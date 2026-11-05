@@ -160,11 +160,11 @@ signature item) stays as in `leaders_hd/<key>.txt`.
    Wears: a long black lecturer's gown, white with chalk dust down the front and sleeves, over a grey wool waistcoat, a stub of chalk tucked behind one ear.
 
 ## Decius (Bannor, Malakim, Calabim)
-1. **Borrowed Throne**: Drawing the dust sheet off a human king's gilded throne with his right hand, his left thumb hooked in his sword belt, a dry half-smile, eyes level on the viewer; a captured human throne hall at amber dusk, dusty sunbeams across the faded banners of the kings before him.
+1. **Borrowed Throne**: Drawing the dust sheet off a human king's gilded throne with his right hand, his left thumb hooked in his sword belt, a dry half-smile, eyes level on the viewer; a captured throne hall at amber dusk, dusty sunbeams across the faded banners of the kings before him.
    Wears: a dead human king's ceremonial mantle of faded gold brocade trimmed with ermine, too short for his long frame, over a plain black soldier's tunic and boots.
 2. **Three Crowns**: Idly turning a white-gold Malakim sun-circlet in his right hand to catch the light, his left hand weighing a black-spiked Calabim crown, a gold Bannor crown on the campaign maps before him; eyes down on them, mouth flat; a desert war tent at white noon, sun glowing through the canvas.
    Wears: a desert campaign surcoat of sun-faded sand linen over plain mail, a loose white Malakim head-wrap around his neck, dust on his boots.
-3. **Exile King**: Pulling the riding glove off his left hand finger by finger with his right as he walks in, eyes sliding sideways to the human courtiers whispering behind their hands, a dry half-smile; a bright white marble human court at morning, coloured light from stained glass on their silks.
+3. **Exile King**: Pulling the riding glove off his left hand finger by finger with his right as he walks in, eyes sliding sideways to the courtiers whispering behind their hands about the foreign soldier, a dry half-smile; a bright white marble human court at morning, coloured light from stained glass on their silks.
    Wears: travel-worn road clothes: a charcoal riding coat and a cloak grey with dust, mud-splashed boots, plain and dark among the courtiers' bright silks.
 4. **Expects Betrayal**: Turning a sealed, unopened letter over in his left hand, his right hand resting on the hilt of a sheathed dagger at his belt, his tired eyes straight on the viewer; his bedchamber at midnight, one guttering candle, rain on the shutters.
    Wears: his worn fine steel plate with silver pauldrons and gold trim, buckled on even indoors at midnight, under a heavy deep-crimson cloak.
