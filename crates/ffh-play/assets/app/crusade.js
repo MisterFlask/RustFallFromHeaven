@@ -69,7 +69,7 @@ addHelp({
   group: GROUP,
   title: "Crusades and the call to arms",
   body: () => [
-    h("p", "With the new game's Crusades box on, a council's war resolution does not drag its members into the war. It raises a crusade: an army of its own, the Host, made of the units its members lend, which fights the target until the crusade ends."),
+    h("p", "A council's war resolution does not drag its members into the war. It raises a crusade: an army of its own, the Host, made of the units its members lend, which fights the target until the crusade ends."),
     h("h4", "The call"),
     h(
       "ul",
@@ -284,7 +284,6 @@ export async function openCrusades() {
       return m.setBody(h("p.warn", e.detail ?? e.message));
     }
     if (m.closed) return;
-    if (!q.enabled) return m.setBody(h("p.dim", "Crusades are off in this game (start a new game with Crusades on)."));
     const rows = q.crusades.map((c) => {
       const call = c.call;
       const answer = !call ? "not called" : call.answer === null ? (call.settled ? "no answer" : "waiting for your answer") : call.answer === "refuse" ? "refused" : `pledged ${strengthLabel(call.answer)}`;

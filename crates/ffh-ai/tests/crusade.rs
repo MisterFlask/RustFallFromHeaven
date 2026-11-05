@@ -5,7 +5,7 @@
 use std::sync::Arc;
 
 use ffh_core::controller::{Controller, ControllerRef};
-use ffh_core::crusade::{CrusadeId, CrusadeKind, CrusadeRules, Dissolution, Objective};
+use ffh_core::crusade::{CrusadeId, CrusadeKind, Dissolution, Objective};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::map::{Map, MapInitData};
@@ -46,7 +46,6 @@ fn scenario(seed: u32, defender: ControllerRef) -> Game {
     let mut o = SetupOptions::new(d, 3, "WORLDSIZE_DUEL", seed);
     o.options.push(GameOptionType::GAMEOPTION_NO_BARBARIANS);
     o.options.push(GameOptionType::GAMEOPTION_NO_EVENTS);
-    o.crusade = CrusadeRules::on();
     let mut g = Game::new_with_options(d, &o);
     g.map_script = Arc::new(FractalMapScript::default());
     let ai = ffh_ai::ai_controller();

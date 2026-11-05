@@ -767,10 +767,10 @@ impl Game {
                 let vote_player = data.vote_option.player.expect("processVote: force war without a player");
                 let team = self.players[vote_player].team;
 
-                // Not in C++: with crusades on, the resolution calls the members to dedicate
+                // Not in C++: the resolution calls the members to dedicate
                 // forces to a Host instead of declaring war ("dedicate or defy";
                 // docs/CRUSADE.md). Without a free Host slot the BtS declarations stand.
-                if self.crusades_enabled() && self.crusade_call_council(data.vote_source, team).is_some() {
+                if self.crusade_call_council(data.vote_source, team).is_some() {
                     self.set_vote_outcome(data, PlayerVote::NO_PLAYER_VOTE);
                     return;
                 }

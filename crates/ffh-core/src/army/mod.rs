@@ -1,5 +1,5 @@
 //! Armies, garrisons, requisition, marching recruits and supply (this game's own rules, not
-//! FFH2's; `GAMEOPTION_ARMIES`; docs/ARMIES.md).
+//! FFH2's; docs/ARMIES.md).
 //!
 //! **Armies.** An army is a persistent, named container of land combat units (`Army`,
 //! `Unit::army`): it moves as one, as a selection group does (its units are kept in one group by
@@ -104,12 +104,6 @@ fn ordinal(n: i32) -> String {
 }
 
 impl Game {
-    /// Whether this game has armies.
-    #[inline]
-    pub fn armies_on(&self) -> bool {
-        self.is_option(GameOptionType::GAMEOPTION_ARMIES)
-    }
-
     /// Whether a unit of type `unit_type` is an army unit: a land combat unit that is not a mage
     /// (arcane unit), a recon unit or a hero (a type with `PROMOTION_HERO` for free, which no unit
     /// of it could lose: [`Game::unit_is_army_unit`] refuses every hero).
@@ -253,7 +247,7 @@ impl Game {
     /// army units outside a garrison has one army; the oldest group with units of an army keeps it;
     /// a disbanded army in the city it marched to joins its garrison; armies without units go.
     pub fn player_army_sync(&mut self, p: PlayerId) {
-        if !self.armies_on() || self.player_is_barbarian(p) {
+        if self.player_is_barbarian(p) {
             return;
         }
         // Units that are no army units (a hero now, a summon) belong to no army; nor does a unit
@@ -344,9 +338,6 @@ impl Game {
 
     /// Forms a new army of `units` (army units of `p` on one plot), in one group of their own.
     pub fn army_form(&mut self, p: PlayerId, units: &[UnitId]) -> Result<ArmyId, &'static str> {
-        if !self.armies_on() {
-            return Err("armies are off in this game");
-        }
         self.army_units_plot(p, units)?;
         let a = self.army_create(p);
         let first = units[0];
@@ -649,7 +640,7 @@ impl Game {
     /// Where a unit of city `c`'s order goes (`order_dest`, else the city's default, else its own
     /// garrison); `None` = it stays here (the city's own garrison, a destination gone, no armies).
     pub fn city_recruit_dest(&self, c: CityId, order_dest: Option<RecruitDest>, unit_type: UnitType) -> Option<RecruitDest> {
-        if !self.armies_on() || !self.unit_type_is_army_unit(unit_type) {
+        if !self.unit_type_is_army_unit(unit_type) {
             return None;
         }
         let owner = self.cities[c].owner;
@@ -674,9 +665,6 @@ impl Game {
     /// leaves every army's requisition, and the recruits marching to its garrison go to the
     /// nearest other one.
     pub fn city_army_lost(&mut self, c: CityId) {
-        if !self.armies_on() {
-            return;
-        }
         let owner = self.cities[c].owner;
         for a in self.players[owner].armies.clone() {
             self.armies[a].requisition.retain(|&x| x != c);

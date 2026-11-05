@@ -25,7 +25,7 @@ addHelp({
   group: "Game options",
   title: "Governors",
   body: () => [
-    h("p", "With the new game's Governors option on, you rule a few cities directly and a governor from your bench runs every other one: for a governed city you choose only who governs it."),
+    h("p", "You rule a few cities directly and a governor from your bench runs every other one: for a governed city you choose only who governs it."),
     h("h4", "Direct rule"),
     h(
       "ul",
@@ -143,10 +143,6 @@ export async function openGovernors({ openCity } = {}) {
       return;
     }
     if (m.closed) return;
-    if (!r.on) {
-      m.setBody(h("p.dim", "This game has no governors (the Governors option is off)."));
-      return;
-    }
     const act = async (cmd) => {
       await run(cmd);
       load();

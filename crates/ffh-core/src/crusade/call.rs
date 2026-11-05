@@ -36,7 +36,7 @@ impl Game {
         deadline: i32,
         called: &[PlayerId],
     ) -> Option<CrusadeId> {
-        if !self.crusades_enabled() || !self.team_is_alive(target) || self.team_is_barbarian(target) || self.team_is_crusade_host(target) {
+        if !self.team_is_alive(target) || self.team_is_barbarian(target) || self.team_is_crusade_host(target) {
             return None;
         }
         let host = self.crusade_free_host_slot()?;

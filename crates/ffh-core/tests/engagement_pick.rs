@@ -31,8 +31,7 @@ fn world_with(war: bool) -> World {
 /// [`world_with`] with `civs` players on a map of size `size`; players 0 and 1 at war if `war`.
 fn world_of(war: bool, civs: usize, size: &str) -> World {
     let d = ffh_data::global();
-    let mut setup = GameSetup::standard(d, civs, size, 5);
-    setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
+    let setup = GameSetup::standard(d, civs, size, 5);
     let mut g = Game::new(d, setup);
     g.game_init();
     let (p0, p1) = (PlayerId(0), PlayerId(1));

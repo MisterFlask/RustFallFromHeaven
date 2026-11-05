@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 
 use ffh_core::controller::Controller;
 use ffh_core::crusade::loan::{LoanAnswer, LoanMission, LoanProposal, LoanTerms};
-use ffh_core::crusade::{CrusadeId, CrusadeKind, CrusadeRules, Dissolution, Objective, Pledge};
+use ffh_core::crusade::{CrusadeId, CrusadeKind, Dissolution, Objective, Pledge};
 use ffh_core::crusade::lend::LendError;
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -57,14 +57,11 @@ const C: PlayerId = PlayerId(3);
 /// Four civs (A, B and C lend, T is the target) on a flat 30x14 grassland, every team meeting
 /// every other, cities: A at (3, 4), B at (3, 10), C at (12, 12), T at (24, 4) and (24, 10).
 /// No barbarians.
-fn game(script: Arc<Script>, crusades: bool) -> Game {
+fn game(script: Arc<Script>) -> Game {
     let d = ffh_data::global();
     let mut o = SetupOptions::new(d, 4, "WORLDSIZE_DUEL", 17);
     o.options.push(GameOptionType::GAMEOPTION_NO_BARBARIANS);
     o.options.push(GameOptionType::GAMEOPTION_NO_EVENTS);
-    if crusades {
-        o.crusade = CrusadeRules::on();
-    }
     let mut g = Game::new_with_options(d, &o);
     g.map_script = Arc::new(FractalMapScript::default());
     for p in g.player_ids() {
@@ -134,7 +131,7 @@ fn lender_credit(g: &Game, id: CrusadeId, p: PlayerId) -> i32 {
 
 #[test]
 fn lending_transfers_ownership_records_the_lender_removes_upkeep_and_declares_war() {
-    let mut g = game(Arc::new(Script::default()), true);
+    let mut g = game(Arc::new(Script::default()));
     let id = call(&mut g, &[A, B]);
     let host = host_of(&g, id);
     assert!(g.player_is_host_slot(host) && g.players[host].alive);
@@ -166,7 +163,7 @@ fn lending_transfers_ownership_records_the_lender_removes_upkeep_and_declares_wa
 
 #[test]
 fn lending_is_refused_when_the_lender_could_not_declare_war() {
-    let mut g = game(Arc::new(Script::default()), true);
+    let mut g = game(Arc::new(Script::default()));
     let id = call(&mut g, &[A]);
     let (ta, tt) = (g.players[A].team, g.players[T].team);
     g.teams[ta].force_peace[tt] = true; // a peace treaty in force
@@ -178,7 +175,7 @@ fn lending_is_refused_when_the_lender_could_not_declare_war() {
 
 #[test]
 fn a_lent_unit_that_never_fights_earns_nothing_and_returns_at_dissolution() {
-    let mut g = game(Arc::new(Script::default()), true);
+    let mut g = game(Arc::new(Script::default()));
     let id = call(&mut g, &[A]);
     let u = unit(&mut g, A, "UNIT_WARRIOR", 3, 4);
     let name = g.units[u].name.clone();
@@ -198,7 +195,7 @@ fn a_lent_unit_that_never_fights_earns_nothing_and_returns_at_dissolution() {
 
 #[test]
 fn a_first_kill_credits_the_handover_strength_once() {
-    let mut g = game(Arc::new(Script::default()), true);
+    let mut g = game(Arc::new(Script::default()));
     let id = call(&mut g, &[A]);
     let u = unit(&mut g, A, "UNIT_CHAMPION", 10, 4);
     g.crusade_lend(id, A, &[u]).unwrap();
@@ -221,7 +218,7 @@ fn a_first_kill_credits_the_handover_strength_once() {
 
 #[test]
 fn a_unit_that_dies_without_killing_is_credited() {
-    let mut g = game(Arc::new(Script::default()), true);
+    let mut g = game(Arc::new(Script::default()));
     let id = call(&mut g, &[A]);
     let u = unit(&mut g, A, "UNIT_WARRIOR", 10, 4);
     g.crusade_lend(id, A, &[u]).unwrap();
@@ -235,7 +232,7 @@ fn a_unit_that_dies_without_killing_is_credited() {
 #[test]
 fn bandwagon_late_big_lender_ranks_below_the_early_lender_that_fought() {
     let script = Arc::new(Script { picks: Some(vec![]), ..Default::default() });
-    let mut g = game(script.clone(), true);
+    let mut g = game(script.clone());
     let id = call(&mut g, &[A, B]);
     let host = host_of(&g, id);
     // A lends 10 units early; all fight (and fall).
@@ -291,7 +288,7 @@ fn credit_both(g: &mut Game, id: CrusadeId, a_n: usize, b_n: usize) {
 #[test]
 fn budgets_sum_to_the_pool_and_the_top_contributor_drafts_first() {
     let script = Arc::new(Script::default());
-    let mut g = game(script.clone(), true);
+    let mut g = game(script.clone());
     let id = call(&mut g, &[A, B]);
     let host = host_of(&g, id);
     credit_both(&mut g, id, 2, 6); // B contributes three times A
@@ -314,7 +311,7 @@ fn budgets_sum_to_the_pool_and_the_top_contributor_drafts_first() {
 fn overdraw_debits_the_lender_and_credits_the_wealth_pool() {
     // A (small share) takes the far bigger city: it pays the difference into the pool, which B
     // then draws on as wealth.
-    let mut g = game(Arc::new(Script::default()), true);
+    let mut g = game(Arc::new(Script::default()));
     let id = call(&mut g, &[A, B]);
     let host = host_of(&g, id);
     credit_both(&mut g, id, 1, 1);
@@ -343,7 +340,7 @@ fn overdraw_debits_the_lender_and_credits_the_wealth_pool() {
 
 #[test]
 fn unspent_budgets_are_paid_from_wealth_pro_rata_when_short() {
-    let mut g = game(Arc::new(Script { picks: Some(vec![]), ..Default::default() }), true);
+    let mut g = game(Arc::new(Script { picks: Some(vec![]), ..Default::default() }));
     let id = call(&mut g, &[A, B]);
     let host = host_of(&g, id);
     credit_both(&mut g, id, 1, 3);
@@ -362,7 +359,7 @@ fn unspent_budgets_are_paid_from_wealth_pro_rata_when_short() {
 
 #[test]
 fn a_victims_recaptured_city_returns_at_once_and_never_enters_the_pool() {
-    let mut g = game(Arc::new(Script { picks: Some(vec![]), ..Default::default() }), true);
+    let mut g = game(Arc::new(Script { picks: Some(vec![]), ..Default::default() }));
     // B is the victim: T took B's city.
     let bc = g.players[B].cities[0];
     g.player_acquire_city(T, bc, true, false, true);
@@ -389,7 +386,7 @@ fn a_victims_recaptured_city_returns_at_once_and_never_enters_the_pool() {
 fn dissolution_fires_on_objective_term_and_last_unit() {
     let target_city = |g: &Game| g.players[T].cities[0];
     // Objective: the listed city is taken.
-    let mut g = game(Arc::new(Script::default()), true);
+    let mut g = game(Arc::new(Script::default()));
     let tc = target_city(&g);
     let plot = g.city_plot(tc);
     let target = g.players[T].team;
@@ -405,7 +402,7 @@ fn dissolution_fires_on_objective_term_and_last_unit() {
     assert_eq!(g.crusade_reports.last().unwrap().reason, Dissolution::Objective);
 
     // Term.
-    let mut g = game(Arc::new(Script::default()), true);
+    let mut g = game(Arc::new(Script::default()));
     let id = call(&mut g, &[A]);
     let u = unit(&mut g, A, "UNIT_WARRIOR", 3, 4);
     g.crusade_lend(id, A, &[u]).unwrap();
@@ -415,7 +412,7 @@ fn dissolution_fires_on_objective_term_and_last_unit() {
     assert_eq!(g.crusade_reports.last().unwrap().reason, Dissolution::Term);
 
     // Last unit lost.
-    let mut g = game(Arc::new(Script::default()), true);
+    let mut g = game(Arc::new(Script::default()));
     let id = call(&mut g, &[A]);
     let u = unit(&mut g, A, "UNIT_WARRIOR", 3, 4);
     g.crusade_lend(id, A, &[u]).unwrap();
@@ -429,7 +426,7 @@ fn dissolution_fires_on_objective_term_and_last_unit() {
 
 #[test]
 fn survivors_and_heroes_return_home_with_their_promotions() {
-    let mut g = game(Arc::new(Script::default()), true);
+    let mut g = game(Arc::new(Script::default()));
     let id = call(&mut g, &[A]);
     let u = unit(&mut g, A, "UNIT_WARRIOR", 20, 4);
     let promo = g.d.t::<PromotionType>("PROMOTION_COMBAT1");
@@ -460,7 +457,7 @@ fn survivors_and_heroes_return_home_with_their_promotions() {
 
 #[test]
 fn refusing_or_ignoring_a_council_call_costs_standing() {
-    let mut g = game(Arc::new(Script { pledge: Some(Pledge::Refuse), ..Default::default() }), true);
+    let mut g = game(Arc::new(Script { pledge: Some(Pledge::Refuse), ..Default::default() }));
     let vs = VoteSourceType(0);
     for p in [A, B] {
         g.players[p].loyal_member[vs] = true;
@@ -479,26 +476,11 @@ fn refusing_or_ignoring_a_council_call_costs_standing() {
     }
 }
 
-#[test]
-fn faithful_mode_is_unchanged_with_the_flag_off() {
-    let d = ffh_data::global();
-    let o = SetupOptions::new(d, 4, "WORLDSIZE_DUEL", 17);
-    let s = ffh_core::setup::GameSetup::from_options(d, &o);
-    assert_eq!(s.players.len(), 4 + ffh_core::setup::GameSetup::SPARE_SLOTS + 1, "no Host slots");
-    assert!(s.players.iter().all(|p| !p.host));
-    let mut g = game(Arc::new(Script::default()), false);
-    let target = g.players[T].team;
-    assert!(!g.crusades_enabled());
-    assert_eq!(g.crusade_call(CrusadeKind::Direct, target, None, Objective::Term, 30, 5, &[A]), None, "no crusade without the flag");
-    let terms = LoanTerms { lender: A, borrower: B, target, mission: LoanMission::Attack, strength: 100, duration: 5 };
-    assert_eq!(g.loan_check(&terms), Err(ffh_core::crusade::loan::LoanError::Off));
-}
-
 // ---- allied loans ----
 
 fn loan_game() -> (Game, Arc<Script>) {
     let script = Arc::new(Script { accept_loans: true, ..Default::default() });
-    let mut g = game(script.clone(), true);
+    let mut g = game(script.clone());
     let (tb, tt) = (g.players[B].team, g.players[T].team);
     g.team_declare_war(tb, tt, false, None); // B is at war with T and borrows
     g.players[B].gold = 1000;
@@ -606,7 +588,7 @@ fn cities_the_general_captures_go_to_the_borrower() {
 
 #[test]
 fn a_saved_game_keeps_the_crusade() {
-    let mut g = game(Arc::new(Script::default()), true);
+    let mut g = game(Arc::new(Script::default()));
     let id = call(&mut g, &[A, B]);
     let u = unit(&mut g, A, "UNIT_WARRIOR", 3, 4);
     g.crusade_lend(id, A, &[u]).unwrap();
@@ -620,7 +602,7 @@ fn a_saved_game_keeps_the_crusade() {
 
 #[test]
 fn a_passed_council_war_resolution_calls_members_to_dedicate_instead_of_declaring() {
-    let mut g = game(Arc::new(Script::default()), true);
+    let mut g = game(Arc::new(Script::default()));
     let d = g.d;
     let over = d.t::<VoteSourceType>("DIPLOVOTE_OVERCOUNCIL");
     let civic = d.vote_sources[over].civic.expect("the Overcouncil has a civic");
@@ -649,7 +631,7 @@ fn a_passed_council_war_resolution_calls_members_to_dedicate_instead_of_declarin
 
 #[test]
 fn a_crusade_called_between_turns_does_not_start_the_hosts_turn_out_of_order() {
-    let mut g = game(Arc::new(Script::default()), true);
+    let mut g = game(Arc::new(Script::default()));
     // (as at the start of a game turn, when the council votes are counted)
     for p in g.player_ids() {
         if g.players[p].turn_active {

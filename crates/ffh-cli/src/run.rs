@@ -137,8 +137,6 @@ pub struct RunConfig {
     /// The leader of the first civ slot (`LEADER_*`): with a forced civilization, one of its
     /// leaders; alone, it forces its civilization too (as `ffh-play`'s new game does).
     pub leader: Option<String>,
-    /// Turn the crusade ruleset on (docs/CRUSADE.md).
-    pub crusades: bool,
     /// Self-play measures (docs/CRUSADE.md): at the start of these turns, a council crusade is
     /// called against the leading civ, every other civ called (AI councils rarely pass war
     /// resolutions on their own).
@@ -168,7 +166,6 @@ impl Default for RunConfig {
             max_turns: 0,
             disabled_victories: Vec::new(),
             leader: None,
-            crusades: false,
             crusade_calls: Vec::new(),
             free_rider: None,
         }
@@ -267,9 +264,6 @@ pub fn new_game(cfg: &RunConfig) -> (Game, Arc<Timed>) {
     }
     o.max_turns = cfg.max_turns;
     o.disabled_victories = cfg.disabled_victories.iter().map(|name| d.t::<VictoryType>(name)).collect();
-    if cfg.crusades {
-        o.crusade = ffh_core::crusade::CrusadeRules::on();
-    }
     let mut setup = ffh_core::setup::GameSetup::from_options(d, &o);
     assert!(cfg.force_civs.len() <= cfg.civs, "more forced civilizations than civ slots");
     for (slot, name) in cfg.force_civs.iter().enumerate() {
@@ -983,7 +977,7 @@ pub fn inspect(g: &Game, p: PlayerId) -> String {
 
 }
 
-/// One dissolved crusade as a JSON line (`ffh autoplay --crusades`; the self-play measures of
+/// One dissolved crusade as a JSON line (`ffh autoplay`; the self-play measures of
 /// docs/CRUSADE.md are computed from these by `scripts/crusade_metrics.py`).
 pub fn crusade_report_json(r: &ffh_core::crusade::CrusadeReport) -> String {
     let lenders: Vec<String> = r

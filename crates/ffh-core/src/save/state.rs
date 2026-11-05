@@ -150,7 +150,7 @@ persist_struct!(GameSetup {
 
 persist_newtype!(CrusadeId);
 persist_struct!(CrusadeRules {
-    enabled, host_slots, term, pledge_deadline, obligation_percent, far_obligation_percent,
+    host_slots, term, pledge_deadline, obligation_percent, far_obligation_percent,
     muster_percent, recover_health_percent, recover_turns, engage_turns, city_pop_gold,
     city_building_percent, loan_max_turns,
 });

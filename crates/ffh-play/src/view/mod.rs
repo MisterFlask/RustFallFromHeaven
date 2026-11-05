@@ -332,7 +332,7 @@ pub fn cities(v: &Viewer) -> Json {
         }
         // Revolt pressure on a city the human sees (its banner's mark): its level
         // (`culture::REVOLT_*`) and the unhappiness it causes.
-        if g.culture_actions_on() && (visible || own) {
+        if visible || own {
             let level = g.cities[c].culture_revolt_level;
             if level > 0 || g.city_revolt_pressure(c) > 0 {
                 j.set("revolt", level);
@@ -373,12 +373,10 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
         j.set("summon_turns", (unit.duration > 0).then_some(unit.duration));
         // This game's armies (docs/ARMIES.md): its army, or the city whose garrison it is in, or
         // its march (a recruit on its way: it takes no orders until it arrives).
-        if g.armies_on() {
-            j.set("army", unit.army);
-            j.set("garrison", g.unit_garrison_city(u));
-            j.set("army_unit", g.unit_is_army_unit(u));
-            j.set("march", if unit.march.is_some() { armies::march_json(v, u) } else { Json::Null });
-        }
+        j.set("army", unit.army);
+        j.set("garrison", g.unit_garrison_city(u));
+        j.set("army_unit", g.unit_is_army_unit(u));
+        j.set("march", if unit.march.is_some() { armies::march_json(v, u) } else { Json::Null });
     }
     // Engagement combat: its role, A, Dv and max HP (`hp` / `max_hp` stay the duel's percent).
     battles::unit_fields(g, u, &mut j);
@@ -445,11 +443,9 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         // This game's armies (null without them): the human's armies and the recruits marching
         // to garrisons (unit ids: each unit's `march` says where and how long).
         "armies" => armies::armies(v),
-        "garrison_marching" => if g.armies_on() { armies::garrison_marching(v) } else { Json::Null },
+        "garrison_marching" => armies::garrison_marching(v),
         // Engagement combat (docs/ENGAGEMENTS.md): the human's battles of this turn and the last.
         "battles" => battles::recent(v),
-        // The crusade ruleset (docs/CRUSADE.md): on (the `crusades` query has the details).
-        "crusades" => g.crusades_enabled(),
         // C++ `CvPlayer::m_groupCycle`: the order W cycles the waiting groups in
         // (`cycleSelectionGroups`), and whether some group has orders to continue
         // (`hasAutoUnit`: the cycle's wrap then sends AutoMoves).

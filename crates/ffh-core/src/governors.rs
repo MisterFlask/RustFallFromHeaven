@@ -1,4 +1,4 @@
-//! Governors (this game's own rules, not FFH2's; `GAMEOPTION_GOVERNORS`; docs/GOVERNORS.md).
+//! Governors (this game's own rules, not FFH2's; docs/GOVERNORS.md).
 //!
 //! **Direct rule.** A player rules up to `GOVERNOR_DIRECT_RULE_CITIES` cities directly, the
 //! capital always among them; they work as cities always have. Every other city is governed. A
@@ -69,15 +69,9 @@ pub struct GovMods {
 pub type GovResult = Result<(), &'static str>;
 
 impl Game {
-    /// Whether this game has governors.
-    #[inline]
-    pub fn governors_on(&self) -> bool {
-        self.is_option(GameOptionType::GAMEOPTION_GOVERNORS)
-    }
-
     /// Whether city `c` is governed (not directly ruled). Barbarian cities are never governed.
     pub fn city_is_governed(&self, c: CityId) -> bool {
-        self.governors_on() && !self.cities[c].direct_rule && !self.player_is_barbarian(self.cities[c].owner)
+        !self.cities[c].direct_rule && !self.player_is_barbarian(self.cities[c].owner)
     }
 
     /// The profile an interim governor runs a city with (the XML's `bInterim` one).
@@ -166,9 +160,6 @@ impl Game {
     /// matched against the city as it is restored, not the blank one `player_acquire_city`
     /// creates, and a city razed or given away at once costs no governor.
     pub fn city_governance_init(&mut self, c: CityId, assign: bool) {
-        if !self.governors_on() {
-            return;
-        }
         let p = self.cities[c].owner;
         self.cities[c].governor = None;
         self.cities[c].governor_penalty_turns = 0;
@@ -198,7 +189,7 @@ impl Game {
     /// at the turn's end, with the units that took it standing in it (they move in after the
     /// transfer) and its new governor in place.
     pub fn city_governance_acquired(&mut self, c: CityId) {
-        if !self.governors_on() || !self.cities.contains(c) || !self.city_is_governed(c) {
+        if !self.cities.contains(c) || !self.city_is_governed(c) {
             return;
         }
         let p = self.cities[c].owner;
@@ -310,9 +301,6 @@ impl Game {
 
     /// Whether `player_set_direct_rule(p, to_rule, to_govern)` would be done (else why not).
     pub fn player_check_direct_rule(&self, p: PlayerId, to_rule: CityId, to_govern: Option<CityId>) -> GovResult {
-        if !self.governors_on() {
-            return Err("governors are off in this game");
-        }
         if !self.cities.contains(to_rule) || self.cities[to_rule].owner != p || !self.city_is_governed(to_rule) {
             return Err("not a governed city of yours");
         }
@@ -347,9 +335,6 @@ impl Game {
 
     /// Whether `city_hand_to_governor(p, c)` would be done (else why not).
     pub fn city_check_hand_to_governor(&self, p: PlayerId, c: CityId) -> GovResult {
-        if !self.governors_on() {
-            return Err("governors are off in this game");
-        }
         if !self.cities.contains(c) || self.cities[c].owner != p || self.city_is_governed(c) {
             return Err("not a directly ruled city of yours");
         }
@@ -415,9 +400,6 @@ impl Game {
 
     /// Whether `city_assign_governor(p, c, g)` would be done (else why not).
     pub fn city_check_assign_governor(&self, p: PlayerId, c: CityId, g: GovernorId) -> GovResult {
-        if !self.governors_on() {
-            return Err("governors are off in this game");
-        }
         if !self.cities.contains(c) || self.cities[c].owner != p || !self.city_is_governed(c) {
             return Err("not a governed city of yours");
         }
@@ -434,7 +416,7 @@ impl Game {
     /// Player `p`'s governance in its turn processing: the capital ruled directly, no more direct
     /// cities than slots, the bench drawing candidates, interim cities taking them.
     pub fn player_governance_turn(&mut self, p: PlayerId) {
-        if !self.governors_on() || self.player_is_barbarian(p) || !self.players[p].alive {
+        if self.player_is_barbarian(p) || !self.players[p].alive {
             return;
         }
         self.player_governance_settle(p);
@@ -469,9 +451,6 @@ impl Game {
     /// The end of player `p`'s turn processing (after its cities' production and commerce): the
     /// replacement penalties wear off, so a penalty of N turns costs N turns' output.
     pub fn player_governance_turn_end(&mut self, p: PlayerId) {
-        if !self.governors_on() {
-            return;
-        }
         for c in self.players[p].cities.clone() {
             if self.cities.contains(c) && self.cities[c].governor_penalty_turns > 0 {
                 self.cities[c].governor_penalty_turns -= 1;
@@ -485,7 +464,7 @@ impl Game {
     /// Player `p`'s direct rule settled: the capital directly ruled, at most the slots' number of
     /// directly ruled cities (the cities made direct last go back to governors).
     pub fn player_governance_settle(&mut self, p: PlayerId) {
-        if !self.governors_on() || self.player_is_barbarian(p) {
+        if self.player_is_barbarian(p) {
             return;
         }
         if let Some(cap) = self.player_get_capital_city(p) {

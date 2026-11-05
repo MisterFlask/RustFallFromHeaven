@@ -1,4 +1,4 @@
-//! Marching recruits (this game's own rules, `GAMEOPTION_ARMIES`; docs/ARMIES.md,
+//! Marching recruits (this game's own rules; docs/ARMIES.md,
 //! "Recruitment").
 //!
 //! A finished land combat unit bound elsewhere (an army, another city's garrison) is created in
@@ -157,9 +157,6 @@ impl Game {
     /// its owner does not move it and it waits for no orders through the turn (it marches at the
     /// turn's end, [`Game::player_do_march`]).
     pub fn player_march_hold(&mut self, p: PlayerId) {
-        if !self.armies_on() {
-            return;
-        }
         for u in self.players[p].units.clone() {
             if self.units.contains(u) && self.units[u].march.is_some() {
                 self.unit_march_detach(u);
@@ -176,9 +173,6 @@ impl Game {
     /// army for gone), then each recruit marches with the moves it kept, toward where its
     /// destination is after its owner moved, and arrives on its destination's plot.
     pub fn player_do_march(&mut self, p: PlayerId) {
-        if !self.armies_on() {
-            return;
-        }
         let marching: Vec<UnitId> = self.players[p].units.iter().copied().filter(|&u| self.units[u].march.is_some()).collect();
         if marching.is_empty() {
             return;
@@ -195,9 +189,6 @@ impl Game {
     /// sync): its recruits standing on their destination's plot arrive (the march's catch-all:
     /// one that reached it is in already).
     pub fn player_march_join(&mut self, p: PlayerId) {
-        if !self.armies_on() {
-            return;
-        }
         for u in self.players[p].units.clone() {
             if !self.units.contains(u) {
                 continue;

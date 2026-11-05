@@ -20,8 +20,7 @@ const H: PlayerId = PlayerId(0);
 /// at least 3 plots away on the same landmass, the starting units gone.
 fn game() -> (Game, CityId, CityId) {
     let d = ffh_data::global();
-    let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
-    setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
+    let setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
     let mut g = Game::new(d, setup);
     g.game_init();
     let u = g.players[H].units[0];

@@ -6,15 +6,15 @@ is a small, time-limited crusade made by agreement. This is the implementation o
 spec "Crusade Mechanic: Design Spec" (2026-11-01); this file records what was built, the choices
 made where the spec left questions open, and the self-play measures.
 
-Not FFH2: a rules layer of this game, **off by default**. With it off no Host slot is reserved,
-nothing in `ffh_core::crusade` runs, and games are bit-identical to the faithful port (checked:
-per-turn sync checksums of 3 seeds x 200 turns equal those of the pre-crusade binary).
+Not FFH2: a rules layer of this game, in every game (the AI-only ones too) since 2026-11-05, the
+owner's decision. Before, it was a ruleset flag, off by default (`CrusadeRules::enabled`, the
+new-game screen's *Crusades* box, `ffh --crusades`), removed in save format 16.
 
-## Turning it on
+## Setup and tools
 
-- Rules: `SetupOptions::crusade = CrusadeRules::on()` (or set `enabled` and tune the other
-  fields): `GameSetup::crusade`, saved with the game (save format 3).
-- `ffh autoplay|stats|bench --crusades`; `--crusade-call T1,T2` also calls a council crusade
+- Rules: `SetupOptions::crusade` (`CrusadeRules`, the parameters): `GameSetup::crusade`, saved
+  with the game. Every game reserves `host_slots` player slots for Hosts.
+- `ffh autoplay|stats|bench --crusade-call T1,T2` calls a council crusade
   against the leading civ at those turns (the measure harness: AI councils rarely pass war
   resolutions by themselves), `--free-rider P` makes player P pledge the minimum.
 - `crates/ffh-cli/scripts/crusade_metrics.py`: the self-play measures over seeds.

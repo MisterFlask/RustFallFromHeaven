@@ -1080,8 +1080,7 @@ mod tests {
     /// `def` units of player 1 on `to`.
     fn world(att: &[&str], def: &[&str]) -> (Game, PlotIdx, PlotIdx) {
         let d = ffh_data::global();
-        let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
-        setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
+        let setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
             let mut g = Game::new(d, setup);
         g.game_init();
         let flat = |g: &Game, p: PlotIdx| {

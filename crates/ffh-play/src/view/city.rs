@@ -73,7 +73,7 @@ fn queue(v: &Viewer, c: CityId) -> Json {
         };
         let mut j = crate::jobj! { "order" => Json::idx(o.order_type), "type" => k, "save" => o.save, "turns" => turns };
         // This game's armies: where a trained land combat unit goes.
-        if g.armies_on() && o.order_type == OrderType::ORDER_TRAIN && ok(d.units.len()) && g.unit_type_is_army_unit(UnitType::from_usize(k as usize)) {
+        if o.order_type == OrderType::ORDER_TRAIN && ok(d.units.len()) && g.unit_type_is_army_unit(UnitType::from_usize(k as usize)) {
             j.set("dest", crate::command::recruit_dest_json(o.dest));
             j.set("dest_name", o.dest.map_or_else(|| "the city's default".to_string(), |x| g.recruit_dest_name(x)));
             j.set("requisition", o.requisition);
@@ -150,13 +150,9 @@ pub fn happy_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
     out
 }
 
-/// City `c`'s governor's modifiers (none without governors).
+/// City `c`'s governor's modifiers.
 fn governor(g: &ffh_core::game::Game, c: CityId) -> ffh_core::governors::GovMods {
-    if g.governors_on() {
-        g.city_governor_mods(c)
-    } else {
-        Default::default()
-    }
+    g.city_governor_mods(c)
 }
 
 /// What makes city `c` unhappy: the terms of C++ `CvCity::unhappyLevel`, which they sum to
@@ -494,9 +490,6 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
 fn cultural(v: &Viewer, c: CityId) -> Json {
     let g = v.g;
     let d = g.d;
-    if !g.culture_actions_on() {
-        return Json::Null;
-    }
     let city = &g.cities[c];
     let team = g.players[v.h].team;
     let channel = g

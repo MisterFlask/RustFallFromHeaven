@@ -158,11 +158,9 @@ impl Controller for Ai {
             diplomacy::reconsider_deals(g, p);
             diplomacy::manage(g, &v);
             offers::to_humans(g, &v); // ai-offers: deals offered to human players
-            if g.crusades_enabled() {
-                // Crusades and loans (docs/CRUSADE.md): pledged units leave before ours move.
-                crusade::deliver(g, p);
-                crusade::ask_for_loans(g, p);
-            }
+            // Crusades and loans (docs/CRUSADE.md): pledged units leave before ours move.
+            crusade::deliver(g, p);
+            crusade::ask_for_loans(g, p);
             // War declarations change the picture.
             v = view::View::new(g, p);
             civs::turn(self, g, &mut v); // civ-mechanics

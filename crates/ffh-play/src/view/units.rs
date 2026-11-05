@@ -284,7 +284,7 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
     // This game's armies (docs/ARMIES.md): form, split, join or merge, garrison, disband,
     // upgrade all. Only for a selection of army units (heroes, mages, recon units and summons
     // move on their own).
-    if g.armies_on() && g.army_units_plot(v.h, units).is_ok() {
+    if g.army_units_plot(v.h, units).is_ok() {
         for (enabled, cmd, extra) in army_actions(v, units, plot) {
             push("army", enabled, cmd, extra);
         }

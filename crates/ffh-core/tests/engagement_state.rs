@@ -14,7 +14,6 @@ use ffh_data::*;
 fn game() -> (Game, CityId) {
     let d = ffh_data::global();
     let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
-    setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
     for p in 0..2 {
         setup.players[p].civ = Some(d.t::<CivilizationType>("CIVILIZATION_BANNOR"));
         setup.players[p].leader = Some(d.t::<LeaderHeadType>("LEADER_CAPRIA")); // no combat trait

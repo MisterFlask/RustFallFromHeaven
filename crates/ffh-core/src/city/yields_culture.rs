@@ -509,9 +509,7 @@ impl Game {
         }
 
         // This game's governors: the traits and a replacement's penalty (docs/GOVERNORS.md).
-        if self.governors_on() {
-            modifier += self.city_governor_mods(c).yield_modifier[y];
-        }
+        modifier += self.city_governor_mods(c).yield_modifier[y];
 
         modifier += extra;
 
@@ -788,7 +786,7 @@ impl Game {
         let player = &self.players[city.owner];
         let capital_modifier = if self.city_is_capital(c) { player.capital_commerce_rate_modifier[i] } else { 0 };
         // This game's governors: the traits (docs/GOVERNORS.md).
-        let governor = if self.governors_on() { self.city_governor_mods(c).commerce_modifier[i] } else { 0 };
+        let governor = self.city_governor_mods(c).commerce_modifier[i];
         max(0, city.commerce_rate_modifier[i] + player.commerce_rate_modifier[i] + capital_modifier + governor + 100)
     }
 

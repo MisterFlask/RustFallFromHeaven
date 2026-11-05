@@ -860,9 +860,6 @@ pub fn names_in(d: &GameData, setup: &Json) -> String {
             if let Some(c) = ng.civ {
                 let _ = write!(s, ", {}", names::name(d, c));
             }
-            if ng.crusades {
-                s += ", crusades";
-            }
             s
         }
         Err(_) => setup.to_string(),
@@ -959,15 +956,6 @@ fn city_of(g: &Game, h: PlayerId, c: CityId) -> Result<(), CmdErr> {
         None => Err(CmdErr::Gone),
         Some(city) if city.owner != h => Err(CmdErr::NotOwner),
         Some(_) => Ok(()),
-    }
-}
-
-/// This game's governors are on.
-fn governors_on(g: &Game) -> Result<(), CmdErr> {
-    if g.governors_on() {
-        Ok(())
-    } else {
-        Err(cannot("governors are off in this game"))
     }
 }
 
@@ -1282,9 +1270,6 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
 
         Command::CultureChannel { city, action, target, religion } => {
             city_of(g, h, *city)?;
-            if !g.culture_actions_on() {
-                return Err(cannot("cultural actions are off in this game"));
-            }
             let order = match (action, target) {
                 (None, _) => None,
                 (Some(_), None) => return Err(invalid("field `target`: a channel needs a civilization")),
@@ -1302,9 +1287,6 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         }
 
         Command::ArmyForm { units } | Command::ArmySplit { units } | Command::ArmyGarrison { units } => {
-            if !g.armies_on() {
-                return Err(cannot("armies are off in this game"));
-            }
             if units.is_empty() {
                 return Err(invalid("field `units`: none"));
             }
@@ -1435,9 +1417,6 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         Command::RecruitDest { city, index, dest } => {
             city_of(g, h, *city)?;
             not_governed(g, *city)?;
-            if !g.armies_on() {
-                return Err(cannot("armies are off in this game"));
-            }
             if *index >= 0 {
                 let i = in_range("queue index", *index, g.cities[*city].order_queue.len())?;
                 let o = &g.cities[*city].order_queue[i];
@@ -1464,21 +1443,18 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             if let Some(o) = instead_of {
                 city_of(g, h, *o)?;
             }
-            governors_on(g)?;
             g.player_check_direct_rule(h, *city, *instead_of).map_err(cannot)?;
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
         Command::GovernHand { city } => {
             city_of(g, h, *city)?;
-            governors_on(g)?;
             g.city_check_hand_to_governor(h, *city).map_err(cannot)?;
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
         Command::GovernAssign { city, governor } => {
             city_of(g, h, *city)?;
-            governors_on(g)?;
             match g.governors.get(*governor) {
                 None => return Err(CmdErr::Gone),
                 Some(gov) if gov.owner != h => return Err(CmdErr::NotOwner),
@@ -1834,7 +1810,6 @@ fn lend_error(e: LendError) -> String {
 /// Why a loan cannot be made, for people.
 pub(crate) fn loan_error(e: LoanError) -> String {
     match e {
-        LoanError::Off => "crusades and loans are off in this game".into(),
         LoanError::NotAllowed => "no loan between these two (same team, a Host, no contact, or at war with each other)".into(),
         LoanError::NotAtWar => "the borrower is not at war with that team".into(),
         LoanError::BadTerms => "terms out of range (strength, duration or target)".into(),

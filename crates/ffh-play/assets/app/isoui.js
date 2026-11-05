@@ -403,7 +403,6 @@ const RAIL = [
   ["btn-armies", "units"],
   ["btn-governors", "cities"],
   ["btn-diplo", "diplomacy"],
-  // Only in a game with the crusade ruleset (hud.js shows it).
   ["btn-crusades", "attack"],
 ];
 const SYSTEM = [

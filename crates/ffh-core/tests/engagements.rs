@@ -47,8 +47,7 @@ fn world_sized(war: bool, size: &str) -> World {
 /// [`world_sized`] with `players` players (0 and 1 at war when `war`).
 fn world_of(war: bool, size: &str, players: usize) -> World {
     let d = ffh_data::global();
-    let mut setup = GameSetup::standard(d, players, size, 5);
-    setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
+    let setup = GameSetup::standard(d, players, size, 5);
     let mut g = Game::new(d, setup);
     g.game_init();
     let flat = |g: &Game, p: PlotIdx| {

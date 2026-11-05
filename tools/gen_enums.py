@@ -108,13 +108,7 @@ WANT = {
 
 # Members this game adds after a C++ enum's own (rules of its own, not FFH2's; docs/PORTING.md
 # "Changes from FFH2"). They follow the C++ members in this order, so the XML lists them last.
-EXTRA_MEMBERS = {
-    "GameOptionTypes": [
-        "GAMEOPTION_CULTURE_ACTIONS",  # docs/CULTURE.md
-        "GAMEOPTION_ARMIES",  # docs/ARMIES.md
-        "GAMEOPTION_GOVERNORS",  # docs/GOVERNORS.md
-    ],
-}
+EXTRA_MEMBERS = {}
 
 
 def strip_comments(s):

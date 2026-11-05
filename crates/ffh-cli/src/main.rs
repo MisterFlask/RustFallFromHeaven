@@ -24,9 +24,8 @@
 //! --climate CLIMATE_X --sea-level SEALEVEL_X (or --sea) --max-turns N --no-victory VICTORY_X (repeatable)
 //! --leader LEADER_X (the first slot's leader; alone, it forces its civilization): the rest of
 //! a custom game, so that a game `ffh-play` builds for an observer plays here too
-//! --crusades (the crusade ruleset on, docs/CRUSADE.md; `autoplay` then prints each dissolved
-//! crusade)  --crusade-call T1,T2,.. (with --crusades: a council crusade against the leading civ
-//! at these turns, every other civ called)  --free-rider P (player P always pledges the minimum)
+//! --crusade-call T1,T2,.. (a council crusade against the leading civ at these turns, every
+//! other civ called; docs/CRUSADE.md)  --free-rider P (player P always pledges the minimum)
 
 mod branch;
 mod run;
@@ -35,7 +34,7 @@ mod stats;
 use std::time::Instant;
 
 fn usage() -> ! {
-    eprintln!("usage: ffh <data|lookup TYPE|autoplay|bench|stats|save FILE --to-turn T|resume FILE --turns N --watch SPEC> [--seed N] [--civs N] [--size WORLDSIZE_X] [--turns N] [--report N] [--option GAMEOPTION_X] [--until-supremacy] [--civ CIVILIZATION_X] [--detail] [--crusades] [--crusade-call T1,T2,..] [--free-rider P] [--at T1,T2,..] [--every N]");
+    eprintln!("usage: ffh <data|lookup TYPE|autoplay|bench|stats|save FILE --to-turn T|resume FILE --turns N --watch SPEC> [--seed N] [--civs N] [--size WORLDSIZE_X] [--turns N] [--report N] [--option GAMEOPTION_X] [--until-supremacy] [--civ CIVILIZATION_X] [--detail] [--crusade-call T1,T2,..] [--free-rider P] [--at T1,T2,..] [--every N]");
     eprintln!("       [--speed GAMESPEED_X] [--handicap HANDICAP_X] [--era ERA_X] [--climate CLIMATE_X] [--sea-level SEALEVEL_X] [--max-turns N] [--no-victory VICTORY_X] [--leader LEADER_X]");
     std::process::exit(2)
 }
@@ -76,11 +75,6 @@ fn parse_run_config_at(args: &[String]) -> (run::RunConfig, Vec<i32>) {
             }
             "--until-supremacy" => {
                 cfg.until_supremacy = true;
-                i += 1;
-                continue;
-            }
-            "--crusades" => {
-                cfg.crusades = true;
                 i += 1;
                 continue;
             }

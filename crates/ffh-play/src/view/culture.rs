@@ -352,9 +352,6 @@ pub fn thresholds_json(v: &Viewer) -> Json {
 /// it sees; `memories`: what the other leaders remember of the human's cultural actions.
 pub fn culture(v: &Viewer) -> Json {
     let g = v.g;
-    if !g.culture_actions_on() {
-        return crate::jobj! { "on" => false };
-    }
     let team = g.players[v.h].team;
     let (mut aimed, mut ours, mut others) = (Vec::new(), Vec::new(), Vec::new());
     for ch in g.culture_channels() {
@@ -391,7 +388,6 @@ pub fn culture(v: &Viewer) -> Json {
         })
         .collect();
     crate::jobj! {
-        "on" => true,
         "ours" => Json::Arr(ours),
         "aimed" => Json::Arr(aimed),
         "pressure" => Json::Arr(pressure),

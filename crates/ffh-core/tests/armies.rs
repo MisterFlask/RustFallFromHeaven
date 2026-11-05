@@ -11,8 +11,7 @@ use ffh_data::*;
 /// at least 3 plots away on the same landmass, the starting units gone.
 fn game() -> (Game, CityId, CityId) {
     let d = ffh_data::global();
-    let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
-    setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
+    let setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
     let mut g = Game::new(d, setup);
     g.game_init();
     g.log.enabled = true;
@@ -89,7 +88,6 @@ fn train_for(g: &mut Game, c: CityId, dest: Option<RecruitDest>) -> UnitId {
 fn flat_game() -> Game {
     let d = ffh_data::global();
     let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
-    setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
     setup.options[GameOptionType::GAMEOPTION_NO_BARBARIANS] = true;
     let mut g = Game::new(d, setup);
     g.game_init();
@@ -673,17 +671,6 @@ fn disbanding_marches_the_units_home() {
     g.player_army_sync(p0);
     assert!(units.iter().all(|&u| g.unit_garrison_city(u) == Some(a)));
     assert!(!g.armies.contains(army));
-}
-
-#[test]
-fn off_without_the_option() {
-    let d = ffh_data::global();
-    let mut g = Game::new(d, GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5));
-    g.game_init();
-    let p0 = PlayerId(0);
-    g.player_army_sync(p0);
-    assert!(g.armies.iter().next().is_none());
-    assert!(g.players[p0].units.iter().all(|&u| g.units[u].army.is_none()));
 }
 
 #[test]

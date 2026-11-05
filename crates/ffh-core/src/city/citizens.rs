@@ -443,9 +443,7 @@ impl Game {
             // This game's Incite Unrest (docs/CULTURE.md).
             unhappiness += self.city_culture_unhappiness(c);
             // This game's governors: a trait's lost faces (docs/GOVERNORS.md).
-            if self.governors_on() {
-                unhappiness -= self.city_governor_mods(c).happy.min(0);
-            }
+            unhappiness -= self.city_governor_mods(c).happy.min(0);
         }
 
         unhappiness.max(0)
@@ -478,9 +476,7 @@ impl Game {
         }
 
         // This game's governors: a trait's faces (docs/GOVERNORS.md).
-        if self.governors_on() {
-            happiness += self.city_governor_mods(c).happy.max(0);
-        }
+        happiness += self.city_governor_mods(c).happy.max(0);
 
         happiness.max(0)
     }
@@ -605,9 +601,7 @@ impl Game {
         }
 
         // This game's governors: a trait's health (docs/GOVERNORS.md).
-        if self.governors_on() {
-            total_health += self.city_governor_mods(c).health.max(0);
-        }
+        total_health += self.city_governor_mods(c).health.max(0);
 
         total_health
     }
@@ -667,9 +661,7 @@ impl Game {
         }
 
         // This game's governors: a trait's lost health (docs/GOVERNORS.md).
-        if self.governors_on() {
-            total_health += self.city_governor_mods(c).health.min(0);
-        }
+        total_health += self.city_governor_mods(c).health.min(0);
 
         self.city_unhealthy_population(c, no_angry, extra) - total_health
     }

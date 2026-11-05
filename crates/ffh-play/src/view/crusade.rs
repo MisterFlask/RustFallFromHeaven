@@ -154,7 +154,6 @@ pub fn crusades(v: &Viewer) -> Json {
         }
     }
     crate::jobj! {
-        "enabled" => g.crusades_enabled(),
         "wars" => Json::Arr(wars),
         "rules" => crate::jobj! {
             "loan_max_turns" => ffh_core::crusade::speed_turns(g, rules.loan_max_turns),

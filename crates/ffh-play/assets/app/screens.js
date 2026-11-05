@@ -302,7 +302,6 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
     st.victories.map((v) => h("label", { tip: v.help ? [h("div.tip-title", v.name), h("div.tip-effects", markup(v.help))] : null }, h("input", { type: "checkbox", value: v.type, checked: !d.disabled_victories.includes(v.id) }), ` ${v.name}`)),
   );
   const spectate = h("input", { type: "checkbox", id: "ng-spectate" });
-  const crusades = h("input", { type: "checkbox", id: "ng-crusades", checked: !!d.crusades });
   const vanilla = h("input", { type: "checkbox", id: "ng-vanilla", checked: !!d.vanilla });
   const err = h("p.error");
   const note = h("p.dim#ng-war-note");
@@ -340,12 +339,6 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
         " Vanilla experience",
       ),
     ),
-    h(
-      "label.check",
-      { title: "A rules variant (not FFH2): a council's war resolution calls its members to lend units to a crusade's own AI army instead of merely declaring war, and civs can lend units to an ally's war" },
-      crusades,
-      " Crusades: committed wars and allied loans",
-    ),
     err,
     note,
   );
@@ -362,7 +355,6 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
       sea_level: sea.value,
       options: [...options.querySelectorAll("input:checked")].map((i) => i.value),
       disabled_victories: [...victories.querySelectorAll("input:not(:checked)")].map((i) => i.value),
-      crusades: crusades.checked,
     };
     if (civ.value) setup.civ = civ.value;
     if (leader.value) setup.leader = leader.value;
