@@ -497,8 +497,12 @@ def export(a):
         key = png.stem
         if key in baked:
             continue
-        im = Image.open(png).convert("RGBA")
-        im.save(out / f"{key}.png", optimize=True)
+        src = Image.open(png)
+        im = src.convert("RGBA")
+        if src.mode == "P":  # a palette image (the HD leader portraits) ships as it is: RGBA would double it
+            shutil.copy(png, out / f"{key}.png")
+        else:
+            im.save(out / f"{key}.png", optimize=True)
         ys, xs = np.nonzero(np.asarray(im)[..., 3] > 8)
         box = [int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1] if len(xs) else [0, 0, im.width, im.height]
         index[key] = {"w": im.width, "h": im.height, "box": box}

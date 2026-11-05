@@ -6,6 +6,7 @@ the M7 image model in the style of the reference's unit portrait.
   python3 leaders.py cut    --keys sabathiel,capria [--round r1] [--art 80]
   python3 leaders.py review --keys sabathiel,capria [--round r1] [--out work/leaders/review.png]
   python3 leaders.py accept --key sabathiel --variant 2 [--round r1]
+  python3 leaders.py --style hdv ship [--list prompts/leaders_hd_vibes_ship.txt] [--round high]   (the HD vibe portraits)
   then: python3 m7.py export
 
 Each leader's description is prompts/leaders/<key>.txt (written from its Civilopedia entry), after
@@ -195,6 +196,55 @@ def accept(a):
     print(json.dumps({"accepted": key}))
 
 
+FULL = 384   # the shipped HD portrait, px a side (drawn at 192 CSS px: 2 device px per CSS px)
+FACE = 160   # its face crop for the small slots (drawn at 80 and 40 CSS px)
+
+
+def ship(a):
+    """Ship the chosen HD vibe portraits (--style hdv): for each `<leader> <vibe>` line of --list, the
+    high-quality painting of that vibe (work/leaders_hd_vibes/<leader>_v<vibe>/raw/<round>_1.png), reduced
+    to FULL px as roster/leaders/leader_<leader>.png, and the square around its face (--faces: centre x,
+    centre y, side in tenths of the painting) as leader_<leader>_face.png at FACE px; the prompt goes to
+    prompts/assets/leader_<leader>.txt. Then `python3 m7.py export`."""
+    if STYLE is not STYLES["hdv"]:
+        raise SystemExit("ship takes the vibe portraits: --style hdv")
+    faces = json.loads(Path(a.faces).read_text())
+    man_p = ROOT / "roster" / "manifest.json"
+    man = json.loads(man_p.read_text())
+    dst = ROOT / "roster" / "leaders"
+    dst.mkdir(parents=True, exist_ok=True)
+    done = []
+    for line in Path(a.list).read_text().splitlines():
+        if not line.strip() or line.startswith("#"):
+            continue
+        leader, vibe = line.split()
+        d = wdir(f"{leader}_v{vibe}")
+        raw = d / "raw" / f"{a.round}_1.png"
+        if not raw.exists():
+            raise SystemExit(f"{raw}: no such painting")
+        im = Image.open(raw).convert("RGB")
+        s = min(im.size)
+        im = im.crop(((im.width - s) // 2, (im.height - s) // 2, (im.width + s) // 2, (im.height + s) // 2))
+        cx, cy, side = (v * s / 10 for v in faces[leader])
+        x0 = min(max(0, cx - side / 2), s - side)
+        y0 = min(max(0, cy - side / 2), s - side)
+        key = f"leader_{leader}"
+        # 256 colours, no dither: indistinguishable at display size, about 40% of the full-colour file
+        pal = lambda x: x.quantize(256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
+        pal(im.resize((FULL, FULL), Image.LANCZOS)).save(dst / f"{key}.png", optimize=True)
+        pal(im.crop((round(x0), round(y0), round(x0 + side), round(y0 + side))).resize((FACE, FACE), Image.LANCZOS)).save(
+            dst / f"{key}_face.png", optimize=True)
+        shutil.copy(d / f"prompt_{a.round}.txt", ROOT / "prompts" / "assets" / f"{key}.txt")
+        common = {"kind": "leader_portrait", "style": "hd", "source": rel(raw), "vibe": int(vibe),
+                  "prompt": f"prompts/assets/{key}.txt", "gen_size": "1024x1024"}
+        man[key] = {**common, "file": f"leaders/{key}.png", "size": [FULL, FULL]}
+        man[f"{key}_face"] = {**common, "file": f"leaders/{key}_face.png", "size": [FACE, FACE],
+                              "crop": [round(x0), round(y0), round(side)]}
+        done.append(leader)
+    man_p.write_text(json.dumps(man, indent=1) + "\n")
+    print(json.dumps({"shipped": done}))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--style", choices=sorted(STYLES), default="bust",
@@ -215,10 +265,14 @@ def main():
     p.add_argument("--keys", required=True); p.add_argument("--round", default="r1"); p.add_argument("--out")
     p = sub.add_parser("accept")
     p.add_argument("--key", required=True); p.add_argument("--variant", required=True); p.add_argument("--round", default="r1")
+    p = sub.add_parser("ship")
+    p.add_argument("--list", default=str(ROOT / "prompts" / "leaders_hd_vibes_ship.txt"))
+    p.add_argument("--faces", default=str(ROOT / "prompts" / "leaders_hd_faces.json"))
+    p.add_argument("--round", default="high")
     a = ap.parse_args()
     global STYLE
     STYLE = STYLES[a.style]
-    {"gen": gen, "cut": cut, "review": review, "accept": accept}[a.cmd](a)
+    {"gen": gen, "cut": cut, "review": review, "accept": accept, "ship": ship}[a.cmd](a)
 
 
 if __name__ == "__main__":

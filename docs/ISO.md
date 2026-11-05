@@ -263,12 +263,14 @@ fills the page and the interface floats over it.
   clearing its feature with a cancel mark, an upgrade the target unit's figure. `ui_backdrop` (the
   meadow behind the portrait and the city picture) is one painting, re-gridded. The 2D art's
   icons that have no M7 counterpart (promotion seals, religions, civic categories) stay, at 2x.
-- **Leader portraits** (`portraits.js`): a bust of each leader a game can have, painted by the
-  same model in the same style (`tools/m7/leaders.py`; each description in
-  `tools/m7/prompts/leaders/` is built around one moment from the leader's lore), 80 art px in
-  2 px blocks, exported as `leader_<key>`. They show in every renderer: 80 px by each player in
-  Diplomacy, 160 px at the top of the trade screen and on the new-game screen, 80 px on a deal
-  offered to you and on the take-control question, 40 px by each candidate of a vote; in this skin in the boxes' inset frame.
+- **Leader portraits** (`portraits.js`): a half-length HD key-art painting of each leader a game can
+  have, in big pixel blocks before a softer painted vista (`tools/m7/leaders.py --style hdv`; each
+  of four vibes a leader was given has its own outfit, hand action, place and light; the owner
+  picked one per leader, `tools/m7/prompts/leaders_hd_vibes_ship.txt`), exported as `leader_<key>`
+  (384 px, 256 colours) and `leader_<key>_face` (160 px, the square around the face). They show in
+  every renderer: the whole painting at 192 px at the top of the trade screen and on the new-game
+  screen; the face at 80 px by each player in Diplomacy, on a deal offered to you and on the
+  take-control question, at 40 px by each candidate of a vote; in this skin in the boxes' inset frame.
 - **How it is wired**: the skin follows the renderer (`main.js` `syncSkin`, on every renderer
   change): it moves the advisor buttons to the rail and End turn, the layers, zoom and minimap
   to the bottom-right cluster, and puts them back when the renderer changes. look.js's helpers

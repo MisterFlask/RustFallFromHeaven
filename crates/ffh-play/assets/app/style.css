@@ -688,10 +688,9 @@ blockquote.leader-says::before { content: "\201C"; position: absolute; left: -2p
   blockquote.leader-says { text-align: left; }
 }
 
-/* Leader portraits (portraits.js): 80 art px drawn as 2 px blocks. The border sits outside the
-   content box, so the picture keeps its exact size and its pixels stay square. */
-img.leader-portrait { display: block; flex: none; box-sizing: content-box; image-rendering: pixelated; border: 2px solid var(--line); background: var(--panel-2); }
-img.leader-portrait[data-size="small"] { image-rendering: auto; }
+/* Leader portraits (portraits.js): paintings shipped at twice their CSS size (or more), so they are
+   scaled down smoothly. The border sits outside the content box, so the picture keeps its size. */
+img.leader-portrait { display: block; flex: none; box-sizing: content-box; image-rendering: auto; border: 2px solid var(--line); background: var(--panel-2); }
 .leader-cell { display: flex; gap: 10px; align-items: center; }
 .leader-cell > div { white-space: nowrap; }
 /* Crusades (crusade.js): the call with the target's leader beside it, the Host's banner colour,

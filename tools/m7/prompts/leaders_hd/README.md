@@ -1,4 +1,4 @@
-# Leader portraits, HD key-art direction (proposal, not wired in)
+# Leader portraits, HD key-art direction (adopted: see tools/m7/README.md, "HD leader portraits")
 
 A candidate replacement for the leader busts in `../leaders/`: the look of two reference images the
 owner supplied on 2026-11-04 (a robed figure under a sun banner and an eclipse; a masked jester-king
