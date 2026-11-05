@@ -1,6 +1,6 @@
 # Building suitability (proposal)
 
-**Status: proposal, not built.** Revision 6, 2026-11-05 (adds the civilization buildings; extras push the same way as the building). This revision sets out the rules only:
+**Status: proposal, not built.** Revision 7, 2026-11-05 (adds the civilization buildings; extras push the same way as the building; Lesser Warrens). This revision sets out the rules only:
 the five tiers, what each building class is at each tier, and how likely each tier is.
 Implementation waits until the XML-to-JSON conversion going on in another session is finished.
 The appendix keeps the implementation decisions made so far.
@@ -298,7 +298,7 @@ rules code (`ffh/events.rs`).
 | Balseraphs | **Freak Show** (made by a Freak, not built): +2 culture; +1 happiness; +1 great artist point | +1 culture; +1 happiness | +3 culture; +2 happiness; +2 points | +4 culture; +2 happiness; +2 points | **Circus of Wonders**: Grand + 1 free artist |
 | Balseraphs | **Hall of Mirrors** (needs a Carnival): +1 happiness; each turn, an illusion copy of an enemy unit next to the city appears in it for 3 turns (5 with Summoner) | copies last 2 turns (3) | 4 turns (8) | 6 turns (10) | **House of a Thousand Faces**: Grand, and it copies enemies up to 2 plots away |
 | Calabim | **Breeding Pit**: +2 food; 20% food kept; −1 health | +1 food; 10% | +3 food; 30% | +4 food; 40% | **Feeding Halls**: Grand + 10% food |
-| Clan of Embers | **Warrens**: every unit trained here gets a free copy (not world, national, siege or naval units) | a copy half the time | copy; both units +2 XP | copy; both units +4 XP | **Deep Warrens**: Grand, and siege units are copied too |
+| Clan of Embers | **Warrens**: every unit trained here gets a free copy (not world, national, siege or naval units) | copy; units it copies −25% production here (1.5× units on net) | copy; both units +2 XP | copy; both units +4 XP | **Deep Warrens**: Grand, and siege units are copied too |
 | Elohim | **Chancel of Guardians**: +25% defense; units trained here have a 20% chance of Defensive | +12%; 10% | +38%; 30% | +50%; 40% | **Sanctum of Guardians**: +50% defense; units trained here always get Defensive |
 | Elohim | **Reliquary**: +2 culture; +1 great prophet point; units trained here get Spirit Guide (on death, half their XP goes to another unit); −1 health | +1 culture; Spirit Guide half the time | +3 culture; +2 points; Spirit Guide; units +2 XP | +4 culture; +2 points; Spirit Guide; units +4 XP | **Ossuary of Saints**: Grand, and Spirit Guide passes on all the unit's XP instead of half |
 | Grigori | **Adventurers' Guild**: +2 Adventurer points; +25% great people rate; land units +2 XP | +1 point; +12%; +1 XP | +3 points; +38%; +3 XP | +4 points; +50%; +4 XP | **Free Companies' Hall**: Grand, and Adventurers born in this city start with +10 XP |
@@ -316,9 +316,10 @@ Notes on these tiers:
   Smokehouse together.
 - **Freak Show.** It is made by a Freak unit, not built, so its tier is simply the city's roll for
   that class.
-- **Warrens.** A Lesser Warrens copies half the units trained there. That is the steepest Lesser
-  in the document, because the Warrens' whole effect is the copy. The alternative is that a Lesser
-  Warrens always copies, and only its copies start with 0 XP.
+- **Warrens.** A Lesser Warrens still copies every unit it copies at Standard, but those units
+  take −25% production in the city, so the city puts out 1.5× its units instead of 2×. The
+  penalty applies only to the units the Warrens copies. Siege, naval, world and national units
+  are trained at the normal rate.
 - **Kuriotates resources.** The Tailor's and Jeweler's free resource is the same at every tier
   below Legendary; a resource can't be halved. Their Lesser tier loses half the gold instead.
 - **Hall of Mirrors durations.** The numbers in brackets are with the Summoner trait.
