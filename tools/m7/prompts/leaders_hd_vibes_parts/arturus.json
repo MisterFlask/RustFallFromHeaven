@@ -1,0 +1,29 @@
+{
+  "pronoun": "he",
+  "body": "ARTURUS THORNE, the old dwarf king of the deep halls, leader of the Khazad in the fantasy game Fall from Heaven: a dwarf; male; old; short, barrel-chested and broad. Weathered ruddy skin, a broad nose, a long iron-grey beard in thick braids bound with gold rings, bushy grey brows, deep-set brown eyes, broad scarred hands.",
+  "costume": "heavy steel pauldrons over a dusty-gold surcoat, a broad belt with a gold buckle.",
+  "signature": "His squat, heavy GOLD DWARVEN CROWN with blunt square points is always on his head.",
+  "extra": "He is planted like the mountain he swears by: his weight set solid on the stone under him, never leaning or reaching.",
+  "vibes": [
+    {
+      "name": "Vault King",
+      "line": "Seated on his clan's hoard, his left hand resting heavy on a stack of gold bars, his right gripping the haft of his great axe beside him, brows knotted, eyes straight on the viewer, daring you to want it; a deep vault glowing gold under brass lamps at midnight.",
+      "wears": "a king's heavy robe of oxblood-red wool trimmed with dark fur over a gold-chased breastplate, a heavy gold chain, rings on every thick finger."
+    },
+    {
+      "name": "Carved History",
+      "line": "His left hand setting a chisel to the stone, his right swinging a mallet, brows knotted, eyes narrowed on the rune he is cutting, lips pressed tight; a pillar covered in fifty years of clan names in a carver's alcove, one shaft of noon daylight falling down a light-well.",
+      "wears": "a stone-carver's heavy brown leather apron over a rolled-sleeve shirt of undyed grey linen, stone dust in the folds, his beard braids tucked into the apron strap."
+    },
+    {
+      "name": "King Under Stone",
+      "line": "Seated at ease on a stone bench, his right thumb tamping a clay pipe, his left hand cradling its bowl, shoulders loose, a content smile in the beard, eyes lifted fondly to the vault; the deepest hall at night, a mountain's weight overhead, lit red by one channel of lava.",
+      "wears": "a long, worn house robe of deep slate-blue wool belted with a gold-ringed cord, a thick sheepskin vest over it."
+    },
+    {
+      "name": "Unbending Oath",
+      "line": "Arms folded tight across his barrel chest, each hand gripping the other forearm, chin up, jaw set in the beard, eyes straight at the viewer, refusing to step forward; the outer arch of a great dwarven city gate in low late-afternoon sun, his tarp-covered pillar on a cart beside him.",
+      "wears": "a heavy hooded travelling cloak of dusty ochre-brown wool thrown back over dull iron mail, a plain leather belt with a gold buckle."
+    }
+  ]
+}

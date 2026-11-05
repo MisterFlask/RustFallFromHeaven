@@ -1,0 +1,29 @@
+{
+  "pronoun": "she",
+  "body": "CAPRIA, the battle commander who led her people out of hell as a girl, leader of the Bannor in the fantasy game Fall from Heaven: human; woman; about thirty-five; tall and strong. Fair skin, a thin pale scar across one cheekbone, a strong square jaw, dark chestnut hair, grey eyes, two fine lines of strain between the brows.",
+  "costume": "a high-collared white linen shirt under a silver-edged white wool mantle, a red cross stitched on its breast.",
+  "signature": "Her long thick CHESTNUT BRAID always hangs forward over one shoulder.",
+  "extra": "She holds herself like a soldier on parade whatever she feels: back straight, chin level.",
+  "vibes": [
+    {
+      "name": "Hell's Survivor",
+      "line": "Her right hand clutching a blanket closed at her throat, her left gripping the bed rail, knuckles white, jaw clenched, face forced still, grey eyes wide on nothing past the viewer; a stone bedchamber in the small hours, steeped crimson-black by a dying hearth, as if hell lingers there.",
+      "wears": "a plain undyed linen nightshirt laced to the throat, long in the sleeve, a dark grey wool blanket snatched round her shoulders."
+    },
+    {
+      "name": "Order's Sword",
+      "line": "Her right fist holding her short sword upright before her face, the blade a bright line between her eyes, her left hand laid flat over the red cross on her breast, eyes straight on the viewer, lips set; a white citadel wall at dawn, rose-gold light behind white towers.",
+      "wears": "polished white enamelled plate edged in gold, a white tabard with a red cross on the breast, a short white cape."
+    },
+    {
+      "name": "Iron Commander",
+      "line": "Her right hand jabbing a rolled battle map toward a flank off frame, her left gripping the pommel of her sheathed sword, mouth wide on a barked order, eyes cut to the side; a windswept ridge at white noon, an army in drilled ranks below under crimson-and-white banners.",
+      "wears": "a long mail hauberk under a crimson surcoat with a white cross, a steel gorget, a grey fur-lined field cloak thrown back from one shoulder."
+    },
+    {
+      "name": "Never Afraid",
+      "line": "Her right hand laid steady on the shoulder of a young soldier, a calm smile, eyes level on the troops off frame, while her left hand, hidden from them at her side, trembles in a white-knuckled fist; a camp on the eve of battle at moonrise, cold blue light.",
+      "wears": "a plain soldier's greatcoat of dark blue wool buttoned to the throat, a mail collar beneath, no rank but a small silver sword badge."
+    }
+  ]
+}

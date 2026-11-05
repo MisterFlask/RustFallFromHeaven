@@ -1,0 +1,29 @@
+{
+  "pronoun": "she",
+  "body": "FAERYL VICONIA, queen of the Unseelie winter court, leader of the Svartalfar in the fantasy game Fall from Heaven: dark elf; female; ageless, looking about thirty; tall and slender. Pale ash-grey skin, straight silver-white hair falling past long pointed ears, narrow violet eyes.",
+  "costume": "a high-collared gown of deep purple velvet with black lace and silver spiderweb embroidery, a mantle of black fur.",
+  "signature": "Her tall black-and-silver CROWN SHAPED LIKE ARCHED SPIDER LEGS rises from her silver hair.",
+  "extra": "In every portrait she hides a slim silver STILETTO with a small spider-shaped pommel where the viewer can see it and the person she is smiling at cannot; it lies flat and still, pointing at no one and never toward the viewer, with no blood anywhere. Whatever her mouth does, her violet eyes stay cold and still.",
+  "vibes": [
+    {
+      "name": "Velvet Venom",
+      "line": "Raising a glass of pale wine in a gracious toast with her right hand, smiling at a guest across the table; her left hand on the tablecloth, the stiletto up inside its black lace cuff, its spider pommel showing at her wrist on the viewer's side; candlelit dinner at night.",
+      "wears": "a high-collared evening gown of deep purple velvet with long black lace cuffs and silver spiderweb embroidery, amethysts at her throat."
+    },
+    {
+      "name": "Winter Crown",
+      "line": "A Seelie envoy walking ahead, unaware; her left hand holding a white fur muff shut on his side, her right inside it on the stiletto's spider hilt, the open end toward the viewer; a small cold smile straight at the viewer, frost on her crown; black trees, moonlit silver snow.",
+      "wears": "her winter furs: a long hooded mantle of white winter fox, the hood down, over a silver-grey brocade gown, frost-white lace at the throat."
+    },
+    {
+      "name": "Spider's Court",
+      "line": "Holding a black lace fan open before her lower face in her right hand, the stiletto along its ribs on the viewer's side; her left hand given to a bowing courtier's kiss, eyes down through her lashes; her throne hall at dusk, courtiers caught in silver web shadows, violet witch-light.",
+      "wears": "a stiff formal court gown of black silk with a vast standing collar of silver spiderweb lace, fine silver threads like web strands trailing from her sleeves."
+    },
+    {
+      "name": "Knife Smile",
+      "line": "Pouring tea for her cousin across a small table with her right hand, her warmest smile on the cousin; her left hand in her lap below the tablecloth, holding the stiletto flat and sideways, hidden from the cousin, not from the viewer; a winter-palace window alcove, pale morning snow-light.",
+      "wears": "a soft, harmless-looking day gown of pale rose silk with tiny pearl buttons and a cream lace shawl, chosen to look kind."
+    }
+  ]
+}

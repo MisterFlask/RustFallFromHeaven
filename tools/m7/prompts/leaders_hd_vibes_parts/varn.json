@@ -1,0 +1,13 @@
+{
+  "pronoun": "he",
+  "body": "VARN GOSAM, the elven prince turned sun-priest, leader of the Malakim in the fantasy game Fall from Heaven: an elf living among desert men; male; ageless, looks about forty; tall, lean and wiry. Sun-bronzed skin, a narrow face with high cheekbones, long straight black hair, long pointed elf ears, bright amber-gold eyes.",
+  "costume": "flowing white-and-cream priest's robes with gold embroidery, an ochre sash and a loose cream headscarf.",
+  "signature": "A GOLDEN SUN-DISC with straight pointed rays, the holy sign of Lugus, always hangs on a heavy chain at his chest.",
+  "extra": "He never squints: even in the brightest light his amber-gold eyes stay wide open and his brows relaxed.",
+  "vibes": [
+    {"name": "Never Squints", "line": "His right hand gripping a staff planted beside him, his left pushing back the edge of his headscarf so no shade falls on his face; eyes wide open, unblinking, straight into a rising sun beyond the frame, lips parted; a white temple terrace at sunrise, men below shielding their eyes.", "wears": "the sun-priest's vestments: flowing white-and-cream robes with gold embroidery, an ochre sash, a loose cream headscarf."},
+    {"name": "Mist Born", "line": "His right hand lowering the dark hood of his elven cloak as one shaft of sunlight breaks through the mist onto him, his left holding a cold, unlit silver lantern; a faint smile, brows drawn up, eyes straight at the viewer; the dark, mist-filled Shadowed Vale behind him, late afternoon.", "wears": "the clothes of an elven prince of the Shadowed Vale: a close-fitting coat of charcoal-black silk with silver leaf clasps, a long dark grey cloak beaded with mist."},
+    {"name": "Elf Among Men", "line": "His right hand tipping a goatskin into the clay bowl of a sunburned pilgrim, his left steadying its neck; head bent to listen, a broad smile, eyes on the pilgrim; a caravanserai courtyard at blue dusk, oil lamps under white domes, the men around him a head shorter.", "wears": "a Malakim caravaner's dusty indigo robe and a long indigo head-veil wound loosely so his long ears show, a plain leather belt."},
+    {"name": "Sun-Struck", "line": "Holding a gold-framed burning-glass up to the blazing noon sun in his right hand, its bright point kindling the altar fire, his left feeding dry palm fronds into the flame; laughing open-mouthed, face washed gold, eyes wide on the viewer; a white rooftop sun-altar at noon.", "wears": "light high-summer festival vestments: a sleeveless saffron-yellow linen robe, broad gold armbands, a pleated sunburst collar of gold-dyed linen spread across his shoulders."}
+  ]
+}

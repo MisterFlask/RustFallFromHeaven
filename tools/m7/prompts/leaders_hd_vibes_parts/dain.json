@@ -1,0 +1,29 @@
+{
+  "pronoun": "he",
+  "body": "DAIN THE CASWALLAWN, absent-minded archmage and veteran siege-mage, leader of the Amurites in the fantasy game Fall from Heaven: human; male; in his late thirties; lanky and loose-limbed. Fair skin, untidy dark-brown hair, a scruffy beard, bright blue eyes.",
+  "costume": "rumpled violet robes with gold trim, a worn grey scarf, scorch marks on one sleeve.",
+  "signature": "His tall, crooked PURPLE WIZARD HAT WITH SMALL GOLD STARS is on his head, whatever else he wears.",
+  "extra": "",
+  "vibes": [
+    {
+      "name": "Clockwork Daydream",
+      "line": "Setting a small brass cogwheel spinning on a pin with a flick of his right forefinger, his left hand holding a half-built orrery ring steady, gazing at the gear with rapt childlike fondness, head tilted, unaware of the viewer; a window seat in a bare antechamber, rose-amber sunset, dust motes.",
+      "wears": "a tinkerer's shirtsleeves: a creased cream linen shirt with the sleeves rolled up, a brown leather waistcoat with brass buttons, its pockets full of tiny tools and gears."
+    },
+    {
+      "name": "Siege Mage",
+      "line": "A roaring fireball cupped in his raised right hand, aimed away from the viewer, his left hand clamping his askew hat down against the hot wind, eyes suddenly cold and lethal on a city wall off to one side; siege lines at night, city walls burning orange behind him.",
+      "wears": "a padded war-mage's gambeson of soot-blackened dark red, singed at every edge, rune-stitched leather bracers, a soldier's satchel of spell scrolls across his chest."
+    },
+    {
+      "name": "Always Late",
+      "line": "Hurrying, a half-built brass orrery hugged against his chest under his left arm, his right hand stuffing loose papers into his sleeve, a sheepish apologetic smile straight at the viewer; an Amurite colonnade at deep blue twilight, the sun already down behind violet spires, rune lamps just lit.",
+      "wears": "his formal archmage's robes of state, thrown on in a hurry: deep violet velvet with gold-embroidered stars, buttoned wrong, the gold chain of office twisted over one shoulder."
+    },
+    {
+      "name": "Chalk Genius",
+      "line": "Absently chalking a formula onto the viewer's sleeve at the lower edge of the frame with his right hand, a slate of sums in his left, brows knit, eyes on the formula, not the viewer; equations of violet light floating around him; his cluttered study at midnight.",
+      "wears": "a long black lecturer's gown, white with chalk dust down the front and sleeves, over a grey wool waistcoat, a stub of chalk tucked behind one ear."
+    }
+  ]
+}

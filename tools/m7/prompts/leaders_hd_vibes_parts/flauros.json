@@ -1,0 +1,29 @@
+{
+  "pronoun": "he",
+  "body": "FLAUROS, Grand Prince of the vampires and younger brother of Alexis, leader of the Calabim in the fantasy game Fall from Heaven: vampire, once human; male; ageless, looking about thirty-five; tall and sleek. A pale, strikingly handsome face, swept-back dark auburn hair, piercing gold-yellow eyes.",
+  "costume": "a high-collared black velvet coat embroidered in dark red, a loosely tied crimson silk cravat with a ruby pin.",
+  "signature": "His long white FANGS show at the corners of his mouth.",
+  "extra": "He is never in a hurry: heavy-lidded gold eyes, a slow private smile, a loose, lounging ease in every movement. No blood anywhere in the picture.",
+  "vibes": [
+    {
+      "name": "Sundown Countdown",
+      "line": "Holding a goblet of dark wine out over the balustrade with his right hand, his left turning a gold hourglass as its last sand runs out, eyes sliding sideways to the sinking sun; a gothic balcony at sunset, blood-orange light, the mob below about to fall into the spires' shadow.",
+      "wears": "a sleek long coat of black watered silk with a high collar and a blood-orange lining, black kid gloves, a black cravat with a single gold pin."
+    },
+    {
+      "name": "Sister's Shadow",
+      "line": "Lounging on the dais step beside his sister Alexis's empty throne, one hand trailing a fingertip through the dust on its carved arm, the other twisting her forgotten signet ring onto his little finger, eyes lifted to the empty seat, measuring; her throne hall before dawn, grey-blue light, candles guttered.",
+      "wears": "lounging clothes: a loose ivory silk shirt with full sleeves under a long open robe of midnight-blue brocade, velvet slippers."
+    },
+    {
+      "name": "Silver Tongue",
+      "line": "Mid-speech on a dais, dropping the scroll of his prepared speech unread into a brazier with his left hand, his right hand twirling a slim ebony cane, eyes sweeping the rapt crowd, smiling wide; a packed torchlit great hall in the evening, hundreds of upturned faces hanging on his words.",
+      "wears": "a resplendent crimson silk coat embroidered in gold, a gold-lined crimson cape thrown back over one shoulder, a heavy gold chain of office."
+    },
+    {
+      "name": "Charming Rot",
+      "line": "Fixing a single wilted rose into his lapel with his right hand, his left hand catching a falling petal, a handsome smile straight at the viewer; a decaying palace salon on a grey afternoon, rain streaming down tall gothic windows, cold blue-grey light.",
+      "wears": "an exquisite but centuries-old coat of dusty plum velvet, its lace cuffs yellowed and frayed, over a faded silk waistcoat with one button missing."
+    }
+  ]
+}

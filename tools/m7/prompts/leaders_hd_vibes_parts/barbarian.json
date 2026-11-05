@@ -1,0 +1,29 @@
+{
+  "pronoun": "he",
+  "body": "THE ORC WARLORD, a nameless chieftain of the raiding orc, goblin and ogre hordes, leader of the Barbarians in the fantasy game Fall from Heaven: orc; male; battle-hardened middle age; huge, thick-necked and broad. Grey-green skin crossed by old pale scars and crude black war paint, jutting yellowed lower tusks, a flattened nose, small red-rimmed amber eyes under a heavy brow.",
+  "costume": "black iron armour with spiked pauldrons, a shaggy black bearskin, a cord of bone charms across his chest, a heavy cleaver at his belt.",
+  "signature": "A horned bone-white BEAST SKULL is always on his head, worn as a helmet.",
+  "extra": "No blood anywhere on him, his gear or his weapons.",
+  "vibes": [
+    {
+      "name": "Truce's End",
+      "line": "Leaning out of the dark, grinning wide, his right hand raising a torch that lights his tusks from below, his left fist snapping a white-ribboned truce stake, eyes fixed past the viewer on a city's warm windows far below; a pine ridge on a moonless night, torches kindling behind him.",
+      "wears": "light raiding gear: a black leather harness over bare painted arms, a shaggy grey wolf-pelt mantle, strings of bone charms rattling at his chest."
+    },
+    {
+      "name": "Nameless Horde",
+      "line": "Chanting, mouth wide, his right fist pounding a hide war drum at his hip with a knotted stick, his left gripping the shoulder of a goblin beside him, eyes straight on the viewer; a misty valley at grey dawn, a thousand goblins and ogres massing in the mist behind him.",
+      "wears": "the same crude gear as the thousands behind him: a patched brown hide jerkin, rusty iron arm-rings, a ragged dull-red war cloth knotted at his waist."
+    },
+    {
+      "name": "Skull Crown",
+      "line": "Sprawled on a throne of mammoth tusks and beast bones, his right hand gripping a cleaver across his knees, his left holding a captured war banner trailing in the dirt, chin up, a slow grin, eyes down on the kneeling camp below; hazy noon, smoke drifting across a white sun.",
+      "wears": "a chieftain's mantle of shaggy white cave-bear pelt, the bear's head on one shoulder, heavy gold torcs on both thick arms, a belt of looted gold coins."
+    },
+    {
+      "name": "Too Civilized",
+      "line": "Sneering, lip curled off one tusk, his right hand holding a tasselled rose-silk cushion out at arm's length by one tassel, his left ripping a lace curtain off its rail, eyes narrowed on the cushion; a looted gilded salon at smoky dusk, the soft city burning beyond tall windows.",
+      "wears": "his full war gear: scorched black iron plate with spiked pauldrons, a shaggy black bearskin over his shoulders, a heavy cleaver at his belt."
+    }
+  ]
+}

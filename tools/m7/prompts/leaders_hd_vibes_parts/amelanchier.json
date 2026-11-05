@@ -1,0 +1,29 @@
+{
+  "pronoun": "he",
+  "body": "AMELANCHIER, the elven ranger-prince, leader of the Ljosalfar in the fantasy game Fall from Heaven: a wood elf; male; ageless, looks about thirty; tall and lean. Fair skin, high sharp cheekbones, long pale-blond hair tied back, long pointed elf ears, narrow cool green eyes, a thin mouth.",
+  "costume": "a leaf-patterned green-and-gold tunic and a leather baldric under a dark-green hooded cloak.",
+  "signature": "His tall PALE WOODEN LONGBOW with gold-tipped ends is always with him, slung over his shoulder or in his hand.",
+  "extra": "His face never shows heat: his mouth stays a flat line and his brows stay level, whatever burns around him.",
+  "vibes": [
+    {
+      "name": "Let It Burn",
+      "line": "On a bare rock ridge at night, his right hand running a block of beeswax along his bowstring, his left holding the bow upright, unmoved, eyes level on the viewer; the whole horizon burning orange behind him, only his own forest below still green, his face in cool shade.",
+      "wears": "a prince's long court robe of ivory silk embroidered with gold oak leaves, a high collar, gold rings on his fingers, untouched by smoke or ash."
+    },
+    {
+      "name": "Treant's Voice",
+      "line": "His right hand raised before his face, two fingers together and parting, his left gripping his longbow, cold eyes looking down past the viewer; a treant's vast bark hand rising behind him, closing on someone below the frame; a tree-city platform in smoky brown afternoon haze, leaf shadow across him.",
+      "wears": "a ranger's field gear: a russet leather jerkin with dark brown bracers and quiver straps, a short bark-brown hooded cape, leaves caught in the stitching."
+    },
+    {
+      "name": "Green Verdict",
+      "line": "Crouched on a high bough, his right hand slowly turning one arrow between his fingers, his left gripping the bark beside him, hood shadowing his face, unblinking hard green eyes looking down straight at the viewer; cold grey dawn mist hanging among giant trunks below.",
+      "wears": "a judge's long hooded mantle of charcoal-black wool over dark mail, the deep hood up, a heavy silver chain of office with an oak-leaf seal across his chest."
+    },
+    {
+      "name": "Rooted Prince",
+      "line": "The fingertips of his right hand tracing the furrows of a colossal trunk as if reading them, his left holding a sprig of white serviceberry blossom, eyes shut, head bowed to the bark, listening, face at rest; an ancient root-hall at midday, sunlight falling green-gold through the canopy.",
+      "wears": "a loose sleeveless tunic of leaf-green linen belted with a plain cord, bare forearms, a living ivy vine twined around one arm."
+    }
+  ]
+}

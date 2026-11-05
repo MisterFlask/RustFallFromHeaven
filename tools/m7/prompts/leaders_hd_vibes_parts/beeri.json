@@ -1,0 +1,29 @@
+{
+  "pronoun": "he",
+  "body": "BEERI BAWL, heir of Graoin the Delver, leader of the Luchuirp in the fantasy game Fall from Heaven: a gnome-like Luchuirp dwarf; male; middle-aged; short, stocky and strong. Ruddy weathered skin, a big hooked nose, a thick copper-red beard in two braids, heavy brows, small fierce dark eyes.",
+  "costume": "a patched ash-grey quilted work jerkin and a leather tool harness with brass buckles.",
+  "signature": "His dented brass MINER'S HELMET with its little lamp is always on his head.",
+  "extra": "He is clenched defiance in every portrait: brows crushed down, jaw set, thick shoulders hunched forward like a bull's.",
+  "vibes": [
+    {
+      "name": "Pure Spite",
+      "line": "Rising out of a mud pit, snarling through the mud on his face, his right fist held at his chest, knuckles white around a gold coin, his left hand clamped behind the head of a writhing viper, eyes glaring straight at the viewer; a carnival arena under blazing white noon.",
+      "wears": "a mud-soaked prisoner's smock of coarse undyed sacking, tied with a rope belt, his forearms bare."
+    },
+    {
+      "name": "Caged Heir",
+      "line": "Both thick hands wrapped around the cage bars, knuckles white, wrenching at them, head lowered like a bull's, eyes glaring over his shoulder at the laughing masked court behind him; iron bars at both edges, a garish carnival throne room in hot flickering torchlight at night.",
+      "wears": "the torn visiting clothes he was taken in: a rust-brown velvet doublet with brass buttons, ripped at one shoulder, a fur-trimmed collar."
+    },
+    {
+      "name": "Debt Collector",
+      "line": "His left hand holding a fat ledger open against his chest, his right tapping a stubby finger on one line, a grim grin through the beard, eyes up at the viewer from under crushed brows; the jester-king's striped palace gates at grey morning, dwarf soldiers ranked behind him.",
+      "wears": "a long, sober coat of dark slate-blue wool buttoned up to the beard, brass buttons, a quill tucked behind one ear under the helmet."
+    },
+    {
+      "name": "Mine Lamp",
+      "line": "His left hand reaching up to turn up the wick of the lamp on his helmet, his right gripping a miner's pick over his shoulder, eyes fixed unblinking on the viewer, brows down; a black mine tunnel deep under the mountain at night, the helmet lamp the only light.",
+      "wears": "a miner's patched canvas smock in faded ochre, sleeves rolled, a thick leather tool harness hung with brass tools and a coil of rope."
+    }
+  ]
+}
