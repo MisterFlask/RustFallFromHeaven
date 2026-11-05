@@ -1,0 +1,16 @@
+infiltrate: a bright red silk domino mask with gold trim and white highlights
+anarchy: a golden royal crown broken cleanly into two separate halves with a gap between them
+stasis: a white clock face frozen inside a pale blue block of ice
+turn_wait: three small banners in a row, one red, one blue, one green, on short poles
+research_needed: a blue glass flask with a big white question mark on it
+plunder: a cloth loot sack overflowing with gold coins, with a cutlass beside it
+destroy: a wooden cogwheel smashed into two pieces with splinters
+ai_idle: a crystal ball on a gold stand with a swirling blue glow inside
+trade_mission: a camel carrying bulging saddle bags and a rolled carpet
+capital: a small golden crown set with red gems
+building_academy: a marble lectern with an open book and a quill in an inkpot
+building_aquae_sucellus: a stone fountain basin spilling clear blue water, with a green leaf on its rim
+building_aqueduct: a tall grey stone aqueduct arch with blue water running along its top
+building_archery_range: a round straw archery target on a wooden stand with an arrow in its red centre
+building_asylum: a grim grey stone building with barred windows and a padlocked door
+building_basilica: a white stone basilica with a golden dome

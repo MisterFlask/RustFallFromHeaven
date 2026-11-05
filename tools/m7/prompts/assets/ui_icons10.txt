@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. a small wooden hut with smoke rising and sausages hanging at its door
+2. a small dock with a hidden barrel and a boat with a black sail
+3. a golden lute with falling orange autumn leaves
+4. an anvil wreathed in ghostly blue flames
+5. a large black spider in its web
+6. a wooden stable with a brown horse's head looking out
+7. a pale open hand with a glowing red mark in its palm
+8. a silver lyre glowing with blue light
+9. three grey stone tablets engraved with angular runes
+10. a tavern with a hanging sign showing a green tankard
+11. a wooden desk with an open ledger and a sack of gold coins
+12. a temple carved of brown rock with a golden gem over its door
+13. a green temple woven from living vines and leaves
+14. a modest grey temple with a silver balance scale symbol
+15. a white temple with a radiant golden sun on its roof
+16. a white stone church with a gold sunburst and a red banner

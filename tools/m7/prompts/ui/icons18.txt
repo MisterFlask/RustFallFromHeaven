@@ -1,0 +1,16 @@
+promo_life: a green seedling sprouting with a white glow
+promo_light: a bright white lantern
+promo_lightning_resistance: a yellow lightning bolt bouncing off a blue shield
+promo_lizardman: a green lizard's head
+promo_longshoremen: a coil of thick rope with a cargo hook
+promo_loyalty: a hand over a heart in front of a blue banner
+promo_magic_immune: a purple magic star blocked by a grey stone shield
+promo_magic_resistance: a blue ward shield with purple sparks bouncing off
+promo_march: a pair of marching boots
+promo_marksman: a loaded crossbow aiming forward
+promo_metamagic: a purple rune circle with a star inside
+promo_mind: a glowing pink brain
+promo_mithril_weapons: a gleaming silvery-blue mithril sword
+promo_morale: a raised red war banner
+promo_mutated: a green mutant arm with an extra eye on it
+promo_nature: a green leaf on a twisted vine

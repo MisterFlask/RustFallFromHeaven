@@ -1,0 +1,16 @@
+building_granary: a round wooden granary barn with a straw thatched roof and wheat sacks at its door
+building_library: a tall stack of three leather-bound books with a lit candle on top
+building_market: a market stall with a striped red and white awning and baskets of fruit
+building_walls: a section of grey stone castle wall with battlements and a wooden gate
+building_harbor: a wooden pier with a coiled rope and a brass anchor leaning on it
+building_mage_guild: a purple wizard's tower with a pointed roof and a glowing star at its tip
+building_temple_of_the_veil: a dark purple shrine with a hanging black veil and a red eye symbol
+building_forge: a black iron anvil with a glowing orange-hot bar and a hammer on it
+building_herbalist: a clay mortar and pestle with green leaves and a small red flower
+building_tavern: a foaming wooden beer mug next to a hanging wooden tavern sign
+building_alchemy_lab: a round glass flask bubbling with green liquid over a small flame
+building_tower_of_necromancy: a black stone tower topped with a white skull and green glow
+building_hunting_lodge: a log cabin with a pair of antlers mounted above its door
+building_siege_workshop: a small wooden catapult with a stone in its bucket
+building_great_library: a grand white marble building with columns and a golden book above the door
+building_dwarven_vault: a heavy round iron vault door set in grey stone, with gold coins spilling out

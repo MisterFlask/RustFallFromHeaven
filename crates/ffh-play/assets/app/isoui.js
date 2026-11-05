@@ -81,20 +81,46 @@ export function spriteIcon(key, px, { title, cls, flip = false } = {}) {
 /** The 2D art's icon names (look.js callers: `icon16/gold`, `icon8/moves`, ...) -> the M7 set. */
 const ART_ICONS = {
   gold: "gold", commerce: "commerce", trade: "commerce", food: "food", production: "production", research: "research",
-  research_needed: "research", culture: "culture", espionage: "sentry", happy: "happy", unhappy: "unhappy", angrypop: "unhappy",
+  research_needed: "research_needed", culture: "culture", espionage: "espionage", happy: "happy", unhappy: "unhappy", angrypop: "unhappy",
   healthy: "health", unhealthy: "unhealthy", greatpeople: "greatpeople", strength: "strength", moves: "moves", defense: "defense",
-  mana: "mana", golden_age: "goldenage", anarchy: "cancel", stasis: "endturn", ai_idle: "automate", turn: "endturn", turn_wait: "endturn",
+  mana: "mana", golden_age: "goldenage", anarchy: "anarchy", stasis: "stasis", ai_idle: "ai_idle", turn: "endturn", turn_wait: "turn_wait",
 };
 
-/** The M7 icon standing for a 2D art icon (`icon16/<x>`, 32 px; `icon8/<x>`, 16 px inline), or null. */
+/** The M7 icon standing for a 2D art icon (`icon16/<x>`, 32 px; `icon8/<x>`, 16 px inline), or null.
+ *  A mana sphere has its own orb (`ui_sphere_<x>`), the generic mana icon when it has none. */
 export function isoIconFor(artName, { title, cls } = {}) {
   const m = /^icon(8|16)\/(.+)$/.exec(artName ?? "");
   if (!m) return null;
   let n = m[2];
   if (n.startsWith("armageddon_")) n = "armageddon";
-  else if (n.startsWith("sphere_")) n = "mana";
+  else if (n.startsWith("sphere_") && !Object.hasOwn(SPRITES, `ui_${n}_s`)) n = "mana";
   const name = ART_ICONS[n] ?? (Object.hasOwn(SPRITES, `ui_${n}_s`) ? n : null);
   return name ? isoIcon(name, { px: m[1] === "8" ? 16 : 32, title, cls }) : null;
+}
+
+/** A building's own M7 icon (`ui_building_<type>`, BUILDING_ dropped, lower case) at `px` CSS px,
+ *  or null when it has none. */
+export function isoBuildingIcon(type, { px = 32, title, cls } = {}) {
+  if (!type) return null;
+  return isoIcon(`building_${type.replace(/^BUILDING_/, "").toLowerCase()}`, { px, title, cls });
+}
+
+const ROMAN = ["", "I", "II", "III", "IV", "V"];
+
+/** A promotion as the skin's seal: its family's M7 icon (`ui_promo_<family>`: PROMOTION_ and the
+ *  level digit dropped) on a gilt disc, the level (the type name's last digit) as a badge, a red rim
+ *  for an affliction (`harmful`, the 2D art's affliction family); `px` the seal's CSS px. Null when
+ *  the family has no icon. */
+export function isoPromotionIcon(type, { px = 32, title, harmful = false } = {}) {
+  const m = /^PROMOTION_(.+?)(\d)?$/.exec(type ?? "");
+  if (!m) return null;
+  const im = isoIcon(`promo_${m[1].toLowerCase()}`, { px: px >= 32 ? 32 : 16 });
+  if (!im) return null;
+  const el = h(`span.iso-seal${harmful ? ".bad" : ""}`, { style: { width: `${px}px`, height: `${px}px` } }, im);
+  const lv = m[2] ? ROMAN[Number(m[2])] ?? m[2] : "";
+  if (lv) el.append(h("b.lv", lv));
+  if (title) el.title = title;
+  return el;
 }
 
 /** A progress bar of the skin (the reference's population bar): a gold-framed black track with a
@@ -111,13 +137,13 @@ export function isoBar(frac, { w = 120, next = null, kind = "", title } = {}) {
 
 const MISSION_ICONS = {
   MISSION_SKIP: "skip", MISSION_SLEEP: "sleep", MISSION_FORTIFY: "fortify", MISSION_HEAL: "heal", MISSION_SENTRY: "sentry",
-  MISSION_PLUNDER: "pillage", MISSION_PILLAGE: "pillage", MISSION_SABOTAGE: "pillage", MISSION_DESTROY: "pillage",
-  MISSION_STEAL_PLANS: "sentry", MISSION_ESPIONAGE: "sentry", MISSION_INFILTRATE: "sentry", MISSION_RECON: "explore",
+  MISSION_PLUNDER: "plunder", MISSION_PILLAGE: "pillage", MISSION_SABOTAGE: "sabotage", MISSION_DESTROY: "destroy",
+  MISSION_STEAL_PLANS: "steal_plans", MISSION_ESPIONAGE: "espionage", MISSION_INFILTRATE: "infiltrate", MISSION_RECON: "explore",
   MISSION_RANGE_ATTACK: "rangeattack", MISSION_BOMBARD: "bombard", MISSION_AIRBOMB: "bombard", MISSION_AIRSTRIKE: "bombard",
-  MISSION_FOUND: "found", MISSION_SPREAD: "spread", MISSION_SPREAD_CORPORATION: "spread", MISSION_JOIN: "population",
-  MISSION_CONSTRUCT: "cities", MISSION_DISCOVER: "research", MISSION_HURRY: "production", MISSION_TRADE: "commerce",
-  MISSION_GREAT_WORK: "greatwork", MISSION_GOLDEN_AGE: "goldenage", MISSION_LEAD: "promote", MISSION_AIRLIFT: "goto",
-  MISSION_PARADROP: "goto", MISSION_MOVE_TO: "goto", MISSION_ROUTE_TO: "road", MISSION_AIRPATROL: "sentry", MISSION_SEAPATROL: "sentry",
+  MISSION_FOUND: "found", MISSION_SPREAD: "spread", MISSION_SPREAD_CORPORATION: "spread", MISSION_JOIN: "join",
+  MISSION_CONSTRUCT: "construct", MISSION_DISCOVER: "discover", MISSION_HURRY: "hurry", MISSION_TRADE: "trade_mission",
+  MISSION_GREAT_WORK: "greatwork", MISSION_GOLDEN_AGE: "goldenage", MISSION_LEAD: "lead", MISSION_AIRLIFT: "goto",
+  MISSION_PARADROP: "goto", MISSION_MOVE_TO: "goto", MISSION_ROUTE_TO: "road", MISSION_AIRPATROL: "seapatrol", MISSION_SEAPATROL: "seapatrol",
 };
 const MODE_ICONS = {
   INTERFACEMODE_GO_TO: "goto", INTERFACEMODE_GO_TO_TYPE: "goto", INTERFACEMODE_GO_TO_ALL: "goto", INTERFACEMODE_ROUTE_TO: "road",
@@ -126,9 +152,9 @@ const MODE_ICONS = {
 };
 const COMMAND_ICONS = {
   COMMAND_PROMOTION: "promote", COMMAND_UPGRADE: "upgrade", COMMAND_AUTOMATE: "automate", COMMAND_AUTOMATE_SPELL: "spell",
-  COMMAND_WAKE: "goldenage", COMMAND_CANCEL: "cancel", COMMAND_CANCEL_ALL: "cancel", COMMAND_STOP_AUTOMATION: "cancel",
-  COMMAND_DELETE: "disband", COMMAND_GIFT: "diplomacy", COMMAND_LOAD: "board", COMMAND_LOAD_UNIT: "board",
-  COMMAND_UNLOAD: "board", COMMAND_UNLOAD_ALL: "board", COMMAND_CAST: "spell",
+  COMMAND_WAKE: "wake", COMMAND_CANCEL: "cancel", COMMAND_CANCEL_ALL: "cancel", COMMAND_STOP_AUTOMATION: "cancel",
+  COMMAND_DELETE: "disband", COMMAND_GIFT: "gift", COMMAND_LOAD: "board", COMMAND_LOAD_UNIT: "board",
+  COMMAND_UNLOAD: "unload", COMMAND_UNLOAD_ALL: "unload", COMMAND_CAST: "spell",
 };
 const AUTOMATE_ICONS = { AUTOMATE_EXPLORE: "explore", AUTOMATE_RELIGION: "spread" };
 
@@ -179,7 +205,8 @@ export function actionIcon(a, px = 40) {
     if (key && Object.hasOwn(SPRITES, key)) return h("span.iso-build", spriteIcon(key, px), isoIcon("upgrade", { px: 16, cls: "badge" }));
     name = "upgrade";
   }
-  return isoIcon(name ?? "goto", { px: px > 32 ? 48 : 32 });
+  const size = { px: px > 32 ? 48 : 32 };
+  return isoIcon(name ?? "goto", size) ?? isoIcon("goto", size);
 }
 
 /** The icon of something a tech unlocks (the `techs` query's `unlocks`: `kind` "units",
@@ -683,7 +710,7 @@ export async function renderCityPanel() {
   const queue = (c?.queue ?? []).slice(0, 4);
   fill(
     el,
-    h("h3.iso-title", { title: city.capital ? "Your capital" : null }, city.capital ? isoIcon("civics", { px: 16, cls: "capital" }) : null, city.name ?? ""),
+    h("h3.iso-title", { title: city.capital ? "Your capital" : null }, city.capital ? isoIcon("capital", { px: 16, cls: "capital" }) ?? isoIcon("civics", { px: 16, cls: "capital" }) : null, city.name ?? ""),
     cityPicture(city),
     h(
       "div.iso-stat",

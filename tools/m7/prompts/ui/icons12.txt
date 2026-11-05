@@ -1,0 +1,16 @@
+building_unyielding_order: a steel shield with a golden hammer emblem
+building_wall_of_stone: a massive wall of grey boulders
+building_winter_palace: a white palace covered in snow with icicles
+building_wolf_pen: a grey wolf behind a wooden fence
+promo_accuracy: a steel arrowhead pointing at a small red bullseye
+promo_aerons_chosen: a black dagger with a red gem and a single red eye above it
+promo_air: a white swirl of wind with a pale blue feather
+promo_amphibious: a green frog leaping out of blue water
+promo_angel: a pair of white feathered wings under a gold halo
+promo_athame: a ritual dagger with a curved black blade and a red gem
+promo_avatar: a radiant golden figure with outstretched arms
+promo_barrage: three arrows flying side by side in a volley arc
+promo_black_mirror: a small round black mirror in a silver frame
+promo_blessed: a gold halo over two praying hands
+promo_blitz: a steel sword with a yellow lightning bolt across it
+promo_blur: a grey running silhouette smeared with motion lines

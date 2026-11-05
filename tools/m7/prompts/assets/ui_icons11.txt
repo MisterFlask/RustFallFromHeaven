@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. a dark green temple with a tentacled octopus idol on its roof
+2. a pile of gold treasure with a red dragon claw resting on it
+3. a grey book with a skull on its cover
+4. a floating blue crystal surrounded by rings of light
+5. a pair of comedy and tragedy masks
+6. a purple stage curtain opening on a glowing crescent moon
+7. a wooden cage holding an orange tiger
+8. a slender tower topped with a pink and purple swirl
+9. a tall white tower with a closed sleeping eye on it
+10. a tower topped with a glowing crystal ball
+11. a stone tower with a big watchful eye on it
+12. a tall gold and blue tower crowned by a four-coloured star
+13. a tower with four small orbs, red, blue, white and brown, circling its top
+14. a round stone coliseum
+15. a marble bust on a stand with a chisel
+16. a wooden training dummy holding a round shield

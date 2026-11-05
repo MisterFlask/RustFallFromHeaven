@@ -1,0 +1,16 @@
+promo_crown_of_akharien: a delicate silver elven circlet set with a green gem
+promo_crown_of_brillance: a gold crown with a bright white glowing gem
+promo_crown_of_command: a dark iron crown with a red gem
+promo_dance_of_blades: two curved scimitars crossing with swirl lines
+promo_dark_elf: a purple pointed elf ear with a silver earring
+promo_demon: a red horned demon face
+promo_defensive: a thick round bronze shield planted in the ground
+promo_demon_slaying: a silver sword cutting through a red demon horn
+promo_dexterous: a gloved hand catching a spinning dagger
+promo_diseased: a sickly green face covered in spots
+promo_divine: a radiant white star with gold rays
+promo_dragon: a red dragon's head
+promo_dragon_slaying: a silver lance piercing a red dragon scale
+promo_dragons_horde: a pile of gold treasure with a red dragon claw resting on it
+promo_dwarf: a dwarf's braided brown beard under a steel helmet
+promo_earth: a brown boulder with green moss

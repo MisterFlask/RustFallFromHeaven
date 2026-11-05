@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. a round wooden granary barn with a straw thatched roof and wheat sacks at its door
+2. a tall stack of three leather-bound books with a lit candle on top
+3. a market stall with a striped red and white awning and baskets of fruit
+4. a section of grey stone castle wall with battlements and a wooden gate
+5. a wooden pier with a coiled rope and a brass anchor leaning on it
+6. a purple wizard's tower with a pointed roof and a glowing star at its tip
+7. a dark purple shrine with a hanging black veil and a red eye symbol
+8. a black iron anvil with a glowing orange-hot bar and a hammer on it
+9. a clay mortar and pestle with green leaves and a small red flower
+10. a foaming wooden beer mug next to a hanging wooden tavern sign
+11. a round glass flask bubbling with green liquid over a small flame
+12. a black stone tower topped with a white skull and green glow
+13. a log cabin with a pair of antlers mounted above its door
+14. a small wooden catapult with a stone in its bucket
+15. a grand white marble building with columns and a golden book above the door
+16. a heavy round iron vault door set in grey stone, with gold coins spilling out

@@ -1,0 +1,16 @@
+building_dwarven_vault_empty: a round iron vault door standing open on a bare empty stone chamber
+building_dwarven_vault_low: a round iron vault door standing open with three gold coins on the floor inside
+building_dwarven_vault_stocked: a round iron vault door standing open with a small pile of gold coins inside
+building_dwarven_vault_abundant: a round iron vault door standing open with a big pile of gold coins inside
+building_dwarven_vault_full: a round iron vault door standing open, the chamber filled with gold coins and gems
+building_dwarven_vault_overflowing: a round iron vault door standing open with gold coins and gems spilling out over the sill
+building_altar_of_the_luonnotar: a plain white stone altar with a faint golden glow
+building_altar_of_the_luonnotar_anointed: a white stone altar with a gold chalice on it and a soft golden glow
+building_altar_of_the_luonnotar_blessed: a white stone altar with a gold chalice and two lit candles
+building_altar_of_the_luonnotar_consecrated: a white stone altar with a gold chalice, candles and a gold sun disc above it
+building_altar_of_the_luonnotar_divine: a white stone altar with a gold sun disc above it and golden light rays
+building_altar_of_the_luonnotar_exalted: a white stone altar under a beam of golden light with white feathered wings on each side
+building_altar_of_the_luonnotar_final: a white stone altar blazing with a pillar of brilliant golden light and wings
+building_bazaar_of_mammon: a dark red merchant tent with a heap of gold coins and a small horned gold idol
+building_bone_palace: a palace built of white bones with a skull over its gate and a purple banner
+building_brewery: a big wooden beer barrel on its side with a brass tap and a foaming mug

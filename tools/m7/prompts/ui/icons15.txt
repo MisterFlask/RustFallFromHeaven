@@ -1,0 +1,16 @@
+promo_elemental: four small orbs, red, blue, white and brown, in a ring
+promo_elf: a green pointed elf ear with a leaf
+promo_empower: a glowing purple fist with sparkles
+promo_empty_bier: an empty stone bier with a white shroud draped on it
+promo_enchanted_blade: a sword with a glowing blue blade and sparkles
+promo_enchantment: a sparkling pink gem with little gold stars
+promo_entropy: a grey hourglass crumbling apart
+promo_expanded_hull: a wooden ship hull with an extra plank section added
+promo_extension: a magic wand trailing a long line of stars
+promo_fair_winds: a white ship sail billowing in a blue wind swirl
+promo_fatigued: a drooping tired face with a sweat drop
+promo_fear: a frightened ghostly purple face
+promo_fire_resistance: a blue shield with a small flame bouncing off it
+promo_flanking: a curved arrow sweeping around the side of a shield
+promo_flying: a single white wing lifting off with motion lines
+promo_frostling: a small blue frost creature with icy spikes

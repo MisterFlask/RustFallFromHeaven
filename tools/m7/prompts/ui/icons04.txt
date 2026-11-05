@@ -1,0 +1,16 @@
+building_carnival: a red and yellow striped carnival tent with a small pennant
+building_catacomb_libralus: a dark stone crypt archway with lit candles and stacked scrolls inside
+building_celestial_compass: a golden astrolabe with a glowing blue star in its middle
+building_city_of_a_thousand_slums: a cluster of crooked wooden shacks with patched roofs
+building_adventurers_guild: a wooden signboard showing a sword crossed with a rolled map, hanging from a post
+building_blasting_workshop: a grey rock bursting apart with orange sparks, a pickaxe beside it
+building_breeding_pit: a dark earthen pit with a green goblin head peeking out
+building_cave_of_ancestors: a cave mouth in a grey cliff with glowing blue spirit wisps drifting out
+building_chancel_of_guardians: a white stone altar with a silver shield and two crossed silver spears
+building_citadel_of_light: a white fortress with a beam of golden light shooting up from its tower
+building_freak_show: a wooden cage wagon with a striped curtain and a green tentacle poking out
+building_planar_gate: a stone ring portal with a swirling purple vortex inside
+building_tailor: a spool of red thread with a needle and a pair of scissors
+building_warrens: a mound of earth with several round burrow holes
+building_pallens_engine: a brass clockwork engine with gears and a glowing blue core
+building_hall_of_mirrors: a tall ornate gold-framed mirror reflecting purple light

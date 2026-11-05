@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. a red and yellow striped carnival tent with a small pennant
+2. a dark stone crypt archway with lit candles and stacked scrolls inside
+3. a golden astrolabe with a glowing blue star in its middle
+4. a cluster of crooked wooden shacks with patched roofs
+5. a wooden signboard showing a sword crossed with a rolled map, hanging from a post
+6. a grey rock bursting apart with orange sparks, a pickaxe beside it
+7. a dark earthen pit with a green goblin head peeking out
+8. a cave mouth in a grey cliff with glowing blue spirit wisps drifting out
+9. a white stone altar with a silver shield and two crossed silver spears
+10. a white fortress with a beam of golden light shooting up from its tower
+11. a wooden cage wagon with a striped curtain and a green tentacle poking out
+12. a stone ring portal with a swirling purple vortex inside
+13. a spool of red thread with a needle and a pair of scissors
+14. a mound of earth with several round burrow holes
+15. a brass clockwork engine with gears and a glowing blue core
+16. a tall ornate gold-framed mirror reflecting purple light

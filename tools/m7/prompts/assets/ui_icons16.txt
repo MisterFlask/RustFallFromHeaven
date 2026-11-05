@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. a pale blue crystal shard with a ghostly face inside
+2. a jagged black sword with a red glow
+3. a golden hammer
+4. a stone golem's face with glowing blue eyes
+5. a golden eagle standard on a pole
+6. a steel tower shield with a halberd behind it
+7. a hooded face peering out among rocks and leaves
+8. a boot with a yellow lightning bolt
+9. a small clay jar of green salve
+10. a heavy black iron weight with a ring on top
+11. a figure bound in glowing purple magic chains
+12. a golden shield inside a laurel wreath
+13. a golden fist inside a laurel wreath
+14. a green bush with two eyes peeking out
+15. a plain black flag with no emblem on a pole
+16. a small house in a green field with a red heart above it

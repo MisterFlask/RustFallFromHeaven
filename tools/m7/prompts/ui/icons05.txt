@@ -1,0 +1,16 @@
+building_jeweler: a cut blue sapphire and a gold ring on a red velvet cushion
+building_reliquary: a small gold casket with a glass window showing a white bone inside
+building_adularia_chamber: a pale blue moonstone crystal in a silver setting
+building_code_of_junil: two rounded grey stone law tablets engraved with gold lines
+building_command_post: a military tent with a red banner and a small map table in front
+building_courthouse: a white columned building with a gold balance scale over its door
+building_governors_manor: a fine two-storey manor house with a blue roof
+building_crown_of_akharien: a delicate silver elven circlet set with a green gem
+building_dancing_bear: a brown bear standing on its hind legs wearing a red collar
+building_demonic_citizens: a small grinning red horned imp
+building_demons_altar: a black stone altar with red flames and a horned skull on it
+building_dies_diei: a golden sun disc rising over a white stone altar
+building_dungeon: a dark stone doorway with iron bars and hanging chains
+building_dwarf_cage: a wooden cage holding a small bearded dwarf
+building_elder_council: a round wooden table with three tall carved chairs and a scroll on it
+building_elf_cage: a wooden cage holding a small pointy-eared elf

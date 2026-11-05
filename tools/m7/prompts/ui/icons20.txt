@@ -1,0 +1,16 @@
+promo_prophecy_mark: a glowing red rune brand
+promo_puppet: a wooden puppet hanging on strings
+promo_recruiter: a quill and a rolled scroll with a blue ribbon
+promo_regeneration: a green heart with a curved arrow around it
+promo_rod_of_winds: a wooden rod with swirling white winds around it
+promo_rusted: a rusty brown broken sword
+promo_scorched_staff: a charred black staff with glowing embers
+promo_scourge: a spiked whip
+promo_sentry: a lookout tower with a spyglass poking out of its top
+promo_shadow: a dark hooded shadowy silhouette
+promo_shadowwalk: dark footprints in purple mist
+promo_sheut_stone: a dark grey stone with a purple glowing rune
+promo_shield_of_faith: a white shield with a gold sun on it
+promo_sinister: a purple crescent moon with a dagger
+promo_skeleton_crew: a skull wearing a red sailor's bandana
+promo_slow: a snail

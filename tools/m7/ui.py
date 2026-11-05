@@ -9,7 +9,8 @@ the M7 image model in the style of the reference screenshot's panels, cut into i
   then: python3 m7.py export
 
 A sheet is 16 icons in a 4 x 4 grid, listed in prompts/ui/<name>.txt (`key: description`, row by
-row). Each call gets prompts/style_ui_icons.txt, the list, and anchors/anchor_ui.png (the reference's
+row; prompts/ui/all_icons.py writes the icons<NN> lists of the buildings, promotions and spheres).
+Each call gets prompts/style_ui_icons.txt, the list, and anchors/anchor_ui.png (the reference's
 panels). The cut keys out the magenta, keeps each cell's pixels, trims, fits the icon in a
 square canvas of each size of CUTS (centred) and re-grids it to PIXEL px blocks, the reference's
 chunky pixels. `accept` stores roster/ui/ui_<key>.png (the export copies it
@@ -24,7 +25,10 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "lib"))
 import cutout as co  # noqa: E402
-from m7 import MODEL, call_api, log_call  # noqa: E402
+from m7 import call_api, log_call  # noqa: E402
+
+# The icon sheets since the full icon pass (2026-11-05); the first 64 icons were drawn by m7.MODEL.
+MODEL = "gpt-image-2.6-sunburst"
 
 GRID = 4
 # The cuts of each icon: suffix -> (canvas, largest side inside it), art px, drawn at 1 CSS px per

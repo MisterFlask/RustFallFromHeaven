@@ -1,0 +1,16 @@
+building_eyes_and_ears_network: a large ear and a watchful eye joined by a dotted gold line
+building_forbidden_palace: a summer palace with a green tiled roof and pink flowers
+building_dwarven_smithy: a stone furnace glowing orange with an axe head on an anvil in front
+building_form_of_the_titan: a giant grey stone fist raised up
+building_gambling_house: a pair of white dice beside a stack of gold coins
+building_gorilla_cage: a wooden cage holding a dark grey gorilla
+building_grand_menagerie: an ornate gilded animal cage with a peacock feather in front
+building_great_lighthouse: a tall white and red striped lighthouse with a bright yellow beam
+building_grove: a ring of three green trees around a mossy stone
+building_guild_of_hammers: two crossed dwarven war hammers over a block of stone
+building_guild_of_the_nine: a ring of nine gold coins around a short sword
+building_heron_throne: a white throne with heron wings carved on its back
+building_hall_of_kings: a red carpet leading up stone steps to a golden throne
+building_harbor_lanun: a wooden pier in a cove with a black pirate flag on a pole
+building_heroic_epic: a golden scroll with a sword laid across it
+building_hope: a single white candle with a warm golden flame

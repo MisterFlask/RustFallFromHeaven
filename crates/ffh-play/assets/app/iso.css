@@ -330,6 +330,14 @@ html.iso .chip-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4p
 html.iso .iso-listed .actions { gap: 6px; }
 html.iso button.action.listed { padding: 0 8px; }
 html.iso .seals { gap: 4px; margin: 0; }
+/* A promotion's seal (isoui.js isoPromotionIcon): its family's icon on a gilt disc, the level as a
+   badge at the lower right, an affliction's rim red. */
+html.iso .iso-seal { position: relative; display: inline-grid; place-items: center; flex: none; box-sizing: border-box; border: 2px solid var(--iso-gold);
+  border-radius: 50%; background: radial-gradient(circle at 35% 30%, #2a4f98, #0b1f52); vertical-align: middle; }
+html.iso .iso-seal.bad { border-color: var(--iso-bad); background: radial-gradient(circle at 35% 30%, #5a2340, #2a0b1e); }
+html.iso .iso-seal > img { width: 86%; height: 86%; }
+html.iso .iso-seal .lv { position: absolute; right: -4px; bottom: -4px; font: 10px/10px var(--iso-font); color: var(--iso-deep); background: var(--iso-gold-lt);
+  border: 1px solid #7a5a17; padding: 0 2px; pointer-events: none; }
 html.iso .panel-head { border-bottom: 0; margin: 0 0 4px; }
 html.iso table.kv th { color: var(--iso-dim); font-weight: 400; }
 

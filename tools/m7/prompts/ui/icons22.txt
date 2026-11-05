@@ -1,0 +1,16 @@
+promo_twincast: two identical purple magic stars side by side
+promo_undead: a skeleton hand glowing green
+promo_undead_slaying: a silver sword through a skull
+promo_unholy_taint: a black blood drop with purple smoke
+promo_valor: a raised golden sword with a red cape
+promo_vampire: two vampire fangs with a red blood drop
+promo_vile_touch: a black hand dripping green ooze
+promo_vulnerable_to_fire: a cracked wooden shield catching fire
+promo_war: two crossed axes
+promo_warcry: a shouting face with sound waves
+promo_water_walking: a footprint on rippling blue water
+promo_water: a curling blue water wave
+promo_weak: a thin snapped twig
+promo_werewolf: a snarling wolf face in front of a full moon
+promo_winterborn: a snowflake on a patch of white fur
+promo_withered: a dead brown curled leaf

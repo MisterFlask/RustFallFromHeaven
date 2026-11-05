@@ -1,0 +1,16 @@
+building_desert_shrine: a sandstone shrine beside a small palm tree
+building_pagan_temple: a ring of grey standing stones with a small fire in the middle
+building_temple_of_the_hand: an ice-blue temple with a white open hand symbol above its door
+building_palace_amurites: a blue palace whose dome carries a glowing purple arcane star
+building_palace_balseraphs: a colourful palace flying a red and yellow jester's banner
+building_palace_bannor: a white stone palace flying a red banner with a gold cross
+building_palace_calabim: a dark gothic palace flying a red banner with a black bat
+building_palace_clan_of_embers: a rough timber longhouse palace with orange torches and a green banner
+building_palace_doviello: a fur-draped wooden hall with antlers over its door and a white wolf banner
+building_palace_elohim: a white marble palace with a golden halo above its dome
+building_palace_grigori: a sturdy stone town hall flying a green banner
+building_palace_hippus: a palace flying a yellow banner with a horse head
+building_palace_illians: an icy blue crystal palace covered in snow
+building_palace_infernal: a black and red palace with horned towers and flames
+building_palace_khazad: a dwarven hall carved into a grey mountain with golden doors
+building_palace_kuriotates: a grand domed palace flying a green banner with a centaur

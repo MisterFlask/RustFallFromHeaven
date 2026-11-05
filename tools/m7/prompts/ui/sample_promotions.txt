@@ -1,0 +1,16 @@
+promo_combat: a steel sword pointing up with a small gold laurel around its hilt
+promo_drill: a round wooden shield with a steel spearhead behind it
+promo_shock: a steel sword crossing a long pike, with a small white impact burst
+promo_formation: three small steel spearheads side by side in a row
+promo_city_raider: a battering ram's iron head striking a stone tower
+promo_city_garrison: a small stone castle keep with a blue flag on its top
+promo_medic: a white cloth bandage roll with a red cross on it
+promo_mobility: a brown leather boot with a small white wing on its heel
+promo_woodsman: a green pine tree with a small hand axe leaning against its trunk
+promo_channeling: a blue crystal with arcs of purple magic energy swirling around it
+promo_fire: a bright orange flame with a yellow core
+promo_death: a white grinning skull with green wisps around it
+promo_hero: a golden laurel wreath around a small red heart
+promo_flaming_arrows: a single arrow pointing up-right with its head on fire
+promo_poisoned: a green dripping bottle with a white skull label
+promo_enraged: a red snarling face with angry eyebrows and steam puffs

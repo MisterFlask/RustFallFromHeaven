@@ -1,0 +1,16 @@
+promo_spellstaff: a tall wooden staff with a blue gem at its top
+promo_spirit_guide: a glowing blue ghostly bird
+promo_spirit: a white glowing wisp spirit
+promo_staff_of_souls: a staff topped with a skull and green souls swirling around it
+promo_starting_settler: a small handcart with a tent bundle and a shovel
+promo_stealth: a black cat's yellow eyes in darkness
+promo_stigmata: a pale hand with a glowing red mark
+promo_stoneskin: a grey fist with a stone texture
+promo_strong: a muscular flexed arm
+promo_subdue_animal: a rope lasso around a wolf's head
+promo_subdue_beasts: a rope lasso around a bear's head
+promo_summoner: a purple summoning circle with a glowing creature rising from it
+promo_sun: a bright golden sun
+promo_sundered: a cracked broken shield
+promo_sylivens_perfect_lyre: a silver lyre glowing with blue light
+promo_timor_mask: a white mask with a terrified face

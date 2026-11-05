@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. a horse's head wearing a golden crown
+2. a blue ice crystal shard
+3. a translucent purple shimmering copy of a soldier
+4. a purple top hat with sparkles rising from it
+5. a golden ankh glowing with light
+6. a white snowflake behind a solid gold shield
+7. a green sickness drop behind a solid gold shield
+8. an orange flame behind a solid gold shield
+9. a yellow lightning bolt behind a solid gold shield
+10. a black leather book with a glowing red demonic eye on its cover
+11. a red hood with a gold sun symbol on it
+12. a dashed white outline of a person with sparkles
+13. a grey iron sword
+14. a green jade neck ring
+15. an eye with a sharp blue sparkle
+16. a golden balance scale

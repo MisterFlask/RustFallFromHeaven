@@ -1,0 +1,16 @@
+building_human_cage: a wooden cage holding a small human peasant
+building_infernal_grimoire: a black leather book with a glowing red demonic eye on its cover and small flames
+building_infirmary: a white tent with a red cross on its side
+building_inn: a cosy timber-framed inn with a lit window and a hanging sign
+building_inspiration: a glowing golden feather quill with sparkles
+building_lighthouse: a small stone lighthouse with a yellow lamp at its top
+building_lion_cage: a wooden cage holding a golden lion
+building_mercurian_gate: a white marble gate with a golden angel wing on each side
+building_mines_of_galdur: a mine entrance in a rock face with a pickaxe and a cart of gold ore
+building_mokkas_cauldron: a big black iron cauldron bubbling with green brew
+building_moneychanger: a brass balance scale with gold coins on both pans
+building_national_epic: a thick red leather book with a gold crown on its cover
+building_nox_noctis: a black tower under a silver crescent moon and stars
+building_monument: a grey stone obelisk on a small base
+building_obsidian_gate: a black obsidian gate with jagged edges and a red glow inside
+building_orc_cage: a wooden cage holding a green orc

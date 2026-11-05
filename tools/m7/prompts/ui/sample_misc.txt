@@ -1,0 +1,16 @@
+espionage: a dark hooded cloak with a curved silver dagger crossed in front of it
+anarchy: a golden royal crown cracked in two with a red jagged crack
+wake: a brass hand bell ringing, with small motion lines on both sides
+steal_plans: a rolled parchment scroll with a black dagger stuck through it
+infiltrate: a black domino mask with empty eye holes
+sabotage: a small wooden powder keg with a lit sparking fuse
+seapatrol: a brass and wood ship's steering wheel
+join: a small blue-robed villager figure with a green plus sign beside it
+construct: a builder's hammer crossed with a mason's trowel over three red bricks
+discover: an unrolled parchment scroll with a burst of golden light above it
+hurry: a golden hourglass with a yellow lightning bolt across it
+lead: a raised blue war banner on a pole, with a gold star on the cloth
+gift: a small wooden treasure chest tied with a red ribbon bow
+unload: a wooden crate hanging from a rope and hook, with a green arrow pointing down
+sphere_fire: a glowing orange-red magic orb with a flame inside it
+sphere_water: a glowing deep-blue magic orb with a white water droplet inside it

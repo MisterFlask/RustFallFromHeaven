@@ -1,0 +1,16 @@
+promo_horselord: a horse's head wearing a golden crown
+promo_ice: a blue ice crystal shard
+promo_illusion: a translucent purple shimmering copy of a soldier
+promo_illusionist: a purple top hat with sparkles rising from it
+promo_immortal: a golden ankh glowing with light
+promo_immune_cold: a white snowflake behind a solid gold shield
+promo_immune_disease: a green sickness drop behind a solid gold shield
+promo_immune_fire: an orange flame behind a solid gold shield
+promo_immune_lightning: a yellow lightning bolt behind a solid gold shield
+promo_infernal_grimoire: a black leather book with a glowing red demonic eye on its cover
+promo_inquisitor: a red hood with a gold sun symbol on it
+promo_invisible: a dashed white outline of a person with sparkles
+promo_iron_weapons: a grey iron sword
+promo_jade_torc: a green jade neck ring
+promo_keen_sight: an eye with a sharp blue sparkle
+promo_law: a golden balance scale

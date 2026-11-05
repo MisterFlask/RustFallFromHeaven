@@ -16,7 +16,7 @@ import * as UI from "../art/ui/ui.js";
 import { setTextHook, setTypeIconHook } from "./dom.js";
 import { setIconHook } from "./markup.js";
 import { setIlluminate } from "./modals.js";
-import { isoSkin, isoIconFor, isoBar } from "./isoui.js";
+import { isoSkin, isoIconFor, isoBar, isoBuildingIcon, isoPromotionIcon } from "./isoui.js";
 
 export { UI };
 
@@ -300,6 +300,12 @@ export function iconEl(name, { title, cls, remap, u = look.u } = {}) {
 /** The icon of a game type through the art's mapping (religion, promotion, building,
  *  unitcombat, specialist, civ), 16 or 8 px; `type` is a type name or an index. */
 export function typeIcon(kind, type, size = 16, opts = {}) {
+  // The skin draws a building with its own M7 icon (32 CSS px for the 16 size, 16 for the 8).
+  if (kind === "building" && isoSkin()) {
+    const name = typeof type === "number" ? look.data?.tables?.BuildingType?.[type]?.type : type;
+    const iso = isoBuildingIcon(name, { px: size === 8 ? 16 : 32, title: opts.title, cls: opts.cls });
+    if (iso) return iso;
+  }
   if (!look.art) return null;
   const r = UI.iconFor(look.art, kind, look.art.typeName(kind, type), size);
   return r ? iconEl(r.name, { ...opts, remap: r.remap }) : null;
@@ -308,6 +314,13 @@ export function typeIcon(kind, type, size = 16, opts = {}) {
 /** A promotion's seal with its level's pips (ui.js `promotionEl`), or null before the art
  *  loaded; `type` is a type name or an index. */
 export function promotionIcon(type, { u = look.u, title } = {}) {
+  if (isoSkin()) {
+    const name = typeof type === "number" ? look.data?.tables?.PromotionType?.[type]?.type : type;
+    // An affliction (poisoned, diseased ...) is the 2D art's crimson family: a red rim in the skin too.
+    const harmful = look.art?.resolve("promotion", name)?.sprite === "icon16/promo_affliction";
+    const iso = isoPromotionIcon(name, { px: 16 * u, title: title ?? name, harmful });
+    if (iso) return iso;
+  }
   if (!look.art) return null;
   const name = look.art.typeName("promotion", type);
   if (!name || !look.art.resolve("promotion", name)) return null;
