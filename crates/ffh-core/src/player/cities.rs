@@ -531,6 +531,8 @@ impl Game {
                     / 100;
                 self.city_change_occupation_timer(new_city, change);
             }
+            // Not in C++ (docs/SIEGES.md): a conquered city's Sentinels are breached.
+            self.city_breach_sentinels(new_city);
 
             self.map_verify_unit_valid_plot();
         }

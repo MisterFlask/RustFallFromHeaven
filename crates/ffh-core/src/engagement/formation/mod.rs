@@ -334,6 +334,9 @@ pub struct Fighter {
     pub collateral_protection: i32,
     /// What its SPELL actions cast.
     pub spell: Spell,
+    /// A Sentinel of the defended city (docs/SIEGES.md): never knocked back, never healed; it
+    /// takes the shots and spells aimed past it in its lanes, and BOMBARD takes it first.
+    pub fixed: bool,
 }
 
 impl Fighter {
@@ -364,6 +367,7 @@ impl Fighter {
             collateral_extra: 0,
             collateral_protection: 0,
             spell: Spell { id: None, power: 60, splash: false },
+            fixed: false,
         }
     }
 
@@ -798,19 +802,32 @@ impl Formation {
     }
 
     /// Who an action of `kind` (as fought) by `h` can hit: STRIKE and a CHARGE where flanking
-    /// does not work the front unit of each enemy lane; SHOOT, SPELL and BOMBARD the backmost;
-    /// STAB and a CHARGE where flanking works every enemy on the field; less the targets at
-    /// `h`'s combat limit. In fighter order.
+    /// does not work the front unit of each enemy lane; SHOOT, SPELL and BOMBARD the backmost,
+    /// but a Sentinel standing in a lane takes the SHOOT and SPELL aimed down it, and BOMBARD
+    /// takes the Sentinels on the field first (docs/SIEGES.md); STAB and a CHARGE where flanking
+    /// works every enemy on the field; less the targets at `h`'s combat limit. In fighter order.
     pub fn reach(&self, s: &State, h: usize, kind: ActionKind) -> Vec<usize> {
         let foe = self.fighters[h].side.other();
         let mut list: Vec<usize> = Vec::new();
         let everyone = kind == ActionKind::Stab || (kind == ActionKind::Charge && self.ground.flanking());
+        if kind == ActionKind::Bombard {
+            let walls: Vec<usize> = (0..self.len()).filter(|&t| s.on_field(t) && self.fighters[t].side == foe && self.fighters[t].fixed && s.hp[t] > self.floor(h, t)).collect();
+            if !walls.is_empty() {
+                return walls;
+            }
+        }
         if everyone {
             list.extend((0..self.len()).filter(|&t| s.on_field(t) && self.fighters[t].side == foe));
         } else if matches!(kind, ActionKind::Strike | ActionKind::Charge) || kind.ranged() {
             for lane in 0..self.lanes[foe.index()] {
-                let units = self.lane_units(s, foe, lane);
-                let pick = if kind.ranged() { units.max_by_key(|&t| s.row[t]) } else { units.min_by_key(|&t| s.row[t]) };
+                let mut units = self.lane_units(s, foe, lane);
+                let pick = if kind.ranged() {
+                    let units: Vec<usize> = units.collect();
+                    let wall = (kind != ActionKind::Bombard).then(|| units.iter().copied().find(|&t| self.fighters[t].fixed)).flatten();
+                    wall.or_else(|| units.iter().copied().max_by_key(|&t| s.row[t]))
+                } else {
+                    units.by_ref().min_by_key(|&t| s.row[t])
+                };
                 if let Some(t) = pick {
                     list.push(t);
                 }
@@ -915,7 +932,7 @@ impl Formation {
         let side = self.fighters[h].side;
         let missing = |t: usize| self.fighters[t].max_hp * 100 - s.hp[t];
         (0..self.len())
-            .filter(|&t| s.on_field(t) && self.fighters[t].side == side && missing(t) > 0)
+            .filter(|&t| s.on_field(t) && self.fighters[t].side == side && !self.fighters[t].fixed && missing(t) > 0)
             .min_by(|&x, &y| missing(y).cmp(&missing(x)).then_with(|| self.place(s, x, y)))
     }
 
@@ -1132,7 +1149,7 @@ impl<'a> Run<'a> {
     fn knock_back(&mut self, t: usize) -> Option<Knock> {
         let f = self.f;
         let row = self.s.row[t];
-        if !self.s.on_field(t) || row as usize + 1 >= ROWS {
+        if !self.s.on_field(t) || row as usize + 1 >= ROWS || f.fighters[t].fixed {
             return None;
         }
         let ft = &f.fighters[t];
@@ -1187,6 +1204,21 @@ pub struct Placement {
 /// centre first (then the lower), else the nearest row with room (behind before in front). A
 /// unit with no room is left out. In candidate order.
 pub fn auto_arrange(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32) -> Vec<Placement> {
+    auto_arrange_around(cands, lanes, slots, ordinary, &[])
+}
+
+/// The cells of `n` Sentinels on a side of `lanes` lanes (docs/SIEGES.md): the front row, the
+/// lanes nearest the centre first (then the lower); any beyond the front row's lanes in the
+/// middle row the same way.
+pub fn sentinel_cells(lanes: u8, n: usize) -> Vec<(u8, u8)> {
+    let centre = |l: u8| (2 * l as i32 - (lanes as i32 - 1)).abs();
+    let mut order: Vec<u8> = (0..lanes).collect();
+    order.sort_by_key(|&l| (centre(l), l));
+    (0..ROWS as u8).flat_map(|r| order.iter().map(move |&l| (l, r))).take(n).collect()
+}
+
+/// [`auto_arrange`] with the cells in `blocked` already taken (a city's Sentinels).
+pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32, blocked: &[(u8, u8)]) -> Vec<Placement> {
     let value = |c: &Candidate| c.value * if c.large { 2 } else { 1 };
     let mut order: Vec<usize> = (0..cands.len()).collect();
     order.sort_by(|&x, &y| {
@@ -1217,6 +1249,11 @@ pub fn auto_arrange(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32) -
     }
     let lanes_n = lanes as usize;
     let mut grid = vec![[false; ROWS]; lanes_n];
+    for &(l, r) in blocked {
+        if let Some(cell) = grid.get_mut(l as usize).and_then(|g| g.get_mut(r as usize)) {
+            *cell = true;
+        }
+    }
     // twice the distance from the centre lane: |2l - (lanes - 1)|, a large unit's from l + 1/2
     let centre = |l: usize, large: bool| (2 * l as i32 + large as i32 - (lanes as i32 - 1)).abs();
     let mut out: Vec<Placement> = Vec::new();

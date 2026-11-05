@@ -331,7 +331,7 @@ persist_struct!(Unit {
     extra_terrain_defense_percent, extra_feature_attack_percent, extra_feature_defense_percent,
     extra_unit_combat_modifier, ai_birthmark, ai_type, ai_groupflag, ai_origin_x, ai_origin_y,
     ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, army, march,
-    extra_combat_percent_defense, attacks_made, battle_heal_turn, lent,
+    extra_combat_percent_defense, attacks_made, battle_heal_turn, xp_carry, lent,
 });
 
 persist_struct!(City {
@@ -354,6 +354,7 @@ persist_struct!(City {
     trade_route_modifier, foreign_trade_route_modifier, building_defense, building_bombard_defense,
     free_experience, curr_airlift, max_airlift, air_modifier, air_unit_capacity, nuke_modifier,
     free_specialist, power_count, dirty_power_count, defense_damage, last_defense_damage,
+    sentinel_damage,
     occupation_timer, culture_update_timer, specialist_free_experience, espionage_defense_modifier,
     never_lost, bombarded, drafted, airlift_targeted, we_love_the_king_day, citizens_automated,
     production_automated, plundered, owner, previous_owner, original_owner, culture_level,

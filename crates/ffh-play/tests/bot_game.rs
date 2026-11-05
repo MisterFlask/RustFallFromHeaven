@@ -47,7 +47,9 @@ fn play_game(ng: NewGame, seed: u32, turns: i32, check_every: i32) -> Played {
         assert!(techs >= 6, "seed {seed}: only {techs} techs");
         assert!(b.stats.events_answered + b.stats.votes_answered + b.stats.research_chosen >= 1, "seed {seed}: no deferred popup answered");
         assert!(b.stats.events_answered >= 1, "seed {seed}: no event answered");
-        assert!(b.stats.productions >= 5 && b.stats.end_turns >= 100, "seed {seed}: {:?}", b.stats);
+        // A bot eliminated early (`Stop::Over`: barbarians besieging its cities) ends its turns
+        // early; a surviving one plays them all.
+        assert!(b.stats.productions >= 5 && (b.stats.end_turns >= 100 || matches!(stop, Stop::Over)), "seed {seed}: {:?}", b.stats);
     }
     let (save, _) = s.save_bytes().expect("save at the end");
     Played { stop, checkpoints, save }

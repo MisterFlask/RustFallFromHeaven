@@ -210,8 +210,9 @@ fn check_reach(log: &BattleLog) -> usize {
     checked
 }
 
-/// 8 Axemen against an Axeman and 3 Archers in a walled city: the attacker commits up to its
-/// slots (the walls cost it two) on its lanes, every strike and shot falls in its reach, and the
+/// 8 Axemen against an Axeman and 3 Archers in a city of 50% defence (no wall building, so no
+/// Sentinels: docs/SIEGES.md; tests/sieges.rs has the walls): the attacker commits up to its slots
+/// (the city's defence costs none) on its lanes, every strike and shot falls in its reach, and the
 /// city falls only when none of its defenders is left: then the launcher's group takes it; else
 /// nobody moves. Every battle: the slots, lanes and reach; some seed of eight: the city taken.
 #[test]
@@ -232,9 +233,9 @@ fn axemen_storm_a_walled_city_of_archers() {
         assert_eq!(reports.len(), 1, "one order, one engagement");
         let r = &reports[0];
         let log = r.log.as_ref().unwrap();
-        assert_eq!(log.slots[0].total, 8, "10 a side on open land, two lost to the walls: {:?}", log.slots[0]);
+        assert_eq!(log.slots[0].total, 10, "10 a side on open land, the city's defence costs none: {:?}", log.slots[0]);
         assert_eq!((r.sides[0].committed, r.sides[1].committed), (8, 4));
-        assert_eq!((r.sides[0].slots, r.sides[1].slots), (8, 10), "the report keeps the slots");
+        assert_eq!((r.sides[0].slots, r.sides[1].slots), (10, 10), "the report keeps the slots");
         assert_eq!((r.sides[0].lanes, r.sides[1].lanes), (4, 4));
         assert_eq!(log.lanes, [4, 4]);
         assert!(log.ground.city && !log.ground.flanking());

@@ -32,15 +32,15 @@
 //     its role's, ENGAGEMENT_LARGE_HP_PERCENT), first_strike_speed (speed a first strike adds,
 //     ENGAGEMENT_FIRST_STRIKE_SPEED)}: the rule values the screens word (absent: the words leave the numbers out)
 //   slots: [SideSlots, SideSlots] (attacker, defender): {base, changes: [SlotChange], total, river_only}
-//     SlotChange {src: "Terrain" (terrain) | "Feature" (feature) | "Hills" | "River" | "CityDefense" (pct, next_at)
-//                 | "Bombarded" (pct) | "Minimum" | "Summons" (n), delta}
+//     SlotChange {src: "Terrain" (terrain) | "Feature" (feature) | "Hills" | "River" | "Sentinels" (n: the defended
+//                 city's Sentinels, docs/SIEGES.md) | "Minimum" | "Summons" (n), delta}
 //   lanes: [attacker's lanes, defender's lanes]
 //   sides: [SideSnap, SideSnap]: {player, shown_player, civ, label, lanes, ordered (its formation was its order's,
 //     not the rules' auto formation)} (`player`: the real one on the viewer's side, the one the viewer saw on the
 //     other: hidden nationality)
 //   fighters: [Fighter]: both lines, and the units of both sides on the two plots that stayed out of them (the
 //     attacker's pool, the defenders' reserve the viewer sees: `lane` null):
-//     {b, unit, unit_type, name, owner, side, level, hero, promotions, role (CombatRoleType), large (fills two
+//     {b, unit, sentinel (a Sentinel of the defended city: its wall section, no unit; docs/SIEGES.md), unit_type, name, owner, side, level, hero, promotions, role (CombatRoleType), large (fills two
 //      cells of a row, lanes `lane` and `lane + 1`), lane, row (null: not in the line), max_hp (HP), hp_start,
 //      a_x100, dv_x100 (its attack and defence in this battle, before the terms of a pair), speed,
 //      actions: [{kind, n}, {kind, n}, {kind, n}] (in its Front, Middle and Rear rows; kind an ActionKind),
@@ -425,10 +425,8 @@ export function slotChangeText(c) {
       return `for the ${tyLabel("FeatureType", c.feature).toLowerCase()}`;
     case "River":
       return "across the river";
-    case "CityDefense":
-      return `for walls at ${c.pct}%`;
-    case "Bombarded":
-      return `back from the bombardment (${c.pct}%)`;
+    case "Sentinels":
+      return `for the walls' ${c.n} Sentinel${c.n === 1 ? "" : "s"}`;
     case "Minimum":
       return "the minimum";
     case "Summons":

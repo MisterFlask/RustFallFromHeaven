@@ -131,7 +131,7 @@ test("the ground's rules in words, and what they do to a unit's hits", () => {
 
 test("slots: the sum in words and the cap", () => {
   const s = FIXTURES.city.preview.slots[0];
-  assert.equal(L.slotSum(s), "8 slots + 2 for plains − 2 for walls at 50% = 8");
+  assert.equal(L.slotSum(s), "8 slots + 2 for plains − 2 for the walls' 2 Sentinels = 8");
   assert.equal(L.slotCap({ total: 6, river_only: 2 }), 8);
 });
 

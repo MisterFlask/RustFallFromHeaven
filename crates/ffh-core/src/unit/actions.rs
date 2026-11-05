@@ -603,9 +603,15 @@ impl Game {
         let mut total_heal = 0;
 
         if self.plot_is_city(plot, true, Some(team)) {
-            total_heal += d.defines.city_heal_rate + if friendly { unit.extra_friendly_heal } else { unit.extra_neutral_heal };
+            // Not in C++ (docs/SIEGES.md): a besieged city gives no heal of its own (its rate and
+            // its buildings'); the unit's own extra heal and the medics still work.
+            let besieged = city.is_some_and(|c| self.city_is_besieged(c));
+            if !besieged {
+                total_heal += d.defines.city_heal_rate;
+            }
+            total_heal += if friendly { unit.extra_friendly_heal } else { unit.extra_neutral_heal };
             if let Some(c) = city {
-                if !self.city_is_occupation(c) {
+                if !self.city_is_occupation(c) && !besieged {
                     total_heal += self.cities[c].heal_rate;
                 }
             }
@@ -1333,8 +1339,19 @@ impl Game {
             bombard_modifier -= self.cities[bombard_city].building_bombard_defense;
         }
 
-        let change = -(self.unit_bombard_rate(u) * std::cmp::max(0, 100 + bombard_modifier)) / 100;
-        self.city_change_defense_modifier(bombard_city, change);
+        // Not in C++ (docs/SIEGES.md): the bombard hits the city's Sentinels (its rate, less the
+        // walls' bombard defence, in percent of their HP) and its soldiers (half that, never below
+        // the floor), not its defence.
+        let pct = (self.unit_bombard_rate(u) * std::cmp::max(0, 100 + bombard_modifier)) / 100;
+        let (walls, soldiers) = self.city_bombard_damage(bombard_city, u, pct);
+        let turn = self.game_turn();
+        let at = self.map.xy(target_plot);
+        let name = self.cities[bombard_city].name.clone();
+        let msg = format!("{name} bombarded: {walls} Sentinels and {soldiers} defenders hit ({pct}%)");
+        for owner in [self.units[u].owner, self.cities[bombard_city].owner] {
+            let m = msg.clone();
+            self.log.msg_at(turn, Some(owner), at, || m);
+        }
 
         self.units[u].made_attack = true;
         // Engagement combat: a bombard is one of the turn's attacks (plan 5.2).

@@ -67,6 +67,10 @@ pub fn construct_capture(s: &mut Session) -> (ffh_core::ids::UnitId, i32, i32) {
     for u in g.map.plots[city_plot].units.clone() {
         g.unit_kill(u, false, None);
     }
+    // Its walls' Sentinels breached too (docs/SIEGES.md): an empty walled city still fights.
+    for k in 0..g.city_sentinel_count(c) {
+        g.city_set_sentinel_damage(c, k, 100);
+    }
     let (my, their) = (g.players[h].team, g.players[owner].team);
     g.team_meet(my, their, false);
     g.team_declare_war(my, their, false, None);

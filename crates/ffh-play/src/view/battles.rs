@@ -196,8 +196,7 @@ fn slot_change_json(c: &SlotChange) -> Json {
         SlotSource::Feature(f) => j("Feature").with("feature", Json::idx(*f)),
         SlotSource::Hills => j("Hills"),
         SlotSource::River => j("River"),
-        SlotSource::CityDefense { pct, next_at } => j("CityDefense").with("pct", *pct).with("next_at", *next_at),
-        SlotSource::Bombarded { pct } => j("Bombarded").with("pct", *pct),
+        SlotSource::Sentinels(n) => j("Sentinels").with("n", *n),
         SlotSource::Minimum => j("Minimum"),
         SlotSource::Summons(n) => j("Summons").with("n", *n),
     }
@@ -281,6 +280,7 @@ fn plan_fighter(g: &Game, u: UnitId, side: Side, place: Option<(u8, u8)>, in_cit
     let first_strikes = g.unit_first_strikes(u);
     LogFighter {
         unit: u,
+        sentinel: false,
         unit_type: unit.unit_type,
         name: unit.name.clone(),
         owner: unit.owner,
@@ -351,6 +351,8 @@ fn fighter_json(g: &Game, b: usize, f: &LogFighter, owner: PlayerId) -> Json {
     crate::jobj! {
         "b" => b,
         "unit" => f.unit,
+        // A Sentinel of the defended city (docs/SIEGES.md): no unit, the city's wall section.
+        "sentinel" => f.sentinel,
         "unit_type" => Json::idx(f.unit_type),
         "name" => name,
         "owner" => owner,
@@ -837,12 +839,20 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Opti
             plan_fighter(g, u, side, place, in_city, v.team, &ctx)
         })
         .collect();
+    // The defended city's Sentinels (docs/SIEGES.md), after the units, in their cells.
+    let walls: Vec<LogFighter> = match g.map.plots[dest].plot_city.filter(|&c| g.cities.contains(c)) {
+        Some(c) => pv.sentinels.iter().map(|s| g.city_sentinel_log_fighter(c, (s.lane, s.row), s.hp)).collect(),
+        None => Vec::new(),
+    };
+    let first_wall = fighters.len();
+    let mut fighters = fighters;
+    fighters.extend(walls);
     let b_of = |u: UnitId, side: Side| units.iter().position(|&x| x == (u, side));
     let bs = |list: &[UnitId], side: Side| Json::Arr(list.iter().filter_map(|&u| b_of(u, side)).map(Json::from).collect());
     let fighters_json: Vec<Json> = fighters
         .iter()
         .enumerate()
-        .map(|(b, f)| fighter_json(g, b, f, if f.side == Side::Attacker || v.reveal { f.owner } else { v.unit_owner(f.unit) }))
+        .map(|(b, f)| fighter_json(g, b, f, if f.side == Side::Attacker || f.sentinel || v.reveal { f.owner } else { v.unit_owner(f.unit) }))
         .collect();
     let def_player = match g.map.plots[dest].plot_city.filter(|&c| g.cities.contains(c) && v.city_revealed(c)) {
         Some(c) => g.cities[c].owner,
@@ -859,7 +869,8 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Opti
     // The forecast, its fighters by index (none for a refused formation: the plan is the auto
     // formation's, not the one asked for).
     let fc = &pv.forecast;
-    let per: Vec<Json> = fc.per.iter().filter_map(|p| Some(per_json(b_of(p.unit, p.side)?, p.fall_pct, p.escape_pct))).collect();
+    let mut per: Vec<Json> = fc.per.iter().filter_map(|p| Some(per_json(b_of(p.unit, p.side)?, p.fall_pct, p.escape_pct))).collect();
+    per.extend(pv.sentinels.iter().enumerate().map(|(j, s)| per_json(first_wall + j, s.fall_pct, 0)));
     let forecast = refused.is_none().then(|| {
         forecast_fields(fc.runs, fc.wiped_permille, fc.falls_permille, fc.repulsed_permille, fc.lost_x100, per).with("escaped_x100", crate::jarr![fc.escaped_x100[0], fc.escaped_x100[1]])
     });
@@ -916,9 +927,12 @@ pub fn combat_fields(v: &Viewer, units: &[UnitId], plot: PlotIdx, mut j: Json) -
     let now = !pool.is_empty();
     let force: Vec<UnitId> = if now { pool } else { units.iter().copied().filter(|&u| could_engage(g, u, plot)).collect() };
     let defenders = g.engage_defenders(plot, v.h, if force.is_empty() { units } else { &force }, war);
-    if defenders.is_empty() {
+    // A walled enemy city's Sentinels defend it with no unit there (docs/SIEGES.md).
+    let walls = if g.plot_has_enemy_sentinels(plot, v.team) || matches!(war, WarTest::DeclareWar(_)) { g.engage_city_sentinels(plot).map_or(0, |(_, ks)| ks.len()) } else { 0 };
+    if defenders.is_empty() && walls == 0 {
         return j;
     }
+    j.set("sentinels", walls);
     j.set("engagement", true);
     if now {
         j.set("valid", true);

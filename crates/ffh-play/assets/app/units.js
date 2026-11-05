@@ -703,7 +703,10 @@ function showTip() {
     );
   }
   const city = cityAt(x, y);
-  if (city) lines.push(h("div.tip-city", `${city.capital ? "★ " : ""}${city.name}`, h("span.dim", ` (${playerName(city.owner)}${city.size !== null && city.size !== undefined ? `, size ${city.size}` : ""})`)));
+  if (city) {
+    const walls = city.sentinels?.length ? `, Sentinels ${city.sentinels.map((p) => (p > 0 ? `${p}%` : "breached")).join("/")}` : "";
+    lines.push(h("div.tip-city", `${city.capital ? "★ " : ""}${city.name}`, h("span.dim", ` (${playerName(city.owner)}${city.size !== null && city.size !== undefined ? `, size ${city.size}` : ""}${walls})`), city.besieged ? h("span.bad", " besieged") : null));
+  }
   const units = unitsAt(x, y);
   if (units.length) {
     // The plot query's units carry their strength, level and promotions (C++ plot help).
@@ -1248,7 +1251,7 @@ function chipTip(u) {
   const act = activityOf(u);
   const numbers = [
     u.strength !== undefined ? `${u.strength} strength` : null,
-    `${Math.round((100 * u.hp) / Math.max(1, u.max_hp))}% health`,
+    `${Math.round((100 * u.hp) / Math.max(1, u.max_hp))}% health${u.besieged ? " (besieged: no heal from the city)" : ""}`,
     u.moves !== undefined ? `${moves(u.moves)}/${moves(u.max_moves)} moves` : null,
     u.level !== undefined ? `level ${u.level}${u.xp !== undefined && u.xp_needed ? ` (${u.xp}/${u.xp_needed} xp)` : ""}` : null,
   ].filter(Boolean);

@@ -193,6 +193,12 @@ impl Game {
         self.engage_combat_terms(u, None, ctx, side, true, &mut TermLog::none()).strength()
     }
 
+    /// Unit `u`'s Dv on side `side` of the attack `ctx` against a hitter with no unit terms (a
+    /// city's Sentinel: docs/SIEGES.md), x100.
+    pub fn engage_dv_alone(&self, u: UnitId, side: Side, ctx: &HitCtx) -> i32 {
+        self.engage_combat_terms(u, None, ctx, side, false, &mut TermLog::none()).strength()
+    }
+
     /// A defender's Dv on the defended plot against a hitter not known yet (its own percentage,
     /// fortification, its city and terrain defense), x100: the view's headline.
     pub fn engage_job_defense(&self, u: UnitId, ctx: &HitCtx) -> i32 {

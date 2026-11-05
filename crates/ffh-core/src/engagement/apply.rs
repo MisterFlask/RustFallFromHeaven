@@ -1,13 +1,16 @@
 //! After the battle (spec 1.9, G2), in this order:
 //!
-//! 1. The survivors' damage is written back (HP to the damage field, plan 4.1); the victims die
+//! 1. The survivors' damage is written back (HP to the damage field, plan 4.1), and the
+//!    Sentinels' to their city (docs/SIEGES.md: a fallen Sentinel is breached); the victims die
 //!    in kill order (`setDamage(max)`, delayed death: the unit-killed event fires here, as for
 //!    today's loser).
-//! 2. **Battle XP**, before any per-kill effect: each unit that damaged a victim and is alive gets
-//!    `clamp(xp_value(v) x Dv(v <- h) / A(h -> v), MIN, MAX)` scaled by its share of the damage
-//!    the victim took in the battle (the killer at least the minimum); `xp_value` is the victim's
-//!    defense XP value if it attacked, its attack XP value if it defended (open point 4).
-//!    Withdrawn units get the withdrawal XP.
+//! 2. **Battle XP**, before any per-kill effect (docs/SIEGES.md, "XP"): each kill of a unit is
+//!    worth `clamp(xp_value(v) x Dv(v <- k) / A(k -> v), MIN, MAX)` (`k` its killer), shared
+//!    equally, in hundredths, by the killing side's units that fought (not sat out) and are alive
+//!    after the battle, withdrawn ones included (`Unit::xp_carry` keeps what is below a point; the
+//!    remainder of the division goes to the killer, else the first sharer). `xp_value` is the
+//!    victim's defense XP value if it attacked, its attack XP value if it defended (open point 4).
+//!    A Sentinel gives and takes no XP. Withdrawn units get the withdrawal XP.
 //! 3. **Per kill**, in kill order: the barbarian win counter, war weariness and war success
 //!    ([`Game::engage_kill_bookkeeping`]), then `combatWon`'s per-kill part
 //!    ([`Game::unit_combat_won_as`]: free XP, the global counter, capture and enslavement, gold,
@@ -33,8 +36,9 @@
 //!    (`made_attack`, `attacks_made`) and pays today's attack move cost unless it moves in.
 //!    Withdrawn attackers stay in their group and army; the survivors stay on their plot.
 //! 9. **The result** (spec 1.7): the plot falls only when no defender is left on it (in the line
-//!    or in reserve): then the launcher's group moves in (a city is captured as today), and only
-//!    it; its mission queue is cleared. Otherwise nobody moves.
+//!    or in reserve, a city's Sentinels standing included): then the launcher's group moves in (a
+//!    city is captured as today), and only it; its mission queue is cleared. Otherwise nobody
+//!    moves. A kill a Sentinel makes or suffers has no per-kill effect (no unit made it).
 //! 10. The armies of every player involved are settled (`player_army_sync`).
 
 use ffh_data::*;
@@ -96,11 +100,23 @@ impl Game {
                 self.unit_set_damage(u, dmg, None);
             }
         }
+        if let Some(c) = e.setup.sentinel_city.filter(|&c| self.cities.contains(c)) {
+            for (j, i) in e.setup.sentinel_range().enumerate() {
+                let dmg = if r.killed(i) { 100 } else { damage_from_hp(r.hp[i], r.max_hp[i]) };
+                self.city_set_sentinel_damage(c, e.setup.sentinels[j], dmg);
+            }
+        }
+        let city_owner = e.setup.sentinel_city.filter(|&c| self.cities.contains(c)).map(|c| self.cities[c].owner);
         let max_hp = d.defines.max_hit_points;
         for k in &r.kills {
+            if k.victim >= n {
+                continue;
+            }
             let v = e.units[k.victim];
-            let ku = e.units[k.killer];
-            let by = self.units.contains(ku).then(|| self.units[ku].owner);
+            let by = match e.units.get(k.killer) {
+                Some(&ku) => self.units.contains(ku).then(|| self.units[ku].owner),
+                None => city_owner,
+            };
             if self.units.contains(v) {
                 self.unit_set_damage(v, max_hp, by);
             }
@@ -113,6 +129,9 @@ impl Game {
         let xp_before: Vec<i32> = e.units.iter().map(|&u| if self.units.contains(u) { self.units[u].experience } else { 0 }).collect();
         for k in &r.kills {
             let vi = k.victim;
+            if vi >= n {
+                continue; // a Sentinel breached: no XP
+            }
             let vu = e.units[vi];
             if !self.units.contains(vu) {
                 continue;
@@ -120,27 +139,27 @@ impl Game {
             let xp_value = if e.side(vi) == Side::Attacker { self.unit_defense_xp_value(vu) } else { self.unit_attack_xp_value(vu) };
             let max = self.unit_max_xp_value(vu);
             let global = !self.unit_is_barbarian(vu);
-            let total: i64 = (0..n).map(|h| r.dealt(h, vi) as i64).sum();
-            for h in e.of(e.side(vi).other()) {
+            let pr = e.setup.pair(k.killer, vi);
+            let full = (xp_value as i64 * pr.dv as i64 / pr.a.max(1) as i64).clamp(min_xp as i64, max_xp.max(min_xp) as i64);
+            let sharers: Vec<usize> = e.of(e.side(vi).other()).filter(|&h| !e.sat_out[h] && r.survived(h) && self.engage_alive(e.units[h])).collect();
+            if sharers.is_empty() || full <= 0 {
+                continue;
+            }
+            let total = full * 100;
+            let m = sharers.len() as i64;
+            let (share, rem) = (total / m, total % m);
+            let gets_rem = if sharers.contains(&k.killer) { k.killer } else { sharers[0] };
+            for &h in &sharers {
                 let hu = e.units[h];
-                let dealt = r.dealt(h, vi) as i64;
-                let is_killer = k.killer == h;
-                if r.killed(h) || (dealt <= 0 && !is_killer) || !self.engage_alive(hu) {
-                    continue;
+                let amount = share + if h == gets_rem { rem } else { 0 };
+                let carry = self.units[hu].xp_carry as i64 + amount;
+                self.units[hu].xp_carry = (carry % 100) as i32;
+                let whole = (carry / 100) as i32;
+                if whole > 0 {
+                    let in_borders = to_owner == Some(self.units[hu].owner);
+                    self.unit_change_experience(hu, whole, max, true, in_borders, global);
                 }
-                let pr = e.setup.pair(h, vi);
-                let full = (xp_value as i64 * pr.dv as i64 / pr.a.max(1) as i64).clamp(min_xp as i64, max_xp.max(min_xp) as i64);
-                let mut xp = if total > 0 { full * dealt / total } else { full };
-                if is_killer {
-                    xp = xp.max(min_xp as i64);
-                }
-                if xp <= 0 {
-                    continue;
-                }
-                let in_borders = to_owner == Some(self.units[hu].owner);
-                self.unit_change_experience(hu, xp as i32, max, true, in_borders, global);
-                let share = if total > 0 { (dealt * 1000 / total) as i32 } else { 1000 };
-                xp_from[h].push(XpSource::Kill { victim: vi as FighterIdx, share_permille: share });
+                xp_from[h].push(XpSource::Kill { victim: vi as FighterIdx, share_permille: (amount * 1000 / total) as i32 });
             }
         }
         for i in 0..n {
@@ -178,9 +197,14 @@ impl Game {
         let mut convert_ok = vec![false; n];
         let mut last_kill = vec![usize::MAX; n];
         for (ki, k) in r.kills.iter().enumerate() {
-            last_kill[k.killer] = ki;
+            if k.killer < n {
+                last_kill[k.killer] = ki;
+            }
         }
         for (ki, k) in r.kills.iter().enumerate() {
+            if k.victim >= n || k.killer >= n {
+                continue; // a Sentinel's kill or a Sentinel breached: no unit made it
+            }
             let vi = k.victim;
             let vu = e.units[vi];
             let kf = k.killer;
@@ -261,7 +285,7 @@ impl Game {
             if r.killed(i) {
                 // On its killer (the duel's loser branch).
                 let Some(k) = r.kills.iter().find(|k| k.victim == i) else { continue };
-                let ku = e.units[k.killer];
+                let Some(&ku) = e.units.get(k.killer) else { continue };
                 for apply in applies {
                     if !self.engage_alive(ku) {
                         break;
@@ -319,12 +343,13 @@ impl Game {
         // 5. The victims are killed; a defending victim is captured when the attackers move in.
         let launcher = e.launcher.filter(|&g| self.groups.contains(g));
         let mover = launcher.and_then(|g| self.groups[g].units.iter().copied().find(|&u| self.engage_alive(u)));
-        let leaving = r.kills.iter().filter(|k| e.side(k.victim) == Side::Defender).count() as i32
+        let leaving = r.kills.iter().filter(|k| k.victim < n && e.side(k.victim) == Side::Defender).count() as i32
             + e.of(Side::Defender).filter(|&i| r.withdrew(i) && !e.in_city()).count() as i32;
-        let will_advance = mover.is_some_and(|m| self.plot_get_num_visible_enemy_defenders(to, m) - leaving <= 0);
+        let walls_left = e.setup.sentinel_range().filter(|&i| !r.killed(i)).count() as i32;
+        let will_advance = walls_left == 0 && mover.is_some_and(|m| self.plot_get_num_visible_enemy_defenders(to, m) - leaving <= 0);
         if will_advance {
             let capture = mover.is_some_and(|m| !self.unit_is_no_capture(m));
-            for k in &r.kills {
+            for k in r.kills.iter().filter(|k| k.victim < n) {
                 let v = e.units[k.victim];
                 if e.side(k.victim) == Side::Defender && self.units.contains(v) {
                     if capture || d.units[self.units[v].unit_type].equipment_promotion.is_some() {
@@ -333,7 +358,7 @@ impl Game {
                 }
             }
         }
-        for k in &r.kills {
+        for k in r.kills.iter().filter(|k| k.victim < n) {
             let v = e.units[k.victim];
             if self.units.contains(v) {
                 self.unit_kill(v, false, None);
@@ -383,7 +408,7 @@ impl Game {
         // 8. Attack cost; 9. the launcher moves in when no defender is left.
         let launcher = e.launcher.filter(|&g| self.groups.contains(g));
         let mover = launcher.and_then(|g| self.groups[g].units.iter().copied().find(|&u| self.engage_alive(u)));
-        let advance = mover.is_some_and(|m| self.plot_get_num_visible_enemy_defenders(to, m) == 0);
+        let advance = walls_left == 0 && mover.is_some_and(|m| self.plot_get_num_visible_enemy_defenders(to, m) == 0);
         for i in e.of(Side::Attacker) {
             let u = e.units[i];
             if !self.engage_alive(u) {
@@ -419,7 +444,7 @@ impl Game {
             }
         }
         // 9. The result: the plot fell when none of the defender's units is left on it.
-        post.defenders_left = e.setup.candidates.iter().filter(|&&u| self.engage_alive(u) && self.unit_plot_opt(u) == Some(to)).count() as i32;
+        post.defenders_left = e.setup.candidates.iter().filter(|&&u| self.engage_alive(u) && self.unit_plot_opt(u) == Some(to)).count() as i32 + walls_left;
         post.result = if post.defenders_left == 0 {
             EngageResult::Taken
         } else if r.down[1] {

@@ -405,6 +405,10 @@ impl Game {
             // changeBuildingDefense, changeBuildingBombardDefense (UI dirty bits aside)
             self.cities[c].building_defense += info.defense_modifier * change;
             self.cities[c].building_bombard_defense += info.bombard_defense_modifier * change;
+            // Not in C++ (docs/SIEGES.md): new Sentinels start whole (breached if besieged).
+            if info.sentinels > 0 {
+                self.city_sync_sentinels(c);
+            }
 
             // changeBaseGreatPeopleRate
             self.cities[c].base_great_people_rate += info.great_people_rate_change * change;
@@ -842,15 +846,15 @@ impl Game {
         }
     }
 
-    /// C++ `CvCity::isBombardable` (CvCity.cpp:7446-7454). C++ allows `pUnit == NULL`.
+    /// C++ `CvCity::isBombardable` (CvCity.cpp:7446-7454). C++ allows `pUnit == NULL`. Not in
+    /// C++ (docs/SIEGES.md): a bombard hits the city's Sentinels and soldiers, not its defence, so
+    /// the city is bombardable while it has a Sentinel standing or (for `unit`) a soldier a bombard
+    /// would still hurt.
     pub fn city_is_bombardable(&self, c: CityId, unit: Option<UnitId>) -> bool {
-        if let Some(unit) = unit {
-            if !self.unit_is_enemy(unit, Some(self.city_team(c)), None) {
-                return false;
-            }
+        match unit {
+            Some(unit) => self.unit_is_enemy(unit, Some(self.city_team(c)), None) && self.city_bombard_hurts(c, unit),
+            None => !self.city_sentinels_standing(c).is_empty(),
         }
-
-        self.city_defense_modifier(c, false) > 0
     }
 
     /// C++ `CvCity::getNaturalDefense` (CvCity.cpp:7457-7465).

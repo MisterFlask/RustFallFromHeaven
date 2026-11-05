@@ -14,7 +14,9 @@
 //! large unit's counts double), then the lower unit id; while the slots last (a large unit needs
 //! 2; units without `bRiver` at most the ordinary slots, Q9). Then the large units are placed
 //! first, each unit in its role's home row, the lanes nearest the centre first, else the nearest
-//! row with room. Deterministic, no RNG, the same for humans and the AI. Heroes are not held
+//! row with room. A defended city's Sentinels (docs/SIEGES.md) hold their cells first: the front
+//! row, the lanes nearest the centre ([`Game::engage_sentinel_cells`]), and the defender's units
+//! take the cells left. Deterministic, no RNG, the same for humans and the AI. Heroes are not held
 //! back. The attacker fights it when its order gives no formation; the defender always does
 //! ([`Game::engage_defense_formation`]: the hook for standing formations, a later step).
 //!
@@ -23,7 +25,7 @@
 //! cells of one row), at most the attacker's slots, and the units without `bRiver` at most its
 //! ordinary slots.
 
-use super::formation::{auto_arrange, lanes_for, Candidate, Side};
+use super::formation::{auto_arrange_around, lanes_for, sentinel_cells, Candidate, Side};
 use super::slots::Slots;
 use super::stats::HitCtx;
 use crate::game::Game;
@@ -40,9 +42,16 @@ pub struct Place {
 }
 
 impl Game {
-    /// Each side's lanes (attacker, defender) for its slots: `max(2, ceil((slots + 2) / 3))`.
+    /// Each side's lanes (attacker, defender) for its slots: `max(2, ceil((slots + 2) / 3))`, the
+    /// defender's cells counting its Sentinels.
     pub fn engage_lanes(&self, slots: &Slots) -> [u8; 2] {
-        [lanes_for(slots.max(Side::Attacker)), lanes_for(slots.max(Side::Defender))]
+        [lanes_for(slots.max(Side::Attacker)), lanes_for(slots.max(Side::Defender) + slots.sentinels as i32)]
+    }
+
+    /// The cells of the defender's Sentinels (docs/SIEGES.md), in the order the city's standing
+    /// Sentinels take them.
+    pub fn engage_sentinel_cells(&self, slots: &Slots) -> Vec<(u8, u8)> {
+        sentinel_cells(self.engage_lanes(slots)[Side::Defender.index()], slots.sentinels as usize)
     }
 
     /// Whether unit `u` is large (`bLarge`: two cells, two slots, more HP).
@@ -87,7 +96,8 @@ impl Game {
         order.sort_by_key(|&i| units[i]);
         let sorted: Vec<Candidate> = order.iter().map(|&i| cands[i]).collect();
         let lanes = self.engage_lanes(slots)[side.index()];
-        let placed = auto_arrange(&sorted, lanes, slots.max(side), slots.ordinary(side));
+        let blocked = if side == Side::Defender { self.engage_sentinel_cells(slots) } else { Vec::new() };
+        let placed = auto_arrange_around(&sorted, lanes, slots.max(side), slots.ordinary(side), &blocked);
         let mut out: Vec<Place> = placed.into_iter().map(|p| Place { unit: units[order[p.unit]], lane: p.lane, row: p.row }).collect();
         let pos = |u: UnitId| pool.iter().position(|&x| x == u);
         out.sort_by_key(|p| pos(p.unit));

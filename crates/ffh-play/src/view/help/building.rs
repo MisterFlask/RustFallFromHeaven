@@ -169,6 +169,7 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         free_techs,
         defense_modifier,
         bombard_defense_modifier,
+        sentinels,
         all_city_defense_modifier,
         espionage_defense_modifier,
         // Not described by C++: whether its effects reach the team.
@@ -577,6 +578,10 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     }
     if *bombard_defense_modifier != 0 {
         add(&mut h, "TXT_KEY_BUILDING_BOMBARD_DEFENSE_MOD", &[Arg::N(-*bombard_defense_modifier)]);
+    }
+    if *sentinels > 0 {
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]{sentinels} Sentinels: wall sections that fight in the front row of the city's battles (they grow with its defence, repair only when it is not besieged, and must be breached before it falls)"));
     }
     if *all_city_defense_modifier != 0 {
         add(&mut h, "TXT_KEY_BUILDING_DEFENSE_MOD_ALL_CITIES", &[Arg::N(*all_city_defense_modifier)]);

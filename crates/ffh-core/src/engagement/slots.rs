@@ -2,21 +2,21 @@
 //!
 //! ```text
 //! S_plot    = SLOTS_BASE + the defended plot's change (GameData::engagement_slots_change)
-//! city      = the defended city's defense modifier (after bombardment) / SLOTS_DEFENSE_DIVISOR
-//! def       = max(SLOTS_MIN, S_plot)
-//! att_all   = max(SLOTS_MIN, S_plot - city)
+//! n         = the defended city's Sentinels that fight (docs/SIEGES.md; 0 without walls)
+//! def       = max(SLOTS_MIN, S_plot - n)   the defender's soldiers; its n Sentinels stand beside
+//! att_all   = max(SLOTS_MIN, S_plot - n)
 //! river     = across a river: min(SLOTS_RIVER, att_all - SLOTS_MIN), else 0
 //! att       = att_all - river      the attacker's ordinary slots
 //! att_river = river                slots only units that cross rivers freely (bRiver) fill (Q9)
 //! ```
 //!
-//! Open flat land gives 10 a side, forest or hills 6, forested hills 4. A bombard returns the
-//! attacker one slot per `SLOTS_DEFENSE_DIVISOR` percent it knocks down. `bIgnoreBuildingDefense`
-//! changes no slots (only Dv per hit).
+//! Open flat land gives 10 a side, forest or hills 6, forested hills 4. A city's defence costs no
+//! slots (it grows its Sentinels instead); its Sentinels cost both sides one slot each, and the
+//! defender's Sentinels fill its cells ([`Slots::sentinels`]).
 //!
 //! [`Slots`] carries each side's count with its reasons in the battle log's form
-//! ([`SideSlots`]): the base, then the changes in the order applied (the plot's, the city's,
-//! the bombardment's, the minimum, the river), so `base + the deltas = total`.
+//! ([`SideSlots`]): the base, then the changes in the order applied (the plot's, the Sentinels',
+//! the minimum, the river), so `base + the deltas = total`.
 
 use super::formation::Side;
 use super::report::{SideSlots, SlotChange, SlotSource};
@@ -29,6 +29,8 @@ use crate::ids::*;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Slots {
     pub sides: [SideSlots; 2],
+    /// The defender's Sentinels: cells of its grid beside its soldiers' slots (docs/SIEGES.md).
+    pub sentinels: u8,
 }
 
 impl Slots {
@@ -77,31 +79,24 @@ impl Game {
         let plot_changes = self.plot_engage_slot_changes(to);
         let s_plot = base + plot_changes.iter().map(|c| c.delta).sum::<i32>();
 
+        // The city's Sentinels: one slot of each side each.
+        let n = self.engage_city_sentinels(to).map_or(0, |(_, ks)| ks.len()) as i32;
+        let mut plot_changes = plot_changes;
+        if n > 0 {
+            plot_changes.push(SlotChange { src: SlotSource::Sentinels(n), delta: -n });
+        }
+        let s_side = s_plot - n;
+
         // The defender.
         let mut def_changes = plot_changes.clone();
-        let def = min.max(s_plot);
-        if def != s_plot {
-            def_changes.push(SlotChange { src: SlotSource::Minimum, delta: def - s_plot });
+        let def = min.max(s_side);
+        if def != s_side {
+            def_changes.push(SlotChange { src: SlotSource::Minimum, delta: def - s_side });
         }
 
-        // The attacker: the city's defense, then the minimum, then the river.
+        // The attacker: the minimum, then the river.
         let mut att_changes = plot_changes;
-        let mut att_all = s_plot;
-        if let Some(c) = self.map.plots[to].plot_city.filter(|&c| self.cities.contains(c)) {
-            let div = defs.engagement_slots_defense_divisor.max(1);
-            let current = self.city_defense_modifier(c, false).max(0);
-            // The walls as built (no bombardment), then what the bombardment knocked down.
-            let full = if self.city_is_occupation(c) { 0 } else { self.city_total_defense(c, false).max(0) }.max(current);
-            if full > 0 {
-                att_changes.push(SlotChange { src: SlotSource::CityDefense { pct: full, next_at: (full / div + 1) * div }, delta: -(full / div) });
-                att_all -= full / div;
-            }
-            if full > current {
-                let returned = full / div - current / div;
-                att_changes.push(SlotChange { src: SlotSource::Bombarded { pct: full - current }, delta: returned });
-                att_all += returned;
-            }
-        }
+        let mut att_all = s_side;
         if att_all < min {
             att_changes.push(SlotChange { src: SlotSource::Minimum, delta: min - att_all });
             att_all = min;
@@ -117,6 +112,7 @@ impl Game {
                 SideSlots { base, changes: att_changes, total: att_all - river, river_only: river },
                 SideSlots { base, changes: def_changes, total: def, river_only: 0 },
             ],
+            sentinels: n as u8,
         }
     }
 

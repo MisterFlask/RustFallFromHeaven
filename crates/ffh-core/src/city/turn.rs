@@ -335,6 +335,8 @@ impl Game {
         if !self.cities[c].bombarded {
             self.city_change_defense_damage(c, -defines.city_defense_damage_heal_rate);
         }
+        // Not in C++ (docs/SIEGES.md): the Sentinels repair unless the city is besieged.
+        self.city_repair_sentinels(c);
 
         {
             let city = &mut self.cities[c];

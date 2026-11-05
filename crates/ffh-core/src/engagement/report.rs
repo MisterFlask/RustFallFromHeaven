@@ -126,8 +126,11 @@ pub struct Outcome {
     /// Units that moved in (they are listed in [`LogEvent::MoveIn`]).
     pub moved_in: i32,
     /// The defender's units still on the plot after the battle (its line's survivors that did
-    /// not flee, the units that sat out and its reserve).
+    /// not flee, the units that sat out and its reserve), its Sentinels standing counted.
     pub defenders_left: i32,
+    /// The city's Sentinels that fought, and of them those breached (docs/SIEGES.md).
+    pub sentinels: i32,
+    pub sentinels_breached: i32,
 }
 
 /// The full record of an engagement (spec section 2).
@@ -180,11 +183,8 @@ pub enum SlotSource {
     Hills,
     /// The attacker, across a river.
     River,
-    /// The attacker: one per `ENGAGEMENT_SLOTS_DEFENSE_DIVISOR` percent; `next_at` is the
-    /// percent at which one more is lost.
-    CityDefense { pct: i32, next_at: i32 },
-    /// Defence knocked down this turn (it returns slots).
-    Bombarded { pct: i32 },
+    /// Both sides: the defended city's Sentinels that fight, one slot each (docs/SIEGES.md).
+    Sentinels(i32),
     /// Raised to `ENGAGEMENT_SLOTS_MIN`.
     Minimum,
     /// Phase 7: extra slots used by summons.
@@ -207,8 +207,12 @@ pub enum LogFate {
 /// A unit on either plot (spec section 2's fighter).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LogFighter {
-    /// The unit (ids are never reused; it may be gone).
+    /// The unit (ids are never reused; it may be gone); for a Sentinel, no unit
+    /// ([`LogFighter::SENTINEL_UNIT`]).
     pub unit: UnitId,
+    /// A Sentinel of the defended city (docs/SIEGES.md): `unit_type` is `UNIT_SENTINEL`, `owner`
+    /// the city's.
+    pub sentinel: bool,
     pub unit_type: UnitType,
     /// Its own name (heroes, renamed units; empty for most).
     pub name: String,
@@ -261,6 +265,11 @@ pub struct LogFighter {
     pub dealt: i32,
     pub taken: i32,
     pub healed: i32,
+}
+
+impl LogFighter {
+    /// The `unit` of a Sentinel's log fighter: no unit has it.
+    pub const SENTINEL_UNIT: UnitId = UnitId(u32::MAX);
 }
 
 /// A bit set of what a fighter is immune to.

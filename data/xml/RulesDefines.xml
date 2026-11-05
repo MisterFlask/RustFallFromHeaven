@@ -151,11 +151,6 @@
 		<DefineName>ENGAGEMENT_SLOTS_RIVER</DefineName>
 		<iDefineIntVal>2</iDefineIntVal>
 	</Define>
-	<!-- SLOTS_DEFENSE_DIVISOR: percent of a city's current defence per attacker slot lost -->
-	<Define>
-		<DefineName>ENGAGEMENT_SLOTS_DEFENSE_DIVISOR</DefineName>
-		<iDefineIntVal>25</iDefineIntVal>
-	</Define>
 	<!-- SUMMON_EXTRA_SLOTS: summons a side may add in battle beyond its slots (phase 7) -->
 	<Define>
 		<DefineName>ENGAGEMENT_SUMMON_EXTRA_SLOTS</DefineName>
@@ -306,5 +301,20 @@
 	<Define>
 		<DefineName>ENGAGEMENT_PREVIEW_RUNS</DefineName>
 		<iDefineIntVal>200</iDefineIntVal>
+	</Define>
+	<!-- ==== Sieges and Sentinels (docs/SIEGES.md). A walled city's Sentinels (a building's
+	     iSentinels) fight in the defender's front row; their base values are UNIT_SENTINEL's
+	     (iHP, iAttack, iDefense), their HP and Dv times (100 + the city's total defence) / 100. ==== -->
+	<!-- SENTINEL_REPAIR_PERCENT: percent of its max HP a Sentinel repairs at its city's turn while
+	     the city is not besieged -->
+	<Define>
+		<DefineName>SENTINEL_REPAIR_PERCENT</DefineName>
+		<iDefineIntVal>10</iDefineIntVal>
+	</Define>
+	<!-- SIEGE_BOMBARD_FLOOR_PERCENT: a bombard never takes a soldier in the city below this percent
+	     of its HP (Sentinels have no floor) -->
+	<Define>
+		<DefineName>SIEGE_BOMBARD_FLOOR_PERCENT</DefineName>
+		<iDefineIntVal>50</iDefineIntVal>
 	</Define>
 </Civ4Defines>

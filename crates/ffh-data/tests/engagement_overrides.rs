@@ -189,10 +189,12 @@ fn a_unit_types_own_values_replace_its_roles() {
 
 #[test]
 fn the_games_units_set_none_of_them() {
-    // The content is the owner's to decide: every unit of the game's data takes its role's.
+    // The content is the owner's to decide: every unit of the game's data takes its role's, but
+    // UNIT_SENTINEL, which is never trained (docs/SIEGES.md: a city's Sentinels fight with it).
     let d = ffh_data::global();
     assert!(d
         .units
         .iter()
+        .filter(|u| u.base.type_ != "UNIT_SENTINEL")
         .all(|u| u.engage_speed.is_none() && u.engage_dodge.is_none() && u.engage_crit_bonus.is_none() && u.engage_rows.is_none()));
 }

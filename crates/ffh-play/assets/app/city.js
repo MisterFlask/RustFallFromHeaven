@@ -441,6 +441,15 @@ function growthView(c) {
     h(
       "div.chips.stats",
       h("span.chip", { tip: c.defense_damage ? `Damaged by ${c.defense_damage}` : "Defence against attackers" }, ic("defense"), `${c.defense}%`),
+      // Sieges (docs/SIEGES.md): the walls' Sentinels (HP left each) and a siege.
+      c.sentinels?.length
+        ? h(
+            "span.chip",
+            { tip: `Sentinels: the walls fight in the front row of the city's battles (${c.sentinel_max_hp} HP each, grown by its defence). They repair 10% a turn unless the city is besieged; the city falls only once they are breached.` },
+            `Sentinels ${c.sentinels.map((p) => (p > 0 ? `${p}%` : "breached")).join(" · ")}`,
+          )
+        : null,
+      c.besieged ? h("span.chip.bad", { tip: `Besieged by ${c.besiegers} enemy unit${c.besiegers === 1 ? "" : "s"} next to the city: its units get no heal from the city and its Sentinels do not repair` }, "Besieged") : null,
       h("span.chip", { tip: "Upkeep: gold a turn" }, ic("gold"), c.maintenance ? `−${c.maintenance}` : "0"),
       c.crime ? h("span.chip", { tip: "Crime" }, `Crime ${c.crime}`) : null,
       c.trade_routes ? h("span.chip", { tip: "Trade routes" }, `Trade ${c.trade_routes}`) : null,

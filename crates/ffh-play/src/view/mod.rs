@@ -311,6 +311,9 @@ pub fn cities(v: &Viewer) -> Json {
             "defense" => visible.then(|| g.city_defense_modifier(c, false)),
             // The city art's curtain wall (docs/ART.md 9.3), seen like its size.
             "walls" => visible.then(|| walls.iter().any(|&b| g.city_num_building(c, b) > 0)),
+            // Sieges (docs/SIEGES.md): besieged, and each Sentinel's HP left in percent.
+            "besieged" => visible.then(|| g.city_is_besieged(c)),
+            "sentinels" => visible.then(|| crate::view::city::sentinels_json(g, c)),
         };
         if own {
             j.set("production", production(g, c));
@@ -353,6 +356,8 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
         "y" => unit.y,
         "hp" => g.unit_curr_hit_points(u),
         "max_hp" => g.unit_max_hit_points(u),
+        // In a besieged city of its own: no heal from the city (docs/SIEGES.md).
+        "besieged" => g.unit_plot_opt(u).and_then(|p| g.map.plots[p].plot_city).is_some_and(|c| g.cities.contains(c) && g.city_team(c) == g.unit_get_team(u) && g.city_is_besieged(c)),
         "level" => unit.level,
     };
     if unit.owner == v.h || v.reveal {

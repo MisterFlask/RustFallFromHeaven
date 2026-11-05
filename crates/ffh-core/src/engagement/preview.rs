@@ -63,6 +63,19 @@ pub struct PreviewFighter {
     pub escape_pct: i32,
 }
 
+/// A Sentinel of the defended city in a plan (docs/SIEGES.md): its cell, HP and max HP (centi-HP
+/// and HP), A and Dv (x100), and its chance to be breached (percent).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PreviewSentinel {
+    pub lane: u8,
+    pub row: u8,
+    pub hp: i32,
+    pub max_hp: i32,
+    pub a: i32,
+    pub dv: i32,
+    pub fall_pct: i32,
+}
+
 /// The sampled forecast of a plan (the battles of the real resolver on the preview's RNG).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Forecast {
@@ -78,6 +91,8 @@ pub struct Forecast {
     /// Each committed fighter, in the engagement's order (the attacker's formation by lane then
     /// row, then the defender's).
     pub per: Vec<PreviewFighter>,
+    /// Each Sentinel's chance to be breached (percent), in the plan's order.
+    pub sentinel_fall_pct: Vec<i32>,
 }
 
 /// The attack preview (module comment).
@@ -99,6 +114,8 @@ pub struct EngagePreview {
     pub defenders: Vec<UnitId>,
     pub def_formation: Vec<Place>,
     pub def_reserve: Vec<UnitId>,
+    /// The defended city's Sentinels that fight (docs/SIEGES.md).
+    pub sentinels: Vec<PreviewSentinel>,
     pub forecast: Forecast,
     /// The team an attack would declare war on.
     pub declare_war: Option<TeamId>,
@@ -152,6 +169,15 @@ impl Game {
             WarTest::DeclareWar(t) => Some(t),
             WarTest::AtWar => None,
         };
+        let sentinels = s
+            .sentinel_range()
+            .enumerate()
+            .map(|(j, i)| {
+                let f = &s.fighters[i];
+                let dv = s.sentinel_city.map_or(0, |c| self.city_sentinel_dv_x100(c));
+                PreviewSentinel { lane: f.lane, row: f.row, hp: f.hp, max_hp: f.max_hp, a: f.a, dv, fall_pct: forecast.sentinel_fall_pct.get(j).copied().unwrap_or(0) }
+            })
+            .collect();
         Ok(EngagePreview {
             slots: s.slots.clone(),
             lanes: s.lanes,
@@ -164,6 +190,7 @@ impl Game {
             defenders: plan.view.candidates.clone(),
             def_formation: plan.def_formation.clone(),
             def_reserve: s.def_reserve(),
+            sentinels,
             forecast,
             declare_war,
         })
@@ -201,7 +228,7 @@ impl Game {
         let force: Vec<UnitId> = formation.iter().map(|q| q.unit).collect();
         let view = self.engage_def_view(p, to, &force, inp.war);
         let def_formation = self.engage_defense_formation(&view.candidates, &slots, &ctx);
-        let setup = self.engage_setup(ctx, slots, formation.clone(), view.candidates.clone())?;
+        let setup = self.engage_setup(ctx, slots, formation.clone(), view.candidates.clone(), true)?;
         Ok(Plan { pool, formation, auto, def_formation, view, setup })
     }
 
@@ -228,6 +255,7 @@ impl Game {
     /// sees there) at war as `view` has it.
     pub(crate) fn engage_forecast_sampled(&self, setup: &Setup, view: &DefView, runs: i32) -> Forecast {
         let n = setup.units.len();
+        let n_all = setup.fighters.len();
         let n_att = setup.n_att;
         let mut rng = Rng::new(self.engage_forecast_seed(setup));
         let pre = self.engage_pre_battle(setup);
@@ -236,14 +264,14 @@ impl Game {
         // reserve and none that sat out (withdrawn defenders flee).
         let reserve = !setup.def_reserve().is_empty();
         let (mut wiped, mut falls, mut repulsed) = (0i64, 0i64, 0i64);
-        let mut fell = vec![0i64; n];
-        let mut escaped = vec![0i64; n];
+        let mut fell = vec![0i64; n_all];
+        let mut escaped = vec![0i64; n_all];
         for _ in 0..runs {
             let mut sat = vec![false; n];
             self.engage_morale_rolls(&setup.units, n_att, &mut sat, &mut rng);
             let mut ov = fresh.clone();
             self.engage_opening_rolls(&setup.units, n_att, &sat, &view.on_plot, &mut ov, &mut rng);
-            let mut hp: Vec<i32> = (0..n).map(|i| hp_from_damage(ov.damage(self, setup.units[i]), setup.fighters[i].max_hp)).collect();
+            let mut hp: Vec<i32> = (0..n_all).map(|i| if i < n { hp_from_damage(ov.damage(self, setup.units[i]), setup.fighters[i].max_hp) } else { setup.fighters[i].hp }).collect();
             let mut effects = pre.clone();
             effects.extend(self.engage_opening_spells(setup, &hp));
             let (f, map) = if effects.is_empty() {
@@ -290,6 +318,7 @@ impl Game {
                     escape_pct: (escaped[i] * 100 / runs64) as i32,
                 })
                 .collect(),
+            sentinel_fall_pct: setup.sentinel_range().map(|i| (fell[i] * 100 / runs64) as i32).collect(),
         }
     }
 

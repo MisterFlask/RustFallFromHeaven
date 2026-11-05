@@ -551,7 +551,6 @@ pub struct Defines {
     pub engagement_slots_min: i32,
     pub engagement_slots_hills: i32,
     pub engagement_slots_river: i32,
-    pub engagement_slots_defense_divisor: i32,
     pub engagement_summon_extra_slots: i32,
     pub engagement_base_damage: i32,
     pub engagement_damage_rand_min: i32,
@@ -580,6 +579,8 @@ pub struct Defines {
     pub engagement_reports_kept: i32,
     pub engagement_report_logs_kept: i32,
     pub engagement_preview_runs: i32,
+    pub sentinel_repair_percent: i32,
+    pub siege_bombard_floor_percent: i32,
     pub bbai_skip_bombard_base_stack_ratio: i32,  // not in XML: C++ reads 0
     pub bbai_skip_bombard_best_attack_odds: i32,  // not in XML: C++ reads 0
     pub bbai_skip_bombard_min_stack_ratio: i32,  // not in XML: C++ reads 0
@@ -1136,7 +1137,6 @@ impl Defines {
             engagement_slots_min: m.int("ENGAGEMENT_SLOTS_MIN"),
             engagement_slots_hills: m.int("ENGAGEMENT_SLOTS_HILLS"),
             engagement_slots_river: m.int("ENGAGEMENT_SLOTS_RIVER"),
-            engagement_slots_defense_divisor: m.int("ENGAGEMENT_SLOTS_DEFENSE_DIVISOR"),
             engagement_summon_extra_slots: m.int("ENGAGEMENT_SUMMON_EXTRA_SLOTS"),
             engagement_base_damage: m.int("ENGAGEMENT_BASE_DAMAGE"),
             engagement_damage_rand_min: m.int("ENGAGEMENT_DAMAGE_RAND_MIN"),
@@ -1165,6 +1165,8 @@ impl Defines {
             engagement_reports_kept: m.int("ENGAGEMENT_REPORTS_KEPT"),
             engagement_report_logs_kept: m.int("ENGAGEMENT_REPORT_LOGS_KEPT"),
             engagement_preview_runs: m.int("ENGAGEMENT_PREVIEW_RUNS"),
+            sentinel_repair_percent: m.int("SENTINEL_REPAIR_PERCENT"),
+            siege_bombard_floor_percent: m.int("SIEGE_BOMBARD_FLOOR_PERCENT"),
             bbai_skip_bombard_base_stack_ratio: m.int("BBAI_SKIP_BOMBARD_BASE_STACK_RATIO"),
             bbai_skip_bombard_best_attack_odds: m.int("BBAI_SKIP_BOMBARD_BEST_ATTACK_ODDS"),
             bbai_skip_bombard_min_stack_ratio: m.int("BBAI_SKIP_BOMBARD_MIN_STACK_RATIO"),

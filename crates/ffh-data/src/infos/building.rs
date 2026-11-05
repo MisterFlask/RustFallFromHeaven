@@ -199,6 +199,9 @@ pub struct BuildingInfo {
     pub defense_modifier: i32,
     /// C++ `getBombardDefenseModifier()`, XML `<iBombardDefense>`.
     pub bombard_defense_modifier: i32,
+    /// Not in C++: XML `<iSentinels>` (docs/SIEGES.md): the Sentinels a city with this building has
+    /// (the most any of its buildings gives).
+    pub sentinels: i32,
     /// C++ `getAllCityDefenseModifier()`, XML `<iAllCityDefense>`.
     pub all_city_defense_modifier: i32,
     /// C++ `getEspionageDefenseModifier()`, XML `<iEspionageDefense>`.
@@ -434,6 +437,7 @@ pub fn read_building(rd: &Rd) -> BuildingInfo {
         free_techs: rd.int("iFreeTechs"),
         defense_modifier: rd.int("iDefense"),
         bombard_defense_modifier: rd.int("iBombardDefense"),
+        sentinels: rd.int("iSentinels"),
         all_city_defense_modifier: rd.int("iAllCityDefense"),
         espionage_defense_modifier: rd.int("iEspionageDefense"),
         asset_value: rd.int("iAsset"),

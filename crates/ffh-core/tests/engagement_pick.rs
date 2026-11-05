@@ -173,38 +173,41 @@ fn slots_follow_the_defended_plot() {
 }
 
 #[test]
-fn a_city_costs_the_attacker_slots_a_bombard_returns_them_and_the_minimum_holds() {
+fn a_walled_citys_sentinels_cost_both_sides_slots_and_the_minimum_holds() {
+    // docs/SIEGES.md: a city's defence costs no slots; each standing Sentinel costs both sides one.
     let mut w = world();
     let (p1, to) = (w.p1, w.to);
+    let grass = w.g.d.t::<TerrainType>("TERRAIN_GRASS");
     let c = w.city(p1, to, 60);
-    // 60% walls: -2 for the attacker (one per 25%), none for the defender.
     let s = w.slots();
     check_sums(&s);
-    assert_eq!((s.att(), s.def()), (8, 10));
-    assert_eq!(src(&s, Side::Attacker), vec![(SlotSource::Terrain(w.g.d.t::<TerrainType>("TERRAIN_GRASS")), 2), (SlotSource::CityDefense { pct: 60, next_at: 75 }, -2)]);
+    assert_eq!((s.att(), s.def(), s.sentinels), (10, 10, 0), "no walls: the defence costs nothing");
 
-    // Bombarded to 30%: one slot back.
-    w.g.cities[c].defense_damage = 50;
-    assert_eq!(w.g.city_defense_modifier(c, false), 30);
+    // Walls: two Sentinels.
+    let walls = w.g.d.t::<BuildingType>("BUILDING_WALLS");
+    w.g.city_set_num_real_building(c, walls, 1);
+    assert_eq!(w.g.city_sentinel_count(c), 2);
     let s = w.slots();
     check_sums(&s);
-    assert_eq!(s.att(), 9);
-    assert_eq!(src(&s, Side::Attacker)[2], (SlotSource::Bombarded { pct: 30 }, 1));
+    assert_eq!((s.att(), s.def(), s.sentinels), (8, 8, 2));
+    let want = vec![(SlotSource::Terrain(grass), 2), (SlotSource::Sentinels(2), -2)];
+    assert_eq!((src(&s, Side::Attacker), src(&s, Side::Defender)), (want.clone(), want));
+    // The defender's grid holds its soldiers' slots and its Sentinels.
+    assert_eq!(w.g.engage_lanes(&s), [4, 4]);
+    assert_eq!(w.g.engage_sentinel_cells(&s), vec![(1, 0), (2, 0)]);
 
-    // Knocked down further: below 25% both slots are back, at 25% one is still taken.
-    for (damage, defense, att) in [(58, 25, 9), (59, 24, 10), (100, 0, 10)] {
-        w.g.cities[c].defense_damage = damage;
-        assert_eq!(w.g.city_defense_modifier(c, false), defense);
-        assert_eq!(w.slots().att(), att, "{defense}%");
-    }
-    w.g.cities[c].defense_damage = 0;
+    // One breached: one slot back to each side.
+    w.g.city_set_sentinel_damage(c, 0, 100);
+    let s = w.slots();
+    assert_eq!((s.att(), s.def(), s.sentinels), (9, 9, 1));
+    w.g.city_set_sentinel_damage(c, 0, 0);
 
-    // Forested hills: 4 a side; the walls would leave the attacker 2: raised to SLOTS_MIN (3).
+    // Forested hills: 4 a side; the Sentinels would leave 2: raised to SLOTS_MIN (3).
     w.g.map.plots[to].plot_type = PlotType::PLOT_HILLS;
     w.g.map.plots[to].feature_type = Some(w.g.d.t::<FeatureType>("FEATURE_FOREST"));
     let s = w.slots();
     check_sums(&s);
-    assert_eq!((s.att(), s.def()), (3, 4));
+    assert_eq!((s.att(), s.def()), (3, 3));
     assert_eq!(src(&s, Side::Attacker).last(), Some(&(SlotSource::Minimum, 1)));
 }
 
@@ -254,14 +257,17 @@ fn the_lanes_follow_the_slots() {
     assert_eq!(w.g.engage_lanes(&w.slots()), [3, 3]);
     w.g.map.plots[to].plot_type = PlotType::PLOT_HILLS;
     assert_eq!(w.g.engage_lanes(&w.slots()), [2, 2]);
-    // A walled city costs the attacker slots, and lanes with them: 10 - 3 = 7, 3 lanes.
+    // A walled city's two Sentinels take a slot of each side and stand in the defender's grid
+    // (docs/SIEGES.md): on hills 6 - 2 = 4 a side, the defender's 4 + 2 cells: 2 and 3 lanes.
     w.g.map.plots[to].plot_type = PlotType::PLOT_LAND;
-    w.g.map.plots[to].feature_type = None;
     let p1 = w.p1;
-    w.city(p1, to, 75);
+    let c = w.city(p1, to, 75);
+    w.g.city_set_num_real_building(c, w.g.d.t::<BuildingType>("BUILDING_WALLS"), 1);
+    w.g.map.plots[to].feature_type = None;
+    w.g.map.plots[to].plot_type = PlotType::PLOT_HILLS;
     let s = w.slots();
-    assert_eq!((s.max(Side::Attacker), s.def()), (7, 10));
-    assert_eq!(w.g.engage_lanes(&s), [3, 4]);
+    assert_eq!((s.max(Side::Attacker), s.def(), s.sentinels), (4, 4, 2));
+    assert_eq!(w.g.engage_lanes(&s), [2, 3]);
 }
 
 #[test]

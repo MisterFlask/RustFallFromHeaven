@@ -145,7 +145,7 @@ side)
   decision: `GAMEOPTION_ENGAGEMENTS` was removed, every game fights it, the AI-only ones too, with or
   without armies; older saves do not load): a land attack is a **formation battle** (revision 4,
   the owner's Ogre Battle-style engagements, 2026-10-31), not a duel. Each side has its slots (10 a
-  side on open land, fewer on rough ground and against city defenses) and a grid of three rows by
+  side on open land, fewer on rough ground and against a walled city's Sentinels) and a grid of three rows by
   `max(2, ceil((slots + 2) / 3))` lanes; the attacker stands in the formation its order gives (the
   player's) or the rules' auto formation, the defender in the auto formation; large units (giants,
   elephants, dragons, golems, treants, ...) fill two cells and have 150% HP. Units take one of eight
@@ -166,6 +166,18 @@ side)
   Kill credit per kill (G2) and the post-battle effects as for a duel's winner; no Fear rout.
   Stances are gone. Ships and air units keep the duel; missiles strike one unit (at half a
   battle's hit, against the plot's own defence, as before the formation battles). Save format 10.
+- **Sieges and Sentinels** (docs/SIEGES.md; the owner's design, 2026-11-04). A city with walls
+  (Palisade, Walls, Wall of Stone: `iSentinels`) has two Sentinels, wall sections that fight in the
+  defender's front row with `UNIT_SENTINEL`'s values (weak blows, 100 HP), their HP and Dv grown by
+  the city's defence. They cost each side a slot (the city's defence no longer costs the attacker
+  any), intercept the arrows and spells aimed down their lanes, are bombarded first by siege, give
+  no XP, and count for capture: a walled city falls only when they are breached, and a walled city
+  with no soldiers fights with them. A city with an enemy land unit next to it is besieged: its
+  units get no heal from the city and its Sentinels do not repair (10% a turn otherwise); walls
+  built under siege start breached, a conquered city's are breached. A bombard hits the Sentinels
+  (its rate less the walls' bombard defence, in percent of their HP) and the soldiers (half that,
+  never below half their HP), no longer the city's defence. Each kill's XP is shared equally by the
+  killing side's units in the battle (it was shared by damage dealt). Save format 14.
 - **Gifts and demands** (`crates/ffh-core/src/tribute.rs`; the owner's design, 2026-11-03). A
   deal proposed from the diplomacy screen in which the proposer only gives is a gift, one in which
   it only takes is a demand. The receiver of a gift and the payer of a demand record it with its
