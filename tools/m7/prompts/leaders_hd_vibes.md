@@ -4,233 +4,241 @@ Four concepts per leader, each a 1-3 word vibe true to the leader's whole charac
 one story beat. The line under each says how the portrait carries it: expression and posture do
 the work, and the setting is the leader's iconic place, not an event in progress.
 
+Two rules (the owner's direction, 2026-11-05):
+
+- **Play up what only this leader has**: a trait, power, history or habit no other leader shares.
+  Moods any leader could wear (weary, gentle, proud, grieving) are not concepts by themselves.
+- **The angels are terrible and unknowable** (Basium, Sabathiel, and what is left of the angel in
+  Cassiel): light where a face should show feeling, a stillness nothing alive has, wings and eyes in
+  the wrong places, a scale that dwarfs the humans around them, who shield their eyes or kneel.
+
 In a prompt, the vibe replaces the story-moment `VIBE:` line; the likeness (face, costume,
 signature item) stays as in `leaders_hd/<key>.txt`.
 
 ## Alexis (Calabim)
-1. **Cold Curiosity**: leans in unblinking, studying you like a moth on a pin; a candle below, black library behind.
-2. **Patient Hunger**: utterly still, hands folded, only the eyes following you; a gothic window, red moon.
-3. **Gracious Predator**: a hostess's smile, a goblet offered; warm candlelight in a velvet salon that feels like a trap.
-4. **Eternal Scholar**: half-turned from an open anatomy folio, mildly put out by the interruption; dusty lamplight.
+1. **Death's Student**: leans close by one candle, unblinking, watching for the instant life leaves your face; plundered books in the dark.
+2. **Herd Keeper**: calm on a balcony above the walled human quarter, surveying it like a farmer her stock; pale moon over black spires.
+3. **Specimen Collector**: pinned moths in velvet cases on her desk, her head tilted at you as the next exhibit.
+4. **First Vampire**: utterly still in an ancient high-backed chair, centuries in her gold eyes; hundreds of candle stubs around her.
 
 ## Amelanchier (Ljosalfar)
-1. **Forest's Wrath**: hard green eyes, jaw set, bow half-drawn; orange fire glow through smoke behind.
-2. **Silent Watcher**: on a high bough, hood half up, only his eyes catching light; deep green gloom.
-3. **Unyielding Oath**: hand over heart, chin high, leaf crown; golden dawn through ancient trunks.
-4. **Cold Mercy**: palm raised in the moment before a verdict; dusk, a treant's eyes glowing behind.
+1. **Let It Burn**: calm face, the horizon on fire behind him, only his own forest still green.
+2. **Treant's Voice**: two fingers raised, a vast bark hand closing on someone just out of frame; smoke and leaf shadow.
+3. **Green Verdict**: a judge in a ranger's hood, looking down from a high bough, mercy not on offer.
+4. **Rooted Prince**: palm flat on a colossal trunk, eyes shut, listening to the forest talk; green-gold light.
 
 ## Arendel (Ljosalfar)
-1. **Summer Radiance**: warm open smile, arms opening in welcome; a sunlit glade in blossom.
-2. **Troubled Foresight**: hand on heart, eyes on the horizon; snow falling on flowering trees.
-3. **Gentle Command**: serene, one hand raised, the forest attending; dappled light, dryads in shadow.
-4. **Bittersweet Grace**: a soft sad smile, a fallen leaf in her palm; autumn light, her reign ending.
+1. **Summer Crown**: the height of her half of the year, golden and laughing, the leaf crown bright; the forest in full blossom.
+2. **Crown Handover**: lifting the leaf crown off for winter's half of the year, hiding her unease; autumn twilight.
+3. **Sister Seasons**: half her face lit summer gold, half lit by Faeryl's winter blue from the window.
+4. **Wrong Snow**: hand on heart as snow falls on trees in flower, the only one who senses what it means.
 
 ## Arturus (Khazad)
-1. **Stone Pride**: chin up, arms folded over the beard, immovable; a torchlit hall of carved kings.
-2. **Gruff Honour**: heavy brows, hand on a hammer, a reluctant nod of respect; forge glow.
-3. **Gold and Grudge**: a coin turned in thick fingers, eyes narrowed at you; a vault of stacked gold.
-4. **Old Mountain**: weary but unmovable, iron rings in the beard; snowy peaks behind.
+1. **Vault King**: seated on his clan's hoard, a hand on a stack of gold bars, eyes daring you to want it; lamplit vault.
+2. **Carved History**: chisel in his scarred hand, fifty years of clan names on the stone pillar beside him.
+3. **Crown From Below**: the squat gold crown he carried out of the Underhome, raised into surface daylight.
+4. **Unbending Oath**: arms folded, chin up, outside the gate of the friend he banished; stubborn as the mountain.
 
 ## Auric (Illians)
-1. **Frozen Calm**: still face, faint secret smile, eyes too old for him; pale glacier light.
-2. **Rising God**: hands lifting, frost spiralling up from them, eyes lit blue; blizzard sky.
-3. **Hollow Crown**: young face gone blank under the heavy ice crown; an empty white throne hall.
-4. **Zealot's Fire**: shouting to his followers, fist up; white sun on snow, the lost men behind.
+1. **Becoming God**: frost climbing his body, eyes going white, half farm boy and half winter; the dead god's ruined ice temple.
+2. **Kept Secret**: a faint closed smile about what happened in the god's empty chamber; white light behind, blue shadow on his face.
+3. **Endless Winter**: arms opening as the blizzard answers him, the world white to the horizon.
+4. **Prisoner's Rags**: the ice crown on his head, frayed prison rags still at his wrists; he has not forgotten.
 
 ## Barbarian (Orc Warlord)
-1. **Hungry Grin**: leaning out of the dark, tusks bared in delight; torchlight under the chin.
-2. **Brute Swagger**: arms spread, chest out, skull helm tilted; a burning village's glow.
-3. **Patient Raider**: crouched on a ridge, watching lit windows far below; cold moonlight.
-4. **Mock Royalty**: slouched in a stolen throne, a looted crown askew; a plundered hall.
+1. **Truce's End**: grinning at your lit windows from the dark edge of the border; torch after torch lit behind him.
+2. **Nameless Horde**: one horned skull among a thousand, goblins and ogres massing in the mist behind.
+3. **Skull Crown**: the beast skull worn like a king's crown on a throne of bones, a beaten camp kneeling.
+4. **Too Civilized**: sneering at a captured silk cushion, the soft city he took burning behind.
 
 ## Basium (Mercurians)
-1. **Righteous Fury**: jaw locked, eyes burning, wings flared; hellfire on the horizon.
-2. **Grim Duty**: battle-worn, helm under one arm, steady eyes on you; grey ash falling.
-3. **Iron Prayer**: eyes shut, fists around a hilt, lips moving; one shaft of white light.
-4. **Fallen Pride**: towering and cold, the angel who chose war, looking down at you; silver armour, red sky.
+1. **Wrath Incarnate**: a face with no human feeling in it, eyes pouring white light, wings filling the sky; soldiers below shielding their eyes.
+2. **Unblinking Host**: perfectly still, lit from nowhere, a hard ring of light for a halo; hellfire mirrored in his armour and no reaction at all.
+3. **Thunder Prayer**: the ritual scars blazing across his face, eyes shut in a prayer that shakes the ash out of the air.
+4. **Not Yet**: one immense hand raised to halt a whole army, regarding you as a small thing; the Mercurian gate blazing behind.
 
 ## Beeri (Luchuirp)
-1. **Pure Spite**: a snarl, a fist clenched around a coin; harsh torchlight.
-2. **Stubborn Grit**: mud-streaked, helmet lamp lit, chin out; mine tunnels behind.
-3. **Gruff Craftsman**: wrench on his shoulder, an appraising squint; a golem's huge hand behind.
-4. **Grudging Hope**: a rare half-smile up at the open sky; sunrise over the hills.
+1. **Pure Spite**: snarling through mud, a gold coin crushed in his fist; alive because his death would please them.
+2. **Caged Heir**: behind the jester-king's cage bars, glaring at the laughing masked court.
+3. **Grudge Engine**: a golem's iron foot raised beside him like a promise, wrench on his shoulder; forge glow.
+4. **Mine Lamp**: the dented helmet lamp the only light in a black tunnel, his eyes fixed on you.
 
 ## Capria (Bannor)
-1. **Iron Will**: jaw clenched, sword upright, staring you down; crimson-lit stone.
-2. **Hidden Fear**: composed face, knuckles white on the hilt; a sliver of cold moonlight.
-3. **Crusader's Resolve**: armoured, eyes forward, the Order's colours behind; dawn over the walls.
-4. **Hard Kindness**: a rare tired, warm smile for her soldiers; campfire light.
+1. **Hell's Survivor**: the closing hell-portal of her childhood still in her grey eyes, her face forced still; crimson-black chamber.
+2. **Order's Sword**: the short sword held upright before her face like a vow; dawn over the white citadel.
+3. **Iron Commander**: barking an order off-frame, the Bannor host and the Order's banners behind her.
+4. **Never Afraid**: composed for her soldiers while her free hand trembles; cold moonlight.
 
 ## Cardith (Kuriotates)
-1. **Sweet Menace**: an innocent smile, cold slit-pupil eyes; bright morning marble.
-2. **Ancient Child**: small and dignified, eyes impossibly old; a lamplit study piled with scrolls.
-3. **Gentle Tyrant**: an open-palmed welcome from a ruler who owns everything; endless green-domed city.
-4. **Gamesman**: hand poised over a jade chess piece, eyes on you; a centaur guard in the doorway.
+1. **Serpent Eyes**: a sweet child's smile and cold gold-green slit pupils; bright marble morning.
+2. **Endless City**: a small figure on a high terrace, green domes and gold roofs to every horizon, all of it his.
+3. **Innocent Checkmate**: the winning move made without a glance, smiling warmly at you.
+4. **Ageless Boy**: a child's face under a centuries-old crown, a centaur guard twice his height kneeling.
 
 ## Cassiel (Grigori)
-1. **Weary Wisdom**: tired grey eyes, a father's patience; soft daylight.
-2. **Defiant Mortal**: chin raised, wingless, standing under an open sky; a colonnade, clouds.
-3. **Open Hand**: palm out, offering freedom, gaze straight at you; the adventurers' city behind.
-4. **Quiet Sorrow**: head bowed, hand at his chest, ghosts drifting past; grey haze.
+1. **Unmade Angel**: the ghost of his lost wings faint as light behind him, a marble face too perfect for a mortal.
+2. **Godless Freedom**: his back turned on a sky full of holy light, facing a free city of guild towers.
+3. **Sees Ghosts**: the only one who sees the drifting dead, his grey eyes following them through the hazy throne hall.
+4. **Marble Mortal**: ivory skin with fine cracks like a statue, the first grey in his gold hair; a mirror he does not trust.
 
 ## Charadon (Doviello)
-1. **Wolf's Stare**: blank, unblinking, a predator's patience; bleached winter light.
-2. **Savage Joy**: head thrown back in a howling laugh; snowstorm, wolves running.
-3. **Bloodless Judge**: flat mouth, cold yellow eyes looking down; skulls on a standing stone.
-4. **Old Beast**: scarred and grey but still dangerous, hand on a wolf's head; firelit longhouse.
+1. **Wolf Father**: wolves at his knees like children, his face blank; snow.
+2. **Returned Dead**: called back from the grave, frost in his beard, testing a hand that is not quite alive; barrow and aurora.
+3. **Blank Approval**: the expressionless stare of the boy who watched his wolves cull his family; bleached winter light.
+4. **Strength Only**: an old giant who respects nothing but force, looking down at you; skulls on a standing stone.
 
 ## Dain (Amurites)
-1. **Absent Genius**: gazing at a spinning gear, unaware of you; sunset dust motes.
-2. **Delighted Tinkerer**: grinning at a spell sparking between his fingers; a cluttered tower study.
-3. **Battle Mage**: hat askew, eyes suddenly sharp, magic crackling in his hand; siege fire behind.
-4. **Late Again**: a sheepish half-smile, hat in hand, a glance at the clock; violet evening.
+1. **Clockwork Daydream**: lost in a spinning brass gear, the meeting forgotten; sunset dust motes.
+2. **Siege Mage**: hat askew, eyes suddenly lethal, a fireball cupped in one hand; a burning wall behind.
+3. **Always Late**: a sheepish smile, the sun already down, the orrery still half built.
+4. **Chalk Genius**: equations of light floating around him, absently chalking one onto your sleeve; violet study.
 
 ## Decius (Bannor, Malakim, Calabim)
-1. **Weary Throne**: slouched, goblet forgotten, measuring you; amber dusk.
-2. **Exile's Pride**: standing straight, scarred face lifted; a foreign city behind.
-3. **Calculated Loyalty**: hand extended, eyes not trusting; a torchlit war tent.
-4. **Soldier King**: dented steel crown, arms crossed, nothing to prove; rain on the battlements.
+1. **Borrowed Throne**: a dark elf lounging on a human throne, a crown not made for him tipped on his brow; amber dusk.
+2. **Three Crowns**: the crowns of three peoples on the table before him, one picked up idly; war tent.
+3. **Exile King**: dusky blue skin and white hair among human courtiers who whisper behind their hands.
+4. **Expects Betrayal**: a goblet offered with one hand, the other resting on a dagger, tired eyes on you.
 
 ## Einion (Elohim)
-1. **Serene Peace**: a gentle smile, hands open; a candle and the evening sea.
-2. **Quiet Grief**: lips shaping a word, eyes lowered, the seashell at his chest; dim window light.
-3. **Unarmed Courage**: alone, staff planted, steady eyes on you; an open gate at dawn.
-4. **Old Warrior**: lined face hardened for one moment, hand where a sword used to hang; monastery walls.
+1. **Absolute Peace**: unarmed and smiling before an army; an open gate at dawn.
+2. **Widower's Vow**: lips shaping the islanders' word for love; a journal, one candle, the evening sea.
+3. **Buried Sword**: a former warrior's scarred hands on a plain staff, his old sword hung on the wall behind.
+4. **Holy Ground**: kneeling at an Elohim holy site, light falling through broken arches, pilgrims far off.
 
 ## Ethne (Elohim)
-1. **Steady Compassion**: brows drawn up in pity, eyes steady; pearl-grey morning.
-2. **Pure Hope**: looking up with a tear-bright smile; golden gate light.
-3. **Gentle Strength**: chin raised, small mouth set; the poor quarter beyond the garden.
-4. **Tender Care**: cradling the lame parrot, soft eyes on you; a white garden.
+1. **Eyes Open**: making herself watch her people's misery, never looking away; torn-out hedges, the poor quarter.
+2. **Lame Parrot**: cradling the one-legged parrot as if it were the world; soft pearl light.
+3. **White Queen**: a slight girl in white whom every army hesitates to strike; a pale gate.
+4. **Breaking Heart**: tears on a face that stays steady; overcast morning.
 
 ## Faeryl (Svartalfar)
-1. **Velvet Venom**: a gracious smile, a stiletto glinting under her lace cuff; a candlelit dinner.
-2. **Winter's Patience**: cold still eyes, one hand resting near a hidden blade; snow behind black glass.
-3. **Courtly Lie**: hand on heart in a sincere apology, the other hand behind her back on a knife; a silver hall.
-4. **Spider's Smile**: narrowed violet eyes, fingers laced over a jewelled dagger hilt; web-shaped shadows.
+1. **Velvet Venom**: a gracious toast, a stiletto under her lace cuff; candlelit dinner.
+2. **Winter Crown**: her half of the year, black trees and silver snow, the spider-leg crown sharp as frost; a blade in her fur muff.
+3. **Spider's Court**: courtiers caught like flies in silver web shadows behind her, a fan hiding a blade.
+4. **Knife Smile**: her warmest smile aimed at her cousin across the table, one hand under the tablecloth.
 
 ## Falamar (Lanun)
-1. **Roguish Charm**: a wink, a slow grin, tipping the plumed hat; a sparkling harbour.
-2. **Smug Victor**: spyglass lowered, a private smile; stern windows, sun on water.
-3. **Easy Bargain**: lounging, a cup offered, eyes measuring your purse; a lantern-lit deck.
-4. **Sea King**: chin up, wind in the plume, boot on the rail; full sail, blue sky.
+1. **Charming Fleecer**: the smile that empties purses, a stolen signet ring on his finger; sparkling harbour.
+2. **Proven Right**: spyglass lowered, a smug private smile; stern windows.
+3. **Plume and Cutlass**: a courtly bow, the white plume sweeping, the cutlass hilt at hand; full sail.
+4. **Pirate Courtier**: at a royal ball in his sea-coat, outrageously at ease among the nobles.
 
 ## Flauros (Calabim)
-1. **Languid Hunger**: heavy-lidded, goblet dangling, fangs just showing; blood-orange sunset.
-2. **Velvet Cruelty**: a charming smile, eyes that do not smile; a candlelit crimson salon.
-3. **Bored Prince**: chin on hand, half a yawn at a petitioner; a moonlit throne hall.
-4. **Predator's Toast**: a glass of dark wine raised to you; rain on gothic windows.
+1. **Sundown Countdown**: timing the sun with his wine, the mob below about to fall into shadow.
+2. **Sister's Shadow**: lounging beside Alexis's empty throne, eyeing it.
+3. **Bored Immortal**: chin on hand, a yawn at a petitioner's pleading, fangs showing.
+4. **Charming Rot**: handsome and smiling, a single wilted rose in his lapel; rain on gothic glass.
 
 ## Garrim (Luchuirp)
-1. **Haunted Wonder**: eyes full of the crystal's light, mouth tight with dread; a dark study.
-2. **Kindly Tinker**: spectacles pushed up, a warm grin, a tiny golem on his palm; workshop daylight.
-3. **Old Guilt**: head bowed, hand on a scorched apron; one candle.
-4. **Master Binder**: staff raised, runes glowing, a great golem waking behind; forge glow.
+1. **Crystal Thrall**: eyes full of the whispering crystal's light, mouth tight with dread.
+2. **Golem Father**: a hand on a great stone golem's arm as it wakes, proud; forge glow.
+3. **Binder's Guilt**: his apprentice's scorched apron folded on the desk, one candle.
+4. **Brass Spectacles**: peering through stacked lenses at a rune too small to see, utterly absorbed.
 
 ## Hannah (Lanun)
-1. **Calm Before Storm**: a serene, hungry smile, hair lifting; yellow-green sky.
-2. **Wild Sea**: laughing in the spray, hands on the wheel; a white squall.
-3. **Prophecy's Child**: distant eyes, bone needles at her throat; a dark tide-pool chamber.
-4. **Mutineer's Glare**: chin down, eyes on you, hand on the cutlass; a lightning-lit deck.
+1. **Living Tempest**: the sea drawn back from the harbour, the wave rising, her serene hungry smile.
+2. **Dreamer's Daughter**: bone needles at her throat, eyes far away, her cultist mother's flooded shrine.
+3. **Kraken Kin**: a tentacle rising beside her from black water, stroked like a dog.
+4. **Mutiny Queen**: chin down, eyes on you, the captain she replaced long gone; lightning-lit deck.
 
 ## Hyborem (Infernals)
-1. **Courteous Evil**: steepled claws, a polite closed smile; still candles in a dark void.
-2. **Infernal Majesty**: enthroned, horns rimmed in fire, looking down; a lava-lit citadel.
-3. **Patient Corruption**: leaning in like a tutor, eyes calmly on yours; a table running into darkness.
-4. **World Hunger**: breathing in mortal air, eyes closed in pleasure; frosty fields at dawn.
+1. **Morality Is Wind**: a patient tutor's smile at the far end of an endless dinner table.
+2. **Courteous Damnation**: steepled claws, a polite nod, perfectly still candle flames.
+3. **Hell Broken Loose**: stepping out of a burning rift onto frosty farmland, tasting mortal air.
+4. **Lord of Ash**: enthroned on obsidian above a burning plain, horns rimmed in fire, looking down.
 
 ## Jonas (Clan of Embers)
-1. **Burdened Fire**: ashen face, the undying flame held at his chest; a forest of spears behind.
-2. **Warlord's Roar**: tusks bared, spear raised, war paint; bonfires.
-3. **Listening Fear**: eyes cut sideways to the flame, as if it just spoke; black night.
-4. **Scarred Faith**: the burned side of his face lit gold, head bowed in prayer; ember sky.
+1. **Voice in Fire**: the undying flame in his hands, eyes cut sideways as if it just spoke.
+2. **Five Thousand Spears**: chin up before a forest of raised spears, the scarred side lit orange.
+3. **Burned Prophet**: the broad burn scar lit gold, head bowed; ember sky.
+4. **Blasphemer Answered**: shouting at the sky, the sky's fire coming down into his hands.
 
 ## Kandros (Khazad)
-1. **Open Sky Wonder**: head tipped back, laughing at the stars; moonlit grass.
-2. **Shrewd Merchant**: a gem held to the light, an appraising grin; a busy market.
-3. **Warm Host**: tankard raised, beaming at you; an inn hearth.
-4. **Quiet Defiance**: jaw set, a brooch in his fist, before the king's hall; crystal lamps.
+1. **First Sky**: head thrown back, laughing at the stars, three hundred years of stone ceiling gone.
+2. **Coin Rings**: the gold coin rings in his forked beard catching lamplight as he names a price.
+3. **Open Door**: shouldering the forbidden stone door open, starlight spilling in.
+4. **Surface Dreamer**: on a green hill with a map of the open world, grinning at you.
 
 ## Keelyn (Balseraphs)
-1. **Possessive Sweetness**: hugging her imp, a sweet stubborn smile; violet summoning glow.
-2. **Lonely Princess**: small in a big chair, feet swinging, imp on her shoulder; an empty gilded hall.
-3. **Playful Mischief**: giggling behind her hand, demons peeking round her; party lanterns.
-4. **Little Queen**: chin up, a huge demon looming protectively behind her; the throne room.
+1. **Mine Forever**: hugging her imp tight, a stubborn, possessive smile; violet summoning glow.
+2. **Demon Playmates**: a tea party with horned guests three times her size, all wearing bows.
+3. **Chalk Circle**: chalk on her fingers, a little summoning circle glowing at her feet, delighted.
+4. **Unacknowledged Princess**: small in a gold-and-black harlequin dress, a huge demon looming protectively.
 
 ## Mahala (Doviello)
-1. **Cunning Smile**: a sideways glance, a secret triumph; blue dusk, first snow.
-2. **Pack Leader**: bear-fur mantle, hard amber eyes on you; a firelit camp.
-3. **Cold Ambition**: studying a map, chin on fist; lamplight.
-4. **Huntress**: knife up her sleeve, braids whipped by wind, watching from the treeline; snowy pines.
+1. **Usurper's Smile**: a secret triumphant smile, slipping out of the hall into first snow.
+2. **Knife Sleeve**: the bone hilt peeking from her sleeve as she lays a friendly hand on your shoulder.
+3. **She-Wolf**: bear mantle, bone-beaded braids, the pack at her heel now, not his.
+4. **Pack Thief**: the old monster's best warrior saddling up to ride off with her; snowy dusk.
 
 ## Os-Gabella (Sheaim)
-1. **Defiant Queen**: palm out, stop, calm as a lioness; storm light.
-2. **First Woman**: an ageless gaze, faintly amused by gods; untouched grassland.
-3. **Storm Bringer**: arms rising, lightning gathering, the jewels in her armour glowing; black sky.
-4. **Ancient Patience**: looking back over her shoulder, knowing how this ends; slate-dark sky.
+1. **First Woman**: ageless calm, faintly amused, the world's first morning behind her.
+2. **Stop, God**: palm out, halting the god sent to claim her; light before the storm.
+3. **Storm Queen**: lightning gathering overhead, the white jewels in her armour blazing.
+4. **Worldbreaker**: the sky cracking above her, relief on her face.
 
 ## Perpentach (Balseraphs)
-1. **Manic Glee**: a grin about to burst, one finger raised to hold the pause; a spotlight.
-2. **Many Minds**: eyes unfocused, pale faces crowding behind him; a dim stage.
-3. **Mask and Tears**: lowering the porcelain mask, the real face suddenly sad; carnival dusk.
-4. **Puppet Master**: fingers dangling marionette strings, gaze on you; red curtains.
+1. **The Punchline**: a grin about to burst, one finger holding the pause; spotlight.
+2. **Swallowed Minds**: pale faces of every age crowding around his head and behind his eyes.
+3. **Mask Under Mask**: lowering the porcelain mask to show his face painted as another mask.
+4. **Flying Cows**: clapping like a child as his catapult sends a cow over the enemy walls.
 
 ## Random (the unknown ruler)
-1. **Unwritten**: the hood in shadow, a hand at its edge; a misty valley at dawn.
-2. **Watcher**: the hood facing you, utterly still; rain and lantern light.
-3. **Wanderer**: walking staff, the hood turned to the horizon; a long road.
-4. **Unclaimed Crown**: a gloved hand holding a crown out of the shadow; an empty throne.
+1. **Unwritten**: a hand at the hood's edge, about to draw it back; a misty valley at dawn.
+2. **Any Face**: the hood's darkness faintly holding a dozen possible faces.
+3. **Blank Map**: a gloved hand above an empty map; candlelight.
+4. **Unclaimed Crown**: a crown held out of the shadow toward you; an empty throne.
 
 ## Rhoanna (Hippus)
-1. **Sly Dealmaker**: one brow raised, a palm-up offer; council fire.
-2. **Heir's Burden**: her father's oversized bronze armour, chin up; dusk on the steppe.
-3. **Horse Queen**: wind in the braid, hand on a mane; galloping herds.
-4. **Vengeful Grief**: a horsetail plume in her fist, eyes hard; a burning tower.
+1. **Raid as Trade**: palm up over the council fire, selling the raiders' swords as one more kind of raid.
+2. **Bronze Heirloom**: her father's too-broad bronze armour, one shoulder stiff from the old wound, chin up.
+3. **United Tribes**: a hundred tribal standards on the steppe behind her, she alone in front.
+4. **Horse Queen**: a hand on her war mare's neck, wind in the braid.
 
 ## Sabathiel (Bannor)
-1. **Disappointed Judge**: half-lowered lids, a sad downturned mouth; his own cold silver glow.
-2. **Hidden Watcher**: looking down from a tower window over many lands; a vaulted chamber.
-3. **Holy Certainty**: a blessing raised, eyes calm and sure; sunrise over a crusader army.
-4. **Fading Light**: looking at the glow in his own palm, worried; moonlit dark.
+1. **Hidden Angel**: a human king's face, but the shadow he throws on the wall has vast wings and too many eyes.
+2. **Thousand Windows**: tall windows on every side, each a different land, all watched at once by a face that shows nothing.
+3. **Crushing Forgiveness**: sad, patient disappointment, light pouring from his skin until the room goes white.
+4. **Inhuman Stillness**: not breathing, not blinking, a perfect face carved from light; courtiers frozen with fear.
 
 ## Sandalphon (Sidar)
-1. **Faint Boredom**: mild, unbothered, mid-sentence; grey fog.
-2. **Fading Soul**: shoulders dissolving into mist, calm eyes; a lamplit lane.
-3. **Cold Offer**: palm up with a wisp of soul-smoke, gaze on you; a candlelit hall.
-4. **Numb Senses**: a peach held to his nose, smelling nothing; festival dusk.
+1. **Half a Soul**: shoulders dissolving into grey mist, the rest of him faintly bored.
+2. **Feels Nothing**: a peach held to his nose, smelling nothing; festival dusk.
+3. **Eternity's Price**: a wisp of his own soul-smoke in his palm, offered to you.
+4. **Fog Walker**: solid for one instant in a lamp's beam, the rest of him already fog.
 
 ## Sheelba (Clan of Embers)
-1. **Burning Hurt**: glaring, tusks bared, fist on the torn lace collar; cold moonlight.
-2. **Found Home**: laughing, a horn raised; hilltop bonfires.
-3. **Fierce Belonging**: chin up among her warriors, fur cloak; an ember-lit camp.
-4. **Two Worlds**: looking back at a lit human town, lace and fur both on her; the jungle's edge.
+1. **Torn Lace**: fist on the torn white lace collar, tusks bared, hurt and fury at once.
+2. **Raised Human**: holding a human girl's ribboned doll she cannot throw away; jungle night.
+3. **Grief to Fury**: red-rimmed eyes, fire rising behind her as she turns from the human town.
+4. **Between Worlds**: lace and orc furs both on her, looking back at a lit human town.
 
 ## Tasunke (Hippus)
-1. **Mercenary Smirk**: pricing your army with his eyes; the open steppe at noon.
-2. **Cracked Bravado**: proud face shaken, hand on the sword; blue ghost-fire.
-3. **Raider's Swagger**: a looted chalice raised, a grin under the moustache; a burning granary.
-4. **Wind Rider**: horsetail plume streaming, squinting ahead; dust and big sky.
+1. **Hired Legend**: the steppe's most famous raider pricing your army with his eyes.
+2. **Underpaid**: realising his employer is no longer a man, frost on his moustache, jaw clenched.
+3. **Horsetail Pride**: the black plume streaming, a grin at full gallop.
+4. **Price Everything**: a looted silver chalice held up and appraised.
 
 ## Tebryn (Sheaim)
-1. **Terror as Resolve**: a snarl, a clawed hand dragging at the air; ghost-green light.
-2. **Blind Seer**: blindfolded face turned to you, calm; planar gate glow.
-3. **End-Bringer**: arms wide, laughing as the sky cracks; a storm.
-4. **Hell's Echo**: hunched, trembling, whispering to the dead; the black rim of the well.
+1. **Hell Remembered**: blindfolded, flinching from something only he can see.
+2. **Blindfold Sight**: the silver-stitched blindfold turned to you, seeing your dead.
+3. **End Bringer**: arms wide as the planar gate's green fire roars behind him.
+4. **Holding the Door**: a clawed hand holding shut a door on hell, terror passing for resolve.
 
 ## Thessa (Ljosalfar)
-1. **Tender Farewell**: a smile through tears; moonlight under the red oak.
-2. **Archmage's Focus**: the gold feather in hand, eyes intent; a candlelit tree-study.
-3. **Joyful Bride**: a breathless laugh, blossom in her hair; a dawn dance.
-4. **Quiet Price**: dry-eyed calm in a mourning gown; the healed forest at bright noon.
+1. **Sacrifice Bride**: smiling through tears at her new husband; the red oak in moonlight.
+2. **Gold Feather**: the single gold feather in her hair glowing as she works a spell.
+3. **Corruption's Price**: violet rot spreading through the woods behind her, a hand at her mouth.
+4. **Evermore Archmage**: a staff of living wood, the tree towers of Evermore behind.
 
 ## Valledia (Amurites)
-1. **Cold Foresight**: gaze in the far distance, unreadable; half brazier light, half dawn.
-2. **Even Hand**: both palms up like scales, weighing you; an academy hall.
-3. **Burden of Knowing**: the seashell in her palm, her eyes elsewhere; before dawn.
-4. **Rare Laughter**: the seeing-stone dim, head thrown back; a feast hall.
+1. **Seeing Stone**: the violet stone on her brow glowing, eyes on a future you cannot see.
+2. **The Even**: her face split evenly between brazier red and dawn violet, unreadable.
+3. **Necessary Murder**: the painted seashell in her palm, proof of the murder she ordered.
+4. **Futures Weighed**: both palms up like scales, a small glowing vision above each.
 
 ## Varn (Malakim)
-1. **Sun Wonder**: wide unshielded eyes on the sunrise; dawn mist.
-2. **Gentle Faith**: a warm smile, an open hand in welcome; a desert village at sunset.
-3. **Desert Prophet**: staff raised, the sun-disc blazing; dunes at noon.
-4. **Weary Shepherd**: worried brow, a hand on a letter; a lamplit tent at night.
+1. **Never Squints**: wide unshielded eyes on the sunrise, where any man would look away.
+2. **Mist Born**: the grey valley of mist he grew up in behind him, the sun breaking through it.
+3. **Elf Among Men**: the long-eared elf among sunburned desert pilgrims under white domes.
+4. **Sun-Struck**: a palm open to blazing noon, his face washed gold, utterly happy.
