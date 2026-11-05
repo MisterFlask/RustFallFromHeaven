@@ -4,16 +4,21 @@ Four concepts per leader, each a 1-3 word vibe true to the leader's whole charac
 one story beat. The line under each says how the portrait carries it: expression and posture do
 the work, and the setting is the leader's iconic place, not an event in progress.
 
-Three rules (the owner's direction, 2026-11-05):
+Rules (the owner's direction, 2026-11-05):
 
 - **Play up what only this leader has**: a trait, power, history or habit no other leader shares.
   Moods any leader could wear (weary, gentle, proud, grieving) are not concepts by themselves.
 - **Each leader differs from the other leaders of their civilization**: two leaders of one civ never share
   a theme (Alexis is death and knowledge, Flauros talk and timing; Arturus hoards gold under the
   mountain, Kandros trades on the open road).
+- **The hands do something**: each vibe names one specific action with the hands (signing, threading,
+  unlacing, holding an object for a reason), not a free gesture; there are only so many open palms.
+- **Each vibe names its own place and light**, so the four backgrounds of a leader differ.
+- **Hannah is inhuman too, differently**: a blank, unblinking stare with no feeling behind it.
+- **Os-Gabella is weary** (canon): heavy lids, shadowed eyes, shoulders bowed under the armour.
 - **The angels are terrible and unknowable** (Basium, Sabathiel, and what is left of the angel in
-  Cassiel): light where a face should show feeling, a stillness nothing alive has, wings and eyes in
-  the wrong places, a scale that dwarfs the humans around them, who shield their eyes or kneel.
+  Cassiel), drawn concretely: eyes of pure white light with no pupils, a smooth mask-like face, extra
+  pairs of wings with eyes among the feathers, humans half their height kneeling or shielding their eyes.
 
 In a prompt, the vibe replaces the story-moment `VIBE:` line; the likeness (face, costume,
 signature item) stays as in `leaders_hd/<key>.txt`.
@@ -55,10 +60,10 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 4. **Too Civilized**: sneering at a captured silk cushion, the soft city he took burning behind.
 
 ## Basium (Mercurians)
-1. **Wrath Incarnate**: a face with no human feeling in it, eyes pouring white light, wings filling the sky; soldiers below shielding their eyes.
-2. **Unblinking Host**: perfectly still, lit from nowhere, a hard ring of light for a halo; hellfire mirrored in his armour and no reaction at all.
-3. **Thunder Prayer**: the ritual scars blazing across his face, eyes shut in a prayer that shakes the ash out of the air.
-4. **Not Yet**: one immense hand raised to halt a whole army, regarding you as a small thing; the Mercurian gate blazing behind.
+1. **Wrath Incarnate**: drawing a blade of white fire out of the empty air with one hand; a battlefield at red-black dusk below him, soldiers half his height shielding their eyes.
+2. **Unblinking Host**: holding a struggling imp off the ground by the scruff at arm's length without looking at it; flat ash-grey noon on a scorched plain.
+3. **Thunder Prayer**: both hands pressed around the hilt of a ceremonial dagger, his ritual scars blazing; storm clouds splitting over a ruined chapel at night.
+4. **Not Yet**: driving the pole of a white war banner into the rock with one hand, the army behind him halting; the Mercurian gate blazing at dawn.
 
 ## Beeri (Luchuirp)
 1. **Pure Spite**: snarling through mud, a gold coin crushed in his fist; alive because his death would please them.
@@ -139,10 +144,10 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 4. **Brass Spectacles**: peering through stacked lenses at a rune too small to see, utterly absorbed.
 
 ## Hannah (Lanun)
-1. **Living Tempest**: the sea drawn back from the harbour, the wave rising, her serene hungry smile.
-2. **Dreamer's Daughter**: bone needles at her throat, eyes far away, her cultist mother's flooded shrine.
-3. **Kraken Kin**: a tentacle rising beside her from black water, stroked like a dog.
-4. **Mutiny Queen**: chin down, eyes on you, the captain she replaced long gone; lightning-lit deck.
+1. **Living Tempest**: wringing seawater out of her hair with both hands, staring blankly ahead as the sea drains from the harbour behind her; sickly yellow-green light, the wave rising.
+2. **Dreamer's Daughter**: threading one of her bone needles through a strand of black kelp, eyes blank and unfocused; a flooded cult shrine lit by a single wick.
+3. **Kraken Kin**: feeding a silver fish from her fingers to a tentacle rising beside her, her empty stare fixed on you; black water under a full moon.
+4. **Mutiny Queen**: cutting the old captain's gold epaulette off his coat with her knife without looking at the work, her blank eyes on you; a deck in lightning and rain.
 
 ## Hyborem (Infernals)
 1. **Morality Is Wind**: a patient tutor's smile at the far end of an endless dinner table.
@@ -175,10 +180,10 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 4. **Pack Thief**: the old monster's best warrior saddling up to ride off with her; snowy dusk.
 
 ## Os-Gabella (Sheaim)
-1. **First Woman**: ageless calm, faintly amused, the world's first morning behind her.
-2. **Stop, God**: palm out, halting the god sent to claim her; light before the storm.
-3. **Storm Queen**: lightning gathering overhead, the white jewels in her armour blazing.
-4. **Outlived Gods**: unchanged among ruins of every age, a toppled god's statue at her feet.
+1. **First Woman**: unlacing a gauntlet with tired fingers, the world's first dawn behind her; untouched grassland bending in the wind.
+2. **Stop, God**: pushing away a golden crown held out to her from the clouds, two fingers on its rim, too tired to be angry; light before rain.
+3. **Storm Queen**: winding a thread of lightning around her wrist like a bracelet, unimpressed by it; a slate storm over her black citadel.
+4. **Outlived Gods**: brushing moss from the face of a toppled god's statue with her gauntlet, weary, almost fond; ruins of every age at dusk.
 
 ## Perpentach (Balseraphs)
 1. **The Punchline**: a grin about to burst, one finger holding the pause; spotlight.
@@ -199,10 +204,10 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 4. **Peace Rider**: riding alone between two lined-up hordes, one empty hand raised.
 
 ## Sabathiel (Bannor)
-1. **Hidden Angel**: a human king's face, but the shadow he throws on the wall has vast wings and too many eyes.
-2. **Thousand Windows**: tall windows on every side, each a different land, all watched at once by a face that shows nothing.
-3. **Crushing Forgiveness**: sad, patient disappointment, light pouring from his skin until the room goes white.
-4. **Inhuman Stillness**: not breathing, not blinking, a perfect face carved from light; courtiers frozen with fear.
+1. **Hidden Angel**: signing a decree with a quill like any king, while the shadow he throws on the wall has vast wings and many eyes; a lamplit study at night.
+2. **Thousand Windows**: turning the pages of a ledger of every life in his realm without looking at it, his eyes of light on the windows around him, each a different land; pale morning.
+3. **Crushing Forgiveness**: laying his gauntleted hand on the bowed head of a kneeling knight, light pouring from his skin until the chapel goes white.
+4. **Inhuman Stillness**: holding a full cup of wine perfectly level, untouched for hours, candles burned to stubs; a frozen court at midnight.
 
 ## Sandalphon (Sidar)
 1. **Half a Soul**: shoulders dissolving into grey mist, the rest of him faintly bored.

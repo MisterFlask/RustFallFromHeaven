@@ -14,14 +14,19 @@ HEAD = {"alexis": "Alexis", "amelanchier": "Amelanchier", "arendel": "Arendel", 
         "mahala": "Mahala", "os_gabella": "Os-Gabella", "perpentach": "Perpentach", "random": "Random",
         "rhoanna": "Rhoanna", "sabathiel": "Sabathiel", "sandalphon": "Sandalphon", "sheelba": "Sheelba",
         "tasunke": "Tasunke", "tebryn": "Tebryn", "thessa": "Thessa", "valledia": "Valledia", "varn": "Varn"}
-ANGEL = ("He is an angel, terrible and unknowable: no human feeling shows in his face, light stands where feeling "
-         "would be, he is stiller than anything alive and larger than any man, and any people near him are small, "
-         "kneeling or shielding their eyes.")
+ANGEL = ("He is an angel, terrible and unknowable: his eyes are pure white light with no pupils, his face is smooth "
+         "and still as a mask with no human feeling in it, a second and a third pair of wings unfold behind the first "
+         "with open eyes among the feathers, and any people near him reach only to his chest, kneeling or shielding "
+         "their eyes.")
 EXTRA = {
     "basium": ANGEL, "sabathiel": ANGEL,
     "cassiel": ("What is left of the angel in him is uncanny: a face too perfect and too still for a mortal, a faint "
                 "light under the skin."),
     "alexis": "Her gown is buttoned to the chin under the high lace collar.",
+    "hannah": ("She is not quite human: her stare is blank, unblinking and fixed, with no feeling behind the sea-grey "
+               "eyes, the storm looking out of a woman's face."),
+    "os_gabella": ("She is weary: heavy-lidded eyes with faint shadows beneath them, shoulders a little bowed under the "
+                   "armour, the tiredness of someone who has lived since the first morning of the world."),
 }
 # likeness sentences that carried the old scene's hand pose or state, loosened to the item itself
 FIX = {
@@ -60,7 +65,8 @@ for key, head in HEAD.items():
         lk, extra = likeness, EXTRA.get(key, "")
         if (key, vibe) == ("sabathiel", "Hidden Angel"):  # the disguise: only his shadow shows the angel
             lk = lk.replace(", and great WHITE FEATHERED WINGS folded high behind him", "")
-            extra = "In the room he passes for a man; only his shadow shows what he is."
+            extra = ("In the room he passes for a man, with a calm human face and grey eyes; only his shadow shows "
+                     "what he is.")
         body = " ".join(x for x in (
             lk, extra,
             f"Pose, light and setting: {line[0].upper() + line[1:]}",
