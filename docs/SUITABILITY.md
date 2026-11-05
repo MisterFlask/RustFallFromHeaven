@@ -1,8 +1,8 @@
 # Building suitability (proposal)
 
-Status: **proposal, not built**. Revision 2, 2026-11-05: building variants, a plain random
-roll, no cost tier. Nothing here is in the rules yet. The code paths named are the ones the change
-would touch.
+Status: **proposal, not built**. Revision 3, 2026-11-05: building variants, a plain random
+roll, no cost tier for ordinary buildings, wonders by cost only, no game option. Nothing here is
+in the rules yet. The code paths named are the ones the change would touch.
 
 When a city is founded, it rolls a suitability for each generic building class. The city can only
 build the variant of each building that matches its roll:
@@ -21,7 +21,11 @@ The roguelike selection is in the building choice. The city is dealt a hand at f
 player builds into its strengths. A Grand Library gives more per hammer than a Library, so it is
 worth building sooner. A Cramped Forge may never be worth building at all.
 
-A rules option controls all of this, and it is off by default.
+Wonders take part too, but only through their cost (section 2.4): a Suited city builds a wonder
+for less, and the wonder does the same thing wherever it stands.
+
+There is no game option: this is part of the rules in every game (the owner's decision,
+2026-11-05: new game features are not put behind feature flags).
 
 ## 1. Why variants rather than a modifier
 
@@ -107,11 +111,40 @@ Variants are generated for the generic classes with no instance limit and a real
 classes, about 60 rows once unique buildings are counted. These are left out and stay
 single-variant:
 
-- world and national wonders;
+- world and national wonders: they take part by cost instead (section 2.4);
 - the civilization classes `BUILDINGCLASS_CIV_BUILDING1-3`;
 - buildings that cannot be built normally (cost -1: cages, vaults, the Dancing Bear and the like).
 
 Religious temples are in scope. That needs a decision from the owner (section 6).
+
+### 2.4 Wonders: cost only
+
+World and national wonders roll a suitability like every other class, but they get no variants.
+A wonder's effect is the same in every city; only its cost changes:
+
+| Suitability | Wonder cost |
+|---|---|
+| Unsuited | 125% |
+| Plain | 100% |
+| Suited | 75% |
+
+The percentages are defines (`SUITABILITY_WONDER_COST_*`).
+
+**Why a cost multiplier here rather than cost-only variant rows.** Variant rows for wonders would
+be identical except `iCost`, and they would add nothing. They would also drag every reference to a
+wonder through the family rule (section 4): about 20 hard-coded wonder lookups in the Rust code
+(the Towers, Dies Diei, Mokka's Cauldron, ...) and the wonder prerequisites in the XML (Crown of
+Akharien, Mercurian Gate, ...). The objection to a city modifier was that its effect has to be
+backed out into the building. That does not apply to cost: the city's build list shows the real
+cost and the turns to finish directly. So the wonder stays one building, and
+`city_production_needed_building` multiplies its cost by the city's wonder-cost percentage, after
+the Python cost mod. Hurry cost reads production needed, so rushing follows.
+
+The choice this makes: **which city builds the wonder.** A world wonder race now favors the civ
+that has a Suited city with good production, and a national wonder is cheapest in its Suited city.
+
+**Display.** The wonder's name is unchanged, shown in its suitability's color. Its tooltip adds
+`Suitability: Suited. Cost: 75%.`
 
 ## 3. The roll
 
@@ -130,7 +163,10 @@ roll is made once and never changes.
   class. The conversion then takes the variant of that building that matches the city's roll.
 - **Free buildings** (from traits, civics or events, given by class) are given as the city's
   variant.
-- **Option off.** No rolls are made, so the RNG stream and the game are bit-identical to today.
+- **Every game changes.** With no option, the founding rolls draw from the RNG in every game.
+  Seeds play out differently from today, the shared run cache's earlier games stop matching the
+  new rules, and the seed-story tests in `crates/ffh-play/tests` need re-picked seeds (their
+  comments say how).
 
 ## 4. Where variants cost work: "the same building"
 
@@ -165,9 +201,14 @@ with `ffh bench`.
 - **AI.** `building_value` reads the variant's row, so a Grand Library is valued at what it does.
   The production chooser ranks value against `city_production_turns_left_building`. A Suited
   building therefore rises in the queue and an Unsuited one sinks, with no new AI code. This is
-  a rules change, so the AI only needs to use it sensibly. The local check: with the option on,
+  a rules change, so the AI only needs to use it sensibly. The local check:
   count how much of the building production goes to Grand and to Cramped variants. Grand should
   clearly lead.
+- **AI for wonders.** The cost reaches the chooser through the turns left, as for buildings. One
+  edit is needed: `production.rs` lets only the player's `top_production_city` start a slow world
+  wonder. That test compares production alone, so it should compare turns to finish this wonder,
+  which takes in the city's wonder cost. Otherwise the AI builds every wonder in its biggest city
+  and ignores its Suited ones.
 - **Interface.**
   - The build list, the city's building list and the tooltips show the variant's name in its
     suitability's color. The tooltip text stays bare: `Grand Library: +38% research, 2 scientist
@@ -187,14 +228,14 @@ with `ffh bench`.
    family rule. I recommend including them, since the family rule is needed anyway.
 2. **Roll weights.** 15/70/15 is a starting guess. More non-Plain classes give more variety but
    also more noise in which cities are good.
-3. **Default for the browser's new-game screen.** Leave it unticked until the AI check and a few
-   human games look right.
+3. **Wonder cost spread.** 75/125 is a starting guess. A wider spread makes the choice of
+   wonder city matter more.
 
 ## 7. Phases
 
 | Phase | What | Check |
 |---|---|---|
 | 1 | Generator (`variant_of`, tier table, rounding, override file), `ffh data` 0 warnings | data tests: each variant's scaled fields, untouched negatives, names resolve |
-| 2 | Option, roll, `building_suitability` on City, `city_building_for_class`, `city_has_building_family`, capture conversion, save | gate; with the option off, sync checksums equal the current binary's; the XML-reference test |
+| 2 | Roll, `building_suitability` on City, `city_building_for_class`, `city_has_building_family`, capture conversion, wonder cost, save | gate; the XML-reference test; seed-story tests re-picked |
 | 3 | Interface: names, colors, tooltips, data endpoint | web smoke |
-| 4 | AI local check, `ffh bench` | Grand and Cramped shares; per-turn cost within noise |
+| 4 | AI: wonder city by turns to finish; local check, `ffh bench` | Grand and Cramped shares; share of wonders built in Suited cities; per-turn cost within noise |

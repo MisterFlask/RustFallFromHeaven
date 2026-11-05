@@ -81,6 +81,9 @@ When porting, read the C++/Python being ported -- never port from memory.
 - **Rules changes are deliberate and recorded.** Change rules on purpose, not as a side effect
   of other work: say what changed and why in the commit, and list gameplay changes from FFH2 0.41
   in docs/PORTING.md ("Changes from FFH2").
+- **New game features are not behind game options** (the owner's decision, 2026-11-05): a new
+  system is part of the rules in every game, not a feature flag. The options that already exist
+  (governors, armies, cultural actions, crusades) predate this decision.
 - **Mirroring the C++ is no longer a goal** (the owner's decision, 2026-10-28). Echoing the C++
   closely was the method for the initial port, which is complete; it has no value in itself now.
   Restructure ported code, its C++-shaped APIs and its quirks whenever that makes present code or
