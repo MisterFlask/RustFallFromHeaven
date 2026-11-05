@@ -1,6 +1,6 @@
 # Building suitability (proposal)
 
-**Status: proposal, not built.** Revision 4, 2026-11-05. This revision sets out the rules only:
+**Status: proposal, not built.** Revision 6, 2026-11-05 (adds the civilization buildings; extras push the same way as the building). This revision sets out the rules only:
 the five tiers, what each building class is at each tier, and how likely each tier is.
 Implementation waits until the XML-to-JSON conversion going on in another session is finished.
 The appendix keeps the implementation decisions made so far.
@@ -91,8 +91,7 @@ otherwise.
    that works without using a citizen.
 3. **Drawbacks never scale.** The Market's −1 research, the Forge's −1 health, the Tax Office's
    −1 happiness, crime, and extra maintenance are the same at every tier. A good tier never makes
-   a drawback worse, and a bad tier never adds one. A few Legendary signatures remove a drawback;
-   where they do, the table says so.
+   a drawback worse, and a bad tier never adds one.
 4. **Unlocks never scale.** Every tier unlocks the same units and spells and counts for the same
    prerequisites, civics and events. A Lesser Stable still lets the city train Horsemen.
 5. **Unlocking buildings act through their units.** The Training Yard, Archery Range, Stable,
@@ -122,9 +121,14 @@ otherwise.
    at once after every growth. 60% is already FFH's own maximum, reached by the Calabim with
    their Breeding Pit.
 9. **Legendary = Grand + signature.** The signature is one ability on top of the Grand version.
-   Most signatures use effects FFH buildings already have (empire-wide or continent-wide
-   modifiers, free specialists, free promotions, war-weariness and health switches). The few that
+   Most signatures use effects FFH buildings already have (free specialists, free promotions,
+   empire-wide or continent-wide modifiers, war-weariness and health switches). The few that
    would be new rules are listed in section 6.
+10. **Extras push the same way as the building.** A Grand extra or a Legendary signature makes
+    the building better at what it already does: a culture building's signature is a big culture
+    effect, a health building's a big health effect, and a building that trains units gives those
+    units more. A signature is never an unrelated stat added on, and never just the removal of a
+    drawback. A good Monument is a better source of culture, not a source of happiness.
 
 ## 3. The buildings
 
@@ -146,22 +150,23 @@ The *Standard* column of each table is FFH 0.41's building, from `CIV4BuildingIn
 | **Market**: +3 gold, −1 research; 1 merchant slot; crime +5 | +1 gold | +5 gold | +6 gold; 2 slots | **Emporium**: Grand + 1 free merchant, +1 trade route |
 | **Money Changer**: +25% gold; 1 merchant slot | +12% | +38% | +50%; 2 slots | **Counting House**: Grand + 5% gold in all your cities |
 | **Tax Office**: +25% gold; −1 happiness | +12% | +38% | +50% | **Exchequer**: Grand + 1 gold per 2 citizens |
-| **Gambling House**: +3 gold; +1 happiness per 10% of the gold rate; crime +10; +10% maintenance | +1 gold; +1 happiness per 20% | +5 gold; +3 happiness per 20% | +6 gold; +1 happiness per 5% | **House of Fortune**: Grand, and its crime is removed |
-| **Smugglers' Port** (coast): +25% gold; +1 trade route; 1 merchant slot; crime +10 | +12% | +38% | +50%; 2 trade routes; 2 slots | **Black Wharf**: Grand + naval units trained here get Hidden Nationality |
-| **Inn**: +25% trade-route yield; +1 trade route; healing +25; +1 happiness with Wine; crime +5 | +12%; healing +12 | +38%; healing +38 | +50%; 2 trade routes; healing +50; +2 with Wine | **Caravanserai**: Grand + 2 great merchant points per turn |
-| **Tavern**: +25% trade-route yield; +1 trade route; +1 great artist point; crime +5; +10% maintenance | +12% | +38% | +50%; 2 trade routes; +2 points | **Mead Hall**: Grand + 2 happiness |
+| **Gambling House**: +3 gold; +1 happiness per 10% of the gold rate; crime +10; +10% maintenance | +1 gold; +1 happiness per 20% | +5 gold; +3 happiness per 20% | +6 gold; +1 happiness per 5% | **House of Fortune**: Grand + 25% gold |
+| **Smugglers' Port** (coast): +25% gold; +1 trade route; 1 merchant slot; crime +10 | +12% | +38% | +50%; 2 trade routes; 2 slots | **Black Wharf**: Grand + 1 free merchant, +50% trade-route yield |
+| **Inn**: +25% trade-route yield; +1 trade route; healing +25; +1 happiness with Wine; crime +5 | +12%; healing +12 | +38%; healing +38 | +50%; 2 trade routes; healing +50; +2 with Wine | **Caravanserai**: Grand + 1 trade route (3 in all), +25% more trade-route yield (+75%) |
+| **Tavern**: +25% trade-route yield; +1 trade route; +1 great artist point; crime +5; +10% maintenance | +12% | +38% | +50%; 2 trade routes; +2 points | **Mead Hall**: Grand + 1 trade route (3 in all), +2 more great artist points (+4) |
 | **Obsidian Gate**: airlift 1; +1 trade route | airlift 1; no trade route | airlift 2 | airlift 2; 2 trade routes | **Gate of Night**: airlift 3; 2 trade routes; +25% trade-route yield |
 
 ### 3.3 Sea
 
 | Standard | Lesser | Fine | Grand | Legendary |
 |---|---|---|---|---|
-| **Harbor**: +50% trade-route yield; +1 health per Clam, Crab, Fish | +25% | +75% | +100%; +2 health per seafood | **Deepwater Quay**: Grand + 1 trade route, +25% naval production |
-| **Lighthouse**: +1 food on water plots; +1 trade route | no trade route | 2 trade routes | 2 trade routes; +1 commerce on water plots | **Beacon Tower**: Grand + naval units trained here get Navigation I |
+| **Harbor**: +50% trade-route yield; +1 health per Clam, Crab, Fish | +25% | +75% | +100%; +2 health per seafood | **Deepwater Quay**: Grand + 1 trade route, +1 food per Clam, Crab, Fish |
+| **Lighthouse**: +1 food on water plots; +1 trade route | no trade route | 2 trade routes | 2 trade routes; +1 food per Clam, Crab, Fish | **Beacon Tower**: Grand, and water plots get +2 food instead of +1 |
 | **Shipyard**: naval units +4 XP; +25% naval production | +2 XP; +12% | +6 XP; +38% | +8 XP; +50% | **Admiralty**: Grand + naval units trained here get Expanded Hull |
 
-The Lighthouse's +1 food per water plot does not scale: +2 food on every ocean plot would
-outweigh everything else in this document. Its tiers act on trade routes and commerce instead.
+The Lighthouse's +1 food per water plot stays +1 up to Grand: +2 food on every water plot is
+too strong to come with a 25% Fine roll. It is the Legendary signature instead, which makes a
+Legendary Lighthouse a fishing metropolis.
 
 ### 3.4 Production
 
@@ -173,17 +178,17 @@ outweigh everything else in this document. Its tiers act on trade routes and com
 
 | Standard | Lesser | Fine | Grand | Legendary |
 |---|---|---|---|---|
-| **Monument**: +2 culture | +1 | +3 | +4; +1 happiness | **Standing Stones**: Grand + 1 happiness in all your cities on this continent |
+| **Monument**: +2 culture | +1 | +3 | +4 | **Standing Stones**: Grand + 1 free artist |
 | **Theatre**: +3 culture; +1 happiness per 10% of the culture rate; 1 artist slot; +1 happiness with Dye | +1 culture; +1 happiness per 20% | +5; +3 happiness per 20% | +6; +1 happiness per 5%; 2 slots | **Amphitheatre**: Grand + 1 free artist |
 | **Carnival**: +1 happiness; +20% culture; 1 artist slot | +1; +10% | +2; +30% | +2; +40%; 2 slots | **Midsummer Fair**: Grand, with +3 happiness; −50% war weariness |
-| **Public Baths**: +3 happiness; −1 health; crime +5 | +1 | +5 | +6 | **Thermae**: Grand, and its unhealthiness and crime are removed |
+| **Public Baths**: +3 happiness; −1 health; crime +5 | +1 | +5 | +6 | **Thermae**: Grand + 1 happiness in all your cities on this continent |
 
 ### 3.6 Growth and health
 
 | Standard | Lesser | Fine | Grand | Legendary |
 |---|---|---|---|---|
 | **Granary**: 20% food kept; +1 health per Corn, Rice, Wheat | 10% | 30% | 40%; +2 per grain | **Horreum**: Grand + 10% food |
-| **Smokehouse**: 20% food kept; +1 health per Cow, Pig, Sheep, Toad | 10% | 30% | 40%; +2 per livestock | **Larder Hall**: Grand + 1 happiness per livestock resource |
+| **Smokehouse**: 20% food kept; +1 health per Cow, Pig, Sheep, Toad | 10% | 30% | 40%; +2 per livestock | **Larder Hall**: Grand + 1 food per Cow, Pig, Sheep, Toad |
 | **Herbalist**: +1 health; healing +10; +1 health with Reagents | +1 health; no healing | +2; healing +15 | +2; healing +20; +2 with Reagents | **Physic Garden**: Grand, with +3 health; +1 health in all your cities on this continent |
 | **Aqueduct**: +2 health | +1 | +3 | +4 | **Great Cistern**: Grand, and the city has no unhealthiness from buildings |
 | **Infirmary**: +3 health; healing +25; unlocks Grigori Medic | +1; healing +12 | +5; healing +38 | +6; healing +50 | **House of Mercy**: Grand, and units in the city heal fully each turn |
@@ -219,8 +224,8 @@ promotion.
 | **Archery Range**: +10% defense; unlocks archers | +5%; archers −25% production | +15%; archers +2 XP | +20%; archers +4 XP | **Bowyers' Yard**: Grand + archers trained here get City Garrison I |
 | **Stable**: unlocks mounted units | mounted −25% production | mounted +2 XP | mounted +4 XP | **Royal Stables**: mounted +4 XP and Mobility I |
 | **Siege Workshop**: unlocks siege units and chariots | −25% production | +2 XP | +4 XP | **Engine Works**: +4 XP; siege units also get Barrage I |
-| **Hunting Lodge**: +1 health with Deer; +1 happiness with Fur; unlocks recon units | recon −25% production | recon +2 XP | recon +4 XP; +2 with Deer and Fur | **Huntsman's Hall**: Grand + recon units trained here get Woodsman I |
-| **Grove**: unlocks Druids, Beastmasters, Myconids | those −25% production | +2 XP | +4 XP; +1 health | **Heartwood**: Grand + forest plots in the city's radius give +1 food |
+| **Hunting Lodge**: +1 health with Deer; +1 happiness with Fur; unlocks recon units | recon −25% production | recon +2 XP | recon +4 XP; +2 with Deer and Fur | **Huntsman's Hall**: Grand + recon units trained here get Sentry (+1 vision) |
+| **Grove**: unlocks Druids, Beastmasters, Myconids | those −25% production | +2 XP | +4 XP | **Heartwood**: +4 XP and Woodsman I |
 
 ### 3.10 Religion
 
@@ -251,9 +256,9 @@ The three buildings that only one religion can build:
 
 | Standard | Lesser | Fine | Grand | Legendary |
 |---|---|---|---|---|
-| **Basilica** (Order): −40% maintenance; crime −10; +1 great commander point | −20%; −5 | −60%; −15 | −80%; −20; +2 points | **Basilica of Junil**: Grand + units trained here get +2 XP |
-| **Asylum** (Overlords): +15% research; 1 scientist slot; +1 great prophet point; −25% war weariness; −1 happiness; unlocks Lunatics; 10% of units trained here go Crazed | +7%; −12% | +23%; −38% | +30%; −50%; +2 points; 2 slots | **Bedlam**: Grand, and units trained here never go Crazed |
-| **Demons' Altar** (Veil): units trained here get Scourge; −1 happiness; enables Sacrifice the Weak | no Scourge | Scourge; units +2 XP | Scourge; units +4 XP | **Altar of Agares**: Grand, and its unhappiness is removed |
+| **Basilica** (Order): −40% maintenance; crime −10; +1 great commander point | −20%; −5 | −60%; −15 | −80%; −20; +2 points | **Basilica of Junil**: Grand, and no maintenance in this city |
+| **Asylum** (Overlords): +15% research; 1 scientist slot; +1 great prophet point; −25% war weariness; −1 happiness; unlocks Lunatics; 10% of units trained here go Crazed | +7%; −12% | +23%; −38% | +30%; −50%; +2 points; 2 slots | **Bedlam**: Grand + 1 free scientist |
+| **Demons' Altar** (Veil): units trained here get Scourge; −1 happiness; enables Sacrifice the Weak | no Scourge | Scourge; units +2 XP | Scourge; units +4 XP | **Altar of Agares**: Grand + units trained here get Fear |
 
 ## 4. Unique buildings
 
@@ -266,13 +271,57 @@ Studio (Training Yard), and Desert Shrine and Temple of the Hand (Pagan Temple).
   becomes +1, +3, +4 and +4.
 - A Legendary one keeps its own name with the prefix "Legendary" and gets the class's signature.
 
-**The civilization buildings** (`BUILDINGCLASS_CIV_BUILDING1-3`: Warrens, Planar Gate, Cave of
-Ancestors, Pallens Engine and the rest) are always Standard. They are a civilization's identity,
-not a site's. Most of their effect is code (the Warrens' copies, the Planar Gate's summons) that
-has no number to scale.
+**The civilization buildings** are covered in section 4.1.
 
 **Not rolled at all:** cages, vaults, the Dancing Bear, and other buildings that can't be built
 normally.
+
+### 4.1 Civilization buildings
+
+These are the buildings in the three civilization slots (`CIV_BUILDING1-3`). They roll like
+every other class. Many of their effects are triggered abilities rather than flat numbers: a
+chance, a free copy, a granted promotion, fire damage. So one more general rule applies to them:
+
+11. **Chances, durations and granted promotions.**
+    - A chance, a duration, an amount of damage or a count scales like any other number: Lesser
+      halves it, Fine multiplies it by 1.5, Grand doubles it.
+    - A promotion that every unit trained there already receives can't go above 100%. So:
+      Lesser gives it only half the time (a 50% chance per unit), Fine adds +2 XP to the units
+      that get it, Grand adds +4 XP, and Legendary adds +4 XP and a second promotion.
+
+The *Standard* column below is FFH 0.41, from `CIV4BuildingInfos.xml` and the effects in the
+rules code (`ffh/events.rs`).
+
+| Civ | Standard | Lesser | Fine | Grand | Legendary |
+|---|---|---|---|---|---|
+| Amurites | **Cave of Ancestors**: arcane units trained here get +1 XP per mana resource the city has | +1 XP per 2 mana | +3 XP per 2 mana | +2 XP per mana | **Ancestral Vault**: Grand, and arcane units trained here get Potency |
+| Balseraphs | **Freak Show** (made by a Freak, not built): +2 culture; +1 happiness; +1 great artist point | +1 culture; +1 happiness | +3 culture; +2 happiness; +2 points | +4 culture; +2 happiness; +2 points | **Circus of Wonders**: Grand + 1 free artist |
+| Balseraphs | **Hall of Mirrors** (needs a Carnival): +1 happiness; each turn, an illusion copy of an enemy unit next to the city appears in it for 3 turns (5 with Summoner) | copies last 2 turns (3) | 4 turns (8) | 6 turns (10) | **House of a Thousand Faces**: Grand, and it copies enemies up to 2 plots away |
+| Calabim | **Breeding Pit**: +2 food; 20% food kept; −1 health | +1 food; 10% | +3 food; 30% | +4 food; 40% | **Feeding Halls**: Grand + 10% food |
+| Clan of Embers | **Warrens**: every unit trained here gets a free copy (not world, national, siege or naval units) | a copy half the time | copy; both units +2 XP | copy; both units +4 XP | **Deep Warrens**: Grand, and siege units are copied too |
+| Elohim | **Chancel of Guardians**: +25% defense; units trained here have a 20% chance of Defensive | +12%; 10% | +38%; 30% | +50%; 40% | **Sanctum of Guardians**: +50% defense; units trained here always get Defensive |
+| Elohim | **Reliquary**: +2 culture; +1 great prophet point; units trained here get Spirit Guide (on death, half their XP goes to another unit); −1 health | +1 culture; Spirit Guide half the time | +3 culture; +2 points; Spirit Guide; units +2 XP | +4 culture; +2 points; Spirit Guide; units +4 XP | **Ossuary of Saints**: Grand, and Spirit Guide passes on all the unit's XP instead of half |
+| Grigori | **Adventurers' Guild**: +2 Adventurer points; +25% great people rate; land units +2 XP | +1 point; +12%; +1 XP | +3 points; +38%; +3 XP | +4 points; +50%; +4 XP | **Free Companies' Hall**: Grand, and Adventurers born in this city start with +10 XP |
+| Kuriotates | **Tailor**: a free Fine Clothes resource; +1 happiness and +10% gold for each of Dye, Cotton, Silk | Fine Clothes; +1 happiness and +5% gold each | +15% gold each | +2 happiness and +20% gold each | **House of Silks**: Grand, with 2 Fine Clothes resources (one to trade) |
+| Kuriotates | **Jeweler**: a free Jewels resource; +1 happiness and +10% gold for each of Gems, Gold, Pearl | Jewels; +1 happiness and +5% gold each | +15% gold each | +2 happiness and +20% gold each | **Crown Jewelers**: Grand, with 2 Jewels resources |
+| Luchuirp | **Blasting Workshop** (needs Fire mana): golems trained here get Fire II | Fire II half the time | Fire II; golems +2 XP | Fire II; +4 XP | **Ember Forge**: Grand + Fire III |
+| Luchuirp | **Pallens Engine** (needs Sun mana): golems trained here get Perfect Sight | Perfect Sight half the time | Perfect Sight; +2 XP | Perfect Sight; +4 XP | **Sun Engine**: Grand + Sentry (+1 vision) |
+| Luchuirp | **Adularia Chamber** (needs Shadow mana): golems trained here get Hidden | Hidden half the time | Hidden; +2 XP | Hidden; +4 XP | **Chamber of Night**: Grand + Shadowwalk |
+| Malakim | **Citadel of Light**: +5% defense; each turn burns the strongest enemy stack within 2 plots for 20 fire damage (to at most 40% damage) | +2%; 10 damage (to 20%) | +8%; 30 damage (to 60%) | +10%; 40 damage (to 80%) | **Lantern of the Sun**: Grand, and it burns the two strongest stacks |
+| Sheaim | **Planar Gate**: each turn a 6% chance (up to 15% as the Armageddon Counter rises) to summon a creature for one of the city's buildings (Gambling House: Revelers, Mage Guild: Mobius Witch, Carnival: Chaos Marauder, Grove: Manticore, Public Baths: Succubus, Obsidian Gate: Minotaur, Temple of the Veil: Tar Demon); at most 1 of each creature per gate (up to 4 with the counter) | half the chance | 1.5× the chance | 2× the chance; +1 to each creature's limit | **Open Rift**: 3× the chance; +2 to each creature's limit |
+
+Notes on these tiers:
+
+- **Breeding Pit.** The 60% cap on food kept (rule 8) also covers it, the Granary and the
+  Smokehouse together.
+- **Freak Show.** It is made by a Freak unit, not built, so its tier is simply the city's roll for
+  that class.
+- **Warrens.** A Lesser Warrens copies half the units trained there. That is the steepest Lesser
+  in the document, because the Warrens' whole effect is the copy. The alternative is that a Lesser
+  Warrens always copies, and only its copies start with 0 XP.
+- **Kuriotates resources.** The Tailor's and Jeweler's free resource is the same at every tier
+  below Legendary; a resource can't be halved. Their Lesser tier loses half the gold instead.
+- **Hall of Mirrors durations.** The numbers in brackets are with the Summoner trait.
 
 ## 5. Wonders: cost only
 
@@ -306,10 +355,10 @@ would break, and buildings that can't be built normally.
    be new:
    - Exchequer: gold per citizen.
    - House of Mercy: full heal each turn.
-   - Heartwood: food on forest plots.
    - The Legendary temples: twice the religious spread.
    - Thornwall: faster Sentinel repair.
-   - Black Wharf and Beacon Tower: a promotion limited to naval units.
+   - Deepwater Quay, Lighthouse (Grand) and Larder Hall: +1 food per resource.
+   - The civilization buildings' changed chances, durations and ranges (section 4.1).
 
    Each is small. Any of them could be swapped for an existing effect if keeping new rules down
    matters more.
