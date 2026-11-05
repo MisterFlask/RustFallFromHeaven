@@ -1,0 +1,29 @@
+{
+  "pronoun": "he",
+  "body": "HYBOREM, Lord of the Infernals, the demon who broke out of hell to conquer the mortal world, leader of the Infernals in the fantasy game Fall from Heaven: demon; male; ageless; towering and hulking, with massive shoulders and clawed hands. Deep crimson skin, a heavy brow over burning yellow eyes, fang tips at the corners of his mouth.",
+  "costume": "black obsidian spiked armour with gold trim and a tattered dark red cape.",
+  "signature": "Two huge curved black HORNS sweep up and back from his brow, whatever he wears.",
+  "extra": "He is huge beside anything mortal, and wholly unhurried: his smile, when he smiles, is polite and holds no feeling at all.",
+  "vibes": [
+    {
+      "name": "Morality Is Wind",
+      "line": "his right claw sliding one bone figure away from five others on the tablecloth, his left hand holding a wineglass by the stem; a tutor's polite closed smile, eyes calmly on the viewer; an endless dream dinner table, empty chairs dwindling into black haze, candle flames utterly still.",
+      "wears": "a host's long midnight-blue velvet coat cut wide for his shoulders, silver buttons, a white silk cravat and lace at the cuffs."
+    },
+    {
+      "name": "Courteous Damnation",
+      "line": "his right hand holding a black quill out across the altar, his left claw pinning an unrolled pact flat; head inclined in a polite nod, eyes lowered courteously to the parchment; the black-veiled sanctum of an Ashen Veil temple at midnight, cultists kneeling in the smoke, cold violet lamplight.",
+      "wears": "a long ash-grey robe of state, a black silk stole embroidered with small silver seals, a heavy silver chain of office across his chest."
+    },
+    {
+      "name": "Hell Broken Loose",
+      "line": "stepping out of a burning rift onto frosty farmland, his right claw crushing a fistful of frozen soil, his left hand gripping the rift's glowing edge behind him; head tipped back, nostrils flared, eyes half-closed toward the sky, tasting mortal air; pale pink dawn, frost on a farm fence.",
+      "wears": "a war harness of blackened iron chains crossed over his bare crimson chest, spiked iron pauldrons, the links still glowing orange with hell's heat and steaming in the frost."
+    },
+    {
+      "name": "Lord of Ash",
+      "line": "enthroned on jagged obsidian, his right claw letting a handful of grey ash trickle through its fingers, his left hand gripping the throne's arm; looking down at the viewer, eyelids heavy; a burning plain at night below, lava rivers, firelight from beneath rimming his horns, a sky of smoke.",
+      "wears": "towering obsidian plate edged in gold filigree and spiked at every edge, a vast dark crimson cloak smouldering into embers at its hem, a crown of black iron spikes between his horns."
+    }
+  ]
+}

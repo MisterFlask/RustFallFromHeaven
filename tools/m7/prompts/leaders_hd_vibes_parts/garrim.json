@@ -1,0 +1,29 @@
+{
+  "pronoun": "he",
+  "body": "GARRIM GYR, master enchanter and binder of spells, leader of the Luchuirp in the fantasy game Fall from Heaven: a gnome-like Luchuirp dwarf; male; elderly; small, stooped and wiry, about half a man's height. Ruddy, wrinkled skin, a big round nose, a long braided snow-white beard, bushy white eyebrows, sharp blue eyes.",
+  "costume": "ash-grey enchanter's robes embroidered in charcoal and silver, with a leather apron of small tools.",
+  "signature": "His small round BRASS SPECTACLES, a set of extra hinged lenses folded up at their sides, are always on his nose.",
+  "extra": "",
+  "vibes": [
+    {
+      "name": "Crystal Thrall",
+      "line": "his left hand holding the crystal on a folded cloth, his right hand clamped around his left wrist, holding it back; eyes wide on the crystal, full of its red-violet light, mouth pulled down tight; his dark study at midnight, black mist curling, the crystal lighting him from below.",
+      "wears": "a long deep-violet scrying robe with silver warding runes stitched down its front and cuffs, sleeves pushed back, a black velvet skullcap."
+    },
+    {
+      "name": "Golem Father",
+      "line": "his left hand pressed flat on the vast stone forearm of a waking golem, his right hand turning a brass key in a socket at its wrist; eyes on the viewer, beaming like a grandfather showing off a grandchild; a mountain foundry hall at night, forge glow and drifting sparks.",
+      "wears": "a heavy scorched leather forge apron hung with brass tools over a rust-red work tunic, sleeves rolled past the elbows, a soot-dark leather cap."
+    },
+    {
+      "name": "Binder's Guilt",
+      "line": "his right hand slowly smoothing the scorched, folded apron of his dead apprentice on the workbench, his left hand gripping its edge; head bowed, shoulders sunk, red-rimmed eyes lowered to the apron; the apprentice's empty corner of the workshop at night, one guttering candle, cold blue moonlight at the window.",
+      "wears": "a plain black wool mourning coat buttoned to the throat, a black cloth band around one sleeve, no apron, no tools, no ornament."
+    },
+    {
+      "name": "Brass Spectacles",
+      "line": "three extra lenses flipped down over his spectacles, his right hand guiding an engraving needle along a rune on a coin-sized brass cog, his left hand pinching the cog in tweezers; eyes huge behind the lenses, fixed on it, tongue poking out; bright morning light through a round workshop window.",
+      "wears": "a moss-green craftsman's waistcoat over a white linen shirt, sleeves gartered up, a leather apron bristling with tiny tools and gauges."
+    }
+  ]
+}

@@ -148,10 +148,14 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 4. **Charming Rot**: handsome and smiling, a single wilted rose in his lapel; rain on gothic glass.
 
 ## Garrim (Luchuirp)
-1. **Crystal Thrall**: eyes full of the whispering crystal's light, mouth tight with dread.
-2. **Golem Father**: a hand on a great stone golem's arm as it wakes, proud; forge glow.
-3. **Binder's Guilt**: his apprentice's scorched apron folded on the desk, one candle.
-4. **Brass Spectacles**: peering through stacked lenses at a rune too small to see, utterly absorbed.
+1. **Crystal Thrall**: his left hand holding the crystal on a folded cloth, his right hand clamped around his left wrist, holding it back; eyes wide on the crystal, full of its red-violet light, mouth pulled down tight; his dark study at midnight, black mist curling, the crystal lighting him from below.
+   Wears: a long deep-violet scrying robe with silver warding runes stitched down its front and cuffs, sleeves pushed back, a black velvet skullcap.
+2. **Golem Father**: his left hand pressed flat on the vast stone forearm of a waking golem, his right hand turning a brass key in a socket at its wrist; eyes on the viewer, beaming like a grandfather showing off a grandchild; a mountain foundry hall at night, forge glow and drifting sparks.
+   Wears: a heavy scorched leather forge apron hung with brass tools over a rust-red work tunic, sleeves rolled past the elbows, a soot-dark leather cap.
+3. **Binder's Guilt**: his right hand slowly smoothing the scorched, folded apron of his dead apprentice on the workbench, his left hand gripping its edge; head bowed, shoulders sunk, red-rimmed eyes lowered to the apron; the apprentice's empty corner of the workshop at night, one guttering candle, cold blue moonlight at the window.
+   Wears: a plain black wool mourning coat buttoned to the throat, a black cloth band around one sleeve, no apron, no tools, no ornament.
+4. **Brass Spectacles**: three extra lenses flipped down over his spectacles, his right hand guiding an engraving needle along a rune on a coin-sized brass cog, his left hand pinching the cog in tweezers; eyes huge behind the lenses, fixed on it, tongue poking out; bright morning light through a round workshop window.
+   Wears: a moss-green craftsman's waistcoat over a white linen shirt, sleeves gartered up, a leather apron bristling with tiny tools and gauges.
 
 ## Hannah (Lanun)
 1. **Nobody Home**: her arms hanging limp at her sides, hands doing nothing at all, staring blankly straight into the camera; rain running down her face unnoticed; the deck of the Desecrated Vessel at grey dusk.
@@ -164,34 +168,54 @@ signature item) stays as in `leaders_hd/<key>.txt`.
    Wears: a soaked fisherwoman's plain wool sweater and canvas apron, kelp caught in the hem, dressed like one of the harbour's own.
 
 ## Hyborem (Infernals)
-1. **Morality Is Wind**: a patient tutor's smile at the far end of an endless dinner table.
-2. **Courteous Damnation**: steepled claws, a polite nod, perfectly still candle flames.
-3. **Hell Broken Loose**: stepping out of a burning rift onto frosty farmland, tasting mortal air.
-4. **Lord of Ash**: enthroned on obsidian above a burning plain, horns rimmed in fire, looking down.
+1. **Morality Is Wind**: his right claw sliding one bone figure away from five others on the tablecloth, his left hand holding a wineglass by the stem; a tutor's polite closed smile, eyes calmly on the viewer; an endless dream dinner table, empty chairs dwindling into black haze, candle flames utterly still.
+   Wears: a host's long midnight-blue velvet coat cut wide for his shoulders, silver buttons, a white silk cravat and lace at the cuffs.
+2. **Courteous Damnation**: his right hand holding a black quill out across the altar, his left claw pinning an unrolled pact flat; head inclined in a polite nod, eyes lowered courteously to the parchment; the black-veiled sanctum of an Ashen Veil temple at midnight, cultists kneeling in the smoke, cold violet lamplight.
+   Wears: a long ash-grey robe of state, a black silk stole embroidered with small silver seals, a heavy silver chain of office across his chest.
+3. **Hell Broken Loose**: stepping out of a burning rift onto frosty farmland, his right claw crushing a fistful of frozen soil, his left hand gripping the rift's glowing edge behind him; head tipped back, nostrils flared, eyes half-closed toward the sky, tasting mortal air; pale pink dawn, frost on a farm fence.
+   Wears: a war harness of blackened iron chains crossed over his bare crimson chest, spiked iron pauldrons, the links still glowing orange with hell's heat and steaming in the frost.
+4. **Lord of Ash**: enthroned on jagged obsidian, his right claw letting a handful of grey ash trickle through its fingers, his left hand gripping the throne's arm; looking down at the viewer, eyelids heavy; a burning plain at night below, lava rivers, firelight from beneath rimming his horns, a sky of smoke.
+   Wears: towering obsidian plate edged in gold filigree and spiked at every edge, a vast dark crimson cloak smouldering into embers at its hem, a crown of black iron spikes between his horns.
 
 ## Jonas (Clan of Embers)
-1. **Voice in Fire**: the undying flame in his hands, eyes cut sideways as if it just spoke.
-2. **Five Thousand Spears**: chin up before a forest of raised spears, the scarred side lit orange.
-3. **Burned Prophet**: the broad burn scar lit gold, head bowed; ember sky.
-4. **Blasphemer Answered**: shouting at the sky, the sky's fire coming down into his hands.
+1. **Voice in Fire**: both hands cupped around his goddess's small undying flame at his chest, a girl's face faintly shaped in its white-gold fire; face drained grey, amber eyes cut sideways to it, wide, as if it just spoke; a black stone jungle shrine at midnight, the flame the only light.
+   Wears: the vestments of Bhall's first priest: a long ember-red hide robe painted with black flame symbols, a collar of fire-blackened bone beads, bare iron bracers.
+2. **Five Thousand Spears**: his right hand raising a heavy spear high over the host, his left hand gripping a round hide shield; chin up, tusks bared in a roar, eyes straight on the viewer; a jungle hilltop at night, five thousand spears raised below, bonfire light on his scarred side.
+   Wears: a warlord's black-iron scale hauberk with spiked pauldrons, a shaggy black boar-hide mantle, and the Ember Banner's rust-orange hide sash across his chest.
+3. **Burned Prophet**: his right hand swinging a smoking censer of embers, his left fist closed around fire-blackened bone prayer beads; head bowed, eyes lowered to the ash, jaw set; the ash fields outside Braduk the Burning at dusk, an ember-red sky, low gold light full on his burn scar.
+   Wears: a penitent's rough ash-white hide wrap knotted at one shoulder, the other shoulder and arm bare and painted with black flame symbols.
+4. **Blasphemer Answered**: head thrown back, shouting at the blizzard sky, his left fist shaking a spear at it, his right hand thrust up open to catch a column of white-gold fire pouring down into the palm; eyes wide on the sky; Braduk at night in a blizzard, snow lit gold.
+   Wears: the Three-Spear tribe's tan deerskin cloak, frost in its fur, over battered grey iron mail, snow settling on his shoulders.
 
 ## Kandros (Khazad)
-1. **First Sky**: head thrown back, laughing at the stars, three hundred years of stone ceiling gone.
-2. **Caravan Prince**: walking ahead of a laden pony caravan down a sunlit surface road, waving you over to trade.
-3. **Open Door**: shouldering the forbidden stone door open, starlight spilling in.
-4. **Surface Dreamer**: on a green hill with a map of the open world, grinning at you.
+1. **First Sky**: kneeling on a hillside, his right hand clutching a fistful of soft grass, not snow, his left hand holding his pulled-off miner's cap; head thrown back laughing at the stars, eyes wet and shining; a mild night, moonlight full on his face, the galaxy's glowing band overhead.
+   Wears: an Underhome clansman's dun stone-grey hooded wool smock over a leather jerkin, dusted with rock dust, a miner's pick slung across his back.
+2. **Caravan Prince**: his right hand holding up a bolt of bright blue silk to the viewer, his left hand holding the lead rope of a laden pony; a salesman's wide grin, eyebrows up, eyes straight on the viewer; a sunlit surface road through green fields at midday, the caravan strung out behind.
+   Wears: a merchant-prince's saffron-yellow travelling coat with brass buttons, a wide-brimmed hat with a feather, a heavy purse and small brass scales at his belt.
+3. **Open Door**: both hands heaving on a pick wedged as a lever in the crack of a massive stone door, one shoulder braced against the stone; teeth gritted in a grin, eyes on the widening gap; a black tunnel lit gold by his lantern, a cold blade of starlight across his face.
+   Wears: a dark slate-blue hooded cloak thrown back over a quilted leather jerkin, a pack and bedroll on his back, dressed to slip past the guards at night.
+4. **Surface Dreamer**: sitting on a green hilltop, a half-drawn map unrolled across his knee, his left hand holding it flat, his right hand inking a new road onto it with a quill; grinning, eyes on the far horizon; golden late afternoon, rivers, forests and a distant human town below.
+   Wears: an explorer's short moss-green hooded cape over a russet leather jerkin, a brass spyglass and compass on cords, map cases on a strap across his chest.
 
 ## Keelyn (Balseraphs)
-1. **Mine Forever**: hugging her imp tight, a stubborn, possessive smile; violet summoning glow.
-2. **Demon Playmates**: a tea party with horned guests three times her size, all wearing bows.
-3. **Chalk Circle**: chalk on her fingers, a little summoning circle glowing at her feet, delighted.
-4. **Unacknowledged Princess**: small in a gold-and-black harlequin dress, a huge demon looming protectively.
+1. **Mine Forever**: both arms wrapped tight around Puppy the imp, hugging him against her cheek; a sweet smile with a stubborn, possessive edge, round unblinking eyes fixed straight on the viewer; a palace balcony at rosy sunset, the carnival city's striped tents and lantern towers below.
+   Wears: a rose-pink velvet hooded cape, hood down, over a plum-purple dress with a round white lace collar, buttoned to the chin.
+2. **Demon Playmates**: her right hand pouring from a gold teapot into a tiny cup in a huge demon's claw, her left hand holding the lid on; beaming at her guest; a garden tea party at golden afternoon, horned guests three times her size in shade, in pink bows, Puppy on the table.
+   Wears: a sunny yellow tea-party dress with white puffed sleeves and a wide white sash, a paper party crown on her head.
+3. **Chalk Circle**: kneeling on the floor, her right hand chalking the last rune of a small summoning circle starting to glow, her left hand holding open a spellbook; a wide delighted grin, eyes on the circle; a dusty attic at night, lit violet from below, Puppy peering over her shoulder.
+   Wears: a plain black pinafore smock dusted all over with chalk, over a white blouse with sleeves pushed up, her hair bow knocked askew.
+4. **Unacknowledged Princess**: seated on her father's throne, too big for her, her right hand holding one claw of the huge horned demon looming protectively behind her in shadow, her left hand stroking Puppy in her lap; chin up, eyes sliding sideways to the bowing ministers; the council hall at grey morning.
+   Wears: the gold-and-black harlequin dress of her father's court with a high ruffled gold collar, and a small gold circlet she has put on herself.
 
 ## Mahala (Doviello)
-1. **Usurper's Smile**: a secret triumphant smile, slipping out of the hall into first snow.
-2. **Knife Sleeve**: the bone hilt peeking from her sleeve as she lays a friendly hand on your shoulder.
-3. **Camp Rebuilder**: sleeves rolled, directing new longhouses going up, the broken tribe made orderly behind her.
-4. **Pack Thief**: the old monster's best warrior saddling up to ride off with her; snowy dusk.
+1. **Usurper's Smile**: her right hand easing the great hall's back door shut behind her, her left hand drawing her hood up; eyes cut sideways back at the hall, cheeks flushed, lips pressed in a tight secret smile; deep blue dusk, first snow, orange firelight from the door slashing across her eyes.
+   Wears: a charcoal-grey hooded riding cloak over a black leather jerkin laced with rawhide, riding gloves tucked into her belt.
+2. **Knife Sleeve**: her left hand raising a mead horn to the viewer in a friendly toast, her right hand half hidden in its wide sleeve, turning the bone hilt of a knife between her fingers; a warm smile, steady unsmiling eyes on the viewer; the feast hall at night, hearth firelight.
+   Wears: a high-necked, long-sleeved dark forest-green wool feast dress with wide embroidered cuffs, a belt of silver and bone plaques, silver rings in her braids.
+3. **Camp Rebuilder**: her left hand holding a timber beam steady, her right hand driving a wooden peg into its joint with a mallet; glancing up along the beam at the builders above, mouth set; a new Doviello camp on a frosty hillside at bright cold morning, longhouse frames rising in orderly rows.
+   Wears: an undyed oatmeal wool work tunic with sleeves rolled to the elbows, a sheepskin vest and a leather apron, her braids tied up out of the way.
+4. **Pack Thief**: both hands hauling her stubborn horse's saddle girth tight; a sly sidelong look and a grin at the tall rider saddling up beside her in shadow, the old warlord's best warrior; black pines at the camp's edge at moonlit midnight, deep snow, breath steaming.
+   Wears: a white fox-fur hooded mantle over pale grey quilted riding leathers and fur-lined gloves, snow-coloured from head to foot for riding out unseen.
 
 ## Os-Gabella (Sheaim)
 1. **Open Carriage**: slouched in the corner of her black carriage, elbow on the open window, chin propped on her hand, eyes half-closed; Galveholm's crowds scrambling out of the way outside, unnoticed; harsh dusty noon.
@@ -204,16 +228,24 @@ signature item) stays as in `leaders_hd/<key>.txt`.
    Wears: full regalia: a vast, stiff black-and-crimson court gown with a towering jewelled collar, all of it too heavy for her.
 
 ## Perpentach (Balseraphs)
-1. **The Punchline**: a grin about to burst, one finger holding the pause; spotlight.
-2. **Swallowed Minds**: pale faces of every age crowding around his head and behind his eyes.
-3. **Mask Under Mask**: lowering the porcelain mask to show his face painted as another mask.
-4. **Flying Cows**: clapping like a child as his catapult sends a cow over the enemy walls.
+1. **The Punchline**: his right forefinger pressed to his lips to hold the pause, his left hand dangling a crowned marionette from its control bar; head cocked, eyebrows high, a grin about to burst, glittering eyes searching the viewer's face; his palace theatre stage at night, a hard white spotlight overhead.
+   Wears: the stage king's harlequin doublet of gold and crimson diamonds, a tall pleated white ruff and a purple velvet cape trimmed in gold.
+2. **Swallowed Minds**: fingertips of both hands pressed to his temples as if tuning many voices at once; a soft rapt smile, eyes unfocused past the viewer, listening; the court inside his own mind, a hall without walls in timeless grey-violet half-light, pale faces of every age crowding around his head.
+   Wears: a long patchwork robe sewn from scraps of many people's clothes, a farmer's brown homespun, a soldier's red, a priest's white, a child's blue, no two patches alike.
+3. **Mask Under Mask**: his right hand lowering the porcelain mask from his face, his left hand pulling a curtain aside; beneath, his face painted as another mask, white greasepaint, black diamonds over the eyes, a red smile wider than his own; eyes straight on the viewer; a candlelit masked ball at midnight.
+   Wears: a masked-ball costume of black-and-silver brocade: a long fitted coat, a black domino cape, silver diamonds down the sleeves.
+4. **Flying Cows**: both hands clapping together at his chest like a delighted child, a grin splitting his face, eyes following a cow sailing in a high arc from his catapult over the enemy walls; a siege camp on a hill at bright blue noon.
+   Wears: a mock general's sky-blue velvet coat with absurdly huge gold epaulettes, a sash pinned with tin medals, and a tall plumed helmet hung with little bells.
 
 ## Random (the unknown ruler)
-1. **Unwritten**: a hand at the hood's edge, about to draw it back; a misty valley at dawn.
-2. **Any Face**: the hood's darkness faintly holding a dozen possible faces.
-3. **Blank Map**: a gloved hand above an empty map; candlelight.
-4. **Unclaimed Crown**: a crown held out of the shadow toward you; an empty throne.
+1. **Unwritten**: their right hand at the edge of the hood, about to draw it back, and not yet; the left hand gripping a walking staff; the dark hood turned to the horizon; a high ridge at dawn, gold light grazing the hood's rim, a valley of mist below.
+   Wears: a traveller's heavy ash-grey wool cloak with a deep hood, grey leather gloves, a satchel on a strap and a worn walking staff.
+2. **Any Face**: their gloved hands lifting one mask from a wall hung with masks of every people, an elf's, a dwarf's, an orc's, a human king's, toward the dark hood as if to try it on; the hood bowed to the mask; a tall dim hall at blue twilight.
+   Wears: a long deep-hooded robe of shot silk that shifts colour with every fold, violet to green to gold, and pale grey gloves.
+3. **Blank Map**: their left gloved hand pinning down the curling corner of a large empty map, their right hand holding a quill above it, the first line not yet drawn; the dark hood bent over the map; a war room at night, candlelight pooling on the blank parchment.
+   Wears: a scholar-strategist's deep-hooded robe of midnight-blue wool trimmed with silver, black gloves and a ring of brass keys at the belt.
+4. **Unclaimed Crown**: their right gloved hand holding a plain gold crown out of the shadow toward the viewer, their left hand gripping the arm of an empty throne beside them; the dark hood turned straight to the viewer; a vast empty throne hall in dusty late-afternoon light from high windows.
+   Wears: a court robe of deep crimson velvet with a gold-embroidered hem and a deep cowl hood, black velvet gloves.
 
 ## Rhoanna (Hippus)
 1. **Feud Breaker**: leaning across the council fire, settling a blood feud between two scowling chiefs with one sly sentence.

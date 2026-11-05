@@ -26,5 +26,61 @@
   "costume": "a heavy, high-collared black gown over deep crimson underlayers; no armour.",
   "signature": "Her pale white glowing JEWELS are always on her, set into whatever she wears (collar, girdle, rings).",
   "extra": "She is weary beyond anything mortal: alive since the first morning of the world and bored by all of it, and it shows in her whole body: shoulders dropped, weight leaning on what is beside her, eyelids half-closed, mouth slack, no tension anywhere. This weariness overrides any drama in the style: no heroic pose, no wind in her hair, no triumphant light, no rim light."
+ },
+ "garrim": {
+  "pronoun": "he",
+  "body": "GARRIM GYR, master enchanter and binder of spells, leader of the Luchuirp in the fantasy game Fall from Heaven: a gnome-like Luchuirp dwarf; male; elderly; small, stooped and wiry, about half a man's height. Ruddy, wrinkled skin, a big round nose, a long braided snow-white beard, bushy white eyebrows, sharp blue eyes.",
+  "costume": "ash-grey enchanter's robes embroidered in charcoal and silver, with a leather apron of small tools.",
+  "signature": "His small round BRASS SPECTACLES, a set of extra hinged lenses folded up at their sides, are always on his nose.",
+  "extra": ""
+ },
+ "hyborem": {
+  "pronoun": "he",
+  "body": "HYBOREM, Lord of the Infernals, the demon who broke out of hell to conquer the mortal world, leader of the Infernals in the fantasy game Fall from Heaven: demon; male; ageless; towering and hulking, with massive shoulders and clawed hands. Deep crimson skin, a heavy brow over burning yellow eyes, fang tips at the corners of his mouth.",
+  "costume": "black obsidian spiked armour with gold trim and a tattered dark red cape.",
+  "signature": "Two huge curved black HORNS sweep up and back from his brow, whatever he wears.",
+  "extra": "He is huge beside anything mortal, and wholly unhurried: his smile, when he smiles, is polite and holds no feeling at all."
+ },
+ "jonas": {
+  "pronoun": "he",
+  "body": "JONAS ENDAIN, warlord of the Three-Spear tribe and first priest of the fire goddess Bhall, leader of the Clan of Embers in the fantasy game Fall from Heaven: orc; male; hard middle age; massive and broad-shouldered. Grey-green battle-scarred skin, thick yellowed lower tusks, a shaved head with a black topknot, heavy brows over amber eyes.",
+  "costume": "dented iron armour with rust-orange trim, a deerskin cloak charred at the edges, and a belt of tusk and bone trophies.",
+  "signature": "The broad dark BURN SCAR across the left side of his face and neck, from the sacred fire of Braduk he walked into at his goddess's command, is always plainly visible.",
+  "extra": "No skulls and no blood anywhere in the picture."
+ },
+ "kandros": {
+  "pronoun": "he",
+  "body": "KANDROS FIR, the merchant-prince who led his clan out of the Underhome, leader of the Khazad in the fantasy game Fall from Heaven: a dwarf; male; middle-aged; stocky and solid as a cask. A ruddy, open face with laugh lines, thick copper-red hair tied back, hazel eyes.",
+  "costume": "a plain ochre-gold travelling coat over a brown leather jerkin, a merchant's purse and a brass lantern at his belt.",
+  "signature": "His FORKED COPPER-RED BEARD, braided into two plaits bound with gold coin rings, hangs over whatever he wears.",
+  "extra": ""
+ },
+ "keelyn": {
+  "pronoun": "she",
+  "body": "KEELYN, the unacknowledged daughter of the mad king Perpentach and a child summoner of demons, leader of the Balseraphs in the fantasy game Fall from Heaven: human; girl; about twelve years old; small and slight, a child's build. A pale, freckled, round little face, raven-black hair tied back with a rose-pink bow, large amber eyes.",
+  "costume": "a gold-and-black harlequin dress with a high ruffled gold collar.",
+  "signature": "Her small grinning red bat-winged IMP, Puppy, a matching rose-pink bow tied on one of its horns, is always with her.",
+  "extra": "She is a child and drawn as one: a child's round face and small hands, modest childish clothes, nothing grown-up or glamorous; sweet and a little eerie, her big amber eyes hardly ever blinking."
+ },
+ "mahala": {
+  "pronoun": "she",
+  "body": "MAHALA, the cunning chieftain who rebuilt the Doviello, leader of the Doviello in the fantasy game Fall from Heaven: human; female; about thirty-five; lean and hard as a huntress. Wind-reddened pale skin, long dark-auburn hair in thick braids woven with small bone beads, sharp amber eyes.",
+  "costume": "a black leather jerkin laced with rawhide, a charcoal hood half raised, and a heavy black bear-fur mantle clasped at the chest.",
+  "signature": "A single large BLACK BEAR CLAW on a rawhide cord hangs at her throat, whatever she wears.",
+  "extra": ""
+ },
+ "perpentach": {
+  "pronoun": "he",
+  "body": "PERPENTACH, the Laughing Man, the mad mind-mage king, leader of the Balseraphs in the fantasy game Fall from Heaven: human; man; looks about forty though centuries old; lean and wiry, with long restless fingers. A pale, sharp-featured face, wild black hair streaked with silver, gold-flecked eyes.",
+  "costume": "a harlequin doublet of gold and crimson diamonds under a purple-and-crimson velvet cape trimmed in gold, and a tall pleated white ruff.",
+  "signature": "His smiling white porcelain CARNIVAL MASK, one black tear painted under its eye, is always with him, pushed up on his forehead or in his hand.",
+  "extra": ""
+ },
+ "random": {
+  "pronoun": "they",
+  "body": "THE UNKNOWN RULER, a leader not yet revealed, leader of an unknown people in the fantasy game Fall from Heaven: of no clear race, sex or age; of middle height, still and upright. No face, hair or skin can be seen.",
+  "costume": "a heavy cloak of ash-grey wool and grey gloves.",
+  "signature": "A DEEP HOOD, whatever they wear, whose shadow hides the face completely: no skin, hair, eyes or features, only soft darkness (this overrides the style's sharp face).",
+  "extra": "Nothing of their body is ever shown: their hands are always gloved, and no skin, hair or eye catches the light anywhere."
  }
 }

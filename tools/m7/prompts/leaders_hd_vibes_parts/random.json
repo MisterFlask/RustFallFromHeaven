@@ -1,0 +1,29 @@
+{
+  "pronoun": "they",
+  "body": "THE UNKNOWN RULER, a leader not yet revealed, leader of an unknown people in the fantasy game Fall from Heaven: of no clear race, sex or age; of middle height, still and upright. No face, hair or skin can be seen.",
+  "costume": "a heavy cloak of ash-grey wool and grey gloves.",
+  "signature": "A DEEP HOOD, whatever they wear, whose shadow hides the face completely: no skin, hair, eyes or features, only soft darkness (this overrides the style's sharp face).",
+  "extra": "Nothing of their body is ever shown: their hands are always gloved, and no skin, hair or eye catches the light anywhere.",
+  "vibes": [
+    {
+      "name": "Unwritten",
+      "line": "their right hand at the edge of the hood, about to draw it back, and not yet; the left hand gripping a walking staff; the dark hood turned to the horizon; a high ridge at dawn, gold light grazing the hood's rim, a valley of mist below.",
+      "wears": "a traveller's heavy ash-grey wool cloak with a deep hood, grey leather gloves, a satchel on a strap and a worn walking staff."
+    },
+    {
+      "name": "Any Face",
+      "line": "their gloved hands lifting one mask from a wall hung with masks of every people, an elf's, a dwarf's, an orc's, a human king's, toward the dark hood as if to try it on; the hood bowed to the mask; a tall dim hall at blue twilight.",
+      "wears": "a long deep-hooded robe of shot silk that shifts colour with every fold, violet to green to gold, and pale grey gloves."
+    },
+    {
+      "name": "Blank Map",
+      "line": "their left gloved hand pinning down the curling corner of a large empty map, their right hand holding a quill above it, the first line not yet drawn; the dark hood bent over the map; a war room at night, candlelight pooling on the blank parchment.",
+      "wears": "a scholar-strategist's deep-hooded robe of midnight-blue wool trimmed with silver, black gloves and a ring of brass keys at the belt."
+    },
+    {
+      "name": "Unclaimed Crown",
+      "line": "their right gloved hand holding a plain gold crown out of the shadow toward the viewer, their left hand gripping the arm of an empty throne beside them; the dark hood turned straight to the viewer; a vast empty throne hall in dusty late-afternoon light from high windows.",
+      "wears": "a court robe of deep crimson velvet with a gold-embroidered hem and a deep cowl hood, black velvet gloves."
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "pronoun": "he",
+  "body": "KANDROS FIR, the merchant-prince who led his clan out of the Underhome, leader of the Khazad in the fantasy game Fall from Heaven: a dwarf; male; middle-aged; stocky and solid as a cask. A ruddy, open face with laugh lines, thick copper-red hair tied back, hazel eyes.",
+  "costume": "a plain ochre-gold travelling coat over a brown leather jerkin, a merchant's purse and a brass lantern at his belt.",
+  "signature": "His FORKED COPPER-RED BEARD, braided into two plaits bound with gold coin rings, hangs over whatever he wears.",
+  "extra": "",
+  "vibes": [
+    {
+      "name": "First Sky",
+      "line": "kneeling on a hillside, his right hand clutching a fistful of soft grass, not snow, his left hand holding his pulled-off miner's cap; head thrown back laughing at the stars, eyes wet and shining; a mild night, moonlight full on his face, the galaxy's glowing band overhead.",
+      "wears": "an Underhome clansman's dun stone-grey hooded wool smock over a leather jerkin, dusted with rock dust, a miner's pick slung across his back."
+    },
+    {
+      "name": "Caravan Prince",
+      "line": "his right hand holding up a bolt of bright blue silk to the viewer, his left hand holding the lead rope of a laden pony; a salesman's wide grin, eyebrows up, eyes straight on the viewer; a sunlit surface road through green fields at midday, the caravan strung out behind.",
+      "wears": "a merchant-prince's saffron-yellow travelling coat with brass buttons, a wide-brimmed hat with a feather, a heavy purse and small brass scales at his belt."
+    },
+    {
+      "name": "Open Door",
+      "line": "both hands heaving on a pick wedged as a lever in the crack of a massive stone door, one shoulder braced against the stone; teeth gritted in a grin, eyes on the widening gap; a black tunnel lit gold by his lantern, a cold blade of starlight across his face.",
+      "wears": "a dark slate-blue hooded cloak thrown back over a quilted leather jerkin, a pack and bedroll on his back, dressed to slip past the guards at night."
+    },
+    {
+      "name": "Surface Dreamer",
+      "line": "sitting on a green hilltop, a half-drawn map unrolled across his knee, his left hand holding it flat, his right hand inking a new road onto it with a quill; grinning, eyes on the far horizon; golden late afternoon, rivers, forests and a distant human town below.",
+      "wears": "an explorer's short moss-green hooded cape over a russet leather jerkin, a brass spyglass and compass on cords, map cases on a strap across his chest."
+    }
+  ]
+}

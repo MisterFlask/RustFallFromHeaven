@@ -1,0 +1,13 @@
+{
+  "pronoun": "she",
+  "body": "SHEELBA, the orc raised as a human daughter who ran back to her people, leader of the Clan of Embers in the fantasy game Fall from Heaven: orc; female; about twenty; tall, strong and lean, a head taller than most men. Olive-green skin, a heavy brow, a broad jaw, small neat lower tusks, a thick black braid threaded with ember-orange beads, sharp hazel eyes.",
+  "costume": "a huge burnt-orange orc warrior's fur cloak around her shoulders over iron-studded hide armour.",
+  "signature": "At her throat, whatever else she wears, is the torn white LACE COLLAR of a human girl's dress, its ripped edge hanging loose.",
+  "extra": "She is plainly an orc, not a human painted green: her tusks always show, even with her mouth closed.",
+  "vibes": [
+    {"name": "Torn Lace", "line": "Her right fist clenched on the torn lace at her throat, her left hand ripping a pink silk ribbon out of her braid; tusks bared in a half-snarl, jaw set, eyes wet and glaring straight at the viewer; dense jungle at night, giant ferns, cold blue-green moonlight.", "wears": "the torn remains of a sky-blue human girl's festival dress, its long sleeves ripped and hanging, under a huge shaggy grey-brown orc's fur cloak wrapped around her."},
+    {"name": "Raised Human", "line": "Her right hand holding a ribboned rag doll over the coals of a brazier, fingers refusing to open, her left clutching a blanket closed at her chest; brows drawn up and together, mouth pressed tight between her tusks, eyes on the doll; her hide tent at grey, rainy dawn.", "wears": "a long plain cream linen nightgown of human make, a moss-green wool blanket around her shoulders, her braid loose and half undone."},
+    {"name": "Human Manners", "line": "Holding a small porcelain teacup by its handle in her right hand, little finger lifted, its saucer level in her left; one brow raised, lips pressed primly over her tusks, eyes sideways on a roaring warlord; a noon war-feast at the fire pit of Braduk, orange glare, smoky sky.", "wears": "a war-chief's full gear: a huge burnt-orange fur cloak over iron-studded hide armour, iron arm-rings, ember-orange war paint striped across her cheekbones."},
+    {"name": "Between Worlds", "line": "Her left hand holding the reins of her saddled warg, her right pulling her wolf-fur mantle tight around her shoulders; looking back over her shoulder at the warm windows and church spire of a human town below, lips parted, brows drawn together; a jungle ridge at blue twilight.", "wears": "both worlds at once: a fitted wine-red velvet human riding dress with lace cuffs, a shaggy black wolf-fur mantle over it, a bone-and-iron orc pauldron on one shoulder."}
+  ]
+}
