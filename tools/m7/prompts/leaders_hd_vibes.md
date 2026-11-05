@@ -94,58 +94,94 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 4. **Ageless Boy**: a child's face under a centuries-old crown, a centaur guard twice his height kneeling.
 
 ## Cassiel (Grigori)
-1. **Unmade Angel**: the ghost of his lost wings faint as light behind him, a marble face too perfect for a mortal.
-2. **Godless Freedom**: his back turned on a sky full of holy light, facing a free city of guild towers.
-3. **Sees Ghosts**: the only one who sees the drifting dead, his grey eyes following them through the hazy throne hall.
-4. **Marble Mortal**: ivory skin with fine cracks like a statue, the first grey in his gold hair; a mirror he does not trust.
+1. **Unmade Angel**: Holding one long shed white feather across his left palm and drawing his right thumb down its vane, face calm and unreadable, eyes straight on the viewer; alone on the palace roof at midnight, a faint outline of starlight behind him where vast wings once were; cold blue-silver light.
+   Wears: the stripped remains of his angelic war-gear: a breastplate of pale white bronze, its holy sigils chiselled off and its gem settings empty, over a plain charcoal-grey undertunic.
+2. **Godless Freedom**: Letting a gold holy sunburst drop from his right hand over the parapet, his left hand coiling its empty chain round his fingers, his back to a sky of blazing holy rays; eyes on the free city of bronze domes, guild towers and harbour below, a quiet smile; bright midmorning.
+   Wears: a free citizen's travelling gear: a weathered brown leather jerkin and bracers, a rust-red wool cloak, a belt of pouches with a small bronze guild token, worn boots.
+3. **Sees Ghosts**: Lowering his right hand to let the ghost of a white cat rub against his fingertips, his left hand gripping the bronze arm of his throne; brows drawn up in sorrow, eyes following the drifting dead through the haze of his bronze-and-black throne hall; pale-gold afternoon light on him alone.
+   Wears: his throne-room robe of plain deep royal-blue wool with a high black collar and bronze clasps, a bronze-buckled belt, no holy symbols anywhere.
+4. **Marble Mortal**: Holding up a single grey hair just pulled from his temple between finger and thumb, his other hand tilting a small tarnished bronze hand mirror away from himself; eyes narrowed on the hair, mouth tight; a bare stone bedchamber at first light, cold grey-blue dawn through one narrow window.
+   Wears: a plain undyed linen nightshirt with a rough oatmeal wool blanket pulled around his shoulders, like any ageing man woken too early.
 
 ## Charadon (Doviello)
-1. **Wolf Father**: wolves at his knees like children, his face blank; snow.
-2. **Returned Dead**: called back from the grave, frost in his beard, testing a hand that is not quite alive; barrow and aurora.
-3. **Blank Approval**: the expressionless stare of the boy who watched his wolves cull his family; bleached winter light.
-4. **Strength Only**: an old giant who respects nothing but force, looking down at you; skulls on a standing stone.
+1. **Wolf Father**: Holding a wolf pup up by the scruff at eye level in his right hand, eyes on it, looking it over, his left hand heavy on its mother's head at his knee, more wolves pressing round his legs like children; a snowy pine clearing, soft grey morning, snow falling.
+   Wears: a vast shaggy cloak of many grey wolf pelts sewn together, their tails still hanging at the hem, over a plain charcoal felt tunic.
+2. **Returned Dead**: Slowly closing and opening his left hand before his face, testing grey fingers not quite alive, his right hand braced on the stone lintel of the barrow he has just left; eyes on the hand; frost in his beard and brows; green aurora over a midnight barrow field.
+   Wears: his burial gear: ancient bronze scale armour gone green with age and rimed with white frost, grave goods of amber beads and bone amulets at his neck, a frozen hide shroud over one shoulder.
+3. **Blank Approval**: Notching a tally stick in his left hand with a flint knife in his right, the blade biting into the wood, one notch per survivor; eyes level and empty, straight on the viewer, as if counting you next; a bare hilltop above a hide-tent camp, bleached noon glare.
+   Wears: a hunter's plain undyed hide coat and leggings, laced with sinew and bleached pale by snow, a collar of grey hare fur, like the clothes he wore as a lost boy.
+4. **Strength Only**: Tying a bleached horned beast skull onto the leaning standing stone among the others, pulling the rawhide knot tight with his right fist, his left hand gripping a huge stone maul over his shoulder; chin lowered, looking down at the viewer; a windswept ridge at red stormy dusk.
+   Wears: a sleeveless hauberk of heavy blackened iron rings over oxblood leather, his huge scarred arms bare, thick iron torcs on his upper arms, a belt of wolf teeth.
 
 ## Dain (Amurites)
-1. **Clockwork Daydream**: lost in a spinning brass gear, the meeting forgotten; sunset dust motes.
-2. **Siege Mage**: hat askew, eyes suddenly lethal, a fireball cupped in one hand; a burning wall behind.
-3. **Always Late**: a sheepish smile, the sun already down, the orrery still half built.
-4. **Chalk Genius**: equations of light floating around him, absently chalking one onto your sleeve; violet study.
+1. **Clockwork Daydream**: Setting a small brass cogwheel spinning on a pin with a flick of his right forefinger, his left hand holding a half-built orrery ring steady, gazing at the gear with rapt childlike fondness, head tilted, unaware of the viewer; a window seat in a bare antechamber, rose-amber sunset, dust motes.
+   Wears: a tinkerer's shirtsleeves: a creased cream linen shirt with the sleeves rolled up, a brown leather waistcoat with brass buttons, its pockets full of tiny tools and gears.
+2. **Siege Mage**: A roaring fireball cupped in his raised right hand, aimed away from the viewer, his left hand clamping his askew hat down against the hot wind, eyes suddenly cold and lethal on a city wall off to one side; siege lines at night, city walls burning orange behind him.
+   Wears: a padded war-mage's gambeson of soot-blackened dark red, singed at every edge, rune-stitched leather bracers, a soldier's satchel of spell scrolls across his chest.
+3. **Always Late**: Hurrying, a half-built brass orrery hugged against his chest under his left arm, his right hand stuffing loose papers into his sleeve, a sheepish apologetic smile straight at the viewer; an Amurite colonnade at deep blue twilight, the sun already down behind violet spires, rune lamps just lit.
+   Wears: his formal archmage's robes of state, thrown on in a hurry: deep violet velvet with gold-embroidered stars, buttoned wrong, the gold chain of office twisted over one shoulder.
+4. **Chalk Genius**: Absently chalking a formula onto the viewer's sleeve at the lower edge of the frame with his right hand, a slate of sums in his left, brows knit, eyes on the formula, not the viewer; equations of violet light floating around him; his cluttered study at midnight.
+   Wears: a long black lecturer's gown, white with chalk dust down the front and sleeves, over a grey wool waistcoat, a stub of chalk tucked behind one ear.
 
 ## Decius (Bannor, Malakim, Calabim)
-1. **Borrowed Throne**: a dark elf standing beside a human throne, one hand on its arm, a crown not made for him tipped on his brow; amber dusk.
-2. **Three Crowns**: the crowns of three peoples on the table before him, one picked up idly; war tent.
-3. **Exile King**: dusky blue skin and white hair among human courtiers who whisper behind their hands.
-4. **Expects Betrayal**: an unopened letter in one hand, the other resting on a dagger, tired eyes on you.
+1. **Borrowed Throne**: Drawing the dust sheet off a human king's gilded throne with his right hand, his left thumb hooked in his sword belt, a dry half-smile, eyes level on the viewer; a captured human throne hall at amber dusk, dusty sunbeams across the faded banners of the kings before him.
+   Wears: a dead human king's ceremonial mantle of faded gold brocade trimmed with ermine, too short for his long frame, over a plain black soldier's tunic and boots.
+2. **Three Crowns**: Idly turning a white-gold Malakim sun-circlet in his right hand to catch the light, his left hand weighing a black-spiked Calabim crown, a gold Bannor crown on the campaign maps before him; eyes down on them, mouth flat; a desert war tent at white noon, sun glowing through the canvas.
+   Wears: a desert campaign surcoat of sun-faded sand linen over plain mail, a loose white Malakim head-wrap around his neck, dust on his boots.
+3. **Exile King**: Pulling the riding glove off his left hand finger by finger with his right as he walks in, eyes sliding sideways to the human courtiers whispering behind their hands, a dry half-smile; a bright white marble human court at morning, coloured light from stained glass on their silks.
+   Wears: travel-worn road clothes: a charcoal riding coat and a cloak grey with dust, mud-splashed boots, plain and dark among the courtiers' bright silks.
+4. **Expects Betrayal**: Turning a sealed, unopened letter over in his left hand, his right hand resting on the hilt of a sheathed dagger at his belt, his tired eyes straight on the viewer; his bedchamber at midnight, one guttering candle, rain on the shutters.
+   Wears: his worn fine steel plate with silver pauldrons and gold trim, buckled on even indoors at midnight, under a heavy deep-crimson cloak.
 
 ## Einion (Elohim)
-1. **Absolute Peace**: unarmed and smiling before an army; an open gate at dawn.
-2. **Widower's Vow**: lips shaping the islanders' word for love; a journal, one candle, the evening sea.
-3. **Buried Sword**: a former warrior's scarred hands on a plain staff, his old sword hung on the wall behind.
-4. **Holy Ground**: kneeling at an Elohim holy site, light falling through broken arches, pilgrims far off.
+1. **Absolute Peace**: Holding a sealed treaty scroll across both hands before him, unarmed, a calm warm smile, eyes straight on the viewer as if the viewer were the army at his gate; the great gate of his city standing wide open behind him at dawn, soft gold light, mist.
+   Wears: a spotless pure-white robe with the long white stole of an Elohim peace envoy, a white cord at the waist, bare-headed, no armour and no weapon.
+2. **Widower's Vow**: His right forefinger tracing a word in a worn leather journal, his left hand closed around the painted seashell at his chest, lips shaping the Lanun word for love, eyes resting just below the viewer on a face no longer there; a whitewashed sea-cliff cell, one candle, blue evening sea.
+   Wears: a grey mourning habit of soft, much-worn wool, a black cord for a belt, a black mourning band stitched around one sleeve.
+3. **Buried Sword**: Tightening a white peace-cord around the sheathed hilt of his old longsword as he hangs it on the wall pegs with his right hand, his left hand gripping a plain wooden staff; eyes on the knot, jaw set; a bare stone guardroom of the monastery at hard white noon.
+   Wears: a warrior monk's old training garb of faded indigo linen, the sleeves tied back above the elbow to show his scarred forearms, cloth wrappings at his wrists.
+4. **Holy Ground**: Kneeling, clearing moss from the carved letters of an altar stone with his right hand, his left hand setting a lit clay lamp beside it; eyes on the letters, smiling in his beard; a ruined shrine among seven giant firs, gold late-afternoon light through broken arches, pilgrims far off.
+   Wears: a dusty pilgrim's cloak of moss-green and brown wool, a wide straw hat hanging at his back, a leather satchel and a water gourd at his hip.
 
 ## Ethne (Elohim)
-1. **Eyes Open**: making herself watch her people's misery, never looking away; torn-out hedges, the poor quarter.
-2. **Lame Parrot**: cradling the one-legged parrot as if it were the world; soft pearl light.
-3. **Young Crown**: the youngest ruler at the council table, chin up among old men, her crown a little too big.
-4. **Breaking Heart**: tears on a face that stays steady; overcast morning.
+1. **Eyes Open**: Pulling the last torn branches of the uprooted palace hedge aside with both hands, brows drawn up, eyes steady past the viewer's shoulder on the crowded, muddy poor quarter below; Splendor on her shoulder; raw stumps and torn earth; hazy late afternoon, a low sun through chimney smoke.
+   Wears: a plain dove-grey wool travelling cloak, hood down, over a simple white dress, her sturdy boots and hem muddied by the torn-up earth.
+2. **Lame Parrot**: Cradling Splendor on her cupped left hand against her chest and feeding him a grape from the fingertips of her right, eyes down on him, a soft smile, as if he were the world; under a tulip poplar by a marble fountain, misty garden at dawn, soft pearl light.
+   Wears: a soft primrose-yellow silk morning gown with white lace at the cuffs and collar, her hair loose down her back, no jewels.
+3. **Young Crown**: Pressing her father's too-large signet ring into the red wax of a decree with her right hand, her left flat on the council table, chin up, eyes steady on a doubting councillor to one side; Splendor on her chair back; a marble council hall at midday, grey-bearded elders in shadow.
+   Wears: her father's state regalia cut down for her: a stiff white-and-silver brocade gown, a royal-blue velvet mantle with silver clasps, and a silver crown a little too big, sitting low on her brow.
+4. **Breaking Heart**: Tying a white mourning ribbon onto a temple railing already hung with hundreds of them, both hands working the knot, tears running down a face she holds steady, eyes straight on the viewer; Splendor on her shoulder; temple steps in the poor quarter, overcast morning, flat grey drizzle.
+   Wears: a sober high-necked black mourning gown, a black lace veil pushed back off her face, a plain black cord at the waist.
 
 ## Faeryl (Svartalfar)
-1. **Velvet Venom**: a gracious toast, a stiletto under her lace cuff; candlelit dinner.
-2. **Winter Crown**: her half of the year, black trees and silver snow, the spider-leg crown sharp as frost; a blade in her fur muff.
-3. **Spider's Court**: courtiers caught like flies in silver web shadows behind her, a fan hiding a blade.
-4. **Knife Smile**: her warmest smile aimed at her cousin across the table, one hand under the tablecloth.
+1. **Velvet Venom**: Raising a glass of pale wine in a gracious toast with her right hand, smiling at a guest across the table; her left hand on the tablecloth, the stiletto up inside its black lace cuff, its spider pommel showing at her wrist on the viewer's side; candlelit dinner at night.
+   Wears: a high-collared evening gown of deep purple velvet with long black lace cuffs and silver spiderweb embroidery, amethysts at her throat.
+2. **Winter Crown**: A Seelie envoy walking ahead, unaware; her left hand holding a white fur muff shut on his side, her right inside it on the stiletto's spider hilt, the open end toward the viewer; a small cold smile straight at the viewer, frost on her crown; black trees, moonlit silver snow.
+   Wears: her winter furs: a long hooded mantle of white winter fox, the hood down, over a silver-grey brocade gown, frost-white lace at the throat.
+3. **Spider's Court**: Holding a black lace fan open before her lower face in her right hand, the stiletto along its ribs on the viewer's side; her left hand given to a bowing courtier's kiss, eyes down through her lashes; her throne hall at dusk, courtiers caught in silver web shadows, violet witch-light.
+   Wears: a stiff formal court gown of black silk with a vast standing collar of silver spiderweb lace, fine silver threads like web strands trailing from her sleeves.
+4. **Knife Smile**: Pouring tea for her cousin across a small table with her right hand, her warmest smile on the cousin; her left hand in her lap below the tablecloth, holding the stiletto flat and sideways, hidden from the cousin, not from the viewer; a winter-palace window alcove, pale morning snow-light.
+   Wears: a soft, harmless-looking day gown of pale rose silk with tiny pearl buttons and a cream lace shawl, chosen to look kind.
 
 ## Falamar (Lanun)
-1. **Charming Fleecer**: the smile that empties purses, a stolen signet ring on his finger; sparkling harbour.
-2. **Proven Right**: spyglass lowered, a smug private smile; stern windows.
-3. **Plume and Cutlass**: a courtly bow, the white plume sweeping, the cutlass hilt at hand; full sail.
-4. **Pirate Courtier**: at a royal ball in his sea-coat, outrageously at ease among the nobles.
+1. **Charming Fleecer**: Holding out a quill to the viewer with his right hand, his left pressing a trade contract flat on a barrel head, a stolen signet ring glinting on that hand; the smile that empties purses, eyes straight on the viewer; a sunlit quay at bright morning, the harbour sparkling behind.
+   Wears: a merchant prince's finery: a cream silk doublet with gold buttons, a short turquoise cape over one shoulder, rings on every finger.
+2. **Proven Right**: Snapping a brass spyglass shut against his chest with his left hand, his right raising a goblet of wine in a private toast to the distant shore, a smug smile, eyes still on the quay through the stern windows; his gilded stern cabin at noon, sunlight rippling off the water.
+   Wears: cabin ease: an open-necked white linen shirt with full sleeves under an unbuttoned sea-green silk waistcoat, his coat thrown over a chair.
+3. **Plume and Cutlass**: Sweeping off his plumed tricorn in a low courtly bow with his right hand, his left hand holding a rigging line for balance, the cutlass hilt at his hip, grinning up at the viewer; the deck at full sail, a windy bright afternoon, white sails and spray.
+   Wears: boarding gear: a fitted black leather jerkin over a billowing white shirt, a wide crimson sash, high black sea boots.
+4. **Pirate Courtier**: Lounging against a gilded pillar, popping a sugared fruit from the royal banquet into his mouth with one hand, a brimming goblet in the other, eyes sliding sideways to the stiff nobles, grinning; a royal ballroom at night, blazing chandeliers, warm gold light.
+   Wears: his salt-stained royal-blue sea-coat with tarnished gold braid, a white lace jabot and sea boots still damp, plain among the nobles' silks.
 
 ## Flauros (Calabim)
-1. **Sundown Countdown**: timing the sun with his wine, the mob below about to fall into shadow.
-2. **Sister's Shadow**: lounging beside Alexis's empty throne, eyeing it.
-3. **Silver Tongue**: mid-speech, one hand turning a courtier's flourish, a whole torchlit hall hanging on his words.
-4. **Charming Rot**: handsome and smiling, a single wilted rose in his lapel; rain on gothic glass.
+1. **Sundown Countdown**: Holding a goblet of dark wine out over the balustrade with his right hand, his left turning a gold hourglass as its last sand runs out, eyes sliding sideways to the sinking sun; a gothic balcony at sunset, blood-orange light, the mob below about to fall into the spires' shadow.
+   Wears: a sleek long coat of black watered silk with a high collar and a blood-orange lining, black kid gloves, a black cravat with a single gold pin.
+2. **Sister's Shadow**: Lounging on the dais step beside his sister Alexis's empty throne, one hand trailing a fingertip through the dust on its carved arm, the other twisting her forgotten signet ring onto his little finger, eyes lifted to the empty seat, measuring; her throne hall before dawn, grey-blue light, candles guttered.
+   Wears: lounging clothes: a loose ivory silk shirt with full sleeves under a long open robe of midnight-blue brocade, velvet slippers.
+3. **Silver Tongue**: Mid-speech on a dais, dropping the scroll of his prepared speech unread into a brazier with his left hand, his right hand twirling a slim ebony cane, eyes sweeping the rapt crowd, smiling wide; a packed torchlit great hall in the evening, hundreds of upturned faces hanging on his words.
+   Wears: a resplendent crimson silk coat embroidered in gold, a gold-lined crimson cape thrown back over one shoulder, a heavy gold chain of office.
+4. **Charming Rot**: Fixing a single wilted rose into his lapel with his right hand, his left hand catching a falling petal, a handsome smile straight at the viewer; a decaying palace salon on a grey afternoon, rain streaming down tall gothic windows, cold blue-grey light.
+   Wears: an exquisite but centuries-old coat of dusty plum velvet, its lace cuffs yellowed and frayed, over a faded silk waistcoat with one button missing.
 
 ## Garrim (Luchuirp)
 1. **Crystal Thrall**: his left hand holding the crystal on a folded cloth, his right hand clamped around his left wrist, holding it back; eyes wide on the crystal, full of its red-violet light, mouth pulled down tight; his dark study at midnight, black mist curling, the crystal lighting him from below.

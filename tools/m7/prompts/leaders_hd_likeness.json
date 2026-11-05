@@ -138,5 +138,68 @@
   "costume": "flowing white-and-cream priest's robes with gold embroidery, an ochre sash and a loose cream headscarf.",
   "signature": "A GOLDEN SUN-DISC with straight pointed rays, the holy sign of Lugus, always hangs on a heavy chain at his chest.",
   "extra": "He never squints: even in the brightest light his amber-gold eyes stay wide open and his brows relaxed."
+ },
+ "cassiel": {
+  "pronoun": "he",
+  "body": "CASSIEL, the archangel who renounced the gods and became a mortal man, leader of the Grigori in the fantasy game Fall from Heaven: once an archangel, now wingless and mortal; male; ageless, looking about fifty; tall and lean. IVORY-WHITE SKIN like polished marble, finely carved noble features, long straight pale-gold hair with the first grey at the temples, deep grey eyes.",
+  "costume": "a plain deep royal-blue robe with a high black collar and bronze clasps, a bronze-buckled belt, no holy symbols.",
+  "signature": "Fine HAIRLINE CRACKS like those in an old marble statue run across his ivory skin at the temples, throat and backs of the hands, a faint cold white light showing in them.",
+  "extra": "What is left of the angel in him is uncanny, though he has no wings and his eyes are human grey: his face is too symmetrical and too calm for a mortal, like a statue that has learned to breathe; he never blinks; and the air around him is wrong: dust motes, smoke and candle flames near him hang motionless, as if he were the still centre of the room."
+ },
+ "charadon": {
+  "pronoun": "he",
+  "body": "CHARADON, the wolf-father who founded the Doviello, called back from the dead by his shamans, leader of the Doviello in the fantasy game Fall from Heaven: human; male; old but still hugely powerful; massive and broad, nearly a giant. Weather-beaten pale skin, old pale claw scars across one cheek and both forearms, shaggy grey hair, a matted grey beard, cold yellow-grey wolf's eyes.",
+  "costume": "black-dyed leather and dark iron scales with charcoal fur, and a belt of wolf teeth.",
+  "signature": "His GREY WOLF-HEAD HOOD is always on him, the snarling wolf's head on top of his own and its pelt spilling over his shoulders.",
+  "extra": "His face never moves, whatever he is doing: no snarl, no smile, no anger, mouth a flat line in the beard, his yellow-grey eyes level and unblinking like a wolf watching the weakest of a herd."
+ },
+ "dain": {
+  "pronoun": "he",
+  "body": "DAIN THE CASWALLAWN, absent-minded archmage and veteran siege-mage, leader of the Amurites in the fantasy game Fall from Heaven: human; male; in his late thirties; lanky and loose-limbed. Fair skin, untidy dark-brown hair, a scruffy beard, bright blue eyes.",
+  "costume": "rumpled violet robes with gold trim, a worn grey scarf, scorch marks on one sleeve.",
+  "signature": "His tall, crooked PURPLE WIZARD HAT WITH SMALL GOLD STARS is on his head, whatever else he wears.",
+  "extra": ""
+ },
+ "decius": {
+  "pronoun": "he",
+  "body": "DECIUS, the exile who rose to be king, leader of the Bannor, Malakim or Calabim in the fantasy game Fall from Heaven: a dark elf of Erebus ruling human nations; male; ageless, looking a weathered fifty; tall and lean. Dusky blue-grey skin, short soldier-cropped white hair, long pointed ears, a narrow hawkish face lined by campaigns, an old pale scar through one eyebrow, pale ice-grey eyes.",
+  "costume": "worn fine steel plate with silver pauldrons and gold trim under a heavy deep-crimson cloak.",
+  "signature": "A plain, dented STEEL CROWN, made for a broader human head, sits tipped askew on his brow.",
+  "extra": "His pale eyes are always tired and measuring, lids a little lowered and one eyebrow faintly raised: a man betrayed by every friend he has had, who expects you to be next."
+ },
+ "einion": {
+  "pronoun": "he",
+  "body": "EINION LOGOS, the ancient head of the monastic order, leader of the Elohim in the fantasy game Fall from Heaven: human; male; very old; lean and upright, a former warrior. Deeply lined tan skin, a long white beard, close-cropped white hair, steady grey eyes, old pale sword scars across the backs of his hands and forearms.",
+  "costume": "a plain white and ash-grey wool habit with a rope belt.",
+  "signature": "A small PAINTED SEASHELL, one his late wife painted herself, hangs on a cord at his chest.",
+  "extra": ""
+ },
+ "ethne": {
+  "pronoun": "she",
+  "body": "ETHNE THE WHITE, the young queen raised never to see suffering, leader of the Elohim in the fantasy game Fall from Heaven: human; female; about twenty; slight and graceful. Fair, pale skin, long straight white-blonde hair, large clear blue eyes.",
+  "costume": "a simple white gown with a high collar and silver embroidery, a pale grey shawl, a thin silver band in her hair.",
+  "signature": "SPLENDOR, her lame BLUE-AND-YELLOW PARROT, missing one claw and standing on one leg, is always with her, on her shoulder, on her hand or close by.",
+  "extra": "However much she feels, and it shows openly in her face, her eyes stay clear and steady and she never looks away."
+ },
+ "faeryl": {
+  "pronoun": "she",
+  "body": "FAERYL VICONIA, queen of the Unseelie winter court, leader of the Svartalfar in the fantasy game Fall from Heaven: dark elf; female; ageless, looking about thirty; tall and slender. Pale ash-grey skin, straight silver-white hair falling past long pointed ears, narrow violet eyes.",
+  "costume": "a high-collared gown of deep purple velvet with black lace and silver spiderweb embroidery, a mantle of black fur.",
+  "signature": "Her tall black-and-silver CROWN SHAPED LIKE ARCHED SPIDER LEGS rises from her silver hair.",
+  "extra": "In every portrait she hides a slim silver STILETTO with a small spider-shaped pommel where the viewer can see it and the person she is smiling at cannot; it lies flat and still, pointing at no one and never toward the viewer, with no blood anywhere. Whatever her mouth does, her violet eyes stay cold and still."
+ },
+ "falamar": {
+  "pronoun": "he",
+  "body": "FALAMAR, the charming pirate Sea-King, leader of the Lanun in the fantasy game Fall from Heaven: human; male; in his late thirties; lean and graceful. Sun-bronzed skin, black hair in a short queue, a neat pointed black beard, lively dark eyes, a gold earring.",
+  "costume": "a royal-blue captain's coat with gold braid over a white shirt with a lace jabot, a sea-blue sash with a cutlass hilt at his waist.",
+  "signature": "His broad BLUE TRICORN HAT WITH A LONG WHITE PLUME is on his head or in his hand.",
+  "extra": "He is always at his ease: a loose stance, weight on one hip, one corner of his mouth turned up as though at a private joke."
+ },
+ "flauros": {
+  "pronoun": "he",
+  "body": "FLAUROS, Grand Prince of the vampires and younger brother of Alexis, leader of the Calabim in the fantasy game Fall from Heaven: vampire, once human; male; ageless, looking about thirty-five; tall and sleek. A pale, strikingly handsome face, swept-back dark auburn hair, piercing gold-yellow eyes.",
+  "costume": "a high-collared black velvet coat embroidered in dark red, a loosely tied crimson silk cravat with a ruby pin.",
+  "signature": "His long white FANGS show at the corners of his mouth.",
+  "extra": "He is never in a hurry: heavy-lidded gold eyes, a slow private smile, a loose, lounging ease in every movement. No blood anywhere in the picture."
  }
 }
