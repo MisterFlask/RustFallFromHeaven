@@ -140,7 +140,9 @@ fn capture_asks_keep_or_raze_inside_the_command() {
 /// the next control point asks for research again.
 #[test]
 fn research_empty_after_turn_four_takes_the_ai_pick_once() {
-    let (mut s, _) = duel(12, |_, _| 0);
+    // (Seed 21: a seed whose undefended capital stands to turn 8; seed 12's fell to a barbarian
+    // after the building tiers changed the game.)
+    let (mut s, _) = duel(21, |_, _| 0);
     to_turn(&mut s, 7);
     let h = s.human;
     ok(&mut s, Command::Research { tech: None, shift: false });

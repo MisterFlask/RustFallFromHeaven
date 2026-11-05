@@ -102,7 +102,9 @@ fn group_of(g: &Game, u: UnitId) -> GroupId {
 /// the workers improve the capital's land.
 #[test]
 fn automated_workers_improve_the_land() {
-    let mut s = session(41, true);
+    // (Seed 27: a seed whose undefended capital stands for the 25 turns; seed 41's fell to a
+    // barbarian after the building tiers changed the game.)
+    let mut s = session(27, true);
     let h = s.human;
     let w = unit(&mut s, "UNIT_WORKER");
     ok(&mut s, Command::SetOption { option: PlayerOptionType::PLAYEROPTION_QUICK_MOVES, value: true });

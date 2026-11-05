@@ -62,7 +62,7 @@ fn play_game(ng: NewGame, seed: u32, turns: i32, check_every: i32) -> Played {
 /// barbarians are not all gone (a barbarian city holding the Dragon's Horde keeps spawning units
 /// through FfH's Python, which ignores `GAMEOPTION_NO_BARBARIANS`), so the bot may be eliminated
 /// before turn 150 (`Stop::Over`); either way the outcome is not a property of a particular seed
-/// that a new AI or new content would break, so the seeds are free (1, 2, 3) and no
+/// that a new AI or new content would break, so the seeds are free (2, 3, 4) and no
 /// seed-specific outcome is asserted. What is asserted is
 /// breadth coverage that holds for every full run: no panic, no stuck turn, ffh-stress's
 /// invariants every 5 turns, and the bot founds cities, researches, answers popups and produces
@@ -73,11 +73,13 @@ fn play_game(ng: NewGame, seed: u32, turns: i32, check_every: i32) -> Played {
 /// and is dropped.
 #[test]
 fn t1_scripted_bot_games() {
-    for seed in [1, 2, 3] {
+    // (Seeds 2, 3, 4: seed 1's bot lost its only city at turn 42 after the building tiers changed
+    // the game, before founding a second; a re-picked seed, as the module asks.)
+    for seed in [2, 3, 4] {
         let played = play_game(peaceful_game(seed), seed, 150, 5);
-        // The run may end with the bot eliminated by Python-spawned barbarians (seed 2: barbarian
-        // warriors and a Son of the Inferno take the bot's last cities by turn 142); what must not
-        // happen is a stuck turn (checked in `play_game`).
+        // The run may end with the bot eliminated by Python-spawned barbarians (seed 2: the bot's
+        // last city falls at turn 97); what must not happen is a stuck turn (checked in
+        // `play_game`).
         assert!(matches!(played.stop, Stop::Human | Stop::Over), "seed {seed}: {:?}", played.stop);
     }
 }

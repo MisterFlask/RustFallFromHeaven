@@ -232,7 +232,10 @@ fn a_city_s_defense_costs_slots_and_gives_dv_nothing() {
     let d = w.g.d;
     let (tx, ty) = w.g.map.xy(to);
     let city = w.g.player_init_city(p1, tx, ty, true, true);
-    w.g.city_set_num_real_building(city, d.t::<BuildingType>("BUILDING_WALLS"), 1);
+    // Standard Walls, two Sentinels (the city's building tier, docs/SUITABILITY.md).
+    let walls = d.t::<BuildingType>("BUILDING_WALLS");
+    w.g.cities[city].building_tiers[d.buildings[walls].building_class_type.unwrap()] = BuildingTierType::STANDARD;
+    w.g.city_set_num_real_building(city, walls, 1);
     w.g.players[p1].city_defense_modifier = 20;
     let defender = w.unit(p1, "UNIT_AXEMAN", to);
     let cannon = w.unit(p0, "UNIT_CANNON", from);
