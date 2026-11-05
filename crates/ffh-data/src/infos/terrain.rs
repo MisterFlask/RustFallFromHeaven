@@ -448,6 +448,11 @@ pub struct ImprovementInfo {
     pub feature_upgrade: Option<FeatureType>,
     /// `getPrereqCivilization()` (C++ `readPass3`)
     pub prereq_civilization: Option<CivilizationType>,
+    /// Not in FFH2: the tech whose research rate rises by `tech_research_percent` percent for a
+    /// player whose team has this improvement inside a member's borders (`tech_research_bonus`;
+    /// the unique features). `GameData::tech_research_bonuses` lists them by tech.
+    pub tech_research_bonus: Option<TechType>,
+    pub tech_research_percent: i32,
     /// `getPythonAtRange()`: Python called (spell module `atRange`, if the plot's Python is
     /// active) when a unit moves onto an ADJACENT plot (`CvUnit::setXY`).
     pub python_at_range: String,
@@ -521,6 +526,8 @@ pub fn read_improvement(rd: &Rd) -> ImprovementInfo {
         bonus_convert: rd.rf("bonus_convert"),
         feature_upgrade: rd.rf("feature_upgrade"),
         prereq_civilization: rd.rf("prereq_civilization"),
+        tech_research_bonus: rd.rf("tech_research_bonus"),
+        tech_research_percent: rd.int("tech_research_percent"),
         python_at_range: rd.string("python_at_range"),
         python_on_move: rd.string("python_on_move"),
         spawn_unit_type: rd.rf("spawn_unit_type"),

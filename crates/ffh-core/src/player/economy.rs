@@ -887,6 +887,12 @@ impl Game {
 
         modifier += (possible_paths - unknown_paths) * d.defines.tech_cost_known_prereq_modifier;
 
+        // Not in FFH2: a unique feature inside the team's borders multiplies research on its tech.
+        let bonus = self.team_tech_research_bonus_percent(team, tech);
+        if bonus > 0 {
+            modifier = modifier * (100 + bonus) / 100;
+        }
+
         modifier
     }
 

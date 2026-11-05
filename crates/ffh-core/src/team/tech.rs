@@ -290,6 +290,28 @@ impl Game {
         1.max(cost)
     }
 
+    /// The research-rate bonus (percent) team `t` holds on `tech`: the largest of those of the
+    /// improvements raising it (`ImprovementInfo::tech_research_bonus`) that lie inside a living
+    /// member's borders; bonuses do not add up. `player_calculate_research_modifier` applies it.
+    /// Not in FFH2.
+    pub fn team_tech_research_bonus_percent(&self, t: TeamId, tech: TechType) -> i32 {
+        let mut best = 0;
+        for &(imp, pct) in &self.d.tech_research_bonuses[tech] {
+            if pct > best && self.team_holds_improvement(t, imp) {
+                best = pct;
+            }
+        }
+        best
+    }
+
+    /// Whether improvement `imp` lies inside the borders of a living member of team `t`.
+    pub fn team_holds_improvement(&self, t: TeamId, imp: ImprovementType) -> bool {
+        self.player_ids().any(|p| {
+            let pl = &self.players[p];
+            pl.alive && pl.team == t && pl.improvement_count[imp] > 0
+        })
+    }
+
     /// C++ `CvTeam::getResearchLeft`.
     pub fn team_get_research_left(&self, t: TeamId, tech: TechType) -> i32 {
         (self.team_get_research_cost(t, tech) - self.team_get_research_progress(t, Some(tech))).max(0)

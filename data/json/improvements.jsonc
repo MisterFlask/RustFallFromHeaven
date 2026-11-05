@@ -14,7 +14,9 @@
     "terrain_makes_valids": {"TERRAIN_OCEAN": true},
     "tech_yield_changes": "",
     "route_yield_changes": "",
-    "unique": true
+    "unique": true,
+    "tech_research_bonus": "TECH_ARCANE_LORE",
+    "tech_research_percent": 100
   },
   {
     "type": "IMPROVEMENT_BARROW",
@@ -75,7 +77,9 @@
     },
     "tech_yield_changes": "",
     "route_yield_changes": "",
-    "unique": true
+    "unique": true,
+    "tech_research_bonus": "TECH_STRENGTH_OF_WILL",
+    "tech_research_percent": 100
   },
   {
     "type": "IMPROVEMENT_BROKEN_SEPULCHER",
@@ -106,6 +110,8 @@
     "tech_yield_changes": "",
     "route_yield_changes": "",
     "unique": true,
+    "tech_research_bonus": "TECH_MALEVOLENT_DESIGNS",
+    "tech_research_percent": 100,
     "bonus_convert": "BONUS_MANA_DEATH"
   },
   {
@@ -269,6 +275,8 @@
     ],
     "route_yield_changes": "",
     "unique": true,
+    "tech_research_bonus": "TECH_ANIMAL_MASTERY",
+    "tech_research_percent": 100,
     "bonus_convert": "BONUS_IVORY"
   },
   {
@@ -502,6 +510,8 @@
     "route_yield_changes": "",
     "requires_peak": true,
     "unique": true,
+    "tech_research_bonus": "TECH_ENGINEERING",
+    "tech_research_percent": 100,
     "python_at_range": "atRangeGuardian(pCaster, pPlot)"
   },
   {
@@ -576,6 +586,8 @@
     "tech_yield_changes": "",
     "route_yield_changes": "",
     "unique": true,
+    "tech_research_bonus": "TECH_SORCERY",
+    "tech_research_percent": 100,
     "bonus_convert": "BONUS_MANA_ICE",
     "python_on_move": "onMoveLetumFrigus(pCaster, pPlot)"
   },
@@ -614,6 +626,8 @@
     "tech_yield_changes": "",
     "route_yield_changes": "",
     "unique": true,
+    "tech_research_bonus": "TECH_PASS_THROUGH_THE_ETHER",
+    "tech_research_percent": 100,
     "python_on_move": "onMoveMaelstrom(pCaster, pPlot)"
   },
   {
@@ -1065,6 +1079,8 @@
     "tech_yield_changes": "",
     "route_yield_changes": "",
     "unique": true,
+    "tech_research_bonus": "TECH_THEOLOGY",
+    "tech_research_percent": 100,
     "visibility_change": 6,
     "bonus_convert": "BONUS_MANA_SUN",
     "python_on_move": "onMoveMirrorOfHeaven(pCaster, pPlot)"
@@ -1116,6 +1132,8 @@
     "tech_yield_changes": "",
     "route_yield_changes": "",
     "unique": true,
+    "tech_research_bonus": "TECH_RAGE",
+    "tech_research_percent": 100,
     "range": 3,
     "range_defense_modifier": 25
   },
@@ -1322,6 +1340,8 @@
     "tech_yield_changes": "",
     "route_yield_changes": "",
     "unique": true,
+    "tech_research_bonus": "TECH_MEDICINE",
+    "tech_research_percent": 100,
     "heal_rate_change": 50,
     "python_on_move": "onMovePoolOfTears(pCaster, pPlot)"
   },
@@ -1349,6 +1369,8 @@
     "tech_yield_changes": "",
     "route_yield_changes": "",
     "unique": true,
+    "tech_research_bonus": "TECH_FANATICISM",
+    "tech_research_percent": 100,
     "bonus_convert": "BONUS_MANA_FIRE"
   },
   {
@@ -1401,7 +1423,9 @@
       }
     ],
     "route_yield_changes": "",
-    "unique": true
+    "unique": true,
+    "tech_research_bonus": "TECH_TAXATION",
+    "tech_research_percent": 100
   },
   {
     "type": "IMPROVEMENT_RING_OF_CARCER",
@@ -1412,7 +1436,9 @@
     "terrain_makes_valids": {"TERRAIN_SNOW": true},
     "tech_yield_changes": "",
     "route_yield_changes": "",
-    "unique": true
+    "unique": true,
+    "tech_research_bonus": "TECH_ASTRONOMY",
+    "tech_research_percent": 100
   },
   {
     "type": "IMPROVEMENT_RUINS",
@@ -1446,7 +1472,9 @@
     "feature_makes_valids": {"FEATURE_FOREST": true},
     "tech_yield_changes": "",
     "route_yield_changes": "",
-    "unique": true
+    "unique": true,
+    "tech_research_bonus": "TECH_RELIGIOUS_LAW",
+    "tech_research_percent": 100
   },
   {
     "type": "IMPROVEMENT_SHIP_WRECK",
@@ -1536,6 +1564,8 @@
     "tech_yield_changes": "",
     "route_yield_changes": "",
     "unique": true,
+    "tech_research_bonus": "TECH_MITHRIL_WORKING",
+    "tech_research_percent": 100,
     "bonus_convert": "BONUS_MANA_EARTH"
   },
   {
@@ -1558,6 +1588,8 @@
     "tech_yield_changes": "",
     "route_yield_changes": "",
     "unique": true,
+    "tech_research_bonus": "TECH_DIVINE_ESSENCE",
+    "tech_research_percent": 100,
     "heal_rate_change": 25,
     "bonus_convert": "BONUS_MANA_LIFE"
   },
@@ -1732,6 +1764,8 @@
     ],
     "route_yield_changes": "",
     "unique": true,
+    "tech_research_bonus": "TECH_COMMUNE_WITH_NATURE",
+    "tech_research_percent": 100,
     "bonus_convert": "BONUS_FRUIT_OF_YGGDRASIL"
   },
   {

@@ -57,6 +57,10 @@ macro_rules! game_data {
             /// Derived at load: the role a unit changes to by promotion, from the role with
             /// `FromRole` (from, promotion, to): a Frontline unit with Formation is a Screen.
             pub screen_role: Option<(CombatRoleType, PromotionType, CombatRoleType)>,
+            /// Derived at load: for each tech, the improvements that raise the research rate on it
+            /// and by how many percent (`ImprovementInfo::tech_research_bonus`), in improvement id
+            /// order.
+            pub tech_research_bonuses: IdxVec<TechType, Vec<(ImprovementType, i32)>>,
         }
 
         /// (data file, registry class) for every info table, in load order.
@@ -83,7 +87,7 @@ macro_rules! game_data {
                 )*
                 let defines = Defines::from_map(&define_map);
                 // (derived tables are filled by `GameData::derive`)
-                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unit_roles: IdxVec::new(), screen_role: None }
+                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unit_roles: IdxVec::new(), screen_role: None, tech_research_bonuses: IdxVec::new() }
             }
 
             /// Everything loaded, one `(name, Debug text)` line per table entry, in a fixed order
@@ -108,6 +112,7 @@ macro_rules! game_data {
                 out.push(("combat_mod_promotions".to_string(), format!("{:?}", self.combat_mod_promotions)));
                 out.push(("unit_roles".to_string(), format!("{:?}", self.unit_roles)));
                 out.push(("screen_role".to_string(), format!("{:?}", self.screen_role)));
+                out.push(("tech_research_bonuses".to_string(), format!("{:?}", self.tech_research_bonuses)));
                 out.push(("warnings".to_string(), format!("{:?}", self.warnings)));
                 out
             }
@@ -306,6 +311,13 @@ impl GameData {
             }
         }
         self.derive_engagements();
+        self.tech_research_bonuses = IdxVec::from_elem(Vec::new(), self.techs.len());
+        for i in self.improvements.keys() {
+            let info = &self.improvements[i];
+            if let Some(t) = info.tech_research_bonus.filter(|_| info.tech_research_percent > 0) {
+                self.tech_research_bonuses[t].push((i, info.tech_research_percent));
+            }
+        }
     }
 
     /// Engagement combat's derived tables (`unit_roles`, `screen_role`), and the checks the

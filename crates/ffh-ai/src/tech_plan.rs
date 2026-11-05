@@ -55,7 +55,8 @@ pub struct Goal {
 }
 
 /// The unknown techs needed to reach a goal (the goal included; the cheapest branch of each OR
-/// prerequisite), and their research left in total.
+/// prerequisite), and their research left in total (`effective_left`: halved where a held unique
+/// feature doubles the research).
 #[derive(Clone, Debug)]
 pub struct Path {
     pub techs: Vec<TechType>,
@@ -318,6 +319,14 @@ fn religion_preferences(g: &Game, p: PlayerId, n: &Names) -> Vec<TechType> {
     prefs
 }
 
+/// The research left on `t` for team `team`, scaled to the rate it gets: a tech whose research a
+/// held unique feature doubles (`team_tech_research_bonus_percent`) counts half. What the plan and
+/// the research scorer compare techs by.
+pub fn effective_left(g: &Game, team: TeamId, t: TechType) -> i64 {
+    let left = g.team_get_research_left(team, t).max(1) as i64;
+    left * 100 / (100 + g.team_tech_research_bonus_percent(team, t) as i64)
+}
+
 /// The unknown techs `p` needs for `goal` and their research left, or `None` if some needed
 /// tech can never be researched.
 pub fn path(g: &Game, p: PlayerId, goal: TechType) -> Option<Path> {
@@ -337,7 +346,7 @@ pub fn path(g: &Game, p: PlayerId, goal: TechType) -> Option<Path> {
             return i64::MAX;
         }
         let info = &g.d.techs[t];
-        let mut total = g.team_get_research_left(team, t).max(1) as i64;
+        let mut total = effective_left(g, team, t);
         for &a in &info.prereq_and_techs {
             let c = cost(g, p, team, a, memo, depth + 1);
             if c == i64::MAX {
@@ -384,7 +393,7 @@ pub fn path(g: &Game, p: PlayerId, goal: TechType) -> Option<Path> {
             }
         }
     }
-    let left = techs.iter().map(|&t| g.team_get_research_left(team, t).max(1) as i64).sum();
+    let left = techs.iter().map(|&t| effective_left(g, team, t)).sum();
     Some(Path { techs, left })
 }
 

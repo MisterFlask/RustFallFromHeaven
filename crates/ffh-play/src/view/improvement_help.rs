@@ -98,6 +98,11 @@ pub fn effects(d: &GameData, i: ImprovementType) -> String {
         }
     }
 
+    // Not in FFH2 (`tech_research_bonus`, applied by `player_calculate_research_modifier`).
+    if let Some(t) = info.tech_research_bonus.filter(|_| info.tech_research_percent > 0) {
+        lines.push(format!("[ICON_BULLET]Inside your borders: {:+}% [ICON_RESEARCH] on {}", info.tech_research_percent, names::display(d, t)));
+    }
+
     // FFH2 says nothing of the rest. C++ `CvPlot::setImprovementType` puts the bonus on the plot.
     if let Some(b) = info.bonus_convert {
         lines.push(format!("[ICON_BULLET]Provides {}", names::display(d, b)));

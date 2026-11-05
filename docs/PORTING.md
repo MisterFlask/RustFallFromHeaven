@@ -250,6 +250,22 @@ flag.
   settlers were also tried and reached about the same end state. They brought barbarian cities from
   turn 1 (`createBarbarianCities` starts once civs average two cities), and civs lost 21 cities to
   barbarians by turn 100 instead of 12.
+- **Unique features double research on a tech** (2026-11-05). Each of the 17 unique features names
+  a tech (`tech_research_bonus`, `tech_research_percent: 100` in `improvements.jsonc`). While the
+  feature is inside the borders of a living member of a team, that team's players research the tech
+  at double rate (`player_calculate_research_modifier` multiplies its modifier by 2, so commerce
+  research and overflow on it count double; lump grants such as a Great Sage's are not affected).
+  The cost is unchanged. It is checked every turn, so the bonus follows the tile when it changes
+  hands, and progress is kept. Bonuses on one tech do not add up (the largest counts). Meant to
+  make the features worth long-term planning and border fights; the techs are medium to large and
+  form paths. Yggdrasil: Commune with Nature; Tomb of Sucellus: Divine Essence; Mirror of Heaven:
+  Theology; Seven Pines: Religious Law; Standing Stones: Mithril Working; Guardian of Pristin
+  Pass: Engineering; Broken Sepulcher: Malevolent Designs; Pyre of the Seraphic: Fanaticism;
+  Odio's Prison: Rage; Letum Frigus: Sorcery; Maenalus: Arcane Lore; Bradeline's Well: Strength
+  of Will; Maelstrom: Pass Through the Ether; Ring of Carcer: Astronomy; Dragon Bones: Animal
+  Mastery; Remnants of Patria: Taxation; Pool of Tears: Medicine. The AI compares techs by research
+  left at the rate it gets (`tech_plan::effective_left`) and values city sites with an unclaimed
+  feature in reach a quarter higher per feature (`sites::research_feature_bonus`).
 
 **Container order and path finding**
 
