@@ -35,6 +35,9 @@ STYLES = {
     # four separate concepts per leader for the same look (prompts/leaders_hd_concepts/<leader>_c1..c4.txt)
     "hdc": ("style_leader_hd.txt", "leaders_hd_concepts",
             [ROOT / "anchors" / "anchor_leader_hd_1.png", ROOT / "anchors" / "anchor_leader_hd_2.png"], "leaders_hd_concepts"),
+    # four 1-3 word vibes per leader (prompts/leaders_hd_vibes.md -> prompts/leaders_hd_vibes/<leader>_v1..v4.txt)
+    "hdv": ("style_leader_hd.txt", "leaders_hd_vibes",
+            [ROOT / "anchors" / "anchor_leader_hd_1.png", ROOT / "anchors" / "anchor_leader_hd_2.png"], "leaders_hd_vibes"),
 }
 STYLE = STYLES["bust"]
 MODEL = "gpt-image-2.5-sunburst"
