@@ -32,8 +32,23 @@ EXTRA = {
                    "half-closed, mouth slack, no tension anywhere. This weariness overrides any drama in the style: no "
                    "heroic pose, no wind in her hair, no triumphant light, no rim light."),
 }
-# whole likenesses written for the vibes, replacing the extracted ones (the owner's notes, 2026-11-05)
+# whole likenesses written for the vibes, replacing the extracted ones (the owner's notes, 2026-11-05):
+# (body, usual costume, signature item); a vibe's Wears: line replaces the costume
+PRONOUN = {"basium": "he", "sabathiel": "he"}  # default "she"
 LIKENESS = {
+    "basium": ("BASIUM, the rebel angel who defied the gods to keep fighting demons, leader of the Mercurians in the "
+               "fantasy game Fall from Heaven: a fallen angel in mortal flesh; male; ageless; towering, massive. Pale, "
+               "weathered skin, a shaved head, a square jaw, THIN PALE RITUAL SCARS cut in straight lines across both "
+               "cheeks and his brow, faintly shining.",
+               "dented silver-grey plate over a clean white tabard with a gold winged-sun emblem.",
+               "Battered grey-white WINGS with ragged feathers spread behind him. No blood anywhere on him, his clothes "
+               "or his weapons."),
+    "sabathiel": ("SABATHIEL, the hidden angel-king, leader of the Bannor in the fantasy game Fall from Heaven: an angel; "
+                  "male; ageless; huge and broad-shouldered, his skin giving off a faint pale glow. A smooth, flawless "
+                  "pale face, long straight silver-white hair, luminous pale-grey eyes.",
+                  "polished white-and-silver plate over a long white robe, bright gold at the collar, a crimson-and-white "
+                  "tabard.",
+                  "Great WHITE FEATHERED WINGS folded high behind him."),
     "hannah": ("HANNAH THE IRIN, the mutineer pirate queen born of a cult dreamer, leader of the Lanun in the fantasy "
                "game Fall from Heaven: human-seeming; female; about thirty; wiry. Wind-burned olive skin with a grey, "
                "drowned pallor, long black hair always wet and hanging straight and heavy, pale grey eyes like worn sea "
@@ -76,7 +91,8 @@ for key, head in HEAD.items():
     sents = re.split(r"(?<=[.])\s+(?=[A-Z])", desc)
     cut = next(i for i, s in enumerate(sents) if i > 0 and re.search(r"\bturned\b", s, re.I))
     whole = LIKENESS.get(key)  # (body, usual costume, signature) when written for the vibes
-    likeness = f"{whole[0]} She wears {whole[1]} {whole[2]}" if whole else " ".join(sents[:cut])
+    he = PRONOUN.get(key, "she")
+    likeness = " ".join(sents[:cut])
     for old, new in FIX.get(key, []):
         assert old in likeness, (key, old)
         likeness = likeness.replace(old, new)
@@ -85,14 +101,18 @@ for key, head in HEAD.items():
         print(f"{key:12} keeps {cut} sentences; pose starts: {sents[cut][:70]!r}")
         continue
     for i, (vibe, line, wears) in enumerate(vibes, 1):
-        lk, extra = likeness, EXTRA.get(key, "")
-        if wears:
-            assert whole, f"{key}: a Wears: line needs a split likeness in LIKENESS"
-            lk = f"{whole[0]} For this portrait she wears {wears} {whole[2]}"
-        if (key, vibe) == ("sabathiel", "Hidden Angel"):  # the disguise: only his shadow shows the angel
-            lk = lk.replace(", and great WHITE FEATHERED WINGS folded high behind him", "")
-            extra = ("In the room he passes for a man, with a calm human face and grey eyes; only his shadow shows "
-                     "what he is.")
+        extra = EXTRA.get(key, "")
+        hidden = (key, vibe) == ("sabathiel", "Hidden Angel")  # the disguise: only his shadow shows the angel
+        if whole:
+            body_, costume, sig = whole
+            dress = f"For this portrait {he} wears {wears}" if wears else f"{he.capitalize()} wears {costume}"
+            lk = " ".join(x for x in (body_, dress, "" if hidden else sig) if x)
+        else:
+            assert not wears, f"{key}: a Wears: line needs a split likeness in LIKENESS"
+            lk = likeness
+        if hidden:
+            extra = ("In the room he passes for a man, with a calm human face and grey eyes and no wings; only his "
+                     "shadow shows what he is.")
         body = " ".join(x for x in (
             lk, extra,
             f"Pose, light and setting: {line[0].upper() + line[1:]}",

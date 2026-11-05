@@ -66,10 +66,14 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 4. **Too Civilized**: sneering at a captured silk cushion, the soft city he took burning behind.
 
 ## Basium (Mercurians)
-1. **Wrath Incarnate**: drawing a blade of white fire out of the empty air with one hand; a battlefield at red-black dusk below him, soldiers half his height shielding their eyes.
-2. **Unblinking Host**: holding a struggling imp off the ground by the scruff at arm's length without looking at it; flat ash-grey noon on a scorched plain.
-3. **Thunder Prayer**: both hands pressed around the hilt of a ceremonial dagger, his ritual scars blazing; storm clouds splitting over a ruined chapel at night.
-4. **Not Yet**: driving the pole of a white war banner into the rock with one hand, the army behind him halting; the Mercurian gate blazing at dawn.
+1. **Wrath Incarnate**: drawing a blade of white fire out of the empty air with his right hand, his left hand closing on nothing as if crushing it; a battlefield at red-black dusk below him, soldiers half his height shielding their eyes.
+   Wears: full battle plate glowing white-hot along its seams, a tabard of white flame edged in gold.
+2. **Unblinking Host**: holding a struggling imp off the ground by the scruff at arm's length without looking at it, his other hand resting on the pommel of a sheathed sword; flat ash-grey noon on a scorched plain.
+   Wears: seamless mirror-polished armour with no visible joins, like a statue, reflecting everything and showing nothing.
+3. **Thunder Prayer**: both hands pressed around the hilt of a ceremonial dagger held upright before his face, prayer cords wound around his forearms, his ritual scars blazing; storm clouds splitting over a ruined chapel at night.
+   Wears: a penitent's rough undyed sackcloth robe, bare-armed, the ritual scars repeating down both arms.
+4. **Not Yet**: driving the pole of a white war banner into the rock with his right hand, his left hand gripping the sword hilt at his belt, the army behind him halted; the Mercurian gate blazing at dawn.
+   Wears: a commander's heavy white cloak over dented silver plate and a clean white tabard with a large gold winged sun.
 
 ## Beeri (Luchuirp)
 1. **Pure Spite**: snarling through mud, a gold coin crushed in his fist; alive because his death would please them.
@@ -218,10 +222,14 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 4. **Peace Rider**: riding alone between two lined-up hordes, one empty hand raised.
 
 ## Sabathiel (Bannor)
-1. **Hidden Angel**: signing a decree with a quill like any king, while the shadow he throws on the wall has vast wings and many eyes; a lamplit study at night.
-2. **Thousand Windows**: turning the pages of a ledger of every life in his realm without looking at it, his eyes of light on the windows around him, each a different land; pale morning.
-3. **Crushing Forgiveness**: laying his gauntleted hand on the bowed head of a kneeling knight, light pouring from his skin until the chapel goes white.
-4. **Inhuman Stillness**: holding a full cup of wine perfectly level, untouched for hours, candles burned to stubs; a frozen court at midnight.
+1. **Hidden Angel**: signing a decree with a quill like any king, his other hand pressing the parchment flat, while the shadow he throws on the wall has vast wings and many eyes; a lamplit study at night.
+   Wears: a human king's sober clothes: a dark blue doublet, a fur-trimmed mantle, a plain gold circlet.
+2. **Thousand Windows**: holding a huge ledger of every life in his realm open on one forearm and turning its pages with the other hand without looking down, his eyes of light on the tall windows around him, each a different land; pale morning.
+   Wears: a long white archivist's robe, its hems and sleeves embroidered with rows of small open eyes in gold thread.
+3. **Crushing Forgiveness**: laying his right hand on the bowed head of a kneeling knight, his left hand holding a tall white candle, light pouring from his skin until the chapel goes white.
+   Wears: a priest-king's white-and-gold cope stiff with gold thread, a crimson stole.
+4. **Inhuman Stillness**: holding a full cup of wine perfectly level, untouched for hours, his other hand resting motionless on the arm of his throne; candles burned to stubs; a frozen court at midnight.
+   Wears: ceremonial white plate polished like porcelain, without a visible seam, a crimson cloak hanging perfectly still.
 
 ## Sandalphon (Sidar)
 1. **Half a Soul**: shoulders dissolving into grey mist, the rest of him faintly bored.
