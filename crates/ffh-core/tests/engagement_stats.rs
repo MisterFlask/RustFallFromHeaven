@@ -182,9 +182,9 @@ fn archer_in_a_walled_hill_city_fortified() {
     assert_eq!(attack.dv, apply(5 * 60, 25 + 25 + 25));
     // The axeman's A: 4 x 100% and its city attack (+10).
     assert_eq!(attack.a, apply(400, 10));
-    // Hitting back (G1): the archer has no city or terrain attack; the axeman, the attacker, has
-    // no plot defense, fortification or hills: its Dv is its bare 4.
-    assert_eq!(ad(back), (300, 400));
+    // Hitting back: the place bonuses count on both sides (docs/UNIT_STATS.md), so the archer's
+    // A has its fortification, city and hills defense, and the axeman's Dv its city attack.
+    assert_eq!(ad(back), (apply(300, 25 + 25 + 25), apply(400, 10)));
 
     // The duel puts all of it on the archer's one strength.
     assert_eq!(w.g.unit_max_combat_str(archer, Some(to), Some(axeman), None), apply(500, plot_defense + 25 + 25 + 25 - 10));
@@ -440,10 +440,10 @@ fn the_handicap_keeps_the_duel_ratio_against_barbarians() {
 }
 
 #[test]
-fn each_side_has_only_its_own_terms() {
-    // G1 on a defended plot with every kind of term: the defending side has its own defense
-    // there (revision 4: not the plot's); the attacking side has its attack bonuses against the
-    // plot and no defense there.
+fn place_bonuses_count_on_both_sides() {
+    // On a defended plot with every kind of term: the defending side has its own defense there
+    // (revision 4: not the plot's), the attacking side its attack bonuses against the plot, each on
+    // its A and its Dv alike (the owner's rule, 2026-11-05).
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     let d = w.g.d;
@@ -464,7 +464,7 @@ fn each_side_has_only_its_own_terms() {
     // The attacker's A: its forest attack; the defender's Dv: its forest defense and its
     // fortification (the forest's own cover is the ground's rules now, not Dv).
     assert_eq!(ad(attack), (apply(400, attack_bonus), apply(400, defense_bonus + 10)));
-    // The defender hitting back: no forest attack; the attacker being hit: no forest, no
-    // fortification, though it stands fortified in a forest.
-    assert_eq!(ad(back), (400, 400));
+    // The defender hitting back keeps its forest defense and fortification; the attacker being
+    // hit keeps its forest attack (not its own fortification: it left its plot to attack).
+    assert_eq!(ad(back), (apply(400, defense_bonus + 10), apply(400, attack_bonus)));
 }

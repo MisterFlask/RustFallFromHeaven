@@ -333,8 +333,10 @@ pub fn promotion_value(g: &Game, u: UnitId, promo: PromotionType) -> i32 {
     let defender = matches!(unit.ai_type, Some(UnitAIType::UNITAI_CITY_DEFENSE) | Some(UnitAIType::UNITAI_CITY_COUNTER));
     let mut v = info.ai_weight;
     v += stat_changes_value(g, u, &info.stat_changes, caster, defender);
-    v += info.city_defense_percent * if defender { 3 } else { 0 };
-    v += info.city_attack_percent * if defender { 0 } else { 2 };
+    // A place bonus counts on both the unit's attack and defence in a battle (docs/UNIT_STATS.md):
+    // a defender's city defence on its hits back too, an attacker's city attack on the blows it takes.
+    v += info.city_defense_percent * if defender { 4 } else { 0 };
+    v += info.city_attack_percent * if defender { 0 } else { 3 };
     v += info.first_strikes_change * 30 + info.chance_first_strikes_change * 15;
     v += info.moves_change * if defender { 5 } else { 60 };
     v += info.withdrawal_change * 2;

@@ -128,14 +128,17 @@ the old values back for the code that wants them):
 | `iFirstStrikesChange`, `iChanceFirstStrikesChange` | 8 (Drill, Dance of Blades, Stoneskin, ...) | stay: SPD in battle, as before |
 | Formation (the Screen role) | the Screen's Dv 110% and speed 3 | DEF % and MDEF % +10, SPD -1 |
 
-**Situational modifiers keep their own fields.** These already belong to one side, so they now say
-so explicitly:
+**Situational modifiers keep their own fields.** Where each one counts:
 
-- **On ATK** when the unit hits: city attack, hills, terrain and feature attack, and the attack
-  half of the unit-combat and class modifiers.
-- **On DEF** when the unit is hit: fortification, city defence, hills, terrain and feature defence
-  (City Garrison, Guerilla, Woodsman, Formation's "vs mounted"), and the defence half of the
-  unit-combat modifiers.
+- **Place bonuses on both ATK and DEF** (the owner's rule, 2026-11-05): the attacker's city attack,
+  hills, terrain and feature attack against the plot it attacks, and the defender's fortification,
+  city defence, hills, terrain and feature defence on the plot it holds (City Raider, City
+  Garrison, Guerilla, Woodsman, Defensive). In a formation battle both sides hit, so a bonus for
+  where the unit fights counts on the blows it deals and the ones it takes; the duel had put each
+  on one side. The amphibious penalty stays on the attacker's ATK.
+- **On ATK** when the unit hits: the attack half of the unit-combat and class modifiers.
+- **On DEF** when the unit is hit: the defence half of the unit-combat modifiers (Formation's "vs
+  mounted").
 - Homeland, Stigmata and an army commander's aura go on both ATK and DEF.
 
 All of these are physical only. MAG and MDEF see only stat changes and elemental resistances.

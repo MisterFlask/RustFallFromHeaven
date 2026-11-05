@@ -25,15 +25,19 @@
 //! | unit class | its class attack modifier | its class defence modifier |
 //! | the handicap's animal and barbarian modifiers | no | yes: today's duel puts them on one strength of the pair |
 //! | the defended plot's own defence (its terrain or feature cover, hills, a fort, the city's buildings and culture, FfH's range defence) and `CITY_BARBARIAN_DEFENSE_MODIFIER` | no | **no** in a formation battle (the ground's rules replace cover); on the defending side against a missile ([`HitCtx::cover`]) |
-//! | the unit's own fortification, city defence (`iCityDefense`), hills, feature and terrain defence | no | on the defending side only |
-//! | city attack, hills, feature and terrain attack against the defended plot, `AMPHIB_ATTACK_MODIFIER` | on the attacking side only | no |
+//! | the unit's own fortification, city defence (`iCityDefense`), hills, feature and terrain defence | on the defending side | on the defending side |
+//! | city attack, hills, feature and terrain attack against the defended plot | on the attacking side | on the attacking side |
+//! | `AMPHIB_ATTACK_MODIFIER` | on the attacking side only | no |
 //! | `RIVER_ATTACK_MODIFIER` | removed: the river costs slots (Q9) | |
 //! | kamikaze, free wins against barbarians | not read (FfH sets neither) | |
 //! | an army commander's aura (phase 7) | [`Game::army_aura_pct`] | [`Game::army_aura_pct`] |
 //!
-//! So an attacker being hit has no fortification or defence of the plot's kind, and a defender
-//! hitting back has no city attack, terrain attack or amphibious term (G1). Every unit of the
-//! defending side fights on the defended plot and shares its terms. The plot itself gives Dv
+//! A unit's bonuses for where it fights count on both its A and its Dv (the owner's rule,
+//! 2026-11-05; docs/UNIT_STATS.md): a defender's fortification, city, hills, feature and terrain
+//! defence on its hits back too, an attacker's city, hills, feature and terrain attack on the blows
+//! it takes too, since in a formation battle both sides hit (they were one-sided, G1, as in the
+//! duel). The landing penalty stays on the attacker's A. Every unit of the defending side fights on
+//! the defended plot and shares its terms. The plot itself gives Dv
 //! nothing (revision 4): a city, a forest or jungle and hills act through the ground's rules of a
 //! formation battle (`formation::Ground`) and the slots.
 //!
@@ -331,16 +335,24 @@ impl Game {
         modifier += log.push(in_borders, || TermSource::InBorders);
         modifier += log.push(self.unit_global_counter_modifier(u), || TermSource::GlobalCounter);
 
+        // Its bonuses for where it fights, on both its A and its Dv (the module comment): an
+        // attacker's against the plot it attacks, a defender's own on the defended plot. No river
+        // term (Q9: the river costs slots instead). A missile's strike keeps the duel's sides: the
+        // attacker's on its A only, the defender's under its cover (below).
+        if side == Side::Attacker && (attack || !ctx.cover) {
+            let city = match opponent {
+                Some(t) => self.plot_is_city(ctx.to, true, Some(self.unit_get_team(t))),
+                None => self.plot_is_city(ctx.to, true, None),
+            };
+            let (plot_terms, terrain_term) = self.combat_attack_plot_terms(u, ctx.to, city, 1, log);
+            modifier += plot_terms + terrain_term;
+        }
+        if side == Side::Defender && attack && !ctx.cover {
+            modifier += self.engage_own_defense_terms(u, ctx.to, log);
+        }
         if attack {
-            // The attacker's bonuses against the plot it attacks (G1: none for a defender hitting
-            // back); no river term (Q9: the river costs slots instead).
+            // The landing penalty, on the attacker's hits only.
             if side == Side::Attacker {
-                let city = match opponent {
-                    Some(t) => self.plot_is_city(ctx.to, true, Some(self.unit_get_team(t))),
-                    None => self.plot_is_city(ctx.to, true, None),
-                };
-                let (plot_terms, terrain_term) = self.combat_attack_plot_terms(u, ctx.to, city, 1, log);
-                modifier += plot_terms + terrain_term;
                 if let Some(from) = ctx.from {
                     modifier += term!(log, amphib_attack_modifier, self.unit_amphib_attack_modifier(u, from, ctx.to), TermSource::Amphibious);
                 }
@@ -352,11 +364,11 @@ impl Game {
             if let Some(h) = opponent {
                 modifier += self.combat_handicap_terms(u, h, log);
             }
-            // The unit's own defensive terms on the defended plot (G1: none for an attacker being
-            // hit back). The plot's own defence (cover, hills, a fort, the city's walls and
-            // culture, range defence) and the city's barbarian defence give Dv nothing in a
-            // formation battle: the ground's rules replace them (spec 1.6). Against a missile
-            // (`ctx.cover`) they count, as the duel's.
+            // The unit's own defensive terms on the defended plot (on its A too, above). The
+            // plot's own defence (cover, hills, a fort, the city's walls and culture, range
+            // defence) and the city's barbarian defence give Dv nothing in a formation battle: the
+            // ground's rules replace them (spec 1.6). Against a missile (`ctx.cover`) they count,
+            // as the duel's.
             if side == Side::Defender && ctx.cover {
                 let team = self.unit_get_team(u);
                 let ignore_building = opponent.is_some_and(|h| self.unit_ignore_building_defense(h));

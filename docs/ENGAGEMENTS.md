@@ -203,7 +203,11 @@ fortification, its city defence in a city (`iCityDefense`, promotions), its hill
 its feature (else terrain) defence. Everything else is as before: the promotions' own percentages,
 Homeland, Stigmata, the bonuses against the opponent (unit combat, class, promotions, domain,
 animals), the handicap's on the target, the attacker's city, hills, feature and terrain attack and
-the amphibious term, the river (slots, Q9). A unit's A against nobody in particular
+the amphibious term, the river (slots, Q9). **The place bonuses count on both sides** (the owner's
+rule, 2026-11-05): the defender's own terms above are on its A as well as its Dv, and the
+attacker's city, hills, feature and terrain attack on its Dv as well as its A, since both sides hit
+in a formation battle (G1 had put each on one side, as in the duel). The amphibious penalty stays
+on the attacker's A only. A unit's A against nobody in particular
 (`Game::engage_a_alone`) is a fighter's "most dangerous", its ties and the auto formation's
 strength. A missile's strike (below) keeps both rows: against it the plot's own defence and the
 city's barbarian defence still count in Dv (`HitCtx::cover`), as before revision 4.

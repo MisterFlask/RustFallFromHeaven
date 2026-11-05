@@ -185,6 +185,14 @@ side)
   Formation, which makes a Frontline unit a Screen, gives +10% defence and magic defence and -1
   speed (the Screen's Dv 110% and speed 3 before), its +10% now summed with the other percentages.
   Save format 15.
+- **Place bonuses count on both sides of a battle** (the owner's rule, 2026-11-05;
+  docs/UNIT_STATS.md). In a formation battle a defender's fortification, city defence, hills,
+  feature and terrain defence also raise its attack on the blows it deals back, and an attacker's
+  city, hills, feature and terrain attack against the plot also raise its defence on the blows it
+  takes. In the duel each was on one strength only (the defender's on its defence, the attacker's
+  on its attack). Why: both sides hit in a formation battle, and the place promotions (City Raider,
+  City Garrison, Guerilla, Woodsman, Defensive) were worth about half of an always-on promotion
+  when they counted one way. A missile's strike and the naval duel keep the one-sided terms.
 - **Sieges and Sentinels** (docs/SIEGES.md; the owner's design, 2026-11-04). A city with walls
   (Palisade, Walls, Wall of Stone: `iSentinels`) has two Sentinels, wall sections that fight in the
   defender's front row with `UNIT_SENTINEL`'s values (weak blows, 100 HP), their HP and Dv grown by
