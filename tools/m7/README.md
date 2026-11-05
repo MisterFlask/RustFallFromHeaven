@@ -77,8 +77,9 @@ draws). Changes made here since the package arrived:
   `roster/leaders/leader_<key>.png` and `prompts/assets/leader_<key>.txt`; `m7.py export` ships
   them with the sprites. The spend tag is `ui/leaders`. FfH's scenario-only leaders (in
   CIV4LeaderHeadInfos.xml but in no civilization) have none.
-- **HD leader portraits (shipped, 2026-11-05)** replace those busts: half-length key art in big pixel
-  blocks (`prompts/style_leader_hd.txt`, after the owner's two reference images in
+- **HD leader portraits (shipped, 2026-11-05)** replace those busts: half-length key art, the figure in chunky pixel
+  blocks with a thick black outline (the owner's pick from an outline test; `OUTLINE` in
+  `leader_vibe_prompts.py`) before a softer background (`prompts/style_leader_hd.txt`, after the owner's two reference images in
   `anchors/anchor_leader_hd_*.png`, which the shipped run did not send). Each leader has four vibes in
   `prompts/leaders_hd_vibes.md` (a 1-3 word vibe true to the whole character, a specific hand action,
   its own place, light and outfit) and a likeness in `prompts/leaders_hd_likeness.json`;
@@ -86,7 +87,7 @@ draws). Changes made here since the package arrived:
   (`leader_vibe_merge.py` folds a writer's per-leader part in). Generate with `leaders.py --style hdv
   gen --keys <leader>_v<n>,... --model gpt-image-2.6-sunburst --quality low|high --stream 2
   --no-anchors` (`--stream` keeps the connection busy: high-quality calls take about a minute and the
-  proxy cuts a silent one at 30 s). `leaders.py --style hdv ship` takes the vibe each leader ships
+  proxy cuts a silent one at 30 s). `leaders.py --style hdv ship --round high_outline` takes the vibe each leader ships
   with (`prompts/leaders_hd_vibes_ship.txt`), reduces its high-quality painting to `leader_<key>.png`
   and crops the face (`prompts/leaders_hd_faces.json`) to `leader_<key>_face.png`, both quantized to
   256 colours; `m7.py export` copies palette PNGs as they are. The older material is in

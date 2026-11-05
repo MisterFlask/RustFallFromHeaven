@@ -6488,7 +6488,7 @@
  "leader_sabathiel": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/sabathiel_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/sabathiel_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_sabathiel.txt",
   "gen_size": "1024x1024",
@@ -6501,7 +6501,7 @@
  "leader_capria": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/capria_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/capria_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_capria.txt",
   "gen_size": "1024x1024",
@@ -6514,7 +6514,7 @@
  "leader_decius": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/decius_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/decius_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_decius.txt",
   "gen_size": "1024x1024",
@@ -6527,7 +6527,7 @@
  "leader_varn": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/varn_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/varn_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_varn.txt",
   "gen_size": "1024x1024",
@@ -6540,7 +6540,7 @@
  "leader_ethne": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/ethne_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/ethne_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_ethne.txt",
   "gen_size": "1024x1024",
@@ -6553,7 +6553,7 @@
  "leader_basium": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/basium_v2/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/basium_v2/raw/high_outline_1.png",
   "vibe": 2,
   "prompt": "prompts/assets/leader_basium.txt",
   "gen_size": "1024x1024",
@@ -6566,7 +6566,7 @@
  "leader_amelanchier": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/amelanchier_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/amelanchier_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_amelanchier.txt",
   "gen_size": "1024x1024",
@@ -6579,7 +6579,7 @@
  "leader_keelyn": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/keelyn_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/keelyn_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_keelyn.txt",
   "gen_size": "1024x1024",
@@ -6592,7 +6592,7 @@
  "leader_perpentach": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/perpentach_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/perpentach_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_perpentach.txt",
   "gen_size": "1024x1024",
@@ -6605,7 +6605,7 @@
  "leader_jonas": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/jonas_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/jonas_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_jonas.txt",
   "gen_size": "1024x1024",
@@ -6618,7 +6618,7 @@
  "leader_sheelba": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/sheelba_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/sheelba_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_sheelba.txt",
   "gen_size": "1024x1024",
@@ -6631,7 +6631,7 @@
  "leader_flauros": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/flauros_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/flauros_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_flauros.txt",
   "gen_size": "1024x1024",
@@ -6644,7 +6644,7 @@
  "leader_arturus": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/arturus_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/arturus_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_arturus.txt",
   "gen_size": "1024x1024",
@@ -6657,7 +6657,7 @@
  "leader_sandalphon": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/sandalphon_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/sandalphon_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_sandalphon.txt",
   "gen_size": "1024x1024",
@@ -6670,7 +6670,7 @@
  "leader_arendel": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/arendel_v2/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/arendel_v2/raw/high_outline_1.png",
   "vibe": 2,
   "prompt": "prompts/assets/leader_arendel.txt",
   "gen_size": "1024x1024",
@@ -6683,7 +6683,7 @@
  "leader_auric": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/auric_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/auric_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_auric.txt",
   "gen_size": "1024x1024",
@@ -6696,7 +6696,7 @@
  "leader_barbarian": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/barbarian_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/barbarian_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_barbarian.txt",
   "gen_size": "1024x1024",
@@ -6709,7 +6709,7 @@
  "leader_beeri": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/beeri_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/beeri_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_beeri.txt",
   "gen_size": "1024x1024",
@@ -6722,7 +6722,7 @@
  "leader_cassiel": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/cassiel_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/cassiel_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_cassiel.txt",
   "gen_size": "1024x1024",
@@ -6735,7 +6735,7 @@
  "leader_falamar": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/falamar_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/falamar_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_falamar.txt",
   "gen_size": "1024x1024",
@@ -6748,7 +6748,7 @@
  "leader_os_gabella": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/os_gabella_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/os_gabella_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_os_gabella.txt",
   "gen_size": "1024x1024",
@@ -6761,7 +6761,7 @@
  "leader_tebryn": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/tebryn_v2/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/tebryn_v2/raw/high_outline_1.png",
   "vibe": 2,
   "prompt": "prompts/assets/leader_tebryn.txt",
   "gen_size": "1024x1024",
@@ -6774,7 +6774,7 @@
  "leader_hyborem": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/hyborem_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/hyborem_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_hyborem.txt",
   "gen_size": "1024x1024",
@@ -6787,7 +6787,7 @@
  "leader_rhoanna": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/rhoanna_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/rhoanna_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_rhoanna.txt",
   "gen_size": "1024x1024",
@@ -6800,7 +6800,7 @@
  "leader_tasunke": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/tasunke_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/tasunke_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_tasunke.txt",
   "gen_size": "1024x1024",
@@ -6813,7 +6813,7 @@
  "leader_random": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/random_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/random_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_random.txt",
   "gen_size": "1024x1024",
@@ -6826,7 +6826,7 @@
  "leader_hannah": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/hannah_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/hannah_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_hannah.txt",
   "gen_size": "1024x1024",
@@ -6839,7 +6839,7 @@
  "leader_valledia": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/valledia_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/valledia_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_valledia.txt",
   "gen_size": "1024x1024",
@@ -6852,7 +6852,7 @@
  "leader_dain": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/dain_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/dain_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_dain.txt",
   "gen_size": "1024x1024",
@@ -6865,7 +6865,7 @@
  "leader_charadon": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/charadon_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/charadon_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_charadon.txt",
   "gen_size": "1024x1024",
@@ -6878,7 +6878,7 @@
  "leader_mahala": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/mahala_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/mahala_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_mahala.txt",
   "gen_size": "1024x1024",
@@ -6891,7 +6891,7 @@
  "leader_alexis": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/alexis_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/alexis_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_alexis.txt",
   "gen_size": "1024x1024",
@@ -6904,7 +6904,7 @@
  "leader_cardith": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/cardith_v2/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/cardith_v2/raw/high_outline_1.png",
   "vibe": 2,
   "prompt": "prompts/assets/leader_cardith.txt",
   "gen_size": "1024x1024",
@@ -6917,7 +6917,7 @@
  "leader_einion": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/einion_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/einion_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_einion.txt",
   "gen_size": "1024x1024",
@@ -6930,7 +6930,7 @@
  "leader_faeryl": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/faeryl_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/faeryl_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_faeryl.txt",
   "gen_size": "1024x1024",
@@ -6943,7 +6943,7 @@
  "leader_garrim": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/garrim_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/garrim_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_garrim.txt",
   "gen_size": "1024x1024",
@@ -6956,7 +6956,7 @@
  "leader_kandros": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/kandros_v2/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/kandros_v2/raw/high_outline_1.png",
   "vibe": 2,
   "prompt": "prompts/assets/leader_kandros.txt",
   "gen_size": "1024x1024",
@@ -6969,7 +6969,7 @@
  "leader_thessa": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/thessa_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/thessa_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_thessa.txt",
   "gen_size": "1024x1024",
@@ -16859,7 +16859,7 @@
  "leader_alexis_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/alexis_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/alexis_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_alexis.txt",
   "gen_size": "1024x1024",
@@ -16869,15 +16869,15 @@
    160
   ],
   "crop": [
-   312,
-   26,
-   461
+   297,
+   41,
+   451
   ]
  },
  "leader_amelanchier_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/amelanchier_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/amelanchier_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_amelanchier.txt",
   "gen_size": "1024x1024",
@@ -16887,7 +16887,7 @@
    160
   ],
   "crop": [
-   307,
+   266,
    0,
    430
   ]
@@ -16895,7 +16895,7 @@
  "leader_arendel_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/arendel_v2/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/arendel_v2/raw/high_outline_1.png",
   "vibe": 2,
   "prompt": "prompts/assets/leader_arendel.txt",
   "gen_size": "1024x1024",
@@ -16905,15 +16905,15 @@
    160
   ],
   "crop": [
-   358,
-   41,
+   317,
+   31,
    471
   ]
  },
  "leader_arturus_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/arturus_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/arturus_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_arturus.txt",
   "gen_size": "1024x1024",
@@ -16923,15 +16923,15 @@
    160
   ],
   "crop": [
-   276,
-   61,
+   297,
+   72,
    471
   ]
  },
  "leader_auric_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/auric_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/auric_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_auric.txt",
   "gen_size": "1024x1024",
@@ -16941,15 +16941,15 @@
    160
   ],
   "crop": [
-   374,
-   46,
-   461
+   317,
+   61,
+   471
   ]
  },
  "leader_barbarian_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/barbarian_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/barbarian_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_barbarian.txt",
   "gen_size": "1024x1024",
@@ -16959,15 +16959,15 @@
    160
   ],
   "crop": [
-   410,
-   51,
+   348,
+   61,
    492
   ]
  },
  "leader_basium_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/basium_v2/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/basium_v2/raw/high_outline_1.png",
   "vibe": 2,
   "prompt": "prompts/assets/leader_basium.txt",
   "gen_size": "1024x1024",
@@ -16977,7 +16977,7 @@
    160
   ],
   "crop": [
-   358,
+   369,
    0,
    410
   ]
@@ -16985,7 +16985,7 @@
  "leader_beeri_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/beeri_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/beeri_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_beeri.txt",
   "gen_size": "1024x1024",
@@ -16995,15 +16995,15 @@
    160
   ],
   "crop": [
-   174,
-   51,
-   471
+   246,
+   31,
+   492
   ]
  },
  "leader_capria_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/capria_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/capria_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_capria.txt",
   "gen_size": "1024x1024",
@@ -17013,15 +17013,15 @@
    160
   ],
   "crop": [
-   389,
-   10,
-   451
+   440,
+   0,
+   410
   ]
  },
  "leader_cardith_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/cardith_v2/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/cardith_v2/raw/high_outline_1.png",
   "vibe": 2,
   "prompt": "prompts/assets/leader_cardith.txt",
   "gen_size": "1024x1024",
@@ -17031,15 +17031,15 @@
    160
   ],
   "crop": [
-   215,
-   31,
+   236,
+   41,
    430
   ]
  },
  "leader_cassiel_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/cassiel_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/cassiel_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_cassiel.txt",
   "gen_size": "1024x1024",
@@ -17049,15 +17049,15 @@
    160
   ],
   "crop": [
-   307,
-   20,
-   492
+   338,
+   31,
+   471
   ]
  },
  "leader_charadon_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/charadon_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/charadon_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_charadon.txt",
   "gen_size": "1024x1024",
@@ -17067,7 +17067,7 @@
    160
   ],
   "crop": [
-   389,
+   399,
    0,
    451
   ]
@@ -17075,7 +17075,7 @@
  "leader_dain_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/dain_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/dain_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_dain.txt",
   "gen_size": "1024x1024",
@@ -17085,15 +17085,15 @@
    160
   ],
   "crop": [
-   266,
-   72,
+   246,
+   92,
    471
   ]
  },
  "leader_decius_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/decius_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/decius_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_decius.txt",
   "gen_size": "1024x1024",
@@ -17103,15 +17103,15 @@
    160
   ],
   "crop": [
-   348,
-   0,
+   338,
+   31,
    430
   ]
  },
  "leader_einion_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/einion_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/einion_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_einion.txt",
   "gen_size": "1024x1024",
@@ -17121,7 +17121,7 @@
    160
   ],
   "crop": [
-   338,
+   317,
    0,
    451
   ]
@@ -17129,7 +17129,7 @@
  "leader_ethne_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/ethne_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/ethne_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_ethne.txt",
   "gen_size": "1024x1024",
@@ -17139,15 +17139,15 @@
    160
   ],
   "crop": [
-   276,
-   10,
+   297,
+   31,
    471
   ]
  },
  "leader_faeryl_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/faeryl_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/faeryl_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_faeryl.txt",
   "gen_size": "1024x1024",
@@ -17157,15 +17157,15 @@
    160
   ],
   "crop": [
-   399,
-   0,
-   430
+   369,
+   41,
+   451
   ]
  },
  "leader_falamar_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/falamar_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/falamar_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_falamar.txt",
   "gen_size": "1024x1024",
@@ -17175,7 +17175,7 @@
    160
   ],
   "crop": [
-   266,
+   307,
    51,
    471
   ]
@@ -17183,7 +17183,7 @@
  "leader_flauros_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/flauros_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/flauros_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_flauros.txt",
   "gen_size": "1024x1024",
@@ -17193,15 +17193,15 @@
    160
   ],
   "crop": [
-   225,
+   205,
    0,
-   451
+   430
   ]
  },
  "leader_garrim_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/garrim_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/garrim_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_garrim.txt",
   "gen_size": "1024x1024",
@@ -17211,15 +17211,15 @@
    160
   ],
   "crop": [
-   287,
-   61,
+   297,
+   72,
    492
   ]
  },
  "leader_hannah_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/hannah_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/hannah_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_hannah.txt",
   "gen_size": "1024x1024",
@@ -17229,15 +17229,15 @@
    160
   ],
   "crop": [
-   328,
-   0,
+   317,
+   20,
    451
   ]
  },
  "leader_hyborem_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/hyborem_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/hyborem_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_hyborem.txt",
   "gen_size": "1024x1024",
@@ -17255,7 +17255,7 @@
  "leader_jonas_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/jonas_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/jonas_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_jonas.txt",
   "gen_size": "1024x1024",
@@ -17265,15 +17265,15 @@
    160
   ],
   "crop": [
-   328,
+   338,
    20,
-   471
+   451
   ]
  },
  "leader_kandros_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/kandros_v2/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/kandros_v2/raw/high_outline_1.png",
   "vibe": 2,
   "prompt": "prompts/assets/leader_kandros.txt",
   "gen_size": "1024x1024",
@@ -17284,14 +17284,14 @@
   ],
   "crop": [
    225,
-   31,
+   51,
    471
   ]
  },
  "leader_keelyn_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/keelyn_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/keelyn_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_keelyn.txt",
   "gen_size": "1024x1024",
@@ -17301,15 +17301,15 @@
    160
   ],
   "crop": [
-   276,
-   113,
+   205,
+   123,
    430
   ]
  },
  "leader_mahala_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/mahala_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/mahala_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_mahala.txt",
   "gen_size": "1024x1024",
@@ -17319,15 +17319,15 @@
    160
   ],
   "crop": [
-   246,
-   41,
+   307,
+   51,
    451
   ]
  },
  "leader_os_gabella_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/os_gabella_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/os_gabella_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_os_gabella.txt",
   "gen_size": "1024x1024",
@@ -17337,15 +17337,15 @@
    160
   ],
   "crop": [
-   225,
-   0,
-   471
+   276,
+   31,
+   451
   ]
  },
  "leader_perpentach_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/perpentach_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/perpentach_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_perpentach.txt",
   "gen_size": "1024x1024",
@@ -17355,15 +17355,15 @@
    160
   ],
   "crop": [
-   184,
-   10,
+   195,
+   0,
    492
   ]
  },
  "leader_random_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/random_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/random_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_random.txt",
   "gen_size": "1024x1024",
@@ -17373,15 +17373,15 @@
    160
   ],
   "crop": [
-   236,
-   0,
+   205,
+   10,
    471
   ]
  },
  "leader_rhoanna_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/rhoanna_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/rhoanna_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_rhoanna.txt",
   "gen_size": "1024x1024",
@@ -17391,15 +17391,15 @@
    160
   ],
   "crop": [
-   348,
-   41,
+   317,
+   51,
    451
   ]
  },
  "leader_sabathiel_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/sabathiel_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/sabathiel_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_sabathiel.txt",
   "gen_size": "1024x1024",
@@ -17409,7 +17409,7 @@
    160
   ],
   "crop": [
-   338,
+   358,
    0,
    430
   ]
@@ -17417,7 +17417,7 @@
  "leader_sandalphon_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/sandalphon_v1/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/sandalphon_v1/raw/high_outline_1.png",
   "vibe": 1,
   "prompt": "prompts/assets/leader_sandalphon.txt",
   "gen_size": "1024x1024",
@@ -17435,7 +17435,7 @@
  "leader_sheelba_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/sheelba_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/sheelba_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_sheelba.txt",
   "gen_size": "1024x1024",
@@ -17445,7 +17445,7 @@
    160
   ],
   "crop": [
-   379,
+   369,
    0,
    451
   ]
@@ -17453,7 +17453,7 @@
  "leader_tasunke_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/tasunke_v4/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/tasunke_v4/raw/high_outline_1.png",
   "vibe": 4,
   "prompt": "prompts/assets/leader_tasunke.txt",
   "gen_size": "1024x1024",
@@ -17463,15 +17463,15 @@
    160
   ],
   "crop": [
-   328,
-   31,
+   297,
+   61,
    471
   ]
  },
  "leader_tebryn_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/tebryn_v2/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/tebryn_v2/raw/high_outline_1.png",
   "vibe": 2,
   "prompt": "prompts/assets/leader_tebryn.txt",
   "gen_size": "1024x1024",
@@ -17481,15 +17481,15 @@
    160
   ],
   "crop": [
-   266,
-   0,
+   297,
+   31,
    471
   ]
  },
  "leader_thessa_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/thessa_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/thessa_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_thessa.txt",
   "gen_size": "1024x1024",
@@ -17499,15 +17499,15 @@
    160
   ],
   "crop": [
-   358,
-   31,
+   369,
+   51,
    430
   ]
  },
  "leader_valledia_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/valledia_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/valledia_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_valledia.txt",
   "gen_size": "1024x1024",
@@ -17517,15 +17517,15 @@
    160
   ],
   "crop": [
-   276,
-   0,
+   256,
+   10,
    471
   ]
  },
  "leader_varn_face": {
   "kind": "leader_portrait",
   "style": "hd",
-  "source": "work/leaders_hd_vibes/varn_v3/raw/high_1.png",
+  "source": "work/leaders_hd_vibes/varn_v3/raw/high_outline_1.png",
   "vibe": 3,
   "prompt": "prompts/assets/leader_varn.txt",
   "gen_size": "1024x1024",
@@ -17535,9 +17535,9 @@
    160
   ],
   "crop": [
-   297,
-   20,
-   451
+   256,
+   31,
+   471
   ]
  }
 }

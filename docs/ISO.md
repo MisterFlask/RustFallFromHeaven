@@ -264,7 +264,7 @@ fills the page and the interface floats over it.
   meadow behind the portrait and the city picture) is one painting, re-gridded. The 2D art's
   icons that have no M7 counterpart (promotion seals, religions, civic categories) stay, at 2x.
 - **Leader portraits** (`portraits.js`): a half-length HD key-art painting of each leader a game can
-  have, in big pixel blocks before a softer painted vista (`tools/m7/leaders.py --style hdv`; each
+  have, the figure in chunky pixel blocks with a thick black outline before a softer painted vista (`tools/m7/leaders.py --style hdv`; each
   of four vibes a leader was given has its own outfit, hand action, place and light; the owner
   picked one per leader, `tools/m7/prompts/leaders_hd_vibes_ship.txt`), exported as `leader_<key>`
   (384 px, 256 colours) and `leader_<key>_face` (160 px, the square around the face). They show in
