@@ -366,7 +366,7 @@ signature item) stays as in `leaders_hd/<key>.txt`.
    Wears: a heavy winter coat of grey wolf fur over quilted dark-blue felt, the hood thrown back, fur mittens tucked into his belt, frost crusting the fur.
 3. **Horsetail Pride**: At full gallop, standing in the stirrups, his left hand holding the reins short, his right swinging a horsehair lasso over his head; laughing open-mouthed, eyes ahead past the viewer, the black plume streaming behind; open grassland at blazing midday, a stampeding horse herd beside him.
    Wears: a raider's light summer gear: a loose red silk shirt under a sleeveless sheepskin vest, a wide leather belt hung with brass horse charms and trophy coins.
-4. **Price Everything**: Holding a looted silver chalice up to the light in his right hand, his left thumbnail scratching its rim to test the silver; one eye squinting at it, lips pursed under the moustache; a sacked manor hall at sunset, loot piled on the tables, gold light through broken shutters.
+4. **Price Everything**: Holding a looted silver chalice up to the light in his raised right hand, his left arm raised too, its forearm and hand fully visible, the left thumbnail scratching the rim to test the silver (both arms drawn whole); one eye squinting at it, lips pursed under the moustache; a sacked manor hall at sunset, loot piled on the tables, gold light through broken shutters.
    Wears: plundered finery over his armour: a looted noble's purple velvet coat too tight across his chest, three gold chains of different makers, a ring on every finger.
 
 ## Tebryn (Sheaim)
