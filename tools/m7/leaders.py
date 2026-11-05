@@ -2,7 +2,7 @@
 """Leader portraits for the client (docs/ISO.md, "The interface"): one bust per leader, painted by
 the M7 image model in the style of the reference's unit portrait.
 
-  python3 leaders.py gen    --keys sabathiel,capria [--n 3] [--round r1] [--quality medium] [--jobs 6] [--extra "..."] [--dry-run]
+  python3 leaders.py [--style hd] gen --keys sabathiel,capria [--n 3] [--round r1] [--quality medium] [--jobs 6] [--extra "..."] [--dry-run]
   python3 leaders.py cut    --keys sabathiel,capria [--round r1] [--art 80]
   python3 leaders.py review --keys sabathiel,capria [--round r1] [--out work/leaders/review.png]
   python3 leaders.py accept --key sabathiel --variant 2 [--round r1]
@@ -25,6 +25,15 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent
 ANCHORS = [ROOT / "anchors" / "anchor_ui.png", ROOT / "anchors" / "anchor_portrait.png"]
+# --style: the style prompt, the descriptions' folder, the anchors and the work folder of each look.
+# "hd" is the half-length key-art proposal (prompts/leaders_hd/README.md), anchored on the owner's
+# two reference portraits.
+STYLES = {
+    "bust": ("style_leader.txt", "leaders", ANCHORS, "leaders"),
+    "hd": ("style_leader_hd.txt", "leaders_hd",
+           [ROOT / "anchors" / "anchor_leader_hd_1.png", ROOT / "anchors" / "anchor_leader_hd_2.png"], "leaders_hd"),
+}
+STYLE = STYLES["bust"]
 MODEL = "gpt-image-2.5-sunburst"
 TAG = "ui/leaders"
 ART = 80      # art px a side: a Fire Emblem-sized bust
@@ -33,20 +42,20 @@ PIXEL = 2     # CSS px per art px (the interface's grid)
 
 def keys_of(arg):
     if arg == "all":
-        return sorted(p.stem for p in (ROOT / "prompts" / "leaders").glob("*.txt"))
+        return sorted(p.stem for p in (ROOT / "prompts" / STYLE[1]).glob("*.txt"))
     return [k.strip() for k in arg.split(",") if k.strip()]
 
 
 def wdir(key):
-    d = ROOT / "work" / "leaders" / key
+    d = ROOT / "work" / STYLE[3] / key
     for s in ("raw", "cut"):
         (d / s).mkdir(parents=True, exist_ok=True)
     return d
 
 
 def prompt_of(key, extra=None):
-    style = (ROOT / "prompts" / "style_leader.txt").read_text(encoding="utf-8").strip()
-    desc = (ROOT / "prompts" / "leaders" / f"{key}.txt").read_text(encoding="utf-8").strip()
+    style = (ROOT / "prompts" / STYLE[0]).read_text(encoding="utf-8").strip()
+    desc = (ROOT / "prompts" / STYLE[1] / f"{key}.txt").read_text(encoding="utf-8").strip()
     return "\n".join(x for x in (style, desc, extra) if x) + "\n"
 
 
@@ -57,8 +66,9 @@ def rel(p):
 def gen_one(key, a):
     d = wdir(key)
     pf = d / f"prompt_{a.round}.txt"
+
     pf.write_text(prompt_of(key, a.extra), encoding="utf-8")
-    images = list(ANCHORS)
+    images = list(STYLE[2])
     if a.revise:
         rnd, v = a.revise.split(":")
         images.append(d / "raw" / f"{rnd}_{v}.png")
@@ -131,12 +141,14 @@ def review(a):
             out.paste(im, (x, y))
             out.paste(im.resize((56, 56), Image.LANCZOS), (x + size + 8, y + size - 56))
             dr.text((x + 2, y + size + 4), f"{a.round}_{v}", fill=(251, 242, 214))
-    p = Path(a.out) if a.out else ROOT / "work" / "leaders" / f"review_{a.round}_{keys[0]}.png"
+    p = Path(a.out) if a.out else ROOT / "work" / STYLE[3] / f"review_{a.round}_{keys[0]}.png"
     out.save(p)
     print(json.dumps({"review": str(p)}))
 
 
 def accept(a):
+    if STYLE is not STYLES["bust"]:
+        raise SystemExit("accept ships into roster/leaders: only the shipped style (--style bust) is accepted")
     d = wdir(a.key)
     src = d / "cut" / f"{a.round}_{a.variant}.png"
     if not src.exists():
@@ -149,7 +161,7 @@ def accept(a):
     man_p = ROOT / "roster" / "manifest.json"
     man = json.loads(man_p.read_text())
     calls = [json.loads(l) for l in (d / "calls.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
-    anchors = next((c["images"] for c in reversed(calls) if c.get("round") == a.round and c.get("ok")), [rel(p) for p in ANCHORS])
+    anchors = next((c["images"] for c in reversed(calls) if c.get("round") == a.round and c.get("ok")), [rel(p) for p in STYLE[2]])
     im = Image.open(src)
     man[key] = {"kind": "leader_portrait", "file": f"leaders/{key}.png", "size": [im.width, im.height], "pixel": PIXEL,
                 "art": im.width // PIXEL, "round": a.round, "variant": a.variant, "gen_size": "1024x1024",
@@ -160,6 +172,8 @@ def accept(a):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--style", choices=sorted(STYLES), default="bust",
+                    help="bust: the shipped head-and-shoulders look; hd: the key-art proposal")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("gen")
     p.add_argument("--keys", required=True); p.add_argument("--n", type=int, default=3)
@@ -175,6 +189,8 @@ def main():
     p = sub.add_parser("accept")
     p.add_argument("--key", required=True); p.add_argument("--variant", required=True); p.add_argument("--round", default="r1")
     a = ap.parse_args()
+    global STYLE
+    STYLE = STYLES[a.style]
     {"gen": gen, "cut": cut, "review": review, "accept": accept}[a.cmd](a)
 
 
