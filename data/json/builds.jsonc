@@ -1,0 +1,1132 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Bart Muzzin (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Build Infos
+[
+  {
+    "type": "BUILD_ROAD",
+    "description": "TXT_KEY_BUILD_ROAD",
+    "prereq_tech": "TECH_EXPLORATION",
+    "time": 200,
+    "route_type": "ROUTE_ROAD",
+    "feature_structs": "",
+    "button": ",Art/Interface/Buttons/Builds/BuildRoad.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,1,8",
+    "hotkeys": [{"key": "KB_R"}]
+  },
+  {
+    "type": "BUILD_FARM",
+    "description": "TXT_KEY_BUILD_FARM",
+    "prereq_tech": "TECH_AGRICULTURE",
+    "time": 500,
+    "improvement_type": "IMPROVEMENT_FARM",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": ",Art/Interface/Buttons/Builds/BuildFarm.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,3,7",
+    "hotkeys": [{"key": "KB_I"}]
+  },
+  {
+    "type": "BUILD_FISHING_BOATS",
+    "description": "TXT_KEY_BUILD_FISHING_BOATS",
+    "prereq_tech": "TECH_FISHING",
+    "kill": true,
+    "improvement_type": "IMPROVEMENT_FISHING_BOATS",
+    "feature_structs": "",
+    "button": ",Art/Interface/Buttons/Builds/BuildFishingBoats.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,7,7",
+    "hotkeys": [{"key": "KB_F", "priority": 1}]
+  },
+  {
+    "type": "BUILD_WHALING_BOATS",
+    "description": "TXT_KEY_BUILD_WHALING_BOATS",
+    "prereq_tech": "TECH_SAILING",
+    "kill": true,
+    "improvement_type": "IMPROVEMENT_WHALING_BOATS",
+    "feature_structs": "",
+    "button": ",Art/Interface/Buttons/Builds/BuildWhalingBoats.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,6,9",
+    "hotkeys": [{"key": "KB_W", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MINE",
+    "description": "TXT_KEY_BUILD_MINE",
+    "prereq_tech": "TECH_MINING",
+    "time": 400,
+    "improvement_type": "IMPROVEMENT_MINE",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": ",Art/Interface/Buttons/Builds/BuildMine.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,6,7",
+    "hotkeys": [{"key": "KB_M"}]
+  },
+  {
+    "type": "BUILD_WORKSHOP",
+    "description": "TXT_KEY_BUILD_WORKSHOP",
+    "prereq_tech": "TECH_CONSTRUCTION",
+    "time": 600,
+    "improvement_type": "IMPROVEMENT_WORKSHOP",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": ",Art/Interface/Buttons/Builds/BuildWorkshop.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,8,8",
+    "hotkeys": [{"key": "KB_K"}]
+  },
+  {
+    "type": "BUILD_LUMBERMILL",
+    "description": "TXT_KEY_BUILD_LUMBERMILL",
+    "prereq_tech": "TECH_ARCHERY",
+    "time": 800,
+    "improvement_type": "IMPROVEMENT_LUMBERMILL",
+    "feature_structs": "",
+    "button": ",Art/Interface/Buttons/Builds/BuildLumberMill.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,5,7",
+    "hotkeys": [{"key": "KB_L", "priority": 1}]
+  },
+  {
+    "type": "BUILD_WINDMILL",
+    "description": "TXT_KEY_BUILD_WINDMILL",
+    "prereq_tech": "TECH_ENGINEERING",
+    "time": 500,
+    "improvement_type": "IMPROVEMENT_WINDMILL",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": ",Art/Interface/Buttons/Builds/BuildWindMill.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,5,8",
+    "hotkeys": [{"key": "KB_W", "shift": true}]
+  },
+  {
+    "type": "BUILD_PLANTATION",
+    "description": "TXT_KEY_BUILD_PLANTATION",
+    "prereq_tech": "TECH_CALENDAR",
+    "time": 500,
+    "improvement_type": "IMPROVEMENT_PLANTATION",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": ",Art/Interface/Buttons/Builds/BuildPlantation.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,1,9",
+    "hotkeys": [{"key": "KB_P", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_QUARRY",
+    "description": "TXT_KEY_BUILD_QUARRY",
+    "prereq_tech": "TECH_MASONRY",
+    "time": 600,
+    "improvement_type": "IMPROVEMENT_QUARRY",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": ",Art/Interface/Buttons/Builds/BuildQuarry.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,2,9",
+    "hotkeys": [{"key": "KB_Q"}]
+  },
+  {
+    "type": "BUILD_PASTURE",
+    "description": "TXT_KEY_BUILD_PASTURE",
+    "prereq_tech": "TECH_ANIMAL_HUSBANDRY",
+    "time": 400,
+    "improvement_type": "IMPROVEMENT_PASTURE",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": ",Art/Interface/Buttons/Builds/BuildPasture.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,8,7",
+    "hotkeys": [{"key": "KB_P", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_CAMP",
+    "description": "TXT_KEY_BUILD_CAMP",
+    "prereq_tech": "TECH_HUNTING",
+    "time": 400,
+    "improvement_type": "IMPROVEMENT_CAMP",
+    "feature_structs": "",
+    "button": ",Art/Interface/Buttons/Builds/BuildCamp.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,1,7",
+    "hotkeys": [{"key": "KB_H", "priority": 1}]
+  },
+  {
+    "type": "BUILD_WINERY",
+    "description": "TXT_KEY_BUILD_WINERY",
+    "prereq_tech": "TECH_CRAFTING",
+    "time": 500,
+    "improvement_type": "IMPROVEMENT_WINERY",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": ",Art/Interface/Buttons/Builds/BuildWinery.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,6,8",
+    "hotkeys": [{"key": "KB_W", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_COTTAGE",
+    "description": "TXT_KEY_BUILD_COTTAGE",
+    "prereq_tech": "TECH_EDUCATION",
+    "time": 400,
+    "improvement_type": "IMPROVEMENT_COTTAGE",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": ",Art/Interface/Buttons/Builds/BuildCottage.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,2,7",
+    "hotkeys": [{"key": "KB_T"}]
+  },
+  {
+    "type": "BUILD_FORT",
+    "description": "TXT_KEY_BUILD_FORT",
+    "prereq_tech": "TECH_CONSTRUCTION",
+    "time": 800,
+    "improvement_type": "IMPROVEMENT_FORT",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": ",Art/Interface/Buttons/Builds/BuildFort.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,7,9",
+    "hotkeys": [{"key": "KB_F", "ctrl": true}]
+  },
+  {
+    "type": "BUILD_REMOVE_JUNGLE",
+    "description": "TXT_KEY_BUILD_REMOVE_JUNGLE",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      }
+    ],
+    "button": ",Art/Interface/Buttons/Builds/BuildChopDown.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,7,8",
+    "hotkeys": [{"key": "KB_C", "alt": true}]
+  },
+  {
+    "type": "BUILD_REMOVE_FOREST",
+    "description": "TXT_KEY_BUILD_REMOVE_FOREST",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": ",Art/Interface/Buttons/Builds/BuildChopDown.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,7,8",
+    "hotkeys": [{"key": "KB_C", "alt": true}]
+  },
+  {
+    "type": "BUILD_SCRUB_FALLOUT",
+    "description": "TXT_KEY_BUILD_SCRUB_FALLOUT",
+    "feature_structs": [{"feature_type": "FEATURE_FALLOUT", "prereq_tech": "TECH_NEVER", "time": 1800, "remove": true}],
+    "button": ",Art/Interface/Buttons/Builds/BuildScrubFallout.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,2,8",
+    "hotkeys": [{"key": "KB_S", "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_AIR",
+    "description": "TXT_KEY_BUILD_MANA_AIR",
+    "prereq_tech": "TECH_ELEMENTALISM",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_AIR",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Air.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_BODY",
+    "description": "TXT_KEY_BUILD_MANA_BODY",
+    "prereq_tech": "TECH_ALTERATION",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_BODY",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Body.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_CHAOS",
+    "description": "TXT_KEY_BUILD_MANA_CHAOS",
+    "prereq_tech": "TECH_NECROMANCY",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_CHAOS",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Chaos.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_DEATH",
+    "description": "TXT_KEY_BUILD_MANA_DEATH",
+    "prereq_tech": "TECH_NECROMANCY",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_DEATH",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Death.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_EARTH",
+    "description": "TXT_KEY_BUILD_MANA_EARTH",
+    "prereq_tech": "TECH_ELEMENTALISM",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_EARTH",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Earth.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_ENCHANTMENT",
+    "description": "TXT_KEY_BUILD_MANA_ENCHANTMENT",
+    "prereq_tech": "TECH_ALTERATION",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_ENCHANTMENT",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Enchantment.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_ENTROPY",
+    "description": "TXT_KEY_BUILD_MANA_ENTROPY",
+    "prereq_tech": "TECH_NECROMANCY",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_ENTROPY",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Entropy.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_FIRE",
+    "description": "TXT_KEY_BUILD_MANA_FIRE",
+    "prereq_tech": "TECH_ELEMENTALISM",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_FIRE",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Fire.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_LAW",
+    "description": "TXT_KEY_BUILD_MANA_LAW",
+    "prereq_tech": "TECH_DIVINATION",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_LAW",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Law.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_LIFE",
+    "description": "TXT_KEY_BUILD_MANA_LIFE",
+    "prereq_tech": "TECH_DIVINATION",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_LIFE",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Life.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_METAMAGIC",
+    "description": "TXT_KEY_BUILD_MANA_METAMAGIC",
+    "prereq_tech": "TECH_SORCERY",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_METAMAGIC",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Metamagic.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_MIND",
+    "description": "TXT_KEY_BUILD_MANA_MIND",
+    "prereq_tech": "TECH_DIVINATION",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_MIND",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Mind.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_NATURE",
+    "description": "TXT_KEY_BUILD_MANA_NATURE",
+    "prereq_tech": "TECH_ALTERATION",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_NATURE",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Nature.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_SPIRIT",
+    "description": "TXT_KEY_BUILD_MANA_SPIRIT",
+    "prereq_tech": "TECH_DIVINATION",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_SPIRIT",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Spirit.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_WATER",
+    "description": "TXT_KEY_BUILD_MANA_WATER",
+    "prereq_tech": "TECH_ELEMENTALISM",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_WATER",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Water.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_SHADOW",
+    "description": "TXT_KEY_BUILD_MANA_SHADOW",
+    "prereq_tech": "TECH_NECROMANCY",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_SHADOW",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Shadow.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "BUILD_MANA_SUN",
+    "description": "TXT_KEY_BUILD_MANA_SUN",
+    "prereq_tech": "TECH_DIVINATION",
+    "time": 1200,
+    "improvement_type": "IMPROVEMENT_MANA_SUN",
+    "feature_structs": [
+      {
+        "feature_type": "FEATURE_JUNGLE",
+        "prereq_tech": "TECH_BRONZE_WORKING",
+        "time": 400,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST",
+        "prereq_tech": "TECH_MINING",
+        "time": 250,
+        "production": 20,
+        "remove": true
+      },
+      {
+        "feature_type": "FEATURE_FOREST_ANCIENT",
+        "prereq_tech": "TECH_MINING",
+        "time": 500,
+        "production": 30,
+        "remove": true
+      },
+      {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+      {
+        "feature_type": "FEATURE_FOREST_BURNT",
+        "prereq_tech": "TECH_MINING",
+        "time": 125,
+        "remove": true
+      }
+    ],
+    "button": "Art/Interface/Buttons/Worldbuilder/Sun.dds",
+    "hotkeys": [{"key": "KB_S", "shift": true, "priority": 1}]
+  }
+]

@@ -1,4 +1,4 @@
-//! CvGameUtils.py rules callbacks. FFH2 0.41 enables (PythonCallbackDefines.xml):
+//! CvGameUtils.py rules callbacks. FFH2 0.41 enables (python_callback_defines.jsonc):
 //! USE_CANNOT_DO_CIVIC, USE_CANNOT_CONSTRUCT, USE_CANNOT_RESEARCH,
 //! USE_GET_BUILDING_COST_MOD, USE_CAN_BUILD, USE_CANNOT_TRAIN, USE_ON_UNIT_CREATED.
 //! The DLL also calls some CvGameUtils functions unconditionally; those whose FFH2

@@ -1,0 +1,246 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Firaxis Games (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Feature
+// iEngagementSlotsChange is this game's own (GAMEOPTION_ENGAGEMENTS): it changes each side's
+//     engagement slots on the plot and replaces the terrain's change where non-zero (forest and
+//     jungle -2).
+[
+  {
+    "type": "FEATURE_ICE",
+    "description": "TXT_KEY_FEATURE_ICE",
+    "civilopedia": "TXT_KEY_FEATURE_ICE_PEDIA",
+    "movement": 1,
+    "impassable": true,
+    "terrain_booleans": {"TERRAIN_COAST": true, "TERRAIN_OCEAN": true}
+  },
+  {
+    "type": "FEATURE_JUNGLE",
+    "description": "TXT_KEY_FEATURE_JUNGLE",
+    "civilopedia": "TXT_KEY_FEATURE_JUNGLE_PEDIA",
+    "yield_changes": [-1, 0, 0],
+    "movement": 2,
+    "see_through": 1,
+    "health_percent": -25,
+    "defense": 25,
+    "engagement_slots_change": -2,
+    "growth": 16,
+    "terrain_booleans": {"TERRAIN_GRASS": true, "TERRAIN_MARSH": true},
+    "advanced_start_remove_cost": 40,
+    "flammable": true
+  },
+  {
+    "type": "FEATURE_OASIS",
+    "description": "TXT_KEY_FEATURE_OASIS",
+    "civilopedia": "TXT_KEY_FEATURE_OASIS_PEDIA",
+    "yield_changes": [3, 0, 2],
+    "movement": 2,
+    "see_through": 1,
+    "appearance": 500,
+    "no_coast": true,
+    "no_river": true,
+    "no_adjacent": true,
+    "requires_flatlands": true,
+    "adds_fresh_water": true,
+    "no_city": true,
+    "no_improvement": true,
+    "terrain_booleans": {"TERRAIN_DESERT": true}
+  },
+  {
+    "type": "FEATURE_FLOOD_PLAINS",
+    "description": "TXT_KEY_FEATURE_FLOOD_PLAINS",
+    "civilopedia": "TXT_KEY_FEATURE_FLOOD_PLAINS_PEDIA",
+    "yield_changes": [3, 0, 0],
+    "river_yield_change": [0, 0, 1],
+    "movement": 1,
+    "health_percent": -40,
+    "appearance": 10000,
+    "requires_flatlands": true,
+    "requires_river": true,
+    "terrain_booleans": {"TERRAIN_DESERT": true}
+  },
+  {
+    "type": "FEATURE_FOREST",
+    "description": "TXT_KEY_FEATURE_FOREST",
+    "civilopedia": "TXT_KEY_FEATURE_FOREST_PEDIA",
+    "yield_changes": [0, 1, 0],
+    "movement": 2,
+    "see_through": 1,
+    "health_percent": 50,
+    "defense": 25,
+    "engagement_slots_change": -2,
+    "growth": 8,
+    "terrain_booleans": {"TERRAIN_GRASS": true, "TERRAIN_PLAINS": true, "TERRAIN_TUNDRA": true},
+    "flammable": true,
+    "feature_upgrade": "FEATURE_FOREST_ANCIENT"
+  },
+  {
+    "type": "FEATURE_FOREST_BURNT",
+    "description": "TXT_KEY_FEATURE_FOREST_BURNT",
+    "civilopedia": "TXT_KEY_FEATURE_FOREST_PEDIA",
+    "yield_changes": [0, 1, 0],
+    "movement": 1,
+    "see_through": 1,
+    "growth": 8,
+    "terrain_booleans": {"TERRAIN_GRASS": true, "TERRAIN_PLAINS": true, "TERRAIN_MARSH": true, "TERRAIN_TUNDRA": true},
+    "feature_upgrade": "FEATURE_FOREST_NEW"
+  },
+  {
+    "type": "FEATURE_FOREST_NEW",
+    "description": "TXT_KEY_FEATURE_FOREST_NEW",
+    "civilopedia": "TXT_KEY_FEATURE_FOREST_PEDIA",
+    "yield_changes": [0, 1, 0],
+    "movement": 1,
+    "see_through": 1,
+    "health_percent": 25,
+    "engagement_slots_change": -2,
+    "growth": 8,
+    "terrain_booleans": {"TERRAIN_GRASS": true, "TERRAIN_PLAINS": true, "TERRAIN_MARSH": true, "TERRAIN_TUNDRA": true},
+    "feature_upgrade": "FEATURE_FOREST"
+  },
+  {
+    "type": "FEATURE_FALLOUT",
+    "description": "TXT_KEY_FEATURE_FALLOUT",
+    "civilopedia": "TXT_KEY_FEATURE_FALLOUT_PEDIA",
+    "yield_changes": [-3, -3, -3],
+    "movement": 2,
+    "health_percent": -50,
+    "impassable": true,
+    "no_improvement": true,
+    "terrain_booleans": {
+      "TERRAIN_DESERT": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_SNOW": true,
+      "TERRAIN_TUNDRA": true
+    }
+  },
+  {
+    "type": "FEATURE_FOREST_ANCIENT",
+    "description": "TXT_KEY_FEATURE_FOREST_ANCIENT",
+    "civilopedia": "TXT_KEY_FEATURE_FOREST_ANCIENT_PEDIA",
+    "yield_changes": [1, 1, 0],
+    "movement": 2,
+    "see_through": 1,
+    "health_percent": 50,
+    "defense": 50,
+    "engagement_slots_change": -2,
+    "no_coast": true,
+    "no_river": true,
+    "terrain_booleans": {"TERRAIN_GRASS": true, "TERRAIN_PLAINS": true, "TERRAIN_TUNDRA": true},
+    "prereq_state_religion": "RELIGION_FELLOWSHIP_OF_LEAVES",
+    "python_on_move": "onMoveAncientForest(pCaster, pPlot)"
+  },
+  {
+    "type": "FEATURE_FLAMES",
+    "description": "TXT_KEY_FEATURE_FLAMES",
+    "civilopedia": "TXT_KEY_FEATURE_FLAMES_PEDIA",
+    "movement": 2,
+    "see_through": 1,
+    "health_percent": -25,
+    "terrain_booleans": {"TERRAIN_BURNING_SANDS": true},
+    "require_resist": "DAMAGE_FIRE"
+  },
+  {
+    "type": "FEATURE_OBSIDIAN_PLAINS",
+    "description": "TXT_KEY_FEATURE_OBSIDIAN_PLAINS",
+    "civilopedia": "TXT_KEY_FEATURE_OBSIDIAN_PLAINS_PEDIA",
+    "yield_changes": [3, 0, 0],
+    "river_yield_change": [0, 0, 1],
+    "movement": 1,
+    "health_percent": -40,
+    "requires_flatlands": true,
+    "requires_river": true,
+    "terrain_booleans": {"TERRAIN_BURNING_SANDS": true}
+  },
+  {
+    "type": "FEATURE_VOLCANO",
+    "description": "TXT_KEY_FEATURE_VOLCANO",
+    "civilopedia": "TXT_KEY_FEATURE_VOLCANO_PEDIA",
+    "movement": 2,
+    "see_through": 1,
+    "requires_flatlands": true,
+    "impassable": true,
+    "terrain_booleans": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_SNOW": true,
+      "TERRAIN_TUNDRA": true
+    }
+  },
+  {
+    "type": "FEATURE_SCRUB",
+    "description": "TXT_KEY_FEATURE_SCRUB",
+    "civilopedia": "TXT_KEY_FEATURE_SCRUB_PEDIA",
+    "yield_changes": [0, 1, 0],
+    "movement": 1,
+    "terrain_booleans": {"TERRAIN_DESERT": true},
+    "flammable": true
+  },
+  {
+    "type": "FEATURE_BLIZZARD",
+    "description": "TXT_KEY_FEATURE_BLIZZARD",
+    "civilopedia": "TXT_KEY_FEATURE_BLIZZARD_PEDIA",
+    "movement": 1,
+    "terrain_booleans": {"TERRAIN_SNOW": true, "TERRAIN_TUNDRA": true},
+    "python_on_move": "onMoveBlizzard(pCaster, pPlot)"
+  },
+  {
+    "type": "FEATURE_TORMENTED_SOULS",
+    "description": "TXT_KEY_FEATURE_TORMENTED_SOULS",
+    "civilopedia": "TXT_KEY_FEATURE_TORMENTED_SOULS_PEDIA",
+    "movement": 1
+  },
+  {
+    "type": "FEATURE_DOOR_WEST_CLOSED",
+    "description": "TXT_KEY_FEATURE_DOOR",
+    "civilopedia": "TXT_KEY_FEATURE_DOOR_PEDIA",
+    "movement": 5,
+    "see_through": 1,
+    "no_city": true,
+    "no_improvement": true,
+    "on_unit_change_to": "FEATURE_DOOR_WEST_OPEN"
+  },
+  {
+    "type": "FEATURE_DOOR_WEST_OPEN",
+    "description": "TXT_KEY_FEATURE_DOOR",
+    "civilopedia": "TXT_KEY_FEATURE_DOOR_PEDIA",
+    "movement": 1,
+    "no_city": true,
+    "no_improvement": true
+  },
+  {
+    "type": "FEATURE_DOOR_NORTH_CLOSED",
+    "description": "TXT_KEY_FEATURE_DOOR",
+    "civilopedia": "TXT_KEY_FEATURE_DOOR_PEDIA",
+    "movement": 5,
+    "see_through": 1,
+    "no_city": true,
+    "no_improvement": true,
+    "on_unit_change_to": "FEATURE_DOOR_NORTH_OPEN"
+  },
+  {
+    "type": "FEATURE_DOOR_NORTH_OPEN",
+    "description": "TXT_KEY_FEATURE_DOOR",
+    "civilopedia": "TXT_KEY_FEATURE_DOOR_PEDIA",
+    "movement": 1,
+    "no_city": true,
+    "no_improvement": true
+  },
+  {
+    "type": "FEATURE_WALLS",
+    "description": "TXT_KEY_FEATURE_WALLS",
+    "civilopedia": "TXT_KEY_FEATURE_WALLS_PEDIA",
+    "movement": 1,
+    "see_through": 9,
+    "impassable": true
+  }
+]

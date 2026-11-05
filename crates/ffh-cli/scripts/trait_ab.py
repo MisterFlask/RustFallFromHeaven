@@ -31,7 +31,8 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, '..', '..', '..'))
-LEADERS_XML = os.path.join(ROOT, 'data', 'xml', 'Civilizations', 'CIV4LeaderHeadInfos.xml')
+sys.path.insert(0, os.path.join(ROOT, 'tools'))
+import jsonc  # noqa: E402
 
 # The traits traits.rs plays, in its order.
 PLAYED = ['RAIDERS', 'SPIRITUAL', 'ARCANE', 'SUMMONER', 'PHILOSOPHICAL', 'FINANCIAL', 'INDUSTRIOUS',
@@ -46,20 +47,11 @@ COUNTERS = ['cities', 'pop', 'techs', 'research', 'gold', 'gp_created', 'wonders
 
 
 def leader_traits():
-    with open(LEADERS_XML) as f:
-        s = f.read()
     out = {}
-    for m in re.finditer(r'<LeaderHeadInfo>(.*?)</LeaderHeadInfo>', s, re.S):
-        b = m.group(1)
-        t = re.search(r'<Type>LEADER_(.*?)</Type>', b)
-        if not t:
+    for e in jsonc.table('leader_heads'):
+        if not e.get('type', '').startswith('LEADER_'):
             continue
-        tr = re.search(r'<Traits>(.*?)</Traits>', b, re.S)
-        names = []
-        if tr:
-            for x in re.finditer(r'<TraitType>TRAIT_(.*?)</TraitType>\s*<bTrait>1</bTrait>', tr.group(1)):
-                names.append(x.group(1))
-        out[t.group(1)] = names
+        out[e['type'][len('LEADER_'):]] = [t[len('TRAIT_'):] for t, on in e.get('traits', {}).items() if on]
     return out
 
 

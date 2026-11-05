@@ -1756,6 +1756,7 @@ impl Game {
     pub fn unit_change_spell_damage_modify(&mut self, u: UnitId, change: i32) {
         if change != 0 {
             self.units[u].spell_damage_modify += change;
+            self.units[u].stat_pct[StatType::Magic.idx()] += change;
         }
     }
 
@@ -1808,15 +1809,33 @@ impl Game {
     }
 
     /// C++ `CvUnit::changeBaseCombatStr` (CvUnit.cpp:15897-15900).
+    /// Its battle attack follows, ten points a strength point (docs/UNIT_STATS.md).
     pub fn unit_change_base_combat_str(&mut self, u: UnitId, change: i32) {
         // C++ `setBaseCombatStr(m_iBaseCombat + iChange)`.
         self.units[u].base_combat += change;
+        self.units[u].stat_flat[StatType::Attack.idx()] += change * 10;
     }
 
     /// C++ `CvUnit::changeBaseCombatStrDefense` (CvUnit.cpp:15902-15905).
+    /// Its battle defence follows, ten points a strength point (docs/UNIT_STATS.md).
     pub fn unit_change_base_combat_str_defense(&mut self, u: UnitId, change: i32) {
         // C++ `setBaseCombatStrDefense(m_iBaseCombatDefense + iChange)`.
         self.units[u].base_combat_defense += change;
+        self.units[u].stat_flat[StatType::Defense.idx()] += change * 10;
+    }
+
+    /// C++ `CvUnit::setBaseCombatStr`: through [`Self::unit_change_base_combat_str`], so its battle
+    /// attack follows.
+    pub fn unit_set_base_combat_str(&mut self, u: UnitId, value: i32) {
+        let change = value - self.units[u].base_combat;
+        self.unit_change_base_combat_str(u, change);
+    }
+
+    /// C++ `CvUnit::setBaseCombatStrDefense`: through
+    /// [`Self::unit_change_base_combat_str_defense`], so its battle defence follows.
+    pub fn unit_set_base_combat_str_defense(&mut self, u: UnitId, value: i32) {
+        let change = value - self.units[u].base_combat_defense;
+        self.unit_change_base_combat_str_defense(u, change);
     }
 
     /// C++ `CvUnit::getExtraSpellMove` (CvUnit.cpp:16090-16104).
@@ -2031,18 +2050,19 @@ impl Game {
         }
         let owner = self.units[u].owner;
         let new_amount = self.player_get_num_available_bonuses(owner, bonus) * self.units[u].bonus_affinity[bonus];
-        let unit = &mut self.units[u];
-        let old_amount = unit.bonus_affinity_amount[bonus];
+        let old_amount = self.units[u].bonus_affinity_amount[bonus];
         match self.d.bonuses[bonus].damage_type {
             None => {
-                unit.base_combat += new_amount - old_amount;
-                unit.base_combat_defense += new_amount - old_amount;
+                self.unit_change_base_combat_str(u, new_amount - old_amount);
+                self.unit_change_base_combat_str_defense(u, new_amount - old_amount);
             }
             Some(damage_type) => {
+                let unit = &mut self.units[u];
                 unit.damage_type_combat[damage_type] += new_amount - old_amount;
                 unit.total_damage_type_combat += new_amount - old_amount;
             }
         }
+        let unit = &mut self.units[u];
         unit.bonus_affinity_amount[bonus] = new_amount;
     }
 

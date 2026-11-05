@@ -1,0 +1,62 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jesse Smith (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Automate Infos
+// Changes must be reflected in CvEnums.h
+[
+  {
+    "description": "TXT_KEY_ACTION_AUTOMATE_BUILD",
+    "help": "TXT_KEY_ACTION_AUTOMATE_BUILD_HELP",
+    "command": "COMMAND_AUTOMATE",
+    "automate": "AUTOMATE_BUILD",
+    "visible": true,
+    "button": "Art/Interface/Buttons/Actions/Automate.dds",
+    "hotkeys": [{"key": "KB_A"}]
+  },
+  {
+    "description": "TXT_KEY_ACTION_AUTOMATE_NETWORK",
+    "help": "TXT_KEY_ACTION_AUTOMATE_NETWORK_HELP",
+    "command": "COMMAND_AUTOMATE",
+    "automate": "AUTOMATE_NETWORK",
+    "visible": true,
+    "button": "Art/Interface/Buttons/Actions/AutomateNetwork.dds",
+    "hotkeys": [{"key": "KB_N"}]
+  },
+  {
+    "description": "TXT_KEY_ACTION_AUTOMATE_CITY",
+    "help": "TXT_KEY_ACTION_AUTOMATE_CITY_HELP",
+    "command": "COMMAND_AUTOMATE",
+    "automate": "AUTOMATE_CITY",
+    "visible": true,
+    "button": "Art/Interface/Buttons/Actions/AutomateCity.dds",
+    "hotkeys": [{"key": "KB_C", "shift": true, "ctrl": true}]
+  },
+  {
+    "description": "TXT_KEY_ACTION_AUTOMATE_EXPLORE",
+    "help": "TXT_KEY_ACTION_AUTOMATE_EXPLORE_HELP",
+    "command": "COMMAND_AUTOMATE",
+    "automate": "AUTOMATE_EXPLORE",
+    "visible": true,
+    "button": "Art/Interface/Buttons/Actions/Explore.dds",
+    "hotkeys": [{"key": "KB_E"}]
+  },
+  {
+    "description": "TXT_KEY_ACTION_AUTOMATE_RELIGION",
+    "help": "TXT_KEY_ACTION_AUTOMATE_RELIGION_HELP",
+    "command": "COMMAND_AUTOMATE",
+    "automate": "AUTOMATE_RELIGION",
+    "visible": true,
+    "button": "Art/Interface/Buttons/Actions/Automate.dds",
+    "hotkeys": [{"key": "KB_R"}]
+  },
+  {
+    "description": "TXT_KEY_ACTION_AUTOMATE_TERRAFORMING",
+    "help": "TXT_KEY_ACTION_AUTOMATE_TERRAFORMING_HELP",
+    "command": "COMMAND_AUTOMATE",
+    "automate": "AUTOMATE_TERRAFORMING",
+    "visible": true,
+    "button": "Art/Interface/Buttons/Actions/Automate.dds",
+    "hotkeys": [{"key": "KB_A"}]
+  }
+]

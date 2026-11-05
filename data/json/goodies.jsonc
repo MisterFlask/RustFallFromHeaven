@@ -1,0 +1,310 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jesse Smith (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Goody Infos
+[
+  {
+    "type": "GOODY_LOW_GOLD",
+    "description": "TXT_KEY_GOODY_GOLD",
+    "gold": 20,
+    "gold_rand1": 21,
+    "gold_rand2": 21
+  },
+  {
+    "type": "GOODY_HIGH_GOLD",
+    "description": "TXT_KEY_GOODY_GOLD",
+    "gold": 20,
+    "gold_rand1": 51,
+    "gold_rand2": 51
+  },
+  {
+    "type": "GOODY_MAP",
+    "description": "TXT_KEY_GOODY_MAP",
+    "map_offset": 4,
+    "map_range": 4,
+    "map_prob": 80
+  },
+  {
+    "type": "GOODY_SETTLER",
+    "description": "TXT_KEY_GOODY_SETTLER",
+    "unit_class": "UNITCLASS_SETTLER"
+  },
+  {
+    "type": "GOODY_WARRIOR",
+    "description": "TXT_KEY_GOODY_WARRIOR",
+    "unit_class": "UNITCLASS_WARRIOR"
+  },
+  {"type": "GOODY_SCOUT", "description": "TXT_KEY_GOODY_SCOUT", "unit_class": "UNITCLASS_SCOUT"},
+  {"type": "GOODY_WORKER", "description": "TXT_KEY_GOODY_WORKER", "unit_class": "UNITCLASS_WORKER"},
+  {"type": "GOODY_EXPERIENCE", "description": "TXT_KEY_GOODY_EXPERIENCE", "experience": 5},
+  {
+    "type": "GOODY_HEALING",
+    "description": "TXT_KEY_GOODY_HEALING",
+    "healing": 100,
+    "damage_prereq": 60
+  },
+  {"type": "GOODY_TECH", "description": "TXT_KEY_GOODY_TECH", "tech": true},
+  {
+    "type": "GOODY_BARBARIANS_WEAK",
+    "description": "TXT_KEY_GOODY_BARBARIANS",
+    "bad": true,
+    "barbarian_class": "UNITCLASS_WARRIOR",
+    "barbarian_unit_prob": 20,
+    "min_barbarians": 1
+  },
+  {
+    "type": "GOODY_BARBARIANS_STRONG",
+    "description": "TXT_KEY_GOODY_BARBARIANS",
+    "bad": true,
+    "barbarian_class": "UNITCLASS_WARRIOR",
+    "barbarian_unit_prob": 40,
+    "min_barbarians": 2
+  },
+  {
+    "type": "GOODY_GRAVE_SKELETONS",
+    "description": "TXT_KEY_GOODY_GRAVE_SKELETONS",
+    "bad": true,
+    "barbarian_class": "UNITCLASS_SKELETON",
+    "barbarian_unit_prob": 20,
+    "min_barbarians": 1
+  },
+  {
+    "type": "GOODY_GRAVE_SPECTRE",
+    "description": "TXT_KEY_GOODY_GRAVE_SPECTRE",
+    "bad": true,
+    "barbarian_class": "UNITCLASS_SPECTRE",
+    "barbarian_unit_prob": 20,
+    "min_barbarians": 1
+  },
+  {
+    "type": "GOODY_GRAVE_LOW_GOLD",
+    "description": "TXT_KEY_GOODY_GRAVE_GOLD",
+    "gold": 20,
+    "gold_rand1": 21,
+    "gold_rand2": 21
+  },
+  {
+    "type": "GOODY_GRAVE_HIGH_GOLD",
+    "description": "TXT_KEY_GOODY_GRAVE_GOLD",
+    "gold": 20,
+    "gold_rand1": 51,
+    "gold_rand2": 51
+  },
+  {"type": "GOODY_GRAVE_TECH", "description": "TXT_KEY_GOODY_GRAVE_TECH", "tech": true},
+  {
+    "type": "GOODY_EXPLORE_LAIR_EXPERIENCE",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_EXPERIENCE",
+    "experience": 5
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_HIGH_GOLD",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_HIGH_GOLD",
+    "gold": 20,
+    "gold_rand1": 51,
+    "gold_rand2": 51
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_ITEM_HEALING_SALVE",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_ITEM_HEALING_SALVE",
+    "unit_class": "EQUIPMENTCLASS_HEALING_SALVE"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_ITEM_JADE_TORC",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_ITEM_JADE_TORC",
+    "unit_class": "EQUIPMENTCLASS_JADE_TORC"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_ITEM_POTION_OF_INVISIBILITY",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_ITEM_POTION_OF_INVISIBILITY",
+    "unit_class": "EQUIPMENTCLASS_POTION_OF_INVISIBILITY"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_ITEM_POTION_OF_RESTORATION",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_ITEM_POTION_OF_RESTORATION",
+    "unit_class": "EQUIPMENTCLASS_POTION_OF_RESTORATION"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_ITEM_ROD_OF_WINDS",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_ITEM_ROD_OF_WINDS",
+    "unit_class": "EQUIPMENTCLASS_ROD_OF_WINDS"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_ITEM_TIMOR_MASK",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_ITEM_TIMOR_MASK",
+    "unit_class": "EQUIPMENTCLASS_TIMOR_MASK"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_TREASURE_VAULT",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_TREASURE_VAULT",
+    "gold": 40,
+    "gold_rand1": 101,
+    "gold_rand2": 101
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_ADVENTURER",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_ADVENTURER",
+    "unit_class": "UNITCLASS_ADVENTURER"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_ANGEL",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_ANGEL",
+    "experience": 10,
+    "unit_class": "UNITCLASS_ANGEL"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_ARTIST",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_ARTIST",
+    "unit_class": "UNITCLASS_ARTIST"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_ASSASSIN",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_ASSASSIN",
+    "experience": 10,
+    "unit_class": "UNITCLASS_ASSASSIN"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_CHAMPION",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_CHAMPION",
+    "experience": 10,
+    "unit_class": "UNITCLASS_CHAMPION"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_COMMANDER",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_COMMANDER",
+    "unit_class": "UNITCLASS_COMMANDER"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_DISCIPLE_ASHEN",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_DISCIPLE_ASHEN",
+    "unit_class": "UNITCLASS_DISCIPLE_THE_ASHEN_VEIL"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_DISCIPLE_EMPYREAN",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_DISCIPLE_EMPYREAN",
+    "unit_class": "UNITCLASS_DISCIPLE_EMPYREAN"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_DISCIPLE_LEAVES",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_DISCIPLE_LEAVES",
+    "unit_class": "UNITCLASS_DISCIPLE_FELLOWSHIP_OF_LEAVES"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_DISCIPLE_RUNES",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_DISCIPLE_RUNES",
+    "unit_class": "UNITCLASS_DISCIPLE_RUNES_OF_KILMORPH"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_DISCIPLE_OVERLORDS",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_DISCIPLE_OVERLORDS",
+    "unit_class": "UNITCLASS_DISCIPLE_OCTOPUS_OVERLORDS"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_DISCIPLE_ORDER",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_DISCIPLE_ORDER",
+    "unit_class": "UNITCLASS_DISCIPLE_THE_ORDER"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_ENGINEER",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_ENGINEER",
+    "unit_class": "UNITCLASS_ENGINEER"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_MAGE",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_MAGE",
+    "experience": 10,
+    "unit_class": "UNITCLASS_MAGE"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_MERCHANT",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_MERCHANT",
+    "unit_class": "UNITCLASS_MERCHANT"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_MONK",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_MONK",
+    "experience": 10,
+    "unit_class": "UNITCLASS_MONK"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_PROPHET",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_PROPHET",
+    "unit_class": "UNITCLASS_PROPHET"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_SCIENTIST",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_SCIENTIST",
+    "unit_class": "UNITCLASS_SCIENTIST"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_PRISONER_SEA_SERPENT",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_PRISONER_SEA_SERPENT",
+    "unit_class": "UNITCLASS_SEA_SERPENT"
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_SPAWN_DROWN",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_SPAWN_DROWN",
+    "bad": true,
+    "barbarian_class": "UNITCLASS_DROWN",
+    "barbarian_unit_prob": 30,
+    "min_barbarians": 1
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_SPAWN_FROSTLING",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_SPAWN_FROSTLING",
+    "bad": true,
+    "barbarian_class": "UNITCLASS_FROSTLING",
+    "barbarian_unit_prob": 30,
+    "min_barbarians": 1
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_SPAWN_LIZARDMAN",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_SPAWN_LIZARDMAN",
+    "bad": true,
+    "barbarian_class": "UNITCLASS_HUNTER",
+    "barbarian_unit_prob": 30,
+    "min_barbarians": 1
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_SPAWN_SCORPION",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_SPAWN_SCORPION",
+    "bad": true,
+    "barbarian_class": "UNITCLASS_SCORPION",
+    "min_barbarians": 1
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_SPAWN_SCORPION_BAD",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_SPAWN_SCORPION_BAD",
+    "bad": true,
+    "barbarian_class": "UNITCLASS_SCORPION",
+    "min_barbarians": 3
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_SPAWN_SEA_SERPENT",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_SPAWN_SEA_SERPENT",
+    "bad": true,
+    "barbarian_class": "UNITCLASS_SEA_SERPENT",
+    "min_barbarians": 1
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_SPAWN_SKELETON",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_SPAWN_SKELETON",
+    "bad": true,
+    "barbarian_class": "UNITCLASS_SKELETON",
+    "barbarian_unit_prob": 30,
+    "min_barbarians": 1
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_SPAWN_SPIDER",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_SPAWN_SPIDER",
+    "bad": true,
+    "barbarian_class": "UNITCLASS_GIANT_SPIDER",
+    "barbarian_unit_prob": 10,
+    "min_barbarians": 1
+  },
+  {
+    "type": "GOODY_EXPLORE_LAIR_SUPPLIES",
+    "description": "TXT_KEY_GOODY_EXPLORE_LAIR_SUPPLIES",
+    "unit_class": "UNITCLASS_SUPPLIES"
+  }
+]

@@ -1940,17 +1940,17 @@ fn ai_true_combat_value(g: &Game, p: PlayerId, unit: UnitType) -> i32 {
         let mut combat_bonus = 0;
         if let Some(promotion) = opt_from_i32::<PromotionType>(d.defines.weapon_promotion_tier1) {
             if available(d.defines.weapon_req_bonus_tier1) > 0 {
-                combat_bonus = d.promotions[promotion].extra_combat_str;
+                combat_bonus = d.promotions[promotion].stat_changes[StatType::Attack.idx()].flat / 10;
             }
         }
         if let Some(promotion) = opt_from_i32::<PromotionType>(d.defines.weapon_promotion_tier2) {
             if info.weapon_tier > 1 && available(d.defines.weapon_req_bonus_tier2) > 0 {
-                combat_bonus = d.promotions[promotion].extra_combat_str;
+                combat_bonus = d.promotions[promotion].stat_changes[StatType::Attack.idx()].flat / 10;
             }
         }
         if let Some(promotion) = opt_from_i32::<PromotionType>(d.defines.weapon_promotion_tier3) {
             if info.weapon_tier > 2 && available(d.defines.weapon_req_bonus_tier3) > 0 {
-                combat_bonus = d.promotions[promotion].extra_combat_str;
+                combat_bonus = d.promotions[promotion].stat_changes[StatType::Attack.idx()].flat / 10;
             }
         }
         combat += combat_bonus;

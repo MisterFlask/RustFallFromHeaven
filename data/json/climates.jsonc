@@ -1,0 +1,65 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jesse Smith (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Climate Infos
+[
+  {
+    "type": "CLIMATE_TEMPERATE",
+    "description": "TXT_KEY_CLIMATE_TEMPERATE",
+    "jungle_latitude": 5,
+    "hill_range": 5,
+    "peak_percent": 25,
+    "ice_latitude": 0.95,
+    "rand_ice_latitude": 0.25
+  },
+  {
+    "type": "CLIMATE_TROPICAL",
+    "description": "TXT_KEY_CLIMATE_TROPICAL",
+    "desert_percent_change": -10,
+    "jungle_latitude": 2,
+    "hill_range": 5,
+    "peak_percent": 25,
+    "snow_latitude_change": 0.1,
+    "tundra_latitude_change": 0.1,
+    "ice_latitude": 0.95,
+    "rand_ice_latitude": 0.2
+  },
+  {
+    "type": "CLIMATE_ARID",
+    "description": "TXT_KEY_CLIMATE_ARID",
+    "desert_percent_change": 20,
+    "jungle_latitude": 6,
+    "hill_range": 5,
+    "peak_percent": 25,
+    "desert_bottom_latitude_change": -0.1,
+    "desert_top_latitude_change": 0.1,
+    "ice_latitude": 0.95,
+    "rand_ice_latitude": 0.2
+  },
+  {
+    "type": "CLIMATE_ROCKY",
+    "description": "TXT_KEY_CLIMATE_ROCKY",
+    "jungle_latitude": 5,
+    "hill_range": 7,
+    "peak_percent": 35,
+    "snow_latitude_change": -0.025,
+    "tundra_latitude_change": -0.05,
+    "desert_top_latitude_change": -0.05,
+    "ice_latitude": 0.95,
+    "rand_ice_latitude": 0.25
+  },
+  {
+    "type": "CLIMATE_COLD",
+    "description": "TXT_KEY_CLIMATE_COLD",
+    "desert_percent_change": -10,
+    "jungle_latitude": 6,
+    "hill_range": 5,
+    "peak_percent": 25,
+    "snow_latitude_change": -0.1,
+    "tundra_latitude_change": -0.15,
+    "desert_top_latitude_change": -0.1,
+    "ice_latitude": 0.9,
+    "rand_ice_latitude": 0.5
+  }
+]

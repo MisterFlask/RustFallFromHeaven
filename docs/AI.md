@@ -1673,6 +1673,11 @@ turn, to move casters and to promote them:
 - **Promotions** (`units::promotion_value`): a sphere is worth the spells it opens, plus half of
   those the next promotion of the sphere opens (a quarter for an adept, which gets Channeling II only
   as a mage): Fire I for Fireball, Enchantment I for Enchanted Blade.
+  Its battle stat changes (docs/UNIT_STATS.md; `units::stat_changes_value`) count as percentages of
+  the unit's own stats, weighted by what the unit does with each: attack and defence as before
+  (a defender the defence), magic for a caster only, magic defence at a quarter (a third on the
+  front line), HP by its percentage, accuracy and evasion a point each, crit half that, speed 5 a
+  point.
 - **Summons spent** (`casting::summon_target`, `SUMMON_SPEND`; More Naval AI's
   `AI_summonAttackMove`, which attacks at any odds): a temporary summon that will be gone before it
   could act again (duration 1: every summon but a Summoner's on the turn it is cast, a Summoner's
@@ -3077,7 +3082,7 @@ map, normal speed, played to the rules' end at turn 690) ended on the time limit
 were won by civs that got there by accident (3 cultural, 2 domination).
 
 **Estimates** (pure functions of the game state, nothing cached; O(cities + techs) per civ): the
-turns each civ needs for each condition of `CvGame::testVictory` (`CIV4VictoryInfo.xml`).
+turns each civ needs for each condition of `CvGame::testVictory` (`victories.jsonc`).
 - *Cultural*: three cities at legendary culture (50000 at normal speed). Per city, the culture
   missing at its culture rate with the slider all in and the culture process (production to
   culture at 50%); the third city's turns. Before Drama frees the culture slider, Drama's

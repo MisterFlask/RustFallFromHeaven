@@ -1,5 +1,5 @@
 //! Spot-checks of EventInfo / EventTriggerInfo against values read by hand from
-//! data/xml/Events/CIV4EventInfos.xml and CIV4EventTriggerInfos.xml.
+//! data/json/events.jsonc and event_triggers.jsonc.
 
 use ffh_data::*;
 

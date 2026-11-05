@@ -43,13 +43,13 @@ impl InfoBase {
     /// C++ `CvInfoBase::read`.
     pub fn read(rd: &Rd) -> InfoBase {
         InfoBase {
-            graphical_only: rd.bool("bGraphicalOnly"),
-            type_: rd.string("Type"),
-            description: rd.string("Description"),
-            civilopedia: rd.string("Civilopedia"),
-            help: rd.string("Help"),
-            strategy: rd.string("Strategy"),
-            button: rd.string("Button"),
+            graphical_only: rd.bool("graphical_only"),
+            type_: rd.string("type"),
+            description: rd.string("description"),
+            civilopedia: rd.string("civilopedia"),
+            help: rd.string("help"),
+            strategy: rd.string("strategy"),
+            button: rd.string("button"),
         }
     }
 }

@@ -1,7 +1,7 @@
 //! Victory planner (victory-pursuit): how close every civ is to each FFH2 victory condition,
 //! the one this player pursues, and a rival about to win.
 //!
-//! The conditions are the rules' (`CvGame::testVictory`, `CIV4VictoryInfo.xml`):
+//! The conditions are the rules' (`CvGame::testVictory`, `victories.jsonc`):
 //! - **Tower of Mastery**: the team owns one of each building class with a
 //!   `VICTORY_TOWER_OF_MASTERY` threshold -- the Towers of Alteration, Divination, Necromancy and
 //!   the Elements (800 hammers each, Alteration / Divination / Necromancy / Elementalism) and the

@@ -57,13 +57,13 @@ const LOG: &[&str] = &[
 const SIDE: &[&str] = &["player", "shown_player", "civ", "label", "lanes", "ordered"];
 const FIGHTER: &[&str] = &[
     "b", "unit", "sentinel", "unit_type", "name", "owner", "side", "lane", "row", "large", "level", "xp", "hero", "role", "promotions", "max_hp", "hp_start", "hp_battle", "speed",
-    "first_strikes", "chance_first_strikes", "rolled_first_strikes", "actions", "bonus_action", "spell", "dodge", "crit_bonus", "anti_flank", "flanker", "withdraw_pct",
-    "combat_limit", "collateral_limit", "splash", "def_strike", "immune", "fear", "a_x100", "dv_x100", "a", "dv", "fate", "dealt", "taken", "healed",
+    "first_strikes", "chance_first_strikes", "rolled_first_strikes", "actions", "bonus_action", "spell", "accuracy", "evasion", "crit", "anti_flank", "flanker", "withdraw_pct",
+    "combat_limit", "collateral_limit", "splash", "def_strike", "immune", "fear", "a_x100", "dv_x100", "ma_x100", "md_x100", "a", "dv", "mag", "mdef", "fate", "dealt", "taken", "healed",
 ];
-const STAT: &[&str] = &["base_x100", "role_pct", "terms", "total_x100"];
-const PAIR: &[&str] = &["h", "t", "a_x100", "dv_x100", "mean", "a_extra", "dv_extra"];
+const STAT: &[&str] = &["base_x100", "terms", "total_x100"];
+const PAIR: &[&str] = &["h", "t", "a_x100", "dv_x100", "mean", "ma_x100", "md_x100", "spell_pct", "magic_mean", "a_extra", "dv_extra"];
 const GROUND: &[&str] = &["city", "forest", "hills", "flanking", "rules"];
-const PARAMS: &[&str] = &["bolt_pct", "splash_pct", "large_hp_pct", "first_strike_speed"];
+const PARAMS: &[&str] = &["bolt_pct", "splash_pct", "first_strike_speed"];
 const OUTCOME: &[&str] = &["result", "rounds", "plot_taken", "city_captured", "moved_in", "defenders_left", "lines_down", "sides"];
 const LINE: &[&str] = &["committed", "sat_out", "fallen", "escaped", "standing"];
 const SUMMARY: &[&str] = &["id", "turn", "x", "y", "from", "place", "city", "viewer_side", "result", "rounds", "plot_taken", "city_captured", "defenders_left", "has_log", "sides"];
@@ -197,8 +197,11 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
         assert_eq!(int(f, "b"), b as i64);
         assert_eq!(keys(f.get("a").unwrap()), sorted(STAT));
         assert_eq!(keys(f.get("dv").unwrap()), sorted(STAT));
+        assert_eq!(keys(f.get("mag").unwrap()), sorted(STAT));
+        assert_eq!(keys(f.get("mdef").unwrap()), sorted(STAT));
         assert_eq!(int(f, "a_x100"), int(f.get("a").unwrap(), "total_x100"));
         assert_eq!(int(f, "dv_x100"), int(f.get("dv").unwrap(), "total_x100"));
+        assert_eq!(int(f, "md_x100"), int(f.get("mdef").unwrap(), "total_x100"));
     }
     for p in arr(&l, "pairs") {
         assert_eq!(keys(&p), sorted(PAIR));
@@ -221,12 +224,12 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
     }
     // The A and Dv parts: the strength before the role's percent, the role's, the total.
     for f in &fighters {
-        for k in ["a", "dv"] {
+        for k in ["a", "dv", "mag", "mdef"] {
             let s = f.get(k).unwrap();
-            let (base, role, total) = (int(s, "base_x100"), int(s, "role_pct"), int(s, "total_x100"));
+            let (base, total) = (int(s, "base_x100"), int(s, "total_x100"));
             let terms: i64 = arr(s, "terms").iter().map(|t| int(t, "pct")).sum();
-            let want = base * role / 100 * (100 + terms) / 100;
-            assert!((want - total).abs() <= 2, "{k} of {f:?}: {base} x {role}% x (100 + {terms})% is not {total}");
+            let want = if terms >= 0 { base * (100 + terms) / 100 } else { base * 100 / (100 - terms) }.max(1);
+            assert!((want - total).abs() <= 2, "{k} of {f:?}: {base} x (100 + {terms})% is not {total}");
         }
     }
     let n = fighters.len() as i64;

@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { pts, chancePct, pressureStage, unrestOf, outcome, settleOf, turnsTo, turnsBelow, nextStage, reachRow, revoltSummary } from "../app/culture.js";
 import { revoltMark } from "../app/iso.js";
 
-// The defaults of data/xml/RulesDefines.xml, as the server's `thresholds` sends them.
+// The defaults of data/json/rules_defines.jsonc, as the server's `thresholds` sends them.
 const th = { unhappy_step: 2500, unhappy_max: 4, disorder: 10000, near_flip: 20000, flip: 30000, fade_percent: 5, resist_percent: 50, garrison: 200, spread_max: 2500, flipping: true };
 
 test("hundredths of culture and of a percent", () => {

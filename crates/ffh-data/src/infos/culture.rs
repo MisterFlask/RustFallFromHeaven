@@ -1,11 +1,11 @@
 //! This game's own info classes for cultural channels (not FFH2's; docs/CULTURE.md):
-//! `Gameinfo/CIV4CulturalActionInfos.xml`.
+//! `cultural_actions.jsonc`.
 
 use super::InfoBase;
 use crate::define_idx;
 use crate::registry::Rd;
 
-define_idx!(/// What a city may channel its culture into (`CULTURALACTION_*`, Gameinfo/CIV4CulturalActionInfos.xml).
+define_idx!(/// What a city may channel its culture into (`CULTURALACTION_*`, cultural_actions.jsonc).
 CulturalActionType);
 
 /// When a channel counts as hostile to its target (XML `Hostile`).
@@ -40,7 +40,7 @@ pub struct CulturalActionInfo {
 
 pub fn read_cultural_action(rd: &Rd) -> CulturalActionInfo {
     let base = InfoBase::read(rd);
-    let hostile = match rd.string("Hostile").as_str() {
+    let hostile = match rd.string("hostile").as_str() {
         "NEVER" | "" => CultureHostility::Never,
         "ALWAYS" => CultureHostility::Always,
         "DIFFERENT_STATE_RELIGION" => CultureHostility::DifferentStateReligion,
@@ -49,7 +49,7 @@ pub fn read_cultural_action(rd: &Rd) -> CulturalActionInfo {
             CultureHostility::Never
         }
     };
-    let effect = match rd.string("Effect").as_str() {
+    let effect = match rd.string("effect").as_str() {
         "FOMENT_REVOLT" => CultureEffect::FomentRevolt,
         "SPREAD_RELIGION" => CultureEffect::SpreadReligion,
         other => {

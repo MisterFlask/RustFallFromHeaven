@@ -89,7 +89,10 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 14: sieges and Sentinels (docs/SIEGES.md): `City::sentinel_damage`, `Unit::xp_carry`, the
 ///   battle report's Sentinels (`Outcome::sentinels`, `sentinels_breached`, `LogFighter::sentinel`,
 ///   `SlotSource::Sentinels`; the city-defence slot sources gone).
-pub const FORMAT_VERSION: u32 = 14;
+/// - 15: unit stats (docs/UNIT_STATS.md): `Unit::stat_flat`, `stat_pct` in place of
+///   `extra_combat_percent_defense`; the battle log's `Stat` without `role_pct`, `LogFighter`'s
+///   accuracy, evasion, crit, magic and magic defence, `LogPair`'s magic pair.
+pub const FORMAT_VERSION: u32 = 15;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

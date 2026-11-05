@@ -1,0 +1,1747 @@
+// Created with the FfH editor by Kael
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Improvement Infos
+[
+  {
+    "type": "IMPROVEMENT_AIFON_ISLE",
+    "description": "TXT_KEY_IMPROVEMENT_AIFON_ISLE",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_AIFON_ISLE_PEDIA",
+    "water": true,
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "terrain_makes_valids": {"TERRAIN_OCEAN": true},
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "unique": true
+  },
+  {
+    "type": "IMPROVEMENT_BARROW",
+    "description": "TXT_KEY_IMPROVEMENT_BARROW",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_BARROW_PEDIA",
+    "yield_changes": [-1, 0, 0],
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "pillage_gold": 10,
+    "outside_borders": true,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true,
+      "TERRAIN_SNOW": true
+    },
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "appearance_probability": 75,
+    "spawn_unit_type": "UNIT_SKELETON"
+  },
+  {
+    "type": "IMPROVEMENT_BEAR_DEN",
+    "description": "TXT_KEY_IMPROVEMENT_BEAR_DEN",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_BEAR_DEN_PEDIA",
+    "requires_flatlands": true,
+    "advanced_start_cost": -1,
+    "outside_borders": true,
+    "terrain_makes_valids": {"TERRAIN_TUNDRA": true},
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "spawn_unit_type": "UNIT_BEAR"
+  },
+  {
+    "type": "IMPROVEMENT_BRADELINES_WELL",
+    "description": "TXT_KEY_IMPROVEMENT_BRADELINES_WELL",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_BRADELINES_WELL_PEDIA",
+    "requires_flatlands": true,
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true,
+      "TERRAIN_SNOW": true
+    },
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "unique": true
+  },
+  {
+    "type": "IMPROVEMENT_BROKEN_SEPULCHER",
+    "description": "TXT_KEY_IMPROVEMENT_BROKEN_SEPULCHER",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_BROKEN_SEPULCHER_PEDIA",
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true,
+      "TERRAIN_SNOW": true
+    },
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA_DEATH",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "unique": true,
+    "bonus_convert": "BONUS_MANA_DEATH"
+  },
+  {
+    "type": "IMPROVEMENT_CAGE",
+    "description": "TXT_KEY_IMPROVEMENT_CAGE",
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_CAMP",
+    "description": "TXT_KEY_IMPROVEMENT_CAMP",
+    "advanced_start_cost": 24,
+    "pillage_gold": 5,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_DEER",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [2, 0, 0]
+      },
+      {
+        "bonus_type": "BONUS_FUR",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [0, 0, 3]
+      },
+      {
+        "bonus_type": "BONUS_IVORY",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [0, 1, 1]
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_CASTLE",
+    "description": "TXT_KEY_IMPROVEMENT_CASTLE",
+    "advanced_start_cost": -1,
+    "upgrade_time": 40,
+    "defense_modifier": 25,
+    "pillage_gold": 10,
+    "outside_borders": true,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true,
+      "TERRAIN_SNOW": true
+    },
+    "improvement_pillage": "IMPROVEMENT_FORT",
+    "improvement_upgrade": "IMPROVEMENT_CITADEL",
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "heal_rate_change": 10,
+    "range": 2,
+    "range_defense_modifier": 10
+  },
+  {
+    "type": "IMPROVEMENT_CITADEL",
+    "description": "TXT_KEY_IMPROVEMENT_CITADEL",
+    "advanced_start_cost": -1,
+    "defense_modifier": 40,
+    "pillage_gold": 15,
+    "outside_borders": true,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true,
+      "TERRAIN_SNOW": true
+    },
+    "improvement_pillage": "IMPROVEMENT_CASTLE",
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "heal_rate_change": 20,
+    "range": 3,
+    "range_defense_modifier": 15,
+    "visibility_change": 1
+  },
+  {
+    "type": "IMPROVEMENT_CITY_RUINS",
+    "description": "TXT_KEY_IMPROVEMENT_CITY_RUINS",
+    "advanced_start_cost": -1,
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_COTTAGE",
+    "description": "TXT_KEY_IMPROVEMENT_COTTAGE",
+    "prereq_nature_yields": [1, 0, 0],
+    "yield_changes": [0, 0, 1],
+    "fresh_water_makes_valid": true,
+    "advanced_start_cost": 24,
+    "upgrade_time": 10,
+    "pillage_gold": 10,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_TUNDRA": true,
+      "TERRAIN_SNOW": true
+    },
+    "improvement_upgrade": "IMPROVEMENT_HAMLET",
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_DRAGON_BONES",
+    "description": "TXT_KEY_IMPROVEMENT_DRAGON_BONES",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_DRAGON_BONES_PEDIA",
+    "yield_changes": [0, 0, 3],
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "happiness": 1,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true
+    },
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_IVORY",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": [
+      {
+        "prereq_tech": "TECH_TRADE",
+        "tech_yields": [0, 0, 2]
+      },
+      {
+        "prereq_tech": "TECH_CONSTRUCTION",
+        "tech_yields": [0, 0, 2]
+      }
+    ],
+    "route_yield_changes": "",
+    "unique": true,
+    "bonus_convert": "BONUS_IVORY"
+  },
+  {
+    "type": "IMPROVEMENT_DUNGEON",
+    "description": "TXT_KEY_IMPROVEMENT_DUNGEON",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_DUNGEON_PEDIA",
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "outside_borders": true,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true,
+      "TERRAIN_SNOW": true
+    },
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "appearance_probability": 75
+  },
+  {
+    "type": "IMPROVEMENT_ENCLAVE",
+    "description": "TXT_KEY_IMPROVEMENT_ENCLAVE",
+    "yield_changes": [1, 0, 5],
+    "advanced_start_cost": -1,
+    "pillage_gold": 30,
+    "improvement_pillage": "IMPROVEMENT_TOWN",
+    "tech_yield_changes": [{"prereq_tech": "TECH_TAXATION", "tech_yields": [0, 0, 1]}],
+    "route_yield_changes": "",
+    "prereq_civilization": "CIVILIZATION_KURIOTATES"
+  },
+  {
+    "type": "IMPROVEMENT_FARM",
+    "description": "TXT_KEY_IMPROVEMENT_FARM",
+    "prereq_nature_yields": [1, 0, 0],
+    "irrigated_yield_change": [1, 0, 0],
+    "fresh_water_makes_valid": true,
+    "requires_flatlands": true,
+    "requires_irrigation": true,
+    "carries_irrigation": true,
+    "advanced_start_cost": 30,
+    "pillage_gold": 5,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_TUNDRA": true,
+      "TERRAIN_SNOW": true
+    },
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_CORN",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [2, 0, 0]
+      },
+      {
+        "bonus_type": "BONUS_RICE",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [1, 0, 0]
+      },
+      {
+        "bonus_type": "BONUS_WHEAT",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [2, 0, 0]
+      }
+    ],
+    "tech_yield_changes": [{"prereq_tech": "TECH_SANITATION", "tech_yields": [1, 0, 0]}],
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_FISHING_BOATS",
+    "description": "TXT_KEY_IMPROVEMENT_FISHING_BOATS",
+    "water": true,
+    "advanced_start_cost": 30,
+    "pillage_gold": 5,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_CLAM",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [2, 0, 0]
+      },
+      {
+        "bonus_type": "BONUS_CRAB",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [2, 0, 0]
+      },
+      {
+        "bonus_type": "BONUS_FISH",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [3, 0, 0]
+      },
+      {
+        "bonus_type": "BONUS_PEARL",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [0, 0, 2]
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_FORT",
+    "description": "TXT_KEY_IMPROVEMENT_FORT",
+    "advanced_start_cost": -1,
+    "upgrade_time": 20,
+    "defense_modifier": 10,
+    "pillage_gold": 5,
+    "outside_borders": true,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true,
+      "TERRAIN_SNOW": true
+    },
+    "improvement_upgrade": "IMPROVEMENT_CASTLE",
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "range": 1,
+    "range_defense_modifier": 5
+  },
+  {
+    "type": "IMPROVEMENT_GOBLIN_FORT",
+    "description": "TXT_KEY_IMPROVEMENT_GOBLIN_FORT",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_GOBLIN_FORT_PEDIA",
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "defense_modifier": 10,
+    "outside_borders": true,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true
+    },
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "appearance_probability": 50,
+    "range": 1,
+    "range_defense_modifier": 5,
+    "spawn_unit_type": "UNIT_GOBLIN_SCORPION_CLAN"
+  },
+  {
+    "type": "IMPROVEMENT_GOODY_HUT",
+    "description": "TXT_KEY_IMPROVEMENT_GOODY_HUT",
+    "goody": true,
+    "advanced_start_cost": -1,
+    "tiles_per_goody": 60,
+    "goody_range": 3,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true
+    },
+    "feature_makes_valids": {"FEATURE_JUNGLE": true, "FEATURE_FOREST": true},
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_GRAVEYARD",
+    "description": "TXT_KEY_IMPROVEMENT_GRAVEYARD",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_GRAVEYARD_PEDIA",
+    "advanced_start_cost": -1,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true,
+      "TERRAIN_SNOW": true
+    },
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "appearance_probability": 25
+  },
+  {
+    "type": "IMPROVEMENT_GUARDIAN",
+    "description": "TXT_KEY_IMPROVEMENT_GUARDIAN",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_GUARDIAN_PEDIA",
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true
+    },
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "requires_peak": true,
+    "unique": true,
+    "python_at_range": "atRangeGuardian(pCaster, pPlot)"
+  },
+  {
+    "type": "IMPROVEMENT_HAMLET",
+    "description": "TXT_KEY_IMPROVEMENT_HAMLET",
+    "yield_changes": [0, 0, 2],
+    "advanced_start_cost": -1,
+    "upgrade_time": 20,
+    "pillage_gold": 15,
+    "improvement_pillage": "IMPROVEMENT_COTTAGE",
+    "improvement_upgrade": "IMPROVEMENT_VILLAGE",
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_HELLFIRE",
+    "description": "TXT_KEY_IMPROVEMENT_HELLFIRE",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_HELLFIRE_PEDIA",
+    "advanced_start_cost": -1,
+    "pillage_gold": 10,
+    "outside_borders": true,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true,
+      "TERRAIN_SNOW": true
+    },
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "spawn_unit_type": "UNIT_CHAMPION"
+  },
+  {
+    "type": "IMPROVEMENT_JUNGLE_ALTAR",
+    "description": "TXT_KEY_IMPROVEMENT_JUNGLE_ALTAR",
+    "advanced_start_cost": -1,
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "python_at_range": "atRangeJungleAltar(pCaster, pPlot)",
+    "python_on_move": "onMoveJungleAltar(pCaster, pPlot)"
+  },
+  {
+    "type": "IMPROVEMENT_LAND_WORKED",
+    "description": "TXT_KEY_IMPROVEMENT_LAND_WORKED",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_LAND_WORKED_PEDIA",
+    "advanced_start_cost": -1,
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "graphical_only": true
+  },
+  {
+    "type": "IMPROVEMENT_LETUM_FRIGUS",
+    "description": "TXT_KEY_IMPROVEMENT_LETUM_FRIGUS",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_LETUM_FRIGUS_PEDIA",
+    "hills_makes_valid": true,
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "terrain_makes_valids": {"TERRAIN_TUNDRA": true, "TERRAIN_SNOW": true},
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA_ICE",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "unique": true,
+    "bonus_convert": "BONUS_MANA_ICE",
+    "python_on_move": "onMoveLetumFrigus(pCaster, pPlot)"
+  },
+  {
+    "type": "IMPROVEMENT_LION_DEN",
+    "description": "TXT_KEY_IMPROVEMENT_LION_DEN",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_LION_DEN_PEDIA",
+    "requires_flatlands": true,
+    "advanced_start_cost": -1,
+    "outside_borders": true,
+    "terrain_makes_valids": {"TERRAIN_PLAINS": true},
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "spawn_unit_type": "UNIT_LION"
+  },
+  {
+    "type": "IMPROVEMENT_LUMBERMILL",
+    "description": "TXT_KEY_IMPROVEMENT_LUMBERMILL",
+    "yield_changes": [0, 1, 0],
+    "river_side_yield_change": [0, 0, 1],
+    "requires_feature": true,
+    "advanced_start_cost": 48,
+    "pillage_gold": 5,
+    "feature_makes_valids": {"FEATURE_FOREST": true},
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_MAELSTROM",
+    "description": "TXT_KEY_IMPROVEMENT_MAELSTROM",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_MAELSTROM_PEDIA",
+    "water": true,
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "terrain_makes_valids": {"TERRAIN_OCEAN": true},
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "unique": true,
+    "python_on_move": "onMoveMaelstrom(pCaster, pPlot)"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_AIR",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_AIR",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_AIR",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_AIR"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_BODY",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_BODY",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_BODY",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_BODY"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_CHAOS",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_CHAOS",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_CHAOS",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_CHAOS"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_DEATH",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_DEATH",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_DEATH",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_DEATH"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_EARTH",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_EARTH",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_EARTH",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_EARTH"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_ENCHANTMENT",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_ENCHANTMENT",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_ENCHANTMENT",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_ENCHANTMENT"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_ENTROPY",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_ENTROPY",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_ENTROPY",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_ENTROPY"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_FIRE",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_FIRE",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_FIRE",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_FIRE"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_LAW",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_LAW",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_LAW",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_LAW"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_LIFE",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_LIFE",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_LIFE",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_LIFE"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_METAMAGIC",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_METAMAGIC",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_METAMAGIC",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_METAMAGIC"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_MIND",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_MIND",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_MIND",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_MIND"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_NATURE",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_NATURE",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_NATURE",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_NATURE"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_SHADOW",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_SHADOW",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_SHADOW",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_SHADOW"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_SPIRIT",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_SPIRIT",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_SPIRIT",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_SPIRIT"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_SUN",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_SUN",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_SUN",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_SUN"
+  },
+  {
+    "type": "IMPROVEMENT_MANA_WATER",
+    "description": "TXT_KEY_IMPROVEMENT_MANA_WATER",
+    "advanced_start_cost": -1,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      },
+      {
+        "bonus_type": "BONUS_MANA_WATER",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "bonus_convert": "BONUS_MANA_WATER"
+  },
+  {
+    "type": "IMPROVEMENT_MINE",
+    "description": "TXT_KEY_IMPROVEMENT_MINE",
+    "yield_changes": [0, 2, 0],
+    "hills_makes_valid": true,
+    "advanced_start_cost": 24,
+    "pillage_gold": 10,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_COPPER",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 10000,
+        "yield_changes": [0, 1, 0]
+      },
+      {
+        "bonus_type": "BONUS_GEMS",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 10000,
+        "yield_changes": [0, -1, 5]
+      },
+      {
+        "bonus_type": "BONUS_GOLD",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 10000,
+        "yield_changes": [0, -1, 6]
+      },
+      {
+        "bonus_type": "BONUS_IRON",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 10000,
+        "yield_changes": [0, 1, 0]
+      },
+      {
+        "bonus_type": "BONUS_MITHRIL",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 10000,
+        "yield_changes": [0, 5, 0]
+      },
+      {
+        "bonus_type": "BONUS_GUNPOWDER",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 10000,
+        "yield_changes": [0, 3, 0]
+      }
+    ],
+    "tech_yield_changes": [{"prereq_tech": "TECH_BLASTING_POWDER", "tech_yields": [0, 1, 0]}],
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_MIRROR_OF_HEAVEN",
+    "description": "TXT_KEY_IMPROVEMENT_MIRROR_OF_HEAVEN",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_MIRROR_OF_HEAVEN_PEDIA",
+    "yield_changes": [0, 3, 0],
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "defense_modifier": 25,
+    "happiness": 1,
+    "terrain_makes_valids": {"TERRAIN_DESERT": true},
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA_SUN",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "unique": true,
+    "visibility_change": 6,
+    "bonus_convert": "BONUS_MANA_SUN",
+    "python_on_move": "onMoveMirrorOfHeaven(pCaster, pPlot)"
+  },
+  {
+    "type": "IMPROVEMENT_MONSTER_SKELETON",
+    "description": "TXT_KEY_IMPROVEMENT_MONSTER_SKELETON",
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_MUSHROOMS",
+    "description": "TXT_KEY_IMPROVEMENT_MUSHROOMS",
+    "yield_changes": [2, 0, 0],
+    "advanced_start_cost": -1,
+    "terrain_makes_valids": {"TERRAIN_GRASS": true, "TERRAIN_PLAINS": true, "TERRAIN_MARSH": true, "TERRAIN_TUNDRA": true},
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_NECROTOTEM",
+    "description": "TXT_KEY_IMPROVEMENT_NECROTOTEM",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_NECROTOTEM_PEDIA",
+    "advanced_start_cost": -1,
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "python_at_range": "atRangeNecrototem(pCaster, pPlot)"
+  },
+  {
+    "type": "IMPROVEMENT_ODIOS_PRISON",
+    "description": "TXT_KEY_IMPROVEMENT_ODIOS_PRISON",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_ODIOS_PRISON_PEDIA",
+    "requires_flatlands": true,
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true
+    },
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "unique": true,
+    "range": 3,
+    "range_defense_modifier": 25
+  },
+  {
+    "type": "IMPROVEMENT_PASTURE",
+    "description": "TXT_KEY_IMPROVEMENT_PASTURE",
+    "advanced_start_cost": 24,
+    "pillage_gold": 5,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_COW",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [1, 2, 0]
+      },
+      {
+        "bonus_type": "BONUS_HORSE",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [0, 2, 1]
+      },
+      {
+        "bonus_type": "BONUS_PIG",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [3, 0, 0]
+      },
+      {
+        "bonus_type": "BONUS_SHEEP",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [2, 0, 1]
+      },
+      {
+        "bonus_type": "BONUS_NIGHTMARE",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [0, 2, 1]
+      },
+      {
+        "bonus_type": "BONUS_TOAD",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [2, 0, 1]
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_PENGUINS",
+    "description": "TXT_KEY_IMPROVEMENT_PENGUINS",
+    "advanced_start_cost": -1,
+    "happiness": 1,
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_PIRATE_COVE",
+    "description": "TXT_KEY_IMPROVEMENT_PIRATE_COVE",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_PIRATE_COVE_PEDIA",
+    "yield_changes": [0, 0, 2],
+    "acts_as_city": true,
+    "water": true,
+    "advanced_start_cost": -1,
+    "upgrade_time": 10,
+    "defense_modifier": 10,
+    "pillage_gold": 5,
+    "outside_borders": true,
+    "terrain_makes_valids": {"TERRAIN_COAST": true},
+    "improvement_upgrade": "IMPROVEMENT_PIRATE_HARBOR",
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_PIRATE_HARBOR",
+    "description": "TXT_KEY_IMPROVEMENT_PIRATE_HARBOR",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_PIRATE_COVE_PEDIA",
+    "yield_changes": [1, 1, 3],
+    "acts_as_city": true,
+    "water": true,
+    "advanced_start_cost": -1,
+    "upgrade_time": 20,
+    "defense_modifier": 20,
+    "pillage_gold": 5,
+    "outside_borders": true,
+    "terrain_makes_valids": {"TERRAIN_COAST": true},
+    "improvement_pillage": "IMPROVEMENT_PIRATE_COVE",
+    "improvement_upgrade": "IMPROVEMENT_PIRATE_PORT",
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "heal_rate_change": 10,
+    "range": 1,
+    "range_defense_modifier": 5
+  },
+  {
+    "type": "IMPROVEMENT_PIRATE_PORT",
+    "description": "TXT_KEY_IMPROVEMENT_PIRATE_PORT",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_PIRATE_COVE_PEDIA",
+    "yield_changes": [2, 2, 4],
+    "acts_as_city": true,
+    "water": true,
+    "advanced_start_cost": -1,
+    "defense_modifier": 30,
+    "pillage_gold": 5,
+    "outside_borders": true,
+    "terrain_makes_valids": {"TERRAIN_COAST": true},
+    "improvement_pillage": "IMPROVEMENT_PIRATE_HARBOR",
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "heal_rate_change": 20,
+    "range": 2,
+    "range_defense_modifier": 10
+  },
+  {
+    "type": "IMPROVEMENT_PLANTATION",
+    "description": "TXT_KEY_IMPROVEMENT_PLANTATION",
+    "advanced_start_cost": 30,
+    "pillage_gold": 5,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_BANANA",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [2, 0, 0]
+      },
+      {
+        "bonus_type": "BONUS_DYE",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [0, 0, 4]
+      },
+      {
+        "bonus_type": "BONUS_INCENSE",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [0, 0, 5]
+      },
+      {
+        "bonus_type": "BONUS_SILK",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [0, 0, 3]
+      },
+      {
+        "bonus_type": "BONUS_REAGENTS",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [1, 0, 2]
+      },
+      {
+        "bonus_type": "BONUS_SUGAR",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [1, 0, 1]
+      },
+      {
+        "bonus_type": "BONUS_COTTON",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [0, 0, 2]
+      },
+      {
+        "bonus_type": "BONUS_GULAGARM",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [2, 0, 1]
+      },
+      {
+        "bonus_type": "BONUS_RAZORWEED",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [0, 0, 2]
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_POOL_OF_TEARS",
+    "description": "TXT_KEY_IMPROVEMENT_POOL_OF_TEARS",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_POOL_OF_TEARS_PEDIA",
+    "help": "TXT_KEY_IMPROVEMENT_POOL_OF_TEARS_HELP",
+    "requires_flatlands": true,
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "happiness": 1,
+    "terrain_makes_valids": {"TERRAIN_GRASS": true, "TERRAIN_PLAINS": true, "TERRAIN_DESERT": true},
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "unique": true,
+    "heal_rate_change": 50,
+    "python_on_move": "onMovePoolOfTears(pCaster, pPlot)"
+  },
+  {
+    "type": "IMPROVEMENT_PYRE_OF_THE_SERAPHIC",
+    "description": "TXT_KEY_IMPROVEMENT_PYRE_OF_THE_SERAPHIC",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_PYRE_OF_THE_SERAPHIC_PEDIA",
+    "requires_flatlands": true,
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "terrain_makes_valids": {
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true
+    },
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA_FIRE",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "unique": true,
+    "bonus_convert": "BONUS_MANA_FIRE"
+  },
+  {
+    "type": "IMPROVEMENT_QUARRY",
+    "description": "TXT_KEY_IMPROVEMENT_QUARRY",
+    "advanced_start_cost": 36,
+    "pillage_gold": 5,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MARBLE",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [0, 1, 2]
+      },
+      {
+        "bonus_type": "BONUS_SHEUT_STONE",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [0, 2, 0]
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_REMNANTS_OF_PATRIA",
+    "description": "TXT_KEY_IMPROVEMENT_REMNANTS_OF_PATRIA",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_REMNANTS_OF_PATRIA_PEDIA",
+    "yield_changes": [0, 3, 0],
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "happiness": 3,
+    "terrain_makes_valids": {
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true
+    },
+    "tech_yield_changes": [
+      {
+        "prereq_tech": "TECH_EDUCATION",
+        "tech_yields": [0, 2, 0]
+      },
+      {
+        "prereq_tech": "TECH_FEUDALISM",
+        "tech_yields": [0, 2, 0]
+      }
+    ],
+    "route_yield_changes": "",
+    "unique": true
+  },
+  {
+    "type": "IMPROVEMENT_RING_OF_CARCER",
+    "description": "TXT_KEY_IMPROVEMENT_RING_OF_CARCER",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_RING_OF_CARCER_PEDIA",
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "terrain_makes_valids": {"TERRAIN_SNOW": true},
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "unique": true
+  },
+  {
+    "type": "IMPROVEMENT_RUINS",
+    "description": "TXT_KEY_IMPROVEMENT_RUINS",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_RUINS_PEDIA",
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "outside_borders": true,
+    "terrain_makes_valids": {
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true
+    },
+    "feature_makes_valids": {"FEATURE_JUNGLE": true},
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "appearance_probability": 75,
+    "spawn_unit_type": "UNIT_LIZARDMAN"
+  },
+  {
+    "type": "IMPROVEMENT_SEVEN_PINES",
+    "description": "TXT_KEY_IMPROVEMENT_SEVEN_PINES",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_SEVEN_PINES_PEDIA",
+    "help": "TXT_KEY_IMPROVEMENT_SEVEN_PINES_HELP",
+    "requires_flatlands": true,
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "terrain_makes_valids": {"TERRAIN_GRASS": true, "TERRAIN_PLAINS": true, "TERRAIN_TUNDRA": true},
+    "feature_makes_valids": {"FEATURE_FOREST": true},
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "unique": true
+  },
+  {
+    "type": "IMPROVEMENT_SHIP_WRECK",
+    "description": "TXT_KEY_IMPROVEMENT_SHIP_WRECK",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_SHIP_WRECK_PEDIA",
+    "water": true,
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "outside_borders": true,
+    "terrain_makes_valids": {"TERRAIN_COAST": true},
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "appearance_probability": 100
+  },
+  {
+    "type": "IMPROVEMENT_SMOKE",
+    "description": "TXT_KEY_IMPROVEMENT_SMOKE",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_SMOKE_PEDIA",
+    "requires_feature": true,
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "defense_modifier": -10,
+    "outside_borders": true,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true
+    },
+    "feature_makes_valids": {"FEATURE_JUNGLE": true, "FEATURE_FOREST": true},
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "feature_upgrade": "FEATURE_FLAMES"
+  },
+  {
+    "type": "IMPROVEMENT_SNAKE_PILLAR",
+    "description": "TXT_KEY_IMPROVEMENT_SNAKE_PILLAR",
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "outside_borders": true,
+    "terrain_makes_valids": {"TERRAIN_BROKEN_LANDS": true},
+    "tech_yield_changes": [
+      {
+        "prereq_tech": "TECH_WAY_OF_THE_WICKED",
+        "tech_yields": [0, 1, 0]
+      },
+      {
+        "prereq_tech": "TECH_INFERNAL_PACT",
+        "tech_yields": [0, 1, 1]
+      }
+    ],
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_STANDING_STONES",
+    "description": "TXT_KEY_IMPROVEMENT_STANDING_STONES",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_STANDING_STONES_PEDIA",
+    "requires_flatlands": true,
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "happiness": 1,
+    "outside_borders": true,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true,
+      "TERRAIN_SNOW": true
+    },
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA_EARTH",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "unique": true,
+    "bonus_convert": "BONUS_MANA_EARTH"
+  },
+  {
+    "type": "IMPROVEMENT_TOMB_OF_SUCELLUS",
+    "description": "TXT_KEY_IMPROVEMENT_TOMB_OF_SUCELLUS",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_TOMB_OF_SUCELLUS_PEDIA",
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "happiness": 1,
+    "terrain_makes_valids": {"TERRAIN_GRASS": true, "TERRAIN_PLAINS": true},
+    "feature_makes_valids": {"FEATURE_JUNGLE": true, "FEATURE_FOREST": true},
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_MANA_LIFE",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "unique": true,
+    "heal_rate_change": 25,
+    "bonus_convert": "BONUS_MANA_LIFE"
+  },
+  {
+    "type": "IMPROVEMENT_TOWER",
+    "description": "TXT_KEY_IMPROVEMENT_TOWER",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_TOWER_PEDIA",
+    "hills_makes_valid": true,
+    "advanced_start_cost": -1,
+    "upgrade_time": 80,
+    "defense_modifier": 25,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_BURNING_SANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true
+    },
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "appearance_probability": 60,
+    "visibility_change": 2
+  },
+  {
+    "type": "IMPROVEMENT_TOWN",
+    "description": "TXT_KEY_IMPROVEMENT_TOWN",
+    "yield_changes": [0, 0, 4],
+    "advanced_start_cost": -1,
+    "upgrade_time": 60,
+    "pillage_gold": 25,
+    "improvement_pillage": "IMPROVEMENT_VILLAGE",
+    "improvement_upgrade": "IMPROVEMENT_ENCLAVE",
+    "tech_yield_changes": [{"prereq_tech": "TECH_TAXATION", "tech_yields": [0, 0, 1]}],
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_VILLAGE",
+    "description": "TXT_KEY_IMPROVEMENT_VILLAGE",
+    "yield_changes": [0, 0, 3],
+    "advanced_start_cost": -1,
+    "upgrade_time": 40,
+    "pillage_gold": 20,
+    "improvement_pillage": "IMPROVEMENT_HAMLET",
+    "improvement_upgrade": "IMPROVEMENT_TOWN",
+    "tech_yield_changes": [{"prereq_tech": "TECH_TAXATION", "tech_yields": [0, 0, 1]}],
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_WARNING_POST",
+    "description": "TXT_KEY_IMPROVEMENT_WARNING_POST",
+    "advanced_start_cost": -1,
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "python_on_move": "onMoveWarningPost(pCaster, pPlot)"
+  },
+  {
+    "type": "IMPROVEMENT_WATER_WORKED",
+    "description": "TXT_KEY_IMPROVEMENT_WATER_WORKED",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_WATER_WORKED_PEDIA",
+    "advanced_start_cost": -1,
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "graphical_only": true
+  },
+  {
+    "type": "IMPROVEMENT_WHALING_BOATS",
+    "description": "TXT_KEY_IMPROVEMENT_WHALING_BOATS",
+    "water": true,
+    "advanced_start_cost": 30,
+    "pillage_gold": 5,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_WHALE",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [0, 1, 2]
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_WINDMILL",
+    "description": "TXT_KEY_IMPROVEMENT_WINDMILL",
+    "yield_changes": [1, 1, 1],
+    "hills_makes_valid": true,
+    "advanced_start_cost": 30,
+    "pillage_gold": 5,
+    "tech_yield_changes": [{"prereq_tech": "TECH_MACHINERY", "tech_yields": [0, 1, 1]}],
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_WINERY",
+    "description": "TXT_KEY_IMPROVEMENT_WINERY",
+    "advanced_start_cost": 30,
+    "pillage_gold": 10,
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_WINE",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0,
+        "yield_changes": [1, 0, 2]
+      }
+    ],
+    "tech_yield_changes": "",
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_WORKSHOP",
+    "description": "TXT_KEY_IMPROVEMENT_WORKSHOP",
+    "prereq_nature_yields": [1, 0, 0],
+    "yield_changes": [-1, 1, 1],
+    "fresh_water_makes_valid": true,
+    "requires_flatlands": true,
+    "advanced_start_cost": 36,
+    "pillage_gold": 5,
+    "terrain_makes_valids": {
+      "TERRAIN_BROKEN_LANDS": true,
+      "TERRAIN_FIELDS_OF_PERDITION": true,
+      "TERRAIN_SHALLOWS": true,
+      "TERRAIN_GRASS": true,
+      "TERRAIN_PLAINS": true,
+      "TERRAIN_DESERT": true,
+      "TERRAIN_MARSH": true,
+      "TERRAIN_TUNDRA": true
+    },
+    "tech_yield_changes": [
+      {
+        "prereq_tech": "TECH_GUILDS",
+        "tech_yields": [0, 2, 0]
+      },
+      {
+        "prereq_tech": "TECH_SMELTING",
+        "tech_yields": [0, 1, 0]
+      }
+    ],
+    "route_yield_changes": ""
+  },
+  {
+    "type": "IMPROVEMENT_YGGDRASIL",
+    "description": "TXT_KEY_IMPROVEMENT_YGGDRASIL",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_YGGDRASIL_PEDIA",
+    "yield_changes": [3, 0, 0],
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "happiness": 1,
+    "terrain_makes_valids": {"TERRAIN_GRASS": true, "TERRAIN_MARSH": true, "TERRAIN_TUNDRA": true},
+    "feature_makes_valids": {"FEATURE_FOREST": true},
+    "bonus_type_structs": [
+      {
+        "bonus_type": "BONUS_FRUIT_OF_YGGDRASIL",
+        "bonus_makes_valid": true,
+        "bonus_trade": true,
+        "discover_rand": 0
+      }
+    ],
+    "tech_yield_changes": [
+      {
+        "prereq_tech": "TECH_WAY_OF_THE_FORESTS",
+        "tech_yields": [2, 0, 0]
+      },
+      {
+        "prereq_tech": "TECH_COMMUNE_WITH_NATURE",
+        "tech_yields": [2, 0, 0]
+      }
+    ],
+    "route_yield_changes": "",
+    "unique": true,
+    "bonus_convert": "BONUS_FRUIT_OF_YGGDRASIL"
+  },
+  {
+    "type": "IMPROVEMENT_PORTAL",
+    "description": "TXT_KEY_IMPROVEMENT_PORTAL",
+    "civilopedia": "TXT_KEY_IMPROVEMENT_PORTAL_PEDIA",
+    "permanent": true,
+    "advanced_start_cost": -1,
+    "tech_yield_changes": "",
+    "route_yield_changes": "",
+    "python_on_move": "onMovePortal(pCaster, pPlot)"
+  }
+]

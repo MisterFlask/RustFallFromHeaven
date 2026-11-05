@@ -556,14 +556,11 @@ pub struct Defines {
     pub engagement_damage_rand_min: i32,
     pub engagement_damage_rand_max: i32,
     pub engagement_rounds: i32,
-    pub engagement_large_hp_percent: i32,
     pub engagement_first_strike_speed: i32,
     pub engagement_extra_action_tier: i32,
     pub engagement_extra_actions: i32,
-    pub engagement_miss_percent: i32,
     pub engagement_shoot_miss_percent: i32,
     pub engagement_bombard_miss_percent: i32,
-    pub engagement_crit_percent: i32,
     pub engagement_crit_damage_percent: i32,
     pub engagement_charge_bonus: i32,
     pub engagement_splash_percent: i32,
@@ -581,12 +578,12 @@ pub struct Defines {
     pub engagement_preview_runs: i32,
     pub sentinel_repair_percent: i32,
     pub siege_bombard_floor_percent: i32,
-    pub bbai_skip_bombard_base_stack_ratio: i32,  // not in XML: C++ reads 0
-    pub bbai_skip_bombard_best_attack_odds: i32,  // not in XML: C++ reads 0
-    pub bbai_skip_bombard_min_stack_ratio: i32,  // not in XML: C++ reads 0
-    pub pirate_cove_spell: i32,  // not in XML: C++ reads 0
-    pub use_debug_log: i32,  // not in XML: C++ reads 0
-    pub use_use_cannot_spread_religion_callback: i32,  // not in XML: C++ reads 0
+    pub bbai_skip_bombard_base_stack_ratio: i32,  // not in the data: C++ reads 0
+    pub bbai_skip_bombard_best_attack_odds: i32,  // not in the data: C++ reads 0
+    pub bbai_skip_bombard_min_stack_ratio: i32,  // not in the data: C++ reads 0
+    pub pirate_cove_spell: i32,  // not in the data: C++ reads 0
+    pub use_debug_log: i32,  // not in the data: C++ reads 0
+    pub use_use_cannot_spread_religion_callback: i32,  // not in the data: C++ reads 0
 }
 
 impl Defines {
@@ -1142,14 +1139,11 @@ impl Defines {
             engagement_damage_rand_min: m.int("ENGAGEMENT_DAMAGE_RAND_MIN"),
             engagement_damage_rand_max: m.int("ENGAGEMENT_DAMAGE_RAND_MAX"),
             engagement_rounds: m.int("ENGAGEMENT_ROUNDS"),
-            engagement_large_hp_percent: m.int("ENGAGEMENT_LARGE_HP_PERCENT"),
             engagement_first_strike_speed: m.int("ENGAGEMENT_FIRST_STRIKE_SPEED"),
             engagement_extra_action_tier: m.int("ENGAGEMENT_EXTRA_ACTION_TIER"),
             engagement_extra_actions: m.int("ENGAGEMENT_EXTRA_ACTIONS"),
-            engagement_miss_percent: m.int("ENGAGEMENT_MISS_PERCENT"),
             engagement_shoot_miss_percent: m.int("ENGAGEMENT_SHOOT_MISS_PERCENT"),
             engagement_bombard_miss_percent: m.int("ENGAGEMENT_BOMBARD_MISS_PERCENT"),
-            engagement_crit_percent: m.int("ENGAGEMENT_CRIT_PERCENT"),
             engagement_crit_damage_percent: m.int("ENGAGEMENT_CRIT_DAMAGE_PERCENT"),
             engagement_charge_bonus: m.int("ENGAGEMENT_CHARGE_BONUS"),
             engagement_splash_percent: m.int("ENGAGEMENT_SPLASH_PERCENT"),

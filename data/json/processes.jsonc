@@ -1,0 +1,31 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jesse Smith (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Process
+[
+  {
+    "type": "PROCESS_WEALTH",
+    "description": "TXT_KEY_PROCESS_WEALTH",
+    "strategy": "TXT_KEY_PROCESS_WEALTH_STRATEGY",
+    "tech_prereq": "TECH_MATHEMATICS",
+    "production_to_commerce_modifiers": [50, 0, 0],
+    "button": "Art/Interface/Buttons/Process/ProcessWealth.dds"
+  },
+  {
+    "type": "PROCESS_RESEARCH",
+    "description": "TXT_KEY_PROCESS_RESEARCH",
+    "strategy": "TXT_KEY_PROCESS_RESEARCH_STRATEGY",
+    "tech_prereq": "TECH_WRITING",
+    "production_to_commerce_modifiers": [0, 50, 0],
+    "button": "Art/Interface/Buttons/Process/ProcessResearch.dds"
+  },
+  {
+    "type": "PROCESS_CULTURE",
+    "description": "TXT_KEY_PROCESS_CULTURE",
+    "strategy": "TXT_KEY_PROCESS_CULTURE_STRATEGY",
+    "tech_prereq": "TECH_DRAMA",
+    "production_to_commerce_modifiers": [0, 0, 50],
+    "button": "Art/Interface/Buttons/Process/ProcessCulture.dds"
+  }
+]

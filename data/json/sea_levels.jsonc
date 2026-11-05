@@ -1,0 +1,10 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jesse Smith (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Sea Level
+[
+  {"type": "SEALEVEL_LOW", "description": "TXT_KEY_SEALEVEL_LOW", "sea_level_change": -8},
+  {"type": "SEALEVEL_MEDIUM", "description": "TXT_KEY_SEALEVEL_MEDIUM"},
+  {"type": "SEALEVEL_HIGH", "description": "TXT_KEY_SEALEVEL_HIGH", "sea_level_change": 6}
+]

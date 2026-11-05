@@ -36,12 +36,17 @@ test("a battle's line names the place, the outcome and both sides' losses as the
   assert.equal(battleLine(battle({ viewer_side: 1, plot_taken: false, place: null })), "(10, 5): held; 3 lost, 0 of theirs");
 });
 
-test("a unit's battle numbers: A, Dv, HP, speed, large, and its actions by row", () => {
+test("a unit's battle numbers: its stats, HP, speed, large, and its actions by row", () => {
   const u = { hp: 50, max_hp: 100, engage_attack: 440, engage_defense: 500, engage_max_hp: 120 };
-  assert.equal(engageNumbers(u), "A 4.4 · Dv 5 · HP 60/120");
+  assert.equal(engageNumbers(u), "ATK 44 · DEF 50 · HP 60/120");
   const acts = [{ kind: "Charge", n: 2 }, { kind: "Strike", n: 1 }, { kind: "None", n: 0 }];
   assert.equal(actionsLine(acts), "2 charges / 1 strike / —");
-  assert.equal(engageNumbers({ ...u, engage_speed: 6, engage_large: true, engage_actions: acts }), "A 4.4 · Dv 5 · HP 60/120 · speed 6 · large · front / middle / rear: 2 charges / 1 strike / —");
+  assert.equal(
+    engageNumbers({ ...u, engage_magic: 1, engage_magic_defense: 320, engage_accuracy: 90, engage_evasion: 10, engage_crit: 10, engage_speed: 6, engage_large: true, engage_actions: acts }),
+    "ATK 44 · DEF 50 · HP 60/120 · MDEF 32 · ACC 90 · EVA 10 · CRIT 10 · speed 6 · large · front / middle / rear: 2 charges / 1 strike / —",
+  );
+  // A caster's magic.
+  assert.equal(engageNumbers({ ...u, engage_magic: 300 }), "ATK 44 · DEF 50 · HP 60/120 · MAG 30");
   assert.equal(actionsLine(null), "");
 });
 

@@ -1,6 +1,6 @@
-//! FFH2 game data: loads the vendored Civ4/FFH2 XML into typed info tables.
+//! FFH2 game data: loads `data/json/*.jsonc` (JSON with comments) into typed info tables.
 //!
-//! This is a port of the DLL's `CvInfos.cpp` + `CvXMLLoadUtility*.cpp`.
+//! The tables are a port of the DLL's `CvInfos.cpp`; the data began as FFH2 0.41's XML.
 //! Field names mirror the C++ members (`m_iCombat` -> `combat`,
 //! `m_piYieldChange` -> `yield_change`), so ported rules code maps
 //! `kInfo.getCombat()` to `info.combat`.
@@ -10,9 +10,9 @@ pub mod defines_gen;
 pub mod enums;
 pub mod idx;
 pub mod infos;
+pub mod jsonc;
 pub mod registry;
 pub mod text;
-pub mod xml;
 
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
@@ -24,11 +24,12 @@ pub use idx::{opt_from_i32, opt_to_i32, Idx, IdxVec};
 pub use infos::*;
 pub use registry::{Ctx, InfoId, Rd, Registry};
 pub use text::Text;
-use xml::XmlDoc;
+use jsonc::Value;
 
-/// Declares every info table: field, id type, info type, xml file, reader fn.
+/// Declares every info table: field, id type, info type, reader fn. Its data file is
+/// `json/<field>.jsonc`.
 macro_rules! game_data {
-    ($( $field:ident : $id:ty => $info:ty, $file:literal, $read:path; )*) => {
+    ($( $field:ident : $id:ty => $info:ty, $read:path; )*) => {
         /// All static game data. Load once, then share as `&'static GameData`.
         pub struct GameData {
             pub reg: Registry,
@@ -41,11 +42,11 @@ macro_rules! game_data {
             /// Non-fatal data problems found while loading (unknown types etc.).
             pub warnings: Vec<String>,
             $( pub $field: IdxVec<$id, $info>, )*
-            /// Derived at load (not XML): the promotions with `promotion_combat_mod > 0`, in id
+            /// Derived at load (not in the data files): the promotions with `promotion_combat_mod > 0`, in id
             /// order. `CvUnit::maxCombatStr` only reads those, so it scans this short list
             /// instead of every promotion.
             pub combat_mod_promotions: Vec<PromotionType>,
-            /// Derived at load (not XML): the engagement role of each unit type
+            /// Derived at load (not in the data files): the engagement role of each unit type
             /// ([`GameData::type_combat_role`]). Every land and immobile type has one, a type
             /// without strength too (workers, settlers, great people): whether a unit fights is its
             /// own strength (C++ `CvUnit::canFight`), which promotions add to (a Worker that takes
@@ -58,20 +59,23 @@ macro_rules! game_data {
             pub screen_role: Option<(CombatRoleType, PromotionType, CombatRoleType)>,
         }
 
-        /// (xml file, registry class) for every info table, in load order.
-        pub const INFO_FILES: &[(&str, &str)] = &[ $( ($file, <$id as InfoId>::CLASS), )* ];
+        /// (data file, registry class) for every info table, in load order.
+        pub const INFO_FILES: &[(&str, &str)] = &[ $( (concat!(stringify!($field), ".jsonc"), <$id as InfoId>::CLASS), )* ];
 
         impl GameData {
             fn load_tables(docs: &Docs, reg: Registry, define_map: DefineMap, text: Text) -> GameData {
                 let mut warnings = Vec::new();
                 $(
                     let $field: IdxVec<$id, $info> = {
-                        let doc = docs.get($file);
-                        let cx = Ctx::new(&reg, $file);
+                        let file = concat!(stringify!($field), ".jsonc");
+                        let doc = docs.get(file);
+                        let cx = Ctx::new(&reg, file);
                         let mut v = IdxVec::new();
                         for e in entries(doc) {
+                            cx.set_entry(e.get("type").and_then(Value::as_str).unwrap_or(""));
                             let rd = Rd::new(e, &cx);
                             v.push($read(&rd));
+                            rd.check_unread();
                         }
                         warnings.extend(cx.warnings.into_inner());
                         v
@@ -81,129 +85,144 @@ macro_rules! game_data {
                 // (derived tables are filled by `GameData::derive`)
                 GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unit_roles: IdxVec::new(), screen_role: None }
             }
+
+            /// Everything loaded, one `(name, Debug text)` line per table entry, in a fixed order
+            /// (the registry and the defines sorted): two loads compare line by line, to show a
+            /// change of the data's format or of the loader left the game's data as it was.
+            pub fn dump(&self) -> Vec<(String, String)> {
+                let mut out = Vec::new();
+                for class in self.reg.classes() {
+                    out.push((format!("reg.{class}"), format!("{:?}", self.reg.names_of(class))));
+                }
+                let mut defines: Vec<_> = self.define_map.map.iter().map(|(k, v)| (k.clone(), format!("{v:?}"))).collect();
+                defines.sort();
+                for (k, v) in defines {
+                    out.push((format!("define.{k}"), v));
+                }
+                out.push(("defines".to_string(), format!("{:?}", self.defines)));
+                $(
+                    for (i, e) in self.$field.iter().enumerate() {
+                        out.push((format!("{}[{}]", stringify!($field), i), format!("{e:?}")));
+                    }
+                )*
+                out.push(("combat_mod_promotions".to_string(), format!("{:?}", self.combat_mod_promotions)));
+                out.push(("unit_roles".to_string(), format!("{:?}", self.unit_roles)));
+                out.push(("screen_role".to_string(), format!("{:?}", self.screen_role)));
+                out.push(("warnings".to_string(), format!("{:?}", self.warnings)));
+                out
+            }
         }
     };
 }
 
 game_data! {
     // ---- BasicInfos ----
-    alignments: AlignmentType => AlignmentInfo, "Basicinfos/CIV4AlignmentInfos.xml", basic::read_alignment;
-    attitudes: AttitudeType => AttitudeInfo, "Basicinfos/CIV4AttitudeInfos.xml", basic::read_attitude;
-    calendars: CalendarType => CalendarInfo, "Basicinfos/CIV4CalendarInfos.xml", basic::read_calendar;
-    damages: DamageType => DamageInfo, "Basicinfos/CIV4DamageInfos.xml", basic::read_damage;
-    denials: DenialType => DenialInfo, "Basicinfos/CIV4DenialInfos.xml", basic::read_denial;
-    domains: DomainType => DomainInfo, "Basicinfos/CIV4DomainInfos.xml", basic::read_domain;
-    invisibles: InvisibleType => InvisibleInfo, "Basicinfos/CIV4InvisibleInfos.xml", basic::read_invisible;
-    memories: MemoryType => MemoryInfo, "Basicinfos/CIV4MemoryInfos.xml", basic::read_memory;
-    months: MonthType => MonthInfo, "Basicinfos/CIV4MonthInfos.xml", basic::read_month;
-    seasons: SeasonType => SeasonInfo, "Basicinfos/CIV4SeasonInfos.xml", basic::read_season;
-    unit_ais: UnitAIType => UnitAIInfo, "Basicinfos/CIV4UnitAIInfos.xml", basic::read_unit_ai;
-    unit_combats: UnitCombatType => UnitCombatInfo, "Basicinfos/CIV4UnitCombatInfos.xml", basic::read_unit_combat;
+    alignments: AlignmentType => AlignmentInfo, basic::read_alignment;
+    attitudes: AttitudeType => AttitudeInfo, basic::read_attitude;
+    calendars: CalendarType => CalendarInfo, basic::read_calendar;
+    damages: DamageType => DamageInfo, basic::read_damage;
+    denials: DenialType => DenialInfo, basic::read_denial;
+    domains: DomainType => DomainInfo, basic::read_domain;
+    invisibles: InvisibleType => InvisibleInfo, basic::read_invisible;
+    memories: MemoryType => MemoryInfo, basic::read_memory;
+    months: MonthType => MonthInfo, basic::read_month;
+    seasons: SeasonType => SeasonInfo, basic::read_season;
+    unit_ais: UnitAIType => UnitAIInfo, basic::read_unit_ai;
+    unit_combats: UnitCombatType => UnitCombatInfo, basic::read_unit_combat;
     // ---- Terrain ----
-    yields: YieldType => YieldInfo, "Terrain/CIV4YieldInfos.xml", terrain::read_yield;
-    terrains: TerrainType => TerrainInfo, "Terrain/CIV4TerrainInfos.xml", terrain::read_terrain;
-    features: FeatureType => FeatureInfo, "Terrain/CIV4FeatureInfos.xml", terrain::read_feature;
-    bonus_classes: BonusClassType => BonusClassInfo, "Terrain/CIV4BonusClassInfos.xml", terrain::read_bonus_class;
-    bonuses: BonusType => BonusInfo, "Terrain/CIV4BonusInfos.xml", terrain::read_bonus;
-    improvements: ImprovementType => ImprovementInfo, "Terrain/CIV4ImprovementInfos.xml", terrain::read_improvement;
-    routes: RouteType => RouteInfo, "Misc/CIV4RouteInfos.xml", terrain::read_route;
+    yields: YieldType => YieldInfo, terrain::read_yield;
+    terrains: TerrainType => TerrainInfo, terrain::read_terrain;
+    features: FeatureType => FeatureInfo, terrain::read_feature;
+    bonus_classes: BonusClassType => BonusClassInfo, terrain::read_bonus_class;
+    bonuses: BonusType => BonusInfo, terrain::read_bonus;
+    improvements: ImprovementType => ImprovementInfo, terrain::read_improvement;
+    routes: RouteType => RouteInfo, terrain::read_route;
     // ---- GameInfo ----
-    commerces: CommerceType => CommerceInfo, "Gameinfo/CIV4CommerceInfo.xml", game::read_commerce;
-    game_speeds: GameSpeedType => GameSpeedInfo, "Gameinfo/CIV4GameSpeedInfo.xml", game::read_game_speed;
-    worlds: WorldSizeType => WorldInfo, "Gameinfo/CIV4WorldInfo.xml", game::read_world;
-    climates: ClimateType => ClimateInfo, "Gameinfo/CIV4ClimateInfo.xml", game::read_climate;
-    sea_levels: SeaLevelType => SeaLevelInfo, "Gameinfo/CIV4SeaLevelInfo.xml", game::read_sea_level;
-    eras: EraType => EraInfo, "Gameinfo/CIV4EraInfos.xml", game::read_era;
-    handicaps: HandicapType => HandicapInfo, "Gameinfo/CIV4HandicapInfo.xml", game::read_handicap;
-    game_options: GameOptionType => GameOptionInfo, "Gameinfo/CIV4GameOptionInfos.xml", game::read_game_option;
-    goodies: GoodyType => GoodyInfo, "Gameinfo/CIV4GoodyInfo.xml", game::read_goody;
-    hurries: HurryType => HurryInfo, "Gameinfo/CIV4HurryInfo.xml", game::read_hurry;
-    upkeeps: UpkeepType => UpkeepInfo, "Gameinfo/CIV4UpkeepInfo.xml", game::read_upkeep;
-    culture_levels: CultureLevelType => CultureLevelInfo, "Gameinfo/CIV4CultureLevelInfo.xml", game::read_culture_level;
-    victories: VictoryType => VictoryInfo, "Gameinfo/CIV4VictoryInfo.xml", game::read_victory;
-    processes: ProcessType => ProcessInfo, "Gameinfo/CIV4ProcessInfo.xml", game::read_process;
-    emphasizes: EmphasizeType => EmphasizeInfo, "Gameinfo/CIV4EmphasizeInfo.xml", game::read_emphasize;
-    specialists: SpecialistType => SpecialistInfo, "Gameinfo/CIV4SpecialistInfos.xml", civics::read_specialist;
-    religions: ReligionType => ReligionInfo, "Gameinfo/CIV4ReligionInfo.xml", civics::read_religion;
-    corporations: CorporationType => CorporationInfo, "Gameinfo/CIV4CorporationInfo.xml", civics::read_corporation;
-    civic_options: CivicOptionType => CivicOptionInfo, "Gameinfo/CIV4CivicOptionInfos.xml", civics::read_civic_option;
-    civics: CivicType => CivicInfo, "Gameinfo/CIV4CivicInfos.xml", civics::read_civic;
-    votes: VoteType => VoteInfo, "Gameinfo/CIV4VoteInfo.xml", civics::read_vote;
-    vote_sources: VoteSourceType => VoteSourceInfo, "Gameinfo/CIV4VoteSourceInfos.xml", civics::read_vote_source;
-    espionage_missions: EspionageMissionType => EspionageMissionInfo, "Gameinfo/CIV4EspionageMissionInfo.xml", civics::read_espionage_mission;
-    projects: ProjectType => ProjectInfo, "Gameinfo/CIV4ProjectInfo.xml", civics::read_project;
+    commerces: CommerceType => CommerceInfo, game::read_commerce;
+    game_speeds: GameSpeedType => GameSpeedInfo, game::read_game_speed;
+    worlds: WorldSizeType => WorldInfo, game::read_world;
+    climates: ClimateType => ClimateInfo, game::read_climate;
+    sea_levels: SeaLevelType => SeaLevelInfo, game::read_sea_level;
+    eras: EraType => EraInfo, game::read_era;
+    handicaps: HandicapType => HandicapInfo, game::read_handicap;
+    game_options: GameOptionType => GameOptionInfo, game::read_game_option;
+    goodies: GoodyType => GoodyInfo, game::read_goody;
+    hurries: HurryType => HurryInfo, game::read_hurry;
+    upkeeps: UpkeepType => UpkeepInfo, game::read_upkeep;
+    culture_levels: CultureLevelType => CultureLevelInfo, game::read_culture_level;
+    victories: VictoryType => VictoryInfo, game::read_victory;
+    processes: ProcessType => ProcessInfo, game::read_process;
+    emphasizes: EmphasizeType => EmphasizeInfo, game::read_emphasize;
+    specialists: SpecialistType => SpecialistInfo, civics::read_specialist;
+    religions: ReligionType => ReligionInfo, civics::read_religion;
+    corporations: CorporationType => CorporationInfo, civics::read_corporation;
+    civic_options: CivicOptionType => CivicOptionInfo, civics::read_civic_option;
+    civics: CivicType => CivicInfo, civics::read_civic;
+    votes: VoteType => VoteInfo, civics::read_vote;
+    vote_sources: VoteSourceType => VoteSourceInfo, civics::read_vote_source;
+    espionage_missions: EspionageMissionType => EspionageMissionInfo, civics::read_espionage_mission;
+    projects: ProjectType => ProjectInfo, civics::read_project;
     // ---- Technologies ----
-    techs: TechType => TechInfo, "Technologies/CIV4TechInfos.xml", civics::read_tech;
+    techs: TechType => TechInfo, civics::read_tech;
     // ---- Buildings ----
-    special_buildings: SpecialBuildingType => SpecialBuildingInfo, "Buildings/CIV4SpecialBuildingInfos.xml", building::read_special_building;
-    building_classes: BuildingClassType => BuildingClassInfo, "Buildings/CIV4BuildingClassInfos.xml", building::read_building_class;
-    buildings: BuildingType => BuildingInfo, "Buildings/CIV4BuildingInfos.xml", building::read_building;
+    special_buildings: SpecialBuildingType => SpecialBuildingInfo, building::read_special_building;
+    building_classes: BuildingClassType => BuildingClassInfo, building::read_building_class;
+    buildings: BuildingType => BuildingInfo, building::read_building;
     // ---- Civilizations ----
-    traits: TraitType => TraitInfo, "Civilizations/CIV4TraitInfos.xml", civ::read_trait;
-    civilizations: CivilizationType => CivilizationInfo, "Civilizations/CIV4CivilizationInfos.xml", civ::read_civilization;
-    leader_heads: LeaderHeadType => LeaderHeadInfo, "Civilizations/CIV4LeaderHeadInfos.xml", civ::read_leader_head;
-    diplomacies: DiploCommentType => DiplomacyInfo, "Gameinfo/CIV4DiplomacyInfos.xml", game::read_diplomacy;
+    traits: TraitType => TraitInfo, civ::read_trait;
+    civilizations: CivilizationType => CivilizationInfo, civ::read_civilization;
+    leader_heads: LeaderHeadType => LeaderHeadInfo, civ::read_leader_head;
+    diplomacies: DiploCommentType => DiplomacyInfo, game::read_diplomacy;
     // ---- Units ----
-    special_units: SpecialUnitType => SpecialUnitInfo, "Units/CIV4SpecialUnitInfos.xml", unit::read_special_unit;
-    unit_classes: UnitClassType => UnitClassInfo, "Units/CIV4UnitClassInfos.xml", unit::read_unit_class;
-    promotions: PromotionType => PromotionInfo, "Units/CIV4PromotionInfos.xml", unit::read_promotion;
-    builds: BuildType => BuildInfo, "Units/CIV4BuildInfos.xml", unit::read_build;
-    units: UnitType => UnitInfo, "Units/CIV4UnitInfos.xml", unit::read_unit;
-    spells: SpellType => SpellInfo, "Units/CIV4SpellInfos.xml", unit::read_spell;
-    automates: AutomateType => AutomateInfo, "Units/CIV4AutomateInfos.xml", unit::read_automate;
-    commands: CommandType => CommandInfo, "Units/CIV4CommandInfos.xml", unit::read_command;
-    missions: MissionType => MissionInfo, "Units/CIV4MissionInfos.xml", unit::read_mission;
+    special_units: SpecialUnitType => SpecialUnitInfo, unit::read_special_unit;
+    unit_classes: UnitClassType => UnitClassInfo, unit::read_unit_class;
+    promotions: PromotionType => PromotionInfo, unit::read_promotion;
+    builds: BuildType => BuildInfo, unit::read_build;
+    units: UnitType => UnitInfo, unit::read_unit;
+    spells: SpellType => SpellInfo, unit::read_spell;
+    automates: AutomateType => AutomateInfo, unit::read_automate;
+    commands: CommandType => CommandInfo, unit::read_command;
+    missions: MissionType => MissionInfo, unit::read_mission;
     // ---- Events ----
-    events: EventType => EventInfo, "Events/CIV4EventInfos.xml", event::read_event;
-    event_triggers: EventTriggerType => EventTriggerInfo, "Events/CIV4EventTriggerInfos.xml", event::read_event_trigger;
+    events: EventType => EventInfo, event::read_event;
+    event_triggers: EventTriggerType => EventTriggerInfo, event::read_event_trigger;
     // ---- This game's own rules (not FFH2's) ----
-    cultural_actions: CulturalActionType => CulturalActionInfo, "Gameinfo/CIV4CulturalActionInfos.xml", culture::read_cultural_action;
-    governor_profiles: GovernorProfileType => GovernorProfileInfo, "Gameinfo/CIV4GovernorProfileInfos.xml", governor::read_governor_profile;
-    governor_traits: GovernorTraitType => GovernorTraitInfo, "Gameinfo/CIV4GovernorTraitInfos.xml", governor::read_governor_trait;
-    governor_names: GovernorNameType => GovernorNameInfo, "Gameinfo/CIV4GovernorNameInfos.xml", governor::read_governor_names;
-    combat_roles: CombatRoleType => CombatRoleInfo, "Units/CIV4CombatRoleInfos.xml", engagement::read_combat_role;
+    cultural_actions: CulturalActionType => CulturalActionInfo, culture::read_cultural_action;
+    governor_profiles: GovernorProfileType => GovernorProfileInfo, governor::read_governor_profile;
+    governor_traits: GovernorTraitType => GovernorTraitInfo, governor::read_governor_trait;
+    governor_names: GovernorNameType => GovernorNameInfo, governor::read_governor_names;
+    combat_roles: CombatRoleType => CombatRoleInfo, engagement::read_combat_role;
 }
 
-/// Lists declared in GlobalTypes.xml that are referenced by type name in XML.
-const GLOBAL_TYPE_LISTS: &[(&str, &str)] = &[
-    ("FlavorTypes", "FlavorTypes"),
-    ("ArtStyleTypes", "ArtStyleTypes"),
-    ("CitySizeTypes", "CitySizeTypes"),
-    ("ContactTypes", "ContactTypes"),
-    ("DiplomacyPowerTypes", "DiplomacyPowerTypes"),
-    ("DirectionTypes", "DirectionTypes"),
-    // CIV4AutomateInfos.xml entries have no <Type>; C++ names them from this list.
-    ("AutomateTypes", "AutomateInfo"),
+/// Type lists of `global_types.jsonc` (key, registry class): types the data names that are
+/// no table's entries.
+pub const GLOBAL_TYPE_LISTS: &[(&str, &str)] = &[
+    ("flavor_types", "FlavorTypes"),
+    ("art_style_types", "ArtStyleTypes"),
+    ("city_size_types", "CitySizeTypes"),
+    ("contact_types", "ContactTypes"),
+    ("diplomacy_power_types", "DiplomacyPowerTypes"),
+    ("direction_types", "DirectionTypes"),
+    // The automate entries have no `type`; C++ names them from this list.
+    ("automate_types", "AutomateInfo"),
 ];
 
+/// The defines files, in load order (a later file's value replaces an earlier one's).
+pub const DEFINES_FILES: &[&str] = &["global_defines.jsonc", "global_defines_alt.jsonc", "python_callback_defines.jsonc", "rules_defines.jsonc"];
+
 struct Docs {
-    docs: Vec<(String, XmlDoc)>,
+    docs: Vec<(String, Value)>,
 }
 
 impl Docs {
-    fn get(&self, file: &str) -> &XmlDoc {
+    fn get(&self, file: &str) -> &Value {
         &self.docs.iter().find(|(f, _)| f == file).expect("document not loaded").1
     }
 }
 
-/// Entry elements of an info file: root -> container -> entries.
-/// A container nested inside the container (FFH2's CIV4CommandInfos.xml has one)
-/// is flattened in place, matching the C++ enum order.
-fn entries(doc: &XmlDoc) -> Vec<xml::Elem<'_>> {
-    fn collect<'a>(container: xml::Elem<'a>, out: &mut Vec<xml::Elem<'a>>) {
-        for c in container.children() {
-            if c.name() == container.name() {
-                collect(c, out);
-            } else {
-                out.push(c);
-            }
-        }
-    }
-    let mut out = Vec::new();
-    if let Some(container) = doc.root().first_child() {
-        collect(container, &mut out);
-    }
-    out
+/// The entries of a table's file: the items of its top-level list.
+fn entries(doc: &Value) -> &[Value] {
+    doc.as_arr().unwrap_or(&[])
 }
 
 #[derive(Debug)]
@@ -217,47 +236,44 @@ impl std::fmt::Display for LoadError {
 
 impl std::error::Error for LoadError {}
 
-fn read_doc(dir: &Path, rel: &str) -> Result<XmlDoc, LoadError> {
+fn read_doc(dir: &Path, rel: &str) -> Result<Value, LoadError> {
     let p = dir.join(rel);
-    let bytes = std::fs::read(&p).map_err(|e| LoadError(format!("{}: {}", p.display(), e)))?;
-    XmlDoc::parse_bytes(&bytes).map_err(|e| LoadError(format!("{}: {}", p.display(), e)))
+    let text = std::fs::read_to_string(&p).map_err(|e| LoadError(format!("{}: {}", p.display(), e)))?;
+    jsonc::parse(&text).map_err(|e| LoadError(format!("{}: {}", p.display(), e)))
 }
 
 impl GameData {
-    /// Loads everything from a data directory containing `xml/` and `text/`.
+    /// Loads everything from a data directory containing `json/` and `text/`.
     pub fn load(data_dir: &Path) -> Result<GameData, LoadError> {
-        let xml_dir = data_dir.join("xml");
+        let json_dir = data_dir.join("json");
         let mut docs = Vec::new();
         for (file, _) in INFO_FILES {
-            docs.push((file.to_string(), read_doc(&xml_dir, file)?));
+            let doc = read_doc(&json_dir, file)?;
+            if doc.as_arr().is_none() {
+                return Err(LoadError(format!("{file}: expected a list of entries")));
+            }
+            docs.push((file.to_string(), doc));
         }
         let docs = Docs { docs };
 
         // Pass 1: register every type name.
         let mut reg = Registry::new();
         for (file, class) in INFO_FILES {
-            let doc = docs.get(file);
-            let mut names = Vec::new();
-            for e in entries(doc) {
-                if e.name() != *class {
-                    return Err(LoadError(format!("{file}: entry <{}> but expected <{class}>", e.name())));
-                }
-                names.push(e.child_text("Type").unwrap_or("").to_string());
-            }
+            let names = entries(docs.get(file)).iter().map(|e| e.get("type").and_then(Value::as_str).unwrap_or("").to_string()).collect();
             reg.register_class(class, names);
         }
-        let gt = read_doc(&xml_dir, "GlobalTypes.xml")?;
+        let gt = read_doc(&json_dir, "global_types.jsonc")?;
         for (list, class) in GLOBAL_TYPE_LISTS {
-            if let Some(l) = gt.root().child(list) {
-                let names = l.children().map(|c| c.text().to_string()).collect();
+            if let Some(l) = gt.get(list).and_then(Value::as_arr) {
+                let names = l.iter().map(|c| c.as_str().unwrap_or("").to_string()).collect();
                 reg.register_class(class, names);
             }
         }
 
         // Defines (text defines resolve through the registry).
         let mut define_map = DefineMap::default();
-        for f in ["GlobalDefines.xml", "GlobalDefinesAlt.xml", "PythonCallbackDefines.xml", "RulesDefines.xml"] {
-            define_map.read_file(&read_doc(&xml_dir, f)?, &reg);
+        for f in DEFINES_FILES {
+            define_map.read_file(&read_doc(&json_dir, f)?, &reg);
         }
 
         let text = match std::fs::read(data_dir.join("text").join("en.tsv")) {
@@ -276,7 +292,7 @@ impl GameData {
         Ok(gd)
     }
 
-    /// Fills the derived (non-XML) tables from the loaded ones.
+    /// Fills the derived tables (not in the data files) from the loaded ones.
     fn derive(&mut self) {
         self.combat_mod_promotions =
             self.promotions.keys().filter(|&p| self.promotions[p].promotion_combat_mod > 0).collect();
@@ -303,12 +319,6 @@ impl GameData {
         }
         for r in self.combat_roles.keys() {
             let info = &self.combat_roles[r];
-            if info.attack_percent <= 0 || info.defense_percent <= 0 || info.max_hp <= 0 || info.speed < 0 {
-                warnings.push(format!("{}: iAttackPercent, iDefensePercent and iMaxHP must be above 0, iSpeed not below", info.base.type_));
-            }
-            if !(0..=95).contains(&info.dodge) || !(0..=95).contains(&info.crit_bonus) {
-                warnings.push(format!("{}: iDodge and iCritBonus must be in 0..=95", info.base.type_));
-            }
             // A row acts iff it has an action kind; a role acts from some row (a unit type's own
             // EngageRows are checked so as they are read).
             if let Some(problem) = rows_problem(&info.rows) {
@@ -334,6 +344,12 @@ impl GameData {
         });
         self.unit_roles =
             IdxVec::from_fn(self.units.len(), |u| if self.type_engages_on_land(u) { self.type_combat_role(u) } else { None });
+        // Every type that fights land battles has a stat sheet (docs/UNIT_STATS.md).
+        for (u, info) in self.units.iter_enumerated() {
+            if self.unit_roles[u].is_some() && info.stats.is_none() {
+                warnings.push(format!("{}: a land unit without stats", info.base.type_));
+            }
+        }
         self.warnings.extend(warnings);
     }
 
@@ -394,26 +410,13 @@ impl GameData {
     }
 
     // A unit's values in a formation battle: each is its type's own (`iEngageSpeed`,
-    // `iEngageDodge`, `iEngageCritBonus`, `EngageRows` in CIV4UnitInfos.xml), else its role's
+    // `iEngageDodge`, `iEngageCritBonus`, `EngageRows` in units.jsonc), else its role's
     // (`role`: the unit's own, which promotions can change: `Game::unit_combat_role`), else
     // nothing (0, no action) for a unit with neither. The rules ask through `Game::unit_engage_*`.
 
-    /// A unit type's speed in a formation battle before first strikes: its `iEngageSpeed`, else
-    /// the role's.
-    pub fn engage_speed(&self, t: UnitType, role: Option<CombatRoleType>) -> i32 {
-        self.units[t].engage_speed.or_else(|| role.map(|r| self.combat_roles[r].speed)).unwrap_or(0)
-    }
-
-    /// A unit type's dodge (points of miss chance on physical actions against it): its
-    /// `iEngageDodge`, else the role's.
-    pub fn engage_dodge(&self, t: UnitType, role: Option<CombatRoleType>) -> i32 {
-        self.units[t].engage_dodge.or_else(|| role.map(|r| self.combat_roles[r].dodge)).unwrap_or(0)
-    }
-
-    /// A unit type's crit bonus (points on its own crit chance): its `iEngageCritBonus`, else the
-    /// role's.
-    pub fn engage_crit_bonus(&self, t: UnitType, role: Option<CombatRoleType>) -> i32 {
-        self.units[t].engage_crit_bonus.or_else(|| role.map(|r| self.combat_roles[r].crit_bonus)).unwrap_or(0)
+    /// A unit type's stat `s` (its sheet's; 0 for a type without one).
+    pub fn unit_stat(&self, t: UnitType, s: StatType) -> i32 {
+        self.units[t].stats.map_or(0, |sheet| sheet[s.idx()])
     }
 
     /// What a unit type does from each row, front first, before the extra actions: its

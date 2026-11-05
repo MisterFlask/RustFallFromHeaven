@@ -1,0 +1,20 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jesse Smith (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Civ4HurryInfo - This structure describes the name for each multiplayer option.
+[
+  {
+    "type": "HURRY_POPULATION",
+    "description": "TXT_KEY_HURRY_POPULATION",
+    "production_per_population": 30,
+    "anger": true,
+    "button": "Art/Interface/MainScreen/CityScreen/hurry_slavery.dds"
+  },
+  {
+    "type": "HURRY_GOLD",
+    "description": "TXT_KEY_HURRY_GOLD",
+    "gold_per_production": 3,
+    "button": "Art/Interface/MainScreen/CityScreen/hurry_commerce.dds"
+  }
+]

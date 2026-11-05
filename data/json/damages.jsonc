@@ -1,0 +1,47 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Alex Mantzaris (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Basic Infos
+[
+  {
+    "type": "DAMAGE_COLD",
+    "description": "TXT_KEY_DAMAGE_COLD",
+    "button": "Art/Interface/Buttons/Cold.dds"
+  },
+  {
+    "type": "DAMAGE_DEATH",
+    "description": "TXT_KEY_DAMAGE_DEATH",
+    "button": "Art/Interface/Buttons/Death.dds"
+  },
+  {
+    "type": "DAMAGE_FIRE",
+    "description": "TXT_KEY_DAMAGE_FIRE",
+    "button": "Art/Interface/Buttons/Fire.dds"
+  },
+  {
+    "type": "DAMAGE_HOLY",
+    "description": "TXT_KEY_DAMAGE_HOLY",
+    "button": "Art/Interface/Buttons/Holy.dds"
+  },
+  {
+    "type": "DAMAGE_LIGHTNING",
+    "description": "TXT_KEY_DAMAGE_LIGHTNING",
+    "button": "Art/Interface/Buttons/Lightning.dds"
+  },
+  {
+    "type": "DAMAGE_PHYSICAL",
+    "description": "TXT_KEY_DAMAGE_PHYSICAL",
+    "button": "Art/Interface/Buttons/Physical.dds"
+  },
+  {
+    "type": "DAMAGE_POISON",
+    "description": "TXT_KEY_DAMAGE_POISON",
+    "button": "Art/Interface/Buttons/Poison.dds"
+  },
+  {
+    "type": "DAMAGE_UNHOLY",
+    "description": "TXT_KEY_DAMAGE_UNHOLY",
+    "button": "Art/Interface/Buttons/Unholy.dds"
+  }
+]

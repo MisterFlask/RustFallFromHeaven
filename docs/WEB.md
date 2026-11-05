@@ -18,7 +18,7 @@ CI rebuilds and redeploys the site on every push to `master` (except pushes that
 | The page side | `crates/ffh-web/site/boot.js` (loaded before `app/main.js`) | replaces `fetch`: requests whose path is `/api` or `/api/...` go to the engine and come back as real `Response`s; it answers `GET /api/status` and the long-poll `GET /api/wait` itself from the last status the engine published; shows the loading progress; restarts a crashed engine |
 | The worker | `crates/ffh-web/site/engine.js`, `wasi.js` | downloads `web/ffh.wasm.gz` and `web/data.pak.gz` (decompressed in the browser), runs the engine on a WASI shim with an in-memory file system: the game data at `/data`, the saves at `/saves` |
 | Isolation | `coi-sw.js` (a service worker at the site's root) | see below |
-| The data | `web/data.pak.gz` | `data/xml/**` and `data/text/**` in one file: `FFHPAK1\n`, then per file `<path>\n<length>\n<bytes>` (`ffh_play::site::data_pack`) |
+| The data | `web/data.pak.gz` | `data/json/**` and `data/text/**` in one file: `FFHPAK1\n`, then per file `<path>\n<length>\n<bytes>` (`ffh_play::site::data_pack`) |
 
 **Cross-origin isolation.** While the engine runs (an end of turn while the AI players move, or a
 move of yours that conquers a city), the page still needs answers: the status, queries, and the

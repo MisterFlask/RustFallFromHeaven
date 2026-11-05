@@ -11,7 +11,7 @@ use crate::idx::{opt_from_i32, Idx, IdxVec};
 use crate::infos::{BuildingClassInfo, InfoBase};
 use crate::registry::{InfoId, Rd};
 
-/// C++ `CvTraitInfo` (Civilizations/CIV4TraitInfos.xml)
+/// C++ `CvTraitInfo` (traits.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct TraitInfo {
     pub base: InfoBase,
@@ -61,42 +61,42 @@ pub struct TraitInfo {
 pub fn read_trait(rd: &Rd) -> TraitInfo {
     TraitInfo {
         base: InfoBase::read(rd),
-        short_description: rd.string("ShortDescription"),
-        health: rd.int("iHealth"),
-        happiness: rd.int("iHappiness"),
-        max_anarchy: rd.int("iMaxAnarchy"),
-        upkeep_modifier: rd.int("iUpkeepModifier"),
-        level_experience_modifier: rd.int("iLevelExperienceModifier"),
-        great_people_rate_modifier: rd.int("iGreatPeopleRateModifier"),
-        great_general_rate_modifier: rd.int("iGreatGeneralRateModifier"),
-        domestic_great_general_rate_modifier: rd.int("iDomesticGreatGeneralRateModifier"),
-        max_global_building_production_modifier: rd.int("iMaxGlobalBuildingProductionModifier"),
-        max_team_building_production_modifier: rd.int("iMaxTeamBuildingProductionModifier"),
-        max_player_building_production_modifier: rd.int("iMaxPlayerBuildingProductionModifier"),
-        adaptive: rd.bool("bAdaptive"),
-        agnostic: rd.bool("bAgnostic"),
-        assimilation: rd.bool("bAssimilation"),
-        barbarian_ally: rd.bool("bBarbarianAlly"),
-        ignore_food: rd.bool("bIgnoreFood"),
-        insane: rd.bool("bInsane"),
-        selectable: rd.bool("bSelectable"),
-        sprawling: rd.bool("bSprawling"),
-        free_xp_from_combat: rd.int("iFreeXPFromCombat"),
-        max_cities: rd.int("iMaxCities"),
-        pillaging_gold: rd.int("iPillagingGold"),
-        starting_gold: rd.int("iStartingGold"),
-        summon_duration: rd.int("iSummonDuration"),
-        upgrade_cost_modifier: rd.int("iUpgradeCostModifier"),
-        extra_yield_threshold: rd.yields("ExtraYieldThresholds"),
-        trade_yield_modifier: rd.yields("TradeYieldModifiers"),
-        commerce_change: rd.commerces("CommerceChanges"),
-        commerce_modifier: rd.commerces("CommerceModifiers"),
-        free_promotion: rd.pairs_bool("FreePromotions"),
-        free_promotion_unit_combat: rd.pairs_bool("FreePromotionUnitCombats"),
+        short_description: rd.string("short_description"),
+        health: rd.int("health"),
+        happiness: rd.int("happiness"),
+        max_anarchy: rd.int("max_anarchy"),
+        upkeep_modifier: rd.int("upkeep_modifier"),
+        level_experience_modifier: rd.int("level_experience_modifier"),
+        great_people_rate_modifier: rd.int("great_people_rate_modifier"),
+        great_general_rate_modifier: rd.int("great_general_rate_modifier"),
+        domestic_great_general_rate_modifier: rd.int("domestic_great_general_rate_modifier"),
+        max_global_building_production_modifier: rd.int("max_global_building_production_modifier"),
+        max_team_building_production_modifier: rd.int("max_team_building_production_modifier"),
+        max_player_building_production_modifier: rd.int("max_player_building_production_modifier"),
+        adaptive: rd.bool("adaptive"),
+        agnostic: rd.bool("agnostic"),
+        assimilation: rd.bool("assimilation"),
+        barbarian_ally: rd.bool("barbarian_ally"),
+        ignore_food: rd.bool("ignore_food"),
+        insane: rd.bool("insane"),
+        selectable: rd.bool("selectable"),
+        sprawling: rd.bool("sprawling"),
+        free_xp_from_combat: rd.int("free_xp_from_combat"),
+        max_cities: rd.int("max_cities"),
+        pillaging_gold: rd.int("pillaging_gold"),
+        starting_gold: rd.int("starting_gold"),
+        summon_duration: rd.int("summon_duration"),
+        upgrade_cost_modifier: rd.int("upgrade_cost_modifier"),
+        extra_yield_threshold: rd.yields("extra_yield_thresholds"),
+        trade_yield_modifier: rd.yields("trade_yield_modifiers"),
+        commerce_change: rd.commerces("commerce_changes"),
+        commerce_modifier: rd.commerces("commerce_modifiers"),
+        free_promotion: rd.pairs_bool("free_promotions"),
+        free_promotion_unit_combat: rd.pairs_bool("free_promotion_unit_combats"),
     }
 }
 
-/// C++ `CvCivilizationInfo` (Civilizations/CIV4CivilizationInfos.xml)
+/// C++ `CvCivilizationInfo` (civilizations.jsonc)
 ///
 /// Civ-specific buildings/units: C++ fills `m_piCivilizationBuildings`/`m_piCivilizationUnits`
 /// with every class's default (`InitBuildingDefaults`/`InitUnitDefaults`, i.e.
@@ -192,31 +192,31 @@ impl CivilizationInfo {
 pub fn read_civilization(rd: &Rd) -> CivilizationInfo {
     CivilizationInfo {
         base: InfoBase::read(rd),
-        short_description_key: rd.string("ShortDescription"),
-        adjective_key: rd.string("Adjective"),
-        playable: rd.bool("bPlayable"),
-        ai_playable: rd.bool("bAIPlayable"),
-        city_names: rd.string_list("Cities"),
-        civilization_building_overrides: class_overrides(rd, "Buildings"),
-        civilization_unit_overrides: class_overrides(rd, "Units"),
-        civilization_free_units_class: rd.pairs_int("FreeUnitClasses", 0),
-        civilization_free_building_class: rd.pairs_bool("FreeBuildingClasses"),
-        civilization_free_techs: rd.pairs_bool("FreeTechs"),
-        civilization_disable_techs: rd.pairs_bool("DisableTechs"),
+        short_description_key: rd.string("short_description"),
+        adjective_key: rd.string("adjective"),
+        playable: rd.bool("playable"),
+        ai_playable: rd.bool("ai_playable"),
+        city_names: rd.string_list("cities"),
+        civilization_building_overrides: class_overrides(rd, "buildings"),
+        civilization_unit_overrides: class_overrides(rd, "units"),
+        civilization_free_units_class: rd.pairs_int("free_unit_classes", 0),
+        civilization_free_building_class: rd.pairs_bool("free_building_classes"),
+        civilization_free_techs: rd.pairs_bool("free_techs"),
+        civilization_disable_techs: rd.pairs_bool("disable_techs"),
         civilization_initial_civics: initial_civics(rd),
-        leaders: rd.pairs_bool("Leaders"),
-        civ_trait: rd.rf("CivTrait"),
-        default_race: rd.rf("DefaultRace"),
-        hero: rd.rf("Hero"),
-        maintain_features: rd.pairs_bool("MaintainFeatures"),
-        best_defender1: rf_or(rd, "eBestDefender1", "UNITCLASS_ARCHER"),
-        best_defender2: rf_or(rd, "eBestDefender2", "UNITCLASS_LONGBOWMAN"),
-        best_defender3: rf_or(rd, "eBestDefender3", "UNITCLASS_ARQUEBUS"),
-        best_patrol1: rf_or(rd, "eBestPatrol1", "UNITCLASS_HUNTER"),
-        best_patrol2: rf_or(rd, "eBestPatrol2", "UNITCLASS_RANGER"),
-        best_patrol3: rd.rf("eBestPatrol3"),
+        leaders: rd.pairs_bool("leaders"),
+        civ_trait: rd.rf("civ_trait"),
+        default_race: rd.rf("default_race"),
+        hero: rd.rf("hero"),
+        maintain_features: rd.pairs_bool("maintain_features"),
+        best_defender1: rf_or(rd, "e_best_defender1", "UNITCLASS_ARCHER"),
+        best_defender2: rf_or(rd, "e_best_defender2", "UNITCLASS_LONGBOWMAN"),
+        best_defender3: rf_or(rd, "e_best_defender3", "UNITCLASS_ARQUEBUS"),
+        best_patrol1: rf_or(rd, "e_best_patrol1", "UNITCLASS_HUNTER"),
+        best_patrol2: rf_or(rd, "e_best_patrol2", "UNITCLASS_RANGER"),
+        best_patrol3: rd.rf("e_best_patrol3"),
         // readPass2
-        derivative_civ: rd.rf("DerivativeCiv"),
+        derivative_civ: rd.rf("derivative_civ"),
     }
 }
 
@@ -252,7 +252,7 @@ fn class_overrides<K: InfoId, V: InfoId>(rd: &Rd, tag: &str) -> IdxVec<K, Option
 /// civic option.
 fn initial_civics(rd: &Rd) -> IdxVec<CivicOptionType, Option<CivicType>> {
     let n = rd.reg().count::<CivicOptionType>();
-    let Some(list) = rd.child("InitialCivics") else {
+    let Some(list) = rd.child("initial_civics") else {
         return IdxVec::from_elem(None, n);
     };
     // C++ quirk: InitList(.., GC.getNumCivicOptionInfos()) fills 0 (the first civic).
@@ -267,7 +267,7 @@ fn initial_civics(rd: &Rd) -> IdxVec<CivicOptionType, Option<CivicType>> {
     out
 }
 
-/// C++ `CvLeaderHeadInfo` (Civilizations/CIV4LeaderHeadInfos.xml): leader personality,
+/// C++ `CvLeaderHeadInfo` (leader_heads.jsonc): leader personality,
 /// mostly AI weights. Defaults noted below are the C++ values used when the tag is absent.
 #[derive(Debug, Clone, Default)]
 pub struct LeaderHeadInfo {
@@ -432,119 +432,119 @@ pub struct LeaderHeadInfo {
 pub fn read_leader_head(rd: &Rd) -> LeaderHeadInfo {
     LeaderHeadInfo {
         base: InfoBase::read(rd),
-        wonder_construct_rand: rd.int("iWonderConstructRand"),
-        base_attitude: rd.int("iBaseAttitude"),
-        base_peace_weight: rd.int("iBasePeaceWeight"),
-        peace_weight_rand: rd.int("iPeaceWeightRand"),
-        warmonger_respect: rd.int("iWarmongerRespect"),
-        espionage_weight: rd.int("iEspionageWeight"),
-        refuse_to_talk_war_threshold: rd.int("iRefuseToTalkWarThreshold"),
-        no_tech_trade_threshold: rd.int("iNoTechTradeThreshold"),
-        tech_trade_known_percent: rd.int("iTechTradeKnownPercent"),
-        max_gold_trade_percent: rd.int("iMaxGoldTradePercent"),
-        max_gold_per_turn_trade_percent: rd.int("iMaxGoldPerTurnTradePercent"),
-        max_war_rand: rd.int_or("iMaxWarRand", 50),
-        max_war_nearby_power_ratio: rd.int("iMaxWarNearbyPowerRatio"),
-        max_war_distant_power_ratio: rd.int("iMaxWarDistantPowerRatio"),
-        max_war_min_adjacent_land_percent: rd.int("iMaxWarMinAdjacentLandPercent"),
-        limited_war_rand: rd.int("iLimitedWarRand"),
-        limited_war_power_ratio: rd.int("iLimitedWarPowerRatio"),
-        dogpile_war_rand: rd.int("iDogpileWarRand"),
-        make_peace_rand: rd.int("iMakePeaceRand"),
-        declare_war_trade_rand: rd.int("iDeclareWarTradeRand"),
-        demand_rebuked_sneak_prob: rd.int("iDemandRebukedSneakProb"),
-        demand_rebuked_war_prob: rd.int("iDemandRebukedWarProb"),
-        raze_city_prob: rd.int("iRazeCityProb"),
-        build_unit_prob: rd.int_or("iBuildUnitProb", 25),
-        base_attack_odds_change: rd.int("iBaseAttackOddsChange"),
-        attack_odds_change_rand: rd.int("iAttackOddsChangeRand"),
-        worse_rank_difference_attitude_change: rd.int("iWorseRankDifferenceAttitudeChange"),
-        better_rank_difference_attitude_change: rd.int("iBetterRankDifferenceAttitudeChange"),
-        close_borders_attitude_change: rd.int("iCloseBordersAttitudeChange"),
-        lost_war_attitude_change: rd.int("iLostWarAttitudeChange"),
-        at_war_attitude_divisor: rd.int_or("iAtWarAttitudeDivisor", 10),
-        at_war_attitude_change_limit: rd.int("iAtWarAttitudeChangeLimit"),
-        at_peace_attitude_divisor: rd.int_or("iAtPeaceAttitudeDivisor", 10),
-        at_peace_attitude_change_limit: rd.int_or("iAtPeaceAttitudeChangeLimit", 5),
-        same_religion_attitude_change: rd.int("iSameReligionAttitudeChange"),
-        same_religion_attitude_divisor: rd.int_or("iSameReligionAttitudeDivisor", 30),
-        same_religion_attitude_change_limit: rd.int_or("iSameReligionAttitudeChangeLimit", 5),
-        different_religion_attitude_change: rd.int("iDifferentReligionAttitudeChange"),
-        different_religion_attitude_divisor: rd.int_or("iDifferentReligionAttitudeDivisor", -30),
-        different_religion_attitude_change_limit: rd.int_or("iDifferentReligionAttitudeChangeLimit", -5),
-        bonus_trade_attitude_divisor: rd.int_or("iBonusTradeAttitudeDivisor", 30),
-        bonus_trade_attitude_change_limit: rd.int_or("iBonusTradeAttitudeChangeLimit", 1),
-        open_borders_attitude_divisor: rd.int_or("iOpenBordersAttitudeDivisor", 30),
-        open_borders_attitude_change_limit: rd.int_or("iOpenBordersAttitudeChangeLimit", 1),
-        defensive_pact_attitude_divisor: rd.int_or("iDefensivePactAttitudeDivisor", 50),
-        defensive_pact_attitude_change_limit: rd.int_or("iDefensivePactAttitudeChangeLimit", 2),
-        share_war_attitude_change: rd.int_or("iShareWarAttitudeChange", 2),
-        share_war_attitude_divisor: rd.int_or("iShareWarAttitudeDivisor", 10),
-        share_war_attitude_change_limit: rd.int_or("iShareWarAttitudeChangeLimit", 2),
-        favorite_civic_attitude_change: rd.int_or("iFavoriteCivicAttitudeChange", 2),
-        favorite_civic_attitude_divisor: rd.int_or("iFavoriteCivicAttitudeDivisor", 30),
-        favorite_civic_attitude_change_limit: rd.int_or("iFavoriteCivicAttitudeChangeLimit", 2),
-        vassal_power_modifier: rd.int("iVassalPowerModifier"),
-        freedom_appreciation: rd.int("iFreedomAppreciation"),
-        demand_tribute_attitude_threshold: rd.rf("DemandTributeAttitudeThreshold"),
-        no_give_help_attitude_threshold: rd.rf("NoGiveHelpAttitudeThreshold"),
-        tech_refuse_attitude_threshold: rd.rf("TechRefuseAttitudeThreshold"),
-        strategic_bonus_refuse_attitude_threshold: rd.rf("StrategicBonusRefuseAttitudeThreshold"),
-        happiness_bonus_refuse_attitude_threshold: rd.rf("HappinessBonusRefuseAttitudeThreshold"),
-        health_bonus_refuse_attitude_threshold: rd.rf("HealthBonusRefuseAttitudeThreshold"),
-        map_refuse_attitude_threshold: rd.rf("MapRefuseAttitudeThreshold"),
-        declare_war_refuse_attitude_threshold: rd.rf("DeclareWarRefuseAttitudeThreshold"),
-        declare_war_them_refuse_attitude_threshold: rd.rf("DeclareWarThemRefuseAttitudeThreshold"),
-        stop_trading_refuse_attitude_threshold: rd.rf("StopTradingRefuseAttitudeThreshold"),
-        stop_trading_them_refuse_attitude_threshold: rd.rf("StopTradingThemRefuseAttitudeThreshold"),
-        adopt_civic_refuse_attitude_threshold: rd.rf("AdoptCivicRefuseAttitudeThreshold"),
-        convert_religion_refuse_attitude_threshold: rd.rf("ConvertReligionRefuseAttitudeThreshold"),
-        open_borders_refuse_attitude_threshold: rd.rf("OpenBordersRefuseAttitudeThreshold"),
-        defensive_pact_refuse_attitude_threshold: rd.rf("DefensivePactRefuseAttitudeThreshold"),
-        permanent_alliance_refuse_attitude_threshold: rd.rf("PermanentAllianceRefuseAttitudeThreshold"),
-        vassal_refuse_attitude_threshold: rd.rf("VassalRefuseAttitudeThreshold"),
-        favorite_civic: rd.rf("FavoriteCivic"),
-        favorite_religion: rd.rf("FavoriteReligion"),
-        cultural_aggression: rd.int_or("iCulturalAggression", -1),
-        has_trait: rd.pairs_bool("Traits"),
-        flavor_value: rd.pairs_int("Flavors", 0),
-        contact_rand: rd.pairs_int("ContactRands", 0),
-        contact_delay: rd.pairs_int("ContactDelays", 0),
-        memory_decay_rand: rd.pairs_int("MemoryDecays", 0),
-        memory_attitude_percent: rd.pairs_int("MemoryAttitudePercents", 0),
-        no_war_attitude_prob: rd.pairs_int("NoWarAttitudeProbs", 0),
-        unit_ai_weight_modifier: rd.pairs_int("UnitAIWeightModifiers", 0),
-        improvement_weight_modifier: rd.pairs_int("ImprovementWeightModifiers", 0),
-        female: rd.bool("bFemale"),
-        alignment: rd.rf("Alignment"),
-        attitude_bad_bonus: rd.int("iAttitudeBadBonus"),
-        attitude_from_females: rd.int("iAttitudeFromFemales"),
-        attitude_from_males: rd.int("iAttitudeFromMales"),
-        attitude_to_females: rd.int("iAttitudeToFemales"),
-        attitude_to_males: rd.int("iAttitudeToMales"),
-        somnium_aggressiveness: rd.int("iSomniumAggressiveness"),
-        favorite_tech: rd.rf("FavoriteTech"),
-        favorite_unit_combat: rd.rf("FavoriteUnitCombat"),
-        favorite_wonder: rd.rf("FavoriteWonder"),
-        permanent_trait: rd.rf("PermanentTrait"),
-        altar_victory: rd.bool("bAltarVictory"),
-        arcane_tower_victory: rd.bool("bArcaneTowerVictory"),
-        culture_victory: rd.bool("bCultureVictory"),
-        religion_victory: rd.bool("bReligionVictory"),
-        religion_opportunist: rd.bool("bReligionOpportunist"),
-        ai_patrol_group_mage: rd.int_or("iAIPatrolGroupMage", 100),
-        ai_patrol_group_size: rd.int_or("iAIPatrolGroupSize", 100),
-        ai_value_defense: rd.int_or("iAIValueDefense", 100),
-        ai_value_mage: rd.int_or("iAIValueMage", 100),
-        economy_tech_value: rd.int_or("iEconomyTechValue", 100),
-        favorite_early_religion: rd.rf("iFavoriteEarlyReligion"),
-        favorite_early_mil_tech: rd.rf("iFavoriteEarlyMilTech"),
-        favorite_early_tech1: rd.rf("iFavoriteEarlyTech1"),
-        favorite_early_tech2: rd.rf("iFavoriteEarlyTech2"),
-        favorite_early_tech3: rd.rf("iFavoriteEarlyTech3"),
-        favorite_early_wonder: find_in_info_class(rd, "iFavoriteEarlyWonder"),
-        favorite_late_wonder: find_in_info_class(rd, "iFavoriteLateWonder"),
-        religion_weight_modifier: rd.pairs_int("ReligionWeightModifiers", 0),
+        wonder_construct_rand: rd.int("wonder_construct_rand"),
+        base_attitude: rd.int("base_attitude"),
+        base_peace_weight: rd.int("base_peace_weight"),
+        peace_weight_rand: rd.int("peace_weight_rand"),
+        warmonger_respect: rd.int("warmonger_respect"),
+        espionage_weight: rd.int("espionage_weight"),
+        refuse_to_talk_war_threshold: rd.int("refuse_to_talk_war_threshold"),
+        no_tech_trade_threshold: rd.int("no_tech_trade_threshold"),
+        tech_trade_known_percent: rd.int("tech_trade_known_percent"),
+        max_gold_trade_percent: rd.int("max_gold_trade_percent"),
+        max_gold_per_turn_trade_percent: rd.int("max_gold_per_turn_trade_percent"),
+        max_war_rand: rd.int_or("max_war_rand", 50),
+        max_war_nearby_power_ratio: rd.int("max_war_nearby_power_ratio"),
+        max_war_distant_power_ratio: rd.int("max_war_distant_power_ratio"),
+        max_war_min_adjacent_land_percent: rd.int("max_war_min_adjacent_land_percent"),
+        limited_war_rand: rd.int("limited_war_rand"),
+        limited_war_power_ratio: rd.int("limited_war_power_ratio"),
+        dogpile_war_rand: rd.int("dogpile_war_rand"),
+        make_peace_rand: rd.int("make_peace_rand"),
+        declare_war_trade_rand: rd.int("declare_war_trade_rand"),
+        demand_rebuked_sneak_prob: rd.int("demand_rebuked_sneak_prob"),
+        demand_rebuked_war_prob: rd.int("demand_rebuked_war_prob"),
+        raze_city_prob: rd.int("raze_city_prob"),
+        build_unit_prob: rd.int_or("build_unit_prob", 25),
+        base_attack_odds_change: rd.int("base_attack_odds_change"),
+        attack_odds_change_rand: rd.int("attack_odds_change_rand"),
+        worse_rank_difference_attitude_change: rd.int("worse_rank_difference_attitude_change"),
+        better_rank_difference_attitude_change: rd.int("better_rank_difference_attitude_change"),
+        close_borders_attitude_change: rd.int("close_borders_attitude_change"),
+        lost_war_attitude_change: rd.int("lost_war_attitude_change"),
+        at_war_attitude_divisor: rd.int_or("at_war_attitude_divisor", 10),
+        at_war_attitude_change_limit: rd.int("at_war_attitude_change_limit"),
+        at_peace_attitude_divisor: rd.int_or("at_peace_attitude_divisor", 10),
+        at_peace_attitude_change_limit: rd.int_or("at_peace_attitude_change_limit", 5),
+        same_religion_attitude_change: rd.int("same_religion_attitude_change"),
+        same_religion_attitude_divisor: rd.int_or("same_religion_attitude_divisor", 30),
+        same_religion_attitude_change_limit: rd.int_or("same_religion_attitude_change_limit", 5),
+        different_religion_attitude_change: rd.int("different_religion_attitude_change"),
+        different_religion_attitude_divisor: rd.int_or("different_religion_attitude_divisor", -30),
+        different_religion_attitude_change_limit: rd.int_or("different_religion_attitude_change_limit", -5),
+        bonus_trade_attitude_divisor: rd.int_or("bonus_trade_attitude_divisor", 30),
+        bonus_trade_attitude_change_limit: rd.int_or("bonus_trade_attitude_change_limit", 1),
+        open_borders_attitude_divisor: rd.int_or("open_borders_attitude_divisor", 30),
+        open_borders_attitude_change_limit: rd.int_or("open_borders_attitude_change_limit", 1),
+        defensive_pact_attitude_divisor: rd.int_or("defensive_pact_attitude_divisor", 50),
+        defensive_pact_attitude_change_limit: rd.int_or("defensive_pact_attitude_change_limit", 2),
+        share_war_attitude_change: rd.int_or("share_war_attitude_change", 2),
+        share_war_attitude_divisor: rd.int_or("share_war_attitude_divisor", 10),
+        share_war_attitude_change_limit: rd.int_or("share_war_attitude_change_limit", 2),
+        favorite_civic_attitude_change: rd.int_or("favorite_civic_attitude_change", 2),
+        favorite_civic_attitude_divisor: rd.int_or("favorite_civic_attitude_divisor", 30),
+        favorite_civic_attitude_change_limit: rd.int_or("favorite_civic_attitude_change_limit", 2),
+        vassal_power_modifier: rd.int("vassal_power_modifier"),
+        freedom_appreciation: rd.int("freedom_appreciation"),
+        demand_tribute_attitude_threshold: rd.rf("demand_tribute_attitude_threshold"),
+        no_give_help_attitude_threshold: rd.rf("no_give_help_attitude_threshold"),
+        tech_refuse_attitude_threshold: rd.rf("tech_refuse_attitude_threshold"),
+        strategic_bonus_refuse_attitude_threshold: rd.rf("strategic_bonus_refuse_attitude_threshold"),
+        happiness_bonus_refuse_attitude_threshold: rd.rf("happiness_bonus_refuse_attitude_threshold"),
+        health_bonus_refuse_attitude_threshold: rd.rf("health_bonus_refuse_attitude_threshold"),
+        map_refuse_attitude_threshold: rd.rf("map_refuse_attitude_threshold"),
+        declare_war_refuse_attitude_threshold: rd.rf("declare_war_refuse_attitude_threshold"),
+        declare_war_them_refuse_attitude_threshold: rd.rf("declare_war_them_refuse_attitude_threshold"),
+        stop_trading_refuse_attitude_threshold: rd.rf("stop_trading_refuse_attitude_threshold"),
+        stop_trading_them_refuse_attitude_threshold: rd.rf("stop_trading_them_refuse_attitude_threshold"),
+        adopt_civic_refuse_attitude_threshold: rd.rf("adopt_civic_refuse_attitude_threshold"),
+        convert_religion_refuse_attitude_threshold: rd.rf("convert_religion_refuse_attitude_threshold"),
+        open_borders_refuse_attitude_threshold: rd.rf("open_borders_refuse_attitude_threshold"),
+        defensive_pact_refuse_attitude_threshold: rd.rf("defensive_pact_refuse_attitude_threshold"),
+        permanent_alliance_refuse_attitude_threshold: rd.rf("permanent_alliance_refuse_attitude_threshold"),
+        vassal_refuse_attitude_threshold: rd.rf("vassal_refuse_attitude_threshold"),
+        favorite_civic: rd.rf("favorite_civic"),
+        favorite_religion: rd.rf("favorite_religion"),
+        cultural_aggression: rd.int_or("cultural_aggression", -1),
+        has_trait: rd.pairs_bool("traits"),
+        flavor_value: rd.pairs_int("flavors", 0),
+        contact_rand: rd.pairs_int("contact_rands", 0),
+        contact_delay: rd.pairs_int("contact_delays", 0),
+        memory_decay_rand: rd.pairs_int("memory_decays", 0),
+        memory_attitude_percent: rd.pairs_int("memory_attitude_percents", 0),
+        no_war_attitude_prob: rd.pairs_int("no_war_attitude_probs", 0),
+        unit_ai_weight_modifier: rd.pairs_int("unit_ai_weight_modifiers", 0),
+        improvement_weight_modifier: rd.pairs_int("improvement_weight_modifiers", 0),
+        female: rd.bool("female"),
+        alignment: rd.rf("alignment"),
+        attitude_bad_bonus: rd.int("attitude_bad_bonus"),
+        attitude_from_females: rd.int("attitude_from_females"),
+        attitude_from_males: rd.int("attitude_from_males"),
+        attitude_to_females: rd.int("attitude_to_females"),
+        attitude_to_males: rd.int("attitude_to_males"),
+        somnium_aggressiveness: rd.int("somnium_aggressiveness"),
+        favorite_tech: rd.rf("favorite_tech"),
+        favorite_unit_combat: rd.rf("favorite_unit_combat"),
+        favorite_wonder: rd.rf("favorite_wonder"),
+        permanent_trait: rd.rf("permanent_trait"),
+        altar_victory: rd.bool("altar_victory"),
+        arcane_tower_victory: rd.bool("arcane_tower_victory"),
+        culture_victory: rd.bool("culture_victory"),
+        religion_victory: rd.bool("religion_victory"),
+        religion_opportunist: rd.bool("religion_opportunist"),
+        ai_patrol_group_mage: rd.int_or("ai_patrol_group_mage", 100),
+        ai_patrol_group_size: rd.int_or("ai_patrol_group_size", 100),
+        ai_value_defense: rd.int_or("ai_value_defense", 100),
+        ai_value_mage: rd.int_or("ai_value_mage", 100),
+        economy_tech_value: rd.int_or("economy_tech_value", 100),
+        favorite_early_religion: rd.rf("favorite_early_religion"),
+        favorite_early_mil_tech: rd.rf("favorite_early_mil_tech"),
+        favorite_early_tech1: rd.rf("favorite_early_tech1"),
+        favorite_early_tech2: rd.rf("favorite_early_tech2"),
+        favorite_early_tech3: rd.rf("favorite_early_tech3"),
+        favorite_early_wonder: find_in_info_class(rd, "favorite_early_wonder"),
+        favorite_late_wonder: find_in_info_class(rd, "favorite_late_wonder"),
+        religion_weight_modifier: rd.pairs_int("religion_weight_modifiers", 0),
     }
 }
 
@@ -559,7 +559,6 @@ fn find_in_info_class<T: Idx>(rd: &Rd, tag: &str) -> Option<T> {
 mod tests {
     use super::*;
     use crate::registry::{Ctx, Registry};
-    use crate::xml::XmlDoc;
 
     fn registry() -> Registry {
         let mut reg = Registry::new();
@@ -579,12 +578,12 @@ mod tests {
         reg
     }
 
-    /// Runs a reader on `xml` against [`registry`]; returns the result and the warnings.
-    fn read<T>(xml: &str, f: fn(&Rd) -> T) -> (T, Vec<String>) {
+    /// Runs a reader on `json` against [`registry`]; returns the result and the warnings.
+    fn read<T>(json: &str, f: fn(&Rd) -> T) -> (T, Vec<String>) {
         let reg = registry();
-        let doc = XmlDoc::parse(xml).expect("test xml");
-        let cx = Ctx::new(&reg, "test.xml");
-        let v = f(&Rd::new(doc.root(), &cx));
+        let value = crate::jsonc::parse(json).expect("test json");
+        let cx = Ctx::new(&reg, "test.jsonc");
+        let v = f(&Rd::new(&value, &cx));
         (v, cx.warnings.into_inner())
     }
 
@@ -597,14 +596,14 @@ mod tests {
 
     #[test]
     fn civ_without_lists_gets_cxx_null_array_values() {
-        let (c, w) = read("<CivilizationInfo><Type>CIVILIZATION_T</Type></CivilizationInfo>", read_civilization);
+        let (c, w) = read(r#"{"type": "CIVILIZATION_T"}"#, read_civilization);
         assert!(w.is_empty(), "{w:?}");
-        // No <Buildings>/<Units>: C++ arrays stay NULL -> -1 for every class, no defaults.
+        // No "buildings"/"units": C++ arrays stay NULL -> -1 for every class, no defaults.
         assert!(c.civilization_building_overrides.iter().all(|o| *o == Some(None)));
         assert_eq!(c.civilization_buildings(BuildingClassType(0), &classes()), None);
         assert_eq!(c.civilization_unit_overrides.len(), 5);
         assert_eq!(c.civilization_units(UnitClassType(3), Some(UnitType(0))), None);
-        // No <InitialCivics>: -1 for every option.
+        // No "initial_civics": -1 for every option.
         assert_eq!(c.civilization_initial_civics.raw, vec![None, None, None]);
         // Better AI string defaults.
         assert_eq!(c.best_defender1, Some(UnitClassType(0)));
@@ -618,27 +617,22 @@ mod tests {
 
     #[test]
     fn civ_overrides_defaults_and_initial_civics_quirk() {
-        let xml = r#"<CivilizationInfo>
-            <Buildings>
-                <Building><BuildingClassType>BUILDINGCLASS_B</BuildingClassType><BuildingType>NONE</BuildingType></Building>
-            </Buildings>
-            <Units>
-                <Unit><UnitClassType>UNITCLASS_HUNTER</UnitClassType><UnitType>UNIT_X</UnitType></Unit>
-                <Unit><UnitClassType>UNITCLASS_RANGER</UnitClassType></Unit>
-            </Units>
-            <InitialCivics><CivicType>CIVIC_B</CivicType><CivicType>NONE</CivicType></InitialCivics>
-            <Cities><City>TXT_A</City><City>TXT_B</City></Cities>
-            <eBestDefender1>UNITCLASS_RANGER</eBestDefender1>
-            <eBestPatrol3>UNITCLASS_HUNTER</eBestPatrol3>
-        </CivilizationInfo>"#;
-        let (c, w) = read(xml, read_civilization);
+        let json = r#"{
+            "buildings": [["BUILDINGCLASS_B", "NONE"]],
+            "units": [["UNITCLASS_HUNTER", "UNIT_X"], ["UNITCLASS_RANGER"]],
+            "initial_civics": ["CIVIC_B", "NONE"],
+            "cities": ["TXT_A", "TXT_B"],
+            "e_best_defender1": "UNITCLASS_RANGER",
+            "e_best_patrol3": "UNITCLASS_HUNTER"
+        }"#;
+        let (c, w) = read(json, read_civilization);
         assert!(w.is_empty(), "{w:?}");
         let classes = classes();
         // Class A untouched -> class default; class B explicitly NONE.
         assert_eq!(c.civilization_building_overrides.raw, vec![None, Some(None)]);
         assert_eq!(c.civilization_buildings(BuildingClassType(0), &classes), Some(BuildingType(0)));
         assert_eq!(c.civilization_buildings(BuildingClassType(1), &classes), None);
-        // HUNTER -> UNIT_X; RANGER without a value element -> "" -> -1; ARCHER -> default.
+        // HUNTER -> UNIT_X; RANGER without a value -> -1; ARCHER -> default.
         assert_eq!(c.civilization_unit_overrides[UnitClassType(3)], Some(Some(UnitType(0))));
         assert_eq!(c.civilization_unit_overrides[UnitClassType(4)], Some(None));
         assert_eq!(c.civilization_units(UnitClassType(0), Some(UnitType(0))), Some(UnitType(0)));
@@ -652,17 +646,17 @@ mod tests {
 
     #[test]
     fn trait_max_cities_defaults_to_zero_not_minus_one() {
-        let (t, w) = read("<TraitInfo><Type>TRAIT_T</Type></TraitInfo>", read_trait);
+        let (t, w) = read(r#"{"type": "TRAIT_T"}"#, read_trait);
         assert!(w.is_empty(), "{w:?}");
         assert_eq!(t.max_cities, 0);
         assert_eq!(t.commerce_change, [0; 4]);
-        let (t, _) = read("<TraitInfo><iMaxCities>-1</iMaxCities></TraitInfo>", read_trait);
+        let (t, _) = read(r#"{"max_cities": -1}"#, read_trait);
         assert_eq!(t.max_cities, -1);
     }
 
     #[test]
     fn leader_head_defaults() {
-        let (l, w) = read("<LeaderHeadInfo><Type>LEADER_T</Type></LeaderHeadInfo>", read_leader_head);
+        let (l, w) = read(r#"{"type": "LEADER_T"}"#, read_leader_head);
         assert!(w.is_empty(), "{w:?}");
         let got = [
             l.max_war_rand, l.build_unit_prob, l.at_war_attitude_divisor, l.at_peace_attitude_divisor,
@@ -685,18 +679,18 @@ mod tests {
 
     #[test]
     fn leader_favorite_wonders_are_class_agnostic() {
-        let xml = r#"<LeaderHeadInfo>
-            <iFavoriteEarlyWonder>BUILDINGCLASS_B</iFavoriteEarlyWonder>
-            <iFavoriteLateWonder>BUILDING_B2</iFavoriteLateWonder>
-            <TechRefuseAttitudeThreshold>ATTITUDE_ANNOYED</TechRefuseAttitudeThreshold>
-        </LeaderHeadInfo>"#;
-        let (l, w) = read(xml, read_leader_head);
+        let json = r#"{
+            "favorite_early_wonder": "BUILDINGCLASS_B",
+            "favorite_late_wonder": "BUILDING_B2",
+            "tech_refuse_attitude_threshold": "ATTITUDE_ANNOYED"
+        }"#;
+        let (l, w) = read(json, read_leader_head);
         // BUILDING_B2 is BuildingInfo index 1, kept as building class 1 like C++ (no warning).
         assert!(w.is_empty(), "{w:?}");
         assert_eq!(l.favorite_early_wonder, Some(BuildingClassType(1)));
         assert_eq!(l.favorite_late_wonder, Some(BuildingClassType(1)));
         assert_eq!(l.tech_refuse_attitude_threshold, Some(AttitudeType(1)));
-        let (l, w) = read("<LeaderHeadInfo><iFavoriteLateWonder>BUILDING_NOPE</iFavoriteLateWonder></LeaderHeadInfo>", read_leader_head);
+        let (l, w) = read(r#"{"favorite_late_wonder": "BUILDING_NOPE"}"#, read_leader_head);
         assert_eq!(l.favorite_late_wonder, None);
         assert_eq!(w.len(), 1, "unknown names still warn: {w:?}");
     }

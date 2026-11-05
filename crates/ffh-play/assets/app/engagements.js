@@ -245,21 +245,28 @@ export function actionsLine(acts) {
     .join(" / ");
 }
 
-/** A unit's battle numbers (the view's `engage_*`): "A 4 · Dv 5 · HP 55/120 · speed 4 · large"
- *  (`hp` / `max_hp` are the health percent; its battle HP scales it to `engage_max_hp`), then its
- *  actions by row when the view sends them. */
+/** A unit's battle numbers (the view's `engage_*`; docs/UNIT_STATS.md): "ATK 40 · DEF 40 · HP 55/120
+ *  · MAG 30 · MDEF 15 · ACC 90 · EVA 0 · CRIT 10 · speed 4 · large" (`hp` / `max_hp` are the health
+ *  percent; its battle HP scales it to `engage_max_hp`; MAG only for a caster), then its actions by
+ *  row when the view sends them. */
 export function engageNumbers(u) {
   const parts = [engageBrief(u)];
+  const st = (v) => Math.round((v ?? 0) / 10);
+  if (u.engage_magic >= 10) parts.push(`MAG ${st(u.engage_magic)}`);
+  if (u.engage_magic_defense !== undefined && u.engage_magic_defense !== null) parts.push(`MDEF ${st(u.engage_magic_defense)}`);
+  for (const [k, label] of [["engage_accuracy", "ACC"], ["engage_evasion", "EVA"], ["engage_crit", "CRIT"]]) {
+    if (u[k] !== undefined && u[k] !== null) parts.push(`${label} ${u[k]}`);
+  }
   if (u.engage_speed !== undefined && u.engage_speed !== null) parts.push(`speed ${u.engage_speed}`);
   if (u.engage_large) parts.push("large");
   const acts = actionsLine(u.engage_actions);
   return `${parts.join(" · ")}${acts ? ` · front / middle / rear: ${acts}` : ""}`;
 }
 
-/** The first of a unit's battle numbers: "A 4 · Dv 5 · HP 55/120" (the card's line; the rest is in
- *  its tooltip). */
+/** The first of a unit's battle numbers: "ATK 40 · DEF 40 · HP 55/120" (the card's line; the rest is
+ *  in its tooltip). */
 export function engageBrief(u) {
-  const x100 = (v) => (v % 100 === 0 ? String(v / 100) : (v / 100).toFixed(1));
+  const st = (v) => Math.round((v ?? 0) / 10);
   const hp = Math.round(((u.hp ?? 0) / Math.max(1, u.max_hp ?? 100)) * u.engage_max_hp);
-  return `A ${x100(u.engage_attack)} · Dv ${x100(u.engage_defense)} · HP ${hp}/${u.engage_max_hp}`;
+  return `ATK ${st(u.engage_attack)} · DEF ${st(u.engage_defense)} · HP ${hp}/${u.engage_max_hp}`;
 }

@@ -28,8 +28,7 @@
 //     defender's Shoot and Bombard deal pct), "ChargeFirstRound" (where flanking works: a Charge in the first round
 //     deals pct on both sides, 100 + ENGAGEMENT_CHARGE_BONUS; absent when that is 100); empty: open ground, no bonus
 //   params: {bolt_pct (the magic bolt's power, ENGAGEMENT_BOLT_PERCENT), splash_pct (a splash on each neighbour, in
-//     percent of the hit on the target, ENGAGEMENT_SPLASH_PERCENT), large_hp_pct (a large unit's HP, in percent of
-//     its role's, ENGAGEMENT_LARGE_HP_PERCENT), first_strike_speed (speed a first strike adds,
+//     percent of the hit on the target, ENGAGEMENT_SPLASH_PERCENT), first_strike_speed (speed a first strike adds,
 //     ENGAGEMENT_FIRST_STRIKE_SPEED)}: the rule values the screens word (absent: the words leave the numbers out)
 //   slots: [SideSlots, SideSlots] (attacker, defender): {base, changes: [SlotChange], total, river_only}
 //     SlotChange {src: "Terrain" (terrain) | "Feature" (feature) | "Hills" | "River" | "Sentinels" (n: the defended
@@ -42,10 +41,12 @@
 //     attacker's pool, the defenders' reserve the viewer sees: `lane` null):
 //     {b, unit, sentinel (a Sentinel of the defended city: its wall section, no unit; docs/SIEGES.md), unit_type, name, owner, side, level, hero, promotions, role (CombatRoleType), large (fills two
 //      cells of a row, lanes `lane` and `lane + 1`), lane, row (null: not in the line), max_hp (HP), hp_start,
-//      a_x100, dv_x100 (its attack and defence in this battle, before the terms of a pair), speed,
+//      a_x100, dv_x100 (its attack and defence in this battle, before the terms of a pair), ma_x100, md_x100
+//      (its magic and magic defence; a stat of the unit's sheet is x10 of it: docs/UNIT_STATS.md), speed,
 //      actions: [{kind, n}, {kind, n}, {kind, n}] (in its Front, Middle and Rear rows; kind an ActionKind),
 //      bonus_action (tier 4 or a hero: the +1 in its best row is in `actions`), spell (SpellType: the damage spell
-//      its Spell casts; null: the magic bolt), dodge (points of miss chance added to attacks on it), crit_bonus,
+//      its Spell casts; null: the magic bolt), accuracy (its chance to hit, before the target's evasion), evasion
+//      (taken off a physical hitter's chance to hit it), crit (its crit chance),
 //      anti_flank, withdraw_pct, combat_limit (100: none), splash (collateral damage: its damaging hits splash
 //      the target's neighbours; a known spell's splash is the spell's, `spell` says it), first_strikes}
 //   ActionKind: "Strike" | "Charge" | "Stab" | "Shoot" | "Spell" | "Bombard" | "Heal" | "None"
@@ -240,6 +241,9 @@ export const dmgText = (centi) => (centi > 0 ? String(Math.max(1, Math.round(cen
 /** A x100 value as a short decimal: 1500 -> "15", 440 -> "4.4". */
 export const x100 = (v) => (v % 100 === 0 ? String(v / 100) : (v / 100).toFixed(1));
 
+/** A battle stat from its x100 value, on its sheet's scale (docs/UNIT_STATS.md): 440 -> "44". */
+export const stat = (v) => String(Math.round((v ?? 0) / 10));
+
 /** The side the viewer is on (0 when the log says nothing: an attack of the viewer's). */
 export function viewerSide(log) {
   return log?.viewer_side ?? 0;
@@ -278,10 +282,7 @@ export function specials(f, ground, params = null) {
   const role = roleKey(f);
   const num = (k) => (typeof params?.[k] === "number" ? params[k] : null);
   const splash = num("splash_pct");
-  if (f.large) {
-    const hp = num("large_hp_pct");
-    notes.push(`Large: fills two cells side by side and counts two slots; it is the front or back unit of both its lanes; ${hp !== null ? `${hp}% of its role's HP` : "more HP than its role's"}.`);
-  }
+  if (f.large) notes.push("Large: fills two cells side by side and counts two slots; it is the front or back unit of both its lanes.");
   if (f.anti_flank) notes.push("Anti-flanking: enemy flankers attack it first whenever it is in their reach.");
   if (role === "flanker" || f.actions?.some((a) => kindKey(a?.kind) === "Charge")) {
     const c = chargeRule(ground);
@@ -297,12 +298,13 @@ export function specials(f, ground, params = null) {
     const bolt = num("bolt_pct");
     notes.push(
       f.spell !== null && f.spell !== undefined
-        ? `Casts ${spellName(f.spell)}: a full hit on its target and ${splash !== null ? splashText(splash) : "part of it"} on the target's neighbours. Spells never miss.`
-        : `Knows no damage spell, so it casts a magic bolt${bolt !== null ? `: ${bolt}% of a normal hit` : ", weaker than a spell"}. Spells never miss.`,
+        ? `Casts ${spellName(f.spell)}: a full hit on its target and ${splash !== null ? splashText(splash) : "part of it"} on the target's neighbours. Spells never miss; its Magic against the target's Magic defense, less the target's resistance to the spell's damage type.`
+        : `Knows no damage spell, so it casts a magic bolt${bolt !== null ? `: ${bolt}% of a normal hit` : ", weaker than a spell"}. Spells never miss; its Magic against the target's Magic defense.`,
     );
   }
-  if (f.dodge) notes.push(`Hard to hit: physical attacks on it miss ${f.dodge} points more often.`);
-  if (f.crit_bonus) notes.push(`Critical ${f.crit_bonus} points more often.`);
+  if (typeof f.accuracy === "number" && f.accuracy !== 90) notes.push(`Accuracy ${f.accuracy}: its chance to hit, before the target's evasion.`);
+  if (f.evasion) notes.push(`Evasion ${f.evasion}: physical attacks on it hit ${f.evasion} points less often.`);
+  if (typeof f.crit === "number" && f.crit !== 10) notes.push(`Crit ${f.crit}%.`);
   if (f.withdraw_pct) notes.push(`Withdrawal ${f.withdraw_pct}%: a blow that would kill it is instead escaped ${f.withdraw_pct}% of the time, and it leaves the battle.`);
   if (f.combat_limit !== undefined && f.combat_limit !== null && f.combat_limit < 100) notes.push(`Never takes a target below ${100 - f.combat_limit}% of its HP.`);
   if (f.splash) notes.push(`Collateral damage: its hits splash the units beside, in front of and behind the target for ${splash !== null ? splashText(splash) : "part of the damage"}.`);

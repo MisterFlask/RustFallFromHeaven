@@ -1104,7 +1104,7 @@ function roleBadge(u) {
 const engageText = (u) => `${roleName(u.engage_role)} · ${engageNumbers(u)}`;
 
 const ENGAGE_TITLE =
-  "In a battle (engagement combat): its role and the row it stands in decide what it does and how many times (front, middle, rear); A is its attack, Dv its defence, HP its health in a battle, speed when it acts (the fastest first)";
+  "In a battle: its role and the row it stands in decide what it does and how many times (front, middle, rear). ATK and DEF: its attack and defence; MAG and MDEF: its magic (spells) and magic defence; ACC: its chance to hit, less the target's EVA (evasion); CRIT: its crit chance; HP: its health in a battle; speed: when it acts (the fastest first)";
 
 /** The lead unit's battle numbers (engagement combat): its role, A, Dv and HP; null without
  *  engagements or a role. */

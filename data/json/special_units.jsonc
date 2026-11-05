@@ -1,0 +1,15 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Alex Mantzaris (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Special Unit Infos
+[
+  {"type": "SPECIALUNIT_PEOPLE", "description": "TXT_KEY_SPECIALUNIT_PEOPLE", "valid": true},
+  {"type": "SPECIALUNIT_BIRD", "description": "TXT_KEY_SPECIALUNIT_BIRD", "valid": true},
+  {
+    "type": "SPECIALUNIT_SPELL",
+    "description": "TXT_KEY_SPECIALUNIT_SPELL",
+    "valid": true,
+    "city_load": true
+  }
+]

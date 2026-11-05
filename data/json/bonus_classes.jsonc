@@ -1,0 +1,15 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Progtern (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Bonus Class
+[
+  {"type": "BONUSCLASS_GENERAL"},
+  {"type": "BONUSCLASS_GRAIN", "unique": 5},
+  {"type": "BONUSCLASS_LIVESTOCK", "unique": 5},
+  {"type": "BONUSCLASS_RUSH", "unique": 3},
+  {"type": "BONUSCLASS_MODERN", "unique": 4},
+  {"type": "BONUSCLASS_WONDER", "unique": 4},
+  {"type": "BONUSCLASS_MANA", "unique": 3},
+  {"type": "BONUSCLASS_RAWMANA", "unique": 3}
+]

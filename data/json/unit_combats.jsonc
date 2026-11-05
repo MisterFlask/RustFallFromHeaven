@@ -1,0 +1,57 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Firaxis Games (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Basic Infos
+[
+  {
+    "type": "UNITCOMBAT_RECON",
+    "description": "TXT_KEY_UNITCOMBAT_RECON",
+    "button": "Art/Interface/Buttons/Units/UCRecon.dds"
+  },
+  {
+    "type": "UNITCOMBAT_ARCHER",
+    "description": "TXT_KEY_UNITCOMBAT_ARCHER",
+    "button": "Art/Interface/Buttons/Units/UCArcher.dds"
+  },
+  {
+    "type": "UNITCOMBAT_MOUNTED",
+    "description": "TXT_KEY_UNITCOMBAT_MOUNTED",
+    "button": ",Art/Interface/Buttons/Promotions/Formation.dds,Art/Interface/Buttons/Promotions_Atlas.dds,1,2"
+  },
+  {
+    "type": "UNITCOMBAT_MELEE",
+    "description": "TXT_KEY_UNITCOMBAT_MELEE",
+    "button": ",Art/Interface/Buttons/Promotions/Shock.dds,Art/Interface/Buttons/Promotions_Atlas.dds,4,5"
+  },
+  {
+    "type": "UNITCOMBAT_SIEGE",
+    "description": "TXT_KEY_UNITCOMBAT_SIEGE",
+    "button": ",Art/Interface/Buttons/Promotions/Charge.dds,Art/Interface/Buttons/Promotions_Atlas.dds,1,5"
+  },
+  {
+    "type": "UNITCOMBAT_ADEPT",
+    "description": "TXT_KEY_UNITCOMBAT_ADEPT",
+    "button": "Art/Interface/Buttons/Units/UCAdept.dds"
+  },
+  {
+    "type": "UNITCOMBAT_DISCIPLE",
+    "description": "TXT_KEY_UNITCOMBAT_DISCIPLE",
+    "button": "Art/Interface/Buttons/Units/UCDisciple.dds"
+  },
+  {
+    "type": "UNITCOMBAT_ANIMAL",
+    "description": "TXT_KEY_UNITCOMBAT_ANIMAL",
+    "button": "Art/Interface/Buttons/Units/UCAnimal.dds"
+  },
+  {
+    "type": "UNITCOMBAT_NAVAL",
+    "description": "TXT_KEY_UNITCOMBAT_NAVAL",
+    "button": ",Art/Interface/Buttons/Promotions/Naval_Units.dds,Art/Interface/Buttons/Promotions_Atlas.dds,3,7"
+  },
+  {
+    "type": "UNITCOMBAT_BEAST",
+    "description": "TXT_KEY_UNITCOMBAT_BEAST",
+    "button": "Art/Interface/Buttons/Units/UCBeast.dds"
+  }
+]

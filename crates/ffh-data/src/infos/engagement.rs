@@ -1,5 +1,5 @@
 //! This game's own info classes for engagement combat (not FFH2's; phase 6 of the owner's spec,
-//! docs/ENGAGEMENTS.md): `Units/CIV4CombatRoleInfos.xml` (the roles of
+//! docs/ENGAGEMENTS.md): `combat_roles.jsonc` (the roles of
 //! formation battles, revision 4). The role of each unit type is derived at load
 //! (`GameData::unit_roles`, lib.rs).
 
@@ -8,7 +8,7 @@ use crate::define_idx;
 use crate::enums::*;
 use crate::registry::Rd;
 
-define_idx!(/// An engagement role (`COMBATROLE_*`, Units/CIV4CombatRoleInfos.xml).
+define_idx!(/// An engagement role (`COMBATROLE_*`, combat_roles.jsonc).
 CombatRoleType);
 
 /// What a unit does with one action of a formation battle (XML `Action` of a role's rows;
@@ -105,18 +105,6 @@ pub struct RowActions {
 #[derive(Debug, Clone, Default)]
 pub struct CombatRoleInfo {
     pub base: InfoBase,
-    /// `iAttackPercent`: the unit's `iCombat` is multiplied by this to give its attack A (100 = 1.0).
-    pub attack_percent: i32,
-    /// `iDefensePercent`: the unit's `iCombatDefense` is multiplied by this to give its defence Dv.
-    pub defense_percent: i32,
-    /// `iMaxHP`: the unit's hit points in an engagement (its damage stays a percentage of them).
-    pub max_hp: i32,
-    /// `iSpeed`: faster units act first in a pass (first strikes add to it).
-    pub speed: i32,
-    /// `iDodge`: points of miss chance added to every physical action on a unit of the role.
-    pub dodge: i32,
-    /// `iCritBonus`: points added to its own crit chance.
-    pub crit_bonus: i32,
     /// `bAntiFlank`: whatever an enemy flanker can reach, units of this role in its reach are
     /// taken first.
     pub anti_flank: bool,
@@ -193,7 +181,7 @@ pub fn rows_charge(rows: &[RowActions; ROWS]) -> bool {
 /// exactly when its kind is not NONE, and some row acts.
 pub fn rows_problem(rows: &[RowActions; ROWS]) -> Option<&'static str> {
     if rows.iter().any(|row| row.count < 0 || (row.kind == ActionKind::None) != (row.count == 0)) {
-        Some("a row has a count above 0 exactly when its Action is not NONE")
+        Some("a row has a count above 0 exactly when its action is not NONE")
     } else if rows.iter().all(|row| row.count == 0) {
         Some("no row has an action")
     } else {
@@ -206,79 +194,192 @@ fn read_row(rd: &Rd, base: &InfoBase, tag: &str) -> RowActions {
         rd.cx.warn(format!("{}: no {tag}", base.type_));
         return RowActions::default();
     };
-    let token = row.string("Action");
+    let token = row.string("action");
     let kind = ActionKind::parse(&token).unwrap_or_else(|| {
         rd.cx.warn(format!("{}: {tag}: unknown Action {token:?}", base.type_));
         ActionKind::None
     });
-    RowActions { kind, count: row.int("iActions") }
+    RowActions { kind, count: row.int("actions") }
 }
 
 pub fn read_combat_role(rd: &Rd) -> CombatRoleInfo {
     let base = InfoBase::read(rd);
-    let rows = [read_row(rd, &base, "FrontRow"), read_row(rd, &base, "MiddleRow"), read_row(rd, &base, "RearRow")];
-    let home = rd.string("HomeRow");
+    let rows = [read_row(rd, &base, "front_row"), read_row(rd, &base, "middle_row"), read_row(rd, &base, "rear_row")];
+    let home = rd.string("home_row");
     let home_row = ROW_TOKENS.iter().position(|&t| t == home.trim()).unwrap_or_else(|| {
         rd.cx.warn(format!("{}: unknown HomeRow {home:?}", base.type_));
         0
     });
     CombatRoleInfo {
-        attack_percent: rd.int("iAttackPercent"),
-        defense_percent: rd.int("iDefensePercent"),
-        max_hp: rd.int("iMaxHP"),
-        speed: rd.int("iSpeed"),
-        dodge: rd.int("iDodge"),
-        crit_bonus: rd.int("iCritBonus"),
-        anti_flank: rd.bool("bAntiFlank"),
+        anti_flank: rd.bool("anti_flank"),
         rows,
         home_row,
-        auto_pick: rd.int("iAutoPick"),
-        default_unit_combats: rd.ref_list("DefaultUnitCombats"),
-        default_free_promotion: rd.rf("DefaultFreePromotion"),
-        from_role: rd.rf("FromRole"),
-        from_promotion: rd.rf("FromPromotion"),
-        default: rd.bool("bDefault"),
+        auto_pick: rd.int("auto_pick"),
+        default_unit_combats: rd.ref_list("default_unit_combats"),
+        default_free_promotion: rd.rf("default_free_promotion"),
+        from_role: rd.rf("from_role"),
+        from_promotion: rd.rf("from_promotion"),
+        default: rd.bool("default"),
         base,
     }
 }
 
 /// A unit type's own value in place of its role's (`iEngageSpeed`, `iEngageDodge`,
-/// `iEngageCritBonus` in `CIV4UnitInfos.xml`): `None` at -1, the default (the role's value), else
+/// `iEngageCritBonus` in `units.jsonc`): `None` at -1, the default (the role's value), else
 /// the value, which must lie in `valid`; one outside both warns and reads as the role's.
-pub fn read_engage_override(rd: &Rd, tag: &str, unit_type: &str, valid: std::ops::RangeInclusive<i32>) -> Option<i32> {
-    let v = rd.int_or(tag, -1);
-    if v == -1 {
-        return None;
-    }
-    if !valid.contains(&v) {
-        rd.cx.warn(format!("{unit_type}: {tag} {v} is neither -1 (the role's) nor in {}..={}", valid.start(), valid.end()));
-        return None;
-    }
-    Some(v)
+/// A unit's battle numbers (docs/UNIT_STATS.md): each land unit type's `stats` sheet in
+/// units.jsonc, and what promotions change of them (`stat_changes` in promotions.jsonc).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum StatType {
+    /// Hit points in a battle (the unit's damage stays a percentage of them).
+    Hp,
+    /// The hitter's side of STRIKE, CHARGE, STAB, SHOOT and BOMBARD.
+    Attack,
+    /// The target's side of those actions.
+    Defense,
+    /// The caster's side of SPELL: 0 casts nothing.
+    Magic,
+    /// The target's side of SPELL.
+    MagicDefense,
+    /// The hitter's chance to hit, in percent, before the target's evasion.
+    Accuracy,
+    /// Taken off a physical hitter's chance to hit.
+    Evasion,
+    /// The chance to crit on STRIKE, CHARGE, STAB and SHOOT, in percent.
+    Crit,
+    /// The order in each pass of a round (first strikes add to it).
+    Speed,
 }
 
-/// A unit type's `EngageRows` (`CIV4UnitInfos.xml`): three `Row` elements, front, middle and rear,
+impl StatType {
+    pub const NUM: usize = 9;
+    pub const ALL: [StatType; StatType::NUM] = [
+        StatType::Hp,
+        StatType::Attack,
+        StatType::Defense,
+        StatType::Magic,
+        StatType::MagicDefense,
+        StatType::Accuracy,
+        StatType::Evasion,
+        StatType::Crit,
+        StatType::Speed,
+    ];
+
+    /// Its key in the data (`stats`, `stat_changes`).
+    pub fn key(self) -> &'static str {
+        match self {
+            StatType::Hp => "hp",
+            StatType::Attack => "attack",
+            StatType::Defense => "defense",
+            StatType::Magic => "magic",
+            StatType::MagicDefense => "magic_defense",
+            StatType::Accuracy => "accuracy",
+            StatType::Evasion => "evasion",
+            StatType::Crit => "crit",
+            StatType::Speed => "speed",
+        }
+    }
+
+    /// Its short name (HP, ATK, DEF, MAG, MDEF, ACC, EVA, CRIT, SPD).
+    pub fn abbr(self) -> &'static str {
+        match self {
+            StatType::Hp => "HP",
+            StatType::Attack => "ATK",
+            StatType::Defense => "DEF",
+            StatType::Magic => "MAG",
+            StatType::MagicDefense => "MDEF",
+            StatType::Accuracy => "ACC",
+            StatType::Evasion => "EVA",
+            StatType::Crit => "CRIT",
+            StatType::Speed => "SPD",
+        }
+    }
+
+    pub fn idx(self) -> usize {
+        self as usize
+    }
+
+    /// The values it may hold in a sheet.
+    pub fn valid(self) -> std::ops::RangeInclusive<i32> {
+        match self {
+            StatType::Hp => 1..=i32::MAX,
+            StatType::Accuracy => 0..=200,
+            StatType::Evasion | StatType::Crit => 0..=95,
+            _ => 0..=i32::MAX,
+        }
+    }
+}
+
+/// A stat sheet, by [`StatType::idx`].
+pub type StatSheet = [i32; StatType::NUM];
+
+/// What something changes of one stat: points added, and a percentage summed with the stat's
+/// other percentages (`x (100 + m) / 100` above 0, `x 100 / (100 - m)` below).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct StatChange {
+    pub flat: i32,
+    pub percent: i32,
+}
+
+/// A unit type's `stats` sheet: every stat's value (`None` without the key: the unit takes no
+/// part in land battles). A missing or out-of-range value warns and reads as its range's
+/// lowest.
+pub fn read_stats(rd: &Rd, unit_type: &str) -> Option<StatSheet> {
+    let sheet = rd.child("stats")?;
+    let mut out = [0; StatType::NUM];
+    for s in StatType::ALL {
+        let valid = s.valid();
+        let v = if sheet.has(s.key()) {
+            sheet.int(s.key())
+        } else {
+            rd.cx.warn(format!("{unit_type}: stats has no {:?}", s.key()));
+            *valid.start()
+        };
+        out[s.idx()] = if valid.contains(&v) {
+            v
+        } else {
+            rd.cx.warn(format!("{unit_type}: stats {:?} {v} is not in {}..={}", s.key(), valid.start(), valid.end()));
+            *valid.start()
+        };
+    }
+    Some(out)
+}
+
+/// A promotion's `stat_changes`: an object from stat keys to `{flat, percent}`.
+pub fn read_stat_changes(rd: &Rd) -> [StatChange; StatType::NUM] {
+    let mut out = [StatChange::default(); StatType::NUM];
+    if let Some(changes) = rd.child("stat_changes") {
+        for s in StatType::ALL {
+            if let Some(c) = changes.child(s.key()) {
+                out[s.idx()] = StatChange { flat: c.int("flat"), percent: c.int("percent") };
+            }
+        }
+    }
+    out
+}
+
+/// A unit type's `EngageRows` (`units.jsonc`): three `Row` elements, front, middle and rear,
 /// each an `Action` and its `iCount`, which replace its role's rows. `None` without the tag: the
 /// role's rows. Rows that are not exactly three, an unknown `Action`, or rows the roles' checks
 /// refuse ([`rows_problem`]) warn, and the unit keeps its role's rows.
 pub fn read_engage_rows(rd: &Rd, unit_type: &str) -> Option<[RowActions; ROWS]> {
-    let list = rd.child("EngageRows")?;
-    let rows: Vec<Rd> = list.children_named("Row").collect();
+    let list = rd.child("engage_rows")?;
+    let rows: Vec<Rd> = list.children().collect();
     if rows.len() != ROWS {
-        rd.cx.warn(format!("{unit_type}: EngageRows has {} Row elements ({ROWS} expected: front, middle, rear)", rows.len()));
+        rd.cx.warn(format!("{unit_type}: engage_rows has {} rows ({ROWS} expected: front, middle, rear)", rows.len()));
         return None;
     }
     let mut out = [RowActions::default(); ROWS];
     for (i, row) in rows.iter().enumerate() {
-        let token = row.string("Action");
+        let (token, count) = (row.string("action"), row.int("count"));
         let Some(kind) = ActionKind::parse(&token) else {
-            rd.cx.warn(format!("{unit_type}: EngageRows, {} row: unknown Action {token:?}", ROW_TOKENS[i]));
+            rd.cx.warn(format!("{unit_type}: engage_rows, {} row: unknown action {token:?}", ROW_TOKENS[i]));
             return None;
         };
-        out[i] = RowActions { kind, count: row.int("iCount") };
+        out[i] = RowActions { kind, count };
     }
     if let Some(problem) = rows_problem(&out) {
-        rd.cx.warn(format!("{unit_type}: EngageRows: {problem}"));
+        rd.cx.warn(format!("{unit_type}: engage_rows: {problem}"));
         return None;
     }
     Some(out)

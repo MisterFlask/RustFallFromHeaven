@@ -1,0 +1,138 @@
+{
+  // Tuning values of this game's own rules (not FFH2's): read after GlobalDefines.xml,
+  //     GlobalDefinesAlt.xml and PythonCallbackDefines.xml, like them. Each system's doc lists
+  //     its values: docs/CULTURE.md for the CULTURE_* defines, docs/ARMIES.md for the ARMY_* ones, docs/GOVERNORS.md for the
+  //     GOVERNOR_* ones; the ENGAGEMENT_* ones are engagement combat's (phase 6). Percentages are integers
+  //     (100 = 1.0).
+  // ==== Cultural channels (GAMEOPTION_CULTURE_ACTIONS, docs/CULTURE.md) ====
+  // percent of a channelling city's culture rate diverted to its channel
+  "CULTURE_CHANNEL_PERCENT": 50,
+  // plots within which a channel works in full; beyond, it falls with the square of the distance
+  "CULTURE_CHANNEL_FULL_RANGE": 5,
+  // plots beyond which a channel does nothing
+  "CULTURE_CHANNEL_RANGE": 20,
+  // percent of a city's own culture rate that resists revolt pressure each turn
+  "CULTURE_REVOLT_RESIST_PERCENT": 50,
+  // revolt pressure resisted each turn per defender of the city's team
+  "CULTURE_REVOLT_GARRISON": 2,
+  // percent of its revolt pressure a city sheds each turn
+  "CULTURE_REVOLT_FADE_PERCENT": 5,
+  // revolt pressure per point of unhappiness
+  "CULTURE_REVOLT_UNHAPPY_STEP": 25,
+  // most unhappiness revolt pressure causes
+  "CULTURE_REVOLT_UNHAPPY_MAX": 4,
+  // revolt pressure at which a city falls into revolt (disorder)
+  "CULTURE_REVOLT_DISORDER": 100,
+  // one caster's revolt pressure at which a city joins it
+  "CULTURE_REVOLT_FLIP": 300,
+  // turns of a hostile channel per point of the target leader's memory of it
+  "CULTURE_REVOLT_MEMORY_TURNS": 5,
+  // Spread Religion: chance a turn per culture channelled, in hundredths of a percent, before distance and the religions present
+  "CULTURE_SPREAD_PER_CULTURE": 100,
+  // Spread Religion: most chance a turn, in hundredths of a percent
+  "CULTURE_SPREAD_MAX": 2500,
+  // the AI: most of its cities channelling revolt against one civilization
+  "CULTURE_AI_MAX_HOSTILE_PER_TARGET": 2,
+  // turns per point a leader's memory of cultural hostility or friendship fades
+  "CULTURE_MEMORY_DECAY_TURNS": 10,
+  // most points of cultural hostility or friendship a leader remembers
+  "CULTURE_MEMORY_MAX": 8,
+  // ==== Armies (GAMEOPTION_ARMIES, docs/ARMIES.md) ====
+  "ARMY_SUPPLY_RANGE": 3,
+  "ARMY_TRANSIT_STALL_TURNS": 5,
+  // ==== Governors (GAMEOPTION_GOVERNORS, docs/GOVERNORS.md) ====
+  "GOVERNOR_DIRECT_RULE_CITIES": 4,
+  "GOVERNOR_DIRECT_RULE_SWAP_COOLDOWN": 10,
+  "GOVERNOR_BENCH_SURPLUS": 2,
+  "GOVERNOR_BENCH_GEN_CHANCE": 15,
+  "GOVERNOR_SWAP_PENALTY": 25,
+  "GOVERNOR_SWAP_TURNS": 5,
+  "GOVERNOR_MAX_TRAITS": 2,
+  // ==== Engagement combat (GAMEOPTION_ENGAGEMENTS; phase 6 of the owner's spec, whose
+  //      parameter names follow each comment; roles: Units/CIV4CombatRoleInfos.xml, plot
+  //      changes: iEngagementSlotsChange of terrains and features; formation battles, revision 4:
+  //      docs/ENGAGEMENTS.md) ====
+  // SLOTS_BASE: units each side commits to an engagement (a large unit counts two), before the
+  //      defended plot's changes; a side's grid has 3 rows and max(2, ceil((slots + 2) / 3)) lanes
+  "ENGAGEMENT_SLOTS_BASE": 8,
+  // SLOTS_MIN: the fewest slots a side has
+  "ENGAGEMENT_SLOTS_MIN": 3,
+  // the slots change of a hills plot (hills are a plot type, not a terrain); a feature's change
+  //      adds to it, the terrain's does not
+  "ENGAGEMENT_SLOTS_HILLS": -2,
+  // SLOTS_RIVER: attacker slots lost attacking across a river; units that cross rivers freely
+  //      (bRiver) may fill them
+  "ENGAGEMENT_SLOTS_RIVER": 2,
+  // SUMMON_EXTRA_SLOTS: summons a side may add in battle beyond its slots (phase 7)
+  "ENGAGEMENT_SUMMON_EXTRA_SLOTS": 2,
+  // BASE_DAMAGE: B in a hit's expected damage B x A / (A + Dv), in HP, before the action's
+  //      percentages (an even hit takes 20 HP; six of them kill a frontline unit)
+  "ENGAGEMENT_BASE_DAMAGE": 40,
+  // r: a hit deals its expected damage x r, r drawn in RAND_MIN..=RAND_MAX percent
+  "ENGAGEMENT_DAMAGE_RAND_MIN": 80,
+  "ENGAGEMENT_DAMAGE_RAND_MAX": 120,
+  // ROUNDS: rounds of a formation battle; in each, every unit acts once per action it has from
+  //      its row, one pass per action
+  "ENGAGEMENT_ROUNDS": 3,
+  // FIRST_STRIKE_SPEED: speed a first strike adds (a chance first strike, when rolled at the
+  //      battle's start)
+  "ENGAGEMENT_FIRST_STRIKE_SPEED": 2,
+  // EXTRA_ACTION_TIER: units of this tier and above, and heroes, get EXTRA_ACTIONS more actions
+  //      in their role's best row
+  "ENGAGEMENT_EXTRA_ACTION_TIER": 4,
+  "ENGAGEMENT_EXTRA_ACTIONS": 1,
+  // SHOOT_MISS_PERCENT, BOMBARD_MISS_PERCENT: what a SHOOT or a BOMBARD takes off the hitter's
+  //      chance to hit (its accuracy less the target's evasion: docs/UNIT_STATS.md)
+  "ENGAGEMENT_SHOOT_MISS_PERCENT": 10,
+  "ENGAGEMENT_BOMBARD_MISS_PERCENT": 15,
+  // CRIT_DAMAGE_PERCENT: what a crit deals, in percent of the hit (the crit chance is the hitter's
+  //      crit stat, at most 95; a melee crit also knocks the target back a row when the cells behind
+  //      it are free)
+  "ENGAGEMENT_CRIT_DAMAGE_PERCENT": 150,
+  // CHARGE_BONUS: percent a flanker's charge adds to its damage in the first round, where
+  //      flanking works (no city, no forest or jungle)
+  "ENGAGEMENT_CHARGE_BONUS": 100,
+  // SPLASH_PERCENT: a splash (collateral damage, a spell's) hits each of the target's neighbours
+  //      for this percent of a hit on it
+  "ENGAGEMENT_SPLASH_PERCENT": 50,
+  // BOLT_PERCENT: the power of a caster's magic bolt (one target), when it knows no damage spell
+  //      (a damage spell has 100 and splashes)
+  "ENGAGEMENT_BOLT_PERCENT": 60,
+  // HEAL_PERCENT: a heal restores BASE_DAMAGE x this percent x r
+  "ENGAGEMENT_HEAL_PERCENT": 50,
+  // MISSILE_PERCENT: a missile's strike (Fireball, Meteor: one hit from outside the field, the
+  //      plot's own defence in the target's Dv, no ground rules) deals this percent of BASE_DAMAGE's
+  //      hit: 50 keeps the strength it had before formation battles doubled BASE_DAMAGE
+  "ENGAGEMENT_MISSILE_PERCENT": 50,
+  // The ground (the defended plot's; multiplied together): in a city the attacker's SHOOT deals
+  //      CITY_ATTACKER_SHOT_PERCENT; in a forest or jungle SHOOT and BOMBARD deal FOREST_RANGED_PERCENT on
+  //      both sides; on hills every attacker hit deals HILLS_ATTACKER_PERCENT and the defender's SHOOT
+  //      and BOMBARD HILLS_DEFENDER_RANGED_PERCENT
+  "ENGAGEMENT_CITY_ATTACKER_SHOT_PERCENT": 50,
+  "ENGAGEMENT_FOREST_RANGED_PERCENT": 50,
+  "ENGAGEMENT_HILLS_ATTACKER_PERCENT": 75,
+  "ENGAGEMENT_HILLS_DEFENDER_RANGED_PERCENT": 125,
+  // AUTO_MIN_HP_PCT: the auto-pick skips units below this percent of their HP while healthier
+  //      ones of the role are left
+  "ENGAGEMENT_AUTO_MIN_HP_PERCENT": 50,
+  // RECON_REVEAL_RANGE: plots within which a recon unit reveals an army's formation (phase 7)
+  "ENGAGEMENT_RECON_REVEAL_RANGE": 2,
+  // battle reports the game keeps: those of the current and the previous turn's battles, and
+  //      of this many latest battles (the oldest are dropped)
+  "ENGAGEMENT_REPORTS_KEPT": 128,
+  // battle logs (the full record the client replays) kept: those of the current and the
+  //      previous turn's battles, and of this many latest battles; older reports keep their summary
+  "ENGAGEMENT_REPORT_LOGS_KEPT": 32,
+  // PREVIEW_RUNS: battles the attack preview plays on its own RNG for its forecast (each
+  //      side's expected losses, the chance the plot falls, each unit's chance to fall)
+  "ENGAGEMENT_PREVIEW_RUNS": 200,
+  // ==== Sieges and Sentinels (docs/SIEGES.md). A walled city's Sentinels (a building's
+  //      iSentinels) fight in the defender's front row; their base values are UNIT_SENTINEL's
+  //      (iHP, iAttack, iDefense), their HP and Dv times (100 + the city's total defence) / 100. ====
+  // SENTINEL_REPAIR_PERCENT: percent of its max HP a Sentinel repairs at its city's turn while
+  //      the city is not besieged
+  "SENTINEL_REPAIR_PERCENT": 10,
+  // SIEGE_BOMBARD_FLOOR_PERCENT: a bombard never takes a soldier in the city below this percent
+  //      of its HP (Sentinels have no floor)
+  "SIEGE_BOMBARD_FLOOR_PERCENT": 50
+}

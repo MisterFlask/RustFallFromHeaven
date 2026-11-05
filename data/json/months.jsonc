@@ -1,0 +1,19 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Alex Mantzaris (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Basic Infos
+[
+  {"type": "MONTH_JANUARY", "description": "TXT_KEY_MONTH_JANUARY"},
+  {"type": "MONTH_FEBRUARY", "description": "TXT_KEY_MONTH_FEBRUARY"},
+  {"type": "MONTH_MARCH", "description": "TXT_KEY_MONTH_MARCH"},
+  {"type": "MONTH_APRIL", "description": "TXT_KEY_MONTH_APRIL"},
+  {"type": "MONTH_MAY", "description": "TXT_KEY_MONTH_MAY"},
+  {"type": "MONTH_JUNE", "description": "TXT_KEY_MONTH_JUNE"},
+  {"type": "MONTH_JULY", "description": "TXT_KEY_MONTH_JULY"},
+  {"type": "MONTH_AUGUST", "description": "TXT_KEY_MONTH_AUGUST"},
+  {"type": "MONTH_SEPTEMBER", "description": "TXT_KEY_MONTH_SEPTEMBER"},
+  {"type": "MONTH_OCTOBER", "description": "TXT_KEY_MONTH_OCTOBER"},
+  {"type": "MONTH_NOVEMBER", "description": "TXT_KEY_MONTH_NOVEMBER"},
+  {"type": "MONTH_DECEMBER", "description": "TXT_KEY_MONTH_DECEMBER"}
+]

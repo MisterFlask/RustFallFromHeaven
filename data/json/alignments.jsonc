@@ -1,0 +1,10 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Alex Mantzaris (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Basic Infos
+[
+  {"type": "ALIGNMENT_GOOD", "description": "TXT_KEY_ALIGNMENT_GOOD"},
+  {"type": "ALIGNMENT_NEUTRAL", "description": "TXT_KEY_ALIGNMENT_NEUTRAL"},
+  {"type": "ALIGNMENT_EVIL", "description": "TXT_KEY_ALIGNMENT_EVIL"}
+]

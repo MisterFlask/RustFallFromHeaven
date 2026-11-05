@@ -1,0 +1,36 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Alex Mantzaris (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Basic Infos
+[
+  {"type": "DENIAL_UNKNOWN", "description": "TXT_KEY_DENIAL_UNKNOWN"},
+  {"type": "DENIAL_NEVER", "description": "TXT_KEY_DENIAL_NEVER"},
+  {"type": "DENIAL_TOO_MUCH", "description": "TXT_KEY_DENIAL_TOO_MUCH"},
+  {"type": "DENIAL_MYSTERY", "description": "TXT_KEY_DENIAL_MYSTERY"},
+  {"type": "DENIAL_JOKING", "description": "TXT_KEY_DENIAL_JOKING"},
+  {"type": "DENIAL_ANGER_CIVIC", "description": "TXT_KEY_DENIAL_ANGER_CIVIC"},
+  {"type": "DENIAL_FAVORITE_CIVIC", "description": "TXT_KEY_DENIAL_FAVORITE_CIVIC"},
+  {"type": "DENIAL_MINORITY_RELIGION", "description": "TXT_KEY_DENIAL_MINORITY_RELIGION"},
+  {"type": "DENIAL_CONTACT_THEM", "description": "TXT_KEY_DENIAL_CONTACT_THEM"},
+  {"type": "DENIAL_VICTORY", "description": "TXT_KEY_DENIAL_VICTORY"},
+  {"type": "DENIAL_ATTITUDE", "description": "TXT_KEY_DENIAL_ATTITUDE"},
+  {"type": "DENIAL_ATTITUDE_THEM", "description": "TXT_KEY_DENIAL_ATTITUDE_THEM"},
+  {"type": "DENIAL_TECH_WHORE", "description": "TXT_KEY_DENIAL_TECH_WHORE"},
+  {"type": "DENIAL_TECH_MONOPOLY", "description": "TXT_KEY_DENIAL_TECH_MONOPOLY"},
+  {"type": "DENIAL_POWER_US", "description": "TXT_KEY_DENIAL_POWER_US"},
+  {"type": "DENIAL_POWER_YOU", "description": "TXT_KEY_DENIAL_POWER_YOU"},
+  {"type": "DENIAL_POWER_THEM", "description": "TXT_KEY_DENIAL_POWER_THEM"},
+  {"type": "DENIAL_TOO_MANY_WARS", "description": "TXT_KEY_DENIAL_TOO_MANY_WARS"},
+  {"type": "DENIAL_NO_GAIN", "description": "TXT_KEY_DENIAL_NO_GAIN"},
+  {"type": "DENIAL_NOT_ALLIED", "description": "TXT_KEY_DENIAL_NOT_ALLIED"},
+  {"type": "DENIAL_RECENT_CANCEL", "description": "TXT_KEY_DENIAL_RECENT_CANCEL"},
+  {"type": "DENIAL_WORST_ENEMY", "description": "TXT_KEY_DENIAL_WORST_ENEMY"},
+  {"type": "DENIAL_POWER_YOUR_ENEMIES", "description": "TXT_KEY_DENIAL_POWER_YOUR_ENEMIES"},
+  {"type": "DENIAL_TOO_FAR", "description": "TXT_KEY_DENIAL_TOO_FAR"},
+  {"type": "DENIAL_VASSAL", "description": "TXT_KEY_DENIAL_VASSAL"},
+  {"type": "DENIAL_WAR_NOT_POSSIBLE_US", "description": "TXT_KEY_DENIAL_WAR_NOT_POSSIBLE_US"},
+  {"type": "DENIAL_WAR_NOT_POSSIBLE_YOU", "description": "TXT_KEY_DENIAL_WAR_NOT_POSSIBLE_YOU"},
+  {"type": "DENIAL_PEACE_NOT_POSSIBLE_US", "description": "TXT_KEY_DENIAL_PEACE_NOT_POSSIBLE_US"},
+  {"type": "DENIAL_PEACE_NOT_POSSIBLE_YOU", "description": "TXT_KEY_DENIAL_PEACE_NOT_POSSIBLE_YOU"}
+]

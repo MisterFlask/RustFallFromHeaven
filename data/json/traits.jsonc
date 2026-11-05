@@ -1,0 +1,303 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Soren Johnson (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Leader Trait Infos
+[
+  {
+    "type": "TRAIT_PHILOSOPHICAL",
+    "description": "TXT_KEY_TRAIT_PHILOSOPHICAL",
+    "short_description": "TXT_KEY_TRAIT_PHILOSOPHICAL_SHORT",
+    "max_anarchy": -1,
+    "great_people_rate_modifier": 100,
+    "selectable": true,
+    "max_cities": -1
+  },
+  {
+    "type": "TRAIT_AGGRESSIVE",
+    "description": "TXT_KEY_TRAIT_AGGRESSIVE",
+    "short_description": "TXT_KEY_TRAIT_AGGRESSIVE_SHORT",
+    "max_anarchy": -1,
+    "selectable": true,
+    "max_cities": -1,
+    "free_promotions": {"PROMOTION_COMBAT1": true},
+    "free_promotion_unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    }
+  },
+  {
+    "type": "TRAIT_SPIRITUAL",
+    "description": "TXT_KEY_TRAIT_SPIRITUAL",
+    "short_description": "TXT_KEY_TRAIT_SPIRITUAL_SHORT",
+    "selectable": true,
+    "max_cities": -1,
+    "free_promotions": {"PROMOTION_MOBILITY1": true, "PROMOTION_POTENCY": true},
+    "free_promotion_unit_combats": {"UNITCOMBAT_DISCIPLE": true}
+  },
+  {
+    "type": "TRAIT_EXPANSIVE",
+    "description": "TXT_KEY_TRAIT_EXPANSIVE",
+    "short_description": "TXT_KEY_TRAIT_EXPANSIVE_SHORT",
+    "health": 3,
+    "max_anarchy": -1,
+    "selectable": true,
+    "max_cities": -1
+  },
+  {
+    "type": "TRAIT_INDUSTRIOUS",
+    "description": "TXT_KEY_TRAIT_INDUSTRIOUS",
+    "short_description": "TXT_KEY_TRAIT_INDUSTRIOUS_SHORT",
+    "max_anarchy": -1,
+    "max_global_building_production_modifier": 50,
+    "max_team_building_production_modifier": 50,
+    "max_player_building_production_modifier": 50,
+    "selectable": true,
+    "max_cities": -1
+  },
+  {
+    "type": "TRAIT_CREATIVE",
+    "description": "TXT_KEY_TRAIT_CREATIVE",
+    "short_description": "TXT_KEY_TRAIT_CREATIVE_SHORT",
+    "max_anarchy": -1,
+    "selectable": true,
+    "max_cities": -1,
+    "commerce_changes": [0, 0, 2]
+  },
+  {
+    "type": "TRAIT_FINANCIAL",
+    "description": "TXT_KEY_TRAIT_FINANCIAL",
+    "short_description": "TXT_KEY_TRAIT_FINANCIAL_SHORT",
+    "max_anarchy": -1,
+    "selectable": true,
+    "max_cities": -1,
+    "extra_yield_thresholds": [0, 0, 2]
+  },
+  {
+    "type": "TRAIT_ORGANIZED",
+    "description": "TXT_KEY_TRAIT_ORGANIZED",
+    "short_description": "TXT_KEY_TRAIT_ORGANIZED_SHORT",
+    "max_anarchy": -1,
+    "upkeep_modifier": -50,
+    "selectable": true,
+    "max_cities": -1
+  },
+  {
+    "type": "TRAIT_CHARISMATIC",
+    "description": "TXT_KEY_TRAIT_CHARISMATIC",
+    "short_description": "TXT_KEY_TRAIT_CHARISMATIC_SHORT",
+    "happiness": 1,
+    "max_anarchy": -1,
+    "level_experience_modifier": -25,
+    "selectable": true,
+    "max_cities": -1
+  },
+  {
+    "type": "TRAIT_ARCANE",
+    "description": "TXT_KEY_TRAIT_ARCANE",
+    "short_description": "TXT_KEY_TRAIT_ARCANE_SHORT",
+    "max_anarchy": -1,
+    "selectable": true,
+    "max_cities": -1,
+    "free_promotions": {"PROMOTION_POTENCY": true},
+    "free_promotion_unit_combats": {"UNITCOMBAT_ADEPT": true}
+  },
+  {
+    "type": "TRAIT_MAGIC_RESISTANT",
+    "description": "TXT_KEY_TRAIT_MAGIC_RESISTANT",
+    "short_description": "TXT_KEY_TRAIT_MAGIC_RESISTANT_SHORT",
+    "max_anarchy": -1,
+    "max_cities": -1,
+    "free_promotions": {"PROMOTION_MAGIC_RESISTANCE": true},
+    "free_promotion_unit_combats": {
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_DISCIPLE": true
+    }
+  },
+  {
+    "type": "TRAIT_AGNOSTIC",
+    "description": "TXT_KEY_TRAIT_AGNOSTIC",
+    "short_description": "TXT_KEY_TRAIT_AGNOSTIC_SHORT",
+    "max_anarchy": -1,
+    "agnostic": true,
+    "max_cities": -1
+  },
+  {
+    "type": "TRAIT_BARBARIAN",
+    "description": "TXT_KEY_TRAIT_BARBARIAN",
+    "short_description": "TXT_KEY_TRAIT_BARBARIAN_SHORT",
+    "max_anarchy": -1,
+    "barbarian_ally": true,
+    "max_cities": -1,
+    "commerce_modifiers": [0, -10, 0]
+  },
+  {
+    "type": "TRAIT_RAIDERS",
+    "description": "TXT_KEY_TRAIT_RAIDERS",
+    "short_description": "TXT_KEY_TRAIT_RAIDERS_SHORT",
+    "max_anarchy": -1,
+    "selectable": true,
+    "max_cities": -1,
+    "pillaging_gold": 100,
+    "free_promotions": {"PROMOTION_COMMANDO": true},
+    "free_promotion_unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    }
+  },
+  {
+    "type": "TRAIT_SUMMONER",
+    "description": "TXT_KEY_TRAIT_SUMMONER",
+    "short_description": "TXT_KEY_TRAIT_SUMMONER_SHORT",
+    "max_anarchy": -1,
+    "max_cities": -1,
+    "summon_duration": 1,
+    "free_promotions": {"PROMOTION_SUMMONER": true},
+    "free_promotion_unit_combats": {"UNITCOMBAT_ADEPT": true}
+  },
+  {
+    "type": "TRAIT_DEFENDER",
+    "description": "TXT_KEY_TRAIT_DEFENDER",
+    "short_description": "TXT_KEY_TRAIT_DEFENDER_SHORT",
+    "max_anarchy": -1,
+    "max_cities": -1,
+    "free_promotions": {"PROMOTION_HOMELAND": true},
+    "free_promotion_unit_combats": {
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_DISCIPLE": true
+    }
+  },
+  {
+    "type": "TRAIT_SPRAWLING",
+    "description": "TXT_KEY_TRAIT_SPRAWLING",
+    "short_description": "TXT_KEY_TRAIT_SPRAWLING_SHORT",
+    "happiness": 3,
+    "max_anarchy": -1,
+    "sprawling": true,
+    "max_cities": 3
+  },
+  {
+    "type": "TRAIT_INGENUITY",
+    "description": "TXT_KEY_TRAIT_INGENUITY",
+    "short_description": "TXT_KEY_TRAIT_INGENUITY_SHORT",
+    "max_anarchy": -1,
+    "max_cities": -1,
+    "starting_gold": 50,
+    "upgrade_cost_modifier": -50
+  },
+  {
+    "type": "TRAIT_ADAPTIVE",
+    "description": "TXT_KEY_TRAIT_ADAPTIVE",
+    "short_description": "TXT_KEY_TRAIT_ADAPTIVE_SHORT",
+    "max_anarchy": -1,
+    "adaptive": true,
+    "max_cities": -1
+  },
+  {
+    "type": "TRAIT_INSANE",
+    "description": "TXT_KEY_TRAIT_INSANE",
+    "short_description": "TXT_KEY_TRAIT_INSANE_SHORT",
+    "max_anarchy": -1,
+    "insane": true,
+    "max_cities": -1
+  },
+  {
+    "type": "TRAIT_FALLOW",
+    "description": "TXT_KEY_TRAIT_FALLOW",
+    "short_description": "TXT_KEY_TRAIT_FALLOW_SHORT",
+    "max_anarchy": -1,
+    "ignore_food": true,
+    "max_cities": -1
+  },
+  {
+    "type": "TRAIT_TOLERANT",
+    "description": "TXT_KEY_TRAIT_TOLERANT",
+    "short_description": "TXT_KEY_TRAIT_TOLERANT_SHORT",
+    "max_anarchy": -1,
+    "assimilation": true,
+    "max_cities": -1
+  },
+  {
+    "type": "TRAIT_DEXTEROUS",
+    "description": "TXT_KEY_TRAIT_DEXTEROUS",
+    "short_description": "TXT_KEY_TRAIT_DEXTEROUS_SHORT",
+    "max_anarchy": -1,
+    "max_cities": -1,
+    "free_promotions": {"PROMOTION_DEXTEROUS": true},
+    "free_promotion_unit_combats": {"UNITCOMBAT_ARCHER": true}
+  },
+  {
+    "type": "TRAIT_GUARDSMAN",
+    "description": "TXT_KEY_TRAIT_GUARDSMAN",
+    "short_description": "TXT_KEY_TRAIT_GUARDSMAN_SHORT",
+    "max_anarchy": -1,
+    "max_cities": -1,
+    "free_promotions": {"PROMOTION_GUARDSMAN": true},
+    "free_promotion_unit_combats": {"UNITCOMBAT_ARCHER": true, "UNITCOMBAT_MELEE": true}
+  },
+  {
+    "type": "TRAIT_HORSELORD",
+    "description": "TXT_KEY_TRAIT_HORSELORD",
+    "short_description": "TXT_KEY_TRAIT_HORSELORD_SHORT",
+    "max_anarchy": -1,
+    "max_cities": -1,
+    "free_promotions": {"PROMOTION_HORSELORD": true},
+    "free_promotion_unit_combats": {"UNITCOMBAT_MOUNTED": true}
+  },
+  {
+    "type": "TRAIT_SINISTER",
+    "description": "TXT_KEY_TRAIT_SINISTER",
+    "short_description": "TXT_KEY_TRAIT_SINISTER_SHORT",
+    "max_anarchy": -1,
+    "max_cities": -1,
+    "free_promotions": {"PROMOTION_SINISTER": true},
+    "free_promotion_unit_combats": {"UNITCOMBAT_RECON": true}
+  },
+  {
+    "type": "TRAIT_SUNDERED",
+    "description": "TXT_KEY_TRAIT_SUNDERED",
+    "short_description": "TXT_KEY_TRAIT_SUNDERED_SHORT",
+    "max_anarchy": -1,
+    "max_cities": -1,
+    "free_promotions": {"PROMOTION_SUNDERED": true},
+    "free_promotion_unit_combats": {"UNITCOMBAT_ADEPT": true}
+  },
+  {
+    "type": "TRAIT_FOOLISH",
+    "description": "TXT_KEY_TRAIT_FOOLISH",
+    "short_description": "TXT_KEY_TRAIT_FOOLISH_SHORT",
+    "max_anarchy": -1,
+    "max_cities": -1,
+    "commerce_modifiers": [0, -25, 0]
+  },
+  {
+    "type": "TRAIT_WEAK",
+    "description": "TXT_KEY_TRAIT_WEAK",
+    "short_description": "TXT_KEY_TRAIT_WEAK_SHORT",
+    "max_anarchy": -1,
+    "max_cities": -1,
+    "free_promotions": {"PROMOTION_WEAK": true},
+    "free_promotion_unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    }
+  }
+]

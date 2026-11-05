@@ -982,7 +982,7 @@ mod tests {
 
     #[test]
     fn known_buildings_say_what_they_do_and_require() {
-        // CIV4BuildingInfos.xml: iFoodKept 20; +1 health with Corn, Rice and Wheat; Expansive
+        // buildings.jsonc: iFoodKept 20; +1 health with Corn, Rice and Wheat; Expansive
         // leaders build it at double speed; PrereqTech Agriculture.
         says("BUILDING_GRANARY", &["Stores 20% of [ICON_FOOD] after Growth", "+1[ICON_HEALTHY] from Corn, Rice, Wheat", "Double production speed for Expansive leaders", "Requires Agriculture"]);
         // iDefense 10, Defender leaders at double speed, no tech.
@@ -1142,88 +1142,78 @@ mod tests {
         assert!(!h.contains("on this Continent"), "{h}");
     }
 
-    /// The buildings whose XML sets a value the help describes, read from the XML itself (any tag
-    /// but the ones below, with a value other than 0, -1, NONE or nothing; a latitude below 90),
-    /// so that a field the struct or the help leaves out still counts.
+    /// The buildings whose data sets a value the help describes, read from the data file itself
+    /// (any key but the ones below, at any depth, with a value other than 0, -1, false, NONE or
+    /// nothing; a latitude below 90), so that a field the struct or the help leaves out still counts.
     fn buildings_with_described_xml() -> Vec<String> {
-        // Names, texts, art, sound, AI, the cost (the page's) and what C++ does not describe.
+        // Names, texts, art, AI, the cost (the page's) and what C++ does not describe.
         const NOT_DESCRIBED: &[&str] = &[
-            "Type",
-            "BuildingClass",
-            "Description",
-            "Civilopedia",
-            "Strategy",
-            "Help",
-            "Advisor",
-            "ArtDefineTag",
-            "MovieDefineTag",
-            "ConstructSound",
-            "HotKey",
-            "bAltDown",
-            "bShiftDown",
-            "bCtrlDown",
-            "iHotKeyPriority",
-            "fVisibilityPriority",
-            "bGraphicalOnly",
-            "bCenterInCity",
-            "iAIWeight",
-            "FlavorType",
-            "iFlavor",
-            "iAsset",
-            "iPower",
-            "iAdvancedStartCost",
-            "iAdvancedStartCostIncrease",
-            "iCost",
-            "iHurryCostModifier",
-            "iConquestProb",
-            "bTeamShare",
-            "bNeverCapture",
-            "bNukeImmune",
-            "bEquipment",
-            "PrereqCiv",
-            "bVictoryBuilding",
-            "CommerceChangeDoubleTimes",
-            "CommerceChangeOriginalOwners",
+            "type",
+            "building_class",
+            "description",
+            "civilopedia",
+            "strategy",
+            "help",
+            "advisor",
+            "art_define_tag",
+            "movie_define_tag",
+            "construct_sound",
+            "hot_key",
+            "alt_down",
+            "shift_down",
+            "ctrl_down",
+            "hot_key_priority",
+            "visibility_priority",
+            "graphical_only",
+            "center_in_city",
+            "ai_weight",
+            "flavor_type",
+            "flavor",
+            "asset",
+            "power_value",
+            "advanced_start_cost",
+            "advanced_start_cost_increase",
+            "cost",
+            "hurry_cost_modifier",
+            "conquest_prob",
+            "team_share",
+            "never_capture",
+            "nuke_immune",
+            "equipment",
+            "prereq_civ",
+            "victory_building",
+            "commerce_change_double_times",
+            "commerce_change_original_owners",
             // A pair's key: its value is the number or the flag beside it.
-            "BonusType",
-            "BuildingClassType",
-            "SpecialistType",
-            "UnitCombatType",
-            "DomainType",
-            "ImprovementType",
-            "ProductionTraitType",
-            "HappinessTraitType",
-            "ReligionType",
+            "bonus_type",
+            "building_class_type",
+            "specialist_type",
+            "unit_combat_type",
+            "domain_type",
+            "improvement_type",
+            "production_trait_type",
+            "happiness_trait_type",
+            "religion_type",
         ];
-        let path = ffh_data::default_data_dir().join("xml").join("Buildings").join("CIV4BuildingInfos.xml");
-        let xml = std::fs::read_to_string(path).expect("building XML");
-        let mut out = Vec::new();
-        for block in xml.split("<BuildingInfo>").skip(1) {
-            let block = block.split("</BuildingInfo>").next().unwrap_or("");
-            let mut ty = String::new();
-            let mut described = false;
-            let mut rest = block;
-            while let Some(open) = rest.find('<') {
-                rest = &rest[open + 1..];
-                let Some(close) = rest.find('>') else { break };
-                let tag = &rest[..close];
-                rest = &rest[close + 1..];
-                if tag.starts_with('/') || tag.starts_with('!') || tag.ends_with('/') {
-                    continue;
-                }
-                let Some(end) = rest.find(&format!("</{tag}>")) else { continue };
-                let value = &rest[..end];
-                if value.contains('<') {
-                    continue;
-                }
-                let value = value.trim();
-                if tag == "Type" {
-                    ty = value.to_string();
-                } else if !NOT_DESCRIBED.contains(&tag) && !matches!(value, "0" | "-1" | "NONE" | "") && !(tag == "iMaxLatitude" && value == "90") {
-                    described = true;
-                }
+        fn counts(key: &str, v: &ffh_data::jsonc::Value) -> bool {
+            use ffh_data::jsonc::Value;
+            match v {
+                Value::Obj(members) => members.iter().any(|(k, m)| counts(k, m)),
+                Value::Arr(items) => items.iter().any(|m| counts(key, m)),
+                _ if NOT_DESCRIBED.contains(&key) => false,
+                Value::Int(i) => !(*i == 0 || *i == -1 || (key == "max_latitude" && *i == 90)),
+                Value::Bool(b) => *b,
+                Value::Float(f) => *f != 0.0,
+                Value::Str(s) => !matches!(s.as_str(), "" | "NONE"),
+                Value::Null => false,
             }
-            if described {
+        }
+        let path = ffh_data::default_data_dir().join("json").join("buildings.jsonc");
+        let doc = ffh_data::jsonc::parse(&std::fs::read_to_string(path).expect("buildings data")).expect("buildings.jsonc");
+        let mut out = Vec::new();
+        for entry in doc.as_arr().expect("a list of buildings") {
+            let ty = entry.get("type").and_then(|t| t.as_str()).unwrap_or("").to_string();
+            if counts("", entry) {
                 out.push(ty);
             }
         }

@@ -1,0 +1,63 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jesse Smith (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Emphasize Infos
+[
+  {
+    "type": "EMPHASIZE_FOOD",
+    "description": "TXT_KEY_EMPHASIZE_FOOD",
+    "strategy": "TXT_KEY_EMPHASIZE_FOOD_STRATEGY",
+    "button": "Art/Interface/Buttons/Governor/Food.dds",
+    "yield_modifiers": [1, 0, 0]
+  },
+  {
+    "type": "EMPHASIZE_PRODUCTION",
+    "description": "TXT_KEY_EMPHASIZE_PRODUCTION",
+    "strategy": "TXT_KEY_EMPHASIZE_PRODUCTION_STRATEGY",
+    "button": "Art/Interface/Buttons/Governor/Production.dds",
+    "yield_modifiers": [0, 1, 0]
+  },
+  {
+    "type": "EMPHASIZE_COMMERCE",
+    "description": "TXT_KEY_EMPHASIZE_COMMERCE",
+    "strategy": "TXT_KEY_EMPHASIZE_COMMERCE_STRATEGY",
+    "button": "Art/Interface/Buttons/Governor/Commerce.dds",
+    "yield_modifiers": [0, 0, 1]
+  },
+  {
+    "type": "EMPHASIZE_RESEARCH",
+    "description": "TXT_KEY_EMPHASIZE_RESEARCH",
+    "strategy": "TXT_KEY_EMPHASIZE_RESEARCH_STRATEGY",
+    "button": "Art/Interface/Buttons/Governor/Science.dds",
+    "commerce_modifiers": [0, 1, 0]
+  },
+  {
+    "type": "EMPHASIZE_GREAT_PEOPLE",
+    "description": "TXT_KEY_EMPHASIZE_GREAT_PEOPLE",
+    "strategy": "TXT_KEY_EMPHASIZE_GREAT_PEOPLE_STRATEGY",
+    "button": "Art/Interface/Buttons/Governor/GreatPerson.dds",
+    "great_people": true
+  },
+  {
+    "type": "EMPHASIZE_AVOID_GROWTH",
+    "description": "TXT_KEY_EMPHASIZE_AVOID_GROWTH",
+    "strategy": "TXT_KEY_EMPHASIZE_AVOID_GROWTH_STRATEGY",
+    "button": "Art/Interface/Buttons/Governor/Governor.dds",
+    "avoid_growth": true
+  },
+  {
+    "type": "EMPHASIZE_AVOID_ANGRY_CITIZENS",
+    "description": "TXT_KEY_EMPHASIZE_AVOID_ANGRY_CITIZENS",
+    "strategy": "TXT_KEY_EMPHASIZE_AVOID_ANGRY_CITIZENS_STRATEGY",
+    "button": "Art/Interface/Buttons/Governor/Governor.dds",
+    "avoid_angry_citizens": true
+  },
+  {
+    "type": "EMPHASIZE_AVOID_UNHEALTHY_CITIZENS",
+    "description": "TXT_KEY_EMPHASIZE_AVOID_UNHEALTHY_CITIZENS",
+    "strategy": "TXT_KEY_EMPHASIZE_AVOID_UNHEALTHY_CITIZENS_STRATEGY",
+    "button": "Art/Interface/Buttons/Governor/Governor.dds",
+    "avoid_unhealthy_citizens": true
+  }
+]

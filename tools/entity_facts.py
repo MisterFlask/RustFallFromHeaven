@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Fact sheets for the entity inventory (docs/ENTITIES.md): one block per unit, building, spell
-and project, from the vendored XML (data/xml), the rules' help texts (the `data` query of
+and project, from the game data (data/json), the rules' help texts (the `data` query of
 `ffh-play agent`) and every place in crates/ffh-ai and crates/ffh-core that names the type.
 
 The AI lines re-implement the AI's filters: production::role_ok (the production roles),
@@ -22,7 +22,9 @@ import os
 import re
 import subprocess
 import sys
-import xml.etree.ElementTree as ET
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import jsonc  # noqa: E402
 from collections import defaultdict
 
 
@@ -39,69 +41,68 @@ OUT = _opt("--out")
 if not OUT or not (_opt("--bin") or _opt("--data-json")):
     sys.exit(__doc__)
 
-X = os.path.join(REPO, "data/xml")
+J = os.path.join(REPO, "data/json")
 
 
-def strip(t):
-    return t.split("}")[-1]
+def items(table):
+    return jsonc.table(table, J)
 
 
-def items(path, tag):
-    r = ET.parse(os.path.join(X, path)).getroot()
-    return [e for e in r.iter() if strip(e.tag) == tag]
+def scalar(v):
+    if isinstance(v, bool):
+        return "1" if v else "0"
+    if v is None:
+        return ""
+    return str(v)
 
 
-def txt(e, tag, default=""):
-    for c in e:
-        if strip(c.tag) == tag:
-            return (c.text or "").strip()
+def txt(e, key, default=""):
+    v = e.get(key)
+    if v is None or isinstance(v, (list, dict)):
+        return default
+    return scalar(v)
+
+
+def num(e, key, default=0):
+    v = e.get(key)
+    if isinstance(v, bool):
+        return int(v)
+    if isinstance(v, (int, float)):
+        return int(v)
     return default
 
 
-def num(e, tag, default=0):
-    t = txt(e, tag, "")
-    try:
-        return int(float(t)) if t != "" else default
-    except ValueError:
-        return default
+def child(e, key):
+    return e.get(key)
 
 
-def child(e, tag):
-    for c in e:
-        if strip(c.tag) == tag:
-            return c
-    return None
-
-
-def pairs(e, tag):
-    """A list container: [(first child text, second child text or '1')]."""
-    c = child(e, tag)
+def pairs(e, key):
+    """A list or a per-type object: [(first value, second value or '1')]."""
+    c = child(e, key)
     out = []
-    if c is None:
+    if isinstance(c, dict):
+        return [(k, scalar(v)) for k, v in c.items()]
+    if not isinstance(c, list):
         return out
     for it in c:
-        sub = list(it)
-        if not sub:
-            t = (it.text or "").strip()
-            if t:
-                out.append((t, "1"))
-            continue
-        a = (sub[0].text or "").strip()
-        b = (sub[1].text or "").strip() if len(sub) > 1 else "1"
-        out.append((a, b))
+        if isinstance(it, dict):
+            vals = [scalar(v) for v in it.values()]
+            out.append((vals[0], vals[1] if len(vals) > 1 else "1"))
+        elif isinstance(it, list):
+            out.append((scalar(it[0]), scalar(it[1]) if len(it) > 1 else "1"))
+        elif scalar(it):
+            out.append((scalar(it), "1"))
     return out
 
 
-def on_list(e, tag):
-    return [a for a, b in pairs(e, tag) if b not in ("0", "", "NONE")]
+def on_list(e, key):
+    return [a for a, b in pairs(e, key) if b not in ("0", "", "NONE")]
 
 
-def int_list(e, tag):
-    """Yields/commerces: <YieldChanges><iYield>1</iYield>..."""
-    c = child(e, tag)
-    if c is None:
-        return []
-    return [int((x.text or "0").strip() or 0) for x in c]
+def int_list(e, key):
+    """Yields/commerces: a list of integers."""
+    c = child(e, key)
+    return [int(x) for x in c] if isinstance(c, list) else []
 
 
 if _opt("--data-json"):
@@ -215,17 +216,17 @@ for line in open(os.path.join(REPO, "docs/AI_ONLY_RULES.md"), encoding="utf-8"):
 # ---------------------------------------------------------------------------------------------
 # Tables
 # ---------------------------------------------------------------------------------------------
-units = {txt(e, "Type"): e for e in items("Units/CIV4UnitInfos.xml", "UnitInfo")}
-uclasses = {txt(e, "Type"): e for e in items("Units/CIV4UnitClassInfos.xml", "UnitClassInfo")}
-buildings = {txt(e, "Type"): e for e in items("Buildings/CIV4BuildingInfos.xml", "BuildingInfo")}
-bclasses = {txt(e, "Type"): e for e in items("Buildings/CIV4BuildingClassInfos.xml", "BuildingClassInfo")}
-spells = {txt(e, "Type"): e for e in items("Units/CIV4SpellInfos.xml", "SpellInfo")}
-projects = {txt(e, "Type"): e for e in items("Gameinfo/CIV4ProjectInfo.xml", "ProjectInfo")}
-promos = {txt(e, "Type"): e for e in items("Units/CIV4PromotionInfos.xml", "PromotionInfo")}
-civs = {txt(e, "Type"): e for e in items("Civilizations/CIV4CivilizationInfos.xml", "CivilizationInfo")}
-leaders = {txt(e, "Type"): e for e in items("Civilizations/CIV4LeaderHeadInfos.xml", "LeaderHeadInfo")}
-techs = {txt(e, "Type"): e for e in items("Technologies/CIV4TechInfos.xml", "TechInfo")}
-improvements = {txt(e, "Type"): e for e in items("Terrain/CIV4ImprovementInfos.xml", "ImprovementInfo")}
+units = {txt(e, "type"): e for e in items("units")}
+uclasses = {txt(e, "type"): e for e in items("unit_classes")}
+buildings = {txt(e, "type"): e for e in items("buildings")}
+bclasses = {txt(e, "type"): e for e in items("building_classes")}
+spells = {txt(e, "type"): e for e in items("spells")}
+projects = {txt(e, "type"): e for e in items("projects")}
+promos = {txt(e, "type"): e for e in items("promotions")}
+civs = {txt(e, "type"): e for e in items("civilizations")}
+leaders = {txt(e, "type"): e for e in items("leader_heads")}
+techs = {txt(e, "type"): e for e in items("techs")}
+improvements = {txt(e, "type"): e for e in items("improvements")}
 
 # The 19 playable civilizations and the two that join mid-game (Infernal, Mercurians).
 PLAYABLE = [c for c in civs if c not in ("CIVILIZATION_RANDOM", "CIVILIZATION_BARBARIAN")]
@@ -234,22 +235,22 @@ PLAYABLE = [c for c in civs if c not in ("CIVILIZATION_RANDOM", "CIVILIZATION_BA
 CIV_UNIT = {}  # (civ, class) -> unit or NONE
 CIV_BUILDING = {}
 for c, e in civs.items():
-    for a, b in pairs(e, "Units"):
+    for a, b in pairs(e, "units"):
         CIV_UNIT[(c, a)] = b
-    for a, b in pairs(e, "Buildings"):
+    for a, b in pairs(e, "buildings"):
         CIV_BUILDING[(c, a)] = b
 
 
 def civ_unit(c, cls):
     if (c, cls) in CIV_UNIT:
         return CIV_UNIT[(c, cls)]
-    return txt(uclasses[cls], "DefaultUnit") if cls in uclasses else "NONE"
+    return txt(uclasses[cls], "default_unit") if cls in uclasses else "NONE"
 
 
 def civ_building(c, cls):
     if (c, cls) in CIV_BUILDING:
         return CIV_BUILDING[(c, cls)]
-    return txt(bclasses[cls], "DefaultBuilding") if cls in bclasses else "NONE"
+    return txt(bclasses[cls], "default_building") if cls in bclasses else "NONE"
 
 
 def short_civ(c):
@@ -257,15 +258,15 @@ def short_civ(c):
 
 
 def who_trains_unit(u):
-    cls = txt(units[u], "Class")
-    prereq_civ = txt(units[u], "PrereqCiv")
+    cls = txt(units[u], "class")
+    prereq_civ = txt(units[u], "prereq_civ")
     who = [c for c in PLAYABLE if civ_unit(c, cls) == u and (not prereq_civ or prereq_civ == "NONE" or prereq_civ == c)]
     return who
 
 
 def who_builds(b):
-    cls = txt(buildings[b], "BuildingClass")
-    prereq_civ = txt(buildings[b], "PrereqCiv")
+    cls = txt(buildings[b], "building_class")
+    prereq_civ = txt(buildings[b], "prereq_civ")
     who = [c for c in PLAYABLE if civ_building(c, cls) == b and (not prereq_civ or prereq_civ == "NONE" or prereq_civ == c)]
     return who
 
@@ -287,7 +288,7 @@ def civ_phrase0(who, total):
 
 
 def class_limits(e):
-    g, t, p = num(e, "iMaxGlobalInstances", -1), num(e, "iMaxTeamInstances", -1), num(e, "iMaxPlayerInstances", -1)
+    g, t, p = num(e, "max_global_instances", -1), num(e, "max_team_instances", -1), num(e, "max_player_instances", -1)
     out = []
     if g > 0:
         out.append(f"world limit {g}")
@@ -302,15 +303,15 @@ def class_limits(e):
 # Units: the AI's production roles (production::role_ok) and field role (units::role_of).
 # ---------------------------------------------------------------------------------------------
 def u_ai(e):
-    return set(on_list(e, "UnitAIs"))
+    return set(on_list(e, "unit_ais"))
 
 
 def u_free(e):
-    return set(on_list(e, "FreePromotions"))
+    return set(on_list(e, "free_promotions"))
 
 
 def is_hero(e):
-    return txt(e, "DefaultUnitAI") == "UNITAI_HERO" or "PROMOTION_HERO" in u_free(e)
+    return txt(e, "default_unit_ai") == "UNITAI_HERO" or "PROMOTION_HERO" in u_free(e)
 
 
 def born_caster(e):
@@ -318,15 +319,15 @@ def born_caster(e):
 
 
 def siege_engine(e):
-    return txt(e, "DefaultUnitAI") in ("UNITAI_ATTACK_CITY", "UNITAI_COLLATERAL") and (num(e, "iBombardRate") > 0 or num(e, "iCollateralDamage") > 0)
+    return txt(e, "default_unit_ai") in ("UNITAI_ATTACK_CITY", "UNITAI_COLLATERAL") and (num(e, "bombard_rate") > 0 or num(e, "collateral_damage") > 0)
 
 
 def roles(e):
     has = u_ai(e)
-    combat = num(e, "iCombat")
-    found = num(e, "bFound")
-    dom = txt(e, "Domain")
-    da = txt(e, "DefaultUnitAI")
+    combat = num(e, "combat")
+    found = num(e, "found")
+    dom = txt(e, "domain")
+    da = txt(e, "default_unit_ai")
     fighter = combat > 0 and not found and not is_hero(e) and da != "UNITAI_MAGE"
     out = []
     land = dom == "DOMAIN_LAND"
@@ -334,7 +335,7 @@ def roles(e):
     if land:
         if fighter and (has & {"UNITAI_CITY_DEFENSE", "UNITAI_CITY_COUNTER", "UNITAI_ATTACK", "UNITAI_COUNTER"}) and da != "UNITAI_EXPLORE":
             out.append("Defense")
-        if fighter and not num(e, "bOnlyDefensive") and (has & {"UNITAI_ATTACK", "UNITAI_ATTACK_CITY"}) and not siege_engine(e):
+        if fighter and not num(e, "only_defensive") and (has & {"UNITAI_ATTACK", "UNITAI_ATTACK_CITY"}) and not siege_engine(e):
             out.append("Attack/CityAttack")
         if "UNITAI_WORKER" in has and combat == 0:
             out.append("Worker")
@@ -346,14 +347,14 @@ def roles(e):
             out.append("Mage")
         if "UNITAI_EXPLORE" in has:
             out.append("Explore")
-        if fighter and (has & {"UNITAI_ATTACK_CITY", "UNITAI_COLLATERAL"}) and (num(e, "iBombardRate") > 0 or num(e, "iCollateralDamage") > 0):
+        if fighter and (has & {"UNITAI_ATTACK_CITY", "UNITAI_COLLATERAL"}) and (num(e, "bombard_rate") > 0 or num(e, "collateral_damage") > 0):
             out.append("Siege")
-        if "UNITAI_MISSIONARY" in has and pairs(e, "ReligionSpreads"):
+        if "UNITAI_MISSIONARY" in has and pairs(e, "religion_spreads"):
             out.append("Missionary")
     if sea:
         if "UNITAI_WORKER_SEA" in has and combat == 0:
             out.append("SeaWorker")
-        if num(e, "iCargo") > 0 and txt(e, "DomainCargo") == "DOMAIN_LAND" and txt(e, "SpecialCargo") in ("", "NONE"):
+        if num(e, "cargo") > 0 and txt(e, "domain_cargo") == "DOMAIN_LAND" and txt(e, "special_cargo") in ("", "NONE"):
             out.append("Transport")
         if combat > 0 and (has & {"UNITAI_EXPLORE_SEA", "UNITAI_ATTACK_SEA"}):
             out.append("SeaExplore")
@@ -363,16 +364,16 @@ def roles(e):
 
 
 def field_role(e):
-    da = txt(e, "DefaultUnitAI")
-    dom = txt(e, "Domain")
-    combat = num(e, "iCombat")
+    da = txt(e, "default_unit_ai")
+    dom = txt(e, "domain")
+    combat = num(e, "combat")
     if dom == "DOMAIN_SEA":
         if "UNITAI_WORKER_SEA" in u_ai(e) and combat == 0:
             return "SeaWorker (workers.rs)"
-        if num(e, "iCargo") > 0 and txt(e, "DomainCargo") == "DOMAIN_LAND" and txt(e, "SpecialCargo") in ("", "NONE"):
+        if num(e, "cargo") > 0 and txt(e, "domain_cargo") == "DOMAIN_LAND" and txt(e, "special_cargo") in ("", "NONE"):
             return "Transport (naval.rs: settlers overseas, amphibious assault)"
         return "Naval: holds (no naval combat logic; a sea explorer if trained as one)"
-    if da == "UNITAI_HERO" and (num(e, "bOnlyDefensive") or combat == 0):
+    if da == "UNITAI_HERO" and (num(e, "only_defensive") or combat == 0):
         return "Caster (a hero that cannot attack moves as a caster)"
     m = {
         "UNITAI_SETTLE": "Settler (expansion.rs)",
@@ -388,11 +389,11 @@ def field_role(e):
         m["UNITAI_" + gp] = "Great person (shrine / wonder rush / lightbulb / join / golden age)"
     if da in m:
         return m[da]
-    if num(e, "bFound"):
+    if num(e, "found"):
         return "Settler"
-    if combat > 0 or num(e, "iCombatDefense") > 0:
+    if combat > 0 or num(e, "combat_defense") > 0:
         return "Army (military.rs, campaign.rs)" + (" -- or Garrison when production trained it as a defender (UNITAI_CITY_DEFENSE)" if "Defense" in roles(e) else "")
-    if on_list(e, "Builds"):
+    if on_list(e, "builds"):
         return "Worker"
     return "Other: holds"
 
@@ -401,16 +402,16 @@ def field_role(e):
 def spell_prereqs(s):
     e = spells[s]
     return {
-        "p1": txt(e, "PromotionPrereq1"), "p2": txt(e, "PromotionPrereq2"), "unit": txt(e, "UnitPrereq"),
-        "cls": txt(e, "UnitClassPrereq"), "combat": txt(e, "UnitCombatPrereq"), "civ": txt(e, "CivilizationPrereq"),
-        "rel": txt(e, "ReligionPrereq"), "staterel": txt(e, "StateReligionPrereq"), "bld": txt(e, "BuildingPrereq"),
-        "tech": txt(e, "TechPrereq"), "bclass_owned": txt(e, "BuildingClassOwnedPrereq"),
+        "p1": txt(e, "promotion_prereq1"), "p2": txt(e, "promotion_prereq2"), "unit": txt(e, "unit_prereq"),
+        "cls": txt(e, "unit_class_prereq"), "combat": txt(e, "unit_combat_prereq"), "civ": txt(e, "civilization_prereq"),
+        "rel": txt(e, "religion_prereq"), "staterel": txt(e, "state_religion_prereq"), "bld": txt(e, "building_prereq"),
+        "tech": txt(e, "tech_prereq"), "bclass_owned": txt(e, "building_class_owned_prereq"),
     }
 
 
 def spells_of_unit(u):
     e = units[u]
-    cls = txt(e, "Class")
+    cls = txt(e, "class")
     free = u_free(e)
     out = []
     for s in spells:
@@ -420,12 +421,12 @@ def spells_of_unit(u):
             continue
         if p["cls"] not in ("", "NONE") and p["cls"] != cls:
             continue
-        if p["combat"] not in ("", "NONE") and p["combat"] != txt(e, "Combat"):
+        if p["combat"] not in ("", "NONE") and p["combat"] != txt(e, "unit_combat"):
             continue
         # A spell's ReligionPrereq is the caster's own religion (CvUnit::canCast).
-        if p["rel"] not in ("", "NONE") and p["rel"] != txt(e, "ReligionType"):
+        if p["rel"] not in ("", "NONE") and p["rel"] != txt(e, "religion_type"):
             continue
-        if txt(spells[s], "CivilizationPrereq") not in ("", "NONE") and txt(e, "PrereqCiv") not in ("", "NONE") and txt(spells[s], "CivilizationPrereq") != txt(e, "PrereqCiv"):
+        if txt(spells[s], "civilization_prereq") not in ("", "NONE") and txt(e, "prereq_civ") not in ("", "NONE") and txt(spells[s], "civilization_prereq") != txt(e, "prereq_civ"):
             continue
         need = [x for x in (p["p1"], p["p2"]) if x not in ("", "NONE")]
         if direct and all(x in free for x in need):
@@ -439,48 +440,48 @@ SUMMONED_BY = defaultdict(list)
 CONVERTED_BY = defaultdict(list)
 BUILDING_BY_SPELL = defaultdict(list)
 for s, e in spells.items():
-    cu = txt(e, "CreateUnitType")
+    cu = txt(e, "create_unit_type")
     if cu not in ("", "NONE"):
-        SUMMONED_BY[cu].append(s + (" (permanent)" if num(e, "bPermanentUnitCreate") else " (temporary)"))
-    cv = txt(e, "ConvertUnitType")
+        SUMMONED_BY[cu].append(s + (" (permanent)" if num(e, "permanent_unit_create") else " (temporary)"))
+    cv = txt(e, "convert_unit_type")
     if cv not in ("", "NONE"):
         CONVERTED_BY[cv].append(s)
-    cb = txt(e, "CreateBuildingType")
+    cb = txt(e, "create_building_type")
     if cb not in ("", "NONE"):
         BUILDING_BY_SPELL[cb].append(s)
 
 UPGRADES_FROM = defaultdict(list)
 for u, e in units.items():
-    for cls in on_list(e, "UnitClassUpgrades"):
+    for cls in on_list(e, "unit_class_upgrades"):
         UPGRADES_FROM[cls].append(u)
 
 ENABLES = defaultdict(list)  # building -> units it gates
 for u, e in units.items():
-    pb = txt(e, "PrereqBuilding")
+    pb = txt(e, "prereq_building")
     if pb not in ("", "NONE"):
         ENABLES[pb].append(u)
-    pbc = txt(e, "PrereqBuildingClass")
+    pbc = txt(e, "prereq_building_class")
     if pbc not in ("", "NONE"):
         ENABLES["CLASS:" + pbc].append(u)
 
 LAIR_SPAWN = defaultdict(list)
 for i, e in improvements.items():
-    su = txt(e, "SpawnUnitType")
+    su = txt(e, "spawn_unit_type")
     if su not in ("", "NONE"):
         LAIR_SPAWN[su].append(i)
 
 # Free promotions from buildings.
 PROMO_FROM_BUILDING = defaultdict(list)
 for b, e in buildings.items():
-    fp = txt(e, "FreePromotion")
+    fp = txt(e, "free_promotion")
     if fp not in ("", "NONE"):
         PROMO_FROM_BUILDING[fp].append(b)
 
-EVENTS_TEXT = open(os.path.join(X, "Events/CIV4EventInfos.xml"), encoding="utf-8").read() + open(os.path.join(X, "Events/CIV4EventTriggerInfos.xml"), encoding="utf-8").read()
-GOODY_TEXT = open(os.path.join(X, "Gameinfo/CIV4GoodyInfo.xml"), encoding="utf-8").read()
+EVENTS_TEXT = open(os.path.join(J, "events.jsonc"), encoding="utf-8").read() + open(os.path.join(J, "event_triggers.jsonc"), encoding="utf-8").read()
+GOODY_TEXT = open(os.path.join(J, "goodies.jsonc"), encoding="utf-8").read()
 
 
-def tech_list(e, one="PrereqTech", many="TechTypes"):
+def tech_list(e, one="prereq_tech", many="tech_types"):
     out = []
     t = txt(e, one)
     if t not in ("", "NONE"):
@@ -491,22 +492,22 @@ def tech_list(e, one="PrereqTech", many="TechTypes"):
 
 def unit_facts(u):
     e = units[u]
-    cls = txt(e, "Class")
+    cls = txt(e, "class")
     ce = uclasses.get(cls)
-    cost = num(e, "iCost")
+    cost = num(e, "cost")
     who = who_trains_unit(u)
     default_for = [c for c in PLAYABLE if civ_unit(c, cls) == u]
     replaces = ""
-    dflt = txt(ce, "DefaultUnit") if ce is not None else ""
+    dflt = txt(ce, "default_unit") if ce is not None else ""
     if dflt and dflt != u and dflt != "NONE":
         replaces = f"replaces {nm(dflt)} (`{dflt}`) for its civilization(s)"
     lines = []
-    lines.append(f"- class `{cls}`{' (' + class_limits(ce) + ')' if ce is not None and class_limits(ce) else ''}; combat type `{txt(e, 'Combat')}`; domain `{txt(e, 'Domain')}`; tier {num(e, 'iTier')}")
-    s = f"- strength {num(e, 'iCombat')}/{num(e, 'iCombatDefense')} (attack/defense), moves {num(e, 'iMoves')}"
-    dmg = pairs(e, "DamageTypeCombats")
+    lines.append(f"- class `{cls}`{' (' + class_limits(ce) + ')' if ce is not None and class_limits(ce) else ''}; combat type `{txt(e, 'unit_combat') or 'NONE'}`; domain `{txt(e, 'domain')}`; tier {num(e, 'tier')}")
+    s = f"- strength {num(e, 'combat')}/{num(e, 'combat_defense')} (attack/defense), moves {num(e, 'moves')}"
+    dmg = pairs(e, "damage_type_combats")
     if dmg:
         s += ", extra damage " + ", ".join(f"{b} {a}" for a, b in dmg)
-    for tag, label in [("iFirstStrikes", "first strikes"), ("iChanceFirstStrikes", "chance first strikes"), ("iWithdrawalProb", "withdraw %"), ("iCollateralDamage", "collateral"), ("iBombardRate", "bombard"), ("iCityAttack", "city attack %"), ("iCityDefense", "city defense %"), ("iCargo", "cargo"), ("iWorkRate", "work rate")]:
+    for tag, label in [("first_strikes", "first strikes"), ("chance_first_strikes", "chance first strikes"), ("withdrawal_prob", "withdraw %"), ("collateral_damage", "collateral"), ("bombard_rate", "bombard"), ("city_attack", "city attack %"), ("city_defense", "city defense %"), ("cargo", "cargo"), ("work_rate", "work rate")]:
         if num(e, tag):
             s += f", {label} {num(e, tag)}"
     lines.append(s)
@@ -516,23 +517,23 @@ def unit_facts(u):
     else:
         lines.append(f"- not trainable (cost {cost}){'; ' + replaces if replaces else ''}")
     req = []
-    tl = tech_list(e, "PrereqTech", "TechTypes")
+    tl = tech_list(e, "prereq_tech", "tech_types")
     if tl:
         req.append("tech " + " + ".join(nm(t) for t in tl))
-    for tag, lab in [("PrereqBuilding", "building"), ("PrereqBuildingClass", "building class"), ("BonusType", "resource"), ("PrereqReligion", "religion"), ("StateReligion", "state religion"), ("PrereqCiv", "civilization"), ("PrereqAlignment", "alignment"), ("PrereqCivic", "civic")]:
+    for tag, lab in [("prereq_building", "building"), ("prereq_building_class", "building class"), ("bonus_type", "resource"), ("prereq_religion", "religion"), ("state_religion", "state religion"), ("prereq_civ", "civilization"), ("prereq_alignment", "alignment"), ("prereq_civic", "civic")]:
         v = txt(e, tag)
         if v not in ("", "NONE"):
             req.append(f"{lab} {nm(v)}")
-    ob = [x for x, _ in pairs(e, "PrereqBonuses")]
+    ob = [x for x, _ in pairs(e, "prereq_or_bonuses")]
     if ob:
         req.append("one of " + "/".join(nm(x) for x in ob))
-    if num(e, "iMinLevel"):
-        req.append(f"min level {num(e, 'iMinLevel')} (not trainable: reached by upgrade)")
+    if num(e, "min_level"):
+        req.append(f"min level {num(e, 'min_level')} (not trainable: reached by upgrade)")
     if req:
         lines.append("- requires: " + "; ".join(req))
-    up = on_list(e, "UnitClassUpgrades")
+    up = on_list(e, "unit_class_upgrades")
     if up:
-        lines.append("- upgrades to (class default; civilizations may replace it): " + ", ".join(nm(txt(uclasses[c], "DefaultUnit")) if c in uclasses else c for c in up))
+        lines.append("- upgrades to (class default; civilizations may replace it): " + ", ".join(nm(txt(uclasses[c], "default_unit")) if c in uclasses else c for c in up))
     frm = UPGRADES_FROM.get(cls, [])
     if frm:
         lines.append("- upgraded from: " + ", ".join(nm(x) for x in frm))
@@ -546,9 +547,9 @@ def unit_facts(u):
         sources.append("converted into by " + ", ".join(nm(x) for x in CONVERTED_BY[u]))
     if LAIR_SPAWN.get(u):
         sources.append("spawned by " + ", ".join(nm(x) for x in LAIR_SPAWN[u]))
-    if f">{u}<" in EVENTS_TEXT:
+    if f'"{u}"' in EVENTS_TEXT:
         sources.append("events give it")
-    if f">{u}<" in GOODY_TEXT:
+    if f'"{u}"' in GOODY_TEXT:
         sources.append("goody huts give it")
     core = refs_of(u, "core")
     if core:
@@ -558,11 +559,11 @@ def unit_facts(u):
     sp = spells_of_unit(u)
     if sp:
         def civnote(s):
-            c = txt(spells[s], "CivilizationPrereq")
+            c = txt(spells[s], "civilization_prereq")
             return f" [{nm(c)} only]" if c not in ("", "NONE") else ""
         lines.append("- spells/abilities it has from birth: " + ", ".join(f"{nm(s)} (`{s}`){civnote(s)}" for s in sp))
-    da = txt(e, "DefaultUnitAI")
-    lines.append(f"- AI data: default AI `{da}`; UnitAIs {sorted(u_ai(e)) or '[]'}; iAIWeight {num(e, 'iAIWeight')}" + ("; bOnlyDefensive" if num(e, 'bOnlyDefensive') else "") + ("; animal" if num(e, 'bAnimal') else ""))
+    da = txt(e, "default_unit_ai")
+    lines.append(f"- AI data: default AI `{da}`; UnitAIs {sorted(u_ai(e)) or '[]'}; iAIWeight {num(e, 'ai_weight')}" + ("; bOnlyDefensive" if num(e, 'only_defensive') else "") + ("; animal" if num(e, 'animal') else ""))
     r = roles(e)
     if cost <= 0:
         prod = "not trainable, so no production role"
@@ -572,11 +573,11 @@ def unit_facts(u):
         prod = "NO production role passes (production never trains it except a civ-specific step naming it)"
     else:
         prod = "production roles it qualifies for: " + ", ".join(r)
-    if num(e, "iMinLevel") > 0 and cost > 0:
+    if num(e, "min_level") > 0 and cost > 0:
         prod += " (but iMinLevel > 0: the AI cannot train it unless GAMEOPTION_AI_NO_MINIMUM_LEVEL and min level > 1)"
     lines.append("- AI production: " + prod)
     if SUMMONED_BY.get(u):
-        sea = txt(e, "Domain") == "DOMAIN_SEA"
+        sea = txt(e, "domain") == "DOMAIN_SEA"
         lines.append("- AI field role: a summon is created on UNITAI_ATTACK (unit_cast_create_unit), so units::role_of makes it " + ("Naval: holds (a sea unit on that AI)" if sea else "Army (military.rs); temporary summons attack at once (casting::summons_attack, magic::summons_attack)"))
     else:
         lines.append("- AI field role (units::role_of on its default AI, for units the rules create; a unit production trains takes the step's AI type instead: Defense -> CITY_DEFENSE (Garrison), Attack/Siege -> ATTACK/ATTACK_CITY (Army), Explore -> EXPLORE, Mage -> MAGE, ...): " + field_role(e))
@@ -592,53 +593,53 @@ def unit_facts(u):
 # Buildings: the fields production::generic_building_value reads, and the rest.
 # ---------------------------------------------------------------------------------------------
 VALUED = {
-    "YieldChanges": "yields", "YieldModifiers": "yield %", "GlobalYieldModifiers": "global yield %",
-    "CommerceChanges": "commerce", "ObsoleteSafeCommerceChanges": "commerce", "CommerceModifiers": "commerce %",
-    "GlobalCommerceModifiers": "global commerce %", "iHappiness": "happiness", "iAreaHappiness": "area happiness",
-    "iGlobalHappiness": "global happiness", "BonusHappinessChanges": "happiness from resources",
-    "iHealth": "health", "iAreaHealth": "area health", "iGlobalHealth": "global health", "BonusHealthChanges": "health from resources",
-    "SpecialistCounts": "specialist slots", "iGreatPeopleRateChange": "great people points", "iGreatPeopleRateModifier": "great people %",
-    "iFreeSpecialist": "free specialist", "iDefense": "city defense", "iExperience": "free experience",
-    "UnitCombatFreeExperiences": "experience by unit combat", "DomainFreeExperiences": "experience by domain (land only)",
-    "iMilitaryProductionModifier": "military production %", "iTradeRoutes": "trade routes", "iFoodKept": "food kept",
-    "iWorkerSpeedModifier": "worker speed", "iMaintenanceModifier": "maintenance %", "iHealRateChange": "heal rate",
-    "iAIWeight": "AI weight", "iStateReligionHappiness": "state religion happiness",
+    "yield_changes": "yields", "yield_modifiers": "yield %", "GlobalYieldModifiers": "global yield %",
+    "commerce_changes": "commerce", "obsolete_safe_commerce_changes": "commerce", "commerce_modifiers": "commerce %",
+    "global_commerce_modifiers": "global commerce %", "happiness": "happiness", "area_happiness": "area happiness",
+    "global_happiness": "global happiness", "bonus_happiness_changes": "happiness from resources",
+    "health": "health", "area_health": "area health", "global_health": "global health", "bonus_health_changes": "health from resources",
+    "specialist_counts": "specialist slots", "great_people_rate_change": "great people points", "great_people_rate_modifier": "great people %",
+    "free_specialist": "free specialist", "defense": "city defense", "experience": "free experience",
+    "unit_combat_free_experiences": "experience by unit combat", "domain_free_experiences": "experience by domain (land only)",
+    "military_production_modifier": "military production %", "trade_routes": "trade routes", "food_kept": "food kept",
+    "worker_speed_modifier": "worker speed", "maintenance_modifier": "maintenance %", "heal_rate_change": "heal rate",
+    "ai_weight": "AI weight", "state_religion_happiness": "state religion happiness",
 }
 UNVALUED = {
-    "FreeBonus": "free resource", "FreeBonus2": "free resource", "FreeBonus3": "free resource", "FreePromotion": "free promotion for units",
-    "bApplyFreePromotionOnMove": "promotion to units passing by", "RemovePromotion": "removes a promotion", "FreeBuilding": "free building",
-    "ReligionChanges": "spreads a religion", "GlobalReligionCommerce": "shrine commerce", "bGoldenAge": "golden age", "iFreeTechs": "free techs",
-    "iGlobalExperience": "global experience", "iGlobalWarWearinessModifier": "global war weariness %", "iWarWearinessModifier": "war weariness %",
-    "CommerceChangeDoubleTimes": "commerce doubling time", "CommerceHappinesses": "happiness from commerce",
-    "StateReligionCommerces": "state religion commerce", "SpecialistYieldChanges": "specialist yields",
-    "SpecialistCommerceChanges": "specialist commerce", "SpecialistExtraCommerces": "specialist extra commerce",
-    "SeaPlotYieldChanges": "sea plot yields", "GlobalSeaPlotYieldChanges": "global sea plot yields",
-    "BonusYieldModifiers": "yield % with resources", "BonusProductionModifiers": "production % with resources",
-    "DomainProductionModifiers": "production % by domain", "iCrime": "crime", "iResistMagic": "magic resistance",
-    "iGlobalResistModify": "global spell resistance", "iGlobalResistEnemyModify": "enemy spell resistance",
-    "iModifyGlobalCounter": "Armageddon counter", "iPlotRadius": "city radius", "bNoUnhappiness": "no unhappiness",
-    "bNoUnhealthyPopulation": "no unhealthy population", "bNoCivicAnger": "no civic anger", "bSeeInvisible": "sees invisible",
-    "bHideUnits": "hides units", "bUnhappyProduction": "unhappy citizens produce", "iAllCityDefense": "defense in all cities",
-    "iBombardDefense": "bombard defense", "iAirlift": "airlift", "iCoastalTradeRoutes": "coastal trade routes",
-    "iTradeRouteModifier": "trade route %", "iGlobalSpaceProductionModifier": "space production %", "bForceTeamVoteEligible": "vote eligibility",
-    "bEquipment": "equipment building", "iFreePromotionPick": "free promotion pick", "FreeSpecialistCounts": "free specialists by type",
-    "iNumFreeBonuses": "free resource count", "bGovernmentCenter": "government center (no distance maintenance)",
-    "HolyCity": "needs the holy city", "bCapital": "palace (moves the capital)", "iGreatGeneralRateModifier": "great general %",
-    "iGlobalGreatPeopleRateModifier": "global great people %", "iAnarchyModifier": "anarchy %", "iGoldenAgeModifier": "golden age %",
-    "iGlobalHurryModifier": "hurry cost %", "iGlobalFreeExperience": "global experience", "iAreaFreeSpecialist": "area free specialist",
-    "iGlobalFreeSpecialist": "global free specialist", "iEnemyWarWearinessModifier": "enemy war weariness %",
-    "iGlobalPopulationChange": "population in every city", "iGlobalTradeRoutes": "global trade routes", "iForeignTradeRouteModifier": "foreign trade route %",
-    "RiverPlotYieldChanges": "river yields", "AreaYieldModifiers": "area yield %", "PowerYieldModifiers": "power yield %",
+    "free_bonus": "free resource", "free_bonus2": "free resource", "free_bonus3": "free resource", "free_promotion": "free promotion for units",
+    "apply_free_promotion_on_move": "promotion to units passing by", "remove_promotion": "removes a promotion", "free_building": "free building",
+    "religion_changes": "spreads a religion", "global_religion_commerce": "shrine commerce", "golden_age": "golden age", "free_techs": "free techs",
+    "global_experience": "global experience", "global_war_weariness_modifier": "global war weariness %", "war_weariness_modifier": "war weariness %",
+    "commerce_change_double_times": "commerce doubling time", "commerce_happinesses": "happiness from commerce",
+    "state_religion_commerces": "state religion commerce", "specialist_yield_changes": "specialist yields",
+    "specialist_commerce_changes": "specialist commerce", "specialist_extra_commerces": "specialist extra commerce",
+    "sea_plot_yield_changes": "sea plot yields", "global_sea_plot_yield_changes": "global sea plot yields",
+    "bonus_yield_modifiers": "yield % with resources", "bonus_production_modifiers": "production % with resources",
+    "domain_production_modifiers": "production % by domain", "crime": "crime", "resist_magic": "magic resistance",
+    "global_resist_modify": "global spell resistance", "global_resist_enemy_modify": "enemy spell resistance",
+    "modify_global_counter": "Armageddon counter", "plot_radius": "city radius", "no_unhappiness": "no unhappiness",
+    "no_unhealthy_population": "no unhealthy population", "no_civic_anger": "no civic anger", "see_invisible": "sees invisible",
+    "hide_units": "hides units", "unhappy_production": "unhappy citizens produce", "all_city_defense": "defense in all cities",
+    "bombard_defense": "bombard defense", "airlift": "airlift", "coastal_trade_routes": "coastal trade routes",
+    "trade_route_modifier": "trade route %", "global_space_production_modifier": "space production %", "force_team_vote_eligible": "vote eligibility",
+    "equipment": "equipment building", "free_promotion_pick": "free promotion pick", "free_specialist_counts": "free specialists by type",
+    "num_free_bonuses": "free resource count", "government_center": "government center (no distance maintenance)",
+    "holy_city": "needs the holy city", "capital": "palace (moves the capital)", "great_general_rate_modifier": "great general %",
+    "global_great_people_rate_modifier": "global great people %", "anarchy_modifier": "anarchy %", "golden_age_modifier": "golden age %",
+    "global_hurry_modifier": "hurry cost %", "iGlobalFreeExperience": "global experience", "area_free_specialist": "area free specialist",
+    "global_free_specialist": "global free specialist", "enemy_war_weariness_modifier": "enemy war weariness %",
+    "global_population_change": "population in every city", "global_trade_routes": "global trade routes", "foreign_trade_route_modifier": "foreign trade route %",
+    "river_plot_yield_changes": "river yields", "AreaYieldModifiers": "area yield %", "PowerYieldModifiers": "power yield %",
     "UnitCombatProductionModifiers": "production % by unit combat",
 }
 FAV = defaultdict(list)
 BCLS_LIST = list(bclasses.keys())
 BLD_LIST = list(buildings.keys())
 for l, e in leaders.items():
-    fw = txt(e, "FavoriteWonder")
+    fw = txt(e, "favorite_wonder")
     if fw not in ("", "NONE"):
         FAV[fw].append(nm(l) + " (+300)")
-    for tag in ("iFavoriteEarlyWonder", "iFavoriteLateWonder"):
+    for tag in ("favorite_early_wonder", "favorite_late_wonder"):
         v = txt(e, tag)
         if v in ("", "NONE"):
             continue
@@ -651,101 +652,95 @@ for l, e in leaders.items():
             cls = None
         if cls:
             for b, be in buildings.items():
-                if txt(be, "BuildingClass") == cls:
+                if txt(be, "building_class") == cls:
                     FAV[b].append(nm(l) + " (+400, class" + (" via the index quirk" if v not in bclasses else "") + ")")
 
 
-def nonzero(e, tag):
-    c = child(e, tag)
+def nonzero(e, key):
+    c = child(e, key)
     if c is None:
         return False
-    if len(list(c)):
-        vals = []
-        for it in c:
-            sub = list(it)
-            if sub:
-                vals.append((sub[-1].text or "").strip())
-            else:
-                vals.append((it.text or "").strip())
-        return any(v not in ("", "0", "NONE") for v in vals)
-    t = (c.text or "").strip()
-    if tag.startswith("i"):
-        return t not in ("", "0")
-    return t not in ("", "0", "NONE", "-1")
+    if isinstance(c, (list, dict)):
+        return any(b not in ("", "0", "NONE") for _, b in pairs(e, key)) if not (isinstance(c, list) and all(isinstance(x, int) for x in c)) else any(x != 0 for x in c)
+    if isinstance(c, bool):
+        return c
+    if isinstance(c, (int, float)):
+        return c != 0
+    return scalar(c) not in ("", "0", "NONE", "-1")
 
 
-def show_tag(e, tag):
-    c = child(e, tag)
+def show_tag(e, key):
+    c = child(e, key)
     if c is None:
         return ""
-    if len(list(c)):
+    if isinstance(c, dict):
+        return ", ".join(f"{a}={scalar(b)}" for a, b in c.items() if scalar(b) not in ("0", "", "NONE"))
+    if isinstance(c, list):
         parts = []
         for i, it in enumerate(c):
-            sub = list(it)
-            if sub:
-                a, b = (sub[0].text or "").strip(), (sub[-1].text or "").strip()
+            if isinstance(it, (dict, list)):
+                vals = [scalar(v) for v in (it.values() if isinstance(it, dict) else it)]
+                a, b = vals[0], vals[-1]
                 if b not in ("0", "", "NONE"):
                     parts.append(f"{a}={b}" if a != b else a)
-            else:
-                v = (it.text or "").strip()
-                if v not in ("0", ""):
-                    parts.append(f"[{i}]={v}")
+            elif scalar(it) not in ("0", ""):
+                parts.append(f"[{i}]={scalar(it)}")
         return ", ".join(parts)
-    return (c.text or "").strip()
+    return scalar(c)
 
 
 def building_facts(b):
     e = buildings[b]
-    cls = txt(e, "BuildingClass")
+    cls = txt(e, "building_class")
     ce = bclasses.get(cls)
-    cost = num(e, "iCost")
+    cost = num(e, "cost")
     who = who_builds(b)
     lines = []
     kind = class_limits(ce) if ce is not None else ""
     lines.append(f"- class `{cls}`" + (f" ({kind})" if kind else "") + f"; cost {cost if cost > 0 else 'none (not buildable: ' + str(cost) + ')'}")
-    dflt = txt(ce, "DefaultBuilding") if ce is not None else ""
+    dflt = txt(ce, "default_building") if ce is not None else ""
     rep = f"; replaces {nm(dflt)} (`{dflt}`)" if dflt and dflt not in (b, "NONE") else ""
     barb = civ_building("CIVILIZATION_BARBARIAN", cls) == b
     lines.append(f"- built by: {civ_phrase(who, len(PLAYABLE), barb)}{rep}")
     req = []
-    tl = tech_list(e, "PrereqTech", "TechTypes")
+    tl = tech_list(e, "prereq_tech", "tech_types")
     if tl:
         req.append("tech " + " + ".join(nm(t) for t in tl))
-    for tag, lab in [("PrereqReligion", "religion"), ("StateReligion", "state religion"), ("HolyCity", "holy city of"), ("PrereqCiv", "civilization"), ("PrereqTrait", "trait"), ("Bonus", "resource"), ("VictoryPrereq", "victory enabled"), ("ObsoleteTech", "obsolete with")]:
+    for tag, lab in [("prereq_religion", "religion"), ("state_religion", "state religion"), ("holy_city", "holy city of"), ("prereq_civ", "civilization"), ("prereq_trait", "trait"), ("bonus", "resource"), ("victory_prereq", "victory enabled"), ("obsolete_tech", "obsolete with")]:
         v = txt(e, tag)
         if v not in ("", "NONE"):
             req.append(f"{lab} {nm(v)}")
-    for tag, lab in [("PrereqBuildingClasses", "buildings"), ("BuildingClassNeededs", "buildings in the city"), ("PrereqBonuses", "one of the resources")]:
+    for tag, lab in [("prereq_building_classes", "buildings"), ("building_class_neededs", "buildings in the city"), ("prereq_bonuses", "one of the resources")]:
         v = show_tag(e, tag)
         if v:
             req.append(f"{lab}: {v}")
-    for tag, lab in [("iCitiesPrereq", "cities"), ("iLevelPrereq", "unit level"), ("iMinAreaSize", "area size")]:
+    for tag, lab in [("cities_prereq", "cities"), ("level_prereq", "unit level"), ("min_area_size", "area size")]:
         if num(e, tag) > 0:
             req.append(f"{lab} {num(e, tag)}")
-    if num(e, "bWater"):
+    if num(e, "water"):
         req.append("coastal")
-    if num(e, "bRiver"):
+    if num(e, "river"):
         req.append("river")
     if req:
         lines.append("- requires: " + "; ".join(req))
-    valued = [f"{VALUED[t]} ({show_tag(e, t)})" for t in VALUED if nonzero(e, t) and t != "DomainFreeExperiences"]
+    valued = [f"{VALUED[t]} ({show_tag(e, t)})" for t in VALUED if nonzero(e, t) and t != "domain_free_experiences"]
     unvalued = [f"{UNVALUED[t]} ({show_tag(e, t)})" for t in UNVALUED if nonzero(e, t)]
-    if nonzero(e, "DomainFreeExperiences"):
-        dom = [a for a, v in pairs(e, "DomainFreeExperiences") if v not in ("0", "")]
+    if nonzero(e, "domain_free_experiences"):
+        dom = [a for a, v in pairs(e, "domain_free_experiences") if v not in ("0", "")]
         if "DOMAIN_LAND" in dom:
-            valued.append(f"experience by domain, land ({show_tag(e, 'DomainFreeExperiences')})")
+            valued.append(f"experience by domain, land ({show_tag(e, 'domain_free_experiences')})")
         if any(x != "DOMAIN_LAND" for x in dom):
-            unvalued.append(f"experience for other domains, not read ({show_tag(e, 'DomainFreeExperiences')})")
-    cul = int_list(e, "ObsoleteSafeCommerceChanges")
+            unvalued.append(f"experience for other domains, not read ({show_tag(e, 'domain_free_experiences')})")
+    cul = int_list(e, "obsolete_safe_commerce_changes")
     if len(cul) > 2 and cul[2] > 0:
         valued.append("(its flat culture is in ObsoleteSafeCommerceChanges: read at 4 a point; the new-city culture bonus, which reads CommerceChanges only, does not apply)")
     lines.append("- fields the generic building value reads: " + ("; ".join(valued) if valued else "NONE"))
     if unvalued:
         lines.append("- effects it ignores: " + "; ".join(unvalued))
     paths = []
-    if num(e, "bCapital"):
+    if num(e, "capital"):
         paths.append("production::building_allowed: never, unless the palace is lost")
-    by_class = [x for x in ENABLES.get("CLASS:" + cls, []) if any(civ_building(c, cls) == b and civ_unit(c, txt(units[x], "Class")) == x for c in PLAYABLE)]
+    by_class = [x for x in ENABLES.get("CLASS:" + cls, []) if any(civ_building(c, cls) == b and civ_unit(c, txt(units[x], "class")) == x for c in PLAYABLE)]
     gated = sorted(set(ENABLES.get(b, []) + by_class))
     if gated:
         parts = []
@@ -763,16 +758,16 @@ def building_facts(b):
                 via.append("civs/grigori.rs (Infirmary for medics at war)")
             parts.append(f"{nm(x)} [{'; '.join(via) if via else 'no AI path builds it for this unit'}]")
         paths.append("gates units: " + ", ".join(parts))
-    builders = [nm(u2) for u2, ue in units.items() if b in on_list(ue, "Buildings") or b in on_list(ue, "ForceBuildings")]
+    builders = [nm(u2) for u2, ue in units.items() if b in on_list(ue, "buildings") or b in on_list(ue, "force_buildings")]
     if builders:
         paths.append("units that can construct it (MISSION_CONSTRUCT): " + ", ".join(builders) + " -- the AI's great people construct only shrines (holy city + GlobalReligionCommerce)")
     if BUILDING_BY_SPELL.get(b):
-        paths.append("created by spell " + ", ".join(nm(x) for x in BUILDING_BY_SPELL[b]) + (" (bRequiresCaster: lost when no caster in the city)" if num(e, "bRequiresCaster") else ""))
+        paths.append("created by spell " + ", ".join(nm(x) for x in BUILDING_BY_SPELL[b]) + (" (bRequiresCaster: lost when no caster in the city)" if num(e, "requires_caster") else ""))
     if FAV.get(b):
         paths.append("leader favourite: " + ", ".join(FAV[b]))
-    if ce is not None and pairs(ce, "VictoryThresholds"):
+    if ce is not None and pairs(ce, "victory_thresholds"):
         paths.append("victory building: never the AI's own goal (victory::plan_ours drops the Tower and the Altar, 3041631); a rival close to it is a war target")
-    if txt(e, "GlobalReligionCommerce") not in ("", "NONE"):
+    if txt(e, "global_religion_commerce") not in ("", "NONE"):
         paths.append("a shrine: Great Prophets build it (units::great_person_build)")
     if paths:
         lines.append("- AI paths besides the generic value: " + "; ".join(paths))
@@ -814,62 +809,62 @@ def spell_facts(s):
         v = p[k]
         if v not in ("", "NONE"):
             who.append(f"{lab} {nm(v)}")
-    for tag, lab in [("UnitInStackPrereq", "unit in stack"), ("PromotionInStackPrereq", "promotion in stack (caster lacks it)"), ("ImprovementPrereq", "improvement"), ("FeatureOrPrereq1", "feature"), ("FeatureOrPrereq2", "feature")]:
+    for tag, lab in [("unit_in_stack_prereq", "unit in stack"), ("promotion_in_stack_prereq", "promotion in stack (caster lacks it)"), ("improvement_prereq", "improvement"), ("feature_or_prereq1", "feature"), ("feature_or_prereq2", "feature")]:
         v = txt(e, tag)
         if v not in ("", "NONE"):
             who.append(f"{lab} {nm(v)}")
     lines.append("- cast by / requires: " + ("; ".join(who) if who else "nothing fixed (Python requirement only)"))
     flags = []
-    for tag in ["bGlobal", "bAbility", "bCausesWar", "bResistable", "bSacrificeCaster", "bInCityOnly", "bInBordersOnly", "bAdjacentToWaterOnly", "bBuffCasterOnly", "bImmuneTeam", "bImmuneNeutral", "bImmuneEnemy", "bImmuneNotAlive", "bPermanentUnitCreate", "bDispel", "bIgnoreHasCasted", "bCasterMustBeAlive", "bCasterNoDuration", "bPrereqSlaveTrade"]:
+    for tag in ["global", "ability", "causes_war", "resistable", "sacrifice_caster", "in_city_only", "in_borders_only", "adjacent_to_water_only", "buff_caster_only", "immune_team", "immune_neutral", "immune_enemy", "immune_not_alive", "permanent_unit_create", "dispel", "ignore_has_casted", "caster_must_be_alive", "caster_no_duration", "prereq_slave_trade"]:
         if num(e, tag):
             flags.append(tag)
-    for tag in ["iRange", "iDamage", "iDamageLimit", "iImmobileTurns", "iCost", "iChangePopulation", "iCreateUnitNum", "iCasterMinLevel", "iResistModify", "iDelay"]:
+    for tag in ["range", "damage", "damage_limit", "immobile_turns", "cost", "change_population", "create_unit_num", "caster_min_level", "resist_modify", "delay"]:
         if num(e, tag):
             flags.append(f"{tag} {num(e, tag)}")
-    for tag in ["DamageType", "CreateUnitType", "CreateUnitPromotion", "ConvertUnitType", "CreateBuildingType", "CreateFeatureType", "CreateImprovementType", "AddPromotionType1", "AddPromotionType2", "AddPromotionType3", "RemovePromotionType1", "RemovePromotionType2", "RemovePromotionType3", "SpreadReligion"]:
+    for tag in ["damage_type", "create_unit_type", "create_unit_promotion", "convert_unit_type", "create_building_type", "create_feature_type", "create_improvement_type", "add_promotion_type1", "add_promotion_type2", "AddPromotionType3", "remove_promotion_type1", "remove_promotion_type2", "remove_promotion_type3", "spread_religion"]:
         v = txt(e, tag)
         if v not in ("", "NONE"):
             flags.append(f"{tag} {nm(v)}")
     lines.append("- data: " + ", ".join(flags))
-    pr, preq = txt(e, "PyResult"), txt(e, "PyRequirement")
+    pr, preq = txt(e, "py_result"), txt(e, "py_requirement")
     if pr:
         lines.append("- Python effect: " + py_loc(pr))
     if preq:
         lines.append("- Python requirement: " + py_loc(preq))
-    allow = num(e, "bAllowAI")
-    glob = num(e, "bGlobal")
-    ab = num(e, "bAbility")
-    understood = (not glob and not ab) and (num(e, "iDamage") != 0 or txt(e, "CreateUnitType") not in ("", "NONE") or txt(e, "AddPromotionType1") not in ("", "NONE") or txt(e, "RemovePromotionType1") not in ("", "NONE") or num(e, "iImmobileTurns") != 0 or num(e, "bDispel") or txt(e, "CreateBuildingType") not in ("", "NONE") or s in PY_VALUED)
+    allow = num(e, "allow_ai")
+    glob = num(e, "global")
+    ab = num(e, "ability")
+    understood = (not glob and not ab) and (num(e, "damage") != 0 or txt(e, "create_unit_type") not in ("", "NONE") or txt(e, "add_promotion_type1") not in ("", "NONE") or txt(e, "remove_promotion_type1") not in ("", "NONE") or num(e, "immobile_turns") != 0 or num(e, "dispel") or txt(e, "create_building_type") not in ("", "NONE") or s in PY_VALUED)
     terms = []
-    if txt(e, "CreateUnitType") not in ("", "NONE"):
+    if txt(e, "create_unit_type") not in ("", "NONE"):
         terms.append("summon (enemy within the summon's moves)")
-    if num(e, "iDamage"):
+    if num(e, "damage"):
         terms.append("damage on enemies in range")
-    if any(txt(e, f"AddPromotionType{i}") not in ("", "NONE") for i in (1, 2, 3)):
+    if any(txt(e, f"add_promotion_type{i}") not in ("", "NONE") for i in (1, 2, 3)):
         terms.append("promotions added (caster's promotion value)")
-    if any(txt(e, f"RemovePromotionType{i}") not in ("", "NONE") for i in (1, 2, 3)):
+    if any(txt(e, f"remove_promotion_type{i}") not in ("", "NONE") for i in (1, 2, 3)):
         terms.append("promotions removed (minus)")
-    if txt(e, "ConvertUnitType") not in ("", "NONE"):
+    if txt(e, "convert_unit_type") not in ("", "NONE"):
         terms.append("unit conversion (new type's value - old)")
-    if txt(e, "CreateBuildingType") not in ("", "NONE"):
+    if txt(e, "create_building_type") not in ("", "NONE"):
         terms.append("building created (building value)")
-    if txt(e, "CreateFeatureType") not in ("", "NONE"):
+    if txt(e, "create_feature_type") not in ("", "NONE"):
         terms.append("feature +10")
-    if txt(e, "CreateImprovementType") not in ("", "NONE"):
+    if txt(e, "create_improvement_type") not in ("", "NONE"):
         terms.append("improvement +10")
-    if num(e, "bDispel"):
+    if num(e, "dispel"):
         terms.append("dispel")
-    if num(e, "iChangePopulation"):
+    if num(e, "change_population"):
         terms.append("population x50")
-    if num(e, "iCost"):
+    if num(e, "cost"):
         terms.append("gold cost -4/gold")
-    if num(e, "iImmobileTurns"):
+    if num(e, "immobile_turns"):
         terms.append("immobility")
-    if num(e, "bSacrificeCaster"):
+    if num(e, "sacrifice_caster"):
         terms.append("caster sacrificed (minus level x worth)")
-    if num(e, "bResistable"):
+    if num(e, "resistable"):
         terms.append("halved (resistable)")
-    aiw = num(e, "iAIWeight")
+    aiw = num(e, "ai_weight")
     ai = []
     ai.append(f"bAllowAI {allow}" + (" -> the rules refuse every AI cast (unit_can_cast)" if not allow else ""))
     ai.append(f"iAIWeight {aiw}")
@@ -897,17 +892,16 @@ def spell_facts(s):
 def project_facts(pj):
     e = projects[pj]
     lines = []
-    lines.append(f"- cost {num(e, 'iCost')}; tech {nm(txt(e, 'TechPrereq'))}; civ {nm(txt(e, 'PrereqCivilization')) if txt(e, 'PrereqCivilization') not in ('', 'NONE') else 'any'}; limits: world {num(e, 'iMaxGlobalInstances', -1)}, team {num(e, 'iMaxTeamInstances', -1)}")
+    lines.append(f"- cost {num(e, 'cost')}; tech {nm(txt(e, 'tech_prereq'))}; civ {nm(txt(e, 'prereq_civilization')) if txt(e, 'prereq_civilization') not in ('', 'NONE') else 'any'}; limits: world {num(e, 'max_global_instances', -1)}, team {num(e, 'max_team_instances', -1)}")
     other = []
-    for c in e:
-        tag = strip(c.tag)
-        if tag in ("Type", "Description", "Civilopedia", "Strategy", "Button", "TechPrereq", "iCost", "iMaxGlobalInstances", "iMaxTeamInstances", "PrereqCivilization", "iAIWeight", "MovieDefineTag", "CreateSound", "MovieArtDef"):
+    for tag in e:
+        if tag in ("type", "description", "civilopedia", "strategy", "button", "tech_prereq", "cost", "max_global_instances", "max_team_instances", "prereq_civilization", "ai_weight", "movie_define_tag", "create_sound", "MovieArtDef"):
             continue
         if nonzero(e, tag):
             other.append(f"{tag} {show_tag(e, tag)}")
     if other:
         lines.append("- data: " + "; ".join(other))
-    aiw = num(e, "iAIWeight")
+    aiw = num(e, "ai_weight")
     excluded = pj in {"PROJECT_SAMHAIN", "PROJECT_THE_DRAW", "PROJECT_STIR_FROM_SLUMBER", "PROJECT_BANE_DIVINE", "PROJECT_GLORY_EVERLASTING", "PROJECT_PURGE_THE_UNFAITHFUL"}
     s = f"- AI: iAIWeight {aiw}; "
     if excluded:
@@ -944,13 +938,13 @@ def entry(t, facts):
 
 def unit_group(u):
     e = units[u]
-    dom = txt(e, "Domain")
-    da = txt(e, "DefaultUnitAI")
-    combat = txt(e, "Combat")
-    cls = txt(e, "Class")
-    if num(e, "bAnimal"):
+    dom = txt(e, "domain")
+    da = txt(e, "default_unit_ai")
+    combat = txt(e, "unit_combat")
+    cls = txt(e, "class")
+    if num(e, "animal"):
         return "animals"
-    if num(e, "iCost") <= 0:
+    if num(e, "cost") <= 0:
         return "summoned, spawned and special"
     if is_hero(e) or (cls in uclasses and class_limits(uclasses[cls])):
         return "heroes and limited units"
@@ -1014,19 +1008,19 @@ COMBAT_SECTION = {
 
 def unit_section(u):
     e = units[u]
-    if txt(e, "EquipmentPromotion") not in ("", "NONE"):
+    if txt(e, "equipment_promotion") not in ("", "NONE"):
         return "Equipment"
-    if txt(e, "DefaultUnitAI") in GP:
+    if txt(e, "default_unit_ai") in GP:
         return "Great people"
     if is_hero(e):
         return "Heroes"
-    if num(e, "bAnimal") or txt(e, "Combat") == "UNITCOMBAT_ANIMAL" or txt(e, "DefaultUnitAI") == "UNITAI_ANIMAL":
+    if num(e, "animal") or txt(e, "unit_combat") == "UNITCOMBAT_ANIMAL" or txt(e, "default_unit_ai") == "UNITAI_ANIMAL":
         return "Animals"
-    if num(e, "iCost") <= 0:
+    if num(e, "cost") <= 0:
         return "Summons" if SUMMONED_BY.get(u) else "Barbarian, event and special units"
-    if txt(e, "Domain") == "DOMAIN_SEA":
+    if txt(e, "domain") == "DOMAIN_SEA":
         return "Naval"
-    return COMBAT_SECTION.get(txt(e, "Combat"), "Settlers, workers and constructs")
+    return COMBAT_SECTION.get(txt(e, "unit_combat"), "Settlers, workers and constructs")
 
 
 UNIT_SLICES = {
@@ -1039,11 +1033,11 @@ UNIT_SLICES = {
 
 def building_section(b):
     e = buildings[b]
-    ce = bclasses.get(txt(e, "BuildingClass"))
-    g = num(ce, "iMaxGlobalInstances", -1) if ce is not None else -1
-    t = num(ce, "iMaxTeamInstances", -1) if ce is not None else -1
-    p = num(ce, "iMaxPlayerInstances", -1) if ce is not None else -1
-    if num(e, "iCost") <= 0:
+    ce = bclasses.get(txt(e, "building_class"))
+    g = num(ce, "max_global_instances", -1) if ce is not None else -1
+    t = num(ce, "max_team_instances", -1) if ce is not None else -1
+    p = num(ce, "max_player_instances", -1) if ce is not None else -1
+    if num(e, "cost") <= 0:
         return "Buildings no city can build (palaces, granted and spell-made)"
     if g > 0:
         return "World wonders"
@@ -1057,12 +1051,12 @@ SPHERES = ("AIR", "BODY", "CHAOS", "DEATH", "EARTH", "ENCHANTMENT", "ENTROPY", "
 
 def spell_section(s):
     e = spells[s]
-    if num(e, "bGlobal"):
+    if num(e, "global"):
         return "World spells"
-    p1, p2 = txt(e, "PromotionPrereq1"), txt(e, "PromotionPrereq2")
+    p1, p2 = txt(e, "promotion_prereq1"), txt(e, "promotion_prereq2")
     if any(re.fullmatch(r"PROMOTION_(%s)[123]" % "|".join(SPHERES), p or "") for p in (p1, p2)):
         return "Sphere spells (arcane)"
-    if num(e, "bAbility"):
+    if num(e, "ability"):
         return "Abilities"
     return "Unit, hero, religion and civilization spells"
 

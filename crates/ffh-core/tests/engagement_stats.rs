@@ -80,6 +80,16 @@ fn apply(base_x100: i32, modifier: i32) -> i32 {
     1.max(if modifier > 0 { base_x100 * (modifier + 100) / 100 } else { base_x100 * 100 / (100 - modifier) })
 }
 
+
+/// A pair's A and Dv (its magic is checked apart).
+fn ad(p: Pair) -> (i32, i32) {
+    (p.a, p.dv)
+}
+
+fn ad2((p, q): (Pair, Pair)) -> ((i32, i32), (i32, i32)) {
+    (ad(p), ad(q))
+}
+
 #[test]
 fn roles_and_hit_points() {
     let mut w = world();
@@ -118,21 +128,21 @@ fn formation_values_by_unit() {
     let (p0, from) = (w.p0, w.from);
     let r = |kind, count| RowActions { kind, count };
     let values = |g: &Game, u: UnitId| {
-        (g.unit_engage_speed(u), g.unit_engage_dodge(u), g.unit_engage_crit_bonus(u), g.unit_engage_best_row(u), g.unit_engage_flanks(u))
+        (g.unit_engage_speed(u), g.unit_engage_evasion(u), g.unit_engage_crit(u), g.unit_engage_best_row(u), g.unit_engage_flanks(u))
     };
     // A tier 4 flanker: the flanker's values, one more charge from the front.
     let knight = w.unit(p0, "UNIT_KNIGHT", from);
-    assert_eq!(values(&w.g, knight), (6, 10, 0, 0, true));
+    assert_eq!(values(&w.g, knight), (6, 10, 10, 0, true));
     assert_eq!(w.g.unit_engage_rows(knight), [r(Charge, 2), r(Strike, 1), r(Strike, 1)]);
     assert_eq!(w.g.unit_engage_actions(knight), [r(Charge, 3), r(Strike, 1), r(Strike, 1)]);
-    // An assassin (tier 3): its role's dodge and crit bonus, best from the middle, no extra action.
+    // An assassin (tier 3): its sheet's evasion and crit, best from the middle, no extra action.
     let assassin = w.unit(p0, "UNIT_ASSASSIN", from);
-    assert_eq!(values(&w.g, assassin), (7, 15, 15, 1, false));
+    assert_eq!(values(&w.g, assassin), (7, 15, 25, 1, false));
     assert_eq!(w.g.unit_engage_actions(assassin), [r(Stab, 1), r(Stab, 2), r(Stab, 1)]);
     // An axeman: the frontline's; with Formation the screen's (its own role); a hero acts once
     // more from its best row.
     let axeman = w.unit(p0, "UNIT_AXEMAN", from);
-    assert_eq!(values(&w.g, axeman), (4, 0, 0, 0, false));
+    assert_eq!(values(&w.g, axeman), (4, 0, 10, 0, false));
     assert_eq!(w.g.unit_engage_actions(axeman), [r(Strike, 2), r(Strike, 1), r(Strike, 1)]);
     w.promote(axeman, "PROMOTION_FORMATION");
     assert_eq!(w.g.unit_engage_speed(axeman), 3);
@@ -140,7 +150,7 @@ fn formation_values_by_unit() {
     assert_eq!(w.g.unit_engage_actions(axeman), [r(Strike, 3), r(Strike, 1), r(Strike, 1)]);
     // A siege engine's front row stays without an action.
     let catapult = w.unit(p0, "UNIT_CATAPULT", from);
-    assert_eq!(values(&w.g, catapult), (1, 0, 0, 2, false));
+    assert_eq!(values(&w.g, catapult), (1, 0, 10, 2, false));
     assert_eq!(w.g.unit_engage_actions(catapult), [r(None, 0), r(Bombard, 1), r(Bombard, 2)]);
 }
 
@@ -172,9 +182,9 @@ fn archer_in_a_walled_hill_city_fortified() {
     assert_eq!(attack.dv, apply(5 * 60, 25 + 25 + 25));
     // The axeman's A: 4 x 100% and its city attack (+10).
     assert_eq!(attack.a, apply(400, 10));
-    // Hitting back (G1): the archer has no city or terrain attack; the axeman, the attacker, has
-    // no plot defense, fortification or hills: its Dv is its bare 4.
-    assert_eq!(back, Pair { a: 300, dv: 400 });
+    // Hitting back: the place bonuses count on both sides (docs/UNIT_STATS.md), so the archer's
+    // A has its fortification, city and hills defense, and the axeman's Dv its city attack.
+    assert_eq!(ad(back), (apply(300, 25 + 25 + 25), apply(400, 10)));
 
     // The duel puts all of it on the archer's one strength.
     assert_eq!(w.g.unit_max_combat_str(archer, Some(to), Some(axeman), None), apply(500, plot_defense + 25 + 25 + 25 - 10));
@@ -182,7 +192,7 @@ fn archer_in_a_walled_hill_city_fortified() {
     // The breakdown lists the parts and they sum to the modifier.
     let stat = w.g.engage_stat(archer, Some(axeman), Side::Defender, false, &w.ctx());
     assert_eq!(stat.total_x100, attack.dv);
-    assert_eq!((stat.base_x100, stat.role_pct), (300, 60));
+    assert_eq!(stat.base_x100, 300); // its sheet's defence, 30
     let srcs: Vec<&TermSource> = stat.terms.iter().map(|t| &t.src).collect();
     for src in [TermSource::Fortify, TermSource::UnitCityDefense, TermSource::UnitHillsDefense] {
         assert!(srcs.contains(&&src), "{src:?} in {srcs:?}");
@@ -249,11 +259,11 @@ fn knight_against_a_formation_axeman() {
     let axeman = w.unit(p1, "UNIT_AXEMAN", to);
     w.promote(axeman, "PROMOTION_FORMATION");
     let (attack, back) = w.both_ways(knight, axeman);
-    // Knight 11 x 110% (Flanker); the screen axeman 4 x 110% with Formation's +40% against
-    // mounted units, on the Dv it shows the knight.
-    assert_eq!(attack, Pair { a: 1210, dv: apply(440, 40) });
+    // Knight 121 (its sheet: 11 x 110% as a Flanker); the screen axeman 40 with Formation's +10%
+    // defence and +40% against mounted units, on the Dv it shows the knight.
+    assert_eq!(ad(attack), (1210, apply(400, 50)));
     // Back: the axeman's A with +40% against mounted, the knight's Dv 7 x 80%.
-    assert_eq!(back, Pair { a: apply(400, 40), dv: 560 });
+    assert_eq!(ad(back), (apply(400, 40), 560));
 }
 
 #[test]
@@ -272,12 +282,12 @@ fn typed_strength_is_scaled_by_the_opponent_resistance() {
     // Its Dv against them: its fire points scaled by the hitter's resistance.
     assert_eq!(w.g.engage_hit(plain, elemental, Side::Defender, &ctx).dv, 900);
     assert_eq!(w.g.engage_hit(immune, elemental, Side::Defender, &ctx).dv, 600);
-    // Flat strength (Bronze Weapons +1) is inside the role's percent: an archer's Dv
-    // (5 + 1) x 60%.
+    // A promotion's points add to the sheet's (docs/UNIT_STATS.md): an archer's defence 30 and
+    // Bronze Weapons' +10.
     let archer = w.unit(p1, "UNIT_ARCHER", to);
     w.promote(archer, "PROMOTION_BRONZE_WEAPONS");
     let axeman = w.unit(p0, "UNIT_AXEMAN", from);
-    assert_eq!(w.g.engage_hit(axeman, archer, Side::Attacker, &ctx).dv, 360);
+    assert_eq!(w.g.engage_hit(axeman, archer, Side::Attacker, &ctx).dv, 400);
 }
 
 #[test]
@@ -287,15 +297,15 @@ fn the_defense_percentage_goes_to_dv_and_the_attack_percentage_to_a() {
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     let d = w.g.d;
     let shield = &d.promotions[d.t::<PromotionType>("PROMOTION_SHIELD_OF_FAITH")];
-    assert!(shield.combat_percent_defense > shield.combat_percent);
-    for (name, a_pct, dv_pct) in [("PROMOTION_ENRAGED", 20, -20), ("PROMOTION_SHIELD_OF_FAITH", shield.combat_percent, shield.combat_percent_defense)] {
+    assert!(shield.combat_percent_defense() > shield.combat_percent());
+    for (name, a_pct, dv_pct) in [("PROMOTION_ENRAGED", 20, -20), ("PROMOTION_SHIELD_OF_FAITH", shield.combat_percent(), shield.combat_percent_defense())] {
         let attacker = w.unit(p0, "UNIT_AXEMAN", from);
         let defender = w.unit(p1, "UNIT_AXEMAN", to);
         w.promote(attacker, name);
         w.promote(defender, name);
         let (attack, back) = w.both_ways(attacker, defender);
-        assert_eq!(attack, Pair { a: apply(400, a_pct), dv: apply(400, dv_pct) }, "{name}");
-        assert_eq!(back, Pair { a: apply(400, a_pct), dv: apply(400, dv_pct) }, "{name}");
+        assert_eq!(ad(attack), (apply(400, a_pct), apply(400, dv_pct)), "{name}");
+        assert_eq!(ad(back), (apply(400, a_pct), apply(400, dv_pct)), "{name}");
         // The duel applies the attack percentage to both.
         assert_eq!(w.g.unit_max_combat_str(defender, Some(to), Some(attacker), None), apply(400, a_pct), "{name}");
     }
@@ -310,15 +320,15 @@ fn homeland_counts_where_the_unit_fights() {
     w.promote(attacker, "PROMOTION_HOMELAND");
     w.promote(defender, "PROMOTION_HOMELAND");
     // Outside their borders: nothing.
-    assert_eq!(w.both_ways(attacker, defender), (Pair { a: 400, dv: 400 }, Pair { a: 400, dv: 400 }));
+    assert_eq!(ad2(w.both_ways(attacker, defender)), ((400, 400), (400, 400)));
     // Each in its own borders: +10% on A and Dv.
     w.g.map.plots[from].owner = Some(p0);
     w.g.map.plots[to].owner = Some(p1);
-    assert_eq!(w.both_ways(attacker, defender), (Pair { a: 440, dv: 440 }, Pair { a: 440, dv: 440 }));
+    assert_eq!(ad2(w.both_ways(attacker, defender)), ((440, 440), (440, 440)));
     // An estimate from an approach plot outside the attacker's borders: no Homeland for it.
     let elsewhere = w.g.map.plot_ids().find(|&p| !w.g.plot_is_water(p) && w.g.map.plots[p].owner.is_none()).unwrap();
     let ctx = HitCtx::new(elsewhere, to);
-    assert_eq!(w.g.engage_hit(attacker, defender, Side::Attacker, &ctx), Pair { a: 400, dv: 440 });
+    assert_eq!(ad(w.g.engage_hit(attacker, defender, Side::Attacker, &ctx)), (400, 440));
 }
 
 #[test]
@@ -334,7 +344,7 @@ fn stigmata_follows_the_armageddon_counter() {
     let per = d.promotions[d.t::<PromotionType>("PROMOTION_STIGMATA")].combat_percent_global_counter;
     let pct = w.g.get_global_counter() * per / 100;
     assert!(pct > 0);
-    assert_eq!(w.both_ways(attacker, defender), (Pair { a: apply(400, pct), dv: apply(400, pct) }, Pair { a: apply(400, pct), dv: apply(400, pct) }));
+    assert_eq!(ad2(w.both_ways(attacker, defender)), ((apply(400, pct), apply(400, pct)), (apply(400, pct), apply(400, pct))));
     // The job strengths have it too (it does not depend on the opponent).
     assert_eq!(w.g.engage_a_alone(attacker, Side::Attacker, &w.ctx()), apply(400, pct));
     assert_eq!(w.g.engage_job_defense(defender, &w.ctx()), apply(400, pct));
@@ -350,9 +360,9 @@ fn an_attack_from_water_costs_a_unless_amphibious() {
     let defender = w.unit(p1, "UNIT_AXEMAN", to);
     let ctx = HitCtx::new(water, to);
     assert_eq!(d.defines.amphib_attack_modifier, -50);
-    assert_eq!(w.g.engage_hit(attacker, defender, Side::Attacker, &ctx), Pair { a: apply(400, -50), dv: 400 });
+    assert_eq!(ad(w.g.engage_hit(attacker, defender, Side::Attacker, &ctx)), (apply(400, -50), 400));
     // The defender hitting back has no such term (it does not attack from water).
-    assert_eq!(w.g.engage_hit(defender, attacker, Side::Defender, &ctx), Pair { a: 400, dv: 400 });
+    assert_eq!(ad(w.g.engage_hit(defender, attacker, Side::Defender, &ctx)), (400, 400));
     w.promote(attacker, "PROMOTION_AMPHIBIOUS");
     assert_eq!(w.g.engage_hit(attacker, defender, Side::Attacker, &ctx).a, 400);
     // An approach not known is by land.
@@ -411,11 +421,11 @@ fn the_handicap_keeps_the_duel_ratio_against_barbarians() {
     let barb = w.unit(barbarian, "UNIT_AXEMAN", to);
     let (attack, back) = w.both_ways(ai, barb);
     // The AI hits the barbarian: the barbarian's Dv / 1.25, as its duel strength defending.
-    assert_eq!(attack, Pair { a: 400, dv: apply(400, bonus) });
+    assert_eq!(ad(attack), (400, apply(400, bonus)));
     let duel_ratio = (w.g.unit_max_combat_str(ai, None, Some(barb), None), w.g.unit_max_combat_str(barb, Some(to), Some(ai), None));
     assert_eq!(duel_ratio, (attack.a, attack.dv));
     // The barbarian hits back: the AI's Dv x 1.25.
-    assert_eq!(back, Pair { a: 400, dv: apply(400, -bonus) });
+    assert_eq!(ad(back), (400, apply(400, -bonus)));
     // A barbarian attacking an AI city: the handicap's bonus still; the city's defense and its
     // barbarian defense give Dv nothing (revision 4: defended-plot terms).
     let (fx, fy) = w.g.map.xy(from);
@@ -430,10 +440,10 @@ fn the_handicap_keeps_the_duel_ratio_against_barbarians() {
 }
 
 #[test]
-fn each_side_has_only_its_own_terms() {
-    // G1 on a defended plot with every kind of term: the defending side has its own defense
-    // there (revision 4: not the plot's); the attacking side has its attack bonuses against the
-    // plot and no defense there.
+fn place_bonuses_count_on_both_sides() {
+    // On a defended plot with every kind of term: the defending side has its own defense there
+    // (revision 4: not the plot's), the attacking side its attack bonuses against the plot, each on
+    // its A and its Dv alike (the owner's rule, 2026-11-05).
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     let d = w.g.d;
@@ -453,8 +463,8 @@ fn each_side_has_only_its_own_terms() {
     let (attack, back) = w.both_ways(attacker, defender);
     // The attacker's A: its forest attack; the defender's Dv: its forest defense and its
     // fortification (the forest's own cover is the ground's rules now, not Dv).
-    assert_eq!(attack, Pair { a: apply(400, attack_bonus), dv: apply(400, defense_bonus + 10) });
-    // The defender hitting back: no forest attack; the attacker being hit: no forest, no
-    // fortification, though it stands fortified in a forest.
-    assert_eq!(back, Pair { a: 400, dv: 400 });
+    assert_eq!(ad(attack), (apply(400, attack_bonus), apply(400, defense_bonus + 10)));
+    // The defender hitting back keeps its forest defense and fortification; the attacker being
+    // hit keeps its forest attack (not its own fortification: it left its plot to attack).
+    assert_eq!(ad(back), (apply(400, defense_bonus + 10), apply(400, attack_bonus)));
 }

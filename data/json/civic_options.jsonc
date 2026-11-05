@@ -1,0 +1,12 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jesse Smith (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Civic Option
+[
+  {"type": "CIVICOPTION_GOVERNMENT", "description": "TXT_KEY_CIVICOPTION_GOVERNMENT"},
+  {"type": "CIVICOPTION_CULTURAL_VALUES", "description": "TXT_KEY_CIVICOPTION_CULTURAL_VALUES"},
+  {"type": "CIVICOPTION_LABOR", "description": "TXT_KEY_CIVICOPTION_LABOR"},
+  {"type": "CIVICOPTION_ECONOMY", "description": "TXT_KEY_CIVICOPTION_ECONOMY"},
+  {"type": "CIVICOPTION_MEMBERSHIP", "description": "TXT_KEY_CIVICOPTION_MEMBERSHIP"}
+]

@@ -13,7 +13,7 @@
 ## Crates
 
 ```
-ffh-data   XML -> typed info tables (GameData). No game state.
+ffh-data   data/json -> typed info tables (GameData). No game state.
 ffh-core   Rules engine. Owns all mutable game state (Game). Deterministic.
 ffh-ai     Controllers (the new AI). Reads state, issues the same calls a human UI would.
 ffh-cli    `ffh` binary: autoplay, benchmarks, inspection.
@@ -127,7 +127,7 @@ without changing the rules engine:
 `ffh-core/src/save/` (replaces C++ `read`/`write`): `Game::save(&self) -> Vec<u8>` and
 `Game::load(d, &bytes) -> Result<Game, LoadError>`. std-only binary format: magic `FFH2SAVE`,
 format version, a fingerprint of the static data (type count + hash of the type names of every
-info table, plus the fixed array lengths; a save made with other XML is refused), then every
+info table, plus the fixed array lengths; a save made with other data is refused), then every
 `Game` field in declaration order (varint integers, length-prefixed strings/vectors, tagged
 options; slabs keep their ids and next id). Encoding details: `save/io.rs`.
 
@@ -151,12 +151,12 @@ options; slabs keep their ids and next id). Encoding details: `save/io.rs`.
 
 FFH2 implements much of its content in Python (spells, events, per-turn effects,
 lairs, rituals). These are ported to Rust under `ffh-core/src/ffh/`, dispatched by
-the callback names stored in XML (`PyResult`, `PyRequirement`, `PythonOnMove`, ...),
+the callback names stored in the data (`PyResult`, `PyRequirement`, `PythonOnMove`, ...),
 resolved once at startup instead of `eval`-ing strings per call.
 
 ## Verification
 
-- Data: integration tests spot-check loaded values against the XML; loading must
+- Data: integration tests spot-check loaded values against the data files; loading must
   produce zero warnings (unknown types, enum-order mismatches).
 - Parity: `tools/parity` compiles self-contained DLL sources (CvRandom, CvFractal)
   unmodified against stubs and generates fixtures the Rust tests compare against.

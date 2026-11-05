@@ -104,12 +104,24 @@ pub fn lanes_for(slots: i32) -> u8 {
     ((slots + 2 + 2) / 3).clamp(2, u8::MAX as i32) as u8
 }
 
-/// The per-pair strengths: the hitter's A against this target and the target's Dv against this
-/// hitter, both x100 (`Game::engage_hit`).
+/// The per-pair strengths (`Game::engage_hit`): the hitter's A against this target and the
+/// target's Dv against this hitter, both x100; for its SPELL actions, its magic and the target's
+/// magic defence, x100, and the percentage of the spell's damage the target takes (100 less its
+/// resistance to the spell's damage type).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Pair {
     pub a: i32,
     pub dv: i32,
+    pub ma: i32,
+    pub md: i32,
+    pub spell_pct: i32,
+}
+
+impl Pair {
+    /// A pair whose magic is its A and Dv, the spell's damage whole.
+    pub fn physical(a: i32, dv: i32) -> Pair {
+        Pair { a, dv, ma: a, md: dv, spell_pct: 100 }
+    }
 }
 
 /// The defended plot's ground, as the battle reads it (docs/ENGAGEMENTS.md, "The ground").
@@ -182,10 +194,8 @@ pub struct Params {
     /// Speed per first strike (and per chance first strike rolled).
     pub first_strike_speed: i32,
     /// The miss chance of a physical action, and what a shot and a bombardment add to it.
-    pub miss_pct: i32,
     pub shoot_miss_pct: i32,
     pub bombard_miss_pct: i32,
-    pub crit_pct: i32,
     /// A crit's damage, in percent of the hit.
     pub crit_damage_pct: i32,
     /// What a charge adds in the first round where flanking works.
@@ -213,10 +223,8 @@ impl Default for Params {
             rand_max: 120,
             rounds: 3,
             first_strike_speed: 2,
-            miss_pct: 10,
             shoot_miss_pct: 10,
             bombard_miss_pct: 15,
-            crit_pct: 10,
             crit_damage_pct: 150,
             charge_bonus: 100,
             splash_pct: 50,
@@ -240,10 +248,8 @@ impl Params {
             rand_max: d.engagement_damage_rand_max.max(d.engagement_damage_rand_min),
             rounds: d.engagement_rounds,
             first_strike_speed: d.engagement_first_strike_speed,
-            miss_pct: d.engagement_miss_percent,
             shoot_miss_pct: d.engagement_shoot_miss_percent,
             bombard_miss_pct: d.engagement_bombard_miss_percent,
-            crit_pct: d.engagement_crit_percent,
             crit_damage_pct: d.engagement_crit_damage_percent,
             charge_bonus: d.engagement_charge_bonus,
             splash_pct: d.engagement_splash_percent,
@@ -309,11 +315,13 @@ pub struct Fighter {
     /// Its A against nobody in particular, x100: the kill choice's "most dangerous", the ties and
     /// a charge's threat.
     pub a: i32,
-    /// Its dodge: points of miss chance on physical actions against it
-    /// (`Game::unit_engage_dodge`).
-    pub dodge: i32,
-    /// Its crit bonus: points on its own crit chance (`Game::unit_engage_crit_bonus`).
-    pub crit_bonus: i32,
+    /// Its accuracy: its chance to hit with a physical action, before the target's evasion
+    /// (`Game::unit_engage_accuracy`).
+    pub accuracy: i32,
+    /// Its evasion: taken off a physical hitter's chance to hit it (`Game::unit_engage_evasion`).
+    pub evasion: i32,
+    /// Its crit chance (`Game::unit_engage_crit`).
+    pub crit: i32,
     /// Of an anti-flank role: enemy flankers take it first.
     pub anti_flank: bool,
     /// A flanker (its rows charge: `Game::unit_engage_flanks`): it takes anti-flank units in its
@@ -357,8 +365,9 @@ impl Fighter {
             chance_first_strikes: 0,
             actions: [strike(2), strike(1), strike(1)],
             a: 400,
-            dodge: 0,
-            crit_bonus: 0,
+            accuracy: 90,
+            evasion: 0,
+            crit: 10,
             anti_flank: false,
             flanker: false,
             withdraw_pct: 0,
@@ -462,10 +471,10 @@ impl Formation {
         self.fighters.is_empty()
     }
 
-    /// The hitter's A and the target's Dv for this pair (x100, >= 1).
+    /// The hitter's A and the target's Dv, magic and magic defence for this pair (x100, >= 1).
     pub fn pair(&self, h: usize, t: usize) -> Pair {
         let p = self.pairs[h * self.fighters.len() + t];
-        Pair { a: p.a.max(1), dv: p.dv.max(1) }
+        Pair { a: p.a.max(1), dv: p.dv.max(1), ma: p.ma.max(1), md: p.md.max(1), spell_pct: p.spell_pct.max(0) }
     }
 
     /// The ground's percentages on a hit of `kind` by `h`, multiplied into `x` (several multiply).
@@ -494,11 +503,13 @@ impl Formation {
     /// `100 + h`'s collateral extra and `100 - t`'s collateral protection, divided once.
     pub fn expected(&self, h: usize, t: usize, kind: ActionKind, round: i32, splash: bool) -> i32 {
         let p = self.pair(h, t);
-        let (a, dv) = (p.a as i64, p.dv as i64);
+        // A spell is the caster's magic against the target's magic defence (docs/UNIT_STATS.md).
+        let (a, dv) = if kind == ActionKind::Spell { (p.ma as i64, p.md as i64) } else { (p.a as i64, p.dv as i64) };
         let mean = self.params.base_damage.max(0) as i64 * 100 * a / (a + dv);
         let mut x = Pcts { num: mean as i128, den: 1 };
         if kind == ActionKind::Spell {
             x.mul(self.fighters[h].spell.power);
+            x.mul(p.spell_pct);
         }
         self.ground_pcts(h, kind, &mut x);
         if kind == ActionKind::Charge && round == 1 && self.ground.flanking() {
@@ -553,20 +564,22 @@ impl Formation {
         self.floor(h, t).max(collateral)
     }
 
-    /// The miss chance of a physical action of `kind` on `t`, in percent.
-    pub fn miss_chance(&self, kind: ActionKind, t: usize) -> i32 {
+    /// The miss chance of a physical action of `kind` by `h` on `t`, in percent: 100 less its
+    /// chance to hit, `h`'s accuracy less `t`'s evasion and what the kind takes off (SHOOT,
+    /// BOMBARD), within `100 - MAX_CHANCE..=100` (docs/UNIT_STATS.md).
+    pub fn miss_chance(&self, kind: ActionKind, h: usize, t: usize) -> i32 {
         let p = &self.params;
         let extra = match kind {
             ActionKind::Shoot => p.shoot_miss_pct,
             ActionKind::Bombard => p.bombard_miss_pct,
             _ => 0,
         };
-        (p.miss_pct + extra + self.fighters[t].dodge).clamp(0, MAX_CHANCE)
+        100 - (self.fighters[h].accuracy - self.fighters[t].evasion - extra).clamp(100 - MAX_CHANCE, 100)
     }
 
-    /// `h`'s crit chance, in percent.
+    /// `h`'s crit chance on a strike, charge, stab or shoot, in percent (at most `MAX_CHANCE`).
     pub fn crit_chance(&self, h: usize) -> i32 {
-        (self.params.crit_pct + self.fighters[h].crit_bonus).clamp(0, MAX_CHANCE)
+        self.fighters[h].crit.clamp(0, MAX_CHANCE)
     }
 }
 
@@ -1083,7 +1096,7 @@ impl<'a> Run<'a> {
             return;
         };
         ev.target = Some(c as FighterIdx);
-        if kind.physical() && rng.rand(100, "Engagement miss") < f.miss_chance(kind, c) {
+        if kind.physical() && rng.rand(100, "Engagement miss") < f.miss_chance(kind, h, c) {
             ev.hits.push(Hit { target: c as FighterIdx, dmg: 0, expected: 0, r: 0, crit: false, miss: true, killed: false, withdrew: false, splash: false });
             self.push(ev);
             return;

@@ -281,7 +281,7 @@ fn the_plot_falls_only_when_no_defender_is_left() {
         }
         let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
         for &a in &axemen {
-            w.g.units[a].extra_combat_percent = 400;
+            w.g.unit_change_extra_combat_percent(a, 400);
         }
         for seed in 0..4 {
             let mut f = w.fork(seed);
@@ -415,7 +415,7 @@ fn the_reserve_strikes_and_the_catapult_splashes() {
     w.units(p1, "UNIT_ARCHER", to, 12);
     let cat = w.unit(p0, "UNIT_CATAPULT", from);
     // Tough enough to outlive the archers' first volleys (it acts last: speed 1).
-    w.g.units[cat].extra_combat_percent_defense = 2000;
+    w.g.units[cat].stat_pct[StatType::Defense.idx()] = 2000;
     w.units(p0, "UNIT_AXEMAN", from, 6);
     let (mut strikes, mut collateral) = (0, 0);
     for seed in 0..6 {
@@ -503,8 +503,8 @@ fn an_attacker_withdraws_and_stays_in_its_army() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     let wall = w.unit(p1, "UNIT_AXEMAN", to);
-    w.g.units[wall].extra_combat_percent_defense = 900;
-    w.g.units[wall].extra_combat_percent = 900;
+    w.g.units[wall].stat_pct[StatType::Defense.idx()] = 900;
+    w.g.unit_change_extra_combat_percent(wall, 900);
     let rider = w.unit(p0, "UNIT_HORSEMAN", from);
     w.g.unit_change_extra_withdrawal(rider, 100);
     w.g.units[rider].damage = 80;
@@ -531,7 +531,7 @@ fn a_held_line_keeps_the_plot() {
     let d = w.unit(p1, "UNIT_WARRIOR", to);
     let a = w.unit(p0, "UNIT_WARRIOR", from);
     for u in [a, d] {
-        w.g.units[u].extra_combat_percent_defense = 100_000;
+        w.g.units[u].stat_pct[StatType::Defense.idx()] = 100_000;
     }
     let mut f = w.fork(1);
     let (_, reports) = f.attack(a);
@@ -640,7 +640,7 @@ fn blitz_attacks_twice() {
     let a = w.unit(p0, "UNIT_HORSEMAN", from);
     w.promote(a, "PROMOTION_BLITZ");
     for u in [a, d] {
-        w.g.units[u].extra_combat_percent_defense = 100_000;
+        w.g.units[u].stat_pct[StatType::Defense.idx()] = 100_000;
     }
     let mut f = w.fork(1);
     assert_eq!(f.attack(a).1.len(), 1);
@@ -658,12 +658,12 @@ fn unit_attack_is_a_forced_engagement() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     let d = w.unit(p1, "UNIT_AXEMAN", to);
-    w.g.units[d].extra_combat_percent_defense = 100_000;
+    w.g.units[d].stat_pct[StatType::Defense.idx()] = 100_000;
     let taunted = w.units(p0, "UNIT_WARRIOR", from, 3);
     for &u in &taunted {
         w.g.units[u].made_attack = true;
         w.g.units[u].attacks_made = 1;
-        w.g.units[u].extra_combat_percent_defense = 100_000;
+        w.g.units[u].stat_pct[StatType::Defense.idx()] = 100_000;
     }
     let mut f = w.fork(1);
     for &u in &taunted {
@@ -917,8 +917,8 @@ fn a_hidden_attacker_with_no_free_plot_dies_after_the_battle() {
     }
     let hidden = w.unit(p0, "UNIT_AXEMAN", from);
     w.promote(hidden, "PROMOTION_HIDDEN");
-    w.g.units[hidden].extra_combat_percent = 3000;
-    w.g.units[hidden].extra_combat_percent_defense = 3000;
+    w.g.unit_change_extra_combat_percent(hidden, 3000);
+    w.g.units[hidden].stat_pct[StatType::Defense.idx()] = 3000;
     assert!(w.g.unit_is_invisible(hidden, w.g.players[p1].team, true));
     // An enemy on the attacker's own plot (it does not see the Hidden unit) and on every other
     // land plot around it.
@@ -961,7 +961,7 @@ fn taunt_stops_when_the_caster_dies() {
     let taunted = w.units(p1, "UNIT_AXEMAN", to, 3);
     for &u in &taunted {
         w.g.units[u].resist = -1000;
-        w.g.units[u].extra_combat_percent = 900;
+        w.g.unit_change_extra_combat_percent(u, 900);
     }
     let taunt = w.g.d.t::<SpellType>("SPELL_TAUNT");
     for seed in 0..4 {

@@ -1,0 +1,11 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Alex Mantzaris (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Basic Infos
+[
+  {"type": "SEASON_WINTER", "description": "TXT_KEY_SEASON_WINTER"},
+  {"type": "SEASON_SPRING", "description": "TXT_KEY_SEASON_SPRING"},
+  {"type": "SEASON_SUMMER", "description": "TXT_KEY_SEASON_SUMMER"},
+  {"type": "SEASON_FALL", "description": "TXT_KEY_SEASON_FALL"}
+]

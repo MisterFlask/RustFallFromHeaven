@@ -31,7 +31,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, '..', '..', '..'))
-UNITS = os.path.join(ROOT, 'data', 'xml', 'Units')
+sys.path.insert(0, os.path.join(ROOT, 'tools'))
+import jsonc  # noqa: E402
 FIELDS = ['arcane_made', 'arcane_lost', 'arcane_lost_alone', 'arcane_lost_with_owner', 'arcane_lost_levels',
           'arcane_upgraded', 'arcane_turns', 'arcane_ready_turns', 'arcane_mage_turns', 'arcane_archmage_turns']
 CAST = re.compile(r'\[cast t(\d+) p(\d+)\] civ=(\S+) unit=(\S+) spell=(\S+) ctx=(\S+)')
@@ -49,26 +50,18 @@ def parse_seeds(s):
 
 def tables():
     """Arcane unit names; each spell's Channeling tier (0: none) and kind."""
-    units = open(os.path.join(UNITS, 'CIV4UnitInfos.xml')).read()
-    arcane = set()
-    for m in re.finditer(r'<UnitInfo>(.*?)</UnitInfo>', units, re.S):
-        if '<Combat>UNITCOMBAT_ADEPT</Combat>' in m.group(1):
-            arcane.add(re.search(r'<Type>UNIT_(.*?)</Type>', m.group(1)).group(1))
-    promos = open(os.path.join(UNITS, 'CIV4PromotionInfos.xml')).read()
+    arcane = {u['type'][len('UNIT_'):] for u in jsonc.table('units') if u.get('unit_combat') == 'UNITCOMBAT_ADEPT'}
     tier = {}
-    for m in re.finditer(r'<PromotionInfo>(.*?)</PromotionInfo>', promos, re.S):
-        a = re.search(r'<PromotionPrereqAnd>PROMOTION_CHANNELING(\d)</PromotionPrereqAnd>', m.group(1))
+    for p in jsonc.table('promotions'):
+        a = re.fullmatch(r'PROMOTION_CHANNELING(\d)', p.get('promotion_prereq_and', ''))
         if a:
-            tier[re.search(r'<Type>(.*?)</Type>', m.group(1)).group(1)] = int(a.group(1))
-    spells = open(os.path.join(UNITS, 'CIV4SpellInfos.xml')).read()
+            tier[p['type']] = int(a.group(1))
     stier, kind = {}, {}
-    for m in re.finditer(r'<SpellInfo>(.*?)</SpellInfo>', spells, re.S):
-        b = m.group(1)
-        t = re.search(r'<Type>SPELL_(.*?)</Type>', b).group(1)
-        p1 = re.search(r'<PromotionPrereq1>(.*?)</PromotionPrereq1>', b)
-        stier[t] = tier.get(p1.group(1), 0) if p1 else 0
-        kind[t] = ('summon' if '<CreateUnitType>' in b else 'damage' if re.search(r'<iDamage>[1-9]', b)
-                   else 'city' if '<CreateBuildingType>' in b else 'promo' if '<AddPromotionType1>' in b else 'python')
+    for sp in jsonc.table('spells'):
+        t = sp['type'][len('SPELL_'):]
+        stier[t] = tier.get(sp.get('promotion_prereq1', ''), 0)
+        kind[t] = ('summon' if 'create_unit_type' in sp else 'damage' if sp.get('damage', 0) > 0
+                   else 'city' if 'create_building_type' in sp else 'promo' if 'add_promotion_type1' in sp else 'python')
     return arcane, stier, kind
 
 

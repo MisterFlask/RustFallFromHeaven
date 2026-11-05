@@ -1,5 +1,5 @@
 //! Data spot-checks for the GameInfo tables ported in `infos/game.rs`.
-//! Every expected value was read by hand from `data/xml/Gameinfo/*.xml`.
+//! Every expected value was read by hand from `data/json/`.
 
 use ffh_data::*;
 

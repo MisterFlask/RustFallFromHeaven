@@ -1,6 +1,6 @@
 //! Spot checks for the unit-related info tables (port of CvUnitInfo, CvUnitClassInfo,
 //! CvPromotionInfo, CvSpellInfo, CvBuildInfo, CvSpecialUnitInfo, CvAutomateInfo, CvCommandInfo,
-//! CvMissionInfo). Expected values were read off data/xml/Units/*.xml.
+//! CvMissionInfo). Expected values were read off data/json/.
 
 use ffh_data::*;
 
@@ -264,9 +264,10 @@ fn unit_classes() {
 fn promotions() {
     let d = data();
     let c1 = promo("PROMOTION_COMBAT1");
-    assert_eq!(c1.combat_percent, 20);
-    assert_eq!(c1.combat_percent_defense, 20);
-    assert_eq!(c1.spell_damage_modify, 5);
+    // Its stat changes (docs/UNIT_STATS.md): attack, defence and magic defence 20%, magic 5%.
+    let pct = |s: StatType| c1.stat_changes[s.idx()].percent;
+    assert_eq!((pct(StatType::Attack), pct(StatType::Defense), pct(StatType::MagicDefense), pct(StatType::Magic)), (20, 20, 20, 5));
+    assert_eq!((c1.combat_percent(), c1.combat_percent_defense(), c1.spell_damage_modify()), (20, 20, 5));
     assert!(c1.mutation);
     assert_eq!(c1.promotion_summon_perk, Some(d.t::<PromotionType>("PROMOTION_EMPOWER1")));
     assert_eq!(c1.promotion_next_level, Some(d.t::<PromotionType>("PROMOTION_COMBAT2")));
@@ -426,7 +427,7 @@ fn missions_commands_automates() {
         assert_eq!(a.command, Some(CommandType::COMMAND_AUTOMATE));
         assert_eq!(a.automate, Some(i), "automate entries are in AutomateTypes order");
         assert!(a.visible);
-        assert_eq!(a.base.type_, "", "CIV4AutomateInfos.xml has no <Type>");
+        assert_eq!(a.base.type_, "", "automates.jsonc has no <Type>");
     }
     assert_eq!(d.automates[AutomateType::AUTOMATE_TERRAFORMING].base.description, "TXT_KEY_ACTION_AUTOMATE_TERRAFORMING");
 }

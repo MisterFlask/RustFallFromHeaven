@@ -1,0 +1,132 @@
+// Governor names (GAMEOPTION_GOVERNORS; this game's own rules, docs/GOVERNORS.md): a new
+//     candidate of the bench takes a name of its civilization's list that none of its player's
+//     governors has (in list order), else of the generic list (the entry without a
+//     Civilization), else "Governor N".
+[
+  {
+    "type": "GOVERNORNAMES_GENERIC",
+    "names": [
+      "Aldous",
+      "Bryn",
+      "Corwin",
+      "Delia",
+      "Edric",
+      "Fiona",
+      "Garrett",
+      "Helena",
+      "Ivo",
+      "Jessamy",
+      "Leofric",
+      "Mara",
+      "Nolan",
+      "Orla",
+      "Piers",
+      "Rowena"
+    ]
+  },
+  {
+    "type": "GOVERNORNAMES_BANNOR",
+    "civilization": "CIVILIZATION_BANNOR",
+    "names": ["Aldric", "Bertram", "Casimir", "Gunthar", "Helmund", "Ottokar", "Reinhold", "Wilhelmina"]
+  },
+  {
+    "type": "GOVERNORNAMES_MALAKIM",
+    "civilization": "CIVILIZATION_MALAKIM",
+    "names": ["Azaril", "Faruq", "Hazir", "Jamila", "Nadir", "Qadira", "Saleem", "Zahir"]
+  },
+  {
+    "type": "GOVERNORNAMES_ELOHIM",
+    "civilization": "CIVILIZATION_ELOHIM",
+    "names": ["Abiel", "Ezrah", "Haniel", "Ilana", "Josia", "Miriel", "Selah", "Tobiah"]
+  },
+  {
+    "type": "GOVERNORNAMES_MERCURIANS",
+    "civilization": "CIVILIZATION_MERCURIANS",
+    "names": ["Aniel", "Barachiel", "Cassiel", "Dinael", "Jeremiel", "Raziel", "Sariel", "Zadkiel"]
+  },
+  {
+    "type": "GOVERNORNAMES_LUCHUIRP",
+    "civilization": "CIVILIZATION_LUCHUIRP",
+    "names": ["Brannoc", "Dolmen", "Garrik", "Hesta", "Korrin", "Mardun", "Pelta", "Tovin"]
+  },
+  {
+    "type": "GOVERNORNAMES_KURIOTATES",
+    "civilization": "CIVILIZATION_KURIOTATES",
+    "names": ["Ashtar", "Cardith", "Elessa", "Kethra", "Lorn", "Pellam", "Sirrah", "Varis"]
+  },
+  {
+    "type": "GOVERNORNAMES_LJOSALFAR",
+    "civilization": "CIVILIZATION_LJOSALFAR",
+    "names": ["Aelthir", "Caladwen", "Elarion", "Faelwen", "Ilmariel", "Lorethil", "Nimrith", "Thalanor"]
+  },
+  {
+    "type": "GOVERNORNAMES_KHAZAD",
+    "civilization": "CIVILIZATION_KHAZAD",
+    "names": ["Borgrim", "Durgan", "Grundi", "Hrolfa", "Kazrik", "Morda", "Thrandar", "Ulfgar"]
+  },
+  {
+    "type": "GOVERNORNAMES_SIDAR",
+    "civilization": "CIVILIZATION_SIDAR",
+    "names": ["Aethel", "Corvin", "Iselde", "Merrow", "Nyssa", "Oren", "Sable", "Veyne"]
+  },
+  {
+    "type": "GOVERNORNAMES_LANUN",
+    "civilization": "CIVILIZATION_LANUN",
+    "names": ["Bartho", "Calla", "Drake", "Gilda", "Ness", "Rorke", "Silas", "Teague"]
+  },
+  {
+    "type": "GOVERNORNAMES_GRIGORI",
+    "civilization": "CIVILIZATION_GRIGORI",
+    "names": ["Adeline", "Bram", "Cormac", "Edda", "Fenwick", "Isolde", "Lucan", "Tamsin"]
+  },
+  {
+    "type": "GOVERNORNAMES_HIPPUS",
+    "civilization": "CIVILIZATION_HIPPUS",
+    "names": ["Aksar", "Batu", "Chagai", "Dorma", "Juchi", "Kaidu", "Orda", "Temur"]
+  },
+  {
+    "type": "GOVERNORNAMES_AMURITES",
+    "civilization": "CIVILIZATION_AMURITES",
+    "names": ["Aldrin", "Cyrene", "Ithril", "Maelis", "Orrin", "Sorcha", "Thessaly", "Vaelin"]
+  },
+  {
+    "type": "GOVERNORNAMES_DOVIELLO",
+    "civilization": "CIVILIZATION_DOVIELLO",
+    "names": ["Bjorga", "Grimvald", "Hakka", "Ivar", "Kolla", "Orm", "Skadi", "Ulf"]
+  },
+  {
+    "type": "GOVERNORNAMES_BALSERAPHS",
+    "civilization": "CIVILIZATION_BALSERAPHS",
+    "names": ["Arlecchin", "Bellamy", "Columba", "Fennick", "Marlo", "Pierrot", "Scara", "Zanni"]
+  },
+  {
+    "type": "GOVERNORNAMES_CLAN_OF_EMBERS",
+    "civilization": "CIVILIZATION_CLAN_OF_EMBERS",
+    "names": ["Bruk", "Drakka", "Gorza", "Hruk", "Morg", "Rakka", "Skarn", "Urgha"]
+  },
+  {
+    "type": "GOVERNORNAMES_SVARTALFAR",
+    "civilization": "CIVILIZATION_SVARTALFAR",
+    "names": ["Alyndra", "Caelith", "Drisinil", "Ilvara", "Maelthra", "Szoril", "Vhaerith", "Zesstra"]
+  },
+  {
+    "type": "GOVERNORNAMES_CALABIM",
+    "civilization": "CIVILIZATION_CALABIM",
+    "names": ["Alexei", "Casimira", "Dmitri", "Irina", "Mikhail", "Nadia", "Sergei", "Valeska"]
+  },
+  {
+    "type": "GOVERNORNAMES_SHEAIM",
+    "civilization": "CIVILIZATION_SHEAIM",
+    "names": ["Corlath", "Dravin", "Hespera", "Mordrin", "Nythra", "Sabine", "Thule", "Vorn"]
+  },
+  {
+    "type": "GOVERNORNAMES_INFERNAL",
+    "civilization": "CIVILIZATION_INFERNAL",
+    "names": ["Azgoth", "Belith", "Drazzil", "Gharn", "Malphas", "Orobas", "Vepar", "Zagan"]
+  },
+  {
+    "type": "GOVERNORNAMES_ILLIANS",
+    "civilization": "CIVILIZATION_ILLIANS",
+    "names": ["Aurik", "Brina", "Calder", "Eira", "Halvard", "Isvald", "Neve", "Sigrun"]
+  }
+]

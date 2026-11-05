@@ -1,0 +1,1992 @@
+// edited with XMLSpy v2006 sp1 U (http://www.altova.com) by Derek Paxton (None)
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jesse Smith (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// UnitClass Schema
+[
+  {
+    "type": "UNITCLASS_SCORPION",
+    "description": "TXT_KEY_UNIT_SCORPION",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SCORPION"
+  },
+  {
+    "type": "UNITCLASS_DISCIPLE_OF_ACHERON",
+    "description": "TXT_KEY_UNIT_DISCIPLE_OF_ACHERON",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_DISCIPLE_OF_ACHERON"
+  },
+  {
+    "type": "UNITCLASS_SON_OF_THE_INFERNO",
+    "description": "TXT_KEY_UNIT_SON_OF_THE_INFERNO",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SON_OF_THE_INFERNO"
+  },
+  {
+    "type": "UNITCLASS_HERNE",
+    "description": "TXT_KEY_UNIT_HERNE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_HERNE"
+  },
+  {
+    "type": "UNITCLASS_SUPPLIES",
+    "description": "TXT_KEY_UNIT_SUPPLIES",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SUPPLIES"
+  },
+  {
+    "type": "EQUIPMENTCLASS_GODSLAYER",
+    "description": "TXT_KEY_EQUIPMENT_GODSLAYER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_GODSLAYER"
+  },
+  {
+    "type": "UNITCLASS_SEVERED_SOUL",
+    "description": "TXT_KEY_UNIT_SEVERED_SOUL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SEVERED_SOUL"
+  },
+  {
+    "type": "UNITCLASS_AURIC_ASCENDED",
+    "description": "TXT_KEY_UNIT_AURIC_ASCENDED",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_AURIC_ASCENDED"
+  },
+  {
+    "type": "UNITCLASS_HIGH_PRIEST_OF_WINTER",
+    "description": "TXT_KEY_UNIT_HIGH_PRIEST_OF_WINTER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_HIGH_PRIEST_OF_WINTER"
+  },
+  {
+    "type": "EQUIPMENTCLASS_ATHAME",
+    "description": "TXT_KEY_EQUIPMENT_ATHAME",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_ATHAME"
+  },
+  {
+    "type": "UNITCLASS_ICE_ELEMENTAL",
+    "description": "TXT_KEY_UNIT_ICE_ELEMENTAL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ICE_ELEMENTAL"
+  },
+  {
+    "type": "EQUIPMENTCLASS_CROWN_OF_COMMAND",
+    "description": "TXT_KEY_EQUIPMENT_CROWN_OF_COMMAND",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_CROWN_OF_COMMAND"
+  },
+  {
+    "type": "EQUIPMENTCLASS_WAR",
+    "description": "TXT_KEY_EQUIPMENT_WAR",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_WAR"
+  },
+  {
+    "type": "EQUIPMENTCLASS_POTION_OF_INVISIBILITY",
+    "description": "TXT_KEY_EQUIPMENT_POTION_OF_INVISIBILITY",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_POTION_OF_INVISIBILITY"
+  },
+  {
+    "type": "EQUIPMENTCLASS_POTION_OF_RESTORATION",
+    "description": "TXT_KEY_EQUIPMENT_POTION_OF_RESTORATION",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_POTION_OF_RESTORATION"
+  },
+  {
+    "type": "EQUIPMENTCLASS_TIMOR_MASK",
+    "description": "TXT_KEY_EQUIPMENT_TIMOR_MASK",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_TIMOR_MASK"
+  },
+  {
+    "type": "EQUIPMENTCLASS_TREASURE",
+    "description": "TXT_KEY_EQUIPMENT_TREASURE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_TREASURE"
+  },
+  {
+    "type": "UNITCLASS_PRIEST_OF_WINTER",
+    "description": "TXT_KEY_UNIT_PRIEST_OF_WINTER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_PRIEST_OF_WINTER"
+  },
+  {
+    "type": "UNITCLASS_MOKKA",
+    "description": "TXT_KEY_UNIT_MOKKA",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MOKKA"
+  },
+  {
+    "type": "EQUIPMENTCLASS_BLACK_MIRROR",
+    "description": "TXT_KEY_EQUIPMENT_BLACK_MIRROR",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_BLACK_MIRROR"
+  },
+  {
+    "type": "UNITCLASS_PUPPET_LOKI",
+    "description": "TXT_KEY_UNIT_PUPPET_LOKI",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_PUPPET_LOKI"
+  },
+  {
+    "type": "UNITCLASS_PUPPET",
+    "description": "TXT_KEY_UNIT_PUPPET",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_PUPPET"
+  },
+  {
+    "type": "UNITCLASS_TUMTUM",
+    "description": "TXT_KEY_UNIT_TUMTUM",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_TUMTUM"
+  },
+  {
+    "type": "UNITCLASS_ROSIER_OATHTAKER",
+    "description": "TXT_KEY_UNIT_ROSIER_OATHTAKER",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ROSIER_OATHTAKER"
+  },
+  {
+    "type": "UNITCLASS_IRA",
+    "description": "TXT_KEY_UNIT_IRA",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_IRA"
+  },
+  {
+    "type": "UNITCLASS_BRIGIT_HELD",
+    "description": "TXT_KEY_UNIT_BRIGIT",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_BRIGIT_HELD"
+  },
+  {
+    "type": "UNITCLASS_BRIGIT",
+    "description": "TXT_KEY_UNIT_BRIGIT",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_BRIGIT"
+  },
+  {
+    "type": "UNITCLASS_MUIRIN",
+    "description": "TXT_KEY_UNIT_MUIRIN",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MUIRIN"
+  },
+  {
+    "type": "UNITCLASS_DRIFA",
+    "description": "TXT_KEY_UNIT_DRIFA",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_DRIFA"
+  },
+  {
+    "type": "UNITCLASS_AURIC",
+    "description": "TXT_KEY_LEADER_AURIC",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_AURIC"
+  },
+  {
+    "type": "UNITCLASS_BATTERING_RAM",
+    "description": "TXT_KEY_UNIT_BATTERING_RAM",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_BATTERING_RAM"
+  },
+  {
+    "type": "UNITCLASS_POLAR_BEAR",
+    "description": "TXT_KEY_UNIT_POLAR_BEAR",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_POLAR_BEAR"
+  },
+  {
+    "type": "UNITCLASS_FROSTLING",
+    "description": "TXT_KEY_UNIT_FROSTLING",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_FROSTLING"
+  },
+  {
+    "type": "UNITCLASS_FROSTLING_ARCHER",
+    "description": "TXT_KEY_UNIT_FROSTLING_ARCHER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_FROSTLING_ARCHER"
+  },
+  {
+    "type": "UNITCLASS_FROSTLING_WOLF_RIDER",
+    "description": "TXT_KEY_UNIT_FROSTLING_WOLF_RIDER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_FROSTLING_WOLF_RIDER"
+  },
+  {
+    "type": "UNITCLASS_LUCIAN",
+    "description": "TXT_KEY_UNIT_LUCIAN",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_LUCIAN"
+  },
+  {
+    "type": "UNITCLASS_GAELAN",
+    "description": "TXT_KEY_UNIT_GAELAN",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_GAELAN"
+  },
+  {
+    "type": "EQUIPMENTCLASS_SCORCHED_STAFF",
+    "description": "TXT_KEY_EQUIPMENT_SCORCHED_STAFF",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_SCORCHED_STAFF"
+  },
+  {
+    "type": "EQUIPMENTCLASS_STAFF_OF_SOULS",
+    "description": "TXT_KEY_EQUIPMENT_STAFF_OF_SOULS",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_STAFF_OF_SOULS"
+  },
+  {
+    "type": "EQUIPMENTCLASS_GELA",
+    "description": "TXT_KEY_EQUIPMENT_GELA",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_GELA"
+  },
+  {
+    "type": "UNITCLASS_SHADE",
+    "description": "TXT_KEY_UNIT_SHADE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_SHADE"
+  },
+  {
+    "type": "UNITCLASS_MISTFORM",
+    "description": "TXT_KEY_UNIT_MISTFORM",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MISTFORM"
+  },
+  {
+    "type": "UNITCLASS_RATHA",
+    "description": "TXT_KEY_UNIT_RATHA",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_RATHA"
+  },
+  {
+    "type": "UNITCLASS_NIGHTWATCH",
+    "description": "TXT_KEY_UNIT_NIGHTWATCH",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_NIGHTWATCH"
+  },
+  {
+    "type": "UNITCLASS_SHADOWRIDER",
+    "description": "TXT_KEY_UNIT_SHADOWRIDER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_SHADOWRIDER"
+  },
+  {
+    "type": "EQUIPMENTCLASS_DRAGONS_HORDE",
+    "description": "TXT_KEY_EQUIPMENT_DRAGONS_HORDE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_DRAGONS_HORDE"
+  },
+  {
+    "type": "EQUIPMENTCLASS_INFERNAL_GRIMOIRE",
+    "description": "TXT_KEY_EQUIPMENT_INFERNAL_GRIMOIRE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_INFERNAL_GRIMOIRE"
+  },
+  {
+    "type": "EQUIPMENTCLASS_SYLIVENS_PERFECT_LYRE",
+    "description": "TXT_KEY_EQUIPMENT_SYLIVENS_PERFECT_LYRE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_SYLIVENS_PERFECT_LYRE"
+  },
+  {
+    "type": "EQUIPMENTCLASS_CROWN_OF_AKHARIEN",
+    "description": "TXT_KEY_EQUIPMENT_CROWN_OF_AKHARIEN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_CROWN_OF_AKHARIEN"
+  },
+  {
+    "type": "UNITCLASS_AZER",
+    "description": "TXT_KEY_UNIT_AZER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_AZER"
+  },
+  {
+    "type": "UNITCLASS_TEUTORIX",
+    "description": "TXT_KEY_UNIT_TEUTORIX",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_TEUTORIX"
+  },
+  {
+    "type": "UNITCLASS_RADIANT_GUARD",
+    "description": "TXT_KEY_UNIT_RADIANT_GUARD",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_RADIANT_GUARD"
+  },
+  {
+    "type": "EQUIPMENTCLASS_GOLDEN_HAMMER",
+    "description": "TXT_KEY_EQUIPMENT_GOLDEN_HAMMER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_GOLDEN_HAMMER"
+  },
+  {
+    "type": "EQUIPMENTCLASS_EMPTY_BIER",
+    "description": "TXT_KEY_EQUIPMENT_EMPTY_BIER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_EMPTY_BIER"
+  },
+  {
+    "type": "EQUIPMENTCLASS_NETHER_BLADE",
+    "description": "TXT_KEY_EQUIPMENT_NETHER_BLADE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_NETHER_BLADE"
+  },
+  {
+    "type": "EQUIPMENTCLASS_HEALING_SALVE",
+    "description": "TXT_KEY_EQUIPMENT_HEALING_SALVE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_HEALING_SALVE"
+  },
+  {
+    "type": "EQUIPMENTCLASS_JADE_TORC",
+    "description": "TXT_KEY_EQUIPMENT_JADE_TORC",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_JADE_TORC"
+  },
+  {
+    "type": "EQUIPMENTCLASS_ORTHUSS_AXE",
+    "description": "TXT_KEY_EQUIPMENT_ORTHUSS_AXE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_ORTHUSS_AXE"
+  },
+  {
+    "type": "EQUIPMENTCLASS_PIECES_OF_BARNAXUS",
+    "description": "TXT_KEY_EQUIPMENT_PIECES_OF_BARNAXUS",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_PIECES_OF_BARNAXUS"
+  },
+  {
+    "type": "EQUIPMENTCLASS_ROD_OF_WINDS",
+    "description": "TXT_KEY_EQUIPMENT_ROD_OF_WINDS",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "EQUIPMENT_ROD_OF_WINDS"
+  },
+  {
+    "type": "UNITCLASS_ALAZKAN",
+    "description": "TXT_KEY_UNIT_ALAZKAN",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ALAZKAN"
+  },
+  {
+    "type": "UNITCLASS_LEVIATHAN",
+    "description": "TXT_KEY_UNIT_LEVIATHAN",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_LEVIATHAN"
+  },
+  {
+    "type": "UNITCLASS_HIGH_PRIEST_OF_THE_EMPYREAN",
+    "description": "TXT_KEY_UNIT_HIGH_PRIEST_OF_THE_EMPYREAN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_HIGH_PRIEST_OF_THE_EMPYREAN"
+  },
+  {
+    "type": "UNITCLASS_PRIEST_OF_THE_EMPYREAN",
+    "description": "TXT_KEY_UNIT_HIGH_PRIEST_OF_THE_EMPYREAN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_PRIEST_OF_THE_EMPYREAN"
+  },
+  {
+    "type": "UNITCLASS_DISCIPLE_EMPYREAN",
+    "description": "TXT_KEY_UNIT_DISCIPLE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_DISCIPLE_EMPYREAN"
+  },
+  {
+    "type": "UNITCLASS_AUREALIS",
+    "description": "TXT_KEY_UNIT_AUREALIS",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_AUREALIS"
+  },
+  {
+    "type": "UNITCLASS_FAWN",
+    "description": "TXT_KEY_UNIT_FAWN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_FAWN"
+  },
+  {
+    "type": "UNITCLASS_MARGALARD",
+    "description": "TXT_KEY_UNIT_MARGALARD",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MARGALARD"
+  },
+  {
+    "type": "UNITCLASS_GURID",
+    "description": "TXT_KEY_UNIT_GURID",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_GURID"
+  },
+  {
+    "type": "UNITCLASS_FREAK",
+    "description": "TXT_KEY_UNIT_FREAK",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_FREAK"
+  },
+  {
+    "type": "UNITCLASS_SATYR",
+    "description": "TXT_KEY_UNIT_SATYR",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SATYR"
+  },
+  {
+    "type": "UNITCLASS_OPHANIM",
+    "description": "TXT_KEY_UNIT_OPHANIM",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_OPHANIM"
+  },
+  {
+    "type": "UNITCLASS_ANGEL_OF_DEATH",
+    "description": "TXT_KEY_UNIT_ANGEL_OF_DEATH",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_ANGEL_OF_DEATH"
+  },
+  {
+    "type": "UNITCLASS_REPENTANT_ANGEL",
+    "description": "TXT_KEY_UNIT_REPENTANT_ANGEL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_REPENTANT_ANGEL"
+  },
+  {
+    "type": "UNITCLASS_SERAPH",
+    "description": "TXT_KEY_UNIT_SERAPH",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_SERAPH"
+  },
+  {
+    "type": "UNITCLASS_VALKYRIE",
+    "description": "TXT_KEY_UNIT_VALKYRIE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_VALKYRIE"
+  },
+  {
+    "type": "UNITCLASS_HERALD",
+    "description": "TXT_KEY_UNIT_HERALD",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_HERALD"
+  },
+  {
+    "type": "UNITCLASS_ELEPHANT",
+    "description": "TXT_KEY_UNIT_ELEPHANT",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ELEPHANT"
+  },
+  {
+    "type": "UNITCLASS_TAR_DEMON",
+    "description": "TXT_KEY_UNIT_TAR_DEMON",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_TAR_DEMON"
+  },
+  {
+    "type": "UNITCLASS_MOBIUS_WITCH",
+    "description": "TXT_KEY_UNIT_MOBIUS_WITCH",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MOBIUS_WITCH"
+  },
+  {
+    "type": "UNITCLASS_REVELERS",
+    "description": "TXT_KEY_UNIT_REVELERS",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_REVELERS"
+  },
+  {
+    "type": "UNITCLASS_SUCCUBUS",
+    "description": "TXT_KEY_UNIT_SUCCUBUS",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SUCCUBUS"
+  },
+  {
+    "type": "UNITCLASS_ANGEL",
+    "description": "TXT_KEY_UNIT_ANGEL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ANGEL"
+  },
+  {
+    "type": "UNITCLASS_MANES",
+    "description": "TXT_KEY_UNIT_MANES",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MANES"
+  },
+  {
+    "type": "UNITCLASS_SEA_SERPENT",
+    "description": "TXT_KEY_UNIT_SEA_SERPENT",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SEA_SERPENT"
+  },
+  {
+    "type": "UNITCLASS_MINOTAUR",
+    "description": "TXT_KEY_UNIT_MINOTAUR",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MINOTAUR"
+  },
+  {
+    "type": "UNITCLASS_MANTICORE",
+    "description": "TXT_KEY_UNIT_MANTICORE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MANTICORE"
+  },
+  {
+    "type": "UNITCLASS_STEPHANOS",
+    "description": "TXT_KEY_UNIT_STEPHANOS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_STEPHANOS"
+  },
+  {
+    "type": "UNITCLASS_BUBOES",
+    "description": "TXT_KEY_UNIT_BUBOES",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_BUBOES"
+  },
+  {
+    "type": "UNITCLASS_YERSINIA",
+    "description": "TXT_KEY_UNIT_YERSINIA",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_YERSINIA"
+  },
+  {
+    "type": "UNITCLASS_ARS",
+    "description": "TXT_KEY_UNIT_ARS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ARS"
+  },
+  {
+    "type": "UNITCLASS_GORILLA",
+    "description": "TXT_KEY_UNIT_GORILLA",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_GORILLA"
+  },
+  {
+    "type": "UNITCLASS_GIANT_TORTOISE",
+    "description": "TXT_KEY_UNIT_GIANT_TORTOISE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_GIANT_TORTOISE"
+  },
+  {
+    "type": "UNITCLASS_LIGHTNING_ELEMENTAL",
+    "description": "TXT_KEY_UNIT_LIGHTNING_ELEMENTAL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_LIGHTNING_ELEMENTAL"
+  },
+  {
+    "type": "UNITCLASS_SAILORS_DIRGE",
+    "description": "TXT_KEY_UNIT_SAILORS_DIRGE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SAILORS_DIRGE"
+  },
+  {
+    "type": "UNITCLASS_WATER_ELEMENTAL",
+    "description": "TXT_KEY_UNIT_WATER_ELEMENTAL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_WATER_ELEMENTAL"
+  },
+  {
+    "type": "UNITCLASS_HYBOREM",
+    "description": "TXT_KEY_UNIT_HYBOREM",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_HYBOREM"
+  },
+  {
+    "type": "UNITCLASS_WILBOMAN",
+    "description": "TXT_KEY_UNIT_WILBOMAN",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_WILBOMAN"
+  },
+  {
+    "type": "UNITCLASS_GRIFFON",
+    "description": "TXT_KEY_UNIT_GRIFFON",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_GRIFFON"
+  },
+  {
+    "type": "UNITCLASS_GUYBRUSH",
+    "description": "TXT_KEY_UNIT_GUYBRUSH",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_GUYBRUSH"
+  },
+  {
+    "type": "UNITCLASS_BLACK_WIND",
+    "description": "TXT_KEY_UNIT_BLACK_WIND",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_BLACK_WIND"
+  },
+  {
+    "type": "UNITCLASS_MAN_O_WAR",
+    "description": "TXT_KEY_UNIT_MAN_O_WAR",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MAN_O_WAR"
+  },
+  {
+    "type": "UNITCLASS_FRIGATE",
+    "description": "TXT_KEY_UNIT_FRIGATE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_FRIGATE"
+  },
+  {
+    "type": "UNITCLASS_TRIREME",
+    "description": "TXT_KEY_UNIT_TRIREME",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_TRIREME"
+  },
+  {
+    "type": "UNITCLASS_RANTINE",
+    "description": "TXT_KEY_UNIT_RANTINE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_RANTINE"
+  },
+  {
+    "type": "UNITCLASS_MAGNADINE",
+    "description": "TXT_KEY_UNIT_MAGNADINE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MAGNADINE"
+  },
+  {
+    "type": "UNITCLASS_GOVANNON",
+    "description": "TXT_KEY_UNIT_GOVANNON",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_GOVANNON"
+  },
+  {
+    "type": "UNITCLASS_GIANT_SPIDER",
+    "description": "TXT_KEY_UNIT_GIANT_SPIDER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_GIANT_SPIDER"
+  },
+  {
+    "type": "UNITCLASS_BABY_SPIDER",
+    "description": "TXT_KEY_UNIT_BABY_SPIDER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_BABY_SPIDER"
+  },
+  {
+    "type": "UNITCLASS_BARNAXUS",
+    "description": "TXT_KEY_UNIT_BARNAXUS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_BARNAXUS"
+  },
+  {
+    "type": "UNITCLASS_EYE",
+    "description": "TXT_KEY_UNIT_EYE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_EYE"
+  },
+  {
+    "type": "UNITCLASS_FLAGBEARER",
+    "description": "TXT_KEY_UNIT_FLAGBEARER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_FLAGBEARER"
+  },
+  {
+    "type": "UNITCLASS_DEMAGOG",
+    "description": "TXT_KEY_UNIT_DEMAGOG",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_DEMAGOG"
+  },
+  {
+    "type": "UNITCLASS_ABASHI",
+    "description": "TXT_KEY_UNIT_ABASHI",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ABASHI"
+  },
+  {
+    "type": "UNITCLASS_ACHERON",
+    "description": "TXT_KEY_UNIT_ACHERON",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ACHERON"
+  },
+  {
+    "type": "UNITCLASS_BASIUM",
+    "description": "TXT_KEY_UNIT_BASIUM",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_BASIUM"
+  },
+  {
+    "type": "UNITCLASS_CHALID",
+    "description": "TXT_KEY_UNIT_CHALID",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_CHALID"
+  },
+  {
+    "type": "UNITCLASS_CORLINDALE",
+    "description": "TXT_KEY_UNIT_CORLINDALE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_CORLINDALE"
+  },
+  {
+    "type": "UNITCLASS_DONAL",
+    "description": "TXT_KEY_UNIT_DONAL",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_DONAL"
+  },
+  {
+    "type": "UNITCLASS_EURABATRES",
+    "description": "TXT_KEY_UNIT_EURABATRES",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_EURABATRES"
+  },
+  {
+    "type": "UNITCLASS_GILDEN",
+    "description": "TXT_KEY_UNIT_GILDEN",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_GILDEN"
+  },
+  {
+    "type": "UNITCLASS_GIBBON",
+    "description": "TXT_KEY_UNIT_GIBBON",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_GIBBON"
+  },
+  {
+    "type": "UNITCLASS_LOKI",
+    "description": "TXT_KEY_UNIT_LOKI",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_LOKI"
+  },
+  {
+    "type": "UNITCLASS_LOSHA",
+    "description": "TXT_KEY_UNIT_LOSHA",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_LOSHA"
+  },
+  {
+    "type": "UNITCLASS_MAROS",
+    "description": "TXT_KEY_UNIT_MAROS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MAROS"
+  },
+  {
+    "type": "UNITCLASS_ORTHUS",
+    "description": "TXT_KEY_UNIT_ORTHUS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ORTHUS"
+  },
+  {
+    "type": "UNITCLASS_RATHUS",
+    "description": "TXT_KEY_UNIT_RATHUS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_RATHUS"
+  },
+  {
+    "type": "UNITCLASS_WAR_MACHINE",
+    "description": "TXT_KEY_UNIT_WAR_MACHINE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_WAR_MACHINE"
+  },
+  {
+    "type": "UNITCLASS_YVAIN",
+    "description": "TXT_KEY_UNIT_YVAIN",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_YVAIN"
+  },
+  {
+    "type": "UNITCLASS_GUARDIAN_VINES",
+    "description": "TXT_KEY_UNIT_GUARDIAN_VINES",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_GUARDIAN_VINES"
+  },
+  {
+    "type": "UNITCLASS_FLESH_GOLEM",
+    "description": "TXT_KEY_UNIT_FLESH_GOLEM",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_FLESH_GOLEM"
+  },
+  {
+    "type": "UNITCLASS_AIR_ELEMENTAL",
+    "description": "TXT_KEY_UNIT_AIR_ELEMENTAL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_AIR_ELEMENTAL"
+  },
+  {
+    "type": "UNITCLASS_KRAKEN",
+    "description": "TXT_KEY_UNIT_KRAKEN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_KRAKEN"
+  },
+  {
+    "type": "UNITCLASS_ADVENTURER",
+    "description": "TXT_KEY_UNIT_ADVENTURER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ADVENTURER"
+  },
+  {
+    "type": "UNITCLASS_TREANT",
+    "description": "TXT_KEY_UNIT_TREANT",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_TREANT"
+  },
+  {
+    "type": "UNITCLASS_DJINN",
+    "description": "TXT_KEY_UNIT_DJINN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_DJINN"
+  },
+  {
+    "type": "UNITCLASS_EARTH_ELEMENTAL",
+    "description": "TXT_KEY_UNIT_EARTH_ELEMENTAL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_EARTH_ELEMENTAL"
+  },
+  {
+    "type": "UNITCLASS_CHAOS_MARAUDER",
+    "description": "TXT_KEY_UNIT_CHAOS_MARAUDER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_CHAOS_MARAUDER"
+  },
+  {
+    "type": "UNITCLASS_PIT_BEAST",
+    "description": "TXT_KEY_UNIT_PIT_BEAST",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_PIT_BEAST"
+  },
+  {
+    "type": "UNITCLASS_EINHERJAR",
+    "description": "TXT_KEY_UNIT_EINHERJAR",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_EINHERJAR"
+  },
+  {
+    "type": "UNITCLASS_WRAITH",
+    "description": "TXT_KEY_UNIT_WRAITH",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_WRAITH"
+  },
+  {
+    "type": "UNITCLASS_SPECTRE",
+    "description": "TXT_KEY_UNIT_SPECTRE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SPECTRE"
+  },
+  {
+    "type": "UNITCLASS_CANNON",
+    "description": "TXT_KEY_UNIT_CANNON",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_CANNON"
+  },
+  {
+    "type": "UNITCLASS_SHADOW",
+    "description": "TXT_KEY_UNIT_SHADOW",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_SHADOW"
+  },
+  {
+    "type": "UNITCLASS_MARY",
+    "description": "TXT_KEY_UNIT_MARY",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MARY"
+  },
+  {
+    "type": "UNITCLASS_MARKSMAN",
+    "description": "TXT_KEY_UNIT_MARKSMAN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_MARKSMAN"
+  },
+  {
+    "type": "UNITCLASS_DRUID",
+    "description": "TXT_KEY_UNIT_DRUID",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_DRUID"
+  },
+  {
+    "type": "UNITCLASS_HILL_GIANT",
+    "description": "TXT_KEY_UNIT_HILL_GIANT",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_HILL_GIANT"
+  },
+  {
+    "type": "UNITCLASS_SKELETON",
+    "description": "TXT_KEY_UNIT_SKELETON",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SKELETON"
+  },
+  {
+    "type": "UNITCLASS_EIDOLON",
+    "description": "TXT_KEY_UNIT_EIDOLON",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_EIDOLON"
+  },
+  {
+    "type": "UNITCLASS_STYGIAN_GUARD",
+    "description": "TXT_KEY_UNIT_STYGIAN_GUARD",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_STYGIAN_GUARD"
+  },
+  {
+    "type": "UNITCLASS_CRUSADER",
+    "description": "TXT_KEY_UNIT_CRUSADER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_CRUSADER"
+  },
+  {
+    "type": "UNITCLASS_PRIEST_OF_THE_VEIL",
+    "description": "TXT_KEY_UNIT_PRIEST_OF_THE_VEIL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_PRIEST_OF_THE_VEIL"
+  },
+  {
+    "type": "UNITCLASS_PRIEST_OF_KILMORPH",
+    "description": "TXT_KEY_UNIT_PRIEST_OF_KILMORPH",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_PRIEST_OF_KILMORPH"
+  },
+  {
+    "type": "UNITCLASS_PRIEST_OF_LEAVES",
+    "description": "TXT_KEY_UNIT_PRIEST_OF_LEAVES",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_PRIEST_OF_LEAVES"
+  },
+  {
+    "type": "UNITCLASS_PRIEST_OF_THE_ORDER",
+    "description": "TXT_KEY_UNIT_PRIEST_OF_THE_ORDER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_PRIEST_OF_THE_ORDER"
+  },
+  {
+    "type": "UNITCLASS_PRIEST_OF_THE_OVERLORDS",
+    "description": "TXT_KEY_UNIT_PRIEST_OF_THE_OVERLORDS",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_PRIEST_OF_THE_OVERLORDS"
+  },
+  {
+    "type": "UNITCLASS_DISEASED_CORPSE",
+    "description": "TXT_KEY_UNIT_DISEASED_CORPSE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_DISEASED_CORPSE"
+  },
+  {
+    "type": "UNITCLASS_ARCHMAGE",
+    "description": "TXT_KEY_UNIT_ARCHMAGE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_ARCHMAGE"
+  },
+  {
+    "type": "UNITCLASS_HAWK",
+    "description": "TXT_KEY_UNIT_HAWK",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_HAWK"
+  },
+  {
+    "type": "UNITCLASS_PALADIN",
+    "description": "TXT_KEY_UNIT_PALADIN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_PALADIN"
+  },
+  {
+    "type": "UNITCLASS_ARQUEBUS",
+    "description": "TXT_KEY_UNIT_ARQUEBUS",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ARQUEBUS"
+  },
+  {
+    "type": "UNITCLASS_DROWN",
+    "description": "TXT_KEY_UNIT_DROWN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_DROWN"
+  },
+  {
+    "type": "UNITCLASS_TIGER",
+    "description": "TXT_KEY_UNIT_TIGER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_TIGER"
+  },
+  {
+    "type": "UNITCLASS_PARAMANDER",
+    "description": "TXT_KEY_UNIT_PARAMANDER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_PARAMANDER"
+  },
+  {
+    "type": "UNITCLASS_BERSERKER",
+    "description": "TXT_KEY_UNIT_BERSERKER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_BERSERKER"
+  },
+  {
+    "type": "UNITCLASS_PRIVATEER",
+    "description": "TXT_KEY_UNIT_PRIVATEER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_PRIVATEER"
+  },
+  {
+    "type": "UNITCLASS_MERCENARY",
+    "description": "TXT_KEY_UNIT_MERCENARY",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MERCENARY"
+  },
+  {
+    "type": "UNITCLASS_BEASTMASTER",
+    "description": "TXT_KEY_UNIT_BEASTMASTER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_BEASTMASTER"
+  },
+  {
+    "type": "UNITCLASS_IMMORTAL",
+    "description": "TXT_KEY_UNIT_IMMORTAL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_IMMORTAL"
+  },
+  {
+    "type": "UNITCLASS_HIGH_PRIEST_OF_KILMORPH",
+    "description": "TXT_KEY_UNIT_HIGH_PRIEST_OF_KILMORPH",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_HIGH_PRIEST_OF_KILMORPH"
+  },
+  {
+    "type": "UNITCLASS_HIGH_PRIEST_OF_LEAVES",
+    "description": "TXT_KEY_UNIT_HIGH_PRIEST_OF_LEAVES",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_HIGH_PRIEST_OF_LEAVES"
+  },
+  {
+    "type": "UNITCLASS_HIGH_PRIEST_OF_THE_ORDER",
+    "description": "TXT_KEY_UNIT_HIGH_PRIEST_OF_THE_ORDER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_HIGH_PRIEST_OF_THE_ORDER"
+  },
+  {
+    "type": "UNITCLASS_HIGH_PRIEST_OF_THE_OVERLORDS",
+    "description": "TXT_KEY_UNIT_HIGH_PRIEST_OF_THE_OVERLORDS",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_HIGH_PRIEST_OF_THE_OVERLORDS"
+  },
+  {
+    "type": "UNITCLASS_HIGH_PRIEST_OF_THE_VEIL",
+    "description": "TXT_KEY_UNIT_HIGH_PRIEST_OF_THE_VEIL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_HIGH_PRIEST_OF_THE_VEIL"
+  },
+  {
+    "type": "UNITCLASS_DISCIPLE_RUNES_OF_KILMORPH",
+    "description": "TXT_KEY_UNIT_DISCIPLE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_DISCIPLE_RUNES_OF_KILMORPH"
+  },
+  {
+    "type": "UNITCLASS_DISCIPLE_FELLOWSHIP_OF_LEAVES",
+    "description": "TXT_KEY_UNIT_DISCIPLE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_DISCIPLE_FELLOWSHIP_OF_LEAVES"
+  },
+  {
+    "type": "UNITCLASS_DISCIPLE_THE_ORDER",
+    "description": "TXT_KEY_UNIT_DISCIPLE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_DISCIPLE_THE_ORDER"
+  },
+  {
+    "type": "UNITCLASS_DISCIPLE_OCTOPUS_OVERLORDS",
+    "description": "TXT_KEY_UNIT_DISCIPLE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_DISCIPLE_OCTOPUS_OVERLORDS"
+  },
+  {
+    "type": "UNITCLASS_DISCIPLE_THE_ASHEN_VEIL",
+    "description": "TXT_KEY_UNIT_DISCIPLE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_DISCIPLE_THE_ASHEN_VEIL"
+  },
+  {
+    "type": "UNITCLASS_WORKBOAT",
+    "description": "TXT_KEY_UNIT_WORKBOAT",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_WORKBOAT"
+  },
+  {
+    "type": "UNITCLASS_GALLEY",
+    "description": "TXT_KEY_UNIT_GALLEY",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_GALLEY"
+  },
+  {
+    "type": "UNITCLASS_CARAVEL",
+    "description": "TXT_KEY_UNIT_CARAVEL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_CARAVEL"
+  },
+  {
+    "type": "UNITCLASS_GALLEON",
+    "description": "TXT_KEY_UNIT_GALLEON",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_GALLEON"
+  },
+  {
+    "type": "UNITCLASS_MAGE",
+    "description": "TXT_KEY_UNIT_MAGE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MAGE"
+  },
+  {
+    "type": "UNITCLASS_HORSEMAN",
+    "description": "TXT_KEY_UNIT_HORSEMAN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_HORSEMAN"
+  },
+  {
+    "type": "UNITCLASS_ADEPT",
+    "description": "TXT_KEY_UNIT_ADEPT",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ADEPT"
+  },
+  {
+    "type": "UNITCLASS_HUNTER",
+    "description": "TXT_KEY_UNIT_HUNTER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_HUNTER"
+  },
+  {
+    "type": "UNITCLASS_DWARVEN_SOLDIER_RUNES",
+    "description": "TXT_KEY_UNIT_DWARVEN_SOLDIER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_DWARVEN_SOLDIER_RUNES"
+  },
+  {
+    "type": "UNITCLASS_PHALANX",
+    "description": "TXT_KEY_UNIT_PHALANX",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_PHALANX"
+  },
+  {
+    "type": "UNITCLASS_ASSASSIN",
+    "description": "TXT_KEY_UNIT_ASSASSIN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ASSASSIN"
+  },
+  {
+    "type": "UNITCLASS_RANGER",
+    "description": "TXT_KEY_UNIT_RANGER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_RANGER"
+  },
+  {
+    "type": "UNITCLASS_LION",
+    "description": "TXT_KEY_UNIT_LION",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_LION"
+  },
+  {
+    "type": "UNITCLASS_LION_PRIDE",
+    "description": "TXT_KEY_UNIT_LION_PRIDE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_LION_PRIDE"
+  },
+  {
+    "type": "UNITCLASS_SAND_LION",
+    "description": "TXT_KEY_UNIT_SAND_LION",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SAND_LION"
+  },
+  {
+    "type": "UNITCLASS_BEAR",
+    "description": "TXT_KEY_UNIT_BEAR",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_BEAR"
+  },
+  {
+    "type": "UNITCLASS_WOLF_PACK",
+    "description": "TXT_KEY_UNIT_WOLF_PACK",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_WOLF_PACK"
+  },
+  {
+    "type": "UNITCLASS_WOLF",
+    "description": "TXT_KEY_UNIT_WOLF",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_WOLF"
+  },
+  {
+    "type": "UNITCLASS_SETTLER",
+    "description": "TXT_KEY_UNIT_SETTLER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SETTLER"
+  },
+  {
+    "type": "UNITCLASS_WORKER",
+    "description": "TXT_KEY_UNIT_WORKER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_WORKER"
+  },
+  {
+    "type": "UNITCLASS_SCOUT",
+    "description": "TXT_KEY_UNIT_SCOUT",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SCOUT"
+  },
+  {
+    "type": "UNITCLASS_WARRIOR",
+    "description": "TXT_KEY_UNIT_WARRIOR",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_WARRIOR"
+  },
+  {
+    "type": "UNITCLASS_AXEMAN",
+    "description": "TXT_KEY_UNIT_AXEMAN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_AXEMAN"
+  },
+  {
+    "type": "UNITCLASS_CHAMPION",
+    "description": "TXT_KEY_UNIT_CHAMPION",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_CHAMPION"
+  },
+  {
+    "type": "UNITCLASS_ARCHER",
+    "description": "TXT_KEY_UNIT_ARCHER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ARCHER"
+  },
+  {
+    "type": "UNITCLASS_LONGBOWMAN",
+    "description": "TXT_KEY_UNIT_LONGBOWMAN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_LONGBOWMAN"
+  },
+  {
+    "type": "UNITCLASS_CROSSBOWMAN",
+    "description": "TXT_KEY_UNIT_CROSSBOWMAN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_CROSSBOWMAN"
+  },
+  {
+    "type": "UNITCLASS_CHARIOT",
+    "description": "TXT_KEY_UNIT_CHARIOT",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_CHARIOT"
+  },
+  {
+    "type": "UNITCLASS_HORSE_ARCHER",
+    "description": "TXT_KEY_UNIT_HORSE_ARCHER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_HORSE_ARCHER"
+  },
+  {
+    "type": "UNITCLASS_KNIGHT",
+    "description": "TXT_KEY_UNIT_KNIGHT",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_KNIGHT"
+  },
+  {
+    "type": "UNITCLASS_WAR_ELEPHANT",
+    "description": "TXT_KEY_UNIT_WAR_ELEPHANT",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_WAR_ELEPHANT"
+  },
+  {
+    "type": "UNITCLASS_CATAPULT",
+    "description": "TXT_KEY_UNIT_CATAPULT",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_CATAPULT"
+  },
+  {
+    "type": "UNITCLASS_PROPHET",
+    "description": "TXT_KEY_UNIT_GREAT_PROPHET",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_PROPHET"
+  },
+  {
+    "type": "UNITCLASS_ARTIST",
+    "description": "TXT_KEY_UNIT_GREAT_ARTIST",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ARTIST"
+  },
+  {
+    "type": "UNITCLASS_SCIENTIST",
+    "description": "TXT_KEY_UNIT_GREAT_SCIENTIST",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SCIENTIST"
+  },
+  {
+    "type": "UNITCLASS_MERCHANT",
+    "description": "TXT_KEY_UNIT_GREAT_TYCOON",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MERCHANT"
+  },
+  {
+    "type": "UNITCLASS_ENGINEER",
+    "description": "TXT_KEY_UNIT_GREAT_ENGINEER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ENGINEER"
+  },
+  {
+    "type": "UNITCLASS_FIREBALL",
+    "description": "TXT_KEY_UNIT_FIREBALL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_FIREBALL"
+  },
+  {
+    "type": "UNITCLASS_FIRE_ELEMENTAL",
+    "description": "TXT_KEY_UNIT_FIRE_ELEMENTAL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_FIRE_ELEMENTAL"
+  },
+  {
+    "type": "UNITCLASS_METEOR",
+    "description": "TXT_KEY_UNIT_METEOR",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_METEOR"
+  },
+  {
+    "type": "UNITCLASS_WRATH",
+    "description": "TXT_KEY_UNIT_WRATH",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_WRATH"
+  },
+  {
+    "type": "UNITCLASS_MESHABBER",
+    "description": "TXT_KEY_UNIT_MESHABBER",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MESHABBER"
+  },
+  {
+    "type": "UNITCLASS_KITHRA",
+    "description": "TXT_KEY_UNIT_KITHRA",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_KITHRA"
+  },
+  {
+    "type": "UNITCLASS_SAVEROUS",
+    "description": "TXT_KEY_UNIT_SAVEROUS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SAVEROUS"
+  },
+  {
+    "type": "UNITCLASS_ROSIER",
+    "description": "TXT_KEY_UNIT_ROSIER",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ROSIER"
+  },
+  {
+    "type": "UNITCLASS_VALIN",
+    "description": "TXT_KEY_UNIT_VALIN",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_VALIN"
+  },
+  {
+    "type": "UNITCLASS_HEMAH",
+    "description": "TXT_KEY_UNIT_HEMAH",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_HEMAH"
+  },
+  {
+    "type": "UNITCLASS_MITHRIL_GOLEM",
+    "description": "TXT_KEY_UNIT_MITHRIL_GOLEM",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MITHRIL_GOLEM"
+  },
+  {
+    "type": "UNITCLASS_ARTHENDAIN",
+    "description": "TXT_KEY_UNIT_ARTHENDAIN",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ARTHENDAIN"
+  },
+  {
+    "type": "UNITCLASS_BAMBUR",
+    "description": "TXT_KEY_UNIT_BAMBUR",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_BAMBUR"
+  },
+  {
+    "type": "UNITCLASS_SLAVE",
+    "description": "TXT_KEY_UNIT_SLAVE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SLAVE"
+  },
+  {
+    "type": "UNITCLASS_RAVENOUS_WEREWOLF",
+    "description": "TXT_KEY_UNIT_RAVENOUS_WEREWOLF",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_RAVENOUS_WEREWOLF"
+  },
+  {
+    "type": "UNITCLASS_WEREWOLF",
+    "description": "TXT_KEY_UNIT_WEREWOLF",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_WEREWOLF"
+  },
+  {
+    "type": "UNITCLASS_GREATER_WEREWOLF",
+    "description": "TXT_KEY_UNIT_GREATER_WEREWOLF",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_GREATER_WEREWOLF"
+  },
+  {
+    "type": "UNITCLASS_COMMANDER",
+    "description": "TXT_KEY_UNIT_COMMANDER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_COMMANDER"
+  },
+  {
+    "type": "UNITCLASS_DUIN",
+    "description": "TXT_KEY_UNIT_DUIN",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_DUIN"
+  },
+  {
+    "type": "UNITCLASS_LUNATIC",
+    "description": "TXT_KEY_UNIT_LUNATIC",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_LUNATIC"
+  },
+  {
+    "type": "UNITCLASS_ROYAL_GUARD",
+    "description": "TXT_KEY_UNIT_ROYAL_GUARD",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_ROYAL_GUARD"
+  },
+  {
+    "type": "UNITCLASS_BEAST_OF_AGARES",
+    "description": "TXT_KEY_UNIT_BEAST_OF_AGARES",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_BEAST_OF_AGARES"
+  },
+  {
+    "type": "UNITCLASS_ARCANE_BARGE",
+    "description": "TXT_KEY_UNIT_ARCANE_BARGE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_ARCANE_BARGE"
+  },
+  {
+    "type": "UNITCLASS_QUEEN_OF_THE_LINE",
+    "description": "TXT_KEY_UNIT_QUEEN_OF_THE_LINE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_QUEEN_OF_THE_LINE"
+  },
+  {
+    "type": "UNITCLASS_MARDERO",
+    "description": "TXT_KEY_UNIT_MARDERO",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MARDERO"
+  },
+  {
+    "type": "UNITCLASS_SPHENER",
+    "description": "TXT_KEY_UNIT_SPHENER",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SPHENER"
+  },
+  {
+    "type": "UNITCLASS_LICH",
+    "description": "TXT_KEY_UNIT_LICH",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 4,
+    "default_unit": "UNIT_LICH"
+  },
+  {
+    "type": "UNITCLASS_LIGHTBRINGER",
+    "description": "TXT_KEY_UNIT_LIGHTBRINGER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_LIGHTBRINGER"
+  },
+  {
+    "type": "UNITCLASS_MONK",
+    "description": "TXT_KEY_UNIT_MONK",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_MONK"
+  },
+  {
+    "type": "UNITCLASS_GRIGORI_MEDIC",
+    "description": "TXT_KEY_UNIT_GRIGORI_MEDIC",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_GRIGORI_MEDIC"
+  },
+  {
+    "type": "UNITCLASS_SENTINEL",
+    "description": "TXT_KEY_UNIT_SENTINEL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_SENTINEL"
+  }
+]

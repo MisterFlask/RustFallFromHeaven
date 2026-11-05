@@ -1,0 +1,1059 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Soren Johnson (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Building Class Infos
+[
+  {
+    "type": "BUILDINGCLASS_HERON_THRONE",
+    "description": "TXT_KEY_BUILDING_HERON_THRONE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_HERON_THRONE"
+  },
+  {
+    "type": "BUILDINGCLASS_GUILD_OF_THE_NINE",
+    "description": "TXT_KEY_BUILDING_GUILD_OF_THE_NINE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_GUILD_OF_THE_NINE"
+  },
+  {
+    "type": "BUILDINGCLASS_PALISADE",
+    "description": "TXT_KEY_BUILDING_PALISADE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_PALISADE"
+  },
+  {
+    "type": "BUILDINGCLASS_DEMONIC_CITIZENS",
+    "description": "TXT_KEY_BUILDING_DEMONIC_CITIZENS",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_DEMONIC_CITIZENS"
+  },
+  {
+    "type": "BUILDINGCLASS_CITY_OF_A_THOUSAND_SLUMS",
+    "description": "TXT_KEY_BUILDING_CITY_OF_A_THOUSAND_SLUMS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_CITY_OF_A_THOUSAND_SLUMS"
+  },
+  {
+    "type": "BUILDINGCLASS_SMUGGLERS_PORT",
+    "description": "TXT_KEY_BUILDING_SMUGGLERS_PORT",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_SMUGGLERS_PORT"
+  },
+  {
+    "type": "BUILDINGCLASS_PILLAR_OF_CHAINS",
+    "description": "TXT_KEY_BUILDING_PILLAR_OF_CHAINS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_PILLAR_OF_CHAINS"
+  },
+  {
+    "type": "BUILDINGCLASS_THEATRE_OF_DREAMS",
+    "description": "TXT_KEY_BUILDING_THEATRE_OF_DREAMS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_THEATRE_OF_DREAMS"
+  },
+  {
+    "type": "BUILDINGCLASS_NOX_NOCTIS",
+    "description": "TXT_KEY_BUILDING_NOX_NOCTIS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_NOX_NOCTIS"
+  },
+  {
+    "type": "BUILDINGCLASS_DIES_DIEI",
+    "description": "TXT_KEY_BUILDING_DIES_DIEI",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_DIES_DIEI"
+  },
+  {
+    "type": "BUILDINGCLASS_TEMPLE_OF_THE_EMPYREAN",
+    "description": "TXT_KEY_BUILDING_TEMPLE_OF_THE_EMPYREAN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_TEMPLE_OF_THE_EMPYREAN"
+  },
+  {
+    "type": "BUILDINGCLASS_GUILD_OF_HAMMERS",
+    "description": "TXT_KEY_BUILDING_GUILD_OF_HAMMERS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_GUILD_OF_HAMMERS"
+  },
+  {
+    "type": "BUILDINGCLASS_GRAND_MENAGERIE",
+    "description": "TXT_KEY_BUILDING_GRAND_MENAGERIE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_GRAND_MENAGERIE"
+  },
+  {
+    "type": "BUILDINGCLASS_MERCURIAN_GATE",
+    "description": "TXT_KEY_BUILDING_MERCURIAN_GATE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_MERCURIAN_GATE"
+  },
+  {
+    "type": "BUILDINGCLASS_CELESTIAL_COMPASS",
+    "description": "TXT_KEY_BUILDING_CELESTIAL_COMPASS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_CELESTIAL_COMPASS"
+  },
+  {
+    "type": "BUILDINGCLASS_GORILLA_CAGE",
+    "description": "TXT_KEY_BUILDING_GORILLA_CAGE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_GORILLA_CAGE"
+  },
+  {
+    "type": "BUILDINGCLASS_RIDE_OF_THE_NINE_KINGS",
+    "description": "TXT_KEY_BUILDING_RIDE_OF_THE_NINE_KINGS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_RIDE_OF_THE_NINE_KINGS"
+  },
+  {
+    "type": "BUILDINGCLASS_MOKKAS_CAULDRON",
+    "description": "TXT_KEY_BUILDING_MOKKAS_CAULDRON",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_MOKKAS_CAULDRON"
+  },
+  {
+    "type": "BUILDINGCLASS_SHRINE_OF_SIRONA",
+    "description": "TXT_KEY_BUILDING_SHRINE_OF_SIRONA",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_SHRINE_OF_SIRONA"
+  },
+  {
+    "type": "BUILDINGCLASS_EYES_AND_EARS_NETWORK",
+    "description": "TXT_KEY_BUILDING_EYES_AND_EARS_NETWORK",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_EYES_AND_EARS_NETWORK"
+  },
+  {
+    "type": "BUILDINGCLASS_SHRINE_OF_THE_CHAMPION",
+    "description": "TXT_KEY_BUILDING_SHRINE_OF_THE_CHAMPION",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_SHRINE_OF_THE_CHAMPION"
+  },
+  {
+    "type": "BUILDINGCLASS_SHIPYARD",
+    "description": "TXT_KEY_BUILDING_SHIPYARD",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_SHIPYARD"
+  },
+  {
+    "type": "BUILDINGCLASS_DWARVEN_VAULT_OVERFLOWING",
+    "description": "TXT_KEY_BUILDING_DWARVEN_VAULT_OVERFLOWING",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_DWARVEN_VAULT_OVERFLOWING"
+  },
+  {
+    "type": "BUILDINGCLASS_DWARVEN_VAULT_FULL",
+    "description": "TXT_KEY_BUILDING_DWARVEN_VAULT_FULL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_DWARVEN_VAULT_FULL"
+  },
+  {
+    "type": "BUILDINGCLASS_DWARVEN_VAULT_ABUNDANT",
+    "description": "TXT_KEY_BUILDING_DWARVEN_VAULT_ABUNDANT",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_DWARVEN_VAULT_ABUNDANT"
+  },
+  {
+    "type": "BUILDINGCLASS_DWARVEN_VAULT_STOCKED",
+    "description": "TXT_KEY_BUILDING_DWARVEN_VAULT_STOCKED",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_DWARVEN_VAULT_STOCKED"
+  },
+  {
+    "type": "BUILDINGCLASS_DWARVEN_VAULT",
+    "description": "TXT_KEY_BUILDING_DWARVEN_VAULT",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_DWARVEN_VAULT"
+  },
+  {
+    "type": "BUILDINGCLASS_DWARVEN_VAULT_LOW",
+    "description": "TXT_KEY_BUILDING_DWARVEN_VAULT_LOW",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_DWARVEN_VAULT_LOW"
+  },
+  {
+    "type": "BUILDINGCLASS_DWARVEN_VAULT_EMPTY",
+    "description": "TXT_KEY_BUILDING_DWARVEN_VAULT_EMPTY",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_DWARVEN_VAULT_EMPTY"
+  },
+  {
+    "type": "BUILDINGCLASS_TOWER_OF_MASTERY",
+    "description": "TXT_KEY_BUILDING_TOWER_OF_MASTERY",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_TOWER_OF_MASTERY",
+    "victory_thresholds": {"VICTORY_TOWER_OF_MASTERY": 1}
+  },
+  {
+    "type": "BUILDINGCLASS_TOWER_OF_ALTERATION",
+    "description": "TXT_KEY_BUILDING_TOWER_OF_ALTERATION",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_TOWER_OF_ALTERATION",
+    "victory_thresholds": {"VICTORY_TOWER_OF_MASTERY": 1}
+  },
+  {
+    "type": "BUILDINGCLASS_TOWER_OF_DIVINATION",
+    "description": "TXT_KEY_BUILDING_TOWER_OF_DIVINATION",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_TOWER_OF_DIVINATION",
+    "victory_thresholds": {"VICTORY_TOWER_OF_MASTERY": 1}
+  },
+  {
+    "type": "BUILDINGCLASS_TOWER_OF_NECROMANCY",
+    "description": "TXT_KEY_BUILDING_TOWER_OF_NECROMANCY",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_TOWER_OF_NECROMANCY",
+    "victory_thresholds": {"VICTORY_TOWER_OF_MASTERY": 1}
+  },
+  {
+    "type": "BUILDINGCLASS_TOWER_OF_THE_ELEMENTS",
+    "description": "TXT_KEY_BUILDING_TOWER_OF_THE_ELEMENTS",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_TOWER_OF_THE_ELEMENTS",
+    "victory_thresholds": {"VICTORY_TOWER_OF_MASTERY": 1}
+  },
+  {
+    "type": "BUILDINGCLASS_UNYIELDING_ORDER",
+    "description": "NONE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_UNYIELDING_ORDER"
+  },
+  {
+    "type": "BUILDINGCLASS_SPIDER_PEN",
+    "description": "NONE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_SPIDER_PEN"
+  },
+  {
+    "type": "BUILDINGCLASS_MAGE_GUILD",
+    "description": "NONE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_MAGE_GUILD"
+  },
+  {
+    "type": "BUILDINGCLASS_SOUL_FORGE",
+    "description": "NONE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_SOUL_FORGE"
+  },
+  {
+    "type": "BUILDINGCLASS_AQUAE_SUCELLUS",
+    "description": "NONE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_AQUAE_SUCELLUS"
+  },
+  {
+    "type": "BUILDINGCLASS_CIV_BUILDING1",
+    "description": "NONE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1
+  },
+  {
+    "type": "BUILDINGCLASS_CIV_BUILDING2",
+    "description": "NONE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1
+  },
+  {
+    "type": "BUILDINGCLASS_CIV_BUILDING3",
+    "description": "NONE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1
+  },
+  {
+    "type": "BUILDINGCLASS_CIV_BUILDING4",
+    "description": "NONE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1
+  },
+  {
+    "type": "BUILDINGCLASS_DEMONS_ALTAR",
+    "description": "TXT_KEY_BUILDING_DEMONS_ALTAR",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_DEMONS_ALTAR"
+  },
+  {
+    "type": "BUILDINGCLASS_WALL_OF_STONE",
+    "description": "TXT_KEY_BUILDING_WALL_OF_STONE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_WALL_OF_STONE"
+  },
+  {
+    "type": "BUILDINGCLASS_INSPIRATION",
+    "description": "TXT_KEY_BUILDING_INSPIRATION",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_INSPIRATION"
+  },
+  {
+    "type": "BUILDINGCLASS_HOPE",
+    "description": "TXT_KEY_BUILDING_HOPE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_HOPE"
+  },
+  {
+    "type": "BUILDINGCLASS_DANCING_BEAR",
+    "description": "TXT_KEY_BUILDING_DANCING_BEAR",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_DANCING_BEAR"
+  },
+  {
+    "type": "BUILDINGCLASS_WOLF_PEN",
+    "description": "TXT_KEY_BUILDING_WOLF_PEN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_WOLF_PEN"
+  },
+  {
+    "type": "BUILDINGCLASS_LION_CAGE",
+    "description": "TXT_KEY_BUILDING_LION_CAGE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_LION_CAGE"
+  },
+  {
+    "type": "BUILDINGCLASS_TIGER_CAGE",
+    "description": "TXT_KEY_BUILDING_TIGER_CAGE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_TIGER_CAGE"
+  },
+  {
+    "type": "BUILDINGCLASS_HUMAN_CAGE",
+    "description": "TXT_KEY_BUILDING_HUMAN_CAGE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_HUMAN_CAGE"
+  },
+  {
+    "type": "BUILDINGCLASS_DWARF_CAGE",
+    "description": "TXT_KEY_BUILDING_DWARF_CAGE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_DWARF_CAGE"
+  },
+  {
+    "type": "BUILDINGCLASS_ELF_CAGE",
+    "description": "TXT_KEY_BUILDING_ELF_CAGE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_ELF_CAGE"
+  },
+  {
+    "type": "BUILDINGCLASS_ORC_CAGE",
+    "description": "TXT_KEY_BUILDING_ORC_CAGE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_ORC_CAGE"
+  },
+  {
+    "type": "BUILDINGCLASS_CARNIVAL",
+    "description": "TXT_KEY_BUILDING_CARNIVAL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_CARNIVAL"
+  },
+  {
+    "type": "BUILDINGCLASS_COMMAND_POST",
+    "description": "TXT_KEY_BUILDING_COMMAND_POST",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_COMMAND_POST"
+  },
+  {
+    "type": "BUILDINGCLASS_ALTAR_OF_THE_LUONNOTAR",
+    "description": "TXT_KEY_BUILDING_ALTAR_OF_THE_LUONNOTAR",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_ALTAR_OF_THE_LUONNOTAR"
+  },
+  {
+    "type": "BUILDINGCLASS_ALTAR_OF_THE_LUONNOTAR_ANOINTED",
+    "description": "TXT_KEY_BUILDING_ALTAR_OF_THE_LUONNOTAR_ANOINTED",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_ALTAR_OF_THE_LUONNOTAR_ANOINTED"
+  },
+  {
+    "type": "BUILDINGCLASS_ALTAR_OF_THE_LUONNOTAR_BLESSED",
+    "description": "TXT_KEY_BUILDING_ALTAR_OF_THE_LUONNOTAR_BLESSED",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_ALTAR_OF_THE_LUONNOTAR_BLESSED"
+  },
+  {
+    "type": "BUILDINGCLASS_ALTAR_OF_THE_LUONNOTAR_CONSECRATED",
+    "description": "TXT_KEY_BUILDING_ALTAR_OF_THE_LUONNOTAR_CONSECRATED",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_ALTAR_OF_THE_LUONNOTAR_CONSECRATED"
+  },
+  {
+    "type": "BUILDINGCLASS_ALTAR_OF_THE_LUONNOTAR_DIVINE",
+    "description": "TXT_KEY_BUILDING_ALTAR_OF_THE_LUONNOTAR_DIVINE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_ALTAR_OF_THE_LUONNOTAR_DIVINE"
+  },
+  {
+    "type": "BUILDINGCLASS_ALTAR_OF_THE_LUONNOTAR_EXALTED",
+    "description": "TXT_KEY_BUILDING_ALTAR_OF_THE_LUONNOTAR_EXALTED",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_ALTAR_OF_THE_LUONNOTAR_EXALTED"
+  },
+  {
+    "type": "BUILDINGCLASS_ALTAR_OF_THE_LUONNOTAR_FINAL",
+    "description": "TXT_KEY_BUILDING_ALTAR_OF_THE_LUONNOTAR_FINAL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_ALTAR_OF_THE_LUONNOTAR_FINAL",
+    "victory_thresholds": {"VICTORY_ALTAR_OF_THE_LUONNOTAR": 1}
+  },
+  {
+    "type": "BUILDINGCLASS_INFERNAL_GRIMOIRE",
+    "description": "TXT_KEY_BUILDING_INFERNAL_GRIMOIRE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_INFERNAL_GRIMOIRE"
+  },
+  {
+    "type": "BUILDINGCLASS_OBSIDIAN_GATE",
+    "description": "TXT_KEY_BUILDING_OBSIDIAN_GATE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_OBSIDIAN_GATE"
+  },
+  {
+    "type": "BUILDINGCLASS_WINTER_PALACE",
+    "description": "TXT_KEY_BUILDING_WINTER_PALACE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_WINTER_PALACE"
+  },
+  {
+    "type": "BUILDINGCLASS_BONE_PALACE",
+    "description": "TXT_KEY_BUILDING_BONE_PALACE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_BONE_PALACE"
+  },
+  {
+    "type": "BUILDINGCLASS_HALL_OF_KINGS",
+    "description": "TXT_KEY_BUILDING_HALL_OF_KINGS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_HALL_OF_KINGS"
+  },
+  {
+    "type": "BUILDINGCLASS_GREAT_LIBRARY",
+    "description": "TXT_KEY_BUILDING_GREAT_LIBRARY",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_GREAT_LIBRARY"
+  },
+  {
+    "type": "BUILDINGCLASS_GREAT_LIGHTHOUSE",
+    "description": "TXT_KEY_BUILDING_GREAT_LIGHTHOUSE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_GREAT_LIGHTHOUSE"
+  },
+  {
+    "type": "BUILDINGCLASS_PROPHECY_OF_RAGNAROK",
+    "description": "TXT_KEY_BUILDING_PROPHECY_OF_RAGNAROK",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_PROPHECY_OF_RAGNAROK"
+  },
+  {
+    "type": "BUILDINGCLASS_TEMPLE_OF_TEMPORENCE",
+    "description": "TXT_KEY_BUILDING_TEMPLE_OF_TEMPORENCE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_TEMPLE_OF_TEMPORENCE"
+  },
+  {
+    "type": "BUILDINGCLASS_HEROIC_EPIC",
+    "description": "TXT_KEY_BUILDING_HEROIC_EPIC",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_HEROIC_EPIC"
+  },
+  {
+    "type": "BUILDINGCLASS_NATIONAL_EPIC",
+    "description": "TXT_KEY_BUILDING_NATIONAL_EPIC",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_NATIONAL_EPIC"
+  },
+  {
+    "type": "BUILDINGCLASS_THE_NECRONOMICON",
+    "description": "TXT_KEY_BUILDING_THE_NECRONOMICON",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_THE_NECRONOMICON"
+  },
+  {
+    "type": "BUILDINGCLASS_TABLETS_OF_BAMBUR",
+    "description": "TXT_KEY_BUILDING_TABLETS_OF_BAMBUR",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_TABLETS_OF_BAMBUR"
+  },
+  {
+    "type": "BUILDINGCLASS_STIGMATA_ON_THE_UNBORN",
+    "description": "TXT_KEY_BUILDING_STIGMATA_ON_THE_UNBORN",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_STIGMATA_ON_THE_UNBORN"
+  },
+  {
+    "type": "BUILDINGCLASS_SONG_OF_AUTUMN",
+    "description": "TXT_KEY_BUILDING_SONG_OF_AUTUMN",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_SONG_OF_AUTUMN"
+  },
+  {
+    "type": "BUILDINGCLASS_CODE_OF_JUNIL",
+    "description": "TXT_KEY_BUILDING_CODE_OF_JUNIL",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_CODE_OF_JUNIL"
+  },
+  {
+    "type": "BUILDINGCLASS_BAZAAR_OF_MAMMON",
+    "description": "TXT_KEY_BUILDING_BAZAAR_OF_MAMMON",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_BAZAAR_OF_MAMMON"
+  },
+  {
+    "type": "BUILDINGCLASS_TEMPLE_OF_LEAVES",
+    "description": "TXT_KEY_BUILDING_TEMPLE_OF_LEAVES",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_TEMPLE_OF_LEAVES"
+  },
+  {
+    "type": "BUILDINGCLASS_TEMPLE_OF_KILMORPH",
+    "description": "TXT_KEY_BUILDING_TEMPLE_OF_KILMORPH",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_TEMPLE_OF_KILMORPH"
+  },
+  {
+    "type": "BUILDINGCLASS_TEMPLE_OF_THE_ORDER",
+    "description": "TXT_KEY_BUILDING_TEMPLE_OF_THE_ORDER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_TEMPLE_OF_THE_ORDER"
+  },
+  {
+    "type": "BUILDINGCLASS_TEMPLE_OF_THE_OVERLORDS",
+    "description": "TXT_KEY_BUILDING_TEMPLE_OF_THE_OVERLORDS",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_TEMPLE_OF_THE_OVERLORDS"
+  },
+  {
+    "type": "BUILDINGCLASS_TEMPLE_OF_THE_VEIL",
+    "description": "TXT_KEY_BUILDING_TEMPLE_OF_THE_VEIL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_TEMPLE_OF_THE_VEIL"
+  },
+  {
+    "type": "BUILDINGCLASS_ALCHEMY_LAB",
+    "description": "TXT_KEY_BUILDING_ALCHEMY_LAB",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_ALCHEMY_LAB"
+  },
+  {
+    "type": "BUILDINGCLASS_THE_DRAGONS_HORDE",
+    "description": "TXT_KEY_BUILDING_THE_DRAGONS_HORDE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_THE_DRAGONS_HORDE"
+  },
+  {
+    "type": "BUILDINGCLASS_TOWER_OF_COMPLACENCY",
+    "description": "TXT_KEY_BUILDING_TOWER_OF_COMPLACENCY",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_TOWER_OF_COMPLACENCY"
+  },
+  {
+    "type": "BUILDINGCLASS_TOWER_OF_EYES",
+    "description": "TXT_KEY_BUILDING_TOWER_OF_EYES",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_TOWER_OF_EYES"
+  },
+  {
+    "type": "BUILDINGCLASS_SYLIVENS_PERFECT_LYRE",
+    "description": "TXT_KEY_BUILDING_SYLIVENS_PERFECT_LYRE",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_SYLIVENS_PERFECT_LYRE"
+  },
+  {
+    "type": "BUILDINGCLASS_CROWN_OF_AKHARIEN",
+    "description": "TXT_KEY_BUILDING_CROWN_OF_AKHARIEN",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_CROWN_OF_AKHARIEN"
+  },
+  {
+    "type": "BUILDINGCLASS_FORBIDDEN_PALACE",
+    "description": "TXT_KEY_BUILDING_FORBIDDEN_PALACE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_FORBIDDEN_PALACE"
+  },
+  {
+    "type": "BUILDINGCLASS_PUBLIC_BATHS",
+    "description": "TXT_KEY_BUILDING_PUBLIC_BATHS",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_PUBLIC_BATHS"
+  },
+  {
+    "type": "BUILDINGCLASS_GAMBLING_HOUSE",
+    "description": "TXT_KEY_BUILDING_GAMBLING_HOUSE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_GAMBLING_HOUSE"
+  },
+  {
+    "type": "BUILDINGCLASS_BASILICA",
+    "description": "TXT_KEY_BUILDING_BASILICA",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_BASILICA"
+  },
+  {
+    "type": "BUILDINGCLASS_ASYLUM",
+    "description": "TXT_KEY_BUILDING_ASYLUM",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_ASYLUM"
+  },
+  {
+    "type": "BUILDINGCLASS_MINES_OF_GALDUR",
+    "description": "TXT_KEY_BUILDING_MINES_OF_GALDUR",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_MINES_OF_GALDUR"
+  },
+  {
+    "type": "BUILDINGCLASS_CATACOMB_LIBRALUS",
+    "description": "TXT_KEY_BUILDING_CATACOMB_LIBRALUS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_CATACOMB_LIBRALUS"
+  },
+  {
+    "type": "BUILDINGCLASS_TAVERN",
+    "description": "TXT_KEY_BUILDING_TAVERN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_TAVERN"
+  },
+  {
+    "type": "BUILDINGCLASS_ELDER_COUNCIL",
+    "description": "TXT_KEY_BUILDING_ELDER_COUNCIL",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_ELDER_COUNCIL"
+  },
+  {
+    "type": "BUILDINGCLASS_MONEYCHANGER",
+    "description": "TXT_KEY_BUILDING_MONEYCHANGER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_MONEYCHANGER"
+  },
+  {
+    "type": "BUILDINGCLASS_INFIRMARY",
+    "description": "TXT_KEY_BUILDING_INFIRMARY",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_INFIRMARY"
+  },
+  {
+    "type": "BUILDINGCLASS_SMOKEHOUSE",
+    "description": "TXT_KEY_BUILDING_SMOKEHOUSE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_SMOKEHOUSE"
+  },
+  {
+    "type": "BUILDINGCLASS_THEATRE",
+    "description": "TXT_KEY_BUILDING_THEATRE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_THEATRE"
+  },
+  {
+    "type": "BUILDINGCLASS_GROVE",
+    "description": "TXT_KEY_BUILDING_GROVE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_GROVE"
+  },
+  {
+    "type": "BUILDINGCLASS_TAX_OFFICE",
+    "description": "TXT_KEY_BUILDING_TAX_OFFICE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_TAX_OFFICE"
+  },
+  {
+    "type": "BUILDINGCLASS_FORM_OF_THE_TITAN",
+    "description": "TXT_KEY_BUILDING_FORM_OF_THE_TITAN",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_FORM_OF_THE_TITAN"
+  },
+  {
+    "type": "BUILDINGCLASS_DUNGEON",
+    "description": "TXT_KEY_BUILDING_DUNGEON",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_DUNGEON"
+  },
+  {
+    "type": "BUILDINGCLASS_COURTHOUSE",
+    "description": "TXT_KEY_BUILDING_COURTHOUSE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_COURTHOUSE"
+  },
+  {
+    "type": "BUILDINGCLASS_MONUMENT",
+    "description": "TXT_KEY_BUILDING_MONUMENT",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_MONUMENT"
+  },
+  {
+    "type": "BUILDINGCLASS_INN",
+    "description": "TXT_KEY_BUILDING_INN",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_INN"
+  },
+  {
+    "type": "BUILDINGCLASS_BREWERY",
+    "description": "TXT_KEY_BUILDING_BREWERY",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "default_building": "BUILDING_BREWERY"
+  },
+  {
+    "type": "BUILDINGCLASS_SIEGE_WORKSHOP",
+    "description": "TXT_KEY_BUILDING_SIEGE_WORKSHOP",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_SIEGE_WORKSHOP"
+  },
+  {
+    "type": "BUILDINGCLASS_HUNTING_LODGE",
+    "description": "TXT_KEY_BUILDING_HUNTING_LODGE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_HUNTING_LODGE"
+  },
+  {
+    "type": "BUILDINGCLASS_PAGAN_TEMPLE",
+    "description": "TXT_KEY_BUILDING_PAGAN_TEMPLE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_PAGAN_TEMPLE"
+  },
+  {
+    "type": "BUILDINGCLASS_HERBALIST",
+    "description": "TXT_KEY_BUILDING_HERBALIST",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_HERBALIST"
+  },
+  {
+    "type": "BUILDINGCLASS_STABLE",
+    "description": "TXT_KEY_BUILDING_STABLE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_STABLE"
+  },
+  {
+    "type": "BUILDINGCLASS_ARCHERY_RANGE",
+    "description": "TXT_KEY_BUILDING_ARCHERY_RANGE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_ARCHERY_RANGE"
+  },
+  {
+    "type": "BUILDINGCLASS_PALACE",
+    "description": "TXT_KEY_BUILDING_PALACE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 1,
+    "extra_player_instances": 1,
+    "no_limit": true,
+    "default_building": "BUILDING_PALACE_BANNOR"
+  },
+  {
+    "type": "BUILDINGCLASS_WALLS",
+    "description": "TXT_KEY_BUILDING_WALLS",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_WALLS"
+  },
+  {
+    "type": "BUILDINGCLASS_TRAINING_YARD",
+    "description": "TXT_KEY_BUILDING_TRAINING_YARD",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_TRAINING_YARD"
+  },
+  {
+    "type": "BUILDINGCLASS_GRANARY",
+    "description": "TXT_KEY_BUILDING_GRANARY",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_GRANARY"
+  },
+  {
+    "type": "BUILDINGCLASS_AQUEDUCT",
+    "description": "TXT_KEY_BUILDING_AQUEDUCT",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_AQUEDUCT"
+  },
+  {
+    "type": "BUILDINGCLASS_LIGHTHOUSE",
+    "description": "TXT_KEY_BUILDING_LIGHTHOUSE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_LIGHTHOUSE"
+  },
+  {
+    "type": "BUILDINGCLASS_HARBOR",
+    "description": "TXT_KEY_BUILDING_HARBOR",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_HARBOR"
+  },
+  {
+    "type": "BUILDINGCLASS_FORGE",
+    "description": "TXT_KEY_BUILDING_FORGE",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_FORGE"
+  },
+  {
+    "type": "BUILDINGCLASS_ACADEMY",
+    "description": "TXT_KEY_BUILDING_ACADEMY",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_ACADEMY"
+  },
+  {
+    "type": "BUILDINGCLASS_LIBRARY",
+    "description": "TXT_KEY_BUILDING_LIBRARY",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_LIBRARY"
+  },
+  {
+    "type": "BUILDINGCLASS_MARKET",
+    "description": "TXT_KEY_BUILDING_MARKET",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_MARKET"
+  },
+  {
+    "type": "BUILDINGCLASS_THE_NEXUS",
+    "description": "TXT_KEY_BUILDING_THE_NEXUS",
+    "max_global_instances": 1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_building": "BUILDING_THE_NEXUS"
+  }
+]

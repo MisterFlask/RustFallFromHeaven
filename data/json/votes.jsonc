@@ -1,0 +1,209 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Alex Mantzaris (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Vote Infos
+[
+  {
+    "type": "VOTE_SECRETARY_GENERAL",
+    "description": "TXT_KEY_VOTE_SECRETARY_GENERAL",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "secretary_general": true,
+    "diplo_votes": {"DIPLOVOTE_OVERCOUNCIL": true}
+  },
+  {
+    "type": "VOTE_SINGLE_CURRENCY",
+    "description": "TXT_KEY_VOTE_SINGLE_CURRENCY",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "trade_routes": 1,
+    "diplo_votes": {"DIPLOVOTE_OVERCOUNCIL": true}
+  },
+  {
+    "type": "VOTE_FREE_TRADE",
+    "description": "TXT_KEY_VOTE_FREE_TRADE",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "free_trade": true,
+    "diplo_votes": {"DIPLOVOTE_OVERCOUNCIL": true}
+  },
+  {
+    "type": "VOTE_LIBERTY",
+    "description": "TXT_KEY_VOTE_LIBERTY",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "force_civics": {"CIVIC_LIBERTY": true},
+    "diplo_votes": {"DIPLOVOTE_OVERCOUNCIL": true}
+  },
+  {
+    "type": "VOTE_UN_FORCE_PEACE",
+    "description": "TXT_KEY_VOTE_UN_FORCE_PEACE",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "force_peace": true,
+    "diplo_votes": {"DIPLOVOTE_OVERCOUNCIL": true}
+  },
+  {
+    "type": "VOTE_UN_FORCE_NO_TRADE",
+    "description": "TXT_KEY_UN_VOTE_FORCE_NO_TRADE",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "force_no_trade": true,
+    "diplo_votes": {"DIPLOVOTE_OVERCOUNCIL": true}
+  },
+  {
+    "type": "VOTE_FORCE_WAR",
+    "description": "TXT_KEY_UN_VOTE_FORCE_WAR",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "force_war": true,
+    "diplo_votes": {"DIPLOVOTE_OVERCOUNCIL": true}
+  },
+  {
+    "type": "VOTE_ASSIGN_CITY",
+    "description": "TXT_KEY_VOTE_UN_ASSIGN_CITY",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "assign_city": true,
+    "diplo_votes": {"DIPLOVOTE_OVERCOUNCIL": true}
+  },
+  {
+    "type": "VOTE_DEFENSIVE_PACT",
+    "description": "TXT_KEY_VOTE_DEFENSIVE_PACT",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "defensive_pact": true,
+    "diplo_votes": {"DIPLOVOTE_OVERCOUNCIL": true}
+  },
+  {
+    "type": "VOTE_NO_DEATH_MANA",
+    "description": "TXT_KEY_VOTE_NO_DEATH_MANA",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "diplo_votes": {"DIPLOVOTE_OVERCOUNCIL": true},
+    "no_bonus": "BONUS_MANA_DEATH"
+  },
+  {
+    "type": "VOTE_NO_ENTROPY_MANA",
+    "description": "TXT_KEY_VOTE_NO_ENTROPY_MANA",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "diplo_votes": {"DIPLOVOTE_OVERCOUNCIL": true},
+    "no_bonus": "BONUS_MANA_ENTROPY"
+  },
+  {
+    "type": "VOTE_NO_SHADOW_MANA",
+    "description": "TXT_KEY_VOTE_NO_SHADOW_MANA",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "diplo_votes": {"DIPLOVOTE_OVERCOUNCIL": true},
+    "no_bonus": "BONUS_MANA_SHADOW"
+  },
+  {
+    "type": "VOTE_SECRETARY_GENERAL_UNDERCOUNCIL",
+    "description": "TXT_KEY_VOTE_SECRETARY_GENERAL",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "secretary_general": true,
+    "diplo_votes": {"DIPLOVOTE_UNDERCOUNCIL": true}
+  },
+  {
+    "type": "VOTE_FORCE_WAR_UNDERCOUNCIL",
+    "description": "TXT_KEY_UN_VOTE_FORCE_WAR",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "force_war": true,
+    "diplo_votes": {"DIPLOVOTE_UNDERCOUNCIL": true}
+  },
+  {
+    "type": "VOTE_DEVELOP_SECRET_CODES",
+    "description": "TXT_KEY_VOTE_DEVELOP_SECRET_CODES",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "diplo_votes": {"DIPLOVOTE_UNDERCOUNCIL": true},
+    "no_outside_tech_trades": true,
+    "cost": 25,
+    "free_units": 1,
+    "free_unit_class": "UNITCLASS_SCIENTIST"
+  },
+  {
+    "type": "VOTE_ENLIST_THE_NIGHTWATCH",
+    "description": "TXT_KEY_VOTE_ENLIST_THE_NIGHTWATCH",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "diplo_votes": {"DIPLOVOTE_UNDERCOUNCIL": true},
+    "cost": 25,
+    "free_units": 1,
+    "free_unit_class": "UNITCLASS_NIGHTWATCH"
+  },
+  {
+    "type": "VOTE_FUND_DISSIDENTS",
+    "description": "TXT_KEY_VOTE_FUND_DISSIDENTS",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "diplo_votes": {"DIPLOVOTE_UNDERCOUNCIL": true},
+    "cost": 50,
+    "py_result": "voteFundDissidents()"
+  },
+  {
+    "type": "VOTE_GAMBLING_RING",
+    "description": "TXT_KEY_VOTE_GAMBLING_RING",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "diplo_votes": {"DIPLOVOTE_UNDERCOUNCIL": true},
+    "gambling_ring": true,
+    "cost": 25,
+    "crime": 5
+  },
+  {
+    "type": "VOTE_SLAVE_TRADE",
+    "description": "TXT_KEY_VOTE_SLAVE_TRADE",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "diplo_votes": {"DIPLOVOTE_UNDERCOUNCIL": true},
+    "slave_trade": true,
+    "cost": 25,
+    "crime": 5
+  },
+  {
+    "type": "VOTE_SMUGGLING_RING",
+    "description": "TXT_KEY_VOTE_SMUGGLING_RING",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "trade_routes": 1,
+    "diplo_votes": {"DIPLOVOTE_UNDERCOUNCIL": true},
+    "smuggling_ring": true,
+    "cost": 25,
+    "crime": 5
+  },
+  {
+    "type": "VOTE_OPEN_BORDERS",
+    "description": "TXT_KEY_VOTE_OPEN_BORDERS",
+    "population_threshold": 50,
+    "civ_voting": true,
+    "min_voters": 2,
+    "open_borders": true,
+    "diplo_votes": {"DIPLOVOTE_UNDERCOUNCIL": true}
+  }
+]

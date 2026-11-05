@@ -130,7 +130,7 @@ pub extern "C" fn ffh_init(ptr: u32, len: u32) -> u32 {
         }
     };
     let data = ffh_data::default_data_dir();
-    if !data.join("xml").is_dir() {
+    if !data.join("json").is_dir() {
         eprintln!("ffh_init: no game data in {} (FFH_DATA_DIR)", data.display());
         return 1;
     }

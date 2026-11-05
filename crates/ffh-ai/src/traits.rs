@@ -652,7 +652,7 @@ pub fn attack_bonus_pct(g: &Game, p: PlayerId) -> i32 {
         return 0;
     }
     let info = &g.d.traits[tr];
-    g.d.promotions.keys().filter(|&pr| info.free_promotion[pr]).map(|pr| g.d.promotions[pr].combat_percent).sum::<i32>().max(0)
+    g.d.promotions.keys().filter(|&pr| info.free_promotion[pr]).map(|pr| g.d.promotions[pr].combat_percent()).sum::<i32>().max(0)
 }
 
 /// The gold player `p` keeps after an upgrade: `reserve`, or half of it for an Ingenuity leader

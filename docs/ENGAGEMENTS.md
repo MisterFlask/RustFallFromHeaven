@@ -34,22 +34,29 @@ city's defence costs no slots); at least 3; across a river two of the attacker's
 soldiers' slots (docs/SIEGES.md). Each side stands on a grid of 3 rows
 (front 0, middle 1, rear 2) by `max(2, ceil((slots + 2) / 3))` lanes (`formation::lanes_for`, of the
 side's ordinary and river slots together; the sides' lane counts may differ). A large unit (`bLarge`,
-below) fills two cells side by side in one row and counts 2 slots, has
-`ENGAGEMENT_LARGE_HP_PERCENT` (150) of its role's HP, and is the front or back unit of both its
-lanes.
+below) fills two cells side by side in one row and counts 2 slots, and is the front or back unit
+of both its lanes.
 
-**Roles** (`CIV4CombatRoleInfos.xml`):
+**Roles** (`combat_roles.jsonc`):
 
-| Role | defaults (unit combat) | A% | Dv% | HP | speed | Front | Middle | Rear | other | home row | auto pick |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| FRONTLINE | MELEE, ANIMAL, BEAST, RECON, bDefault | 100 | 100 | 120 | 4 | 2 strike | 1 strike | 1 strike | | front | 2 |
-| SCREEN | FRONTLINE + Formation | 100 | 110 | 120 | 3 | 2 strike | 1 strike | 1 strike | anti-flank | front | 1 |
-| FLANKER | MOUNTED | 110 | 80 | 100 | 6 | 2 charge | 1 strike | 1 strike | dodge 10 | front | 4 |
-| ASSASSIN | RECON with Marksman free | 120 | 60 | 60 | 7 | 1 stab | 2 stab | 1 stab | dodge 15, crit +15 | middle | 8 |
-| ARCHER | ARCHER, NAVAL (Airship) | 100 | 60 | 80 | 4 | 1 shoot | 2 shoot | 2 shoot | | middle | 3 |
-| SIEGE | SIEGE | 100 | 60 | 80 | 1 | none | 1 bombard | 2 bombard | | rear | 7 |
-| ARCANE | ADEPT | 100 | 50 | 70 | 3 | 1 strike | 1 spell | 2 spell | | rear | 5 |
-| DIVINE | DISCIPLE | 100 | 50 | 70 | 3 | 1 strike | 1 heal | 2 heal | | middle | 6 |
+| Role | defaults (unit combat) | Front | Middle | Rear | other | home row | auto pick |
+|---|---|---|---|---|---|---|---|
+| FRONTLINE | MELEE, ANIMAL, BEAST, RECON, bDefault | 2 strike | 1 strike | 1 strike | | front | 2 |
+| SCREEN | FRONTLINE + Formation | 2 strike | 1 strike | 1 strike | anti-flank | front | 1 |
+| FLANKER | MOUNTED | 2 charge | 1 strike | 1 strike | | front | 4 |
+| ASSASSIN | RECON with Marksman free | 1 stab | 2 stab | 1 stab | | middle | 8 |
+| ARCHER | ARCHER, NAVAL (Airship) | 1 shoot | 2 shoot | 2 shoot | | middle | 3 |
+| SIEGE | SIEGE | none | 1 bombard | 2 bombard | | rear | 7 |
+| ARCANE | ADEPT | 1 strike | 1 spell | 2 spell | | rear | 5 |
+| DIVINE | DISCIPLE | 1 strike | 1 heal | 2 heal | | middle | 6 |
+
+A unit's numbers (HP, attack, defence, magic, magic defence, accuracy, evasion, crit, speed) are
+its own stat sheet's, not its role's (docs/UNIT_STATS.md; below). The sheets began as the roles' old
+values: HP 120 frontline, 100 flanker, 80 archer and siege, 70 arcane and divine, 60 assassin;
+attack and defence the unit's strength times the role's percent (flanker 110/80, assassin 120/60,
+archer and siege 100/60, arcane and divine 100/50, screen defence 110); speed 4, screen 3, flanker
+6, assassin 7, archer 4, siege 1, arcane and divine 3; evasion 10 for flankers and 15 for
+assassins, crit 10 and 25 for assassins; accuracy 90.
 
 Units of tier `ENGAGEMENT_EXTRA_ACTION_TIER` (4) and above and heroes get
 `ENGAGEMENT_EXTRA_ACTIONS` (1) more actions in their best row, the row with the most (the first
@@ -58,41 +65,34 @@ chance first strike rolled at the battle's start (first strikes are speed now; i
 strikes has no effect in an engagement). A flanker is a unit whose rows have a CHARGE. The home row
 and the auto-pick order are the auto formation's, always the role's.
 
-**Per-unit values** (the owner's request, 2026-10-31). A unit type may replace its role's values in
-`CIV4UnitInfos.xml`; each falls back to the role's when absent, and no unit sets them yet (the
+**Per-unit values** (the owner's request, 2026-10-31; docs/UNIT_STATS.md). Every land unit type has
+a stat sheet in `units.jsonc`, `stats`: `hp`, `attack`, `defense`, `magic`, `magic_defense`,
+`accuracy`, `evasion`, `crit`, `speed`. Promotions change them (`stat_changes`); a missing or
+out-of-range value warns. A unit type may also replace its role's rows, and no unit does yet (the
 content is the owner's to decide):
 
-| Tag | Replaces | Absent / -1 | Valid |
+| Key | Replaces | Absent | Valid |
 |---|---|---|---|
-| `CombatRole` | the role its unit combat gives it | that role | a role |
-| `iAttack`, `iDefense` | the base of A (`iCombat` x the role's A%), of Dv (`iCombatDefense` x Dv%) | 0: the role's | above 0 |
-| `iHP` | the role's max HP (a large unit's 150% of it) | 0: the role's | above 0 |
-| `bLarge` | one cell | 0: one cell | |
-| `iEngageSpeed` | the role's speed | -1: the role's | 0 and above |
-| `iEngageDodge` | the role's dodge | -1: the role's | 0..=95 |
-| `iEngageCritBonus` | the role's crit bonus | -1: the role's | 0..=95 |
-| `EngageRows` | the role's rows | the role's | three `Row`s |
+| `combat_role` | the role its unit combat gives it | that role | a role |
+| `large` | one cell | false: one cell | |
+| `engage_rows` | the role's rows | the role's | three rows |
 
-`EngageRows` holds three `Row` elements, front, middle and rear, each an `Action` (STRIKE, CHARGE,
-STAB, SHOOT, SPELL, BOMBARD, HEAL, NONE) and its `iCount` (note: `iCount` here, `iActions` in the
-roles' `FrontRow`, `MiddleRow`, `RearRow`):
+`engage_rows` holds three rows, front, middle and rear, each an `action` (STRIKE, CHARGE, STAB,
+SHOOT, SPELL, BOMBARD, HEAL, NONE) and its `count` (note: `count` here, `actions` in the roles'
+`front_row`, `middle_row`, `rear_row`):
 
-```xml
-<EngageRows>
-    <Row><Action>SHOOT</Action><iCount>1</iCount></Row>
-    <Row><Action>STAB</Action><iCount>2</iCount></Row>
-    <Row><Action>NONE</Action><iCount>0</iCount></Row>
-</EngageRows>
+```jsonc
+"engage_rows": [{"action": "SHOOT", "count": 1}, {"action": "STAB", "count": 2}, {"action": "NONE"}],
 ```
 
 The rows' rules are the roles': a count above 0 exactly when the action is not NONE, and some row
 acts. A value outside its range, rows that are not three, an unknown action or rows that break those
-rules warn at load and leave the unit its role's value. One accessor per value resolves the unit
-type, then the unit's role: `Game::unit_engage_speed`, `unit_engage_dodge`,
-`unit_engage_crit_bonus`, `unit_engage_rows`, `unit_engage_best_row`, `unit_engage_actions` (with the
-extra action), `unit_engage_flanks`, `unit_engage_max_hp`, `unit_engage_large`, `unit_engage_spell`
-(stats.rs, arrange.rs); the rules' fighters, the auto formation, the preview, the view and the
-client read these, not the role's fields.
+rules warn at load and leave the unit its role's rows. One accessor per value resolves the unit:
+`Game::unit_stat` and `unit_engage_max_hp`, `_speed`, `_accuracy`, `_evasion`, `_crit` (its sheet,
+its own points and percentages), `unit_engage_rows`, `unit_engage_best_row`, `unit_engage_actions`
+(with the extra action), `unit_engage_flanks`, `unit_engage_large`, `unit_engage_spell` (its type's
+own, else its role's; stats.rs, arrange.rs); the rules' fighters, the auto formation, the preview,
+the view and the client read these.
 
 **Action kinds and reach** (`ffh_data::ActionKind`):
 - STRIKE: the front unit of each enemy lane; physical; a crit knocks the target back.
@@ -156,14 +156,16 @@ field.
    A (the unit's A against nobody in particular), then lane, then row, never by list order.
 
 **Hits.** Expected damage, centi-HP: `ENGAGEMENT_BASE_DAMAGE (40) x 100 x A / (A + Dv)` (an even
-hit 20 HP; six kill a frontline unit), then times the hit's percentages (a spell's power, the
-ground's, the first round's charge, a splash's) over one division. A hit: `max(1, expected x r)`, r
-in `ENGAGEMENT_DAMAGE_RAND_MIN..=MAX` (80..120) %. A physical action misses with
-`ENGAGEMENT_MISS_PERCENT` (10) + the kind's extra + the target's dodge (at most 95), rolled before
-the crit and the damage. Strike, charge, stab and shoot crit with `ENGAGEMENT_CRIT_PERCENT` (10) +
-the hitter's crit bonus (at most 95), for `ENGAGEMENT_CRIT_DAMAGE_PERCENT` (150) % of the hit; a
-strike's or a charge's crit knocks the target back a row when every cell behind it is free (it acts
-from that row then).
+hit 20 HP; six kill a frontline unit); a SPELL's A and Dv are the caster's magic and the target's
+magic defence, and its damage is times `100 -` the target's resistance to the spell's damage type
+(none for the magic bolt). Then times the hit's percentages (a spell's power, the ground's, the
+first round's charge, a splash's) over one division. A hit: `max(1, expected x r)`, r in
+`ENGAGEMENT_DAMAGE_RAND_MIN..=MAX` (80..120) %. A physical action hits with the hitter's accuracy
+less the target's evasion and the kind's (`ENGAGEMENT_SHOOT_MISS_PERCENT` 10, `_BOMBARD_` 15),
+within 5..100, rolled before the crit and the damage. Strike, charge, stab and shoot crit with the
+hitter's crit (at most 95), for `ENGAGEMENT_CRIT_DAMAGE_PERCENT` (150) % of the hit; a strike's or a
+charge's crit knocks the target back a row when every cell behind it is free (it acts from that row
+then).
 
 **Withdrawal** replaces a killing hit: a unit with a withdrawal chance (attackers: FfH's
 `withdrawalProbability`; defenders: the defensive withdrawal) that a hit (a splash too) would kill
@@ -178,7 +180,7 @@ BOMBARD deal `ENGAGEMENT_FOREST_RANGED_PERCENT` (50) % on both sides; hills: eve
 (spells too) deals `ENGAGEMENT_HILLS_ATTACKER_PERCENT` (75) %, the defender's SHOOT and BOMBARD
 `ENGAGEMENT_HILLS_DEFENDER_RANGED_PERCENT` (125) %. A city, a forest or jungle stop flanking.
 
-**Large units** (`bLarge` in `CIV4UnitInfos.xml`): the spec's Hill Giant, War Elephant and Elephant,
+**Large units** (`bLarge` in `units.jsonc`): the spec's Hill Giant, War Elephant and Elephant,
 the dragons (Abashi, Acheron, Drifa, Eurabatres), every golem (Bone, Clockwork, Flesh, Iron,
 Mithril, Mud, Nullstone, Wood) and the Treant, and of that size class the giant heroes Gurid,
 Margalard and Wilboman (a frost giant), Barnaxus (a golem), the War Machine, the Earth Elemental (a
@@ -187,9 +189,11 @@ Giant Spider, the Manticore) stay one cell.
 
 ## A and Dv per hit
 
-`Game::engage_hit` (stats.rs; G1, Q1, Q2, Q9): the hitter's A and the target's Dv are its base (the
-type's strength times the role's percent, or the type's `iAttack` / `iDefense`, plus the unit's own
-flat and typed strength) under one summed percentage modifier, through the duel's terms. Revision 4
+`Game::engage_hit` (stats.rs; G1, Q1, Q2, Q9): the hitter's A and the target's Dv are its base (its
+sheet's attack or defence plus its own points, x10, plus its typed strength scaled by the opponent's
+resistance) under one summed percentage modifier: its own percentage (`Unit::stat_pct`) and the
+duel's terms. Magic and magic defence take only the unit's own points and percentage
+(docs/UNIT_STATS.md). Revision 4
 changed two rows of the term table (stats.rs's module comment): **the defended plot's own defence
 no longer adds to Dv** (its terrain or feature cover, hills, a fort's improvement defence, the
 city's building and culture defence, FfH's range defence: the duel's `plot_defense_modifier`) and
@@ -199,7 +203,11 @@ fortification, its city defence in a city (`iCityDefense`, promotions), its hill
 its feature (else terrain) defence. Everything else is as before: the promotions' own percentages,
 Homeland, Stigmata, the bonuses against the opponent (unit combat, class, promotions, domain,
 animals), the handicap's on the target, the attacker's city, hills, feature and terrain attack and
-the amphibious term, the river (slots, Q9). A unit's A against nobody in particular
+the amphibious term, the river (slots, Q9). **The place bonuses count on both sides** (the owner's
+rule, 2026-11-05): the defender's own terms above are on its A as well as its Dv, and the
+attacker's city, hills, feature and terrain attack on its Dv as well as its A, since both sides hit
+in a formation battle (G1 had put each on one side, as in the duel). The amphibious penalty stays
+on the attacker's A only. A unit's A against nobody in particular
 (`Game::engage_a_alone`) is a fighter's "most dangerous", its ties and the auto formation's
 strength. A missile's strike (below) keeps both rows: against it the plot's own defence and the
 city's barbarian defence still count in Dv (`HitCtx::cover`), as before revision 4.
@@ -329,7 +337,7 @@ post-battle steps' (combat-apply, poison, the per-kill effects' own rolls, the f
 
 **The resolver's API** (`engagement::formation`, pure: nothing of `Game`): `Formation::new(params,
 ground, lanes, fighters, pair)` (each `Fighter`'s side, tag, lane, row, large, max HP and HP, its
-speed, first strikes and chance first strikes, actions per row, A against nobody, dodge, crit bonus,
+speed, first strikes and chance first strikes, actions per row, A against nobody, accuracy, evasion, crit,
 anti-flank, flanker, withdrawal chance, combat limit, collateral limit, extra and protection,
 spell), `Formation::validate`
 (inside the grid, one unit a cell), `Params::from_defines`, `Ground` and `Ground::rules`;
@@ -352,7 +360,7 @@ either side, or a human team sees the plot), `report::BattleLog`:
   their place), then the reserves on both plots (no cell): the unit, its name, unit type, owner and
   shown owner, side, cell `(lane, row)`, large, level, XP, hero, role, max HP, HP before the opening
   and when the battle began, its speed in the battle, first strikes, their chance and what it
-  rolled, actions per row, the spell it casts, dodge, crit bonus, anti-flank, flanker, withdrawal
+  rolled, actions per row, the spell it casts, accuracy, evasion, crit, anti-flank, flanker, withdrawal
   chance, combat limit, collateral limit, defensive strike, immunities, Fear, A and Dv with their
   parts, its fate (standing, fell by whom in which round, withdrew in which round, sat out) and the
   damage it dealt, took and healed;
@@ -426,7 +434,7 @@ The spec (the owner's, revision 4) holds; these were left open and are decided s
 - The fighters' order (the resolver's draw order for first strikes and coins) is the engagement's:
   the attacker's formation by lane then row, then the defender's; so the same formation is the same
   battle however the order lists it.
-- A large unit's HP is 150% of its role's; a unit type's own `iHP` is its HP whether large or not.
+- A large unit's HP is in its stat sheet (150% of its role's when the sheets were derived).
 - The forest flag of the ground is a feature with `iEngagementSlotsChange` below 0 (the forests and
   the jungle); the city flag a city on the plot (a fort is not a city here).
 - The auto formation's strength is the unit's A against nobody in particular on its side (its

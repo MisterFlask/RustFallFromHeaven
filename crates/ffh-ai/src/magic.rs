@@ -296,8 +296,8 @@ fn promo_pct(g: &Game, t: UnitId, pr: PromotionType, attack: bool, city: Option<
         return -100;
     }
     let base = if attack { g.unit_base_combat_str(t) } else { g.unit_base_combat_str_defense(t) }.max(1);
-    let mut pct = if attack { info.combat_percent } else { info.combat_percent_defense };
-    let extra = if attack { info.extra_combat_str } else { info.extra_combat_defense };
+    let mut pct = if attack { info.combat_percent() } else { info.combat_percent_defense() };
+    let extra = if attack { info.extra_combat_str() } else { info.extra_combat_defense() };
     pct += (extra + info.damage_type_combat.iter().sum::<i32>()) * 100 / base;
     if let Some(c) = city {
         pct += if attack { info.city_attack_percent } else { info.city_defense_percent };
@@ -1695,14 +1695,14 @@ pub fn spell_worth(d: &GameData, s: SpellType) -> i32 {
     for pr in adds(info) {
         let p = &d.promotions[pr];
         if p.ai_weight < 0 {
-            let curse = (-p.combat_percent_defense).max(0)
-                + (-p.extra_combat_defense).max(0) * 20
+            let curse = (-p.combat_percent_defense()).max(0)
+                + (-p.extra_combat_defense()).max(0) * 20
                 + if p.only_defensive { 40 } else { 0 }
                 + if p.moves_change < 0 { 30 } else { 0 };
             w += curse * reach;
         } else {
-            let gain = p.combat_percent.max(p.combat_percent_defense)
-                + (p.extra_combat_str.max(p.extra_combat_defense) + p.damage_type_combat.iter().sum::<i32>()) * 20
+            let gain = p.combat_percent().max(p.combat_percent_defense())
+                + (p.extra_combat_str().max(p.extra_combat_defense()) + p.damage_type_combat.iter().sum::<i32>()) * 20
                 + p.first_strikes_change * 10;
             let stack = if info.buff_caster_only { 1 } else { 3 };
             let lasting = if p.expire_chance == 0 && !p.removed_by_combat { 3 } else { 2 };
@@ -1712,7 +1712,7 @@ pub fn spell_worth(d: &GameData, s: SpellType) -> i32 {
     if info.immune_team {
         // Weapons and blessings taken from the enemy (Rust): a unit carries one tier of weapons,
         // so the best of them, at half (not every defender has them).
-        let taken = removes(info).map(|pr| (d.promotions[pr].extra_combat_defense * 20 + d.promotions[pr].combat_percent_defense).max(0)).max().unwrap_or(0);
+        let taken = removes(info).map(|pr| (d.promotions[pr].extra_combat_defense() * 20 + d.promotions[pr].combat_percent_defense()).max(0)).max().unwrap_or(0);
         w += taken * reach / 2;
     }
     w += info.immobile_turns * 20 * reach;

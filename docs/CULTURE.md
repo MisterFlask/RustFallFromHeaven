@@ -13,8 +13,8 @@ it: fomenting revolt among its people, or spreading a religion among its cities.
 | 7 FfH layer | Incite Mutiny (needs armies) | later |
 
 Code: rules `crates/ffh-core/src/culture.rs` (hooks in the city turn, unhappiness, `city_kill`,
-the player turn); data `data/xml/Gameinfo/CIV4CulturalActionInfos.xml` (`ffh-data`
-`infos/culture.rs`), tuning `data/xml/RulesDefines.xml` (`CULTURE_*`); AI
+the player turn); data `data/json/cultural_actions.jsonc` (`ffh-data`
+`infos/culture.rs`), tuning `data/json/rules_defines.jsonc` (`CULTURE_*`); AI
 `crates/ffh-ai/src/culture.rs`; UI `crates/ffh-play/src/view/culture.rs`, the city query's
 `cultural`, `assets/app/culture.js`. Tests: `crates/ffh-core/tests/culture.rs`.
 

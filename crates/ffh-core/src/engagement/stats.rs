@@ -1,42 +1,49 @@
-//! Engagement combat's derived unit stats (plan sections 3 and 4): a unit's role, its HP, and its
-//! attack A and defence Dv per hit.
+//! Engagement combat's unit stats (docs/UNIT_STATS.md; plan sections 3 and 4): a unit's role, its
+//! battle stats, and its attack A and defence Dv, magic and magic defence per hit.
 //!
 //! **Roles** ([`Game::unit_combat_role`]): the type's role (`GameData::unit_roles`, every land and
-//! immobile type has one), a Frontline unit with Formation being a Screen (Q7).
+//! immobile type has one), a Frontline unit with Formation being a Screen (Q7). A role gives rows,
+//! a home row, an auto-pick place and anti-flank; the numbers are the unit's own.
 //!
-//! **HP** ([`Game::unit_engage_max_hp`]): the type's `iHP`, else its role's (a large unit's:
-//! `ENGAGEMENT_LARGE_HP_PERCENT` of it); the damage field stays a percentage of it (G3).
-//!
-//! **Formation battles' per-unit values** ([`Game::unit_engage_speed`], `_dodge`, `_crit_bonus`,
-//! `_rows`, `_best_row`, `_actions`, `_flanks`): the type's own (`iEngageSpeed`, `iEngageDodge`,
-//! `iEngageCritBonus`, `EngageRows`), else its role's.
+//! **Stats** ([`Game::unit_stat`]): the type's sheet (`stats` in units.jsonc) plus the unit's own
+//! points (`Unit::stat_flat`) under its own percentage (`Unit::stat_pct`), both from its
+//! promotions' `stat_changes` and every change of its strength. HP, speed, accuracy, evasion and
+//! crit are read so ([`Game::unit_engage_max_hp`], `_speed`, `_accuracy`, `_evasion`, `_crit`); the
+//! damage field stays a percentage of the HP (G3).
 //!
 //! **A and Dv per hit** ([`Game::engage_hit`], G1, Q1, Q2, Q9). One hit has a hitter and a target.
-//! The hitter's A and the target's Dv are its base (the type's strength times the role's percent,
-//! or the type's `iAttack` / `iDefense`, plus the unit's own flat strength and its typed strength
-//! scaled by the opponent's resistances, both times the role's percent) under one summed
-//! percentage modifier, through the same terms as the duel ([`Game::unit_combat_terms`]):
+//! The hitter's A and the target's Dv are its base (its sheet's attack or defence plus its own
+//! points, x10, and its typed strength scaled by the opponent's resistances) under one summed
+//! percentage modifier: its own percentage and the duel's terms ([`Game::unit_combat_terms`]):
 //!
 //! | Term | A (the hitter) | Dv (the target) |
 //! |---|---|---|
-//! | the promotions' own percentage (Q1) | `iCombatPercent` | `iCombatPercentDefense` |
+//! | its own percentage (Q1) | its attack's (`stat_pct`) | its defence's |
 //! | Homeland (in the owner's borders, where it fights) | yes | yes |
 //! | Stigmata (Armageddon counter) | yes | yes |
 //! | bonuses against the opponent's promotions, unit combat, domain, animals | its own against the target | its own against the hitter |
 //! | unit class | its class attack modifier | its class defence modifier |
 //! | the handicap's animal and barbarian modifiers | no | yes: today's duel puts them on one strength of the pair |
 //! | the defended plot's own defence (its terrain or feature cover, hills, a fort, the city's buildings and culture, FfH's range defence) and `CITY_BARBARIAN_DEFENSE_MODIFIER` | no | **no** in a formation battle (the ground's rules replace cover); on the defending side against a missile ([`HitCtx::cover`]) |
-//! | the unit's own fortification, city defence (`iCityDefense`), hills, feature and terrain defence | no | on the defending side only |
-//! | city attack, hills, feature and terrain attack against the defended plot, `AMPHIB_ATTACK_MODIFIER` | on the attacking side only | no |
+//! | the unit's own fortification, city defence (`iCityDefense`), hills, feature and terrain defence | on the defending side | on the defending side |
+//! | city attack, hills, feature and terrain attack against the defended plot | on the attacking side | on the attacking side |
+//! | `AMPHIB_ATTACK_MODIFIER` | on the attacking side only | no |
 //! | `RIVER_ATTACK_MODIFIER` | removed: the river costs slots (Q9) | |
 //! | kamikaze, free wins against barbarians | not read (FfH sets neither) | |
 //! | an army commander's aura (phase 7) | [`Game::army_aura_pct`] | [`Game::army_aura_pct`] |
 //!
-//! So an attacker being hit has no fortification or defence of the plot's kind, and a defender
-//! hitting back has no city attack, terrain attack or amphibious term (G1). Every unit of the
-//! defending side fights on the defended plot and shares its terms. The plot itself gives Dv
+//! A unit's bonuses for where it fights count on both its A and its Dv (the owner's rule,
+//! 2026-11-05; docs/UNIT_STATS.md): a defender's fortification, city, hills, feature and terrain
+//! defence on its hits back too, an attacker's city, hills, feature and terrain attack on the blows
+//! it takes too, since in a formation battle both sides hit (they were one-sided, G1, as in the
+//! duel). The landing penalty stays on the attacker's A. Every unit of the defending side fights on
+//! the defended plot and shares its terms. The plot itself gives Dv
 //! nothing (revision 4): a city, a forest or jungle and hills act through the ground's rules of a
 //! formation battle (`formation::Ground`) and the slots.
+//!
+//! **Magic per hit** (SPELL): the caster's magic against the target's magic defence, each its
+//! sheet's plus its own points, x10, under its own percentage alone (no term of the table), and
+//! the target's resistance to the spell's damage type ([`Pair::spell_pct`]).
 //!
 //! **Against nobody in particular** ([`Game::engage_a_alone`], [`Game::engage_job_defense`]): the
 //! same stats against an opponent not known yet: the auto formation's strength, a charge's threat
@@ -48,6 +55,7 @@
 use ffh_data::*;
 
 use super::formation::{Ground, Pair, Side};
+use crate::unit::apply_combat_modifier;
 use super::report::{Stat, TermSource};
 use crate::game::Game;
 use crate::ids::*;
@@ -94,41 +102,49 @@ impl Game {
         }
     }
 
-    /// The unit's maximum HP in an engagement (plan 4.1): its type's `iHP`, else its role's.
-    /// Units without a role (ships, air units: never in a land engagement) answer the duel's
-    /// `MAX_HIT_POINTS`.
-    pub fn unit_engage_max_hp(&self, u: UnitId) -> i32 {
-        let info = &self.d.units[self.units[u].unit_type];
-        if info.hp_override > 0 {
-            return info.hp_override;
-        }
-        match self.unit_combat_role(u) {
-            Some(role) if info.large => (self.d.combat_roles[role].max_hp * self.d.defines.engagement_large_hp_percent / 100).max(1),
-            Some(role) => self.d.combat_roles[role].max_hp,
-            None => self.d.defines.max_hit_points,
+    /// Unit `u`'s stat `s` in a battle (docs/UNIT_STATS.md): its type's sheet plus its own points,
+    /// under its own percentage; at least 0 (HP at least 1). A type without a sheet (it never
+    /// fights a land battle) answers 0, and the duel's `MAX_HIT_POINTS` for HP.
+    pub fn unit_stat(&self, u: UnitId, s: StatType) -> i32 {
+        let unit = &self.units[u];
+        let Some(sheet) = self.d.units[unit.unit_type].stats else {
+            return if s == StatType::Hp { self.d.defines.max_hit_points } else { 0 };
+        };
+        let v = apply_combat_modifier(sheet[s.idx()] + unit.stat_flat[s.idx()], unit.stat_pct[s.idx()]);
+        if s == StatType::Hp {
+            v.max(1)
+        } else {
+            v.max(0)
         }
     }
 
-    // A unit's values in a formation battle (docs/ENGAGEMENTS.md, "Per-unit values"): its type's
-    // own, else its role's (the unit's own role: `unit_combat_role`); `GameData::engage_*`. The
+    /// The unit's maximum HP in an engagement (plan 4.1): its HP stat.
+    pub fn unit_engage_max_hp(&self, u: UnitId) -> i32 {
+        self.unit_stat(u, StatType::Hp)
+    }
+
+    // A unit's values in a formation battle (docs/ENGAGEMENTS.md, "Per-unit values"): its stats,
+    // and its type's own rows, else its role's (the unit's own role: `unit_combat_role`). The
     // resolver's fighters, the auto formation, the preview, the view and the client read these.
 
-    /// Unit `u`'s speed in a formation battle before first strikes: its type's `iEngageSpeed`,
-    /// else its role's.
+    /// Unit `u`'s speed in a formation battle before first strikes.
     pub fn unit_engage_speed(&self, u: UnitId) -> i32 {
-        self.d.engage_speed(self.units[u].unit_type, self.unit_combat_role(u))
+        self.unit_stat(u, StatType::Speed)
     }
 
-    /// Unit `u`'s dodge (points of miss chance on physical actions against it): its type's
-    /// `iEngageDodge`, else its role's.
-    pub fn unit_engage_dodge(&self, u: UnitId) -> i32 {
-        self.d.engage_dodge(self.units[u].unit_type, self.unit_combat_role(u))
+    /// Unit `u`'s accuracy: its chance to hit with a physical action, before the target's evasion.
+    pub fn unit_engage_accuracy(&self, u: UnitId) -> i32 {
+        self.unit_stat(u, StatType::Accuracy)
     }
 
-    /// Unit `u`'s crit bonus (points on its own crit chance): its type's `iEngageCritBonus`, else
-    /// its role's.
-    pub fn unit_engage_crit_bonus(&self, u: UnitId) -> i32 {
-        self.d.engage_crit_bonus(self.units[u].unit_type, self.unit_combat_role(u))
+    /// Unit `u`'s evasion: taken off a physical hitter's chance to hit it.
+    pub fn unit_engage_evasion(&self, u: UnitId) -> i32 {
+        self.unit_stat(u, StatType::Evasion)
+    }
+
+    /// Unit `u`'s crit chance on STRIKE, CHARGE, STAB and SHOOT.
+    pub fn unit_engage_crit(&self, u: UnitId) -> i32 {
+        self.unit_stat(u, StatType::Crit)
     }
 
     /// What unit `u` does from each row before its extra actions: its type's `EngageRows`, else
@@ -179,11 +195,47 @@ impl Game {
     }
 
     /// The A of `hitter` (on side `hitter_side`) against `target` and the Dv of `target` against
-    /// `hitter`, x100 (plan 4.2; the module comment's table): the pair table's entry.
+    /// `hitter`, x100 (plan 4.2; the module comment's table), and the hitter's magic against the
+    /// target's magic defence and resistance: the pair table's entry.
     pub fn engage_hit(&self, hitter: UnitId, target: UnitId, hitter_side: Side, ctx: &HitCtx) -> Pair {
         let a = self.engage_combat_terms(hitter, Some(target), ctx, hitter_side, true, &mut TermLog::none());
         let dv = self.engage_combat_terms(target, Some(hitter), ctx, hitter_side.other(), false, &mut TermLog::none());
-        Pair { a: a.strength(), dv: dv.strength() }
+        Pair {
+            a: a.strength(),
+            dv: dv.strength(),
+            ma: self.engage_magic_x100(hitter, true),
+            md: self.engage_magic_x100(target, false),
+            spell_pct: self.engage_spell_pct(hitter, Some(target)),
+        }
+    }
+
+    /// Unit `u`'s magic (`magic`) or magic defence in a battle, x100: its sheet's plus its own
+    /// points, x10, under its own percentage (module comment, "Magic per hit").
+    pub fn engage_magic_x100(&self, u: UnitId, magic: bool) -> i32 {
+        self.engage_magic_terms(u, magic, &mut TermLog::none()).strength()
+    }
+
+    /// The percentage of its spells' damage `hitter` deals to `target`: 100 less the target's
+    /// resistance to the damage type of the spell it casts (none for the magic bolt), at least 0.
+    /// `None`: a target with no resistances (a city's Sentinel).
+    pub fn engage_spell_pct(&self, hitter: UnitId, target: Option<UnitId>) -> i32 {
+        let dt = self.unit_engage_spell(hitter).and_then(|sp| self.d.spells[sp].damage_type);
+        match (dt, target) {
+            (Some(dt), Some(t)) => (100 - self.unit_get_damage_type_resist(t, dt)).max(0),
+            _ => 100,
+        }
+    }
+
+    fn engage_magic_terms(&self, u: UnitId, magic: bool, log: &mut TermLog) -> CombatTerms {
+        log.reset(self, u);
+        let s = if magic { StatType::Magic } else { StatType::MagicDefense };
+        let unit = &self.units[u];
+        let base = self.d.units[unit.unit_type].stats.map_or(0, |sheet| sheet[s.idx()]) + unit.stat_flat[s.idx()];
+        let own = unit.stat_pct[s.idx()];
+        if log.listing() {
+            self.engage_own_percent_terms(u, s, own, log);
+        }
+        CombatTerms { base: base * 10, modifier: own }
     }
 
     /// Unit `u`'s A on side `side` of the attack `ctx` against nobody in particular (its own
@@ -211,7 +263,14 @@ impl Game {
     pub fn engage_stat(&self, u: UnitId, opponent: Option<UnitId>, side: Side, attack: bool, ctx: &HitCtx) -> Stat {
         let mut terms = Vec::new();
         let t = self.engage_combat_terms(u, opponent, ctx, side, attack, &mut TermLog { details: None, terms: Some(&mut terms) });
-        Stat { base_x100: t.base, role_pct: self.engage_role_pct(u, attack), terms, total_x100: t.strength() }
+        Stat { base_x100: t.base, terms, total_x100: t.strength() }
+    }
+
+    /// Unit `u`'s magic (`magic`) or magic defence with its parts (the battle log's `Stat`).
+    pub fn engage_magic_stat(&self, u: UnitId, magic: bool) -> Stat {
+        let mut terms = Vec::new();
+        let t = self.engage_magic_terms(u, magic, &mut TermLog { details: None, terms: Some(&mut terms) });
+        Stat { base_x100: t.base, terms, total_x100: t.strength() }
     }
 
     /// Phase 7 hook (plan 14): the percentages an army commander's aura adds to the A and Dv of
@@ -220,30 +279,17 @@ impl Game {
         (0, 0)
     }
 
-    /// The role's A or Dv percent of the unit (100 without a role).
-    fn engage_role_pct(&self, u: UnitId, attack: bool) -> i32 {
-        match self.unit_combat_role(u) {
-            Some(r) if attack => self.d.combat_roles[r].attack_percent,
-            Some(r) => self.d.combat_roles[r].defense_percent,
-            None => 100,
-        }
-    }
-
-    /// The base of the unit's A (`attack`) or Dv, x100 (plan 4.2): its type's `iCombat`
-    /// (`iCombatDefense`) times the role's percent, or the type's `iAttack` (`iDefense`); plus,
-    /// times the role's percent, the unit's own change to that strength (promotions' flat
-    /// strength, FfH's Python) and its typed strength, each type's points scaled by the
-    /// opponent's resistance to it (Q2).
+    /// The base of the unit's A (`attack`) or Dv, x100 (plan 4.2; docs/UNIT_STATS.md): its sheet's
+    /// attack (defence) plus its own points, x10; plus its typed strength, each type's points
+    /// scaled by the opponent's resistance to it (Q2). A type without a sheet (it never fights a
+    /// land battle): its strength, x100.
     fn engage_base_x100(&self, u: UnitId, opponent: Option<UnitId>, attack: bool) -> i32 {
         let unit = &self.units[u];
-        let info = &self.d.units[unit.unit_type];
-        let role_pct = self.engage_role_pct(u, attack);
-        let (type_str, own_str, fixed) = if attack {
-            (info.combat, unit.base_combat, info.attack_override)
-        } else {
-            (info.combat_defense, unit.base_combat_defense, info.defense_override)
+        let s = if attack { StatType::Attack } else { StatType::Defense };
+        let own = match self.d.units[unit.unit_type].stats {
+            Some(sheet) => (sheet[s.idx()] + unit.stat_flat[s.idx()]) * 10,
+            None => (if attack { unit.base_combat } else { unit.base_combat_defense }) * 100,
         };
-        let fixed = if fixed > 0 { fixed * 100 } else { type_str * role_pct };
         let mut typed = 0;
         for damage_type in self.d.damages.keys() {
             let points = unit.damage_type_combat[damage_type];
@@ -252,7 +298,7 @@ impl Game {
                 typed += points * (100 - resist);
             }
         }
-        fixed + ((own_str - type_str) * 100 + typed) * role_pct / 100
+        own + typed
     }
 
     /// [`StrMode::EngageAttack`] (`attack`) and [`StrMode::EngageDefense`]: the terms of `u`'s
@@ -272,9 +318,10 @@ impl Game {
         let base = self.engage_base_x100(u, opponent, attack);
         let mut modifier = 0;
 
-        // The unit's own percentage: its promotions' iCombatPercent on A, iCombatPercentDefense on
-        // Dv (Q1); Homeland where it fights; Stigmata.
-        let own = if attack { unit.extra_combat_percent } else { unit.extra_combat_percent_defense };
+        // The unit's own percentage of its attack or defence (Q1: its promotions' and its strength
+        // changes'); Homeland where it fights; Stigmata.
+        let stat = if attack { StatType::Attack } else { StatType::Defense };
+        let own = unit.stat_pct[stat.idx()];
         let fights_on = match side {
             Side::Attacker => ctx.from.unwrap_or_else(|| self.unit_plot(u)),
             Side::Defender => ctx.to,
@@ -282,22 +329,30 @@ impl Game {
         let in_borders = if self.map.plots[fights_on].owner == Some(unit.owner) { unit.combat_percent_in_borders } else { 0 };
         log.set(|det| det.extra_combat_percent = own + in_borders);
         if log.listing() {
-            self.engage_own_percent_terms(u, attack, own, log);
+            self.engage_own_percent_terms(u, stat, own, log);
         }
         modifier += own;
         modifier += log.push(in_borders, || TermSource::InBorders);
         modifier += log.push(self.unit_global_counter_modifier(u), || TermSource::GlobalCounter);
 
+        // Its bonuses for where it fights, on both its A and its Dv (the module comment): an
+        // attacker's against the plot it attacks, a defender's own on the defended plot. No river
+        // term (Q9: the river costs slots instead). A missile's strike keeps the duel's sides: the
+        // attacker's on its A only, the defender's under its cover (below).
+        if side == Side::Attacker && (attack || !ctx.cover) {
+            let city = match opponent {
+                Some(t) => self.plot_is_city(ctx.to, true, Some(self.unit_get_team(t))),
+                None => self.plot_is_city(ctx.to, true, None),
+            };
+            let (plot_terms, terrain_term) = self.combat_attack_plot_terms(u, ctx.to, city, 1, log);
+            modifier += plot_terms + terrain_term;
+        }
+        if side == Side::Defender && attack && !ctx.cover {
+            modifier += self.engage_own_defense_terms(u, ctx.to, log);
+        }
         if attack {
-            // The attacker's bonuses against the plot it attacks (G1: none for a defender hitting
-            // back); no river term (Q9: the river costs slots instead).
+            // The landing penalty, on the attacker's hits only.
             if side == Side::Attacker {
-                let city = match opponent {
-                    Some(t) => self.plot_is_city(ctx.to, true, Some(self.unit_get_team(t))),
-                    None => self.plot_is_city(ctx.to, true, None),
-                };
-                let (plot_terms, terrain_term) = self.combat_attack_plot_terms(u, ctx.to, city, 1, log);
-                modifier += plot_terms + terrain_term;
                 if let Some(from) = ctx.from {
                     modifier += term!(log, amphib_attack_modifier, self.unit_amphib_attack_modifier(u, from, ctx.to), TermSource::Amphibious);
                 }
@@ -309,11 +364,11 @@ impl Game {
             if let Some(h) = opponent {
                 modifier += self.combat_handicap_terms(u, h, log);
             }
-            // The unit's own defensive terms on the defended plot (G1: none for an attacker being
-            // hit back). The plot's own defence (cover, hills, a fort, the city's walls and
-            // culture, range defence) and the city's barbarian defence give Dv nothing in a
-            // formation battle: the ground's rules replace them (spec 1.6). Against a missile
-            // (`ctx.cover`) they count, as the duel's.
+            // The unit's own defensive terms on the defended plot (on its A too, above). The
+            // plot's own defence (cover, hills, a fort, the city's walls and culture, range
+            // defence) and the city's barbarian defence give Dv nothing in a formation battle: the
+            // ground's rules replace them (spec 1.6). Against a missile (`ctx.cover`) they count,
+            // as the duel's.
             if side == Side::Defender && ctx.cover {
                 let team = self.unit_get_team(u);
                 let ignore_building = opponent.is_some_and(|h| self.unit_ignore_building_defense(h));
@@ -374,16 +429,14 @@ impl Game {
         modifier
     }
 
-    /// The breakdown of the unit's own percentage `total` (A's or Dv's, Q1): each promotion it
+    /// The breakdown of the unit's own percentage `total` of stat `s` (Q1): each promotion it
     /// holds with one, the rest (spells, FfH's Python) as `Own`.
-    fn engage_own_percent_terms(&self, u: UnitId, attack: bool, total: i32, log: &mut TermLog) {
+    fn engage_own_percent_terms(&self, u: UnitId, s: StatType, total: i32, log: &mut TermLog) {
         let held = &self.units[u].has_promotion;
         let mut rest = total;
         for p in self.d.promotions.keys() {
             if held[p] {
-                let info = &self.d.promotions[p];
-                let pct = if attack { info.combat_percent } else { info.combat_percent_defense };
-                rest -= log.push(pct, || TermSource::Promotion(p));
+                rest -= log.push(self.d.promotions[p].stat_changes[s.idx()].percent, || TermSource::Promotion(p));
             }
         }
         log.push(rest, || TermSource::Own);

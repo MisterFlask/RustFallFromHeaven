@@ -5,7 +5,7 @@
 //
 // Checks: palette.txt equals the guide's palette and remap blocks; every sprite parses, uses only
 // palette keys and slots, has the size its namespace requires; every manifest rule targets an
-// existing sprite and parses; types.json matches data/xml; every game type of every kind
+// existing sprite and parses; types.json matches data/json; every game type of every kind
 // resolves to a sprite (or to `none`) through the mapping; loadArt installs the set passes (art.js
 // PASSES). Warnings (colour counts, unknown metadata) do not fail the run. Also run by tools/check.sh.
 import { readFile } from 'node:fs/promises';
@@ -15,7 +15,7 @@ import { loadLibrary, splitBundle } from '../library.js';
 import { makeBundle } from './bundle.mjs';
 import { KINDS, NON_SPRITE_KINDS, KIND_SOURCE } from '../mapping.js';
 import { parsePalette, TRANSPARENT, NUM_COLORS, REMAP_TABLES, SLOT_CHARS } from '../spritefmt.js';
-import { ART_DIR, XML_DIR, buildTypes, formatTypes } from './gen-types.mjs';
+import { ART_DIR, DATA_DIR, buildTypes, formatTypes } from './gen-types.mjs';
 
 const verbose = process.argv.includes('-v');
 const errors = [];
@@ -125,11 +125,11 @@ for (const s of lib.sprites.values()) for (const t of s.meta.types) {
   if (![...Object.values(lib.types)].some((list) => list.some((e) => e.type === t))) err(`${s.file}:${s.line}: ${s.name} claims unknown type ${t}`);
 }
 
-// ---- types.json vs the XML
-if (existsSync(XML_DIR)) {
-  const fresh = formatTypes(buildTypes(XML_DIR));
+// ---- types.json vs the game data
+if (existsSync(DATA_DIR)) {
+  const fresh = formatTypes(buildTypes(DATA_DIR));
   if (fresh !== readFileSync(join(ART_DIR, 'types.json'), 'utf8')) err('types.json is stale: run node tools/gen-types.mjs');
-} else warn(`data/xml not found at ${XML_DIR}; types.json not checked against it`);
+} else warn(`data/json not found at ${DATA_DIR}; types.json not checked against it`);
 
 // ---- the one-file bundle loads the same library
 {
