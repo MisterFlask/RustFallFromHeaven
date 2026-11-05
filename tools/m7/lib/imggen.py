@@ -86,7 +86,8 @@ def read_stream(r):
             continue
         ev = json.loads(line[5:].strip())
         if ev.get("type", "").endswith(".completed"):
-            return {"data": [{"b64_json": ev.get("b64_json")}], "usage": ev.get("usage")}
+            meta = {k: v for k, v in ev.items() if k not in ("b64_json", "usage")}
+            return {"data": [{"b64_json": ev.get("b64_json")}], "usage": ev.get("usage"), "meta": meta}
         if ev.get("type") == "error" or "error" in ev:
             raise ValueError(json.dumps(ev)[:500])
     raise ValueError("stream ended without a completed event")
@@ -194,6 +195,7 @@ def main():
     row = {"t": int(time.time()), "tag": a.tag, "cmd": a.cmd, "model": a.model, "size": a.size,
            "quality": a.quality, "n": a.n, "n_images": len(a.image), "latency": round(latency, 1),
            "rl_wait": round(rl_wait, 1), "usd": round(usd, 4), "usage": usage, "ok": bool(res), "stream": a.stream,
+           "meta": (res or {}).get("meta"),
            "dropped_params": dropped, "files": files, "error": err,
            "prompt": prompt, "images": a.image}
     with open(LEDGER, "a", encoding="utf-8") as f:
