@@ -1858,4 +1858,42 @@ mod tests {
         assert_eq!(g.plot_get_plot_group(east, P0), None);
         assert!(!g.plot_is_adjacent_plot_group_connected_bonus(center, P0, bonus));
     }
+
+    #[test]
+    fn unique_feature_doubles_research_on_its_tech_for_the_owner_team() {
+        let mut g = game(5, 5);
+        let d = g.d;
+        let mirror = d.t::<ImprovementType>("IMPROVEMENT_MIRROR_OF_HEAVEN");
+        let theology = d.t::<TechType>("TECH_THEOLOGY");
+        let other = d.t::<TechType>("TECH_ASTRONOMY");
+        assert_eq!(d.improvements[mirror].tech_research_bonus, Some(theology));
+        // (`game` leaves the players' per-improvement counts unsized and the plots without terrain.)
+        for p in [P0, P1] {
+            g.players[p].improvement_count = IdxVec::from_elem(0, d.improvements.len());
+        }
+        let desert = d.t::<TerrainType>("TERRAIN_DESERT");
+        for q in g.map.plot_ids() {
+            g.map.plots[q].terrain_type = Some(desert);
+            g.map.plots[q].plot_type = PlotType::PLOT_LAND;
+        }
+        let cost = g.team_get_research_cost(T0, theology);
+        let base = g.player_calculate_research_modifier(P0, Some(theology));
+        let other_base = g.player_calculate_research_modifier(P0, Some(other));
+        let q = plot(&g, 2, 2);
+        g.plot_set_improvement_type(q, Some(mirror));
+        // Outside everyone's borders: no bonus.
+        assert_eq!(g.player_calculate_research_modifier(P0, Some(theology)), base);
+
+        g.plot_set_owner(q, Some(P0), false, false);
+        assert_eq!(g.player_calculate_research_modifier(P0, Some(theology)), 2 * base);
+        assert_eq!(g.player_calculate_research_modifier(P1, Some(theology)), base);
+        assert_eq!(g.player_calculate_research_modifier(P0, Some(other)), other_base);
+        // The cost stays as it is.
+        assert_eq!(g.team_get_research_cost(T0, theology), cost);
+
+        // It changes hands: the bonus follows.
+        g.plot_set_owner(q, Some(P1), false, false);
+        assert_eq!(g.player_calculate_research_modifier(P0, Some(theology)), base);
+        assert_eq!(g.player_calculate_research_modifier(P1, Some(theology)), 2 * base);
+    }
 }

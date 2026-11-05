@@ -66,6 +66,10 @@ macro_rules! game_data {
             pub sentinel_repair_buildings: Vec<BuildingType>,
             /// Derived at load: the buildings with a `bonus_yield_change`, in id order.
             pub bonus_yield_buildings: Vec<BuildingType>,
+            /// Derived at load: for each tech, the improvements that raise the research rate on it
+            /// and by how many percent (`ImprovementInfo::tech_research_bonus`), in improvement id
+            /// order.
+            pub tech_research_bonuses: IdxVec<TechType, Vec<(ImprovementType, i32)>>,
         }
 
         /// (data file, registry class) for every info table, in load order.
@@ -92,7 +96,7 @@ macro_rules! game_data {
                 )*
                 let defines = Defines::from_map(&define_map);
                 // (derived tables are filled by `GameData::derive`)
-                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unit_roles: IdxVec::new(), screen_role: None, unlocking_buildings: Vec::new(), population_commerce_buildings: Vec::new(), sentinel_repair_buildings: Vec::new(), bonus_yield_buildings: Vec::new() }
+                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unit_roles: IdxVec::new(), screen_role: None, unlocking_buildings: Vec::new(), population_commerce_buildings: Vec::new(), sentinel_repair_buildings: Vec::new(), bonus_yield_buildings: Vec::new(), tech_research_bonuses: IdxVec::new() }
             }
 
             /// Everything loaded, one `(name, Debug text)` line per table entry, in a fixed order
@@ -118,6 +122,7 @@ macro_rules! game_data {
                 out.push(("unit_roles".to_string(), format!("{:?}", self.unit_roles)));
                 out.push(("screen_role".to_string(), format!("{:?}", self.screen_role)));
                 out.push(("unlocking_buildings".to_string(), format!("{:?}", self.unlocking_buildings)));
+                out.push(("tech_research_bonuses".to_string(), format!("{:?}", self.tech_research_bonuses)));
                 out.push(("warnings".to_string(), format!("{:?}", self.warnings)));
                 out
             }
@@ -356,6 +361,13 @@ impl GameData {
             }
         }
         self.derive_engagements();
+        self.tech_research_bonuses = IdxVec::from_elem(Vec::new(), self.techs.len());
+        for i in self.improvements.keys() {
+            let info = &self.improvements[i];
+            if let Some(t) = info.tech_research_bonus.filter(|_| info.tech_research_percent > 0) {
+                self.tech_research_bonuses[t].push((i, info.tech_research_percent));
+            }
+        }
         self.derive_building_tiers();
     }
 

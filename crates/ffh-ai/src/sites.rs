@@ -51,6 +51,34 @@ pub fn overseas_sites(ai: &Ai, g: &Game, p: PlayerId) -> Vec<(PlotIdx, i32)> {
     sites(ai, g, p).into_iter().filter(|&(q, _)| !home.contains(&g.map.plots[q].area)).collect()
 }
 
+/// Site value added per unique feature in reach, in percent of its research bonus: a feature
+/// doubling research (+100%) adds a quarter to the site.
+const RESEARCH_FEATURE_SHARE: i32 = 4;
+
+/// `value` raised for each unique feature in the site's fat cross (a radius-2 city's plots) that is nobody's (or ours) and
+/// would multiply research on a tech we lack and can research (`ImprovementInfo::tech_research_bonus`):
+/// a city there brings it inside our borders. Ad hoc weight (a rules change's AI, docs/AI.md).
+fn research_feature_bonus(g: &Game, p: PlayerId, q: PlotIdx, value: i32) -> i32 {
+    if value <= 0 {
+        return value;
+    }
+    let team = g.players[p].team;
+    let (x, y) = g.map.xy(q);
+    let mut bonus = 0;
+    for i in 0..ffh_core::utils::NUM_CITY_PLOTS_RADIUS_2 as usize {
+        let Some(r) = g.plot_city(x, y, i) else { continue };
+        let plot = &g.map.plots[r];
+        let Some(imp) = plot.revealed_improvement_type[team] else { continue };
+        let info = &g.d.improvements[imp];
+        let Some(tech) = info.tech_research_bonus else { continue };
+        if plot.owner.is_some_and(|o| o != p) || g.team_is_has_tech(team, Some(tech)) || !g.player_can_ever_research(p, tech) {
+            continue;
+        }
+        bonus += value * info.tech_research_percent / (100 * RESEARCH_FEATURE_SHARE);
+    }
+    value + bonus
+}
+
 fn compute(g: &Game, p: PlayerId) -> Vec<(PlotIdx, i32)> {
     let pl = &g.players[p];
     let team = pl.team;
@@ -78,6 +106,7 @@ fn compute(g: &Game, p: PlayerId) -> Vec<(PlotIdx, i32)> {
                 }
                 let (x, y) = g.map.xy(q);
                 let v = crate::civs::site_value(g, p, q, g.player_ai_found_value(p, x, y, -1, false, &[])); // civ-mechanics
+                let v = research_feature_bonus(g, p, q, v);
                 if v > 0 {
                     scored.push((q, v));
                 }
@@ -109,6 +138,7 @@ fn compute(g: &Game, p: PlayerId) -> Vec<(PlotIdx, i32)> {
                     }
                     let (x, y) = g.map.xy(q);
                     let v = crate::civs::site_value(g, p, q, g.player_ai_found_value(p, x, y, -1, false, &[])); // civ-mechanics
+                let v = research_feature_bonus(g, p, q, v);
                     if v > 0 {
                         scored.push((q, v));
                     }

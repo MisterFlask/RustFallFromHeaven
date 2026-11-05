@@ -102,6 +102,13 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
     let mut b = String::new();
     let nobody_knows = g.count_known_tech_num_teams(t) == 0;
 
+    // Not in FFH2: the unique features that multiply research on it from inside the team's borders.
+    for &(imp, pct) in &d.tech_research_bonuses[t] {
+        let held = if g.team_holds_improvement(team, imp) { " (held)" } else { "" };
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]{:+}% [ICON_RESEARCH] with {} inside your borders{}", pct, names::display(d, imp), held));
+    }
+
     // Obsolete buildings (of the classes the player has), resources, special buildings.
     for class in d.building_classes.keys() {
         if pl.building_class_count[class] > 0 {

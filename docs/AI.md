@@ -544,6 +544,12 @@ train one (and the tech before it; a settler waiting for a ship makes it a goal,
 processes (Writing, Mathematics) when cities have nothing left to build. `FFH_AI_TRACE_TECH=1`
 with `FFH_AI_TRACE` lists every candidate's value and score, and the goals below.
 
+Turns to research are `tech_plan::effective_left` / rate: a tech whose research a unique feature
+inside our borders doubles (docs/PORTING.md, "Balance") counts half its research left, in the
+scorer and in the plan's path costs, so the plan heads down paths the features speed up. City
+sites value such a feature in reach, unclaimed and for a tech we lack, at a quarter more per
+feature (`sites::research_feature_bonus`; ad hoc, a rules change's AI).
+
 **Goals (`tech_plan.rs`).** On top of the score, research follows an ordered list of goals
 adapted from FfH's own AI (`CvGameUtils.AI_chooseTech`), recomputed at every choice (no
 cache): a tier-2 military tech until one of Bronze Working, Archery, Hunting or Horseback
