@@ -254,27 +254,34 @@ fills the page and the interface floats over it.
   CSS, wraps and selects as text. It is set at 20px (2 CSS px a pixel) with 24px lines, so every
   baseline falls on a whole pixel; the tech tree's fixed boxes take it at 10px (1x). Other sizes
   blur it: iso.css overrides style.css's 11-17px sizes.
-- **Icons**: the M7 package's interface icons (`ui_<name>`, 64 of them: yields, commerce, mood,
-  health, the top bar's, the menu's, the orders', the layers'), drawn by the image model on
-  `tools/m7/anchors/anchor_ui.png` (the reference's panels), four sheets of sixteen, and cut to
-  24 (`ui_<name>`, the order tiles) and 16 (`ui_<name>_s`) blocks of 2 px (`tools/m7/ui.py`,
-  about $0.03 a sheet; prompts in `tools/m7/prompts/ui/` and `prompts/assets/ui_*.txt`). A
-  worker's builds show the map's own improvement sprites (a farm, a mine, a cottage ...), a
-  clearing its feature with a cancel mark, an upgrade the target unit's figure. `ui_backdrop` (the
-  meadow behind the portrait and the city picture) is one painting, re-gridded.
-- **The full icon pass** (2026-11-05, `gpt-image-2.6-sunburst` at medium, 26 sheets): no icon
-  stands in for another concept any more. Every order and state that borrowed one has its own
-  (espionage, infiltrate, steal plans, sabotage, destroy, plunder, sea patrol, wake, gift, unload,
-  join, construct, discover, hurry, trade mission, lead; anarchy, stasis, waiting for the others,
-  research needed, AI thinking; the capital's crown), every mana sphere its orb (`ui_sphere_<x>`),
-  every building its icon (`ui_building_<type>`, the Dwarven Vault's fill states and the Altar of
-  the Luonnotar's stages included; `look.js` `typeIcon`) and every promotion family its icon
-  (`ui_promo_<family>`: the type name without PROMOTION_ and its level digit), drawn as a seal
-  (`isoui.js` `isoPromotionIcon`: a gilt disc, the level as a Roman-numeral badge, the 2D art's
-  afflictions with a red rim). The lists are written by `tools/m7/prompts/ui/all_icons.py`
-  (`icons01`..`icons22`; `icons23` redrew the 16 weakest) plus the three sample sheets (`sample_misc`, `sample_buildings`,
-  `sample_promotions`). The 2D art's icons still used in the skin are the religions and the civic
-  categories, at 2x.
+- **Icons** (`ui_<name>` for the order tiles, `ui_<name>_s` for the bar, the lists and inline text):
+  minimal flat art since 2026-11-05 (the owner's pick among pixel, modern, minimal flat and gold
+  glyph trials): each icon reduced to its silhouette in flat fills of at most three colours (gold,
+  ivory and one muted accent), no gradients, no outline, dark subjects in mid-tones so they read on
+  the navy. Drawn by `gpt-image-2.6-sunburst` at medium quality on a transparent background, no
+  anchor image (`tools/m7/ui.py sheet --style minimal`, prompt `prompts/style_ui_icons_minimal.txt`),
+  and cut smooth at twice the display size (`ui.py cut --smooth`: 96 and 64 px files shown at 48 and
+  32 CSS px or smaller, so they stay sharp on 2x screens; `iso.css` draws `.iso-icon` smoothly, the
+  map sprites stay pixelated; `citywork.js` scales the yields and citizens with smoothing). 30 sheets
+  of sixteen, about 480 icons:
+  * the original 64 (`prompts/ui/stats|menu|orders|misc.txt`: yields, commerce, mood, health, the
+    top bar's, the menu's, the orders', the layers');
+  * every order and state that used to borrow another's picture (espionage, infiltrate, steal
+    plans, sabotage, destroy, plunder, sea patrol, wake, gift, unload, join, construct, discover,
+    hurry, trade mission, lead; anarchy, stasis, waiting for the others, research needed, AI
+    thinking; the capital's crown);
+  * every mana sphere (`ui_sphere_<x>`), every building (`ui_building_<type>`, the 21 palaces, the
+    Dwarven Vault's fill states and the Altar of the Luonnotar's stages included; `look.js`
+    `typeIcon`) and every promotion family (`ui_promo_<family>`: the type name without PROMOTION_
+    and its level digit), the last drawn as a seal (`isoui.js` `isoPromotionIcon`: a gilt disc, the
+    level as a Roman-numeral badge, the 2D art's afflictions with a red rim).
+
+  The lists of the new ones are written by `tools/m7/prompts/ui/all_icons.py` (`icons01`..`icons22`,
+  `icons23` holding better descriptions of 16) plus `sample_misc`, `sample_buildings` and
+  `sample_promotions`. A worker's builds show the map's own improvement sprites (a farm, a mine, a
+  cottage ...), a clearing its feature with a cancel mark, an upgrade the target unit's figure.
+  `ui_backdrop` (the meadow behind the portrait and the city picture) is one painting, re-gridded.
+  The 2D art's icons still used in the skin are the religions and the civic categories, at 2x.
 - **Leader portraits** (`portraits.js`): a half-length HD key-art painting of each leader a game can
   have, the figure in chunky pixel blocks with a thick black outline before a softer painted vista (`tools/m7/leaders.py --style hdv`; each
   of four vibes a leader was given has its own outfit, hand action, place and light; the owner

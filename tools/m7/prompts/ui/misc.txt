@@ -1,4 +1,4 @@
-moves: a brown leather boot, like the screenshot's movement icon
+moves: a brown leather boot
 defense: a round grey stone watchtower with battlements
 hp: a red heart
 xp: a golden five-pointed star

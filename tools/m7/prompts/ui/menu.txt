@@ -1,9 +1,9 @@
-pedia: an open brown leather book, like the screenshot's book icon
-settings: a steel cogwheel, like the screenshot's gear icon
+pedia: an open brown leather book
+settings: a steel cogwheel
 techs: a rolled parchment scroll tied with a ribbon and a blue wax seal
-cities: a small white stone castle with blue pointed roofs, like the screenshot's castle icon
-units: a steel knight's helmet with a visor, like the screenshot's helmet icon
-map: a folded parchment map, like the screenshot's scroll icon
+cities: a small white stone castle with blue pointed roofs
+units: a steel knight's helmet with a visor
+map: a folded parchment map
 civics: a golden royal crown with red jewels
 religion: a small white marble temple with columns and a golden dome
 diplomacy: two hands clasped in a handshake, one in a blue sleeve and one in a red sleeve
