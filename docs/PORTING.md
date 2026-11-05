@@ -166,6 +166,25 @@ side)
   Kill credit per kill (G2) and the post-battle effects as for a duel's winner; no Fear rout.
   Stances are gone. Ships and air units keep the duel; missiles strike one unit (at half a
   battle's hit, against the plot's own defence, as before the formation battles). Save format 10.
+- **Unit stats** (docs/UNIT_STATS.md; the owner's design, 2026-11-05). Every land unit type has a
+  stat sheet (`stats`: HP, attack, defence, magic, magic defence, accuracy, evasion, crit, speed),
+  and promotions name the stats they change (`stat_changes`: points and percentages). A physical
+  hit is attack against defence, a spell magic against magic defence; the chance to hit is the
+  hitter's accuracy less the target's evasion and the kind's, the crit chance the hitter's own.
+  Roles keep their rows, home row, auto-pick place and anti-flank; their A%, Dv%, HP, speed, dodge
+  and crit bonus became each unit's sheet, which reproduces the old numbers, and
+  `ENGAGEMENT_MISS_PERCENT`, `_CRIT_PERCENT` and `_LARGE_HP_PERCENT` are gone. The strength outside
+  land battles (ships, the rules that read strength, the AI's power estimates) is unchanged. What
+  plays differently from day one: (1) a spell in a battle is the caster's magic against the
+  target's magic defence, which take only the units' own percentages (no fortification, terrain,
+  city, unit-combat, Homeland or Stigmata terms), and the target's resistance to the spell's damage
+  type reduces it; (2) a promotion's or an effect's flat strength gives 10 points of attack or
+  defence a strength point whatever the role (it was scaled by the role's percent), typed strength
+  too; (3) a promotion's spell damage percentage raises magic in a battle, and its attack
+  percentage no longer raises a caster's spells (Combat I gives +5% magic, not +20%); (4)
+  Formation, which makes a Frontline unit a Screen, gives +10% defence and magic defence and -1
+  speed (the Screen's Dv 110% and speed 3 before), its +10% now summed with the other percentages.
+  Save format 15.
 - **Sieges and Sentinels** (docs/SIEGES.md; the owner's design, 2026-11-04). A city with walls
   (Palisade, Walls, Wall of Stone: `iSentinels`) has two Sentinels, wall sections that fight in the
   defender's front row with `UNIT_SENTINEL`'s values (weak blows, 100 HP), their HP and Dv grown by

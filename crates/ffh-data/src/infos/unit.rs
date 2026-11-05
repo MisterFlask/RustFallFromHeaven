@@ -17,7 +17,7 @@
 
 use crate::enums::*;
 use crate::idx::IdxVec;
-use crate::infos::{read_engage_override, read_engage_rows, CombatRoleType, InfoBase, RowActions, ROWS};
+use crate::infos::{read_engage_rows, read_stat_changes, read_stats, CombatRoleType, InfoBase, RowActions, StatChange, StatSheet, StatType, ROWS};
 use crate::registry::Rd;
 
 // ---------------------------------------------------------------------------------------------
@@ -116,7 +116,6 @@ pub struct PromotionInfo {
     pub friendly_heal_change: i32,
     pub same_tile_heal_change: i32,
     pub adjacent_tile_heal_change: i32,
-    pub combat_percent: i32,
     /// C++ `getCityAttackPercent()` (`<iCityAttack>`).
     pub city_attack_percent: i32,
     /// C++ `getCityDefensePercent()` (`<iCityDefense>`).
@@ -197,14 +196,17 @@ pub struct PromotionInfo {
     pub combat_capture_percent: i32,
     pub combat_heal_percent: i32,
     pub combat_limit: i32,
-    pub combat_percent_defense: i32,
+    /// What it changes of a unit's battle stats (`stat_changes`; docs/UNIT_STATS.md). Its attack and
+    /// defence also change the unit's strength outside land battles: their percentages that
+    /// strength's (C++ `iCombatPercent`, `iCombatPercentDefense`), their points, in tens, its flat
+    /// strength (`iExtraCombatStr`, `iExtraCombatDefense`); its magic percentage, its spell damage
+    /// (`iSpellDamageModify`).
+    pub stat_changes: [StatChange; StatType::NUM],
     pub combat_percent_global_counter: i32,
     pub combat_percent_in_borders: i32,
     pub defensive_strike_chance: i32,
     pub defensive_strike_damage: i32,
     pub expire_chance: i32,
-    pub extra_combat_str: i32,
-    pub extra_combat_defense: i32,
     /// C++ `getFreeXPPerTurn()`.
     pub free_xp_per_turn: i32,
     /// C++ `getFreeXPFromCombat()`.
@@ -216,7 +218,6 @@ pub struct PromotionInfo {
     pub resist_magic: i32,
     /// C++ `getSpellCasterXP()`.
     pub spell_caster_xp: i32,
-    pub spell_damage_modify: i32,
     pub work_rate_modify: i32,
     pub capture_unit_combat: Option<UnitCombatType>,
     /// C++ `getPromotionCombatApply()` (C++ `readPass2`).
@@ -244,6 +245,34 @@ pub struct PromotionInfo {
     pub damage_type_combat: IdxVec<DamageType, i32>,
     /// C++ `getDamageTypeResist(i)` (`<DamageTypeResists>`).
     pub damage_type_resist: IdxVec<DamageType, i32>,
+}
+
+impl PromotionInfo {
+    /// C++ `getCombatPercent()`: its attack's percentage (`stat_changes`), which is also the
+    /// unit's strength percentage outside land battles.
+    pub fn combat_percent(&self) -> i32 {
+        self.stat_changes[StatType::Attack.idx()].percent
+    }
+
+    /// Its defence's percentage (`iCombatPercentDefense`).
+    pub fn combat_percent_defense(&self) -> i32 {
+        self.stat_changes[StatType::Defense.idx()].percent
+    }
+
+    /// C++ `getExtraCombatStr()`: its attack's points in strength points (tens).
+    pub fn extra_combat_str(&self) -> i32 {
+        self.stat_changes[StatType::Attack.idx()].flat / 10
+    }
+
+    /// C++ `getExtraCombatDefense()`: its defence's points in strength points (tens).
+    pub fn extra_combat_defense(&self) -> i32 {
+        self.stat_changes[StatType::Defense.idx()].flat / 10
+    }
+
+    /// C++ `getSpellDamageModify()`: its magic's percentage.
+    pub fn spell_damage_modify(&self) -> i32 {
+        self.stat_changes[StatType::Magic.idx()].percent
+    }
 }
 
 /// C++ `CvPromotionInfo::read` + `readPass2` + `readPass3`.
@@ -287,7 +316,6 @@ pub fn read_promotion(rd: &Rd) -> PromotionInfo {
         friendly_heal_change: rd.int("friendly_heal_change"),
         same_tile_heal_change: rd.int("same_tile_heal_change"),
         adjacent_tile_heal_change: rd.int("adjacent_tile_heal_change"),
-        combat_percent: rd.int("combat_percent"),
         city_attack_percent: rd.int("city_attack"),
         city_defense_percent: rd.int("city_defense"),
         hills_attack_percent: rd.int("hills_attack"),
@@ -345,14 +373,12 @@ pub fn read_promotion(rd: &Rd) -> PromotionInfo {
         combat_capture_percent: rd.int("combat_capture_percent"),
         combat_heal_percent: rd.int("combat_heal_percent"),
         combat_limit: rd.int("combat_limit"),
-        combat_percent_defense: rd.int("combat_percent_defense"),
+        stat_changes: read_stat_changes(rd),
         combat_percent_global_counter: rd.int("combat_percent_global_counter"),
         combat_percent_in_borders: rd.int("combat_percent_in_borders"),
         defensive_strike_chance: rd.int("defensive_strike_chance"),
         defensive_strike_damage: rd.int("defensive_strike_damage"),
         expire_chance: rd.int("expire_chance"),
-        extra_combat_str: rd.int("extra_combat_str"),
-        extra_combat_defense: rd.int("extra_combat_defense"),
         free_xp_per_turn: rd.int("free_xp_per_turn"),
         free_xp_from_combat: rd.int("free_xp_from_combat"),
         gold_from_combat: rd.int("gold_from_combat"),
@@ -361,7 +387,6 @@ pub fn read_promotion(rd: &Rd) -> PromotionInfo {
         modify_global_counter_on_combat: rd.int("modify_global_counter_on_combat"),
         resist_magic: rd.int("resist_magic"),
         spell_caster_xp: rd.int("spell_caster_xp"),
-        spell_damage_modify: rd.int("spell_damage_modify"),
         work_rate_modify: rd.int("work_rate_modify"),
         capture_unit_combat: rd.rf::<UnitCombatType>("capture_unit_combat"),
         bonus_prereq: rd.rf::<BonusType>("bonus_prereq"),
@@ -759,27 +784,13 @@ pub struct UnitInfo {
     /// `CombatRole`: the unit's engagement role in place of the one its unit combat gives it
     /// (`GameData::type_combat_role`).
     pub combat_role: Option<CombatRoleType>,
-    /// `iAttack` (0: none): replaces `iCombat` x the role's attack percent as the base of the
-    /// unit's engagement attack A.
-    pub attack_override: i32,
-    /// `iDefense` (0: none): replaces `iCombatDefense` x the role's defence percent as the base
-    /// of its engagement defence Dv.
-    pub defense_override: i32,
-    /// `iHP` (0: none): replaces the role's max HP.
-    pub hp_override: i32,
+    /// Its battle numbers (`stats`; docs/UNIT_STATS.md); `None` for a type that never fights a land
+    /// battle (ships, air units).
+    pub stats: Option<StatSheet>,
     /// `bLarge`: a large unit in a formation battle (giants, elephants, dragons, golems,
     /// treants, ...): it fills two cells side by side in one row and two slots, and has
     /// `ENGAGEMENT_LARGE_HP_PERCENT` of its role's HP.
     pub large: bool,
-    /// `iEngageSpeed` (-1, `None`: the role's): its speed in a formation battle before first
-    /// strikes, in place of its role's (`GameData::engage_speed`).
-    pub engage_speed: Option<i32>,
-    /// `iEngageDodge` (-1, `None`: the role's; else 0..=95): the points of miss chance on
-    /// physical actions against it, in place of its role's (`GameData::engage_dodge`).
-    pub engage_dodge: Option<i32>,
-    /// `iEngageCritBonus` (-1, `None`: the role's; else 0..=95): the points on its own crit
-    /// chance, in place of its role's (`GameData::engage_crit_bonus`).
-    pub engage_crit_bonus: Option<i32>,
     /// `EngageRows` (three `Row`s, front, middle, rear, each an `Action` and its `iCount`): what
     /// it does from each row, in place of its role's rows (`GameData::engage_rows`); `None`: the
     /// role's.
@@ -975,13 +986,8 @@ pub fn read_unit(rd: &Rd) -> UnitInfo {
         ai_block_patrol: rd.bool("ai_block_patrol"),
         // ---- This game's own: engagement combat ----
         combat_role: rd.rf::<CombatRoleType>("combat_role"),
-        attack_override: rd.int("attack"),
-        defense_override: rd.int("defense"),
-        hp_override: rd.int("hp"),
         large: rd.bool("large"),
-        engage_speed: read_engage_override(rd, "engage_speed", &rd.string("type"), 0..=i32::MAX),
-        engage_dodge: read_engage_override(rd, "engage_dodge", &rd.string("type"), 0..=95),
-        engage_crit_bonus: read_engage_override(rd, "engage_crit_bonus", &rd.string("type"), 0..=95),
+        stats: read_stats(rd, &rd.string("type")),
         engage_rows: read_engage_rows(rd, &rd.string("type")),
         // ---- readPass2 ----
         unit_convert_from_combat: rd.rf::<UnitType>("unit_convert_from_combat"),

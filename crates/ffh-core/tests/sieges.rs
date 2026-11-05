@@ -144,7 +144,7 @@ fn sentinels_take_the_shots_down_their_lanes_and_siege_takes_them_first() {
     };
     // Lane 0: a Sentinel in front of an archer at the back; lane 1: a soldier in front, one behind.
     let fighters = vec![archer, catapult, at(0, 0, true), at(0, 2, false), at(1, 0, false), at(1, 1, false)];
-    let f = Formation::new(p, Ground::default(), [2, 2], fighters, |_, _| Pair { a: 400, dv: 400 });
+    let f = Formation::new(p, Ground::default(), [2, 2], fighters, |_, _| Pair::physical(400, 400));
     let s = State::new(&f);
     assert_eq!(f.reach(&s, 0, ActionKind::Shoot), vec![2, 5], "lane 0's shot hits the Sentinel; lane 1's the back");
     assert_eq!(f.reach(&s, 0, ActionKind::Spell), vec![2, 5], "spells too");

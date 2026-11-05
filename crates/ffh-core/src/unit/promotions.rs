@@ -1409,18 +1409,29 @@ impl Game {
         i
     }
 
-    /// C++ `CvUnit::changeExtraCombatPercent` (CvUnit.cpp:12296-12304).
+    /// C++ `CvUnit::changeExtraCombatPercent` (CvUnit.cpp:12296-12304). Its battle attack follows
+    /// (`stat_pct`, docs/UNIT_STATS.md).
     pub fn unit_change_extra_combat_percent(&mut self, u: UnitId, change: i32) {
         if change != 0 {
             self.units[u].extra_combat_percent += change;
+            self.units[u].stat_pct[StatType::Attack.idx()] += change;
         }
     }
 
-    /// Engagement combat (Q1): the promotions' `iCombatPercentDefense`, the unit's own percentage
-    /// on Dv. `engage_combat_terms` (`engagement/stats.rs`) reads it, with Homeland where the unit
-    /// fights rather than where it stands.
-    pub fn unit_change_extra_combat_percent_defense(&mut self, u: UnitId, change: i32) {
-        self.units[u].extra_combat_percent_defense += change;
+    /// A promotion's `stat_changes` (docs/UNIT_STATS.md), `change` times (1 gained, -1 lost): the
+    /// unit's battle stats, and its strength outside land battles from its attack and defence
+    /// (their points in tens; the attack's percentage, C++ `iCombatPercent`) and its spell damage
+    /// from its magic's percentage (`iSpellDamageModify`).
+    pub fn unit_apply_stat_changes(&mut self, u: UnitId, changes: &[StatChange; StatType::NUM], change: i32) {
+        let unit = &mut self.units[u];
+        for s in StatType::ALL {
+            unit.stat_flat[s.idx()] += changes[s.idx()].flat * change;
+            unit.stat_pct[s.idx()] += changes[s.idx()].percent * change;
+        }
+        unit.extra_combat_percent += changes[StatType::Attack.idx()].percent * change;
+        unit.base_combat += changes[StatType::Attack.idx()].flat / 10 * change;
+        unit.base_combat_defense += changes[StatType::Defense.idx()].flat / 10 * change;
+        unit.spell_damage_modify += changes[StatType::Magic.idx()].percent * change;
     }
 
     /// C++ `CvUnit::changeExtraCityAttackPercent` (CvUnit.cpp:12311-12319).
@@ -1768,9 +1779,8 @@ impl Game {
             self.unit_change_extra_friendly_heal(u, info.friendly_heal_change * change);
             self.unit_change_same_tile_heal(u, info.same_tile_heal_change * change);
             self.unit_change_adjacent_tile_heal(u, info.adjacent_tile_heal_change * change);
-            self.unit_change_extra_combat_percent(u, info.combat_percent * change);
+            self.unit_apply_stat_changes(u, &info.stat_changes, change);
             // This game's engagement combat (Q1): the defence percentage, never read by the duel.
-            self.unit_change_extra_combat_percent_defense(u, info.combat_percent_defense * change);
             self.unit_change_extra_city_attack_percent(u, info.city_attack_percent * change);
             self.unit_change_extra_city_defense_percent(u, info.city_defense_percent * change);
             self.unit_change_extra_hills_attack_percent(u, info.hills_attack_percent * change);
@@ -1789,8 +1799,6 @@ impl Game {
             }
             self.unit_change_ai_control(u, flag(info.ai_control));
             self.unit_change_alive(u, flag(info.not_alive));
-            self.unit_change_base_combat_str(u, info.extra_combat_str * change);
-            self.unit_change_base_combat_str_defense(u, info.extra_combat_defense * change);
             self.unit_change_better_defender_than_percent(u, info.better_defender_than_percent * change);
             self.unit_change_boarding(u, flag(info.boarding));
             self.unit_change_combat_heal_percent(u, info.combat_heal_percent * change);
@@ -1821,7 +1829,6 @@ impl Game {
             self.unit_change_resist_modify(u, info.caster_resist_modify * change);
             self.unit_change_see_invisible(u, flag(info.see_invisible));
             self.unit_change_spell_caster_xp(u, info.spell_caster_xp * change);
-            self.unit_change_spell_damage_modify(u, info.spell_damage_modify * change);
             self.unit_change_target_weakest_unit(u, flag(info.target_weakest_unit));
             self.unit_change_target_weakest_unit_counter(u, flag(info.target_weakest_unit_counter));
             self.unit_change_twincast(u, flag(info.twincast));

@@ -7,7 +7,7 @@ use super::*;
 use ffh_data::ActionKind as K;
 
 /// A = Dv: an even hit's expected damage is `40 x 100 / 2` = 2000 centi-HP (20 HP).
-const EQ: Pair = Pair { a: 400, dv: 400 };
+const EQ: Pair = Pair { a: 400, dv: 400, ma: 400, md: 400, spell_pct: 100 };
 const EVEN: i32 = 2000;
 
 fn row(kind: K, count: i32) -> RowActions {
@@ -35,7 +35,7 @@ fn flanker(side: Side, lane: u8, r: u8) -> Fighter {
     let mut f = at(Fighter::new(side, 100), lane, r);
     f.speed = 6;
     f.actions = [row(K::Charge, 2), row(K::Strike, 1), row(K::Strike, 1)];
-    f.dodge = 10;
+    f.evasion = 10;
     f.flanker = true;
     f
 }
@@ -44,8 +44,8 @@ fn assassin(side: Side, lane: u8, r: u8) -> Fighter {
     let mut f = at(Fighter::new(side, 60), lane, r);
     f.speed = 7;
     f.actions = [row(K::Stab, 1), row(K::Stab, 2), row(K::Stab, 1)];
-    f.dodge = 15;
-    f.crit_bonus = 15;
+    f.evasion = 15;
+    f.crit = 25;
     f
 }
 
@@ -380,7 +380,7 @@ fn the_ground() {
     b.fighters[3].spell = Spell::bolt(&b.params);
     assert_eq!(b.expected(3, 6, K::Spell, 1, false), EVEN * 60 / 100);
     // A and Dv: 600 against 200 is 40 x 100 x 600 / 800.
-    let b = Formation::new(Params::default(), OPEN, [4, 4], fs, |h, _| if h == 2 { Pair { a: 600, dv: 200 } } else { EQ });
+    let b = Formation::new(Params::default(), OPEN, [4, 4], fs, |h, _| if h == 2 { Pair::physical(600, 200) } else { EQ });
     assert_eq!(b.expected(2, 6, K::Strike, 1, false), 3000);
 }
 
@@ -414,17 +414,22 @@ fn a_missile_s_strike() {
 fn misses_and_crits() {
     use Side::*;
     let mut big_dodge = frontline(Defender, 3, 0);
-    big_dodge.dodge = 90;
+    big_dodge.evasion = 90;
     let b = battle(
         OPEN,
         vec![frontline(Attacker, 0, 0), assassin(Attacker, 1, 1), frontline(Defender, 0, 0), flanker(Defender, 1, 0), assassin(Defender, 2, 0), big_dodge],
     );
-    // (kind, target) -> miss chance: 10, + the kind's (shoot 10, bombard 15), + the target's dodge.
-    assert_eq!(b.miss_chance(K::Strike, 2), 10);
-    assert_eq!(b.miss_chance(K::Strike, 3), 20);
-    assert_eq!(b.miss_chance(K::Shoot, 4), 35);
-    assert_eq!(b.miss_chance(K::Bombard, 4), 40);
-    assert_eq!(b.miss_chance(K::Shoot, 5), MAX_CHANCE);
+    // (kind, target) -> miss chance: 100 less the hitter's accuracy (90) less the target's evasion
+    // and the kind's (shoot 10, bombard 15), at most MAX_CHANCE.
+    assert_eq!(b.miss_chance(K::Strike, 0, 2), 10);
+    assert_eq!(b.miss_chance(K::Strike, 0, 3), 20);
+    assert_eq!(b.miss_chance(K::Shoot, 0, 4), 35);
+    assert_eq!(b.miss_chance(K::Bombard, 0, 4), 40);
+    assert_eq!(b.miss_chance(K::Shoot, 0, 5), MAX_CHANCE);
+    // A sharper eye hits more: accuracy 105 against evasion 15 hits a shot 80%.
+    let mut b2 = b.clone();
+    b2.fighters[0].accuracy = 105;
+    assert_eq!(b2.miss_chance(K::Shoot, 0, 4), 20);
     assert_eq!((b.crit_chance(0), b.crit_chance(1)), (10, 25));
     // A miss: no crit roll, no r, no damage.
     let b = one_round(battle(OPEN, vec![frontline(Attacker, 0, 0), frontline(Defender, 0, 0)]));
@@ -539,7 +544,7 @@ fn siege_never_takes_a_target_below_its_limit() {
     // A combat limit of 75: never below 25% of max HP (3000 of a frontline unit's 12000). The
     // defenders barely scratch it (A 1 against Dv 400).
     let fs = vec![siege(Attacker, 0, 2), hurt(frontline(Defender, 0, 0), 4000), hurt(frontline(Defender, 1, 0), 3000)];
-    let b = Formation::new(Params::default(), OPEN, [4, 4], fs, |h, _| if h == 0 { EQ } else { Pair { a: 1, dv: 400 } });
+    let b = Formation::new(Params::default(), OPEN, [4, 4], fs, |h, _| if h == 0 { EQ } else { Pair::physical(1, 400) });
     let s = State::new(&b);
     assert_eq!(b.floor(0, 1), 3000);
     assert_eq!(b.reach(&s, 0, K::Bombard), [1], "a target at the limit is not in its reach");
@@ -883,7 +888,7 @@ fn random_battle(seed: u32) -> Formation {
         }
     }
     let strength: Vec<(i32, i32)> = (0..fighters.len()).map(|_| (100 + r(900), 100 + r(900))).collect();
-    let b = Formation::new(Params::default(), ground, lanes, fighters, |h, t| Pair { a: strength[h].0, dv: strength[t].1 });
+    let b = Formation::new(Params::default(), ground, lanes, fighters, |h, t| Pair::physical(strength[h].0, strength[t].1));
     assert_eq!(b.validate(), Ok(()));
     b
 }
@@ -1263,8 +1268,8 @@ fn proto_scenario(key: &str) -> (Formation, Vec<String>) {
             f.first_strikes = u.fs;
             f.actions = r.4.map(|(kind, count)| row(kind, count));
             f.a = u.str_ * r.0 * (100 + 10 * (u.level - 1)) / 100;
-            f.dodge = r.5;
-            f.crit_bonus = r.6;
+            f.evasion = r.5;
+            f.crit = 10 + r.6;
             f.anti_flank = r.7;
             f.flanker = r.4.iter().any(|x| x.0 == K::Charge);
             f.withdraw_pct = u.wd;
@@ -1277,7 +1282,7 @@ fn proto_scenario(key: &str) -> (Formation, Vec<String>) {
         }
     }
     let dv = |u: &Proto| u.def * PROTO_ROLES[u.role].1 * (100 + 10 * (u.level - 1)) / 100;
-    let b = Formation::new(Params::default(), ground, lanes, fighters.clone(), |h, t| Pair { a: fighters[h].a, dv: dv(&units[t]) });
+    let b = Formation::new(Params::default(), ground, lanes, fighters.clone(), |h, t| Pair::physical(fighters[h].a, dv(&units[t])));
     assert_eq!(b.validate(), Ok(()));
     (b, shown)
 }

@@ -1552,7 +1552,7 @@ impl Cai {
 
         //FfH: Modified by Kael 11/14/2009 0.41k (the Warlord super-medic bonus is commented out)
 
-        temp = pi.combat_percent;
+        temp = pi.combat_percent();
         if is(A::UNITAI_ATTACK)
             || is(A::UNITAI_COUNTER)
             || is(A::UNITAI_CITY_COUNTER)

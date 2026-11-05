@@ -1673,6 +1673,11 @@ turn, to move casters and to promote them:
 - **Promotions** (`units::promotion_value`): a sphere is worth the spells it opens, plus half of
   those the next promotion of the sphere opens (a quarter for an adept, which gets Channeling II only
   as a mage): Fire I for Fireball, Enchantment I for Enchanted Blade.
+  Its battle stat changes (docs/UNIT_STATS.md; `units::stat_changes_value`) count as percentages of
+  the unit's own stats, weighted by what the unit does with each: attack and defence as before
+  (a defender the defence), magic for a caster only, magic defence at a quarter (a third on the
+  front line), HP by its percentage, accuracy and evasion a point each, crit half that, speed 5 a
+  point.
 - **Summons spent** (`casting::summon_target`, `SUMMON_SPEND`; More Naval AI's
   `AI_summonAttackMove`, which attacks at any odds): a temporary summon that will be gone before it
   could act again (duration 1: every summon but a Summoner's on the turn it is cast, a Summoner's

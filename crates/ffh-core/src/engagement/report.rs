@@ -242,8 +242,10 @@ pub struct LogFighter {
     pub actions: [RowActions; ROWS],
     /// The damage spell it casts with SPELL actions (`None`: the magic bolt, or it casts none).
     pub spell: Option<SpellType>,
-    pub dodge: i32,
-    pub crit_bonus: i32,
+    /// Its accuracy, evasion and crit chance (docs/UNIT_STATS.md).
+    pub accuracy: i32,
+    pub evasion: i32,
+    pub crit: i32,
     pub anti_flank: bool,
     pub flanker: bool,
     /// 0 for defenders in a city (Q3).
@@ -259,6 +261,9 @@ pub struct LogFighter {
     /// Against an ordinary opponent (the card's headline).
     pub a: Stat,
     pub dv: Stat,
+    /// Its magic and magic defence (SPELL: docs/UNIT_STATS.md).
+    pub mag: Stat,
+    pub mdef: Stat,
     /// How it ended (`None` for a reserve), and the damage it dealt, took and healed in the
     /// battle (centi-HP).
     pub fate: Option<LogFate>,
@@ -297,7 +302,6 @@ impl Immunities {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Stat {
     pub base_x100: i32,
-    pub role_pct: i32,
     pub terms: Vec<Term>,
     pub total_x100: i32,
 }
@@ -360,6 +364,13 @@ pub struct LogPair {
     pub dv_x100: i32,
     /// Centi-HP: `ENGAGEMENT_BASE_DAMAGE x A / (A + Dv)`, before the hit's percentages.
     pub mean: i32,
+    /// For `h`'s spells: its magic, `t`'s magic defence (x100), the percentage of the spell's
+    /// damage `t` takes (its resistance to the spell's damage type) and the mean, centi-HP,
+    /// before the spell's power and the hit's percentages.
+    pub ma_x100: i32,
+    pub md_x100: i32,
+    pub spell_pct: i32,
+    pub magic_mean: i32,
     /// The pair-only terms (against a unit combat, class, promotion).
     pub a_extra: Vec<Term>,
     pub dv_extra: Vec<Term>,

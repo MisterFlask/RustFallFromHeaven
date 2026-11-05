@@ -77,11 +77,11 @@ fn promotions_keep_the_defence_percentage() {
     let u = warrior(&mut g, x, y);
     let (faith, combat1) = (g.d.t::<PromotionType>("PROMOTION_SHIELD_OF_FAITH"), g.d.t::<PromotionType>("PROMOTION_COMBAT1"));
     g.unit_set_has_promotion(u, faith, true);
-    assert_eq!((g.units[u].extra_combat_percent, g.units[u].extra_combat_percent_defense), (10, 30));
+    assert_eq!((g.units[u].extra_combat_percent, g.units[u].stat_pct[StatType::Defense.idx()]), (10, 30));
     g.unit_set_has_promotion(u, combat1, true);
-    assert_eq!((g.units[u].extra_combat_percent, g.units[u].extra_combat_percent_defense), (30, 50));
+    assert_eq!((g.units[u].extra_combat_percent, g.units[u].stat_pct[StatType::Defense.idx()]), (30, 50));
     g.unit_set_has_promotion(u, faith, false);
-    assert_eq!((g.units[u].extra_combat_percent, g.units[u].extra_combat_percent_defense), (20, 20));
+    assert_eq!((g.units[u].extra_combat_percent, g.units[u].stat_pct[StatType::Defense.idx()]), (20, 20));
     // Homeland adds to both where the unit fights: tests/engagement_stats.rs,
     // `homeland_counts_where_the_unit_fights`.
 }
@@ -135,7 +135,7 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
         standing: 1,
         lost: Vec::new(),
     };
-    let stat = |x| Stat { base_x100: x, role_pct: 100, terms: vec![Term { src: TermSource::Fortify, pct: 25 }], total_x100: x * 125 / 100 };
+    let stat = |x| Stat { base_x100: x, terms: vec![Term { src: TermSource::Fortify, pct: 25 }], total_x100: x * 125 / 100 };
     let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
     let strike = |count| RowActions { kind: ActionKind::Strike, count };
     let fighter = |side: Side, unit: UnitId, fate: LogFate| LogFighter {
@@ -161,8 +161,9 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
         rolled_first_strikes: 0,
         actions: [strike(2), strike(1), strike(1)],
         spell: None,
-        dodge: 0,
-        crit_bonus: 0,
+        accuracy: 90,
+        evasion: 0,
+        crit: 10,
         anti_flank: false,
         flanker: false,
         withdraw_pct: 0,
@@ -173,6 +174,8 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
         fear: false,
         a: stat(300),
         dv: stat(300),
+        mag: stat(0),
+        mdef: stat(300),
         fate: Some(fate),
         dealt: 0,
         taken: 0,
@@ -186,7 +189,7 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
         rules: vec![GroundRule::HillsAttacker { pct: 75 }, GroundRule::HillsDefenderRanged { pct: 125 }, GroundRule::Charge { pct: 200 }],
         ordered: [false, false],
         fighters: vec![fighter(Side::Attacker, UnitId(1000), LogFate::Standing), fighter(Side::Defender, UnitId(1001), LogFate::Fell { by: 0, round: 2 })],
-        pairs: vec![LogPair { h: 0, t: 1, a_x100: 300, dv_x100: 375, mean: 1777, a_extra: vec![], dv_extra: vec![] }],
+        pairs: vec![LogPair { h: 0, t: 1, a_x100: 300, dv_x100: 375, mean: 1777, ma_x100: 300, md_x100: 375, spell_pct: 100, magic_mean: 1777, a_extra: vec![], dv_extra: vec![] }],
         events: vec![
             LogEvent::Stage { stage: Stage::Battle },
             LogEvent::Action(Event { round: 2, pass: 1, actor: 0, kind: ActionKind::Strike, spell: None, target: Some(1), hits: vec![hit], heal: None, knocked: None, note: None }),
@@ -293,7 +296,7 @@ fn reports_and_unit_fields_survive_a_save() {
     g.battle_report_add(report(&g, c, false));
     let bytes = g.save();
     let h = Game::load(g.d, &bytes).unwrap();
-    assert_eq!((h.units[u].extra_combat_percent_defense, h.units[u].attacks_made, h.units[u].battle_heal_turn), (30, 1, 7));
+    assert_eq!((h.units[u].stat_pct[StatType::Defense.idx()], h.units[u].attacks_made, h.units[u].battle_heal_turn), (30, 1, 7));
     assert_eq!(h.battle_reports, g.battle_reports);
     assert!(h.battle_reports[0].log.is_some() && h.battle_reports[1].log.is_none());
     assert_eq!(h.battle_report_next, 2);

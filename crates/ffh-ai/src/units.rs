@@ -332,14 +332,13 @@ pub fn promotion_value(g: &Game, u: UnitId, promo: PromotionType) -> i32 {
     let caster = matches!(unit.ai_type, Some(UnitAIType::UNITAI_MAGE) | Some(UnitAIType::UNITAI_WARWIZARD));
     let defender = matches!(unit.ai_type, Some(UnitAIType::UNITAI_CITY_DEFENSE) | Some(UnitAIType::UNITAI_CITY_COUNTER));
     let mut v = info.ai_weight;
-    v += info.combat_percent * 2 + info.extra_combat_str * 40 + info.extra_combat_defense * if defender { 40 } else { 15 };
+    v += stat_changes_value(g, u, &info.stat_changes, caster, defender);
     v += info.city_defense_percent * if defender { 3 } else { 0 };
     v += info.city_attack_percent * if defender { 0 } else { 2 };
     v += info.first_strikes_change * 30 + info.chance_first_strikes_change * 15;
     v += info.moves_change * if defender { 5 } else { 60 };
     v += info.withdrawal_change * 2;
     v += info.combat_heal_percent / 2 + info.same_tile_heal_change + info.adjacent_tile_heal_change;
-    v += info.spell_damage_modify * if caster { 2 } else { 0 };
     v += info.damage_type_combat.iter().sum::<i32>() * 40;
     if caster {
         v += info.spell_caster_xp * 3;
@@ -349,6 +348,30 @@ pub fn promotion_value(g: &Game, u: UnitId, promo: PromotionType) -> i32 {
         v += crate::magic::promotion_value(g, u, promo);
     }
     v.max(1)
+}
+
+/// What a promotion's battle stat changes are worth to unit `u` (docs/UNIT_STATS.md): each change
+/// as a percentage of the unit's own stat (points count against what it has), weighted by what the
+/// unit does with the stat. Its attack and defence as before stats (a defender the defence, the
+/// others both), magic for a caster alone, magic defence at a quarter (a third on the front
+/// line), each point of accuracy or evasion about a percent of damage dealt or taken, a crit point
+/// half that, HP as its percentage, a point of speed 5.
+fn stat_changes_value(g: &Game, u: UnitId, changes: &[StatChange; StatType::NUM], caster: bool, defender: bool) -> i32 {
+    let front = g.unit_combat_role(u).is_some_and(|r| g.d.combat_roles[r].home_row == 0);
+    let pct = |s: StatType| {
+        let c = changes[s.idx()];
+        c.percent + c.flat * 100 / g.unit_stat(u, s).max(10)
+    };
+    let points = |s: StatType| changes[s.idx()].flat;
+    let mut v = 0;
+    v += pct(StatType::Attack) * if defender { 1 } else { 2 } / 2;
+    v += pct(StatType::Defense) * if defender { 2 } else { 1 };
+    v += if caster { pct(StatType::Magic) * 2 } else { 0 };
+    v += pct(StatType::MagicDefense) / if front { 3 } else { 4 };
+    v += pct(StatType::Hp);
+    v += points(StatType::Accuracy) + points(StatType::Evasion) + points(StatType::Crit) / 2;
+    v += points(StatType::Speed) * 5;
+    v
 }
 
 fn best_promotion(g: &Game, u: UnitId) -> Option<PromotionType> {

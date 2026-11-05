@@ -38,26 +38,22 @@ fn the_eight_roles() {
             "COMBATROLE_ARCANE", "COMBATROLE_DIVINE",
         ]
     );
-    // The spec's table: (type, A %, Dv %, HP, speed, dodge, crit bonus, anti-flank, rows front
-    // to rear, home row, auto-pick place).
-    type Want = (&'static str, i32, i32, i32, i32, i32, i32, bool, [RowActions; 3], usize, i32);
+    // The spec's table: (type, anti-flank, rows front to rear, home row, auto-pick place); the
+    // numbers are each unit's own (docs/UNIT_STATS.md).
+    type Want = (&'static str, bool, [RowActions; 3], usize, i32);
     let want: [Want; 8] = [
-        ("COMBATROLE_FRONTLINE", 100, 100, 120, 4, 0, 0, false, [row(Strike, 2), row(Strike, 1), row(Strike, 1)], 0, 2),
-        ("COMBATROLE_SCREEN", 100, 110, 120, 3, 0, 0, true, [row(Strike, 2), row(Strike, 1), row(Strike, 1)], 0, 1),
-        ("COMBATROLE_FLANKER", 110, 80, 100, 6, 10, 0, false, [row(Charge, 2), row(Strike, 1), row(Strike, 1)], 0, 4),
-        ("COMBATROLE_ASSASSIN", 120, 60, 60, 7, 15, 15, false, [row(Stab, 1), row(Stab, 2), row(Stab, 1)], 1, 8),
-        ("COMBATROLE_ARCHER", 100, 60, 80, 4, 0, 0, false, [row(Shoot, 1), row(Shoot, 2), row(Shoot, 2)], 1, 3),
-        ("COMBATROLE_SIEGE", 100, 60, 80, 1, 0, 0, false, [row(None, 0), row(Bombard, 1), row(Bombard, 2)], 2, 7),
-        ("COMBATROLE_ARCANE", 100, 50, 70, 3, 0, 0, false, [row(Strike, 1), row(Spell, 1), row(Spell, 2)], 2, 5),
-        ("COMBATROLE_DIVINE", 100, 50, 70, 3, 0, 0, false, [row(Strike, 1), row(Heal, 1), row(Heal, 2)], 1, 6),
+        ("COMBATROLE_FRONTLINE", false, [row(Strike, 2), row(Strike, 1), row(Strike, 1)], 0, 2),
+        ("COMBATROLE_SCREEN", true, [row(Strike, 2), row(Strike, 1), row(Strike, 1)], 0, 1),
+        ("COMBATROLE_FLANKER", false, [row(Charge, 2), row(Strike, 1), row(Strike, 1)], 0, 4),
+        ("COMBATROLE_ASSASSIN", false, [row(Stab, 1), row(Stab, 2), row(Stab, 1)], 1, 8),
+        ("COMBATROLE_ARCHER", false, [row(Shoot, 1), row(Shoot, 2), row(Shoot, 2)], 1, 3),
+        ("COMBATROLE_SIEGE", false, [row(None, 0), row(Bombard, 1), row(Bombard, 2)], 2, 7),
+        ("COMBATROLE_ARCANE", false, [row(Strike, 1), row(Spell, 1), row(Spell, 2)], 2, 5),
+        ("COMBATROLE_DIVINE", false, [row(Strike, 1), row(Heal, 1), row(Heal, 2)], 1, 6),
     ];
-    for (name, a, dv, hp, speed, dodge, crit, anti_flank, rows, home, pick) in want {
+    for (name, anti_flank, rows, home, pick) in want {
         let r = &d.combat_roles[role(name)];
-        assert_eq!(
-            (r.attack_percent, r.defense_percent, r.max_hp, r.speed, r.dodge, r.crit_bonus, r.anti_flank, r.rows, r.home_row, r.auto_pick),
-            (a, dv, hp, speed, dodge, crit, anti_flank, rows, home, pick),
-            "{name}"
-        );
+        assert_eq!((r.anti_flank, r.rows, r.home_row, r.auto_pick), (anti_flank, rows, home, pick), "{name}");
         assert!(d.text.get(&r.base.description) != r.base.description, "{name}: no text");
         assert!(d.text.get(&r.base.help) != r.base.help, "{name}: no help text");
         // Only the flanker charges.
@@ -250,7 +246,8 @@ fn the_religions_fighters_are_frontline_and_every_assassin_has_marksman() {
         assert_eq!(u.unit_combat_type, Some(disciple), "{}", u.base.type_);
         assert!(!u.free_promotions[channeling] && !u.free_promotions[divine], "{} casts", u.base.type_);
     }
-    assert!(d.units.iter().filter(not_sentinel).all(|u| u.attack_override == 0 && u.defense_override == 0 && u.hp_override == 0));
+    // Every type that fights land battles has a stat sheet (docs/UNIT_STATS.md), and ships none.
+    assert!(d.units.keys().all(|u| d.unit_roles[u].is_some() == d.units[u].stats.is_some()), "a role without a sheet or a sheet without a role");
     // Q6: the assassins are exactly the recon units with Marksman free.
     let mut assassins: Vec<&str> =
         d.units.keys().filter(|&u| d.unit_roles[u] == Some(role("COMBATROLE_ASSASSIN"))).map(|u| d.type_name(u)).collect();
@@ -328,7 +325,8 @@ fn withered_and_puppet_lower_defence_too() {
     let d = d();
     for (name, pct) in [("PROMOTION_WITHERED", -10), ("PROMOTION_PUPPET", -20)] {
         let p = &d.promotions[d.t::<PromotionType>(name)];
-        assert_eq!((p.combat_percent, p.combat_percent_defense), (pct, pct), "{name}");
+        let c = |s: StatType| p.stat_changes[s.idx()].percent;
+        assert_eq!((c(StatType::Attack), c(StatType::Defense), c(StatType::MagicDefense)), (pct, pct, pct), "{name}");
     }
 }
 
@@ -341,10 +339,10 @@ fn engagement_defines() {
     assert_eq!((x.sentinel_repair_percent, x.siege_bombard_floor_percent), (10, 50));
     // The owner's choice: an even-strength hit takes 20 HP (six kill a frontline unit).
     assert_eq!((x.engagement_base_damage, x.engagement_damage_rand_min, x.engagement_damage_rand_max), (40, 80, 120));
-    assert_eq!((x.engagement_rounds, x.engagement_large_hp_percent, x.engagement_first_strike_speed), (3, 150, 2));
+    assert_eq!((x.engagement_rounds, x.engagement_first_strike_speed), (3, 2));
     assert_eq!((x.engagement_extra_action_tier, x.engagement_extra_actions), (4, 1));
-    assert_eq!((x.engagement_miss_percent, x.engagement_shoot_miss_percent, x.engagement_bombard_miss_percent), (10, 10, 15));
-    assert_eq!((x.engagement_crit_percent, x.engagement_crit_damage_percent, x.engagement_charge_bonus), (10, 150, 100));
+    assert_eq!((x.engagement_shoot_miss_percent, x.engagement_bombard_miss_percent), (10, 15));
+    assert_eq!((x.engagement_crit_damage_percent, x.engagement_charge_bonus), (150, 100));
     assert_eq!((x.engagement_splash_percent, x.engagement_bolt_percent, x.engagement_heal_percent), (50, 60, 50));
     assert_eq!((x.engagement_city_attacker_shot_percent, x.engagement_forest_ranged_percent), (50, 50));
     assert_eq!((x.engagement_hills_attacker_percent, x.engagement_hills_defender_ranged_percent), (75, 125));

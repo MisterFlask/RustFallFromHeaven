@@ -459,8 +459,8 @@ fn post_combat_heal50(g: &mut Game, caster: UnitId, _opponent: UnitId, _call: &P
 fn post_combat_ira(g: &mut Game, caster: UnitId, opponent: UnitId, _call: &PyCall) {
     if g.unit_is_alive(opponent) && g.unit_base_combat_str(caster) < 32 {
         // setBaseCombatStr(baseCombatStr() - 3): the getter includes damage-type strength.
-        g.units[caster].base_combat = g.unit_base_combat_str(caster) - 3;
-        g.units[caster].base_combat_defense = g.unit_base_combat_str_defense(caster) - 3;
+        g.unit_set_base_combat_str(caster, g.unit_base_combat_str(caster) - 3);
+        g.unit_set_base_combat_str_defense(caster, g.unit_base_combat_str_defense(caster) - 3);
     }
 }
 
@@ -606,8 +606,8 @@ fn post_combat_yersinia(g: &mut Game, _caster: UnitId, opponent: UnitId, _call: 
 fn post_combat_reduce_combat1(g: &mut Game, caster: UnitId, opponent: UnitId, _call: &PyCall) {
     if g.unit_is_alive(opponent) && g.unit_base_combat_str(caster) > 5 {
         // setBaseCombatStr(baseCombatStr() - 5): the getter includes damage-type strength.
-        g.units[caster].base_combat = g.unit_base_combat_str(caster) - 5;
-        g.units[caster].base_combat_defense = g.unit_base_combat_str_defense(caster) - 5;
+        g.unit_set_base_combat_str(caster, g.unit_base_combat_str(caster) - 5);
+        g.unit_set_base_combat_str_defense(caster, g.unit_base_combat_str_defense(caster) - 5);
     }
 }
 
@@ -699,10 +699,10 @@ fn spell_add_to_flesh_golem(g: &mut Game, caster: UnitId, _call: &PyCall) {
     }
     let Some(golem) = golem else { return };
     if g.unit_base_combat_str(caster) > g.unit_base_combat_str(golem) {
-        g.units[golem].base_combat = g.unit_base_combat_str(golem) + 1;
+        g.unit_set_base_combat_str(golem, g.unit_base_combat_str(golem) + 1);
     }
     if g.unit_base_combat_str_defense(caster) > g.unit_base_combat_str_defense(golem) {
-        g.units[golem].base_combat_defense = g.unit_base_combat_str_defense(golem) + 1;
+        g.unit_set_base_combat_str_defense(golem, g.unit_base_combat_str_defense(golem) + 1);
     }
     for prom in d.promotions.keys() {
         if g.units[caster].has_promotion[prom] {

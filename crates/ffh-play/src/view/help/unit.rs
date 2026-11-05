@@ -278,18 +278,11 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         ai_block_explore: _,
         ai_block_perm_defense: _,
         ai_block_patrol: _,
-        // This game's own engagement combat (docs/ENGAGEMENTS.md): the role and its
-        // overrides matter only in a game with the option, which this static help does not know
-        // of: left out here (a unit's role and engagement numbers belong with the unit in such a
-        // game).
+        // This game's own land battles (docs/ENGAGEMENTS.md, docs/UNIT_STATS.md): its stat sheet
+        // is a line below; its role and rows are the battle screens' (and the unit card's).
         combat_role: _,
-        attack_override: _,
-        defense_override: _,
-        hp_override: _,
+        stats,
         large: _,
-        engage_speed: _,
-        engage_dodge: _,
-        engage_crit_bonus: _,
         engage_rows: _,
     } = &d.units[u];
     let class = *unit_class_type;
@@ -318,6 +311,13 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     // The unit combat C++'s name line shows after the name, " (Melee)".
     if let Some(uc) = unit_combat_type {
         b.push_str(&format!(" ({})", display(d, *uc)));
+    }
+
+    // ---- This game's own: its stat sheet in a land battle (docs/UNIT_STATS.md) ----
+    if let Some(sheet) = stats {
+        let parts: Vec<String> = StatType::ALL.iter().map(|&s| format!("{} {}", super::promotion::stat_name(s), sheet[s.idx()])).collect();
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]In battle: {}", parts.join(", ")));
     }
 
     // ---- setUnitHelp: unique unit, limited unit ----

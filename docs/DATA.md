@@ -42,6 +42,9 @@ reader looks up (a misspelt or obsolete key: `unknown key "combt": nothing reads
 appears twice in one object fails the load, with its line and column. `ffh data` must report
 0 warnings.
 
+**Battle stats.** A land unit's `stats` sheet and a promotion's `stat_changes` are this game's own
+(docs/UNIT_STATS.md).
+
 **Adding a field.** Add the key to the entries that need it and read it in the table's reader
 (`crates/ffh-data/src/infos/*.rs`) with its default; entries without it are unchanged.
 

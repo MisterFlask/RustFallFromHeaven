@@ -2175,7 +2175,7 @@ fn spell_wild_hunt(g: &mut Game, caster: UnitId, _call: &PyCall) {
             if g.unit_base_combat_str(u) > 3 {
                 let i = py_div(g.unit_base_combat_str(u) - 2, 2);
                 // `newUnit.setBaseCombatStr(2 + i)`
-                g.units[new_unit].base_combat = 2 + i;
+                g.unit_set_base_combat_str(new_unit, 2 + i);
             }
         }
     }

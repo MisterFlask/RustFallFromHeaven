@@ -15,6 +15,36 @@ fn line(b: &mut String, d: &GameData, key: &str, args: &[Arg]) {
     b.push_str(&txt(d, key, args));
 }
 
+/// A stat's name in the help (docs/UNIT_STATS.md).
+pub fn stat_name(s: StatType) -> &'static str {
+    match s {
+        StatType::Hp => "HP",
+        StatType::Attack => "Attack",
+        StatType::Defense => "Defense",
+        StatType::Magic => "Magic",
+        StatType::MagicDefense => "Magic defense",
+        StatType::Accuracy => "Accuracy",
+        StatType::Evasion => "Evasion",
+        StatType::Crit => "Crit",
+        StatType::Speed => "Speed",
+    }
+}
+
+/// The battle stats a promotion changes, a line each: "+20% Attack", "+10 Defense", "-1 Speed".
+fn stat_lines(b: &mut String, changes: &[StatChange; StatType::NUM]) {
+    for s in StatType::ALL {
+        let c = changes[s.idx()];
+        if c.flat != 0 {
+            b.push_str(NEWLINE);
+            b.push_str(&format!("[ICON_BULLET]{:+} {}", c.flat, stat_name(s)));
+        }
+        if c.percent != 0 {
+            b.push_str(NEWLINE);
+            b.push_str(&format!("[ICON_BULLET]{:+}% {}", c.percent, stat_name(s)));
+        }
+    }
+}
+
 /// A requirement line: `line` without the warning colour (`super::unwarned`).
 fn line_req(b: &mut String, d: &GameData, key: &str, args: &[Arg]) {
     b.push_str(NEWLINE);
@@ -49,7 +79,7 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         friendly_heal_change,
         same_tile_heal_change,
         adjacent_tile_heal_change,
-        combat_percent,
+        stat_changes,
         city_attack_percent,
         city_defense_percent,
         hills_attack_percent,
@@ -91,7 +121,6 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         validate: _,
         combat_percent_global_counter: _,
         // Never applied by the rules (C++ reads it, no unit uses it; the AI weighs it).
-        combat_percent_defense: _,
         // Equipment and races: no unit chooses them (no requirements below).
         equipment,
         race,
@@ -131,8 +160,6 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         defensive_strike_chance,
         defensive_strike_damage,
         expire_chance,
-        extra_combat_str,
-        extra_combat_defense,
         free_xp_per_turn,
         free_xp_from_combat,
         gold_from_combat,
@@ -141,7 +168,6 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         modify_global_counter_on_combat,
         resist_magic,
         spell_caster_xp,
-        spell_damage_modify,
         work_rate_modify,
         capture_unit_combat,
         promotion_combat_apply,
@@ -244,9 +270,7 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         line(b, d, "TXT_KEY_PROMOTION_HEALS_ADJACENT_TEXT", &[Arg::N(*adjacent_tile_heal_change)]);
         b.push_str(&per_turn);
     }
-    if *combat_percent != 0 {
-        line(b, d, "TXT_KEY_PROMOTION_STRENGTH_TEXT", &[Arg::N(*combat_percent)]);
-    }
+    stat_lines(b, stat_changes);
     // Attack and defence: one "strength" line when they are equal (FfH BUG addon, Denev).
     if city_attack_percent == city_defense_percent {
         if *city_attack_percent != 0 {
@@ -358,18 +382,6 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
     if *combat_percent_in_borders != 0 {
         line(b, d, "TXT_KEY_PROMOTION_COMBAT_PERCENT_IN_BORDERS", &[Arg::N(*combat_percent_in_borders)]);
     }
-    if extra_combat_str == extra_combat_defense {
-        if *extra_combat_str != 0 {
-            line(b, d, "TXT_KEY_PROMOTION_EXTRA_COMBAT_STR", &[Arg::N(*extra_combat_str)]);
-        }
-    } else {
-        if *extra_combat_str != 0 {
-            line(b, d, "TXT_KEY_PROMOTION_EXTRA_COMBAT_STR_ATTACK", &[Arg::N(*extra_combat_str)]);
-        }
-        if *extra_combat_defense != 0 {
-            line(b, d, "TXT_KEY_PROMOTION_EXTRA_COMBAT_STR_DEFENSE", &[Arg::N(*extra_combat_defense)]);
-        }
-    }
     if *target_weakest_unit {
         line(b, d, "TXT_KEY_PROMOTION_TARGET_WEAKEST_UNIT", &[]);
     }
@@ -453,7 +465,6 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
     }
     for (n, key) in [
         (*resist_magic, "TXT_KEY_PROMOTION_RESIST"),
-        (*spell_damage_modify, "TXT_KEY_PROMOTION_SPELL_DAMAGE_MODIFY"),
         (*caster_resist_modify, "TXT_KEY_PROMOTION_CASTER_RESIST_MODIFY"),
     ] {
         if n != 0 {
@@ -581,7 +592,7 @@ mod tests {
     #[test]
     fn known_promotions_say_what_they_do() {
         let combat1 = of("PROMOTION_COMBAT1");
-        for part in ["[ICON_BULLET]+20% Strength", "[ICON_BULLET]+5 to spell damage", "Grants the Empower I promotion to summoned units", "Available To: Recon Units, Archery Units, ", "Beast Units"] {
+        for part in ["[ICON_BULLET]+20% Attack", "[ICON_BULLET]+20% Defense", "[ICON_BULLET]+5% Magic", "[ICON_BULLET]+20% Magic defense", "Grants the Empower I promotion to summoned units", "Available To: Recon Units, Archery Units, ", "Beast Units"] {
             assert!(combat1.contains(part), "{part}: {combat1}");
         }
         // Nothing to choose it after, and no tech.

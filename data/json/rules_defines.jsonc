@@ -74,8 +74,6 @@
   // ROUNDS: rounds of a formation battle; in each, every unit acts once per action it has from
   //      its row, one pass per action
   "ENGAGEMENT_ROUNDS": 3,
-  // LARGE_HP_PERCENT: a large unit's (bLarge) HP, in percent of its role's
-  "ENGAGEMENT_LARGE_HP_PERCENT": 150,
   // FIRST_STRIKE_SPEED: speed a first strike adds (a chance first strike, when rolled at the
   //      battle's start)
   "ENGAGEMENT_FIRST_STRIKE_SPEED": 2,
@@ -83,15 +81,13 @@
   //      in their role's best row
   "ENGAGEMENT_EXTRA_ACTION_TIER": 4,
   "ENGAGEMENT_EXTRA_ACTIONS": 1,
-  // MISS_PERCENT: the miss chance of a physical action, plus the kind's (SHOOT, BOMBARD below)
-  //      and the target role's iDodge, at most 95
-  "ENGAGEMENT_MISS_PERCENT": 10,
+  // SHOOT_MISS_PERCENT, BOMBARD_MISS_PERCENT: what a SHOOT or a BOMBARD takes off the hitter's
+  //      chance to hit (its accuracy less the target's evasion: docs/UNIT_STATS.md)
   "ENGAGEMENT_SHOOT_MISS_PERCENT": 10,
   "ENGAGEMENT_BOMBARD_MISS_PERCENT": 15,
-  // CRIT_PERCENT: the crit chance of a strike, charge, stab or shoot, plus the hitter role's
-  //      iCritBonus, at most 95; a crit deals CRIT_DAMAGE_PERCENT of the hit (a melee crit also knocks
-  //      the target back a row when the cells behind it are free)
-  "ENGAGEMENT_CRIT_PERCENT": 10,
+  // CRIT_DAMAGE_PERCENT: what a crit deals, in percent of the hit (the crit chance is the hitter's
+  //      crit stat, at most 95; a melee crit also knocks the target back a row when the cells behind
+  //      it are free)
   "ENGAGEMENT_CRIT_DAMAGE_PERCENT": 150,
   // CHARGE_BONUS: percent a flanker's charge adds to its damage in the first round, where
   //      flanking works (no city, no forest or jungle)

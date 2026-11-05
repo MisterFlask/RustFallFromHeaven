@@ -9,7 +9,7 @@
 import { h, toast } from "./dom.js";
 import {
   uname, roleKey, roleLabel, ROLE_UNITS, ROWS, actionAt, actionText, reachText, specials, slotSum, slotCap,
-  placeOf, placeFromList, formationOf, previewForecast, gridOf, slotsUsed, placeUnit, benchUnit, inLine, x100, hpOf, tyLabel,
+  placeOf, placeFromList, formationOf, previewForecast, gridOf, slotsUsed, placeUnit, benchUnit, inLine, x100, stat, hpOf, tyLabel,
 } from "./battle_log.js";
 import { loadArt, unitXY, cellXY, cellAt, figBox, pic, faceFlip, headChip, uiIcon, btn, add, groundLine, FRAME_W, FRAME_H, COLORS } from "./battle_stage.js";
 
@@ -305,7 +305,7 @@ export function unitInfo(pv, f, { pos, fc } = {}) {
   return [
     h("div.bt-row", h(`span.bt-chip.tiny.${f.side === me ? "you" : "them"}`, f.side === 0 ? "Attacker" : "Defender"), h("b", uname(pv, f.b)), f.level > 1 ? h("span.dim.small", `level ${f.level}`) : null),
     h("div.small", `${roleLabel(f)}${f.large ? ", large" : ""}${ROLE_UNITS[role] ? ` (${ROLE_UNITS[role]})` : ""}`),
-    h("div.small", h("span.amber", `A ${x100(f.a_x100)}`), " · ", h("span.frost", `Dv ${x100(f.dv_x100)}`), ` · ${hpOf(f.hp_start)} of ${f.max_hp} HP · speed ${f.speed}`),
+    h("div.small", h("span.amber", `ATK ${stat(f.a_x100)}`), " · ", h("span.frost", `DEF ${stat(f.dv_x100)}`), f.ma_x100 >= 10 ? ` · MAG ${stat(f.ma_x100)}` : "", ` · MDEF ${stat(f.md_x100)} · ${hpOf(f.hp_start)} of ${f.max_hp} HP · speed ${f.speed}`),
     (f.promotions ?? []).length ? h("div.small.dim", f.promotions.map((p) => tyLabel("PromotionType", p)).join(", ")) : null,
     h("table.bt-rows", h("thead", h("tr", h("th", "Row"), h("th", "Actions"), h("th", "Hits"))), h("tbody", rows)),
     h(
@@ -409,7 +409,7 @@ function render(ctx) {
         `div.bt-bench${P.sel === f.b ? ".sel" : ""}`,
         { role: "button", tabIndex: 0, "data-b": f.b, title: "", onclick: () => ((P.sel = P.sel === f.b ? null : f.b), render(ctx)) },
         headChip(f, pv.sides, { w: 28, h: 26 }),
-        h("span.bt-ell", h("b", uname(pv, f.b)), h("br"), h("span.small.dim", `${roleLabel(f)}${f.large ? " · large" : ""} · A ${x100(f.a_x100)} · Dv ${x100(f.dv_x100)}`)),
+        h("span.bt-ell", h("b", uname(pv, f.b)), h("br"), h("span.small.dim", `${roleLabel(f)}${f.large ? " · large" : ""} · ATK ${stat(f.a_x100)} · DEF ${stat(f.dv_x100)}`)),
       ),
     ),
   );

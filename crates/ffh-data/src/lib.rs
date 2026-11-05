@@ -319,12 +319,6 @@ impl GameData {
         }
         for r in self.combat_roles.keys() {
             let info = &self.combat_roles[r];
-            if info.attack_percent <= 0 || info.defense_percent <= 0 || info.max_hp <= 0 || info.speed < 0 {
-                warnings.push(format!("{}: iAttackPercent, iDefensePercent and iMaxHP must be above 0, iSpeed not below", info.base.type_));
-            }
-            if !(0..=95).contains(&info.dodge) || !(0..=95).contains(&info.crit_bonus) {
-                warnings.push(format!("{}: iDodge and iCritBonus must be in 0..=95", info.base.type_));
-            }
             // A row acts iff it has an action kind; a role acts from some row (a unit type's own
             // EngageRows are checked so as they are read).
             if let Some(problem) = rows_problem(&info.rows) {
@@ -350,6 +344,12 @@ impl GameData {
         });
         self.unit_roles =
             IdxVec::from_fn(self.units.len(), |u| if self.type_engages_on_land(u) { self.type_combat_role(u) } else { None });
+        // Every type that fights land battles has a stat sheet (docs/UNIT_STATS.md).
+        for (u, info) in self.units.iter_enumerated() {
+            if self.unit_roles[u].is_some() && info.stats.is_none() {
+                warnings.push(format!("{}: a land unit without stats", info.base.type_));
+            }
+        }
         self.warnings.extend(warnings);
     }
 
@@ -414,22 +414,9 @@ impl GameData {
     // (`role`: the unit's own, which promotions can change: `Game::unit_combat_role`), else
     // nothing (0, no action) for a unit with neither. The rules ask through `Game::unit_engage_*`.
 
-    /// A unit type's speed in a formation battle before first strikes: its `iEngageSpeed`, else
-    /// the role's.
-    pub fn engage_speed(&self, t: UnitType, role: Option<CombatRoleType>) -> i32 {
-        self.units[t].engage_speed.or_else(|| role.map(|r| self.combat_roles[r].speed)).unwrap_or(0)
-    }
-
-    /// A unit type's dodge (points of miss chance on physical actions against it): its
-    /// `iEngageDodge`, else the role's.
-    pub fn engage_dodge(&self, t: UnitType, role: Option<CombatRoleType>) -> i32 {
-        self.units[t].engage_dodge.or_else(|| role.map(|r| self.combat_roles[r].dodge)).unwrap_or(0)
-    }
-
-    /// A unit type's crit bonus (points on its own crit chance): its `iEngageCritBonus`, else the
-    /// role's.
-    pub fn engage_crit_bonus(&self, t: UnitType, role: Option<CombatRoleType>) -> i32 {
-        self.units[t].engage_crit_bonus.or_else(|| role.map(|r| self.combat_roles[r].crit_bonus)).unwrap_or(0)
+    /// A unit type's stat `s` (its sheet's; 0 for a type without one).
+    pub fn unit_stat(&self, t: UnitType, s: StatType) -> i32 {
+        self.units[t].stats.map_or(0, |sheet| sheet[s.idx()])
     }
 
     /// What a unit type does from each row, front first, before the extra actions: its

@@ -78,13 +78,13 @@ test("actions and reach in words", () => {
   const elephant = field.fighters.find((f) => f.name === "War Elephant");
   const notes = L.specials(elephant, field.ground, field.params).join(" ");
   assert.match(notes, /Large/);
-  assert.match(notes, /150% of its role's HP/);
+  assert.match(notes, /Evasion 10: physical attacks on it hit 10 points less often/);
   assert.match(notes, /Withdrawal 25%/);
   assert.match(notes, /first-round charges deal double damage/);
-  assert.match(L.specials(elephant, { flanking: true, rules: [{ kind: "ChargeFirstRound", pct: 175 }] }, { large_hp_pct: 140 }).join(" "), /140% of its role's HP.*first-round charges deal 175% damage/);
+  assert.match(L.specials(elephant, { flanking: true, rules: [{ kind: "ChargeFirstRound", pct: 175 }] }, {}).join(" "), /Large: fills two cells.*first-round charges deal 175% damage/);
   const bare = L.specials(elephant, { flanking: true, rules: [] }).join(" ");
   assert.doesNotMatch(bare, /150%|double|first-round/, "no rule values without the params and the ground's rule");
-  assert.match(bare, /more HP than its role's/);
+  assert.match(bare, /Large: fills two cells/);
   const catNotes = L.specials(cat, field.ground, field.params).join(" ");
   assert.match(catNotes, /Never takes a target below 25% of its HP/);
   assert.match(catNotes, /splash .* for half damage/);

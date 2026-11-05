@@ -44,12 +44,12 @@ persist_enum!(SlotSource {
 persist_struct!(LogFighter {
     unit, sentinel, unit_type, name, owner, shown_owner, side, place, large, level, xp, hero, role, max_hp,
     hp_start, hp_battle, speed, first_strikes, chance_first_strikes, rolled_first_strikes, actions,
-    spell, dodge, crit_bonus, anti_flank, flanker, withdraw_pct, combat_limit, collateral_limit,
-    def_strike, immune, fear, a, dv, fate, dealt, taken, healed,
+    spell, accuracy, evasion, crit, anti_flank, flanker, withdraw_pct, combat_limit, collateral_limit,
+    def_strike, immune, fear, a, dv, mag, mdef, fate, dealt, taken, healed,
 });
 persist_enum!(LogFate { 0 => Standing, 1 => Fell { by, round }, 2 => Withdrew { round }, 3 => SatOut });
 persist_newtype!(Immunities);
-persist_struct!(Stat { base_x100, role_pct, terms, total_x100 });
+persist_struct!(Stat { base_x100, terms, total_x100 });
 persist_struct!(Term { src, pct });
 persist_enum!(TermSource {
     0 => Own,
@@ -84,7 +84,7 @@ persist_enum!(TermSource {
     29 => Improvement(i),
     30 => RangeDefense,
 });
-persist_struct!(LogPair { h, t, a_x100, dv_x100, mean, a_extra, dv_extra });
+persist_struct!(LogPair { h, t, a_x100, dv_x100, mean, ma_x100, md_x100, spell_pct, magic_mean, a_extra, dv_extra });
 
 persist_enum!(Stage { 0 => PreBattle, 1 => Morale, 2 => Opening, 3 => Battle, 4 => Post });
 persist_enum!(LogEvent {
@@ -143,7 +143,6 @@ mod tests {
     fn stat(base: i32) -> Stat {
         Stat {
             base_x100: base,
-            role_pct: 100,
             terms: vec![Term { src: TermSource::Promotion(PromotionType(3)), pct: 20 }, Term { src: TermSource::Fortify, pct: 25 }],
             total_x100: base * 145 / 100,
         }
@@ -174,8 +173,9 @@ mod tests {
             rolled_first_strikes: 1,
             actions: [row(ActionKind::Spell, 1), row(ActionKind::Heal, 2), row(ActionKind::None, 0)],
             spell: Some(SpellType(4)),
-            dodge: 15,
-            crit_bonus: 10,
+            accuracy: 95,
+            evasion: 15,
+            crit: 20,
             anti_flank: true,
             flanker: false,
             withdraw_pct: 30,
@@ -186,6 +186,8 @@ mod tests {
             fear: true,
             a: stat(400),
             dv: stat(300),
+            mag: stat(250),
+            mdef: stat(350),
             fate,
             dealt: 2400,
             taken: 1000,
@@ -327,7 +329,7 @@ mod tests {
                 fighter(Side::Attacker, Some((2, 2)), Some(LogFate::Standing)),
                 fighter(Side::Defender, None, None),
             ],
-            pairs: vec![LogPair { h: 0, t: 1, a_x100: 440, dv_x100: 660, mean: 800, a_extra: terms, dv_extra: vec![] }],
+            pairs: vec![LogPair { h: 0, t: 1, a_x100: 440, dv_x100: 660, mean: 800, ma_x100: 250, md_x100: 350, spell_pct: 75, magic_mean: 1666, a_extra: terms, dv_extra: vec![] }],
             events,
             forecast: Some(FrozenForecast {
                 runs: 200,

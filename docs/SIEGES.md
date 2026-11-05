@@ -31,12 +31,13 @@ Garrison promotions).
   the most any of its buildings gives, not the sum. Palisade, Walls and Wall of Stone: 2
   **(default)**. An occupied city (`city_is_occupation`) has none fighting.
 - **Their values** are `UNIT_SENTINEL`'s (`units.jsonc`; never trained or placed, so its
-  name, role and rows reach the battle screens like any unit type's): `hp` 100, `attack` 1,
-  `defense` 3, speed 0 (they act last), one STRIKE from the front row and nothing from the others,
-  no dodge, no crit bonus **(default)**.
-- **They grow with the city's defence** (the owner's rule): max HP and Dv times (100 + its total
-  defence) / 100, `city_total_defense` (buildings, culture level, the player's modifier, FfH's range
-  defence). A Developing city with Walls (45): 145 HP, Dv 4.35.
+  name, role and rows reach the battle screens like any unit type's): its stat sheet (HP 100,
+  attack 10, defence 30, magic 0, magic defence 30, accuracy 90, evasion 0, crit 10, speed 0: they
+  act last; docs/UNIT_STATS.md), one STRIKE from the front row and nothing from the others
+  **(default)**.
+- **They grow with the city's defence** (the owner's rule): max HP, defence and magic defence times
+  (100 + its total defence) / 100, `city_total_defense` (buildings, culture level, the player's
+  modifier, FfH's range defence). A Developing city with Walls (45): 145 HP, defence 43.5.
 - **Fixed** (`Fighter::fixed`): always in their front-row cells, the lanes nearest the centre; never
   knocked back, never withdraw, never healed in the battle; Fear, defensive strikes and every
   per-kill effect pass them by. Collateral splash and spells hurt them as anyone.

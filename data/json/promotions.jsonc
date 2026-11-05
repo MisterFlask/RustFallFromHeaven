@@ -294,31 +294,29 @@
   },
   {
     "type": "PROMOTION_BRONZE_WEAPONS",
+    "stat_changes": {"attack": {"flat": 10}, "defense": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_BRONZE_WEAPONS",
     "button": "Art/Interface/Buttons/Promotions/Bronzeweapons.dds",
-    "extra_combat_str": 1,
-    "extra_combat_defense": 1,
     "min_level": -1,
     "damage_type_resists": {"DAMAGE_LIGHTNING": -25}
   },
   {
     "type": "PROMOTION_BUCCANEERS",
+    "stat_changes": {"attack": {"flat": 10}, "defense": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_BUCCANEERS",
     "tech_prereq": "TECH_NEVER",
     "moves_change": -1,
     "unit_combats": {"UNITCOMBAT_NAVAL": true},
     "button": "Art/Interface/Buttons/Promotions/Buccaneers.dds",
-    "extra_combat_str": 1,
-    "extra_combat_defense": 1,
     "min_level": -1
   },
   {
     "type": "PROMOTION_BURNING_BLOOD",
+    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic_defense": {"percent": 20}},
     "description": "TXT_KEY_PROMOTION_BURNING_BLOOD",
     "tech_prereq": "TECH_NEVER",
     "blitz": true,
     "moves_change": 1,
-    "combat_percent": 20,
     "unit_combats": {
       "UNITCOMBAT_ANIMAL": true,
       "UNITCOMBAT_ARCHER": true,
@@ -330,7 +328,6 @@
     "button": "Art/Interface/Buttons/Promotions/Burningblood.dds",
     "immune_to_fear": true,
     "betrayal_chance": 20,
-    "combat_percent_defense": 20,
     "expire_chance": 10,
     "min_level": -1
   },
@@ -543,8 +540,8 @@
   },
   {
     "type": "PROMOTION_COMBAT1",
+    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic": {"percent": 5}, "magic_defense": {"percent": 20}},
     "description": "TXT_KEY_PROMOTION_COMBAT1",
-    "combat_percent": 20,
     "unit_combats": {
       "UNITCOMBAT_ADEPT": true,
       "UNITCOMBAT_ANIMAL": true,
@@ -559,16 +556,14 @@
     },
     "button": ",Art/Interface/Buttons/Promotions/Combat1.dds,Art/Interface/Buttons/Promotions_Atlas.dds,8,2",
     "mutation": true,
-    "combat_percent_defense": 20,
-    "spell_damage_modify": 5,
     "promotion_summon_perk": "PROMOTION_EMPOWER1",
     "promotion_next_level": "PROMOTION_COMBAT2"
   },
   {
     "type": "PROMOTION_COMBAT2",
+    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic": {"percent": 5}, "magic_defense": {"percent": 20}},
     "description": "TXT_KEY_PROMOTION_COMBAT2",
     "promotion_prereq": "PROMOTION_COMBAT1",
-    "combat_percent": 20,
     "unit_combats": {
       "UNITCOMBAT_ADEPT": true,
       "UNITCOMBAT_ANIMAL": true,
@@ -582,16 +577,14 @@
       "UNITCOMBAT_SIEGE": true
     },
     "button": ",Art/Interface/Buttons/Promotions/Combat2.dds,Art/Interface/Buttons/Promotions_Atlas.dds,1,6",
-    "combat_percent_defense": 20,
-    "spell_damage_modify": 5,
     "promotion_summon_perk": "PROMOTION_EMPOWER2",
     "promotion_next_level": "PROMOTION_COMBAT3"
   },
   {
     "type": "PROMOTION_COMBAT3",
+    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic": {"percent": 5}, "magic_defense": {"percent": 20}},
     "description": "TXT_KEY_PROMOTION_COMBAT3",
     "promotion_prereq": "PROMOTION_COMBAT2",
-    "combat_percent": 20,
     "unit_combats": {
       "UNITCOMBAT_ADEPT": true,
       "UNITCOMBAT_ANIMAL": true,
@@ -605,16 +598,14 @@
       "UNITCOMBAT_SIEGE": true
     },
     "button": ",Art/Interface/Buttons/Promotions/Combat3.dds,Art/Interface/Buttons/Promotions_Atlas.dds,2,6",
-    "combat_percent_defense": 20,
-    "spell_damage_modify": 5,
     "promotion_summon_perk": "PROMOTION_EMPOWER3",
     "promotion_next_level": "PROMOTION_COMBAT4"
   },
   {
     "type": "PROMOTION_COMBAT4",
+    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic": {"percent": 5}, "magic_defense": {"percent": 20}},
     "description": "TXT_KEY_PROMOTION_COMBAT4",
     "promotion_prereq": "PROMOTION_COMBAT3",
-    "combat_percent": 20,
     "unit_combats": {
       "UNITCOMBAT_ADEPT": true,
       "UNITCOMBAT_ANIMAL": true,
@@ -628,16 +619,14 @@
       "UNITCOMBAT_SIEGE": true
     },
     "button": ",Art/Interface/Buttons/Promotions/Combat4.dds,Art/Interface/Buttons/Promotions_Atlas.dds,3,6",
-    "combat_percent_defense": 20,
-    "spell_damage_modify": 5,
     "promotion_summon_perk": "PROMOTION_EMPOWER4",
     "promotion_next_level": "PROMOTION_COMBAT5"
   },
   {
     "type": "PROMOTION_COMBAT5",
+    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic": {"percent": 5}, "magic_defense": {"percent": 20}},
     "description": "TXT_KEY_PROMOTION_COMBAT5",
     "promotion_prereq": "PROMOTION_COMBAT4",
-    "combat_percent": 20,
     "unit_combats": {
       "UNITCOMBAT_ADEPT": true,
       "UNITCOMBAT_ANIMAL": true,
@@ -651,8 +640,6 @@
       "UNITCOMBAT_SIEGE": true
     },
     "button": ",Art/Interface/Buttons/Promotions/Combat5.dds,Art/Interface/Buttons/Promotions_Atlas.dds,4,6",
-    "combat_percent_defense": 20,
-    "spell_damage_modify": 5,
     "promotion_summon_perk": "PROMOTION_EMPOWER5"
   },
   {
@@ -913,22 +900,22 @@
   },
   {
     "type": "PROMOTION_DEXTEROUS",
+    "stat_changes": {"attack": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_DEXTEROUS",
     "tech_prereq": "TECH_NEVER",
     "unit_combats": {"UNITCOMBAT_ARCHER": true},
     "button": "Art/Interface/Buttons/Promotions/Dexterous.dds",
     "validate": true,
-    "extra_combat_str": 1,
     "min_level": -1
   },
   {
     "type": "PROMOTION_DISEASED",
+    "stat_changes": {"attack": {"percent": -30}, "defense": {"percent": -30}, "magic_defense": {"percent": -30}},
     "description": "TXT_KEY_PROMOTION_DISEASED",
     "tech_prereq": "TECH_NEVER",
     "enemy_heal_change": -10,
     "neutral_heal_change": -10,
     "friendly_heal_change": -10,
-    "combat_percent": -30,
     "unit_combats": {
       "UNITCOMBAT_ADEPT": true,
       "UNITCOMBAT_ANIMAL": true,
@@ -945,7 +932,6 @@
     "mutation": true,
     "prereq_alive": true,
     "ai_weight": -100,
-    "combat_percent_defense": -30,
     "min_level": -1,
     "promotion_combat_apply": "PROMOTION_DISEASED"
   },
@@ -1141,70 +1127,64 @@
   },
   {
     "type": "PROMOTION_EMPOWER1",
+    "stat_changes": {"attack": {"percent": 10}, "defense": {"percent": 10}, "magic_defense": {"percent": 10}},
     "description": "TXT_KEY_PROMOTION_EMPOWER1",
-    "combat_percent": 10,
     "button": "Art/Interface/Buttons/Promotions/Empower1.dds",
     "mutation": true,
-    "combat_percent_defense": 10,
     "min_level": -1,
     "promotion_next_level": "PROMOTION_EMPOWER2"
   },
   {
     "type": "PROMOTION_EMPOWER2",
+    "stat_changes": {"attack": {"percent": 10}, "defense": {"percent": 10}, "magic_defense": {"percent": 10}},
     "description": "TXT_KEY_PROMOTION_EMPOWER2",
-    "combat_percent": 10,
     "button": "Art/Interface/Buttons/Promotions/Empower2.dds",
-    "combat_percent_defense": 10,
     "min_level": -1,
     "promotion_next_level": "PROMOTION_EMPOWER3"
   },
   {
     "type": "PROMOTION_EMPOWER3",
+    "stat_changes": {"attack": {"percent": 10}, "defense": {"percent": 10}, "magic_defense": {"percent": 10}},
     "description": "TXT_KEY_PROMOTION_EMPOWER3",
-    "combat_percent": 10,
     "button": "Art/Interface/Buttons/Promotions/Empower3.dds",
-    "combat_percent_defense": 10,
     "min_level": -1,
     "promotion_next_level": "PROMOTION_EMPOWER4"
   },
   {
     "type": "PROMOTION_EMPOWER4",
+    "stat_changes": {"attack": {"percent": 10}, "defense": {"percent": 10}, "magic_defense": {"percent": 10}},
     "description": "TXT_KEY_PROMOTION_EMPOWER4",
-    "combat_percent": 10,
     "button": "Art/Interface/Buttons/Promotions/Empower4.dds",
-    "combat_percent_defense": 10,
     "min_level": -1,
     "promotion_next_level": "PROMOTION_EMPOWER5"
   },
   {
     "type": "PROMOTION_EMPOWER5",
+    "stat_changes": {"attack": {"percent": 10}, "defense": {"percent": 10}, "magic_defense": {"percent": 10}},
     "description": "TXT_KEY_PROMOTION_EMPOWER5",
-    "combat_percent": 10,
     "button": "Art/Interface/Buttons/Promotions/Empower5.dds",
-    "combat_percent_defense": 10,
     "min_level": -1
   },
   {
     "type": "PROMOTION_EMPTY_BIER",
+    "stat_changes": {"defense": {"flat": 20}},
     "description": "TXT_KEY_EQUIPMENT_EMPTY_BIER",
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Equipment/EmptyBier.dds",
     "double_fortify_bonus": true,
     "equipment": true,
-    "ai_weight": 100,
-    "extra_combat_defense": 2
+    "ai_weight": 100
   },
   {
     "type": "PROMOTION_ENCHANTED_BLADE",
+    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic_defense": {"percent": 20}},
     "description": "TXT_KEY_PROMOTION_ENCHANTED_BLADE",
     "tech_prereq": "TECH_NEVER",
-    "combat_percent": 20,
     "unit_combats": {"UNITCOMBAT_MELEE": true},
     "button": "Art/Interface/Buttons/Promotions/Enchantedblade.dds",
     "dispellable": true,
     "validate": true,
     "ai_weight": 100,
-    "combat_percent_defense": 20,
     "min_level": -1
   },
   {
@@ -1260,14 +1240,13 @@
   },
   {
     "type": "PROMOTION_ENRAGED",
+    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": -20}, "magic_defense": {"percent": -20}},
     "description": "TXT_KEY_PROMOTION_ENRAGED",
     "help": "TXT_KEY_PROMOTION_ENRAGED_HELP",
     "moves_change": 1,
-    "combat_percent": 20,
     "button": "Art/Interface/Buttons/Promotions/Enraged.dds",
     "ai_control": true,
     "removed_by_combat": true,
-    "combat_percent_defense": -20,
     "min_level": -1
   },
   {
@@ -1363,11 +1342,10 @@
   },
   {
     "type": "PROMOTION_FATIGUED",
+    "stat_changes": {"attack": {"percent": -10}, "defense": {"percent": -10}, "magic_defense": {"percent": -10}},
     "description": "TXT_KEY_PROMOTION_FATIGUED",
-    "combat_percent": -10,
     "button": "Art/Interface/Buttons/Promotions/Fatigued.dds",
     "ai_weight": -50,
-    "combat_percent_defense": -10,
     "expire_chance": 50,
     "min_level": -1
   },
@@ -1511,6 +1489,7 @@
   },
   {
     "type": "PROMOTION_FORMATION",
+    "stat_changes": {"defense": {"percent": 10}, "magic_defense": {"percent": 10}, "speed": {"flat": -1}},
     "description": "TXT_KEY_PROMOTION_FORMATION",
     "promotion_prereq": "PROMOTION_COMBAT2",
     "unit_combat_mods": {"UNITCOMBAT_MOUNTED": 40},
@@ -1556,13 +1535,12 @@
   },
   {
     "type": "PROMOTION_GODSLAYER",
+    "stat_changes": {"attack": {"flat": 30}, "defense": {"flat": 30}},
     "description": "TXT_KEY_EQUIPMENT_GODSLAYER",
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Equipment/Godslayer.dds",
     "equipment": true,
     "ai_weight": 100,
-    "extra_combat_str": 3,
-    "extra_combat_defense": 3,
     "resist_magic": 100,
     "promotion_combat_type": "PROMOTION_AVATAR",
     "promotion_combat_mod": 1000,
@@ -1578,11 +1556,11 @@
   },
   {
     "type": "PROMOTION_GOLDEN_HAMMER",
+    "stat_changes": {"attack": {"flat": 10}},
     "description": "TXT_KEY_EQUIPMENT_GOLDEN_HAMMER",
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Equipment/GoldenHammer.dds",
-    "equipment": true,
-    "extra_combat_str": 1
+    "equipment": true
   },
   {
     "type": "PROMOTION_GOLEM",
@@ -1598,12 +1576,11 @@
   },
   {
     "type": "PROMOTION_GREAT_COMMANDER",
+    "stat_changes": {"attack": {"flat": 10}, "defense": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_GREAT_COMMANDER",
     "help": "TXT_KEY_PROMOTION_GREAT_COMMANDER_PEDIA",
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Units/Commander.dds",
-    "extra_combat_str": 1,
-    "extra_combat_defense": 1,
     "free_xp_from_combat": 1,
     "min_level": -1
   },
@@ -1677,13 +1654,12 @@
   },
   {
     "type": "PROMOTION_HEAVY",
+    "stat_changes": {"attack": {"percent": 30}, "defense": {"percent": 30}, "magic_defense": {"percent": 30}},
     "description": "TXT_KEY_PROMOTION_HEAVY",
     "tech_prereq": "TECH_NEVER",
     "move_discount_change": -1,
-    "combat_percent": 30,
     "button": "Art/Interface/Buttons/Promotions/Heavy.dds",
     "mutation": true,
-    "combat_percent_defense": 30,
     "min_level": -1
   },
   {
@@ -1706,6 +1682,7 @@
   },
   {
     "type": "PROMOTION_HEROIC_DEFENSE",
+    "stat_changes": {"defense": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_HEROIC_DEFENSE",
     "promotion_prereq": "PROMOTION_HERO",
     "unit_combats": {
@@ -1723,12 +1700,12 @@
     "button": "Art/Interface/Buttons/Promotions/Heroicdefense.dds",
     "mutation": true,
     "ai_weight": 20,
-    "extra_combat_defense": 1,
     "promotion_prereq_and": "PROMOTION_COMBAT5",
     "promotion_next_level": "PROMOTION_HEROIC_DEFENSE2"
   },
   {
     "type": "PROMOTION_HEROIC_DEFENSE2",
+    "stat_changes": {"defense": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_HEROIC_DEFENSE2",
     "promotion_prereq": "PROMOTION_HEROIC_DEFENSE",
     "unit_combats": {
@@ -1745,11 +1722,11 @@
     },
     "button": "Art/Interface/Buttons/Promotions/Heroicdefense2.dds",
     "ai_weight": 40,
-    "extra_combat_defense": 1,
     "promotion_prereq_and": "PROMOTION_COMBAT5"
   },
   {
     "type": "PROMOTION_HEROIC_STRENGTH",
+    "stat_changes": {"attack": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_HEROIC_STRENGTH",
     "promotion_prereq": "PROMOTION_HERO",
     "unit_combats": {
@@ -1767,12 +1744,12 @@
     "button": "Art/Interface/Buttons/Promotions/Heroicstrength.dds",
     "mutation": true,
     "ai_weight": 20,
-    "extra_combat_str": 1,
     "promotion_prereq_and": "PROMOTION_COMBAT5",
     "promotion_next_level": "PROMOTION_HEROIC_STRENGTH2"
   },
   {
     "type": "PROMOTION_HEROIC_STRENGTH2",
+    "stat_changes": {"attack": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_HEROIC_STRENGTH2",
     "promotion_prereq": "PROMOTION_HEROIC_STRENGTH",
     "unit_combats": {
@@ -1789,7 +1766,6 @@
     },
     "button": "Art/Interface/Buttons/Promotions/Heroicstrength2.dds",
     "ai_weight": 40,
-    "extra_combat_str": 1,
     "promotion_prereq_and": "PROMOTION_COMBAT5"
   },
   {
@@ -1991,11 +1967,10 @@
   },
   {
     "type": "PROMOTION_IRON_WEAPONS",
+    "stat_changes": {"attack": {"flat": 20}, "defense": {"flat": 20}},
     "description": "TXT_KEY_PROMOTION_IRON_WEAPONS",
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Promotions/Ironweapons.dds",
-    "extra_combat_str": 2,
-    "extra_combat_defense": 2,
     "min_level": -1,
     "promotion_combat_type": "PROMOTION_BRONZE_WEAPONS",
     "promotion_combat_mod": 10,
@@ -2122,14 +2097,13 @@
   },
   {
     "type": "PROMOTION_LIGHT",
+    "stat_changes": {"attack": {"percent": -20}, "defense": {"percent": -20}, "magic_defense": {"percent": -20}},
     "description": "TXT_KEY_PROMOTION_LIGHT",
     "tech_prereq": "TECH_NEVER",
     "moves_change": 1,
     "withdrawal_change": 10,
-    "combat_percent": -20,
     "button": "Art/Interface/Buttons/Promotions/Light.dds",
     "mutation": true,
-    "combat_percent_defense": -20,
     "min_level": -1
   },
   {
@@ -2278,18 +2252,19 @@
   },
   {
     "type": "PROMOTION_METAMAGIC1",
+    "stat_changes": {"magic": {"percent": 5}},
     "description": "TXT_KEY_PROMOTION_METAMAGIC1",
     "promotion_prereq": "PROMOTION_CHANNELING1",
     "unit_combats": {"UNITCOMBAT_ADEPT": true},
     "button": "Art/Interface/Buttons/Promotions/Metamagic1.dds",
     "ai_weight": 50,
     "caster_resist_modify": -5,
-    "spell_damage_modify": 5,
     "bonus_prereq": "BONUS_MANA_METAMAGIC",
     "promotion_next_level": "PROMOTION_METAMAGIC2"
   },
   {
     "type": "PROMOTION_METAMAGIC2",
+    "stat_changes": {"magic": {"percent": 5}},
     "description": "TXT_KEY_PROMOTION_METAMAGIC2",
     "promotion_prereq": "PROMOTION_METAMAGIC1",
     "unit_combats": {
@@ -2307,12 +2282,12 @@
     "button": "Art/Interface/Buttons/Promotions/Metamagic2.dds",
     "ai_weight": 100,
     "caster_resist_modify": -5,
-    "spell_damage_modify": 5,
     "promotion_prereq_and": "PROMOTION_CHANNELING2",
     "promotion_next_level": "PROMOTION_METAMAGIC3"
   },
   {
     "type": "PROMOTION_METAMAGIC3",
+    "stat_changes": {"magic": {"percent": 5}},
     "description": "TXT_KEY_PROMOTION_METAMAGIC3",
     "promotion_prereq": "PROMOTION_METAMAGIC2",
     "unit_combats": {
@@ -2330,7 +2305,6 @@
     "button": "Art/Interface/Buttons/Promotions/Metamagic3.dds",
     "ai_weight": 150,
     "caster_resist_modify": -5,
-    "spell_damage_modify": 5,
     "promotion_prereq_and": "PROMOTION_CHANNELING3"
   },
   {
@@ -2386,11 +2360,10 @@
   },
   {
     "type": "PROMOTION_MITHRIL_WEAPONS",
+    "stat_changes": {"attack": {"flat": 40}, "defense": {"flat": 40}},
     "description": "TXT_KEY_PROMOTION_MITHRIL_WEAPONS",
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Promotions/Mithrilweapons.dds",
-    "extra_combat_str": 4,
-    "extra_combat_defense": 4,
     "min_level": -1,
     "promotion_combat_type": "PROMOTION_IRON_WEAPONS",
     "promotion_combat_mod": 10
@@ -2424,9 +2397,9 @@
   },
   {
     "type": "PROMOTION_MORALE",
+    "stat_changes": {"attack": {"percent": 10}, "defense": {"percent": 10}, "magic_defense": {"percent": 10}},
     "description": "TXT_KEY_PROMOTION_MORALE",
     "tech_prereq": "TECH_NEVER",
-    "combat_percent": 10,
     "city_attack": 10,
     "unit_combats": {
       "UNITCOMBAT_ADEPT": true,
@@ -2438,7 +2411,6 @@
     },
     "button": ",Art/Interface/Buttons/Promotions/Combat5.dds,Art/Interface/Buttons/Warlords_Atlas_1.dds,7,16",
     "ai_weight": 50,
-    "combat_percent_defense": 10,
     "expire_chance": 10,
     "min_level": -1
   },
@@ -2540,6 +2512,7 @@
   },
   {
     "type": "PROMOTION_NIGHTMARE",
+    "stat_changes": {"attack": {"flat": 10}, "defense": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_NIGHTMARE",
     "tech_prereq": "TECH_NEVER",
     "terrain_attacks": {"TERRAIN_BROKEN_LANDS": 10, "TERRAIN_FIELDS_OF_PERDITION": 10, "TERRAIN_BURNING_SANDS": 10},
@@ -2547,8 +2520,6 @@
     "unit_combats": {"UNITCOMBAT_MOUNTED": true},
     "button": "Art/Interface/Buttons/Worldbuilder/Nightmare.dds",
     "validate": true,
-    "extra_combat_str": 1,
-    "extra_combat_defense": 1,
     "min_level": -1
   },
   {
@@ -2609,12 +2580,12 @@
   },
   {
     "type": "PROMOTION_PLAGUED",
+    "stat_changes": {"attack": {"percent": -60}, "defense": {"percent": -60}, "magic_defense": {"percent": -60}},
     "description": "TXT_KEY_PROMOTION_PLAGUED",
     "tech_prereq": "TECH_NEVER",
     "enemy_heal_change": -20,
     "neutral_heal_change": -20,
     "friendly_heal_change": -20,
-    "combat_percent": -60,
     "unit_combats": {
       "UNITCOMBAT_ADEPT": true,
       "UNITCOMBAT_ANIMAL": true,
@@ -2630,7 +2601,6 @@
     "button": "Art/Interface/Buttons/Promotions/Plagued.dds",
     "prereq_alive": true,
     "ai_weight": -100,
-    "combat_percent_defense": -60,
     "min_level": -1
   },
   {
@@ -2653,17 +2623,16 @@
   },
   {
     "type": "PROMOTION_POISONED",
+    "stat_changes": {"attack": {"percent": -10}, "defense": {"percent": -10}, "magic_defense": {"percent": -10}},
     "description": "TXT_KEY_PROMOTION_POISONED",
     "help": "TXT_KEY_PROMOTION_POISONED_PEDIA",
     "tech_prereq": "TECH_NEVER",
     "enemy_heal_change": -3,
     "neutral_heal_change": -5,
     "friendly_heal_change": -8,
-    "combat_percent": -10,
     "button": "Art/Interface/Buttons/Promotions/Poisoned.dds",
     "removed_when_healed": true,
     "ai_weight": -100,
-    "combat_percent_defense": -10,
     "min_level": -1
   },
   {
@@ -2731,14 +2700,12 @@
   },
   {
     "type": "PROMOTION_PUPPET",
+    "stat_changes": {"attack": {"percent": -20}, "defense": {"percent": -20}, "magic": {"percent": -10}, "magic_defense": {"percent": -20}},
     "description": "TXT_KEY_PROMOTION_PUPPET",
-    "combat_percent": -20,
-    "combat_percent_defense": -20,
     "button": "Art/Interface/Buttons/Promotions/Puppet.dds",
     "not_alive": true,
     "race": true,
     "caster_resist_modify": 20,
-    "spell_damage_modify": -10,
     "promotion_summon_perk": "PROMOTION_PUPPET"
   },
   {
@@ -2782,14 +2749,13 @@
   },
   {
     "type": "PROMOTION_RUSTED",
+    "stat_changes": {"attack": {"percent": -10}, "defense": {"percent": -10}, "magic_defense": {"percent": -10}},
     "description": "TXT_KEY_PROMOTION_RUSTED",
     "help": "TXT_KEY_PROMOTION_RUSTED_PEDIA",
     "tech_prereq": "TECH_NEVER",
-    "combat_percent": -10,
     "unit_combats": {"UNITCOMBAT_MELEE": true},
     "button": "Art/Interface/Buttons/Promotions/Rusted.dds",
     "ai_weight": -50,
-    "combat_percent_defense": -10,
     "min_level": -1
   },
   {
@@ -2929,9 +2895,9 @@
   },
   {
     "type": "PROMOTION_SHIELD_OF_FAITH",
+    "stat_changes": {"attack": {"percent": 10}, "defense": {"percent": 30}, "magic_defense": {"percent": 30}},
     "description": "TXT_KEY_PROMOTION_SHIELD_OF_FAITH",
     "tech_prereq": "TECH_NEVER",
-    "combat_percent": 10,
     "unit_combats": {
       "UNITCOMBAT_ADEPT": true,
       "UNITCOMBAT_ARCHER": true,
@@ -2943,7 +2909,6 @@
     "button": "Art/Interface/Buttons/Promotions/ShieldofFaith.dds",
     "dispellable": true,
     "ai_weight": 100,
-    "combat_percent_defense": 30,
     "min_level": -1
   },
   {
@@ -2973,23 +2938,22 @@
   },
   {
     "type": "PROMOTION_SINISTER",
+    "stat_changes": {"attack": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_SINISTER",
     "tech_prereq": "TECH_NEVER",
     "unit_combats": {"UNITCOMBAT_RECON": true},
     "button": "Art/Interface/Buttons/Promotions/Sinister.dds",
     "validate": true,
-    "extra_combat_str": 1,
     "min_level": -1
   },
   {
     "type": "PROMOTION_SKELETON_CREW",
+    "stat_changes": {"attack": {"flat": -10}, "defense": {"flat": -10}},
     "description": "TXT_KEY_PROMOTION_SKELETON_CREW",
     "tech_prereq": "TECH_NEVER",
     "cargo_change": 1,
     "unit_combats": {"UNITCOMBAT_NAVAL": true},
     "button": "Art/Interface/Buttons/Promotions/Skeletoncrew.dds",
-    "extra_combat_str": -1,
-    "extra_combat_defense": -1,
     "min_level": -1
   },
   {
@@ -3138,6 +3102,7 @@
   },
   {
     "type": "PROMOTION_STONESKIN",
+    "stat_changes": {"defense": {"flat": 20}},
     "description": "TXT_KEY_PROMOTION_STONESKIN",
     "tech_prereq": "TECH_NEVER",
     "first_strikes_change": 3,
@@ -3156,7 +3121,6 @@
     "mutation": true,
     "removed_by_combat": true,
     "ai_weight": 100,
-    "extra_combat_defense": 2,
     "min_level": -1,
     "damage_type_resists": {
       "DAMAGE_COLD": 50,
@@ -3170,13 +3134,12 @@
   },
   {
     "type": "PROMOTION_STRONG",
+    "stat_changes": {"attack": {"flat": 10}, "defense": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_STRONG",
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Promotions/Strong.dds",
     "mutation": true,
     "ai_weight": 100,
-    "extra_combat_str": 1,
-    "extra_combat_defense": 1,
     "min_level": -1
   },
   {
@@ -3321,17 +3284,13 @@
   },
   {
     "type": "PROMOTION_UNHOLY_TAINT",
+    "stat_changes": {"attack": {"flat": -10, "percent": -25}, "defense": {"flat": -10, "percent": -25}, "magic": {"percent": 10}, "magic_defense": {"percent": -25}},
     "description": "TXT_KEY_PROMOTION_UNHOLY_TAINT",
     "help": "TXT_KEY_PROMOTION_UNHOLY_TAINT_PEDIA",
     "tech_prereq": "TECH_NEVER",
-    "combat_percent": -25,
     "button": "Art/Interface/Buttons/Promotions/Unholytaint.dds",
-    "combat_percent_defense": -25,
-    "extra_combat_str": -1,
-    "extra_combat_defense": -1,
     "min_level": -1,
     "spell_caster_xp": 10,
-    "spell_damage_modify": 10,
     "damage_type_combats": {"DAMAGE_UNHOLY": 1},
     "damage_type_resists": {"DAMAGE_UNHOLY": 25}
   },
@@ -3356,14 +3315,13 @@
   },
   {
     "type": "PROMOTION_VAMPIRE",
+    "stat_changes": {"attack": {"percent": 10}, "defense": {"percent": 10}, "magic_defense": {"percent": 10}},
     "description": "TXT_KEY_PROMOTION_VAMPIRE",
     "tech_prereq": "TECH_NEVER",
     "enemy_heal_change": 5,
     "neutral_heal_change": 5,
     "friendly_heal_change": 5,
-    "combat_percent": 10,
     "button": "Art/Interface/Buttons/Promotions/Vampire.dds",
-    "combat_percent_defense": 10,
     "min_level": -1
   },
   {
@@ -3393,6 +3351,7 @@
   },
   {
     "type": "PROMOTION_WARCRY",
+    "stat_changes": {"attack": {"flat": 10}, "defense": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_WARCRY",
     "tech_prereq": "TECH_NEVER",
     "blitz": true,
@@ -3400,8 +3359,6 @@
     "button": "Art/Interface/Buttons/Promotions/Warcry.dds",
     "ai_weight": 100,
     "expire_chance": 5,
-    "extra_combat_str": 1,
-    "extra_combat_defense": 1,
     "min_level": -1
   },
   {
@@ -3468,13 +3425,12 @@
   },
   {
     "type": "PROMOTION_WEAK",
+    "stat_changes": {"attack": {"flat": -10}, "defense": {"flat": -10}},
     "description": "TXT_KEY_PROMOTION_WEAK",
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Promotions/Weak.dds",
     "mutation": true,
     "ai_weight": -100,
-    "extra_combat_str": -1,
-    "extra_combat_defense": -1,
     "min_level": -1
   },
   {
@@ -3507,13 +3463,12 @@
   },
   {
     "type": "PROMOTION_WITHERED",
+    "stat_changes": {"attack": {"percent": -10}, "defense": {"percent": -10}, "magic_defense": {"percent": -10}},
     "description": "TXT_KEY_PROMOTION_WITHERED",
     "tech_prereq": "TECH_NEVER",
     "enemy_heal_change": -20,
     "neutral_heal_change": -20,
     "friendly_heal_change": -20,
-    "combat_percent": -10,
-    "combat_percent_defense": -10,
     "experience_percent": -50,
     "unit_combats": {
       "UNITCOMBAT_ADEPT": true,

@@ -181,7 +181,7 @@ impl Setup {
     /// The pair of set-up indices `h` (hitting) and `t`.
     pub fn pair(&self, h: usize, t: usize) -> Pair {
         let p = self.pairs[h * self.fighters.len() + t];
-        Pair { a: p.a.max(1), dv: p.dv.max(1) }
+        Pair { a: p.a.max(1), dv: p.dv.max(1), ma: p.ma.max(1), md: p.md.max(1), spell_pct: p.spell_pct.max(0) }
     }
 
     /// The side's formation as places.
@@ -390,8 +390,9 @@ impl Game {
         f.chance_first_strikes = self.unit_chance_first_strikes(u);
         f.actions = self.unit_engage_actions(u);
         f.a = self.engage_a_alone(u, side, ctx);
-        f.dodge = self.unit_engage_dodge(u);
-        f.crit_bonus = self.unit_engage_crit_bonus(u);
+        f.accuracy = self.unit_engage_accuracy(u);
+        f.evasion = self.unit_engage_evasion(u);
+        f.crit = self.unit_engage_crit(u);
         f.anti_flank = self.unit_combat_role(u).is_some_and(|r| d.combat_roles[r].anti_flank);
         f.flanker = self.unit_engage_flanks(u);
         f.withdraw_pct = match side {
@@ -421,11 +422,12 @@ impl Game {
         f.tag = u32::MAX - k as u32;
         (f.lane, f.row) = place;
         f.hp = hp_from_damage(self.city_sentinel_damage(c, k), max_hp);
-        f.speed = d.engage_speed(ty, role);
+        f.speed = self.sentinel_stat(StatType::Speed);
         f.actions = d.engage_actions(ty, role, false);
         f.a = self.sentinel_a_x100();
-        f.dodge = d.engage_dodge(ty, role);
-        f.crit_bonus = d.engage_crit_bonus(ty, role);
+        f.accuracy = self.sentinel_stat(StatType::Accuracy);
+        f.evasion = self.sentinel_stat(StatType::Evasion);
+        f.crit = self.sentinel_stat(StatType::Crit);
         f.spell = Spell::bolt(params);
         f.fixed = true;
         f
@@ -487,8 +489,20 @@ impl Game {
                 }
                 pairs[h * n + t] = match (h < n_units, t < n_units, sentinel_city) {
                     (true, true, _) => self.engage_hit(units[h], units[t], sides[h], &ctx),
-                    (true, false, Some(c)) => Pair { a: self.engage_a_alone(units[h], sides[h], &ctx), dv: self.city_sentinel_dv_x100(c) },
-                    (false, true, _) => Pair { a: self.sentinel_a_x100(), dv: self.engage_dv_alone(units[t], sides[t], &ctx) },
+                    (true, false, Some(c)) => Pair {
+                        a: self.engage_a_alone(units[h], sides[h], &ctx),
+                        dv: self.city_sentinel_dv_x100(c),
+                        ma: self.engage_magic_x100(units[h], true),
+                        md: self.city_sentinel_md_x100(c),
+                        spell_pct: self.engage_spell_pct(units[h], None),
+                    },
+                    (false, true, _) => Pair {
+                        a: self.sentinel_a_x100(),
+                        dv: self.engage_dv_alone(units[t], sides[t], &ctx),
+                        ma: self.sentinel_stat(StatType::Magic) * 10,
+                        md: self.engage_magic_x100(units[t], false),
+                        spell_pct: 100,
+                    },
                     _ => Pair::default(),
                 };
             }

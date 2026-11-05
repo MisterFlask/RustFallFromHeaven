@@ -4,20 +4,23 @@
 //
 // Unit Infos
 // UNIT_SENTINEL is this game's own (docs/SIEGES.md): never trained or placed on the map; the
-//     Sentinels of a walled city fight in battles with its values (CombatRole, iAttack, iDefense,
-//     iHP, its engagement rows), their HP and Dv grown by the city's defence.
-// This game's own fields (GAMEOPTION_ENGAGEMENTS, Units/CIV4CombatRoleInfos.xml):
-//     CombatRole overrides the role a unit takes from its unit combat (the religions' fighters,
-//     which never cast, are COMBATROLE_FRONTLINE although disciples are support); iAttack, iDefense
-//     and iHP, when above 0, replace the role's attack base (iCombat x the role's attack %), its
-//     defence base (iCombatDefense x its defence %) and its max HP. bLarge: a large unit in a
-//     formation battle (two cells, two slots). iEngageSpeed, iEngageDodge and iEngageCritBonus
-//     (-1, the default: the role's) and EngageRows (three Row elements, front, middle, rear, each an
-//     Action and its iCount) replace the role's speed, dodge, crit bonus and rows
-//     (docs/ENGAGEMENTS.md, "Per-unit values").
+//     Sentinels of a walled city fight in battles with its stats and rows, their HP, defence and
+//     magic defence grown by the city's defence.
+// This game's own fields (docs/UNIT_STATS.md, docs/ENGAGEMENTS.md "Per-unit values"):
+//     stats: a land unit's numbers in a battle: hp, attack, defense, magic (its spells; 0: it
+//         casts nothing), magic_defense, accuracy (its chance to hit before the target's
+//         evasion), evasion, crit (its crit chance), speed. Promotions change them
+//         (stat_changes in promotions.jsonc).
+//     combat_role overrides the role a unit takes from its unit combat (the religions' fighters,
+//         which never cast, are COMBATROLE_FRONTLINE although disciples are support); large: a
+//         large unit in a formation battle (two cells, two slots); engage_rows (three rows,
+//         front, middle, rear, each an action and its count) replace the role's rows.
+//     combat and combat_defense stay the unit's strength outside land battles (ships, the
+//         rules that read strength, the AI's power estimates).
 [
   {
     "type": "EQUIPMENT_ATHAME",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_ATHAME",
     "capture": "EQUIPMENTCLASS_ATHAME",
     "domain": "DOMAIN_IMMOBILE",
@@ -37,6 +40,7 @@
   },
   {
     "type": "EQUIPMENT_BLACK_MIRROR",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_BLACK_MIRROR",
     "capture": "EQUIPMENTCLASS_BLACK_MIRROR",
     "domain": "DOMAIN_IMMOBILE",
@@ -56,6 +60,7 @@
   },
   {
     "type": "EQUIPMENT_CROWN_OF_AKHARIEN",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_CROWN_OF_AKHARIEN",
     "capture": "EQUIPMENTCLASS_CROWN_OF_AKHARIEN",
     "domain": "DOMAIN_IMMOBILE",
@@ -76,6 +81,7 @@
   },
   {
     "type": "EQUIPMENT_CROWN_OF_COMMAND",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_CROWN_OF_COMMAND",
     "capture": "EQUIPMENTCLASS_CROWN_OF_COMMAND",
     "domain": "DOMAIN_IMMOBILE",
@@ -95,6 +101,7 @@
   },
   {
     "type": "EQUIPMENT_DRAGONS_HORDE",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_DRAGONS_HORDE",
     "capture": "EQUIPMENTCLASS_DRAGONS_HORDE",
     "domain": "DOMAIN_IMMOBILE",
@@ -115,6 +122,7 @@
   },
   {
     "type": "EQUIPMENT_EMPTY_BIER",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_EMPTY_BIER",
     "capture": "EQUIPMENTCLASS_EMPTY_BIER",
     "domain": "DOMAIN_IMMOBILE",
@@ -134,6 +142,7 @@
   },
   {
     "type": "EQUIPMENT_GELA",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_GELA",
     "capture": "EQUIPMENTCLASS_GELA",
     "domain": "DOMAIN_IMMOBILE",
@@ -153,6 +162,7 @@
   },
   {
     "type": "EQUIPMENT_GODSLAYER",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_GODSLAYER",
     "capture": "EQUIPMENTCLASS_GODSLAYER",
     "domain": "DOMAIN_IMMOBILE",
@@ -173,6 +183,7 @@
   },
   {
     "type": "EQUIPMENT_GOLDEN_HAMMER",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_GOLDEN_HAMMER",
     "capture": "EQUIPMENTCLASS_GOLDEN_HAMMER",
     "domain": "DOMAIN_IMMOBILE",
@@ -192,6 +203,7 @@
   },
   {
     "type": "EQUIPMENT_HEALING_SALVE",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_HEALING_SALVE",
     "capture": "EQUIPMENTCLASS_HEALING_SALVE",
     "domain": "DOMAIN_IMMOBILE",
@@ -211,6 +223,7 @@
   },
   {
     "type": "EQUIPMENT_INFERNAL_GRIMOIRE",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_INFERNAL_GRIMOIRE",
     "capture": "EQUIPMENTCLASS_INFERNAL_GRIMOIRE",
     "domain": "DOMAIN_IMMOBILE",
@@ -231,6 +244,7 @@
   },
   {
     "type": "EQUIPMENT_JADE_TORC",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_JADE_TORC",
     "capture": "EQUIPMENTCLASS_JADE_TORC",
     "domain": "DOMAIN_IMMOBILE",
@@ -250,6 +264,7 @@
   },
   {
     "type": "EQUIPMENT_NETHER_BLADE",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_NETHER_BLADE",
     "capture": "EQUIPMENTCLASS_NETHER_BLADE",
     "domain": "DOMAIN_IMMOBILE",
@@ -269,6 +284,7 @@
   },
   {
     "type": "EQUIPMENT_ORTHUSS_AXE",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_ORTHUSS_AXE",
     "capture": "EQUIPMENTCLASS_ORTHUSS_AXE",
     "domain": "DOMAIN_IMMOBILE",
@@ -288,6 +304,7 @@
   },
   {
     "type": "EQUIPMENT_PIECES_OF_BARNAXUS",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_PIECES_OF_BARNAXUS",
     "capture": "EQUIPMENTCLASS_PIECES_OF_BARNAXUS",
     "domain": "DOMAIN_IMMOBILE",
@@ -307,6 +324,7 @@
   },
   {
     "type": "EQUIPMENT_POTION_OF_INVISIBILITY",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_POTION_OF_INVISIBILITY",
     "capture": "EQUIPMENTCLASS_POTION_OF_INVISIBILITY",
     "domain": "DOMAIN_IMMOBILE",
@@ -326,6 +344,7 @@
   },
   {
     "type": "EQUIPMENT_POTION_OF_RESTORATION",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_POTION_OF_RESTORATION",
     "capture": "EQUIPMENTCLASS_POTION_OF_RESTORATION",
     "domain": "DOMAIN_IMMOBILE",
@@ -345,6 +364,7 @@
   },
   {
     "type": "EQUIPMENT_ROD_OF_WINDS",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_ROD_OF_WINDS",
     "capture": "EQUIPMENTCLASS_ROD_OF_WINDS",
     "domain": "DOMAIN_IMMOBILE",
@@ -364,6 +384,7 @@
   },
   {
     "type": "EQUIPMENT_SCORCHED_STAFF",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_SCORCHED_STAFF",
     "capture": "EQUIPMENTCLASS_SCORCHED_STAFF",
     "domain": "DOMAIN_IMMOBILE",
@@ -383,6 +404,7 @@
   },
   {
     "type": "EQUIPMENT_STAFF_OF_SOULS",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_STAFF_OF_SOULS",
     "capture": "EQUIPMENTCLASS_STAFF_OF_SOULS",
     "domain": "DOMAIN_IMMOBILE",
@@ -402,6 +424,7 @@
   },
   {
     "type": "EQUIPMENT_SYLIVENS_PERFECT_LYRE",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_SYLIVENS_PERFECT_LYRE",
     "capture": "EQUIPMENTCLASS_SYLIVENS_PERFECT_LYRE",
     "domain": "DOMAIN_IMMOBILE",
@@ -422,6 +445,7 @@
   },
   {
     "type": "EQUIPMENT_TIMOR_MASK",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_TIMOR_MASK",
     "capture": "EQUIPMENTCLASS_TIMOR_MASK",
     "domain": "DOMAIN_IMMOBILE",
@@ -441,6 +465,7 @@
   },
   {
     "type": "EQUIPMENT_TREASURE",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_TREASURE",
     "capture": "EQUIPMENTCLASS_TREASURE",
     "domain": "DOMAIN_IMMOBILE",
@@ -460,6 +485,7 @@
   },
   {
     "type": "EQUIPMENT_WAR",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "EQUIPMENTCLASS_WAR",
     "capture": "EQUIPMENTCLASS_WAR",
     "domain": "DOMAIN_IMMOBILE",
@@ -479,6 +505,7 @@
   },
   {
     "type": "UNIT_ABASHI",
+    "stats": {"hp": 180, "attack": 210, "defense": 210, "magic": 0, "magic_defense": 210, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_ABASHI",
     "unit_combat": "UNITCOMBAT_BEAST",
     "large": true,
@@ -516,6 +543,7 @@
   },
   {
     "type": "UNIT_ACHERON",
+    "stats": {"hp": 180, "attack": 190, "defense": 190, "magic": 0, "magic_defense": 190, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_ACHERON",
     "unit_combat": "UNITCOMBAT_BEAST",
     "large": true,
@@ -555,6 +583,7 @@
   },
   {
     "type": "UNIT_ADEPT",
+    "stats": {"hp": 70, "attack": 30, "defense": 15, "magic": 30, "magic_defense": 15, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_ADEPT",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -613,6 +642,7 @@
   },
   {
     "type": "UNIT_IMP",
+    "stats": {"hp": 70, "attack": 30, "defense": 15, "magic": 30, "magic_defense": 15, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_ADEPT",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -671,6 +701,7 @@
   },
   {
     "type": "UNIT_SHAMAN",
+    "stats": {"hp": 70, "attack": 30, "defense": 15, "magic": 30, "magic_defense": 15, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_ADEPT",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -728,6 +759,7 @@
   },
   {
     "type": "UNIT_ADVENTURER",
+    "stats": {"hp": 120, "attack": 20, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_ADVENTURER",
     "unique_names": [
       "TXT_KEY_UNIT_ADVENTURER_1",
@@ -786,6 +818,7 @@
   },
   {
     "type": "UNIT_AIR_ELEMENTAL",
+    "stats": {"hp": 120, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_AIR_ELEMENTAL",
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_ATTACK",
@@ -824,6 +857,7 @@
   },
   {
     "type": "UNIT_ALAZKAN",
+    "stats": {"hp": 60, "attack": 72, "defense": 24, "magic": 0, "magic_defense": 24, "accuracy": 90, "evasion": 15, "crit": 25, "speed": 7},
     "class": "UNITCLASS_ALAZKAN",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -865,6 +899,7 @@
   },
   {
     "type": "UNIT_ANGEL",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_ANGEL",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -905,6 +940,7 @@
   },
   {
     "type": "UNIT_ANGEL_OF_DEATH",
+    "stats": {"hp": 60, "attack": 96, "defense": 36, "magic": 0, "magic_defense": 36, "accuracy": 90, "evasion": 15, "crit": 25, "speed": 7},
     "class": "UNITCLASS_ANGEL_OF_DEATH",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -981,6 +1017,7 @@
   },
   {
     "type": "UNIT_ARCHER",
+    "stats": {"hp": 80, "attack": 30, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_ARCHER",
     "unit_combat": "UNITCOMBAT_ARCHER",
     "domain": "DOMAIN_LAND",
@@ -1019,6 +1056,7 @@
   },
   {
     "type": "UNIT_ARCHER_SCORPION_CLAN",
+    "stats": {"hp": 80, "attack": 30, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_ARCHER",
     "unit_combat": "UNITCOMBAT_ARCHER",
     "domain": "DOMAIN_LAND",
@@ -1059,6 +1097,7 @@
   },
   {
     "type": "UNIT_DWARVEN_SLINGER",
+    "stats": {"hp": 80, "attack": 30, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_ARCHER",
     "unit_combat": "UNITCOMBAT_ARCHER",
     "domain": "DOMAIN_LAND",
@@ -1098,6 +1137,7 @@
   },
   {
     "type": "UNIT_JAVELIN_THROWER",
+    "stats": {"hp": 80, "attack": 40, "defense": 24, "magic": 0, "magic_defense": 24, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_ARCHER",
     "unit_combat": "UNITCOMBAT_ARCHER",
     "domain": "DOMAIN_LAND",
@@ -1135,6 +1175,7 @@
   },
   {
     "type": "UNIT_ARCHMAGE",
+    "stats": {"hp": 70, "attack": 50, "defense": 25, "magic": 50, "magic_defense": 25, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_ARCHMAGE",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -1193,6 +1234,7 @@
   },
   {
     "type": "UNIT_EATER_OF_DREAMS",
+    "stats": {"hp": 70, "attack": 50, "defense": 25, "magic": 50, "magic_defense": 25, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_ARCHMAGE",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -1251,6 +1293,7 @@
   },
   {
     "type": "UNIT_ARQUEBUS",
+    "stats": {"hp": 80, "attack": 100, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_ARQUEBUS",
     "unit_combat": "UNITCOMBAT_ARCHER",
     "domain": "DOMAIN_LAND",
@@ -1286,6 +1329,7 @@
   },
   {
     "type": "UNIT_ARS",
+    "stats": {"hp": 100, "attack": 143, "defense": 104, "magic": 0, "magic_defense": 104, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_ARS",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -1327,6 +1371,7 @@
   },
   {
     "type": "UNIT_ARTHENDAIN",
+    "stats": {"hp": 80, "attack": 90, "defense": 54, "magic": 0, "magic_defense": 54, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_ARTHENDAIN",
     "unit_combat": "UNITCOMBAT_ARCHER",
     "domain": "DOMAIN_LAND",
@@ -1378,6 +1423,7 @@
   },
   {
     "type": "UNIT_ARTIST",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_ARTIST",
     "unique_names": [
       "TXT_KEY_UNIT_ARTIST_1",
@@ -1426,6 +1472,7 @@
   },
   {
     "type": "UNIT_ASSASSIN",
+    "stats": {"hp": 60, "attack": 60, "defense": 18, "magic": 0, "magic_defense": 18, "accuracy": 90, "evasion": 15, "crit": 25, "speed": 7},
     "class": "UNITCLASS_ASSASSIN",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -1468,6 +1515,7 @@
   },
   {
     "type": "UNIT_CHANTER",
+    "stats": {"hp": 60, "attack": 60, "defense": 18, "magic": 0, "magic_defense": 18, "accuracy": 90, "evasion": 15, "crit": 25, "speed": 7},
     "class": "UNITCLASS_ASSASSIN",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -1510,6 +1558,7 @@
   },
   {
     "type": "UNIT_DEVOUT",
+    "stats": {"hp": 120, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_ASSASSIN",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -1556,6 +1605,7 @@
   },
   {
     "type": "UNIT_GHOST",
+    "stats": {"hp": 60, "attack": 60, "defense": 18, "magic": 0, "magic_defense": 18, "accuracy": 90, "evasion": 15, "crit": 25, "speed": 7},
     "class": "UNITCLASS_ASSASSIN",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -1598,6 +1648,7 @@
   },
   {
     "type": "UNIT_LIZARDMAN_ASSASSIN",
+    "stats": {"hp": 60, "attack": 60, "defense": 18, "magic": 0, "magic_defense": 18, "accuracy": 90, "evasion": 15, "crit": 25, "speed": 7},
     "class": "UNITCLASS_ASSASSIN",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -1641,6 +1692,7 @@
   },
   {
     "type": "UNIT_TASKMASTER",
+    "stats": {"hp": 60, "attack": 60, "defense": 18, "magic": 0, "magic_defense": 18, "accuracy": 90, "evasion": 15, "crit": 25, "speed": 7},
     "class": "UNITCLASS_ASSASSIN",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -1682,6 +1734,7 @@
   },
   {
     "type": "UNIT_AUREALIS",
+    "stats": {"hp": 120, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_AUREALIS",
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_ATTACK",
@@ -1711,6 +1764,7 @@
   },
   {
     "type": "UNIT_AURIC",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_AURIC",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -1740,6 +1794,7 @@
   },
   {
     "type": "UNIT_AURIC_ASCENDED",
+    "stats": {"hp": 120, "attack": 300, "defense": 300, "magic": 0, "magic_defense": 300, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_AURIC_ASCENDED",
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_HERO",
@@ -1777,6 +1832,7 @@
   },
   {
     "type": "UNIT_AXEMAN",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_AXEMAN",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -1817,6 +1873,7 @@
   },
   {
     "type": "UNIT_MOROI",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_AXEMAN",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -1857,6 +1914,7 @@
   },
   {
     "type": "UNIT_PYRE_ZOMBIE",
+    "stats": {"hp": 120, "attack": 30, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_AXEMAN",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -1898,6 +1956,7 @@
   },
   {
     "type": "UNIT_SONS_OF_ASENA",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_AXEMAN",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -1938,6 +1997,7 @@
   },
   {
     "type": "UNIT_SWORDSMAN",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_AXEMAN",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -1978,6 +2038,7 @@
   },
   {
     "type": "UNIT_WOOD_GOLEM",
+    "stats": {"hp": 180, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_AXEMAN",
     "large": true,
     "domain": "DOMAIN_LAND",
@@ -2016,6 +2077,7 @@
   },
   {
     "type": "UNIT_AZER",
+    "stats": {"hp": 120, "attack": 30, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_AZER",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -2046,6 +2108,7 @@
   },
   {
     "type": "UNIT_BABY_SPIDER",
+    "stats": {"hp": 120, "attack": 20, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BABY_SPIDER",
     "unit_combat": "UNITCOMBAT_ANIMAL",
     "domain": "DOMAIN_LAND",
@@ -2076,6 +2139,7 @@
   },
   {
     "type": "UNIT_BAMBUR",
+    "stats": {"hp": 120, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BAMBUR",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -2123,6 +2187,7 @@
   },
   {
     "type": "UNIT_BARNAXUS",
+    "stats": {"hp": 180, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BARNAXUS",
     "unit_combat": "UNITCOMBAT_MELEE",
     "large": true,
@@ -2160,6 +2225,7 @@
   },
   {
     "type": "UNIT_BASIUM",
+    "stats": {"hp": 120, "attack": 70, "defense": 70, "magic": 0, "magic_defense": 70, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BASIUM",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -2198,6 +2264,7 @@
   },
   {
     "type": "UNIT_BATTERING_RAM",
+    "stats": {"hp": 80, "attack": 10, "defense": 6, "magic": 0, "magic_defense": 6, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 1},
     "class": "UNITCLASS_BATTERING_RAM",
     "unit_combat": "UNITCOMBAT_SIEGE",
     "domain": "DOMAIN_LAND",
@@ -2231,6 +2298,7 @@
   },
   {
     "type": "UNIT_BEAR",
+    "stats": {"hp": 120, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BEAR",
     "unit_combat": "UNITCOMBAT_ANIMAL",
     "domain": "DOMAIN_LAND",
@@ -2259,6 +2327,7 @@
   },
   {
     "type": "UNIT_POLAR_BEAR",
+    "stats": {"hp": 120, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BEAR",
     "unit_combat": "UNITCOMBAT_ANIMAL",
     "domain": "DOMAIN_LAND",
@@ -2290,6 +2359,7 @@
   },
   {
     "type": "UNIT_BEAST_OF_AGARES",
+    "stats": {"hp": 120, "attack": 110, "defense": 110, "magic": 0, "magic_defense": 110, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BEAST_OF_AGARES",
     "unit_combat": "UNITCOMBAT_BEAST",
     "domain": "DOMAIN_LAND",
@@ -2328,6 +2398,7 @@
   },
   {
     "type": "UNIT_BEASTMASTER",
+    "stats": {"hp": 120, "attack": 140, "defense": 140, "magic": 0, "magic_defense": 140, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BEASTMASTER",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -2365,6 +2436,7 @@
   },
   {
     "type": "UNIT_LIZARDMAN_BEASTMASTER",
+    "stats": {"hp": 120, "attack": 140, "defense": 140, "magic": 0, "magic_defense": 140, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BEASTMASTER",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -2404,6 +2476,7 @@
   },
   {
     "type": "UNIT_MYCONID",
+    "stats": {"hp": 120, "attack": 140, "defense": 140, "magic": 0, "magic_defense": 140, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BEASTMASTER",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -2436,6 +2509,7 @@
   },
   {
     "type": "UNIT_SPIDERKIN",
+    "stats": {"hp": 120, "attack": 120, "defense": 120, "magic": 0, "magic_defense": 120, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BEASTMASTER",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -2472,6 +2546,7 @@
   },
   {
     "type": "UNIT_BALOR",
+    "stats": {"hp": 120, "attack": 70, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BERSERKER",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -2507,6 +2582,7 @@
   },
   {
     "type": "UNIT_BERSERKER",
+    "stats": {"hp": 120, "attack": 110, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BERSERKER",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -2543,6 +2619,7 @@
   },
   {
     "type": "UNIT_BRUJAH",
+    "stats": {"hp": 120, "attack": 110, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BERSERKER",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -2587,6 +2664,7 @@
   },
   {
     "type": "UNIT_CIRCLE_OF_URD",
+    "stats": {"hp": 120, "attack": 110, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BERSERKER",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -2622,6 +2700,7 @@
   },
   {
     "type": "UNIT_CLOCKWORK_GOLEM",
+    "stats": {"hp": 180, "attack": 150, "defense": 90, "magic": 0, "magic_defense": 90, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BERSERKER",
     "large": true,
     "domain": "DOMAIN_LAND",
@@ -2691,6 +2770,7 @@
   },
   {
     "type": "UNIT_BRIGIT",
+    "stats": {"hp": 120, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BRIGIT",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -2723,6 +2803,7 @@
   },
   {
     "type": "UNIT_BRIGIT_HELD",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_BRIGIT_HELD",
     "capture": "UNITCLASS_BRIGIT",
     "unit_combat": "UNITCOMBAT_MELEE",
@@ -2749,6 +2830,7 @@
   },
   {
     "type": "UNIT_BUBOES",
+    "stats": {"hp": 100, "attack": 275, "defense": 200, "magic": 0, "magic_defense": 200, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_BUBOES",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -2788,6 +2870,7 @@
   },
   {
     "type": "UNIT_CANNON",
+    "stats": {"hp": 80, "attack": 80, "defense": 36, "magic": 0, "magic_defense": 36, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 1},
     "class": "UNITCLASS_CANNON",
     "unit_combat": "UNITCOMBAT_SIEGE",
     "domain": "DOMAIN_LAND",
@@ -2831,6 +2914,7 @@
   },
   {
     "type": "UNIT_DWARVEN_CANNON",
+    "stats": {"hp": 80, "attack": 100, "defense": 42, "magic": 0, "magic_defense": 42, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 1},
     "class": "UNITCLASS_CANNON",
     "unit_combat": "UNITCOMBAT_SIEGE",
     "domain": "DOMAIN_LAND",
@@ -2913,6 +2997,7 @@
   },
   {
     "type": "UNIT_CATAPULT",
+    "stats": {"hp": 80, "attack": 40, "defense": 18, "magic": 0, "magic_defense": 18, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 1},
     "class": "UNITCLASS_CATAPULT",
     "unit_combat": "UNITCOMBAT_SIEGE",
     "domain": "DOMAIN_LAND",
@@ -2955,6 +3040,7 @@
   },
   {
     "type": "UNIT_TREBUCHET",
+    "stats": {"hp": 80, "attack": 60, "defense": 24, "magic": 0, "magic_defense": 24, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 1},
     "class": "UNITCLASS_CATAPULT",
     "unit_combat": "UNITCOMBAT_SIEGE",
     "domain": "DOMAIN_LAND",
@@ -2996,6 +3082,7 @@
   },
   {
     "type": "UNIT_CHALID",
+    "stats": {"hp": 70, "attack": 70, "defense": 35, "magic": 0, "magic_defense": 35, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_CHALID",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -3042,6 +3129,7 @@
   },
   {
     "type": "UNIT_BATTLEMASTER",
+    "stats": {"hp": 120, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_CHAMPION",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -3091,6 +3179,7 @@
   },
   {
     "type": "UNIT_BOARDING_PARTY",
+    "stats": {"hp": 120, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_CHAMPION",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -3134,6 +3223,7 @@
   },
   {
     "type": "UNIT_CHAMPION",
+    "stats": {"hp": 120, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_CHAMPION",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -3182,6 +3272,7 @@
   },
   {
     "type": "UNIT_DRAGON_SLAYER",
+    "stats": {"hp": 120, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_CHAMPION",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -3231,6 +3322,7 @@
   },
   {
     "type": "UNIT_IRON_GOLEM",
+    "stats": {"hp": 180, "attack": 100, "defense": 100, "magic": 0, "magic_defense": 100, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_CHAMPION",
     "large": true,
     "domain": "DOMAIN_LAND",
@@ -3271,6 +3363,7 @@
   },
   {
     "type": "UNIT_MIMIC",
+    "stats": {"hp": 120, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_CHAMPION",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -3319,6 +3412,7 @@
   },
   {
     "type": "UNIT_OGRE",
+    "stats": {"hp": 120, "attack": 80, "defense": 80, "magic": 0, "magic_defense": 80, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_CHAMPION",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -3362,6 +3456,7 @@
   },
   {
     "type": "UNIT_VAMPIRE",
+    "stats": {"hp": 120, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_CHAMPION",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -3416,6 +3511,7 @@
   },
   {
     "type": "UNIT_CHAOS_MARAUDER",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_CHAOS_MARAUDER",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -3446,6 +3542,7 @@
   },
   {
     "type": "UNIT_CENTAUR_CHARGER",
+    "stats": {"hp": 100, "attack": 55, "defense": 24, "magic": 0, "magic_defense": 24, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_CHARIOT",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -3483,6 +3580,7 @@
   },
   {
     "type": "UNIT_CHARIOT",
+    "stats": {"hp": 100, "attack": 55, "defense": 24, "magic": 0, "magic_defense": 24, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_CHARIOT",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -3521,6 +3619,7 @@
   },
   {
     "type": "UNIT_CHARIOT_SCORPION_CLAN",
+    "stats": {"hp": 100, "attack": 55, "defense": 24, "magic": 0, "magic_defense": 24, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_CHARIOT",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -3559,6 +3658,7 @@
   },
   {
     "type": "UNIT_COMMANDER",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_COMMANDER",
     "unique_names": [
       "TXT_KEY_UNIT_COMMANDER_1",
@@ -3604,6 +3704,7 @@
   },
   {
     "type": "UNIT_DECIUS",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_COMMANDER",
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_ENGINEER",
@@ -3624,6 +3725,7 @@
   },
   {
     "type": "UNIT_CORLINDALE",
+    "stats": {"hp": 70, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_CORLINDALE",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -3659,6 +3761,7 @@
   },
   {
     "type": "UNIT_CROSSBOWMAN",
+    "stats": {"hp": 80, "attack": 90, "defense": 78, "magic": 0, "magic_defense": 78, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_CROSSBOWMAN",
     "unit_combat": "UNITCOMBAT_ARCHER",
     "domain": "DOMAIN_LAND",
@@ -3702,6 +3805,7 @@
   },
   {
     "type": "UNIT_FLURRY",
+    "stats": {"hp": 80, "attack": 120, "defense": 72, "magic": 0, "magic_defense": 72, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_CROSSBOWMAN",
     "unit_combat": "UNITCOMBAT_ARCHER",
     "domain": "DOMAIN_LAND",
@@ -3739,6 +3843,7 @@
   },
   {
     "type": "UNIT_CRUSADER",
+    "stats": {"hp": 120, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_CRUSADER",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "combat_role": "COMBATROLE_FRONTLINE",
@@ -3784,6 +3889,7 @@
   },
   {
     "type": "UNIT_DEMAGOG",
+    "stats": {"hp": 120, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_DEMAGOG",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -3824,6 +3930,7 @@
   },
   {
     "type": "UNIT_DISCIPLE_EMPYREAN",
+    "stats": {"hp": 70, "attack": 30, "defense": 15, "magic": 0, "magic_defense": 15, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_DISCIPLE_EMPYREAN",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -3863,6 +3970,7 @@
   },
   {
     "type": "UNIT_DISCIPLE_FELLOWSHIP_OF_LEAVES",
+    "stats": {"hp": 70, "attack": 30, "defense": 15, "magic": 0, "magic_defense": 15, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_DISCIPLE_FELLOWSHIP_OF_LEAVES",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -3903,6 +4011,7 @@
   },
   {
     "type": "UNIT_DISCIPLE_OCTOPUS_OVERLORDS",
+    "stats": {"hp": 70, "attack": 30, "defense": 15, "magic": 0, "magic_defense": 15, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_DISCIPLE_OCTOPUS_OVERLORDS",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -3943,6 +4052,7 @@
   },
   {
     "type": "UNIT_DISCIPLE_OF_ACHERON",
+    "stats": {"hp": 70, "attack": 30, "defense": 15, "magic": 30, "magic_defense": 15, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_DISCIPLE_OF_ACHERON",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -3981,6 +4091,7 @@
   },
   {
     "type": "UNIT_DISCIPLE_RUNES_OF_KILMORPH",
+    "stats": {"hp": 70, "attack": 30, "defense": 15, "magic": 0, "magic_defense": 15, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_DISCIPLE_RUNES_OF_KILMORPH",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -4021,6 +4132,7 @@
   },
   {
     "type": "UNIT_DISCIPLE_THE_ASHEN_VEIL",
+    "stats": {"hp": 70, "attack": 30, "defense": 15, "magic": 0, "magic_defense": 15, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_DISCIPLE_THE_ASHEN_VEIL",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -4060,6 +4172,7 @@
   },
   {
     "type": "UNIT_DISCIPLE_THE_ORDER",
+    "stats": {"hp": 70, "attack": 30, "defense": 15, "magic": 0, "magic_defense": 15, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_DISCIPLE_THE_ORDER",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -4099,6 +4212,7 @@
   },
   {
     "type": "UNIT_DISEASED_CORPSE",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_DISEASED_CORPSE",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -4139,6 +4253,7 @@
   },
   {
     "type": "UNIT_DJINN",
+    "stats": {"hp": 120, "attack": 10, "defense": 10, "magic": 0, "magic_defense": 10, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_DJINN",
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_ATTACK",
@@ -4186,6 +4301,7 @@
   },
   {
     "type": "UNIT_DONAL",
+    "stats": {"hp": 120, "attack": 70, "defense": 70, "magic": 0, "magic_defense": 70, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_DONAL",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -4225,6 +4341,7 @@
   },
   {
     "type": "UNIT_DRIFA",
+    "stats": {"hp": 180, "attack": 140, "defense": 140, "magic": 0, "magic_defense": 140, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_DRIFA",
     "unit_combat": "UNITCOMBAT_BEAST",
     "large": true,
@@ -4268,6 +4385,7 @@
   },
   {
     "type": "UNIT_DROWN",
+    "stats": {"hp": 120, "attack": 30, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_DROWN",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -4310,6 +4428,7 @@
   },
   {
     "type": "UNIT_DRUID",
+    "stats": {"hp": 70, "attack": 80, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_DRUID",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -4358,6 +4477,7 @@
   },
   {
     "type": "UNIT_DWARVEN_DRUID",
+    "stats": {"hp": 70, "attack": 80, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_DRUID",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -4407,6 +4527,7 @@
   },
   {
     "type": "UNIT_LIZARDMAN_DRUID",
+    "stats": {"hp": 70, "attack": 80, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_DRUID",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -4457,6 +4578,7 @@
   },
   {
     "type": "UNIT_LUONNOTAR",
+    "stats": {"hp": 70, "attack": 100, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_DRUID",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -4497,6 +4619,7 @@
   },
   {
     "type": "UNIT_DUIN",
+    "stats": {"hp": 120, "attack": 110, "defense": 110, "magic": 0, "magic_defense": 110, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_DUIN",
     "unit_combat": "UNITCOMBAT_BEAST",
     "domain": "DOMAIN_LAND",
@@ -4536,6 +4659,7 @@
   },
   {
     "type": "UNIT_DWARVEN_SOLDIER_RUNES",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_DWARVEN_SOLDIER_RUNES",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -4574,6 +4698,7 @@
   },
   {
     "type": "UNIT_EARTH_ELEMENTAL",
+    "stats": {"hp": 180, "attack": 110, "defense": 110, "magic": 0, "magic_defense": 110, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_EARTH_ELEMENTAL",
     "large": true,
     "domain": "DOMAIN_LAND",
@@ -4604,6 +4729,7 @@
   },
   {
     "type": "UNIT_EIDOLON",
+    "stats": {"hp": 120, "attack": 110, "defense": 110, "magic": 0, "magic_defense": 110, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_EIDOLON",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "combat_role": "COMBATROLE_FRONTLINE",
@@ -4645,6 +4771,7 @@
   },
   {
     "type": "UNIT_EINHERJAR",
+    "stats": {"hp": 120, "attack": 30, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_EINHERJAR",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "combat_role": "COMBATROLE_FRONTLINE",
@@ -4676,6 +4803,7 @@
   },
   {
     "type": "UNIT_ELEPHANT",
+    "stats": {"hp": 180, "attack": 80, "defense": 80, "magic": 0, "magic_defense": 80, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_ELEPHANT",
     "unit_combat": "UNITCOMBAT_ANIMAL",
     "large": true,
@@ -4706,6 +4834,7 @@
   },
   {
     "type": "UNIT_ENGINEER",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_ENGINEER",
     "unique_names": [
       "TXT_KEY_UNIT_ENGINEER_1",
@@ -4754,6 +4883,7 @@
   },
   {
     "type": "UNIT_EURABATRES",
+    "stats": {"hp": 180, "attack": 230, "defense": 230, "magic": 0, "magic_defense": 230, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_EURABATRES",
     "unit_combat": "UNITCOMBAT_BEAST",
     "large": true,
@@ -4814,6 +4944,7 @@
   },
   {
     "type": "UNIT_FAWN",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_FAWN",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -4849,6 +4980,7 @@
   },
   {
     "type": "UNIT_FIRE_ELEMENTAL",
+    "stats": {"hp": 120, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_FIRE_ELEMENTAL",
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_ATTACK",
@@ -4883,6 +5015,7 @@
   },
   {
     "type": "UNIT_FIREBALL",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_FIREBALL",
     "special": "SPECIALUNIT_SPELL",
     "domain": "DOMAIN_LAND",
@@ -4917,6 +5050,7 @@
   },
   {
     "type": "UNIT_FLAGBEARER",
+    "stats": {"hp": 120, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_FLAGBEARER",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -4957,6 +5091,7 @@
   },
   {
     "type": "UNIT_FLESH_GOLEM",
+    "stats": {"hp": 180, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_FLESH_GOLEM",
     "large": true,
     "domain": "DOMAIN_LAND",
@@ -4988,6 +5123,7 @@
   },
   {
     "type": "UNIT_FREAK",
+    "stats": {"hp": 120, "attack": 30, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_FREAK",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -5070,6 +5206,7 @@
   },
   {
     "type": "UNIT_FROSTLING",
+    "stats": {"hp": 120, "attack": 20, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_FROSTLING",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -5100,6 +5237,7 @@
   },
   {
     "type": "UNIT_FROSTLING_ARCHER",
+    "stats": {"hp": 80, "attack": 20, "defense": 24, "magic": 0, "magic_defense": 24, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_FROSTLING_ARCHER",
     "unit_combat": "UNITCOMBAT_ARCHER",
     "domain": "DOMAIN_LAND",
@@ -5136,6 +5274,7 @@
   },
   {
     "type": "UNIT_FROSTLING_WOLF_RIDER",
+    "stats": {"hp": 100, "attack": 33, "defense": 24, "magic": 0, "magic_defense": 24, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_FROSTLING_WOLF_RIDER",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -5168,6 +5307,7 @@
   },
   {
     "type": "UNIT_GAELAN",
+    "stats": {"hp": 70, "attack": 60, "defense": 20, "magic": 60, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_GAELAN",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -5292,6 +5432,7 @@
   },
   {
     "type": "UNIT_GIANT_SPIDER",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_GIANT_SPIDER",
     "unit_combat": "UNITCOMBAT_ANIMAL",
     "domain": "DOMAIN_LAND",
@@ -5351,6 +5492,7 @@
   },
   {
     "type": "UNIT_GIBBON",
+    "stats": {"hp": 70, "attack": 50, "defense": 25, "magic": 50, "magic_defense": 25, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_GIBBON",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -5393,6 +5535,7 @@
   },
   {
     "type": "UNIT_GILDEN",
+    "stats": {"hp": 80, "attack": 50, "defense": 36, "magic": 0, "magic_defense": 36, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_GILDEN",
     "unit_combat": "UNITCOMBAT_ARCHER",
     "domain": "DOMAIN_LAND",
@@ -5429,6 +5572,7 @@
   },
   {
     "type": "UNIT_GORILLA",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_GORILLA",
     "unit_combat": "UNITCOMBAT_ANIMAL",
     "domain": "DOMAIN_LAND",
@@ -5457,6 +5601,7 @@
   },
   {
     "type": "UNIT_GOVANNON",
+    "stats": {"hp": 70, "attack": 50, "defense": 25, "magic": 50, "magic_defense": 25, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_GOVANNON",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -5516,6 +5661,7 @@
   },
   {
     "type": "UNIT_GREATER_WEREWOLF",
+    "stats": {"hp": 120, "attack": 110, "defense": 110, "magic": 0, "magic_defense": 110, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_GREATER_WEREWOLF",
     "unit_combat": "UNITCOMBAT_BEAST",
     "domain": "DOMAIN_LAND",
@@ -5553,6 +5699,7 @@
   },
   {
     "type": "UNIT_GRIFFON",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_GRIFFON",
     "unit_combat": "UNITCOMBAT_ANIMAL",
     "domain": "DOMAIN_LAND",
@@ -5583,6 +5730,7 @@
   },
   {
     "type": "UNIT_GRIGORI_MEDIC",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_GRIGORI_MEDIC",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -5620,6 +5768,7 @@
   },
   {
     "type": "UNIT_GUARDIAN_VINES",
+    "stats": {"hp": 120, "attack": 90, "defense": 90, "magic": 0, "magic_defense": 90, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_GUARDIAN_VINES",
     "domain": "DOMAIN_IMMOBILE",
     "default_unit_ai": "UNITAI_ATTACK",
@@ -5647,6 +5796,7 @@
   },
   {
     "type": "UNIT_GURID",
+    "stats": {"hp": 180, "attack": 220, "defense": 220, "magic": 0, "magic_defense": 220, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_GURID",
     "unit_combat": "UNITCOMBAT_BEAST",
     "large": true,
@@ -5676,6 +5826,7 @@
   },
   {
     "type": "UNIT_GUYBRUSH",
+    "stats": {"hp": 120, "attack": 70, "defense": 70, "magic": 0, "magic_defense": 70, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_GUYBRUSH",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -5733,6 +5884,7 @@
   },
   {
     "type": "UNIT_HEMAH",
+    "stats": {"hp": 70, "attack": 70, "defense": 35, "magic": 70, "magic_defense": 35, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_HEMAH",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -5796,6 +5948,7 @@
   },
   {
     "type": "UNIT_HERALD",
+    "stats": {"hp": 120, "attack": 140, "defense": 140, "magic": 0, "magic_defense": 140, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_HERALD",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -5835,6 +5988,7 @@
   },
   {
     "type": "UNIT_HERNE",
+    "stats": {"hp": 100, "attack": 121, "defense": 56, "magic": 0, "magic_defense": 56, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_HERNE",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -5867,6 +6021,7 @@
   },
   {
     "type": "UNIT_HIGH_PRIEST_OF_KILMORPH",
+    "stats": {"hp": 70, "attack": 70, "defense": 35, "magic": 0, "magic_defense": 35, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_HIGH_PRIEST_OF_KILMORPH",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -5915,6 +6070,7 @@
   },
   {
     "type": "UNIT_HIGH_PRIEST_OF_LEAVES",
+    "stats": {"hp": 70, "attack": 80, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_HIGH_PRIEST_OF_LEAVES",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -5962,6 +6118,7 @@
   },
   {
     "type": "UNIT_HIGH_PRIEST_OF_THE_EMPYREAN",
+    "stats": {"hp": 70, "attack": 60, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_HIGH_PRIEST_OF_THE_EMPYREAN",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -6010,6 +6167,7 @@
   },
   {
     "type": "UNIT_HIGH_PRIEST_OF_THE_ORDER",
+    "stats": {"hp": 70, "attack": 60, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_HIGH_PRIEST_OF_THE_ORDER",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -6058,6 +6216,7 @@
   },
   {
     "type": "UNIT_HIGH_PRIEST_OF_THE_OVERLORDS",
+    "stats": {"hp": 70, "attack": 70, "defense": 35, "magic": 0, "magic_defense": 35, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_HIGH_PRIEST_OF_THE_OVERLORDS",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -6106,6 +6265,7 @@
   },
   {
     "type": "UNIT_HIGH_PRIEST_OF_THE_VEIL",
+    "stats": {"hp": 70, "attack": 60, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_HIGH_PRIEST_OF_THE_VEIL",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -6154,6 +6314,7 @@
   },
   {
     "type": "UNIT_HIGH_PRIEST_OF_WINTER",
+    "stats": {"hp": 70, "attack": 60, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_HIGH_PRIEST_OF_WINTER",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -6201,6 +6362,7 @@
   },
   {
     "type": "UNIT_HILL_GIANT",
+    "stats": {"hp": 180, "attack": 70, "defense": 70, "magic": 0, "magic_defense": 70, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_HILL_GIANT",
     "unit_combat": "UNITCOMBAT_BEAST",
     "large": true,
@@ -6232,6 +6394,7 @@
   },
   {
     "type": "UNIT_CAMEL_ARCHER",
+    "stats": {"hp": 100, "attack": 66, "defense": 48, "magic": 0, "magic_defense": 48, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_HORSE_ARCHER",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -6272,6 +6435,7 @@
   },
   {
     "type": "UNIT_CENTAUR_ARCHER",
+    "stats": {"hp": 100, "attack": 66, "defense": 48, "magic": 0, "magic_defense": 48, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_HORSE_ARCHER",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -6312,6 +6476,7 @@
   },
   {
     "type": "UNIT_FYRDWELL",
+    "stats": {"hp": 100, "attack": 66, "defense": 48, "magic": 0, "magic_defense": 48, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_HORSE_ARCHER",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -6354,6 +6519,7 @@
   },
   {
     "type": "UNIT_HORSE_ARCHER",
+    "stats": {"hp": 100, "attack": 66, "defense": 48, "magic": 0, "magic_defense": 48, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_HORSE_ARCHER",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -6395,6 +6561,7 @@
   },
   {
     "type": "UNIT_NYXKIN",
+    "stats": {"hp": 100, "attack": 66, "defense": 48, "magic": 0, "magic_defense": 48, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_HORSE_ARCHER",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -6436,6 +6603,7 @@
   },
   {
     "type": "UNIT_BOAR_RIDER",
+    "stats": {"hp": 100, "attack": 44, "defense": 32, "magic": 0, "magic_defense": 32, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_HORSEMAN",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -6473,6 +6641,7 @@
   },
   {
     "type": "UNIT_CENTAUR",
+    "stats": {"hp": 100, "attack": 44, "defense": 32, "magic": 0, "magic_defense": 32, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_HORSEMAN",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -6509,6 +6678,7 @@
   },
   {
     "type": "UNIT_HORSEMAN",
+    "stats": {"hp": 100, "attack": 44, "defense": 32, "magic": 0, "magic_defense": 32, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_HORSEMAN",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -6546,6 +6716,7 @@
   },
   {
     "type": "UNIT_WOLF_RIDER",
+    "stats": {"hp": 100, "attack": 44, "defense": 32, "magic": 0, "magic_defense": 32, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_HORSEMAN",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -6582,6 +6753,7 @@
   },
   {
     "type": "UNIT_WOLF_RIDER_SCORPION_CLAN",
+    "stats": {"hp": 100, "attack": 44, "defense": 32, "magic": 0, "magic_defense": 32, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_HORSEMAN",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -6617,6 +6789,7 @@
   },
   {
     "type": "UNIT_DIVIDED_SOUL",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_HUNTER",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -6655,6 +6828,7 @@
   },
   {
     "type": "UNIT_HELLHOUND",
+    "stats": {"hp": 120, "attack": 30, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_HUNTER",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -6694,6 +6868,7 @@
   },
   {
     "type": "UNIT_HUNTER",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_HUNTER",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -6732,6 +6907,7 @@
   },
   {
     "type": "UNIT_LIZARDMAN",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_HUNTER",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -6771,6 +6947,7 @@
   },
   {
     "type": "UNIT_HYBOREM",
+    "stats": {"hp": 120, "attack": 70, "defense": 70, "magic": 0, "magic_defense": 70, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_HYBOREM",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -6809,6 +6986,7 @@
   },
   {
     "type": "UNIT_ICE_ELEMENTAL",
+    "stats": {"hp": 120, "attack": 20, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_ICE_ELEMENTAL",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -6847,6 +7025,7 @@
   },
   {
     "type": "UNIT_BONE_GOLEM",
+    "stats": {"hp": 180, "attack": 130, "defense": 130, "magic": 0, "magic_defense": 130, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_IMMORTAL",
     "large": true,
     "domain": "DOMAIN_LAND",
@@ -6887,6 +7066,7 @@
   },
   {
     "type": "UNIT_IMMORTAL",
+    "stats": {"hp": 120, "attack": 90, "defense": 90, "magic": 0, "magic_defense": 90, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_IMMORTAL",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -6926,6 +7106,7 @@
   },
   {
     "type": "UNIT_OGRE_WARCHIEF",
+    "stats": {"hp": 120, "attack": 110, "defense": 110, "magic": 0, "magic_defense": 110, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_IMMORTAL",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -6967,6 +7148,7 @@
   },
   {
     "type": "UNIT_SKULD",
+    "stats": {"hp": 120, "attack": 90, "defense": 90, "magic": 0, "magic_defense": 90, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_IMMORTAL",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -7005,6 +7187,7 @@
   },
   {
     "type": "UNIT_VAMPIRE_LORD",
+    "stats": {"hp": 120, "attack": 90, "defense": 90, "magic": 0, "magic_defense": 90, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_IMMORTAL",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -7054,6 +7237,7 @@
   },
   {
     "type": "UNIT_IRA",
+    "stats": {"hp": 120, "attack": 80, "defense": 80, "magic": 0, "magic_defense": 80, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_IRA",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -7086,6 +7270,7 @@
   },
   {
     "type": "UNIT_KITHRA",
+    "stats": {"hp": 100, "attack": 88, "defense": 64, "magic": 0, "magic_defense": 64, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_KITHRA",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -7127,6 +7312,7 @@
   },
   {
     "type": "UNIT_BISON_RIDER",
+    "stats": {"hp": 100, "attack": 132, "defense": 80, "magic": 0, "magic_defense": 80, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_KNIGHT",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -7160,6 +7346,7 @@
   },
   {
     "type": "UNIT_CENTAUR_LANCER",
+    "stats": {"hp": 100, "attack": 121, "defense": 56, "magic": 0, "magic_defense": 56, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_KNIGHT",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -7194,6 +7381,7 @@
   },
   {
     "type": "UNIT_DEATH_KNIGHT",
+    "stats": {"hp": 100, "attack": 88, "defense": 32, "magic": 0, "magic_defense": 32, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_KNIGHT",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -7236,6 +7424,7 @@
   },
   {
     "type": "UNIT_HORNGUARD",
+    "stats": {"hp": 100, "attack": 132, "defense": 64, "magic": 0, "magic_defense": 64, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_KNIGHT",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -7271,6 +7460,7 @@
   },
   {
     "type": "UNIT_KNIGHT",
+    "stats": {"hp": 100, "attack": 121, "defense": 56, "magic": 0, "magic_defense": 56, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_KNIGHT",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -7306,6 +7496,7 @@
   },
   {
     "type": "UNIT_WAR_TORTOISE",
+    "stats": {"hp": 150, "attack": 121, "defense": 152, "magic": 0, "magic_defense": 152, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_KNIGHT",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "large": true,
@@ -7394,6 +7585,7 @@
   },
   {
     "type": "UNIT_LICH",
+    "stats": {"hp": 70, "attack": 50, "defense": 25, "magic": 50, "magic_defense": 25, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_LICH",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -7446,6 +7638,7 @@
   },
   {
     "type": "UNIT_LIGHTBRINGER",
+    "stats": {"hp": 70, "attack": 20, "defense": 10, "magic": 0, "magic_defense": 10, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_LIGHTBRINGER",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -7485,6 +7678,7 @@
   },
   {
     "type": "UNIT_LIGHTNING_ELEMENTAL",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_LIGHTNING_ELEMENTAL",
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_ATTACK",
@@ -7508,6 +7702,7 @@
   },
   {
     "type": "UNIT_LION",
+    "stats": {"hp": 120, "attack": 30, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_LION",
     "unit_combat": "UNITCOMBAT_ANIMAL",
     "domain": "DOMAIN_LAND",
@@ -7539,6 +7734,7 @@
   },
   {
     "type": "UNIT_LION_PRIDE",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_LION_PRIDE",
     "unit_combat": "UNITCOMBAT_ANIMAL",
     "domain": "DOMAIN_LAND",
@@ -7568,6 +7764,7 @@
   },
   {
     "type": "UNIT_LOKI",
+    "stats": {"hp": 120, "attack": 20, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_LOKI",
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_HERO",
@@ -7607,6 +7804,7 @@
   },
   {
     "type": "UNIT_FIREBOW",
+    "stats": {"hp": 80, "attack": 50, "defense": 24, "magic": 0, "magic_defense": 24, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_LONGBOWMAN",
     "unit_combat": "UNITCOMBAT_ARCHER",
     "domain": "DOMAIN_LAND",
@@ -7648,6 +7846,7 @@
   },
   {
     "type": "UNIT_GARGOYLE",
+    "stats": {"hp": 120, "attack": 80, "defense": 80, "magic": 0, "magic_defense": 80, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_LONGBOWMAN",
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_ATTACK",
@@ -7683,6 +7882,7 @@
   },
   {
     "type": "UNIT_LONGBOWMAN",
+    "stats": {"hp": 80, "attack": 50, "defense": 36, "magic": 0, "magic_defense": 36, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_LONGBOWMAN",
     "unit_combat": "UNITCOMBAT_ARCHER",
     "domain": "DOMAIN_LAND",
@@ -7723,6 +7923,7 @@
   },
   {
     "type": "UNIT_LOSHA",
+    "stats": {"hp": 120, "attack": 70, "defense": 70, "magic": 0, "magic_defense": 70, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_LOSHA",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -7763,6 +7964,7 @@
   },
   {
     "type": "UNIT_LUCIAN",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_LUCIAN",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -7798,6 +8000,7 @@
   },
   {
     "type": "UNIT_LUNATIC",
+    "stats": {"hp": 120, "attack": 70, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_LUNATIC",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -7835,6 +8038,7 @@
   },
   {
     "type": "UNIT_ILLUSIONIST",
+    "stats": {"hp": 70, "attack": 40, "defense": 20, "magic": 40, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_MAGE",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -7894,6 +8098,7 @@
   },
   {
     "type": "UNIT_MAGE",
+    "stats": {"hp": 70, "attack": 40, "defense": 20, "magic": 40, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_MAGE",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -7953,6 +8158,7 @@
   },
   {
     "type": "UNIT_WIZARD",
+    "stats": {"hp": 70, "attack": 40, "defense": 20, "magic": 40, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_MAGE",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -8012,6 +8218,7 @@
   },
   {
     "type": "UNIT_MAGNADINE",
+    "stats": {"hp": 100, "attack": 121, "defense": 88, "magic": 0, "magic_defense": 88, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_MAGNADINE",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -8080,6 +8287,7 @@
   },
   {
     "type": "UNIT_MANES",
+    "stats": {"hp": 120, "attack": 20, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_MANES",
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_ATTACK",
@@ -8116,6 +8324,7 @@
   },
   {
     "type": "UNIT_MANTICORE",
+    "stats": {"hp": 120, "attack": 120, "defense": 80, "magic": 0, "magic_defense": 80, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_MANTICORE",
     "unit_combat": "UNITCOMBAT_BEAST",
     "domain": "DOMAIN_LAND",
@@ -8154,6 +8363,7 @@
   },
   {
     "type": "UNIT_MARDERO",
+    "stats": {"hp": 70, "attack": 100, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_MARDERO",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -8205,6 +8415,7 @@
   },
   {
     "type": "UNIT_MARGALARD",
+    "stats": {"hp": 180, "attack": 220, "defense": 220, "magic": 0, "magic_defense": 220, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_MARGALARD",
     "unit_combat": "UNITCOMBAT_BEAST",
     "large": true,
@@ -8233,6 +8444,7 @@
   },
   {
     "type": "UNIT_MARKSMAN",
+    "stats": {"hp": 80, "attack": 110, "defense": 66, "magic": 0, "magic_defense": 66, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_MARKSMAN",
     "unit_combat": "UNITCOMBAT_ARCHER",
     "domain": "DOMAIN_LAND",
@@ -8271,6 +8483,7 @@
   },
   {
     "type": "UNIT_MAROS",
+    "stats": {"hp": 120, "attack": 60, "defense": 120, "magic": 0, "magic_defense": 120, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_MAROS",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -8303,6 +8516,7 @@
   },
   {
     "type": "UNIT_MARY",
+    "stats": {"hp": 120, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_MARY",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -8334,6 +8548,7 @@
   },
   {
     "type": "UNIT_MERCENARY",
+    "stats": {"hp": 120, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_MERCENARY",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -8366,6 +8581,7 @@
   },
   {
     "type": "UNIT_MERCENARY_MOUNTED",
+    "stats": {"hp": 100, "attack": 55, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_MERCENARY",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -8398,6 +8614,7 @@
   },
   {
     "type": "UNIT_MERCHANT",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_MERCHANT",
     "unique_names": [
       "TXT_KEY_UNIT_MERCHANT_1",
@@ -8448,6 +8665,7 @@
   },
   {
     "type": "UNIT_MESHABBER",
+    "stats": {"hp": 120, "attack": 190, "defense": 190, "magic": 0, "magic_defense": 190, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_MESHABBER",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -8492,6 +8710,7 @@
   },
   {
     "type": "UNIT_METEOR",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_METEOR",
     "special": "SPECIALUNIT_SPELL",
     "domain": "DOMAIN_LAND",
@@ -8524,6 +8743,7 @@
   },
   {
     "type": "UNIT_MINOTAUR",
+    "stats": {"hp": 120, "attack": 80, "defense": 110, "magic": 0, "magic_defense": 110, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_MINOTAUR",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -8555,6 +8775,7 @@
   },
   {
     "type": "UNIT_MISTFORM",
+    "stats": {"hp": 120, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_MISTFORM",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -8586,6 +8807,7 @@
   },
   {
     "type": "UNIT_MITHRIL_GOLEM",
+    "stats": {"hp": 180, "attack": 250, "defense": 250, "magic": 0, "magic_defense": 250, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_MITHRIL_GOLEM",
     "large": true,
     "domain": "DOMAIN_LAND",
@@ -8630,6 +8852,7 @@
   },
   {
     "type": "UNIT_MOBIUS_WITCH",
+    "stats": {"hp": 70, "attack": 40, "defense": 20, "magic": 40, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_MOBIUS_WITCH",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -8683,6 +8906,7 @@
   },
   {
     "type": "UNIT_MOKKA",
+    "stats": {"hp": 70, "attack": 60, "defense": 30, "magic": 60, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_MOKKA",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -8714,6 +8938,7 @@
   },
   {
     "type": "UNIT_MONK",
+    "stats": {"hp": 120, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_MONK",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "combat_role": "COMBATROLE_FRONTLINE",
@@ -8748,6 +8973,7 @@
   },
   {
     "type": "UNIT_MUIRIN",
+    "stats": {"hp": 120, "attack": 30, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_MUIRIN",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -8784,6 +9010,7 @@
   },
   {
     "type": "UNIT_NIGHTWATCH",
+    "stats": {"hp": 80, "attack": 30, "defense": 18, "magic": 0, "magic_defense": 18, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_NIGHTWATCH",
     "unit_combat": "UNITCOMBAT_ARCHER",
     "domain": "DOMAIN_LAND",
@@ -8826,6 +9053,7 @@
   },
   {
     "type": "UNIT_OPHANIM",
+    "stats": {"hp": 100, "attack": 99, "defense": 48, "magic": 0, "magic_defense": 48, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_OPHANIM",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -8864,6 +9092,7 @@
   },
   {
     "type": "UNIT_ORTHUS",
+    "stats": {"hp": 120, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_ORTHUS",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -8901,6 +9130,7 @@
   },
   {
     "type": "UNIT_PALADIN",
+    "stats": {"hp": 120, "attack": 110, "defense": 110, "magic": 0, "magic_defense": 110, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_PALADIN",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "combat_role": "COMBATROLE_FRONTLINE",
@@ -8946,6 +9176,7 @@
   },
   {
     "type": "UNIT_PARAMANDER",
+    "stats": {"hp": 120, "attack": 70, "defense": 70, "magic": 0, "magic_defense": 70, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_PARAMANDER",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "combat_role": "COMBATROLE_FRONTLINE",
@@ -8985,6 +9216,7 @@
   },
   {
     "type": "UNIT_NULLSTONE_GOLEM",
+    "stats": {"hp": 180, "attack": 130, "defense": 130, "magic": 0, "magic_defense": 130, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_PHALANX",
     "large": true,
     "domain": "DOMAIN_LAND",
@@ -9019,6 +9251,7 @@
   },
   {
     "type": "UNIT_PHALANX",
+    "stats": {"hp": 120, "attack": 120, "defense": 120, "magic": 0, "magic_defense": 120, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_PHALANX",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -9058,6 +9291,7 @@
   },
   {
     "type": "UNIT_STONESKIN_OGRE",
+    "stats": {"hp": 120, "attack": 140, "defense": 140, "magic": 0, "magic_defense": 140, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_PHALANX",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -9099,6 +9333,7 @@
   },
   {
     "type": "UNIT_VERDANDI",
+    "stats": {"hp": 120, "attack": 120, "defense": 120, "magic": 0, "magic_defense": 120, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_PHALANX",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -9137,6 +9372,7 @@
   },
   {
     "type": "UNIT_PIT_BEAST",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_PIT_BEAST",
     "unit_combat": "UNITCOMBAT_BEAST",
     "domain": "DOMAIN_LAND",
@@ -9168,6 +9404,7 @@
   },
   {
     "type": "UNIT_PRIEST_OF_KILMORPH",
+    "stats": {"hp": 70, "attack": 50, "defense": 25, "magic": 0, "magic_defense": 25, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_PRIEST_OF_KILMORPH",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -9216,6 +9453,7 @@
   },
   {
     "type": "UNIT_PRIEST_OF_LEAVES",
+    "stats": {"hp": 70, "attack": 50, "defense": 25, "magic": 0, "magic_defense": 25, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_PRIEST_OF_LEAVES",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -9264,6 +9502,7 @@
   },
   {
     "type": "UNIT_PRIEST_OF_THE_EMPYREAN",
+    "stats": {"hp": 70, "attack": 40, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_PRIEST_OF_THE_EMPYREAN",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -9313,6 +9552,7 @@
   },
   {
     "type": "UNIT_PRIEST_OF_THE_ORDER",
+    "stats": {"hp": 70, "attack": 40, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_PRIEST_OF_THE_ORDER",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -9363,6 +9603,7 @@
   },
   {
     "type": "UNIT_PRIEST_OF_THE_OVERLORDS",
+    "stats": {"hp": 70, "attack": 50, "defense": 25, "magic": 0, "magic_defense": 25, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_PRIEST_OF_THE_OVERLORDS",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -9412,6 +9653,7 @@
   },
   {
     "type": "UNIT_PRIEST_OF_THE_VEIL",
+    "stats": {"hp": 70, "attack": 40, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_PRIEST_OF_THE_VEIL",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -9462,6 +9704,7 @@
   },
   {
     "type": "UNIT_PRIEST_OF_WINTER",
+    "stats": {"hp": 70, "attack": 50, "defense": 25, "magic": 0, "magic_defense": 25, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_PRIEST_OF_WINTER",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -9575,6 +9818,7 @@
   },
   {
     "type": "UNIT_PROPHET",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_PROPHET",
     "unique_names": [
       "TXT_KEY_UNIT_PROPHET_1",
@@ -9636,6 +9880,7 @@
   },
   {
     "type": "UNIT_PUPPET",
+    "stats": {"hp": 120, "attack": 20, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_PUPPET",
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_EXPLORE",
@@ -9662,6 +9907,7 @@
   },
   {
     "type": "UNIT_PUPPET_LOKI",
+    "stats": {"hp": 120, "attack": 20, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_PUPPET_LOKI",
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_EXPLORE",
@@ -9690,6 +9936,7 @@
   },
   {
     "type": "UNIT_AIRSHIP",
+    "stats": {"hp": 80, "attack": 30, "defense": 54, "magic": 0, "magic_defense": 54, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_QUEEN_OF_THE_LINE",
     "unit_combat": "UNITCOMBAT_NAVAL",
     "domain": "DOMAIN_LAND",
@@ -9757,6 +10004,7 @@
   },
   {
     "type": "UNIT_RADIANT_GUARD",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_RADIANT_GUARD",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -9802,6 +10050,7 @@
   },
   {
     "type": "UNIT_HARLEQUIN",
+    "stats": {"hp": 120, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_RANGER",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -9839,6 +10088,7 @@
   },
   {
     "type": "UNIT_LIZARDMAN_RANGER",
+    "stats": {"hp": 120, "attack": 70, "defense": 70, "magic": 0, "magic_defense": 70, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_RANGER",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -9880,6 +10130,7 @@
   },
   {
     "type": "UNIT_RANGER",
+    "stats": {"hp": 120, "attack": 70, "defense": 70, "magic": 0, "magic_defense": 70, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_RANGER",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -9919,6 +10170,7 @@
   },
   {
     "type": "UNIT_RANTINE",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_RANTINE",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -9957,6 +10209,7 @@
   },
   {
     "type": "UNIT_RATHA",
+    "stats": {"hp": 100, "attack": 55, "defense": 24, "magic": 0, "magic_defense": 24, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_RATHA",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -9999,6 +10252,7 @@
   },
   {
     "type": "UNIT_RATHUS",
+    "stats": {"hp": 60, "attack": 60, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 15, "crit": 25, "speed": 7},
     "class": "UNITCLASS_RATHUS",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -10040,6 +10294,7 @@
   },
   {
     "type": "UNIT_RAVENOUS_WEREWOLF",
+    "stats": {"hp": 120, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_RAVENOUS_WEREWOLF",
     "unit_combat": "UNITCOMBAT_BEAST",
     "domain": "DOMAIN_LAND",
@@ -10080,6 +10335,7 @@
   },
   {
     "type": "UNIT_REPENTANT_ANGEL",
+    "stats": {"hp": 120, "attack": 120, "defense": 120, "magic": 0, "magic_defense": 120, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_REPENTANT_ANGEL",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -10115,6 +10371,7 @@
   },
   {
     "type": "UNIT_REVELERS",
+    "stats": {"hp": 120, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_REVELERS",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -10147,6 +10404,7 @@
   },
   {
     "type": "UNIT_ROSIER",
+    "stats": {"hp": 100, "attack": 77, "defense": 56, "magic": 0, "magic_defense": 56, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_ROSIER",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -10187,6 +10445,7 @@
   },
   {
     "type": "UNIT_ROSIER_OATHTAKER",
+    "stats": {"hp": 100, "attack": 77, "defense": 56, "magic": 0, "magic_defense": 56, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_ROSIER_OATHTAKER",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -10220,6 +10479,7 @@
   },
   {
     "type": "UNIT_ROYAL_GUARD",
+    "stats": {"hp": 100, "attack": 44, "defense": 64, "magic": 0, "magic_defense": 64, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_ROYAL_GUARD",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -10288,6 +10548,7 @@
   },
   {
     "type": "UNIT_SAND_LION",
+    "stats": {"hp": 120, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SAND_LION",
     "unit_combat": "UNITCOMBAT_BEAST",
     "domain": "DOMAIN_LAND",
@@ -10319,6 +10580,7 @@
   },
   {
     "type": "UNIT_SATYR",
+    "stats": {"hp": 120, "attack": 90, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SATYR",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -10354,6 +10616,7 @@
   },
   {
     "type": "UNIT_SAVEROUS",
+    "stats": {"hp": 120, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SAVEROUS",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -10392,6 +10655,7 @@
   },
   {
     "type": "UNIT_SCIENTIST",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SCIENTIST",
     "unique_names": [
       "TXT_KEY_UNIT_SCIENTIST_1",
@@ -10440,6 +10704,7 @@
   },
   {
     "type": "UNIT_SCORPION",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SCORPION",
     "unit_combat": "UNITCOMBAT_ANIMAL",
     "domain": "DOMAIN_LAND",
@@ -10469,6 +10734,7 @@
   },
   {
     "type": "UNIT_GOBLIN",
+    "stats": {"hp": 120, "attack": 20, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SCOUT",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -10506,6 +10772,7 @@
   },
   {
     "type": "UNIT_GOBLIN_SCORPION_CLAN",
+    "stats": {"hp": 120, "attack": 20, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SCOUT",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -10544,6 +10811,7 @@
   },
   {
     "type": "UNIT_SCOUT",
+    "stats": {"hp": 120, "attack": 20, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SCOUT",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -10604,6 +10872,7 @@
   },
   {
     "type": "UNIT_SERAPH",
+    "stats": {"hp": 120, "attack": 80, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SERAPH",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -10648,6 +10917,7 @@
   },
   {
     "type": "UNIT_SETTLER",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SETTLER",
     "capture": "UNITCLASS_WORKER",
     "domain": "DOMAIN_LAND",
@@ -10673,6 +10943,7 @@
   },
   {
     "type": "UNIT_SEVERED_SOUL",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SEVERED_SOUL",
     "special": "SPECIALUNIT_SPELL",
     "domain": "DOMAIN_LAND",
@@ -10698,6 +10969,7 @@
   },
   {
     "type": "UNIT_SHADE",
+    "stats": {"hp": 120, "attack": 20, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SHADE",
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_ATTACK",
@@ -10735,6 +11007,7 @@
   },
   {
     "type": "UNIT_COURTESAN",
+    "stats": {"hp": 60, "attack": 96, "defense": 42, "magic": 0, "magic_defense": 42, "accuracy": 90, "evasion": 15, "crit": 25, "speed": 7},
     "class": "UNITCLASS_SHADOW",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -10776,6 +11049,7 @@
   },
   {
     "type": "UNIT_DWARVEN_SHADOW",
+    "stats": {"hp": 60, "attack": 96, "defense": 42, "magic": 0, "magic_defense": 42, "accuracy": 90, "evasion": 15, "crit": 25, "speed": 7},
     "class": "UNITCLASS_SHADOW",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -10819,6 +11093,7 @@
   },
   {
     "type": "UNIT_SHADOW",
+    "stats": {"hp": 60, "attack": 96, "defense": 42, "magic": 0, "magic_defense": 42, "accuracy": 90, "evasion": 15, "crit": 25, "speed": 7},
     "class": "UNITCLASS_SHADOW",
     "unit_combat": "UNITCOMBAT_RECON",
     "domain": "DOMAIN_LAND",
@@ -10859,6 +11134,7 @@
   },
   {
     "type": "UNIT_SHADOWRIDER",
+    "stats": {"hp": 100, "attack": 99, "defense": 72, "magic": 0, "magic_defense": 72, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_SHADOWRIDER",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -10902,6 +11178,7 @@
   },
   {
     "type": "UNIT_SKELETON",
+    "stats": {"hp": 120, "attack": 20, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SKELETON",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -10929,6 +11206,7 @@
   },
   {
     "type": "UNIT_SLAVE",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SLAVE",
     "capture": "UNITCLASS_SLAVE",
     "domain": "DOMAIN_LAND",
@@ -10971,6 +11249,7 @@
   },
   {
     "type": "UNIT_SON_OF_THE_INFERNO",
+    "stats": {"hp": 70, "attack": 50, "defense": 25, "magic": 50, "magic_defense": 25, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_SON_OF_THE_INFERNO",
     "unit_combat": "UNITCOMBAT_ADEPT",
     "domain": "DOMAIN_LAND",
@@ -11011,6 +11290,7 @@
   },
   {
     "type": "UNIT_SPECTRE",
+    "stats": {"hp": 120, "attack": 30, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SPECTRE",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -11041,6 +11321,7 @@
   },
   {
     "type": "UNIT_SPHENER",
+    "stats": {"hp": 70, "attack": 120, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_SPHENER",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -11094,6 +11375,7 @@
   },
   {
     "type": "UNIT_STEPHANOS",
+    "stats": {"hp": 100, "attack": 209, "defense": 152, "magic": 0, "magic_defense": 152, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_STEPHANOS",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -11135,6 +11417,7 @@
   },
   {
     "type": "UNIT_STYGIAN_GUARD",
+    "stats": {"hp": 120, "attack": 50, "defense": 50, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_STYGIAN_GUARD",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -11180,6 +11463,7 @@
   },
   {
     "type": "UNIT_SUCCUBUS",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SUCCUBUS",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -11212,6 +11496,7 @@
   },
   {
     "type": "UNIT_SUPPLIES",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_SUPPLIES",
     "capture": "UNITCLASS_SUPPLIES",
     "domain": "DOMAIN_LAND",
@@ -11251,6 +11536,7 @@
   },
   {
     "type": "UNIT_TAR_DEMON",
+    "stats": {"hp": 120, "attack": 20, "defense": 70, "magic": 0, "magic_defense": 70, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_TAR_DEMON",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "combat_role": "COMBATROLE_FRONTLINE",
@@ -11290,6 +11576,7 @@
   },
   {
     "type": "UNIT_TEUTORIX",
+    "stats": {"hp": 80, "attack": 120, "defense": 72, "magic": 0, "magic_defense": 72, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_TEUTORIX",
     "unit_combat": "UNITCOMBAT_ARCHER",
     "domain": "DOMAIN_LAND",
@@ -11330,6 +11617,7 @@
   },
   {
     "type": "UNIT_TIGER",
+    "stats": {"hp": 120, "attack": 40, "defense": 40, "magic": 0, "magic_defense": 40, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_TIGER",
     "unit_combat": "UNITCOMBAT_ANIMAL",
     "domain": "DOMAIN_LAND",
@@ -11359,6 +11647,7 @@
   },
   {
     "type": "UNIT_TREANT",
+    "stats": {"hp": 180, "attack": 100, "defense": 100, "magic": 0, "magic_defense": 100, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_TREANT",
     "large": true,
     "domain": "DOMAIN_LAND",
@@ -11434,6 +11723,7 @@
   },
   {
     "type": "UNIT_TUMTUM",
+    "stats": {"hp": 100, "attack": 132, "defense": 80, "magic": 0, "magic_defense": 80, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_TUMTUM",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -11466,6 +11756,7 @@
   },
   {
     "type": "UNIT_VALIN",
+    "stats": {"hp": 100, "attack": 66, "defense": 48, "magic": 0, "magic_defense": 48, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_VALIN",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -11504,6 +11795,7 @@
   },
   {
     "type": "UNIT_VALKYRIE",
+    "stats": {"hp": 120, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_VALKYRIE",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -11540,6 +11832,7 @@
   },
   {
     "type": "UNIT_WAR_ELEPHANT",
+    "stats": {"hp": 150, "attack": 77, "defense": 56, "magic": 0, "magic_defense": 56, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_WAR_ELEPHANT",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "large": true,
@@ -11575,6 +11868,7 @@
   },
   {
     "type": "UNIT_WAR_MACHINE",
+    "stats": {"hp": 150, "attack": 209, "defense": 152, "magic": 0, "magic_defense": 152, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_WAR_MACHINE",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "large": true,
@@ -11612,6 +11906,7 @@
   },
   {
     "type": "UNIT_BEASTMAN",
+    "stats": {"hp": 120, "attack": 30, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_WARRIOR",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -11646,6 +11941,7 @@
   },
   {
     "type": "UNIT_BLOODPET",
+    "stats": {"hp": 120, "attack": 30, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_WARRIOR",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -11680,6 +11976,7 @@
   },
   {
     "type": "UNIT_WARRIOR",
+    "stats": {"hp": 120, "attack": 30, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_WARRIOR",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -11713,6 +12010,7 @@
   },
   {
     "type": "UNIT_WATER_ELEMENTAL",
+    "stats": {"hp": 120, "attack": 80, "defense": 80, "magic": 0, "magic_defense": 80, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_WATER_ELEMENTAL",
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_ATTACK",
@@ -11743,6 +12041,7 @@
   },
   {
     "type": "UNIT_WEREWOLF",
+    "stats": {"hp": 120, "attack": 80, "defense": 80, "magic": 0, "magic_defense": 80, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_WEREWOLF",
     "unit_combat": "UNITCOMBAT_BEAST",
     "domain": "DOMAIN_LAND",
@@ -11782,6 +12081,7 @@
   },
   {
     "type": "UNIT_WILBOMAN",
+    "stats": {"hp": 180, "attack": 70, "defense": 70, "magic": 0, "magic_defense": 70, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_WILBOMAN",
     "unit_combat": "UNITCOMBAT_MELEE",
     "large": true,
@@ -11820,6 +12120,7 @@
   },
   {
     "type": "UNIT_WOLF",
+    "stats": {"hp": 120, "attack": 20, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_WOLF",
     "unit_combat": "UNITCOMBAT_ANIMAL",
     "domain": "DOMAIN_LAND",
@@ -11852,6 +12153,7 @@
   },
   {
     "type": "UNIT_WOLF_PACK",
+    "stats": {"hp": 120, "attack": 30, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_WOLF_PACK",
     "unit_combat": "UNITCOMBAT_ANIMAL",
     "domain": "DOMAIN_LAND",
@@ -11910,6 +12212,7 @@
   },
   {
     "type": "UNIT_MUD_GOLEM",
+    "stats": {"hp": 180, "attack": 0, "defense": 20, "magic": 0, "magic_defense": 20, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_WORKER",
     "large": true,
     "domain": "DOMAIN_LAND",
@@ -11951,6 +12254,7 @@
   },
   {
     "type": "UNIT_WORKER",
+    "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_WORKER",
     "capture": "UNITCLASS_WORKER",
     "domain": "DOMAIN_LAND",
@@ -11991,6 +12295,7 @@
   },
   {
     "type": "UNIT_WRAITH",
+    "stats": {"hp": 120, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 60, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_WRAITH",
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_ATTACK",
@@ -12018,6 +12323,7 @@
   },
   {
     "type": "UNIT_WRATH",
+    "stats": {"hp": 120, "attack": 330, "defense": 330, "magic": 0, "magic_defense": 330, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_WRATH",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -12048,6 +12354,7 @@
   },
   {
     "type": "UNIT_YERSINIA",
+    "stats": {"hp": 100, "attack": 165, "defense": 120, "magic": 0, "magic_defense": 120, "accuracy": 90, "evasion": 10, "crit": 10, "speed": 6},
     "class": "UNITCLASS_YERSINIA",
     "unit_combat": "UNITCOMBAT_MOUNTED",
     "domain": "DOMAIN_LAND",
@@ -12088,6 +12395,7 @@
   },
   {
     "type": "UNIT_YVAIN",
+    "stats": {"hp": 70, "attack": 90, "defense": 45, "magic": 0, "magic_defense": 45, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
     "class": "UNITCLASS_YVAIN",
     "unit_combat": "UNITCOMBAT_DISCIPLE",
     "domain": "DOMAIN_LAND",
@@ -12146,14 +12454,9 @@
   },
   {
     "type": "UNIT_SENTINEL",
+    "stats": {"hp": 100, "attack": 10, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 0},
     "class": "UNITCLASS_SENTINEL",
     "combat_role": "COMBATROLE_FRONTLINE",
-    "attack": 1,
-    "defense": 3,
-    "hp": 100,
-    "engage_speed": 0,
-    "engage_dodge": 0,
-    "engage_crit_bonus": 0,
     "engage_rows": [{"action": "STRIKE", "count": 1}, {"action": "NONE"}, {"action": "NONE"}],
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_UNKNOWN",

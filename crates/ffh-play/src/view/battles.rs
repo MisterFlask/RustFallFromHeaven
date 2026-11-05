@@ -101,14 +101,13 @@ fn ground_json(g: &ffh_core::engagement::Ground, rules: &[GroundRule]) -> Json {
 }
 
 /// The rule values the screens word (the tooltips' and the rules' sentences): the magic bolt's
-/// power, a splash on each neighbour (percent of the hit on the target), a large unit's HP (percent
-/// of its role's), the speed a first strike adds.
+/// power, a splash on each neighbour (percent of the hit on the target), the speed a first strike
+/// adds.
 fn params_json(d: &GameData) -> Json {
     let x = &d.defines;
     crate::jobj! {
         "bolt_pct" => x.engagement_bolt_percent,
         "splash_pct" => x.engagement_splash_percent,
-        "large_hp_pct" => x.engagement_large_hp_percent,
         "first_strike_speed" => x.engagement_first_strike_speed,
     }
 }
@@ -177,16 +176,10 @@ fn terms_json(ts: &[Term]) -> Json {
     Json::Arr(ts.iter().map(term_json).collect())
 }
 
-/// A fighter's A (`attack`) or Dv as the screens read it (DESIGN `Stat`): `total = base x role x
-/// (1 + terms)`, so `base_x100` is the strength before its role's percent. The engine's
-/// [`Stat::base_x100`] has the role in it (`engage_base_x100`), so the view takes it out; a unit
-/// type with a fixed strength (`iAttack` / `iDefense`) takes no role percent on it, and shows its
-/// role's percent as 100.
-pub fn stat_json(d: &GameData, unit_type: UnitType, attack: bool, s: &Stat) -> Json {
-    let info = &d.units[unit_type];
-    let fixed = if attack { info.attack_override } else { info.defense_override } > 0;
-    let (base, role) = if fixed || s.role_pct <= 0 { (s.base_x100, if fixed { 100 } else { s.role_pct }) } else { (s.base_x100 * 100 / s.role_pct, s.role_pct) };
-    crate::jobj! { "base_x100" => base, "role_pct" => role, "terms" => terms_json(&s.terms), "total_x100" => s.total_x100 }
+/// A fighter's A, Dv, magic or magic defence as the screens read it (DESIGN `Stat`): `total = base
+/// x (1 + terms)`, x100 (a stat of the unit's sheet is x10 of it: docs/UNIT_STATS.md).
+pub fn stat_json(s: &Stat) -> Json {
+    crate::jobj! { "base_x100" => s.base_x100, "terms" => terms_json(&s.terms), "total_x100" => s.total_x100 }
 }
 
 fn slot_change_json(c: &SlotChange) -> Json {
@@ -301,8 +294,9 @@ fn plan_fighter(g: &Game, u: UnitId, side: Side, place: Option<(u8, u8)>, in_cit
         rolled_first_strikes: 0,
         actions: g.unit_engage_actions(u),
         spell: g.unit_engage_spell(u),
-        dodge: g.unit_engage_dodge(u),
-        crit_bonus: g.unit_engage_crit_bonus(u),
+        accuracy: g.unit_engage_accuracy(u),
+        evasion: g.unit_engage_evasion(u),
+        crit: g.unit_engage_crit(u),
         anti_flank: role.is_some_and(|r| d.combat_roles[r].anti_flank),
         flanker: g.unit_engage_flanks(u),
         withdraw_pct,
@@ -313,6 +307,8 @@ fn plan_fighter(g: &Game, u: UnitId, side: Side, place: Option<(u8, u8)>, in_cit
         fear: g.unit_is_fear(u),
         a: g.engage_stat(u, None, side, true, ctx),
         dv: g.engage_stat(u, None, side, false, ctx),
+        mag: g.engage_magic_stat(u, true),
+        mdef: g.engage_magic_stat(u, false),
         fate: None,
         dealt: 0,
         taken: 0,
@@ -375,8 +371,9 @@ fn fighter_json(g: &Game, b: usize, f: &LogFighter, owner: PlayerId) -> Json {
         "actions" => actions_json(&f.actions),
         "bonus_action" => d.engage_extra_actions(f.unit_type, f.hero) > 0,
         "spell" => Json::opt_idx(f.spell),
-        "dodge" => f.dodge,
-        "crit_bonus" => f.crit_bonus,
+        "accuracy" => f.accuracy,
+        "evasion" => f.evasion,
+        "crit" => f.crit,
         "anti_flank" => f.anti_flank,
         "flanker" => f.flanker,
         "withdraw_pct" => f.withdraw_pct,
@@ -388,8 +385,12 @@ fn fighter_json(g: &Game, b: usize, f: &LogFighter, owner: PlayerId) -> Json {
         "fear" => f.fear,
         "a_x100" => f.a.total_x100,
         "dv_x100" => f.dv.total_x100,
-        "a" => stat_json(d, f.unit_type, true, &f.a),
-        "dv" => stat_json(d, f.unit_type, false, &f.dv),
+        "ma_x100" => f.mag.total_x100,
+        "md_x100" => f.mdef.total_x100,
+        "a" => stat_json(&f.a),
+        "dv" => stat_json(&f.dv),
+        "mag" => stat_json(&f.mag),
+        "mdef" => stat_json(&f.mdef),
         "fate" => f.fate.as_ref().map(fate_json),
         "dealt" => f.dealt,
         "taken" => f.taken,
@@ -404,6 +405,10 @@ fn pair_json(p: &LogPair) -> Json {
         "a_x100" => p.a_x100,
         "dv_x100" => p.dv_x100,
         "mean" => p.mean,
+        "ma_x100" => p.ma_x100,
+        "md_x100" => p.md_x100,
+        "spell_pct" => p.spell_pct,
+        "magic_mean" => p.magic_mean,
         "a_extra" => terms_json(&p.a_extra),
         "dv_extra" => terms_json(&p.dv_extra),
     }
@@ -965,8 +970,11 @@ pub fn unit_fields(g: &Game, u: UnitId, j: &mut Json) {
     j.set("engage_max_hp", g.unit_engage_max_hp(u));
     j.set("engage_speed", g.unit_engage_speed(u));
     j.set("engage_actions", actions_json(&g.unit_engage_actions(u)));
-    j.set("engage_dodge", g.unit_engage_dodge(u));
-    j.set("engage_crit_bonus", g.unit_engage_crit_bonus(u));
+    j.set("engage_magic", g.engage_magic_x100(u, true));
+    j.set("engage_magic_defense", g.engage_magic_x100(u, false));
+    j.set("engage_accuracy", g.unit_engage_accuracy(u));
+    j.set("engage_evasion", g.unit_engage_evasion(u));
+    j.set("engage_crit", g.unit_engage_crit(u));
     j.set("engage_large", g.unit_engage_large(u));
 }
 
@@ -991,15 +999,13 @@ mod tests {
         }
     }
 
-    /// The screens' `base_x100` is the strength before the role's percent (the engine's has it in).
+    /// A stat goes to the screens as the engine has it: its base and terms, its total.
     #[test]
-    fn a_stat_shows_the_strength_before_its_role() {
-        let d = ffh_data::global();
-        let horseman = d.t::<UnitType>("UNIT_HORSEMAN");
-        let j = stat_json(d, horseman, true, &Stat { base_x100: 440, role_pct: 110, terms: Vec::new(), total_x100: 440 });
-        assert_eq!(j.get("base_x100").and_then(Json::as_i64), Some(400));
-        assert_eq!(j.get("role_pct").and_then(Json::as_i64), Some(110));
-        assert_eq!(j.get("total_x100").and_then(Json::as_i64), Some(440));
+    fn a_stat_shows_its_base_and_total() {
+        let j = stat_json(&Stat { base_x100: 440, terms: Vec::new(), total_x100: 528 });
+        assert_eq!(j.get("base_x100").and_then(Json::as_i64), Some(440));
+        assert_eq!(j.get("total_x100").and_then(Json::as_i64), Some(528));
+        assert!(j.get("role_pct").is_none());
     }
 
     /// A plot the viewer has not revealed tells nothing of itself (the plan's and the log's

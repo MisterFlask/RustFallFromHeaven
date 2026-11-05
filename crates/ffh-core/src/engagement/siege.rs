@@ -51,21 +51,29 @@ impl Game {
         self.city_total_defense(c, false).max(0)
     }
 
-    /// A Sentinel's max HP in a battle: `UNIT_SENTINEL`'s `iHP` x (100 + the city's defence) / 100.
+    /// `UNIT_SENTINEL`'s stat `s` (its sheet's).
+    pub fn sentinel_stat(&self, s: StatType) -> i32 {
+        self.d.unit_stat(self.sentinel_unit_type(), s)
+    }
+
+    /// A Sentinel's max HP in a battle: `UNIT_SENTINEL`'s HP x (100 + the city's defence) / 100.
     pub fn city_sentinel_max_hp(&self, c: CityId) -> i32 {
-        let base = self.d.units[self.sentinel_unit_type()].hp_override.max(1);
-        (base * (100 + self.city_sentinel_defense(c)) / 100).max(1)
+        (self.sentinel_stat(StatType::Hp).max(1) * (100 + self.city_sentinel_defense(c)) / 100).max(1)
     }
 
-    /// A Sentinel's Dv, x100: `UNIT_SENTINEL`'s `iDefense` x (100 + the city's defence) / 100.
+    /// A Sentinel's Dv, x100: `UNIT_SENTINEL`'s defence, x10, x (100 + the city's defence) / 100.
     pub fn city_sentinel_dv_x100(&self, c: CityId) -> i32 {
-        let base = self.d.units[self.sentinel_unit_type()].defense_override.max(1);
-        (base * (100 + self.city_sentinel_defense(c))).max(1)
+        (self.sentinel_stat(StatType::Defense) * 10 * (100 + self.city_sentinel_defense(c)) / 100).max(1)
     }
 
-    /// A Sentinel's A, x100: `UNIT_SENTINEL`'s `iAttack`.
+    /// A Sentinel's magic defence, x100: `UNIT_SENTINEL`'s, x10, grown by the city's defence too.
+    pub fn city_sentinel_md_x100(&self, c: CityId) -> i32 {
+        (self.sentinel_stat(StatType::MagicDefense) * 10 * (100 + self.city_sentinel_defense(c)) / 100).max(1)
+    }
+
+    /// A Sentinel's A, x100: `UNIT_SENTINEL`'s attack, x10.
     pub fn sentinel_a_x100(&self) -> i32 {
-        (self.d.units[self.sentinel_unit_type()].attack_override * 100).max(1)
+        (self.sentinel_stat(StatType::Attack) * 10).max(1)
     }
 
     /// The Sentinels of city `c` that can fight: not breached, the city not occupied.
@@ -92,7 +100,9 @@ impl Game {
         let owner = self.cities[c].owner;
         let defense = if self.city_is_occupation(c) { 0 } else { self.city_sentinel_defense(c) };
         let a = self.sentinel_a_x100();
-        let base_dv = d.units[ty].defense_override * 100;
+        let base_dv = self.sentinel_stat(StatType::Defense) * 10;
+        let base_md = self.sentinel_stat(StatType::MagicDefense) * 10;
+        let mag = self.sentinel_stat(StatType::Magic) * 10;
         LogFighter {
             unit: LogFighter::SENTINEL_UNIT,
             sentinel: true,
@@ -110,14 +120,15 @@ impl Game {
             max_hp: self.city_sentinel_max_hp(c),
             hp_start: hp,
             hp_battle: hp,
-            speed: d.engage_speed(ty, role),
+            speed: self.sentinel_stat(StatType::Speed),
             first_strikes: 0,
             chance_first_strikes: 0,
             rolled_first_strikes: 0,
             actions: d.engage_actions(ty, role, false),
             spell: None,
-            dodge: d.engage_dodge(ty, role),
-            crit_bonus: d.engage_crit_bonus(ty, role),
+            accuracy: self.sentinel_stat(StatType::Accuracy),
+            evasion: self.sentinel_stat(StatType::Evasion),
+            crit: self.sentinel_stat(StatType::Crit),
             anti_flank: false,
             flanker: false,
             withdraw_pct: 0,
@@ -126,8 +137,10 @@ impl Game {
             def_strike: None,
             immune: Immunities::default().with(Immunities::DEF_STRIKE, true).with(Immunities::FEAR, true),
             fear: false,
-            a: Stat { base_x100: a, role_pct: 100, terms: Vec::new(), total_x100: a },
-            dv: Stat { base_x100: base_dv, role_pct: 100, terms: vec![Term { src: TermSource::CityDefense, pct: defense }], total_x100: self.city_sentinel_dv_x100(c) },
+            a: Stat { base_x100: a, terms: Vec::new(), total_x100: a },
+            dv: Stat { base_x100: base_dv, terms: vec![Term { src: TermSource::CityDefense, pct: defense }], total_x100: self.city_sentinel_dv_x100(c) },
+            mag: Stat { base_x100: mag, terms: Vec::new(), total_x100: mag },
+            mdef: Stat { base_x100: base_md, terms: vec![Term { src: TermSource::CityDefense, pct: defense }], total_x100: self.city_sentinel_md_x100(c) },
             fate: None,
             dealt: 0,
             taken: 0,
