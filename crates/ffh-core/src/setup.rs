@@ -61,7 +61,7 @@ pub struct GameSetup {
     pub map_script: String,
     /// One entry per player slot, barbarian slot last.
     pub players: Vec<PlayerSetup>,
-    /// Not in C++: the crusade ruleset (docs/CRUSADE.md; off in the faithful game).
+    /// Not in C++: the crusade ruleset's parameters (docs/CRUSADE.md).
     pub crusade: CrusadeRules,
 }
 
@@ -109,8 +109,8 @@ pub struct SetupOptions {
     /// Open slots after the civs for players FFH2 adds mid-game; capped so that civs + spare
     /// slots fit in `MAX_CIV_PLAYERS`.
     pub spare_slots: usize,
-    /// The crusade ruleset (docs/CRUSADE.md): when enabled, `host_slots` more open slots (capped
-    /// to fit in `MAX_CIV_PLAYERS`) are reserved for Hosts after the spare slots.
+    /// The crusade ruleset (docs/CRUSADE.md): `host_slots` more open slots (capped to fit in
+    /// `MAX_CIV_PLAYERS`) are reserved for Hosts after the spare slots.
     pub crusade: CrusadeRules,
     pub seed: u32,
 }
@@ -179,7 +179,7 @@ impl GameSetup {
         assert!(o.civs >= 1 && o.civs <= MAX_CIV_PLAYERS, "civs must be in 1..={MAX_CIV_PLAYERS}");
         let mut players = Vec::new();
         let n_spare = o.civs + o.spare_slots.min(MAX_CIV_PLAYERS - o.civs);
-        let n_host = if o.crusade.enabled { o.crusade.host_slots.min(MAX_CIV_PLAYERS - n_spare) } else { 0 };
+        let n_host = o.crusade.host_slots.min(MAX_CIV_PLAYERS - n_spare);
         let n_slots = n_spare + n_host;
         for i in 0..=n_slots {
             let barbarian = i == n_slots;
@@ -265,7 +265,9 @@ mod tests {
     fn standard_matches_default_options() {
         let d = ffh_data::global();
         let s = GameSetup::standard(d, 3, "WORLDSIZE_TINY", 5);
-        assert_eq!(s.players.len(), 3 + GameSetup::SPARE_SLOTS + 1);
+        let hosts = CrusadeRules::default().host_slots;
+        assert_eq!(s.players.len(), 3 + GameSetup::SPARE_SLOTS + hosts + 1);
+        assert_eq!(s.players.iter().filter(|p| p.host).count(), hosts);
         assert!(s.players.iter().enumerate().all(|(i, p)| p.team == TeamId(i as u8)));
         assert!(s.options.iter().all(|&b| !b));
         assert!(s.victories.iter().all(|&b| b));

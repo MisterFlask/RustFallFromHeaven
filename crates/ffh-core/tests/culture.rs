@@ -18,8 +18,7 @@ fn action(g: &Game, name: &str) -> CulturalActionType {
 /// each city revealed to both.
 fn game() -> (Game, CityId, CityId, CityId) {
     let d = ffh_data::global();
-    let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
-    setup.options[GameOptionType::GAMEOPTION_CULTURE_ACTIONS] = true;
+    let setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
     let mut g = Game::new(d, setup);
     g.game_init();
     g.log.enabled = true;
@@ -272,8 +271,6 @@ fn channels_are_checked() {
         g.city_set_has_religion(c, r, true, false, false);
     }
     assert_eq!(g.culture_channel_check(a, spread, PlayerId(1), Some(r)), Err(CultureRefusal::NoneCanTake));
-    g.setup.options[GameOptionType::GAMEOPTION_CULTURE_ACTIONS] = false;
-    assert_eq!(g.culture_channel_check(a, revolt, PlayerId(1), None), Err(CultureRefusal::Off));
 }
 
 #[test]

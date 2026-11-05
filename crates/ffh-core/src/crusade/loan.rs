@@ -73,8 +73,6 @@ pub enum LoanAnswer {
 /// Why a loan cannot be made.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum LoanError {
-    /// Crusades (and loans) are off in this game.
-    Off,
     /// Same team, dead, a Host, no contact, or the lender is at war with the borrower.
     NotAllowed,
     /// The borrower is not at war with the target.
@@ -94,9 +92,6 @@ pub enum LoanError {
 impl Game {
     /// Could the loan `t` be made now?
     pub fn loan_check(&self, t: &LoanTerms) -> Result<(), LoanError> {
-        if !self.crusades_enabled() {
-            return Err(LoanError::Off);
-        }
         let (lt, bt) = (self.players[t.lender].team, self.players[t.borrower].team);
         if lt == bt || !self.players[t.lender].alive || !self.players[t.borrower].alive {
             return Err(LoanError::NotAllowed);

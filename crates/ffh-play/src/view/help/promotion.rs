@@ -80,6 +80,7 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         same_tile_heal_change,
         adjacent_tile_heal_change,
         stat_changes,
+        spell_damage_modify,
         city_attack_percent,
         city_defense_percent,
         hills_attack_percent,
@@ -271,6 +272,9 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         b.push_str(&per_turn);
     }
     stat_lines(b, stat_changes);
+    if *spell_damage_modify != 0 {
+        line(b, d, "TXT_KEY_PROMOTION_SPELL_DAMAGE_MODIFY", &[Arg::N(*spell_damage_modify)]);
+    }
     // Attack and defence: one "strength" line when they are equal (FfH BUG addon, Denev).
     if city_attack_percent == city_defense_percent {
         if *city_attack_percent != 0 {
@@ -592,7 +596,7 @@ mod tests {
     #[test]
     fn known_promotions_say_what_they_do() {
         let combat1 = of("PROMOTION_COMBAT1");
-        for part in ["[ICON_BULLET]+20% Attack", "[ICON_BULLET]+20% Defense", "[ICON_BULLET]+5% Magic", "[ICON_BULLET]+20% Magic defense", "Grants the Empower I promotion to summoned units", "Available To: Recon Units, Archery Units, ", "Beast Units"] {
+        for part in ["[ICON_BULLET]+20% Attack", "[ICON_BULLET]+20% Defense", "[ICON_BULLET]+10% Magic", "[ICON_BULLET]+20% Magic defense", "[ICON_BULLET]+5 spell damage outside battles", "Grants the Empower I promotion to summoned units", "Available To: Recon Units, Archery Units, ", "Beast Units"] {
             assert!(combat1.contains(part), "{part}: {combat1}");
         }
         // Nothing to choose it after, and no tech.

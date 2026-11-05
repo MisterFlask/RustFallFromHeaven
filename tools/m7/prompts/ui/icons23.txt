@@ -1,0 +1,16 @@
+building_altar_of_the_luonnotar: a plain white marble altar block with gold trim, no glow
+building_altar_of_the_luonnotar_anointed: a white marble altar with gold trim and a gold chalice on it, no glow
+building_altar_of_the_luonnotar_blessed: a white marble altar with gold trim, a gold chalice and two lit white candles, no glow
+building_altar_of_the_luonnotar_consecrated: a white marble altar with gold trim, a gold chalice, two candles and a small gold sun disc above it
+building_altar_of_the_luonnotar_divine: a white marble altar with a gold sun disc above it sending out hard-edged solid yellow rays
+building_altar_of_the_luonnotar_exalted: a white marble altar with a gold sun disc above it, solid yellow rays and a white feathered wing on each side
+building_altar_of_the_luonnotar_final: a white marble altar with a big gold sun disc, many solid yellow rays and two large white wings
+building_great_lighthouse: a tall white and red striped lighthouse with a solid yellow lamp at its top and two hard-edged yellow beams
+building_public_baths: a square stone pool of clear blue water between two white columns, with a few small white steam curls
+building_spider_pen: a large black spider with red eyes on a few thick grey web strands
+building_the_nexus: a floating blue crystal inside two thin gold rings
+building_asylum: a narrow grey stone house with one barred window and a heavy iron door, beside a bare dead tree
+promo_prophecy_mark: a red wax seal stamp pressed with a small black eye
+promo_invisible: a white dashed outline of a standing figure with three small white sparkles, empty inside
+promo_dark_elf: a dark purple pointed elf ear with a silver earring
+promo_extension: a wooden magic wand with a long trail of small yellow stars behind it

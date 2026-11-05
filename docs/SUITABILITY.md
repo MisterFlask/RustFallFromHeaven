@@ -382,7 +382,7 @@ would break, and buildings that can't be built normally.
   and spell prerequisites, events, Python ports); loops over every building type read the exact
   counts. Civic and event bonuses to a building class apply to every tier. Wonders: a cost
   multiplier in `city_production_needed_building`. The code effects of the civilization buildings
-  read their tier (`city_real_family_tier`, ffh/events.rs). Save format 16.
+  read their tier (`city_real_family_tier`, ffh/events.rs). Save format 17.
 - **AI.** `building_value` reads the variant, so better tiers rise in the build order by
   themselves; the new keys are valued in `generic_building_value`. A slow world wonder goes to a
   top city by production weighed by its cost tier there (`top_wonder_city`). Where the AI names a

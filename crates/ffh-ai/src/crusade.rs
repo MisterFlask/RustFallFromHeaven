@@ -1,5 +1,4 @@
-//! Crusades and allied loans (docs/CRUSADE.md, "Host behaviour", "AI decisions"; only runs
-//! when the ruleset turns crusades on).
+//! Crusades and allied loans (docs/CRUSADE.md, "Host behaviour", "AI decisions").
 //!
 //! - **The Host** (a crusade's own AI player) runs the suggested state machine, its state kept in
 //!   `Crusade::ai` so saves resume it: *Muster* (gather the delivered units at a rally point: the

@@ -33,7 +33,7 @@ addHelp({
     const th = known;
     const n = (v, d) => (th ? v(th) : d);
     return [
-      h("p", `With the new game's Cultural actions option on, a city may channel ${n((t) => `${t.channel_percent}%`, "part")} of its culture (rounded down) into one standing order aimed at a civilization, until you change it; changing costs nothing. Without a channel, all of it grows the city's culture and borders. You set a city's channel in its screen (its Culture section); a governor never does.`),
+      h("p", `A city may channel ${n((t) => `${t.channel_percent}%`, "part")} of its culture (rounded down) into one standing order aimed at a civilization, until you change it; changing costs nothing. Without a channel, all of it grows the city's culture and borders. You set a city's channel in its screen (its Culture section); a governor never does.`),
       h("h4", "The actions"),
       h(
         "ul",
@@ -662,10 +662,6 @@ export async function openCulture() {
       return;
     }
     if (m.closed) return;
-    if (!r.on) {
-      m.setBody(h("p.dim", "This game has no cultural actions (the Cultural actions option is off)."));
-      return;
-    }
     m.setBody(...panelParts(m, r, load));
   };
   await load();

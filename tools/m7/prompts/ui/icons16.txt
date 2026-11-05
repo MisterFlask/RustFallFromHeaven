@@ -1,0 +1,16 @@
+promo_gela: a pale blue crystal shard with a ghostly face inside
+promo_godslayer: a jagged black sword with a red glow
+promo_golden_hammer: a golden hammer
+promo_golem: a stone golem's face with glowing blue eyes
+promo_great_commander: a golden eagle standard on a pole
+promo_guardsman: a steel tower shield with a halberd behind it
+promo_guerilla: a hooded face peering out among rocks and leaves
+promo_hasted: a boot with a yellow lightning bolt
+promo_healing_salve: a small clay jar of green salve
+promo_heavy: a heavy black iron weight with a ring on top
+promo_held: a figure bound in glowing purple magic chains
+promo_heroic_defense: a golden shield inside a laurel wreath
+promo_heroic_strength: a golden fist inside a laurel wreath
+promo_hidden: a green bush with two eyes peeking out
+promo_hidden_nationality: a plain black flag with no emblem on a pole
+promo_homeland: a small house in a green field with a red heart above it

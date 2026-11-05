@@ -255,18 +255,15 @@ pub fn trade_answer(v: &Viewer, with: PlayerId, give: &[TradeData], get: &[Trade
     Ok(crate::jobj! { "accept" => verdict.accept, "margin" => verdict.margin, "why" => verdict.why })
 }
 
-/// Troops (docs/CRUSADE.md, "Allied loans"), the crusade ruleset's item of the deal: a loan of
+/// Troops (docs/CRUSADE.md, "Allied loans"), the crusades' item of the deal: a loan of
 /// units, sent as `propose_loan` with the rest of the deal as its `give` / `get`. Each way --
 /// `lend` (the human lends to `with`) and `borrow` (`with` lends to the human) -- the teams the
 /// loan could be against (the borrower's enemies the lender may fight), or `why_not` when there
 /// are none; `lend` lists the human's units that can be lent. How much `with` can spare is its
-/// own business: its answer says. Null without the crusade ruleset.
+/// own business: its answer says.
 fn troops(v: &Viewer, with: PlayerId) -> Json {
     use ffh_core::crusade::loan::{LoanError, LoanMission, LoanTerms};
     let g = v.g;
-    if !g.crusades_enabled() {
-        return Json::Null;
-    }
     let way = |lender: PlayerId, borrower: PlayerId| -> Json {
         let mut targets = Vec::new();
         let mut why: Option<LoanError> = None;

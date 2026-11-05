@@ -99,21 +99,22 @@ stays playable at https://misterflask.github.io/RustFallFromHeaven/classic/ (doc
 classic site"); the changes below up to that tag are its differences from FFH2.
 
 **This game's own systems** (after `classic-1`: the owner's design spec "FfH Culture Actions &
-Army Combat", 2026-10-29; each behind its own game option, so FFH2's rules stay playable side by
-side)
+Army Combat", 2026-10-29). They were game options until 2026-11-05 (engagement combat until
+2026-11-03); the owner's decision made them part of every game, so FFH2's rules without them are
+no longer playable side by side. Save format 16 removed the last three options and the crusade
+flag.
 
-- **Cultural channels** (`GAMEOPTION_CULTURE_ACTIONS`, docs/CULTURE.md): a city may channel half its
+- **Cultural channels** (docs/CULTURE.md; not an option since 2026-11-05, the owner's decision: every game has it, the AI-only ones too; older saves do not load): a city may channel half its
   culture (that culture reaches neither the city's culture, its plots nor the culture victory) into
   one standing order aimed at a civilization, until its owner changes it: Foment Revolt (revolt
   pressure on the target's cities: unhappiness, disorder, then the city joins the caster; never a
   capital) or Spread Religion (a chance a turn to spread a religion of the city to one of the
   target's cities). The effect falls with the square of the distance; a city resists revolt with
   part of its own culture and its garrison. Not acts of war; the target's leader remembers them.
-  Every channel is public to the civilizations that have met the caster. Option off (the default
-  outside the browser's new-game screen), nothing changes. Save format 8 (it replaced the cultural
+  Every channel is public to the civilizations that have met the caster. Save format 8 (it replaced the cultural
   queue of timed actions of formats 4-5: Festival, Trade Fair, Incite Unrest, Siphon Knowledge,
   Foment Revolt, Flip City, Spread Religion, removed on the owner's direction of 2026-10-30).
-- **Armies** (`GAMEOPTION_ARMIES`, docs/ARMIES.md): land combat units (not mages, recon units,
+- **Armies** (docs/ARMIES.md; not an option since 2026-11-05, the owner's decision: every game has it, the AI-only ones too; older saves do not load): land combat units (not mages, recon units,
   heroes or summons) serve in named armies, kept one selection group each, or in a city's
   garrison. An army requisitions soldiers from the cities its owner picks for it (any city,
   directly ruled or governed) while it is short of its target size: an order at the front of the
@@ -126,11 +127,10 @@ side)
   while the army is in supply (within 3 plots of the owner's trade network); 5 turns without
   progress or a destination gone send it to the nearest garrison it can reach. Form, split, join
   and merge, garrison, rename, disband (march to the nearest garrison), upgrade all, target size,
-  requisition cities. Option off (the default outside the browser's new-game screen), nothing
-  changes. Save format 9 (2026-10-31, the owner's design: requisition and marching recruits
+  requisition cities. Save format 9 (2026-10-31, the owner's design: requisition and marching recruits
   replace the invisible transit, "Reinforce to N" and the governed cities' feed mode of formats
   6-8).
-- **Governors** (`GAMEOPTION_GOVERNORS`, docs/GOVERNORS.md): a player rules four cities directly
+- **Governors** (docs/GOVERNORS.md; not an option since 2026-11-05, the owner's decision: every game has it, the AI-only ones too; older saves do not load): a player rules four cities directly
   (the capital always); every other city is governed: its production is its governor's (it cannot
   be set by hand), developing the city; an army's requisition goes ahead of it (the feed mode,
   formats 7-8, is gone since format 9, 2026-10-31). World wonders, palaces, rituals and settlers
@@ -139,8 +139,7 @@ side)
   leans toward, its citizens' emphasis) and up to two traits (small modifiers of their city);
   replacing one costs the city 25% of its production and commerce for 5 turns; a lost city's
   governor leaves the game. Swapping a city in or out of direct rule locks it for 10 turns. A
-  governed city's cultural channel is its owner's, never its governor's (2026-10-30).
-  Option off (the default outside the browser's new-game screen), nothing changes. Save format 7.
+  governed city's cultural channel is its owner's, never its governor's (2026-10-30). Save format 7.
 - **Engagement combat** (docs/ENGAGEMENTS.md; not an option since 2026-11-03, the owner's
   decision: `GAMEOPTION_ENGAGEMENTS` was removed, every game fights it, the AI-only ones too, with or
   without armies; older saves do not load): a land attack is a **formation battle** (revision 4,
@@ -193,6 +192,18 @@ side)
   on its attack). Why: both sides hit in a formation battle, and the place promotions (City Raider,
   City Garrison, Guerilla, Woodsman, Defensive) were worth about half of an always-on promotion
   when they counted one way. A missile's strike and the naval duel keep the one-sided terms.
+- **The unit stats content pass** (the owner's approval, 2026-11-05; docs/UNIT_STATS.md section 7,
+  docs/STATS_CONTENT.md). Every land unit's magic defence, accuracy, evasion, crit and a caster's
+  magic now follow its role and kind instead of the day-one values derived from the old roles
+  (HP, attack, defence and speed unchanged): magic defence a share of defence (Frontline 75%,
+  casters 250%, ...), flankers EVA 15, assassins EVA 20 and CRIT 30 with their free Marksman,
+  archers ACC 95, casters' magic 110% of their attack. Promotions gained battle stats: Drill I-IV
+  +5 ACC and +10 CRIT, Flanking I-III +8 EVA, Marksman +10 ACC and +20 CRIT, Magic Resistance
+  +75% MDEF, Hero +5 ACC, +5 CRIT and +20% MDEF, the Combat line +10% MAG (from +5%), and the
+  races (Dwarves +10% DEF and MDEF, -5 EVA; Elves +5 ACC and EVA; Orcs +10% HP, -5 ACC; ...).
+  Why: units of a role were clones, and the takeable promotions are balanced against each other.
+  Spells outside battles keep FfH's damage bonus: a promotion's `spell_damage_modify` is its own
+  key again, apart from its battle magic.
 - **Sieges and Sentinels** (docs/SIEGES.md; the owner's design, 2026-11-04). A city with walls
   (Palisade, Walls, Wall of Stone: `iSentinels`) has two Sentinels, wall sections that fight in the
   defender's front row with `UNIT_SENTINEL`'s values (weak blows, 100 HP), their HP and Dv grown by
@@ -238,7 +249,7 @@ side)
   tier. The civilization buildings whose effects are code (Warrens, Planar Gate, Citadel of Light,
   ...) scale them by tier (`ffh/events.rs`). A wonder's tier is its cost there (125/100/85/70/50%);
   not the Tower of Mastery or the Altar of the Luonnotar. New: `PROMOTION_SPIRIT_GUIDE2` (the
-  Legendary Reliquary's). Save format 16.
+  Legendary Reliquary's). Save format 17.
 
 **Balance** (after `classic-1`, each the owner's decision)
 
@@ -444,17 +455,17 @@ could never run them.
   off panicked on the deleted unit at turn 495: a city flipped to the Infernals by culture with an
   Ashen Veil worker inside.
 
-**Crusades and allied loans (a ruleset flag, off by default; docs/CRUSADE.md)**
+**Crusades and allied loans (docs/CRUSADE.md; a ruleset flag, off by default, until 2026-11-05:
+the owner's decision made them part of every game, the AI-only ones too)**
 
-- Not FFH2: with `GameSetup::crusade.enabled`, `CrusadeRules::host_slots` player slots are reserved
+- Not FFH2: `CrusadeRules::host_slots` player slots are reserved
   for crusade Hosts (temporary AI players that own lent units and fight one war), a passed
   `VOTE_FORCE_WAR` calls the voting members to pledge forces instead of declaring war for them
   ("dedicate or defy": refusing defies the resolution at the deadline), lending declares war on the
   target, lent units earn their lender contribution when they kill or die, and dissolution drafts
   the Host's cities and gold by contribution. Allied loans are small, agreed, time-limited crusades,
-  priced freely by the rest of the deal (an ongoing payment runs as long as the loan). With the
-  flag off nothing of this runs and games are identical to the faithful port (per-turn sync
-  checksums checked against the binary before it). Save formats 11 and 12.
+  priced freely by the rest of the deal (an ongoing payment runs as long as the loan). Save
+  formats 11 and 12; 16 removed the flag (`CrusadeRules::enabled`).
 
 **Human play (ffh-play; docs/PLAY_DESIGN.md §10)**
 

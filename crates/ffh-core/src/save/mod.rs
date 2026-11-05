@@ -92,9 +92,11 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 15: unit stats (docs/UNIT_STATS.md): `Unit::stat_flat`, `stat_pct` in place of
 ///   `extra_combat_percent_defense`; the battle log's `Stat` without `role_pct`, `LogFighter`'s
 ///   accuracy, evasion, crit, magic and magic defence, `LogPair`'s magic pair.
-/// - 16: building suitability (docs/SUITABILITY.md): `City::building_tiers`; the tier variants
+/// - 16: culture actions, armies, governors and crusades always on: three game options fewer
+///   (`GameSetup::options`), `CrusadeRules` without `enabled`.
+/// - 17: building suitability (docs/SUITABILITY.md): `City::building_tiers`; the tier variants
 ///   and `PROMOTION_SPIRIT_GUIDE2` in the data.
-pub const FORMAT_VERSION: u32 = 16;
+pub const FORMAT_VERSION: u32 = 17;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

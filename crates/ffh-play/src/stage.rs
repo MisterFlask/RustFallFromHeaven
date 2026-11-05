@@ -381,7 +381,7 @@ pub fn diplomacy(dir: &Path) -> Result<StagedDiplomacy, String> {
     Ok(StagedDiplomacy { save: paths.save, with, turn: s.g.game_turn() })
 }
 
-/// A saved game with crusades on (docs/CRUSADE.md) at a human control point: a crusade against
+/// A saved game (docs/CRUSADE.md) at a human control point: a crusade against
 /// AI player 1 (`target`) waits for the human's answer (`crusade`), the human has warriors to
 /// lend in its capital, and AI player 2 (`ally`) is at war with the target (a loan can be
 /// offered to it). Gold trading is known (loan payments).
@@ -405,7 +405,6 @@ pub fn crusade(dir: &Path) -> Result<StagedCrusade, String> {
     let mut ng = NewGame::new(d, 12);
     ng.opponents = 2;
     ng.world = d.t("WORLDSIZE_TINY");
-    ng.crusades = true;
     ng.options.push(GameOptionType::GAMEOPTION_NO_BARBARIANS);
     let opts = SessionOptions { saves_dir: Some(dir.to_path_buf()), autosave_keep: 0, journal: false, ..Default::default() };
     let mut s = Session::new_game(&ng, Arc::new(AdvisorAnswerer), opts).map_err(|e| format!("new game: {e:?}"))?;
@@ -534,7 +533,7 @@ impl StagedArmies {
 pub fn armies(dir: &Path) -> Result<StagedArmies, String> {
     use ffh_core::army::RecruitDest;
     let d = ffh_data::global();
-    let mut s = duel_with(dir, 11, 4, None, &[GameOptionType::GAMEOPTION_ARMIES, GameOptionType::GAMEOPTION_GOVERNORS])?;
+    let mut s = duel_with(dir, 11, 4, None, &[])?;
     let h = s.human;
     let g = &mut s.g;
     let capital = *g.players[h].cities.first().ok_or("no city")?;
@@ -609,7 +608,7 @@ impl StagedEngagement {
 pub fn engagement(dir: &Path) -> Result<StagedEngagement, String> {
     use ffh_core::engagement::WarTest;
     let d = ffh_data::global();
-    let mut s = duel_with(dir, 11, 4, None, &[GameOptionType::GAMEOPTION_ARMIES])?;
+    let mut s = duel_with(dir, 11, 4, None, &[])?;
     let h = s.human;
     let g = &mut s.g;
     let capital = *g.players[h].cities.first().ok_or("no city of the human's")?;

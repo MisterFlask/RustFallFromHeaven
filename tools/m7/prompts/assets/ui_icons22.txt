@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. two identical purple magic stars side by side
+2. a skeleton hand glowing green
+3. a silver sword through a skull
+4. a black blood drop with purple smoke
+5. a raised golden sword with a red cape
+6. two vampire fangs with a red blood drop
+7. a black hand dripping green ooze
+8. a cracked wooden shield catching fire
+9. two crossed axes
+10. a shouting face with sound waves
+11. a footprint on rippling blue water
+12. a curling blue water wave
+13. a thin snapped twig
+14. a snarling wolf face in front of a full moon
+15. a snowflake on a patch of white fur
+16. a dead brown curled leaf

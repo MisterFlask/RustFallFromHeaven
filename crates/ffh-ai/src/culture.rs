@@ -77,7 +77,7 @@ pub fn turn(g: &mut Game, p: PlayerId) {
 
 /// [`turn`] with switch `CULTURE` read.
 fn turn_switched(g: &mut Game, p: PlayerId, on: bool) {
-    if !on || !g.culture_actions_on() || g.player_is_barbarian(p) || g.players[p].cities.is_empty() {
+    if !on || g.player_is_barbarian(p) || g.players[p].cities.is_empty() {
         return;
     }
     defend(g, p, false);
@@ -87,7 +87,7 @@ fn turn_switched(g: &mut Game, p: PlayerId, on: bool) {
 /// The governors of a human player's governed cities train defenders against the revolt pressure
 /// aimed at them (docs/GOVERNORS.md); they never set a channel.
 pub fn govern(g: &mut Game, p: PlayerId) {
-    if !g.culture_actions_on() || g.player_is_barbarian(p) || g.players[p].cities.is_empty() {
+    if g.player_is_barbarian(p) || g.players[p].cities.is_empty() {
         return;
     }
     defend(g, p, true);
@@ -139,9 +139,6 @@ fn steady(g: &Game, inflow: i32, resist: i32) -> i64 {
 /// That also keeps the city from being taken: a city in revolt makes no culture (disorder stops its
 /// commerce), so past disorder only its garrison resists and the pressure runs on to the flip.
 pub(crate) fn defenders_needed(g: &Game, c: CityId) -> i32 {
-    if !g.culture_actions_on() {
-        return 0;
-    }
     needed_with(g, c, &inflows_on(g, g.cities[c].owner))
 }
 
@@ -943,7 +940,6 @@ mod tests {
     fn duel() -> (Game, CityId, CityId, CityId) {
         // The Doviello's Charadon: Aggressive, a conqueror.
         let mut g = crate::testkit::one_landmass_game_with(4, &["CIVILIZATION_DOVIELLO", "CIVILIZATION_ELOHIM"]);
-        g.setup.options[GameOptionType::GAMEOPTION_CULTURE_ACTIONS] = true;
         let (p0, p1) = (PlayerId(0), PlayerId(1));
         let ours = g.player_init_city(p0, 4, 5, true, true);
         let capital = g.player_init_city(p1, 15, 5, true, true);
@@ -1063,7 +1059,6 @@ mod tests {
     fn governors_never_channel() {
         let (mut g, ours, _, town) = duel();
         let (p0, p1) = (PlayerId(0), PlayerId(1));
-        g.setup.options[GameOptionType::GAMEOPTION_GOVERNORS] = true;
         g.cities[ours].direct_rule = false;
         g.players[p0].culture_memory[p1] = [8, 0];
         g.city_set_population(town, 8);
@@ -1114,7 +1109,6 @@ mod tests {
     #[test]
     fn a_defender_behind_a_requisition_order_still_counts() {
         let (mut g, _, _, town) = duel();
-        g.setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
         let (p0, p1) = (PlayerId(0), PlayerId(1));
         let target = g.player_init_city(p0, 11, 7, true, true);
         g.cities[target].revealed[g.players[p1].team] = true;

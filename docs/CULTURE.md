@@ -1,4 +1,4 @@
-# Cultural channels (`GAMEOPTION_CULTURE_ACTIONS`)
+# Cultural channels
 
 This game's own rules, not FFH2's: the first system of the owner's design spec "FfH Culture
 Actions & Army Combat" (2026-10-29), redesigned on the owner's direction of 2026-10-30. A city may
@@ -18,13 +18,10 @@ the player turn); data `data/json/cultural_actions.jsonc` (`ffh-data`
 `crates/ffh-ai/src/culture.rs`; UI `crates/ffh-play/src/view/culture.rs`, the city query's
 `cultural`, `assets/app/culture.js`. Tests: `crates/ffh-core/tests/culture.rs`.
 
-## The option
-
-`GAMEOPTION_CULTURE_ACTIONS` is a visible game option with `bDefault` 1: the browser's new-game
-screen starts with it ticked (`setup::screen_defaults`), and a player can untick it to play the
-rules as they were. Everything else (`ffh autoplay`, `ffh stats`, the AI batches, `ffh-play
-agent`, soaks) plays without it unless asked (`--option GAMEOPTION_CULTURE_ACTIONS`). With the
-option off nothing of this runs.
+Every game has cultural channels, the AI-only ones (`ffh autoplay`, `ffh stats`, the AI batches,
+`ffh-play agent`, soaks) too. Until 2026-11-05 they were a game option
+(`GAMEOPTION_CULTURE_ACTIONS`, on by default only in the browser's new-game screen); the owner
+removed it, with those of the armies and the governors.
 
 ## Rules
 

@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. a dark hooded cloak with a curved silver dagger crossed in front of it
+2. a golden royal crown cracked in two with a red jagged crack
+3. a brass hand bell ringing, with small motion lines on both sides
+4. a rolled parchment scroll with a black dagger stuck through it
+5. a black domino mask with empty eye holes
+6. a small wooden powder keg with a lit sparking fuse
+7. a brass and wood ship's steering wheel
+8. a small blue-robed villager figure with a green plus sign beside it
+9. a builder's hammer crossed with a mason's trowel over three red bricks
+10. an unrolled parchment scroll with a burst of golden light above it
+11. a golden hourglass with a yellow lightning bolt across it
+12. a raised blue war banner on a pole, with a gold star on the cloth
+13. a small wooden treasure chest tied with a red ribbon bow
+14. a wooden crate hanging from a rope and hook, with a green arrow pointing down
+15. a glowing orange-red magic orb with a flame inside it
+16. a glowing deep-blue magic orb with a white water droplet inside it

@@ -1,4 +1,4 @@
-# Armies (`GAMEOPTION_ARMIES`)
+# Armies
 
 This game's own rules, not FFH2's: the second system of the owner's design spec "FfH Culture
 Actions & Army Combat" (2026-10-29), "Armies and recruitment", with the owner's redesign of
@@ -28,12 +28,9 @@ actions (`view/units.rs`), the city query's `recruit` and its queue's `dest`,
 the harness checks that a marching unit is in no army and that requisition orders lead their
 queue (`ffh_harness::check`).
 
-## The option
-
-`GAMEOPTION_ARMIES` is a visible game option with `bDefault` 1, like the cultural actions: the
-browser's new-game screen starts with it ticked, and everything else (`ffh autoplay`, `ffh stats`,
-the AI batches, soaks) plays without it unless asked (`--option GAMEOPTION_ARMIES`). Off, nothing of
-this runs: no unit has an army or marches, no army requisitions, the save carries empty lists.
+Every game has armies, the AI-only ones (`ffh autoplay`, `ffh stats`, the AI batches, soaks) too.
+Until 2026-11-05 they were a game option (`GAMEOPTION_ARMIES`, on by default only in the browser's
+new-game screen); the owner removed it, with those of the cultural actions and the governors.
 
 ## Rules
 

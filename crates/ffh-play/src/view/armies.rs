@@ -135,9 +135,6 @@ fn army_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
 /// The human's armies (formation order), as the view has them.
 pub fn armies(v: &Viewer) -> Json {
     let g = v.g;
-    if !g.armies_on() {
-        return Json::Null;
-    }
     Json::Arr(g.players[v.h].armies.iter().filter(|&&a| g.armies.contains(a)).map(|&a| army_json(v, a, false)).collect())
 }
 
@@ -153,9 +150,6 @@ pub fn garrison_marching(v: &Viewer) -> Json {
 /// nearest garrison instead.
 pub fn screen(v: &Viewer) -> Json {
     let g = v.g;
-    if !g.armies_on() {
-        return crate::jobj! { "on" => false };
-    }
     let h = v.h;
     let garrisons = g.players[h].cities.iter().map(|&c| {
         crate::jobj! {
@@ -167,7 +161,6 @@ pub fn screen(v: &Viewer) -> Json {
         }
     });
     crate::jobj! {
-        "on" => true,
         "armies" => Json::Arr(g.players[h].armies.iter().filter(|&&a| g.armies.contains(a)).map(|&a| army_json(v, a, true)).collect()),
         "garrisons" => Json::Arr(garrisons.collect()),
         "supply_range" => g.d.defines.army_supply_range,
@@ -180,9 +173,6 @@ pub fn screen(v: &Viewer) -> Json {
 /// requisition from it; `null` without armies.
 pub fn recruit(v: &Viewer, c: CityId) -> Json {
     let g = v.g;
-    if !g.armies_on() {
-        return Json::Null;
-    }
     let h = v.h;
     let mut options = vec![crate::jobj! { "dest" => recruit_dest_json(Some(RecruitDest::Garrison(c))), "name" => "this city's garrison" }];
     for &o in &g.players[h].cities {

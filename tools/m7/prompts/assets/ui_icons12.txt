@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. a steel shield with a golden hammer emblem
+2. a massive wall of grey boulders
+3. a white palace covered in snow with icicles
+4. a grey wolf behind a wooden fence
+5. a steel arrowhead pointing at a small red bullseye
+6. a black dagger with a red gem and a single red eye above it
+7. a white swirl of wind with a pale blue feather
+8. a green frog leaping out of blue water
+9. a pair of white feathered wings under a gold halo
+10. a ritual dagger with a curved black blade and a red gem
+11. a radiant golden figure with outstretched arms
+12. three arrows flying side by side in a volley arc
+13. a small round black mirror in a silver frame
+14. a gold halo over two praying hands
+15. a steel sword with a yellow lightning bolt across it
+16. a grey running silhouette smeared with motion lines

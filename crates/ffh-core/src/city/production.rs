@@ -557,9 +557,7 @@ impl Game {
         let mut experience = city.free_experience;
         experience += player.free_experience;
         // This game's governors: the traits (docs/GOVERNORS.md).
-        if self.governors_on() {
-            experience += self.city_governor_mods(c).experience;
-        }
+        experience += self.city_governor_mods(c).experience;
 
         if let Some(unit) = unit {
             if let Some(unit_combat) = d.units[unit].unit_combat_type {
@@ -890,9 +888,7 @@ impl Game {
         }
 
         // This game's governors: the traits (docs/GOVERNORS.md).
-        if self.governors_on() {
-            multiplier += self.city_governor_mods(c).unit_production;
-        }
+        multiplier += self.city_governor_mods(c).unit_production;
 
         // This game's building suitability (docs/SUITABILITY.md): the units the city's buildings
         // unlock, and the units a Lesser Warrens copies.
@@ -923,9 +919,7 @@ impl Game {
         }
 
         // This game's governors: the traits (docs/GOVERNORS.md).
-        if self.governors_on() {
-            multiplier += self.city_governor_mods(c).building_production;
-        }
+        multiplier += self.city_governor_mods(c).building_production;
 
         multiplier.max(0)
     }

@@ -199,9 +199,11 @@ pub struct PromotionInfo {
     /// What it changes of a unit's battle stats (`stat_changes`; docs/UNIT_STATS.md). Its attack and
     /// defence also change the unit's strength outside land battles: their percentages that
     /// strength's (C++ `iCombatPercent`, `iCombatPercentDefense`), their points, in tens, its flat
-    /// strength (`iExtraCombatStr`, `iExtraCombatDefense`); its magic percentage, its spell damage
-    /// (`iSpellDamageModify`).
+    /// strength (`iExtraCombatStr`, `iExtraCombatDefense`). Its magic is a battle's only.
     pub stat_changes: [StatChange; StatType::NUM],
+    /// C++ `getSpellDamageModify()`: damage added to its unit's spells outside battles (FfH's
+    /// `doDamage`); a battle's spells use magic (`stat_changes`).
+    pub spell_damage_modify: i32,
     pub combat_percent_global_counter: i32,
     pub combat_percent_in_borders: i32,
     pub defensive_strike_chance: i32,
@@ -267,11 +269,6 @@ impl PromotionInfo {
     /// C++ `getExtraCombatDefense()`: its defence's points in strength points (tens).
     pub fn extra_combat_defense(&self) -> i32 {
         self.stat_changes[StatType::Defense.idx()].flat / 10
-    }
-
-    /// C++ `getSpellDamageModify()`: its magic's percentage.
-    pub fn spell_damage_modify(&self) -> i32 {
-        self.stat_changes[StatType::Magic.idx()].percent
     }
 }
 
@@ -374,6 +371,7 @@ pub fn read_promotion(rd: &Rd) -> PromotionInfo {
         combat_heal_percent: rd.int("combat_heal_percent"),
         combat_limit: rd.int("combat_limit"),
         stat_changes: read_stat_changes(rd),
+        spell_damage_modify: rd.int("spell_damage_modify"),
         combat_percent_global_counter: rd.int("combat_percent_global_counter"),
         combat_percent_in_borders: rd.int("combat_percent_in_borders"),
         defensive_strike_chance: rd.int("defensive_strike_chance"),

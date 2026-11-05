@@ -10,11 +10,14 @@ use ffh_core::setup::GameSetup;
 use ffh_data::*;
 
 /// A duel map after `game_init` with armies: player 0's city on its first unit's plot, the starting
-/// units gone.
+/// units gone. Both players are the Bannor (no race promotion: a unit's numbers are its sheet's).
 fn game() -> (Game, CityId) {
     let d = ffh_data::global();
     let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
-    setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
+    for p in 0..2 {
+        setup.players[p].civ = Some(d.t::<CivilizationType>("CIVILIZATION_BANNOR"));
+        setup.players[p].leader = Some(d.t::<LeaderHeadType>("LEADER_CAPRIA")); // no combat trait
+    }
     let mut g = Game::new(d, setup);
     g.game_init();
     let p0 = PlayerId(0);

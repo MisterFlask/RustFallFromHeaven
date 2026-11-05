@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. a wooden cage holding a small human peasant
+2. a black leather book with a glowing red demonic eye on its cover and small flames
+3. a white tent with a red cross on its side
+4. a cosy timber-framed inn with a lit window and a hanging sign
+5. a glowing golden feather quill with sparkles
+6. a small stone lighthouse with a yellow lamp at its top
+7. a wooden cage holding a golden lion
+8. a white marble gate with a golden angel wing on each side
+9. a mine entrance in a rock face with a pickaxe and a cart of gold ore
+10. a big black iron cauldron bubbling with green brew
+11. a brass balance scale with gold coins on both pans
+12. a thick red leather book with a gold crown on its cover
+13. a black tower under a silver crescent moon and stars
+14. a grey stone obelisk on a small base
+15. a black obsidian gate with jagged edges and a red glow inside
+16. a wooden cage holding a green orc

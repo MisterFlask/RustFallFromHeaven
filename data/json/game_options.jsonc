@@ -471,27 +471,5 @@
     "type": "GAMEOPTION_ALWAYS_RAZE",
     "description": "TXT_KEY_GAME_OPTION_ALWAYS_RAZE",
     "help": "TXT_KEY_GAME_OPTION_ALWAYS_RAZE_HELP"
-  },
-  // This game's own rules (after FFH2's options, in tools/gen_enums.py's EXTRA_MEMBERS order)
-  {
-    "type": "GAMEOPTION_CULTURE_ACTIONS",
-    "description": "TXT_KEY_GAME_OPTION_CULTURE_ACTIONS",
-    "help": "TXT_KEY_GAME_OPTION_CULTURE_ACTIONS_HELP",
-    "default": true,
-    "visible": true
-  },
-  {
-    "type": "GAMEOPTION_ARMIES",
-    "description": "TXT_KEY_GAME_OPTION_ARMIES",
-    "help": "TXT_KEY_GAME_OPTION_ARMIES_HELP",
-    "default": true,
-    "visible": true
-  },
-  {
-    "type": "GAMEOPTION_GOVERNORS",
-    "description": "TXT_KEY_GAME_OPTION_GOVERNORS",
-    "help": "TXT_KEY_GAME_OPTION_GOVERNORS_HELP",
-    "default": true,
-    "visible": true
   }
 ]

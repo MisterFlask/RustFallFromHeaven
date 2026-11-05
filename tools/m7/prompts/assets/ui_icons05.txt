@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. a cut blue sapphire and a gold ring on a red velvet cushion
+2. a small gold casket with a glass window showing a white bone inside
+3. a pale blue moonstone crystal in a silver setting
+4. two rounded grey stone law tablets engraved with gold lines
+5. a military tent with a red banner and a small map table in front
+6. a white columned building with a gold balance scale over its door
+7. a fine two-storey manor house with a blue roof
+8. a delicate silver elven circlet set with a green gem
+9. a brown bear standing on its hind legs wearing a red collar
+10. a small grinning red horned imp
+11. a black stone altar with red flames and a horned skull on it
+12. a golden sun disc rising over a white stone altar
+13. a dark stone doorway with iron bars and hanging chains
+14. a wooden cage holding a small bearded dwarf
+15. a round wooden table with three tall carved chairs and a scroll on it
+16. a wooden cage holding a small pointy-eared elf

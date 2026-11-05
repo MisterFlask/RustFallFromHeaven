@@ -1,8 +1,6 @@
 //! Crusades and allied loans: committed force for a called war (docs/CRUSADE.md).
 //!
-//! Not FFH2: a rules layer of this game, off unless the ruleset turns it on
-//! ([`CrusadeRules::enabled`], `GameSetup::crusade`). With it off nothing here runs and the game
-//! is the faithful port.
+//! Not FFH2: a rules layer of this game, always on (parameters in `GameSetup::crusade`).
 //!
 //! A *crusade* is one called war plus its *Host*: a temporary AI player (a reserved player slot,
 //! see [`host`]) that owns every unit lent to the war, is at war only with the *target* (and the
@@ -31,13 +29,11 @@ use ffh_data::*;
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Debug)]
 pub struct CrusadeId(pub u32);
 
-/// Ruleset parameters of crusades and loans. `Default` is the faithful game: crusades off.
+/// Ruleset parameters of crusades and loans.
 /// Turn counts are at normal speed (scaled by the game speed's growth percent); strengths are
 /// in [`Game::crusade_unit_strength`] units (combat strength x 100).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CrusadeRules {
-    /// The ruleset flag: crusades and loans exist in this game.
-    pub enabled: bool,
     /// Player slots reserved for Hosts (one per running crusade or loan general).
     pub host_slots: usize,
     /// Most turns a council crusade runs.
@@ -67,7 +63,6 @@ pub struct CrusadeRules {
 impl Default for CrusadeRules {
     fn default() -> Self {
         CrusadeRules {
-            enabled: false,
             host_slots: 4,
             term: 40,
             pledge_deadline: 10,
@@ -81,13 +76,6 @@ impl Default for CrusadeRules {
             city_building_percent: 100,
             loan_max_turns: 30,
         }
-    }
-}
-
-impl CrusadeRules {
-    /// The default parameters with crusades on.
-    pub fn on() -> CrusadeRules {
-        CrusadeRules { enabled: true, ..CrusadeRules::default() }
     }
 }
 
@@ -290,12 +278,6 @@ pub fn speed_turns(g: &Game, turns: i32) -> i32 {
 }
 
 impl Game {
-    /// The ruleset flag (docs/CRUSADE.md).
-    #[inline]
-    pub fn crusades_enabled(&self) -> bool {
-        self.setup.crusade.enabled
-    }
-
     pub fn crusade_rules(&self) -> &CrusadeRules {
         &self.setup.crusade
     }

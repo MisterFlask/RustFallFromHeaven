@@ -1,0 +1,16 @@
+building_palace_lanun: a wooden palace on stilts over water flying a black skull flag
+building_palace_ljosalfar: a palace grown out of a giant green-leaved tree
+building_palace_luchuirp: a stone palace with a big golem face carved on its front
+building_palace_malakim: a desert palace with white domes and a golden sun
+building_palace_mercurians: a white and gold palace with angel wings on its towers
+building_palace_sheaim: a dark purple palace with a swirling portal above it
+building_palace_sidar: a grey misty palace flying a banner with a hooded figure
+building_palace_svartalfar: a dark tree palace with purple leaves under a silver moon
+building_palisade: a fence of sharpened wooden stakes
+building_pillar_of_chains: a stone pillar wrapped in heavy iron chains
+building_prophecy_of_ragnarok: an unrolled scroll under a burning red comet
+building_public_baths: a stone pool of steaming blue water between two columns
+building_ride_of_the_nine_kings: a galloping white horse with a golden crown above it
+building_shipyard: a wooden ship hull on a slipway with a hammer beside it
+building_shrine_of_sirona: a small white shrine with a silver crescent and a soft blue glow
+building_shrine_of_the_champion: a stone pedestal holding a golden helmet and sword

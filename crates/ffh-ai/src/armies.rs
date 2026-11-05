@@ -1,4 +1,4 @@
-//! Armies (this game's own rules, `GAMEOPTION_ARMIES`; docs/ARMIES.md; docs/AI.md "Armies").
+//! Armies (this game's own rules; docs/ARMIES.md; docs/AI.md "Armies").
 //!
 //! The AI's groups become armies by themselves (the rules' army sync names every group of army
 //! units), so its movement logic drives each army unchanged: a city-attack stack is an army, a
@@ -44,7 +44,7 @@ use crate::production::{self as prod, Role};
 const FIELD_ROLES: [UnitAIType; 4] = [UnitAIType::UNITAI_ATTACK, UnitAIType::UNITAI_ATTACK_CITY, UnitAIType::UNITAI_COLLATERAL, UnitAIType::UNITAI_COUNTER];
 
 pub fn turn(g: &mut Game, p: PlayerId) {
-    if !g.armies_on() || !crate::switches::ARMIES.on(g, p) || g.player_is_barbarian(p) {
+    if !crate::switches::ARMIES.on(g, p) || g.player_is_barbarian(p) {
         return;
     }
     // A defender that walked into one of our cities to hold it serves in the city's garrison, not
@@ -370,7 +370,6 @@ mod tests {
     #[test]
     fn at_war_attack_units_reinforce_the_main_army() {
         let mut g = crate::testkit::one_landmass_game(4);
-        g.setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
         let (p0, p1) = (PlayerId(0), PlayerId(1));
         let ours = g.player_init_city(p0, 4, 5, true, true);
         g.player_init_city(p1, 14, 5, true, true);
@@ -396,7 +395,6 @@ mod tests {
     #[test]
     fn requisition_takes_siege_then_attackers() {
         let mut g = crate::testkit::one_landmass_game(4);
-        g.setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
         let p0 = PlayerId(0);
         let c = g.player_init_city(p0, 5, 5, true, true);
         let w = g.d.t::<UnitType>("UNIT_WARRIOR");
@@ -416,8 +414,6 @@ mod tests {
     /// every city is near enough to the front).
     fn requisition_game() -> (Game, Vec<CityId>, ArmyId) {
         let mut g = crate::testkit::one_landmass_game(4);
-        g.setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
-        g.setup.options[GameOptionType::GAMEOPTION_GOVERNORS] = true;
         let (p0, p1) = (PlayerId(0), PlayerId(1));
         let cities: Vec<CityId> = [(3, 4), (3, 7), (6, 4), (6, 7), (9, 4), (9, 7), (12, 4)].iter().map(|&(x, y)| g.player_init_city(p0, x, y, true, true)).collect();
         g.player_init_city(p1, 16, 6, true, true);
@@ -537,7 +533,6 @@ mod tests {
     #[test]
     fn a_marching_unit_is_not_moved_or_counted() {
         let mut g = crate::testkit::one_landmass_game(4);
-        g.setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
         let (p0, p1) = (PlayerId(0), PlayerId(1));
         let home = g.player_init_city(p0, 4, 5, true, true);
         let far = g.player_init_city(p0, 10, 7, true, true);

@@ -27,11 +27,9 @@ fn game(seed: u32) -> Session {
     let mut ng = NewGame::new(d, seed);
     ng.opponents = 2;
     ng.world = d.t("WORLDSIZE_TINY");
-    ng.crusades = true;
     ng.options.push(GameOptionType::GAMEOPTION_NO_BARBARIANS);
     let answerer = Arc::new(FnAnswerer(|_: &Game, _: &Decision| Answer::Option(0)));
     let mut s = Session::new_game(&ng, answerer, SessionOptions::default()).unwrap();
-    assert!(s.g.crusades_enabled());
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
     let h = s.human;
     let settler = s.g.players[h].units.iter().copied().find(|&u| s.g.d.units[s.g.units[u].unit_type].found).expect("a settler");
@@ -115,7 +113,6 @@ fn a_call_waits_in_pending_and_the_human_answers_and_lends() {
     assert!(matches!(s.execute(&Command::CrusadeLend { crusade: id.0, units: mine[..1].to_vec(), declare_war: true }), Err(CmdErr::Gone | CmdErr::NotOwner)));
     // The query shows the human's part.
     let q = s.query(&Query::Crusades).unwrap();
-    assert_eq!(q.req::<bool>("enabled"), Ok(true));
     let cr = &q.req_arr("crusades").unwrap()[0];
     assert_eq!(cr.req::<u32>("id"), Ok(id.0));
     assert_eq!(cr.req::<i32>("delivered"), Ok(strength));
@@ -198,25 +195,6 @@ fn the_human_borrows_and_lends_through_propose_loan() {
         Ok(CmdOk::Applied { accepted: Some(false), .. }) => assert!(s.g.loan_general(ALLY, target).is_none()),
         other => panic!("{other:?}"),
     }
-}
-
-#[test]
-fn crusade_commands_are_refused_without_the_ruleset() {
-    let d = ffh_data::global();
-    let mut ng = NewGame::new(d, 6);
-    ng.opponents = 1;
-    ng.world = d.t("WORLDSIZE_DUEL");
-    let answerer = Arc::new(FnAnswerer(|_: &Game, _: &Decision| Answer::Option(0)));
-    let mut s = Session::new_game(&ng, answerer, SessionOptions::default()).unwrap();
-    assert_eq!(s.advance(&mut |_| {}), Stop::Human);
-    assert!(!s.g.crusades_enabled());
-    assert_eq!(s.execute(&Command::CrusadeAnswer { crusade: 0, strength: None }), Err(CmdErr::Gone));
-    let target = s.g.players[PlayerId(1)].team;
-    let loan = Command::ProposeLoan { to: PlayerId(1), lend: false, target, defend: false, strength: 100, duration: 3, give: vec![], get: vec![], units: vec![] };
-    assert!(matches!(s.execute(&loan), Err(CmdErr::Cannot(_) | CmdErr::Invalid(_))));
-    assert!(s.pending().crusade_calls.is_empty());
-    let q = s.query(&Query::Crusades).unwrap();
-    assert_eq!(q.req::<bool>("enabled"), Ok(false));
 }
 
 /// Troops in the trade screen (docs/CRUSADE.md, "Allied loans"): the `trade` query offers a

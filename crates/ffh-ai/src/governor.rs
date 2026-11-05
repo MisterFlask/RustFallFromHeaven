@@ -1,4 +1,4 @@
-//! Governed cities (this game's own rules, `GAMEOPTION_GOVERNORS`; docs/GOVERNORS.md; docs/AI.md
+//! Governed cities (this game's own rules; docs/GOVERNORS.md; docs/AI.md
 //! "Governors"): what a governor builds, and how the AI runs its own governed cities.
 //!
 //! **Production.** A governed city's production is the governor's, for the human's cities as
@@ -154,7 +154,7 @@ pub(crate) fn culture_grave(g: &Game, c: CityId) -> bool {
 
 /// The AI's governed cities, once a turn: the direct slots on its most productive cities.
 pub fn turn(g: &mut Game, p: PlayerId) {
-    if !g.governors_on() || !crate::switches::GOVERNORS.on(g, p) || g.player_is_barbarian(p) {
+    if !crate::switches::GOVERNORS.on(g, p) || g.player_is_barbarian(p) {
         return;
     }
     swap_direct(g, p);

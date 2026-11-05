@@ -9,9 +9,7 @@ use ffh_data::*;
 /// player 0 holding `n` cities at least 3 plots apart (the first is its capital).
 fn game(n: usize) -> (Game, Vec<CityId>) {
     let d = ffh_data::global();
-    let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_SMALL", 7);
-    setup.options[GameOptionType::GAMEOPTION_GOVERNORS] = true;
-    setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
+    let setup = GameSetup::standard(d, 2, "WORLDSIZE_SMALL", 7);
     let mut g = Game::new(d, setup);
     g.game_init();
     g.log.enabled = true;
@@ -174,20 +172,6 @@ fn governors_survive_a_save() {
     assert_eq!(h.governors[gv], g.governors[gv]);
     assert_eq!(h.cities[cities[4]].governor, Some(gv));
     assert_eq!(h.save(), bytes);
-}
-
-#[test]
-fn off_without_the_option() {
-    let d = ffh_data::global();
-    let mut g = Game::new(d, GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5));
-    g.game_init();
-    let p0 = PlayerId(0);
-    let u = g.players[p0].units[0];
-    let (x, y) = (g.units[u].x, g.units[u].y);
-    let c = g.player_init_city(p0, x, y, true, true);
-    assert!(!g.city_is_governed(c));
-    g.player_governance_turn(p0);
-    assert!(g.governors.iter().next().is_none());
 }
 
 #[test]

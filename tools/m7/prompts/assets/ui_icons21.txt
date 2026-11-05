@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. a tall wooden staff with a blue gem at its top
+2. a glowing blue ghostly bird
+3. a white glowing wisp spirit
+4. a staff topped with a skull and green souls swirling around it
+5. a small handcart with a tent bundle and a shovel
+6. a black cat's yellow eyes in darkness
+7. a pale hand with a glowing red mark
+8. a grey fist with a stone texture
+9. a muscular flexed arm
+10. a rope lasso around a wolf's head
+11. a rope lasso around a bear's head
+12. a purple summoning circle with a glowing creature rising from it
+13. a bright golden sun
+14. a cracked broken shield
+15. a silver lyre glowing with blue light
+16. a white mask with a terrified face

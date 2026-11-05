@@ -1,0 +1,16 @@
+building_smokehouse: a small wooden hut with smoke rising and sausages hanging at its door
+building_smugglers_port: a small dock with a hidden barrel and a boat with a black sail
+building_song_of_autumn: a golden lute with falling orange autumn leaves
+building_soul_forge: an anvil wreathed in ghostly blue flames
+building_spider_pen: a large black spider in its web
+building_stable: a wooden stable with a brown horse's head looking out
+building_stigmata_on_the_unborn: a pale open hand with a glowing red mark in its palm
+building_sylivens_perfect_lyre: a silver lyre glowing with blue light
+building_tablets_of_bambur: three grey stone tablets engraved with angular runes
+building_tavern_grigori: a tavern with a hanging sign showing a green tankard
+building_tax_office: a wooden desk with an open ledger and a sack of gold coins
+building_temple_of_kilmorph: a temple carved of brown rock with a golden gem over its door
+building_temple_of_leaves: a green temple woven from living vines and leaves
+building_temple_of_temporence: a modest grey temple with a silver balance scale symbol
+building_temple_of_the_empyrean: a white temple with a radiant golden sun on its roof
+building_temple_of_the_order: a white stone church with a gold sunburst and a red banner

@@ -1,0 +1,16 @@
+building_temple_of_the_overlords: a dark green temple with a tentacled octopus idol on its roof
+building_the_dragons_horde: a pile of gold treasure with a red dragon claw resting on it
+building_the_necronomicon: a grey book with a skull on its cover
+building_the_nexus: a floating blue crystal surrounded by rings of light
+building_theatre: a pair of comedy and tragedy masks
+building_theatre_of_dreams: a purple stage curtain opening on a glowing crescent moon
+building_tiger_cage: a wooden cage holding an orange tiger
+building_tower_of_alteration: a slender tower topped with a pink and purple swirl
+building_tower_of_complacency: a tall white tower with a closed sleeping eye on it
+building_tower_of_divination: a tower topped with a glowing crystal ball
+building_tower_of_eyes: a stone tower with a big watchful eye on it
+building_tower_of_mastery: a tall gold and blue tower crowned by a four-coloured star
+building_tower_of_the_elements: a tower with four small orbs, red, blue, white and brown, circling its top
+building_arena: a round stone coliseum
+building_sculptors_studio: a marble bust on a stand with a chisel
+building_training_yard: a wooden training dummy holding a round shield

@@ -7896,8 +7896,6 @@ TXT_KEY_GAME_OPTION_ALL_UNIQUE_IMPROVEMENTS	All Unique Features
 TXT_KEY_GAME_OPTION_ALL_UNIQUE_IMPROVEMENTS_HELP	All of the game's Unique Features will be placed on the map
 TXT_KEY_GAME_OPTION_ALWAYS_WAR	Always War
 TXT_KEY_GAME_OPTION_ALWAYS_WAR_HELP	All AI civilizations are at war with the human for the length of the game
-TXT_KEY_GAME_OPTION_ARMIES	Armies
-TXT_KEY_GAME_OPTION_ARMIES_HELP	Land combat units serve in named armies, which move as one, or in a city's garrison. A city can send the units it trains to another city's garrison or to an army: they travel there off the map and join it, as long as the army stays in supply (near your connected network). Heroes, mages, scouts and summons move on their own.
 TXT_KEY_GAME_OPTION_BARBARIAN_WORLD	Challenge- Barbarian World
 TXT_KEY_GAME_OPTION_BARBARIAN_WORLD_HELP	The world starts already inhabited with barbarian cities
 TXT_KEY_GAME_OPTION_BLUE_MARBLE_TERRAIN	Blue Marble Terrain
@@ -7910,8 +7908,6 @@ TXT_KEY_GAME_OPTION_CHALLENGE_INCREASING_DIFFICULTY	Challenge- Increasing Diffic
 TXT_KEY_GAME_OPTION_CHALLENGE_INCREASING_DIFFICULTY_HELP	Every 50 turns the game difficulty increases by 1 until it gets to Deity
 TXT_KEY_GAME_OPTION_COMPLETE_KILLS	Require Complete Kills
 TXT_KEY_GAME_OPTION_COMPLETE_KILLS_HELP	Must kill all cities AND units to wipe out an enemy civilization.
-TXT_KEY_GAME_OPTION_CULTURE_ACTIONS	Cultural actions
-TXT_KEY_GAME_OPTION_CULTURE_ACTIONS_HELP	A city may channel half its culture into fomenting revolt in a civilization's cities or spreading a religion among them, until you change it. Culture channelled this way does not reach borders or the culture victory. Every channel is public to the civilizations that have met its caster.
 TXT_KEY_GAME_OPTION_DOUBLE_ANIMALS	Wildlands
 TXT_KEY_GAME_OPTION_DOUBLE_ANIMALS_HELP	Double the amount of animals that spawn
 TXT_KEY_GAME_OPTION_DOUBLE_BONUSES	Blessing of Amathaon
@@ -7924,8 +7920,6 @@ TXT_KEY_GAME_OPTION_FLEXIBLE_DIFFICULTY	Flexible Difficulty
 TXT_KEY_GAME_OPTION_FLEXIBLE_DIFFICULTY_HELP	If the player is in the top third the game difficulty increases by one. If the player is in the bottom third the game difficulty decreases by one. (single player only)
 TXT_KEY_GAME_OPTION_FLIPPING_AFTER_CONQUEST	City Flipping after Conquest
 TXT_KEY_GAME_OPTION_FLIPPING_AFTER_CONQUEST_HELP	Cities which have been captured via conquest can convert peacefully back to a previous owner
-TXT_KEY_GAME_OPTION_GOVERNORS	Governors
-TXT_KEY_GAME_OPTION_GOVERNORS_HELP	You rule four cities directly, your capital among them; every other city is run by a governor from your bench. You choose who governs a city and whether it develops itself or feeds one of your armies; the governor chooses what it builds. World wonders, rituals and settlers are built only in directly ruled cities.
 TXT_KEY_GAME_OPTION_LEAD_ANY_CIV	Unrestricted Leaders
 TXT_KEY_GAME_OPTION_LEAD_ANY_CIV_HELP	Players may lead any Civilization with any Leader.
 TXT_KEY_GAME_OPTION_LOCK_MODS	Lock Modified Assets
@@ -11306,7 +11300,7 @@ TXT_KEY_PROMOTION_SLOW	Slow
 TXT_KEY_PROMOTION_SPELLSTAFF	Spellstaff
 TXT_KEY_PROMOTION_SPELLSTAFF_PEDIA	[ICON_BULLET]A Spellstaff can be broken to allow the caster to regain the ability to cast
 TXT_KEY_PROMOTION_SPELL_CASTER_XP	[ICON_BULLET]Increases the rate spellcasters gain xp
-TXT_KEY_PROMOTION_SPELL_DAMAGE_MODIFY	[ICON_BULLET]%D1 to spell damage
+TXT_KEY_PROMOTION_SPELL_DAMAGE_MODIFY	[ICON_BULLET]%D1 spell damage outside battles
 TXT_KEY_PROMOTION_SPIRIT1	Spirit I
 TXT_KEY_PROMOTION_SPIRIT2	Spirit II
 TXT_KEY_PROMOTION_SPIRIT3	Spirit III

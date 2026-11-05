@@ -9,8 +9,9 @@ use ffh_core::ids::*;
 use ffh_core::setup::GameSetup;
 use ffh_data::*;
 
-/// A duel map with players 0 and 1 at war (both AI), `from` and `to` two unowned flat land plots
-/// side by side with no feature, improvement or river crossing between them and no plot defense.
+/// A duel map with players 0 and 1 at war (both AI, the Bannor: no race promotion, so a unit's
+/// numbers are its sheet's), `from` and `to` two unowned flat land plots side by side with no
+/// feature, improvement or river crossing between them and no plot defense.
 struct World {
     g: Game,
     p0: PlayerId,
@@ -22,7 +23,10 @@ struct World {
 fn world() -> World {
     let d = ffh_data::global();
     let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
-    setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
+    for p in 0..2 {
+        setup.players[p].civ = Some(d.t::<CivilizationType>("CIVILIZATION_BANNOR"));
+        setup.players[p].leader = Some(d.t::<LeaderHeadType>("LEADER_CAPRIA")); // no combat trait
+    }
     let mut g = Game::new(d, setup);
     g.game_init();
     let (p0, p1) = (PlayerId(0), PlayerId(1));
@@ -132,12 +136,13 @@ fn formation_values_by_unit() {
     };
     // A tier 4 flanker: the flanker's values, one more charge from the front.
     let knight = w.unit(p0, "UNIT_KNIGHT", from);
-    assert_eq!(values(&w.g, knight), (6, 10, 10, 0, true));
+    assert_eq!(values(&w.g, knight), (6, 15, 10, 0, true));
     assert_eq!(w.g.unit_engage_rows(knight), [r(Charge, 2), r(Strike, 1), r(Strike, 1)]);
     assert_eq!(w.g.unit_engage_actions(knight), [r(Charge, 3), r(Strike, 1), r(Strike, 1)]);
-    // An assassin (tier 3): its sheet's evasion and crit, best from the middle, no extra action.
+    // An assassin (tier 3): its sheet's evasion, its crit with its free Marksman's (10 + 20), best
+    // from the middle, no extra action.
     let assassin = w.unit(p0, "UNIT_ASSASSIN", from);
-    assert_eq!(values(&w.g, assassin), (7, 15, 25, 1, false));
+    assert_eq!(values(&w.g, assassin), (7, 20, 30, 1, false));
     assert_eq!(w.g.unit_engage_actions(assassin), [r(Stab, 1), r(Stab, 2), r(Stab, 1)]);
     // An axeman: the frontline's; with Formation the screen's (its own role); a hero acts once
     // more from its best row.

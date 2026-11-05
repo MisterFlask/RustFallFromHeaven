@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. a glowing pale sky-blue magic orb with a white swirl of wind inside it
+2. a glowing rose-red magic orb with a white flexed arm inside it
+3. a glowing rainbow-swirled magic orb with a twisting multicoloured spiral inside it
+4. a glowing dark violet-black magic orb with a small white skull inside it
+5. a glowing earthy brown magic orb with a grey rock with green moss inside it
+6. a glowing bright pink magic orb with a golden four-pointed star inside it
+7. a glowing ash-grey magic orb with a crumbling broken hourglass inside it
+8. a glowing pale cyan magic orb with a white snowflake inside it
+9. a glowing golden-yellow magic orb with a small silver balance scale inside it
+10. a glowing warm white-gold magic orb with a green sprouting seedling inside it
+11. a glowing deep violet magic orb with a glowing rune circle inside it
+12. a glowing magenta magic orb with a single open eye inside it
+13. a glowing leaf-green magic orb with a curled green vine leaf inside it
+14. a glowing pale blue magic orb with a white ghostly wisp inside it
+15. a glowing orange-yellow magic orb with a radiant little sun inside it
+16. a glowing inky black-blue magic orb with a silver crescent moon inside it

@@ -1,4 +1,4 @@
-//! Cultural channels (this game's own rules, not FFH2's; `GAMEOPTION_CULTURE_ACTIONS`;
+//! Cultural channels (this game's own rules, not FFH2's;
 //! docs/CULTURE.md).
 //!
 //! A city may channel `CULTURE_CHANNEL_PERCENT` of its culture into one standing order aimed at
@@ -43,8 +43,6 @@ pub struct CultureChannel {
 /// Why a channel cannot be set, or why one ends.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CultureRefusal {
-    /// `GAMEOPTION_CULTURE_ACTIONS` is off.
-    Off,
     /// The barbarians channel nothing.
     Barbarian,
     /// The target civilization is gone.
@@ -65,7 +63,6 @@ impl CultureRefusal {
     /// The reason for the player, in a sentence fragment.
     pub fn describe(&self) -> String {
         match self {
-            CultureRefusal::Off => "cultural actions are off in this game".into(),
             CultureRefusal::Barbarian => "the barbarians channel nothing".into(),
             CultureRefusal::Dead => "that civilization is gone".into(),
             CultureRefusal::NotMet => "we have not met them".into(),
@@ -108,12 +105,6 @@ pub const REVOLT_REVOLT: i32 = 2;
 pub const REVOLT_NEAR_FLIP: i32 = 3;
 
 impl Game {
-    /// Whether this game has cultural channels.
-    #[inline]
-    pub fn culture_actions_on(&self) -> bool {
-        self.is_option(GameOptionType::GAMEOPTION_CULTURE_ACTIONS)
-    }
-
     /// The distance effect (percent) of a channel on a city `dist` plots away: in full within
     /// `CULTURE_CHANNEL_FULL_RANGE`, then falling with the square of the distance, nothing beyond
     /// `CULTURE_CHANNEL_RANGE`.
@@ -217,9 +208,6 @@ impl Game {
 
     /// Whether city `c` may channel `action` (with `religion`) into `target` now.
     pub fn culture_channel_check(&self, c: CityId, action: CulturalActionType, target: PlayerId, religion: Option<ReligionType>) -> Result<(), CultureRefusal> {
-        if !self.culture_actions_on() {
-            return Err(CultureRefusal::Off);
-        }
         let caster = self.cities[c].owner;
         if caster == self.barbarian_player() {
             return Err(CultureRefusal::Barbarian);

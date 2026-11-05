@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Crusade self-play measures (docs/CRUSADE.md, "Self-play measures").
 
-Plays `ffh autoplay --crusades` games (in parallel) with council crusades injected against the
+Plays `ffh autoplay` games (in parallel) with council crusades injected against the
 leading civ at the `--call` turns (AI councils rarely pass war resolutions on their own), one
 player made a free rider (it pledges the minimum to every call), and reads the dissolved
 crusades the runner prints (`crusade {...}` lines). Prints:
@@ -40,7 +40,7 @@ def seeds(spec):
 
 def play(args, seed):
     cmd = [args.bin, 'autoplay', '--seed', str(seed), '--civs', str(args.civs), '--size', args.size,
-           '--turns', str(args.turns), '--crusades', '--crusade-call', args.call]
+           '--turns', str(args.turns), '--crusade-call', args.call]
     if args.free_rider is not None:
         cmd += ['--free-rider', str(args.free_rider)]
     out = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout

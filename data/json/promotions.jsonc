@@ -95,6 +95,7 @@
   },
   {
     "type": "PROMOTION_ANGEL",
+    "stat_changes": {"magic_defense": {"percent": 20}, "accuracy": {"flat": 5}},
     "description": "TXT_KEY_PROMOTION_ANGEL",
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Promotions/Angel.dds",
@@ -352,6 +353,7 @@
   },
   {
     "type": "PROMOTION_CENTAUR",
+    "stat_changes": {"accuracy": {"flat": 5}},
     "description": "TXT_KEY_PROMOTION_CENTAUR",
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Promotions/Centaur.dds",
@@ -540,7 +542,8 @@
   },
   {
     "type": "PROMOTION_COMBAT1",
-    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic": {"percent": 5}, "magic_defense": {"percent": 20}},
+    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic": {"percent": 10}, "magic_defense": {"percent": 20}},
+    "spell_damage_modify": 5,
     "description": "TXT_KEY_PROMOTION_COMBAT1",
     "unit_combats": {
       "UNITCOMBAT_ADEPT": true,
@@ -561,7 +564,8 @@
   },
   {
     "type": "PROMOTION_COMBAT2",
-    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic": {"percent": 5}, "magic_defense": {"percent": 20}},
+    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic": {"percent": 10}, "magic_defense": {"percent": 20}},
+    "spell_damage_modify": 5,
     "description": "TXT_KEY_PROMOTION_COMBAT2",
     "promotion_prereq": "PROMOTION_COMBAT1",
     "unit_combats": {
@@ -582,7 +586,8 @@
   },
   {
     "type": "PROMOTION_COMBAT3",
-    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic": {"percent": 5}, "magic_defense": {"percent": 20}},
+    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic": {"percent": 10}, "magic_defense": {"percent": 20}},
+    "spell_damage_modify": 5,
     "description": "TXT_KEY_PROMOTION_COMBAT3",
     "promotion_prereq": "PROMOTION_COMBAT2",
     "unit_combats": {
@@ -603,7 +608,8 @@
   },
   {
     "type": "PROMOTION_COMBAT4",
-    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic": {"percent": 5}, "magic_defense": {"percent": 20}},
+    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic": {"percent": 10}, "magic_defense": {"percent": 20}},
+    "spell_damage_modify": 5,
     "description": "TXT_KEY_PROMOTION_COMBAT4",
     "promotion_prereq": "PROMOTION_COMBAT3",
     "unit_combats": {
@@ -624,7 +630,8 @@
   },
   {
     "type": "PROMOTION_COMBAT5",
-    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic": {"percent": 5}, "magic_defense": {"percent": 20}},
+    "stat_changes": {"attack": {"percent": 20}, "defense": {"percent": 20}, "magic": {"percent": 10}, "magic_defense": {"percent": 20}},
+    "spell_damage_modify": 5,
     "description": "TXT_KEY_PROMOTION_COMBAT5",
     "promotion_prereq": "PROMOTION_COMBAT4",
     "unit_combats": {
@@ -801,6 +808,7 @@
   },
   {
     "type": "PROMOTION_DARK_ELF",
+    "stat_changes": {"magic": {"percent": 10}, "accuracy": {"flat": 5}},
     "description": "TXT_KEY_PROMOTION_ELF",
     "tech_prereq": "TECH_NEVER",
     "feature_attacks": {"FEATURE_FOREST": 10, "FEATURE_FOREST_ANCIENT": 10},
@@ -872,6 +880,7 @@
   },
   {
     "type": "PROMOTION_DEMON",
+    "stat_changes": {"magic_defense": {"percent": 20}, "crit": {"flat": 5}},
     "description": "TXT_KEY_PROMOTION_DEMON",
     "tech_prereq": "TECH_NEVER",
     "terrain_attacks": {"TERRAIN_BROKEN_LANDS": 10, "TERRAIN_FIELDS_OF_PERDITION": 10, "TERRAIN_BURNING_SANDS": 10},
@@ -944,6 +953,7 @@
   },
   {
     "type": "PROMOTION_DRAGON",
+    "stat_changes": {"magic_defense": {"percent": 30}},
     "description": "TXT_KEY_PROMOTION_DRAGON",
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Promotions/Dragon.dds",
@@ -968,6 +978,7 @@
   },
   {
     "type": "PROMOTION_DRILL1",
+    "stat_changes": {"accuracy": {"flat": 5}, "crit": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_DRILL1",
     "chance_first_strikes_change": 1,
     "unit_combats": {
@@ -987,6 +998,7 @@
   },
   {
     "type": "PROMOTION_DRILL2",
+    "stat_changes": {"accuracy": {"flat": 5}, "crit": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_DRILL2",
     "promotion_prereq": "PROMOTION_DRILL1",
     "first_strikes_change": 1,
@@ -1007,6 +1019,7 @@
   },
   {
     "type": "PROMOTION_DRILL3",
+    "stat_changes": {"accuracy": {"flat": 5}, "crit": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_DRILL3",
     "promotion_prereq": "PROMOTION_DRILL2",
     "chance_first_strikes_change": 2,
@@ -1026,6 +1039,7 @@
   },
   {
     "type": "PROMOTION_DRILL4",
+    "stat_changes": {"accuracy": {"flat": 5}, "crit": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_DRILL4",
     "promotion_prereq": "PROMOTION_DRILL3",
     "first_strikes_change": 2,
@@ -1045,6 +1059,7 @@
   },
   {
     "type": "PROMOTION_DWARF",
+    "stat_changes": {"defense": {"percent": 10}, "magic_defense": {"percent": 10}, "evasion": {"flat": -5}},
     "description": "TXT_KEY_PROMOTION_DWARF",
     "tech_prereq": "TECH_NEVER",
     "hills_double_move": true,
@@ -1106,6 +1121,7 @@
   },
   {
     "type": "PROMOTION_ELEMENTAL",
+    "stat_changes": {"magic_defense": {"percent": 20}},
     "description": "TXT_KEY_PROMOTION_ELEMENTAL",
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Promotions/Elemental.dds",
@@ -1116,6 +1132,7 @@
   },
   {
     "type": "PROMOTION_ELF",
+    "stat_changes": {"accuracy": {"flat": 5}, "evasion": {"flat": 5}},
     "description": "TXT_KEY_PROMOTION_ELF",
     "tech_prereq": "TECH_NEVER",
     "feature_attacks": {"FEATURE_FOREST": 10, "FEATURE_FOREST_ANCIENT": 10},
@@ -1452,6 +1469,7 @@
   },
   {
     "type": "PROMOTION_FLANKING1",
+    "stat_changes": {"evasion": {"flat": 8}},
     "description": "TXT_KEY_PROMOTION_FLANKING1",
     "withdrawal_change": 20,
     "unit_combats": {"UNITCOMBAT_MOUNTED": true, "UNITCOMBAT_NAVAL": true, "UNITCOMBAT_RECON": true},
@@ -1460,6 +1478,7 @@
   },
   {
     "type": "PROMOTION_FLANKING2",
+    "stat_changes": {"evasion": {"flat": 8}},
     "description": "TXT_KEY_PROMOTION_FLANKING2",
     "promotion_prereq": "PROMOTION_FLANKING1",
     "withdrawal_change": 20,
@@ -1469,6 +1488,7 @@
   },
   {
     "type": "PROMOTION_FLANKING3",
+    "stat_changes": {"evasion": {"flat": 8}},
     "description": "TXT_KEY_PROMOTION_FLANKING3",
     "promotion_prereq": "PROMOTION_FLANKING2",
     "immune_to_first_strikes": true,
@@ -1515,6 +1535,7 @@
   },
   {
     "type": "PROMOTION_FROSTLING",
+    "stat_changes": {"evasion": {"flat": 5}},
     "description": "TXT_KEY_PROMOTION_FROSTLING",
     "tech_prereq": "TECH_NEVER",
     "terrain_attacks": {"TERRAIN_SNOW": 25, "TERRAIN_TUNDRA": 10, "TERRAIN_DESERT": -25},
@@ -1564,6 +1585,7 @@
   },
   {
     "type": "PROMOTION_GOLEM",
+    "stat_changes": {"magic_defense": {"percent": 40}, "evasion": {"flat": -10}},
     "description": "TXT_KEY_PROMOTION_GOLEM",
     "tech_prereq": "TECH_NEVER",
     "neutral_heal_change": -5,
@@ -1673,6 +1695,7 @@
   },
   {
     "type": "PROMOTION_HERO",
+    "stat_changes": {"magic_defense": {"percent": 20}, "accuracy": {"flat": 5}, "crit": {"flat": 5}},
     "description": "TXT_KEY_PROMOTION_HERO",
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Promotions/Hero.dds",
@@ -1885,6 +1908,7 @@
   },
   {
     "type": "PROMOTION_ILLUSION",
+    "stat_changes": {"evasion": {"flat": 10}},
     "description": "TXT_KEY_PROMOTION_ILLUSION",
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Promotions/Illusion.dds",
@@ -2126,6 +2150,7 @@
   },
   {
     "type": "PROMOTION_LIZARDMAN",
+    "stat_changes": {"evasion": {"flat": 5}},
     "description": "TXT_KEY_PROMOTION_LIZARDMAN",
     "tech_prereq": "TECH_NEVER",
     "amphib": true,
@@ -2179,6 +2204,7 @@
   },
   {
     "type": "PROMOTION_MAGIC_RESISTANCE",
+    "stat_changes": {"magic_defense": {"percent": 75}},
     "description": "TXT_KEY_PROMOTION_MAGIC_RESISTANCE",
     "help": "TXT_KEY_PROMOTION_MAGIC_RESISTANCE_PEDIA",
     "promotion_prereq": "PROMOTION_COMBAT3",
@@ -2210,6 +2236,7 @@
   },
   {
     "type": "PROMOTION_MARKSMAN",
+    "stat_changes": {"accuracy": {"flat": 10}, "crit": {"flat": 20}},
     "description": "TXT_KEY_PROMOTION_MARKSMAN",
     "promotion_prereq": "PROMOTION_COMBAT4",
     "tech_prereq": "TECH_PRECISION",
@@ -2253,6 +2280,7 @@
   {
     "type": "PROMOTION_METAMAGIC1",
     "stat_changes": {"magic": {"percent": 5}},
+    "spell_damage_modify": 5,
     "description": "TXT_KEY_PROMOTION_METAMAGIC1",
     "promotion_prereq": "PROMOTION_CHANNELING1",
     "unit_combats": {"UNITCOMBAT_ADEPT": true},
@@ -2265,6 +2293,7 @@
   {
     "type": "PROMOTION_METAMAGIC2",
     "stat_changes": {"magic": {"percent": 5}},
+    "spell_damage_modify": 5,
     "description": "TXT_KEY_PROMOTION_METAMAGIC2",
     "promotion_prereq": "PROMOTION_METAMAGIC1",
     "unit_combats": {
@@ -2288,6 +2317,7 @@
   {
     "type": "PROMOTION_METAMAGIC3",
     "stat_changes": {"magic": {"percent": 5}},
+    "spell_damage_modify": 5,
     "description": "TXT_KEY_PROMOTION_METAMAGIC3",
     "promotion_prereq": "PROMOTION_METAMAGIC2",
     "unit_combats": {
@@ -2534,6 +2564,7 @@
   },
   {
     "type": "PROMOTION_ORC",
+    "stat_changes": {"hp": {"percent": 10}, "accuracy": {"flat": -5}},
     "description": "TXT_KEY_PROMOTION_ORC",
     "tech_prereq": "TECH_NEVER",
     "feature_attacks": {"FEATURE_JUNGLE": 10},
@@ -2701,6 +2732,7 @@
   {
     "type": "PROMOTION_PUPPET",
     "stat_changes": {"attack": {"percent": -20}, "defense": {"percent": -20}, "magic": {"percent": -10}, "magic_defense": {"percent": -20}},
+    "spell_damage_modify": -10,
     "description": "TXT_KEY_PROMOTION_PUPPET",
     "button": "Art/Interface/Buttons/Promotions/Puppet.dds",
     "not_alive": true,
@@ -3264,6 +3296,7 @@
   },
   {
     "type": "PROMOTION_UNDEAD",
+    "stat_changes": {"hp": {"percent": 10}, "magic_defense": {"percent": -20}},
     "description": "TXT_KEY_PROMOTION_UNDEAD",
     "tech_prereq": "TECH_NEVER",
     "button": "Art/Interface/Buttons/Promotions/Undead.dds",
@@ -3285,6 +3318,7 @@
   {
     "type": "PROMOTION_UNHOLY_TAINT",
     "stat_changes": {"attack": {"flat": -10, "percent": -25}, "defense": {"flat": -10, "percent": -25}, "magic": {"percent": 10}, "magic_defense": {"percent": -25}},
+    "spell_damage_modify": 10,
     "description": "TXT_KEY_PROMOTION_UNHOLY_TAINT",
     "help": "TXT_KEY_PROMOTION_UNHOLY_TAINT_PEDIA",
     "tech_prereq": "TECH_NEVER",

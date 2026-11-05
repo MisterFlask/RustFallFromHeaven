@@ -1296,7 +1296,7 @@ are rare by then, and a building nearly always outscores a gold a turn.
 
 ## Cultural actions (`culture.rs`)
 
-This game's own system (`GAMEOPTION_CULTURE_ACTIONS`, docs/CULTURE.md): a city may channel half
+This game's own system (docs/CULTURE.md): a city may channel half
 its culture into one standing order aimed at a civilization, Foment Revolt or Spread Religion,
 until its owner changes it. Once a turn, after the diplomacy (so the war state is current) and the
 governors' production, what an expert does with the channels:
@@ -1401,7 +1401,7 @@ its channels' strength in the cities it throws into revolt.
 
 ## Armies (`armies.rs`)
 
-This game's own system (`GAMEOPTION_ARMIES`, docs/ARMIES.md). The rules' army sync gives every
+This game's own system (docs/ARMIES.md). The rules' army sync gives every
 group of army units an army, so the AI's movement logic (`military.rs`, `campaign.rs`) drives each
 army unchanged: a city-attack stack is an army, a city's defenders are its garrison. What an
 expert adds is logistics, once a turn before the governed cities and the cultural actions. Since
@@ -1510,7 +1510,7 @@ Firings (seed 3, `FFH_AI_TRACE`), each forked there (`tools/ai-branch.sh --switc
 
 ## Governors (`governor.rs`)
 
-This game's own system (`GAMEOPTION_GOVERNORS`, docs/GOVERNORS.md). Two things: what a governor
+This game's own system (docs/GOVERNORS.md). Two things: what a governor
 builds in a governed city (the human's as well as the AI's), and how the AI runs its own governed
 cities.
 
@@ -3507,8 +3507,8 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
 
 ## Crusades and loans (`crusade.rs`)
 
-Only with the crusade ruleset on (docs/CRUSADE.md, which describes the Host's state machine, the
-pledge valuation, delivery, draft picks and loans, and the self-play measures). The Host strikes
+See docs/CRUSADE.md, which describes the Host's state machine, the
+pledge valuation, delivery, draft picks and loans, and the self-play measures. The Host strikes
 through `campaign::strike`; a borrower does not seek peace (`diplomacy::want_peace`) with an enemy
 its loan general is fighting. None of this runs in the default game, so it moves no win rate there.
 

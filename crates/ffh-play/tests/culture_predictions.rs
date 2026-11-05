@@ -17,8 +17,7 @@ const CULTURE: CommerceType = CommerceType::COMMERCE_CULTURE;
 /// revolt.
 fn game() -> (Game, CityId, CityId) {
     let d = ffh_data::global();
-    let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
-    setup.options[GameOptionType::GAMEOPTION_CULTURE_ACTIONS] = true;
+    let setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
     let mut g = Game::new(d, setup);
     g.game_init();
     let (p0, p1) = (PlayerId(0), PlayerId(1));

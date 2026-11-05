@@ -1196,7 +1196,7 @@ function pickUnit(u, ev) {
 }
 
 /** What a unit is doing as the strip's corner mark shows it (the group's activity). */
-const ACTIVITY_ICONS = { ACTIVITY_SLEEP: "sleep", ACTIVITY_HEAL: "heal", ACTIVITY_SENTRY: "sentry", ACTIVITY_INTERCEPT: "sentry", ACTIVITY_PATROL: "sentry", ACTIVITY_MISSION: "goto", ACTIVITY_PLUNDER: "pillage" };
+const ACTIVITY_ICONS = { ACTIVITY_SLEEP: "sleep", ACTIVITY_HEAL: "heal", ACTIVITY_SENTRY: "sentry", ACTIVITY_INTERCEPT: "sentry", ACTIVITY_PATROL: "sentry", ACTIVITY_MISSION: "goto", ACTIVITY_PLUNDER: "plunder" };
 
 /** The unit's activity when it is not awake (sleeping, fortified, healing, ...), else null. */
 function activityOf(u) {

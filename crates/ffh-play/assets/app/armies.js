@@ -31,7 +31,7 @@ addHelp({
   group: "Game options",
   title: "Armies and garrisons",
   body: () => [
-    h("p", "With the new game's Armies option on, land combat units serve in armies, which move as one, or in a city's garrison. Heroes, mages, recon units and summons move on their own."),
+    h("p", "Land combat units serve in armies, which move as one, or in a city's garrison. Heroes, mages, recon units and summons move on their own."),
     h("h4", "Forming armies"),
     h(
       "ul",
@@ -163,10 +163,6 @@ export async function openArmies({ select, centerOn } = {}) {
       return;
     }
     if (m.closed) return;
-    if (!r.on) {
-      m.setBody(h("p.dim", "This game has no armies (the Armies option is off)."));
-      return;
-    }
     for (const d of document.querySelectorAll("#modals .army-card details.requisition-pick")) {
       const id = Number(d.closest(".army-card")?.dataset.army);
       if (d.open) opened.add(id);

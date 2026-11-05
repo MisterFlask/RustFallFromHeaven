@@ -1,0 +1,16 @@
+sphere_air: a glowing pale sky-blue magic orb with a white swirl of wind inside it
+sphere_body: a glowing rose-red magic orb with a white flexed arm inside it
+sphere_chaos: a glowing rainbow-swirled magic orb with a twisting multicoloured spiral inside it
+sphere_death: a glowing dark violet-black magic orb with a small white skull inside it
+sphere_earth: a glowing earthy brown magic orb with a grey rock with green moss inside it
+sphere_enchantment: a glowing bright pink magic orb with a golden four-pointed star inside it
+sphere_entropy: a glowing ash-grey magic orb with a crumbling broken hourglass inside it
+sphere_ice: a glowing pale cyan magic orb with a white snowflake inside it
+sphere_law: a glowing golden-yellow magic orb with a small silver balance scale inside it
+sphere_life: a glowing warm white-gold magic orb with a green sprouting seedling inside it
+sphere_metamagic: a glowing deep violet magic orb with a glowing rune circle inside it
+sphere_mind: a glowing magenta magic orb with a single open eye inside it
+sphere_nature: a glowing leaf-green magic orb with a curled green vine leaf inside it
+sphere_spirit: a glowing pale blue magic orb with a white ghostly wisp inside it
+sphere_sun: a glowing orange-yellow magic orb with a radiant little sun inside it
+sphere_shadow: a glowing inky black-blue magic orb with a silver crescent moon inside it

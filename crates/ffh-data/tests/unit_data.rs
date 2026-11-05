@@ -265,10 +265,11 @@ fn unit_classes() {
 fn promotions() {
     let d = data();
     let c1 = promo("PROMOTION_COMBAT1");
-    // Its stat changes (docs/UNIT_STATS.md): attack, defence and magic defence 20%, magic 5%.
+    // Its stat changes (docs/UNIT_STATS.md): attack, defence and magic defence 20%, magic 10%; its
+    // spells outside battles +5 damage.
     let pct = |s: StatType| c1.stat_changes[s.idx()].percent;
-    assert_eq!((pct(StatType::Attack), pct(StatType::Defense), pct(StatType::MagicDefense), pct(StatType::Magic)), (20, 20, 20, 5));
-    assert_eq!((c1.combat_percent(), c1.combat_percent_defense(), c1.spell_damage_modify()), (20, 20, 5));
+    assert_eq!((pct(StatType::Attack), pct(StatType::Defense), pct(StatType::MagicDefense), pct(StatType::Magic)), (20, 20, 20, 10));
+    assert_eq!((c1.combat_percent(), c1.combat_percent_defense(), c1.spell_damage_modify), (20, 20, 5));
     assert!(c1.mutation);
     assert_eq!(c1.promotion_summon_perk, Some(d.t::<PromotionType>("PROMOTION_EMPOWER1")));
     assert_eq!(c1.promotion_next_level, Some(d.t::<PromotionType>("PROMOTION_COMBAT2")));

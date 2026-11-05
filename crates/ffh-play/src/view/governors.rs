@@ -49,7 +49,7 @@ fn city_json(v: &Viewer, c: CityId) -> Json {
 /// cities it may take the slot of.
 pub fn city(v: &Viewer, c: CityId) -> Json {
     let g = v.g;
-    if !g.governors_on() || g.cities[c].owner != v.h {
+    if g.cities[c].owner != v.h {
         return Json::Null;
     }
     let h = v.h;
@@ -81,14 +81,10 @@ pub fn city(v: &Viewer, c: CityId) -> Json {
 /// the direct slots.
 pub fn screen(v: &Viewer) -> Json {
     let g = v.g;
-    if !g.governors_on() {
-        return crate::jobj! { "on" => false };
-    }
     let h = v.h;
     let mut cities: Vec<CityId> = g.players[h].cities.clone();
     cities.sort_by_key(|&c| (g.city_is_governed(c), !g.city_is_capital(c), c));
     crate::jobj! {
-        "on" => true,
         "slots" => g.governor_direct_slots(),
         "cooldown" => g.d.defines.governor_direct_rule_swap_cooldown,
         "penalty" => g.d.defines.governor_swap_penalty,

@@ -278,7 +278,7 @@ pub struct Game {
     pub num_culture_victory_cities: i32,
     /// C++ `m_eCultureVictoryCultureLevel`.
     pub culture_victory_culture_level: Option<CultureLevelType>,
-    // ---- not in C++: crusades and loans (docs/CRUSADE.md; empty with the ruleset flag off) ----
+    // ---- not in C++: crusades and loans (docs/CRUSADE.md) ----
     /// Running crusades and loan generals, in creation order.
     pub crusades: Vec<crate::crusade::Crusade>,
     /// Next `CrusadeId`.
@@ -664,7 +664,8 @@ mod tests {
     fn new_game_has_reset_defaults() {
         let d = ffh_data::global();
         let setup = GameSetup::standard(d, 4, "WORLDSIZE_SMALL", 1234);
-        let n = 4 + GameSetup::SPARE_SLOTS + 1; // civs, open slots, barbarian
+        // civs, open slots, crusade Host slots, barbarian
+        let n = 4 + GameSetup::SPARE_SLOTS + crate::crusade::CrusadeRules::default().host_slots + 1;
         let g = Game::new(d, setup);
         assert_eq!(g.num_players(), n);
         assert_eq!(g.num_teams(), n);

@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. a green seedling sprouting with a white glow
+2. a bright white lantern
+3. a yellow lightning bolt bouncing off a blue shield
+4. a green lizard's head
+5. a coil of thick rope with a cargo hook
+6. a hand over a heart in front of a blue banner
+7. a purple magic star blocked by a grey stone shield
+8. a blue ward shield with purple sparks bouncing off
+9. a pair of marching boots
+10. a loaded crossbow aiming forward
+11. a purple rune circle with a star inside
+12. a glowing pink brain
+13. a gleaming silvery-blue mithril sword
+14. a raised red war banner
+15. a green mutant arm with an extra eye on it
+16. a green leaf on a twisted vine

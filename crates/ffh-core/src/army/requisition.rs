@@ -1,4 +1,4 @@
-//! Requisition (this game's own rules, `GAMEOPTION_ARMIES`; docs/ARMIES.md, "Recruitment"): an
+//! Requisition (this game's own rules; docs/ARMIES.md, "Recruitment"): an
 //! army takes soldiers from the cities its owner picks for it, interrupting their production,
 //! while it is short of its target size.
 //!
@@ -51,9 +51,6 @@ impl Game {
 
     /// Whether `p` may change army `a`'s requisition (else why not).
     pub fn army_check_requisition(&self, p: PlayerId, a: ArmyId) -> ArmyResult {
-        if !self.armies_on() {
-            return Err("armies are off in this game");
-        }
         if !self.armies.contains(a) || self.armies[a].owner != p {
             return Err("no such army");
         }
@@ -263,7 +260,7 @@ impl Game {
     /// a reason withdrawn, then for each army (in formation order) orders placed while it is short
     /// of its target size, or withdrawn beyond it (see the module comment).
     pub fn player_do_requisition(&mut self, p: PlayerId) {
-        if !self.armies_on() || self.player_is_barbarian(p) {
+        if self.player_is_barbarian(p) {
             return;
         }
         // Orders without a reason any more.

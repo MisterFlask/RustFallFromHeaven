@@ -290,7 +290,7 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
     /* the tips go without */
   }
   // The deal: per side, the chosen items by key (gold: the amount typed); `troops`, a loan of
-  // troops (the crusade ruleset, docs/CRUSADE.md: `{lend, target, mission, duration, strength,
+  // troops (crusades, docs/CRUSADE.md: `{lend, target, mission, duration, strength,
   // units}`, lent by you when `lend`), at most one.
   const deal = { give: new Map(), get: new Map(), troops: null };
   const keyOf = (it) => `${it.item}:${it.data}`;
@@ -441,7 +441,7 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
           : h("p.dim", "Nothing."),
         troopsRow(mapKey),
       );
-    // Troops (the crusade ruleset): a loan of units, each way; adding it opens the troops screen
+    // Troops (crusades): a loan of units, each way; adding it opens the troops screen
     // (the enemy, the mission, the turns, the units you send), the rest of the deal its price.
     const troopsRow = (mapKey) => {
       const lend = mapKey === "give";

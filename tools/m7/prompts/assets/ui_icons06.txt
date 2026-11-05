@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. a large ear and a watchful eye joined by a dotted gold line
+2. a summer palace with a green tiled roof and pink flowers
+3. a stone furnace glowing orange with an axe head on an anvil in front
+4. a giant grey stone fist raised up
+5. a pair of white dice beside a stack of gold coins
+6. a wooden cage holding a dark grey gorilla
+7. an ornate gilded animal cage with a peacock feather in front
+8. a tall white and red striped lighthouse with a bright yellow beam
+9. a ring of three green trees around a mossy stone
+10. two crossed dwarven war hammers over a block of stone
+11. a ring of nine gold coins around a short sword
+12. a white throne with heron wings carved on its back
+13. a red carpet leading up stone steps to a golden throne
+14. a wooden pier in a cove with a black pirate flag on a pole
+15. a golden scroll with a sword laid across it
+16. a single white candle with a warm golden flame

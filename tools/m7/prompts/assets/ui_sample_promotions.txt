@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. a steel sword pointing up with a small gold laurel around its hilt
+2. a round wooden shield with a steel spearhead behind it
+3. a steel sword crossing a long pike, with a small white impact burst
+4. three small steel spearheads side by side in a row
+5. a battering ram's iron head striking a stone tower
+6. a small stone castle keep with a blue flag on its top
+7. a white cloth bandage roll with a red cross on it
+8. a brown leather boot with a small white wing on its heel
+9. a green pine tree with a small hand axe leaning against its trunk
+10. a blue crystal with arcs of purple magic energy swirling around it
+11. a bright orange flame with a yellow core
+12. a white grinning skull with green wisps around it
+13. a golden laurel wreath around a small red heart
+14. a single arrow pointing up-right with its head on fire
+15. a green dripping bottle with a white skull label
+16. a red snarling face with angry eyebrows and steam puffs

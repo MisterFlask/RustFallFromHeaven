@@ -1,0 +1,16 @@
+promo_boarding: an iron grappling hook on a coiled rope
+promo_body: a muscular red-glowing flexed arm
+promo_bounty_hunter: a sack of gold coins with a dagger stuck in it
+promo_bronze_weapons: a bronze short sword
+promo_buccaneers: a pirate cutlass and a black tricorn hat
+promo_burning_blood: a red blood drop wrapped in flames
+promo_cannibalize: a gnawed bone with red meat on it
+promo_centaur: a horseshoe with a bow and arrow over it
+promo_chaos: a twisting multicoloured chaotic spiral
+promo_charmed: a pink heart with a purple swirl inside it
+promo_cold_resistance: a brown fur cloak with a white snowflake on it
+promo_command: a golden marshal's baton with red bands
+promo_commando: a dark green hood with a knife beside it
+promo_courage: a roaring golden lion's head
+promo_cover: a raised wooden shield with arrows stuck in it
+promo_crazed: a dizzy face with spiral eyes

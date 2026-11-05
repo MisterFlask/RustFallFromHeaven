@@ -232,10 +232,10 @@ export function renderTop() {
     end.classList.toggle("end-turn-message", msg);
     end.title = msg ? "End the turn [Enter, Space]; Shift: without the checks" : "End the turn [Shift+Enter: without the checks]; Enter selects the next unit waiting";
   }
-  // The crusade ruleset (docs/CRUSADE.md): its advisor, marked while a call to arms waits.
+  // Crusades (docs/CRUSADE.md): the advisor, marked while a call to arms waits.
   const crusades = document.getElementById("btn-crusades");
   if (crusades) {
-    crusades.hidden = !v?.crusades;
+    crusades.hidden = !v;
     const calls = observing() ? 0 : (v?.pending?.crusade_calls?.length ?? 0);
     crusades.classList.toggle("attention", calls > 0);
     crusades.title = calls ? `Crusades: ${calls === 1 ? "a call to arms waits" : `${calls} calls to arms wait`} for your answer` : "Crusades: the calls to arms, the units you lent, past crusades";

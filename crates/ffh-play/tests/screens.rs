@@ -349,8 +349,7 @@ fn the_city_screen_parts_add_up_to_the_totals() {
     use ffh_play::view::city::{bad_health_parts, good_health_parts, happy_parts, unhappy_parts};
     // A peaceful game reaches the turn whatever the AI does (common::peaceful_game); with
     // governors, whose traits add happiness and health.
-    let mut ng = peaceful_game(11);
-    ng.options.push(GameOptionType::GAMEOPTION_GOVERNORS);
+    let ng = peaceful_game(11);
     let (mut s, mut b) = bot_session(&ng, None);
     let until = s.g.game_turn() + 120;
     let mut checked = 0;
@@ -383,8 +382,7 @@ fn the_city_screen_parts_add_up_to_the_totals() {
 fn a_governors_traits_are_among_the_city_screens_parts() {
     use ffh_play::view::city::{bad_health_parts, good_health_parts, happy_parts, unhappy_parts};
     let d = ffh_data::global();
-    let mut setup = ffh_core::setup::GameSetup::standard(d, 2, "WORLDSIZE_SMALL", 7);
-    setup.options[GameOptionType::GAMEOPTION_GOVERNORS] = true;
+    let setup = ffh_core::setup::GameSetup::standard(d, 2, "WORLDSIZE_SMALL", 7);
     let mut g = ffh_core::game::Game::new(d, setup);
     g.game_init();
     let p0 = PlayerId(0);
