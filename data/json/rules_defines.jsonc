@@ -98,7 +98,7 @@
   "ENGAGEMENT_SPLASH_PERCENT": 50,
   // BOLT_PERCENT: the power of a caster's magic bolt (one target), when it knows no damage spell
   //      (a damage spell has 100 and splashes)
-  "ENGAGEMENT_BOLT_PERCENT": 60,
+  "ENGAGEMENT_BOLT_PERCENT": 80,
   // HEAL_PERCENT: a heal restores BASE_DAMAGE x this percent x r (a unit's own heal_percent
   //      takes its place)
   "ENGAGEMENT_HEAL_PERCENT": 50,
@@ -109,7 +109,7 @@
   //      front unit of each lane beside it; TRAMPLE: the unit behind it.
   "ENGAGEMENT_VOLLEY_PERCENT": 50,
   "ENGAGEMENT_PIERCE_PERCENT": 50,
-  "ENGAGEMENT_SWEEP_PERCENT": 35,
+  "ENGAGEMENT_SWEEP_PERCENT": 50,
   "ENGAGEMENT_CLEAVE_PERCENT": 60,
   "ENGAGEMENT_TRAMPLE_PERCENT": 60,
   // MISSILE_PERCENT: a missile's strike (Fireball, Meteor: one hit from outside the field, the
@@ -122,7 +122,7 @@
   //      and BOMBARD HILLS_DEFENDER_RANGED_PERCENT
   "ENGAGEMENT_CITY_ATTACKER_SHOT_PERCENT": 50,
   "ENGAGEMENT_FOREST_RANGED_PERCENT": 50,
-  "ENGAGEMENT_HILLS_ATTACKER_PERCENT": 75,
+  "ENGAGEMENT_HILLS_ATTACKER_PERCENT": 85,
   "ENGAGEMENT_HILLS_DEFENDER_RANGED_PERCENT": 125,
   // AUTO_MIN_HP_PCT: the auto-pick skips units below this percent of their HP while healthier
   //      ones of the same kind (the action of the row a unit prefers) are left

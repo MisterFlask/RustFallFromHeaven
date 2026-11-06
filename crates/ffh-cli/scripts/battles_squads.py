@@ -5,7 +5,8 @@ generic units (each class's default unit), squads at an equal budget (early 480,
 normal price (the over-limit price is a deliberate sink, not balanced for): every unit alone,
 front-line pairs, a front type with each support type (3:1, and 1:1 for the main ones), triples.
 
-    battles_squads.py LEVEL                      the squads, `name|spec`
+    battles_squads.py LEVEL [--compact]          the squads, `name|spec` (compact: without the 1:1
+                                                 front-and-support pairs)
     battles_squads.py specs OUT LEVELS GROUNDS [ONLY.json] [--chunks N]
                                                  round-robin spec files for `ffh battles`
                                                  (GROUNDS from open,forest,hills,walls; ONLY: a
@@ -63,12 +64,19 @@ def fill(template, budget):
     return n
 
 
+# The rows a player would give an attacker the auto formation places worse (the auto formation is
+# out of scope: docs/UNIT_ROLES.md): mounted units charge from the front. Only the attacker's
+# formation follows these (`ffh battles`' `@row`); the defender's is the rules' auto formation.
+ATTACK_ROWS = {'HORSEMAN': 'front', 'HORSE_ARCHER': 'front', 'KNIGHT': 'front', 'CHARIOT': 'front'}
+
+
 def name_of(n):
     return '+'.join(f"{c}{SHORT[s]}" for s, c in sorted(n.items(), key=lambda kv: (-kv[1] * COST[base(kv[0])], kv[0])) if c)
 
 
 def spec_of(n):
-    return ', '.join(f"{c}*{s}" for s, c in n.items() if c)
+    row = lambda s: f"@{ATTACK_ROWS[base(s)]}" if base(s) in ATTACK_ROWS else ""
+    return ', '.join(f"{c}*{s}{row(s)}" for s, c in n.items() if c)
 
 
 LEVELS = {
@@ -80,9 +88,9 @@ LEVELS = {
                   + [('HORSEMAN', 'ARCHER', x) for x in ['ADEPT', 'SKIRMISHER', 'WAR_ELEPHANT']],
                   half=['AXEMAN', 'HORSEMAN']),
     'mid': dict(budget=960,
-                front=['CHAMPION', 'HORSE_ARCHER', 'RANGER', 'WAR_ELEPHANT'],
+                front=['CHAMPION', 'HORSE_ARCHER', 'RANGER', 'WAR_ELEPHANT', 'CRUSADER'],
                 support=['LONGBOWMAN', 'MAGE', 'MAGE+FIRE1+FIRE2', 'PRIEST_OF_THE_ORDER', 'ASSASSIN', 'CATAPULT', 'ARCHER'],
-                pure_only=['CHARIOT', 'CRUSADER'],
+                pure_only=['CHARIOT'],
                 triples=[('CHAMPION', 'LONGBOWMAN', x) for x in ['HORSE_ARCHER', 'MAGE+FIRE1+FIRE2', 'ASSASSIN', 'PRIEST_OF_THE_ORDER', 'WAR_ELEPHANT', 'CATAPULT']]
                 + [('HORSE_ARCHER', 'ASSASSIN', 'MAGE+FIRE1+FIRE2'), ('HORSE_ARCHER', 'LONGBOWMAN', 'MAGE+FIRE1+FIRE2')],
                 half=['CHAMPION', 'HORSE_ARCHER']),
@@ -127,7 +135,7 @@ def squads(level):
     for a in L['front']:
         for s in L['support']:
             add([(a, 0.75), (s, 0.25)])
-            if a in L['half']:
+            if a in L['half'] and not COMPACT:
                 add([(a, 0.5), (s, 0.5)])
     for a, b, c in L['triples']:
         add([(a, 0.5), (b, 0.25), (c, 0.25)])
@@ -137,7 +145,11 @@ def squads(level):
     return out
 
 
-GROUNDS = {'open': 'open', 'forest': 'forest', 'hills': 'hills', 'walls': 'walls fort:5'}
+COMPACT = '--compact' in sys.argv
+if COMPACT:
+    sys.argv.remove('--compact')
+
+GROUNDS = {'open': 'open', 'forest': 'forest', 'hills': 'hills', 'walls': 'walls fort:5 bombard:3'}
 
 
 def specs(levels, grounds, only=None):

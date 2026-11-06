@@ -1939,8 +1939,10 @@ mod tests {
         }
         // (+208 pairs and +326 in all: this game's PROMOTION_SPIRIT_GUIDE2, docs/SUITABILITY.md;
         // +326 in all and no pair: PROMOTION_SUMMONERS_BOND, which no unit combat allows;
-        // +263 in all: this game's UNIT_SKIRMISHER, with the Archer's promotions, below.)
-        assert_eq!((n, d.promotions.len() * d.units.len()), (26628, 86001));
+        // +263 in all: this game's UNIT_SKIRMISHER, with the Archer's promotions, below;
+        // +1 pair: Formation, free on the Phalanx's class (docs/UNIT_ROLES.md), on the Nullstone
+        // Golem, which has no unit combat.)
+        assert_eq!((n, d.promotions.len() * d.units.len()), (26629, 86001));
         let archer = d.t::<UnitType>("UNIT_ARCHER");
         let skirmisher = d.t::<UnitType>("UNIT_SKIRMISHER");
         let takes = |u: UnitType| d.promotions.keys().filter(|&p| is_promotion_valid(d, p, u, false)).collect::<Vec<_>>();

@@ -434,14 +434,18 @@ fn siege_turn(g: &mut Game, from: PlotIdx, bombard: bool) {
     }
 }
 
-/// One run's net result from the attacker's side (`Agg::net_hp`, `Agg::net_cw`).
+/// One run's net result from the attacker's side (`Agg::net_hp`, `Agg::net_cw`). A side's HP lost is
+/// net of its healers' heals (the cost-weighted figure is not).
 fn run_net(reports: &[BattleReport]) -> (f64, f64) {
     let d = ffh_data::global();
     let (mut taken, mut max_hp, mut cw) = ([0f64; 2], [0f64; 2], [0f64; 2]);
     for log in reports.iter().filter_map(|r| r.log.as_ref()) {
         for f in log.fighters.iter().filter(|f| f.place.is_some()) {
             let s = f.side.index();
-            taken[s] += f.taken as f64;
+            // Its side's net loss: what its units took before the battle (a siege's bombards; the
+            // lab's units start whole) and in it, less what its healers healed them.
+            let before = (100 * f.max_hp - f.hp_start).max(0);
+            taken[s] += (before + f.taken - f.healed) as f64;
             max_hp[s] += 100.0 * f.max_hp as f64;
             if !f.sentinel && f.max_hp > 0 {
                 cw[s] += f.taken as f64 / (100.0 * f.max_hp as f64) * d.units[f.unit_type].production_cost as f64;

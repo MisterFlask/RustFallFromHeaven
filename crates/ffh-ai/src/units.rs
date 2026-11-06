@@ -342,6 +342,10 @@ pub fn promotion_value(g: &Game, u: UnitId, promo: PromotionType) -> i32 {
     v += info.withdrawal_change * 2;
     v += info.combat_heal_percent / 2 + info.same_tile_heal_change + info.adjacent_tile_heal_change;
     v += info.damage_type_combat.iter().sum::<i32>() * 40;
+    // The battle levers (docs/UNIT_ROLES.md): damage against and resistance to unit combats at
+    // about a quarter of their percentage (they work against some enemies), armor and pursuit.
+    v += (info.damage_vs.iter().sum::<i32>() + info.resist_vs.iter().sum::<i32>()) / 4;
+    v += info.armor * 5 + i32::from(info.armor_piercing) * 10 + i32::from(info.pursuit) * 10;
     if caster {
         v += info.spell_caster_xp * 3;
     }

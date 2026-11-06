@@ -1452,14 +1452,22 @@ pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary:
     let mut out: Vec<Placement> = Vec::new();
     let larges = chosen.iter().copied().filter(|&i| cands[i].large);
     let smalls = chosen.iter().copied().filter(|&i| !cands[i].large);
+    let mut larges_left = chosen.iter().filter(|&&i| cands[i].large).count();
     for i in larges.chain(smalls).collect::<Vec<_>>() {
         let c = &cands[i];
+        if c.large {
+            larges_left -= 1;
+        }
         let mut cell = None;
         for r in c.row_order {
             let r = (r as usize).min(ROWS - 1);
             let mut free: Vec<usize> =
                 (0..lanes_n).filter(|&l| if c.large { l + 1 < lanes_n && !grid[l][r] && !grid[l + 1][r] } else { !grid[l][r] }).collect();
-            free.sort_by_key(|&l| (centre(l, c.large), l));
+            // With another large unit still to place, a large unit does not split a pair of free
+            // cells: it starts after an even run of free cells on its left, so a row of 4 lanes
+            // holds two (lanes 0-1 and 2-3). A lone one takes the centre.
+            let odd_left = |l: usize| c.large && larges_left > 0 && (0..l).rev().take_while(|&k| !grid[k][r]).count() % 2 == 1;
+            free.sort_by_key(|&l| (odd_left(l), centre(l, c.large), l));
             if let Some(&l) = free.first() {
                 cell = Some((l, r));
                 break;

@@ -268,6 +268,26 @@ flag.
 
 **Balance** (after `classic-1`, each the owner's decision)
 
+- **Unit roles in engagements** (2026-11-06; the owner's target: every unit of every tier has a
+  place in some lineup and every formation has one that beats it; docs/UNIT_ROLES.md, which lists
+  every value). New battle levers in the rules (docs/ENGAGEMENTS.md): attack patterns per row
+  (volley, pierce, sweep, cleave, trample; a sweeping heal heals a row), damage against and
+  resistance to unit combats as damage multipliers (`damage_vs`, `resist_vs`, and against large
+  units and walls), flat armor and armor piercing, pursuit (no withdrawal from its hits), a unit's own
+  heal power, target preference, damage by round; and the auto formation places two large units
+  side by side in a row of 4 lanes (it left the second a row back, and a fourth out). The unit values
+  that use them, tuned in the balance lab: archers and longbowmen against melee (longbowmen also
+  against mounted, in volleys), mounted raiders against back-line units, hunters, rangers and
+  crossbowmen against mounted, Formation +50% damage to and -50% from mounted (free on the
+  Phalanx, now the Guard: attack 90, defence 130, armor), the Champion and Immortal as armored
+  lines, trampling chariots and knights, cleaving berserkers that grow stronger each round,
+  piercing bolts and faster casters with a ward against arrows, sweeping heals and stronger healers,
+  siege engines against walls and large units, assassins and marksmen that go for casters and
+  healers first. Costs: Chariot 120 to 100, War Elephant 90 to 100, Horse Archer 120 to 150, Ranger
+  150 to 120. Defines: `ENGAGEMENT_HILLS_ATTACKER_PERCENT` 75 to 85, `ENGAGEMENT_BOLT_PERCENT` 60
+  to 80, new `ENGAGEMENT_VOLLEY_PERCENT`, `_PIERCE_`, `_SWEEP_`, `_CLEAVE_`, `_TRAMPLE_`. The AI
+  values the new promotion keys (Formation's) when it promotes.
+
 - **Recon units fight from any row** (2026-11-06; the Ogre Battle 64 Valkyrie pattern; this game's
   engagement combat, docs/ENGAGEMENTS.md, not FFH2's). The 20 recon unit types that do not stab
   (the Scout, Hunter, Ranger, Beastmaster and their kin; the assassins with Marksman keep their

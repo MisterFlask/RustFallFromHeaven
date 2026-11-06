@@ -1,7 +1,10 @@
 # Unit roles: levers for diverse compositions
 
-**Status: proposal** (2026-11-06), for the owner to mark up. Nothing here is built. It follows the
-owner's balance target (docs/ENGAGEMENTS.md, "Balance lab"): every unit of every tier has a
+**Status: built** (2026-11-06; the owner: "implement this; tune numbers as needed"). The levers
+of section 2 that are marked engine are built but L7 (reach), L9 (interception), crit immunity,
+L17 (knock-back) and L16 (charms, docs/EARLY_UNITS.md); section 9 has the values as built and what
+the balance lab measured. Sections 0 to 8 are the proposal as written. It follows the owner's
+balance target (docs/ENGAGEMENTS.md, "Balance lab"): every unit of every tier has a
 valuable place in some lineup, and every formation has a formation that beats it. Units past a
 national class's limit are a deliberate sink and are not balanced for. **The auto formation is out
 of scope** (the owner, 2026-11-06): everything below assumes each side's units stand where they
@@ -236,3 +239,95 @@ the siege is in the lab.
    priority (L8).
 3. docs/EARLY_UNITS.md's E2 (charms and hexes) for the supports.
 4. A formation search in the lab.
+
+## 9. As built
+
+**Engine** (docs/ENGAGEMENTS.md has the rules): attack patterns (VOLLEY, PIERCE, SWEEP, CLEAVE,
+TRAMPLE; a heal's SWEEP heals the row), `damage_vs` and `resist_vs` by unit combat as damage
+multipliers (and `damage_vs_large`, `damage_vs_walls`), `armor` and `armor_piercing`, `pursuit`,
+`heal_percent`, `target_preference`, `round_percent`; the auto formation places two large units side
+by side in a row of 4 lanes. Promotions take `damage_vs`, `resist_vs`, `armor`, `armor_piercing`,
+`pursuit`. The unit and promotion help lists them.
+
+**Values** (tuned in the lab, 9 rounds; a class's change applies to its units whose rows are the
+default unit's, a stat change to the default unit only):
+
+| Unit (class) | Change |
+|---|---|
+| Archer (class) | damage +30% Melee; round damage 130%/100%/100% |
+| Horseman (class) | damage +50% Adept, +50% Disciple, +50% Siege, +25% Archer |
+| Hunter (class) | damage +75% Mounted, +50% Beast, +50% Animal, -25% Melee |
+| Chariot (class) | cost 100; rows charge 2 trample / strike 1 / strike 1; resistance +50% Archer; armor 2 |
+| War Elephant (class) | cost 100; rows charge 2 / strike 2 / strike 1; damage +50% Mounted |
+| Adept (class) | speed 5; resistance +50% Archer; rows strike 1 / spell 1 pierce / spell 2 pierce |
+| Catapult (class) | damage vs walls 100; damage vs large 100 |
+| Champion (class) | armor 3; resistance +40% Mounted |
+| Longbowman (class) | rows shoot 1 / shoot 2 volley / shoot 2 volley; damage +25% Melee, +50% Mounted |
+| Horse Archer (class) | cost 150; withdrawal 25%; rows charge 2 / shoot 2 / shoot 1 |
+| Mage (class) | speed 5; resistance +50% Archer; rows strike 1 / spell 1 pierce / spell 2 pierce |
+| Assassin (class) | damage +50% Adept, +50% Disciple, +50% Archer, +50% Siege, -50% Melee; goes for Adept, Disciple first |
+| Ranger (class) | cost 120; resistance +30% Archer; damage +75% Mounted, +50% Beast, +50% Animal, -25% Melee |
+| Phalanx (class) | free Formation; armor 3; attack 90, defense 130 |
+| Immortal (class) | resistance +50% Adept; attack 110; armor 4 |
+| Berserker (class) | rows strike 2 cleave / strike 1 / strike 1; round damage 110%/130%/150%; damage +25% Melee |
+| Knight (class) | rows charge 2 trample / strike 1 / strike 1; damage +50% Adept, +50% Disciple, +50% Siege, +25% Archer |
+| Paladin (class) | armor 2 |
+| Beastmaster (class) | damage +75% Beast, +75% Animal |
+| Crossbowman (class) | damage +75% Mounted; armor piercing |
+| Marksman (class) | goes for Adept, Disciple first |
+| Arquebus (class) | armor piercing |
+| Cannon (class) | damage vs walls 100; damage vs large 100 |
+| Archmage (class) | speed 4; resistance +50% Archer; rows strike 1 / spell 1 pierce / spell 2 pierce |
+| Druid (class) | rows strike 1 / heal 2 sweep / heal 2 sweep |
+| Disciple Empyrean, Disciple Fellowship Of Leaves, Disciple Octopus Overlords, Disciple Runes Of Kilmorph, Disciple The Ashen Veil, Disciple The Order | rows strike 1 / heal 2 sweep / heal 2 sweep; heal 60% |
+| Priest Of Kilmorph, Priest Of Leaves, Priest Of The Empyrean, Priest Of The Order, Priest Of The Overlords, Priest Of The Veil, Priest Of Winter | rows strike 1 / heal 2 sweep / heal 2 sweep; heal 75% |
+| High Priest Of Kilmorph, High Priest Of Leaves, High Priest Of The Empyrean, High Priest Of The Order, High Priest Of The Overlords, High Priest Of The Veil, High Priest Of Winter | rows strike 1 / heal 2 sweep / heal 2 sweep; heal 70% |
+| Formation (promotion) | damage +50% Mounted; resistance +50% Mounted |
+
+Defines: ENGAGEMENT_HILLS_ATTACKER_PERCENT 85, ENGAGEMENT_BOLT_PERCENT 80, ENGAGEMENT_SWEEP_PERCENT 50
+
+Differences from the proposal, from the lab: the Hunter keeps one shot from the middle (two made
+eight Hunters the best squad on every ground early); the Crusader gets no free Formation (it took
+over the mid tier); the Champion resists mounted units (40%) and wears armor 3, so the mid tier has
+an answer to Horse Archers; the Longbowman deals +50% to mounted units (and +25% to melee) in
+volleys; casters get speed 5 (the Archmage 4) and a ward against arrows (50%), since they died
+before acting; healers heal more (Disciple 60%, Priest 75%, High Priest 70% with its extra action),
+in sweeps; the Arquebus keeps its accuracy; the bolt is 80% (was 60); costs below.
+
+**What the lab measured** (compact squad round robins per tech level, 57-70 squads at an equal
+budget on open land, the best 16 and the best squad with each unit type on forest, hills and a
+walled, fortified city after 3 turns of siege; 20 battles a matchup, both roles; the attacker's
+mounted units in front, the defender in the auto formation). Squads that nothing beats by 2 standard
+errors, per tech level and ground, before (2026-11-06, docs/ENGAGEMENTS.md: 40 to 60 battles a
+matchup, the walled city without siege turns, heals and bombards not in the score) and after:
+
+| Level | Open | Forest | Hills | Walls |
+|---|---|---|---|---|
+| Early before | 6 Horsemen, 2 Skirmishers | 8 Horsemen | 6 Horsemen, 2 Skirmishers (and 3 more) | 6 Axemen, 2 Skirmishers |
+| Early after | 4 Horsemen, 4 Hunters | none | none | none |
+| Mid before | 6 Horse Archers, 4 Archers | 2 Horse Archer squads | 3 Horse Archer squads | 4 Champions, 4 Fire II Mages |
+| Mid after | none | 6 Champions, 2 Assassins; 3 Horse Archers, 2 Assassins, 2 Fire II Mages | none | 4 Champions, 2 Longbowmen, 2 Catapults |
+| Late before | 4 Knights, 5 Arquebuses | 4 Fire II Archmages, 4 Paladins | 4 Beastmasters, 4 Knights | 4 Marksmen, 4 Paladins (and 1 more) |
+| Late after | none | none | 2 each of Fire II Archmages, Knights, Marksmen, Phalanxes | 4 Fire II Archmages, 4 Phalanxes |
+
+Equilibria after are mixes where they were single squads: early forest 4 Axemen and 4 Horsemen
+(60%), 8 Hunters (32%), Horsemen with an Adept (8%); mid hills seven squads, Rangers, Champions,
+Horse Archers, Fire II Mages, Assassins, Longbowmen and Priests among them; late open six.
+
+Units in a squad of some ground's equilibrium (5% or more) or among its 5 best, after: early all
+but the Catapult (and the obsolete Scout); mid all but the Chariot, War Elephant and Crusader (a
+Mage has its place with Fire II); late all but the Champion and War Elephant (holdovers from
+earlier tiers), the Cannon, the Berserker and Beastmaster (at the margin: they were in the
+equilibria of earlier rounds) and the Archmage without Fire II. The siege engines' place is the
+siege: with 3 turns of bombarding, the round robins' walled city has Catapults in a mid equilibrium
+(4 Champions, 2 Longbowmen, 2 Catapults), and the siege runs of section 0 show squads with them
+taking walled cities that squads without them do not.
+
+**Measurement notes.** A side's HP lost is net of its healers' heals and counts a siege's bombard
+damage before the assault (the lab counted neither before: healers looked worse than they were,
+and siege engines got no credit for their bombards). The auto formation still places a second
+charger behind the strikers (out of scope); the lab puts the attacker's mounted units in front.
+
+**Open:** the remaining unbeaten squads above; the auto formation's chargers; the engine levers
+not built (reach, interception, crit immunity, knock-back, charms); the AI does not yet choose
+squads by these roles (it values the new promotion keys when it promotes).

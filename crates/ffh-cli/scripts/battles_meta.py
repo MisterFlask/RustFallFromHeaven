@@ -16,6 +16,9 @@ destroyed less lost) attacking j and defending against j.
         share of cells where Y is better, and where it is significantly worse
     battles_meta.py h2h LEVEL A,B,C FILES..
         head-to-head of the named squads, per ground
+    battles_meta.py targets LEVEL FILES..
+        the owner's two targets per ground: squads nothing beats, the equilibrium; units with and
+        without a place
 """
 import collections
 import glob
@@ -221,12 +224,66 @@ def h2h(level, squads, files):
         print(line)
 
 
+def targets(level, files):
+    """The owner's two targets, per ground: the squads nothing beats (by 2 standard errors) and the
+    equilibrium's support; per unit type, the grounds where a squad with it is in the support (5%
+    or more) or among the 5 best; and the unit types another one replaces for the better in 90% of
+    comparisons and for the worse in none (2 standard errors)."""
+    cells = {}
+    for j in load(files):
+        lv, c, pair = j['name'].split(':', 2)
+        if lv != level or j['runs'] == 0:
+            continue
+        a, d = pair.split('>')
+        r = j['runs']
+        s, ss = j['net_hp']
+        m = s / r
+        cells[(c, a, d)] = (m, math.sqrt(max(0.0, ss / r - m * m) / r))
+    unit = lambda n: [re.sub(r'^\d+', '', p) for p in n.split('+')]
+    places = collections.defaultdict(set)
+    total_unc = 0
+    for g in sorted({c for c, _, _ in cells}):
+        names = sorted({a for (c, a, _) in cells if c == g})
+        names = [n for n in names if all((g, n, m) in cells and (g, m, n) in cells for m in names)]
+        N = len(names)
+        P = np.zeros((N, N))
+        SE = np.zeros((N, N))
+        for i, a in enumerate(names):
+            for k, b in enumerate(names):
+                m1, s1 = cells[(g, a, b)]
+                m2, s2 = cells[(g, b, a)]
+                P[i, k] = (m1 - m2) / 2
+                SE[i, k] = math.sqrt(s1 * s1 + s2 * s2) / 2
+        counts = np.zeros(N)
+        counts[0] = 1
+        pay = P[:, 0].copy()
+        for _ in range(60000):
+            b = int(np.argmax(pay))
+            counts[b] += 1
+            pay += P[:, b]
+        x = counts / counts.sum()
+        rank = {names[i]: r + 1 for r, i in enumerate(np.argsort(-P.mean(axis=1)))}
+        unc = [names[i] for i in range(N) if all(P[i, k] >= -2 * SE[i, k] for k in range(N))]
+        total_unc += len(unc)
+        sup = [(names[i], round(100 * x[i])) for i in np.argsort(-x) if x[i] >= 0.02]
+        print(f"{level} {g:<7} {N:2d} squads; equilibrium {sup}; nothing beats: {unc}")
+        for i, n in enumerate(names):
+            if x[i] >= 0.05 or rank[n] <= 5:
+                for u in set(unit(n)):
+                    places[u].add(g)
+    allu = sorted({u for (_, a, _) in cells for u in unit(a)})
+    print(f"{level}: {total_unc} squads nothing beats; units with a place: " + ', '.join(f"{u} ({'/'.join(sorted(places[u]))})" for u in allu if places[u]))
+    print(f"{level}: units without a place: {[u for u in allu if not places[u]]}")
+
+
 if __name__ == '__main__':
     cmd = sys.argv[1] if len(sys.argv) > 1 else ''
     if cmd == 'meta':
         meta(sys.argv[2:])
     elif cmd == 'swaps':
         swaps(sys.argv[2:])
+    elif cmd == 'targets':
+        targets(sys.argv[2], sys.argv[3:])
     elif cmd == 'h2h':
         h2h(sys.argv[2], sys.argv[3].split(','), sys.argv[4:])
     else:

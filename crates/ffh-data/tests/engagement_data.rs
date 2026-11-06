@@ -40,7 +40,7 @@ fn the_rows_of_the_seven_kinds() {
         ("UNIT_ARCHER", [row(Shoot, 1), row(Shoot, 2), row(Shoot, 2)], [1, 2, 0], Shoot),
         ("UNIT_CATAPULT", [row(None, 0), row(Bombard, 1), row(Bombard, 2)], [2, 1, 0], Bombard),
         ("UNIT_ADEPT", [row(Strike, 1), row(Spell, 1), row(Spell, 2)], [2, 1, 0], Spell),
-        ("UNIT_PRIEST_OF_LEAVES", [row(Strike, 1), row(Heal, 1), row(Heal, 2)], [1, 2, 0], Heal),
+        ("UNIT_PRIEST_OF_LEAVES", [row(Strike, 1), row(Heal, 2), row(Heal, 2)], [1, 2, 0], Heal),
     ];
     for (name, rows, order, kind) in want {
         let t = d.t::<UnitType>(name);
@@ -68,12 +68,41 @@ fn tier_4_units_and_heroes_act_once_more_in_their_best_row() {
         // the front row stays without an action
         ("UNIT_CATAPULT", 2, [row(None, 0), row(Bombard, 1), row(Bombard, 3)]),
         ("UNIT_ADEPT", 2, [row(Strike, 1), row(Spell, 1), row(Spell, 3)]),
-        ("UNIT_PRIEST_OF_LEAVES", 2, [row(Strike, 1), row(Heal, 1), row(Heal, 3)]),
+        // two rows with two: the first such (the healers' rows, docs/UNIT_ROLES.md)
+        ("UNIT_PRIEST_OF_LEAVES", 1, [row(Strike, 1), row(Heal, 3), row(Heal, 2)]),
     ] {
         let t = d.t::<UnitType>(name);
         assert_eq!(d.engage_best_row(t), best, "{name}");
         assert_eq!(d.engage_actions(t, true), rows, "{name}");
         assert_eq!(d.engage_actions(t, false), d.engage_rows(t), "{name}");
+    }
+}
+
+/// The battle levers' spot checks (docs/UNIT_ROLES.md): patterns, type multipliers, armor,
+/// piercing, heal power, target preference, round damage, Formation's.
+#[test]
+fn the_unit_roles() {
+    let d = d();
+    let u = |n: &str| &d.units[d.t::<UnitType>(n)];
+    let c = |n: &str| d.t::<UnitCombatType>(n);
+    assert_eq!(u("UNIT_LONGBOWMAN").engage_patterns, [AttackPattern::Single, AttackPattern::Volley, AttackPattern::Volley]);
+    assert_eq!(u("UNIT_KNIGHT").engage_patterns[0], AttackPattern::Trample);
+    assert_eq!(u("UNIT_BERSERKER").engage_patterns[0], AttackPattern::Cleave);
+    assert_eq!(u("UNIT_ADEPT").engage_patterns[2], AttackPattern::Pierce);
+    assert_eq!(u("UNIT_DISCIPLE_THE_ORDER").engage_patterns[2], AttackPattern::Sweep);
+    assert_eq!(u("UNIT_HUNTER").damage_vs[c("UNITCOMBAT_MOUNTED")], 75);
+    assert_eq!(u("UNIT_CHAMPION").resist_vs[c("UNITCOMBAT_MOUNTED")], 40);
+    assert_eq!((u("UNIT_CHAMPION").armor, u("UNIT_PHALANX").armor), (3, 3));
+    assert!(u("UNIT_CROSSBOWMAN").armor_piercing && !u("UNIT_ARCHER").armor_piercing);
+    assert_eq!((u("UNIT_DISCIPLE_THE_ORDER").heal_percent, u("UNIT_AXEMAN").heal_percent), (Some(60), None));
+    assert_eq!(u("UNIT_ASSASSIN").target_preference, [c("UNITCOMBAT_ADEPT"), c("UNITCOMBAT_DISCIPLE")]);
+    assert_eq!((u("UNIT_BERSERKER").round_percent, u("UNIT_AXEMAN").round_percent), ([110, 130, 150], [100; 3]));
+    assert_eq!((u("UNIT_CATAPULT").damage_vs_walls, u("UNIT_CATAPULT").damage_vs_large), (100, 100));
+    let formation = &d.promotions[d.t::<PromotionType>("PROMOTION_FORMATION")];
+    assert_eq!((formation.damage_vs[c("UNITCOMBAT_MOUNTED")], formation.resist_vs[c("UNITCOMBAT_MOUNTED")]), (50, 50));
+    assert!(u("UNIT_PHALANX").free_promotions[d.t::<PromotionType>("PROMOTION_FORMATION")]);
+    for p in AttackPattern::ALL {
+        assert_eq!(AttackPattern::parse(p.token()), Some(p));
     }
 }
 
@@ -357,9 +386,12 @@ fn engagement_defines() {
     assert_eq!((x.engagement_extra_action_tier, x.engagement_extra_actions), (4, 1));
     assert_eq!((x.engagement_shoot_miss_percent, x.engagement_bombard_miss_percent), (10, 15));
     assert_eq!((x.engagement_crit_damage_percent, x.engagement_charge_bonus), (150, 100));
-    assert_eq!((x.engagement_splash_percent, x.engagement_bolt_percent, x.engagement_heal_percent), (50, 60, 50));
+    assert_eq!((x.engagement_splash_percent, x.engagement_bolt_percent, x.engagement_heal_percent), (50, 80, 50));
+    // The attack patterns (docs/UNIT_ROLES.md).
+    let patterns = (x.engagement_volley_percent, x.engagement_pierce_percent, x.engagement_sweep_percent, x.engagement_cleave_percent, x.engagement_trample_percent);
+    assert_eq!(patterns, (50, 50, 50, 60, 60));
     assert_eq!((x.engagement_city_attacker_shot_percent, x.engagement_forest_ranged_percent), (50, 50));
-    assert_eq!((x.engagement_hills_attacker_percent, x.engagement_hills_defender_ranged_percent), (75, 125));
+    assert_eq!((x.engagement_hills_attacker_percent, x.engagement_hills_defender_ranged_percent), (85, 125));
     assert_eq!(x.engagement_auto_min_hp_percent, 50);
     assert_eq!((x.engagement_recon_reveal_range, x.engagement_reports_kept, x.engagement_report_logs_kept), (2, 128, 32));
     // The round model's own constants are no longer defines.

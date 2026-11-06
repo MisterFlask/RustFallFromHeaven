@@ -47,6 +47,23 @@ type has, in `units.jsonc`:
 | `engage_row_order` | its rank preference: `FRONT`, `MIDDLE` and `REAR`, once each, in the order the auto formation tries them | warns; front, middle, rear |
 | `large` | it fills two cells of a row and counts 2 slots | one cell |
 
+The battle levers (docs/UNIT_ROLES.md, built 2026-11-06), each optional:
+
+| Key | Where | What | Absent |
+|---|---|---|---|
+| `pattern` | a row of `engage_rows` | whom else the row's action hits (below) | `SINGLE` |
+| `damage_vs` | unit, promotion | percent more damage to units of each unit combat (below 0: less) | 0 |
+| `resist_vs` | unit, promotion | percent less damage from units of each unit combat (below 0: more) | 0 |
+| `damage_vs_large`, `damage_vs_walls` | unit | percent more damage to large units, to a city's Sentinels | 0 |
+| `armor` | unit, promotion | HP off each physical hit it takes (at least 0.01 HP gets through) | 0 |
+| `armor_piercing` | unit, promotion | its hits ignore armor | no |
+| `pursuit` | unit, promotion | a hit of it cannot be withdrawn from | no |
+| `heal_percent` | unit | its heal, in percent of a hit | `ENGAGEMENT_HEAL_PERCENT` |
+| `target_preference` | unit | unit combats it goes for first | none |
+| `round_percent` | unit | its hits' damage in rounds 1, 2 and 3 (and later), percent | 100 each |
+
+A unit's `damage_vs`, `resist_vs` and `armor` are its type's plus its promotions'.
+
 ```jsonc
 "engage_rows": [{"action": "STRIKE", "count": 2}, {"action": "STRIKE", "count": 1}, {"action": "STRIKE", "count": 1}],
 "engage_row_order": ["FRONT", "MIDDLE", "REAR"],
@@ -132,8 +149,18 @@ the view and the client read these.
 - BOMBARD: the backmost unit of each enemy lane; physical, `ENGAGEMENT_BOMBARD_MISS_PERCENT` (15)
   more miss; never crits.
 - HEAL: the most hurt ally on the field (most HP missing; ties by lane, then row), itself
-  included: `ENGAGEMENT_BASE_DAMAGE x ENGAGEMENT_HEAL_PERCENT (50) x r`. No one hurt: the action is
-  spent.
+  included: `ENGAGEMENT_BASE_DAMAGE x` the healer's `heal_percent` (else `ENGAGEMENT_HEAL_PERCENT`,
+  50) `x r`. No one hurt: the action is spent. A heal with the SWEEP pattern also heals every other
+  hurt ally in its target's row for `ENGAGEMENT_SWEEP_PERCENT` of the heal (one log event each).
+- **Attack patterns** (a row's `pattern`): the action's extra hits, with the target's hit (no miss
+  or crit roll of their own, r drawn, withdrawal as any hit), never crit, at a percentage of a hit:
+  VOLLEY (`ENGAGEMENT_VOLLEY_PERCENT`) the unit the kind would hit in each lane beside the target's
+  (the backmost, a Sentinel first, for a shot or spell; the front for a strike); PIERCE
+  (`_PIERCE_`) every other unit in the target's lanes; SWEEP (`_SWEEP_`) every other unit in the
+  target's row; CLEAVE (`_CLEAVE_`) the front unit of each lane beside the target's; TRAMPLE
+  (`_TRAMPLE_`) the nearest unit behind the target in its lanes. A pattern takes the place of a
+  collateral splash; a known spell's splash stays the spell's (a caster's bolt follows the row's
+  pattern). The log marks the extra hits as splash hits.
 - Splash: a unit with collateral damage (`iCollateralDamage > 0`: siege, Berserker, Fire
   Elemental, ...) splashes its damaging hits (not a miss) on the target's neighbours (beside it in
   its row, in front and behind in its lanes) for `ENGAGEMENT_SPLASH_PERCENT` (50) % of a hit on
@@ -161,12 +188,14 @@ field.
 
 **Targeting** (everyone, the player does not choose; `Formation::choose`):
 1. A flanker's pool is the anti-flank units in its reach when there are any.
-2. **Nearby first** (the owner's rule, 2026-10-31): of the pool, the units whose lanes are within
+2. **Target preference** (`target_preference`): the units of its preferred unit combats in the
+   pool, when there are any, wherever they stand (nearby first does not apply to them).
+3. **Nearby first** (the owner's rule, 2026-10-31): of the pool, the units whose lanes are within
    one lane of the hitter's (`Formation::lane_distance`: the least over both units' lanes, a large
    unit's two; lanes are numbered the same on both sides) come first; only when none of those is
    in reach does it consider the rest. A charge where flanking works keeps going for its target
    wherever it is; heals are not affected; a splash's centre is chosen by this rule too.
-3. A charge where flanking works takes the highest threat for its HP left; otherwise, if this hit's
+4. A charge where flanking works takes the highest threat for its HP left; otherwise, if this hit's
    expected damage would kill some, the one with the highest A among them, else the one it hurts
    most for its HP left (expected / HP, by cross-multiplication). The expected damage is capped at
    what the hitter's combat limit lets it take, so a siege engine takes no kill. Ties by the higher
@@ -176,18 +205,22 @@ field.
 hit 20 HP; six kill a frontline unit); a SPELL's A and Dv are the caster's magic and the target's
 magic defence, and its damage is times `100 -` the target's resistance to the spell's damage type
 (none for the magic bolt). Then times the hit's percentages (a spell's power, the ground's, the
-first round's charge, a splash's) over one division. A hit: `max(1, expected x r)`, r in
+first round's charge, the pair's type percentage: `100 +` the hitter's `damage_vs` against the
+target's unit combat (and `damage_vs_large`, `damage_vs_walls`), times `100 -` the target's
+`resist_vs` against the hitter's; the hitter's `round_percent`; a splash's or pattern's) over one
+division. A hit: `max(1, expected x r)`, r in
 `ENGAGEMENT_DAMAGE_RAND_MIN..=MAX` (80..120) %. A physical action hits with the hitter's accuracy
 less the target's evasion and the kind's (`ENGAGEMENT_SHOOT_MISS_PERCENT` 10, `_BOMBARD_` 15),
 within 5..100, rolled before the crit and the damage. Strike, charge, stab and shoot crit with the
 hitter's crit (at most 95), for `ENGAGEMENT_CRIT_DAMAGE_PERCENT` (150) % of the hit; a strike's or a
 charge's crit knocks the target back a row when every cell behind it is free (it acts from that row
-then).
+then). A physical hit (a pattern's and a splash's too) loses the target's armor, at least 1 centi-HP
+getting through, unless the hitter has `armor_piercing`.
 
 **Withdrawal** replaces a killing hit: a unit with a withdrawal chance (attackers: FfH's
 `withdrawalProbability`; defenders: the defensive withdrawal) that a hit (a splash too) would kill
 rolls it; on a success the hit does nothing and the unit leaves the battle alive. Never a city's
-defenders (Q3; the resolver enforces it).
+defenders (Q3; the resolver enforces it), and never from a hit of a unit with `pursuit`.
 
 **The ground** (the defended plot's, `Game::engage_ground`: a city on it; a forest or jungle,
 which is a feature with `iEngagementSlotsChange` below 0: Forest, New Forest, Ancient Forest,
@@ -243,7 +276,8 @@ A on its side against nobody in particular, with its promotions; a large unit's 
 the lower unit id; while the slots last (a large unit needs 2; units without `bRiver` at most the
 ordinary slots, Q9's river rule). Then the large units are placed first, each unit in the first row
 of its rank order (`engage_row_order`) with room, the lanes nearest the centre first (then the
-lower). Deterministic, no RNG, the same for humans and the AI. Heroes and
+lower); while another large unit is still to place, a large unit does not split a pair of free
+cells (it starts after an even run of free cells on its left), so a row of 4 lanes holds two. Deterministic, no RNG, the same for humans and the AI. Heroes and
 veterans are not held back. The attacker fights it when its order gives no formation; the defender
 always does (`Game::engage_defense_formation`: the hook for standing formations per army, a later
 step).
@@ -462,7 +496,7 @@ levers and the units to pull them on). Units past a national class's
 limit are a deliberate, inefficient sink for production (the over-limit price): squads are not
 balanced for them, and the battery's squads hold at most the limit of each class.
 
-**What the first battery showed** (2026-11-06; about 1,100 matchups of 200 to 400 battles; each
+**What the first battery showed** (2026-11-06, before the unit roles; about 1,100 matchups of 200 to 400 battles; each
 line is one turn, so healing between turns and bombarding on the map are not in it; its late
 armies of 5 to 8 of one national class are past the limit, so its late results are superseded by
 the squad round robin below):
@@ -518,7 +552,8 @@ the squad round robin below):
 - **Chariots** (120) are the worst early army: a Horseman's role at twice its cost, with less
   defence and no first strike.
 
-**Squads by tech level** (2026-11-06; `battles_squads.py` and `battles_meta.py`). Each level's
+**Squads by tech level** (2026-11-06, before the unit roles of docs/UNIT_ROLES.md, whose section
+9 has the round robins after them; `battles_squads.py` and `battles_meta.py`). Each level's
 generic units (each class's default unit): early (Axeman, Archer, Horseman, Hunter, Adept,
 Disciple, Catapult, Chariot, War Elephant, at most 2 Skirmishers; Warrior and Scout as leftovers),
 mid (Champion, Longbowman, Horse Archer, Mage with the bolt or Fire II, Priest, Assassin, Ranger,
@@ -606,13 +641,6 @@ The spec (the owner's, revision 4) holds; these were left open and are decided s
   a port) fights today's duel (see "Open").
 
 ## Open
-
-- **Large units in the auto formation** (found by the balance lab, 2026-11-06, not fixed):
-  `auto_arrange_around` places a large unit at the centre lanes, so on a side of 4 lanes (8 to 10
-  slots) the first large unit of a row takes lanes 1-2 and no second one fits beside it (0-1 and
-  2-3 would hold two). A second large unit goes a row back (a War Elephant there strikes once and
-  does not charge); a fourth is chosen, counts its 2 slots and is left out of the formation: 4 War
-  Elephants on open land fight as 3 with one in reserve.
 
 - The AI decides its attacks on the duel's odds and attacks in the auto formation (the AI is paused,
   the owner's call). The defender always fights in the auto formation: standing formations per army

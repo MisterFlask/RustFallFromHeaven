@@ -1504,3 +1504,17 @@ fn heal_power_and_sweep() {
     // lane 3's unit stands in the middle row.
     assert_eq!(heals, [Heal { target: 1, amount: 4000, r: 100 }, Heal { target: 2, amount: 1400, r: 100 }]);
 }
+
+/// Two large units that prefer the front fit side by side in a row of 4 lanes (lanes 0-1 and
+/// 2-3); a lone one takes the centre (lanes 1-2).
+#[test]
+fn large_units_side_by_side() {
+    let big = |value| Candidate { large: true, ..cand(4, 0, value) };
+    let p = auto_arrange(&[big(50), big(40)], 4, 10, 10);
+    let cells: Vec<(usize, u8, u8)> = p.iter().map(|x| (x.unit, x.lane, x.row)).collect();
+    assert_eq!(cells, [(0, 0, 0), (1, 2, 0)]);
+    let p = auto_arrange(&[big(50)], 4, 10, 10);
+    assert_eq!((p[0].lane, p[0].row), (1, 0));
+    // Four fill two rows; none is left out.
+    assert_eq!(auto_arrange(&[big(50), big(40), big(30), big(20)], 4, 10, 10).len(), 4);
+}

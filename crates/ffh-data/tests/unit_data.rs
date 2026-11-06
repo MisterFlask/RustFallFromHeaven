@@ -138,7 +138,7 @@ fn chariot_prereqs_and_modifiers() {
     );
     assert_eq!(u.prereq_and_bonus, None);
     assert_eq!(u.prereq_building, Some(d.t::<BuildingType>("BUILDING_SIEGE_WORKSHOP")));
-    assert_eq!(u.production_cost, 120);
+    assert_eq!(u.production_cost, 100); // FFH2: 120 (this game's, docs/UNIT_ROLES.md)
     assert_eq!(u.combat, 5);
     assert_eq!(u.moves, 3);
     assert_eq!(u.withdrawal_probability, 25);
