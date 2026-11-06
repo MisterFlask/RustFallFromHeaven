@@ -443,7 +443,9 @@ them.
 `ffh battles FILE [--runs N] [--seed S]` (`crates/ffh-cli/src/battles.rs`) fights staged
 engagements through the rules' own entry: each line of FILE is a matchup (`name | ATTACKERS |
 DEFENDERS | GROUND`, units as `[N*]UNIT[+PROMOTION]..[@row]`, ground words `open`, `forest`,
-`hills`, `city`, `walls`, `fort:N`, `dmg:N`, `waves:N`; the module comment has the details), fought
+`hills`, `city`, `walls`, `fort:N`, `dmg:N`, `waves:N`, `bombard:N` (turns of siege before the
+assault; an AI stack with siege units goes on bombarding until the Sentinels are breached, up to 10
+turns); the module comment has the details), fought
 `--runs` times from a save of the staged world with the RNG reseeded, both sides in the auto
 formation, units without races, traits or weapons; one JSON line of totals per matchup (results,
 units and HP lost, cost, damage by action kind, per unit type: fate, damage dealt, taken and
@@ -455,7 +457,8 @@ HP destroyed, summed and squared for standard errors). About 5 to 7 ms a battle.
 them (`meta`: payoffs, the equilibrium and dominance; `swaps`: unit against unit; `h2h`).
 
 **The balance target** (the owner's, 2026-11-06): every unit of every tier has a valuable place
-in some lineup, and every formation has a formation that beats it. Units past a national class's
+in some lineup, and every formation has a formation that beats it (docs/UNIT_ROLES.md proposes the
+levers and the units to pull them on). Units past a national class's
 limit are a deliberate, inefficient sink for production (the over-limit price): squads are not
 balanced for them, and the battery's squads hold at most the limit of each class.
 
@@ -511,7 +514,7 @@ the squad round robin below):
 - **Siege engines do little in battle**: Catapults and Trebuchets are net losses or neutral as
   additions (they cannot finish a target, a third withdraw), and 8 Axemen, 4 Archers and 4
   Catapults lose more against a walled city than 16 Axemen (3.1 units to 2.5). Their bombard on
-  the map is not in the battery.
+  the map is not in this battery; with it, they take walled cities (below).
 - **Chariots** (120) are the worst early army: a Horseman's role at twice its cost, with less
   defence and no first strike.
 
@@ -546,12 +549,19 @@ of HP, the mean of attacking and defending.
 - **Units without a place**: replacing them with the level's main units improves a squad on every
   ground (comparisons of squads that differ only in that unit, against every opponent, both roles):
   the healers (Disciple, Priest, High Priest), casters without a battle spell (Adept, Mage,
-  Archmage), the Catapult (at late, the Arquebus beats the Cannon in 80% of comparisons), the
-  Chariot (the Horseman beats it in 99.8% at half the cost), the War Elephant (with the placement
+  Archmage), the Chariot (the Horseman beats it in 99.8% at half the cost), the War Elephant (with the placement
   bug under "Open"); on open land, the Immortal and the Berserker (the Phalanx beats the Immortal
   in 99%: the same cost, cap and tier, 120/120 against 90/90). Marginal: the Longbowman (the
   Assassin or a Fire II Mage does better in its slot), the Hunter (about an Axeman), the Ranger
   (its best squads are 10th of 30 in a forest and on hills).
+- **Siege engines' place is the siege, not the battle.** In the battle they add little (the
+  Catapult loses to almost any substitute; at late, the Arquebus beats the Cannon in 80% of
+  comparisons), and the walled-city ground above had no siege turns. With them (`bombard:3`, then
+  the AI's own bombards until the Sentinels are breached), against a walled, fortified city: 4
+  Axemen, 2 Skirmishers and 2 Catapults take one held by 5 in every assault after 6 turns, losing
+  0.3 units (none of the squads without siege engines ever takes it); 6 Champions and 2 Catapults
+  in 92% after 3 (0.5% without the turns); 4 Paladins, 2 Marksmen and 2 Cannons take one held by 8
+  in 90% (0% without). The siege is not free: the besiegers wait 3 to 6 turns next to the city.
 - **Strictly better units**: Marksman over Crossbowman (better in 91% of comparisons, worse in
   0.3%: the same cost, cap and tier; both can still fill a squad, being capped); Paladin over
   Phalanx (97%; good civilizations only); Crusader over Champion (100%; the Order only); Skirmisher

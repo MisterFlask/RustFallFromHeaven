@@ -10,7 +10,9 @@
 //! space-separated words: `open` (the default: flat grassland, no feature), `forest`, `hills`,
 //! `city` (the defender's city, size 6), `walls` (a city with Walls), `fort:N` (the defenders'
 //! fortify turns), `dmg:N` (every unit's damage, percent), `waves:N` (up to N attack orders in
-//! the turn, each committing the attackers that have not attacked yet, until the plot falls).
+//! the turn, each committing the attackers that have not attacked yet, until the plot falls),
+//! `bombard:N` (N turns of siege first: each attacker that can bombard does, then the attackers'
+//! attacks and moves are reset; the defenders do not heal, as in a besieged city).
 //!
 //! The world is a duel map, players 0 (attacker) and 1 (defender) at war, no controllers. Every
 //! unit keeps only its unit type's free promotions and the ones the line names (the civs' races and
@@ -47,6 +49,7 @@ struct Spec {
     fort: i32,
     dmg: i32,
     waves: usize,
+    bombard: usize,
 }
 
 fn parse_stacks(d: &GameData, s: &str) -> Result<Vec<Stack>, String> {
@@ -117,6 +120,7 @@ fn parse_line(d: &GameData, line: &str) -> Result<Option<Spec>, String> {
         fort: 0,
         dmg: 0,
         waves: 1,
+        bombard: 0,
     };
     for w in f.get(3).copied().unwrap_or("").split_whitespace() {
         match w {
@@ -131,6 +135,8 @@ fn parse_line(d: &GameData, line: &str) -> Result<Option<Spec>, String> {
             _ => {
                 if let Some(n) = w.strip_prefix("fort:") {
                     s.fort = n.parse().map_err(|_| format!("bad {w}"))?;
+                } else if let Some(n) = w.strip_prefix("bombard:") {
+                    s.bombard = n.parse().map_err(|_| format!("bad {w}"))?;
                 } else if let Some(n) = w.strip_prefix("waves:") {
                     s.waves = n.parse().map_err(|_| format!("bad {w}"))?;
                 } else if let Some(n) = w.strip_prefix("dmg:") {
@@ -307,6 +313,8 @@ struct SideAgg {
 struct Agg {
     runs: i64,
     waves: i64,
+    /// Turns of siege before the assault (`bombard:N` and the AI's bombards).
+    siege_turns: i64,
     /// Per run, from the attacker's side: the defender's share of HP lost less its own (percent),
     /// and the hammers of HP it destroyed less those it lost; sums and sums of squares.
     net_hp: [f64; 2],
@@ -334,8 +342,12 @@ fn fight(spec: &Spec, runs: i64, seed: u32) -> Agg {
                 .wrapping_mul(2_654_435_761)
                 .wrapping_add(17),
         );
+        for _ in 0..spec.bombard {
+            siege_turn(&mut g, from, true);
+        }
+        let mut siege_turns = spec.bombard as i64;
         let mut reports: Vec<BattleReport> = Vec::new();
-        for _ in 0..spec.waves {
+        while reports.len() < spec.waves {
             let ready = g.map.plots[from]
                 .units
                 .iter()
@@ -360,6 +372,13 @@ fn fight(spec: &Spec, runs: i64, seed: u32) -> Agg {
                 break;
             }
             let Some(r) = g.battle_reports.iter().find(|r| r.id >= before) else {
+                // An AI stack with siege units bombards instead while a Sentinel stands
+                // (`group_attack_force`'s bombard-first): another siege turn, up to 10 in all.
+                if spec.bombard > 0 && siege_turns < 10 && g.units[lead].made_attack {
+                    siege_turn(&mut g, from, false);
+                    siege_turns += 1;
+                    continue;
+                }
                 break;
             };
             let taken = r.outcome.result == ffh_core::engagement::EngageResult::Taken;
@@ -373,6 +392,7 @@ fn fight(spec: &Spec, runs: i64, seed: u32) -> Agg {
             continue;
         }
         a.waves += reports.len() as i64;
+        a.siege_turns += siege_turns;
         a.runs += 1;
         let last = reports.last().unwrap();
         use ffh_core::engagement::EngageResult as R;
@@ -392,6 +412,26 @@ fn fight(spec: &Spec, runs: i64, seed: u32) -> Agg {
         a.net_cw[1] += cw * cw;
     }
     a
+}
+
+/// A turn of siege: the attackers on `from` that can bombard do (when `bombard`), then every
+/// attacker's attacks and moves are reset for the next turn.
+fn siege_turn(g: &mut Game, from: PlotIdx, bombard: bool) {
+    let ours: Vec<UnitId> = g.map.plots[from].units.iter().copied().filter(|&u| g.units[u].owner == PlayerId(0)).collect();
+    if bombard {
+        for &u in &ours {
+            if g.units.contains(u) && g.unit_can_bombard(u, from) {
+                g.unit_bombard(u);
+            }
+        }
+    }
+    for &u in &ours {
+        if g.units.contains(u) {
+            g.units[u].made_attack = false;
+            g.units[u].attacks_made = 0;
+            g.units[u].moves = 0;
+        }
+    }
 }
 
 /// One run's net result from the attacker's side (`Agg::net_hp`, `Agg::net_cw`).
@@ -506,8 +546,8 @@ fn json(spec: &Spec, a: &Agg) -> String {
     let mut s = String::new();
     let _ = write!(
         s,
-        "{{\"name\":{:?},\"runs\":{},\"waves\":{},\"results\":{:?},\"rounds\":{},\"net_hp\":[{:.3},{:.3}],\"net_cw\":[{:.3},{:.3}]",
-        spec.name, a.runs, a.waves, a.results, a.rounds, a.net_hp[0], a.net_hp[1], a.net_cw[0], a.net_cw[1]
+        "{{\"name\":{:?},\"runs\":{},\"waves\":{},\"results\":{:?},\"rounds\":{},\"siege_turns\":{},\"net_hp\":[{:.3},{:.3}],\"net_cw\":[{:.3},{:.3}]",
+        spec.name, a.runs, a.waves, a.results, a.rounds, a.siege_turns, a.net_hp[0], a.net_hp[1], a.net_cw[0], a.net_cw[1]
     );
     let _ = write!(
         s,
