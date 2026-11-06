@@ -478,29 +478,65 @@ impl GameData {
         matches!(self.units[u].domain_type, Some(DomainType::DOMAIN_LAND) | Some(DomainType::DOMAIN_IMMOBILE))
     }
 
-    /// The battle spell a unit knows (docs/ENGAGEMENTS.md, "Battle spells"): of the spells with
-    /// `iDamage > 0` or `battle_only` whose prerequisites on the caster it meets
-    /// (`PromotionPrereq1` and `PromotionPrereq2` among its promotions, `UnitPrereq`,
-    /// `UnitClassPrereq` and `UnitCombatPrereq` its type's, `ReligionPrereq` its `religion`), the
-    /// strongest: the highest `iDamage` (Fireball's is 0), then the lower id. `None`: it knows
-    /// none (a caster casts the magic bolt).
+    /// The damage spell a unit casts in a battle (docs/ENGAGEMENTS.md, "Battle spells"): the
+    /// `attack` of [`Self::engage_battle_spells`]; its prerequisites on the caster are
+    /// `PromotionPrereq1` and `PromotionPrereq2` among its promotions, `UnitPrereq`,
+    /// `UnitClassPrereq` and `UnitCombatPrereq` its type's, `ReligionPrereq` its `religion`.
+    /// `None`: it knows none (a caster casts the magic bolt).
     pub fn engage_damage_spell(&self, unit_type: UnitType, has_promotion: impl Fn(PromotionType) -> bool, religion: Option<ReligionType>) -> Option<SpellType> {
+        self.engage_battle_spells(unit_type, has_promotion, religion).attack
+    }
+
+    /// A damage spell's output in a battle, to choose a caster's strongest: its power times `100 +`
+    /// what its pattern adds when every extra target is there (a splash and a VOLLEY, PIERCE or
+    /// CLEAVE two, a SWEEP three, a TRAMPLE one, each at its percentage).
+    pub fn battle_spell_output(&self, x: &SpellInfo) -> i64 {
+        let d = &self.defines;
+        let extra = match x.battle_pattern {
+            None => 2 * d.engagement_splash_percent,
+            Some(AttackPattern::Single) => 0,
+            Some(AttackPattern::Volley) => 2 * d.engagement_volley_percent,
+            Some(AttackPattern::Pierce) => 2 * d.engagement_pierce_percent,
+            Some(AttackPattern::Sweep) => 3 * d.engagement_sweep_percent,
+            Some(AttackPattern::Cleave) => 2 * d.engagement_cleave_percent,
+            Some(AttackPattern::Trample) => d.engagement_trample_percent,
+        };
+        x.battle_power_or_default() as i64 * (100 + extra.max(0)) as i64
+    }
+
+    /// A caster's battle spells (docs/ENGAGEMENTS.md, "Battle spells"), of the spells whose
+    /// promotion, unit, unit class, unit combat and religion prerequisites it meets: its damage
+    /// spell (`iDamage > 0`, `battle_only` or a `battle_power`, and no heal or charm), the strongest
+    /// by [`Self::battle_spell_output`], then `iDamage`, then the lower id; its heal (`battle_heal`), the strongest;
+    /// its charms and hexes (`battle_charm`), all, in spell order.
+    pub fn engage_battle_spells(&self, unit_type: UnitType, has_promotion: impl Fn(PromotionType) -> bool, religion: Option<ReligionType>) -> BattleSpells<SpellType> {
         let info = &self.units[unit_type];
-        let mut best: Option<SpellType> = None;
+        let mut out = BattleSpells::default();
         for s in self.spells.keys() {
             let spell = &self.spells[s];
-            let meets = (spell.damage > 0 || spell.battle_only)
-                && spell.promotion_prereq1.map_or(true, &has_promotion)
+            let meets = spell.promotion_prereq1.map_or(true, &has_promotion)
                 && spell.promotion_prereq2.map_or(true, &has_promotion)
                 && spell.unit_prereq.map_or(true, |t| t == unit_type)
                 && spell.unit_class_prereq.map_or(true, |c| info.unit_class_type == Some(c))
                 && spell.unit_combat_prereq.map_or(true, |c| info.unit_combat_type == Some(c))
                 && spell.religion_prereq.map_or(true, |r| religion == Some(r));
-            if meets && best.map_or(true, |b| spell.damage > self.spells[b].damage) {
-                best = Some(s);
+            if !meets {
+                continue;
+            }
+            if spell.battle_charm.is_some() {
+                out.charms.push(s);
+            } else if spell.battle_heal > 0 {
+                if out.heal.map_or(true, |b| spell.battle_heal > self.spells[b].battle_heal) {
+                    out.heal = Some(s);
+                }
+            } else if spell.damage > 0 || spell.battle_only || spell.battle_power > 0 {
+                let key = |x: &SpellInfo| (self.battle_spell_output(x), x.damage);
+                if out.attack.map_or(true, |b| key(spell) > key(&self.spells[b])) {
+                    out.attack = Some(s);
+                }
             }
         }
-        best
+        out
     }
 
     // A unit type's values in a formation battle: its stat sheet, its rows and its rank preference

@@ -49,8 +49,9 @@ fn table_sizes() {
     // 261 and this game's PROMOTION_SPIRIT_GUIDE2 (docs/SUITABILITY.md) and
     // PROMOTION_SUMMONERS_BOND (the Summoner trait's).
     assert_eq!(d.promotions.len(), 263);
-    // 267 and this game's SPELL_FIREBALL_BARGE (docs/ENGAGEMENTS.md, "Battle spells").
-    assert_eq!(d.spells.len(), 268);
+    // 267 and this game's SPELL_FIREBALL_BARGE and 25 sphere spells in battle (docs/ENGAGEMENTS.md,
+    // "Battle spells").
+    assert_eq!(d.spells.len(), 293);
     assert_eq!(d.builds.len(), 35);
     assert_eq!(d.special_units.len(), 3);
     assert_eq!(d.missions.len(), MissionType::NUM);

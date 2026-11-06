@@ -1700,9 +1700,11 @@ turn, to move casters and to promote them:
   (docs/ENGAGEMENTS.md), by their caster's spell actions, so the AI never casts them on the map,
   and neither the strike's softening (`planned_soften`) nor the barrage counts them.
   `spell_worth` values a battle-only spell at `BATTLE_SPELL_WORTH` (80: the old Fireball missile
-  without its collateral bonus), so the two spheres keep their place; a caster with a spell in
-  battle (`Game::unit_engage_spell`: not the magic bolt) is a combat caster, which marches with the
-  army, and a damage caster, which `MAGIC_WAR` counts. The Arcane Barge's Fireball (the missile) is
+  without its collateral bonus), so the spheres keep their place (each sphere I's battle spell
+  since 2026-11-06, docs/ENGAGEMENTS.md, the same); a caster with any spell in battle
+  (`Game::unit_engage_battle_spells`: a damage spell, heal, charm or hex; not the magic bolt) is a
+  combat caster, which marches with the army, and one with a damage spell in battle
+  (`Game::unit_engage_spell`) a damage caster, which `MAGIC_WAR` counts. The Arcane Barge's Fireball (the missile) is
   cast as FfH's AI casts summons.
 - **Summons spent** (`casting::summon_target`, `SUMMON_SPEND`; More Naval AI's
   `AI_summonAttackMove`, which attacks at any odds): a temporary summon that will be gone before it

@@ -131,21 +131,65 @@ the view and the client read these.
 - SHOOT: the backmost unit of each enemy lane. Physical, `ENGAGEMENT_SHOOT_MISS_PERCENT` (10) more
   miss.
 - SPELL: the backmost unit of each enemy lane; never misses, never crits. A caster that knows a
-  battle spell (below) casts it at power 100 with a splash; one that knows none casts the magic
-  bolt, `ENGAGEMENT_BOLT_PERCENT` (60), one target. The log names the spell.
-- **Battle spells** (the owner's decisions, 2026-11-05). A unit's battle spell
-  (`Game::unit_battle_spell`, `GameData::engage_damage_spell`) is, of the spells with
-  `iDamage > 0` or `battle_only` whose promotion, unit, unit class, unit combat and religion
-  prerequisites it meets, the highest `iDamage`, then the lower id. A unit with magic that knows
-  one casts it in place of each attack, in every row: its strikes, charges, stabs, shots and
-  bombards are SPELL actions, the same counts (`rows_with_battle_spell`); a healer (a row that
-  heals) keeps its rows. So a Fire II mage casts Fireball from the front row too, and Meshabber,
-  Mary and Auric Ascended (heroes with a battle spell of their own, given a caster's magic: 110% of
-  their attack) cast Fireball, Contagion and Greater Snowfall in place of their strikes. A
-  `battle_only` spell is cast only in battle, never on the map (`unit_can_cast` refuses it):
-  Fire II's Fireball (fire; FFH2's summoned a missile) and Air II's Maelstrom (lightning; FFH2's
-  struck the units within 2 plots). The Arcane Barge, a ship, keeps a Fireball of its own
-  (`SPELL_FIREBALL_BARGE`), the missile.
+  damage spell (below) casts it at its `battle_power` (100 when absent) with its `battle_pattern`
+  (none: a splash); one that knows none casts the magic bolt, `ENGAGEMENT_BOLT_PERCENT` (60), one
+  target (or its row's pattern). The log names the spell.
+- **Battle spells** (the owner's decisions, 2026-11-05 and 2026-11-06). A unit's battle spells
+  (`Game::unit_battle_spells`, `GameData::engage_battle_spells`) are of the spells whose
+  promotion, unit, unit class, unit combat and religion prerequisites it meets:
+  * its **damage spell**: of the spells with `iDamage > 0`, `battle_only` or a `battle_power` (and
+    no heal or charm), the most output (`GameData::battle_spell_output`: the power times `100 +`
+    what its pattern adds when every extra target is there: a splash two at 50%, VOLLEY, PIERCE
+    and CLEAVE two, SWEEP three, TRAMPLE one, each at its percentage), then the highest
+    `iDamage`, then the lower id;
+  * its **heal** (`battle_heal`: percent of a hit, `battle_pattern` SINGLE or SWEEP), the
+    strongest: cast with a SPELL action in place of the damage spell when an ally on the field is
+    missing at least half of the heal (the most hurt ally, as HEAL);
+  * its **charms and hexes** (`battle_charm`: `{"side": "OWN"|"ENEMY", "rows": "FRONT"|"ALL",
+    "damage", "taken", "accuracy", "evasion", "crit", "speed"}`), every one it knows, cast with
+    its first SPELL actions, one an action, in id order; each draws nothing and lasts the battle,
+    on the units of that side on the field as it is cast (the front row: row 0 then). `damage` and
+    `taken` are percent more damage dealt and taken (each hit times `(100 + dealt)(100 + taken)`
+    before armor); accuracy, evasion, crit and speed are points (speed orders the passes).
+
+  A unit with magic that knows any of them casts with SPELL in place of each attack, in every
+  row: its strikes, charges, stabs, shots and bombards are SPELL actions, the same counts
+  (`rows_with_battle_spell`); a healer (a row that heals) keeps its rows. So a Fire II mage casts
+  Fireball from the front row too, and Meshabber, Mary and Auric Ascended (heroes with a battle
+  spell of their own, given a caster's magic: 110% of their attack) cast Fireball, Contagion and
+  Greater Snowfall in place of their strikes. A `battle_only` spell is cast only in battle, never
+  on the map (`unit_can_cast` refuses it). Each sphere I and some spheres II have one (the owner's
+  request, 2026-11-06: adepts that matter in a battle, and battle spells beyond Fire II):
+
+  | Sphere | I | II |
+  |---|---|---|
+  | Air | Shock: lightning 80, VOLLEY | Maelstrom: lightning 100, splash |
+  | Body | Quicken: own front row +5 speed, +10 evasion | |
+  | Chaos | Wild Edge: own front row +35 crit | |
+  | Death | Grave Touch: death 120 | Death Grip: death 150 |
+  | Earth | Tremor: enemy front row -15 evasion, -1 speed | Stone Ward: own front row -25% taken |
+  | Enchantment | Keen Edge: own front row +20% damage | |
+  | Entropy | Corrode: enemy front row +20% taken | |
+  | Fire | Firebolt: fire 120 | Fireball: fire 100, splash |
+  | Ice | Chill: enemy front row -3 speed, -15 evasion | Frost Lance: cold 120, PIERCE |
+  | Law | Hold the Line: own front row -15% taken | |
+  | Life | Mend: heal 60 | Healing Light: heal 70, SWEEP |
+  | Metamagic | Ward: own side -10% taken | |
+  | Mind | Daze: enemy side -10 accuracy | |
+  | Nature | Thornlash: poison 120 | Bramble Snare: enemy front row -4 speed, -20 evasion, +10% taken |
+  | Shadow | Shadow Veil: own front row +15 evasion | |
+  | Spirit | Battle Hymn: own side +20 accuracy | |
+  | Sun | Flare: holy 120 | Sunburst: holy 100, VOLLEY |
+  | Water | Wave: physical 70, PIERCE | Tidal Surge: physical 90, PIERCE |
+
+  (Power without a pattern: one target.) The map spells that only dealt damage are battle spells
+  now: Fire II's Fireball (FFH2's summoned a missile), Air II's Maelstrom (FFH2's struck the units
+  within 2 plots), Entropy III's Wither, Mary's Contagion and the Empyrean's Crown of Brilliance.
+  Snowfall and Ring of Flames, which also change the land, stay map spells (and are their casters'
+  damage spells in a battle). The Arcane Barge, a ship, keeps a Fireball of its own
+  (`SPELL_FIREBALL_BARGE`), the missile. A caster of two spheres casts both: a mage with Fire I
+  and Enchantment I casts Keen Edge, then Firebolt; one with Earth I and II casts its two charms,
+  then the bolt.
 - BOMBARD: the backmost unit of each enemy lane; physical, `ENGAGEMENT_BOMBARD_MISS_PERCENT` (15)
   more miss; never crits.
 - HEAL: the most hurt ally on the field (most HP missing; ties by lane, then row), itself

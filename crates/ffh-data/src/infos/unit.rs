@@ -18,7 +18,8 @@
 use crate::enums::*;
 use crate::idx::IdxVec;
 use crate::infos::{
-    read_engage_patterns, read_engage_row_order, read_engage_rows, read_round_percent, read_stat_changes, read_stats, AttackPattern, InfoBase, RowActions, StatChange,
+    read_battle_charm, read_engage_patterns, read_engage_row_order, read_engage_rows, read_round_percent, read_stat_changes, read_stats, AttackPattern, BattleCharm,
+    InfoBase, RowActions, StatChange,
     StatSheet, StatType, ROWS,
 };
 use crate::registry::Rd;
@@ -1134,6 +1135,14 @@ pub struct SpellInfo {
     /// reach": SPELL), never cast on the map (`Game::unit_can_cast` refuses it): its caster's battle
     /// spell, of its `damage_type`. Fire II's Fireball.
     pub battle_only: bool,
+    /// This game's battle keys (docs/ENGAGEMENTS.md, "Battle spells"): `battle_power`, its damage in
+    /// percent of a hit (0: 100); `battle_pattern`, whom else it hits (`None`: a splash on the
+    /// target's neighbours, as Fireball's; `SINGLE`: one target); `battle_heal`, a heal of this
+    /// percent of a hit in place of damage; `battle_charm`, a charm or hex.
+    pub battle_power: i32,
+    pub battle_pattern: Option<AttackPattern>,
+    pub battle_heal: i32,
+    pub battle_charm: Option<BattleCharm>,
     pub dispel: bool,
     pub push: bool,
     pub remove_has_casted: bool,
@@ -1224,6 +1233,16 @@ pub fn read_spell(rd: &Rd) -> SpellInfo {
         immune_not_alive: rd.bool("immune_not_alive"),
         ability: rd.bool("ability"),
         battle_only: rd.bool("battle_only"),
+        battle_power: rd.int("battle_power"),
+        battle_pattern: rd.has("battle_pattern").then(|| rd.string("battle_pattern")).and_then(|t| {
+            let p = AttackPattern::parse(&t);
+            if p.is_none() {
+                rd.cx.warn(format!("{}: unknown battle_pattern {t:?}", rd.string("type")));
+            }
+            p
+        }),
+        battle_heal: rd.int("battle_heal"),
+        battle_charm: read_battle_charm(rd, &rd.string("type")),
         dispel: rd.bool("dispel"),
         push: rd.bool("push"),
         remove_has_casted: rd.bool("remove_has_casted"),
@@ -1341,5 +1360,16 @@ pub fn read_mission(rd: &Rd) -> MissionInfo {
         target: rd.bool("target"),
         build: rd.bool("build"),
         visible: rd.bool("visible"),
+    }
+}
+
+impl SpellInfo {
+    /// Its damage in a battle, in percent of a hit: `battle_power`, else 100.
+    pub fn battle_power_or_default(&self) -> i32 {
+        if self.battle_power > 0 {
+            self.battle_power
+        } else {
+            100
+        }
     }
 }

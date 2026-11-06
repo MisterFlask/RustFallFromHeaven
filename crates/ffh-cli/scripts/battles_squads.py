@@ -11,6 +11,11 @@ front-line pairs, a front type with each support type (3:1, and 1:1 for the main
                                                  round-robin spec files for `ffh battles`
                                                  (GROUNDS from open,forest,hills,walls; ONLY: a
                                                  {level: [squad names]} file to restrict to)
+    battles_squads.py casters OUT [GROUNDS] [--chunks N]
+                                                 the casters' marginal lab (docs/UNIT_ROLES.md,
+                                                 section 9): a core squad and two of each sphere's
+                                                 caster, the bolt caster, a healer or the core
+                                                 units, early and mid (GROUNDS: open,forest)
 
     python3 crates/ffh-cli/scripts/battles_squads.py specs OUT early,mid,late open
     for f in OUT/part*.txt; do tools/agents/slot.sh $B/ffh battles $f --runs 40 > ${f%.txt}.jsonl & done; wait
@@ -164,6 +169,45 @@ def specs(levels, grounds, only=None):
     return lines
 
 
+SPHERES1 = ['AIR', 'BODY', 'CHAOS', 'DEATH', 'EARTH', 'ENCHANTMENT', 'ENTROPY', 'FIRE', 'ICE', 'LAW', 'LIFE',
+            'METAMAGIC', 'MIND', 'NATURE', 'SHADOW', 'SPIRIT', 'SUN', 'WATER']
+SPHERES2 = ['AIR', 'DEATH', 'EARTH', 'FIRE', 'ICE', 'LIFE', 'NATURE', 'SUN', 'WATER']
+
+
+def caster_squads(level):
+    """The marginal lab's squads: a core and two of X, by X's name."""
+    if level == 'early':
+        core = '4*AXEMAN, 2*ARCHER'
+        xs = {s.lower(): f'ADEPT+{s}1' for s in SPHERES1}
+        xs.update(bolt='ADEPT', axe='AXEMAN', arch='ARCHER', disc='DISCIPLE_THE_ORDER')
+    else:
+        core = '4*CHAMPION, 2*LONGBOWMAN'
+        xs = {f'{s.lower()}2': f'MAGE+{s}1+{s}2' for s in SPHERES2}
+        xs.update(bodyenchantment='MAGE+BODY1+ENCHANTMENT1', enchantmentfire='MAGE+ENCHANTMENT1+FIRE1',
+                  lawentropy='MAGE+LAW1+ENTROPY1', bolt='MAGE', priest='PRIEST_OF_THE_ORDER', lb='LONGBOWMAN',
+                  champ='CHAMPION')
+    return {k: f'{core}, 2*{v}' for k, v in xs.items()}
+
+
+def caster_specs(grounds):
+    lines = []
+    for lvl in ['early', 'mid']:
+        sq = caster_squads(lvl)
+        for g in grounds:
+            for a, d in itertools.product(sq, repeat=2):
+                lines.append(f"{lvl}:{g}:{a}>{d} | {sq[a]} | {sq[d]} | {GROUNDS[g]}")
+    return lines
+
+
+def write_chunks(out, lines, chunks):
+    random.Random(1).shuffle(lines)  # even chunks
+    os.makedirs(out, exist_ok=True)
+    for i in range(chunks):
+        with open(os.path.join(out, f"part{i}.txt"), "w") as f:
+            f.write("\n".join(lines[i::chunks]) + "\n")
+    print(f"{len(lines)} matchups in {chunks} files under {out}")
+
+
 if __name__ == '__main__':
     if len(sys.argv) >= 2 and sys.argv[1] == 'specs':
         # specs OUT LEVELS GROUNDS [ONLY.json] [--chunks N]
@@ -174,13 +218,16 @@ if __name__ == '__main__':
             chunks = int(rest[rest.index('--chunks') + 1])
             rest = rest[:rest.index('--chunks')]
         only = json.load(open(rest[0])) if rest else None
-        lines = specs(levels, grounds, only)
-        random.Random(1).shuffle(lines)  # even chunks
-        os.makedirs(out, exist_ok=True)
-        for i in range(chunks):
-            with open(os.path.join(out, f"part{i}.txt"), "w") as f:
-                f.write("\n".join(lines[i::chunks]) + "\n")
-        print(f"{len(lines)} matchups in {chunks} files under {out}")
+        write_chunks(out, specs(levels, grounds, only), chunks)
+    elif len(sys.argv) >= 2 and sys.argv[1] == 'casters':
+        # casters OUT [GROUNDS] [--chunks N]
+        rest = sys.argv[2:]
+        chunks = 4
+        if '--chunks' in rest:
+            chunks = int(rest[rest.index('--chunks') + 1])
+            rest = rest[:rest.index('--chunks')]
+        grounds = rest[1].split(',') if len(rest) > 1 else ['open', 'forest']
+        write_chunks(rest[0], caster_specs(grounds), chunks)
     else:
         for k, v in squads(sys.argv[1]).items():
             print(f"{k}|{v}")

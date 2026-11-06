@@ -288,6 +288,23 @@ flag.
   to 80, new `ENGAGEMENT_VOLLEY_PERCENT`, `_PIERCE_`, `_SWEEP_`, `_CLEAVE_`, `_TRAMPLE_`. The AI
   values the new promotion keys (Formation's) when it promotes.
 
+- **Sphere spells in battle** (2026-11-06; the owner's request: adepts that matter in a battle, and
+  battle spells beyond Fire II; docs/ENGAGEMENTS.md, "Battle spells", lists them). 25 new spells,
+  cast only in formation battles: every sphere I gives an adept one (Firebolt, Shock, Wave,
+  Thornlash, Flare and Grave Touch deal damage; Life's Mend heals; the other eleven are charms on
+  the caster's side or hexes on the enemy's, for the battle: Quicken, Keen Edge, Hold the Line,
+  Tremor, Shadow Veil, Battle Hymn, Wild Edge, Corrode, Daze, Ward, Chill), and seven spheres II
+  give a mage a stronger one (Tidal Surge, Sunburst, Death Grip, Frost Lance, Stone Ward, Bramble
+  Snare, Healing Light). A caster casts each charm it knows with its first spell actions, then its
+  damage spell, or its heal when an ally is hurt by half the heal; its damage spell is the one with
+  the most output (power times its pattern's extra targets), then the most damage. The map spells
+  that only dealt damage are battle spells now, as Maelstrom: Entropy III's Wither, Mary's
+  Contagion, the Empyrean's Crown of Brilliance (no longer cast on the map). The magic bolt is back
+  at 60% (`ENGAGEMENT_BOLT_PERCENT`, 80 since the unit roles). New spell keys `battle_power`,
+  `battle_pattern`, `battle_heal`, `battle_charm`; new spells, so saves made before do not load.
+  The AI counts a caster with any battle spell (a charm or heal too) as one that marches with the
+  army.
+
 - **Recon units fight from any row** (2026-11-06; the Ogre Battle 64 Valkyrie pattern; this game's
   engagement combat, docs/ENGAGEMENTS.md, not FFH2's). The 20 recon unit types that do not stab
   (the Scout, Hunter, Ranger, Beastmaster and their kin; the assassins with Marksman keep their

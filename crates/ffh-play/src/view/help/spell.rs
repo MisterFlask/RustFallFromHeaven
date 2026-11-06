@@ -61,6 +61,10 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         ability: _,
         damage_type,
         battle_only,
+        battle_power,
+        battle_pattern,
+        battle_heal,
+        battle_charm,
         push: _,
         change_population: _,
         global,
@@ -191,17 +195,13 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
     }
 
     // What it does.
-    if *battle_only {
-        // ffh-play's (this game's rule: docs/ENGAGEMENTS.md, SPELL).
+    // ffh-play's (this game's rules: docs/ENGAGEMENTS.md, "Battle spells").
+    let battle = *battle_only || *battle_power > 0 || *battle_heal > 0 || battle_charm.is_some();
+    if battle {
         b.push_str(NEWLINE);
-        match damage_type {
-            Some(t) => b.push_str(&format!(
-                "[ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle; {} damage, {}% splash on adjacent units",
-                display(d, *t),
-                d.defines.engagement_splash_percent
-            )),
-            None => b.push_str("[ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle"),
-        }
+        b.push_str(&battle_line(d, damage_type, *battle_power, *battle_pattern, *battle_heal, battle_charm.as_ref()));
+    }
+    if *battle_only {
         b.push_str(NEWLINE);
         b.push_str("[ICON_BULLET]Cannot be cast on the map");
         // Its map fields (damage, range, war) do nothing outside a battle.
@@ -373,8 +373,19 @@ mod tests {
         let fireball = of("SPELL_FIREBALL");
         assert_eq!(
             fireball,
-            "[ICON_BULLET]Requires the Fire II promotion[NEWLINE][ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle; Fire damage, 50% splash on adjacent units[NEWLINE][ICON_BULLET]Cannot be cast on the map"
+            "[ICON_BULLET]Requires the Fire II promotion[NEWLINE][ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle; Fire damage, power 100%, 50% splash on adjacent units[NEWLINE][ICON_BULLET]Cannot be cast on the map"
         );
+        // The sphere spells in battle: a damage spell's power and pattern, a charm, a heal.
+        for (spell, line) in [
+            ("SPELL_FIREBOLT", "[ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle; Fire damage, power 120%, one target"),
+            ("SPELL_KEEN_EDGE", "[ICON_BULLET]Battle spell: own front row, for the battle: +20% damage dealt; cast with one of the caster's first spell actions"),
+            ("SPELL_CHILL", "[ICON_BULLET]Battle spell: enemy front row, for the battle: -15 evasion, -3 speed; cast with one of the caster's first spell actions"),
+            ("SPELL_HEALING_LIGHT", "[ICON_BULLET]Battle spell: heals 70% of a hit to the most hurt ally, and 50% of it to each other hurt ally in its row; cast in place of the caster's damage spell when an ally lacks half of it or more"),
+        ] {
+            let text = of(spell);
+            assert!(text.contains(line), "{spell}: {text}");
+            assert!(text.ends_with("[ICON_BULLET]Cannot be cast on the map"), "{spell}: {text}");
+        }
         // A permanent summon says so on its line.
         let skeleton = of("SPELL_RAISE_SKELETON");
         assert!(skeleton.contains("[ICON_BULLET]Summons a [LINK=literal]Skeleton[\\LINK]. (permanent)"), "{skeleton}");
@@ -397,7 +408,7 @@ mod tests {
 
         // A battle spell: its battle line, none of its map fields.
         let maelstrom = of("SPELL_MAELSTROM");
-        assert!(maelstrom.contains("[ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle; Lightning damage, 50% splash on adjacent units"), "{maelstrom}");
+        assert!(maelstrom.contains("[ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle; Lightning damage, power 100%, 50% splash on adjacent units"), "{maelstrom}");
         assert!(!maelstrom.contains("Damages units") && !maelstrom.contains("Range"), "{maelstrom}");
         let snowfall = of("SPELL_SNOWFALL");
         assert!(snowfall.contains("[ICON_BULLET]Damages units about +40%, to a limit of +80% damage."), "{snowfall}");
@@ -423,5 +434,43 @@ mod tests {
         for name in ["SPELL_HASTE", "SPELL_FIREBALL", "SPELL_RAISE_SKELETON", "SPELL_SUMMON_BALOR", "SPELL_RAGING_SEAS", "SPELL_MAELSTROM", "SPELL_DISPEL_MAGIC"] {
             println!("{name}:\n{}\n", of(name));
         }
+    }
+}
+
+/// The battle line of a spell (bare rule text): its damage, pattern, heal or charm.
+fn battle_line(d: &GameData, damage_type: &Option<DamageType>, power: i32, pattern: Option<AttackPattern>, heal: i32, charm: Option<&BattleCharm>) -> String {
+    let what = |p: Option<AttackPattern>| match p {
+        None => format!("{}% splash on adjacent units", d.defines.engagement_splash_percent),
+        Some(AttackPattern::Single) => "one target".to_string(),
+        Some(p) => format!("pattern {}", p.token().to_lowercase()),
+    };
+    if let Some(c) = charm {
+        let mut parts = Vec::new();
+        for (v, name) in [(c.damage, "damage dealt"), (c.taken, "damage taken")] {
+            if v != 0 {
+                parts.push(format!("{v:+}% {name}"));
+            }
+        }
+        for (v, name) in [(c.accuracy, "accuracy"), (c.evasion, "evasion"), (c.crit, "crit"), (c.speed, "speed")] {
+            if v != 0 {
+                parts.push(format!("{v:+} {name}"));
+            }
+        }
+        let side = if c.enemy { "enemy" } else { "own" };
+        let rows = if c.whole_side { "side" } else { "front row" };
+        return format!("[ICON_BULLET]Battle spell: {} {rows}, for the battle: {}; cast with one of the caster's first spell actions", side, parts.join(", "));
+    }
+    if heal > 0 {
+        let whom = if pattern == Some(AttackPattern::Sweep) {
+            format!("the most hurt ally, and {}% of it to each other hurt ally in its row", d.defines.engagement_sweep_percent)
+        } else {
+            "the most hurt ally".to_string()
+        };
+        return format!("[ICON_BULLET]Battle spell: heals {heal}% of a hit to {whom}; cast in place of the caster's damage spell when an ally lacks half of it or more");
+    }
+    let power = if power > 0 { power } else { 100 };
+    match damage_type {
+        Some(t) => format!("[ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle; {} damage, power {power}%, {}", display(d, *t), what(pattern)),
+        None => format!("[ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle; power {power}%, {}", what(pattern)),
     }
 }

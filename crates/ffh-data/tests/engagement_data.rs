@@ -161,14 +161,19 @@ fn casters_cast_their_strongest_damage_spell() {
         let held: Vec<PromotionType> = held.iter().map(|n| p(n)).collect();
         d.engage_damage_spell(d.t::<UnitType>(unit), |x| held.contains(&x), Some(d.t::<ReligionType>(religion))).map(|s| d.type_name(s))
     };
-    // No damage spell: the magic bolt.
+    // No damage spell: the magic bolt (Enchantment I's spell in a battle is a charm).
     assert_eq!(spell("UNIT_ADEPT", &[]), None);
-    assert_eq!(spell("UNIT_ADEPT", &["PROMOTION_AIR1"]), None);
+    assert_eq!(spell("UNIT_ADEPT", &["PROMOTION_ENCHANTMENT1"]), None);
+    assert_eq!(spell("UNIT_ADEPT", &["PROMOTION_AIR1"]), Some("SPELL_SHOCK"));
     assert_eq!(spell("UNIT_MAGE", &["PROMOTION_AIR2"]), Some("SPELL_MAELSTROM"));
     // A battle-only spell: Fire II's Fireball (damage 0, so a damage spell comes first).
     assert_eq!(spell("UNIT_MAGE", &["PROMOTION_FIRE2"]), Some("SPELL_FIREBALL"));
     assert_eq!(spell("UNIT_MAGE", &["PROMOTION_FIRE2", "PROMOTION_AIR2"]), Some("SPELL_MAELSTROM"));
-    // The strongest: Snowfall (40) over Maelstrom (15).
+    // The most output (power x what its pattern adds): Fireball's splash (100 x 200%) over
+    // Firebolt (120, one target); Sunburst's volley (100 x 200%) over Flare (120).
+    assert_eq!(spell("UNIT_MAGE", &["PROMOTION_FIRE1", "PROMOTION_FIRE2"]), Some("SPELL_FIREBALL"));
+    assert_eq!(spell("UNIT_MAGE", &["PROMOTION_SUN1", "PROMOTION_SUN2"]), Some("SPELL_SUNBURST"));
+    // Equal output: the damage, Snowfall (40) over Maelstrom (15).
     assert_eq!(spell("UNIT_ARCHMAGE", &["PROMOTION_AIR2", "PROMOTION_ICE3"]), Some("SPELL_SNOWFALL"));
     // Both promotions of a two-promotion spell and its religion: Ring of Flames (15) needs
     // Channeling II, Divine and the Ashen Veil.
@@ -182,6 +187,38 @@ fn casters_cast_their_strongest_damage_spell() {
     // A unit-class spell: Mary's Contagion, Auric Ascended's greater Snowfall.
     assert_eq!(spell("UNIT_MARY", &[]), Some("SPELL_CONTAGION"));
     assert_eq!(spell("UNIT_AURIC_ASCENDED", &[]), Some("SPELL_SNOWFALL_GREATOR"));
+}
+
+/// Every sphere I gives an adept a spell in a battle: a damage spell, a heal, a charm or a hex.
+/// A caster heals with its strongest heal and casts every charm and hex it knows.
+#[test]
+fn every_sphere_has_a_battle_spell() {
+    let d = d();
+    let p = |n: &str| d.t::<PromotionType>(n);
+    let spells = |unit: &str, held: &[&str]| {
+        let held: Vec<PromotionType> = held.iter().map(|n| p(n)).collect();
+        d.engage_battle_spells(d.t::<UnitType>(unit), |x| held.contains(&x), None)
+    };
+    let name = |s: Option<SpellType>| s.map(|s| d.type_name(s));
+    for sphere in [
+        "AIR", "BODY", "CHAOS", "DEATH", "EARTH", "ENCHANTMENT", "ENTROPY", "FIRE", "ICE", "LAW", "LIFE", "METAMAGIC", "MIND", "NATURE",
+        "SHADOW", "SPIRIT", "SUN", "WATER",
+    ] {
+        let promo = format!("PROMOTION_{sphere}1");
+        assert!(spells("UNIT_ADEPT", &[promo.as_str()]).any(), "{promo}");
+    }
+    assert_eq!(name(spells("UNIT_ADEPT", &["PROMOTION_LIFE1"]).heal), Some("SPELL_MEND"));
+    assert_eq!(name(spells("UNIT_MAGE", &["PROMOTION_LIFE1", "PROMOTION_LIFE2"]).heal), Some("SPELL_HEALING_LIGHT"));
+    let earth = spells("UNIT_MAGE", &["PROMOTION_EARTH1", "PROMOTION_EARTH2"]);
+    let mut charms: Vec<&str> = earth.charms.iter().map(|&s| d.type_name(s)).collect();
+    charms.sort();
+    assert_eq!((earth.attack, earth.heal, charms), (None, None, vec!["SPELL_STONESKIN_WARD", "SPELL_TREMOR"]));
+    let keen = &d.spells[d.t::<SpellType>("SPELL_KEEN_EDGE")];
+    assert_eq!(keen.battle_charm, Some(BattleCharm { damage: 20, ..BattleCharm::default() }), "its own front row");
+    // The map spells that only dealt damage on the map are battle spells now.
+    for s in ["SPELL_WITHER", "SPELL_CONTAGION", "SPELL_CROWN_OF_BRILLANCE"] {
+        assert!(d.spells[d.t::<SpellType>(s)].battle_only, "{s}");
+    }
 }
 
 #[test]
@@ -386,7 +423,7 @@ fn engagement_defines() {
     assert_eq!((x.engagement_extra_action_tier, x.engagement_extra_actions), (4, 1));
     assert_eq!((x.engagement_shoot_miss_percent, x.engagement_bombard_miss_percent), (10, 15));
     assert_eq!((x.engagement_crit_damage_percent, x.engagement_charge_bonus), (150, 100));
-    assert_eq!((x.engagement_splash_percent, x.engagement_bolt_percent, x.engagement_heal_percent), (50, 80, 50));
+    assert_eq!((x.engagement_splash_percent, x.engagement_bolt_percent, x.engagement_heal_percent), (50, 60, 50));
     // The attack patterns (docs/UNIT_ROLES.md).
     let patterns = (x.engagement_volley_percent, x.engagement_pierce_percent, x.engagement_sweep_percent, x.engagement_cleave_percent, x.engagement_trample_percent);
     assert_eq!(patterns, (50, 50, 50, 60, 60));

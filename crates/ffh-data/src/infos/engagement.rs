@@ -408,3 +408,75 @@ pub fn read_round_percent(rd: &Rd, unit_type: &str) -> [i32; ROWS] {
     }
     [v[0], v[1], v[2]]
 }
+
+/// A battle charm or hex (docs/ENGAGEMENTS.md, "Battle spells"): a spell's `battle_charm`, cast with
+/// one of its caster's first actions and lasting the battle: on its own side (a charm) or the
+/// enemy's (a hex), on the front row or the whole side; percent more damage dealt and taken, and
+/// points of accuracy, evasion, crit and speed (each may be below 0).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct BattleCharm {
+    pub enemy: bool,
+    pub whole_side: bool,
+    pub damage: i32,
+    pub taken: i32,
+    pub accuracy: i32,
+    pub evasion: i32,
+    pub crit: i32,
+    pub speed: i32,
+}
+
+/// A spell's `battle_charm`: `{"side": "OWN"|"ENEMY", "rows": "FRONT"|"ALL", "damage", "taken",
+/// "accuracy", "evasion", "crit", "speed"}`; an unknown side or rows warns and reads as none.
+pub fn read_battle_charm(rd: &Rd, spell: &str) -> Option<BattleCharm> {
+    let c = rd.child("battle_charm")?;
+    let side = c.string("side");
+    let rows = c.string("rows");
+    let enemy = match side.as_str() {
+        "OWN" => false,
+        "ENEMY" => true,
+        _ => {
+            rd.cx.warn(format!("{spell}: battle_charm side {side:?} is not OWN or ENEMY"));
+            return None;
+        }
+    };
+    let whole_side = match rows.as_str() {
+        "FRONT" => false,
+        "ALL" => true,
+        _ => {
+            rd.cx.warn(format!("{spell}: battle_charm rows {rows:?} is not FRONT or ALL"));
+            return None;
+        }
+    };
+    Some(BattleCharm {
+        enemy,
+        whole_side,
+        damage: c.int("damage"),
+        taken: c.int("taken"),
+        accuracy: c.int("accuracy"),
+        evasion: c.int("evasion"),
+        crit: c.int("crit"),
+        speed: c.int("speed"),
+    })
+}
+
+/// A caster's battle spells (`GameData::engage_battle_spells`): the damage spell it casts with its
+/// spell actions, the heal it casts in their place when an ally is hurt, and its charms and hexes,
+/// cast first (docs/ENGAGEMENTS.md, "Battle spells").
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BattleSpells<S> {
+    pub attack: Option<S>,
+    pub heal: Option<S>,
+    pub charms: Vec<S>,
+}
+
+impl<S> Default for BattleSpells<S> {
+    fn default() -> Self {
+        BattleSpells { attack: None, heal: None, charms: Vec::new() }
+    }
+}
+
+impl<S> BattleSpells<S> {
+    pub fn any(&self) -> bool {
+        self.attack.is_some() || self.heal.is_some() || !self.charms.is_empty()
+    }
+}

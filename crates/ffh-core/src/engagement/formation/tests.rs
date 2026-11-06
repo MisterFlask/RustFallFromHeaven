@@ -1518,3 +1518,73 @@ fn large_units_side_by_side() {
     // Four fill two rows; none is left out.
     assert_eq!(auto_arrange(&[big(50), big(40), big(30), big(20)], 4, 10, 10).len(), 4);
 }
+
+/// A caster's charms and hexes take its first SPELL actions, one each; they last the battle, on
+/// the side and the rows they name (the front row as it stands when cast).
+#[test]
+fn charms_and_hexes() {
+    use Side::*;
+    let keen = BattleCharm { damage: 50, ..BattleCharm::default() };
+    let corrode = BattleCharm { enemy: true, taken: 50, ..BattleCharm::default() };
+    let mut c = caster(Attacker, 0, 2, Spell::known(3));
+    c.speed = 9;
+    c.charms = vec![(7, keen), (8, corrode)];
+    let mut axe = frontline(Attacker, 1, 0);
+    axe.actions[0].count = 1;
+    let fs = vec![c, axe, frontline(Defender, 1, 0), frontline(Defender, 2, 1)];
+    let mut b = battle(OPEN, fs);
+    b.params.rounds = 2;
+    let out = play(&b, &mut rigged(sure));
+    let cast: Vec<(u8, Option<u32>, Option<FighterIdx>, usize)> =
+        out.events.iter().filter(|e| e.actor == 0).map(|e| (e.round, e.spell, e.target, e.hits.len())).take(3).collect();
+    // Round 1: Keen Edge on its front row (the axe), then the hex on the enemy's front row (2,
+    // not 3 in the middle row); round 2: its damage spell.
+    assert_eq!(cast[..2], [(1, Some(7), Some(1), 0), (1, Some(8), Some(2), 0)]);
+    assert_eq!((cast[2].0, cast[2].1), (2, Some(3)));
+    let strikes: Vec<(u8, i32)> = out.events.iter().filter(|e| e.actor == 1).map(|e| (e.round, e.hits[0].dmg)).collect();
+    // +50% dealt; then +50% dealt and +50% taken.
+    assert_eq!(strikes, [(1, EVEN * 150 / 100), (2, EVEN * 150 / 100 * 150 / 100)]);
+}
+
+/// A heal spell takes the place of the damage spell when an ally is hurt by at least half of its
+/// heal (100% of a hit: 40 HP, so 20).
+#[test]
+fn a_heal_spell_in_place_of_the_damage_spell() {
+    use Side::*;
+    let mut c = caster(Attacker, 0, 1, Spell::known(3));
+    c.speed = 9;
+    c.heal_spell = Some(HealSpell { id: 9, pct: 100, pattern: AttackPattern::Single });
+    for (missing, kind, spell) in [(1999, K::Spell, Some(3)), (2000, K::Heal, Some(9))] {
+        let fs = vec![c.clone(), hurt(frontline(Attacker, 1, 0), 12000 - missing), frontline(Defender, 0, 0)];
+        let b = one_round(battle(OPEN, fs));
+        let out = play(&b, &mut rigged(sure));
+        let e = &out.events[0];
+        assert_eq!((e.actor, e.kind, e.spell), (0, kind, spell), "{missing} missing");
+        if kind == K::Heal {
+            assert_eq!(e.heal, Some(Heal { target: 1, amount: 2000, r: 100 }), "no more than it lacks");
+        }
+    }
+}
+
+/// A spell with its own pattern: its power, its pattern's extra targets in place of the splash.
+#[test]
+fn a_spell_s_power_and_pattern() {
+    use Side::*;
+    let def = || {
+        vec![
+            frontline(Defender, 0, 0),              // 1
+            frontline(Defender, 1, 0),              // 2
+            frontline(Defender, 2, 0),              // 3
+            frontline(Defender, 1, 1),              // 4
+            hurt(frontline(Defender, 1, 2), 11000), // 5, lane 1's backmost and the most hurt: the choice
+        ]
+    };
+    let mut c = caster(Attacker, 1, 2, Spell::battle(3, 150, Some(AttackPattern::Pierce)));
+    c.speed = 9;
+    let b = one_round(battle(OPEN, std::iter::once(c).chain(def()).collect()));
+    let out = play(&b, &mut rigged(sure));
+    let e = &out.events[0];
+    let got: Vec<(FighterIdx, i32, bool)> = e.hits.iter().map(|h| (h.target, h.dmg, h.splash)).collect();
+    // 150% on the target, the pierce's 50% of that on everyone else in its lane.
+    assert_eq!(got, [(5, EVEN * 150 / 100, false), (2, EVEN * 150 / 100 / 2, true), (4, EVEN * 150 / 100 / 2, true)]);
+}

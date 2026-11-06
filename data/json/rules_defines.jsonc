@@ -97,8 +97,8 @@
   //      for this percent of a hit on it
   "ENGAGEMENT_SPLASH_PERCENT": 50,
   // BOLT_PERCENT: the power of a caster's magic bolt (one target), when it knows no damage spell
-  //      (a damage spell has 100 and splashes)
-  "ENGAGEMENT_BOLT_PERCENT": 80,
+  //      (a damage spell has its battle_power, 100 when absent)
+  "ENGAGEMENT_BOLT_PERCENT": 60,
   // HEAL_PERCENT: a heal restores BASE_DAMAGE x this percent x r (a unit's own heal_percent
   //      takes its place)
   "ENGAGEMENT_HEAL_PERCENT": 50,

@@ -284,7 +284,7 @@ default unit's, a stat change to the default unit only):
 | High Priest Of Kilmorph, High Priest Of Leaves, High Priest Of The Empyrean, High Priest Of The Order, High Priest Of The Overlords, High Priest Of The Veil, High Priest Of Winter | rows strike 1 / heal 2 sweep / heal 2 sweep; heal 70% |
 | Formation (promotion) | damage +50% Mounted; resistance +50% Mounted |
 
-Defines: ENGAGEMENT_HILLS_ATTACKER_PERCENT 85, ENGAGEMENT_BOLT_PERCENT 80, ENGAGEMENT_SWEEP_PERCENT 50
+Defines: ENGAGEMENT_HILLS_ATTACKER_PERCENT 85, ENGAGEMENT_SWEEP_PERCENT 50 (ENGAGEMENT_BOLT_PERCENT 80, back to 60 with the sphere spells)
 
 Differences from the proposal, from the lab: the Hunter keeps one shot from the middle (two made
 eight Hunters the best squad on every ground early); the Crusader gets no free Formation (it took
@@ -292,7 +292,8 @@ over the mid tier); the Champion resists mounted units (40%) and wears armor 3, 
 an answer to Horse Archers; the Longbowman deals +50% to mounted units (and +25% to melee) in
 volleys; casters get speed 5 (the Archmage 4) and a ward against arrows (50%), since they died
 before acting; healers heal more (Disciple 60%, Priest 75%, High Priest 70% with its extra action),
-in sweeps; the Arquebus keeps its accuracy; the bolt is 80% (was 60); costs below.
+in sweeps; the Arquebus keeps its accuracy; the bolt was 80% (from 60) until the sphere spells
+below took its place, and is 60% again; costs below.
 
 **What the lab measured** (compact squad round robins per tech level, 57-70 squads at an equal
 budget on open land, the best 16 and the best squad with each unit type on forest, hills and a
@@ -328,6 +329,27 @@ damage before the assault (the lab counted neither before: healers looked worse 
 and siege engines got no credit for their bombards). The auto formation still places a second
 charger behind the strikers (out of scope); the lab puts the attacker's mounted units in front.
 
+**Casters' sphere spells** (the owner's request, 2026-11-06: adepts that matter in a battle, and
+battle spells beyond Fire II; the spells are in docs/ENGAGEMENTS.md, "Battle spells"). Every
+sphere I gives an adept a battle spell: six damage spells (Fire, Air, Water, Nature, Sun, Death),
+a heal (Life) and eleven charms and hexes (lever L11, built with them); several spheres II give a
+mage a stronger one. Tuned in a marginal lab: a core squad (4 Axemen and 2 Archers early, 4
+Champions and 2 Longbowmen mid) plus two of X, X each sphere's caster, the plain bolt caster, or
+the core units again (and a Disciple or Priest); a round robin on open land and in a forest, 30
+battles a matchup, both roles (`battles_squads.py casters OUT`, then `ffh battles` and
+`battles_meta.py meta early|mid`). After five rounds of numbers:
+
+- Early (22 squads): every sphere's pair of adepts does better against the field than the bolt
+  pair (-1.5), from Earth (-0.3) and Mind (-0.1) to Air (+4.3); the equilibrium is Air (33%) and
+  Body (67%), with Spirit, Shadow, Metamagic, Water and the damage spheres within 1 of it. Two
+  more Axemen (-12.9) or Archers (-15.3) do worse than any pair of adepts, which cost 60 hammers
+  more.
+- Mid (16 squads): all nine sphere-II mage pairs are undominated (Fire II, Air II, Sun II, Death
+  II +10; Life II +7, Earth II +7, Water II +6, Nature II +6, Ice II +3); Death II is the
+  equilibrium, the others 0.6 to 12 below it. Mages with two sphere-I charms (Body and
+  Enchantment, Law and Entropy) are near 0, the bolt mage at -8.5, two more Champions at -26.
+
 **Open:** the remaining unbeaten squads above; the auto formation's chargers; the engine levers
-not built (reach, interception, crit immunity, knock-back, charms); the AI does not yet choose
-squads by these roles (it values the new promotion keys when it promotes).
+not built (reach, interception, crit immunity, knock-back); the AI does not yet choose squads by
+these roles (it values the new promotion keys when it promotes, and counts a caster with any battle
+spell as one that marches with the army); sphere III spells in battle (Meteor Swarm and the like).

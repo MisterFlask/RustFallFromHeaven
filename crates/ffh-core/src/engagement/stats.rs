@@ -167,7 +167,7 @@ impl Game {
     /// attack (`rows_with_battle_spell`; docs/ENGAGEMENTS.md, "Battle spells").
     pub fn unit_engage_rows(&self, u: UnitId) -> [RowActions; ROWS] {
         let rows = self.d.engage_rows(self.units[u].unit_type);
-        if self.unit_battle_spell(u).is_some() && self.unit_stat(u, StatType::Magic) > 0 {
+        if self.unit_battle_spells(u).any() && self.unit_stat(u, StatType::Magic) > 0 {
             rows_with_battle_spell(rows)
         } else {
             rows
@@ -195,17 +195,29 @@ impl Game {
     /// The battle spell unit `u` knows (`GameData::engage_damage_spell`: the strongest damage or
     /// battle-only spell whose prerequisites it meets, its religion included), whatever its rows.
     pub fn unit_battle_spell(&self, u: UnitId) -> Option<SpellType> {
+        self.unit_battle_spells(u).attack
+    }
+
+    /// Unit `u`'s battle spells: its damage spell, its heal, its charms and hexes
+    /// (`GameData::engage_battle_spells`), whatever its rows.
+    pub fn unit_battle_spells(&self, u: UnitId) -> BattleSpells<SpellType> {
         let unit = &self.units[u];
-        self.d.engage_damage_spell(unit.unit_type, |p| unit.has_promotion[p], unit.religion)
+        self.d.engage_battle_spells(unit.unit_type, |p| unit.has_promotion[p], unit.religion)
     }
 
     /// The spell unit `u` casts with its SPELL actions: its battle spell ([`Self::unit_battle_spell`]);
     /// `None` when it knows none (it casts the magic bolt) or casts nothing (no row of it has SPELL).
     pub fn unit_engage_spell(&self, u: UnitId) -> Option<SpellType> {
+        self.unit_engage_battle_spells(u).attack
+    }
+
+    /// The battle spells unit `u` casts with its SPELL actions ([`Self::unit_battle_spells`]); none
+    /// when no row of it has SPELL.
+    pub fn unit_engage_battle_spells(&self, u: UnitId) -> BattleSpells<SpellType> {
         if !self.unit_engage_actions(u).iter().any(|r| r.kind == ActionKind::Spell) {
-            return None;
+            return BattleSpells::default();
         }
-        self.unit_battle_spell(u)
+        self.unit_battle_spells(u)
     }
 
     /// The defended plot's ground for a formation battle (spec 1.6): a city on it; a forest or

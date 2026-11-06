@@ -200,6 +200,17 @@
     "button": "Art/Interface/Buttons/Spells/Arena Battle.dds"
   },
   {
+    "type": "SPELL_BATTLE_HYMN",
+    "description": "TXT_KEY_SPELL_BATTLE_HYMN",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_SPIRIT1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "ALL", "accuracy": 20},
+    "button": "Art/Interface/Buttons/Promotions/Courage.dds"
+  },
+  {
     "type": "SPELL_BLAZE",
     "description": "TXT_KEY_SPELL_BLAZE",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
@@ -269,6 +280,17 @@
     "has_casted": true,
     "add_promotion_type1": "PROMOTION_BLUR",
     "button": "Art/Interface/Buttons/Promotions/Blur.dds"
+  },
+  {
+    "type": "SPELL_BRAMBLE_SNARE",
+    "description": "TXT_KEY_SPELL_BRAMBLE_SNARE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_NATURE2",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "ENEMY", "rows": "FRONT", "speed": -4, "evasion": -20, "taken": 10},
+    "button": "Art/Interface/Buttons/Spells/Poisoned Blade.dds"
   },
   {
     "type": "SPELL_BREATH_FIRE",
@@ -367,6 +389,17 @@
     "button": "Art/Interface/Buttons/Promotions/Charmed.dds"
   },
   {
+    "type": "SPELL_CHILL",
+    "description": "TXT_KEY_SPELL_CHILL",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_ICE1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "ENEMY", "rows": "FRONT", "speed": -3, "evasion": -15},
+    "button": "Art/Interface/Buttons/Promotions/Slow.dds"
+  },
+  {
     "type": "SPELL_COMMANDER_JOIN",
     "description": "TXT_KEY_SPELL_COMMANDER_JOIN",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
@@ -427,6 +460,9 @@
   },
   {
     "type": "SPELL_CONTAGION",
+    // This game's (the owner's request, 2026-11-06: map spells that only dealt damage become
+    // battle spells, as Maelstrom): cast in formation battles only (docs/ENGAGEMENTS.md).
+    "battle_only": true,
     "description": "TXT_KEY_SPELL_CONTAGION",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
     "unit_class_prereq": "UNITCLASS_MARY",
@@ -477,6 +513,17 @@
     "py_requirement": "reqConvertCityRantine(pCaster)",
     "graphical_only": true,
     "button": "Art/Interface/Buttons/Spells/Convertcity.dds"
+  },
+  {
+    "type": "SPELL_CORRODE",
+    "description": "TXT_KEY_SPELL_CORRODE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_ENTROPY1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "ENEMY", "rows": "FRONT", "taken": 20},
+    "button": "Art/Interface/Buttons/Promotions/Rusted.dds"
   },
   {
     "type": "SPELL_COURAGE",
@@ -637,6 +684,9 @@
   },
   {
     "type": "SPELL_CROWN_OF_BRILLANCE",
+    // This game's (the owner's request, 2026-11-06: map spells that only dealt damage become
+    // battle spells, as Maelstrom): cast in formation battles only (docs/ENGAGEMENTS.md).
+    "battle_only": true,
     "description": "TXT_KEY_SPELL_CROWN_OF_BRILLANCE",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
     "promotion_prereq1": "PROMOTION_CHANNELING3",
@@ -695,6 +745,30 @@
     "has_casted": true,
     "add_promotion_type1": "PROMOTION_DANCE_OF_BLADES",
     "button": "Art/Interface/Buttons/Promotions/Danceofblades.dds"
+  },
+  {
+    "type": "SPELL_DAZE",
+    "description": "TXT_KEY_SPELL_DAZE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_MIND1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "ENEMY", "rows": "ALL", "accuracy": -10},
+    "button": "Art/Interface/Buttons/Buildings/Inspiration.dds"
+  },
+  {
+    "type": "SPELL_DEATH_GRIP",
+    "description": "TXT_KEY_SPELL_DEATH_GRIP",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_DEATH2",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_power": 150,
+    "battle_pattern": "SINGLE",
+    "damage_type": "DAMAGE_DEATH",
+    "button": "Art/Interface/Buttons/Units/Spectre.dds"
   },
   {
     "type": "SPELL_DECLARE_NATIONALITY",
@@ -1140,6 +1214,19 @@
     "button": "Art/Interface/Buttons/Units/Fireball.dds"
   },
   {
+    "type": "SPELL_FIREBOLT",
+    "description": "TXT_KEY_SPELL_FIREBOLT",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_FIRE1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_power": 120,
+    "battle_pattern": "SINGLE",
+    "damage_type": "DAMAGE_FIRE",
+    "button": "Art/Interface/Buttons/Spells/Blaze.dds"
+  },
+  {
     "type": "SPELL_FLAMING_ARROWS",
     "description": "TXT_KEY_SPELL_FLAMING_ARROWS",
     "civilopedia": "TXT_KEY_SPELL_FLAMING_ARROWS_PEDIA",
@@ -1150,6 +1237,19 @@
     "has_casted": true,
     "add_promotion_type1": "PROMOTION_FLAMING_ARROWS",
     "button": "Art/Interface/Buttons/Promotions/FlamingArrows.dds"
+  },
+  {
+    "type": "SPELL_FLARE",
+    "description": "TXT_KEY_SPELL_FLARE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_SUN1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_power": 120,
+    "battle_pattern": "SINGLE",
+    "damage_type": "DAMAGE_HOLY",
+    "button": "Art/Interface/Buttons/Spells/Scorch.dds"
   },
   {
     "type": "SPELL_FLOATING_EYE",
@@ -1285,6 +1385,19 @@
     "button": "Art/Interface/Buttons/Buildings/Templeashen.dds"
   },
   {
+    "type": "SPELL_FROST_LANCE",
+    "description": "TXT_KEY_SPELL_FROST_LANCE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_ICE2",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_power": 120,
+    "battle_pattern": "PIERCE",
+    "damage_type": "DAMAGE_COLD",
+    "button": "Art/Interface/Buttons/Units/Ice Elemental.dds"
+  },
+  {
     "type": "SPELL_GIFT_VAMPIRISM",
     "description": "TXT_KEY_SPELL_GIFT_VAMPIRISM",
     "civilopedia": "TXT_KEY_SPELL_GIFT_VAMPIRISM_PEDIA",
@@ -1344,6 +1457,19 @@
     "button": "Art/Interface/Buttons/Units/Flesh Golem.dds"
   },
   {
+    "type": "SPELL_GRAVE_TOUCH",
+    "description": "TXT_KEY_SPELL_GRAVE_TOUCH",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_DEATH1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_power": 120,
+    "battle_pattern": "SINGLE",
+    "damage_type": "DAMAGE_DEATH",
+    "button": "Art/Interface/Buttons/Units/Skeleton.dds"
+  },
+  {
     "type": "SPELL_HASTE",
     "description": "TXT_KEY_SPELL_HASTE",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
@@ -1388,6 +1514,18 @@
     "py_result": "spellHeal(pCaster,20)",
     "py_requirement": "reqHeal(pCaster)",
     "button": "Art/Interface/Buttons/Spells/Heal.dds"
+  },
+  {
+    "type": "SPELL_HEALING_LIGHT",
+    "description": "TXT_KEY_SPELL_HEALING_LIGHT",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_LIFE2",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_heal": 70,
+    "battle_pattern": "SWEEP",
+    "button": "Art/Interface/Buttons/Spells/Destroy Undead.dds"
   },
   {
     "type": "SPELL_HEALING_SALVE",
@@ -1513,6 +1651,17 @@
     "button": "Art/Interface/Buttons/Units/Wolf Rider Scorpion Clan.dds"
   },
   {
+    "type": "SPELL_HOLD_THE_LINE",
+    "description": "TXT_KEY_SPELL_HOLD_THE_LINE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_LAW1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "FRONT", "taken": -15},
+    "button": "Art/Interface/Buttons/Promotions/Loyalty.dds"
+  },
+  {
     "type": "SPELL_HOPE",
     "description": "TXT_KEY_SPELL_HOPE",
     "civilopedia": "TXT_KEY_SPELL_HOPE_PEDIA",
@@ -1616,6 +1765,17 @@
     "button": "Art/Interface/Buttons/Units/Ira.dds"
   },
   {
+    "type": "SPELL_KEEN_EDGE",
+    "description": "TXT_KEY_SPELL_KEEN_EDGE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_ENCHANTMENT1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "FRONT", "damage": 20},
+    "button": "Art/Interface/Buttons/Promotions/Enchantedblade.dds"
+  },
+  {
     "type": "SPELL_KIDNAP",
     "description": "TXT_KEY_SPELL_KIDNAP",
     "civilopedia": "TXT_KEY_SPELL_KIDNAP_PEDIA",
@@ -1716,6 +1876,18 @@
     "buff_caster_only": true,
     "py_requirement": "reqMask(pCaster)",
     "button": "Art/Interface/Buttons/Spells/Mask.dds"
+  },
+  {
+    "type": "SPELL_MEND",
+    "description": "TXT_KEY_SPELL_MEND",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_LIFE1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_heal": 60,
+    "battle_pattern": "SINGLE",
+    "button": "Art/Interface/Buttons/Spells/Sanctify.dds"
   },
   {
     "type": "SPELL_MEZMERIZE_ANIMAL",
@@ -1914,6 +2086,17 @@
     "py_result": "spellPromoteSettlement(pCaster)",
     "py_requirement": "reqPromoteSettlement(pCaster)",
     "button": "Art/Interface/Buttons/Spells/Promote Settlement.dds"
+  },
+  {
+    "type": "SPELL_QUICKEN",
+    "description": "TXT_KEY_SPELL_QUICKEN",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_BODY1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "FRONT", "speed": 5, "evasion": 10},
+    "button": "Art/Interface/Buttons/Promotions/Hasted.dds"
   },
   {
     "type": "SPELL_RAGE",
@@ -2350,6 +2533,17 @@
     "button": "Art/Interface/Buttons/Promotions/Shadowwalk.dds"
   },
   {
+    "type": "SPELL_SHADOW_VEIL",
+    "description": "TXT_KEY_SPELL_SHADOW_VEIL",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_SHADOW1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "FRONT", "evasion": 15},
+    "button": "Art/Interface/Buttons/Promotions/Blur.dds"
+  },
+  {
     "type": "SPELL_SHIELD_OF_FAITH",
     "description": "TXT_KEY_SPELL_SHIELD_OF_FAITH",
     "civilopedia": "TXT_KEY_SPELL_SHIELD_OF_FAITH_PEDIA",
@@ -2361,6 +2555,19 @@
     "has_casted": true,
     "add_promotion_type1": "PROMOTION_SHIELD_OF_FAITH",
     "button": "Art/Interface/Buttons/Promotions/ShieldofFaith.dds"
+  },
+  {
+    "type": "SPELL_SHOCK",
+    "description": "TXT_KEY_SPELL_SHOCK",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_AIR1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_power": 80,
+    "battle_pattern": "VOLLEY",
+    "damage_type": "DAMAGE_LIGHTNING",
+    "button": "Art/Interface/Buttons/Spells/Fairwinds.dds"
   },
   {
     "type": "SPELL_SING",
@@ -2586,6 +2793,17 @@
     "button": "Art/Interface/Buttons/Spells/Stoneskin.dds"
   },
   {
+    "type": "SPELL_STONESKIN_WARD",
+    "description": "TXT_KEY_SPELL_STONESKIN_WARD",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_EARTH2",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "FRONT", "taken": -25},
+    "button": "Art/Interface/Buttons/Spells/Stoneskin.dds"
+  },
+  {
     "type": "SPELL_SUMMON_AIR_ELEMENTAL",
     "description": "TXT_KEY_SPELL_SUMMON_AIR_ELEMENTAL",
     "civilopedia": "TXT_KEY_SPELL_SUMMON_AIR_ELEMENTAL_PEDIA",
@@ -2805,6 +3023,19 @@
     "create_unit_type": "UNIT_WRAITH",
     "create_unit_num": 1,
     "button": "Art/Interface/Buttons/Units/Wraith.dds"
+  },
+  {
+    "type": "SPELL_SUNBURST",
+    "description": "TXT_KEY_SPELL_SUNBURST",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_SUN2",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_power": 100,
+    "battle_pattern": "VOLLEY",
+    "damage_type": "DAMAGE_HOLY",
+    "button": "Art/Interface/Buttons/Spells/Blinding Light.dds"
   },
   {
     "type": "SPELL_TAKE_ATHAME_PROMOTION",
@@ -3629,6 +3860,32 @@
     "button": "Art/Interface/Buttons/Units/Govannon.dds"
   },
   {
+    "type": "SPELL_THORNLASH",
+    "description": "TXT_KEY_SPELL_THORNLASH",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_NATURE1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_power": 120,
+    "battle_pattern": "SINGLE",
+    "damage_type": "DAMAGE_POISON",
+    "button": "Art/Interface/Buttons/Spells/Treetopdefence.dds"
+  },
+  {
+    "type": "SPELL_TIDAL_SURGE",
+    "description": "TXT_KEY_SPELL_TIDAL_SURGE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_WATER2",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_power": 90,
+    "battle_pattern": "PIERCE",
+    "damage_type": "DAMAGE_PHYSICAL",
+    "button": "Art/Interface/Buttons/Promotions/Waterwalking.dds"
+  },
+  {
     "type": "SPELL_TREETOP_DEFENCE",
     "description": "TXT_KEY_SPELL_TREETOP_DEFENCE",
     "civilopedia": "TXT_KEY_SPELL_TREETOP_DEFENCE_PEDIA",
@@ -3643,6 +3900,17 @@
     "has_casted": true,
     "py_result": "spellTreetopDefence(pCaster)",
     "button": "Art/Interface/Buttons/Spells/Treetopdefence.dds"
+  },
+  {
+    "type": "SPELL_TREMOR",
+    "description": "TXT_KEY_SPELL_TREMOR",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_EARTH1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "ENEMY", "rows": "FRONT", "evasion": -15, "speed": -1},
+    "button": "Art/Interface/Buttons/Buildings/Wall.dds"
   },
   {
     "type": "SPELL_TRUST",
@@ -3922,6 +4190,17 @@
     "button": "Art/Interface/Buttons/Promotions/Warcry.dds"
   },
   {
+    "type": "SPELL_WARD",
+    "description": "TXT_KEY_SPELL_WARD",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_METAMAGIC1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "ALL", "taken": -10},
+    "button": "Art/Interface/Buttons/Units/Floating Eye.dds"
+  },
+  {
     "type": "SPELL_WATER_WALKING",
     "description": "TXT_KEY_SPELL_WATER_WALKING",
     "civilopedia": "TXT_KEY_SPELL_WATER_WALKING_PEDIA",
@@ -3932,6 +4211,19 @@
     "add_promotion_type1": "PROMOTION_WATER_WALKING",
     "buff_caster_only": true,
     "button": "Art/Interface/Buttons/Promotions/Waterwalking.dds"
+  },
+  {
+    "type": "SPELL_WAVE",
+    "description": "TXT_KEY_SPELL_WAVE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_WATER1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_power": 70,
+    "battle_pattern": "PIERCE",
+    "damage_type": "DAMAGE_PHYSICAL",
+    "button": "Art/Interface/Buttons/Spells/Spring.dds"
   },
   {
     "type": "SPELL_WHITEOUT",
@@ -3950,6 +4242,17 @@
     "button": "Art/Interface/Buttons/Spells/Whiteout.dds"
   },
   {
+    "type": "SPELL_WILD_EDGE",
+    "description": "TXT_KEY_SPELL_WILD_EDGE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_CHAOS1",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "FRONT", "crit": 35},
+    "button": "Art/Interface/Buttons/Promotions/Danceofblades.dds"
+  },
+  {
     "type": "SPELL_WILD_HUNT",
     "description": "TXT_KEY_SPELL_WILD_HUNT",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
@@ -3966,6 +4269,9 @@
   },
   {
     "type": "SPELL_WITHER",
+    // This game's (the owner's request, 2026-11-06: map spells that only dealt damage become
+    // battle spells, as Maelstrom): cast in formation battles only (docs/ENGAGEMENTS.md).
+    "battle_only": true,
     "description": "TXT_KEY_SPELL_WITHER",
     "civilopedia": "TXT_KEY_SPELL_WITHER_PEDIA",
     "promotion_prereq1": "PROMOTION_ENTROPY3",

@@ -55,7 +55,7 @@ use ffh_data::*;
 
 use super::apply::Post;
 use super::arrange::Place;
-use super::formation::{self, missile_hit, Fate, Fighter, Formation, Ground, Outcome, Pair, Params, Side, Spell};
+use super::formation::{self, missile_hit, Fate, Fighter, Formation, Ground, HealSpell, Outcome, Pair, Params, Side, Spell};
 use super::pick::WarTest;
 use super::report::{BattleLog, BattleReport, CitySnap, EngageResult, LogFate, Outcome as ReportOutcome, PlotSnap, ReportSide};
 use super::sink::Sink;
@@ -404,9 +404,22 @@ impl Game {
         f.collateral_extra = self.units[u].extra_collateral_damage;
         f.collateral_protection = self.units[u].collateral_damage_protection;
         f.spell = match self.unit_engage_spell(u) {
-            Some(s) => Spell::known(s.idx() as u32),
+            Some(s) => {
+                let si = &self.d.spells[s];
+                Spell::battle(s.idx() as u32, si.battle_power_or_default(), si.battle_pattern)
+            }
             None => Spell::bolt(params),
         };
+        // Its heal spell and its charms and hexes, when it casts (docs/ENGAGEMENTS.md, "Battle
+        // spells").
+        if f.actions.iter().any(|r| r.kind == ActionKind::Spell) {
+            let bs = self.unit_battle_spells(u);
+            f.heal_spell = bs.heal.map(|s| {
+                let si = &self.d.spells[s];
+                HealSpell { id: s.idx() as u32, pct: si.battle_heal, pattern: si.battle_pattern.unwrap_or(AttackPattern::Single) }
+            });
+            f.charms = bs.charms.iter().filter_map(|&s| self.d.spells[s].battle_charm.map(|c| (s.idx() as u32, c))).collect();
+        }
         let ty = &self.d.units[self.units[u].unit_type];
         f.patterns = ty.engage_patterns;
         f.armor = self.unit_engage_armor(u).max(0) * 100;

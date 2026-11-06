@@ -1680,9 +1680,9 @@ pub fn spell_worth(d: &GameData, s: SpellType) -> i32 {
         return 0;
     }
     if info.battle_only {
-        // A battle spell (Fireball, Maelstrom): its caster's spell in every formation battle it
-        // fights, a splash of its damage type in place of the magic bolt's single hit at 60%;
-        // its map fields do nothing.
+        // A battle spell (Fireball, Firebolt, Keen Edge, Mend): its caster's spell in every
+        // formation battle it fights, in place of the magic bolt's single hit at 60%; its map
+        // fields do nothing.
         return BATTLE_SPELL_WORTH;
     }
     let reach = info.range + 1;
@@ -1820,8 +1820,8 @@ fn channeling_below(d: &GameData, and: PromotionType) -> Option<PromotionType> {
 pub fn combat_caster(g: &Game, u: UnitId) -> bool {
     let d = g.d;
     let unit = &g.units[u];
-    // Its spell in a battle (Fireball, Maelstrom: not the magic bolt).
-    if g.unit_engage_spell(u).is_some() {
+    // Its spells in a battle (Fireball, Firebolt, Keen Edge, Mend: not the magic bolt).
+    if g.unit_engage_battle_spells(u).any() {
         return true;
     }
     d.spells.keys().any(|s| {
@@ -1845,7 +1845,7 @@ pub fn combat_caster(g: &Game, u: UnitId) -> bool {
 /// sent them to wars they could not win (docs/AI_LOG.md, "Magic civilizations").
 pub fn damage_caster(g: &Game, u: UnitId) -> bool {
     let d = g.d;
-    // Its spell in a battle (Fireball, Maelstrom: not the magic bolt).
+    // Its damage spell in a battle (Fireball, Firebolt: not the magic bolt).
     if g.unit_engage_spell(u).is_some() {
         return true;
     }

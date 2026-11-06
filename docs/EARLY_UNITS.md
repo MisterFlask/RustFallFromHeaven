@@ -1,6 +1,7 @@
 # Early units: recon in any row, sphere-I battle magic, trained creatures
 
-**Status: proposal** (2026-11-06), for the owner to mark up. Nothing here is built. It follows the
+**Status: proposal** (2026-11-06), for the owner to mark up. Sections 1 and 2 are built (with the
+differences their sections give); section 3 is not. It follows the
 owner's direction of 2026-11-06: more variety in the early unit lineup, arcane units that matter
 before Sorcery, recon units that fight from the front and the back (the Ogre Battle 64 Valkyrie
 pattern), and trained creatures, which also bring large units early. Values marked **(default)**
@@ -51,7 +52,24 @@ rear (docs/PORTING.md, "Changes from FFH2"). The assassins (recon with Marksman)
 
 ## 2. Sphere-I battle magic
 
-**Rules (default):**
+**Built** (2026-11-06, the owner's request: adepts that matter in a battle, and battle spells
+beyond Fire II), with E1, E2 and E4 below; the spells as built and their numbers are in
+docs/ENGAGEMENTS.md ("Battle spells"), the lab that tuned them in docs/UNIT_ROLES.md section 9.
+Differences from this proposal: the damage spells are 120 for one target (Shock 80 in a VOLLEY,
+Wave 70 in a PIERCE), since at 80 they were barely better than the bolt; every sphere has a charm,
+hex, heal or damage spell without the summon and denial pieces (E3, E5): Earth's Tremor is a hex
+(-15 evasion, -1 speed on the enemy front row), Death's Grave Touch a damage spell, Mind's Daze -10
+accuracy on the enemy side, Ice's Chill a hex only; charms are stat changes of their own (damage
+dealt and taken, accuracy, evasion, crit, speed), not the promotions' `stat_changes`; Law's Hold
+the Line is -15% damage taken (no knock-back immunity), Spirit's Battle Hymn +20 accuracy (no Fear
+immunity); a caster casts every charm it knows, in id order, then its damage spell (the most
+output) or its heal, when an ally is hurt enough. Several spheres II have a stronger spell (Tidal
+Surge, Sunburst, Death Grip, Frost Lance, Stone Ward, Bramble Snare, Healing Light), and the map
+spells that only dealt damage became battle spells (Wither, Contagion, Crown of Brilliance, as
+Maelstrom before them). The map spells stay as they are. The AI counts a caster with any battle
+spell as one that marches with the army and values each battle spell a sphere opens as Fireball's.
+
+**Rules (as proposed):**
 
 1. **Damage spheres.** The sphere-I spell becomes a battle spell of the sphere's damage type at
    power 80, one target, in place of the magic bolt (60). Sphere II's Fireball and Maelstrom stay

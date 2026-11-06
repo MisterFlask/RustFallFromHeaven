@@ -47,7 +47,7 @@
 //! Integers throughout: HP in centi-HP, A and Dv x100, percentages multiplied in `i128` and
 //! divided once. No map iteration, every sort a total order (ties by fighter index last).
 
-use ffh_data::{ActionKind, AttackPattern, Defines, RowActions, ROWS};
+use ffh_data::{ActionKind, AttackPattern, BattleCharm, Defines, RowActions, ROWS};
 
 use crate::rng::Rng;
 
@@ -305,18 +305,35 @@ pub struct Spell {
     pub power: i32,
     /// It also hits the target's neighbours for `splash_pct` of a hit on it.
     pub splash: bool,
+    /// Its own attack pattern (`battle_pattern`), in place of the splash and the row's pattern.
+    pub pattern: Option<AttackPattern>,
 }
 
 impl Spell {
     /// A damage spell the caster knows: power 100, with a splash.
     pub fn known(id: u32) -> Spell {
-        Spell { id: Some(id), power: 100, splash: true }
+        Spell { id: Some(id), power: 100, splash: true, pattern: None }
     }
 
-    /// The magic bolt: `bolt_pct`, one target.
-    pub fn bolt(p: &Params) -> Spell {
-        Spell { id: None, power: p.bolt_pct, splash: false }
+    /// A damage spell of `power` with its own `pattern` (`None`: a splash).
+    pub fn battle(id: u32, power: i32, pattern: Option<AttackPattern>) -> Spell {
+        Spell { id: Some(id), power, splash: pattern.is_none(), pattern }
     }
+
+    /// The magic bolt: `bolt_pct`, one target (or its row's pattern).
+    pub fn bolt(p: &Params) -> Spell {
+        Spell { id: None, power: p.bolt_pct, splash: false, pattern: None }
+    }
+}
+
+/// A heal spell (`battle_heal`): cast with a spell action in place of the damage spell when an ally
+/// is hurt by at least half of the heal.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct HealSpell {
+    pub id: u32,
+    /// The heal, in percent of a hit.
+    pub pct: i32,
+    pub pattern: AttackPattern,
 }
 
 /// One unit on its side's grid, as the resolver sees it (the rules map units onto it).
@@ -373,6 +390,11 @@ pub struct Fighter {
     pub collateral_protection: i32,
     /// What its SPELL actions cast.
     pub spell: Spell,
+    /// Its heal spell, cast in place of `spell` when an ally is hurt enough.
+    pub heal_spell: Option<HealSpell>,
+    /// Its charms and hexes (the spell id and the effect), cast one each with its first SPELL
+    /// actions, lasting the battle (docs/ENGAGEMENTS.md, "Battle spells").
+    pub charms: Vec<(u32, BattleCharm)>,
     /// A Sentinel of the defended city (docs/SIEGES.md): never knocked back, never healed; it
     /// takes the shots and spells aimed past it in its lanes, and BOMBARD takes it first.
     pub fixed: bool,
@@ -421,7 +443,9 @@ impl Fighter {
             collateral_limit: None,
             collateral_extra: 0,
             collateral_protection: 0,
-            spell: Spell { id: None, power: 60, splash: false },
+            spell: Spell { id: None, power: 60, splash: false, pattern: None },
+            heal_spell: None,
+            charms: Vec::new(),
             fixed: false,
             patterns: [AttackPattern::Single; ROWS],
             armor: 0,
@@ -670,8 +694,17 @@ pub struct State {
     pub alive: Vec<bool>,
     /// Left the battle alive (withdrew).
     pub gone: Vec<bool>,
-    /// Speed after the battle's first strike rolls.
+    /// Speed after the battle's first strike rolls (and the charms and hexes on it).
     pub speed: Vec<i32>,
+    /// The charms and hexes on each fighter: percent more damage dealt and taken, points of
+    /// accuracy, evasion and crit.
+    pub dmg_mod: Vec<i32>,
+    pub taken_mod: Vec<i32>,
+    pub acc_mod: Vec<i32>,
+    pub eva_mod: Vec<i32>,
+    pub crit_mod: Vec<i32>,
+    /// The charms each fighter has cast.
+    pub charms_cast: Vec<usize>,
 }
 
 impl State {
@@ -684,6 +717,12 @@ impl State {
             alive: vec![true; f.len()],
             gone: vec![false; f.len()],
             speed: f.fighters.iter().map(|x| x.speed).collect(),
+            dmg_mod: vec![0; f.len()],
+            taken_mod: vec![0; f.len()],
+            acc_mod: vec![0; f.len()],
+            eva_mod: vec![0; f.len()],
+            crit_mod: vec![0; f.len()],
+            charms_cast: vec![0; f.len()],
         }
     }
 
@@ -1199,6 +1238,39 @@ impl<'a> Run<'a> {
             knocked: None,
             note: None,
         };
+        // A caster's charms and hexes first, one an action (they draw nothing).
+        if kind == ActionKind::Spell && self.s.charms_cast[h] < f.fighters[h].charms.len() {
+            let (id, c) = f.fighters[h].charms[self.s.charms_cast[h]];
+            self.s.charms_cast[h] += 1;
+            let side = if c.enemy { f.fighters[h].side.other() } else { f.fighters[h].side };
+            let on: Vec<usize> = (0..f.len()).filter(|&t| self.s.on_field(t) && f.fighters[t].side == side && (c.whole_side || self.s.row[t] == 0)).collect();
+            for &t in &on {
+                self.s.dmg_mod[t] += c.damage;
+                self.s.taken_mod[t] += c.taken;
+                self.s.acc_mod[t] += c.accuracy;
+                self.s.eva_mod[t] += c.evasion;
+                self.s.crit_mod[t] += c.crit;
+                self.s.speed[t] += c.speed;
+            }
+            ev.spell = Some(id);
+            ev.target = on.first().map(|&t| t as FighterIdx);
+            if on.is_empty() {
+                ev.note = Some(Note::NoTarget);
+            }
+            self.push(ev);
+            return;
+        }
+        // A heal spell in place of the damage spell when an ally is hurt by at least half its heal.
+        if let (ActionKind::Spell, Some(hs)) = (kind, f.fighters[h].heal_spell) {
+            let p = &f.params;
+            let half = p.base_damage.max(0) * hs.pct.max(0) / 2;
+            if let Some(t) = f.heal_target(&self.s, h).filter(|&t| f.fighters[t].max_hp * 100 - self.s.hp[t] >= half) {
+                ev.kind = ActionKind::Heal;
+                ev.spell = Some(hs.id);
+                self.heal(h, t, hs.pct, hs.pattern, ev, rng);
+                return;
+            }
+        }
         if kind == ActionKind::Heal {
             match f.heal_target(&self.s, h) {
                 None => {
@@ -1206,32 +1278,9 @@ impl<'a> Run<'a> {
                     self.push(ev);
                 }
                 Some(t) => {
-                    let p = &f.params;
-                    let r = p.rand_min + rng.rand(p.rand_max - p.rand_min + 1, "Engagement heal");
-                    let heal_pct = f.fighters[h].heal_pct.unwrap_or(p.heal_pct).max(0) as i64;
-                    let amount = (p.base_damage.max(0) as i64 * heal_pct * r as i64 / 100) as i32;
-                    // A sweeping heal also heals every other hurt ally of the target's row, for
-                    // the sweep's percentage of the heal (one event each, as the same action's).
-                    let row = self.s.row[t];
-                    let others: Vec<usize> = if f.fighters[h].patterns[self.s.row[h] as usize] == AttackPattern::Sweep {
-                        (0..f.len())
-                            .filter(|&u| u != t && self.s.on_field(u) && f.fighters[u].side == f.fighters[h].side && !f.fighters[u].fixed && self.s.row[u] == row)
-                            .filter(|&u| self.s.hp[u] < f.fighters[u].max_hp * 100)
-                            .collect()
-                    } else {
-                        Vec::new()
-                    };
-                    for (k, u) in std::iter::once(t).chain(others).enumerate() {
-                        let amt = if k == 0 { amount } else { (amount as i64 * p.sweep_pct.max(0) as i64 / 100) as i32 };
-                        let got = amt.min(f.fighters[u].max_hp * 100 - self.s.hp[u]).max(0);
-                        self.s.hp[u] += got;
-                        self.healed[h] += got;
-                        self.was_healed[u] += got;
-                        let mut e = ev.clone();
-                        e.target = Some(u as FighterIdx);
-                        e.heal = Some(Heal { target: u as FighterIdx, amount: got, r });
-                        self.push(e);
-                    }
+                    let pct = f.fighters[h].heal_pct.unwrap_or(f.params.heal_pct);
+                    let pattern = f.fighters[h].patterns[self.s.row[h] as usize];
+                    self.heal(h, t, pct, pattern, ev, rng);
                 }
             }
             return;
@@ -1243,16 +1292,17 @@ impl<'a> Run<'a> {
             return;
         };
         ev.target = Some(c as FighterIdx);
-        if kind.physical() && rng.rand(100, "Engagement miss") < f.miss_chance(kind, h, c) {
+        if kind.physical() && rng.rand(100, "Engagement miss") < self.miss_chance(kind, h, c) {
             ev.hits.push(Hit { target: c as FighterIdx, dmg: 0, expected: 0, r: 0, crit: false, miss: true, killed: false, withdrew: false, splash: false });
             self.push(ev);
             return;
         }
-        let crit = kind.can_crit() && rng.rand(100, "Engagement crit") < f.crit_chance(h);
+        let crit = kind.can_crit() && rng.rand(100, "Engagement crit") < (f.fighters[h].crit + self.s.crit_mod[h]).clamp(0, MAX_CHANCE);
         let spell_splash = kind == ActionKind::Spell && f.fighters[h].spell.splash;
         // An attack pattern's extra hits take the place of a collateral splash; a known spell's
         // splash stays the spell's.
-        let pattern = f.fighters[h].patterns[self.s.row[h] as usize];
+        let spell_pattern = if kind == ActionKind::Spell { f.fighters[h].spell.pattern } else { None };
+        let pattern = spell_pattern.unwrap_or(f.fighters[h].patterns[self.s.row[h] as usize]);
         let pattern_pct = if spell_splash { None } else { f.params.pattern_pct(pattern) };
         let collateral = pattern_pct.is_none() && f.collateral_splash(h, kind);
         let around = match pattern_pct {
@@ -1280,6 +1330,50 @@ impl<'a> Run<'a> {
         self.push(ev);
     }
 
+    /// The miss chance of a physical action of `kind` by `h` on `t` ([`Formation::miss_chance`])
+    /// with the charms and hexes on both (accuracy, evasion).
+    fn miss_chance(&self, kind: ActionKind, h: usize, t: usize) -> i32 {
+        let f = self.f;
+        let p = &f.params;
+        let extra = match kind {
+            ActionKind::Shoot => p.shoot_miss_pct,
+            ActionKind::Bombard => p.bombard_miss_pct,
+            _ => 0,
+        };
+        let hit = f.fighters[h].accuracy + self.s.acc_mod[h] - f.fighters[t].evasion - self.s.eva_mod[t] - extra;
+        100 - hit.clamp(100 - MAX_CHANCE, 100)
+    }
+
+    /// A heal by `h` of `pct` percent of a hit on `t` (r drawn): with SWEEP also every other hurt
+    /// ally of `t`'s row for the sweep's percentage of the heal, one event each (as the same
+    /// action's).
+    fn heal(&mut self, h: usize, t: usize, pct: i32, pattern: AttackPattern, ev: Event, rng: &mut impl BattleRng) {
+        let f = self.f;
+        let p = &f.params;
+        let r = p.rand_min + rng.rand(p.rand_max - p.rand_min + 1, "Engagement heal");
+        let amount = (p.base_damage.max(0) as i64 * pct.max(0) as i64 * r as i64 / 100) as i32;
+        let row = self.s.row[t];
+        let others: Vec<usize> = if pattern == AttackPattern::Sweep {
+            (0..f.len())
+                .filter(|&u| u != t && self.s.on_field(u) && f.fighters[u].side == f.fighters[h].side && !f.fighters[u].fixed && self.s.row[u] == row)
+                .filter(|&u| self.s.hp[u] < f.fighters[u].max_hp * 100)
+                .collect()
+        } else {
+            Vec::new()
+        };
+        for (k, u) in std::iter::once(t).chain(others).enumerate() {
+            let amt = if k == 0 { amount } else { (amount as i64 * p.sweep_pct.max(0) as i64 / 100) as i32 };
+            let got = amt.min(f.fighters[u].max_hp * 100 - self.s.hp[u]).max(0);
+            self.s.hp[u] += got;
+            self.healed[h] += got;
+            self.was_healed[u] += got;
+            let mut e = ev.clone();
+            e.target = Some(u as FighterIdx);
+            e.heal = Some(Heal { target: u as FighterIdx, amount: got, r });
+            self.push(e);
+        }
+    }
+
     /// One hit of `h` on `t` (`crit`; its target or an `extra` hit), never below `floor`: r, the
     /// target's armor off a physical hit (unless `h` pierces it; at least 1 centi-HP), then a
     /// withdrawal from a killing hit (none from a hit of a pursuer).
@@ -1290,7 +1384,9 @@ impl<'a> Run<'a> {
         let expected = f.expected_with(h, t, kind, self.round as i32, extra);
         let r = p.rand_min + rng.rand(p.rand_max - p.rand_min + 1, "Engagement hit");
         let pct = if crit { p.crit_damage_pct.max(0) as i64 } else { 100 };
-        let mut raw = (expected as i64 * pct * r as i64 / 10_000).clamp(1, i32::MAX as i64) as i32;
+        // The charms and hexes: percent more damage dealt by the hitter and taken by the target.
+        let mods = (100 + self.s.dmg_mod[h]).max(0) as i64 * (100 + self.s.taken_mod[t]).max(0) as i64;
+        let mut raw = (expected as i64 * pct * r as i64 / 10_000 * mods / 10_000).clamp(1, i32::MAX as i64) as i32;
         if kind.physical() && !f.fighters[h].pierce {
             raw = (raw - f.fighters[t].armor.max(0)).max(1);
         }
