@@ -138,9 +138,9 @@ pub const ASSETS: &[(&str, &str, &str)] = &[
 ];
 
 // `ASSET_BYTES`: the binary client files, the isometric renderer's PNG sprites (docs/ISO.md) and the
-// battle screens' unit animations, embedded by `build.rs` from `assets/app/iso/*.png` and
-// `assets/app/anim/*.png`: `(path, content type, bytes)`, served like [`ASSETS`] but from raw
-// bytes. `tests/web.rs` checks that every file under `assets/app/` is listed.
+// battle screens' unit animations, key poses and impact cards, embedded by `build.rs` from
+// `assets/app/iso/*.png` and `assets/app/{anim,pose,fx}/*.png`: `(path, content type, bytes)`,
+// served like [`ASSETS`] but from raw bytes. `tests/web.rs` checks that every file under `assets/app/` is listed.
 include!(concat!(env!("OUT_DIR"), "/iso_assets.rs"));
 
 // `ART_MODULES`: the art toolkit's modules (`web/art`, docs/ART.md 15-16), embedded by `build.rs`

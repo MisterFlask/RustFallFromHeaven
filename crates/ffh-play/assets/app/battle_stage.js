@@ -10,6 +10,10 @@
 // sets (`app/anim/<unit>_<idle|strike|flinch|death>.png`: strips of 160 x 128 frames, the feet
 // at (80, 126); anim-sprint/ANIMATING_UNITS.md). Pixel art is drawn at 1x, but for the watch
 // screen's breathing (a squash of 2% at most) and its snap (battle_snap.js: a lean, up to 8% larger).
+// Key poses (`app/pose/<unit>_<attack|hit>.png`: one 160 x 128 frame each, the feet at (80, 126)) give
+// a unit without the strips the one frame its snap holds; impact cards (`app/fx/<card>_<back|front>.png`)
+// are what a ranged blow does where it lands (anim-sprint/ANIMATING_UNITS.md, "Impact cards and key
+// poses"; made by anim-sprint/lib/impact_cards.py).
 
 import { SPRITES } from "./iso/sprites.js";
 import { unitSpriteKeys, ISO_TABLES } from "./iso.js";
@@ -20,6 +24,8 @@ export const FRAME_H = 800;
 
 const spriteUrl = (key) => new URL(`./iso/${key}.png`, import.meta.url).href;
 const animUrl = (unit, anim) => new URL(`./anim/${unit}_${anim}.png`, import.meta.url).href;
+const poseUrl = (unit, pose) => new URL(`./pose/${unit}_${pose}.png`, import.meta.url).href;
+const fxUrl = (card, layer) => new URL(`./fx/${card}_${layer}.png`, import.meta.url).href;
 
 /** The anim-sprint sets the client ships (their timings are the sets' manifests'), by the short
  *  name of the M7 sprite they animate; `left`: the set faces lower-left. The strips the screens
@@ -31,6 +37,11 @@ export const ANIMS = {
   flinch: [80, 120, 120, 120],
   death: [80, 120, 140, 200, 80, 80, 80, 400],
 };
+/** The key poses the client ships, by the short name of the M7 sprite: `attack` (held while it
+ *  shoots, bombards or casts, or strikes when it has no strips) and `hit` (held while it is struck). */
+const KEY_POSES = { catapult: ["attack", "hit"] };
+/** The impact cards the client ships (each a `back` layer, drawn behind the target, and a `front`). */
+export const IMPACT_CARDS = ["rubble"];
 /** ms from the start of the strike strip to its blow (the frame the hit lands on). */
 export const STRIKE_HIT = 430;
 const ANIM_FRAME = { w: 160, h: 128, ax: 80, ay: 126 };
@@ -89,7 +100,7 @@ export function figOf(f, sides) {
   if (fig) return fig;
   // A city's Sentinel (docs/SIEGES.md): its wall section, the watchtower's art scaled to a figure.
   if (f.sentinel && SPRITES.bld_watchtower) {
-    fig = { key: "bld_watchtower", anim: null, left: false, scale: 0.55 };
+    fig = { key: "bld_watchtower", anim: null, short: null, poses: new Set(), left: false, scale: 0.55 };
     FIGS.set(f, fig);
     return fig;
   }
@@ -100,13 +111,16 @@ export function figOf(f, sides) {
   if (own) keys.unshift(`unit_${own.replace(/^UNIT_/, "").toLowerCase()}`);
   const key = keys.find((k) => SPRITES[k]) ?? "unit_swordsman";
   const short = key.replace(/^unit_/, "");
-  fig = { key, anim: ANIM_SETS[short] ? short : null, left: FACES_LEFT.has(short) };
+  fig = { key, anim: ANIM_SETS[short] ? short : null, short, poses: new Set(KEY_POSES[short] ?? []), left: FACES_LEFT.has(short) };
   FIGS.set(f, fig);
   return fig;
 }
 
 /** Whether fighter `f` has an animation set (it strikes, flinches and dies with its frames). */
 export const animated = (sides) => (f) => !!figOf(f, sides).anim;
+
+/** Fighter `f`'s key poses: a Set of "attack" and "hit" (empty: none). */
+export const keyPoses = (sides) => (f) => figOf(f, sides).poses;
 
 const DRY = /PLAINS|DESERT|BURNING_SANDS|BROKEN_LANDS|FIELDS_OF_PERDITION/;
 const COLD = /TUNDRA|SNOW/;
@@ -149,7 +163,9 @@ export function loadArt({ fighters, plot, from, sides }) {
     const fig = figOf(f, sides);
     jobs.push(sprite(fig.key));
     if (fig.anim) for (const a of Object.keys(ANIMS)) jobs.push(loadImage(`anim:${fig.anim}:${a}`, animUrl(fig.anim, a)));
+    for (const k of fig.poses) jobs.push(loadImage(`pose:${fig.short}:${k}`, poseUrl(fig.short, k)));
   }
+  for (const c of IMPACT_CARDS) for (const l of ["back", "front"]) jobs.push(loadImage(`fx:${c}:${l}`, fxUrl(c, l)));
   return Promise.all(jobs);
 }
 
@@ -453,9 +469,14 @@ function frameAt(ms, list, loop) {
   return list.length - 1;
 }
 
-/** The picture of fighter `f`: animation `anim` at `ms` when it has the set, else its sprite. */
+/** The picture of fighter `f`: animation `anim` at `ms` when it has the set, its key pose when
+ *  `anim` names one it has ("attack", "hit"), else its sprite. */
 export function pic(f, sides, anim = null, ms = 0, loop = false) {
   const fig = figOf(f, sides);
+  if (anim && fig.poses.has(anim)) {
+    const im = IMG.get(`pose:${fig.short}:${anim}`);
+    if (im) return { im, sx: 0, w: ANIM_FRAME.w, h: ANIM_FRAME.h, ax: ANIM_FRAME.ax, ay: ANIM_FRAME.ay, anim };
+  }
   if (anim && fig.anim) {
     const im = IMG.get(`anim:${fig.anim}:${anim}`);
     if (im) return { im, sx: frameAt(ms, ANIMS[anim], loop) * ANIM_FRAME.w, w: ANIM_FRAME.w, h: ANIM_FRAME.h, ax: ANIM_FRAME.ax, ay: ANIM_FRAME.ay, anim };
@@ -482,6 +503,9 @@ function scaledImage(key, im, k) {
   }
   return c;
 }
+
+/** Layer `layer` ("back" or "front") of impact card `card`, or null (not loaded, or missing). */
+export const impactPic = (card, layer) => IMG.get(`fx:${card}:${layer}`) ?? null;
 
 /** The last frame of the death animation (the fallen), or null when it has none. */
 export function deadPic(f, sides) {

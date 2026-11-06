@@ -405,6 +405,112 @@ They never went through this recipe's canvas, anchor, slicer or checks. It is a 
 "Known limits", close to the sprint's "sheet, no pose guides" arm (7.60 in the strike, 3.80 in the idle), not a
 replacement for the recipe.
 
+## Impact cards and key poses (the battle screen's snap)
+
+The owner's direction (5 November 2026, on the catapult): **an action is key frames, not motion.** The struck unit
+holds **one** flinch frame and the blow is **one** still image of the projectile or effect, both held for a beat, as in
+Darkest Dungeon. A smooth flinch or attack animation played through reads as too sudden; the held frame is what reads.
+The catapult's rubble was the first: the owner approved it from a GIF prototype ("Love it") and asked for the method to
+be replicated for other siege engines, ranged units and spells. Here is how.
+
+**What plays** (`crates/ffh-play/assets/app/battle_snap.js`; the watch screen's snap, docs/HUMAN.md):
+1. Idle, then a cut with no wind-up. The attacker snaps to its attack frame. A melee striker slides in; a siege engine
+   lunges 10 px toward the target and creeps 5 px on; a shooter or a caster stays on its cell.
+2. On the same frame the target snaps to its hit frame, under a white flash and a small shake.
+3. The **impact card** arrives over the target: it starts 150 px back along the line of the blow, 70 px up and 30%
+   larger, with three fading ghosts behind it. Its approach decays as `exp(-t / 55 ms)`: it covers most of the way in
+   two frames, then all but stops ("arrives very suddenly and then slows down to show itself").
+4. The hold: nothing changes frame. The card settles 4 px a second; its dust layer keeps billowing (90% to 110%); the
+   pair creep a few pixels. A bombard holds 0.76 s (a crit or a kill longer, as for every action).
+5. A quarter-second return: the card fades and the pair ease back to their idles. On a dodge the card lands where the
+   target stood, and the target leans aside.
+
+**A splash is bigger** (the owner's call, on the first in-game catapult): when the blow strikes several units, the card
+is drawn at 2× (or 3× when the group spreads wider than 150 px), in the middle of the units it strikes, and none of them
+gets its own flare or sparks. Steps are whole multiples so the pixel art stays even. Draw a card at the 1× size;
+don't make separate splash art.
+
+**The alternative staging, for spells:** the brief allows "a very abrupt animation with very little wind-up" in place
+of a travelling card: a pillar of flame or an explosion that is simply there on the contact frame. That is the same
+card with `ARRIVE`, `RISE` and `GROW` at 0 (it appears in place). Add a per-card option to `CARD` when the first such
+card is made.
+
+**The pieces**, each a PNG at the sprites' pixel size (1 art pixel = 1 screen pixel on the battle stage):
+
+| Piece | File | What it is |
+|---|---|---|
+| key pose `attack` | `crates/ffh-play/assets/app/pose/<unit>_attack.png` | one 160×128 frame, the feet at (80, 126): the unit at the moment it acts (the catapult's arm thrown, its bucket empty) |
+| key pose `hit` | `crates/ffh-play/assets/app/pose/<unit>_hit.png` | one 160×128 frame: the deepest point of its recoil |
+| impact card | `crates/ffh-play/assets/app/fx/<card>_back.png`, `<card>_front.png` | the blow where it lands, in two layers on one canvas: `back` behind the target (dust, smoke, the glow of a fire), `front` over it (the stones, the flames' body). The card stands on its bottom centre, which lands 2 px below the target's feet. |
+
+`<unit>` is the M7 sprite's short name (`unit_catapult` → `catapult`). A unit with the full anim-sprint strips
+(`app/anim`) already holds one frame of each: its strike strip's blow (frame 4) and its flinch's recoil (frame 1), so it
+needs no key poses. Key poses are for every other unit, and are the cheap way to give one a snap: two frames instead
+of 23.
+
+**Making them** (`lib/impact_cards.py`):
+- **Key poses:** take the frame from the unit's anim-sprint set when it has one, even an unshipped one (the catapult's
+  came from `final_catapult/strike/frame_04.png` and `final_catapult/flinch/frame_01.png` on the `anim-all` branch):
+  `python lib/impact_cards.py pose <frame.png> ../crates/ffh-play/assets/app/pose/<unit>_attack.png`. Fix what the held
+  frame says that the motion hid. The catapult's strike frames still carried the stone after the throw, so
+  `--empty-bucket` paints the bucket empty. Without a set, one image-model edit of the static sprite gives a usable
+  recoil (see "Combat presentation and spell effects" above: word the direction from where the sprite looks). Rule 1
+  holds: the attack goes toward the side the sprite looks.
+- **Impact cards:** draw them as pixel art, not as particles ("matter on the pixel grid", above). The rubble is
+  code-drawn: angular stones with flat faces lit from the upper left, a 1 px dark outline, a crack each; ochre dust in
+  four tones, posterized, roughened by value noise and edged with an ordered dither; a few dark flecks thrown up.
+  `python lib/impact_cards.py rubble ../crates/ffh-play/assets/app/fx`. Make the card about the size of the target
+  (the rubble is 100×92; its stones cover the lower body and the head shows above). A fire pillar or an explosion can
+  instead come from one image-model call, as the spike's did, shrunk to this pixel size and keyed. Put the card in
+  front of the target where it covers it and behind where it frames it.
+- **What failed in the prototype:** the first dust was round blobs and read as a teddy bear's head. Plumes (blobs
+  stretched upward, with noise on the edge) read as dust. Stones shrunk below about 80% of the drawing lose their
+  outlines: draw them at the size they show.
+
+**Wiring them in** (two tables):
+- `KEY_POSES` in `app/battle_stage.js`: `{ catapult: ["attack", "hit"] }`. A unit with only one of the two poses
+  falls back to a lean for the other.
+- `IMPACT_CARDS` in `app/battle_snap.js`: by staged action kind, `{ Bombard: "rubble" }`. Every bombard lands as the
+  rubble for now (cannons too). When a second card exists for the same kind, key it by the actor's unit, and for spells
+  by the spell. Add the card's name to `IMPACT_CARDS` in `battle_stage.js` as well (the list of files it loads).
+- `crates/ffh-play/build.rs` embeds `app/pose` and `app/fx` (the server and the static site); new files there need
+  nothing else. The timings live in `planOf` (the hold by kind) and `CARD` (the arrival).
+
+**Key frames still to make** (the plan of 5 November 2026; tick them off here). In battle, a unit with neither strips
+nor key poses still leans its sprite, and a shot or a spell still arrives as a streak. In order:
+
+1. *Impact cards for the spells* (the abrupt kind: on the target at once, no travel; needs the in-place option
+   above). Every caster in battle casts one of these, so each card is seen often. Fireball: a fire burst. Maelstrom: a
+   lightning bolt striking down. Ring of Flames: a ring of flame pillars. Snowfall and Greater Snowfall: ice shards in a
+   snow burst. Contagion and Wither: a sickly miasma with a skull's shape in it. Crown of Brilliance: a pillar of holy
+   light. The magic bolt (casters without a battle spell): a small lilac arcane burst. Key them by `e.spell` (the log
+   names it; the bolt has none).
+2. *The ranger's hawk* (the owner's idea): the ranger stays on his cell and his hawk is the card, talons first,
+   arriving fast and braking over the target. The hawk's frames exist (`final_hawk` on `anim-all`: its strike frame
+   is the card). The ranger is a recon unit and strikes in melee, so this also needs a per-unit card that stages
+   the strike as a shot (the ranger stays put). The same could suit the beastmaster and the hunter.
+3. *Shots:* arrows (archer, longbowman, crossbowman, marksman and the like: a sheaf of shafts striking), a thrown
+   javelin (javelin thrower), a sling stone (dwarven slinger) and a musket's smoke and flash (arquebus). One per
+   kind of missile, keyed by the shooter's unit. 14 archer units.
+4. *The other siege cards:* the cannon and dwarven cannon (an iron shot's burst: smoke and a flash of fire), the
+   battering ram (splintered timbers). The trebuchet keeps the rubble. Key them by the actor's unit.
+5. *Key poses (`attack`, `hit`) for the units that act at range*, which nothing animates yet: the other four siege
+   engines (the cannon, dwarven cannon and battering ram have sets on `anim-all`), the 14 archers (a bow drawn and
+   loosed), the 17 adepts (a staff thrust toward the target), the 35 disciples (hands raised to heal). Then the
+   melee units, most-fought first; count which unit types fight the most battles over the stress games before
+   choosing.
+6. *Heal:* a glow does it now; a card (a column of soft light on the healed) is optional.
+
+Sources, cheapest first: a finished set's frames (`anim-all` has 60: the siege engines, elementals, ships,
+the wolf, the horseman, the hawk and more; `pose` above); else one image-model edit per pose of the static
+sprite, two per unit (the local Klein model with the pose LoRA, `lib/klein.py`); cards are code-drawn
+(`lib/impact_cards.py`) or one image-model call each.
+
+**Checking one:** the pure parts (which pose and card an action takes) are tested in
+`crates/ffh-play/assets/test/battle_snap.test.mjs`. For the look, render a GIF of the beat with the unit's frames and
+the card over a plain ground strip, at 3× and 25 fps: the catapult's prototype took one short script per change, quick
+enough to iterate with the owner from a phone. Then watch a battle with the unit in the game.
+
 ## Known limits
 
 - **Canvas size.** The canvas is 160×128 with a safe region of x 16–143. A unit taller than about 110 px, or one with a

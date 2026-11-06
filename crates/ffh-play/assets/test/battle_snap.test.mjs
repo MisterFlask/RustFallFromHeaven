@@ -31,7 +31,7 @@ test("the timing plan by kind (ms at 1x): a snap with no wind-up, a held beat, a
   assert.deepEqual(plan(ev("Charge", [hit()])), [680, 240, 160, 1100, 3]);
   assert.deepEqual(plan(ev("Shoot", [hit()])), [620, 240, 160, 1040, 3]);
   assert.deepEqual(plan(ev("Spell", [hit(), hit({ target: 2 })])), [620, 240, 160, 1040, 3]);
-  assert.deepEqual(plan(ev("Bombard", [hit()])), [620, 240, 160, 1040, 5]);
+  assert.deepEqual(plan(ev("Bombard", [hit()])), [760, 240, 160, 1180, 5]);
   assert.deepEqual(plan(ev("Strike", [hit({ crit: true })])), [1050, 280, 160, 1510, 7]);
   assert.deepEqual(plan(ev("Strike", [hit({ crit: true, killed: true })])), [1150, 280, 440, 1890, 7]);
   assert.deepEqual(plan(ev("Strike", [hit({ killed: true })])), [900, 260, 440, 1620, 5]);
@@ -176,6 +176,38 @@ test("the poses each unit snaps to: its strip's contact frames, else its sprite 
   assert.ok(S.poseOf({ kind: "healed", primary: true }, ph(P, 300), false).glow);
   assert.ok(S.poseOf({ kind: "miss", primary: true }, ph(P, 300), true).lean < 0);
   assert.equal(S.poseOf({ kind: "escape", primary: true }, ph(P, 300), true).tint, "#bfe3ff");
+});
+
+test("key poses: a unit without strips holds its one attack or hit frame for the whole snap", () => {
+  const ph = (P, t) => S.phaseOf(P, t);
+  const P = S.planOf(ev("Bombard", [hit()]));
+  const keys = new Set(["attack", "hit"]);
+  for (const t of [0, 300, P.hold + P.ret - 1]) {
+    const a = S.poseOf({ kind: "bombard", actor: true }, ph(P, t), false, null, keys);
+    assert.deepEqual([a.anim, a.lean, a.scale], ["attack", 0, 1], `the attack frame at ${t} ms`);
+    const h = S.poseOf({ kind: "hit", primary: true }, ph(P, t), false, null, keys);
+    assert.deepEqual([h.anim, h.lean], ["hit", 0], `the hit frame at ${t} ms`);
+  }
+  // the hit frame keeps the white flash on the cut
+  assert.equal(S.poseOf({ kind: "hit", primary: true }, ph(P, 0), false, null, keys).tint, "#ffffff");
+  // a dodge still leans away; a unit with strips keeps its strips; one with only a hit pose still leans in to shoot
+  assert.equal(S.poseOf({ kind: "miss", primary: true }, ph(P, 300), false, null, keys).anim, null);
+  assert.equal(S.poseOf({ kind: "hit", primary: true }, ph(P, 300), true, null, keys).anim, "flinch");
+  assert.equal(S.poseOf({ kind: "bombard", actor: true }, ph(P, 300), false, null, new Set(["hit"])).anim, null);
+});
+
+test("impact cards: a bombard lands as the rubble card, with no streak, flare or sparks; a splash's larger, over the group", () => {
+  assert.equal(S.impactOf(S.planOf(ev("Bombard", [hit()]))), "rubble");
+  assert.equal(S.impactOf(S.planOf(ev("Bombard", [hit({ dmg: 0, miss: true })]))), "rubble", "a miss lands beside the dodge");
+  for (const k of ["Shoot", "Spell", "Strike"]) assert.equal(S.impactOf(S.planOf(ev(k, [hit()]))), null, `${k} has no card`);
+  const at = (b) => ({ x: [100, 400, 460][b], y: [200, 300, 340][b], large: false });
+  const st = S.stageOf(ev("Bombard", [hit(), hit({ target: 2 })]), at, 1);
+  // the siege engine lunges toward its target (a shooter recoils)
+  const a = st.roles.get(0);
+  assert.ok(a.off[0] * st.dir[0] + a.off[1] * st.dir[1] > 9, "the bombard lunges");
+  // the card is the blow: no sparks
+  assert.equal(st.sparks.length, 0);
+  assert.deepEqual([S.cardScale([[0, 0]]), S.cardScale([[0, 0], [100, 30]]), S.cardScale([[0, 0], [90, 30], [190, 0]])], [1, 2, 3]);
 });
 
 test("a lean follows the way the figure faces as drawn: a dodge and a shooter's recoil tip away from the enemy, the Champion's too", () => {

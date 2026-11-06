@@ -9,11 +9,18 @@
 // (0.5 to 1.1 s by kind) with embers or dust drifting and the breathing going on, then a quarter
 // second's ease back to the cells. A crit holds longer; a kill holds on the contact frame and its
 // death plays after the return; a miss is a dodge with a whiff; a heal glows with motes; a shot or
-// a spell snaps the shooter on its own cell with the shot arriving as a streak; splash targets snap
+// a spell snaps the shooter on its own cell with the shot arriving as a streak, or, for a kind with
+// an impact card (a bombard: the rubble), with one still image of the blow arriving fast over the
+// target, braking hard, held and fading on the return; splash targets snap
 // together; a knock-back eases its target back a row during the return; one that escapes a killing
 // blow leaves the field after it. On crits and kills only, the rest of the field drops into a shade
 // round a pool of light on the pair. The camera never zooms; under reduced motion nothing shakes.
 // No narrator's line (the owner's call; the spike had one on crits and kills).
+//
+// Key frames, not motion (the owner's call, 2026-11-05, on the catapult's rubble): each fighter of a
+// snap holds one frame for the whole beat (the strike strip's blow and the flinch's recoil, or a
+// unit's key poses: `attack` and `hit`, app/pose), and the blow itself is one held image (the impact
+// card, app/fx). anim-sprint/ANIMATING_UNITS.md, "Impact cards and key poses", says how to add them.
 //
 // While it acts, the pair is lifted out of the board: the stage draws its rings but not its
 // figures (`lifts`), and `drawOver` draws them above everything, the shade included, with an ink
@@ -26,7 +33,7 @@
 // canvas.
 
 import { kindOf, kindKey, dmgText } from "./battle_log.js";
-import { drawPicX, leanTurn, silhouette, STRIKE_HIT, FRAME_W, FRAME_H } from "./battle_stage.js";
+import { drawPicX, leanTurn, silhouette, impactPic, STRIKE_HIT, FRAME_W, FRAME_H } from "./battle_stage.js";
 
 /** ms of stillness before the cut (the snap needs a still frame to contrast with). */
 export const LEAD = 20;
@@ -40,6 +47,25 @@ const STRIKE_MS = { cut: STRIKE_HIT - 30, hold: STRIKE_HIT + 10, back: 700 };
 /** The flinch strip's (ANIMS.flinch): the hold and a slain unit's whole stay (frame 1, the
  *  recoil), then the recovery on the way back (frames 2 and 3). */
 const FLINCH_MS = { hold: 140, back1: 260, back2: 380 };
+
+/** The impact card each staged kind lands with (app/fx; anim-sprint/lib/impact_cards.py); a kind
+ *  without one arrives as a streak. */
+export const IMPACT_CARDS = { Bombard: "rubble" };
+/** The impact card plan `P` lands with, or null. */
+export const impactOf = (P) => (P?.snap && P.ranged ? IMPACT_CARDS[P.kind] ?? null : null);
+/** How the card arrives (ms at 1x): its approach decays as exp(-t / BRAKE), so it covers most of
+ *  the way in the first two frames and then all but stops; it starts ARRIVE px back along the line
+ *  of the blow and RISE px up, a third larger (GROW), trailing ghosts while it is still fast, then
+ *  settles DRIFT px a second. */
+const CARD = { BRAKE: 55, ARRIVE: 150, RISE: 70, GROW: 0.3, DRIFT: 4 };
+/** The card's size for a blow that strikes the units at `pts` (their feet): one unit's at 1x, a
+ *  splash's over the group, 2x or 3x by how wide it spreads (whole-pixel steps keep the pixel art
+ *  even). */
+export function cardScale(pts) {
+  if (pts.length < 2) return 1;
+  const xs = pts.map((p) => p[0]);
+  return Math.max(...xs) - Math.min(...xs) > 150 ? 3 : 2;
+}
 
 const lerp = (a, b, k) => a + (b - a) * k;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -101,7 +127,8 @@ export function planOf(e) {
   else if (kill) [hold, ret, shake] = [900, 260, 5];
   else if (escape) [hold, shake] = [720, 3];
   else if (melee) [hold, shake] = [680, 3];
-  else [hold, shake] = [620, kind === "Bombard" ? 5 : 3];
+  // a bombard's card needs a beat longer to read
+  else [hold, shake] = kind === "Bombard" ? [760, 5] : [620, 3];
   // a kill leaves room for the fall to read before the next cut
   if (kill) rest = 440;
   return { snap: true, kind, melee, ranged: !melee && !heal, heal, crit, kill, miss, escape, shade: crit || kill, hold, ret, rest, shake, impact: LEAD, fates: LEAD + hold + ret, end: LEAD + hold + ret + rest };
@@ -173,6 +200,7 @@ export function stageOf(e, at, seed) {
   if (ar && ar.actor) {
     if (P.melee) [ar.off, ar.creep] = [[dx * gap * 0.78, dy * gap * 0.78], [dx * 6, dy * 6]];
     else if (P.heal) [ar.off, ar.creep] = [[0, -4], [0, -2]];
+    else if (P.kind === "Bombard") [ar.off, ar.creep] = [[dx * 10, dy * 10], [dx * 5, dy * 5]];
     else [ar.off, ar.creep] = [[-dx * 4, -dy * 4], [-dx * 2, -dy * 2]];
   }
   for (const r of roles.values()) {
@@ -202,7 +230,8 @@ export function stageOf(e, at, seed) {
   for (const r of roles.values()) {
     if (r.actor || r.kind === "miss" || r.kind === "healed" || r.kind === "escape") continue;
     const c = r.primary ? contact : [held(r)[0], held(r)[1] - 46];
-    const k = r.primary ? nS : Math.ceil(nS / 2);
+    // the impact card is the blow: no sparks over it
+    const k = impactOf(P) ? 0 : r.primary ? nS : Math.ceil(nS / 2);
     for (let s = 0; s < k; s++) {
       const a = Math.atan2(dy, dx) + (R() - 0.5) * 2.4;
       const v = 260 + R() * 320;
@@ -226,13 +255,15 @@ export function toneOf(e, P = planOf(e)) {
     return e.spell !== null && e.spell !== undefined ? { rgb: "140, 235, 255", light: "#9feeff", motes: ["#9feeff", "#e0fbff", "#5cc8ff"] } : { rgb: "205, 165, 255", light: "#d8b8ff", motes: ["#d8b8ff", "#f4eaff", "#a77cff"] };
   }
   if (P.miss) return { rgb: "217, 205, 176", light: "#efe6d0", motes: ["#d9cdb0", "#bfb299", "#efe6d0"] };
-  return { rgb: P.kind === "Bombard" ? "200, 180, 150" : "255, 240, 200", light: "#ffd890", motes: ["#ffb347", "#ffd890", "#ff7b3a", "#fff2c0"] };
+  if (P.kind === "Bombard") return { rgb: "200, 180, 150", light: "#efe6d0", motes: ["#d9cdb0", "#c9a46a", "#a3804d", "#efe6d0"] };
+  return { rgb: "255, 240, 200", light: "#ffd890", motes: ["#ffb347", "#ffd890", "#ff7b3a", "#fff2c0"] };
 }
 
 /** The pose of a unit in role `r` (`{kind, primary}`, and `tone` for a caster) at phase `ph`:
- *  `anim`/`ms` a frame of its strip (when `animated`: `clean` drops the strike frames' smear), else
- *  its sprite under `lean` (radians, + forward) and `scale`; and `tint`/`tintA`, `glow`. */
-export function poseOf(r, ph, animated, tone = null) {
+ *  `anim`/`ms` a frame of its strip (when `animated`: `clean` drops the strike frames' smear), or
+ *  one of its key poses (`keys`, a Set: "attack" for the actor, "hit" for one struck), else its
+ *  sprite under `lean` (radians, + forward) and `scale`; and `tint`/`tintA`, `glow`. */
+export function poseOf(r, ph, animated, tone = null, keys = null) {
   const p = { anim: null, ms: 0, clean: false, lean: 0, scale: 1, tint: null, tintA: 0, glow: null };
   const { t, k, q, c } = ph;
   switch (r.kind) {
@@ -272,8 +303,13 @@ export function poseOf(r, ph, animated, tone = null) {
       Object.assign(p, { glow: k > 0.4 ? "#7dffb0" : null, tint: "#7dffb0", tintA: (0.3 - 0.15 * c) * k });
       break;
   }
+  // a key pose replaces the lean: the one frame held for the whole snap, the return included
+  const key = ACTOR_KINDS.has(r.kind) ? "attack" : r.kind === "hit" || r.kind === "kill" ? "hit" : null;
+  if (key && !p.anim && keys?.has(key)) Object.assign(p, { anim: key, ms: 0, lean: 0, scale: 1 });
   return p;
 }
+
+const ACTOR_KINDS = new Set(["melee", "shoot", "bombard", "spell", "healer"]);
 
 /** The camera's shake `t` ms after the contact frame of plan `P`: `[dx, dy]` px, or null. */
 export function shakeAt(P, t) {
@@ -380,9 +416,50 @@ export class Snap {
     if (C.P.shade) this.drawShade(g, ph, sx, sy);
     g.setTransform(1, 0, 0, 1, sx, sy);
     const order = [...C.roles.values()].sort((a, b) => a.home[1] + a.off[1] - (b.home[1] + b.off[1]));
+    this.drawImpact(g, ph, "back");
     for (const r of order) this.drawRole(stage, g, r, ph, wall);
+    this.drawImpact(g, ph, "front");
     this.drawMarks(g, ph);
     this.drawTexts(g, ph);
+    g.restore();
+  }
+
+  /** Layer `layer` ("back": behind the fighters; "front") of the action's impact card over its
+   *  primary target: in from the shooter's side, braking hard, a slow settle through the hold, a
+   *  fade over the return. It lands where the target stood (a dodge leaves it beside the card); a
+   *  splash's lands larger (cardScale) in the middle of the units it strikes. */
+  drawImpact(g, ph, layer) {
+    const C = this.cur;
+    const card = impactOf(C.P);
+    const im = card ? impactPic(card, layer) : null;
+    if (!im) return;
+    const first = [...C.roles.values()].find((r) => !r.actor && r.primary);
+    const struck = [...C.roles.values()].filter((r) => !r.actor && r.kind !== "miss" && r.kind !== "escape").map((r) => this.heldAt(r, ph));
+    const big = cardScale(struck);
+    let [fx, fy] = first && first.kind !== "miss" && first.kind !== "escape" ? this.heldAt(first, ph) : C.T;
+    if (big > 1) [fx, fy] = [struck.reduce((a, p) => a + p[0], 0) / struck.length, struck.reduce((a, p) => a + p[1], 0) / struck.length + 24];
+    const [dx, dy] = C.dir;
+    const e = Math.exp(-ph.t / CARD.BRAKE);
+    const back = layer === "back";
+    // the dust keeps billowing after the stones have stopped
+    const s = big * (back ? 0.9 + 0.2 * (1 - Math.exp(-ph.t / 260)) : 1 + CARD.GROW * e);
+    const ox = -dx * CARD.ARRIVE * e * (back ? 0.5 : 1);
+    const oy = (-dy * CARD.ARRIVE - CARD.RISE) * e * (back ? 0.4 : 1) + (CARD.DRIFT * ph.t) / 1000;
+    const w = Math.round(im.width * s);
+    const h = Math.round(im.height * s);
+    const at = (k) => [Math.round(fx + ox * k - w / 2), Math.round(fy + 2 + oy * k - h)];
+    g.save();
+    g.imageSmoothingEnabled = false;
+    const fade = ph.hold ? 1 : ph.k;
+    // ghosts along the way it came, while it is still fast
+    if (!back && e > 0.35) {
+      for (const n of [3, 2, 1]) {
+        g.globalAlpha = fade * (0.05 + (0.18 * n) / 3);
+        g.drawImage(im, ...at(1 + 0.35 * n), w, h);
+      }
+    }
+    g.globalAlpha = fade;
+    g.drawImage(im, ...at(1), w, h);
     g.restore();
   }
 
@@ -411,7 +488,7 @@ export class Snap {
     // the return goes to the cell it stands on now (a row back after a knock-back, with a hop)
     const pos = ph.hold ? held : [lerp(held[0], fx, ph.q), lerp(held[1], fy, ph.q) - (r.knock ? Math.sin(Math.PI * ph.q) * 16 : 0)];
     const animd = env.animated(b);
-    const po = poseOf(r, ph, animd, this.cur.tone);
+    const po = poseOf(r, ph, animd, this.cur.tone, env.keys?.(b) ?? null);
     let pic = po.anim ? env.pic(b, po.anim, po.ms, false) : null;
     if (pic && po.clean) pic = clean(pic);
     pic = pic ?? env.pic(b, animd ? "idle" : null, wall + b * 137, true);
@@ -487,7 +564,8 @@ export class Snap {
     }
     // the shot, already arriving as a streak (on the trajectory the flight had: arrows arc low,
     // stones high, spells flat)
-    if (P.ranged) {
+    const card = impactOf(P);
+    if (P.ranged && !card) {
       const kind = P.kind;
       const arc = kind === "Bombard" ? 150 : kind === "Shoot" ? 60 : 30;
       const [x0, y0] = [C.A[0], C.A[1] - 64];
@@ -572,7 +650,7 @@ export class Snap {
           crescent(g, c[0] + dx * drift, c[1] + dy * drift, ang, R0 + 4, big ? 14 : 11, big ? "rgba(255, 200, 70, 0.9)" : "rgba(170, 200, 255, 0.6)", aFade);
           crescent(g, c[0] + dx * drift, c[1] + dy * drift, ang, R0, big ? 10 : 8, "#ffffff", aFade);
         }
-      } else if (r.kind !== "miss") {
+      } else if (r.kind !== "miss" && !card) {
         // a flare that blooms on the cut and slowly opens
         const col = C.tone.rgb;
         const rr = (r.primary ? 26 : 18) + 18 * ph.c;

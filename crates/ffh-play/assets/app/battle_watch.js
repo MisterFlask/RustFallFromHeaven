@@ -12,7 +12,7 @@
 
 import { h } from "./dom.js";
 import { initialState, applyEvent, logLines, viewerSide, resultWords, fates, headOf, uname } from "./battle_log.js";
-import { loadArt, unitXY, cellXY, pic, deadPic, faceFlip, animated, figOf, pixGlyph, GLYPH, btn, add, partsEl } from "./battle_stage.js";
+import { loadArt, unitXY, cellXY, pic, deadPic, faceFlip, animated, keyPoses, figOf, pixGlyph, GLYPH, btn, add, partsEl } from "./battle_stage.js";
 import { Snap, breath, LEAD } from "./battle_snap.js";
 
 export const NAME = "watch";
@@ -62,6 +62,7 @@ function snapEnv(ctx, log) {
     side: (b) => W.F[b].side,
     pic: (b, anim, ms, loop) => pic(W.F[b], sides, anim, ms, loop),
     animated: (b) => W.anim(W.F[b]),
+    keys: (b) => keyPoses(sides)(W.F[b]),
     flip: (b) => faceFlip(W.F[b], sides),
     leftArt: (b) => figOf(W.F[b], sides).left,
     bar: (b) => (W.disp.status[b] === "on" ? { hp: W.disp.hp[b], max: W.F[b].max_hp * 100 } : null),

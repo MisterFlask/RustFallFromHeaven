@@ -41,7 +41,9 @@ anim-sprint/     animations for M7 unit sprites (its own project; anim-sprint/AN
 To make idle, strike, flinch or death animations for an M7 unit sprite, follow
 `anim-sprint/ANIMATING_UNITS.md`. It describes the method that won the October 2026 animation
 sprint (`lib/recipe.py` in that folder); do not start from an ad-hoc approach. Its first rule:
-the strike always goes in the direction the sprite is looking. Agent build worktrees are sparse
+the strike always goes in the direction the sprite is looking. For the battle screen's held key
+poses and impact cards (one hit frame and one still image of the blow, held: the catapult's
+rubble), follow its section "Impact cards and key poses". Agent build worktrees are sparse
 and leave that folder out; run `git sparse-checkout add anim-sprint` first.
 
 ## Parallel agents

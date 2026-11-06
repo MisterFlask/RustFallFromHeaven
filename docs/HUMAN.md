@@ -536,14 +536,17 @@ engine at each change: each side's expected losses, their line wiped out, the pl
 wiped out; Watch or Report after the attack; Attack or `Enter`), **the battle** (the log played
 one action at a time as a snap, the owner's pick of the battle-feel spike, 2026-10-31: every
 unit breathes; on an action's contact frame the pair cuts to its impact poses (the strike strip's
-contact frame and the target's flinch frame where the unit has anim-sprint frames, else the
-sprite leaning in, a little larger, and the target leaning back under a white flash) and slides
+contact frame and the target's flinch frame where the unit has anim-sprint frames, else its key
+poses (`app/pose`: one attack and one hit frame, the catapult's), else the sprite leaning in, a
+little larger, and the target leaning back under a white flash) and slides
 together, lifted above the field with an ink outline, and the slash or the sparks, the number and
 a small shake land; a held beat of 0.5-1.1 s with embers drifting, then a quarter-second ease
 back. Crits hold longer and kills hold, the death playing after the return; on crits and kills only
 the rest of the field drops into a shade round the pair, the camera never zooms; CRITICAL and
 SLAIN under the numbers; a miss is a dodge with a whiff, a heal glows, a shot or a spell arrives
-as a streak while its shooter stays on its cell, splash targets snap together, a knock-back eases
+as a streak while its shooter stays on its cell, a bombard lunges and its blow lands as one held
+image (the impact card, `app/fx`: the rubble arrives fast over the target, brakes hard, holds and
+fades, larger over a splash's group; anim-sprint/ANIMATING_UNITS.md, "Impact cards and key poses"), splash targets snap together, a knock-back eases
 back a row on the return, an escape leaves after it; no shake under reduced motion; each side's
 standing units; the log beside it under round and pass headers, a unit's speed before its line,
 an action's line on its contact frame; play/pause `Space` (the action freezes where it is), step
