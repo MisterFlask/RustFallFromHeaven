@@ -452,6 +452,15 @@ impl GameData {
     /// a stat sheet (docs/UNIT_STATS.md), rows and a rank preference (docs/ENGAGEMENTS.md).
     fn derive_engagements(&mut self) {
         let mut warnings = Vec::new();
+        // A Wonder's outcomes are cast through it only (docs/ENGAGEMENTS.md, "Battle spells").
+        let outcomes: Vec<SpellType> = self.spells.iter().flat_map(|s| s.battle_wonder.iter().map(|&(o, _)| o)).collect();
+        for o in outcomes {
+            self.spells[o].wonder_outcome = true;
+            let info = &self.spells[o];
+            if !info.battle_wonder.is_empty() || !info.battle_only {
+                warnings.push(format!("{}: a battle_wonder outcome must be battle_only and no wonder itself", info.base.type_));
+            }
+        }
         for (u, info) in self.units.iter_enumerated() {
             if !self.type_engages_on_land(u) {
                 continue;
@@ -505,10 +514,12 @@ impl GameData {
     }
 
     /// A caster's battle spells (docs/ENGAGEMENTS.md, "Battle spells"), of the spells whose
-    /// promotion, unit, unit class, unit combat and religion prerequisites it meets: its damage
-    /// spell (`iDamage > 0`, `battle_only` or a `battle_power`, and no heal or charm), the strongest
-    /// by [`Self::battle_spell_output`], then `iDamage`, then the lower id; its heal (`battle_heal`), the strongest;
-    /// its charms and hexes (`battle_charm`), all, in spell order.
+    /// promotion, unit, unit class, unit combat and religion prerequisites it meets (not a Wonder's
+    /// outcomes): its damage spell (`iDamage > 0`, `battle_only`, a `battle_power` or a
+    /// `battle_wonder`, and no heal or charm), a Wonder first, then the strongest by
+    /// [`Self::battle_spell_output`], then `iDamage`, then the lower id; its heal (`battle_heal`),
+    /// the strongest; its charms and hexes (`battle_charm`), all but those of a lower
+    /// [`Self::spell_tier`] than its damage spell, the highest tier first, then by id.
     pub fn engage_battle_spells(&self, unit_type: UnitType, has_promotion: impl Fn(PromotionType) -> bool, religion: Option<ReligionType>) -> BattleSpells<SpellType> {
         let info = &self.units[unit_type];
         let mut out = BattleSpells::default();
@@ -520,7 +531,7 @@ impl GameData {
                 && spell.unit_class_prereq.map_or(true, |c| info.unit_class_type == Some(c))
                 && spell.unit_combat_prereq.map_or(true, |c| info.unit_combat_type == Some(c))
                 && spell.religion_prereq.map_or(true, |r| religion == Some(r));
-            if !meets {
+            if !meets || spell.wonder_outcome {
                 continue;
             }
             if spell.battle_charm.is_some() {
@@ -529,14 +540,40 @@ impl GameData {
                 if out.heal.map_or(true, |b| spell.battle_heal > self.spells[b].battle_heal) {
                     out.heal = Some(s);
                 }
-            } else if spell.damage > 0 || spell.battle_only || spell.battle_power > 0 {
-                let key = |x: &SpellInfo| (self.battle_spell_output(x), x.damage);
+            } else if spell.damage > 0 || spell.battle_only || spell.battle_power > 0 || !spell.battle_wonder.is_empty() {
+                let key = |x: &SpellInfo| (!x.battle_wonder.is_empty(), self.battle_spell_output(x), x.damage);
                 if out.attack.map_or(true, |b| key(spell) > key(&self.spells[b])) {
                     out.attack = Some(s);
                 }
             }
         }
+        // No charm of a lower sphere tier than its damage spell (an archmage with Firestorm does not
+        // spend an action on Hold the Line); the strongest sphere's charms first, then the lower id.
+        let floor = out.attack.map_or(0, |a| self.spell_tier(a));
+        out.charms.retain(|&s| self.spell_tier(s) >= floor);
+        out.charms.sort_by_key(|&s| (std::cmp::Reverse(self.spell_tier(s)), s));
         out
+    }
+
+    /// A spell's tier: the deepest of its promotion prerequisites in their lines (Fire III is 3:
+    /// Fire II, then Fire I, below it), 0 without one.
+    pub fn spell_tier(&self, s: SpellType) -> i32 {
+        let info = &self.spells[s];
+        [info.promotion_prereq1, info.promotion_prereq2].into_iter().flatten().map(|p| self.promotion_line_tier(p)).max().unwrap_or(0)
+    }
+
+    /// A promotion's place in its line: 1, plus 1 for each promotion below it (`prereq_promotion`).
+    pub fn promotion_line_tier(&self, p: PromotionType) -> i32 {
+        let mut tier = 1;
+        let mut at = p;
+        while let Some(below) = self.promotions[at].prereq_promotion {
+            if tier >= 10 {
+                break;
+            }
+            tier += 1;
+            at = below;
+        }
+        tier
     }
 
     // A unit type's values in a formation battle: its stat sheet, its rows and its rank preference

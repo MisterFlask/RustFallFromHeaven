@@ -213,6 +213,35 @@ fn every_sphere_has_a_battle_spell() {
     let mut charms: Vec<&str> = earth.charms.iter().map(|&s| d.type_name(s)).collect();
     charms.sort();
     assert_eq!((earth.attack, earth.heal, charms), (None, None, vec!["SPELL_STONESKIN_WARD", "SPELL_TREMOR"]));
+    // Every sphere III gives an archmage another battle spell (Ice III: Snowfall's battle form).
+    for sphere in [
+        "AIR", "BODY", "CHAOS", "DEATH", "EARTH", "ENCHANTMENT", "ENTROPY", "FIRE", "ICE", "LAW", "LIFE", "METAMAGIC", "MIND", "NATURE",
+        "SHADOW", "SPIRIT", "SUN", "WATER",
+    ] {
+        let promos: Vec<String> = (1..=3).map(|i| format!("PROMOTION_{sphere}{i}")).collect();
+        let names: Vec<&str> = promos.iter().map(|x| x.as_str()).collect();
+        assert!(spells("UNIT_ARCHMAGE", &names[..2]) != spells("UNIT_ARCHMAGE", &names), "{sphere} III");
+    }
+    // The strongest sphere's charms first.
+    let earth = spells("UNIT_ARCHMAGE", &["PROMOTION_EARTH1", "PROMOTION_EARTH2", "PROMOTION_EARTH3"]);
+    let order: Vec<&str> = earth.charms.iter().map(|&s| d.type_name(s)).collect();
+    assert_eq!(order, ["SPELL_QUAKE", "SPELL_STONESKIN_WARD", "SPELL_TREMOR"]);
+    // No charm below the damage spell's tier: Firestorm (III) and Hold the Line (I); Aegis (III).
+    let charms = |held: &[&str]| -> Vec<&str> { spells("UNIT_ARCHMAGE", held).charms.iter().map(|&s| d.type_name(s)).collect() };
+    let fire3 = ["PROMOTION_FIRE1", "PROMOTION_FIRE2", "PROMOTION_FIRE3"];
+    assert_eq!(charms(&[&fire3[..], &["PROMOTION_LAW1"]].concat()), Vec::<&str>::new());
+    assert_eq!(charms(&[&fire3[..], &["PROMOTION_LAW1", "PROMOTION_LAW2", "PROMOTION_LAW3"]].concat()), ["SPELL_AEGIS"]);
+    assert_eq!(charms(&["PROMOTION_FIRE1", "PROMOTION_ENCHANTMENT1"]), ["SPELL_KEEN_EDGE"]);
+    // Wonder is the damage spell of a caster that knows it, before Fire III's Firestorm; its
+    // outcomes are no unit's own.
+    let chaos_fire = ["PROMOTION_CHAOS1", "PROMOTION_CHAOS2", "PROMOTION_CHAOS3", "PROMOTION_FIRE1", "PROMOTION_FIRE2", "PROMOTION_FIRE3"];
+    assert_eq!(name(spells("UNIT_ARCHMAGE", &chaos_fire).attack), Some("SPELL_WONDER"));
+    let wonder = &d.spells[d.t::<SpellType>("SPELL_WONDER")];
+    assert!(wonder.battle_wonder.len() >= 6 && !wonder.battle_only, "a map spell too");
+    for &(o, w) in &wonder.battle_wonder {
+        assert!(w > 0 && d.spells[o].wonder_outcome && d.spells[o].battle_only, "{}", d.type_name(o));
+    }
+    assert!(!spells("UNIT_ARCHMAGE", &[]).any(), "no outcome is known without Wonder");
     let keen = &d.spells[d.t::<SpellType>("SPELL_KEEN_EDGE")];
     assert_eq!(keen.battle_charm, Some(BattleCharm { damage: 20, ..BattleCharm::default() }), "its own front row");
     // The map spells that only dealt damage on the map are battle spells now.

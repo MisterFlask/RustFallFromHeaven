@@ -37,7 +37,8 @@
 //! **RNG** ([`BattleRng`], the game's sync RNG in a real fight), in this order and nowhere else:
 //! per battle, each fighter with chance first strikes in fighter order ("Engagement first
 //! strikes", `0..=chance`); per pass, each mover in fighter order ("Engagement order", the coin,
-//! `0..COIN`); per action, a physical one's miss ("Engagement miss", `0..100`), if it lands a crit
+//! `0..COIN`); per action, a Wonder's outcome ("Engagement wonder", `0..` its weights), a physical
+//! one's miss ("Engagement miss", `0..100`), if it lands a crit
 //! roll for strike, charge, stab and shoot ("Engagement crit"), then r ("Engagement hit"), the
 //! target's withdrawal if the hit would kill it ("Engagement withdraw"), then for each splashed
 //! neighbour in (lane, row) order its r and its withdrawal; a heal draws its r ("Engagement heal").
@@ -326,6 +327,15 @@ impl Spell {
     }
 }
 
+/// One outcome of a Wonder's die roll (`battle_wonder`): a damage spell, a heal or a charm or hex,
+/// cast as the caster's own would be.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum WonderOutcome {
+    Damage(Spell),
+    Heal(HealSpell),
+    Charm(u32, BattleCharm),
+}
+
 /// A heal spell (`battle_heal`): cast with a spell action in place of the damage spell when an ally
 /// is hurt by at least half of the heal.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -393,8 +403,10 @@ pub struct Fighter {
     /// Its heal spell, cast in place of `spell` when an ally is hurt enough.
     pub heal_spell: Option<HealSpell>,
     /// Its charms and hexes (the spell id and the effect), cast one each with its first SPELL
-    /// actions, lasting the battle (docs/ENGAGEMENTS.md, "Battle spells").
+    /// actions but in the last round, lasting the battle (docs/ENGAGEMENTS.md, "Battle spells").
     pub charms: Vec<(u32, BattleCharm)>,
+    /// A Wonder in place of its damage spell: each cast rolls one of these outcomes by weight.
+    pub wonder: Vec<(i32, WonderOutcome)>,
     /// A Sentinel of the defended city (docs/SIEGES.md): never knocked back, never healed; it
     /// takes the shots and spells aimed past it in its lanes, and BOMBARD takes it first.
     pub fixed: bool,
@@ -446,6 +458,7 @@ impl Fighter {
             spell: Spell { id: None, power: 60, splash: false, pattern: None },
             heal_spell: None,
             charms: Vec::new(),
+            wonder: Vec::new(),
             fixed: false,
             patterns: [AttackPattern::Single; ROWS],
             armor: 0,
@@ -596,6 +609,11 @@ impl Formation {
     /// ([`Pair::pct`]) and `h`'s percentage for the round; a pattern's extra hit times its
     /// percentage (no collateral terms).
     pub fn expected_with(&self, h: usize, t: usize, kind: ActionKind, round: i32, extra: Extra) -> i32 {
+        self.expected_power(h, t, kind, round, extra, self.fighters[h].spell.power)
+    }
+
+    /// [`Formation::expected_with`] for a spell of `power` (a Wonder's outcome).
+    pub fn expected_power(&self, h: usize, t: usize, kind: ActionKind, round: i32, extra: Extra, power: i32) -> i32 {
         let splash = extra == Extra::Splash;
         let p = self.pair(h, t);
         // A spell is the caster's magic against the target's magic defence (docs/UNIT_STATS.md).
@@ -603,7 +621,7 @@ impl Formation {
         let mean = self.params.base_damage.max(0) as i64 * 100 * a / (a + dv);
         let mut x = Pcts { num: mean as i128, den: 1 };
         if kind == ActionKind::Spell {
-            x.mul(self.fighters[h].spell.power);
+            x.mul(power);
             x.mul(p.spell_pct);
         }
         self.ground_pcts(h, kind, &mut x);
@@ -907,6 +925,8 @@ struct Run<'a> {
     was_healed: Vec<i32>,
     round: u8,
     pass: u8,
+    /// The damage spell of the action being fought, when a Wonder rolled one.
+    spell_now: Option<Spell>,
 }
 
 impl Formation {
@@ -1137,6 +1157,7 @@ impl<'a> Run<'a> {
             was_healed: vec![0; n],
             round: 0,
             pass: 0,
+            spell_now: None,
         }
     }
 
@@ -1238,26 +1259,13 @@ impl<'a> Run<'a> {
             knocked: None,
             note: None,
         };
-        // A caster's charms and hexes first, one an action (they draw nothing).
-        if kind == ActionKind::Spell && self.s.charms_cast[h] < f.fighters[h].charms.len() {
+        self.spell_now = None;
+        // A caster's charms and hexes first, one an action, but not in the last round (they draw
+        // nothing).
+        if kind == ActionKind::Spell && self.s.charms_cast[h] < f.fighters[h].charms.len() && round < f.params.rounds {
             let (id, c) = f.fighters[h].charms[self.s.charms_cast[h]];
             self.s.charms_cast[h] += 1;
-            let side = if c.enemy { f.fighters[h].side.other() } else { f.fighters[h].side };
-            let on: Vec<usize> = (0..f.len()).filter(|&t| self.s.on_field(t) && f.fighters[t].side == side && (c.whole_side || self.s.row[t] == 0)).collect();
-            for &t in &on {
-                self.s.dmg_mod[t] += c.damage;
-                self.s.taken_mod[t] += c.taken;
-                self.s.acc_mod[t] += c.accuracy;
-                self.s.eva_mod[t] += c.evasion;
-                self.s.crit_mod[t] += c.crit;
-                self.s.speed[t] += c.speed;
-            }
-            ev.spell = Some(id);
-            ev.target = on.first().map(|&t| t as FighterIdx);
-            if on.is_empty() {
-                ev.note = Some(Note::NoTarget);
-            }
-            self.push(ev);
+            self.charm(h, id, c, ev);
             return;
         }
         // A heal spell in place of the damage spell when an ally is hurt by at least half its heal.
@@ -1269,6 +1277,39 @@ impl<'a> Run<'a> {
                 ev.spell = Some(hs.id);
                 self.heal(h, t, hs.pct, hs.pattern, ev, rng);
                 return;
+            }
+        }
+        // A Wonder: its outcome by a roll of its weights, cast as its own spell would be.
+        if kind == ActionKind::Spell && !f.fighters[h].wonder.is_empty() {
+            let w = &f.fighters[h].wonder;
+            let total: i32 = w.iter().map(|&(x, _)| x.max(0)).sum();
+            let mut roll = rng.rand(total.clamp(1, 0xFFFF), "Engagement wonder");
+            let outcome = w.iter().find(|&&(x, _)| {
+                roll -= x.max(0);
+                roll < 0
+            });
+            match outcome.map(|&(_, o)| o) {
+                Some(WonderOutcome::Charm(id, c)) => {
+                    self.charm(h, id, c, ev);
+                    return;
+                }
+                Some(WonderOutcome::Heal(hs)) => {
+                    ev.kind = ActionKind::Heal;
+                    ev.spell = Some(hs.id);
+                    match f.heal_target(&self.s, h) {
+                        Some(t) => self.heal(h, t, hs.pct, hs.pattern, ev, rng),
+                        None => {
+                            ev.note = Some(Note::NoOneHurt);
+                            self.push(ev);
+                        }
+                    }
+                    return;
+                }
+                Some(WonderOutcome::Damage(sp)) => {
+                    ev.spell = sp.id;
+                    self.spell_now = Some(sp);
+                }
+                None => {}
             }
         }
         if kind == ActionKind::Heal {
@@ -1298,10 +1339,11 @@ impl<'a> Run<'a> {
             return;
         }
         let crit = kind.can_crit() && rng.rand(100, "Engagement crit") < (f.fighters[h].crit + self.s.crit_mod[h]).clamp(0, MAX_CHANCE);
-        let spell_splash = kind == ActionKind::Spell && f.fighters[h].spell.splash;
+        let spell = self.spell_now.unwrap_or(f.fighters[h].spell);
+        let spell_splash = kind == ActionKind::Spell && spell.splash;
         // An attack pattern's extra hits take the place of a collateral splash; a known spell's
         // splash stays the spell's.
-        let spell_pattern = if kind == ActionKind::Spell { f.fighters[h].spell.pattern } else { None };
+        let spell_pattern = if kind == ActionKind::Spell { spell.pattern } else { None };
         let pattern = spell_pattern.unwrap_or(f.fighters[h].patterns[self.s.row[h] as usize]);
         let pattern_pct = if spell_splash { None } else { f.params.pattern_pct(pattern) };
         let collateral = pattern_pct.is_none() && f.collateral_splash(h, kind);
@@ -1344,6 +1386,28 @@ impl<'a> Run<'a> {
         100 - hit.clamp(100 - MAX_CHANCE, 100)
     }
 
+    /// A charm or hex `c` (spell `id`) cast by `h`: on the units of its side on the field (the
+    /// front row as it stands, or all), for the rest of the battle; the event names the first.
+    fn charm(&mut self, h: usize, id: u32, c: BattleCharm, mut ev: Event) {
+        let f = self.f;
+        let side = if c.enemy { f.fighters[h].side.other() } else { f.fighters[h].side };
+        let on: Vec<usize> = (0..f.len()).filter(|&t| self.s.on_field(t) && f.fighters[t].side == side && (c.whole_side || self.s.row[t] == 0)).collect();
+        for &t in &on {
+            self.s.dmg_mod[t] += c.damage;
+            self.s.taken_mod[t] += c.taken;
+            self.s.acc_mod[t] += c.accuracy;
+            self.s.eva_mod[t] += c.evasion;
+            self.s.crit_mod[t] += c.crit;
+            self.s.speed[t] += c.speed;
+        }
+        ev.spell = Some(id);
+        ev.target = on.first().map(|&t| t as FighterIdx);
+        if on.is_empty() {
+            ev.note = Some(Note::NoTarget);
+        }
+        self.push(ev);
+    }
+
     /// A heal by `h` of `pct` percent of a hit on `t` (r drawn): with SWEEP also every other hurt
     /// ally of `t`'s row for the sweep's percentage of the heal, one event each (as the same
     /// action's).
@@ -1381,7 +1445,8 @@ impl<'a> Run<'a> {
     fn hit(&mut self, h: usize, t: usize, kind: ActionKind, crit: bool, extra: Extra, floor: i32, rng: &mut impl BattleRng) -> Hit {
         let f = self.f;
         let p = &f.params;
-        let expected = f.expected_with(h, t, kind, self.round as i32, extra);
+        let power = self.spell_now.map_or(f.fighters[h].spell.power, |sp| sp.power);
+        let expected = f.expected_power(h, t, kind, self.round as i32, extra, power);
         let r = p.rand_min + rng.rand(p.rand_max - p.rand_min + 1, "Engagement hit");
         let pct = if crit { p.crit_damage_pct.max(0) as i64 } else { 100 };
         // The charms and hexes: percent more damage dealt by the hitter and taken by the target.

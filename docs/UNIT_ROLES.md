@@ -329,11 +329,12 @@ damage before the assault (the lab counted neither before: healers looked worse 
 and siege engines got no credit for their bombards). The auto formation still places a second
 charger behind the strikers (out of scope); the lab puts the attacker's mounted units in front.
 
-**Casters' sphere spells** (the owner's request, 2026-11-06: adepts that matter in a battle, and
-battle spells beyond Fire II; the spells are in docs/ENGAGEMENTS.md, "Battle spells"). Every
-sphere I gives an adept a battle spell: six damage spells (Fire, Air, Water, Nature, Sun, Death),
-a heal (Life) and eleven charms and hexes (lever L11, built with them); several spheres II give a
-mage a stronger one. Tuned in a marginal lab: a core squad (4 Axemen and 2 Archers early, 4
+**Casters' sphere spells** (the owner's requests, 2026-11-06: adepts that matter in a battle,
+battle spells beyond Fire II, sphere III and Wonder's roll; the spells are in docs/ENGAGEMENTS.md,
+"Battle spells"). Every sphere I gives an adept a battle spell: six damage spells (Fire, Air,
+Water, Nature, Sun, Death), a heal (Life) and eleven charms and hexes (lever L11, built with them);
+several spheres II give a mage a stronger one, and every sphere III an archmage one more (Chaos
+III: Wonder, a roll of strong outcomes). Tuned in a marginal lab: a core squad (4 Axemen and 2 Archers early, 4
 Champions and 2 Longbowmen mid) plus two of X, X each sphere's caster, the plain bolt caster, or
 the core units again (and a Disciple or Priest); a round robin on open land and in a forest, 30
 battles a matchup, both roles (`battles_squads.py casters OUT`, then `ffh battles` and
@@ -344,12 +345,24 @@ battles a matchup, both roles (`battles_squads.py casters OUT`, then `ffh battle
   Body (67%), with Spirit, Shadow, Metamagic, Water and the damage spheres within 1 of it. Two
   more Axemen (-12.9) or Archers (-15.3) do worse than any pair of adepts, which cost 60 hammers
   more.
-- Mid (16 squads): all nine sphere-II mage pairs are undominated (Fire II, Air II, Sun II, Death
-  II +10; Life II +7, Earth II +7, Water II +6, Nature II +6, Ice II +3); Death II is the
-  equilibrium, the others 0.6 to 12 below it. Mages with two sphere-I charms (Body and
-  Enchantment, Law and Entropy) are near 0, the bolt mage at -8.5, two more Champions at -26.
+- Mid (16 squads): eight of the nine sphere-II mage pairs are undominated (Air II, Fire II, Ice
+  II, Sun II, Death II +9 to +10; Life II +7, Earth II +7, Nature II +5; Water II +6, dominated by
+  Ice II alone); Ice II is the equilibrium, the others 1 to 10 below it. Mages with two sphere-I
+  charms (Body and Enchantment, Law and Entropy) are below 0, the bolt mage at -8.6, two more
+  Champions at -26.
+- Late (25 squads, `battles_squads.py casters OUT open,forest late`: 4 Phalanxes and 2 Marksmen
+  plus two Archmages with each sphere I to III, Fire I-II only, the bolt, and Fire III with Law I,
+  Chaos III with Fire II, a High Priest, or the core units): every sphere-III pair does better
+  against the field than the Fire II pair (-15.8) and the bolt pair (-31.6), from Shadow III
+  (-0.6) and Body III (-0.3) to Earth III (+16.7), Wonder (+15.9) and Nature III (+14.5); the
+  equilibrium is Nature III (86%), Wonder (11%) and Water III (3%); 10 squads are undominated.
+  Two lessons on the way: a sweep is a weak pattern for a spell (a spell aims at the back row,
+  where only the archmages stand), so the area spells splash; and a front-row sphere-I charm cost an
+  archmage with a sphere-III spell its opening action (Fire III with Law I was 18 points below
+  Fire III alone), hence the rule that a caster skips charms below its damage spell's tier.
 
 **Open:** the remaining unbeaten squads above; the auto formation's chargers; the engine levers
 not built (reach, interception, crit immunity, knock-back); the AI does not yet choose squads by
 these roles (it values the new promotion keys when it promotes, and counts a caster with any battle
-spell as one that marches with the army); sphere III spells in battle (Meteor Swarm and the like).
+spell as one that marches with the army); a caster's damage type chosen against each target's
+resistances.

@@ -11,11 +11,12 @@ front-line pairs, a front type with each support type (3:1, and 1:1 for the main
                                                  round-robin spec files for `ffh battles`
                                                  (GROUNDS from open,forest,hills,walls; ONLY: a
                                                  {level: [squad names]} file to restrict to)
-    battles_squads.py casters OUT [GROUNDS] [--chunks N]
+    battles_squads.py casters OUT [GROUNDS [LEVELS]] [--chunks N]
                                                  the casters' marginal lab (docs/UNIT_ROLES.md,
                                                  section 9): a core squad and two of each sphere's
                                                  caster, the bolt caster, a healer or the core
-                                                 units, early and mid (GROUNDS: open,forest)
+                                                 units (GROUNDS: open,forest; LEVELS: early,mid;
+                                                 late: the Archmages' sphere III)
 
     python3 crates/ffh-cli/scripts/battles_squads.py specs OUT early,mid,late open
     for f in OUT/part*.txt; do tools/agents/slot.sh $B/ffh battles $f --runs 40 > ${f%.txt}.jsonl & done; wait
@@ -172,6 +173,7 @@ def specs(levels, grounds, only=None):
 SPHERES1 = ['AIR', 'BODY', 'CHAOS', 'DEATH', 'EARTH', 'ENCHANTMENT', 'ENTROPY', 'FIRE', 'ICE', 'LAW', 'LIFE',
             'METAMAGIC', 'MIND', 'NATURE', 'SHADOW', 'SPIRIT', 'SUN', 'WATER']
 SPHERES2 = ['AIR', 'DEATH', 'EARTH', 'FIRE', 'ICE', 'LIFE', 'NATURE', 'SUN', 'WATER']
+LEVELS = ['early', 'mid', 'late']
 
 
 def caster_squads(level):
@@ -180,18 +182,24 @@ def caster_squads(level):
         core = '4*AXEMAN, 2*ARCHER'
         xs = {s.lower(): f'ADEPT+{s}1' for s in SPHERES1}
         xs.update(bolt='ADEPT', axe='AXEMAN', arch='ARCHER', disc='DISCIPLE_THE_ORDER')
-    else:
+    elif level == 'mid':
         core = '4*CHAMPION, 2*LONGBOWMAN'
         xs = {f'{s.lower()}2': f'MAGE+{s}1+{s}2' for s in SPHERES2}
         xs.update(bodyenchantment='MAGE+BODY1+ENCHANTMENT1', enchantmentfire='MAGE+ENCHANTMENT1+FIRE1',
                   lawentropy='MAGE+LAW1+ENTROPY1', bolt='MAGE', priest='PRIEST_OF_THE_ORDER', lb='LONGBOWMAN',
                   champ='CHAMPION')
+    else:
+        core = '4*PHALANX, 2*MARKSMAN'
+        xs = {f'{s.lower()}3': f'ARCHMAGE+{s}1+{s}2+{s}3' for s in SPHERES1}
+        xs.update(fire2='ARCHMAGE+FIRE1+FIRE2', fire3law='ARCHMAGE+FIRE1+FIRE2+FIRE3+LAW1',
+                  chaos3fire2='ARCHMAGE+CHAOS1+CHAOS2+CHAOS3+FIRE1+FIRE2', bolt='ARCHMAGE',
+                  hpriest='HIGH_PRIEST_OF_THE_ORDER', phal='PHALANX', mksm='MARKSMAN')
     return {k: f'{core}, 2*{v}' for k, v in xs.items()}
 
 
-def caster_specs(grounds):
+def caster_specs(grounds, levels=('early', 'mid')):
     lines = []
-    for lvl in ['early', 'mid']:
+    for lvl in levels:
         sq = caster_squads(lvl)
         for g in grounds:
             for a, d in itertools.product(sq, repeat=2):
@@ -227,7 +235,8 @@ if __name__ == '__main__':
             chunks = int(rest[rest.index('--chunks') + 1])
             rest = rest[:rest.index('--chunks')]
         grounds = rest[1].split(',') if len(rest) > 1 else ['open', 'forest']
-        write_chunks(rest[0], caster_specs(grounds), chunks)
+        levels = rest[2].split(',') if len(rest) > 2 else ['early', 'mid']
+        write_chunks(rest[0], caster_specs(grounds, levels), chunks)
     else:
         for k, v in squads(sys.argv[1]).items():
             print(f"{k}|{v}")

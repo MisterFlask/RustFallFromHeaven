@@ -305,6 +305,19 @@ flag.
   The AI counts a caster with any battle spell (a charm or heal too) as one that marches with the
   army.
 
+- **Sphere III in battle; Wonder's roll** (2026-11-06; the owner's request; docs/ENGAGEMENTS.md,
+  "Battle spells"). Each sphere III gives an archmage a battle spell: 15 new battle-only spells
+  (Firestorm, Chain Lightning, Deluge, Solar Wrath, Finger of Death, Wrath of the Wild; Restoration,
+  a heal; Surge, Runeblades, Aegis, Quake, Nightfall, Exaltation, Confusion, Disjunction, charms and
+  hexes on a whole side), Snowfall a battle power and splash of its own (still a map spell), and
+  Wither a hex on the enemy side in place of its damage. Chaos III's Wonder, still a map spell,
+  is a caster's damage spell in a battle before any other: each cast rolls one of 10 outcomes by
+  weight (strong damage, a heal, charms and hexes on a side; one in 18 a backfire, one in 18
+  nothing), new battle-only spells known by no unit. A caster casts no charm of a lower sphere
+  tier than its damage spell (an archmage with Firestorm skips Hold the Line), the highest sphere
+  first, and none in the battle's last round (it cast every one in id order, in any round). New spell
+  key `battle_wonder`; new spells, so saves made before do not load.
+
 - **Recon units fight from any row** (2026-11-06; the Ogre Battle 64 Valkyrie pattern; this game's
   engagement combat, docs/ENGAGEMENTS.md, not FFH2's). The 20 recon unit types that do not stab
   (the Scout, Hunter, Ranger, Beastmaster and their kin; the assassins with Marksman keep their

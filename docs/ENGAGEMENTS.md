@@ -136,60 +136,94 @@ the view and the client read these.
   target (or its row's pattern). The log names the spell.
 - **Battle spells** (the owner's decisions, 2026-11-05 and 2026-11-06). A unit's battle spells
   (`Game::unit_battle_spells`, `GameData::engage_battle_spells`) are of the spells whose
-  promotion, unit, unit class, unit combat and religion prerequisites it meets:
-  * its **damage spell**: of the spells with `iDamage > 0`, `battle_only` or a `battle_power` (and
-    no heal or charm), the most output (`GameData::battle_spell_output`: the power times `100 +`
-    what its pattern adds when every extra target is there: a splash two at 50%, VOLLEY, PIERCE
-    and CLEAVE two, SWEEP three, TRAMPLE one, each at its percentage), then the highest
-    `iDamage`, then the lower id;
+  promotion, unit, unit class, unit combat and religion prerequisites it meets (not a Wonder's
+  outcomes, below):
+  * its **damage spell**: of the spells with `iDamage > 0`, `battle_only`, a `battle_power` or a
+    `battle_wonder` (and no heal or charm), a Wonder first, then the most output
+    (`GameData::battle_spell_output`: the power times `100 +` what its pattern adds when every
+    extra target is there: a splash two at 50%, VOLLEY, PIERCE and CLEAVE two, SWEEP three,
+    TRAMPLE one, each at its percentage), then the highest `iDamage`, then the lower id;
   * its **heal** (`battle_heal`: percent of a hit, `battle_pattern` SINGLE or SWEEP), the
     strongest: cast with a SPELL action in place of the damage spell when an ally on the field is
     missing at least half of the heal (the most hurt ally, as HEAL);
   * its **charms and hexes** (`battle_charm`: `{"side": "OWN"|"ENEMY", "rows": "FRONT"|"ALL",
-    "damage", "taken", "accuracy", "evasion", "crit", "speed"}`), every one it knows, cast with
-    its first SPELL actions, one an action, in id order; each draws nothing and lasts the battle,
-    on the units of that side on the field as it is cast (the front row: row 0 then). `damage` and
-    `taken` are percent more damage dealt and taken (each hit times `(100 + dealt)(100 + taken)`
-    before armor); accuracy, evasion, crit and speed are points (speed orders the passes).
+    "damage", "taken", "accuracy", "evasion", "crit", "speed"}`), every one it knows but those of
+    a lower sphere tier than its damage spell (`GameData::spell_tier`: Fire III's Firestorm is 3,
+    Law I's Hold the Line 1, so an archmage with both does not spend its opening action on Hold the
+    Line; the bolt is 0), cast with its first SPELL actions, one an action, the highest tier first
+    (Earth III's before Earth II's before Earth I's), then by id, and none in the battle's last
+    round (there it casts its damage spell or heal: a charm then would last a pass or two); each draws
+    nothing and lasts the battle, on the units of that side on the field as it is cast (the front
+    row: row 0 then). `damage` and `taken` are percent more damage dealt and taken (each hit times
+    `(100 + dealt)(100 + taken)` before armor); accuracy, evasion, crit and speed are points
+    (speed orders the passes).
 
-  A unit with magic that knows any of them casts with SPELL in place of each attack, in every
+  So a caster of several spheres casts its charms and hexes of its damage spell's tier or above,
+  then one damage spell, the same at every target (its damage type is not chosen against each
+  target's resistances), or its heal when an ally is hurt enough: a mage with Fire I and
+  Enchantment I casts Keen Edge, then Firebolt; an archmage with Fire III and Law I casts only
+  Firestorm; one with Fire III and Law III casts Aegis, then Firestorm; one with Earth I to III
+  casts Quake, Stone Ward and Tremor, then the bolt.
+
+  **Wonder** (Chaos III; the owner's request, 2026-11-06): a `battle_wonder` (`{"SPELL_X":
+  weight, ..}`) is a damage spell whose every cast rolls one of its outcomes by weight ("Engagement
+  wonder", the action's first draw) and casts it as the caster's own: a damage spell (of Wonder's
+  damage type: none, so no resistance cuts it), a heal (nothing when no ally is hurt) or a charm or
+  hex. The outcomes are `battle_only` spells of their own (`SPELL_WONDER_*`), known by no unit
+  (`wonder_outcome`); the log names the outcome. Wonder stays a map spell as well.
+
+  | Outcome | Weight | Effect |
+  |---|---|---|
+  | Starfall | 3 | power 170, splash |
+  | Thunderclap | 2 | power 200, VOLLEY |
+  | Smite | 2 | power 300, one target |
+  | Blessing | 2 | own side +20% damage, +10 accuracy |
+  | Sanctuary | 2 | own side -20% taken |
+  | Doom | 2 | enemy side +20% taken, -10 evasion |
+  | Renewal | 2 | heal 120, SWEEP |
+  | Time Warp | 1 | own side +6 speed, +15 evasion |
+  | Backfire | 1 | own side -15 accuracy |
+  | Butterflies | 1 | nothing |
+
+  A unit with magic that knows any battle spell casts with SPELL in place of each attack, in every
   row: its strikes, charges, stabs, shots and bombards are SPELL actions, the same counts
   (`rows_with_battle_spell`); a healer (a row that heals) keeps its rows. So a Fire II mage casts
   Fireball from the front row too, and Meshabber, Mary and Auric Ascended (heroes with a battle
   spell of their own, given a caster's magic: 110% of their attack) cast Fireball, Contagion and
   Greater Snowfall in place of their strikes. A `battle_only` spell is cast only in battle, never
-  on the map (`unit_can_cast` refuses it). Each sphere I and some spheres II have one (the owner's
-  request, 2026-11-06: adepts that matter in a battle, and battle spells beyond Fire II):
+  on the map (`unit_can_cast` refuses it). Every sphere has a battle spell at each of its three
+  promotions but a few at II (the owner's requests, 2026-11-06: adepts that matter in a battle,
+  battle spells beyond Fire II, and sphere III):
 
-  | Sphere | I | II |
-  |---|---|---|
-  | Air | Shock: lightning 80, VOLLEY | Maelstrom: lightning 100, splash |
-  | Body | Quicken: own front row +5 speed, +10 evasion | |
-  | Chaos | Wild Edge: own front row +35 crit | |
-  | Death | Grave Touch: death 120 | Death Grip: death 150 |
-  | Earth | Tremor: enemy front row -15 evasion, -1 speed | Stone Ward: own front row -25% taken |
-  | Enchantment | Keen Edge: own front row +20% damage | |
-  | Entropy | Corrode: enemy front row +20% taken | |
-  | Fire | Firebolt: fire 120 | Fireball: fire 100, splash |
-  | Ice | Chill: enemy front row -3 speed, -15 evasion | Frost Lance: cold 120, PIERCE |
-  | Law | Hold the Line: own front row -15% taken | |
-  | Life | Mend: heal 60 | Healing Light: heal 70, SWEEP |
-  | Metamagic | Ward: own side -10% taken | |
-  | Mind | Daze: enemy side -10 accuracy | |
-  | Nature | Thornlash: poison 120 | Bramble Snare: enemy front row -4 speed, -20 evasion, +10% taken |
-  | Shadow | Shadow Veil: own front row +15 evasion | |
-  | Spirit | Battle Hymn: own side +20 accuracy | |
-  | Sun | Flare: holy 120 | Sunburst: holy 100, VOLLEY |
-  | Water | Wave: physical 70, PIERCE | Tidal Surge: physical 90, PIERCE |
+  | Sphere | I | II | III |
+  |---|---|---|---|
+  | Air | Shock: lightning 80, VOLLEY | Maelstrom: lightning 100, splash | Chain Lightning: lightning 150, VOLLEY |
+  | Body | Quicken: own front row +5 speed, +10 evasion | | Surge: own side +6 speed, +20 evasion |
+  | Chaos | Wild Edge: own front row +35 crit | | Wonder (above) |
+  | Death | Grave Touch: death 120 | Death Grip: death 150 | Finger of Death: death 200 |
+  | Earth | Tremor: enemy front row -15 evasion, -1 speed | Stone Ward: own front row -25% taken | Quake: enemy side -20 evasion, -3 speed, +10% taken |
+  | Enchantment | Keen Edge: own front row +20% damage | | Runeblades: own side +35% damage |
+  | Entropy | Corrode: enemy front row +20% taken | | Wither: enemy side +20% taken, -10 accuracy |
+  | Fire | Firebolt: fire 120 | Fireball: fire 100, splash | Firestorm: fire 150, splash |
+  | Ice | Chill: enemy front row -3 speed, -15 evasion | Frost Lance: cold 100, PIERCE | Snowfall: cold 150, splash |
+  | Law | Hold the Line: own front row -15% taken | | Aegis: own side -20% taken |
+  | Life | Mend: heal 60 | Healing Light: heal 70, SWEEP | Restoration: heal 110, SWEEP |
+  | Metamagic | Ward: own side -10% taken | | Disjunction: enemy side -20% damage |
+  | Mind | Daze: enemy side -10 accuracy | | Confusion: enemy side -20 accuracy, -3 speed |
+  | Nature | Thornlash: poison 120 | Bramble Snare: enemy front row -4 speed, -20 evasion, +10% taken | Wrath of the Wild: poison 160, CLEAVE |
+  | Shadow | Shadow Veil: own front row +15 evasion | | Nightfall: own side +25 evasion |
+  | Spirit | Battle Hymn: own side +20 accuracy | | Exaltation: own side +10% damage, +20 accuracy, +30 crit |
+  | Sun | Flare: holy 120 | Sunburst: holy 100, VOLLEY | Solar Wrath: holy 140, splash |
+  | Water | Wave: physical 70, PIERCE | Tidal Surge: physical 90, PIERCE | Deluge: physical 150, PIERCE |
 
   (Power without a pattern: one target.) The map spells that only dealt damage are battle spells
   now: Fire II's Fireball (FFH2's summoned a missile), Air II's Maelstrom (FFH2's struck the units
-  within 2 plots), Entropy III's Wither, Mary's Contagion and the Empyrean's Crown of Brilliance.
-  Snowfall and Ring of Flames, which also change the land, stay map spells (and are their casters'
-  damage spells in a battle). The Arcane Barge, a ship, keeps a Fireball of its own
-  (`SPELL_FIREBALL_BARGE`), the missile. A caster of two spheres casts both: a mage with Fire I
-  and Enchantment I casts Keen Edge, then Firebolt; one with Earth I and II casts its two charms,
-  then the bolt.
+  within 2 plots), Entropy III's Wither (a hex in battle), Mary's Contagion and the Empyrean's
+  Crown of Brilliance. Snowfall and Ring of Flames, which also change the land, stay map spells
+  (and are their casters' damage spells in a battle: Snowfall with its own power, Ring of Flames
+  at 100 with a splash). The other map spells of the spheres (the summons, Haste, Wall of Stone,
+  ...) stay as they were. The Arcane Barge, a ship, keeps a Fireball of its own
+  (`SPELL_FIREBALL_BARGE`), the missile.
 - BOMBARD: the backmost unit of each enemy lane; physical, `ENGAGEMENT_BOMBARD_MISS_PERCENT` (15)
   more miss; never crits.
 - HEAL: the most hurt ally on the field (most HP missing; ties by lane, then row), itself
@@ -424,8 +458,8 @@ choice reads that hit.
 defenders); per committed attacker that did not sit out its defensive strike's roll and damage
 ("Defensive Strike"); then the resolver's (`formation/mod.rs`'s module comment): per battle, each
 fighter with chance first strikes in fighter order ("Engagement first strikes", `0..=chance`); per
-pass each mover's coin in fighter order ("Engagement order"); per action a physical one's miss
-("Engagement miss"), if it lands the crit roll of strike, charge, stab and shoot ("Engagement
+pass each mover's coin in fighter order ("Engagement order"); per action a Wonder's outcome
+("Engagement wonder"), a physical one's miss ("Engagement miss"), if it lands the crit roll of strike, charge, stab and shoot ("Engagement
 crit"), r ("Engagement hit"), the target's withdrawal if the hit would kill it ("Engagement
 withdraw"), then each splashed neighbour's r and withdrawal in (lane, row) order (not one at its
 floor or fully protected from collateral damage); a heal's r

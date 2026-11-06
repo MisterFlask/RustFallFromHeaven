@@ -55,7 +55,7 @@ use ffh_data::*;
 
 use super::apply::Post;
 use super::arrange::Place;
-use super::formation::{self, missile_hit, Fate, Fighter, Formation, Ground, HealSpell, Outcome, Pair, Params, Side, Spell};
+use super::formation::{self, missile_hit, Fate, Fighter, Formation, Ground, HealSpell, Outcome, Pair, Params, Side, Spell, WonderOutcome};
 use super::pick::WarTest;
 use super::report::{BattleLog, BattleReport, CitySnap, EngageResult, LogFate, Outcome as ReportOutcome, PlotSnap, ReportSide};
 use super::sink::Sink;
@@ -404,20 +404,22 @@ impl Game {
         f.collateral_extra = self.units[u].extra_collateral_damage;
         f.collateral_protection = self.units[u].collateral_damage_protection;
         f.spell = match self.unit_engage_spell(u) {
+            // A Wonder: each cast rolls its outcome (`f.wonder`); never a collateral splash.
+            Some(s) if !self.d.spells[s].battle_wonder.is_empty() => Spell::known(s.idx() as u32),
             Some(s) => {
                 let si = &self.d.spells[s];
                 Spell::battle(s.idx() as u32, si.battle_power_or_default(), si.battle_pattern)
             }
             None => Spell::bolt(params),
         };
+        if let Some(s) = self.unit_engage_spell(u) {
+            f.wonder = self.d.spells[s].battle_wonder.iter().map(|&(o, w)| (w, self.engage_wonder_outcome(o))).collect();
+        }
         // Its heal spell and its charms and hexes, when it casts (docs/ENGAGEMENTS.md, "Battle
         // spells").
         if f.actions.iter().any(|r| r.kind == ActionKind::Spell) {
             let bs = self.unit_battle_spells(u);
-            f.heal_spell = bs.heal.map(|s| {
-                let si = &self.d.spells[s];
-                HealSpell { id: s.idx() as u32, pct: si.battle_heal, pattern: si.battle_pattern.unwrap_or(AttackPattern::Single) }
-            });
+            f.heal_spell = bs.heal.map(|s| self.engage_heal_spell(s));
             f.charms = bs.charms.iter().filter_map(|&s| self.d.spells[s].battle_charm.map(|c| (s.idx() as u32, c))).collect();
         }
         let ty = &self.d.units[self.units[u].unit_type];
@@ -1232,5 +1234,25 @@ mod tests {
         let hit = missile_hit(&f, 0, &mut crate::rng::Rng::new(7)).expect("a hit");
         assert_eq!((hit.target, hit.expected), (1, expected));
         assert!(hit.dmg >= expected * 80 / 100 && hit.dmg <= expected * 120 / 100, "{hit:?}");
+    }
+}
+
+impl Game {
+    /// Heal spell `s` as the resolver casts it (`battle_heal`, its pattern: one ally or SWEEP).
+    fn engage_heal_spell(&self, s: SpellType) -> HealSpell {
+        let si = &self.d.spells[s];
+        HealSpell { id: s.idx() as u32, pct: si.battle_heal, pattern: si.battle_pattern.unwrap_or(AttackPattern::Single) }
+    }
+
+    /// One of a Wonder's outcomes, spell `o`: its charm or hex, its heal, else its damage.
+    fn engage_wonder_outcome(&self, o: SpellType) -> WonderOutcome {
+        let si = &self.d.spells[o];
+        if let Some(c) = si.battle_charm {
+            WonderOutcome::Charm(o.idx() as u32, c)
+        } else if si.battle_heal > 0 {
+            WonderOutcome::Heal(self.engage_heal_spell(o))
+        } else {
+            WonderOutcome::Damage(Spell::battle(o.idx() as u32, si.battle_power_or_default(), si.battle_pattern))
+        }
     }
 }

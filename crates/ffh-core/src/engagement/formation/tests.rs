@@ -1588,3 +1588,52 @@ fn a_spell_s_power_and_pattern() {
     // 150% on the target, the pierce's 50% of that on everyone else in its lane.
     assert_eq!(got, [(5, EVEN * 150 / 100, false), (2, EVEN * 150 / 100 / 2, true), (4, EVEN * 150 / 100 / 2, true)]);
 }
+
+/// A Wonder rolls its outcome by weight with each cast ("Engagement wonder", before anything else
+/// of the action) and casts it as its own: a charm, a heal (nothing when no one is hurt), a damage
+/// spell of the outcome's power and pattern.
+#[test]
+fn a_wonder_rolls_its_outcome() {
+    use Side::*;
+    let blessing = BattleCharm { damage: 30, whole_side: true, ..BattleCharm::default() };
+    // In the middle row: one spell action a round.
+    let mut c = caster(Attacker, 1, 1, Spell::known(20));
+    c.speed = 9;
+    c.wonder = vec![
+        (2, WonderOutcome::Charm(21, blessing)),
+        (1, WonderOutcome::Heal(HealSpell { id: 22, pct: 100, pattern: AttackPattern::Single })),
+        (3, WonderOutcome::Damage(Spell::battle(23, 200, Some(AttackPattern::Single)))),
+    ];
+    let fs = vec![c, frontline(Attacker, 1, 0), frontline(Defender, 0, 0), frontline(Defender, 1, 0)];
+    let b = one_round(battle(OPEN, fs));
+    // The roll is out of 6: 0-1 the charm, 2 the heal, 3-5 the damage spell.
+    for (roll, kind, spell, note) in [(1, K::Spell, Some(21), None), (2, K::Heal, Some(22), Some(Note::NoOneHurt)), (3, K::Spell, Some(23), None)] {
+        let mut rng = rigged(|label, n| if label == "Engagement wonder" { assert_eq!(n, 6); roll } else { sure(label, n) });
+        let out = play(&b, &mut rng);
+        let e = &out.events[0];
+        assert_eq!((e.actor, e.kind, e.spell, e.note), (0, kind, spell, note), "roll {roll}");
+        assert_eq!(rng.labels.iter().filter(|l| **l == "Engagement wonder").count(), 1, "one roll a cast");
+        if roll == 3 {
+            // 200% on one target, no splash.
+            assert_eq!(e.hits.iter().map(|h| (h.dmg, h.splash)).collect::<Vec<_>>(), [(EVEN * 2, false)]);
+        }
+        if roll == 1 {
+            // The front unit's strike after it: +30%.
+            let strike = out.events.iter().find(|e| e.actor == 1).expect("the strike");
+            assert_eq!(strike.hits[0].dmg, EVEN * 130 / 100);
+        }
+    }
+}
+
+/// Charms and hexes are not cast in the last round: the caster casts its damage spell instead.
+#[test]
+fn no_charm_in_the_last_round() {
+    use Side::*;
+    let mut c = caster(Attacker, 0, 2, Spell::known(3));
+    c.speed = 9;
+    c.charms = vec![(7, BattleCharm { damage: 50, ..BattleCharm::default() })];
+    let b = one_round(battle(OPEN, vec![c, frontline(Attacker, 1, 0), frontline(Defender, 1, 0)]));
+    let out = play(&b, &mut rigged(sure));
+    let casts: Vec<Option<u32>> = out.events.iter().filter(|e| e.actor == 0).map(|e| e.spell).collect();
+    assert_eq!(casts, [Some(3), Some(3)]);
+}

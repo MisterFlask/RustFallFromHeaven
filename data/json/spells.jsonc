@@ -155,6 +155,17 @@
     "button": "Art/Interface/Buttons/Units/Wolf.dds"
   },
   {
+    "type": "SPELL_AEGIS",
+    "description": "TXT_KEY_SPELL_AEGIS",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_LAW3",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "ALL", "taken": -20},
+    "button": "Art/Interface/Buttons/Promotions/Valor.dds"
+  },
+  {
     "type": "SPELL_ARCANE_LACUNA",
     "description": "TXT_KEY_SPELL_ARCANE_LACUNA",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
@@ -372,6 +383,19 @@
     "button": "Art/Interface/Buttons/Spells/Call of the Grave.dds"
   },
   {
+    "type": "SPELL_CHAIN_LIGHTNING",
+    "description": "TXT_KEY_SPELL_CHAIN_LIGHTNING",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_AIR3",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_power": 150,
+    "battle_pattern": "VOLLEY",
+    "damage_type": "DAMAGE_LIGHTNING",
+    "button": "Art/Interface/Buttons/Units/Air Elemental.dds"
+  },
+  {
     "type": "SPELL_CHARM_PERSON",
     "description": "TXT_KEY_SPELL_CHARM_PERSON",
     "civilopedia": "TXT_KEY_SPELL_CHARM_PERSON_PEDIA",
@@ -442,6 +466,17 @@
     "ability": true,
     "py_result": "spellCommanderSplit(pCaster)",
     "button": "Art/Interface/Buttons/Units/Commander.dds"
+  },
+  {
+    "type": "SPELL_CONFUSION",
+    "description": "TXT_KEY_SPELL_CONFUSION",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_MIND3",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "ENEMY", "rows": "ALL", "accuracy": -20, "speed": -3},
+    "button": "Art/Interface/Buttons/Spells/Domination.dds"
   },
   {
     "type": "SPELL_CONSUME_SOUL",
@@ -786,6 +821,19 @@
     "button": "Art/Interface/Buttons/Spells/Declarenationality.dds"
   },
   {
+    "type": "SPELL_DELUGE",
+    "description": "TXT_KEY_SPELL_DELUGE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_WATER3",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_power": 150,
+    "battle_pattern": "PIERCE",
+    "damage_type": "DAMAGE_PHYSICAL",
+    "button": "Art/Interface/Buttons/Units/Water Elemental.dds"
+  },
+  {
     "type": "SPELL_DESTROY_UNDEAD",
     "description": "TXT_KEY_SPELL_DESTROY_UNDEAD",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
@@ -797,6 +845,17 @@
     "py_result": "spellDestroyUndead(pCaster)",
     "py_requirement": "reqDestroyUndead(pCaster)",
     "button": "Art/Interface/Buttons/Spells/Destroy Undead.dds"
+  },
+  {
+    "type": "SPELL_DISJUNCTION",
+    "description": "TXT_KEY_SPELL_DISJUNCTION",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_METAMAGIC3",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "ENEMY", "rows": "ALL", "damage": -20},
+    "button": "Art/Interface/Buttons/Units/Djinn.dds"
   },
   {
     "type": "SPELL_DISPEL_MAGIC",
@@ -1026,6 +1085,17 @@
     "button": "Art/Interface/Buttons/Spells/Escape.dds"
   },
   {
+    "type": "SPELL_EXALTATION",
+    "description": "TXT_KEY_SPELL_EXALTATION",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_SPIRIT3",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "ALL", "damage": 10, "accuracy": 20, "crit": 30},
+    "button": "Art/Interface/Buttons/Buildings/Trust.dds"
+  },
+  {
     "type": "SPELL_EXPLORE_LAIR_AIFON_ISLE",
     "description": "TXT_KEY_SPELL_EXPLORE_LAIR",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
@@ -1187,6 +1257,19 @@
     "button": "Art/Interface/Buttons/Spells/Feed.dds"
   },
   {
+    "type": "SPELL_FINGER_OF_DEATH",
+    "description": "TXT_KEY_SPELL_FINGER_OF_DEATH",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_DEATH3",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_power": 200,
+    "battle_pattern": "SINGLE",
+    "damage_type": "DAMAGE_DEATH",
+    "button": "Art/Interface/Buttons/Units/Wraith.dds"
+  },
+  {
     "type": "SPELL_FIREBALL",
     "description": "TXT_KEY_SPELL_FIREBALL",
     "civilopedia": "TXT_KEY_UNIT_FIREBALL_PEDIA",
@@ -1225,6 +1308,18 @@
     "battle_pattern": "SINGLE",
     "damage_type": "DAMAGE_FIRE",
     "button": "Art/Interface/Buttons/Spells/Blaze.dds"
+  },
+  {
+    "type": "SPELL_FIRESTORM",
+    "description": "TXT_KEY_SPELL_FIRESTORM",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_FIRE3",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_power": 150,
+    "damage_type": "DAMAGE_FIRE",
+    "button": "Art/Interface/Buttons/Units/Fire Elemental.dds"
   },
   {
     "type": "SPELL_FLAMING_ARROWS",
@@ -1392,7 +1487,7 @@
     "allow_ai": true,
     // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
     "battle_only": true,
-    "battle_power": 120,
+    "battle_power": 100,
     "battle_pattern": "PIERCE",
     "damage_type": "DAMAGE_COLD",
     "button": "Art/Interface/Buttons/Units/Ice Elemental.dds"
@@ -1965,6 +2060,17 @@
     "button": "Art/Interface/Buttons/Promotions/Mutated.dds"
   },
   {
+    "type": "SPELL_NIGHTFALL",
+    "description": "TXT_KEY_SPELL_NIGHTFALL",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_SHADOW3",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "ALL", "evasion": 25},
+    "button": "Art/Interface/Buttons/Units/Mistform.dds"
+  },
+  {
     "type": "SPELL_OPEN_CHEST",
     "description": "TXT_KEY_SPELL_OPEN_CHEST",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
@@ -2086,6 +2192,17 @@
     "py_result": "spellPromoteSettlement(pCaster)",
     "py_requirement": "reqPromoteSettlement(pCaster)",
     "button": "Art/Interface/Buttons/Spells/Promote Settlement.dds"
+  },
+  {
+    "type": "SPELL_QUAKE",
+    "description": "TXT_KEY_SPELL_QUAKE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_EARTH3",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "ENEMY", "rows": "ALL", "evasion": -20, "speed": -3, "taken": 10},
+    "button": "Art/Interface/Buttons/Units/Earth Elemental.dds"
   },
   {
     "type": "SPELL_QUICKEN",
@@ -2305,6 +2422,18 @@
     "button": "Art/Interface/Buttons/Spells/Ressurection.dds"
   },
   {
+    "type": "SPELL_RESTORATION",
+    "description": "TXT_KEY_SPELL_RESTORATION",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_LIFE3",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_heal": 110,
+    "battle_pattern": "SWEEP",
+    "button": "Art/Interface/Buttons/Spells/Ressurection.dds"
+  },
+  {
     "type": "SPELL_REVEAL",
     "description": "TXT_KEY_SPELL_REVEAL",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
@@ -2411,6 +2540,17 @@
     "py_result": "spellRobGrave(pCaster)",
     "py_requirement": "reqRobGrave(pCaster)",
     "button": "Art/Interface/Buttons/Spells/Rob Grave.dds"
+  },
+  {
+    "type": "SPELL_RUNEBLADES",
+    "description": "TXT_KEY_SPELL_RUNEBLADES",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_ENCHANTMENT3",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "ALL", "damage": 35},
+    "button": "Art/Interface/Buttons/Promotions/Spellstaff.dds"
   },
   {
     "type": "SPELL_RUST",
@@ -2654,6 +2794,8 @@
     "damage_limit": 80,
     "damage_type": "DAMAGE_COLD",
     "py_result": "spellSnowfall(pCaster)",
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): Ice III's spell in a formation battle.
+    "battle_power": 150,
     "button": "Art/Interface/Buttons/Spells/Snowfall.dds"
   },
   {
@@ -2674,6 +2816,18 @@
     "py_result": "spellSnowfallGreator(pCaster)",
     "graphical_only": true,
     "button": "Art/Interface/Buttons/Spells/Snowfall.dds"
+  },
+  {
+    "type": "SPELL_SOLAR_WRATH",
+    "description": "TXT_KEY_SPELL_SOLAR_WRATH",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_SUN3",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_power": 140,
+    "damage_type": "DAMAGE_HOLY",
+    "button": "Art/Interface/Buttons/Units/Aurealis.dds"
   },
   {
     "type": "SPELL_SPELLSTAFF",
@@ -3036,6 +3190,17 @@
     "battle_pattern": "VOLLEY",
     "damage_type": "DAMAGE_HOLY",
     "button": "Art/Interface/Buttons/Spells/Blinding Light.dds"
+  },
+  {
+    "type": "SPELL_SURGE",
+    "description": "TXT_KEY_SPELL_SURGE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_BODY3",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "ALL", "speed": 6, "evasion": 20},
+    "button": "Art/Interface/Buttons/Units/Flesh Golem.dds"
   },
   {
     "type": "SPELL_TAKE_ATHAME_PROMOTION",
@@ -4287,6 +4452,8 @@
     "immune_team": true,
     "immune_neutral": true,
     "immune_not_alive": true,
+    // This game's: Entropy III's hex in a formation battle (docs/ENGAGEMENTS.md, "Battle spells").
+    "battle_charm": {"side": "ENEMY", "rows": "ALL", "taken": 20, "accuracy": -10},
     "button": "Art/Interface/Buttons/Promotions/Withered.dds"
   },
   {
@@ -4301,6 +4468,116 @@
     "display_when_disabled": true,
     "has_casted": true,
     "py_result": "spellWonder(pCaster)",
+    // This game's (the owner's request, 2026-11-06): in a formation battle, each cast rolls one of
+    // these outcomes by weight (docs/ENGAGEMENTS.md, "Battle spells").
+    "battle_wonder": {
+      "SPELL_WONDER_STARFALL": 3, "SPELL_WONDER_THUNDERCLAP": 2, "SPELL_WONDER_SMITE": 2, "SPELL_WONDER_BLESSING": 2,
+      "SPELL_WONDER_SANCTUARY": 2, "SPELL_WONDER_DOOM": 2, "SPELL_WONDER_RENEWAL": 2, "SPELL_WONDER_TIME_WARP": 1,
+      "SPELL_WONDER_BACKFIRE": 1, "SPELL_WONDER_BUTTERFLIES": 1
+    },
+    "button": "Art/Interface/Buttons/Spells/Wonder.dds"
+  },
+  {
+    "type": "SPELL_WONDER_BACKFIRE",
+    "description": "TXT_KEY_SPELL_WONDER_BACKFIRE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): an outcome of Wonder's roll in a battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "ALL", "accuracy": -15},
+    "button": "Art/Interface/Buttons/Spells/Wonder.dds"
+  },
+  {
+    "type": "SPELL_WONDER_BLESSING",
+    "description": "TXT_KEY_SPELL_WONDER_BLESSING",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): an outcome of Wonder's roll in a battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "ALL", "damage": 20, "accuracy": 10},
+    "button": "Art/Interface/Buttons/Spells/Wonder.dds"
+  },
+  {
+    "type": "SPELL_WONDER_BUTTERFLIES",
+    "description": "TXT_KEY_SPELL_WONDER_BUTTERFLIES",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): an outcome of Wonder's roll in a battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "ALL"},
+    "button": "Art/Interface/Buttons/Spells/Wonder.dds"
+  },
+  {
+    "type": "SPELL_WONDER_DOOM",
+    "description": "TXT_KEY_SPELL_WONDER_DOOM",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): an outcome of Wonder's roll in a battle.
+    "battle_only": true,
+    "battle_charm": {"side": "ENEMY", "rows": "ALL", "taken": 20, "evasion": -10},
+    "button": "Art/Interface/Buttons/Spells/Wonder.dds"
+  },
+  {
+    "type": "SPELL_WONDER_RENEWAL",
+    "description": "TXT_KEY_SPELL_WONDER_RENEWAL",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): an outcome of Wonder's roll in a battle.
+    "battle_only": true,
+    "battle_heal": 120,
+    "battle_pattern": "SWEEP",
+    "button": "Art/Interface/Buttons/Spells/Wonder.dds"
+  },
+  {
+    "type": "SPELL_WONDER_SANCTUARY",
+    "description": "TXT_KEY_SPELL_WONDER_SANCTUARY",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): an outcome of Wonder's roll in a battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "ALL", "taken": -20},
+    "button": "Art/Interface/Buttons/Spells/Wonder.dds"
+  },
+  {
+    "type": "SPELL_WONDER_SMITE",
+    "description": "TXT_KEY_SPELL_WONDER_SMITE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): an outcome of Wonder's roll in a battle.
+    "battle_only": true,
+    "battle_power": 300,
+    "battle_pattern": "SINGLE",
+    "button": "Art/Interface/Buttons/Spells/Wonder.dds"
+  },
+  {
+    "type": "SPELL_WONDER_STARFALL",
+    "description": "TXT_KEY_SPELL_WONDER_STARFALL",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): an outcome of Wonder's roll in a battle.
+    "battle_only": true,
+    "battle_power": 170,
+    "button": "Art/Interface/Buttons/Spells/Wonder.dds"
+  },
+  {
+    "type": "SPELL_WONDER_THUNDERCLAP",
+    "description": "TXT_KEY_SPELL_WONDER_THUNDERCLAP",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): an outcome of Wonder's roll in a battle.
+    "battle_only": true,
+    "battle_power": 200,
+    "battle_pattern": "VOLLEY",
+    "button": "Art/Interface/Buttons/Spells/Wonder.dds"
+  },
+  {
+    "type": "SPELL_WONDER_TIME_WARP",
+    "description": "TXT_KEY_SPELL_WONDER_TIME_WARP",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): an outcome of Wonder's roll in a battle.
+    "battle_only": true,
+    "battle_charm": {"side": "OWN", "rows": "ALL", "speed": 6, "evasion": 15},
     "button": "Art/Interface/Buttons/Spells/Wonder.dds"
   },
   {
@@ -4317,5 +4594,18 @@
     "py_result": "spellWorldbreak(pCaster)",
     "py_requirement": "reqWorldbreak(pCaster)",
     "button": "Art/Interface/Buttons/Spells/Worldbreak.dds"
+  },
+  {
+    "type": "SPELL_WRATH_OF_THE_WILD",
+    "description": "TXT_KEY_SPELL_WRATH_OF_THE_WILD",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "promotion_prereq1": "PROMOTION_NATURE3",
+    "allow_ai": true,
+    // This game's (docs/ENGAGEMENTS.md, "Battle spells"): a sphere's spell in a formation battle.
+    "battle_only": true,
+    "battle_power": 160,
+    "battle_pattern": "CLEAVE",
+    "damage_type": "DAMAGE_POISON",
+    "button": "Art/Interface/Buttons/Spells/Vitalize.dds"
   }
 ]

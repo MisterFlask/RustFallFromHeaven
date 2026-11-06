@@ -1734,6 +1734,10 @@ pub fn spell_worth(d: &GameData, s: SpellType) -> i32 {
     if info.dispel {
         w += 30;
     }
+    if !info.battle_wonder.is_empty() {
+        // Wonder: also its caster's spell in every formation battle (a roll of strong outcomes).
+        w = w.max(BATTLE_SPELL_WORTH);
+    }
     w
 }
 

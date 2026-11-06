@@ -65,6 +65,8 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         battle_pattern,
         battle_heal,
         battle_charm,
+        battle_wonder,
+        wonder_outcome,
         push: _,
         change_population: _,
         global,
@@ -196,10 +198,20 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
 
     // What it does.
     // ffh-play's (this game's rules: docs/ENGAGEMENTS.md, "Battle spells").
-    let battle = *battle_only || *battle_power > 0 || *battle_heal > 0 || battle_charm.is_some();
+    let battle = (*battle_only || *battle_power > 0 || *battle_heal > 0 || battle_charm.is_some()) && battle_wonder.is_empty();
     if battle {
         b.push_str(NEWLINE);
         b.push_str(&battle_line(d, damage_type, *battle_power, *battle_pattern, *battle_heal, battle_charm.as_ref()));
+    }
+    if !battle_wonder.is_empty() {
+        let total: i32 = battle_wonder.iter().map(|&(_, w)| w.max(0)).sum();
+        let each: Vec<String> = battle_wonder.iter().map(|&(o, w)| format!("{} ({w} in {total})", display(d, o))).collect();
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle; each cast is one of: {}", each.join(", ")));
+    }
+    if *wonder_outcome {
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]Cast only as an outcome of Wonder");
     }
     if *battle_only {
         b.push_str(NEWLINE);
@@ -386,6 +398,12 @@ mod tests {
             assert!(text.contains(line), "{spell}: {text}");
             assert!(text.ends_with("[ICON_BULLET]Cannot be cast on the map"), "{spell}: {text}");
         }
+        // Wonder: its roll in a battle, and its map spell.
+        let wonder = of("SPELL_WONDER");
+        assert!(wonder.contains("[ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle; each cast is one of: Wonder: Starfall (3 in 18), "), "{wonder}");
+        assert!(!wonder.contains("Cannot be cast on the map"), "{wonder}");
+        let smite = of("SPELL_WONDER_SMITE");
+        assert!(smite.contains("[ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle; power 300%, one target[NEWLINE][ICON_BULLET]Cast only as an outcome of Wonder"), "{smite}");
         // A permanent summon says so on its line.
         let skeleton = of("SPELL_RAISE_SKELETON");
         assert!(skeleton.contains("[ICON_BULLET]Summons a [LINK=literal]Skeleton[\\LINK]. (permanent)"), "{skeleton}");

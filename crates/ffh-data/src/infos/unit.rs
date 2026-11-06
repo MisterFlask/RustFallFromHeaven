@@ -1143,6 +1143,12 @@ pub struct SpellInfo {
     pub battle_pattern: Option<AttackPattern>,
     pub battle_heal: i32,
     pub battle_charm: Option<BattleCharm>,
+    /// `battle_wonder`: a die roll among other spells, each with its weight, cast in the battle in
+    /// place of a damage spell (Chaos III's Wonder): `{"SPELL_X": weight, ..}` in file order.
+    pub battle_wonder: Vec<(SpellType, i32)>,
+    /// Derived (`GameData::derive`): one of a `battle_wonder`'s outcomes, cast only through it, so
+    /// no unit knows it as its own battle spell.
+    pub wonder_outcome: bool,
     pub dispel: bool,
     pub push: bool,
     pub remove_has_casted: bool,
@@ -1243,6 +1249,8 @@ pub fn read_spell(rd: &Rd) -> SpellInfo {
         }),
         battle_heal: rd.int("battle_heal"),
         battle_charm: read_battle_charm(rd, &rd.string("type")),
+        battle_wonder: rd.pair_list_int::<SpellType>("battle_wonder"),
+        wonder_outcome: false,
         dispel: rd.bool("dispel"),
         push: rd.bool("push"),
         remove_has_casted: rd.bool("remove_has_casted"),
