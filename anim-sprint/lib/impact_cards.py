@@ -187,21 +187,13 @@ def feather(d, x, y, ang, n, dark, light):
 
 def hawk(src: Path, out: Path):
     """The ranger's hawk striking, talons first: the hawk's strike frame (it faces right and dives on its talons, at
-    (90, 118) in the frame) placed so the talons land 44 px above the card's foot (the target's chest), three claw
-    rakes under them (front), and loose feathers (back). Faces right; the battle screen mirrors it for a blow toward
+    (90, 118) in the frame) placed so the talons land 44 px above the card's foot (the target's chest) (front), and
+    loose feathers (back). No claw marks: the owner found the card stronger without them. Faces right; the battle screen mirrors it for a blow toward
     the left."""
     W, H = 110, 112
     tx, ty = W // 2, H - 44
     bird = Image.open(src).convert("RGBA")
     front = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(front)
-    # the rakes: three slashes down and forward of the talons, a white core in a dark-red rim and an outline
-    for k in range(3):
-        x0, y0 = tx - 6 + 6 * k, ty - 4 + 2 * k
-        x1, y1 = x0 + 14, y0 + 18
-        d.line([(x0, y0), (x1, y1)], fill=OUTLINE, width=4)
-        d.line([(x0, y0), (x1, y1)], fill=(170, 30, 36, 255), width=2)
-        d.line([(x0, y0 - 1), (x1, y1 - 1)], fill=(255, 248, 236, 255), width=1)
     front.alpha_composite(bird, (tx - 90, ty - 118))
     back = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(back)

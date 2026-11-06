@@ -456,6 +456,12 @@ of 23.
   `--empty-bucket` paints the bucket empty. Without a set, one image-model edit of the static sprite gives a usable
   recoil (see "Combat presentation and spell effects" above: word the direction from where the sprite looks). Rule 1
   holds: the attack goes toward the side the sprite looks.
+- **A redrawn limb on the real sprite** (the ranger's launch pose: the owner wanted the arm raised and pointed
+  outward, which an erase alone could not give): cut the old limb away, paint a rough new one in the sprite's colours,
+  let the local model redraw it image-to-image (Klein with the pose LoRA, the original sprite as the reference,
+  denoise 0.65; 0.5 kept the rough limb's shape too closely), then shrink, key, snap to the sprite's own colours and
+  take only the limb's region from the render, so everything else stays the sprite's own pixels. Fix the magenta's
+  purple fringe and close the outline. `lib/ranger_launch.py` is the worked example (its docstring has the prompt).
 - **Impact cards:** draw them as pixel art, not as particles ("matter on the pixel grid", above). The rubble is
   code-drawn: angular stones with flat faces lit from the upper left, a 1 px dark outline, a crack each; ochre dust in
   four tones, posterized, roughened by value noise and edged with an ordered dither; a few dark flecks thrown up.
@@ -475,10 +481,11 @@ of 23.
   `battle_stage.js` as well (the list of files it loads).
 - `UNIT_CARDS` in `app/battle_stage.js`, by unit type: `{ UNIT_RANGER: "hawk" }`. A unit with a card of its own lands
   every blow as it, and its blows are staged as shots: it stays on its cell (stepping 6 px into the release) instead of
-  lunging across the field, and its strike's timing stays a strike's. The ranger's hawk is the first: his attack pose
-  is the sprite with the hawk gone from his fist (`--release-hawk`), and the card is the hawk's own strike frame
-  diving talons first, with three claw rakes and loose feathers. A unit without an attack pose keeps its sprite (the
-  lizardman ranger's art still shows its hawk on its shoulder).
+  lunging across the field, and its strike's timing stays a strike's. The ranger's hawk is the first. His attack
+  pose is his arm raised and flung toward the target, hand open, the hawk just launched (`lib/ranger_launch.py`,
+  below). The card is the hawk's own strike frame diving talons first, with loose feathers behind the target. Claw
+  rakes under the talons were tried and dropped: the owner found the card stronger without them. A unit without an
+  attack pose keeps its sprite (the lizardman ranger's art still shows its hawk on its shoulder).
 - `DIRECTED_CARDS` in `app/battle_snap.js`: cards drawn facing right (the hawk), mirrored about their own centre for a
   blow toward the left. The rubble is not directed.
 - `crates/ffh-play/build.rs` embeds `app/pose` and `app/fx` (the server and the static site); new files there need
