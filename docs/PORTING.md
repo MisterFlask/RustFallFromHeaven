@@ -268,6 +268,17 @@ flag.
 
 **Balance** (after `classic-1`, each the owner's decision)
 
+- **Recon units fight from any row** (2026-11-06; the Ogre Battle 64 Valkyrie pattern; this game's
+  engagement combat, docs/ENGAGEMENTS.md, not FFH2's). The 20 recon unit types that do not stab
+  (the Scout, Hunter, Ranger, Beastmaster and their kin; the assassins with Marksman keep their
+  stabs) strike twice from the front row, as before, and shoot once from the middle and once from
+  the rear (they struck once from each: a strike reaches the front enemy of a lane, a shot its
+  backmost unit). They prefer the middle row, then the front, then the rear (`engage_row_order`):
+  with room the auto formation puts them in the middle, behind the line, where they shoot at the
+  enemy's archers, casters and siege. Their kind is now a shot, so Formation no longer makes them
+  anti-flanking, and the auto formation takes them among the shooters. Stat sheets unchanged.
+  The AI needs nothing new: its formations are the auto formation.
+
 - **A national unit's limit is a price** (2026-11-06; `NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT` in
   `rules_defines.jsonc`, a new unit class key `hard_limit`). FFH2's national classes (most
   tier-4 units, 4 per player each) stopped at the limit; now the limit is how many a player trains at

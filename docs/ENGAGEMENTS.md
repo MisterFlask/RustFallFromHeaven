@@ -73,6 +73,10 @@ it had, so every battle played the same (same seeds, same game checksums). Those
 | Arcane | adepts | 1 strike | 1 spell | 2 spell | rear, middle, front |
 | Divine | disciples (seven that never cast were Frontline) | 1 strike | 1 heal | 2 heal | middle, rear, front |
 
+Since then (each recorded in docs/PORTING.md, "Changes from FFH2"): the recon units that do not
+stab strike twice from the front and shoot once from the middle and the rear, and prefer the
+middle row, then the front, then the rear (2026-11-06).
+
 A unit's numbers (HP, attack, defence, magic, magic defence, accuracy, evasion, crit, speed) are its
 own stat sheet's (docs/UNIT_STATS.md; below). The sheets began as the roles' old values: HP 120
 frontline, 100 flanker, 80 archer and siege, 70 arcane and divine, 60 assassin; attack and defence

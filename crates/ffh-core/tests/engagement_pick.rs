@@ -323,6 +323,23 @@ fn formations_are_validated() {
 }
 
 #[test]
+fn the_auto_formation_puts_recon_units_in_the_middle_row() {
+    // Recon units fight from any row and prefer the middle (2026-11-06): with room, a Hunter
+    // stands in the middle row, where it shoots; the Axeman in the front.
+    let mut w = world();
+    let (p0, from) = (w.p0, w.from);
+    let hunter = w.unit(p0, "UNIT_HUNTER", from);
+    let axeman = w.unit(p0, "UNIT_AXEMAN", from);
+    let auto = w.auto(&[hunter, axeman], Side::Attacker);
+    let row_of = |u: UnitId| auto.iter().find(|p| p.unit == u).map(|p| p.row);
+    assert_eq!((row_of(hunter), row_of(axeman)), (Some(1), Some(0)));
+    assert_eq!(w.kind(hunter), "SHOOT");
+    // With Formation it is not anti-flanking: it does not strike from the row it prefers.
+    w.promote(hunter, "PROMOTION_FORMATION");
+    assert!(!w.g.unit_engage_anti_flank(hunter));
+}
+
+#[test]
 fn the_auto_formation_takes_one_of_each_kind_first_and_puts_each_in_the_row_it_prefers() {
     let mut w = world();
     let (p0, from) = (w.p0, w.from);

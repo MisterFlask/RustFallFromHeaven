@@ -12,9 +12,9 @@ are Claude's proposals for points the owner has not decided.
 the Skirmisher (tier 1; the Skirmisher, an early national archer, since 2026-11-06), and the tier-2
 melee unit (Axeman, or the Swordsman that replaces it for seven civilizations), the Archer, the
 Horseman, the Chariot, the Hunter, the Adept, the six disciples and the Catapult (tier 2). In a
-battle (docs/ENGAGEMENTS.md) the melee, recon and beast units all have one role, FRONTLINE: 2
+battle (docs/ENGAGEMENTS.md) the melee, recon and beast units all fought the same way: 2
 strikes from the front row, 1 from the middle and rear, every strike at the front enemy of a lane.
-So a Hunter is an Axeman with other promotions.
+So a Hunter was an Axeman with other promotions (until section 1 was built).
 
 **Arcane.** The Adept comes early. Knowledge of the Ether is 640 beakers of research from the
 start, about the same as Bronze Working (720). Sorcery, which brings the Mage, is not unusually
@@ -43,25 +43,11 @@ the 500% copies become a sink only later.
 
 ## 1. Recon units fight from any row
 
-A unit that is good in front and useful behind, instead of best in one row. A new role, **PATHFINDER**,
-is the default for RECON units without Marksman (the assassins keep ASSASSIN):
-
-| Role | Front | Middle | Rear | Home row |
-|---|---|---|---|---|
-| **PATHFINDER** (new) | 2 strike | 1 shoot | 1 shoot | front |
-| FRONTLINE (today's recon) | 2 strike | 1 strike | 1 strike | front |
-| ARCHER | 1 shoot | 2 shoot | 2 shoot | middle |
-
-- In the front row nothing changes.
-- From the middle and rear a recon unit shoots the backmost enemy of each lane (archers, casters,
-  siege) instead of striking the front one. A Hunter in the back row picks at the enemy's archers
-  and adepts at half an archer's rate, and in the front it holds a lane like a frontline unit.
-- Stat sheets unchanged (120 HP, the frontline's).
-- Units: Goblin, Scout, Hunter, Lizardman, Hellhound, Divided Soul, Fawn, Ranger, Lizardman Ranger,
-  Satyr, Harlequin, Devout, Beastmaster, Lizardman Beastmaster, Myconid.
-
-**Build:** data only (`combat_roles.jsonc`: the role, with RECON moved from FRONTLINE's default unit
-combats). The auto formation places a pathfinder in its home row like any unit.
+**Built** (2026-11-06), without a new role: the owner's decision removed roles altogether, and
+each unit type now has its own rows and rank preference (`engage_rows`, `engage_row_order`;
+docs/ENGAGEMENTS.md). The 20 recon unit types that do not stab strike twice from the front, shoot
+once from the middle and once from the rear, and prefer the middle row, then the front, then the
+rear (docs/PORTING.md, "Changes from FFH2"). The assassins (recon with Marksman) keep their stabs.
 
 ## 2. Sphere-I battle magic
 
@@ -181,7 +167,7 @@ route to large units.
   prerequisites read the city's trade network, not its radius.
 - The client's art aliases.
 - **AI:** none expected beyond the rules allowing it: its unit choice (power squared per build turn)
-  picks a creature when it is the best unit for the role, and since the Skirmisher it weighs a
+  picks a creature when it is the best unit for the job, and since the Skirmisher it weighs a
   national unit at the over-limit price once its units alive and in production fill the limit.
 
 ## 4. Covens (later)
@@ -193,8 +179,7 @@ casters in a stack, combining them in a battle, and an AI that stacks them.
 
 ## 5. Open questions for the owner
 
-1. Pathfinder rear row: 1 shoot, or 2 (then 100 HP instead of 120, so it is not better than an
-   archer behind)?
+1. (Decided and built: recon rows 2 strike / 1 shoot / 1 shoot, preferring the middle row.)
 2. Sphere-I damage: power 80 on one target?
 3. Charms on the front row (as above) or the whole side?
 4. The table of battle effects: any to change.
@@ -207,7 +192,7 @@ casters in a stack, combining them in a battle, and an AI that stacks them.
 
 ## 6. Build order
 
-1. Pathfinder role (data only).
+1. Recon rows and rank preference (built 2026-11-06).
 2. E1 and E2 (14 of the 18 spheres).
 3. Beasts and mana-bound creatures (new unit types, the limit from a count, the radius
    prerequisite, art aliases).

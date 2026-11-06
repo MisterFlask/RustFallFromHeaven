@@ -167,7 +167,10 @@ fn named_units_have_their_kinds() {
         ("UNIT_FIRE_ELEMENTAL", "STRIKE"),
         // Marksman is free but the unit is an archer, not recon (Q6): it shoots.
         ("UNIT_MARKSMAN", "SHOOT"),
-        ("UNIT_SCOUT", "STRIKE"),
+        // recon units fight from any row and prefer the middle, where they shoot (2026-11-06)
+        ("UNIT_SCOUT", "SHOOT"),
+        ("UNIT_HUNTER", "SHOOT"),
+        ("UNIT_RANGER", "SHOOT"),
         ("UNIT_CATAPULT", "BOMBARD"),
         ("UNIT_TREBUCHET", "BOMBARD"),
         ("UNIT_BATTERING_RAM", "BOMBARD"),
@@ -253,15 +256,35 @@ fn the_religions_fighters_strike_and_every_stabber_has_marksman() {
 }
 
 #[test]
+fn recon_units_fight_from_any_row_and_prefer_the_middle() {
+    use ActionKind::*;
+    let d = d();
+    // The owner's decision (2026-11-06; the Ogre Battle 64 Valkyrie pattern): every recon unit but
+    // the stabbers strikes twice in front and shoots once from the middle and the rear, and the
+    // auto formation puts it in the middle first, then the front.
+    let recon = d.t::<UnitCombatType>("UNITCOMBAT_RECON");
+    let mut n = 0;
+    for u in d.units.keys().filter(|&u| d.units[u].unit_combat_type == Some(recon) && d.units[u].engage_rows.is_some()) {
+        if d.engage_kind(u) == Stab {
+            continue;
+        }
+        n += 1;
+        assert_eq!(d.engage_rows(u), [row(Strike, 2), row(Shoot, 1), row(Shoot, 1)], "{}", d.type_name(u));
+        assert_eq!(d.engage_row_order(u), [1, 0, 2], "{}", d.type_name(u));
+    }
+    assert_eq!(n, 20);
+}
+
+#[test]
 fn every_land_type_has_rows() {
     let d = d();
     let count = |want: Option<ActionKind>| d.units.keys().filter(|&u| d.units[u].engage_rows.map(|_| d.engage_kind(u)) == want).count();
     // (kind, unit types) at the time of writing; the sum is every unit type.
     let want = [
-        (Some(ActionKind::Strike), 190),
+        (Some(ActionKind::Strike), 170),
         (Some(ActionKind::Charge), 38),
         (Some(ActionKind::Stab), 11),
-        (Some(ActionKind::Shoot), 17), // 16 and this game's Skirmisher
+        (Some(ActionKind::Shoot), 37), // 16, this game's Skirmisher and the 20 recon units that do not stab
         (Some(ActionKind::Bombard), 5),
         (Some(ActionKind::Spell), 18),
         (Some(ActionKind::Heal), 29),

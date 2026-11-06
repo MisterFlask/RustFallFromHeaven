@@ -130,7 +130,7 @@ fn a_unit_types_own_values() {
 
     // The hunter prefers the rear row, then the front: its kind is what it does there.
     let hu = unit("UNIT_HUNTER");
-    assert_eq!((d.engage_row_order(hu), d.engage_kind(hu)), ([2, 0, 1], Strike));
+    assert_eq!((d.engage_row_order(hu), d.engage_kind(hu)), ([2, 0, 1], Shoot));
 
     // The knight, tier 4: its extra action goes to its own best row, the middle one.
     let k = unit("UNIT_KNIGHT");
