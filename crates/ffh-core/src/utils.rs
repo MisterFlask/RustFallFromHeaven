@@ -1938,8 +1938,14 @@ mod tests {
             }
         }
         // (+208 pairs and +326 in all: this game's PROMOTION_SPIRIT_GUIDE2, docs/SUITABILITY.md;
-        // +326 in all and no pair: PROMOTION_SUMMONERS_BOND, which no unit combat allows.)
-        assert_eq!((n, d.promotions.len() * d.units.len()), (26520, 85738));
+        // +326 in all and no pair: PROMOTION_SUMMONERS_BOND, which no unit combat allows;
+        // +263 in all: this game's UNIT_SKIRMISHER, with the Archer's promotions, below.)
+        assert_eq!((n, d.promotions.len() * d.units.len()), (26628, 86001));
+        let archer = d.t::<UnitType>("UNIT_ARCHER");
+        let skirmisher = d.t::<UnitType>("UNIT_SKIRMISHER");
+        let takes = |u: UnitType| d.promotions.keys().filter(|&p| is_promotion_valid(d, p, u, false)).collect::<Vec<_>>();
+        assert_eq!(takes(skirmisher), takes(archer));
+        assert_eq!(takes(skirmisher).len(), 108);
     }
 
     #[test]

@@ -6,7 +6,7 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 |---|---|---|---|---|---|---|---|
 | [Settlers, workers and constructs](#settlers-workers-and-constructs) | 11 | 2 | 7 |  | 1 | 1 |  |
 | [Melee](#melee) | 38 | 1 | 26 | 5 | 6 |  |  |
-| [Archery](#archery) | 10 |  | 6 | 1 | 3 |  |  |
+| [Archery](#archery) | 11 |  | 7 | 1 | 3 |  |  |
 | [Mounted](#mounted) | 21 |  | 11 | 7 | 3 |  |  |
 | [Recon](#recon) | 23 | 2 | 2 | 18 | 1 |  |  |
 | [Siege](#siege) | 4 | 4 |  |  |  |  |  |
@@ -557,6 +557,15 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 **Playing it well.** A tool for deniable raids: walk it into a rival's land, kill a lone worker or settler escort, and keep the peace treaty. As a garrison it is weaker than an Archer for twice the hammers. Its real value is the upgrade path to the Shadowrider, the strongest hidden-nationality unit; keep a few and level them.
 
 **AI: Incidental.** It passes only the Defense role (`role_ok`: `CITY_DEFENSE`, `CITY_COUNTER`), where its power (550 for 120 hammers) loses to the Archer (687 for 60) and the Longbowman; it is trained only in a productive Esus city without an Archery Range. Research never values it (`research::unit_available` skips state-religion units). Hidden Nationality is thrown away: at the end of a turn the FfH spell choice casts Declare Nationality (`casting::ffh_value`: the ability's AI weight 50 less 1 for the promotion; the rules' AI gate only bars units with the pirate-ship or animal AI, hidden or invisible units and barbarians), and the AI has no logic for deniable attacks.
+
+### Skirmisher (`UNIT_SKIRMISHER`)
+*Archery, tier 1 · 50 hammers · 4/4, 2 moves, 1 first strike, +25% city and hills defense · Exploration, no building · national unit (2 at the normal cost, then 500%) · this game's, not FFH2's · every civilization but the Mercurians*
+
+**What it does.** An archer for the opening, above its era's curve: it shoots from the middle and rear rows (2 shots a round from either) with ATK 40, ACC 100, EVA 10, CRIT 15 and speed 5 (7 with its first strike), on 90 HP; the Archer, a tier later and behind an Archery Range, has ATK 30, ACC 95 and 80 HP. It has the Archer's defensive strike (20% for +10%). Two per civilization at 50 hammers, then 250 each (the national price); it upgrades to nothing and never goes obsolete.
+
+**Playing it well.** It is the first unit that is not Frontline, so put Warriors in the front row and the Skirmishers behind them: melee reaches only the front of a lane, so early enemies (warriors, animals, barbarians) cannot touch it while that front stands. It is better on defence than on attack (a city halves an attacker's arrows), so keep one in the capital and one in the city the barbarians or a neighbour threaten; take one along when an early stack must fight in the open. Promote it along City Garrison or Drill; a veteran Skirmisher stays useful long after Archers come.
+
+**AI: Valued.** The Defense role's best pick while it costs 50 hammers (`production::role_ok`: `CITY_DEFENSE`/`CITY_COUNTER`; city defense power 550 against the Warrior's 375: `production::type_city_defense`, `best_unit`, whose production turns see the 500% past two). It never passes Attack (no `ATTACK` AI), so the spare-production step (`decide`, step 11) does not take it, and requisition never takes a limited class (`army::requisition`), so it garrisons (`units::garrison_unit`) and is promoted toward city defense (`units::promotion_value`); while it costs 50 hammers it is also the settler's escort (`expansion::escort_unit`), then the new city's garrison. Research does not see it (national units are left out of `research::unit_available`); Exploration comes from the research goals. Seeds 1-8 (150 turns): one in most civilizations by turn 50, two in 21 of 32 by turn 100.
 
 ## Mounted
 

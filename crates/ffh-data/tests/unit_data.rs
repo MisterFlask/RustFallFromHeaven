@@ -43,8 +43,9 @@ fn loads_without_warnings() {
 #[test]
 fn table_sizes() {
     let d = data();
-    assert_eq!(d.units.len(), 326);
-    assert_eq!(d.unit_classes.len(), 248);
+    // 326 and 248, and this game's Skirmisher (docs/PORTING.md, "Changes from FFH2").
+    assert_eq!(d.units.len(), 327);
+    assert_eq!(d.unit_classes.len(), 249);
     // 261 and this game's PROMOTION_SPIRIT_GUIDE2 (docs/SUITABILITY.md) and
     // PROMOTION_SUMMONERS_BOND (the Summoner trait's).
     assert_eq!(d.promotions.len(), 263);
@@ -238,6 +239,33 @@ fn misc_ffh_unit_references() {
     assert!(unit("UNIT_ASSASSIN").ai_block_patrol);
     assert!(!unit("UNIT_WARRIOR").ai_block_patrol);
     assert_eq!(unit("UNIT_ACHERON").py_post_combat_lost, "postCombatAcheron(pCaster,pOpponent)");
+}
+
+/// This game's early national unit (docs/PORTING.md, "Changes from FFH2"): an archer, two a
+/// civilization at the normal cost (the national price after them, not a ban), from Exploration
+/// with no building, that upgrades to nothing.
+#[test]
+fn skirmisher() {
+    let d = data();
+    let u = unit("UNIT_SKIRMISHER");
+    let class = d.t::<UnitClassType>("UNITCLASS_SKIRMISHER");
+    assert_eq!(u.unit_class_type, Some(class));
+    assert_eq!(d.unit_classes[class].max_player_instances, 2);
+    assert!(!d.unit_classes[class].hard_limit);
+    assert_eq!((d.unit_classes[class].max_global_instances, d.unit_classes[class].max_team_instances), (-1, -1));
+    assert_eq!(u.unit_combat_type, Some(d.t::<UnitCombatType>("UNITCOMBAT_ARCHER")));
+    assert_eq!(u.prereq_and_tech, Some(d.t::<TechType>("TECH_EXPLORATION")));
+    assert_eq!((u.prereq_building, u.prereq_building_class), (None, None));
+    assert!(set_names(&u.upgrade_unit_class).is_empty());
+    assert_eq!(u.tier, 1);
+    // Above the Archer's sheet (HP 80, ATK 30, ACC 95, EVA 5, SPD 4).
+    // HP, ATK, DEF, MAG, MDEF, ACC, EVA, CRIT, SPD (StatType's order).
+    assert_eq!(u.stats, Some([90, 40, 30, 0, 30, 100, 10, 15, 5]));
+    // The civilizations that train no mortal early units have none.
+    for civ in ["CIVILIZATION_MERCURIANS", "CIVILIZATION_BARBARIAN"] {
+        assert_eq!(d.civ_unit(d.t::<CivilizationType>(civ), class), None, "{civ}");
+    }
+    assert_eq!(d.civ_unit(d.t::<CivilizationType>("CIVILIZATION_BANNOR"), class), Some(d.t::<UnitType>("UNIT_SKIRMISHER")));
 }
 
 #[test]

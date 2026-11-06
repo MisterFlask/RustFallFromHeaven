@@ -46,6 +46,8 @@ LARGE_EVASION = 0  # a large unit is easy to hit
 # ---- 3. Single units.
 UNIT = {
     "UNIT_NULLSTONE_GOLEM": dict(mdef=400),  # near immune to magic (FfH's lore)
+    # This game's early national archer, above its era's curve (docs/PORTING.md, "Balance").
+    "UNIT_SKIRMISHER": dict(acc=100, eva=10, crit=15),
 }
 
 # ---- 4. Promotions: (stat, "flat" | "percent") -> value, set over what the promotion has.

@@ -282,7 +282,7 @@ fn every_land_type_has_a_role() {
         (Some("COMBATROLE_SCREEN"), 0),
         (Some("COMBATROLE_FLANKER"), 38),
         (Some("COMBATROLE_ASSASSIN"), 11),
-        (Some("COMBATROLE_ARCHER"), 16),
+        (Some("COMBATROLE_ARCHER"), 17), // 16 and this game's Skirmisher
         (Some("COMBATROLE_SIEGE"), 5),
         (Some("COMBATROLE_ARCANE"), 18),
         (Some("COMBATROLE_DIVINE"), 29),

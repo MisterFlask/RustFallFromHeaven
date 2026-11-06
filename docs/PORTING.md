@@ -321,6 +321,28 @@ flag.
   Mastery; Remnants of Patria: Taxation; Pool of Tears: Medicine. The AI compares techs by research
   left at the rate it gets (`tech_plan::effective_left`) and values city sites with an unclaimed
   feature in reach a quarter higher per feature (`sites::research_feature_bonus`).
+- **The Skirmisher, an early national unit** (2026-11-06, the owner's decision: national units
+  are above their era's curve, with no upgrade). New `UNITCLASS_SKIRMISHER` (national: 2 per
+  player at the normal cost, then 500% each, 250 hammers, as for every national class above) and
+  `UNIT_SKIRMISHER`: an archer (Archer role, middle and rear rows) at Exploration, with no
+  building, 50 hammers, tier 1; 4/4 with 2 moves, a first strike, +25% city and hills defence and
+  the Archer's defensive strike; sheet HP 90, ATK 40, DEF 30, MDEF 30, ACC 100, EVA 10, CRIT 15,
+  SPD 5 (the Archer, tier 2 at 60 hammers and an Archery Range: 80/30/30/30/95/5/10/4). It
+  upgrades to nothing, so it is never obsolete and its two places stay filled. Every civilization
+  but the Mercurians and the barbarians (who block it as they block the other mortal early units).
+  Why: before tier 2 (a tech and a building: Bronze Working is 720 beakers in) every unit a civ
+  can train fights as Frontline, so the formation battle's rows and roles do nothing for the
+  opening; the limit keeps the Archer line worth building (a third Skirmisher costs more than
+  four Archers). The AI needs nothing new: it is the Defense role's best pick while it costs 50 hammers
+  (`production::best_unit`, city defence 550 against the Warrior's 375; at 250 hammers the
+  production turns put it behind), it never passes Attack (no `ATTACK` AI), so the spare-production
+  step does not take it, and requisition never takes a limited class, so it garrisons. Measured
+  (seeds 1-8, 150 turns, 4 civilizations): 59 trained, one in most civilizations by turn 50 and
+  two in 21 of 32 by turn 100, when no civilization had an Archer yet, none with more than two by
+  turn 150; 9 kills and 3 losses. (Two AI fixes for the national price: the unit choice weighs a
+  national unit at the over-limit price once its units alive and in production fill the limit, and
+  a settler's escort is never one; docs/AI.md, "Production" and "Settlers and escorts".)
+  Art: it shows the Archer's figure (by unit combat) until it has its own.
 
 **Container order and path finding**
 

@@ -1347,7 +1347,7 @@ pub(crate) fn best_unit_where(g: &Game, c: CityId, role: Role, keep: impl Fn(Uni
         if !g.city_offers_unit(c, u) || !g.city_can_train(c, u, false, false, false, false) {
             continue;
         }
-        let turns = g.city_production_turns_left_unit(c, u, 0).max(1) as i64;
+        let turns = national_turns(g, c, u, g.city_production_turns_left_unit(c, u, 0).max(1) as i64);
         let power = match role {
             Role::Defense => type_city_defense(info),
             Role::Attack | Role::Hero | Role::SeaHero | Role::Siege => {
@@ -1387,6 +1387,33 @@ pub(crate) fn best_unit_where(g: &Game, c: CityId, role: Role, keep: impl Fn(Uni
         }
     }
     best.map(|(u, _)| u)
+}
+
+/// `turns` (city `c`'s turns to train `u`) at the over-limit price when `u` is a national unit
+/// whose units alive and in production elsewhere already fill its limit. The rules price a
+/// national unit past its limit by the units alive only (docs/PORTING.md, "Changes from FFH2"),
+/// so without this several cities each start one at the normal cost while fewer are alive, and
+/// all but the first few finish at `NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT` (cities keep a limited
+/// unit's order): early Skirmishers came by fives at 250 hammers each.
+fn national_turns(g: &Game, c: CityId, u: UnitType, turns: i64) -> i64 {
+    let d = g.d;
+    let p = g.cities[c].owner;
+    let priced = d.units[u].unit_class_type.is_some_and(|k| g.player_is_over_unit_class_limit(p, k));
+    if national_full(g, c, u) && !priced {
+        turns * d.defines.national_unit_over_limit_cost_percent.max(100) as i64 / 100
+    } else {
+        turns // the rules' price, if any, is in `turns` already
+    }
+}
+
+/// Would one more `u` from city `c` be a national unit past its limit: its owner's units of
+/// that class alive and in production in other cities fill the limit (the rules price it by the
+/// units alive only: [`national_turns`]).
+pub(crate) fn national_full(g: &Game, c: CityId, u: UnitType) -> bool {
+    let d = g.d;
+    let Some(k) = d.units[u].unit_class_type.filter(|&k| ffh_core::utils::is_soft_limited_unit_class(d, k)) else { return false };
+    let own = i32::from(g.city_first_unit_order(c, u).is_some());
+    g.player_get_unit_class_count_plus_making(g.cities[c].owner, k) - own >= d.unit_classes[k].max_player_instances
 }
 
 /// The strongest unit this city can train for `role`, whatever it costs.

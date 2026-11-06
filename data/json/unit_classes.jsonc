@@ -1661,6 +1661,15 @@
     "default_unit": "UNIT_ARCHER"
   },
   {
+    // A national unit of the opening (not FFH2's; docs/PORTING.md, "Changes from FFH2").
+    "type": "UNITCLASS_SKIRMISHER",
+    "description": "TXT_KEY_UNIT_SKIRMISHER",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": 2,
+    "default_unit": "UNIT_SKIRMISHER"
+  },
+  {
     "type": "UNITCLASS_LONGBOWMAN",
     "description": "TXT_KEY_UNIT_LONGBOWMAN",
     "max_global_instances": -1,

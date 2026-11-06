@@ -199,6 +199,11 @@ fn escort_unit(g: &Game, c: CityId) -> Option<UnitType> {
         if !g.city_offers_unit(c, u) || !g.city_can_train(c, u, false, false, false, false) {
             continue;
         }
+        // Not a national unit past its limit: the escort is a cheap job, and the Skirmisher
+        // (550 against the Warrior's 375) would leave it the only candidate at five times its cost.
+        if crate::production::national_full(g, c, u) {
+            continue;
+        }
         cands.push((u, crate::production::type_city_defense(info), g.city_production_turns_left_unit(c, u, 0)));
     }
     let best_def = cands.iter().map(|&(_, d, _)| d).max()?;

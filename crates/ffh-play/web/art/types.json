@@ -420,6 +420,7 @@
 {"type":"PROMOTION_SUBDUE_ANIMAL","race":0,"equipment":0,"sphere":"NONE","line":"SUBDUE_ANIMAL","level":0,"dispellable":0,"expires":0,"mutation":0},
 {"type":"PROMOTION_SUBDUE_BEASTS","race":0,"equipment":0,"sphere":"NONE","line":"SUBDUE_BEASTS","level":0,"dispellable":0,"expires":0,"mutation":0},
 {"type":"PROMOTION_SUMMONER","race":0,"equipment":0,"sphere":"NONE","line":"SUMMONER","level":0,"dispellable":0,"expires":0,"mutation":0},
+{"type":"PROMOTION_SUMMONERS_BOND","race":0,"equipment":0,"sphere":"NONE","line":"SUMMONERS_BOND","level":0,"dispellable":0,"expires":0,"mutation":0},
 {"type":"PROMOTION_SUN1","race":0,"equipment":0,"sphere":"SUN","line":"SUN","level":1,"dispellable":0,"expires":0,"mutation":0},
 {"type":"PROMOTION_SUN2","race":0,"equipment":0,"sphere":"SUN","line":"SUN","level":2,"dispellable":0,"expires":0,"mutation":0},
 {"type":"PROMOTION_SUN3","race":0,"equipment":0,"sphere":"SUN","line":"SUN","level":3,"dispellable":0,"expires":0,"mutation":0},
@@ -445,7 +446,8 @@
 {"type":"PROMOTION_WINTERBORN","race":0,"equipment":0,"sphere":"NONE","line":"WINTERBORN","level":0,"dispellable":0,"expires":0,"mutation":0},
 {"type":"PROMOTION_WITHERED","race":0,"equipment":0,"sphere":"NONE","line":"WITHERED","level":0,"dispellable":1,"expires":0,"mutation":1},
 {"type":"PROMOTION_WOODSMAN1","race":0,"equipment":0,"sphere":"NONE","line":"WOODSMAN","level":1,"dispellable":0,"expires":0,"mutation":0},
-{"type":"PROMOTION_WOODSMAN2","race":0,"equipment":0,"sphere":"NONE","line":"WOODSMAN","level":2,"dispellable":0,"expires":0,"mutation":0}
+{"type":"PROMOTION_WOODSMAN2","race":0,"equipment":0,"sphere":"NONE","line":"WOODSMAN","level":2,"dispellable":0,"expires":0,"mutation":0},
+{"type":"PROMOTION_SPIRIT_GUIDE2","race":0,"equipment":0,"sphere":"NONE","line":"SPIRIT_GUIDE","level":2,"dispellable":1,"expires":0,"mutation":0}
 ],
 "unit": [
 {"type":"EQUIPMENT_ATHAME","cls":"EQUIPMENTCLASS_ATHAME","combat":"NONE","domain":"IMMOBILE","tier":0,"special":"NONE","race":["NONE"],"hero":0,"equipment":1,"invisible":0,"strength":0,"base":"NONE"},
@@ -484,6 +486,7 @@
 {"type":"UNIT_ANGEL_OF_DEATH","cls":"UNITCLASS_ANGEL_OF_DEATH","combat":"RECON","domain":"LAND","tier":4,"special":"NONE","race":["ANGEL"],"hero":0,"equipment":0,"invisible":0,"strength":8,"base":"NONE"},
 {"type":"UNIT_ARCANE_BARGE","cls":"UNITCLASS_ARCANE_BARGE","combat":"NAVAL","domain":"SEA","tier":3,"special":"NONE","race":["NONE"],"hero":0,"equipment":0,"invisible":0,"strength":8,"base":"NONE"},
 {"type":"UNIT_ARCHER","cls":"UNITCLASS_ARCHER","combat":"ARCHER","domain":"LAND","tier":2,"special":"NONE","race":["NONE"],"hero":0,"equipment":0,"invisible":0,"strength":3,"base":"NONE"},
+{"type":"UNIT_SKIRMISHER","cls":"UNITCLASS_SKIRMISHER","combat":"ARCHER","domain":"LAND","tier":1,"special":"NONE","race":["NONE"],"hero":0,"equipment":0,"invisible":0,"strength":4,"base":"NONE"},
 {"type":"UNIT_ARCHER_SCORPION_CLAN","cls":"UNITCLASS_ARCHER","combat":"ARCHER","domain":"LAND","tier":2,"special":"NONE","race":["ORC"],"hero":0,"equipment":0,"invisible":0,"strength":3,"base":"UNIT_ARCHER"},
 {"type":"UNIT_DWARVEN_SLINGER","cls":"UNITCLASS_ARCHER","combat":"ARCHER","domain":"LAND","tier":2,"special":"NONE","race":["DWARF"],"hero":0,"equipment":0,"invisible":0,"strength":3,"base":"UNIT_ARCHER"},
 {"type":"UNIT_JAVELIN_THROWER","cls":"UNITCLASS_ARCHER","combat":"ARCHER","domain":"LAND","tier":2,"special":"NONE","race":["NONE"],"hero":0,"equipment":0,"invisible":0,"strength":4,"base":"UNIT_ARCHER"},

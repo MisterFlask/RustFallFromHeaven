@@ -269,7 +269,10 @@ scrap); when no more units are affordable, the strongest one whatever it costs, 
 unit past its limit (support is the same for any unit and the cheapest are disbanded first, so
 idle hammers buy quality).
 Units are chosen by power squared per production turn, so stronger units win unless much
-dearer.
+dearer. A national unit whose class's units alive and in production in other cities already fill
+its limit is weighed at the over-limit price (`production::national_turns`): the rules price it
+by the units alive only, so before this several cities each started one at the normal cost and
+paid 500% when the others finished (early Skirmishers by fives, at 250 hammers each).
 
 **Effects in the rules' code** (`code_effects.rs`, switch `CODE_EFFECTS`). FfH 0.41 gives a
 building's plain effects in the XML, which the value above reads, and its special ones in Python,
@@ -707,7 +710,9 @@ two hammers a turn, and the barbarians took such cities within a few turns of fo
   must still hold the visible threat), a second one when the best site needs more. Once per
   turn (`prepare_escorts`), a city 3 turns or less from a settler, or holding one that waits,
   with no fighter to spare queues the cheapest unit that defends at least 70% as well as its
-  best one, so both leave together; the escort becomes the new city's first garrison. Waiting
+  best one, so both leave together; the escort becomes the new city's first garrison. Not a
+  national unit at its limit (`production::national_full`): the Skirmisher, 550 to the Warrior's
+  375, was otherwise the only candidate at 250 hammers, and civilizations held five by turn 150. Waiting
   settlers also ask single field units within 6 turns to come (`View::escort_requests`).
 - **Risk**: each reachable site's risk is the worst danger on the straight line there, or
   twice the danger at the site (the new city has to hold it). A settler goes only where its
