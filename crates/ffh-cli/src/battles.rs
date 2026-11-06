@@ -307,6 +307,10 @@ struct SideAgg {
 struct Agg {
     runs: i64,
     waves: i64,
+    /// Per run, from the attacker's side: the defender's share of HP lost less its own (percent),
+    /// and the hammers of HP it destroyed less those it lost; sums and sums of squares.
+    net_hp: [f64; 2],
+    net_cw: [f64; 2],
     results: [i64; 4],
     rounds: i64,
     sides: [SideAgg; 2],
@@ -381,8 +385,31 @@ fn fight(spec: &Spec, runs: i64, seed: u32) -> Agg {
         for r in &reports {
             add_report(&mut a, r, &spec.name);
         }
+        let (hp, cw) = run_net(&reports);
+        a.net_hp[0] += hp;
+        a.net_hp[1] += hp * hp;
+        a.net_cw[0] += cw;
+        a.net_cw[1] += cw * cw;
     }
     a
+}
+
+/// One run's net result from the attacker's side (`Agg::net_hp`, `Agg::net_cw`).
+fn run_net(reports: &[BattleReport]) -> (f64, f64) {
+    let d = ffh_data::global();
+    let (mut taken, mut max_hp, mut cw) = ([0f64; 2], [0f64; 2], [0f64; 2]);
+    for log in reports.iter().filter_map(|r| r.log.as_ref()) {
+        for f in log.fighters.iter().filter(|f| f.place.is_some()) {
+            let s = f.side.index();
+            taken[s] += f.taken as f64;
+            max_hp[s] += 100.0 * f.max_hp as f64;
+            if !f.sentinel && f.max_hp > 0 {
+                cw[s] += f.taken as f64 / (100.0 * f.max_hp as f64) * d.units[f.unit_type].production_cost as f64;
+            }
+        }
+    }
+    let frac = |s: usize| if max_hp[s] > 0.0 { 100.0 * taken[s] / max_hp[s] } else { 0.0 };
+    (frac(1) - frac(0), cw[1] - cw[0])
 }
 
 /// Adds one engagement's battle log to the totals.
@@ -479,8 +506,8 @@ fn json(spec: &Spec, a: &Agg) -> String {
     let mut s = String::new();
     let _ = write!(
         s,
-        "{{\"name\":{:?},\"runs\":{},\"waves\":{},\"results\":{:?},\"rounds\":{}",
-        spec.name, a.runs, a.waves, a.results, a.rounds
+        "{{\"name\":{:?},\"runs\":{},\"waves\":{},\"results\":{:?},\"rounds\":{},\"net_hp\":[{:.3},{:.3}],\"net_cw\":[{:.3},{:.3}]",
+        spec.name, a.runs, a.waves, a.results, a.rounds, a.net_hp[0], a.net_hp[1], a.net_cw[0], a.net_cw[1]
     );
     let _ = write!(
         s,

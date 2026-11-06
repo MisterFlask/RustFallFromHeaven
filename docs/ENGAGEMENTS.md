@@ -447,12 +447,22 @@ DEFENDERS | GROUND`, units as `[N*]UNIT[+PROMOTION]..[@row]`, ground words `open
 `--runs` times from a save of the staged world with the RNG reseeded, both sides in the auto
 formation, units without races, traits or weapons; one JSON line of totals per matchup (results,
 units and HP lost, cost, damage by action kind, per unit type: fate, damage dealt, taken and
-healed, actions, misses, crits, kills, rows). About 7 ms a battle.
-`crates/ffh-cli/scripts/battles_battery.py OUT` writes the battery below as spec files and
-`battles_report.py` makes its tables (`rows`, `matrix`, `hpmatrix`, `types`).
+healed, actions, misses, crits, kills, rows; per run, the net share of HP and the net hammers of
+HP destroyed, summed and squared for standard errors). About 5 to 7 ms a battle.
+`crates/ffh-cli/scripts/battles_battery.py OUT` writes the first battery below as spec files and
+`battles_report.py` makes its tables (`rows`, `matrix`, `hpmatrix`, `types`);
+`battles_squads.py` writes the squad round robins per tech level and `battles_meta.py` analyses
+them (`meta`: payoffs, the equilibrium and dominance; `swaps`: unit against unit; `h2h`).
+
+**The balance target** (the owner's, 2026-11-06): every unit of every tier has a valuable place
+in some lineup, and every formation has a formation that beats it. Units past a national class's
+limit are a deliberate, inefficient sink for production (the over-limit price): squads are not
+balanced for them, and the battery's squads hold at most the limit of each class.
 
 **What the first battery showed** (2026-11-06; about 1,100 matchups of 200 to 400 battles; each
-line is one turn, so healing between turns and bombarding on the map are not in it):
+line is one turn, so healing between turns and bombarding on the map are not in it; its late
+armies of 5 to 8 of one national class are past the limit, so its late results are superseded by
+the squad round robin below):
 
 - **Numbers beat quality, and cheap units are the most cost-efficient in the game.** 4 Warriors
   (100 hammers) attacking one Phalanx (240) kill it in 99% of battles and lose 0.4 Warriors; 3
@@ -466,8 +476,8 @@ line is one turn, so healing between turns and bombarding on the map are not in 
   every frontline unit has 120 HP at every tier, and a unit's actions do not grow with its
   strength (tier 4 adds one), so a unit four times as strong trades about four times as well
   while it costs ten times as much.
-- **Mounted armies are the strongest pure army of every era in the open** (8 Horsemen, 8 Horse
-  Archers, 8 Knights top their eras' round robins); 68-74% of their damage is the charge (+100% in
+- **Mounted armies are the strongest pure army of every era in the open** (8 Horsemen and 8 Horse
+  Archers top their eras' round robins); 68-74% of their damage is the charge (+100% in
   the first round, any target, the most threatening first), with speed 6 plus first strikes,
   evasion 15 and 25-35% withdrawal. A forest, a city or Formation takes most of it away (8 Horsemen
   on 8 Axemen: 1.5 lost to 5.1 in the open, 1.7 to 2.6 in a forest, 2.3 to 3.6 against Formation).
@@ -504,6 +514,52 @@ line is one turn, so healing between turns and bombarding on the map are not in 
   the map is not in the battery.
 - **Chariots** (120) are the worst early army: a Horseman's role at twice its cost, with less
   defence and no first strike.
+
+**Squads by tech level** (2026-11-06; `battles_squads.py` and `battles_meta.py`). Each level's
+generic units (each class's default unit): early (Axeman, Archer, Horseman, Hunter, Adept,
+Disciple, Catapult, Chariot, War Elephant, at most 2 Skirmishers; Warrior and Scout as leftovers),
+mid (Champion, Longbowman, Horse Archer, Mage with the bolt or Fire II, Priest, Assassin, Ranger,
+Catapult, Archer, Chariot, Crusader, War Elephant), late (at most 4 of each of Phalanx, Immortal,
+Knight, Paladin, Berserker, Beastmaster, Crossbowman, Marksman, Archmage with the bolt or Fire II,
+High Priest; Arquebus, Cannon, Mage, Champion, War Elephant). Squads at an equal budget (480, 960,
+1920) within 10 slots: every unit alone, front pairs, a front type with each support type, triples
+(65-70 a level); a full round robin on open land (40 battles a matchup, both roles), then about 25
+finalists a level on forest, hills and a walled, fortified city (60). The result is the net share
+of HP, the mean of attacking and defending.
+
+- **Each ground has a squad that nothing beats** (none beats it by 2 standard errors), at every
+  level: early, 6 Horsemen and 2 Skirmishers in the open and on hills, 8 Horsemen in a forest, 6
+  Axemen and 2 Skirmishers at walls; mid, 6 Horse Archers and 4 Archers in the open, 4 Horse
+  Archers, 2 Assassins and 2 Fire II Mages on hills, 4 Champions and 4 Fire II Mages at walls (in
+  a forest three Horse Archer squads form a cycle); late, 4 Knights and 5 Arquebuses in the open,
+  4 Fire II Archmages and 4 Paladins in a forest, 4 Marksmen and 4 Paladins at walls (on hills
+  three Knight squads nearly cycle). The open-land winners of mid and late beat every other squad
+  both attacking and defending. Over the four grounds together, 8 Horsemen (early) and 4 Horse
+  Archers, 2 Assassins and 2 Fire II Mages (mid) beat or tie every squad; only late is a mix (4
+  Knights and 4 Marksmen, 4 Beastmasters and 4 Paladins, 4 Fire II Archmages and 4 Knights), and
+  per ground it is not.
+- **Mounted units have no counter but the ground.** Every winner off walls has a mounted front;
+  Formation axemen still lose to horsemen. The charge picks the highest threat for its HP, so the
+  enemy's archers and casters die first: in the winners the cheap ranged units (Archers,
+  Arquebuses) are as much a sink for the enemy's charges as a source of damage (96% of the
+  Arquebuses fall in the late mirror).
+- **Units without a place**: replacing them with the level's main units improves a squad on every
+  ground (comparisons of squads that differ only in that unit, against every opponent, both roles):
+  the healers (Disciple, Priest, High Priest), casters without a battle spell (Adept, Mage,
+  Archmage), the Catapult (at late, the Arquebus beats the Cannon in 80% of comparisons), the
+  Chariot (the Horseman beats it in 99.8% at half the cost), the War Elephant (with the placement
+  bug under "Open"); on open land, the Immortal and the Berserker (the Phalanx beats the Immortal
+  in 99%: the same cost, cap and tier, 120/120 against 90/90). Marginal: the Longbowman (the
+  Assassin or a Fire II Mage does better in its slot), the Hunter (about an Axeman), the Ranger
+  (its best squads are 10th of 30 in a forest and on hills).
+- **Strictly better units**: Marksman over Crossbowman (better in 91% of comparisons, worse in
+  0.3%: the same cost, cap and tier; both can still fill a squad, being capped); Paladin over
+  Phalanx (97%; good civilizations only); Crusader over Champion (100%; the Order only); Skirmisher
+  over Archer (98%; by design, 2 a player); Fire II Mage over Mage, Fire II Archmage over Archmage.
+- **Degenerate squads**: all of one type wins only early (8 Horsemen, the best squad of its level
+  over the four grounds). 8 Horse Archers are 7th of 30 mid; all-archer, all-caster, all-healer,
+  all-siege and all-large squads are at the bottom of every level. 10 Cannons attack no walled
+  city (an AI owner bombards instead).
 
 ## Decided while building it
 
