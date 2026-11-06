@@ -183,18 +183,26 @@ def text():
     return t
 
 
-def role_of(u, roles):
-    """GameData::type_combat_role."""
-    if u.get("combat_role"):
-        return u["combat_role"]
-    uc = u.get("unit_combat")
-    free = {p for p, on in u.get("free_promotions", {}).items() if on}
-    if uc:
-        ordered = [r for r in roles if r.get("default_free_promotion")] + [r for r in roles if not r.get("default_free_promotion")]
-        for r in ordered:
-            if uc in r.get("default_unit_combats", []) and (not r.get("default_free_promotion") or r["default_free_promotion"] in free):
-                return r["type"]
-    return next(r["type"] for r in roles if r.get("default"))
+# The rules' groups by the action of a unit's main row (its row with the most actions, the first
+# such: the rows `engage_rows` in units.jsonc; there are no combat roles since 2026-11-06), named
+# as the roles these rules were written for.
+GROUP_OF_ACTION = {
+    "STRIKE": "COMBATROLE_FRONTLINE",
+    "CHARGE": "COMBATROLE_FLANKER",
+    "STAB": "COMBATROLE_ASSASSIN",
+    "SHOOT": "COMBATROLE_ARCHER",
+    "BOMBARD": "COMBATROLE_SIEGE",
+    "SPELL": "COMBATROLE_ARCANE",
+    "HEAL": "COMBATROLE_DIVINE",
+}
+
+
+def role_of(u):
+    """The rules' group of unit entry `u`: by the action of its main row."""
+    rows = u.get("engage_rows") or []
+    best = max(range(len(rows)), key=lambda i: (rows[i].get("count", 0), -i)) if rows else 0
+    action = rows[best]["action"] if rows else "STRIKE"
+    return GROUP_OF_ACTION.get(action, "COMBATROLE_FRONTLINE")
 
 
 def draft_sheet(u, role):
@@ -254,14 +262,13 @@ def main():
     apply = "--apply" in sys.argv
     tx = text()
     units = jsonc.table("units")
-    roles = jsonc.table("combat_roles")
     promos = jsonc.table("promotions")
     pby = {p["type"]: p for p in promos}
     races = {p["type"] for p in promos if p.get("race")}
     land = [u for u in units if "stats" in u]
     rows, drafted = {}, {}
     for u in land:
-        role = role_of(u, roles)
+        role = role_of(u)
         new = draft_sheet(u, role)
         drafted[u["type"]] = new
         uc = u.get("unit_combat", "NONE")

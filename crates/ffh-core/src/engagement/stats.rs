@@ -1,9 +1,11 @@
-//! Engagement combat's unit stats (docs/UNIT_STATS.md; plan sections 3 and 4): a unit's role, its
-//! battle stats, and its attack A and defence Dv, magic and magic defence per hit.
+//! Engagement combat's unit stats (docs/UNIT_STATS.md; plan sections 3 and 4): what a unit does
+//! from each row, its battle stats, and its attack A and defence Dv, magic and magic defence per
+//! hit.
 //!
-//! **Roles** ([`Game::unit_combat_role`]): the type's role (`GameData::unit_roles`, every land and
-//! immobile type has one), a Frontline unit with Formation being a Screen (Q7). A role gives rows,
-//! a home row, an auto-pick place and anti-flank; the numbers are the unit's own.
+//! **Rows** ([`Game::unit_engage_rows`]): its type's own (`engage_rows` in units.jsonc), with its
+//! rank preference (`engage_row_order`) and its kind, the action of the row it prefers
+//! ([`Game::unit_engage_kind`]). A unit that strikes from the row it prefers and holds a promotion
+//! with `anti_flank` (Formation) is anti-flanking (Q7). There are no roles (2026-11-06).
 //!
 //! **Stats** ([`Game::unit_stat`]): the type's sheet (`stats` in units.jsonc) plus the unit's own
 //! points (`Unit::stat_flat`) under its own percentage (`Unit::stat_pct`), both from its
@@ -90,16 +92,29 @@ impl HitCtx {
 }
 
 impl Game {
-    /// The unit's engagement role (plan 3): its type's, a Frontline unit with Formation being a
-    /// Screen (`GameData::screen_role`, Q7). `None` for sea and air units, which never take part
-    /// in a land engagement.
-    pub fn unit_combat_role(&self, u: UnitId) -> Option<CombatRoleType> {
-        let unit = &self.units[u];
-        let role = self.d.unit_roles[unit.unit_type]?;
-        match self.d.screen_role {
-            Some((from, promotion, to)) if role == from && unit.has_promotion[promotion] => Some(to),
-            _ => Some(role),
-        }
+    /// Whether unit `u` can take part in a land engagement (`GameData::type_engages_on_land`): a
+    /// land or immobile type. Sea and air units never do. Whether it fights is its strength.
+    pub fn unit_engages_on_land(&self, u: UnitId) -> bool {
+        self.d.type_engages_on_land(self.units[u].unit_type)
+    }
+
+    /// Unit `u`'s rank preference: its type's rows in the order the auto formation tries them.
+    pub fn unit_engage_row_order(&self, u: UnitId) -> [usize; ROWS] {
+        self.d.engage_row_order(self.units[u].unit_type)
+    }
+
+    /// Unit `u`'s kind: what its type does from the row it prefers (`GameData::engage_kind`), the
+    /// auto formation's order (`formation::kind_pick_order`). Its type's rows, before a battle
+    /// spell takes the place of its attacks.
+    pub fn unit_engage_kind(&self, u: UnitId) -> ActionKind {
+        self.d.engage_kind(self.units[u].unit_type)
+    }
+
+    /// Whether unit `u` is anti-flanking (Q7): it strikes from the row it prefers and holds a
+    /// promotion with `anti_flank` (Formation). Whatever an enemy flanker can reach, such units in
+    /// its reach are taken first.
+    pub fn unit_engage_anti_flank(&self, u: UnitId) -> bool {
+        self.unit_engage_kind(u) == ActionKind::Strike && self.units[u].has_promotion.iter_enumerated().any(|(p, &has)| has && self.d.promotions[p].anti_flank)
     }
 
     /// Unit `u`'s stat `s` in a battle (docs/UNIT_STATS.md): its type's sheet plus its own points,
@@ -124,7 +139,7 @@ impl Game {
     }
 
     // A unit's values in a formation battle (docs/ENGAGEMENTS.md, "Per-unit values"): its stats,
-    // and its type's own rows, else its role's (the unit's own role: `unit_combat_role`). The
+    // and its type's own rows. The
     // resolver's fighters, the auto formation, the preview, the view and the client read these.
 
     /// Unit `u`'s speed in a formation battle before first strikes.
@@ -147,11 +162,11 @@ impl Game {
         self.unit_stat(u, StatType::Crit)
     }
 
-    /// What unit `u` does from each row before its extra actions: its type's `EngageRows`, else
-    /// its role's rows; a unit with magic that knows a battle spell casts it in place of each
+    /// What unit `u` does from each row before its extra actions: its type's `engage_rows`; a unit
+    /// with magic that knows a battle spell casts it in place of each
     /// attack (`rows_with_battle_spell`; docs/ENGAGEMENTS.md, "Battle spells").
     pub fn unit_engage_rows(&self, u: UnitId) -> [RowActions; ROWS] {
-        let rows = self.d.engage_rows(self.units[u].unit_type, self.unit_combat_role(u));
+        let rows = self.d.engage_rows(self.units[u].unit_type);
         if self.unit_battle_spell(u).is_some() && self.unit_stat(u, StatType::Magic) > 0 {
             rows_with_battle_spell(rows)
         } else {

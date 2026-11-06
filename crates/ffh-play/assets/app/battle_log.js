@@ -39,7 +39,7 @@
 //     other: hidden nationality)
 //   fighters: [Fighter]: both lines, and the units of both sides on the two plots that stayed out of them (the
 //     attacker's pool, the defenders' reserve the viewer sees: `lane` null):
-//     {b, unit, sentinel (a Sentinel of the defended city: its wall section, no unit; docs/SIEGES.md), unit_type, name, owner, side, level, hero, promotions, role (CombatRoleType), large (fills two
+//     {b, unit, sentinel (a Sentinel of the defended city: its wall section, no unit; docs/SIEGES.md), unit_type, name, owner, side, level, hero, promotions, large (fills two
 //      cells of a row, lanes `lane` and `lane + 1`), lane, row (null: not in the line), max_hp (HP), hp_start,
 //      a_x100, dv_x100 (its attack and defence in this battle, before the terms of a pair), ma_x100, md_x100
 //      (its magic and magic defence; a stat of the unit's sheet is x10 of it: docs/UNIT_STATS.md), speed,
@@ -90,7 +90,7 @@
 //   line_wiped_permille (the defenders' line wiped out), plot_falls_permille, attackers_wiped_permille?,
 //   per: [{b, fall_pct, escape_pct}]}.
 // The `engage` command: {army | units | from, to, formation?, declare_war?}; its reply's `r.report` is the battle's.
-// Static data (`/api/data`): the names of UnitType, PromotionType, CombatRoleType, TerrainType, FeatureType,
+// Static data (`/api/data`): the names of UnitType, PromotionType, TerrainType, FeatureType,
 //   SpellType, CivilizationType.
 // ---------------------------------------------------------------------------------------------
 
@@ -121,35 +121,21 @@ export function tyLabel(kind, v) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Roles, rows, actions
+// Rows, actions
 
 export const ROWS = ["Front", "Middle", "Rear"];
 
-/** A role's short key ("flanker" for COMBATROLE_FLANKER), for its icon and its words. */
-export function roleKey(f) {
-  const n = tyName("CombatRoleType", f?.role);
-  return n ? n.replace(/^COMBATROLE_/, "").toLowerCase() : "";
+/** What fighter `f` does from its Front, Middle and Rear rows, short: "2 strikes / 1 strike /
+ *  1 strike" ("—" for a row without an action). Each unit has its own rows (no roles). */
+export function rowsLine(f) {
+  if (!Array.isArray(f?.actions) || f.actions.length !== 3) return "-";
+  return f.actions
+    .map((a) => {
+      const k = KINDS[kindKey(a?.kind)];
+      return a?.n && k ? `${a.n} ${a.n > 1 ? k.nouns : k.noun}` : "—";
+    })
+    .join(" / ");
 }
-
-/** A role's display name ("Frontline"). */
-export function roleLabel(f) {
-  const i = tyIdx("CombatRoleType", f?.role);
-  if (i >= 0 && info("CombatRoleType", i)) return dname("CombatRoleType", i);
-  const k = roleKey(f);
-  return k ? k[0].toUpperCase() + k.slice(1) : "-";
-}
-
-/** Which units a role takes, in words (the tooltip's gloss). */
-export const ROLE_UNITS = {
-  frontline: "melee, beasts, animals, recon",
-  screen: "a frontline unit with Formation",
-  flanker: "mounted",
-  assassin: "recon with Marksman",
-  archer: "archers",
-  siege: "catapults, rams, trebuchets",
-  arcane: "adepts, mages",
-  divine: "disciples, priests",
-};
 
 /** The action kinds: their words, their reach and how they look (`melee`: the unit goes in;
  *  `ranged`: something flies; `phys`: it can miss and, `crit`, be critical). */
@@ -279,12 +265,11 @@ export function plural(n) {
  *  line words one of its fields or one of the engine's values. */
 export function specials(f, ground, params = null) {
   const notes = [];
-  const role = roleKey(f);
   const num = (k) => (typeof params?.[k] === "number" ? params[k] : null);
   const splash = num("splash_pct");
   if (f.large) notes.push("Large: fills two cells side by side and counts two slots; it is the front or back unit of both its lanes.");
   if (f.anti_flank) notes.push("Anti-flanking: enemy flankers attack it first whenever it is in their reach.");
-  if (role === "flanker" || f.actions?.some((a) => kindKey(a?.kind) === "Charge")) {
+  if (f.actions?.some((a) => kindKey(a?.kind) === "Charge")) {
     const c = chargeRule(ground);
     const how =
       ground?.flanking === false

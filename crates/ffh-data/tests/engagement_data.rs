@@ -1,9 +1,8 @@
-//! Data spot-checks for engagement combat (this game's own rules, docs/ENGAGEMENTS.md): the
-//! roles of formation battles (combat_roles.jsonc), the role each unit type derives,
-//! the large units, the casters'
-//! damage spells, the plots' slot changes and the ENGAGEMENT_* defines. Expected values are the
-//! owner's (the formation battles spec, revision 4: docs/ENGAGEMENTS.md) and
-//! docs/COMBAT_INVENTORY.md's answers.
+//! Data spot-checks for engagement combat (this game's own rules, docs/ENGAGEMENTS.md): what each
+//! unit type does from each row and its rank preference (`engage_rows`, `engage_row_order` in
+//! units.jsonc; there are no roles since 2026-11-06), the large units, the casters' damage spells,
+//! the plots' slot changes and the ENGAGEMENT_* defines. Expected values are the owner's (the
+//! formation battles spec, revision 4: docs/ENGAGEMENTS.md) and docs/COMBAT_INVENTORY.md's answers.
 
 use ffh_data::*;
 
@@ -11,14 +10,15 @@ fn d() -> &'static GameData {
     ffh_data::global()
 }
 
-fn role(name: &str) -> CombatRoleType {
-    d().t::<CombatRoleType>(name)
-}
-
-/// The derived role of a unit type, as a type name ("-" for none).
-fn unit_role(name: &str) -> &'static str {
+/// A unit type's kind (the action of the row it prefers), as its token ("-" for a type without
+/// rows: sea and air units).
+fn unit_kind(name: &str) -> &'static str {
     let d = d();
-    d.unit_roles[d.t::<UnitType>(name)].map_or("-", |r| d.type_name(r))
+    let t = d.t::<UnitType>(name);
+    if d.units[t].engage_rows.is_none() {
+        return "-";
+    }
+    d.engage_kind(t).token()
 }
 
 /// A row: `n` actions of `kind`.
@@ -27,79 +27,53 @@ fn row(kind: ActionKind, n: i32) -> RowActions {
 }
 
 #[test]
-fn the_eight_roles() {
+fn the_rows_of_the_seven_kinds() {
     use ActionKind::*;
     let d = d();
-    let names: Vec<&str> = d.combat_roles.iter().map(|r| r.base.type_.as_str()).collect();
-    assert_eq!(
-        names,
-        [
-            "COMBATROLE_FRONTLINE", "COMBATROLE_SCREEN", "COMBATROLE_FLANKER", "COMBATROLE_ASSASSIN", "COMBATROLE_ARCHER", "COMBATROLE_SIEGE",
-            "COMBATROLE_ARCANE", "COMBATROLE_DIVINE",
-        ]
-    );
-    // The spec's table: (type, anti-flank, rows front to rear, home row, auto-pick place); the
-    // numbers are each unit's own (docs/UNIT_STATS.md).
-    type Want = (&'static str, bool, [RowActions; 3], usize, i32);
-    let want: [Want; 8] = [
-        ("COMBATROLE_FRONTLINE", false, [row(Strike, 2), row(Strike, 1), row(Strike, 1)], 0, 2),
-        ("COMBATROLE_SCREEN", true, [row(Strike, 2), row(Strike, 1), row(Strike, 1)], 0, 1),
-        ("COMBATROLE_FLANKER", false, [row(Charge, 2), row(Strike, 1), row(Strike, 1)], 0, 4),
-        ("COMBATROLE_ASSASSIN", false, [row(Stab, 1), row(Stab, 2), row(Stab, 1)], 1, 8),
-        ("COMBATROLE_ARCHER", false, [row(Shoot, 1), row(Shoot, 2), row(Shoot, 2)], 1, 3),
-        ("COMBATROLE_SIEGE", false, [row(None, 0), row(Bombard, 1), row(Bombard, 2)], 2, 7),
-        ("COMBATROLE_ARCANE", false, [row(Strike, 1), row(Spell, 1), row(Spell, 2)], 2, 5),
-        ("COMBATROLE_DIVINE", false, [row(Strike, 1), row(Heal, 1), row(Heal, 2)], 1, 6),
+    // The spec's rows (front to rear) and rank preferences, one unit of each kind; the numbers
+    // are each unit's own (docs/UNIT_STATS.md).
+    type Want = (&'static str, [RowActions; 3], [usize; 3], ActionKind);
+    let want: [Want; 7] = [
+        ("UNIT_AXEMAN", [row(Strike, 2), row(Strike, 1), row(Strike, 1)], [0, 1, 2], Strike),
+        ("UNIT_KNIGHT", [row(Charge, 2), row(Strike, 1), row(Strike, 1)], [0, 1, 2], Charge),
+        ("UNIT_ASSASSIN", [row(Stab, 1), row(Stab, 2), row(Stab, 1)], [1, 2, 0], Stab),
+        ("UNIT_ARCHER", [row(Shoot, 1), row(Shoot, 2), row(Shoot, 2)], [1, 2, 0], Shoot),
+        ("UNIT_CATAPULT", [row(None, 0), row(Bombard, 1), row(Bombard, 2)], [2, 1, 0], Bombard),
+        ("UNIT_ADEPT", [row(Strike, 1), row(Spell, 1), row(Spell, 2)], [2, 1, 0], Spell),
+        ("UNIT_PRIEST_OF_LEAVES", [row(Strike, 1), row(Heal, 1), row(Heal, 2)], [1, 2, 0], Heal),
     ];
-    for (name, anti_flank, rows, home, pick) in want {
-        let r = &d.combat_roles[role(name)];
-        assert_eq!((r.anti_flank, r.rows, r.home_row, r.auto_pick), (anti_flank, rows, home, pick), "{name}");
-        assert!(d.text.get(&r.base.description) != r.base.description, "{name}: no text");
-        assert!(d.text.get(&r.base.help) != r.base.help, "{name}: no help text");
-        // Only the flanker charges.
-        assert_eq!(r.flanks(), name == "COMBATROLE_FLANKER", "{name}");
+    for (name, rows, order, kind) in want {
+        let t = d.t::<UnitType>(name);
+        assert_eq!((d.engage_rows(t), d.engage_row_order(t), d.engage_kind(t)), (rows, order, kind), "{name}");
+        // Only the chargers flank.
+        assert_eq!(d.engage_flanks(t), kind == Charge, "{name}");
     }
-    // Defaults by unit combat (the frontline also takes units with none), Marksman for assassins.
-    let uc = |n: &str| d.t::<UnitCombatType>(n);
-    let frontline = &d.combat_roles[role("COMBATROLE_FRONTLINE")];
-    assert!(frontline.default);
-    assert_eq!(frontline.default_unit_combats, ["UNITCOMBAT_MELEE", "UNITCOMBAT_ANIMAL", "UNITCOMBAT_BEAST", "UNITCOMBAT_RECON"].map(uc));
-    assert_eq!(d.combat_roles.iter().filter(|r| r.default).count(), 1);
-    let assassin = &d.combat_roles[role("COMBATROLE_ASSASSIN")];
-    assert_eq!(assassin.default_unit_combats, [uc("UNITCOMBAT_RECON")]);
-    assert_eq!(assassin.default_free_promotion, Some(d.t::<PromotionType>("PROMOTION_MARKSMAN")));
-    assert_eq!(d.combat_roles[role("COMBATROLE_ARCHER")].default_unit_combats, ["UNITCOMBAT_ARCHER", "UNITCOMBAT_NAVAL"].map(uc));
-    assert_eq!(d.combat_roles[role("COMBATROLE_SIEGE")].default_unit_combats, [uc("UNITCOMBAT_SIEGE")]);
-    assert_eq!(d.combat_roles[role("COMBATROLE_FLANKER")].default_unit_combats, [uc("UNITCOMBAT_MOUNTED")]);
-    assert_eq!(d.combat_roles[role("COMBATROLE_ARCANE")].default_unit_combats, [uc("UNITCOMBAT_ADEPT")]);
-    assert_eq!(d.combat_roles[role("COMBATROLE_DIVINE")].default_unit_combats, [uc("UNITCOMBAT_DISCIPLE")]);
-    // Q7: Formation makes a frontline unit a screen.
-    let screen = &d.combat_roles[role("COMBATROLE_SCREEN")];
-    assert!(screen.default_unit_combats.is_empty());
-    assert_eq!(d.screen_role, Some((role("COMBATROLE_FRONTLINE"), d.t::<PromotionType>("PROMOTION_FORMATION"), role("COMBATROLE_SCREEN"))));
+    // Q7: Formation is the one promotion that makes a striker anti-flanking.
+    let anti: Vec<&str> = d.promotions.iter().filter(|p| p.anti_flank).map(|p| p.base.type_.as_str()).collect();
+    assert_eq!(anti, ["PROMOTION_FORMATION"]);
 }
 
 #[test]
 fn tier_4_units_and_heroes_act_once_more_in_their_best_row() {
     use ActionKind::*;
     let d = d();
-    // (role, best row, its actions with the extra one)
+    // (unit, best row, its actions with the extra one); none of them tier 4, which has it always
+    assert_eq!(d.engage_extra_actions(d.t::<UnitType>("UNIT_KNIGHT"), false), 1);
     for (name, best, rows) in [
-        ("COMBATROLE_FRONTLINE", 0, [row(Strike, 3), row(Strike, 1), row(Strike, 1)]),
-        ("COMBATROLE_SCREEN", 0, [row(Strike, 3), row(Strike, 1), row(Strike, 1)]),
-        ("COMBATROLE_FLANKER", 0, [row(Charge, 3), row(Strike, 1), row(Strike, 1)]),
-        ("COMBATROLE_ASSASSIN", 1, [row(Stab, 1), row(Stab, 3), row(Stab, 1)]),
+        ("UNIT_AXEMAN", 0, [row(Strike, 3), row(Strike, 1), row(Strike, 1)]),
+        ("UNIT_HORSEMAN", 0, [row(Charge, 3), row(Strike, 1), row(Strike, 1)]),
+        ("UNIT_ASSASSIN", 1, [row(Stab, 1), row(Stab, 3), row(Stab, 1)]),
         // two rows with two: the first such
-        ("COMBATROLE_ARCHER", 1, [row(Shoot, 1), row(Shoot, 3), row(Shoot, 2)]),
+        ("UNIT_ARCHER", 1, [row(Shoot, 1), row(Shoot, 3), row(Shoot, 2)]),
         // the front row stays without an action
-        ("COMBATROLE_SIEGE", 2, [row(None, 0), row(Bombard, 1), row(Bombard, 3)]),
-        ("COMBATROLE_ARCANE", 2, [row(Strike, 1), row(Spell, 1), row(Spell, 3)]),
-        ("COMBATROLE_DIVINE", 2, [row(Strike, 1), row(Heal, 1), row(Heal, 3)]),
+        ("UNIT_CATAPULT", 2, [row(None, 0), row(Bombard, 1), row(Bombard, 3)]),
+        ("UNIT_ADEPT", 2, [row(Strike, 1), row(Spell, 1), row(Spell, 3)]),
+        ("UNIT_PRIEST_OF_LEAVES", 2, [row(Strike, 1), row(Heal, 1), row(Heal, 3)]),
     ] {
-        let r = &d.combat_roles[role(name)];
-        assert_eq!(r.best_row(), best, "{name}");
-        assert_eq!(r.actions(d.defines.engagement_extra_actions), rows, "{name}");
-        assert_eq!(r.actions(0), r.rows, "{name}");
+        let t = d.t::<UnitType>(name);
+        assert_eq!(d.engage_best_row(t), best, "{name}");
+        assert_eq!(d.engage_actions(t, true), rows, "{name}");
+        assert_eq!(d.engage_actions(t, false), d.engage_rows(t), "{name}");
     }
 }
 
@@ -182,89 +156,95 @@ fn casters_cast_their_strongest_damage_spell() {
 }
 
 #[test]
-fn named_units_take_their_roles() {
+fn named_units_have_their_kinds() {
     for (unit, want) in [
-        ("UNIT_AXEMAN", "COMBATROLE_FRONTLINE"),
-        ("UNIT_ARCHER", "COMBATROLE_ARCHER"),
-        ("UNIT_KNIGHT", "COMBATROLE_FLANKER"),
-        ("UNIT_ASSASSIN", "COMBATROLE_ASSASSIN"),
-        ("UNIT_ADEPT", "COMBATROLE_ARCANE"),
-        ("UNIT_PALADIN", "COMBATROLE_FRONTLINE"),
-        ("UNIT_FIRE_ELEMENTAL", "COMBATROLE_FRONTLINE"),
-        // Marksman is free but the unit is an archer, not recon (Q6): an archer.
-        ("UNIT_MARKSMAN", "COMBATROLE_ARCHER"),
-        // recon fight as frontline (spec)
-        ("UNIT_SCOUT", "COMBATROLE_FRONTLINE"),
-        ("UNIT_CATAPULT", "COMBATROLE_SIEGE"),
-        ("UNIT_TREBUCHET", "COMBATROLE_SIEGE"),
-        ("UNIT_BATTERING_RAM", "COMBATROLE_SIEGE"),
+        ("UNIT_AXEMAN", "STRIKE"),
+        ("UNIT_ARCHER", "SHOOT"),
+        ("UNIT_KNIGHT", "CHARGE"),
+        ("UNIT_ASSASSIN", "STAB"),
+        ("UNIT_ADEPT", "SPELL"),
+        ("UNIT_PALADIN", "STRIKE"),
+        ("UNIT_FIRE_ELEMENTAL", "STRIKE"),
+        // Marksman is free but the unit is an archer, not recon (Q6): it shoots.
+        ("UNIT_MARKSMAN", "SHOOT"),
+        ("UNIT_SCOUT", "STRIKE"),
+        ("UNIT_CATAPULT", "BOMBARD"),
+        ("UNIT_TREBUCHET", "BOMBARD"),
+        ("UNIT_BATTERING_RAM", "BOMBARD"),
         // more of section 3's table
-        ("UNIT_WOLF", "COMBATROLE_FRONTLINE"),
-        ("UNIT_HILL_GIANT", "COMBATROLE_FRONTLINE"),
-        ("UNIT_WAR_ELEPHANT", "COMBATROLE_FLANKER"),
-        ("UNIT_HORSE_ARCHER", "COMBATROLE_FLANKER"),
-        ("UNIT_SHADOW", "COMBATROLE_ASSASSIN"),
-        ("UNIT_RATHUS", "COMBATROLE_ASSASSIN"),
-        ("UNIT_PRIEST_OF_LEAVES", "COMBATROLE_DIVINE"),
-        ("UNIT_DRUID", "COMBATROLE_DIVINE"),
-        ("UNIT_MAGE", "COMBATROLE_ARCANE"),
-        ("UNIT_IRON_GOLEM", "COMBATROLE_FRONTLINE"),
+        ("UNIT_WOLF", "STRIKE"),
+        ("UNIT_HILL_GIANT", "STRIKE"),
+        ("UNIT_WAR_ELEPHANT", "CHARGE"),
+        ("UNIT_HORSE_ARCHER", "CHARGE"),
+        ("UNIT_SHADOW", "STAB"),
+        ("UNIT_RATHUS", "STAB"),
+        ("UNIT_PRIEST_OF_LEAVES", "HEAL"),
+        ("UNIT_DRUID", "HEAL"),
+        ("UNIT_MAGE", "SPELL"),
+        ("UNIT_IRON_GOLEM", "STRIKE"),
         // the only land unit with UNITCOMBAT_NAVAL
-        ("UNIT_AIRSHIP", "COMBATROLE_ARCHER"),
-        // defends only, immobile: still frontline
-        ("UNIT_GUARDIAN_VINES", "COMBATROLE_FRONTLINE"),
-        ("UNIT_MUD_GOLEM", "COMBATROLE_FRONTLINE"),
+        ("UNIT_AIRSHIP", "SHOOT"),
+        // defends only, immobile: still a striker
+        ("UNIT_GUARDIAN_VINES", "STRIKE"),
+        ("UNIT_MUD_GOLEM", "STRIKE"),
         // typed strength only (lightning 3)
-        ("UNIT_LIGHTNING_ELEMENTAL", "COMBATROLE_FRONTLINE"),
-        // missiles have a role (their strike targets by it); the rules never commit them
-        ("UNIT_FIREBALL", "COMBATROLE_FRONTLINE"),
-        // Types without strength have a role too: a unit's strength is its own, and promotions
-        // add to it (a Worker that takes the Godslayer is a 3/3 unit, and it defends).
-        ("UNIT_WORKER", "COMBATROLE_FRONTLINE"),
-        ("UNIT_SETTLER", "COMBATROLE_FRONTLINE"),
-        ("UNIT_COMMANDER", "COMBATROLE_FRONTLINE"),
-        ("UNIT_CORLINDALE", "COMBATROLE_ARCANE"),
-        ("EQUIPMENT_GOLDEN_HAMMER", "COMBATROLE_FRONTLINE"),
-        ("UNIT_BRIGIT_HELD", "COMBATROLE_FRONTLINE"),
-        // no role: sea and air units
+        ("UNIT_LIGHTNING_ELEMENTAL", "STRIKE"),
+        // missiles have rows (their strike targets by them); the rules never commit them
+        ("UNIT_FIREBALL", "STRIKE"),
+        // Types without strength have rows too: a unit's strength is its own, and promotions add
+        // to it (a Worker that takes the Godslayer is a 3/3 unit, and it defends).
+        ("UNIT_WORKER", "STRIKE"),
+        ("UNIT_SETTLER", "STRIKE"),
+        ("UNIT_COMMANDER", "STRIKE"),
+        ("UNIT_CORLINDALE", "SPELL"),
+        ("EQUIPMENT_GOLDEN_HAMMER", "STRIKE"),
+        ("UNIT_BRIGIT_HELD", "STRIKE"),
+        // no rows: sea and air units
         ("UNIT_TRIREME", "-"),
         ("UNIT_KRAKEN", "-"),
         ("UNIT_HAWK", "-"),
     ] {
-        assert_eq!(unit_role(unit), want, "{unit}");
+        assert_eq!(unit_kind(unit), want, "{unit}");
     }
 }
 
 #[test]
-fn the_religions_fighters_are_frontline_and_every_assassin_has_marksman() {
+fn the_religions_fighters_strike_and_every_stabber_has_marksman() {
     let d = d();
-    // Section 3: seven disciples that never cast are frontline by their CombatRole; nothing else
-    // sets one, and no unit sets the iAttack / iDefense / iHP overrides yet.
-    // UNIT_SENTINEL (docs/SIEGES.md: never trained; a city's Sentinels fight with its values) is
-    // the one other unit that sets them.
-    let not_sentinel = |u: &&UnitInfo| u.base.type_ != "UNIT_SENTINEL";
-    let mut overridden: Vec<&str> = d.units.iter().filter(not_sentinel).filter(|u| u.combat_role.is_some()).map(|u| u.base.type_.as_str()).collect();
-    overridden.sort_unstable();
-    assert_eq!(
-        overridden,
-        ["UNIT_CRUSADER", "UNIT_EIDOLON", "UNIT_EINHERJAR", "UNIT_MONK", "UNIT_PALADIN", "UNIT_PARAMANDER", "UNIT_TAR_DEMON"]
-    );
+    // Section 3: seven disciples that never cast strike from the front, like melee units.
     let channeling = d.t::<PromotionType>("PROMOTION_CHANNELING1");
     let divine = d.t::<PromotionType>("PROMOTION_DIVINE");
     let disciple = d.t::<UnitCombatType>("UNITCOMBAT_DISCIPLE");
-    for u in d.units.iter().filter(not_sentinel).filter(|u| u.combat_role.is_some()) {
-        assert_eq!(u.combat_role, Some(role("COMBATROLE_FRONTLINE")), "{}", u.base.type_);
-        assert_eq!(u.unit_combat_type, Some(disciple), "{}", u.base.type_);
-        assert!(!u.free_promotions[channeling] && !u.free_promotions[divine], "{} casts", u.base.type_);
+    let mut strikers: Vec<&str> = d
+        .units
+        .keys()
+        .filter(|&u| d.units[u].unit_combat_type == Some(disciple) && d.units[u].engage_rows.is_some() && d.engage_kind(u) == ActionKind::Strike)
+        .map(|u| d.type_name(u))
+        .collect();
+    strikers.sort_unstable();
+    assert_eq!(strikers, ["UNIT_CRUSADER", "UNIT_EIDOLON", "UNIT_EINHERJAR", "UNIT_MONK", "UNIT_PALADIN", "UNIT_PARAMANDER", "UNIT_TAR_DEMON"]);
+    for name in strikers {
+        let u = &d.units[d.t::<UnitType>(name)];
+        assert!(!u.free_promotions[channeling] && !u.free_promotions[divine], "{name} casts");
     }
-    // Every type that fights land battles has a stat sheet (docs/UNIT_STATS.md), and ships none.
-    assert!(d.units.keys().all(|u| d.unit_roles[u].is_some() == d.units[u].stats.is_some()), "a role without a sheet or a sheet without a role");
-    // Q6: the assassins are exactly the recon units with Marksman free.
-    let mut assassins: Vec<&str> =
-        d.units.keys().filter(|&u| d.unit_roles[u] == Some(role("COMBATROLE_ASSASSIN"))).map(|u| d.type_name(u)).collect();
-    assassins.sort_unstable();
+    // Every type that fights land battles has a stat sheet (docs/UNIT_STATS.md), rows and a rank
+    // preference, and ships none.
+    for u in d.units.iter() {
+        assert_eq!(u.stats.is_some(), u.engage_rows.is_some(), "{}", u.base.type_);
+        assert_eq!(u.engage_rows.is_some(), u.engage_row_order.is_some(), "{}", u.base.type_);
+    }
+    // Q6: the stabbers are exactly the recon units with Marksman free.
+    let marksman = d.t::<PromotionType>("PROMOTION_MARKSMAN");
+    let recon = d.t::<UnitCombatType>("UNITCOMBAT_RECON");
+    let mut stabbers: Vec<&str> =
+        d.units.keys().filter(|&u| d.units[u].engage_rows.is_some() && d.engage_kind(u) == ActionKind::Stab).map(|u| d.type_name(u)).collect();
+    stabbers.sort_unstable();
+    for name in &stabbers {
+        let u = &d.units[d.t::<UnitType>(name)];
+        assert!(u.free_promotions[marksman] && u.unit_combat_type == Some(recon), "{name}");
+    }
     assert_eq!(
-        assassins,
+        stabbers,
         [
             "UNIT_ALAZKAN", "UNIT_ANGEL_OF_DEATH", "UNIT_ASSASSIN", "UNIT_CHANTER", "UNIT_COURTESAN", "UNIT_DWARVEN_SHADOW",
             "UNIT_GHOST", "UNIT_LIZARDMAN_ASSASSIN", "UNIT_RATHUS", "UNIT_SHADOW", "UNIT_TASKMASTER",
@@ -273,30 +253,30 @@ fn the_religions_fighters_are_frontline_and_every_assassin_has_marksman() {
 }
 
 #[test]
-fn every_land_type_has_a_role() {
+fn every_land_type_has_rows() {
     let d = d();
-    let count = |want: Option<&str>| d.unit_roles.iter().filter(|r| r.map(|r| d.type_name(r)) == want).count();
-    // (role, unit types) at the time of writing; the sum is every unit type.
+    let count = |want: Option<ActionKind>| d.units.keys().filter(|&u| d.units[u].engage_rows.map(|_| d.engage_kind(u)) == want).count();
+    // (kind, unit types) at the time of writing; the sum is every unit type.
     let want = [
-        (Some("COMBATROLE_FRONTLINE"), 190),
-        (Some("COMBATROLE_SCREEN"), 0),
-        (Some("COMBATROLE_FLANKER"), 38),
-        (Some("COMBATROLE_ASSASSIN"), 11),
-        (Some("COMBATROLE_ARCHER"), 17), // 16 and this game's Skirmisher
-        (Some("COMBATROLE_SIEGE"), 5),
-        (Some("COMBATROLE_ARCANE"), 18),
-        (Some("COMBATROLE_DIVINE"), 29),
+        (Some(ActionKind::Strike), 190),
+        (Some(ActionKind::Charge), 38),
+        (Some(ActionKind::Stab), 11),
+        (Some(ActionKind::Shoot), 17), // 16 and this game's Skirmisher
+        (Some(ActionKind::Bombard), 5),
+        (Some(ActionKind::Spell), 18),
+        (Some(ActionKind::Heal), 29),
         (None, 19),
     ];
-    for (r, n) in want {
-        assert_eq!(count(r), n, "{r:?}");
+    for (k, n) in want {
+        assert_eq!(count(k), n, "{k:?}");
     }
     assert_eq!(want.iter().map(|w| w.1).sum::<usize>(), d.units.len());
     // Whether a unit fights is its own strength, not its type's (promotions add to it), so every
-    // land and immobile type has a role, with or without strength; sea and air types have none.
+    // land and immobile type has rows, with or without strength; sea and air types have none.
     for (u, info) in d.units.iter_enumerated() {
         let land = matches!(info.domain_type, Some(DomainType::DOMAIN_LAND) | Some(DomainType::DOMAIN_IMMOBILE));
-        assert_eq!(d.unit_roles[u].is_some(), land, "{}", info.base.type_);
+        assert_eq!(info.engage_rows.is_some(), land, "{}", info.base.type_);
+        assert_eq!(d.type_engages_on_land(u), land, "{}", info.base.type_);
     }
 }
 

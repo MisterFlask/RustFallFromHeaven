@@ -163,8 +163,8 @@ impl Game {
     }
 
     /// Whether a unit the attack meets on `to` is one of its defenders ([`Game::engage_defenders`]):
-    /// it can defend there and has a role.
+    /// it can defend there and fights land battles (a land or immobile type).
     pub(crate) fn engage_can_defend(&self, d: UnitId, to: PlotIdx) -> bool {
-        self.unit_can_defend(d, Some(to)) && self.unit_combat_role(d).is_some()
+        self.unit_can_defend(d, Some(to)) && self.unit_engages_on_land(d)
     }
 }

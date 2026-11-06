@@ -67,8 +67,8 @@ A 300-turn mixed game writes about 0.5 MB of events.
 | `engage` / `engage_def` | the attacker's / the defender's engagements by result: `taken` (the plot fell), `cleared` (the defender's line gone, the plot held), `repulsed` (the attacker's line gone), `held` (both lines stand after the last round) (engagement combat, docs/ENGAGEMENTS.md) | rounds |
 | `engage_rounds` | rounds begun: `0`, `1`, `2`, `3`, `4+` | rounds |
 | `engage_slots` / `engage_slots_def` | a side's slots (`00`..`24`) | units committed |
-| `engage_force` | a committed attacker's role (`COMBATROLE_*`) | – |
-| `engage_lost_role` | a killed fighter's role (its owner's count) | – |
+| `engage_force` | a committed attacker's kind (the action of the row it prefers: `STRIKE`, `SHOOT`, `CHARGE`, `SPELL`, `HEAL`, `BOMBARD`, `STAB`) | – |
+| `engage_lost_kind` | a killed fighter's kind (its owner's count) | – |
 | `engage_withdrew` / `engage_satout` | `att`, `def`: fighters that withdrew / failed the morale check | – |
 | `engage_strike` | `n`: engagements with defensive strikes that hit | strikes that hit |
 | `engage_missile` | `hit`, `kill`, `miss`: missile strikes (Fireball, Meteor) | – |

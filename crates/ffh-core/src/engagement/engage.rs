@@ -370,15 +370,14 @@ pub(crate) struct OpeningRolls {
 }
 
 impl Game {
-    /// Unit `u` as a fighter of side `side` in cell `place` (spec 1.2-1.6): its role's values
-    /// through the per-unit accessors (speed, actions with the extra ones, dodge, crit bonus,
-    /// flanker), its role's anti-flank, HP from the damage field (a large unit's more), first
+    /// Unit `u` as a fighter of side `side` in cell `place` (spec 1.2-1.6): its values through
+    /// the per-unit accessors (speed, actions with the extra ones, dodge, crit bonus, flanker,
+    /// anti-flank), HP from the damage field (a large unit's more), first
     /// strikes and their chance, its A against nobody, withdrawal (attackers'
     /// `withdrawalProbability`; defenders' defensive withdrawal outside a city, none in one, Q3),
     /// combat limit (attackers only), collateral limit (units with collateral damage splash) and
     /// its extra (Barrage), collateral protection (Drill), its spell.
     pub(crate) fn engage_fighter(&self, u: UnitId, side: Side, place: (u8, u8), in_city: bool, ctx: &HitCtx, params: &Params) -> Fighter {
-        let d = self.d;
         let max_hp = self.unit_engage_max_hp(u);
         let mut f = Fighter::new(side, max_hp);
         f.tag = u.0;
@@ -393,7 +392,7 @@ impl Game {
         f.accuracy = self.unit_engage_accuracy(u);
         f.evasion = self.unit_engage_evasion(u);
         f.crit = self.unit_engage_crit(u);
-        f.anti_flank = self.unit_combat_role(u).is_some_and(|r| d.combat_roles[r].anti_flank);
+        f.anti_flank = self.unit_engage_anti_flank(u);
         f.flanker = self.unit_engage_flanks(u);
         f.withdraw_pct = match side {
             Side::Attacker => self.unit_withdrawal_probability(u),
@@ -416,14 +415,13 @@ impl Game {
     pub(crate) fn engage_sentinel_fighter(&self, c: CityId, k: usize, place: (u8, u8), params: &Params) -> Fighter {
         let d = self.d;
         let ty = self.sentinel_unit_type();
-        let role = d.unit_roles[ty];
         let max_hp = self.city_sentinel_max_hp(c);
         let mut f = Fighter::new(Side::Defender, max_hp);
         f.tag = u32::MAX - k as u32;
         (f.lane, f.row) = place;
         f.hp = hp_from_damage(self.city_sentinel_damage(c, k), max_hp);
         f.speed = self.sentinel_stat(StatType::Speed);
-        f.actions = d.engage_actions(ty, role, false);
+        f.actions = d.engage_actions(ty, false);
         f.a = self.sentinel_a_x100();
         f.accuracy = self.sentinel_stat(StatType::Accuracy);
         f.evasion = self.sentinel_stat(StatType::Evasion);
@@ -560,7 +558,7 @@ impl Game {
             Some(units) => {
                 let pool: Vec<UnitId> = units
                     .into_iter()
-                    .filter(|&u| self.units.contains(u) && !self.unit_is_dead(u) && self.unit_can_attack(u) && self.unit_combat_role(u).is_some())
+                    .filter(|&u| self.units.contains(u) && !self.unit_is_dead(u) && self.unit_can_attack(u) && self.unit_engages_on_land(u))
                     .collect();
                 let f = self.engage_auto_formation(&pool, Side::Attacker, &slots, &ctx);
                 (pool, f, false)

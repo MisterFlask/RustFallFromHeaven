@@ -3,7 +3,7 @@
 // escaped gone), whether the plot fell, each side's fallen, escaped and standing, and the whole log.
 
 import { h } from "./dom.js";
-import { finalState, fates, resultWords, logLines, viewerSide, uname, hpOf, xpBy, roleLabel } from "./battle_log.js";
+import { finalState, fates, resultWords, logLines, viewerSide, uname, hpOf, xpBy } from "./battle_log.js";
 import { loadArt, unitXY, pic, deadPic, faceFlip, animated, headChip, uiIcon, btn, add, partsEl, hpBar, groundLine } from "./battle_stage.js";
 
 export const NAME = "report";
@@ -107,7 +107,7 @@ function fatesPanel(L, me) {
     const label = L.sides?.[side]?.label ?? (side === me ? "Your army" : "Them");
     const chip = (b, kind) => {
       const f = L.fighters[b];
-      const title = `${uname(L, b)} (${roleLabel(f)}): ${kind === "fallen" ? "fell" : kind === "escaped" ? "escaped a killing blow and left the field" : kind === "afraid" ? "sat out, afraid" : `${hpOf(R.st.hp[b])} of ${f.max_hp} HP`}${xp[b] ? `, +${xp[b]} XP` : ""}`;
+      const title = `${uname(L, b)}: ${kind === "fallen" ? "fell" : kind === "escaped" ? "escaped a killing blow and left the field" : kind === "afraid" ? "sat out, afraid" : `${hpOf(R.st.hp[b])} of ${f.max_hp} HP`}${xp[b] ? `, +${xp[b]} XP` : ""}`;
       return h(
         `span.bt-fate.${kind}`,
         { title, "data-b": b },

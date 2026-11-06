@@ -12,11 +12,9 @@ import { setData } from "../app/state.js";
 import { FIXTURES } from "../app/battle_fixture.js";
 
 setData({
-  kinds: ["UnitType", "CombatRoleType", "SpellType", "FeatureType"],
+  kinds: ["UnitType", "SpellType", "FeatureType"],
   tables: {
     UnitType: [{ type: "UNIT_AXEMAN", name: "Axeman" }],
-    // the data's roles, in its order (combat_roles.jsonc)
-    CombatRoleType: ["FRONTLINE", "SCREEN", "FLANKER", "ASSASSIN", "ARCHER", "SIEGE", "ARCANE", "DIVINE"].map((r) => ({ type: `COMBATROLE_${r}`, name: r[0] + r.slice(1).toLowerCase() })),
     SpellType: [{ type: "SPELL_MAELSTROM", name: "Maelstrom" }],
     FeatureType: [{ type: "FEATURE_FOREST", name: "Forest" }],
   },
@@ -25,14 +23,14 @@ setData({
 const logs = Object.entries(FIXTURES).flatMap(([name, fx]) => fx.logs.map((l, k) => ({ name: `${name}#${k}`, log: l.log, formation: l.formation })));
 const field = FIXTURES.field.logs[0].log;
 
-test("types resolve by index or by name; roles by their key", () => {
+test("types resolve by index or by name; a fighter's rows in words", () => {
   assert.equal(L.tyName("UnitType", 0), "UNIT_AXEMAN");
   assert.equal(L.tyIdx("UnitType", "UNIT_AXEMAN"), 0);
   assert.equal(L.tyLabel("UnitType", "UNIT_WAR_ELEPHANT"), "War Elephant");
-  assert.equal(L.roleKey({ role: 2 }), "flanker");
-  assert.equal(L.roleKey({ role: 7 }), "divine");
-  assert.equal(L.roleKey({ role: "COMBATROLE_ARCANE" }), "arcane");
-  assert.equal(L.roleLabel({ role: "COMBATROLE_SIEGE" }), "Siege");
+  assert.equal(L.rowsLine({ actions: [{ kind: "Strike", n: 2 }, { kind: "Strike", n: 1 }, { kind: "Strike", n: 1 }] }), "2 strikes / 1 strike / 1 strike");
+  assert.equal(L.rowsLine({ actions: [{ kind: "None", n: 0 }, { kind: "BOMBARD", n: 1 }, { kind: "Bombard", n: 2 }] }), "— / 1 bombard / 2 bombards");
+  assert.equal(L.rowsLine({ actions: [{ kind: "Shoot", n: 1 }, { kind: "Shoot", n: 2 }, { kind: "Shoot", n: 2 }] }), "1 shot / 2 shots / 2 shots");
+  assert.equal(L.rowsLine({}), "-");
   assert.equal(L.kindKey("STRIKE"), "Strike");
   assert.equal(L.kindKey("bombard"), "Bombard");
   assert.equal(L.kindKey("whatever"), "None");
@@ -385,7 +383,7 @@ test("a preview's forecast is the formation's asked for, not the auto formation 
 });
 
 test("the result when no attacker is left: worded from the fates (fallen, escaped, afraid)", () => {
-  const fighter = (b, side, name, lane) => ({ b, unit: 900 + b, unit_type: "UNIT_AXEMAN", name, owner: side, side, role: "COMBATROLE_FLANKER", large: false, lane, row: 0, max_hp: 100, hp_start: 10000, speed: 6, actions: [] });
+  const fighter = (b, side, name, lane) => ({ b, unit: 900 + b, unit_type: "UNIT_AXEMAN", name, owner: side, side, large: false, lane, row: 0, max_hp: 100, hp_start: 10000, speed: 6, actions: [] });
   const fighters = [fighter(0, 0, "Horseman", 0), fighter(1, 0, "Horseman", 1), fighter(2, 0, "Axeman", 2), fighter(3, 1, "Axeman", 0)];
   const kill = (t) => ({ round: 1, pass: 1, actor: 3, kind: "Strike", target: t, hits: [{ target: t, dmg: 10000, killed: true }] });
   const flee = (t) => ({ round: 1, pass: 2, actor: 3, kind: "Strike", target: t, hits: [{ target: t, dmg: 0, withdrew: true }] });

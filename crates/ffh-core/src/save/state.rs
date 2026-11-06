@@ -45,7 +45,7 @@ persist_newtype!(
     TerrainType, TradeableItem, TraitType, UnitAIType, UnitArtStyleType, UnitClassType,
     UnitCombatType, UnitType, UpkeepType, VictoryType, VoteSourceType, VoteType, WarPlanType,
     WorldSizeType, YieldType, CulturalActionType, GovernorProfileType, GovernorTraitType,
-    CombatRoleType, BuildingTierType,
+    BuildingTierType,
 );
 
 persist_enum!(ActionKind { 0 => None, 1 => Strike, 2 => Charge, 3 => Stab, 4 => Shoot, 5 => Spell, 6 => Bombard, 7 => Heal });

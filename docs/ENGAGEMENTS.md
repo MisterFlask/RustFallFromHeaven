@@ -7,7 +7,7 @@ applies only to units in an army). Every game fights engagements, the AI-only ga
 `ffh autoplay`, `ffh-stress` and `ai_metrics.py` too (AI measurements from before 2026-11-03 are of
 the duel); saves made before do not load (the game options changed). When units attack a land plot, they fight a **formation battle** (revision 4, the
 owner's Ogre Battle-style engagements, 2026-10-31, designed in a browser prototype): each side's
-units stand on a grid of three rows by its lanes and act by row, role and speed for three rounds;
+units stand on a grid of three rows by its lanes and act by row and speed for three rounds;
 the plot falls only when no defender is left on it. The owner's answers on every FfH combat
 ability (Q1-Q13) and the ground rules G1-G5 are in docs/COMBAT_INVENTORY.md (its answers about
 rounds, stances and targeting are superseded by revision 4: this document).
@@ -16,7 +16,7 @@ Naval and air combat stay the duel.
 
 Code: `crates/ffh-core/src/engagement/` (`mod.rs` lists the modules): the pure resolver in
 `formation/` (`formation::resolve`, the auto formation `formation::auto_arrange`); on `Game` the
-dispatch rule (`state.rs`), the units' roles, HP and A and Dv per hit (`stats.rs`),
+dispatch rule (`state.rs`), the units' rows, HP and A and Dv per hit (`stats.rs`),
 the slots (`slots.rs`), who can fight (`pick.rs`), where each side's units stand (`arrange.rs`),
 the engagement (`engage.rs`, `apply.rs`, `sink.rs`), the reports and the battle log
 (`report.rs`), and the attack preview (`preview.rs`). Tests: the resolver's in
@@ -37,61 +37,63 @@ side's ordinary and river slots together; the sides' lane counts may differ). A 
 below) fills two cells side by side in one row and counts 2 slots, and is the front or back unit
 of both its lanes.
 
-**Roles** (`combat_roles.jsonc`):
+**Each unit's own rows** (the owner's decision, 2026-11-06: there are no roles). Every land unit
+type has, in `units.jsonc`:
 
-| Role | defaults (unit combat) | Front | Middle | Rear | other | home row | auto pick |
-|---|---|---|---|---|---|---|---|
-| FRONTLINE | MELEE, ANIMAL, BEAST, RECON, bDefault | 2 strike | 1 strike | 1 strike | | front | 2 |
-| SCREEN | FRONTLINE + Formation | 2 strike | 1 strike | 1 strike | anti-flank | front | 1 |
-| FLANKER | MOUNTED | 2 charge | 1 strike | 1 strike | | front | 4 |
-| ASSASSIN | RECON with Marksman free | 1 stab | 2 stab | 1 stab | | middle | 8 |
-| ARCHER | ARCHER, NAVAL (Airship) | 1 shoot | 2 shoot | 2 shoot | | middle | 3 |
-| SIEGE | SIEGE | none | 1 bombard | 2 bombard | | rear | 7 |
-| ARCANE | ADEPT | 1 strike | 1 spell | 2 spell | | rear | 5 |
-| DIVINE | DISCIPLE | 1 strike | 1 heal | 2 heal | | middle | 6 |
+| Key | What | Absent |
+|---|---|---|
+| `stats` | its numbers (docs/UNIT_STATS.md) | warns |
+| `engage_rows` | what it does from each row: three rows, front, middle and rear, each an `action` and its `count` | warns; no action from any row |
+| `engage_row_order` | its rank preference: `FRONT`, `MIDDLE` and `REAR`, once each, in the order the auto formation tries them | warns; front, middle, rear |
+| `large` | it fills two cells of a row and counts 2 slots | one cell |
 
-A unit's numbers (HP, attack, defence, magic, magic defence, accuracy, evasion, crit, speed) are
-its own stat sheet's, not its role's (docs/UNIT_STATS.md; below). The sheets began as the roles' old
-values: HP 120 frontline, 100 flanker, 80 archer and siege, 70 arcane and divine, 60 assassin;
-attack and defence the unit's strength times the role's percent (flanker 110/80, assassin 120/60,
-archer and siege 100/60, arcane and divine 100/50, screen defence 110); speed 4, screen 3, flanker
-6, assassin 7, archer 4, siege 1, arcane and divine 3; evasion 10 for flankers and 15 for
-assassins, crit 10 and 25 for assassins; accuracy 90.
+```jsonc
+"engage_rows": [{"action": "STRIKE", "count": 2}, {"action": "STRIKE", "count": 1}, {"action": "STRIKE", "count": 1}],
+"engage_row_order": ["FRONT", "MIDDLE", "REAR"],
+```
+
+An action is STRIKE, CHARGE, STAB, SHOOT, SPELL, BOMBARD, HEAL or NONE. A row's count is above 0
+exactly when its action is not NONE, and some row acts; rows that are not three, an unknown action
+or rows that break those rules warn at load and read as none. A unit's **kind** is what it does from
+the row it prefers (the first of its rank order); the auto formation sorts by it. A striker that
+holds a promotion with `anti_flank` (Formation) is **anti-flanking** (Q7). A **flanker** is a unit
+whose rows have a CHARGE.
+
+When the roles went (2026-11-06), each unit type's rows and rank order were written from the role
+it had, so every battle played the same (same seeds, same game checksums). Those were:
+
+| Was | Unit types | Front | Middle | Rear | Rank order |
+|---|---|---|---|---|---|
+| Frontline | melee, animals, beasts, recon, units without a unit combat | 2 strike | 1 strike | 1 strike | front, middle, rear |
+| Screen | a frontline unit with Formation: anti-flanking | 2 strike | 1 strike | 1 strike | front, middle, rear |
+| Flanker | mounted | 2 charge | 1 strike | 1 strike | front, middle, rear |
+| Assassin | recon with Marksman free | 1 stab | 2 stab | 1 stab | middle, rear, front |
+| Archer | archers, the Airship | 1 shoot | 2 shoot | 2 shoot | middle, rear, front |
+| Siege | siege | none | 1 bombard | 2 bombard | rear, middle, front |
+| Arcane | adepts | 1 strike | 1 spell | 2 spell | rear, middle, front |
+| Divine | disciples (seven that never cast were Frontline) | 1 strike | 1 heal | 2 heal | middle, rear, front |
+
+A unit's numbers (HP, attack, defence, magic, magic defence, accuracy, evasion, crit, speed) are its
+own stat sheet's (docs/UNIT_STATS.md; below). The sheets began as the roles' old values: HP 120
+frontline, 100 flanker, 80 archer and siege, 70 arcane and divine, 60 assassin; attack and defence
+the unit's strength times the role's percent (flanker 110/80, assassin 120/60, archer and siege
+100/60, arcane and divine 100/50, screen defence 110); speed 4, screen 3, flanker 6, assassin 7,
+archer 4, siege 1, arcane and divine 3; evasion 10 for flankers and 15 for assassins, crit 10 and
+25 for assassins; accuracy 90.
 
 Units of tier `ENGAGEMENT_EXTRA_ACTION_TIER` (4) and above and heroes get
 `ENGAGEMENT_EXTRA_ACTIONS` (1) more actions in their best row, the row with the most (the first
 such). Speed is the unit's (below) plus `ENGAGEMENT_FIRST_STRIKE_SPEED` (2) per first strike and per
 chance first strike rolled at the battle's start (first strikes are speed now; immunity to first
-strikes has no effect in an engagement). A flanker is a unit whose rows have a CHARGE. The home row
-and the auto-pick order are the auto formation's, always the role's.
+strikes has no effect in an engagement).
 
-**Per-unit values** (the owner's request, 2026-10-31; docs/UNIT_STATS.md). Every land unit type has
-a stat sheet in `units.jsonc`, `stats`: `hp`, `attack`, `defense`, `magic`, `magic_defense`,
-`accuracy`, `evasion`, `crit`, `speed`. Promotions change them (`stat_changes`); a missing or
-out-of-range value warns. A unit type may also replace its role's rows, and no unit does yet (the
-content is the owner's to decide):
-
-| Key | Replaces | Absent | Valid |
-|---|---|---|---|
-| `combat_role` | the role its unit combat gives it | that role | a role |
-| `large` | one cell | false: one cell | |
-| `engage_rows` | the role's rows | the role's | three rows |
-
-`engage_rows` holds three rows, front, middle and rear, each an `action` (STRIKE, CHARGE, STAB,
-SHOOT, SPELL, BOMBARD, HEAL, NONE) and its `count` (note: `count` here, `actions` in the roles'
-`front_row`, `middle_row`, `rear_row`):
-
-```jsonc
-"engage_rows": [{"action": "SHOOT", "count": 1}, {"action": "STAB", "count": 2}, {"action": "NONE"}],
-```
-
-The rows' rules are the roles': a count above 0 exactly when the action is not NONE, and some row
-acts. A value outside its range, rows that are not three, an unknown action or rows that break those
-rules warn at load and leave the unit its role's rows. One accessor per value resolves the unit:
-`Game::unit_stat` and `unit_engage_max_hp`, `_speed`, `_accuracy`, `_evasion`, `_crit` (its sheet,
-its own points and percentages), `unit_engage_rows`, `unit_engage_best_row`, `unit_engage_actions`
-(with the extra action), `unit_engage_flanks`, `unit_engage_large`, `unit_engage_spell` (its type's
-own, else its role's; stats.rs, arrange.rs); the rules' fighters, the auto formation, the preview,
+**Per-unit values** (the owner's requests, 2026-10-31 and 2026-11-06; docs/UNIT_STATS.md).
+Promotions change a unit's stats (`stat_changes`); a missing or out-of-range value warns. One
+accessor per value resolves the unit: `Game::unit_stat` and `unit_engage_max_hp`, `_speed`,
+`_accuracy`, `_evasion`, `_crit` (its sheet, its own points and percentages), `unit_engage_rows`,
+`unit_engage_best_row`, `unit_engage_actions` (with the extra action), `unit_engage_row_order`,
+`unit_engage_kind`, `unit_engage_anti_flank`, `unit_engage_flanks`, `unit_engage_large`,
+`unit_engage_spell` (stats.rs, arrange.rs); the rules' fighters, the auto formation, the preview,
 the view and the client read these.
 
 **Action kinds and reach** (`ffh_data::ActionKind`):
@@ -141,7 +143,7 @@ the view and the client read these.
   This replaces the round model's collateral step before the battle (Q4).
 - Siege (combat limit below 100, attackers only): its hits never take a target below
   `(100 - limit)%` of its max HP, and such targets are not in its reach.
-- Anti-flank: whatever a flanker can reach (with any of its actions), units of an anti-flank role
+- Anti-flank: whatever a flanker can reach (with any of its actions), anti-flanking units
   in that reach are taken first.
 
 **Order.** `ENGAGEMENT_ROUNDS` (3) rounds; in each, pass k (k from 1 to the most actions any unit
@@ -229,14 +231,15 @@ city's barbarian defence still count in Dv (`HitCtx::cover`), as before revision
 lane).
 
 **The auto formation** (`Game::engage_auto_formation`, over `formation::auto_arrange`, the
-prototype's `autoArrange`): one unit of each role first in the roles' `iAutoPick` order (Screen,
-Frontline, Archer, Flanker, Arcane, Divine, Siege, Assassin), then the rest in that order; within a
-role the healthy units first (not below `ENGAGEMENT_AUTO_MIN_HP_PERCENT`), then the strongest (its
+prototype's `autoArrange`): one unit of each kind first (what it does from the row it prefers:
+`formation::kind_pick_order`), in the order anti-flanking strikers, strikers, shooters, chargers,
+casters, healers, bombards, stabbers (the old roles' order: Screen, Frontline, Archer, Flanker,
+Arcane, Divine, Siege, Assassin), then the rest in that order; within a kind the healthy units first (not below `ENGAGEMENT_AUTO_MIN_HP_PERCENT`), then the strongest (its
 A on its side against nobody in particular, with its promotions; a large unit's counts double), then
 the lower unit id; while the slots last (a large unit needs 2; units without `bRiver` at most the
-ordinary slots, Q9's river rule). Then the large units are placed first, each unit in its role's
-home row, the lanes nearest the centre first (then the lower), else the nearest row with room
-(behind before in front). Deterministic, no RNG, the same for humans and the AI. Heroes and
+ordinary slots, Q9's river rule). Then the large units are placed first, each unit in the first row
+of its rank order (`engage_row_order`) with room, the lanes nearest the centre first (then the
+lower). Deterministic, no RNG, the same for humans and the AI. Heroes and
 veterans are not held back. The attacker fights it when its order gives no formation; the defender
 always does (`Game::engage_defense_formation`: the hook for standing formations per army, a later
 step).
@@ -370,7 +373,7 @@ either side, or a human team sees the plot), `report::BattleLog`:
   apply, and whether each side's formation was ordered;
 - the fighters (`LogFighter`): the committed units first in the engagement's order (sat-out ones in
   their place), then the reserves on both plots (no cell): the unit, its name, unit type, owner and
-  shown owner, side, cell `(lane, row)`, large, level, XP, hero, role, max HP, HP before the opening
+  shown owner, side, cell `(lane, row)`, large, level, XP, hero, max HP, HP before the opening
   and when the battle began, its speed in the battle, first strikes, their chance and what it
   rolled, actions per row, the spell it casts, accuracy, evasion, crit, anti-flank, flanker, withdrawal
   chance, combat limit, collateral limit, defensive strike, immunities, Fear, A and Dv with their
@@ -425,7 +428,7 @@ declare; and the forecast.
 ## Telemetry
 
 `engage*` counts and the `engagement` event (docs/TELEMETRY.md): the result (`taken`, `cleared`,
-`repulsed`, `held`), the rounds, the slots, the committed attackers and the fallen by role, the
+`repulsed`, `held`), the rounds, the slots, the committed attackers and the fallen by kind, the
 withdrawals, the morale failures, the defensive strikes, the missiles; the per-unit `attack` /
 `defend` counts stay comparable with the duel's; each kill, a missile strike's too, counts as a
 combat won (`kill_by`, the war's kills, a summon's kills). `telemetry.py`'s combat section prints
@@ -442,11 +445,11 @@ The spec (the owner's, revision 4) holds; these were left open and are decided s
 - Battle XP is shared equally per kill (docs/SIEGES.md, "XP"; until 2026-11-04 it was shared by
   the damage dealt). Withdrawal XP takes the enemy side's least restrictive XP cap.
 - `unit_attack` is forced: the unit given, whatever its moves and attacks this turn, if it is alive,
-  can attack and has a role, in the auto formation.
+  can attack and fights land battles, in the auto formation.
 - The fighters' order (the resolver's draw order for first strikes and coins) is the engagement's:
   the attacker's formation by lane then row, then the defender's; so the same formation is the same
   battle however the order lists it.
-- A large unit's HP is in its stat sheet (150% of its role's when the sheets were derived).
+- A large unit's HP is in its stat sheet (150% of its old role's when the sheets were derived).
 - The forest flag of the ground is a feature with `iEngagementSlotsChange` below 0 (the forests and
   the jungle); the city flag a city on the plot (a fort is not a city here).
 - The auto formation's strength is the unit's A against nobody in particular on its side (its

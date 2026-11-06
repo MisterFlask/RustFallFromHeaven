@@ -1183,17 +1183,34 @@ impl<'a> Run<'a> {
     }
 }
 
+/// The auto formation's order of a unit's kind (the action of the row it prefers), lowest first:
+/// anti-flanking strikers, strikers, shooters, chargers, casters, healers, bombards, stabbers
+/// (docs/ENGAGEMENTS.md, "The auto formation").
+pub fn kind_pick_order(kind: ActionKind, anti_flank: bool) -> i32 {
+    match kind {
+        ActionKind::Strike if anti_flank => 1,
+        ActionKind::Strike => 2,
+        ActionKind::Shoot => 3,
+        ActionKind::Charge => 4,
+        ActionKind::Spell => 5,
+        ActionKind::Heal => 6,
+        ActionKind::Bombard => 7,
+        ActionKind::Stab => 8,
+        ActionKind::None => 9,
+    }
+}
+
 /// A unit the auto formation may place ([`auto_arrange`]).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Candidate {
-    /// Its role's `iAutoPick`: the role order (lowest first).
+    /// Its kind's place in the auto formation's order ([`kind_pick_order`], lowest first).
     pub pick_order: i32,
-    /// Its role's home row (always the role's: a unit type's own `EngageRows` do not move it).
-    pub home_row: u8,
+    /// Its rank preference: the rows in the order it is placed in them (`engage_row_order`).
+    pub row_order: [u8; ROWS],
     pub large: bool,
     /// Its strength with its promotions (any consistent scale; a large unit counts double).
     pub value: i64,
-    /// Not below `ENGAGEMENT_AUTO_MIN_HP_PERCENT` of its HP: preferred within its role.
+    /// Not below `ENGAGEMENT_AUTO_MIN_HP_PERCENT` of its HP: preferred within its kind.
     pub healthy: bool,
     /// It may fill the river slots (`bRiver`: it crosses rivers freely): only such units fill the
     /// slots above `ordinary` ([`auto_arrange`]).
@@ -1209,13 +1226,13 @@ pub struct Placement {
     pub row: u8,
 }
 
-/// The rules' auto formation (the prototype's `autoArrange`): one unit of each role first, in
-/// the roles' pick order, then the rest in that order, each role's healthy units first and the
+/// The rules' auto formation (the prototype's `autoArrange`): one unit of each kind first, in
+/// the kinds' pick order, then the rest in that order, each kind's healthy units first and the
 /// strongest first (a large unit's value counts double), while the slots last (a large unit
 /// needs 2; units that cannot fill river slots at most `ordinary` of them: Q9's river rule);
-/// then the large units placed first, each unit in its role's home row, the lanes nearest the
-/// centre first (then the lower), else the nearest row with room (behind before in front). A
-/// unit with no room is left out. In candidate order.
+/// then the large units placed first, each unit in the first row of its rank preference with
+/// room, the lanes nearest the centre first (then the lower). A unit with no room is left out.
+/// In candidate order.
 pub fn auto_arrange(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32) -> Vec<Placement> {
     auto_arrange_around(cands, lanes, slots, ordinary, &[])
 }
@@ -1274,11 +1291,9 @@ pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary:
     let smalls = chosen.iter().copied().filter(|&i| !cands[i].large);
     for i in larges.chain(smalls).collect::<Vec<_>>() {
         let c = &cands[i];
-        let home = (c.home_row as i32).clamp(0, ROWS as i32 - 1);
-        let rows = [home, home + 1, home - 1, home + 2, home - 2].into_iter().filter(|r| (0..ROWS as i32).contains(r));
         let mut cell = None;
-        for r in rows {
-            let r = r as usize;
+        for r in c.row_order {
+            let r = (r as usize).min(ROWS - 1);
             let mut free: Vec<usize> =
                 (0..lanes_n).filter(|&l| if c.large { l + 1 < lanes_n && !grid[l][r] && !grid[l + 1][r] } else { !grid[l][r] }).collect();
             free.sort_by_key(|&l| (centre(l, c.large), l));

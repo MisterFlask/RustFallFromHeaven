@@ -359,7 +359,7 @@ pub fn promotion_value(g: &Game, u: UnitId, promo: PromotionType) -> i32 {
 /// line), each point of accuracy or evasion about a percent of damage dealt or taken, a crit point
 /// half that, HP as its percentage, a point of speed 5.
 fn stat_changes_value(g: &Game, u: UnitId, changes: &[StatChange; StatType::NUM], caster: bool, defender: bool) -> i32 {
-    let front = g.unit_combat_role(u).is_some_and(|r| g.d.combat_roles[r].home_row == 0);
+    let front = g.unit_engages_on_land(u) && g.unit_engage_row_order(u)[0] == 0;
     let pct = |s: StatType| {
         let c = changes[s.idx()];
         c.percent + c.flat * 100 / g.unit_stat(u, s).max(10)

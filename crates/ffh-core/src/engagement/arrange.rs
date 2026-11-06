@@ -7,14 +7,14 @@
 //! slots.
 //!
 //! **The auto formation** ([`Game::engage_auto_formation`]; `formation::auto_arrange`, the
-//! prototype's `autoArrange`): one unit of each role first, in the roles' `iAutoPick` order
-//! (Screen, Frontline, Archer, Flanker, Arcane, Divine, Siege, Assassin), then the rest in that
-//! order; within a role the healthy units first (not below `ENGAGEMENT_AUTO_MIN_HP_PERCENT`),
-//! then the strongest (its A on its side against nobody in particular, with its promotions; a
-//! large unit's counts double), then the lower unit id; while the slots last (a large unit needs
-//! 2; units without `bRiver` at most the ordinary slots, Q9). Then the large units are placed
-//! first, each unit in its role's home row, the lanes nearest the centre first, else the nearest
-//! row with room. A defended city's Sentinels (docs/SIEGES.md) hold their cells first: the front
+//! prototype's `autoArrange`): one unit of each kind first (the action of the row it prefers:
+//! `formation::kind_pick_order`), in the order anti-flanking strikers, strikers, shooters,
+//! chargers, casters, healers, bombards, stabbers, then the rest in that order; within a kind the
+//! healthy units first (not below `ENGAGEMENT_AUTO_MIN_HP_PERCENT`), then the strongest (its A on
+//! its side against nobody in particular, with its promotions; a large unit's counts double), then
+//! the lower unit id; while the slots last (a large unit needs 2; units without `bRiver` at most
+//! the ordinary slots, Q9). Then the large units are placed first, each unit in the first row of
+//! its rank preference (`engage_row_order`) with room, the lanes nearest the centre first. A defended city's Sentinels (docs/SIEGES.md) hold their cells first: the front
 //! row, the lanes nearest the centre ([`Game::engage_sentinel_cells`]), and the defender's units
 //! take the cells left. Deterministic, no RNG, the same for humans and the AI. Heroes are not held
 //! back. The attacker fights it when its order gives no formation; the defender always does
@@ -25,7 +25,7 @@
 //! cells of one row), at most the attacker's slots, and the units without `bRiver` at most its
 //! ordinary slots.
 
-use super::formation::{auto_arrange_around, lanes_for, sentinel_cells, Candidate, Side};
+use super::formation::{auto_arrange_around, kind_pick_order, lanes_for, sentinel_cells, Candidate, Side};
 use super::slots::Slots;
 use super::stats::HitCtx;
 use crate::game::Game;
@@ -71,18 +71,20 @@ impl Game {
     }
 
     /// The rules' auto formation of side `side` from `pool` (module comment), in the pool's order.
-    /// Units without a role are left out.
+    /// Units that never fight land battles (sea and air units) are left out.
     pub fn engage_auto_formation(&self, pool: &[UnitId], side: Side, slots: &Slots, ctx: &HitCtx) -> Vec<Place> {
         let d = self.d;
         let min_hp = d.defines.engagement_auto_min_hp_percent;
         let mut units: Vec<UnitId> = Vec::with_capacity(pool.len());
         let mut cands: Vec<Candidate> = Vec::with_capacity(pool.len());
         for &u in pool {
-            let Some(role) = self.unit_combat_role(u) else { continue };
-            let info = &d.combat_roles[role];
+            if !self.unit_engages_on_land(u) {
+                continue;
+            }
+            let order = self.unit_engage_row_order(u);
             cands.push(Candidate {
-                pick_order: info.auto_pick,
-                home_row: info.home_row.min(ROWS - 1) as u8,
+                pick_order: kind_pick_order(self.unit_engage_kind(u), self.unit_engage_anti_flank(u)),
+                row_order: order.map(|r| r.min(ROWS - 1) as u8),
                 large: self.unit_engage_large(u),
                 value: self.engage_strength(u, side, ctx) as i64,
                 healthy: 100 - self.units[u].damage >= min_hp,

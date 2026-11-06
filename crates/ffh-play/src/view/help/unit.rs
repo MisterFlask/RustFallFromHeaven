@@ -279,11 +279,11 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         ai_block_perm_defense: _,
         ai_block_patrol: _,
         // This game's own land battles (docs/ENGAGEMENTS.md, docs/UNIT_STATS.md): its stat sheet
-        // is a line below; its role and rows are the battle screens' (and the unit card's).
-        combat_role: _,
+        // is a line below; its rows and rank preference are the battle screens' (and the unit card's).
         stats,
         large: _,
         engage_rows: _,
+        engage_row_order: _,
     } = &d.units[u];
     let class = *unit_class_type;
     let mut b = String::new();
@@ -748,7 +748,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     let has = |p: Option<PromotionType>| p.is_none_or(|p| free_promotions[p]);
     // A battle-only spell (Fireball) only for a type whose battle rows cast spells (a unit that
     // knows a battle spell through its free promotions casts it in place of its attacks).
-    let rows = d.engage_rows(u, d.unit_roles[u]);
+    let rows = d.engage_rows(u);
     let knows = d.engage_damage_spell(u, |p| free_promotions[p], *religion_type).is_some() && d.unit_stat(u, StatType::Magic) > 0;
     let rows = if knows { rows_with_battle_spell(rows) } else { rows };
     let casts_in_battle = rows.iter().any(|r| r.kind == ActionKind::Spell);

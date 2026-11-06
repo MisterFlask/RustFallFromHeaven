@@ -11,7 +11,6 @@ use super::report::{BattleLog, FrozenForecast, Immunities, LogEvent, LogFighter,
 use crate::game::Game;
 use crate::ids::*;
 use crate::unit::DefStrikeRoll;
-use ffh_data::*;
 
 /// The log being written, and which unit each of its fighters is.
 pub(crate) struct Sink {
@@ -87,7 +86,6 @@ impl Sink {
     fn push(&mut self, g: &Game, e: &Eng, u: UnitId, side: Side, place: Option<(u8, u8)>) -> FighterIdx {
         let d = g.d;
         let unit = &g.units[u];
-        let role = g.unit_combat_role(u);
         let max_hp = g.unit_engage_max_hp(u);
         let other_team = match side {
             Side::Attacker => e.units.get(e.setup.n_att).map(|&du| g.unit_get_team(du)),
@@ -114,7 +112,6 @@ impl Sink {
             level: unit.level,
             xp: unit.experience,
             hero: g.unit_is_hero(u),
-            role: role.unwrap_or(CombatRoleType::from_usize(0)),
             max_hp,
             hp_start: hp,
             hp_battle: hp,
@@ -127,7 +124,7 @@ impl Sink {
             accuracy: g.unit_engage_accuracy(u),
             evasion: g.unit_engage_evasion(u),
             crit: g.unit_engage_crit(u),
-            anti_flank: role.is_some_and(|r| d.combat_roles[r].anti_flank),
+            anti_flank: g.unit_engage_anti_flank(u),
             flanker: g.unit_engage_flanks(u),
             withdraw_pct,
             combat_limit: if side == Side::Attacker { unit.combat_limit } else { 100 },

@@ -732,7 +732,8 @@ impl Game {
         let city = r.place.city.is_some();
         let barb = self.player_is_barbarian(pd);
         let animal = barb && e.of(Side::Defender).all(|i| d.units[e.types[i]].animal);
-        let role_of = |i: usize| d.unit_roles[e.types[i]].map_or("none", |ro| d.combat_roles[ro].base.type_.as_str());
+        // A unit's kind (the action of the row it prefers: STRIKE, SHOOT, ...).
+        let kind_of = |i: usize| d.engage_kind(e.types[i]).token();
         let (n_att, n_def) = (e.of(Side::Attacker).len(), e.of(Side::Defender).len());
         let result = match r.outcome.result {
             EngageResult::Taken => "taken",
@@ -755,7 +756,7 @@ impl Game {
                     };
                     t.count(p, "attack", res, 0);
                     t.count(p, "attack_vs", if !barb { "civ" } else if animal { "animal" } else { "barbarian" }, (res == "win") as i64);
-                    t.count(p, "engage_force", role_of(i), 0);
+                    t.count(p, "engage_force", kind_of(i), 0);
                 } else {
                     let res = match fate {
                         LogFate::Fell { .. } => "loss",
@@ -767,7 +768,7 @@ impl Game {
                 }
                 let side = if e.side(i) == Side::Attacker { "att" } else { "def" };
                 match fate {
-                    LogFate::Fell { .. } => t.count(p, "engage_lost_role", role_of(i), 0),
+                    LogFate::Fell { .. } => t.count(p, "engage_lost_kind", kind_of(i), 0),
                     LogFate::Withdrew { .. } => t.count(p, "engage_withdrew", side, 0),
                     LogFate::SatOut => t.count(p, "engage_satout", side, 0),
                     LogFate::Standing => {}

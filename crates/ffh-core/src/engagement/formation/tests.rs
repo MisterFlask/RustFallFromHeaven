@@ -1091,8 +1091,16 @@ fn nearby_first() {
     assert_eq!(b10.choose(&s10, 0, K::Spell, 1, &reach), Some(1));
 }
 
+/// The rank order of a unit placed by a home row, as the data's orders are (the rows behind before
+/// those in front): home, +1, -1, +2, -2.
+fn order_from(home: u8) -> [u8; ROWS] {
+    let h = home as i32;
+    let rows: Vec<u8> = [h, h + 1, h - 1, h + 2, h - 2].into_iter().filter(|r| (0..ROWS as i32).contains(r)).map(|r| r as u8).collect();
+    [rows[0], rows[1], rows[2]]
+}
+
 fn cand(pick_order: i32, home_row: u8, value: i64) -> Candidate {
-    Candidate { pick_order, home_row, large: false, value, healthy: true, river: true }
+    Candidate { pick_order, row_order: order_from(home_row), large: false, value, healthy: true, river: true }
 }
 
 #[test]
@@ -1253,7 +1261,7 @@ fn proto_scenario(key: &str) -> (Formation, Vec<String>) {
             .iter()
             .map(|u| {
                 let r = &PROTO_ROLES[u.role];
-                Candidate { pick_order: r.8, home_row: r.9, large: u.large, value: (u.str_ * (100 + 10 * (u.level - 1))) as i64, healthy: true, river: true }
+                Candidate { pick_order: r.8, row_order: order_from(r.9), large: u.large, value: (u.str_ * (100 + 10 * (u.level - 1))) as i64, healthy: true, river: true }
             })
             .collect();
         let tag = if side == Side::Attacker { "att" } else { "def" };

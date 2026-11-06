@@ -56,7 +56,7 @@ const LOG: &[&str] = &[
 ];
 const SIDE: &[&str] = &["player", "shown_player", "civ", "label", "lanes", "ordered"];
 const FIGHTER: &[&str] = &[
-    "b", "unit", "sentinel", "unit_type", "name", "owner", "side", "lane", "row", "large", "level", "xp", "hero", "role", "promotions", "max_hp", "hp_start", "hp_battle", "speed",
+    "b", "unit", "sentinel", "unit_type", "name", "owner", "side", "lane", "row", "large", "level", "xp", "hero", "promotions", "max_hp", "hp_start", "hp_battle", "speed",
     "first_strikes", "chance_first_strikes", "rolled_first_strikes", "actions", "bonus_action", "spell", "accuracy", "evasion", "crit", "anti_flank", "flanker", "withdraw_pct",
     "combat_limit", "collateral_limit", "splash", "def_strike", "immune", "fear", "a_x100", "dv_x100", "ma_x100", "md_x100", "a", "dv", "mag", "mdef", "fate", "dealt", "taken", "healed",
 ];
@@ -105,12 +105,13 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
     let mut s = load(&st.save);
     let (army, x, y) = (st.army.0, st.x, st.y);
 
-    // The view: no battle yet; each army unit's role, A, Dv, battle HP, speed and actions per row.
+    // The view: no battle yet; each army unit's rank preference, A, Dv, battle HP, speed and
+    // actions per row.
     let view = q(&s, r#"{"q":"view"}"#);
     assert_eq!(view.get("battles").and_then(Json::as_arr).map(<[Json]>::len), Some(0));
     for u in arr(&view, "units").iter().filter(|u| st.units.iter().any(|&id| id.0 as i64 == int(u, "id"))) {
         assert!(int(u, "engage_attack") > 0 && int(u, "engage_defense") > 0 && int(u, "engage_max_hp") > 0, "{u:?}");
-        assert!(u.get("engage_role").and_then(Json::as_i64).is_some());
+        assert_eq!(arr(u, "engage_row_order").len(), 3, "{u:?}");
         assert!(int(u, "engage_speed") > 0 && arr(u, "engage_actions").len() == 3, "{u:?}");
         assert!(u.get("engage_large").and_then(Json::as_bool).is_some());
     }

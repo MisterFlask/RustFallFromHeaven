@@ -49,7 +49,8 @@
   "GOVERNOR_SWAP_TURNS": 5,
   "GOVERNOR_MAX_TRAITS": 2,
   // ==== Engagement combat (GAMEOPTION_ENGAGEMENTS; phase 6 of the owner's spec, whose
-  //      parameter names follow each comment; roles: Units/CIV4CombatRoleInfos.xml, plot
+  //      parameter names follow each comment; a unit's rows and rank preference: engage_rows and
+  //      engage_row_order in units.jsonc; plot
   //      changes: iEngagementSlotsChange of terrains and features; formation battles, revision 4:
   //      docs/ENGAGEMENTS.md) ====
   // SLOTS_BASE: units each side commits to an engagement (a large unit counts two), before the
@@ -78,7 +79,7 @@
   //      battle's start)
   "ENGAGEMENT_FIRST_STRIKE_SPEED": 2,
   // EXTRA_ACTION_TIER: units of this tier and above, and heroes, get EXTRA_ACTIONS more actions
-  //      in their role's best row
+  //      in their best row (the row of their engage_rows with the most actions)
   "ENGAGEMENT_EXTRA_ACTION_TIER": 4,
   "ENGAGEMENT_EXTRA_ACTIONS": 1,
   // SHOOT_MISS_PERCENT, BOMBARD_MISS_PERCENT: what a SHOOT or a BOMBARD takes off the hitter's
@@ -113,7 +114,7 @@
   "ENGAGEMENT_HILLS_ATTACKER_PERCENT": 75,
   "ENGAGEMENT_HILLS_DEFENDER_RANGED_PERCENT": 125,
   // AUTO_MIN_HP_PCT: the auto-pick skips units below this percent of their HP while healthier
-  //      ones of the role are left
+  //      ones of the same kind (the action of the row a unit prefers) are left
   "ENGAGEMENT_AUTO_MIN_HP_PERCENT": 50,
   // RECON_REVEAL_RANGE: plots within which a recon unit reveals an army's formation (phase 7)
   "ENGAGEMENT_RECON_REVEAL_RANGE": 2,

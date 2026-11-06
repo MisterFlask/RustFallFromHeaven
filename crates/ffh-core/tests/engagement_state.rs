@@ -154,7 +154,6 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
         level: 1,
         xp: 0,
         hero: false,
-        role: CombatRoleType(0),
         max_hp: 120,
         hp_start: 12000,
         hp_battle: 12000,

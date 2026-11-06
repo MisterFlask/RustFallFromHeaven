@@ -96,7 +96,6 @@ impl Game {
     pub fn city_sentinel_log_fighter(&self, c: CityId, place: (u8, u8), hp: i32) -> LogFighter {
         let d = self.d;
         let ty = self.sentinel_unit_type();
-        let role = d.unit_roles[ty];
         let owner = self.cities[c].owner;
         let defense = if self.city_is_occupation(c) { 0 } else { self.city_sentinel_defense(c) };
         let a = self.sentinel_a_x100();
@@ -116,7 +115,6 @@ impl Game {
             level: 0,
             xp: 0,
             hero: false,
-            role: role.unwrap_or(CombatRoleType::from_usize(0)),
             max_hp: self.city_sentinel_max_hp(c),
             hp_start: hp,
             hp_battle: hp,
@@ -124,7 +122,7 @@ impl Game {
             first_strikes: 0,
             chance_first_strikes: 0,
             rolled_first_strikes: 0,
-            actions: d.engage_actions(ty, role, false),
+            actions: d.engage_actions(ty, false),
             spell: None,
             accuracy: self.sentinel_stat(StatType::Accuracy),
             evasion: self.sentinel_stat(StatType::Evasion),

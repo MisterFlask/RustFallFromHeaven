@@ -17,7 +17,7 @@
 
 use crate::enums::*;
 use crate::idx::IdxVec;
-use crate::infos::{read_engage_rows, read_stat_changes, read_stats, CombatRoleType, InfoBase, RowActions, StatChange, StatSheet, StatType, ROWS};
+use crate::infos::{read_engage_row_order, read_engage_rows, read_stat_changes, read_stats, InfoBase, RowActions, StatChange, StatSheet, StatType, ROWS};
 use crate::registry::Rd;
 
 // ---------------------------------------------------------------------------------------------
@@ -205,6 +205,10 @@ pub struct PromotionInfo {
     /// strength's (C++ `iCombatPercent`, `iCombatPercentDefense`), their points, in tens, its flat
     /// strength (`iExtraCombatStr`, `iExtraCombatDefense`). Its magic is a battle's only.
     pub stat_changes: [StatChange; StatType::NUM],
+    /// This game's own (docs/ENGAGEMENTS.md): `anti_flank`: a unit holding it that strikes from the
+    /// row it prefers is anti-flanking (Formation): whatever an enemy flanker can reach, such
+    /// units in its reach are taken first.
+    pub anti_flank: bool,
     /// C++ `getSpellDamageModify()`: damage added to its unit's spells outside battles (FfH's
     /// `doDamage`); a battle's spells use magic (`stat_changes`).
     pub spell_damage_modify: i32,
@@ -375,6 +379,7 @@ pub fn read_promotion(rd: &Rd) -> PromotionInfo {
         combat_heal_percent: rd.int("combat_heal_percent"),
         combat_limit: rd.int("combat_limit"),
         stat_changes: read_stat_changes(rd),
+        anti_flank: rd.bool("anti_flank"),
         spell_damage_modify: rd.int("spell_damage_modify"),
         combat_percent_global_counter: rd.int("combat_percent_global_counter"),
         combat_percent_in_borders: rd.int("combat_percent_in_borders"),
@@ -783,20 +788,20 @@ pub struct UnitInfo {
     /// C++ `isAIblockPatrol()`.
     pub ai_block_patrol: bool,
     // ---- This game's own: engagement combat (docs/ENGAGEMENTS.md) ----
-    /// `CombatRole`: the unit's engagement role in place of the one its unit combat gives it
-    /// (`GameData::type_combat_role`).
-    pub combat_role: Option<CombatRoleType>,
     /// Its battle numbers (`stats`; docs/UNIT_STATS.md); `None` for a type that never fights a land
     /// battle (ships, air units).
     pub stats: Option<StatSheet>,
     /// `bLarge`: a large unit in a formation battle (giants, elephants, dragons, golems,
     /// treants, ...): it fills two cells side by side in one row and two slots, and has
-    /// `ENGAGEMENT_LARGE_HP_PERCENT` of its role's HP.
+    /// its own HP (its stat sheet).
     pub large: bool,
-    /// `EngageRows` (three `Row`s, front, middle, rear, each an `Action` and its `iCount`): what
-    /// it does from each row, in place of its role's rows (`GameData::engage_rows`); `None`: the
-    /// role's.
+    /// `engage_rows` (three rows, front, middle, rear, each an `action` and its `count`): what it
+    /// does from each row (`GameData::engage_rows`); `None` for a type that never fights a land
+    /// battle.
     pub engage_rows: Option<[RowActions; ROWS]>,
+    /// `engage_row_order`: its rank preference, the rows front (0), middle (1), rear (2) in the
+    /// order the auto formation tries them; `None` for a type that never fights a land battle.
+    pub engage_row_order: Option<[usize; ROWS]>,
 }
 
 /// C++ `CvUnitInfo::read` + `readPass2` + `readPass3`.
@@ -987,10 +992,10 @@ pub fn read_unit(rd: &Rd) -> UnitInfo {
         ai_block_perm_defense: rd.bool("ai_block_perm_defense"),
         ai_block_patrol: rd.bool("ai_block_patrol"),
         // ---- This game's own: engagement combat ----
-        combat_role: rd.rf::<CombatRoleType>("combat_role"),
         large: rd.bool("large"),
         stats: read_stats(rd, &rd.string("type")),
         engage_rows: read_engage_rows(rd, &rd.string("type")),
+        engage_row_order: read_engage_row_order(rd, &rd.string("type")),
         // ---- readPass2 ----
         unit_convert_from_combat: rd.rf::<UnitType>("unit_convert_from_combat"),
         unit_create_from_combat: rd.rf::<UnitType>("unit_create_from_combat"),

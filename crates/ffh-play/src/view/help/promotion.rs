@@ -80,6 +80,7 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         same_tile_heal_change,
         adjacent_tile_heal_change,
         stat_changes,
+        anti_flank,
         spell_damage_modify,
         city_attack_percent,
         city_defense_percent,
@@ -272,6 +273,11 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         b.push_str(&per_turn);
     }
     stat_lines(b, stat_changes);
+    if *anti_flank {
+        // This game's own (docs/ENGAGEMENTS.md, Q7).
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]Anti-flanking in battle (a unit that strikes from the row it prefers): enemy flankers attack it first whenever it is in their reach");
+    }
     if *spell_damage_modify != 0 {
         line(b, d, "TXT_KEY_PROMOTION_SPELL_DAMAGE_MODIFY", &[Arg::N(*spell_damage_modify)]);
     }

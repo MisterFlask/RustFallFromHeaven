@@ -120,12 +120,18 @@ impl World {
         units.iter().filter(|&&u| self.g.units[u].unit_type == ty).count()
     }
 
-    fn role(&self, u: UnitId) -> String {
-        self.g.d.combat_roles[self.g.unit_combat_role(u).unwrap()].base.type_.clone()
+    /// A unit's kind as the auto formation sorts it: `ANTI_FLANK` for an anti-flanking striker,
+    /// else the token of what it does from the row it prefers (`STRIKE`, `SHOOT`, ...).
+    fn kind(&self, u: UnitId) -> String {
+        if self.g.unit_engage_anti_flank(u) {
+            "ANTI_FLANK".to_string()
+        } else {
+            self.g.unit_engage_kind(u).token().to_string()
+        }
     }
 
-    fn roles(&self, units: &[UnitId], role: &str) -> usize {
-        units.iter().filter(|&&u| self.role(u) == role).count()
+    fn kinds(&self, units: &[UnitId], kind: &str) -> usize {
+        units.iter().filter(|&&u| self.kind(u) == kind).count()
     }
 }
 
@@ -317,7 +323,7 @@ fn formations_are_validated() {
 }
 
 #[test]
-fn the_auto_formation_takes_one_of_each_role_first_and_puts_each_in_its_home_row() {
+fn the_auto_formation_takes_one_of_each_kind_first_and_puts_each_in_the_row_it_prefers() {
     let mut w = world();
     let (p0, from) = (w.p0, w.from);
     let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
@@ -328,30 +334,28 @@ fn the_auto_formation_takes_one_of_each_role_first_and_puts_each_in_its_home_row
     let assassins = w.units(p0, "UNIT_ASSASSIN", from, 2);
     let adepts = w.units(p0, "UNIT_ADEPT", from, 2);
     let pool: Vec<UnitId> = [axemen.clone(), vec![screen], archers, horsemen, assassins, adepts].concat();
-    assert_eq!(w.role(screen), "COMBATROLE_SCREEN");
+    assert_eq!(w.kind(screen), "ANTI_FLANK");
     assert_eq!((w.slots().att(), w.g.engage_lanes(&w.slots())), (10, [4, 4]));
 
-    let roles = |pick: &[UnitId]| {
-        ["COMBATROLE_FRONTLINE", "COMBATROLE_SCREEN", "COMBATROLE_ARCHER", "COMBATROLE_FLANKER", "COMBATROLE_ASSASSIN", "COMBATROLE_ARCANE"].map(|r| w.roles(pick, r))
-    };
-    // One of each role first (screen, frontline, archer, flanker, arcane, assassin: six), then
-    // the rest in the role order: four more frontline units.
+    let kinds = |pick: &[UnitId]| ["STRIKE", "ANTI_FLANK", "SHOOT", "CHARGE", "STAB", "SPELL"].map(|k| w.kinds(pick, k));
+    // One of each kind first (anti-flank, strike, shoot, charge, spell, stab: six), then the
+    // rest in the kinds' order: four more strikers.
     let auto = w.auto(&pool, Side::Attacker);
     let pick: Vec<UnitId> = auto.iter().map(|p| p.unit).collect();
-    assert_eq!(roles(&pick), [5, 1, 1, 1, 1, 1]);
+    assert_eq!(kinds(&pick), [5, 1, 1, 1, 1, 1]);
     assert_eq!(w.g.engage_validate_formation(&pool, &auto, &w.slots()), Ok(()));
-    // Home rows: the screen and the horseman in the front row; the archer and the assassin in
-    // the middle; the adept in the rear; the front's four cells full, the other frontline units
-    // in the next row with room.
+    // The rows they prefer: the anti-flanker and the horseman in the front row; the archer and
+    // the assassin in the middle; the adept in the rear; the front's four cells full, the other
+    // strikers in the next row of their rank order with room.
     let row_of = |u: UnitId| auto.iter().find(|p| p.unit == u).map(|p| p.row);
-    let of_role = |r: &str| pick.iter().copied().filter(|&u| w.role(u) == r).collect::<Vec<_>>();
+    let of_kind = |k: &str| pick.iter().copied().filter(|&u| w.kind(u) == k).collect::<Vec<_>>();
     assert_eq!(row_of(screen), Some(0));
-    assert_eq!(of_role("COMBATROLE_FLANKER").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(0)]);
-    assert_eq!(of_role("COMBATROLE_ARCHER").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(1)]);
-    assert_eq!(of_role("COMBATROLE_ASSASSIN").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(1)]);
-    assert_eq!(of_role("COMBATROLE_ARCANE").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(2)]);
+    assert_eq!(of_kind("CHARGE").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(0)]);
+    assert_eq!(of_kind("SHOOT").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(1)]);
+    assert_eq!(of_kind("STAB").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(1)]);
+    assert_eq!(of_kind("SPELL").iter().map(|&u| row_of(u)).collect::<Vec<_>>(), [Some(2)]);
     assert_eq!(auto.iter().filter(|p| p.row == 0).count(), 4, "the front row is full");
-    // Centre lanes first: the screen, picked first, stands in lane 1 (lanes 1 and 2 are the
+    // Centre lanes first: the anti-flanker, picked first, stands in lane 1 (lanes 1 and 2 are the
     // centre; ties go to the lower).
     assert_eq!(auto.iter().find(|p| p.unit == screen).map(|p| p.lane), Some(1));
 

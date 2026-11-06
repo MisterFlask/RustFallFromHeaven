@@ -149,7 +149,6 @@ function fighterOf(u, side, b, unit, owner) {
     level: u.level,
     hero: !!u.hero,
     promotions,
-    role: `COMBATROLE_${u.role.toUpperCase()}`,
     large: !!u.large,
     lane: null,
     row: null,

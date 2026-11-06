@@ -954,7 +954,7 @@ fn taunt_stops_when_the_caster_dies() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     let caster = w.unit(p0, "UNIT_HARLEQUIN", from);
-    assert!(w.g.d.unit_roles[w.g.units[caster].unit_type].is_some(), "the Harlequin defends in an engagement");
+    assert!(w.g.unit_engages_on_land(caster), "the Harlequin defends in an engagement");
     w.g.units[caster].damage = 99;
     w.g.unit_change_extra_withdrawal(caster, -1000);
     let taunted = w.units(p1, "UNIT_AXEMAN", to, 3);

@@ -96,7 +96,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   (`GameSetup::options`), `CrusadeRules` without `enabled`.
 /// - 17: building suitability (docs/SUITABILITY.md): `City::building_tiers`; the tier variants
 ///   and `PROMOTION_SPIRIT_GUIDE2` in the data.
-pub const FORMAT_VERSION: u32 = 17;
+/// - 18: no engagement roles (docs/ENGAGEMENTS.md): a battle report's fighters without `role`.
+pub const FORMAT_VERSION: u32 = 18;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

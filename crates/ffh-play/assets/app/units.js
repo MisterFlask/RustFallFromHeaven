@@ -14,7 +14,7 @@ import { look, iconEl, unitIcon, barEl, pix, typeIcon, promotionIcon, uiIcon } f
 import { isoSkin, isoIcon, actionIcon, portrait, isoBar, focusOn, unitFigure, updateInsets } from "./isoui.js";
 import { effectsOf, infoTip, partsList } from "./infotips.js";
 import { marchLine } from "./armies.js";
-import { battleTerrain, openPlan, roleName, flashBattle, engageNumbers, engageBrief } from "./engagements.js";
+import { battleTerrain, openPlan, preferredRow, flashBattle, engageNumbers, engageBrief } from "./engagements.js";
 
 /** An 8 px icon of the ui set, or the glyph before the art loaded. */
 const icon8 = (name, glyph, title) => iconEl(`icon8/${name}`, { title }) ?? glyph;
@@ -1093,24 +1093,26 @@ function armyBadge(u) {
   return null;
 }
 
-/** Engagement combat (docs/ENGAGEMENTS.md): the unit's role as a badge, its A, Dv and battle HP
- *  in the tooltip; null without engagements or a role. */
+/** Engagement combat (docs/ENGAGEMENTS.md): the row the unit prefers and what it does there as a
+ *  badge, its A, Dv and battle HP in the tooltip; null without engagements (or a sea or air unit). */
 function roleBadge(u) {
-  if (u.engage_role === undefined || u.engage_role === null) return null;
-  return h("span.badge.role", { "data-role": u.engage_role, title: engageText(u) }, roleName(u.engage_role));
+  const row = preferredRow(u);
+  if (!row) return null;
+  return h("span.badge.role", { title: engageText(u) }, row);
 }
 
-/** "Frontline · A 4 · Dv 5 · HP 55/120 · speed 4". */
-const engageText = (u) => `${roleName(u.engage_role)} · ${engageNumbers(u)}`;
+/** "Front: 2 strikes · A 4 · Dv 5 · HP 55/120 · speed 4". */
+const engageText = (u) => `${preferredRow(u)} · ${engageNumbers(u)}`;
 
 const ENGAGE_TITLE =
-  "In a battle: its role and the row it stands in decide what it does and how many times (front, middle, rear). ATK and DEF: its attack and defence; MAG and MDEF: its magic (spells) and magic defence; ACC: its chance to hit, less the target's EVA (evasion); CRIT: its crit chance; HP: its health in a battle; speed: when it acts (the fastest first)";
+  "In a battle: the row it stands in decides what it does and how many times (front, middle, rear: its own rows); the auto formation puts it in the row it prefers first. ATK and DEF: its attack and defence; MAG and MDEF: its magic (spells) and magic defence; ACC: its chance to hit, less the target's EVA (evasion); CRIT: its crit chance; HP: its health in a battle; speed: when it acts (the fastest first)";
 
-/** The lead unit's battle numbers (engagement combat): its role, A, Dv and HP; null without
- *  engagements or a role. */
+/** The lead unit's battle numbers (engagement combat): the row it prefers and what it does there,
+ *  A, Dv and HP; null without engagements (or for a sea or air unit). */
 function engageLine(u) {
-  if (!u || u.engage_role === undefined || u.engage_role === null) return null;
-  return h("div.engage-line", { title: ENGAGE_TITLE }, h("b", roleName(u.engage_role)), h("span.dim", ` · ${engageNumbers(u)}`));
+  const row = u ? preferredRow(u) : "";
+  if (!row) return null;
+  return h("div.engage-line", { title: ENGAGE_TITLE }, h("b", row), h("span.dim", ` · ${engageNumbers(u)}`));
 }
 
 /** The selection's army in one line: its size (and target), its recruits marching to it and in
@@ -1267,7 +1269,7 @@ function chipTip(u) {
   return [
     h("div.tip-title", u.name ?? dname("UnitType", u.type)),
     h("div.tip-stats", numbers.join(" · ")),
-    u.engage_role !== undefined && u.engage_role !== null ? h("div.tip-stats", engageText(u)) : null,
+    preferredRow(u) ? h("div.tip-stats", engageText(u)) : null,
     badges.length ? h("div.chip-badges", badges) : null,
     h("div.tip-hint", touchy() ? "Tap: select its group." : "Click: select its group. Ctrl-click: add or remove this unit."),
   ];
@@ -1445,9 +1447,10 @@ function renderCard({ own, ordered, r, details, lead, promotions, tools, status,
         d.moves !== undefined ? stat("moves", "Movement", h("span.value", `${moves(d.moves)}/${moves(d.max_moves)}`)) : null,
         d.max_hp ? stat("hp", "Health", isoBar(d.hp / Math.max(1, d.max_hp), { w: 64, kind: d.hp * 4 < d.max_hp ? "low" : "hp" }), `Health: ${Math.round((100 * d.hp) / d.max_hp)}%`) : null,
         d.level !== undefined ? stat("xp", "Level", h("span.value", `${d.level}${d.xp !== undefined && d.xp_needed ? ` (${d.xp}/${d.xp_needed})` : ""}`), d.xp !== undefined && d.xp_needed ? `Level ${d.level}: ${d.xp} of the ${d.xp_needed} experience the next promotion needs` : null) : null,
-        // Engagement combat: its role, A, Dv and battle HP (the rest in the tooltip).
-        d.engage_role !== undefined && d.engage_role !== null
-          ? stat("strength", roleName(d.engage_role), h("span.value.engage", `${roleName(d.engage_role)} · ${engageBrief(d)}`), `${engageText(d)}\n\n${ENGAGE_TITLE}`, ".engage-stat")
+        // Engagement combat: the row it prefers and what it does there, A, Dv and battle HP (the
+        // rest in the tooltip).
+        preferredRow(d)
+          ? stat("strength", "Battle", h("span.value.engage", `${preferredRow(d)} · ${engageBrief(d)}`), `${engageText(d)}\n\n${ENGAGE_TITLE}`, ".engage-stat")
           : null,
       )
     : null;

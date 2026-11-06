@@ -227,7 +227,6 @@ pub struct LogFighter {
     pub level: i32,
     pub xp: i32,
     pub hero: bool,
-    pub role: CombatRoleType,
     /// Max HP, and HP before the opening and when the rounds begin (centi-HP).
     pub max_hp: i32,
     pub hp_start: i32,

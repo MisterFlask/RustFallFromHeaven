@@ -9,6 +9,10 @@
 > which abilities are kept (first strikes now as speed, collateral now as a splash, defensive
 > strikes, Fear's morale check, combat limits, withdrawal, medics, kill effects, immortality,
 > captures, poison, missiles) still hold as ENGAGEMENTS.md applies them.
+>
+> **Roles are gone** (the owner's decision, 2026-11-06): each unit type has its own rows and rank
+> preference (docs/ENGAGEMENTS.md, "Each unit's own rows"), and Formation's `anti_flank` replaces
+> the Screen role. "Role" below means the role a unit had then.
 
 The owner's design spec "FfH Culture Actions & Army Combat" (2026-10-29) replaces Civ4's one-on-one
 combat with engagements: each side commits up to S units, units have roles (frontline, screen,

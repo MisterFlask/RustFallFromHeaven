@@ -1510,6 +1510,7 @@
   {
     "type": "PROMOTION_FORMATION",
     "stat_changes": {"defense": {"percent": 10}, "magic_defense": {"percent": 10}, "speed": {"flat": -1}},
+    "anti_flank": true,
     "description": "TXT_KEY_PROMOTION_FORMATION",
     "promotion_prereq": "PROMOTION_COMBAT2",
     "unit_combat_mods": {"UNITCOMBAT_MOUNTED": 40},

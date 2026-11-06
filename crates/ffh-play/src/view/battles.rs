@@ -261,7 +261,6 @@ fn plot_now(v: &Viewer, p: PlotIdx, river_crossing: bool) -> Json {
 fn plan_fighter(g: &Game, u: UnitId, side: Side, place: Option<(u8, u8)>, in_city: bool, viewer_team: TeamId, ctx: &HitCtx) -> LogFighter {
     let d = g.d;
     let unit = &g.units[u];
-    let role = g.unit_combat_role(u);
     let max_hp = g.unit_engage_max_hp(u);
     let withdraw_pct = match side {
         Side::Attacker => g.unit_withdrawal_probability(u),
@@ -284,7 +283,6 @@ fn plan_fighter(g: &Game, u: UnitId, side: Side, place: Option<(u8, u8)>, in_cit
         level: unit.level,
         xp: unit.experience,
         hero: g.unit_is_hero(u),
-        role: role.unwrap_or(CombatRoleType::from_usize(0)),
         max_hp,
         hp_start: hp,
         hp_battle: hp,
@@ -297,7 +295,7 @@ fn plan_fighter(g: &Game, u: UnitId, side: Side, place: Option<(u8, u8)>, in_cit
         accuracy: g.unit_engage_accuracy(u),
         evasion: g.unit_engage_evasion(u),
         crit: g.unit_engage_crit(u),
-        anti_flank: role.is_some_and(|r| d.combat_roles[r].anti_flank),
+        anti_flank: g.unit_engage_anti_flank(u),
         flanker: g.unit_engage_flanks(u),
         withdraw_pct,
         combat_limit: if side == Side::Attacker { unit.combat_limit } else { 100 },
@@ -359,7 +357,6 @@ fn fighter_json(g: &Game, b: usize, f: &LogFighter, owner: PlayerId) -> Json {
         "level" => f.level,
         "xp" => f.xp,
         "hero" => f.hero,
-        "role" => Json::idx(f.role),
         "promotions" => Json::Arr(fighter_promotions(g, f).into_iter().map(Json::idx).collect()),
         "max_hp" => f.max_hp,
         "hp_start" => f.hp_start,
@@ -956,15 +953,18 @@ fn could_engage(g: &Game, u: UnitId, plot: PlotIdx) -> bool {
     g.engage_applies(u, plot) && g.units[u].march.is_none() && !g.unit_is_suicide(u) && g.unit_can_attack(u)
 }
 
-/// A unit's engagement fields (the view's units, under engagements): its role, its A before the
-/// bonuses of a plot it attacks (its role and own percentages: as it hits back), its Dv where it
-/// stands, both x100, its max HP, its speed before first strikes, what it does from each row, its
-/// dodge and crit bonus, and whether it is large.
+/// A unit's engagement fields (the view's units, under engagements): what it does from each row
+/// and its rank preference (the rows front 0, middle 1, rear 2 in the order the auto formation
+/// tries them), its A before the bonuses of a plot it attacks (its own percentages: as it hits
+/// back), its Dv where it stands, both x100, its max HP, its speed before first strikes, its dodge
+/// and crit bonus, and whether it is large. Nothing for a sea or air unit.
 pub fn unit_fields(g: &Game, u: UnitId, j: &mut Json) {
-    let Some(role) = g.unit_combat_role(u) else { return };
+    if !g.unit_engages_on_land(u) {
+        return;
+    }
     let Some(at) = g.unit_plot_opt(u) else { return };
     let ctx = HitCtx { to: at, from: None, cover: false };
-    j.set("engage_role", Json::idx(role));
+    j.set("engage_row_order", Json::Arr(g.unit_engage_row_order(u).iter().map(|&r| Json::from(r)).collect()));
     j.set("engage_attack", g.engage_stat(u, None, Side::Defender, true, &ctx).total_x100);
     j.set("engage_defense", g.engage_job_defense(u, &ctx));
     j.set("engage_max_hp", g.unit_engage_max_hp(u));

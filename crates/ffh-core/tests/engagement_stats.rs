@@ -102,36 +102,36 @@ fn ad2((p, q): (Pair, Pair)) -> ((i32, i32), (i32, i32)) {
 }
 
 #[test]
-fn roles_and_hit_points() {
+fn kinds_and_hit_points() {
     let mut w = world();
     let (p0, from) = (w.p0, w.from);
-    let role = |g: &Game, u: UnitId| g.unit_combat_role(u).map(|r| g.d.combat_roles[r].base.type_.clone());
     for (name, expect, hp) in [
-        ("UNIT_AXEMAN", "COMBATROLE_FRONTLINE", 120),
-        ("UNIT_ARCHER", "COMBATROLE_ARCHER", 80),
-        ("UNIT_KNIGHT", "COMBATROLE_FLANKER", 100),
-        ("UNIT_ASSASSIN", "COMBATROLE_ASSASSIN", 60),
-        ("UNIT_ADEPT", "COMBATROLE_ARCANE", 70),
-        ("UNIT_FIRE_ELEMENTAL", "COMBATROLE_FRONTLINE", 120),
+        ("UNIT_AXEMAN", ActionKind::Strike, 120),
+        ("UNIT_ARCHER", ActionKind::Shoot, 80),
+        ("UNIT_KNIGHT", ActionKind::Charge, 100),
+        ("UNIT_ASSASSIN", ActionKind::Stab, 60),
+        ("UNIT_ADEPT", ActionKind::Spell, 70),
+        ("UNIT_FIRE_ELEMENTAL", ActionKind::Strike, 120),
     ] {
         let u = w.unit(p0, name, from);
-        assert_eq!(role(&w.g, u).as_deref(), Some(expect), "{name}");
+        assert_eq!(w.g.unit_engage_kind(u), expect, "{name}");
         assert_eq!(w.g.unit_engage_max_hp(u), hp, "{name}");
     }
-    // Formation makes a frontline unit a screen (Q7); an archer keeps its role.
+    // Formation makes a striker anti-flanking (Q7); an archer, which shoots from the row it
+    // prefers, is not.
     let axeman = w.unit(p0, "UNIT_AXEMAN", from);
     let archer = w.unit(p0, "UNIT_ARCHER", from);
+    assert!(!w.g.unit_engage_anti_flank(axeman));
     w.promote(axeman, "PROMOTION_FORMATION");
     w.promote(archer, "PROMOTION_FORMATION");
-    assert_eq!(role(&w.g, axeman).as_deref(), Some("COMBATROLE_SCREEN"));
+    assert!(w.g.unit_engage_anti_flank(axeman));
     assert_eq!(w.g.unit_engage_max_hp(axeman), 120);
-    assert_eq!(role(&w.g, archer).as_deref(), Some("COMBATROLE_ARCHER"));
+    assert!(!w.g.unit_engage_anti_flank(archer));
 }
 
-/// Formation battles' per-unit values (`Game::unit_engage_*`): with no unit type setting its own
-/// (the game's data; crates/ffh-data/tests/engagement_overrides.rs loads a fixture that does),
-/// each is the unit's role's, by the unit's own role, with a tier 4 unit's or a hero's extra
-/// action in its best row.
+/// Formation battles' per-unit values (`Game::unit_engage_*`): each is the unit type's own (the
+/// game's data; crates/ffh-data/tests/engagement_overrides.rs loads a fixture with others), with a
+/// tier 4 unit's or a hero's extra action in its best row.
 #[test]
 fn formation_values_by_unit() {
     use ActionKind::*;
@@ -151,8 +151,8 @@ fn formation_values_by_unit() {
     let assassin = w.unit(p0, "UNIT_ASSASSIN", from);
     assert_eq!(values(&w.g, assassin), (7, 20, 30, 1, false));
     assert_eq!(w.g.unit_engage_actions(assassin), [r(Stab, 1), r(Stab, 2), r(Stab, 1)]);
-    // An axeman: the frontline's; with Formation the screen's (its own role); a hero acts once
-    // more from its best row.
+    // An axeman: two strikes in front; Formation slows it (its speed -1); a hero acts once more
+    // from its best row.
     let axeman = w.unit(p0, "UNIT_AXEMAN", from);
     assert_eq!(values(&w.g, axeman), (4, 0, 10, 0, false));
     assert_eq!(w.g.unit_engage_actions(axeman), [r(Strike, 2), r(Strike, 1), r(Strike, 1)]);

@@ -8,7 +8,7 @@
 
 import { h, toast } from "./dom.js";
 import {
-  uname, roleKey, roleLabel, ROLE_UNITS, ROWS, actionAt, actionText, reachText, specials, slotSum, slotCap,
+  uname, rowsLine, ROWS, actionAt, actionText, reachText, specials, slotSum, slotCap,
   placeOf, placeFromList, formationOf, previewForecast, gridOf, slotsUsed, placeUnit, benchUnit, inLine, x100, stat, hpOf, tyLabel,
 } from "./battle_log.js";
 import { loadArt, unitXY, cellXY, cellAt, figBox, pic, faceFlip, headChip, uiIcon, btn, add, groundLine, FRAME_W, FRAME_H, COLORS } from "./battle_stage.js";
@@ -296,7 +296,6 @@ export function key(ctx, ev) {
 
 /** The tooltip's body for fighter `f`. */
 export function unitInfo(pv, f, { pos, fc } = {}) {
-  const role = roleKey(f);
   const rows = [0, 1, 2].map((r) => {
     const { kind, n } = actionAt(f, r);
     return h(`tr${pos && pos.row === r ? ".here" : ""}`, h("th", ROWS[r]), h("td", actionText(f, r)), h("td.dim", n ? reachText(kind, pv.ground) : ""));
@@ -304,7 +303,7 @@ export function unitInfo(pv, f, { pos, fc } = {}) {
   const per = fc?.per?.find((p) => p.b === f.b);
   return [
     h("div.bt-row", h(`span.bt-chip.tiny.${f.side === me ? "you" : "them"}`, f.side === 0 ? "Attacker" : "Defender"), h("b", uname(pv, f.b)), f.level > 1 ? h("span.dim.small", `level ${f.level}`) : null),
-    h("div.small", `${roleLabel(f)}${f.large ? ", large" : ""}${ROLE_UNITS[role] ? ` (${ROLE_UNITS[role]})` : ""}`),
+    f.large ? h("div.small", "Large") : null,
     h("div.small", h("span.amber", `ATK ${stat(f.a_x100)}`), " · ", h("span.frost", `DEF ${stat(f.dv_x100)}`), f.ma_x100 >= 10 ? ` · MAG ${stat(f.ma_x100)}` : "", ` · MDEF ${stat(f.md_x100)} · ${hpOf(f.hp_start)} of ${f.max_hp} HP · speed ${f.speed}`),
     (f.promotions ?? []).length ? h("div.small.dim", f.promotions.map((p) => tyLabel("PromotionType", p)).join(", ")) : null,
     h("table.bt-rows", h("thead", h("tr", h("th", "Row"), h("th", "Actions"), h("th", "Hits"))), h("tbody", rows)),
@@ -382,7 +381,7 @@ function render(ctx) {
       h(
         "div.bt-row",
         { style: { marginTop: "2px" } },
-        btn("Auto-arrange", { cls: "sm", title: "The rules' formation: one of each role first, the strongest, each in its role's row", onclick: () => autoArrange(ctx) }),
+        btn("Auto-arrange", { cls: "sm", title: "The rules' formation: one of each kind first, the strongest, each in the row it prefers", onclick: () => autoArrange(ctx) }),
         h("span.dim", "Then"),
         btn("Watch", { cls: "sm", on: watch === "watch", title: "Attack, then watch the battle", onclick: () => (ctx.prefs.set("watch", "watch"), render(ctx)) }),
         btn("Report", { cls: "sm", on: watch === "report", title: "Attack, then straight to the report", onclick: () => (ctx.prefs.set("watch", "report"), render(ctx)) }),
@@ -409,7 +408,7 @@ function render(ctx) {
         `div.bt-bench${P.sel === f.b ? ".sel" : ""}`,
         { role: "button", tabIndex: 0, "data-b": f.b, title: "", onclick: () => ((P.sel = P.sel === f.b ? null : f.b), render(ctx)) },
         headChip(f, pv.sides, { w: 28, h: 26 }),
-        h("span.bt-ell", h("b", uname(pv, f.b)), h("br"), h("span.small.dim", `${roleLabel(f)}${f.large ? " · large" : ""} · ATK ${stat(f.a_x100)} · DEF ${stat(f.dv_x100)}`)),
+        h("span.bt-ell", h("b", uname(pv, f.b)), h("br"), h("span.small.dim", `${rowsLine(f)}${f.large ? " · large" : ""} · ATK ${stat(f.a_x100)} · DEF ${stat(f.dv_x100)}`)),
       ),
     ),
   );

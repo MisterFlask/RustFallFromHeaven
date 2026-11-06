@@ -1,8 +1,8 @@
-//! Engagement roles (phase 6): the role table (`GameData::unit_roles`,
-//! ffh-data) is per unit type, but whether a unit fights is the unit's own strength (C++
-//! `CvUnit::canFight`, on `baseCombatStr` / `baseCombatStrDefense`), which promotions add to. So
-//! a type without strength must have a role too: a Worker that takes the Godslayer is a 3/3 unit
-//! that defends its plot, and an engagement commits it like any other defender.
+//! Engagement rows (phase 6): what a unit does from each row is per unit type (`engage_rows` and
+//! `engage_row_order` in units.jsonc), but whether a unit fights is the unit's own strength (C++
+//! `CvUnit::canFight`, on `baseCombatStr` / `baseCombatStrDefense`), which promotions add to. So a
+//! type without strength must have rows too: a Worker that takes the Godslayer is a 3/3 unit that
+//! defends its plot, and an engagement commits it like any other defender.
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -10,7 +10,7 @@ use ffh_core::setup::GameSetup;
 use ffh_data::*;
 
 #[test]
-fn a_worker_that_takes_the_godslayer_defends_and_has_a_role() {
+fn a_worker_that_takes_the_godslayer_defends_and_has_rows() {
     let d = ffh_data::global();
     let mut g = Game::new(d, GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5));
     g.game_init();
@@ -32,7 +32,8 @@ fn a_worker_that_takes_the_godslayer_defends_and_has_a_role() {
     assert_eq!((g.unit_base_combat_str(worker), g.unit_base_combat_str_defense(worker)), (3, 3));
     assert!(g.unit_can_fight(worker) && g.unit_can_defend(worker, None));
 
-    // Its type has a role (no unit combat: the bDefault role), so the engagement code can rely on
-    // every land unit that can fight having one.
-    assert_eq!(d.unit_roles[worker_type], Some(d.t::<CombatRoleType>("COMBATROLE_FRONTLINE")));
+    // Its type has rows and a rank preference (it strikes, from the front first), so the
+    // engagement code can rely on every land unit that can fight having them.
+    assert!(g.unit_engages_on_land(worker));
+    assert_eq!((g.unit_engage_kind(worker), g.unit_engage_row_order(worker)), (ActionKind::Strike, [0, 1, 2]));
 }

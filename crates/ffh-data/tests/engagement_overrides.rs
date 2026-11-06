@@ -1,39 +1,44 @@
 //! A unit type's own formation-battle values: its stat sheet (`stats` in units.jsonc:
-//! docs/UNIT_STATS.md) and its own rows in place of its role's (`engage_rows`; docs/ENGAGEMENTS.md,
-//! "Per-unit values"). This test loads a fixture: the game's data with a few units given rows and
-//! sheet values, good and bad, and checks what each unit's values resolve to and the load warnings.
+//! docs/UNIT_STATS.md), its rows (`engage_rows`) and its rank preference (`engage_row_order`;
+//! docs/ENGAGEMENTS.md, "Per-unit values"). This test loads a fixture: the game's data with a few
+//! units given other rows, orders and sheet values, good and bad, and checks what each unit's
+//! values resolve to and the load warnings.
 
 use std::path::{Path, PathBuf};
 
 use ffh_data::*;
 
-/// A change to the fixture: members inserted after a unit's `"type"`, or one value of its sheet.
+/// A change to the fixture: the line of a unit's member `key` replaced (`Replace(key, line)`), or
+/// one value of its sheet.
 enum Edit {
-    Insert(&'static str),
+    Replace(&'static str, &'static str),
     Stat(&'static str, i32),
 }
 
 /// Fixture changes, by unit.
 const FIXTURE: &[(&str, Edit)] = &[
-    // A frontline unit (tier 1) that acts like a skirmisher: its rows are its own.
+    // A tier-1 melee unit that shoots and stabs: its rows are its own.
     (
         "UNIT_WARRIOR",
-        Edit::Insert(r#""engage_rows": [{"action": "SHOOT", "count": 1}, {"action": "STAB", "count": 2}, {"action": "NONE", "count": 0}],"#),
+        Edit::Replace("engage_rows", r#""engage_rows": [{"action": "SHOOT", "count": 1}, {"action": "STAB", "count": 2}, {"action": "NONE", "count": 0}],"#),
     ),
     // A flanker with no evasion and a high crit (its sheet's values).
+    // A hunter that prefers the rear row, then the front.
+    ("UNIT_HUNTER", Edit::Replace("engage_row_order", r#""engage_row_order": ["REAR", "FRONT", "MIDDLE"],"#)),
     ("UNIT_HORSEMAN", Edit::Stat("evasion", 0)),
     ("UNIT_HORSEMAN", Edit::Stat("crit", 35)),
     // A tier 4 flanker whose best row is the middle one: its extra action goes there.
-    ("UNIT_KNIGHT", Edit::Insert(r#""engage_rows": [{"action": "STRIKE", "count": 1}, {"action": "CHARGE", "count": 2}, {"action": "NONE"}],"#)),
+    ("UNIT_KNIGHT", Edit::Replace("engage_rows", r#""engage_rows": [{"action": "STRIKE", "count": 1}, {"action": "CHARGE", "count": 2}, {"action": "NONE"}],"#)),
     // An archer whose rear row charges: a flanker by its own rows.
-    ("UNIT_ARCHER", Edit::Insert(r#""engage_rows": [{"action": "SHOOT", "count": 1}, {"action": "SHOOT", "count": 1}, {"action": "CHARGE", "count": 1}],"#)),
-    // Bad values: each warns; a bad sheet value reads as its range's lowest, bad rows give the
-    // role's.
+    ("UNIT_ARCHER", Edit::Replace("engage_rows", r#""engage_rows": [{"action": "SHOOT", "count": 1}, {"action": "SHOOT", "count": 1}, {"action": "CHARGE", "count": 1}],"#)),
+    // Bad values: each warns; a bad sheet value reads as its range's lowest, bad rows or a bad
+    // rank order read as none (and the loader warns for a land unit without them).
     ("UNIT_SCOUT", Edit::Stat("evasion", 120)),
     ("UNIT_SCOUT", Edit::Stat("speed", -3)),
-    ("UNIT_AXEMAN", Edit::Insert(r#""engage_rows": [{"action": "STRIKE", "count": 2}, {"action": "STRIKE", "count": 1}],"#)),
-    ("UNIT_SWORDSMAN", Edit::Insert(r#""engage_rows": [{"action": "THROW", "count": 2}, {"action": "STRIKE", "count": 1}, {"action": "STRIKE", "count": 1}],"#)),
-    ("UNIT_CHAMPION", Edit::Insert(r#""engage_rows": [{"action": "STRIKE", "count": 0}, {"action": "NONE", "count": 1}, {"action": "STRIKE", "count": 1}],"#)),
+    ("UNIT_AXEMAN", Edit::Replace("engage_rows", r#""engage_rows": [{"action": "STRIKE", "count": 2}, {"action": "STRIKE", "count": 1}],"#)),
+    ("UNIT_SWORDSMAN", Edit::Replace("engage_rows", r#""engage_rows": [{"action": "THROW", "count": 2}, {"action": "STRIKE", "count": 1}, {"action": "STRIKE", "count": 1}],"#)),
+    ("UNIT_CHAMPION", Edit::Replace("engage_rows", r#""engage_rows": [{"action": "STRIKE", "count": 0}, {"action": "NONE", "count": 1}, {"action": "STRIKE", "count": 1}],"#)),
+    ("UNIT_RANGER", Edit::Replace("engage_row_order", r#""engage_row_order": ["FRONT", "FRONT", "REAR"],"#)),
 ];
 
 fn copy_dir(from: &Path, to: &Path) {
@@ -62,7 +67,14 @@ fn load_fixture() -> GameData {
         let key = format!("\"type\": \"{unit}\",");
         assert_eq!(text.matches(&key).count(), 1, "{unit}");
         match edit {
-            Edit::Insert(snippet) => text = text.replacen(&key, &format!("{key}\n{snippet}"), 1),
+            Edit::Replace(member, line) => {
+                // The unit's own line of the member: the first after its type.
+                let at = text.find(&key).unwrap();
+                let m = format!("\n    \"{member}\": ");
+                let line_start = at + text[at..].find(&m).unwrap() + 1;
+                let line_end = line_start + text[line_start..].find('\n').unwrap();
+                text = format!("{}    {line}{}", &text[..line_start], &text[line_end..]);
+            }
             Edit::Stat(stat, value) => {
                 // The sheet is the line after the type.
                 let at = text.find(&key).unwrap();
@@ -89,84 +101,79 @@ fn row(kind: ActionKind, count: i32) -> RowActions {
 }
 
 #[test]
-fn a_unit_types_own_values_replace_its_roles() {
+fn a_unit_types_own_values() {
     use ActionKind::*;
     let d = load_fixture();
     let unit = |n: &str| d.t::<UnitType>(n);
-    let role_of = |n: &str| d.unit_roles[unit(n)];
-    let role = |n: &str| &d.combat_roles[d.t::<CombatRoleType>(n)];
     let stat = |n: &str, s: StatType| d.unit_stat(unit(n), s);
 
     // The warrior: its own rows; its speed is its sheet's.
-    let (w, wr) = (unit("UNIT_WARRIOR"), role_of("UNIT_WARRIOR"));
-    assert_eq!(wr, Some(d.t::<CombatRoleType>("COMBATROLE_FRONTLINE")));
-    let skirmisher = [row(Shoot, 1), row(Stab, 2), row(None, 0)];
-    assert_eq!(d.units[w].engage_rows, Some(skirmisher));
+    let w = unit("UNIT_WARRIOR");
+    let shoot_stab = [row(Shoot, 1), row(Stab, 2), row(None, 0)];
+    assert_eq!(d.units[w].engage_rows, Some(shoot_stab));
     assert_eq!(stat("UNIT_WARRIOR", StatType::Speed), 4);
-    assert_eq!(d.engage_rows(w, wr), skirmisher);
+    assert_eq!(d.engage_rows(w), shoot_stab);
     // Its best row and its extra action come from its own rows: the middle one, for a hero.
-    assert_eq!(d.engage_best_row(w, wr), 1);
+    assert_eq!(d.engage_best_row(w), 1);
     assert_eq!(d.engage_extra_actions(w, false), 0);
-    assert_eq!(d.engage_actions(w, wr, false), skirmisher);
-    assert_eq!(d.engage_actions(w, wr, true), [row(Shoot, 1), row(Stab, 3), row(None, 0)]);
-    assert!(!d.engage_flanks(w, wr));
-    // The role is unchanged (its other units fight by it).
-    assert_eq!(role("COMBATROLE_FRONTLINE").rows, [row(Strike, 2), row(Strike, 1), row(Strike, 1)]);
-    // The type's rows hold whatever role the unit has (a promotion can change it).
-    let screen = Some(d.t::<CombatRoleType>("COMBATROLE_SCREEN"));
-    assert_eq!(d.engage_rows(w, screen), skirmisher);
+    assert_eq!(d.engage_actions(w, false), shoot_stab);
+    assert_eq!(d.engage_actions(w, true), [row(Shoot, 1), row(Stab, 3), row(None, 0)]);
+    assert!(!d.engage_flanks(w));
+    // It prefers the front row (its rank order is unchanged), so its kind is a shot.
+    assert_eq!((d.engage_row_order(w), d.engage_kind(w)), ([0, 1, 2], Shoot));
 
-    // The horseman: its sheet's evasion and crit; its role's rows charge.
-    let (h, hr) = (unit("UNIT_HORSEMAN"), role_of("UNIT_HORSEMAN"));
-    assert_eq!(hr, Some(d.t::<CombatRoleType>("COMBATROLE_FLANKER")));
+    // The horseman: its sheet's evasion and crit; its rows charge.
+    let h = unit("UNIT_HORSEMAN");
     assert_eq!((stat("UNIT_HORSEMAN", StatType::Evasion), stat("UNIT_HORSEMAN", StatType::Crit), stat("UNIT_HORSEMAN", StatType::Speed)), (0, 35, 6));
-    assert_eq!(d.engage_rows(h, hr), role("COMBATROLE_FLANKER").rows);
-    assert!(d.engage_flanks(h, hr));
+    assert_eq!(d.engage_rows(h), [row(Charge, 2), row(Strike, 1), row(Strike, 1)]);
+    assert!(d.engage_flanks(h));
+
+    // The hunter prefers the rear row, then the front: its kind is what it does there.
+    let hu = unit("UNIT_HUNTER");
+    assert_eq!((d.engage_row_order(hu), d.engage_kind(hu)), ([2, 0, 1], Strike));
 
     // The knight, tier 4: its extra action goes to its own best row, the middle one.
-    let (k, kr) = (unit("UNIT_KNIGHT"), role_of("UNIT_KNIGHT"));
+    let k = unit("UNIT_KNIGHT");
     assert_eq!(d.units[k].tier, 4);
     assert_eq!(d.engage_extra_actions(k, false), 1);
-    assert_eq!(d.engage_best_row(k, kr), 1);
-    assert_eq!(d.engage_actions(k, kr, false), [row(Strike, 1), row(Charge, 3), row(None, 0)]);
-    assert!(d.engage_flanks(k, kr));
+    assert_eq!(d.engage_best_row(k), 1);
+    assert_eq!(d.engage_actions(k, false), [row(Strike, 1), row(Charge, 3), row(None, 0)]);
+    assert!(d.engage_flanks(k));
 
-    // The archer flanks by its own rows; its role does not.
-    let (a, ar) = (unit("UNIT_ARCHER"), role_of("UNIT_ARCHER"));
-    assert_eq!(ar, Some(d.t::<CombatRoleType>("COMBATROLE_ARCHER")));
-    assert!(d.engage_flanks(a, ar) && !role("COMBATROLE_ARCHER").flanks());
+    // The archer flanks by its own rows.
+    let a = unit("UNIT_ARCHER");
+    assert!(d.engage_flanks(a));
     // Of three rows with one action each, the first is the best.
-    assert_eq!(d.engage_best_row(a, ar), 0);
+    assert_eq!(d.engage_best_row(a), 0);
 
-    // Bad values warn: a sheet value reads as its range's lowest, rows fall back to the role's.
+    // Bad values warn: a sheet value reads as its range's lowest; bad rows read as none (no
+    // action from any row), a bad rank order as none (front, middle, rear).
     assert_eq!((stat("UNIT_SCOUT", StatType::Evasion), stat("UNIT_SCOUT", StatType::Speed)), (0, 0));
     for name in ["UNIT_AXEMAN", "UNIT_SWORDSMAN", "UNIT_CHAMPION"] {
-        let (u, r) = (unit(name), role_of(name));
+        let u = unit(name);
         assert_eq!(d.units[u].engage_rows, Option::None, "{name}");
-        assert_eq!(d.engage_rows(u, r), role("COMBATROLE_FRONTLINE").rows, "{name}");
+        assert_eq!(d.engage_rows(u), [RowActions::default(); ROWS], "{name}");
     }
+    assert_eq!((d.units[unit("UNIT_RANGER")].engage_row_order, d.engage_row_order(unit("UNIT_RANGER"))), (Option::None, [0, 1, 2]));
     let mut warnings: Vec<String> = d.warnings.iter().map(|w| w.replace("units.jsonc: ", "")).collect();
     warnings.sort();
     assert_eq!(
         warnings,
         [
             "UNIT_AXEMAN: UNIT_AXEMAN: engage_rows has 2 rows (3 expected: front, middle, rear)",
+            "UNIT_AXEMAN: a land unit without engage_rows",
             "UNIT_CHAMPION: UNIT_CHAMPION: engage_rows: a row has a count above 0 exactly when its action is not NONE",
+            "UNIT_CHAMPION: a land unit without engage_rows",
+            "UNIT_RANGER: UNIT_RANGER: engage_row_order [\"FRONT\", \"FRONT\", \"REAR\"] is not FRONT, MIDDLE and REAR once each",
+            "UNIT_RANGER: a land unit without engage_row_order",
             "UNIT_SCOUT: UNIT_SCOUT: stats \"evasion\" 120 is not in 0..=95",
             "UNIT_SCOUT: UNIT_SCOUT: stats \"speed\" -3 is not in 0..=2147483647",
             "UNIT_SWORDSMAN: UNIT_SWORDSMAN: engage_rows, FRONT row: unknown action \"THROW\"",
+            "UNIT_SWORDSMAN: a land unit without engage_rows",
         ]
     );
 
-    // A unit type without a role (a ship) has no sheet and no rows.
-    let ship = d.units.keys().find(|&u| d.unit_roles[u].is_none()).unwrap();
-    assert_eq!((d.units[ship].stats, d.engage_rows(ship, Option::None)), (Option::None, [RowActions::default(); ROWS]));
-}
-
-#[test]
-fn the_games_units_set_no_rows_of_their_own() {
-    // The content is the owner's to decide: every unit of the game's data takes its role's rows,
-    // but UNIT_SENTINEL, which is never trained (docs/SIEGES.md: a city's Sentinels fight with it).
-    let d = ffh_data::global();
-    assert!(d.units.iter().filter(|u| u.base.type_ != "UNIT_SENTINEL").all(|u| u.engage_rows.is_none()));
+    // A sea unit has no sheet, no rows and no rank preference.
+    let ship = d.units.keys().find(|&u| !d.type_engages_on_land(u)).unwrap();
+    assert_eq!((d.units[ship].stats, d.units[ship].engage_rows, d.units[ship].engage_row_order), (Option::None, Option::None, Option::None));
 }

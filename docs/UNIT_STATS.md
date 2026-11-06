@@ -58,10 +58,14 @@ All values are integers on a x10 scale: an Axeman (strength 4) has Attack 40.
 | Crit | CRIT | its chance to crit on STRIKE, CHARGE, STAB, SHOOT | 10 + the role's crit bonus (Assassin 25) |
 | Speed | SPD | turn order in a pass; first strikes add to it as now | the role's speed |
 
-**Roles stay.** They still define rows and actions, the home row, the auto-pick order and
-anti-flank. Their A%, Dv%, HP, speed, dodge and crit were the values the derivation read once; they
-are gone from the roles, and the unit's sheet is the only source (307 land unit types, Sentinel
-included; ships and air units have none). A land type without a sheet warns at load.
+**Roles stayed, then went.** At first they still defined rows and actions, the home row, the
+auto-pick order and anti-flank. Their A%, Dv%, HP, speed, dodge and crit were the values the
+derivation read once; they are gone from the roles, and the unit's sheet is the only source (307
+land unit types, Sentinel included; ships and air units have none). A land type without a sheet
+warns at load. On 2026-11-06 (the owner's decision) the roles went too: each unit type has its own
+rows and rank preference (`engage_rows`, `engage_row_order`), written from its role, and Formation's
+`anti_flank` replaces the Screen role (docs/ENGAGEMENTS.md). "The role's" below means the role the
+unit had then.
 
 **Large units** keep two cells. Their 150% HP is written into their sheet.
 

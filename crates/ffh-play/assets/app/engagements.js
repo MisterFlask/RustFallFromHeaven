@@ -225,24 +225,32 @@ export function battleToast(line, ms = 9000) {
   return toastNode(h("div.toast.log.battle", { role: "status", title: "Click to dismiss" }, markup(line.text), battleLinks(line.report, { hasLog: b?.has_log ?? true })), ms);
 }
 
-/** A role's display name ("Frontline") for a unit's `engage_role`. */
-export function roleName(i) {
-  return i === null || i === undefined ? "" : dname("CombatRoleType", i);
-}
-
 const ACT = { Strike: "strike", Charge: "charge", Stab: "stab", Shoot: "shot", Spell: "spell", Bombard: "bombard", Heal: "heal" };
 const ACTS = { Strike: "strikes", Charge: "charges", Stab: "stabs", Shoot: "shots", Spell: "spells", Bombard: "bombards", Heal: "heals" };
+const ROW_NAMES = ["Front", "Middle", "Rear"];
+
+/** One row's actions ("2 strikes"; "—" without any). */
+function rowActions(a) {
+  const k = typeof a?.kind === "string" ? a.kind[0].toUpperCase() + a.kind.slice(1).toLowerCase() : "";
+  return a?.n && ACT[k] ? `${a.n} ${a.n > 1 ? ACTS[k] : ACT[k]}` : "—";
+}
+
+/** The row a unit prefers and what it does there, from the view's `engage_row_order` and
+ *  `engage_actions` ("Front: 2 strikes"), or "" (no engagements, or a sea or air unit). Each unit
+ *  has its own rows and rank preference (no roles). */
+export function preferredRow(u) {
+  const order = u?.engage_row_order;
+  const acts = u?.engage_actions;
+  if (!Array.isArray(order) || !order.length || !Array.isArray(acts) || acts.length !== 3) return "";
+  const r = order[0];
+  return `${ROW_NAMES[r] ?? "-"}: ${rowActions(acts[r])}`;
+}
 
 /** A unit's actions in its front, middle and rear rows (the view's `engage_actions`):
  *  "2 strikes / 1 strike / 1 strike" ("—" where it has none), or "". */
 export function actionsLine(acts) {
   if (!Array.isArray(acts) || acts.length !== 3) return "";
-  return acts
-    .map((a) => {
-      const k = typeof a?.kind === "string" ? a.kind[0].toUpperCase() + a.kind.slice(1).toLowerCase() : "";
-      return a?.n && ACT[k] ? `${a.n} ${a.n > 1 ? ACTS[k] : ACT[k]}` : "—";
-    })
-    .join(" / ");
+  return acts.map(rowActions).join(" / ");
 }
 
 /** A unit's battle numbers (the view's `engage_*`; docs/UNIT_STATS.md): "ATK 40 · DEF 40 · HP 55/120

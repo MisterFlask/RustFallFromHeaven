@@ -42,7 +42,7 @@ persist_enum!(SlotSource {
 });
 
 persist_struct!(LogFighter {
-    unit, sentinel, unit_type, name, owner, shown_owner, side, place, large, level, xp, hero, role, max_hp,
+    unit, sentinel, unit_type, name, owner, shown_owner, side, place, large, level, xp, hero, max_hp,
     hp_start, hp_battle, speed, first_strikes, chance_first_strikes, rolled_first_strikes, actions,
     spell, accuracy, evasion, crit, anti_flank, flanker, withdraw_pct, combat_limit, collateral_limit,
     def_strike, immune, fear, a, dv, mag, mdef, fate, dealt, taken, healed,
@@ -163,7 +163,6 @@ mod tests {
             level: 2,
             xp: 7,
             hero: false,
-            role: CombatRoleType(0),
             max_hp: 120,
             hp_start: 9000,
             hp_battle: 8000,
