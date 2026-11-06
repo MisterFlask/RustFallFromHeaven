@@ -39,7 +39,7 @@ export const ANIMS = {
 };
 /** The key poses the client ships, by the short name of the M7 sprite: `attack` (held while it
  *  shoots, bombards or casts, or strikes when it has no strips) and `hit` (held while it is struck). */
-const KEY_POSES = { catapult: ["attack", "hit"], ranger: ["attack"] };
+const KEY_POSES = { catapult: ["attack", "hit"], ranger: ["attack"], scout: ["attack"] };
 /** The impact cards the client ships (each a `back` layer, drawn behind the target, and a `front`). */
 export const IMPACT_CARDS = ["rubble", "hawk"];
 /** Units whose every blow lands as their own impact card, by unit type: the ranger's hawk strikes

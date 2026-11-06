@@ -456,6 +456,14 @@ of 23.
   `--empty-bucket` paints the bucket empty. Without a set, one image-model edit of the static sprite gives a usable
   recoil (see "Combat presentation and spell effects" above: word the direction from where the sprite looks). Rule 1
   holds: the attack goes toward the side the sprite looks.
+- **A whole new pose by prompt alone** (the scout's attack, 5 November 2026; `lib/prompt_pose.py`): the sprite at 4x on
+  magenta as the only reference to the local Klein model with the pose LoRA, no mannequin and no init, and a prompt
+  naming the pose. On the scout, every one of six tries (two thrusts, two slashes, a spyglass bash) took its pose, kept
+  the face, hood and outfit, and read well once shrunk; the guided version (a painted arm, below) kept the body exact
+  but stood upright, less dynamic. Fix in post: the model draws the figure 10-15% too large and floats its feet up
+  (`finish` rescales and grounds it), it may lengthen a weapon (the slashes swung longswords), and a tip can run off
+  the 160×128 canvas. For a full-body action pose, try this first; for a change to one limb, the redrawn limb keeps
+  more of the sprite's own pixels.
 - **A redrawn limb on the real sprite** (the ranger's launch pose: the owner wanted the arm raised and pointed
   outward, which an erase alone could not give): cut the old limb away, paint a rough new one in the sprite's colours,
   let the local model redraw it image-to-image (Klein with the pose LoRA, the original sprite as the reference,
@@ -502,6 +510,7 @@ nor key poses still leans its sprite, and a shot or a spell still arrives as a s
    names it; the bolt has none).
 2. ~~*The ranger's hawk*~~: done (5 November 2026; `UNIT_CARDS` above). Still open: his `hit` pose (he leans), and
    the same for the beastmaster and the hunter if their art carries a bird.
+   The scout has an attack pose too (a sword lunge; prompt only, above).
 3. *Shots:* arrows (archer, longbowman, crossbowman, marksman and the like: a sheaf of shafts striking), a thrown
    javelin (javelin thrower), a sling stone (dwarven slinger) and a musket's smoke and flash (arquebus). One per
    kind of missile, keyed by the shooter's unit. 14 archer units.
