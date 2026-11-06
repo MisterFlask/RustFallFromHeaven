@@ -1,0 +1,415 @@
+[
+ {
+  "name": "unit_mud_golem",
+  "who": "a hulking mud and clay golem with bronze bands and teal eyes",
+  "attack": "heaving forward toward the lower right and swinging his long brass-bladed hoe flat in both hands like a giant scythe, hunched body twisting with the swing, mud flaking off his arms, compact pose",
+  "hit": "struck from the lower right, a chunk of mud bursting off his shoulder, hunched body rocking back away from the lower right, head thrown back, both hands still gripping the brass-bladed hoe, teal eyes squeezed shut",
+  "unconventional": true
+ },
+ {
+  "name": "unit_prophet",
+  "who": "an elderly prophet in a white robe and blue cloak with a golden book",
+  "attack": "stepping forward toward the lower right and slamming the heavy glowing golden book down like a hammer in both hands, blue cloak flaring behind him, golden light bursting from the pages, stern shouting face",
+  "hit": "struck from the lower right, staggering back away from the lower right with his head snapped back, blue cloak whipping forward, beard flying, the glowing golden book clutched to his chest in both hands, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_scientist",
+  "who": "an old scientist with white beard, round glasses and a blue beret",
+  "attack": "lunging forward toward the lower right and thrusting the brass telescope out at the enemy like a rapier in his right hand while flinging the green potion flask with his left hand, robe flaring, fierce grin",
+  "hit": "struck from the lower right, glasses crooked, knocked off balance and tumbling back away from the lower right, the brass telescope in one hand and the green potion flask in the other flailing wide, beret slipping, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_scout",
+  "who": "a young scout in a green hooded cloak and leather vest",
+  "attack": "lunging forward toward the lower right, front knee bent, swinging his brass spyglass like a club at the enemy in a wide arc, green cloak flaring behind him, the sheathed dagger still at his hip",
+  "hit": "doubled over in pain from a hit to the chest from the lower right, knees buckling, stumbling back away from the lower right, clutching his chest, wincing, the brass spyglass slipping from his hand",
+  "unconventional": true
+ },
+ {
+  "name": "unit_settler",
+  "who": "a young settler with a big backpack, red bedroll and a tin pot",
+  "attack": "leaning forward toward the lower right and swinging his wooden walking staff down hard in a two-handed overhead blow, the heavy backpack swinging with the turn, red bedroll and tin pot flying out behind him",
+  "hit": "struck from the lower right, thrown off balance by the heavy backpack and toppling back away from the lower right, arms flung out, the wooden walking staff slipping in his hand, tin pot swinging wildly, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_slave",
+  "who": "a thin barefoot slave in sackcloth with an iron collar and chain",
+  "attack": "lunging forward toward the lower right and swinging the worn wooden pickaxe in a desperate arc, the shackle chain whipping out taut between his wrists, the sack of stones dragging on his back, gritted teeth",
+  "hit": "struck from the lower right, cringing and flinching away away from the lower right, one arm raised to shield his face, the shackle chain jerking, bent under the sack of stones, the wooden pickaxe sagging in his hand",
+  "unconventional": false
+ },
+ {
+  "name": "unit_worker",
+  "who": "a young worker in a wide straw conical hat, white shirt and blue vest",
+  "attack": "stepping forward toward the lower right and swinging his long-handled hoe flat in both hands like a club, blade whipping around at head height, straw hat tilting, blue vest flapping",
+  "hit": "struck from the lower right, straw hat flying off backwards, knocked off balance and stumbling back away from the lower right, both hands still gripping the long-handled hoe, wincing with gritted teeth",
+  "unconventional": true
+ },
+ {
+  "name": "unit_amurites_warrior",
+  "who": "a wild black-haired warrior with a white headband, blue star tunic and round shield",
+  "attack": "stepping forward toward the lower right with the round blue star shield thrust out in front, ramming the enemy with its rim while the brass-banded club is cocked back over his right shoulder, purple sash streaming",
+  "hit": "struck from the lower right, shield raised too late, reeling back away from the lower right with his head snapped back, wild hair flying, brass-banded club dropping low, wincing with gritted teeth",
+  "unconventional": true
+ },
+ {
+  "name": "unit_balseraphs_warrior",
+  "who": "a grinning jester warrior in a purple and gold harlequin suit with a black mask",
+  "attack": "somersaulting forward toward the lower right in mid-leap, bringing the bell-hung spiked club down in a wild overhead smash, bells flying, round diamond shield held out behind for balance, wide mad grin",
+  "hit": "struck from the lower right, grin gone, yanked off his feet and spinning back away from the lower right, bells on club and shoes jangling, curled bell shoes in the air, round diamond shield flung wide, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_bannor_axeman",
+  "who": "a bearded axeman in a steel kettle helmet with red plume and a white and red sun tabard",
+  "attack": "taking a big step forward toward the lower right and chopping the large double-bitted steel battle axe down diagonally in both hands with all his weight, red plume streaming, tabard flaring, compact pose",
+  "hit": "struck from the lower right, kettle helmet knocked askew, reeling back away from the lower right on one heel, the battle axe dragging low in both hands, red plume bent, gritted teeth",
+  "unconventional": false
+ },
+ {
+  "name": "unit_bannor_warrior",
+  "who": "a stubbled warrior with a red headband, white tunic and round red sun shield",
+  "attack": "driving forward toward the lower right and bashing the enemy with the round red sun shield, his studded club cocked back above his head in the other hand, kilt flying, shouting",
+  "hit": "struck from the lower right, doubled over with his shield arm clutching his ribs, staggering back away from the lower right, studded club slipping from his raised hand, red headband tails whipping, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_barbarian_axeman",
+  "who": "a green-skinned tusked orc in a horned bull-skull helmet and fur-trimmed armour",
+  "attack": "roaring and hacking the large rusty single-bladed battle axe down with both hands in a huge diagonal chop toward the lower left, bull-skull helmet lowered, whole body behind the blow, compact pose",
+  "hit": "struck from the lower left, bellowing in pain, head thrown back, lurching back away from the lower left with the large rusty axe dipping in both hands, tooth necklace swinging, tusks bared",
+  "unconventional": false
+ },
+ {
+  "name": "unit_barbarian_warrior",
+  "who": "a green-skinned tusked orc with a black topknot and a round hide shield",
+  "attack": "charging toward the lower right and head-butting the enemy with his tusks lowered while swinging the spiked wooden club around in a wide hook from his right hand, hide shield held tight on the left arm",
+  "hit": "struck from the lower right, snarling, knocked sideways and sprawling back away from the lower right, hide shield swung out wide, spiked club flying loose from his raised hand, topknot whipping",
+  "unconventional": true
+ },
+ {
+  "name": "unit_clan_of_embers_axeman",
+  "who": "a muscular green orc in a steel helmet with black plume and orange wraps",
+  "attack": "leaping forward toward the lower right and slamming the large single-bladed battle axe down with a two-handed overhead chop, black plume streaming, orange loincloth flying, snarling, sparks at the blade",
+  "hit": "struck from the lower right, steel helmet rocked, staggering back away from the lower right with a grunt, the big battle axe sagging in both hands, one knee buckling, tusks bared, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_clan_of_embers_warrior",
+  "who": "a green-skinned orc with a topknot and an orange flame-emblem round shield",
+  "attack": "swinging the spiked wooden club in a vicious sideways blow toward the lower right at head height while twisting low behind the round flame shield on the other arm, tusks bared, bone necklace swinging",
+  "hit": "struck from the lower right, shield raised too late, thrown off balance and stumbling back away from the lower right, topknot whipping, spiked club dropping toward the ground, snarling in pain",
+  "unconventional": false
+ },
+ {
+  "name": "unit_elohim_axeman",
+  "who": "a bearded axeman in a cream hood, chainmail and blue tabard",
+  "attack": "lunging forward toward the lower right and bringing the large steel battle axe round in both hands in a wide horizontal sweep, cream sash and hood flaring, shoulders turning into the blow",
+  "hit": "struck from the lower right, hood thrown back, head snapped back and torso twisting away from the lower right, cream sash whipping, large steel battle axe swinging loose in both hands, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_elohim_warrior",
+  "who": "a brown-haired bearded warrior in a white hooded robe with a round white blue-ringed shield",
+  "attack": "lunging forward toward the lower right and punching the round white shield's rim into the enemy while the studded wooden club is raised high behind in the other hand, white robe and blue sash flaring",
+  "hit": "struck from the lower right, doubled over, shield dropping low, hooded robe billowing as he staggers back away from the lower right, studded club lowered in his hand, wincing with gritted teeth",
+  "unconventional": true
+ },
+ {
+  "name": "unit_grigori_axeman",
+  "who": "a stocky bearded axeman in a round steel nasal helmet and blue scarf",
+  "attack": "swinging the long-handled battle axe with its broad crescent blade over his shoulder in a huge arc toward the lower right, hands sliding on the haft, blue scarf streaming behind, braced legs, roaring",
+  "hit": "struck from the lower right, helmet ringing, thrown off balance and stumbling back away from the lower right, blue scarf whipping, the long-handled battle axe swinging wildly in his hands, gritted teeth",
+  "unconventional": false
+ },
+ {
+  "name": "unit_grigori_warrior",
+  "who": "a bearded warrior with a teal headband and scarf, brown leather vest and teal kilt",
+  "attack": "turning sideways and kicking forward toward the lower right with his boot into the enemy while swinging the knobbed wooden club down from above, round teal striped shield held close, teal scarf flying",
+  "hit": "struck from the lower right, shield raised too late, spun half around and falling back away from the lower right, teal headband tails and scarf whipping, knobbed club slipping from his hand, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_hippus_axeman",
+  "who": "a tanned steppe warrior in a pointed bronze helmet with orange plume and lamellar armour",
+  "attack": "twisting at the hips and swinging the big bronze-edged axe across his body in both hands, a fierce slash toward the lower right, orange horsehair plume streaming, black braids flying",
+  "hit": "struck from the lower right, bronze helmet knocked crooked, head snapped back, staggering back away from the lower right, orange plume whipping, the big bronze-edged axe sagging low in both hands, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_hippus_warrior",
+  "who": "a bearded horseman on foot in a tall orange fur cap with feather plume, orange coat and round shield",
+  "attack": "leaping forward toward the lower right and swinging the studded wooden club down in a hard overhead blow, round brass-boss shield out to the side, tall orange feather plume streaming, coat flaring",
+  "hit": "struck from the lower right, tall fur cap flying off, knocked off balance and sprawling back away from the lower right, round shield flung up wide, studded club slipping from his hand, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_illians_axeman",
+  "who": "an old white-bearded warrior in a steel nasal helmet and white fur cloak",
+  "attack": "stepping forward toward the lower right and smashing the large frost-glowing battle axe down in a two-handed chop, white fur cloak flaring wide, a short burst of frost at the blade, fierce glare",
+  "hit": "struck from the lower right, white beard thrown sideways, doubled over and staggering back away from the lower right, fur cloak billowing, frost-edged battle axe dragging in both hands, gritted teeth",
+  "unconventional": false
+ },
+ {
+  "name": "unit_illians_warrior",
+  "who": "a white-haired frost-pale barbarian in white wolf fur with ice-blue wraps",
+  "attack": "swinging the ice-crystal-studded club down overhead toward the lower right with a roar while smashing out with the round white snowflake shield in his other hand, shards of ice glittering at the club, fur pelt flying",
+  "hit": "struck from the lower right, white hair thrown back, knocked off balance and tumbling back away from the lower right, round snowflake shield flung wide, ice-studded club slipping from his hand, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_infernal_axeman",
+  "who": "a red-skinned demon in black spiked plate armour with a horned helmet",
+  "attack": "bringing the black battle axe with its flaming orange blade down in a furious two-handed overhead chop toward the lower right, red tail lashing out behind him, embers trailing the blade, snarling",
+  "hit": "struck from the lower right, horned helmet knocked sideways, roaring in pain and staggering back away from the lower right, red tail whipping, flaming axe dragging low in both hands, spiked armour dented",
+  "unconventional": false
+ },
+ {
+  "name": "unit_infernal_warrior",
+  "who": "a red-skinned demon with black horns, spiked pauldron and a round black trident shield",
+  "attack": "lunging forward toward the lower right and lashing out with his arrow-tipped red tail like a whip, spiked club raised high in the other hand and the black trident shield held out, yellow eyes blazing",
+  "hit": "struck from the lower right, yellow eyes squeezed shut, recoiling back away from the lower right with clawed feet skidding, tail curling in pain, shield raised too late, spiked club slipping from his hand",
+  "unconventional": true
+ },
+ {
+  "name": "unit_khazad_axeman",
+  "who": "a short broad dwarf in a horned steel helmet with a big braided red beard and gold tabard",
+  "attack": "planting his feet and swinging the double-crescent battle axe from low to high across his body in both hands toward the lower right, gold rune flashing on the broad blade, braided red beard flying, compact pose",
+  "hit": "struck from the lower right, horned helmet clanging, braided beard flung sideways, skidding back away from the lower right on his heels, the double-crescent axe dragging in both hands, gritted teeth",
+  "unconventional": false
+ },
+ {
+  "name": "unit_khazad_warrior",
+  "who": "a stocky dwarf in a gold-trimmed horned helmet with a braided orange beard",
+  "attack": "charging toward the lower right head down and butting the enemy with his horned helmet, studded wooden club swinging round from the side and the round steel-rimmed shield pushed forward, bare muscular arms straining",
+  "hit": "struck from the lower right, horned helmet knocked askew, bounced backward away from the lower right, braided beard whipping, round shield slipping, studded club dropping in his hand, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_kuriotates_warrior",
+  "who": "a young warrior with a gold laurel wreath, green tunic and round green sun shield",
+  "attack": "lunging forward toward the lower right and thrusting out the round green shield with its gold sun boss to punch the enemy, studded wooden club swinging round in a hard sideways blow in the other hand",
+  "hit": "struck from the lower right, laurel wreath slipping, buckling at the knees and stumbling back away from the lower right, green shield dropping, studded club sliding in his hand, wincing with gritted teeth",
+  "unconventional": true
+ },
+ {
+  "name": "unit_lanun_warrior",
+  "who": "a dark-skinned pirate in a red bandana, striped shirt and red sash with a navy anchor shield",
+  "attack": "swinging in a big arc toward the lower right and slamming the spiked wooden club down overhead, navy anchor shield on his other arm for balance, red sash and ragged trouser legs flying, snarling",
+  "hit": "struck from the lower right, red bandana flapping, spun and reeling back away from the lower right off balance, anchor shield swinging out, spiked club slipping loose, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_ljosalfar_warrior",
+  "who": "a blonde wood-elf warrior woman in a green leaf tunic with a round leaf shield",
+  "attack": "springing forward toward the lower right on one leg and driving her knee up while swinging the vine-wrapped wooden club in a downward arc, round green leaf shield held back, long blonde hair streaming",
+  "hit": "struck from the lower right, long blonde hair whipped forward, spinning half around and staggering back away from the lower right, round leaf shield raised too late, vine-wrapped club dropping, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_luchuirp_warrior",
+  "who": "a stout gnome with a bushy red beard, brass-rimmed blue goggles and a leather apron",
+  "attack": "swinging the brass-banded wooden club in a wild two-footed leap toward the lower right, tool-laden apron flying out, round bronze gear shield pressed forward to ram, goggles glinting, bushy beard flying",
+  "hit": "struck from the lower right, goggles knocked crooked, flung off his feet and tumbling back away from the lower right, tools flying from the apron, bronze gear shield and brass-banded club held loosely, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_malakim_warrior",
+  "who": "a bare-chested desert warrior in a cream turban with a teal gem and white wrap",
+  "attack": "spinning forward toward the lower right on one foot and slashing the studded wooden club in a wide whirling blow at head height, round cream-and-teal shield trailing on his other arm, teal sash flying",
+  "hit": "struck from the lower right, turban slipping, head snapped back and leaning away away from the lower right, round cream-and-teal shield dropping, studded club drooping in his hand, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_mercurians_axeman",
+  "who": "an angel warrior with a gold halo, silver helm, blonde hair and white feathered wings",
+  "attack": "diving forward toward the lower right with wings spread wide and chopping the great double-curved axe down in both hands, blue tabard flaring, halo shining, one short flare of light at the blade, compact pose",
+  "hit": "struck from the lower right, halo tilted, wings flung wide and a few white feathers loosened as he is thrown back away from the lower right, the great axe dragging in both hands, gritted teeth",
+  "unconventional": false
+ },
+ {
+  "name": "unit_sheaim_warrior",
+  "who": "a gaunt bald pale warrior with skull face paint and a purple ragged loincloth",
+  "attack": "lunging forward toward the lower right and bashing the enemy with the round skull shield, spiked wooden club raised overhead in the other hand, sash flying, skull-painted face twisted in a snarl",
+  "hit": "struck from the lower right, bone ornaments rattling, jerked back away from the lower right with head snapped back, skull shield dropping, spiked club slipping from his raised hand, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_sidar_axeman",
+  "who": "a ghostly pale grey axeman in a grey hood, chainmail and tattered tabard",
+  "attack": "swinging the steel battle axe in a wide diagonal chop toward the lower right in both hands, tattered hood and tabard streaming, pale body leaning hard into the blow",
+  "hit": "struck from the lower right, tattered hood thrown back, pale head snapped back, drifting back away from the lower right with the steel battle axe dragging in both hands, tabard fluttering, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_sidar_warrior",
+  "who": "a pale grey-skinned warrior in a ragged grey cloak with a teal scarf and black moon shield",
+  "attack": "hurling himself forward toward the lower right and slamming the black crescent moon shield into the enemy, bone-white studded club cocked high behind, ragged grey cloak and teal scarf streaming",
+  "hit": "struck from the lower right, ragged cloak whipped forward, pushed back away from the lower right with feet skidding, black moon shield raised too late, bone-white club slipping from his hand, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_svartalfar_warrior",
+  "who": "a grey-skinned dark elf warrior with long white hair, black fur collar and purple tunic",
+  "attack": "springing forward toward the lower right and swinging the black spiked iron club in a savage sideways blow, long white hair streaming, black fur collar flaring, black spiderweb shield pulled back",
+  "hit": "struck from the lower right, white hair whipped across the face, knocked off balance and sliding back away from the lower right, spiderweb shield raised too late, black spiked club dropping in his hand, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_ljosalfar_archer",
+  "who": "a long-haired blonde elf woman in a green cloak with a golden longbow",
+  "attack": "dropping to one knee and loosing two arrows at once from the golden longbow toward the lower right, bowstring snapping forward, green cloak flaring, white-fletched arrows streaking away, quiver on her back",
+  "hit": "struck from the lower right, the golden longbow in her left hand wrenched sideways, an arrow falling from her fingers, staggering back away from the lower right, long blonde hair whipping, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_amurites_adept",
+  "who": "a young mage in a deep-blue starry robe and pointed purple wizard hat",
+  "attack": "thrusting the wooden staff with its glowing blue crystal out toward the lower right in a sweeping arc at the enemy, a bright blue flare bursting at the crystal, robe and hat flaring back, white sash trailing",
+  "hit": "struck from the lower right, wizard hat flying off, bent over and reeling back away from the lower right, deep-blue robe billowing, the staff with the blue crystal clutched in his right hand dimming, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_balseraphs_adept",
+  "who": "a jester-style mage in a harlequin hood with bells and a white half-mask",
+  "attack": "pirouetting and swatting toward the lower left with the staff head, yellow crystal trailing a streak of golden sparks, free fist at his waist, hood bells flying, mad grin under the half-mask",
+  "hit": "struck from the lower left, bells ringing wildly, hood askew, tumbling back away from the lower left off balance, the staff with its yellow crystal swung wide, diamond robe flaring, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_bannor_adept",
+  "who": "a young Bannor adept in a red hood with gold trim and a white robe",
+  "attack": "stepping forward toward the lower right and thrusting the tall staff with its gold crystal out at the enemy, golden light flaring at the crystal, red hood and robe hems streaming, gold sun amulet swinging",
+  "hit": "struck from the lower right, red hood thrown back, flinching and staggering back away from the lower right, white robe billowing, the tall staff with the gold crystal clutched tight, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_calabim_adept",
+  "who": "a pale vampire mage in a black hooded robe with red lining and a red eye",
+  "attack": "lunging forward toward the lower right and lashing out with the tall dark staff, the red crystal trailing sparks as he swats like a whip, black robe flaring red inside, fangs bared",
+  "hit": "struck from the lower right, hood falling back, hissing, recoiling back away from the lower right with a clawed hand up, black robe billowing, the dark staff with the red crystal held at an angle, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_elohim_adept",
+  "who": "a young adept in a cream-white hooded robe with a pale-blue stole",
+  "attack": "stepping forward toward the lower right and driving the tall staff with its blue ice crystal at the enemy, icy blue light flaring at the crystal, hood and stole streaming, prayer beads swinging",
+  "hit": "struck from the lower right, hood slipping, doubled over and staggering back away from the lower right, cream robe flapping, the blue-crystal staff gripped in his left hand, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_grigori_adept",
+  "who": "a young man with brown hair in a teal hood, scarf and long teal coat",
+  "attack": "lunging forward toward the lower right and thrusting the wooden staff with its glowing blue crystal out at the enemy, a flare of blue light at the crystal, long teal coat and scarf streaming back",
+  "hit": "struck from the lower right, scarf whipped across his face, bent over and reeling back away from the lower right, long teal coat flapping, the blue-crystal staff clutched in his right hand, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_hippus_adept",
+  "who": "a steppe shaman with a drooping moustache in a rust-brown hooded robe",
+  "attack": "stepping forward toward the lower right and swinging the tall horse-skull staff down like a club, orange tassels whipping, amber crystal flaring, bronze-studded mantle flaring, compact pose",
+  "hit": "struck from the lower right, hood pushed back, staggering back away from the lower right, orange tassels whipping, the horse-skull staff held out to the side for balance in his left hand, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_illians_adept",
+  "who": "a silver-haired mage in a white hooded robe with blue stripes and sash",
+  "attack": "thrusting the long silver staff with its ice-blue crystal out toward the lower right at the enemy, a spray of frost flaring at the crystal, white robe and blue sash streaming behind",
+  "hit": "struck from the lower right, silver hair thrown back, knocked backward away from the lower right with robe flaring, the silver staff with its ice-blue crystal swinging wide in his right hand, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_khazad_adept",
+  "who": "a stout dwarf with a braided red beard in a golden-yellow hooded robe",
+  "attack": "stomping forward toward the lower right and jabbing the wooden staff with its blue crystal out like a battering ram, blue magic flaring at the crystal, golden-yellow robe swinging, braided beard flying",
+  "hit": "struck from the lower right, hood knocked back, braided beard flung sideways, stumbling back away from the lower right on short legs, the blue-crystal staff gripped in his right hand, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_kuriotates_adept",
+  "who": "a young mage in a green hooded robe with gold laurel trim",
+  "attack": "lunging forward toward the lower right and sweeping the wooden staff with its glowing green crystal out at the enemy, green light flaring at the crystal, green hood and rope belt flying, free fist at his waist",
+  "hit": "struck from the lower right, hood falling back, bent double and staggering back away from the lower right, green robe billowing, the staff with its green crystal swinging wide in his left hand, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_lanun_adept",
+  "who": "a dark-skinned pirate mage with long black hair, red bandana and a navy coat",
+  "attack": "stepping forward toward the lower right and thrusting the twisted driftwood staff with its blue crystal at the enemy, a blue flare and spray of sparks at the crystal, navy coat and red sash flaring, long black hair flying",
+  "hit": "struck from the lower right, red bandana slipping, long black hair whipped back, spinning back away from the lower right, navy coat flapping, the driftwood staff with the blue crystal held to one side, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_ljosalfar_adept",
+  "who": "a blonde elf woman in a green hooded robe with white trim",
+  "attack": "sweeping forward toward the lower right and thrusting the gnarled wooden staff with its blue crystal and leaves out at the enemy, blue and green light flaring at the tip, leaf-shaped hem and hood streaming",
+  "hit": "struck from the lower right, hood falling back, blonde hair whipped across her face, stumbling back away from the lower right, green robe flapping, the leafy staff clutched in her left hand, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_luchuirp_adept",
+  "who": "a short gnome-like mage with an orange beard and brass goggles on a teal hood",
+  "attack": "hopping forward toward the lower right and clubbing the enemy with the brass cog at the head of the wooden staff, blue crystal flaring and sparking, teal robes flaring, orange beard flying, compact pose",
+  "hit": "struck from the lower right, goggles knocked crooked, tumbling back away from the lower right on short legs, satchel swinging, the cog-and-crystal staff gripped in his right hand, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_malakim_adept",
+  "who": "a bearded brown-skinned man in a cream turban and a cream robe with teal sash",
+  "attack": "stepping forward toward the lower right and thrusting the wooden staff with its glowing gold orb out at the enemy, golden light flaring at the orb, cream robe and teal sash streaming back",
+  "hit": "struck from the lower right, turban slipping, doubled over and reeling back away from the lower right, cream robe billowing, the staff with the gold orb held tight in his left hand, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_mercurians_adept",
+  "who": "a blonde angelic youth with a gold halo, white hood and small feathered wings",
+  "attack": "leaping up toward the lower right with small wings flapping, thrusting the gold staff with its pale-yellow crystal at the enemy, golden light flaring at the crystal, blue robe and gold sash streaming, halo shining",
+  "hit": "struck from the lower right, halo tilted, wings flung wide, a white feather loose, thrown back away from the lower right with feet leaving the ground, the gold staff in his left hand, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_sheaim_adept",
+  "who": "a pale skull-faced mage with a red eye in a purple hooded robe",
+  "attack": "stepping forward toward the lower right and swinging the dark staff with its horned skull and burning flame around like a flaming club, flame trailing fire, purple robe and orange sash flaring",
+  "hit": "struck from the lower right, hood thrown back, staggering back away from the lower right, skull pendant swinging, purple robe flapping, the flame-topped skull staff clutched in his left hand, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_sheaim_mage",
+  "who": "a pale lavender-skinned mage in a deep-purple pointed hood with gold trim",
+  "attack": "thrusting his raised right hand toward the lower left, hurling the magenta swirl orb at the enemy in a burst of magenta light, and stabbing the spiked black staff with its pink orb out in his left hand, robe flaring",
+  "hit": "struck from the lower left, pointed hood bent, hurled backward away from the lower left, the floating magenta orb flickering over his raised hand, spiked black staff in the other hand, robe whipping, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_sidar_adept",
+  "who": "a pale grey Sidar adept in a ragged grey hooded robe with a teal sash",
+  "attack": "stepping forward toward the lower right and thrusting the crooked pale staff with its silver crescent moon and glowing white orb out at the enemy, white light flaring at the orb, ragged robe hem streaming",
+  "hit": "struck from the lower right, hood thrown back, drifting back away from the lower right with ragged robe fluttering, the crooked staff with its glowing white orb held in his left hand, wincing",
+  "unconventional": false
+ },
+ {
+  "name": "unit_svartalfar_adept",
+  "who": "a pale dark elf in a deep purple hooded robe with long white hair",
+  "attack": "snapping the twisted dark staff toward the lower right in a hard sideways swat, blue crystal trailing sparks, long white hair and purple robe streaming, thin hateful smile",
+  "hit": "struck from the lower right, white hair whipped across the face, hood falling, reeling back away from the lower right, purple robe flapping, the twisted staff with its blue crystal in his right hand, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_amurites_horseman",
+  "who": "a rider in a steel morion helmet with blue plume on a dapple-grey horse",
+  "attack": "the dapple-grey horse rearing up on its hind legs and kicking out with its forehooves toward the lower right while the rider sits mounted, levelling the steel-tipped lance in his right hand, blue shield on his left arm, plume streaming",
+  "hit": "the dapple-grey horse shying and rearing away away from the lower right from a hit from the lower right, the rider mounted and rocked back in the saddle, lance tipping up in his right hand, blue shield raised too late, wincing",
+  "unconventional": true
+ },
+ {
+  "name": "unit_balseraphs_horseman",
+  "who": "a rider in a steel helmet with jester-cap plume and black mask on a glossy black horse",
+  "attack": "the glossy black horse leaping forward toward the lower right at a gallop, the rider mounted and thrusting the long spear with its violet-gold pennant out at the enemy, diamond shield on his left arm, bells flying",
+  "hit": "the glossy black horse shying and twisting away away from the lower right from a hit from the lower right, the rider mounted and reeling in the saddle, bells ringing, long spear with its pennant tipping up, diamond shield askew, wincing",
+  "unconventional": false
+ }
+]

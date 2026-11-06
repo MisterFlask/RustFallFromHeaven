@@ -18,6 +18,7 @@
 import { SPRITES } from "./iso/sprites.js";
 import { unitSpriteKeys, ISO_TABLES } from "./iso.js";
 import { tyName, tyIdx, ROWS, groundTags } from "./battle_log.js";
+import { KEY_POSES } from "./key_poses.js";
 
 export const FRAME_W = 1280;
 export const FRAME_H = 800;
@@ -37,9 +38,9 @@ export const ANIMS = {
   flinch: [80, 120, 120, 120],
   death: [80, 120, 140, 200, 80, 80, 80, 400],
 };
-/** The key poses the client ships, by the short name of the M7 sprite: `attack` (held while it
- *  shoots, bombards or casts, or strikes when it has no strips) and `hit` (held while it is struck). */
-const KEY_POSES = { catapult: ["attack", "hit"], ranger: ["attack"], scout: ["attack"] };
+// The key poses the client ships (key_poses.js, written with them): by the short name of the M7
+// sprite, `attack` (held while it strikes, shoots, bombards or casts, when it has no strips) and
+// `hit` (held while it is struck).
 /** The impact cards the client ships (each a `back` layer, drawn behind the target, and a `front`). */
 export const IMPACT_CARDS = ["rubble", "hawk"];
 /** Units whose every blow lands as their own impact card, by unit type: the ranger's hawk strikes
@@ -48,8 +49,9 @@ const UNIT_CARDS = { UNIT_RANGER: "hawk" };
 /** ms from the start of the strike strip to its blow (the frame the hit lands on). */
 export const STRIKE_HIT = 430;
 const ANIM_FRAME = { w: 160, h: 128, ax: 80, ay: 126 };
-/** M7 unit sprites that face lower-left (the rest face lower-right). */
-const FACES_LEFT = new Set(["champion"]);
+/** M7 unit sprites that face lower-left (the rest face lower-right), from the anim-sprint roster's
+ *  facings (anim-sprint/roster_classified.json on the anim-all branch). */
+const FACES_LEFT = new Set(["auric", "auric_ascended", "azer", "balseraphs_adept", "barbarian_axeman", "barnaxus", "berserker", "bloodpet", "chalid", "champion", "chaos_marauder", "circle_of_urd", "clockwork_golem", "crusader", "demagog", "dwarven_soldier_runes", "flesh_golem", "harlequin", "high_priest_of_the_veil", "hill_giant", "hyborem", "illians_settler", "kraken", "lich", "lightbringer", "lucian", "mardero", "monk", "myconid", "ogre_embers", "priest_of_kilmorph", "priest_of_leaves", "priest_of_the_veil", "revelers", "sheaim_mage", "sphener", "valkyrie", "workboat"]);
 
 export const COLORS = {
   you: "#8fb6ff",
@@ -480,8 +482,9 @@ function frameAt(ms, list, loop) {
 export function pic(f, sides, anim = null, ms = 0, loop = false) {
   const fig = figOf(f, sides);
   if (anim && fig.poses.has(anim)) {
+    // a big unit's pose has a bigger canvas: the feet at its bottom centre, 2 px up, as on the 160 x 128 one
     const im = IMG.get(`pose:${fig.short}:${anim}`);
-    if (im) return { im, sx: 0, w: ANIM_FRAME.w, h: ANIM_FRAME.h, ax: ANIM_FRAME.ax, ay: ANIM_FRAME.ay, anim };
+    if (im) return { im, sx: 0, w: im.width, h: im.height, ax: im.width / 2, ay: im.height - 2, anim };
   }
   if (anim && fig.anim) {
     const im = IMG.get(`anim:${fig.anim}:${anim}`);

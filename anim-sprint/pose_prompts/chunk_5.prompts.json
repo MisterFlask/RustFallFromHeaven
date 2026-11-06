@@ -1,0 +1,408 @@
+[
+ {
+  "name": "unit_bannor_horseman",
+  "who": "a Bannor rider in mail and white tabard on a chestnut horse",
+  "attack": "the horse rearing up on its hind legs toward the lower right, forehooves slashing out to kick the enemy, the rider leaning back in the saddle, round red sun shield held out and his spear raised high in his right hand",
+  "hit": "the horse shying and twisting back away from the lower right after a hit from the lower right, the rider jolted in the saddle with head snapped back, wincing, spear tilting, shield swung up too late",
+  "unconventional": true
+ },
+ {
+  "name": "unit_calabim_horseman",
+  "who": "a pale Calabim vampire rider in black armour on a black horse",
+  "attack": "charging toward the lower right at full gallop, the rider leaning far forward and driving his spear in his left hand straight at the enemy, red-lined black cape streaming behind, bat shield held back",
+  "hit": "knocked back in the saddle by a blow from the lower right, red eyes squeezed shut, fangs bared in a grimace, cape whipping, the horse stumbling back away from the lower right, spear tip drooping",
+  "unconventional": false
+ },
+ {
+  "name": "unit_doviello_horseman",
+  "who": "a Doviello rider in a wolf-pelt headdress on a dark brown horse",
+  "attack": "leaning far out of the saddle toward the lower right and hurling his feathered spear from his right hand at the enemy, arm fully extended, fur cloak flying, wolf shield on his left arm, horse surging forward",
+  "hit": "reeling in the saddle from a strike from the lower right, head snapped back, blue warpaint twisted in a snarl, feathered spear sagging in his hand, horse rearing and backing away from the lower right",
+  "unconventional": true
+ },
+ {
+  "name": "unit_elohim_horseman",
+  "who": "an Elohim rider in a white hood and blue-white tabard on a chestnut horse",
+  "attack": "braced in the saddle and thrusting his spear in his right hand straight toward the lower right in a lunge, body low over the horse's neck, blue-and-white shield forward on his left arm, horse in a driving stride",
+  "hit": "slumped sideways in the saddle after a hit from the lower right, wincing with gritted teeth, white hood slipping, spear drooping, shield raised too late, the horse stumbling back away from the lower right",
+  "unconventional": false
+ },
+ {
+  "name": "unit_grigori_horseman",
+  "who": "a young Grigori rider in leather armour and teal scarf on a brown horse",
+  "attack": "both horse and rider lunging toward the lower right, the horse rearing with forehooves striking out while the rider swings the round teal-and-gold shield on his left arm like a bludgeon, spear held upright in his right hand",
+  "hit": "thrown off balance by a hit from the lower right, rider twisting in the saddle with teal scarf flying, gritting his teeth, spear tilting, horse shying and recoiling back away from the lower right",
+  "unconventional": true
+ },
+ {
+  "name": "unit_hippus_horseman",
+  "who": "a bearded Hippus steppe rider in bronze lamellar armour on a bay horse",
+  "attack": "galloping toward the lower right, the rider standing in the stirrups and stabbing his spear in his left hand forward at the enemy, orange plume streaming back, bronze shield held close, horse stretched in full stride",
+  "hit": "struck from the lower right, the rider arching backward in the saddle, beard jutting, wincing, spear slipping in his grip, orange plume whipping, the horse jerking back away from the lower right",
+  "unconventional": false
+ },
+ {
+  "name": "unit_illians_horseman",
+  "who": "a white-bearded Illians rider in white fur and blue-white armour on a white horse",
+  "attack": "rising in the stirrups and slamming the rim of his snowflake shield on his left arm into the enemy toward the lower right, steel-tipped spear in his right hand swept back, fur cloak flaring, horse lunging forward",
+  "hit": "knocked back in the saddle by a hit from the lower right, white beard flung sideways, wincing, spear dipping, shield slipping, the white horse rearing and backing away from the lower right",
+  "unconventional": true
+ },
+ {
+  "name": "unit_infernal_horseman",
+  "who": "a red-skinned horned demon rider in black plate on a flaming-maned black horse",
+  "attack": "the black horse rearing high toward the lower right with flames streaming from mane and tail, forehooves lashing out, the demon rider roaring and holding his spear in his left hand angled forward, flame shield on his other arm",
+  "hit": "the demon rider doubled over in the saddle from a hit from the lower right, horns thrown back, snarling in pain, spear sagging, the flaming horse twisting and recoiling back away from the lower right",
+  "unconventional": true
+ },
+ {
+  "name": "unit_lanun_horseman",
+  "who": "a Lanun pirate rider in a blue tricorn hat and coat on a brown horse",
+  "attack": "leaning far over the horse's neck and driving his spear in his right hand forward toward the lower right, coat tails and red sash flying, anchor shield held on his left arm, horse at a hard gallop",
+  "hit": "reeling from a hit from the lower right, tricorn hat flying loose, wincing and gritting his teeth, clutching the saddle, spear tilting, horse shying back away from the lower right",
+  "unconventional": false
+ },
+ {
+  "name": "unit_ljosalfar_horseman",
+  "who": "a blonde Ljosalfar elf rider in green and silver on a white horse",
+  "attack": "the white horse rearing toward the lower right to strike with its forehooves while the elf leans back with long hair streaming, spear held upright in his right hand and green leaf shield on his left arm",
+  "hit": "thrown off balance by a blow from the lower right, the elf twisting in the saddle with long hair swinging, wincing, spear tipping, shield raised too late, the horse stepping back away from the lower right",
+  "unconventional": true
+ },
+ {
+  "name": "unit_malakim_horseman",
+  "who": "a white-bearded Malakim desert rider in cream robes on a palomino horse",
+  "attack": "thrusting his spear in his left hand forward toward the lower right in a fast lunge, body stretched low over the horse, cream turban and teal sash flying, bronze-and-teal shield on his arm, horse at a gallop",
+  "hit": "recoiling from a hit from the lower right, white beard flung aside, turban loosened, grimacing, spear drooping, the palomino horse shying and stumbling back away from the lower right",
+  "unconventional": false
+ },
+ {
+  "name": "unit_mercurians_horseman",
+  "who": "an angelic Mercurian rider with a halo and white wings on a white horse",
+  "attack": "wings spread wide and the white horse rearing toward the lower right, the angelic rider driving his spear in his right hand down at the enemy, golden halo gleaming, blue shield with gold rim on his left arm",
+  "hit": "struck from the lower right, the angelic rider thrown back with wings flung open and halo tilting, wincing, spear loosening, the white horse recoiling back away from the lower right",
+  "unconventional": false
+ },
+ {
+  "name": "unit_sheaim_horseman",
+  "who": "a pale Sheaim rider in a purple hooded cloak on a bone-decked grey horse",
+  "attack": "lunging toward the lower right and stabbing his long steel-tipped spear in his right hand forward at the enemy, purple cloak flaring over the horse's flank, skull shield on his left arm, bone trinkets swinging",
+  "hit": "jolted backward in the saddle by a hit from the lower right, hood falling back, face twisted in a wince, spear sagging, skull shield dropping, the pale horse shying back away from the lower right",
+  "unconventional": false
+ },
+ {
+  "name": "unit_sidar_horseman",
+  "who": "a pale Sidar rider in a grey hooded cloak and scale mail on a pale grey horse",
+  "attack": "the pale grey horse rearing toward the lower right with forehooves kicking, the rider leaning back in the saddle with his spear in his right hand held ready, tattered grey cloak flapping, crescent shield on his left arm",
+  "hit": "doubled over the saddle from a hit from the lower right, grey hood slipping, wincing, spear sagging, crescent shield slipping, the pale horse stumbling back away from the lower right",
+  "unconventional": true
+ },
+ {
+  "name": "unit_svartalfar_horseman",
+  "who": "a dark elf rider in black-and-silver armour and purple cape on a black horse",
+  "attack": "charging toward the lower right and thrusting his long leaf-bladed spear in his left hand at the enemy, white-lavender hair and purple cape streaming back, black shield on his right arm, horse in full gallop",
+  "hit": "struck from the lower right, the dark elf snapped back in the saddle, hair flying, gritting his teeth, spear slipping, cape whipping, the black horse reeling back away from the lower right",
+  "unconventional": false
+ },
+ {
+  "name": "unit_amurites_settler",
+  "who": "a young Amurite settler in a blue hooded robe with a huge backpack",
+  "attack": "lunging forward toward the lower right and swinging his gnarled wooden walking staff in his left hand like a club in a wide arc, right hand still on the pack strap, bucket and bedroll swinging on his big backpack",
+  "hit": "staggering back away from the lower right after a hit from the lower right, backpack pulling him off balance, wincing, hood flung back, staff slipping from his hand, bucket swinging",
+  "unconventional": true
+ },
+ {
+  "name": "unit_amurites_worker",
+  "who": "a young Amurite worker in a blue wizard hat and vest",
+  "attack": "swinging his long hoe in both hands flat like a club toward the lower right, the iron blade sweeping across at the enemy, body twisted through the swing, wizard hat tilting, compact pose",
+  "hit": "doubled over from a hit from the lower right, wizard hat knocked askew, wincing, stumbling back away from the lower right, the hoe slipping in his hands",
+  "unconventional": true
+ },
+ {
+  "name": "unit_balseraphs_settler",
+  "who": "a red-haired Balseraph jester-traveller in a harlequin tunic with a big backpack",
+  "attack": "lunging toward the lower right and whacking the enemy with his tall walking staff in his left hand, brass bell jangling at its tip, bells on his tunic flying, red drum and mask swinging on the pack",
+  "hit": "knocked off balance by a hit from the lower right, spiky hair flattened, wincing, stumbling back away from the lower right, staff slipping from his hand, bell ringing, pack tugging him backward",
+  "unconventional": true
+ },
+ {
+  "name": "unit_balseraphs_worker",
+  "who": "a ginger jester-dressed Balseraph worker in a purple hat with a bell",
+  "attack": "stepping forward toward the lower right and jabbing the handle end of his long hoe in both hands at the enemy like a quarterstaff, bell on his purple hat jingling, harlequin vest twisting",
+  "hit": "doubled over by a blow from the lower right, purple hat with its bell knocked sideways, wincing, stumbling back away from the lower right, the hoe slipping in his grip",
+  "unconventional": true
+ },
+ {
+  "name": "unit_bannor_settler",
+  "who": "a young Bannor settler in a red tunic and white mantle with a huge backpack",
+  "attack": "stepping forward toward the lower right and swinging his tall staff in his left hand like a club, the white sun banner whipping out at the enemy, white mantle flaring, tin pot rattling on the pack",
+  "hit": "staggering back away from the lower right after a hit from the lower right, tousled hair flying, wincing, the banner staff slipping, backpack with its red bedroll tipping him off balance",
+  "unconventional": true
+ },
+ {
+  "name": "unit_bannor_worker",
+  "who": "a young Bannor worker in a straw hat with a gold sun badge and red vest",
+  "attack": "bringing his wooden hoe down in both hands in an overhead chop toward the lower right, steel blade swinging at the enemy, straw hat tilting, body leaning into the swing",
+  "hit": "knocked back by a blow from the lower right, straw hat flying loose, wincing, stumbling back away from the lower right, the hoe nearly slipping from his hands",
+  "unconventional": false
+ },
+ {
+  "name": "unit_barbarian_worker",
+  "who": "a grey-green orc worker with tusks and a black topknot in a hide vest",
+  "attack": "roaring and swinging his long hoe in both hands in a wide sideways sweep toward the lower right, iron blade slashing at the enemy, tusks bared, body twisting through the swing",
+  "hit": "head snapped back by a hit from the lower right, tusks bared in a grimace, staggering back away from the lower right, the hoe slipping in his hands, topknot flying",
+  "unconventional": false
+ },
+ {
+  "name": "unit_calabim_settler",
+  "who": "a pale black-haired Calabim settler in a red hood and black cloak with a huge backpack",
+  "attack": "lunging toward the lower right and thrusting his gnarled walking staff in his right hand at the enemy, fist still at the chest strap, red hood falling back, lantern swinging on the pack",
+  "hit": "recoiling from a hit from the lower right, pale face wincing, stumbling back away from the lower right, staff slipping from his hand, the swinging lantern and heavy pack dragging him off balance",
+  "unconventional": false
+ },
+ {
+  "name": "unit_calabim_worker",
+  "who": "a pale red-eyed Calabim peasant worker in a wide grey hat",
+  "attack": "twisting and swinging the heavy hoe in both hands in a low sideways sweep toward the lower right, steel blade whipping at the enemy, wide grey hat tilting, red eyes narrowed",
+  "hit": "doubled over by a hit from the lower right, grey hat knocked off-kilter, wincing with bared teeth, stumbling back away from the lower right, the hoe slipping from his hands",
+  "unconventional": false
+ },
+ {
+  "name": "unit_clan_of_embers_settler",
+  "who": "a green-skinned orc settler with a topknot and orange shawl with a big backpack",
+  "attack": "lunging toward the lower right and jabbing his spear-tipped staff in his right hand at the enemy, orange shawl flaring, flames flaring from the iron fire-pot swinging on the pack",
+  "hit": "knocked back by a hit from the lower right, tusked face twisted in a snarl, stumbling back away from the lower right, staff slipping, the fire-pot swinging wildly and the pack pulling him off balance",
+  "unconventional": false
+ },
+ {
+  "name": "unit_clan_of_embers_worker",
+  "who": "a green-skinned tusked orc worker with an orange bandana",
+  "attack": "swinging his long hoe in both hands flat like a club toward the lower right, iron blade crashing sideways at the enemy, bandana tails flying, tusks bared in a roar",
+  "hit": "staggering back away from the lower right after a hit from the lower right, head snapped back, bandana tails flying, snarling, the hoe slipping in his hands",
+  "unconventional": true
+ },
+ {
+  "name": "unit_doviello_settler",
+  "who": "a shaggy Doviello settler with blue war paint and a big backpack topped with antlers",
+  "attack": "lunging toward the lower right and swinging his crooked wooden staff in his left hand like a club, fur mantle flaring, the antlers on his backpack bobbing and the tin pot swinging",
+  "hit": "knocked sideways by a hit from the lower right, blue-painted face wincing, stumbling back away from the lower right, staff slipping from his hand, the heavy pack and antlers tugging him off balance",
+  "unconventional": true
+ },
+ {
+  "name": "unit_doviello_worker",
+  "who": "a Doviello worker with blue face paint in a grey wolf-head hood",
+  "attack": "swinging his long adze in both hands in a wide overhead chop toward the lower right, the blade crashing down at the enemy, wolf-head hood bobbing, snarling, body leaning into the blow",
+  "hit": "head snapped back by a hit from the lower right, blue-painted face twisted in pain, staggering back away from the lower right, the adze slipping in his hands",
+  "unconventional": false
+ },
+ {
+  "name": "unit_elohim_settler",
+  "who": "a young blond Elohim pilgrim in a white hood and blue cloak with a tall backpack",
+  "attack": "stepping forward toward the lower right and swinging his crooked wooden staff in his left hand in a wide arc at the enemy, blue cloak flaring, the small chest and bedroll on the pack jolting",
+  "hit": "reeling back away from the lower right after a hit from the lower right, white hood slipping, wincing, staff slipping from his hand, the tall backpack with its chest tipping him off balance",
+  "unconventional": false
+ },
+ {
+  "name": "unit_elohim_worker",
+  "who": "a young Elohim peasant in a cream hood and blue tunic",
+  "attack": "jabbing the shaft of his wooden hoe in both hands forward toward the lower right like a spear, steel blade held up and back, cream hood flapping, leaning hard into the thrust",
+  "hit": "doubled over from a hit from the lower right, cream hood falling back, wincing, stumbling back away from the lower right, the hoe slipping in his grip",
+  "unconventional": true
+ },
+ {
+  "name": "unit_grigori_medic",
+  "who": "a bearded Grigori herbalist in a wide-brimmed hat and blue coat",
+  "attack": "thrusting his gnarled herb-wrapped staff in his right hand toward the lower right with healing green sparks flaring at its tip, the stone mortar and pestle held out on his left arm, potion vials swinging on his bandolier",
+  "hit": "flinching from a hit from the lower right, hat tilting, wincing, staggering back away from the lower right, the mortar and pestle clutched to his chest, staff slipping, vials swinging",
+  "unconventional": false
+ },
+ {
+  "name": "unit_grigori_settler",
+  "who": "a young Grigori settler in a teal scarf and tunic with a big backpack",
+  "attack": "lunging forward toward the lower right and swinging his wooden walking staff in his left hand in a wide arc, teal scarf flying, lantern and bedroll swinging on the pack, right hand on the strap",
+  "hit": "knocked off balance by a hit from the lower right, wincing, stumbling back away from the lower right, staff slipping from his hand, the swinging lantern and heavy pack dragging him backward",
+  "unconventional": false
+ },
+ {
+  "name": "unit_grigori_worker",
+  "who": "a bearded Grigori adventurer in a wide leather hat with a teal band",
+  "attack": "swinging his long hoe in both hands flat across toward the lower right, steel blade sweeping at the enemy, hat tilting, satchel flying, body twisted through the swing",
+  "hit": "doubled over by a hit from the lower right, leather hat knocked askew, wincing with gritted teeth, stumbling back away from the lower right, the hoe slipping from his hands",
+  "unconventional": true
+ },
+ {
+  "name": "unit_hippus_settler",
+  "who": "a bearded Hippus nomad in an orange fur-trimmed hat and coat with a huge pack",
+  "attack": "stepping forward toward the lower right and thrusting his gnarled wooden staff in his right hand at the enemy, fur-trimmed coat flaring, the hanging pot and bedroll on the pack swinging",
+  "hit": "staggering back away from the lower right after a hit from the lower right, hat knocked askew, moustache bristling, wincing, staff slipping, the heavy pack tugging him off balance",
+  "unconventional": false
+ },
+ {
+  "name": "unit_hippus_worker",
+  "who": "a bearded Hippus worker in a tall fur-trimmed cap and orange vest",
+  "attack": "swinging his long-handled hoe in both hands in a wide sweep toward the lower right, blade whipping at the enemy, red sash flying, cap tilting, leaning into the swing",
+  "hit": "head snapped back by a hit from the lower right, tall cap flying off, wincing, stumbling back away from the lower right, the hoe slipping in his hands",
+  "unconventional": false
+ },
+ {
+  "name": "unit_illians_settler",
+  "who": "an Illian traveller in a white fur-trimmed hooded parka with a huge backpack",
+  "attack": "lunging forward toward the lower left and whacking at the enemy with his long wooden walking staff in his left hand, fur hood bobbing, the cooking pot and bedroll on the pack swinging",
+  "hit": "knocked off balance by a hit from the lower left, wincing, stumbling back away from the lower left, staff slipping from his hand, fur hood falling back, the pack and swinging pot pulling him over",
+  "unconventional": true
+ },
+ {
+  "name": "unit_illians_worker",
+  "who": "an Illian labourer in a white fur ear-flap hat and ice-blue padded tunic",
+  "attack": "swinging his frosted-blade hoe in both hands in a wide arc toward the lower right, the frosted steel slashing at the enemy, ear flaps flying, body leaning into the swing",
+  "hit": "doubled over by a hit from the lower right, fur hat knocked sideways, wincing, stumbling back away from the lower right, the hoe slipping in his hands",
+  "unconventional": false
+ },
+ {
+  "name": "unit_infernal_settler",
+  "who": "a red-skinned demon settler in a dark horned hood with a huge backpack",
+  "attack": "lunging toward the lower right and lashing his devil tail at the enemy while swinging his gnarled dark staff in his right hand, hooded cloak flaring, flaming lantern swinging on the pack",
+  "hit": "recoiling from a hit from the lower right, yellow eyes squeezed shut, snarling, stumbling back away from the lower right, staff slipping, tail lashing, the flaming lantern and pack dragging him off balance",
+  "unconventional": true
+ },
+ {
+  "name": "unit_infernal_worker",
+  "who": "a hunched reddish-brown imp worker with curved horns and a spade-tipped tail",
+  "attack": "snapping his spade-tipped tail toward the lower right in a whip-lash at the enemy while swinging the long hoe in both hands, horns lowered, yellow eyes glowing, clawed feet braced",
+  "hit": "knocked back by a hit from the lower right, yelping with bared fangs, horns tilting, tail lashing, stumbling back away from the lower right, the hoe slipping from his hands",
+  "unconventional": true
+ },
+ {
+  "name": "unit_khazad_settler",
+  "who": "a stocky Khazad dwarf settler with a braided red-orange beard and steel-and-gold helmet",
+  "attack": "charging toward the lower right and swinging his crooked wooden walking staff in his right hand in a hard overhead blow, braided beard flying, the pickaxe, bedroll and pot on the huge pack jolting",
+  "hit": "knocked back by a hit from the lower right, helmet tilting, beard flying, gritting his teeth, staggering back away from the lower right, staff slipping, the heavy pack pulling him off balance",
+  "unconventional": false
+ },
+ {
+  "name": "unit_khazad_worker",
+  "who": "a stout Khazad dwarf worker with a steel-and-gold helmet and braided red-orange beard",
+  "attack": "swinging his pickaxe in both hands in a powerful downward strike toward the lower right, pick head slamming at the enemy, braided beard flying, rear hand high and front hand low, planted wide",
+  "hit": "head snapped back by a hit from the lower right, helmet askew, gritting his teeth, stumbling back away from the lower right, the pickaxe slipping in his hands, beard whipping",
+  "unconventional": false
+ },
+ {
+  "name": "unit_kuriotates_settler",
+  "who": "a young Kuriotates settler with a gold laurel wreath and green hooded cloak with a big pack",
+  "attack": "lunging toward the lower right and swinging his gnarled wooden staff in his right hand like a club, cloak flaring, the brass bucket on the pack swinging out as a second weapon",
+  "hit": "doubled over by a hit from the lower right, laurel wreath slipping, wincing, stumbling back away from the lower right, staff slipping from his hand, the bucket clanging and the heavy pack dragging him backward",
+  "unconventional": true
+ },
+ {
+  "name": "unit_kuriotates_worker",
+  "who": "a young Kuriotates worker with a gold-green laurel wreath and green tunic",
+  "attack": "swinging his long-handled hoe in both hands in an overhead chop toward the lower right, blade crashing down at the enemy, laurel wreath tilting, leaning into the blow",
+  "hit": "knocked back by a hit from the lower right, laurel wreath slipping, wincing, stumbling back away from the lower right, the hoe slipping from his hands",
+  "unconventional": false
+ },
+ {
+  "name": "unit_lanun_settler",
+  "who": "a dark-skinned Lanun pirate settler in a black tricorn hat and navy coat with a huge pack",
+  "attack": "lunging toward the lower right and swinging the bucket on his pack strap while thrusting his crooked staff in his left hand at the enemy, coat tails and red sash flying, rope and striped bedroll swinging",
+  "hit": "knocked off balance by a hit from the lower right, tricorn hat flying, wincing, stumbling back away from the lower right, staff slipping from his hand, the heavy pack dragging him backward",
+  "unconventional": true
+ },
+ {
+  "name": "unit_lanun_worker",
+  "who": "a dark-skinned Lanun labourer in a red bandana and blue vest",
+  "attack": "swinging his long-handled hoe in both hands in a wide sideways sweep toward the lower right, the blade slashing at the enemy like a cutlass, bandana tails flying, red sash whipping",
+  "hit": "doubled over by a hit from the lower right, bandana tails flying, wincing, stumbling back away from the lower right, the hoe slipping from his hands",
+  "unconventional": true
+ },
+ {
+  "name": "unit_ljosalfar_settler",
+  "who": "a blonde Ljosalfar elf settler in a green hooded tunic with a huge backpack",
+  "attack": "lunging toward the lower right and thrusting her leafy wooden staff in her right hand at the enemy, green leaves fluttering from its tip, hood falling back, the potted sapling and pot on the pack swinging",
+  "hit": "staggering back away from the lower right after a hit from the lower right, blonde hair flying, wincing, staff slipping from her hand, the heavy pack and sapling pulling her off balance",
+  "unconventional": false
+ },
+ {
+  "name": "unit_ljosalfar_worker",
+  "who": "a blond Ljosalfar elf worker with pointed ears in a green leaf-edged tunic",
+  "attack": "spinning and swinging his long hoe in both hands in a wide arc toward the lower right, blade sweeping at the enemy, blond hair flying, leaf-edged tunic flaring, graceful balanced stance",
+  "hit": "knocked back by a hit from the lower right, blond hair flying, wincing, stumbling back away from the lower right, the hoe slipping from his hands",
+  "unconventional": false
+ },
+ {
+  "name": "unit_luchuirp_settler",
+  "who": "a red-bearded Luchuirp dwarf settler with brass goggles and a tool-hung leather apron",
+  "attack": "swinging the big hammer from his apron in his right hand in a hard overhead blow toward the lower right, wooden walking staff tucked under his left arm, goggles gleaming, the heavy pack with its cog and pot jolting",
+  "hit": "knocked back by a hit from the lower right, goggles askew, red beard flying, gritting his teeth, stumbling back away from the lower right, staff slipping, tools clattering on his apron",
+  "unconventional": true
+ },
+ {
+  "name": "unit_malakim_settler",
+  "who": "a bearded Malakim desert traveller in a white-and-gold turban with a large pack",
+  "attack": "lunging toward the lower right and swinging the heavy brass water jug from his pack at the enemy in a wide arc, tall walking staff in his right hand braced, white robes flaring",
+  "hit": "recoiling from a hit from the lower right, turban slipping, wincing, stumbling back away from the lower right, staff slipping from his hand, the brass jug swinging and the pack pulling him off balance",
+  "unconventional": true
+ },
+ {
+  "name": "unit_malakim_worker",
+  "who": "a bearded Malakim desert worker in a white turban and teal vest",
+  "attack": "swinging his long hoe in both hands in a wide sweep toward the lower right, the steel blade slashing at the enemy, turban cloth trailing, baggy trousers billowing, leaning into the swing",
+  "hit": "knocked back by a hit from the lower right, turban cloth flying, wincing, stumbling back away from the lower right, the hoe slipping from his hands",
+  "unconventional": false
+ },
+ {
+  "name": "unit_mercurians_settler",
+  "who": "a blond angelic Mercurian settler with a golden halo and small white wings",
+  "attack": "stepping forward toward the lower right and thrusting his gold-star-topped staff in his right hand at the enemy with a bright golden flare at the star, small white wings flared, halo gleaming, backpack and pot swinging",
+  "hit": "knocked back by a hit from the lower right, wings fluttering, halo tilting, wincing, stumbling back away from the lower right, staff slipping from his hand, the heavy backpack pulling him off balance",
+  "unconventional": false
+ },
+ {
+  "name": "unit_mercurians_worker",
+  "who": "a young angelic Mercurian worker with golden hair, a halo and small white wings",
+  "attack": "wings flared and halo gleaming, swinging his long hoe in both hands in a wide overhead strike toward the lower right, blade crashing down at the enemy, blue tabard flaring",
+  "hit": "doubled over by a hit from the lower right, wings fluttering, halo tilting, wincing, stumbling back away from the lower right, the hoe slipping from his hands",
+  "unconventional": false
+ },
+ {
+  "name": "unit_sheaim_settler",
+  "who": "a small Sheaim settler in a purple hooded cloak with a big tan backpack",
+  "attack": "flinging the glowing embers from his pail in his right hand toward the lower right at the enemy in a fiery spray, thrusting his skull-topped staff in his left hand forward, purple cloak flaring",
+  "hit": "recoiling from a hit from the lower right, hood falling back, wincing, stumbling back away from the lower right, the ember pail swinging and spilling sparks, skull-topped staff slipping, pack dragging him off balance",
+  "unconventional": true
+ },
+ {
+  "name": "unit_sheaim_worker",
+  "who": "a Sheaim labourer in a purple hood and tunic with a bone-bead necklace",
+  "attack": "swinging his hoe in both hands in a wide sweep toward the lower right, the blade slashing at the enemy, purple hood and tunic flaring, bone beads swinging, leaning into the swing",
+  "hit": "knocked back by a hit from the lower right, hood slipping, bone beads swinging, wincing, stumbling back away from the lower right, the hoe slipping from his hands",
+  "unconventional": false
+ },
+ {
+  "name": "unit_sidar_settler",
+  "who": "a pale grey-eyed Sidar settler in a deep grey hood and tattered grey cloak with a backpack",
+  "attack": "lunging toward the lower right and jabbing his pale crooked staff in his left hand at the enemy, tattered cloak flaring, the tin pot and dark bedroll on the backpack swinging",
+  "hit": "staggering back away from the lower right after a hit from the lower right, grey hood slipping, wincing, staff slipping from his hand, the heavy pack and swinging pot pulling him off balance",
+  "unconventional": false
+ },
+ {
+  "name": "unit_sidar_worker",
+  "who": "a pale grey-haired Sidar labourer in a grey hood and black vest",
+  "attack": "swinging his wooden hoe in both hands flat like a club toward the lower right, steel blade sweeping at the enemy, grey hood flapping, teal sash flying, body twisted through the swing",
+  "hit": "doubled over by a hit from the lower right, grey hood falling back, wincing, stumbling back away from the lower right, the hoe slipping from his hands",
+  "unconventional": true
+ },
+ {
+  "name": "unit_svartalfar_settler",
+  "who": "a lavender-skinned dark elf settler with long white hair in a purple-and-black coat with a big pack",
+  "attack": "lunging toward the lower right and thrusting his dark crook-topped staff in his right hand at the enemy, long white hair streaming, purple-and-black coat flaring, the hanging metal pot swinging on the pack",
+  "hit": "knocked back by a hit from the lower right, long white hair flying, wincing, stumbling back away from the lower right, staff slipping from his hand, the heavy pack pulling him off balance",
+  "unconventional": false
+ },
+ {
+  "name": "unit_svartalfar_worker",
+  "who": "a pale grey-skinned dark elf worker with a long white ponytail in a dark purple tunic",
+  "attack": "spinning and swinging his long-handled hoe in both hands in a wide arc toward the lower right, blade slashing at the enemy, white ponytail whipping, rear hand high and front hand low",
+  "hit": "head snapped back by a hit from the lower right, white ponytail flying, wincing, stumbling back away from the lower right, the hoe slipping from his hands",
+  "unconventional": false
+ }
+]

@@ -456,6 +456,19 @@ of 23.
   `--empty-bucket` paints the bucket empty. Without a set, one image-model edit of the static sprite gives a usable
   recoil (see "Combat presentation and spell effects" above: word the direction from where the sprite looks). Rule 1
   holds: the attack goes toward the side the sprite looks.
+- **Every unit at once: sprite sheets on the OpenAI model** (5 November 2026, the owner's experiment; `lib/pose_sheet.py`,
+  the all-units batch). One call to `gpt-image-2.6-sunburst` (medium, 1536x1024, one image) takes a template of
+  8 units, each as [its real sprite standing | empty | empty] in a 6x4 grid of 256 cells on magenta, and the per-unit
+  attack and hit descriptions; it fills all 16 cells. $0.067 and about 45 s a call: about $0.004 a pose, and the
+  whole roster (353 units) in 45 calls, four at a time. On the same 8 units it matched or beat the local model's
+  per-pose calls (closer to each sprite's colours and detail; the local one bent two of them oddly) at 1/12 of the
+  wall time; its hit poses are a little milder. It answers with real transparency and a haze of faint magenta
+  (`cut` takes alpha below half as background), draws the figures somewhat larger than the template (`finish` sizes
+  them by area) and sometimes runs a figure past its cell or draws a seam between cells (`cut` drops small pieces at
+  a cell's rim). The per-unit descriptions (`pose_prompts/chunk_*.prompts.json`) were written by agents from the
+  anim-all roster's descriptions (weapon, facing), under `pose_prompts/RULES.md`: the strike toward
+  the facing, the unit's own items only, unconventional attacks where the unit and what it carries allow (about 45%).
+  This is the default for bulk key poses; use the local per-pose calls (below) for one unit or a reroll.
 - **A whole new pose by prompt alone** (the scout's attack, 5 November 2026; `lib/prompt_pose.py`): the sprite at 4x on
   magenta as the only reference to the local Klein model with the pose LoRA, no mannequin and no init, and a prompt
   naming the pose. On the scout, every one of six tries (two thrusts, two slashes, a spyglass bash) took its pose, kept
@@ -482,8 +495,9 @@ of 23.
   outlines: draw them at the size they show.
 
 **Wiring them in** (two tables):
-- `KEY_POSES` in `app/battle_stage.js`: `{ catapult: ["attack", "hit"] }`. A unit with only one of the two poses
-  falls back to a lean for the other.
+- `KEY_POSES` in `app/key_poses.js` (written by `lib/pose_batch.py install`, from the files in `app/pose`): which
+  units have which pose. A unit with only one of the two poses falls back to a lean for the other. A pose larger than
+  160x128 (a big unit) is drawn with its feet at its own bottom centre, 2 px up.
 - `IMPACT_CARDS` in `app/battle_snap.js`: by staged action kind, `{ Bombard: "rubble" }`. Every bombard lands as the
   rubble for now (cannons too). For spells, key them by the spell. Add the card's name to `IMPACT_CARDS` in
   `battle_stage.js` as well (the list of files it loads).
@@ -516,11 +530,9 @@ nor key poses still leans its sprite, and a shot or a spell still arrives as a s
    kind of missile, keyed by the shooter's unit. 14 archer units.
 4. *The other siege cards:* the cannon and dwarven cannon (an iron shot's burst: smoke and a flash of fire), the
    battering ram (splintered timbers). The trebuchet keeps the rubble. Key them by the actor's unit.
-5. *Key poses (`attack`, `hit`) for the units that act at range*, which nothing animates yet: the other four siege
-   engines (the cannon, dwarven cannon and battering ram have sets on `anim-all`), the 14 archers (a bow drawn and
-   loosed), the 17 adepts (a staff thrust toward the target), the 35 disciples (hands raised to heal). Then the
-   melee units, most-fought first; count which unit types fight the most battles over the stress games before
-   choosing.
+5. ~~*Key poses (`attack`, `hit`) for every unit*~~: done (5 November 2026): all 353 land units without strips, by
+   sprite sheets (`lib/pose_sheet.py`, above), reviewed by eye at small scale; `app/key_poses.js` lists them. Still
+   open: a closer pass for misses (redo a unit with `lib/prompt_pose.py` locally, or its sheet), and the ships.
 6. *Heal:* a glow does it now; a card (a column of soft light on the healed) is optional.
 
 Sources, cheapest first: a finished set's frames (`anim-all` has 60: the siege engines, elementals, ships,
