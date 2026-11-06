@@ -244,11 +244,12 @@ impl Sink {
                 t: t as FighterIdx,
                 a_x100: pr.a,
                 dv_x100: pr.dv,
-                mean: (base * pr.a as i64 / (pr.a as i64 + pr.dv as i64)) as i32,
+                // The pair's type percentage (docs/UNIT_ROLES.md) is in both means.
+                mean: (base * pr.a as i64 / (pr.a as i64 + pr.dv as i64) * pr.pct as i64 / 100) as i32,
                 ma_x100: pr.ma,
                 md_x100: pr.md,
                 spell_pct: pr.spell_pct,
-                magic_mean: (base * pr.ma as i64 / (pr.ma as i64 + pr.md as i64)) as i32,
+                magic_mean: (base * pr.ma as i64 / (pr.ma as i64 + pr.md as i64) * pr.pct as i64 / 100) as i32,
                 a_extra,
                 dv_extra,
             });

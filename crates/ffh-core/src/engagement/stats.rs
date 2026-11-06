@@ -232,7 +232,62 @@ impl Game {
             ma: self.engage_magic_x100(hitter, true),
             md: self.engage_magic_x100(target, false),
             spell_pct: self.engage_spell_pct(hitter, Some(target)),
+            pct: self.engage_pair_pct(hitter, Some(target)),
         }
+    }
+
+    /// The percentage of `hitter`'s hits' damage on `target` (`None`: a city's Sentinel): `100 +`
+    /// its damage against the target's unit combat (and against a large target, or walls), times
+    /// `100 -` the target's resistance to the hitter's unit combat, at least 0 (docs/UNIT_ROLES.md,
+    /// L1 and L2).
+    pub fn engage_pair_pct(&self, hitter: UnitId, target: Option<UnitId>) -> i32 {
+        let ht = &self.d.units[self.units[hitter].unit_type];
+        let up = match target {
+            Some(t) => {
+                let mut v = self.unit_engage_damage_vs(hitter, self.unit_get_unit_combat_type(t));
+                if self.unit_engage_large(t) {
+                    v += ht.damage_vs_large;
+                }
+                v
+            }
+            None => ht.damage_vs_walls,
+        };
+        let down = target.map_or(0, |t| self.unit_engage_resist_vs(t, self.unit_get_unit_combat_type(hitter)));
+        ((100 + up).max(0) as i64 * (100 - down).max(0) as i64 / 100) as i32
+    }
+
+    /// Unit `u`'s damage against unit combat `c` (percent more; its type's `damage_vs` and its
+    /// promotions').
+    pub fn unit_engage_damage_vs(&self, u: UnitId, c: Option<UnitCombatType>) -> i32 {
+        let Some(c) = c else { return 0 };
+        let unit = &self.units[u];
+        self.d.units[unit.unit_type].damage_vs[c] + self.d.promotions.keys().filter(|&p| unit.has_promotion[p]).map(|p| self.d.promotions[p].damage_vs[c]).sum::<i32>()
+    }
+
+    /// Unit `u`'s resistance to damage from unit combat `c` (percent less; its type's `resist_vs`
+    /// and its promotions').
+    pub fn unit_engage_resist_vs(&self, u: UnitId, c: Option<UnitCombatType>) -> i32 {
+        let Some(c) = c else { return 0 };
+        let unit = &self.units[u];
+        self.d.units[unit.unit_type].resist_vs[c] + self.d.promotions.keys().filter(|&p| unit.has_promotion[p]).map(|p| self.d.promotions[p].resist_vs[c]).sum::<i32>()
+    }
+
+    /// Unit `u`'s armor: HP off each physical hit on it (its type's and its promotions').
+    pub fn unit_engage_armor(&self, u: UnitId) -> i32 {
+        let unit = &self.units[u];
+        self.d.units[unit.unit_type].armor + self.d.promotions.keys().filter(|&p| unit.has_promotion[p]).map(|p| self.d.promotions[p].armor).sum::<i32>()
+    }
+
+    /// Unit `u`'s hits ignore armor (its type's or a promotion's `armor_piercing`).
+    pub fn unit_engage_piercing(&self, u: UnitId) -> bool {
+        let unit = &self.units[u];
+        self.d.units[unit.unit_type].armor_piercing || self.d.promotions.keys().any(|p| unit.has_promotion[p] && self.d.promotions[p].armor_piercing)
+    }
+
+    /// Unit `u`'s hits cannot be withdrawn from (its type's or a promotion's `pursuit`).
+    pub fn unit_engage_pursuit(&self, u: UnitId) -> bool {
+        let unit = &self.units[u];
+        self.d.units[unit.unit_type].pursuit || self.d.promotions.keys().any(|p| unit.has_promotion[p] && self.d.promotions[p].pursuit)
     }
 
     /// Unit `u`'s magic (`magic`) or magic defence in a battle, x100: its sheet's plus its own

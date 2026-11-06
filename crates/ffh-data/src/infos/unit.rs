@@ -17,7 +17,10 @@
 
 use crate::enums::*;
 use crate::idx::IdxVec;
-use crate::infos::{read_engage_row_order, read_engage_rows, read_stat_changes, read_stats, InfoBase, RowActions, StatChange, StatSheet, StatType, ROWS};
+use crate::infos::{
+    read_engage_patterns, read_engage_row_order, read_engage_rows, read_round_percent, read_stat_changes, read_stats, AttackPattern, InfoBase, RowActions, StatChange,
+    StatSheet, StatType, ROWS,
+};
 use crate::registry::Rd;
 
 // ---------------------------------------------------------------------------------------------
@@ -209,6 +212,14 @@ pub struct PromotionInfo {
     /// row it prefers is anti-flanking (Formation): whatever an enemy flanker can reach, such
     /// units in its reach are taken first.
     pub anti_flank: bool,
+    /// This game's own (docs/UNIT_ROLES.md): `damage_vs` and `resist_vs` by unit combat (percent,
+    /// added to its unit's), `armor` (HP off each physical hit on its unit), `armor_piercing` and
+    /// `pursuit` (as the unit keys).
+    pub damage_vs: IdxVec<UnitCombatType, i32>,
+    pub resist_vs: IdxVec<UnitCombatType, i32>,
+    pub armor: i32,
+    pub armor_piercing: bool,
+    pub pursuit: bool,
     /// C++ `getSpellDamageModify()`: damage added to its unit's spells outside battles (FfH's
     /// `doDamage`); a battle's spells use magic (`stat_changes`).
     pub spell_damage_modify: i32,
@@ -380,6 +391,11 @@ pub fn read_promotion(rd: &Rd) -> PromotionInfo {
         combat_limit: rd.int("combat_limit"),
         stat_changes: read_stat_changes(rd),
         anti_flank: rd.bool("anti_flank"),
+        damage_vs: rd.pairs_int::<UnitCombatType>("damage_vs", 0),
+        resist_vs: rd.pairs_int::<UnitCombatType>("resist_vs", 0),
+        armor: rd.int("armor"),
+        armor_piercing: rd.bool("armor_piercing"),
+        pursuit: rd.bool("pursuit"),
         spell_damage_modify: rd.int("spell_damage_modify"),
         combat_percent_global_counter: rd.int("combat_percent_global_counter"),
         combat_percent_in_borders: rd.int("combat_percent_in_borders"),
@@ -802,6 +818,28 @@ pub struct UnitInfo {
     /// `engage_row_order`: its rank preference, the rows front (0), middle (1), rear (2) in the
     /// order the auto formation tries them; `None` for a type that never fights a land battle.
     pub engage_row_order: Option<[usize; ROWS]>,
+    /// Each row's attack pattern (`engage_rows`' `pattern`; docs/UNIT_ROLES.md).
+    pub engage_patterns: [AttackPattern; ROWS],
+    /// `damage_vs`: percent more damage its hits deal to units of each unit combat (below 0: less).
+    pub damage_vs: IdxVec<UnitCombatType, i32>,
+    /// `resist_vs`: percent less damage it takes from units of each unit combat (below 0: more).
+    pub resist_vs: IdxVec<UnitCombatType, i32>,
+    /// `damage_vs_large`: percent more damage to large units; `damage_vs_walls`: to a city's
+    /// Sentinels.
+    pub damage_vs_large: i32,
+    pub damage_vs_walls: i32,
+    /// `armor`: HP taken off each physical hit on it (at least 1 HP gets through).
+    pub armor: i32,
+    /// `armor_piercing`: its hits ignore armor.
+    pub armor_piercing: bool,
+    /// `pursuit`: a hit of it cannot be withdrawn from.
+    pub pursuit: bool,
+    /// `heal_percent`: its heal, in percent of a hit (`None`: `ENGAGEMENT_HEAL_PERCENT`).
+    pub heal_percent: Option<i32>,
+    /// `target_preference`: unit combats it goes for first, wherever they stand in its reach.
+    pub target_preference: Vec<UnitCombatType>,
+    /// `round_percent`: its hits' damage in each round, in percent.
+    pub round_percent: [i32; ROWS],
 }
 
 /// C++ `CvUnitInfo::read` + `readPass2` + `readPass3`.
@@ -996,6 +1034,17 @@ pub fn read_unit(rd: &Rd) -> UnitInfo {
         stats: read_stats(rd, &rd.string("type")),
         engage_rows: read_engage_rows(rd, &rd.string("type")),
         engage_row_order: read_engage_row_order(rd, &rd.string("type")),
+        engage_patterns: read_engage_patterns(rd, &rd.string("type")),
+        damage_vs: rd.pairs_int::<UnitCombatType>("damage_vs", 0),
+        resist_vs: rd.pairs_int::<UnitCombatType>("resist_vs", 0),
+        damage_vs_large: rd.int("damage_vs_large"),
+        damage_vs_walls: rd.int("damage_vs_walls"),
+        armor: rd.int("armor"),
+        armor_piercing: rd.bool("armor_piercing"),
+        pursuit: rd.bool("pursuit"),
+        heal_percent: rd.has("heal_percent").then(|| rd.int("heal_percent")),
+        target_preference: rd.ref_list::<UnitCombatType>("target_preference"),
+        round_percent: read_round_percent(rd, &rd.string("type")),
         // ---- readPass2 ----
         unit_convert_from_combat: rd.rf::<UnitType>("unit_convert_from_combat"),
         unit_create_from_combat: rd.rf::<UnitType>("unit_create_from_combat"),

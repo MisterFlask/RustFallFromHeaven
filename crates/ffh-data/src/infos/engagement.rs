@@ -82,6 +82,49 @@ impl ActionKind {
     }
 }
 
+/// Whom else an action hits besides its target (an `engage_rows` row's `pattern`; docs/UNIT_ROLES.md,
+/// "Attack patterns"). The extra hits land with the target's (no roll of their own), at the
+/// pattern's percentage of a hit (`ENGAGEMENT_*_PERCENT`), never crit, and take the place of a
+/// collateral splash (a known spell's splash stays the spell's).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub enum AttackPattern {
+    /// `SINGLE`: the target alone.
+    #[default]
+    Single,
+    /// `VOLLEY`: also the unit its kind would hit in each lane beside the target's.
+    Volley,
+    /// `PIERCE`: also every other unit in the target's lanes, front to back.
+    Pierce,
+    /// `SWEEP`: also every other unit in the target's row. A heal with it heals every hurt ally in
+    /// its target's row.
+    Sweep,
+    /// `CLEAVE`: also the front unit of each lane beside the target's.
+    Cleave,
+    /// `TRAMPLE`: also the unit behind the target in its lanes.
+    Trample,
+}
+
+impl AttackPattern {
+    pub const ALL: [AttackPattern; 6] =
+        [AttackPattern::Single, AttackPattern::Volley, AttackPattern::Pierce, AttackPattern::Sweep, AttackPattern::Cleave, AttackPattern::Trample];
+
+    /// The data's token of the pattern.
+    pub fn token(self) -> &'static str {
+        match self {
+            AttackPattern::Single => "SINGLE",
+            AttackPattern::Volley => "VOLLEY",
+            AttackPattern::Pierce => "PIERCE",
+            AttackPattern::Sweep => "SWEEP",
+            AttackPattern::Cleave => "CLEAVE",
+            AttackPattern::Trample => "TRAMPLE",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<AttackPattern> {
+        AttackPattern::ALL.into_iter().find(|k| k.token() == s.trim())
+    }
+}
+
 /// The rows of a side's formation grid, front (0), middle (1) and rear (2).
 pub const ROWS: usize = 3;
 
@@ -312,6 +355,24 @@ pub fn read_engage_rows(rd: &Rd, unit_type: &str) -> Option<[RowActions; ROWS]> 
     Some(out)
 }
 
+/// A unit type's attack patterns, by row (each `engage_rows` row's optional `pattern`;
+/// `SINGLE` without it). An unknown pattern warns and reads as `SINGLE`.
+pub fn read_engage_patterns(rd: &Rd, unit_type: &str) -> [AttackPattern; ROWS] {
+    let mut out = [AttackPattern::Single; ROWS];
+    if let Some(list) = rd.child("engage_rows") {
+        for (i, row) in list.children().enumerate().take(ROWS) {
+            if row.has("pattern") {
+                let token = row.string("pattern");
+                match AttackPattern::parse(&token) {
+                    Some(p) => out[i] = p,
+                    None => rd.cx.warn(format!("{unit_type}: engage_rows, {} row: unknown pattern {token:?}", ROW_TOKENS[i])),
+                }
+            }
+        }
+    }
+    out
+}
+
 /// A unit type's `engage_row_order` (`units.jsonc`): its rank preference, the three rows (`FRONT`,
 /// `MIDDLE`, `REAR`) in the order the auto formation tries them. `None` without the key. A list
 /// that is not the three rows once each warns and reads as `None`.
@@ -332,3 +393,18 @@ pub fn read_engage_row_order(rd: &Rd, unit_type: &str) -> Option<[usize; ROWS]> 
     Some([rows[0], rows[1], rows[2]])
 }
 
+
+/// A unit type's `round_percent` (`units.jsonc`): its hits' damage in each round, in percent (the
+/// last value for later rounds); 100 each without the key. A list that is not three numbers of 0
+/// or more warns and reads as 100 each.
+pub fn read_round_percent(rd: &Rd, unit_type: &str) -> [i32; ROWS] {
+    if !rd.has("round_percent") {
+        return [100; ROWS];
+    }
+    let v: Vec<i32> = rd.child("round_percent").map(|l| l.children().map(|c| c.scalar_text().parse::<i32>().unwrap_or(-1)).collect()).unwrap_or_default();
+    if v.len() != ROWS || v.iter().any(|&x| x < 0) {
+        rd.cx.warn(format!("{unit_type}: round_percent {v:?} is not three percentages"));
+        return [100; ROWS];
+    }
+    [v[0], v[1], v[2]]
+}

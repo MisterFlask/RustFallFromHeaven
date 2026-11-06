@@ -181,7 +181,7 @@ impl Setup {
     /// The pair of set-up indices `h` (hitting) and `t`.
     pub fn pair(&self, h: usize, t: usize) -> Pair {
         let p = self.pairs[h * self.fighters.len() + t];
-        Pair { a: p.a.max(1), dv: p.dv.max(1), ma: p.ma.max(1), md: p.md.max(1), spell_pct: p.spell_pct.max(0) }
+        Pair { a: p.a.max(1), dv: p.dv.max(1), ma: p.ma.max(1), md: p.md.max(1), spell_pct: p.spell_pct.max(0), pct: p.pct.max(0) }
     }
 
     /// The side's formation as places.
@@ -407,6 +407,15 @@ impl Game {
             Some(s) => Spell::known(s.idx() as u32),
             None => Spell::bolt(params),
         };
+        let ty = &self.d.units[self.units[u].unit_type];
+        f.patterns = ty.engage_patterns;
+        f.armor = self.unit_engage_armor(u).max(0) * 100;
+        f.pierce = self.unit_engage_piercing(u);
+        f.pursuit = self.unit_engage_pursuit(u);
+        f.heal_pct = ty.heal_percent;
+        f.round_pct = ty.round_percent;
+        f.class_bit = self.unit_get_unit_combat_type(u).map_or(0, |c| 1u64 << (c.idx() % 64));
+        f.prefer = ty.target_preference.iter().fold(0u64, |m, c| m | 1u64 << (c.idx() % 64));
         f
     }
 
@@ -493,6 +502,7 @@ impl Game {
                         ma: self.engage_magic_x100(units[h], true),
                         md: self.city_sentinel_md_x100(c),
                         spell_pct: self.engage_spell_pct(units[h], None),
+                        pct: self.engage_pair_pct(units[h], None),
                     },
                     (false, true, _) => Pair {
                         a: self.sentinel_a_x100(),
@@ -500,6 +510,7 @@ impl Game {
                         ma: self.sentinel_stat(StatType::Magic) * 10,
                         md: self.engage_magic_x100(units[t], false),
                         spell_pct: 100,
+                        pct: 100,
                     },
                     _ => Pair::default(),
                 };

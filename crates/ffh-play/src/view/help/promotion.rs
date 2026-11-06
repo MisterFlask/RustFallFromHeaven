@@ -31,6 +31,43 @@ pub fn stat_name(s: StatType) -> &'static str {
 }
 
 /// The battle stats a promotion changes, a line each: "+20% Attack", "+10 Defense", "-1 Speed".
+/// The battle levers of a unit type or promotion (docs/UNIT_ROLES.md): damage against and
+/// resistance to unit combats, armor, armor piercing, pursuit; one line each.
+pub(super) fn lever_lines(
+    b: &mut String,
+    d: &GameData,
+    damage_vs: &IdxVec<UnitCombatType, i32>,
+    resist_vs: &IdxVec<UnitCombatType, i32>,
+    armor: i32,
+    piercing: bool,
+    pursuit: bool,
+) {
+    for (c, &v) in damage_vs.iter_enumerated() {
+        if v != 0 {
+            b.push_str(NEWLINE);
+            b.push_str(&format!("[ICON_BULLET]In battle: {v:+}% damage to {} units", display(d, c)));
+        }
+    }
+    for (c, &v) in resist_vs.iter_enumerated() {
+        if v != 0 {
+            b.push_str(NEWLINE);
+            b.push_str(&format!("[ICON_BULLET]In battle: {:+}% damage from {} units", -v, display(d, c)));
+        }
+    }
+    if armor != 0 {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]In battle: armor {armor} (HP off each physical hit taken)"));
+    }
+    if piercing {
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]In battle: its hits ignore armor");
+    }
+    if pursuit {
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]In battle: its hits cannot be withdrawn from");
+    }
+}
+
 fn stat_lines(b: &mut String, changes: &[StatChange; StatType::NUM]) {
     for s in StatType::ALL {
         let c = changes[s.idx()];
@@ -81,6 +118,11 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         adjacent_tile_heal_change,
         stat_changes,
         anti_flank,
+        damage_vs,
+        resist_vs,
+        armor,
+        armor_piercing,
+        pursuit,
         spell_damage_modify,
         city_attack_percent,
         city_defense_percent,
@@ -273,6 +315,7 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         b.push_str(&per_turn);
     }
     stat_lines(b, stat_changes);
+    lever_lines(b, d, damage_vs, resist_vs, *armor, *armor_piercing, *pursuit);
     if *anti_flank {
         // This game's own (docs/ENGAGEMENTS.md, Q7).
         b.push_str(NEWLINE);

@@ -47,7 +47,7 @@
 //! Integers throughout: HP in centi-HP, A and Dv x100, percentages multiplied in `i128` and
 //! divided once. No map iteration, every sort a total order (ties by fighter index last).
 
-use ffh_data::{ActionKind, Defines, RowActions, ROWS};
+use ffh_data::{ActionKind, AttackPattern, Defines, RowActions, ROWS};
 
 use crate::rng::Rng;
 
@@ -107,7 +107,9 @@ pub fn lanes_for(slots: i32) -> u8 {
 /// The per-pair strengths (`Game::engage_hit`): the hitter's A against this target and the
 /// target's Dv against this hitter, both x100; for its SPELL actions, its magic and the target's
 /// magic defence, x100, and the percentage of the spell's damage the target takes (100 less its
-/// resistance to the spell's damage type).
+/// resistance to the spell's damage type); and the percentage of every hit's damage for the pair
+/// (`pct`: the hitter's damage against the target's unit combat, size or walls, less the
+/// target's resistance to the hitter's unit combat; docs/UNIT_ROLES.md).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Pair {
     pub a: i32,
@@ -115,12 +117,13 @@ pub struct Pair {
     pub ma: i32,
     pub md: i32,
     pub spell_pct: i32,
+    pub pct: i32,
 }
 
 impl Pair {
-    /// A pair whose magic is its A and Dv, the spell's damage whole.
+    /// A pair whose magic is its A and Dv, the spell's damage whole, no type modifier.
     pub fn physical(a: i32, dv: i32) -> Pair {
-        Pair { a, dv, ma: a, md: dv, spell_pct: 100 }
+        Pair { a, dv, ma: a, md: dv, spell_pct: 100, pct: 100 }
     }
 }
 
@@ -204,8 +207,14 @@ pub struct Params {
     pub splash_pct: i32,
     /// The magic bolt's power (a caster that knows no damage spell).
     pub bolt_pct: i32,
-    /// A heal: `base_damage x heal_pct x r`.
+    /// A heal: `base_damage x heal_pct x r` (a fighter's own `heal_pct` takes its place).
     pub heal_pct: i32,
+    /// The attack patterns' extra hits, in percent of a hit on the target (AttackPattern).
+    pub volley_pct: i32,
+    pub pierce_pct: i32,
+    pub sweep_pct: i32,
+    pub cleave_pct: i32,
+    pub trample_pct: i32,
     /// A missile's strike ([`missile_hit`]), in percent of a hit.
     pub missile_pct: i32,
     pub city_attacker_shot_pct: i32,
@@ -230,6 +239,11 @@ impl Default for Params {
             splash_pct: 50,
             bolt_pct: 60,
             heal_pct: 50,
+            volley_pct: 50,
+            pierce_pct: 50,
+            sweep_pct: 35,
+            cleave_pct: 60,
+            trample_pct: 60,
             missile_pct: 50,
             city_attacker_shot_pct: 50,
             forest_ranged_pct: 50,
@@ -240,6 +254,18 @@ impl Default for Params {
 }
 
 impl Params {
+    /// The percentage of a pattern's extra hits (`None` for a single target).
+    pub fn pattern_pct(&self, pattern: AttackPattern) -> Option<i32> {
+        match pattern {
+            AttackPattern::Single => None,
+            AttackPattern::Volley => Some(self.volley_pct),
+            AttackPattern::Pierce => Some(self.pierce_pct),
+            AttackPattern::Sweep => Some(self.sweep_pct),
+            AttackPattern::Cleave => Some(self.cleave_pct),
+            AttackPattern::Trample => Some(self.trample_pct),
+        }
+    }
+
     /// The `ENGAGEMENT_*` defines.
     pub fn from_defines(d: &Defines) -> Params {
         Params {
@@ -255,6 +281,11 @@ impl Params {
             splash_pct: d.engagement_splash_percent,
             bolt_pct: d.engagement_bolt_percent,
             heal_pct: d.engagement_heal_percent,
+            volley_pct: d.engagement_volley_percent,
+            pierce_pct: d.engagement_pierce_percent,
+            sweep_pct: d.engagement_sweep_percent,
+            cleave_pct: d.engagement_cleave_percent,
+            trample_pct: d.engagement_trample_percent,
             missile_pct: d.engagement_missile_percent,
             city_attacker_shot_pct: d.engagement_city_attacker_shot_percent,
             forest_ranged_pct: d.engagement_forest_ranged_percent,
@@ -345,6 +376,21 @@ pub struct Fighter {
     /// A Sentinel of the defended city (docs/SIEGES.md): never knocked back, never healed; it
     /// takes the shots and spells aimed past it in its lanes, and BOMBARD takes it first.
     pub fixed: bool,
+    /// Its attack pattern from each row (docs/UNIT_ROLES.md).
+    pub patterns: [AttackPattern; ROWS],
+    /// Centi-HP taken off each physical hit on it (at least 1 centi-HP gets through), unless the
+    /// hitter's `pierce`.
+    pub armor: i32,
+    pub pierce: bool,
+    /// Its hits cannot be withdrawn from.
+    pub pursuit: bool,
+    /// Its heal, in percent of a hit (`None`: the params').
+    pub heal_pct: Option<i32>,
+    /// Its hits' damage in rounds 1, 2 and 3 and later, in percent.
+    pub round_pct: [i32; ROWS],
+    /// Its unit combat as a bit (0: none), and the unit combats it goes for first (a mask).
+    pub class_bit: u64,
+    pub prefer: u64,
 }
 
 impl Fighter {
@@ -377,6 +423,14 @@ impl Fighter {
             collateral_protection: 0,
             spell: Spell { id: None, power: 60, splash: false },
             fixed: false,
+            patterns: [AttackPattern::Single; ROWS],
+            armor: 0,
+            pierce: false,
+            pursuit: false,
+            heal_pct: None,
+            round_pct: [100; ROWS],
+            class_bit: 0,
+            prefer: 0,
         }
     }
 
@@ -402,6 +456,15 @@ impl Pcts {
         self.num *= pct.max(0) as i128;
         self.den *= 100;
     }
+}
+
+/// What a hit is to its action: its target, a neighbour splashed (collateral damage, a spell's
+/// splash) or an attack pattern's extra hit at its percentage.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Extra {
+    Target,
+    Splash,
+    Pattern(i32),
 }
 
 /// The battle: its rules, ground, each side's lanes, the fighters and the pair table.
@@ -474,7 +537,7 @@ impl Formation {
     /// The hitter's A and the target's Dv, magic and magic defence for this pair (x100, >= 1).
     pub fn pair(&self, h: usize, t: usize) -> Pair {
         let p = self.pairs[h * self.fighters.len() + t];
-        Pair { a: p.a.max(1), dv: p.dv.max(1), ma: p.ma.max(1), md: p.md.max(1), spell_pct: p.spell_pct.max(0) }
+        Pair { a: p.a.max(1), dv: p.dv.max(1), ma: p.ma.max(1), md: p.md.max(1), spell_pct: p.spell_pct.max(0), pct: p.pct.max(0) }
     }
 
     /// The ground's percentages on a hit of `kind` by `h`, multiplied into `x` (several multiply).
@@ -502,6 +565,14 @@ impl Formation {
     /// charge bonus and (`splash`) the splash percentage, for a collateral splash also times
     /// `100 + h`'s collateral extra and `100 - t`'s collateral protection, divided once.
     pub fn expected(&self, h: usize, t: usize, kind: ActionKind, round: i32, splash: bool) -> i32 {
+        self.expected_with(h, t, kind, round, if splash { Extra::Splash } else { Extra::Target })
+    }
+
+    /// [`Formation::expected`] for a hit of any [`Extra`]: also times the pair's percentage
+    /// ([`Pair::pct`]) and `h`'s percentage for the round; a pattern's extra hit times its
+    /// percentage (no collateral terms).
+    pub fn expected_with(&self, h: usize, t: usize, kind: ActionKind, round: i32, extra: Extra) -> i32 {
+        let splash = extra == Extra::Splash;
         let p = self.pair(h, t);
         // A spell is the caster's magic against the target's magic defence (docs/UNIT_STATS.md).
         let (a, dv) = if kind == ActionKind::Spell { (p.ma as i64, p.md as i64) } else { (p.a as i64, p.dv as i64) };
@@ -514,6 +585,11 @@ impl Formation {
         self.ground_pcts(h, kind, &mut x);
         if kind == ActionKind::Charge && round == 1 && self.ground.flanking() {
             x.mul(100 + self.params.charge_bonus);
+        }
+        x.mul(p.pct);
+        x.mul(self.fighters[h].round_pct[(round.max(1) as usize - 1).min(ROWS - 1)]);
+        if let Extra::Pattern(pct) = extra {
+            x.mul(pct);
         }
         if splash {
             x.mul(self.params.splash_pct);
@@ -535,6 +611,7 @@ impl Formation {
         let mean = self.params.base_damage.max(0) as i64 * 100 * a / (a + dv);
         let mut x = Pcts { num: mean as i128, den: 1 };
         x.mul(self.params.missile_pct);
+        x.mul(p.pct);
         (x.num / x.den).min(i32::MAX as i128) as i32
     }
 
@@ -885,7 +962,13 @@ impl Formation {
         if self.fighters[h].flanker && pool.iter().any(|&t| self.fighters[t].anti_flank) {
             pool.retain(|&t| self.fighters[t].anti_flank);
         }
-        if !missile && !(kind == ActionKind::Charge && self.ground.flanking()) && pool.iter().any(|&t| self.lane_distance(h, t) <= 1) {
+        // Its preferred prey first, wherever it stands in reach (docs/UNIT_ROLES.md, L8).
+        let prefer = self.fighters[h].prefer;
+        let hunting = prefer != 0 && pool.iter().any(|&t| self.fighters[t].class_bit & prefer != 0);
+        if hunting {
+            pool.retain(|&t| self.fighters[t].class_bit & prefer != 0);
+        }
+        if !missile && !hunting && !(kind == ActionKind::Charge && self.ground.flanking()) && pool.iter().any(|&t| self.lane_distance(h, t) <= 1) {
             pool.retain(|&t| self.lane_distance(h, t) <= 1);
         }
         let a = |t: usize| self.fighters[t].a;
@@ -936,6 +1019,51 @@ impl Formation {
             })
             .collect();
         out.sort_by(|&x, &y| self.place(s, x, y));
+        out
+    }
+
+    /// The extra targets of an attack pattern on target `c` (docs/UNIT_ROLES.md), on the field, in
+    /// (lane, row) order: VOLLEY the unit an action of `kind` would hit in each lane beside `c`'s
+    /// (the backmost, a Sentinel first for a shot or spell; the front for a strike); PIERCE every
+    /// other unit in `c`'s lanes; SWEEP every other unit in `c`'s row; CLEAVE the front unit of
+    /// each lane beside `c`'s; TRAMPLE the nearest unit behind `c` in its lanes.
+    pub fn pattern_targets(&self, s: &State, c: usize, kind: ActionKind, pattern: AttackPattern) -> Vec<usize> {
+        let fc = &self.fighters[c];
+        let side = fc.side;
+        let lanes = self.lanes[side.index()];
+        let ours = |t: usize| t != c && s.on_field(t) && self.fighters[t].side == side;
+        let shares = |t: usize| self.fighters[t].lanes().any(|l| fc.lanes().contains(&l));
+        let beside: Vec<u8> = {
+            let (lo, hi) = (*fc.lanes().start(), *fc.lanes().end());
+            let mut v = Vec::new();
+            if lo > 0 {
+                v.push(lo - 1);
+            }
+            if hi + 1 < lanes {
+                v.push(hi + 1);
+            }
+            v
+        };
+        let lane_pick = |lane: u8, back: bool| -> Option<usize> {
+            let units: Vec<usize> = (0..self.len()).filter(|&t| ours(t) && self.fighters[t].lanes().contains(&lane)).collect();
+            if back {
+                let wall = (kind != ActionKind::Bombard).then(|| units.iter().copied().find(|&t| self.fighters[t].fixed)).flatten();
+                wall.or_else(|| units.iter().copied().max_by_key(|&t| (s.row[t], std::cmp::Reverse(t))))
+            } else {
+                units.iter().copied().min_by_key(|&t| (s.row[t], t))
+            }
+        };
+        let mut out: Vec<usize> = match pattern {
+            AttackPattern::Single => Vec::new(),
+            AttackPattern::Volley => beside.iter().filter_map(|&l| lane_pick(l, kind.ranged())).collect(),
+            AttackPattern::Cleave => beside.iter().filter_map(|&l| lane_pick(l, false)).collect(),
+            AttackPattern::Pierce => (0..self.len()).filter(|&t| ours(t) && shares(t)).collect(),
+            AttackPattern::Sweep => (0..self.len()).filter(|&t| ours(t) && s.row[t] == s.row[c]).collect(),
+            AttackPattern::Trample => (0..self.len()).filter(|&t| ours(t) && shares(t) && s.row[t] > s.row[c]).min_by_key(|&t| (s.row[t], t)).into_iter().collect(),
+        };
+        out.sort_by(|&x, &y| self.place(s, x, y));
+        out.dedup();
+        out.retain(|&t| t != c);
         out
     }
 
@@ -1073,20 +1201,39 @@ impl<'a> Run<'a> {
         };
         if kind == ActionKind::Heal {
             match f.heal_target(&self.s, h) {
-                None => ev.note = Some(Note::NoOneHurt),
+                None => {
+                    ev.note = Some(Note::NoOneHurt);
+                    self.push(ev);
+                }
                 Some(t) => {
                     let p = &f.params;
                     let r = p.rand_min + rng.rand(p.rand_max - p.rand_min + 1, "Engagement heal");
-                    let amount = (p.base_damage.max(0) as i64 * p.heal_pct.max(0) as i64 * r as i64 / 100) as i32;
-                    let got = amount.min(f.fighters[t].max_hp * 100 - self.s.hp[t]).max(0);
-                    self.s.hp[t] += got;
-                    self.healed[h] += got;
-                    self.was_healed[t] += got;
-                    ev.target = Some(t as FighterIdx);
-                    ev.heal = Some(Heal { target: t as FighterIdx, amount: got, r });
+                    let heal_pct = f.fighters[h].heal_pct.unwrap_or(p.heal_pct).max(0) as i64;
+                    let amount = (p.base_damage.max(0) as i64 * heal_pct * r as i64 / 100) as i32;
+                    // A sweeping heal also heals every other hurt ally of the target's row, for
+                    // the sweep's percentage of the heal (one event each, as the same action's).
+                    let row = self.s.row[t];
+                    let others: Vec<usize> = if f.fighters[h].patterns[self.s.row[h] as usize] == AttackPattern::Sweep {
+                        (0..f.len())
+                            .filter(|&u| u != t && self.s.on_field(u) && f.fighters[u].side == f.fighters[h].side && !f.fighters[u].fixed && self.s.row[u] == row)
+                            .filter(|&u| self.s.hp[u] < f.fighters[u].max_hp * 100)
+                            .collect()
+                    } else {
+                        Vec::new()
+                    };
+                    for (k, u) in std::iter::once(t).chain(others).enumerate() {
+                        let amt = if k == 0 { amount } else { (amount as i64 * p.sweep_pct.max(0) as i64 / 100) as i32 };
+                        let got = amt.min(f.fighters[u].max_hp * 100 - self.s.hp[u]).max(0);
+                        self.s.hp[u] += got;
+                        self.healed[h] += got;
+                        self.was_healed[u] += got;
+                        let mut e = ev.clone();
+                        e.target = Some(u as FighterIdx);
+                        e.heal = Some(Heal { target: u as FighterIdx, amount: got, r });
+                        self.push(e);
+                    }
                 }
             }
-            self.push(ev);
             return;
         }
         let list = f.reach(&self.s, h, kind);
@@ -1103,15 +1250,27 @@ impl<'a> Run<'a> {
         }
         let crit = kind.can_crit() && rng.rand(100, "Engagement crit") < f.crit_chance(h);
         let spell_splash = kind == ActionKind::Spell && f.fighters[h].spell.splash;
-        let collateral = f.collateral_splash(h, kind);
-        let around = if spell_splash || collateral { f.neighbours(&self.s, c) } else { Vec::new() };
-        let hit = self.hit(h, c, kind, crit, false, f.floor(h, c), rng);
+        // An attack pattern's extra hits take the place of a collateral splash; a known spell's
+        // splash stays the spell's.
+        let pattern = f.fighters[h].patterns[self.s.row[h] as usize];
+        let pattern_pct = if spell_splash { None } else { f.params.pattern_pct(pattern) };
+        let collateral = pattern_pct.is_none() && f.collateral_splash(h, kind);
+        let around = match pattern_pct {
+            Some(_) => f.pattern_targets(&self.s, c, kind, pattern),
+            None if spell_splash || collateral => f.neighbours(&self.s, c),
+            None => Vec::new(),
+        };
+        let hit = self.hit(h, c, kind, crit, Extra::Target, f.floor(h, c), rng);
         ev.hits.push(hit);
         for t in around {
             let floor = if collateral { f.splash_floor(h, t) } else { f.floor(h, t) };
             let shielded = collateral && f.fighters[t].collateral_protection >= 100;
             if self.s.on_field(t) && self.s.hp[t] > floor && !shielded {
-                let hit = self.hit(h, t, kind, false, true, floor, rng);
+                let extra = match pattern_pct {
+                    Some(pct) => Extra::Pattern(pct),
+                    None => Extra::Splash,
+                };
+                let hit = self.hit(h, t, kind, false, extra, floor, rng);
                 ev.hits.push(hit);
             }
         }
@@ -1121,21 +1280,25 @@ impl<'a> Run<'a> {
         self.push(ev);
     }
 
-    /// One hit of `h` on `t` (`crit`, a `splash`), never below `floor`: r, then a withdrawal from
-    /// a killing hit.
+    /// One hit of `h` on `t` (`crit`; its target or an `extra` hit), never below `floor`: r, the
+    /// target's armor off a physical hit (unless `h` pierces it; at least 1 centi-HP), then a
+    /// withdrawal from a killing hit (none from a hit of a pursuer).
     #[allow(clippy::too_many_arguments)]
-    fn hit(&mut self, h: usize, t: usize, kind: ActionKind, crit: bool, splash: bool, floor: i32, rng: &mut impl BattleRng) -> Hit {
+    fn hit(&mut self, h: usize, t: usize, kind: ActionKind, crit: bool, extra: Extra, floor: i32, rng: &mut impl BattleRng) -> Hit {
         let f = self.f;
         let p = &f.params;
-        let expected = f.expected(h, t, kind, self.round as i32, splash);
+        let expected = f.expected_with(h, t, kind, self.round as i32, extra);
         let r = p.rand_min + rng.rand(p.rand_max - p.rand_min + 1, "Engagement hit");
         let pct = if crit { p.crit_damage_pct.max(0) as i64 } else { 100 };
-        let raw = (expected as i64 * pct * r as i64 / 10_000).clamp(1, i32::MAX as i64) as i32;
+        let mut raw = (expected as i64 * pct * r as i64 / 10_000).clamp(1, i32::MAX as i64) as i32;
+        if kind.physical() && !f.fighters[h].pierce {
+            raw = (raw - f.fighters[t].armor.max(0)).max(1);
+        }
         let dmg = raw.min((self.s.hp[t] - floor).max(0));
-        let mut out = Hit { target: t as FighterIdx, dmg, expected, r, crit, miss: false, killed: false, withdrew: false, splash };
+        let mut out = Hit { target: t as FighterIdx, dmg, expected, r, crit, miss: false, killed: false, withdrew: false, splash: extra != Extra::Target };
         if dmg >= self.s.hp[t] {
             let x = &f.fighters[t];
-            let may_flee = x.withdraw_pct > 0 && !(x.side == Side::Defender && f.ground.city);
+            let may_flee = x.withdraw_pct > 0 && !(x.side == Side::Defender && f.ground.city) && !f.fighters[h].pursuit;
             if may_flee && rng.rand(100, "Engagement withdraw") < x.withdraw_pct {
                 self.s.gone[t] = true;
                 self.fate[t] = Fate::Withdrew { round: self.round };

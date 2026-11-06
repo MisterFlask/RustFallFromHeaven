@@ -518,6 +518,11 @@ impl GameData {
         self.units[t].engage_rows.unwrap_or_default()
     }
 
+    /// A unit type's attack pattern from each row (`engage_rows`' `pattern`; docs/UNIT_ROLES.md).
+    pub fn engage_patterns(&self, t: UnitType) -> [AttackPattern; ROWS] {
+        self.units[t].engage_patterns
+    }
+
     /// A unit type's rank preference: the rows in the order the auto formation tries them
     /// (`engage_row_order`; front, middle, rear for a type without one).
     pub fn engage_row_order(&self, t: UnitType) -> [usize; ROWS] {

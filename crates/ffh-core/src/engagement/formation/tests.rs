@@ -7,7 +7,7 @@ use super::*;
 use ffh_data::ActionKind as K;
 
 /// A = Dv: an even hit's expected damage is `40 x 100 / 2` = 2000 centi-HP (20 HP).
-const EQ: Pair = Pair { a: 400, dv: 400, ma: 400, md: 400, spell_pct: 100 };
+const EQ: Pair = Pair { a: 400, dv: 400, ma: 400, md: 400, spell_pct: 100, pct: 100 };
 const EVEN: i32 = 2000;
 
 fn row(kind: K, count: i32) -> RowActions {
@@ -1345,4 +1345,162 @@ fn the_prototypes_scenarios() {
             assert!((g - w).abs() <= 0.4 * w + 0.1, "{key}: {what} {g:.3}, the prototype's {w}");
         }
     }
+}
+
+/// The pair's type percentage (damage against a unit combat, resistance) and the hitter's round
+/// percentage multiply each hit (docs/UNIT_ROLES.md, L1, L2, L12).
+#[test]
+fn type_and_round_percentages() {
+    use Side::*;
+    let mut axe = frontline(Attacker, 0, 0);
+    axe.speed = 9;
+    axe.actions[0].count = 1;
+    axe.round_pct = [150, 100, 100];
+    let fs = vec![axe, frontline(Defender, 0, 0)];
+    let b = Formation::new(Params::default(), OPEN, [4, 4], fs, |h, _| if h == 0 { Pair { pct: 200, ..EQ } } else { EQ });
+    assert_eq!(b.expected(0, 1, K::Strike, 1, false), EVEN * 2 * 3 / 2);
+    assert_eq!(b.expected(0, 1, K::Strike, 2, false), EVEN * 2);
+    assert_eq!(b.expected(0, 1, K::Strike, 3, false), EVEN * 2, "round 3 and later: the last value");
+    assert_eq!(b.expected(1, 0, K::Strike, 1, false), EVEN);
+    let out = play(&one_round(b), &mut rigged(sure));
+    assert_eq!(out.events[0].hits[0].dmg, EVEN * 3);
+}
+
+/// Each attack pattern's extra targets and their hits at the pattern's percentage (no crit, the
+/// target's roll; docs/UNIT_ROLES.md, "Attack patterns").
+#[test]
+fn attack_patterns() {
+    use Side::*;
+    // The defender's grid: lanes 0-3 front (1-4), lane 1 middle (5) and rear (6), lane 2 rear (7).
+    let def = || {
+        vec![
+            frontline(Defender, 0, 0), // 1
+            frontline(Defender, 1, 0), // 2
+            frontline(Defender, 2, 0), // 3
+            frontline(Defender, 3, 0), // 4
+            frontline(Defender, 1, 1), // 5
+            frontline(Defender, 1, 2), // 6
+            frontline(Defender, 2, 2), // 7
+        ]
+    };
+    let mut hitter = frontline(Attacker, 1, 0);
+    hitter.speed = 9;
+    hitter.actions[0].count = 1;
+    let b = battle(OPEN, std::iter::once(hitter.clone()).chain(def()).collect());
+    let s = State::new(&b);
+    let t = |p| b.pattern_targets(&s, 2, K::Strike, p);
+    assert_eq!(t(AttackPattern::Single), Vec::<usize>::new());
+    assert_eq!(t(AttackPattern::Cleave), [1, 3], "the front units beside lane 1");
+    assert_eq!(t(AttackPattern::Pierce), [5, 6], "everyone behind it in its lane");
+    assert_eq!(t(AttackPattern::Sweep), [1, 3, 4], "its row");
+    assert_eq!(t(AttackPattern::Trample), [5], "the nearest behind it");
+    // A volley of shots on lane 1's backmost (6): the backmost of lanes 0 and 2.
+    assert_eq!(b.pattern_targets(&s, 6, K::Shoot, AttackPattern::Volley), [1, 7]);
+    // A cleaving strike: the target in full, its neighbours at the cleave's 60%.
+    let mut cleaver = hitter.clone();
+    cleaver.patterns = [AttackPattern::Cleave; ROWS];
+    // Unit 2 a little hurt: the choice (the most hurt for its HP).
+    let hurt2 = || def().into_iter().enumerate().map(|(i, f)| if i == 1 { hurt(f, 11000) } else { f }).collect::<Vec<_>>();
+    let b2 = one_round(battle(OPEN, std::iter::once(cleaver).chain(hurt2()).collect()));
+    let out = play(&b2, &mut rigged(sure));
+    let e = &out.events[0];
+    let got: Vec<(FighterIdx, i32, bool)> = e.hits.iter().map(|h| (h.target, h.dmg, h.splash)).collect();
+    assert_eq!(got, [(2, EVEN, false), (1, EVEN * 60 / 100, true), (3, EVEN * 60 / 100, true)]);
+    // A pattern takes the place of a collateral splash.
+    let mut both = hitter.clone();
+    both.patterns = [AttackPattern::Trample; ROWS];
+    both.collateral_limit = Some(100);
+    let b3 = one_round(battle(OPEN, std::iter::once(both).chain(hurt2()).collect()));
+    let out = play(&b3, &mut rigged(sure));
+    assert_eq!(out.events[0].hits.iter().map(|h| h.target).collect::<Vec<_>>(), [2, 5]);
+}
+
+/// Armor takes HP off each physical hit (at least 1 centi-HP gets through), not off a spell's;
+/// piercing ignores it. Pursuit denies the withdrawal.
+#[test]
+fn armor_piercing_and_pursuit() {
+    use Side::*;
+    let mut axe = frontline(Attacker, 0, 0);
+    axe.speed = 9;
+    axe.actions[0].count = 1;
+    let mut target = frontline(Defender, 0, 0);
+    target.armor = 500;
+    let b = one_round(battle(OPEN, vec![axe.clone(), target.clone()]));
+    let out = play(&b, &mut rigged(sure));
+    assert_eq!(out.events[0].hits[0].dmg, EVEN - 500);
+    let mut b2 = b.clone();
+    b2.fighters[1].armor = 100_000;
+    let out = play(&b2, &mut rigged(sure));
+    assert_eq!(out.events[0].hits[0].dmg, 1, "at least 1 gets through");
+    let mut b3 = b.clone();
+    b3.fighters[0].pierce = true;
+    let out = play(&b3, &mut rigged(sure));
+    assert_eq!(out.events[0].hits[0].dmg, EVEN);
+    let mut mage = caster(Attacker, 0, 2, Spell::known(1));
+    mage.speed = 9;
+    mage.actions[2].count = 1;
+    let b4 = one_round(battle(OPEN, vec![mage, target]));
+    let out = play(&b4, &mut rigged(sure));
+    assert_eq!(out.events[0].hits[0].dmg, EVEN, "a spell is not physical");
+    // Pursuit: a killing hit on a unit that would withdraw (every withdrawal roll succeeds).
+    let mut runner = hurt(frontline(Defender, 0, 0), 1000);
+    runner.withdraw_pct = 100;
+    let flee = |label: &'static str, n: i32| if label == "Engagement withdraw" { 0 } else { sure(label, n) };
+    let b5 = one_round(battle(OPEN, vec![axe.clone(), runner]));
+    let out = play(&b5, &mut rigged(flee));
+    assert!(out.events[0].hits[0].withdrew);
+    let mut b6 = b5.clone();
+    b6.fighters[0].pursuit = true;
+    let mut rng = rigged(flee);
+    let out = play(&b6, &mut rng);
+    assert!(out.events[0].hits[0].killed, "no escape from a pursuer");
+    assert!(!rng.labels.contains(&"Engagement withdraw"));
+}
+
+/// A unit with a target preference goes for its prey wherever it stands in its reach (no nearby
+/// first), and only then for the usual choice.
+#[test]
+fn target_preference() {
+    use Side::*;
+    let mut stabber = assassin(Attacker, 0, 1);
+    stabber.speed = 9;
+    stabber.actions[1].count = 1;
+    let mut rider = frontline(Defender, 3, 0);
+    rider.class_bit = 1 << 2;
+    let fs = vec![stabber.clone(), hurt(frontline(Defender, 0, 0), 3000), rider.clone()];
+    let b = one_round(battle(OPEN, fs.clone()));
+    let s = State::new(&b);
+    let list = b.reach(&s, 0, K::Stab);
+    assert_eq!(b.choose(&s, 0, K::Stab, 1, &list), Some(1), "nearby first, the kill");
+    let mut b2 = b.clone();
+    b2.fighters[0].prefer = 1 << 2;
+    assert_eq!(b2.choose(&s, 0, K::Stab, 1, &list), Some(2), "the prey, three lanes away");
+}
+
+/// A unit's own heal percentage, and a sweeping heal: every other hurt ally of the target's row
+/// for the sweep's percentage of the heal, one event each.
+#[test]
+fn heal_power_and_sweep() {
+    use Side::*;
+    let mut priest = healer(Attacker, 0, 1);
+    priest.speed = 9;
+    priest.heal_pct = Some(100);
+    let fs = vec![
+        priest.clone(),
+        hurt(frontline(Attacker, 1, 0), 6000),
+        hurt(frontline(Attacker, 2, 0), 10000),
+        hurt(frontline(Attacker, 3, 1), 6000),
+        Fighter::new(Defender, 120),
+    ];
+    let b = one_round(battle(OPEN, fs));
+    let out = play(&b, &mut rigged(sure));
+    assert_eq!(out.events[0].heal, Some(Heal { target: 1, amount: 4000, r: 100 }), "40 x 100%");
+    assert!(out.events[1].kind != K::Heal || out.events[1].actor != 0, "one heal");
+    let mut b2 = b.clone();
+    b2.fighters[0].patterns = [AttackPattern::Sweep; ROWS];
+    let out = play(&b2, &mut rigged(sure));
+    let heals: Vec<Heal> = out.events.iter().filter(|e| e.actor == 0 && e.round == 1 && e.pass == 1).filter_map(|e| e.heal).collect();
+    // The target (lane 1, front) in full; the other hurt unit of the front row (lane 2) at 35%;
+    // lane 3's unit stands in the middle row.
+    assert_eq!(heals, [Heal { target: 1, amount: 4000, r: 100 }, Heal { target: 2, amount: 1400, r: 100 }]);
 }

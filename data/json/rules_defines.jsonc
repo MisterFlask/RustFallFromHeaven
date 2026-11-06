@@ -99,8 +99,19 @@
   // BOLT_PERCENT: the power of a caster's magic bolt (one target), when it knows no damage spell
   //      (a damage spell has 100 and splashes)
   "ENGAGEMENT_BOLT_PERCENT": 60,
-  // HEAL_PERCENT: a heal restores BASE_DAMAGE x this percent x r
+  // HEAL_PERCENT: a heal restores BASE_DAMAGE x this percent x r (a unit's own heal_percent
+  //      takes its place)
   "ENGAGEMENT_HEAL_PERCENT": 50,
+  // Attack patterns (docs/UNIT_ROLES.md): each extra hit of an action, in percent of a hit on
+  //      its target. VOLLEY: the unit its kind would hit in each lane beside the target's;
+  //      PIERCE: every other unit in the target's lanes; SWEEP: every other unit in its row (a
+  //      heal's sweep heals each hurt ally of the row for this percent of its heal); CLEAVE: the
+  //      front unit of each lane beside it; TRAMPLE: the unit behind it.
+  "ENGAGEMENT_VOLLEY_PERCENT": 50,
+  "ENGAGEMENT_PIERCE_PERCENT": 50,
+  "ENGAGEMENT_SWEEP_PERCENT": 35,
+  "ENGAGEMENT_CLEAVE_PERCENT": 60,
+  "ENGAGEMENT_TRAMPLE_PERCENT": 60,
   // MISSILE_PERCENT: a missile's strike (Fireball, Meteor: one hit from outside the field, the
   //      plot's own defence in the target's Dv, no ground rules) deals this percent of BASE_DAMAGE's
   //      hit: 50 keeps the strength it had before formation battles doubled BASE_DAMAGE

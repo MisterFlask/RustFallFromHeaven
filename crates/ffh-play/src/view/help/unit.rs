@@ -282,8 +282,19 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         // is a line below; its rows and rank preference are the battle screens' (and the unit card's).
         stats,
         large: _,
-        engage_rows: _,
+        engage_rows,
         engage_row_order: _,
+        engage_patterns,
+        damage_vs,
+        resist_vs,
+        damage_vs_large,
+        damage_vs_walls,
+        armor,
+        armor_piercing,
+        pursuit,
+        heal_percent,
+        target_preference,
+        round_percent,
     } = &d.units[u];
     let class = *unit_class_type;
     let mut b = String::new();
@@ -318,6 +329,37 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         let parts: Vec<String> = StatType::ALL.iter().map(|&s| format!("{} {}", super::promotion::stat_name(s), sheet[s.idx()])).collect();
         b.push_str(NEWLINE);
         b.push_str(&format!("[ICON_BULLET]In battle: {}", parts.join(", ")));
+    }
+    // ---- This game's own battle levers (docs/UNIT_ROLES.md) ----
+    if let Some(rows) = engage_rows {
+        for (i, (r, p)) in rows.iter().zip(engage_patterns.iter()).enumerate() {
+            if r.kind != ActionKind::None && *p != AttackPattern::Single {
+                b.push_str(NEWLINE);
+                b.push_str(&format!("[ICON_BULLET]In battle, {} row: {} {}", ["front", "middle", "rear"][i], r.kind.token().to_lowercase(), p.token().to_lowercase()));
+            }
+        }
+    }
+    super::promotion::lever_lines(&mut b, d, damage_vs, resist_vs, *armor, *armor_piercing, *pursuit);
+    if *damage_vs_large != 0 {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]In battle: {damage_vs_large:+}% damage to large units"));
+    }
+    if *damage_vs_walls != 0 {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]In battle: {damage_vs_walls:+}% damage to Sentinels"));
+    }
+    if let Some(h) = heal_percent {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]In battle: heals {}% of a hit", h));
+    }
+    if !target_preference.is_empty() {
+        let names: Vec<String> = target_preference.iter().map(|&c| display(d, c).to_string()).collect();
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]In battle: attacks {} units first", names.join(", ")));
+    }
+    if *round_percent != [100; ROWS] {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]In battle: damage {}% / {}% / {}% in rounds 1 / 2 / 3", round_percent[0], round_percent[1], round_percent[2]));
     }
 
     // ---- setUnitHelp: unique unit, limited unit ----
