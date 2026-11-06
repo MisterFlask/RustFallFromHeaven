@@ -9,6 +9,8 @@
 //!                                    play a game, print one JSON line of AI metrics
 //!                                    (per-civ snapshots after T1, T2, .. turns, or every N
 //!                                    turns, plus the final state; events)
+//!   ffh battles FILE [--runs N]      staged engagements, one JSON line of totals per matchup
+//!                                    (battles.rs)
 //!   ffh save FILE --to-turn T [opts]  play to the start of turn T and save the game (branch.rs)
 //!   ffh resume FILE --turns N [--watch city:X,Y|player:P|area:X,Y,R|unit:ID]..
 //!                                    resume a save with the AI and print the watched facts each
@@ -27,6 +29,7 @@
 //! --crusade-call T1,T2,.. (a council crusade against the leading civ at these turns, every
 //! other civ called; docs/CRUSADE.md)  --free-rider P (player P always pledges the minimum)
 
+mod battles;
 mod branch;
 mod run;
 mod stats;
@@ -176,6 +179,7 @@ fn main() {
             print!("{}", run::report(&g));
             print!("{}", run::inspect(&g, ffh_core::ids::PlayerId(player)));
         }
+        Some("battles") => battles::cmd_battles(&args[1..]),
         Some("save") => branch::cmd_save(&args[1..], parse_run_config),
         Some("resume") => branch::cmd_resume(&args[1..]),
         Some("stats") => {

@@ -438,6 +438,73 @@ withdrawals, the morale failures, the defensive strikes, the missiles; the per-u
 combat won (`kill_by`, the war's kills, a summon's kills). `telemetry.py`'s combat section prints
 them.
 
+## Balance lab
+
+`ffh battles FILE [--runs N] [--seed S]` (`crates/ffh-cli/src/battles.rs`) fights staged
+engagements through the rules' own entry: each line of FILE is a matchup (`name | ATTACKERS |
+DEFENDERS | GROUND`, units as `[N*]UNIT[+PROMOTION]..[@row]`, ground words `open`, `forest`,
+`hills`, `city`, `walls`, `fort:N`, `dmg:N`, `waves:N`; the module comment has the details), fought
+`--runs` times from a save of the staged world with the RNG reseeded, both sides in the auto
+formation, units without races, traits or weapons; one JSON line of totals per matchup (results,
+units and HP lost, cost, damage by action kind, per unit type: fate, damage dealt, taken and
+healed, actions, misses, crits, kills, rows). About 7 ms a battle.
+`crates/ffh-cli/scripts/battles_battery.py OUT` writes the battery below as spec files and
+`battles_report.py` makes its tables (`rows`, `matrix`, `hpmatrix`, `types`).
+
+**What the first battery showed** (2026-11-06; about 1,100 matchups of 200 to 400 battles; each
+line is one turn, so healing between turns and bombarding on the map are not in it):
+
+- **Numbers beat quality, and cheap units are the most cost-efficient in the game.** 4 Warriors
+  (100 hammers) attacking one Phalanx (240) kill it in 99% of battles and lose 0.4 Warriors; 3
+  Warriors kill a Champion in 99.5%. 19 Warriors (475) take a plot held by 6 fortified Axemen
+  every time, losing 3.4; 2 Phalanxes (480) are repulsed in 92%. Defending against 12 Axemen, 19
+  Warriors always hold and 2 Phalanxes always fall. Warriors stop being buildable once a city can
+  train Archers and Axemen, but the step holds wherever both units are buildable: 8 Axemen against 4
+  Champions (the same cost) trade 136 hammers of losses for 260, 8 Champions (never obsolete)
+  against 4 Phalanxes 378 for 530 (the tier-4 extra action narrows that one). Why: a hit is at
+  most 40 HP whatever the strength ratio (`40 x A / (A + Dv)`: a 4:1 ratio gives 32 against 8),
+  every frontline unit has 120 HP at every tier, and a unit's actions do not grow with its
+  strength (tier 4 adds one), so a unit four times as strong trades about four times as well
+  while it costs ten times as much.
+- **Mounted armies are the strongest pure army of every era in the open** (8 Horsemen, 8 Horse
+  Archers, 8 Knights top their eras' round robins); 68-74% of their damage is the charge (+100% in
+  the first round, any target, the most threatening first), with speed 6 plus first strikes,
+  evasion 15 and 25-35% withdrawal. A forest, a city or Formation takes most of it away (8 Horsemen
+  on 8 Axemen: 1.5 lost to 5.1 in the open, 1.7 to 2.6 in a forest, 2.3 to 3.6 against Formation).
+- **The auto formation puts the second charger behind the strikers**: strikers are placed first
+  and fill the front row, so in a mixed army half the mounted units stand in the middle row,
+  where they strike once and do not charge. Moving them to the front: 2 Knights with 4 Phalanxes
+  and 2 Crossbowmen lose 3.4 units instead of 4.3; 3 Horse Archers with 5 Champions 2.0 instead of
+  2.6.
+- **Healers do not pay in battle at any tier.** Replacing 2 healers with 2 frontline units is
+  better in every era; a High Priest of the Order (240) heals exactly as a Disciple (60) does, 20 HP
+  a heal, and the two armies trade evenly. Healers prefer the middle row, where they heal once a
+  round; in the rear they heal twice but are the backmost unit and are shot: no better. 63-70% of
+  them fall in a battle.
+- **A mage without a battle spell is a net loss; with one it is among the best picks.** The magic
+  bolt (60%) makes the Adept the worst early addition and the Mage and Archmage among the worst
+  later; Fire II or Air II (Fireball, Maelstrom) deal about four times as much and put the Mage
+  with the Horse Archer and the Assassin. Mages stand in the rear, are the backmost unit and take
+  the enemy's shots: 66-73% fall.
+- **The rear row is the exposed one.** Shots, spells and bombards hit the backmost unit of each
+  lane; the middle row is safe only with someone behind it. On open land 8 units stand 4 in front
+  and 4 in the middle, so the middle row is the back row.
+- **Crit units are the best additions of the mid and late eras**: Assassin, Shadow, Marksman (28%
+  crit with Marksman). Crossbowmen and Marksmen are the best late support; Rangers (150) are safe in
+  the middle (6% fall) but deal little for their cost.
+- **Ground: hills outweigh walls.** 8 Axemen against 2 Axemen and 3 Archers take the plot in 98%
+  of battles in the open or in an unwalled city, 25% in a forest, 0.5% in a walled city, 0% on
+  hills, where they also lose more units than they kill (3.4 to 1.6). A city alone hardly matters
+  (its defence counts only through Walls' Sentinels). In one turn, 16 Axemen (two waves) always
+  take a walled, fortified city held by 5; held by 8 it takes 24; on hills with walls 24 Axemen
+  (four waves, losing 9).
+- **Siege engines do little in battle**: Catapults and Trebuchets are net losses or neutral as
+  additions (they cannot finish a target, a third withdraw), and 8 Axemen, 4 Archers and 4
+  Catapults lose more against a walled city than 16 Axemen (3.1 units to 2.5). Their bombard on
+  the map is not in the battery.
+- **Chariots** (120) are the worst early army: a Horseman's role at twice its cost, with less
+  defence and no first strike.
+
 ## Decided while building it
 
 The spec (the owner's, revision 4) holds; these were left open and are decided so:
@@ -473,6 +540,13 @@ The spec (the owner's, revision 4) holds; these were left open and are decided s
   a port) fights today's duel (see "Open").
 
 ## Open
+
+- **Large units in the auto formation** (found by the balance lab, 2026-11-06, not fixed):
+  `auto_arrange_around` places a large unit at the centre lanes, so on a side of 4 lanes (8 to 10
+  slots) the first large unit of a row takes lanes 1-2 and no second one fits beside it (0-1 and
+  2-3 would hold two). A second large unit goes a row back (a War Elephant there strikes once and
+  does not charge); a fourth is chosen, counts its 2 slots and is left out of the formation: 4 War
+  Elephants on open land fight as 3 with one in reserve.
 
 - The AI decides its attacks on the duel's odds and attacks in the auto formation (the AI is paused,
   the owner's call). The defender always fights in the auto formation: standing formations per army
