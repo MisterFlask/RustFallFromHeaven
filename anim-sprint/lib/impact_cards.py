@@ -10,6 +10,11 @@ shooter's) and `<unit>_hit.png` (the target's), for units without the full anim-
     python lib/impact_cards.py rubble ../crates/ffh-play/assets/app/fx
     python lib/impact_cards.py pose final_catapult/strike/frame_04.png ../crates/ffh-play/assets/app/pose/catapult_attack.png --empty-bucket
     python lib/impact_cards.py pose final_catapult/flinch/frame_01.png ../crates/ffh-play/assets/app/pose/catapult_hit.png
+    python lib/impact_cards.py hawk final_hawk_nofx/strike/frame_04.png ../crates/ffh-play/assets/app/fx
+    python lib/impact_cards.py pose ../crates/ffh-play/assets/app/iso/unit_ranger.png ../crates/ffh-play/assets/app/pose/ranger_attack.png --release-hawk
+
+(`final_catapult` and `final_hawk_nofx` are anim-sprint sets on the `anim-all` branch.) `pose` also takes an M7 sprite
+(its feet at the bottom centre, 2 px up), placed on the 160x128 canvas.
 
 Pixel art at the sprites' pixel size: flat faces lit from the upper left, a 1 px dark outline, dust in four tones with an
 ordered-dither edge. Deterministic (fixed seeds)."""
@@ -116,13 +121,96 @@ def empty_bucket(img):
     return Image.fromarray(a.astype(np.uint8))
 
 
-def pose(src: Path, dst: Path, bucket: bool):
+def release_hawk(img):
+    """The ranger's attack pose (unit_ranger.png, 96x120): his hawk has left his raised fist. Erases the bird (its body
+    and wings right of the hood, its tail right of the glove, its talons on the glove's top), drops the isolated pixels
+    left behind, and closes the cut edges with the outline colour. Coordinates are the sprite's own."""
+    a = np.array(img).astype(int)
+    h, w = a.shape[:2]
+    assert (w, h) == (96, 120), f"release_hawk expects unit_ranger.png (96x120), not {w}x{h}"
+    yy, xx = np.mgrid[0:h, 0:w]
+    erased = ((xx >= 50) & (yy < 58)) | ((xx >= 66) & (yy < 72)) | ((xx >= 50) & (xx < 67) & (yy <= 61))
+    a[erased, 3] = 0
+
+    def neighbours(op):
+        c = np.zeros(op.shape, int)
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                if dy or dx:
+                    c += np.roll(np.roll(op, dy, 0), dx, 1)
+        return c
+
+    op = a[..., 3] > 0
+    a[op & (neighbours(op) <= 1) & (xx >= 46) & (yy < 74), 3] = 0
+    # the bird's head outline, left on the hood's edge
+    for x, y in [(49, 43), (49, 44), (50, 44), (50, 54), (49, 54)]:
+        a[y, x, 3] = 0
+    op = a[..., 3] > 0
+    light = op & (a[..., :3].sum(-1) >= 140)
+    edge = np.zeros_like(op)
+    for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        edge |= np.roll(np.roll(light, dy, 0), dx, 1)
+    fix = ~op & edge & erased
+    a[fix, :3] = (30, 18, 30)
+    a[fix, 3] = 255
+    return Image.fromarray(a.astype(np.uint8))
+
+
+def on_canvas(im):
+    """An M7 sprite (the feet at its bottom centre, 2 px up) on the 160x128 canvas, the feet at (80, 126)."""
+    if im.size == (160, 128):
+        return im
+    c = Image.new("RGBA", (160, 128), (0, 0, 0, 0))
+    c.alpha_composite(im, (80 - im.width // 2, 126 - (im.height - 2)))
+    return c
+
+
+def pose(src: Path, dst: Path, bucket: bool, hawk: bool = False):
     im = Image.open(src).convert("RGBA")
-    assert im.size == (160, 128), f"{src}: a key pose is one 160x128 frame, not {im.size}"
+    if hawk:
+        im = release_hawk(im)
+    im = on_canvas(im)
     if bucket:
         im = empty_bucket(im)
     dst.parent.mkdir(parents=True, exist_ok=True)
     im.save(dst)
+
+
+def feather(d, x, y, ang, n, dark, light):
+    """A loose feather `n` px long along `ang`: a pointed leaf shape, light with a dark vane down one side, outlined."""
+    ca, sa = math.cos(ang), math.sin(ang)
+    at = lambda u, v: (x + ca * u - sa * v, y + sa * u + ca * v)
+    pts = [at(0, 0), at(n * 0.35, 2.2), at(n, 0), at(n * 0.35, -2.2)]
+    d.polygon(pts, fill=light, outline=OUTLINE)
+    d.line([at(1, 0), at(n - 1, 0)], fill=dark, width=1)
+
+
+def hawk(src: Path, out: Path):
+    """The ranger's hawk striking, talons first: the hawk's strike frame (it faces right and dives on its talons, at
+    (90, 118) in the frame) placed so the talons land 44 px above the card's foot (the target's chest), three claw
+    rakes under them (front), and loose feathers (back). Faces right; the battle screen mirrors it for a blow toward
+    the left."""
+    W, H = 110, 112
+    tx, ty = W // 2, H - 44
+    bird = Image.open(src).convert("RGBA")
+    front = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(front)
+    # the rakes: three slashes down and forward of the talons, a white core in a dark-red rim and an outline
+    for k in range(3):
+        x0, y0 = tx - 6 + 6 * k, ty - 4 + 2 * k
+        x1, y1 = x0 + 14, y0 + 18
+        d.line([(x0, y0), (x1, y1)], fill=OUTLINE, width=4)
+        d.line([(x0, y0), (x1, y1)], fill=(170, 30, 36, 255), width=2)
+        d.line([(x0, y0 - 1), (x1, y1 - 1)], fill=(255, 248, 236, 255), width=1)
+    front.alpha_composite(bird, (tx - 90, ty - 118))
+    back = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(back)
+    rng = random.Random(5)
+    for x, y in [(18, 44), (30, 22), (84, 30), (96, 58), (22, 76), (70, 14)]:
+        feather(d, x, y, rng.uniform(0, math.tau), rng.randint(8, 11), (120, 70, 34, 255), (226, 200, 160, 255))
+    out.mkdir(parents=True, exist_ok=True)
+    back.save(out / "hawk_back.png")
+    front.save(out / "hawk_front.png")
 
 
 def main():
@@ -134,11 +222,17 @@ def main():
     p.add_argument("src", type=Path)
     p.add_argument("dst", type=Path)
     p.add_argument("--empty-bucket", action="store_true", help="the catapult's attack: its stone has left")
+    p.add_argument("--release-hawk", action="store_true", help="the ranger's attack: his hawk has left his fist")
+    k = sub.add_parser("hawk", help="write hawk_back.png and hawk_front.png into OUT from the hawk's strike frame SRC")
+    k.add_argument("src", type=Path)
+    k.add_argument("out", type=Path)
     a = ap.parse_args()
     if a.cmd == "rubble":
         rubble(a.out)
+    elif a.cmd == "hawk":
+        hawk(a.src, a.out)
     else:
-        pose(a.src, a.dst, a.empty_bucket)
+        pose(a.src, a.dst, a.empty_bucket, a.release_hawk)
 
 
 if __name__ == "__main__":

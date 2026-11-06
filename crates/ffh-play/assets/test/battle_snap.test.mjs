@@ -196,6 +196,23 @@ test("key poses: a unit without strips holds its one attack or hit frame for the
   assert.equal(S.poseOf({ kind: "bombard", actor: true }, ph(P, 300), false, null, new Set(["hit"])).anim, null);
 });
 
+test("a unit's own card: the ranger's strike is his hawk, landing from his cell, timed as a strike", () => {
+  const e = ev("Strike", [hit()]);
+  const P = S.planOf(e, "hawk");
+  assert.deepEqual([P.melee, P.ranged, P.hold, P.card, S.impactOf(P)], [false, true, S.planOf(e).hold, "hawk", "hawk"]);
+  assert.equal(S.rolesOf(e, "hawk").get(0).kind, "shoot", "he stays on his cell");
+  const at = (b) => ({ x: [100, 400][b], y: [200, 300][b], large: false });
+  const st = S.stageOf(e, at, 1, "hawk");
+  const a = st.roles.get(0);
+  const along = a.off[0] * st.dir[0] + a.off[1] * st.dir[1];
+  assert.ok(along > 4 && along < 8, "he steps into the release, no lunge across the field");
+  assert.equal(st.sparks.length, 0);
+  assert.equal(S.poseOf({ kind: "shoot", actor: true }, S.phaseOf(P, 300), false, null, new Set(["attack"])).anim, "attack");
+  // without a card a strike stays melee; a heal ignores the card
+  assert.equal(S.planOf(e).melee, true);
+  assert.equal(S.planOf({ round: 1, pass: 1, actor: 0, kind: "Heal", target: 1, hits: [], heal: { target: 1, amount: 900 } }, "hawk").card, null);
+});
+
 test("impact cards: a bombard lands as the rubble card, with no streak, flare or sparks; a splash's larger, over the group", () => {
   assert.equal(S.impactOf(S.planOf(ev("Bombard", [hit()]))), "rubble");
   assert.equal(S.impactOf(S.planOf(ev("Bombard", [hit({ dmg: 0, miss: true })]))), "rubble", "a miss lands beside the dodge");

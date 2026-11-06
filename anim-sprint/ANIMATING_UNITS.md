@@ -471,8 +471,16 @@ of 23.
 - `KEY_POSES` in `app/battle_stage.js`: `{ catapult: ["attack", "hit"] }`. A unit with only one of the two poses
   falls back to a lean for the other.
 - `IMPACT_CARDS` in `app/battle_snap.js`: by staged action kind, `{ Bombard: "rubble" }`. Every bombard lands as the
-  rubble for now (cannons too). When a second card exists for the same kind, key it by the actor's unit, and for spells
-  by the spell. Add the card's name to `IMPACT_CARDS` in `battle_stage.js` as well (the list of files it loads).
+  rubble for now (cannons too). For spells, key them by the spell. Add the card's name to `IMPACT_CARDS` in
+  `battle_stage.js` as well (the list of files it loads).
+- `UNIT_CARDS` in `app/battle_stage.js`, by unit type: `{ UNIT_RANGER: "hawk" }`. A unit with a card of its own lands
+  every blow as it, and its blows are staged as shots: it stays on its cell (stepping 6 px into the release) instead of
+  lunging across the field, and its strike's timing stays a strike's. The ranger's hawk is the first: his attack pose
+  is the sprite with the hawk gone from his fist (`--release-hawk`), and the card is the hawk's own strike frame
+  diving talons first, with three claw rakes and loose feathers. A unit without an attack pose keeps its sprite (the
+  lizardman ranger's art still shows its hawk on its shoulder).
+- `DIRECTED_CARDS` in `app/battle_snap.js`: cards drawn facing right (the hawk), mirrored about their own centre for a
+  blow toward the left. The rubble is not directed.
 - `crates/ffh-play/build.rs` embeds `app/pose` and `app/fx` (the server and the static site); new files there need
   nothing else. The timings live in `planOf` (the hold by kind) and `CARD` (the arrival).
 
@@ -485,10 +493,8 @@ nor key poses still leans its sprite, and a shot or a spell still arrives as a s
    snow burst. Contagion and Wither: a sickly miasma with a skull's shape in it. Crown of Brilliance: a pillar of holy
    light. The magic bolt (casters without a battle spell): a small lilac arcane burst. Key them by `e.spell` (the log
    names it; the bolt has none).
-2. *The ranger's hawk* (the owner's idea): the ranger stays on his cell and his hawk is the card, talons first,
-   arriving fast and braking over the target. The hawk's frames exist (`final_hawk` on `anim-all`: its strike frame
-   is the card). The ranger is a recon unit and strikes in melee, so this also needs a per-unit card that stages
-   the strike as a shot (the ranger stays put). The same could suit the beastmaster and the hunter.
+2. ~~*The ranger's hawk*~~: done (5 November 2026; `UNIT_CARDS` above). Still open: his `hit` pose (he leans), and
+   the same for the beastmaster and the hunter if their art carries a bird.
 3. *Shots:* arrows (archer, longbowman, crossbowman, marksman and the like: a sheaf of shafts striking), a thrown
    javelin (javelin thrower), a sling stone (dwarven slinger) and a musket's smoke and flash (arquebus). One per
    kind of missile, keyed by the shooter's unit. 14 archer units.

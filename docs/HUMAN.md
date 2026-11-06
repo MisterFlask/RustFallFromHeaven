@@ -546,7 +546,8 @@ the rest of the field drops into a shade round the pair, the camera never zooms;
 SLAIN under the numbers; a miss is a dodge with a whiff, a heal glows, a shot or a spell arrives
 as a streak while its shooter stays on its cell, a bombard lunges and its blow lands as one held
 image (the impact card, `app/fx`: the rubble arrives fast over the target, brakes hard, holds and
-fades, larger over a splash's group; anim-sprint/ANIMATING_UNITS.md, "Impact cards and key poses"), splash targets snap together, a knock-back eases
+fades, larger over a splash's group; anim-sprint/ANIMATING_UNITS.md, "Impact cards and key poses"), a
+ranger stays on his cell and his hawk strikes for him (his card), splash targets snap together, a knock-back eases
 back a row on the return, an escape leaves after it; no shake under reduced motion; each side's
 standing units; the log beside it under round and pass headers, a unit's speed before its line,
 an action's line on its contact frame; play/pause `Space` (the action freezes where it is), step

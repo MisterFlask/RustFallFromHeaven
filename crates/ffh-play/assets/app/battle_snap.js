@@ -11,7 +11,8 @@
 // death plays after the return; a miss is a dodge with a whiff; a heal glows with motes; a shot or
 // a spell snaps the shooter on its own cell with the shot arriving as a streak, or, for a kind with
 // an impact card (a bombard: the rubble), with one still image of the blow arriving fast over the
-// target, braking hard, held and fading on the return; splash targets snap
+// target, braking hard, held and fading on the return (a unit with a card of its own, the ranger's
+// hawk, strikes that way from its cell); splash targets snap
 // together; a knock-back eases its target back a row during the return; one that escapes a killing
 // blow leaves the field after it. On crits and kills only, the rest of the field drops into a shade
 // round a pool of light on the pair. The camera never zooms; under reduced motion nothing shakes.
@@ -51,8 +52,10 @@ const FLINCH_MS = { hold: 140, back1: 260, back2: 380 };
 /** The impact card each staged kind lands with (app/fx; anim-sprint/lib/impact_cards.py); a kind
  *  without one arrives as a streak. */
 export const IMPACT_CARDS = { Bombard: "rubble" };
-/** The impact card plan `P` lands with, or null. */
-export const impactOf = (P) => (P?.snap && P.ranged ? IMPACT_CARDS[P.kind] ?? null : null);
+/** The impact card plan `P` lands with (the actor's own, else its kind's), or null. */
+export const impactOf = (P) => (P?.snap && P.ranged ? P.card ?? IMPACT_CARDS[P.kind] ?? null : null);
+/** Cards drawn facing right, mirrored for a blow toward the left. */
+const DIRECTED_CARDS = new Set(["hawk"]);
 /** How the card arrives (ms at 1x): its approach decays as exp(-t / BRAKE), so it covers most of
  *  the way in the first two frames and then all but stops; it starts ARRIVE px back along the line
  *  of the blow and RISE px up, a third larger (GROW), trailing ghosts while it is still fast, then
@@ -99,20 +102,22 @@ export function breath(b, side, wall) {
  *  the reserve, off the field). */
 export const stagedKind = (e) => (e.kind === "DefStrike" ? "Shoot" : kindKey(e.kind));
 
-/** How event `e` plays at 1x (ms). `snap: false` for an event with no blow (a unit afraid, an
+/** How event `e` plays at 1x (ms); `card`: the actor's own impact card (its blows land as it,
+ *  from its cell: staged as ranged, timed as its kind). `snap: false` for an event with no blow (a unit afraid, an
  *  action with no one in reach): `impact` when it is folded in, `end` when the next may start.
  *  Else the snap's: `impact` (= LEAD, the contact frame), `hold` (the held beat), `ret` (the ease
  *  back), `rest` (stillness before the next cut), `fates` (when its deaths and escapes show: the
  *  return's end), `end`, `shake` (px), `shade` (a crit or a kill), and what it is (`kind`,
  *  `melee`, `ranged`, `heal`, `crit`, `kill`, `miss`, `escape`). */
-export function planOf(e) {
+export function planOf(e, card = null) {
   if (e.kind === "Afraid") return { snap: false, impact: 300, end: 800 };
   const hits = e.hits ?? [];
   if (!hits.length && !e.heal) return { snap: false, impact: 120, end: 520 };
   const kind = stagedKind(e);
   const K = kindOf(kind);
   const heal = !!e.heal && !hits.length;
-  const melee = !heal && !!K.melee;
+  const meleeKind = !heal && !!K.melee;
+  const melee = meleeKind && !card;
   const crit = hits.some((h) => h.crit && !h.miss);
   const kill = hits.some((h) => h.killed);
   const miss = hits.length > 0 && hits.every((h) => h.miss);
@@ -126,12 +131,12 @@ export function planOf(e) {
   else if (crit) [hold, ret, shake] = [kill ? 1150 : 1050, 280, 7];
   else if (kill) [hold, ret, shake] = [900, 260, 5];
   else if (escape) [hold, shake] = [720, 3];
-  else if (melee) [hold, shake] = [680, 3];
+  else if (meleeKind) [hold, shake] = [680, 3];
   // a bombard's card needs a beat longer to read
   else [hold, shake] = kind === "Bombard" ? [760, 5] : [620, 3];
   // a kill leaves room for the fall to read before the next cut
   if (kill) rest = 440;
-  return { snap: true, kind, melee, ranged: !melee && !heal, heal, crit, kill, miss, escape, shade: crit || kill, hold, ret, rest, shake, impact: LEAD, fates: LEAD + hold + ret, end: LEAD + hold + ret + rest };
+  return { snap: true, kind, card: heal ? null : card, melee, ranged: !melee && !heal, heal, crit, kill, miss, escape, shade: crit || kill, hold, ret, rest, shake, impact: LEAD, fates: LEAD + hold + ret, end: LEAD + hold + ret + rest };
 }
 
 /** Whether event `e` drops the rest of the field into the shade: a crit or a kill. */
@@ -150,8 +155,8 @@ export function phaseOf(P, t) {
 /** The units event `e` stages and their roles: a Map fighter -> `{b, kind, primary, knock, h}`.
  *  The actor's kind: "melee", "shoot", "bombard", "spell" or "healer"; a target's: "hit", "kill",
  *  "miss", "escape" or "healed" (`primary`: the first target; the rest are its splash). */
-export function rolesOf(e) {
-  const P = planOf(e);
+export function rolesOf(e, card = null) {
+  const P = planOf(e, card);
   const roles = new Map();
   if (!P.snap) return roles;
   if (e.actor !== null && e.actor !== undefined) {
@@ -172,11 +177,11 @@ export function rolesOf(e) {
  *  it has no blow or nobody to stage. `at(b)`: fighter b's feet `{x, y, large, field}` (`field`
  *  false: off the field, a striker in the reserve: its shot starts there, but it is not staged);
  *  `seed`: the action's. */
-export function stageOf(e, at, seed) {
-  const P = planOf(e);
+export function stageOf(e, at, seed, card = null) {
+  const P = planOf(e, card);
   if (!P.snap) return null;
   const R = rng(seed);
-  const all = rolesOf(e);
+  const all = rolesOf(e, card);
   const roles = new Map();
   for (const [b, r] of all) {
     const p = at(b);
@@ -201,6 +206,8 @@ export function stageOf(e, at, seed) {
     if (P.melee) [ar.off, ar.creep] = [[dx * gap * 0.78, dy * gap * 0.78], [dx * 6, dy * 6]];
     else if (P.heal) [ar.off, ar.creep] = [[0, -4], [0, -2]];
     else if (P.kind === "Bombard") [ar.off, ar.creep] = [[dx * 10, dy * 10], [dx * 5, dy * 5]];
+    // one whose own card strikes (the ranger loosing his hawk) steps into it
+    else if (P.card) [ar.off, ar.creep] = [[dx * 6, dy * 6], [dx * 3, dy * 3]];
     else [ar.off, ar.creep] = [[-dx * 4, -dy * 4], [-dx * 2, -dy * 2]];
   }
   for (const r of roles.values()) {
@@ -365,7 +372,8 @@ export class Snap {
   /** Stages event `e`, the log's `seq`th, starting at replay time `now`; returns its plan
    *  (`planOf`: times after `now`). */
   begin(e, now, seq) {
-    const P = planOf(e);
+    const card = e.actor !== null && e.actor !== undefined ? this.env.card?.(e.actor) ?? null : null;
+    const P = planOf(e, card);
     this.cur = null;
     if (!P.snap) return P;
     const env = this.env;
@@ -373,7 +381,7 @@ export class Snap {
       const [x, y] = env.feet(b);
       return { x, y, large: env.large(b), field: env.onField(b) };
     };
-    const S = stageOf(e, at, (seq + 1) * 7919 + (e.actor ?? 0) * 131 + 17);
+    const S = stageOf(e, at, (seq + 1) * 7919 + (e.actor ?? 0) * 131 + 17, card);
     if (S) this.cur = { e, t0: now + P.impact, ...S };
     return P;
   }
@@ -448,6 +456,17 @@ export class Snap {
     const w = Math.round(im.width * s);
     const h = Math.round(im.height * s);
     const at = (k) => [Math.round(fx + ox * k - w / 2), Math.round(fy + 2 + oy * k - h)];
+    // a directed card (drawn facing right) is mirrored about its own centre for a blow toward the left
+    const mirror = DIRECTED_CARDS.has(card) && dx < 0;
+    const put = (k) => {
+      const [x, y] = at(k);
+      if (!mirror) return g.drawImage(im, x, y, w, h);
+      g.save();
+      g.translate(x + w, y);
+      g.scale(-1, 1);
+      g.drawImage(im, 0, 0, w, h);
+      g.restore();
+    };
     g.save();
     g.imageSmoothingEnabled = false;
     const fade = ph.hold ? 1 : ph.k;
@@ -455,11 +474,11 @@ export class Snap {
     if (!back && e > 0.35) {
       for (const n of [3, 2, 1]) {
         g.globalAlpha = fade * (0.05 + (0.18 * n) / 3);
-        g.drawImage(im, ...at(1 + 0.35 * n), w, h);
+        put(1 + 0.35 * n);
       }
     }
     g.globalAlpha = fade;
-    g.drawImage(im, ...at(1), w, h);
+    put(1);
     g.restore();
   }
 

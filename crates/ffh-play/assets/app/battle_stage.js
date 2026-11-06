@@ -39,9 +39,12 @@ export const ANIMS = {
 };
 /** The key poses the client ships, by the short name of the M7 sprite: `attack` (held while it
  *  shoots, bombards or casts, or strikes when it has no strips) and `hit` (held while it is struck). */
-const KEY_POSES = { catapult: ["attack", "hit"] };
+const KEY_POSES = { catapult: ["attack", "hit"], ranger: ["attack"] };
 /** The impact cards the client ships (each a `back` layer, drawn behind the target, and a `front`). */
-export const IMPACT_CARDS = ["rubble"];
+export const IMPACT_CARDS = ["rubble", "hawk"];
+/** Units whose every blow lands as their own impact card, by unit type: the ranger's hawk strikes
+ *  for him (he stays on his cell, as a shooter does). */
+const UNIT_CARDS = { UNIT_RANGER: "hawk" };
 /** ms from the start of the strike strip to its blow (the frame the hit lands on). */
 export const STRIKE_HIT = 430;
 const ANIM_FRAME = { w: 160, h: 128, ax: 80, ay: 126 };
@@ -100,7 +103,7 @@ export function figOf(f, sides) {
   if (fig) return fig;
   // A city's Sentinel (docs/SIEGES.md): its wall section, the watchtower's art scaled to a figure.
   if (f.sentinel && SPRITES.bld_watchtower) {
-    fig = { key: "bld_watchtower", anim: null, short: null, poses: new Set(), left: false, scale: 0.55 };
+    fig = { key: "bld_watchtower", anim: null, short: null, poses: new Set(), card: null, left: false, scale: 0.55 };
     FIGS.set(f, fig);
     return fig;
   }
@@ -111,7 +114,7 @@ export function figOf(f, sides) {
   if (own) keys.unshift(`unit_${own.replace(/^UNIT_/, "").toLowerCase()}`);
   const key = keys.find((k) => SPRITES[k]) ?? "unit_swordsman";
   const short = key.replace(/^unit_/, "");
-  fig = { key, anim: ANIM_SETS[short] ? short : null, short, poses: new Set(KEY_POSES[short] ?? []), left: FACES_LEFT.has(short) };
+  fig = { key, anim: ANIM_SETS[short] ? short : null, short, poses: new Set(KEY_POSES[short] ?? []), card: (own && UNIT_CARDS[own]) || null, left: FACES_LEFT.has(short) };
   FIGS.set(f, fig);
   return fig;
 }
@@ -121,6 +124,9 @@ export const animated = (sides) => (f) => !!figOf(f, sides).anim;
 
 /** Fighter `f`'s key poses: a Set of "attack" and "hit" (empty: none). */
 export const keyPoses = (sides) => (f) => figOf(f, sides).poses;
+
+/** Fighter `f`'s own impact card (its blows land as it, from its cell), or null. */
+export const unitCard = (sides) => (f) => figOf(f, sides).card;
 
 const DRY = /PLAINS|DESERT|BURNING_SANDS|BROKEN_LANDS|FIELDS_OF_PERDITION/;
 const COLD = /TUNDRA|SNOW/;
