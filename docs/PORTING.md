@@ -318,6 +318,14 @@ flag.
   first, and none in the battle's last round (it cast every one in id order, in any round). New spell
   key `battle_wonder`; new spells, so saves made before do not load.
 
+- **Buff spells that pay** (2026-11-06; the owner's request: whether casters do better without
+  knowing a buff spell; docs/UNIT_ROLES.md, section 9). In the spells lab, Battle Hymn and Tremor
+  barely paid, and Mend, Healing Light, Restoration, Bramble Snare and Nightfall did not pay or
+  cost next to Fire's damage spell. Now: Battle Hymn own side +5% damage and +10 accuracy (+20
+  accuracy); Tremor +5% taken and -2 speed (-1); Chill +5% taken; Bramble Snare +15% taken (+10);
+  Nightfall also -10% taken; Mend 68 (60), Healing Light 80 (70), Restoration 130 (110). Every
+  charm, hex and heal now pays, with its sphere alone and next to Fire.
+
 - **Recon units fight from any row** (2026-11-06; the Ogre Battle 64 Valkyrie pattern; this game's
   engagement combat, docs/ENGAGEMENTS.md, not FFH2's). The 20 recon unit types that do not stab
   (the Scout, Hunter, Ranger, Beastmaster and their kin; the assassins with Marksman keep their

@@ -11,6 +11,13 @@ front-line pairs, a front type with each support type (3:1, and 1:1 for the main
                                                  round-robin spec files for `ffh battles`
                                                  (GROUNDS from open,forest,hills,walls; ONLY: a
                                                  {level: [squad names]} file to restrict to)
+    battles_squads.py spells OUT [--chunks N]   the casters' spells lab (docs/UNIT_ROLES.md,
+                                                 section 9): for each charm, hex or heal of the
+                                                 spheres, casters that know it and the same casters
+                                                 without it (its sphere alone or with Fire's damage
+                                                 spell of its tier), against a fixed field, open
+                                                 and forest; OUT/pairs.json for `battles_meta.py
+                                                 pairs`
     battles_squads.py casters OUT [GROUNDS [LEVELS]] [--chunks N]
                                                  the casters' marginal lab (docs/UNIT_ROLES.md,
                                                  section 9): a core squad and two of each sphere's
@@ -22,7 +29,7 @@ front-line pairs, a front type with each support type (3:1, and 1:1 for the main
     for f in OUT/part*.txt; do tools/agents/slot.sh $B/ffh battles $f --runs 40 > ${f%.txt}.jsonl & done; wait
     python3 crates/ffh-cli/scripts/battles_meta.py meta mid OUT/*.jsonl
 """
-import itertools, json, os, random, sys
+import itertools, json, os, random, re, sys
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..')
 sys.path.insert(0, os.path.join(ROOT, 'tools'))
 import jsonc
@@ -207,6 +214,54 @@ def caster_specs(grounds, levels=('early', 'mid')):
     return lines
 
 
+# The spells lab: each level's core, caster and damage sphere (Fire up to the tier), and its field.
+SPELL_LEVELS = {
+    'early': ('4*AXEMAN, 2*ARCHER', 'ADEPT', 1, ['ADEPT', 'ADEPT+FIRE1', 'ADEPT+AIR1', 'ADEPT+BODY1', 'ADEPT+LIFE1',
+                                                'ADEPT+EARTH1', 'AXEMAN', 'ARCHER']),
+    'mid': ('4*CHAMPION, 2*LONGBOWMAN', 'MAGE', 2, ['MAGE', 'MAGE+FIRE1+FIRE2', 'MAGE+AIR1+AIR2', 'MAGE+ICE1+ICE2',
+                                                   'MAGE+DEATH1+DEATH2', 'MAGE+LIFE1+LIFE2', 'MAGE+EARTH1+EARTH2', 'CHAMPION']),
+    'late': ('4*PHALANX, 2*MARKSMAN', 'ARCHMAGE', 3, ['ARCHMAGE+FIRE1+FIRE2+FIRE3', 'ARCHMAGE+CHAOS1+CHAOS2+CHAOS3',
+                                                     'ARCHMAGE+EARTH1+EARTH2+EARTH3', 'ARCHMAGE+NATURE1+NATURE2+NATURE3',
+                                                     'ARCHMAGE+LIFE1+LIFE2+LIFE3', 'ARCHMAGE+SPIRIT1+SPIRIT2+SPIRIT3',
+                                                     'ARCHMAGE+DEATH1+DEATH2+DEATH3', 'PHALANX']),
+}
+
+
+def sphere_spells():
+    """(sphere, tier, spell type, kind) of every charm, hex and heal a sphere promotion gives."""
+    out = []
+    for sp in jsonc.load(os.path.join(ROOT, 'data/json/spells.jsonc')):
+        m = re.fullmatch(r'PROMOTION_([A-Z]+)([123])', sp.get('promotion_prereq1') or '')
+        if m and ('battle_charm' in sp or sp.get('battle_heal', 0) > 0):
+            out.append((m.group(1), int(m.group(2)), sp['type'], 'heal' if 'battle_charm' not in sp else 'charm'))
+    return out
+
+
+def spell_specs():
+    """The spells lab's lines and its pairs ({level, spell, context, with, without})."""
+    lines, pairs = set(), []
+    for lvl, (core, caster, tier, field) in SPELL_LEVELS.items():
+        fire = '+'.join(f'FIRE{i}' for i in range(1, tier + 1))
+        tests = set()
+        for sphere, t, spell, kind in sphere_spells():
+            if t != tier:
+                continue
+            own = '+'.join(f'{sphere}{i}' for i in range(1, tier + 1))
+            below = '+'.join(f'{sphere}{i}' for i in range(1, tier))
+            for context, w, wo in [('own', f'{caster}+{own}', f'{caster}+{below}' if below else caster),
+                                   ('with Fire', f'{caster}+{fire}+{own}', f'{caster}+{fire}')]:
+                pairs.append({'level': lvl, 'spell': spell, 'kind': kind, 'context': context, 'with': w.lower(), 'without': wo.lower(),
+                              'field': [o.lower() for o in field]})
+                tests.update([w, wo])
+        for x in sorted(tests):
+            for o in field:
+                for g in ['open', 'forest']:
+                    sq = lambda u: f'{core}, 2*{u}'
+                    lines.add(f"{lvl}:{g}:{x.lower()}>{o.lower()} | {sq(x)} | {sq(o)} | {GROUNDS[g]}")
+                    lines.add(f"{lvl}:{g}:{o.lower()}>{x.lower()} | {sq(o)} | {sq(x)} | {GROUNDS[g]}")
+    return sorted(lines), pairs
+
+
 def write_chunks(out, lines, chunks):
     random.Random(1).shuffle(lines)  # even chunks
     os.makedirs(out, exist_ok=True)
@@ -227,6 +282,15 @@ if __name__ == '__main__':
             rest = rest[:rest.index('--chunks')]
         only = json.load(open(rest[0])) if rest else None
         write_chunks(out, specs(levels, grounds, only), chunks)
+    elif len(sys.argv) >= 2 and sys.argv[1] == 'spells':
+        # spells OUT [--chunks N]
+        rest = sys.argv[2:]
+        chunks = int(rest[rest.index('--chunks') + 1]) if '--chunks' in rest else 4
+        lines, pairs = spell_specs()
+        write_chunks(rest[0], lines, chunks)
+        with open(os.path.join(rest[0], 'pairs.json'), 'w') as f:
+            json.dump(pairs, f, indent=1)
+        print(f"{len(pairs)} pairs")
     elif len(sys.argv) >= 2 and sys.argv[1] == 'casters':
         # casters OUT [GROUNDS] [--chunks N]
         rest = sys.argv[2:]

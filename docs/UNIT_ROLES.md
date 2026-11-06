@@ -340,26 +340,43 @@ the core units again (and a Disciple or Priest); a round robin on open land and 
 battles a matchup, both roles (`battles_squads.py casters OUT`, then `ffh battles` and
 `battles_meta.py meta early|mid`). After five rounds of numbers:
 
-- Early (22 squads): every sphere's pair of adepts does better against the field than the bolt
-  pair (-1.5), from Earth (-0.3) and Mind (-0.1) to Air (+4.3); the equilibrium is Air (33%) and
-  Body (67%), with Spirit, Shadow, Metamagic, Water and the damage spheres within 1 of it. Two
-  more Axemen (-12.9) or Archers (-15.3) do worse than any pair of adepts, which cost 60 hammers
-  more.
-- Mid (16 squads): eight of the nine sphere-II mage pairs are undominated (Air II, Fire II, Ice
-  II, Sun II, Death II +9 to +10; Life II +7, Earth II +7, Nature II +5; Water II +6, dominated by
-  Ice II alone); Ice II is the equilibrium, the others 1 to 10 below it. Mages with two sphere-I
-  charms (Body and Enchantment, Law and Entropy) are below 0, the bolt mage at -8.6, two more
-  Champions at -26.
+- Early (22 squads): every sphere's pair of adepts but Mind's (-0.5) does better against the
+  field than the bolt pair (-2.4), from Law (+0.1) to Life (+5.4) and Spirit (+5.3); the
+  equilibrium is Life, with Spirit 0.8 below it; 8 squads are undominated. Two more Axemen (-14.1)
+  or Archers (-16.3) do worse than any pair of adepts, which cost 60 hammers more.
+- Mid (16 squads): all nine sphere-II mage pairs are undominated but Water II (+4.9), from Death
+  II (+8.3) to Life II (+12.9); the equilibrium is Ice II (67%), Earth II (23%) and Life II
+  (11%). Mages with two sphere-I charms (Body and Enchantment, Law and Entropy) are below 0, the
+  bolt mage at -9.7, two more Champions at -26.
 - Late (25 squads, `battles_squads.py casters OUT open,forest late`: 4 Phalanxes and 2 Marksmen
   plus two Archmages with each sphere I to III, Fire I-II only, the bolt, and Fire III with Law I,
-  Chaos III with Fire II, a High Priest, or the core units): every sphere-III pair does better
-  against the field than the Fire II pair (-15.8) and the bolt pair (-31.6), from Shadow III
-  (-0.6) and Body III (-0.3) to Earth III (+16.7), Wonder (+15.9) and Nature III (+14.5); the
-  equilibrium is Nature III (86%), Wonder (11%) and Water III (3%); 10 squads are undominated.
-  Two lessons on the way: a sweep is a weak pattern for a spell (a spell aims at the back row,
-  where only the archmages stand), so the area spells splash; and a front-row sphere-I charm cost an
-  archmage with a sphere-III spell its opening action (Fire III with Law I was 18 points below
-  Fire III alone), hence the rule that a caster skips charms below its damage spell's tier.
+  Chaos III with Fire II, a High Priest, or the core units): every sphere-III pair but Body III
+  (-1.5) and Metamagic III (-0.3) does better against the field than 0, all far above the Fire II
+  pair (-17.0) and the bolt pair (-32.4); the best are Earth III (+16.9), Wonder (+14.9), Spirit
+  III (+13.7) and Nature III (+13.6); the equilibrium is Nature III (86%), Wonder (12%) and Water
+  III (3%); 10 squads are undominated. Two lessons on the way: a sweep is a weak pattern for a
+  spell (a spell aims at the back row, where only the archmages stand), so the area spells
+  splash; and a front-row sphere-I charm cost an archmage with a sphere-III spell its opening
+  action (Fire III with Law I was 18 points below Fire III alone), hence the rule that a caster
+  skips charms below its damage spell's tier.
+
+**Does a caster do better knowing the spell?** (the owner's question, 2026-11-06: a buff that a
+caster does better without needs improving.) The spells lab (`battles_squads.py spells OUT`, then
+`ffh battles --runs 40` and `battles_meta.py pairs OUT/pairs.json`) pairs, for every charm, hex
+and heal of the spheres, casters that know it with the same casters that do not, at its tier
+(adepts with a sphere I, mages with a sphere II, archmages with a sphere III; the squads' cores as
+above) in two contexts: its sphere alone (against the caster without that promotion: the bolt,
+or its sphere one tier lower) and next to Fire's damage spell of its tier (Firebolt, Fireball,
+Firestorm: the charm costs a Fire action, the heal replaces one); against a field of 8 squads of
+its tier, open and forest, attacking and defending (32 cells, 40 battles each). The result is the
+mean change of the net share of HP, cell by cell. Before: Battle Hymn (+20 accuracy: +1.1 and
++0.5) was even in both contexts; next to Fire, Mend (-1.1), Bramble Snare (+0.2), Nightfall (-1.5)
+and Restoration (+0.8) were even and Healing Light cost (-1.9, 2 standard errors below 0); Tremor
+barely paid (+1.4). Accuracy and evasion alone are weak (most hits land already, and evasion does
+nothing against spells, a large share of late damage); a heal replaces a damage spell as soon as
+an ally lacks half of it. After the changes (docs/PORTING.md, "Buff spells that pay"), all 50
+pairs pay (above 0 by 2 standard errors): early charms +3 to +8 in both contexts, Mend +9.5 alone
+and +2.9 next to Firebolt; mid +4.8 to +18; late +9 to +39.
 
 **Open:** the remaining unbeaten squads above; the auto formation's chargers; the engine levers
 not built (reach, interception, crit immunity, knock-back); the AI does not yet choose squads by

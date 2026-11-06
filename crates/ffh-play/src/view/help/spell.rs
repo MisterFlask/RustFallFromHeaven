@@ -391,8 +391,8 @@ mod tests {
         for (spell, line) in [
             ("SPELL_FIREBOLT", "[ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle; Fire damage, power 120%, one target"),
             ("SPELL_KEEN_EDGE", "[ICON_BULLET]Battle spell: own front row, for the battle: +20% damage dealt; cast with one of the caster's first spell actions"),
-            ("SPELL_CHILL", "[ICON_BULLET]Battle spell: enemy front row, for the battle: -15 evasion, -3 speed; cast with one of the caster's first spell actions"),
-            ("SPELL_HEALING_LIGHT", "[ICON_BULLET]Battle spell: heals 70% of a hit to the most hurt ally, and 50% of it to each other hurt ally in its row; cast in place of the caster's damage spell when an ally lacks half of it or more"),
+            ("SPELL_CHILL", "[ICON_BULLET]Battle spell: enemy front row, for the battle: +5% damage taken, -15 evasion, -3 speed; cast with one of the caster's first spell actions"),
+            ("SPELL_HEALING_LIGHT", "[ICON_BULLET]Battle spell: heals 80% of a hit to the most hurt ally, and 50% of it to each other hurt ally in its row; cast in place of the caster's damage spell when an ally lacks half of it or more"),
         ] {
             let text = of(spell);
             assert!(text.contains(line), "{spell}: {text}");

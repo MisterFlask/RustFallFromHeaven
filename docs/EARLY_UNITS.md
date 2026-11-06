@@ -61,9 +61,10 @@ hex, heal or damage spell without the summon and denial pieces (E3, E5): Earth's
 (-15 evasion, -1 speed on the enemy front row), Death's Grave Touch a damage spell, Mind's Daze -10
 accuracy on the enemy side, Ice's Chill a hex only; charms are stat changes of their own (damage
 dealt and taken, accuracy, evasion, crit, speed), not the promotions' `stat_changes`; Law's Hold
-the Line is -15% damage taken (no knock-back immunity), Spirit's Battle Hymn +20 accuracy (no Fear
-immunity); a caster casts every charm it knows, in id order, then its damage spell (the most
-output) or its heal, when an ally is hurt enough. Several spheres II have a stronger spell (Tidal
+the Line is -15% damage taken (no knock-back immunity), Spirit's Battle Hymn +5% damage and +10
+accuracy (no Fear immunity); a caster casts its charms (the highest sphere first, none below its
+damage spell's tier, none in the last round), then its damage spell (the most output) or its heal,
+when an ally is hurt enough. Several spheres II have a stronger spell (Tidal
 Surge, Sunburst, Death Grip, Frost Lance, Stone Ward, Bramble Snare, Healing Light), and the map
 spells that only dealt damage became battle spells (Wither, Contagion, Crown of Brilliance, as
 Maelstrom before them). The map spells stay as they are. The AI counts a caster with any battle

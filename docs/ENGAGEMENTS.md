@@ -201,18 +201,18 @@ the view and the client read these.
   | Body | Quicken: own front row +5 speed, +10 evasion | | Surge: own side +6 speed, +20 evasion |
   | Chaos | Wild Edge: own front row +35 crit | | Wonder (above) |
   | Death | Grave Touch: death 120 | Death Grip: death 150 | Finger of Death: death 200 |
-  | Earth | Tremor: enemy front row -15 evasion, -1 speed | Stone Ward: own front row -25% taken | Quake: enemy side -20 evasion, -3 speed, +10% taken |
+  | Earth | Tremor: enemy front row +5% taken, -15 evasion, -2 speed | Stone Ward: own front row -25% taken | Quake: enemy side -20 evasion, -3 speed, +10% taken |
   | Enchantment | Keen Edge: own front row +20% damage | | Runeblades: own side +35% damage |
   | Entropy | Corrode: enemy front row +20% taken | | Wither: enemy side +20% taken, -10 accuracy |
   | Fire | Firebolt: fire 120 | Fireball: fire 100, splash | Firestorm: fire 150, splash |
-  | Ice | Chill: enemy front row -3 speed, -15 evasion | Frost Lance: cold 100, PIERCE | Snowfall: cold 150, splash |
+  | Ice | Chill: enemy front row +5% taken, -15 evasion, -3 speed | Frost Lance: cold 100, PIERCE | Snowfall: cold 150, splash |
   | Law | Hold the Line: own front row -15% taken | | Aegis: own side -20% taken |
-  | Life | Mend: heal 60 | Healing Light: heal 70, SWEEP | Restoration: heal 110, SWEEP |
+  | Life | Mend: heal 68 | Healing Light: heal 80, SWEEP | Restoration: heal 130, SWEEP |
   | Metamagic | Ward: own side -10% taken | | Disjunction: enemy side -20% damage |
   | Mind | Daze: enemy side -10 accuracy | | Confusion: enemy side -20 accuracy, -3 speed |
-  | Nature | Thornlash: poison 120 | Bramble Snare: enemy front row -4 speed, -20 evasion, +10% taken | Wrath of the Wild: poison 160, CLEAVE |
-  | Shadow | Shadow Veil: own front row +15 evasion | | Nightfall: own side +25 evasion |
-  | Spirit | Battle Hymn: own side +20 accuracy | | Exaltation: own side +10% damage, +20 accuracy, +30 crit |
+  | Nature | Thornlash: poison 120 | Bramble Snare: enemy front row +15% taken, -20 evasion, -4 speed | Wrath of the Wild: poison 160, CLEAVE |
+  | Shadow | Shadow Veil: own front row +15 evasion | | Nightfall: own side -10% taken, +25 evasion |
+  | Spirit | Battle Hymn: own side +5% damage, +10 accuracy | | Exaltation: own side +10% damage, +20 accuracy, +30 crit |
   | Sun | Flare: holy 120 | Sunburst: holy 100, VOLLEY | Solar Wrath: holy 140, splash |
   | Water | Wave: physical 70, PIERCE | Tidal Surge: physical 90, PIERCE | Deluge: physical 150, PIERCE |
 
@@ -565,8 +565,11 @@ healed, actions, misses, crits, kills, rows; per run, the net share of HP and th
 HP destroyed, summed and squared for standard errors). About 5 to 7 ms a battle.
 `crates/ffh-cli/scripts/battles_battery.py OUT` writes the first battery below as spec files and
 `battles_report.py` makes its tables (`rows`, `matrix`, `hpmatrix`, `types`);
-`battles_squads.py` writes the squad round robins per tech level and `battles_meta.py` analyses
-them (`meta`: payoffs, the equilibrium and dominance; `swaps`: unit against unit; `h2h`).
+`battles_squads.py` writes the squad round robins per tech level (and the casters' labs:
+`casters`, a core squad with two of each sphere's casters; `spells`, casters with and without each
+charm, hex and heal) and `battles_meta.py` analyses them (`meta`: payoffs, the equilibrium and
+dominance; `swaps`: unit against unit; `h2h`; `pairs`: with and without a spell, cell by cell;
+docs/UNIT_ROLES.md, section 9).
 
 **The balance target** (the owner's, 2026-11-06): every unit of every tier has a valuable place
 in some lineup, and every formation has a formation that beats it (docs/UNIT_ROLES.md proposes the

@@ -19,6 +19,11 @@ destroyed less lost) attacking j and defending against j.
     battles_meta.py targets LEVEL FILES..
         the owner's two targets per ground: squads nothing beats, the equilibrium; units with and
         without a place
+    battles_meta.py pairs PAIRS.json FILES..
+        the spells lab (`battles_squads.py spells`): for each pair, the squad that knows the spell
+        less the one that does not, cell by cell (opponent, ground, role): the mean change and its
+        standard error, the share of cells where knowing it is better, the cells where it is
+        significantly worse; COSTS when the mean is 2 standard errors below 0
 """
 import collections
 import glob
@@ -276,6 +281,41 @@ def targets(level, files):
     print(f"{level}: units without a place: {[u for u in allu if not places[u]]}")
 
 
+def pairs(pairs_file, files):
+    cells = {}
+    for j in load(files):
+        lv, ctx, pair = j['name'].split(':', 2)
+        r = j['runs']
+        if r == 0:
+            continue
+        a, d = pair.split('>')
+        s, ss = j['net_hp']
+        m = s / r
+        cells[(lv, ctx, a, d)] = (m, math.sqrt(max(0.0, ss / r - m * m) / r))
+    print(f"{'level':<6}{'spell':<24}{'context':<11}{'change':>8}{'se':>6}{'better':>8}{'worse!':>8}  verdict")
+    for p in json.load(open(pairs_file)):
+        lv, w, wo, field = p['level'], p['with'], p['without'], set(p['field'])
+        diffs = []
+        for (l, ctx, a, d), (m, se) in cells.items():
+            if l != lv or a != w or d not in field:
+                continue
+            for att in (True, False):
+                x = cells.get((l, ctx, w, d) if att else (l, ctx, d, w))
+                y = cells.get((l, ctx, wo, d) if att else (l, ctx, d, wo))
+                if x and y:
+                    sign = 1 if att else -1
+                    diffs.append((sign * (x[0] - y[0]), math.hypot(x[1], y[1])))
+        if not diffs:
+            continue
+        n = len(diffs)
+        mean = sum(d for d, _ in diffs) / n
+        se = math.sqrt(sum(e * e for _, e in diffs)) / n
+        better = sum(1 for d, _ in diffs if d > 0) / n
+        worse = sum(1 for d, e in diffs if d < -2 * e)
+        verdict = 'COSTS' if mean < -2 * se else ('pays' if mean > 2 * se else 'even')
+        print(f"{lv:<6}{p['spell'][6:]:<24}{p['context']:<11}{mean:8.2f}{se:6.2f}{100 * better:7.0f}%{worse:5d}/{n:<3d} {verdict}")
+
+
 if __name__ == '__main__':
     cmd = sys.argv[1] if len(sys.argv) > 1 else ''
     if cmd == 'meta':
@@ -284,6 +324,8 @@ if __name__ == '__main__':
         swaps(sys.argv[2:])
     elif cmd == 'targets':
         targets(sys.argv[2], sys.argv[3:])
+    elif cmd == 'pairs':
+        pairs(sys.argv[2], sys.argv[3:])
     elif cmd == 'h2h':
         h2h(sys.argv[2], sys.argv[3].split(','), sys.argv[4:])
     else:
