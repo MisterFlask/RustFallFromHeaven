@@ -354,7 +354,10 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         if ci.max_team_instances != -1 {
             add(d, &mut b, "TXT_KEY_UNIT_TEAM_UNIT_ALLOWED", &[Arg::N(ci.max_team_instances)]);
         }
-        if ci.max_player_instances != -1 {
+        if ffh_core::utils::is_soft_limited_unit_class(d, c) {
+            // This game: the national limit is a price (docs/PORTING.md, "Changes from FFH2").
+            add(d, &mut b, "TXT_KEY_UNIT_NATIONAL_UNIT_PRICED", &[Arg::N(ci.max_player_instances), Arg::N(d.defines.national_unit_over_limit_cost_percent)]);
+        } else if ci.max_player_instances != -1 {
             add(d, &mut b, "TXT_KEY_UNIT_NATIONAL_UNIT_ALLOWED", &[Arg::N(ci.max_player_instances)]);
         }
         if ci.instance_cost_modifier != 0 {

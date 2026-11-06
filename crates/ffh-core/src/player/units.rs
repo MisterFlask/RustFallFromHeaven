@@ -15,8 +15,8 @@ use crate::group::SelectionGroup;
 use crate::ids::*;
 use crate::unit::Unit;
 use crate::utils::{
-    is_limited_wonder_class, is_national_unit_class, is_national_wonder_class, is_team_wonder_class, is_world_project,
-    is_world_unit_class, is_world_wonder_class,
+    is_limited_wonder_class, is_national_unit_class, is_national_wonder_class, is_soft_limited_unit_class, is_team_wonder_class,
+    is_world_project, is_world_unit_class, is_world_wonder_class,
 };
 use ffh_data::*;
 
@@ -623,7 +623,21 @@ impl Game {
             }
         }
 
+        // This game, not FFH2: a national class's limit is a price (docs/PORTING.md, "Changes
+        // from FFH2"). The units its owner has now count, so a unit still in production costs more
+        // once others of its class are finished.
+        if self.player_is_over_unit_class_limit(p, unit_class) {
+            production_needed *= d.defines.national_unit_over_limit_cost_percent;
+            production_needed /= 100;
+        }
+
         max(1, production_needed)
+    }
+
+    /// True when `p` already has as many units of `unit_class` as its national limit, so the next
+    /// one costs `NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT` ([`is_soft_limited_unit_class`]).
+    pub fn player_is_over_unit_class_limit(&self, p: PlayerId, unit_class: UnitClassType) -> bool {
+        is_soft_limited_unit_class(self.d, unit_class) && self.players[p].unit_class_count[unit_class] >= self.d.unit_classes[unit_class].max_player_instances
     }
 
     /// C++ `CvPlayer::getProductionModifier(UnitTypes)`.
@@ -649,11 +663,13 @@ impl Game {
         multiplier
     }
 
-    /// C++ `CvPlayer::isUnitClassMaxedOut(eIndex, iExtra = 0)` (national unit limit).
+    /// C++ `CvPlayer::isUnitClassMaxedOut(eIndex, iExtra = 0)` (national unit limit). This game:
+    /// only a class with `hard_limit` maxes out; another national class's limit is a price
+    /// ([`Game::player_is_over_unit_class_limit`]).
     pub fn player_is_unit_class_maxed_out(&self, p: PlayerId, unit_class: UnitClassType, extra: i32) -> bool {
         let d = self.d;
 
-        if !is_national_unit_class(d, unit_class) {
+        if !is_national_unit_class(d, unit_class) || is_soft_limited_unit_class(d, unit_class) {
             return false;
         }
 

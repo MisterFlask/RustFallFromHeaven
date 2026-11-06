@@ -968,7 +968,18 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     if let Some(pr) = best_project(g, c) {
         return Some((Choice::Create(pr), "project"));
     }
-    // 11. Convert production to research (else gold).
+    // 11. Nothing left to build and the army at its target: army quality instead of half the
+    // hammers' worth in gold. A national unit past its limit costs NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT
+    // (this game's rule, docs/PORTING.md "Changes from FFH2"), the sink for spare production; only
+    // while one more unit's upkeep is affordable, and in a city that finishes it within
+    // ELITE_MAX_TURNS.
+    if ctx.afford {
+        let national = |u: UnitType| d.units[u].unit_class_type.is_some_and(|k| ffh_core::utils::is_soft_limited_unit_class(d, k));
+        if let Some(u) = best_unit_where(g, c, Role::Attack, national).filter(|&u| g.city_production_turns_left_unit(c, u, 0) <= ELITE_MAX_TURNS) {
+            return Some((Choice::Train(u, UnitAIType::UNITAI_ATTACK), "elite"));
+        }
+    }
+    // 12. Convert production to research (else gold).
     let mut best_process: Option<(ProcessType, i32)> = None;
     for pr in d.processes.keys() {
         if !g.city_can_maintain(c, pr, false) {
@@ -1384,6 +1395,8 @@ fn strongest_unit(g: &Game, c: CityId, role: Role) -> Option<UnitType> {
     d.units
         .keys()
         .filter(|&u| d.units[u].domain_type == Some(DomainType::DOMAIN_LAND) && role_ok(d, &d.units[u], role) && g.city_offers_unit(c, u) && g.city_can_train(c, u, false, false, false, false))
+        // Not a national unit past its limit (its price is several times the cost below).
+        .filter(|&u| !d.units[u].unit_class_type.is_some_and(|k| g.player_is_over_unit_class_limit(g.cities[c].owner, k)))
         .max_by_key(|&u| (type_attack_power(d, u), d.units[u].production_cost, std::cmp::Reverse(u)))
 }
 
@@ -1419,6 +1432,8 @@ pub(crate) fn best_missionary(g: &Game, c: CityId, r: ReligionType) -> Option<Un
 /// while the army is short -- the ladder's existing army-short bar, shared by the economy gate and
 /// step 9 (lifted from a literal so the two stay identical).
 const ECON_BUILD_BAR: i32 = 40;
+/// Most turns a city spends on an elite national unit with spare production (step 11 of `decide`).
+const ELITE_MAX_TURNS: i32 = 20;
 
 /// What a missionary sent abroad is worth in [`building_value`] points: the shrine's gold a turn
 /// for the city it converts (80), at the odds of reaching it and spreading (a city without a

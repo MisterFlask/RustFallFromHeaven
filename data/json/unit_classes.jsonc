@@ -4,6 +4,12 @@
 // Copyright Firaxis Games 2005
 //
 // UnitClass Schema
+//
+// This game: "hard_limit" (not FFH2's) keeps a national class's max_player_instances as a limit.
+// Without it the limit is how many its owner trains at the normal cost; each one past it costs
+// NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT (rules_defines.jsonc). The hard-limited classes are the
+// casters (units that start with Channeling): one more of them is more spells a turn, which no
+// battle slot limits.
 [
   {
     "type": "UNITCLASS_SCORPION",
@@ -75,6 +81,7 @@
     "max_global_instances": -1,
     "max_team_instances": -1,
     "max_player_instances": 4,
+    "hard_limit": true,
     "default_unit": "UNIT_HIGH_PRIEST_OF_WINTER"
   },
   {
@@ -507,6 +514,7 @@
     "max_global_instances": -1,
     "max_team_instances": -1,
     "max_player_instances": 4,
+    "hard_limit": true,
     "default_unit": "UNIT_HIGH_PRIEST_OF_THE_EMPYREAN"
   },
   {
@@ -1179,6 +1187,7 @@
     "max_global_instances": -1,
     "max_team_instances": -1,
     "max_player_instances": 4,
+    "hard_limit": true,
     "default_unit": "UNIT_DRUID"
   },
   {
@@ -1275,6 +1284,7 @@
     "max_global_instances": -1,
     "max_team_instances": -1,
     "max_player_instances": 4,
+    "hard_limit": true,
     "default_unit": "UNIT_ARCHMAGE"
   },
   {
@@ -1371,6 +1381,7 @@
     "max_global_instances": -1,
     "max_team_instances": -1,
     "max_player_instances": 4,
+    "hard_limit": true,
     "default_unit": "UNIT_HIGH_PRIEST_OF_KILMORPH"
   },
   {
@@ -1379,6 +1390,7 @@
     "max_global_instances": -1,
     "max_team_instances": -1,
     "max_player_instances": 4,
+    "hard_limit": true,
     "default_unit": "UNIT_HIGH_PRIEST_OF_LEAVES"
   },
   {
@@ -1387,6 +1399,7 @@
     "max_global_instances": -1,
     "max_team_instances": -1,
     "max_player_instances": 4,
+    "hard_limit": true,
     "default_unit": "UNIT_HIGH_PRIEST_OF_THE_ORDER"
   },
   {
@@ -1395,6 +1408,7 @@
     "max_global_instances": -1,
     "max_team_instances": -1,
     "max_player_instances": 4,
+    "hard_limit": true,
     "default_unit": "UNIT_HIGH_PRIEST_OF_THE_OVERLORDS"
   },
   {
@@ -1403,6 +1417,7 @@
     "max_global_instances": -1,
     "max_team_instances": -1,
     "max_player_instances": 4,
+    "hard_limit": true,
     "default_unit": "UNIT_HIGH_PRIEST_OF_THE_VEIL"
   },
   {

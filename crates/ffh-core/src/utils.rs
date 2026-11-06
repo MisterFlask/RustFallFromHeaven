@@ -617,6 +617,13 @@ pub fn is_national_unit_class(d: &GameData, unit_class: UnitClassType) -> bool {
     d.unit_classes[unit_class].max_player_instances != -1
 }
 
+/// A national class whose limit is a price, not a ban (this game, not FFH2): past
+/// `max_player_instances`, each unit costs `NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT`. The classes with
+/// `hard_limit` (the casters) keep FFH2's limit.
+pub fn is_soft_limited_unit_class(d: &GameData, unit_class: UnitClassType) -> bool {
+    is_national_unit_class(d, unit_class) && !d.unit_classes[unit_class].hard_limit
+}
+
 /// C++ `isLimitedUnitClass`.
 pub fn is_limited_unit_class(d: &GameData, unit_class: UnitClassType) -> bool {
     is_world_unit_class(d, unit_class) || is_team_unit_class(d, unit_class) || is_national_unit_class(d, unit_class)

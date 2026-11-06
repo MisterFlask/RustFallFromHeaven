@@ -256,11 +256,18 @@ counters, war success, war plans) that the diplomacy below reads.
     city, happiness and health when capped, maintenance savings, specialists, experience,
     ...; a world wonder outside the top third of our cities by production only if it is done
     within the wonder slot's 2 x cities + 1 turns, `TOP_CITIES`); casters; missionaries;
-    projects that do not need dedicated logic; a process.
+    projects that do not need dedicated logic;
+11. with nothing left to build and one more unit's upkeep affordable, an elite national unit
+    (the best attacker of a national class whose limit is a price: past it, the unit costs
+    `NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT`, docs/PORTING.md "Changes from FFH2") that the city
+    finishes within `ELITE_MAX_TURNS` (20): spare production as army quality rather than half
+    its worth in gold;
+12. a process.
 
 Nothing left to build: workers, then field units (never garrisons a broke treasury would
-scrap); when no more units are affordable, the strongest one whatever it costs (support is
-the same for any unit and the cheapest are disbanded first, so idle hammers buy quality).
+scrap); when no more units are affordable, the strongest one whatever it costs, not a national
+unit past its limit (support is the same for any unit and the cheapest are disbanded first, so
+idle hammers buy quality).
 Units are chosen by power squared per production turn, so stronger units win unless much
 dearer.
 

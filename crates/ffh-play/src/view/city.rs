@@ -24,11 +24,13 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
     let mut out = Vec::new();
     for u in d.units.keys() {
         if g.city_offers_unit(c, u) && g.city_can_train(c, u, false, true, false, false) {
-            out.push(crate::jobj! {
+            let mut j = crate::jobj! {
                 "order" => Json::idx(OrderType::ORDER_TRAIN), "type" => Json::idx(u),
                 "enabled" => g.city_can_train(c, u, false, false, false, false),
                 "cost" => g.city_production_needed_unit(c, u), "turns" => g.city_production_turns_left_unit(c, u, 0),
-            });
+            };
+            set_national(g, c, u, &mut j);
+            out.push(j);
         }
     }
     for b in d.buildings.keys() {
@@ -57,6 +59,17 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
         }
     }
     Json::Arr(out)
+}
+
+/// A national unit whose limit is a price (docs/PORTING.md, "Changes from FFH2"): how many its
+/// owner has, how many it trains at the normal cost, and the cost percent past them.
+fn set_national(g: &ffh_core::game::Game, c: CityId, u: UnitType, j: &mut Json) {
+    let d = g.d;
+    let Some(k) = d.units[u].unit_class_type.filter(|&k| ffh_core::utils::is_soft_limited_unit_class(d, k)) else { return };
+    let owner = g.cities[c].owner;
+    j.set("national_have", g.players[owner].unit_class_count[k]);
+    j.set("national_normal", d.unit_classes[k].max_player_instances);
+    j.set("national_over_percent", d.defines.national_unit_over_limit_cost_percent);
 }
 
 /// Building tiers (docs/SUITABILITY.md): a building's tier in the city (`tier`, the

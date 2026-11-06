@@ -268,6 +268,23 @@ flag.
 
 **Balance** (after `classic-1`, each the owner's decision)
 
+- **A national unit's limit is a price** (2026-11-06; `NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT` in
+  `rules_defines.jsonc`, a new unit class key `hard_limit`). FFH2's national classes (most
+  tier-4 units, 4 per player each) stopped at the limit; now the limit is how many a player trains at
+  the normal cost, and each one past it costs 500% (`player_get_production_needed_unit`; the
+  units alive count, so a unit still in production costs 500% once others of its class are
+  finished, and fewer alive bring the normal cost back). Upgrading into such a class pays the
+  same price (the upgrade's gold follows the production cost). Meant as a sink for late-game
+  production that is not more economy: rich cities turn spare hammers into army quality instead of
+  every building and half their worth in gold. The price does not climb past 500%, so the sink
+  never runs out. The casters' classes keep FFH2's limit (`hard_limit`: the Archmage, the Druid and
+  the seven High Priests, units that start with Channeling): one more caster is more spells a
+  turn, which no battle slot limits. World units (heroes) are unchanged. The AI trains one with
+  spare production (docs/AI.md, "Production", step 11). Measured on seeds 3-8 (4 AIs, small map,
+  500 turns): on master no civilization held more than 4 of a national class; with the price, a
+  civ held 1-10 national units past the old limit at the end of every game (the Bannor of seed 7
+  11 Paladins and 7 Berserkers), all after turn 400, when tier 4 arrives in these games.
+
 - **The Summoner trait makes summons much stronger** (2026-11-05; `traits.jsonc`, a new trait key
   `summon_promotion`). Every unit a spell of a Summoner leader's units summons (temporary or
   lasting, a puppet too) gets the new `PROMOTION_SUMMONERS_BOND`: +50% HP, attack, defence, magic

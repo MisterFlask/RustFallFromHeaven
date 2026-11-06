@@ -61,6 +61,9 @@ pub struct UnitClassInfo {
     pub max_team_instances: i32,
     pub max_player_instances: i32,
     pub instance_cost_modifier: i32,
+    /// This game, not FFH2: `max_player_instances` stays a limit. Without it a national class's
+    /// limit is how many its owner trains at the normal cost (`NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT`).
+    pub hard_limit: bool,
     /// C++ `getDefaultUnitIndex()` (`<DefaultUnit>`, resolved by C++ `readPass3`).
     pub default_unit_index: Option<UnitType>,
 }
@@ -75,6 +78,7 @@ pub fn read_unit_class(rd: &Rd) -> UnitClassInfo {
         max_team_instances: rd.int("max_team_instances"),
         max_player_instances: rd.int("max_player_instances"),
         instance_cost_modifier: rd.int("instance_cost_modifier"),
+        hard_limit: rd.bool("hard_limit"),
         default_unit_index: rd.rf::<UnitType>("default_unit"),
     }
 }

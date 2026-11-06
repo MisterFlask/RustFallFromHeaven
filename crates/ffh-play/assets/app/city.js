@@ -593,6 +593,13 @@ export function tierSel(t) {
   return t === null || t === undefined || t === 1 ? "" : `.tier-${t}`;
 }
 
+/** The hint line of a national unit whose limit is a price: how many the player has, how many
+ *  at the normal cost, and the cost past them. */
+function nationalHint(b) {
+  if (b.national_normal === undefined) return "";
+  return `National: you have ${b.national_have}; ${b.national_normal} at the normal cost, then ${b.national_over_percent}%.`;
+}
+
 /** The hint line of a building in the chooser: its tier, and a wonder's cost there. */
 function tierHint(b) {
   if (b.tier === undefined || b.tier === null) return "";
@@ -707,7 +714,7 @@ function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
               disabled: !b.enabled,
               "data-order": order,
               "data-type": b.type,
-              tip: infoTip(kind, b.type, { hint: [tierHint(b), b.enabled ? "Click: build now. Shift: add to the queue. Ctrl: put first." : "Not possible now."].filter(Boolean).join(" ") }),
+              tip: infoTip(kind, b.type, { hint: [tierHint(b), nationalHint(b), b.enabled ? "Click: build now. Shift: add to the queue. Ctrl: put first." : "Not possible now."].filter(Boolean).join(" ") }),
               onclick: (ev) => choose(order, b.type, ev),
             },
             isoSkin() ? buildIcon(order, b.type) : null,
