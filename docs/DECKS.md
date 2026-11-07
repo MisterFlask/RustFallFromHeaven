@@ -2061,3 +2061,98 @@ calculate, not modelling what other AIs will do.
 - Harvest of Souls: "your own wars raise the counter: fight short";
 - the Unforgiven: "if you are owed, strike in the window; if you owe, garrison the cities you
   took".
+
+---
+
+## 8. Succession, the integrated version (draft)
+
+The goal: succession that adds no new stats or screens. Its inputs are state the game already
+has (traits, governors, history counters, Unrest), and its outputs are levers it already has
+(trait changes, statuses, Unrest, secession).
+
+**What it leaves out**, because each piece is a game of its own beside the 4X:
+- ages and health;
+- family trees, marriages, dynasties;
+- court intrigue;
+- character stats apart from traits.
+
+**Why not age.** Half of FFH's leaders do not die of age:
+- the angels Sabathiel, Cassiel and Basium; the demon Hyborem;
+- the vampires Alexis and Flauros;
+- Tebryn, released from Hell; Os-Gabella, made immortal; the shade Sandalphon;
+- Auric, who means to become a god;
+- the elves.
+
+The trigger has to come from play.
+
+### 8.1 The three parts
+
+**1. What changes is the leader's traits.** Traits carry nearly all of a leader's mechanics,
+and swapping them exists:
+- Adaptive swaps a trait every 100 turns (normal speed), keeping the leader's permanent trait.
+- Insane swaps at random (2% a turn).
+- Both go through `player_set_has_trait` (`crates/ffh-core/src/ffh/events.rs`,
+  `random_events_a.rs` `do_trait`).
+
+A successor keeps the civilization's permanent trait (its identity) and brings the rest.
+
+**2. The heirs are your governors.** The game already has characters with names, profiles and
+traits. A governor's traits become leader traits:
+
+| Governor trait or profile | Leader trait |
+|---|---|
+| Industrious, Builder | Industrious |
+| Martial, Marshal | Aggressive |
+| Drillmaster | Organized |
+| Beloved | Charismatic |
+| Frugal, Merchant | Financial |
+| Learned, Scholar | Philosophical |
+| Patron | Creative |
+| Farmer | Expansive |
+| Zealot | Spiritual |
+
+The bad governor traits (Harsh, Lazy, Corrupt) come along as the heir's flaw. Governors should
+also grow traits with time in a city (the Living Legend card's rule made general), so that
+choosing where a governor serves is also grooming an heir. No second character system.
+
+**3. The trigger is play, in two kinds:**
+- **The regular stream: reigns.** At each Adaptive cycle (every 100 turns, normal speed), every
+  leader's non-permanent traits are redrawn from an offer of three. The offer is shaped by
+  history counters: a civ that fought a lot is offered Aggressive or Raiders, one that built
+  wonders Industrious or Creative. It is Adaptive for everyone, earned by deeds. It delivers the
+  roguelike stream (new information that changes the plan, on a known schedule) without
+  anyone dying.
+- **Rare true successions,** when the throne is lost in play:
+  - the capital falls;
+  - the leader dies in the field. This is opt-in: a leader may take the field as a hero unit
+    with an aura for its army, as Hyborem and Basium already are both leaders and units.
+
+  The heir is chosen from your governors.
+
+### 8.2 The weak moment
+
+It uses the primitives of section 6:
+- *Mourning*, a status for 10 turns;
+- the coronation, scheduled and public;
+- passed-over governors with Ambitious or Popular traits become claimants: their cities gain
+  Unrest, and may secede (section 1.9).
+
+All of it is the player's own governors and Unrest, so it passes the self-contained rule
+(section 7).
+
+### 8.3 Expert play
+
+- **Governors.** Placement gains a second dimension: grooming an heir in a safe city.
+- **The leader in the field.** Its aura against the risk of a succession is a calculation, not
+  a guess.
+- **Reigns.** The trait offers pivot strategy on a known schedule. The choice is local (one of
+  three), so the AI can make it from its own plan.
+
+### 8.4 Open points
+
+- **The AI's personality after a succession.** Today the leader's flavors, favourite civic and
+  alignment steer the AI. The heir's governor profile has flavors, so the AI could follow the
+  heir. Alignment stays the civilization's.
+- **The successor's name and portrait.** Governor names exist; leader portraits exist only for
+  the named leaders.
+- **The Balseraphs.** Every heir is named Perpentach.
