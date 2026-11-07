@@ -84,7 +84,13 @@ pub fn castable_spells(g: &Game, u: UnitId) -> Vec<SpellType> {
                 // FfH kept spells without `bAllowAI` from its AI: the generic casting does too;
                 // the ones we have logic for are cast by it (`unflagged.rs`).
                 && s.allow_ai
+                // The cards' world spells and spells cast at a distance have their own AI
+                // (docs/CARDS.md, `cards::TURNS`); a great person discovers its card through
+                // `cards::great_person_card`.
+                && !s.once
+                && s.target.is_none()
         })
+        .filter(|&(sp, _)| sp != crate::cards::discover_spell(d))
         .map(|(s, _)| s)
         .filter(|&s| g.unit_can_cast(u, s, false))
         .collect()

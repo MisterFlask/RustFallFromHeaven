@@ -29,7 +29,8 @@ const WAIT_TURNS: i32 = 30;
 /// How many of its card's needs may be missing for a great person to wait.
 const WAIT_MISSING: usize = 2;
 
-fn discover_spell(d: &GameData) -> SpellType {
+/// `SPELL_DISCOVER_CARD`.
+pub fn discover_spell(d: &GameData) -> SpellType {
     static S: OnceLock<SpellType> = OnceLock::new();
     *S.get_or_init(|| d.t::<SpellType>("SPELL_DISCOVER_CARD"))
 }
