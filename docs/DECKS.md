@@ -801,7 +801,7 @@ hammers.
 *Expert:* fund a war without stalling the governed cities' growth.
 
 **Charter Company** · III · needs Mercantilism · national unit, 1 · [new: colony civ birth]
-The Company founds a city on another landmass. The city is a new civ, your permanent vassal,
+The Company founds a city on another landmass. The city is a new civ, your vassal,
 which settles and grows on its own and pays you 25% of its gold. It may declare independence
 once your power falls below its own.
 *Expert:* land you cannot govern well becomes a vassal that expands itself; keep your power
@@ -2784,7 +2784,7 @@ one-off world spell. A few change the diplomatic landscape. All of them:
 
 **Prophet**
 - **Rite of Return** (III, needs Divine Essence; world spell). A destroyed civilization
-  returns as your permanent vassal in one of your cities that it originally founded (the
+  returns as your vassal in one of your cities that it originally founded (the
   city's original owner, which the game keeps), with a garrison of four of its own units.
   *Expert:* turn a conquest you struggle to hold into a vassal that fights with you.
 - **Curse of the Nemesis** [evil] (III, needs Malevolent Designs; world spell). Name a civ you
@@ -2833,11 +2833,11 @@ one-off world spell. A few change the diplomatic landscape. All of them:
 **Merchant**
 - **Client Kingdom** (II, needs Feudalism; world spell). Release one to three connected cities
   of yours (not the capital) as a new civ: an unused civilization that fits the cities, else
-  yours under a new name. It is your permanent vassal while you hold more power.
+  yours under a new name. It is your vassal while you hold more power.
   *Expert:* the far cities you cannot defend become a buffer that fights with you.
 - **Sellsword Nation** (III, needs Guilds; world spell). Choose a civ you are at war with. A
   mercenary civ appears on its border with an army (one tier-3 unit per two of its cities). It
-  is your permanent vassal and at war with that civ.
+  is your vassal and at war with that civ.
   *Expert:* a second front you do not have to march to.
 - **Condottiero** (II, needs Trade; national unit, 1). A tier-3 melee unit with the Hero
   promotion (acts once more in battles), bought only with gold, in any of your cities, at any
@@ -2938,7 +2938,7 @@ world spell (once per game)
 **2. Wake the Hill Clans** · Engineer · I · needs Mining · world spell
 - **Requires:** an unclaimed region with at least 6 hill or peak plots within 3 plots of each
   other.
-- **Effect:** a new civ of giants, the Hill Clans, your permanent vassal. It gets two cities on
+- **Effect:** a new civ of giants, the Hill Clans, your vassal. It gets two cities on
   that region's hills, each with a Palisade, and 4 Hill Giants.
 - **Its hero:** Thrumm the Mountain-King, large, 200 HP, 100 attack, 100 defence.
 - **Its mechanics:**
@@ -3002,7 +3002,7 @@ level 5+
 **10. Charter of the Free Peoples** · Bard · II · needs Code of Laws · world spell
 - **Requires:** at least 3 barbarian cities in the world.
 - **Effect:** every barbarian city in the world, with the barbarian units within 3 plots of it,
-  becomes a new civ, the Free Peoples, your permanent vassal. Orthus, if alive, becomes its
+  becomes a new civ, the Free Peoples, your vassal. Orthus, if alive, becomes its
   leader-hero; otherwise a barbarian warlord hero (Champion line, 90 attack).
 - **Why it matters:** it starts with every barbarian city at once, often 4 to 10 cities across
   the map, and their armies.
@@ -3027,7 +3027,7 @@ Clan of Embers' world spell For the Horde, which turns barbarians to the Clan's 
 
 **2. Oath of Fealty** · Merchant · II · needs Feudalism · world spell
 - **Requires:** you are at war with a civ whose power is a third of yours or less.
-- **Effect:** that civ becomes your permanent vassal at once: the war ends, its cities and
+- **Effect:** that civ becomes your vassal at once: the war ends, its cities and
   units become a vassal's.
 - **Expert:** end a won war without the last sieges; the cities you would have taken fight for
   you instead.
@@ -3064,7 +3064,7 @@ per civ)
 **8. Call the Aifon** · Merchant · II · needs Sailing · world spell (a new civ)
 - **Requires:** an unclaimed coast or island with room for two cities.
 - **Effect:** the Aifon, the sea-god's people of the Lanun's lore (`IMPROVEMENT_AIFON_ISLE`),
-  found two coastal cities there as your permanent vassal.
+  found two coastal cities there as your vassal.
 - **Its hero:** the Deep Mother, a Kraken.
 - **Its mechanics:** its land units have Water Walking, so they cross the sea without ships.
 - **Why it matters:** an army no navy can stop, and a Kraken.
@@ -3166,5 +3166,15 @@ What changes:
 - *Judgment of Junil* (20 turns of enforced peace, once) and *Free City Charter* (50 turns
   unattackable) are timed rather than permanent. Flagged: the owner to say whether timed
   enforcement is also out.
-- "Permanent vassal" (the Hill Clans, Rite of Return, Client Kingdom, Call the Aifon) is
+- "Vassal" (the Hill Clans, Rite of Return, Client Kingdom, Call the Aifon) is
   vassalage, not war or peace; flagged for the same question.
+
+**Seventh round of verdicts:**
+- **Religion cards are offered whatever the drawer's religion.** Besides its effect, each
+  spreads its religion to three of your cities: an option for an abrupt religious shift. For
+  batch 3, cards 1-7 work this way. The religion's own units (the Order's disciples for the
+  Inquisition) are then in reach once the faith is in your cities. Cards 8-10 already work
+  with any religion and spread nothing.
+- **"Vassal", not "permanent vassal",** everywhere (replaced throughout this file). Ordinary
+  vassal rules apply.
+- Still open: whether timed enforcement (Judgment of Junil, Free City Charter) is out too.
