@@ -417,16 +417,21 @@ pub fn read_round_percent(rd: &Rd, unit_type: &str) -> [i32; ROWS] {
 pub struct BattleCharm {
     pub enemy: bool,
     pub whole_side: bool,
+    /// `"rows": "REAR"`: the rear row (else the front row, or the whole side).
+    pub rear: bool,
     pub damage: i32,
     pub taken: i32,
     pub accuracy: i32,
     pub evasion: i32,
     pub crit: i32,
     pub speed: i32,
+    /// `skip`: actions each unit it lands on skips, its next ones (docs/CARDS.md, the Lullaby).
+    pub skip: i32,
 }
 
-/// A spell's `battle_charm`: `{"side": "OWN"|"ENEMY", "rows": "FRONT"|"ALL", "damage", "taken",
-/// "accuracy", "evasion", "crit", "speed"}`; an unknown side or rows warns and reads as none.
+/// A spell's `battle_charm`: `{"side": "OWN"|"ENEMY", "rows": "FRONT"|"REAR"|"ALL", "damage",
+/// "taken", "accuracy", "evasion", "crit", "speed", "skip"}`; an unknown side or rows warns and
+/// reads as none.
 pub fn read_battle_charm(rd: &Rd, spell: &str) -> Option<BattleCharm> {
     let c = rd.child("battle_charm")?;
     let side = c.string("side");
@@ -439,23 +444,26 @@ pub fn read_battle_charm(rd: &Rd, spell: &str) -> Option<BattleCharm> {
             return None;
         }
     };
-    let whole_side = match rows.as_str() {
-        "FRONT" => false,
-        "ALL" => true,
+    let (whole_side, rear) = match rows.as_str() {
+        "FRONT" => (false, false),
+        "REAR" => (false, true),
+        "ALL" => (true, false),
         _ => {
-            rd.cx.warn(format!("{spell}: battle_charm rows {rows:?} is not FRONT or ALL"));
+            rd.cx.warn(format!("{spell}: battle_charm rows {rows:?} is not FRONT, REAR or ALL"));
             return None;
         }
     };
     Some(BattleCharm {
         enemy,
         whole_side,
+        rear,
         damage: c.int("damage"),
         taken: c.int("taken"),
         accuracy: c.int("accuracy"),
         evasion: c.int("evasion"),
         crit: c.int("crit"),
         speed: c.int("speed"),
+        skip: c.int("skip"),
     })
 }
 
@@ -467,16 +475,18 @@ pub struct BattleSpells<S> {
     pub attack: Option<S>,
     pub heal: Option<S>,
     pub charms: Vec<S>,
+    /// Its illusions (`battle_illusions`, docs/CARDS.md), cast with its first spell action.
+    pub illusions: Option<S>,
 }
 
 impl<S> Default for BattleSpells<S> {
     fn default() -> Self {
-        BattleSpells { attack: None, heal: None, charms: Vec::new() }
+        BattleSpells { attack: None, heal: None, charms: Vec::new(), illusions: None }
     }
 }
 
 impl<S> BattleSpells<S> {
     pub fn any(&self) -> bool {
-        self.attack.is_some() || self.heal.is_some() || !self.charms.is_empty()
+        self.attack.is_some() || self.heal.is_some() || !self.charms.is_empty() || self.illusions.is_some()
     }
 }

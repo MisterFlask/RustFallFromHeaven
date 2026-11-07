@@ -391,7 +391,8 @@ impl Game {
         if !e.in_city() {
             for i in e.of(Side::Defender) {
                 let u = e.units[i];
-                if !r.withdrew(i) || !self.engage_alive(u) {
+                // Card: a recalled unit goes to its capital instead (battle_magic.rs).
+                if !r.withdrew(i) || !self.engage_alive(u) || self.engage_recalled(e, r, i) {
                     continue;
                 }
                 self.unit_join_group(u, None, true);
@@ -404,6 +405,10 @@ impl Game {
                 }
             }
         }
+
+        // Card: Contingency (battle_magic.rs): recalled units go to their capital; the opening
+        // casts and recalls use their promotion up.
+        self.engage_magic_after(e, r);
 
         // 8. Attack cost; 9. the launcher moves in when no defender is left.
         let launcher = e.launcher.filter(|&g| self.groups.contains(g));

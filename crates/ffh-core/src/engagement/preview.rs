@@ -282,7 +282,8 @@ impl Game {
                 s.battle(&sat, &hp)
             };
             let out = formation::resolve_quiet(&f, &mut rng);
-            for (k, e) in out.fighters.iter().enumerate() {
+            // Card: an illusion (past the set-up's fighters) is not counted.
+            for (k, e) in out.fighters.iter().enumerate().filter(|&(k, _)| map[k] < n_all) {
                 match e.fate {
                     Fate::Fell { .. } => fell[map[k]] += 1,
                     Fate::Withdrew { .. } => escaped[map[k]] += 1,

@@ -67,6 +67,7 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         battle_charm,
         battle_wonder,
         wonder_outcome,
+        battle_illusions,
         push: _,
         change_population: _,
         global,
@@ -217,7 +218,14 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
 
     // What it does.
     // ffh-play's (this game's rules: docs/ENGAGEMENTS.md, "Battle spells").
-    let battle = (*battle_only || *battle_power > 0 || *battle_heal > 0 || battle_charm.is_some()) && battle_wonder.is_empty();
+    let battle = (*battle_only || *battle_power > 0 || *battle_heal > 0 || battle_charm.is_some()) && battle_wonder.is_empty() && battle_illusions.is_none();
+    if let Some(i) = battle_illusions {
+        b.push_str(NEWLINE);
+        b.push_str(&format!(
+            "[ICON_BULLET]Battle spell: {} illusory soldiers of {} HP each take free cells of the caster's side (the front row first); they do not act, vanish when a spell hits them and exist only in the battle; cast with the caster's first spell action",
+            i.count, i.hp
+        ));
+    }
     if battle {
         b.push_str(NEWLINE);
         b.push_str(&battle_line(d, damage_type, *battle_power, *battle_pattern, *battle_heal, battle_charm.as_ref()));
@@ -493,8 +501,17 @@ fn battle_line(d: &GameData, damage_type: &Option<DamageType>, power: i32, patte
                 parts.push(format!("{v:+} {name}"));
             }
         }
+        if c.skip > 0 {
+            parts.push(format!("each skips its next {} action{}", c.skip, if c.skip == 1 { "" } else { "s" }));
+        }
         let side = if c.enemy { "enemy" } else { "own" };
-        let rows = if c.whole_side { "side" } else { "front row" };
+        let rows = if c.whole_side {
+            "side"
+        } else if c.rear {
+            "rear row"
+        } else {
+            "front row"
+        };
         return format!("[ICON_BULLET]Battle spell: {} {rows}, for the battle: {}; cast with one of the caster's first spell actions", side, parts.join(", "));
     }
     if heal > 0 {

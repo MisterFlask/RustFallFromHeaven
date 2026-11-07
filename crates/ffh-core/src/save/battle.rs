@@ -7,7 +7,7 @@
 
 use super::io::{persist_enum, persist_newtype, persist_struct};
 
-use crate::engagement::formation::{Event, Ground, GroundRule, Heal, Hit, Knock, Note, Side};
+use crate::engagement::formation::{Entry, Event, Ground, GroundRule, Heal, Hit, Knock, Note, Side};
 use crate::engagement::report::*;
 
 persist_enum!(Side { 0 => Attacker, 1 => Defender });
@@ -101,11 +101,12 @@ persist_enum!(LogEvent {
     10 => Flee { unit, to },
     11 => MoveIn { units, city },
 });
-persist_struct!(Event { round, pass, actor, kind, spell, target, hits, heal, knocked, note });
+persist_struct!(Event { round, pass, actor, kind, spell, target, hits, heal, knocked, note, entered });
+persist_struct!(Entry { unit, row, hp });
 persist_struct!(Hit { target, dmg, expected, r, crit, miss, killed, withdrew, splash });
 persist_struct!(Heal { target, amount, r });
 persist_struct!(Knock { unit, from, to });
-persist_enum!(Note { 0 => NoTarget, 1 => NoOneHurt });
+persist_enum!(Note { 0 => NoTarget, 1 => NoOneHurt, 2 => Skipped });
 persist_enum!(CastEffect { 0 => Mod { a_pct, dv_pct }, 1 => Damage(hits), 2 => Summon(b) });
 persist_enum!(SatOutWhy { 0 => Afraid });
 persist_enum!(HealSource { 0 => Medic { b, unit_type, adjacent }, 1 => OnKill, 2 => Spell(s) });
@@ -269,6 +270,7 @@ mod tests {
                 heal: None,
                 knocked: Some(Knock { unit: 1, from: 0, to: 1 }),
                 note: None,
+                entered: vec![],
             }),
             LogEvent::Action(Event {
                 round: 2,
@@ -281,10 +283,11 @@ mod tests {
                 heal: None,
                 knocked: None,
                 note: None,
+                entered: vec![],
             }),
-            LogEvent::Action(Event { round: 3, pass: 1, actor: 2, kind: ActionKind::Heal, spell: None, target: Some(3), hits: vec![], heal: Some(Heal { target: 3, amount: 1700, r: 85 }), knocked: None, note: None }),
-            LogEvent::Action(Event { round: 3, pass: 2, actor: 2, kind: ActionKind::Heal, spell: None, target: None, hits: vec![], heal: None, knocked: None, note: Some(Note::NoOneHurt) }),
-            LogEvent::Action(Event { round: 3, pass: 3, actor: 5, kind: ActionKind::Bombard, spell: None, target: None, hits: vec![], heal: None, knocked: None, note: Some(Note::NoTarget) }),
+            LogEvent::Action(Event { round: 3, pass: 1, actor: 2, kind: ActionKind::Heal, spell: None, target: Some(3), hits: vec![], heal: Some(Heal { target: 3, amount: 1700, r: 85 }), knocked: None, note: None, entered: vec![] }),
+            LogEvent::Action(Event { round: 3, pass: 2, actor: 2, kind: ActionKind::Heal, spell: None, target: None, hits: vec![], heal: None, knocked: None, note: Some(Note::NoOneHurt), entered: vec![] }),
+            LogEvent::Action(Event { round: 3, pass: 3, actor: 5, kind: ActionKind::Bombard, spell: None, target: None, hits: vec![], heal: None, knocked: None, note: Some(Note::NoTarget), entered: vec![] }),
             LogEvent::End { rounds: 3, down: [false, true] },
             LogEvent::Heal { unit: 0, amount: 1200, source: HealSource::Medic { b: Some(6), unit_type: UnitType(9), adjacent: false } },
             LogEvent::Heal { unit: 0, amount: 2400, source: HealSource::Medic { b: None, unit_type: UnitType(9), adjacent: true } },
@@ -295,7 +298,7 @@ mod tests {
             LogEvent::MoveIn { units: vec![5], city: Some(CityId(3)) },
         ]);
         for kind in ActionKind::ALL {
-            events.push(LogEvent::Action(Event { round: 1, pass: 1, actor: 3, kind, spell: None, target: Some(0), hits: vec![], heal: None, knocked: None, note: None }));
+            events.push(LogEvent::Action(Event { round: 1, pass: 1, actor: 3, kind, spell: None, target: Some(0), hits: vec![], heal: None, knocked: None, note: None, entered: vec![] }));
         }
         for kind in [
             KillKind::Capture(UnitType(1)),

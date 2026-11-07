@@ -1672,6 +1672,19 @@ impl Game {
             return false;
         }
 
+        // Card (docs/CARDS.md): a unit learns at most one spell by a promotion's `battle_spell`
+        // (the Homunculus), and at most one by its `strike_spell` (the Spellsword).
+        let m = info.magic;
+        if m.spell.is_some() || m.strike_spell.is_some() {
+            let clash = d.magic_promotions.iter().any(|&p| {
+                let o = d.promotions[p].magic;
+                unit.has_promotion[p] && ((m.spell.is_some() && o.spell.is_some()) || (m.strike_spell.is_some() && o.strike_spell.is_some()))
+            });
+            if clash {
+                return false;
+            }
+        }
+
         true
     }
 

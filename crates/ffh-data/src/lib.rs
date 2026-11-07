@@ -59,6 +59,9 @@ macro_rules! game_data {
             /// and by how many percent (`ImprovementInfo::tech_research_bonus`), in improvement id
             /// order.
             pub tech_research_bonuses: IdxVec<TechType, Vec<(ImprovementType, i32)>>,
+            /// Derived at load (docs/CARDS.md, "New data keys"): the promotions with battle magic
+            /// (`PromotionInfo::magic`), in id order.
+            pub magic_promotions: Vec<PromotionType>,
         }
 
         /// (data file, registry class) for every info table, in load order.
@@ -85,7 +88,7 @@ macro_rules! game_data {
                 )*
                 let defines = Defines::from_map(&define_map);
                 // (derived tables are filled by `GameData::derive`)
-                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unlocking_buildings: Vec::new(), population_commerce_buildings: Vec::new(), sentinel_repair_buildings: Vec::new(), bonus_yield_buildings: Vec::new(), tech_research_bonuses: IdxVec::new() }
+                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unlocking_buildings: Vec::new(), population_commerce_buildings: Vec::new(), sentinel_repair_buildings: Vec::new(), bonus_yield_buildings: Vec::new(), tech_research_bonuses: IdxVec::new(), magic_promotions: Vec::new() }
             }
 
             /// Everything loaded, one `(name, Debug text)` line per table entry, in a fixed order
@@ -408,6 +411,7 @@ impl GameData {
     fn derive(&mut self) {
         self.combat_mod_promotions =
             self.promotions.keys().filter(|&p| self.promotions[p].promotion_combat_mod > 0).collect();
+        self.magic_promotions = self.promotions.keys().filter(|&p| self.promotions[p].magic.any()).collect();
         // A leader without `iCulturalAggression`: 100, more for a war-eager leader (FfH's
         // iLimitedWarRand runs from 60, eager, to 300, peaceful) and for a culture lover.
         let culture_flavor = self.reg.lookup::<FlavorType>("FLAVOR_CULTURE");
@@ -594,6 +598,9 @@ impl GameData {
     pub fn engage_battle_spells(&self, unit_type: UnitType, has_promotion: impl Fn(PromotionType) -> bool, religion: Option<ReligionType>) -> BattleSpells<SpellType> {
         let info = &self.units[unit_type];
         let mut out = BattleSpells::default();
+        // Its battle magic (docs/CARDS.md): the spells its promotions teach (`battle_spell`),
+        // whatever their own prerequisites, and whether it casts damage spells only.
+        let magic = self.unit_battle_magic(unit_type, &has_promotion);
         for s in self.spells.keys() {
             let spell = &self.spells[s];
             let meets = spell.promotion_prereq1.map_or(true, &has_promotion)
@@ -602,10 +609,15 @@ impl GameData {
                 && spell.unit_class_prereq.map_or(true, |c| info.unit_class_type == Some(c))
                 && spell.unit_combat_prereq.map_or(true, |c| info.unit_combat_type == Some(c))
                 && spell.religion_prereq.map_or(true, |r| religion == Some(r));
-            if !meets || spell.wonder_outcome {
+            if !(meets || magic.spell == Some(s)) || spell.wonder_outcome {
                 continue;
             }
-            if spell.battle_charm.is_some() {
+            if spell.battle_illusions.is_some() {
+                let count = |x: SpellType| self.spells[x].battle_illusions.map_or(0, |i| i.count);
+                if out.illusions.map_or(true, |b| count(s) > count(b)) {
+                    out.illusions = Some(s);
+                }
+            } else if spell.battle_charm.is_some() {
                 out.charms.push(s);
             } else if spell.battle_heal > 0 {
                 if out.heal.map_or(true, |b| spell.battle_heal > self.spells[b].battle_heal) {
@@ -623,7 +635,24 @@ impl GameData {
         let floor = out.attack.map_or(0, |a| self.spell_tier(a));
         out.charms.retain(|&s| self.spell_tier(s) >= floor);
         out.charms.sort_by_key(|&s| (std::cmp::Reverse(self.spell_tier(s)), s));
+        if magic.damage_only {
+            out.charms.clear();
+            out.heal = None;
+        }
         out
+    }
+
+    /// The battle magic of a unit of type `unit_type` holding the promotions `has_promotion`
+    /// accepts (docs/CARDS.md, "New data keys"): its type's and its promotions', summed
+    /// ([`BattleMagic::plus`]).
+    pub fn unit_battle_magic(&self, unit_type: UnitType, has_promotion: impl Fn(PromotionType) -> bool) -> BattleMagic {
+        let mut m = self.units[unit_type].magic;
+        for &p in &self.magic_promotions {
+            if has_promotion(p) {
+                m = m.plus(&self.promotions[p].magic);
+            }
+        }
+        m
     }
 
     /// A spell's tier: the deepest of its promotion prerequisites in their lines (Fire III is 3:

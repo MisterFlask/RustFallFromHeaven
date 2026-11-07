@@ -101,6 +101,8 @@ impl Game {
         let blocked = if side == Side::Defender { self.engage_sentinel_cells(slots) } else { Vec::new() };
         let placed = auto_arrange_around(&sorted, lanes, slots.max(side), slots.ordinary(side), &blocked);
         let mut out: Vec<Place> = placed.into_iter().map(|p| Place { unit: units[order[p.unit]], lane: p.lane, row: p.row }).collect();
+        // Card: a familiar stands in its caster's lane (battle_magic.rs).
+        self.engage_familiar_places(&mut out, lanes, &blocked);
         let pos = |u: UnitId| pool.iter().position(|&x| x == u);
         out.sort_by_key(|p| pos(p.unit));
         out
