@@ -2503,6 +2503,23 @@ Engineer, Merchant, Bard and Armageddon cards beyond section 10.1: not yet revie
     turning the sea into land (Causeway). A new unit, building, improvement or promotion beats
     a new system.
 
+14. **No push-button cooldowns.** Something repeatable is a ritual (a project in a city: it
+    costs production, it is visible, it can be raided), or it happens once, as a world spell.
+    Watch the duty cycle: an effect that is up half the time is a permanent state.
+15. **Record history in the game's own state, not in side counters.** The game already keeps a
+    city's original owner, previous owner, the civs that ever owned it, the turns it was
+    founded and acquired, and City Ruins on the map. Cards may read these. A new tally (deaths
+    per plot, verses, martyrs, culpability) is suspect. If history must be kept, keep it where
+    the player sees it: as map state (a feature or improvement), not a number on a screen.
+16. **Permanent beats temporary for medium effects.** A temporary change must be large to
+    matter (the Long Nightmare is too subtle unless permanent). An effect the game's own systems
+    quickly undo (culture regrowing, deals struck again) is low impact.
+17. **No diplomatic legwork.** Offers that may be refused, about things that may not exist,
+    are too many moving parts for the gain.
+18. **Military stays military.** No converting the army back into the economy.
+19. **A generic card should serve most civs that draw it.** A card only one civilization can
+    really use (Golem Labor) is out.
+
 ### 10.1 What the principles predict for the unreviewed cards
 
 To check the principles against the owner's next verdicts:
@@ -2562,6 +2579,24 @@ information cards.
 - Holy Days (-20% damage).
 - The small parts of liked cards: the Lantern's Glare (-15 accuracy) goes, and its point stays
   (a holy shooter that sees invisible units).
+
+### 10.2a Third round of verdicts (2026-11-07)
+
+- **Push-button cooldowns are out.** A "once every N turns" ability on a button becomes either
+  a ritual that can repeat (a project built in a city, with its cost and its visibility) or a
+  one-off world spell. Otherwise, at steady state, someone may spend half the game unable to
+  attack you.
+- **Golem Labor:** out. Military should not convert back into labor, and only the Luchuirp
+  really have golems.
+- **Saga of the Named:** out. Counters that exist outside the game's own systems are suspect
+  in general.
+- **Blood Money:** out. Too much diplomatic legwork: an offer to end something that may not
+  exist, which may be refused. Too many moving parts for the gain.
+- **Favoured Partner:** out (confirmed), for the same reason.
+- **The Long Nightmare:** too subtle unless the trait changes are permanent.
+- **The Unmaking:** out. Low impact: culture regrows a city's borders at once, and every deal
+  is simply struck again.
+- **The Judgment:** out, boring.
 
 ### 10.3 Predicted verdicts on everything not yet reviewed
 
@@ -2672,3 +2707,27 @@ Confidence: H high, M medium, L low. Numbers are the principles of section 10.
 
   The Ljosalfar-Svartalfar split and Somehow Also Perpentach could come back through Schism or
   the Returning, which do not need Unrest.
+
+### 10.4 What the third round changes
+
+- **Rituals instead of cooldowns:**
+  - *Tidecall of Danalin:* the Drown becomes a ritual in a coastal city: when completed, a chosen
+    flat land plot within 3 plots of the city becomes Shallows for good.
+  - *Weather Engine*, *Floodgates*, *Oath of the Blood-Price:* each use is a ritual.
+  - *Mana Grafting:* a node can be grafted once, for good; no cooldown.
+- ***Judgment of Junil:*** a one-off world spell (20 turns of enforced peace with one civ, once
+  per game). A ritual with a long cooldown is the alternative, but even then the duty cycle
+  stays high.
+- **History in the game's own state:**
+  - Vendetta reads the city's previous owner and the turn it was acquired.
+  - The Unforgiven reads `original_owner` and `ever_owned`.
+  - Children of the Ash and Ash of Empires read City Ruins.
+  - All of these are already kept.
+- **At risk, because they need new tallies:** Ghost Garrisons (defenders killed per city), the
+  Dead Remember and Scars of war (deaths per plot). They survive only if the record lives on
+  the map: a big battle leaves a *Battlefield* feature on its plot, visible to all, and the
+  cards read Battlefields.
+- **The Long Nightmare, permanent version:** each leader permanently loses one non-permanent
+  trait and gains one drawn at random.
+- **Out:** Golem Labor, Saga of the Named, Blood Money, Favoured Partner, the Unmaking, the
+  Judgment.
