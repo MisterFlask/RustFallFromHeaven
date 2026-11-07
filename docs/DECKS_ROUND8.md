@@ -955,3 +955,40 @@ Rank: **A** strong, **B** solid, **C** marginal (keep only if the deck needs vol
   the Infernals the game already has.
 - **Cut the Vault of the Earthmother** (taste 4): it was strong, but the deck already has metal
   gifts; Starmetal Meteor is the one kept.
+
+### C.7 The owner's verdicts on the marginal cards (2026-11-07)
+
+**Kept**
+- **Sanctified Steel:** "having very good demon/undead slaying is strategically relevant since it
+  can encourage aggression against same." Raised to rank B.
+- **Beast Market:** kept. Rank B.
+- **Wardance:** kept; it adds optionality, and its numbers can be balanced later. Rank B.
+- **Prize Courts:** kept with a 50% chance of capture.
+
+**Reworked**
+- **Elemental Attunement:** situational defence is uncompelling unless bundled with a thematic
+  economic or military benefit. Redraft as **Elemental Forge** (Sage · II · needs Elementalism ·
+  building): when built, choose fire or lightning (Fire or Air mana held). Units trained here
+  strike with that element (their physical damage becomes it) and are immune to it. The choice
+  then answers the enemy's resistances, and its offence comes with its defence.
+- **Siege Colossus:** marginal as stated; make it a highly effective combat unit. Redraft (Engineer
+  · III · needs Machinery · national 1, hard · 400 hammers): large, tier 4, HP 240, attack 120,
+  defence 100, front row.
+  - Round 1: BOMBARD, taking Sentinels first, with double damage against walls.
+  - Rounds 2-3: STRIKE with TRAMPLE.
+  - On the map it bombards a city from 2 plots away (rate 30), and the city counts as besieged
+    that turn.
+
+**Out**
+- **Levy Hall:** "city defense" as a general concept is weak; the cards amount to similar things.
+- **Market Towns, Grand Exhibition, Bard's Retinue:** they do not encourage interesting play
+  patterns.
+- **Leviathans Rise, Unbound Elementals, the Gargoyles Wake, Orthus's Host:** "more barbs and
+  animals" is mostly uninteresting and encourages defensive play.
+
+**Not yet ruled on:** Templar's Oath, Call the Leviathan, the Unconquered City.
+
+**Counts after this round:**
+- **Great-person cards:** 54 (16 A, 33 B, 5 C or open). Elemental Forge and the Siege Colossus
+  count as B.
+- **Armageddon cards:** 15.

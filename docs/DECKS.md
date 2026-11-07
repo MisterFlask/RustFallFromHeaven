@@ -2536,6 +2536,21 @@ Engineer, Merchant, Bard and Armageddon cards beyond section 10.1: not yet revie
 23. **One-off global effects are welcome:** world spells a player casts once. They must be worth
     the great person.
 
+28. **City defense is a weak family.** City-defense effects amount to similar things (the Levy
+    Hall verdict). Keep very few, or none.
+29. **A card must open an interesting play pattern,** not only boost the economy, research or XP
+    (Market Towns, Grand Exhibition, Bard's Retinue).
+30. **Effects that encourage aggression are good.** Demon and undead slaying that invites a war
+    on demons and undead is strategically relevant (Sanctified Steel). Effects that encourage
+    defensive play are not.
+31. **"More barbarians and animals" is mostly uninteresting,** in the Armageddon deck as
+    elsewhere. It encourages defensive play (Leviathans Rise, Unbound Elementals, the Gargoyles,
+    Orthus's Host).
+32. **Situational defence needs a bundle:** a thematic economic or military benefit that comes
+    with it (Elemental Attunement).
+33. **Optionality first, numbers later.** A card that adds options is fine even if its numbers
+    need balancing later (Wardance).
+
 ### 10.1 What the principles predict for the unreviewed cards
 
 To check the principles against the owner's next verdicts:
