@@ -145,7 +145,9 @@ exists. **(new)** marks a lever the engine does not have yet.
   Thaw machinery); terrain-changing spells.
 - **Resources**: revealed by a tech; mana types (and raw mana a player assigns); free promotion
   from a resource; research modifier; great-people rate modifier; mutate chance.
-- **Terraforming land into sea, or sea into land (new).**
+- **Plot type**: land, hills, peak, water. `plot_set_plot_type` changes it mid-game, areas
+  recalculated; FFH's volcano event turns a plot into land. Terraforming land into sea or sea
+  into land therefore needs only a rule that calls it.
 
 ### 1.6 The player
 
@@ -270,6 +272,144 @@ A civ can be born in six ways, each a rule a card or a crisis can call:
 - puppet states (a vassal its master moves directly; the Balseraphs' flavor);
 - nomad civs (an army that moves and demands tribute);
 - colonies that grow into vassal civs.
+
+### 1.10 Levers to build
+
+Mechanics the code does not have yet (checked against `ffh-core` and `ffh-ai`), each with what it
+would open up. Some partial versions exist, and the entry says so.
+
+**Generic primitives.** Many cards need these, so they come first.
+- **Timed status effects on cities, plots and players.** Units have promotions with expiry. A
+  city, plot or player has only a few fixed timers (happy turns, revolt turns, golden age).
+  A general "Blessed for 10 turns" / "Cursed" / "Quarantined" status opens up every timed card
+  and crisis.
+- **History counters.** Per city: units killed defending it, sieges survived, owners, razings.
+  Per player: forests cut, cities razed, treaties broken, counter points added. The world
+  remembers what happened in it. Ghost Garrisons, the Green Revenge and culpability rest on
+  these.
+- **Scheduled effects.** "In 20 turns, X happens to Y", announced now: prophecies, debts falling
+  due, a curse that lands later. Spells have a delay; nothing general exists.
+- **Hooks for cards.** "When a city is founded / a unit dies / a great person is born / a war
+  is declared, do X", so a card can attach a rule without new code at each site.
+
+**Characters**
+- **Mortal leaders and succession.** Leaders age and die. The heir arrives with drawn traits,
+  and the transition is a moment of weakness (Unrest, a claimant). It is the strongest stream
+  of plan-changing news in Old World and Crusader Kings; leaders here are immortal.
+- **Leader agendas.** Each AI leader draws a hidden agenda per game, revealed over contact
+  (Civ6). Rivals then differ from game to game, not only by leader.
+- **Hero relationships.** Rivalries and nemeses that remember who killed whom (Shadow of
+  Mordor), loyalty to a leader, a hero who leaves when slighted.
+- **Governor ambitions.** A governor wants something (a building, a war, a post) and its
+  loyalty moves with whether it gets it. Governors have profiles and traits, but no wants.
+- **A leader on the field.** A leader unit whose death costs Unrest and succession, and whose
+  presence lifts an army.
+
+**Inside a civilization**
+- **Factions or estates.** Nobles, clergy, guilds, the army, the cattle, each with approval,
+  wants and power (Europa Universalis' estates, Victoria's interest groups). This is the
+  natural source of per-civ Unrest (the Calabim's nobles against their cattle) and of who leads
+  a secession.
+- **Population by people.** A city's citizens split by race or culture (elves and men,
+  dwarves and orcs, cattle and lords). Today only units have races. It decides Unrest, the
+  rebels' identity and assimilation.
+- **Migration.** People move between cities and civs, toward happiness, food and faith, and
+  away from war. Exodus becomes a rule, not a one-off.
+- **An orders budget.** A limited number of the leader's actions per turn (Old World's
+  orders). It makes governors and direct rule matter more and limits micromanagement.
+- **Legitimacy and ambitions.** A leader's standing, raised by completing ambitions drawn
+  from an offer (Old World). It is a long-term goal the player chooses among random ones.
+
+**War**
+- **Supply and attrition.** Units beyond supply lose HP each turn, more in winter, desert and
+  enemy land. Supply exists only for marching recruits. It makes the Caravanserai, Automatons,
+  winter and logistics real.
+- **Zones of control.** Units slow or stop enemy movement next to them; there is none now.
+  Borders and chokepoints get a military shape.
+- **War goals and war score.** A war declared for a stated goal (a city, a plot, tribute,
+  revenge), a score from battles and occupation, and peace terms that follow from it. Today
+  peace is an ordinary trade. Wars end for reasons, which helps expert play and the AI alike.
+- **Casus belli and claims.** Claims on plots and cities (from history, culture, marriage,
+  religion) that lower the cost of a war over them. They tie into history counters and
+  secession.
+- **Ceasefires and demilitarized zones.** Pauses that are not peace; borders with rules.
+- **Prisoners and ransom.** Captured combat units and heroes held, exchanged, ransomed or
+  executed. Today only non-combat units are captured.
+- **Persistent morale.** An army's morale carried across battles (winning streaks, routs,
+  bad news from home). Morale now is only the Fear check inside one battle.
+- **Army traditions.** An army gains XP and traits as a unit (its standards, its battles), not
+  only its soldiers. Armies already exist and have names.
+- **Battles that last.** A battle that runs into the next turn, so neighbouring stacks can
+  reinforce it. Today an engagement resolves the plot's units in one go.
+- **Siege damage to the prize.** Buildings, population and improvements damaged during a
+  siege, not only at capture.
+
+**Diplomacy**
+- **Reputation.** A public record of treaties broken, demands extorted and allies abandoned,
+  read by every civ. Memories are per leader now, not a reputation.
+- **Guarantees and coalitions.** "Attack them and you fight me" made explicit; a coalition that
+  forms against a runaway. Crusades cover part of this.
+- **New deal items.** Loans, sworn peace, hostages, marriages, embassies, shared vision,
+  passage of arms (section 3.6).
+- **Minor factions.** Non-civ actors on the map: city-states, monster nations, mercenary
+  companies, orders of knights that can be courted, hired, absorbed or destroyed (Endless
+  Legend's minor factions). Crusade Hosts already show that temporary players work.
+
+**Economy**
+- **Stockpiles.** Strategic resources as quantities that units and buildings consume (Iron 3
+  per Champion). Today resources are on or off. Supply then gives trade, raids and cornering a
+  market something to bite on.
+- **Depletion.** A mine runs out; a herd dies. Discovery exists (an improvement can reveal a
+  resource); depletion does not. The map's value shifts over a game.
+- **Prices.** Resources and units with prices that move with supply and demand (the Black
+  Market, the Last Market).
+- **Trade as caravans.** Trade routes carried by units or ships that can be raided, escorted
+  or blockaded.
+- **Debt and interest.** Loans, interest, default.
+- **Harvests.** Food that varies by year and season; famine as a pressure.
+
+**Information**
+- **Spies on the map.** There are no spy units, and espionage has one mission. Spies would
+  carry the missions of section 3.6.
+- **False information.** What a rival sees can be wrong: a stack shown smaller (Masquerade),
+  false colours (the Masks of Esus), forged letters.
+- **Intelligence.** How much a civ knows about another: its army, gold, plans, cards, Unrest.
+  Embassies, Informers and the Ledger buy it.
+- **Forecasts.** What is coming, shown in advance: the next Armageddon card, the heir's traits,
+  a famine. The roguelike principle's "warning" leg.
+
+**Magic**
+- **A mana pool.** Spells cost mana from a civ's or a city's pool, filled by nodes. Today a
+  spell costs at most gold and a turn. Cards could then grant, steal or overflow mana.
+- **Learning spells.** Casters learn spells from scrolls, tutors or study, beyond the sphere
+  promotions.
+- **Wild magic.** Surges and miscasts that grow with how much magic a civ uses; corruption
+  from casting.
+- **Summons with upkeep.** Lasting summons that drain mana or gold, so an army of them is a
+  choice.
+
+**The world**
+- **Seasons that matter.** The calendar has seasons but nothing reads them. Winter attrition,
+  the elven courts' reigns, harvests.
+- **Weather.** Area effects for a few turns: storm, fog, blizzard, drought (the Weather Engine,
+  the Ashen Sky).
+- **Climate drift.** Temperature that moves terrain over time. The hell terrain's plot counter
+  is one existing case.
+- **Plague as an entity.** A disease that spreads along trade routes and armies and is fought
+  by quarantine and medicine; health is static now.
+- **Rivers that move.** Floods, new courses, dried beds.
+
+**Map content**
+- **Dungeons.** A lair with depths: multi-step exploration with choices, guardians and rewards
+  that grow with the depth (Stellaris' anomaly chains). Lairs today are one roll.
+- **Ruins with stories.** A razed city's ruins keep its name, its owner and what it had: claims,
+  ghosts, treasure.
+
+**Meta**
+- **An objectives deck.** Public and secret objectives drawn per game, scored toward victory
+  or rewards (Twilight Imperium's objectives, Old World's ambitions). Each game's goals differ,
+  the roguelike principle applied to winning itself.
+- **Deck operations.** Draw, peek, keep one of two, put back, copy, burn (section 3).
 
 ---
 
