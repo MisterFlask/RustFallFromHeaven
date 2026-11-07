@@ -3212,7 +3212,8 @@ What the game already has and the decks have not touched:
 - ships and the naval duel;
 - unique features (the research-doubling rule);
 - world units, which are once per game;
-- the `no_bad_goodies` and `explode_in_combat` unit keys.
+- the `no_bad_goodies` unit key. (`explode_in_combat` is only a visual flag in the port: no rule
+  reads it. The Fireship, now out, wrongly relied on it.)
 
 **Items**
 - **Rite of Forging** (Engineer · II · needs Smelting · ritual, repeatable). Forge one item from
