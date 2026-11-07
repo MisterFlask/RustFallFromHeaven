@@ -3264,3 +3264,8 @@ What the game already has and the decks have not touched:
   yours that dies can be trained again here at full cost, once per hero. World units are
   otherwise once per game.
   *Expert:* the hero-centred army stops being one battle from collapse.
+
+**Verdicts on batch 2:** all liked, except the Ritual Circle (out: summons are within-combat
+entities only in the current system, so there is nothing to make permanent). The same fact
+removes Unweaving (section 11.1), which destroyed summoned units on the map. Spellbreaker's
+double damage against summoned units still applies inside battles.
