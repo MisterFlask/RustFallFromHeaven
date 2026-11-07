@@ -3148,3 +3148,23 @@ needs Theology · building
 - **Effect:** choose a second state religion of the same alignment as your first, or a neutral
   one. Both count as your state religion for buildings, units, civics and spells.
 - **Expert:** two faiths' heroes and units, at the cost of the Cultural Values slot.
+
+**Sixth round of verdicts:** forever-at-war and forever-at-peace are out in general. Attitude
+modifiers are fine.
+
+27. **No permanent war or permanent peace.** A spawned or changed civ's leanings are set
+    through attitude modifiers (a strong grudge against its parent, gratitude toward the caster),
+    and its AI then decides. The card's payoff is still the board change (the cities and units),
+    not the attitude (principle 9).
+
+What changes:
+- *Rite of the Necropolis:* +4 attitude toward the caster, -4 toward good civs, in place of
+  permanent peace and war.
+- *The Usurper's Crown:* +4 toward the caster, -6 toward its parent.
+- *The Kingmaker's Ballad, Curse of the Nemesis, the Nemesis of Kings:* out; their effect was
+  the permanent war.
+- *Judgment of Junil* (20 turns of enforced peace, once) and *Free City Charter* (50 turns
+  unattackable) are timed rather than permanent. Flagged: the owner to say whether timed
+  enforcement is also out.
+- "Permanent vassal" (the Hill Clans, Rite of Return, Client Kingdom, Call the Aifon) is
+  vassalage, not war or peace; flagged for the same question.
