@@ -1538,3 +1538,144 @@ can see and manage:
 Unit and building conversion uses the class mapping crusade Hosts already use: a Fyrdwell
 becomes a Nyxkin, a Flurry a crossbowman, a Dwarven Smithy a Forge. Heroes stay with the
 parent.
+
+---
+
+## 6. What the four general mechanisms make possible
+
+The four mechanisms of section 1.10: timed statuses, history counters, scheduled effects, hooks.
+
+### 6.1 How to build them so they pay
+
+- **A status is declared, not scripted.** It has:
+  - a name;
+  - a scope (city, plot, player, unit);
+  - a duration (turns, or until a condition);
+  - modifiers from the existing lever vocabulary (yields, Unrest, attitude, combat stats,
+    movement, research, ...);
+  - optionally a per-turn effect.
+
+  The help text and the AI read the same declaration, so a new status costs neither help code
+  nor AI code. A status that runs arbitrary code needs both, every time. Keep the few verbs that
+  need code (spawn, convert, terraform) as named effects that a status or schedule calls.
+- **Hooks attach to the moments that already exist:** the ~40 `ev_*` callbacks ported from
+  FFH's event manager (`crates/ffh-core/src/ffh/events.rs`: `ev_city_built`, `ev_city_razed`,
+  `ev_city_acquired`, `ev_combat_result`, `ev_great_person_born`, `ev_building_built`,
+  `ev_change_war`, `ev_first_contact`, `ev_golden_age`, ...). A card, a trait or a civilization
+  registers a hook in data: a moment, a condition and an effect.
+- **History counters** are a keyed table per city, plot and player (a `BTreeMap`, saved),
+  written by hooks. Plots already keep `ownership_duration`; that is the pattern.
+- **Scheduled effects** are a queue of (turn, target, effect), public by default. Secrecy is a
+  property a card grants explicitly.
+- **They can absorb the one-off timers.** City: `occupation_timer`, `happiness_timer`,
+  `hurry_anger_timer`, `defy_resolution_anger_timer`. Player: `sanctuary_timer`,
+  `golden_age_turns`. Plot: `temp_terrain_timer`, `force_unowned_timer`. Unit:
+  `immobile_timer`. This is optional cleanup, not a requirement.
+- **Everything is visible.**
+  - Every status shows its icon and the turns left.
+  - Counters appear on the city and leader screens: each game's Chronicle.
+  - A Coming panel lists the public schedule: loans due, truces ending, prophecies, the next
+    Armageddon card.
+
+  That is the forecast leg of the roguelike principle, and what lets an expert plan.
+
+### 6.2 Systems built from them
+
+The payoff is in combinations. Each entry names the mechanisms it uses.
+
+**Vendetta** (hook, history, status, schedule)
+Losing a city gives the loser *Vengeance on X* for 30 turns: +20% attack against X's units and
+no war weariness against X. Retaking the city in time gives *Triumph* (+2 happiness empire-wide,
+10 turns).
+*Expert:* retake it fast or not at all. The captor knows the window and holds the city for 30
+turns.
+
+**Scars of war** (history on plots, status)
+A plot where 10 or more units died becomes a *Battlefield*. Left alone, it is *Haunted*: ghosts
+rise against whoever stands there. With a memorial built on it, it is *Hallowed*: +2 culture,
+and defenders on it start battles with +10% damage. Over a long game the map gathers the scars
+of its wars, different every game.
+*Expert:* build memorials on the battlefields you will fight over again.
+
+**Salted earth** (hook, status, history)
+Razing a city may *Salt* its plots for 50 turns: no food, no new city. The ruin keeps the
+razer's name, which feeds claims and Children of the Ash.
+*Expert:* deny a contested site to a rival who cannot hold it either.
+
+**Epithets** (history, permanent player status)
+History counters past a threshold give a leader a public epithet with its own effects:
+- *the Razer* (5 cities razed): -2 attitude from good civs, +1 from evil.
+- *the Oathbreaker* (a sworn peace or treaty broken): no civ accepts sworn peace or hostages
+  from you for 50 turns.
+- *the Merciful* (cities released or spared): +1 attitude from everyone; released cities start
+  Friendly.
+- *the Dragonslayer*: +1 attitude from good civs, and dragons avoid your lands.
+- *the Builder* (5 wonders): +10% wonder production.
+
+*Expert:* an epithet is a reputation you choose by how you fight; plan the one you want.
+
+**Curses and blessings with a fuse** (status, schedule)
+- A curse that lands later: *this city burns in 15 turns unless dispelled*.
+- A blessing that turns: *Sanctified while its founder holds it, Desecrated if captured*.
+
+*Expert:* a short-term priority with a clear answer: dispel in time, or move what matters out.
+
+**Prophecy** (schedule, hook)
+A Prophet announces: *City X will fall within 30 turns*. If it falls by anyone's hand, the
+prophet's religion spreads to every city of the civ that took it. If it stands, the prophet's
+holy city loses its holy-city commerce for 30 turns.
+*Expert:* prophesy against a city your neighbours already want; third parties get a reason to
+act, and the target gets a warning.
+
+**Contracts that come due** (schedule, hook, history)
+Loans, tribute, hostage release, truce ends, allied pledges and debt defaults, all on the Coming
+panel. A missed payment fires its hook, which may give a casus belli or an epithet.
+*Expert:* time wars to the calendar of what others owe and are owed.
+
+**Mourning and succession** (hook, status, schedule; once leaders are mortal)
+A leader's death gives *Mourning* for 10 turns (no war declarations, -10% production) and
+schedules the coronation. The heir's traits are revealed at the coronation. Rivals see the
+window, and claimants (Unrest, a Pretender) may rise in it.
+*Expert:* the turns before a coronation are the moment to strike, or to make peace.
+
+**Earned unlocks** (hook, history)
+Abilities unlocked by what a civ has done, not by research:
+- 10 battles won in forests: your archers learn *Forest Volley*.
+- 3 dragons slain: Dragon Slayers for all your champions.
+- 5 cities founded on coast: *Seafaring* moves.
+
+*Expert:* play shapes the tree; an expert leans into the deeds the civ already does.
+
+**Old growth** (history on plots, status)
+A forest untouched for 100 turns becomes ancient forest. A desert worked for 100 turns becomes
+an oasis. The map ages by how it was used.
+*Expert:* leave the forest belts alone; they grow into walls (Heartwood of Sucellus).
+
+**Claims** (history, hook)
+A civ holds a claim on a city it owned for 20 turns or more, fading over 50 turns after losing
+it. A claim lowers the war weariness of a war to retake the city and is a war goal (section
+1.10).
+*Expert:* reconquest wars are cheap for a while; the captor's defence plan follows the claim's
+fade.
+
+**Governor ambitions** (hook, status)
+A governor wants a building, a war or a post. Getting it makes the governor *Content* (loyal);
+being denied for 20 turns makes it *Resentful* (Unrest, and it may lead a secession).
+*Expert:* read the ambitions before choosing which city a governor gets.
+
+### 6.3 What else turns into data
+
+- **Civilization flavor** (section 5):
+  - the Doviello's raid hunger is a counter (turns since a sack) and two hooks (city captured,
+    tribute paid);
+  - the Balseraphs' boredom is a hook on Arena battles;
+  - the Sheaim's cause is a hook on the counter's change.
+
+  Most of section 5 becomes data.
+- **Leader traits** can be written as hooks. For example *Vengeful*: when a city of yours is
+  captured, Vengeance lasts 50 turns.
+- **The Armageddon deck** is a schedule. Its reveal, its lingering cards and its chains are
+  statuses and scheduled stages.
+- **The objectives deck** is scored by hooks and counters.
+- **The great-person deck's** non-tech effects (the Index's draws, the Lens's copy, the Recall's
+  return) are hooks.
