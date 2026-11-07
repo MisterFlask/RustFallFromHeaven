@@ -2890,3 +2890,23 @@ one-off world spell. A few change the diplomatic landscape. All of them:
   game keeps the original owner), a court in exile appears on unclaimed land near it. It is a
   civ of the dispossessed civilization, permanently at war with the captor.
   *Expert:* every conqueror of a capital gets a nemesis; conquerors weigh it before 30.
+
+### 11.3 Fifth round of verdicts (2026-11-07)
+
+- **Spawned civs must have an answer to "why is this civ relevant?"** A one-city civ next to
+  its enemies dies at once or stops mattering. Curse of the Nemesis, Sellsword Nation and the
+  Nemesis of Kings are too weak as written. The Infernals are the model: they arrive with a
+  very strong hero and unique mechanics that let them grow quickly.
+- **Hall of Legends:** far too strong. The Hero promotion is huge on its own, and acting twice
+  in battle compounds it.
+- **The Exiled Court:** cannot be implemented as written.
+- **No direct interaction with Vendetta** in deck cards.
+- **Process:** no mass drafting yet. Review continues in rounds, so the drafts learn the
+  owner's taste first.
+
+24. **A spawned civ needs a reason to matter:** a hero far above its era, mechanics that let
+    it grow fast, enough land and cities to stand. Without one, the card is a speed bump.
+25. **Respect the power of existing promotions.** Hero, the extra action and similar ones are
+    rare for a reason; a card does not hand them out wholesale.
+26. **Implementable from existing state.** "Original capital", "where it appears" and "who it
+    is" must each have a definite answer in the game's data.
