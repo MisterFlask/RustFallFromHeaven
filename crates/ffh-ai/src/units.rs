@@ -189,7 +189,12 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
                 // Settlers re-plan every turn (danger and sites change).
                 Role::Settler => g.groups[grp].mission_queue[0].mission_type == MissionType::MISSION_MOVE_TO,
                 // Workers drop their job when enemies come near.
-                Role::Worker => g.group_get_head_unit(grp).is_some_and(|h| crate::workers::worker_in_danger(g, v, g.unit_plot(h))),
+                // (A worker sent to build Siege Lines under a besieging stack keeps its job: the
+                // stack escorts it; docs/CARDS.md.)
+                Role::Worker => {
+                    g.group_get_head_unit(grp).is_some_and(|h| crate::workers::worker_in_danger(g, v, g.unit_plot(h)))
+                        && !crate::cards_map_rules::escorted_siege_work(g, grp)
+                }
                 _ => false,
             };
         // A settler never sleeps through a turn (a site may have opened up); cargo excepted.

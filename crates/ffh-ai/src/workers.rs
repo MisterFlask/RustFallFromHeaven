@@ -329,6 +329,10 @@ fn build_value(g: &Game, v: &View, p: PlayerId, plot: PlotIdx, build: BuildType,
         if pl.improvement_type == Some(imp) {
             return 0;
         }
+        // The great-person cards' improvements (docs/CARDS.md).
+        if let Some(value) = crate::cards_map_rules::build_value(g, p, plot, imp) {
+            return value;
+        }
         // What the working city needs.
         let city = pl.working_city.filter(|&c| g.cities[c].owner == p);
         let (food_w, prod_w) = match city {
