@@ -3080,3 +3080,71 @@ per civ)
 - **Effect:** the archer's shots strike Sentinels as a siege engine's stones do. Archers become
   wall-breakers.
 - **Expert:** take early walled cities without siege engines.
+
+## 14. Review batch 3: the religions (10 cards)
+
+Each card needs the named state religion to be drawn and used, unless it says "any". It draws on
+that religion's own flavor and content.
+
+**1. Seed of Yggdrasil** · Prophet · Fellowship of Leaves · II · needs Way of the Forests ·
+worker build on a forest plot in your borders, one per city
+- **Effect:** a Sapling that grows into a Great Tree in 30 turns, as a cottage grows into a
+  hamlet (`improvement_upgrade`, `upgrade_time`). The Great Tree gives the city a Fruit of
+  Yggdrasil resource (an existing bonus) and +2 food. Units in the city's radius heal as in a
+  city.
+- **Expert:** plant early, in the cities you will hold longest.
+
+**2. Holy Inquisition** · Prophet · The Order · II · needs Orders from Heaven · spell for the
+Order's disciples, in a city of yours
+- **Effect:** removes one religion other than the Order from the city, and its temples there
+  become Temples of the Order. If the city is that religion's holy city, its shrine is
+  destroyed and the religion loses its holy city.
+- **Expert:** take a rival faith's holy city, then purge it; its founder loses the shrine
+  everywhere.
+
+**3. Altar of the Deep** · Prophet · Octopus Overlords · II · needs Message from the Deep ·
+building, coastal cities
+- **Effect:** every land unit killed in a battle within 2 plots of the city rises there as a
+  Drown (the Overlords' undead) under your control.
+- **Expert:** fight on your own coast; every failed invasion there feeds you.
+
+**4. Mithril Forge** · Engineer · Runes of Kilmorph · III · needs Mithril Working · national
+building
+- **Effect:** melee units trained in this city get the mithril weapon tier, with or without the
+  Mithril resource.
+- **Expert:** the armoury of an empire without Mithril.
+
+**5. Soul-Bound** · Prophet · The Ashen Veil · II · needs Corruption of Spirit · promotion for
+units of level 4+
+- **Effect:** when the unit dies, a Balor (the Veil's tier-4 demon) appears on its plot under
+  your control for 5 turns.
+- **Expert:** veterans are worth more dead in the middle of a siege; take it on the assault
+  units.
+
+**6. Radiant Bastion** · Prophet · The Empyrean · II · needs Honor · building
+- **Effect:** in battles at this city the attackers are Blinded: they act last in every round,
+  whatever their speed. Hidden units within 3 plots of the city are revealed.
+- **Expert:** the city that fast armies and shadow armies cannot take.
+
+**7. The Faceless One** · Bard · Council of Esus · II · needs Deception · national unit, 1
+(hard)
+- **Effect:** invisible (the Council's own invisibility). Its spell *Unmake* kills an adjacent
+  enemy hero or world unit, and the Faceless One dies with it. An immortal hero returns as
+  usual.
+- **Expert:** kill the hero the enemy's war is built on.
+
+**8. Temple Ward** · Engineer · any religion · II · needs Priesthood · building
+- **Effect:** in a city with a temple of your state religion, the walls have one more
+  Sentinel (three instead of two).
+- **Expert:** the walls of the cities that matter, in any faith.
+
+**9. The Second Shrine** · Prophet · any religion, for the civ that holds its holy city · III ·
+needs Theology · building
+- **Effect:** build your religion's holy shrine in a second city. Both shrines give the
+  shrine's effects; if one is lost, the other stands.
+- **Expert:** insurance for the holy city, and double the shrine where the faith is wide.
+
+**10. Syncretism** · Sage · any religion · III · needs Divine Essence · civic (Cultural Values)
+- **Effect:** choose a second state religion of the same alignment as your first, or a neutral
+  one. Both count as your state religion for buildings, units, civics and spells.
+- **Expert:** two faiths' heroes and units, at the cost of the Cultural Values slot.
