@@ -344,7 +344,7 @@ fn votes_and_vote_sources() {
 
     let gambling = vote("VOTE_GAMBLING_RING");
     assert!(gambling.gambling_ring);
-    assert_eq!((gambling.cost, gambling.crime), (25, 5));
+    assert_eq!(gambling.cost, 25);
     assert_eq!(vote("VOTE_SMUGGLING_RING").trade_routes, 1);
     assert_eq!(vote("VOTE_NO_DEATH_MANA").no_bonus, d.ty::<BonusType>("BONUS_MANA_DEATH"));
     assert!(vote("VOTE_NO_DEATH_MANA").no_bonus.is_some());

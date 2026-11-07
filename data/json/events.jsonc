@@ -358,7 +358,6 @@
     "max_num_religions": -1,
     "button": ",Art/Interface/Buttons/Process/Blank.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,8,5",
     "ai_value": 1000,
-    "crime": -5
   },
   {
     "type": "EVENT_BANDIT_NIETZ_2",
@@ -372,7 +371,6 @@
     "max_num_religions": -1,
     "button": ",Art/Interface/Buttons/Process/Blank.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,8,5",
     "ai_value": 1000,
-    "crime": -15
   },
   {
     "type": "EVENT_BANDIT_NIETZ_3",
@@ -387,7 +385,6 @@
     "python_help": "helpBanditNietz3",
     "button": ",Art/Interface/Buttons/Process/Blank.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,8,5",
     "ai_value": 1000,
-    "crime": 10
   },
   {
     "type": "EVENT_BARDS_TALE_1",
@@ -1079,7 +1076,6 @@
     "max_num_religions": -1,
     "button": ",Art/Interface/Buttons/Process/Blank.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,8,5",
     "ai_value": 1000,
-    "crime": -2
   },
   {
     "type": "EVENT_CRIME_INCREASE_1",
@@ -1092,7 +1088,6 @@
     "max_num_religions": -1,
     "button": ",Art/Interface/Buttons/Process/Blank.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,8,5",
     "ai_value": 1000,
-    "crime": 2
   },
   {
     "type": "EVENT_CYCLONE_1",
@@ -3144,7 +3139,6 @@
     "max_num_religions": -1,
     "button": ",Art/Interface/Buttons/Process/Blank.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,8,5",
     "ai_value": 1000,
-    "crime": -5
   },
   {
     "type": "EVENT_MARKET_THEFT_2",
@@ -3171,7 +3165,6 @@
     "max_num_religions": -1,
     "button": ",Art/Interface/Buttons/Process/Blank.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,8,5",
     "ai_value": 1000,
-    "crime": -10,
     "prereq_state_religion": "RELIGION_COUNCIL_OF_ESUS"
   },
   {
@@ -4059,7 +4052,6 @@
     "max_num_religions": -1,
     "button": ",Art/Interface/Buttons/Process/Blank.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,8,5",
     "ai_value": 1000,
-    "crime": -2
   },
   {
     "type": "EVENT_RANSOM_2",
@@ -4073,7 +4065,6 @@
     "max_num_religions": -1,
     "button": ",Art/Interface/Buttons/Process/Blank.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,8,5",
     "ai_value": 1000,
-    "crime": 5
   },
   {
     "type": "EVENT_RANSOM_3",
@@ -4087,7 +4078,6 @@
     "max_num_religions": -1,
     "button": ",Art/Interface/Buttons/Process/Blank.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,8,5",
     "ai_value": 1000,
-    "crime": -5
   },
   {
     "type": "EVENT_RUNNING_BULLS_1",
@@ -4544,7 +4534,6 @@
     "max_num_religions": -1,
     "button": ",Art/Interface/Buttons/Process/Blank.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,8,5",
     "ai_value": 1000,
-    "crime": -10
   },
   {
     "type": "EVENT_SLAVE_RING_END_2",
@@ -5900,7 +5889,6 @@
     "max_num_religions": -1,
     "button": ",Art/Interface/Buttons/Process/Blank.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,8,5",
     "ai_value": 1000,
-    "crime": 10
   },
   {
     "type": "EVENT_ENEMY_CITY_CRIME_3",
@@ -5915,7 +5903,6 @@
     "max_num_religions": -1,
     "button": ",Art/Interface/Buttons/Process/Blank.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,8,5",
     "ai_value": 1000,
-    "crime": 20
   },
   {
     "type": "EVENT_WB_SPLINTERED_COURT_DEFEATED_AMELANCHIER_1",

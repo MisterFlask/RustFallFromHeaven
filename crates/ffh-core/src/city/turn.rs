@@ -1,6 +1,6 @@
 //! CvCity: lifecycle (`init`, `kill`), turn processing (`doTurn`, `doTask`), the build queue
 //! (`pushOrder`/`popOrder`, `doCheckProduction`, `doProduction`, `doDecay`), events,
-//! liberation and FFH2 misc (meltdown, crime).
+//! liberation and FFH2 misc (meltdown).
 
 use super::{ai_choose_production, ai_reset, building_class_of, order_type_data, unit_class_of, City};
 use crate::defs::*;
@@ -18,9 +18,9 @@ impl Game {
     /// (`player_init_city` = C++ `CvPlayer::initCity`); like C++ `init` -> `reset`, this
     /// overwrites it with `City::new(..)`.
     ///
-    /// RNG: C++ `reset()` draws `getSorenRandNum(20, "Crime")`, and it runs twice per new
-    /// city: first from the CvCity constructor (`FFreeListTrashArray::add`, value discarded),
-    /// then from `init`. This function must perform both draws, in that order, first.
+    /// RNG: C++ `reset()` draws `getSorenRandNum(20, "Crime")` twice per new city (the
+    /// constructor's and `init`'s); with crime gone (docs/PORTING.md, "Changes from FFH2") a new
+    /// city draws nothing here.
     ///
     /// C++ ends with `AI_init()`: `AI_reset()` (which clears the AI bookkeeping fields again,
     /// e.g. an `ai_choose_production_dirty` set by `setPopulation` during init), then
@@ -38,11 +38,8 @@ impl Game {
 
         // Logging (cheat level only): not ported.
 
-        // Init saved data: reset(iID, eOwner, pPlot->getX_INLINE(), pPlot->getY_INLINE()). The
-        // first "Crime" draw is the constructor's reset (value discarded).
-        let _ = self.soren_rand_num(20, "Crime");
-        let crime = self.soren_rand_num(20, "Crime");
-        self.cities[c] = City::new(d, self.num_players(), self.num_teams(), c, owner, plot_x, plot_y, crime);
+        // Init saved data: reset(iID, eOwner, pPlot->getX_INLINE(), pPlot->getY_INLINE()).
+        self.cities[c] = City::new(d, self.num_players(), self.num_teams(), c, owner, plot_x, plot_y);
         match tiers {
             Some(tiers) => self.cities[c].building_tiers = tiers,
             None => self.city_roll_building_tiers(c),
@@ -1294,11 +1291,7 @@ impl Game {
             return MIN_INT;
         }
 
-        // FfH: Added by Kael 01/21/2008
-        if k_trigger.prereq_crime != 0 && self.city_crime(c) < k_trigger.prereq_crime {
-            return MIN_INT;
-        }
-        // FfH: End Add
+        // (FfH's PrereqCrime gate is gone: no crime in this game.)
 
         value += city.food * k_trigger.city_food_weight;
 
@@ -1484,11 +1477,7 @@ impl Game {
                 self.city_change_culture(c, owner, k_event.culture, true, true);
             }
 
-            // FfH: Added by Kael 01/21/2008
-            if k_event.crime != 0 {
-                self.cities[c].crime += k_event.crime;
-            }
-            // FfH: End Add
+            // (FfH's event crime is gone: no crime in this game.)
         }
 
         if let Some(unit_class) = k_event.unit_class {
@@ -1816,17 +1805,6 @@ impl Game {
         }
         self.unit_set_weapons(unit);
     }
-
-    /// C++ `CvCity::getCrime` (CvCity.cpp:14675-14683, FFH): the game's global crime plus
-    /// the city's own (`crime` field), at least 0.
-    pub fn city_crime(&self, c: CityId) -> i32 {
-        let crime = self.crime + self.cities[c].crime;
-        if crime < 0 {
-            return 0;
-        }
-        crime
-    }
-
 }
 
 /// The TXT_KEY_MISC_LOST_WONDER_PROD_CONVERTED message of `doCheckProduction` (game log).
@@ -1898,7 +1876,7 @@ mod tests {
             g.players[p] = Player::new(d, p, &g.setup.players[p.idx()], num_players, num_teams);
         }
         let id = g.cities.next_id();
-        let c = g.player_add_city(P0, City::new(d, num_players, num_teams, id, P0, 2, 2, 0));
+        let c = g.player_add_city(P0, City::new(d, num_players, num_teams, id, P0, 2, 2));
         (g, c)
     }
 
@@ -1906,18 +1884,6 @@ mod tests {
     /// `canConstruct` answers false before asking the player).
     fn buildings(g: &Game, n: usize) -> Vec<BuildingType> {
         g.d.buildings.keys().filter(|&b| g.d.buildings[b].building_class_type.is_some()).take(n).collect()
-    }
-
-    #[test]
-    fn crime_adds_the_game_crime_and_is_never_negative() {
-        let (mut g, c) = game_with_city();
-        g.crime = 10;
-        g.cities[c].crime = 7;
-        assert_eq!(g.city_crime(c), 17);
-        g.cities[c].crime = -4;
-        assert_eq!(g.city_crime(c), 6);
-        g.cities[c].crime = -30;
-        assert_eq!(g.city_crime(c), 0);
     }
 
     #[test]
@@ -2037,7 +2003,6 @@ mod tests {
                 && t.angry == 0
                 && t.unhealthy == 0
                 && !t.prereq_event_city
-                && t.prereq_crime == 0
         };
         let trigger = d.event_triggers.keys().find(|&t| simple(&d.event_triggers[t]) && d.event_triggers[t].city_food_weight > 0).expect("a trigger weighted by city food");
         let weight = d.event_triggers[trigger].city_food_weight;

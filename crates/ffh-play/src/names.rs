@@ -684,7 +684,7 @@ mod tests {
     fn placeholders() {
         assert!(has_placeholder("%D1: \"Learn how to play Somnium!\""));
         assert!(has_placeholder("x %s1"));
-        assert!(!has_placeholder("Reduces the cost by 75%, increases crime by 5%"));
+        assert!(!has_placeholder("Reduces the cost by 75%, increases gold by 5%"));
         assert!(!has_placeholder("%"));
         assert!(!has_placeholder("100%D"));
         assert!(!has_placeholder(""));

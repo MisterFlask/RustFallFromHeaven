@@ -362,7 +362,7 @@ persist_struct!(City {
     occupation_timer, culture_update_timer, specialist_free_experience, espionage_defense_modifier,
     never_lost, bombarded, drafted, airlift_targeted, we_love_the_king_day, citizens_automated,
     production_automated, plundered, owner, previous_owner, original_owner, culture_level,
-    settlement, civ, crime, mutate_chance, plot_radius, resist_magic, unhappy_production,
+    settlement, civ, mutate_chance, plot_radius, resist_magic, unhappy_production,
     sea_plot_yield, river_plot_yield, base_yield_rate, yield_rate_modifier,
     power_yield_rate_modifier, bonus_yield_rate_modifier, trade_yield, corporation_yield,
     extra_specialist_yield, commerce_rate, production_to_commerce_modifier, building_commerce,

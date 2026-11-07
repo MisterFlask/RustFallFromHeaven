@@ -387,7 +387,6 @@
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_GOLD": 10, "FLAVOR_MILITARY": 5},
-    "crime": -10,
     "specialist_commerce_changes": ""
   },
   {
@@ -409,7 +408,6 @@
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_GOLD": 10},
-    "crime": 10,
     "specialist_commerce_changes": ""
   },
   {
@@ -557,7 +555,6 @@
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_GROWTH": 10},
-    "crime": 10,
     "plot_radius": 3,
     "specialist_commerce_changes": ""
   },
@@ -913,7 +910,6 @@
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_RELIGION": 10},
-    "crime": -10,
     "specialist_commerce_changes": ""
   },
   {
@@ -953,7 +949,6 @@
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_GOLD": 10},
-    "crime": -10,
     "specialist_commerce_changes": ""
   },
   {
@@ -976,7 +971,6 @@
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_GOLD": 10},
     "unhappy_production": true,
-    "crime": -10,
     "specialist_commerce_changes": ""
   },
   {
@@ -1091,7 +1085,6 @@
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_RELIGION": 10},
     "see_invisible": true,
-    "crime": -10,
     "specialist_commerce_changes": ""
   },
   {
@@ -1109,7 +1102,6 @@
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_GOLD": 2, "FLAVOR_GROWTH": 5},
-    "crime": -10,
     "specialist_commerce_changes": ""
   },
   {
@@ -1303,7 +1295,6 @@
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_CULTURE": 2, "FLAVOR_GOLD": 3, "FLAVOR_SCIENCE": 5},
-    "crime": 10,
     "specialist_commerce_changes": ""
   },
   {
@@ -1324,7 +1315,6 @@
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_GOLD": 10},
-    "crime": -10,
     "specialist_commerce_changes": ""
   },
   {
@@ -1428,7 +1418,6 @@
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_GOLD": 10},
-    "crime": 10,
     "specialist_commerce_changes": ""
   },
   {
@@ -1894,7 +1883,6 @@
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_GOLD": 10},
-    "crime": 5,
     "specialist_commerce_changes": ""
   },
   {
@@ -2010,7 +1998,6 @@
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_GOLD": 10},
-    "crime": 5,
     "specialist_commerce_changes": ""
   },
   {
@@ -2163,7 +2150,6 @@
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_RELIGION": 10},
     "hide_units": true,
-    "crime": 10,
     "specialist_commerce_changes": ""
   },
   {
@@ -2307,7 +2293,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_FIRE",
     "free_bonus3": "BONUS_MANA_BODY",
     "specialist_commerce_changes": ""
@@ -2333,7 +2318,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_CHAOS",
     "free_bonus3": "BONUS_MANA_AIR",
     "specialist_commerce_changes": ""
@@ -2360,7 +2344,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_SPIRIT",
     "free_bonus3": "BONUS_MANA_EARTH",
     "specialist_commerce_changes": ""
@@ -2387,7 +2370,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_LAW",
     "free_bonus3": "BONUS_MANA_SHADOW",
     "specialist_commerce_changes": ""
@@ -2414,7 +2396,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_NATURE",
     "free_bonus3": "BONUS_MANA_BODY",
     "specialist_commerce_changes": ""
@@ -2441,7 +2422,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_EARTH",
     "free_bonus3": "BONUS_MANA_BODY",
     "specialist_commerce_changes": ""
@@ -2468,7 +2448,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_NATURE",
     "free_bonus3": "BONUS_MANA_WATER",
     "specialist_commerce_changes": ""
@@ -2497,7 +2476,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_ENCHANTMENT",
     "free_bonus3": "BONUS_MANA_WATER",
     "specialist_commerce_changes": ""
@@ -2523,7 +2501,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_NATURE",
     "free_bonus3": "BONUS_MANA_AIR",
     "specialist_commerce_changes": ""
@@ -2549,7 +2526,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_ENCHANTMENT",
     "free_bonus3": "BONUS_MANA_LAW",
     "specialist_commerce_changes": ""
@@ -2581,7 +2557,6 @@
     "state_religion_commerces": [1, 1, 1],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_FIRE",
     "free_bonus3": "BONUS_IRON",
     "specialist_commerce_changes": ""
@@ -2609,7 +2584,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_GOLD",
     "free_bonus3": "BONUS_MANA_LAW",
     "specialist_commerce_changes": ""
@@ -2637,7 +2611,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_SPIRIT",
     "free_bonus3": "BONUS_MANA_WATER",
     "specialist_commerce_changes": ""
@@ -2664,7 +2637,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_CHAOS",
     "free_bonus3": "BONUS_MANA_AIR",
     "specialist_commerce_changes": ""
@@ -2691,7 +2663,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_AIR",
     "free_bonus3": "BONUS_MANA_LIFE",
     "specialist_commerce_changes": ""
@@ -2718,7 +2689,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_LIFE",
     "free_bonus3": "BONUS_MANA_EARTH",
     "specialist_commerce_changes": ""
@@ -2745,7 +2715,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_MIND",
     "free_bonus3": "BONUS_MANA_LIFE",
     "specialist_commerce_changes": ""
@@ -2776,7 +2745,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 4],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_EARTH",
     "free_bonus3": "BONUS_IRON",
     "specialist_commerce_changes": ""
@@ -2803,7 +2771,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_CHAOS",
     "free_bonus3": "BONUS_MANA_FIRE",
     "specialist_commerce_changes": ""
@@ -2838,7 +2805,6 @@
       }
     ],
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_ENCHANTMENT",
     "free_bonus3": "BONUS_MANA_SHADOW",
     "specialist_commerce_changes": [
@@ -2890,7 +2856,6 @@
     "obsolete_safe_commerce_changes": [0, 0, 2],
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
-    "crime": -10,
     "free_bonus2": "BONUS_MANA_NATURE",
     "free_bonus3": "BONUS_MANA_MIND",
     "specialist_commerce_changes": ""
@@ -2938,7 +2903,6 @@
     "flavors": {"FLAVOR_GOLD": 5, "FLAVOR_GROWTH": 2},
     "no_civic_anger": true,
     "unhappy_production": true,
-    "crime": -10,
     "modify_global_counter": 4,
     "specialist_commerce_changes": ""
   },
@@ -2987,7 +2951,6 @@
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_GROWTH": 10},
-    "crime": 5,
     "specialist_commerce_changes": ""
   },
   {
@@ -3141,7 +3104,6 @@
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_GOLD": 10},
-    "crime": 10,
     "specialist_commerce_changes": ""
   },
   {
@@ -3329,7 +3291,6 @@
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_GOLD": 10},
-    "crime": 5,
     "specialist_commerce_changes": ""
   },
   {
@@ -3353,7 +3314,6 @@
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_GOLD": 10},
-    "crime": 5,
     "specialist_commerce_changes": ""
   },
   {
@@ -3491,7 +3451,6 @@
     "specialist_yield_changes": "",
     "bonus_yield_modifiers": "",
     "flavors": {"FLAVOR_PRODUCTION": 2, "FLAVOR_RELIGION": 5},
-    "crime": -5,
     "specialist_commerce_changes": ""
   },
   {
@@ -3908,7 +3867,6 @@
     "bonus_yield_modifiers": "",
     "graphical_only": true,
     "requires_caster": true,
-    "crime": -10,
     "specialist_commerce_changes": ""
   },
   {

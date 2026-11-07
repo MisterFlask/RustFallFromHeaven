@@ -542,7 +542,6 @@ pub fn event_effects(g: &Game, p: PlayerId, event: EventType, data: &EventTrigge
         (e.espionage_points, "espionage"),
         (e.free_unit_support, "unit support"),
         (e.global_counter, "Armageddon counter"),
-        (e.crime, "crime"),
     ] {
         if n != 0 {
             out.push(format!("{} {what}", signed(n)));

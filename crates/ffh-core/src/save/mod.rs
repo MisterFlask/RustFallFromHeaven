@@ -278,7 +278,6 @@ fn write_game(g: &Game, w: &mut Writer) {
         victory,
         game_state,
         script_data,
-        crime,
         cut_losers_counter,
         flexible_difficulty_counter,
         global_counter,
@@ -395,7 +394,6 @@ fn write_game(g: &Game, w: &mut Writer) {
     victory.write(w);
     game_state.write(w);
     script_data.write(w);
-    crime.write(w);
     cut_losers_counter.write(w);
     flexible_difficulty_counter.write(w);
     global_counter.write(w);
@@ -510,7 +508,6 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         victory: Persist::read(r)?,
         game_state: Persist::read(r)?,
         script_data: Persist::read(r)?,
-        crime: Persist::read(r)?,
         cut_losers_counter: Persist::read(r)?,
         flexible_difficulty_counter: Persist::read(r)?,
         global_counter: Persist::read(r)?,

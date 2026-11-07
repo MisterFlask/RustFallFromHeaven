@@ -225,7 +225,6 @@ fn value(g: &Game, p: PlayerId, t: &EventTriggeredData, e: EventType, depth: u32
         v += ev.happy_turns as i64 * hw * d.defines.temp_happy.max(1) as i64;
         v += cities * ev.culture as i64 / 2;
     }
-    v += -ev.crime as i64 * 2;
 
     let bonus_val = ev.bonus.map_or(0, |b| g.player_ai_bonus_val(p, b, 0) as i64);
     if let Some(pl) = plot {

@@ -83,14 +83,12 @@ values; `trade_cities: Vec<Option<CityId>>` (`MAX_TRADE_ROUTES` slots; read thro
 `order_queue: Vec<OrderData>` head first (`City::head_order()`); `building_original_owner:
 IdxVec<BuildingType, Option<PlayerId>>`, `building_original_time` uses `MIN_INT` for none;
 `civ: Option<CivilizationType>` is FFH's `m_iCiv` (`getTrueCivilizationType` /
-`setCivilizationType`); `crime` is the city's own `m_iCrime` (`city_crime` adds the game's).
+`setCivilizationType`). FFH's `m_iCrime` is gone (no crime in this game).
 
-`City::new(d, num_players, num_teams, id, owner, x, y, crime)` reproduces `CvCity::reset()`
+`City::new(d, num_players, num_teams, id, owner, x, y)` reproduces `CvCity::reset()`
 (with `uninit`) and the bookkeeping part of `CvCityAI::AI_reset()`. Per-type arrays are sized
-from `d`, per-player/per-team arrays from the parameters. `reset()` draws
-`getSorenRandNum(20, "Crime")`, and C++ runs it twice for every new city (constructor via
-`FFreeListTrashArray::add`, value discarded; then `init`). So `City::new` takes `crime` as a
-parameter and `city_init` must make both draws, in that order, before anything else.
+from `d`, per-player/per-team arrays from the parameters. C++ `reset()` also draws
+`getSorenRandNum(20, "Crime")` (twice for every new city); with crime gone, no draw is made.
 
 ### CvCityAI bookkeeping
 
@@ -245,7 +243,7 @@ bumps the culture emphasize count, which only the AI reads).
 | `getLiberationPlayer(bool bConquest) const` | 14230-14342 | 113 | `city_liberation_player` | ported |
 | `isAutoRaze() const` | 14382-14410 | 29 | `city_is_auto_raze` | ported |
 | `applyBuildEffects(CvUnit* pUnit)` | 14499-14591 | 93 | `city_apply_build_effects` | ported |
-| `getCrime() const` | 14675-14683 | 9 | `city_crime` | ported |
+| `getCrime() const` | 14675-14683 | 9 | -- | removed (no crime in this game) |
 
 ### `citizens.rs`
 
@@ -727,7 +725,6 @@ bits aside) are field accesses on `self.cities[c]`. A `changeFoo(iChange)` of th
 | `settlement` | `isSettlement`, `setSettlement` |
 | `plot_radius` | `getPlotRadius` |
 | `unhappy_production` | `changeUnhappyProduction` |
-| `crime` | `changeCrime` |
 | `mutate_chance` | `changeMutateChance`, `getMutateChance` |
 | `resist_magic` | `changeResistMagic`, `getResistMagic` |
 
@@ -749,7 +746,7 @@ bits aside) are field accesses on `self.cities[c]`. A `changeFoo(iChange)` of th
 
 ## Porting notes (C++ quirks spotted while reading)
 
-- `init`: besides the two "Crime" draws, C++ finishes with `AI_init()` -> `AI_reset()`, which
+- `init`: C++ finishes with `AI_init()` -> `AI_reset()`, which
   clears the AI bookkeeping fields again after `init` has run (e.g. an
   `ai_choose_production_dirty` set by `setPopulation` for an AI owner).
 - `setPlotRadius`: the loop that frees worked outer plots tests `iNewValue < getPlotRadius()`

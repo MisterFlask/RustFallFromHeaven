@@ -1531,7 +1531,7 @@ mod tests {
     fn add_city(g: &mut Game, owner: PlayerId, x: i32, y: i32, population: i32) -> CityId {
         let d = g.d;
         let (num_players, num_teams) = (g.num_players(), g.num_teams());
-        let c = g.cities.insert_with(|id| City::new(d, num_players, num_teams, id, owner, x, y, 0));
+        let c = g.cities.insert_with(|id| City::new(d, num_players, num_teams, id, owner, x, y));
         g.players[owner].cities.push(c);
         g.cities[c].population = population;
         let p = at(g, x, y);

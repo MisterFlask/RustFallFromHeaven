@@ -1456,12 +1456,9 @@ fn do_judgement_right(g: &mut Game, _event: EventType, data: &EventTriggeredData
     }
 }
 
-/// `doJudgementWrong(argsList)`.
-fn do_judgement_wrong(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
-    if let Some(c) = data_city(g, data) {
-        g.cities[c].crime += 3;
-    }
-}
+/// `doJudgementWrong(argsList)`: the city's crime +3 in FFH2; nothing here (no crime in this
+/// game).
+fn do_judgement_wrong(_g: &mut Game, _event: EventType, _data: &EventTriggeredData) {}
 
 /// `doLetumFrigus3(argsList)`.
 fn do_letum_frigus3(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
@@ -1519,14 +1516,9 @@ fn apply_malakim_pilgrimage1(g: &mut Game, _event: EventType, data: &EventTrigge
     move_to_civ_capital(g, data, civ);
 }
 
-/// `doMarketTheft2(argsList)`: city crime changes by -10..10.
-fn do_market_theft2(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
-    let city = data_city(g, data);
-    let rnd = g.soren_rand_num(21, "Market Theft 2") - 10;
-    if let Some(c) = city {
-        g.cities[c].crime += rnd;
-    }
-}
+/// `doMarketTheft2(argsList)`: the city's crime changes by -10..10 in FFH2; nothing here (no
+/// crime in this game).
+fn do_market_theft2(_g: &mut Game, _event: EventType, _data: &EventTriggeredData) {}
 
 /// `canTriggerMerchantKeep(argsList)`.
 fn can_trigger_merchant_keep(g: &Game, _trigger: EventTriggerType, _p: PlayerId, c: CityId) -> bool {
@@ -2005,15 +1997,13 @@ fn do_sign_dagda(g: &mut Game, data: &EventTriggeredData, _p: PlayerId) {
     sign_attitude(g, data, 1);
 }
 
-/// `doSignEsus(argsList)`: `CyGame().changeCrime(5)`.
-fn do_sign_esus(g: &mut Game, _data: &EventTriggeredData, _p: PlayerId) {
-    g.crime += 5;
-}
+/// `doSignEsus(argsList)`: `CyGame().changeCrime(5)` in FFH2; nothing here (no crime in this
+/// game).
+fn do_sign_esus(_g: &mut Game, _data: &EventTriggeredData, _p: PlayerId) {}
 
-/// `doSignLugus(argsList)`: `CyGame().changeCrime(-5)`.
-fn do_sign_lugus(g: &mut Game, _data: &EventTriggeredData, _p: PlayerId) {
-    g.crime -= 5;
-}
+/// `doSignLugus(argsList)`: `CyGame().changeCrime(-5)` in FFH2; nothing here (no crime in this
+/// game).
+fn do_sign_lugus(_g: &mut Game, _data: &EventTriggeredData, _p: PlayerId) {}
 
 /// `doSignMulcarn(argsList)`: the player's land temporarily cools down one step.
 fn do_sign_mulcarn(g: &mut Game, data: &EventTriggeredData, _p: PlayerId) {
@@ -3050,18 +3040,6 @@ mod tests {
     }
 
     const INVALID_PLOT_COORD: i32 = crate::defs::INVALID_PLOT_COORD;
-
-    #[test]
-    fn signs_of_esus_and_lugus_change_game_crime() {
-        let mut g = game(&[("CIVILIZATION_BANNOR", "LEADER_SABATHIEL")]);
-        let before = g.crime;
-        let p = PlayerId(0);
-        do_sign_esus(&mut g, &data(p), p);
-        assert_eq!(g.crime, before + 5);
-        do_sign_lugus(&mut g, &data(p), p);
-        do_sign_lugus(&mut g, &data(p), p);
-        assert_eq!(g.crime, before - 5);
-    }
 
     #[test]
     fn pick_alignment_sets_the_alignment() {

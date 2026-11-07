@@ -4,7 +4,7 @@
 //! yields/costs, "ever active" queries, destroyed city / great person names; barbarians
 //! (`createBarbarianCities`, `createBarbarianUnits`, `createAnimals`, FfH `foundBarbarianCity`)
 //! and the other FfH additions: the global (Armageddon) counter, trophies, disabled religions.
-//! (FfH's crime, challenge and scenario counters are plain fields.)
+//! (FfH's challenge and scenario counters are plain fields; its crime is gone.)
 //!
 //! Trivial CvGame accessors of this topic are fields (docs/porting/game.md, "Field access"):
 //! `incrementUnitCreatedCount` = `unit_created_count[u] += 1`, `incrementUnitClassCreatedCount`,

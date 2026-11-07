@@ -123,7 +123,6 @@ pub struct EventInfo {
     pub ai_value: i32,
 
     // FfH additions
-    pub crime: i32,
     pub global_counter: i32,
     pub prereq_alignment: Option<AlignmentType>,
     pub prereq_bonus: Option<BonusType>,
@@ -274,7 +273,6 @@ pub fn read_event(rd: &Rd) -> EventInfo {
         space_production_modifier: rd.int("space_production_mod"),
         ai_value: rd.int("ai_value"),
 
-        crime: rd.int("crime"),
         global_counter: rd.int("global_counter"),
         prereq_alignment: rd.rf("prereq_alignment"),
         prereq_bonus: rd.rf("prereq_bonus"),
@@ -419,7 +417,6 @@ pub struct EventTriggerInfo {
     pub python_can_do_unit: String,
 
     // FfH additions
-    pub prereq_crime: i32,
     pub prereq_global_counter: i32,
     pub prereq_alignment: Option<AlignmentType>,
     pub prereq_civilization_pleased: Option<CivilizationType>,
@@ -514,7 +511,6 @@ pub fn read_event_trigger(rd: &Rd) -> EventTriggerInfo {
         python_can_do_city: rd.string("python_can_do_city"),
         python_can_do_unit: rd.string("python_can_do_unit"),
 
-        prereq_crime: rd.int("prereq_crime"),
         prereq_global_counter: rd.int("prereq_global_counter"),
         prereq_alignment: rd.rf("prereq_alignment"),
         prereq_civilization_pleased: rd.rf("prereq_civilization_pleased"),

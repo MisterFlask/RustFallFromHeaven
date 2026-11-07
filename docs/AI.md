@@ -1290,8 +1290,7 @@ values), stopping a winning front-runner and sparing a losing friend; an embargo
 enemy or a disliked civ; a mana ban hurts those who hold the mana and helps against the
 enemies who do; a forced civic against our own civic values; trade routes (More Naval AI: a
 large empire gains little), free trade, free units we can pay for, open borders and pacts by who
-they bind us to; Fund Dissidents against the Overcouncil members we fight or dislike; crime
-counts against. Positive: yes; negative: no; nothing at stake: abstain. A resolution worth -300
+they bind us to; Fund Dissidents against the Overcouncil members we fight or dislike. Positive: yes; negative: no; nothing at stake: abstain. A resolution worth -300
 or less (war on us, one of our cities given away) is defied (the rules' veto: unrest, and the
 loyal membership lost). For head councilor we vote for ourselves when we stand, else our master,
 else the candidate we like best that is neither our victory rival nor the clear leader. The head

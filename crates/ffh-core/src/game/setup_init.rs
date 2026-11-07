@@ -285,8 +285,7 @@ impl Game {
 
         self.script_data = String::new();
 
-        // FfH: Added by Kael 08/07/2007
-        self.crime = 10;
+        // FfH: Added by Kael 08/07/2007 (without C++ `m_iCrime = 10`: no crime in this game)
         self.cut_losers_counter = 100;
         self.flexible_difficulty_counter = 0;
         self.global_counter = 0;

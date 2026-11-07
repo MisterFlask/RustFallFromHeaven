@@ -672,7 +672,6 @@
     "obsolete_techs": "",
     "pick_city": true,
     "show_plot": true,
-    "prereq_crime": 15
   },
   {
     "type": "EVENTTRIGGER_BARDS_TALE",
@@ -1190,7 +1189,6 @@
     "obsolete_techs": "",
     "pick_city": true,
     "show_plot": true,
-    "prereq_crime": 30
   },
   {
     "type": "EVENTTRIGGER_CRAB_CAKES",
@@ -1246,7 +1244,6 @@
     "recurring": true,
     "pick_city": true,
     "show_plot": true,
-    "prereq_crime": 2
   },
   {
     "type": "EVENTTRIGGER_CRIME_INCREASE",
@@ -1389,7 +1386,6 @@
     "recurring": true,
     "pick_city": true,
     "show_plot": true,
-    "prereq_crime": 20
   },
   {
     "type": "EVENTTRIGGER_DREAMS_OF_DEATH",
@@ -1691,7 +1687,6 @@
     "recurring": true,
     "pick_city": true,
     "show_plot": true,
-    "prereq_crime": 10
   },
   {
     "type": "EVENTTRIGGER_FARM_BANDITS_AGAIN",
@@ -1726,7 +1721,6 @@
     "recurring": true,
     "pick_city": true,
     "show_plot": true,
-    "prereq_crime": 15
   },
   {
     "type": "EVENTTRIGGER_FARM_PLOWS",
@@ -2149,7 +2143,6 @@
     "recurring": true,
     "pick_city": true,
     "show_plot": true,
-    "prereq_crime": 25
   },
   {
     "type": "EVENTTRIGGER_GRAVEYARD",
@@ -3376,7 +3369,6 @@
     "recurring": true,
     "pick_city": true,
     "show_plot": true,
-    "prereq_crime": 25
   },
   {
     "type": "EVENTTRIGGER_MARY",
@@ -4692,7 +4684,6 @@
     "recurring": true,
     "pick_city": true,
     "show_plot": true,
-    "prereq_crime": 35
   },
   {
     "type": "EVENTTRIGGER_RUNNING_BULLS",
@@ -5557,7 +5548,6 @@
     "obsolete_techs": "",
     "pick_city": true,
     "show_plot": true,
-    "prereq_crime": 25
   },
   {
     "type": "EVENTTRIGGER_SMUGGLERS",
@@ -5586,7 +5576,6 @@
     "pick_city": true,
     "show_plot": true,
     "python_can_do_city": "canTriggerSmugglers",
-    "prereq_crime": 30
   },
   {
     "type": "EVENTTRIGGER_SOBS",
@@ -5976,7 +5965,6 @@
     "pick_city": true,
     "show_plot": true,
     "python_can_do_city": "canTriggerTraitor",
-    "prereq_crime": 30
   },
   {
     "type": "EVENTTRIGGER_TRANSMUTATION_TO_COPPER",
@@ -6534,7 +6522,6 @@
     "obsolete_techs": "",
     "pick_city": true,
     "show_plot": true,
-    "prereq_crime": 30
   },
   {
     "type": "EVENTTRIGGER_PSYCHOPATH_LOST",

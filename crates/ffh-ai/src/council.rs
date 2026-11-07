@@ -341,7 +341,7 @@ pub(crate) fn value(g: &Game, s: &Seen, data: &VoteSelectionSubData, vs: VoteSou
     if info.smuggling_ring {
         v += 5; // the Smugglers' Port
     }
-    v - info.crime
+    v
 }
 
 /// A resolution worth this little to us (a war on us, our city given away) is defied.

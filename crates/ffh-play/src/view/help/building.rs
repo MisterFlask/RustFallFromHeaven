@@ -217,7 +217,6 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         requires_caster,
         see_invisible,
         unhappy_production,
-        crime,
         free_promotion_pick,
         free_bonus2,
         free_bonus3,
@@ -401,9 +400,6 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     }
 
     // FfH.
-    if *crime != 0 {
-        add(&mut h, "TXT_KEY_BUILDING_CRIME", &[Arg::N(*crime)]);
-    }
     if *free_promotion_pick > 0 {
         add(&mut h, "TXT_KEY_BUILDING_FREE_PROMOTION_PICK", &[Arg::N(*free_promotion_pick)]);
     }
@@ -1056,12 +1052,11 @@ mod tests {
         );
         assert!(great_library.contains("[ICON_RESEARCH] from Sage in All Cities"), "{great_library}");
         // A religious temple: the Order in the city, Orders from Heaven, two priests, +1 happiness
-        // with Incense, +10% military production, -5 crime.
+        // with Incense, +10% military production.
         says(
             "BUILDING_TEMPLE_OF_THE_ORDER",
             &[
                 "+10% Military Unit Production",
-                "-5 to the crime rate",
                 "Can turn 2 Citizens into Priest",
                 "+1[ICON_HAPPY] from Incense",
                 "Requires the Order religion in the city",

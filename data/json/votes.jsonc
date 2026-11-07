@@ -172,7 +172,6 @@
     "diplo_votes": {"DIPLOVOTE_UNDERCOUNCIL": true},
     "gambling_ring": true,
     "cost": 25,
-    "crime": 5
   },
   {
     "type": "VOTE_SLAVE_TRADE",
@@ -183,7 +182,6 @@
     "diplo_votes": {"DIPLOVOTE_UNDERCOUNCIL": true},
     "slave_trade": true,
     "cost": 25,
-    "crime": 5
   },
   {
     "type": "VOTE_SMUGGLING_RING",
@@ -195,7 +193,6 @@
     "diplo_votes": {"DIPLOVOTE_UNDERCOUNCIL": true},
     "smuggling_ring": true,
     "cost": 25,
-    "crime": 5
   },
   {
     "type": "VOTE_OPEN_BORDERS",

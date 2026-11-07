@@ -240,9 +240,7 @@ impl Game {
                 self.city_change_free_bonus(c, bonus, num_free_bonuses * change);
             }
 
-            // FfH: Added by Kael 08/04/2007
-            // changeCrime
-            self.cities[c].crime += info.crime * change;
+            // FfH: Added by Kael 08/04/2007 (without changeCrime: no crime in this game)
             // changeUnhappyProduction(iChange * isUnhappyProduction())
             self.cities[c].unhappy_production += change * i32::from(info.unhappy_production);
             if let Some(bonus) = info.free_bonus2 {
@@ -1673,7 +1671,7 @@ mod tests {
         let mut g = Game::new(d, GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 3));
         let (num_players, num_teams) = (g.num_players(), g.num_teams());
         let id = g.cities.next_id();
-        let c = g.cities.insert(City::new(d, num_players, num_teams, id, PlayerId(0), 1, 1, 0));
+        let c = g.cities.insert(City::new(d, num_players, num_teams, id, PlayerId(0), 1, 1));
         (g, c)
     }
 

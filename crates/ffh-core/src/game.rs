@@ -167,9 +167,8 @@ pub struct Game {
     pub game_state: GameStateType,
     /// C++ `m_szScriptData` (Python script data).
     pub script_data: String,
-    // FfH: Added by Kael 08/07/2007
-    /// C++ `m_iCrime` (FfH vote effect; starts at 10).
-    pub crime: i32,
+    // FfH: Added by Kael 08/07/2007 (C++ `m_iCrime` is gone: no crime in this game,
+    // docs/PORTING.md, "Changes from FFH2").
     /// C++ `m_iCutLosersCounter` (GAMEOPTION_CHALLENGE_CUT_LOSERS; starts at 100).
     pub cut_losers_counter: i32,
     /// C++ `m_iFlexibleDifficultyCounter` (GAMEOPTION_FLEXIBLE_DIFFICULTY).
@@ -393,7 +392,6 @@ impl Game {
             victory: None,
             game_state: GameStateType::GAMESTATE_ON,
             script_data: String::new(),
-            crime: 0,
             cut_losers_counter: 0,
             flexible_difficulty_counter: 0,
             global_counter: 0,
@@ -683,7 +681,6 @@ mod tests {
         assert!(g.team_ids().all(|t| g.teams[t].id == t && g.teams[t].at_war.len() == n));
         assert_eq!(g.handicap, d.t::<HandicapType>("HANDICAP_NOBLE"));
         assert_eq!(g.game_state, GameStateType::GAMESTATE_ON);
-        assert_eq!(g.crime, 10);
         assert_eq!(g.cut_losers_counter, 100);
         assert_eq!(g.global_counter_limit, d.defines.global_counter_limit_default);
         assert_eq!(g.unit_created_count.len(), d.units.len());
