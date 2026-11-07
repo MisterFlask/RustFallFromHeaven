@@ -2434,7 +2434,20 @@ end. Band: I Ancient, II Classical, III Medieval.
   - Penance: too non-interactive for a world effect;
   - Martyrs' Calendar: vague, many fiddly counters for a small effect, the Saint undefined.
 
-Engineer, Merchant, Bard and the Armageddon deck: not yet reviewed.
+**Second round** (2026-11-07):
+- **Agreed with section 10.1's predictions, except** Cornering the Market: out. Mildly harming
+  other civs' economies, or stopping a unit for a short time, is too subtle.
+- **Causeway:** keep, simplified. A special improvement on a coast plot, with its own defence,
+  that units move over. No terraforming.
+- **Siren Rock:** out, too fiddly. In general, a payoff of 10% of anything is too fiddly.
+- **Governors:** parked. No card uses governors as a mechanical effect until the governor
+  mechanic is reworked (it is unsatisfying as it stands).
+- **Unrest:** parked. No card pushes on Unrest while the mechanic is being iterated.
+- **Espionage:** out. A fiddly mechanic, likely to be removed later.
+
+Grammar of True Names, the Recursive Lemma, Judgment of Junil, the Brand of Aeron,
+Excommunication, Dagda's Balance, the Holy See, Holy Days, the Oath of the Blood-Price, and the
+Engineer, Merchant, Bard and Armageddon cards beyond section 10.1: not yet reviewed.
 
 ---
 
@@ -2473,6 +2486,19 @@ Engineer, Merchant, Bard and the Armageddon deck: not yet reviewed.
    civ's identity (Heartwood against the Ljosalfar's March of the Trees) is out.
 9. **Self-contained** (section 7): the payoff does not rest on how rivals respond.
 
+10. **Effects are qualitative or large.** A card says can or cannot, immune, doubled, a unit,
+    a plot, a city. Small percentages are fiddly: a payoff of 10% of anything is out. As a
+    rule of thumb, a modifier is +25% or more, or it is not the card's point.
+11. **The payoff is felt by the player who holds the card.** A mild, invisible harm to other
+    civs' economies is too subtle, even when it is mechanical (Cornering the Market).
+12. **Build only on stable ground.** Cards hook into the core: the map, units, battles,
+    cities, buildings, techs, mana, religion, civics. Not into mechanics still being iterated
+    (governors, Unrest) or likely to be removed (espionage). A card can be revisited when its
+    mechanic settles.
+13. **The simplest mechanism that delivers the effect.** An improvement units walk over beats
+    turning the sea into land (Causeway). A new unit, building, improvement or promotion beats
+    a new system.
+
 ### 10.1 What the principles predict for the unreviewed cards
 
 To check the principles against the owner's next verdicts:
@@ -2495,3 +2521,40 @@ To check the principles against the owner's next verdicts:
   - Satrapy and Confederation (civics);
   - War Drums, the Lullaby, the Illusory Host, the Chorus (battle rules);
   - Muster (a local tool).
+
+### 10.2 What the second round changes in the pool
+
+**Causeway, reworked.** A worker build on a Coast or Shallows plot next to land. Land units
+move onto and over it as over land, and units on it get +50% defence. Open point: whether ships
+still pass (a bridge) or not (a dam).
+
+**Out:** Cornering the Market; Siren Rock.
+
+**Parked with governors:** Satrapy, the Regency Council, the Clockwork Steward, Merchant
+Princes, Company Towns, Living Legend. Mirror Colony stays, as two cities of yours with no word
+about governors.
+
+**Parked with Unrest:**
+- Vigil, Jesters, Satire of Kings, Confederation, Excommunication, the Pretender's Song.
+- The Armageddon cards that run on Unrest or secession: the Hollow Crown, the Free Cities, the
+  Sundering.
+- Cards that keep their core with the Unrest part removed:
+  - Stoicism: war weariness causes no unhappiness;
+  - Carnival: longer golden ages;
+  - Corvée: draft a citizen as a Worker, at the cost of the population.
+
+**Out with espionage:** Spymasters, Informers; Embassies and the Ledger of Nations as
+information cards.
+
+**Fail the 10% rule; out or need a bigger effect:**
+- Wayside Shrines (liked; units passing heal 10%). It needs a bigger effect, e.g. units on its
+  plot heal as in a city.
+- Snares (15% damage).
+- Walls that Remember (+20% wall HP per siege).
+- Insurance (40% refund).
+- Bounty (gold and XP per kill).
+- The Ballad of the Traitor (5% a round).
+- The Chorus of the Fallen (+5% damage per death).
+- Holy Days (-20% damage).
+- The small parts of liked cards: the Lantern's Glare (-15 accuracy) goes, and its point stays
+  (a holy shooter that sees invisible units).
