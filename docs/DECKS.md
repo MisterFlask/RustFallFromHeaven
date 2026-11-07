@@ -3008,3 +3008,75 @@ level 5+
   the map, and their armies.
 - **Expert:** cast it when the barbarians hold many cities nobody has cleared; your vassal then
   sits on every rival's flank.
+
+**Verdicts on batch 1:** all liked, except the Charter of the Free Peoples (out: too close to the
+Clan of Embers' world spell For the Horde, which turns barbarians to the Clan's side).
+
+## 13. Review batch 2 (10 cards)
+
+**1. The Usurper's Crown** · Bard · III · needs Rage · world spell
+- **Requires:** a civ you have met with 8 or more cities.
+- **Effect:** the third of that civ's cities farthest from its capital (at least 2), with the
+  units inside them, secede as a new civ of the same civilization. It is permanently at war
+  with its parent and permanently at peace with you.
+- **Its leader:** the Usurper, a hero of the civilization's best melee line, with the Hero
+  promotion.
+- **Why it matters:** it takes a third of a large empire's cities at once, with their
+  garrisons and walls.
+- **Expert:** cast it on the leader just before your own war on it, so it fights on two fronts.
+
+**2. Oath of Fealty** · Merchant · II · needs Feudalism · world spell
+- **Requires:** you are at war with a civ whose power is a third of yours or less.
+- **Effect:** that civ becomes your permanent vassal at once: the war ends, its cities and
+  units become a vassal's.
+- **Expert:** end a won war without the last sieges; the cities you would have taken fight for
+  you instead.
+
+**3. Runeguard** · Engineer · II · needs Construction · national unit, 4
+- **Stats:** tier 3 frontline. HP 140, attack 55, defence 70.
+- **Effect:** immune to spell damage, charms and hexes in battle (`immune_to_magic`).
+- **Expert:** the front row against a caster army; useless against plain steel.
+
+**4. Witch-Hunter** · Prophet · II · needs Priesthood · national unit, 3
+- **Stats:** tier 3 recon (stabs). HP 90, attack 55.
+- **Effect:** double damage against adepts and disciples (`damage_vs` those unit combats). It
+  targets casters first (target preference), and is immune to hexes.
+- **Expert:** two of them in every army that faces mages or priests.
+
+**5. Ritual Circle** · Sage · II · needs Knowledge of the Ether · improvement, national (one
+per civ)
+- **Effect:** a unit summoned by a caster standing on the Circle is permanent instead of
+  temporary. The Circle holds at most 4 permanent summons at a time; when one dies, it frees
+  its place.
+- **Expert:** four permanent elementals or demons; best for a summoner and a mana-rich
+  empire.
+
+**6. Earthshaper's Decree** · Engineer · III · needs Machinery · world spell
+- **Effect:** every unimproved land plot in your borders that can take an improvement gets the
+  one that suits it best (farm, mine, lumber mill, pasture, ...), at once.
+- **Expert:** cast it after your borders have grown, not before; it is a decade of worker
+  turns in one.
+
+**7. Academy of War** · Bard · II · needs Military Strategy · national building
+- **Effect:** land units trained in this city start at level 3 (two promotions).
+- **Expert:** the army's factory; requisition your armies from this city.
+
+**8. Call the Aifon** · Merchant · II · needs Sailing · world spell (a new civ)
+- **Requires:** an unclaimed coast or island with room for two cities.
+- **Effect:** the Aifon, the sea-god's people of the Lanun's lore (`IMPROVEMENT_AIFON_ISLE`),
+  found two coastal cities there as your permanent vassal.
+- **Its hero:** the Deep Mother, a Kraken.
+- **Its mechanics:** its land units have Water Walking, so they cross the sea without ships.
+- **Why it matters:** an army no navy can stop, and a Kraken.
+- **Expert:** cast it on the far coast of the rival you will fight across the water. (Risk: it
+  sits close to the Lanun's sea identity.)
+
+**9. Spellbreaker** · Sage · II · needs Alteration · promotion for melee units of level 2+
+- **Effect:** each hit it lands removes the target's charms and spell-given promotions for the
+  battle. It deals double damage to summoned units.
+- **Expert:** the answer to buffed and summoned armies (Keelyn's Bond, the Sheaim's gates).
+
+**10. Fire Arrows** · Engineer · I · needs Archery · promotion for archers
+- **Effect:** the archer's shots strike Sentinels as a siege engine's stones do. Archers become
+  wall-breakers.
+- **Expert:** take early walled cities without siege engines.
