@@ -20,6 +20,9 @@ Settled in discussion so far:
   civilization (section 5).
 - The Balseraphs' first split-off civ is Balseraphs, led by Somehow Also Perpentach.
 - Vendetta (section 6.2) is liked: keep it.
+- **Self-contained payoffs** (section 7): a card's or crisis's effect on the player's decisions
+  must not rest chiefly on how other civs respond, since the AI may or may not respond
+  reasonably.
 
 Proposed and not yet decided:
 
@@ -474,6 +477,8 @@ Go wide; any of these can carry a card or a crisis.
 ---
 
 ## 3. The great-person deck (66 cards)
+
+Section 7 reworks or cuts the cards whose payoff rested on how rivals respond.
 
 Format: **Name** · band · needs (the ordinary tech the content requires) · vehicle. Tags:
 **[data]** = existing keys can express it; **[new: ...]** = a rule to write. "National, N" =
@@ -1913,3 +1918,146 @@ The counter stops moving up. The Apocalypse is scheduled 50 turns away, publicly
 cancelled only if the counter is brought below 50 before the date.
 *Expert:* the whole world gets one goal and a deadline; the good civs organise the Penance,
 and the Sheaim defend the date.
+
+---
+
+## 7. The self-contained rule, and every card checked against it
+
+### 7.1 The rule
+
+A card's or a crisis's main payoff must come from mechanics the player controls or can
+calculate: yields, combat, movement, the map, timing, Unrest, the counter.
+
+An effect whose value depends on how rivals choose to react may be a side effect, never the
+reason to take the card. This covers attitude, deterrence, deals a rival must accept, votes, a
+rival taking bait, and a rival being fooled.
+
+Risk from the board is fine. "The city might be attacked" is a fact the player prices into his
+own plan. It is not a bet on one particular response.
+
+The rule also makes the AI's job tractable. Playing a card becomes using mechanics it can
+calculate, not modelling what other AIs will do.
+
+### 7.2 What fails, and the fix
+
+- **Attitude as the payoff.** Replace it with Unrest, combat, yields or production.
+- **Deterrence** ("breaking it costs attitude"). Replace it with **enforcement**: the thing
+  cannot happen for N turns.
+- **Deal items that need consent.** Make them unilateral actions or rules. A deal's value
+  starts with an AI saying yes.
+- **Bait** (a public prize that lures rivals; prophesying what the neighbours want). Make it a
+  **wager on your own action**: you commit to doing something, with a reward and a forfeit.
+- **Deception aimed at what the AI perceives** (false colours, rumours, false strength).
+  Replace it with the mechanical form of surprise: ambush, sneak attack, invisibility. The
+  Council of Esus' `sneak_attack` is an existing lever.
+- **Votes.** Replace them with a seal held and used unilaterally.
+- **AI allies the card creates.** Keep the cities yours (governed), or give them enforced
+  protection.
+
+### 7.3 Verdicts
+
+**Pass** (the payoff is the player's own mechanics):
+- **Sage:** the Second Sky, Familiars, Homunculus Vats, the Index, the Calculus of Chance, the
+  Grammar of True Names, Waystones, Mana Grafting, the Orrery, the Plagiarist's Lens, the
+  Recursive Lemma, the Chronicle of Recall, Contingency, the Long Experiment, the Predictive
+  Engine, Temporal Anchor.
+- **Prophet:** Maponos's Cradle, Breath of Tali, the Lantern of Lugus, Agares's Well, Tidecall,
+  the Heartwood, the Ledger of Mammon, the Ossuary, the Pilgrim Road, the Brand of Aeron,
+  Dagda's Balance, the Martyrs' Calendar, the Relic Cult, the Oath of the Blood-Price.
+- **Engineer:** every card.
+- **Merchant:** the Black Market, the Ledger of Nations, Insurance, the Mercenary Hall, the
+  Caravanserai, Cornering the Market, the Paymaster, Merchant Princes.
+- **Bard:** the Saga, War Drums, Siren Rock, the Lullaby, the Opera, Anthem, Living Legend, the
+  Ballad, the Chorus, the Illusory Host, the Living Chronicle, Songs of Grievance, the Hall of
+  Heroes.
+- **Capabilities:** every civic but Tribute State and the Grey Council; the processes and the
+  hurry; Spymasters (without Forge Letters); movement, specialists, improvements.
+- **Armageddon:** every card not named below, including Vendetta's crisis form (the
+  Unforgiven), Omens, Witching Nights, the Reckoning, the Mark, the Hollow Years, the Dead
+  Remember, the Forgetting, Ash of Empires.
+
+**Reworked** (new text replaces the card's):
+- **Mirror Kingdom → Mirror Colony.** Two cities of yours appear on the largest unclaimed
+  region, governed, joined to your capital by a portal for land units.
+- **Holy See.** The See stays yours. Civs of its religion cannot attack it (enforced), and it
+  trains its religion's heroes and units at half cost.
+- **Charter Company → Company Towns.** The colony is yours and governed. Its governor trains
+  settlers and founds cities on that landmass on its own.
+- **Scales of Junil → Judgment of Junil.** Once every 40 turns, name a civ: neither of you can
+  declare war on or attack the other for 20 turns (enforced, no consent).
+- **Masks of Esus → False Colours.** The stack may attack a civ you are at peace with without a
+  declaration; war follows the battle. In that first battle the defenders get no defensive
+  strikes and no fortification.
+- **Masquerade.** The stack is invisible to rivals until it is next to their units. Its first
+  battle from hiding denies the defenders' defensive strikes.
+- **Hollow Mountain.** The hidden garrison also strikes first in the first battle at the city in
+  each war (it no longer relies on the enemy being fooled).
+- **Free City Charter.** The Free City cannot be attacked by anyone for 50 turns (enforced),
+  and pays you half its commerce.
+- **Satire of Kings.** The target's cities within 10 plots of yours gain +2 Unrest a turn for
+  20 turns.
+- **Bounty Office → Bounty.** Name a civ: for 30 turns your units earn 15 gold and +1 XP per
+  kill of its units.
+- **The Grey Council → Dagda's Seal** (Membership civic). Once every 40 turns, impose the Truce
+  of Dagda (no war declarations in the world for 10 turns) or Hold the Counter (20 turns), with
+  no vote.
+- **Embassies.** Open an embassy with any civ you have met, without its consent.
+- **Shared Vision → Scrying Pool** (Sage). See what one civ's units and cities see for 10
+  turns, once every 20.
+- **Passage of Arms → Forced March.** Once every 30 turns per civ, your armies may cross its
+  land for 5 turns without open borders or war, staying in supply.
+- **Letters of Credit.** Borrow from the Guild (the rules), not a civ: gold now, repaid with 25%
+  over 20 turns. A missed payment: -25% production in every city until it is paid.
+- **Blood Money.** The avenger cannot refuse: pay (priced by the city's size) and its Vengeance
+  against you ends.
+- **Book of Prophecies → Prophecy of Ruin.** Name a rival city.
+  - If *you* take it within 30 turns: your religion spreads to every city of the victim, and the
+    city keeps all its buildings.
+  - If you do not: your holy city loses its holy-city commerce for 30 turns.
+
+  It is a wager on your own plan.
+- **Holy Days.** Sacrilege becomes mechanical: units of civs at war with you during Holy Days
+  deal -20% damage to your units.
+- **Excommunication.** The attitude part goes; the Unrest and the silenced disciples stay.
+- **The Feast of Ceasefire.** For its 5 turns, announced 10 ahead, no civ can declare war on
+  you, and you cannot declare war either (enforced).
+- **The Signs.**
+  - Sign of Camulos: +25% attack for every unit in the world.
+  - Sign of Junil: no war declarations while it lasts.
+- **The Countdown.** Cancelled if the counter falls below 50, or when any one civ lowers it by
+  10 with its own Penance before the date.
+- **Epithets** (section 6.2). Each gives its holder a mechanical effect, not only attitude:
+  - the Razer: +50% gold from razing, and -1 happiness per 5 cities razed;
+  - the Oathbreaker: -10% damage against the civ whose treaty was broken, for 30 turns;
+  - the Merciful: released cities pay you 10% of their commerce;
+  - the Dragonslayer: +25% damage against large units;
+  - the Builder: +10% wonder production.
+
+**Cut** (no mechanical core once the response is taken out):
+- Debt Bonds: needs an AI to borrow and default.
+- Hostages: needs an AI to break a peace.
+- Royal Marriage: needs consent, and pays in attitude.
+- Favoured Partner: needs an AI to keep trading.
+- Rumour Mill: pays in an AI's misjudgment.
+- Tribute State: needs AIs to pay demands.
+- Spymasters' Forge Letters: pays in attitude.
+- The Black Book's "publish": the record stays visible to you.
+
+**Kept, flagged as depending on an AI:**
+- **The Free Company.** Its war is waged by the crusade Host's AI. That AI is ours, purpose-built
+  and measurable, but the card is only as good as it is.
+- **The Pretender's Song.** The friendly new civ is a side effect; the Unrest is the payoff.
+- **The Unbinding of Oaths.** Its effect on you is mechanical (deals end, vassals may go), but
+  much of its weight is rivals' new freedom to attack.
+- **The Pale Election.** The Herald's bonus is mechanical; the crusade call rests on AI
+  pledges.
+- **Toll Roads.** The war effect is the payoff; the gold from foreign movement is a side
+  effect.
+
+**Expert lines to rewrite** (the mechanics pass, but the line leaned on rivals):
+- the Long Experiment and the Time-Locked Vault: "run it where you can hold the city for the
+  term";
+- the Martyrs' Calendar: drop "rivals leave your priests alone";
+- Harvest of Souls: "your own wars raise the counter: fight short";
+- the Unforgiven: "if you are owed, strike in the window; if you owe, garrison the cities you
+  took".
