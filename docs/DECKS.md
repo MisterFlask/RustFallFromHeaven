@@ -2444,6 +2444,10 @@ end. Band: I Ancient, II Classical, III Medieval.
   mechanic is reworked (it is unsatisfying as it stands).
 - **Unrest:** parked. No card pushes on Unrest while the mechanic is being iterated.
 - **Espionage:** out. A fiddly mechanic, likely to be removed later.
+- **Supply:** not stable, not being built now. Cards that use it are out (the Caravanserai,
+  Scorched Earth, Forced March, the supply part of Automatons).
+- **Engagement combat** (the Ogre Battle formation battles) is stable ground: the specific
+  numbers may change, the concept will not.
 
 Grammar of True Names, the Recursive Lemma, Judgment of Junil, the Brand of Aeron,
 Excommunication, Dagda's Balance, the Holy See, Holy Days, the Oath of the Blood-Price, and the
@@ -2558,3 +2562,113 @@ information cards.
 - Holy Days (-20% damage).
 - The small parts of liked cards: the Lantern's Glare (-15 accuracy) goes, and its point stays
   (a holy shooter that sees invisible units).
+
+### 10.3 Predicted verdicts on everything not yet reviewed
+
+Confidence: H high, M medium, L low. Numbers are the principles of section 10.
+
+**Great-person cards**
+
+| Card | Prediction | Why |
+|---|---|---|
+| Grammar of True Names | out (M) | ignoring evasion is about +10% to hit: subtle (10) |
+| The Recursive Lemma | in (H) | twincast doubles a sphere's battle spells: qualitative, combat (10, 12) |
+| Judgment of Junil | in (M) | a 20-turn enforced non-aggression with one civ: blunt, targeted; risk: read as a rule by decree (4) |
+| Brand of Aeron | in, simplified (M) | +50% attack, pursuit, no withdrawal is the point; the 10%-a-turn decay goes ("the brand ends after 5 turns without a fight") (10) |
+| Dagda's Balance | out (H) | steers the world machinery, with a cooldown (3, 4) |
+| Holy See | in (L) | half-cost religious units is large; "cannot be attacked by co-religionists" may read as decree (4) |
+| Oath of the Blood-Price | in (H) | Vendetta on demand, and Vendetta is liked |
+| Holy Days | out (H) | recurring festivals, a 20% modifier (3, 10) |
+| Watchtower | out (M) | sight and a defensive strike: low impact (2) |
+| Tunnel Heads | in, without Collapse (M) | a passive movement network is big; Collapse is upkeep (3) |
+| Tierwright's Forge | out (M) | a recurring small gamble (3, 10) |
+| Hollow Mountain | out (M) | situational, small (2) |
+| Burning Mirror | in, simplified (M) | siege doubled against walls in the open is the point; the 10% building burn goes (10) |
+| Free City Charter | out (M) | the payoff is commerce over time, and the protection is by decree (2, 4) |
+| Floodgates | in (H) | occasional, high-stakes, physical (3, 5) |
+| Golem Labor | in (L) | qualitative, but mostly the Luchuirp's golems benefit (8) |
+| Corvée, without Unrest | in (L) | drafting a citizen as a Worker is qualitative; "25% faster improvements" is at the threshold |
+| Automatons, without supply | in (M) | immune to fear, charms and hexes: qualitative, combat |
+| Black Market | in (M) | buying a missing resource unlocks units: qualitative |
+| Blood Money | in (L) | the counter to Vendetta; it lives or dies with Vendetta |
+| Toll Roads | out (H) | the war effect is small and the gold is the AI's movement (7, 11) |
+| The Free Company | out (M) | the war's value is the Host AI's play (9) |
+| Saga of the Named | in (L) | a counter, but the payoff is a hero; risk: the Skald is a unit to manage (3) |
+| Plunder | in (M) | triple pillage gold and a treasury share on capture: large, rewards acting (7) |
+| Masquerade | in (H) | bounded hidden effect, like False Colours (6) |
+| The Unfinished Opera | out (H) | +5% culture an act (10) |
+| Carnival, without Unrest | out (M) | longer golden ages: situational (2) |
+| Patronage | in (M) | a new verb: culture spent as hammers (13) |
+| Hall of Heroes | out (H) | a name and one promotion (2) |
+| The Chorus of the Fallen | out unless qualitative (M) | +5% per death (10); a qualitative version: "when half your side has fallen, the rest are immune to fear and deal double damage" |
+
+**Armageddon cards**
+
+| Card | Prediction | Why |
+|---|---|---|
+| Blight, the Four Horsemen, Hellfire, Wrath, Apocalypse | in (H) | FFH2's own; physical, qualitative |
+| Pestilence | out (M) | a recurring random hit on one civ; 25% damage (3) |
+| Omens | in, without the governor omen (M) | personal forecasts, the roguelike principle itself; governors parked (12) |
+| The Red Moon | in, without the bleed (M) | triple spawns is the point; 5% a turn outside borders goes (10) |
+| Children of the Ash | in (H) | simple, physical, the past returning |
+| Whispers in the Wells | out (M) | small health and 10% poison (10) |
+| Census of the Damned | out (M) | a culpability ledger and +10% attack (10) |
+| The Mirror Hour | in (H) | dramatic, qualitative: your best units against yourself |
+| The Signs | out (M) | a world rule that changes every 10 turns: tracking (3) |
+| Witching Nights | out (M) | specific turns to track (3) |
+| The Drowning Bells | in, without stage 1 (H) | the sea taking the coast is physical and large; -1 coastal happiness goes (10) |
+| The Long Winter | in (H) | physical, large, a chain with a clear answer |
+| Rise of the Barbarian Kings | in (M) | a civ birth with no Unrest |
+| The Kurgan | in (L) | rests on tribute rules; the horde's behaviour is scripted, not diplomacy |
+| The Green Revenge | out (M) | a forest-cut counter for a medium effect (3) |
+| Plague Ships | out (M) | a spreading infection to track (3) |
+| The Ashen Sky | in, simplified (M) | shots and stones halved is large; -1 food and sight 1 are the fiddly part |
+| Demonic Embassies | in (M) | a big, clear choice: +25% production for doom |
+| The Last Market | in (L) | a 10-turn window where gold buys anything: large; "cities in disorder" may not survive |
+| The Unforgiven | in (H) | Vendetta at world scale |
+| Rift Storms | out (M) | recurring, with ±1 and +1-turn payoffs (3, 10) |
+| Starfall | in (H) | physical, reshuffles mana and Mithril |
+| The Fissure | in (H) | the map changes shape |
+| Bloodmoon Tithe | out (H) | a recurring tax; routine upkeep (3, 7) |
+| The Reckoning of Debts | out (L) | rests on history counters (broken treaties) for a moderate effect |
+| Mark of the Beast, Harvest of Souls | out (H) | ±1 counter per kill or per 20 deaths (3, 10) |
+| The Silence of the Gods | in (H) | qualitative: no spread, divine spells fail, no religious culture |
+| The Hollow Years | in (M) | simple and qualitative: no great people, then double |
+| The Dead Remember | in (M) | qualitative; needs a death count per plot |
+| The Long Nightmare | in (L) | big and announced; random trait swaps may feel arbitrary |
+| Dragon Wake | in (H) | FFH's dragons; physical; the hoard draw ties the decks |
+| The Shepherd's Mercy | rework (M) | angels are good; "who lowered the counter" needs culpability; reward a simpler test |
+| The Returning | in (M) | a civ birth from surviving culture, no Unrest |
+| Schism | in (M) | a secession by religion, no Unrest |
+| The Forgetting | out (H) | acts on the game's machinery (4) |
+| Ghost Garrisons | in (H) | qualitative, history made physical |
+| Bone Roads | in (H) | physical |
+| Ash of Empires | in (H) | simple, physical, a debt for razing |
+| The Countdown | rework (M) | a fixed doom date is dramatic; cancelling through Penance is disliked; cancel through the map (a Doom Herald to kill) |
+| Exodus | in (L) | disorder is core; a new civ from refugees |
+| The Black Tide | in, simplified (M) | "no ship survives a turn at sea outside a port" beats 20% a turn (10) |
+| Agares Unchained | in (H) | a boss invasion |
+| The Judgment | out (M) | population by share of culpability: arithmetic (10) |
+| The Unmaking | in (L) | huge and physical; risk: too weird (5) |
+| The Unbinding of Oaths | in (L) | a blunt diplomatic shock; risk: it leans on rivals (9) |
+| The Pale Election | out (M) | the crusade call rests on AI pledges (9) |
+
+**Systems of section 6 and after**
+
+- **In:**
+  - Scars of war (Haunted and Hallowed plots, M);
+  - Salted earth (H);
+  - curses with a fuse, once each is specified (M);
+  - earned unlocks, once each is specified (M).
+- **Out:**
+  - epithets (attitude and small modifiers, M);
+  - contracts that come due (deals, interest, H);
+  - claims (war-weariness numbers, M);
+  - old growth (slow, low impact, L).
+- **Parked:**
+  - governor ambitions, and succession (section 8: the heirs are governors);
+  - Unrest by civilization (section 5);
+  - the rebels' identities (section 5.3).
+
+  The Ljosalfar-Svartalfar split and Somehow Also Perpentach could come back through Schism or
+  the Returning, which do not need Unrest.
