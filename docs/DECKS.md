@@ -3190,3 +3190,77 @@ attacking it costly instead). Engineer · II · needs Construction · world spel
 
 Judgment of Junil stays: a one-time enforced peace is fine (the owner). What is out is lasting
 enforcement: permanent war or peace, and a city made unattackable for decades.
+
+## 15. Concepts from mechanics no card uses yet
+
+What the game already has and the decks have not touched:
+- 23 equipment items (Godslayer, Orthus's Axe, Crown of Akharien, Rod of Winds, potions, ...);
+- 6 lair types that spawn units (Barrow: skeletons; Bear and Lion Dens; Goblin Fort; Ruins:
+  lizardmen; Hellfire);
+- 54 goody and lair outcomes, among them prisoners and treasure vaults;
+- 20 mutation promotions (Strong, Stoneskin, Regeneration, Blitz, Heavy, ...);
+- capture;
+- Fear;
+- disease;
+- ships and the naval duel;
+- unique features (the research-doubling rule);
+- world units, which are once per game;
+- the `no_bad_goodies` and `explode_in_combat` unit keys.
+
+**Items**
+- **Rite of Forging** (Engineer · II · needs Smelting · ritual, repeatable). Forge one item from
+  a short list of new ones; items follow the existing equipment rules (carried, dropped,
+  captured):
+  - *Banner of the Last Host*: the bearer's whole side is immune to fear;
+  - *Seven-League Boots*: +2 moves;
+  - *Ward Amulet*: immune to spell damage.
+
+  *Expert:* the banner goes with the main army; the amulet on the hero the enemy mages
+  target.
+
+**Lairs and goodies**
+- **Covenant of the Wild** (Prophet · I · needs Animal Husbandry · building, national). Lairs
+  inside your borders (Bear and Lion Dens, Barrows, Goblin Forts) spawn their units for you
+  instead of for the barbarians.
+  *Expert:* do not clear the dens you will grow your borders over; they become free armies.
+- **Ruin Delvers** (Merchant · I · needs Exploration · promotion for recon units). The unit can
+  explore City Ruins as it would a lair, for the lair outcomes (gold, techs, items, prisoners),
+  never the bad ones (`no_bad_goodies`).
+  *Expert:* the razed cities of old wars become treasure.
+
+**Mutation**
+- **Mutagen Font** (Sage · II · needs Alteration · building). Each unit trained here gains one
+  mutation, drawn from the 20 mutation promotions.
+  *Expert:* a gamble on every unit, worth it for armies of cheap ones. (Risk: close to the
+  Balseraphs' Freaks.)
+
+**Capture, Fear, disease**
+- **Beast-Catchers' Nets** (Bard · I · needs Hunting · promotion for recon units). Animals and
+  beasts this unit defeats join you (capture).
+  *Expert:* an early army of bears and wolves from the wild.
+- **Dread Banner** (Bard · III · needs Rage · item from a ritual). The bearer has Fear: before
+  each battle, enemy units of lower level than the bearer may sit it out.
+  *Expert:* the hero's banner; it empties the enemy's front row before the battle starts.
+- **Plague Carrier** [evil] (Prophet · II · needs Corruption of Spirit · national unit, 3).
+  Its hits give the Diseased promotion (`promotion_combat_apply`).
+  *Expert:* an army whose wounded stay wounded.
+
+**Ships**
+- **Fireship** (Engineer · I · needs Sailing · ship). Cheap. When it attacks, it is destroyed
+  (`explode_in_combat`); if it wins, the defender sinks.
+  *Expert:* the poor navy's answer to the rich one.
+- **Leviathan Harpoons** (Merchant · II · needs Optics · promotion for ships). Double damage
+  against sea monsters and large ships; a Kraken or Leviathan it kills is captured.
+  *Expert:* tame the monsters that close the sea lanes.
+
+**Unique features**
+- **The Wonder Unearthed** (Sage · III · needs Arcane Lore · world spell). A new unique feature
+  appears on a plot in your borders, from a short list of new ones. Each doubles research on a
+  tech, by the existing unique-feature rule.
+  *Expert:* pick the feature whose tech is on your beeline.
+
+**World units**
+- **Hall of Rebirth** (Prophet · III · needs Divine Essence · national building). A hero of
+  yours that dies can be trained again here at full cost, once per hero. World units are
+  otherwise once per game.
+  *Expert:* the hero-centred army stops being one battle from collapse.
