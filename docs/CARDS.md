@@ -106,6 +106,26 @@ comment naming the card.
 **Records:** each card that changes the rules is listed in docs/PORTING.md ("Changes from
 FFH2", the decks entry). Its row in section 5 below gets its status.
 
+**New data keys** the cards read (each has its reader in `ffh-data` and its line in ffh-play's
+help):
+
+| Table | Key | Card | What it does |
+|---|---|---|---|
+| techs | `peak_movement` | Mountaineering | the team's land units enter peaks (3 moves); +50% defence and sight 3 there |
+| techs | `strait_crossing` | Ferries | the team's land units enter a one-plot strait (water with land on two opposite sides) as land |
+| techs | `forest_paths` (features) | Forest Paths | in the team's borders its units cross these features as open ground; units at war with it that start their turn in them there have one move fewer (never below one) |
+| improvements | `land_bridge` | Causeway | land units move onto and over the water plot as over land; ships cannot enter it; built next to land |
+| improvements | `canal` | Canal Locks | ships enter the land plot unless it is in the land of a civ at war with them; built next to water or another canal |
+| improvements | `city_heal_tech` (tech) | Siege Lines, Wayside Shrines | units of a team that knows the tech heal on the plot as in a city of their own |
+| improvements | `enemy_city_adjacent` | Siege Lines | built only next to a city of a civ the builder is at war with, then also in that civ's land |
+| improvements | `requires_route` | Wayside Shrines | built only on a plot with a route |
+| builds | `built_by` (unit classes) | Siege Lines, Causeway, Canal Locks, Wayside Shrines | the classes whose units can make the build (added to their `builds` at load) |
+| buildings | `border_stops_enemies` | Wall of the Kings | land units at war with the owner, and barbarians, that enter its borders end their move there |
+| buildings | `blocks_enemy_ships` | Harbor Chain | ships at war with the city's owner cannot enter the water plots next to the city |
+| buildings | `conquest_keeps_all` | Hall of Judgment | the owner's conquests keep every building that can be captured, and lose no population |
+| buildings | `naval_capture_percent` | Prize Courts | the owner's ships capture the ships they defeat with this chance |
+| promotions | `false_colours` | False Colours | the unit may attack units of a civ at peace without a declaration; the war is declared at the battle, whose defenders get no defensive strikes and no fortification |
+
 ## 3. Card world spells and remote targets
 
 - **A card's world spell** is a spell with `"once": true` and `"tech_prereq"` its card. Any unit of
@@ -155,3 +175,17 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | Card | Suit | Status |
 |---|---|---|
 | (the deck itself: deal, discover, once spells, targets, Armageddon deck) | | built |
+| E07 Wall of the Kings | Engineer | built |
+| E10 Harbor Chain | Engineer | built |
+| E12 Siege Lines | Engineer | built |
+| E13 Powder Charge | Engineer | built |
+| M02 Prize Courts | Merchant | built |
+| P03 Hall of Judgment (Courts of Junil renamed) | Prophet | built |
+| Causeway | Engineer | built (a dam: ships cannot enter it; built by Work Boats) |
+| Canal Locks | Engineer | built |
+| Mountaineering | Engineer | built |
+| Ferries | Engineer | built |
+| Wheeled City | Engineer | built (not in the capital or a holy city) |
+| Forest Paths | Prophet | built |
+| Wayside Shrines | Prophet | built (the +1 culture left out) |
+| False Colours | Prophet | built (land battles only) |

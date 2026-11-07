@@ -548,6 +548,11 @@ impl Game {
     ) -> Result<Option<(bool, bool)>, &'static str> {
         let owner = self.groups[g].owner;
         let Some(from) = self.group_plot(g) else { return Ok(Some((false, false))) };
+        // Card: False Colours (docs/CARDS.md): an attack under false colours on units of a civ at
+        // peace declares the war at the battle, and takes the defenders by surprise.
+        let surprise = self.group_false_colours_team(g, dest).is_some()
+            && !(human && formation.is_none() && !self.groups[g].last_plot_visible)
+            && self.group_false_colours_strike(g, dest);
         let members = units_snapshot(self, g);
         let missiles = !members.is_empty() && members.iter().all(|&u| self.unit_is_suicide(u));
         let test: Vec<UnitId> = match (&formation, missiles) {
@@ -580,7 +585,7 @@ impl Game {
             }
             return Ok(Some((attacked, false)));
         }
-        let order = crate::engagement::engage::EngageOrder { p: owner, from, to: dest, launcher: Some(g), formation, forced: None, log: None };
+        let order = crate::engagement::engage::EngageOrder { p: owner, from, to: dest, launcher: Some(g), formation, forced: None, log: None, surprise };
         self.engage(order)?;
         Ok(Some((true, false)))
     }

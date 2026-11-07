@@ -456,15 +456,24 @@ impl Game {
             return true;
         }
 
+        // Card: Canal Locks (docs/CARDS.md): a ship may stay in a canal, as in a friendly city.
+        if self.unit_get_domain_type(unit) == DomainType::DOMAIN_SEA && self.unit_can_use_canal(unit, p) {
+            return true;
+        }
+
         self.plot_is_city(p, true, Some(self.unit_get_team(unit)))
     }
 
     /// C++ `CvPlot::isValidDomainForAction`.
     pub fn plot_is_valid_domain_for_action(&self, p: PlotIdx, unit: UnitId) -> bool {
         match self.unit_get_domain_type(unit) {
-            DomainType::DOMAIN_SEA => self.plot_is_water(p) || self.unit_can_move_all_terrain(unit),
+            // Card: Causeway (docs/CARDS.md): no ship on a causeway.
+            DomainType::DOMAIN_SEA => (self.plot_is_water(p) && !self.plot_is_land_bridge(p)) || self.unit_can_move_all_terrain(unit),
             DomainType::DOMAIN_AIR => false,
-            DomainType::DOMAIN_LAND | DomainType::DOMAIN_IMMOBILE => !self.plot_is_water(p) || self.unit_can_move_all_terrain(unit),
+            // Card: Causeway, Ferries (docs/CARDS.md): water walked on as land.
+            DomainType::DOMAIN_LAND | DomainType::DOMAIN_IMMOBILE => {
+                !self.plot_is_water(p) || self.unit_can_move_all_terrain(unit) || self.unit_walks_on_water(unit, p)
+            }
             // (C++ FAssert(false))
             _ => false,
         }
@@ -486,6 +495,12 @@ impl Game {
     pub fn plot_movement_cost(&self, p: PlotIdx, unit: UnitId, from_plot: PlotIdx) -> i32 {
         let d = self.d;
         let move_denominator = d.defines.move_denominator;
+
+        // Card: Wall of the Kings (docs/CARDS.md): an enemy land unit entering the holder's
+        // borders ends its move there.
+        if self.unit_stopped_at_border(unit, from_plot, p) {
+            return self.unit_max_moves(unit).max(move_denominator);
+        }
 
         if self.unit_flat_movement_cost(unit) || self.unit_get_domain_type(unit) == DomainType::DOMAIN_AIR {
             return move_denominator;
@@ -517,11 +532,21 @@ impl Game {
         } else {
             regular_cost = match feature {
                 None => d.terrains[terrain].movement_cost,
+                // Card: Forest Paths (docs/CARDS.md): in its holder's borders, its units cross
+                // forest and jungle as open ground.
+                Some(f) if self.plot_get_team(p) == Some(self.unit_get_team(unit)) && self.team_forest_path(self.unit_get_team(unit), f) => {
+                    d.terrains[terrain].movement_cost
+                }
                 Some(f) => d.features[f].movement_cost,
             };
 
             if hills {
                 regular_cost += d.defines.hills_extra_movement;
+            }
+
+            // Card: Mountaineering (docs/CARDS.md): a peak costs its holder's land units 3 moves.
+            if self.plot_is_peak(p) && self.unit_can_climb(unit, p) {
+                regular_cost = crate::ffh::cards::map_rules::PEAK_MOVES;
             }
 
             if regular_cost > 0 {

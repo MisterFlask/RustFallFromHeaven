@@ -268,6 +268,10 @@ pub struct BuildingInfo {
     pub sentinels: i32,
     /// C++ `getAllCityDefenseModifier()`, XML `<iAllCityDefense>`.
     pub all_city_defense_modifier: i32,
+    /// This game's (docs/CARDS.md, Prize Courts): the owner's ships capture the enemy ships they
+    /// defeat with this chance in percent (the Boarding promotion's capture; the most any of its
+    /// buildings gives).
+    pub naval_capture_percent: i32,
     /// C++ `getEspionageDefenseModifier()`, XML `<iEspionageDefense>`.
     pub espionage_defense_modifier: i32,
 
@@ -280,6 +284,15 @@ pub struct BuildingInfo {
     pub area_clean_power: bool,
     /// C++ `isAreaBorderObstacle()`, XML `<bBorderObstacle>`.
     pub area_border_obstacle: bool,
+    /// This game's (docs/CARDS.md, Wall of the Kings): land units at war with the owner (and
+    /// barbarians) that enter the owner's borders end their move there.
+    pub border_stops_enemies: bool,
+    /// This game's (docs/CARDS.md, Harbor Chain): ships at war with the owner (and barbarian
+    /// ships) cannot enter the water plots next to the city.
+    pub blocks_enemy_ships: bool,
+    /// This game's (docs/CARDS.md, Hall of Judgment): the cities the owner conquers keep every
+    /// building that can be captured, and lose no population.
+    pub conquest_keeps_all: bool,
     pub force_team_vote_eligible: bool,
     pub capital: bool,
     pub government_center: bool,
@@ -442,6 +455,9 @@ pub fn read_building(rd: &Rd) -> BuildingInfo {
         dirty_power: rd.bool("dirty_power"),
         area_clean_power: rd.bool("area_clean_power"),
         area_border_obstacle: rd.bool("border_obstacle"),
+        border_stops_enemies: rd.bool("border_stops_enemies"),
+        blocks_enemy_ships: rd.bool("blocks_enemy_ships"),
+        conquest_keeps_all: rd.bool("conquest_keeps_all"),
         force_team_vote_eligible: rd.bool("force_team_vote_eligible"),
         capital: rd.bool("capital"),
         government_center: rd.bool("government_center"),
@@ -514,6 +530,7 @@ pub fn read_building(rd: &Rd) -> BuildingInfo {
         bombard_defense_modifier: rd.int("bombard_defense"),
         sentinels: rd.int("sentinels"),
         all_city_defense_modifier: rd.int("all_city_defense"),
+        naval_capture_percent: rd.int("naval_capture_percent"),
         espionage_defense_modifier: rd.int("espionage_defense"),
         asset_value: rd.int("asset"),
         power_value: rd.int("power_value"),

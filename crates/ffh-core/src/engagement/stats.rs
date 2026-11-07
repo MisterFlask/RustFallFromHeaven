@@ -509,6 +509,12 @@ impl Game {
         if self.plot_is_hills(p) {
             modifier += term!(log, hills_defense_modifier, self.unit_hills_defense_modifier(u), TermSource::UnitHillsDefense);
         }
+        // Card: Mountaineering (docs/CARDS.md): +50% defence on a peak.
+        if self.unit_on_climbed_peak(u, p) {
+            if let Some(peak) = crate::ffh::cards::map_rules::rules(self.d).peak_terrain {
+                modifier += log.push(crate::ffh::cards::map_rules::PEAK_DEFENSE, || TermSource::Terrain(peak));
+            }
+        }
         match self.map.plots[p].feature_type {
             Some(feature) => {
                 modifier += term!(log, feature_defense_modifier, self.unit_feature_defense_modifier(u, feature), TermSource::UnitFeatureDefense(feature));

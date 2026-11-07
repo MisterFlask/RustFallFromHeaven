@@ -97,6 +97,9 @@ pub(crate) struct EngageOrder {
     pub forced: Option<Vec<UnitId>>,
     /// Write the battle log: `None` decides by whether a human could see the battle.
     pub log: Option<bool>,
+    /// A surprise attack (the card False Colours, docs/CARDS.md): the defenders make no
+    /// defensive strikes.
+    pub surprise: bool,
 }
 
 /// What an engagement did.
@@ -575,7 +578,7 @@ impl Game {
     }
 
     fn engage_inner(&mut self, ord: EngageOrder) -> Result<EngageOutcome, &'static str> {
-        let EngageOrder { p, from, to, launcher, formation, forced, log } = ord;
+        let EngageOrder { p, from, to, launcher, formation, forced, log, surprise } = ord;
         let ctx = HitCtx::new(from, to);
 
         // 1. Set-up.
@@ -673,8 +676,11 @@ impl Game {
         // 2. Morale.
         self.engage_morale(&mut e, &mut sink);
 
-        // 3. Opening: defensive strikes (never kill), then phase 7's opening spells.
-        self.engage_opening(&mut e, &mut sink);
+        // 3. Opening: defensive strikes (never kill; none against a surprise attack, the card
+        // False Colours), then phase 7's opening spells.
+        if !surprise {
+            self.engage_opening(&mut e, &mut sink);
+        }
         let mut hp: Vec<i32> =
             (0..e.setup.fighters.len()).map(|i| if i < n { hp_from_damage(self.units[e.units[i]].damage, e.setup.fighters[i].max_hp) } else { e.setup.fighters[i].hp }).collect();
         effects.extend(self.engage_opening_spells(&e.setup, &hp));
@@ -1090,7 +1096,7 @@ impl Game {
         }
         let Some(from) = self.unit_plot_opt(u) else { return true };
         let launcher = self.units[u].group.filter(|&g| self.groups.contains(g));
-        let _ = self.engage(EngageOrder { p, from, to, launcher, formation: None, forced: Some(vec![u]), log: None });
+        let _ = self.engage(EngageOrder { p, from, to, launcher, formation: None, forced: Some(vec![u]), log: None, surprise: false });
         true
     }
 }
@@ -1135,7 +1141,7 @@ mod tests {
     }
 
     fn order(from: PlotIdx, to: PlotIdx, log: bool) -> EngageOrder {
-        EngageOrder { p: PlayerId(0), from, to, launcher: None, formation: None, forced: None, log: Some(log) }
+        EngageOrder { p: PlayerId(0), from, to, launcher: None, formation: None, forced: None, log: Some(log), surprise: false }
     }
 
     fn clone(g: &Game) -> Game {

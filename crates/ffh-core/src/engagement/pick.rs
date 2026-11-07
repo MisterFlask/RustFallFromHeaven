@@ -87,7 +87,8 @@ impl Game {
         if limit >= 100 {
             return true;
         }
-        let from_water = self.unit_plot_opt(u).is_some_and(|at| self.plot_is_water(at));
+        // (Card: Causeway, Ferries (docs/CARDS.md): water walked on as land is not water here.)
+        let from_water = self.unit_plot_opt(u).is_some_and(|at| self.plot_is_water(at) && !self.unit_walks_on_water(u, at));
         let team = self.players[self.units[u].owner].team;
         let declared = self.engage_declared(team, war);
         let (mut defenders, mut others, mut other_below) = (false, false, false);

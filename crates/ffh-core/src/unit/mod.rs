@@ -580,6 +580,8 @@ pub struct Unit {
     /// discovered with `SPELL_DISCOVER_CARD`; back in the deck if the unit dies or is used
     /// another way.
     pub card: Option<TechType>,
+    /// Not in C++: on a City Caravan, the city it carries (docs/CARDS.md, Wheeled City).
+    pub packed_city: Option<crate::ffh::cards::map_rules::PackedCity>,
 }
 
 impl Unit {
@@ -759,6 +761,7 @@ impl Unit {
             xp_carry: 0,
             lent: None,
             card: None,
+            packed_city: None,
         }
     }
 }

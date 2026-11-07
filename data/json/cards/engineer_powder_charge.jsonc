@@ -1,0 +1,91 @@
+// E13 Powder Charge (docs/DECKS_ROUND8.md; C.4: an action next to a walled city: the Charge is
+// destroyed and every Sentinel is breached; no battle). National siege unit, 2. Rules:
+// `spellPowderCharge` (crates/ffh-core/src/ffh/cards/map_rules.rs; docs/SIEGES.md).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_POWDER_CHARGE",
+      "description": "TXT_KEY_TECH_CARD_POWDER_CHARGE",
+      "help": "TXT_KEY_TECH_CARD_POWDER_CHARGE_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_POWDER_CHARGE_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_BLASTING_POWDER"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_POWDER_CHARGE",
+      "description": "TXT_KEY_UNIT_POWDER_CHARGE",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 2,
+      "default_unit": "UNIT_POWDER_CHARGE"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_POWDER_CHARGE",
+      "stats": {"hp": 80, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 1},
+      "engage_rows": [{"action": "STRIKE", "count": 2}, {"action": "STRIKE", "count": 1}, {"action": "STRIKE", "count": 1}],
+      "engage_row_order": ["FRONT", "MIDDLE", "REAR"],
+      "class": "UNITCLASS_POWDER_CHARGE",
+      "unit_combat": "UNITCOMBAT_SIEGE",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_ATTACK_CITY",
+      "description": "TXT_KEY_UNIT_POWDER_CHARGE",
+      "civilopedia": "TXT_KEY_UNIT_POWDER_CHARGE_PEDIA",
+      "help": "TXT_KEY_UNIT_POWDER_CHARGE_HELP",
+      "military_support": true,
+      "military_production": true,
+      "only_defensive": true,
+      "no_defensive_bonus": true,
+      "mechanized": true,
+      "unit_ais": {"UNITAI_ATTACK_CITY": true},
+      "prereq_tech": "TECH_CARD_POWDER_CHARGE",
+      "cost": 120,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 1,
+      "nuke_range": -1,
+      "combat_limit": 100,
+      "xp_value_attack": 4,
+      "xp_value_defense": 2,
+      "asset": 2,
+      "power": 2,
+      "ai_block_explore": true,
+      "ai_block_patrol": true,
+      "ai_block_perm_defense": true,
+      "tier": 3
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_POWDER_CHARGE",
+      "description": "TXT_KEY_SPELL_POWDER_CHARGE",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_POWDER_CHARGE_HELP",
+      "unit_prereq": "UNIT_POWDER_CHARGE",
+      "display_when_disabled": true,
+      "ability": true,
+      "sacrifice_caster": true,
+      "py_result": "spellPowderCharge(pCaster)",
+      "py_requirement": "reqPowderCharge(pCaster)",
+      "button": "Art/Interface/Buttons/Spells/Earthquake.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_POWDER_CHARGE": "Powder Charge",
+    "TXT_KEY_TECH_CARD_POWDER_CHARGE_HELP": "[ICON_BULLET]Allows the Powder Charge (national unit, 2).[NEWLINE][ICON_BULLET]Detonate: next to a city of a civ you are at war with, the Charge is used up and every Sentinel of the city is breached. No battle.",
+    "TXT_KEY_TECH_CARD_POWDER_CHARGE_PEDIA": "Sappers dig under the wall by night and pack the tunnel with blasting powder. At dawn the wall comes down before the assault.",
+    "TXT_KEY_UNIT_POWDER_CHARGE": "Powder Charge",
+    "TXT_KEY_UNIT_POWDER_CHARGE_HELP": "[ICON_BULLET]Cannot attack.[NEWLINE][ICON_BULLET]Detonate: next to a city of a civ you are at war with, the Charge is used up and every Sentinel of the city is breached.",
+    "TXT_KEY_UNIT_POWDER_CHARGE_PEDIA": "A sapper crew with a cart of blasting powder, for the one breach that opens a city.",
+    "TXT_KEY_SPELL_POWDER_CHARGE": "Detonate",
+    "TXT_KEY_SPELL_POWDER_CHARGE_HELP": "[ICON_BULLET]Next to a city of a civ you are at war with that has Sentinels standing (the one with the most).[NEWLINE][ICON_BULLET]Every Sentinel of the city is breached. No battle.[NEWLINE][ICON_BULLET]Uses up the Powder Charge."
+  }
+}

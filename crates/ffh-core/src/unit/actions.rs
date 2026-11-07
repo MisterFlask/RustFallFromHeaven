@@ -615,6 +615,10 @@ impl Game {
                     total_heal += self.cities[c].heal_rate;
                 }
             }
+        } else if self.unit_heals_as_in_city_at(u, plot) {
+            // Card: Siege Lines, Wayside Shrines (docs/CARDS.md): the holder's units heal there as
+            // in a city of their own.
+            total_heal += d.defines.city_heal_rate + unit.extra_friendly_heal;
         } else if !friendly {
             if self.unit_is_enemy(u, plot_team, Some(plot)) {
                 total_heal += d.defines.enemy_heal_rate + unit.extra_enemy_heal;

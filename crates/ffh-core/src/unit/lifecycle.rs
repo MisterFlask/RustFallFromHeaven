@@ -727,6 +727,11 @@ impl Game {
 
         // `setMoves(0)`: the rest of it is interface updates.
         self.units[u].moves = 0;
+        // Card: Forest Paths (docs/CARDS.md): a unit in an enemy's Forest Paths starts its turn
+        // with a move less (never below one).
+        if let Some(plot) = self.unit_plot_opt(u) {
+            self.units[u].moves = self.unit_max_moves(u) - self.unit_turn_moves_at(u, plot);
+        }
 
         // AI: BETTER AI `AI_chooseGroupflag()` for non-human, non-barbarian units whose group flag
         // is GROUPFLAG_NONE (AI bookkeeping; the controller's).

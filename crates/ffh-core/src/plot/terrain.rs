@@ -986,6 +986,13 @@ impl Game {
             self.plot_verify_unit_valid_plot(p);
         }
 
+        // Cards: Causeway, Canal Locks (docs/CARDS.md): units the plot no longer holds (ships on a
+        // new causeway, land units on a lost one, ships in a lost canal) move off.
+        let walk = |i: Option<ImprovementType>| i.is_some_and(|i| d.improvements[i].land_bridge || d.improvements[i].canal);
+        if walk(self.map.plots[p].improvement_type) || walk(old_improvement) {
+            self.plot_verify_unit_valid_plot(p);
+        }
+
         // (debug mode setLayoutDirty: graphics)
 
         if let Some(current) = self.map.plots[p].improvement_type {
@@ -1276,6 +1283,26 @@ impl Game {
                 return false;
             }
 
+            // This game's cards (docs/CARDS.md): Siege Lines next to a city of a civ at war with
+            // the builder, Wayside Shrines on a route, a Canal next to water or another canal, a
+            // Causeway next to land.
+            let card = &d.improvements[improvement];
+            if !test_visible {
+                if card.enemy_city_adjacent && !self.plot_next_to_enemy_city(p, player_team) {
+                    return false;
+                }
+                if card.requires_route && plot.route_type.is_none() {
+                    return false;
+                }
+                if card.canal && !self.plot_canal_connected(p) {
+                    return false;
+                }
+                // Causeway: next to land.
+                if card.land_bridge && !self.plot_is_adjacent_to_land(p) {
+                    return false;
+                }
+            }
+
             if let Some(current) = plot.improvement_type {
                 if d.improvements[current].permanent {
                     return false;
@@ -1292,7 +1319,9 @@ impl Game {
                 }
             }
 
-            if !test_visible && Some(player_team) != plot_team {
+            // Card: Siege Lines (docs/CARDS.md): also in the land of the civ at war it besieges.
+            let siege_land = card.enemy_city_adjacent && plot_team.is_some_and(|t| self.teams[player_team].at_war[t]);
+            if !test_visible && Some(player_team) != plot_team && !siege_land {
                 if d.improvements[improvement].outside_borders {
                     //outside borders can't be built in other's culture
                     if plot_team.is_some() {

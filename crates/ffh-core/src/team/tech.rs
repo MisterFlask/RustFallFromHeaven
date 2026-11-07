@@ -424,7 +424,18 @@ impl Game {
             } else {
                 update_tech_bonus_plot_groups(self, t, tech, false);
 
+                // Card: Mountaineering (docs/CARDS.md): its land units' sight on peaks depends on
+                // the card; it is taken away before the change and given back after.
+                let peak_sight = d.techs[tech].peak_movement;
+                if peak_sight {
+                    self.team_change_peak_sight(t, false);
+                }
+
                 self.teams[t].has_tech[tech] = value;
+
+                if peak_sight {
+                    self.team_change_peak_sight(t, true);
+                }
 
                 update_tech_bonus_plot_groups(self, t, tech, true);
             }

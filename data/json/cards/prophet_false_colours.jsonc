@@ -1,0 +1,110 @@
+// False Colours, the Masks of Esus reworked (docs/DECKS.md section 7.3: the stack may attack a civ
+// you are at peace with without a declaration; war follows the battle; in that first battle the
+// defenders get no defensive strikes and no fortification; principle 6: one battle). The Masker,
+// a national unit (2). Raise False Colours: the Masker's stack is under false colours for the
+// turn; its first battle declares the war and spends them. Rules: `false_colours`
+// (crates/ffh-core/src/ffh/cards/map_rules.rs, `group_attack_engage`).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_FALSE_COLOURS",
+      "description": "TXT_KEY_TECH_CARD_FALSE_COLOURS",
+      "help": "TXT_KEY_TECH_CARD_FALSE_COLOURS_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_FALSE_COLOURS_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_DECEPTION"],
+      "card_suit": "UNITCLASS_PROPHET",
+      "card_alignment": "ALIGNMENT_EVIL",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_MASKER",
+      "description": "TXT_KEY_UNIT_MASKER",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 2,
+      "default_unit": "UNIT_MASKER"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_MASKER",
+      "stats": {"hp": 100, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
+      "engage_rows": [{"action": "STRIKE", "count": 2}, {"action": "STRIKE", "count": 1}, {"action": "STRIKE", "count": 1}],
+      "engage_row_order": ["FRONT", "MIDDLE", "REAR"],
+      "class": "UNITCLASS_MASKER",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_UNKNOWN",
+      "description": "TXT_KEY_UNIT_MASKER",
+      "civilopedia": "TXT_KEY_UNIT_MASKER_PEDIA",
+      "help": "TXT_KEY_UNIT_MASKER_HELP",
+      "only_defensive": true,
+      "unit_ais": {"UNITAI_UNKNOWN": true},
+      "prereq_tech": "TECH_CARD_FALSE_COLOURS",
+      "cost": 90,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 2,
+      "nuke_range": -1,
+      "combat_limit": 100,
+      "xp_value_attack": 4,
+      "xp_value_defense": 2,
+      "tier": 2
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_FALSE_COLOURS",
+      "description": "TXT_KEY_PROMOTION_FALSE_COLOURS",
+      "tech_prereq": "TECH_NEVER",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true,
+        "UNITCOMBAT_ANIMAL": true,
+        "UNITCOMBAT_ARCHER": true,
+        "UNITCOMBAT_BEAST": true,
+        "UNITCOMBAT_DISCIPLE": true,
+        "UNITCOMBAT_MELEE": true,
+        "UNITCOMBAT_MOUNTED": true,
+        "UNITCOMBAT_RECON": true,
+        "UNITCOMBAT_SIEGE": true
+      },
+      "button": "Art/Interface/Buttons/Promotions/HiddenNationality.dds",
+      "false_colours": true,
+      "expire_chance": 100,
+      "min_level": -1
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_FALSE_COLOURS",
+      "description": "TXT_KEY_SPELL_FALSE_COLOURS",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_FALSE_COLOURS_HELP",
+      "unit_prereq": "UNIT_MASKER",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "ability": true,
+      "add_promotion_type1": "PROMOTION_FALSE_COLOURS",
+      "immune_neutral": true,
+      "immune_enemy": true,
+      "py_requirement": "reqFalseColours(pCaster)",
+      "button": "Art/Interface/Buttons/Promotions/HiddenNationality.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_FALSE_COLOURS": "False Colours",
+    "TXT_KEY_TECH_CARD_FALSE_COLOURS_HELP": "[ICON_BULLET]Allows the Masker (national unit, 2).[NEWLINE][ICON_BULLET]Raise False Colours: this turn, the Masker's stack may attack units of a civ you are at peace with, without a declaration.[NEWLINE][ICON_BULLET]The war is declared at that battle; its defenders get no defensive strikes and no fortification. One battle.",
+    "TXT_KEY_TECH_CARD_FALSE_COLOURS_PEDIA": "Borrowed banners, stolen livery, a friendly hail across the field. By the time the defenders see the blades, the blades are among them.",
+    "TXT_KEY_UNIT_MASKER": "Masker",
+    "TXT_KEY_UNIT_MASKER_HELP": "[ICON_BULLET]Cannot attack.[NEWLINE][ICON_BULLET]Raise False Colours: this turn, its stack may attack units of a civ you are at peace with, without a declaration; the war is declared at the battle, whose defenders get no defensive strikes and no fortification.",
+    "TXT_KEY_UNIT_MASKER_PEDIA": "A master of borrowed banners and false greetings.",
+    "TXT_KEY_PROMOTION_FALSE_COLOURS": "False Colours",
+    "TXT_KEY_SPELL_FALSE_COLOURS": "Raise False Colours",
+    "TXT_KEY_SPELL_FALSE_COLOURS_HELP": "[ICON_BULLET]Your units on this plot are under false colours until the end of the turn.[NEWLINE][ICON_BULLET]They may attack units of a civ you are at peace with, without a declaration. The war is declared at the battle, whose defenders get no defensive strikes and no fortification.[NEWLINE][ICON_BULLET]The colours are spent by that battle."
+  }
+}

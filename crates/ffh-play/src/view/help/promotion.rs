@@ -192,6 +192,7 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         target_weakest_unit_counter,
         twincast,
         water_walking,
+        false_colours,
         // AI weight.
         ai_weight: _,
         betrayal_chance,
@@ -515,6 +516,11 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         if has {
             line(b, d, key, &[]);
         }
+    }
+    // This game's card (docs/CARDS.md, False Colours).
+    if *false_colours {
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]May attack units of a civ you are at peace with, without a declaration: war follows at the battle, whose defenders get no defensive strikes and no fortification. Ends after its first battle, or at the end of the turn");
     }
     for (n, key) in [
         (*resist_magic, "TXT_KEY_PROMOTION_RESIST"),
