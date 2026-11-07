@@ -3188,5 +3188,5 @@ attacking it costly instead). Engineer · II · needs Construction · world spel
 - **Expert:** turn the border city you cannot hold into a hard, friendly buffer between you and
   the rival.
 
-By the same reasoning, timed enforcement looks out in general. Judgment of Junil's enforced
-peace would then need the same treatment (to confirm).
+Judgment of Junil stays: a one-time enforced peace is fine (the owner). What is out is lasting
+enforcement: permanent war or peace, and a city made unattackable for decades.
