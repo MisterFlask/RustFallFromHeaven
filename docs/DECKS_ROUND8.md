@@ -711,8 +711,11 @@ The designer then weighed each objection against the card's best one-line reply,
 the engine facts the verdicts rest on in the code.
 
 **Result:**
-- **Great-person cards:** 55 survive (16 strong, 27 solid, 12 marginal), 45 cut.
-- **Armageddon cards:** 18 survive, 32 cut.
+- **Great-person cards:** 58 survive (16 strong, 29 solid, 13 marginal), 42 cut.
+- **Armageddon cards:** 19 survive, 31 cut.
+
+These counts are after the owner's naval decision (rule 7), which brought back Harbor Chain,
+Admiralty, Prize Courts and Leviathans Rise.
 
 ### C.2 Engine facts the cards got wrong (checked in the code)
 
@@ -764,7 +767,8 @@ the engine facts the verdicts rest on in the code.
 5. **One Fear card at most.** This round's Herald of Agares or the pool's Dread Banner. A dragon
    says whether it has Fear.
 6. **No card makes a stack invisible on the map.**
-7. **Naval cards wait for a naval AI,** except those the owner has already liked.
+7. **Naval cards are fine** (the owner, 2026-11-07). An AI sprint will give the AI naval combat;
+   until then, their payoff against the AI is small.
 8. **Every card is checked before it enters the deck** against the 21 civ world spells, the civs'
    unique units, and the existing spells, promotions and rituals.
 9. **Regions are defined** as the largest connected group of unowned plots of a terrain or
@@ -806,7 +810,7 @@ Rank: **A** strong, **B** solid, **C** marginal (keep only if the deck needs vol
 | P03 | Courts of Junil | keep | A | keep every building that can be captured, and lose no population; rename (the Order's shrine is the Code of Junil) |
 | P04 | Templar | keep | C | a promotion for Crusaders (the Order's own frontline) that heals the unit behind it |
 | P05 | The Whisperer | keep | A | Madness becomes a pre-battle effect: the enemy's highest-attack unit (not a Sentinel) strikes its own side in round 1 |
-| P06 | Call the Leviathan | keep | C | a Kraken if the Leviathan lives; waits on a naval AI |
+| P06 | Call the Leviathan | keep | C | a Kraken if the Leviathan lives |
 | P07 | Golems of the Earthmother | keep | A | the Mithril Golem (one in the world) at 600 hammers, whatever the counter; Kilmorph still its state religion |
 | P08 | Vault of the Earthmother | cut | | strong but redundant: the Mithril Forge, Starmetal Meteor |
 | P09 | Hellforge | cut | | the Infernals' own units |
@@ -830,7 +834,7 @@ Rank: **A** strong, **B** solid, **C** marginal (keep only if the deck needs vol
 | E07 | Wall of the Kings | keep | A | "enemy" means units of civs at war with you, and barbarians |
 | E08 | Mantlets | cut | | low impact |
 | E09 | Grand Siege Park | cut | | large is nearly a downgrade for siege |
-| E10 | Harbor Chain | cut | | waits on a naval AI |
+| E10 | Harbor Chain | keep | B | band II (Sailing is Classical) |
 | E11 | Pioneers | keep | B | as written |
 | E12 | Siege Lines | keep | B | may be built in the land of a civ you are at war with, next to its city |
 | E13 | Powder Charge | keep | B | an action next to a walled city: the Charge is destroyed and every Sentinel is breached; no battle |
@@ -842,7 +846,7 @@ Rank: **A** strong, **B** solid, **C** marginal (keep only if the deck needs vol
 | E19 | Shatter the Walls | cut | | Powder Charge is the one wall-opener; Earthquake is near |
 | E20 | Levy Hall | keep | C | national; the first battle each turn; the strongest land unit type the city can train |
 | M01 | Gold Standard | keep | B | 2 gold a hammer, units only, under any Labor civic; research -20% |
-| M02 | Prize Courts | cut | | waits on a naval AI; Boarding exists |
+| M02 | Prize Courts | keep | C | your ships capture the enemy ships they defeat (the Boarding promotion's effect); overlaps the Lanun, whose Boarding Party and Guybrush are the only units with Boarding today |
 | M03 | Bazaar of Wonders | keep | B | a wonder with a positive cost whose prerequisites the city meets; not a victory wonder |
 | M04 | Grand Bazaar | cut | | the Black Market |
 | M05 | Hired Fleet | cut | | naval, small |
@@ -850,7 +854,7 @@ Rank: **A** strong, **B** solid, **C** marginal (keep only if the deck needs vol
 | M07 | The Condottieri Free State | keep | B | a Captain-General at attack 130; rushing at the 2-gold floor; an Expert line |
 | M08 | Purchase Charter | keep | A | not a holy city or a wonder city; the price adds its buildings' cost |
 | M09 | Transmutation Charter | keep | B | enumerate the classes from the data (the RUSH bonuses; the happiness bonuses; the food bonuses) |
-| M10 | Admiralty | cut | | naval |
+| M10 | Admiralty | keep | B | as written: the naval Academy of War |
 | M11 | Armourers' Guild | cut | | the Ingenuity trait's effect |
 | M12 | Patrons' Guild | cut | | the National Epic |
 | M13 | Market Towns | keep | C | as written |
@@ -895,7 +899,7 @@ Rank: **A** strong, **B** solid, **C** marginal (keep only if the deck needs vol
 | A07 | The Burning Plains | cut | | the base rule already spreads hell over evil land from 50 |
 | A08 | The Great Flood | cut | | a huge tax with nothing to prepare; Flood Plains are desert-only |
 | A09 | Volcanic Spring | keep | A | a hill within 3 of each of the six largest cities, named at the reveal; it becomes flat with a Volcano; units within 1 take 50%, improvements go, cities lose 2 population but stand; then +1 food (it replaces FFH2's random volcano event) |
-| A10 | Leviathans Rise | cut | | one Leviathan per game; barbarian ships hold |
+| A10 | Leviathans Rise | keep | C | a barbarian Kraken in every ocean of 20 or more plots, and the Leviathan (one per game) in the largest if it is not alive |
 | A11 | Werewolf Moon | keep | B | as written |
 | A12 | The Gold Rot | cut | | arithmetic, falls on the Khazad |
 | A13 | The Great Fire | cut | | an unanswerable tax on big cities |

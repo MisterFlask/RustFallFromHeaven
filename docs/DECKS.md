@@ -3290,8 +3290,8 @@ double damage against summoned units still applies inside battles.
 
 The candidates, the three reviews' findings and the verdicts are in `docs/DECKS_ROUND8.md`
 (section C).
-- **Great-person cards:** 55 of 100 survive, ranked A (16), B (27) and C (12).
-- **Armageddon cards:** 18 of 50 survive.
+- **Great-person cards:** 58 of 100 survive, ranked A (16), B (29) and C (13).
+- **Armageddon cards:** 19 of 50 survive.
 
 Its rules for the decks (C.3) apply to every card here as well:
 - a card's world spell is its own one-off;
@@ -3300,7 +3300,7 @@ Its rules for the decks (C.3) apply to every card here as well:
 - few fortress buildings;
 - one Fear card;
 - no invisible stacks on the map;
-- naval cards wait for a naval AI;
+- naval cards are fine (the owner: an AI sprint will give the AI naval combat, later);
 - every card checked against the civ world spells and existing content;
 - regions defined as connected groups of plots;
 - "a level" means the XP for the next level.
