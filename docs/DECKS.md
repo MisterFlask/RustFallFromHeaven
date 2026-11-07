@@ -19,6 +19,7 @@ Settled in discussion so far:
 - Unrest is worth having, and what raises and lowers it is mostly specific to each
   civilization (section 5).
 - The Balseraphs' first split-off civ is Balseraphs, led by Somehow Also Perpentach.
+- Vendetta (section 6.2) is liked: keep it.
 
 Proposed and not yet decided:
 
@@ -1679,3 +1680,236 @@ being denied for 20 turns makes it *Resentful* (Unrest, and it may lead a secess
 - **The objectives deck** is scored by hooks and counters.
 - **The great-person deck's** non-tech effects (the Index's draws, the Lens's copy, the Recall's
   return) are hooks.
+
+### 6.4 Great-person cards built on the four (23 candidates)
+
+These go into the pool beside the 94 of section 3. Each names the mechanisms it uses: status,
+history, schedule, hook.
+
+**Sage**
+
+**Contingency** · II · needs Sorcery · promotion for mages · [status, hook]
+A mage prepares one contingency, which holds until it fires:
+- *When my stack is attacked:* cast my strongest battle spell before the battle opens.
+- *When I would die:* return to the capital at 1 HP.
+
+*Expert:* the first on the army's mage, the second on the archmage you cannot replace.
+
+**The Long Experiment** · II · needs Alteration · building · [schedule]
+Start an experiment: three outcomes are drawn (a free tech of the next era, a permanent mana
+resource of a type, a unique unit) and you choose one. It completes in 40 turns, publicly. If
+the city is captured first, the captor gets the result.
+*Expert:* run it in the safest city; every rival knows the date and has a reason to take that
+city.
+
+**The Predictive Engine** · III · needs Machinery · wonder (national) · [schedule]
+You see every scheduled effect in the world, secret ones included. Once every 30 turns, delay
+one of them by 10 turns: a loan's due date, a truce's end, a curse's fuse, an Armageddon reveal.
+*Expert:* delay the curse on your city, or the end of the truce with the strong neighbour.
+
+**Temporal Anchor** · III · needs Pass Through the Ether · spell · [status, schedule; heavy]
+Anchor a city of yours for 10 turns. When the anchor ends, the city returns to its state at the
+anchoring: its population, buildings and owner.
+*Expert:* anchor the city the enemy is about to take. They take it, and lose it again when the
+anchor ends.
+
+**Prophet**
+
+**Book of Prophecies** · II · needs Divination · national unit, 1 · [schedule, hook]
+Prophesy: *City X will fall within 30 turns*. If anyone takes it, your religion spreads to every
+city of the taker. If it stands, your holy city loses its holy-city commerce for 30 turns.
+*Expert:* prophesy against a city your neighbours already want.
+
+**Martyrs' Calendar** · II · needs Priesthood · building (holy city) · [history, status]
+Each of your religion's disciples killed is a martyr. The city that trained it is *Blessed* for
+20 turns (+2 happiness, +2 culture). At 10 martyrs, the religion gains a Saint, a hero.
+*Expert:* a war on your faith strengthens it; rivals who know this leave your priests alone.
+
+**Holy Days** · II · needs Religious Law · building (holy city) · [schedule, status]
+Every 20 turns, every city of your religion, in any civ, keeps 3 Holy Days: +2 happiness, -25%
+production. A civ that is at war with you during Holy Days takes *Sacrilege*: -2 attitude from
+every civ of the religion.
+*Expert:* time your wars between the Holy Days; a co-religionist enemy cannot.
+
+**Relic Cult** · I · needs Ancient Chants · building · [hook, status]
+When a hero of yours dies, its relic rests in the nearest city of yours. That city is
+*Sanctified* while it holds the relic: +3 culture, -2 Unrest a turn, and units trained there get
++1 XP. A relic is taken with its city.
+*Expert:* a dead hero still pays; relic cities become war goals for both sides.
+
+**Oath of the Blood-Price** [evil or neutral] · II · needs Warfare · wonder (national) · [history, status; Vendetta]
+Once every 50 turns, declare Vengeance (section 6.2) on any civ that has ever taken a city of
+yours. It needs no fresh loss and lasts 40 turns.
+*Expert:* old grievances become war bonuses on your schedule.
+
+**Excommunication** · III · needs Theology · spell (holy city owner) · [status]
+Excommunicate a civ whose state religion is yours. For 30 turns its cities of your religion
+gain +2 Unrest a turn, its disciples cast no spells, and every civ of the religion takes -2
+attitude toward it.
+*Expert:* break a rival that shares your faith before a war; it will not be helped by its
+brothers.
+
+**Engineer**
+
+**Walls that Remember** · I · needs Masonry · building · [history]
+A city's Sentinels gain +20% HP for each siege the city has survived (permanent).
+*Expert:* the border city that held becomes the fortress; never let a besieger retreat
+cheaply.
+
+**Snares** · I · needs Hunting · worker build · [status on plots]
+A hidden trap on a plot in your borders, lasting 30 turns. The first enemy stack to enter takes
+15% damage and ends its move.
+*Expert:* trap the approach roads in the turns before a war you expect.
+
+**Floodgates** · II · needs Engineering · building (city on a river) · [status on plots]
+Once every 20 turns, flood the river plots within 4 plots of the city for 10 turns: they become
+marsh (temporary terrain), impassable to enemy units.
+*Expert:* open the gates the turn the invasion reaches the river.
+
+**Time-Locked Vault** · II · needs Currency · building · [schedule]
+Deposit gold. In 30 turns, publicly, it returns doubled. If the city falls first, the captor
+gets the deposit.
+*Expert:* the safe city's investment; rivals see the date and the sum.
+
+**Scorched Earth** · II · needs Smelting · spell (any unit, own borders) · [status on plots; needs attrition]
+A plot in your borders gives no yield and no healing for 15 turns. With supply and attrition
+(section 1.10), an invader there starves.
+*Expert:* burn the invaders' path, not your own cities' land.
+
+**Merchant**
+
+**Letters of Credit** · I · needs Currency · deal item · [schedule, history]
+Buy now, pay in 20 turns at 25%. A missed payment gives the creditor a claim on your nearest
+city and you the *Debtor* epithet for 30 turns.
+*Expert:* borrow for a war you will win before the date.
+
+**Blood Money** · II · needs Code of Laws · deal item · [status; Vendetta]
+Offer gold to end a Vengeance against you, priced by the size of the city taken. The avenger
+may refuse. If it accepts, its Vengeance ends and it cannot start another against you for 50
+turns.
+*Expert:* buy off a vendetta you cannot fight; refusing it is the avenger's statement.
+
+**Favoured Partner** · II · needs Trade · building (national) · [history]
+Each 10 turns of unbroken trade with a civ adds a step. At 5 steps: permanent +2 attitude and
+one more trade route with that civ. Breaking a deal with it resets the count and costs -2
+attitude.
+*Expert:* long partnerships pay more than any single deal; choose the partner who will last.
+
+**The Black Book** · III · needs Guilds · building (national) · [history]
+You see every civ's history counters (treaties broken, cities razed, debts). Once, publish one:
+the target gains the matching epithet for 50 turns.
+*Expert:* publish the Oathbreaker's record before the council votes.
+
+**Bard**
+
+**The Living Chronicle** · I · needs Ancient Chants · wonder (national) · [history, hook]
+Each first in your history is a verse: first wonder, 10 battles won, a city held through 3
+sieges, a dragon slain. Each verse gives +5 culture a turn. Every 5 verses add +1 happiness in
+every city.
+*Expert:* every deed counts once; seek the firsts you have not done.
+
+**Songs of Grievance** · II · needs Drama · building · [history, Vendetta]
+While you hold a claim on a city (section 6.2), your cultural channel aimed at its holder
+counts double against that city.
+*Expert:* lost cities come back by culture, without a war.
+
+**Hall of Heroes** · II · needs Arete · building · [history]
+A unit trained in this city may take the name and one promotion of a fallen hero of yours.
+*Expert:* a dead hero's best promotion lives on in your next champion.
+
+**Rumour Mill** · II · needs Drama · building · [status on players]
+Once every 30 turns, set a rumour on a leader for 20 turns:
+- *Weak:* the AI counts it at half its power.
+- *Treacherous:* no deals with it.
+- *Plague-ridden:* no open borders with it.
+
+*Expert:* make the leader look weak to his neighbours the turn before you need allies against
+him.
+
+**The Feast of Ceasefire** · III · needs Festivals · building · [schedule, status]
+Announce a world feast 10 turns ahead, lasting 5 turns. Civs at peace with you through it gain
++2 attitude toward you. Any civ that declares war during it takes the epithet *the Spoiler* for
+50 turns.
+*Expert:* schedule it over the turns you need peace; it binds even those who dislike you.
+
+### 6.5 Armageddon cards built on the four (12 candidates)
+
+These go into the pool beside section 4's.
+
+**Omens** · 20 · single [schedule]
+Every civ is told its omen: an effect personal to it, scheduled 30 turns ahead and drawn from a
+small set:
+- famine in its largest city;
+- a great person;
+- a governor who turns Disloyal;
+- a meteor on a named plot;
+- a hero who will be born in a named city.
+
+*Expert:* prepare for your omen; read your rivals' (they are public) and plan around them.
+
+**The Signs** · 30 · recurring [status, schedule]
+From 30 on, the sky shows a sign every 10 turns: a world status for 10 turns. The next two signs
+are always shown. The signs belong to the angels, replacing FFH2's Sign events, which were only
+golden ages:
+- *Sign of Camulos:* war declarations cost no attitude.
+- *Sign of Junil:* war declarations cost -2 attitude with everyone.
+- *Sign of Esus:* espionage costs half.
+- *Sign of Kilmorph:* +25% production.
+- *Sign of Mulcarn:* no healing outside cities.
+
+*Expert:* time each move to the sign that favours it; the shown two signs are a schedule.
+
+**The Unforgiven** · 40 · single [history, status; Vendetta]
+Every civ that ever lost a city to another gets Vengeance on its captor for 30 turns, all at
+once.
+*Expert:* the conquerors brace; the conquered strike together. Know your history before 40.
+
+**Witching Nights** · 40 · recurring [schedule, status]
+For 50 turns, every 10th turn is a Witching Night (shown in advance): summons last twice as long,
+undead deal +25% damage, and divine spells fail.
+*Expert:* evil civs attack on the witching turns; good civs dig in for them.
+
+**The Reckoning of Debts** · 50 · single [history, schedule]
+Each civ's broken treaties and razed cities are counted. Each is a debt, collected in 10 turns:
+a population from the largest city, or a unit of the civ's choice.
+*Expert:* the Oathbreaker and the Razer pay; between the reveal and the date, a clean record is
+worth something.
+
+**Mark of the Beast** · 50 · single [status, hook]
+The most culpable civ's units bear the Mark. Each kill by a Marked unit adds 1 to the counter;
+each Marked unit killed takes 1 off.
+*Expert:* the marked civ fights to hasten the end; everyone else gains by killing its units.
+
+**Harvest of Souls** · 55 · lingering [hook]
+While the counter is 55 or more, every 20 unit deaths in the world add 1 to the counter.
+*Expert:* wars hasten the end, so the evil civs start them and the good civs push for peace
+(the Grey Council's Truce of Dagda).
+
+**The Hollow Years** · 60 · single [status]
+For 20 turns, no great person is born anywhere. Great-people points accumulate at double rate
+during them.
+*Expert:* the deck's draws pause; stock specialists for the burst after.
+
+**The Dead Remember** · 60 · single [history]
+On every plot where 5 or more units died, Haunted dead rise, hostile to all; the more dead, the
+more of them.
+*Expert:* the old battlefields are the danger; clear or avoid them.
+
+**The Forgetting** · 65 · single [history]
+The world forgets:
+- every history counter, epithet and claim is wiped;
+- every Vengeance ends;
+- memory-based attitude resets to neutral.
+
+*Expert:* the Oathbreaker starts clean, and the claims you were counting on are gone. Settle
+old wars before 65 or after.
+
+**Ash of Empires** · 70 · single [history]
+Every ruin of a razed city becomes Hellfire with a demon. The razers' lands get the demons.
+*Expert:* every razing is a debt that comes due at 70.
+
+**The Countdown** · 70 · single [schedule]
+The counter stops moving up. The Apocalypse is scheduled 50 turns away, publicly. It is
+cancelled only if the counter is brought below 50 before the date.
+*Expert:* the whole world gets one goal and a deadline; the good civs organise the Penance,
+and the Sheaim defend the date.
