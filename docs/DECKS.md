@@ -1686,7 +1686,7 @@ being denied for 20 turns makes it *Resentful* (Unrest, and it may lead a secess
 - **The great-person deck's** non-tech effects (the Index's draws, the Lens's copy, the Recall's
   return) are hooks.
 
-### 6.4 Great-person cards built on the four (23 candidates)
+### 6.4 Great-person cards built on the four (24 candidates)
 
 These go into the pool beside the 94 of section 3. Each names the mechanisms it uses: status,
 history, schedule, hook.
@@ -2156,3 +2156,249 @@ All of it is the player's own governors and Unrest, so it passes the self-contai
 - **The successor's name and portrait.** Governor names exist; leader portraits exist only for
   the named leaders.
 - **The Balseraphs.** Every heir is named Perpentach.
+
+---
+
+## 9. The pool as it stands
+
+Every card that meets the criteria: an expert line, a payoff that does not rest on how rivals
+respond (section 7), and visible before it bites. Where section 7 reworked a card, this is the
+reworked card. Cut cards are left out. The five flagged as depending on an AI are listed at the
+end. Band: I Ancient, II Classical, III Medieval.
+
+### 9.1 Great-person cards (109)
+
+**Sage (20)**
+- *The Second Sky* (I): reveals every mana node, unique feature, lair and goody hut, for good.
+- *Familiars* (I): a unit bound to a caster takes the first spell or shot aimed at it.
+- *Homunculus Vats* (I): a frail caster that knows one chosen sphere I battle spell without the
+  mana.
+- *The Index of Unwritten Books* (I): order the deck's top three. Every later great person
+  draws two, and you keep one.
+- *Scrying Pool* (I): see what one civ sees for 10 turns, once every 20.
+- *The Calculus of Chance* (II): +10 crit for units trained. The Augur's charm turns each
+  unit's first miss into a hit.
+- *Grammar of True Names* (II): name a rival unit type; ignore its evasion and half its magic
+  defence for 25 turns.
+- *Waystones* (II): mages fold their stack between Waystone cities.
+- *Mana Grafting* (II): turn a mana node into another type you own.
+- *Orrery of Ceridwen* (II): see the next two Armageddon cards and their thresholds.
+- *Stoicism* (II, civic): war weariness causes no unhappiness, and unhappiness no Unrest;
+  -15% culture.
+- *Dagda's Seal* (II, membership civic): once every 40 turns, impose the Truce of Dagda or Hold
+  the Counter, with no vote.
+- *Contingency* (II): a mage's prepared trigger: a battle spell before the battle opens, or a
+  return home instead of death.
+- *The Long Experiment* (II): choose one of three drawn rewards, delivered in 40 turns. The
+  captor gets it if the city falls first.
+- *The Plagiarist's Lens* (III): once, learn a secret tech another civ holds.
+- *The Recursive Lemma* (III): one sphere's battle spells are cast twice.
+- *The Predictive Engine* (III): see every scheduled effect; delay one by 10 turns every 30.
+- *Temporal Anchor* (III): a city returns to its anchored state, owner included, after 10
+  turns.
+- *Chronicle of Recall* (III): once, every unit lost in the last 3 turns returns.
+- *Mirror Colony* (III): two governed cities of yours on the largest unclaimed region, joined
+  to the capital by a portal.
+
+**Prophet (25)**
+- *Maponos's Cradle* (I): a free Settler every 20 turns without losing population.
+- *Breath of Tali* (I): the Windcaller's Tailwind, +2 speed in round 1; +1 move on flat land.
+- *Lantern of Lugus* [good] (I): a holy shooter with Glare (-15 enemy accuracy); sees
+  invisible.
+- *Agares's Well* [evil] (I): a mana resource of your choice; +3 counter.
+- *Relic Cult* (I): a dead hero's relic Sanctifies the city that holds it.
+- *Ancestor Worship* (I, civic): cities you founded calm with age; captured cities are
+  restless.
+- *Vigil* (I, process): production lowers the city's Unrest.
+- *Forest Paths* (I): forest and jungle are open ground for you, -1 move for invaders.
+- *Wayside Shrines* (I): road shrines give culture, and passing units heal.
+- *Tidecall of Danalin* (II): turn a flat land plot into Shallows for good.
+- *Heartwood of Sucellus* [not evil] (II): forests wake as Treants against invaders.
+- *Judgment of Junil* [good] (II): name a civ; no war between you for 20 turns, enforced.
+- *Ledger of Mammon* [evil] (II): 3% interest on gold; feeds the counter while you are rich.
+- *False Colours* [evil] (II): attack a civ at peace without a declaration; its defenders get no
+  defensive strikes or fortification.
+- *Ossuary of Arawn* (II): souls of your dead buy Bone Golems or bring a unit back.
+- *The Pilgrim Road* [good or neutral] (II): foreign cities of your religion send pilgrims
+  (population or gold).
+- *Penance* [good or neutral] (II, process): production lowers the Armageddon counter.
+- *Prophecy of Ruin* (II): name a rival city. Take it within 30 turns for the reward, or lose
+  holy-city commerce.
+- *Martyrs' Calendar* (II): each disciple killed Blesses its home city; 10 martyrs make a Saint.
+- *Holy Days* (II): every 20 turns, a festival in every city of your religion. Enemies at war
+  with you then deal -20% damage.
+- *Oath of the Blood-Price* [evil or neutral] (II): declare Vengeance on any civ that ever took a
+  city of yours.
+- *Brand of Aeron* [evil] (III): +50% attack, pursuit, no withdrawal; it decays when idle.
+- *Excommunication* (III): a rival of your faith gets Unrest, and its disciples are silent for 30
+  turns.
+- *Dagda's Balance* [neutral] (III): the counter drifts toward 50; tilt it 3 points every 20
+  turns.
+- *Holy See* (III): a holy city that civs of its religion cannot attack; its religion's units at
+  half cost.
+
+**Engineer (24)**
+- *Cairn Golem* (I): a construct that becomes a permanent fortified hill.
+- *Causeway* (I): coast becomes land.
+- *Corvée* (I, civic): draft citizens as Workers; faster improvements; Unrest per draft.
+- *Ferries* (I): land units cross one-plot straits.
+- *Watchtower* (I): sight 3 and a defensive strike.
+- *Walls that Remember* (I): Sentinels +20% HP per siege survived.
+- *Snares* (I): hidden traps on your plots.
+- *Tunnel Heads* (II): cities with Tunnel Heads are one move apart.
+- *Clockwork Steward* (II): a governor that builds from a list you set.
+- *Tierwright's Forge* (II): reroll a building tier every 30 turns.
+- *Hollow Mountain* (II): a workable peak; a hidden garrison that strikes first in the first
+  battle of each war.
+- *Burning Mirror* (II): siege that doubles against Sentinels in the open and burns buildings.
+- *Canal Locks* (II): ships through land.
+- *Free City Charter* (II): release a city that nobody may attack for 50 turns; it pays you half
+  its commerce.
+- *Mountaineering* (II): units enter peaks, +50% defence there.
+- *Forced March* (II): armies cross a neutral's land for 5 turns, in supply.
+- *Floodgates* (II): flood a river valley into impassable marsh for 10 turns.
+- *Time-Locked Vault* (II): gold returns doubled in 30 turns.
+- *Scorched Earth* (II): your plots give no yield or healing for 15 turns.
+- *Weather Engine* (III): storm, fog or blizzard over an area.
+- *Bastion* (III): a walking fortress; its stack fights with two Sentinels.
+- *Wheeled City* (III): pack a city up and refound it.
+- *Automatons* (III): never out of supply; immune to fear, charms and hexes.
+- *Golem Labor* (III, civic): golems work plots as citizens.
+
+**Merchant (18)**
+- *Black Market* (I): buy a resource you lack.
+- *Ledger of Nations* (I): see rivals' gold, deals, power, cards and great-people progress.
+- *Insurance of the Nine* (I): 40% of a lost unit's cost back.
+- *Embassies* (I): see a civ's Unrest, production and cards, without its consent.
+- *Letters of Credit* (I): borrow from the Guild; a default cuts your production.
+- *Mercenary Hall* (II): hire from a board of any civ's units.
+- *Bounty* (II): your units earn gold and XP for each kill of a named civ's units.
+- *Caravanserai* (II): armies stay in supply along roads into open-border lands.
+- *Cornering the Market* (II): rivals' copies of a resource stop working.
+- *Satrapy* (II, civic): only the capital ruled directly; stronger governors; half the Unrest.
+- *Spymasters* (II): Incite Unrest, Poison the Wells, Steal Plans, Turn a Governor.
+- *Informers* (II, specialist): espionage; see foreign Unrest within 6 plots.
+- *Blood Money* (II): pay to end a Vengeance against you.
+- *Paymaster* (III): buy an adjacent enemy unit.
+- *Merchant Princes* (III): governors that turn surplus into gold and pay requisitions in gold.
+- *Company Towns* (III): an overseas colony whose governor settles the landmass for you.
+- *Confederation* (III, civic): restless cities go autonomous instead of revolting.
+- *The Black Book* (III): see every civ's history counters.
+
+**Bard (22)**
+- *Saga of the Named* (I): an army's victories make a named hero and culture.
+- *War Drums* (I): +1 speed and fear immunity in round 1.
+- *Siren Rock* (I): pulls and damages enemy ships near the coast.
+- *Satire of Kings* (I): +2 Unrest a turn in a rival's cities near yours, for 20 turns.
+- *Plunder* (I, civic): triple pillage gold; a share of a captured city's owner's treasury.
+- *Muster* (I, process): production becomes XP.
+- *Jesters* (I, specialist): -3 Unrest a turn.
+- *The Living Chronicle* (I): each first in your history is a verse of culture.
+- *The Feast of Ceasefire* (I): a scheduled 5 turns in which no one declares war on you, nor
+  you on them.
+- *Masquerade* (II): an invisible stack; its first battle from hiding denies defensive strikes.
+- *Lullaby of Ceridwen* (II): the enemy's rear row skips its first action.
+- *The Unfinished Opera* (II): three Bards, three acts of culture.
+- *Anthem* (II): a cultural channel that falls off with distance, not distance squared.
+- *Living Legend* (II): governors grow traits; call one to arms as a hero.
+- *Regency Council* (II, civic): six directly ruled cities; weaker governors.
+- *Carnival* (II, civic): the Culture process calms Unrest; longer golden ages.
+- *Patronage* (II, hurry): spend culture to finish production.
+- *Songs of Grievance* (II): your cultural channel counts double against cities you have a claim
+  on.
+- *Hall of Heroes* (II): a new unit takes a fallen hero's name and a promotion.
+- *Ballad of the Traitor* (III): invaders in your borders may change sides.
+- *Chorus of the Fallen* (III): your dead raise your side's damage for the rest of the battle.
+- *Illusory Host* (III): decoy soldiers in battle.
+
+### 9.2 Armageddon cards (52)
+
+**FFH2's, as cards**
+- *Blight* (30): unhealthiness everywhere; 25% death damage to every living unit.
+- *Pestilence* (35, recurring): Blight for one civ at a time.
+- *The Four Horsemen* (40 → 50 → 60 → 70): Stephanos, Buboes, Yersinia and Ars Moriendi, one
+  per stage.
+- *Hellfire* (80): empty flat plots become Hellfire, each with a demon.
+- *Wrath* (90): Wrath appears; land units may become Enraged.
+
+**Early (10-30)**
+- *Omens* (20): each civ is told its own fate 30 turns ahead (famine, a traitor governor, a
+  meteor on a named plot, a hero's birth).
+- *The Red Moon* (20): barbarian and animal spawns ×3 for 20 turns; units outside borders bleed.
+- *Children of the Ash* (20-30): the ruins of razed cities rise as Pyre Zombies.
+- *Whispers in the Wells* (20 → 40): river cities lose fresh water; then cities without a
+  Temple poison healing units.
+- *Census of the Damned* (20-40): culpability published. The most culpable is Marked, and the
+  most penitent gets a great person.
+- *The Mirror Hour* (30): each civ's three strongest units get barbarian doubles.
+- *The Signs* (30, recurring): an angel's world rule every 10 turns, the next two always shown
+  (Camulos +25% attack; Junil no war declarations; Esus cheap espionage; Kilmorph +25%
+  production; Mulcarn no healing outside cities).
+
+**Middle (30-60)**
+- *The Drowning Bells* (30 → 50 → 70): coastal unhappiness; the sea takes unimproved coastal
+  flats; the Drowned rise.
+- *The Long Winter* (35 → 55 → 75): the snow line moves toward the equator; the coasts freeze;
+  the Avatar of Mulcarn walks.
+- *Rise of the Barbarian Kings* (30-50): barbarian holdings of 3+ cities become civs.
+- *The Kurgan* (30-50): a city-less horde that demands tribute and moves on if paid.
+- *The Green Revenge* (30-50): Treants rise near the worst forest-cutters.
+- *Plague Ships* (40): plague spreads along trade routes; Quarantine stops it at the price of
+  trade.
+- *The Ashen Sky* (40-60, lingering): -1 food, sight 1, and shots and stones halved in battles.
+- *Demonic Embassies* (40-60): every civ may take an Infernal Pact (+25% production, +1
+  happiness) that feeds the counter.
+- *The Last Market* (40-60): for 10 turns gold buys units, techs, and cities in disorder.
+- *The Free Cities* (40-60): every city at Unrest 70+ revolts; neighbours form a League.
+- *The Unforgiven* (40): every civ that ever lost a city gets Vengeance on its captor at once.
+- *Witching Nights* (40, recurring): every 10th turn summons last twice as long, undead hit
+  harder, and divine spells fail.
+- *Rift Storms* (50+, recurring): rifts spill creatures; adepts close them (-2) or harness them
+  (+1).
+- *Starfall* (50): meteors destroy and leave craters with new mana or Mithril.
+- *The Fissure* (50): a ridge of peaks with one pass splits the largest continent.
+- *Bloodmoon Tithe* (50, recurring): a unit per 8 cities, or 2 population.
+- *The Reckoning of Debts* (50): each broken treaty and razed city costs population or a unit
+  in 10 turns.
+- *Mark of the Beast* (50): the most culpable civ's kills raise the counter, and its dead lower
+  it.
+- *Harvest of Souls* (55, lingering): every 20 deaths in the world add 1 to the counter.
+- *The Hollow Crown* (60): the score leader's most restless governed city secedes.
+- *The Silence of the Gods* (60, lingering): no religion spreads, divine spells fail half the
+  time, and religious buildings give no culture.
+- *The Hollow Years* (60): no great person born for 20 turns, then double points.
+- *The Dead Remember* (60): the haunted dead rise on old battlefields.
+
+**Late (60-90)**
+- *The Long Nightmare* (60-80, lingering): one trait per leader replaced at random for 20 turns.
+- *Dragon Wake* (60 → 80 → 95): dragons wake; they raid the richest cities; a slain dragon
+  leaves a hoard and a secret-tech draw.
+- *The Shepherd's Mercy* (60-80): Angels for every civ that lowered the counter; the Repentant
+  Angel for the most penitent.
+- *The Returning* (60-80): destroyed civs return where their culture survives.
+- *Schism* (60-80): cities of a religion opposed to the state religion secede as a theocracy.
+- *The Forgetting* (65): history, epithets, claims and vendettas are wiped.
+- *Ghost Garrisons* (70): cities get Ghost defenders for every defender who died there.
+- *Bone Roads* (70 → 90): bone roads link evil and good capitals; the dead march them.
+- *Ash of Empires* (70): the ruins of razed cities become Hellfire with demons.
+- *The Countdown* (70): the counter freezes; Apocalypse is scheduled in 50 turns, cancelled below
+  50 or by one civ's 10 points of Penance.
+- *Exodus* (80): cities in disorder or under siege lose population to a new civ, the
+  Dispossessed.
+- *The Sundering* (80): the largest empire's far governed cities secede, in civil war or peace.
+- *The Black Tide* (80-90, lingering): ships at sea bleed; Krakens and Leviathans spawn.
+
+**Endings (100, one drawn, shown at 95)**
+- *Apocalypse*: half of every city's population; units may die.
+- *Agares Unchained*: the Host of Agares invades the most culpable civs; destroying it resets the
+  counter to 50.
+- *The Judgment*: the guilty lose population and the penitent gain it, by culpability.
+- *The Unmaking*: all culture is reset to the cities' own plots, and every deal ends.
+
+### 9.3 Flagged as depending on an AI (not in the counts above)
+
+- *Toll Roads* and *The Pretender's Song* (Merchant, Bard): the mechanical part is the payoff,
+  but the card leans on rivals' moves.
+- *The Free Company* (Merchant): only as good as the crusade Host's AI.
+- *The Unbinding of Oaths* and *The Pale Election* (Armageddon): mechanical for you, but much of
+  their weight is what rivals do with the opening.
