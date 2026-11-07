@@ -15,6 +15,10 @@ Settled in discussion so far:
 - The Armageddon counter becomes a deck of crises triggered at thresholds.
 - The random events and crime are to be scrapped. The event machinery stays for the triggers
   that rules code fires (Armageddon, the Adaptive and Insane traits, lair outcomes, ...).
+- New rules may be drafted; spawning civs and revolutions are in scope.
+- Unrest is worth having, and what raises and lowers it is mostly specific to each
+  civilization (section 5).
+- The Balseraphs' first split-off civ is Balseraphs, led by Somehow Also Perpentach.
 
 Proposed and not yet decided:
 
@@ -226,21 +230,18 @@ A civ can be born in six ways, each a rule a card or a crisis can call:
 6. **Mirror:** a sibling of an existing civ.
 
 **Revolutions.**
-- **Unrest** (0-100, a city's, new).
-  - It rises each turn with:
-    - unhappy citizens beyond the content ones;
-    - turns in disorder;
-    - distance from the capital past 8 plots;
-    - another civ's culture on the city's plot;
-    - a religion present whose alignment opposes the state religion's;
-    - war weariness;
-    - Foment Revolt pressure (the cultural channel's pressure becomes Unrest);
-    - a disloyal governor.
-  - It falls with:
-    - garrison units and surplus happiness;
-    - Courthouse, Governor's Manor and Dungeon (the crime they reduced did nothing; Unrest
-      gives them a real job);
-    - a loyal governor.
+- **Unrest** (0-100, a city's, new). Most of it comes from the civilization: each civ has its
+  own risers and calmers (section 5). The Doviello grow restless without plunder; the Calabim's
+  cattle grow restless when fed on. A thin core is the same for every civ, so rivals always
+  have a lever on it:
+  - **Core risers:** turns in disorder; another civ's culture on the city's plot; Foment Revolt
+    pressure (the cultural channel's pressure becomes Unrest); espionage (Incite Unrest,
+    section 3.6); a disloyal governor.
+  - **Core calmers:** garrison units; a loyal governor; Courthouse, Governor's Manor and
+    Dungeon (the crime they reduced did nothing; Unrest gives them a real job); the Vigil
+    process and Jesters (section 3.6).
+  - The first draft's generic risers (unhappiness, distance from the capital, an opposed
+    religion, war weariness) become options that a civilization can take in section 5.
   - A directly ruled city gains no Unrest. The four direct-rule slots get a second meaning: the
     cities you cannot afford to lose.
 - **The revolt.** At 100 the city revolts. Governed cities of the same owner within 5 plots
@@ -248,7 +249,8 @@ A civ can be born in six ways, each a rule a card or a crisis can call:
 - **Where it goes.** If one foreign civ's culture is the city's majority, the city joins that
   civ (as Foment Revolt does today). Otherwise the group secedes as a new civ, led by the
   governor of its largest city. This changes Foment Revolt: today a revolting city always joins
-  the caster.
+  the caster. Some civilizations' rebels become another civilization (the Ljosalfar's
+  Svartalfar, the Balseraphs' second Perpentach: section 5.3).
 - **The owner's answer.**
   - *Let Go:* peace.
   - *Fight:* civil war. Each rebel city gets a free unit per 3 population, and the parent's
@@ -726,10 +728,181 @@ civ starts Friendly to you, with open borders and a defensive pact on offer.
 *Expert:* break a leader's periphery into a friendly buffer instead of conquering it. Aim at
 the far city with the foreign culture.
 
-### 3.6 Deck notes
+### 3.6 Capabilities and civics (28)
 
-- **Count.** 66 cards: 13 per suit, 14 for the Prophet. The bands are spread across I-III:
-  Sage 4/5/4, Prophet 4/7/3, Engineer 2/7/4, Merchant 4/5/4, Bard 4/6/3.
+These cards work the way existing techs do: Construction gives bridges and irrigation,
+Cartography map trading and open borders, Honor defensive pacts, Feudalism vassals, Drama the
+commerce slider, and techs unlock civics. Each card here unlocks a capability or a civic. A
+civic behind a card is held by one civ in the world, since the card leaves the deck: this game,
+only one empire has a Satrapy.
+
+Today there are five civic options with 31 civics, three processes (Wealth, Research,
+Culture), two hurries (population, gold) and one espionage mission (See Demographics). Each of
+those is a slot these cards can fill.
+
+**Civics**
+
+**Satrapy** · Merchant · II · needs Code of Laws · Government
+Only the capital is directly ruled. Governors get one more trait. Governed cities gain half the
+Unrest. No maintenance from distance.
+*Expert:* a wide empire that delegates; world wonders, which need direct rule, are then built in
+the capital alone.
+
+**Regency Council** · Bard · II · needs Code of Laws · Government
+Six direct-rule slots instead of four. Every governor has one trait fewer, and governed cities
+gain +1 Unrest a turn.
+*Expert:* the tall empire's wonder government; a wide empire pays for it in Unrest.
+
+**Confederation** · Merchant · III · needs Mercantilism · Government
+A city at Unrest 100 does not revolt; it becomes Autonomous. It stays yours for the score and
+trade routes, but gives no production, units or taxes until its Unrest falls below 50.
+*Expert:* holds a big restless empire together through a crisis (the Free Cities, the
+Sundering), at the price of the output.
+
+**Ancestor Worship** · Prophet · I · needs Ancient Chants · Cultural Values
+Cities you founded gain 1 Unrest less a turn for every 25 turns of their age. Graveyards give
++2 culture. Captured cities gain +1 Unrest a turn.
+*Expert:* a builder that never loses its own cities pays for it in holding conquests.
+
+**Carnival** · Bard · II · needs Festivals · Cultural Values
+The Culture process also lowers the city's Unrest. Golden ages last 50% longer. -10% research.
+*Expert:* the culture civ's answer to Unrest crises; the research cost is the price.
+
+**Stoicism** · Sage · II · needs Philosophy · Cultural Values
+War weariness causes no unhappiness, and unhappiness raises no Unrest. -15% culture.
+*Expert:* the long-war civic.
+
+**Corvée** · Engineer · I · needs Masonry · Labor
+A city may draft a citizen as a Worker (population -1, regrown normally). Improvements build
+25% faster. Each draft gives the city +10 Unrest.
+*Expert:* the early land-improvement rush, paid in Unrest.
+
+**Golem Labor** · Engineer · III · needs Mithril Working · Labor
+A golem in a city works a plot as a citizen and eats nothing. Golems cost +50% hammers.
+*Expert:* growth past the food cap; for the Luchuirp it is the whole economy.
+
+**Tribute State** · Merchant · II · needs Taxation · Economy
+Demands paid to you are worth 50% more. Vassals pay you 10% of their commerce. Civs you have
+made demands of take -1 more attitude.
+*Expert:* the strong civ's economy of fear.
+
+**Plunder** · Bard · I · needs Warfare · Economy
+Pillage gives 3 times the gold. A captured city gives you 10% of its owner's treasury. Captured
+cities keep 25% fewer buildings.
+*Expert:* the raider's economy (the Doviello's, the Clan's); a poor choice for a civ that means
+to keep what it takes.
+
+**The Grey Council** · Sage · II · needs Philosophy · Membership
+A third council, with a vote source of its own. Its resolutions:
+- Truce of Dagda: no war declarations for 10 turns.
+- Hold the Counter: the Armageddon counter cannot rise for 20 turns.
+- Open the Archives: each member gets the tech known by the most members.
+- Sanction: a named civ's deals and trade routes with members end.
+
+*Expert:* the neutral civs' instrument against the other two councils' wars and the world
+clock.
+
+**Processes**
+
+**Vigil** · Prophet · I · needs Mysticism
+Production lowers the city's Unrest: 1 point per 10 hammers.
+*Expert:* a restless city works for its own peace before it revolts.
+
+**Penance** [good or neutral] · Prophet · II · needs Religious Law
+Production lowers the Armageddon counter: 1 point per 500 hammers, counted as penitence.
+*Expert:* the good civs' way to race culpability (the Census of the Damned, the Shepherd's
+Mercy).
+
+**Muster** · Bard · I · needs Military Strategy
+Production gives XP to units in the city: 1 XP per 30 hammers, spread among them.
+*Expert:* an idle military city before a war.
+
+**Hurries**
+
+**Patronage** · Bard · II · needs Drama
+Spend the city's culture to finish production, at 2 culture a hammer. Spent culture counts
+toward neither borders nor the culture victory.
+*Expert:* a culture city that has its borders turns culture into wonders.
+
+**Diplomacy** (new deal items)
+
+**Embassies** · Merchant · I · needs Writing
+Exchange embassies. Each side sees the other's cities' Unrest and production, and its held
+secret techs.
+*Expert:* needed to aim Foment Revolt or the Pretender's Song well.
+
+**Hostages** · Merchant · I · needs Code of Laws
+A unit given as a hostage with a peace. If the giver breaks the peace, the hostage joins the
+holder. If the holder breaks it, the hostage goes home with two levels more.
+*Expert:* give a hero to buy a peace your neighbour will believe.
+
+**Royal Marriage** · Bard · II · needs Code of Laws
+Permanent +2 attitude between the two leaders. When either civ's cities revolt, the rebels may
+join the spouse instead of seceding.
+*Expert:* marry the neighbour whose empire is about to break.
+
+**Shared Vision** · Sage · I · needs Cartography
+A deal item: each side sees everything the other's units and cities see.
+*Expert:* an alliance's eyes; a cheap gift to a friend at war.
+
+**Passage of Arms** · Engineer · II · needs Honor
+The other side's armies may march through your land and stay in supply there, without open
+borders' trade and culture.
+*Expert:* how a crusade reaches a target behind a neutral.
+
+**Espionage**
+
+**Spymasters** · Merchant · II · needs Deception
+Unlocks missions, paid in espionage points (the fourth commerce):
+- Incite Unrest: +25 Unrest in a city.
+- Poison the Wells: -2 population.
+- Steal Plans: see a civ's held secret techs and its next great person's card.
+- Forge Letters: two civs take -2 attitude to each other for 20 turns.
+- Turn a Governor: one of the target's governors becomes Disloyal.
+
+*Expert:* Unrest becomes a weapon at range.
+
+**Movement**
+
+**Mountaineering** · Engineer · II · needs Engineering
+Land units can enter peaks, at 3 moves. A unit on a peak gets +50% defence and sight 3.
+*Expert:* the impassable border is a road for you alone.
+
+**Ferries** · Engineer · I · needs Fishing
+Land units cross a one-plot strait in one move, as if it were land.
+*Expert:* the early island neighbour is in reach without boats.
+
+**Forest Paths** · Prophet · I · needs Way of the Forests
+Your units move through forest and jungle as through open ground. Enemy units in your forests
+have -1 move.
+*Expert:* a forest border becomes your highway and the enemy's mud.
+
+**Specialists**
+
+**Jesters** · Bard · I · needs Festivals
+A new specialist: +1 culture, and -3 Unrest a turn in its city.
+*Expert:* a citizen spent on order, in the city about to revolt.
+
+**Informers** · Merchant · II · needs Code of Laws
+A new specialist: +3 espionage points, and shows the Unrest of foreign cities within 6 plots.
+*Expert:* the border city that watches the neighbour's soft cities.
+
+**Improvements**
+
+**Watchtower** · Engineer · I · needs Construction
++3 sight. A unit on it strikes first when attacked (a defensive strike).
+*Expert:* the early warning line on an open border.
+
+**Wayside Shrines** · Prophet · I · needs Priesthood
+Built on a road: +1 culture to the city that works it. Units passing heal 10%.
+*Expert:* roads to the front that heal the army on its way.
+
+### 3.7 Deck notes
+
+- **Count.** 94 cards: the 66 above (13 per suit, 14 for the Prophet) and the 28
+  capabilities and civics. The bands of the 66 are spread across I-III: Sage 4/5/4, Prophet
+  4/7/3, Engineer 2/7/4, Merchant 4/5/4, Bard 4/6/3. A deck of 94 is above the 40-70 first
+  estimated: games repeat less, and the content bill is larger.
 - **Civ births and Unrest (section 1.9)** carry Mirror Kingdom, Holy See, Free City Charter,
   Charter Company and the Pretender's Song.
 - **Strongest cards to watch:** Chronicle of Recall, The Free Company, the Index, Bastion,
@@ -1010,3 +1183,216 @@ units over buildings.
 - **New systems the deck leans on:** culpability; civ births and Unrest; per-city and
   per-player history (ruins, defenders killed, forests cut); terraforming; area weather;
   quarantine. The rest uses existing levers.
+
+---
+
+## 5. Unrest by civilization
+
+### 5.1 How it works (proposal)
+
+- The core of section 1.9 applies to every civ. On top of it, each civilization has its own
+  risers and calmers: what its people need and what calms them.
+- Three options are drafted per civ. Choose one, or mix them. Each option names one riser and
+  one calmer.
+- The flavor sets each civ's rhythm: the Doviello must raid on a schedule, the Elohim must not
+  start wars, the Sheaim want the world clock to run. Managing Unrest becomes part of playing
+  each civ well, so the AI manages it per civ. That follows "civilizations use their unique
+  mechanics" (CLAUDE.md).
+- A riser must be visible to its owner before it bites. The city screen shows each source of
+  Unrest. That includes the Council of Esus, a hidden religion (`hidden`, `sneak_attack`), in
+  the owner's own cities.
+
+### 5.2 The options
+
+**Bannor**: bound to fight chaos and disorder.
+1. *The oath.* Rises while an evil civ you have met is not at war with you, more the stronger
+   it is. Falls with each evil or demon unit killed.
+2. *The Order.* Rises in cities without The Order. Falls with each Temple of the Order and
+   while the Crusade civic is in force.
+3. *Idle swords.* Rises in every city once 20 turns pass at peace. Falls with each battle won,
+   doubled during a crusade.
+
+**Malakim**: desert faithful of Lugus, led by an exiled elven prince.
+1. *The open sky.* Rises in cities that work no desert, plains or flood plains. Falls per
+   desert plot worked, doubled with a Desert Shrine.
+2. *Lugus's light.* Rises in cities without the Empyrean while the Empyrean exists in the
+   world. Falls with each Empyrean temple and each spread of the Empyrean by your missionaries.
+3. *The caravan.* Rises in cities with no trade route to a foreign city. Falls per foreign
+   trade route.
+
+**Elohim**: Sirona's shelter for the wise.
+1. *Shelter.* Rises in every city when you declare a war. Falls each turn at peace, and with
+   refugees you take in (Exodus).
+2. *Holy ground.* Rises when a unique feature leaves your borders. Falls per unique feature
+   inside them.
+3. *Wisdom.* Rises in cities without an Elder Council or Library. Falls with each great person
+   born in the empire.
+
+**Mercurians**: angels who care only for the war on demons.
+1. *The war in Hell.* Rises in every city while the Infernals live, 1 per 10 demons alive.
+   Falls with each demon killed.
+2. *Orders.* Rises while at peace with an evil civ. Falls each turn of war against one.
+3. *Indifference.* Unhappiness raises no Unrest. Instead it rises with turns your angels spend
+   inside your own borders, and falls per angel fighting outside them.
+
+**Luchuirp**: the Open-Skiers, makers of golems.
+1. *Idle hands.* Rises in cities where golems outnumber citizens. Falls with each building or
+   wonder completed.
+2. *The masterwork.* Rises while no wonder, Pallen's Engine or Adularia Chamber is in
+   production anywhere in the empire. Falls with each one completed.
+3. *The surface.* Rises in cities on hills. Falls per Workshop worked. The rebels become Khazad
+   (5.3).
+
+**Kuriotates**: squabbling tribes gathered under a boy-king; few cities, many Settlements.
+1. *The tribes.* Settlements gain Unrest by distance to the nearest full city. Falls with each
+   luxury available (the Tailor's Fine Clothes, the Jeweler's Jewels).
+2. *The court.* Rises in a full city whose culture level is below the empire's average. Falls
+   with Legends (the world spell) and each great artist.
+3. *Representation.* Rises in Settlements while none has been promoted for 30 turns. Falls in
+   every Settlement when one is promoted.
+
+**Ljosalfar**: the Seelie court, returning from the hidden groves.
+1. *The grove.* Rises per forest cut within the city's radius. Falls per ancient forest in it.
+2. *The court's faith.* Rises in cities where the Council of Esus is present. Falls per
+   Fellowship of Leaves temple. Rebels with Esus become Svartalfar (5.3).
+3. *The seasons.* Rises in the calendar's autumn and winter turns and falls in spring and
+   summer: the two courts' reigns.
+
+**Khazad**: dwarves of the deep halls and the vaults.
+1. *The vaults.* FFH2's vault levels already turn gold per city into happiness. Unrest rises
+   with Empty and Low vaults and falls with Abundant and Overflowing.
+2. *Under the mountain.* Rises in cities with no hill or peak in their radius. Falls per mine
+   worked. Rebels on flat land become Luchuirp (5.3).
+3. *The grudge.* Rises in every city while another civ holds a city taken from the Khazad.
+   Falls when one is retaken.
+
+**Sidar**: shades, detached from the world.
+1. *Detachment.* Rises during a war the Sidar declared. Falls each turn at peace.
+2. *The aberration.* Rises while undead units are within 10 plots of a city. Falls with each
+   undead destroyed.
+3. *Fading.* A Sidar city at Unrest 100 never revolts. It fades instead: -2 population, and
+   its garrison is hidden in the mist for 10 turns. Unrest rises with population above 10 and
+   falls as units Wane into shades.
+
+**Lanun**: sea people of Danalin, and pirates.
+1. *The sea's call.* Rises in cities with no coast. Falls per ocean plot worked.
+2. *Plunder.* Rises once 15 turns pass without a raid at sea (a ship sunk or a coast
+   pillaged). Falls with each raid.
+3. *The coves.* Falls per Pirate Cove. Rises when a cove is lost.
+
+**Grigori**: free people who want the gods gone.
+1. *No gods.* Rises per religion present in a city. Falls with each Adventurer born.
+2. *Adventure.* Rises in cities with an Adventurers' Guild while no Adventurer is in the
+   field. Falls with each lair explored and each level an Adventurer gains.
+3. *Free people.* Rises under Theocracy, God King or Social Order. Falls under Liberty or
+   Republic.
+
+**Hippus**: horselords and sell-swords.
+1. *The herds.* Rises in cities with no Horses or pasture in their radius. Falls per pasture.
+2. *Riders.* Rises per mounted unit idle in a city for 5 turns or more. Falls per mounted unit
+   outside the borders.
+3. *Sell-swords.* Rises once 20 turns pass without a unit lent or hired out (allied loans, the
+   Mercenary Hall). Falls with each one.
+
+**Amurites**: the Children of Kylorin.
+1. *The Art.* Rises in cities without a Mage Guild. Falls per spell cast by casters trained
+   there.
+2. *Kylorin's heirs.* Rises while another civ has more Archmages than you. Falls per Archmage.
+3. *The nodes.* Rises with each mana node lost. Falls per node within 5 plots of the city.
+
+**Doviello**: the pack follows the strongest.
+1. *Raid hunger* (the owner's idea). Rises 2 a turn in every city once 15 turns pass without a
+   sack (a city captured or razed) or a tribute paid to them. Falls 30 in every city with each
+   sack or paid demand.
+2. *The weak are left behind.* Rises in cities smaller than half the empire's average size.
+   Falls with each wolf pack formed in the city.
+3. *The strongest leads.* Rises while a civ you have met has more power than you. Falls with
+   each battle won by your largest army.
+
+**Balseraphs**: Perpentach's court of freaks, puppets and mirrors.
+1. *Boredom.* Rises each turn without entertainment. Falls with each Arena battle, each freak
+   added to the Freak Show, and each Revelry.
+2. *Sanity.* Rises each turn the leader's traits stay the same. Perpentach's Insane trait
+   resets it when it reshuffles them. Under Keelyn it rises while no summon is active.
+3. *The audience.* Falls per Puppet and Harlequin in the city. Rises while the Hall of Mirrors
+   stands unbuilt in an empire of 6 cities or more.
+
+**Clan of Embers**: the horde, kin to the barbarians.
+1. *Kin.* Rises when barbarians near your borders are destroyed by other civs. Falls when
+   barbarian units join you.
+2. *The warrens.* Rises in cities of population 8 or more without Warrens. Falls per unit
+   trained in a city with Warrens.
+3. *The horde must move.* Rises in every city once 25 turns pass without a city taken. Falls
+   with each city taken.
+
+**Svartalfar**: the Unseelie court.
+1. *Intrigue.* Rises once 15 turns pass without a successful Kidnap or espionage mission.
+   Falls with each.
+2. *The court's faith.* Rises in cities where the Fellowship of Leaves is present. Falls with
+   the Council of Esus. Rebels with the Fellowship become Ljosalfar (5.3).
+3. *The night.* Rises in the calendar's spring and summer turns and falls in autumn and
+   winter.
+
+**Calabim**: vampire lords and their cattle.
+1. *The cattle.* Rises 10 with each Feast in the city. Falls with a Breeding Pit and a
+   Governor's Manor.
+2. *The hungry nobles.* Rises in cities where no vampire has fed for 20 turns. Falls with each
+   Feast. (The opposite pull of option 1; take one.)
+3. *Sunlight.* Rises with The Order or the Empyrean present. Falls with the Ashen Veil. The
+   rebels are the cattle, a human civ (5.3).
+
+**Sheaim**: gathered from every people to end creation.
+1. *The cause.* Rises when the Armageddon counter falls. Falls when it rises.
+2. *The gates.* Falls per Planar Gate summon alive. Rises with each summon destroyed.
+3. *The gathered.* Foreign culture raises Unrest twice as fast as in the core. Falls with each
+   foreign city that takes the Ashen Veil.
+
+**Infernals**: Hyborem's host.
+1. *Hunger for souls.* Rises each turn. Falls per unit killed by Infernal units.
+2. *The angels.* Rises while the Mercurians live. Falls with each angel killed.
+3. *Hell on earth.* Falls per hell terrain plot in the radius. Rises per plot of ordinary
+   terrain.
+
+**Illians**: the lost men of Letum Frigus.
+1. *Winter.* Rises per worked plot that is not snow or tundra. Falls per snow plot.
+2. *The god-king.* Falls with each step of Auric's rise (the Draw, Ascension). Rises once 30
+   turns pass without one.
+3. *The world sleeps.* Rises while another civ researches faster than you. Falls while Stasis
+   holds.
+
+### 5.3 Who the rebels become
+
+By default, rebels found a civ of their own civilization under a new leader. Five
+civilizations' rebels become something else, and in each the rule turns on something the owner
+can see and manage:
+
+- **Ljosalfar and Svartalfar, by faith.**
+  - Ljosalfar rebels whose cities hold the Council of Esus become Svartalfar. Svartalfar rebels
+    whose cities hold the Fellowship of Leaves become Ljosalfar. Rebels without the other
+    court's faith stay their own civ.
+  - If the other court is already in the game and has met them, the rebels join it, as the
+    courts reclaim their own. Otherwise they found it, led by a court noble (or Faeryl or
+    Arendel when not in play).
+  - The lore is this civil war. The Svartalfar's own text: the Unseelie court, in power when
+    Sucellus died, decreed Esus in his place, punished the elves who would not stop
+    worshipping Sucellus, and set off a civil war that only the Age of Ice stopped.
+- **Khazad and Luchuirp, by ground.** Khazad rebels whose cities sit on flat land become
+  Luchuirp, the Open-Skiers. Luchuirp rebels on hills become Khazad. The Luchuirp's text calls
+  the Khazad their cousins who kept the caves.
+- **Mercurians and Infernals, by faith.** Mercurian cities where the Ashen Veil is the majority
+  fall as Infernals. Infernal cities with The Order rise as Mercurians, led by a Repentant
+  Angel.
+- **Calabim, by species.** The cattle rise: Calabim rebels become a human civ not in play
+  (Bannor, Malakim or Elohim, by the rebels' majority religion).
+- **Balseraphs: Perpentach again** (the owner's idea).
+  - The first Balseraph secession founds a Balseraph civ led by *Somehow Also Perpentach*, with
+    Perpentach's traits, Insane included. Later secessions are led by *Perpentach the Other*,
+    *Definitely Perpentach* and *Perpentach (Original)*.
+  - Every Perpentach has -2 attitude toward every other one ("Impostor").
+  - When a Perpentach civ is destroyed, the Perpentach with the most cities gains one of its
+    traits.
+  - Under Keelyn the rebels are still led by a Perpentach. Nobody can explain it.
+
+Unit and building conversion uses the class mapping crusade Hosts already use: a Fyrdwell
+becomes a Nyxkin, a Flurry a crossbowman, a Dwarven Smithy a Forge. Heroes stay with the
+parent.
