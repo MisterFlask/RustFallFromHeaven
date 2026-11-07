@@ -2519,6 +2519,15 @@ Engineer, Merchant, Bard and Armageddon cards beyond section 10.1: not yet revie
 18. **Military stays military.** No converting the army back into the economy.
 19. **A generic card should serve most civs that draw it.** A card only one civilization can
     really use (Golem Labor) is out.
+20. **No new trackers for modest effects.** A new piece of state is worth adding only for an
+    effect that matters a great deal.
+21. **The content vehicles are presumptively in.** These already fit the player's ways of
+    deciding: a promotion units can take, a unit players can build, a building or improvement
+    players can build, a spell that can be cast.
+22. **Changing the diplomatic landscape is welcome.** New civilizations, spawned vassals,
+    forever-enemies.
+23. **One-off global effects are welcome:** world spells a player casts once. They must be worth
+    the great person.
 
 ### 10.1 What the principles predict for the unreviewed cards
 
@@ -2734,3 +2743,150 @@ Confidence: H high, M medium, L low. Numbers are the principles of section 10.
   trait and gains one drawn at random.
 - **Out:** Golem Labor, Saga of the Named, Blood Money, Favoured Partner, the Unmaking, the
   Judgment.
+- **Ghost Garrisons, the Dead Remember, Scars of war:** out (fourth round). New trackers whose
+  only job is to power one-off effects of modest importance are out; that is also why crime
+  was disliked.
+
+---
+
+## 11. A batch in the favoured shapes (fourth round, draft)
+
+Every card here is a promotion, a unit, a building, an improvement, a spell, a ritual or a
+one-off world spell. A few change the diplomatic landscape. All of them:
+- use no push-button cooldowns and no new trackers;
+- stay off governors, Unrest, espionage and supply;
+- have qualitative or large effects.
+
+"National, N" = N at the normal cost, then 500% each. "Hard" = a true limit.
+
+### 11.1 Great-person cards (30)
+
+**Sage**
+- **Ceridwen's Fall** (III, needs Arcane Lore; world spell). Choose a plot you can see. Every
+  unit within 2 plots of it takes 50% fire damage, and every improvement there is destroyed.
+  *Expert:* the answer to the doomstack at your gates, or the opening of the decisive siege.
+- **The Great Summoning** (III, needs Arcane Lore; world spell). For each of Air, Earth, Fire,
+  Water and Ice mana you have, a permanent elemental of that kind appears in your capital.
+  *Expert:* collect the five manas first; it is five tier-3 units for one great person.
+- **Wardstone** (II, needs Knowledge of the Ether; improvement). In battles on plots within 2
+  of a Wardstone, the attacker's damage spells deal no damage (charms and hexes still work).
+  *Expert:* ring your border cities against the caster civs (Amurites, Sheaim, Balseraphs).
+- **Spell Turning** (II, needs Alteration; promotion for casters of level 4+). The first enemy
+  damage spell aimed at this unit in each battle strikes its caster instead.
+  *Expert:* the archmage's insurance in a mage war.
+- **Spellbinder** (II, needs Divination; national unit, 2). A caster whose battle hex
+  *Silence* stops the enemy caster with the most magic from casting for the whole battle.
+  *Expert:* bring it against armies built around one archmage or hero caster.
+- **Unweaving** (III, needs Strength of Will; world spell). Every summoned unit, temporary or
+  permanent, of every civ at war with you is destroyed, wherever it stands.
+  *Expert:* the summoners' doom (the Sheaim's gates, Keelyn's Bond); hold it for the war that
+  needs it.
+
+**Prophet**
+- **Rite of Return** (III, needs Divine Essence; world spell). A destroyed civilization
+  returns as your permanent vassal in one of your cities that it originally founded (the
+  city's original owner, which the game keeps), with a garrison of four of its own units.
+  *Expert:* turn a conquest you struggle to hold into a vassal that fights with you.
+- **Curse of the Nemesis** [evil] (III, needs Malevolent Designs; world spell). Name a civ you
+  have met. A new civ (an unused evil civilization, else a demon host) appears on the
+  unclaimed land nearest it, or on its border, with one tier-3 unit per city the target has. It
+  is permanently at war with the target: no peace, ever.
+  *Expert:* give the rival a war it can never end, before you start yours.
+- **Crusade of the Faithful** [good or neutral] (II, needs Fanaticism; world spell). Your holy
+  city receives one unit of your religion's strongest buildable unit per city in the world
+  that follows your religion, up to 12.
+  *Expert:* spread the faith first, then call the crusade.
+- **Hallowed Ground** [good] (II, needs Honor; world spell). Every hell-terrain plot in your
+  borders returns to its natural terrain, and your units deal +25% damage in battles inside
+  your borders, for the rest of the game.
+  *Expert:* the good civ's permanent home-ground advantage; cast it when hell terrain starts to
+  creep in.
+- **Exorcist** (II, needs Priesthood; national unit, 3). A disciple that deals double damage to
+  units with the Demon or Undead promotion; its battle heal also ends Fear.
+  *Expert:* the line against the Infernals, the Sheaim and the Calabim.
+- **The Covenant Ark** (III, needs Theology; national unit, 1, hard). A large unit. Every unit
+  in its stack is immune to fear and takes half damage from unholy and death damage.
+  *Expert:* the centre of the army that marches on the evil civs.
+
+**Engineer**
+- **Raise the Ramparts** (II, needs Construction; world spell). Every city of yours gains its
+  next wall: none to Palisade, Palisade to Walls, Walls to Wall of Stone.
+  *Expert:* the turn before a two-front war.
+- **Hill Fort** (I, needs Masonry; improvement on hills). Acts as a city for healing and
+  movement (`acts_as_city`), and battles on it are fought with two Sentinels for the defender.
+  *Expert:* walls in the field, at the pass the enemy must take.
+- **Siege Tower** (II, needs Construction; unit, siege). In an attack on a walled city, the
+  attacking side's melee strikes past the Sentinels at the soldiers behind them, and the Siege
+  Tower takes the Sentinels' blows.
+  *Expert:* takes a walled city without first grinding down its walls.
+- **Raise the Mountain** (III, needs Machinery; ritual, repeatable). A hill within 3 plots of
+  the city becomes a peak, or a flat plot becomes a hill.
+  *Expert:* close a pass for good, or give a city its hills.
+- **Forgemasters' Secrets** (II, needs Smelting; two promotions for melee units).
+  *Giantsbane*: double damage against large units (`damage_vs_large`). *Wallbreaker*: double
+  damage against walls (`damage_vs_walls`).
+  *Expert:* the answer to dragons, golems and giants, and to the walled capital.
+- **The Iron Road** (III, needs Machinery; a worker build). Unlocks the Railroad route (in the
+  data, but no build makes it): your units move along it at no movement cost.
+  *Expert:* one army for the whole empire; build it between your fronts.
+
+**Merchant**
+- **Client Kingdom** (II, needs Feudalism; world spell). Release one to three connected cities
+  of yours (not the capital) as a new civ: an unused civilization that fits the cities, else
+  yours under a new name. It is your permanent vassal while you hold more power.
+  *Expert:* the far cities you cannot defend become a buffer that fights with you.
+- **Sellsword Nation** (III, needs Guilds; world spell). Choose a civ you are at war with. A
+  mercenary civ appears on its border with an army (one tier-3 unit per two of its cities). It
+  is your permanent vassal and at war with that civ.
+  *Expert:* a second front you do not have to march to.
+- **Condottiero** (II, needs Trade; national unit, 1). A tier-3 melee unit with the Hero
+  promotion (acts once more in battles), bought only with gold, in any of your cities, at any
+  time.
+  *Expert:* the emergency champion for the city under attack this turn.
+- **The Golden Hoard** (III, needs Mercantilism; world spell). For 10 turns, gold spent to hurry
+  production buys twice the hammers.
+  *Expert:* save gold for a war, then buy the army in one burst.
+- **Raider's Mark** (I, needs Horseback Riding; promotion for mounted and recon units).
+  Pillaging costs no movement and gives triple gold.
+  *Expert:* the raiding economy's tool, best with Plunder.
+- **Black Market** (I, needs Trade; building). As in section 3.4: buy a resource you lack for
+  gold per turn.
+
+**Bard**
+- **The Great Epic** (III, needs Strength of Will; world spell). Every living unit of yours
+  gains a free promotion pick.
+  *Expert:* cast it with the army at its largest, the turn before the war.
+- **Hall of Legends** (II, needs Arete; building, national). Every unit of yours that reaches
+  level 5 gains the Hero promotion (acts once more in battles).
+  *Expert:* veterans become heroes; fight many battles with the same units.
+- **War Chanter** (I, needs Festivals; national unit, 2). Battle charm *Battle Chant*: its side
+  is immune to fear and has +1 speed for the whole battle.
+  *Expert:* the answer to fear armies, from the first turns.
+- **Herald of Defiance** (II, needs Drama; national unit, 1). When the city it stands in is
+  attacked, every defender acts once more in round 1.
+  *Expert:* the capital's garrison, or the city the enemy will hit first.
+- **The Kingmaker's Ballad** (III, needs Philosophy; world spell). Name two civs, neither
+  yours. They become permanently at war with each other: no peace, ever.
+  *Expert:* lock the two strongest rivals into a war that bleeds them both.
+- **Illusory Host** (III, needs Strength of Will; national unit, 2). As in section 3.5: decoy
+  soldiers in battle.
+
+### 11.2 Armageddon cards that change the diplomatic landscape (5)
+
+- **The Lost Legion** (40). An unused civilization appears on the largest unclaimed region,
+  with three cities and an army, at peace with everyone.
+  *Expert:* a new neighbour to court, or the last free land is taken; settle before 40.
+- **Breaking of the Chains** (50). Every vassal breaks free and is at war with its former
+  master for 20 turns.
+  *Expert:* masters garrison the border with their vassals before 50.
+- **Twin Thrones** (60). Every civ with 12 or more cities splits. The half of its cities
+  farthest from its capital becomes a civ of the same civilization, at war with the parent for
+  20 turns. No Unrest needed: size is the test.
+  *Expert:* stay under 12 cities, or hold the far half with armies before 60.
+- **The Nemesis of Kings** (70). A forever-enemy civ appears beside the score leader, with an
+  army of one tier-3 unit per two of its cities. It can never make peace with the leader.
+  *Expert:* the leader fortifies the border it will appear on; the rest let it bleed.
+- **The Exiled Court** (30-50). For each civ whose original capital is held by another civ (the
+  game keeps the original owner), a court in exile appears on unclaimed land near it. It is a
+  civ of the dispossessed civilization, permanently at war with the captor.
+  *Expert:* every conqueror of a capital gets a nemesis; conquerors weigh it before 30.
