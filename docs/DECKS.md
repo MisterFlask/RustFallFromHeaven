@@ -594,7 +594,7 @@ Nyx. Building it adds +3 to the counter.
 *Expert:* the sphere your mages lack, paid for in doom; worth more the earlier it comes.
 
 **Tidecall of Danalin** · II · needs Message from the Deep · national unit, 1 (hard) · [new: land to sea]
-*Drown*: a flat land plot next to water within 2 plots, with no city, becomes Shallows for
+*Drown*: a flat land plot next to water within 2 plots, with no city, becomes Coast (water) for
 good. Units on it that cannot swim move to the nearest land. Once every 10 turns.
 *Expert:* cut the land bridge the enemy's army needs, or drown a rival's coastal farms; one
 plot at the right isthmus can end a war plan.
@@ -662,7 +662,7 @@ ground.
 next war is fought.
 
 **Causeway** · I · needs Fishing · worker build · [new: sea to land]
-Over 15 turns, a Shallows or Coast plot that touches land on two sides becomes grassland.
+Over 15 turns, a Coast plot that touches land on two sides becomes grassland.
 *Expert:* bridge to the island or the rival's coast. It is the counter to the Lanun and to
 Tidecall.
 
@@ -1131,8 +1131,8 @@ Each civ's three strongest units get a barbarian double next to them.
 **The Drowning Bells** · 30 → 50 → 70 · chain
 - *30:* bells ring under the sea; -1 happiness in coastal cities.
 - *50:* the sea rises. Every coastal flat land plot with no improvement and no city becomes
-  Shallows.
-- *70:* the Drowned rise from the new Shallows as barbarians.
+  Coast (water).
+- *70:* the Drowned rise from the new coast as barbarians.
 
 *Expert:* improve the coast before 50, and settle and plan wars away from low shores. The Lanun
 gain and everyone else loses land.
@@ -2212,7 +2212,7 @@ end. Band: I Ancient, II Classical, III Medieval.
 - *Vigil* (I, process): production lowers the city's Unrest.
 - *Forest Paths* (I): forest and jungle are open ground for you, -1 move for invaders.
 - *Wayside Shrines* (I): road shrines give culture, and passing units heal.
-- *Tidecall of Danalin* (II): turn a flat land plot into Shallows for good.
+- *Tidecall of Danalin* (II): turn a flat land plot into Coast (water) for good.
 - *Heartwood of Sucellus* [not evil] (II): forests wake as Treants against invaders.
 - *Judgment of Junil* [good] (II): name a civ; no war between you for 20 turns, enforced.
 - *Ledger of Mammon* [evil] (II): 3% interest on gold; feeds the counter while you are rich.
@@ -2561,7 +2561,7 @@ To check the principles against the owner's next verdicts:
 
 ### 10.2 What the second round changes in the pool
 
-**Causeway, reworked.** A worker build on a Coast or Shallows plot next to land. Land units
+**Causeway, reworked.** A worker build on a Coast plot next to land. Land units
 move onto and over it as over land, and units on it get +50% defence. Open point: whether ships
 still pass (a bridge) or not (a dam).
 
@@ -2731,7 +2731,7 @@ Confidence: H high, M medium, L low. Numbers are the principles of section 10.
 
 - **Rituals instead of cooldowns:**
   - *Tidecall of Danalin:* the Drown becomes a ritual in a coastal city: when completed, a chosen
-    flat land plot within 3 plots of the city becomes Shallows for good.
+    flat land plot within 3 plots of the city becomes Coast (water) for good.
   - *Weather Engine*, *Floodgates*, *Oath of the Blood-Price:* each use is a ritual.
   - *Mana Grafting:* a node can be grafted once, for good; no cooldown.
 - ***Judgment of Junil:*** a one-off world spell (20 turns of enforced peace with one civ, once
@@ -3282,3 +3282,38 @@ What the game already has and the decks have not touched:
 entities only in the current system, so there is nothing to make permanent). The same fact
 removes Unweaving (section 11.1), which destroyed summoned units on the map. Spellbreaker's
 double damage against summoned units still applies inside battles.
+
+
+---
+
+## 16. Round 8: 150 candidates and adversarial review
+
+The candidates, the three reviews' findings and the verdicts are in `docs/DECKS_ROUND8.md`
+(section C).
+- **Great-person cards:** 55 of 100 survive, ranked A (16), B (27) and C (12).
+- **Armageddon cards:** 18 of 50 survive.
+
+Its rules for the decks (C.3) apply to every card here as well:
+- a card's world spell is its own one-off;
+- remote targeting is one shared system;
+- a floor of 2 gold a hammer;
+- few fortress buildings;
+- one Fear card;
+- no invisible stacks on the map;
+- naval cards wait for a naval AI;
+- every card checked against the civ world spells and existing content;
+- regions defined as connected groups of plots;
+- "a level" means the XP for the next level.
+
+Corrections to earlier cards that the review found:
+- **Shallows is a land terrain** (the hell form of Marsh), not water. Tidecall, Causeway and the
+  Drowning Bells now say Coast (water).
+- **Holy Inquisition** (batch 3) overlaps the existing Inquisition spell, which already purges a
+  city's non-state religions and their buildings. Its own part is the purge of a holy city and
+  its shrine.
+- **Hall of Rebirth** (section 15) overlaps the existing Resurrection spell, which brings back
+  the civ's dead hero.
+- **Beast-Catchers' Nets** (section 15) is the existing Subdue Animal promotion (recon units
+  capture the animals they defeat): out.
+- **The Great Summoning** (section 11.1) is replaced by Elemental Foundry (round 8, G01).
+- **Call the Leviathan and Leviathans Rise:** the Leviathan is one per game.

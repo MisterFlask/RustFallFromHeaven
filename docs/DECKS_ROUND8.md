@@ -684,3 +684,270 @@ plots becomes that civ's vassal.
 cities, and every plot gives -1 food.
 
 **A50 The Godless Age:** every religion is removed from every city.
+
+---
+
+## C. Review results (2026-11-07)
+
+### C.1 Method
+
+Three independent reviewers read all 150 cards. They worked from the files, not from the
+designer's view:
+- **Taste:** the owner's verdict history and principles in `docs/DECKS.md`.
+- **Implementability:** every name checked against `data/json`, every mechanic against
+  `crates/ffh-core`, plus collisions with existing content.
+- **Power and duplication:** worth a great person, exploits, AI dependence, civ signatures,
+  duplicates.
+
+Their raw verdicts:
+
+| Lens | Great-person cards (keep / fix / cut) | Armageddon cards (keep / fix / cut) |
+|---|---|---|
+| Taste | 57 / 19 / 24 | 19 / 8 / 23 |
+| Implementability | 35 / 56 / 9 | 23 / 25 / 2 |
+| Power | 25 / 41 / 34 | 15 / 16 / 19 |
+
+The designer then weighed each objection against the card's best one-line reply, and checked
+the engine facts the verdicts rest on in the code.
+
+**Result:**
+- **Great-person cards:** 55 survive (16 strong, 27 solid, 12 marginal), 45 cut.
+- **Armageddon cards:** 18 survive, 32 cut.
+
+### C.2 Engine facts the cards got wrong (checked in the code)
+
+- `TERRAIN_SHALLOWS` is land, the hell form of Marsh (`found`, no `water`). Water is Coast and
+  Ocean. This also corrects earlier cards: Tidecall, Causeway and the Drowning Bells.
+- Every world spell sets one per-player flag, `FEAT_GLOBAL_SPELL` (`unit/ffh.rs:277-283`,
+  `:800-802`). A card's world spell would use up the civ's own.
+- **Fear:** a unit sits out unless `rand(40) <= max(4, its strength + 20 + its level - the
+  source's)` (`engagement/engage.rs:879`). An equal source sits out about half of the enemy, a
+  tier-4 one about 60% of Champions: the strongest lever in battle.
+- Invisible units are not engaged as defenders unless the attacker sees them
+  (`engagement/pick.rs:157`). A stack made invisible on the map cannot be attacked.
+- **Charms and hexes:** charms add up. Hexes are cast at the caster's speed, by units with
+  magic, after a cavalry charge. Morale (Fear) is checked before the battle only.
+- **World units, one per game:** the Leviathan, the Mithril Golem, Acheron. Paladins are capped
+  at 4 per player.
+- **Things that do not exist:** no Ice mana node (Ice mana comes from the Illian palace and
+  Letum Frigus); no spider lair; no dragon with Flying.
+- **Wrong stats and placement:**
+  - The Ice Elemental is tier 3, 20/20.
+  - Giant Spiders cost -1 and are not large.
+  - The Wall of Stone is made by a spell and cannot be built.
+  - Flood Plains grow only on desert.
+  - The Volcano needs flat land.
+  - Peaks cannot be entered by workers.
+  - Improvements cannot be built in another civ's land.
+  - The Remnants of Patria cannot take a city.
+- **Already in FFH2 or this game:**
+  - the Genesis ritual already plants forest in its builder's borders;
+  - the Inquisition spell already purges a city's other religions;
+  - the Resurrection spell already brings back a dead hero;
+  - Subdue Animal already captures animals;
+  - the National Epic already doubles a city's great-people points;
+  - Orthus already appears at turn 75;
+  - Drifa already has the drafted dragon's stats.
+- **The AI has no naval combat and no blockade** (docs/AI.md). Cards whose payoff is beating
+  AI ships pay little now.
+
+### C.3 Rules for the decks that follow from them
+
+1. **A card's world spell is its own one-off**, with a flag of its own, never the civ's world
+   spell.
+2. **Remote targeting** ("a city, plot or unit you can see") is a new shared system: a target
+   for a spell, its UI, and an AI chooser. About 15 cards need it; it is built once.
+3. **A floor for gold.** No card turns gold into production below 2 gold a hammer, and a
+   one-shot completion is capped at 10 turns of the city's own production.
+4. **Fortress buildings are few.** At most about three in the deck. The strong ones are
+   national, or act in the first battle at the city each turn.
+5. **One Fear card at most.** This round's Herald of Agares or the pool's Dread Banner. A dragon
+   says whether it has Fear.
+6. **No card makes a stack invisible on the map.**
+7. **Naval cards wait for a naval AI,** except those the owner has already liked.
+8. **Every card is checked before it enters the deck** against the 21 civ world spells, the civs'
+   unique units, and the existing spells, promotions and rituals.
+9. **Regions are defined** as the largest connected group of unowned plots of a terrain or
+   feature. One shared helper.
+10. **"Gains a level"** means it gains the XP for its next level.
+11. **New civs:**
+    - They share 4 spare player slots with Hyborem and Basium.
+    - Vassal births need a fallback when the No Vassal States option is on.
+    - Each new civ is a content project: data, leader, art, AI.
+
+### C.4 Verdicts, great-person cards
+
+Rank: **A** strong, **B** solid, **C** marginal (keep only if the deck needs volume).
+
+| id | name | verdict | rank | change, or reason cut |
+|---|---|---|---|---|
+| G01 | Elemental Foundry | keep | B | 300 hammers, national 1 per element; Air, Earth, Fire, Water only; replaces the Great Summoning |
+| G02 | Mana Font | cut | | almost nothing reads a doubled mana count |
+| G03 | Arcane Siegecraft | cut | | wall-breaking is crowded; Powder Charge and Wallbreaker cover it |
+| G04 | Evoker | keep | B | say that the magic bolt counts |
+| G05 | Abjurer | keep | A | enemy charms end each round and are not recast |
+| G06 | Spellsword | keep | A | the six damage spells only (Shock, Grave Touch, Firebolt, Thornlash, Flare, Wave); magic is half its attack; in place of its first strike each round |
+| G07 | Astral Leap | keep | A | all your units on one of your city plots move to a visible land plot with no foreign unit or city; they arrive with no moves left; not an attack |
+| G08 | Null Zone | cut | | the pool's Wardstone |
+| G09 | Elemental Attunement | keep | C | national; three buildings (fire, cold, lightning); the Immune promotions get unit combats |
+| G10 | Seal of Binding | keep | B | cannot move for 20 turns (the immobile timer); still defends |
+| G11 | Spell Thief | cut | | rare trigger, small gain |
+| G12 | The Patrian Awakening | keep | A | founded next to the Remnants, else on the largest unowned region; an Expert line |
+| G13 | The Great Conjunction | cut | | the XP half of the Amurites' Arcane Lacuna; a small Great Epic |
+| G14 | Thunderhead Tower | keep | B | 30% of max HP, never below 1; the deck's one pre-battle damage building |
+| G15 | Unseen Servants | cut | | Pioneers covers it |
+| G16 | Arcane Fortress | keep | A | Sentinels take half damage from map bombards, BOMBARD and SHOOT |
+| G17 | Starmetal Meteor | keep | A | a plot with no units; destroys its improvement or feature only |
+| G18 | Gravity Well | keep | B | a pre-battle effect of the caster's presence, so it beats the charge |
+| G19 | Magocracy | keep | B | adept-combat units cost 50% less, others 25% more |
+| G20 | Sunder Node | cut | | Dispel Magic, and pillage, already do it |
+| P01 | Living Walls | keep | B | national; its Sentinels use the Treant's attack and HP, one cell each; replaces the Gatehouse |
+| P02 | The Verdant Pact | cut | | the Genesis ritual, same tech, already plants the forest |
+| P03 | Courts of Junil | keep | A | keep every building that can be captured, and lose no population; rename (the Order's shrine is the Code of Junil) |
+| P04 | Templar | keep | C | a promotion for Crusaders (the Order's own frontline) that heals the unit behind it |
+| P05 | The Whisperer | keep | A | Madness becomes a pre-battle effect: the enemy's highest-attack unit (not a Sentinel) strikes its own side in round 1 |
+| P06 | Call the Leviathan | keep | C | a Kraken if the Leviathan lives; waits on a naval AI |
+| P07 | Golems of the Earthmother | keep | A | the Mithril Golem (one in the world) at 600 hammers, whatever the counter; Kilmorph still its state religion |
+| P08 | Vault of the Earthmother | cut | | strong but redundant: the Mithril Forge, Starmetal Meteor |
+| P09 | Hellforge | cut | | the Infernals' own units |
+| P10 | Herald of Agares | keep | B | rename (UNIT_HERALD exists); the existing Fear check; the deck's one Fear card, or the pool's Dread Banner |
+| P11 | Halo | keep | A | revives the first unit of its side to fall, in its cell if free, else the rear; never a Sentinel |
+| P12 | Pillar of Dawn | keep | B | each completion costs twice the last (the duty cycle) |
+| P13 | Shadow Roads | cut | | invisible stacks cannot be attacked; the Sidar's Into the Mist |
+| P14 | Mask of a Thousand Faces | cut | | the Svartalfar's Veil of Night |
+| P15 | Heaven's Gate | cut | | weak; the Mercurians' Angels |
+| P16 | Call of the Faithful | keep | B | "its heroes (one or two)"; dead ones return; their techs are not required |
+| P17 | Sanctified Steel | keep | C | reaches melee, beast and disciple units only |
+| P18 | Founding of the Dawn Knights | keep | B | two cities; its own Dawn Knight line at half cost; a Grand Master far above a Paladin; an Expert line |
+| P19 | The Fey Court Awakens | keep | B | a defined region; +2 first strikes and +50% defence in forest instead of invisibility; no Treant walls; Fellowship as its state religion |
+| P20 | Wings of Faith | cut | | Flying handed out wholesale; the Gryphon Riders |
+| E01 | Master Masons' Guild | cut | | small; the Wall of Stone has no build cost |
+| E02 | Gatehouse | cut | | Living Walls covers it |
+| E03 | Boiling Oil | cut | | the Thunderhead Tower is the one kept |
+| E04 | Siege Ballista | keep | B | sheet: tier 2 siege, 100 hammers, BOMBARD with PIERCE |
+| E05 | Trench | keep | B | as written |
+| E06 | Sapper | cut | | breaches any wall in a turn; crowded theme |
+| E07 | Wall of the Kings | keep | A | "enemy" means units of civs at war with you, and barbarians |
+| E08 | Mantlets | cut | | low impact |
+| E09 | Grand Siege Park | cut | | large is nearly a downgrade for siege |
+| E10 | Harbor Chain | cut | | waits on a naval AI |
+| E11 | Pioneers | keep | B | as written |
+| E12 | Siege Lines | keep | B | may be built in the land of a civ you are at war with, next to its city |
+| E13 | Powder Charge | keep | B | an action next to a walled city: the Charge is destroyed and every Sentinel is breached; no battle |
+| E14 | Moat | keep | A | in the first battle at the city each turn, the attacker's STRIKE, CHARGE and STAB actions are spent in round 1 |
+| E15 | Siege Colossus | keep | C | bombard rate 30 from 2 plots; the city counts as besieged that turn |
+| E16 | Avalanche Charges | cut | | needs workers on peaks and hidden improvements; pays when an enemy walks into it |
+| E17 | Bombard Barge | cut | | ships already bombard walls |
+| E18 | Terraced Hills | cut | | an ordinary yield improvement (the Windmill is near) |
+| E19 | Shatter the Walls | cut | | Powder Charge is the one wall-opener; Earthquake is near |
+| E20 | Levy Hall | keep | C | national; the first battle each turn; the strongest land unit type the city can train |
+| M01 | Gold Standard | keep | B | 2 gold a hammer, units only, under any Labor civic; research -20% |
+| M02 | Prize Courts | cut | | waits on a naval AI; Boarding exists |
+| M03 | Bazaar of Wonders | keep | B | a wonder with a positive cost whose prerequisites the city meets; not a victory wonder |
+| M04 | Grand Bazaar | cut | | the Black Market |
+| M05 | Hired Fleet | cut | | naval, small |
+| M06 | Beast Market | keep | C | Bears 75, Lions 50, Tigers 75; no Griffons |
+| M07 | The Condottieri Free State | keep | B | a Captain-General at attack 130; rushing at the 2-gold floor; an Expert line |
+| M08 | Purchase Charter | keep | A | not a holy city or a wonder city; the price adds its buildings' cost |
+| M09 | Transmutation Charter | keep | B | enumerate the classes from the data (the RUSH bonuses; the happiness bonuses; the food bonuses) |
+| M10 | Admiralty | cut | | naval |
+| M11 | Armourers' Guild | cut | | the Ingenuity trait's effect |
+| M12 | Patrons' Guild | cut | | the National Epic |
+| M13 | Market Towns | keep | C | as written |
+| M14 | Regime Change | cut | | small, and felt by the rival |
+| M15 | Purchased Peace | cut | | Judgment of Junil |
+| M16 | Grand Exhibition | keep | C | the two cheapest techs known by three civs you have met |
+| M17 | Reserve Arsenal | cut | | rewards hoarding; undefined when the city falls |
+| M18 | Mammon's Bargain | keep | B | 1500 gold, +10 counter |
+| M19 | Grand Order | keep | A | each city completes at most 10 turns of its own production |
+| M20 | Golden Muster | cut | | the Golden Hoard; below the gold floor |
+| B01 | Cultural Diaspora | cut | | rests on Foment Revolt flips while Unrest is parked |
+| B02 | Sing the Stones | keep | B | City Ruins within 3 plots of your borders; size 3 |
+| B03 | Golden Epic | cut | | the Kuriotates' Legends |
+| B04 | Banshee Choir | cut | | a second Fear card |
+| B05 | Shadow Theatre | cut | | the Sidar's Into the Mist |
+| B06 | Cultural Annexation | keep | B | the owner keeps peace with you, with -4 attitude |
+| B07 | Legacy of Kings | keep | A | Philosophical excluded (it feeds the deck) |
+| B08 | Masque of the Red Death | keep | B | as written |
+| B09 | Bard's Retinue | keep | C | as written |
+| B10 | The Heroes' Saga | cut | | small; the Great Epic |
+| B11 | The Unconquered City | keep | C | as written; counts toward the fortress-building limit |
+| B12 | Feast of Plenty | cut | | the Calabim's River of Blood |
+| B13 | Dragon's Oath | keep | A | a dragon of its own, not Drifa (large, 180 HP, 150/120, the dragons' movement, Breath Fire, no Fear) |
+| B14 | Last Stand Hymn | keep | B | no fear clause: once half the committed defenders (not Sentinels) have fallen, the rest deal double damage; it is the Chorus of the Fallen's rework |
+| B15 | Wardance | keep | C | level 5+; only the first strike each round cleaves |
+| B16 | Cult of Heroes | cut | | little felt impact for a civic slot |
+| B17 | Silver Tongue | cut | | Corlindale's Peace; Judgment of Junil |
+| B18 | Anointed Champion | keep | B | also two levels (the hero's extra action does not stack with tier 4's) |
+| B19 | Wager of Glory | cut | | vague; an expert names a city already falling |
+| B20 | Heartland Charter | cut | | rests on Foment Revolt flips |
+
+### C.5 Verdicts, Armageddon cards
+
+| id | name | verdict | rank | change, or reason cut |
+|---|---|---|---|---|
+| A01 | The Wild Awakens | keep | B | the six lairs enumerated (Hellfire included) |
+| A02 | The Sea Recedes | keep | B | one sea named at the reveal: its unimproved Coast outside city radii becomes grassland; ships move to the nearest water; sea resources there go |
+| A03 | Collapse of the Roads | cut | | workers rebuild roads |
+| A04 | The Scaled Kingdom | keep | A | a defined region; note the lizardmen are the Clan of Embers' units too |
+| A05 | The Gods Answer | cut | | Call of the Faithful; a boon, not a crisis |
+| A06 | The Brood | keep | A | unclaimed forest only; a new spider-nest lair (not permanent); Giant Spiders 60 hammers for the Brood; the Spider Queen large |
+| A07 | The Burning Plains | cut | | the base rule already spreads hell over evil land from 50 |
+| A08 | The Great Flood | cut | | a huge tax with nothing to prepare; Flood Plains are desert-only |
+| A09 | Volcanic Spring | keep | A | a hill within 3 of each of the six largest cities, named at the reveal; it becomes flat with a Volcano; units within 1 take 50%, improvements go, cities lose 2 population but stand; then +1 food (it replaces FFH2's random volcano event) |
+| A10 | Leviathans Rise | cut | | one Leviathan per game; barbarian ships hold |
+| A11 | Werewolf Moon | keep | B | as written |
+| A12 | The Gold Rot | cut | | arithmetic, falls on the Khazad |
+| A13 | The Great Fire | cut | | an unanswerable tax on big cities |
+| A14 | The Iron Blight | cut | | -10%, and the Rust spell exists |
+| A15 | Mana Collapse | cut | | workers rebuild nodes |
+| A16 | The Fire Goes Out | cut | | may touch nobody; temporary |
+| A17 | Unbound Elementals | keep | C | raw and typed nodes alike, outside city radii; no Ice |
+| A18 | The Great Tremor | cut | | workers rebuild mines |
+| A19 | The Gargoyles Wake | keep | C | a Gargoyle beside every walled city; no "lose a level" (Walls and Wall of Stone are the same) |
+| A20 | The Golem Rebellion | cut | | deletes the Luchuirp |
+| A21 | The Desert Wakes | cut | | trivial |
+| A22 | The Host of Nyx | keep | A | reworked: **The Infernal Gate Opens**. If the Infernals are not in play, they arrive as with the Infernal Pact, beside the evil civ with the most cities; otherwise the card is dealt again. It uses the Infernals that exist instead of copying them. |
+| A23 | The Shattering of Peaks | cut | | small and mixed |
+| A24 | The Burning Libraries | cut | | no tech order is kept; small |
+| A25 | The Iron Rain | cut | | obsolete by 60 |
+| A26 | The Four Winds | cut | | four mild repairs |
+| A27 | The Unchaining of Orthus | keep | C | Orthus's Host: 10 Ogres join Orthus if he lives, else a new warlord (Champion line with Hero, attack 110) leads them from the largest unowned region |
+| A28 | The Unseen War | cut | | narrow and temporary |
+| A29 | The Shroud Falls | cut | | acts on knowledge; scouts undo it |
+| A30 | The Lairs Deepen | keep | B | enumerate every lair, Hellfire included |
+| A31 | Peace of the Grave | cut | | a rule by fiat; Corlindale's Peace |
+| A32 | The Second Sun | keep | B | one step from each plot's terrain before the card: Snow to Tundra, Tundra to Plains (no Plains to Desert) |
+| A33 | The Blade Returns | keep | B | at the unowned land plot farthest from every city |
+| A34 | The Towers Fall | cut | | no AI builds the towers |
+| A35 | The Arcane Tide | cut | | the Great Conjunction |
+| A36 | The Ghost Fleet | cut | | barbarian ships hold |
+| A37 | The Plague of Undeath | cut | | the Sky Falls is the one big-city card |
+| A38 | The Bleeding Sky | cut | | Blight |
+| A39 | The Twilight of the Gods | keep | B | as written |
+| A40 | The Sky Falls | keep | B | as written |
+| A41 | The Feast of Crows | cut | | tier-1 skeletons at 70 are clutter |
+| A42 | The Final Plague | cut | | Apocalypse; its good-temple exemption could join Apocalypse |
+| A43 | The Fall of the Mighty | cut | | one city, no answer |
+| A44 | The Siege of Capitals | cut | | a speed bump at 90 |
+| A45 | The Dimming of Wonders | cut | | temporary, by fiat |
+| A46 | The Last Harvest | cut | | workers rebuild farms |
+| A47 | Hell on Earth | cut | | the base rule and Hellfire |
+| A48 | The Gathering | keep | A | 15 plots capital to capital; vassals made this way do not count toward domination |
+| A49 | The Long Night | keep | B | -1 food and no healing outside cities; no sight change |
+| A50 | The Godless Age | keep | B | state religions end, holy cities and shrines are gone |
+
+### C.6 Where the designer overruled a reviewer
+
+- **Kept the Wall of the Kings** against "Sanctuary is near": the Elohim's Sanctuary expels and
+  bars entry, while this card stops movement at the border. Different verbs.
+- **Kept Legacy of Kings** against "the Adaptive trait": one permanent pick is not a periodic
+  swap. Philosophical is excluded because it feeds the deck.
+- **Cut the Verdant Pact** although taste and power kept it: the Genesis ritual, on the same
+  tech, already does it. The implementability finding decides.
+- **Cut the Burning Plains** although taste kept it: the base rule already turns evil land
+  hellish from 50.
+- **Reworked the Host of Nyx into the Infernal Gate**, as the power review proposed: it uses
+  the Infernals the game already has.
+- **Cut the Vault of the Earthmother** (taste 4): it was strong, but the deck already has metal
+  gifts; Starmetal Meteor is the one kept.
