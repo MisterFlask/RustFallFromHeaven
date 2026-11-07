@@ -196,6 +196,79 @@ Also: fear before the battle; defensive strikes; withdrawal; Sentinels intercept
 lanes; XP shared per kill. **New**: weather on the battlefield, decoys, a side's mood (charms
 that build as units fall).
 
+### 1.9 New rules: civs born mid-game, and revolutions (draft)
+
+The engine already adds players mid-game (Hyborem, Basium, the crusade Hosts), and the AI plays
+any civilization. These two rules turn that into a lever cards and crises can call.
+
+**A civ's birth.** Every birth needs:
+- **A slot.** Reserve spare player slots, as crusades reserve Host slots. With none free, the
+  birth's cities go to the barbarians instead.
+- **A civilization.** Prefer one not in play this game that fits the birth (its alignment,
+  religion, race): a 6-civ game leaves 15 of the 21 unused. Otherwise the parent's own
+  civilization under a new name (the Free Bannor).
+- **A leader.** The governor who led it (its traits become leader traits), a hero, or a leader
+  of the chosen civilization.
+- **A start.** The parent's techs; the cities' garrisons; gold by population; alignment from its
+  state religion; and a memory of its birth with every civ ("seceded from", "liberated by",
+  "released by").
+- **Diplomacy at birth.** At war with the parent (civil war) or at peace (a released state), by
+  the kind of birth.
+- **Standing.** A full civ: its share of the world counts in the score, and it can win.
+
+A civ can be born in six ways, each a rule a card or a crisis can call:
+1. **Secession:** a group of a civ's cities becomes a new civ (revolution, below).
+2. **Release:** an owner frees cities on purpose (a Free City, a Holy See, a vassal colony).
+3. **Barbarian crowning:** a barbarian holding of 3+ cities becomes a civ.
+4. **Return:** a destroyed civ comes back where its culture survives.
+5. **Arrival:** a civ from outside the world (Hyborem and Basium; the Host of Agares; a nomad
+   horde).
+6. **Mirror:** a sibling of an existing civ.
+
+**Revolutions.**
+- **Unrest** (0-100, a city's, new).
+  - It rises each turn with:
+    - unhappy citizens beyond the content ones;
+    - turns in disorder;
+    - distance from the capital past 8 plots;
+    - another civ's culture on the city's plot;
+    - a religion present whose alignment opposes the state religion's;
+    - war weariness;
+    - Foment Revolt pressure (the cultural channel's pressure becomes Unrest);
+    - a disloyal governor.
+  - It falls with:
+    - garrison units and surplus happiness;
+    - Courthouse, Governor's Manor and Dungeon (the crime they reduced did nothing; Unrest
+      gives them a real job);
+    - a loyal governor.
+  - A directly ruled city gains no Unrest. The four direct-rule slots get a second meaning: the
+    cities you cannot afford to lose.
+- **The revolt.** At 100 the city revolts. Governed cities of the same owner within 5 plots
+  with Unrest 60 or more go with it.
+- **Where it goes.** If one foreign civ's culture is the city's majority, the city joins that
+  civ (as Foment Revolt does today). Otherwise the group secedes as a new civ, led by the
+  governor of its largest city. This changes Foment Revolt: today a revolting city always joins
+  the caster.
+- **The owner's answer.**
+  - *Let Go:* peace.
+  - *Fight:* civil war. Each rebel city gets a free unit per 3 population, and the parent's
+    other cities lose 10 Unrest, rallying to the crown.
+- **Governors gain loyalty.** New traits: Loyal (less Unrest), Ambitious (more Unrest, better
+  output), Popular (less Unrest; leads a secession if one comes).
+
+*Expert:*
+- Keep the far, foreign-cultured, religiously mixed cities under direct rule, or garrisoned
+  under loyal governors.
+- Against a rival, Foment Revolt can push his soft periphery into secession instead of taking
+  it. A new weak neighbour costs less than a city to defend.
+
+**Other big rules within reach:**
+- leader succession (leaders age and die; heirs come with traits);
+- city-states (one-city civs with their own diplomacy);
+- puppet states (a vassal its master moves directly; the Balseraphs' flavor);
+- nomad civs (an army that moves and demands tribute);
+- colonies that grow into vassal civs.
+
 ---
 
 ## 2. Themes
@@ -255,13 +328,13 @@ Go wide; any of these can carry a card or a crisis.
 
 ---
 
-## 3. The great-person deck (61 cards)
+## 3. The great-person deck (66 cards)
 
 Format: **Name** · band · needs (the ordinary tech the content requires) · vehicle. Tags:
 **[data]** = existing keys can express it; **[new: ...]** = a rule to write. "National, N" =
 N at the normal cost, then 500% each; "hard" = a true limit.
 
-### 3.1 Sage (12)
+### 3.1 Sage (13)
 
 **The Second Sky** · I · needs Calendar · wonder (national) · [new: map reveal]
 When built, shows every mana node, unique feature, lair and goody hut on the map, and keeps
@@ -336,7 +409,15 @@ its promotions.
 *Expert:* it makes one all-in battle affordable: attack, lose, recall, attack again. Hold it for
 the decisive war; using it after a skirmish wastes it.
 
-### 3.2 Prophet (13)
+**Mirror Kingdom** · III · needs Pass Through the Ether · world spell · [new: civ birth, mirror]
+Once per game, a mirror of your civilization opens on the largest unclaimed region. It is a new
+civ of your civilization, led by a mirrored leader with your traits, with 2 cities, copies of 4
+of your units and all your techs. It is your permanent ally (a defensive pact it never cancels)
+and plays for itself. Its share of the world is its own, not yours.
+*Expert:* an ally on a front where you could never expand. Cast it when that land would
+otherwise go to a rival, not when it could go to you.
+
+### 3.2 Prophet (14)
 
 Alignment in brackets where the card is filtered by it.
 
@@ -413,7 +494,15 @@ move the counter 3 points either way.
 *Expert:* hold the world just under the threshold whose card hurts you, or just over the one
 that helps; with the Orrery you know which.
 
-### 3.3 Engineer (12)
+**Holy See** · III · needs Theology · building (a holy city you hold) · [new: release]
+Declare the city a Holy See. It becomes a new civ, a theocracy of its religion, and your
+permanent ally. The See trains its religion's heroes and units at half cost and calls crusades
+of its own against the religion's enemies. Civs of its religion take -3 attitude toward anyone
+at war with it.
+*Expert:* trade a city for a crusading ally that your faith's civs will not fight; best when
+the holy city sits on a border you cannot hold.
+
+### 3.3 Engineer (13)
 
 **Cairn Golem** · I · needs Masonry · national unit, 3 · [new: unit to improvement]
 Large, armored, 1 move. *Raise the Cairn* (on hills): it becomes a permanent Cairn, +50%
@@ -488,7 +577,14 @@ gain no XP and heal only in a city with a Forge.
 *Expert:* the core of a long campaign beyond the supply line; never the garrison of a forgeless
 city.
 
-### 3.4 Merchant (12)
+**Free City Charter** · II · needs Construction · building · [new: release]
+Release the city as a Free City: a one-city civ at peace with everyone. Attacking it costs the
+attacker -2 attitude with every civ. It trades with all and pays you half its commerce for 50
+turns.
+*Expert:* release the border city you cannot defend. It becomes a neutral buffer that pays,
+and a rival who takes it pays in reputation.
+
+### 3.4 Merchant (13)
 
 **Toll Roads** · I · needs Trade · building (national) · [new]
 Foreign units pay their owner's gold to you, 2 per plot moved on your roads. Units of civs at
@@ -554,7 +650,14 @@ its surplus production into gold, 1:1, and pays its army requisitions in gold in
 hammers.
 *Expert:* fund a war without stalling the governed cities' growth.
 
-### 3.5 Bard (12)
+**Charter Company** · III · needs Mercantilism · national unit, 1 · [new: colony civ birth]
+The Company founds a city on another landmass. The city is a new civ, your permanent vassal,
+which settles and grows on its own and pays you 25% of its gold. It may declare independence
+once your power falls below its own.
+*Expert:* land you cannot govern well becomes a vassal that expands itself; keep your power
+above its, or it walks.
+
+### 3.5 Bard (13)
 
 **Saga of the Named** · I · needs Ancient Chants · national unit, 3 · [new]
 The Skald rides with an army. Each battle the army wins adds a verse. At 5 verses, the army's
@@ -617,10 +720,18 @@ The Illusionist's battle spell adds 4 illusory soldiers to its side's front row:
 they deal no damage and vanish when a spell hits them.
 *Expert:* in a siege, decoys soak the Sentinels' and archers' first volleys.
 
+**The Pretender's Song** · II · needs Drama · building · [new: Unrest]
+Name a rival's governed city. For 30 turns its Unrest rises 3 a turn. If it secedes, the new
+civ starts Friendly to you, with open borders and a defensive pact on offer.
+*Expert:* break a leader's periphery into a friendly buffer instead of conquering it. Aim at
+the far city with the foreign culture.
+
 ### 3.6 Deck notes
 
-- **Count.** 61 cards: 12 per suit, 13 for the Prophet. The bands are spread across I-III:
-  Sage 4/5/3, Prophet 4/7/2, Engineer 2/6/4, Merchant 4/5/3, Bard 4/5/3.
+- **Count.** 66 cards: 13 per suit, 14 for the Prophet. The bands are spread across I-III:
+  Sage 4/5/4, Prophet 4/7/3, Engineer 2/7/4, Merchant 4/5/4, Bard 4/6/3.
+- **Civ births and Unrest (section 1.9)** carry Mirror Kingdom, Holy See, Free City Charter,
+  Charter Company and the Pretender's Song.
 - **Strongest cards to watch:** Chronicle of Recall, The Free Company, the Index, Bastion,
   Wheeled City. They may need a hard limit or a bigger price.
 - **Where the two decks touch:** the Orrery and Dagda's Balance read and steer the counter;
@@ -629,7 +740,7 @@ they deal no damage and vanish when a spell hits them.
 
 ---
 
-## 4. The Armageddon deck (30 new cards)
+## 4. The Armageddon deck (36 new cards)
 
 ### 4.1 How it runs (proposal)
 
@@ -645,7 +756,7 @@ they deal no damage and vanish when a spell hits them.
   negative). A card can hit the world, the most culpable, the most penitent, an alignment, or
   the score leader.
 - **The pool.** FFH2's nine events go in as cards. The four Horsemen become one chain, so they
-  no longer come in every game. With the 30 new cards, the pool is 36 cards for about 10 slots
+  no longer come in every game. With the 36 new cards, the pool is 42 cards for about 10 slots
   per game.
 
 FFH2's events, as cards:
@@ -775,10 +886,30 @@ Each civ gives up one unit per 8 cities (its choice) or its largest city loses 2
 *Expert:* keep cheap tithe units (slaves, warriors); slaves become worth something.
 
 **The Hollow Crown** · 60 · single
-The score leader's most unhappy governed city breaks away as a barbarian city-state, led by its
-governor, with half its units.
-*Expert:* the leader keeps its governed cities content before 60; rivals foment revolt in them
-before it fires.
+The score leader's governed city with the most Unrest secedes as a new civ (section 1.9), led by
+its governor, with half its units. Its owner chooses Let Go or Fight.
+*Expert:* the leader calms or directly rules its restless cities before 60; rivals foment revolt
+in them before it fires.
+
+**Rise of the Barbarian Kings** · 30-50 · single
+Every barbarian holding of 3 or more cities within 6 plots of each other crowns a king and
+becomes a civ. Orthus leads one if he lives; otherwise a named chief. It researches, trades and
+can make peace. Barbarian units near its cities join it.
+*Expert:* the barbarian land you farmed for XP now has borders and allies; take its cities
+before the crowning, or court the new king.
+
+**The Kurgan** · 30-50 · single (a nomad horde)
+A horde civ with no cities appears in the emptiest region: a great army with settlers. Every 5
+turns it marches toward the nearest civ and demands tribute (the gifts and demands rules). If
+paid, it moves on toward the next civ. If refused, it is at war, and it settles the first city
+it takes.
+*Expert:* pay it when its next stop is your rival; fight it only from your walls.
+
+**The Free Cities** · 40-60 · single
+Every city in the world with Unrest 70 or more revolts at once. Revolting cities within 8 plots
+of each other form one civ, the League of Free Cities.
+*Expert:* bring Unrest down between the reveal and the threshold. The League is a new partner
+for whoever has a navy and a market.
 
 **The Silence of the Gods** · 60 · lingering
 For 20 turns, no religion spreads, divine spells fail half the time, and religious buildings
@@ -819,9 +950,29 @@ Angel, a hero.
 hero.
 
 **Exodus** · 80 · single
-Every city in disorder or under siege loses 2 population. It reappears as Settlers in the
-nearest friendly city of another civ; taking them in gives +1 attitude.
-*Expert:* keep cities out of disorder; a stable empire next to a burning one gains settlers.
+Every city in disorder or under siege loses 2 population. The refugees found a new civ, the
+Dispossessed, in the nearest unclaimed land: one city per 4 refugees, at least one. They
+remember who drove them out.
+*Expert:* keep cities out of disorder. The Dispossessed are an ally for whoever did not burn
+their homes.
+
+**The Returning** · 60-80 · single
+Every destroyed civ whose culture is 20% or more in some city returns. The city where its
+culture is highest revolts back to it, with a leader and a garrison.
+*Expert:* conquerors who left foreign culture standing pay; assimilate before 60 or hold the
+city with a garrison.
+
+**Schism** · 60-80 · single
+In every civ whose cities hold two religions of opposed alignment, the cities whose majority
+religion is not the state religion secede together as a theocracy of that religion.
+*Expert:* keep the faith uniform before 60, or let the heretics go as a buffer.
+
+**The Sundering** · 80 · single
+The civ with the most cities splits. The third of its governed cities farthest from the capital
+secede together, led by their most senior governor. Its owner chooses Let Go (peace) or Fight
+(civil war; each rebel city gets a free unit per 3 population).
+*Expert:* the largest empire brings its far cities under direct rule, garrisons or loyal
+governors; its rivals court the new civ before it picks a side.
 
 **The Black Tide** · 80-90 · lingering
 Ships at sea lose 20% HP a turn outside a port. Krakens and Leviathans spawn.
@@ -849,10 +1000,13 @@ units over buildings.
 
 ### 4.6 Deck notes
 
-- **Count.** 30 new cards: 6 early, 14 middle, 7 late, 3 new endings. With the six FFH2 cards
-  in the table above (Apocalypse among them), the pool is 36.
+- **Count.** 36 new cards: 6 early, 17 middle, 10 late, 3 new endings. With the six FFH2 cards
+  in the table above (Apocalypse among them), the pool is 42.
+- **Civ births and Unrest (section 1.9)** carry the Hollow Crown, Rise of the Barbarian Kings,
+  the Kurgan, the Free Cities, Exodus, the Returning, Schism, the Sundering and Agares
+  Unchained.
 - **The counter's pace.** Scrapping the random events removes 26 outcomes that moved the
   counter, so its pace needs retuning with the deck.
-- **New systems the deck leans on:** culpability; per-city and per-player history (ruins,
-  defenders killed, forests cut); terraforming; area weather; quarantine. The rest uses existing
-  levers.
+- **New systems the deck leans on:** culpability; civ births and Unrest; per-city and
+  per-player history (ruins, defenders killed, forests cut); terraforming; area weather;
+  quarantine. The rest uses existing levers.
