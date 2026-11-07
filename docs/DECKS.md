@@ -2444,13 +2444,13 @@ end. Band: I Ancient, II Classical, III Medieval.
   mechanic is reworked (it is unsatisfying as it stands).
 - **Unrest:** parked. No card pushes on Unrest while the mechanic is being iterated.
 - **Espionage:** out. A fiddly mechanic, likely to be removed later.
-- **Ignored for now:** corporations, mutations, slaves, ships, and the unusual building keys
+- **Ignored for now:** corporations, mutations, slaves, and the unusual building keys
   (airlift, culture doubling over time, promotion on entering a city, and the like). This takes
-  out:
-  - from section 15: the Mutagen Font, the Fireship and Leviathan Harpoons;
-  - from earlier sections: Canal Locks and the Black Tide.
-
-  Causeway's open point (whether ships pass) is moot.
+  out the Mutagen Font (section 15).
+- **Ships are fine** (the owner reversed an earlier "ignore"). Leviathan Harpoons, Canal Locks
+  and the Black Tide stay. The Fireship stays out: its effect was empty (see section 15).
+- **Short lists are enumerated.** A card that offers "one of a short list" names every item on
+  the list.
 - **Supply:** not stable, not being built now. Cards that use it are out (the Caravanserai,
   Scorched Earth, Forced March, the supply part of Automatons).
 - **Engagement combat** (the Ogre Battle formation battles) is stable ground: the specific
@@ -3216,9 +3216,8 @@ What the game already has and the decks have not touched:
   reads it. The Fireship, now out, wrongly relied on it.)
 
 **Items**
-- **Rite of Forging** (Engineer · II · needs Smelting · ritual, repeatable). Forge one item from
-  a short list of new ones; items follow the existing equipment rules (carried, dropped,
-  captured):
+- **Rite of Forging** (Engineer · II · needs Smelting · ritual, repeatable). Forge one of these
+  three new items. Items follow the existing equipment rules (carried, dropped, captured):
   - *Banner of the Last Host*: the bearer's whole side is immune to fear;
   - *Seven-League Boots*: +2 moves;
   - *Ward Amulet*: immune to spell damage.
@@ -3262,9 +3261,15 @@ What the game already has and the decks have not touched:
   *Expert:* tame the monsters that close the sea lanes.
 
 **Unique features**
-- **The Wonder Unearthed** (Sage · III · needs Arcane Lore · world spell). A new unique feature
-  appears on a plot in your borders, from a short list of new ones. Each doubles research on a
-  tech, by the existing unique-feature rule.
+- **The Wonder Unearthed** (Sage · III · needs Arcane Lore · world spell). One new unique
+  feature of your choice appears on an unimproved plot in your borders. Each doubles research
+  on its tech while inside a civ's borders, by the existing unique-feature rule. None of these
+  techs has a feature today.
+  - *The Iron Tree* (forest): Iron Working.
+  - *The Whispering Stacks* (any land): Guilds.
+  - *The Weeping Monolith* (hills): Righteousness.
+  - *The Horse Lords' Barrow* (grassland or plains): Warhorses.
+  - *Starfall Crater* (any flat land): Precision.
   *Expert:* pick the feature whose tech is on your beeline.
 
 **World units**
