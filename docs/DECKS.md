@@ -2865,7 +2865,7 @@ one-off world spell. A few change the diplomatic landscape. All of them:
 - **Herald of Defiance** (II, needs Drama; national unit, 1). When the city it stands in is
   attacked, every defender acts once more in round 1.
   *Expert:* the capital's garrison, or the city the enemy will hit first.
-- **The Kingmaker's Ballad** (III, needs Philosophy; world spell). Name two civs, neither
+- **The Kingmaker's Ballad** (III, needs Rage; world spell). Name two civs, neither
   yours. They become permanently at war with each other: no peace, ever.
   *Expert:* lock the two strongest rivals into a war that bleeds them both.
 - **Illusory Host** (III, needs Strength of Will; national unit, 2). As in section 3.5: decoy
