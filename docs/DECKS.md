@@ -1826,7 +1826,7 @@ Once every 30 turns, set a rumour on a leader for 20 turns:
 *Expert:* make the leader look weak to his neighbours the turn before you need allies against
 him.
 
-**The Feast of Ceasefire** · III · needs Festivals · building · [schedule, status]
+**The Feast of Ceasefire** · I · needs Festivals · building · [schedule, status]
 Announce a world feast 10 turns ahead, lasting 5 turns. Civs at peace with you through it gain
 +2 attitude toward you. Any civ that declares war during it takes the epithet *the Spoiler* for
 50 turns.
