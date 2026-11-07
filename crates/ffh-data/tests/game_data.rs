@@ -21,10 +21,10 @@ fn table_sizes() {
     assert_eq!(d.worlds.len(), WorldSizeType::NUM);
     assert_eq!(d.climates.len(), 5);
     assert_eq!(d.sea_levels.len(), 3);
-    assert_eq!(d.eras.len(), 10);
+    assert_eq!(d.eras.len() - ffh_data::card_entry_count("eras"), 10);
     assert_eq!(d.handicaps.len(), 9);
     assert_eq!(d.game_options.len(), GameOptionType::NUM);
-    assert_eq!(d.goodies.len(), 54);
+    assert_eq!(d.goodies.len() - ffh_data::card_entry_count("goodies"), 54);
     assert_eq!(d.hurries.len(), 2);
     assert_eq!(d.upkeeps.len(), 3);
     assert_eq!(d.culture_levels.len(), 7);

@@ -156,6 +156,8 @@ impl Game {
         // `eFacingDirection` only orients the unit's graphics entity.
         let _ = facing;
         self.unit_init(u, unit, unit_ai, p, x, y);
+        // This game's: a great person is born with a card of its suit (docs/DECKS.md).
+        self.deck_deal_to_unit(u);
 
         u
     }

@@ -66,6 +66,14 @@ fn run(seed: u32, end: i32, swap: Option<&TempDir>) -> (Vec<(i32, i32)>, Vec<u8>
         // the full length. The reload happens right here, straight after the decision (a reload
         // recreates the session's stats, so this cannot lean on a `decisions_total()` check at a
         // later control point -- an intervening reload would have zeroed it).
+        // For the "deferred event pending" reload: random events are gone (docs/CARDS.md), so the
+        // human gets the Adaptive trait's choice of a new trait at a known control point, as the
+        // rules raise it for an Adaptive leader, identically in both runs.
+        if turn == 20 {
+            let h = s.human;
+            let trigger = s.g.d.t::<ffh_data::EventTriggerType>("EVENTTRIGGER_TRAIT_ADAPTIVE");
+            s.g.player_init_triggered_data(h, trigger, true, None, -1, -1, Some(h), None, None, None, None, None);
+        }
         if !captured && turn >= 30 {
             captured = true;
             let h = s.human;

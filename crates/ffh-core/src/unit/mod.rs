@@ -576,6 +576,10 @@ pub struct Unit {
     /// Not in C++: on a crusade Host's unit, who lent it and its contribution value
     /// (docs/CRUSADE.md).
     pub lent: Option<crate::crusade::LentRecord>,
+    /// Not in C++: the card a great person was born with (docs/DECKS.md, "The deck as built"),
+    /// discovered with `SPELL_DISCOVER_CARD`; back in the deck if the unit dies or is used
+    /// another way.
+    pub card: Option<TechType>,
 }
 
 impl Unit {
@@ -754,6 +758,7 @@ impl Unit {
             battle_heal_turn: -1,
             xp_carry: 0,
             lent: None,
+            card: None,
         }
     }
 }

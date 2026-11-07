@@ -97,7 +97,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 17: building suitability (docs/SUITABILITY.md): `City::building_tiers`; the tier variants
 ///   and `PROMOTION_SPIRIT_GUIDE2` in the data.
 /// - 18: no engagement roles (docs/ENGAGEMENTS.md): a battle report's fighters without `role`.
-pub const FORMAT_VERSION: u32 = 18;
+/// - 19: the great-person deck (docs/DECKS.md): `Unit::card`, `Player::once_spells`, the
+///   Armageddon deck (`Game::doom`).
+pub const FORMAT_VERSION: u32 = 19;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -331,6 +333,8 @@ fn write_game(g: &Game, w: &mut Writer) {
         crusades,
         next_crusade_id,
         crusade_reports,
+        doom,
+        spell_target: _,
         trophies,
         map_script: _,
         dying: _,
@@ -446,6 +450,7 @@ fn write_game(g: &Game, w: &mut Writer) {
     crusades.write(w);
     next_crusade_id.write(w);
     crusade_reports.write(w);
+    doom.write(w);
     trophies.write(w);
 }
 
@@ -560,6 +565,8 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         crusades: Persist::read(r)?,
         next_crusade_id: Persist::read(r)?,
         crusade_reports: Persist::read(r)?,
+        doom: Persist::read(r)?,
+        spell_target: None,
         trophies: Persist::read(r)?,
         map_script: default_map_script(),
         dying: Vec::new(),

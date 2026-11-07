@@ -50,6 +50,11 @@ impl Text {
         Text { map }
     }
 
+    /// Adds (or replaces) one entry, as a line of the TSV would (a card file's `text`).
+    pub fn insert(&mut self, key: &str, raw: &str) {
+        self.map.insert(key.to_string(), Entry::parse(raw));
+    }
+
     /// Text for a key (an entry with forms: its `<Text>` value, every form); falls back to the
     /// key itself.
     pub fn get<'a>(&'a self, key: &'a str) -> &'a str {

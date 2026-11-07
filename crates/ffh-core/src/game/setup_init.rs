@@ -354,6 +354,7 @@ impl Game {
         self.crusades.clear();
         self.next_crusade_id = 0;
         self.crusade_reports.clear();
+        self.doom = Default::default();
 
         // AI_reset(): CvGameAI::m_iPad = 0 (nothing to port).
     }

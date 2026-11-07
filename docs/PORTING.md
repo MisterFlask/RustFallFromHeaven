@@ -265,6 +265,25 @@ flag.
   ability of its class (`SPELL_FIREBALL_BARGE`, the missile); the Wonder spell still summons the
   missile it summoned (`UNIT_FIREBALL`). New spell key `battle_only`; one new spell, so saves made
   before do not load.
+- **The decks** (docs/CARDS.md; the owner's design, docs/DECKS.md, 2026-11-07; save format 19):
+  - **Great-person cards.** A Sage (Great Scientist), Prophet, Engineer, Merchant or Bard (Great
+    Artist) is born holding a secret tech, a card drawn from one world deck: its suit's cards of
+    the player's era band. Once its owner knows the card's needs, the great person can discover
+    it (`SPELL_DISCOVER_CARD`, using it up), and the card's content opens. A card whose great
+    person dies or is used another way goes back into the deck. Card techs are never researched
+    or traded. A card's world spell is cast once a game with its own flag, never the
+    civilization's world spell. Some spells are cast at a distance (a plot, city, unit, player or
+    option chosen). Each card is listed in docs/CARDS.md section 5.
+  - **The Armageddon deck.** FFH2's fixed Armageddon events become cards dealt face down to the
+    counter's slots (10, 20, ... 90, 100) on the first turn: one card a slot, a chain's stages in
+    the later slots they name. FFH2's events are cards: Blight 30, the Four Horsemen 40-50-60-70
+    as one chain, Hellfire 80, Wrath 90, Apocalypse 100. They no longer all come in every game.
+    A card is shown to everyone when the counter is within 5 of its slot and plays when the
+    counter reaches it. FFH2's message at 10 (`EVENTTRIGGER_ARMAGEDDON`) is gone.
+  - **No random events.** The weighted roll for a random event each turn is gone, and with it
+    every random event and quest. The triggers rules code fires (the Adaptive and Insane traits,
+    lairs, Aeron's Chosen, alignment picks) still fire. Crime, which only enabled random
+    events, has no effect left.
 
 **Balance** (after `classic-1`, each the owner's decision)
 

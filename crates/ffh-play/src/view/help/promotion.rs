@@ -574,7 +574,7 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
     // can choose: races, equipment, the effects of spells and the like (`iMinLevel` -1), those
     // behind a tech nobody can research (Never) and those for no unit combat (only a unit that
     // starts with one may have it, and it has it then).
-    let chosen_by_none = *min_level == -1 || *race || *equipment || tech_prereq.is_some_and(|t| d.techs[t].disable) || !unit_combat.iter().any(|&c| c);
+    let chosen_by_none = *min_level == -1 || *race || *equipment || tech_prereq.is_some_and(|t| d.techs[t].disable && d.techs[t].card.is_none()) || !unit_combat.iter().any(|&c| c);
     if chosen_by_none {
         return finish(std::mem::take(b));
     }

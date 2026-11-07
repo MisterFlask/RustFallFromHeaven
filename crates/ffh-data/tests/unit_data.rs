@@ -43,16 +43,18 @@ fn loads_without_warnings() {
 #[test]
 fn table_sizes() {
     let d = data();
+    // The game's own entries: the great-person cards' files add theirs (docs/CARDS.md).
+    let own = |n: usize, table: &str| n - card_entry_count(table);
     // 326 and 248, and this game's Skirmisher (docs/PORTING.md, "Changes from FFH2").
-    assert_eq!(d.units.len(), 327);
-    assert_eq!(d.unit_classes.len(), 249);
+    assert_eq!(own(d.units.len(), "units"), 327);
+    assert_eq!(own(d.unit_classes.len(), "unit_classes"), 249);
     // 261 and this game's PROMOTION_SPIRIT_GUIDE2 (docs/SUITABILITY.md) and
     // PROMOTION_SUMMONERS_BOND (the Summoner trait's).
-    assert_eq!(d.promotions.len(), 263);
+    assert_eq!(own(d.promotions.len(), "promotions"), 263);
     // 267 and this game's SPELL_FIREBALL_BARGE, 40 sphere spells in battle and Wonder's 10
     // outcomes (docs/ENGAGEMENTS.md, "Battle spells").
-    assert_eq!(d.spells.len(), 318);
-    assert_eq!(d.builds.len(), 35);
+    assert_eq!(own(d.spells.len(), "spells"), 318);
+    assert_eq!(own(d.builds.len(), "builds"), 35);
     assert_eq!(d.special_units.len(), 3);
     assert_eq!(d.missions.len(), MissionType::NUM);
     assert_eq!(d.commands.len(), CommandType::NUM);

@@ -728,6 +728,12 @@ pub(crate) fn barbarian(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
 
 fn great_person(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let p = v.p;
+    // The deck (docs/DECKS.md): discover the card it holds, or keep it (in the capital) while
+    // its needs are near.
+    let card_plan = crate::cards::great_person_card(g, u);
+    if card_plan == crate::cards::CardPlan::Discovered {
+        return;
+    }
     if crate::victory::great_work(g, v, grp, u) { return; } // victory-pursuit
     if great_person_build(g, v, grp, u) {
         return;
@@ -743,6 +749,10 @@ fn great_person(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
         if alive(g, grp) && g.group_ready_to_move(grp, false) {
             skip(g, grp);
         }
+        return;
+    }
+    if card_plan == crate::cards::CardPlan::Wait {
+        hold(g, grp);
         return;
     }
     // Lightbulb a tech, else settle as a super specialist, else start a golden age.

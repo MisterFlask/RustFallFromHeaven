@@ -245,7 +245,8 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
     // bar's world actions ([`world_actions`]).
     for s in d.spells.keys() {
         let k = s.idx() as i32;
-        if d.spells[s].global {
+        // A card's world spell (`once`) is the empire's too (docs/CARDS.md).
+        if d.spells[s].global || d.spells[s].once {
             continue;
         }
         if !selection::can_do_command(g, units, CommandType::COMMAND_CAST, k, -1, true) {
@@ -305,7 +306,7 @@ pub fn world_actions(v: &Viewer) -> Json {
     let cast = CommandType::COMMAND_CAST;
     let mut out = Vec::new();
     for s in d.spells.keys() {
-        if !d.spells[s].global {
+        if !d.spells[s].global && !d.spells[s].once {
             continue;
         }
         let k = s.idx() as i32;

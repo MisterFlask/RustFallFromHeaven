@@ -1,0 +1,33 @@
+// The decks' own data (docs/DECKS.md): the spell a great person discovers its card with, and
+// the text of the Armageddon deck's cards (crates/ffh-core/src/deck/doom.rs).
+{
+  "spells": [
+    {
+      "type": "SPELL_DISCOVER_CARD",
+      "description": "TXT_KEY_SPELL_DISCOVER_CARD",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_DISCOVER_CARD_HELP",
+      "allow_ai": true,
+      "caster_no_duration": true,
+      "ignore_has_casted": true,
+      "sacrifice_caster": true,
+      "py_result": "spellDiscoverCard(pCaster)",
+      "py_requirement": "reqDiscoverCard(pCaster)",
+      "button": "Art/Interface/Buttons/Actions/Discover.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_SPELL_DISCOVER_CARD": "Discover the Card",
+    "TXT_KEY_SPELL_DISCOVER_CARD_HELP": "[ICON_BULLET]Your team learns the card this great person holds.[NEWLINE][ICON_BULLET]Needs the card's prerequisite techs.[NEWLINE][ICON_BULLET]Uses up the great person.",
+    "TXT_KEY_DOOM_BLIGHT": "Blight",
+    "TXT_KEY_DOOM_BLIGHT_HELP": "Every city outside the Infernals gains unhealthiness (10 plus its population, less its good health from buildings). Every living unit takes 25% death damage.",
+    "TXT_KEY_DOOM_FOUR_HORSEMEN": "The Four Horsemen",
+    "TXT_KEY_DOOM_FOUR_HORSEMEN_HELP": "40: Stephanos appears. 50: Buboes appears. 60: Yersinia appears. 70: Ars Moriendi appears.",
+    "TXT_KEY_DOOM_HELLFIRE": "Hellfire",
+    "TXT_KEY_DOOM_HELLFIRE_HELP": "Empty flat land plots without a bonus may become Hellfire, each with a demon Champion of the Infernals (else of the barbarians).",
+    "TXT_KEY_DOOM_WRATH": "Wrath",
+    "TXT_KEY_DOOM_WRATH_HELP": "Wrath appears. Each living land unit that is not a world unit may become Enraged.",
+    "TXT_KEY_DOOM_APOCALYPSE": "Apocalypse",
+    "TXT_KEY_DOOM_APOCALYPSE_HELP": "Every city outside the Fallow loses half its population. Every living unit may die."
+  }
+}

@@ -29,8 +29,8 @@ fn bc(name: &str) -> BuildingClassType {
 fn loads_without_warnings() {
     let d = data();
     assert!(d.warnings.is_empty(), "{} data warnings:\n{}", d.warnings.len(), d.warnings.join("\n"));
-    assert_eq!(d.events.len(), 522);
-    assert_eq!(d.event_triggers.len(), 277);
+    assert_eq!(d.events.len() - ffh_data::card_entry_count("events"), 522);
+    assert_eq!(d.event_triggers.len() - ffh_data::card_entry_count("event_triggers"), 277);
     assert_eq!(d.events[ev("EVENT_CONTINUE")].base.type_, "EVENT_CONTINUE");
 }
 

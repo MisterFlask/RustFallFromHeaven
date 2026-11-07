@@ -737,12 +737,30 @@ pub struct TechInfo {
     pub commerce_flexible: [bool; CommerceType::NUM],
     /// `isTerrainTrade(i)` (XML `TerrainTrades`)
     pub terrain_trade: IdxVec<TerrainType, bool>,
+    /// This game's: the tech is a great person's card (docs/DECKS.md, "The deck as built"),
+    /// `None` for an ordinary tech. A card tech is never researched or traded (`disable` and
+    /// `!trade` are forced): a great person holding it discovers it.
+    pub card: Option<CardInfo>,
+}
+
+/// A great-person card (docs/DECKS.md): the deck it is drawn from, and who may draw it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CardInfo {
+    /// The great person's class that draws it (`card_suit`: Sage `UNITCLASS_SCIENTIST`, Prophet
+    /// `UNITCLASS_PROPHET`, Engineer `UNITCLASS_ENGINEER`, Merchant `UNITCLASS_MERCHANT`, Bard
+    /// `UNITCLASS_ARTIST`).
+    pub suit: UnitClassType,
+    /// Drawn only by civilizations of this alignment (`card_alignment`).
+    pub alignment: Option<AlignmentType>,
+    /// The card's faith (`card_religion`): drawn whatever the drawer's religion; discovering it
+    /// also spreads this religion to three of the discoverer's cities.
+    pub religion: Option<ReligionType>,
 }
 
 /// C++ `CvTechInfo::read` + `readPass2` (`OrPreReqs`, `AndPreReqs`) + `readPass3`
 /// (`PrereqReligion`).
 pub fn read_tech(rd: &Rd) -> TechInfo {
-    TechInfo {
+    let mut tech = TechInfo {
         base: InfoBase::read(rd),
         advisor_type: rd.string("advisor"),
         ai_weight: rd.int("ai_weight"),
@@ -790,7 +808,14 @@ pub fn read_tech(rd: &Rd) -> TechInfo {
         // readPass2 in C++ (references other techs)
         prereq_or_techs: rd.ref_list("or_pre_reqs"),
         prereq_and_techs: rd.ref_list("and_pre_reqs"),
+        card: None,
+    };
+    if let Some(suit) = rd.rf::<UnitClassType>("card_suit") {
+        tech.card = Some(CardInfo { suit, alignment: rd.rf("card_alignment"), religion: rd.rf("card_religion") });
+        tech.disable = true;
+        tech.trade = false;
     }
+    tech
 }
 
 #[cfg(test)]

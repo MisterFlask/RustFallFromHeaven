@@ -257,21 +257,12 @@ impl Game {
             }
         }
 
-        let mut new_event_eligible = true;
-        if self.elapsed_game_turns < d.defines.first_event_delay_turns {
-            new_event_eligible = false;
-        }
-
-        if new_event_eligible {
-            // FfH: Modified by Kael 09/26/2007 (GAMEOPTION_DOUBLE_EVENTS doubles the era's chance)
-            let mut chance = d.eras[self.players[p].current_era].event_chance_per_turn;
-            if self.is_option(GameOptionType::GAMEOPTION_DOUBLE_EVENTS) {
-                chance *= 2;
-            }
-            if self.soren_rand_num(d.defines.event_probability_roll_sides, "Global event check") >= chance {
-                new_event_eligible = false;
-            }
-        }
+        // Change from FFH2: no random events (docs/PORTING.md, "Changes from FFH2"; docs/DECKS.md).
+        // The weighted roll for a new event is gone; the triggers that always fire (weight -1)
+        // still do, except the Armageddon events, which the Armageddon deck plays
+        // (`deck::doom`). Rules code still fires its own triggers (the Adaptive and Insane
+        // traits, lairs, ...).
+        let new_event_eligible = false;
 
         // (triggered data, cumulative weight)
         let mut possible_event_trigger_weights: Vec<(TriggeredId, i32)> = Vec::new();
@@ -279,6 +270,10 @@ impl Game {
         for trigger in d.event_triggers.keys() {
             let weight = self.player_get_event_trigger_weight(p, trigger);
             if weight == -1 {
+                // The counter's triggers (FFH2's Armageddon events) are the Armageddon deck's.
+                if d.event_triggers[trigger].prereq_global_counter > 0 {
+                    continue;
+                }
                 self.player_trigger(p, trigger);
             } else if weight > 0 && new_event_eligible {
                 let triggered = self.player_init_triggered_data(

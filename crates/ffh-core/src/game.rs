@@ -285,6 +285,11 @@ pub struct Game {
     pub next_crusade_id: u32,
     /// Dissolved crusades (reports for the self-play measures and the log).
     pub crusade_reports: Vec<crate::crusade::CrusadeReport>,
+    /// Not in C++: the Armageddon deck (docs/DECKS.md, "The Armageddon deck as built").
+    pub doom: crate::deck::doom::Doom,
+    /// Not in C++: the target of the targeted spell being cast (`unit_cast_at`), read by its
+    /// result; `None` outside such a cast. Not saved (a cast is over within one call).
+    pub spell_target: Option<crate::structs::SpellTarget>,
     // ---- replacements for state C++ keeps outside CvGame ----
     /// Trophies (C++ Python `CvDataStorage`, persistent across games in C++; per game here).
     pub trophies: BTreeMap<String, i32>,
@@ -443,6 +448,8 @@ impl Game {
             crusades: Vec::new(),
             next_crusade_id: 0,
             crusade_reports: Vec::new(),
+            doom: Default::default(),
+            spell_target: None,
             trophies: BTreeMap::new(),
             map_script: default_map_script(),
             dying: Vec::new(),

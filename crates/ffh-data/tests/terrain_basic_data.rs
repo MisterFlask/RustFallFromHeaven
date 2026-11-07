@@ -45,7 +45,8 @@ fn table_sizes() {
         ("unit_combats", d.unit_combats.len(), 10),
     ];
     for (name, got, want) in sizes {
-        assert_eq!(got, want, "{name}");
+        // The game's own entries: the great-person cards' files add theirs (docs/CARDS.md).
+        assert_eq!(got - ffh_data::card_entry_count(name), want, "{name}");
     }
 }
 

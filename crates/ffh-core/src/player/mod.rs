@@ -376,6 +376,9 @@ pub struct Player {
     pub governors: Vec<GovernorId>,
     /// Governors drawn so far.
     pub governor_count: i32,
+    /// Not in C++: the once-a-game spells (`SpellInfo::once`, the great-person cards' world
+    /// spells; docs/DECKS.md) this player has cast, in the order cast.
+    pub once_spells: Vec<SpellType>,
 }
 
 impl Player {
@@ -632,6 +635,7 @@ impl Player {
             army_count: 0,
             governors: Vec::new(),
             governor_count: 0,
+            once_spells: Vec::new(),
         }
     }
 

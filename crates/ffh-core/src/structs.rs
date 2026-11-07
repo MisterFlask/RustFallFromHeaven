@@ -72,6 +72,18 @@ pub struct Tribute {
     pub demand: bool,
 }
 
+/// This game's: what a remotely targeted spell is cast at (`SpellInfo::target`; docs/DECKS.md,
+/// "Remote targeting"). Read by the spell's result through `Game::spell_target`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum SpellTarget {
+    Plot(PlotIdx),
+    City(CityId),
+    Unit(UnitId),
+    Player(PlayerId),
+    /// One of the spell's own options, numbered by the spell.
+    Choice(i32),
+}
+
 /// C++ `EventTriggeredData`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EventTriggeredData {

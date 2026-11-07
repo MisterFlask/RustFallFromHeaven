@@ -12,6 +12,7 @@ pub mod controller;
 pub mod culture;
 pub mod crusade;
 pub mod deal;
+pub mod deck;
 pub mod defs;
 pub mod engagement;
 pub mod ffh;

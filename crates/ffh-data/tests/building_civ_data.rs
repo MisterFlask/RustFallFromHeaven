@@ -68,12 +68,12 @@ fn loads_without_warnings() {
 #[test]
 fn table_sizes() {
     assert_eq!(d().special_buildings.len(), 1);
-    assert_eq!(d().building_classes.len(), 131);
+    assert_eq!(d().building_classes.len() - ffh_data::card_entry_count("building_classes"), 131);
     // 170 FFH2 buildings and 276 tier variants (docs/SUITABILITY.md).
-    assert_eq!(d().buildings.len(), 446);
-    assert_eq!(d().traits.len(), 29);
-    assert_eq!(d().civilizations.len(), 23);
-    assert_eq!(d().leader_heads.len(), 69);
+    assert_eq!(d().buildings.len() - ffh_data::card_entry_count("buildings"), 446);
+    assert_eq!(d().traits.len() - ffh_data::card_entry_count("traits"), 29);
+    assert_eq!(d().civilizations.len() - ffh_data::card_entry_count("civilizations"), 23);
+    assert_eq!(d().leader_heads.len() - ffh_data::card_entry_count("leader_heads"), 69);
     for b in d().buildings.iter() {
         assert!(b.building_class_type.is_some(), "{} has no class", b.base.type_);
         // Arrays the C++ sizes with NUM_* enum constants rather than GC.getNumXInfos().

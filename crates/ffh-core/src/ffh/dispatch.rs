@@ -18,6 +18,8 @@ use ffh_data::*;
 pub type SpellFn = fn(&mut Game, UnitId, &PyCall);
 /// `reqX(pCaster, ...)` -- PyRequirement.
 pub type ReqFn = fn(&Game, UnitId, &PyCall) -> bool;
+/// This game's: a targeted spell's valid targets for a caster (`SpellInfo::py_targets`).
+pub type TargetsFn = fn(&Game, UnitId, &PyCall) -> Vec<crate::structs::SpellTarget>;
 /// Unit-only effect: promotion `PyPerTurn`, spell `PyMiscast`.
 pub type UnitFn = fn(&mut Game, UnitId, &PyCall);
 /// `(pCaster, pPlot)`: improvement/feature `PythonOnMove`, improvement `PythonAtRange`.
@@ -51,6 +53,7 @@ pub struct Tables {
     pub spell_result: IdxVec<SpellType, Option<Bound<SpellFn>>>,
     pub spell_requirement: IdxVec<SpellType, Option<Bound<ReqFn>>>,
     pub spell_miscast: IdxVec<SpellType, Option<Bound<UnitFn>>>,
+    pub spell_targets: IdxVec<SpellType, Option<Bound<TargetsFn>>>,
     pub promotion_per_turn: IdxVec<PromotionType, Option<Bound<UnitFn>>>,
     pub improvement_on_move: IdxVec<ImprovementType, Option<Bound<PlotFn>>>,
     pub improvement_at_range: IdxVec<ImprovementType, Option<Bound<PlotFn>>>,
@@ -91,12 +94,13 @@ fn bind<K: Idx, F: Copy>(
 
 impl Tables {
     pub fn build(d: &GameData) -> Tables {
-        use crate::ffh::{random_events_a as ra, random_events_b as rb, spells_a as sa, spells_b as sb};
+        use crate::ffh::{cards, random_events_a as ra, random_events_b as rb, spells_a as sa, spells_b as sb};
         let mut un = Vec::new();
-        let spell_result = bind(d.spells.len(), &mut un, "SpellInfo.PyResult", |k: SpellType| d.spells[k].py_result.clone(), |n| sa::find_spell(n).or_else(|| sb::find_spell(n)));
-        let spell_requirement = bind(d.spells.len(), &mut un, "SpellInfo.PyRequirement", |k: SpellType| d.spells[k].py_requirement.clone(), |n| sa::find_req(n).or_else(|| sb::find_req(n)));
-        let spell_miscast = bind(d.spells.len(), &mut un, "SpellInfo.PyMiscast", |k: SpellType| d.spells[k].py_miscast.clone(), |n| sa::find_unit_fn(n).or_else(|| sb::find_unit_fn(n)));
-        let promotion_per_turn = bind(d.promotions.len(), &mut un, "PromotionInfo.PyPerTurn", |k: PromotionType| d.promotions[k].py_per_turn.clone(), |n| sa::find_unit_fn(n).or_else(|| sb::find_unit_fn(n)));
+        let spell_result = bind(d.spells.len(), &mut un, "SpellInfo.PyResult", |k: SpellType| d.spells[k].py_result.clone(), |n| sa::find_spell(n).or_else(|| sb::find_spell(n)).or_else(|| cards::find_spell(n)));
+        let spell_requirement = bind(d.spells.len(), &mut un, "SpellInfo.PyRequirement", |k: SpellType| d.spells[k].py_requirement.clone(), |n| sa::find_req(n).or_else(|| sb::find_req(n)).or_else(|| cards::find_req(n)));
+        let spell_targets = bind(d.spells.len(), &mut un, "SpellInfo.PyTargets", |k: SpellType| d.spells[k].py_targets.clone(), cards::find_targets);
+        let spell_miscast = bind(d.spells.len(), &mut un, "SpellInfo.PyMiscast", |k: SpellType| d.spells[k].py_miscast.clone(), |n| sa::find_unit_fn(n).or_else(|| sb::find_unit_fn(n)).or_else(|| cards::find_unit_fn(n)));
+        let promotion_per_turn = bind(d.promotions.len(), &mut un, "PromotionInfo.PyPerTurn", |k: PromotionType| d.promotions[k].py_per_turn.clone(), |n| sa::find_unit_fn(n).or_else(|| sb::find_unit_fn(n)).or_else(|| cards::find_unit_fn(n)));
         let improvement_on_move = bind(d.improvements.len(), &mut un, "ImprovementInfo.PythonOnMove", |k: ImprovementType| d.improvements[k].python_on_move.clone(), |n| sa::find_plot_fn(n).or_else(|| sb::find_plot_fn(n)));
         let improvement_at_range = bind(d.improvements.len(), &mut un, "ImprovementInfo.PythonAtRange", |k: ImprovementType| d.improvements[k].python_at_range.clone(), |n| sa::find_plot_fn(n).or_else(|| sb::find_plot_fn(n)));
         let feature_on_move = bind(d.features.len(), &mut un, "FeatureInfo.PythonOnMove", |k: FeatureType| d.features[k].python_on_move.clone(), |n| sa::find_plot_fn(n).or_else(|| sb::find_plot_fn(n)));
@@ -114,6 +118,7 @@ impl Tables {
             spell_result,
             spell_requirement,
             spell_miscast,
+            spell_targets,
             promotion_per_turn,
             improvement_on_move,
             improvement_at_range,

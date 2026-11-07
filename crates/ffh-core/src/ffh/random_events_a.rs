@@ -42,6 +42,7 @@
 //!   `pPlayer` before assigning it (UnboundLocalError on its first statement: it does nothing).
 //! - `AI_getAttitude` (CvPlayerAI) is `Game::player_ai_get_attitude`: see `ai_get_attitude` below.
 
+use crate::defs::INVALID_PLOT_COORD;
 use crate::ffh::dispatch::*;
 use crate::ffh::game_utils::py_div;
 use crate::game::Game;
@@ -722,6 +723,42 @@ fn can_trigger_amurite_trial_unit(g: &Game, _trigger: EventTriggerType, _p: Play
 fn apply_amurite_trial1(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
     let civ = g.d.t::<CivilizationType>("CIVILIZATION_AMURITES");
     move_to_civ_capital(g, data, civ);
+}
+
+/// This game's Armageddon deck (docs/DECKS.md, `deck::doom`) fires FFH2's Armageddon events as
+/// its cards: `name` is the callback (`doArmageddonBlight`, ...), run for player `p` with the
+/// trigger data a counter trigger has (no city, plot or unit).
+pub(crate) fn armageddon_effect(g: &mut Game, name: &str, p: PlayerId) {
+    let trigger = g.d.event_triggers.keys().next().expect("an event trigger");
+    let data = EventTriggeredData {
+        id: TriggeredId(0),
+        trigger,
+        turn: g.game_turn(),
+        player: p,
+        city: None,
+        plot_x: INVALID_PLOT_COORD,
+        plot_y: INVALID_PLOT_COORD,
+        unit: None,
+        other_player: None,
+        other_player_city: None,
+        religion: None,
+        corporation: None,
+        building: None,
+        text: String::new(),
+        global_text: String::new(),
+    };
+    let f: fn(&mut Game, &EventTriggeredData, PlayerId) = match name {
+        "doArmageddonApocalypse" => do_armageddon_apocalypse,
+        "doArmageddonArs" => do_armageddon_ars,
+        "doArmageddonBlight" => do_armageddon_blight,
+        "doArmageddonBuboes" => do_armageddon_buboes,
+        "doArmageddonHellfire" => do_armageddon_hellfire,
+        "doArmageddonStephanos" => do_armageddon_stephanos,
+        "doArmageddonWrath" => do_armageddon_wrath,
+        "doArmageddonYersinia" => do_armageddon_yersinia,
+        _ => panic!("no Armageddon effect {name}"),
+    };
+    f(g, &data, p);
 }
 
 /// `doArmageddonApocalypse(argsList)`: unless the player is Fallow, every city loses half its

@@ -282,6 +282,11 @@ impl Game {
                 return false;
             }
         }
+        // This game's: a card's world spell is cast once a game, with its own flag
+        // (docs/DECKS.md), never the civilization's world spell.
+        if info.once && self.players[owner].once_spells.contains(&spell) {
+            return false;
+        }
         if info.prereq_slave_trade {
             if !self.player_is_slave_trade(owner) {
                 return false;
@@ -417,6 +422,13 @@ impl Game {
             if !self.unit_can_create_building(u, spell) {
                 return false;
             }
+        }
+        // This game's: a targeted spell needs a valid target (docs/DECKS.md, "Remote targeting").
+        if info.target.is_some() {
+            if !info.py_requirement.is_empty() && !self.py_can_cast(u, spell) {
+                return false;
+            }
+            return !self.unit_spell_targets(u, spell).is_empty();
         }
         if !info.py_requirement.is_empty() {
             // Python `canCast(pCaster, eSpell)` decides alone once the XML prereqs pass.
@@ -778,9 +790,35 @@ impl Game {
         self.tel_cast_end(snap);
     }
 
+    /// This game's: the valid targets of a targeted spell (`SpellInfo::target`) for caster `u`,
+    /// from its `py_targets`; empty for a spell without one.
+    pub fn unit_spell_targets(&self, u: UnitId, spell: SpellType) -> Vec<crate::structs::SpellTarget> {
+        if self.d.spells[spell].target.is_none() {
+            return Vec::new();
+        }
+        self.py_spell_targets(u, spell)
+    }
+
+    /// This game's: can `u` cast the targeted spell at `target` now?
+    pub fn unit_can_cast_at(&self, u: UnitId, spell: SpellType, target: crate::structs::SpellTarget) -> bool {
+        self.unit_can_cast(u, spell, false) && self.unit_spell_targets(u, spell).contains(&target)
+    }
+
+    /// This game's: casts a targeted spell at `target` (its result reads `spell_target`). The
+    /// caller checks `unit_can_cast_at`.
+    pub fn unit_cast_at(&mut self, u: UnitId, spell: SpellType, target: crate::structs::SpellTarget) {
+        self.spell_target = Some(target);
+        self.unit_cast(u, spell);
+        self.spell_target = None;
+    }
+
     fn unit_cast_inner(&mut self, u: UnitId, spell: SpellType) {
         let d = self.d;
         let info = &d.spells[spell];
+        // A targeted spell is cast only at a target (`unit_cast_at`).
+        if info.target.is_some() && self.spell_target.is_none() {
+            return;
+        }
 
         if info.has_casted {
             self.units[u].has_casted = true;
@@ -796,6 +834,12 @@ impl Game {
                     }
                 }
             }
+        }
+        if info.once {
+            let owner = self.units[u].owner;
+            self.players[owner].once_spells.push(spell);
+            let turn = self.game_turn();
+            self.log.msg(turn, Some(owner), || format!("Card spell: {}", d.text.name(&info.base.description)));
         }
         if info.global {
             let owner = self.units[u].owner;

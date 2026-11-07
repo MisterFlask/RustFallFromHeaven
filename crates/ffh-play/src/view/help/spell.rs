@@ -112,6 +112,9 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         py_miscast: _,
         py_result: _,
         py_requirement: _,
+        once,
+        target,
+        py_targets: _,
     } = &d.spells[s];
     let b = &mut String::new();
 
@@ -131,6 +134,22 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
 
     if *global {
         line(b, d, "TXT_KEY_SPELL_GLOBAL", &[]);
+    }
+    // This game's (docs/DECKS.md): a card's world spell, and a spell cast at a distance.
+    if *once {
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]Cast once a game, by any of your units");
+    }
+    if let Some(kind) = target {
+        let what = match kind {
+            SpellTargetKind::Plot => "a plot",
+            SpellTargetKind::City => "a city",
+            SpellTargetKind::Unit => "a unit",
+            SpellTargetKind::Player => "a player",
+            SpellTargetKind::Choice => "one of its options",
+        };
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]Cast at {what} you choose"));
     }
     if *prereq_slave_trade {
         line(b, d, "TXT_KEY_SPELL_PREREQ_SLAVE_TRADE", &[]);

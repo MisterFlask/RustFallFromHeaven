@@ -276,6 +276,73 @@ fn add_building_variants(docs: &mut [(String, Value)], json_dir: &Path) -> Resul
     Ok(())
 }
 
+/// The great-person deck's cards (docs/DECKS.md, "The deck as built"): one file per card, each an
+/// object whose members are info tables (a table's file name without `.jsonc`: `techs`, `units`,
+/// `promotions`, `buildings`, `spells`, ...) holding the entries the card adds, plus `text`, an
+/// object of the card's English text (TXT_KEY -> string). The entries are appended to their
+/// tables after the tables' own (and the building variants), the files in name order, so the
+/// game's own types keep their ids.
+pub const CARDS_DIR: &str = "cards";
+
+/// Appends every card file's entries to their tables (see [`CARDS_DIR`]); returns the cards' text.
+fn add_card_files(docs: &mut [(String, Value)], json_dir: &Path) -> Result<Vec<(String, String)>, LoadError> {
+    let dir = json_dir.join(CARDS_DIR);
+    let mut names: Vec<String> = match std::fs::read_dir(&dir) {
+        Ok(rd) => rd
+            .filter_map(|e| e.ok())
+            .filter_map(|e| e.file_name().to_str().map(str::to_string))
+            .filter(|n| n.ends_with(".jsonc"))
+            .collect(),
+        Err(_) => return Ok(Vec::new()),
+    };
+    names.sort();
+    let mut text = Vec::new();
+    for name in names {
+        let rel = format!("{CARDS_DIR}/{name}");
+        let doc = read_doc(json_dir, &rel)?;
+        let Value::Obj(members) = doc else {
+            return Err(LoadError(format!("{rel}: expected an object of tables")));
+        };
+        for (key, val) in members {
+            if key == "text" {
+                let Value::Obj(lines) = val else {
+                    return Err(LoadError(format!("{rel}: text must be an object")));
+                };
+                for (k, v) in lines {
+                    let Some(v) = v.as_str() else {
+                        return Err(LoadError(format!("{rel}: text {k} is not a string")));
+                    };
+                    text.push((k, v.to_string()));
+                }
+                continue;
+            }
+            let file = format!("{key}.jsonc");
+            let Some((_, Value::Arr(entries))) = docs.iter_mut().find(|(f, _)| *f == file) else {
+                return Err(LoadError(format!("{rel}: {key} is no info table")));
+            };
+            let Value::Arr(added) = val else {
+                return Err(LoadError(format!("{rel}: {key} must be a list of entries")));
+            };
+            entries.extend(added);
+        }
+    }
+    Ok(text)
+}
+
+/// How many entries the card files of the default data directory add to `table` (a table's file
+/// name without `.jsonc`): what tests that count a table's entries subtract, to count the
+/// game's own (docs/CARDS.md).
+pub fn card_entry_count(table: &str) -> usize {
+    let dir = default_data_dir().join("json").join(CARDS_DIR);
+    let Ok(rd) = std::fs::read_dir(&dir) else { return 0 };
+    rd.filter_map(|e| e.ok())
+        .filter(|e| e.file_name().to_string_lossy().ends_with(".jsonc"))
+        .filter_map(|e| std::fs::read_to_string(e.path()).ok())
+        .filter_map(|text| jsonc::parse(&text).ok())
+        .map(|v| v.get(table).and_then(Value::as_arr).map_or(0, |a| a.len()))
+        .sum()
+}
+
 fn read_doc(dir: &Path, rel: &str) -> Result<Value, LoadError> {
     let p = dir.join(rel);
     let text = std::fs::read_to_string(&p).map_err(|e| LoadError(format!("{}: {}", p.display(), e)))?;
@@ -295,6 +362,7 @@ impl GameData {
             docs.push((file.to_string(), doc));
         }
         add_building_variants(&mut docs, &json_dir)?;
+        let card_text = add_card_files(&mut docs, &json_dir)?;
         let docs = Docs { docs };
 
         // Pass 1: register every type name.
@@ -317,10 +385,13 @@ impl GameData {
             define_map.read_file(&read_doc(&json_dir, f)?, &reg);
         }
 
-        let text = match std::fs::read(data_dir.join("text").join("en.tsv")) {
+        let mut text = match std::fs::read(data_dir.join("text").join("en.tsv")) {
             Ok(b) => Text::parse_tsv(&String::from_utf8_lossy(&b)),
             Err(_) => Text::default(),
         };
+        for (k, v) in card_text {
+            text.insert(&k, &v);
+        }
 
         // Pass 2: typed tables.
         let mut gd = GameData::load_tables(&docs, reg, define_map, text);

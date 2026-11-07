@@ -362,6 +362,8 @@ const SIEGE_SCORE: i64 = 1_500_000;
 /// is researched next (below defense, as siege). It is a few hundred beakers (Optics for the
 /// Caravel), and without it the settler idled in port for up to 150 turns.
 const TRANSPORT_SCORE: i64 = 1_500_000;
+/// The pull of a held card's needs (`goal_bonus`): about the siege goal's.
+const CARD_SCORE: i64 = 1_500_000;
 
 /// The nearest researchable step toward the transport one of our ports could train soonest (the
 /// research left on the path to all of its techs). Types whose resources no port of ours has are
@@ -465,6 +467,17 @@ fn goal_bonus(g: &Game, p: PlayerId, ctx: &Ctx, trace: bool) -> Vec<(TechType, i
             out.push((t, TRANSPORT_SCORE * (turns + 4) / 1000));
             if trace {
                 crate::trace!(g, p, "  transport goal {} (a settler waits in port)", g.d.techs[t].base.type_);
+            }
+        }
+    }
+    // A great person holds a card whose needs we lack (docs/DECKS.md): the card is worth a great
+    // person, so its needs pull research, one researchable step at a time.
+    for t in crate::cards::needed_techs(g, p) {
+        if g.player_can_research(p, t, false) {
+            let turns = crate::tech_plan::effective_left(g, team, t) / rate;
+            out.push((t, CARD_SCORE * (turns + 4) / 1000));
+            if trace {
+                crate::trace!(g, p, "  card goal {} (a great person holds its card)", g.d.techs[t].base.type_);
             }
         }
     }

@@ -22,6 +22,14 @@ impl Game {
             None => true,
         }
     }
+    /// This game's: a targeted spell's valid targets for `caster` (its `py_targets`; none if
+    /// it names no callback).
+    pub fn py_spell_targets(&self, caster: UnitId, spell: SpellType) -> Vec<crate::structs::SpellTarget> {
+        match &tables(self.d).spell_targets[spell] {
+            Some(b) => (b.f)(self, caster, &b.call),
+            None => Vec::new(),
+        }
+    }
     /// `miscast(pCaster, eSpell)`: run the spell's `PyMiscast`.
     pub fn py_miscast(&mut self, caster: UnitId, spell: SpellType) {
         if let Some(b) = &tables(self.d).spell_miscast[spell] {

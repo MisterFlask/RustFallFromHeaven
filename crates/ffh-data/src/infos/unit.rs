@@ -1089,6 +1089,10 @@ pub struct SpellInfo {
     pub caster_no_duration: bool,
     pub causes_war: bool,
     pub global: bool,
+    /// This game's: a great-person card's world spell (docs/DECKS.md), cast once a game by any
+    /// unit of its owner, with its own flag (`Player::once_spells`) rather than the
+    /// civilization's world spell (`global`).
+    pub once: bool,
     pub in_borders_only: bool,
     pub in_city_only: bool,
     pub prereq_slave_trade: bool,
@@ -1164,6 +1168,27 @@ pub struct SpellInfo {
     pub py_result: String,
     /// Python callback that decides whether the spell can be cast (`<PyRequirement>`).
     pub py_requirement: String,
+    /// This game's: what a remotely targeted spell is cast at (`target`: `plot`, `city`, `unit`,
+    /// `player` or `choice`), `None` for a spell cast where its caster stands. Its valid targets
+    /// come from `py_targets`; the cast takes one of them (docs/DECKS.md, "Remote targeting").
+    pub target: Option<SpellTargetKind>,
+    /// This game's: the callback listing a targeted spell's valid targets for a caster.
+    pub py_targets: String,
+}
+
+/// What a remotely targeted spell is cast at (`SpellInfo::target`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SpellTargetKind {
+    /// A plot (the caster's owner sees it).
+    Plot,
+    /// A city.
+    City,
+    /// A unit.
+    Unit,
+    /// A player.
+    Player,
+    /// One of the spell's own options (a trait, a wonder, ...), numbered by the spell.
+    Choice,
 }
 
 /// C++ `CvSpellInfo::read`.
@@ -1199,6 +1224,7 @@ pub fn read_spell(rd: &Rd) -> SpellInfo {
         caster_no_duration: rd.bool("caster_no_duration"),
         causes_war: rd.bool("causes_war"),
         global: rd.bool("global"),
+        once: rd.bool("once"),
         in_borders_only: rd.bool("in_borders_only"),
         in_city_only: rd.bool("in_city_only"),
         prereq_slave_trade: rd.bool("prereq_slave_trade"),
@@ -1263,6 +1289,16 @@ pub fn read_spell(rd: &Rd) -> SpellInfo {
         py_miscast: rd.string("py_miscast"),
         py_result: rd.string("py_result"),
         py_requirement: rd.string("py_requirement"),
+        target: match rd.string("target").as_str() {
+            "" => None,
+            "plot" => Some(SpellTargetKind::Plot),
+            "city" => Some(SpellTargetKind::City),
+            "unit" => Some(SpellTargetKind::Unit),
+            "player" => Some(SpellTargetKind::Player),
+            "choice" => Some(SpellTargetKind::Choice),
+            other => panic!("spells: target {other:?} is none of plot, city, unit, player, choice"),
+        },
+        py_targets: rd.string("py_targets"),
     }
 }
 

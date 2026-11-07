@@ -23,6 +23,7 @@ pub mod governor;
 pub mod automation;
 pub mod campaign;
 pub mod casters;
+pub mod cards;
 pub mod casting;
 pub mod combat_sim;
 pub mod civs;
@@ -168,6 +169,7 @@ impl Controller for Ai {
             armies::turn(g, p); // armies' reinforcements (docs/ARMIES.md)
             governor::turn(g, p); // governed cities (docs/GOVERNORS.md)
             culture::turn(g, p); // cultural channels (docs/CULTURE.md), after the governors' production
+            cards::turn(g, &v); // the great-person cards' content: world spells, rituals (docs/CARDS.md)
         }
         if !v.barbarian {
             campaign::plan(g, &mut v);

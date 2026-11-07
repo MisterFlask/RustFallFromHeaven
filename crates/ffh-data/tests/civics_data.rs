@@ -33,16 +33,16 @@ fn loads_without_warnings() {
 #[test]
 fn table_sizes_and_types() {
     let d = d();
-    assert_eq!(d.specialists.len(), 11);
+    assert_eq!(d.specialists.len() - ffh_data::card_entry_count("specialists"), 11);
     assert_eq!(d.religions.len(), 7);
     assert_eq!(d.corporations.len(), 0, "FFH2 ships an empty corporation file");
     assert_eq!(d.civic_options.len(), 5);
-    assert_eq!(d.civics.len(), 31);
-    assert_eq!(d.votes.len(), 21);
+    assert_eq!(d.civics.len() - ffh_data::card_entry_count("civics"), 31);
+    assert_eq!(d.votes.len() - ffh_data::card_entry_count("votes"), 21);
     assert_eq!(d.vote_sources.len(), 2);
     assert_eq!(d.espionage_missions.len(), 1);
-    assert_eq!(d.projects.len(), 17);
-    assert_eq!(d.techs.len(), 86);
+    assert_eq!(d.projects.len() - ffh_data::card_entry_count("projects"), 17);
+    assert_eq!(d.techs.len() - ffh_data::card_entry_count("techs"), 86);
     // every entry's <Type> is the registered name at its index
     for (t, info) in d.techs.iter_enumerated() {
         assert_eq!(d.type_name(t), info.base.type_);

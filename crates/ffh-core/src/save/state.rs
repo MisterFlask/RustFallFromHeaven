@@ -14,6 +14,7 @@ use crate::area::Area;
 use crate::city::City;
 use crate::crusade::*;
 use crate::deal::Deal;
+use crate::deck::doom::{Doom, DoomSlot};
 use crate::group::SelectionGroup;
 use crate::ids::*;
 use crate::log::{GameLog, LogEntry};
@@ -331,8 +332,11 @@ persist_struct!(Unit {
     extra_terrain_defense_percent, extra_feature_attack_percent, extra_feature_defense_percent,
     extra_unit_combat_modifier, ai_birthmark, ai_type, ai_groupflag, ai_origin_x, ai_origin_y,
     ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, army, march,
-    stat_flat, stat_pct, attacks_made, battle_heal_turn, xp_carry, lent,
+    stat_flat, stat_pct, attacks_made, battle_heal_turn, xp_carry, lent, card,
 });
+
+persist_struct!(Doom { dealt, slots });
+persist_struct!(DoomSlot { threshold, card, revealed, fired });
 
 persist_struct!(City {
     id, x, y, rally_x, rally_y, game_turn_founded, game_turn_acquired, population, highest_population,
@@ -434,7 +438,7 @@ persist_struct!(Player {
     culture_history, espionage_history, ai_civic_timer, ai_religion_timer, ai_num_train_ai_units,
     ai_num_ai_units, ai_peacetime_trade_value, ai_peacetime_grant_value, ai_gold_traded_to,
     ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, tributes, armies, army_count,
-    governors, governor_count,
+    governors, governor_count, once_spells,
 });
 
 persist_struct!(Team {

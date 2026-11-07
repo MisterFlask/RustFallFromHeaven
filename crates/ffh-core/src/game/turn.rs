@@ -110,6 +110,9 @@ impl Game {
         // Not in C++: crusades and loans (docs/CRUSADE.md; nothing runs with the flag off).
         self.crusade_do_turn();
 
+        // Not in C++: the Armageddon deck (docs/DECKS.md): its cards are revealed and fired.
+        self.doom_do_turn();
+
         // setEndTurnMessage(false), setHasMovedUnit(false): UI.
 
         if self.ai_auto_play > 0 {
