@@ -2402,3 +2402,96 @@ end. Band: I Ancient, II Classical, III Medieval.
 - *The Free Company* (Merchant): only as good as the crusade Host's AI.
 - *The Unbinding of Oaths* and *The Pale Election* (Armageddon): mechanical for you, but much of
   their weight is what rivals do with the opening.
+
+### 9.4 The owner's verdicts so far (2026-11-07)
+
+**Sage**
+- **Liked:** the Second Sky, Familiars, Homunculus Vats, Mana Grafting, the Orrery of Ceridwen,
+  Stoicism, Contingency (a promotion mages take), the Plagiarist's Lens, Mirror Colony.
+- **Disliked:**
+  - the Long Experiment: not specific enough to implement;
+  - the Index of Unwritten Books: self-referential;
+  - Scrying Pool: low impact;
+  - the Calculus of Chance: low impact, too subtle, little effect on decisions;
+  - Waystones: fiddly to manage;
+  - Dagda's Seal;
+  - the Predictive Engine: fiddly;
+  - Temporal Anchor: too weird;
+  - Chronicle of Recall: too opaque to opponents for its impact.
+
+**Prophet**
+- **Liked:** Maponos's Cradle, the Lantern of Lugus, Agares's Well, Vigil, Forest Paths (inside
+  your own borders only), Wayside Shrines (a worker-built improvement on a road), Tidecall of
+  Danalin, False Colours.
+- **Disliked:**
+  - Breath of Tali: the Windcaller was undefined;
+  - Relic Cult: fiddly, dicey access to dead heroes' relics, low impact;
+  - Ancestor Worship: too vague to implement;
+  - Heartwood of Sucellus: too much like the Ljosalfar's March of the Trees, which already
+    turns every forest in their borders into a Treant for 5 turns;
+  - Ledger of Mammon: interest mechanics reward doing nothing;
+  - Ossuary of Arawn, the Pilgrim Road, Prophecy of Ruin: too vague to implement;
+  - Penance: too non-interactive for a world effect;
+  - Martyrs' Calendar: vague, many fiddly counters for a small effect, the Saint undefined.
+
+Engineer, Merchant, Bard and the Armageddon deck: not yet reviewed.
+
+---
+
+## 10. What makes a card good (from the owner's verdicts)
+
+1. **A card is a spec, not a pitch.** It names its vehicle (unit, promotion, building,
+   improvement, civic, process, spell), its numbers, its targets and its scope (Forest Paths:
+   inside your borders). Every noun is defined: a Windcaller or a Saint that is only a name is
+   a reject. Test: could it be implemented from the card text alone?
+2. **The impact is worth a great person.** A card costs a great person's other uses, so its
+   effect must be one the player notices and plans around. Rejects: a little information
+   (Scrying Pool), a few points of crit, a small bonus behind conditions (Relic Cult).
+3. **One decision with lasting consequences, or a passive rule; no routine upkeep.**
+   - Liked: one-shots (the Second Sky, the Lens, Mirror Colony); one choice that lasts
+     (Agares's Well, Mana Grafting); passive rules (Stoicism, Forest Paths); set-once triggers
+     (Contingency).
+   - Rejected: actions to repeat and route (Waystones), schedules to juggle (the Predictive
+     Engine), counters to tend for a small payoff (Martyrs, Relic Cult).
+   - An occasional high-stakes action is fine (Tidecall every 10 turns). A frequent low-stakes
+     one is not.
+4. **Act on the world, not on the game's own machinery.** Cards change the map, units, cities,
+   mana and civics. Rejected: manipulating the deck (the Index), the schedule (the Predictive
+   Engine), or the world's rules by fiat (Dagda's Seal). Information about the machinery is
+   fine (the Orrery). Acquiring another civ's tech through it is fine too (the Lens).
+5. **Physical, not metaphysical.** Strange effects on the map are welcome: land into sea, sneak
+   attacks, cities through a portal. Effects that bend time or undo the past are not (Temporal
+   Anchor, Chronicle of Recall).
+6. **Big effects are visible to opponents.** A large swing the opponent cannot see coming or
+   plan for is too opaque (Chronicle of Recall). Hidden effects are fine when they are bounded
+   (False Colours: one battle).
+7. **Reward acting, not waiting.** Interest, hoarding and passive conversion into a world
+   effect are out (the Ledger of Mammon, Penance). A world-scale effect must come through play
+   on the map that others can contest, not through a solitary sink. A local tool for a local
+   problem is fine (Vigil).
+8. **Add new verbs; do not hand out a civilization's signature.** A card that gives anyone a
+   civ's identity (Heartwood against the Ljosalfar's March of the Trees) is out.
+9. **Self-contained** (section 7): the payoff does not rest on how rivals respond.
+
+### 10.1 What the principles predict for the unreviewed cards
+
+To check the principles against the owner's next verdicts:
+- **Likely out:**
+  - the Time-Locked Vault and Letters of Credit (interest, principle 7);
+  - Snares and Forced March (small or fiddly, 2 and 3);
+  - the Living Chronicle and Songs of Grievance (counters for small effects, or subtle; 2, 3);
+  - Insurance, Informers, the Black Book and Embassies (low impact, 2);
+  - the Feast of Ceasefire (a world rule by fiat, 4);
+  - Anthem (subtle, 2);
+  - the Signs and Witching Nights (world rules by fiat; but they are crises, where principle 4
+    may not apply);
+  - the Reckoning of Debts (counters, but a large effect);
+  - the Mercenary Hall (a board to watch, 3).
+- **Likely in:**
+  - Cairn Golem, Causeway, Canal Locks, Mountaineering, Ferries, Bastion, Automatons, Wheeled
+    City (physical, 5);
+  - the Weather Engine (occasional, high stakes);
+  - Cornering the Market, the Paymaster, Company Towns;
+  - Satrapy and Confederation (civics);
+  - War Drums, the Lullaby, the Illusory Host, the Chorus (battle rules);
+  - Muster (a local tool).
