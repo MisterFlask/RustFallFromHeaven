@@ -2910,3 +2910,101 @@ one-off world spell. A few change the diplomatic landscape. All of them:
     rare for a reason; a card does not hand them out wholesale.
 26. **Implementable from existing state.** "Original capital", "where it appears" and "who it
     is" must each have a definite answer in the game's data.
+
+## 12. Review batch 1 (10 cards, 2026-11-07)
+
+Stat scale for reference: Champion 120 HP / 60 attack / 60 defence; Paladin 110 / 110; Hill
+Giant (large) 180 HP / 70 / 70; Archmage magic 55; Acheron 190 / 190.
+
+**1. Rite of the Necropolis** [evil or neutral] · Prophet · III · needs Malevolent Designs ·
+world spell (once per game)
+- **Requires:** at least 3 City Ruins on the map.
+- **Effect:** a new civ, the Necropolis, rises on the 3 City Ruins nearest your capital: three
+  cities of size 2, each with Walls.
+- **Its leader and hero:** the Lich-Prince. A Lich with the Hero promotion, magic 70 (an
+  Archmage has 55), Death II's battle spell, and `immortal` (returns to its capital when
+  killed).
+- **Its mechanics:**
+  - It has the Infernals' Fallow trait: its cities need no food.
+  - Every unit killed in a battle inside its borders rises there as a Pyre Zombie of the
+    Necropolis.
+- **Diplomacy:** permanently at peace with you, and permanently at war with every good-aligned
+  civ.
+- **Why it matters:** a hero above its era, walled cities from its first turn, and an army that
+  grows from every war fought against it.
+- **Expert:** cast it on the ruins your rivals must march past, never beside your own
+  expansion.
+
+**2. Wake the Hill Clans** · Engineer · I · needs Mining · world spell
+- **Requires:** an unclaimed region with at least 6 hill or peak plots within 3 plots of each
+  other.
+- **Effect:** a new civ of giants, the Hill Clans, your permanent vassal. It gets two cities on
+  that region's hills, each with a Palisade, and 4 Hill Giants.
+- **Its hero:** Thrumm the Mountain-King, large, 200 HP, 100 attack, 100 defence.
+- **Its mechanics:**
+  - It alone trains Hill Giants (90 hammers).
+  - Its cities get +1 production per hill worked.
+- **Why it matters:** large units that outclass the Ancient era, a hero, and defensible cities.
+- **Expert:** cast it early on the hills between you and your nearest rival: a wall of giants
+  that fights for you.
+
+**3. Gryphon Riders** · Bard · II · needs Animal Handling · national unit, 4 · trained in a
+city with a Stable
+- **Stats:** tier 3, mounted (flanker). HP 100, attack 65, defence 45, magic defence 34,
+  accuracy 90, evasion 15, crit 10, speed 7; 3 moves.
+- **Flies:** crosses peaks and water at 1 move a plot, ignoring terrain costs. It cannot end a
+  turn over water.
+- **In battle:** its charge reaches any enemy unit, the rear row included, in every round.
+- **Expert:** the killer of casters, archers and siege engines, and the only land unit that
+  crosses mountains.
+
+**4. Shieldbearer** · Engineer · II · needs Bronze Working · promotion for melee units of
+level 3+
+- **Effect:** while the Shieldbearer stands in the front row, shots, stones and damage spells
+  aimed at units in its lane hit it instead (as a Sentinel intercepts down its lane). It takes
+  half damage from them.
+- **Expert:** one per lane makes the back row safe from archers and mages.
+
+**5. Spire of the Archmagi** · Sage · II · needs Sorcery · national building
+- **Effect:** casters trained in this city start with one extra sphere I promotion, chosen at
+  training among the mana types your empire holds, with no level requirement. Every adept from
+  here arrives with a battle spell.
+- **Expert:** the mage school; worth most to a mana-rich empire.
+
+**6. Battlemage** · Sage · III · needs Arcane Lore · promotion for Mages and Archmages of
+level 5+
+- **Effect:** the caster's damage battle spells strike every unit in the target row (the sweep
+  pattern), and the caster may stand in the front row.
+- **Expert:** one Battlemage against a massed front line.
+
+**7. The Gilded Legion** · Merchant · III · needs Mercantilism · national building
+- **Effect:** when built, choose one civilization you have met. This city can train that
+  civilization's versions of each unit class (its unique units; not heroes or world units) at
+  150% cost, with its own building prerequisites.
+- **Expert:** buy the unique line that answers your enemy: golems, Fyrdwell horse archers,
+  vampires.
+
+**8. Trading Post** · Merchant · I · needs Trade · improvement, built outside borders at least
+3 plots from any city
+- **Effect:** its plot and the 8 around it become your territory, fixed (culture does not move
+  it). Resources there join your trade network by road. A unique feature there counts as
+  inside your borders (its doubled research).
+- **Removal:** an enemy that pillages it removes the claim.
+- **Expert:** claim a far mana node, unique feature or strategic resource without founding a
+  city.
+
+**9. Font of Rebirth** [good or neutral] · Prophet · II · needs Priesthood · building
+- **Effect:** the first time a unit of yours would die in a battle within 3 plots of the city,
+  it is carried to the city at 10% HP instead. It gains the promotion *Reborn*, which marks the
+  Font as used for that unit: a Reborn unit dies normally.
+- **Expert:** the fortress city's garrison survives its first lost battle; fight near the Font.
+
+**10. Charter of the Free Peoples** · Bard · II · needs Code of Laws · world spell
+- **Requires:** at least 3 barbarian cities in the world.
+- **Effect:** every barbarian city in the world, with the barbarian units within 3 plots of it,
+  becomes a new civ, the Free Peoples, your permanent vassal. Orthus, if alive, becomes its
+  leader-hero; otherwise a barbarian warlord hero (Champion line, 90 attack).
+- **Why it matters:** it starts with every barbarian city at once, often 4 to 10 cities across
+  the map, and their armies.
+- **Expert:** cast it when the barbarians hold many cities nobody has cleared; your vassal then
+  sits on every rival's flank.
