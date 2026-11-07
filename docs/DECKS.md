@@ -3178,3 +3178,15 @@ What changes:
 - **"Vassal", not "permanent vassal",** everywhere (replaced throughout this file). Ordinary
   vassal rules apply.
 - Still open: whether timed enforcement (Judgment of Junil, Free City Charter) is out too.
+
+**Free City Charter, reworked** (the owner: no unattackable city; strong defences that make
+attacking it costly instead). Engineer · II · needs Construction · world spell.
+- **Effect:** release one of your cities (not the capital) as a Free City: a one-city civ that
+  keeps its buildings and garrison, with +4 attitude toward you.
+- **Its defences:** it gains a Wall of Stone, three Sentinels instead of two, and +50% defence
+  for units fighting in the city.
+- **Expert:** turn the border city you cannot hold into a hard, friendly buffer between you and
+  the rival.
+
+By the same reasoning, timed enforcement looks out in general. Judgment of Junil's enforced
+peace would then need the same treatment (to confirm).
