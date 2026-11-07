@@ -389,8 +389,10 @@ would open up. Some partial versions exist, and the entry says so.
   choice.
 
 **The world**
-- **Seasons that matter.** The calendar has seasons but nothing reads them. Winter attrition,
-  the elven courts' reigns, harvests.
+- **Seasons that matter.** Entirely new. The data has only four season names, used by Civ4's
+  Seasons calendar, a date-label option that no game uses: the standard calendar counts years,
+  many to a turn early on. A seasonal rule needs its own cycle (say four seasons of 5 turns)
+  for winter attrition, the elven courts' reigns and harvests.
 - **Weather.** Area effects for a few turns: storm, fog, blizzard, drought (the Weather Engine,
   the Ashen Sky).
 - **Climate drift.** Temperature that moves terrain over time. The hell terrain's plot counter
