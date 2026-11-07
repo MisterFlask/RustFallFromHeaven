@@ -2597,6 +2597,9 @@ information cards.
 - **The Unmaking:** out. Low impact: culture regrows a city's borders at once, and every deal
   is simply struck again.
 - **The Judgment:** out, boring.
+- **The Signs, Witching Nights, Pestilence:** out, as predicted. Recurring world effects are
+  rejected in the Armageddon deck too: principle 3 covers crises, not only the cards a player
+  holds.
 
 ### 10.3 Predicted verdicts on everything not yet reviewed
 
