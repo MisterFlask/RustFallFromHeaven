@@ -1397,8 +1397,8 @@ units over buildings.
 1. *The grove.* Rises per forest cut within the city's radius. Falls per ancient forest in it.
 2. *The court's faith.* Rises in cities where the Council of Esus is present. Falls per
    Fellowship of Leaves temple. Rebels with Esus become Svartalfar (5.3).
-3. *The seasons.* Rises in the calendar's autumn and winter turns and falls in spring and
-   summer: the two courts' reigns.
+3. *The seasons.* Rises in autumn and winter and falls in spring and summer: the two courts'
+   reigns. Needs the seasonal cycle (section 1.10).
 
 **Khazad**: dwarves of the deep halls and the vaults.
 1. *The vaults.* FFH2's vault levels already turn gold per city into happiness. Unrest rises
@@ -1472,8 +1472,8 @@ units over buildings.
    Falls with each.
 2. *The court's faith.* Rises in cities where the Fellowship of Leaves is present. Falls with
    the Council of Esus. Rebels with the Fellowship become Ljosalfar (5.3).
-3. *The night.* Rises in the calendar's spring and summer turns and falls in autumn and
-   winter.
+3. *The night.* Rises in spring and summer and falls in autumn and winter. Needs the seasonal
+   cycle (section 1.10).
 
 **Calabim**: vampire lords and their cattle.
 1. *The cattle.* Rises 10 with each Feast in the city. Falls with a Breeding Pit and a
