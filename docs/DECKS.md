@@ -2444,6 +2444,7 @@ end. Band: I Ancient, II Classical, III Medieval.
   mechanic is reworked (it is unsatisfying as it stands).
 - **Unrest:** parked. No card pushes on Unrest while the mechanic is being iterated.
 - **Espionage:** out. A fiddly mechanic, likely to be removed later.
+- **Corporations:** ignored for now. No card uses them (FFH2's base data defines none).
 - **Supply:** not stable, not being built now. Cards that use it are out (the Caravanserai,
   Scorched Earth, Forced March, the supply part of Automatons).
 - **Engagement combat** (the Ogre Battle formation battles) is stable ground: the specific
