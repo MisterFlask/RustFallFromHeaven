@@ -115,6 +115,7 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         once,
         target,
         py_targets: _,
+        py_target_label: _,
     } = &d.spells[s];
     let b = &mut String::new();
 

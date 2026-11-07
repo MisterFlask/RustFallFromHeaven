@@ -438,7 +438,7 @@ persist_struct!(Player {
     culture_history, espionage_history, ai_civic_timer, ai_religion_timer, ai_num_train_ai_units,
     ai_num_ai_units, ai_peacetime_trade_value, ai_peacetime_grant_value, ai_gold_traded_to,
     ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, tributes, armies, army_count,
-    governors, governor_count, once_spells,
+    governors, governor_count, once_spells, card_traits,
 });
 
 persist_struct!(Team {

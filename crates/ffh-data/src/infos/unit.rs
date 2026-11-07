@@ -1174,6 +1174,9 @@ pub struct SpellInfo {
     pub target: Option<SpellTargetKind>,
     /// This game's: the callback listing a targeted spell's valid targets for a caster.
     pub py_targets: String,
+    /// This game's: the callback naming a `choice` target for people (`py_target_label`: a trait,
+    /// a wonder, ...); a choice spell without one shows "Option n" (docs/CARDS.md, section 3).
+    pub py_target_label: String,
 }
 
 /// What a remotely targeted spell is cast at (`SpellInfo::target`).
@@ -1299,6 +1302,7 @@ pub fn read_spell(rd: &Rd) -> SpellInfo {
             other => panic!("spells: target {other:?} is none of plot, city, unit, player, choice"),
         },
         py_targets: rd.string("py_targets"),
+        py_target_label: rd.string("py_target_label"),
     }
 }
 

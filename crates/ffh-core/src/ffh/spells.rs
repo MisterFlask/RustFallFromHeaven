@@ -30,6 +30,11 @@ impl Game {
             None => Vec::new(),
         }
     }
+    /// This game's: the name of choice `choice` of a targeted spell for `caster` (its
+    /// `py_target_label`), if the spell names a label callback.
+    pub fn py_spell_target_label(&self, caster: UnitId, spell: SpellType, choice: i32) -> Option<String> {
+        tables(self.d).spell_target_label[spell].as_ref().map(|b| (b.f)(self, caster, choice, &b.call))
+    }
     /// `miscast(pCaster, eSpell)`: run the spell's `PyMiscast`.
     pub fn py_miscast(&mut self, caster: UnitId, spell: SpellType) {
         if let Some(b) = &tables(self.d).spell_miscast[spell] {

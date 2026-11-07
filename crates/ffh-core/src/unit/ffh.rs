@@ -175,6 +175,17 @@ impl Game {
     /// C++ non-const; changes nothing (the FfH `req*` Python requirement functions have no side
     /// effects). The spell's `PyRequirement` goes through `crate::ffh`.
     pub fn unit_can_cast(&self, u: UnitId, spell: SpellType, test_visible: bool) -> bool {
+        self.unit_can_cast_with(u, spell, test_visible, true)
+    }
+
+    /// This game's: [`Self::unit_can_cast`] without asking a targeted spell (`SpellInfo::target`)
+    /// whether it has a valid target: for a caller that lists the targets itself
+    /// (`unit_spell_targets`), once rather than for every unit it tries.
+    pub fn unit_can_cast_untargeted(&self, u: UnitId, spell: SpellType, test_visible: bool) -> bool {
+        self.unit_can_cast_with(u, spell, test_visible, false)
+    }
+
+    fn unit_can_cast_with(&self, u: UnitId, spell: SpellType, test_visible: bool, with_targets: bool) -> bool {
         let d = self.d;
         let info = &d.spells[spell];
         let unit = &self.units[u];
@@ -428,7 +439,7 @@ impl Game {
             if !info.py_requirement.is_empty() && !self.py_can_cast(u, spell) {
                 return false;
             }
-            return !self.unit_spell_targets(u, spell).is_empty();
+            return !with_targets || !self.unit_spell_targets(u, spell).is_empty();
         }
         if !info.py_requirement.is_empty() {
             // Python `canCast(pCaster, eSpell)` decides alone once the XML prereqs pass.
@@ -801,7 +812,7 @@ impl Game {
 
     /// This game's: can `u` cast the targeted spell at `target` now?
     pub fn unit_can_cast_at(&self, u: UnitId, spell: SpellType, target: crate::structs::SpellTarget) -> bool {
-        self.unit_can_cast(u, spell, false) && self.unit_spell_targets(u, spell).contains(&target)
+        self.unit_can_cast_untargeted(u, spell, false) && self.unit_spell_targets(u, spell).contains(&target)
     }
 
     /// This game's: casts a targeted spell at `target` (its result reads `spell_target`). The
@@ -810,6 +821,38 @@ impl Game {
         self.spell_target = Some(target);
         self.unit_cast(u, spell);
         self.spell_target = None;
+    }
+
+    /// This game's: target `target` of spell `spell` cast by `caster`, named for people: a plot's
+    /// terrain (and feature) with its coordinates, a city's name, a unit's name and level, a
+    /// player's name, or a choice's name from the spell's `py_target_label` ("Option n" without
+    /// one).
+    pub fn spell_target_label(&self, caster: UnitId, spell: SpellType, target: crate::structs::SpellTarget) -> String {
+        use crate::structs::SpellTarget;
+        let d = self.d;
+        let text = |key: &str| d.text.name(key).to_string();
+        match target {
+            SpellTarget::Plot(p) => {
+                let plot = &self.map.plots[p];
+                let (x, y) = self.map.xy(p);
+                let mut s = plot.terrain_type.map_or_else(String::new, |t| text(&d.terrains[t].base.description));
+                if let Some(f) = plot.feature_type {
+                    s.push_str(", ");
+                    s.push_str(&text(&d.features[f].base.description));
+                }
+                format!("{s} ({x}, {y})")
+            }
+            SpellTarget::City(c) => self.cities.get(c).map_or_else(|| format!("City {}", c.0), |city| text(&city.name)),
+            SpellTarget::Unit(t) => match self.units.get(t) {
+                Some(unit) => {
+                    let name = if unit.name.is_empty() { text(&d.units[unit.unit_type].base.description) } else { text(&unit.name) };
+                    format!("{name}, level {}", unit.level)
+                }
+                None => format!("Unit {}", t.0),
+            },
+            SpellTarget::Player(p) => text(&self.player_get_name(p)),
+            SpellTarget::Choice(i) => self.py_spell_target_label(caster, spell, i).unwrap_or_else(|| format!("Option {i}")),
+        }
     }
 
     fn unit_cast_inner(&mut self, u: UnitId, spell: SpellType) {

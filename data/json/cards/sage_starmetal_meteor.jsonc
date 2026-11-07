@@ -1,0 +1,42 @@
+// G17 Starmetal Meteor (docs/DECKS_ROUND8.md; C.4: a plot with no units, destroying its improvement
+// or feature only). The rules: crates/ffh-core/src/ffh/cards/deck_ui.rs.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_STARMETAL_METEOR",
+      "description": "TXT_KEY_TECH_CARD_STARMETAL_METEOR",
+      "help": "TXT_KEY_TECH_CARD_STARMETAL_METEOR_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_STARMETAL_METEOR_PEDIA",
+      "advisor": "ADVISOR_SCIENCE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_ASTRONOMY"],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {"FLAVOR_SCIENCE": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_STARMETAL_METEOR",
+      "description": "TXT_KEY_SPELL_STARMETAL_METEOR",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_STARMETAL_METEOR_HELP",
+      "tech_prereq": "TECH_CARD_STARMETAL_METEOR",
+      "once": true,
+      "target": "plot",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_targets": "targetsStarmetalMeteor(pCaster)",
+      "py_result": "spellStarmetalMeteor(pCaster)",
+      "button": "Art/Interface/Buttons/Promotions/Mithrilweapons.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_STARMETAL_METEOR": "Starmetal Meteor",
+    "TXT_KEY_TECH_CARD_STARMETAL_METEOR_HELP": "[ICON_BULLET]World spell, once a game: a meteor falls on a land plot you see, not a peak, within 6 plots of your borders, with no city, improvement, unit or resource.[NEWLINE][ICON_BULLET]The plot loses its feature and gains Mithril (revealed and connected with Mithril Working).",
+    "TXT_KEY_TECH_CARD_STARMETAL_METEOR_PEDIA": "The sages who chart the heavens learn to call down a falling star, and the dwarves mine the starmetal out of the crater it leaves.",
+    "TXT_KEY_SPELL_STARMETAL_METEOR": "Starmetal Meteor",
+    "TXT_KEY_SPELL_STARMETAL_METEOR_HELP": "[ICON_BULLET]The target: a land plot you see, not a peak, within 6 plots of your borders, with no city, improvement, unit or resource.[NEWLINE][ICON_BULLET]The plot loses its feature and gains Mithril (revealed and connected with Mithril Working)."
+  }
+}
