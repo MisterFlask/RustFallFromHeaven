@@ -9,7 +9,8 @@
 //!   (unit/actions.rs).
 //!
 //! The Gathering's vassals are marked (`Team::gathered`) and do not count toward their master's
-//! victory (`Game::team_victory_population`, `team_victory_land`, the conquest test).
+//! domination victory (`Game::team_victory_population`, `team_victory_land`); toward conquest they
+//! count as every vassal does.
 //!
 //! The cards that bring a civilization into the game (A04 The Scaled Kingdom, A06 The Brood, A22
 //! The Infernal Gate Opens) are batch B8's: their `valid` and `fire` functions are in
@@ -622,7 +623,7 @@ fn valid_gathering(g: &Game) -> bool {
 /// Every civilization with less than half the power of the strongest civilization within 15
 /// plots, capital to capital, becomes its vassal (it capitulates). From the strongest down, on
 /// the powers before the card: a team that became a vassal takes none. These vassals do not
-/// count toward their master's victory (`Team::gathered`). Under No Vassal States the card is
+/// count toward their master's domination victory (`Team::gathered`). Under No Vassal States the card is
 /// never played (`valid_gathering`: dealt again at the reveal).
 fn fire_gathering(g: &mut Game, _: usize) {
     if g.is_option(GameOptionType::GAMEOPTION_NO_VASSAL_STATES) {
@@ -1026,7 +1027,7 @@ mod tests {
     }
 
     #[test]
-    fn the_gathering_makes_the_weak_neighbour_a_vassal_that_wins_nothing_for_its_master() {
+    fn the_gathering_makes_the_weak_neighbour_a_vassal_that_counts_for_conquest_not_domination() {
         let mut g = game(3);
         let (a, b, c) = (civ(&g, 0), civ(&g, 1), civ(&g, 2));
         let land = open_land(&g);
@@ -1044,10 +1045,17 @@ mod tests {
         fire_gathering(&mut g, 0);
         assert!(g.teams[tb].vassal[ta] && g.teams[tb].gathered && g.teams[tb].capitulated);
         assert!(!g.team_is_a_vassal(ta) && !g.team_is_a_vassal(tc), "too far, or the strongest");
-        // The vassal counts for its master's score totals, not for a victory.
+        // The vassal counts for its master's score totals, not for its domination victory.
         assert_eq!(g.team_victory_population(ta), g.teams[ta].total_population);
         assert_eq!(g.team_victory_land(ta), g.teams[ta].total_land);
         assert_eq!(g.team_get_total_population(ta, true), g.teams[ta].total_population + g.teams[tb].total_population / 2);
+        // Toward conquest it counts as every vassal does: once the third civilization holds no
+        // city, its master has conquered the world.
+        let conquest = g.d.t::<VictoryType>("VICTORY_CONQUEST");
+        assert!(!g.test_victory_team(conquest, ta).0, "the third civilization stands");
+        g.teams[tc].num_cities = 0;
+        assert!(g.test_victory_team(conquest, ta).0, "the Gathering's vassal counts as conquered");
+        g.teams[tc].num_cities = 1;
         // Freed, it counts as any vassal would if it were made one again.
         g.team_set_vassal(tb, ta, false, false);
         assert!(!g.teams[tb].gathered);

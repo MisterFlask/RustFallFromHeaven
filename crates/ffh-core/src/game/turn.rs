@@ -1275,11 +1275,9 @@ impl Game {
                 } else {
                     let mut found = false;
 
-                    // Not in C++: a vassal the Armageddon card The Gathering made counts as
-                    // unconquered (docs/CARDS.md).
                     for k in self.civ_team_ids() {
                         if self.team_is_alive(k) {
-                            if k != team && (!self.teams[k].vassal[team] || self.teams[k].gathered) {
+                            if k != team && !self.teams[k].vassal[team] {
                                 if self.teams[k].num_cities > 0 {
                                     found = true;
                                     break;

@@ -592,8 +592,9 @@ flag.
     - *The Sky Falls* (80): the ten largest cities lose 2 population (never below 1), and the units
       in them half their max HP.
     - *The Gathering* (100): every civilization with less than half the power of the strongest
-      civilization whose capital is within 15 plots of its own capitulates to it; these vassals
-      count toward neither their master's domination nor its conquest victory.
+      civilization whose capital is within 15 plots of its own capitulates to it; these vassals do
+      not count toward their master's domination victory (toward conquest they count as every
+      vassal does).
     - *The Long Night* (100, lasting): -1 food on every plot; units heal each turn only in cities.
     - *The Godless Age* (100): every shrine, holy city and religion is removed, and state religions
       end (without anarchy).
