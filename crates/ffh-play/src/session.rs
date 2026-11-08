@@ -248,7 +248,7 @@ impl Session {
                 .find(|&p| g.setup.players[p.idx()].human)
                 .ok_or_else(|| PlayError::Load("the save has no human player (use take over)".into()))?,
         };
-        if human.idx() >= g.num_civ_players() || (!observe && !g.setup.players[human.idx()].human) {
+        if !g.is_civ_player_slot(human) || (!observe && !g.setup.players[human.idx()].human) {
             return Err(PlayError::Load(format!("player {} is not a human player of this save", human.0)));
         }
         let mut s = Session::assemble(g, human, answerer, opts, journal, observe);
@@ -288,7 +288,7 @@ impl Session {
         if !g.at_turn_boundary() {
             return Err(PlayError::Load("take over needs a save at a turn boundary".into()));
         }
-        if p.idx() >= g.num_civ_players() || !g.players[p].alive {
+        if !g.is_civ_player_slot(p) || !g.players[p].alive {
             return Err(PlayError::Load(format!("player {} is not an alive civilization", p.0)));
         }
         if g.num_human_players() > 0 {
@@ -345,7 +345,7 @@ impl Session {
         if !self.observing {
             return Err(PlayError::Refused("only an observed game follows another player".into()));
         }
-        if p.idx() >= self.g.num_civ_players() || !self.g.players[p].ever_alive {
+        if !self.g.is_civ_player_slot(p) || !self.g.players[p].ever_alive {
             return Err(PlayError::Refused(format!("player {} is not a civilization of this game", p.0)));
         }
         self.human = p;

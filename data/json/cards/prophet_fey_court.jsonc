@@ -372,10 +372,10 @@
   ],
   "text": {
     "TXT_KEY_TECH_CARD_FEY_COURT": "The Fey Court Awakens",
-    "TXT_KEY_TECH_CARD_FEY_COURT_HELP": "[ICON_BULLET]World spell, once: the Fey Court is born as your vassal, of the Fellowship of Leaves.[NEWLINE][ICON_BULLET]Needs an unowned forest region of 12 or more forest plots; its two cities stand in it.[NEWLINE][ICON_BULLET]It starts with two Satyrs, two Fawns, two Treants and the Erlking, a hero (large, tier 4, HP 160, attack 110).[NEWLINE][ICON_BULLET]Its units have +2 first strikes and +50% defence in forest.[NEWLINE][ICON_BULLET]Needs a free player slot.",
+    "TXT_KEY_TECH_CARD_FEY_COURT_HELP": "[ICON_BULLET]World spell, once: the Fey Court is born as your vassal, of the Fellowship of Leaves.[NEWLINE][ICON_BULLET]Needs an unowned forest region of 12 or more forest plots; its two cities stand in it.[NEWLINE][ICON_BULLET]It starts with two Satyrs, two Fawns, two Treants and the Erlking, a hero (large, tier 4, HP 160, attack 110).[NEWLINE][ICON_BULLET]Its units have +2 first strikes and +50% defence in forest.",
     "TXT_KEY_TECH_CARD_FEY_COURT_PEDIA": "Where the old woods are deepest, the fey still hold court.[NEWLINE][NEWLINE]Expert: wake them in the forest between you and a rival; under the trees nobody fights them well.",
     "TXT_KEY_SPELL_FEY_COURT": "The Fey Court Awakens",
-    "TXT_KEY_SPELL_FEY_COURT_HELP": "[ICON_BULLET]The Fey Court is born as your vassal, in two cities of the largest unowned forest region (12 forest plots or more).[NEWLINE][ICON_BULLET]It starts with two Satyrs, two Fawns, two Treants and the Erlking.[NEWLINE][ICON_BULLET]Once per game. Needs a free player slot.",
+    "TXT_KEY_SPELL_FEY_COURT_HELP": "[ICON_BULLET]The Fey Court is born as your vassal, in two cities of the largest unowned forest region (12 forest plots or more).[NEWLINE][ICON_BULLET]It starts with two Satyrs, two Fawns, two Treants and the Erlking.[NEWLINE][ICON_BULLET]Once per game.",
     "TXT_KEY_BUILDING_PALACE_FEY_COURT": "Palace",
     "TXT_KEY_PROMOTION_FEY_GLAMOUR": "Fey Glamour",
     "TXT_KEY_PROMOTION_FEY_GLAMOUR_HELP": "[ICON_BULLET]+2 first strikes in forest.",

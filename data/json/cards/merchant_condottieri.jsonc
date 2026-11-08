@@ -374,10 +374,10 @@
   ],
   "text": {
     "TXT_KEY_TECH_CARD_CONDOTTIERI": "The Condottieri Free State",
-    "TXT_KEY_TECH_CARD_CONDOTTIERI_HELP": "[ICON_BULLET]World spell, once: the Free Companies are born as your vassal, in two cities on free sites within 8 plots of your borders.[NEWLINE][ICON_BULLET]They start with six Mercenaries, 1000 gold and the Captain-General, a hero (a Champion with Hero, attack 130).[NEWLINE][ICON_BULLET]Their cities make double gold; they buy units at 2 gold per hammer left, under any civic.[NEWLINE][ICON_BULLET]Needs a free player slot.",
+    "TXT_KEY_TECH_CARD_CONDOTTIERI_HELP": "[ICON_BULLET]World spell, once: the Free Companies are born as your vassal, in two cities on free sites within 8 plots of your borders.[NEWLINE][ICON_BULLET]They start with six Mercenaries, 1000 gold and the Captain-General, a hero (a Champion with Hero, attack 130).[NEWLINE][ICON_BULLET]Their cities make double gold; they buy units at 2 gold per hammer left, under any civic.",
     "TXT_KEY_TECH_CARD_CONDOTTIERI_PEDIA": "A charter for the free companies: land, a flag, and a treasury of their own.[NEWLINE][NEWLINE]Expert: found them where the next war will be fought; their gold buys an army a turn.",
     "TXT_KEY_SPELL_CONDOTTIERI": "The Condottieri Free State",
-    "TXT_KEY_SPELL_CONDOTTIERI_HELP": "[ICON_BULLET]The Free Companies are born as your vassal, in two cities within 8 plots of your borders.[NEWLINE][ICON_BULLET]They start with six Mercenaries, 1000 gold and the Captain-General.[NEWLINE][ICON_BULLET]Once per game. Needs a free player slot.",
+    "TXT_KEY_SPELL_CONDOTTIERI_HELP": "[ICON_BULLET]The Free Companies are born as your vassal, in two cities within 8 plots of your borders.[NEWLINE][ICON_BULLET]They start with six Mercenaries, 1000 gold and the Captain-General.[NEWLINE][ICON_BULLET]Once per game.",
     "TXT_KEY_BUILDING_PALACE_FREE_COMPANIES": "Palace",
     "TXT_KEY_TRAIT_FREE_COMPANIES": "Free Companies",
     "TXT_KEY_TRAIT_FREE_COMPANIES_SHORT": "Free Companies",

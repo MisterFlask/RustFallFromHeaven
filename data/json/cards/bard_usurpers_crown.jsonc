@@ -82,10 +82,10 @@
   ],
   "text": {
     "TXT_KEY_TECH_CARD_USURPERS_CROWN": "The Usurper's Crown",
-    "TXT_KEY_TECH_CARD_USURPERS_CROWN_HELP": "[ICON_BULLET]World spell, once, at a civilization you have met with 8 or more cities.[NEWLINE][ICON_BULLET]A third of its cities (at least 2), those farthest from its capital, secede as a new civilization of its civilization, with their buildings and garrisons.[NEWLINE][ICON_BULLET]Its leader is the Usurper, a hero of its best melee unit.[NEWLINE][ICON_BULLET]+4 attitude toward you, -6 toward the civilization it secedes from.[NEWLINE][ICON_BULLET]Needs a free player slot.",
+    "TXT_KEY_TECH_CARD_USURPERS_CROWN_HELP": "[ICON_BULLET]World spell, once, at a civilization you have met with 8 or more cities.[NEWLINE][ICON_BULLET]A third of its cities (at least 2), those farthest from its capital, secede as a new civilization of its civilization, with their buildings and garrisons.[NEWLINE][ICON_BULLET]Its leader is the Usurper, a hero of its best melee unit.[NEWLINE][ICON_BULLET]+4 attitude toward you, -6 toward the civilization it secedes from.",
     "TXT_KEY_TECH_CARD_USURPERS_CROWN_PEDIA": "Every crown has a rival claimant. Find him, and lend him your coin.[NEWLINE][NEWLINE]Expert: crown the usurper of the leading civilization just before your own war on it, so it fights on two fronts.",
     "TXT_KEY_SPELL_USURPERS_CROWN": "The Usurper's Crown",
-    "TXT_KEY_SPELL_USURPERS_CROWN_HELP": "[ICON_BULLET]Target: a civilization you have met with 8 or more cities.[NEWLINE][ICON_BULLET]A third of its cities (at least 2), those farthest from its capital, secede with their buildings and garrisons, led by the Usurper, a hero of its best melee unit.[NEWLINE][ICON_BULLET]Effect: +4 attitude toward you, -6 toward the civilization it secedes from.[NEWLINE][ICON_BULLET]Once per game. Needs a free player slot.",
+    "TXT_KEY_SPELL_USURPERS_CROWN_HELP": "[ICON_BULLET]Target: a civilization you have met with 8 or more cities.[NEWLINE][ICON_BULLET]A third of its cities (at least 2), those farthest from its capital, secede with their buildings and garrisons, led by the Usurper, a hero of its best melee unit.[NEWLINE][ICON_BULLET]Effect: +4 attitude toward you, -6 toward the civilization it secedes from.[NEWLINE][ICON_BULLET]Once per game.",
     "TXT_KEY_LEADER_USURPER": "The Usurper",
     "TXT_KEY_LEADER_USURPER_PEDIA": "There is always another claimant: a cousin, a general, a bastard of the old line. The Usurper is whichever of them a foreign crown chose to pay."
   }

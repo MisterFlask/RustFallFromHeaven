@@ -175,7 +175,7 @@ pub fn ai_willing_to_talk(g: &Game, ai: PlayerId, other: PlayerId) -> bool {
 /// Why the human cannot trade with `with` (or `Ok`): a met, alive civilization it can contact
 /// and that is willing to talk ([`ai_willing_to_talk`]).
 pub fn contact(g: &Game, h: PlayerId, with: PlayerId) -> Result<(), String> {
-    if with.idx() >= g.num_civ_players() || with == h || g.player_is_barbarian(with) {
+    if !g.is_civ_player_slot(with) || with == h || g.player_is_barbarian(with) {
         return Err(format!("player {} is not another civilization", with.0));
     }
     let team = g.players[h].team;
@@ -198,7 +198,7 @@ pub fn contact(g: &Game, h: PlayerId, with: PlayerId) -> Result<(), String> {
 /// another), with the rules' constants.
 pub fn trade(v: &Viewer, with: PlayerId) -> Result<Json, QueryErr> {
     let g = v.g;
-    if with.idx() >= g.num_civ_players() || with == v.h || g.player_is_barbarian(with) || !v.player_met(with) {
+    if !g.is_civ_player_slot(with) || with == v.h || g.player_is_barbarian(with) || !v.player_met(with) {
         return Err(invalid(format!("field `with`: player {} is not a civilization the human knows", with.0)));
     }
     let can = contact(g, v.h, with);
@@ -242,7 +242,7 @@ fn tribute_json(g: &Game, ai: PlayerId, h: PlayerId) -> Json {
 /// refused with that refusal as `why`; a human's answer is not known (`accept` null).
 pub fn trade_answer(v: &Viewer, with: PlayerId, give: &[TradeData], get: &[TradeData]) -> Result<Json, QueryErr> {
     let g = v.g;
-    if with.idx() >= g.num_civ_players() || with == v.h || g.player_is_barbarian(with) || !v.player_met(with) {
+    if !g.is_civ_player_slot(with) || with == v.h || g.player_is_barbarian(with) || !v.player_met(with) {
         return Err(invalid(format!("field `with`: player {} is not a civilization the human knows", with.0)));
     }
     if g.players[with].human {

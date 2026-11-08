@@ -1648,13 +1648,8 @@ impl Game {
             }
         }
 
-        if self.player_can_split_empire(owner) && self.player_can_split_area(owner, area) {
-            if let Some(player) = self.player_get_split_empire_player(owner, area) {
-                if self.players[player].alive {
-                    return Some(player);
-                }
-            }
-        }
+        // (C++ next returns the alive slot a colony split would recycle; a colony gets a new slot,
+        // never alive, so there is none.)
 
         let mut best_player = None;
         let mut best_value = 0;

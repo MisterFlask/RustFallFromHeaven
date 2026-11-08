@@ -141,7 +141,7 @@ fn the_armageddon_civilizations_play_under_the_ai() {
         g.plot_set_feature_type(q, None);
         g.plot_set_terrain_type(q, marsh, true);
     }
-    let kingdom = world::open_slot(&g).unwrap();
+    let kingdom = world::next_player(&g);
     assert!(nc::valid_scaled_kingdom(&g));
     nc::fire_scaled_kingdom(&mut g, 0);
     born.push((kingdom, "the Scaled Kingdom"));
@@ -154,7 +154,7 @@ fn the_armageddon_civilizations_play_under_the_ai() {
             g.plot_set_feature_type(q, Some(forest));
         }
         nc::fire_brood(&mut g, 0);
-        let brood = world::open_slot(&g).unwrap();
+        let brood = world::next_player(&g);
         nc::fire_brood(&mut g, 1);
         if g.players[brood].alive {
             born.push((brood, "the Brood"));
@@ -167,7 +167,7 @@ fn the_armageddon_civilizations_play_under_the_ai() {
         g.players[p].alignment = Some(if p == patron { AlignmentType::ALIGNMENT_EVIL } else { AlignmentType::ALIGNMENT_NEUTRAL });
     }
     if nc::valid_infernal_gate(&g) {
-        let infernals = world::open_slot(&g).unwrap();
+        let infernals = world::next_player(&g);
         nc::fire_infernal_gate(&mut g, 0);
         assert!(g.players[infernals].alive);
         // The Infernals start with settlers, not cities: they are checked for living only.

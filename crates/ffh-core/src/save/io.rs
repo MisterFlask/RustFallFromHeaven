@@ -140,9 +140,38 @@ impl<'a> Reader<'a> {
 ///
 /// Struct implementations (see [`persist_struct!`]) destructure the struct exhaustively, so
 /// adding a field to a saved struct fails to compile until the save code handles it.
+///
+/// The same lists grow the game state when a player is added mid-game
+/// (`Game::add_player_slot`): [`Persist::grow`] lengthens every per-player
+/// (`IdxVec<PlayerId, _>`) and per-team (`IdxVec<TeamId, _>`) array reachable from a value, so a
+/// per-player field added to a saved struct is grown with no further code.
 pub trait Persist: Sized {
     fn write(&self, w: &mut Writer);
     fn read(r: &mut Reader<'_>) -> Result<Self, LoadError>;
+
+    /// Grows every per-player and per-team array in this value to `slots` (the game's new
+    /// numbers of player and team slots); the new entries are [`Persist::fresh`]. An empty array
+    /// is storage not sized yet (a placeholder) and stays empty. Leaves (numbers, ids, strings)
+    /// have nothing to grow.
+    #[inline]
+    fn grow(&mut self, _slots: &Slots) {}
+
+    /// The value of a new entry of a grown per-player or per-team array: zero, `false`, `None`,
+    /// empty; an array by an info type gets the length of `like`'s (an existing entry of the same
+    /// array). `None` for a type that is no such entry (the growth then panics: give the type a
+    /// `fresh`).
+    #[inline]
+    fn fresh(_like: Option<&Self>) -> Option<Self> {
+        None
+    }
+}
+
+/// The numbers of player and team slots a game's per-player and per-team arrays are grown to
+/// ([`Persist::grow`]).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct Slots {
+    pub players: usize,
+    pub teams: usize,
 }
 
 /// `Persist` for a struct with named fields, written in the order listed (keep it the
@@ -158,6 +187,10 @@ macro_rules! persist_struct {
             fn read(r: &mut $crate::save::Reader<'_>) -> Result<Self, $crate::save::LoadError> {
                 // Struct literal fields are evaluated in the order written.
                 Ok($t { $($f: $crate::save::Persist::read(r)?),* })
+            }
+            fn grow(&mut self, slots: &$crate::save::Slots) {
+                let $t { $($f),* } = self;
+                $( $crate::save::Persist::grow($f, slots); )*
             }
         }
     };
@@ -205,6 +238,15 @@ macro_rules! persist_enum {
                     b => Err($crate::save::LoadError::Corrupt(format!("{} tag {b}", stringify!($t)))),
                 }
             }
+            #[allow(unused_variables)]
+            fn grow(&mut self, slots: &$crate::save::Slots) {
+                match self {
+                    $( $t::$v $( ( $($tf),* ) )? $( { $($sf),* } )? => {
+                        $( $( $crate::save::Persist::grow($tf, slots); )* )?
+                        $( $( $crate::save::Persist::grow($sf, slots); )* )?
+                    } )*
+                }
+            }
         }
     };
 }
@@ -221,6 +263,10 @@ impl Persist for u8 {
     fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
         r.u8()
     }
+    #[inline]
+    fn fresh(_: Option<&Self>) -> Option<Self> {
+        Some(0)
+    }
 }
 
 impl Persist for bool {
@@ -236,6 +282,10 @@ impl Persist for bool {
             b => Err(LoadError::Corrupt(format!("bool byte {b}"))),
         }
     }
+    #[inline]
+    fn fresh(_: Option<&Self>) -> Option<Self> {
+        Some(false)
+    }
 }
 
 macro_rules! persist_unsigned {
@@ -249,6 +299,10 @@ macro_rules! persist_unsigned {
             fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
                 let v = r.varint()?;
                 <$t>::try_from(v).map_err(|_| LoadError::Corrupt(format!("{v} out of range for {}", stringify!($t))))
+            }
+            #[inline]
+            fn fresh(_: Option<&Self>) -> Option<Self> {
+                Some(0)
             }
         }
     )*};
@@ -267,6 +321,10 @@ macro_rules! persist_signed {
                 let v = r.varint_signed()?;
                 <$t>::try_from(v).map_err(|_| LoadError::Corrupt(format!("{v} out of range for {}", stringify!($t))))
             }
+            #[inline]
+            fn fresh(_: Option<&Self>) -> Option<Self> {
+                Some(0)
+            }
         }
     )*};
 }
@@ -281,6 +339,9 @@ impl Persist for String {
         let n = r.len()?;
         let b = r.bytes(n)?;
         String::from_utf8(b.to_vec()).map_err(|_| LoadError::Corrupt("string is not UTF-8".into()))
+    }
+    fn fresh(_: Option<&Self>) -> Option<Self> {
+        Some(String::new())
     }
 }
 
@@ -305,6 +366,16 @@ impl<T: Persist> Persist for Option<T> {
             b => Err(LoadError::Corrupt(format!("option tag {b}"))),
         }
     }
+    #[inline]
+    fn grow(&mut self, slots: &Slots) {
+        if let Some(v) = self {
+            v.grow(slots);
+        }
+    }
+    #[inline]
+    fn fresh(_: Option<&Self>) -> Option<Self> {
+        Some(None)
+    }
 }
 
 impl<T: Persist> Persist for Vec<T> {
@@ -322,6 +393,14 @@ impl<T: Persist> Persist for Vec<T> {
         }
         Ok(v)
     }
+    fn grow(&mut self, slots: &Slots) {
+        for v in self {
+            v.grow(slots);
+        }
+    }
+    fn fresh(_: Option<&Self>) -> Option<Self> {
+        Some(Vec::new())
+    }
 }
 
 impl<T: Persist> Persist for Box<T> {
@@ -330,6 +409,9 @@ impl<T: Persist> Persist for Box<T> {
     }
     fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
         Ok(Box::new(T::read(r)?))
+    }
+    fn grow(&mut self, slots: &Slots) {
+        (**self).grow(slots);
     }
 }
 
@@ -346,14 +428,63 @@ impl<T: Persist, const N: usize> Persist for [T; N] {
         }
         v.try_into().map_err(|_| LoadError::Corrupt("array length".into()))
     }
+    fn grow(&mut self, slots: &Slots) {
+        for v in self {
+            v.grow(slots);
+        }
+    }
+    fn fresh(like: Option<&Self>) -> Option<Self> {
+        let mut v = Vec::with_capacity(N);
+        for i in 0..N {
+            v.push(T::fresh(like.map(|l| &l[i]))?);
+        }
+        v.try_into().ok()
+    }
 }
 
-impl<I: Idx, T: Persist> Persist for IdxVec<I, T> {
+/// The number of entries a per-player (`I` = `PlayerId`) or per-team (`I` = `TeamId`) array has
+/// with `slots`; `None` for an array by anything else.
+fn slot_len<I: 'static>(slots: &Slots) -> Option<usize> {
+    use std::any::TypeId;
+    let i = TypeId::of::<I>();
+    if i == TypeId::of::<crate::ids::PlayerId>() {
+        Some(slots.players)
+    } else if i == TypeId::of::<crate::ids::TeamId>() {
+        Some(slots.teams)
+    } else {
+        None
+    }
+}
+
+impl<I: Idx + 'static, T: Persist> Persist for IdxVec<I, T> {
     fn write(&self, w: &mut Writer) {
         self.raw.write(w);
     }
     fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
         Ok(IdxVec::from_vec(Vec::read(r)?))
+    }
+    fn grow(&mut self, slots: &Slots) {
+        for v in self.raw.iter_mut() {
+            v.grow(slots);
+        }
+        let Some(n) = slot_len::<I>(slots) else { return };
+        // An empty array is not sized yet (see `Persist::grow`).
+        while !self.raw.is_empty() && self.raw.len() < n {
+            let Some(mut v) = T::fresh(self.raw.first()) else {
+                panic!("no fresh entry for a per-slot array of {}", std::any::type_name::<T>())
+            };
+            v.grow(slots);
+            self.raw.push(v);
+        }
+    }
+    fn fresh(like: Option<&Self>) -> Option<Self> {
+        // Sized like its neighbour (`like`), the entries fresh; a per-slot array is then sized to
+        // the new slots by the caller's `grow`.
+        let mut raw = Vec::new();
+        for e in like.map_or(&[][..], |l| &l.raw[..]) {
+            raw.push(T::fresh(Some(e))?);
+        }
+        Some(IdxVec::from_vec(raw))
     }
 }
 
@@ -377,6 +508,14 @@ impl<K: Persist + Ord, V: Persist> Persist for BTreeMap<K, V> {
         }
         Ok(m)
     }
+    fn grow(&mut self, slots: &Slots) {
+        for v in self.values_mut() {
+            v.grow(slots);
+        }
+    }
+    fn fresh(_: Option<&Self>) -> Option<Self> {
+        Some(BTreeMap::new())
+    }
 }
 
 impl<A: Persist, B: Persist> Persist for (A, B) {
@@ -388,6 +527,13 @@ impl<A: Persist, B: Persist> Persist for (A, B) {
         let a = A::read(r)?;
         let b = B::read(r)?;
         Ok((a, b))
+    }
+    fn grow(&mut self, slots: &Slots) {
+        self.0.grow(slots);
+        self.1.grow(slots);
+    }
+    fn fresh(like: Option<&Self>) -> Option<Self> {
+        Some((A::fresh(like.map(|l| &l.0))?, B::fresh(like.map(|l| &l.1))?))
     }
 }
 
@@ -402,6 +548,14 @@ impl<A: Persist, B: Persist, C: Persist> Persist for (A, B, C) {
         let b = B::read(r)?;
         let c = C::read(r)?;
         Ok((a, b, c))
+    }
+    fn grow(&mut self, slots: &Slots) {
+        self.0.grow(slots);
+        self.1.grow(slots);
+        self.2.grow(slots);
+    }
+    fn fresh(like: Option<&Self>) -> Option<Self> {
+        Some((A::fresh(like.map(|l| &l.0))?, B::fresh(like.map(|l| &l.1))?, C::fresh(like.map(|l| &l.2))?))
     }
 }
 
@@ -424,6 +578,11 @@ impl<I: Idx, T: Persist> Persist for Slab<I, T> {
     fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
         Ok(Slab::from_slots(Vec::<Option<T>>::read(r)?))
     }
+    fn grow(&mut self, slots: &Slots) {
+        for (_, v) in self.iter_mut() {
+            v.grow(slots);
+        }
+    }
 }
 
 // ---- interior-mutable caches (C++ `mutable` members): saved like plain values ----
@@ -443,6 +602,9 @@ impl<T: Persist> Persist for RefCell<T> {
     }
     fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
         Ok(RefCell::new(T::read(r)?))
+    }
+    fn grow(&mut self, slots: &Slots) {
+        self.get_mut().grow(slots);
     }
 }
 

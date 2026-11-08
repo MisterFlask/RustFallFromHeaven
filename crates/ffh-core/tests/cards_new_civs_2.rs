@@ -55,7 +55,7 @@ impl World {
     fn cast(&mut self, p: PlayerId, name: &str) -> PlayerId {
         let spell = self.spell(name);
         let u = self.caster(p);
-        let np = world::open_slot(&self.g).expect("a free slot");
+        let np = world::next_player(&self.g);
         assert!(self.g.unit_can_cast(u, spell, false), "{name} can be cast");
         self.g.unit_cast(u, spell);
         assert!(self.g.players[np].alive, "{name}: the new civilization lives");
@@ -353,7 +353,7 @@ fn the_usurpers_crown_splits_the_farthest_third_of_a_large_civilization() {
     w.g.player_init_unit(w.p1, warrior, gx, gy, None, None);
     let hero_unit = nc::usurper_unit(&w.g, w.p1).expect("a melee unit");
     assert_eq!(d.units[hero_unit].unit_combat_type, d.ty::<UnitCombatType>("UNITCOMBAT_MELEE"));
-    let np = world::open_slot(&w.g).unwrap();
+    let np = world::next_player(&w.g);
     assert!(w.g.unit_can_cast_at(u, spell, target));
     w.g.unit_cast_at(u, spell, target);
 
@@ -475,7 +475,7 @@ fn the_scaled_kingdom_rises_in_the_largest_jungle_or_marsh() {
         w.g.plot_set_terrain_type(q, marsh, true);
     }
     assert!(nc::valid_scaled_kingdom(&w.g));
-    let np = world::open_slot(&w.g).unwrap();
+    let np = world::next_player(&w.g);
     nc::fire_scaled_kingdom(&mut w.g, 0);
 
     assert!(w.g.players[np].alive);
@@ -574,7 +574,7 @@ fn the_brood_nests_in_the_forests_and_hatches_where_a_nest_still_stands() {
     let barbarian = w.g.barbarian_player();
     let (x, y) = w.g.map.xy(sites[0]);
     let baby = w.g.player_init_unit(barbarian, d.t::<UnitType>("UNIT_BABY_SPIDER"), x, y, None, None);
-    let np = world::open_slot(&w.g).unwrap();
+    let np = world::next_player(&w.g);
     nc::fire_brood(&mut w.g, 1);
 
     assert!(w.g.players[np].alive);
@@ -622,7 +622,7 @@ fn the_infernal_gate_brings_the_infernals_once_beside_the_largest_evil_civilizat
     let card = d.t::<TechType>("TECH_CARD_USURPERS_CROWN");
     let t1 = w.g.players[w.p1].team;
     w.g.team_set_has_tech(t1, card, true, Some(w.p1), false, false);
-    let ip = world::open_slot(&w.g).unwrap();
+    let ip = world::next_player(&w.g);
     let plot = nc::infernal_gate_plot(&w.g, w.p1).unwrap();
     assert!(world::within_range_of_borders(&w.g, w.p1, plot, nc::INFERNAL_GATE_RANGE), "beside it");
     nc::fire_infernal_gate(&mut w.g, 0);

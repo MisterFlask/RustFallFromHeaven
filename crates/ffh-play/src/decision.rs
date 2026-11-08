@@ -836,7 +836,7 @@ pub fn vote_choices(g: &Game, p: PlayerId, data: &VoteTriggeredData) -> Vec<Play
 /// The votes waiting for `p`: triggered votes of a source `p` votes in, not yet answered.
 pub fn pending_votes(g: &Game, p: PlayerId) -> Vec<PendingVote> {
     let mut out = Vec::new();
-    if p.idx() >= g.num_civ_players() {
+    if !g.is_civ_player_slot(p) {
         return out;
     }
     for data in &g.votes_triggered {

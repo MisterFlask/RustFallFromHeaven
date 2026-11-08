@@ -230,7 +230,7 @@ pub fn line(g: &Game, ai: PlayerId, other: PlayerId, comment: DiploCommentType, 
 /// experience).
 pub fn speech(v: &Viewer, with: PlayerId, comment: Option<DiploCommentType>, salt: i64, own: bool) -> Result<Json, QueryErr> {
     let g = v.g;
-    if with.idx() >= g.num_civ_players() || with == v.h || g.player_is_barbarian(with) || !v.player_met(with) || g.players[with].human || !g.players[with].alive {
+    if !g.is_civ_player_slot(with) || with == v.h || g.player_is_barbarian(with) || !v.player_met(with) || g.players[with].human || !g.players[with].alive {
         return Err(invalid(format!("field `with`: player {} is not a living AI civilization the human knows", with.0)));
     }
     let mut rand = Async::new(salt as u64);

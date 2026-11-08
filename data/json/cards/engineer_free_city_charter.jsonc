@@ -327,10 +327,10 @@
   ],
   "text": {
     "TXT_KEY_TECH_CARD_FREE_CITY_CHARTER": "Free City Charter",
-    "TXT_KEY_TECH_CARD_FREE_CITY_CHARTER_HELP": "[ICON_BULLET]World spell, once, cast at one of your cities (not the capital): it becomes a Free City, a one-city civilization with +4 attitude toward you.[NEWLINE][ICON_BULLET]It keeps its buildings and its garrison (your land combat units in it, but heroes and the caster).[NEWLINE][ICON_BULLET]It gains a Wall of Stone and the Charter: three Sentinels, +50% defence for the units fighting in the city.[NEWLINE][ICON_BULLET]Needs a free player slot.",
+    "TXT_KEY_TECH_CARD_FREE_CITY_CHARTER_HELP": "[ICON_BULLET]World spell, once, cast at one of your cities (not the capital): it becomes a Free City, a one-city civilization with +4 attitude toward you.[NEWLINE][ICON_BULLET]It keeps its buildings and its garrison (your land combat units in it, but heroes and the caster).[NEWLINE][ICON_BULLET]It gains a Wall of Stone and the Charter: three Sentinels, +50% defence for the units fighting in the city.",
     "TXT_KEY_TECH_CARD_FREE_CITY_CHARTER_PEDIA": "A city given its own charter, its own walls and its own council.[NEWLINE][NEWLINE]Expert: turn the border city you cannot hold into a hard, friendly buffer between you and the rival.",
     "TXT_KEY_SPELL_FREE_CITY_CHARTER": "Free City Charter",
-    "TXT_KEY_SPELL_FREE_CITY_CHARTER_HELP": "[ICON_BULLET]The target city (yours, not the capital) becomes a Free City, a civilization of its own with +4 attitude toward you.[NEWLINE][ICON_BULLET]It keeps its buildings and garrison, and gains a Wall of Stone, three Sentinels and +50% defence for the units fighting in it.[NEWLINE][ICON_BULLET]Once per game. Needs a free player slot.",
+    "TXT_KEY_SPELL_FREE_CITY_CHARTER_HELP": "[ICON_BULLET]The target city (yours, not the capital) becomes a Free City, a civilization of its own with +4 attitude toward you.[NEWLINE][ICON_BULLET]It keeps its buildings and garrison, and gains a Wall of Stone, three Sentinels and +50% defence for the units fighting in it.[NEWLINE][ICON_BULLET]Once per game.",
     "TXT_KEY_BUILDING_PALACE_FREE_CITY": "Palace",
     "TXT_KEY_BUILDING_FREE_CITY_CHARTER": "Free City Charter",
     "TXT_KEY_BUILDING_FREE_CITY_CHARTER_HELP": "[ICON_BULLET]Three Sentinels.[NEWLINE][ICON_BULLET]+50% defence for the units fighting in the city.",

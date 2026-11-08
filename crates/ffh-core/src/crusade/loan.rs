@@ -85,7 +85,7 @@ pub enum LoanError {
     NotEnoughUnits,
     /// A payment item cannot be traded.
     BadPayment,
-    /// No Host slot is free for a new general.
+    /// No general can be called against the target (`crusade_call` refused it).
     NoGeneral,
 }
 
@@ -119,9 +119,6 @@ impl Game {
         }
         if self.crusade_military_strength(t.lender) < t.strength {
             return Err(LoanError::NotEnoughUnits);
-        }
-        if self.loan_general(t.borrower, t.target).is_none() && self.crusade_free_host_slot().is_none() {
-            return Err(LoanError::NoGeneral);
         }
         Ok(())
     }

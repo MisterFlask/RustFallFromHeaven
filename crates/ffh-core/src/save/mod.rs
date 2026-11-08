@@ -41,7 +41,7 @@ mod battle;
 pub(crate) mod io;
 mod state;
 
-pub use io::{Persist, Reader, Writer};
+pub use io::{Persist, Reader, Slots, Writer};
 
 use std::cell::RefCell;
 use std::fmt;
@@ -100,7 +100,10 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 19: the great-person deck (docs/DECKS.md): `Unit::card`, `Player::once_spells`, the
 ///   Armageddon deck (`Game::doom`).
 /// - 20: no `Team::gathered` (the Gathering's vassals count toward every victory).
-pub const FORMAT_VERSION: u32 = 20;
+/// - 21: players added mid-game (`Game::add_player_slot`): `GameSetup::barbarian` (the barbarian
+///   slot is no longer the last), `CrusadeRules::host_slots` gone (no slots are reserved); the
+///   per-player and per-team arrays hold one entry per slot the game has now.
+pub const FORMAT_VERSION: u32 = 21;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -220,6 +223,248 @@ impl Game {
             return Err(LoadError::TrailingData(r.remaining()));
         }
         Ok(g)
+    }
+}
+
+/// Grows every per-player and per-team array of `g` to `slots` (`Game::add_player_slot`, after
+/// it pushed the new player, team and controller): the fields `write_game` saves, through
+/// [`Persist::grow`], and the few per-slot vectors that are not arrays by `PlayerId` or `TeamId`.
+/// Exhaustive like `write_game`: a new `Game` field fails to compile here until it is handled.
+pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
+    let slots = &slots;
+    let Game {
+        d: _,
+        setup,
+        map,
+        players,
+        teams,
+        units,
+        cities,
+        groups,
+        plot_groups,
+        deals,
+        armies,
+        governors,
+        battle_reports,
+        battle_report_next,
+        map_rand,
+        soren_rand,
+        log,
+        controllers: _,
+        elapsed_game_turns,
+        start_turn,
+        start_year,
+        estimate_end_turn,
+        turn_slice,
+        cutoff_slice,
+        num_game_turn_active,
+        num_cities,
+        total_population,
+        trade_routes,
+        free_trade_count,
+        no_nukes_count,
+        nukes_exploded,
+        max_population,
+        max_land,
+        max_tech,
+        max_wonders,
+        init_population,
+        init_land,
+        init_tech,
+        init_wonders,
+        ai_auto_play,
+        autorun,
+        active_player,
+        score_dirty,
+        circumnavigated,
+        final_initialized,
+        nukes_valid,
+        handicap,
+        best_land_unit,
+        winner,
+        victory,
+        game_state,
+        script_data,
+        cut_losers_counter,
+        flexible_difficulty_counter,
+        global_counter,
+        global_counter_limit,
+        high_to_low_counter,
+        increasing_difficulty_counter,
+        max_global_counter,
+        scenario_counter,
+        event_triggered,
+        gambling_ring,
+        no_bonus,
+        no_outside_tech_trades,
+        slave_trade,
+        smuggling_ring,
+        rank_player,
+        player_rank,
+        player_score,
+        rank_team,
+        team_rank,
+        team_score,
+        unit_created_count,
+        unit_class_created_count,
+        building_class_created_count,
+        project_created_count,
+        force_civic_count,
+        vote_outcome,
+        religion_game_turn_founded,
+        corporation_game_turn_founded,
+        secretary_general_timer,
+        vote_timer,
+        diplo_vote,
+        special_unit_valid,
+        special_building_valid,
+        religion_slot_taken,
+        holy_city,
+        headquarters,
+        destroyed_cities,
+        great_people_born,
+        vote_selections,
+        votes_triggered,
+        next_vote_selection_id,
+        next_vote_triggered_id,
+        plot_extra_yields,
+        plot_extra_costs,
+        vote_source_religions,
+        inactive_triggers,
+        shrine_building_count,
+        shrine_building,
+        shrine_religion,
+        num_culture_victory_cities,
+        culture_victory_culture_level,
+        crusades,
+        next_crusade_id,
+        crusade_reports,
+        doom,
+        area_effects,
+        spell_target: _,
+        trophies,
+        map_script: _,
+        dying: _,
+        telemetry: _,
+        combat_notes: _,
+        path_finder: _,
+        step_finder: _,
+        border_finder: _,
+    } = g;
+    debug_assert_eq!((players.len(), teams.len(), setup.players.len()), (slots.players, slots.teams, slots.players));
+    setup.grow(slots);
+    map.grow(slots);
+    players.grow(slots);
+    teams.grow(slots);
+    units.grow(slots);
+    cities.grow(slots);
+    groups.grow(slots);
+    plot_groups.grow(slots);
+    deals.grow(slots);
+    armies.grow(slots);
+    governors.grow(slots);
+    battle_reports.grow(slots);
+    battle_report_next.grow(slots);
+    map_rand.grow(slots);
+    soren_rand.grow(slots);
+    log.grow(slots);
+    elapsed_game_turns.grow(slots);
+    start_turn.grow(slots);
+    start_year.grow(slots);
+    estimate_end_turn.grow(slots);
+    turn_slice.grow(slots);
+    cutoff_slice.grow(slots);
+    num_game_turn_active.grow(slots);
+    num_cities.grow(slots);
+    total_population.grow(slots);
+    trade_routes.grow(slots);
+    free_trade_count.grow(slots);
+    no_nukes_count.grow(slots);
+    nukes_exploded.grow(slots);
+    max_population.grow(slots);
+    max_land.grow(slots);
+    max_tech.grow(slots);
+    max_wonders.grow(slots);
+    init_population.grow(slots);
+    init_land.grow(slots);
+    init_tech.grow(slots);
+    init_wonders.grow(slots);
+    ai_auto_play.grow(slots);
+    autorun.grow(slots);
+    active_player.grow(slots);
+    score_dirty.grow(slots);
+    circumnavigated.grow(slots);
+    final_initialized.grow(slots);
+    nukes_valid.grow(slots);
+    handicap.grow(slots);
+    best_land_unit.grow(slots);
+    winner.grow(slots);
+    victory.grow(slots);
+    game_state.grow(slots);
+    script_data.grow(slots);
+    cut_losers_counter.grow(slots);
+    flexible_difficulty_counter.grow(slots);
+    global_counter.grow(slots);
+    global_counter_limit.grow(slots);
+    high_to_low_counter.grow(slots);
+    increasing_difficulty_counter.grow(slots);
+    max_global_counter.grow(slots);
+    scenario_counter.grow(slots);
+    event_triggered.grow(slots);
+    gambling_ring.grow(slots);
+    no_bonus.grow(slots);
+    no_outside_tech_trades.grow(slots);
+    slave_trade.grow(slots);
+    smuggling_ring.grow(slots);
+    player_rank.grow(slots);
+    player_score.grow(slots);
+    team_rank.grow(slots);
+    team_score.grow(slots);
+    unit_created_count.grow(slots);
+    unit_class_created_count.grow(slots);
+    building_class_created_count.grow(slots);
+    project_created_count.grow(slots);
+    force_civic_count.grow(slots);
+    vote_outcome.grow(slots);
+    religion_game_turn_founded.grow(slots);
+    corporation_game_turn_founded.grow(slots);
+    secretary_general_timer.grow(slots);
+    vote_timer.grow(slots);
+    diplo_vote.grow(slots);
+    special_unit_valid.grow(slots);
+    special_building_valid.grow(slots);
+    religion_slot_taken.grow(slots);
+    holy_city.grow(slots);
+    headquarters.grow(slots);
+    destroyed_cities.grow(slots);
+    great_people_born.grow(slots);
+    vote_selections.grow(slots);
+    votes_triggered.grow(slots);
+    next_vote_selection_id.grow(slots);
+    next_vote_triggered_id.grow(slots);
+    plot_extra_yields.grow(slots);
+    plot_extra_costs.grow(slots);
+    vote_source_religions.grow(slots);
+    inactive_triggers.grow(slots);
+    shrine_building_count.grow(slots);
+    shrine_building.grow(slots);
+    shrine_religion.grow(slots);
+    num_culture_victory_cities.grow(slots);
+    culture_victory_culture_level.grow(slots);
+    crusades.grow(slots);
+    next_crusade_id.grow(slots);
+    crusade_reports.grow(slots);
+    doom.grow(slots);
+    area_effects.grow(slots);
+    trophies.grow(slots);
+    // Ranks by position, one per slot (`update_score` fills those of the civ slots).
+    rank_player.resize(slots.players, crate::ids::PlayerId(0));
+    rank_team.resize(slots.teams, crate::ids::TeamId(0));
+    // `Team::tech_share_count` is indexed by a number of teams (C++ `m_aiTechShareCount`).
+    for team in teams.iter_mut() {
+        if !team.tech_share_count.is_empty() {
+            team.tech_share_count.resize(slots.teams, 0);
+        }
     }
 }
 

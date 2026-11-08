@@ -33,8 +33,8 @@ pub struct PlayerSetup {
     pub human: bool,
     pub leader_name: String,
     pub civ_description: String,
-    /// Not in C++: the slot is reserved for crusade Hosts (`crusade::host`); FfH's mid-game
-    /// players never take it.
+    /// Not in C++: the slot is a crusade Host's (`crusade::host`, docs/CRUSADE.md): added for a
+    /// crusade and reused by later ones once free.
     pub host: bool,
 }
 
@@ -59,8 +59,13 @@ pub struct GameSetup {
     pub map_rand_seed: u32,
     /// Map script name; this port ships its own generators (see `mapgen`).
     pub map_script: String,
-    /// One entry per player slot, barbarian slot last.
+    /// One entry per player slot: the civ slots and the barbarian slot of the game's start, then
+    /// the players added since (`Game::add_player_slot`: civilizations born mid-game, crusade
+    /// Hosts).
     pub players: Vec<PlayerSetup>,
+    /// Not in C++ (where `BARBARIAN_PLAYER` is the last slot): the barbarian slot, the last of
+    /// those the game started with (players added mid-game come after it).
+    pub barbarian: PlayerId,
     /// Not in C++: the crusade ruleset's parameters (docs/CRUSADE.md).
     pub crusade: CrusadeRules,
 }
@@ -106,11 +111,7 @@ pub struct SetupOptions {
     /// `CvInitCore::m_iMaxCityElimination` (0 = none).
     pub max_city_elimination: i32,
     pub teams: TeamSetup,
-    /// Open slots after the civs for players FFH2 adds mid-game; capped so that civs + spare
-    /// slots fit in `MAX_CIV_PLAYERS`.
-    pub spare_slots: usize,
-    /// The crusade ruleset (docs/CRUSADE.md): `host_slots` more open slots (capped to fit in
-    /// `MAX_CIV_PLAYERS`) are reserved for Hosts after the spare slots.
+    /// The crusade ruleset (docs/CRUSADE.md).
     pub crusade: CrusadeRules,
     pub seed: u32,
 }
@@ -135,7 +136,6 @@ impl SetupOptions {
             target_score: 0,
             max_city_elimination: 0,
             teams: TeamSetup::Solo,
-            spare_slots: GameSetup::SPARE_SLOTS,
             crusade: CrusadeRules::default(),
             seed,
         }
@@ -156,31 +156,24 @@ impl SetupOptions {
 }
 
 impl GameSetup {
-    /// Open player slots reserved for players FFH2 adds mid-game (Infernals, Mercurians,
-    /// `formEmpire`, ...; C++ uses any of its 35 civ slots via `addPlayerAdvanced`).
-    pub const SPARE_SLOTS: usize = 4;
-
-    /// Most civs a game can have (C++ `MAX_CIV_PLAYERS`); with that many there is no open slot
-    /// for the players FFH2 adds mid-game.
+    /// Most civs a game can start with (C++ `MAX_CIV_PLAYERS`). Players added mid-game
+    /// (`Game::add_player_slot`) are not counted against it.
     pub const MAX_CIVS: usize = MAX_CIV_PLAYERS;
 
     /// A standard game: `n` AI civs (random civs/leaders are chosen by `game_init`, port of the
-    /// FfH RANDOM_CIVILIZATION block in `CvGame::init`),
-    /// [`Self::SPARE_SLOTS`] open slots, then the barbarian slot (barbarian civilization and
-    /// leader, AI-controlled); given world size,
+    /// FfH RANDOM_CIVILIZATION block in `CvGame::init`), then the barbarian slot (barbarian
+    /// civilization and leader, AI-controlled); given world size,
     /// normal speed/climate/sea level, first era, Noble difficulty.
     pub fn standard(d: &GameData, n_civs: usize, world: &str, seed: u32) -> GameSetup {
         GameSetup::from_options(d, &SetupOptions::new(d, n_civs, world, seed))
     }
 
-    /// The game described by `o`: `o.civs` AI civ slots (teams per `o.teams`), up to
-    /// `o.spare_slots` open slots, then the barbarian slot.
+    /// The game described by `o`: `o.civs` AI civ slots (teams per `o.teams`), then the
+    /// barbarian slot.
     pub fn from_options(d: &GameData, o: &SetupOptions) -> GameSetup {
         assert!(o.civs >= 1 && o.civs <= MAX_CIV_PLAYERS, "civs must be in 1..={MAX_CIV_PLAYERS}");
         let mut players = Vec::new();
-        let n_spare = o.civs + o.spare_slots.min(MAX_CIV_PLAYERS - o.civs);
-        let n_host = o.crusade.host_slots.min(MAX_CIV_PLAYERS - n_spare);
-        let n_slots = n_spare + n_host;
+        let n_slots = o.civs;
         for i in 0..=n_slots {
             let barbarian = i == n_slots;
             let team = if i < o.civs { o.team_of(i) } else { TeamId(i as u8) };
@@ -193,11 +186,11 @@ impl GameSetup {
                 team,
                 handicap: Some(o.player_handicap),
                 art_style: None,
-                slot_status: if i < o.civs || barbarian { SlotStatus::Computer } else { SlotStatus::Open },
+                slot_status: SlotStatus::Computer,
                 human: false,
                 leader_name: String::new(),
                 civ_description: String::new(),
-                host: !barbarian && i >= n_spare,
+                host: false,
             });
         }
         let mut options = IdxVec::from_elem(false, d.game_options.len());
@@ -226,6 +219,7 @@ impl GameSetup {
             map_rand_seed: o.seed.wrapping_mul(2654435761).wrapping_add(1),
             map_script: "Fractal".into(),
             players,
+            barbarian: PlayerId(n_slots as u8),
             crusade: o.crusade.clone(),
         }
     }
@@ -265,16 +259,16 @@ mod tests {
     fn standard_matches_default_options() {
         let d = ffh_data::global();
         let s = GameSetup::standard(d, 3, "WORLDSIZE_TINY", 5);
-        let hosts = CrusadeRules::default().host_slots;
-        assert_eq!(s.players.len(), 3 + GameSetup::SPARE_SLOTS + hosts + 1);
-        assert_eq!(s.players.iter().filter(|p| p.host).count(), hosts);
+        assert_eq!(s.players.len(), 3 + 1);
+        assert_eq!(s.barbarian, PlayerId(3));
+        assert!(s.players.iter().all(|p| !p.host));
         assert!(s.players.iter().enumerate().all(|(i, p)| p.team == TeamId(i as u8)));
         assert!(s.options.iter().all(|&b| !b));
         assert!(s.victories.iter().all(|&b| b));
     }
 
     #[test]
-    fn max_civs_leave_no_spare_slot_and_teams_group_slots() {
+    fn max_civs_and_teams_group_slots() {
         let d = ffh_data::global();
         let mut o = SetupOptions::new(d, GameSetup::MAX_CIVS, "WORLDSIZE_HUGE", 1);
         o.teams = TeamSetup::TeamsOf(2);

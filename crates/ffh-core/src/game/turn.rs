@@ -154,7 +154,7 @@ impl Game {
                 }
             }
         } else {
-            for p in self.player_ids() {
+            for p in self.turn_order() {
                 if self.players[p].alive {
                     // (C++ PBEM branch for human players -- hot seat for the active player,
                     // e-mailed turns for the others -- does not apply: no PBEM games.)
@@ -282,9 +282,10 @@ impl Game {
     /// end-of-turn AI spell casting (Sephi BETTER AI) is left to the controller.
     pub fn update_moves(&mut self) {
         // MPOPTION_SIMULTANEOUS_TURNS (players visited in a soren-rand shuffled order) is never
-        // set: players are visited in slot order. A player whose turn ends here activates the
-        // next alive player, who is then visited in the same pass, as in C++.
-        for p in self.player_ids() {
+        // set: players are visited in turn order (`turn_order`: slot order, the barbarian last). A
+        // player whose turn ends here activates the next alive player, who is then visited in the
+        // same pass, as in C++.
+        for p in self.turn_order() {
             if self.players[p].alive {
                 if self.players[p].turn_active {
                     if !self.players[p].auto_moves {
@@ -931,8 +932,8 @@ impl Game {
     }
 
     /// The three shares behind the game score (score v2, see docs/SCORE.md), in parts per
-    /// million, indexed by civ player id: `[people, land, knowledge]`. Dead players get
-    /// `[0, 0, 0]`; over the scored players (alive civs) each column sums to about 1_000_000
+    /// million, indexed by player id: `[people, land, knowledge]`. Dead players and the barbarians
+    /// get `[0, 0, 0]`; over the scored players (alive civs) each column sums to about 1_000_000
     /// (floor division). [`Game::world_scores`] apportions their sums to basis points.
     ///
     /// Deliberate deviation (docs/PORTING.md): FFH2's `calculateScore` is replaced by "your share
@@ -943,9 +944,9 @@ impl Game {
     /// leader. Integer only, players in id order: deterministic.
     pub fn world_score_shares(&self) -> Vec<[i64; 3]> {
         const PPM: i64 = 1_000_000;
-        let num_civ_players = self.num_civ_players();
+        let num_players = self.num_players();
         let num_teams = self.num_teams();
-        let mut shares = vec![[0i64; 3]; num_civ_players];
+        let mut shares = vec![[0i64; 3]; num_players];
 
         // S: alive civ players, in id order.
         // (not in C++: crusade Hosts are not scored; docs/CRUSADE.md)
@@ -955,8 +956,8 @@ impl Game {
             return shares;
         }
 
-        let mut pop = vec![0i64; num_civ_players];
-        let mut land = vec![0i64; num_civ_players];
+        let mut pop = vec![0i64; num_players];
+        let mut land = vec![0i64; num_players];
         for &p in &scored {
             pop[p.idx()] = (self.players[p].total_population as i64).max(0);
             land[p.idx()] = (self.players[p].total_land as i64).max(0);
@@ -966,7 +967,7 @@ impl Game {
         // half credit; C++ getPopScore/getLandScore give the half to every master member).
         for &p in &scored {
             let Some(master) = self.score_master_team(self.players[p].team) else { continue };
-            let Some(lead) = self.team_get_leader_id(master).filter(|&l| l.idx() < num_civ_players && self.players[l].alive) else {
+            let Some(lead) = self.team_get_leader_id(master).filter(|&l| self.is_civ_player_slot(l) && self.players[l].alive) else {
                 continue;
             };
             for v in [&mut pop, &mut land] {
@@ -1023,12 +1024,13 @@ impl Game {
     }
 
     /// The game score (score v2, see docs/SCORE.md): each civ player's share of the world in
-    /// basis points, indexed by civ player id. Alive civs sum to exactly [`SCORE_TOTAL_BP`]
+    /// basis points, indexed by player id (the barbarians score 0). Alive civs sum to exactly [`SCORE_TOTAL_BP`]
     /// (10000 = the whole world) and score at least 1; dead players score 0. Pure (reads the
     /// game only); `update_score` caches it in `player_score` and the team sums in `team_score`.
     pub fn world_scores(&self) -> Vec<i32> {
         let shares = self.world_score_shares();
-        let alive: Vec<bool> = self.civ_player_ids().map(|p| self.players[p].alive && !self.player_is_crusade_host(p)).collect();
+        let alive: Vec<bool> =
+            self.player_ids().map(|p| self.is_civ_player_slot(p) && self.players[p].alive && !self.player_is_crusade_host(p)).collect();
         let u: Vec<i64> = shares.iter().map(|s| s[0] + s[1] + s[2]).collect();
         apportion_score(&u, &alive, SCORE_TOTAL_BP)
     }
@@ -1056,19 +1058,19 @@ impl Game {
         // The scores only read game state, so they are computed once (C++ recomputes
         // calculateScore in every pass of the selection sort, with the same result).
         let scores: Vec<i32> = self.world_scores();
-        let mut player_scored = vec![false; num_civ_players];
+        let mut player_scored = vec![false; self.num_players()];
 
         for rank in 0..num_civ_players {
             let mut best_score = MIN_INT;
             let mut best_player: Option<PlayerId> = None;
 
-            for j in 0..num_civ_players {
-                if !player_scored[j] {
-                    let score = scores[j];
+            for j in self.civ_player_ids() {
+                if !player_scored[j.idx()] {
+                    let score = scores[j.idx()];
 
                     if score >= best_score {
                         best_score = score;
-                        best_player = Some(PlayerId(j as u8));
+                        best_player = Some(j);
                     }
                 }
             }
@@ -1084,15 +1086,14 @@ impl Game {
         }
 
         let num_civ_teams = self.num_civ_teams();
-        let mut team_scored = vec![false; num_civ_teams];
+        let mut team_scored = vec![false; self.num_teams()];
 
         for rank in 0..num_civ_teams {
             let mut best_score = MIN_INT;
             let mut best_team: Option<TeamId> = None;
 
-            for j in 0..num_civ_teams {
-                if !team_scored[j] {
-                    let team = TeamId(j as u8);
+            for team in self.civ_team_ids() {
+                if !team_scored[team.idx()] {
                     let mut score = 0;
 
                     for k in self.civ_player_ids() {
@@ -1142,7 +1143,8 @@ impl Game {
         } else if rank < num_scored + num_missing {
             None
         } else {
-            self.rank_player.get(rank - num_missing).copied()
+            // (`rank_player` has an entry for every slot, but only the civ slots are ranked.)
+            Some(rank - num_missing).filter(|&r| r < self.num_civ_players()).map(|r| self.rank_player[r])
         }
     }
 
@@ -1203,7 +1205,7 @@ impl Game {
 
     /// C++ `CvGame::testVictory(eVictory, eTeam, pbEndScore)`: `(valid, end_score)`.
     pub fn test_victory_team(&self, victory: VictoryType, team: TeamId) -> (bool, bool) {
-        debug_assert!(team.idx() < self.num_civ_teams());
+        debug_assert!(self.is_civ_team_slot(team));
         debug_assert!(self.team_is_alive(team));
 
         let d = self.d;
@@ -1757,7 +1759,8 @@ mod tests {
         g.teams[TeamId(0)].has_tech[tech] = true;
         g.teams[TeamId(2)].has_tech[tech] = true;
         // a team that never lived does not count
-        g.teams[TeamId(4)].has_tech[tech] = true;
+        let open = g.add_player_slot();
+        g.teams[TeamId(open.0)].has_tech[tech] = true;
         assert_eq!(g.count_known_tech_num_teams(tech), 2);
     }
 
@@ -1858,9 +1861,8 @@ mod tests {
         let s0 = g.player_score[PlayerId(0)];
         let s1 = g.player_score[PlayerId(1)];
         assert_eq!((s0, s1, g.player_score[PlayerId(2)]), (3651, 2698, 3651));
-        // ties go to the higher index; the open (dead) slots score 0, highest index first
-        let mut expected = vec![PlayerId(2), PlayerId(0), PlayerId(1)];
-        expected.extend((3..n_civ).rev().map(|i| PlayerId(i as u8)));
+        // ties go to the higher index
+        let expected = vec![PlayerId(2), PlayerId(0), PlayerId(1)];
         assert_eq!(&g.rank_player[..n_civ], &expected[..]);
         for (rank, &p) in expected.iter().enumerate() {
             assert_eq!(g.player_rank[p], rank as i32);
@@ -1877,7 +1879,7 @@ mod tests {
         assert_eq!(g.cpp_rank_player(2), Some(PlayerId(1)));
         assert_eq!(g.cpp_rank_player(3), None);
         assert_eq!(g.cpp_rank_player((3 + missing - 1) as i32), None);
-        assert_eq!(g.cpp_rank_player((3 + missing) as i32), Some(PlayerId((n_civ - 1) as u8)));
+        assert_eq!(g.cpp_rank_player((3 + missing) as i32), None, "no zero-score civ slot: nothing ranks after the empty slots");
     }
 
     /// A score state on `game(n)`: player i on team `team[i]` (teams 0..n), alive per `alive`,
@@ -1909,7 +1911,7 @@ mod tests {
 
     /// Alive civs sum to exactly 10000 basis points and score at least 1; the rest score 0.
     fn assert_score_invariants(g: &Game, scores: &[i32]) {
-        assert_eq!(scores.len(), g.num_civ_players());
+        assert_eq!(scores.len(), g.num_players());
         let mut sum = 0;
         for p in g.civ_player_ids() {
             if g.players[p].alive {

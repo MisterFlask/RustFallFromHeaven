@@ -34,8 +34,6 @@ pub struct CrusadeId(pub u32);
 /// in [`Game::crusade_unit_strength`] units (combat strength x 100).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CrusadeRules {
-    /// Player slots reserved for Hosts (one per running crusade or loan general).
-    pub host_slots: usize,
     /// Most turns a council crusade runs.
     pub term: i32,
     /// Turns a called civ has to deliver its pledge (answering later counts as refusing).
@@ -63,7 +61,6 @@ pub struct CrusadeRules {
 impl Default for CrusadeRules {
     fn default() -> Self {
         CrusadeRules {
-            host_slots: 4,
             term: 40,
             pledge_deadline: 10,
             obligation_percent: 25,
@@ -320,7 +317,7 @@ impl Game {
         self.crusade_of_host_team(t).is_some()
     }
 
-    /// Is slot `p` reserved for Hosts (never used by FfH's mid-game players)?
+    /// Is slot `p` a Host's (added for a crusade by `crusade_host_slot`, reused by later ones)?
     #[inline]
     pub fn player_is_host_slot(&self, p: PlayerId) -> bool {
         self.setup.players.get(p.idx()).is_some_and(|s| s.host)

@@ -1492,7 +1492,7 @@ mod tests {
     const T1: TeamId = TeamId(1);
 
     /// A two-civ game on a `w` x `h` non-wrapping ocean map: players 0 and 1 (teams 0 and 1)
-    /// and the barbarians are alive, the open slots are not.
+    /// and the barbarians are alive.
     fn game(w: i32, h: i32) -> Game {
         let d = ffh_data::global();
         let mut g = Game::new(d, GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 1));
@@ -1517,8 +1517,8 @@ mod tests {
     #[test]
     fn culture_counts_and_percentages() {
         let mut g = game(5, 5);
+        let dead = g.add_player_slot(); // an open slot
         let p = plot(&g, 2, 2);
-        let dead = PlayerId(2); // an open slot
         let barbarian = g.barbarian_player();
         g.map.plots[p].culture[P0] = 30;
         g.map.plots[p].culture[P1] = 30;
@@ -1532,7 +1532,7 @@ mod tests {
         // integer division: 30 * 100 / 70
         assert_eq!(g.plot_calculate_culture_percent(p, P0), 42);
         assert_eq!(g.plot_calculate_team_culture_percent(p, T1), 42);
-        assert_eq!(g.plot_calculate_team_culture_percent(p, TeamId(2)), 0);
+        assert_eq!(g.plot_calculate_team_culture_percent(p, TeamId(dead.0)), 0);
 
         // friendly culture: own team, vassals and open-borders partners
         assert_eq!(g.plot_count_friendly_culture(p, T0), 30);

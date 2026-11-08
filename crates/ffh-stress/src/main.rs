@@ -20,7 +20,7 @@
 //!   --era ERA_X --climate CLIMATE_X --sea SEALEVEL_X (or --sea-level) --options GAMEOPTION_A,GAMEOPTION_B (or repeated --option)
 //!   --teams N (consecutive civs in teams of N) --turns N --max-turns N
 //!   --target-score N (score victory at N basis points of the world: 5000 = half; 0 = off)
-//!   --max-city-elimination N --no-victory VICTORY_A,VICTORY_B --spare N
+//!   --max-city-elimination N --no-victory VICTORY_A,VICTORY_B
 //!
 //! Batch options: --matrix NAME[,NAME..] (speed handicap era world civs climate sea options
 //!   teams victory random all; default all) --seeds 1,2 --turns N --jobs N --timeout SECS

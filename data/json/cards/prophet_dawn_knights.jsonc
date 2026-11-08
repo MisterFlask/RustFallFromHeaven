@@ -463,10 +463,10 @@
   ],
   "text": {
     "TXT_KEY_TECH_CARD_DAWN_KNIGHTS": "Founding of the Dawn Knights",
-    "TXT_KEY_TECH_CARD_DAWN_KNIGHTS_HELP": "[ICON_BULLET]World spell, once: the Knights of the Dawn are born as your vassal, of the Order, +4 attitude toward good civilizations.[NEWLINE][ICON_BULLET]Two cities on free sites within 6 plots of your borders; the first has a Wall of Stone and a Temple of the Order.[NEWLINE][ICON_BULLET]They start with four Dawn Knights and the Grand Master, a hero (HP 160, attack 170, defence 150).[NEWLINE][ICON_BULLET]Their Dawn Knights cost 120 hammers (a Paladin 240) and have no limit per player.[NEWLINE][ICON_BULLET]Their units heal fully after each battle they win against units of evil civilizations.[NEWLINE][ICON_BULLET]Needs a free player slot.",
+    "TXT_KEY_TECH_CARD_DAWN_KNIGHTS_HELP": "[ICON_BULLET]World spell, once: the Knights of the Dawn are born as your vassal, of the Order, +4 attitude toward good civilizations.[NEWLINE][ICON_BULLET]Two cities on free sites within 6 plots of your borders; the first has a Wall of Stone and a Temple of the Order.[NEWLINE][ICON_BULLET]They start with four Dawn Knights and the Grand Master, a hero (HP 160, attack 170, defence 150).[NEWLINE][ICON_BULLET]Their Dawn Knights cost 120 hammers (a Paladin 240) and have no limit per player.[NEWLINE][ICON_BULLET]Their units heal fully after each battle they win against units of evil civilizations.",
     "TXT_KEY_TECH_CARD_DAWN_KNIGHTS_PEDIA": "An order of knights sworn at first light, to stand where the dark comes in.[NEWLINE][NEWLINE]Expert: found them on the border you share with an evil neighbour; every battle they win against it heals them.",
     "TXT_KEY_SPELL_DAWN_KNIGHTS": "Founding of the Dawn Knights",
-    "TXT_KEY_SPELL_DAWN_KNIGHTS_HELP": "[ICON_BULLET]The Knights of the Dawn are born as your vassal, in two cities within 6 plots of your borders.[NEWLINE][ICON_BULLET]They start with four Dawn Knights and the Grand Master.[NEWLINE][ICON_BULLET]Once per game. Needs a free player slot.",
+    "TXT_KEY_SPELL_DAWN_KNIGHTS_HELP": "[ICON_BULLET]The Knights of the Dawn are born as your vassal, in two cities within 6 plots of your borders.[NEWLINE][ICON_BULLET]They start with four Dawn Knights and the Grand Master.[NEWLINE][ICON_BULLET]Once per game.",
     "TXT_KEY_BUILDING_PALACE_DAWN_KNIGHTS": "Palace",
     "TXT_KEY_PROMOTION_DAWN_VOW": "Dawn Vow",
     "TXT_KEY_PROMOTION_DAWN_VOW_HELP": "[ICON_BULLET]Heals fully after each battle won against units of evil civilizations.",

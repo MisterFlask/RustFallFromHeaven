@@ -5,7 +5,7 @@
 //! nothing here.
 //!
 //! - **The births and Mirror Colony** are cast as soon as they can be: each gives a vassal or two
-//!   cities on land that is free now, and the land and the player slots go to whoever is first.
+//!   cities on land that is free now, and the land goes to whoever is first.
 //! - **The Free City Charter** releases the city an expert would: a city (not the capital) that an
 //!   enemy army is about to take, the enemy's land units within 2 plots at least
 //!   [`FREE_CITY_ODDS`] times its defenders. The Free City is at peace with that enemy, and keeps
