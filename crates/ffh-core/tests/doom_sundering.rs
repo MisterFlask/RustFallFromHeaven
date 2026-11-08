@@ -106,7 +106,10 @@ fn a_civilization_of_eight_cities_loses_its_two_farthest_to_a_faction_of_its_own
     let l = g.player_get_leader_type(np).unwrap();
     assert_eq!(l, leader(&g, "LEADER_CAPRIA"));
     assert!(l != leader(&g, "LEADER_SABATHIEL") && d.civilizations[d.t::<CivilizationType>("CIVILIZATION_BANNOR")].leaders[l]);
-    assert!(g.player_get_civilization_description(np).starts_with("Bannor of "), "named for its capital");
+    let capital = g.player_get_capital_city(np).expect("a capital");
+    let city = d.text.name(&g.cities[capital].name).to_string();
+    assert!(!city.starts_with("TXT_KEY"));
+    assert_eq!(g.player_get_civilization_description(np), format!("Bannor of {city}"), "named for its capital");
     for &q in &plots {
         assert_eq!(g.map.plots[q].plot_city.map(|c| g.cities[c].owner), Some(np), "the far cities secede");
     }

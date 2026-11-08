@@ -119,7 +119,8 @@ pub fn fire_sundering(g: &mut Game, _: usize) {
         let Some(&capital) = cities.first() else { continue };
         let mut b = Birth::wild(civ, leader);
         b.parent = Some(q);
-        b.description = Some(format!("{} of {}", g.player_get_civilization_short_description(q), g.cities[capital].name));
+        let city = g.d.text.name(&g.cities[capital].name).to_string();
+        b.description = Some(format!("{} of {}", g.player_get_civilization_short_description(q), city));
         b.release = cities;
         b.parent_attitude = GRUDGE;
         let np = world::birth(g, &b);
