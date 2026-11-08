@@ -66,6 +66,7 @@
       "has_casted": true,
       "target": "unit",
       "py_targets": "targetsBuyOut(pCaster)",
+      "py_target_label": "labelBuyOut(pCaster, pTarget)",
       "py_requirement": "reqBuyOut(pCaster)",
       "py_result": "spellBuyOut(pCaster)",
       "button": "Art/Interface/Buttons/Spells/Domination.dds"

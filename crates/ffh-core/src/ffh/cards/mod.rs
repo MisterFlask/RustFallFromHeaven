@@ -42,7 +42,7 @@ const MODULES: &[Lookups] = &[
 
 /// Every card module's `py_target_label` lookup (the names of a choice spell's options), searched
 /// in order.
-const LABELS: &[fn(&str) -> Option<TargetLabelFn>] = &[world::find_target_label, world_spells::find_target_label];
+const LABELS: &[fn(&str) -> Option<TargetLabelFn>] = &[world::find_target_label, world_spells::find_target_label, economy::find_target_label];
 
 /// `PyResult` functions.
 pub fn find_spell(name: &str) -> Option<SpellFn> {

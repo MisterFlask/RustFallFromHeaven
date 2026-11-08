@@ -32,6 +32,7 @@
       "in_borders_only": true,
       "target": "choice",
       "py_targets": "targetsManaGraft(pCaster)",
+      "py_target_label": "labelInfo(pCaster, iChoice, 'BonusType')",
       "py_requirement": "reqManaGraft(pCaster)",
       "py_result": "spellManaGraft(pCaster)",
       "button": "Art/Interface/Buttons/Spells/Dispel Magic.dds"

@@ -65,6 +65,22 @@ pub fn find_targets(name: &str) -> Option<TargetsFn> {
     Some(f)
 }
 
+/// `py_target_label` functions: a Buy Out target's price.
+pub fn find_target_label(name: &str) -> Option<TargetLabelFn> {
+    let f: TargetLabelFn = match name {
+        "labelBuyOut" => label_buy_out,
+        _ => return None,
+    };
+    Some(f)
+}
+
+fn label_buy_out(g: &Game, _caster: UnitId, target: SpellTarget, _: &PyCall) -> String {
+    match target {
+        SpellTarget::Unit(t) if g.units.contains(t) => g.unit_buy_out_price(t).map_or_else(String::new, |price| format!("Price: {price} gold")),
+        _ => String::new(),
+    }
+}
+
 // ---------------------------------------------------------------------------------------------
 // Mana Grafting.
 
