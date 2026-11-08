@@ -2552,6 +2552,9 @@ Engineer, Merchant, Bard and Armageddon cards beyond section 10.1: not yet revie
     with it (Elemental Attunement).
 33. **Optionality first, numbers later.** A card that adds options is fine even if its numbers
     need balancing later (Wardance).
+34. **Cards never alter the victory conditions** (the owner's rule, 2026-11-08). Whatever a card
+    produces (vassals, cities, land, population) counts normally toward every victory; a card is
+    not balanced by exempting its results from one.
 
 ### 10.1 What the principles predict for the unreviewed cards
 

@@ -361,10 +361,9 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   Gate (60: the Infernals, as the Infernal Pact brings them, `Game::infernals_arrive`; they come
   once a game, by the Pact or the card). They are born as section 6 says, without a founder
   (`Birth::wild`); a card that finds no free player slot is not valid at its reveal.
-- **The Gathering's vassals** are marked (`Team::gathered`, saved; cleared when freed): they do
-  not count toward their master's domination victory (`team_victory_population`,
-  `team_victory_land`), as the owner's verdict says (docs/DECKS_ROUND8.md, C.5). Toward conquest
-  they count as every vassal does (the owner's decision, 2026-11-08).
+- **No card alters a victory condition** (the owner's rule, 2026-11-08): what a card produces
+  counts normally toward every victory. The Gathering's vassals are ordinary vassals (the C.5
+  verdict's "they do not count toward domination" is withdrawn).
 - **The human's view:** `me.doom` (`view/cards.rs`) lists the slots with what the human knows:
   a revealed or fired card, or one it sees ahead, by key, name and effect; hidden slots say
   nothing of their card. The reveal and the firing are messages to every player (the log's fog

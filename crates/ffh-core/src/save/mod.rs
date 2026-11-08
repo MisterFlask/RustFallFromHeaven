@@ -99,7 +99,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 18: no engagement roles (docs/ENGAGEMENTS.md): a battle report's fighters without `role`.
 /// - 19: the great-person deck (docs/DECKS.md): `Unit::card`, `Player::once_spells`, the
 ///   Armageddon deck (`Game::doom`).
-pub const FORMAT_VERSION: u32 = 19;
+/// - 20: no `Team::gathered` (the Gathering's vassals count toward every victory).
+pub const FORMAT_VERSION: u32 = 20;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -265,7 +265,8 @@ flag.
   ability of its class (`SPELL_FIREBALL_BARGE`, the missile); the Wonder spell still summons the
   missile it summoned (`UNIT_FIREBALL`). New spell key `battle_only`; one new spell, so saves made
   before do not load.
-- **The decks** (docs/CARDS.md; the owner's design, docs/DECKS.md, 2026-11-07; save format 19):
+- **The decks** (docs/CARDS.md; the owner's design, docs/DECKS.md, 2026-11-07; save format 19, 20 since the
+  Gathering's vassals are ordinary ones):
   - **Great-person cards.** A Sage (Great Scientist), Prophet, Engineer, Merchant or Bard (Great
     Artist) is born holding a secret tech, a card drawn from one world deck: its suit's cards of
     the player's era band. Once its owner knows the card's needs, the great person can discover
@@ -593,9 +594,8 @@ flag.
     - *The Sky Falls* (80): the ten largest cities lose 2 population (never below 1), and the units
       in them half their max HP.
     - *The Gathering* (100): every civilization with less than half the power of the strongest
-      civilization whose capital is within 15 plots of its own capitulates to it; these vassals do
-      not count toward their master's domination victory (toward conquest they count as every
-      vassal does).
+      civilization whose capital is within 15 plots of its own capitulates to it; they are ordinary
+      vassals, counting toward every victory as any vassal does.
     - *The Long Night* (100, lasting): -1 food on every plot; units heal each turn only in cities.
     - *The Godless Age* (100): every shrine, holy city and religion is removed, and state religions
       end (without anarchy).

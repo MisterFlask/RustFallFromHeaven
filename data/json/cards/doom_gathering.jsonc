@@ -3,6 +3,6 @@
 {
   "text": {
     "TXT_KEY_DOOM_GATHERING": "The Gathering",
-    "TXT_KEY_DOOM_GATHERING_HELP": "Every civilization with less than half the power of the strongest civilization whose capital is within 15 plots of its own becomes that civilization's vassal (it capitulates). These vassals do not count toward their master's domination victory. Not played under No Vassal States."
+    "TXT_KEY_DOOM_GATHERING_HELP": "Every civilization with less than half the power of the strongest civilization whose capital is within 15 plots of its own becomes that civilization's vassal (it capitulates). Not played under No Vassal States."
   }
 }

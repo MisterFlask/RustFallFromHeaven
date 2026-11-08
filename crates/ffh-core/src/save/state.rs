@@ -454,7 +454,7 @@ persist_struct!(Team {
     permanent_alliance_trading_count, vassal_trading_count, bridge_building_count,
     irrigation_count, ignore_irrigation_count, water_work_count, vassal_power, master_power,
     enemy_war_weariness_modifier, river_trade_count, espionage_points_ever, map_centering,
-    capitulated, gathered, barbarian_ally, no_civic_anger, stolen_visibility_timer, war_weariness,
+    capitulated, barbarian_ally, no_civic_anger, stolen_visibility_timer, war_weariness,
     tech_share_count, commerce_flexible_count, extra_moves, force_team_vote_eligibility_count,
     at_war, has_met, permanent_war_peace, open_borders, defensive_pact, force_peace, vassal,
     can_launch, route_change, project_count, project_making, unit_class_count,

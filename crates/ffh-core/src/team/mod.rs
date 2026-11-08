@@ -88,10 +88,6 @@ pub struct Team {
     pub map_centering: bool,
     /// C++ `m_bCapitulated` (`isCapitulated`; meaningful only while a vassal).
     pub capitulated: bool,
-    /// Not in C++: made a vassal by the Armageddon card The Gathering (docs/CARDS.md), so it
-    /// does not count toward its master's victory (`team_victory_population`, conquest). Cleared
-    /// when it is freed.
-    pub gathered: bool,
     /// C++ `m_bBarbarianAlly` (FfH trait).
     pub barbarian_ally: bool,
     /// C++ `m_bNoCivicAnger` (FfH).
@@ -233,7 +229,6 @@ impl Team {
             espionage_points_ever: 0,
             map_centering: false,
             capitulated: false,
-            gathered: false,
             barbarian_ally: false,
             no_civic_anger: false,
 
