@@ -1,7 +1,8 @@
 # Decks: secret techs and the Armageddon deck
 
-**Status: design; being built** (2026-11-07). The decks as built, and each card's status:
-`docs/CARDS.md`. Ideas to choose from, not a spec. The
+**Status: design; the approved cards are built** (2026-11-08: 105 great-person cards and 15
+Armageddon cards; the religion batch of section 14 and Vendetta are not). The decks as built, and
+each card's status: `docs/CARDS.md`. Ideas to choose from, not a spec. The
 numbers are placeholders. Each card and crisis carries an *Expert* line: how a strong player uses
 it. That line is the test for strategy relevance, and later the AI's brief (CLAUDE.md, "AI
 changes"). If an entry has no expert line that differs from a novice's, it does not belong in
