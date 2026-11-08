@@ -386,6 +386,46 @@ flag.
       first Strike or Charge each round cleaves.
     - Map generation draws no random number for a card's improvement that never appears, so the
       cards leave the generated maps as they were.
+    - *Starmetal Meteor* (Sage, II, Astronomy; world spell at a plot): a land plot you see within
+      6 plots of your borders, not a peak, with no city, improvement, or unit or resource you see,
+      loses its feature and gains Mithril.
+    - *Anointed Champion* (Bard, II, Arete; world spell at a unit): a unit of yours that can fight,
+      not a hero or a summon, becomes a hero and gains the experience for two more promotions.
+    - *Legacy of Kings* (Bard, II, Philosophy; world spell at a choice): your leader gains one of
+      the ten common traits it lacks, for good (the Adaptive and Insane swaps keep it).
+    - *Evoker* (Sage, II, Sorcery; promotion, casters of level 4): its damage spells deal 50% more;
+      it casts no charm, hex or heal.
+    - *Abjurer* (Sage, II, Alteration; promotion, casters of level 4): while it is on the field the
+      enemy's hexes (Madness and Gravity Well included) do not reach its side, and the enemy's
+      charms end at the start of rounds 2 and 3.
+    - *Spellsword* (Sage, II, Alteration; six promotions, melee units of level 3, one each): its
+      first strike each round is its spell, cast with half its attack as its magic.
+    - *Gravity Well* (Sage, II, Alteration; promotion, casters with Earth I): in the line when the
+      battle starts, it turns the enemy's charges into strikes for the battle.
+    - *The Whisperer* (Prophet, the Octopus Overlords, Message from the Deep; national unit, 2):
+      in round 1 the enemy unit with the highest attack hits its own side.
+    - *Halo* (Prophet, the Empyrean, Honor; promotion, disciples of level 3): once a battle its
+      heal brings back the first of its side to fall, at 25% HP.
+    - *Spellbreaker* (Sage, II, Alteration; promotion, melee units of level 2): +100% damage to
+      summoned units and illusions; its hits end the target's charms and the effect of its
+      dispellable promotions for the battle.
+    - *Contingency* (Sage, II, Sorcery; two promotions for mages, one held at a time, spent when it
+      fires): Strike (a defending mage casts its damage spell before round 1) or Recall (a killing
+      hit sends the mage to its capital with 1 HP).
+    - *Battlemage* (Sage, III, Arcane Lore; promotion, mages of level 5): its damage spells hit the
+      whole target row, and from the front row it casts as many spells as from its best row.
+    - *Lullaby of Ceridwen* (Bard, II, Philosophy; the Lutist, national unit, 2): its hex makes each
+      enemy unit in the enemy's rearmost row in use skip its next action.
+    - *Illusory Host* (Bard, III, Strength of Will; the Host Illusionist): its first spell action
+      puts 4 illusory soldiers in its side's free cells; they do not act, die to any spell's hit and
+      exist only in the battle.
+    - *Familiars* (Sage, I, Mysticism; national unit, 4): bound to the highest-level caster in its
+      stack, it takes the first spell or shot aimed at that caster in battle; the caster gains 1
+      XP a turn while they share a plot.
+    - *Homunculus Vats* (Sage, I, Alteration; national building): trains the Homunculus (national,
+      3), which takes one of 18 promotions each teaching one sphere I battle spell.
+    - A charm or hex aimed at the "rear" lands on the side's rearmost row in use; a unit holds at
+      most one battle-spell promotion and one strike-spell promotion.
     - *Orrery of Ceridwen* (Sage, II, Astronomy; world wonder): its city has +2 research per 10
       points of the Armageddon counter, and its owner sees the next two Armageddon cards before
       they are revealed.
