@@ -97,6 +97,11 @@ impl Game {
         // The attacker: the minimum, then the river.
         let mut att_changes = plot_changes;
         let mut att_all = s_side;
+        // Card: Trench (docs/CARDS.md): the defended plot's improvement narrows the attacker.
+        if let Some(c) = self.engage_arms_attacker_slots(to) {
+            att_all += c.delta;
+            att_changes.push(c);
+        }
         if att_all < min {
             att_changes.push(SlotChange { src: SlotSource::Minimum, delta: min - att_all });
             att_all = min;

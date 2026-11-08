@@ -325,6 +325,11 @@ impl Game {
             return false;
         }
 
+        // Card: Elemental Forge (docs/CARDS.md): a building of an exclusive class excludes it.
+        if info.exclusive_with.iter().any(|&k| self.city_is_has_building_class(c, k)) {
+            return false;
+        }
+
         if info.government_center && self.city_is_government_center(c) {
             return false;
         }

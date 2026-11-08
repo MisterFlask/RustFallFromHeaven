@@ -295,6 +295,9 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         heal_percent,
         target_preference,
         round_percent,
+        engage_first_round,
+        bombard_range,
+        bombard_besieges,
     } = &d.units[u];
     let class = *unit_class_type;
     let mut b = String::new();
@@ -351,6 +354,20 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     if let Some(h) = heal_percent {
         b.push_str(NEWLINE);
         b.push_str(&format!("[ICON_BULLET]In battle: heals {}% of a hit", h));
+    }
+    // The great-person cards' keys (docs/CARDS.md, section 2).
+    if let Some((k, p)) = engage_first_round {
+        let pattern = if *p == AttackPattern::Single { String::new() } else { format!(" {}", p.token().to_lowercase()) };
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]In battle, round 1: {}{pattern} from any row, in place of its row's action", k.token().to_lowercase()));
+    }
+    if *bombard_range > 1 {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]Bombards a city up to {bombard_range} plots away (one its team has revealed)"));
+    }
+    if *bombard_besieges {
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]A city it bombards counts as besieged until the city's next turn");
     }
     if !target_preference.is_empty() {
         let names: Vec<String> = target_preference.iter().map(|&c| display(d, c).to_string()).collect();

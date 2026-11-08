@@ -1,0 +1,53 @@
+// E14 Moat (docs/DECKS_ROUND8.md; C.4: in the first battle at the city each turn, the attacker's
+// STRIKE, CHARGE and STAB actions are spent in round 1).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_MOAT",
+      "description": "TXT_KEY_TECH_CARD_MOAT",
+      "help": "TXT_KEY_TECH_CARD_MOAT_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_MOAT_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_ANCIENT",
+      "and_pre_reqs": ["TECH_MASONRY"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_MOAT",
+      "description": "TXT_KEY_BUILDING_MOAT",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": -1,
+      "default_building": "BUILDING_MOAT"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_MOAT",
+      "building_class": "BUILDINGCLASS_MOAT",
+      "description": "TXT_KEY_BUILDING_MOAT",
+      "civilopedia": "TXT_KEY_BUILDING_MOAT_PEDIA",
+      "prereq_tech": "TECH_CARD_MOAT",
+      "cost": 90,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "conquest_prob": 75,
+      "asset": 1,
+      "power_value": 3,
+      "hold_melee_rounds": 1,
+      "flavors": {"FLAVOR_MILITARY": 10}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_MOAT": "Moat",
+    "TXT_KEY_TECH_CARD_MOAT_HELP": "[ICON_BULLET]Allows the Moat.[NEWLINE][ICON_BULLET]Moat: in the first battle at the city each turn, the attacker's Strike, Charge and Stab actions in round 1 are spent. Shots, bombards and spells act as usual.",
+    "TXT_KEY_TECH_CARD_MOAT_PEDIA": "Water and stakes before the gate. The first wave wades while the archers on the wall take their time.",
+    "TXT_KEY_BUILDING_MOAT": "Moat",
+    "TXT_KEY_BUILDING_MOAT_PEDIA": "A ditch of black water around the walls. Whoever comes first comes slowly."
+  }
+}

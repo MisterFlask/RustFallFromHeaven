@@ -110,7 +110,7 @@ export const stagedKind = (e) => (e.kind === "DefStrike" ? "Shoot" : kindKey(e.k
  *  return's end), `end`, `shake` (px), `shade` (a crit or a kill), and what it is (`kind`,
  *  `melee`, `ranged`, `heal`, `crit`, `kill`, `miss`, `escape`). */
 export function planOf(e, card = null) {
-  if (e.kind === "Afraid") return { snap: false, impact: 300, end: 800 };
+  if (e.kind === "Afraid" || e.kind === "Building") return { snap: false, impact: 300, end: 800 };
   const hits = e.hits ?? [];
   if (!hits.length && !e.heal) return { snap: false, impact: 120, end: 520 };
   const kind = stagedKind(e);

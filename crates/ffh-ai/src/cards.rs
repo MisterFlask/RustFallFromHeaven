@@ -23,6 +23,17 @@ pub fn turn(g: &mut Game, v: &crate::view::View) {
 /// Each card batch's AI turn function.
 const TURNS: &[fn(&mut Game, &crate::view::View)] = &[];
 
+/// The cards' content that acts once the player's units have moved this turn (a unit's own action
+/// that must not hold its stack back): each batch's function in [`END_TURNS`].
+pub fn end_turn(g: &mut Game, p: PlayerId) {
+    for f in END_TURNS {
+        f(g, p);
+    }
+}
+
+/// Each card batch's end-of-turn function.
+const END_TURNS: &[fn(&mut Game, PlayerId)] = &[crate::cards_battle_arms::end_turn];
+
 /// How many turns a great person waits for its card's needs.
 const WAIT_TURNS: i32 = 30;
 

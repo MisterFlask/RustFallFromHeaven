@@ -345,6 +345,8 @@ impl Game {
         }
         // Not in C++ (docs/SIEGES.md): the Sentinels repair unless the city is besieged.
         self.city_repair_sentinels(c);
+        // Card: Siege Colossus (docs/CARDS.md): a besieging bombard lasts until the city's turn.
+        self.cities[c].besieged_by_bombard = false;
 
         {
             let city = &mut self.cities[c];

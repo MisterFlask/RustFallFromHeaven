@@ -19,7 +19,7 @@ use crate::enums::*;
 use crate::idx::IdxVec;
 use crate::infos::{
     read_battle_charm, read_engage_patterns, read_engage_row_order, read_engage_rows, read_round_percent, read_stat_changes, read_stats, AttackPattern, BattleCharm,
-    InfoBase, RowActions, StatChange,
+    ActionKind, InfoBase, RowActions, StatChange,
     StatSheet, StatType, ROWS,
 };
 use crate::registry::Rd;
@@ -267,6 +267,18 @@ pub struct PromotionInfo {
     pub damage_type_combat: IdxVec<DamageType, i32>,
     /// C++ `getDamageTypeResist(i)` (`<DamageTypeResists>`).
     pub damage_type_resist: IdxVec<DamageType, i32>,
+    // ---- this game's own: the great-person cards' keys (docs/CARDS.md, section 2) ----
+    /// `first_melee_pattern`: the attack pattern of its unit's first STRIKE or CHARGE each round of
+    /// a battle.
+    pub first_melee_pattern: Option<AttackPattern>,
+    /// `heal_behind`: at the end of each round of a battle its unit heals the nearest ally behind
+    /// it in its lanes this many HP.
+    pub heal_behind: i32,
+    /// `unit_classes`: only units of these classes may take it (empty: any).
+    pub unit_classes: Vec<UnitClassType>,
+    /// `attack_damage_type`: its unit's physical attack deals this damage type: in a battle the
+    /// target's resistance to it cuts the unit's attack.
+    pub attack_damage_type: Option<DamageType>,
 }
 
 impl PromotionInfo {
@@ -419,6 +431,10 @@ pub fn read_promotion(rd: &Rd) -> PromotionInfo {
         bonus_affinity: rd.pairs_int::<BonusType>("bonus_affinities", 0),
         damage_type_combat: rd.pairs_int::<DamageType>("damage_type_combats", 0),
         damage_type_resist: rd.pairs_int::<DamageType>("damage_type_resists", 0),
+        first_melee_pattern: crate::infos::read_first_melee_pattern(rd, &rd.string("type")),
+        heal_behind: rd.int("heal_behind"),
+        unit_classes: rd.ref_list::<UnitClassType>("unit_classes"),
+        attack_damage_type: rd.rf::<DamageType>("attack_damage_type"),
         // readPass2 (FfH)
         promotion_combat_apply: rd.rf::<PromotionType>("promotion_combat_apply"),
         promotion_immune1: rd.rf::<PromotionType>("promotion_immune1"),
@@ -487,6 +503,10 @@ pub struct BuildInfo {
     pub feature_production: IdxVec<FeatureType, i32>,
     /// C++ `isFeatureRemove(i)`.
     pub feature_remove: IdxVec<FeatureType, bool>,
+    /// This game's own (a great-person card's key, docs/CARDS.md section 2): `all_workers`, every
+    /// unit type that builds an improvement can do it (a card's file cannot add to the units'
+    /// `builds`): `GameData::derive` sets it in their lists.
+    pub all_workers: bool,
 }
 
 /// C++ `CvBuildInfo::read`.
@@ -501,6 +521,7 @@ pub fn read_build(rd: &Rd) -> BuildInfo {
         kill: rd.bool("kill"),
         improvement: rd.rf::<ImprovementType>("improvement_type"),
         route: rd.rf::<RouteType>("route_type"),
+        all_workers: rd.bool("all_workers"),
         ..Default::default()
     };
     set_feature_struct(rd, &mut info);
@@ -841,6 +862,14 @@ pub struct UnitInfo {
     pub target_preference: Vec<UnitCombatType>,
     /// `round_percent`: its hits' damage in each round, in percent.
     pub round_percent: [i32; ROWS],
+    // ---- this game's own: the great-person cards' keys (docs/CARDS.md, section 2) ----
+    /// `engage_first_round`: what it does in a battle's first round from any row, in place of its
+    /// row's action (with the row's count), and its attack pattern then.
+    pub engage_first_round: Option<(ActionKind, AttackPattern)>,
+    /// `bombard_range`: it bombards a city this many plots away (0 or absent: the adjacent ones).
+    pub bombard_range: i32,
+    /// `bombard_besieges`: a city it bombards counts as besieged until the city's next turn.
+    pub bombard_besieges: bool,
 }
 
 /// C++ `CvUnitInfo::read` + `readPass2` + `readPass3`.
@@ -1046,6 +1075,9 @@ pub fn read_unit(rd: &Rd) -> UnitInfo {
         heal_percent: rd.has("heal_percent").then(|| rd.int("heal_percent")),
         target_preference: rd.ref_list::<UnitCombatType>("target_preference"),
         round_percent: read_round_percent(rd, &rd.string("type")),
+        engage_first_round: crate::infos::read_engage_first_round(rd, &rd.string("type")),
+        bombard_range: rd.int("bombard_range"),
+        bombard_besieges: rd.bool("bombard_besieges"),
         // ---- readPass2 ----
         unit_convert_from_combat: rd.rf::<UnitType>("unit_convert_from_combat"),
         unit_create_from_combat: rd.rf::<UnitType>("unit_create_from_combat"),

@@ -1,0 +1,89 @@
+// P10 Herald of Agares (docs/DECKS_ROUND8.md; C.4: renamed, UNIT_HERALD exists; the existing Fear
+// check; the deck's one Fear card). A faith card: the Ashen Veil. National unit 1, hard; tier 4
+// demon, HP 160, attack 120, defence 90. Its Fear is the Fear promotion: in every battle it fights,
+// its side has Fear (the morale check, docs/ENGAGEMENTS.md).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_HERALD_OF_AGARES",
+      "description": "TXT_KEY_TECH_CARD_HERALD_OF_AGARES",
+      "help": "TXT_KEY_TECH_CARD_HERALD_OF_AGARES_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_HERALD_OF_AGARES_PEDIA",
+      "advisor": "ADVISOR_RELIGION",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_MALEVOLENT_DESIGNS"],
+      "card_suit": "UNITCLASS_PROPHET",
+      "card_religion": "RELIGION_THE_ASHEN_VEIL",
+      "flavors": {"FLAVOR_MILITARY": 1, "FLAVOR_RELIGION": 1}
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_HERALD_OF_AGARES",
+      "description": "TXT_KEY_UNIT_HERALD_OF_AGARES",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 1,
+      "hard_limit": true,
+      "default_unit": "UNIT_HERALD_OF_AGARES"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_HERALD_OF_AGARES",
+      "stats": {"hp": 160, "attack": 120, "defense": 90, "magic": 0, "magic_defense": 68, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
+      "engage_rows": [
+        {"action": "STRIKE", "count": 2},
+        {"action": "STRIKE", "count": 1},
+        {"action": "STRIKE", "count": 1}
+      ],
+      "engage_row_order": ["FRONT", "MIDDLE", "REAR"],
+      "class": "UNITCLASS_HERALD_OF_AGARES",
+      "unit_combat": "UNITCOMBAT_MELEE",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_ATTACK",
+      "description": "TXT_KEY_UNIT_HERALD_OF_AGARES",
+      "civilopedia": "TXT_KEY_UNIT_HERALD_OF_AGARES_PEDIA",
+      "strategy": "TXT_KEY_UNIT_HERALD_OF_AGARES_STRATEGY",
+      "military_happiness": true,
+      "military_support": true,
+      "military_production": true,
+      "pillage": true,
+      "unit_ais": {"UNITAI_ATTACK": true, "UNITAI_ATTACK_CITY": true, "UNITAI_COUNTER": true},
+      "religion_type": "RELIGION_THE_ASHEN_VEIL",
+      "prereq_religion": "RELIGION_THE_ASHEN_VEIL",
+      "prereq_tech": "TECH_CARD_HERALD_OF_AGARES",
+      "cost": 300,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 1,
+      "nuke_range": -1,
+      "combat": 12,
+      "combat_defense": 9,
+      "combat_limit": 100,
+      "xp_value_attack": 8,
+      "xp_value_defense": 4,
+      "culture_garrison": 6,
+      "asset": 24,
+      "power": 48,
+      "free_promotions": {
+        "PROMOTION_DEMON": true,
+        "PROMOTION_FEAR": true,
+        "PROMOTION_FIRE_RESISTANCE": true
+      },
+      "tier": 4,
+      "weapon_tier": 3,
+      "damage_type_combats": {"DAMAGE_UNHOLY": 2}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_HERALD_OF_AGARES": "Herald of Agares",
+    "TXT_KEY_TECH_CARD_HERALD_OF_AGARES_HELP": "[ICON_BULLET]Allows the Herald of Agares (one per player, 300 [ICON_PRODUCTION], in a city with the Ashen Veil): a tier 4 demon, HP 160, attack 120, defence 90.[NEWLINE][ICON_BULLET]Fear: in every battle it fights, enemy units not immune to fear roll against it before the battle, and those that fail sit out.[NEWLINE][ICON_BULLET]Spreads the Ashen Veil to three of your cities.",
+    "TXT_KEY_TECH_CARD_HERALD_OF_AGARES_PEDIA": "The Ashen Veil's great prophet opens a door, and the Herald of the Pit steps through it.",
+    "TXT_KEY_UNIT_HERALD_OF_AGARES": "Herald of Agares",
+    "TXT_KEY_UNIT_HERALD_OF_AGARES_PEDIA": "It speaks for Agares on the fields of the living. Soldiers who hear it drop their spears and run.",
+    "TXT_KEY_UNIT_HERALD_OF_AGARES_STRATEGY": "Put it at the head of the army: before every battle it fights, the enemy's weaker units may sit out in fear."
+  }
+}

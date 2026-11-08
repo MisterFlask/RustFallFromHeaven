@@ -694,6 +694,11 @@ impl Game {
             }
             if valid {
                 for imp in d.improvements.keys() {
+                    // Not in C++: a great-person card's improvement that never appears draws
+                    // nothing, so the cards leave the generated maps as they were (docs/CARDS.md).
+                    if imp.idx() >= d.own_improvements && d.improvements[imp].appearance_probability <= 0 {
+                        continue;
+                    }
                     if self.plot_can_have_improvement(plot, imp, None, false)
                         && self.soren_rand_num(10000, "Spawn Improvement") < d.improvements[imp].appearance_probability
                     {

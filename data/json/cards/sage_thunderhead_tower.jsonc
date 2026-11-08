@@ -1,0 +1,53 @@
+// G14 Thunderhead Tower (docs/DECKS_ROUND8.md; C.4: 30% of max HP, never below 1; the deck's one
+// pre-battle damage building).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_THUNDERHEAD_TOWER",
+      "description": "TXT_KEY_TECH_CARD_THUNDERHEAD_TOWER",
+      "help": "TXT_KEY_TECH_CARD_THUNDERHEAD_TOWER_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_THUNDERHEAD_TOWER_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_ELEMENTALISM"],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_THUNDERHEAD_TOWER",
+      "description": "TXT_KEY_BUILDING_THUNDERHEAD_TOWER",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": -1,
+      "default_building": "BUILDING_THUNDERHEAD_TOWER"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_THUNDERHEAD_TOWER",
+      "building_class": "BUILDINGCLASS_THUNDERHEAD_TOWER",
+      "description": "TXT_KEY_BUILDING_THUNDERHEAD_TOWER",
+      "civilopedia": "TXT_KEY_BUILDING_THUNDERHEAD_TOWER_PEDIA",
+      "prereq_tech": "TECH_CARD_THUNDERHEAD_TOWER",
+      "cost": 150,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "conquest_prob": 50,
+      "asset": 2,
+      "power_value": 4,
+      "pre_battle_damage": {"row": "REAR", "percent": 30, "damage_type": "DAMAGE_LIGHTNING"},
+      "flavors": {"FLAVOR_MILITARY": 10}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_THUNDERHEAD_TOWER": "Thunderhead Tower",
+    "TXT_KEY_TECH_CARD_THUNDERHEAD_TOWER_HELP": "[ICON_BULLET]Allows the Thunderhead Tower.[NEWLINE][ICON_BULLET]Thunderhead Tower: at the start of every battle at the city, each attacking unit in the rear row takes lightning damage of 30% of its max HP, less its lightning resistance, never below 1 HP.",
+    "TXT_KEY_TECH_CARD_THUNDERHEAD_TOWER_PEDIA": "A great sage's design: a spire of copper and glass that draws the storm down on whatever waits behind an army's lines.",
+    "TXT_KEY_BUILDING_THUNDERHEAD_TOWER": "Thunderhead Tower",
+    "TXT_KEY_BUILDING_THUNDERHEAD_TOWER_PEDIA": "The tower calls lightning from a clear sky. Siege engines and archers, who keep to the rear of an assault, are the first to burn."
+  }
+}

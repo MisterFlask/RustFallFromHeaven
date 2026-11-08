@@ -1,0 +1,41 @@
+// P04 Templar (docs/DECKS_ROUND8.md; C.4: a promotion for Crusaders, the Order's own frontline unit,
+// that heals the unit behind it; immune to fear, as the spec says). A faith card: the Order.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_TEMPLAR",
+      "description": "TXT_KEY_TECH_CARD_TEMPLAR",
+      "help": "TXT_KEY_TECH_CARD_TEMPLAR_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_TEMPLAR_PEDIA",
+      "advisor": "ADVISOR_RELIGION",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_ORDERS_FROM_HEAVEN"],
+      "card_suit": "UNITCLASS_PROPHET",
+      "card_religion": "RELIGION_THE_ORDER",
+      "flavors": {"FLAVOR_MILITARY": 1, "FLAVOR_RELIGION": 1}
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_TEMPLAR",
+      "description": "TXT_KEY_PROMOTION_TEMPLAR",
+      "civilopedia": "TXT_KEY_PROMOTION_TEMPLAR_PEDIA",
+      "tech_prereq": "TECH_CARD_TEMPLAR",
+      "unit_combats": {"UNITCOMBAT_DISCIPLE": true},
+      "unit_classes": ["UNITCLASS_CRUSADER"],
+      "heal_behind": 20,
+      "immune_to_fear": true,
+      "ai_weight": 35,
+      "button": "Art/Interface/Buttons/Promotions/Medic1.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_TEMPLAR": "Templar",
+    "TXT_KEY_TECH_CARD_TEMPLAR_HELP": "[ICON_BULLET]Crusaders can take the Templar promotion.[NEWLINE][ICON_BULLET]Templar: at the end of each round of a battle, the unit heals the nearest ally behind it in its lane 20 HP. Immune to fear.[NEWLINE][ICON_BULLET]Spreads the Order to three of your cities.",
+    "TXT_KEY_TECH_CARD_TEMPLAR_PEDIA": "The Order's great prophet founds a brotherhood of knights who guard the ranks behind them.",
+    "TXT_KEY_PROMOTION_TEMPLAR": "Templar",
+    "TXT_KEY_PROMOTION_TEMPLAR_PEDIA": "A knight of the Order sworn to hold the line, and to tend the one who stands behind."
+  }
+}

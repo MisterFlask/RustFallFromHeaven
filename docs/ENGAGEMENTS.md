@@ -308,6 +308,17 @@ BOMBARD deal `ENGAGEMENT_FOREST_RANGED_PERCENT` (50) % on both sides; hills: eve
 (spells too) deals `ENGAGEMENT_HILLS_ATTACKER_PERCENT` (75) %, the defender's SHOOT and BOMBARD
 `ENGAGEMENT_HILLS_DEFENDER_RANGED_PERCENT` (125) %. A city, a forest or jungle stop flanking.
 
+**The great-person cards' battle effects** (docs/CARDS.md, section 2, "New data keys"; the set-up's
+`engagement/arms.rs`, the resolver's `formation/arms_cards.rs`): a defended city's buildings strike
+the attacker's rear row before the battle (`pre_battle_damage`), hold its melee in round 1 of the
+first battle there each turn (`hold_melee_rounds`, a `Held` note), give the defenders a last stand
+(`last_stand_damage`) or more damage while the city has never changed hands (`never_lost_damage`),
+change its Sentinels (`sentinel_unit`, `sentinel_ranged_resist`); an improvement narrows the
+attacker (`engagement_attacker_slots_change`); a unit acts otherwise in round 1
+(`engage_first_round`); promotions give the first STRIKE or CHARGE of each round a pattern
+(`first_melee_pattern`), a heal of the ally behind at each round's end (`heal_behind`, an event with
+pass 0) or an attack of a damage type (`attack_damage_type`). None of them draws a random number.
+
 **Large units** (`bLarge` in `units.jsonc`): the spec's Hill Giant, War Elephant and Elephant,
 the dragons (Abashi, Acheron, Drifa, Eurabatres), every golem (Bone, Clockwork, Flesh, Iron,
 Mithril, Mud, Nullstone, Wood) and the Treant, and of that size class the giant heroes Gurid,

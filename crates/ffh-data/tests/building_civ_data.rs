@@ -512,7 +512,10 @@ fn leader_favorite_wonder_class_index_cxx_quirk() {
 #[test]
 fn every_buildable_ordinary_building_has_all_five_tiers() {
     let d = d();
-    for b in d.buildings.keys() {
+    // The game's own buildings: the great-person cards' come after them, without tiers
+    // (docs/CARDS.md).
+    let own = d.buildings.len() - ffh_data::card_entry_count("buildings");
+    for b in d.buildings.keys().filter(|b| b.idx() < own) {
         let info = &d.buildings[b];
         let class = &d.building_classes[info.building_class_type.unwrap()];
         let wonder = class.max_global_instances > 0 || class.max_team_instances > 0 || class.max_player_instances > 0;

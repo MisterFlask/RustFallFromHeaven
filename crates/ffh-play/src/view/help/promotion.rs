@@ -234,6 +234,10 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         bonus_affinity,
         damage_type_combat,
         damage_type_resist,
+        first_melee_pattern,
+        heal_behind,
+        unit_classes,
+        attack_damage_type,
     } = &d.promotions[p];
     let b = &mut String::new();
 
@@ -320,6 +324,24 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         // This game's own (docs/ENGAGEMENTS.md, Q7).
         b.push_str(NEWLINE);
         b.push_str("[ICON_BULLET]Anti-flanking in battle (a unit that strikes from the row it prefers): enemy flankers attack it first whenever it is in their reach");
+    }
+    // The great-person cards' keys (docs/CARDS.md, section 2).
+    if let Some(pattern) = first_melee_pattern {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]In battle: its first Strike or Charge each round has the {} pattern", pattern.token().to_lowercase()));
+    }
+    if *heal_behind > 0 {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]In battle: at the end of each round it heals the nearest ally behind it in its lane {heal_behind} HP"));
+    }
+    if let Some(dt) = attack_damage_type {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]In battle: its physical attack deals {} damage (the target's resistance to it cuts the attack)", display(d, *dt).to_lowercase()));
+    }
+    if !unit_classes.is_empty() {
+        let names: Vec<String> = unit_classes.iter().map(|&k| display(d, k).to_string()).collect();
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]Only for: {}", names.join(", ")));
     }
     if *spell_damage_modify != 0 {
         line(b, d, "TXT_KEY_PROMOTION_SPELL_DAMAGE_MODIFY", &[Arg::N(*spell_damage_modify)]);

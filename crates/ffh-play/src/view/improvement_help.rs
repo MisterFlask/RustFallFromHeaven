@@ -88,6 +88,10 @@ pub fn effects(d: &GameData, i: ImprovementType) -> String {
     if info.visibility_change != 0 {
         lines.push(txt(d, "TXT_KEY_IMPROVEMENT_VISIBILITY_CHANGE", &[Arg::N(info.visibility_change)]));
     }
+    // A great-person card's key (docs/CARDS.md): the Trench.
+    if info.engagement_attacker_slots_change != 0 {
+        lines.push(format!("[ICON_BULLET]In battles on this plot: {:+} slots for the attacker (at least the minimum)", info.engagement_attacker_slots_change));
+    }
     if let Some(u) = info.spawn_unit_type {
         lines.push(txt(d, "TXT_KEY_IMPROVEMENT_SPAWN_UNIT_TYPE", &[Arg::S(&names::display(d, u))]));
     }

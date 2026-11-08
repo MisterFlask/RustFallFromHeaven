@@ -18,6 +18,7 @@
 //! city's battles, are [`siege`] (docs/SIEGES.md).
 
 mod apply;
+mod arms;
 pub mod arrange;
 pub(crate) mod engage;
 pub mod formation;

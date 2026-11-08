@@ -1,0 +1,130 @@
+// Elemental Forge, the owner's rework of G09 Elemental Attunement (docs/DECKS_ROUND8.md C.7): a
+// building whose element is chosen when it is built, fire (Fire mana) or lightning (Air mana): two
+// buildings that exclude each other in a city. Units trained there strike with the element (their
+// physical attack deals it: the target's resistance to it cuts their attack) and are immune to it.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_ELEMENTAL_FORGE",
+      "description": "TXT_KEY_TECH_CARD_ELEMENTAL_FORGE",
+      "help": "TXT_KEY_TECH_CARD_ELEMENTAL_FORGE_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_ELEMENTAL_FORGE_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_ELEMENTALISM"],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_FIRE_FORGE",
+      "description": "TXT_KEY_BUILDING_FIRE_FORGE",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": -1,
+      "default_building": "BUILDING_FIRE_FORGE"
+    },
+    {
+      "type": "BUILDINGCLASS_STORM_FORGE",
+      "description": "TXT_KEY_BUILDING_STORM_FORGE",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": -1,
+      "default_building": "BUILDING_STORM_FORGE"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_FIRE_FORGE",
+      "building_class": "BUILDINGCLASS_FIRE_FORGE",
+      "description": "TXT_KEY_BUILDING_FIRE_FORGE",
+      "civilopedia": "TXT_KEY_BUILDING_FIRE_FORGE_PEDIA",
+      "prereq_tech": "TECH_CARD_ELEMENTAL_FORGE",
+      "bonus": "BONUS_MANA_FIRE",
+      "exclusive_with": ["BUILDINGCLASS_STORM_FORGE"],
+      "free_promotion": "PROMOTION_FIREFORGED",
+      "cost": 150,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "conquest_prob": 50,
+      "asset": 2,
+      "power_value": 4,
+      "flavors": {"FLAVOR_MILITARY": 10}
+    },
+    {
+      "type": "BUILDING_STORM_FORGE",
+      "building_class": "BUILDINGCLASS_STORM_FORGE",
+      "description": "TXT_KEY_BUILDING_STORM_FORGE",
+      "civilopedia": "TXT_KEY_BUILDING_STORM_FORGE_PEDIA",
+      "prereq_tech": "TECH_CARD_ELEMENTAL_FORGE",
+      "bonus": "BONUS_MANA_AIR",
+      "exclusive_with": ["BUILDINGCLASS_FIRE_FORGE"],
+      "free_promotion": "PROMOTION_STORMFORGED",
+      "cost": 150,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "conquest_prob": 50,
+      "asset": 2,
+      "power_value": 4,
+      "flavors": {"FLAVOR_MILITARY": 10}
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_FIREFORGED",
+      "description": "TXT_KEY_PROMOTION_FIREFORGED",
+      "civilopedia": "TXT_KEY_PROMOTION_FIREFORGED_PEDIA",
+      "min_level": -1,
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true,
+        "UNITCOMBAT_ANIMAL": true,
+        "UNITCOMBAT_ARCHER": true,
+        "UNITCOMBAT_BEAST": true,
+        "UNITCOMBAT_DISCIPLE": true,
+        "UNITCOMBAT_MELEE": true,
+        "UNITCOMBAT_MOUNTED": true,
+        "UNITCOMBAT_RECON": true,
+        "UNITCOMBAT_SIEGE": true
+      },
+      "attack_damage_type": "DAMAGE_FIRE",
+      "damage_type_resists": {"DAMAGE_FIRE": 100},
+      "button": "Art/Interface/Buttons/Promotions/Immunefire.dds"
+    },
+    {
+      "type": "PROMOTION_STORMFORGED",
+      "description": "TXT_KEY_PROMOTION_STORMFORGED",
+      "civilopedia": "TXT_KEY_PROMOTION_STORMFORGED_PEDIA",
+      "min_level": -1,
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true,
+        "UNITCOMBAT_ANIMAL": true,
+        "UNITCOMBAT_ARCHER": true,
+        "UNITCOMBAT_BEAST": true,
+        "UNITCOMBAT_DISCIPLE": true,
+        "UNITCOMBAT_MELEE": true,
+        "UNITCOMBAT_MOUNTED": true,
+        "UNITCOMBAT_RECON": true,
+        "UNITCOMBAT_SIEGE": true
+      },
+      "attack_damage_type": "DAMAGE_LIGHTNING",
+      "damage_type_resists": {"DAMAGE_LIGHTNING": 100},
+      "button": "Art/Interface/Buttons/Promotions/ImmuneLightning.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_ELEMENTAL_FORGE": "Elemental Forge",
+    "TXT_KEY_TECH_CARD_ELEMENTAL_FORGE_HELP": "[ICON_BULLET]Allows the Elemental Forge, built as a Fire Forge (needs Fire mana) or a Storm Forge (needs Air mana); a city has one or the other.[NEWLINE][ICON_BULLET]Units trained in a Fire Forge's city: their physical attack deals fire damage (the target's fire resistance cuts it) and they are immune to fire.[NEWLINE][ICON_BULLET]Units trained in a Storm Forge's city: the same with lightning.",
+    "TXT_KEY_TECH_CARD_ELEMENTAL_FORGE_PEDIA": "A great sage binds an element into the anvil, and every blade struck on it carries the element after.",
+    "TXT_KEY_BUILDING_FIRE_FORGE": "Fire Forge",
+    "TXT_KEY_BUILDING_FIRE_FORGE_PEDIA": "An Elemental Forge bound to fire. The blades it makes burn what they cut, and fire does not touch their bearers.",
+    "TXT_KEY_BUILDING_STORM_FORGE": "Storm Forge",
+    "TXT_KEY_BUILDING_STORM_FORGE_PEDIA": "An Elemental Forge bound to the storm. Its blades strike like lightning, and lightning passes their bearers by.",
+    "TXT_KEY_PROMOTION_FIREFORGED": "Fireforged",
+    "TXT_KEY_PROMOTION_FIREFORGED_PEDIA": "Trained at a Fire Forge.",
+    "TXT_KEY_PROMOTION_STORMFORGED": "Stormforged",
+    "TXT_KEY_PROMOTION_STORMFORGED_PEDIA": "Trained at a Storm Forge."
+  }
+}

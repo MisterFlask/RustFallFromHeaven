@@ -32,7 +32,8 @@
 //     ENGAGEMENT_FIRST_STRIKE_SPEED)}: the rule values the screens word (absent: the words leave the numbers out)
 //   slots: [SideSlots, SideSlots] (attacker, defender): {base, changes: [SlotChange], total, river_only}
 //     SlotChange {src: "Terrain" (terrain) | "Feature" (feature) | "Hills" | "River" | "Sentinels" (n: the defended
-//                 city's Sentinels, docs/SIEGES.md) | "Minimum" | "Summons" (n), delta}
+//                 city's Sentinels, docs/SIEGES.md) | "Minimum" | "Summons" (n) | "Improvement" (improvement: the
+//                 attacker, on a plot whose improvement narrows it: a card's Trench), delta}
 //   lanes: [attacker's lanes, defender's lanes]
 //   sides: [SideSnap, SideSnap]: {player, shown_player, civ, label, lanes, ordered (its formation was its order's,
 //     not the rules' auto formation)} (`player`: the real one on the viewer's side, the one the viewer saw on the
@@ -57,11 +58,14 @@
 //        miss (true: the strike did no harm)}]}
 //       {round: 0, pass: 0, kind: "Cast", actor, spell (SpellType), hits: [{target, dmg}]}: phase 7's opening spells
 //        (none yet)
+//       {round: 0, pass: 0, kind: "Building", building (BuildingType), hits: [{target, dmg}]}: the defended city's
+//        building strikes before the battle (a card's Thunderhead Tower); no actor
 //     then the actions, one unit at a time (round 1.., pass 1..):
 //       {round, pass, actor, kind (ActionKind), spell? (SpellType; null: the magic bolt), target (null: none),
 //        hits: [{target, dmg, crit?, miss?, killed?, withdrew?}] (the first on `target`, the rest its splash; `dmg`
 //        what the target lost), heal?: {target, amount}, knocked?: {unit, from, to} (rows), note?: "NoTarget" |
-//        "NoOneHurt"}
+//        "NoOneHurt" | "Held" (a melee action spent: a card's Moat)}; a heal at a round's end (a card's Templar) has
+//        pass 0
 //   outcome: {plot_taken, city_captured (the city as the attacker's: its id changes with its owner; null), rounds
 //     (fought), defenders_left (on the plot after the battle, in the line or not), sides: [{committed, sat_out,
 //     fallen, escaped, standing} (counts of the units in the line), ...]}
@@ -418,6 +422,8 @@ export function slotChangeText(c) {
       return "the minimum";
     case "Summons":
       return "for summons";
+    case "Improvement":
+      return `for the ${tyLabel("ImprovementType", c.improvement).toLowerCase()}`;
     default:
       return humanize(String(c.src));
   }
@@ -640,7 +646,8 @@ export function resultWords(log) {
 
 /** "Round 2 · pass 1" (the opening: "Before the battle"). */
 export function headOf(e) {
-  return e.round ? `Round ${e.round} · pass ${e.pass}` : "Before the battle";
+  if (!e.round) return "Before the battle";
+  return e.pass ? `Round ${e.round} · pass ${e.pass}` : `Round ${e.round} · end`;
 }
 
 /** Each event's line, with a head line before an event that starts a new round or pass:
@@ -672,6 +679,18 @@ export function logLines(log) {
       parts.push(who(e.actor), t(" strikes "), who(e.target), t(" as it comes in"));
       parts.push(...(h?.miss || !h?.dmg ? [t(", to no effect", "dim")] : [t(" "), t(dmgText(h.dmg), "bt-n")]));
       out.push({ i, parts, speed: null });
+      return;
+    }
+    if (e.kind === "Building") {
+      parts.push(t(`The ${tyLabel("BuildingType", e.building)} strikes`));
+      (e.hits ?? []).forEach((h, k) => parts.push(t(k ? ", " : " "), who(h.target), t(" "), t(dmgText(h.dmg), "bt-n")));
+      parts.push(t("."));
+      out.push({ i, parts, speed: null });
+      return;
+    }
+    if (e.note === "Held") {
+      parts.push(who(e.actor), t(" is held back: no melee this round.", "dim"));
+      out.push({ i, parts, speed: F[e.actor]?.speed ?? null });
       return;
     }
     if (e.kind === "Cast") {

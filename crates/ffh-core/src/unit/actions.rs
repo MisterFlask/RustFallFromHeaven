@@ -1260,21 +1260,20 @@ impl Game {
         let mut best_city = None;
 
         let (px, py) = self.map.xy(plot);
-        for i in 0..DirectionType::NUM {
-            if let Some(loop_plot) = self.plot_direction(px, py, DirectionType::from_usize(i)) {
-                if let Some(loop_city) = self.map.plots[loop_plot].plot_city {
-                    if self.city_is_bombardable(loop_city, Some(u)) {
-                        let mut value = self.cities[loop_city].defense_damage;
+        // Card: Siege Colossus (docs/CARDS.md): a unit with a bombard range reaches further.
+        for loop_plot in self.unit_bombard_plots(u, px, py) {
+            if let Some(loop_city) = self.map.plots[loop_plot].plot_city {
+                if self.city_is_bombardable(loop_city, Some(u)) {
+                    let mut value = self.cities[loop_city].defense_damage;
 
-                        // always prefer cities we are at war with
-                        if self.unit_is_enemy(u, Some(self.city_team(loop_city)), Some(plot)) {
-                            value *= 128;
-                        }
+                    // always prefer cities we are at war with
+                    if self.unit_is_enemy(u, Some(self.city_team(loop_city)), Some(plot)) {
+                        value *= 128;
+                    }
 
-                        if value < best_value {
-                            best_value = value;
-                            best_city = Some(loop_city);
-                        }
+                    if value < best_value {
+                        best_value = value;
+                        best_city = Some(loop_city);
                     }
                 }
             }
@@ -1344,6 +1343,10 @@ impl Game {
         // the floor), not its defence.
         let pct = (self.unit_bombard_rate(u) * std::cmp::max(0, 100 + bombard_modifier)) / 100;
         let (walls, soldiers) = self.city_bombard_damage(bombard_city, u, pct);
+        // Card: Siege Colossus (docs/CARDS.md): its bombard besieges the city until its turn.
+        if self.d.units[self.units[u].unit_type].bombard_besieges {
+            self.cities[bombard_city].besieged_by_bombard = true;
+        }
         let turn = self.game_turn();
         let at = self.map.xy(target_plot);
         let name = self.cities[bombard_city].name.clone();

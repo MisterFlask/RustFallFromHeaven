@@ -360,7 +360,7 @@ persist_struct!(City {
     free_specialist, power_count, dirty_power_count, defense_damage, last_defense_damage,
     sentinel_damage,
     occupation_timer, culture_update_timer, specialist_free_experience, espionage_defense_modifier,
-    never_lost, bombarded, drafted, airlift_targeted, we_love_the_king_day, citizens_automated,
+    never_lost, bombarded, besieged_by_bombard, drafted, airlift_targeted, we_love_the_king_day, citizens_automated,
     production_automated, plundered, owner, previous_owner, original_owner, culture_level,
     settlement, civ, crime, mutate_chance, plot_radius, resist_magic, unhappy_production,
     sea_plot_yield, river_plot_yield, base_yield_rate, yield_rate_modifier,

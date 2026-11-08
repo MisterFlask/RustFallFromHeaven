@@ -1613,6 +1613,8 @@ fn generic_building_value(g: &Game, c: CityId, b: BuildingType, threat: i32) -> 
     // Effects the rules implement in code, not in the data (the Warrens' copies, the Planar
     // Gate's creatures, ...).
     v += crate::code_effects::building_value(g, c, b, threat);
+    // The great-person cards' battle buildings (docs/CARDS.md).
+    v += crate::cards_battle_arms::building_value(g, c, b, threat);
     if let Some(l) = g.players[p].personality_type.map(|l| &d.leader_heads[l]) {
         if info.building_class_type.is_some() && (l.favorite_early_wonder == info.building_class_type || l.favorite_late_wonder == info.building_class_type) {
             v += 400;

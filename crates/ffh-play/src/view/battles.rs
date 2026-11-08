@@ -192,6 +192,7 @@ fn slot_change_json(c: &SlotChange) -> Json {
         SlotSource::Sentinels(n) => j("Sentinels").with("n", *n),
         SlotSource::Minimum => j("Minimum"),
         SlotSource::Summons(n) => j("Summons").with("n", *n),
+        SlotSource::Improvement(i) => j("Improvement").with("improvement", Json::idx(*i)),
     }
 }
 
@@ -484,6 +485,7 @@ fn action_json(e: &Event) -> Json {
         "note" => e.note.map(|n| match n {
             Note::NoTarget => "NoTarget",
             Note::NoOneHurt => "NoOneHurt",
+            Note::Held => "Held",
         }),
     }
 }
@@ -541,6 +543,11 @@ fn log_events(g: &Game, log: &[LogEvent]) -> (Vec<Json>, Vec<Json>) {
             LogEvent::KillEffect { killer, victim, kind } => after.push(k("KillEffect").with("killer", *killer).with("victim", *victim).with("effect", kill_kind_json(kind))),
             LogEvent::Flee { unit, to } => after.push(k("Flee").with("unit", *unit).with("to", plot_idx_json(g, *to))),
             LogEvent::MoveIn { units, city } => after.push(k("MoveIn").with("units", idxs(units)).with("city", *city)),
+            // A card's building (the Thunderhead Tower): its strike before the battle, at round 0.
+            LogEvent::BuildingStrike { building, hits } => {
+                let hits: Vec<Json> = hits.iter().map(|&(b, dmg)| crate::jobj! { "target" => b, "dmg" => dmg }).collect();
+                events.push(opening_json("Building").with("building", Json::idx(*building)).with("hits", Json::Arr(hits)));
+            }
         }
     }
     (events, after)
