@@ -120,7 +120,11 @@ FFH2", the decks entry). Its row in section 5 below gets its status.
   - A targeted spell cast without a target does nothing.
 - **Shared helpers** for the cards go in `crates/ffh-core/src/ffh/cards/world.rs`: a region (the
   largest connected group of unowned plots of a terrain or feature), a new civilization born
-  mid-game, ...
+  mid-game, "within N plots of your borders" (`within_range_of_borders`), "+N to the Armageddon
+  counter" in the points of its percentage, whatever its limit (`counter_change_for_points`), ...
+- **Attitude:** a card that changes what a leader thinks of another (Purchase Charter, Cultural
+  Annexation: -4) adds to `Player::ai_attitude_extra`. The AI reads it as a term of its relation,
+  "acts toward us" (`ffh-ai/src/diplomacy.rs`), on the relation's own scale (2 is a step).
 
 ## 4. The Armageddon deck
 
@@ -155,3 +159,13 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | Card | Suit | Status |
 |---|---|---|
 | (the deck itself: deal, discover, once spells, targets, Armageddon deck) | | built |
+| G07 Astral Leap | Sage | built (world spell at a plot; batch B3, `cards/world_spells.rs`) |
+| G10 Seal of Binding | Sage | built (world spell at a unit; B3) |
+| B08 Masque of the Red Death | Bard | built (world spell at a city; B3) |
+| M08 Purchase Charter | Merchant | built (world spell at a city; B3) |
+| B06 Cultural Annexation | Bard | built (world spell at a city; B3) |
+| M09 Transmutation Charter | Merchant | built (world spell at a choice: plot and resource; B3) |
+| M03 Bazaar of Wonders | Merchant | built (world spell at a city of yours building the wonder; B3) |
+| P16 Call of the Faithful | Prophet | built (world spell; B3) |
+| M19 Grand Order | Merchant | built (world spell; B3) |
+| M18 Mammon's Bargain | Merchant | built (world spell; B3) |
