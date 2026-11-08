@@ -293,9 +293,9 @@ impl Game {
                 return false;
             }
         }
-        // This game's: a card's world spell is cast once a game, with its own flag
-        // (docs/DECKS.md), never the civilization's world spell.
-        if info.once && self.players[owner].once_spells.contains(&spell) {
+        // This game's: a card's world spell is cast once a game by the team that knows the card,
+        // with its own flag (docs/CARDS.md), never the civilization's world spell.
+        if info.once && self.player_cast_once(owner, spell) {
             return false;
         }
         // This game's (docs/CARDS.md, `ritual_charge`): a ritual's spell is cast from a city of its
@@ -868,6 +868,14 @@ impl Game {
             Some(extra) if !extra.is_empty() => format!("{name}: {extra}"),
             _ => name,
         }
+    }
+
+    /// Whether `p`'s team has cast the card world spell `spell` (`SpellInfo::once`): a card is its
+    /// team's (`team_set_has_tech`), so its world spell is cast once a game by the team, whichever
+    /// member casts it (each caster's own record is `Player::once_spells`).
+    pub fn player_cast_once(&self, p: PlayerId, spell: SpellType) -> bool {
+        let team = self.players[p].team;
+        self.player_ids().any(|q| self.players[q].team == team && self.players[q].once_spells.contains(&spell))
     }
 
     fn unit_cast_inner(&mut self, u: UnitId, spell: SpellType) {

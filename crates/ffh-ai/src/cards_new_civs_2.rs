@@ -48,7 +48,7 @@ pub fn turn(g: &mut Game, v: &View) {
 fn caster(g: &Game, p: PlayerId, spell: SpellType) -> Option<UnitId> {
     let info = &g.d.spells[spell];
     let team = g.players[p].team;
-    if info.tech_prereq.is_some_and(|t| !g.team_is_has_tech(team, Some(t))) || g.players[p].once_spells.contains(&spell) {
+    if info.tech_prereq.is_some_and(|t| !g.team_is_has_tech(team, Some(t))) || g.player_cast_once(p, spell) {
         return None;
     }
     g.players[p].units.iter().copied().find(|&u| !g.units[u].has_casted && g.unit_plot_opt(u).is_some())

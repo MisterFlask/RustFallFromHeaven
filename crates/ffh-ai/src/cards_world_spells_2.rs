@@ -60,7 +60,7 @@ fn ready(g: &Game, p: PlayerId, name: &str) -> Option<SpellType> {
     let spell = g.d.ty::<SpellType>(name)?;
     let info = &g.d.spells[spell];
     let team = g.players[p].team;
-    (g.team_is_has_tech(team, info.tech_prereq) && !(info.once && g.players[p].once_spells.contains(&spell))).then_some(spell)
+    (g.team_is_has_tech(team, info.tech_prereq) && !(info.once && g.player_cast_once(p, spell))).then_some(spell)
 }
 
 /// The unit of `p` that casts `spell` from `units` (a city defender first, then one that loses no

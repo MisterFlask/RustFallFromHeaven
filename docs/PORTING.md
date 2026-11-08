@@ -271,8 +271,8 @@ flag.
     the player's era band. Once its owner knows the card's needs, the great person can discover
     it (`SPELL_DISCOVER_CARD`, using it up), and the card's content opens. A card whose great
     person dies or is used another way goes back into the deck. Card techs are never researched
-    or traded. A card's world spell is cast once a game with its own flag, never the
-    civilization's world spell. Some spells are cast at a distance (a plot, city, unit, player or
+    or traded. A card's world spell is cast once a game by the team that knows the card, with
+    its own flag, never the civilization's world spell. Some spells are cast at a distance (a plot, city, unit, player or
     option chosen). Each card is listed in docs/CARDS.md section 5.
   - **The Armageddon deck.** FFH2's fixed Armageddon events become cards dealt face down to the
     counter's slots (10, 20, ... 90, 100) on the first turn: one card a slot, a chain's stages in

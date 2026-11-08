@@ -78,7 +78,7 @@ pub fn turn(g: &mut Game, v: &View) {
 /// Does `p` hold `spell`: its team knows its card, and `p` has not cast it?
 fn holds(g: &Game, p: PlayerId, spell: SpellType) -> bool {
     let team = g.players[p].team;
-    g.d.spells[spell].tech_prereq.is_some_and(|t| g.team_is_has_tech(team, Some(t))) && !g.players[p].once_spells.contains(&spell)
+    g.d.spells[spell].tech_prereq.is_some_and(|t| g.team_is_has_tech(team, Some(t))) && !g.player_cast_once(p, spell)
 }
 
 /// Our units that may cast a card's spell, in the order tried: not marching, not having cast this

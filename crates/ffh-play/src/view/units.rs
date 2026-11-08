@@ -375,7 +375,7 @@ pub fn world_actions(v: &Viewer) -> Json {
             "help" => if help == info.base.help { "" } else { help },
         };
         // A card's world spell cast already: still the empire's, spent.
-        if info.once && g.players[v.h].once_spells.contains(&s) {
+        if info.once && g.player_cast_once(v.h, s) {
             if !g.team_is_has_tech(v.team, info.tech_prereq) {
                 continue;
             }

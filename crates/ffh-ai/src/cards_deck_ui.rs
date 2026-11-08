@@ -37,7 +37,7 @@ fn ready(g: &Game, p: PlayerId, name: &str) -> Option<SpellType> {
     let spell = g.d.ty::<SpellType>(name)?;
     let team = g.players[p].team;
     let info = &g.d.spells[spell];
-    if !g.team_is_has_tech(team, info.tech_prereq) || g.players[p].once_spells.contains(&spell) {
+    if !g.team_is_has_tech(team, info.tech_prereq) || g.player_cast_once(p, spell) {
         return None;
     }
     Some(spell)

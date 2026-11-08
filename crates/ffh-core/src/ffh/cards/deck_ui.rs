@@ -244,6 +244,11 @@ mod tests {
         assert!(g.players[p].once_spells.contains(&spell));
         assert!(!g.unit_can_cast(caster, spell, false));
         assert!(!g.unit_can_cast_untargeted(caster, spell, true));
+        // Once a game for the team: a teammate cannot cast it again (the card is the team's).
+        let mate = g.player_ids().find(|&q| q != p && g.players[q].alive && !g.player_is_barbarian(q)).expect("another civilization");
+        assert!(!g.player_cast_once(mate, spell));
+        g.players[mate].team = g.players[p].team;
+        assert!(g.player_cast_once(mate, spell));
     }
 
     #[test]

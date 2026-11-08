@@ -221,8 +221,9 @@ a fighter revived), each `{unit, lane, row, hp}`; the battle screens fold it
 ## 3. Card world spells and remote targets
 
 - **A card's world spell** is a spell with `"once": true` and `"tech_prereq"` its card. Any unit of
-  its owner can cast it, once a game. Its flag is its own (`Player::once_spells`), never the
-  civilization's world spell (`global`, `FEAT_GLOBAL_SPELL`).
+  its owner can cast it, once a game for the owner's team: a card is its team's, so a teammate
+  cannot cast it again (`player_cast_once`). Its flag is its own (`Player::once_spells`, the
+  caster's record), never the civilization's world spell (`global`, `FEAT_GLOBAL_SPELL`).
 - **A spell cast at a distance** names its target kind, `"target"`: `plot`, `city`, `unit`,
   `player` or `choice` (one of its own numbered options). It also names the callback listing the
   valid targets for a caster, `"py_targets"`: a `TargetsFn`, `fn(&Game, UnitId, &PyCall) ->
