@@ -347,6 +347,8 @@ fn fighter_json(g: &Game, b: usize, f: &LogFighter, owner: PlayerId) -> Json {
         "unit" => f.unit,
         // A Sentinel of the defended city (docs/SIEGES.md): no unit, the city's wall section.
         "sentinel" => f.sentinel,
+        // An illusion of the battle (docs/CARDS.md, battle_illusions): no unit, no cell until cast.
+        "illusion" => !f.sentinel && f.unit == LogFighter::SENTINEL_UNIT,
         "unit_type" => Json::idx(f.unit_type),
         "name" => name,
         "owner" => owner,
@@ -487,7 +489,7 @@ fn action_json(e: &Event) -> Json {
             Note::Skipped => "Skipped",
         }),
         // The fighters that enter the field with it (illusions cast, a fighter revived).
-        "entered" => Json::Arr(e.entered.iter().map(|x| crate::jobj! { "unit" => x.unit, "row" => x.row, "hp" => x.hp }).collect()),
+        "entered" => Json::Arr(e.entered.iter().map(|x| crate::jobj! { "unit" => x.unit, "lane" => x.lane, "row" => x.row, "hp" => x.hp }).collect()),
     }
 }
 

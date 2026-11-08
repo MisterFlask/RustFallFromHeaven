@@ -1,0 +1,397 @@
+// Homunculus Vats (docs/DECKS.md, section 3.1): the building, the Homunculus and its spell, a promotion chosen when it is trained (one a unit).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_HOMUNCULUS_VATS",
+      "description": "TXT_KEY_TECH_CARD_HOMUNCULUS_VATS",
+      "help": "TXT_KEY_TECH_CARD_HOMUNCULUS_VATS_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_HOMUNCULUS_VATS_PEDIA",
+      "advisor": "ADVISOR_SCIENCE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_ANCIENT",
+      "and_pre_reqs": [
+        "TECH_ALTERATION"
+      ],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {
+        "FLAVOR_SCIENCE": 1
+      }
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_HOMUNCULUS_VATS",
+      "description": "NONE",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 1,
+      "default_building": "BUILDING_HOMUNCULUS_VATS"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_HOMUNCULUS_VATS",
+      "building_class": "BUILDINGCLASS_HOMUNCULUS_VATS",
+      "description": "TXT_KEY_BUILDING_HOMUNCULUS_VATS",
+      "civilopedia": "TXT_KEY_BUILDING_HOMUNCULUS_VATS_PEDIA",
+      "prereq_tech": "TECH_CARD_HOMUNCULUS_VATS",
+      "cost": 90,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "conquest_prob": 25,
+      "asset": 2,
+      "power_value": 2,
+      "flavors": {
+        "FLAVOR_SCIENCE": 5
+      }
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_HOMUNCULUS",
+      "description": "TXT_KEY_UNIT_HOMUNCULUS",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 3,
+      "default_unit": "UNIT_HOMUNCULUS"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_HOMUNCULUS",
+      "stats": {
+        "hp": 45,
+        "attack": 15,
+        "defense": 10,
+        "magic": 33,
+        "magic_defense": 30,
+        "accuracy": 90,
+        "evasion": 10,
+        "crit": 5,
+        "speed": 5
+      },
+      "engage_rows": [
+        {
+          "action": "STRIKE",
+          "count": 1
+        },
+        {
+          "action": "SPELL",
+          "count": 1,
+          "pattern": "PIERCE"
+        },
+        {
+          "action": "SPELL",
+          "count": 2,
+          "pattern": "PIERCE"
+        }
+      ],
+      "engage_row_order": [
+        "REAR",
+        "MIDDLE",
+        "FRONT"
+      ],
+      "resist_vs": {
+        "UNITCOMBAT_ARCHER": 50
+      },
+      "class": "UNITCLASS_HOMUNCULUS",
+      "unit_combat": "UNITCOMBAT_ADEPT",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_WARWIZARD",
+      "description": "TXT_KEY_UNIT_HOMUNCULUS",
+      "civilopedia": "TXT_KEY_UNIT_HOMUNCULUS_PEDIA",
+      "strategy": "TXT_KEY_UNIT_HOMUNCULUS_STRATEGY",
+      "military_happiness": true,
+      "military_support": true,
+      "military_production": true,
+      "unit_ais": {
+        "UNITAI_WARWIZARD": true,
+        "UNITAI_RESERVE": true
+      },
+      "not_unit_ais": {
+        "UNITAI_WORKER": true
+      },
+      "prereq_tech": "TECH_CARD_HOMUNCULUS_VATS",
+      "flavors": {
+        "FLAVOR_SCIENCE": 2
+      },
+      "ai_weight": 0,
+      "cost": 50,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 1,
+      "nuke_range": -1,
+      "combat": 2,
+      "combat_limit": 100,
+      "xp_value_attack": 8,
+      "xp_value_defense": 4,
+      "culture_garrison": 3,
+      "asset": 2,
+      "power": 3,
+      "free_promotions": {
+        "PROMOTION_HOMUNCULUS": true
+      },
+      "free_xp": true,
+      "combat_defense": 2,
+      "free_promotion_pick": 1,
+      "tier": 1,
+      "prereq_building": "BUILDING_HOMUNCULUS_VATS"
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_HOMUNCULUS",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS",
+      "help": "TXT_KEY_PROMOTION_HOMUNCULUS_HELP",
+      "button": "Art/Interface/Buttons/Promotions/Channeling1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_BATTLE_HYMN",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_BATTLE_HYMN",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_BATTLE_HYMN",
+      "button": "Art/Interface/Buttons/Promotions/Spirit1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_CHILL",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_CHILL",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_CHILL",
+      "button": "Art/Interface/Buttons/Promotions/Ice1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_CORRODE",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_CORRODE",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_CORRODE",
+      "button": "Art/Interface/Buttons/Promotions/Entropy1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_DAZE",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_DAZE",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_DAZE",
+      "button": "Art/Interface/Buttons/Promotions/Mind1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_FIREBOLT",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_FIREBOLT",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_FIREBOLT",
+      "button": "Art/Interface/Buttons/Promotions/Fire1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_FLARE",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_FLARE",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_FLARE",
+      "button": "Art/Interface/Buttons/Promotions/Sun1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_GRAVE_TOUCH",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_GRAVE_TOUCH",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_GRAVE_TOUCH",
+      "button": "Art/Interface/Buttons/Promotions/Death1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_HOLD_THE_LINE",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_HOLD_THE_LINE",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_HOLD_THE_LINE",
+      "button": "Art/Interface/Buttons/Promotions/Law1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_KEEN_EDGE",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_KEEN_EDGE",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_KEEN_EDGE",
+      "button": "Art/Interface/Buttons/Promotions/Enchantment1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_MEND",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_MEND",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_MEND",
+      "button": "Art/Interface/Buttons/Promotions/Life1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_QUICKEN",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_QUICKEN",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_QUICKEN",
+      "button": "Art/Interface/Buttons/Promotions/Body1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_SHADOW_VEIL",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_SHADOW_VEIL",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_SHADOW_VEIL",
+      "button": "Art/Interface/Buttons/Promotions/Shadow1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_SHOCK",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_SHOCK",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_SHOCK",
+      "button": "Art/Interface/Buttons/Promotions/Air1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_THORNLASH",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_THORNLASH",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_THORNLASH",
+      "button": "Art/Interface/Buttons/Promotions/Nature1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_TREMOR",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_TREMOR",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_TREMOR",
+      "button": "Art/Interface/Buttons/Promotions/Earth1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_WARD",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_WARD",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_WARD",
+      "button": "Art/Interface/Buttons/Promotions/Metamagic1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_WAVE",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_WAVE",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_WAVE",
+      "button": "Art/Interface/Buttons/Promotions/Water1.dds",
+      "ai_weight": 0
+    },
+    {
+      "type": "PROMOTION_HOMUNCULUS_WILD_EDGE",
+      "description": "TXT_KEY_PROMOTION_HOMUNCULUS_WILD_EDGE",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_HOMUNCULUS_VATS",
+      "promotion_prereq": "PROMOTION_HOMUNCULUS",
+      "battle_spell": "SPELL_WILD_EDGE",
+      "button": "Art/Interface/Buttons/Promotions/Chaos1.dds",
+      "ai_weight": 0
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_HOMUNCULUS_VATS": "Homunculus Vats",
+    "TXT_KEY_TECH_CARD_HOMUNCULUS_VATS_HELP": "[ICON_BULLET]Can build the Homunculus Vats (national building, 1); the city with them can train Homunculi (national unit, 3).[NEWLINE][ICON_BULLET]A Homunculus is a frail caster. It is trained with a promotion to choose: one sphere I battle spell, which it knows without the sphere or its mana.",
+    "TXT_KEY_TECH_CARD_HOMUNCULUS_VATS_PEDIA": "Grown in brine and glass, a little caster that knows one word of power.",
+    "TXT_KEY_BUILDING_HOMUNCULUS_VATS": "Homunculus Vats",
+    "TXT_KEY_BUILDING_HOMUNCULUS_VATS_PEDIA": "Glass tanks where homunculi are grown.",
+    "TXT_KEY_UNIT_HOMUNCULUS": "Homunculus",
+    "TXT_KEY_UNIT_HOMUNCULUS_PEDIA": "A frail caster grown in a vat, that knows one spell.",
+    "TXT_KEY_UNIT_HOMUNCULUS_STRATEGY": "Choose the spell your casters lack: Mend for healing, Quicken for speed.",
+    "TXT_KEY_PROMOTION_HOMUNCULUS": "Homunculus",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_HELP": "[ICON_BULLET]Can take one Homunculus spell promotion: a sphere I battle spell it knows without the sphere or its mana.",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_BATTLE_HYMN": "Homunculus: Battle Hymn",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_CHILL": "Homunculus: Chill",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_CORRODE": "Homunculus: Corrode",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_DAZE": "Homunculus: Daze",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_FIREBOLT": "Homunculus: Firebolt",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_FLARE": "Homunculus: Flare",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_GRAVE_TOUCH": "Homunculus: Grave Touch",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_HOLD_THE_LINE": "Homunculus: Hold The Line",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_KEEN_EDGE": "Homunculus: Keen Edge",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_MEND": "Homunculus: Mend",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_QUICKEN": "Homunculus: Quicken",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_SHADOW_VEIL": "Homunculus: Shadow Veil",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_SHOCK": "Homunculus: Shock",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_THORNLASH": "Homunculus: Thornlash",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_TREMOR": "Homunculus: Tremor",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_WARD": "Homunculus: Ward",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_WAVE": "Homunculus: Wave",
+    "TXT_KEY_PROMOTION_HOMUNCULUS_WILD_EDGE": "Homunculus: Wild Edge"
+  }
+}

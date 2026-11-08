@@ -41,9 +41,6 @@ impl Game {
     /// Unit `u`'s battle magic on its fighter `f` of side `side` (module comment).
     pub(crate) fn engage_fighter_magic(&self, u: UnitId, side: Side, f: &mut Fighter, ctx: &HitCtx, params: &Params) {
         let m = self.unit_battle_magic(u);
-        if !m.any() && !self.unit_has_dispellable(u) {
-            return;
-        }
         let casts = f.actions.iter().any(|r| r.kind == ActionKind::Spell);
         // Spellsword: its strike spell, with half its attack as its magic (`engage_magic_x100`).
         if let Some(s) = m.strike_spell {
@@ -92,12 +89,6 @@ impl Game {
                 }
             }
         }
-    }
-
-    /// Whether unit `u` holds a dispellable promotion.
-    fn unit_has_dispellable(&self, u: UnitId) -> bool {
-        let unit = &self.units[u];
-        self.d.promotions.keys().any(|p| unit.has_promotion[p] && self.d.promotions[p].dispellable)
     }
 
     /// What unit `u` (on side `side` of `ctx`) loses while dispelled (Spellbreaker): its A, Dv
@@ -293,5 +284,169 @@ impl Setup {
             return p;
         }
         self.pairs[map[h] * n + map[t]]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::engagement::engage::EngageOrder;
+    use crate::setup::GameSetup;
+
+    /// Two flat plots side by side, players 0 and 1 at war and knowing every card; `att` units of
+    /// player 0 on `from`, `def` units of player 1 on `to`.
+    fn world(att: &[&str], def: &[&str]) -> (Game, PlotIdx, PlotIdx, Vec<UnitId>, Vec<UnitId>) {
+        let d = ffh_data::global();
+        let mut g = Game::new(d, GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5));
+        g.game_init();
+        let flat = |g: &Game, p: PlotIdx| {
+            let plot = &g.map.plots[p];
+            !g.plot_is_water(p) && !g.plot_is_peak(p) && !g.plot_is_hills(p) && plot.units.is_empty() && plot.owner.is_none() && plot.improvement_type.is_none() && plot.feature_type.is_none()
+        };
+        let (from, to) = g
+            .map
+            .plot_ids()
+            .filter(|&p| flat(&g, p))
+            .find_map(|p| {
+                let (x, y) = g.map.xy(p);
+                let q = g.map.plot_xy(x + 1, y)?;
+                flat(&g, q).then_some((p, q))
+            })
+            .unwrap();
+        let (t0, t1) = (g.players[PlayerId(0)].team, g.players[PlayerId(1)].team);
+        g.team_declare_war(t0, t1, false, None);
+        for t in [t0, t1] {
+            for card in d.techs.keys().filter(|&k| d.techs[k].card.is_some()) {
+                g.team_set_has_tech(t, card, true, None, false, false);
+            }
+        }
+        let mut out = [Vec::new(), Vec::new()];
+        for (k, (owner, names, at)) in [(PlayerId(0), att, from), (PlayerId(1), def, to)].into_iter().enumerate() {
+            let (x, y) = g.map.xy(at);
+            for n in names {
+                out[k].push(g.player_init_unit(owner, d.t::<UnitType>(n), x, y, None, None));
+            }
+            g.player_army_sync(owner);
+        }
+        let [a, b] = out;
+        (g, from, to, a, b)
+    }
+
+    fn order(from: PlotIdx, to: PlotIdx) -> EngageOrder {
+        EngageOrder { p: PlayerId(0), from, to, launcher: None, formation: None, forced: None, log: Some(true) }
+    }
+
+    fn give(g: &mut Game, u: UnitId, names: &[&str]) {
+        for n in names {
+            let p = g.d.t::<PromotionType>(n);
+            g.unit_set_has_promotion(u, p, true);
+        }
+    }
+
+    /// An Evoker's damage spell deals +50% and it casts no charm; a Battlemage's sweeps and casts
+    /// from the front row as from its best.
+    #[test]
+    fn an_evoker_hits_harder_and_casts_no_charm() {
+        let (mut g, from, to, att, _) = world(&["UNIT_MAGE"], &["UNIT_WARRIOR"]);
+        let mage = att[0];
+        give(&mut g, mage, &["PROMOTION_FIRE1", "PROMOTION_ENCHANTMENT1"]);
+        let ctx = HitCtx::new(from, to);
+        let params = Params::from_defines(&g.d.defines);
+        let plain = g.engage_fighter(mage, Side::Attacker, (0, 2), false, &ctx, &params);
+        assert_eq!(plain.spell.power, 120, "Firebolt");
+        assert_eq!(plain.charms.len(), 1, "Keen Edge");
+        give(&mut g, mage, &["PROMOTION_EVOKER", "PROMOTION_BATTLEMAGE"]);
+        let evoker = g.engage_fighter(mage, Side::Attacker, (0, 2), false, &ctx, &params);
+        assert_eq!(evoker.spell.power, 180);
+        assert!(evoker.charms.is_empty() && evoker.heal_spell.is_none());
+        assert_eq!(evoker.spell.pattern, Some(AttackPattern::Sweep));
+        assert_eq!(evoker.actions[0], evoker.actions[2], "from the front as from its best row");
+    }
+
+    /// A Spellsword's magic is half its attack, and its spell's damage type meets the target's
+    /// resistance.
+    #[test]
+    fn a_spellswords_magic_is_half_its_attack() {
+        let (mut g, _, _, att, def) = world(&["UNIT_AXEMAN"], &["UNIT_WARRIOR"]);
+        let axe = att[0];
+        give(&mut g, axe, &["PROMOTION_SPELLSWORD_FIREBOLT"]);
+        let sheet = g.d.units[g.units[axe].unit_type].stats.unwrap()[StatType::Attack.idx()];
+        assert_eq!(g.engage_magic_x100(axe, true), (apply_combat_modifier(sheet / 2 * 10, g.units[axe].stat_pct[StatType::Attack.idx()])).max(1));
+        let warrior = def[0];
+        let fire = g.unit_get_damage_type_resist(warrior, DamageType::DAMAGE_FIRE);
+        assert_eq!(g.engage_spell_pct(axe, Some(warrior)), (100 - fire).max(0));
+    }
+
+    /// A Homunculus learns one spell by a promotion, whatever the spell's sphere, and no second;
+    /// no other unit takes them.
+    #[test]
+    fn a_homunculus_learns_one_spell() {
+        let (mut g, _, _, att, _) = world(&["UNIT_HOMUNCULUS", "UNIT_ADEPT"], &["UNIT_WARRIOR"]);
+        let (h, adept) = (att[0], att[1]);
+        let d = g.d;
+        let (bolt, shock) = (d.t::<PromotionType>("PROMOTION_HOMUNCULUS_FIREBOLT"), d.t::<PromotionType>("PROMOTION_HOMUNCULUS_SHOCK"));
+        assert!(g.unit_can_acquire_promotion(h, bolt) && g.unit_can_acquire_promotion(h, shock));
+        assert!(!g.unit_can_acquire_promotion(adept, bolt), "for the Homunculus only");
+        g.unit_set_has_promotion(h, bolt, true);
+        assert!(!g.unit_can_acquire_promotion(h, shock), "one spell a unit");
+        assert_eq!(g.unit_battle_spell(h), Some(d.t::<SpellType>("SPELL_FIREBOLT")), "without Fire I");
+    }
+
+    /// The Host Illusionist's illusions fight in the battle's log as fighters of their own and
+    /// leave nothing on the map.
+    #[test]
+    fn illusions_are_the_battles_only() {
+        let (mut g, from, to, _, _) = world(&["UNIT_HOST_ILLUSIONIST", "UNIT_AXEMAN", "UNIT_AXEMAN"], &["UNIT_ARCHER", "UNIT_ARCHER", "UNIT_AXEMAN"]);
+        let units_before = g.units.len();
+        let r = g.engage(order(from, to)).expect("an engagement");
+        let log = g.battle_report(r.report).unwrap().log.clone().expect("a log");
+        let illusions: Vec<usize> = (0..log.fighters.len()).filter(|&i| log.fighters[i].name == super::super::sink::ILLUSION_NAME).collect();
+        assert_eq!(illusions.len(), 4, "four illusions");
+        let entered = log.events.iter().any(|e| matches!(e, super::super::report::LogEvent::Action(a) if a.entered.len() == 4 && a.entered.iter().all(|x| illusions.contains(&(x.unit as usize)))));
+        assert!(entered, "they enter with the cast");
+        assert!(g.units.len() <= units_before, "no unit made");
+    }
+
+    /// Contingency's recall: the mage that would fall returns to the capital with 1 HP and loses
+    /// the promotion.
+    #[test]
+    fn a_recalled_mage_returns_to_its_capital() {
+        let (mut g, from, to, _, def) = world(&["UNIT_CHAMPION", "UNIT_CHAMPION", "UNIT_CHAMPION", "UNIT_CHAMPION"], &["UNIT_MAGE"]);
+        let mage = def[0];
+        let d = g.d;
+        let (tx, ty) = g.map.xy(to);
+        let home = g
+            .map
+            .plot_ids()
+            .find(|&q| !g.plot_is_water(q) && !g.plot_is_peak(q) && g.map.plots[q].units.is_empty() && g.map.plots[q].owner.is_none() && g.plot_distance(g.map.xy(q).0, g.map.xy(q).1, tx, ty) > 4)
+            .unwrap();
+        let (hx, hy) = g.map.xy(home);
+        let cap = g.player_init_city(PlayerId(1), hx, hy, false, true);
+        assert_eq!(g.player_get_capital_city(PlayerId(1)), Some(cap));
+        let recall = d.t::<PromotionType>("PROMOTION_CONTINGENCY_RECALL");
+        g.unit_set_has_promotion(mage, recall, true);
+        g.units[mage].damage = 95;
+        let r = g.engage(order(from, to)).expect("an engagement");
+        assert!(g.units.contains(mage) && !g.unit_is_dead(mage), "{r:?}");
+        assert_eq!(g.unit_plot_opt(mage), Some(home));
+        assert!(!g.units[mage].has_promotion[recall]);
+        assert_eq!(g.units[mage].damage, damage_from_hp(100, g.unit_engage_max_hp(mage)));
+    }
+
+    /// A familiar bound to a mage stands in the mage's lane in the auto formation, and guards it.
+    #[test]
+    fn a_familiar_stands_in_its_casters_lane() {
+        let (mut g, from, to, att, _) = world(&["UNIT_AXEMAN", "UNIT_AXEMAN", "UNIT_AXEMAN", "UNIT_MAGE", "UNIT_FAMILIAR"], &["UNIT_WARRIOR"]);
+        let (mage, fam) = (att[3], att[4]);
+        g.units[fam].summoner = Some(mage);
+        let ctx = HitCtx::new(from, to);
+        let slots = g.engage_slots(&ctx);
+        let f = g.engage_auto_formation(&att, Side::Attacker, &slots, &ctx);
+        let place = |u: UnitId| f.iter().find(|p| p.unit == u).copied().expect("placed");
+        assert_eq!(place(fam).lane, place(mage).lane, "{f:?}");
+        let defenders = g.engage_defenders(to, PlayerId(0), &att, crate::engagement::WarTest::AtWar);
+        let setup = g.engage_setup(ctx, slots, f, defenders, true).unwrap();
+        let (i, j) = (setup.units.iter().position(|&u| u == fam).unwrap(), setup.units.iter().position(|&u| u == mage).unwrap());
+        assert_eq!(setup.fighters[i].magic.guards, Some(j as u16));
     }
 }

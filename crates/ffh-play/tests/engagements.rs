@@ -56,7 +56,7 @@ const LOG: &[&str] = &[
 ];
 const SIDE: &[&str] = &["player", "shown_player", "civ", "label", "lanes", "ordered"];
 const FIGHTER: &[&str] = &[
-    "b", "unit", "sentinel", "unit_type", "name", "owner", "side", "lane", "row", "large", "level", "xp", "hero", "promotions", "max_hp", "hp_start", "hp_battle", "speed",
+    "b", "unit", "sentinel", "illusion", "unit_type", "name", "owner", "side", "lane", "row", "large", "level", "xp", "hero", "promotions", "max_hp", "hp_start", "hp_battle", "speed",
     "first_strikes", "chance_first_strikes", "rolled_first_strikes", "actions", "bonus_action", "spell", "accuracy", "evasion", "crit", "anti_flank", "flanker", "withdraw_pct",
     "combat_limit", "collateral_limit", "splash", "def_strike", "immune", "fear", "a_x100", "dv_x100", "ma_x100", "md_x100", "a", "dv", "mag", "mdef", "fate", "dealt", "taken", "healed",
 ];
@@ -83,7 +83,7 @@ const EVENTS: &[(&str, &[&str])] = &[
     ("DefStrike", &["round", "pass", "kind", "actor", "target", "hits", "chance", "roll", "pct"]),
     ("Cast", &["round", "pass", "kind", "actor", "spell", "targets", "effect", "hits"]),
 ];
-const ACTION: &[&str] = &["round", "pass", "actor", "kind", "spell", "target", "hits", "heal", "knocked", "note"];
+const ACTION: &[&str] = &["round", "pass", "actor", "kind", "spell", "target", "hits", "heal", "knocked", "note", "entered"];
 /// Each kind of `after` with its members.
 const AFTER: &[(&str, &[&str])] = &[
     ("Heal", &["kind", "unit", "amount", "source"]),

@@ -388,6 +388,7 @@ fn best_promotion(g: &Game, u: UnitId) -> Option<PromotionType> {
         }
         let v = crate::civs::promotion_value(g, u, promo, promotion_value(g, u, promo)); // civ-mechanics
         let v = crate::traits::promotion_value(g, u, promo, v); // trait-play
+        let v = crate::cards_battle_magic::promotion_value(g, u, promo, v); // the battle cards (docs/CARDS.md)
         if best.map_or(true, |(_, b)| v > b) {
             best = Some((promo, v));
         }

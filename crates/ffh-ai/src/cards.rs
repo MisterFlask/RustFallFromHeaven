@@ -21,7 +21,7 @@ pub fn turn(g: &mut Game, v: &crate::view::View) {
 }
 
 /// Each card batch's AI turn function.
-const TURNS: &[fn(&mut Game, &crate::view::View)] = &[];
+const TURNS: &[fn(&mut Game, &crate::view::View)] = &[crate::cards_battle_magic::turn];
 
 /// How many turns a great person waits for its card's needs.
 const WAIT_TURNS: i32 = 30;

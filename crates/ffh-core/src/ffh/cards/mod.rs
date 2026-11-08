@@ -6,6 +6,7 @@
 
 use crate::ffh::dispatch::*;
 
+pub mod battle_magic;
 pub mod deck;
 pub mod world;
 
@@ -25,6 +26,7 @@ fn none<T>(_: &str) -> Option<T> {
 const MODULES: &[Lookups] = &[
     Lookups { spell: deck::find_spell, req: deck::find_req, targets: none, unit_fn: none },
     Lookups { spell: world::find_spell, req: world::find_req, targets: world::find_targets, unit_fn: world::find_unit_fn },
+    Lookups { spell: battle_magic::find_spell, req: battle_magic::find_req, targets: none, unit_fn: battle_magic::find_unit_fn },
 ];
 
 /// `PyResult` functions.

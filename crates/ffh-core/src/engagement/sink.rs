@@ -237,7 +237,8 @@ impl Sink {
         }
         for (hk, tk) in pairs {
             let (h, t) = (map[hk], map[tk]);
-            let (side_h, side_t) = (e.side(h), e.side(t));
+            // The formation's sides: an illusion (card: battle_magic.rs) is no set-up fighter.
+            let (side_h, side_t) = (f.fighters[hk].side, f.fighters[tk].side);
             let pr = f.pair(hk, tk);
             // A Sentinel has no unit terms: a pair with one has no pair-only terms.
             let (a_extra, dv_extra) = if e.setup.is_sentinel(h) || e.setup.is_sentinel(t) {
@@ -277,6 +278,7 @@ impl Sink {
             let caster = x.magic.summoner.map_or(0, |c| map[c as usize]);
             let mut lf = self.log.fighters[caster].clone();
             lf.unit = LogFighter::SENTINEL_UNIT;
+            lf.unit_type = g.d.ty::<ffh_data::UnitType>("UNIT_SWORDSMAN").unwrap_or(lf.unit_type);
             lf.name = ILLUSION_NAME.to_string();
             lf.place = None;
             lf.large = false;
@@ -300,7 +302,6 @@ impl Sink {
             self.index.push((None, x.side));
             out[k] = self.log.fighters.len() - 1;
         }
-        let _ = g;
         out
     }
 

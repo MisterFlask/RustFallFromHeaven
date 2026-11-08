@@ -1,0 +1,43 @@
+// P11 Halo (docs/DECKS_ROUND8.md, C.4: the first unit of its side to fall, in its cell if free, else the rear; never a Sentinel).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_HALO",
+      "description": "TXT_KEY_TECH_CARD_HALO",
+      "help": "TXT_KEY_TECH_CARD_HALO_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_HALO_PEDIA",
+      "advisor": "ADVISOR_RELIGION",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": [
+        "TECH_HONOR"
+      ],
+      "card_suit": "UNITCLASS_PROPHET",
+      "flavors": {
+        "FLAVOR_RELIGION": 1
+      },
+      "card_religion": "RELIGION_THE_EMPYREAN"
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_HALO",
+      "description": "TXT_KEY_PROMOTION_HALO",
+      "unit_combats": {
+        "UNITCOMBAT_DISCIPLE": true
+      },
+      "tech_prereq": "TECH_CARD_HALO",
+      "button": "Art/Interface/Buttons/Promotions/Sun1.dds",
+      "ai_weight": 0,
+      "min_level": 3,
+      "battle_revive": 25
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_HALO": "Halo",
+    "TXT_KEY_TECH_CARD_HALO_HELP": "[ICON_BULLET]Promotion Halo, for disciples of level 3 or more.[NEWLINE][ICON_BULLET]Once per battle, its heal also brings back the first unit of its side that fell in the battle, at 25% HP: in that unit's cell if free, else the rear cell of its lane. Never a Sentinel.",
+    "TXT_KEY_TECH_CARD_HALO_PEDIA": "In the light of the halo, the fallen rise once more.",
+    "TXT_KEY_PROMOTION_HALO": "Halo"
+  }
+}

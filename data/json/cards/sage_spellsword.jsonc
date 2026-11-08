@@ -1,0 +1,107 @@
+// G06 Spellsword (docs/DECKS_ROUND8.md, C.4: the six damage spells; magic is half its attack; in place of its first strike each round).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_SPELLSWORD",
+      "description": "TXT_KEY_TECH_CARD_SPELLSWORD",
+      "help": "TXT_KEY_TECH_CARD_SPELLSWORD_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_SPELLSWORD_PEDIA",
+      "advisor": "ADVISOR_SCIENCE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": [
+        "TECH_ALTERATION"
+      ],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {
+        "FLAVOR_SCIENCE": 1
+      }
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_SPELLSWORD_SHOCK",
+      "description": "TXT_KEY_PROMOTION_SPELLSWORD_SHOCK",
+      "unit_combats": {
+        "UNITCOMBAT_MELEE": true
+      },
+      "tech_prereq": "TECH_CARD_SPELLSWORD",
+      "button": "Art/Interface/Buttons/Promotions/Air1.dds",
+      "ai_weight": 0,
+      "min_level": 3,
+      "strike_spell": "SPELL_SHOCK"
+    },
+    {
+      "type": "PROMOTION_SPELLSWORD_GRAVE_TOUCH",
+      "description": "TXT_KEY_PROMOTION_SPELLSWORD_GRAVE_TOUCH",
+      "unit_combats": {
+        "UNITCOMBAT_MELEE": true
+      },
+      "tech_prereq": "TECH_CARD_SPELLSWORD",
+      "button": "Art/Interface/Buttons/Promotions/Death1.dds",
+      "ai_weight": 0,
+      "min_level": 3,
+      "strike_spell": "SPELL_GRAVE_TOUCH"
+    },
+    {
+      "type": "PROMOTION_SPELLSWORD_FIREBOLT",
+      "description": "TXT_KEY_PROMOTION_SPELLSWORD_FIREBOLT",
+      "unit_combats": {
+        "UNITCOMBAT_MELEE": true
+      },
+      "tech_prereq": "TECH_CARD_SPELLSWORD",
+      "button": "Art/Interface/Buttons/Promotions/Fire1.dds",
+      "ai_weight": 0,
+      "min_level": 3,
+      "strike_spell": "SPELL_FIREBOLT"
+    },
+    {
+      "type": "PROMOTION_SPELLSWORD_THORNLASH",
+      "description": "TXT_KEY_PROMOTION_SPELLSWORD_THORNLASH",
+      "unit_combats": {
+        "UNITCOMBAT_MELEE": true
+      },
+      "tech_prereq": "TECH_CARD_SPELLSWORD",
+      "button": "Art/Interface/Buttons/Promotions/Nature1.dds",
+      "ai_weight": 0,
+      "min_level": 3,
+      "strike_spell": "SPELL_THORNLASH"
+    },
+    {
+      "type": "PROMOTION_SPELLSWORD_FLARE",
+      "description": "TXT_KEY_PROMOTION_SPELLSWORD_FLARE",
+      "unit_combats": {
+        "UNITCOMBAT_MELEE": true
+      },
+      "tech_prereq": "TECH_CARD_SPELLSWORD",
+      "button": "Art/Interface/Buttons/Promotions/Sun1.dds",
+      "ai_weight": 0,
+      "min_level": 3,
+      "strike_spell": "SPELL_FLARE"
+    },
+    {
+      "type": "PROMOTION_SPELLSWORD_WAVE",
+      "description": "TXT_KEY_PROMOTION_SPELLSWORD_WAVE",
+      "unit_combats": {
+        "UNITCOMBAT_MELEE": true
+      },
+      "tech_prereq": "TECH_CARD_SPELLSWORD",
+      "button": "Art/Interface/Buttons/Promotions/Water1.dds",
+      "ai_weight": 0,
+      "min_level": 3,
+      "strike_spell": "SPELL_WAVE"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_SPELLSWORD": "Spellsword",
+    "TXT_KEY_TECH_CARD_SPELLSWORD_HELP": "[ICON_BULLET]Promotion Spellsword, for melee units of level 3 or more, one of six: Shock, Grave Touch, Firebolt, Thornlash, Flare or Wave. A unit takes one of them.[NEWLINE][ICON_BULLET]In battle, in place of its first strike each round, the unit casts that spell, with half its attack as its magic.",
+    "TXT_KEY_TECH_CARD_SPELLSWORD_PEDIA": "A blade that speaks a word of power as it falls.",
+    "TXT_KEY_PROMOTION_SPELLSWORD_SHOCK": "Spellsword: Shock",
+    "TXT_KEY_PROMOTION_SPELLSWORD_GRAVE_TOUCH": "Spellsword: Grave Touch",
+    "TXT_KEY_PROMOTION_SPELLSWORD_FIREBOLT": "Spellsword: Firebolt",
+    "TXT_KEY_PROMOTION_SPELLSWORD_THORNLASH": "Spellsword: Thornlash",
+    "TXT_KEY_PROMOTION_SPELLSWORD_FLARE": "Spellsword: Flare",
+    "TXT_KEY_PROMOTION_SPELLSWORD_WAVE": "Spellsword: Wave"
+  }
+}

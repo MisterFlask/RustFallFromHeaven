@@ -54,6 +54,8 @@ use crate::rng::Rng;
 
 mod magic;
 #[cfg(test)]
+mod magic_tests;
+#[cfg(test)]
 mod tests;
 
 pub use magic::{add_illusions, Applied, Bare, FighterMagic, IllusionSpell, MagicState};
@@ -772,10 +774,11 @@ pub enum Note {
 }
 
 /// Card: a fighter that enters the field with an event (an illusion summoned, a fighter revived):
-/// its row and HP (centi-HP); its lane is its own.
+/// its cell (its own lane) and HP (centi-HP).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Entry {
     pub unit: FighterIdx,
+    pub lane: u8,
     pub row: u8,
     pub hp: i32,
 }

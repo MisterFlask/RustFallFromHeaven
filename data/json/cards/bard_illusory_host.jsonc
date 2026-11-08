@@ -1,0 +1,136 @@
+// Illusory Host (docs/DECKS.md, sections 3.5 and 11.1). The card's Illusionist is UNIT_HOST_ILLUSIONIST (UNIT_ILLUSIONIST is the Svartalfar's).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_ILLUSORY_HOST",
+      "description": "TXT_KEY_TECH_CARD_ILLUSORY_HOST",
+      "help": "TXT_KEY_TECH_CARD_ILLUSORY_HOST_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_ILLUSORY_HOST_PEDIA",
+      "advisor": "ADVISOR_CULTURE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": [
+        "TECH_STRENGTH_OF_WILL"
+      ],
+      "card_suit": "UNITCLASS_ARTIST",
+      "flavors": {
+        "FLAVOR_CULTURE": 1
+      }
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_HOST_ILLUSIONIST",
+      "description": "TXT_KEY_UNIT_HOST_ILLUSIONIST",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 2,
+      "default_unit": "UNIT_HOST_ILLUSIONIST"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_HOST_ILLUSIONIST",
+      "stats": {
+        "hp": 70,
+        "attack": 40,
+        "defense": 20,
+        "magic": 44,
+        "magic_defense": 50,
+        "accuracy": 90,
+        "evasion": 5,
+        "crit": 5,
+        "speed": 5
+      },
+      "engage_rows": [
+        {
+          "action": "STRIKE",
+          "count": 1
+        },
+        {
+          "action": "SPELL",
+          "count": 1,
+          "pattern": "PIERCE"
+        },
+        {
+          "action": "SPELL",
+          "count": 2,
+          "pattern": "PIERCE"
+        }
+      ],
+      "engage_row_order": [
+        "REAR",
+        "MIDDLE",
+        "FRONT"
+      ],
+      "resist_vs": {
+        "UNITCOMBAT_ARCHER": 50
+      },
+      "class": "UNITCLASS_HOST_ILLUSIONIST",
+      "unit_combat": "UNITCOMBAT_ADEPT",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_WARWIZARD",
+      "description": "TXT_KEY_UNIT_HOST_ILLUSIONIST",
+      "civilopedia": "TXT_KEY_UNIT_HOST_ILLUSIONIST_PEDIA",
+      "strategy": "TXT_KEY_UNIT_HOST_ILLUSIONIST_STRATEGY",
+      "military_happiness": true,
+      "military_support": true,
+      "military_production": true,
+      "unit_ais": {
+        "UNITAI_WARWIZARD": true,
+        "UNITAI_RESERVE": true
+      },
+      "not_unit_ais": {
+        "UNITAI_WORKER": true
+      },
+      "prereq_tech": "TECH_CARD_ILLUSORY_HOST",
+      "flavors": {
+        "FLAVOR_CULTURE": 3
+      },
+      "ai_weight": 0,
+      "cost": 150,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 1,
+      "nuke_range": -1,
+      "combat": 4,
+      "combat_limit": 100,
+      "xp_value_attack": 8,
+      "xp_value_defense": 4,
+      "culture_garrison": 3,
+      "asset": 6,
+      "power": 12,
+      "free_promotions": {},
+      "free_xp": true,
+      "never_obsolete": true,
+      "combat_defense": 4,
+      "min_level": 4,
+      "tier": 3
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_ILLUSORY_HOST",
+      "description": "TXT_KEY_SPELL_ILLUSORY_HOST",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "unit_prereq": "UNIT_HOST_ILLUSIONIST",
+      "battle_only": true,
+      "battle_illusions": {
+        "count": 4,
+        "hp": 60
+      },
+      "button": "Art/Interface/Buttons/Promotions/Mind2.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_ILLUSORY_HOST": "Illusory Host",
+    "TXT_KEY_TECH_CARD_ILLUSORY_HOST_HELP": "[ICON_BULLET]Can train the Host Illusionist (national unit, 2).[NEWLINE][ICON_BULLET]Illusory Host, its battle spell, cast with its first spell action: 4 illusory soldiers of 60 HP each take free cells of its side, the front row first. They do not act, vanish when a spell hits them and exist only in the battle.",
+    "TXT_KEY_TECH_CARD_ILLUSORY_HOST_PEDIA": "An army of mirrors: the enemy's first volleys find nothing but air.",
+    "TXT_KEY_UNIT_HOST_ILLUSIONIST": "Host Illusionist",
+    "TXT_KEY_UNIT_HOST_ILLUSIONIST_PEDIA": "A caster of the Illusory Host, who fills the field with soldiers that are not there.",
+    "TXT_KEY_UNIT_HOST_ILLUSIONIST_STRATEGY": "In a siege, its illusions take the Sentinels' and archers' first volleys.",
+    "TXT_KEY_SPELL_ILLUSORY_HOST": "Illusory Host",
+    "TXT_KEY_UNIT_ILLUSORY_SOLDIER": "Illusory Soldier"
+  }
+}

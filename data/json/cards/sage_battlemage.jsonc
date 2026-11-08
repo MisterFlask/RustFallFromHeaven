@@ -1,0 +1,44 @@
+// Battlemage (docs/DECKS.md, section 13, card 6).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_BATTLEMAGE",
+      "description": "TXT_KEY_TECH_CARD_BATTLEMAGE",
+      "help": "TXT_KEY_TECH_CARD_BATTLEMAGE_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_BATTLEMAGE_PEDIA",
+      "advisor": "ADVISOR_SCIENCE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": [
+        "TECH_ARCANE_LORE"
+      ],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {
+        "FLAVOR_SCIENCE": 1
+      }
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_BATTLEMAGE",
+      "description": "TXT_KEY_PROMOTION_BATTLEMAGE",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_BATTLEMAGE",
+      "button": "Art/Interface/Buttons/Promotions/Fire3.dds",
+      "ai_weight": 0,
+      "min_level": 5,
+      "promotion_prereq_and": "PROMOTION_CHANNELING2",
+      "battle_spell_pattern": "SWEEP",
+      "battle_front_caster": true
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_BATTLEMAGE": "Battlemage",
+    "TXT_KEY_TECH_CARD_BATTLEMAGE_HELP": "[ICON_BULLET]Promotion Battlemage, for Mages and Archmages (Channeling II) of level 5 or more.[NEWLINE][ICON_BULLET]In battle its damage spells and its magic bolt hit with the sweep pattern: the target and every other unit in the target's row.[NEWLINE][ICON_BULLET]From the front row it casts as many spells as from its best row.",
+    "TXT_KEY_TECH_CARD_BATTLEMAGE_PEDIA": "The Battlemage stands with the shield wall and breaks the line in front of it.",
+    "TXT_KEY_PROMOTION_BATTLEMAGE": "Battlemage"
+  }
+}

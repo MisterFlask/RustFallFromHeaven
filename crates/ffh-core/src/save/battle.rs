@@ -102,7 +102,7 @@ persist_enum!(LogEvent {
     11 => MoveIn { units, city },
 });
 persist_struct!(Event { round, pass, actor, kind, spell, target, hits, heal, knocked, note, entered });
-persist_struct!(Entry { unit, row, hp });
+persist_struct!(Entry { unit, lane, row, hp });
 persist_struct!(Hit { target, dmg, expected, r, crit, miss, killed, withdrew, splash });
 persist_struct!(Heal { target, amount, r });
 persist_struct!(Knock { unit, from, to });

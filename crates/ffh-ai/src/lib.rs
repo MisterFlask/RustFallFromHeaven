@@ -24,6 +24,7 @@ pub mod automation;
 pub mod campaign;
 pub mod casters;
 pub mod cards;
+pub mod cards_battle_magic;
 pub mod casting;
 pub mod combat_sim;
 pub mod civs;

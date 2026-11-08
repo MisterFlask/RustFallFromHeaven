@@ -1,0 +1,123 @@
+// Lullaby of Ceridwen (docs/DECKS.md, section 3.5).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_LULLABY_OF_CERIDWEN",
+      "description": "TXT_KEY_TECH_CARD_LULLABY_OF_CERIDWEN",
+      "help": "TXT_KEY_TECH_CARD_LULLABY_OF_CERIDWEN_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_LULLABY_OF_CERIDWEN_PEDIA",
+      "advisor": "ADVISOR_CULTURE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": [
+        "TECH_PHILOSOPHY"
+      ],
+      "card_suit": "UNITCLASS_ARTIST",
+      "flavors": {
+        "FLAVOR_CULTURE": 1
+      }
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_LUTIST",
+      "description": "TXT_KEY_UNIT_LUTIST",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 2,
+      "default_unit": "UNIT_LUTIST"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_LUTIST",
+      "stats": {
+        "hp": 60,
+        "attack": 20,
+        "defense": 15,
+        "magic": 30,
+        "magic_defense": 40,
+        "accuracy": 90,
+        "evasion": 10,
+        "crit": 5,
+        "speed": 7
+      },
+      "engage_rows": [
+        {
+          "action": "STRIKE",
+          "count": 1
+        },
+        {
+          "action": "SPELL",
+          "count": 1
+        },
+        {
+          "action": "SPELL",
+          "count": 1
+        }
+      ],
+      "engage_row_order": [
+        "REAR",
+        "MIDDLE",
+        "FRONT"
+      ],
+      "class": "UNITCLASS_LUTIST",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_ATTACK",
+      "description": "TXT_KEY_UNIT_LUTIST",
+      "civilopedia": "TXT_KEY_UNIT_LUTIST_PEDIA",
+      "strategy": "TXT_KEY_UNIT_LUTIST_STRATEGY",
+      "military_happiness": true,
+      "military_support": true,
+      "military_production": true,
+      "unit_ais": {
+        "UNITAI_ATTACK": true
+      },
+      "prereq_tech": "TECH_CARD_LULLABY_OF_CERIDWEN",
+      "flavors": {
+        "FLAVOR_CULTURE": 3
+      },
+      "ai_weight": 0,
+      "cost": 80,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 1,
+      "nuke_range": -1,
+      "combat": 2,
+      "combat_limit": 100,
+      "xp_value_attack": 8,
+      "xp_value_defense": 4,
+      "culture_garrison": 3,
+      "asset": 2,
+      "power": 3,
+      "free_xp": true,
+      "combat_defense": 2,
+      "tier": 2
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_LULLABY",
+      "description": "TXT_KEY_SPELL_LULLABY",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "unit_prereq": "UNIT_LUTIST",
+      "battle_only": true,
+      "battle_charm": {
+        "side": "ENEMY",
+        "rows": "REAR",
+        "skip": 1
+      },
+      "button": "Art/Interface/Buttons/Promotions/Mind1.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_LULLABY_OF_CERIDWEN": "Lullaby of Ceridwen",
+    "TXT_KEY_TECH_CARD_LULLABY_OF_CERIDWEN_HELP": "[ICON_BULLET]Can train the Lutist (national unit, 2).[NEWLINE][ICON_BULLET]Lullaby, its battle hex, cast with its first spell action: each enemy unit in the rear row skips its next action.",
+    "TXT_KEY_TECH_CARD_LULLABY_OF_CERIDWEN_PEDIA": "Ceridwen's own song, that closes the eyes of archers and casters alike.",
+    "TXT_KEY_UNIT_LUTIST": "Lutist",
+    "TXT_KEY_UNIT_LUTIST_PEDIA": "A bard of Ceridwen whose song puts the enemy's rear to sleep.",
+    "TXT_KEY_UNIT_LUTIST_STRATEGY": "Bring it against armies of archers and casters.",
+    "TXT_KEY_SPELL_LULLABY": "Lullaby"
+  }
+}

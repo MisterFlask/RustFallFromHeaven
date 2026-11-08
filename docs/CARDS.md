@@ -106,6 +106,44 @@ comment naming the card.
 **Records:** each card that changes the rules is listed in docs/PORTING.md ("Changes from
 FFH2", the decks entry). Its row in section 5 below gets its status.
 
+### New data keys
+
+**Battle magic** (the battle cards; `ffh_data::BattleMagic`, `crates/ffh-data/src/infos/battle_magic.rs`),
+read the same way on a unit type and a promotion; a unit has its type's and its promotions'
+(`GameData::unit_battle_magic`). The rules are `engagement/battle_magic.rs` (fighters, pairs,
+illusions, familiars, Contingency's post-battle steps) and the resolver's `formation/magic.rs`;
+ffh-play's promotion and unit help describe every key (`magic_lines`).
+
+| Key | What |
+|---|---|
+| `battle_spell_power` | percent more damage of its damage spells, the magic bolt and Wonder's damage outcomes included |
+| `battle_damage_only` | it casts no charm, hex or heal (nor Wonder's other outcomes) |
+| `battle_spell_pattern` | its damage spells and bolt hit with this pattern in place of their own |
+| `battle_front_caster` | from the front row it casts as many spells as from its best row |
+| `battle_hex_ward` | while on the field, the enemy's hexes have no effect on its side, the pre-battle hexes included |
+| `battle_end_charms` | while on the field, the enemy side's charms end at the start of each round after the first |
+| `battle_presence` | a pre-battle hex of its presence in the line at the start: `GROUNDING` (the enemy's charges are strikes for the battle), `MADNESS` (in round 1 the enemy's fighter with the highest A, not a Sentinel, hits its own side) |
+| `battle_revive` | once per battle its heal also brings back the first fighter of its side that fell, at this percent of its HP, in its cell if free, else the rear cell of its lanes; never a Sentinel; the kill is undone |
+| `battle_dispel` | each hit it lands ends the target's charms and its dispellable promotions' attack, defence, magic defence and first strikes for the battle |
+| `battle_damage_vs_summons` | percent more damage to units with a duration and to illusions |
+| `battle_spell` | it knows this battle spell, whatever the spell's prerequisites; one such promotion a unit |
+| `strike_spell` | in place of its first strike each round it casts this spell, with half its attack as its magic; one such promotion a unit |
+| `opening_cast` | a defender: it casts its damage spell (else the bolt) before round 1; the promotion is then lost |
+| `death_recall` | a killing hit takes it out of the battle (no roll, even in a city); it returns to its capital with 1 HP and the promotion is lost; only with a capital |
+| `battle_familiar` | (unit) it binds to a caster (its `summoner`, `SPELL_BIND_FAMILIAR`); in a battle it takes the first spell or shot aimed at that caster, and the auto formation puts it in the caster's lane |
+
+**Spells:** `battle_illusions` `{"count", "hp"}`: cast with the caster's first spell action, its
+illusory soldiers take the free cells of its side (the front row first, the lanes nearest the
+centre first; cells assigned when the battle starts, a cell taken by then stays empty). They do
+not act, hold no field (a side of illusions alone is down), die to any spell's hit, give no XP and
+exist only in the battle (fighters of the formation after the set-up's; the log names them
+`TXT_KEY_UNIT_ILLUSORY_SOLDIER`). `battle_charm` takes `"rows": "REAR"` and `"skip"` (actions each
+fighter it lands on skips: its next ones; the log's `Skipped` note).
+
+**The log:** an action's `entered` lists the fighters that enter the field with it (illusions cast,
+a fighter revived), each `{unit, lane, row, hp}`; the battle screens fold it
+(`battle_log.js`).
+
 ## 3. Card world spells and remote targets
 
 - **A card's world spell** is a spell with `"once": true` and `"tech_prereq"` its card. Any unit of
@@ -155,3 +193,16 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | Card | Suit | Status |
 |---|---|---|
 | (the deck itself: deal, discover, once spells, targets, Armageddon deck) | | built |
+| G04 Evoker (`sage_evoker`) | Sage | built |
+| G05 Abjurer (`sage_abjurer`) | Sage | built |
+| G06 Spellsword (`sage_spellsword`: six promotions, one a unit) | Sage | built |
+| G18 Gravity Well (`sage_gravity_well`) | Sage | built |
+| P05 The Whisperer (`prophet_whisperer`) | Prophet | built |
+| P11 Halo (`prophet_halo`) | Prophet | built |
+| Spellbreaker (`sage_spellbreaker`) | Sage | built |
+| Contingency (`sage_contingency`: Strike and Recall, one held at a time) | Sage | built |
+| Battlemage (`sage_battlemage`) | Sage | built |
+| Lullaby of Ceridwen (`bard_lullaby_of_ceridwen`: the Lutist) | Bard | built |
+| Illusory Host (`bard_illusory_host`: `UNIT_HOST_ILLUSIONIST`) | Bard | built |
+| Familiars (`sage_familiars`) | Sage | built |
+| Homunculus Vats (`sage_homunculus_vats`: a spell promotion chosen when trained) | Sage | built |

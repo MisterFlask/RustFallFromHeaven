@@ -137,8 +137,8 @@ pub struct MagicState {
     pub skip: Vec<i32>,
     /// Per side (attacker, defender): its charges are strikes (grounded).
     pub grounded: [bool; 2],
-    /// The fighter that hits its own side (madness), in round 1.
-    pub mad: Option<usize>,
+    /// Per side (attacker, defender): its fighter that hits its own side (madness), in round 1.
+    pub mad: [Option<usize>; 2],
     /// Dispelled fighters.
     pub dispelled: Vec<bool>,
     /// The round in which a Spellsword last cast in place of a strike.
@@ -159,7 +159,7 @@ impl MagicState {
             applied: Vec::new(),
             skip: vec![0; n],
             grounded: [false; 2],
-            mad: None,
+            mad: [None; 2],
             dispelled: vec![false; n],
             struck: vec![0; n],
             revived: vec![false; n],
@@ -173,7 +173,7 @@ impl MagicState {
 impl Formation {
     /// The side `h`'s hostile actions fall on: the other side, or its own while it is mad.
     pub(super) fn foe_of(&self, s: &State, h: usize) -> Side {
-        if s.mx.mad == Some(h) {
+        if s.mx.mad[self.fighters[h].side.index()] == Some(h) {
             self.fighters[h].side
         } else {
             self.fighters[h].side.other()
@@ -204,9 +204,7 @@ impl<'a> Run<'a> {
                 let top = (0..f.len())
                     .filter(|&i| f.fighters[i].side == foe && self.s.on_field(i) && !f.fighters[i].fixed && !f.fighters[i].magic.illusion)
                     .max_by(|&x, &y| f.fighters[x].a.cmp(&f.fighters[y].a).then(y.cmp(&x)));
-                if self.s.mx.mad.is_none() {
-                    self.s.mx.mad = top;
-                }
+                self.s.mx.mad[foe.index()] = top;
             }
         }
         // The opening casts, round 0.
@@ -222,7 +220,7 @@ impl<'a> Run<'a> {
     pub(super) fn magic_round(&mut self, round: i32) {
         let f = self.f;
         if round >= 2 {
-            self.s.mx.mad = None;
+            self.s.mx.mad = [None; 2];
             for side in [Side::Attacker, Side::Defender] {
                 let breaker = (0..f.len()).any(|i| f.fighters[i].side == side && f.fighters[i].magic.end_charms && self.s.on_field(i));
                 if breaker {
@@ -298,7 +296,7 @@ impl<'a> Run<'a> {
             }
             self.s.mx.pending[t] = false;
             self.s.row[t] = row;
-            ev.entered.push(Entry { unit: t as FighterIdx, row, hp: self.s.hp[t] });
+            ev.entered.push(Entry { unit: t as FighterIdx, lane: ft.lane, row, hp: self.s.hp[t] });
         }
         if ev.entered.is_empty() {
             ev.note = Some(Note::NoTarget);
@@ -446,7 +444,7 @@ impl<'a> Run<'a> {
         e.heal = None;
         e.knocked = None;
         e.note = None;
-        e.entered = vec![Entry { unit: v as FighterIdx, row, hp }];
+        e.entered = vec![Entry { unit: v as FighterIdx, lane: f.fighters[v].lane, row, hp }];
         self.push(e);
         true
     }

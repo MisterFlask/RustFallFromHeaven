@@ -1898,7 +1898,9 @@ mod tests {
         assert!(!is_limited_wonder_class(d, granary));
         assert_eq!(limited_wonder_class_limit(d, granary), -1);
         assert_eq!(get_wonder_score(d, granary), 0);
-        let count = |f: fn(&GameData, BuildingClassType) -> bool| d.building_classes.keys().filter(|&c| f(d, c)).count();
+        // The game's own classes: the card files' come after them (docs/CARDS.md).
+        let own = d.building_classes.len() - ffh_data::card_entry_count("building_classes");
+        let count = |f: fn(&GameData, BuildingClassType) -> bool| d.building_classes.keys().take(own).filter(|&c| f(d, c)).count();
         assert_eq!((count(is_world_wonder_class), count(is_team_wonder_class), count(is_national_wonder_class)), (38, 0, 20));
 
         let bane = d.t::<ProjectType>("PROJECT_BANE_DIVINE");
@@ -1929,9 +1931,12 @@ mod tests {
 
         // Over all (promotion, unit) pairs; the count comes from an independent evaluation of
         // the C++ rules over the XML. FFH2 has no leader promotions, so bLeader changes nothing.
+        // The game's own entries: the card files' come after them (docs/CARDS.md).
+        let own_p = d.promotions.len() - ffh_data::card_entry_count("promotions");
+        let own_u = d.units.len() - ffh_data::card_entry_count("units");
         let mut n = 0;
-        for p in d.promotions.keys() {
-            for u in d.units.keys() {
+        for p in d.promotions.keys().take(own_p) {
+            for u in d.units.keys().take(own_u) {
                 let v = is_promotion_valid(d, p, u, false);
                 assert_eq!(v, is_promotion_valid(d, p, u, true));
                 n += v as usize;
@@ -1942,7 +1947,7 @@ mod tests {
         // +263 in all: this game's UNIT_SKIRMISHER, with the Archer's promotions, below;
         // +1 pair: Formation, free on the Phalanx's class (docs/UNIT_ROLES.md), on the Nullstone
         // Golem, which has no unit combat.)
-        assert_eq!((n, d.promotions.len() * d.units.len()), (26629, 86001));
+        assert_eq!((n, own_p * own_u), (26629, 86001));
         let archer = d.t::<UnitType>("UNIT_ARCHER");
         let skirmisher = d.t::<UnitType>("UNIT_SKIRMISHER");
         let takes = |u: UnitType| d.promotions.keys().filter(|&p| is_promotion_valid(d, p, u, false)).collect::<Vec<_>>();
