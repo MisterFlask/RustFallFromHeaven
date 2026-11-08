@@ -385,12 +385,18 @@ impl Game {
         })
     }
 
+    /// False Colours: the team the false colours of `p`'s units on `from` let them attack on
+    /// `dest`, if any of them is under them (an attack from `from` is then one on that team, with
+    /// no declaration before it).
+    pub fn player_false_colours_team(&self, p: PlayerId, from: PlotIdx, dest: PlotIdx) -> Option<TeamId> {
+        self.map.plots[from].units.iter().filter(|&&u| self.units[u].owner == p).find_map(|&u| self.unit_false_colours_team(u, dest))
+    }
+
     /// False Colours: the team the group `g`'s false colours let it attack on `dest`, if any of
     /// its owner's units on its plot is under them.
     pub fn group_false_colours_team(&self, g: GroupId, dest: PlotIdx) -> Option<TeamId> {
-        let owner = self.groups[g].owner;
         let from = self.group_plot(g)?;
-        self.map.plots[from].units.iter().filter(|&&u| self.units[u].owner == owner).find_map(|&u| self.unit_false_colours_team(u, dest))
+        self.player_false_colours_team(self.groups[g].owner, from, dest)
     }
 
     /// False Colours, at the attack (`group_attack_engage`): the war on the target team is declared

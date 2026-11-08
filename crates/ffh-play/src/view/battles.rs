@@ -811,12 +811,15 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Opti
     if !v.plot_visible(dest) {
         errors.push("you cannot see that plot".into());
     }
-    let rival = g.map.plots[from].units.iter().filter(|&&u| g.units[u].owner == h).find_map(|&u| g.unit_get_declare_war_move(u, dest));
+    // Card: False Colours (docs/CARDS.md): an attack under false colours asks no question; its
+    // defenders are the units of the civ at peace there.
+    let colours = g.player_false_colours_team(h, from, dest);
+    let rival = g.map.plots[from].units.iter().filter(|&&u| g.units[u].owner == h).find_map(|&u| g.unit_get_declare_war_move(u, dest)).filter(|_| colours.is_none());
     let err_reply = |errors: Vec<String>| crate::jobj! { "declare_war" => rival, "errors" => Json::Arr(errors.into_iter().map(Json::from).collect()) };
     if !errors.is_empty() {
         return Ok(err_reply(errors));
     }
-    let war = rival.map_or(WarTest::AtWar, WarTest::DeclareWar);
+    let war = rival.or(colours).map_or(WarTest::AtWar, WarTest::DeclareWar);
     let inp = PreviewInput { player: h, from, to: dest, formation, war };
     let (pv, refused) = match g.engage_preview(&inp) {
         Ok(pv) => (pv, None),
@@ -923,8 +926,10 @@ pub fn combat_fields(v: &Viewer, units: &[UnitId], plot: PlotIdx, mut j: Json) -
     }
     let from = g.unit_plot(units[0]);
     let ((fx, fy), (tx, ty)) = (g.map.xy(from), g.map.xy(plot));
-    let rival = units.iter().find_map(|&u| g.unit_get_declare_war_move(u, plot));
-    let war = rival.map_or(WarTest::AtWar, WarTest::DeclareWar);
+    // Card: False Colours (docs/CARDS.md): as in `engage_preview`.
+    let colours = g.player_false_colours_team(v.h, from, plot);
+    let rival = units.iter().find_map(|&u| g.unit_get_declare_war_move(u, plot)).filter(|_| colours.is_none());
+    let war = rival.or(colours).map_or(WarTest::AtWar, WarTest::DeclareWar);
     let pool = if g.step_distance(fx, fy, tx, ty) == 1 { g.engage_attackers(v.h, from, plot, war) } else { Vec::new() };
     let now = !pool.is_empty();
     let force: Vec<UnitId> = if now { pool } else { units.iter().copied().filter(|&u| could_engage(g, u, plot)).collect() };

@@ -1084,8 +1084,10 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         Command::Move { units, x, y, append, declare_war } => {
             selection_of(g, h, units)?;
             let plot = on_map(g, *x, *y)?;
-            // selectionListMove: the first selected unit whose move needs a war asks.
-            let rival = units.iter().find_map(|&u| g.unit_get_declare_war_move(u, plot));
+            // selectionListMove: the first selected unit whose move needs a war asks (not a move
+            // under false colours: its war is declared at the battle, Card: False Colours).
+            let colours = g.player_false_colours_team(h, selection::plot(g, units), plot);
+            let rival = units.iter().find_map(|&u| g.unit_get_declare_war_move(u, plot)).filter(|_| colours.is_none());
             let mut war = None;
             if let Some(rival) = rival {
                 let move_anyway = g.plot_get_team(plot) != Some(rival);
@@ -1383,8 +1385,12 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             if g.plot_is_water(dest) {
                 return Err(cannot("a battle at sea is a duel: move there instead"));
             }
+            // Card: False Colours (docs/CARDS.md): units under false colours attack the civ at peace
+            // there without the question; their battle's defenders are its units (the war is
+            // declared at the battle).
+            let colours = g.player_false_colours_team(h, from, dest);
             // selectionListMove's DECLAREWARMOVE: the first unit there whose attack needs a war asks.
-            let rival = g.map.plots[from].units.iter().filter(|&&u| g.units[u].owner == h).find_map(|&u| g.unit_get_declare_war_move(u, dest));
+            let rival = g.map.plots[from].units.iter().filter(|&&u| g.units[u].owner == h).find_map(|&u| g.unit_get_declare_war_move(u, dest)).filter(|_| colours.is_none());
             let mut war = None;
             if let Some(rival) = rival {
                 match declare_war {
@@ -1393,7 +1399,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                     Some(false) => return Ok(Plan::Noop),
                 }
             }
-            let test = war.map_or(WarTest::AtWar, WarTest::DeclareWar);
+            let test = war.or(colours).map_or(WarTest::AtWar, WarTest::DeclareWar);
             let pool = g.engage_attackers(h, from, dest, test);
             if pool.is_empty() {
                 return Err(cannot("no unit there can attack that plot now"));
