@@ -44,6 +44,12 @@ pub enum DecisionKind {
     Draft { crusade: u32 },
     /// Not in C++: an allied loan offered to the human: option 0 accepts, 1 refuses.
     Loan { from: PlayerId },
+    /// Not in C++ (the cards, docs/CARDS.md): the free promotion of a unit trained in a city with
+    /// a Spire of the Archmagi; the options are promotions.
+    FreePromotion { unit: UnitId },
+    /// Not in C++ (the cards): the resource a just-built Agares's Well gives its city; the options
+    /// are resources.
+    FreeBonus { city: CityId },
 }
 
 impl DecisionKind {
@@ -59,6 +65,8 @@ impl DecisionKind {
             DecisionKind::Religion => "religion",
             DecisionKind::Draft { .. } => "draft",
             DecisionKind::Loan { .. } => "loan",
+            DecisionKind::FreePromotion { .. } => "free_promotion",
+            DecisionKind::FreeBonus { .. } => "free_bonus",
         }
     }
 }
@@ -406,6 +414,53 @@ pub fn loan(g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanPropo
         options: vec![accept, DecisionOption::new("refuse", "Refuse")],
         advisor: Some(if advisor_accepts { 0 } else { 1 }),
         context: DecisionContext { other_player: Some(proposal.from), ..Default::default() },
+    }
+}
+
+/// The cards' free promotion (the Spire of the Archmagi, docs/CARDS.md): one option per
+/// promotion unit `u` may take.
+pub fn free_promotion(g: &Game, p: PlayerId, u: UnitId, options: &[PromotionType], advisor: Option<PromotionType>) -> Decision {
+    let d = g.d;
+    let unit = &g.units[u];
+    Decision {
+        id: 0,
+        player: p,
+        kind: DecisionKind::FreePromotion { unit: u },
+        title: "Free promotion".into(),
+        text: format!("{} starts with one of these promotions, without experience.", g.unit_get_name(u)),
+        options: options
+            .iter()
+            .map(|&pr| {
+                let mut o = DecisionOption::new(names::name(d, pr), names::display(d, pr));
+                o.help = crate::view::help::promotion::effects(d, pr);
+                o
+            })
+            .collect(),
+        advisor: advisor.and_then(|a| options.iter().position(|&x| x == a)),
+        context: DecisionContext { plot: Some((unit.x, unit.y)), city: None, unit: Some(u), other_player: None },
+    }
+}
+
+/// The cards' free resource (Agares's Well, docs/CARDS.md): one option per resource city `c` may
+/// gain.
+pub fn free_bonus(g: &Game, p: PlayerId, c: CityId, b: BuildingType, options: &[BonusType], advisor: Option<BonusType>) -> Decision {
+    let d = g.d;
+    Decision {
+        id: 0,
+        player: p,
+        kind: DecisionKind::FreeBonus { city: c },
+        title: format!("{}: choose a resource", names::display(d, b)),
+        text: format!("{} has one of the resource you choose while it has {}.", g.cities[c].name, names::display(d, b)),
+        options: options
+            .iter()
+            .map(|&x| {
+                let mut o = DecisionOption::new(names::name(d, x), names::display(d, x));
+                o.help = crate::view::help::bonus::effects(d, x);
+                o
+            })
+            .collect(),
+        advisor: advisor.and_then(|a| options.iter().position(|&x| x == a)),
+        context: city_context(g, c, None),
     }
 }
 

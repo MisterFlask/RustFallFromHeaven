@@ -5130,6 +5130,7 @@ function settlementOf(type, ctx) {
     }
     case "TOWER":
     case "WARNING_POST":
+    case "TRADING_POST":
       plan.add("bld.tower", t === "TOWER" ? 0 : 1, r.range(-0.06, 0.06), ctx.unit ? -0.2 : -0.04, r.range(-0.3, 0.3), t === "TOWER" ? 0.9 : 0.75);
       if (t === "TOWER") plan.add("bld.fence", 0, r.range(-0.1, 0.1), 0.18, r.range(-0.3, 0.3), 0.6, { ghost: true });
       break;

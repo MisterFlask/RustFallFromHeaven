@@ -208,6 +208,21 @@ pub trait Controller: Send + Sync {
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &crate::crusade::loan::LoanTerms) -> Vec<UnitId> {
         g.loan_default_units(p, terms.strength)
     }
+
+    /// Not in C++ (the cards, docs/CARDS.md): the free promotion unit `u`, just trained in a
+    /// city with `free_promotion_choices` (the Spire of the Archmagi), takes: one of `options`
+    /// (never empty). Default: `None`, the first.
+    fn choose_free_promotion(&self, _g: &Game, _p: PlayerId, _u: UnitId, _options: &[PromotionType]) -> Option<PromotionType> {
+        None
+    }
+
+    /// Not in C++ (the cards): the resource building `b`, just built in city `c`, gives its city
+    /// (`free_bonus_choices`: Agares's Well): one of `options` (never empty). Default: `None`, the
+    /// first.
+    fn choose_free_bonus(&self, _g: &Game, _p: PlayerId, _c: CityId, _b: BuildingType, _options: &[BonusType]) -> Option<BonusType> {
+        None
+    }
+
     /// The C++ AI entry points inside the rules' own turn processing (`// AI:` notes at each
     /// site), for a controller that plays them where the C++ does (the C++ AI port, ffh-cppai).
     /// Called on the controller of the player concerned (for a team, its leader). Default:

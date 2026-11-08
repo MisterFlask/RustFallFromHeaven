@@ -112,7 +112,7 @@ function improvementSprites(t) {
   if (/VILLAGE|TOWN|GOODY_HUT/.test(t)) return ["bld_hamlet", "bld_cottage"];
   if (/GOBLIN_FORT/.test(t)) return ["bld_goblin_fort", "bld_fort"];
   if (/FORT|CASTLE|CITADEL|ENCLAVE|GUARDIAN/.test(t)) return ["bld_fort"];
-  if (/TOWER|WARNING_POST/.test(t)) return ["bld_watchtower", "bld_fort"];
+  if (/TOWER|WARNING_POST|TRADING_POST/.test(t)) return ["bld_watchtower", "bld_fort"];
   if (/WHALING/.test(t)) return ["feat_whaling_boats", "feat_fishing_boats"];
   if (/FISHING/.test(t)) return ["feat_fishing_boats"];
   if (/PIRATE|SHIP_WRECK/.test(t)) return ["bld_harbor", "bld_ruins"];

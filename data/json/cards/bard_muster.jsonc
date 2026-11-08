@@ -1,0 +1,37 @@
+// Muster (docs/DECKS.md section 3.6): a process; the city's production gives experience to its
+// units, 1 per 30 hammers, spread among them (ProcessInfo::production_to_experience). Band II:
+// Military Strategy is Classical (as the round-8 review moved the Harbor Chain).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_MUSTER",
+      "description": "TXT_KEY_TECH_CARD_MUSTER",
+      "help": "TXT_KEY_TECH_CARD_MUSTER_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_MUSTER_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_MILITARY_STRATEGY"],
+      "card_suit": "UNITCLASS_ARTIST",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "processes": [
+    {
+      "type": "PROCESS_MUSTER",
+      "description": "TXT_KEY_PROCESS_MUSTER",
+      "strategy": "TXT_KEY_PROCESS_MUSTER_STRATEGY",
+      "tech_prereq": "TECH_CARD_MUSTER",
+      "production_to_experience": 30,
+      "button": "Art/Interface/Buttons/Process/ProcessWealth.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_MUSTER": "Muster",
+    "TXT_KEY_TECH_CARD_MUSTER_HELP": "[ICON_BULLET]Allows the process Muster: the city's production gives experience to its units, 1 per 30[ICON_PRODUCTION], each point to the unit with the least.",
+    "TXT_KEY_TECH_CARD_MUSTER_PEDIA": "A great bard's war songs turn the garrison's idle days into drill.",
+    "TXT_KEY_PROCESS_MUSTER": "Muster",
+    "TXT_KEY_PROCESS_MUSTER_STRATEGY": "1 experience per 30 production to the units in the city."
+  }
+}

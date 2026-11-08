@@ -1,0 +1,53 @@
+// Academy of War (docs/DECKS.md section 13, card 7): land units trained in its city start at level 3,
+// the experience for two promotions of their owner's choice.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_ACADEMY_OF_WAR",
+      "description": "TXT_KEY_TECH_CARD_ACADEMY_OF_WAR",
+      "help": "TXT_KEY_TECH_CARD_ACADEMY_OF_WAR_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_ACADEMY_OF_WAR_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_MILITARY_STRATEGY"],
+      "card_suit": "UNITCLASS_ARTIST",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_ACADEMY_OF_WAR",
+      "description": "TXT_KEY_BUILDING_ACADEMY_OF_WAR",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 1,
+      "default_building": "BUILDING_ACADEMY_OF_WAR"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_ACADEMY_OF_WAR",
+      "building_class": "BUILDINGCLASS_ACADEMY_OF_WAR",
+      "description": "TXT_KEY_BUILDING_ACADEMY_OF_WAR",
+      "civilopedia": "TXT_KEY_BUILDING_ACADEMY_OF_WAR_PEDIA",
+      "prereq_tech": "TECH_CARD_ACADEMY_OF_WAR",
+      "cost": 200,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "asset": 4,
+      "power_value": 8,
+      // The experience of level 3 (2 for level 2, 5 for level 3): two promotions.
+      "domain_free_experiences": {"DOMAIN_LAND": 5},
+      "flavors": {"FLAVOR_MILITARY": 8}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_ACADEMY_OF_WAR": "Academy of War",
+    "TXT_KEY_TECH_CARD_ACADEMY_OF_WAR_HELP": "[ICON_BULLET]Allows the Academy of War (national): land units trained in its city start with 5 experience, enough for two promotions (level 3).",
+    "TXT_KEY_TECH_CARD_ACADEMY_OF_WAR_PEDIA": "A great bard's songs of old campaigns become the drill of a school of war.",
+    "TXT_KEY_BUILDING_ACADEMY_OF_WAR": "Academy of War",
+    "TXT_KEY_BUILDING_ACADEMY_OF_WAR_PEDIA": "The army's school, where recruits learn the lessons of the old wars."
+  }
+}

@@ -1,0 +1,54 @@
+// Maponos's Cradle (docs/DECKS.md section 3.2): a national building, +2 food; every 20 turns
+// the city makes a free Settler without losing population, or a Worker when no site is free
+// within 10 plots (BuildingInfo::free_unit_turns).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_MAPONOS_CRADLE",
+      "description": "TXT_KEY_TECH_CARD_MAPONOS_CRADLE",
+      "help": "TXT_KEY_TECH_CARD_MAPONOS_CRADLE_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_MAPONOS_CRADLE_PEDIA",
+      "advisor": "ADVISOR_GROWTH",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_ANCIENT",
+      "and_pre_reqs": ["TECH_AGRICULTURE"],
+      "card_suit": "UNITCLASS_PROPHET",
+      "flavors": {"FLAVOR_GROWTH": 1}
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_MAPONOS_CRADLE",
+      "description": "TXT_KEY_BUILDING_MAPONOS_CRADLE",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 1,
+      "default_building": "BUILDING_MAPONOS_CRADLE"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_MAPONOS_CRADLE",
+      "building_class": "BUILDINGCLASS_MAPONOS_CRADLE",
+      "description": "TXT_KEY_BUILDING_MAPONOS_CRADLE",
+      "civilopedia": "TXT_KEY_BUILDING_MAPONOS_CRADLE_PEDIA",
+      "prereq_tech": "TECH_CARD_MAPONOS_CRADLE",
+      "cost": 120,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "asset": 4,
+      "yield_changes": [2, 0, 0],
+      "free_unit_turns": 20,
+      "free_unit_classes": ["UNITCLASS_SETTLER", "UNITCLASS_WORKER"],
+      "flavors": {"FLAVOR_GROWTH": 8}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_MAPONOS_CRADLE": "Maponos's Cradle",
+    "TXT_KEY_TECH_CARD_MAPONOS_CRADLE_HELP": "[ICON_BULLET]Allows Maponos's Cradle (national): +2[ICON_FOOD].[NEWLINE][ICON_BULLET]Every 20 turns its city makes a free Settler, without losing population; with no free city site within 10 plots, a Worker instead.",
+    "TXT_KEY_TECH_CARD_MAPONOS_CRADLE_PEDIA": "A great prophet of Amathaon dedicates a cradle to Maponos the Young, and the city's children are many.",
+    "TXT_KEY_BUILDING_MAPONOS_CRADLE": "Maponos's Cradle",
+    "TXT_KEY_BUILDING_MAPONOS_CRADLE_PEDIA": "A shrine to Maponos the Young, where the families of settlers are blessed."
+  }
+}

@@ -14,6 +14,7 @@ pub fn effects(d: &GameData, p: ProcessType) -> String {
         // tech's help lists the processes it allows (`setTechHelp`, "Can Build").
         tech_prereq: _,
         production_to_commerce_modifier,
+        production_to_experience,
     } = &d.processes[p];
     let mut b = String::new();
     for k in 0..CommerceType::NUM {
@@ -26,6 +27,14 @@ pub fn effects(d: &GameData, p: ProcessType) -> String {
                 &[Arg::N(n), Arg::S(YIELD_ICONS[YieldType::YIELD_PRODUCTION.idx()]), Arg::S(COMMERCE_ICONS[k])],
             ));
         }
+    }
+    // This game's (the Muster card, docs/CARDS.md).
+    if *production_to_experience > 0 {
+        b.push_str(NEWLINE);
+        b.push_str(&format!(
+            "[ICON_BULLET]1 experience per {production_to_experience}{} to the units in the city, each point to the unit with the least",
+            YIELD_ICONS[YieldType::YIELD_PRODUCTION.idx()]
+        ));
     }
     // C++ shows no XML help here; kept at the end so that the tooltip, which shows `effects` in
     // place of the help, does not lose it (no FFH2 process has one).
@@ -52,6 +61,9 @@ mod tests {
             let t = effects(d, p);
             assert!(!t.contains("%s") && !t.contains("%d") && !t.contains("%D") && !t.contains("%F"), "{t}");
             // Every process converts something.
+            if d.processes[p].production_to_commerce_modifier.iter().any(|&n| n != 0) || d.processes[p].production_to_experience > 0 {
+                assert!(!t.is_empty(), "{}", crate::names::name(d, p));
+            }
             if d.processes[p].production_to_commerce_modifier.iter().any(|&n| n != 0) {
                 assert!(t.contains("[ICON_BULLET]Converts"), "{}: {t}", crate::names::name(d, p));
             }

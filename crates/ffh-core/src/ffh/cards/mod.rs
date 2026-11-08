@@ -10,6 +10,7 @@ use crate::ffh::dispatch::*;
 pub mod battle_magic;
 pub mod deck;
 pub mod deck_ui;
+pub mod economy;
 pub mod map_rules;
 pub mod new_civs;
 pub mod world;
@@ -36,6 +37,7 @@ const MODULES: &[Lookups] = &[
     Lookups { spell: deck_ui::find_spell, req: none, targets: deck_ui::find_targets, unit_fn: none },
     Lookups { spell: battle_magic::find_spell, req: battle_magic::find_req, targets: none, unit_fn: battle_magic::find_unit_fn },
     Lookups { spell: new_civs::find_spell, req: new_civs::find_req, targets: new_civs::find_targets, unit_fn: none },
+    Lookups { spell: economy::find_spell, req: economy::find_req, targets: economy::find_targets, unit_fn: none },
 ];
 
 /// Every card module's `py_target_label` lookup (the names of a choice spell's options), searched

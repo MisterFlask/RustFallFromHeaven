@@ -164,6 +164,27 @@ pub struct BuildingInfo {
     /// How many unrevealed Armageddon cards ahead its owner sees (`doom_sight`: the Orrery 2).
     pub doom_sight: i32,
 
+    // ---- the cards (this game's, docs/CARDS.md; not in FFH2) ----
+    /// The units its city can train while it has the building, each at a cost of its own
+    /// (`train_units`: the Beast Market's animals, the Elemental Foundry's elementals).
+    pub train_units: Vec<TrainUnit>,
+    /// When the building is built, its owner chooses one of these resources: the city has one of
+    /// it while it has the building (`free_bonus_choices`: Agares's Well).
+    pub free_bonus_choices: Vec<BonusType>,
+    /// A unit trained in its city gets one of these promotions that it can acquire, chosen by
+    /// its owner, without experience (`free_promotion_choices`: the Spire of the Archmagi).
+    pub free_promotion_choices: Vec<PromotionType>,
+    /// The first time a unit of its owner would die in a battle within this many plots of the
+    /// city, it is carried to the city at 10% of its HP instead, and gains `rebirth_promotion`;
+    /// a unit with that promotion dies normally (`rebirth_range`: the Font of Rebirth; 0: none).
+    pub rebirth_range: i32,
+    pub rebirth_promotion: Option<PromotionType>,
+    /// Every this many turns after it is built, the city makes a free unit of the first class of
+    /// `free_unit_classes` it may: a unit that founds cities only while a site within
+    /// `FREE_UNIT_SITE_RANGE` plots of the city is free (`free_unit_turns`: Maponos's Cradle).
+    pub free_unit_turns: i32,
+    pub free_unit_classes: Vec<UnitClassType>,
+
     // ---- type references ----
     /// C++ `getBuildingClassType()`, XML `<BuildingClass>`.
     pub building_class_type: Option<BuildingClassType>,
@@ -436,6 +457,14 @@ pub fn read_building(rd: &Rd) -> BuildingInfo {
         global_counter_commerce: rd.commerces("global_counter_commerces"),
         doom_sight: rd.int("doom_sight"),
 
+        train_units: list_entries(rd, "train_units", "train_unit").iter().filter_map(read_train_unit).collect(),
+        free_bonus_choices: rd.ref_list("free_bonus_choices"),
+        free_promotion_choices: rd.ref_list("free_promotion_choices"),
+        rebirth_range: rd.int("rebirth_range"),
+        rebirth_promotion: rd.rf("rebirth_promotion"),
+        free_unit_turns: rd.int("free_unit_turns"),
+        free_unit_classes: rd.ref_list("free_unit_classes"),
+
         building_class_type: rd.rf("building_class"),
         special_building_type: rd.rf("special_building_type"),
         holy_city: rd.rf("holy_city"),
@@ -613,6 +642,28 @@ pub fn read_building(rd: &Rd) -> BuildingInfo {
         building_happiness_changes: rd.pairs_int("building_happiness_changes", 0),
         specialist_commerce_change: keyed_arrays(rd, "specialist_commerce_changes", "specialist_commerce_change", "specialist_type", "commerce_changes"),
     }
+}
+
+/// A unit a building lets its city train ([`BuildingInfo::train_units`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TrainUnit {
+    pub unit: UnitType,
+    /// Its production cost there, in place of the unit's own (`cost`).
+    pub cost: i32,
+    /// The resource the city needs to train it (`bonus`).
+    pub bonus: Option<BonusType>,
+    /// Past this many units of its class, each costs `NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT`
+    /// (`national`; 0: no limit).
+    pub national: i32,
+}
+
+/// One entry of `train_units`: `{"unit": ..., "cost": ..., "bonus": ..., "national": ...}`.
+fn read_train_unit(rd: &Rd) -> Option<TrainUnit> {
+    let unit = rd.rf::<UnitType>("unit");
+    let cost = rd.int("cost");
+    let bonus = rd.rf::<BonusType>("bonus");
+    let national = rd.int("national");
+    Some(TrainUnit { unit: unit?, cost, bonus, national })
 }
 
 /// C++ `SetCommerce(&m_pbX)` on a bool list (or `InitList(.., NUM_COMMERCE_TYPES)` when absent).

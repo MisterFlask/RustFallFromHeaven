@@ -519,6 +519,9 @@ pub struct BuildInfo {
     /// unit type that builds an improvement can do it (a card's file cannot add to the units'
     /// `builds`): `GameData::derive` sets it in their lists.
     pub all_workers: bool,
+    /// This game's (a card's build, docs/CARDS.md): the units that can do this build can do this
+    /// one too (`same_builders_as`; set in the units' `builds` at load).
+    pub same_builders_as: Option<BuildType>,
 }
 
 /// C++ `CvBuildInfo::read`.
@@ -535,6 +538,7 @@ pub fn read_build(rd: &Rd) -> BuildInfo {
         route: rd.rf::<RouteType>("route_type"),
         built_by: rd.ref_list("built_by"),
         all_workers: rd.bool("all_workers"),
+        same_builders_as: rd.rf::<BuildType>("same_builders_as"),
         ..Default::default()
     };
     set_feature_struct(rd, &mut info);

@@ -68,7 +68,9 @@ fn buildings_add_and_remove_cleanly() {
     let d = g.d;
     let mut failed = Vec::new();
     for building in d.buildings.keys() {
-        let info = &d.buildings[building];
+        // The city holds its own tier's variant of the building (docs/SUITABILITY.md): what it
+        // does is that variant's (a Legendary Temple of Leaves spreads its religion).
+        let info = &d.buildings[g.city_building_variant(c, building)];
         // What a building does once, when it is first built (C++ `setNumRealBuildingTimed`):
         // a new capital, a golden age, population, a religion, free techs.
         let once = info.capital

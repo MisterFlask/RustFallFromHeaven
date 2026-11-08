@@ -4798,7 +4798,7 @@ function rocksOf(ctx) {
 
 /** Settlement-like improvements belong to architecture.js (and the "worked" markers and smoke have
  *  no structure). */
-const NOT_OURS = /^(COTTAGE|HAMLET|VILLAGE|TOWN|ENCLAVE|FORT|CASTLE|CITADEL|TOWER|WARNING_POST|PIRATE_PORT|GOBLIN_FORT|LAND_WORKED|WATER_WORKED|SMOKE)$/;
+const NOT_OURS = /^(COTTAGE|HAMLET|VILLAGE|TOWN|ENCLAVE|FORT|CASTLE|CITADEL|TOWER|WARNING_POST|TRADING_POST|PIRATE_PORT|GOBLIN_FORT|LAND_WORKED|WATER_WORKED|SMOKE)$/;
 
 /** The ore a mine digs (from the plot's resource). */
 function oreOf(bonus) {

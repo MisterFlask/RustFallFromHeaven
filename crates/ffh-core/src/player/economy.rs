@@ -1611,6 +1611,11 @@ impl Game {
         }
         //FfH: End Add
 
+        // Card: Stoicism (docs/CARDS.md): war weariness causes no unhappiness.
+        if self.player_no_war_weariness(p) {
+            return 0;
+        }
+
         self.players[p].war_weariness_percent_anger
     }
 

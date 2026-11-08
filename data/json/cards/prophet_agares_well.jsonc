@@ -1,0 +1,60 @@
+// Agares's Well [evil] (docs/DECKS.md section 3.2): a national building; its city gains one mana
+// resource of a type its owner chooses when it is built (BuildingInfo::free_bonus_choices), and
+// building it adds 3 to the Armageddon counter. Band II: Way of the Wicked is Classical (as the
+// round-8 review moved the Harbor Chain).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_AGARES_WELL",
+      "description": "TXT_KEY_TECH_CARD_AGARES_WELL",
+      "help": "TXT_KEY_TECH_CARD_AGARES_WELL_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_AGARES_WELL_PEDIA",
+      "advisor": "ADVISOR_RELIGION",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_WAY_OF_THE_WICKED"],
+      "card_suit": "UNITCLASS_PROPHET",
+      "card_alignment": "ALIGNMENT_EVIL",
+      "flavors": {"FLAVOR_SCIENCE": 1}
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_AGARES_WELL",
+      "description": "TXT_KEY_BUILDING_AGARES_WELL",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 1,
+      "default_building": "BUILDING_AGARES_WELL"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_AGARES_WELL",
+      "building_class": "BUILDINGCLASS_AGARES_WELL",
+      "description": "TXT_KEY_BUILDING_AGARES_WELL",
+      "civilopedia": "TXT_KEY_BUILDING_AGARES_WELL_PEDIA",
+      "prereq_tech": "TECH_CARD_AGARES_WELL",
+      "cost": 120,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "asset": 4,
+      "modify_global_counter": 3,
+      "free_bonus_choices": [
+        "BONUS_MANA_AIR", "BONUS_MANA_BODY", "BONUS_MANA_CHAOS", "BONUS_MANA_DEATH", "BONUS_MANA_EARTH",
+        "BONUS_MANA_ENCHANTMENT", "BONUS_MANA_ENTROPY", "BONUS_MANA_FIRE", "BONUS_MANA_LAW", "BONUS_MANA_LIFE",
+        "BONUS_MANA_METAMAGIC", "BONUS_MANA_MIND", "BONUS_MANA_NATURE", "BONUS_MANA_SHADOW", "BONUS_MANA_SPIRIT",
+        "BONUS_MANA_SUN", "BONUS_MANA_WATER"
+      ],
+      "flavors": {"FLAVOR_SCIENCE": 4}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_AGARES_WELL": "Agares's Well",
+    "TXT_KEY_TECH_CARD_AGARES_WELL_HELP": "[ICON_BULLET]Allows Agares's Well (national): when it is built, choose a type of mana; its city has one mana resource of that type.[NEWLINE][ICON_BULLET]Building it adds 3 to the Armageddon counter.[NEWLINE][ICON_BULLET]Drawn by evil civilizations only.",
+    "TXT_KEY_TECH_CARD_AGARES_WELL_PEDIA": "A great prophet of the Veil learns how Agares opened wells of raw element in Nyx.",
+    "TXT_KEY_BUILDING_AGARES_WELL": "Agares's Well",
+    "TXT_KEY_BUILDING_AGARES_WELL_PEDIA": "A shaft into the raw element, as Agares made in Nyx."
+  }
+}

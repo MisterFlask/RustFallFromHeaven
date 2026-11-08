@@ -89,6 +89,17 @@ impl Game {
         players.sort();
         players.dedup();
 
+        // Card: the Font of Rebirth (docs/CARDS.md): a victim a Font saves fights on as a
+        // survivor at 10% of its HP, and is carried to the Font's city before the victims die.
+        let saved = crate::ffh::cards::economy::font_saves(self, &e.units, to, r);
+        let spared;
+        let r = if saved.is_empty() {
+            r
+        } else {
+            spared = crate::ffh::cards::economy::spare_saved(r, &saved);
+            &spared
+        };
+
         // 1. Damage written back; the victims die (delayed), in kill order.
         for i in 0..n {
             let u = e.units[i];
@@ -337,6 +348,14 @@ impl Game {
                         }
                     }
                 }
+            }
+        }
+
+        // Card: the Font of Rebirth: the saved go to their Font's city.
+        for &(i, c, mark) in &saved {
+            let u = e.units[i];
+            if self.engage_alive(u) && self.cities.contains(c) {
+                self.unit_carry_to_font(u, c, mark);
             }
         }
 

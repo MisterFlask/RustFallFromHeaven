@@ -237,6 +237,7 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             continue;
         }
         if !v.barbarian && crate::civs::unit(ai, g, v, grp, head) { continue; } // civ-mechanics
+        if !v.barbarian && crate::cards_economy::unit(g, v, grp, head) { continue; } // the cards (docs/CARDS.md)
         // Govannon teaches (TEACH_SPELLS).
         if !v.barbarian && crate::casters::govannon(g, v, grp, head) {
             continue;
