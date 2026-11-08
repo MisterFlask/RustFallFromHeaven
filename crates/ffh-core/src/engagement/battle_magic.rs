@@ -333,7 +333,7 @@ mod tests {
     }
 
     fn order(from: PlotIdx, to: PlotIdx) -> EngageOrder {
-        EngageOrder { p: PlayerId(0), from, to, launcher: None, formation: None, forced: None, log: Some(true) }
+        EngageOrder { p: PlayerId(0), from, to, launcher: None, formation: None, forced: None, log: Some(true), surprise: false }
     }
 
     fn give(g: &mut Game, u: UnitId, names: &[&str]) {
