@@ -1,0 +1,42 @@
+// G10 Seal of Binding (docs/DECKS_ROUND8.md; C.4: cannot move for 20 turns (the immobile timer);
+// still defends). Rules: crates/ffh-core/src/ffh/cards/world_spells.rs.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_SEAL_OF_BINDING",
+      "description": "TXT_KEY_TECH_CARD_SEAL_OF_BINDING",
+      "help": "TXT_KEY_TECH_CARD_SEAL_OF_BINDING_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_SEAL_OF_BINDING_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_STRENGTH_OF_WILL"],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_SEAL_OF_BINDING",
+      "description": "TXT_KEY_SPELL_SEAL_OF_BINDING",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_SEAL_OF_BINDING_HELP",
+      "tech_prereq": "TECH_CARD_SEAL_OF_BINDING",
+      "once": true,
+      "target": "unit",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_result": "spellSealOfBinding(pCaster)",
+      "py_targets": "targetsSealOfBinding(pCaster)",
+      "button": "Art/Interface/Buttons/Spells/Entangle.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_SEAL_OF_BINDING": "Seal of Binding",
+    "TXT_KEY_TECH_CARD_SEAL_OF_BINDING_HELP": "[ICON_BULLET]World spell, once a game: Seal of Binding.[NEWLINE][ICON_BULLET]Target: a world unit or a hero you can see, of a civilization you are at war with or of the barbarians.[NEWLINE][ICON_BULLET]It cannot move, attack or cast spells for 20 turns. It still defends.",
+    "TXT_KEY_TECH_CARD_SEAL_OF_BINDING_PEDIA": "Freeze the dragon or hero the enemy's war rests on.",
+    "TXT_KEY_SPELL_SEAL_OF_BINDING": "Seal of Binding",
+    "TXT_KEY_SPELL_SEAL_OF_BINDING_HELP": "[ICON_BULLET]Target: a world unit or a hero you can see, of a civilization you are at war with or of the barbarians.[NEWLINE][ICON_BULLET]It cannot move, attack or cast spells for 20 turns.[NEWLINE][ICON_BULLET]It still defends."
+  }
+}

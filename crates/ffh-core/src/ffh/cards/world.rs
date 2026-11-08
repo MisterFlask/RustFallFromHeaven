@@ -90,3 +90,34 @@ pub fn regions(g: &Game, member: impl Fn(&Game, PlotIdx) -> bool) -> Vec<Vec<Plo
 pub fn largest_region(g: &Game, member: impl Fn(&Game, PlotIdx) -> bool) -> Option<Vec<PlotIdx>> {
     regions(g, member).into_iter().next()
 }
+
+// ---------------------------------------------------------------------------------------------
+// Borders and the Armageddon counter.
+
+/// Does `p` own a plot within `range` plots (plot distance) of `plot`? A card's "within N plots of
+/// your borders".
+pub fn within_range_of_borders(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> bool {
+    let (x, y) = g.map.xy(plot);
+    for dx in -range..=range {
+        for dy in -range..=range {
+            if g.plot_distance(x, y, x + dx, y + dy) > range {
+                continue;
+            }
+            if g.plot_xy(x, y, dx, dy).is_some_and(|q| g.map.plots[q].owner == Some(p)) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+/// The raw change (`change_global_counter`) that raises the Armageddon counter's percentage
+/// (`get_global_counter`, the scale of the Armageddon deck's slots) by `points`, whatever the
+/// counter's limit: a card's "+N to the Armageddon counter".
+pub fn counter_change_for_points(g: &Game, points: i32) -> i32 {
+    let limit = g.global_counter_limit.max(1) as i64;
+    let target = (g.get_global_counter() + points) as i64;
+    // The smallest raw value whose percentage reaches the target.
+    let raw = (target * limit + 99) / 100;
+    (raw - g.global_counter as i64).max(0) as i32
+}

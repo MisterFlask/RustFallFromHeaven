@@ -1,0 +1,43 @@
+// M03 Bazaar of Wonders (docs/DECKS_ROUND8.md; C.4: a wonder with a positive cost whose
+// prerequisites the city meets; not a victory wonder). The target is a city of yours: the world
+// wonder it is building is completed. Rules: crates/ffh-core/src/ffh/cards/world_spells.rs.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_BAZAAR_OF_WONDERS",
+      "description": "TXT_KEY_TECH_CARD_BAZAAR_OF_WONDERS",
+      "help": "TXT_KEY_TECH_CARD_BAZAAR_OF_WONDERS_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_BAZAAR_OF_WONDERS_PEDIA",
+      "advisor": "ADVISOR_ECONOMY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_MERCANTILISM"],
+      "card_suit": "UNITCLASS_MERCHANT",
+      "flavors": {"FLAVOR_GOLD": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_BAZAAR_OF_WONDERS",
+      "description": "TXT_KEY_SPELL_BAZAAR_OF_WONDERS",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_BAZAAR_OF_WONDERS_HELP",
+      "tech_prereq": "TECH_CARD_BAZAAR_OF_WONDERS",
+      "once": true,
+      "target": "city",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_result": "spellBazaarOfWonders(pCaster)",
+      "py_targets": "targetsBazaarOfWonders(pCaster)",
+      "button": "Art/Interface/Buttons/Spells/Wonder.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_BAZAAR_OF_WONDERS": "Bazaar of Wonders",
+    "TXT_KEY_TECH_CARD_BAZAAR_OF_WONDERS_HELP": "[ICON_BULLET]World spell, once a game: Bazaar of Wonders.[NEWLINE][ICON_BULLET]Target: a city of yours building a world wonder that costs hammers. Not the Tower of Mastery or a tower it needs, nor a stage of the Altar of the Luonnotar.[NEWLINE][ICON_BULLET]The wonder is completed at once.[NEWLINE][ICON_BULLET]Price: 3 gold for each hammer it still needs.",
+    "TXT_KEY_TECH_CARD_BAZAAR_OF_WONDERS_PEDIA": "The wonder your rival is two turns from.",
+    "TXT_KEY_SPELL_BAZAAR_OF_WONDERS": "Bazaar of Wonders",
+    "TXT_KEY_SPELL_BAZAAR_OF_WONDERS_HELP": "[ICON_BULLET]Target: a city of yours building a world wonder that costs hammers. Not the Tower of Mastery or a tower it needs, nor a stage of the Altar of the Luonnotar.[NEWLINE][ICON_BULLET]The wonder is completed at once.[NEWLINE][ICON_BULLET]Price: 3 gold for each hammer it still needs."
+  }
+}

@@ -25,6 +25,7 @@ pub mod campaign;
 pub mod casters;
 pub mod cards;
 pub mod cards_map_rules;
+pub mod cards_world_spells;
 pub mod casting;
 pub mod combat_sim;
 pub mod civs;

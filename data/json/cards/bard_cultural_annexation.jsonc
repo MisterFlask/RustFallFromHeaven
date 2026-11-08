@@ -1,0 +1,43 @@
+// B06 Cultural Annexation (docs/DECKS_ROUND8.md; C.4: the owner keeps peace with you, with -4
+// attitude). The city changes hands as a culture flip does. Rules:
+// crates/ffh-core/src/ffh/cards/world_spells.rs.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_CULTURAL_ANNEXATION",
+      "description": "TXT_KEY_TECH_CARD_CULTURAL_ANNEXATION",
+      "help": "TXT_KEY_TECH_CARD_CULTURAL_ANNEXATION_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_CULTURAL_ANNEXATION_PEDIA",
+      "advisor": "ADVISOR_CULTURE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_PHILOSOPHY"],
+      "card_suit": "UNITCLASS_ARTIST",
+      "flavors": {"FLAVOR_CULTURE": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_CULTURAL_ANNEXATION",
+      "description": "TXT_KEY_SPELL_CULTURAL_ANNEXATION",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_CULTURAL_ANNEXATION_HELP",
+      "tech_prereq": "TECH_CARD_CULTURAL_ANNEXATION",
+      "once": true,
+      "target": "city",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_result": "spellCulturalAnnexation(pCaster)",
+      "py_targets": "targetsCulturalAnnexation(pCaster)",
+      "button": "Art/Interface/Buttons/Spells/Convertcity.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_CULTURAL_ANNEXATION": "Cultural Annexation",
+    "TXT_KEY_TECH_CARD_CULTURAL_ANNEXATION_HELP": "[ICON_BULLET]World spell, once a game: Cultural Annexation.[NEWLINE][ICON_BULLET]Target: a city of another civilization or of the barbarians. Not a capital. Within 3 plots of your borders. Your culture is at least 30% of the culture on its plot.[NEWLINE][ICON_BULLET]The city joins you with its buildings. No war is declared. Its owner gets -4 attitude toward you.",
+    "TXT_KEY_TECH_CARD_CULTURAL_ANNEXATION_PEDIA": "The city that already half belongs to you.",
+    "TXT_KEY_SPELL_CULTURAL_ANNEXATION": "Cultural Annexation",
+    "TXT_KEY_SPELL_CULTURAL_ANNEXATION_HELP": "[ICON_BULLET]Target: a city of another civilization or of the barbarians. Not a capital. Within 3 plots of your borders. Your culture is at least 30% of the culture on its plot.[NEWLINE][ICON_BULLET]The city joins you with its buildings. No war is declared.[NEWLINE][ICON_BULLET]Effect: -4 attitude toward you, for its owner."
+  }
+}

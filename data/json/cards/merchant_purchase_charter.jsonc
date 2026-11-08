@@ -1,0 +1,42 @@
+// M08 Purchase Charter (docs/DECKS_ROUND8.md; C.4: not a holy city or a wonder city; the price adds
+// its buildings' cost, at 2 gold a hammer: C.3 rule 3). Rules: crates/ffh-core/src/ffh/cards/world_spells.rs.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_PURCHASE_CHARTER",
+      "description": "TXT_KEY_TECH_CARD_PURCHASE_CHARTER",
+      "help": "TXT_KEY_TECH_CARD_PURCHASE_CHARTER_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_PURCHASE_CHARTER_PEDIA",
+      "advisor": "ADVISOR_ECONOMY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_MERCANTILISM"],
+      "card_suit": "UNITCLASS_MERCHANT",
+      "flavors": {"FLAVOR_GOLD": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_PURCHASE_CHARTER",
+      "description": "TXT_KEY_SPELL_PURCHASE_CHARTER",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_PURCHASE_CHARTER_HELP",
+      "tech_prereq": "TECH_CARD_PURCHASE_CHARTER",
+      "once": true,
+      "target": "city",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_result": "spellPurchaseCharter(pCaster)",
+      "py_targets": "targetsPurchaseCharter(pCaster)",
+      "button": "Art/Interface/Buttons/Spells/Hire Units.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_PURCHASE_CHARTER": "Purchase Charter",
+    "TXT_KEY_TECH_CARD_PURCHASE_CHARTER_HELP": "[ICON_BULLET]World spell, once a game: Purchase Charter.[NEWLINE][ICON_BULLET]Target: a city of a civilization you have met and are at peace with. Not its capital, a holy city or a city with a world wonder. Population 5 or less. Within 6 plots of your borders.[NEWLINE][ICON_BULLET]Price: 100 gold per population, plus 2 gold per hammer of the cost of its buildings.[NEWLINE][ICON_BULLET]The city joins you with its buildings. Its owner receives the gold, and -4 attitude toward you.",
+    "TXT_KEY_TECH_CARD_PURCHASE_CHARTER_PEDIA": "The border city you want, without the war.",
+    "TXT_KEY_SPELL_PURCHASE_CHARTER": "Purchase Charter",
+    "TXT_KEY_SPELL_PURCHASE_CHARTER_HELP": "[ICON_BULLET]Target: a city of a civilization you have met and are at peace with. Not its capital, a holy city or a city with a world wonder. Population 5 or less. Within 6 plots of your borders.[NEWLINE][ICON_BULLET]Price: 100 gold per population, plus 2 gold per hammer of the cost of its buildings.[NEWLINE][ICON_BULLET]The city joins you with its buildings.[NEWLINE][ICON_BULLET]Its owner receives the gold. Effect: -4 attitude toward you."
+  }
+}
