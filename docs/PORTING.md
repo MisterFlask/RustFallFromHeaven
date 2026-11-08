@@ -491,6 +491,34 @@ flag.
       (not a hero or a world unit) for three times its hammer cost in gold.
     - *Muster* (Bard, II, Military Strategy; a process): 1 experience per 30 hammers, spread over the
       city's units.
+    - *Sing the Stones* (Bard, II, Drama; world spell): every City Ruins your team has seen within
+      3 plots of your borders, where you could found a city, becomes a city of yours of size 3.
+    - *Dragon's Oath* (Bard, III, Animal Mastery; world spell): Sylvarith, a dragon of your own (one
+      in the world, large, 180 HP, 150/120, Drifa's movement, Breath Fire, no Fear), joins you in
+      your capital; it can be called again once it is dead.
+    - *Call the Leviathan* (Prophet, the Octopus Overlords, Message from the Deep; world spell at a
+      coastal city): the Leviathan comes, or a Kraken while a Leviathan lives.
+    - *Judgment of Junil* (Prophet, good, II, Orders from Heaven; world spell at a player): a war
+      with the civilization named ends, and a 20-turn truce holds: neither can declare war on the
+      other or its vassals, defensive pacts, vassals and votes cannot start it, and their units
+      are not enemies.
+    - *Earthshaper's Decree* (Engineer, III, Machinery; world spell): every unimproved land plot you
+      own gets the Workers' best improvement there that keeps its feature and resource (one that
+      connects its resource first).
+    - *The Second Sky* (Sage, I, Calendar; national wonder): when built, your team sees every plot
+      with a mana resource, a unique feature, a lair or a goody hut; recon units trained there have
+      +1 sight.
+    - *The Plagiarist's Lens* (Sage, III, Arcane Lore; world spell at a choice): your team learns a
+      card a civilization you have met knows; each civilization that knows it gets -2 attitude
+      toward you, for good.
+    - *Weather Engine* (Engineer, III, Machinery; ritual, 300, repeatable): each completion leaves a
+      charge, spent on Blizzard (no healing, a move less), Storm (Shoot and Bombard deal half
+      damage) or Fog (no Shoot in round 1; units hidden from afar) over 5 plots around a plot within
+      10 of the city, for this turn and the next 5.
+    - *Tidecall of Danalin* (Prophet, II, Message from the Deep; ritual, 150, coastal cities):
+      its charge turns a flat land plot within 3 plots of the city, next to water, into Coast.
+    - *Pillar of Dawn* (Prophet, the Empyrean, Righteousness; ritual, 500, each completion costs
+      twice the last): for 10 turns your units within 5 plots of the city heal fully each turn.
     - *Orrery of Ceridwen* (Sage, II, Astronomy; world wonder): its city has +2 research per 10
       points of the Armageddon counter, and its owner sees the next two Armageddon cards before
       they are revealed.
