@@ -432,12 +432,13 @@ pub fn civic_value(g: &Game, p: PlayerId, civic: CivicType, v: i32) -> i32 {
     let pl = &g.players[p];
     let n_cities = pl.cities.len() as i32;
     let mut v = v;
-    // Gold Standard: a hurry for units only, cheaper than the Labor civics' (`units_only`).
-    for h in d.hurries.keys().filter(|&h| info.hurry[h] && d.hurries[h].units_only) {
-        let cheaper = d.hurries.keys().filter(|&o| o != h && g.player_can_hurry(p, o) && d.hurries[o].gold_per_production > 0).map(|o| d.hurries[o].gold_per_production).min();
+    // Gold Standard: units bought at a flat rate whatever the Labor civic (`unit_rush_gold`),
+    // cheaper than the Labor civics' gold hurry.
+    if info.unit_rush_gold > 0 {
+        let cheaper = d.hurries.keys().filter(|&o| g.player_can_hurry(p, o) && d.hurries[o].gold_per_production > 0).map(|o| d.hurries[o].gold_per_production).min();
         let rich = pl.gold > 6 * reserve(g, p);
         let gain = match cheaper {
-            Some(rate) if rate <= d.hurries[h].gold_per_production => 0,
+            Some(rate) if rate <= info.unit_rush_gold => 0,
             Some(_) => 150,
             None => 400,
         };

@@ -318,6 +318,9 @@ pub struct CivicInfo {
     pub unit_combat_cost_modifiers: Vec<(UnitCombatType, i32)>,
     /// Stoicism: war weariness causes no unhappiness in its player's cities (`no_war_weariness`).
     pub no_war_weariness: bool,
+    /// Gold Standard: its player buys the production of units at this many gold per hammer left,
+    /// whatever its Labor civic (`unit_rush_gold`, as a trait's; 0: no).
+    pub unit_rush_gold: i32,
 }
 
 impl CivicInfo {
@@ -404,6 +407,7 @@ pub fn read_civic(rd: &Rd) -> CivicInfo {
         unit_cost_modifier: rd.int("unit_cost_modifier"),
         unit_combat_cost_modifiers: rd.pair_list_int("unit_combat_cost_modifiers"),
         no_war_weariness: rd.bool("no_war_weariness"),
+        unit_rush_gold: rd.int("unit_rush_gold"),
     }
 }
 

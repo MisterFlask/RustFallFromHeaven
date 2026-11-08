@@ -597,9 +597,6 @@ pub struct HurryInfo {
     pub production_per_population: i32,
     /// C++ `isAnger()`
     pub anger: bool,
-    /// This game's (the Gold Standard card, docs/CARDS.md): the hurry finishes units only, never
-    /// buildings (`units_only`).
-    pub units_only: bool,
 }
 
 /// C++ `CvHurryInfo::read`.
@@ -609,7 +606,6 @@ pub fn read_hurry(rd: &Rd) -> HurryInfo {
         gold_per_production: rd.int("gold_per_production"),
         production_per_population: rd.int("production_per_population"),
         anger: rd.bool("anger"),
-        units_only: rd.bool("units_only"),
     }
 }
 

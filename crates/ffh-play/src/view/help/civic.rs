@@ -127,6 +127,7 @@ fn help(d: &GameData, c: CivicType, requirements: bool) -> String {
         unit_cost_modifier,
         unit_combat_cost_modifiers,
         no_war_weariness,
+        unit_rush_gold,
     } = &d.civics[c];
     let mut b = String::new();
     let line = |b: &mut String, s: String| {
@@ -270,6 +271,10 @@ fn help(d: &GameData, c: CivicType, requirements: bool) -> String {
     if *unit_cost_modifier != 0 {
         let others = if unit_combat_cost_modifiers.is_empty() { "units" } else { "other units" };
         line(&mut b, format!("[ICON_BULLET]{:+}% production cost of {others}", *unit_cost_modifier));
+    }
+    // This game's (Gold Standard).
+    if *unit_rush_gold > 0 {
+        line(&mut b, format!("[ICON_BULLET]Buys units at {unit_rush_gold}[ICON_GOLD] per hammer left, under any Labor civic"));
     }
     if *free_specialist != 0 {
         line(&mut b, txt(d, "TXT_KEY_CIVIC_FREE_SPECIALISTS", &[Arg::N(*free_specialist)]));

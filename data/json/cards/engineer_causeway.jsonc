@@ -40,7 +40,7 @@
       "time": 300,
       "kill": true,
       "improvement_type": "IMPROVEMENT_CAUSEWAY",
-      "built_by": ["UNITCLASS_WORKBOAT"],
+      "same_builders_as": "BUILD_FISHING_BOATS",
       "button": ",Art/Interface/Buttons/Builds/BuildFishingBoats.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,7,7"
     }
   ],

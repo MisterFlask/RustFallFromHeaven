@@ -1048,11 +1048,6 @@ impl Game {
             return false;
         }
 
-        // Card: Gold Standard (docs/CARDS.md): a hurry for units only.
-        if self.d.hurries[hurry].units_only && !self.city_is_production_unit(c) {
-            return false;
-        }
-
         if self.city_is_disorder(c) {
             return false;
         }
@@ -1086,7 +1081,8 @@ impl Game {
     /// C++ `CvCity::canHurryUnit` (CvCity.cpp:3493-3521).
     pub fn city_can_hurry_unit(&self, c: CityId, hurry: HurryType, unit: UnitType, ignore_new: bool) -> bool {
         let owner = self.cities[c].owner;
-        // Card: the Condottieri Free State (docs/CARDS.md): units bought at the trait's rate.
+        // Cards: the Condottieri Free State, Gold Standard (docs/CARDS.md): units bought at the
+        // player's rush rate.
         let rush = self.player_unit_rush_gold(owner);
         let rush = (rush > 0 && self.d.hurries[hurry].gold_per_production > 0).then_some(rush);
 
@@ -1122,11 +1118,6 @@ impl Game {
         let owner = self.cities[c].owner;
 
         if !self.player_can_hurry(owner, hurry) {
-            return false;
-        }
-
-        // Card: Gold Standard (docs/CARDS.md): a hurry for units only.
-        if self.d.hurries[hurry].units_only {
             return false;
         }
 
@@ -1416,14 +1407,17 @@ impl Game {
         self.city_hurry_gold_for_cost(c, hurry, self.city_hurry_cost(c, false))
     }
 
-    /// This game's (docs/CARDS.md, the Condottieri Free State): the gold per hammer left at which
-    /// `p` buys units whatever its civics, the most its traits give (`unit_rush_gold`; 0: none).
+    /// This game's (docs/CARDS.md: the Condottieri Free State's trait, the Gold Standard civic): the
+    /// gold per hammer left at which `p` buys units whatever its Labor civic, the most its traits
+    /// and civics give (`unit_rush_gold`; 0: none).
     pub fn player_unit_rush_gold(&self, p: PlayerId) -> i32 {
         let d = self.d;
-        d.traits.keys().filter(|&t| d.traits[t].unit_rush_gold > 0 && self.players[p].traits[t]).map(|t| d.traits[t].unit_rush_gold).max().unwrap_or(0)
+        let traits = d.traits.keys().filter(|&t| self.players[p].traits[t]).map(|t| d.traits[t].unit_rush_gold);
+        let civics = self.players[p].civics.iter().flatten().map(|&c| d.civics[c].unit_rush_gold);
+        traits.chain(civics).max().unwrap_or(0).max(0)
     }
 
-    /// Card: the Condottieri Free State (docs/CARDS.md). The gold per hammer left at which city
+    /// Cards: the Condottieri Free State, Gold Standard (docs/CARDS.md). The gold per hammer left at which city
     /// `c` buys the unit it is training with gold hurry `hurry` (its owner's
     /// [`Game::player_unit_rush_gold`], flat: no hurry modifier applies, so it never goes below
     /// the decks' 2-gold floor); `None` when it does not apply (no such trait, not a gold hurry,

@@ -21,9 +21,11 @@ pub fn manage(g: &mut Game, p: PlayerId) {
 /// once the anger from the last one has passed.
 fn hurry(g: &mut Game, p: PlayerId) {
     let d = g.d;
-    // Card: the Condottieri Free State (docs/CARDS.md): a player that buys units at its trait's
-    // rate hurries them with gold whatever its civics.
+    // Cards: the Condottieri Free State, Gold Standard (docs/CARDS.md): a player that buys units at
+    // a rush rate (its trait's, its civic's) hurries them with gold whatever its Labor civic.
     let rush = g.player_unit_rush_gold(p) > 0;
+    // The Free Companies live by the purse: they buy their army at peace too.
+    let mercenary = d.traits.keys().any(|t| g.players[p].traits[t] && d.traits[t].unit_rush_gold > 0);
     let mut hurries: Vec<HurryType> = d.hurries.keys().filter(|&h| g.player_can_hurry(p, h) || rush && d.hurries[h].gold_per_production > 0).collect();
     if hurries.is_empty() {
         return;
@@ -43,9 +45,9 @@ fn hurry(g: &mut Game, p: PlayerId) {
                 let info = &d.units[u];
                 let plot = g.city_plot(c);
                 let threatened = crate::production::local_threat(g, p, plot, 2) > crate::production::garrison(g, p, plot).1;
-                // A unit bought at the Condottieri's rate is worth its gold whenever it fights,
-                // past the first tier (a new city's Warriors are not).
-                let cheap = info.combat > 0 && info.tier >= 2 && hurries.iter().any(|&h| g.city_unit_rush_gold(c, h).is_some());
+                // A unit bought at the rush rate is worth its gold when it fights, past the first
+                // tier (a new city's Warriors are not): at war, or always for the Free Companies.
+                let cheap = info.combat > 0 && info.tier >= 2 && (at_war || mercenary) && hurries.iter().any(|&h| g.city_unit_rush_gold(c, h).is_some());
                 info.found || info.work_rate > 0 && info.combat == 0 || threatened && info.combat > 0 || cheap
             }
             None => false,
@@ -61,9 +63,7 @@ fn hurry(g: &mut Game, p: PlayerId) {
             if d.hurries[h].gold_per_production > 0 {
                 let cost = g.city_hurry_gold(c, h);
                 let rich = g.players[p].gold - cost > reserve * 3 && turns <= 4;
-                // Gold Standard (docs/CARDS.md): the rich empire buys its army at war.
-                let buys_army = d.hurries[h].units_only && at_war && g.city_production_unit(c).is_some_and(|u| d.units[u].combat > 0) && g.players[p].gold - cost > reserve * 2;
-                if (urgent && g.players[p].gold - cost >= reserve) || rich || buys_army {
+                if (urgent && g.players[p].gold - cost >= reserve) || rich {
                     crate::trace!(g, p, "hurries {} with {} gold", g.cities[c].name, cost);
                     g.city_hurry(c, h);
                     break;

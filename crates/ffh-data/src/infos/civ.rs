@@ -59,7 +59,8 @@ pub struct TraitInfo {
     /// (`Game::unit_summon`): the Summoner trait's Summoner's Bond.
     pub summon_promotion: Option<PromotionType>,
     /// This game's (docs/CARDS.md, the Condottieri Free State): its player buys the production of
-    /// units at this many gold per hammer left, whatever its civics (`unit_rush_gold`; 0: no).
+    /// units at this many gold per hammer left, whatever its civics (`unit_rush_gold`, also a
+    /// civic's: Gold Standard; 0: no).
     pub unit_rush_gold: i32,
 }
 

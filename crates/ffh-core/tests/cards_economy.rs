@@ -130,16 +130,18 @@ fn gold_standard_rushes_units_for_two_gold_a_hammer_and_not_buildings() {
     card(&mut g, p, "TECH_CARD_GOLD_STANDARD");
     let economy = d.t::<CivicOptionType>("CIVICOPTION_ECONOMY");
     let civic = d.t::<CivicType>("CIVIC_GOLD_STANDARD");
+    // The gold hurry, which no Labor civic of the player enables here.
+    let hurry = d.t::<HurryType>("HURRY_GOLD");
+    assert!(!g.player_can_hurry(p, hurry));
+    assert_eq!(g.player_unit_rush_gold(p), 0);
     g.player_set_civics(p, economy, Some(civic));
-    let hurry = d.t::<HurryType>("HURRY_GOLD_STANDARD");
-    assert!(g.player_can_hurry(p, hurry), "under any Labor civic");
+    assert_eq!(g.player_unit_rush_gold(p), 2, "the civic's rush rate (as the Condottieri's trait)");
     assert_eq!(d.civics[civic].commerce_modifier[CommerceType::COMMERCE_RESEARCH.idx()], -20);
     g.players[p].gold = 10_000;
     let warrior = d.t::<UnitType>("UNIT_WARRIOR");
     g.city_push_order(c, OrderType::ORDER_TRAIN, warrior.i(), -1, false, false, false, false);
-    assert!(g.city_can_hurry(c, hurry, false));
-    let cost = g.city_hurry_cost(c, false);
-    assert_eq!(g.city_hurry_gold(c, hurry), (cost * 2).max(1));
+    assert!(g.city_can_hurry(c, hurry, false), "under any Labor civic");
+    assert_eq!(g.city_hurry_gold(c, hurry), (2 * g.city_production_left(c)).max(1), "2 gold a hammer left");
     g.city_clear_order_queue(c);
     let monument = d.t::<BuildingType>("BUILDING_MONUMENT");
     g.city_push_order(c, OrderType::ORDER_CONSTRUCT, monument.i(), -1, false, false, false, false);

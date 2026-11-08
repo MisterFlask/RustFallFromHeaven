@@ -1,5 +1,6 @@
 // M01 Gold Standard (docs/DECKS_ROUND8.md; C.4: 2 gold a hammer, units only, under any Labor
-// civic): an Economy civic.
+// civic): an Economy civic whose player buys units at 2 gold a hammer left (`unit_rush_gold`, as the
+// Condottieri's trait).
 {
   "techs": [
     {
@@ -16,15 +17,6 @@
       "flavors": {"FLAVOR_GOLD": 1}
     }
   ],
-  "hurries": [
-    {
-      "type": "HURRY_GOLD_STANDARD",
-      "description": "TXT_KEY_HURRY_GOLD_STANDARD",
-      "gold_per_production": 2,
-      "units_only": true,
-      "button": "Art/Interface/MainScreen/CityScreen/hurry_commerce.dds"
-    }
-  ],
   "civics": [
     {
       "type": "CIVIC_GOLD_STANDARD",
@@ -37,14 +29,13 @@
       "anarchy_length": 1,
       "upkeep": "UPKEEP_MEDIUM",
       "commerce_modifiers": [0, -20, 0],
-      "hurrys": {"HURRY_GOLD_STANDARD": true}
+      "unit_rush_gold": 2
     }
   ],
   "text": {
     "TXT_KEY_TECH_CARD_GOLD_STANDARD": "Gold Standard",
     "TXT_KEY_TECH_CARD_GOLD_STANDARD_HELP": "[ICON_BULLET]Allows the civic Gold Standard (Economy): units can be rushed for 2[ICON_GOLD] a hammer, under any Labor civic; -20% research.",
     "TXT_KEY_TECH_CARD_GOLD_STANDARD_PEDIA": "A great merchant ties the coin to the treasury's gold, and the treasury buys armies.",
-    "TXT_KEY_HURRY_GOLD_STANDARD": "Can Spend Gold to Finish Units in a City (2[ICON_GOLD] a hammer)",
     "TXT_KEY_CIVIC_GOLD_STANDARD": "Gold Standard",
     "TXT_KEY_CIVIC_GOLD_STANDARD_PEDIA": "Coin minted against the royal reserve: the crown pays for what the cities cannot build in time.",
     "TXT_KEY_CIVIC_GOLD_STANDARD_STRATEGY": "Rush units for 2 gold a hammer. Research -20%."

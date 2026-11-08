@@ -449,37 +449,6 @@ impl GameData {
             }
         }
         self.derive_building_tiers();
-        self.derive_card_builds();
-    }
-
-    /// The great-person cards' builds, added to the units' `builds` (a card's file cannot add to
-    /// them; docs/CARDS.md): an `all_workers` build to every unit type that builds one of the
-    /// game's own improvements, and a build to the units of its `built_by` classes.
-    fn derive_card_builds(&mut self) {
-        let card_builds: Vec<BuildType> = self.builds.keys().filter(|&b| self.builds[b].all_workers).collect();
-        if !card_builds.is_empty() {
-            let improvement_builds: Vec<BuildType> = self
-                .builds
-                .keys()
-                .filter(|&b| self.builds[b].improvement.is_some() && !self.builds[b].all_workers && self.builds[b].built_by.is_empty())
-                .collect();
-            for u in self.units.keys() {
-                if improvement_builds.iter().any(|&b| self.units[u].builds[b]) {
-                    for &b in &card_builds {
-                        self.units[u].builds[b] = true;
-                    }
-                }
-            }
-        }
-        for b in self.builds.keys() {
-            for &class in &self.builds[b].built_by.clone() {
-                for u in self.units.keys() {
-                    if self.units[u].unit_class_type == Some(class) {
-                        self.units[u].builds[b] = true;
-                    }
-                }
-            }
-        }
     }
 
     /// The building tiers' derived fields (docs/SUITABILITY.md): each family's buildings by tier,

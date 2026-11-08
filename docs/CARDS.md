@@ -126,7 +126,6 @@ help):
 | improvements | `city_heal_tech` (tech) | Siege Lines, Wayside Shrines | units of a team that knows the tech heal on the plot as in a city of their own |
 | improvements | `enemy_city_adjacent` | Siege Lines | built only next to a city of a civ the builder is at war with, then also in that civ's land |
 | improvements | `requires_route` | Wayside Shrines | built only on a plot with a route |
-| builds | `built_by` (unit classes) | Causeway | the classes whose units can make the build (added to their `builds` at load) |
 | buildings | `border_stops_enemies` | Wall of the Kings | land units at war with the owner, and barbarians, that enter its borders end their move there |
 | buildings | `blocks_enemy_ships` | Harbor Chain | ships at war with the city's owner cannot enter the water plots next to the city |
 | buildings | `conquest_keeps_all` | Hall of Judgment | the owner's conquests keep every building that can be captured, and lose no population |
@@ -140,7 +139,6 @@ help):
 | buildings | `never_lost_damage` | The Unconquered City | while its city has never changed hands (`never_lost` and its original owner owns it), its defenders (units and Sentinels) deal this percent more damage (the pairs' percentage) |
 | buildings | `exclusive_with` `[class]` | Elemental Forge | a city with a building of one of these classes cannot build it |
 | improvements | `engagement_attacker_slots_change` | Trench | the attacker's slots in battles on its plot (before the minimum; `SlotSource::Improvement`) |
-| builds | `all_workers` | Trench | every unit type that builds an improvement can do it (`GameData::derive` adds it to their `builds`: a card's file cannot edit the units') |
 | units | `engage_first_round` `{action, pattern}` | Siege Colossus | what it does in a battle's first round from any row, with the row's count, in place of the row's action; its pattern then (`SINGLE` without one) |
 | units | `bombard_range` | Siege Colossus | it bombards a city this many plots away (a city on a plot its team has revealed; absent: the adjacent ones) |
 | units | `bombard_besieges` | Siege Colossus | a city it bombards counts as besieged until the city's next turn (`City::besieged_by_bombard`) |
@@ -171,7 +169,7 @@ help):
 | spells | `battle_illusions` `{count, hp}` | Illusory Host | illusory soldiers cast with the caster's first spell action (below) |
 | spells | `battle_charm` `"rows": "REAR"`, `"skip"` | Lullaby of Ceridwen | a charm or hex on the side's rearmost row in use; a hex that makes the fighters it lands on skip their next action |
 | civilizations | `unit_promotion` | The Fey Court Awakens, Founding of the Dawn Knights | a promotion every land unit of the civilization gets when it is created (`unit_init`) |
-| traits | `unit_rush_gold` | The Condottieri Free State | its player buys units at this many gold per hammer left, under any civic (the hurry rules) |
+| traits, civics | `unit_rush_gold` | The Condottieri Free State (a trait), Gold Standard (a civic) | its player buys units at this many gold per hammer left, under any Labor civic (the most its traits and civics give; the gold hurry, `player_unit_rush_gold`) |
 | buildings | `defender_defense` | Free City Charter | percent more defence for the units fighting in the city (the most of its buildings; an engagement's defence terms) |
 | techs | `card_block_alignment` | Font of Rebirth | players of this alignment do not draw the card (a [good or neutral] card blocks evil; section 1) |
 | buildings | `train_units` `[{unit, cost, bonus, national}]` | Beast Market, Elemental Foundry | the city trains each unit (one without a cost of its own) at `cost`, where it has `bonus`; past `national` units of the class, each costs `NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT` |
@@ -181,10 +179,9 @@ help):
 | buildings | `free_unit_turns`, `free_unit_classes` | Maponos's Cradle | every N turns after it is built, a free unit of the first class that applies (a city founder only while a site within 10 plots is free) |
 | civics | `unit_cost_modifier`, `unit_combat_cost_modifiers` | Magocracy | percent change to the cost of every unit, and of the units of each unit combat |
 | civics | `no_war_weariness` | Stoicism | war weariness causes no unhappiness |
-| hurries | `units_only` | Gold Standard | the hurry buys units only |
 | processes | `production_to_experience` | Muster | hammers per point of experience to the units in the city |
 | improvements | `claim_range`, `min_city_distance` | Trading Post | its plot and the land plots within the range are its builder's territory whatever the culture (it is built only outside every border); built only that many plots or more from every city |
-| builds | `same_builders_as` | Trading Post (the Fort's builders); Siege Lines, Canal Locks, Wayside Shrines (the Road's: Workers, Slaves, Mud Golems, Pioneers) | every unit that can do that build can do this one (set in the units' `builds` at load) |
+| builds | `same_builders_as` | Trading Post (the Fort's builders); Siege Lines, Canal Locks, Wayside Shrines, Trench (the Road's: Workers, Slaves, Mud Golems, Pioneers); Causeway (the Fishing Boats': Work Boats) | every unit that can do that build can do this one (set in the units' `builds` at load; a card's file cannot edit the units') |
 | spells | `ritual_charge` (a project) | Weather Engine, Tidecall of Danalin | each completion of the ritual leaves its city a charge (`City::ritual_charges`); the spell is cast only by a unit in a city of its owner holding one, and spends it; a city holding a charge does not build the ritual again (section 3, "Rituals") |
 | projects | `repeat_cost_percent` | Pillar of Dawn | each completion by a team makes the ritual's next cost this percent of the last (200: twice; at most 16 times) |
 | buildings | `reveals_sites` | The Second Sky | when built, its owner's team has every plot with a mana resource, a unique feature, a lair (an improvement that spawns) or a goody hut revealed |

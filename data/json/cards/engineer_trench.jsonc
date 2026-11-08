@@ -46,7 +46,7 @@
       "prereq_tech": "TECH_CARD_TRENCH",
       "time": 400,
       "improvement_type": "IMPROVEMENT_TRENCH",
-      "all_workers": true,
+      "same_builders_as": "BUILD_ROAD",
       "feature_structs": [
         {"feature_type": "FEATURE_JUNGLE", "prereq_tech": "TECH_BRONZE_WORKING", "time": 400, "remove": true},
         {"feature_type": "FEATURE_FOREST", "prereq_tech": "TECH_MINING", "time": 250, "production": 20, "remove": true},

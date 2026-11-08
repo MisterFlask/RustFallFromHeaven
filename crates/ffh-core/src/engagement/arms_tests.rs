@@ -258,6 +258,9 @@ fn a_trench_narrows_the_attacker() {
     let build = d.t::<BuildType>("BUILD_TRENCH");
     assert!(d.units[d.t::<UnitType>("UNIT_WORKER")].builds[build]);
     assert!(!d.units[d.t::<UnitType>("UNIT_AXEMAN")].builds[build]);
+    // The Road's builders (`same_builders_as`): not the casters, whose mana-node builds are
+    // improvements too.
+    assert!(!d.units[d.t::<UnitType>("UNIT_ADEPT")].builds[build], "casters dig no trenches");
 }
 
 /// The Siege Colossus in battle: a first-round bombard, then trampling strikes from the front.

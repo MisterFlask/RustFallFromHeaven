@@ -524,13 +524,6 @@ pub struct BuildInfo {
     pub feature_production: IdxVec<FeatureType, i32>,
     /// C++ `isFeatureRemove(i)`.
     pub feature_remove: IdxVec<FeatureType, bool>,
-    /// This game's (docs/CARDS.md): the unit classes whose units can make this build, besides
-    /// the units whose own `builds` list it (`GameData::derive` adds it to theirs).
-    pub built_by: Vec<UnitClassType>,
-    /// This game's own (a great-person card's key, docs/CARDS.md section 2): `all_workers`, every
-    /// unit type that builds an improvement can do it (a card's file cannot add to the units'
-    /// `builds`): `GameData::derive` sets it in their lists.
-    pub all_workers: bool,
     /// This game's (a card's build, docs/CARDS.md): the units that can do this build can do this
     /// one too (`same_builders_as`; set in the units' `builds` at load).
     pub same_builders_as: Option<BuildType>,
@@ -548,8 +541,6 @@ pub fn read_build(rd: &Rd) -> BuildInfo {
         kill: rd.bool("kill"),
         improvement: rd.rf::<ImprovementType>("improvement_type"),
         route: rd.rf::<RouteType>("route_type"),
-        built_by: rd.ref_list("built_by"),
-        all_workers: rd.bool("all_workers"),
         same_builders_as: rd.rf::<BuildType>("same_builders_as"),
         ..Default::default()
     };
