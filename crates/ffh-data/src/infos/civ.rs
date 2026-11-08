@@ -158,6 +158,9 @@ pub struct CivilizationInfo {
     /// This game's (docs/CARDS.md): the promotion every land unit of the civilization gets when it
     /// is created (`unit_promotion`; the new civilizations' own rules).
     pub unit_promotion: Option<PromotionType>,
+    /// This game's (docs/CARDS.md, Wake the Hill Clans): the yields its plots on hills give more
+    /// (`hills_yield_change`).
+    pub hills_yield_change: [i32; YieldType::NUM],
     /// C++ `isMaintainFeatures(i)`.
     pub maintain_features: IdxVec<FeatureType, bool>,
     // ---- Better AI ----
@@ -220,6 +223,7 @@ pub fn read_civilization(rd: &Rd) -> CivilizationInfo {
         default_race: rd.rf("default_race"),
         hero: rd.rf("hero"),
         unit_promotion: rd.rf("unit_promotion"),
+        hills_yield_change: rd.yields("hills_yield_change"),
         maintain_features: rd.pairs_bool("maintain_features"),
         best_defender1: rf_or(rd, "e_best_defender1", "UNITCLASS_ARCHER"),
         best_defender2: rf_or(rd, "e_best_defender2", "UNITCLASS_LONGBOWMAN"),

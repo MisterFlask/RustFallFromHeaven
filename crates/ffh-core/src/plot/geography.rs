@@ -1077,8 +1077,15 @@ impl Game {
 
         // FfH: Added by Kael 09/25/2008
         if let Some(owner) = pl.owner {
-            if self.player_get_civilization_type(owner) == terrain.civilization_yield_type {
+            let civ = self.player_get_civilization_type(owner);
+            if civ == terrain.civilization_yield_type {
                 yield_ += terrain.civilization_yield_change[y];
+            }
+            // Card: Wake the Hill Clans (docs/CARDS.md): a civilization's yields on its hills.
+            if let Some(civ) = civ {
+                if self.plot_is_hills(p) {
+                    yield_ += self.d.civilizations[civ].hills_yield_change[y];
+                }
             }
         }
         // FfH: End Add

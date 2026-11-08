@@ -1307,7 +1307,9 @@ impl Game {
                             count += 1;
                         }
                     }
-                    if count == 1 {
+                    // Card: The Infernal Gate Opens (docs/CARDS.md): the Infernals come once a game,
+                    // by the Pact or by the card.
+                    if count == 1 && !self.infernals_ever_in_play() {
                         self.ev_infernal_pact(player);
                     }
                 }
@@ -1518,7 +1520,6 @@ impl Game {
     /// plot (random 0..500, plus area size, unowned area tiles, unowned plot and the founder's
     /// territory), share the founder's techs and wars, make peace with the barbarians.
     fn ev_infernal_pact(&mut self, p: PlayerId) {
-        let d = self.d;
         let infernal_player = self.cf_get_open_player();
         let mut best_plot = None;
         let mut best_value = -1;
@@ -1546,15 +1547,38 @@ impl Game {
         }
 
         let (Some(infernal_player), Some(best_plot)) = (infernal_player, best_plot) else { return };
+        self.infernals_arrive(infernal_player, p, best_plot, true);
+    }
+
+    /// Has a player of the Infernals ever lived in this game? They come once a game: by the
+    /// Infernal Pact or by the Armageddon card The Infernal Gate Opens (docs/CARDS.md).
+    pub fn infernals_ever_in_play(&self) -> bool {
+        let infernal = self.d.ty::<CivilizationType>("CIVILIZATION_INFERNAL");
+        self.player_ids().any(|q| self.players[q].ever_alive && infernal.is_some() && self.player_get_civilization_type(q) == infernal)
+    }
+
+    /// The Infernals arrive in slot `infernal_player` at `plot`, beside `patron` (the Infernal
+    /// Pact's founder, or the evil civilization The Infernal Gate Opens names): Hyborem's
+    /// civilization, which knows the patron's techs (not its cards: docs/CARDS.md), makes peace
+    /// with the barbarians, joins the patron's wars and has +4 attitude toward it, with Hyborem
+    /// and his host. By the Pact (`pact`) they are played by the patron's controller and a human
+    /// patron is offered control of them; otherwise by the slot's own (the AI's).
+    pub fn infernals_arrive(&mut self, infernal_player: PlayerId, patron: PlayerId, plot: PlotIdx, pact: bool) {
+        let d = self.d;
+        let p = patron;
+        let best_plot = plot;
         let hyborem = d.t::<LeaderHeadType>("LEADER_HYBOREM");
         let infernal = d.t::<CivilizationType>("CIVILIZATION_INFERNAL");
         self.add_player_advanced(infernal_player, None, hyborem, infernal);
-        // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
-        self.controllers[infernal_player] = self.controllers[p].clone();
+        if pact {
+            // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
+            self.controllers[infernal_player] = self.controllers[p].clone();
+        }
         let founder_team = self.players[p].team;
         let infernal_team = self.players[infernal_player].team;
         for tech in d.techs.keys() {
-            if self.team_is_has_tech(founder_team, Some(tech)) {
+            // Not in FFH2: a card stays its discoverer's (docs/CARDS.md).
+            if self.team_is_has_tech(founder_team, Some(tech)) && d.techs[tech].card.is_none() {
                 self.team_set_has_tech(infernal_team, tech, true, Some(infernal_player), true, false);
             }
         }
@@ -1602,7 +1626,9 @@ impl Game {
         }
         // `if gc.getPlayer(iPlayer).isHuman()`: the TXT_KEY_POPUP_CONTROL_INFERNAL popup, whose
         // `reassignPlayer` callback moves the human to the Infernals on "yes" (button 0).
-        self.ev_offer_control(p, infernal_player);
+        if pact {
+            self.ev_offer_control(p, infernal_player);
+        }
     }
 
     /// The human-only "take control" popup of the Infernal Pact and the Mercurian Gate
