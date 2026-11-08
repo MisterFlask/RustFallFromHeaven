@@ -20,9 +20,10 @@ pub type SpellFn = fn(&mut Game, UnitId, &PyCall);
 pub type ReqFn = fn(&Game, UnitId, &PyCall) -> bool;
 /// This game's: a targeted spell's valid targets for a caster (`SpellInfo::py_targets`).
 pub type TargetsFn = fn(&Game, UnitId, &PyCall) -> Vec<crate::structs::SpellTarget>;
-/// This game's: the name of a choice target (`SpellTarget::Choice`) of a targeted spell for a
-/// caster, for people (`SpellInfo::py_target_label`).
-pub type TargetLabelFn = fn(&Game, UnitId, i32, &PyCall) -> String;
+/// This game's: a target of a targeted spell for a caster, for people (`SpellInfo::py_target_label`):
+/// the name of a choice (`SpellTarget::Choice`), and for the other kinds what to add to the
+/// target's own name (a city's price); empty to add nothing.
+pub type TargetLabelFn = fn(&Game, UnitId, crate::structs::SpellTarget, &PyCall) -> String;
 /// Unit-only effect: promotion `PyPerTurn`, spell `PyMiscast`.
 pub type UnitFn = fn(&mut Game, UnitId, &PyCall);
 /// `(pCaster, pPlot)`: improvement/feature `PythonOnMove`, improvement `PythonAtRange`.

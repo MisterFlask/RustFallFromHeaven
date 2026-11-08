@@ -57,6 +57,39 @@ pub fn find_req(name: &str) -> Option<ReqFn> {
 }
 
 /// `py_targets` functions.
+/// The batch's `py_target_label` callbacks: a Transmutation Charter option's name, a city's price
+/// (docs/CARDS.md, section 3).
+pub fn find_target_label(name: &str) -> Option<TargetLabelFn> {
+    let f: TargetLabelFn = match name {
+        "labelTransmutationCharter" => label_transmutation_charter,
+        "labelPurchaseCharter" => label_purchase_charter,
+        "labelBazaarOfWonders" => label_bazaar,
+        _ => return None,
+    };
+    Some(f)
+}
+
+fn label_transmutation_charter(g: &Game, _caster: UnitId, target: SpellTarget, _: &PyCall) -> String {
+    match target {
+        SpellTarget::Choice(choice) => transmutation_charter_choice_label(g, choice),
+        _ => String::new(),
+    }
+}
+
+fn label_purchase_charter(g: &Game, _caster: UnitId, target: SpellTarget, _: &PyCall) -> String {
+    match target {
+        SpellTarget::City(c) if g.cities.contains(c) => format!("Price: {} gold", purchase_charter_price(g, c)),
+        _ => String::new(),
+    }
+}
+
+fn label_bazaar(g: &Game, _caster: UnitId, target: SpellTarget, _: &PyCall) -> String {
+    match target {
+        SpellTarget::City(c) if g.cities.contains(c) => format!("Price: {} gold", bazaar_price(g, c)),
+        _ => String::new(),
+    }
+}
+
 pub fn find_targets(name: &str) -> Option<TargetsFn> {
     let f: TargetsFn = match name {
         "targetsAstralLeap" => targets_astral_leap,
@@ -917,6 +950,9 @@ mod tests {
         assert!(g.unit_spell_targets(caster, spell).is_empty(), "short of gold");
         g.players[US].gold = price + 1000;
         assert_eq!(g.unit_spell_targets(caster, spell), vec![SpellTarget::City(small)], "not the capital, not a city of 6");
+        // The target, named for people, says its price (`py_target_label`).
+        let label = g.spell_target_label(caster, spell, SpellTarget::City(small));
+        assert!(label.ends_with(&format!(": Price: {price} gold")), "{label}");
         let their_gold = g.players[THEM].gold;
         g.unit_cast_at(caster, spell, SpellTarget::City(small));
         let bought = city_at(&g, 8, 5);

@@ -144,7 +144,8 @@ help):
 | improvements | `deep_spawn_unit_type` (a unit type) | The Lairs Deepen | what a lair spawns once The Lairs Deepen has been played (every lair has one) |
 | buildings | `global_counter_commerces` (commerces) | Orrery of Ceridwen | its city's commerce per 10 points of the Armageddon counter |
 | buildings | `doom_sight` | Orrery of Ceridwen | how many unrevealed Armageddon cards ahead its owner sees (the Orrery: 2) |
-| spells | `py_target_label` | (choice spells) | the callback naming a `choice` target's option (section 3) |
+| spells | `py_target_label` | (choice spells; Purchase Charter, Bazaar of Wonders) | the callback naming a `choice` target's option, or adding to another target's name (a city's price; section 3) |
+| spells | `cast_from_selection` | Astral Leap | a card's world spell whose effect depends on its caster: offered on a selected unit that can cast it, not among the empire's world actions |
 
 The battle effects are in `crates/ffh-core/src/engagement/arms.rs` (the set-up, `Game`) and
 `engagement/formation/arms_cards.rs` (the resolver, a fighter's `Arms`); their AI in
@@ -181,11 +182,15 @@ entries only (`card_entry_count`): the cards' units, buildings and promotions fo
 - **Naming a target for people:** `Game::spell_target_label(caster, spell, target)`: a plot's
   terrain and feature with its coordinates, a city's name, a unit's name and level, a player's
   name. A `choice` target's option is named by the spell's `py_target_label`, a `TargetLabelFn`
-  (`fn(&Game, UnitId, i32, &PyCall) -> String`; a module with choice spells adds its lookup to
-  `cards::LABELS`); without one it is "Option n". When the options are entries of an info table
+  (`fn(&Game, UnitId, SpellTarget, &PyCall) -> String`; a module with labels adds its lookup to
+  `cards::LABELS`); without one it is "Option n". For the other kinds, what the label callback
+  returns is added to the target's name (a city's price: `Name: Price: 450 gold`). When the options are entries of an info table
   (a trait, a building, a damage type, ...), the shared `labelInfo(pCaster, iChoice, 'TraitType')`
   names entry `n` of the table its third argument names (`world::LABEL_KINDS`), and the UI shows
   that entry's help beside it.
+- **Cast from a selection:** a card's world spell whose effect depends on the unit casting it
+  (Astral Leap: the units of the caster's city leap) has `cast_from_selection`: the UI offers it
+  on a selected unit that can cast it, not among the empire's world actions.
 - **Listing targets once:** `unit_can_cast_untargeted` is `unit_can_cast` without asking a
   targeted spell for its targets: a caller that tries many units (the UI's world actions, the AI)
   asks it for each and lists the targets once, for the caster.

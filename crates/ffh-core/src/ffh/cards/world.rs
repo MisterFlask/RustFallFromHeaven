@@ -106,7 +106,8 @@ pub fn info_description<'d>(d: &'d GameData, kind: &str, i: i32) -> Option<&'d s
 /// `labelInfo(pCaster, iChoice, 'TraitType')`: a choice spell whose options are entries of an info
 /// table (its third argument, one of [`LABEL_KINDS`]) names option `choice` by the entry's name.
 /// A UI also shows the entry's help (ffh-play reads the kind from the call).
-fn label_info(g: &Game, _caster: UnitId, choice: i32, call: &PyCall) -> String {
+fn label_info(g: &Game, _caster: UnitId, target: SpellTarget, call: &PyCall) -> String {
+    let SpellTarget::Choice(choice) = target else { return String::new() };
     let d = g.d;
     match call.str_arg(2).and_then(|kind| info_description(d, kind, choice)) {
         Some(key) => d.text.name(key).to_string(),

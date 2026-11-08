@@ -826,12 +826,12 @@ impl Game {
     /// This game's: target `target` of spell `spell` cast by `caster`, named for people: a plot's
     /// terrain (and feature) with its coordinates, a city's name, a unit's name and level, a
     /// player's name, or a choice's name from the spell's `py_target_label` ("Option n" without
-    /// one).
+    /// one). For the other kinds, the label callback may add to the name (`Name: Price: 450 gold`).
     pub fn spell_target_label(&self, caster: UnitId, spell: SpellType, target: crate::structs::SpellTarget) -> String {
         use crate::structs::SpellTarget;
         let d = self.d;
         let text = |key: &str| d.text.name(key).to_string();
-        match target {
+        let name = match target {
             SpellTarget::Plot(p) => {
                 let plot = &self.map.plots[p];
                 let (x, y) = self.map.xy(p);
@@ -854,7 +854,12 @@ impl Game {
                 None => format!("Unit {}", t.0),
             },
             SpellTarget::Player(p) => text(&self.player_get_name(p)),
-            SpellTarget::Choice(i) => self.py_spell_target_label(caster, spell, i).unwrap_or_else(|| format!("Option {i}")),
+            SpellTarget::Choice(i) => return self.py_spell_target_label(caster, spell, target).unwrap_or_else(|| format!("Option {i}")),
+        };
+        // The spell's label callback may add to the target's name (a city's price).
+        match self.py_spell_target_label(caster, spell, target) {
+            Some(extra) if !extra.is_empty() => format!("{name}: {extra}"),
+            _ => name,
         }
     }
 

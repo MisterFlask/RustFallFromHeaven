@@ -30,10 +30,10 @@ impl Game {
             None => Vec::new(),
         }
     }
-    /// This game's: the name of choice `choice` of a targeted spell for `caster` (its
-    /// `py_target_label`), if the spell names a label callback.
-    pub fn py_spell_target_label(&self, caster: UnitId, spell: SpellType, choice: i32) -> Option<String> {
-        tables(self.d).spell_target_label[spell].as_ref().map(|b| (b.f)(self, caster, choice, &b.call))
+    /// This game's: what a targeted spell's `py_target_label` says of `target` for `caster` (a
+    /// choice's name; what to add to another target's name), if the spell names a label callback.
+    pub fn py_spell_target_label(&self, caster: UnitId, spell: SpellType, target: crate::structs::SpellTarget) -> Option<String> {
+        tables(self.d).spell_target_label[spell].as_ref().map(|b| (b.f)(self, caster, target, &b.call))
     }
     /// `miscast(pCaster, eSpell)`: run the spell's `PyMiscast`.
     pub fn py_miscast(&mut self, caster: UnitId, spell: SpellType) {

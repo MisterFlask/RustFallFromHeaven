@@ -113,6 +113,7 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         py_result: _,
         py_requirement: _,
         once,
+        cast_from_selection,
         target,
         py_targets: _,
         py_target_label: _,
@@ -137,7 +138,10 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         line(b, d, "TXT_KEY_SPELL_GLOBAL", &[]);
     }
     // This game's (docs/DECKS.md): a card's world spell, and a spell cast at a distance.
-    if *once {
+    if *once && *cast_from_selection {
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]Cast once a game, by the unit you select");
+    } else if *once {
         b.push_str(NEWLINE);
         b.push_str("[ICON_BULLET]Cast once a game, by any of your units");
     }

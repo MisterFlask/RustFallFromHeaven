@@ -1134,6 +1134,10 @@ pub struct SpellInfo {
     /// unit of its owner, with its own flag (`Player::once_spells`) rather than the
     /// civilization's world spell (`global`).
     pub once: bool,
+    /// This game's: a card's world spell whose effect depends on the unit casting it (Astral
+    /// Leap: the units of the caster's city leap), cast through a unit the player selects rather
+    /// than from the empire's world actions (docs/CARDS.md).
+    pub cast_from_selection: bool,
     pub in_borders_only: bool,
     pub in_city_only: bool,
     pub prereq_slave_trade: bool,
@@ -1269,6 +1273,7 @@ pub fn read_spell(rd: &Rd) -> SpellInfo {
         causes_war: rd.bool("causes_war"),
         global: rd.bool("global"),
         once: rd.bool("once"),
+        cast_from_selection: rd.bool("cast_from_selection"),
         in_borders_only: rd.bool("in_borders_only"),
         in_city_only: rd.bool("in_city_only"),
         prereq_slave_trade: rd.bool("prereq_slave_trade"),

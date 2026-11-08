@@ -29,6 +29,7 @@
       "has_casted": true,
       "py_result": "spellPurchaseCharter(pCaster)",
       "py_targets": "targetsPurchaseCharter(pCaster)",
+      "py_target_label": "labelPurchaseCharter(pCaster, pTarget)",
       "button": "Art/Interface/Buttons/Spells/Hire Units.dds"
     }
   ],

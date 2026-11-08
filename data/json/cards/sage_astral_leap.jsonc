@@ -25,6 +25,7 @@
       "help": "TXT_KEY_SPELL_ASTRAL_LEAP_HELP",
       "tech_prereq": "TECH_CARD_ASTRAL_LEAP",
       "once": true,
+      "cast_from_selection": true,
       "target": "plot",
       "display_when_disabled": true,
       "has_casted": true,

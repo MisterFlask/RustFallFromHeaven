@@ -162,6 +162,24 @@ fn a_unit_target_lists_the_human_units_by_plot() {
 }
 
 #[test]
+fn astral_leap_is_cast_from_a_selected_unit_in_a_city() {
+    let mut s = duel(35);
+    let d = s.g.d;
+    let h = s.human;
+    let leap = d.t::<SpellType>("SPELL_ASTRAL_LEAP");
+    learn(&mut s, "TECH_CARD_ASTRAL_LEAP");
+    // Not in the top bar: the unit casting it decides whose units leap (`cast_from_selection`).
+    assert!(world_action(&s, leap).is_none());
+    let c = s.g.players[h].cities[0];
+    let (cx, cy) = (s.g.cities[c].x, s.g.cities[c].y);
+    let u = s.g.player_init_unit(h, d.t::<UnitType>("UNIT_WARRIOR"), cx, cy, None, None);
+    let gq = s.query(&Query::Group { units: vec![u] }).unwrap();
+    let a = arr(&gq, "actions").iter().find(|a| a.get("spell").and_then(Json::as_i64) == Some(leap.idx() as i64)).cloned().expect("offered on a unit in a city");
+    assert_eq!(a.get("target_kind").and_then(Json::as_str), Some("plot"));
+    assert!(!arr(&a, "targets").is_empty());
+}
+
+#[test]
 fn a_held_card_shows_in_the_unit_panel_with_its_discover_action() {
     let mut s = duel(34);
     let d = s.g.d;

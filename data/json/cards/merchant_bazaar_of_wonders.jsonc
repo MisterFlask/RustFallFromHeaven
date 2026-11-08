@@ -30,6 +30,7 @@
       "has_casted": true,
       "py_result": "spellBazaarOfWonders(pCaster)",
       "py_targets": "targetsBazaarOfWonders(pCaster)",
+      "py_target_label": "labelBazaarOfWonders(pCaster, pTarget)",
       "button": "Art/Interface/Buttons/Spells/Wonder.dds"
     }
   ],

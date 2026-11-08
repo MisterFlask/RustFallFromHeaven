@@ -31,6 +31,7 @@
       "has_casted": true,
       "py_result": "spellTransmutationCharter(pCaster)",
       "py_targets": "targetsTransmutationCharter(pCaster)",
+      "py_target_label": "labelTransmutationCharter(pCaster, iChoice)",
       "button": "Art/Interface/Buttons/Spells/Mother Lode.dds"
     }
   ],
