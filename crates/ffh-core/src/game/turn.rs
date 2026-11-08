@@ -5,8 +5,8 @@
 //!
 //! Single process, no networking: MP options (`MPOPTION_SIMULTANEOUS_TURNS`,
 //! `MPOPTION_TURN_TIMER`), PBEM, hot seat and simultaneous team turns are never on, so turns
-//! are sequential in player slot order. The exe's world builder mode, autosaves, interface
-//! dirty bits and engine calls are not ported.
+//! are sequential in turn order (`Game::turn_order`: slot order with the barbarian last). The
+//! exe's world builder mode, autosaves, interface dirty bits and engine calls are not ported.
 
 use std::collections::BTreeSet;
 
@@ -1633,7 +1633,7 @@ mod tests {
     use crate::setup::GameSetup;
     use ffh_data::*;
 
-    /// A game with `n` civ slots alive (each on its own team) plus the open spare slots.
+    /// A game with `n` civ slots alive (each on its own team) and the barbarian slot.
     fn game(n: usize) -> Game {
         let d = ffh_data::global();
         let mut g = Game::new(d, GameSetup::standard(d, n, "WORLDSIZE_DUEL", 3));

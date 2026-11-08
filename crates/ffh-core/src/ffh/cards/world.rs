@@ -406,8 +406,8 @@ pub struct Birth {
     pub description: Option<String>,
     /// The player whose card makes it: its controller plays the new civilization, it has met it,
     /// and it is a vassal birth's master. `None`: an Armageddon card's civilization
-    /// ([`Birth::wild`]), played by its slot's own controller (the host's AI: a slot that never
-    /// lived is no human's).
+    /// ([`Birth::wild`]), played by its new slot's own controller (the game's AI:
+    /// `Game::add_player_slot`).
     pub founder: Option<PlayerId>,
     /// Its parent (`Player::parent`), whose team's techs it knows (never the cards) and which it
     /// has met: the founder unless set otherwise (the Usurper's Crown: the civilization it secedes
@@ -446,8 +446,8 @@ impl Birth {
         Birth { founder: Some(founder), parent: Some(founder), ..Birth::wild(civ, leader) }
     }
 
-    /// An Armageddon card's civilization, with nothing yet: no founder and no parent (its slot's
-    /// own controller, the world's techs, nobody's vassal).
+    /// An Armageddon card's civilization, with nothing yet: no founder and no parent (its new
+    /// slot's own controller, the world's techs, nobody's vassal).
     pub fn wild(civ: CivilizationType, leader: LeaderHeadType) -> Birth {
         Birth {
             civ,

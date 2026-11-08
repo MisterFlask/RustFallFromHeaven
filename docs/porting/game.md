@@ -113,8 +113,8 @@ used in the C++. `m_bScoreDirty` is kept (rank update timing feeds the FfH chall
 | `getTeamClosenessScore` | 2171-2227 | 57 | `team_closeness_score` | ported |
 | `initScoreCalculation` | 3996-4066 | 71 | `init_score_calculation` | ported |
 | `setFinalInitialized` | 4627-4652 | 26 | `set_final_initialized` | ported |
-| `addPlayer` | 8623-8664 | 42 | `add_player` | ported |
-| `addPlayerAdvanced` | 8667-8744 | 78 | `add_player_advanced` | ported |
+| `addPlayer` | 8623-8664 | 42 | `add_player` | ported (on a new slot: `add_player_slot`) |
+| `addPlayerAdvanced` | 8667-8744 | 78 | `add_player_advanced` | ported (on a new slot: `add_player_slot`) |
 | `isEventActive` | 9623-9634 | 12 | `is_event_active` | ported |
 | `initEvents` | 9636-9645 | 10 | `init_events` | ported |
 | `pythonIsBonusIgnoreLatitudes` | 9724-9736 | 13 | `python_is_bonus_ignore_latitudes` | ported |

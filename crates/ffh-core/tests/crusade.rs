@@ -117,7 +117,7 @@ fn unit(g: &mut Game, p: PlayerId, name: &str, x: i32, y: i32) -> UnitId {
 
 fn call(g: &mut Game, called: &[PlayerId]) -> CrusadeId {
     let target = g.players[T].team;
-    g.crusade_call(CrusadeKind::Direct, target, None, Objective::Term, 30, 5, called).expect("a Host slot is free")
+    g.crusade_call(CrusadeKind::Direct, target, None, Objective::Term, 30, 5, called).expect("the crusade is called")
 }
 
 fn host_of(g: &Game, id: CrusadeId) -> PlayerId {
@@ -171,6 +171,25 @@ fn lending_is_refused_when_the_lender_could_not_declare_war() {
     assert_eq!(g.crusade_lend(id, A, &[u]), Err(LendError::CannotDeclareWar));
     assert_eq!(g.units[u].owner, A);
     assert!(!g.at_war(ta, tt));
+}
+
+#[test]
+fn a_host_takes_a_new_slot_after_the_barbarians_and_a_later_crusade_reuses_a_freed_one() {
+    let mut g = game(Arc::new(Script::default()));
+    let (n, barbarian) = (g.num_players(), g.barbarian_player());
+    let first = call(&mut g, &[A]);
+    let host = host_of(&g, first);
+    assert_eq!(host, PlayerId(n as u8), "a new slot, after the barbarians'");
+    assert_eq!((g.num_players(), g.num_teams()), (n + 1, n + 1));
+    assert_eq!(g.barbarian_player(), barbarian);
+    assert_eq!(g.turn_order().last(), Some(barbarian), "the barbarians still move last");
+    let second = call(&mut g, &[B]);
+    assert_eq!(host_of(&g, second), PlayerId(n as u8 + 1), "a running crusade keeps its Host: the next adds a slot");
+    g.crusade_dissolve(first, Dissolution::Term);
+    assert!(!g.players[host].alive);
+    let third = call(&mut g, &[A]);
+    assert_eq!(host_of(&g, third), host, "a freed Host slot is reused");
+    assert_eq!(g.num_players(), n + 2);
 }
 
 #[test]

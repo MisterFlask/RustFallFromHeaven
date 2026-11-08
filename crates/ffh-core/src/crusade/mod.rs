@@ -2,8 +2,8 @@
 //!
 //! Not FFH2: a rules layer of this game, always on (parameters in `GameSetup::crusade`).
 //!
-//! A *crusade* is one called war plus its *Host*: a temporary AI player (a reserved player slot,
-//! see [`host`]) that owns every unit lent to the war, is at war only with the *target* (and the
+//! A *crusade* is one called war plus its *Host*: a temporary AI player (a Host slot, added for
+//! the crusade or freed by an earlier one, see [`host`]) that owns every unit lent to the war, is at war only with the *target* (and the
 //! target's vassals) and is deleted at dissolution. Civs lend units ([`lend`]); a lent unit
 //! counts toward its lender's *contribution* only once it has killed an enemy or died. At
 //! dissolution ([`dissolve`]) the cities the Host still holds and the wealth it sacked are
@@ -171,7 +171,7 @@ pub struct HostAi {
 pub struct Crusade {
     pub id: CrusadeId,
     pub kind: CrusadeKind,
-    /// The Host player (a reserved slot).
+    /// The Host player (a Host slot: `crusade_host_slot`).
     pub host: PlayerId,
     pub target: TeamId,
     /// League-defence victim, or a loan's borrower: its cities taken by the Host go back to it.

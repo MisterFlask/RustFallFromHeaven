@@ -13,7 +13,8 @@ new-game screen's *Crusades* box, `ffh --crusades`), removed in save format 16.
 ## Setup and tools
 
 - Rules: `SetupOptions::crusade` (`CrusadeRules`, the parameters): `GameSetup::crusade`, saved
-  with the game. Every game reserves `host_slots` player slots for Hosts.
+  with the game. No player slots are reserved: a Host takes a freed Host slot or a new one
+  (`Game::add_player_slot`, docs/ARCHITECTURE.md, "Players added mid-game").
 - `ffh autoplay|stats|bench --crusade-call T1,T2` calls a council crusade
   against the leading civ at those turns (the measure harness: AI councils rarely pass war
   resolutions by themselves), `--free-rider P` makes player P pledge the minimum.
@@ -42,12 +43,13 @@ moves to what it becomes), `unit_update_combat` (fought, kill credit), `player_a
 `player_can_trade_item` (no separate peace), `calculatePreInflatedCosts` (no costs), `doTurn`
 (no research), `doEvents` (none), `verifyAlive` (the crusade decides), heal rate (friendly land),
 `AI_conquerCity` (Host keeps cities), world scores and `countCivPlayersAlive` (Hosts are not
-civilizations), FfH's open-slot searches (Host slots are reserved).
+civilizations).
 
 ## The rules as built
 
-**The Host.** `CrusadeRules::host_slots` (4) open slots after the spare slots are reserved
-(`PlayerSetup::host`). A Host is brought alive like FfH's mid-game players (`addPlayer`: team and
+**The Host.** A crusade's Host takes a Host slot (`PlayerSetup::host`) an earlier crusade freed,
+else a new one (`crusade_host_slot`, `Game::add_player_slot`: after the barbarian's id, moving
+before it in a turn). A Host is brought alive like FfH's mid-game players (`addPlayer`: team and
 player reset, which also clears the other players' and teams' entries about the slot) with the
 **target's civilization** (cities it captures keep their buildings by class) and the barbarian
 leader (no traits), its civilization trait removed and a neutral alignment, so a unit gains
@@ -67,7 +69,7 @@ falling linearly to `far_obligation_percent` (40% of that) at the map's farthest
 capital to the target. Each called civ answers through `Controller::crusade_pledge` (asked every
 turn until it answers). **Council war resolutions** (`VOTE_FORCE_WAR`) now call the voting members
 that could fight (at war with the target already or able to declare it) instead of declaring war
-for them: "dedicate or defy". If no Host slot is free, the BtS declarations stand.
+for them: "dedicate or defy".
 
 **Standing** (interpretation): at the deadline each call is settled on what was *delivered*. A
 refusal, no answer, or a pledge with nothing delivered against a positive obligation costs the

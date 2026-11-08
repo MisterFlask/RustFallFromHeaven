@@ -507,13 +507,14 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | Lantern of Lugus (`prophet_lantern_of_lugus`: the Dawnbringer) | Prophet | built (no Glare; an archer's rows and levers, its shots holy) |
 ## 6. New civilizations
 
-`world::birth(g, &Birth)` gives a new civilization a player slot mid-game; the cards of batches B4
-(`cards/new_civs.rs`) and B8 (`cards/new_civs_2.rs`, the Armageddon cards' too) use it, and later
-cards can.
+`world::birth(g, &Birth)` gives a new civilization a player slot mid-game and returns it; the
+cards of batches B4 (`cards/new_civs.rs`) and B8 (`cards/new_civs_2.rs`, the Armageddon cards'
+too) use it, and later cards can.
 
-- **The slot:** `world::open_slot`, a spare slot never alive (`GameSetup::SPARE_SLOTS`, 4, shared
-  with Hyborem and Basium; never a crusade Host's). With none free, a card that makes a
-  civilization cannot be cast: its requirement tests the slot (an Armageddon card's `valid` does).
+- **The slot:** a new one, after every existing id, the barbarian's included
+  (`Game::add_player_slot`, docs/ARCHITECTURE.md, "Players added mid-game"; `world::next_player`
+  names it before the birth). Nothing is reserved and there is no limit, so no card waits for a
+  slot: its requirement or `valid` tests only its land and its once-a-game rule.
 - **Who it is:** a civilization and a leader of its own (`civilizations` and `leader_heads` in the
   card's file; neither playable nor AI-playable, so no game starts with it and no colony takes it),
   or a civilization that exists with a leader of its own (the Usurper's Crown: its parent's
@@ -522,7 +523,7 @@ cards can.
   and played by the founder's controller. Its parent (`Player::parent`) is the founder, or
   `parent` (the civilization the Usurper secedes from).
 - **Without a founder** (`Birth::wild`: an Armageddon card's civilization) it is played by its
-  slot's own controller (the host's AI: a slot that never lived is no human's), has no parent, is
+  new slot's own controller (the barbarian slot's: the game's AI, never a human), has no parent, is
   nobody's vassal and knows the world's techs (`world::world_techs`: those at least half the
   civilizations' teams know, never a card), with `techs` (the Scaled Kingdom's Animal Handling).
 - **What it starts with** (`Birth`): the cities it founds at given plots (`NewCity`: the first its

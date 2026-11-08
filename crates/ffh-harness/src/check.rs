@@ -10,6 +10,30 @@ use ffh_core::Idx;
 pub fn check(g: &Game) {
     let fail = |msg: String| -> ! { panic!("invariant: {msg} (turn {})", g.game_turn()) };
 
+    // Slots (players added mid-game, `Game::add_player_slot`): one team slot, setup entry and
+    // controller per player slot, and the per-slot arrays sized to them.
+    let n = g.num_players();
+    if g.num_teams() != n || g.setup.players.len() != n || g.controllers.len() != n {
+        fail(format!("{n} player slots, {} teams, {} setups, {} controllers", g.num_teams(), g.setup.players.len(), g.controllers.len()));
+    }
+    for p in g.player_ids() {
+        let pl = &g.players[p];
+        if pl.alive && (pl.ai_attitude_extra.len() != n || pl.gold_per_turn_by_player.len() != n) {
+            fail(format!("player {}'s per-player arrays are not sized to {n} slots", p.0));
+        }
+    }
+    for t in g.team_ids() {
+        let tm = &g.teams[t];
+        if tm.at_war.len() != n || tm.has_met.len() != n {
+            fail(format!("team {}'s per-team arrays are not sized to {n} slots", t.0));
+        }
+    }
+    if let Some(plot) = g.map.plots.first() {
+        if plot.culture.len() != n || plot.revealed.len() != n {
+            fail(format!("the plots' per-slot arrays are not sized to {n} slots"));
+        }
+    }
+
     // Cities: owner lists, plots, population, team and area counters.
     let mut team_cities = vec![0i32; g.num_teams()];
     let mut team_pop = vec![0i32; g.num_teams()];

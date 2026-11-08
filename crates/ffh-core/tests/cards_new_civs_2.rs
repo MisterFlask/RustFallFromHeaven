@@ -140,13 +140,6 @@ impl World {
         }
         out
     }
-
-    /// Every player slot has lived: none is open.
-    fn fill_slots(&mut self) {
-        for p in self.g.player_ids() {
-            self.g.players[p].ever_alive = true;
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -527,8 +520,6 @@ fn a_civilization_without_a_founder_knows_the_worlds_techs() {
     w.g.team_set_has_tech(t0, card, true, Some(w.p0), false, false);
     w.g.team_set_has_tech(t1, card, true, Some(w.p1), false, false);
     assert!(!world::world_techs(&w.g).contains(&card));
-    w.fill_slots();
-    assert!(!nc::valid_scaled_kingdom(&w.g), "no slot, no kingdom");
 }
 
 // ---------------------------------------------------------------------------------------------
