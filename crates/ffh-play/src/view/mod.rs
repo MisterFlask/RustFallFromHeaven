@@ -22,6 +22,7 @@ pub mod crusade;
 pub mod culture;
 pub mod data;
 pub mod diplo;
+pub mod explore;
 pub mod fog;
 pub mod help;
 pub mod hotkeys;

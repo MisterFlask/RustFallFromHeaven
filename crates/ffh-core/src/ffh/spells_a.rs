@@ -1725,40 +1725,17 @@ fn explore_lair_finish(g: &mut Game, caster: UnitId, pl: PlotIdx, destroy_lair: 
     g.unit_change_experience(caster, 1, -1, false, false, false);
 }
 
-/// `spellExploreLair(caster)`.
+/// `spellExploreLair(caster)` (ffh/lairs.rs).
 fn spell_explore_lair(g: &mut Game, caster: UnitId, _call: &PyCall) {
     let pl = g.unit_plot(caster);
-    let rnd = g.soren_rand_num(100, "Explore Lair") + g.units[caster].level;
-    let mut destroy_lair = 0;
-    if rnd < 14 {
-        destroy_lair = g.cf_explore_lair_big_bad(caster);
-    }
-    if (14..44).contains(&rnd) {
-        destroy_lair = g.cf_explore_lair_bad(caster);
-    }
-    if (44..74).contains(&rnd) {
-        destroy_lair = g.cf_explore_lair_neutral(caster);
-    }
-    if (74..94).contains(&rnd) {
-        destroy_lair = g.cf_explore_lair_good(caster);
-    }
-    if rnd >= 94 {
-        destroy_lair = g.cf_explore_lair_big_good(caster);
-    }
+    let destroy_lair = g.lair_explore(caster, false);
     explore_lair_finish(g, caster, pl, destroy_lair);
 }
 
-/// `spellExploreLairEpic(caster)`.
+/// `spellExploreLairEpic(caster)` (ffh/lairs.rs).
 fn spell_explore_lair_epic(g: &mut Game, caster: UnitId, _call: &PyCall) {
     let pl = g.unit_plot(caster);
-    let rnd = g.soren_rand_num(100, "Explore Lair") + g.units[caster].level;
-    let mut destroy_lair = 0;
-    if rnd < 54 {
-        destroy_lair = g.cf_explore_lair_big_bad(caster);
-    }
-    if rnd >= 54 {
-        destroy_lair = g.cf_explore_lair_big_good(caster);
-    }
+    let destroy_lair = g.lair_explore(caster, true);
     explore_lair_finish(g, caster, pl, destroy_lair);
 }
 

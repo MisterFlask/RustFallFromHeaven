@@ -274,7 +274,7 @@ fn base_move_cost(v: &Viewer, p: PlotIdx) -> i32 {
 }
 
 /// `plot {x,y}`: the plot as the human knows it; units and live values only while visible.
-pub fn plot(v: &Viewer, x: i32, y: i32) -> Result<Json, QueryErr> {
+pub fn plot(v: &Viewer, x: i32, y: i32, units: &[UnitId]) -> Result<Json, QueryErr> {
     let p = plot_at(v, x, y)?;
     let g = v.g;
     let d = g.d;
@@ -303,6 +303,10 @@ pub fn plot(v: &Viewer, x: i32, y: i32) -> Result<Json, QueryErr> {
     // C++ plot help: "Must be level N to enter" (the Ring of Carcer's 15; -1 once it is gone).
     if pl.min_level > 0 {
         j.set("min_level", pl.min_level);
+    }
+    // A lair or goody hut: the odds for the selection's first unit (view/explore.rs).
+    if let Some(explore) = crate::view::explore::explore_json(v, p, units) {
+        j.set("explore", explore);
     }
     if visible {
         let owner_team = pl.owner.map(|o| g.players[o].team);

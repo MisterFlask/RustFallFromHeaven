@@ -44,7 +44,7 @@ fn all_queries(s: &ffh_play::Session) -> Vec<Query> {
         qs.push(Query::Group { units: units.clone() });
         qs.push(Query::Path { units: units.clone(), x: (x + 3).min(g.map.grid_width - 1), y, flags: 0 });
         qs.push(Query::Combat { units: units.clone(), x: (x + 1).min(g.map.grid_width - 1), y });
-        qs.push(Query::Plot { x, y });
+        qs.push(Query::Plot { x, y, units: vec![] });
         qs.push(Query::Inspect { kind: "unit".into(), oid: units[0].0 as i64 });
     }
     for &c in &g.players[h].cities {
