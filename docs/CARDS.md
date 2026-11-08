@@ -169,7 +169,7 @@ help):
 | spells | `battle_illusions` `{count, hp}` | Illusory Host | illusory soldiers cast with the caster's first spell action (below) |
 | spells | `battle_charm` `"rows": "REAR"`, `"skip"` | Lullaby of Ceridwen | a charm or hex on the side's rearmost row in use; a hex that makes the fighters it lands on skip their next action |
 | civilizations | `unit_promotion` | The Fey Court Awakens, Founding of the Dawn Knights | a promotion every land unit of the civilization gets when it is created (`unit_init`) |
-| traits, civics | `unit_rush_gold` | The Condottieri Free State (a trait), Gold Standard (a civic) | its player buys units at this many gold per hammer left, under any Labor civic (the most its traits and civics give; the gold hurry, `player_unit_rush_gold`) |
+| traits, civics | `unit_rush_gold` | The Condottieri Free State (a trait), Gold Standard (a civic), the Court of Mammon (a trait) | its player buys units at this many gold per hammer left, under any Labor civic (the most its traits and civics give; the gold hurry, `player_unit_rush_gold`) |
 | buildings | `defender_defense` | Free City Charter | percent more defence for the units fighting in the city (the most of its buildings; an engagement's defence terms) |
 | techs | `card_block_alignment` | Font of Rebirth | players of this alignment do not draw the card (a [good or neutral] card blocks evil; section 1) |
 | buildings | `train_units` `[{unit, cost, bonus, national}]` | Beast Market, Elemental Foundry | the city trains each unit (one without a cost of its own) at `cost`, where it has `bonus`; past `national` units of the class, each costs `NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT` |
@@ -358,9 +358,27 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   60 three ways, 100 four ways.
 - **Civilizations of the deck** (batch B8, `ffh/cards/new_civs_2.rs`): the Scaled Kingdom (30),
   the Brood (its nests at 30, the civilization at 50 where a nest still stands) and the Infernal
-  Gate (60: the Infernals, as the Infernal Pact brings them, `Game::infernals_arrive`; they come
-  once a game, by the Pact or the card). They are born as section 6 says, without a founder
+  Gate (60: the Court of Mammon, below). They are born as section 6 says, without a founder
   (`Birth::wild`); a card that finds no free player slot is not valid at its reveal.
+- **The Court of Mammon** (the Infernal Gate, the owner's design of 2026-11-08; its data in
+  `doom_infernal_gate.jsonc`): an evil infernal faction of Mammon's, not Hyborem's, and no part of
+  the Infernal Pact (which is FFH2's again). It arrives without a city (`Birth::camp`) on the best
+  free site within 4 plots of the borders of the civilization with the most gold (`court_patron`:
+  ties to the lower id; `court_site`): Aurivane (its hero), two Champions, two Longbowmen, two
+  Settlers, a Worker, two Manes, 200 gold. Its leader is Avaricious (`TRAIT_AVARICIOUS`: +100% gold,
+  `unit_rush_gold` 2) and Organized; every land unit of it has Mammon's Coin (its civilization's
+  `unit_promotion`), whose Buy Out (`SPELL_COURT_BUY_OUT`, while the Court owns the unit) is the
+  Paymaster's spell (`cards/economy.rs`'s callbacks and price). **Population:** the Infernals' rules
+  are the Court's (`infernal_population`: Fallow, its civilization trait; cities of 3 with Demonic
+  Citizens, `ev_city_built`, `ev_city_acquired`; no Manes from a city it founded, `ev_city_razed`;
+  the Beast of Agares costs its cities no population; the Blight and the Pestilence spare its
+  cities), and the Manes of the evil dead (`cf_gift_unit` from `ev_city_razed` and
+  `ev_unit_killed`) go to one of the two (`manes_civ`): the one in play with a city, else, while
+  both are, one drawn with the game RNG (one `soren_rand_num`, only then). The AI plays its Manes
+  as the Infernals' (`civs`: they walk home and join cities) and buys with every unit
+  (`cards_economy`, at the start of its turn and once its units have moved). -4 attitude between
+  it and the Infernals, both ways, set when the second of them arrives (`court_infernal_grudge`;
+  no war is forced). It is played with a free site and a free player slot.
 - **No card alters a victory condition** (the owner's rule, 2026-11-08): what a card produces
   counts normally toward every victory. The Gathering's vassals are ordinary vassals (the C.5
   verdict's "they do not count toward domination" is withdrawn).
@@ -490,7 +508,7 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | Call the Aifon | Merchant | built (batch B8; four Axemen and two Archers) |
 | A04 The Scaled Kingdom (30) | Armageddon | built (batch B8) |
 | A06 The Brood (30, 50) | Armageddon | built (batch B8; not played without barbarians) |
-| A22 The Infernal Gate Opens (60) | Armageddon | built (batch B8; once a game with the Infernal Pact) |
+| A22 The Infernal Gate Opens (60) | Armageddon | built (batch B8; reworked 2026-11-08: the Court of Mammon, beside the richest civilization; no tie to the Infernal Pact) |
 
 | P17 Sanctified Steel (`prophet_sanctified_steel`) | Prophet | built (no religion needed in the city) |
 | Shieldbearer (`engineer_shieldbearer`) | Engineer | built |
@@ -526,10 +544,12 @@ cards can.
   nobody's vassal and knows the world's techs (`world::world_techs`: those at least half the
   civilizations' teams know, never a card), with `techs` (the Scaled Kingdom's Animal Handling).
 - **What it starts with** (`Birth`): the cities it founds at given plots (`NewCity`: the first its
-  capital, each with its buildings and units), or cities it takes over from their owner (`release`:
-  a trade, so they keep their buildings, with their culture and garrison: the owner's land
-  combat units in them but heroes and the caster), a hero in its capital, every tech its parent's
-  team knows but the cards (and `techs`), a state religion in all its cities, gold.
+  capital, each with its buildings and units), or units on a plot without a city (`camp`: the Court
+  of Mammon's, whose settlers found its cities; its hero stands there), or cities it takes over
+  from their owner (`release`: a trade, so they keep their buildings, with their culture and
+  garrison: the owner's land combat units in them but heroes and the caster), a hero in its
+  capital, every tech its parent's team knows but the cards (and `techs`), a state religion in all
+  its cities, gold.
 - **Its relation to the founder:** it has met it (and its parent). As a vassal (`vassal`) it is the founder's, by
   the ordinary vassal rules (it joins its master's wars). Like every civilization it is at war
   with the barbarians on both sides (`add_player_advanced` sets only its own side; the other left
@@ -548,14 +568,16 @@ cards can.
   mana rules), with no unit, no city within `MIN_CITY_RANGE`, unowned; the best are taken by the
   land, bonuses, water and fresh water in their radius.
 - **Its own rules** are data where they can be: a civilization's `unit_promotion` (the Fey
-  Glamour, the Dawn Vow, the Aifon's Water Walking, the Scaled Kingdom's Swampborn), a
-  civilization trait (`civ_trait`: the Free Companies', the Necropolis's Fallow), a palace's
+  Glamour, the Dawn Vow, the Aifon's Water Walking, the Scaled Kingdom's Swampborn, the Court of
+  Mammon's Coin), a civilization trait (`civ_trait`: the Free Companies', the Necropolis's and the
+  Court of Mammon's Fallow), a palace's
   `free_building` (the Patrians' Mage Guilds), unique units in its `units` (the Hill Clans' Hill
   Giant and the Brood's Giant Spider are their own versions of classes whose default nobody
   trains), `hills_yield_change` (the Hill Clans). What data cannot say is a rule hooked where it
   lives (section 2), each naming its card: the Necropolis's risen dead (the living units a battle
   on its land kills rise as its Pyre Zombies, there or in its nearest city:
-  `engagement/apply.rs`).
+  `engagement/apply.rs`); the Court of Mammon's share of the Infernals' population rules
+  (`new_civs_2::infernal_population`, `manes_civ`; section 4).
 - **Art:** a new leader shows an existing leader's portrait and a new unit an existing unit's
   sprite (`PORTRAIT_ALIASES` in `crates/ffh-play/assets/app/portraits.js`, `UNIT_ALIASES` in
   `iso.js`).
