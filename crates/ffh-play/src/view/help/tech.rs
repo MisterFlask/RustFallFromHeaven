@@ -87,6 +87,115 @@ pub fn unlocks(g: &Game, p: PlayerId, t: TechType) -> Unlocks {
     Unlocks { units, buildings, builds, civics, religions }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Great-person cards (docs/CARDS.md).
+
+/// A card's suit for people: its great person's class, without "Great" ("Sage", "Bard").
+pub fn suit_name(d: &GameData, suit: UnitClassType) -> String {
+    let name = names::display(d, suit);
+    name.strip_prefix("Great ").unwrap_or(&name).to_string()
+}
+
+/// A card's band for people: "II (Classical)" (Medieval and later are III).
+pub fn band_name(d: &GameData, era: Option<EraType>) -> String {
+    match era {
+        Some(e) => format!("{} ({})", ["I", "II", "III"][e.idx().min(2)], names::display(d, e)),
+        None => "I".to_string(),
+    }
+}
+
+/// The lines that say what card `t` is: its suit and band, its needs (with `known`, whether the
+/// player's team knows each), who draws it and its faith.
+fn card_lines(d: &GameData, t: TechType, b: &mut String, known: Option<&dyn Fn(TechType) -> bool>) {
+    let info = &d.techs[t];
+    let Some(card) = &info.card else { return };
+    let tech = |x: TechType| {
+        let name = names::display(d, x).into_owned();
+        match known {
+            Some(k) if k(x) => format!("{name} (known)"),
+            _ => name,
+        }
+    };
+    b.push_str(NEWLINE);
+    b.push_str(&format!("[ICON_BULLET]Card: {}, band {}", suit_name(d, card.suit), band_name(d, info.era)));
+    if !info.prereq_and_techs.is_empty() {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]Needs: {}", info.prereq_and_techs.iter().map(|&x| tech(x)).collect::<Vec<_>>().join(", ")));
+    }
+    if !info.prereq_or_techs.is_empty() {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]Needs one of: {}", info.prereq_or_techs.iter().map(|&x| tech(x)).collect::<Vec<_>>().join(", ")));
+    }
+    if let Some(a) = card.alignment {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]Drawn by {} civilizations only", names::display(d, a)));
+    }
+    if let Some(r) = card.religion {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]Discovering it spreads {} to three of your cities", names::display(d, r)));
+    }
+}
+
+/// What card `t` unlocks, by the content that names it as its tech (units, buildings, builds,
+/// civics, projects, processes, promotions, spells), whoever plays it.
+fn card_unlocks(d: &GameData, t: TechType, b: &mut String) {
+    let mut list = |what: &str, colour: &str, items: Vec<String>| {
+        for (i, item) in items.iter().enumerate() {
+            list_help(b, &format!("{NEWLINE}{what}"), &color(colour, item), ", ", i == 0);
+        }
+    };
+    list(
+        &txt(d, "TXT_KEY_TECH_CAN_TRAIN", &[]),
+        "COLOR_UNIT_TEXT",
+        d.units.keys().filter(|&u| d.units[u].prereq_and_tech == Some(t) || d.units[u].prereq_and_techs.contains(&t)).map(|u| names::display(d, u).into_owned()).collect(),
+    );
+    list(
+        &txt(d, "TXT_KEY_TECH_CAN_CONSTRUCT", &[]),
+        "COLOR_BUILDING_TEXT",
+        d.buildings
+            .keys()
+            .filter(|&x| d.buildings[x].prereq_and_tech == Some(t) || d.buildings[x].prereq_and_techs.contains(&Some(t)))
+            .map(|x| names::display(d, x).into_owned())
+            .collect(),
+    );
+    for build in d.builds.keys().filter(|&x| d.builds[x].tech_prereq == Some(t)) {
+        b.push_str(NEWLINE);
+        b.push_str(&txt(d, "TXT_KEY_MISC_CAN_BUILD_IMPROVEMENT", &[Arg::S(&names::display(d, build))]));
+    }
+    let mut list = |what: &str, items: Vec<String>| {
+        for (i, item) in items.iter().enumerate() {
+            if i == 0 {
+                b.push_str(NEWLINE);
+            }
+            list_help(b, what, &color("COLOR_HIGHLIGHT_TEXT", item), ", ", i == 0);
+        }
+    };
+    list(&txt(d, "TXT_KEY_MISC_ENABLES", &[]), d.civics.keys().filter(|&x| d.civics[x].tech_prereq == Some(t)).map(|x| names::display(d, x).into_owned()).collect());
+    list(&txt(d, "TXT_KEY_TECH_CAN_CREATE", &[]), d.projects.keys().filter(|&x| d.projects[x].tech_prereq == Some(t)).map(|x| names::display(d, x).into_owned()).collect());
+    list(&txt(d, "TXT_KEY_MISC_CAN_BUILD", &[]), d.processes.keys().filter(|&x| d.processes[x].tech_prereq == Some(t)).map(|x| names::display(d, x).into_owned()).collect());
+    list(&txt(d, "TXT_KEY_MISC_ENABLES", &[]), d.promotions.keys().filter(|&x| d.promotions[x].tech_prereq == Some(t)).map(|x| names::display(d, x).into_owned()).collect());
+    list("[ICON_BULLET]Enables spell ", d.spells.keys().filter(|&x| d.spells[x].tech_prereq == Some(t)).map(|x| names::display(d, x).into_owned()).collect());
+}
+
+/// What a great person's card is and gives (docs/CARDS.md), whoever holds it: its suit, band,
+/// needs, who draws it, its faith, what it unlocks and its own help. The data's `effects` of a
+/// card tech (the unit panel's card, the cards the player knows); empty for another tech.
+pub fn card_effects(d: &GameData, t: TechType) -> String {
+    let info = &d.techs[t];
+    if info.card.is_none() {
+        return String::new();
+    }
+    let mut b = String::new();
+    card_lines(d, t, &mut b, None);
+    card_unlocks(d, t, &mut b);
+    let help = names::text(d, &info.base.help);
+    if !info.base.help.is_empty() && help != info.base.help && !help.trim().is_empty() {
+        b.push_str(NEWLINE);
+        b.push_str(help);
+    }
+    finish(b)
+}
+
 /// The help of tech `t` for player `p` (Civ4 markup, lines joined by `[NEWLINE]`; empty when the
 /// tech brings nothing to list).
 pub fn tech_help(g: &Game, p: PlayerId, t: TechType) -> String {
@@ -101,6 +210,8 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
     let info = &d.techs[t];
     let mut b = String::new();
     let nobody_knows = g.count_known_tech_num_teams(t) == 0;
+    // A great person's card (docs/CARDS.md): what it is, and which of its needs the team knows.
+    card_lines(d, t, &mut b, Some(&|x| g.team_is_has_tech(team, Some(x))));
 
     // Not in FFH2: the unique features that multiply research on it from inside the team's borders.
     for &(imp, pct) in &d.tech_research_bonuses[t] {

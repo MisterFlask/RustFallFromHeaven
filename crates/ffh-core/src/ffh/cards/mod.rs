@@ -2,11 +2,13 @@
 //! `PyRequirement`, `py_targets` and unit callbacks the cards' data names. One module per batch
 //! of cards, each registering its functions by name in its `find_*` lookups (as `spells_a.rs`
 //! does); `deck.rs` is the deck's own (discovering a card), `world.rs` the helpers the cards
-//! share. A batch adds its module to [`MODULES`].
+//! share. A batch adds its module to [`MODULES`]; a module with choice spells (a `choice` target)
+//! adds its label lookup (`py_target_label`) to [`LABELS`] as well.
 
 use crate::ffh::dispatch::*;
 
 pub mod deck;
+pub mod deck_ui;
 pub mod map_rules;
 pub mod world;
 pub mod world_spells;
@@ -29,7 +31,12 @@ const MODULES: &[Lookups] = &[
     Lookups { spell: world::find_spell, req: world::find_req, targets: world::find_targets, unit_fn: world::find_unit_fn },
     Lookups { spell: map_rules::find_spell, req: map_rules::find_req, targets: none, unit_fn: none },
     Lookups { spell: world_spells::find_spell, req: world_spells::find_req, targets: world_spells::find_targets, unit_fn: none },
+    Lookups { spell: deck_ui::find_spell, req: none, targets: deck_ui::find_targets, unit_fn: none },
 ];
+
+/// Every card module's `py_target_label` lookup (the names of a choice spell's options), searched
+/// in order.
+const LABELS: &[fn(&str) -> Option<TargetLabelFn>] = &[world::find_target_label];
 
 /// `PyResult` functions.
 pub fn find_spell(name: &str) -> Option<SpellFn> {
@@ -49,4 +56,9 @@ pub fn find_targets(name: &str) -> Option<TargetsFn> {
 /// Unit callbacks (promotion `PyPerTurn`, spell `PyMiscast`).
 pub fn find_unit_fn(name: &str) -> Option<UnitFn> {
     MODULES.iter().find_map(|m| (m.unit_fn)(name))
+}
+
+/// `py_target_label` functions.
+pub fn find_target_label(name: &str) -> Option<TargetLabelFn> {
+    LABELS.iter().find_map(|f| f(name))
 }

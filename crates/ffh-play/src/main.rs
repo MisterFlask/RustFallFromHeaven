@@ -726,7 +726,7 @@ fn cmd_lookup(args: &[String]) {
     }
 }
 
-/// `ffh-play stage capture|attack|automoves|load|trade|diplomacy|automate|armies|engagement|election|settlement|corrupt|crusade DIR`: a save
+/// `ffh-play stage capture|attack|automoves|load|trade|diplomacy|automate|armies|engagement|election|settlement|corrupt|crusade|cards DIR`: a save
 /// at a staged situation (testing the clients).
 fn cmd_stage(args: &[String]) {
     let [kind, dir] = args else { usage() };
@@ -745,6 +745,7 @@ fn cmd_stage(args: &[String]) {
         "settlement" => ffh_play::stage::settlement(dir).map(|s| s.to_json()),
         "corrupt" => ffh_play::stage::corrupt(dir).map(|s| s.to_json()),
         "crusade" => ffh_play::stage::crusade(dir).map(|s| s.to_json()),
+        "cards" => ffh_play::stage::cards(dir).map(|s| s.to_json()),
         _ => usage(),
     };
     match out {

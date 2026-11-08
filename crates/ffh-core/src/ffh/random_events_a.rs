@@ -536,11 +536,16 @@ fn can_apply_trait(g: &Game, data: &EventTriggeredData, trait_type: TraitType) -
 }
 
 /// `doTraitX`: drop every selectable trait but the leader's permanent one, then gain `trait_type`.
-fn do_trait(g: &mut Game, data: &EventTriggeredData, trait_type: TraitType) {
+/// This game's: the traits a card gave (`Player::card_traits`, Legacy of Kings) stay too.
+pub(crate) fn do_trait(g: &mut Game, data: &EventTriggeredData, trait_type: TraitType) {
     let d = g.d;
     let p = data.player;
     let permanent = permanent_trait(g, p);
     for t in d.traits.keys() {
+        // Card: Legacy of Kings (docs/CARDS.md): its trait is permanent.
+        if g.players[p].card_traits.contains(&t) {
+            continue;
+        }
         if g.players[p].traits[t] && d.traits[t].selectable && permanent != Some(t) {
             g.player_set_has_trait(p, t, false);
         }
@@ -2270,7 +2275,8 @@ fn do_trait_industrious(g: &mut Game, _event: EventType, data: &EventTriggeredDa
 }
 
 /// `doTraitInsane(argsList)`: every trait but Insane is lost, then three different random
-/// traits of the eleven selectable ones are gained.
+/// traits of the eleven selectable ones are gained. This game's: the traits a card gave
+/// (`Player::card_traits`, Legacy of Kings) are kept.
 fn do_trait_insane(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
     const TRAITS: [&str; 11] = [
         "TRAIT_AGGRESSIVE",
@@ -2289,6 +2295,10 @@ fn do_trait_insane(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
     let p = data.player;
     let insane = d.t::<TraitType>("TRAIT_INSANE");
     for t in d.traits.keys() {
+        // Card: Legacy of Kings (docs/CARDS.md): its trait is permanent.
+        if g.players[p].card_traits.contains(&t) {
+            continue;
+        }
         if g.players[p].traits[t] && t != insane {
             g.player_set_has_trait(p, t, false);
         }

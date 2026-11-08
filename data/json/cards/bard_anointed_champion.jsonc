@@ -1,0 +1,42 @@
+// B18 Anointed Champion (docs/DECKS_ROUND8.md; C.4: also two levels, the hero's extra action not
+// stacking with tier 4's). The rules: crates/ffh-core/src/ffh/cards/deck_ui.rs.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_ANOINTED_CHAMPION",
+      "description": "TXT_KEY_TECH_CARD_ANOINTED_CHAMPION",
+      "help": "TXT_KEY_TECH_CARD_ANOINTED_CHAMPION_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_ANOINTED_CHAMPION_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_ARETE"],
+      "card_suit": "UNITCLASS_ARTIST",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_ANOINTED_CHAMPION",
+      "description": "TXT_KEY_SPELL_ANOINTED_CHAMPION",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_ANOINTED_CHAMPION_HELP",
+      "tech_prereq": "TECH_CARD_ANOINTED_CHAMPION",
+      "once": true,
+      "target": "unit",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_targets": "targetsAnointedChampion(pCaster)",
+      "py_result": "spellAnointedChampion(pCaster)",
+      "button": "Art/Interface/Buttons/Promotions/Hero.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_ANOINTED_CHAMPION": "Anointed Champion",
+    "TXT_KEY_TECH_CARD_ANOINTED_CHAMPION_HELP": "[ICON_BULLET]World spell, once a game: one combat unit of yours that is not a hero or a summon gains the Hero promotion and the experience for two more promotions.[NEWLINE][ICON_BULLET]In a battle a hero has one more action in its best row; a unit of tier 4 or above has it already and gains no second one.",
+    "TXT_KEY_TECH_CARD_ANOINTED_CHAMPION_PEDIA": "The bards sing one veteran into legend, and the army follows the legend.",
+    "TXT_KEY_SPELL_ANOINTED_CHAMPION": "Anointed Champion",
+    "TXT_KEY_SPELL_ANOINTED_CHAMPION_HELP": "[ICON_BULLET]The target: a combat unit of yours that is not a hero or a summon.[NEWLINE][ICON_BULLET]It gains the Hero promotion and the experience for two more promotions."
+  }
+}

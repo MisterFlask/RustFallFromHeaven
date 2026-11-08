@@ -52,6 +52,26 @@ export function unlockRow(x, max = 6) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Great-person cards (docs/CARDS.md): techs a great person discovers, outside the tree.
+
+/** The cards the player knows (entries of the `techs` query that are cards), and those its great
+ *  people hold (the view's units' `card`), each with its help as a tooltip; null when there are
+ *  none. */
+export function cardsLine(t) {
+  const known = (t.techs ?? []).filter((x) => x.has && info("TechType", x.tech)?.card);
+  const mine = me()?.player;
+  const held = [...(S.units?.values?.() ?? [])].filter((u) => u.owner === mine && u.card !== null && u.card !== undefined);
+  if (!known.length && !held.length) return null;
+  const card = (tech, extra = "") => h("span.card-name", { tip: infoTip("TechType", tech, { title: `Card: ${dname("TechType", tech)}` }) }, `${dname("TechType", tech)}${extra}`);
+  const list = (items) => items.flatMap((x, i) => (i ? [", ", x] : [x]));
+  return h(
+    "div.cards-known",
+    known.length ? h("div", "Cards known: ", list(known.map((x) => card(x.tech)))) : h("div.dim", "Cards known: none."),
+    held.length ? h("div", "Cards held by your great people: ", list(held.map((u) => card(u.card, ` (${dname("UnitType", u.type)} at ${u.x}, ${u.y})`)))) : null,
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
 // The tech tree (Civ4's technology advisor, F6).
 
 /** Rows of the tech tree: each column (prerequisite depth) ordered by the mean row of the
@@ -178,6 +198,7 @@ export async function openTechTree() {
       h(
         "div.research-head",
         cur ? h("div", "Researching ", h("b", cur)) : h("div.warn", "Nothing is being researched."),
+        cardsLine(t),
         t.queue.length > 1 ? h("div.dim", `Queue: ${t.queue.map((q) => dname("TechType", q)).join(" → ")}`) : null,
         h("div.dim", `${t.rate} research per turn. Click a technology to research it (with what it needs); Shift-click to queue it. Point at one to see the path to it.`),
         tapModes(tapMode, [["now", "Research now", "A tap researches it now"], ["queue", "Add to queue", "A tap adds it to the research queue (Shift-click)"]], (v) => ((tapMode = v), load())),

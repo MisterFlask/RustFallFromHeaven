@@ -138,6 +138,8 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
             let t = &d.techs[TechType::from_usize(i)];
             j.set("cost", t.research_cost);
             j.set("era", Json::opt_idx(t.era));
+            // A great person's card (docs/CARDS.md): its suit, alignment and faith.
+            j.set("card", t.card.as_ref().map(|c| crate::jobj! { "suit" => Json::idx(c.suit), "alignment" => Json::opt_idx(c.alignment), "religion" => Json::opt_idx(c.religion) }));
             j.set("and", Json::Arr(t.prereq_and_techs.iter().map(|&p| Json::idx(p)).collect()));
             j.set("or", Json::Arr(t.prereq_or_techs.iter().map(|&p| Json::idx(p)).collect()));
         }
@@ -166,6 +168,9 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
             j.set("global", s.global);
             j.set("causes_war", s.causes_war);
             j.set("range", s.range);
+            // A card's world spell, and a spell cast at a distance (docs/CARDS.md).
+            j.set("once", s.once);
+            j.set("target", s.target.map(crate::view::cards::target_kind_name));
         }
         "BuildType" => {
             let b = &d.builds[BuildType::from_usize(i)];

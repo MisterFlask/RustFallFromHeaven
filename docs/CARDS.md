@@ -144,6 +144,7 @@ help):
 | improvements | `deep_spawn_unit_type` (a unit type) | The Lairs Deepen | what a lair spawns once The Lairs Deepen has been played (every lair has one) |
 | buildings | `global_counter_commerces` (commerces) | Orrery of Ceridwen | its city's commerce per 10 points of the Armageddon counter |
 | buildings | `doom_sight` | Orrery of Ceridwen | how many unrevealed Armageddon cards ahead its owner sees (the Orrery: 2) |
+| spells | `py_target_label` | (choice spells) | the callback naming a `choice` target's option (section 3) |
 
 The battle effects are in `crates/ffh-core/src/engagement/arms.rs` (the set-up, `Game`) and
 `engagement/formation/arms_cards.rs` (the resolver, a fighter's `Arms`); their AI in
@@ -168,12 +169,33 @@ entries only (`card_entry_count`): the cards' units, buildings and promotions fo
   - `unit_cast_at(u, spell, target)` sets `Game::spell_target` for the spell's result to read.
   - A targeted spell cast without a target does nothing.
 - **Shared helpers** for the cards go in `crates/ffh-core/src/ffh/cards/world.rs`: a region (the
-  largest connected group of unowned plots of a terrain or feature), a new civilization born
-  mid-game, "within N plots of your borders" (`within_range_of_borders`), "+N to the Armageddon
-  counter" in the points of its percentage, whatever its limit (`counter_change_for_points`), ...
+  largest connected group of unowned plots of a terrain or feature), the plots within N plots of
+  a player's borders (`near_borders`, by steps, for every plot at once; `within_range_of_borders`
+  for one plot, by plot distance), a unit gaining levels (`unit_gain_levels`, rule 10: the XP for
+  N more promotions than it can take now), a new civilization born mid-game, "+N to the
+  Armageddon counter" in the points of its percentage, whatever its limit
+  (`counter_change_for_points`), ...
 - **Attitude:** a card that changes what a leader thinks of another (Purchase Charter, Cultural
   Annexation: -4) adds to `Player::ai_attitude_extra`. The AI reads it as a term of its relation,
   "acts toward us" (`ffh-ai/src/diplomacy.rs`), on the relation's own scale (2 is a step).
+- **Naming a target for people:** `Game::spell_target_label(caster, spell, target)`: a plot's
+  terrain and feature with its coordinates, a city's name, a unit's name and level, a player's
+  name. A `choice` target's option is named by the spell's `py_target_label`, a `TargetLabelFn`
+  (`fn(&Game, UnitId, i32, &PyCall) -> String`; a module with choice spells adds its lookup to
+  `cards::LABELS`); without one it is "Option n". When the options are entries of an info table
+  (a trait, a building, a damage type, ...), the shared `labelInfo(pCaster, iChoice, 'TraitType')`
+  names entry `n` of the table its third argument names (`world::LABEL_KINDS`), and the UI shows
+  that entry's help beside it.
+- **Listing targets once:** `unit_can_cast_untargeted` is `unit_can_cast` without asking a
+  targeted spell for its targets: a caller that tries many units (the UI's world actions, the AI)
+  asks it for each and lists the targets once, for the caster.
+- **In the human's UI** (ffh-play, docs/HUMAN.md): the actions of a targeted spell (the empire's
+  world actions, and a selection's spells) carry `target_kind` and `targets`, each `{target, at,
+  label, info?}` (`target` the command's form, `at` the plot it is picked on, `info` `[kind, n]` for
+  an info table's entry), and a `cast_at {unit, spell, target, confirmed}` command. A plot, city or
+  unit is picked on the map (its plots outlined; a plot with several targets asks which), a player
+  or a choice from a list. A card's world spell asks to confirm (once a game) and stays listed,
+  spent, once cast. `do_command COMMAND_CAST` refuses a targeted spell.
 
 ## 4. The Armageddon deck
 
@@ -212,6 +234,10 @@ entries only (`card_entry_count`): the cards' units, buildings and promotions fo
 - **The Gathering's vassals** are marked (`Team::gathered`, saved; cleared when freed): they do
   not count toward their master's domination victory (`team_victory_population`,
   `team_victory_land`) or conquest victory.
+- **The human's view:** `me.doom` (`view/cards.rs`) lists the slots with what the human knows:
+  a revealed or fired card, or one it sees ahead, by key, name and effect; hidden slots say
+  nothing of their card. The reveal and the firing are messages to every player (the log's fog
+  lets them through to the human).
 - FFH2's counter triggers (`prereq_global_counter`, weight -1) no longer fire by themselves.
 
 **Random events are gone:** `player_do_events` no longer rolls for a weighted event. The
@@ -277,3 +303,7 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | A48 The Gathering (100) | Armageddon | built (not played under No Vassal States) |
 | A49 The Long Night (100) | Armageddon | built: lasting |
 | A50 The Godless Age (100) | Armageddon | built |
+| (the decks' UI: a held card, Discover, cards in the help and the tech tree, card world spells, `cast_at` and target picks, the Armageddon deck in the HUD) | | built |
+| G17 Starmetal Meteor | Sage | built |
+| B07 Legacy of Kings | Bard | built |
+| B18 Anointed Champion | Bard | built |

@@ -379,6 +379,9 @@ pub struct Player {
     /// Not in C++: the once-a-game spells (`SpellInfo::once`, the great-person cards' world
     /// spells; docs/DECKS.md) this player has cast, in the order cast.
     pub once_spells: Vec<SpellType>,
+    /// Not in C++: the traits a card gave the leader (Legacy of Kings, docs/CARDS.md), in the
+    /// order given. The Adaptive and Insane trait swaps keep them.
+    pub card_traits: Vec<TraitType>,
 }
 
 impl Player {
@@ -636,6 +639,7 @@ impl Player {
             governors: Vec::new(),
             governor_count: 0,
             once_spells: Vec::new(),
+            card_traits: Vec::new(),
         }
     }
 

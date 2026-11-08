@@ -73,13 +73,18 @@ cannot load.
 happening (your turn; "Moving: …" with the players and the seconds while the AIs play); gold and
 rate, research (click it to choose) with its progress bar and turns, the commerce split by its
 icons (click it for the sliders), the Armageddon eclipse (its corona reddens at 50, 75 and 100)
-with the counter, mana by sphere, anarchy, golden age, Stasis, idle AI-controlled groups, score
+with the counter (its tooltip lists the Armageddon deck's slots, 10 to 100: a slot's card once it
+is revealed, or seen ahead, with its effect; fired slots marked; the others hidden), mana by sphere, anarchy, golden age, Stasis, idle AI-controlled groups, score
 (your share of the world, docs/SCORE.md, with the fair share in its tooltip); the gold's tooltip
 gives where the gold rate comes from (the cities' commerce, deals; units with the free ones, units
 outside the borders, city maintenance, civic upkeep, inflation); beside them the empire's own
 actions, a row of buttons that belong to no unit: your world spell while you can cast it (its
 tooltip has its effects and the unit it is cast through, one that can cast it now and loses no
-promotion by casting, picked for you; the unit panel no longer lists world spells);
+promotion by casting, picked for you; the unit panel no longer lists world spells), and your
+cards' world spells (docs/CARDS.md: "Card spell: cast once a game"; still shown, spent, once
+cast). A spell cast at a distance asks for its target first: a plot, a city or a unit is picked on
+the map, the valid plots outlined (a plot with several targets lists them), a player or one of the
+spell's options from a list (a trait with its effects);
 below them the menu (Research, Techs, Cities, Civics, Religion, Diplomacy, Tools, Save, Load,
 New, keys `?`, a raw request box `⌘` for testing) and End turn. The map fills the middle (minimap
 bottom right, zoom and the map layers bottom left), the selection panel is on the right, and the
@@ -211,7 +216,11 @@ it then; the valid targets are outlined); builds with their turns; spells with t
 promotions; upgrades with their price; load, unload, wake, cancel, delete. The sections follow
 Civ4's button order (Orders, Build, Great person, Religion, Cargo, Spells, Promotions,
 Upgrades). "Promote…" lists the promotions with their help, "details" by Spells lists every
-spell with its help and whether it can be cast now. Units in a transport are listed under it.
+spell with its help and whether it can be cast now. A great person shows the card it holds
+(docs/CARDS.md): its name, suit and band, its needs with the ones your team knows, and whether it
+can be discovered now (its help in the tooltip; a "card" badge on the unit's row and tooltip); its
+Discover action names the card ("Discover: Abjurer") and, while it cannot be cast, says what is
+missing ("Needs Astronomy."). Units in a transport are listed under it.
 With the art, the panel's head shows the lead unit's figure in its owner's colours, each row its
 combat class, strength, health bar, moves and level, the lead unit's promotions are seals under
 the list (and each promotion button carries its seal). With armies on (this game's own system,
@@ -299,7 +308,9 @@ rest of the screen stands in panels at the sides, the interface steps aside, and
 back when the screen closes (docs/ISO.md, "The city screen").
 
 **Empire.** **Techs** (`F6`): the tech tree by prerequisite depth, what you know, research and
-can research now, with costs, turns and progress, and each tech's tooltip; click a tech to research
+can research now, with costs, turns and progress, and each tech's tooltip (over it, the cards you
+know and those your great people hold, each with what it is and unlocks: its suit, band, needs,
+content and effect; cards stay out of the tree); click a tech to research
 it (with what it needs first), Shift-click to queue it. **Civics** (`F3`): each civic option with its
 civics (the current ones marked, the ones you cannot adopt greyed, their tooltip saying why: the
 tech, a war, an alignment, a state religion); pick civics and the screen shows the
@@ -646,7 +657,10 @@ cargo build --release
   `diplomacy`: an AI leader's first contact and war declaration, shown as leader moments on load;
   `engagement`: armies and engagement combat on, an army of two Axemen, an Archer, a Horseman and
   a Warrior next to an AI city at war held by two Warriors and an Archer: attacking it opens the
-  battle plan, and the battle takes the city),
+  battle plan, and the battle takes the city; `cards`: the decks in play (docs/CARDS.md), the
+  Starmetal Meteor and Legacy of Kings cards known (their world spells in the top bar), a Great
+  Bard holding the Anointed Champion card with its need missing, the Armageddon deck dealt with
+  its slot 30 revealed),
   and prints
   its path and the ids as JSON. It writes only `DIR/KIND.ffhsave` and its sidecar (the staged
   game keeps no journal and no autosaves). Nothing in play uses it.
@@ -759,8 +773,13 @@ the rules refuse; the reply carries `report`, the battle's report id, and `battl
 through `group_attack_force`, as every attack; a `move` onto an enemy land plot is one battle
 too, in the rules' auto formation, and its reply carries the same `report` and `battle`;
 `PLAYEROPTION_STACK_ATTACK` is ignored), `research`, `update_civics`, `percent_change`, `convert`, `declare_war`,
-`propose_deal`, `event`, `vote`, `set_option`, `auto_moves`, `end_turn`, `autoplay`, and (see Crusades
-below) `crusade_answer`, `crusade_lend`, `propose_loan`. Each is
+`propose_deal`, `event`, `vote`, `set_option`, `auto_moves`, `end_turn`, `autoplay`, `cast_at {unit,
+spell, target, confirmed}` (a spell cast at a distance, docs/CARDS.md: `target` is `{"plot": {"x":
+x, "y": y}}`, `{"city": id}`, `{"unit": id}`, `{"player": id}` or `{"choice": n}`, one of the
+`targets` its action lists; a world or card spell answers `{"confirm": {"kind": "cast_global"}}`
+until resent with `confirmed: true`; refused for a spell without a target, a target of another
+kind, a target not listed, or a unit that cannot cast it now; `do_command COMMAND_CAST` refuses a
+targeted spell), and (see Crusades below) `crusade_answer`, `crusade_lend`, `propose_loan`. Each is
 the port of what Civ4 sends for that input; design §4.5 and the "As built" notes of P1 and P3 in
 §7 list the rules calls and checks. The `group` query lists the actions of a selection with the
 command that performs each, ready to send, except a `target` action's plot: its command carries
@@ -867,10 +886,10 @@ Errors: `invalid`, `not_owner`, `gone`, `busy`.
 |---|---|
 | `status` | phase (`human`, `running`, `decision`, `over`; over the transports also `stuck`, `no_game`, `crashed` with the report), turn, year, you, the active players, the open decision, the winner, `view_version` (changes whenever the view does: a command, a decision opening or closing, debug reveal), `ai_auto_play` (the AI autoplay's turns left, 0 when off; observed, the turns left to play), `observe` (an observed game: `human` is the player the view follows, phase `human` means stopped at a turn boundary), `build` (the commit the binary was built from), and over the transports `game {dir, journal, autosave}` |
 | `pending` | open events (with each option's effects), votes, research needed, idle cities, promotions, ready groups, idle AI-controlled groups, crusade calls |
-| `view` | `me` (gold and rate, research, sliders, civics, score, Armageddon counter, mana, Stasis, the player options, AI autoplay), the players you met, the cities you revealed, the units you see, your groups (`ready`: some unit can move, as `pending.ready_groups`; `selectable`: every unit can, what Civ4's cycle selects; neither for a marching recruit's group), `group_cycle` (your groups in Civ4's cycle order) and `has_auto_unit`, `pending`, `log_next`; with armies (null without), `armies` (each: `id`, `name`, `group`, `units`, `x`, `y`, `in_supply`, `target_size`, `marching` (the recruits marching to it: unit ids), `requisition` (`cities`: the cities it requisitions from, in order; `orders`: its requisition orders in production, each `{city, name, unit, index, turns}`; `head_orders`: how many other orders bound for it its cities build next (the first order behind any requisition orders, whose destination or the city's default names the army); `shortfall`: how many it lacks of its target size counting its units, recruits marching, `orders` and `head_orders`, 0 or less: none), `disband_to`, and `upgrades` with their `upgrade_price`) and `garrison_marching` (the recruits marching to garrisons: unit ids), and each unit's `army`, `garrison`, `army_unit` and `march` (null, or a marching recruit's `{dest, to, from, turns_left, stalled, diverted, since}`: where it goes and its name, the city that trained it, the turns it needs along the rules' path (null: no way there now), the turns without progress, whether it was sent to the nearest garrison instead, the turn it set out); `battles` (your battles of this game turn and the last, as `battle_reports`' summaries: the map's markers); each land unit its `engage_row_order` (its rank preference: the rows, front 0, middle 1, rear 2, in the order the auto formation tries them), `engage_attack` (its A before the bonuses of a plot it attacks, x100), `engage_defense` (its Dv where it stands, x100), `engage_max_hp` (its HP in a battle; `hp` and `max_hp` stay the health percent), `engage_speed` (before first strikes), `engage_actions` (`[{kind, n}]` in its front, middle and rear rows, `kind` an action kind: `Strike`, `Charge`, `Stab`, `Shoot`, `Spell`, `Bombard`, `Heal` or `None`), `engage_dodge`, `engage_crit_bonus` and `engage_large` (it fills two cells of a row and counts two slots); with cultural actions, each of your cities' `channel` (`{action, target, religion}`, absent when it channels nothing), and `revolt` (the level: 0 pressure without effect yet, 1 unrest, 2 revolt, 3 close to changing hands) and `unrest` (its unhappiness) for the cities you see under revolt pressure |
+| `view` | `me` (gold and rate, research, sliders, civics, score, Armageddon counter, the Armageddon deck as you know it (`doom`: null before the deal; else `counter` and `slots`, each `{threshold, state}`, `state` `fired`, `revealed`, `seen` (ahead) or `hidden`, and for a known slot `card` (its key, null for an empty slot), `name`, `help`, `stage`, `stages`), mana, Stasis, the player options, AI autoplay, `world_actions` (the world spell and the cards' world spells: `once`, `cast`, `why`, and for a spell cast at a distance `target_kind` and `targets`)), the players you met, the cities you revealed, the units you see, your groups (`ready`: some unit can move, as `pending.ready_groups`; `selectable`: every unit can, what Civ4's cycle selects; neither for a marching recruit's group), `group_cycle` (your groups in Civ4's cycle order) and `has_auto_unit`, `pending`, `log_next`; with armies (null without), `armies` (each: `id`, `name`, `group`, `units`, `x`, `y`, `in_supply`, `target_size`, `marching` (the recruits marching to it: unit ids), `requisition` (`cities`: the cities it requisitions from, in order; `orders`: its requisition orders in production, each `{city, name, unit, index, turns}`; `head_orders`: how many other orders bound for it its cities build next (the first order behind any requisition orders, whose destination or the city's default names the army); `shortfall`: how many it lacks of its target size counting its units, recruits marching, `orders` and `head_orders`, 0 or less: none), `disband_to`, and `upgrades` with their `upgrade_price`) and `garrison_marching` (the recruits marching to garrisons: unit ids), and each unit's `army`, `garrison`, `army_unit` and `march` (null, or a marching recruit's `{dest, to, from, turns_left, stalled, diverted, since}`: where it goes and its name, the city that trained it, the turns it needs along the rules' path (null: no way there now), the turns without progress, whether it was sent to the nearest garrison instead, the turn it set out); `battles` (your battles of this game turn and the last, as `battle_reports`' summaries: the map's markers); each land unit its `engage_row_order` (its rank preference: the rows, front 0, middle 1, rear 2, in the order the auto formation tries them), `engage_attack` (its A before the bonuses of a plot it attacks, x100), `engage_defense` (its Dv where it stands, x100), `engage_max_hp` (its HP in a battle; `hp` and `max_hp` stay the health percent), `engage_speed` (before first strikes), `engage_actions` (`[{kind, n}]` in its front, middle and rear rows, `kind` an action kind: `Strike`, `Charge`, `Stab`, `Shoot`, `Spell`, `Bombard`, `Heal` or `None`), `engage_dodge`, `engage_crit_bonus` and `engage_large` (it fills two cells of a row and counts two slots); with cultural actions, each of your cities' `channel` (`{action, target, religion}`, absent when it channels nothing), and `revolt` (the level: 0 pressure without effect yet, 1 unrest, 2 revolt, 3 close to changing hands) and `unrest` (its unhappiness) for the cities you see under revolt pressure |
 | `map` | flat arrays `y * w + x`: `vis` (0 unrevealed, 1 fogged, 2 visible), `plot_type`, `terrain`, `feature`, `bonus`, `improvement`, `route`, `owner`, `river` (bit 0 river on the south edge, bit 1 on the east edge, bits 2-4 north/south flow + 1, bits 5-7 west/east flow + 1), `city`, `yield` (`food \| production << 8 \| commerce << 16`, visible plots only), `map_rev`, and `epoch` and `rev`. `map {since: R, epoch: E}` answers only the tiles changed since revision `R` (`full: false`, `tiles` = their indices, each array the values of those tiles), or the full map (`full: true`) when `E` is not the current epoch, `R` is unknown or much of the map changed |
 | `plot {x,y}` | a plot as you know it (`min_level` when units below a level cannot enter); while visible also yields, defence, culture and the units (under debug reveal each with `ai_type`, the AI's role, and `missions`, its group's orders) |
-| `group {units}` | the units in detail and the actions: `mission`, `target` (an interface mode, `mode`: go-to, route-to for workers, range attack, the air modes; needs a plot), `command`, `load`, `spell`, `promotion`, `upgrade`, `army` (this game's armies: `army` the action, `label`, `help`), each `enabled` or not, each with its `cmd`; a selection with a marching recruit has none and says why in `marching` ("marching to the 2nd Army") |
+| `group {units}` | the units in detail and the actions: `mission`, `target` (an interface mode, `mode`: go-to, route-to for workers, range attack, the air modes; needs a plot), `command`, `load`, `spell` (a spell cast at a distance: `target_kind`, `targets` `[{target, at, label, info?}]` and a `cast_at` command; the Discover action of a great person holding a card: `label` "Discover: <card>", `card`, and `why` while it cannot be cast), `promotion`, `upgrade`, `army` (this game's armies: `army` the action, `label`, `help`), each `enabled` or not, each with its `cmd`; a great person's unit carries `card_detail` (its card's `tech`, `suit`, `band`, `alignment`, `religion`, `needs` and `needs_one_of` (`{tech, known}`), `known`, `discoverable`, `why`), and every unit of yours in the view its `card`; a selection with a marching recruit has none and says why in `marching` ("marching to the 2nd Army") |
 | `path {units,x,y}` | the path preview: nodes with the turn of arrival and moves left, total turns, a war it would declare, whether it ends in an attack |
 | `combat {units,x,y}` | the attack preview: attacker, defender, odds of winning and of retreating (per mille), strengths, the modifiers of both sides. Under engagement combat, for land units attacking a land plot that holds a defender: `engagement: true`, `defenders` (their number), `declare_war_team` and `on_arrival`. An attack the selection can launch now (the plot is next to it and some unit on its plot can attack the plot now): `on_arrival: false`, `valid: true`, `pool` the units on its plot that can (other armies and the garrison there included). Otherwise (a go-to that ends in an attack, units that have used their moves or their attack): `on_arrival: true`, the duel's `valid` and odds kept, `pool` the selected units that could fight there once they can attack it. The duel's odds and strengths of the strongest pair stay beside them (the forecast of a battle is `engage_preview`'s). Ships, air units and the option off: the duel's preview |
 | `engage_preview {army \| units \| from, to, formation?}` | engagement combat: the plan of an attack (the battle screens' plan), in the battle log's shapes (`assets/app/battle_log.js`'s header lists what the screens read): `plot` and `from`, the `ground` and its rules, `params` (the rule values the screens word), both sides' `slots` and why and their `lanes`, `sides`, `fighters` (the pool, then the defenders you see, each in its cell or `lane` null: its A and Dv, HP, speed, actions per row, spell, dodge, crit bonus, size and specials), `formation` (the one asked for; else the rules' auto formation), `auto_formation`, `reserve` (the pool's units not in it), `def_formation` and `def_reserve` (the defenders' line in the rules' auto formation, as the real fight forms it, and the rest on the plot), `forecast` (`runs` battles of the real resolver on a private RNG seeded from the plan, never the game's: `lost_x100` and `escaped_x100` per side, `line_wiped_permille`, `plot_falls_permille`, `attackers_wiped_permille`, and `per` fighter its `fall_pct` and `escape_pct`), `declare_war` (the team the attack declares war on), `errors`. A formation the rules refuse gets the plan in the auto formation, `forecast` null and why in `errors`; a plot you do not see, one not next to the attackers, or an attack the rules refuse has no plan: the reply is `errors` and `declare_war` alone. Refused without the option |
@@ -1107,7 +1126,10 @@ node tools/web-touch-smoke.mjs           # the same on an emulated phone, with t
   (`F7`), the sliders (top bar and `F2`), diplomacy (`F4`; the trade screen when a player was
   met), the cities list (`F1`), the keys (`?`), the go-to mode (`G`, `Esc`), the map layers, the
   inspector, debug reveal, an AI autoplay turn and a 5,000-turn one stopped from the top bar, the spectator mode (play, pause, step, stop),
-  and the trade screen (`stage trade`: 7 gold offered and accepted); and the classic interface on
+  and the trade screen (`stage trade`: 7 gold offered and accepted); the decks (`stage cards`: the
+  Armageddon deck's slots in the counter's tooltip, a Great Bard's card in the unit panel and its
+  Discover action named for the card, Legacy of Kings cast at a trait picked from a list and
+  Starmetal Meteor at a plot picked on the map, each confirmed); and the classic interface on
   the flat map, which those steps drive: the art loads, the interface has its bitmap type and
   icons, the map is not blank, a frame takes under 60 ms (median of 15), the zoom goes through
   the flat map's steps with `+` and `-`, Tools → Options switches to the isometric map and back,

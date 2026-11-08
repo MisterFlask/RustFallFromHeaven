@@ -443,11 +443,14 @@ async function atControl(st) {
   return false;
 }
 
-/** Sends the action (a `group` query action); a `target` action first asks for a plot. An
- *  action of other units than the selected ones (a reply that came late) is not sent. */
+/** Sends the action (a `group` query action); a `target` action first asks for a plot, a spell
+ *  cast at a distance for its target (`castTargeted`). An action of other units than the selected
+ *  ones (a reply that came late) is not sent. */
 export async function doAction(a) {
   if (!a.enabled) return;
   if (a.cmd?.units && unitsKey(a.cmd.units) !== unitsKey(S.sel?.units)) return;
+  if (a.cmd?.c === "cast_at" && !(S.sel?.units ?? []).includes(a.cmd.unit)) return;
+  if (a.kind === "spell" && a.target_kind) return castTargeted(a);
   if (a.kind === "target") {
     if (!a.any && (a.targets ?? []).length === 0) {
       toast("No target in range.", "error");
@@ -483,7 +486,8 @@ export function currentActions() {
  *  leaves it. */
 export function setMode(m) {
   mode = m;
-  const targets = m?.kind === "target" ? (m.action.any ? null : m.action.targets) : null;
+  // A spell cast at a distance outlines the plots of its targets (`plots`).
+  const targets = m?.kind === "target" ? (m.plots ?? (m.action.any ? null : m.action.targets)) : null;
   // The route-to mode's path preview is drawn in ochre (docs/ART.md 11.7).
   mapView?.setOverlay({ targets: targets ?? (m ? [] : null), routeTo: m?.kind === "target" && m.action.mode === "INTERFACEMODE_ROUTE_TO" });
   document.body.classList.toggle("picking", !!m);
@@ -506,6 +510,7 @@ export function isGoTo(a) {
  *  stays on meanwhile so that more can be added (P6 review). */
 async function pickPlot(x, y, ev) {
   const m = mode;
+  if (m.cast) return pickCast(m, x, y);
   if (!S.sel) {
     setMode(null);
     return;
@@ -524,6 +529,88 @@ async function pickPlot(x, y, ev) {
   setMode(null);
   if (isGoTo(a)) await moveTo(x, y);
   else await run(actionCommand(a, x, y));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Spells cast at a distance (docs/CARDS.md, section 3)
+
+/** The `cast_at` command of spell action `a` at target `t` (an entry of its `targets`). */
+function castCommand(a, t) {
+  return { ...a.cmd, target: t.target };
+}
+
+/** The distinct plots `[x, y]` of targets `targets` (those picked on the map). */
+function targetPlots(targets) {
+  const seen = new Set();
+  const out = [];
+  for (const t of targets) {
+    if (!Array.isArray(t.at) || seen.has(`${t.at[0]},${t.at[1]}`)) continue;
+    seen.add(`${t.at[0]},${t.at[1]}`);
+    out.push([t.at[0], t.at[1]]);
+  }
+  return out;
+}
+
+/** Asks which of `targets` (`{target, label, info?}`) action `a` is cast at: a list of their names,
+ *  each with its help when it is an info table's entry (a trait, a building, ...). Resolves with
+ *  the target, or null. */
+export function chooseTarget(a, targets, title = null) {
+  const m = openModal({
+    title: title ?? actionLabel(a),
+    tag: "cast-target",
+    wide: true,
+    body: [
+      h(
+        "div.options",
+        targets.map((t) => {
+          // The entry's help, without a first line that only repeats its name (a trait's).
+          const lines = t.info ? effectsOf(t.info[0], t.info[1]).split("[NEWLINE]") : [];
+          if (lines.length && lines[0].replace(/\[[^\]]*\]/g, "").trim() === t.label) lines.shift();
+          const help = lines.join("[NEWLINE]");
+          return h(
+            "button.option",
+            { "data-target": JSON.stringify(t.target), tip: t.info ? infoTip(t.info[0], t.info[1]) : null, onclick: () => m.close(t) },
+            h("span", t.label),
+            help ? h("small", markup(help)) : null,
+          );
+        }),
+      ),
+    ],
+    buttons: [{ label: "Cancel", value: null }],
+  });
+  return m.done;
+}
+
+/** Casts spell action `a`, one cast at a distance (`target_kind`, `targets`: the action carries
+ *  its valid targets): a plot, city or unit is picked on the map, its plots outlined (`world`: a
+ *  world action, picked without a selection); a player or one of the spell's options from a list.
+ *  The cast is `cast_at` at the pick (a card spell then asks to confirm). */
+export async function castTargeted(a, { world = false } = {}) {
+  if (!a.enabled) return;
+  const targets = a.targets ?? [];
+  if (!targets.length) {
+    toast(a.why ?? "No valid target now.", "error");
+    return;
+  }
+  if (a.target_kind === "player" || a.target_kind === "choice") {
+    const t = await chooseTarget(a, targets);
+    if (t) await run(castCommand(a, t));
+    return;
+  }
+  setMode({ kind: "target", action: a, cast: true, world, plots: targetPlots(targets) });
+  if (world || !S.sel) toast(`${actionLabel(a)}: pick its target on the map (the outlined plots). Esc cancels.`, "info", 6000);
+}
+
+/** A plot picked for a spell cast at a distance: its target there (several there: which one). */
+async function pickCast(m, x, y) {
+  const here = (m.action.targets ?? []).filter((t) => Array.isArray(t.at) && t.at[0] === x && t.at[1] === y);
+  setMode(null);
+  if (!here.length) {
+    toast("Not a valid target.", "error");
+    return;
+  }
+  const t = here.length === 1 ? here[0] : await chooseTarget(m.action, here, `${actionLabel(m.action)}: which one?`);
+  if (t) await run(castCommand(m.action, t));
 }
 
 /** Shift was released (or the window lost the focus): the held waypoints are sent, and a go-to
@@ -720,6 +807,8 @@ function showTip() {
         u.strength !== undefined ? ` ${u.strength}${u.defense_strength !== undefined && u.defense_strength !== u.strength ? `/${u.defense_strength}` : ""}⚔` : "",
         h("span.dim", ` ${playerName(u.owner)}${u.level > 1 ? `, level ${u.level}` : ""}${u.hp < u.max_hp ? `, ${Math.round((100 * u.hp) / u.max_hp)}% health` : ""}`),
         promos.length ? h("div.dim.tip-promos", promos.join(", ")) : null,
+        // A great person of ours holding a card (docs/CARDS.md).
+        u.card !== null && u.card !== undefined ? h("div.tip-card", `Card: ${dname("TechType", u.card)}`) : null,
         // This game's armies: a recruit of ours marching to its destination.
         u.march ? h("div.tip-march", marchLine(u.march)) : null,
       );
@@ -905,7 +994,7 @@ function actionLabel(a) {
     case "automate":
       return AUTOMATE_LABELS[tname("AutomateType", a.automate)] ?? dname("AutomateType", a.automate);
     case "spell":
-      return dname("SpellType", a.spell);
+      return a.label ?? dname("SpellType", a.spell);
     case "promotion":
       return dname("PromotionType", a.promotion);
     case "army":
@@ -963,7 +1052,13 @@ function sectionActions(actions, test) {
 /** An action's help text (markup): a spell's, a promotion's, a build's or a mission's. */
 function helpOf(a) {
   // A spell's, promotion's and upgrade's help: the data's `effects` (the server's help texts).
-  if (a.kind === "spell") return effectsOf("SpellType", a.spell) || a.help || "";
+  if (a.kind === "spell") {
+    // Why it cannot be cast now (a card's missing needs, no valid target), and for the Discover
+    // action the card's own help (what it is and gives).
+    const why = !a.enabled && a.why ? `[COLOR_NEGATIVE_TEXT]${a.why}[COLOR_REVERT]` : "";
+    const card = a.card !== undefined && a.card !== null ? effectsOf("TechType", a.card) : "";
+    return [why, card, effectsOf("SpellType", a.spell) || a.help || ""].filter(Boolean).join("[NEWLINE]");
+  }
   if (a.kind === "promotion") return effectsOf("PromotionType", a.promotion);
   if (a.kind === "upgrade") return effectsOf("UnitType", a.unit);
   if (a.kind === "army") return a.help ?? "";
@@ -1063,6 +1158,39 @@ function describe(a) {
   if (!box) return;
   const shown = (a && descs.get(a)) || box.firstElementChild;
   for (const c of box.children) c.classList.toggle("shown", c === shown);
+}
+
+/** A great person's card (docs/CARDS.md) as a badge: its name, its help in the tooltip. */
+function cardBadge(u) {
+  if (u.card === null || u.card === undefined) return null;
+  return h("span.badge.card", { tip: infoTip("TechType", u.card, { title: `Card: ${dname("TechType", u.card)}` }) }, `card: ${dname("TechType", u.card)}`);
+}
+
+/** The card the lead unit holds, for the panel (the `group` query's `card_detail`): its name, suit
+ *  and band, its needs with the ones the team knows, and whether it can be discovered now (else
+ *  why not); its help in the tooltip. Null without a card. */
+function cardLine(u) {
+  const c = u?.card_detail;
+  if (!c) return null;
+  const need = (n) => `${dname("TechType", n.tech)} (${n.known ? "known" : "not known"})`;
+  const needs = [
+    c.needs?.length ? c.needs.map(need).join(", ") : null,
+    c.needs_one_of?.length ? `one of ${c.needs_one_of.map(need).join(", ")}` : null,
+  ].filter(Boolean);
+  const e = info("TechType", c.tech);
+  const suit = c.suit !== null && c.suit !== undefined ? dname("UnitClassType", c.suit).replace(/^Great /, "") : null;
+  const band = c.band !== null && c.band !== undefined ? ["I", "II", "III"][Math.min(2, c.band)] : null;
+  // The needs line says what is missing; another reason (the team knows the card) gets a line.
+  const missing = (c.needs ?? []).some((n) => !n.known) || ((c.needs_one_of ?? []).length > 0 && !c.needs_one_of.some((n) => n.known));
+  return h(
+    "div.card-line",
+    { tip: infoTip("TechType", c.tech, { title: `Card: ${dname("TechType", c.tech)}`, hint: c.discoverable ? "Discover it with the great person's Discover action." : c.why }) },
+    h("b", `Card: ${dname("TechType", c.tech)}`),
+    suit || band ? h("span.dim", ` (${[suit, band ? `band ${band}` : null].filter(Boolean).join(", ")})`) : null,
+    needs.length ? h(`div.small${missing ? ".warn" : ""}`, `Needs: ${needs.join("; ")}`) : null,
+    c.discoverable ? h("div.small.good", "Can be discovered now.") : !missing && c.why ? h("div.small.warn", c.why) : null,
+    e?.help && !isoSkin() ? h("div.small.dim", markup(e.help)) : null,
+  );
 }
 
 /** "automated" (the AI moves the unit's group: Stop automation gives it back) or "AI control"
@@ -1265,6 +1393,7 @@ function chipTip(u) {
     u.cargo?.length ? h("span.badge", `${u.cargo.length} aboard`) : null,
     u.transport !== null && u.transport !== undefined ? h("span.badge", "aboard") : null,
     act ? h("span.badge", humanize(act)) : null,
+    cardBadge(u),
   ].filter(Boolean);
   return [
     h("div.tip-title", u.name ?? dname("UnitType", u.type)),
@@ -1296,6 +1425,7 @@ function unitRow(u, selected) {
       roleBadge(u),
       u.summon_turns ? h("span.badge", { title: "A summoned unit: turns left" }, `${u.summon_turns}t`) : null,
       u.cargo?.length ? h("span.badge", { title: "Units on board" }, `${u.cargo.length} aboard`) : null,
+      cardBadge(u),
     ),
     look.art || isoSkin()
       ? h(
@@ -1327,6 +1457,12 @@ function touchy() {
 /** The side panel for the selection. */
 export function renderPanel() {
   if (!panel) return;
+  // A world spell's target picked on the map, with no selection: the pick's hint.
+  if (!S.sel && mode?.world) {
+    delete panel.dataset.plot;
+    fill(panel, h("div.mode-hint", h("span", `Pick a target: ${actionLabel(mode.action)} (Esc cancels).`), h("button.small", { onclick: () => setMode(null), title: "Leave the pick [Esc]" }, "Cancel")));
+    return;
+  }
   if (!S.sel) {
     // The isometric map's card shows only with a selection or a plot (the map stays clear).
     if (!panel.dataset.plot) {
@@ -1397,6 +1533,9 @@ export function renderPanel() {
   if (engage && !isoSkin()) status.push(engage);
   const army = armyLine();
   if (army) status.push(army);
+  // A great person's card (docs/CARDS.md).
+  const card = cardLine(lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null);
+  if (card) status.push(card);
   if (grp?.missions?.length) status.push(h("div.dim", `Orders: ${grp.missions.map((m) => dname("MissionType", m.m)).join(", ")}`));
   if (grp && !grp.ready && !march) status.push(h("div.dim", grp.busy ? "Busy" : "Done for this turn"));
   const actions = [];
@@ -1411,7 +1550,8 @@ export function renderPanel() {
     }
   }
   const others = foreign.length ? h("div.section", h("h4", "Others here"), foreign.map((u) => h("div.dim", `${dname("UnitType", u.type)} (${ownerText(u)})`))) : null;
-  const pick = touchy() ? (isGoTo(mode?.action) ? "Tap a plot to go there." : `Tap a plot: ${mode && actionLabel(mode.action)}.`) : isGoTo(mode?.action) ? "Click a plot to go there (Shift: add waypoints; Esc cancels)." : `Pick a plot: ${mode && actionLabel(mode.action)} (Esc cancels).`;
+  const what = mode?.cast ? "a target" : "a plot";
+  const pick = touchy() ? (isGoTo(mode?.action) ? "Tap a plot to go there." : `Tap ${what}: ${mode && actionLabel(mode.action)}.`) : isGoTo(mode?.action) ? "Click a plot to go there (Shift: add waypoints; Esc cancels)." : `Pick ${what}: ${mode && actionLabel(mode.action)} (Esc cancels).`;
   // One hint at a time: waypoints being laid say more than the go-to mode they are laid in.
   const way = waypoints && unitsKey(waypoints.units) === unitsKey(S.sel.units)
     ? h("p.mode-hint", `${waypoints.points.length === 1 ? "1 waypoint" : `${waypoints.points.length} waypoints`}: release Shift to send (Esc drops them).`)
