@@ -563,7 +563,10 @@ export function chooseTarget(a, targets, title = null) {
       h(
         "div.options",
         targets.map((t) => {
-          const help = t.info ? effectsOf(t.info[0], t.info[1]) : "";
+          // The entry's help, without a first line that only repeats its name (a trait's).
+          const lines = t.info ? effectsOf(t.info[0], t.info[1]).split("[NEWLINE]") : [];
+          if (lines.length && lines[0].replace(/\[[^\]]*\]/g, "").trim() === t.label) lines.shift();
+          const help = lines.join("[NEWLINE]");
           return h(
             "button.option",
             { "data-target": JSON.stringify(t.target), tip: t.info ? infoTip(t.info[0], t.info[1]) : null, onclick: () => m.close(t) },
@@ -1177,13 +1180,15 @@ function cardLine(u) {
   const e = info("TechType", c.tech);
   const suit = c.suit !== null && c.suit !== undefined ? dname("UnitClassType", c.suit).replace(/^Great /, "") : null;
   const band = c.band !== null && c.band !== undefined ? ["I", "II", "III"][Math.min(2, c.band)] : null;
+  // The needs line says what is missing; another reason (the team knows the card) gets a line.
+  const missing = (c.needs ?? []).some((n) => !n.known) || ((c.needs_one_of ?? []).length > 0 && !c.needs_one_of.some((n) => n.known));
   return h(
     "div.card-line",
     { tip: infoTip("TechType", c.tech, { title: `Card: ${dname("TechType", c.tech)}`, hint: c.discoverable ? "Discover it with the great person's Discover action." : c.why }) },
     h("b", `Card: ${dname("TechType", c.tech)}`),
     suit || band ? h("span.dim", ` (${[suit, band ? `band ${band}` : null].filter(Boolean).join(", ")})`) : null,
-    needs.length ? h("div.small", `Needs: ${needs.join("; ")}`) : null,
-    h(`div.small${c.discoverable ? ".good" : ".warn"}`, c.discoverable ? "Can be discovered now." : c.why ?? ""),
+    needs.length ? h(`div.small${missing ? ".warn" : ""}`, `Needs: ${needs.join("; ")}`) : null,
+    c.discoverable ? h("div.small.good", "Can be discovered now.") : !missing && c.why ? h("div.small.warn", c.why) : null,
     e?.help && !isoSkin() ? h("div.small.dim", markup(e.help)) : null,
   );
 }
