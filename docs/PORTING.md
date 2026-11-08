@@ -519,6 +519,25 @@ flag.
       its charge turns a flat land plot within 3 plots of the city, next to water, into Coast.
     - *Pillar of Dawn* (Prophet, the Empyrean, Righteousness; ritual, 500, each completion costs
       twice the last): for 10 turns your units within 5 plots of the city heal fully each turn.
+    - *Rite of the Necropolis* (Prophet, III, Malevolent Designs, not drawn by good players; world
+      spell): the Necropolis rises on the three City Ruins nearest the caster's capital, three cities
+      of size 2 with Walls and Pyre Zombies, led by the Lich-Prince; +4 toward the caster, -4 toward
+      good civilizations, not a vassal. The living units killed in a land battle on its land rise as
+      its Pyre Zombies.
+    - *Wake the Hill Clans* (Engineer, I, Mining; world spell): two cities on a hill site with 6
+      unowned hills or peaks around it, with Hill Giants and Thrumm; the caster's vassal; +1
+      production on its plots on hills.
+    - *The Usurper's Crown* (Bard, III, Rage; world spell at a player): a civilization of 8 or more
+      cities loses the third of them farthest from its capital to a usurper of its own civilization
+      (with their buildings and garrisons) led by a hero; +4 toward the caster, -6 toward the
+      parent.
+    - *Oath of Fealty* (Merchant, II, Feudalism; world spell at a player): a civilization at war
+      with the caster, of a third of its power or less, makes peace and becomes its vassal.
+    - *Call the Aifon* (Merchant, II, Sailing; world spell): two cities on an ocean coast of the
+      largest unowned region; the Deep Mother (a Kraken) leads them, and their land units walk on
+      water; the caster's vassal.
+    - **Civilizations born without a founder** (the Armageddon cards below) know every tech that at
+      least half the civilizations' teams know, and are played by the AI.
     - *Orrery of Ceridwen* (Sage, II, Astronomy; world wonder): its city has +2 research per 10
       points of the Armageddon counter, and its owner sees the next two Armageddon cards before
       they are revealed.
@@ -551,6 +570,16 @@ flag.
     - *The Long Night* (100, lasting): -1 food on every plot; units heal each turn only in cities.
     - *The Godless Age* (100): every shrine, holy city and religion is removed, and state religions
       end (without anarchy).
+    - *The Scaled Kingdom* (30): a new civilization of lizardmen rises in the largest unowned region
+      of jungle and marsh: three cities and the Slitherking; its units move through jungle and marsh
+      as open ground with +50% defence there; -2 toward the civilizations near its cities.
+    - *The Brood* (30, then 50): a Spider Nest, a lair of Baby Spiders, appears in each of the three
+      largest unowned forest regions; at 50 each nest still standing becomes a city of the Brood,
+      with Giant Spiders (60 hammers for it) and the Spider Queen.
+    - *The Infernal Gate Opens* (60): the Infernals arrive as with the Infernal Pact, beside the evil
+      civilization with the most cities; the card is dealt again if they have been in play.
+    - **The Infernals come once a game:** the Infernal Pact brings none once they have been in play,
+      and whoever brings them, they do not learn their patron's cards.
 
 **Balance** (after `classic-1`, each the owner's decision)
 
