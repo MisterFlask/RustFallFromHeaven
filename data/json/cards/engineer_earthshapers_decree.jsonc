@@ -1,0 +1,44 @@
+// Earthshaper's Decree (docs/DECKS.md 13, review batch 2, card 6: Engineer, band III, needs
+// Machinery, a world spell). Every land plot of the caster's owner without an improvement or a
+// city gets at once the improvement that suits it best among those its workers could build there
+// without removing the plot's feature: the one that connects the plot's resource, else the one
+// that adds the most food and production (then commerce). Rules: crates/ffh-core/src/ffh/cards/world_spells_2.rs.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_EARTHSHAPERS_DECREE",
+      "description": "TXT_KEY_TECH_CARD_EARTHSHAPERS_DECREE",
+      "help": "TXT_KEY_TECH_CARD_EARTHSHAPERS_DECREE_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_EARTHSHAPERS_DECREE_PEDIA",
+      "advisor": "ADVISOR_GROWTH",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_MACHINERY"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_GROWTH": 1, "FLAVOR_PRODUCTION": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_EARTHSHAPERS_DECREE",
+      "description": "TXT_KEY_SPELL_EARTHSHAPERS_DECREE",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_EARTHSHAPERS_DECREE_HELP",
+      "tech_prereq": "TECH_CARD_EARTHSHAPERS_DECREE",
+      "once": true,
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_requirement": "reqEarthshapersDecree(pCaster)",
+      "py_result": "spellEarthshapersDecree(pCaster)",
+      "button": "Art/Interface/Buttons/Spells/Earthquake.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_EARTHSHAPERS_DECREE": "Earthshaper's Decree",
+    "TXT_KEY_TECH_CARD_EARTHSHAPERS_DECREE_HELP": "[ICON_BULLET]World spell, once a game: Earthshaper's Decree.[NEWLINE][ICON_BULLET]Every land plot in your borders with no improvement and no city gets one at once: of the improvements your workers could build there without removing its forest or other feature, the one that connects its resource, else the one that adds the most food and production, then commerce.",
+    "TXT_KEY_TECH_CARD_EARTHSHAPERS_DECREE_PEDIA": "The engineers' great survey: every field, mine and mill of the realm drawn on one map and raised in one season.",
+    "TXT_KEY_SPELL_EARTHSHAPERS_DECREE": "Earthshaper's Decree",
+    "TXT_KEY_SPELL_EARTHSHAPERS_DECREE_HELP": "[ICON_BULLET]Every land plot in your borders with no improvement and no city gets one at once: of the improvements your workers could build there without removing its feature, the one that connects its resource, else the one that adds the most food and production, then commerce."
+  }
+}

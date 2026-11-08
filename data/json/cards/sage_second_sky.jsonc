@@ -1,0 +1,67 @@
+// The Second Sky (docs/DECKS.md 3.1 and 9.1: Sage, band I, needs Calendar, a national wonder).
+// When built, its owner's team sees every mana node, unique feature, lair and goody hut on the
+// map, for good (`reveals_sites`: the plots are revealed, not the units on them). Recon units
+// trained in its city get +1 sight (its free promotion).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_SECOND_SKY",
+      "description": "TXT_KEY_TECH_CARD_SECOND_SKY",
+      "help": "TXT_KEY_TECH_CARD_SECOND_SKY_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_SECOND_SKY_PEDIA",
+      "advisor": "ADVISOR_SCIENCE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_ANCIENT",
+      "and_pre_reqs": ["TECH_CALENDAR"],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {"FLAVOR_SCIENCE": 1, "FLAVOR_GROWTH": 1}
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_SECOND_SKY",
+      "description": "TXT_KEY_BUILDING_SECOND_SKY",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 1,
+      "default_building": "BUILDING_SECOND_SKY"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_SECOND_SKY",
+      "building_class": "BUILDINGCLASS_SECOND_SKY",
+      "description": "TXT_KEY_BUILDING_SECOND_SKY",
+      "civilopedia": "TXT_KEY_BUILDING_SECOND_SKY_PEDIA",
+      "prereq_tech": "TECH_CARD_SECOND_SKY",
+      "never_capture": true,
+      "cost": 150,
+      "hurry_cost_modifier": 50,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "asset": 4,
+      "reveals_sites": true,
+      "free_promotion": "PROMOTION_SECOND_SKY",
+      "flavors": {"FLAVOR_SCIENCE": 5}
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_SECOND_SKY",
+      "description": "TXT_KEY_PROMOTION_SECOND_SKY",
+      "tech_prereq": "TECH_NEVER",
+      "visibility_change": 1,
+      "unit_combats": {"UNITCOMBAT_RECON": true},
+      "button": "Art/Interface/Buttons/Promotions/Sentry1.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_SECOND_SKY": "The Second Sky",
+    "TXT_KEY_TECH_CARD_SECOND_SKY_HELP": "[ICON_BULLET]Allows the Second Sky (national wonder, 150 [ICON_PRODUCTION]).[NEWLINE][ICON_BULLET]When built, you see every mana node, unique feature, lair and goody hut on the map, for good (not the units on them).[NEWLINE][ICON_BULLET]Recon units trained in its city: +1 sight.",
+    "TXT_KEY_TECH_CARD_SECOND_SKY_PEDIA": "A dome painted with the world as the stars see it: every place of power marked in silver.",
+    "TXT_KEY_BUILDING_SECOND_SKY": "The Second Sky",
+    "TXT_KEY_BUILDING_SECOND_SKY_PEDIA": "Its astronomers watch the sky over the world, and the sky over the world shows them where the old powers sleep.",
+    "TXT_KEY_PROMOTION_SECOND_SKY": "Second Sky"
+  }
+}

@@ -29,6 +29,7 @@ pub mod cards_battle_magic;
 pub mod cards_deck_ui;
 pub mod cards_map_rules;
 pub mod cards_world_spells;
+pub mod cards_world_spells_2;
 pub mod casting;
 pub mod combat_sim;
 pub mod civs;

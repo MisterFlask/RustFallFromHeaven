@@ -95,6 +95,7 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         // ---- the Armageddon deck (docs/CARDS.md) ----
         global_counter_commerce,
         doom_sight,
+        reveals_sites,
         building_class_type,
         victory_prereq,
         free_start_era,
@@ -511,6 +512,10 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     if *doom_sight > 0 {
         h.push_str(NEWLINE);
         h.push_str(&format!("[ICON_BULLET]Shows the next {} Armageddon cards and their thresholds", doom_sight));
+    }
+    if *reveals_sites {
+        h.push_str(NEWLINE);
+        h.push_str("[ICON_BULLET]When built: you see every mana node, unique feature, lair and goody hut on the map");
     }
     if let (Some(t), Some(of)) = (*tier, *variant_of) {
         h.push_str(NEWLINE);

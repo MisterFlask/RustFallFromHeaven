@@ -292,6 +292,10 @@ pub struct City {
     /// class, rolled at founding (`Game::city_roll_building_tiers`) and kept for the city's life
     /// (a city changing hands keeps it). Standard for a class no city rolls.
     pub building_tiers: IdxVec<BuildingClassType, BuildingTierType>,
+    /// This game's (docs/CARDS.md, `ritual_charge`): the rituals completed here whose spell has
+    /// not been cast yet, one entry a completion (the Weather Engine, the Tidecall of Danalin).
+    /// Lost with the city.
+    pub ritual_charges: Vec<ProjectType>,
 }
 
 impl City {
@@ -507,6 +511,7 @@ impl City {
             governor: None,
             governor_penalty_turns: 0,
             building_tiers: IdxVec::from_elem(BuildingTierType::STANDARD, d.building_classes.len()),
+            ritual_charges: Vec::new(),
         }
     }
 

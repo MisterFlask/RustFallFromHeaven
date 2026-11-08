@@ -333,6 +333,7 @@ fn write_game(g: &Game, w: &mut Writer) {
         next_crusade_id,
         crusade_reports,
         doom,
+        area_effects,
         spell_target: _,
         trophies,
         map_script: _,
@@ -449,6 +450,7 @@ fn write_game(g: &Game, w: &mut Writer) {
     next_crusade_id.write(w);
     crusade_reports.write(w);
     doom.write(w);
+    area_effects.write(w);
     trophies.write(w);
 }
 
@@ -563,6 +565,7 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         next_crusade_id: Persist::read(r)?,
         crusade_reports: Persist::read(r)?,
         doom: Persist::read(r)?,
+        area_effects: Persist::read(r)?,
         spell_target: None,
         trophies: Persist::read(r)?,
         map_script: default_map_script(),

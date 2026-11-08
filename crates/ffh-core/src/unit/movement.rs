@@ -1061,6 +1061,12 @@ impl Game {
             return true;
         }
 
+        // Card: the Weather Engine's Fog (docs/CARDS.md): hidden from a team with no unit or city
+        // within 1 plot.
+        if plot.is_some_and(|p| self.plot_fog_hides(p, team)) {
+            return true;
+        }
+
         if check_cargo && self.unit_is_cargo(u) {
             return true;
         }
@@ -1110,6 +1116,11 @@ impl Game {
         }
 
         if self.unit_always_invisible(u) {
+            return true;
+        }
+
+        // Card: the Weather Engine's Fog (docs/CARDS.md), as in `unit_is_invisible`.
+        if plot.is_some_and(|p| self.plot_fog_hides(p, team)) {
             return true;
         }
 
@@ -1491,7 +1502,8 @@ impl Game {
 
         //FfH: Added by Kael 10/26/2007 (to prevent spinlocks when always hostile units attack barbarian allied teams)
         if self.unit_is_always_hostile(u, plot) {
-            if Some(our_team) != team {
+            // Card: Judgment of Junil (docs/CARDS.md): not toward a team under truce with its own.
+            if Some(our_team) != team && !team.is_some_and(|t| self.team_has_truce(our_team, t)) {
                 return true;
             }
         }

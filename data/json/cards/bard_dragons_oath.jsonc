@@ -1,0 +1,117 @@
+// B13 Dragon's Oath (docs/DECKS_ROUND8.md; C.4: a dragon of its own, not Drifa: large, 180 HP,
+// attack 150 / defence 120, the dragons' movement, Breath Fire, no Fear). Sylvarith, the Singing
+// Wyrm, is a world unit: one in the world, never trained. It moves as Drifa does (3 moves, over
+// impassable terrain at a plain move's cost). It has no Dragon promotion (that one gives Fear), so
+// its Breath Fire is its own copy of the dragons' spell. Rules: crates/ffh-core/src/ffh/cards/world_spells_2.rs.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_DRAGONS_OATH",
+      "description": "TXT_KEY_TECH_CARD_DRAGONS_OATH",
+      "help": "TXT_KEY_TECH_CARD_DRAGONS_OATH_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_DRAGONS_OATH_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_ANIMAL_MASTERY"],
+      "card_suit": "UNITCLASS_ARTIST",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_SYLVARITH",
+      "description": "TXT_KEY_UNIT_SYLVARITH",
+      "max_global_instances": 1,
+      "max_team_instances": -1,
+      "max_player_instances": -1,
+      "default_unit": "UNIT_SYLVARITH"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_SYLVARITH",
+      "stats": {"hp": 180, "attack": 150, "defense": 120, "magic": 0, "magic_defense": 84, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
+      "engage_rows": [
+        {"action": "STRIKE", "count": 2},
+        {"action": "STRIKE", "count": 1},
+        {"action": "STRIKE", "count": 1}
+      ],
+      "engage_row_order": ["FRONT", "MIDDLE", "REAR"],
+      "class": "UNITCLASS_SYLVARITH",
+      "unit_combat": "UNITCOMBAT_BEAST",
+      "large": true,
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_ATTACK",
+      "description": "TXT_KEY_UNIT_SYLVARITH",
+      "civilopedia": "TXT_KEY_UNIT_SYLVARITH_PEDIA",
+      "strategy": "TXT_KEY_UNIT_SYLVARITH_STRATEGY",
+      "military_happiness": true,
+      "military_production": true,
+      "pillage": true,
+      "no_defensive_bonus": true,
+      "can_move_impassable": true,
+      "ignore_terrain_cost": true,
+      "unit_ais": {"UNITAI_ATTACK": true, "UNITAI_ATTACK_CITY": true},
+      "flavors": {"FLAVOR_MILITARY": 10},
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 3,
+      "nuke_range": -1,
+      "combat": 15,
+      "combat_defense": 12,
+      "combat_limit": 100,
+      "xp_value_attack": 32,
+      "xp_value_defense": 16,
+      "first_strikes": 1,
+      "culture_garrison": 16,
+      "asset": 42,
+      "power": 84,
+      "free_promotions": {
+        "PROMOTION_MAGIC_IMMUNE": true,
+        "PROMOTION_SENTRY": true
+      },
+      "tier": 4
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_DRAGONS_OATH",
+      "description": "TXT_KEY_SPELL_DRAGONS_OATH",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_DRAGONS_OATH_HELP",
+      "tech_prereq": "TECH_CARD_DRAGONS_OATH",
+      "once": true,
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_requirement": "reqDragonsOath(pCaster)",
+      "py_result": "spellDragonsOath(pCaster)",
+      "button": "Art/Interface/Buttons/Equipment/DragonsHorde.dds"
+    },
+    {
+      "type": "SPELL_SYLVARITH_BREATH_FIRE",
+      "description": "TXT_KEY_SPELL_BREATH_FIRE",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "unit_prereq": "UNIT_SYLVARITH",
+      "allow_ai": true,
+      "display_when_disabled": true,
+      "has_casted": true,
+      "create_unit_type": "UNIT_METEOR",
+      "create_unit_num": 1,
+      "ability": true,
+      "button": "Art/Interface/Buttons/Spells/Breathfire.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_DRAGONS_OATH": "Dragon's Oath",
+    "TXT_KEY_TECH_CARD_DRAGONS_OATH_HELP": "[ICON_BULLET]World spell, once a game: Dragon's Oath.[NEWLINE][ICON_BULLET]Sylvarith, the Singing Wyrm, joins you in your capital: a large dragon, HP 180, attack 150, defence 120, 3 moves over any terrain, Breath Fire. It has no Fear.[NEWLINE][ICON_BULLET]One Sylvarith in the world: not while another lives.",
+    "TXT_KEY_TECH_CARD_DRAGONS_OATH_PEDIA": "A song older than the elves calls a wyrm out of the high places, and it swears itself to the singer's people.",
+    "TXT_KEY_SPELL_DRAGONS_OATH": "Dragon's Oath",
+    "TXT_KEY_SPELL_DRAGONS_OATH_HELP": "[ICON_BULLET]Sylvarith, the Singing Wyrm, joins you in your capital.[NEWLINE][ICON_BULLET]Not while a Sylvarith lives.",
+    "TXT_KEY_UNIT_SYLVARITH": "Sylvarith, the Singing Wyrm",
+    "TXT_KEY_UNIT_SYLVARITH_PEDIA": "Its song carries over the mountains before its shadow does. It is no servant: it keeps an oath, and the oath is to the people whose bards remembered its name.",
+    "TXT_KEY_UNIT_SYLVARITH_STRATEGY": "3 moves; enters peaks and other impassable land, each plot at the cost of open ground. Breath Fire. Immune to magic. No Fear."
+  }
+}

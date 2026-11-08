@@ -1,0 +1,45 @@
+// P06 Call the Leviathan (docs/DECKS_ROUND8.md; a faith card, the Octopus Overlords; C.4: a Kraken
+// comes if the Leviathan lives; DECKS.md 16: the Leviathan is one in the world). The beast comes in
+// a coastal city of the caster's owner, chosen. Rules: crates/ffh-core/src/ffh/cards/world_spells_2.rs.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_CALL_THE_LEVIATHAN",
+      "description": "TXT_KEY_TECH_CARD_CALL_THE_LEVIATHAN",
+      "help": "TXT_KEY_TECH_CARD_CALL_THE_LEVIATHAN_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_CALL_THE_LEVIATHAN_PEDIA",
+      "advisor": "ADVISOR_RELIGION",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_MESSAGE_FROM_THE_DEEP"],
+      "card_suit": "UNITCLASS_PROPHET",
+      "card_religion": "RELIGION_OCTOPUS_OVERLORDS",
+      "flavors": {"FLAVOR_MILITARY": 1, "FLAVOR_RELIGION": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_CALL_THE_LEVIATHAN",
+      "description": "TXT_KEY_SPELL_CALL_THE_LEVIATHAN",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_CALL_THE_LEVIATHAN_HELP",
+      "tech_prereq": "TECH_CARD_CALL_THE_LEVIATHAN",
+      "once": true,
+      "target": "city",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_targets": "targetsCallTheLeviathan(pCaster)",
+      "py_target_label": "labelCallTheLeviathan(pCaster)",
+      "py_result": "spellCallTheLeviathan(pCaster)",
+      "button": "Art/Interface/Buttons/Buildings/Templeoverlords.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_CALL_THE_LEVIATHAN": "Call the Leviathan",
+    "TXT_KEY_TECH_CARD_CALL_THE_LEVIATHAN_HELP": "[ICON_BULLET]World spell, once a game: Call the Leviathan.[NEWLINE][ICON_BULLET]The Leviathan joins you in a coastal city of yours you choose. While a Leviathan lives anywhere, a Kraken comes instead.[NEWLINE][ICON_BULLET]Spreads the Octopus Overlords to three of your cities.",
+    "TXT_KEY_TECH_CARD_CALL_THE_LEVIATHAN_PEDIA": "The deep ones answer the prophet's call, and the greatest of the sea's beasts rises under the harbour.",
+    "TXT_KEY_SPELL_CALL_THE_LEVIATHAN": "Call the Leviathan",
+    "TXT_KEY_SPELL_CALL_THE_LEVIATHAN_HELP": "[ICON_BULLET]The target: a coastal city of yours.[NEWLINE][ICON_BULLET]The Leviathan joins you there; while a Leviathan lives anywhere, a Kraken instead."
+  }
+}

@@ -599,6 +599,10 @@ impl Game {
         if city.is_none() && self.doom_fired(crate::deck::doom_cards::LONG_NIGHT) {
             return 0;
         }
+        // Card: the Weather Engine's Blizzard (docs/CARDS.md): no healing under it.
+        if self.plot_has_weather(plot, crate::structs::AreaEffectKind::Blizzard) {
+            return 0;
+        }
 
         let team = self.unit_get_team(u);
         let plot_team = self.plot_get_team(plot);

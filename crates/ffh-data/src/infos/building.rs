@@ -163,6 +163,9 @@ pub struct BuildingInfo {
     pub global_counter_commerce: [i32; CommerceType::NUM],
     /// How many unrevealed Armageddon cards ahead its owner sees (`doom_sight`: the Orrery 2).
     pub doom_sight: i32,
+    /// This game's (`reveals_sites`, docs/CARDS.md: the Second Sky): when built, its owner's team
+    /// has every plot with a mana node, a unique feature, a lair or a goody hut revealed.
+    pub reveals_sites: bool,
 
     // ---- type references ----
     /// C++ `getBuildingClassType()`, XML `<BuildingClass>`.
@@ -432,6 +435,7 @@ pub fn read_building(rd: &Rd) -> BuildingInfo {
 
         global_counter_commerce: rd.commerces("global_counter_commerces"),
         doom_sight: rd.int("doom_sight"),
+        reveals_sites: rd.bool("reveals_sites"),
 
         building_class_type: rd.rf("building_class"),
         special_building_type: rd.rf("special_building_type"),

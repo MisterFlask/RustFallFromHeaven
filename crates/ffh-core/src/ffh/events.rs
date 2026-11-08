@@ -1002,6 +1002,12 @@ impl Game {
 
         // UI: wonder movie popup for the active player.
 
+        // Card: the Second Sky (docs/CARDS.md, `reveals_sites`).
+        if d.buildings[building].reveals_sites {
+            let team = self.players[player].team;
+            crate::ffh::cards::world_spells_2::team_reveal_sites(self, team);
+        }
+
         if is("BUILDING_INFERNAL_GRIMOIRE") {
             if self.soren_rand_num(100, "Bob") <= 20 {
                 if let Some(plot2) = self.cf_find_clear_plot(None, plot) {
@@ -1129,6 +1135,10 @@ impl Game {
         let (x, y) = (self.cities[c].x, self.cities[c].y);
 
         // UI: wonder movie popup for the active player.
+
+        // Cards: the Weather Engine, the Tidecall of Danalin, the Pillar of Dawn (docs/CARDS.md):
+        // a ritual's charge, the Pillar's healing.
+        crate::ffh::cards::world_spells_2::project_built(self, c, project);
 
         if is("PROJECT_BANE_DIVINE") {
             let disciple = d.t::<UnitCombatType>("UNITCOMBAT_DISCIPLE");

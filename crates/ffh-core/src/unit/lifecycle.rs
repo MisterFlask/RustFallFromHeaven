@@ -562,6 +562,12 @@ impl Game {
         let unit_type = self.units[u].unit_type;
         let info = &d.units[unit_type];
 
+        // Card: Pillar of Dawn (docs/CARDS.md): under its owner's Pillar a unit heals fully.
+        if self.units[u].damage > 0 && self.unit_in_pillar_of_dawn(u) {
+            let damage = self.units[u].damage;
+            self.unit_change_damage(u, -damage, None);
+        }
+
         // FfH Spell System: Added by Kael 07/23/2007
         let plot = self.unit_plot(u);
         if self.unit_has_moved(u) {
@@ -1386,7 +1392,9 @@ impl Game {
     /// C++ `CvUnit::getCombatOwner` (CvUnit.cpp:12763-12774).
     pub fn unit_get_combat_owner(&self, u: UnitId, for_team: Option<TeamId>, plot: Option<PlotIdx>) -> PlayerId {
         if let Some(for_team) = for_team {
-            if self.unit_get_team(u) != for_team && for_team != self.barbarian_team() {
+            // Card: Judgment of Junil (docs/CARDS.md): an always-hostile unit fights a team under
+            // truce with its own as its owner's, at peace.
+            if self.unit_get_team(u) != for_team && for_team != self.barbarian_team() && !self.team_has_truce(self.unit_get_team(u), for_team) {
                 if self.unit_is_always_hostile(u, plot) {
                     return self.barbarian_player();
                 }

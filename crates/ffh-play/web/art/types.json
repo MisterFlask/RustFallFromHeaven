@@ -485,6 +485,7 @@
 {"type":"PROMOTION_HOMUNCULUS_WARD","race":0,"equipment":0,"sphere":"NONE","line":"HOMUNCULUS_WARD","level":0,"dispellable":0,"expires":0,"mutation":0},
 {"type":"PROMOTION_HOMUNCULUS_WAVE","race":0,"equipment":0,"sphere":"NONE","line":"HOMUNCULUS_WAVE","level":0,"dispellable":0,"expires":0,"mutation":0},
 {"type":"PROMOTION_HOMUNCULUS_WILD_EDGE","race":0,"equipment":0,"sphere":"NONE","line":"HOMUNCULUS_WILD_EDGE","level":0,"dispellable":0,"expires":0,"mutation":0},
+{"type":"PROMOTION_SECOND_SKY","race":0,"equipment":0,"sphere":"NONE","line":"SECOND_SKY","level":0,"dispellable":0,"expires":0,"mutation":0},
 {"type":"PROMOTION_SPELLBREAKER","race":0,"equipment":0,"sphere":"NONE","line":"SPELLBREAKER","level":0,"dispellable":0,"expires":0,"mutation":0},
 {"type":"PROMOTION_SPELLSWORD_SHOCK","race":0,"equipment":0,"sphere":"NONE","line":"SPELLSWORD_SHOCK","level":0,"dispellable":0,"expires":0,"mutation":0},
 {"type":"PROMOTION_SPELLSWORD_GRAVE_TOUCH","race":0,"equipment":0,"sphere":"NONE","line":"SPELLSWORD_GRAVE_TOUCH","level":0,"dispellable":0,"expires":0,"mutation":0},
@@ -821,6 +822,7 @@
 {"type":"UNIT_YERSINIA","cls":"UNITCLASS_YERSINIA","combat":"MOUNTED","domain":"LAND","tier":4,"special":"NONE","race":["DEMON"],"hero":0,"equipment":0,"invisible":0,"strength":15,"base":"NONE"},
 {"type":"UNIT_YVAIN","cls":"UNITCLASS_YVAIN","combat":"DISCIPLE","domain":"LAND","tier":4,"special":"NONE","race":["ELEMENTAL"],"hero":1,"equipment":0,"invisible":0,"strength":9,"base":"NONE"},
 {"type":"UNIT_SENTINEL","cls":"UNITCLASS_SENTINEL","combat":"NONE","domain":"LAND","tier":0,"special":"NONE","race":["NONE"],"hero":0,"equipment":0,"invisible":0,"strength":1,"base":"NONE"},
+{"type":"UNIT_SYLVARITH","cls":"UNITCLASS_SYLVARITH","combat":"BEAST","domain":"LAND","tier":4,"special":"NONE","race":["NONE"],"hero":0,"equipment":0,"invisible":0,"strength":15,"base":"NONE"},
 {"type":"UNIT_HOST_ILLUSIONIST","cls":"UNITCLASS_HOST_ILLUSIONIST","combat":"ADEPT","domain":"LAND","tier":3,"special":"NONE","race":["NONE"],"hero":0,"equipment":0,"invisible":0,"strength":4,"base":"NONE"},
 {"type":"UNIT_LUTIST","cls":"UNITCLASS_LUTIST","combat":"NONE","domain":"LAND","tier":2,"special":"NONE","race":["NONE"],"hero":0,"equipment":0,"invisible":0,"strength":2,"base":"NONE"},
 {"type":"UNIT_POWDER_CHARGE","cls":"UNITCLASS_POWDER_CHARGE","combat":"SIEGE","domain":"LAND","tier":3,"special":"NONE","race":["NONE"],"hero":0,"equipment":0,"invisible":0,"strength":0,"base":"NONE"},
@@ -1052,6 +1054,7 @@
 {"type":"BUILDING_STORM_FORGE","cls":"BUILDINGCLASS_STORM_FORGE","wonder":"NONE","religion":"NONE","defense":0,"graphical":0},
 {"type":"BUILDING_HOMUNCULUS_VATS","cls":"BUILDINGCLASS_HOMUNCULUS_VATS","wonder":"NATIONAL","religion":"NONE","defense":0,"graphical":0},
 {"type":"BUILDING_ORRERY_OF_CERIDWEN","cls":"BUILDINGCLASS_ORRERY_OF_CERIDWEN","wonder":"WORLD","religion":"NONE","defense":0,"graphical":0},
+{"type":"BUILDING_SECOND_SKY","cls":"BUILDINGCLASS_SECOND_SKY","wonder":"NATIONAL","religion":"NONE","defense":0,"graphical":0},
 {"type":"BUILDING_THUNDERHEAD_TOWER","cls":"BUILDINGCLASS_THUNDERHEAD_TOWER","wonder":"NONE","religion":"NONE","defense":0,"graphical":0}
 ],
 "unitcombat": [

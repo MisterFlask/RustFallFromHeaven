@@ -195,6 +195,10 @@ pub struct Team {
     pub ai_enemy_peacetime_grant_value: IdxVec<TeamId, i32>,
     /// C++ `CvTeamAI::m_aeWarPlan` (`AI_getWarPlan`). Write through `team_ai_set_war_plan`.
     pub ai_war_plan: IdxVec<TeamId, Option<WarPlanType>>,
+    /// Not in C++ (the card Judgment of Junil, docs/CARDS.md): the first game turn the truce with
+    /// a team no longer holds (0: none). While it holds there is no war between the two teams,
+    /// whoever would start it (`team_has_truce`). Kept the same on both teams.
+    pub truce_until: IdxVec<TeamId, i32>,
 }
 
 impl Team {
@@ -281,6 +285,7 @@ impl Team {
             ai_enemy_peacetime_trade_value: IdxVec::from_elem(0, num_teams),
             ai_enemy_peacetime_grant_value: IdxVec::from_elem(0, num_teams),
             ai_war_plan: IdxVec::from_elem(None, num_teams),
+            truce_until: IdxVec::from_elem(0, num_teams),
         }
     }
 }
@@ -344,6 +349,7 @@ impl Game {
             k.ai_enemy_peacetime_trade_value[t] = 0;
             k.ai_enemy_peacetime_grant_value[t] = 0;
             k.ai_war_plan[t] = None;
+            k.truce_until[t] = 0;
         }
     }
 }

@@ -1,0 +1,41 @@
+// B02 Sing the Stones (docs/DECKS_ROUND8.md; C.4: City Ruins within 3 plots of your borders; the
+// city is refounded at size 3). Rules: crates/ffh-core/src/ffh/cards/world_spells_2.rs.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_SING_THE_STONES",
+      "description": "TXT_KEY_TECH_CARD_SING_THE_STONES",
+      "help": "TXT_KEY_TECH_CARD_SING_THE_STONES_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_SING_THE_STONES_PEDIA",
+      "advisor": "ADVISOR_CULTURE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_DRAMA"],
+      "card_suit": "UNITCLASS_ARTIST",
+      "flavors": {"FLAVOR_GROWTH": 1, "FLAVOR_CULTURE": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_SING_THE_STONES",
+      "description": "TXT_KEY_SPELL_SING_THE_STONES",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_SING_THE_STONES_HELP",
+      "tech_prereq": "TECH_CARD_SING_THE_STONES",
+      "once": true,
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_requirement": "reqSingTheStones(pCaster)",
+      "py_result": "spellSingTheStones(pCaster)",
+      "button": "Art/Interface/Buttons/Improvements/City Ruins.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_SING_THE_STONES": "Sing the Stones",
+    "TXT_KEY_TECH_CARD_SING_THE_STONES_HELP": "[ICON_BULLET]World spell, once a game: Sing the Stones.[NEWLINE][ICON_BULLET]Every City Ruins you have seen within 3 plots of your borders, where you could found a city, becomes a city of yours of size 3.",
+    "TXT_KEY_TECH_CARD_SING_THE_STONES_PEDIA": "The bards sing the names of the fallen towns until their stones remember them and stand again.",
+    "TXT_KEY_SPELL_SING_THE_STONES": "Sing the Stones",
+    "TXT_KEY_SPELL_SING_THE_STONES_HELP": "[ICON_BULLET]Every City Ruins you have seen within 3 plots of your borders becomes a city of yours of size 3.[NEWLINE][ICON_BULLET]Only where you could found a city: not in another civilization's land, not too close to another city, no enemy unit on it."
+  }
+}

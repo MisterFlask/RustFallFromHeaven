@@ -1304,6 +1304,10 @@ impl Game {
 
         let mut production_needed = d.projects[project].production_cost;
 
+        // Card: Pillar of Dawn (docs/CARDS.md, `repeat_cost_percent`): each completion by the team
+        // makes the next cost more.
+        production_needed = self.team_repeat_project_cost(pl.team, project, production_needed);
+
         production_needed *= d.defines.project_production_percent;
         production_needed /= 100;
 
