@@ -264,6 +264,12 @@ pub fn leader_help(d: &GameData, l: LeaderHeadType, civ: Option<CivilizationType
         b.push_str(NEWLINE);
         b.push_str(&txt(d, "TXT_KEY_ALIGNMENT", &[Arg::S(&display(d, a))]));
     }
+    // The Sundering's minor leaders (`minor_leader_of`, docs/CARDS.md section 4).
+    if let Some(c) = info.minor_leader_of {
+        b.push_str(NEWLINE);
+        b.push_str(&txt(d, "TXT_KEY_MINOR_LEADER_OF", &[Arg::S(&display(d, c))]));
+    }
+    let civ = civ.or(info.minor_leader_of);
     if let Some(c) = civ {
         if let Some(hero) = d.civilizations[c].hero {
             b.push_str(NEWLINE);

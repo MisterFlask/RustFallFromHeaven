@@ -348,7 +348,7 @@ mod tests {
             (60, &["DOOM_INFERNAL_GATE"]),
             (70, &[]),
             (80, &["DOOM_HELLFIRE", "DOOM_SKY_FALLS"]),
-            (90, &["DOOM_WRATH"]),
+            (90, &["DOOM_SUNDERING", "DOOM_WRATH"]),
             (100, &["DOOM_APOCALYPSE", "DOOM_LONG_NIGHT"]),
         ];
         for (t, keys) in expected {

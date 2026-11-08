@@ -15,6 +15,7 @@ pub mod economy;
 pub mod map_rules;
 pub mod new_civs;
 pub mod new_civs_2;
+pub mod sundering;
 pub mod world;
 pub mod world_spells;
 pub mod world_spells_2;
