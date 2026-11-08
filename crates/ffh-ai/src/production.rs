@@ -847,6 +847,12 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     // city it cannot take (a barbarian town, say) asks for a couple as well.
     let siege = count_ai(g, p, UnitAIType::UNITAI_ATTACK_CITY) + count_ai(g, p, UnitAIType::UNITAI_COLLATERAL);
     if let Some(choice) = crate::campaign::army_choice(g, c, attackers - siege, siege, ctx.afford) { return Some((choice, "campaign_army")); } // siege-campaigns
+    // The great-person cards' units (docs/CARDS.md).
+    if ctx.afford {
+        if let Some(choice) = crate::cards_map_rules::production(g, c, ctx.threat) {
+            return Some((choice, "card_unit"));
+        }
+    }
     if (ctx.at_war && army_short && siege * 3 < attackers + 1) || (siege < 2 && besieging(g, p) && ctx.afford) {
         if let Some(u) = best_unit(g, c, Role::Siege) {
             return Some((Choice::Train(u, UnitAIType::UNITAI_ATTACK_CITY), "siege"));
@@ -1613,6 +1619,8 @@ fn generic_building_value(g: &Game, c: CityId, b: BuildingType, threat: i32) -> 
     // Effects the rules implement in code, not in the data (the Warrens' copies, the Planar
     // Gate's creatures, ...).
     v += crate::code_effects::building_value(g, c, b, threat);
+    // The great-person cards' buildings (docs/CARDS.md).
+    v += crate::cards_map_rules::building_value(g, c, b, threat);
     if let Some(l) = g.players[p].personality_type.map(|l| &d.leader_heads[l]) {
         if info.building_class_type.is_some() && (l.favorite_early_wonder == info.building_class_type || l.favorite_late_wonder == info.building_class_type) {
             v += 400;

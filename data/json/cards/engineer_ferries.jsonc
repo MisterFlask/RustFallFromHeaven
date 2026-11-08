@@ -1,0 +1,26 @@
+// Ferries (docs/DECKS.md section 3.6, Movement): land units cross a one-plot strait in one move,
+// as if it were land. A strait: a water plot with land on two opposite sides. Your land units
+// only. Rules: `strait_crossing` (crates/ffh-core/src/ffh/cards/map_rules.rs).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_FERRIES",
+      "description": "TXT_KEY_TECH_CARD_FERRIES",
+      "help": "TXT_KEY_TECH_CARD_FERRIES_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_FERRIES_PEDIA",
+      "advisor": "ADVISOR_GROWTH",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_ANCIENT",
+      "and_pre_reqs": ["TECH_FISHING"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "strait_crossing": true,
+      "flavors": {"FLAVOR_GROWTH": 1}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_FERRIES": "Ferries",
+    "TXT_KEY_TECH_CARD_FERRIES_HELP": "[ICON_BULLET]Your land units can enter a one-plot strait (a water plot with land on two opposite sides) as if it were land.",
+    "TXT_KEY_TECH_CARD_FERRIES_PEDIA": "Rafts on ropes across every narrow water. The island across the strait is a day's walk."
+  }
+}

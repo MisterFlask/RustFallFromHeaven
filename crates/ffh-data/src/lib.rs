@@ -426,6 +426,16 @@ impl GameData {
             }
         }
         self.derive_building_tiers();
+        // This game's (docs/CARDS.md): a build's `built_by` classes can make it.
+        for b in self.builds.keys() {
+            for &class in &self.builds[b].built_by.clone() {
+                for u in self.units.keys() {
+                    if self.units[u].unit_class_type == Some(class) {
+                        self.units[u].builds[b] = true;
+                    }
+                }
+            }
+        }
     }
 
     /// The building tiers' derived fields (docs/SUITABILITY.md): each family's buildings by tier,

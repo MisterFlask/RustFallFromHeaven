@@ -1,0 +1,127 @@
+// Wheeled City (docs/DECKS.md section 3.3). Pack Up: the city becomes a City Caravan (population,
+// buildings and tiers kept; its culture lost), 1 move; it refounds on a valid site within 12 plots
+// of where it packed up. A caravan defends with its garrison; taken, it is destroyed. Not in the
+// capital or a holy city (their palace and holy city do not travel). Rules: `spellPackUp`,
+// `spellUnpack` (crates/ffh-core/src/ffh/cards/map_rules.rs).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_WHEELED_CITY",
+      "description": "TXT_KEY_TECH_CARD_WHEELED_CITY",
+      "help": "TXT_KEY_TECH_CARD_WHEELED_CITY_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_WHEELED_CITY_PEDIA",
+      "advisor": "ADVISOR_GROWTH",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_MITHRIL_WORKING"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_GROWTH": 1}
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_WHEELED_CITY",
+      "description": "TXT_KEY_BUILDING_WHEELED_CITY",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": -1,
+      "default_building": "BUILDING_WHEELED_CITY"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_WHEELED_CITY",
+      "building_class": "BUILDINGCLASS_WHEELED_CITY",
+      "description": "TXT_KEY_BUILDING_WHEELED_CITY",
+      "civilopedia": "TXT_KEY_BUILDING_WHEELED_CITY_PEDIA",
+      "help": "TXT_KEY_BUILDING_WHEELED_CITY_HELP",
+      "prereq_tech": "TECH_CARD_WHEELED_CITY",
+      "never_capture": true,
+      "cost": 180,
+      "hurry_cost_modifier": 50,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "asset": 2,
+      "flavors": {"FLAVOR_GROWTH": 2}
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_CITY_CARAVAN",
+      "description": "TXT_KEY_UNIT_CITY_CARAVAN",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": -1,
+      "default_unit": "UNIT_CITY_CARAVAN"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_CITY_CARAVAN",
+      "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 1},
+      "engage_rows": [{"action": "STRIKE", "count": 2}, {"action": "STRIKE", "count": 1}, {"action": "STRIKE", "count": 1}],
+      "engage_row_order": ["FRONT", "MIDDLE", "REAR"],
+      "class": "UNITCLASS_CITY_CARAVAN",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_UNKNOWN",
+      "description": "TXT_KEY_UNIT_CITY_CARAVAN",
+      "civilopedia": "TXT_KEY_UNIT_CITY_CARAVAN_PEDIA",
+      "help": "TXT_KEY_UNIT_CITY_CARAVAN_HELP",
+      "only_defensive": true,
+      "unit_ais": {"UNITAI_UNKNOWN": true},
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 1,
+      "nuke_range": -1,
+      "combat_limit": 100,
+      "xp_value_attack": 4,
+      "xp_value_defense": 2,
+      "tier": 1
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_PACK_UP",
+      "description": "TXT_KEY_SPELL_PACK_UP",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_PACK_UP_HELP",
+      "building_prereq": "BUILDING_WHEELED_CITY",
+      "in_city_only": true,
+      "display_when_disabled": true,
+      "ability": true,
+      "py_result": "spellPackUp(pCaster,'UNIT_CITY_CARAVAN')",
+      "py_requirement": "reqPackUp(pCaster)",
+      "button": "Art/Interface/Buttons/Spells/Add to City.dds"
+    },
+    {
+      "type": "SPELL_UNPACK",
+      "description": "TXT_KEY_SPELL_UNPACK",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_UNPACK_HELP",
+      "unit_prereq": "UNIT_CITY_CARAVAN",
+      "display_when_disabled": true,
+      "ability": true,
+      "sacrifice_caster": true,
+      "py_result": "spellUnpack(pCaster)",
+      "py_requirement": "reqUnpack(pCaster)",
+      "button": "Art/Interface/Buttons/Spells/Add to City.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_WHEELED_CITY": "Wheeled City",
+    "TXT_KEY_TECH_CARD_WHEELED_CITY_HELP": "[ICON_BULLET]Allows the Wheeled City (building).[NEWLINE][ICON_BULLET]Pack Up: a city with the Wheeled City (not the capital or a holy city) becomes a City Caravan that keeps its population, buildings and tiers; its culture is lost.[NEWLINE][ICON_BULLET]Unpack: the caravan refounds the city on a valid site within 12 plots of where it packed up. Taken, it is destroyed.",
+    "TXT_KEY_TECH_CARD_WHEELED_CITY_PEDIA": "Halls on mithril axles, granaries on runners, a temple drawn by forty oxen. When the war turns, the city goes with its people.",
+    "TXT_KEY_BUILDING_WHEELED_CITY": "Wheeled City",
+    "TXT_KEY_BUILDING_WHEELED_CITY_HELP": "[ICON_BULLET]Pack Up: the city (not the capital or a holy city) becomes a City Caravan that keeps its population, buildings and tiers; its culture is lost.",
+    "TXT_KEY_BUILDING_WHEELED_CITY_PEDIA": "Axles and runners under every hall of the city.",
+    "TXT_KEY_UNIT_CITY_CARAVAN": "City Caravan",
+    "TXT_KEY_UNIT_CITY_CARAVAN_HELP": "[ICON_BULLET]Carries a city: its population, buildings and tiers.[NEWLINE][ICON_BULLET]Unpack: refounds the city on a valid site within 12 plots of where it packed up.[NEWLINE][ICON_BULLET]Cannot fight; taken, it is destroyed with the city it carries.",
+    "TXT_KEY_UNIT_CITY_CARAVAN_PEDIA": "A city on the road: its people, its halls and its stores.",
+    "TXT_KEY_SPELL_PACK_UP": "Pack Up",
+    "TXT_KEY_SPELL_PACK_UP_HELP": "[ICON_BULLET]In a city of yours with the Wheeled City, not the capital or a holy city.[NEWLINE][ICON_BULLET]The city becomes a City Caravan on its plot (population, buildings and tiers kept; its culture lost).",
+    "TXT_KEY_SPELL_UNPACK": "Unpack",
+    "TXT_KEY_SPELL_UNPACK_HELP": "[ICON_BULLET]On a valid city site within 12 plots of where the city packed up.[NEWLINE][ICON_BULLET]The city is refounded here with its population, buildings and tiers.[NEWLINE][ICON_BULLET]Uses up the caravan."
+  }
+}

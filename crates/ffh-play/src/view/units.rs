@@ -487,7 +487,9 @@ pub fn path(v: &Viewer, finder: &mut PathFinder, units: &[UnitId], x: i32, y: i3
         nodes.reverse();
     }
     let war = units.iter().find_map(|&u| g.unit_get_declare_war_move(u, to));
-    let attack = v.plot_visible(to) && units.iter().any(|&u| g.plot_is_visible_enemy_defender(to, u));
+    // Card: False Colours (docs/CARDS.md): a move onto units the group's false colours let it
+    // attack is an attack (its war is declared at the battle, without a question).
+    let attack = v.plot_visible(to) && (units.iter().any(|&u| g.plot_is_visible_enemy_defender(to, u)) || g.group_false_colours_team(grp, to).is_some());
     Ok(crate::jobj! {
         "ok" => ok,
         "turns" => if ok { finder.path_turns().map(Json::from).unwrap_or(Json::Null) } else { Json::Null },

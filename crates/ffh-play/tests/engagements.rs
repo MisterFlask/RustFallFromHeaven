@@ -401,3 +401,25 @@ fn an_engage_that_declares_war_asks_first() {
     assert!(matches!(r, Ok(CmdOk::Applied { battle: Some(_), .. })), "{r:?}");
     assert!(s.g.teams[my].at_war[their]);
 }
+
+/// Card: False Colours (docs/CARDS.md): an army under false colours attacks a civ at peace
+/// without the question: the plan shows the battle, and the war is declared with it.
+#[test]
+fn an_engage_under_false_colours_asks_nothing_and_the_war_comes_with_the_battle() {
+    let dir = common::TempDir::new("stage-engagement-colours");
+    let st = ffh_play::stage::engagement(&dir.0).expect("staged");
+    let mut s = load(&st.save);
+    let my = s.g.players[s.human].team;
+    let their = s.g.players[s.g.cities[st.city].owner].team;
+    s.g.team_make_peace(my, their, false);
+    let colours = s.g.d.t::<ffh_data::PromotionType>("PROMOTION_FALSE_COLOURS");
+    for &u in &st.units {
+        s.g.unit_set_has_promotion(u, colours, true);
+    }
+    let pv = q(&s, &format!(r#"{{"q":"engage_preview","army":{},"to":{{"x":{},"y":{}}}}}"#, st.army.0, st.x, st.y));
+    assert_eq!(pv.get("declare_war"), Some(&Json::Null), "no question");
+    assert!(arr(&pv, "errors").is_empty() && !arr(&pv, "fighters").is_empty(), "a plan: {pv:?}");
+    let r = cmd(&mut s, &format!(r#"{{"c":"engage","army":{},"to":{{"x":{},"y":{}}}}}"#, st.army.0, st.x, st.y));
+    assert!(matches!(r, Ok(CmdOk::Applied { battle: Some(_), .. })), "{r:?}");
+    assert!(s.g.teams[my].at_war[their], "the war is declared at the battle");
+}

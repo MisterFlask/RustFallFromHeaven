@@ -332,8 +332,12 @@ persist_struct!(Unit {
     extra_terrain_defense_percent, extra_feature_attack_percent, extra_feature_defense_percent,
     extra_unit_combat_modifier, ai_birthmark, ai_type, ai_groupflag, ai_origin_x, ai_origin_y,
     ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, army, march,
-    stat_flat, stat_pct, attacks_made, battle_heal_turn, xp_carry, lent, card,
+    stat_flat, stat_pct, attacks_made, battle_heal_turn, xp_carry, lent, card, packed_city,
 });
+
+use crate::ffh::cards::map_rules::{PackedBuilding, PackedCity};
+persist_struct!(PackedBuilding { building, count, original_owner, original_time });
+persist_struct!(PackedCity { name, origin, population, buildings, tiers });
 
 persist_struct!(Doom { dealt, slots });
 persist_struct!(DoomSlot { threshold, card, revealed, fired });

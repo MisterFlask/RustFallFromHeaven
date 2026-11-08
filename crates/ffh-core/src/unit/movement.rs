@@ -148,6 +148,11 @@ impl Game {
         // (C++ FAssert(isHuman()))
         let domain = self.unit_get_domain_type(u);
 
+        // Card: False Colours (docs/CARDS.md): its attack needs no declaration.
+        if self.unit_false_colours_team(u, plot).is_some() {
+            return None;
+        }
+
         if domain != DomainType::DOMAIN_AIR {
             let team = self.unit_get_team(u);
             let plot_area = self.map.plots[plot].area;
@@ -240,7 +245,8 @@ impl Game {
         }
 
         if self.plot_is_impassable(plot) {
-            if !self.unit_can_move_impassable(u) {
+            // Card: Mountaineering (docs/CARDS.md): its holder's land units climb peaks.
+            if !self.unit_can_move_impassable(u) && !self.unit_can_climb(u, plot) {
                 return false;
             }
         }
@@ -298,9 +304,16 @@ impl Game {
         match domain {
             DomainType::DOMAIN_SEA => {
                 if !self.plot_is_water(plot) && !self.unit_can_move_all_terrain(u) {
-                    if !self.plot_is_friendly_city(plot, u, true) || !self.plot_is_coastal_land(plot, -1) {
+                    // Card: Canal Locks (docs/CARDS.md): ships enter a canal unless it is in the
+                    // land of a civ at war with them.
+                    if (!self.plot_is_friendly_city(plot, u, true) || !self.plot_is_coastal_land(plot, -1)) && !self.unit_can_use_canal(u, plot) {
                         return false;
                     }
+                }
+                // Card: Causeway (a dam: ships cannot enter it) and Harbor Chain (enemy ships cannot
+                // enter the water next to the city) (docs/CARDS.md).
+                if self.plot_is_water(plot) && !self.unit_can_move_all_terrain(u) && (self.plot_is_land_bridge(plot) || self.unit_harbor_blocked(u, plot)) {
+                    return false;
                 }
             }
 
@@ -330,6 +343,8 @@ impl Game {
                 if self.plot_is_water(plot) && !self.unit_can_move_all_terrain(u)
                     //FfH: Added by Kael 08/27/2007 (for boarding)
                     && !(attack && self.unit_is_boarding(u))
+                    // Card: Causeway, Ferries (docs/CARDS.md): water walked on as land.
+                    && !self.unit_walks_on_water(u, plot)
                 {
                     if !self.plot_is_city(plot, false, None) || 0 == d.defines.land_units_can_attack_water_cities {
                         if ignore_load
@@ -401,13 +416,15 @@ impl Game {
                 }
             }
         } else {
+            // Card: False Colours (docs/CARDS.md): units of a civ at peace are fought as enemies.
+            let colours = attack && self.unit_false_colours_team(u, plot).is_some();
             if self.unit_can_attack(u) {
                 if attack || !self.unit_can_coexist_with_enemy_unit(u, None) {
                     if !self.unit_is_human(u) || self.plot_is_visible(plot, team) {
                         // Not in C++ (docs/SIEGES.md): an enemy city's standing Sentinels defend it,
                         // so moving into it is an attack even with no unit there.
                         let walls = self.engage_applies(u, plot) && self.plot_has_enemy_sentinels(plot, team);
-                        if (self.plot_is_visible_enemy_unit_for_unit(plot, u) || walls) != attack {
+                        if (self.plot_is_visible_enemy_unit_for_unit(plot, u) || walls || colours) != attack {
                             if !declare_war
                                 || (self.plot_is_visible_other_unit(plot, owner) != attack
                                     && !(attack
@@ -457,7 +474,7 @@ impl Game {
                 can_enter_area = self.unit_can_enter_area(u, plot_team, plot_area, false);
             }
 
-            if !can_enter_area {
+            if !can_enter_area && !colours {
                 // C++ FAssert(ePlotTeam != NO_TEAM): `canEnterTerritory(NO_TEAM)` is always true and
                 // the border-obstacle test needs a team, so a plot that cannot be entered has one.
                 let plot_team = plot_team.expect("CvUnit::canMoveInto: area not enterable without a team");
@@ -891,8 +908,13 @@ impl Game {
         //FfH: Modified by Kael 08/10/2007
         let mut range = self.d.defines.unit_visibility_range;
         range += self.units[u].extra_visibility_range;
-        if let Some(improvement) = self.map.plots[self.unit_plot(u)].improvement_type {
+        let plot = self.unit_plot(u);
+        if let Some(improvement) = self.map.plots[plot].improvement_type {
             range += self.d.improvements[improvement].visibility_change;
+        }
+        // Card: Mountaineering (docs/CARDS.md): sight 3 on a peak.
+        if self.unit_on_climbed_peak(u, plot) {
+            range = range.max(crate::ffh::cards::map_rules::PEAK_SIGHT);
         }
         range
         //FfH: End Modify

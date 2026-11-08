@@ -197,6 +197,10 @@ pub struct PromotionInfo {
     pub twincast: bool,
     pub validate: bool,
     pub water_walking: bool,
+    /// This game's (docs/CARDS.md, False Colours): the unit may attack units of a civ its team
+    /// is at peace with, without a declaration; the war follows at the battle, whose defenders
+    /// get no defensive strikes and no fortification.
+    pub false_colours: bool,
     pub ai_weight: i32,
     pub betrayal_chance: i32,
     pub better_defender_than_percent: i32,
@@ -383,6 +387,7 @@ pub fn read_promotion(rd: &Rd) -> PromotionInfo {
         twincast: rd.bool("twincast"),
         validate: rd.bool("validate"),
         water_walking: rd.bool("water_walking"),
+        false_colours: rd.bool("false_colours"),
         ai_weight: rd.int("ai_weight"),
         betrayal_chance: rd.int("betrayal_chance"),
         better_defender_than_percent: rd.int("better_defender_than_percent"),
@@ -487,6 +492,9 @@ pub struct BuildInfo {
     pub feature_production: IdxVec<FeatureType, i32>,
     /// C++ `isFeatureRemove(i)`.
     pub feature_remove: IdxVec<FeatureType, bool>,
+    /// This game's (docs/CARDS.md): the unit classes whose units can make this build, besides
+    /// the units whose own `builds` list it (`GameData::derive` adds it to theirs).
+    pub built_by: Vec<UnitClassType>,
 }
 
 /// C++ `CvBuildInfo::read`.
@@ -501,6 +509,7 @@ pub fn read_build(rd: &Rd) -> BuildInfo {
         kill: rd.bool("kill"),
         improvement: rd.rf::<ImprovementType>("improvement_type"),
         route: rd.rf::<RouteType>("route_type"),
+        built_by: rd.ref_list("built_by"),
         ..Default::default()
     };
     set_feature_struct(rd, &mut info);

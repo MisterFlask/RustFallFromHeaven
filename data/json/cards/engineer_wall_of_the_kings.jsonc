@@ -1,0 +1,57 @@
+// E07 Wall of the Kings (docs/DECKS_ROUND8.md; C.4: "enemy" means units of civs at war with you,
+// and barbarians). Rules: `border_stops_enemies` (crates/ffh-core/src/ffh/cards/map_rules.rs).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_WALL_OF_THE_KINGS",
+      "description": "TXT_KEY_TECH_CARD_WALL_OF_THE_KINGS",
+      "help": "TXT_KEY_TECH_CARD_WALL_OF_THE_KINGS_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_WALL_OF_THE_KINGS_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_ENGINEERING"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_WALL_OF_THE_KINGS",
+      "description": "TXT_KEY_BUILDING_WALL_OF_THE_KINGS",
+      "max_global_instances": 1,
+      "max_team_instances": -1,
+      "max_player_instances": -1,
+      "default_building": "BUILDING_WALL_OF_THE_KINGS"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_WALL_OF_THE_KINGS",
+      "building_class": "BUILDINGCLASS_WALL_OF_THE_KINGS",
+      "description": "TXT_KEY_BUILDING_WALL_OF_THE_KINGS",
+      "civilopedia": "TXT_KEY_BUILDING_WALL_OF_THE_KINGS_PEDIA",
+      "prereq_tech": "TECH_CARD_WALL_OF_THE_KINGS",
+      "border_stops_enemies": true,
+      "nuke_immune": true,
+      "cost": 500,
+      "hurry_cost_modifier": 100,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "conquest_prob": 100,
+      "asset": 10,
+      "power_value": 8,
+      "obsolete_safe_commerce_changes": [0, 0, 3],
+      "commerce_change_double_times": [0, 0, 1000],
+      "flavors": {"FLAVOR_MILITARY": 10}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_WALL_OF_THE_KINGS": "Wall of the Kings",
+    "TXT_KEY_TECH_CARD_WALL_OF_THE_KINGS_HELP": "[ICON_BULLET]Allows the world wonder Wall of the Kings.[NEWLINE][ICON_BULLET]Wall of the Kings: land units of civs at war with you, and barbarians, that enter your borders end their move there.",
+    "TXT_KEY_TECH_CARD_WALL_OF_THE_KINGS_PEDIA": "The old kings raised watchtowers and ditches along every road into their land. An army that crossed the border had to stop there and be counted.",
+    "TXT_KEY_BUILDING_WALL_OF_THE_KINGS": "Wall of the Kings",
+    "TXT_KEY_BUILDING_WALL_OF_THE_KINGS_PEDIA": "Watchtowers, ditches and gates along every road into the realm. Invaders cross the border, and there they halt."
+  }
+}

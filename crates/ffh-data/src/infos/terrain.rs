@@ -462,6 +462,21 @@ pub struct ImprovementInfo {
     /// `getSpawnUnitType()` (C++ `readPass3`)
     pub spawn_unit_type: Option<UnitType>,
     pub visibility_change: i32,
+    // ---- this game's: the cards' improvements (docs/CARDS.md) ----
+    /// Causeway: land units move onto and over this water plot as over land, and ships cannot
+    /// enter it.
+    pub land_bridge: bool,
+    /// Canal Locks: ships can enter this land plot unless it is in the land of a civ at war with
+    /// them; it is built next to water or to another plot with this improvement.
+    pub canal: bool,
+    /// Siege Lines, Wayside Shrines: units of a team that knows this tech heal on the plot as in
+    /// a city of their own.
+    pub city_heal_tech: Option<TechType>,
+    /// Siege Lines: built only next to a city of a civ the builder is at war with, and then also
+    /// in that civ's land.
+    pub enemy_city_adjacent: bool,
+    /// Wayside Shrines: built only on a plot with a route.
+    pub requires_route: bool,
     // ---- arrays ----
     /// `getPrereqNatureYield(i)` (`PrereqNatureYields`)
     pub prereq_nature_yield: [i32; YieldType::NUM],
@@ -532,6 +547,11 @@ pub fn read_improvement(rd: &Rd) -> ImprovementInfo {
         python_on_move: rd.string("python_on_move"),
         spawn_unit_type: rd.rf("spawn_unit_type"),
         visibility_change: rd.int("visibility_change"),
+        land_bridge: rd.bool("land_bridge"),
+        canal: rd.bool("canal"),
+        city_heal_tech: rd.rf("city_heal_tech"),
+        enemy_city_adjacent: rd.bool("enemy_city_adjacent"),
+        requires_route: rd.bool("requires_route"),
         prereq_nature_yield: rd.yields("prereq_nature_yields"),
         yield_change: rd.yields("yield_changes"),
         river_side_yield_change: rd.yields("river_side_yield_change"),

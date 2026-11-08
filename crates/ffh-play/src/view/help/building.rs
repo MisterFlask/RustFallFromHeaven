@@ -183,6 +183,7 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         bombard_defense_modifier,
         sentinels,
         all_city_defense_modifier,
+        naval_capture_percent,
         espionage_defense_modifier,
         // Not described by C++: whether its effects reach the team.
         team_share: _,
@@ -192,6 +193,9 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         dirty_power,
         area_clean_power,
         area_border_obstacle,
+        border_stops_enemies,
+        blocks_enemy_ships,
+        conquest_keeps_all,
         force_team_vote_eligible,
         capital,
         government_center,
@@ -640,6 +644,21 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     }
     if *all_city_defense_modifier != 0 {
         add(&mut h, "TXT_KEY_BUILDING_DEFENSE_MOD_ALL_CITIES", &[Arg::N(*all_city_defense_modifier)]);
+    }
+    // This game's cards (docs/CARDS.md).
+    for (on, line) in [
+        (*border_stops_enemies, "Land units at war with you, and barbarians, that enter your borders end their move there"),
+        (*blocks_enemy_ships, "Ships at war with you, and barbarian ships, cannot enter the water plots next to this city"),
+        (*conquest_keeps_all, "Cities you capture keep every building that can be captured, and lose no population"),
+    ] {
+        if on {
+            h.push_str(NEWLINE);
+            h.push_str(&format!("[ICON_BULLET]{line}"));
+        }
+    }
+    if *naval_capture_percent > 0 {
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]Your ships capture the enemy ships they defeat: {naval_capture_percent}% chance"));
     }
     if *espionage_defense_modifier != 0 {
         add(&mut h, "TXT_KEY_BUILDING_ESPIONAGE_DEFENSE_MOD", &[Arg::N(*espionage_defense_modifier)]);

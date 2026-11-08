@@ -1,0 +1,55 @@
+// Causeway (docs/DECKS.md section 3.3; the owner's rework in 10.2: a special improvement on a
+// Coast plot next to land, with its own defence, that land units move over; no terraforming).
+// A dam, not a bridge: ships cannot enter it. Built by Work Boats (a land worker cannot stand on
+// water before it is built). Rules: `land_bridge` (crates/ffh-core/src/ffh/cards/map_rules.rs).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_CAUSEWAY",
+      "description": "TXT_KEY_TECH_CARD_CAUSEWAY",
+      "help": "TXT_KEY_TECH_CARD_CAUSEWAY_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_CAUSEWAY_PEDIA",
+      "advisor": "ADVISOR_GROWTH",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_ANCIENT",
+      "and_pre_reqs": ["TECH_FISHING"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_GROWTH": 1}
+    }
+  ],
+  "improvements": [
+    {
+      "type": "IMPROVEMENT_CAUSEWAY",
+      "description": "TXT_KEY_IMPROVEMENT_CAUSEWAY",
+      "civilopedia": "TXT_KEY_IMPROVEMENT_CAUSEWAY_PEDIA",
+      "water": true,
+      "land_bridge": true,
+      "advanced_start_cost": -1,
+      "defense_modifier": 50,
+      "pillage_gold": 5,
+      "outside_borders": true,
+      "terrain_makes_valids": {"TERRAIN_COAST": true}
+    }
+  ],
+  "builds": [
+    {
+      "type": "BUILD_CAUSEWAY",
+      "description": "TXT_KEY_BUILD_CAUSEWAY",
+      "prereq_tech": "TECH_CARD_CAUSEWAY",
+      "time": 300,
+      "kill": true,
+      "improvement_type": "IMPROVEMENT_CAUSEWAY",
+      "built_by": ["UNITCLASS_WORKBOAT"],
+      "button": ",Art/Interface/Buttons/Builds/BuildFishingBoats.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,7,7"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_CAUSEWAY": "Causeway",
+    "TXT_KEY_TECH_CARD_CAUSEWAY_HELP": "[ICON_BULLET]Work Boats can build a Causeway on a Coast plot next to land (the boat is used up).[NEWLINE][ICON_BULLET]Causeway: land units move onto and over it as over land; ships cannot enter it; units on it get +50% defence.",
+    "TXT_KEY_TECH_CARD_CAUSEWAY_PEDIA": "Stone sunk into the shallows, course after course, until a road runs over the water to the far shore.",
+    "TXT_KEY_IMPROVEMENT_CAUSEWAY": "Causeway",
+    "TXT_KEY_IMPROVEMENT_CAUSEWAY_PEDIA": "A stone road over the shallows.",
+    "TXT_KEY_BUILD_CAUSEWAY": "Build Causeway"
+  }
+}

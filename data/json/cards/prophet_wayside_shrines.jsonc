@@ -1,0 +1,64 @@
+// Wayside Shrines (docs/DECKS.md section 3.6, Improvements; the owner's verdicts in 9.4, a
+// worker-built improvement on a road, and 10.2, units on its plot heal as in a city). The +1
+// culture of the first draft is left out (the small part of a liked card, 10.2). Rules:
+// `requires_route`, `city_heal_tech` (crates/ffh-core/src/ffh/cards/map_rules.rs).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_WAYSIDE_SHRINES",
+      "description": "TXT_KEY_TECH_CARD_WAYSIDE_SHRINES",
+      "help": "TXT_KEY_TECH_CARD_WAYSIDE_SHRINES_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_WAYSIDE_SHRINES_PEDIA",
+      "advisor": "ADVISOR_RELIGION",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_ANCIENT",
+      "and_pre_reqs": ["TECH_PRIESTHOOD"],
+      "card_suit": "UNITCLASS_PROPHET",
+      "flavors": {"FLAVOR_RELIGION": 1}
+    }
+  ],
+  "improvements": [
+    {
+      "type": "IMPROVEMENT_WAYSIDE_SHRINE",
+      "description": "TXT_KEY_IMPROVEMENT_WAYSIDE_SHRINE",
+      "civilopedia": "TXT_KEY_IMPROVEMENT_WAYSIDE_SHRINE_PEDIA",
+      "advanced_start_cost": -1,
+      "outside_borders": true,
+      "requires_route": true,
+      "city_heal_tech": "TECH_CARD_WAYSIDE_SHRINES",
+      "pillage_gold": 5,
+      "terrain_makes_valids": {
+        "TERRAIN_BROKEN_LANDS": true,
+        "TERRAIN_BURNING_SANDS": true,
+        "TERRAIN_FIELDS_OF_PERDITION": true,
+        "TERRAIN_SHALLOWS": true,
+        "TERRAIN_GRASS": true,
+        "TERRAIN_PLAINS": true,
+        "TERRAIN_DESERT": true,
+        "TERRAIN_MARSH": true,
+        "TERRAIN_TUNDRA": true,
+        "TERRAIN_SNOW": true
+      }
+    }
+  ],
+  "builds": [
+    {
+      "type": "BUILD_WAYSIDE_SHRINE",
+      "description": "TXT_KEY_BUILD_WAYSIDE_SHRINE",
+      "prereq_tech": "TECH_CARD_WAYSIDE_SHRINES",
+      "time": 300,
+      "improvement_type": "IMPROVEMENT_WAYSIDE_SHRINE",
+      "built_by": ["UNITCLASS_WORKER", "UNITCLASS_SLAVE"],
+      "button": ",Art/Interface/Buttons/Builds/BuildFort.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,4,8"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_WAYSIDE_SHRINES": "Wayside Shrines",
+    "TXT_KEY_TECH_CARD_WAYSIDE_SHRINES_HELP": "[ICON_BULLET]Workers can build a Wayside Shrine on a plot with a road.[NEWLINE][ICON_BULLET]Your units on a Wayside Shrine heal as in a city of your own.",
+    "TXT_KEY_TECH_CARD_WAYSIDE_SHRINES_PEDIA": "A roof, a spring and a priest at every crossroads. The army on the march sleeps under the shrine and wakes whole.",
+    "TXT_KEY_IMPROVEMENT_WAYSIDE_SHRINE": "Wayside Shrine",
+    "TXT_KEY_IMPROVEMENT_WAYSIDE_SHRINE_PEDIA": "A shrine and a spring at the roadside, where the faithful rest.",
+    "TXT_KEY_BUILD_WAYSIDE_SHRINE": "Build Wayside Shrine"
+  }
+}

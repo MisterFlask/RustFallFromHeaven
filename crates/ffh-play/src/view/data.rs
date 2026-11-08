@@ -98,7 +98,9 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
             j.set("upgrade_time", m.upgrade_time);
             j.set("permanent", m.permanent);
             j.set("unique", m.unique);
-            if m.unique {
+            // (This game's cards' improvements too: what their rules do, docs/CARDS.md.)
+            let card = m.land_bridge || m.canal || m.enemy_city_adjacent || m.requires_route || m.city_heal_tech.is_some();
+            if m.unique || card {
                 j.set("effects", crate::view::improvement_help::effects(d, ImprovementType::from_usize(i)));
             }
         }

@@ -1,0 +1,27 @@
+// Forest Paths (docs/DECKS.md section 3.6, Movement; the owner's verdict in 9.4: inside your own
+// borders only). Your units move through forest and jungle as through open ground; units at war
+// with you that start their turn in your forests have one move fewer (never below one). Rules:
+// `forest_paths` (crates/ffh-core/src/ffh/cards/map_rules.rs).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_FOREST_PATHS",
+      "description": "TXT_KEY_TECH_CARD_FOREST_PATHS",
+      "help": "TXT_KEY_TECH_CARD_FOREST_PATHS_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_FOREST_PATHS_PEDIA",
+      "advisor": "ADVISOR_RELIGION",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_ANCIENT",
+      "and_pre_reqs": ["TECH_WAY_OF_THE_FORESTS"],
+      "card_suit": "UNITCLASS_PROPHET",
+      "forest_paths": ["FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_FOREST_NEW", "FEATURE_JUNGLE"],
+      "flavors": {"FLAVOR_RELIGION": 1}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_FOREST_PATHS": "Forest Paths",
+    "TXT_KEY_TECH_CARD_FOREST_PATHS_HELP": "[ICON_BULLET]In your borders, your units move through forest and jungle as through open ground.[NEWLINE][ICON_BULLET]Units at war with you that start their turn in a forest or jungle in your borders have 1 move less (never below 1).",
+    "TXT_KEY_TECH_CARD_FOREST_PATHS_PEDIA": "The old trails under the trees are known to the faithful alone. A stranger who leaves the road walks in circles."
+  }
+}

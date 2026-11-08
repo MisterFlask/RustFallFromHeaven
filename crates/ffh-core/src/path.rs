@@ -949,7 +949,10 @@ impl Game {
             if domain == Some(DomainType::DOMAIN_LAND) {
                 let group_area = self.group_area(group);
                 if self.map.plots[to_plot].area != group_area {
-                    if !group_area.is_some_and(|a| self.plot_is_adjacent_to_area(to_plot, a)) {
+                    // Card: Causeway, Ferries (docs/CARDS.md): land groups may walk to another
+                    // land area over the water they walk on.
+                    let over_water = self.map_has_land_bridges() || self.group_get_head_team(group).is_some_and(|t| self.team_strait_crossing(t));
+                    if !over_water && !group_area.is_some_and(|a| self.plot_is_adjacent_to_area(to_plot, a)) {
                         return false;
                     }
                 }
@@ -1041,7 +1044,8 @@ impl Game {
         for &loop_unit in &self.groups[group].units {
             debug_assert!(self.unit_get_domain_type(loop_unit) != DomainType::DOMAIN_AIR);
 
-            let max = if parent.data1 > 0 { parent.data1 } else { self.unit_max_moves(loop_unit) };
+            // Card: Forest Paths (docs/CARDS.md): a turn begun in an enemy's forest has a move less.
+            let max = if parent.data1 > 0 { parent.data1 } else { self.unit_turn_moves_at(loop_unit, from_plot) };
 
             let mut cost = self.plot_movement_cost(to_plot, loop_unit, from_plot);
 
@@ -1248,7 +1252,9 @@ impl Game {
             }
 
             for &loop_unit in &self.groups[group].units {
-                let mut unit_moves = if start_moves == 0 { self.unit_max_moves(loop_unit) } else { start_moves };
+                // Card: Forest Paths (docs/CARDS.md): a turn begun in an enemy's forest has a move
+                // less.
+                let mut unit_moves = if start_moves == 0 { self.unit_turn_moves_at(loop_unit, from_plot) } else { start_moves };
                 unit_moves -= self.plot_movement_cost(to_plot, loop_unit, from_plot);
                 unit_moves = unit_moves.max(0);
 

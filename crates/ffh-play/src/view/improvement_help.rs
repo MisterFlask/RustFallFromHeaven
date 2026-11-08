@@ -98,6 +98,23 @@ pub fn effects(d: &GameData, i: ImprovementType) -> String {
         }
     }
 
+    // This game's cards (docs/CARDS.md, `ffh_core::ffh::cards::map_rules`).
+    if info.land_bridge {
+        lines.push("[ICON_BULLET]Built next to land. Land units move onto and over it as over land; ships cannot enter it".to_string());
+    }
+    if info.canal {
+        lines.push("[ICON_BULLET]Built next to water or another canal. Ships can enter it, unless it is in the land of a civ at war with them; ships in it cannot defend it".to_string());
+    }
+    if info.enemy_city_adjacent {
+        lines.push("[ICON_BULLET]Built only next to a city of a civ you are at war with, and then also in that civ's land".to_string());
+    }
+    if info.requires_route {
+        lines.push("[ICON_BULLET]Built only on a plot with a road".to_string());
+    }
+    if let Some(t) = info.city_heal_tech {
+        lines.push(format!("[ICON_BULLET]Units of the civ that knows {} heal here as in a city of their own", names::display(d, t)));
+    }
+
     // Not in FFH2 (`tech_research_bonus`, applied by `player_calculate_research_modifier`).
     if let Some(t) = info.tech_research_bonus.filter(|_| info.tech_research_percent > 0) {
         lines.push(format!("[ICON_BULLET]Inside your borders: {:+}% [ICON_RESEARCH] on {}", info.tech_research_percent, names::display(d, t)));

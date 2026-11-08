@@ -201,6 +201,21 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
             b.push_str(&txt(d, key, &[]));
         }
     }
+    // This game's cards (docs/CARDS.md): movement rules a card tech gives its team.
+    for (gives, line) in [
+        (info.peak_movement, "Your land units can enter peaks (3 moves); on a peak they get +50% defence and sight 3"),
+        (info.strait_crossing, "Your land units can enter a one-plot strait (a water plot with land on two opposite sides) as if it were land"),
+        (
+            !info.forest_paths.is_empty(),
+            "In your borders: your units move through forest and jungle as through open ground; units at war with you that start their turn there have 1 move less (never below 1)",
+        ),
+    ] {
+        if gives {
+            b.push_str(NEWLINE);
+            b.push_str("[ICON_BULLET]");
+            b.push_str(line);
+        }
+    }
     for (gives, has, key) in [
         (info.irrigation, g.team_is_irrigation(team), "TXT_KEY_MISC_SPREAD_IRRIGATION"),
         (info.ignore_irrigation, g.team_is_ignore_irrigation(team), "TXT_KEY_MISC_IRRIGATION_ANYWHERE"),

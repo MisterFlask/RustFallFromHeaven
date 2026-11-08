@@ -192,7 +192,7 @@ impl Game {
 
     /// `player_init_city` for a new city (`acquired` `None`) or one changing hands (`acquired`:
     /// its building tiers, docs/SUITABILITY.md).
-    fn player_init_city_as(&mut self, p: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool, acquired: Option<IdxVec<BuildingClassType, BuildingTierType>>) -> CityId {
+    pub(crate) fn player_init_city_as(&mut self, p: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool, acquired: Option<IdxVec<BuildingClassType, BuildingTierType>>) -> CityId {
         let is_acquired = acquired.is_some();
         // addCity(): the new slot holds a default (reset) city until `init` re-runs `reset`.
         // Both "Crime" draws of the C++ (constructor + init) are made by `city_init`.
@@ -388,6 +388,9 @@ impl Game {
         }
 
         let recapture = highest_culture_player.is_some_and(|h| self.players[h].team == team);
+        // Card: Hall of Judgment (docs/CARDS.md): the holder's conquests keep every building that
+        // can be captured, and lose no population.
+        let judged = conquest && self.player_conquest_keeps_all(p);
 
         //FfH: Added by Kael 09/21/2008
         if self.players[old_owner].num_cities() == 1 {
@@ -413,7 +416,7 @@ impl Game {
         self.cities[new_city].previous_owner = Some(old_owner);
         self.cities[new_city].original_owner = original_owner;
         self.city_set_game_turn_founded(new_city, game_turn_founded);
-        let new_population = if conquest && !recapture { (population - 1).max(1) } else { population };
+        let new_population = if conquest && !recapture && !judged { (population - 1).max(1) } else { population };
         self.city_set_population(new_city, new_population);
         self.cities[new_city].highest_population = highest_population;
         self.city_set_name(new_city, &name, false);
@@ -451,6 +454,7 @@ impl Game {
                                 // recapture.
                                 if !conquest
                                     || recapture
+                                    || judged
                                     || self.soren_rand_num(100, "Capture Probability") < d.buildings[building].conquest_probability
                                 {
                                     num += num_real_building[building];

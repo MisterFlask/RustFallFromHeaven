@@ -1529,7 +1529,8 @@ impl Game {
     /// (`AMPHIB_ATTACK_MODIFIER`, from the attacker's side), 0 when it is amphibious or the
     /// attack is not from water onto land.
     pub(crate) fn unit_amphib_attack_modifier(&self, a: UnitId, from: PlotIdx, to: PlotIdx) -> i32 {
-        if !self.unit_is_amphib(a) && !self.plot_is_water(to) && self.plot_is_water(from) {
+        // Card: Causeway, Ferries (docs/CARDS.md): no landing from water walked on as land.
+        if !self.unit_is_amphib(a) && !self.plot_is_water(to) && self.plot_is_water(from) && !self.unit_walks_on_water(a, from) {
             self.d.defines.amphib_attack_modifier
         } else {
             0
@@ -2146,6 +2147,16 @@ impl Game {
 
         let owner = self.units[u].owner;
         let info = &d.units[self.units[u].unit_type];
+
+        // Card: Prize Courts (docs/CARDS.md): the holder's ship captures the ship it defeats, with
+        // the building's chance (the Boarding promotion's capture).
+        if new_unit_type.is_none() && self.unit_get_domain_type(u) == DomainType::DOMAIN_SEA && self.unit_get_domain_type(loser) == DomainType::DOMAIN_SEA {
+            let pct = self.player_naval_capture_percent(owner);
+            if pct > 0 && self.soren_rand_num(100, "Prize Courts") < pct {
+                new_unit_type = Some(self.units[loser].unit_type);
+                convert = true;
+            }
+        }
 
         if self.players[owner].free_xp_from_combat != 0 {
             let free_xp = self.players[owner].free_xp_from_combat;

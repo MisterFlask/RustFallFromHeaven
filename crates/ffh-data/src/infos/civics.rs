@@ -737,6 +737,16 @@ pub struct TechInfo {
     pub commerce_flexible: [bool; CommerceType::NUM],
     /// `isTerrainTrade(i)` (XML `TerrainTrades`)
     pub terrain_trade: IdxVec<TerrainType, bool>,
+    /// This game's (docs/CARDS.md, Mountaineering): the team's land units can enter peaks (3
+    /// moves); on a peak they get +50% defence and sight 3.
+    pub peak_movement: bool,
+    /// This game's (docs/CARDS.md, Ferries): the team's land units can enter a one-plot strait
+    /// (a water plot with land on two opposite sides) as if it were land.
+    pub strait_crossing: bool,
+    /// This game's (docs/CARDS.md, Forest Paths): the features (forest and jungle) the team's
+    /// units move through in its own borders as through open ground; units at war with it that
+    /// start their turn in them there have one move fewer.
+    pub forest_paths: Vec<FeatureType>,
     /// This game's: the tech is a great person's card (docs/DECKS.md, "The deck as built"),
     /// `None` for an ordinary tech. A card tech is never researched or traded (`disable` and
     /// `!trade` are forced): a great person holding it discovers it.
@@ -808,6 +818,9 @@ pub fn read_tech(rd: &Rd) -> TechInfo {
         // readPass2 in C++ (references other techs)
         prereq_or_techs: rd.ref_list("or_pre_reqs"),
         prereq_and_techs: rd.ref_list("and_pre_reqs"),
+        peak_movement: rd.bool("peak_movement"),
+        strait_crossing: rd.bool("strait_crossing"),
+        forest_paths: rd.ref_list("forest_paths"),
         card: None,
     };
     if let Some(suit) = rd.rf::<UnitClassType>("card_suit") {
