@@ -191,6 +191,9 @@ const UNIT_ALIASES = {
   // The great-person cards' new units (docs/CARDS.md), until they have sprites of their own.
   archon: ["archmage", "mage"], dawn_knight: ["paladin"], grand_master: ["paladin"], erlking: ["treant"],
   captain_general: ["champion"],
+  // Batch B8's new civilizations (docs/CARDS.md, section 6).
+  lich_prince: ["lich"], thrumm: ["hill_giant"], clan_giant: ["hill_giant"], deep_mother: ["kraken", "sea_serpent"],
+  slitherking: ["lizardman"], spider_queen: ["giant_spider"], brood_spider: ["giant_spider"],
 };
 
 /** The last resorts by combat type and domain. */

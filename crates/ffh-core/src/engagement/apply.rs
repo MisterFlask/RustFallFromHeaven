@@ -99,6 +99,9 @@ impl Game {
             spared = crate::ffh::cards::economy::spare_saved(r, &saved);
             &spared
         };
+        // Card: Rite of the Necropolis (docs/CARDS.md): the living units this battle kills on the
+        // Necropolis's land, counted before they die; they rise as its Pyre Zombies after it.
+        let risers = crate::ffh::cards::new_civs_2::necropolis_risers(self, to, r.kills.iter().filter(|k| k.victim < n).map(|k| e.units[k.victim]));
 
         // 1. Damage written back; the victims die (delayed), in kill order.
         for i in 0..n {
@@ -489,6 +492,10 @@ impl Game {
             let winners: Vec<UnitId> = e.of(w).filter(|&i| r.survived(i)).map(|i| e.units[i]).filter(|&u| self.engage_alive(u)).collect();
             let losers: Vec<PlayerId> = e.of(w.other()).map(|i| e.owners[i]).collect();
             crate::ffh::cards::new_civs::dawn_vow_heal(self, &winners, &losers);
+        }
+        // Card: Rite of the Necropolis: the battle's dead rise.
+        if let Some((necropolis, count)) = risers {
+            crate::ffh::cards::new_civs_2::necropolis_rise(self, necropolis, to, count);
         }
 
         // 10. Armies.

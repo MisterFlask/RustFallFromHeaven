@@ -30,6 +30,7 @@ pub mod cards_deck_ui;
 pub mod cards_economy;
 pub mod cards_map_rules;
 pub mod cards_new_civs;
+pub mod cards_new_civs_2;
 pub mod cards_world_spells;
 pub mod casting;
 pub mod combat_sim;

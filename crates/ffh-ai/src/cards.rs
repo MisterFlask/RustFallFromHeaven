@@ -28,6 +28,7 @@ const TURNS: &[fn(&mut Game, &crate::view::View)] = &[
     crate::cards_battle_magic::turn, // batch B1: the battle magic cards
     crate::cards_new_civs::turn, // batch B4: the new civilizations
     crate::cards_economy::turn, // batch B10: the economy cards
+    crate::cards_new_civs_2::turn, // batch B8: the new civilizations, second batch
 ];
 
 /// The cards' content that acts once the player's units have moved this turn (a unit's own action

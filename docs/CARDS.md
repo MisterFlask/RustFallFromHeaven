@@ -24,7 +24,7 @@ A card tech is never researched or traded: the reader forces `disable` and `!tra
   card is discovered only once its owner knows them.
 - **Alignment:** `card_alignment` (`ALIGNMENT_GOOD`, `ALIGNMENT_EVIL`) limits who draws it;
   `card_block_alignment` keeps one alignment from drawing it (a [good or neutral] card blocks
-  `ALIGNMENT_EVIL`).
+  `ALIGNMENT_EVIL`, an [evil or neutral] card `ALIGNMENT_GOOD`).
 - **Faith:** `card_religion` names a religion card. It is drawn whatever the drawer's
   religion; discovering it spreads the religion to three of the owner's cities without it, the
   most populous first.
@@ -185,6 +185,7 @@ help):
 | processes | `production_to_experience` | Muster | hammers per point of experience to the units in the city |
 | improvements | `claim_range`, `min_city_distance` | Trading Post | its plot and the land plots within the range are its builder's territory whatever the culture (it is built only outside every border); built only that many plots or more from every city |
 | builds | `same_builders_as` | Trading Post | every unit that can do that build can do this one (set in the units' `builds` at load) |
+| civilizations | `hills_yield_change` (yields) | Wake the Hill Clans | the yields each plot on hills it owns gives more (`plot_calculate_nature_yield`) |
 
 The battle effects are in `crates/ffh-core/src/engagement/arms.rs` (the set-up, `Game`) and
 `engagement/formation/arms_cards.rs` (the resolver, a fighter's `Arms`); their AI in
@@ -289,11 +290,18 @@ a fighter revived), each `{unit, lane, row, hp}`; the battle screens fold it
   Long Night) fires nothing itself; the rule it changes asks `Game::doom_fired(key)` where the
   rule lives, with a comment naming the card.
 - **No barbarians:** a card that brings barbarian units (The Wild Awakens, Werewolf Moon, The
-  Blade Returns, The Lairs Deepen) is not valid under No Barbarians, so it is dealt again.
+  Blade Returns, The Lairs Deepen, The Brood's nests) is not valid under No Barbarians, so it is
+  dealt again.
 - **The deal with the new cards:** slots 20, 30, ... 100 always hold a card, but 70, which only
   the Four Horsemen's chain reaches (a test checks this); slot 10 has none. A slot's cards share
-  it evenly: 30 Blight or the Sea Recedes, 40 three ways (Volcanic Spring, Werewolf Moon, the
-  Horsemen, who then take 50-70), 100 four ways.
+  it evenly: 30 four ways (Blight, the Sea Recedes, the Scaled Kingdom, the Brood, which then
+  takes 50), 40 three ways (Volcanic Spring, Werewolf Moon, the Horsemen, who then take 50-70),
+  60 three ways, 100 four ways.
+- **Civilizations of the deck** (batch B8, `ffh/cards/new_civs_2.rs`): the Scaled Kingdom (30),
+  the Brood (its nests at 30, the civilization at 50 where a nest still stands) and the Infernal
+  Gate (60: the Infernals, as the Infernal Pact brings them, `Game::infernals_arrive`; they come
+  once a game, by the Pact or the card). They are born as section 6 says, without a founder
+  (`Birth::wild`); a card that finds no free player slot is not valid at its reveal.
 - **The Gathering's vassals** are marked (`Team::gathered`, saved; cleared when freed): they do
   not count toward their master's domination victory (`team_victory_population`,
   `team_victory_land`) or conquest victory.
@@ -406,25 +414,41 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | M07 The Condottieri Free State | Merchant | built (batch B4) |
 | Free City Charter (reworked) | Engineer | built (batch B4) |
 | Mirror Colony | Sage | built (batch B4) |
+| Rite of the Necropolis | Prophet [evil or neutral: `card_block_alignment` good] | built (batch B8; its cities start with two Pyre Zombies each) |
+| Wake the Hill Clans | Engineer | built (batch B8; the hills: 6 or more within 3 plots of its first city) |
+| The Usurper's Crown | Bard | built (batch B8; world spell at a player) |
+| Oath of Fealty | Merchant | built (batch B8; world spell at a player; not under No Vassal States) |
+| Call the Aifon | Merchant | built (batch B8; four Axemen and two Archers) |
+| A04 The Scaled Kingdom (30) | Armageddon | built (batch B8) |
+| A06 The Brood (30, 50) | Armageddon | built (batch B8; not played without barbarians) |
+| A22 The Infernal Gate Opens (60) | Armageddon | built (batch B8; once a game with the Infernal Pact) |
 
 ## 6. New civilizations
 
-`world::birth(g, &Birth)` gives a new civilization a player slot mid-game; the cards of batch B4
-(`cards/new_civs.rs`) use it, and later cards can.
+`world::birth(g, &Birth)` gives a new civilization a player slot mid-game; the cards of batches B4
+(`cards/new_civs.rs`) and B8 (`cards/new_civs_2.rs`, the Armageddon cards' too) use it, and later
+cards can.
 
 - **The slot:** `world::open_slot`, a spare slot never alive (`GameSetup::SPARE_SLOTS`, 4, shared
   with Hyborem and Basium; never a crusade Host's). With none free, a card that makes a
-  civilization cannot be cast: its requirement tests the slot.
+  civilization cannot be cast: its requirement tests the slot (an Armageddon card's `valid` does).
 - **Who it is:** a civilization and a leader of its own (`civilizations` and `leader_heads` in the
-  card's file; neither playable nor AI-playable, so no game starts with it and no colony takes it).
-  The slot is added as the Infernals' is (`add_player_advanced`, on a team of its own) and played
-  by the founder's controller. Its parent is the founder (`Player::parent`).
+  card's file; neither playable nor AI-playable, so no game starts with it and no colony takes it),
+  or a civilization that exists with a leader of its own (the Usurper's Crown: its parent's
+  civilization, `LEADER_USURPER`, its parent's alignment; `description` names it, "Bannor
+  Usurpers"). The slot is added as the Infernals' is (`add_player_advanced`, on a team of its own)
+  and played by the founder's controller. Its parent (`Player::parent`) is the founder, or
+  `parent` (the civilization the Usurper secedes from).
+- **Without a founder** (`Birth::wild`: an Armageddon card's civilization) it is played by its
+  slot's own controller (the host's AI: a slot that never lived is no human's), has no parent, is
+  nobody's vassal and knows the world's techs (`world::world_techs`: those at least half the
+  civilizations' teams know, never a card), with `techs` (the Scaled Kingdom's Animal Handling).
 - **What it starts with** (`Birth`): the cities it founds at given plots (`NewCity`: the first its
-  capital, each with its buildings and units), or cities of the founder it takes over (`release`:
-  a trade, so they keep their buildings, with their culture and garrison: the founder's land
-  combat units in them but heroes and the caster), a hero in its capital, every tech the founder's
+  capital, each with its buildings and units), or cities it takes over from their owner (`release`:
+  a trade, so they keep their buildings, with their culture and garrison: the owner's land
+  combat units in them but heroes and the caster), a hero in its capital, every tech its parent's
   team knows but the cards (and `techs`), a state religion in all its cities, gold.
-- **Its relation to the founder:** it has met it. As a vassal (`vassal`) it is the founder's, by
+- **Its relation to the founder:** it has met it (and its parent). As a vassal (`vassal`) it is the founder's, by
   the ordinary vassal rules (it joins its master's wars). Like every civilization it is at war
   with the barbarians on both sides (`add_player_advanced` sets only its own side; the other left
   at peace made `ai_vassal_trade` deny the vassal trade). Its AI keeps the vassalage until the
@@ -432,8 +456,9 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
   where a vassal that is not hopeless would otherwise leave after 20 turns. **Where vassals cannot be** (No Vassal
   States, or a founder that is a vassal itself) it signs open borders and a defensive pact with the
   founder instead, a deal like any other. No other war or peace is forced (docs/DECKS.md, principle
-  27): its leanings are attitude modifiers, toward the founder (`ai_attitude_extra`) and toward
-  every civilization of an alignment (`Player::alignment_attitude`).
+  27): its leanings are attitude modifiers, toward the founder (`ai_attitude_extra`), toward its
+  parent when that is another (`parent_attitude`: the Usurper's -6), and toward every civilization
+  of an alignment (`Player::alignment_attitude`).
 - **The AI's attitude** (`ffh-ai`, `diplomacy::relation_parts`) counts both, at half (they are on
   FFH's scale, where 4 is about a step; the AI's step is 2, as for the Trust spell).
 - **City sites** (`world::free_site`, `site_value`, `best_sites`, `land_near_borders`): a free site is
@@ -441,9 +466,14 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
   mana rules), with no unit, no city within `MIN_CITY_RANGE`, unowned; the best are taken by the
   land, bonuses, water and fresh water in their radius.
 - **Its own rules** are data where they can be: a civilization's `unit_promotion` (the Fey
-  Glamour, the Dawn Vow), a civilization trait (`civ_trait`: the Free Companies'), a palace's
-  `free_building` (the Patrians' Mage Guilds), unique units in its `units`. What data cannot say is
-  a rule hooked where it lives (section 2), each naming its card.
+  Glamour, the Dawn Vow, the Aifon's Water Walking, the Scaled Kingdom's Swampborn), a
+  civilization trait (`civ_trait`: the Free Companies', the Necropolis's Fallow), a palace's
+  `free_building` (the Patrians' Mage Guilds), unique units in its `units` (the Hill Clans' Hill
+  Giant and the Brood's Giant Spider are their own versions of classes whose default nobody
+  trains), `hills_yield_change` (the Hill Clans). What data cannot say is a rule hooked where it
+  lives (section 2), each naming its card: the Necropolis's risen dead (the living units a battle
+  on its land kills rise as its Pyre Zombies, there or in its nearest city:
+  `engagement/apply.rs`).
 - **Art:** a new leader shows an existing leader's portrait and a new unit an existing unit's
   sprite (`PORTRAIT_ALIASES` in `crates/ffh-play/assets/app/portraits.js`, `UNIT_ALIASES` in
   `iso.js`).
