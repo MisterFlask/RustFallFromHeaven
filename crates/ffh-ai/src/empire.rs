@@ -39,8 +39,9 @@ fn hurry(g: &mut Game, p: PlayerId) {
                 let info = &d.units[u];
                 let plot = g.city_plot(c);
                 let threatened = crate::production::local_threat(g, p, plot, 2) > crate::production::garrison(g, p, plot).1;
-                // A unit bought at the Condottieri's rate is worth its gold whenever it fights.
-                let cheap = info.combat > 0 && hurries.iter().any(|&h| g.city_unit_rush_gold(c, h).is_some());
+                // A unit bought at the Condottieri's rate is worth its gold whenever it fights,
+                // past the first tier (a new city's Warriors are not).
+                let cheap = info.combat > 0 && info.tier >= 2 && hurries.iter().any(|&h| g.city_unit_rush_gold(c, h).is_some());
                 info.found || info.work_rate > 0 && info.combat == 0 || threatened && info.combat > 0 || cheap
             }
             None => false,

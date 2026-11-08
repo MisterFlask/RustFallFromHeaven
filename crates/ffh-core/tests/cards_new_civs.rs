@@ -167,6 +167,11 @@ fn the_patrians_wake_by_the_remnants_of_patria() {
     assert_eq!(w.g.players[np].ai_attitude_extra[w.p0], new_civs::ATTITUDE);
     assert_eq!(w.g.players[np].parent, Some(w.p0));
     w.knows_founders_techs(np);
+    // At war with the barbarians on both sides, as every civilization: its vassal trade stands.
+    let (barbarians, nt) = (w.g.players[w.g.barbarian_player()].team, w.g.players[np].team);
+    assert!(w.g.teams[barbarians].at_war[nt] && w.g.teams[nt].at_war[barbarians]);
+    let vassal = ffh_core::structs::TradeData { item_type: TradeableItem::TRADE_VASSAL, data: 0, offering: false, hidden: false };
+    assert_eq!(w.g.player_get_trade_denial(np, w.p0, &vassal), None);
 
     // Its casters start at level 3 with Channeling II: those it starts with, and those it trains.
     for u in w.units_of(np, "UNIT_ADEPT") {

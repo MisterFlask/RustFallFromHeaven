@@ -1744,6 +1744,14 @@ pub fn reconsider_deals(g: &mut Game, p: PlayerId) {
         if turn - deal.initial_game_turn < length * 2 || !g.deal_is_cancelable(d, Some(p)) || g.deal_is_loan(d) || !can_talk(g, p, other) {
             continue;
         }
+        // A civilization born as its founder's vassal (a card, docs/CARDS.md) keeps the
+        // vassalage until the ordinary revolt rule would free it (its land grew, or its master's
+        // shrank: `team_can_vassal_revolt`).
+        let (team, master) = (g.players[p].team, g.players[other].team);
+        let born_of = g.players[p].parent.is_some_and(|f| g.players[f].team == master);
+        if born_of && g.teams[team].vassal[master] && g.deal_is_vassal_deal(d) && !g.team_can_vassal_revolt(team, master) {
+            continue;
+        }
         let human = g.players[other].human;
         let why = if human {
             keep_deal(g, p, other, &ours, &theirs).err()

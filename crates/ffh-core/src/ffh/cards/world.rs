@@ -311,6 +311,11 @@ pub fn birth(g: &mut Game, b: &Birth) -> Option<PlayerId> {
     g.controllers[p] = g.controllers[founder].clone();
     g.players[p].parent = Some(founder);
     let (ft, nt) = (g.players[founder].team, g.players[p].team);
+    // At war with the barbarians on both sides, as every civilization is (`add_player_advanced`
+    // sets only the new team's side, FFH's quirk; the other side left at peace would also deny
+    // the vassal trade, `ai_vassal_trade`, and end a born vassal's vassalage).
+    let barbarians = g.players[g.barbarian_player()].team;
+    g.teams[barbarians].at_war[nt] = true;
     for tech in d.techs.keys() {
         let known = g.team_is_has_tech(ft, Some(tech)) && d.techs[tech].card.is_none();
         if (known || b.techs.contains(&tech)) && !g.team_is_has_tech(nt, Some(tech)) {
