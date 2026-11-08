@@ -22,7 +22,9 @@ A card tech is never researched or traded: the reader forces `disable` and `!tra
 - **Band:** the tech's `era` (I `ERA_ANCIENT`, II `ERA_CLASSICAL`, III `ERA_MEDIEVAL`).
 - **Needs:** the tech's `and_pre_reqs` / `or_pre_reqs`, the ordinary techs its content needs. A
   card is discovered only once its owner knows them.
-- **Alignment:** `card_alignment` (`ALIGNMENT_GOOD`, `ALIGNMENT_EVIL`) limits who draws it.
+- **Alignment:** `card_alignment` (`ALIGNMENT_GOOD`, `ALIGNMENT_EVIL`) limits who draws it;
+  `card_block_alignment` keeps one alignment from drawing it (a [good or neutral] card blocks
+  `ALIGNMENT_EVIL`).
 - **Faith:** `card_religion` names a religion card. It is drawn whatever the drawer's
   religion; discovering it spreads the religion to three of the owner's cities without it, the
   most populous first.
@@ -103,6 +105,39 @@ bare rules text (CLAUDE.md, "Rules text and tooltips").
 in its `find_*` lookups. Rules that are not callbacks go where the rule they change lives, with a
 comment naming the card.
 
+**New data keys** (each read in `ffh-data`, described in ffh-play's help):
+- techs: `card_block_alignment` (above).
+- buildings:
+  - `train_units`: a list of `{unit, cost, bonus, national}`. The city trains each unit (one
+    without a cost of its own) at `cost`, where it has `bonus`; past `national` units of the
+    class, each costs `NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT`. The Beast Market, the Elemental
+    Foundry.
+  - `free_bonus_choices`: resources. When the building is built, its owner chooses one
+    (`Controller::choose_free_bonus`; kept in `City::free_bonus_choices` while the city has the
+    building); the city has one of it. Agares's Well.
+  - `free_promotion_choices`: promotions. A unit trained in the city takes one it can acquire,
+    its owner's choice (`Controller::choose_free_promotion`). The Spire of the Archmagi.
+  - `rebirth_range`, `rebirth_promotion`: the first time a unit of the owner would die in a battle
+    within the range, it is carried to the city at 10% of its HP and gains the promotion; a unit
+    with it dies normally (`engagement/apply.rs`). The Font of Rebirth.
+  - `free_unit_turns`, `free_unit_classes`: every N turns after it is built, a free unit of the
+    first class that applies (a city founder only while a site within 10 plots is free). Maponos's
+    Cradle.
+- civics: `unit_cost_modifier`, `unit_combat_cost_modifiers` (Magocracy); `no_war_weariness`
+  (Stoicism).
+- hurries: `units_only` (Gold Standard's hurry, 2 gold a hammer).
+- processes: `production_to_experience`: hammers per point of experience to the units in the city
+  (Muster).
+- improvements: `claim_range` (the plot and the land plots within it are the builder's territory,
+  whatever the culture; built only outside every border), `min_city_distance`. The Trading Post.
+- builds: `same_builders_as`: every unit that can do that build can do this one (set in the units'
+  `builds` at load). The Trading Post.
+
+**Tiers and counts:** a card's buildings have no tier variants (`building_variants.jsonc` is read
+before the card files): an ordinary one is Standard everywhere, a national one rolls a tier for its
+cost only. Tests that count a table, or check every entry of it against FFH2's numbers, count the
+game's own entries: the first `len() - card_entry_count(table)` ids.
+
 **Records:** each card that changes the rules is listed in docs/PORTING.md ("Changes from
 FFH2", the decks entry). Its row in section 5 below gets its status.
 
@@ -155,3 +190,20 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | Card | Suit | Status |
 |---|---|---|
 | (the deck itself: deal, discover, once spells, targets, Armageddon deck) | | built |
+| E11 Pioneers | Engineer | built |
+| M01 Gold Standard | Merchant | built |
+| M06 Beast Market | Merchant | built |
+| M10 Admiralty | Merchant | built (free picks: 5 experience, two promotions) |
+| G01 Elemental Foundry | Sage | built (300 hammers an elemental) |
+| G19 Magocracy | Sage | built |
+| P07 Golems of the Earthmother | Prophet (Runes of Kilmorph) | built |
+| Trading Post | Merchant | built (II; claims land plots only) |
+| Font of Rebirth | Prophet [good or neutral] | built |
+| Spire of the Archmagi | Sage | built |
+| Academy of War | Bard | built (free picks: 5 experience, two promotions) |
+| Mana Grafting | Sage | built (once a node, for good) |
+| Stoicism | Sage | built |
+| Maponos's Cradle | Prophet | built |
+| Agares's Well | Prophet [evil] | built (II) |
+| Paymaster | Merchant | built |
+| Muster | Bard | built (II) |

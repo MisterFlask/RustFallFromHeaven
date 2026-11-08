@@ -75,6 +75,9 @@ pub const POLICIES: &[(&str, Policy)] = &[
     ("crusade_draft_pick", Policy::Blocking),
     ("consider_loan", Policy::Blocking),
     ("choose_loan_units", Policy::Advisor),
+    // (the cards, docs/CARDS.md: the Spire of the Archmagi's sphere, Agares's Well's mana)
+    ("choose_free_promotion", Policy::Blocking),
+    ("choose_free_bonus", Policy::Blocking),
     ("hook", Policy::Advisor),
     ("assign_working_plots", Policy::Advisor),
 ];

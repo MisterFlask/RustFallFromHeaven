@@ -524,7 +524,7 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     if !free_promotion_choices.is_empty() {
         let names: Vec<String> = free_promotion_choices.iter().map(|&x| display(d, x).into_owned()).collect();
         h.push_str(NEWLINE);
-        h.push_str(&format!("[ICON_BULLET]Units trained here start with one of these that they can acquire, chosen at training: {}", names.join(", ")));
+        h.push_str(&format!("[ICON_BULLET]A unit trained here starts with one of these promotions that it can acquire, its owner's choice, without experience: {}", names.join(", ")));
     }
     if *rebirth_range > 0 {
         h.push_str(NEWLINE);
