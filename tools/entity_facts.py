@@ -595,7 +595,8 @@ def unit_facts(u):
 VALUED = {
     "yield_changes": "yields", "yield_modifiers": "yield %", "GlobalYieldModifiers": "global yield %",
     "commerce_changes": "commerce", "obsolete_safe_commerce_changes": "commerce", "commerce_modifiers": "commerce %",
-    "global_commerce_modifiers": "global commerce %", "happiness": "happiness", "area_happiness": "area happiness",
+    "global_commerce_modifiers": "global commerce %", "global_counter_commerces": "commerce per 10 Armageddon counter",
+    "doom_sight": "Armageddon cards seen", "happiness": "happiness", "area_happiness": "area happiness",
     "global_happiness": "global happiness", "bonus_happiness_changes": "happiness from resources",
     "health": "health", "area_health": "area health", "global_health": "global health", "bonus_health_changes": "health from resources",
     "specialist_counts": "specialist slots", "great_people_rate_change": "great people points", "great_people_rate_modifier": "great people %",

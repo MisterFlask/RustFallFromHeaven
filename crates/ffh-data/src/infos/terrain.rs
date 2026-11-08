@@ -461,6 +461,9 @@ pub struct ImprovementInfo {
     pub python_on_move: String,
     /// `getSpawnUnitType()` (C++ `readPass3`)
     pub spawn_unit_type: Option<UnitType>,
+    /// Not in FFH2: what a lair spawns instead of `spawn_unit_type` once the Armageddon card
+    /// The Lairs Deepen has fired (docs/CARDS.md; `deep_spawn_unit_type`).
+    pub deep_spawn_unit_type: Option<UnitType>,
     pub visibility_change: i32,
     // ---- arrays ----
     /// `getPrereqNatureYield(i)` (`PrereqNatureYields`)
@@ -531,6 +534,7 @@ pub fn read_improvement(rd: &Rd) -> ImprovementInfo {
         python_at_range: rd.string("python_at_range"),
         python_on_move: rd.string("python_on_move"),
         spawn_unit_type: rd.rf("spawn_unit_type"),
+        deep_spawn_unit_type: rd.rf("deep_spawn_unit_type"),
         visibility_change: rd.int("visibility_change"),
         prereq_nature_yield: rd.yields("prereq_nature_yields"),
         yield_change: rd.yields("yield_changes"),

@@ -869,6 +869,12 @@ impl Game {
                     if kb.population_commerce[i] != 0 {
                         total += kb.population_commerce[i] * city.population * num_active_building / 100;
                     }
+
+                    // The Armageddon deck (docs/CARDS.md): commerce per 10 points of the
+                    // counter (the Orrery of Ceridwen), kept current by `change_global_counter`.
+                    if kb.global_counter_commerce[i] != 0 {
+                        total += kb.global_counter_commerce[i] * (self.get_global_counter() / 10) * num_active_building;
+                    }
                 }
 
                 // ADDON (Fix CommerceChangeDoubleTime) Sephi: was

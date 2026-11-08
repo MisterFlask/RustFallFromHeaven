@@ -152,6 +152,13 @@ pub struct BuildingInfo {
     /// Percentage points added to `SENTINEL_REPAIR_PERCENT` for its city's Sentinels.
     pub sentinel_repair_change: i32,
 
+    // ---- the Armageddon deck (docs/CARDS.md; not in FFH2) ----
+    /// Commerce of its city per 10 points of the Armageddon counter (`global_counter_commerces`:
+    /// the Orrery of Ceridwen's research).
+    pub global_counter_commerce: [i32; CommerceType::NUM],
+    /// How many unrevealed Armageddon cards ahead its owner sees (`doom_sight`: the Orrery 2).
+    pub doom_sight: i32,
+
     // ---- type references ----
     /// C++ `getBuildingClassType()`, XML `<BuildingClass>`.
     pub building_class_type: Option<BuildingClassType>,
@@ -402,6 +409,9 @@ pub fn read_building(rd: &Rd) -> BuildingInfo {
         bonus_yield_change: keyed_arrays(rd, "bonus_yield_changes", "bonus_yield_change", "bonus_type", "yield_changes"),
         population_commerce: rd.commerces("population_commerces"),
         sentinel_repair_change: rd.int("sentinel_repair_change"),
+
+        global_counter_commerce: rd.commerces("global_counter_commerces"),
+        doom_sight: rd.int("doom_sight"),
 
         building_class_type: rd.rf("building_class"),
         special_building_type: rd.rf("special_building_type"),

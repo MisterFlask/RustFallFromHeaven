@@ -55,8 +55,9 @@ impl Game {
             // C++ re-reads getImprovementType() below (doImprovementUpgrade may have upgraded
             // it). It never becomes NO_IMPROVEMENT there with FFH2 data; C++ would then read
             // GC.getImprovementInfo(NO_IMPROVEMENT) (undefined), here the step is skipped.
-            if let Some(improvement) = self.map.plots[p].improvement_type {
-                if let Some(unit) = d.improvements[improvement].spawn_unit_type {
+            if self.map.plots[p].improvement_type.is_some() {
+                // Not in FFH2: the Armageddon card The Lairs Deepen changes what lairs spawn.
+                if let Some(unit) = self.plot_lair_spawn_unit(p) {
                     if !self.is_option(GameOptionType::GAMEOPTION_NO_BARBARIANS) {
                         // C++ dereferences GC.getMapINLINE().getArea(getArea()) unchecked.
                         if let Some(area) = live_area(self, p) {
@@ -74,20 +75,7 @@ impl Game {
                                     chance /= d.game_speeds[self.game_speed_type()].train_percent;
                                     if self.soren_rand_num(10000, "Spawn Unit") < chance {
                                         if !self.plot_is_visible_other_unit(p, barbarian) {
-                                            let (x, y) = self.map.xy(p);
-                                            let new_unit = self.player_init_unit(
-                                                barbarian,
-                                                unit,
-                                                x,
-                                                y,
-                                                Some(UnitAIType::UNITAI_ATTACK),
-                                                None,
-                                            );
-                                            if self.units.contains(new_unit) && self.unit_is_animal(new_unit) {
-                                                if let Some(promotion) = opt_from_i32(d.defines.hidden_nationality_promotion) {
-                                                    self.unit_set_has_promotion(new_unit, promotion, true);
-                                                }
-                                            }
+                                            self.plot_spawn_lair_unit(p, unit);
                                         }
                                     }
                                 }
@@ -128,6 +116,32 @@ impl Game {
             }
         }
         //FfH: End Add
+    }
+
+    /// What the lair on `p` spawns (`None`: no lair): its improvement's `spawn_unit_type`, or
+    /// its `deep_spawn_unit_type` once the Armageddon card The Lairs Deepen has been played
+    /// (docs/CARDS.md).
+    pub fn plot_lair_spawn_unit(&self, p: PlotIdx) -> Option<UnitType> {
+        let info = &self.d.improvements[self.map.plots[p].improvement_type?];
+        let unit = info.spawn_unit_type?;
+        match info.deep_spawn_unit_type {
+            Some(deep) if self.doom_fired(crate::deck::doom_cards::LAIRS_DEEPEN) => Some(deep),
+            _ => Some(unit),
+        }
+    }
+
+    /// The lair on `p` spawns a barbarian `unit` (the spawn of C++ `CvPlot::doTurn`): an animal
+    /// gets the hidden nationality promotion.
+    pub fn plot_spawn_lair_unit(&mut self, p: PlotIdx, unit: UnitType) -> UnitId {
+        let barbarian = self.barbarian_player();
+        let (x, y) = self.map.xy(p);
+        let new_unit = self.player_init_unit(barbarian, unit, x, y, Some(UnitAIType::UNITAI_ATTACK), None);
+        if self.units.contains(new_unit) && self.unit_is_animal(new_unit) {
+            if let Some(promotion) = opt_from_i32(self.d.defines.hidden_nationality_promotion) {
+                self.unit_set_has_promotion(new_unit, promotion, true);
+            }
+        }
+        new_unit
     }
 
     /// C++ `CvPlot::doImprovement` (worked plots): bonus discovery, then `doImprovementUpgrade`.

@@ -1259,6 +1259,12 @@ impl Game {
             }
         }
 
+        // Not in FFH2: the Armageddon card The Long Night, -1 food on every plot for the rest of
+        // the game (docs/CARDS.md).
+        if yield_type == YieldType::YIELD_FOOD && self.doom_fired(crate::deck::doom_cards::LONG_NIGHT) {
+            yield_ -= 1;
+        }
+
         std::cmp::max(0, yield_)
     }
 

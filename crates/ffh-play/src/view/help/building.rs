@@ -90,6 +90,9 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         bonus_yield_change,
         population_commerce,
         sentinel_repair_change,
+        // ---- the Armageddon deck (docs/CARDS.md) ----
+        global_counter_commerce,
+        doom_sight,
         building_class_type,
         victory_prereq,
         free_start_era,
@@ -492,6 +495,16 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     if *sentinel_repair_change != 0 {
         h.push_str(NEWLINE);
         h.push_str(&format!("[ICON_BULLET]Sentinel repair: {:+}% of their HP per turn", sentinel_repair_change));
+    }
+    for (i, &v) in global_counter_commerce.iter().enumerate() {
+        if v != 0 {
+            h.push_str(NEWLINE);
+            h.push_str(&format!("[ICON_BULLET]{:+}{} per 10 points of the Armageddon counter", v, COMMERCE_ICONS[i]));
+        }
+    }
+    if *doom_sight > 0 {
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]Shows the next {} Armageddon cards and their thresholds", doom_sight));
     }
     if let (Some(t), Some(of)) = (*tier, *variant_of) {
         h.push_str(NEWLINE);

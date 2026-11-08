@@ -691,6 +691,14 @@ pub(crate) fn explore_target(g: &Game, v: &mut View, u: UnitId) -> Option<PlotId
 }
 
 pub(crate) fn barbarian(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
+    // Guards stay with the item they stand on (the Godslayer of the Armageddon card The Blade
+    // Returns and its four Greater Werewolves, docs/CARDS.md).
+    let here = g.unit_plot(u);
+    let owner = g.units[u].owner;
+    if g.map.plots[here].units.iter().any(|&o| o != u && g.units[o].owner == owner && g.d.units[g.units[o].unit_type].equipment_promotion.is_some()) {
+        hold(g, grp);
+        return;
+    }
     // Barbarians and animals are aggressive: attack anything they can beat.
     if attack_adjacent(g, v, grp, u, 500) {
         return;

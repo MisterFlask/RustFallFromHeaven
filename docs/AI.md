@@ -197,7 +197,9 @@ counters, war success, war plans) that the diplomacy below reads.
      stack nearest an operation's target, to the units their blessings are for, the cities
      their city spells are for or the land they terraform (`magic::caster_target`), else to
      the most threatened city; barbarians and animals attack what they can beat,
-     else roam; **ships** see Naval. Units aboard a ship get no orders (the ship lands them).
+     else roam (a barbarian standing on an item of its own holds it: the Godslayer and its
+     four Greater Werewolves of the Armageddon card The Blade Returns, docs/CARDS.md);
+     **ships** see Naval. Units aboard a ship get no orders (the ship lands them).
      Any group still idle is skipped so the turn always ends.
 6. **End-of-turn spells** (`casting.rs`): FfH's own AI casts spells at the end of every turn
    (`CvGame::updateMoves`, "BETTER AI (Spellcasting end of turn)"): `CvUnit::chooseSpell`, then

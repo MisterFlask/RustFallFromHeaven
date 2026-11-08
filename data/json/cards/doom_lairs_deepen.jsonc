@@ -1,0 +1,9 @@
+// A30 The Lairs Deepen (docs/DECKS_ROUND8.md section B, as amended in C.5; the Armageddon card
+// is code: crates/ffh-core/src/deck/doom_cards.rs). What each lair spawns then is its
+// deep_spawn_unit_type (data/json/improvements.jsonc).
+{
+  "text": {
+    "TXT_KEY_DOOM_LAIRS_DEEPEN": "The Lairs Deepen",
+    "TXT_KEY_DOOM_LAIRS_DEEPEN_HELP": "For the rest of the game, every lair spawns a stronger kind: Barrow (Wraith), Bear Den (Greater Werewolf), Goblin Fort (Ogre), Hellfire (Balor), Lion Den (Greater Werewolf), Ruins (Ranger, lizardman). Not played without barbarians."
+  }
+}

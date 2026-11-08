@@ -627,6 +627,37 @@ impl Game {
         self.teams[t].total_population + vassal_pop
     }
 
+    /// The population a victory counts for `t` (the domination victory's share): as
+    /// `team_get_total_population(t, true)`, but without the vassals the Armageddon card The
+    /// Gathering made (`Team::gathered`, docs/CARDS.md).
+    pub fn team_victory_population(&self, t: TeamId) -> i32 {
+        if self.team_is_a_vassal(t) {
+            return self.teams[t].total_population / 2;
+        }
+        let mut vassal_pop = 0;
+        for o in self.team_ids() {
+            if o != t && self.team_is_alive(o) && self.teams[o].vassal[t] && !self.teams[o].gathered {
+                vassal_pop += self.team_get_total_population(o, false) / 2;
+            }
+        }
+        self.teams[t].total_population + vassal_pop
+    }
+
+    /// The land a victory counts for `t`: as `team_get_total_land(t, true)`, but without the
+    /// vassals of the Gathering (see `team_victory_population`).
+    pub fn team_victory_land(&self, t: TeamId) -> i32 {
+        if self.team_is_a_vassal(t) {
+            return self.teams[t].total_land / 2;
+        }
+        let mut vassal_land = 0;
+        for o in self.team_ids() {
+            if o != t && self.team_is_alive(o) && self.teams[o].vassal[t] && !self.teams[o].gathered {
+                vassal_land += self.team_get_total_land(o, false) / 2;
+            }
+        }
+        self.teams[t].total_land + vassal_land
+    }
+
     /// C++ `CvTeam::getTotalLand` (C++ default `bCheckVassals = true`).
     pub fn team_get_total_land(&self, t: TeamId, check_vassals: bool) -> i32 {
         let mut vassal_land = 0;

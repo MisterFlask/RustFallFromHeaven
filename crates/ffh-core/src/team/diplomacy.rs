@@ -1211,6 +1211,9 @@ impl Game {
                 }
 
                 self.teams[t].capitulated = false;
+                // Not in C++: a freed vassal of the Gathering counts like any other if it is made
+                // a vassal again (docs/CARDS.md).
+                self.teams[t].gathered = false;
             }
 
             for p in self.player_ids() {

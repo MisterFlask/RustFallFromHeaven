@@ -1,0 +1,8 @@
+// A09 Volcanic Spring (docs/DECKS_ROUND8.md section B, as amended in C.5; the Armageddon card
+// is code: crates/ffh-core/src/deck/doom_cards.rs). It replaces FFH2's random volcano event.
+{
+  "text": {
+    "TXT_KEY_DOOM_VOLCANIC_SPRING": "Volcanic Spring",
+    "TXT_KEY_DOOM_VOLCANIC_SPRING_HELP": "Named at the reveal: a hill within 3 plots of each of the six largest cities (a city without one gives its place to the next largest). When it plays, each becomes flat land with a Volcano. Within 1 plot of it: units take damage equal to 50% of their hit points, improvements are destroyed, cities lose 2 population. The plots next to each Volcano give +1 food from then on."
+  }
+}

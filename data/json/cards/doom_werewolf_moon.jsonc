@@ -1,0 +1,8 @@
+// A11 Werewolf Moon (docs/DECKS_ROUND8.md section B; the Armageddon card is code:
+// crates/ffh-core/src/deck/doom_cards.rs).
+{
+  "text": {
+    "TXT_KEY_DOOM_WEREWOLF_MOON": "Werewolf Moon",
+    "TXT_KEY_DOOM_WEREWOLF_MOON_HELP": "Three barbarian Ravenous Werewolves appear next to each civilization's largest city. Every barbarian Wolf and Wolf Pack becomes a Greater Werewolf. Not played without barbarians."
+  }
+}

@@ -1898,7 +1898,9 @@ mod tests {
         assert!(!is_limited_wonder_class(d, granary));
         assert_eq!(limited_wonder_class_limit(d, granary), -1);
         assert_eq!(get_wonder_score(d, granary), 0);
-        let count = |f: fn(&GameData, BuildingClassType) -> bool| d.building_classes.keys().filter(|&c| f(d, c)).count();
+        // The game's own classes (the cards' are appended after them, docs/CARDS.md).
+        let own = d.building_classes.len() - ffh_data::card_entry_count("building_classes");
+        let count = |f: fn(&GameData, BuildingClassType) -> bool| d.building_classes.keys().take(own).filter(|&c| f(d, c)).count();
         assert_eq!((count(is_world_wonder_class), count(is_team_wonder_class), count(is_national_wonder_class)), (38, 0, 20));
 
         let bane = d.t::<ProjectType>("PROJECT_BANE_DIVINE");
