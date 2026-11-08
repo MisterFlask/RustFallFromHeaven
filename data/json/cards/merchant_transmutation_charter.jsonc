@@ -1,0 +1,44 @@
+// M09 Transmutation Charter (docs/DECKS_ROUND8.md; C.4: the classes enumerated from the data: the
+// RUSH bonuses, the happiness bonuses, the food (health) bonuses, among those the map places). The
+// target is a choice: a plot of yours and the resource it becomes. Rules:
+// crates/ffh-core/src/ffh/cards/world_spells.rs (`resource_group`; a test checks the lists below).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_TRANSMUTATION_CHARTER",
+      "description": "TXT_KEY_TECH_CARD_TRANSMUTATION_CHARTER",
+      "help": "TXT_KEY_TECH_CARD_TRANSMUTATION_CHARTER_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_TRANSMUTATION_CHARTER_PEDIA",
+      "advisor": "ADVISOR_ECONOMY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_ALTERATION"],
+      "card_suit": "UNITCLASS_MERCHANT",
+      "flavors": {"FLAVOR_GOLD": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_TRANSMUTATION_CHARTER",
+      "description": "TXT_KEY_SPELL_TRANSMUTATION_CHARTER",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_TRANSMUTATION_CHARTER_HELP",
+      "tech_prereq": "TECH_CARD_TRANSMUTATION_CHARTER",
+      "once": true,
+      "target": "choice",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_result": "spellTransmutationCharter(pCaster)",
+      "py_targets": "targetsTransmutationCharter(pCaster)",
+      "button": "Art/Interface/Buttons/Spells/Mother Lode.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_TRANSMUTATION_CHARTER": "Transmutation Charter",
+    "TXT_KEY_TECH_CARD_TRANSMUTATION_CHARTER_HELP": "[ICON_BULLET]World spell, once a game: Transmutation Charter.[NEWLINE][ICON_BULLET]Target: a resource on a plot you own, and the resource of its group it becomes.[NEWLINE][ICON_BULLET]Strategic: Copper, Gunpowder, Horse, Iron, Mithril, Reagents.[NEWLINE][ICON_BULLET]Luxury: Cotton, Dye, Fur, Gems, Gold, Ivory, Pearls, Silk, Sugar, Whale, Wine.[NEWLINE][ICON_BULLET]Food: Banana, Clam, Corn, Cow, Crab, Deer, Fish, Pig, Rice, Sheep, Wheat.[NEWLINE][ICON_BULLET]A water resource becomes a water resource, a land resource a land resource. Needs the tech that reveals the new resource.",
+    "TXT_KEY_TECH_CARD_TRANSMUTATION_CHARTER_PEDIA": "The Iron you need, from the Copper you have.",
+    "TXT_KEY_SPELL_TRANSMUTATION_CHARTER": "Transmutation Charter",
+    "TXT_KEY_SPELL_TRANSMUTATION_CHARTER_HELP": "[ICON_BULLET]Target: a resource on a plot you own, and the resource of its group it becomes.[NEWLINE][ICON_BULLET]Strategic: Copper, Gunpowder, Horse, Iron, Mithril, Reagents.[NEWLINE][ICON_BULLET]Luxury: Cotton, Dye, Fur, Gems, Gold, Ivory, Pearls, Silk, Sugar, Whale, Wine.[NEWLINE][ICON_BULLET]Food: Banana, Clam, Corn, Cow, Crab, Deer, Fish, Pig, Rice, Sheep, Wheat.[NEWLINE][ICON_BULLET]A water resource becomes a water resource, a land resource a land resource.[NEWLINE][ICON_BULLET]Needs the tech that reveals the new resource."
+  }
+}

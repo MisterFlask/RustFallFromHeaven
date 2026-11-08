@@ -1,0 +1,41 @@
+// M19 Grand Order (docs/DECKS_ROUND8.md; C.4: each city completes at most 10 turns of its own
+// production). Rules: crates/ffh-core/src/ffh/cards/world_spells.rs.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_GRAND_ORDER",
+      "description": "TXT_KEY_TECH_CARD_GRAND_ORDER",
+      "help": "TXT_KEY_TECH_CARD_GRAND_ORDER_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_GRAND_ORDER_PEDIA",
+      "advisor": "ADVISOR_ECONOMY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_GUILDS"],
+      "card_suit": "UNITCLASS_MERCHANT",
+      "flavors": {"FLAVOR_PRODUCTION": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_GRAND_ORDER",
+      "description": "TXT_KEY_SPELL_GRAND_ORDER",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_GRAND_ORDER_HELP",
+      "tech_prereq": "TECH_CARD_GRAND_ORDER",
+      "once": true,
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_result": "spellGrandOrder(pCaster)",
+      "py_requirement": "reqGrandOrder(pCaster)",
+      "button": "Art/Interface/Buttons/Equipment/GoldenHammer.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_GRAND_ORDER": "Grand Order",
+    "TXT_KEY_TECH_CARD_GRAND_ORDER_HELP": "[ICON_BULLET]World spell, once a game: Grand Order.[NEWLINE][ICON_BULLET]Every city of yours completes its current build at once: a unit, or a building that is not a wonder. Rituals are not affected.[NEWLINE][ICON_BULLET]At most 10 turns of the city's own production: a build that needs more gets 10 turns of production toward it.",
+    "TXT_KEY_TECH_CARD_GRAND_ORDER_PEDIA": "Time it to the turn your cities start their most expensive builds.",
+    "TXT_KEY_SPELL_GRAND_ORDER": "Grand Order",
+    "TXT_KEY_SPELL_GRAND_ORDER_HELP": "[ICON_BULLET]Every city of yours completes its current build at once: a unit, or a building that is not a wonder. Rituals are not affected.[NEWLINE][ICON_BULLET]At most 10 turns of the city's own production: a build that needs more gets 10 turns of production toward it."
+  }
+}

@@ -1,0 +1,42 @@
+// M18 Mammon's Bargain [evil] (docs/DECKS_ROUND8.md; C.4: 1500 gold, +10 counter). The +10 is in
+// the points of the counter's percentage, which the Armageddon deck's slots use. Rules:
+// crates/ffh-core/src/ffh/cards/world_spells.rs.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_MAMMONS_BARGAIN",
+      "description": "TXT_KEY_TECH_CARD_MAMMONS_BARGAIN",
+      "help": "TXT_KEY_TECH_CARD_MAMMONS_BARGAIN_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_MAMMONS_BARGAIN_PEDIA",
+      "advisor": "ADVISOR_ECONOMY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_CURRENCY"],
+      "card_suit": "UNITCLASS_MERCHANT",
+      "card_alignment": "ALIGNMENT_EVIL",
+      "flavors": {"FLAVOR_GOLD": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_MAMMONS_BARGAIN",
+      "description": "TXT_KEY_SPELL_MAMMONS_BARGAIN",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_MAMMONS_BARGAIN_HELP",
+      "tech_prereq": "TECH_CARD_MAMMONS_BARGAIN",
+      "once": true,
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_result": "spellMammonsBargain(pCaster)",
+      "button": "Art/Interface/Buttons/Equipment/Treasure.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_MAMMONS_BARGAIN": "Mammon's Bargain",
+    "TXT_KEY_TECH_CARD_MAMMONS_BARGAIN_HELP": "[ICON_BULLET]World spell, once a game: Mammon's Bargain.[NEWLINE][ICON_BULLET]+1500 gold.[NEWLINE][ICON_BULLET]+10 to the Armageddon counter.",
+    "TXT_KEY_TECH_CARD_MAMMONS_BARGAIN_PEDIA": "Buy the war now; the world pays later.",
+    "TXT_KEY_SPELL_MAMMONS_BARGAIN": "Mammon's Bargain",
+    "TXT_KEY_SPELL_MAMMONS_BARGAIN_HELP": "[ICON_BULLET]+1500 gold.[NEWLINE][ICON_BULLET]+10 to the Armageddon counter."
+  }
+}
