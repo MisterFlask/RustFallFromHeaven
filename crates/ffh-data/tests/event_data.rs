@@ -80,7 +80,6 @@ fn trigger_plot_requirements_keep_none_entries() {
         ["BONUS_WHEAT", "BONUS_RICE", "BONUS_CORN"].iter().map(|n| Some(d.t(n))).collect();
     assert_eq!(t.bonuses_required, bonuses);
     assert_eq!(t.routes_required, vec![Some(d.t::<RouteType>("ROUTE_ROAD"))]);
-    assert_eq!(t.prereq_crime, 10);
     assert_eq!(t.unit_distance_weight, -1);
     assert_eq!(t.events.len(), 4);
     assert_eq!(t.texts.len(), 3);

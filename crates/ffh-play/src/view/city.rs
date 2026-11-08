@@ -501,7 +501,6 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "sentinels" => sentinels_json(g, c),
         "sentinel_max_hp" => g.city_sentinel_max_hp(c),
         "maintenance" => g.city_maintenance(c),
-        "crime" => g.city_crime(c),
         "trade_routes" => g.city_trade_routes(c),
         "disorder" => g.city_is_disorder(c),
         "occupation" => city.occupation_timer,

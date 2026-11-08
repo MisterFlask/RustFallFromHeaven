@@ -141,6 +141,9 @@ help):
 | promotions | `heal_behind` | Templar | at the end of each round its unit heals the nearest ally behind it in its lanes this many HP (an event with pass 0; nothing drawn) |
 | promotions | `unit_classes` `[class]` | Templar | only units of these classes may take it |
 | promotions | `attack_damage_type` | Elemental Forge | its unit's physical attack deals this damage type: the target's resistance to it cuts the attack (as a typed strength's) |
+| improvements | `deep_spawn_unit_type` (a unit type) | The Lairs Deepen | what a lair spawns once The Lairs Deepen has been played (every lair has one) |
+| buildings | `global_counter_commerces` (commerces) | Orrery of Ceridwen | its city's commerce per 10 points of the Armageddon counter |
+| buildings | `doom_sight` | Orrery of Ceridwen | how many unrevealed Armageddon cards ahead its owner sees (the Orrery: 2) |
 
 The battle effects are in `crates/ffh-core/src/engagement/arms.rs` (the set-up, `Game`) and
 `engagement/formation/arms_cards.rs` (the resolver, a fighter's `Arms`); their AI in
@@ -189,13 +192,32 @@ entries only (`card_entry_count`): the cards' units, buildings and promotions fo
   `DOOM_<NAME>`, its thresholds, what each stage does, and an optional condition. Its text is
   `TXT_KEY_DOOM_<NAME>` (the name) and `TXT_KEY_DOOM_<NAME>_HELP` (the effect), in a card file's
   `text`.
-- **Sight:** a player may see unrevealed slots ahead (`doom_slot_known`, `player_doom_sight`:
-  the Orrery of Ceridwen shows two).
+- **Sight:** a player may see unrevealed cards ahead (`doom_slot_known`: the next unrevealed
+  slots that hold a card; `player_doom_sight` -> `doom_cards::doom_sight`, the most any of the
+  player's buildings shows by its `doom_sight`: the Orrery of Ceridwen, two).
+- **Named at the reveal:** a card whose targets must be known before it plays (a sea, six hills)
+  has an `on_reveal` hook. It is called when its slot is revealed (after a redeal, for the card
+  that stays) and returns the targets, which the slot keeps (`DoomSlot::targets`, saved: plot
+  indices for the cards so far). Its fire reads them back with `Game::doom_targets(key, stage)`.
+  A redeal clears a slot's targets.
+- **Lasting cards:** a card whose effect lasts for the rest of the game (The Lairs Deepen, The
+  Long Night) fires nothing itself; the rule it changes asks `Game::doom_fired(key)` where the
+  rule lives, with a comment naming the card.
+- **No barbarians:** a card that brings barbarian units (The Wild Awakens, Werewolf Moon, The
+  Blade Returns, The Lairs Deepen) is not valid under No Barbarians, so it is dealt again.
+- **The deal with the new cards:** slots 20, 30, ... 100 always hold a card, but 70, which only
+  the Four Horsemen's chain reaches (a test checks this); slot 10 has none. A slot's cards share
+  it evenly: 30 Blight or the Sea Recedes, 40 three ways (Volcanic Spring, Werewolf Moon, the
+  Horsemen, who then take 50-70), 100 four ways.
+- **The Gathering's vassals** are marked (`Team::gathered`, saved; cleared when freed): they do
+  not count toward their master's domination victory (`team_victory_population`,
+  `team_victory_land`) or conquest victory.
 - FFH2's counter triggers (`prereq_global_counter`, weight -1) no longer fire by themselves.
 
 **Random events are gone:** `player_do_events` no longer rolls for a weighted event. The
 triggers rules code fires itself still work: the Adaptive and Insane traits, lairs, the
-always-firing triggers without a counter threshold.
+always-firing triggers without a counter threshold. Crime, which only gated random events, is
+gone too: no state, no `crime` / `prereq_crime` data keys, no help line.
 
 ## 5. Status
 
@@ -242,3 +264,16 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | B11 The Unconquered City | Bard | built (`bard_unconquered_city.jsonc`) |
 | B14 Last Stand Hymn | Bard | built (`bard_last_stand_hymn.jsonc`) |
 | B15 Wardance | Bard | built (`bard_wardance.jsonc`) |
+| Orrery of Ceridwen (DECKS.md 3.1) | Sage II | built: world wonder, `sage_orrery_of_ceridwen.jsonc`; sight 2, +2 research per 10 counter |
+| A01 The Wild Awakens (20) | Armageddon | built |
+| A02 The Sea Recedes (30) | Armageddon | built: the sea named at the reveal |
+| A09 Volcanic Spring (40) | Armageddon | built: the hills named at the reveal |
+| A11 Werewolf Moon (40) | Armageddon | built |
+| A30 The Lairs Deepen (60) | Armageddon | built: lasting (`deep_spawn_unit_type`) |
+| A32 The Second Sun (60) | Armageddon | built |
+| A33 The Blade Returns (50) | Armageddon | built |
+| A39 The Twilight of the Gods (80) | Armageddon | built |
+| A40 The Sky Falls (80) | Armageddon | built |
+| A48 The Gathering (100) | Armageddon | built (not played under No Vassal States) |
+| A49 The Long Night (100) | Armageddon | built: lasting |
+| A50 The Godless Age (100) | Armageddon | built |

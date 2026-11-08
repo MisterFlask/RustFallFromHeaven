@@ -4,7 +4,7 @@
 //! yields/costs, "ever active" queries, destroyed city / great person names; barbarians
 //! (`createBarbarianCities`, `createBarbarianUnits`, `createAnimals`, FfH `foundBarbarianCity`)
 //! and the other FfH additions: the global (Armageddon) counter, trophies, disabled religions.
-//! (FfH's crime, challenge and scenario counters are plain fields.)
+//! (FfH's challenge and scenario counters are plain fields; its crime is gone.)
 //!
 //! Trivial CvGame accessors of this topic are fields (docs/porting/game.md, "Field access"):
 //! `incrementUnitCreatedCount` = `unit_created_count[u] += 1`, `incrementUnitClassCreatedCount`,
@@ -1382,6 +1382,23 @@ impl Game {
                 self.max_global_counter = new_value;
             }
             // AS2D_ARMAGEDDON_INCREASE / _DECREASE sounds are UI.
+            self.update_global_counter_commerce();
+        }
+    }
+
+    /// Not in C++: the cities with a building whose commerce follows the counter
+    /// (`BuildingInfo::global_counter_commerce`, the Orrery of Ceridwen; docs/CARDS.md) update
+    /// their building commerce.
+    pub fn update_global_counter_commerce(&mut self) {
+        let d = self.d;
+        let buildings: Vec<BuildingType> = d.buildings.keys().filter(|&b| d.buildings[b].global_counter_commerce.iter().any(|&v| v != 0)).collect();
+        if buildings.is_empty() {
+            return;
+        }
+        for c in self.cities.ids() {
+            if buildings.iter().any(|&b| self.city_num_building(c, b) > 0) {
+                self.city_update_building_commerce(c);
+            }
         }
     }
 

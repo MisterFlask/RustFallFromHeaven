@@ -1,0 +1,8 @@
+// A50 The Godless Age (docs/DECKS_ROUND8.md section B, as amended in C.5; the Armageddon card is
+// code: crates/ffh-core/src/deck/doom_cards.rs).
+{
+  "text": {
+    "TXT_KEY_DOOM_GODLESS_AGE": "The Godless Age",
+    "TXT_KEY_DOOM_GODLESS_AGE_HELP": "Every shrine and every holy city is gone, every religion is removed from every city, and every state religion ends."
+  }
+}

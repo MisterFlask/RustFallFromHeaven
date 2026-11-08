@@ -157,6 +157,13 @@ pub struct BuildingInfo {
     /// `exclusive_with`: a city that has a building of one of these classes cannot build it.
     pub exclusive_with: Vec<BuildingClassType>,
 
+    // ---- the Armageddon deck (docs/CARDS.md; not in FFH2) ----
+    /// Commerce of its city per 10 points of the Armageddon counter (`global_counter_commerces`:
+    /// the Orrery of Ceridwen's research).
+    pub global_counter_commerce: [i32; CommerceType::NUM],
+    /// How many unrevealed Armageddon cards ahead its owner sees (`doom_sight`: the Orrery 2).
+    pub doom_sight: i32,
+
     // ---- type references ----
     /// C++ `getBuildingClassType()`, XML `<BuildingClass>`.
     pub building_class_type: Option<BuildingClassType>,
@@ -323,7 +330,6 @@ pub struct BuildingInfo {
     pub requires_caster: bool,
     pub see_invisible: bool,
     pub unhappy_production: bool,
-    pub crime: i32,
     pub free_promotion_pick: i32,
     pub free_bonus2: Option<BonusType>,
     pub free_bonus3: Option<BonusType>,
@@ -423,6 +429,9 @@ pub fn read_building(rd: &Rd) -> BuildingInfo {
         sentinel_repair_change: rd.int("sentinel_repair_change"),
         battle: crate::infos::read_building_battle(rd, &rd.string("type")),
         exclusive_with: rd.ref_list::<BuildingClassType>("exclusive_with"),
+
+        global_counter_commerce: rd.commerces("global_counter_commerces"),
+        doom_sight: rd.int("doom_sight"),
 
         building_class_type: rd.rf("building_class"),
         special_building_type: rd.rf("special_building_type"),
@@ -549,7 +558,6 @@ pub fn read_building(rd: &Rd) -> BuildingInfo {
         requires_caster: rd.bool("requires_caster"),
         see_invisible: rd.bool("see_invisible"),
         unhappy_production: rd.bool("unhappy_production"),
-        crime: rd.int("crime"),
         free_promotion_pick: rd.int("free_promotion_pick"),
         free_bonus2: rd.rf("free_bonus2"),
         free_bonus3: rd.rf("free_bonus3"),

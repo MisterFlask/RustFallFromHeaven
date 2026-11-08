@@ -334,7 +334,7 @@ A building is built through these paths:
    mana of the palaces and many wonders), free promotions (`FreePromotion`,
    `bApplyFreePromotionOnMove`), religion spread, shrine commerce, specialist yields and commerce,
    sea plot yields, resource-based modifiers, free techs, golden ages, the Armageddon counter,
-   spell resistance, crime, war weariness, and every effect that lives in Python. A building whose
+   spell resistance, war weariness, and every effect that lives in Python. A building whose
    value is 0 or less is never chosen by this path; after Writing a city always has a process to
    fall back on, so a building with no value is not built at all (before it, `production::fallback`
    builds the quickest building the city can construct, whatever its value).

@@ -108,6 +108,11 @@ impl World {
     fn city(&mut self, owner: PlayerId, at: PlotIdx, pct: i32) -> CityId {
         let (x, y) = self.g.map.xy(at);
         let c = self.g.player_init_city(owner, x, y, true, true);
+        // Standard Walls (two Sentinels) whatever the city's building tiers rolled
+        // (docs/SUITABILITY.md).
+        let walls = self.g.d.t::<BuildingType>("BUILDING_WALLS");
+        let class = self.g.d.buildings[walls].building_class_type.unwrap();
+        self.g.cities[c].building_tiers[class] = BuildingTierType::STANDARD;
         let total = self.g.city_total_defense(c, false);
         self.g.cities[c].building_defense += pct - total;
         assert_eq!(self.g.city_defense_modifier(c, false), pct);

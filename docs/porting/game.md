@@ -321,7 +321,7 @@ used in the C++. `m_bScoreDirty` is kept (rank update timing feeds the FfH chall
 | `getMapRand`, `getSorenRand` | `map_rand`, `soren_rand` |
 | `culturalVictoryNumCultureCities` | `num_culture_victory_cities` |
 | `getVoteSourceReligion` | `vote_source_religions[vs]` |
-| FfH `get/changeCrime`, `get/changeCutLosersCounter`, `get/changeFlexibleDifficultyCounter`, `get/changeHighToLowCounter`, `get/changeIncreasingDifficultyCounter`, `get/changeGlobalCounterLimit`, `get/changeScenarioCounter` | `crime`, `cut_losers_counter`, `flexible_difficulty_counter`, `high_to_low_counter`, `increasing_difficulty_counter`, `global_counter_limit`, `scenario_counter` |
+| FfH `get/changeCutLosersCounter`, `get/changeFlexibleDifficultyCounter`, `get/changeHighToLowCounter`, `get/changeIncreasingDifficultyCounter`, `get/changeGlobalCounterLimit`, `get/changeScenarioCounter` | `cut_losers_counter`, `flexible_difficulty_counter`, `high_to_low_counter`, `increasing_difficulty_counter`, `global_counter_limit`, `scenario_counter` |
 | FfH `getTrueGlobalCounter`, `getTrueMaxGlobalCounter` | `global_counter`, `max_global_counter` |
 | FfH `is/setEventTriggered`, `is/setGamblingRing`, `is/setNoBonus`, `is/setNoOutsideTechTrades`, `is/setSlaveTrade`, `is/setSmugglingRing` | `event_triggered[t]`, `gambling_ring[vs]`, `no_bonus[b]`, `no_outside_tech_trades[vs]`, `slave_trade[vs]`, `smuggling_ring[vs]` |
 

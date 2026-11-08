@@ -340,7 +340,7 @@ persist_struct!(PackedBuilding { building, count, original_owner, original_time 
 persist_struct!(PackedCity { name, origin, population, buildings, tiers });
 
 persist_struct!(Doom { dealt, slots });
-persist_struct!(DoomSlot { threshold, card, revealed, fired });
+persist_struct!(DoomSlot { threshold, card, revealed, fired, targets });
 
 persist_struct!(City {
     id, x, y, rally_x, rally_y, game_turn_founded, game_turn_acquired, population, highest_population,
@@ -366,7 +366,7 @@ persist_struct!(City {
     occupation_timer, culture_update_timer, specialist_free_experience, espionage_defense_modifier,
     never_lost, bombarded, besieged_by_bombard, drafted, airlift_targeted, we_love_the_king_day, citizens_automated,
     production_automated, plundered, owner, previous_owner, original_owner, culture_level,
-    settlement, civ, crime, mutate_chance, plot_radius, resist_magic, unhappy_production,
+    settlement, civ, mutate_chance, plot_radius, resist_magic, unhappy_production,
     sea_plot_yield, river_plot_yield, base_yield_rate, yield_rate_modifier,
     power_yield_rate_modifier, bonus_yield_rate_modifier, trade_yield, corporation_yield,
     extra_specialist_yield, commerce_rate, production_to_commerce_modifier, building_commerce,
@@ -452,7 +452,7 @@ persist_struct!(Team {
     permanent_alliance_trading_count, vassal_trading_count, bridge_building_count,
     irrigation_count, ignore_irrigation_count, water_work_count, vassal_power, master_power,
     enemy_war_weariness_modifier, river_trade_count, espionage_points_ever, map_centering,
-    capitulated, barbarian_ally, no_civic_anger, stolen_visibility_timer, war_weariness,
+    capitulated, gathered, barbarian_ally, no_civic_anger, stolen_visibility_timer, war_weariness,
     tech_share_count, commerce_flexible_count, extra_moves, force_team_vote_eligibility_count,
     at_war, has_met, permanent_war_peace, open_borders, defensive_pact, force_peace, vassal,
     can_launch, route_change, project_count, project_making, unit_class_count,

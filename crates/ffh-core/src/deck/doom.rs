@@ -13,6 +13,12 @@
 //! The cards are code ([`CARDS`]): a name (text `TXT_KEY_DOOM_<KEY>`, its effect
 //! `TXT_KEY_DOOM_<KEY>_HELP`), its thresholds, and what each stage does. A slot holds a card by
 //! its key, so a save does not depend on the table's order.
+//!
+//! - **Named at the reveal:** a card whose targets are fixed when it is shown (a sea, six hills)
+//!   names them then (`DoomCard::on_reveal`), into its slot (`DoomSlot::targets`), so every
+//!   player sees them before it fires; its fire reads them back (`Game::doom_targets`).
+//! - **Lasting cards:** a card whose effect lasts for the rest of the game is a rule that asks
+//!   whether its slot has fired (`Game::doom_fired`).
 
 use crate::game::Game;
 use crate::ids::*;
@@ -30,6 +36,9 @@ pub struct DoomCard {
     pub fire: fn(&mut Game, usize),
     /// Whether the card can be played (checked at the reveal; `None`: always).
     pub valid: Option<fn(&Game) -> bool>,
+    /// Names what stage `i` will strike when its slot is revealed: the slot keeps the list
+    /// (`DoomSlot::targets`; each card says what its numbers are). `None`: nothing to name.
+    pub on_reveal: Option<fn(&mut Game, usize) -> Vec<i32>>,
 }
 
 /// The slots, in counter order.
@@ -49,6 +58,9 @@ pub struct DoomSlot {
     pub revealed: bool,
     /// Played.
     pub fired: bool,
+    /// What its card named at the reveal (`DoomCard::on_reveal`): plot indices for the cards so
+    /// far. Empty for a card that names nothing.
+    pub targets: Vec<i32>,
 }
 
 /// The Armageddon deck as dealt (`Game::doom`).
@@ -94,11 +106,11 @@ fn fire_apocalypse(g: &mut Game, _: usize) {
 /// Every card of the deck. FFH2's events first; the cards of docs/DECKS_ROUND8.md section B
 /// follow (`deck/doom_cards.rs`).
 pub const CARDS: &[DoomCard] = &[
-    DoomCard { key: "DOOM_BLIGHT", stages: &[30], fire: fire_blight, valid: None },
-    DoomCard { key: "DOOM_FOUR_HORSEMEN", stages: &[40, 50, 60, 70], fire: fire_horsemen, valid: None },
-    DoomCard { key: "DOOM_HELLFIRE", stages: &[80], fire: fire_hellfire, valid: None },
-    DoomCard { key: "DOOM_WRATH", stages: &[90], fire: fire_wrath, valid: None },
-    DoomCard { key: "DOOM_APOCALYPSE", stages: &[100], fire: fire_apocalypse, valid: None },
+    DoomCard { key: "DOOM_BLIGHT", stages: &[30], fire: fire_blight, valid: None, on_reveal: None },
+    DoomCard { key: "DOOM_FOUR_HORSEMEN", stages: &[40, 50, 60, 70], fire: fire_horsemen, valid: None, on_reveal: None },
+    DoomCard { key: "DOOM_HELLFIRE", stages: &[80], fire: fire_hellfire, valid: None, on_reveal: None },
+    DoomCard { key: "DOOM_WRATH", stages: &[90], fire: fire_wrath, valid: None, on_reveal: None },
+    DoomCard { key: "DOOM_APOCALYPSE", stages: &[100], fire: fire_apocalypse, valid: None, on_reveal: None },
 ];
 
 /// The cards of the deck: FFH2's and the new ones.
@@ -163,6 +175,22 @@ impl Game {
         Some((find(key)?, *stage as usize))
     }
 
+    /// Has a stage of the card `key` been played? A card that lasts for the rest of the game is
+    /// in force from then on.
+    pub fn doom_fired(&self, key: &str) -> bool {
+        self.doom.slots.iter().any(|s| s.fired && s.card.as_ref().is_some_and(|(k, _)| k == key))
+    }
+
+    /// What stage `stage` of the card `key` named at its reveal (empty if nothing, or the card
+    /// is not dealt).
+    pub fn doom_targets(&self, key: &str, stage: usize) -> &[i32] {
+        self.doom
+            .slots
+            .iter()
+            .find(|s| s.card.as_ref().is_some_and(|(k, st)| k == key && *st as usize == stage))
+            .map_or(&[], |s| s.targets.as_slice())
+    }
+
     /// Reveals and fires the slots the counter has reached (each game turn).
     pub fn doom_do_turn(&mut self) {
         if self.is_option(GameOptionType::GAMEOPTION_NO_GLOBAL_COUNTER) {
@@ -190,7 +218,7 @@ impl Game {
     }
 
     /// Reveals slot `i`: a first stage whose card cannot be played is dealt again from the
-    /// slot's cards.
+    /// slot's cards; then the card names its targets, if it has any (`DoomCard::on_reveal`).
     fn doom_reveal(&mut self, i: usize) {
         self.doom.slots[i].revealed = true;
         let threshold = self.doom.slots[i].threshold;
@@ -200,6 +228,7 @@ impl Game {
                 for s in self.doom.slots.iter_mut() {
                     if s.card.as_ref().is_some_and(|(k, _)| k == c.key) {
                         s.card = None;
+                        s.targets.clear();
                     }
                 }
                 let cands: Vec<&'static DoomCard> =
@@ -210,7 +239,8 @@ impl Game {
                 }
             }
         }
-        if let Some((c, _)) = self.doom_slot_card(i) {
+        if let Some((c, stage)) = self.doom_slot_card(i) {
+            self.doom.slots[i].targets = c.on_reveal.map_or_else(Vec::new, |f| f(self, stage));
             let turn = self.game_turn();
             let name = self.d.text.get(&format!("TXT_KEY_{}", c.key)).to_string();
             self.log.msg(turn, None, || format!("Armageddon card revealed at {threshold}: {name}."));
@@ -218,7 +248,8 @@ impl Game {
     }
 
     /// Is slot `i` known to `p`: revealed to everyone, or among the next `extra` unrevealed
-    /// slots for a player who sees further (the Orrery of Ceridwen: 2).
+    /// slots that hold a card, for a player who sees further (the Orrery of Ceridwen: the next
+    /// two cards and their thresholds).
     pub fn doom_slot_known(&self, p: PlayerId, i: usize) -> bool {
         let Some(slot) = self.doom.slots.get(i) else { return false };
         if slot.revealed {
@@ -228,11 +259,13 @@ impl Game {
         if extra == 0 {
             return false;
         }
-        let ahead: Vec<usize> = (0..self.doom.slots.len()).filter(|&j| !self.doom.slots[j].revealed).take(extra).collect();
+        let ahead: Vec<usize> =
+            (0..self.doom.slots.len()).filter(|&j| !self.doom.slots[j].revealed && self.doom.slots[j].card.is_some()).take(extra).collect();
         ahead.contains(&i)
     }
 
-    /// How many unrevealed slots ahead `p` sees (0; cards that show more add to it).
+    /// How many unrevealed cards ahead `p` sees (0 without a building that shows more:
+    /// `BuildingInfo::doom_sight`, the Orrery of Ceridwen's 2).
     pub fn player_doom_sight(&self, p: PlayerId) -> usize {
         crate::deck::doom_cards::doom_sight(self, p)
     }
@@ -291,5 +324,58 @@ mod tests {
         let s30 = g.doom.slots.iter().find(|s| s.threshold == 30).unwrap();
         assert!(s30.revealed && !s30.fired);
         assert!(g.doom.slots.iter().filter(|s| s.threshold < 30).all(|s| s.fired));
+    }
+
+    #[test]
+    fn every_card_can_be_dealt_and_every_slot_from_20_gets_one_but_70() {
+        let mut g = game();
+        // In an empty deck each card is a candidate of its first slot.
+        g.doom.slots = SLOTS.iter().map(|&threshold| DoomSlot { threshold, ..Default::default() }).collect();
+        for c in all_cards() {
+            assert!(g.doom_slot_candidates(c.stages[0], false).iter().any(|x| x.key == c.key), "{} can be dealt", c.key);
+        }
+        // Whichever cards come, every slot from 20 holds one, but 70, which only the Four
+        // Horsemen's chain reaches (and 10, which none does).
+        for _ in 0..20 {
+            g.doom_deal();
+            for s in &g.doom.slots {
+                if s.threshold >= 20 && s.threshold != 70 {
+                    assert!(s.card.is_some(), "slot {} is dealt a card", s.threshold);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_card_names_its_targets_at_the_reveal_and_a_redeal_clears_them() {
+        use crate::deck::doom_cards::{dig_test_sea, SEA_RECEDES};
+        let mut g = game();
+        let sea = dig_test_sea(&mut g);
+        g.doom.dealt = true;
+        g.doom.slots = SLOTS.iter().map(|&threshold| DoomSlot { threshold, ..Default::default() }).collect();
+        let i = g.doom.slots.iter().position(|s| s.threshold == 30).unwrap();
+        g.doom.slots[i].card = Some((SEA_RECEDES.to_string(), 0));
+        g.doom_reveal(i);
+        // The sea is named: the targets are its plots, which the fire reads back.
+        let slot = &g.doom.slots[i];
+        assert!(slot.revealed);
+        assert_eq!(slot.card.as_ref().map(|(k, _)| k.as_str()), Some(SEA_RECEDES));
+        assert!(!slot.targets.is_empty() && slot.targets.iter().all(|&t| sea.contains(&PlotIdx(t as u32))));
+        assert_eq!(g.doom_targets(SEA_RECEDES, 0), slot.targets.as_slice());
+        assert!(!g.doom_fired(SEA_RECEDES));
+
+        // With no sea left at a reveal the card is dealt again, and the slot keeps only what the
+        // new card names.
+        for &p in &sea {
+            g.plot_set_plot_type(p, PlotType::PLOT_LAND, true);
+        }
+        g.doom.slots[i].revealed = false;
+        g.doom_reveal(i);
+        let slot = &g.doom.slots[i];
+        let now = slot.card.as_ref().map(|(k, _)| k.as_str());
+        assert_ne!(now, Some(SEA_RECEDES));
+        if now.and_then(find).map_or(true, |c| c.on_reveal.is_none()) {
+            assert!(slot.targets.is_empty());
+        }
     }
 }

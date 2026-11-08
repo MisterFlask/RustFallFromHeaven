@@ -1,7 +1,8 @@
 //! CvGame: diplomatic votes (FfH: Overcouncil / Undercouncil). Vote counting and
 //! eligibility, secretary general, diplo vote sources, resolution validity, vote selections
 //! and triggered votes, `doVoteResults`/`doVoteSelection`, `processVote` (with the FfH vote
-//! effects: crime, gambling/smuggling rings, slave trade, no bonus, free units, PyResult),
+//! effects: gambling/smuggling rings, slave trade, no bonus, free units, PyResult; FfH's crime
+//! is gone),
 //! vote source religions.
 //!
 //! Decisions: the secretary general's choice of resolution (C++ `CvTeamAI::AI_chooseElection`,
@@ -700,10 +701,7 @@ impl Game {
                 }
             }
         }
-        if info.crime != 0 {
-            // changeCrime. C++ quirk: also when the vote is reverted (iChange -1).
-            self.crime += info.crime;
-        }
+        // (C++ changeCrime: no crime in this game.)
         if !info.py_result.is_empty() {
             // Python CvSpellInterface.vote(eVote, 1). C++ quirk: the argument is always 1, and the
             // result also runs when the vote is reverted.
@@ -1317,18 +1315,14 @@ mod tests {
         let over = d.t::<VoteSourceType>("DIPLOVOTE_OVERCOUNCIL");
 
         let gambling = triggered(8192, under, d.t::<VoteType>("VOTE_GAMBLING_RING"));
-        let crime = g.crime;
         g.set_vote_outcome(&gambling, PlayerVote::PLAYER_VOTE_YES);
         assert!(g.is_vote_passed(gambling.vote_option.vote));
         assert!(g.gambling_ring[under] && !g.gambling_ring[over]);
-        assert_eq!(g.crime, crime + 5);
         g.set_vote_outcome(&gambling, PlayerVote::PLAYER_VOTE_NO);
         assert!(!g.gambling_ring[under]);
-        // C++ quirk: repealing adds the crime again
-        assert_eq!(g.crime, crime + 10);
         // a failed vote that never passed changes nothing
         g.set_vote_outcome(&gambling, PlayerVote::PLAYER_VOTE_ABSTAIN);
-        assert_eq!(g.crime, crime + 10);
+        assert!(!g.gambling_ring[under]);
 
         let no_death_mana = triggered(16384, over, d.t::<VoteType>("VOTE_NO_DEATH_MANA"));
         let death_mana = d.t::<BonusType>("BONUS_MANA_DEATH");

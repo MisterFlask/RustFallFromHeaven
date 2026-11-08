@@ -1271,9 +1271,11 @@ impl Game {
                 } else {
                     let mut found = false;
 
+                    // Not in C++: a vassal the Armageddon card The Gathering made counts as
+                    // unconquered (docs/CARDS.md).
                     for k in self.civ_team_ids() {
                         if self.team_is_alive(k) {
-                            if k != team && !self.teams[k].vassal[team] {
+                            if k != team && (!self.teams[k].vassal[team] || self.teams[k].gathered) {
                                 if self.teams[k].num_cities > 0 {
                                     found = true;
                                     break;
@@ -1309,9 +1311,11 @@ impl Game {
             }
         }
 
+        // Not in C++: the vassals of the Armageddon card The Gathering do not count
+        // (`team_victory_population`, `team_victory_land`; docs/CARDS.md).
         if valid {
             if self.adjusted_population_percent(victory) > 0 {
-                if 100 * self.team_get_total_population(team, true) < self.total_population * self.adjusted_population_percent(victory) {
+                if 100 * self.team_victory_population(team) < self.total_population * self.adjusted_population_percent(victory) {
                     valid = false;
                 }
             }
@@ -1319,7 +1323,7 @@ impl Game {
 
         if valid {
             if self.adjusted_land_percent(victory) > 0 {
-                if 100 * self.team_get_total_land(team, true) < self.map.land_plots * self.adjusted_land_percent(victory) {
+                if 100 * self.team_victory_land(team) < self.map.land_plots * self.adjusted_land_percent(victory) {
                     valid = false;
                 }
             }

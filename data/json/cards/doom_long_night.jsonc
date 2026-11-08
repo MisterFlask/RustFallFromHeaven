@@ -1,0 +1,8 @@
+// A49 The Long Night (docs/DECKS_ROUND8.md section B, as amended in C.5; the Armageddon card is
+// code: crates/ffh-core/src/deck/doom_cards.rs).
+{
+  "text": {
+    "TXT_KEY_DOOM_LONG_NIGHT": "The Long Night",
+    "TXT_KEY_DOOM_LONG_NIGHT_HELP": "For the rest of the game: -1 food on every plot, and units heal only in cities."
+  }
+}

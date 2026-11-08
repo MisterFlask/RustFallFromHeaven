@@ -1,0 +1,8 @@
+// A33 The Blade Returns (docs/DECKS_ROUND8.md section B, as amended in C.5; the Armageddon card
+// is code: crates/ffh-core/src/deck/doom_cards.rs).
+{
+  "text": {
+    "TXT_KEY_DOOM_BLADE_RETURNS": "The Blade Returns",
+    "TXT_KEY_DOOM_BLADE_RETURNS_HELP": "If the Godslayer is not in the world, it appears at the unowned land plot farthest from every city, guarded by four barbarian Greater Werewolves. Not played without barbarians, or while the Godslayer is in the world."
+  }
+}

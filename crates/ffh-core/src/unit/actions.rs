@@ -593,6 +593,13 @@ impl Game {
         // FfH: End Add
 
         let city = self.map.plots[plot].plot_city;
+
+        // Not in FFH2: the Armageddon card The Long Night, no healing outside cities for the rest
+        // of the game (docs/CARDS.md).
+        if city.is_none() && self.doom_fired(crate::deck::doom_cards::LONG_NIGHT) {
+            return 0;
+        }
+
         let team = self.unit_get_team(u);
         let plot_team = self.plot_get_team(plot);
         let unit = &self.units[u];

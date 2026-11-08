@@ -162,8 +162,7 @@ pub struct City {
     /// C++ `m_iCiv` (`getTrueCivilizationType`/`setCivilizationType`): the civilization the
     /// city was founded by; `getCivilizationType` uses it for assimilating owners.
     pub civ: Option<CivilizationType>,
-    /// C++ `m_iCrime`: the city's own crime; `getCrime` adds the game's global crime.
-    pub crime: i32,
+    // (C++ `m_iCrime` is gone: no crime in this game.)
     pub mutate_chance: i32,
     pub plot_radius: i32,
     pub resist_magic: i32,
@@ -303,10 +302,8 @@ impl City {
     /// Per-type arrays are sized from `d`; per-player/per-team arrays from `num_players` /
     /// `num_teams` (`Game::num_players()` / `Game::num_teams()`).
     ///
-    /// `crime` is C++ `m_iCrime = getSorenRandNum(20, "Crime")`: reset() draws from the game
-    /// RNG, so the caller draws it (`Game::city_init` does, twice, as C++ does).
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(d: &GameData, num_players: usize, num_teams: usize, id: CityId, owner: PlayerId, x: i32, y: i32, crime: i32) -> City {
+    /// (C++ reset() also draws `m_iCrime = getSorenRandNum(20, "Crime")`: no crime in this game.)
+    pub fn new(d: &GameData, num_players: usize, num_teams: usize, id: CityId, owner: PlayerId, x: i32, y: i32) -> City {
         let nb = d.buildings.len();
         let nu = d.units.len();
         let ns = d.specialists.len();
@@ -418,7 +415,6 @@ impl City {
 
             settlement: false,
             civ: None,
-            crime,
             mutate_chance: 0,
             plot_radius: 2,
             resist_magic: 0,
@@ -595,7 +591,7 @@ mod tests {
     #[test]
     fn new_city_has_reset_defaults() {
         let d = ffh_data::global();
-        let c = City::new(d, 3, 3, CityId(7), PlayerId(1), 4, 5, 13);
+        let c = City::new(d, 3, 3, CityId(7), PlayerId(1), 4, 5);
         assert_eq!(c.id, CityId(7));
         assert_eq!((c.x, c.y), (4, 5));
         assert_eq!((c.rally_x, c.rally_y), (INVALID_PLOT_COORD, INVALID_PLOT_COORD));
@@ -603,7 +599,6 @@ mod tests {
         assert_eq!(c.original_owner, PlayerId(1));
         assert_eq!(c.previous_owner, None);
         assert!(c.never_lost && c.citizens_automated && !c.production_automated);
-        assert_eq!(c.crime, 13);
         assert_eq!(c.plot_radius, 2);
         assert_eq!(c.culture_level, None);
         assert_eq!(c.civ, None);

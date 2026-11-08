@@ -2041,7 +2041,7 @@ mod tests {
     fn add_city(g: &mut Game, owner: PlayerId, x: i32, y: i32) -> CityId {
         let (num_players, num_teams) = (g.num_players(), g.num_teams());
         let id = g.cities.next_id();
-        let c = g.player_add_city(owner, crate::city::City::new(g.d, num_players, num_teams, id, owner, x, y, 0));
+        let c = g.player_add_city(owner, crate::city::City::new(g.d, num_players, num_teams, id, owner, x, y));
         let p = g.map.plot_idx(x, y).unwrap();
         g.map.plots[p].plot_city = Some(c);
         c

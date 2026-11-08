@@ -451,7 +451,6 @@ function growthView(c) {
         : null,
       c.besieged ? h("span.chip.bad", { tip: `Besieged by ${c.besiegers} enemy unit${c.besiegers === 1 ? "" : "s"} next to the city: its units get no heal from the city and its Sentinels do not repair` }, "Besieged") : null,
       h("span.chip", { tip: "Upkeep: gold a turn" }, ic("gold"), c.maintenance ? `−${c.maintenance}` : "0"),
-      c.crime ? h("span.chip", { tip: "Crime" }, `Crime ${c.crime}`) : null,
       c.trade_routes ? h("span.chip", { tip: "Trade routes" }, `Trade ${c.trade_routes}`) : null,
       h("span.chip.dim", `Founded turn ${c.founded}`),
     ),

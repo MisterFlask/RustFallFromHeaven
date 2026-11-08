@@ -1498,6 +1498,7 @@ fn economy_value(g: &Game, c: CityId, b: BuildingType) -> i32 {
         v += (info.commerce_change[i] + info.obsolete_safe_commerce_change[i]) * cw[i] * 10;
         v += info.commerce_modifier[i] * rate * cw[i] / 10;
         v += info.global_commerce_modifier[i] * rate * cw[i] * n_cities.min(8) / 20;
+        v += info.global_counter_commerce[i] * (g.get_global_counter() / 10 + 2) * cw[i] * 10;
     }
     // Specialists, great people, trade routes (building_value's own terms).
     let slots: i32 = info.specialist_count.iter().sum();
@@ -1548,7 +1549,12 @@ fn generic_building_value(g: &Game, c: CityId, b: BuildingType, threat: i32) -> 
         v += (info.commerce_change[i] + info.obsolete_safe_commerce_change[i]) * cw[i] * 10;
         v += info.commerce_modifier[i] * rate * cw[i] / 10;
         v += info.global_commerce_modifier[i] * rate * cw[i] * n_cities.min(8) / 20;
+        // Commerce per 10 points of the Armageddon counter (the Orrery of Ceridwen,
+        // docs/CARDS.md): what it gives now, and two steps more as the counter rises.
+        v += info.global_counter_commerce[i] * (g.get_global_counter() / 10 + 2) * cw[i] * 10;
     }
+    // Seeing the Armageddon cards ahead (the Orrery): no AI reads it yet; a little.
+    v += info.doom_sight * 50;
     // Culture: border growth matters in a new city (cheap culture buildings only).
     let culture = info.commerce_change[CommerceType::COMMERCE_CULTURE.idx()];
     if culture > 0 && info.production_cost <= 120 && city.culture_level.map_or(true, |l| l.i() <= 1) {

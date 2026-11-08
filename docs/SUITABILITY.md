@@ -18,7 +18,7 @@ Some things never change with the tier:
 
 - A building's cost.
 - What it unlocks: units, spells, prerequisites, civic and event bonuses.
-- Its drawbacks: crime, unhealthiness, unhappiness, extra maintenance.
+- Its drawbacks: unhealthiness, unhappiness, extra maintenance.
 
 The city's choice is what to build first, given the hand it was dealt. Wonders roll a tier too,
 but it changes only their cost (section 5).
@@ -89,7 +89,7 @@ otherwise.
    more slot of the same kind. Some Legendary buildings also come with a *free* specialist: one
    that works without using a citizen.
 3. **Drawbacks never scale.** The Market's −1 research, the Forge's −1 health, the Tax Office's
-   −1 happiness, crime, and extra maintenance are the same at every tier. A good tier never makes
+   −1 happiness and extra maintenance are the same at every tier. A good tier never makes
    a drawback worse, and a bad tier never adds one.
 4. **Unlocks never scale.** Every tier unlocks the same units and spells and counts for the same
    prerequisites, civics and events. A Lesser Stable still lets the city train Horsemen.
@@ -146,13 +146,13 @@ The *Standard* column of each table is FFH 0.41's building, from `CIV4BuildingIn
 
 | Standard | Lesser | Fine | Grand | Legendary |
 |---|---|---|---|---|
-| **Market**: +3 gold, −1 research; 1 merchant slot; crime +5 | +1 gold | +5 gold | +6 gold; 2 slots | **Emporium**: Grand + 1 free merchant, +1 trade route |
+| **Market**: +3 gold, −1 research; 1 merchant slot | +1 gold | +5 gold | +6 gold; 2 slots | **Emporium**: Grand + 1 free merchant, +1 trade route |
 | **Money Changer**: +25% gold; 1 merchant slot | +12% | +38% | +50%; 2 slots | **Counting House**: Grand + 5% gold in all your cities |
 | **Tax Office**: +25% gold; −1 happiness | +12% | +38% | +50% | **Exchequer**: Grand + 1 gold per 2 citizens |
-| **Gambling House**: +3 gold; +1 happiness per 10% of the gold rate; crime +10; +10% maintenance | +1 gold; +1 happiness per 20% | +5 gold; +3 happiness per 20% | +6 gold; +1 happiness per 5% | **House of Fortune**: Grand + 25% gold |
-| **Smugglers' Port** (coast): +25% gold; +1 trade route; 1 merchant slot; crime +10 | +12% | +38% | +50%; 2 trade routes; 2 slots | **Black Wharf**: Grand + 1 free merchant, +50% trade-route yield |
-| **Inn**: +25% trade-route yield; +1 trade route; healing +25; +1 happiness with Wine; crime +5 | +12%; healing +12 | +38%; healing +38 | +50%; 2 trade routes; healing +50; +2 with Wine | **Caravanserai**: Grand + 1 trade route (3 in all), +25% more trade-route yield (+75%) |
-| **Tavern**: +25% trade-route yield; +1 trade route; +1 great artist point; crime +5; +10% maintenance | +12% | +38% | +50%; 2 trade routes; +2 points | **Mead Hall**: Grand + 1 trade route (3 in all), +2 more great artist points (+4) |
+| **Gambling House**: +3 gold; +1 happiness per 10% of the gold rate; +10% maintenance | +1 gold; +1 happiness per 20% | +5 gold; +3 happiness per 20% | +6 gold; +1 happiness per 5% | **House of Fortune**: Grand + 25% gold |
+| **Smugglers' Port** (coast): +25% gold; +1 trade route; 1 merchant slot | +12% | +38% | +50%; 2 trade routes; 2 slots | **Black Wharf**: Grand + 1 free merchant, +50% trade-route yield |
+| **Inn**: +25% trade-route yield; +1 trade route; healing +25; +1 happiness with Wine | +12%; healing +12 | +38%; healing +38 | +50%; 2 trade routes; healing +50; +2 with Wine | **Caravanserai**: Grand + 1 trade route (3 in all), +25% more trade-route yield (+75%) |
+| **Tavern**: +25% trade-route yield; +1 trade route; +1 great artist point; +10% maintenance | +12% | +38% | +50%; 2 trade routes; +2 points | **Mead Hall**: Grand + 1 trade route (3 in all), +2 more great artist points (+4) |
 | **Obsidian Gate**: airlift 1; +1 trade route | airlift 1; no trade route | airlift 2 | airlift 2; 2 trade routes | **Gate of Night**: airlift 3; 2 trade routes; +25% trade-route yield |
 
 ### 3.3 Sea
@@ -180,7 +180,7 @@ Legendary Lighthouse a fishing metropolis.
 | **Monument**: +2 culture | +1 | +3 | +4 | **Standing Stones**: Grand + 1 free artist |
 | **Theatre**: +3 culture; +1 happiness per 10% of the culture rate; 1 artist slot; +1 happiness with Dye | +1 culture; +1 happiness per 20% | +5; +3 happiness per 20% | +6; +1 happiness per 5%; 2 slots | **Amphitheatre**: Grand + 1 free artist |
 | **Carnival**: +1 happiness; +20% culture; 1 artist slot | +1; +10% | +2; +30% | +2; +40%; 2 slots | **Midsummer Fair**: Grand, with +3 happiness; −50% war weariness |
-| **Public Baths**: +3 happiness; −1 health; crime +5 | +1 | +5 | +6 | **Thermae**: Grand + 1 happiness in all your cities on this continent |
+| **Public Baths**: +3 happiness; −1 health | +1 | +5 | +6 | **Thermae**: Grand + 1 happiness in all your cities on this continent |
 
 ### 3.6 Growth and health
 
@@ -198,8 +198,8 @@ The food-kept cap of 60% (rule 8) applies to the Granary and Smokehouse together
 
 | Standard | Lesser | Fine | Grand | Legendary |
 |---|---|---|---|---|
-| **Courthouse**: −40% maintenance; crime −10 | −20%; −5 | −60%; −15 | −80%; −20 | **High Court**: no maintenance in this city; crime −20 |
-| **Dungeon**: −25% war weariness; crime −10 | −12%; −5 | −38%; −15 | −50%; −20 | **Oubliette**: no war weariness in this city; crime −20 |
+| **Courthouse**: −40% maintenance | −20% | −60% | −80% | **High Court**: no maintenance in this city |
+| **Dungeon**: −25% war weariness | −12% | −38% | −50% | **Oubliette**: no war weariness in this city |
 | **Command Post** (Organized leaders): +20% military production; land units +2 XP; +1 great commander point | +10%; +1 XP | +30%; +3 XP | +40%; +4 XP; +2 points | **War Room**: Grand + land units trained here get Drill I |
 
 ### 3.8 Defense
@@ -247,7 +247,7 @@ specialist slots and the extras below, and unlocks that religion's disciples and
 | Kilmorph (+2 gold) | +1 | +3 | +4 | Deep Hall of Kilmorph |
 | Leaves (+1 health) | +1 | +2 | +2 | Heart-Tree |
 | Empyrean (+10% research) | +5% | +15% | +20% | Sun Spire |
-| The Order (+10% military production, crime −5) | +5%, −2 | +15%, −8 | +20%, −10 | Cathedral of the Order |
+| The Order (+10% military production) | +5% | +15% | +20% | Cathedral of the Order |
 | Overlords (+3 culture) | +1 | +5 | +6 | Drowned Sanctum |
 | Ashen Veil (+2 research) | +1 | +3 | +4 | Black Cathedral |
 
@@ -255,7 +255,7 @@ The three buildings that only one religion can build:
 
 | Standard | Lesser | Fine | Grand | Legendary |
 |---|---|---|---|---|
-| **Basilica** (Order): −40% maintenance; crime −10; +1 great commander point | −20%; −5 | −60%; −15 | −80%; −20; +2 points | **Basilica of Junil**: Grand, and no maintenance in this city |
+| **Basilica** (Order): −40% maintenance; +1 great commander point | −20% | −60% | −80%; +2 points | **Basilica of Junil**: Grand, and no maintenance in this city |
 | **Asylum** (Overlords): +15% research; 1 scientist slot; +1 great prophet point; −25% war weariness; −1 happiness; unlocks Lunatics; 10% of units trained here go Crazed | +7%; −12% | +23%; −38% | +30%; −50%; +2 points; 2 slots | **Bedlam**: Grand + 1 free scientist |
 | **Demons' Altar** (Veil): units trained here get Scourge; −1 happiness; enables Sacrifice the Weak | no Scourge | Scourge; units +2 XP | Scourge; units +4 XP | **Altar of Agares**: Grand + units trained here get Fear |
 

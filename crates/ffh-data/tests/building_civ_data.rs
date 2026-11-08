@@ -138,7 +138,6 @@ fn palace_sidar_yields_free_bonuses_and_2d_arrays() {
     assert_eq!(b.yield_change, [0, 3, 8]);
     assert_eq!(b.obsolete_safe_commerce_change, [0, 0, 2, 0]);
     assert_eq!(b.happiness, 1);
-    assert_eq!(b.crime, -10);
     assert!(b.capital && b.government_center && b.never_capture && b.nuke_immune);
     assert_eq!(b.free_bonus, Some(bonus("BONUS_MANA_SPIRIT")));
     assert_eq!(b.num_free_bonuses, 1);

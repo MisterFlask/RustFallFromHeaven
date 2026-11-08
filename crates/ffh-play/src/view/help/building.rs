@@ -92,6 +92,9 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         sentinel_repair_change,
         battle,
         exclusive_with,
+        // ---- the Armageddon deck (docs/CARDS.md) ----
+        global_counter_commerce,
+        doom_sight,
         building_class_type,
         victory_prereq,
         free_start_era,
@@ -223,7 +226,6 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         requires_caster,
         see_invisible,
         unhappy_production,
-        crime,
         free_promotion_pick,
         free_bonus2,
         free_bonus3,
@@ -407,9 +409,6 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     }
 
     // FfH.
-    if *crime != 0 {
-        add(&mut h, "TXT_KEY_BUILDING_CRIME", &[Arg::N(*crime)]);
-    }
     if *free_promotion_pick > 0 {
         add(&mut h, "TXT_KEY_BUILDING_FREE_PROMOTION_PICK", &[Arg::N(*free_promotion_pick)]);
     }
@@ -502,6 +501,16 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     if *sentinel_repair_change != 0 {
         h.push_str(NEWLINE);
         h.push_str(&format!("[ICON_BULLET]Sentinel repair: {:+}% of their HP per turn", sentinel_repair_change));
+    }
+    for (i, &v) in global_counter_commerce.iter().enumerate() {
+        if v != 0 {
+            h.push_str(NEWLINE);
+            h.push_str(&format!("[ICON_BULLET]{:+}{} per 10 points of the Armageddon counter", v, COMMERCE_ICONS[i]));
+        }
+    }
+    if *doom_sight > 0 {
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]Shows the next {} Armageddon cards and their thresholds", doom_sight));
     }
     if let (Some(t), Some(of)) = (*tier, *variant_of) {
         h.push_str(NEWLINE);
@@ -1083,12 +1092,11 @@ mod tests {
         );
         assert!(great_library.contains("[ICON_RESEARCH] from Sage in All Cities"), "{great_library}");
         // A religious temple: the Order in the city, Orders from Heaven, two priests, +1 happiness
-        // with Incense, +10% military production, -5 crime.
+        // with Incense, +10% military production.
         says(
             "BUILDING_TEMPLE_OF_THE_ORDER",
             &[
                 "+10% Military Unit Production",
-                "-5 to the crime rate",
                 "Can turn 2 Citizens into Priest",
                 "+1[ICON_HAPPY] from Incense",
                 "Requires the Order religion in the city",

@@ -595,7 +595,8 @@ def unit_facts(u):
 VALUED = {
     "yield_changes": "yields", "yield_modifiers": "yield %", "GlobalYieldModifiers": "global yield %",
     "commerce_changes": "commerce", "obsolete_safe_commerce_changes": "commerce", "commerce_modifiers": "commerce %",
-    "global_commerce_modifiers": "global commerce %", "happiness": "happiness", "area_happiness": "area happiness",
+    "global_commerce_modifiers": "global commerce %", "global_counter_commerces": "commerce per 10 Armageddon counter",
+    "doom_sight": "Armageddon cards seen", "happiness": "happiness", "area_happiness": "area happiness",
     "global_happiness": "global happiness", "bonus_happiness_changes": "happiness from resources",
     "health": "health", "area_health": "area health", "global_health": "global health", "bonus_health_changes": "health from resources",
     "specialist_counts": "specialist slots", "great_people_rate_change": "great people points", "great_people_rate_modifier": "great people %",
@@ -615,7 +616,7 @@ UNVALUED = {
     "specialist_commerce_changes": "specialist commerce", "specialist_extra_commerces": "specialist extra commerce",
     "sea_plot_yield_changes": "sea plot yields", "global_sea_plot_yield_changes": "global sea plot yields",
     "bonus_yield_modifiers": "yield % with resources", "bonus_production_modifiers": "production % with resources",
-    "domain_production_modifiers": "production % by domain", "crime": "crime", "resist_magic": "magic resistance",
+    "domain_production_modifiers": "production % by domain", "resist_magic": "magic resistance",
     "global_resist_modify": "global spell resistance", "global_resist_enemy_modify": "enemy spell resistance",
     "modify_global_counter": "Armageddon counter", "plot_radius": "city radius", "no_unhappiness": "no unhappiness",
     "no_unhealthy_population": "no unhealthy population", "no_civic_anger": "no civic anger", "see_invisible": "sees invisible",

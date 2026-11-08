@@ -1,0 +1,8 @@
+// A01 The Wild Awakens (docs/DECKS_ROUND8.md section B; the Armageddon card is code:
+// crates/ffh-core/src/deck/doom_cards.rs).
+{
+  "text": {
+    "TXT_KEY_DOOM_WILD_AWAKENS": "The Wild Awakens",
+    "TXT_KEY_DOOM_WILD_AWAKENS_HELP": "Every lair spawns three of its units at once: Barrow (Skeleton), Bear Den (Bear), Goblin Fort (Goblin), Hellfire (Champion), Lion Den (Lion), Ruins (Lizardman). A lair with another civilization's unit on it spawns none. Not played without barbarians."
+  }
+}

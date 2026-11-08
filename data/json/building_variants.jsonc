@@ -951,7 +951,6 @@
     "variant_tier": "BUILDINGTIER_LESSER",
     "description": "TXT_KEY_BUILDING_COURTHOUSE_LESSER",
     "maintenance_modifier": -20,
-    "crime": -5,
   },
   {
     "type": "BUILDING_COURTHOUSE_FINE",
@@ -959,7 +958,6 @@
     "variant_tier": "BUILDINGTIER_FINE",
     "description": "TXT_KEY_BUILDING_COURTHOUSE_FINE",
     "maintenance_modifier": -60,
-    "crime": -15,
   },
   {
     "type": "BUILDING_COURTHOUSE_GRAND",
@@ -967,7 +965,6 @@
     "variant_tier": "BUILDINGTIER_GRAND",
     "description": "TXT_KEY_BUILDING_COURTHOUSE_GRAND",
     "maintenance_modifier": -80,
-    "crime": -20,
   },
   {
     "type": "BUILDING_COURTHOUSE_LEGENDARY",
@@ -975,7 +972,6 @@
     "variant_tier": "BUILDINGTIER_LEGENDARY",
     "description": "TXT_KEY_BUILDING_COURTHOUSE_LEGENDARY",
     "maintenance_modifier": -100,
-    "crime": -20,
   },
   // ---- Governor's Manor (BUILDING_GOVERNORS_MANOR)
   {
@@ -985,7 +981,6 @@
     "description": "TXT_KEY_BUILDING_GOVERNORS_MANOR_LESSER",
     "maintenance_modifier": -10,
     "war_weariness_modifier": -12,
-    "crime": -5,
   },
   {
     "type": "BUILDING_GOVERNORS_MANOR_FINE",
@@ -994,7 +989,6 @@
     "description": "TXT_KEY_BUILDING_GOVERNORS_MANOR_FINE",
     "maintenance_modifier": -30,
     "war_weariness_modifier": -38,
-    "crime": -15,
   },
   {
     "type": "BUILDING_GOVERNORS_MANOR_GRAND",
@@ -1003,7 +997,6 @@
     "description": "TXT_KEY_BUILDING_GOVERNORS_MANOR_GRAND",
     "maintenance_modifier": -40,
     "war_weariness_modifier": -50,
-    "crime": -20,
   },
   {
     "type": "BUILDING_GOVERNORS_MANOR_LEGENDARY",
@@ -1012,7 +1005,6 @@
     "description": "TXT_KEY_BUILDING_GOVERNORS_MANOR_LEGENDARY",
     "maintenance_modifier": -100,
     "war_weariness_modifier": -50,
-    "crime": -20,
   },
   // ---- Dungeon (BUILDING_DUNGEON)
   {
@@ -1021,7 +1013,6 @@
     "variant_tier": "BUILDINGTIER_LESSER",
     "description": "TXT_KEY_BUILDING_DUNGEON_LESSER",
     "war_weariness_modifier": -12,
-    "crime": -5,
   },
   {
     "type": "BUILDING_DUNGEON_FINE",
@@ -1029,7 +1020,6 @@
     "variant_tier": "BUILDINGTIER_FINE",
     "description": "TXT_KEY_BUILDING_DUNGEON_FINE",
     "war_weariness_modifier": -38,
-    "crime": -15,
   },
   {
     "type": "BUILDING_DUNGEON_GRAND",
@@ -1037,7 +1027,6 @@
     "variant_tier": "BUILDINGTIER_GRAND",
     "description": "TXT_KEY_BUILDING_DUNGEON_GRAND",
     "war_weariness_modifier": -50,
-    "crime": -20,
   },
   {
     "type": "BUILDING_DUNGEON_LEGENDARY",
@@ -1045,7 +1034,6 @@
     "variant_tier": "BUILDINGTIER_LEGENDARY",
     "description": "TXT_KEY_BUILDING_DUNGEON_LEGENDARY",
     "war_weariness_modifier": -100,
-    "crime": -20,
   },
   // ---- Command Post (BUILDING_COMMAND_POST)
   {
@@ -1626,7 +1614,6 @@
     "description": "TXT_KEY_BUILDING_TEMPLE_OF_THE_ORDER_LESSER",
     "commerce_modifiers": [0, 0, 10],
     "military_production_modifier": 5,
-    "crime": -2,
     "unlocked_unit_production_modifier": -25,
   },
   {
@@ -1636,7 +1623,6 @@
     "description": "TXT_KEY_BUILDING_TEMPLE_OF_THE_ORDER_FINE",
     "commerce_modifiers": [0, 0, 30],
     "military_production_modifier": 15,
-    "crime": -8,
     "unlocked_unit_experience": 2,
   },
   {
@@ -1647,7 +1633,6 @@
     "commerce_modifiers": [0, 0, 40],
     "specialist_counts": {"SPECIALIST_PRIEST": 3},
     "military_production_modifier": 20,
-    "crime": -10,
     "unlocked_unit_experience": 4,
   },
   {
@@ -1658,7 +1643,6 @@
     "commerce_modifiers": [0, 0, 40],
     "specialist_counts": {"SPECIALIST_PRIEST": 3},
     "military_production_modifier": 20,
-    "crime": -10,
     "unlocked_unit_experience": 4,
     "religion_changes": {"RELIGION_THE_ORDER": 1},
   },
@@ -1749,7 +1733,6 @@
     "variant_tier": "BUILDINGTIER_LESSER",
     "description": "TXT_KEY_BUILDING_BASILICA_LESSER",
     "maintenance_modifier": -20,
-    "crime": -5,
   },
   {
     "type": "BUILDING_BASILICA_FINE",
@@ -1757,7 +1740,6 @@
     "variant_tier": "BUILDINGTIER_FINE",
     "description": "TXT_KEY_BUILDING_BASILICA_FINE",
     "maintenance_modifier": -60,
-    "crime": -15,
   },
   {
     "type": "BUILDING_BASILICA_GRAND",
@@ -1765,7 +1747,6 @@
     "variant_tier": "BUILDINGTIER_GRAND",
     "description": "TXT_KEY_BUILDING_BASILICA_GRAND",
     "maintenance_modifier": -80,
-    "crime": -20,
     "great_people_rate_change": 2,
   },
   {
@@ -1774,7 +1755,6 @@
     "variant_tier": "BUILDINGTIER_LEGENDARY",
     "description": "TXT_KEY_BUILDING_BASILICA_LEGENDARY",
     "maintenance_modifier": -100,
-    "crime": -20,
     "great_people_rate_change": 2,
   },
   // ---- Asylum (BUILDING_ASYLUM)

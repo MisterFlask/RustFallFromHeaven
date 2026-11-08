@@ -195,9 +195,8 @@ impl Game {
     pub(crate) fn player_init_city_as(&mut self, p: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool, acquired: Option<IdxVec<BuildingClassType, BuildingTierType>>) -> CityId {
         let is_acquired = acquired.is_some();
         // addCity(): the new slot holds a default (reset) city until `init` re-runs `reset`.
-        // Both "Crime" draws of the C++ (constructor + init) are made by `city_init`.
         let id = self.cities.next_id();
-        let placeholder = City::new(self.d, self.num_players(), self.num_teams(), id, p, x, y, 0);
+        let placeholder = City::new(self.d, self.num_players(), self.num_teams(), id, p, x, y);
         let city = self.player_add_city(p, placeholder);
         debug_assert_eq!(city, id);
 
@@ -1544,7 +1543,7 @@ mod tests {
     /// A bare (reset) city of `p` named `name`, registered in the owner list.
     fn add_city(g: &mut Game, p: PlayerId, name: &str) -> CityId {
         let id = g.cities.next_id();
-        let mut city = City::new(g.d, g.num_players(), g.num_teams(), id, p, 0, 0, 0);
+        let mut city = City::new(g.d, g.num_players(), g.num_teams(), id, p, 0, 0);
         city.name = name.to_string();
         g.player_add_city(p, city)
     }

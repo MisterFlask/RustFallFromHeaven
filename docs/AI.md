@@ -197,7 +197,9 @@ counters, war success, war plans) that the diplomacy below reads.
      stack nearest an operation's target, to the units their blessings are for, the cities
      their city spells are for or the land they terraform (`magic::caster_target`), else to
      the most threatened city; barbarians and animals attack what they can beat,
-     else roam; **ships** see Naval. Units aboard a ship get no orders (the ship lands them).
+     else roam (a barbarian standing on an item of its own holds it: the Godslayer and its
+     four Greater Werewolves of the Armageddon card The Blade Returns, docs/CARDS.md);
+     **ships** see Naval. Units aboard a ship get no orders (the ship lands them).
      Any group still idle is skipped so the turn always ends.
 6. **End-of-turn spells** (`casting.rs`): FfH's own AI casts spells at the end of every turn
    (`CvGame::updateMoves`, "BETTER AI (Spellcasting end of turn)"): `CvUnit::chooseSpell`, then
@@ -1290,8 +1292,7 @@ values), stopping a winning front-runner and sparing a losing friend; an embargo
 enemy or a disliked civ; a mana ban hurts those who hold the mana and helps against the
 enemies who do; a forced civic against our own civic values; trade routes (More Naval AI: a
 large empire gains little), free trade, free units we can pay for, open borders and pacts by who
-they bind us to; Fund Dissidents against the Overcouncil members we fight or dislike; crime
-counts against. Positive: yes; negative: no; nothing at stake: abstain. A resolution worth -300
+they bind us to; Fund Dissidents against the Overcouncil members we fight or dislike. Positive: yes; negative: no; nothing at stake: abstain. A resolution worth -300
 or less (war on us, one of our cities given away) is defied (the rules' veto: unrest, and the
 loyal membership lost). For head councilor we vote for ourselves when we stand, else our master,
 else the candidate we like best that is neither our victory rival nor the clear leader. The head

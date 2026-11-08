@@ -1511,7 +1511,7 @@ mod tests {
             g.players[p] = Player::new(d, p, &g.setup.players[p.idx()], num_players, num_teams);
         }
         let id = g.cities.next_id();
-        let c = g.player_add_city(PlayerId(0), City::new(d, num_players, num_teams, id, PlayerId(0), 3, 3, 0));
+        let c = g.player_add_city(PlayerId(0), City::new(d, num_players, num_teams, id, PlayerId(0), 3, 3));
         (g, c)
     }
 

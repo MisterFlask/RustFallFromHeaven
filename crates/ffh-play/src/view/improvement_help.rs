@@ -95,6 +95,9 @@ pub fn effects(d: &GameData, i: ImprovementType) -> String {
     if let Some(u) = info.spawn_unit_type {
         lines.push(txt(d, "TXT_KEY_IMPROVEMENT_SPAWN_UNIT_TYPE", &[Arg::S(&names::display(d, u))]));
     }
+    if let Some(u) = info.deep_spawn_unit_type {
+        lines.push(format!("[ICON_BULLET]Once The Lairs Deepen has been played: spawns {} instead", names::display(d, u)));
+    }
     if !info.base.help.is_empty() {
         let help = names::text(d, &info.base.help);
         if help != info.base.help && !help.trim().is_empty() {

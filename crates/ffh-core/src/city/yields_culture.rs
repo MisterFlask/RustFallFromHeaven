@@ -869,6 +869,12 @@ impl Game {
                     if kb.population_commerce[i] != 0 {
                         total += kb.population_commerce[i] * city.population * num_active_building / 100;
                     }
+
+                    // The Armageddon deck (docs/CARDS.md): commerce per 10 points of the
+                    // counter (the Orrery of Ceridwen), kept current by `change_global_counter`.
+                    if kb.global_counter_commerce[i] != 0 {
+                        total += kb.global_counter_commerce[i] * (self.get_global_counter() / 10) * num_active_building;
+                    }
                 }
 
                 // ADDON (Fix CommerceChangeDoubleTime) Sephi: was
@@ -1531,7 +1537,7 @@ mod tests {
     fn add_city(g: &mut Game, owner: PlayerId, x: i32, y: i32, population: i32) -> CityId {
         let d = g.d;
         let (num_players, num_teams) = (g.num_players(), g.num_teams());
-        let c = g.cities.insert_with(|id| City::new(d, num_players, num_teams, id, owner, x, y, 0));
+        let c = g.cities.insert_with(|id| City::new(d, num_players, num_teams, id, owner, x, y));
         g.players[owner].cities.push(c);
         g.cities[c].population = population;
         let p = at(g, x, y);

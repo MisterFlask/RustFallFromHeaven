@@ -422,7 +422,6 @@ pub struct VoteInfo {
     pub slave_trade: bool,
     pub smuggling_ring: bool,
     pub cost: i32,
-    pub crime: i32,
     pub free_units: i32,
     pub free_unit_class: Option<UnitClassType>,
     /// `getNoBonus()`: bonus banned by this resolution.
@@ -458,7 +457,6 @@ pub fn read_vote(rd: &Rd) -> VoteInfo {
         slave_trade: rd.bool("slave_trade"),
         smuggling_ring: rd.bool("smuggling_ring"),
         cost: rd.int("cost"),
-        crime: rd.int("crime"),
         free_units: rd.int("free_units"),
         free_unit_class: rd.rf("free_unit_class"),
         no_bonus: rd.rf("no_bonus"),
