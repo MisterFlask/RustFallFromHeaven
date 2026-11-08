@@ -1062,6 +1062,82 @@ mod tests {
         assert!(g.unit_heal_rate(inside, site) > 0, "a city still heals");
     }
 
+    /// Every unit stands where it says, and every plot has an area.
+    fn consistent(g: &Game) -> Result<(), String> {
+        for (u, unit) in g.units.iter() {
+            if unit.death_delay || unit.x < 0 {
+                continue;
+            }
+            let p = g.map.plot_xy(unit.x, unit.y).ok_or(format!("{u:?} off the map"))?;
+            if !g.map.plots[p].units.contains(&u) {
+                return Err(format!("{u:?} is not on its plot"));
+            }
+        }
+        match g.map.plot_ids().find(|&p| g.plot_area(p).is_none()) {
+            Some(p) => Err(format!("{p:?} has no area")),
+            None => Ok(()),
+        }
+    }
+
+    /// A world as games make it (the Fractal script: oceans, hills, coasts), with cities founded
+    /// by hand, a holy city with its shrine, a lair, wolves and ships: every new card is dealt to
+    /// its slot alone and the counter raised to it. Each is revealed and played (or dealt again
+    /// at its reveal when it cannot be), and the world stays consistent.
+    #[test]
+    fn every_new_card_plays_on_a_generated_world() {
+        let d = ffh_data::global();
+        let mut g = Game::new(d, GameSetup::standard(d, 4, "WORLDSIZE_SMALL", 7));
+        g.map_script = std::sync::Arc::new(crate::mapscript::FractalMapScript::default());
+        g.game_init();
+        assert!(g.map.plot_ids().filter(|&p| g.plot_is_water(p)).count() > 200, "a world with seas");
+        let civs = civ_players(&g);
+        let barbarian = g.barbarian_player();
+        // Cities: one on each starting plot, then coastal land plots in turn, spaced out.
+        let mut sites: Vec<PlotIdx> = civs.iter().filter_map(|&p| g.player_get_starting_plot(p)).collect();
+        for p in g.map.plot_ids() {
+            if sites.len() >= 16 {
+                break;
+            }
+            if !g.plot_is_water(p) && !g.plot_is_impassable(p) && g.plot_is_coastal_land(p, -1) && sites.iter().all(|&s| dist(&g, s, p) >= 4) {
+                sites.push(p);
+            }
+        }
+        for (i, &s) in sites.iter().enumerate() {
+            if g.map.plots[s].plot_city.is_none() {
+                city_at(&mut g, civs[i % civs.len()], s, 3 + (i as i32 % 6));
+            }
+        }
+        let cities = g.cities.ids();
+        assert!(cities.len() >= 8);
+        let order = d.t::<ReligionType>("RELIGION_THE_ORDER");
+        g.set_holy_city(order, Some(cities[0]), false);
+        g.city_set_num_real_building(cities[0], d.t::<BuildingType>("BUILDING_CODE_OF_JUNIL"), 1);
+        let believer = g.cities[cities[0]].owner;
+        g.player_set_last_state_religion(believer, Some(order));
+        let land = open_land(&g);
+        g.plot_set_improvement_type(land[land.len() / 3], Some(d.t::<ImprovementType>("IMPROVEMENT_BARROW")));
+        unit_at(&mut g, barbarian, "UNIT_WOLF", land[land.len() / 2]);
+        let coast = d.t::<TerrainType>("TERRAIN_COAST");
+        let shore: Vec<PlotIdx> = g.map.plot_ids().filter(|&p| g.map.plots[p].terrain_type == Some(coast) && g.map.plots[p].units.is_empty()).collect();
+        for k in 0..4 {
+            unit_at(&mut g, civs[k % civs.len()], "UNIT_CARAVEL", shore[k * shore.len() / 4]);
+        }
+        consistent(&g).unwrap();
+
+        let limit = g.global_counter_limit;
+        for c in CARDS {
+            g.doom.dealt = true;
+            g.doom.slots = crate::deck::doom::SLOTS.iter().map(|&threshold| DoomSlot { threshold, ..Default::default() }).collect();
+            let i = g.doom.slots.iter().position(|s| s.threshold == c.stages[0]).unwrap();
+            g.doom.slots[i].card = Some((c.key.to_string(), 0));
+            g.global_counter = (limit * c.stages[0] + 99) / 100;
+            g.doom_do_turn();
+            let slot = &g.doom.slots[i];
+            assert!(slot.revealed && slot.fired, "{}", c.key);
+            consistent(&g).unwrap_or_else(|e| panic!("{}: {e}", c.key));
+        }
+    }
+
     #[test]
     fn the_orrery_shows_two_cards_and_researches_with_the_counter() {
         let mut g = game(2);
