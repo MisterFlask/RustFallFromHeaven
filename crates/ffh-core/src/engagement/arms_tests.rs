@@ -156,7 +156,7 @@ fn the_thunderhead_tower_strike_is_logged() {
     w.unit(p0, "UNIT_AXEMAN", from);
     let catapult = w.unit(p0, "UNIT_CATAPULT", from);
     w.unit(p1, "UNIT_WARRIOR", to);
-    let out = w.g.engage(EngageOrder { p: p0, from, to, launcher: None, formation: None, forced: None, log: Some(true) }).expect("a battle");
+    let out = w.g.engage(EngageOrder { p: p0, from, to, launcher: None, formation: None, forced: None, log: Some(true), surprise: false }).expect("a battle");
     let log = w.g.battle_report(out.report).and_then(|r| r.log.clone()).expect("a log");
     let b = log.fighters.iter().position(|f| f.unit == catapult).expect("in the log") as FighterIdx;
     let strike = log.events.iter().find_map(|e| match e {
@@ -227,7 +227,7 @@ fn the_moat_holds_the_first_battle_of_the_turn() {
     assert!(s.of(Side::Attacker).all(|i| s.fighters[i].arms.hold_melee_rounds == 1));
     assert!(s.of(Side::Defender).all(|i| s.fighters[i].arms.hold_melee_rounds == 0));
     assert!(w.g.city_first_battle_this_turn(w.city));
-    let out = w.g.engage(EngageOrder { p: p0, from, to, launcher: None, formation: None, forced: None, log: Some(true) }).expect("a battle");
+    let out = w.g.engage(EngageOrder { p: p0, from, to, launcher: None, formation: None, forced: None, log: Some(true), surprise: false }).expect("a battle");
     let log = w.g.battle_report(out.report).and_then(|r| r.log.clone()).expect("a log");
     assert!(log.events.iter().any(|e| matches!(e, LogEvent::Action(a) if a.round == 1 && a.note == Some(Note::Held))), "the warrior was held in round 1");
     assert_eq!(w.g.cities[w.city].owner, p1);
