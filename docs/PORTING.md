@@ -458,8 +458,9 @@ flag.
       cards' modifiers now change what the AI thinks.
     - *Pioneers* (Engineer, I, Crafting; national unit, 4): a worker with three times the work rate;
       captured, it becomes a Worker.
-    - *Gold Standard* (Merchant, III, Mercantilism; Economy civic): units can be hurried for 2 gold a
-      hammer under any Labor civic; -20% research.
+    - *Gold Standard* (Merchant, III, Mercantilism; Economy civic): its player buys units at 2 gold a
+      hammer left with the gold hurry, under any Labor civic (the Condottieri's rate); -20%
+      research.
     - *Beast Market* (Merchant, I, Hunting; building): the city trains Bears (75), Lions (50) and
       Tigers (75).
     - *Admiralty* (Merchant, II, Sailing; national building, water cities) and *Academy of War*
