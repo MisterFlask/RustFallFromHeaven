@@ -179,7 +179,11 @@
 {"type":"IMPROVEMENT_WORKSHOP","permanent":0,"unique":0,"goody":0,"graphical":0,"water":0,"actsAsCity":0,"spawn":"NONE","civ":"NONE","mana":0},
 {"type":"IMPROVEMENT_YGGDRASIL","permanent":1,"unique":1,"goody":0,"graphical":0,"water":0,"actsAsCity":0,"spawn":"NONE","civ":"NONE","mana":0},
 {"type":"IMPROVEMENT_PORTAL","permanent":1,"unique":0,"goody":0,"graphical":0,"water":0,"actsAsCity":0,"spawn":"NONE","civ":"NONE","mana":0},
-{"type":"IMPROVEMENT_TRENCH","permanent":0,"unique":0,"goody":0,"graphical":0,"water":0,"actsAsCity":0,"spawn":"NONE","civ":"NONE","mana":0}
+{"type":"IMPROVEMENT_CANAL","permanent":0,"unique":0,"goody":0,"graphical":0,"water":0,"actsAsCity":0,"spawn":"NONE","civ":"NONE","mana":0},
+{"type":"IMPROVEMENT_CAUSEWAY","permanent":0,"unique":0,"goody":0,"graphical":0,"water":1,"actsAsCity":0,"spawn":"NONE","civ":"NONE","mana":0},
+{"type":"IMPROVEMENT_SIEGE_LINES","permanent":0,"unique":0,"goody":0,"graphical":0,"water":0,"actsAsCity":0,"spawn":"NONE","civ":"NONE","mana":0},
+{"type":"IMPROVEMENT_TRENCH","permanent":0,"unique":0,"goody":0,"graphical":0,"water":0,"actsAsCity":0,"spawn":"NONE","civ":"NONE","mana":0},
+{"type":"IMPROVEMENT_WAYSIDE_SHRINE","permanent":0,"unique":0,"goody":0,"graphical":0,"water":0,"actsAsCity":0,"spawn":"NONE","civ":"NONE","mana":0}
 ],
 "route": [
 {"type":"ROUTE_ROAD"},
@@ -450,6 +454,7 @@
 {"type":"PROMOTION_WOODSMAN2","race":0,"equipment":0,"sphere":"NONE","line":"WOODSMAN","level":2,"dispellable":0,"expires":0,"mutation":0},
 {"type":"PROMOTION_SPIRIT_GUIDE2","race":0,"equipment":0,"sphere":"NONE","line":"SPIRIT_GUIDE","level":2,"dispellable":1,"expires":0,"mutation":0},
 {"type":"PROMOTION_WARDANCE","race":0,"equipment":0,"sphere":"NONE","line":"WARDANCE","level":0,"dispellable":0,"expires":0,"mutation":0},
+{"type":"PROMOTION_FALSE_COLOURS","race":0,"equipment":0,"sphere":"NONE","line":"FALSE_COLOURS","level":0,"dispellable":0,"expires":1,"mutation":0},
 {"type":"PROMOTION_TEMPLAR","race":0,"equipment":0,"sphere":"NONE","line":"TEMPLAR","level":0,"dispellable":0,"expires":0,"mutation":0},
 {"type":"PROMOTION_FIREFORGED","race":0,"equipment":0,"sphere":"NONE","line":"FIREFORGED","level":0,"dispellable":0,"expires":0,"mutation":0},
 {"type":"PROMOTION_STORMFORGED","race":0,"equipment":0,"sphere":"NONE","line":"STORMFORGED","level":0,"dispellable":0,"expires":0,"mutation":0}
@@ -782,8 +787,11 @@
 {"type":"UNIT_YERSINIA","cls":"UNITCLASS_YERSINIA","combat":"MOUNTED","domain":"LAND","tier":4,"special":"NONE","race":["DEMON"],"hero":0,"equipment":0,"invisible":0,"strength":15,"base":"NONE"},
 {"type":"UNIT_YVAIN","cls":"UNITCLASS_YVAIN","combat":"DISCIPLE","domain":"LAND","tier":4,"special":"NONE","race":["ELEMENTAL"],"hero":1,"equipment":0,"invisible":0,"strength":9,"base":"NONE"},
 {"type":"UNIT_SENTINEL","cls":"UNITCLASS_SENTINEL","combat":"NONE","domain":"LAND","tier":0,"special":"NONE","race":["NONE"],"hero":0,"equipment":0,"invisible":0,"strength":1,"base":"NONE"},
+{"type":"UNIT_POWDER_CHARGE","cls":"UNITCLASS_POWDER_CHARGE","combat":"SIEGE","domain":"LAND","tier":3,"special":"NONE","race":["NONE"],"hero":0,"equipment":0,"invisible":0,"strength":0,"base":"NONE"},
 {"type":"UNIT_SIEGE_BALLISTA","cls":"UNITCLASS_SIEGE_BALLISTA","combat":"SIEGE","domain":"LAND","tier":2,"special":"NONE","race":["NONE"],"hero":0,"equipment":0,"invisible":0,"strength":4,"base":"NONE"},
 {"type":"UNIT_SIEGE_COLOSSUS","cls":"UNITCLASS_SIEGE_COLOSSUS","combat":"SIEGE","domain":"LAND","tier":4,"special":"NONE","race":["NONE"],"hero":0,"equipment":0,"invisible":0,"strength":12,"base":"NONE"},
+{"type":"UNIT_CITY_CARAVAN","cls":"UNITCLASS_CITY_CARAVAN","combat":"NONE","domain":"LAND","tier":1,"special":"NONE","race":["NONE"],"hero":0,"equipment":0,"invisible":0,"strength":0,"base":"NONE"},
+{"type":"UNIT_MASKER","cls":"UNITCLASS_MASKER","combat":"NONE","domain":"LAND","tier":2,"special":"NONE","race":["NONE"],"hero":0,"equipment":0,"invisible":0,"strength":0,"base":"NONE"},
 {"type":"UNIT_HERALD_OF_AGARES","cls":"UNITCLASS_HERALD_OF_AGARES","combat":"MELEE","domain":"LAND","tier":4,"special":"NONE","race":["DEMON"],"hero":0,"equipment":0,"invisible":0,"strength":12,"base":"NONE"}
 ],
 "civ": [
@@ -993,7 +1001,12 @@
 {"type":"BUILDING_WOLF_PEN","cls":"BUILDINGCLASS_WOLF_PEN","wonder":"NONE","religion":"NONE","defense":0,"graphical":1},
 {"type":"BUILDING_LAST_STAND_HYMN","cls":"BUILDINGCLASS_LAST_STAND_HYMN","wonder":"NONE","religion":"NONE","defense":0,"graphical":0},
 {"type":"BUILDING_UNCONQUERED_CITY","cls":"BUILDINGCLASS_UNCONQUERED_CITY","wonder":"NONE","religion":"NONE","defense":0,"graphical":0},
+{"type":"BUILDING_HARBOR_CHAIN","cls":"BUILDINGCLASS_HARBOR_CHAIN","wonder":"NONE","religion":"NONE","defense":0,"graphical":0},
 {"type":"BUILDING_MOAT","cls":"BUILDINGCLASS_MOAT","wonder":"NONE","religion":"NONE","defense":0,"graphical":0},
+{"type":"BUILDING_WALL_OF_THE_KINGS","cls":"BUILDINGCLASS_WALL_OF_THE_KINGS","wonder":"WORLD","religion":"NONE","defense":0,"graphical":0},
+{"type":"BUILDING_WHEELED_CITY","cls":"BUILDINGCLASS_WHEELED_CITY","wonder":"NONE","religion":"NONE","defense":0,"graphical":0},
+{"type":"BUILDING_PRIZE_COURTS","cls":"BUILDINGCLASS_PRIZE_COURTS","wonder":"NATIONAL","religion":"NONE","defense":0,"graphical":0},
+{"type":"BUILDING_HALL_OF_JUDGMENT","cls":"BUILDINGCLASS_HALL_OF_JUDGMENT","wonder":"NATIONAL","religion":"NONE","defense":0,"graphical":0},
 {"type":"BUILDING_LIVING_WALLS","cls":"BUILDINGCLASS_LIVING_WALLS","wonder":"NATIONAL","religion":"NONE","defense":0,"graphical":0},
 {"type":"BUILDING_ARCANE_FORTRESS","cls":"BUILDINGCLASS_ARCANE_FORTRESS","wonder":"NATIONAL","religion":"NONE","defense":0,"graphical":0},
 {"type":"BUILDING_FIRE_FORGE","cls":"BUILDINGCLASS_FIRE_FORGE","wonder":"NONE","religion":"NONE","defense":0,"graphical":0},
