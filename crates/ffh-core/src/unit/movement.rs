@@ -648,6 +648,43 @@ impl Game {
         valid
     }
 
+    /// Card: Gryphon Riders (docs/CARDS.md): whether unit `u` cannot end its owner's turn where it
+    /// is (`no_rest_on_water`: over water, not in a city, not carried).
+    pub fn unit_must_land(&self, u: UnitId) -> bool {
+        if !self.d.units[self.units[u].unit_type].no_rest_on_water || self.unit_is_cargo(u) {
+            return false;
+        }
+        let Some(plot) = self.unit_plot_opt(u) else { return false };
+        self.plot_is_water(plot) && !self.plot_is_city(plot, false, None)
+    }
+
+    /// Card: Gryphon Riders (docs/CARDS.md): a unit that cannot end a turn over water lands, at the
+    /// end of its owner's turn, on the nearest land plot it could enter that its team has revealed
+    /// and no enemy holds (by plot distance, then plot order). `false`: none, it stays.
+    pub fn unit_land_from_water(&mut self, u: UnitId) -> bool {
+        let (x, y) = (self.units[u].x, self.units[u].y);
+        let team = self.unit_get_team(u);
+        let mut best: Option<(i32, PlotIdx)> = None;
+        for q in self.map.plot_ids() {
+            if self.plot_is_water(q) || !self.map.plots[q].revealed[team] {
+                continue;
+            }
+            let (qx, qy) = self.map.xy(q);
+            let dist = self.plot_distance(x, y, qx, qy);
+            if best.is_some_and(|(d, _)| d <= dist) {
+                continue;
+            }
+            if self.unit_can_move_into(u, q, false, false, false) && !self.unit_is_enemy(u, self.plot_get_team(q), Some(q)) && self.plot_get_num_visible_enemy_defenders(q, u) == 0 {
+                best = Some((dist, q));
+            }
+        }
+        let Some((_, q)) = best else { return false };
+        let (qx, qy) = self.map.xy(q);
+        self.unit_join_group(u, None, true);
+        self.unit_set_xy(u, qx, qy, false);
+        true
+    }
+
     /// C++ `CvUnit::canLoadUnit` (CvUnit.cpp:4094-4164).
     pub fn unit_can_load_unit(&self, u: UnitId, transport: UnitId, plot: PlotIdx) -> bool {
         if transport == u {

@@ -92,6 +92,7 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         sentinel_repair_change,
         battle,
         exclusive_with,
+        legion_cost_percent,
         // ---- the Armageddon deck (docs/CARDS.md) ----
         global_counter_commerce,
         doom_sight,
@@ -658,6 +659,11 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         let names: Vec<String> = exclusive_with.iter().map(|&k| display(d, k).to_string()).collect();
         h.push_str(NEWLINE);
         h.push_str(&format!("[ICON_BULLET]Cannot be built in a city with: {}", names.join(", ")));
+    }
+    // A great-person card's key (docs/CARDS.md): the Gilded Legion.
+    if *legion_cost_percent > 0 {
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]Once built, choose a civilization you have met (the Gilded Legion action of a unit in the city): the city trains that civilization's unit of each class (not world units), with its own prerequisites, at {legion_cost_percent}% of its cost"));
     }
     if *all_city_defense_modifier != 0 {
         add(&mut h, "TXT_KEY_BUILDING_DEFENSE_MOD_ALL_CITIES", &[Arg::N(*all_city_defense_modifier)]);

@@ -162,6 +162,9 @@ pub struct City {
     /// C++ `m_iCiv` (`getTrueCivilizationType`/`setCivilizationType`): the civilization the
     /// city was founded by; `getCivilizationType` uses it for assimilating owners.
     pub civ: Option<CivilizationType>,
+    /// This game's own (a card's: the Gilded Legion, docs/CARDS.md): the civilization whose units
+    /// the city's building with `legion_cost_percent` lets it train, chosen once it is built.
+    pub legion_civ: Option<CivilizationType>,
     // (C++ `m_iCrime` is gone: no crime in this game.)
     pub mutate_chance: i32,
     pub plot_radius: i32,
@@ -415,6 +418,7 @@ impl City {
 
             settlement: false,
             civ: None,
+            legion_civ: None,
             mutate_chance: 0,
             plot_radius: 2,
             resist_magic: 0,

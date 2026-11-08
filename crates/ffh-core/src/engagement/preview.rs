@@ -67,6 +67,8 @@ pub struct PreviewFighter {
 /// and HP), A and Dv (x100), and its chance to be breached (percent).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PreviewSentinel {
+    /// The city's, or (card) the field's.
+    pub src: super::more_cards::SentinelSource,
     pub lane: u8,
     pub row: u8,
     pub hp: i32,
@@ -174,8 +176,12 @@ impl Game {
             .enumerate()
             .map(|(j, i)| {
                 let f = &s.fighters[i];
-                let dv = s.sentinel_city.map_or(0, |c| self.city_sentinel_dv_x100(c));
-                PreviewSentinel { lane: f.lane, row: f.row, hp: f.hp, max_hp: f.max_hp, a: f.a, dv, fall_pct: forecast.sentinel_fall_pct.get(j).copied().unwrap_or(0) }
+                let src = s.sentinel_source(i).expect("a Sentinel has a source");
+                let dv = match src {
+                    super::more_cards::SentinelSource::City(c) => self.city_sentinel_dv_x100(c),
+                    super::more_cards::SentinelSource::Field { grow, .. } => self.field_sentinel_def_x100(grow, false),
+                };
+                PreviewSentinel { src, lane: f.lane, row: f.row, hp: f.hp, max_hp: f.max_hp, a: f.a, dv, fall_pct: forecast.sentinel_fall_pct.get(j).copied().unwrap_or(0) }
             })
             .collect();
         Ok(EngagePreview {
@@ -227,6 +233,9 @@ impl Game {
         }
         let force: Vec<UnitId> = formation.iter().map(|q| q.unit).collect();
         let view = self.engage_def_view(p, to, &force, inp.war);
+        // Card: the field's Sentinels take cells of the defender's grid (more_cards.rs).
+        let mut slots = slots;
+        self.engage_add_field_sentinels(&mut slots, &view.candidates, to);
         let def_formation = self.engage_defense_formation(&view.candidates, &slots, &ctx);
         let setup = self.engage_setup(ctx, slots, formation.clone(), view.candidates.clone(), true)?;
         Ok(Plan { pool, formation, auto, def_formation, view, setup })

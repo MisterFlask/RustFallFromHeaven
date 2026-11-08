@@ -1,0 +1,85 @@
+// Lantern of Lugus [good] (docs/DECKS.md, section 3.2; 10.2: its Glare goes, its point stays: a
+// holy shooter that sees invisible units): national unit, 2. The Dawnbringer shoots holy damage
+// (`attack_damage_type`) and prefers the middle row; it sees invisible units within 2 plots (it sees
+// every invisible type, and Sentry gives it a sight of 2).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_LANTERN_OF_LUGUS",
+      "description": "TXT_KEY_TECH_CARD_LANTERN_OF_LUGUS",
+      "help": "TXT_KEY_TECH_CARD_LANTERN_OF_LUGUS_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_LANTERN_OF_LUGUS_PEDIA",
+      "advisor": "ADVISOR_RELIGION",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_ANCIENT",
+      "and_pre_reqs": ["TECH_ANCIENT_CHANTS"],
+      "card_suit": "UNITCLASS_PROPHET",
+      "card_alignment": "ALIGNMENT_GOOD",
+      "flavors": {"FLAVOR_MILITARY": 1, "FLAVOR_RELIGION": 1}
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_DAWNBRINGER",
+      "description": "TXT_KEY_UNIT_DAWNBRINGER",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 2,
+      "default_unit": "UNIT_DAWNBRINGER"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_DAWNBRINGER",
+      "stats": {"hp": 80, "attack": 36, "defense": 30, "magic": 0, "magic_defense": 40, "accuracy": 95, "evasion": 5, "crit": 10, "speed": 4},
+      "engage_rows": [
+        {"action": "SHOOT", "count": 1},
+        {"action": "SHOOT", "count": 2},
+        {"action": "SHOOT", "count": 2}
+      ],
+      "engage_row_order": ["MIDDLE", "REAR", "FRONT"],
+      "round_percent": [130, 100, 100],
+      "damage_vs": {"UNITCOMBAT_MELEE": 30},
+      "attack_damage_type": "DAMAGE_HOLY",
+      "see_invisible": ["INVISIBLE_LAND", "INVISIBLE_ANIMAL", "INVISIBLE_ALL"],
+      "class": "UNITCLASS_DAWNBRINGER",
+      "unit_combat": "UNITCOMBAT_ARCHER",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_CITY_DEFENSE",
+      "description": "TXT_KEY_UNIT_DAWNBRINGER",
+      "civilopedia": "TXT_KEY_UNIT_DAWNBRINGER_PEDIA",
+      "strategy": "TXT_KEY_UNIT_DAWNBRINGER_STRATEGY",
+      "military_happiness": true,
+      "military_support": true,
+      "military_production": true,
+      "unit_ais": {"UNITAI_CITY_DEFENSE": true, "UNITAI_ATTACK": true},
+      "prereq_tech": "TECH_CARD_LANTERN_OF_LUGUS",
+      "free_promotions": {"PROMOTION_SENTRY": true},
+      "cost": 70,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 1,
+      "nuke_range": -1,
+      "combat": 4,
+      "combat_defense": 4,
+      "combat_limit": 100,
+      "xp_value_attack": 8,
+      "xp_value_defense": 4,
+      "first_strikes": 1,
+      "culture_garrison": 4,
+      "asset": 3,
+      "power": 6,
+      "never_obsolete": true,
+      "tier": 2
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_LANTERN_OF_LUGUS": "Lantern of Lugus",
+    "TXT_KEY_TECH_CARD_LANTERN_OF_LUGUS_HELP": "[ICON_BULLET]Can train the Dawnbringer (national unit, 2): tier 2, shoots, prefers the middle row.[NEWLINE][ICON_BULLET]Its shots deal holy damage (the target's resistance to holy cuts them; the undead and demons take more).[NEWLINE][ICON_BULLET]It sees invisible units within 2 plots.",
+    "TXT_KEY_TECH_CARD_LANTERN_OF_LUGUS_PEDIA": "Lugus's lamp, carried before the host: nothing that hides from the day can hide from it.",
+    "TXT_KEY_UNIT_DAWNBRINGER": "Dawnbringer",
+    "TXT_KEY_UNIT_DAWNBRINGER_PEDIA": "A lantern-bearer of the dawn, whose arrows are lit from the sacred flame.",
+    "TXT_KEY_UNIT_DAWNBRINGER_STRATEGY": "The answer to a neighbour that fights hidden (the Svartalfar, the Council of Esus), and to the undead and demons."
+  }
+}

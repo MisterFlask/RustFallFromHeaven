@@ -13,6 +13,7 @@ pub mod governor;
 pub mod engagement;
 pub mod battle_cards;
 pub mod battle_magic;
+pub mod battle_kit;
 
 pub use basic::*;
 pub use terrain::*;
@@ -27,6 +28,7 @@ pub use governor::*;
 pub use engagement::*;
 pub use battle_cards::*;
 pub use battle_magic::*;
+pub use battle_kit::*;
 
 use crate::registry::Rd;
 

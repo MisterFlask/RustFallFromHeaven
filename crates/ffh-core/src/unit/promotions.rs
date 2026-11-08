@@ -1179,6 +1179,10 @@ impl Game {
         in_borders: bool,
         update_global: bool,
     ) {
+        // Card: Automatons (docs/CARDS.md): a unit type that gains no experience.
+        if change > 0 && self.d.units[self.units[u].unit_type].no_experience {
+            return;
+        }
         let mut unit_experience = change;
 
         if from_combat {

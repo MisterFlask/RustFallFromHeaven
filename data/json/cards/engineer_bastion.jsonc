@@ -1,0 +1,87 @@
+// Bastion (docs/DECKS.md, section 3.3; 9.1: a walking fortress; its stack fights with two
+// Sentinels): national unit, 1 (hard). A large walking fortress that cannot attack
+// (`only_defensive`). When its plot is attacked, its side fights with two Sentinels
+// (`battle_sentinels`: whole each battle, at no slot; they hold no plot), grown as a strong city's
+// walls (`battle_sentinel_defense`: +100% HP and defence). Not when its stack
+// attacks: a fortress that cannot attack does not enter the plot its stack attacks.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_BASTION",
+      "description": "TXT_KEY_TECH_CARD_BASTION",
+      "help": "TXT_KEY_TECH_CARD_BASTION_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_BASTION_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_MACHINERY"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_BASTION",
+      "description": "TXT_KEY_UNIT_BASTION",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 1,
+      "hard_limit": true,
+      "default_unit": "UNIT_BASTION"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_BASTION",
+      "stats": {"hp": 240, "attack": 50, "defense": 130, "magic": 0, "magic_defense": 100, "accuracy": 85, "evasion": 0, "crit": 5, "speed": 2},
+      "engage_rows": [
+        {"action": "STRIKE", "count": 2},
+        {"action": "STRIKE", "count": 1},
+        {"action": "STRIKE", "count": 1}
+      ],
+      "engage_row_order": ["FRONT", "MIDDLE", "REAR"],
+      "large": true,
+      "armor": 5,
+      "battle_sentinels": 2,
+      "battle_sentinel_defense": 100,
+      "class": "UNITCLASS_BASTION",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_ATTACK",
+      "description": "TXT_KEY_UNIT_BASTION",
+      "civilopedia": "TXT_KEY_UNIT_BASTION_PEDIA",
+      "strategy": "TXT_KEY_UNIT_BASTION_STRATEGY",
+      "military_happiness": true,
+      "military_support": true,
+      "military_production": true,
+      "mechanized": true,
+      "only_defensive": true,
+      "unit_ais": {"UNITAI_ATTACK": true, "UNITAI_CITY_DEFENSE": true},
+      "prereq_tech": "TECH_CARD_BASTION",
+      "ai_weight": 0,
+      "cost": 300,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 1,
+      "nuke_range": -1,
+      "combat": 5,
+      "combat_defense": 13,
+      "combat_limit": 100,
+      "xp_value_attack": 8,
+      "xp_value_defense": 4,
+      "culture_garrison": 8,
+      "asset": 12,
+      "power": 24,
+      "never_obsolete": true,
+      "tier": 4
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_BASTION": "Bastion",
+    "TXT_KEY_TECH_CARD_BASTION_HELP": "[ICON_BULLET]Can train the Bastion (one per player, 300 [ICON_PRODUCTION]): large, tier 4, HP 240, defence 130, armor 5; it cannot attack.[NEWLINE][ICON_BULLET]When its plot is attacked, its side fights with two Sentinels with +100% HP and defence (whole each battle).",
+    "TXT_KEY_TECH_CARD_BASTION_PEDIA": "A gatehouse on rollers, pushed by a hundred hands to wherever the army camps.",
+    "TXT_KEY_UNIT_BASTION": "Bastion",
+    "TXT_KEY_UNIT_BASTION_PEDIA": "A walking fortress: two wall sections and a tower, with the army camped in their lee.",
+    "TXT_KEY_UNIT_BASTION_STRATEGY": "March it with the main army: every battle against that army is a siege, whose walls the enemy must breach before its shots and spells reach the rear."
+  }
+}

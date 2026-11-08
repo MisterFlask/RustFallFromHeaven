@@ -156,6 +156,10 @@ pub struct BuildingInfo {
     pub battle: crate::infos::BuildingBattle,
     /// `exclusive_with`: a city that has a building of one of these classes cannot build it.
     pub exclusive_with: Vec<BuildingClassType>,
+    /// `legion_cost_percent` (the Gilded Legion): its city may train the units a civilization
+    /// chosen once it is built (`City::legion_civ`) has for each unit class (not world units), with
+    /// their own prerequisites, at this percent of their cost.
+    pub legion_cost_percent: i32,
 
     // ---- the Armageddon deck (docs/CARDS.md; not in FFH2) ----
     /// Commerce of its city per 10 points of the Armageddon counter (`global_counter_commerces`:
@@ -429,6 +433,7 @@ pub fn read_building(rd: &Rd) -> BuildingInfo {
         sentinel_repair_change: rd.int("sentinel_repair_change"),
         battle: crate::infos::read_building_battle(rd, &rd.string("type")),
         exclusive_with: rd.ref_list::<BuildingClassType>("exclusive_with"),
+        legion_cost_percent: rd.int("legion_cost_percent"),
 
         global_counter_commerce: rd.commerces("global_counter_commerces"),
         doom_sight: rd.int("doom_sight"),

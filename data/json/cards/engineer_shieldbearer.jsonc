@@ -1,0 +1,41 @@
+// Shieldbearer (docs/DECKS.md, section 12, batch 1, card 4): a promotion for melee units of level
+// 3+. While it stands in the front row, the shots, stones and damage spells aimed at the units in its
+// lane hit it instead (as a Sentinel takes them down its lane), and it takes half damage from them
+// (`battle_shield`).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_SHIELDBEARER",
+      "description": "TXT_KEY_TECH_CARD_SHIELDBEARER",
+      "help": "TXT_KEY_TECH_CARD_SHIELDBEARER_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_SHIELDBEARER_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_BRONZE_WORKING"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_SHIELDBEARER",
+      "description": "TXT_KEY_PROMOTION_SHIELDBEARER",
+      "civilopedia": "TXT_KEY_PROMOTION_SHIELDBEARER_PEDIA",
+      "tech_prereq": "TECH_CARD_SHIELDBEARER",
+      "min_level": 3,
+      "unit_combats": {"UNITCOMBAT_MELEE": true},
+      "battle_shield": 50,
+      "ai_weight": 30,
+      "button": ",Art/Interface/Buttons/Promotions/Drill1.dds,Art/Interface/Buttons/Promotions_Atlas.dds,2,3"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_SHIELDBEARER": "Shieldbearer",
+    "TXT_KEY_TECH_CARD_SHIELDBEARER_HELP": "[ICON_BULLET]Allows the Shieldbearer promotion (melee units of level 3 or more).[NEWLINE][ICON_BULLET]Shieldbearer: in the front row, it takes the shots, stones and damage spells aimed at the units in its lane, and takes 50% less damage from shots, stones and spells.",
+    "TXT_KEY_TECH_CARD_SHIELDBEARER_PEDIA": "A tower shield and the nerve to stand in front of the archers' line of sight.",
+    "TXT_KEY_PROMOTION_SHIELDBEARER": "Shieldbearer",
+    "TXT_KEY_PROMOTION_SHIELDBEARER_PEDIA": "One per lane, and the men behind fight without looking up."
+  }
+}

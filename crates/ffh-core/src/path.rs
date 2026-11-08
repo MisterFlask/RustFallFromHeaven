@@ -1168,6 +1168,12 @@ impl Game {
             return true;
         }
 
+        // Card: Gryphon Riders (docs/CARDS.md): no turn of a flier that cannot rest on water ends
+        // over water.
+        if parent.data1 == 0 && self.plot_is_water(from_plot) && !self.plot_is_city(from_plot, false, None) && self.groups[group].units.iter().any(|&u| self.d.units[self.units[u].unit_type].no_rest_on_water) {
+            return false;
+        }
+
         let head_team = self.group_get_head_team(group);
         let from_revealed = head_team.is_some_and(|t| self.map.plots[from_plot].revealed[t]);
 

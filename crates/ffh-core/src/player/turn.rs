@@ -189,6 +189,13 @@ impl Game {
         // choices: the controller does this while the player's turn is active.
         self.ai_hook(p, AiHook::PlayerTurnPre(p));
 
+        // Card: Gryphon Riders (docs/CARDS.md): a unit that cannot end a turn over water lands.
+        for u in self.players[p].units.clone() {
+            if self.units.contains(u) && self.unit_must_land(u) {
+                self.unit_land_from_water(u);
+            }
+        }
+
         // This game's cultural actions: their memories fade.
         self.player_do_culture_memory(p);
         // This game's armies (docs/ARMIES.md): the marching recruits march (the armies settled with

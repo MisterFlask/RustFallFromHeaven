@@ -137,7 +137,8 @@ impl Game {
     /// differs from it only for an Assimilation player's conquered cities (the owner's own units).
     pub fn city_offers_unit(&self, c: CityId, unit: UnitType) -> bool {
         let d = self.d;
-        d.units[unit].unit_class_type.is_some_and(|class| d.civ_unit(self.city_civilization_type(c), class) == Some(unit))
+        // Card: the Gilded Legion (docs/CARDS.md): and the chosen civilization's units.
+        d.units[unit].unit_class_type.is_some_and(|class| d.civ_unit(self.city_civilization_type(c), class) == Some(unit)) || self.city_legion_unit_civ(c, unit).is_some()
     }
 
     /// C++ `CvCity::canTrain(UnitTypes, ...)` (CvCity.cpp:1832-1850). FFH: min level and
@@ -154,6 +155,11 @@ impl Game {
         // This game's governors: settlers only in directly ruled cities (docs/GOVERNORS.md).
         if self.d.units[unit].found && self.city_is_governed(c) {
             return false;
+        }
+        // Card: the Gilded Legion (docs/CARDS.md): its city trains the chosen civilization's units
+        // for each class as that civilization's city would (`ffh::cards::battle_more`).
+        if let Some(civ) = self.city_legion_unit_civ(c, unit) {
+            return self.city_can_upgrade_as(c, unit, cont, test_visible, ignore_cost, ignore_upgrades, Some(civ));
         }
         // Changed from FFH2: `canUpgrade` checks a unit with `UpgradeCiv` only against that
         // civilization's line, so that a Centaur in anyone's hands upgrades to a Centaur Archer.
@@ -174,7 +180,15 @@ impl Game {
     /// C++ `CvCity::canUpgrade` (CvCity.cpp:1852-1968): the BTS `canTrain` body (Python
     /// `canTrain`/`cannotTrain` callbacks, player/plot checks, FFH civ/world-unit rules).
     pub fn city_can_upgrade(&self, c: CityId, unit: UnitType, cont: bool, test_visible: bool, ignore_cost: bool, ignore_upgrades: bool) -> bool {
+        self.city_can_upgrade_as(c, unit, cont, test_visible, ignore_cost, ignore_upgrades, None)
+    }
+
+    /// [`Game::city_can_upgrade`] for city `c` as a city of civilization `civ` (card: the Gilded
+    /// Legion's; `None`: its own, `city_civilization_type`).
+    #[allow(clippy::too_many_arguments)]
+    pub fn city_can_upgrade_as(&self, c: CityId, unit: UnitType, cont: bool, test_visible: bool, ignore_cost: bool, ignore_upgrades: bool, civ: Option<CivilizationType>) -> bool {
         let d = self.d;
+        let city_civ = civ.unwrap_or_else(|| self.city_civilization_type(c));
         let owner = self.cities[c].owner;
 
         if d.defines.use_can_train_callback != 0 && py_can_train(self, c, unit, cont, test_visible, ignore_cost, ignore_upgrades) {
@@ -200,7 +214,7 @@ impl Game {
         // FfH: Added by Kael 09/26/2007
         let info = &d.units[unit];
         if let Some(prereq_civ) = info.prereq_civ {
-            if prereq_civ != self.city_civilization_type(c) {
+            if prereq_civ != city_civ {
                 return false;
             }
         }
@@ -216,7 +230,7 @@ impl Game {
         } else {
             match info.upgrade_civ {
                 None => {
-                    if !(d.civ_unit(self.city_civilization_type(c), unit_class) == Some(unit) || owner_civ_unit == Some(unit)) {
+                    if !(d.civ_unit(city_civ, unit_class) == Some(unit) || owner_civ_unit == Some(unit)) {
                         return false;
                     }
                 }
@@ -727,7 +741,12 @@ impl Game {
 
     /// C++ `CvCity::getProductionNeeded(UnitTypes)` (CvCity.cpp:3074-3077).
     pub fn city_production_needed_unit(&self, c: CityId, unit: UnitType) -> i32 {
-        self.player_get_production_needed_unit(self.cities[c].owner, unit)
+        let needed = self.player_get_production_needed_unit(self.cities[c].owner, unit);
+        // Card: the Gilded Legion (docs/CARDS.md): the chosen civilization's units at its price.
+        match self.city_legion_unit_civ(c, unit) {
+            Some(_) => needed * self.city_legion_cost_percent(c).max(0) / 100,
+            None => needed,
+        }
     }
 
     /// C++ `CvCity::getProductionNeeded(BuildingTypes)` (CvCity.cpp:3079-3101). Python

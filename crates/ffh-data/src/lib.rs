@@ -66,6 +66,9 @@ macro_rules! game_data {
             /// Derived at load (docs/CARDS.md, "New data keys"): the promotions with battle magic
             /// (`PromotionInfo::magic`), in id order.
             pub magic_promotions: Vec<PromotionType>,
+            /// Derived at load (docs/CARDS.md, "New data keys"): the promotions with a battle kit
+            /// (`PromotionInfo::kit`), in id order.
+            pub kit_promotions: Vec<PromotionType>,
         }
 
         /// (data file, registry class) for every info table, in load order.
@@ -92,7 +95,7 @@ macro_rules! game_data {
                 )*
                 let defines = Defines::from_map(&define_map);
                 // (derived tables are filled by `GameData::derive`)
-                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unlocking_buildings: Vec::new(), population_commerce_buildings: Vec::new(), sentinel_repair_buildings: Vec::new(), bonus_yield_buildings: Vec::new(), tech_research_bonuses: IdxVec::new(), own_improvements: 0, magic_promotions: Vec::new() }
+                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unlocking_buildings: Vec::new(), population_commerce_buildings: Vec::new(), sentinel_repair_buildings: Vec::new(), bonus_yield_buildings: Vec::new(), tech_research_bonuses: IdxVec::new(), own_improvements: 0, magic_promotions: Vec::new(), kit_promotions: Vec::new() }
             }
 
             /// Everything loaded, one `(name, Debug text)` line per table entry, in a fixed order
@@ -418,6 +421,7 @@ impl GameData {
         self.combat_mod_promotions =
             self.promotions.keys().filter(|&p| self.promotions[p].promotion_combat_mod > 0).collect();
         self.magic_promotions = self.promotions.keys().filter(|&p| self.promotions[p].magic.any()).collect();
+        self.kit_promotions = self.promotions.keys().filter(|&p| self.promotions[p].kit.any()).collect();
         // A leader without `iCulturalAggression`: 100, more for a war-eager leader (FfH's
         // iLimitedWarRand runs from 60, eager, to 300, peaceful) and for a culture lover.
         let culture_flavor = self.reg.lookup::<FlavorType>("FLAVOR_CULTURE");
@@ -690,6 +694,19 @@ impl GameData {
             }
         }
         m
+    }
+
+    /// The battle kit of a unit of type `unit_type` holding the promotions `has_promotion` accepts
+    /// (docs/CARDS.md, "New data keys"): its type's and its promotions', summed
+    /// ([`BattleKit::plus`]).
+    pub fn unit_battle_kit(&self, unit_type: UnitType, has_promotion: impl Fn(PromotionType) -> bool) -> BattleKit {
+        let mut k = self.units[unit_type].kit;
+        for &p in &self.kit_promotions {
+            if has_promotion(p) {
+                k = k.plus(&self.promotions[p].kit);
+            }
+        }
+        k
     }
 
     /// A spell's tier: the deepest of its promotion prerequisites in their lines (Fire III is 3:

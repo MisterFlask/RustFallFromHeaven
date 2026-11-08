@@ -1,0 +1,87 @@
+// Gryphon Riders (docs/DECKS.md, section 12, batch 1, card 3; DECKS_ROUND8.md C.4: Wings of Faith cut
+// for it): national unit, 4, trained in a city with a Stable. Tier 3 mounted flanker: HP 100,
+// attack 65, defence 45, magic defence 34, accuracy 90, evasion 15, crit 10, speed 7; 3 moves.
+// Flies (the Flying promotion: peaks and water at 1 move a plot, terrain costs ignored); it cannot
+// end a turn over water (`no_rest_on_water`). In battle its charge reaches any enemy unit, the rear
+// row included, in every round and on any ground (`charge_anywhere`).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_GRYPHON_RIDERS",
+      "description": "TXT_KEY_TECH_CARD_GRYPHON_RIDERS",
+      "help": "TXT_KEY_TECH_CARD_GRYPHON_RIDERS_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_GRYPHON_RIDERS_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_ANIMAL_HANDLING"],
+      "card_suit": "UNITCLASS_ARTIST",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_GRYPHON_RIDER",
+      "description": "TXT_KEY_UNIT_GRYPHON_RIDER",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 4,
+      "default_unit": "UNIT_GRYPHON_RIDER"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_GRYPHON_RIDER",
+      "stats": {"hp": 100, "attack": 65, "defense": 45, "magic": 0, "magic_defense": 34, "accuracy": 90, "evasion": 15, "crit": 10, "speed": 7},
+      "engage_rows": [
+        {"action": "CHARGE", "count": 2},
+        {"action": "STRIKE", "count": 1},
+        {"action": "STRIKE", "count": 1}
+      ],
+      "engage_row_order": ["FRONT", "MIDDLE", "REAR"],
+      "charge_anywhere": true,
+      "no_rest_on_water": true,
+      "class": "UNITCLASS_GRYPHON_RIDER",
+      "unit_combat": "UNITCOMBAT_MOUNTED",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_ATTACK",
+      "description": "TXT_KEY_UNIT_GRYPHON_RIDER",
+      "civilopedia": "TXT_KEY_UNIT_GRYPHON_RIDER_PEDIA",
+      "strategy": "TXT_KEY_UNIT_GRYPHON_RIDER_STRATEGY",
+      "military_happiness": true,
+      "military_support": true,
+      "military_production": true,
+      "pillage": true,
+      "no_defensive_bonus": true,
+      "unit_ais": {"UNITAI_ATTACK": true, "UNITAI_PILLAGE": true},
+      "prereq_tech": "TECH_CARD_GRYPHON_RIDERS",
+      "prereq_building_class": "BUILDINGCLASS_STABLE",
+      "free_promotions": {"PROMOTION_FLYING": true},
+      "cost": 150,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 2,
+      "nuke_range": -1,
+      "combat": 6,
+      "combat_defense": 5,
+      "combat_limit": 100,
+      "withdrawal_prob": 25,
+      "xp_value_attack": 8,
+      "xp_value_defense": 4,
+      "culture_garrison": 5,
+      "asset": 9,
+      "power": 18,
+      "never_obsolete": true,
+      "tier": 3
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_GRYPHON_RIDERS": "Gryphon Riders",
+    "TXT_KEY_TECH_CARD_GRYPHON_RIDERS_HELP": "[ICON_BULLET]Can train the Gryphon Riders (national unit, 4) in a city with a Stable: tier 3, mounted, HP 100, attack 65, defence 45, speed 7, 3 moves.[NEWLINE][ICON_BULLET]Flies: crosses peaks and water at 1 move a plot, terrain costs ignored. It cannot end a turn over water.[NEWLINE][ICON_BULLET]In battle its charge reaches any enemy, the rear row included, on any ground, with the first round's bonus.",
+    "TXT_KEY_TECH_CARD_GRYPHON_RIDERS_PEDIA": "Riders who took their mounts from the eyries as chicks, and raised them on horse meat.",
+    "TXT_KEY_UNIT_GRYPHON_RIDER": "Gryphon Riders",
+    "TXT_KEY_UNIT_GRYPHON_RIDER_PEDIA": "They come over the walls and the trees, and find the archers and the mages first.",
+    "TXT_KEY_UNIT_GRYPHON_RIDER_STRATEGY": "The killer of casters, archers and siege engines, in cities and forests too; the only land unit that crosses mountains. Land it before the turn ends."
+  }
+}

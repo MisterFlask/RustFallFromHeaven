@@ -152,11 +152,12 @@ impl Sink {
         (self.index.len() - 1) as FighterIdx
     }
 
-    /// Set-up index `i`, a Sentinel of the defended city (docs/SIEGES.md), as a log fighter.
+    /// Set-up index `i`, a Sentinel of the defended city (docs/SIEGES.md) or (card) of the field,
+    /// as a log fighter.
     fn push_sentinel(&mut self, g: &Game, e: &Eng, i: usize) {
         let s = &e.setup;
-        let c = s.sentinel_city.expect("a Sentinel has a city");
-        let lf = g.city_sentinel_log_fighter(c, s.places[i], s.fighters[i].hp);
+        let src = s.sentinel_source(i).expect("a Sentinel has a source");
+        let lf = g.sentinel_log_fighter(src, s.places[i], s.fighters[i].hp);
         self.log.fighters.push(lf);
         self.index.push((None, Side::Defender));
     }

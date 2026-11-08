@@ -92,6 +92,13 @@ pub fn effects(d: &GameData, i: ImprovementType) -> String {
     if info.engagement_attacker_slots_change != 0 {
         lines.push(format!("[ICON_BULLET]In battles on this plot: {:+} slots for the attacker (at least the minimum)", info.engagement_attacker_slots_change));
     }
+    // A great-person card's keys (docs/CARDS.md): the Cairn.
+    if info.engagement_defense != 0 {
+        lines.push(format!("[ICON_BULLET]In battles on this plot: {:+}% defense for the defender's units", info.engagement_defense));
+    }
+    if info.battle_sentinels > 0 {
+        lines.push(format!("[ICON_BULLET]In battles on this plot: the defender fights with {} Sentinels (grown by the plot's defense; whole each battle; they hold no plot)", info.battle_sentinels));
+    }
     if let Some(u) = info.spawn_unit_type {
         lines.push(txt(d, "TXT_KEY_IMPROVEMENT_SPAWN_UNIT_TYPE", &[Arg::S(&names::display(d, u))]));
     }

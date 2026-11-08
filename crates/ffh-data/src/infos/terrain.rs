@@ -506,6 +506,13 @@ pub struct ImprovementInfo {
     /// `engagement_attacker_slots_change`, the change to the attacker's slots in battles on its
     /// plot (before the minimum).
     pub engagement_attacker_slots_change: i32,
+    /// This game's own (the Cairn Golem's Cairn, docs/CARDS.md section 2): `battle_sentinels`, the
+    /// Sentinels the defender fights with in battles on its plot (`UNIT_SENTINEL`'s values grown by
+    /// `engagement_defense`, whole at the start of each battle).
+    pub battle_sentinels: i32,
+    /// `engagement_defense`: percent more defence (Dv) for the defender's units in battles on its
+    /// plot (and for its Sentinels' HP and Dv).
+    pub engagement_defense: i32,
 }
 
 /// C++ `CvImprovementInfo::read`, plus `readPass2` (`ImprovementPillage`,
@@ -571,6 +578,8 @@ pub fn read_improvement(rd: &Rd) -> ImprovementInfo {
         route_yield_changes: yields_by_type(rd, "route_yield_changes", "route_type", "route_yields"),
         improvement_bonus: improvement_bonuses(rd),
         engagement_attacker_slots_change: rd.int("engagement_attacker_slots_change"),
+        battle_sentinels: rd.int("battle_sentinels"),
+        engagement_defense: rd.int("engagement_defense"),
     }
 }
 

@@ -104,6 +104,38 @@ pub(super) fn magic_lines(b: &mut String, d: &GameData, m: &BattleMagic) {
     }
 }
 
+/// The battle kit of a unit type or promotion (docs/CARDS.md, "New data keys"; the batch "battle
+/// more"), a line each: its shield, arrows at the walls, drums, charge, immunities and Sentinels.
+/// Bare rules text.
+pub(super) fn kit_lines(b: &mut String, k: &BattleKit) {
+    let BattleKit { shield, shots_at_walls, drums, charge_anywhere, immune_spells, immune_charms, immune_hexes, sentinels, sentinel_defense } = k;
+    let mut say = |text: String| {
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]In battle: ");
+        b.push_str(&text);
+    };
+    if *shield > 0 {
+        say(format!("in the front row, it takes the shots, stones and damage spells aimed at the units in its lane; {shield}% less damage from shots, stones and spells"));
+    }
+    if *shots_at_walls {
+        say("its shots hit the enemy's standing Sentinels first, as stones do (no city penalty on a Sentinel)".to_string());
+    }
+    if *drums > 0 {
+        say(format!("while it fights, its side is immune to fear and has +{drums} speed in round 1"));
+    }
+    if *charge_anywhere {
+        say("its charge reaches any enemy on any ground, with the first round's bonus".to_string());
+    }
+    let immune: Vec<&str> = [(*immune_spells, "spell damage"), (*immune_charms, "charms"), (*immune_hexes, "hexes")].into_iter().filter(|x| x.0).map(|x| x.1).collect();
+    if !immune.is_empty() {
+        say(format!("immune to {}", immune.join(", ")));
+    }
+    if *sentinels > 0 {
+        let grown = if *sentinel_defense != 0 { format!(", HP and defence {sentinel_defense:+}%") } else { String::new() };
+        say(format!("when its plot is attacked, its side fights with {sentinels} more Sentinels{grown} (whole each battle; they hold no plot)"));
+    }
+}
+
 /// The battle stats a promotion changes, a line each: "+20% Attack", "+10 Defense", "-1 Speed".
 /// The battle levers of a unit type or promotion (docs/UNIT_ROLES.md): damage against and
 /// resistance to unit combats, armor, armor piercing, pursuit; one line each.
@@ -198,6 +230,9 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         armor_piercing,
         pursuit,
         magic,
+        kit,
+        damage_vs_walls,
+        naval_damage_vs,
         spell_damage_modify,
         city_attack_percent,
         city_defense_percent,
@@ -397,6 +432,16 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
     stat_lines(b, stat_changes);
     lever_lines(b, d, damage_vs, resist_vs, *armor, *armor_piercing, *pursuit);
     magic_lines(b, d, magic);
+    kit_lines(b, kit);
+    if *damage_vs_walls != 0 {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]In battle: {damage_vs_walls:+}% damage to Sentinels"));
+    }
+    let naval: Vec<String> = naval_damage_vs.iter_enumerated().filter(|x| *x.1 != 0).map(|(c, v)| format!("{v:+}% {}", display(d, c))).collect();
+    if !naval.is_empty() {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]In naval combat: damage {}", naval.join(", ")));
+    }
     if *anti_flank {
         // This game's own (docs/ENGAGEMENTS.md, Q7).
         b.push_str(NEWLINE);

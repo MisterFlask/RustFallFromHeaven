@@ -333,11 +333,17 @@ fn the_religions_fighters_strike_and_every_stabber_has_marksman() {
         assert_eq!(u.stats.is_some(), u.engage_rows.is_some(), "{}", u.base.type_);
         assert_eq!(u.engage_rows.is_some(), u.engage_row_order.is_some(), "{}", u.base.type_);
     }
-    // Q6: the stabbers are exactly the recon units with Marksman free.
+    // Q6: the stabbers are exactly the recon units with Marksman free (the game's own units: the
+    // great-person cards' follow their own rules, docs/CARDS.md).
     let marksman = d.t::<PromotionType>("PROMOTION_MARKSMAN");
     let recon = d.t::<UnitCombatType>("UNITCOMBAT_RECON");
-    let mut stabbers: Vec<&str> =
-        d.units.keys().filter(|&u| d.units[u].engage_rows.is_some() && d.engage_kind(u) == ActionKind::Stab).map(|u| d.type_name(u)).collect();
+    let own = d.units.len() - ffh_data::card_entry_count("units");
+    let mut stabbers: Vec<&str> = d
+        .units
+        .keys()
+        .filter(|&u| u.idx() < own && d.units[u].engage_rows.is_some() && d.engage_kind(u) == ActionKind::Stab)
+        .map(|u| d.type_name(u))
+        .collect();
     stabbers.sort_unstable();
     for name in &stabbers {
         let u = &d.units[d.t::<UnitType>(name)];

@@ -2878,6 +2878,9 @@ impl Game {
         }
 
         let (our_damage, their_damage) = combat_round_damages(d.defines.combat_damage, our_firepower, their_firepower);
+        // Card: Leviathan Harpoons (docs/CARDS.md): a ship's damage against these classes at sea.
+        let our_damage = (our_damage * self.unit_naval_damage_pct(defender, u) / 100).max(1);
+        let their_damage = (their_damage * self.unit_naval_damage_pct(u, defender) / 100).max(1);
 
         DefenderCombatValues { their_odds, their_strength, our_damage, their_damage }
     }

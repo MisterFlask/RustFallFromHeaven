@@ -856,11 +856,9 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Opti
             plan_fighter(g, u, side, place, in_city, v.team, &ctx)
         })
         .collect();
-    // The defended city's Sentinels (docs/SIEGES.md), after the units, in their cells.
-    let walls: Vec<LogFighter> = match g.map.plots[dest].plot_city.filter(|&c| g.cities.contains(c)) {
-        Some(c) => pv.sentinels.iter().map(|s| g.city_sentinel_log_fighter(c, (s.lane, s.row), s.hp)).collect(),
-        None => Vec::new(),
-    };
+    // The defended city's Sentinels (docs/SIEGES.md), and the field's (card: a Bastion's, a
+    // Cairn's), after the units, in their cells.
+    let walls: Vec<LogFighter> = pv.sentinels.iter().map(|s| g.sentinel_log_fighter(s.src, (s.lane, s.row), s.hp)).collect();
     let first_wall = fighters.len();
     let mut fighters = fighters;
     fighters.extend(walls);

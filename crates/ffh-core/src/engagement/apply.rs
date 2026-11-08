@@ -101,7 +101,8 @@ impl Game {
             }
         }
         if let Some(c) = e.setup.sentinel_city.filter(|&c| self.cities.contains(c)) {
-            for (j, i) in e.setup.sentinel_range().enumerate() {
+            // Card: the field's Sentinels keep nothing (more_cards.rs).
+            for (j, i) in e.setup.city_sentinel_range().enumerate() {
                 let dmg = if r.killed(i) { 100 } else { damage_from_hp(r.hp[i], r.max_hp[i]) };
                 self.city_set_sentinel_damage(c, e.setup.sentinels[j], dmg);
             }
@@ -345,7 +346,8 @@ impl Game {
         let mover = launcher.and_then(|g| self.groups[g].units.iter().copied().find(|&u| self.engage_alive(u)));
         let leaving = r.kills.iter().filter(|k| k.victim < n && e.side(k.victim) == Side::Defender).count() as i32
             + e.of(Side::Defender).filter(|&i| r.withdrew(i) && !e.in_city()).count() as i32;
-        let walls_left = e.setup.sentinel_range().filter(|&i| !r.killed(i)).count() as i32;
+        // Card: the field's Sentinels hold no plot (more_cards.rs).
+        let walls_left = e.setup.city_sentinel_range().filter(|&i| !r.killed(i)).count() as i32;
         let will_advance = walls_left == 0 && mover.is_some_and(|m| self.plot_get_num_visible_enemy_defenders(to, m) - leaving <= 0);
         if will_advance {
             let capture = mover.is_some_and(|m| !self.unit_is_no_capture(m));

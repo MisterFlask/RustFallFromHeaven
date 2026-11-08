@@ -43,15 +43,15 @@ pub struct Place {
 
 impl Game {
     /// Each side's lanes (attacker, defender) for its slots: `max(2, ceil((slots + 2) / 3))`, the
-    /// defender's cells counting its Sentinels.
+    /// defender's cells counting its Sentinels (card: the field's too, `more_cards.rs`).
     pub fn engage_lanes(&self, slots: &Slots) -> [u8; 2] {
-        [lanes_for(slots.max(Side::Attacker)), lanes_for(slots.max(Side::Defender) + slots.sentinels as i32)]
+        [lanes_for(slots.max(Side::Attacker)), lanes_for(slots.max(Side::Defender) + slots.sentinels as i32 + slots.field_sentinels as i32)]
     }
 
     /// The cells of the defender's Sentinels (docs/SIEGES.md), in the order the city's standing
-    /// Sentinels take them.
+    /// Sentinels take them, then (card: `more_cards.rs`) the field's.
     pub fn engage_sentinel_cells(&self, slots: &Slots) -> Vec<(u8, u8)> {
-        sentinel_cells(self.engage_lanes(slots)[Side::Defender.index()], slots.sentinels as usize)
+        sentinel_cells(self.engage_lanes(slots)[Side::Defender.index()], slots.sentinels as usize + slots.field_sentinels as usize)
     }
 
     /// Whether unit `u` is large (`bLarge`: two cells, two slots, more HP).
