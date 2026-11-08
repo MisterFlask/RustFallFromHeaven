@@ -6,7 +6,8 @@
 //! - **Training** ([`turn`]): at war or planning one, one order a turn for the unit that answers
 //!   the enemy: War Drummers against an enemy with Fear units, Witch-Hunters and Runeguards against
 //!   an enemy with casters, Dawnbringers against demons, the undead or invisible units, the Bastion
-//!   for the main army, and a Cairn Golem while a frontier hill waits for a Cairn.
+//!   for the main army, two Gryphon Riders against an enemy with a back line (casters, archers,
+//!   engines); and a Cairn Golem while a frontier hill waits for a Cairn.
 //! - **Buildings** ([`building_value`], production's building value): Sanctified Steel in a city
 //!   that trains, more when a civ we meet fields demons or undead; the Gilded Legion in a productive
 //!   city once a civ we met has units of its own.
@@ -35,6 +36,7 @@ struct Types {
     witch_hunter: Option<UnitType>,
     runeguard: Option<UnitType>,
     dawnbringer: Option<UnitType>,
+    gryphon: Option<UnitType>,
     bastion: Option<UnitType>,
     cairn_golem: Option<UnitType>,
     cairn: Option<ImprovementType>,
@@ -53,6 +55,7 @@ fn types(d: &GameData) -> &'static Types {
         witch_hunter: d.ty::<UnitType>("UNIT_WITCH_HUNTER"),
         runeguard: d.ty::<UnitType>("UNIT_RUNEGUARD"),
         dawnbringer: d.ty::<UnitType>("UNIT_DAWNBRINGER"),
+        gryphon: d.ty::<UnitType>("UNIT_GRYPHON_RIDER"),
         bastion: d.ty::<UnitType>("UNIT_BASTION"),
         cairn_golem: d.ty::<UnitType>("UNIT_CAIRN_GOLEM"),
         cairn: d.ty::<ImprovementType>("IMPROVEMENT_CAIRN"),
@@ -157,6 +160,12 @@ fn train(g: &mut Game, p: PlayerId) {
             wish.push((t, 2));
         }
         wish.extend(tt.bastion.map(|t| (t, 1)));
+        // The Gryphon Riders reach the casters, archers and engines behind a line, in cities and
+        // forests too (by its stats alone production prefers the Horse Archer).
+        let backline = foe_units(g, p, |u| caster(g, u) || matches!(g.unit_engage_kind(u), ActionKind::Shoot | ActionKind::Bombard));
+        if backline >= 3 {
+            wish.extend(tt.gryphon.map(|t| (t, 2)));
+        }
     }
     if let Some(t) = tt.cairn_golem {
         if !cairn_sites(g, p).is_empty() {
