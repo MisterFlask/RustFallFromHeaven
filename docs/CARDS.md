@@ -137,7 +137,7 @@ illusory soldiers take the free cells of its side (the front row first, the lane
 centre first; cells assigned when the battle starts, a cell taken by then stays empty). They do
 not act, hold no field (a side of illusions alone is down), die to any spell's hit, give no XP and
 exist only in the battle (fighters of the formation after the set-up's; the log names them
-`TXT_KEY_UNIT_ILLUSORY_SOLDIER`). `battle_charm` takes `"rows": "REAR"` and `"skip"` (actions each
+`TXT_KEY_UNIT_ILLUSORY_SOLDIER`). `battle_charm` takes `"rows": "REAR"` (the side's rearmost row in use: the middle row of an army of two rows) and `"skip"` (actions each
 fighter it lands on skips: its next ones; the log's `Skipped` note).
 
 **The log:** an action's `entered` lists the fighters that enter the field with it (illusions cast,

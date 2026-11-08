@@ -167,7 +167,8 @@ pub fn promotion_value(g: &Game, u: UnitId, promo: PromotionType, v: i32) -> i32
         value += 70;
     }
     if let Some(s) = m.strike_spell {
-        value += 40 + (d.battle_spell_output(&d.spells[s]) / 300) as i32;
+        // Half its attack against magic defence: about a strike's damage, on the back row.
+        value += 20 + (d.battle_spell_output(&d.spells[s]) / 600) as i32;
     }
     if let Some(s) = m.spell {
         let si = &d.spells[s];

@@ -113,7 +113,7 @@
   ],
   "text": {
     "TXT_KEY_TECH_CARD_LULLABY_OF_CERIDWEN": "Lullaby of Ceridwen",
-    "TXT_KEY_TECH_CARD_LULLABY_OF_CERIDWEN_HELP": "[ICON_BULLET]Can train the Lutist (national unit, 2).[NEWLINE][ICON_BULLET]Lullaby, its battle hex, cast with its first spell action: each enemy unit in the rear row skips its next action.",
+    "TXT_KEY_TECH_CARD_LULLABY_OF_CERIDWEN_HELP": "[ICON_BULLET]Can train the Lutist (national unit, 2).[NEWLINE][ICON_BULLET]Lullaby, its battle hex, cast with its first spell action: each enemy unit in the enemy's rearmost row in use (the middle row of an army of two rows) skips its next action.",
     "TXT_KEY_TECH_CARD_LULLABY_OF_CERIDWEN_PEDIA": "Ceridwen's own song, that closes the eyes of archers and casters alike.",
     "TXT_KEY_UNIT_LUTIST": "Lutist",
     "TXT_KEY_UNIT_LUTIST_PEDIA": "A bard of Ceridwen whose song puts the enemy's rear to sleep.",

@@ -331,11 +331,10 @@ impl<'a> Run<'a> {
         if c.enemy && f.warded(&self.s, side) {
             return Vec::new();
         }
-        let rear = (ROWS - 1) as u8;
-        (0..f.len())
-            .filter(|&t| self.s.on_field(t) && f.fighters[t].side == side && !f.fighters[t].magic.illusion)
-            .filter(|&t| c.whole_side || if c.rear { self.s.row[t] == rear } else { self.s.row[t] == 0 })
-            .collect()
+        let on: Vec<usize> = (0..f.len()).filter(|&t| self.s.on_field(t) && f.fighters[t].side == side && !f.fighters[t].magic.illusion).collect();
+        // The rear row: the side's rearmost row in use (the middle row of an army of two rows).
+        let rear = on.iter().map(|&t| self.s.row[t]).max().unwrap_or(0);
+        on.into_iter().filter(|&t| c.whole_side || if c.rear { self.s.row[t] == rear } else { self.s.row[t] == 0 }).collect()
     }
 
     /// A charm or hex `c` of `h` landed on `t`: its skips, and its record.

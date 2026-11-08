@@ -417,7 +417,7 @@ pub fn read_round_percent(rd: &Rd, unit_type: &str) -> [i32; ROWS] {
 pub struct BattleCharm {
     pub enemy: bool,
     pub whole_side: bool,
-    /// `"rows": "REAR"`: the rear row (else the front row, or the whole side).
+    /// `"rows": "REAR"`: the side's rearmost row in use (else the front row, or the whole side).
     pub rear: bool,
     pub damage: i32,
     pub taken: i32,

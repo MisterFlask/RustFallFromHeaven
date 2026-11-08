@@ -508,7 +508,7 @@ fn battle_line(d: &GameData, damage_type: &Option<DamageType>, power: i32, patte
         let rows = if c.whole_side {
             "side"
         } else if c.rear {
-            "rear row"
+            "rearmost row in use"
         } else {
             "front row"
         };
