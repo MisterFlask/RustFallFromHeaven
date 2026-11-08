@@ -13,7 +13,8 @@
 //!   casters in the army, Stoicism by the war weariness it removes.
 //! - Muster ([`process_value`]): an idle city with units, at war or preparing one.
 //! - The Paymaster ([`production`], [`unit`]): one, trained at war; it follows the largest stack
-//!   and buys the strongest enemy unit next to it that the treasury can spare.
+//!   and buys the strongest enemy unit next to it that the treasury can spare (above the reserve
+//!   `empire::hurry` keeps).
 //! - Mana Grafting ([`unit`]): a caster on a node of a type the empire has several of grafts it
 //!   into the type worth most.
 //! - Trading Posts ([`turn`]): a worker claims the best free site near our cities (a resource we
@@ -80,12 +81,12 @@ pub fn turn(g: &mut Game, v: &View) {
 }
 
 /// The Paymaster `u` of `p` buys the strongest enemy unit next to it that the treasury can spare
-/// (keeping twice the reserve). True when it bought one.
+/// (keeping the reserve). True when it bought one.
 fn buy_out(g: &mut Game, p: PlayerId, u: UnitId) -> bool {
     let d = g.d;
     let Some(spell) = names(d).buy_out else { return false };
     let gold = g.players[p].gold;
-    let keep = 2 * reserve(g, p);
+    let keep = reserve(g, p);
     let best = g
         .unit_buy_out_targets(u)
         .into_iter()
@@ -147,9 +148,9 @@ fn improvable(g: &Game, p: PlayerId, q: PlotIdx, b: BonusType) -> Option<BuildTy
     })
 }
 
-/// A Trading Post job every 10 turns: the best free site within 6 plots of a city of ours, one at a
-/// time, by a worker of ours on the same landmass; then the claimed resource's improvement and the
-/// road to the city.
+/// A Trading Post job every 10 turns: the best free site a worker of ours reaches within 15 turns
+/// (its value per turn of the trip), at most three posts; then the claimed resource's improvement
+/// and the road to our nearest city.
 fn trading_posts(g: &mut Game, v: &View) {
     let d = g.d;
     let n = names(d);
@@ -159,45 +160,46 @@ fn trading_posts(g: &mut Game, v: &View) {
     if !d.builds[build].tech_prereq.is_some_and(|t| g.team_is_has_tech(team, Some(t))) || (g.game_turn() + p.0 as i32) % 10 != 0 {
         return;
     }
-    // At most three posts.
     if g.players[p].improvement_count[post] >= 3 {
         return;
     }
-    let mut best: Option<(i32, PlotIdx, CityId)> = None;
-    for &c in &g.players[p].cities {
-        let (cx, cy) = (g.cities[c].x, g.cities[c].y);
-        for dx in -6..=6 {
-            for dy in -6..=6 {
-                let Some(q) = g.plot_xy(cx, cy, dx, dy) else { continue };
-                if g.map.plots[q].build_progress[build] > 0 || v.danger_at(q) > 0 || !g.player_can_build(p, q, build, false, false) {
-                    continue;
-                }
-                let value = post_site_value(g, p, q);
-                if value >= 300 && best.map_or(true, |(bv, bq, _)| (value, std::cmp::Reverse(q)) > (bv, std::cmp::Reverse(bq))) {
-                    best = Some((value, q, c));
-                }
-            }
-        }
-    }
-    let Some((value, site, city)) = best else { return };
-    // The nearest free worker on the site's landmass.
-    let area = g.map.plots[site].area;
-    let (sx, sy) = g.map.xy(site);
-    let worker = g.players[p]
+    // The idle workers (alone in their group, with nothing ordered), at most four, by id.
+    let mut workers: Vec<UnitId> = g.players[p]
         .units
         .iter()
         .copied()
-        .filter(|&u| g.units[u].ai_type == Some(UnitAIType::UNITAI_WORKER) && g.unit_can_build(u, site, build, true) && g.map.plots[g.unit_plot(u)].area == area)
-        .filter(|&u| {
-            g.units[u].group.is_some_and(|grp| g.groups.contains(grp) && g.groups[grp].units.len() == 1 && g.group_ready_to_move(grp, true)) && !g.unit_is_automated(u)
-        })
-        .min_by_key(|&u| (g.plot_distance(g.units[u].x, g.units[u].y, sx, sy), u));
-    let Some(u) = worker else { return };
+        .filter(|&u| g.units[u].ai_type == Some(UnitAIType::UNITAI_WORKER) && g.d.units[g.units[u].unit_type].builds[build] && !g.unit_is_automated(u))
+        .filter(|&u| g.units[u].group.is_some_and(|grp| g.groups.contains(grp) && g.groups[grp].units.len() == 1 && g.group_ready_to_move(grp, true)))
+        .collect();
+    workers.sort_unstable();
+    workers.truncate(4);
+    let mut flood = crate::reach::Flood::default();
+    let mut best: Option<(i64, UnitId, PlotIdx)> = None;
+    for &u in &workers {
+        for r in flood.run(g, u, 15, false) {
+            let q = r.plot;
+            if g.map.plots[q].build_progress[build] > 0 || v.danger_at(q) > 0 || !g.player_can_build(p, q, build, false, false) {
+                continue;
+            }
+            let value = post_site_value(g, p, q);
+            if value < 300 {
+                continue;
+            }
+            let score = value as i64 * 100 / (r.turns as i64 + 3);
+            if best.map_or(true, |(bs, bu, bq)| (score, std::cmp::Reverse(u), std::cmp::Reverse(q)) > (bs, std::cmp::Reverse(bu), std::cmp::Reverse(bq))) {
+                best = Some((score, u, q));
+            }
+        }
+    }
+    let Some((score, u, site)) = best else { return };
     let Some(grp) = g.units[u].group else { return };
-    crate::trace!(g, p, "trading post at {:?} (value {value}) by worker {:?}", g.map.xy(site), u);
-    if g.unit_plot(u) != site {
+    let (sx, sy) = g.map.xy(site);
+    crate::trace!(g, p, "trading post at {:?} (score {score}) by worker {:?}", (sx, sy), u);
+    let start = g.unit_plot(u);
+    if start != site {
         move_to(g, grp, site, 0);
-        if !alive(g, grp) {
+        // (A move the path finder refuses leaves the worker to its usual jobs.)
+        if !alive(g, grp) || g.groups[grp].mission_queue.is_empty() && g.unit_plot(u) == start {
             return;
         }
     }
@@ -226,8 +228,10 @@ fn trading_posts(g: &mut Game, v: &View) {
         }
         push(g, grp, MissionType::MISSION_BUILD, bu.i(), -1, 0, true);
     }
-    let (cx, cy) = (g.cities[city].x, g.cities[city].y);
-    push(g, grp, MissionType::MISSION_ROUTE_TO, cx, cy, 0, true);
+    if let Some(city) = crate::units::nearest_city(g, p, site) {
+        let (cx, cy) = (g.cities[city].x, g.cities[city].y);
+        push(g, grp, MissionType::MISSION_ROUTE_TO, cx, cy, 0, true);
+    }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -371,6 +375,10 @@ pub fn building_value(g: &Game, c: CityId, b: BuildingType, v: i32) -> i32 {
         let national = info.building_class_type.is_some_and(|k| d.building_classes[k].max_player_instances > 0);
         if (national && !top()) || have >= 2 {
             gain /= 4;
+        }
+        // Animals are an early army ("before bronze"): none from the Medieval era on.
+        if info.train_units.iter().all(|t| d.units[t.unit].animal) && g.players[p].current_era.i() >= 2 {
+            gain = 0;
         }
         v += if at_war(g, p) { gain } else { gain / 2 };
     }
