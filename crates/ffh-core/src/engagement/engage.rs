@@ -196,9 +196,8 @@ impl Setup {
     /// with HP `hp` (centi-HP, by set-up index): the resolver's formation, and each fighter's
     /// set-up index.
     pub fn battle(&self, sat_out: &[bool], hp: &[i32]) -> (Formation, Vec<usize>) {
-        let n = self.fighters.len();
-        let map: Vec<usize> = (0..self.units.len()).filter(|&i| !sat_out[i]).chain(self.sentinel_range()).collect();
-        let fighters = map
+        let mut map: Vec<usize> = (0..self.units.len()).filter(|&i| !sat_out[i]).chain(self.sentinel_range()).collect();
+        let mut fighters: Vec<Fighter> = map
             .iter()
             .map(|&i| {
                 let mut f = self.fighters[i].clone();
@@ -206,7 +205,10 @@ impl Setup {
                 f
             })
             .collect();
-        let f = Formation::new(self.params, self.ground, self.lanes, fighters, |h, t| self.pairs[map[h] * n + map[t]]);
+        // Card: the battle's illusions (past the set-up's fighters in `map`), the familiars.
+        let casters = self.battle_magic(&mut fighters, &mut map);
+        let base = map.len() - casters.len();
+        let f = Formation::new(self.params, self.ground, self.lanes, fighters, |h, t| self.battle_pair(&map, &casters, base, h, t));
         debug_assert_eq!(f.validate(), Ok(()), "an engagement's formation off its grid");
         (f, map)
     }
@@ -268,6 +270,10 @@ impl Fought {
         let mut end_hp = hp.to_vec();
         for (k, e) in out.fighters.iter().enumerate() {
             let i = map[k];
+            // Card: an illusion is the battle's only.
+            if i >= n {
+                continue;
+            }
             end_hp[i] = e.hp;
             fate[i] = match e.fate {
                 Fate::Standing => LogFate::Standing,
@@ -276,8 +282,8 @@ impl Fought {
             };
         }
         let mut dealt = vec![0; n * n];
-        for (hk, &h) in map.iter().enumerate() {
-            for (tk, &t) in map.iter().enumerate() {
+        for (hk, &h) in map.iter().enumerate().filter(|&(_, &h)| h < n) {
+            for (tk, &t) in map.iter().enumerate().filter(|&(_, &t)| t < n) {
                 dealt[h * n + t] = out.dealt(hk, tk);
             }
         }
@@ -285,7 +291,12 @@ impl Fought {
             fate,
             hp: end_hp,
             max_hp: setup.fighters.iter().map(|f| f.max_hp).collect(),
-            kills: out.kills.iter().map(|k| Kill { victim: map[k.victim as usize], killer: map[k.killer as usize], round: k.round }).collect(),
+            kills: out
+                .kills
+                .iter()
+                .filter(|k| map[k.victim as usize] < n && map[k.killer as usize] < n)
+                .map(|k| Kill { victim: map[k.victim as usize], killer: map[k.killer as usize], round: k.round })
+                .collect(),
             dealt,
             rounds: out.rounds as i32,
             down: out.down,
@@ -434,6 +445,8 @@ impl Game {
         f.round_pct = ty.round_percent;
         f.class_bit = self.unit_get_unit_combat_type(u).map_or(0, |c| 1u64 << (c.idx() % 64));
         f.prefer = ty.target_preference.iter().fold(0u64, |m, c| m | 1u64 << (c.idx() % 64));
+        // Card: its battle magic (battle_magic.rs).
+        self.engage_fighter_magic(u, side, &mut f, ctx, params);
         f
     }
 
@@ -534,6 +547,8 @@ impl Game {
                 };
             }
         }
+        // Card: familiars, the maddened's own side, damage against summons (battle_magic.rs).
+        self.engage_magic_setup(&units, &sides, &mut fighters, &mut pairs, &ctx);
         let mut setup = Setup { ctx, slots, lanes, ground, params, in_city, candidates, units, sides, places, n_att, fighters, pairs, sentinel_city, sentinels: ks };
         // The great-person cards' battle effects (docs/CARDS.md; `arms.rs`).
         self.engage_arms_setup(&mut setup);

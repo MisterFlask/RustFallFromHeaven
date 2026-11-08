@@ -298,6 +298,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         engage_first_round,
         bombard_range,
         bombard_besieges,
+        magic,
     } = &d.units[u];
     let class = *unit_class_type;
     let mut b = String::new();
@@ -343,6 +344,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         }
     }
     super::promotion::lever_lines(&mut b, d, damage_vs, resist_vs, *armor, *armor_piercing, *pursuit);
+    super::promotion::magic_lines(&mut b, d, magic);
     if *damage_vs_large != 0 {
         b.push_str(NEWLINE);
         b.push_str(&format!("[ICON_BULLET]In battle: {damage_vs_large:+}% damage to large units"));

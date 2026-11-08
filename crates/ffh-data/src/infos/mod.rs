@@ -12,6 +12,7 @@ pub mod culture;
 pub mod governor;
 pub mod engagement;
 pub mod battle_cards;
+pub mod battle_magic;
 
 pub use basic::*;
 pub use terrain::*;
@@ -25,6 +26,7 @@ pub use culture::*;
 pub use governor::*;
 pub use engagement::*;
 pub use battle_cards::*;
+pub use battle_magic::*;
 
 use crate::registry::Rd;
 

@@ -12,6 +12,9 @@ use crate::game::Game;
 use crate::ids::*;
 use crate::unit::DefStrikeRoll;
 
+/// Card: the display name of a battle's illusions (a text key; docs/CARDS.md).
+pub const ILLUSION_NAME: &str = "TXT_KEY_UNIT_ILLUSORY_SOLDIER";
+
 /// The log being written, and which unit each of its fighters is.
 pub(crate) struct Sink {
     log: BattleLog,
@@ -47,6 +50,9 @@ fn renumber(mut ev: Event, map: &[usize]) -> Event {
     }
     if let Some(k) = ev.knocked.as_mut() {
         k.unit = m(k.unit);
+    }
+    for x in ev.entered.iter_mut() {
+        x.unit = m(x.unit);
     }
     ev
 }
@@ -205,6 +211,9 @@ impl Sink {
     /// action, the end, the fighters' values in the battle (HP when it began, speed, the first
     /// strikes rolled, damage dealt, taken and healed) and the pairs that hit.
     pub fn battle(&mut self, g: &Game, e: &Eng, f: &Formation, map: &[usize], out: &Outcome) {
+        // Card: the battle's illusions get log fighters of their own (battle_magic.rs).
+        let lmap = self.illusions(g, e, f, map);
+        let map = &lmap[..];
         self.stage(Stage::Battle);
         let mut pairs: Vec<(usize, usize)> = Vec::new();
         for ev in &out.events {
@@ -228,7 +237,8 @@ impl Sink {
         }
         for (hk, tk) in pairs {
             let (h, t) = (map[hk], map[tk]);
-            let (side_h, side_t) = (e.side(h), e.side(t));
+            // The formation's sides: an illusion (card: battle_magic.rs) is no set-up fighter.
+            let (side_h, side_t) = (f.fighters[hk].side, f.fighters[tk].side);
             let pr = f.pair(hk, tk);
             // A Sentinel has no unit terms: a pair with one has no pair-only terms.
             let (a_extra, dv_extra) = if e.setup.is_sentinel(h) || e.setup.is_sentinel(t) {
@@ -254,6 +264,45 @@ impl Sink {
                 dv_extra,
             });
         }
+    }
+
+    /// Card: `map` with each of the battle's illusions (past the set-up's fighters) as a new log
+    /// fighter: its caster's, named as an illusion, not in the line until it is cast.
+    fn illusions(&mut self, g: &Game, e: &Eng, f: &Formation, map: &[usize]) -> Vec<usize> {
+        let n = e.setup.fighters.len();
+        let mut out = map.to_vec();
+        for (k, x) in f.fighters.iter().enumerate() {
+            if map[k] < n {
+                continue;
+            }
+            let caster = x.magic.summoner.map_or(0, |c| map[c as usize]);
+            let mut lf = self.log.fighters[caster].clone();
+            lf.unit = LogFighter::SENTINEL_UNIT;
+            lf.unit_type = g.d.ty::<ffh_data::UnitType>("UNIT_SWORDSMAN").unwrap_or(lf.unit_type);
+            lf.name = ILLUSION_NAME.to_string();
+            lf.place = None;
+            lf.large = false;
+            lf.hero = false;
+            lf.level = 1;
+            lf.xp = 0;
+            lf.max_hp = x.max_hp;
+            lf.hp_start = x.hp;
+            lf.hp_battle = x.hp;
+            lf.speed = 0;
+            lf.first_strikes = 0;
+            lf.chance_first_strikes = 0;
+            lf.actions = x.actions;
+            lf.spell = None;
+            lf.def_strike = None;
+            lf.fear = false;
+            for st in [&mut lf.a, &mut lf.dv, &mut lf.mag, &mut lf.mdef] {
+                st.terms.clear();
+            }
+            self.log.fighters.push(lf);
+            self.index.push((None, x.side));
+            out[k] = self.log.fighters.len() - 1;
+        }
+        out
     }
 
     /// The log, with each committed unit's fate.

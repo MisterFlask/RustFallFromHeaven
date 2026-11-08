@@ -1,0 +1,43 @@
+// Spellbreaker (docs/DECKS.md, section 13, card 9).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_SPELLBREAKER",
+      "description": "TXT_KEY_TECH_CARD_SPELLBREAKER",
+      "help": "TXT_KEY_TECH_CARD_SPELLBREAKER_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_SPELLBREAKER_PEDIA",
+      "advisor": "ADVISOR_SCIENCE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": [
+        "TECH_ALTERATION"
+      ],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {
+        "FLAVOR_SCIENCE": 1
+      }
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_SPELLBREAKER",
+      "description": "TXT_KEY_PROMOTION_SPELLBREAKER",
+      "unit_combats": {
+        "UNITCOMBAT_MELEE": true
+      },
+      "tech_prereq": "TECH_CARD_SPELLBREAKER",
+      "button": "Art/Interface/Buttons/Promotions/Metamagic2.dds",
+      "ai_weight": 0,
+      "min_level": 2,
+      "battle_dispel": true,
+      "battle_damage_vs_summons": 100
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_SPELLBREAKER": "Spellbreaker",
+    "TXT_KEY_TECH_CARD_SPELLBREAKER_HELP": "[ICON_BULLET]Promotion Spellbreaker, for melee units of level 2 or more.[NEWLINE][ICON_BULLET]In battle, each hit it lands ends the target's charms and the battle effects of its dispellable promotions (Bless, Enchanted Blade, Shield of Faith, Stoneskin, ...) for the rest of the battle.[NEWLINE][ICON_BULLET]+100% damage to summoned units and illusions.",
+    "TXT_KEY_TECH_CARD_SPELLBREAKER_PEDIA": "Every ward has a seam, and the Spellbreaker's blade finds it.",
+    "TXT_KEY_PROMOTION_SPELLBREAKER": "Spellbreaker"
+  }
+}

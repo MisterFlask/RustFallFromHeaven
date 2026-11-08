@@ -146,6 +146,23 @@ help):
 | buildings | `doom_sight` | Orrery of Ceridwen | how many unrevealed Armageddon cards ahead its owner sees (the Orrery: 2) |
 | spells | `py_target_label` | (choice spells; Purchase Charter, Bazaar of Wonders) | the callback naming a `choice` target's option, or adding to another target's name (a city's price; section 3) |
 | spells | `cast_from_selection` | Astral Leap | a card's world spell whose effect depends on its caster: offered on a selected unit that can cast it, not among the empire's world actions |
+| units, promotions | `battle_spell_power` | Evoker | percent more damage of its damage spells, the magic bolt and Wonder's damage outcomes included |
+| units, promotions | `battle_damage_only` | Evoker | it casts no charm, hex or heal (nor Wonder's other outcomes) |
+| units, promotions | `battle_spell_pattern` | Battlemage | its damage spells and bolt hit with this pattern in place of their own |
+| units, promotions | `battle_front_caster` | Battlemage | from the front row it casts as many spells as from its best row |
+| units, promotions | `battle_hex_ward` | Abjurer | while on the field, the enemy's hexes have no effect on its side, the pre-battle hexes included |
+| units, promotions | `battle_end_charms` | Abjurer | while on the field, the enemy side's charms end at the start of each round after the first |
+| units, promotions | `battle_presence` | Gravity Well, The Whisperer | a pre-battle hex of its presence in the line at the start: `GROUNDING` (the enemy's charges are strikes for the battle), `MADNESS` (in round 1 the enemy's fighter with the highest A, not a Sentinel, hits its own side) |
+| units, promotions | `battle_revive` | Halo | once per battle its heal also brings back the first fighter of its side that fell, at this percent of its HP, in its cell if free, else the rear cell of its lanes; never a Sentinel; the kill is undone |
+| units, promotions | `battle_dispel` | Spellbreaker | each hit it lands ends the target's charms and its dispellable promotions' attack, defence, magic defence and first strikes for the battle |
+| units, promotions | `battle_damage_vs_summons` | Spellbreaker | percent more damage to units with a duration and to illusions |
+| units, promotions | `battle_spell` | Homunculus Vats | it knows this battle spell, whatever the spell's prerequisites; one such promotion a unit |
+| units, promotions | `strike_spell` | Spellsword | in place of its first strike each round it casts this spell, with half its attack as its magic; one such promotion a unit |
+| units, promotions | `opening_cast` | Contingency | a defender: it casts its damage spell (else the bolt) before round 1; the promotion is then lost |
+| units, promotions | `death_recall` | Contingency | a killing hit takes it out of the battle (no roll, even in a city); it returns to its capital with 1 HP and the promotion is lost; only with a capital |
+| units | `battle_familiar` | Familiars | it binds to a caster (its `summoner`, `SPELL_BIND_FAMILIAR`); in a battle it takes the first spell or shot aimed at that caster, and the auto formation puts it in the caster's lane |
+| spells | `battle_illusions` `{count, hp}` | Illusory Host | illusory soldiers cast with the caster's first spell action (below) |
+| spells | `battle_charm` `"rows": "REAR"`, `"skip"` | Lullaby of Ceridwen | a charm or hex on the side's rearmost row in use; a hex that makes the fighters it lands on skip their next action |
 
 The battle effects are in `crates/ffh-core/src/engagement/arms.rs` (the set-up, `Game`) and
 `engagement/formation/arms_cards.rs` (the resolver, a fighter's `Arms`); their AI in
@@ -156,6 +173,24 @@ A card's improvement comes after the game's own (`GameData::own_improvements`). 
 draws nothing for one that never appears (`appearance_probability` 0, as the Trench), so the cards
 leave the generated maps as they were. Tests that count or check a table's entries take its own
 entries only (`card_entry_count`): the cards' units, buildings and promotions follow their own rules.
+
+**Battle magic** (the battle cards; `ffh_data::BattleMagic`, `crates/ffh-data/src/infos/battle_magic.rs`),
+read the same way on a unit type and a promotion; a unit has its type's and its promotions'
+(`GameData::unit_battle_magic`). The rules are `engagement/battle_magic.rs` (fighters, pairs,
+illusions, familiars, Contingency's post-battle steps) and the resolver's `formation/magic.rs`;
+ffh-play's promotion and unit help describe every key (`magic_lines`).
+
+**Spells:** `battle_illusions` `{"count", "hp"}`: cast with the caster's first spell action, its
+illusory soldiers take the free cells of its side (the front row first, the lanes nearest the
+centre first; cells assigned when the battle starts, a cell taken by then stays empty). They do
+not act, hold no field (a side of illusions alone is down), die to any spell's hit, give no XP and
+exist only in the battle (fighters of the formation after the set-up's; the log names them
+`TXT_KEY_UNIT_ILLUSORY_SOLDIER`). `battle_charm` takes `"rows": "REAR"` (the side's rearmost row in use: the middle row of an army of two rows) and `"skip"` (actions each
+fighter it lands on skips: its next ones; the log's `Skipped` note).
+
+**The log:** an action's `entered` lists the fighters that enter the field with it (illusions cast,
+a fighter revived), each `{unit, lane, row, hp}`; the battle screens fold it
+(`battle_log.js`).
 
 ## 3. Card world spells and remote targets
 
@@ -312,3 +347,16 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | G17 Starmetal Meteor | Sage | built |
 | B07 Legacy of Kings | Bard | built |
 | B18 Anointed Champion | Bard | built |
+| G04 Evoker (`sage_evoker`) | Sage | built |
+| G05 Abjurer (`sage_abjurer`) | Sage | built |
+| G06 Spellsword (`sage_spellsword`: six promotions, one a unit) | Sage | built |
+| G18 Gravity Well (`sage_gravity_well`) | Sage | built |
+| P05 The Whisperer (`prophet_whisperer`) | Prophet | built |
+| P11 Halo (`prophet_halo`) | Prophet | built |
+| Spellbreaker (`sage_spellbreaker`) | Sage | built |
+| Contingency (`sage_contingency`: Strike and Recall, one held at a time) | Sage | built |
+| Battlemage (`sage_battlemage`) | Sage | built |
+| Lullaby of Ceridwen (`bard_lullaby_of_ceridwen`: the Lutist) | Bard | built |
+| Illusory Host (`bard_illusory_host`: `UNIT_HOST_ILLUSIONIST`) | Bard | built |
+| Familiars (`sage_familiars`) | Sage | built |
+| Homunculus Vats (`sage_homunculus_vats`: a spell promotion chosen when trained) | Sage | built |

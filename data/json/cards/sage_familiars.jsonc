@@ -1,0 +1,139 @@
+// Familiars (docs/DECKS.md, section 3.1). The bond is the familiar's summoner (crates/ffh-core/src/ffh/cards/battle_magic.rs).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_FAMILIARS",
+      "description": "TXT_KEY_TECH_CARD_FAMILIARS",
+      "help": "TXT_KEY_TECH_CARD_FAMILIARS_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_FAMILIARS_PEDIA",
+      "advisor": "ADVISOR_SCIENCE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_ANCIENT",
+      "and_pre_reqs": [
+        "TECH_MYSTICISM"
+      ],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {
+        "FLAVOR_SCIENCE": 1
+      }
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_FAMILIAR",
+      "description": "TXT_KEY_UNIT_FAMILIAR",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 4,
+      "default_unit": "UNIT_FAMILIAR"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_FAMILIAR",
+      "stats": {
+        "hp": 40,
+        "attack": 10,
+        "defense": 15,
+        "magic": 0,
+        "magic_defense": 60,
+        "accuracy": 80,
+        "evasion": 20,
+        "crit": 0,
+        "speed": 6
+      },
+      "engage_rows": [
+        {
+          "action": "STRIKE",
+          "count": 1
+        },
+        {
+          "action": "NONE",
+          "count": 0
+        },
+        {
+          "action": "NONE",
+          "count": 0
+        }
+      ],
+      "engage_row_order": [
+        "REAR",
+        "MIDDLE",
+        "FRONT"
+      ],
+      "class": "UNITCLASS_FAMILIAR",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_ATTACK",
+      "description": "TXT_KEY_UNIT_FAMILIAR",
+      "civilopedia": "TXT_KEY_UNIT_FAMILIAR_PEDIA",
+      "strategy": "TXT_KEY_UNIT_FAMILIAR_STRATEGY",
+      "military_happiness": true,
+      "military_support": true,
+      "military_production": true,
+      "unit_ais": {
+        "UNITAI_ATTACK": true
+      },
+      "prereq_tech": "TECH_CARD_FAMILIARS",
+      "flavors": {
+        "FLAVOR_SCIENCE": 2
+      },
+      "ai_weight": 0,
+      "cost": 40,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 1,
+      "nuke_range": -1,
+      "combat": 1,
+      "combat_limit": 100,
+      "xp_value_attack": 2,
+      "xp_value_defense": 2,
+      "culture_garrison": 3,
+      "asset": 1,
+      "power": 1,
+      "free_promotions": {
+        "PROMOTION_FAMILIAR": true
+      },
+      "combat_defense": 1,
+      "tier": 1,
+      "battle_familiar": true
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_FAMILIAR",
+      "description": "TXT_KEY_PROMOTION_FAMILIAR",
+      "help": "TXT_KEY_PROMOTION_FAMILIAR_HELP",
+      "button": "Art/Interface/Buttons/Promotions/Spirit1.dds",
+      "py_per_turn": "effectFamiliar(pUnit)",
+      "ai_weight": 0
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_BIND_FAMILIAR",
+      "description": "TXT_KEY_SPELL_BIND_FAMILIAR",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_BIND_FAMILIAR_HELP",
+      "unit_prereq": "UNIT_FAMILIAR",
+      "allow_ai": true,
+      "ignore_has_casted": true,
+      "ability": true,
+      "py_result": "spellBindFamiliar(pCaster)",
+      "py_requirement": "reqBindFamiliar(pCaster)",
+      "button": "Art/Interface/Buttons/Promotions/Spirit1.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_FAMILIARS": "Familiars",
+    "TXT_KEY_TECH_CARD_FAMILIARS_HELP": "[ICON_BULLET]Can train Familiars (national unit, 4).[NEWLINE][ICON_BULLET]Bind: a Familiar binds to the caster of the highest level in its stack.[NEWLINE][ICON_BULLET]In battle it takes the first spell or shot aimed at its caster; the auto formation puts it in its caster's lane.[NEWLINE][ICON_BULLET]The caster gains 1 XP a turn while they share a plot.",
+    "TXT_KEY_TECH_CARD_FAMILIARS_PEDIA": "A small spirit in a borrowed shape, that loves its master more than its own life.",
+    "TXT_KEY_UNIT_FAMILIAR": "Familiar",
+    "TXT_KEY_UNIT_FAMILIAR_PEDIA": "A small spirit bound to a caster.",
+    "TXT_KEY_UNIT_FAMILIAR_STRATEGY": "Bind it to the caster that carries the army's damage.",
+    "TXT_KEY_PROMOTION_FAMILIAR": "Familiar",
+    "TXT_KEY_PROMOTION_FAMILIAR_HELP": "[ICON_BULLET]Each turn, the caster it is bound to gains 1 XP while they share a plot.",
+    "TXT_KEY_SPELL_BIND_FAMILIAR": "Bind",
+    "TXT_KEY_SPELL_BIND_FAMILIAR_HELP": "[ICON_BULLET]The Familiar binds to the caster of the highest level in its stack that no other Familiar holds."
+  }
+}

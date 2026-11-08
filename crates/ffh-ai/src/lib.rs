@@ -25,6 +25,7 @@ pub mod campaign;
 pub mod casters;
 pub mod cards;
 pub mod cards_battle_arms;
+pub mod cards_battle_magic;
 pub mod cards_deck_ui;
 pub mod cards_map_rules;
 pub mod cards_world_spells;

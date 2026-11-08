@@ -53,8 +53,13 @@ use ffh_data::{ActionKind, AttackPattern, BattleCharm, Defines, RowActions, ROWS
 use crate::rng::Rng;
 
 pub mod arms_cards;
+mod magic;
+#[cfg(test)]
+mod magic_tests;
 #[cfg(test)]
 mod tests;
+
+pub use magic::{add_illusions, Applied, Bare, FighterMagic, IllusionSpell, MagicState};
 
 /// Which side a fighter is on.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -428,6 +433,8 @@ pub struct Fighter {
     pub prefer: u64,
     /// What the great-person cards give it in a battle (docs/CARDS.md; [`arms_cards`]).
     pub arms: arms_cards::Arms,
+    /// Card: its battle magic (docs/CARDS.md; `magic.rs`).
+    pub magic: FighterMagic,
 }
 
 impl Fighter {
@@ -472,6 +479,7 @@ impl Fighter {
             class_bit: 0,
             prefer: 0,
             arms: arms_cards::Arms::default(),
+            magic: FighterMagic::default(),
         }
     }
 
@@ -543,7 +551,8 @@ impl Formation {
         let mut pairs = vec![Pair::default(); n * n];
         for h in 0..n {
             for t in 0..n {
-                if fighters[h].side != fighters[t].side {
+                // Card: same-side pairs too, for a fighter that hits its own side (madness).
+                if h != t {
                     pairs[h * n + t] = pair(h, t);
                 }
             }
@@ -728,6 +737,8 @@ pub struct State {
     pub crit_mod: Vec<i32>,
     /// The charms each fighter has cast.
     pub charms_cast: Vec<usize>,
+    /// Card: the battle magic's state (`magic.rs`).
+    pub mx: MagicState,
 }
 
 impl State {
@@ -746,12 +757,13 @@ impl State {
             eva_mod: vec![0; f.len()],
             crit_mod: vec![0; f.len()],
             charms_cast: vec![0; f.len()],
+            mx: MagicState::new(f),
         }
     }
 
-    /// Alive and not withdrawn.
+    /// Alive and not withdrawn (and, card: an illusion summoned).
     pub fn on_field(&self, i: usize) -> bool {
-        self.alive[i] && !self.gone[i]
+        self.alive[i] && !self.gone[i] && !self.mx.pending[i]
     }
 }
 
@@ -764,6 +776,18 @@ pub enum Note {
     NoOneHurt,
     /// Held: its STRIKE, CHARGE or STAB was spent (a card: the Moat; [`arms_cards`]).
     Held,
+    /// Card: the actor skips this action (the Lullaby).
+    Skipped,
+}
+
+/// Card: a fighter that enters the field with an event (an illusion summoned, a fighter revived):
+/// its cell (its own lane) and HP (centi-HP).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct Entry {
+    pub unit: FighterIdx,
+    pub lane: u8,
+    pub row: u8,
+    pub hp: i32,
 }
 
 /// One hit of an action, on its target or (`splash`) a neighbour.
@@ -818,6 +842,8 @@ pub struct Event {
     pub heal: Option<Heal>,
     pub knocked: Option<Knock>,
     pub note: Option<Note>,
+    /// Card: the fighters that enter the field with it.
+    pub entered: Vec<Entry>,
 }
 
 /// What became of a fighter.
@@ -963,7 +989,8 @@ impl Formation {
     /// takes the Sentinels on the field first (docs/SIEGES.md); STAB and a CHARGE where flanking
     /// works every enemy on the field; less the targets at `h`'s combat limit. In fighter order.
     pub fn reach(&self, s: &State, h: usize, kind: ActionKind) -> Vec<usize> {
-        let foe = self.fighters[h].side.other();
+        // Card: a mad fighter's foes are its own side.
+        let foe = self.foe_of(s, h);
         let mut list: Vec<usize> = Vec::new();
         let everyone = kind == ActionKind::Stab || (kind == ActionKind::Charge && self.ground.flanking());
         if kind == ActionKind::Bombard {
@@ -991,7 +1018,7 @@ impl Formation {
             list.sort_unstable();
             list.dedup();
         }
-        list.retain(|&t| s.hp[t] > self.floor(h, t));
+        list.retain(|&t| t != h && s.hp[t] > self.floor(h, t));
         list
     }
 
@@ -1144,7 +1171,8 @@ impl Formation {
     }
 
     fn side_down(&self, s: &State, side: Side) -> bool {
-        !(0..self.len()).any(|i| self.fighters[i].side == side && s.on_field(i))
+        // Card: illusions do not hold the field.
+        !(0..self.len()).any(|i| self.fighters[i].side == side && s.on_field(i) && !self.fighters[i].magic.illusion)
     }
 }
 
@@ -1180,10 +1208,13 @@ impl<'a> Run<'a> {
             }
             self.s.speed[i] = x.speed + p.first_strike_speed * (x.first_strikes.max(0) + self.rolled[i]);
         }
+        // Card: the pre-battle hexes and the opening casts.
+        self.magic_start(rng);
         let mut ended = f.side_down(&self.s, Side::Attacker) || f.side_down(&self.s, Side::Defender);
         let mut round = 1;
         while round <= p.rounds && !ended {
             self.round = round as u8;
+            self.magic_round(round);
             let passes = (0..f.len())
                 .filter(|&i| self.s.on_field(i))
                 .map(|i| f.actions_at(i, self.s.row[i]))
@@ -1253,10 +1284,22 @@ impl<'a> Run<'a> {
 
     /// Fighter `h` acts once from its current row.
     fn act(&mut self, h: usize, rng: &mut impl BattleRng) {
+        self.act_kind(h, None, rng)
+    }
+
+    /// Fighter `h` acts once from its current row, or (`forced`, card: an opening cast) with an
+    /// action of that kind, its damage spell for a SPELL.
+    fn act_kind(&mut self, h: usize, forced: Option<ActionKind>, rng: &mut impl BattleRng) {
         let f = self.f;
         let round = self.round as i32;
-        let row_kind = f.arms_kind(h, f.actions_at(h, self.s.row[h]).kind, round);
+        // Card: a fighter under the Lullaby skips the action.
+        if forced.is_none() && self.magic_skip(h) {
+            return;
+        }
+        let row_kind = forced.unwrap_or_else(|| f.arms_kind(h, f.actions_at(h, self.s.row[h]).kind, round));
         let kind = if row_kind == ActionKind::Charge && !f.ground.flanking() { ActionKind::Strike } else { row_kind };
+        // Card: grounded charges, a Spellsword's first strike.
+        let kind = self.magic_kind(h, kind);
         let mut ev = Event {
             round: self.round,
             pass: self.pass,
@@ -1268,6 +1311,7 @@ impl<'a> Run<'a> {
             heal: None,
             knocked: None,
             note: None,
+            entered: Vec::new(),
         };
         self.spell_now = None;
         if f.arms_held(h, kind, round) {
@@ -1275,16 +1319,20 @@ impl<'a> Run<'a> {
             self.push(ev);
             return;
         }
+        // Card: a caster's illusions with its first spell action.
+        if kind == ActionKind::Spell && forced.is_none() && self.magic_summon(h, ev.clone()) {
+            return;
+        }
         // A caster's charms and hexes first, one an action, but not in the last round (they draw
         // nothing).
-        if kind == ActionKind::Spell && self.s.charms_cast[h] < f.fighters[h].charms.len() && round < f.params.rounds {
+        if kind == ActionKind::Spell && forced.is_none() && self.s.charms_cast[h] < f.fighters[h].charms.len() && round < f.params.rounds {
             let (id, c) = f.fighters[h].charms[self.s.charms_cast[h]];
             self.s.charms_cast[h] += 1;
             self.charm(h, id, c, ev);
             return;
         }
         // A heal spell in place of the damage spell when an ally is hurt by at least half its heal.
-        if let (ActionKind::Spell, Some(hs)) = (kind, f.fighters[h].heal_spell) {
+        if let (ActionKind::Spell, Some(hs), None) = (kind, f.fighters[h].heal_spell, forced) {
             let p = &f.params;
             let half = p.base_damage.max(0) * hs.pct.max(0) / 2;
             if let Some(t) = f.heal_target(&self.s, h).filter(|&t| f.fighters[t].max_hp * 100 - self.s.hp[t] >= half) {
@@ -1329,6 +1377,8 @@ impl<'a> Run<'a> {
         }
         if kind == ActionKind::Heal {
             match f.heal_target(&self.s, h) {
+                // Card: the Halo's revive is a heal too.
+                None if self.magic_revive(h, &ev) => {}
                 None => {
                     ev.note = Some(Note::NoOneHurt);
                     self.push(ev);
@@ -1347,6 +1397,8 @@ impl<'a> Run<'a> {
             self.push(ev);
             return;
         };
+        // Card: a familiar takes the first spell or shot aimed at its caster.
+        let c = self.magic_intercept(h, c, kind);
         ev.target = Some(c as FighterIdx);
         if kind.physical() && rng.rand(100, "Engagement miss") < self.miss_chance(kind, h, c) {
             ev.hits.push(Hit { target: c as FighterIdx, dmg: 0, expected: 0, r: 0, crit: false, miss: true, killed: false, withdrew: false, splash: false });
@@ -1404,9 +1456,8 @@ impl<'a> Run<'a> {
     /// A charm or hex `c` (spell `id`) cast by `h`: on the units of its side on the field (the
     /// front row as it stands, or all), for the rest of the battle; the event names the first.
     fn charm(&mut self, h: usize, id: u32, c: BattleCharm, mut ev: Event) {
-        let f = self.f;
-        let side = if c.enemy { f.fighters[h].side.other() } else { f.fighters[h].side };
-        let on: Vec<usize> = (0..f.len()).filter(|&t| self.s.on_field(t) && f.fighters[t].side == side && (c.whole_side || self.s.row[t] == 0)).collect();
+        // Card: its rows (front, rear, all), a warded side, the skips it makes and its record.
+        let on: Vec<usize> = self.magic_charm_targets(h, &c);
         for &t in &on {
             self.s.dmg_mod[t] += c.damage;
             self.s.taken_mod[t] += c.taken;
@@ -1414,6 +1465,7 @@ impl<'a> Run<'a> {
             self.s.eva_mod[t] += c.evasion;
             self.s.crit_mod[t] += c.crit;
             self.s.speed[t] += c.speed;
+            self.magic_charm_landed(h, t, &c);
         }
         ev.spell = Some(id);
         ev.target = on.first().map(|&t| t as FighterIdx);
@@ -1451,6 +1503,8 @@ impl<'a> Run<'a> {
             e.heal = Some(Heal { target: u as FighterIdx, amount: got, r });
             self.push(e);
         }
+        // Card: the Halo.
+        self.magic_revive(h, &ev);
     }
 
     /// One hit of `h` on `t` (`crit`; its target or an `extra` hit), never below `floor`: r, the
@@ -1467,16 +1521,21 @@ impl<'a> Run<'a> {
         // The charms and hexes: percent more damage dealt by the hitter and taken by the target.
         let mods = (100 + self.s.dmg_mod[h]).max(0) as i64 * (100 + self.s.taken_mod[t]).max(0) as i64;
         let mods = mods * self.arms_dealt_pct(h) / 100;
+        // Card: a dispelled fighter fights without its dispellable promotions.
+        let mods = mods * self.magic_hit_pct(h, t, kind) / 100;
         let mut raw = (expected as i64 * pct * r as i64 / 10_000 * mods / 10_000).clamp(1, i32::MAX as i64) as i32;
         if kind.physical() && !f.fighters[h].pierce {
             raw = (raw - f.fighters[t].armor.max(0)).max(1);
         }
+        // Card: a spell's hit takes an illusion's HP; a Spellbreaker's hit dispels.
+        let raw = self.magic_landed(h, t, kind, raw);
         let dmg = raw.min((self.s.hp[t] - floor).max(0));
         let mut out = Hit { target: t as FighterIdx, dmg, expected, r, crit, miss: false, killed: false, withdrew: false, splash: extra != Extra::Target };
         if dmg >= self.s.hp[t] {
             let x = &f.fighters[t];
             let may_flee = x.withdraw_pct > 0 && !(x.side == Side::Defender && f.ground.city) && !f.fighters[h].pursuit;
-            if may_flee && rng.rand(100, "Engagement withdraw") < x.withdraw_pct {
+            // Card: Contingency's recall takes the place of the kill (no roll).
+            if self.magic_recall(t) || (may_flee && rng.rand(100, "Engagement withdraw") < x.withdraw_pct) {
                 self.s.gone[t] = true;
                 self.fate[t] = Fate::Withdrew { round: self.round };
                 out.withdrew = true;

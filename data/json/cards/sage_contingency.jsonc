@@ -1,0 +1,57 @@
+// Contingency (docs/DECKS.md, section 6.4; the owner: a promotion mages take). Two promotions, one held at a time.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_CONTINGENCY",
+      "description": "TXT_KEY_TECH_CARD_CONTINGENCY",
+      "help": "TXT_KEY_TECH_CARD_CONTINGENCY_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_CONTINGENCY_PEDIA",
+      "advisor": "ADVISOR_SCIENCE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": [
+        "TECH_SORCERY"
+      ],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {
+        "FLAVOR_SCIENCE": 1
+      }
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_CONTINGENCY_STRIKE",
+      "description": "TXT_KEY_PROMOTION_CONTINGENCY_STRIKE",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_CONTINGENCY",
+      "button": "Art/Interface/Buttons/Promotions/Fire2.dds",
+      "ai_weight": 0,
+      "promotion_prereq_and": "PROMOTION_CHANNELING2",
+      "opening_cast": true,
+      "promotion_immune1": "PROMOTION_CONTINGENCY_RECALL"
+    },
+    {
+      "type": "PROMOTION_CONTINGENCY_RECALL",
+      "description": "TXT_KEY_PROMOTION_CONTINGENCY_RECALL",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_CONTINGENCY",
+      "button": "Art/Interface/Buttons/Promotions/Mobility1.dds",
+      "ai_weight": 0,
+      "promotion_prereq_and": "PROMOTION_CHANNELING2",
+      "death_recall": true,
+      "promotion_immune1": "PROMOTION_CONTINGENCY_STRIKE"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_CONTINGENCY": "Contingency",
+    "TXT_KEY_TECH_CARD_CONTINGENCY_HELP": "[ICON_BULLET]Two promotions for mages (Channeling II); a mage holds one of them at a time, and loses it when it fires:[NEWLINE][ICON_BULLET]Contingency: Strike. When its plot is attacked, the mage casts its damage spell (else the magic bolt) before the battle's first round.[NEWLINE][ICON_BULLET]Contingency: Recall. When a hit would kill the mage in a battle, it leaves the battle and returns to its capital with 1 HP.",
+    "TXT_KEY_TECH_CARD_CONTINGENCY_PEDIA": "A spell woven in advance, waiting for the moment it was made for.",
+    "TXT_KEY_PROMOTION_CONTINGENCY_STRIKE": "Contingency: Strike",
+    "TXT_KEY_PROMOTION_CONTINGENCY_RECALL": "Contingency: Recall"
+  }
+}

@@ -40,7 +40,9 @@
 //     other: hidden nationality)
 //   fighters: [Fighter]: both lines, and the units of both sides on the two plots that stayed out of them (the
 //     attacker's pool, the defenders' reserve the viewer sees: `lane` null):
-//     {b, unit, sentinel (a Sentinel of the defended city: its wall section, no unit; docs/SIEGES.md), unit_type, name, owner, side, level, hero, promotions, large (fills two
+//     {b, unit, sentinel (a Sentinel of the defended city: its wall section, no unit; docs/SIEGES.md), illusion (an
+//      illusory soldier of the battle: no unit, out of the line until an event's `entered` brings it in; it holds no
+//      field, so the fates leave it out; docs/CARDS.md), unit_type, name, owner, side, level, hero, promotions, large (fills two
 //      cells of a row, lanes `lane` and `lane + 1`), lane, row (null: not in the line), max_hp (HP), hp_start,
 //      a_x100, dv_x100 (its attack and defence in this battle, before the terms of a pair), ma_x100, md_x100
 //      (its magic and magic defence; a stat of the unit's sheet is x10 of it: docs/UNIT_STATS.md), speed,
@@ -64,8 +66,10 @@
 //       {round, pass, actor, kind (ActionKind), spell? (SpellType; null: the magic bolt), target (null: none),
 //        hits: [{target, dmg, crit?, miss?, killed?, withdrew?}] (the first on `target`, the rest its splash; `dmg`
 //        what the target lost), heal?: {target, amount}, knocked?: {unit, from, to} (rows), note?: "NoTarget" |
-//        "NoOneHurt" | "Held" (a melee action spent: a card's Moat)}; a heal at a round's end (a card's Templar) has
-//        pass 0
+//        "NoOneHurt" | "Held" (a melee action spent: a card's Moat) | "Skipped" (the actor skips the action: a hex's
+//        skip), entered?: [{unit, lane, row, hp}] (the fighters that enter the field with it: illusions cast, which are
+//        fighters with no cell before, or a fighter brought back by a heal; docs/CARDS.md)}; a heal at a round's end (a
+//        card's Templar) has pass 0
 //   outcome: {plot_taken, city_captured (the city as the attacker's: its id changes with its owner; null), rounds
 //     (fought), defenders_left (on the plot after the battle, in the line or not), sides: [{committed, sat_out,
 //     fallen, escaped, standing} (counts of the units in the line), ...]}
@@ -583,6 +587,11 @@ export function applyEvent(st, e, F) {
   }
   if (e.heal) st.hp[e.heal.target] = Math.min(F[e.heal.target].max_hp * 100, st.hp[e.heal.target] + e.heal.amount);
   if (e.knocked && st.pos[e.knocked.unit]) st.pos[e.knocked.unit] = { ...st.pos[e.knocked.unit], row: e.knocked.to };
+  for (const x of e.entered ?? []) {
+    st.status[x.unit] = "on";
+    st.hp[x.unit] = x.hp;
+    st.pos[x.unit] = { lane: x.lane, row: x.row };
+  }
   return st;
 }
 
@@ -602,7 +611,7 @@ export function fates(log, st) {
   const out = [0, 1].map(() => ({ fallen: [], escaped: [], standing: [], afraid: [], out: [] }));
   log.fighters.forEach((f, b) => {
     const s = out[f.side];
-    if (!s) return;
+    if (!s || f.illusion) return;
     const k = st.status[b];
     if (k === "dead") s.fallen.push(b);
     else if (k === "gone") s.escaped.push(b);
@@ -702,6 +711,22 @@ export function logLines(log) {
     }
     const K = kindOf(e.kind);
     const speed = F[e.actor]?.speed ?? null;
+    if (e.note === "Skipped") {
+      parts.push(who(e.actor), t(" skips its action.", "dim"));
+      out.push({ i, parts, speed });
+      return;
+    }
+    if (e.entered?.length) {
+      const brought = kindKey(e.kind) === "Heal";
+      parts.push(who(e.actor), t(brought ? " brings back " : ` casts ${spellName(e.spell)}: `));
+      e.entered.forEach((x, k) => {
+        if (k) parts.push(t(", "));
+        parts.push(who(x.unit));
+      });
+      parts.push(t(brought ? ` with ${dmgText(e.entered[0].hp)} HP.` : " enter the field."));
+      out.push({ i, parts, speed });
+      return;
+    }
     if (e.heal) {
       parts.push(who(e.actor), t(" heals "), who(e.heal.target), t(" "), t(`+${dmgText(e.heal.amount)}`, "bt-n heal"));
     } else if (e.hits?.length && e.hits[0].miss) {

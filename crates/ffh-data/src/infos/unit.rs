@@ -18,7 +18,7 @@
 use crate::enums::*;
 use crate::idx::IdxVec;
 use crate::infos::{
-    read_battle_charm, read_engage_patterns, read_engage_row_order, read_engage_rows, read_round_percent, read_stat_changes, read_stats, AttackPattern, BattleCharm,
+    read_battle_charm, read_battle_illusions, read_battle_magic, BattleIllusions, BattleMagic, read_engage_patterns, read_engage_row_order, read_engage_rows, read_round_percent, read_stat_changes, read_stats, AttackPattern, BattleCharm,
     ActionKind, InfoBase, RowActions, StatChange,
     StatSheet, StatType, ROWS,
 };
@@ -225,6 +225,9 @@ pub struct PromotionInfo {
     pub armor: i32,
     pub armor_piercing: bool,
     pub pursuit: bool,
+    /// This game's own (docs/CARDS.md, "New data keys"): its battle magic (the cards' spell,
+    /// ward, presence, revive, dispel and contingency keys).
+    pub magic: BattleMagic,
     /// C++ `getSpellDamageModify()`: damage added to its unit's spells outside battles (FfH's
     /// `doDamage`); a battle's spells use magic (`stat_changes`).
     pub spell_damage_modify: i32,
@@ -414,6 +417,7 @@ pub fn read_promotion(rd: &Rd) -> PromotionInfo {
         armor: rd.int("armor"),
         armor_piercing: rd.bool("armor_piercing"),
         pursuit: rd.bool("pursuit"),
+        magic: read_battle_magic(rd, &rd.string("type")),
         spell_damage_modify: rd.int("spell_damage_modify"),
         combat_percent_global_counter: rd.int("combat_percent_global_counter"),
         combat_percent_in_borders: rd.int("combat_percent_in_borders"),
@@ -879,6 +883,8 @@ pub struct UnitInfo {
     pub bombard_range: i32,
     /// `bombard_besieges`: a city it bombards counts as besieged until the city's next turn.
     pub bombard_besieges: bool,
+    /// This game's own (docs/CARDS.md, "New data keys"): its battle magic (a presence, a familiar).
+    pub magic: BattleMagic,
 }
 
 /// C++ `CvUnitInfo::read` + `readPass2` + `readPass3`.
@@ -1087,6 +1093,7 @@ pub fn read_unit(rd: &Rd) -> UnitInfo {
         engage_first_round: crate::infos::read_engage_first_round(rd, &rd.string("type")),
         bombard_range: rd.int("bombard_range"),
         bombard_besieges: rd.bool("bombard_besieges"),
+        magic: read_battle_magic(rd, &rd.string("type")),
         // ---- readPass2 ----
         unit_convert_from_combat: rd.rf::<UnitType>("unit_convert_from_combat"),
         unit_create_from_combat: rd.rf::<UnitType>("unit_create_from_combat"),
@@ -1195,6 +1202,8 @@ pub struct SpellInfo {
     /// `battle_wonder`: a die roll among other spells, each with its weight, cast in the battle in
     /// place of a damage spell (Chaos III's Wonder): `{"SPELL_X": weight, ..}` in file order.
     pub battle_wonder: Vec<(SpellType, i32)>,
+    /// `battle_illusions`: illusory soldiers it puts on its caster's side in a battle (docs/CARDS.md).
+    pub battle_illusions: Option<BattleIllusions>,
     /// Derived (`GameData::derive`): one of a `battle_wonder`'s outcomes, cast only through it, so
     /// no unit knows it as its own battle spell.
     pub wonder_outcome: bool,
@@ -1325,6 +1334,7 @@ pub fn read_spell(rd: &Rd) -> SpellInfo {
         battle_heal: rd.int("battle_heal"),
         battle_charm: read_battle_charm(rd, &rd.string("type")),
         battle_wonder: rd.pair_list_int::<SpellType>("battle_wonder"),
+        battle_illusions: read_battle_illusions(rd, &rd.string("type")),
         wonder_outcome: false,
         dispel: rd.bool("dispel"),
         push: rd.bool("push"),

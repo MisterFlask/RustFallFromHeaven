@@ -168,7 +168,15 @@ impl Game {
     pub fn unit_engage_rows(&self, u: UnitId) -> [RowActions; ROWS] {
         let rows = self.d.engage_rows(self.units[u].unit_type);
         if self.unit_battle_spells(u).any() && self.unit_stat(u, StatType::Magic) > 0 {
-            rows_with_battle_spell(rows)
+            let mut rows = rows_with_battle_spell(rows);
+            // Card: a Battlemage casts from the front row as from its best row (docs/CARDS.md).
+            if self.d.magic_promotions.iter().any(|&p| self.units[u].has_promotion[p] && self.d.promotions[p].magic.front_caster) {
+                let best = rows[rows_best_row(&rows)];
+                if best.kind == ActionKind::Spell {
+                    rows[0] = best;
+                }
+            }
+            rows
         } else {
             rows
         }
@@ -312,7 +320,9 @@ impl Game {
     /// resistance to the damage type of the spell it casts (none for the magic bolt), at least 0.
     /// `None`: a target with no resistances (a city's Sentinel).
     pub fn engage_spell_pct(&self, hitter: UnitId, target: Option<UnitId>) -> i32 {
-        let dt = self.unit_engage_spell(hitter).and_then(|sp| self.d.spells[sp].damage_type);
+        // Card: a Spellsword's strike spell (docs/CARDS.md).
+        let spell = self.unit_engage_spell(hitter).or_else(|| self.unit_battle_magic(hitter).strike_spell);
+        let dt = spell.and_then(|sp| self.d.spells[sp].damage_type);
         match (dt, target) {
             (Some(dt), Some(t)) => (100 - self.unit_get_damage_type_resist(t, dt)).max(0),
             _ => 100,
@@ -321,9 +331,15 @@ impl Game {
 
     fn engage_magic_terms(&self, u: UnitId, magic: bool, log: &mut TermLog) -> CombatTerms {
         log.reset(self, u);
-        let s = if magic { StatType::Magic } else { StatType::MagicDefense };
+        let mut s = if magic { StatType::Magic } else { StatType::MagicDefense };
+        // Card: a Spellsword casts with half its attack as its magic (docs/CARDS.md).
+        let half = magic && self.unit_battle_magic(u).strike_spell.is_some();
+        if half {
+            s = StatType::Attack;
+        }
         let unit = &self.units[u];
         let base = self.d.units[unit.unit_type].stats.map_or(0, |sheet| sheet[s.idx()]) + unit.stat_flat[s.idx()];
+        let base = if half { base / 2 } else { base };
         let own = unit.stat_pct[s.idx()];
         if log.listing() {
             self.engage_own_percent_terms(u, s, own, log);

@@ -1,0 +1,43 @@
+// G05 Abjurer (docs/DECKS_ROUND8.md, C.4: enemy charms end each round and are not recast).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_ABJURER",
+      "description": "TXT_KEY_TECH_CARD_ABJURER",
+      "help": "TXT_KEY_TECH_CARD_ABJURER_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_ABJURER_PEDIA",
+      "advisor": "ADVISOR_SCIENCE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": [
+        "TECH_ALTERATION"
+      ],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {
+        "FLAVOR_SCIENCE": 1
+      }
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_ABJURER",
+      "description": "TXT_KEY_PROMOTION_ABJURER",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_ABJURER",
+      "button": "Art/Interface/Buttons/Promotions/Metamagic1.dds",
+      "ai_weight": 0,
+      "min_level": 4,
+      "battle_hex_ward": true,
+      "battle_end_charms": true
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_ABJURER": "Abjurer",
+    "TXT_KEY_TECH_CARD_ABJURER_HELP": "[ICON_BULLET]Promotion Abjurer, for casters of level 4 or more. While an Abjurer is on the field:[NEWLINE][ICON_BULLET]enemy hexes have no effect on its side, the pre-battle hexes included;[NEWLINE][ICON_BULLET]at the start of each round after the first, the enemy side's charms end. A caster casts each charm once, so they are not cast again.",
+    "TXT_KEY_TECH_CARD_ABJURER_PEDIA": "The Abjurer unmakes what others weave, and turns their curses aside.",
+    "TXT_KEY_PROMOTION_ABJURER": "Abjurer"
+  }
+}

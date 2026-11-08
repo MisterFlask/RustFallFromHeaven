@@ -25,6 +25,7 @@ const TURNS: &[fn(&mut Game, &crate::view::View)] = &[
     crate::cards_map_rules::turn, // batch B9: the map and movement cards
     crate::cards_world_spells::turn, // batch B3: the card world spells
     crate::cards_deck_ui::turn, // batch B0: the deck UI's three targeted cards
+    crate::cards_battle_magic::turn, // batch B1: the battle magic cards
 ];
 
 /// The cards' content that acts once the player's units have moved this turn (a unit's own action

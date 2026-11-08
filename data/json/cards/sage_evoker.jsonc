@@ -1,0 +1,43 @@
+// G04 Evoker (docs/DECKS_ROUND8.md, C.4: the magic bolt counts).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_EVOKER",
+      "description": "TXT_KEY_TECH_CARD_EVOKER",
+      "help": "TXT_KEY_TECH_CARD_EVOKER_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_EVOKER_PEDIA",
+      "advisor": "ADVISOR_SCIENCE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": [
+        "TECH_SORCERY"
+      ],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {
+        "FLAVOR_SCIENCE": 1
+      }
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_EVOKER",
+      "description": "TXT_KEY_PROMOTION_EVOKER",
+      "unit_combats": {
+        "UNITCOMBAT_ADEPT": true
+      },
+      "tech_prereq": "TECH_CARD_EVOKER",
+      "button": "Art/Interface/Buttons/Promotions/Fire1.dds",
+      "ai_weight": 0,
+      "min_level": 4,
+      "battle_spell_power": 50,
+      "battle_damage_only": true
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_EVOKER": "Evoker",
+    "TXT_KEY_TECH_CARD_EVOKER_HELP": "[ICON_BULLET]Promotion Evoker, for casters of level 4 or more: in battle their damage spells deal +50% damage, the magic bolt included.[NEWLINE][ICON_BULLET]An Evoker casts no charms, hexes or heals.",
+    "TXT_KEY_TECH_CARD_EVOKER_PEDIA": "The Evoker gives up every gentler art for one: the bolt that kills.",
+    "TXT_KEY_PROMOTION_EVOKER": "Evoker"
+  }
+}

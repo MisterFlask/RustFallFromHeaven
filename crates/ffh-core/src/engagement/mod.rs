@@ -20,6 +20,7 @@
 mod apply;
 mod arms;
 pub mod arrange;
+mod battle_magic;
 pub(crate) mod engage;
 pub mod formation;
 pub mod pick;

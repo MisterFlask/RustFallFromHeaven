@@ -194,7 +194,7 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
         pairs: vec![LogPair { h: 0, t: 1, a_x100: 300, dv_x100: 375, mean: 1777, ma_x100: 300, md_x100: 375, spell_pct: 100, magic_mean: 1777, a_extra: vec![], dv_extra: vec![] }],
         events: vec![
             LogEvent::Stage { stage: Stage::Battle },
-            LogEvent::Action(Event { round: 2, pass: 1, actor: 0, kind: ActionKind::Strike, spell: None, target: Some(1), hits: vec![hit], heal: None, knocked: None, note: None }),
+            LogEvent::Action(Event { round: 2, pass: 1, actor: 0, kind: ActionKind::Strike, spell: None, target: Some(1), hits: vec![hit], heal: None, knocked: None, note: None, entered: vec![] }),
             LogEvent::End { rounds: 2, down: [false, true] },
         ],
         forecast: Some(FrozenForecast {

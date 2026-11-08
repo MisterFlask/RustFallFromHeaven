@@ -348,6 +348,8 @@ fn fighter_json(g: &Game, b: usize, f: &LogFighter, owner: PlayerId) -> Json {
         "unit" => f.unit,
         // A Sentinel of the defended city (docs/SIEGES.md): no unit, the city's wall section.
         "sentinel" => f.sentinel,
+        // An illusion of the battle (docs/CARDS.md, battle_illusions): no unit, no cell until cast.
+        "illusion" => !f.sentinel && f.unit == LogFighter::SENTINEL_UNIT,
         "unit_type" => Json::idx(f.unit_type),
         "name" => name,
         "owner" => owner,
@@ -486,7 +488,10 @@ fn action_json(e: &Event) -> Json {
             Note::NoTarget => "NoTarget",
             Note::NoOneHurt => "NoOneHurt",
             Note::Held => "Held",
+            Note::Skipped => "Skipped",
         }),
+        // The fighters that enter the field with it (illusions cast, a fighter revived).
+        "entered" => Json::Arr(e.entered.iter().map(|x| crate::jobj! { "unit" => x.unit, "lane" => x.lane, "row" => x.row, "hp" => x.hp }).collect()),
     }
 }
 
@@ -1063,8 +1068,9 @@ mod tests {
             heal: None,
             knocked: Some(Knock { unit: 3, from: 0, to: 1 }),
             note: None,
+            entered: vec![],
         };
-        let heal = Event { round: 2, pass: 1, actor: 4, kind: ActionKind::Heal, spell: None, target: Some(0), hits: Vec::new(), heal: Some(Heal { target: 0, amount: 900, r: 110 }), knocked: None, note: None };
+        let heal = Event { round: 2, pass: 1, actor: 4, kind: ActionKind::Heal, spell: None, target: Some(0), hits: Vec::new(), heal: Some(Heal { target: 0, amount: 900, r: 110 }), knocked: None, note: None, entered: vec![] };
         let log = vec![
             LogEvent::Stage { stage: Stage::PreBattle },
             LogEvent::Cast { caster: 4, spell, targets: vec![0, 1], effect: CastEffect::Damage(vec![(0, 500), (1, 700)]) },

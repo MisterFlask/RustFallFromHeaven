@@ -7,6 +7,7 @@
 
 use crate::ffh::dispatch::*;
 
+pub mod battle_magic;
 pub mod deck;
 pub mod deck_ui;
 pub mod map_rules;
@@ -32,6 +33,7 @@ const MODULES: &[Lookups] = &[
     Lookups { spell: map_rules::find_spell, req: map_rules::find_req, targets: none, unit_fn: none },
     Lookups { spell: world_spells::find_spell, req: world_spells::find_req, targets: world_spells::find_targets, unit_fn: none },
     Lookups { spell: deck_ui::find_spell, req: none, targets: deck_ui::find_targets, unit_fn: none },
+    Lookups { spell: battle_magic::find_spell, req: battle_magic::find_req, targets: none, unit_fn: battle_magic::find_unit_fn },
 ];
 
 /// Every card module's `py_target_label` lookup (the names of a choice spell's options), searched

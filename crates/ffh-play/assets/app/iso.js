@@ -186,6 +186,8 @@ const UNIT_ALIASES = {
   divided_soul: ["spectre"], eidolon: ["spectre"], diseased_corpse: ["skeleton"], pyre_zombie: ["skeleton"],
   drown: ["skeleton"], ogre: ["ogre_embers"], ogre_warchief: ["ogre_embers"], stoneskin_ogre: ["ogre_embers"],
   minotaur: ["ogre_embers"], brigit_held: ["brigit"], rosier_oathtaker: ["rosier"],
+  // The battle cards' units (docs/CARDS.md).
+  lutist: ["harlequin", "artist"], host_illusionist: ["mage"], whisperer: ["disciple_octopus_overlords", "disciple"], familiar: ["imp"], homunculus: ["adept"],
 };
 
 /** The last resorts by combat type and domain. */

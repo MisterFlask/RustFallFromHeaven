@@ -30,6 +30,80 @@ pub fn stat_name(s: StatType) -> &'static str {
     }
 }
 
+/// The battle magic of a unit type or promotion (docs/CARDS.md, "New data keys"), a line each:
+/// what its spells, presence and hits do in a formation battle. Bare rules text.
+pub(super) fn magic_lines(b: &mut String, d: &GameData, m: &BattleMagic) {
+    let BattleMagic {
+        spell_power,
+        damage_only,
+        spell_pattern,
+        front_caster,
+        hex_ward,
+        end_charms,
+        presence,
+        revive,
+        dispel,
+        damage_vs_summons,
+        spell,
+        strike_spell,
+        opening_cast,
+        death_recall,
+        familiar,
+    } = m;
+    let mut say = |text: String| {
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]In battle: ");
+        b.push_str(&text);
+    };
+    if *spell_power != 0 {
+        say(format!("{spell_power:+}% damage of its damage spells, the magic bolt included"));
+    }
+    if *damage_only {
+        say("it casts no charms, hexes or heals".to_string());
+    }
+    if let Some(p) = spell_pattern {
+        say(format!("its damage spells hit with the {} pattern", p.token().to_lowercase()));
+    }
+    if *front_caster {
+        say("from the front row it casts as many spells as from its best row".to_string());
+    }
+    if *hex_ward {
+        say("while it is on the field, enemy hexes have no effect on its side".to_string());
+    }
+    if *end_charms {
+        say("while it is on the field, the enemy side's charms end at the start of each round after the first".to_string());
+    }
+    match presence {
+        Some(Presence::Grounding) => say("while it is in the line at the start, enemy charges are strikes for the battle (front of a lane, no first-round bonus)".to_string()),
+        Some(Presence::Madness) => say("while it is in the line at the start, the enemy unit with the highest attack (not a Sentinel) hits its own side in round 1".to_string()),
+        None => {}
+    }
+    if *revive > 0 {
+        say(format!("once per battle, its heal also brings back the first unit of its side that fell, at {revive}% HP, in its cell if free, else the rear cell of its lane (not a Sentinel)"));
+    }
+    if *dispel {
+        say("each hit it lands ends the target's charms and its dispellable promotions' battle effects for the battle".to_string());
+    }
+    if *damage_vs_summons != 0 {
+        say(format!("{damage_vs_summons:+}% damage to summoned units and illusions"));
+    }
+    if let Some(s) = spell {
+        say(format!("knows the battle spell {}", display(d, *s)));
+    }
+    if let Some(s) = strike_spell {
+        say(format!("casts {} in place of its first strike each round, with half its attack as its magic", display(d, *s)));
+    }
+    if *opening_cast {
+        say("when its plot is attacked, it casts its damage spell before the first round; the promotion is then lost".to_string());
+    }
+    if *death_recall {
+        say("when a hit would kill it, it leaves the battle and returns to the capital with 1 HP; the promotion is then lost".to_string());
+    }
+    if *familiar {
+        say("bound to a caster, it takes the first spell or shot aimed at that caster; the caster gains 1 XP a turn while they share a plot".to_string());
+    }
+}
+
 /// The battle stats a promotion changes, a line each: "+20% Attack", "+10 Defense", "-1 Speed".
 /// The battle levers of a unit type or promotion (docs/UNIT_ROLES.md): damage against and
 /// resistance to unit combats, armor, armor piercing, pursuit; one line each.
@@ -123,6 +197,7 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
         armor,
         armor_piercing,
         pursuit,
+        magic,
         spell_damage_modify,
         city_attack_percent,
         city_defense_percent,
@@ -321,6 +396,7 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
     }
     stat_lines(b, stat_changes);
     lever_lines(b, d, damage_vs, resist_vs, *armor, *armor_piercing, *pursuit);
+    magic_lines(b, d, magic);
     if *anti_flank {
         // This game's own (docs/ENGAGEMENTS.md, Q7).
         b.push_str(NEWLINE);
