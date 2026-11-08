@@ -1,0 +1,92 @@
+// The Usurper's Crown (docs/DECKS.md section 13, amended in 14: attitudes in place of permanent
+// peace and war; docs/CARDS.md, section 5). The new civilization is of its parent's civilization;
+// only its leader is its own.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_USURPERS_CROWN",
+      "description": "TXT_KEY_TECH_CARD_USURPERS_CROWN",
+      "help": "TXT_KEY_TECH_CARD_USURPERS_CROWN_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_USURPERS_CROWN_PEDIA",
+      "advisor": "ADVISOR_SCIENCE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_RAGE"],
+      "card_suit": "UNITCLASS_ARTIST",
+      "flavors": {"FLAVOR_SCIENCE": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_USURPERS_CROWN",
+      "description": "TXT_KEY_SPELL_USURPERS_CROWN",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_USURPERS_CROWN_HELP",
+      "tech_prereq": "TECH_CARD_USURPERS_CROWN",
+      "once": true,
+      "target": "player",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_result": "spellUsurpersCrown(pCaster)",
+      "py_requirement": "reqUsurpersCrown(pCaster)",
+      "py_targets": "targetsUsurpersCrown(pCaster)",
+      "py_target_label": "labelUsurpersCrown(pCaster, pTarget)",
+      "button": "Art/Interface/Buttons/Equipment/CrownOfAkharien.dds"
+    }
+  ],
+  "leader_heads": [
+    {
+      "type": "LEADER_USURPER",
+      "description": "TXT_KEY_LEADER_USURPER",
+      "civilopedia": "TXT_KEY_LEADER_USURPER_PEDIA",
+      "base_attitude": -1,
+      "peace_weight_rand": 2,
+      "warmonger_respect": 2,
+      "refuse_to_talk_war_threshold": 10,
+      "no_tech_trade_threshold": 5,
+      "tech_trade_known_percent": 25,
+      "max_gold_trade_percent": 10,
+      "max_gold_per_turn_trade_percent": 10,
+      "max_war_nearby_power_ratio": 130,
+      "max_war_distant_power_ratio": 60,
+      "max_war_min_adjacent_land_percent": 2,
+      "limited_war_rand": 60,
+      "limited_war_power_ratio": 100,
+      "dogpile_war_rand": 15,
+      "make_peace_rand": 50,
+      "declare_war_trade_rand": 20,
+      "demand_rebuked_sneak_prob": 25,
+      "demand_rebuked_war_prob": 20,
+      "build_unit_prob": 40,
+      "worse_rank_difference_attitude_change": -4,
+      "close_borders_attitude_change": -4,
+      "lost_war_attitude_change": -1,
+      "at_war_attitude_divisor": -5,
+      "at_war_attitude_change_limit": 5,
+      "same_religion_attitude_change": 4,
+      "demand_tribute_attitude_threshold": "ATTITUDE_ANNOYED",
+      "no_give_help_attitude_threshold": "ATTITUDE_CAUTIOUS",
+      "traits": {"TRAIT_AGGRESSIVE": true, "TRAIT_CHARISMATIC": true},
+      "flavors": {"FLAVOR_MILITARY": 8, "FLAVOR_GOLD": 2},
+      "favorite_early_tech1": "TECH_BRONZE_WORKING",
+      "favorite_early_tech2": "TECH_IRON_WORKING",
+      "favorite_early_wonder": "BUILDINGCLASS_FORM_OF_THE_TITAN",
+      "favorite_late_wonder": "BUILDINGCLASS_GUILD_OF_HAMMERS",
+      "somnium_aggressiveness": 65,
+      "alignment": "ALIGNMENT_NEUTRAL",
+      "favorite_tech": "TECH_IRON_WORKING",
+      "favorite_unit_combat": "UNITCOMBAT_MELEE",
+      "favorite_wonder": "BUILDING_GUILD_OF_HAMMERS"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_USURPERS_CROWN": "The Usurper's Crown",
+    "TXT_KEY_TECH_CARD_USURPERS_CROWN_HELP": "[ICON_BULLET]World spell, once, at a civilization you have met with 8 or more cities.[NEWLINE][ICON_BULLET]A third of its cities (at least 2), those farthest from its capital, secede as a new civilization of its civilization, with their buildings and garrisons.[NEWLINE][ICON_BULLET]Its leader is the Usurper, a hero of its best melee unit.[NEWLINE][ICON_BULLET]+4 attitude toward you, -6 toward the civilization it secedes from.[NEWLINE][ICON_BULLET]Needs a free player slot.",
+    "TXT_KEY_TECH_CARD_USURPERS_CROWN_PEDIA": "Every crown has a rival claimant. Find him, and lend him your coin.[NEWLINE][NEWLINE]Expert: crown the usurper of the leading civilization just before your own war on it, so it fights on two fronts.",
+    "TXT_KEY_SPELL_USURPERS_CROWN": "The Usurper's Crown",
+    "TXT_KEY_SPELL_USURPERS_CROWN_HELP": "[ICON_BULLET]Target: a civilization you have met with 8 or more cities.[NEWLINE][ICON_BULLET]A third of its cities (at least 2), those farthest from its capital, secede with their buildings and garrisons, led by the Usurper, a hero of its best melee unit.[NEWLINE][ICON_BULLET]Effect: +4 attitude toward you, -6 toward the civilization it secedes from.[NEWLINE][ICON_BULLET]Once per game. Needs a free player slot.",
+    "TXT_KEY_LEADER_USURPER": "The Usurper",
+    "TXT_KEY_LEADER_USURPER_PEDIA": "There is always another claimant: a cousin, a general, a bastard of the old line. The Usurper is whichever of them a foreign crown chose to pay."
+  }
+}

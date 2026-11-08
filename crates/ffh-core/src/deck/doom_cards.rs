@@ -10,10 +10,15 @@
 //!
 //! The Gathering's vassals are marked (`Team::gathered`) and do not count toward their master's
 //! victory (`Game::team_victory_population`, `team_victory_land`, the conquest test).
+//!
+//! The cards that bring a civilization into the game (A04 The Scaled Kingdom, A06 The Brood, A22
+//! The Infernal Gate Opens) are batch B8's: their `valid` and `fire` functions are in
+//! `ffh/cards/new_civs_2.rs`.
 
 use std::cmp::Reverse;
 
 use crate::deck::doom::DoomCard;
+use crate::ffh::cards::new_civs_2;
 use crate::game::Game;
 use crate::ids::*;
 use ffh_data::*;
@@ -30,9 +35,11 @@ pub const SKY_FALLS: &str = "DOOM_SKY_FALLS";
 pub const GATHERING: &str = "DOOM_GATHERING";
 pub const LONG_NIGHT: &str = "DOOM_LONG_NIGHT";
 pub const GODLESS_AGE: &str = "DOOM_GODLESS_AGE";
+pub const SCALED_KINGDOM: &str = "DOOM_SCALED_KINGDOM";
+pub const BROOD: &str = "DOOM_BROOD";
+pub const INFERNAL_GATE: &str = "DOOM_INFERNAL_GATE";
 
-/// The new cards (FFH2's are in `doom::CARDS`). The new civilizations (A04 the Scaled Kingdom,
-/// A06 the Brood, A22 the Infernal Gate) are another batch's.
+/// The new cards (FFH2's are in `doom::CARDS`).
 pub const CARDS: &[DoomCard] = &[
     DoomCard { key: WILD_AWAKENS, stages: &[20], fire: fire_wild_awakens, valid: Some(lairs_spawn), on_reveal: None },
     DoomCard { key: SEA_RECEDES, stages: &[30], fire: fire_sea_recedes, valid: Some(valid_sea_recedes), on_reveal: Some(name_sea) },
@@ -46,6 +53,9 @@ pub const CARDS: &[DoomCard] = &[
     DoomCard { key: GATHERING, stages: &[100], fire: fire_gathering, valid: Some(valid_gathering), on_reveal: None },
     DoomCard { key: LONG_NIGHT, stages: &[100], fire: fire_long_night, valid: None, on_reveal: None },
     DoomCard { key: GODLESS_AGE, stages: &[100], fire: fire_godless_age, valid: Some(valid_godless_age), on_reveal: None },
+    DoomCard { key: SCALED_KINGDOM, stages: &[30], fire: new_civs_2::fire_scaled_kingdom, valid: Some(new_civs_2::valid_scaled_kingdom), on_reveal: None },
+    DoomCard { key: BROOD, stages: &[30, 50], fire: new_civs_2::fire_brood, valid: Some(new_civs_2::valid_brood), on_reveal: None },
+    DoomCard { key: INFERNAL_GATE, stages: &[60], fire: new_civs_2::fire_infernal_gate, valid: Some(new_civs_2::valid_infernal_gate), on_reveal: None },
 ];
 
 /// How many unrevealed Armageddon cards ahead `p` sees: the most any building of theirs shows
@@ -1086,8 +1096,8 @@ mod tests {
 
     /// A world as games make it (the Fractal script: oceans, hills, coasts), with cities founded
     /// by hand, a holy city with its shrine, a lair, wolves and ships: every new card is dealt to
-    /// its slot alone and the counter raised to it. Each is revealed and played (or dealt again
-    /// at its reveal when it cannot be), and the world stays consistent.
+    /// its slots alone (a chain's every stage) and the counter raised to the last. Each is revealed
+    /// and played (or dealt again at its reveal when it cannot be), and the world stays consistent.
     #[test]
     fn every_new_card_plays_on_a_generated_world() {
         let d = ffh_data::global();
@@ -1129,16 +1139,22 @@ mod tests {
         }
         consistent(&g).unwrap();
 
-        let limit = g.global_counter_limit;
         for c in CARDS {
             g.doom.dealt = true;
             g.doom.slots = crate::deck::doom::SLOTS.iter().map(|&threshold| DoomSlot { threshold, ..Default::default() }).collect();
-            let i = g.doom.slots.iter().position(|s| s.threshold == c.stages[0]).unwrap();
-            g.doom.slots[i].card = Some((c.key.to_string(), 0));
-            g.global_counter = (limit * c.stages[0] + 99) / 100;
+            // Every stage of the card in its slot, the counter raised to the last. (Its limit is
+            // read each time: a card that brings a civilization raises it, as every new player.)
+            for (k, &t) in c.stages.iter().enumerate() {
+                let slot = g.doom.slots.iter_mut().find(|s| s.threshold == t).unwrap();
+                slot.card = Some((c.key.to_string(), k as u8));
+            }
+            let last = *c.stages.last().unwrap();
+            g.global_counter = (g.global_counter_limit * last + 99) / 100;
             g.doom_do_turn();
-            let slot = &g.doom.slots[i];
-            assert!(slot.revealed && slot.fired, "{}", c.key);
+            for &t in c.stages {
+                let slot = g.doom.slots.iter().find(|s| s.threshold == t).unwrap();
+                assert!(slot.revealed && slot.fired, "{} at {t}", c.key);
+            }
             consistent(&g).unwrap_or_else(|e| panic!("{}: {e}", c.key));
         }
     }

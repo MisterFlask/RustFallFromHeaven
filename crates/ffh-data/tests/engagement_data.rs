@@ -339,13 +339,14 @@ fn the_religions_fighters_strike_and_every_stabber_has_marksman() {
     // Q6: the stabbers are exactly the recon units with Marksman free.
     let marksman = d.t::<PromotionType>("PROMOTION_MARKSMAN");
     let recon = d.t::<UnitCombatType>("UNITCOMBAT_RECON");
-    let mut stabbers: Vec<&str> =
-        d.units.keys().filter(|&u| d.units[u].engage_rows.is_some() && d.engage_kind(u) == ActionKind::Stab).map(|u| d.type_name(u)).collect();
-    stabbers.sort_unstable();
-    for name in &stabbers {
-        let u = &d.units[d.t::<UnitType>(name)];
+    let stab = |u: UnitType| d.units[u].engage_rows.is_some() && d.engage_kind(u) == ActionKind::Stab;
+    for u in d.units.keys().filter(|&u| stab(u)) {
+        let (name, u) = (d.type_name(u), &d.units[u]);
         assert!(u.free_promotions[marksman] && u.unit_combat_type == Some(recon), "{name}");
     }
+    // The game's own stabbers (the cards' follow the rule above too: the Slitherking).
+    let mut stabbers: Vec<&str> = d.units.keys().take(own).filter(|&u| stab(u)).map(|u| d.type_name(u)).collect();
+    stabbers.sort_unstable();
     assert_eq!(
         stabbers,
         [

@@ -314,6 +314,13 @@ pub fn civ_help(d: &GameData, c: CivilizationType) -> String {
     if let Some(p) = info.unit_promotion {
         b.push_str(&format!("{NEWLINE}[ICON_BULLET]Its land units start with the [LINK=literal]{}[\\LINK] promotion", display(d, p)));
     }
+    // This game's (docs/CARDS.md, Wake the Hill Clans).
+    for y in 0..YieldType::NUM {
+        let n = info.hills_yield_change[y];
+        if n != 0 {
+            b.push_str(&format!("{NEWLINE}[ICON_BULLET]{n:+}{} on each of its plots on hills", YIELD_ICONS[y]));
+        }
+    }
     head(&mut b, "TXT_KEY_GLOBAL_SPELL_PEDIA");
     for s in d.spells.keys().filter(|&s| d.spells[s].global && d.spells[s].civilization_prereq == Some(c)) {
         item(&mut b, &display(d, s));

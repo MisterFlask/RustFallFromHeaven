@@ -1,0 +1,42 @@
+// Oath of Fealty (docs/DECKS.md section 13; docs/CARDS.md, section 5).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_OATH_OF_FEALTY",
+      "description": "TXT_KEY_TECH_CARD_OATH_OF_FEALTY",
+      "help": "TXT_KEY_TECH_CARD_OATH_OF_FEALTY_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_OATH_OF_FEALTY_PEDIA",
+      "advisor": "ADVISOR_SCIENCE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_FEUDALISM"],
+      "card_suit": "UNITCLASS_MERCHANT",
+      "flavors": {"FLAVOR_SCIENCE": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_OATH_OF_FEALTY",
+      "description": "TXT_KEY_SPELL_OATH_OF_FEALTY",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_OATH_OF_FEALTY_HELP",
+      "tech_prereq": "TECH_CARD_OATH_OF_FEALTY",
+      "once": true,
+      "target": "player",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_result": "spellOathOfFealty(pCaster)",
+      "py_targets": "targetsOathOfFealty(pCaster)",
+      "py_target_label": "labelOathOfFealty(pCaster, pTarget)",
+      "button": "Art/Interface/Buttons/Equipment/CrownOfCommand.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_OATH_OF_FEALTY": "Oath of Fealty",
+    "TXT_KEY_TECH_CARD_OATH_OF_FEALTY_HELP": "[ICON_BULLET]World spell, once, at a civilization you are at war with whose power is a third of yours or less (not a vassal).[NEWLINE][ICON_BULLET]The war ends and it becomes your vassal (it capitulates): its cities and units are a vassal's, under the ordinary vassal rules.[NEWLINE][ICON_BULLET]Not with No Vassal States, or while you are a vassal.",
+    "TXT_KEY_TECH_CARD_OATH_OF_FEALTY_PEDIA": "Kneel, and keep your crown; stand, and lose your head. Most kings can count.[NEWLINE][NEWLINE]Expert: end a won war without the last sieges; the cities you would have taken fight for you instead.",
+    "TXT_KEY_SPELL_OATH_OF_FEALTY": "Oath of Fealty",
+    "TXT_KEY_SPELL_OATH_OF_FEALTY_HELP": "[ICON_BULLET]Target: a civilization you are at war with whose power is a third of yours or less (not a vassal).[NEWLINE][ICON_BULLET]Effect: the war ends and it becomes your vassal (it capitulates).[NEWLINE][ICON_BULLET]Once per game. Not with No Vassal States, or while you are a vassal."
+  }
+}

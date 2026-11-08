@@ -395,23 +395,35 @@ pub struct NewCity {
     pub units: Vec<NewUnit>,
 }
 
-/// A new civilization: who it is, what it starts with, and its relation to its founder.
+/// A new civilization: who it is, what it starts with, and its relation to its founder and its
+/// parent.
 #[derive(Clone, Debug)]
 pub struct Birth {
     pub civ: CivilizationType,
     pub leader: LeaderHeadType,
-    /// The player whose card makes it: its techs and its controller are the new civilization's.
-    pub founder: PlayerId,
+    /// A name of its own in place of its civilization's (`GameSetup` `civ_description`: the
+    /// Usurper's Crown's "Bannor Usurpers").
+    pub description: Option<String>,
+    /// The player whose card makes it: its controller plays the new civilization, it has met it,
+    /// and it is a vassal birth's master. `None`: an Armageddon card's civilization
+    /// ([`Birth::wild`]), played by its slot's own controller (the host's AI: a slot that never
+    /// lived is no human's).
+    pub founder: Option<PlayerId>,
+    /// Its parent (`Player::parent`), whose team's techs it knows (never the cards) and which it
+    /// has met: the founder unless set otherwise (the Usurper's Crown: the civilization it secedes
+    /// from). `None`: it knows the world's techs ([`world_techs`]).
+    pub parent: Option<PlayerId>,
     /// The cities it founds, its capital first.
     pub found: Vec<NewCity>,
-    /// The founder's cities it takes over (a release), with their buildings and garrisons (the
-    /// founder's land combat units in them but `keep` and heroes).
+    /// The cities it takes over from their owners (a release, as a trade), with their buildings
+    /// and garrisons (the owner's land combat units in them but `keep` and heroes), after the
+    /// cities it founds.
     pub release: Vec<CityId>,
-    /// A unit of the founder's that stays the founder's in a released city (the caster).
+    /// A unit that stays its owner's in a released city (the caster).
     pub keep: Option<UnitId>,
     /// Its hero, in its capital.
     pub hero: Option<NewUnit>,
-    /// Techs beyond the founder's (it knows every tech the founder's team knows but the cards).
+    /// Techs beyond its parent's (or the world's).
     pub techs: Vec<TechType>,
     /// Its state religion, spread to its cities.
     pub state_religion: Option<ReligionType>,
@@ -420,17 +432,29 @@ pub struct Birth {
     pub vassal: bool,
     /// Its attitude modifier toward the founder (`ai_attitude_extra`: FFH's scale, 4 a step).
     pub founder_attitude: i32,
+    /// Its attitude modifier toward its parent, when the parent is not the founder (the Usurper's
+    /// grudge).
+    pub parent_attitude: i32,
     /// Its attitude modifier toward civilizations of an alignment (`Player::alignment_attitude`).
     pub alignment_attitude: Option<(AlignmentType, i32)>,
 }
 
 impl Birth {
-    /// A birth of civilization `civ` led by `leader`, founded by `founder`, with nothing yet.
+    /// A birth of civilization `civ` led by `leader`, founded by `founder` (its parent too), with
+    /// nothing yet.
     pub fn new(civ: CivilizationType, leader: LeaderHeadType, founder: PlayerId) -> Birth {
+        Birth { founder: Some(founder), parent: Some(founder), ..Birth::wild(civ, leader) }
+    }
+
+    /// An Armageddon card's civilization, with nothing yet: no founder and no parent (its slot's
+    /// own controller, the world's techs, nobody's vassal).
+    pub fn wild(civ: CivilizationType, leader: LeaderHeadType) -> Birth {
         Birth {
             civ,
             leader,
-            founder,
+            description: None,
+            founder: None,
+            parent: None,
             found: Vec::new(),
             release: Vec::new(),
             keep: None,
@@ -440,6 +464,7 @@ impl Birth {
             gold: 0,
             vassal: false,
             founder_attitude: 0,
+            parent_attitude: 0,
             alignment_attitude: None,
         }
     }
@@ -451,37 +476,69 @@ pub fn open_slot(g: &Game) -> Option<PlayerId> {
     g.cf_get_open_player()
 }
 
+/// The living civilizations: not the barbarians, a minor civilization or a crusade Host.
+pub fn civ_players(g: &Game) -> Vec<PlayerId> {
+    g.player_ids().filter(|&p| g.players[p].alive && !g.player_is_barbarian(p) && !g.player_is_minor_civ(p) && !g.player_is_crusade_host(p)).collect()
+}
+
+/// The world's techs, which a civilization without a parent starts with (it is of its era): every
+/// tech (not a card) that at least half of the living civilizations' teams know.
+pub fn world_techs(g: &Game) -> Vec<TechType> {
+    let d = g.d;
+    let mut teams: Vec<TeamId> = civ_players(g).into_iter().map(|p| g.players[p].team).collect();
+    teams.sort();
+    teams.dedup();
+    let half = |t: TechType| 2 * teams.iter().filter(|&&team| g.team_is_has_tech(team, Some(t))).count() >= teams.len();
+    d.techs.keys().filter(|&t| d.techs[t].card.is_none() && !teams.is_empty() && half(t)).collect()
+}
+
 /// Gives birth to `b` in an [`open_slot`] (`None` when there is none). The slot is added
 /// (`add_player_advanced`, on a team of its own) and played by the founder's controller (as the
-/// Infernals are); its parent is the founder, and it knows the founder's team's techs (never the
-/// cards) and `b.techs`. It founds its cities (the first its capital) with their buildings and
-/// takes over the released cities, its state religion in every one; its units stand in their
-/// cities, its hero in the capital. It has met the founder. As a vassal it is the founder's
-/// (ordinary vassal rules: it joins its master's wars); where vassals cannot be (No Vassal States,
-/// or the founder a vassal itself) it signs open borders and a defensive pact with the founder
-/// instead, a deal like any other. No other war or peace is forced (docs/DECKS.md, principle 27):
-/// its leanings are its attitude modifiers.
+/// Infernals are), or by its own without a founder; its parent is `b.parent`, and it knows its
+/// parent's team's techs (never the cards), or without a parent the world's ([`world_techs`]), and
+/// `b.techs`. It founds its cities (the first its capital) with their buildings and takes over the
+/// released cities, its state religion in every one; its units stand in their cities, its hero in
+/// the capital. It has met its founder and its parent. As a vassal it is the founder's (ordinary
+/// vassal rules: it joins its master's wars); where vassals cannot be (No Vassal States, or the
+/// founder a vassal itself) it signs open borders and a defensive pact with the founder instead, a
+/// deal like any other. No other war or peace is forced (docs/DECKS.md, principle 27): its
+/// leanings are its attitude modifiers.
 pub fn birth(g: &mut Game, b: &Birth) -> Option<PlayerId> {
     let d = g.d;
     let p = open_slot(g)?;
-    let founder = b.founder;
+    let techs: Vec<TechType> = match b.parent {
+        Some(parent) => {
+            let pt = g.players[parent].team;
+            d.techs.keys().filter(|&t| g.team_is_has_tech(pt, Some(t)) && d.techs[t].card.is_none()).collect()
+        }
+        None => world_techs(g),
+    };
     g.add_player_advanced(p, None, b.leader, b.civ);
-    g.controllers[p] = g.controllers[founder].clone();
-    g.players[p].parent = Some(founder);
-    let (ft, nt) = (g.players[founder].team, g.players[p].team);
+    if let Some(description) = &b.description {
+        g.setup.players[p.idx()].civ_description = description.clone();
+    }
+    if let Some(founder) = b.founder {
+        g.controllers[p] = g.controllers[founder].clone();
+    }
+    g.players[p].parent = b.parent;
+    let nt = g.players[p].team;
     // At war with the barbarians on both sides, as every civilization is (`add_player_advanced`
     // sets only the new team's side, FFH's quirk; the other side left at peace would also deny
     // the vassal trade, `ai_vassal_trade`, and end a born vassal's vassalage).
     let barbarians = g.players[g.barbarian_player()].team;
     g.teams[barbarians].at_war[nt] = true;
     for tech in d.techs.keys() {
-        let known = g.team_is_has_tech(ft, Some(tech)) && d.techs[tech].card.is_none();
-        if (known || b.techs.contains(&tech)) && !g.team_is_has_tech(nt, Some(tech)) {
+        if (techs.contains(&tech) || b.techs.contains(&tech)) && !g.team_is_has_tech(nt, Some(tech)) {
             g.team_set_has_tech(nt, tech, true, Some(p), false, false);
         }
     }
     g.players[p].gold += b.gold;
-    g.team_meet(nt, ft, true);
+    for other in [b.founder, b.parent].into_iter().flatten() {
+        let ot = g.players[other].team;
+        if !g.teams[nt].has_met[ot] {
+            g.team_meet(nt, ot, true);
+        }
+    }
 
     let mut cities = Vec::new();
     for nc in &b.found {
@@ -515,21 +572,34 @@ pub fn birth(g: &mut Game, b: &Birth) -> Option<PlayerId> {
         new_unit(g, p, hero, x, y);
     }
 
-    let vassal_states = !g.is_option(GameOptionType::GAMEOPTION_NO_VASSAL_STATES) && !g.team_is_a_vassal(ft);
-    if b.vassal && vassal_states {
-        g.team_assign_vassal(ft, nt, false);
-    } else if b.vassal {
-        let item = |item_type| crate::structs::TradeData { item_type, data: 0, offering: false, hidden: false };
-        let items = [item(TradeableItem::TRADE_OPEN_BORDERS), item(TradeableItem::TRADE_DEFENSIVE_PACT)];
-        g.implement_deal(founder, p, &items, &items, true);
+    if let (Some(founder), true) = (b.founder, b.vassal) {
+        let ft = g.players[founder].team;
+        if !g.is_option(GameOptionType::GAMEOPTION_NO_VASSAL_STATES) && !g.team_is_a_vassal(ft) {
+            g.team_assign_vassal(ft, nt, false);
+        } else {
+            let item = |item_type| crate::structs::TradeData { item_type, data: 0, offering: false, hidden: false };
+            let items = [item(TradeableItem::TRADE_OPEN_BORDERS), item(TradeableItem::TRADE_DEFENSIVE_PACT)];
+            g.implement_deal(founder, p, &items, &items, true);
+        }
     }
-    g.players[p].ai_attitude_extra[founder] += b.founder_attitude;
+    if let Some(founder) = b.founder {
+        g.players[p].ai_attitude_extra[founder] += b.founder_attitude;
+    }
+    if let Some(parent) = b.parent.filter(|&parent| Some(parent) != b.founder) {
+        g.players[p].ai_attitude_extra[parent] += b.parent_attitude;
+    }
     if let Some((alignment, change)) = b.alignment_attitude {
         g.players[p].alignment_attitude[alignment] += change;
     }
     let turn = g.game_turn();
-    let (name, by) = (g.player_get_civilization_description(p), g.player_get_civilization_description(founder));
-    g.log.msg(turn, Some(founder), || format!("{name} is born of {by}"));
+    let name = g.player_get_civilization_description(p);
+    match b.parent.or(b.founder) {
+        Some(by) => {
+            let by = g.player_get_civilization_description(by);
+            g.log.msg(turn, b.founder, || format!("{name} is born of {by}"));
+        }
+        None => g.log.msg(turn, None, || format!("{name} rises")),
+    }
     Some(p)
 }
 

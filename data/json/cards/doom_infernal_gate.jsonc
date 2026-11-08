@@ -1,0 +1,10 @@
+// A22 The Infernal Gate Opens (docs/DECKS_ROUND8.md section B, the Host of Nyx as reworked in C.5
+// and C.6; the Armageddon card is code: crates/ffh-core/src/deck/doom_cards.rs, its rules
+// crates/ffh-core/src/ffh/cards/new_civs_2.rs). It brings the Infernals that exist, as the Infernal
+// Pact does (Game::infernals_arrive), never a copy of them.
+{
+  "text": {
+    "TXT_KEY_DOOM_INFERNAL_GATE": "The Infernal Gate Opens",
+    "TXT_KEY_DOOM_INFERNAL_GATE_HELP": "The Infernals arrive as with the Infernal Pact, beside the evil civilization with the most cities: Hyborem and his host on the best free site within 4 plots of its borders. They know its techs, join its wars and have +4 attitude toward it. The Infernals come once a game: the card is not played if they have been in play, without an evil civilization with a city, without a free player slot, or under No Hyborem or Basium."
+  }
+}
