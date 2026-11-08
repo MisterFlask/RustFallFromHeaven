@@ -1583,6 +1583,8 @@ impl Game {
     /// slot's own (the AI's).
     pub fn infernals_arrive(&mut self, patron: PlayerId, plot: PlotIdx, pact: bool) -> PlayerId {
         let d = self.d;
+        let p = patron;
+        let best_plot = plot;
         let hyborem = d.t::<LeaderHeadType>("LEADER_HYBOREM");
         let infernal = d.t::<CivilizationType>("CIVILIZATION_INFERNAL");
         let infernal_player = self.add_player_advanced(None, hyborem, infernal);
