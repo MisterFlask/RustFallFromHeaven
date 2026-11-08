@@ -98,7 +98,8 @@ fn ai_ships_an_army_overseas_and_takes_an_enemy_city() {
 
     // The attacker has the whole tech tree (so its capital can train a real attacker and
     // `can_take_city` can judge the assault); the enemy stays primitive.
-    for tech in d.techs.keys() {
+    // Every tech but the cards (a card is a great person's; its world spells would change the game).
+    for tech in d.techs.keys().filter(|&t| d.techs[t].card.is_none()) {
         g.team_set_has_tech(at, tech, true, Some(attacker), false, false);
     }
 
@@ -183,7 +184,8 @@ fn ai_takes_a_defended_overseas_city_with_a_small_transport() {
     let target = g.players[enemy].capital_city.expect("enemy founded a city");
     assert_ne!(g.map.plots[g.city_plot(capital)].area, g.map.plots[g.city_plot(target)].area, "cities on different landmasses");
 
-    for tech in d.techs.keys() {
+    // Every tech but the cards (a card is a great person's; its world spells would change the game).
+    for tech in d.techs.keys().filter(|&t| d.techs[t].card.is_none()) {
         g.team_set_has_tech(at, tech, true, Some(attacker), false, false);
     }
 

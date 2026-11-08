@@ -454,6 +454,18 @@ impl Game {
         } else {
             EngageResult::Held
         };
+        // Card: Founding of the Dawn Knights (docs/CARDS.md): the winners that hold the Vow heal
+        // fully after a battle won against units of evil civilizations.
+        let won = match post.result {
+            EngageResult::Taken | EngageResult::Cleared => Some(Side::Attacker),
+            EngageResult::Repulsed => Some(Side::Defender),
+            EngageResult::Held => None,
+        };
+        if let Some(w) = won {
+            let winners: Vec<UnitId> = e.of(w).filter(|&i| r.survived(i)).map(|i| e.units[i]).filter(|&u| self.engage_alive(u)).collect();
+            let losers: Vec<PlayerId> = e.of(w.other()).map(|i| e.owners[i]).collect();
+            crate::ffh::cards::new_civs::dawn_vow_heal(self, &winners, &losers);
+        }
 
         // 10. Armies.
         for p in players {

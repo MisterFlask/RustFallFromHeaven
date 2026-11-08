@@ -505,6 +505,13 @@ impl Game {
         let mut modifier = term!(log, fortify_modifier, self.unit_fortify_modifier(u), TermSource::Fortify);
         if self.plot_is_city(p, true, Some(team)) {
             modifier += term!(log, city_defense_modifier, self.unit_city_defense_modifier(u), TermSource::UnitCityDefense);
+            // Card: the Free City Charter (docs/CARDS.md): the city's own defence for the units in it.
+            if let Some(c) = self.map.plots[p].plot_city {
+                let pct = self.city_defender_defense(c);
+                if pct != 0 {
+                    modifier += log.push(pct, || TermSource::CityDefense);
+                }
+            }
         }
         if self.plot_is_hills(p) {
             modifier += term!(log, hills_defense_modifier, self.unit_hills_defense_modifier(u), TermSource::UnitHillsDefense);

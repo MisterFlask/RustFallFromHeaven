@@ -13,11 +13,20 @@ import { SPRITES } from "./iso/sprites.js";
 /** The sizes a portrait is drawn at, CSS px: the whole painting at large, its face below that. */
 export const PORTRAIT = { large: 192, medium: 80, small: 40 };
 
+/** The leaders of the civilizations born from the great-person cards (docs/CARDS.md), shown with
+ *  another leader's portrait until they have their own. */
+const PORTRAIT_ALIASES = {
+  LEADER_AURELIAN: "valledia", LEADER_HALRIC: "sabathiel", LEADER_AINE: "amelanchier", LEADER_VESK: "hannah",
+  LEADER_BURGOMASTER: "cardith",
+};
+
 /** The sprite key of leader type `type` ("LEADER_OS-GABELLA" -> "leader_os_gabella"; every random
  *  choice shares "leader_random"), or null when there is no such portrait. */
 export function portraitKey(type) {
   if (!type) return null;
-  const k = /^LEADER_RANDOM/.test(type) ? "random" : type.replace(/^LEADER_/, "").toLowerCase().replace(/-/g, "_");
+  const k = /^LEADER_RANDOM/.test(type)
+    ? "random"
+    : PORTRAIT_ALIASES[type] ?? type.replace(/^LEADER_/, "").toLowerCase().replace(/-/g, "_");
   return Object.hasOwn(SPRITES, `leader_${k}`) ? `leader_${k}` : null;
 }
 

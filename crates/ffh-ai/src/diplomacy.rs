@@ -58,6 +58,20 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
     if b.feat_accomplished[FeatType::FEAT_TRUST] {
         out.push(("the Trust spell", 2));
     }
+    // The rules' attitude modifiers (C++ `AI_getAttitudeExtra`: FfH's events and spells, a
+    // civilization's birth from a card, docs/CARDS.md) and a born civilization's leaning toward an
+    // alignment (`Player::alignment_attitude`). They are on FfH's scale, where 4 is about a step;
+    // here 2 is one, so they count half (as the Trust spell does).
+    let extra = a.ai_attitude_extra[other] / 2;
+    if extra != 0 {
+        out.push(("attitude modifier", extra));
+    }
+    if let Some(alignment) = b.alignment {
+        let lean = a.alignment_attitude[alignment] / 2;
+        if lean != 0 {
+            out.push(("alignment leaning", lean));
+        }
+    }
     // What `other` did to us with cultural actions (docs/CULTURE.md): a point of memory per
     // completed unrest-sized act, fading a point every few turns; two points are a step.
     let [hostility, friendship] = a.culture_memory[other];

@@ -106,6 +106,14 @@ comment naming the card.
 **Records:** each card that changes the rules is listed in docs/PORTING.md ("Changes from
 FFH2", the decks entry). Its row in section 5 below gets its status.
 
+**New data keys** (each has its reader; the loader warns about any key nothing reads):
+
+| Table | Key | What |
+|---|---|---|
+| `civilizations` | `unit_promotion` | a promotion every land unit of the civilization gets when it is created (`unit_init`) |
+| `traits` | `unit_rush_gold` | its player buys units at this many gold per hammer left, under any civic (the hurry rules) |
+| `buildings` | `defender_defense` | percent more defence for the units fighting in the city (the most of its buildings; an engagement's defence terms) |
+
 ## 3. Card world spells and remote targets
 
 - **A card's world spell** is a spell with `"once": true` and `"tech_prereq"` its card. Any unit of
@@ -119,8 +127,8 @@ FFH2", the decks entry). Its row in section 5 below gets its status.
   - `unit_cast_at(u, spell, target)` sets `Game::spell_target` for the spell's result to read.
   - A targeted spell cast without a target does nothing.
 - **Shared helpers** for the cards go in `crates/ffh-core/src/ffh/cards/world.rs`: a region (the
-  largest connected group of unowned plots of a terrain or feature), a new civilization born
-  mid-game, ...
+  largest connected group of unowned plots of a terrain or feature), city sites, a new
+  civilization born mid-game (section 6), ...
 
 ## 4. The Armageddon deck
 
@@ -155,3 +163,46 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | Card | Suit | Status |
 |---|---|---|
 | (the deck itself: deal, discover, once spells, targets, Armageddon deck) | | built |
+| G12 The Patrian Awakening | Sage | built (batch B4) |
+| P18 Founding of the Dawn Knights | Prophet | built (batch B4) |
+| P19 The Fey Court Awakens | Prophet | built (batch B4) |
+| M07 The Condottieri Free State | Merchant | built (batch B4) |
+| Free City Charter (reworked) | Engineer | built (batch B4) |
+| Mirror Colony | Sage | built (batch B4) |
+
+## 6. New civilizations
+
+`world::birth(g, &Birth)` gives a new civilization a player slot mid-game; the cards of batch B4
+(`cards/new_civs.rs`) use it, and later cards can.
+
+- **The slot:** `world::open_slot`, a spare slot never alive (`GameSetup::SPARE_SLOTS`, 4, shared
+  with Hyborem and Basium; never a crusade Host's). With none free, a card that makes a
+  civilization cannot be cast: its requirement tests the slot.
+- **Who it is:** a civilization and a leader of its own (`civilizations` and `leader_heads` in the
+  card's file; neither playable nor AI-playable, so no game starts with it and no colony takes it).
+  The slot is added as the Infernals' is (`add_player_advanced`, on a team of its own) and played
+  by the founder's controller. Its parent is the founder (`Player::parent`).
+- **What it starts with** (`Birth`): the cities it founds at given plots (`NewCity`: the first its
+  capital, each with its buildings and units), or cities of the founder it takes over (`release`:
+  a trade, so they keep their buildings, with their culture and garrison: the founder's land
+  combat units in them but heroes and the caster), a hero in its capital, every tech the founder's
+  team knows but the cards (and `techs`), a state religion in all its cities, gold.
+- **Its relation to the founder:** it has met it. As a vassal (`vassal`) it is the founder's, by
+  the ordinary vassal rules (it joins its master's wars). **Where vassals cannot be** (No Vassal
+  States, or a founder that is a vassal itself) it signs open borders and a defensive pact with the
+  founder instead, a deal like any other. No other war or peace is forced (docs/DECKS.md, principle
+  27): its leanings are attitude modifiers, toward the founder (`ai_attitude_extra`) and toward
+  every civilization of an alignment (`Player::alignment_attitude`).
+- **The AI's attitude** (`ffh-ai`, `diplomacy::relation_parts`) counts both, at half (they are on
+  FFH's scale, where 4 is about a step; the AI's step is 2, as for the Trust spell).
+- **City sites** (`world::free_site`, `site_value`, `best_sites`, `near_borders`): a free site is
+  land a city can stand on (`player_can_found`'s terrain, feature, peak, permanent improvement and
+  mana rules), with no unit, no city within `MIN_CITY_RANGE`, unowned; the best are taken by the
+  land, bonuses, water and fresh water in their radius.
+- **Its own rules** are data where they can be: a civilization's `unit_promotion` (the Fey
+  Glamour, the Dawn Vow), a civilization trait (`civ_trait`: the Free Companies'), a palace's
+  `free_building` (the Patrians' Mage Guilds), unique units in its `units`. What data cannot say is
+  a rule hooked where it lives (section 2), each naming its card.
+- **Art:** a new leader shows an existing leader's portrait and a new unit an existing unit's
+  sprite (`PORTRAIT_ALIASES` in `crates/ffh-play/assets/app/portraits.js`, `UNIT_ALIASES` in
+  `iso.js`).

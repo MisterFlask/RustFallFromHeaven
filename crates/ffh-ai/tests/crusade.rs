@@ -90,7 +90,8 @@ fn scenario(seed: u32, defender: ControllerRef) -> Game {
         g.city_set_population(c, 4);
     }
     for t in [g.players[PlayerId(0)].team, g.players[PlayerId(1)].team] {
-        for tech in d.techs.keys() {
+        // Every tech but the cards (a card is a great person's; its world spells would change the game).
+        for tech in d.techs.keys().filter(|&t| d.techs[t].card.is_none()) {
             g.team_set_has_tech(t, tech, true, None, false, false);
         }
     }

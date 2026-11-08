@@ -186,6 +186,9 @@ const UNIT_ALIASES = {
   divided_soul: ["spectre"], eidolon: ["spectre"], diseased_corpse: ["skeleton"], pyre_zombie: ["skeleton"],
   drown: ["skeleton"], ogre: ["ogre_embers"], ogre_warchief: ["ogre_embers"], stoneskin_ogre: ["ogre_embers"],
   minotaur: ["ogre_embers"], brigit_held: ["brigit"], rosier_oathtaker: ["rosier"],
+  // The great-person cards' new units (docs/CARDS.md), until they have sprites of their own.
+  archon: ["archmage", "mage"], dawn_knight: ["paladin"], grand_master: ["paladin"], erlking: ["treant"],
+  captain_general: ["champion"],
 };
 
 /** The last resorts by combat type and domain. */

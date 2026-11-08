@@ -41,6 +41,15 @@ impl Game {
         d.buildings.keys().filter(|&b| d.buildings[b].sentinels > 0 && self.city_num_building(c, b) > 0).map(|b| d.buildings[b].sentinels as usize).max().unwrap_or(0)
     }
 
+    /// Card: the Free City Charter (docs/CARDS.md). The percent more defence city `c` gives the
+    /// units fighting in it: the most any of its buildings gives (`defender_defense`).
+    pub fn city_defender_defense(&self, c: CityId) -> i32 {
+        static WITH: std::sync::OnceLock<Vec<BuildingType>> = std::sync::OnceLock::new();
+        let d = self.d;
+        let with = WITH.get_or_init(|| d.buildings.keys().filter(|&b| d.buildings[b].defender_defense != 0).collect());
+        with.iter().filter(|&&b| self.city_num_building(c, b) > 0).map(|&b| d.buildings[b].defender_defense).max().unwrap_or(0)
+    }
+
     /// Sentinel `k`'s damage in percent of its max HP (100: breached).
     pub fn city_sentinel_damage(&self, c: CityId, k: usize) -> i32 {
         self.cities[c].sentinel_damage.get(k).copied().unwrap_or(0).clamp(0, 100)

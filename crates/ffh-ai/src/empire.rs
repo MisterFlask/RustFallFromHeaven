@@ -21,7 +21,10 @@ pub fn manage(g: &mut Game, p: PlayerId) {
 /// once the anger from the last one has passed.
 fn hurry(g: &mut Game, p: PlayerId) {
     let d = g.d;
-    let hurries: Vec<HurryType> = d.hurries.keys().filter(|&h| g.player_can_hurry(p, h)).collect();
+    // Card: the Condottieri Free State (docs/CARDS.md): a player that buys units at its trait's
+    // rate hurries them with gold whatever its civics.
+    let rush = g.player_unit_rush_gold(p) > 0;
+    let hurries: Vec<HurryType> = d.hurries.keys().filter(|&h| g.player_can_hurry(p, h) || rush && d.hurries[h].gold_per_production > 0).collect();
     if hurries.is_empty() {
         return;
     }
@@ -36,7 +39,9 @@ fn hurry(g: &mut Game, p: PlayerId) {
                 let info = &d.units[u];
                 let plot = g.city_plot(c);
                 let threatened = crate::production::local_threat(g, p, plot, 2) > crate::production::garrison(g, p, plot).1;
-                info.found || info.work_rate > 0 && info.combat == 0 || threatened && info.combat > 0
+                // A unit bought at the Condottieri's rate is worth its gold whenever it fights.
+                let cheap = info.combat > 0 && hurries.iter().any(|&h| g.city_unit_rush_gold(c, h).is_some());
+                info.found || info.work_rate > 0 && info.combat == 0 || threatened && info.combat > 0 || cheap
             }
             None => false,
         };

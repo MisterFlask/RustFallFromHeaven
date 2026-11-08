@@ -1929,9 +1929,12 @@ mod tests {
 
         // Over all (promotion, unit) pairs; the count comes from an independent evaluation of
         // the C++ rules over the XML. FFH2 has no leader promotions, so bLeader changes nothing.
+        // The game's own promotions and units: the cards' come after them (docs/CARDS.md).
+        let own_promotions = d.promotions.len() - ffh_data::card_entry_count("promotions");
+        let own_units = d.units.len() - ffh_data::card_entry_count("units");
         let mut n = 0;
-        for p in d.promotions.keys() {
-            for u in d.units.keys() {
+        for p in d.promotions.keys().take(own_promotions) {
+            for u in d.units.keys().take(own_units) {
                 let v = is_promotion_valid(d, p, u, false);
                 assert_eq!(v, is_promotion_valid(d, p, u, true));
                 n += v as usize;
@@ -1942,7 +1945,7 @@ mod tests {
         // +263 in all: this game's UNIT_SKIRMISHER, with the Archer's promotions, below;
         // +1 pair: Formation, free on the Phalanx's class (docs/UNIT_ROLES.md), on the Nullstone
         // Golem, which has no unit combat.)
-        assert_eq!((n, d.promotions.len() * d.units.len()), (26629, 86001));
+        assert_eq!((n, own_promotions * own_units), (26629, 86001));
         let archer = d.t::<UnitType>("UNIT_ARCHER");
         let skirmisher = d.t::<UnitType>("UNIT_SKIRMISHER");
         let takes = |u: UnitType| d.promotions.keys().filter(|&p| is_promotion_valid(d, p, u, false)).collect::<Vec<_>>();
