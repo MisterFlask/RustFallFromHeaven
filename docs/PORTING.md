@@ -324,6 +324,33 @@ flag.
       units of a civ at peace on land without a declaration (not vassals, masters, barbarians or
       crusade hosts). The war is declared at the battle, whose defenders have no fortification and
       no defensive strikes; the colours are spent by that battle.
+    - *Astral Leap* (Sage, III, Pass Through the Ether; world spell at a plot): cast by a unit in
+      one of your cities at a visible land plot with no unit or city of another team; the city's
+      units that can enter it move there with no moves left (not an attack).
+    - *Seal of Binding* (Sage, III, Strength of Will; world spell at a unit): a world unit or hero
+      you see, of a civ at war with you or of the barbarians, cannot move, attack or cast for 20
+      turns; it still defends.
+    - *Masque of the Red Death* (Bard, evil, III, Malevolent Designs; world spell at a city): a
+      city you see of a civ at war with you, of 2 or more population, loses half its population.
+    - *Purchase Charter* (Merchant, III, Mercantilism; world spell at a city): buy a city of a civ
+      you have met and are at peace with, within 6 plots of your borders, of 5 or less population,
+      not a capital, holy city or world-wonder city, for 100 gold a population and 2 gold a hammer
+      of its buildings; the owner gets the gold and -4 attitude toward you.
+    - *Cultural Annexation* (Bard, II, Philosophy; world spell at a city): a foreign city, not a
+      capital, within 3 plots of your borders, where your culture is at least 30% of its plot's,
+      joins you as in a culture flip; the owner gets -4 attitude toward you.
+    - *Transmutation Charter* (Merchant, II, Alteration; world spell at a choice): a resource on a
+      plot of yours becomes another of its group (strategic, luxury or food; water for water, land
+      for land).
+    - *Bazaar of Wonders* (Merchant, III, Mercantilism; world spell at a city): a city of yours
+      building a world wonder (not a victory wonder) completes it at once, for 3 gold a hammer it
+      still needs.
+    - *Call of the Faithful* (Prophet, III, Theology; world spell): the state religion's heroes
+      that no player has alive join you, in its holy city if yours, else your capital.
+    - *Grand Order* (Merchant, III, Guilds; world spell): each city's current unit or non-wonder
+      building gets up to 10 turns of the city's production, completing it if enough.
+    - *Mammon's Bargain* (Merchant, evil, II, Currency; world spell): +1500 gold and +10 to the
+      Armageddon counter.
 
 **Balance** (after `classic-1`, each the owner's decision)
 
