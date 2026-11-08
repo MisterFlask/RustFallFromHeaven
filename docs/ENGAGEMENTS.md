@@ -318,6 +318,15 @@ attacker (`engagement_attacker_slots_change`); a unit acts otherwise in round 1
 (`engage_first_round`); promotions give the first STRIKE or CHARGE of each round a pattern
 (`first_melee_pattern`), a heal of the ally behind at each round's end (`heal_behind`, an event with
 pass 0) or an attack of a damage type (`attack_damage_type`). None of them draws a random number.
+The battle kit of a unit type or promotion (`ffh_data::BattleKit`; `engagement/more_cards.rs`,
+`formation/more_cards.rs`): a shield bearer in the front row takes the SHOOT, BOMBARD and SPELL
+aimed down its lanes at less damage (`battle_shield`); arrows take the standing Sentinels first, as
+stones (`shots_at_walls`); drums keep fear off their side and quicken it in round 1 (`battle_drums`);
+a charge reaches anywhere, whatever the ground (`charge_anywhere`); a unit immune to spell damage
+(expected 0: casters aim elsewhere), charms or hexes (`battle_immune`); and Sentinels from the field
+for the defender (a unit's `battle_sentinels`, an improvement's: whole each battle, at no slot,
+after the city's in the front row, holding no plot; an improvement's `engagement_defense` grows them
+and the defenders' Dv). None of them draws a random number either.
 
 **Large units** (`bLarge` in `units.jsonc`): the spec's Hill Giant, War Elephant and Elephant,
 the dragons (Abashi, Acheron, Drifa, Eurabatres), every golem (Bone, Clockwork, Flesh, Iron,

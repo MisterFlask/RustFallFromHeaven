@@ -397,9 +397,9 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | Leviathan Harpoons (`merchant_leviathan_harpoons`) | Merchant | built (the large ships are the tier 4 ones, the Man-o-War and the Queen of the Line) |
 | Runeguard (`engineer_runeguard`) | Engineer | built (`battle_immune`; FFH2's `immune_to_magic` is still map only) |
 | Witch-Hunter (`prophet_witch_hunter`) | Prophet | built |
-| Gryphon Riders (`bard_gryphon_riders`) | Bard | built |
+| Gryphon Riders (`bard_gryphon_riders`) | Bard | built (withdrawal 25%, as the other riders: not in the spec's sheet) |
 | The Gilded Legion (`merchant_gilded_legion`) | Merchant | built (the choice is a spell of a unit in the city) |
 | Cairn Golem (`engineer_cairn_golem`: Raise the Cairn) | Engineer | built |
 | Automatons (`engineer_automatons`) | Engineer | built (no supply) |
 | Bastion (`engineer_bastion`) | Engineer | built (its Sentinels fight when its plot is attacked, not in its stack's attacks) |
-| Lantern of Lugus (`prophet_lantern_of_lugus`: the Dawnbringer) | Prophet | built (no Glare) |
+| Lantern of Lugus (`prophet_lantern_of_lugus`: the Dawnbringer) | Prophet | built (no Glare; an archer's rows and levers, its shots holy) |
