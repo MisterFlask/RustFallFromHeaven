@@ -82,7 +82,13 @@ defender's: it fields its soldiers in `S - n` slots plus its `n` Sentinels, the 
 plot next to it holds a land unit at war with the city's owner (`unit_is_enemy`, so barbarians,
 animals and hidden-nationality units count), with strength above 0, that the city's team sees
 **(default)**. A pure test of the map (`Game::city_is_besieged`, `city_besiegers`): no state, nothing
-saved. A lone enemy counts; the defender can sally out and kill it.
+saved. A lone enemy counts; the defender can sally out and kill it. A great-person card adds one
+case (docs/CARDS.md, the Siege Colossus): a unit with `bombard_besieges` that bombards the city
+(from up to its `bombard_range`, 2 plots) makes it count as besieged until the city's next turn
+(`City::besieged_by_bombard`, cleared at the city's turn after the Sentinels' repair). Other cards
+change a city's Sentinels: the Living Walls give them the Treant's attack and HP
+(`sentinel_unit`), the Arcane Fortress halves the damage they take from bombards, BOMBARD and
+SHOOT (`sentinel_ranged_resist`).
 
 **What a siege does:**
 - **Units do not heal from the city** (the owner's rule): on a besieged city's plot a unit's heal

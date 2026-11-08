@@ -52,6 +52,7 @@ use ffh_data::{ActionKind, AttackPattern, BattleCharm, Defines, RowActions, ROWS
 
 use crate::rng::Rng;
 
+pub mod arms_cards;
 #[cfg(test)]
 mod tests;
 
@@ -425,6 +426,8 @@ pub struct Fighter {
     /// Its unit combat as a bit (0: none), and the unit combats it goes for first (a mask).
     pub class_bit: u64,
     pub prefer: u64,
+    /// What the great-person cards give it in a battle (docs/CARDS.md; [`arms_cards`]).
+    pub arms: arms_cards::Arms,
 }
 
 impl Fighter {
@@ -468,6 +471,7 @@ impl Fighter {
             round_pct: [100; ROWS],
             class_bit: 0,
             prefer: 0,
+            arms: arms_cards::Arms::default(),
         }
     }
 
@@ -629,6 +633,7 @@ impl Formation {
             x.mul(100 + self.params.charge_bonus);
         }
         x.mul(p.pct);
+        self.arms_taken(t, kind, &mut x);
         x.mul(self.fighters[h].round_pct[(round.max(1) as usize - 1).min(ROWS - 1)]);
         if let Extra::Pattern(pct) = extra {
             x.mul(pct);
@@ -757,6 +762,8 @@ pub enum Note {
     NoTarget,
     /// A heal, and no ally is hurt.
     NoOneHurt,
+    /// Held: its STRIKE, CHARGE or STAB was spent (a card: the Moat; [`arms_cards`]).
+    Held,
 }
 
 /// One hit of an action, on its target or (`splash`) a neighbour.
@@ -1211,6 +1218,9 @@ impl<'a> Run<'a> {
                     break;
                 }
             }
+            if !ended {
+                self.arms_round_end();
+            }
             round += 1;
         }
         let n = f.len();
@@ -1245,7 +1255,7 @@ impl<'a> Run<'a> {
     fn act(&mut self, h: usize, rng: &mut impl BattleRng) {
         let f = self.f;
         let round = self.round as i32;
-        let row_kind = f.actions_at(h, self.s.row[h]).kind;
+        let row_kind = f.arms_kind(h, f.actions_at(h, self.s.row[h]).kind, round);
         let kind = if row_kind == ActionKind::Charge && !f.ground.flanking() { ActionKind::Strike } else { row_kind };
         let mut ev = Event {
             round: self.round,
@@ -1260,6 +1270,11 @@ impl<'a> Run<'a> {
             note: None,
         };
         self.spell_now = None;
+        if f.arms_held(h, kind, round) {
+            ev.note = Some(Note::Held);
+            self.push(ev);
+            return;
+        }
         // A caster's charms and hexes first, one an action, but not in the last round (they draw
         // nothing).
         if kind == ActionKind::Spell && self.s.charms_cast[h] < f.fighters[h].charms.len() && round < f.params.rounds {
@@ -1344,7 +1359,7 @@ impl<'a> Run<'a> {
         // An attack pattern's extra hits take the place of a collateral splash; a known spell's
         // splash stays the spell's.
         let spell_pattern = if kind == ActionKind::Spell { spell.pattern } else { None };
-        let pattern = spell_pattern.unwrap_or(f.fighters[h].patterns[self.s.row[h] as usize]);
+        let pattern = spell_pattern.unwrap_or_else(|| f.arms_pattern(h, self.s.row[h], kind, round, self.pass));
         let pattern_pct = if spell_splash { None } else { f.params.pattern_pct(pattern) };
         let collateral = pattern_pct.is_none() && f.collateral_splash(h, kind);
         let around = match pattern_pct {
@@ -1451,6 +1466,7 @@ impl<'a> Run<'a> {
         let pct = if crit { p.crit_damage_pct.max(0) as i64 } else { 100 };
         // The charms and hexes: percent more damage dealt by the hitter and taken by the target.
         let mods = (100 + self.s.dmg_mod[h]).max(0) as i64 * (100 + self.s.taken_mod[t]).max(0) as i64;
+        let mods = mods * self.arms_dealt_pct(h) / 100;
         let mut raw = (expected as i64 * pct * r as i64 / 10_000 * mods / 10_000).clamp(1, i32::MAX as i64) as i32;
         if kind.physical() && !f.fighters[h].pierce {
             raw = (raw - f.fighters[t].armor.max(0)).max(1);

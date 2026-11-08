@@ -73,6 +73,9 @@ map unit UNIT_DUIN|UNIT_GREATER_WEREWOLF|UNIT_RAVENOUS_WEREWOLF -> unit/werewolf
 map unit UNIT_MUIRIN -> unit/drown
 map unit UNIT_BOARDING_PARTY -> unit/guybrush
 map unit UNIT_BEAST_OF_AGARES -> unit/pit_beast
+; ---- the great-person cards' units (docs/CARDS.md), until they have sprites of their own
+map unit UNIT_SIEGE_COLOSSUS -> unit/war_machine
+map unit UNIT_HERALD_OF_AGARES -> unit/balor
 map unit UNIT_IRA -> unit/chaos_marauder
 map unit UNIT_SAVEROUS -> unit/chaos_marauder remap=It,ck,CT,RS
 map unit UNIT_MINOTAUR -> unit/berserker

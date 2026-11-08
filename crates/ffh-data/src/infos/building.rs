@@ -151,6 +151,11 @@ pub struct BuildingInfo {
     pub population_commerce: [i32; CommerceType::NUM],
     /// Percentage points added to `SENTINEL_REPAIR_PERCENT` for its city's Sentinels.
     pub sentinel_repair_change: i32,
+    // ---- this game's own: the great-person cards' keys (docs/CARDS.md, section 2) ----
+    /// What it does to its city's battles (`battle_cards::BuildingBattle`).
+    pub battle: crate::infos::BuildingBattle,
+    /// `exclusive_with`: a city that has a building of one of these classes cannot build it.
+    pub exclusive_with: Vec<BuildingClassType>,
 
     // ---- type references ----
     /// C++ `getBuildingClassType()`, XML `<BuildingClass>`.
@@ -416,6 +421,8 @@ pub fn read_building(rd: &Rd) -> BuildingInfo {
         bonus_yield_change: keyed_arrays(rd, "bonus_yield_changes", "bonus_yield_change", "bonus_type", "yield_changes"),
         population_commerce: rd.commerces("population_commerces"),
         sentinel_repair_change: rd.int("sentinel_repair_change"),
+        battle: crate::infos::read_building_battle(rd, &rd.string("type")),
+        exclusive_with: rd.ref_list::<BuildingClassType>("exclusive_with"),
 
         building_class_type: rd.rf("building_class"),
         special_building_type: rd.rf("special_building_type"),

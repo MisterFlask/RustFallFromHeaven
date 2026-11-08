@@ -125,6 +125,32 @@ help):
 | buildings | `conquest_keeps_all` | Hall of Judgment | the owner's conquests keep every building that can be captured, and lose no population |
 | buildings | `naval_capture_percent` | Prize Courts | the owner's ships capture the ships they defeat with this chance |
 | promotions | `false_colours` | False Colours | the unit may attack units of a civ at peace without a declaration; the war is declared at the battle, whose defenders get no defensive strikes and no fortification |
+| buildings | `pre_battle_damage` `{row, percent, damage_type}` | Thunderhead Tower | at the start of every battle at its city, each attacking unit in `row` (`FRONT`, `MIDDLE`, `REAR`) loses `percent` of its max HP, cut by its resistance to `damage_type`, never below 1 HP; after the morale check and the defensive strikes, not on units that sat out; logged as `LogEvent::BuildingStrike` |
+| buildings | `sentinel_ranged_resist` | Arcane Fortress | percent less damage its city's Sentinels take from bombards on the map and from BOMBARD and SHOOT in battle |
+| buildings | `sentinel_unit` | Living Walls | its city's Sentinels fight with this unit type's attack and HP (grown by the city's defence as before; one cell each) |
+| buildings | `hold_melee_rounds` | Moat | in the first battle at its city each game turn (no battle report at the city this turn), the attacker's STRIKE, CHARGE and STAB actions in rounds 1 to N are spent (`Note::Held`, nothing drawn) |
+| buildings | `last_stand_damage` | Last Stand Hymn | in a battle at its city, once half the defender's committed units (not Sentinels) have fallen, the rest deal this percent more damage |
+| buildings | `never_lost_damage` | The Unconquered City | while its city has never changed hands (`never_lost` and its original owner owns it), its defenders (units and Sentinels) deal this percent more damage (the pairs' percentage) |
+| buildings | `exclusive_with` `[class]` | Elemental Forge | a city with a building of one of these classes cannot build it |
+| improvements | `engagement_attacker_slots_change` | Trench | the attacker's slots in battles on its plot (before the minimum; `SlotSource::Improvement`) |
+| builds | `all_workers` | Trench | every unit type that builds an improvement can do it (`GameData::derive` adds it to their `builds`: a card's file cannot edit the units') |
+| units | `engage_first_round` `{action, pattern}` | Siege Colossus | what it does in a battle's first round from any row, with the row's count, in place of the row's action; its pattern then (`SINGLE` without one) |
+| units | `bombard_range` | Siege Colossus | it bombards a city this many plots away (a city on a plot its team has revealed; absent: the adjacent ones) |
+| units | `bombard_besieges` | Siege Colossus | a city it bombards counts as besieged until the city's next turn (`City::besieged_by_bombard`) |
+| promotions | `first_melee_pattern` | Wardance | the attack pattern of its unit's first STRIKE or CHARGE each round (pass 1) |
+| promotions | `heal_behind` | Templar | at the end of each round its unit heals the nearest ally behind it in its lanes this many HP (an event with pass 0; nothing drawn) |
+| promotions | `unit_classes` `[class]` | Templar | only units of these classes may take it |
+| promotions | `attack_damage_type` | Elemental Forge | its unit's physical attack deals this damage type: the target's resistance to it cuts the attack (as a typed strength's) |
+
+The battle effects are in `crates/ffh-core/src/engagement/arms.rs` (the set-up, `Game`) and
+`engagement/formation/arms_cards.rs` (the resolver, a fighter's `Arms`); their AI in
+`crates/ffh-ai/src/cards_battle_arms.rs`. `cards::end_turn` (`END_TURNS`) runs a batch's AI once the
+player's units have moved (the Siege Colossus bombards then, so its stack is not held back).
+
+A card's improvement comes after the game's own (`GameData::own_improvements`). Map generation
+draws nothing for one that never appears (`appearance_probability` 0, as the Trench), so the cards
+leave the generated maps as they were. Tests that count or check a table's entries take its own
+entries only (`card_entry_count`): the cards' units, buildings and promotions follow their own rules.
 
 ## 3. Card world spells and remote targets
 
@@ -203,3 +229,16 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | P16 Call of the Faithful | Prophet | built (world spell; B3) |
 | M19 Grand Order | Merchant | built (world spell; B3) |
 | M18 Mammon's Bargain | Merchant | built (world spell; B3) |
+| G14 Thunderhead Tower | Sage | built (`sage_thunderhead_tower.jsonc`) |
+| G16 Arcane Fortress | Sage | built (`sage_arcane_fortress.jsonc`) |
+| Elemental Forge (G09's rework) | Sage | built: the Fire Forge and the Storm Forge (`sage_elemental_forge.jsonc`) |
+| P01 Living Walls | Prophet (the Fellowship of Leaves) | built (`prophet_living_walls.jsonc`) |
+| P04 Templar | Prophet (the Order) | built: a promotion for Crusaders (`prophet_templar.jsonc`) |
+| P10 Herald of Agares | Prophet (the Ashen Veil) | built (`prophet_herald_of_agares.jsonc`) |
+| E04 Siege Ballista | Engineer | built (`engineer_siege_ballista.jsonc`) |
+| E05 Trench | Engineer | built (`engineer_trench.jsonc`) |
+| E14 Moat | Engineer | built (`engineer_moat.jsonc`) |
+| E15 Siege Colossus (the owner's rework) | Engineer | built (`engineer_siege_colossus.jsonc`) |
+| B11 The Unconquered City | Bard | built (`bard_unconquered_city.jsonc`) |
+| B14 Last Stand Hymn | Bard | built (`bard_last_stand_hymn.jsonc`) |
+| B15 Wardance | Bard | built (`bard_wardance.jsonc`) |

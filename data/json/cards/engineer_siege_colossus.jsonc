@@ -1,0 +1,88 @@
+// E15 Siege Colossus, the owner's rework (docs/DECKS_ROUND8.md C.7): national 1, hard; 400 hammers;
+// large, tier 4, HP 240, attack 120, defence 100, front row. Round 1: BOMBARD (the Sentinels first),
+// double damage against walls; rounds 2-3: STRIKE with TRAMPLE. On the map it bombards a city from 2
+// plots away (rate 30), and the city counts as besieged until its next turn.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_SIEGE_COLOSSUS",
+      "description": "TXT_KEY_TECH_CARD_SIEGE_COLOSSUS",
+      "help": "TXT_KEY_TECH_CARD_SIEGE_COLOSSUS_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_SIEGE_COLOSSUS_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_MACHINERY"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_SIEGE_COLOSSUS",
+      "description": "TXT_KEY_UNIT_SIEGE_COLOSSUS",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 1,
+      "hard_limit": true,
+      "default_unit": "UNIT_SIEGE_COLOSSUS"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_SIEGE_COLOSSUS",
+      "stats": {"hp": 240, "attack": 120, "defense": 100, "magic": 0, "magic_defense": 75, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 3},
+      "engage_rows": [
+        {"action": "STRIKE", "count": 2, "pattern": "TRAMPLE"},
+        {"action": "STRIKE", "count": 1, "pattern": "TRAMPLE"},
+        {"action": "STRIKE", "count": 1, "pattern": "TRAMPLE"}
+      ],
+      "engage_row_order": ["FRONT", "MIDDLE", "REAR"],
+      "engage_first_round": {"action": "BOMBARD"},
+      "damage_vs_walls": 100,
+      "large": true,
+      "class": "UNITCLASS_SIEGE_COLOSSUS",
+      "unit_combat": "UNITCOMBAT_SIEGE",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_ATTACK",
+      "description": "TXT_KEY_UNIT_SIEGE_COLOSSUS",
+      "civilopedia": "TXT_KEY_UNIT_SIEGE_COLOSSUS_PEDIA",
+      "strategy": "TXT_KEY_UNIT_SIEGE_COLOSSUS_STRATEGY",
+      "military_happiness": true,
+      "military_support": true,
+      "military_production": true,
+      "pillage": true,
+      "mechanized": true,
+      "unit_ais": {"UNITAI_ATTACK": true, "UNITAI_ATTACK_CITY": true},
+      "prereq_tech": "TECH_CARD_SIEGE_COLOSSUS",
+      "cost": 400,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 1,
+      "nuke_range": -1,
+      "combat": 12,
+      "combat_defense": 10,
+      "combat_limit": 100,
+      "xp_value_attack": 8,
+      "xp_value_defense": 4,
+      "bombard_rate": 30,
+      "bombard_range": 2,
+      "bombard_besieges": true,
+      "culture_garrison": 6,
+      "asset": 24,
+      "power": 48,
+      "ai_block_explore": true,
+      "ai_block_patrol": true,
+      "tier": 4
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_SIEGE_COLOSSUS": "Siege Colossus",
+    "TXT_KEY_TECH_CARD_SIEGE_COLOSSUS_HELP": "[ICON_BULLET]Allows the Siege Colossus (one per player, 400 [ICON_PRODUCTION]): large, tier 4, HP 240, attack 120, defence 100; it stands in the front row.[NEWLINE][ICON_BULLET]In battle: round 1, Bombard (the Sentinels first); rounds 2 and 3, Strike with Trample. +100% damage to Sentinels.[NEWLINE][ICON_BULLET]On the map: bombards a city up to 2 plots away (rate 30%); the city counts as besieged until its next turn.",
+    "TXT_KEY_TECH_CARD_SIEGE_COLOSSUS_PEDIA": "A walking tower of bronze and timber, the work of a great engineer and a hundred smiths.",
+    "TXT_KEY_UNIT_SIEGE_COLOSSUS": "Siege Colossus",
+    "TXT_KEY_UNIT_SIEGE_COLOSSUS_PEDIA": "It hurls stones from beyond the reach of the walls, then walks up to them and tears them down.",
+    "TXT_KEY_UNIT_SIEGE_COLOSSUS_STRATEGY": "Bombard the city from two plots away while the army comes up: the city stops repairing and healing. In the assault it breaks the Sentinels in round 1 and tramples the line after."
+  }
+}

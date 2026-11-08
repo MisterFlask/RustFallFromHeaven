@@ -39,6 +39,7 @@ persist_enum!(SlotSource {
     4 => Sentinels(n),
     6 => Minimum,
     7 => Summons(n),
+    20 => Improvement(i),
 });
 
 persist_struct!(LogFighter {
@@ -100,12 +101,13 @@ persist_enum!(LogEvent {
     9 => KillEffect { killer, victim, kind },
     10 => Flee { unit, to },
     11 => MoveIn { units, city },
+    30 => BuildingStrike { building, hits },
 });
 persist_struct!(Event { round, pass, actor, kind, spell, target, hits, heal, knocked, note });
 persist_struct!(Hit { target, dmg, expected, r, crit, miss, killed, withdrew, splash });
 persist_struct!(Heal { target, amount, r });
 persist_struct!(Knock { unit, from, to });
-persist_enum!(Note { 0 => NoTarget, 1 => NoOneHurt });
+persist_enum!(Note { 0 => NoTarget, 1 => NoOneHurt, 10 => Held });
 persist_enum!(CastEffect { 0 => Mod { a_pct, dv_pct }, 1 => Damage(hits), 2 => Summon(b) });
 persist_enum!(SatOutWhy { 0 => Afraid });
 persist_enum!(HealSource { 0 => Medic { b, unit_type, adjacent }, 1 => OnKill, 2 => Spell(s) });

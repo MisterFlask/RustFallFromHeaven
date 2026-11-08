@@ -59,6 +59,10 @@ macro_rules! game_data {
             /// and by how many percent (`ImprovementInfo::tech_research_bonus`), in improvement id
             /// order.
             pub tech_research_bonuses: IdxVec<TechType, Vec<(ImprovementType, i32)>>,
+            /// Set at load: how many improvements are the game's own; the great-person cards'
+            /// come after them (docs/CARDS.md). Map generation draws nothing for a card's
+            /// improvement that never appears, so the cards leave the generated maps as they were.
+            pub own_improvements: usize,
         }
 
         /// (data file, registry class) for every info table, in load order.
@@ -85,7 +89,7 @@ macro_rules! game_data {
                 )*
                 let defines = Defines::from_map(&define_map);
                 // (derived tables are filled by `GameData::derive`)
-                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unlocking_buildings: Vec::new(), population_commerce_buildings: Vec::new(), sentinel_repair_buildings: Vec::new(), bonus_yield_buildings: Vec::new(), tech_research_bonuses: IdxVec::new() }
+                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unlocking_buildings: Vec::new(), population_commerce_buildings: Vec::new(), sentinel_repair_buildings: Vec::new(), bonus_yield_buildings: Vec::new(), tech_research_bonuses: IdxVec::new(), own_improvements: 0 }
             }
 
             /// Everything loaded, one `(name, Debug text)` line per table entry, in a fixed order
@@ -362,6 +366,7 @@ impl GameData {
             docs.push((file.to_string(), doc));
         }
         add_building_variants(&mut docs, &json_dir)?;
+        let own_improvements = docs.iter().find(|(f, _)| f == "improvements.jsonc").and_then(|(_, v)| v.as_arr().map(|a| a.len())).unwrap_or(0);
         let card_text = add_card_files(&mut docs, &json_dir)?;
         let docs = Docs { docs };
 
@@ -395,6 +400,7 @@ impl GameData {
 
         // Pass 2: typed tables.
         let mut gd = GameData::load_tables(&docs, reg, define_map, text);
+        gd.own_improvements = own_improvements;
         gd.barks = std::fs::read_to_string(data_dir.join("text").join("barks.md")).unwrap_or_default();
         for (name, a, b) in &gd.reg.duplicates {
             gd.warnings.push(format!("type {name} registered as both {a} and {b}"));
@@ -426,7 +432,28 @@ impl GameData {
             }
         }
         self.derive_building_tiers();
-        // This game's (docs/CARDS.md): a build's `built_by` classes can make it.
+        self.derive_card_builds();
+    }
+
+    /// The great-person cards' builds, added to the units' `builds` (a card's file cannot add to
+    /// them; docs/CARDS.md): an `all_workers` build to every unit type that builds one of the
+    /// game's own improvements, and a build to the units of its `built_by` classes.
+    fn derive_card_builds(&mut self) {
+        let card_builds: Vec<BuildType> = self.builds.keys().filter(|&b| self.builds[b].all_workers).collect();
+        if !card_builds.is_empty() {
+            let improvement_builds: Vec<BuildType> = self
+                .builds
+                .keys()
+                .filter(|&b| self.builds[b].improvement.is_some() && !self.builds[b].all_workers && self.builds[b].built_by.is_empty())
+                .collect();
+            for u in self.units.keys() {
+                if improvement_builds.iter().any(|&b| self.units[u].builds[b]) {
+                    for &b in &card_builds {
+                        self.units[u].builds[b] = true;
+                    }
+                }
+            }
+        }
         for b in self.builds.keys() {
             for &class in &self.builds[b].built_by.clone() {
                 for u in self.units.keys() {

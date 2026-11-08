@@ -1,0 +1,53 @@
+// B14 Last Stand Hymn (docs/DECKS_ROUND8.md; C.4: no fear clause; once half the committed defenders,
+// not the Sentinels, have fallen, the rest deal double damage; the Chorus of the Fallen's rework).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_LAST_STAND_HYMN",
+      "description": "TXT_KEY_TECH_CARD_LAST_STAND_HYMN",
+      "help": "TXT_KEY_TECH_CARD_LAST_STAND_HYMN_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_LAST_STAND_HYMN_PEDIA",
+      "advisor": "ADVISOR_CULTURE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_DRAMA"],
+      "card_suit": "UNITCLASS_ARTIST",
+      "flavors": {"FLAVOR_MILITARY": 1, "FLAVOR_CULTURE": 1}
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_LAST_STAND_HYMN",
+      "description": "TXT_KEY_BUILDING_LAST_STAND_HYMN",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": -1,
+      "default_building": "BUILDING_LAST_STAND_HYMN"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_LAST_STAND_HYMN",
+      "building_class": "BUILDINGCLASS_LAST_STAND_HYMN",
+      "description": "TXT_KEY_BUILDING_LAST_STAND_HYMN",
+      "civilopedia": "TXT_KEY_BUILDING_LAST_STAND_HYMN_PEDIA",
+      "prereq_tech": "TECH_CARD_LAST_STAND_HYMN",
+      "cost": 150,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "conquest_prob": 25,
+      "asset": 2,
+      "power_value": 3,
+      "last_stand_damage": 100,
+      "flavors": {"FLAVOR_MILITARY": 8, "FLAVOR_CULTURE": 2}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_LAST_STAND_HYMN": "Last Stand Hymn",
+    "TXT_KEY_TECH_CARD_LAST_STAND_HYMN_HELP": "[ICON_BULLET]Allows the Last Stand Hymn.[NEWLINE][ICON_BULLET]Last Stand Hymn: in a battle at the city, once half of the defender's committed units (not Sentinels) have fallen, the rest deal double damage.",
+    "TXT_KEY_TECH_CARD_LAST_STAND_HYMN_PEDIA": "A great bard's song, taught to every child of the city, sung only when the walls are lost.",
+    "TXT_KEY_BUILDING_LAST_STAND_HYMN": "Last Stand Hymn",
+    "TXT_KEY_BUILDING_LAST_STAND_HYMN_PEDIA": "The hall where the hymn is kept. Its verses are for the dead, and for the living who stand over them."
+  }
+}

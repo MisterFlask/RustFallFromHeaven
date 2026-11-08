@@ -24,6 +24,7 @@ pub mod automation;
 pub mod campaign;
 pub mod casters;
 pub mod cards;
+pub mod cards_battle_arms;
 pub mod cards_map_rules;
 pub mod cards_world_spells;
 pub mod casting;
@@ -178,6 +179,9 @@ impl Controller for Ai {
             casting::barrage(g, &v);
         }
         units::play(self, g, &mut v);
+        if !v.barbarian {
+            cards::end_turn(g, p); // the cards' content that acts once the units have moved
+        }
         casting::end_turn(g, &v);
         // Spells may have summoned units or used moves: make sure nothing is left ready.
         units::finalize(g, p);

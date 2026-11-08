@@ -123,7 +123,9 @@ fn the_kinds() {
 #[test]
 fn the_large_units() {
     let d = d();
-    let mut large: Vec<&str> = d.units.iter().filter(|u| u.large).map(|u| u.base.type_.as_str()).collect();
+    // The game's own units: the great-person cards' come after them (docs/CARDS.md).
+    let own = d.units.len() - card_entry_count("units");
+    let mut large: Vec<&str> = d.units.iter().take(own).filter(|u| u.large).map(|u| u.base.type_.as_str()).collect();
     large.sort_unstable();
     // The spec's (Hill Giant, the elephants, the dragons, every golem, the Treant) and the units of
     // that size class: the giant heroes Gurid, Margalard and Wilboman (a frost giant), Barnaxus (a

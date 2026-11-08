@@ -383,6 +383,8 @@ impl Game {
             Some(sheet) => (sheet[s.idx()] + unit.stat_flat[s.idx()]) * 10,
             None => (if attack { unit.base_combat } else { unit.base_combat_defense }) * 100,
         };
+        // Card: Elemental Forge (docs/CARDS.md): an attack of a damage type is cut by its resistance.
+        let own = if attack { self.engage_arms_attack(u, opponent, own) } else { own };
         let mut typed = 0;
         for damage_type in self.d.damages.keys() {
             let points = unit.damage_type_combat[damage_type];

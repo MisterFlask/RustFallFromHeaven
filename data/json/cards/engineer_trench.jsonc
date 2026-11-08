@@ -1,0 +1,68 @@
+// E05 Trench (docs/DECKS_ROUND8.md; C.4: as written): a worker build in your borders; in battles on
+// its plot the attacker has 3 fewer slots.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_TRENCH",
+      "description": "TXT_KEY_TECH_CARD_TRENCH",
+      "help": "TXT_KEY_TECH_CARD_TRENCH_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_TRENCH_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_ANCIENT",
+      "and_pre_reqs": ["TECH_MINING"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "improvements": [
+    {
+      "type": "IMPROVEMENT_TRENCH",
+      "description": "TXT_KEY_IMPROVEMENT_TRENCH",
+      "civilopedia": "TXT_KEY_IMPROVEMENT_TRENCH_PEDIA",
+      "advanced_start_cost": -1,
+      "pillage_gold": 2,
+      "hills_makes_valid": true,
+      "terrain_makes_valids": {
+        "TERRAIN_BROKEN_LANDS": true,
+        "TERRAIN_BURNING_SANDS": true,
+        "TERRAIN_FIELDS_OF_PERDITION": true,
+        "TERRAIN_SHALLOWS": true,
+        "TERRAIN_GRASS": true,
+        "TERRAIN_PLAINS": true,
+        "TERRAIN_DESERT": true,
+        "TERRAIN_MARSH": true,
+        "TERRAIN_TUNDRA": true,
+        "TERRAIN_SNOW": true
+      },
+      "engagement_attacker_slots_change": -3
+    }
+  ],
+  "builds": [
+    {
+      "type": "BUILD_TRENCH",
+      "description": "TXT_KEY_BUILD_TRENCH",
+      "prereq_tech": "TECH_CARD_TRENCH",
+      "time": 400,
+      "improvement_type": "IMPROVEMENT_TRENCH",
+      "all_workers": true,
+      "feature_structs": [
+        {"feature_type": "FEATURE_JUNGLE", "prereq_tech": "TECH_BRONZE_WORKING", "time": 400, "remove": true},
+        {"feature_type": "FEATURE_FOREST", "prereq_tech": "TECH_MINING", "time": 250, "production": 20, "remove": true},
+        {"feature_type": "FEATURE_FOREST_ANCIENT", "prereq_tech": "TECH_MINING", "time": 500, "production": 30, "remove": true},
+        {"feature_type": "FEATURE_FOREST_NEW", "prereq_tech": "TECH_MINING", "remove": true},
+        {"feature_type": "FEATURE_FOREST_BURNT", "prereq_tech": "TECH_MINING", "time": 125, "remove": true}
+      ],
+      "button": ",Art/Interface/Buttons/Builds/BuildFort.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,7,9"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_TRENCH": "Trench",
+    "TXT_KEY_TECH_CARD_TRENCH_HELP": "[ICON_BULLET]Workers can build a Trench on a land plot in your borders.[NEWLINE][ICON_BULLET]Trench: in battles on its plot the attacker has 3 fewer slots (at least the minimum).",
+    "TXT_KEY_TECH_CARD_TRENCH_PEDIA": "Earthworks that turn an open field into a narrow front.",
+    "TXT_KEY_IMPROVEMENT_TRENCH": "Trench",
+    "TXT_KEY_IMPROVEMENT_TRENCH_PEDIA": "Ditches and banks of earth across the approach. An army that attacks here fights a few files at a time.",
+    "TXT_KEY_BUILD_TRENCH": "Build a Trench"
+  }
+}

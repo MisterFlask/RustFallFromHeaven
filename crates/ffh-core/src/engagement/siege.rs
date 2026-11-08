@@ -58,7 +58,8 @@ impl Game {
 
     /// A Sentinel's max HP in a battle: `UNIT_SENTINEL`'s HP x (100 + the city's defence) / 100.
     pub fn city_sentinel_max_hp(&self, c: CityId) -> i32 {
-        (self.sentinel_stat(StatType::Hp).max(1) * (100 + self.city_sentinel_defense(c)) / 100).max(1)
+        // Card: Living Walls (docs/CARDS.md): a building may give them another unit's HP.
+        (self.city_sentinel_stat(c, StatType::Hp).max(1) * (100 + self.city_sentinel_defense(c)) / 100).max(1)
     }
 
     /// A Sentinel's Dv, x100: `UNIT_SENTINEL`'s defence, x10, x (100 + the city's defence) / 100.
@@ -98,7 +99,7 @@ impl Game {
         let ty = self.sentinel_unit_type();
         let owner = self.cities[c].owner;
         let defense = if self.city_is_occupation(c) { 0 } else { self.city_sentinel_defense(c) };
-        let a = self.sentinel_a_x100();
+        let a = self.city_sentinel_a_x100(c);
         let base_dv = self.sentinel_stat(StatType::Defense) * 10;
         let base_md = self.sentinel_stat(StatType::MagicDefense) * 10;
         let mag = self.sentinel_stat(StatType::Magic) * 10;
@@ -183,8 +184,12 @@ impl Game {
             && !self.unit_is_invisible(u, ct, false)
     }
 
-    /// Whether city `c` is besieged (module comment).
+    /// Whether city `c` is besieged (module comment), or a unit that besieges by bombard (the
+    /// Siege Colossus card, docs/CARDS.md) bombarded it since its last turn.
     pub fn city_is_besieged(&self, c: CityId) -> bool {
+        if self.cities[c].besieged_by_bombard {
+            return true;
+        }
         let ct = self.city_team(c);
         let plot = self.city_plot(c);
         let (x, y) = self.map.xy(plot);
@@ -272,9 +277,11 @@ impl Game {
     pub fn city_bombard_damage(&mut self, c: CityId, u: UnitId, pct: i32) -> (i32, i32) {
         self.city_sync_sentinels(c);
         let mut walls = 0;
+        // Card: Arcane Fortress (docs/CARDS.md): the Sentinels may resist bombards.
+        let wall_pct = pct.max(0) * (100 - self.city_sentinel_ranged_resist(c)) / 100;
         for k in self.city_sentinels_standing(c) {
             let now = self.city_sentinel_damage(c, k);
-            self.city_set_sentinel_damage(c, k, now + pct.max(0));
+            self.city_set_sentinel_damage(c, k, now + wall_pct);
             walls += 1;
         }
         let mut soldiers = 0;

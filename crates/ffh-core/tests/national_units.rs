@@ -89,7 +89,10 @@ fn every_hard_limited_class_is_a_casters_national_class() {
     let channeling = d.t::<PromotionType>("PROMOTION_CHANNELING1");
     let channeling2 = d.t::<PromotionType>("PROMOTION_CHANNELING2");
     let mut hard = 0;
-    for k in d.unit_classes.keys() {
+    // The game's own classes: the great-person cards' come after them and may be hard-limited
+    // whatever they train (docs/CARDS.md: the Siege Colossus, the Herald of Agares).
+    let own = d.unit_classes.len() - ffh_data::card_entry_count("unit_classes");
+    for k in d.unit_classes.keys().filter(|k| k.idx() < own) {
         if !d.unit_classes[k].hard_limit {
             continue;
         }

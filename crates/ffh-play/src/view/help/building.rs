@@ -90,6 +90,8 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         bonus_yield_change,
         population_commerce,
         sentinel_repair_change,
+        battle,
+        exclusive_with,
         building_class_type,
         victory_prereq,
         free_start_era,
@@ -641,6 +643,12 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     if *sentinels > 0 {
         h.push_str(NEWLINE);
         h.push_str(&format!("[ICON_BULLET]{sentinels} Sentinels: wall sections that fight in the front row of the city's battles (they grow with its defence, repair only when it is not besieged, and must be breached before it falls)"));
+    }
+    battle_lines(&mut h, d, battle);
+    if !exclusive_with.is_empty() {
+        let names: Vec<String> = exclusive_with.iter().map(|&k| display(d, k).to_string()).collect();
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]Cannot be built in a city with: {}", names.join(", ")));
     }
     if *all_city_defense_modifier != 0 {
         add(&mut h, "TXT_KEY_BUILDING_DEFENSE_MOD_ALL_CITIES", &[Arg::N(*all_city_defense_modifier)]);
@@ -1321,5 +1329,35 @@ mod tests {
             let b = d.t::<BuildingType>(&n);
             println!("== {n}\n{}\n", effects(d, b).replace(NEWLINE, "\n"));
         }
+    }
+}
+
+/// The great-person cards' battle keys of a building (docs/CARDS.md, section 2), a line each.
+fn battle_lines(h: &mut String, d: &GameData, b: &BuildingBattle) {
+    let mut line = |text: String| {
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]{text}"));
+    };
+    if let Some(p) = b.pre_battle_damage {
+        let row = ["front", "middle", "rear"][p.row.min(2)];
+        let what = p.damage_type.map(|t| format!("{} damage", display(d, t).to_lowercase())).unwrap_or_else(|| "damage".to_string());
+        line(format!("At the start of every battle at the city, each attacking unit in the {row} row takes {what} of {}% of its max HP, less its resistance, never below 1 HP", p.percent));
+    }
+    if b.sentinel_ranged_resist != 0 {
+        line(format!("The city's Sentinels take {}% less damage from bombards, Bombard and Shoot", b.sentinel_ranged_resist));
+    }
+    if let Some(u) = b.sentinel_unit {
+        let sheet = d.units[u].stats.unwrap_or([0; StatType::NUM]);
+        line(format!("The city's Sentinels fight with the {}'s attack ({}) and HP ({}), one cell each", display(d, u), sheet[StatType::Attack.idx()], sheet[StatType::Hp.idx()]));
+    }
+    if b.hold_melee_rounds > 0 {
+        let rounds = if b.hold_melee_rounds == 1 { "round 1".to_string() } else { format!("rounds 1 to {}", b.hold_melee_rounds) };
+        line(format!("In the first battle at the city each turn, the attacker's Strike, Charge and Stab actions in {rounds} are spent"));
+    }
+    if b.last_stand_damage != 0 {
+        line(format!("In a battle at the city, once half of the defender's committed units (not Sentinels) have fallen, the rest deal {:+}% damage", b.last_stand_damage));
+    }
+    if b.never_lost_damage != 0 {
+        line(format!("While the city has never changed hands, its defenders (units and Sentinels) deal {:+}% damage in its battles", b.never_lost_damage));
     }
 }

@@ -499,6 +499,10 @@ pub struct ImprovementInfo {
     /// `isImprovementBonusMakesValid(b)`, `isImprovementBonusTrade(b)` and
     /// `getImprovementBonusDiscoverRand(b)` are its other fields.
     pub improvement_bonus: IdxVec<BonusType, ImprovementBonusInfo>,
+    /// This game's own (a great-person card's key, docs/CARDS.md section 2):
+    /// `engagement_attacker_slots_change`, the change to the attacker's slots in battles on its
+    /// plot (before the minimum).
+    pub engagement_attacker_slots_change: i32,
 }
 
 /// C++ `CvImprovementInfo::read`, plus `readPass2` (`ImprovementPillage`,
@@ -562,6 +566,7 @@ pub fn read_improvement(rd: &Rd) -> ImprovementInfo {
         tech_yield_changes: yields_by_type(rd, "tech_yield_changes", "prereq_tech", "tech_yields"),
         route_yield_changes: yields_by_type(rd, "route_yield_changes", "route_type", "route_yields"),
         improvement_bonus: improvement_bonuses(rd),
+        engagement_attacker_slots_change: rd.int("engagement_attacker_slots_change"),
     }
 }
 

@@ -274,6 +274,8 @@ impl Game {
             let mut hp: Vec<i32> = (0..n_all).map(|i| if i < n { hp_from_damage(ov.damage(self, setup.units[i]), setup.fighters[i].max_hp) } else { setup.fighters[i].hp }).collect();
             let mut effects = pre.clone();
             effects.extend(self.engage_opening_spells(setup, &hp));
+            // Card: Thunderhead Tower (docs/CARDS.md), as the real fight.
+            self.engage_arms_opening(setup, &sat, &mut hp, None);
             let (f, map) = if effects.is_empty() {
                 setup.battle(&sat, &hp)
             } else {

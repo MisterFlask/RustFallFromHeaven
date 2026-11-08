@@ -333,6 +333,10 @@ fn build_value(g: &Game, v: &View, p: PlayerId, plot: PlotIdx, build: BuildType,
         if let Some(value) = crate::cards_map_rules::build_value(g, p, plot, imp) {
             return value;
         }
+        // A card's battle improvement (the Trench): where our units hold.
+        if let Some(v) = crate::cards_battle_arms::build_value(g, p, plot, build) {
+            return v;
+        }
         // What the working city needs.
         let city = pl.working_city.filter(|&c| g.cities[c].owner == p);
         let (food_w, prod_w) = match city {

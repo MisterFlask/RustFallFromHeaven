@@ -1,0 +1,39 @@
+// B15 Wardance (docs/DECKS_ROUND8.md; C.4: level 5+; only the first strike each round cleaves; C.7:
+// kept, its numbers to be balanced later). A promotion for melee units.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_WARDANCE",
+      "description": "TXT_KEY_TECH_CARD_WARDANCE",
+      "help": "TXT_KEY_TECH_CARD_WARDANCE_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_WARDANCE_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_BRONZE_WORKING"],
+      "card_suit": "UNITCLASS_ARTIST",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_WARDANCE",
+      "description": "TXT_KEY_PROMOTION_WARDANCE",
+      "civilopedia": "TXT_KEY_PROMOTION_WARDANCE_PEDIA",
+      "tech_prereq": "TECH_CARD_WARDANCE",
+      "min_level": 5,
+      "unit_combats": {"UNITCOMBAT_MELEE": true},
+      "first_melee_pattern": "CLEAVE",
+      "ai_weight": 40,
+      "button": ",Art/Interface/Buttons/Promotions/Combat5.dds,Art/Interface/Buttons/Promotions_Atlas.dds,4,6"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_WARDANCE": "Wardance",
+    "TXT_KEY_TECH_CARD_WARDANCE_HELP": "[ICON_BULLET]Melee units of level 5 or more can take the Wardance promotion.[NEWLINE][ICON_BULLET]Wardance: the unit's first Strike or Charge each round cleaves: it also hits the front unit of each lane beside its target's for 60% of the hit.",
+    "TXT_KEY_TECH_CARD_WARDANCE_PEDIA": "The veterans' dance, taught by a great bard: the first blow of every round is a wheel of steel.",
+    "TXT_KEY_PROMOTION_WARDANCE": "Wardance",
+    "TXT_KEY_PROMOTION_WARDANCE_PEDIA": "It opens each exchange with a turning cut that finds the men on either side of its foe."
+  }
+}

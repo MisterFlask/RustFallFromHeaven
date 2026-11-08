@@ -1,0 +1,89 @@
+// E04 Siege Ballista (docs/DECKS_ROUND8.md; C.4: tier 2 siege, 100 hammers, BOMBARD with PIERCE:
+// each shot also hits every other unit in the target's lane). Its sheet follows the Catapult's;
+// it trades the Catapult's collateral damage and double damage to walls for the pierce, a higher
+// attack and accuracy, and no combat limit (its bolts kill): in the lab (`ffh battles`) it deals
+// about a Catapult's damage to deep formations and kills more of them.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_SIEGE_BALLISTA",
+      "description": "TXT_KEY_TECH_CARD_SIEGE_BALLISTA",
+      "help": "TXT_KEY_TECH_CARD_SIEGE_BALLISTA_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_SIEGE_BALLISTA_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_MATHEMATICS"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_SIEGE_BALLISTA",
+      "description": "TXT_KEY_UNIT_SIEGE_BALLISTA",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": -1,
+      "default_unit": "UNIT_SIEGE_BALLISTA"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_SIEGE_BALLISTA",
+      "stats": {"hp": 80, "attack": 55, "defense": 18, "magic": 0, "magic_defense": 13, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 1},
+      "engage_rows": [
+        {"action": "NONE"},
+        {"action": "BOMBARD", "count": 1, "pattern": "PIERCE"},
+        {"action": "BOMBARD", "count": 2, "pattern": "PIERCE"}
+      ],
+      "engage_row_order": ["REAR", "MIDDLE", "FRONT"],
+      "damage_vs_large": 50,
+      "class": "UNITCLASS_SIEGE_BALLISTA",
+      "unit_combat": "UNITCOMBAT_SIEGE",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_ATTACK_CITY",
+      "description": "TXT_KEY_UNIT_SIEGE_BALLISTA",
+      "civilopedia": "TXT_KEY_UNIT_SIEGE_BALLISTA_PEDIA",
+      "strategy": "TXT_KEY_UNIT_SIEGE_BALLISTA_STRATEGY",
+      "military_happiness": true,
+      "military_support": true,
+      "military_production": true,
+      "pillage": true,
+      "no_defensive_bonus": true,
+      "mechanized": true,
+      "unit_class_upgrades": {"UNITCLASS_CANNON": true},
+      "unit_ais": {"UNITAI_ATTACK_CITY": true, "UNITAI_COLLATERAL": true},
+      "prereq_tech": "TECH_CARD_SIEGE_BALLISTA",
+      "cost": 100,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 1,
+      "nuke_range": -1,
+      "combat": 4,
+      "combat_defense": 3,
+      "combat_limit": 100,
+      "xp_value_attack": 8,
+      "xp_value_defense": 4,
+      "withdrawal_prob": 80,
+      "bombard_rate": 15,
+      "culture_garrison": 4,
+      "asset": 4,
+      "power": 8,
+      "ai_weight": 420,
+      "ai_block_explore": true,
+      "ai_block_patrol": true,
+      "ai_block_perm_defense": true,
+      "tier": 2
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_SIEGE_BALLISTA": "Siege Ballista",
+    "TXT_KEY_TECH_CARD_SIEGE_BALLISTA_HELP": "[ICON_BULLET]Allows the Siege Ballista: a tier 2 siege unit (100 [ICON_PRODUCTION]).[NEWLINE][ICON_BULLET]Its Bombard actions pierce: each also hits every other unit in the target's lane for 50% of the hit. Unlike other siege units, its hits can kill.",
+    "TXT_KEY_TECH_CARD_SIEGE_BALLISTA_PEDIA": "A great engineer's torsion engine. Its bolts pass through the first rank and into the second.",
+    "TXT_KEY_UNIT_SIEGE_BALLISTA": "Siege Ballista",
+    "TXT_KEY_UNIT_SIEGE_BALLISTA_PEDIA": "A great crossbow on a frame of oak, wound by four men. One bolt can pin a whole file of soldiers.",
+    "TXT_KEY_UNIT_SIEGE_BALLISTA_STRATEGY": "Bring it against deep formations: each bolt hits the whole lane. A Catapult breaks walls better."
+  }
+}

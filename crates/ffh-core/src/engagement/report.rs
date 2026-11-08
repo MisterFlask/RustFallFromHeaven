@@ -189,6 +189,9 @@ pub enum SlotSource {
     Minimum,
     /// Phase 7: extra slots used by summons.
     Summons(i32),
+    /// The attacker: the defended plot's improvement (`engagement_attacker_slots_change`, a
+    /// card's: the Trench).
+    Improvement(ImprovementType),
 }
 
 /// What became of a committed unit.
@@ -409,6 +412,9 @@ pub enum LogEvent {
     /// A withdrawn defender outside a city.
     Flee { unit: FighterIdx, to: PlotIdx },
     MoveIn { units: Vec<FighterIdx>, city: Option<CityId> },
+    /// The defended city's building struck before the battle (`pre_battle_damage`, a card's: the
+    /// Thunderhead Tower): the damage each fighter took, centi-HP.
+    BuildingStrike { building: BuildingType, hits: Vec<(FighterIdx, i32)> },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -140,6 +140,10 @@ pub struct City {
 
     pub never_lost: bool,
     pub bombarded: bool,
+    /// This game's own (a card's: the Siege Colossus, docs/CARDS.md): a unit that besieges by
+    /// bombard (`bombard_besieges`) bombarded the city since its last turn, so it counts as
+    /// besieged until then.
+    pub besieged_by_bombard: bool,
     pub drafted: bool,
     pub airlift_targeted: bool,
     pub we_love_the_king_day: bool,
@@ -399,6 +403,7 @@ impl City {
 
             never_lost: true,
             bombarded: false,
+            besieged_by_bombard: false,
             drafted: false,
             airlift_targeted: false,
             we_love_the_king_day: false,

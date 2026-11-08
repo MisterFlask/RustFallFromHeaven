@@ -504,6 +504,11 @@ pub fn is_promotion_valid(d: &GameData, promotion: PromotionType, unit: UnitType
         return false;
     }
 
+    // Card: Templar (docs/CARDS.md): a promotion may name the unit classes that take it.
+    if !k_promotion.unit_classes.is_empty() && !k_unit.unit_class_type.is_some_and(|k| k_promotion.unit_classes.contains(&k)) {
+        return false;
+    }
+
     if k_unit.only_defensive {
         if k_promotion.city_attack_percent != 0
             || k_promotion.withdrawal_change != 0

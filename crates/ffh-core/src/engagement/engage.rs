@@ -449,7 +449,7 @@ impl Game {
         f.hp = hp_from_damage(self.city_sentinel_damage(c, k), max_hp);
         f.speed = self.sentinel_stat(StatType::Speed);
         f.actions = d.engage_actions(ty, false);
-        f.a = self.sentinel_a_x100();
+        f.a = self.city_sentinel_a_x100(c);
         f.accuracy = self.sentinel_stat(StatType::Accuracy);
         f.evasion = self.sentinel_stat(StatType::Evasion);
         f.crit = self.sentinel_stat(StatType::Crit);
@@ -523,7 +523,7 @@ impl Game {
                         pct: self.engage_pair_pct(units[h], None),
                     },
                     (false, true, _) => Pair {
-                        a: self.sentinel_a_x100(),
+                        a: sentinel_city.map_or_else(|| self.sentinel_a_x100(), |c| self.city_sentinel_a_x100(c)),
                         dv: self.engage_dv_alone(units[t], sides[t], &ctx),
                         ma: self.sentinel_stat(StatType::Magic) * 10,
                         md: self.engage_magic_x100(units[t], false),
@@ -534,7 +534,10 @@ impl Game {
                 };
             }
         }
-        Ok(Setup { ctx, slots, lanes, ground, params, in_city, candidates, units, sides, places, n_att, fighters, pairs, sentinel_city, sentinels: ks })
+        let mut setup = Setup { ctx, slots, lanes, ground, params, in_city, candidates, units, sides, places, n_att, fighters, pairs, sentinel_city, sentinels: ks };
+        // The great-person cards' battle effects (docs/CARDS.md; `arms.rs`).
+        self.engage_arms_setup(&mut setup);
+        Ok(setup)
     }
 
     /// Phase 7 hook (plan 6.2, 14): the pre-battle spells' effects on the battle of `setup` (its
@@ -684,6 +687,8 @@ impl Game {
         let mut hp: Vec<i32> =
             (0..e.setup.fighters.len()).map(|i| if i < n { hp_from_damage(self.units[e.units[i]].damage, e.setup.fighters[i].max_hp) } else { e.setup.fighters[i].hp }).collect();
         effects.extend(self.engage_opening_spells(&e.setup, &hp));
+        // Card: Thunderhead Tower (docs/CARDS.md): the defended city's pre-battle damage.
+        self.engage_arms_opening(&e.setup, &e.sat_out, &mut hp, sink.as_mut());
         if !effects.is_empty() {
             e.setup.apply_effects(&effects, &mut hp);
         }

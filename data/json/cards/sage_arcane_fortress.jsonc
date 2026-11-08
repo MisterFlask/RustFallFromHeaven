@@ -1,0 +1,53 @@
+// G16 Arcane Fortress (docs/DECKS_ROUND8.md; C.4: the Sentinels take half damage from map bombards,
+// BOMBARD and SHOOT). A national building: one per player.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_ARCANE_FORTRESS",
+      "description": "TXT_KEY_TECH_CARD_ARCANE_FORTRESS",
+      "help": "TXT_KEY_TECH_CARD_ARCANE_FORTRESS_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_ARCANE_FORTRESS_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_ARCANE_LORE"],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_ARCANE_FORTRESS",
+      "description": "TXT_KEY_BUILDING_ARCANE_FORTRESS",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 1,
+      "default_building": "BUILDING_ARCANE_FORTRESS"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_ARCANE_FORTRESS",
+      "building_class": "BUILDINGCLASS_ARCANE_FORTRESS",
+      "description": "TXT_KEY_BUILDING_ARCANE_FORTRESS",
+      "civilopedia": "TXT_KEY_BUILDING_ARCANE_FORTRESS_PEDIA",
+      "prereq_tech": "TECH_CARD_ARCANE_FORTRESS",
+      "cost": 300,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "never_capture": true,
+      "asset": 4,
+      "power_value": 6,
+      "sentinel_ranged_resist": 50,
+      "flavors": {"FLAVOR_MILITARY": 10}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_ARCANE_FORTRESS": "Arcane Fortress",
+    "TXT_KEY_TECH_CARD_ARCANE_FORTRESS_HELP": "[ICON_BULLET]Allows the Arcane Fortress (national: one city).[NEWLINE][ICON_BULLET]Arcane Fortress: the city's Sentinels take 50% less damage from bombards, and from Bombard and Shoot actions in battle.",
+    "TXT_KEY_TECH_CARD_ARCANE_FORTRESS_PEDIA": "Wards woven into the stones of a capital, so that the engines of a siege throw their loads against something that will not break.",
+    "TXT_KEY_BUILDING_ARCANE_FORTRESS": "Arcane Fortress",
+    "TXT_KEY_BUILDING_ARCANE_FORTRESS_PEDIA": "Its walls drink the shock of stone and arrow. Only a blade or a spell opens them."
+  }
+}

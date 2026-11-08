@@ -8,7 +8,7 @@
 // keys on (unit combat class, domain, tier, race, ...). It is generated, committed, and loaded by
 // art.js so the browser can resolve fallbacks without the data files. Only facts come from the
 // data; any curated grouping (which promotions are afflictions, ...) lives in the set manifests.
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -42,7 +42,17 @@ export function parseJsonc(src) {
 
 /** The entries of a table's file (`units`, `promotions`, ...). */
 function table(dataDir, name) {
-  return parseJsonc(readFileSync(join(dataDir, `${name}.jsonc`), 'utf8'));
+  const entries = parseJsonc(readFileSync(join(dataDir, `${name}.jsonc`), 'utf8'));
+  // Then the entries the great-person cards add (data/json/cards/*.jsonc, files in name order, as
+  // the game loads them: docs/CARDS.md).
+  const cards = join(dataDir, 'cards');
+  if (existsSync(cards)) {
+    for (const f of readdirSync(cards).filter((n) => n.endsWith('.jsonc')).sort()) {
+      const doc = parseJsonc(readFileSync(join(cards, f), 'utf8'));
+      if (Array.isArray(doc[name])) entries.push(...doc[name]);
+    }
+  }
+  return entries;
 }
 const ref = (e, key) => e[key] || 'NONE';
 const flag = (e, key) => (e[key] === true ? 1 : 0);
