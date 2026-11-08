@@ -599,10 +599,21 @@ flag.
     - *The Brood* (30, then 50): a Spider Nest, a lair of Baby Spiders, appears in each of the three
       largest unowned forest regions; at 50 each nest still standing becomes a city of the Brood,
       with Giant Spiders (60 hammers for it) and the Spider Queen.
-    - *The Infernal Gate Opens* (60): the Infernals arrive as with the Infernal Pact, beside the evil
-      civilization with the most cities; the card is dealt again if they have been in play.
-    - **The Infernals come once a game:** the Infernal Pact brings none once they have been in play,
-      and whoever brings them, they do not learn their patron's cards.
+    - *The Infernal Gate Opens* (60; the owner's design, 2026-11-08): the Court of Mammon, an evil
+      infernal faction of its own (not Hyborem's), arrives on the best free site within 4 plots of
+      the borders of the civilization with the most gold, without a founder: Aurivane (its hero),
+      two Champions, two Longbowmen, two Settlers, a Worker, two Manes and 200 gold. Its leader is
+      Avaricious (+100% gold, buys units at 2 gold per hammer under any civic) and Organized; its
+      land units Buy Out as the Paymaster does. It has the Infernals' population rules (Fallow,
+      cities of 3 with Demonic Citizens, no Manes from its razed cities, the Beast of Agares costs
+      its cities nothing, the Blight and the Pestilence spare its cities), and shares the Manes of
+      the evil dead with them: each Manes goes to whichever of the two is in play with a city, or
+      to one of them at random while both are (a draw only then). -4 attitude between it and the
+      Infernals, both ways. Not under the No Hyborem or Basium option's rule: the Court is not
+      Hyborem.
+    - **The Infernal Pact is FFH2's again** (2026-11-08): the first team to learn it brings the
+      Infernals whatever the Armageddon deck did (batch B8 had made them come once a game, by the
+      Pact or the card). Whoever brings them, they do not learn their patron's cards.
 
 **Balance** (after `classic-1`, each the owner's decision)
 

@@ -425,4 +425,19 @@ mod tests {
         assert!(fin.contains("[ICON_BULLET]"), "{fin}");
         assert!(!civ.contains("%s") && !civ.contains("%d") && !fin.contains("%D"), "{civ}{fin}");
     }
+
+    /// The Infernal Gate's Court of Mammon (docs/CARDS.md): its help shows its rules.
+    #[test]
+    fn the_court_of_mammon_says_what_it_brings() {
+        let d = ffh_data::global();
+        let court = d.t::<CivilizationType>("CIVILIZATION_COURT_OF_MAMMON");
+        let civ = civ_help(d, court);
+        for part in ["Fallow", "Mammon's Coin", "Buy Out", "Manes", "Aurivane"] {
+            assert!(civ.contains(part), "{part}: {civ}");
+        }
+        let leader = leader_help(d, d.t::<LeaderHeadType>("LEADER_AURIVANE"), Some(court));
+        for part in ["Avaricious", "Buys units at 2 gold per hammer left", "Organized", "Evil"] {
+            assert!(leader.contains(part), "{part}: {leader}");
+        }
+    }
 }

@@ -82,7 +82,7 @@ pub enum Civ {
     Other,
 }
 
-const NAMES: [(&str, Civ); 21] = [
+const NAMES: [(&str, Civ); 22] = [
     ("AMURITES", Civ::Amurites),
     ("BALSERAPHS", Civ::Balseraphs),
     ("BANNOR", Civ::Bannor),
@@ -94,6 +94,9 @@ const NAMES: [(&str, Civ); 21] = [
     ("HIPPUS", Civ::Hippus),
     ("ILLIANS", Civ::Illians),
     ("INFERNAL", Civ::Infernal),
+    // The Infernal Gate's Court of Mammon (docs/CARDS.md) takes the Infernals' population rules:
+    // its Manes walk to its cities and join them as the Infernals' do.
+    ("COURT_OF_MAMMON", Civ::Infernal),
     ("KHAZAD", Civ::Khazad),
     ("KURIOTATES", Civ::Kuriotates),
     ("LANUN", Civ::Lanun),

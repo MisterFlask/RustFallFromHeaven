@@ -803,7 +803,8 @@ fn do_armageddon_ars(g: &mut Game, _data: &EventTriggeredData, _p: PlayerId) {
 /// takes 25% death damage.
 fn do_armageddon_blight(g: &mut Game, _data: &EventTriggeredData, p: PlayerId) {
     let d = g.d;
-    if g.player_get_civilization_type(p) != Some(d.t::<CivilizationType>("CIVILIZATION_INFERNAL")) {
+    // Card: The Infernal Gate Opens (docs/CARDS.md): nor the Court of Mammon's (demonic citizens).
+    if !crate::ffh::cards::new_civs_2::infernal_population(d, g.player_get_civilization_type(p)) {
         for city in city_list(g, p) {
             // The roll is drawn and then overwritten (`i = 10`).
             g.soren_rand_num(15, "Blight");
@@ -877,7 +878,8 @@ fn do_armageddon_hellfire(g: &mut Game, _data: &EventTriggeredData, p: PlayerId)
 fn do_armageddon_pestilence(g: &mut Game, data: &EventTriggeredData, _p: PlayerId) {
     let d = g.d;
     let p = data.player;
-    if g.player_get_civilization_type(p) != Some(d.t::<CivilizationType>("CIVILIZATION_INFERNAL")) {
+    // Card: The Infernal Gate Opens (docs/CARDS.md): nor the Court of Mammon's (demonic citizens).
+    if !crate::ffh::cards::new_civs_2::infernal_population(d, g.player_get_civilization_type(p)) {
         for city in city_list(g, p) {
             let mut i = g.soren_rand_num(9, "Pestilence");
             i += py_div(g.cities[city].population, 4);
