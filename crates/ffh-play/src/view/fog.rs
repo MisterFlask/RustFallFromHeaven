@@ -236,7 +236,10 @@ impl LogFog {
             d.vote_sources.keys().any(|vs| text == format!("{religion} is now the religion of the {}", d.text.name(&d.vote_sources[vs].base.description)))
         }) || d.special_buildings.keys().any(|sb| text == format!("{} can now be built", d.text.name(&d.special_buildings[sb].base.description)))
             || (text.starts_with("A nuke of player ") && text.contains(" was intercepted by team "))
-            || (text.starts_with("Player ") && text.contains(" launched a nuke at ("));
+            || (text.starts_with("Player ") && text.contains(" launched a nuke at ("))
+            // The Armageddon deck (docs/CARDS.md): a card revealed, a card fired.
+            || text.starts_with("Armageddon card revealed at ")
+            || (text.starts_with("Armageddon ") && text.as_bytes().get("Armageddon ".len()).is_some_and(u8::is_ascii_digit));
         // Anything else untagged (event world news, new log sites) is held back.
         everyone.then_some(e)
     }

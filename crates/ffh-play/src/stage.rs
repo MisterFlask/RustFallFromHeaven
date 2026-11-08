@@ -1,5 +1,5 @@
 //! Staged situations for testing the clients (`ffh-play stage
-//! capture|attack|automoves|load|trade|diplomacy|automate|armies|engagement|election|settlement|corrupt|crusade DIR`,
+//! capture|attack|automoves|load|trade|diplomacy|automate|armies|engagement|election|settlement|corrupt|crusade|cards DIR`,
 //! and the transports' tests): a saved game at a human control point arranged with rules calls,
 //! so that a client can be tried on a situation a fresh game reaches only by chance (a captured
 //! city's keep/raze decision, an attack, the AutoMoves rule between commands, the transport
@@ -502,6 +502,60 @@ pub fn automate(dir: &Path) -> Result<StagedAutomate, String> {
     let scout = g.player_init_unit(h, d.t::<UnitType>("UNIT_SCOUT"), sx, sy, None, None);
     let paths = s.save("automate").map_err(|e| format!("save: {e:?}"))?;
     Ok(StagedAutomate { save: paths.save, worker, scout, turn: s.g.game_turn() })
+}
+
+/// A saved game at a human control point (turn 4 of a duel, seed 11) with the decks in play
+/// (docs/CARDS.md): the human knows the Starmetal Meteor and Legacy of Kings cards (spells
+/// `meteor` and `legacy`, the top bar's card spells, cast at a plot and at a choice) and Mithril
+/// Working (the meteor's Mithril shows); its Great Bard `bard`, in the capital, holds the Anointed
+/// Champion card with its need (Arete) missing; the Armageddon deck is dealt with its slot 30
+/// revealed.
+pub struct StagedCards {
+    pub save: PathBuf,
+    pub bard: UnitId,
+    pub meteor: SpellType,
+    pub legacy: SpellType,
+    pub turn: i32,
+}
+
+impl StagedCards {
+    pub fn to_json(&self) -> Json {
+        crate::jobj! {
+            "stage" => "cards", "save" => self.save.display().to_string(), "bard" => self.bard,
+            "meteor" => Json::idx(self.meteor), "legacy" => Json::idx(self.legacy), "turn" => self.turn,
+        }
+    }
+}
+
+/// Writes a [`StagedCards`] into `dir` (a game directory).
+pub fn cards(dir: &Path) -> Result<StagedCards, String> {
+    let d = ffh_data::global();
+    let mut s = duel_at(dir, 11, 4)?;
+    let h = s.human;
+    let g = &mut s.g;
+    let team = g.players[h].team;
+    for t in ["TECH_CARD_STARMETAL_METEOR", "TECH_CARD_LEGACY_OF_KINGS", "TECH_MITHRIL_WORKING"] {
+        g.team_set_has_tech(team, d.t::<TechType>(t), true, Some(h), false, false);
+    }
+    // The bard alone on its plot (a click there selects it).
+    let &(x, y) = free_plots_near_capital(g, h)?.first().ok_or("no free plot")?;
+    let civ = g.player_get_civilization_type(h).ok_or("no civilization")?;
+    let bard_type = d.civ_unit(civ, d.t::<UnitClassType>("UNITCLASS_ARTIST")).ok_or("no Great Bard")?;
+    let bard = g.player_init_unit(h, bard_type, x, y, None, None);
+    g.units[bard].card = Some(d.t::<TechType>("TECH_CARD_ANOINTED_CHAMPION"));
+    if !g.doom.dealt {
+        g.doom_deal();
+    }
+    let at30 = g.doom.slots.iter().position(|s| s.threshold == 30).ok_or("no slot 30")?;
+    g.doom.slots[at30].revealed = true;
+    let paths = s.save("cards").map_err(|e| format!("save: {e:?}"))?;
+    Ok(StagedCards {
+        save: paths.save,
+        bard,
+        meteor: d.t::<SpellType>("SPELL_STARMETAL_METEOR"),
+        legacy: d.t::<SpellType>("SPELL_LEGACY_OF_KINGS"),
+        turn: s.g.game_turn(),
+    })
 }
 
 /// A saved game at a human control point (turn 4 of a duel, seed 11, armies and governors on)

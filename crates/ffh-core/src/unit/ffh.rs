@@ -846,7 +846,10 @@ impl Game {
             SpellTarget::Unit(t) => match self.units.get(t) {
                 Some(unit) => {
                     let name = if unit.name.is_empty() { text(&d.units[unit.unit_type].base.description) } else { text(&unit.name) };
-                    format!("{name}, level {}", unit.level)
+                    // Another player's unit says whose it is.
+                    let owner = self.units.get(caster).map(|c| c.owner);
+                    let whose = if owner == Some(unit.owner) { String::new() } else { format!(" ({})", text(&self.player_get_name(unit.owner))) };
+                    format!("{name}, level {}{whose}", unit.level)
                 }
                 None => format!("Unit {}", t.0),
             },

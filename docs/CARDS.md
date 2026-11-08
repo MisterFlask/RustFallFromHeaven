@@ -106,6 +106,12 @@ comment naming the card.
 **Records:** each card that changes the rules is listed in docs/PORTING.md ("Changes from
 FFH2", the decks entry). Its row in section 5 below gets its status.
 
+**New data keys** (each read by `ffh-data`; the loader warns about a key nothing reads):
+
+| Key | Table | What |
+|---|---|---|
+| `py_target_label` | spells | the name of a `choice` target's option (section 3) |
+
 ## 3. Card world spells and remote targets
 
 - **A card's world spell** is a spell with `"once": true` and `"tech_prereq"` its card. Any unit of
@@ -119,8 +125,27 @@ FFH2", the decks entry). Its row in section 5 below gets its status.
   - `unit_cast_at(u, spell, target)` sets `Game::spell_target` for the spell's result to read.
   - A targeted spell cast without a target does nothing.
 - **Shared helpers** for the cards go in `crates/ffh-core/src/ffh/cards/world.rs`: a region (the
-  largest connected group of unowned plots of a terrain or feature), a new civilization born
-  mid-game, ...
+  largest connected group of unowned plots of a terrain or feature), the plots within N plots of
+  a player's borders (`near_borders`), a unit gaining levels (`unit_gain_levels`, rule 10: the XP
+  for N more promotions than it can take now), a new civilization born mid-game, ...
+- **Naming a target for people:** `Game::spell_target_label(caster, spell, target)`: a plot's
+  terrain and feature with its coordinates, a city's name, a unit's name and level, a player's
+  name. A `choice` target's option is named by the spell's `py_target_label`, a `TargetLabelFn`
+  (`fn(&Game, UnitId, i32, &PyCall) -> String`; a module with choice spells adds its lookup to
+  `cards::LABELS`); without one it is "Option n". When the options are entries of an info table
+  (a trait, a building, a damage type, ...), the shared `labelInfo(pCaster, iChoice, 'TraitType')`
+  names entry `n` of the table its third argument names (`world::LABEL_KINDS`), and the UI shows
+  that entry's help beside it.
+- **Listing targets once:** `unit_can_cast_untargeted` is `unit_can_cast` without asking a
+  targeted spell for its targets: a caller that tries many units (the UI's world actions, the AI)
+  asks it for each and lists the targets once, for the caster.
+- **In the human's UI** (ffh-play, docs/HUMAN.md): the actions of a targeted spell (the empire's
+  world actions, and a selection's spells) carry `target_kind` and `targets`, each `{target, at,
+  label, info?}` (`target` the command's form, `at` the plot it is picked on, `info` `[kind, n]` for
+  an info table's entry), and a `cast_at {unit, spell, target, confirmed}` command. A plot, city or
+  unit is picked on the map (its plots outlined; a plot with several targets asks which), a player
+  or a choice from a list. A card's world spell asks to confirm (once a game) and stays listed,
+  spent, once cast. `do_command COMMAND_CAST` refuses a targeted spell.
 
 ## 4. The Armageddon deck
 
@@ -141,6 +166,10 @@ FFH2", the decks entry). Its row in section 5 below gets its status.
   `text`.
 - **Sight:** a player may see unrevealed slots ahead (`doom_slot_known`, `player_doom_sight`:
   the Orrery of Ceridwen shows two).
+- **The human's view:** `me.doom` (`view/cards.rs`) lists the slots with what the human knows:
+  a revealed or fired card, or one it sees ahead, by key, name and effect; hidden slots say
+  nothing of their card. The reveal and the firing are messages to every player (the log's fog
+  lets them through to the human).
 - FFH2's counter triggers (`prereq_global_counter`, weight -1) no longer fire by themselves.
 
 **Random events are gone:** `player_do_events` no longer rolls for a weighted event. The
@@ -155,3 +184,7 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | Card | Suit | Status |
 |---|---|---|
 | (the deck itself: deal, discover, once spells, targets, Armageddon deck) | | built |
+| (the decks' UI: a held card, Discover, cards in the help and the tech tree, card world spells, `cast_at` and target picks, the Armageddon deck in the HUD) | | built |
+| G17 Starmetal Meteor | Sage | built |
+| B07 Legacy of Kings | Bard | built |
+| B18 Anointed Champion | Bard | built |

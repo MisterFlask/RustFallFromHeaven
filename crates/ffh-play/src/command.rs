@@ -116,6 +116,91 @@ pub enum Command {
     /// defend the borrower; `give` / `get` are trade items the human gives / asks with it;
     /// `units`: the units the human lends (empty: the advisor picks them).
     ProposeLoan { to: PlayerId, lend: bool, target: TeamId, defend: bool, strength: i32, duration: i32, give: Vec<TradeData>, get: Vec<TradeData>, units: Vec<UnitId> },
+    /// This game's spells cast at a distance (docs/CARDS.md, section 3): unit `unit` casts
+    /// `spell` (one with a `target`) at `target`, one of the spell's valid targets for it
+    /// (`unit_spell_targets`). A world or card spell asks first (`confirmed`).
+    CastAt { unit: UnitId, spell: SpellType, target: TargetRef, confirmed: bool },
+}
+
+/// What a spell is cast at, as the protocol names it (`cast_at`'s `target`): `{"plot": {"x": x,
+/// "y": y}}` (or `[x, y]`), `{"city": id}`, `{"unit": id}`, `{"player": id}` or `{"choice": n}` (one
+/// of the spell's own numbered options). Validation resolves it to a `SpellTarget`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TargetRef {
+    Plot(i32, i32),
+    City(CityId),
+    Unit(UnitId),
+    Player(PlayerId),
+    Choice(i32),
+}
+
+impl TargetRef {
+    /// The protocol's form of a rules target.
+    pub fn of(g: &Game, t: SpellTarget) -> TargetRef {
+        match t {
+            SpellTarget::Plot(p) => {
+                let (x, y) = g.map.xy(p);
+                TargetRef::Plot(x, y)
+            }
+            SpellTarget::City(c) => TargetRef::City(c),
+            SpellTarget::Unit(u) => TargetRef::Unit(u),
+            SpellTarget::Player(p) => TargetRef::Player(p),
+            SpellTarget::Choice(i) => TargetRef::Choice(i),
+        }
+    }
+
+    /// The canonical form (`{"plot": {"x": x, "y": y}}`, `{"city": id}`, ...).
+    pub fn to_json(&self) -> Json {
+        match *self {
+            TargetRef::Plot(x, y) => crate::jobj! { "plot" => plot_json(x, y) },
+            TargetRef::City(c) => crate::jobj! { "city" => c },
+            TargetRef::Unit(u) => crate::jobj! { "unit" => u },
+            TargetRef::Player(p) => crate::jobj! { "player" => p },
+            TargetRef::Choice(i) => crate::jobj! { "choice" => i },
+        }
+    }
+
+    /// Decodes member `key`: an object with exactly one of `plot`, `city`, `unit`, `player` and
+    /// `choice`.
+    pub fn from_json(j: &Json, key: &str) -> Result<TargetRef, FieldError> {
+        let v = j.req_value(key)?;
+        let wrong = || FieldError::wrong(key, "a target: {\"plot\": {\"x\": x, \"y\": y}}, {\"city\": id}, {\"unit\": id}, {\"player\": id} or {\"choice\": n}", v);
+        let members = v.as_obj().ok_or_else(wrong)?;
+        let [(k, _)] = members else { return Err(wrong()) };
+        Ok(match k.as_str() {
+            "plot" => {
+                let (x, y) = plot_field(v, "plot")?.ok_or_else(wrong)?;
+                TargetRef::Plot(x, y)
+            }
+            "city" => TargetRef::City(v.req("city")?),
+            "unit" => TargetRef::Unit(v.req("unit")?),
+            "player" => TargetRef::Player(v.req("player")?),
+            "choice" => TargetRef::Choice(v.req("choice")?),
+            _ => return Err(wrong()),
+        })
+    }
+
+    /// The rules target (a plot must be on the map; the spell's targets check the rest).
+    pub fn resolve(&self, g: &Game) -> Result<SpellTarget, CmdErr> {
+        Ok(match *self {
+            TargetRef::Plot(x, y) => SpellTarget::Plot(on_map(g, x, y)?),
+            TargetRef::City(c) => SpellTarget::City(c),
+            TargetRef::Unit(u) => SpellTarget::Unit(u),
+            TargetRef::Player(p) => SpellTarget::Player(p),
+            TargetRef::Choice(i) => SpellTarget::Choice(i),
+        })
+    }
+
+    /// For people (`journal print`).
+    pub fn describe(&self) -> String {
+        match *self {
+            TargetRef::Plot(x, y) => format!("plot ({x}, {y})"),
+            TargetRef::City(c) => format!("city {}", c.0),
+            TargetRef::Unit(u) => format!("unit {}", u.0),
+            TargetRef::Player(p) => format!("player {}", p.0),
+            TargetRef::Choice(i) => format!("option {i}"),
+        }
+    }
 }
 
 /// Who launches an `engage` (and whose attack an `engage_preview` plans): an army, the selected
@@ -365,6 +450,7 @@ pub const COMMAND_NAMES: &[&str] = &[
     "crusade_answer",
     "crusade_lend",
     "propose_loan",
+    "cast_at",
 ];
 
 /// The members of each command besides `c` (in the order of [`COMMAND_NAMES`]). A request
@@ -412,6 +498,7 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("crusade_answer", &["crusade", "strength"]),
     ("crusade_lend", &["crusade", "units", "declare_war"]),
     ("propose_loan", &["to", "lend", "target", "mission", "strength", "duration", "give", "get", "units"]),
+    ("cast_at", &["unit", "spell", "target", "confirmed"]),
 ];
 
 /// The envelope's members a command or query object may carry (`transport::Request`).
@@ -553,6 +640,7 @@ impl Command {
             Command::CrusadeAnswer { .. } => "crusade_answer",
             Command::CrusadeLend { .. } => "crusade_lend",
             Command::ProposeLoan { .. } => "propose_loan",
+            Command::CastAt { .. } => "cast_at",
         }
     }
 
@@ -682,6 +770,12 @@ impl Command {
                     units: j.get_or("units", Vec::new())?,
                 }
             }
+            "cast_at" => Command::CastAt {
+                unit: j.req("unit")?,
+                spell: names::field(d, j, "spell")?,
+                target: TargetRef::from_json(j, "target")?,
+                confirmed: flag("confirmed")?,
+            },
             other => return Err(invalid(format!("unknown command {other:?}"))),
         })
     }
@@ -774,6 +868,9 @@ impl Command {
                     .with("get", items(get))
                     .with("units", ids(units))
             }
+            Command::CastAt { unit, spell, target, confirmed } => {
+                j.with("unit", *unit).with("spell", Json::idx(*spell)).with("target", target.to_json()).with("confirmed", *confirmed)
+            }
         }
     }
 
@@ -839,6 +936,7 @@ impl Command {
                     if units.is_empty() { String::new() } else { format!(", units {units:?}") }
                 )
             }
+            Command::CastAt { unit, spell, target, .. } => format!("cast {} by unit {} at {}", names::name(d, *spell), unit.0, target.describe()),
             other => other.to_json().to_string(),
         }
     }
@@ -929,6 +1027,8 @@ pub enum Action {
     CrusadeLend { crusade: CrusadeId, units: Vec<UnitId> },
     /// The other side accepted: `Game::loan_agree_with` (the human's named units, if lending).
     AgreeLoan { proposal: LoanProposal, units: Vec<UnitId> },
+    /// `Game::unit_cast_at` (docs/CARDS.md, section 3).
+    CastAt { unit: UnitId, spell: SpellType, target: SpellTarget },
 }
 
 /// What validation needs from the session.
@@ -1159,6 +1259,10 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 }
                 CommandType::COMMAND_CAST => {
                     in_range("spell", *data1, d.spells.len())?;
+                    let spell = SpellType::from_usize(*data1 as usize);
+                    if d.spells[spell].target.is_some() {
+                        return Err(invalid(format!("{} is cast at a target: use cast_at", names::name(d, spell))));
+                    }
                 }
                 CommandType::COMMAND_LOAD_UNIT => {
                     in_range("player", *data1, g.num_players())?;
@@ -1723,6 +1827,35 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::CrusadeLend { crusade: id, units: units.clone() })
         }
 
+        Command::CastAt { unit, spell, target, confirmed } => {
+            unit_of(g, h, *unit)?;
+            let info = &d.spells[*spell];
+            let Some(kind) = info.target else {
+                return Err(invalid(format!("{} has no target: it is cast with do_command COMMAND_CAST", names::name(d, *spell))));
+            };
+            let t = target.resolve(g)?;
+            if !crate::view::cards::target_is_kind(t, kind) {
+                return Err(invalid(format!("field `target`: {} is cast at a {}", names::name(d, *spell), crate::view::cards::target_kind_name(kind))));
+            }
+            if selection::is_busy(g, &[*unit]) || !g.unit_can_cast_untargeted(*unit, *spell, false) {
+                return Err(cannot(format!("{} cannot be cast by this unit now", names::name(d, *spell))));
+            }
+            if !g.unit_spell_targets(*unit, *spell).contains(&t) {
+                return Err(cannot(format!("{} is not a valid target of {}", target.describe(), names::name(d, *spell))));
+            }
+            if !confirmed {
+                if info.global || info.once {
+                    return Ok(Plan::Confirm(Confirm::CastGlobal { spell: *spell }));
+                }
+                if info.causes_war {
+                    if let Some(team) = target_war_team(g, h, t) {
+                        return Ok(Plan::Confirm(Confirm::CastWar { spell: *spell, team }));
+                    }
+                }
+            }
+            Plan::Apply(Action::CastAt { unit: *unit, spell: *spell, target: t })
+        }
+
         Command::ProposeLoan { to, lend, target, defend, strength, duration, give, get, units } => {
             in_range("player", to.0 as i32, g.num_civ_players())?;
             in_range("team", target.0 as i32, g.num_teams())?;
@@ -1865,6 +1998,22 @@ fn cast_war_target(g: &Game, head: UnitId, spell: SpellType) -> Option<TeamId> {
         }
     }
     None
+}
+
+/// The team a `bCausesWar` spell cast at target `t` would start a war with (the CONFIRMCASTWAR
+/// question of a spell cast at a distance): the team owning the target (a plot's or a city's
+/// owner, a unit's, a player's) when it is another team, not our vassal and not at war with us.
+fn target_war_team(g: &Game, h: PlayerId, t: SpellTarget) -> Option<TeamId> {
+    let team = g.players[h].team;
+    let owner = match t {
+        SpellTarget::Plot(p) => g.map.plots[p].owner,
+        SpellTarget::City(c) => g.cities.get(c).map(|city| city.owner),
+        SpellTarget::Unit(u) => g.units.get(u).map(|unit| unit.owner),
+        SpellTarget::Player(p) => Some(p),
+        SpellTarget::Choice(_) => None,
+    }?;
+    let other = g.players[owner].team;
+    (other != team && !g.teams[other].vassal[team] && !g.teams[other].at_war[team]).then_some(other)
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -2047,6 +2196,13 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
             let named = (!units.is_empty()).then_some(units.as_slice());
             let _ = g.loan_agree_with(proposal, named);
         }
+        Action::CastAt { unit, spell, target } => {
+            // As CvNetDoCommand(COMMAND_CAST), at the target (validated just before).
+            if g.units.contains(*unit) {
+                g.tel_cast_reason(*unit, "command", 0);
+                g.unit_cast_at(*unit, *spell, *target);
+            }
+        }
     }
     // This game's armies follow the groups the command changed (docs/ARMIES.md).
     g.player_army_sync(h);
@@ -2138,6 +2294,16 @@ mod tests {
                 units: vec![],
             },
         ];
+        let cmds: Vec<Command> = cmds
+            .into_iter()
+            .chain([
+                Command::CastAt { unit: UnitId(4), spell: SpellType(3), target: TargetRef::Plot(5, 6), confirmed: false },
+                Command::CastAt { unit: UnitId(4), spell: SpellType(3), target: TargetRef::City(CityId(2)), confirmed: true },
+                Command::CastAt { unit: UnitId(4), spell: SpellType(3), target: TargetRef::Unit(UnitId(9)), confirmed: false },
+                Command::CastAt { unit: UnitId(4), spell: SpellType(3), target: TargetRef::Player(PlayerId(1)), confirmed: false },
+                Command::CastAt { unit: UnitId(4), spell: SpellType(3), target: TargetRef::Choice(7), confirmed: false },
+            ])
+            .collect();
         let mut seen: Vec<&str> = Vec::new();
         for c in &cmds {
             let j = c.to_json();

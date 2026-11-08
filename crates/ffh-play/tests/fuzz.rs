@@ -156,6 +156,31 @@ impl Fuzz {
         }
     }
 
+    /// A spell target (`cast_at`): a plot, a city, a unit, a player or a choice, or junk.
+    fn target(&mut self, s: &Session) -> Json {
+        match self.n(7) {
+            0 => {
+                let (x, y) = (self.n(80) as i64 - 5, self.n(60) as i64 - 5);
+                jobj! { "plot" => jarr![x, y] }
+            }
+            1 => {
+                let c = self.city(s);
+                jobj! { "city" => c }
+            }
+            2 => {
+                let u = self.unit(s);
+                jobj! { "unit" => u }
+            }
+            3 => jobj! { "player" => Json::Int(self.n(12) as i64 - 1) },
+            4 => {
+                let n = self.number();
+                jobj! { "choice" => n }
+            }
+            5 => jobj! { "plot" => Json::Int(3), "city" => Json::Int(1) },
+            _ => self.number(),
+        }
+    }
+
     fn item(&mut self) -> Json {
         jobj! { "item" => self.type_ref(), "data" => self.number() }
     }
@@ -188,6 +213,7 @@ impl Fuzz {
             "crusade_answer" => &["crusade", "strength"],
             "crusade_lend" => &["crusade", "units", "declare_war"],
             "propose_loan" => &["to", "lend", "target", "mission", "strength", "duration", "give", "get", "units"],
+            "cast_at" => &["unit", "spell", "target", "confirmed"],
             _ => &[],
         };
         for &f in fields {
@@ -207,6 +233,8 @@ impl Fuzz {
                 "civics" => Json::Arr((0..self.n(3)).map(|_| self.type_ref()).collect()),
                 "give" | "get" => Json::Arr((0..self.n(3)).map(|_| self.item()).collect()),
                 "choice" => self.pick(&[Json::from("YES"), Json::from("ABSTAIN"), Json::Int(-1), Json::Int(-6), Json::Int(3), Json::Int(i32::MAX as i64)]),
+                "target" if c == "cast_at" => self.target(s),
+                "spell" => self.type_ref(),
                 "to" | "team" | "target" => Json::Int(self.n(12) as i64 - 1),
                 "x" | "y" => {
                     if self.chance(60) {

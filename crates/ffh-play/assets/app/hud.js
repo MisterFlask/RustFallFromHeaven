@@ -12,6 +12,7 @@ import { renderSpectatorBar, autoplayBar, flagsView } from "./tools.js";
 import { isoSkin, isoIcon } from "./isoui.js";
 import { effectsOf, partsList } from "./infotips.js";
 import { battleLine, battleLinks } from "./engagements.js";
+import { castTargeted } from "./units.js";
 
 /** The parts of `#phase`: the phase line (redrawn each render), the spectator bar and the
  *  autoplay bar (each its own slot; `display: contents`, so #phase lays out their children). */
@@ -272,7 +273,7 @@ export function renderTop() {
         .map(([p, i]) => h("span.slider-item", look.art || iso ? uiIcon("commerce", i, 8, { title: dname("CommerceType", i) }) : `${dname("CommerceType", i).slice(0, 3)} `, small(`${p}%`))),
     ),
     sep(),
-    h("span.stat.armageddon", { title: `Armageddon counter ${m.armageddon}` }, look.art || iso ? uiIcon("armageddon", m.armageddon, 16) : h("span.icon", "☄"), big(m.armageddon)),
+    h("span.stat.armageddon", { tip: () => doomTip(m) }, look.art || iso ? uiIcon("armageddon", m.armageddon, 16) : h("span.icon", "☄"), big(m.armageddon)),
   ];
   const mana = m.mana.filter((x) => x.count > 0);
   if (mana.length) {
@@ -297,9 +298,14 @@ export function renderTop() {
   fill(info, items);
 }
 
+/** What a spell's target is, in words (`target_kind`). */
+const TARGET_WORDS = { plot: "a plot", city: "a city", unit: "a unit", player: "a player", choice: "one of its options" };
+
 /** The empire's own actions, a row of buttons beside its numbers (`me.world_actions`): its world
- *  spell, cast once per game through the unit the server picked (`caster`), after the cast's
- *  confirmation. */
+ *  spell, cast once per game, and its cards' world spells (docs/CARDS.md: once a game each, still
+ *  shown once cast), each through the unit the server picked (`caster`), after the cast's
+ *  confirmation. A spell cast at a distance first picks its target (`castTargeted`: on the map, or
+ *  from a list). */
 function renderWorldActions(m, st) {
   const box = document.getElementById("world-actions");
   if (!box) return;
@@ -309,22 +315,52 @@ function renderWorldActions(m, st) {
     box,
     list.map((a) => {
       const name = dname("SpellType", a.spell);
-      const caster = a.caster !== null ? S.units?.get?.(a.caster) : null;
+      const caster = a.caster !== null && a.caster !== undefined ? S.units?.get?.(a.caster) : null;
       const help = effectsOf("SpellType", a.spell) || a.help || "";
+      const what = a.once ? "Card spell" : "World spell";
+      const pick = a.target_kind ? `; then pick its target (${TARGET_WORDS[a.target_kind] ?? a.target_kind})` : "";
       const tip = [
-        h("div.tip-title", `World spell: ${name}`),
-        h("div", "Cast once per game; it reaches your whole empire."),
+        h("div.tip-title", `${what}: ${name}`),
+        h("div", a.once ? "Card spell: cast once a game." : "Cast once per game; it reaches your whole empire."),
         help ? h("div.tip-effects", markup(help)) : null,
-        a.enabled ? (caster ? h("div.tip-hint", `Cast by your ${dname("UnitType", caster.type)} at (${caster.x}, ${caster.y}).`) : null) : h("div.tip-hint", "No unit of yours can cast it now."),
+        a.enabled ? (caster ? h("div.tip-hint", `Cast by your ${dname("UnitType", caster.type)} at (${caster.x}, ${caster.y})${pick}.`) : null) : h("div.tip-hint", a.why ?? "No unit of yours can cast it now."),
       ];
       return h(
-        "button.world-action",
-        { disabled: !a.enabled || !yours, "data-spell": a.spell, "aria-label": `Cast the world spell ${name}`, tip, onclick: () => run(a.cmd) },
-        isoSkin() ? isoIcon("spell", { px: 32 }) : h("span.icon", "✶"),
+        `button.world-action${a.cast ? ".spent" : ""}`,
+        {
+          disabled: !a.enabled || !yours,
+          "data-spell": a.spell,
+          "aria-label": `Cast the ${a.once ? "card" : "world"} spell ${name}`,
+          tip,
+          onclick: () => (a.target_kind ? castTargeted(a, { world: true }) : run(a.cmd)),
+        },
+        isoSkin() ? isoIcon("spell", { px: 32 }) : h("span.icon", a.once ? "✦" : "✶"),
         small(name, ".label"),
       );
     }),
   );
+}
+
+/** The Armageddon counter's tooltip: the counter, and the Armageddon deck's slots as the player
+ *  knows them (`me.doom`, docs/CARDS.md): a slot's card once revealed (or seen ahead), with its
+ *  effect; fired slots marked; the others hidden. */
+export function doomTip(m) {
+  const d = m.doom;
+  const head = h("div.tip-title", `Armageddon counter ${m.armageddon}`);
+  if (!d?.slots?.length) return [head, h("div.dim", "No Armageddon card is dealt yet: the deck is dealt at the end of the first turn.")];
+  const STATES = { fired: "fired", revealed: "revealed", seen: "seen ahead", hidden: "hidden" };
+  const rows = d.slots.map((s) => {
+    const known = s.state !== "hidden";
+    const name = !known ? "Hidden" : s.card ? `${s.name}${s.stages > 1 ? ` (stage ${s.stage + 1} of ${s.stages})` : ""}` : "No card";
+    return h(
+      `div.doom-slot.${s.state}`,
+      h("span.doom-at", String(s.threshold)),
+      h("span.doom-card", name),
+      known ? h("span.dim", ` · ${STATES[s.state] ?? s.state}`) : null,
+      known && s.card && s.help ? h("div.doom-help", markup(s.help)) : null,
+    );
+  });
+  return [head, h("div.doom-slots", rows), h("div.tip-hint", "A card is revealed to every player when the counter is within 5 of its slot, and plays when the counter reaches it.")];
 }
 
 /** The top bar's gold tooltip: the treasury and where the gold rate comes from. */

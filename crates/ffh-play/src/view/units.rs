@@ -243,24 +243,44 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
 
     // Spells. World spells are the empire's, not the selection's: they are cast from the top
     // bar's world actions ([`world_actions`]).
+    let discover = d.ty::<SpellType>("SPELL_DISCOVER_CARD");
     for s in d.spells.keys() {
         let k = s.idx() as i32;
         // A card's world spell (`once`) is the empire's too (docs/CARDS.md).
         if d.spells[s].global || d.spells[s].once {
             continue;
         }
-        if !selection::can_do_command(g, units, CommandType::COMMAND_CAST, k, -1, true) {
+        let info = &d.spells[s];
+        let help = crate::names::text(d, &info.base.help);
+        let mut extra = crate::jobj! { "spell" => Json::idx(s), "global" => info.global, "once" => info.once, "causes_war" => info.causes_war, "help" => if help == info.base.help { "" } else { help } };
+        // A spell cast at a distance (docs/CARDS.md): its targets, for the first selected unit
+        // that can cast it; the command is `cast_at` (at its first target, for the client to
+        // replace).
+        if info.target.is_some() {
+            if selection::is_busy(g, units) || !units.iter().any(|&u| g.unit_can_cast_untargeted(u, s, true)) {
+                continue;
+            }
+            let caster = units.iter().copied().find(|&u| g.unit_can_cast_untargeted(u, s, false));
+            let targets = caster.map(|u| g.unit_spell_targets(u, s)).unwrap_or_default();
+            let (enabled, cmd) = targeted_action(v, caster.unwrap_or(units[0]), s, caster.is_some(), &targets, &mut extra);
+            push("spell", enabled, cmd, extra);
+            continue;
+        }
+        // Discovering a great person's card (docs/CARDS.md): shown for a selection holding a card
+        // even while its needs are missing, named for its card, with what it lacks.
+        let holder = (Some(s) == discover).then(|| units.iter().copied().find(|&u| g.units[u].card.is_some())).flatten();
+        if !selection::can_do_command(g, units, CommandType::COMMAND_CAST, k, -1, true) && holder.is_none() {
             continue;
         }
         let enabled = selection::can_do_command(g, units, CommandType::COMMAND_CAST, k, -1, false);
-        let info = &d.spells[s];
-        let help = crate::names::text(d, &info.base.help);
-        push(
-            "spell",
-            enabled,
-            command_cmd(units, CommandType::COMMAND_CAST, k, -1),
-            crate::jobj! { "spell" => Json::idx(s), "global" => info.global, "causes_war" => info.causes_war, "help" => if help == info.base.help { "" } else { help } },
-        );
+        if let Some(card) = holder.and_then(|u| g.units[u].card) {
+            extra.set("label", format!("Discover: {}", crate::names::display(d, card)));
+            extra.set("card", Json::idx(card));
+            if !enabled {
+                extra.set("why", crate::view::cards::card_why_not(v, card).unwrap_or_else(|| "Not possible now.".into()));
+            }
+        }
+        push("spell", enabled, command_cmd(units, CommandType::COMMAND_CAST, k, -1), extra);
     }
 
     // Promotions.
@@ -294,41 +314,102 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
     out
 }
 
-/// The actions of the whole empire, offered in the top bar rather than on a selection: for now its
-/// world spell (once per game). The rules cast a spell through a unit, so each action names the
-/// unit it is cast through (`caster`): one that can cast it now, preferring one that loses no
-/// promotion by casting (Hidden, Invisible), then the oldest. The world spells' effects reach the
-/// whole empire, whoever casts them (the Basium's and Hyborem's are theirs alone). An action is
-/// listed while some unit could cast it (`canCast` with `bTestVisible`), `enabled` when one can now.
+/// The command and the fields of a spell cast at a distance (docs/CARDS.md): `target_kind`, the
+/// `targets` of `caster` ([`crate::view::cards::targets_json`]), `why` when it cannot be cast
+/// (`can`: the caster can cast it now, whatever its target), and a `cast_at` command at its first
+/// target (the client puts the picked one in). Returns whether it is enabled, and the command.
+fn targeted_action(v: &Viewer, caster: UnitId, s: SpellType, can: bool, targets: &[ffh_core::structs::SpellTarget], extra: &mut Json) -> (bool, Json) {
+    let g = v.g;
+    let kind = g.d.spells[s].target.expect("a targeted spell");
+    extra.set("target_kind", crate::view::cards::target_kind_name(kind));
+    extra.set("targets", crate::view::cards::targets_json(v, caster, s, targets));
+    let enabled = can && !targets.is_empty();
+    if !can {
+        extra.set("why", "No unit of yours can cast it now.");
+    } else if targets.is_empty() {
+        extra.set("why", "No valid target now.");
+    }
+    // A placeholder target of the kind (the client replaces it with the pick).
+    let target = targets.first().map(|&t| crate::command::TargetRef::of(g, t)).unwrap_or(match kind {
+        SpellTargetKind::Plot => {
+            let (x, y) = (g.units[caster].x, g.units[caster].y);
+            crate::command::TargetRef::Plot(x, y)
+        }
+        SpellTargetKind::City => crate::command::TargetRef::City(CityId(0)),
+        SpellTargetKind::Unit => crate::command::TargetRef::Unit(caster),
+        SpellTargetKind::Player => crate::command::TargetRef::Player(v.h),
+        SpellTargetKind::Choice => crate::command::TargetRef::Choice(0),
+    });
+    (enabled, Command::CastAt { unit: caster, spell: s, target, confirmed: false }.to_json())
+}
+
+/// The actions of the whole empire, offered in the top bar rather than on a selection: its world
+/// spell (once per game) and its cards' world spells (`once`, docs/CARDS.md). The rules cast a
+/// spell through a unit, so each action names the unit it is cast through (`caster`): one that can
+/// cast it now, preferring one that loses no promotion by casting (Hidden, Invisible), then the
+/// oldest. The world spells' effects reach the whole empire, whoever casts them (the Basium's and
+/// Hyborem's are theirs alone). An action is listed while some unit could cast it (`canCast` with
+/// `bTestVisible`), `enabled` when one can now (`why`: why not); a card's world spell stays listed
+/// once cast (`cast`, never enabled again). A spell cast at a distance carries its targets
+/// (`target_kind`, `targets`) and a `cast_at` command.
 pub fn world_actions(v: &Viewer) -> Json {
     let g = v.g;
     let d = g.d;
     let cast = CommandType::COMMAND_CAST;
     let mut out = Vec::new();
     for s in d.spells.keys() {
-        if !d.spells[s].global && !d.spells[s].once {
+        let info = &d.spells[s];
+        if !info.global && !info.once {
             continue;
         }
         let k = s.idx() as i32;
-        let can = |u: UnitId, visible: bool| selection::can_do_command(g, &[u], cast, k, -1, visible);
+        let help = crate::names::text(d, &info.base.help);
+        let mut j = crate::jobj! {
+            "kind" => "spell",
+            "spell" => Json::idx(s),
+            "global" => info.global,
+            "once" => info.once,
+            "causes_war" => info.causes_war,
+            "help" => if help == info.base.help { "" } else { help },
+        };
+        // A card's world spell cast already: still the empire's, spent.
+        if info.once && g.players[v.h].once_spells.contains(&s) {
+            if !g.team_is_has_tech(v.team, info.tech_prereq) {
+                continue;
+            }
+            j.set("enabled", false);
+            j.set("cast", true);
+            j.set("why", "Cast already: once a game.");
+            j.set("caster", Json::Null);
+            j.set("cmd", Json::Null);
+            out.push(j);
+            continue;
+        }
+        let busy = |u: UnitId| selection::is_busy(g, &[u]);
+        // The targets are listed once, for the caster: not for every unit tried.
+        let can = |u: UnitId, visible: bool| if info.target.is_some() { !busy(u) && g.unit_can_cast_untargeted(u, s, visible) } else { selection::can_do_command(g, &[u], cast, k, -1, visible) };
         let visible: Vec<UnitId> = g.players[v.h].units.iter().copied().filter(|&u| can(u, true)).collect();
         if visible.is_empty() {
             continue;
         }
         let loses = |u: UnitId| d.promotions.keys().filter(|&p| g.units[u].has_promotion[p] && d.promotions[p].removed_by_casting).count();
-        let caster = visible.iter().copied().filter(|&u| can(u, false)).min_by_key(|&u| (loses(u), u.0));
-        let info = &d.spells[s];
-        let help = crate::names::text(d, &info.base.help);
-        out.push(crate::jobj! {
-            "kind" => "spell",
-            "enabled" => caster.is_some(),
-            "spell" => Json::idx(s),
-            "global" => true,
-            "causes_war" => info.causes_war,
-            "help" => if help == info.base.help { "" } else { help },
-            "caster" => caster,
-            "cmd" => command_cmd(&[caster.unwrap_or(visible[0])], cast, k, -1),
-        });
+        // Not a marching recruit (this game's armies): it takes no orders until it arrives.
+        let caster = visible.iter().copied().filter(|&u| g.unit_march_refusal(u).is_none() && can(u, false)).min_by_key(|&u| (loses(u), u.0));
+        j.set("cast", false);
+        j.set("caster", caster);
+        if info.target.is_some() {
+            let targets = caster.map(|u| g.unit_spell_targets(u, s)).unwrap_or_default();
+            let (enabled, cmd) = targeted_action(v, caster.unwrap_or(visible[0]), s, caster.is_some(), &targets, &mut j);
+            j.set("enabled", enabled);
+            j.set("cmd", cmd);
+        } else {
+            j.set("enabled", caster.is_some());
+            if caster.is_none() {
+                j.set("why", "No unit of yours can cast it now.");
+            }
+            j.set("cmd", command_cmd(&[caster.unwrap_or(visible[0])], cast, k, -1));
+        }
+        out.push(j);
     }
     Json::Arr(out)
 }
@@ -438,6 +519,8 @@ pub fn unit_details(v: &Viewer, u: UnitId) -> Json {
     j.set("cargo", Json::Arr(g.map.plots[g.unit_plot(u)].units.iter().filter(|&&c| g.units[c].transport_unit == Some(u)).map(|&c| Json::from(c)).collect()));
     j.set("cargo_space", unit.cargo_capacity);
     j.set("has_casted", unit.has_casted);
+    // A great person's card (docs/CARDS.md): what it is, its needs, whether it can be discovered.
+    j.set("card_detail", unit.card.map(|c| crate::view::cards::card_json(v, c)));
     j
 }
 

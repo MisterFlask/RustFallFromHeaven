@@ -4,7 +4,7 @@
 // command resent with the answer.
 
 import * as api from "./api.js";
-import { S, emit, on, dname, teamName, gateLines, loadUnitCommand, tradeItemLabel, observing, OBSERVER_COMMANDS } from "./state.js";
+import { S, emit, on, dname, info, teamName, gateLines, loadUnitCommand, tradeItemLabel, observing, OBSERVER_COMMANDS } from "./state.js";
 import { ask } from "./modals.js";
 import { toast, busy } from "./dom.js";
 import { showBattles, battleShown, battlesMuted, battlesPending } from "./engagements.js";
@@ -129,7 +129,9 @@ async function answerConfirm(c, confirm) {
     }
     case "cast_global": {
       const name = dname("SpellType", confirm.spell);
-      const v = await ask(`Cast ${name}?`, "This is a world spell: it can be cast once per game.", [
+      // A card's world spell (docs/CARDS.md) has its own once-a-game flag.
+      const once = info("SpellType", confirm.spell)?.once;
+      const v = await ask(`Cast ${name}?`, once ? "This is a card spell: it can be cast once a game." : "This is a world spell: it can be cast once per game.", [
         { label: `Cast ${name}`, value: true, primary: true },
         { label: "Cancel", value: null },
       ]);

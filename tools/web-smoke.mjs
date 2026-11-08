@@ -23,7 +23,9 @@
 // Armies screen, a requisition order in a city's queue), the secretary general's election
 // popup (`stage election`) and the Kuriotates city-or-settlement decision (`stage settlement`);
 // crusades (`stage crusade`: the call popup, lending with the war confirmation, the Crusades
-// screen, a loan proposed). The debug start at war (its progress, the game at the attacked
+// screen, a loan proposed); the decks (`stage cards`: the Armageddon deck's slots in the counter's
+// tooltip, a great person's card and its Discover action, card spells cast at a trait picked from
+// a list and at a plot picked on the map). The debug start at war (its progress, the game at the attacked
 // civilization, the message, the start's save). It
 // fails on any console error, page error, failed
 // request or HTTP error, and saves screenshots for review.
@@ -1346,6 +1348,46 @@ async function stagedDiplomacy(bin, saves) {
   steps.push("leader moments (stage diplomacy): first contact, war declared, then a refusal to talk");
 }
 
+/** The decks (docs/CARDS.md), `stage cards`: the Armageddon counter's tooltip lists the deck's 10
+ *  slots (30 revealed); a Great Bard's card in the unit panel, its Discover action named for the
+ *  card and disabled (its need missing); Legacy of Kings cast at a trait picked from a list, and
+ *  Starmetal Meteor at a plot picked on the map, each confirmed, then shown spent. */
+async function stagedCards(bin, saves) {
+  const st = await loadStaged(bin, saves, "cards");
+  const counter = "#empire .stat.armageddon";
+  await until2(`!!document.querySelector(${q(counter)})`, "the Armageddon counter");
+  await b.eval(`(() => { const e = document.querySelector(${q(counter)}); const r = e.getBoundingClientRect(); e.dispatchEvent(new MouseEvent("mouseenter", { clientX: r.left + 2, clientY: r.top + 2 })); })()`);
+  await until2(`document.querySelectorAll(".tooltip.richtip:not([hidden]) .doom-slot").length === 10 && !!document.querySelector(".tooltip.richtip:not([hidden]) .doom-slot.revealed")`, "the Armageddon deck's slots in the counter's tooltip");
+  await shot("armageddon-deck");
+  await b.eval(`document.querySelector(${q(counter)}).dispatchEvent(new MouseEvent("mouseleave"))`);
+  await selectUnit(st.bard);
+  await until2(`/Card: Anointed Champion/.test(document.querySelector("#unit-panel .card-line")?.textContent ?? "")`, "the held card in the unit panel");
+  const discover = '#unit-panel button.action[data-type="SPELL_DISCOVER_CARD"]';
+  await until2(`(() => { const e = document.querySelector(${q(discover)}); return !!e && e.disabled && /Discover: Anointed Champion/.test(e.textContent); })()`, "the Discover action named for its card, disabled");
+  await shot("held-card");
+  // Legacy of Kings: a trait from a list, then the card spell's confirmation.
+  const spent = (spell) => `window.ffh.S.view.me.world_actions.some((a) => a.spell === ${spell} && a.cast)`;
+  await click(`#world-actions button.world-action[data-spell="${st.legacy}"]`);
+  const option = `${TOP} .modal[data-tag="cast-target"] button.option`;
+  await until2(`!!document.querySelector(${q(option)})`, "the traits to choose from");
+  await shot("card-choice");
+  await click(option);
+  await dialog("Cast Legacy of Kings?");
+  await click(`${TOP} .modal-buttons button.primary`);
+  await until2(spent(st.legacy), "Legacy of Kings cast");
+  // Starmetal Meteor: a plot picked on the map (one with no unit around, so no figure covers it).
+  await click(`#world-actions button.world-action[data-spell="${st.meteor}"]`);
+  await until2(`document.body.classList.contains("picking")`, "the target pick");
+  const at = await S(`(() => { const a = S.view.me.world_actions.find((x) => x.spell === ${st.meteor}); const near = (t) => [...S.units.values()].some((u) => Math.abs(u.x - t.at[0]) <= 1 && Math.abs(u.y - t.at[1]) <= 1); return (a.targets.find((t) => !near(t)) ?? a.targets[0]).at; })()`);
+  const p = await plotPos(at[0], at[1]);
+  await b.mouse(p.x, p.y);
+  await dialog("Cast Starmetal Meteor?");
+  await click(`${TOP} .modal-buttons button.primary`);
+  await until2(spent(st.meteor), "Starmetal Meteor cast");
+  await shot("card-spells-spent");
+  steps.push("the decks (stage cards): the Armageddon deck's slots in the counter's tooltip; a Great Bard's card and its Discover action; Legacy of Kings cast at a trait from a list, Starmetal Meteor at a plot picked on the map");
+}
+
 /** Selects the group of unit `u` with a click on its plot. */
 async function selectUnit(u) {
   const unit = await S(`S.units.get(${u})`);
@@ -1980,6 +2022,7 @@ async function main() {
     await stagedElection(bin, saves);
     await stagedSettlement(bin, saves);
     await stagedCrusade(bin, saves);
+    await stagedCards(bin, saves);
     await stagedLoad(bin, saves);
     await shiftWaypoints(bin, saves);
     await shiftWaypoints(bin, saves, "goto");

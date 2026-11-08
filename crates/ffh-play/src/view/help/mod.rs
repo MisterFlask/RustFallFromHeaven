@@ -53,6 +53,8 @@ pub fn effects_of(d: &GameData, kind: &str, i: usize) -> Option<String> {
         "SpecialistType" => specialist::effects(d, SpecialistType::from_usize(i)),
         "ProcessType" => process::effects(d, ProcessType::from_usize(i)),
         "BonusType" => bonus::effects(d, BonusType::from_usize(i)),
+        // A great person's card (docs/CARDS.md); the other techs' help is the player's (`techs`).
+        "TechType" => tech::card_effects(d, TechType::from_usize(i)),
         "TraitType" => civ::trait_help(d, TraitType::from_usize(i), None),
         "CivilizationType" => civ::civ_help(d, CivilizationType::from_usize(i)),
         "LeaderHeadType" => {

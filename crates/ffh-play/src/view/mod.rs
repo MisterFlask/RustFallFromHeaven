@@ -15,6 +15,7 @@
 
 pub mod armies;
 pub mod battles;
+pub mod cards;
 pub mod governors;
 pub mod city;
 pub mod crusade;
@@ -177,6 +178,9 @@ pub fn me(v: &Viewer) -> Json {
         "civics" => Json::Arr(pl.civics.iter().map(|&c| Json::opt_idx(c)).collect()),
         "score" => g.player_score[h],
         "armageddon" => g.get_global_counter(),
+        // The Armageddon deck as the human knows it (docs/CARDS.md): each slot's card when
+        // revealed or seen ahead, else hidden.
+        "doom" => crate::view::cards::doom_json(v),
         "mana" => Json::Arr(mana),
         "stasis" => crate::jobj! {
             "research" => pl.disable_research, "production" => pl.disable_production, "spells" => pl.disable_spellcasting,
@@ -371,6 +375,8 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
         j.set("activity", grp.filter(|&gr| g.groups.contains(gr)).map(|gr| Json::idx(g.groups[gr].activity_type)));
         j.set("transport", unit.transport_unit);
         j.set("summon_turns", (unit.duration > 0).then_some(unit.duration));
+        // A great person's card (docs/CARDS.md).
+        j.set("card", Json::opt_idx(unit.card));
         // This game's armies (docs/ARMIES.md): its army, or the city whose garrison it is in, or
         // its march (a recruit on its way: it takes no orders until it arrives).
         j.set("army", unit.army);
