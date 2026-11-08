@@ -3,8 +3,6 @@
 // Copyright Firaxis Games 2005
 //
 // Improvement Infos
-// deep_spawn_unit_type is this game's own (docs/CARDS.md): what a lair spawns instead of its
-//     spawn_unit_type once the Armageddon card The Lairs Deepen has been played.
 [
   {
     "type": "IMPROVEMENT_AIFON_ISLE",
@@ -44,8 +42,7 @@
     "tech_yield_changes": "",
     "route_yield_changes": "",
     "appearance_probability": 75,
-    "spawn_unit_type": "UNIT_SKELETON",
-    "deep_spawn_unit_type": "UNIT_WRAITH"
+    "spawn_unit_type": "UNIT_SKELETON"
   },
   {
     "type": "IMPROVEMENT_BEAR_DEN",
@@ -57,8 +54,7 @@
     "terrain_makes_valids": {"TERRAIN_TUNDRA": true},
     "tech_yield_changes": "",
     "route_yield_changes": "",
-    "spawn_unit_type": "UNIT_BEAR",
-    "deep_spawn_unit_type": "UNIT_GREATER_WEREWOLF"
+    "spawn_unit_type": "UNIT_BEAR"
   },
   {
     "type": "IMPROVEMENT_BRADELINES_WELL",
@@ -449,8 +445,7 @@
     "appearance_probability": 50,
     "range": 1,
     "range_defense_modifier": 5,
-    "spawn_unit_type": "UNIT_GOBLIN_SCORPION_CLAN",
-    "deep_spawn_unit_type": "UNIT_OGRE"
+    "spawn_unit_type": "UNIT_GOBLIN_SCORPION_CLAN"
   },
   {
     "type": "IMPROVEMENT_GOODY_HUT",
@@ -552,8 +547,7 @@
     },
     "tech_yield_changes": "",
     "route_yield_changes": "",
-    "spawn_unit_type": "UNIT_CHAMPION",
-    "deep_spawn_unit_type": "UNIT_BALOR"
+    "spawn_unit_type": "UNIT_CHAMPION"
   },
   {
     "type": "IMPROVEMENT_JUNGLE_ALTAR",
@@ -607,8 +601,7 @@
     "terrain_makes_valids": {"TERRAIN_PLAINS": true},
     "tech_yield_changes": "",
     "route_yield_changes": "",
-    "spawn_unit_type": "UNIT_LION",
-    "deep_spawn_unit_type": "UNIT_GREATER_WEREWOLF"
+    "spawn_unit_type": "UNIT_LION"
   },
   {
     "type": "IMPROVEMENT_LUMBERMILL",
@@ -1465,8 +1458,7 @@
     "tech_yield_changes": "",
     "route_yield_changes": "",
     "appearance_probability": 75,
-    "spawn_unit_type": "UNIT_LIZARDMAN",
-    "deep_spawn_unit_type": "UNIT_LIZARDMAN_RANGER"
+    "spawn_unit_type": "UNIT_LIZARDMAN"
   },
   {
     "type": "IMPROVEMENT_SEVEN_PINES",

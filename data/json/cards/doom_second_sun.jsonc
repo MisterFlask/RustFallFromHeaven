@@ -1,8 +1,0 @@
-// A32 The Second Sun (docs/DECKS_ROUND8.md section B, as amended in C.5; the Armageddon card is
-// code: crates/ffh-core/src/deck/doom_cards.rs).
-{
-  "text": {
-    "TXT_KEY_DOOM_SECOND_SUN": "The Second Sun",
-    "TXT_KEY_DOOM_SECOND_SUN_HELP": "Every plot's terrain moves one step from what it was: Ice becomes Tundra, Tundra becomes Plains. A feature the new terrain cannot have is removed."
-  }
-}

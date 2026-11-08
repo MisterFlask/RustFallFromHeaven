@@ -14,8 +14,7 @@
       "tech_yield_changes": "",
       "route_yield_changes": "",
       "appearance_probability": 0,
-      "spawn_unit_type": "UNIT_BABY_SPIDER",
-      "deep_spawn_unit_type": "UNIT_GIANT_SPIDER"
+      "spawn_unit_type": "UNIT_BABY_SPIDER"
     }
   ],
   "unit_classes": [

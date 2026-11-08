@@ -334,6 +334,26 @@ mod tests {
         for c in all_cards() {
             assert!(g.doom_slot_candidates(c.stages[0], false).iter().any(|x| x.key == c.key), "{} can be dealt", c.key);
         }
+        // Each slot's cards, which share it evenly.
+        let slot = |g: &Game, t: i32| -> Vec<&str> {
+            let mut keys: Vec<&str> = g.doom_slot_candidates(t, false).iter().map(|c| c.key).collect();
+            keys.sort();
+            keys
+        };
+        let expected: [(i32, &[&str]); 9] = [
+            (20, &["DOOM_WILD_AWAKENS"]),
+            (30, &["DOOM_BLIGHT", "DOOM_BROOD", "DOOM_SCALED_KINGDOM", "DOOM_SEA_RECEDES"]),
+            (40, &["DOOM_FOUR_HORSEMEN", "DOOM_VOLCANIC_SPRING", "DOOM_WEREWOLF_MOON"]),
+            (50, &["DOOM_BLADE_RETURNS"]),
+            (60, &["DOOM_INFERNAL_GATE"]),
+            (70, &[]),
+            (80, &["DOOM_HELLFIRE", "DOOM_SKY_FALLS"]),
+            (90, &["DOOM_WRATH"]),
+            (100, &["DOOM_APOCALYPSE", "DOOM_LONG_NIGHT"]),
+        ];
+        for (t, keys) in expected {
+            assert_eq!(slot(&g, t), keys, "the cards of slot {t}");
+        }
         // Whichever cards come, every slot from 20 holds one, but 70, which only the Four
         // Horsemen's chain reaches (and 10, which none does).
         for _ in 0..20 {

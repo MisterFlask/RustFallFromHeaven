@@ -571,8 +571,9 @@ flag.
       points of the Armageddon counter, and its owner sees the next two Armageddon cards before
       they are revealed.
   - **The Armageddon cards** (the counter's slot; each is dealt to its slot or not, docs/CARDS.md
-    section 4). A card that brings barbarians is dealt again under No Barbarians, and the
-    Gathering under No Vassal States.
+    section 4). A card that brings barbarians is dealt again under No Barbarians. The Lairs
+    Deepen, The Second Sun, The Twilight of the Gods, The Gathering and The Godless Age were cut
+    by the owner (2026-11-08).
     - *The Wild Awakens* (20): every lair spawns three of its units at once (Barrow, Bear Den,
       Goblin Fort, Hellfire, Lion Den, Ruins), unless another civilization's unit stands on it.
     - *The Sea Recedes* (30): a stretch of sea named at the reveal (the open coast within 7 plots
@@ -586,19 +587,9 @@ flag.
       largest city; every barbarian Wolf and Wolf Pack becomes a Greater Werewolf.
     - *The Blade Returns* (50): if no Godslayer is in the world, it appears on the unowned land
       plot farthest from any city, guarded by four barbarian Greater Werewolves.
-    - *The Lairs Deepen* (60, lasting): lairs spawn stronger creatures (Barrow: Wraith; Bear and
-      Lion Dens: Greater Werewolf; Goblin Fort: Ogre; Ruins: Lizardman Ranger; Hellfire: Balor).
-    - *The Second Sun* (60): Ice becomes Tundra and Tundra becomes Plains (a feature the new
-      terrain cannot have is removed).
-    - *The Twilight of the Gods* (80): every holy city's shrine is destroyed (and cannot be rebuilt).
     - *The Sky Falls* (80): the ten largest cities lose 2 population (never below 1), and the units
       in them half their max HP.
-    - *The Gathering* (100): every civilization with less than half the power of the strongest
-      civilization whose capital is within 15 plots of its own capitulates to it; they are ordinary
-      vassals, counting toward every victory as any vassal does.
     - *The Long Night* (100, lasting): -1 food on every plot; units heal each turn only in cities.
-    - *The Godless Age* (100): every shrine, holy city and religion is removed, and state religions
-      end (without anarchy).
     - *The Scaled Kingdom* (30): a new civilization of lizardmen rises in the largest unowned region
       of jungle and marsh: three cities and the Slitherking; its units move through jungle and marsh
       as open ground with +50% defence there; -2 toward the civilizations near its cities.

@@ -941,6 +941,8 @@ Rank: **A** strong, **B** solid, **C** marginal (keep only if the deck needs vol
 | A49 | The Long Night | keep | B | -1 food and no healing outside cities; no sight change |
 | A50 | The Godless Age | keep | B | state religions end, holy cities and shrines are gone |
 
+A30, A32, A39, A48 and A50 were built, then cut by the owner on 2026-11-08 (docs/CARDS.md).
+
 ### C.6 Where the designer overruled a reviewer
 
 - **Kept the Wall of the Kings** against "Sanctuary is near": the Elohim's Sanctuary expels and

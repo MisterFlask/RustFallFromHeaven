@@ -4,12 +4,11 @@
 //! Each card's text (`TXT_KEY_DOOM_<NAME>`, `TXT_KEY_DOOM_<NAME>_HELP`) is in its card file,
 //! `data/json/cards/doom_<name>.jsonc`. Cards that last for the rest of the game are rules where
 //! the rule lives, asking `Game::doom_fired`:
-//! - The Lairs Deepen: `Game::plot_lair_spawn_unit` (plot/terrain.rs);
 //! - The Long Night: `Game::plot_calculate_yield` (plot/geography.rs), `Game::unit_heal_rate`
 //!   (unit/actions.rs).
 //!
-//! The Gathering's vassals are ordinary vassals: they count toward every victory as any vassal
-//! does (the owner's rule: cards do not alter the victory conditions).
+//! The Godless Age, The Gathering, The Twilight of the Gods, The Lairs Deepen and The Second Sun
+//! were cut (the owner's call, 2026-11-08).
 //!
 //! The cards that bring a civilization into the game (A04 The Scaled Kingdom, A06 The Brood, A22
 //! The Infernal Gate Opens) are batch B8's: their `valid` and `fire` functions are in
@@ -28,13 +27,8 @@ pub const SEA_RECEDES: &str = "DOOM_SEA_RECEDES";
 pub const VOLCANIC_SPRING: &str = "DOOM_VOLCANIC_SPRING";
 pub const WEREWOLF_MOON: &str = "DOOM_WEREWOLF_MOON";
 pub const BLADE_RETURNS: &str = "DOOM_BLADE_RETURNS";
-pub const LAIRS_DEEPEN: &str = "DOOM_LAIRS_DEEPEN";
-pub const SECOND_SUN: &str = "DOOM_SECOND_SUN";
-pub const TWILIGHT_OF_THE_GODS: &str = "DOOM_TWILIGHT_OF_THE_GODS";
 pub const SKY_FALLS: &str = "DOOM_SKY_FALLS";
-pub const GATHERING: &str = "DOOM_GATHERING";
 pub const LONG_NIGHT: &str = "DOOM_LONG_NIGHT";
-pub const GODLESS_AGE: &str = "DOOM_GODLESS_AGE";
 pub const SCALED_KINGDOM: &str = "DOOM_SCALED_KINGDOM";
 pub const BROOD: &str = "DOOM_BROOD";
 pub const INFERNAL_GATE: &str = "DOOM_INFERNAL_GATE";
@@ -46,13 +40,8 @@ pub const CARDS: &[DoomCard] = &[
     DoomCard { key: VOLCANIC_SPRING, stages: &[40], fire: fire_volcanic_spring, valid: Some(valid_volcanic_spring), on_reveal: Some(name_hills) },
     DoomCard { key: WEREWOLF_MOON, stages: &[40], fire: fire_werewolf_moon, valid: Some(barbarians_on), on_reveal: None },
     DoomCard { key: BLADE_RETURNS, stages: &[50], fire: fire_blade_returns, valid: Some(valid_blade_returns), on_reveal: None },
-    DoomCard { key: LAIRS_DEEPEN, stages: &[60], fire: fire_nothing, valid: Some(lairs_spawn), on_reveal: None },
-    DoomCard { key: SECOND_SUN, stages: &[60], fire: fire_second_sun, valid: Some(valid_second_sun), on_reveal: None },
-    DoomCard { key: TWILIGHT_OF_THE_GODS, stages: &[80], fire: fire_twilight_of_the_gods, valid: Some(valid_twilight_of_the_gods), on_reveal: None },
     DoomCard { key: SKY_FALLS, stages: &[80], fire: fire_sky_falls, valid: None, on_reveal: None },
-    DoomCard { key: GATHERING, stages: &[100], fire: fire_gathering, valid: Some(valid_gathering), on_reveal: None },
     DoomCard { key: LONG_NIGHT, stages: &[100], fire: fire_long_night, valid: None, on_reveal: None },
-    DoomCard { key: GODLESS_AGE, stages: &[100], fire: fire_godless_age, valid: Some(valid_godless_age), on_reveal: None },
     DoomCard { key: SCALED_KINGDOM, stages: &[30], fire: new_civs_2::fire_scaled_kingdom, valid: Some(new_civs_2::valid_scaled_kingdom), on_reveal: None },
     DoomCard { key: BROOD, stages: &[30, 50], fire: new_civs_2::fire_brood, valid: Some(new_civs_2::valid_brood), on_reveal: None },
     DoomCard { key: INFERNAL_GATE, stages: &[60], fire: new_civs_2::fire_infernal_gate, valid: Some(new_civs_2::valid_infernal_gate), on_reveal: None },
@@ -157,16 +146,12 @@ fn barbarians_on(g: &Game) -> bool {
     !g.is_option(GameOptionType::GAMEOPTION_NO_BARBARIANS)
 }
 
-/// A card that only names its targets, or whose rule asks whether it has fired, does nothing
-/// when it fires.
-fn fire_nothing(_: &mut Game, _: usize) {}
-
 fn targets(g: &Game, key: &str, stage: usize) -> Vec<PlotIdx> {
     g.doom_targets(key, stage).iter().filter(|&&i| i >= 0 && (i as usize) < g.map.plots.len()).map(|&i| PlotIdx(i as u32)).collect()
 }
 
 // ---------------------------------------------------------------------------------------------
-// A01 The Wild Awakens (20) and A30 The Lairs Deepen (60): the lairs.
+// A01 The Wild Awakens (20): the lairs.
 
 /// Barbarians are on and some lair is on the map.
 fn lairs_spawn(g: &Game) -> bool {
@@ -462,107 +447,6 @@ fn fire_blade_returns(g: &mut Game, _: usize) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// A32 The Second Sun (60).
-
-/// The terrain one step warmer: Snow to Tundra, Tundra to Plains (`None`: no change).
-fn warmer(d: &GameData, t: TerrainType) -> Option<TerrainType> {
-    if t == d.t::<TerrainType>("TERRAIN_SNOW") {
-        Some(d.t::<TerrainType>("TERRAIN_TUNDRA"))
-    } else if t == d.t::<TerrainType>("TERRAIN_TUNDRA") {
-        Some(d.t::<TerrainType>("TERRAIN_PLAINS"))
-    } else {
-        None
-    }
-}
-
-fn valid_second_sun(g: &Game) -> bool {
-    g.map.plots.iter().any(|pl| pl.terrain_type.is_some_and(|t| warmer(g.d, t).is_some()))
-}
-
-/// Every plot's terrain one step from what it was before the card: Snow becomes Tundra, Tundra
-/// becomes Plains (a temporary terrain's real one too). A feature the new terrain cannot have
-/// goes (a Blizzard on new Plains; a feature bound to no terrain stays).
-fn fire_second_sun(g: &mut Game, _: usize) {
-    let d = g.d;
-    for p in g.map.plot_ids() {
-        if let Some(real) = g.map.plots[p].real_terrain_type.and_then(|t| warmer(d, t)) {
-            g.map.plots[p].real_terrain_type = Some(real);
-        }
-        let Some(new) = g.map.plots[p].terrain_type.and_then(|t| warmer(d, t)) else { continue };
-        g.plot_set_terrain_type(p, new, true);
-        let bound = |f: FeatureType| d.features[f].terrain.iter().any(|&b| b);
-        if g.map.plots[p].feature_type.is_some_and(|f| bound(f) && !d.features[f].terrain[new]) {
-            g.plot_set_feature_type(p, None);
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------------------------
-// A39 The Twilight of the Gods (80) and A50 The Godless Age (100): religions.
-
-/// The shrines of `religion`: its buildings that need its holy city and give its global
-/// commerce.
-fn shrines(d: &GameData, religion: ReligionType) -> Vec<BuildingType> {
-    d.buildings.keys().filter(|&b| d.buildings[b].holy_city.is_some() && d.buildings[b].global_religion_commerce == Some(religion)).collect()
-}
-
-/// The (city, shrine) pairs of the holy cities that have their religion's shrine.
-fn holy_shrines(g: &Game) -> Vec<(CityId, BuildingType)> {
-    let d = g.d;
-    let mut out = Vec::new();
-    for r in d.religions.keys() {
-        let Some(c) = g.get_holy_city(r) else { continue };
-        for b in shrines(d, r) {
-            if g.cities[c].num_real_building[b] > 0 {
-                out.push((c, b));
-            }
-        }
-    }
-    out
-}
-
-fn valid_twilight_of_the_gods(g: &Game) -> bool {
-    !holy_shrines(g).is_empty()
-}
-
-/// Every religion's holy city loses its shrine.
-fn fire_twilight_of_the_gods(g: &mut Game, _: usize) {
-    for (c, b) in holy_shrines(g) {
-        g.city_set_num_real_building(c, b, 0);
-    }
-}
-
-fn valid_godless_age(g: &Game) -> bool {
-    g.cities.iter().any(|(_, c)| c.has_religion.iter().any(|&h| h)) || g.player_ids().any(|p| g.players[p].last_state_religion.is_some())
-}
-
-/// The shrines and holy cities are gone, every religion leaves every city, and every state
-/// religion ends.
-fn fire_godless_age(g: &mut Game, _: usize) {
-    let d = g.d;
-    for (c, b) in holy_shrines(g) {
-        g.city_set_num_real_building(c, b, 0);
-    }
-    for r in d.religions.keys() {
-        if g.get_holy_city(r).is_some() {
-            g.set_holy_city(r, None, false);
-        }
-    }
-    for c in g.cities.ids() {
-        for r in d.religions.keys() {
-            if g.cities.contains(c) && g.cities[c].has_religion[r] {
-                g.city_set_has_religion(c, r, false, false, false);
-            }
-        }
-    }
-    for p in g.player_ids() {
-        if g.players[p].alive {
-            g.player_set_last_state_religion(p, None);
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------------------------
 // A40 The Sky Falls (80).
 
 /// Meteors strike the ten largest cities: units there take damage equal to 50% of their hit
@@ -575,77 +459,6 @@ fn fire_sky_falls(g: &mut Game, _: usize) {
         let p = g.city_plot(c);
         damage_units(g, p, 50);
         lose_population(g, c, 2);
-    }
-}
-
-// ---------------------------------------------------------------------------------------------
-// A48 The Gathering (100).
-
-/// How far apart two capitals may be.
-const GATHERING_RANGE: i32 = 15;
-
-/// The teams the Gathering acts on: alive, with a civilization player (not the barbarians, a
-/// minor civ or a crusade Host) that has a capital.
-fn gathering_teams(g: &Game) -> Vec<TeamId> {
-    let civs = civ_players(g);
-    g.team_ids().filter(|&t| civs.iter().any(|&p| g.players[p].team == t && g.player_get_capital_city(p).is_some())).collect()
-}
-
-/// Some capital of `a` is within `GATHERING_RANGE` plots of some capital of `b`.
-fn capitals_near(g: &Game, a: TeamId, b: TeamId) -> bool {
-    let capitals = |t: TeamId| -> Vec<(i32, i32)> {
-        g.player_ids()
-            .filter(|&p| g.players[p].alive && g.players[p].team == t)
-            .filter_map(|p| g.player_get_capital_city(p))
-            .map(|c| (g.cities[c].x, g.cities[c].y))
-            .collect()
-    };
-    let cb = capitals(b);
-    capitals(a).iter().any(|&(ax, ay)| cb.iter().any(|&(bx, by)| g.plot_distance(ax, ay, bx, by) <= GATHERING_RANGE))
-}
-
-/// The strongest team within range of `t` that may take a vassal (not itself a vassal), from
-/// `teams` (ties: the lower team id).
-fn strongest_near(g: &Game, t: TeamId, teams: &[TeamId], power: &dyn Fn(TeamId) -> i32) -> Option<TeamId> {
-    teams.iter().copied().filter(|&m| m != t && !g.team_is_a_vassal(m) && capitals_near(g, t, m)).max_by_key(|&m| (power(m), Reverse(m)))
-}
-
-fn valid_gathering(g: &Game) -> bool {
-    if g.is_option(GameOptionType::GAMEOPTION_NO_VASSAL_STATES) {
-        return false;
-    }
-    let teams = gathering_teams(g);
-    let power = |t: TeamId| g.team_get_power(t, false);
-    teams.iter().any(|&t| !g.team_is_a_vassal(t) && strongest_near(g, t, &teams, &power).is_some_and(|m| power(t) * 2 < power(m)))
-}
-
-/// Every civilization with less than half the power of the strongest civilization within 15
-/// plots, capital to capital, becomes its vassal (it capitulates). From the strongest down, on
-/// the powers before the card: a team that became a vassal takes none. They are ordinary
-/// vassals. Under No Vassal States the card is
-/// never played (`valid_gathering`: dealt again at the reveal).
-fn fire_gathering(g: &mut Game, _: usize) {
-    if g.is_option(GameOptionType::GAMEOPTION_NO_VASSAL_STATES) {
-        return;
-    }
-    let teams = gathering_teams(g);
-    let before: Vec<(TeamId, i32)> = teams.iter().map(|&t| (t, g.team_get_power(t, false))).collect();
-    let power = |t: TeamId| before.iter().find(|&&(x, _)| x == t).map_or(0, |&(_, v)| v);
-    let mut order = teams.clone();
-    order.sort_by_key(|&t| (Reverse(power(t)), t));
-    for t in order {
-        if g.team_is_a_vassal(t) || !g.team_is_alive(t) {
-            continue;
-        }
-        let Some(m) = strongest_near(g, t, &teams, &power) else { continue };
-        if power(t) * 2 < power(m) {
-            if !g.teams[t].has_met[m] {
-                g.team_meet(t, m, false);
-            }
-            g.team_assign_vassal(m, t, true);
-            let turn = g.game_turn();
-            g.log.msg(turn, None, || format!("The Gathering: team {t} becomes the vassal of team {m}."));
-        }
     }
 }
 
@@ -765,28 +578,6 @@ mod tests {
         // Not played without barbarians.
         g.setup.options[GameOptionType::GAMEOPTION_NO_BARBARIANS] = true;
         assert!(!lairs_spawn(&g));
-    }
-
-    #[test]
-    fn the_lairs_deepen_changes_what_every_lair_spawns() {
-        let mut g = game(2);
-        let d = g.d;
-        for info in d.improvements.iter() {
-            if info.spawn_unit_type.is_some() {
-                assert!(info.deep_spawn_unit_type.is_some(), "{}: a lair deepens", info.base.type_);
-            }
-        }
-        let barrow = d.t::<ImprovementType>("IMPROVEMENT_BARROW");
-        let p = open_land(&g)[0];
-        g.plot_set_improvement_type(p, Some(barrow));
-        assert_eq!(g.plot_lair_spawn_unit(p), Some(d.t::<UnitType>("UNIT_SKELETON")));
-        play(&mut g, LAIRS_DEEPEN, vec![]);
-        assert_eq!(g.plot_lair_spawn_unit(p), Some(d.t::<UnitType>("UNIT_WRAITH")));
-        // What spawns from then on is the deeper kind.
-        let barbarian = g.barbarian_player();
-        fire_wild_awakens(&mut g, 0);
-        assert_eq!(count(&g, p, barbarian, "UNIT_WRAITH"), 3);
-        assert_eq!(count(&g, p, barbarian, "UNIT_SKELETON"), 0);
     }
 
     #[test]
@@ -934,76 +725,6 @@ mod tests {
     }
 
     #[test]
-    fn the_second_sun_warms_ice_and_tundra_one_step() {
-        let mut g = game(2);
-        let d = g.d;
-        let t = |n: &str| d.t::<TerrainType>(n);
-        let blizzard = d.t::<FeatureType>("FEATURE_BLIZZARD");
-        let land = open_land(&g);
-        let (ice, ice_storm, tundra_storm, plains) = (land[0], land[1], land[2], land[3]);
-        for (p, name) in [(ice, "TERRAIN_SNOW"), (ice_storm, "TERRAIN_SNOW"), (tundra_storm, "TERRAIN_TUNDRA"), (plains, "TERRAIN_PLAINS")] {
-            g.plot_set_feature_type(p, None);
-            g.plot_set_terrain_type(p, t(name), true);
-        }
-        g.plot_set_feature_type(ice_storm, Some(blizzard));
-        g.plot_set_feature_type(tundra_storm, Some(blizzard));
-        assert!(valid_second_sun(&g));
-        fire_second_sun(&mut g, 0);
-        assert_eq!(g.map.plots[ice].terrain_type, Some(t("TERRAIN_TUNDRA")), "one step, not two");
-        assert_eq!(g.map.plots[ice_storm].terrain_type, Some(t("TERRAIN_TUNDRA")));
-        assert_eq!(g.map.plots[ice_storm].feature_type, Some(blizzard), "a Blizzard can stay on Tundra");
-        assert_eq!(g.map.plots[tundra_storm].terrain_type, Some(t("TERRAIN_PLAINS")));
-        assert_eq!(g.map.plots[tundra_storm].feature_type, None, "a Blizzard cannot be on Plains");
-        assert_eq!(g.map.plots[plains].terrain_type, Some(t("TERRAIN_PLAINS")), "no Plains to Desert");
-        assert!(!g.map.plots.iter().any(|pl| pl.terrain_type == Some(t("TERRAIN_SNOW"))));
-    }
-
-    /// A holy city of the Order with its shrine, and a second city of the Order and the Runes.
-    fn religious_world() -> (Game, CityId, CityId, ReligionType, ReligionType, BuildingType) {
-        let mut g = game(2);
-        let d = g.d;
-        let p0 = civ(&g, 0);
-        let land = open_land(&g);
-        let holy = city_at(&mut g, p0, land[0], 4);
-        let other = city_at(&mut g, p0, land[land.len() / 2], 4);
-        let order = d.t::<ReligionType>("RELIGION_THE_ORDER");
-        let runes = d.t::<ReligionType>("RELIGION_RUNES_OF_KILMORPH");
-        g.set_holy_city(order, Some(holy), false);
-        g.city_set_has_religion(other, order, true, false, false);
-        g.city_set_has_religion(other, runes, true, false, false);
-        let shrine = d.t::<BuildingType>("BUILDING_CODE_OF_JUNIL");
-        g.city_set_num_real_building(holy, shrine, 1);
-        g.player_set_last_state_religion(p0, Some(order));
-        (g, holy, other, order, runes, shrine)
-    }
-
-    #[test]
-    fn the_twilight_of_the_gods_takes_the_holy_cities_shrines() {
-        let (mut g, holy, _, order, _, shrine) = religious_world();
-        assert!(valid_twilight_of_the_gods(&g));
-        fire_twilight_of_the_gods(&mut g, 0);
-        assert_eq!(g.cities[holy].num_real_building[shrine], 0);
-        assert_eq!(g.get_holy_city(order), Some(holy), "it stays the holy city");
-        assert!(g.cities[holy].has_religion[order]);
-        assert!(!valid_twilight_of_the_gods(&g));
-    }
-
-    #[test]
-    fn the_godless_age_ends_every_religion() {
-        let (mut g, holy, other, order, runes, shrine) = religious_world();
-        let p0 = civ(&g, 0);
-        assert!(valid_godless_age(&g));
-        fire_godless_age(&mut g, 0);
-        assert_eq!(g.cities[holy].num_real_building[shrine], 0);
-        assert_eq!(g.get_holy_city(order), None);
-        for c in [holy, other] {
-            assert!(!g.cities[c].has_religion[order] && !g.cities[c].has_religion[runes]);
-        }
-        assert_eq!(g.players[p0].last_state_religion, None);
-        assert!(!valid_godless_age(&g));
-    }
-
-    #[test]
     fn the_sky_falls_on_the_ten_largest_cities() {
         let mut g = game(2);
         let p0 = civ(&g, 0);
@@ -1022,38 +743,6 @@ mod tests {
         }
         assert_eq!(g.units[fresh].damage, g.unit_max_hit_points(fresh) / 2);
         assert!(!g.units.contains(hurt) || g.units[hurt].death_delay, "a unit already half hurt dies");
-    }
-
-    #[test]
-    fn the_gathering_makes_the_weak_neighbour_an_ordinary_vassal() {
-        let mut g = game(3);
-        let (a, b, c) = (civ(&g, 0), civ(&g, 1), civ(&g, 2));
-        let land = open_land(&g);
-        let pa = land[land.len() / 2];
-        let pb = *land.iter().find(|&&p| (3..=15).contains(&dist(&g, p, pa))).unwrap();
-        let pc = *land.iter().find(|&&p| dist(&g, p, pa) > 15 && dist(&g, p, pb) > 15).unwrap();
-        city_at(&mut g, a, pa, 6);
-        city_at(&mut g, b, pb, 4);
-        city_at(&mut g, c, pc, 2);
-        g.players[a].power = 100;
-        g.players[b].power = 30;
-        g.players[c].power = 5;
-        let (ta, tb, tc) = (g.players[a].team, g.players[b].team, g.players[c].team);
-        assert!(valid_gathering(&g));
-        fire_gathering(&mut g, 0);
-        assert!(g.teams[tb].vassal[ta] && g.teams[tb].capitulated);
-        assert!(!g.team_is_a_vassal(ta) && !g.team_is_a_vassal(tc), "too far, or the strongest");
-        // It counts as every vassal does: half its population toward its master's domination, and
-        // as conquered once the third civilization holds no city.
-        assert_eq!(g.team_get_total_population(ta, true), g.teams[ta].total_population + g.teams[tb].total_population / 2);
-        let conquest = g.d.t::<VictoryType>("VICTORY_CONQUEST");
-        assert!(!g.test_victory_team(conquest, ta).0, "the third civilization stands");
-        g.teams[tc].num_cities = 0;
-        assert!(g.test_victory_team(conquest, ta).0, "the Gathering's vassal counts as conquered");
-        g.teams[tc].num_cities = 1;
-        // Under No Vassal States the card is not played.
-        g.setup.options[GameOptionType::GAMEOPTION_NO_VASSAL_STATES] = true;
-        assert!(!valid_gathering(&g));
     }
 
     #[test]
@@ -1095,7 +784,7 @@ mod tests {
     }
 
     /// A world as games make it (the Fractal script: oceans, hills, coasts), with cities founded
-    /// by hand, a holy city with its shrine, a lair, wolves and ships: every new card is dealt to
+    /// by hand, a lair, wolves and ships: every new card is dealt to
     /// its slots alone (a chain's every stage) and the counter raised to the last. Each is revealed
     /// and played (or dealt again at its reveal when it cannot be), and the world stays consistent.
     #[test]
@@ -1124,11 +813,6 @@ mod tests {
         }
         let cities = g.cities.ids();
         assert!(cities.len() >= 8);
-        let order = d.t::<ReligionType>("RELIGION_THE_ORDER");
-        g.set_holy_city(order, Some(cities[0]), false);
-        g.city_set_num_real_building(cities[0], d.t::<BuildingType>("BUILDING_CODE_OF_JUNIL"), 1);
-        let believer = g.cities[cities[0]].owner;
-        g.player_set_last_state_religion(believer, Some(order));
         let land = open_land(&g);
         g.plot_set_improvement_type(land[land.len() / 3], Some(d.t::<ImprovementType>("IMPROVEMENT_BARROW")));
         unit_at(&mut g, barbarian, "UNIT_WOLF", land[land.len() / 2]);

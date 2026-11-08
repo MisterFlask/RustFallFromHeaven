@@ -1,8 +1,0 @@
-// A39 The Twilight of the Gods (docs/DECKS_ROUND8.md section B; the Armageddon card is code:
-// crates/ffh-core/src/deck/doom_cards.rs).
-{
-  "text": {
-    "TXT_KEY_DOOM_TWILIGHT_OF_THE_GODS": "The Twilight of the Gods",
-    "TXT_KEY_DOOM_TWILIGHT_OF_THE_GODS_HELP": "Every religion's holy city loses its shrine."
-  }
-}

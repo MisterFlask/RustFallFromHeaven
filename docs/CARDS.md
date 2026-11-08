@@ -146,7 +146,6 @@ help):
 | promotions | `heal_behind` | Templar | at the end of each round its unit heals the nearest ally behind it in its lanes this many HP (an event with pass 0; nothing drawn) |
 | promotions | `unit_classes` `[class]` | Templar | only units of these classes may take it |
 | promotions | `attack_damage_type` | Elemental Forge | its unit's physical attack deals this damage type: the target's resistance to it cuts the attack (as a typed strength's) |
-| improvements | `deep_spawn_unit_type` (a unit type) | The Lairs Deepen | what a lair spawns once The Lairs Deepen has been played (every lair has one) |
 | buildings | `global_counter_commerces` (commerces) | Orrery of Ceridwen | its city's commerce per 10 points of the Armageddon counter |
 | buildings | `doom_sight` | Orrery of Ceridwen | how many unrevealed Armageddon cards ahead its owner sees (the Orrery: 2) |
 | spells | `py_target_label` | (choice spells; Purchase Charter, Bazaar of Wonders) | the callback naming a `choice` target's option, or adding to another target's name (a city's price; section 3) |
@@ -345,25 +344,26 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   that stays) and returns the targets, which the slot keeps (`DoomSlot::targets`, saved: plot
   indices for the cards so far). Its fire reads them back with `Game::doom_targets(key, stage)`.
   A redeal clears a slot's targets.
-- **Lasting cards:** a card whose effect lasts for the rest of the game (The Lairs Deepen, The
-  Long Night) fires nothing itself; the rule it changes asks `Game::doom_fired(key)` where the
-  rule lives, with a comment naming the card.
+- **Lasting cards:** a card whose effect lasts for the rest of the game (The Long Night) changes
+  a rule that asks `Game::doom_fired(key)` where the rule lives, with a comment naming the card.
 - **No barbarians:** a card that brings barbarian units (The Wild Awakens, Werewolf Moon, The
-  Blade Returns, The Lairs Deepen, The Brood's nests) is not valid under No Barbarians, so it is
-  dealt again.
+  Blade Returns, The Brood's nests) is not valid under No Barbarians, so it is dealt again.
 - **The deal with the new cards:** slots 20, 30, ... 100 always hold a card, but 70, which only
   the Four Horsemen's chain reaches (a test checks this); slot 10 has none. A slot's cards share
-  it evenly: 30 four ways (Blight, the Sea Recedes, the Scaled Kingdom, the Brood, which then
-  takes 50), 40 three ways (Volcanic Spring, Werewolf Moon, the Horsemen, who then take 50-70),
-  60 three ways, 100 four ways.
+  it evenly (a test checks the lists): 20 the Wild Awakens; 30 four ways (Blight, the Sea
+  Recedes, the Scaled Kingdom, the Brood, which then takes 50); 40 three ways (Volcanic Spring,
+  Werewolf Moon, the Horsemen, who then take 50-70); 50 the Blade Returns; 60 the Infernal Gate
+  Opens; 80 two ways (Hellfire, the Sky Falls); 90 Wrath; 100 two ways (Apocalypse, the Long
+  Night).
+- **Cut cards** (the owner's call, 2026-11-08): The Godless Age, The Gathering, The Twilight of
+  the Gods, The Lairs Deepen and The Second Sun are gone, with their rules and text.
 - **Civilizations of the deck** (batch B8, `ffh/cards/new_civs_2.rs`): the Scaled Kingdom (30),
   the Brood (its nests at 30, the civilization at 50 where a nest still stands) and the Infernal
   Gate (60: the Infernals, as the Infernal Pact brings them, `Game::infernals_arrive`; they come
   once a game, by the Pact or the card). They are born as section 6 says, without a founder
   (`Birth::wild`); a card that finds no free player slot is not valid at its reveal.
 - **No card alters a victory condition** (the owner's rule, 2026-11-08): what a card produces
-  counts normally toward every victory. The Gathering's vassals are ordinary vassals (the C.5
-  verdict's "they do not count toward domination" is withdrawn).
+  counts normally toward every victory.
 - **The human's view:** `me.doom` (`view/cards.rs`) lists the slots with what the human knows:
   a revealed or fired card, or one it sees ahead, by key, name and effect; hidden slots say
   nothing of their card. The reveal and the firing are messages to every player (the log's fog
@@ -442,14 +442,9 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | A02 The Sea Recedes (30) | Armageddon | built: the sea named at the reveal |
 | A09 Volcanic Spring (40) | Armageddon | built: the hills named at the reveal |
 | A11 Werewolf Moon (40) | Armageddon | built |
-| A30 The Lairs Deepen (60) | Armageddon | built: lasting (`deep_spawn_unit_type`) |
-| A32 The Second Sun (60) | Armageddon | built |
 | A33 The Blade Returns (50) | Armageddon | built |
-| A39 The Twilight of the Gods (80) | Armageddon | built |
 | A40 The Sky Falls (80) | Armageddon | built |
-| A48 The Gathering (100) | Armageddon | built (not played under No Vassal States) |
 | A49 The Long Night (100) | Armageddon | built: lasting |
-| A50 The Godless Age (100) | Armageddon | built |
 | (the decks' UI: a held card, Discover, cards in the help and the tech tree, card world spells, `cast_at` and target picks, the Armageddon deck in the HUD) | | built |
 | G17 Starmetal Meteor | Sage | built |
 | B07 Legacy of Kings | Bard | built |

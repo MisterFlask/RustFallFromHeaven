@@ -56,7 +56,6 @@ impl Game {
             // it). It never becomes NO_IMPROVEMENT there with FFH2 data; C++ would then read
             // GC.getImprovementInfo(NO_IMPROVEMENT) (undefined), here the step is skipped.
             if self.map.plots[p].improvement_type.is_some() {
-                // Not in FFH2: the Armageddon card The Lairs Deepen changes what lairs spawn.
                 if let Some(unit) = self.plot_lair_spawn_unit(p) {
                     if !self.is_option(GameOptionType::GAMEOPTION_NO_BARBARIANS) {
                         // C++ dereferences GC.getMapINLINE().getArea(getArea()) unchecked.
@@ -118,16 +117,9 @@ impl Game {
         //FfH: End Add
     }
 
-    /// What the lair on `p` spawns (`None`: no lair): its improvement's `spawn_unit_type`, or
-    /// its `deep_spawn_unit_type` once the Armageddon card The Lairs Deepen has been played
-    /// (docs/CARDS.md).
+    /// What the lair on `p` spawns (`None`: no lair): its improvement's `spawn_unit_type`.
     pub fn plot_lair_spawn_unit(&self, p: PlotIdx) -> Option<UnitType> {
-        let info = &self.d.improvements[self.map.plots[p].improvement_type?];
-        let unit = info.spawn_unit_type?;
-        match info.deep_spawn_unit_type {
-            Some(deep) if self.doom_fired(crate::deck::doom_cards::LAIRS_DEEPEN) => Some(deep),
-            _ => Some(unit),
-        }
+        self.d.improvements[self.map.plots[p].improvement_type?].spawn_unit_type
     }
 
     /// The lair on `p` spawns a barbarian `unit` (the spawn of C++ `CvPlot::doTurn`): an animal
