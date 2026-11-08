@@ -563,8 +563,7 @@ flag.
       immune to charms and hexes in battle, no experience, healing only in a city with a Forge.
     - *Bastion* (Engineer, III, Machinery; one per player, cannot attack): when its plot is
       attacked, its side fights with two more Sentinels at +100% HP and defence.
-    - *Lantern of Lugus* (Prophet, I, Ancient Chants, not drawn by evil players; the Dawnbringer,
-      national unit, 2): an archer whose shots deal holy damage; it sees invisible units within 2
+    - *Lantern of Lugus* (Prophet, good, I, Ancient Chants; the Dawnbringer, national unit, 2): an archer whose shots deal holy damage; it sees invisible units within 2
       plots.
     - *Orrery of Ceridwen* (Sage, II, Astronomy; world wonder): its city has +2 research per 10
       points of the Armageddon counter, and its owner sees the next two Armageddon cards before
