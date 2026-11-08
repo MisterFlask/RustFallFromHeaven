@@ -24,6 +24,7 @@ pub mod automation;
 pub mod campaign;
 pub mod casters;
 pub mod cards;
+pub mod cards_economy;
 pub mod casting;
 pub mod combat_sim;
 pub mod civs;
@@ -258,6 +259,14 @@ impl Controller for Ai {
 
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
         crusade::pick_units(g, p, terms.strength as i64)
+    }
+
+    fn choose_free_promotion(&self, g: &Game, p: PlayerId, _u: UnitId, options: &[PromotionType]) -> Option<PromotionType> {
+        cards_economy::choose_free_promotion(g, p, options)
+    }
+
+    fn choose_free_bonus(&self, g: &Game, p: PlayerId, _c: CityId, _b: BuildingType, options: &[BonusType]) -> Option<BonusType> {
+        cards_economy::choose_free_bonus(g, p, options)
     }
 }
 
