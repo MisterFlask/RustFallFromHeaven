@@ -14,6 +14,7 @@ import { look, iconEl, unitIcon, barEl, pix, typeIcon, promotionIcon, uiIcon } f
 import { isoSkin, isoIcon, actionIcon, portrait, isoBar, focusOn, unitFigure, updateInsets } from "./isoui.js";
 import { effectsOf, infoTip, partsList } from "./infotips.js";
 import { marchLine } from "./armies.js";
+import { exploreShort, exploreFull } from "./explore.js";
 import { battleTerrain, openPlan, preferredRow, flashBattle, engageNumbers, engageBrief } from "./engagements.js";
 
 /** An 8 px icon of the ui set, or the glyph before the art loaded. */
@@ -337,10 +338,12 @@ export function click(x, y, ev) {
     emit("open-city", city.id);
     return;
   }
+  // (The units selected until this click: the plot panel's lair or goody hut odds are theirs.)
+  const before = S.sel?.units ?? null;
   S.sel = null;
   syncOverlay();
   emit("selection");
-  renderPlotInfo(x, y);
+  renderPlotInfo(x, y, before);
 }
 
 /** A right-click on (x, y): move the selection there (Shift: add a waypoint). Under engagement
@@ -703,7 +706,8 @@ async function loadPreview(x, y) {
   const jobs = [];
   if (S.status?.phase === "human" || S.status?.phase === "decision") {
     jobs.push(
-      api.query("plot", { x, y }).then((r) => still() && (preview.plot = r)).catch(() => {}),
+      // (The selection: the odds of a lair or goody hut there are for its first unit.)
+      api.query("plot", sel ? { x, y, units: sel.units } : { x, y }).then((r) => still() && (preview.plot = r)).catch(() => {}),
     );
   }
   // (A marching recruit takes no orders: no move to preview.)
@@ -779,6 +783,9 @@ function showTip() {
       ),
     );
   } else if (minLevel) lines.push(minLevel);
+  // A lair or goody hut: the odds for the selection (view/explore.rs; the full table is in the
+  // plot panel and on the Explore Lair action).
+  if (p && p.x === x && p.y === y && p.explore) lines.push(h("div.tip-explore", markup(exploreShort(p.explore, dname))));
   if (p && p.x === x && p.y === y && p.yields) {
     lines.push(
       look.art || isoSkin()
@@ -1060,7 +1067,9 @@ function helpOf(a) {
     // action the card's own help (what it is and gives).
     const why = !a.enabled && a.why ? `[COLOR_NEGATIVE_TEXT]${a.why}[COLOR_REVERT]` : "";
     const card = a.card !== undefined && a.card !== null ? effectsOf("TechType", a.card) : "";
-    return [why, card, effectsOf("SpellType", a.spell) || a.help || ""].filter(Boolean).join("[NEWLINE]");
+    // Explore Lair: the odds for the selected units (view/explore.rs).
+    const explore = a.explore ? exploreFull(a.explore, dname) : "";
+    return [why, card, effectsOf("SpellType", a.spell) || a.help || "", explore].filter(Boolean).join("[NEWLINE]");
   }
   if (a.kind === "promotion") return effectsOf("PromotionType", a.promotion);
   if (a.kind === "upgrade") return effectsOf("UnitType", a.unit);
@@ -1713,12 +1722,12 @@ function ownerText(u) {
   return `${playerName(u.owner)}${lent}`;
 }
 
-async function renderPlotInfo(x, y) {
+async function renderPlotInfo(x, y, selUnits = S.sel?.units ?? null) {
   panel.dataset.plot = `${x},${y}`;
   fill(panel, h("div.panel-head", h("h3", `Plot (${x}, ${y})`)), h("p.dim", "…"));
   let p;
   try {
-    p = await api.query("plot", { x, y });
+    p = await api.query("plot", selUnits?.length ? { x, y, units: selUnits } : { x, y });
   } catch (e) {
     return fill(panel, h("p.warn", e.detail ?? e.message));
   }
@@ -1770,6 +1779,7 @@ async function renderPlotInfo(x, y) {
     h("table.kv", rows.map(([k, v]) => h("tr", h("th", k), h("td", String(v))))),
     summary,
     units.length ? h("div.section", h("h4", "Units"), units) : null,
+    p.explore ? h("div.section.plot-explore", h("h4", p.explore.kind === "hut" ? "Goody hut odds" : "Explore Lair odds"), h("div.small", markup(exploreFull(p.explore, dname)))) : null,
     events,
     flag,
   );

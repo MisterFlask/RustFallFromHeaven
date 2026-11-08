@@ -46,7 +46,7 @@ re-read against the original in the audit wave (see "Audit and stress testing" b
 | XML call-expression parser | done (ffh/pycall.rs) |
 | CvSpellInterface.py | done, audited (spells_a.rs, spells_b.rs: 242 callbacks) |
 | CvEventManager.py (rules handlers) | done, audited (events.rs) |
-| CustomFunctions.py | done, audited (custom.rs; AI war policy and UI functions excluded) |
+| CustomFunctions.py | done, audited (custom.rs; AI war policy and UI functions excluded; the `exploreLair*` functions in lairs.rs, each tier split into a read-only outcome list and its effect, shared with the odds the interface shows) |
 | CvGameUtils.py (enabled callbacks: cannotDoCivic, cannotConstruct, cannotResearch, getBuildingCostMod, canBuild, cannotTrain, ...) | done, audited (game_utils.rs) |
 | CvRandomEventInterface.py | done, audited (random_events_a.rs, random_events_b.rs; the callbacks no XML references were removed, see "Changes from FFH2") |
 | ScenarioFunctions.py | out of scope (scenarios are not the base game) |

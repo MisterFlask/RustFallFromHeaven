@@ -233,10 +233,10 @@ fn hidden_units_stay_hidden() {
     let masked_json = arr(&view, "units").iter().find(|u| int(u, "id") == masked.0 as i64).expect("the masked unit is visible");
     assert_eq!(int(masked_json, "owner"), s.g.barbarian_player().0 as i64, "hidden nationality shows a barbarian");
     // The plot query of the fogged plot shows no units; an attack preview there has no target.
-    let plot = wire(&s, Query::Plot { x: fx, y: fy });
+    let plot = wire(&s, Query::Plot { x: fx, y: fy, units: vec![] });
     assert_eq!(int(&plot, "vis"), 1);
     assert!(plot.get("units").is_none());
-    let next_plot = wire(&s, Query::Plot { x: nx, y: ny });
+    let next_plot = wire(&s, Query::Plot { x: nx, y: ny, units: vec![] });
     assert!(arr(&next_plot, "units").iter().all(|u| int(u, "id") != hidden.0 as i64));
     let combat = wire(&s, Query::Combat { units: vec![ours], x: nx, y: ny });
     assert_eq!(combat.get("valid"), Some(&Json::Bool(false)), "attack preview against an invisible unit: {combat}");

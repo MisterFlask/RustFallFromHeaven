@@ -33,7 +33,8 @@ pub enum Query {
     /// The map arrays; with `since` (a revision the client holds) and its `epoch`, only the
     /// tiles changed since ([`crate::view::map::MapTracker`]), else the full map.
     Map { since: Option<i64>, epoch: Option<String> },
-    Plot { x: i32, y: i32 },
+    /// `units`: the selection, for the odds of a lair or goody hut there (`explore`).
+    Plot { x: i32, y: i32, units: Vec<UnitId> },
     /// Unit details and the actions the selection can take (C++ `canHandleAction`).
     Group { units: Vec<UnitId> },
     /// A path preview through the interface finder. `flags`: the `MOVE_*` flags (the exe's
@@ -229,7 +230,7 @@ impl Query {
             "pending" => Query::Pending,
             "view" => Query::View,
             "map" => Query::Map { since: j.opt("since")?, epoch: j.opt("epoch")? },
-            "plot" => Query::Plot { x: j.req("x")?, y: j.req("y")? },
+            "plot" => Query::Plot { x: j.req("x")?, y: j.req("y")?, units: j.get_or("units", Vec::new())? },
             "group" => Query::Group { units: j.req("units")? },
             "path" => Query::Path { units: j.req("units")?, x: j.req("x")?, y: j.req("y")?, flags: j.get_or("flags", 0)? },
             "combat" => Query::Combat { units: j.req("units")?, x: j.req("x")?, y: j.req("y")? },
@@ -290,7 +291,8 @@ impl Query {
         match self {
             Query::Map { since, epoch } => j.with("since", *since).with("epoch", epoch.as_deref()),
             Query::Civics { with } => j.with("with", Json::Arr(with.iter().map(|&c| Json::idx(c)).collect())),
-            Query::Plot { x, y } => j.with("x", *x).with("y", *y),
+            Query::Plot { x, y, units } if units.is_empty() => j.with("x", *x).with("y", *y),
+            Query::Plot { x, y, units } => j.with("x", *x).with("y", *y).with("units", ids(units)),
             Query::Group { units } => j.with("units", ids(units)),
             Query::Path { units, x, y, flags } => j.with("units", ids(units)).with("x", *x).with("y", *y).with("flags", *flags),
             Query::Combat { units, x, y } => j.with("units", ids(units)).with("x", *x).with("y", *y),
@@ -380,7 +382,7 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
             ui.map.update(rows);
             ui.map.reply(*since, epoch.as_deref())
         }
-        Query::Plot { x, y } => view::map::plot(&v, *x, *y)?,
+        Query::Plot { x, y, units } => view::map::plot(&v, *x, *y, units)?,
         Query::Group { units } => view::units::group(&v, units)?,
         Query::Path { units, x, y, flags } => {
             // The search runs without the lock: the finder is taken out and put back (a fresh
@@ -448,7 +450,8 @@ mod tests {
             Query::View,
             Query::Map { since: None, epoch: None },
             Query::Map { since: Some(7), epoch: Some("e-1".into()) },
-            Query::Plot { x: 3, y: 4 },
+            Query::Plot { x: 3, y: 4, units: vec![] },
+            Query::Plot { x: 3, y: 4, units: vec![UnitId(2)] },
             Query::Group { units: vec![UnitId(1), UnitId(2)] },
             Query::Path { units: vec![UnitId(1)], x: 5, y: 6, flags: 0 },
             Query::Combat { units: vec![UnitId(1)], x: 5, y: 6 },

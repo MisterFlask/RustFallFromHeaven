@@ -10,6 +10,7 @@ pub mod custom;
 pub mod dispatch;
 pub mod events;
 pub mod game_utils;
+pub mod lairs;
 pub mod pycall;
 pub mod random_events;
 pub mod random_events_a;

@@ -281,6 +281,13 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
                 extra.set("why", crate::view::cards::card_why_not(v, card).unwrap_or_else(|| "Not possible now.".into()));
             }
         }
+        // Explore Lair: the odds for the selected units that can cast it (each explores in turn).
+        if info.py_result.starts_with("spellExploreLair") {
+            let casters: Vec<UnitId> = units.iter().copied().filter(|&u| g.unit_can_cast(u, s, true)).collect();
+            if let Some(explore) = crate::view::explore::explore_json(v, plot, &casters) {
+                extra.set("explore", explore);
+            }
+        }
         push("spell", enabled, command_cmd(units, CommandType::COMMAND_CAST, k, -1), extra);
     }
 
