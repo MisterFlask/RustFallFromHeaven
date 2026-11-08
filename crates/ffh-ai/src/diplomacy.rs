@@ -58,8 +58,8 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
     if b.feat_accomplished[FeatType::FEAT_TRUST] {
         out.push(("the Trust spell", 2));
     }
-    // The rules' attitude modifiers (C++ `AI_getAttitudeExtra`: FfH's events and spells, a
-    // civilization's birth from a card, docs/CARDS.md) and a born civilization's leaning toward an
+    // The rules' attitude modifiers (C++ `AI_getAttitudeExtra`: FfH's events and spells; the cards,
+    // docs/CARDS.md: a civilization's birth, a city bought or annexed) and a born civilization's leaning toward an
     // alignment (`Player::alignment_attitude`). They are on FfH's scale, where 4 is about a step;
     // here 2 is one, so they count half (as the Trust spell does).
     let extra = a.ai_attitude_extra[other] / 2;
@@ -88,13 +88,6 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
     }
     if demands < 0 {
         out.push(("demands paid", demands));
-    }
-    // What the rules recorded of `other`'s acts toward us (`ai_attitude_extra`, C++
-    // `AI_getAttitudeExtra`): a city it bought or annexed from us (the cards Purchase Charter and
-    // Cultural Annexation, -4 each; docs/CARDS.md).
-    let extra = a.ai_attitude_extra[other];
-    if extra != 0 {
-        out.push(("acts toward us", extra));
     }
     out
 }
