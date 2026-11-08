@@ -3,6 +3,6 @@
 {
   "text": {
     "TXT_KEY_DOOM_SEA_RECEDES": "The Sea Recedes",
-    "TXT_KEY_DOOM_SEA_RECEDES_HELP": "Named at the reveal: the sea with the most unimproved Coast outside city radii (at least 10 plots), and those plots. When it plays, each of them that is still unimproved Coast outside every city's radius becomes Grassland for good. Its sea resources are removed; ships on it move to the nearest water."
+    "TXT_KEY_DOOM_SEA_RECEDES_HELP": "Named at the reveal: the stretch of sea within 7 plots of a centre with the most unimproved Coast outside city radii (at least 10 plots), and those plots. When it plays, each of them that is still unimproved Coast outside every city's radius becomes Grassland for good. Its sea resources are removed; ships on it move to the nearest water."
   }
 }

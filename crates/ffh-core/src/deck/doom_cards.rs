@@ -193,22 +193,27 @@ fn receding(g: &Game, p: PlotIdx, coast: TerrainType) -> bool {
     g.plot_is_water(p) && pl.terrain_type == Some(coast) && pl.improvement_type.is_none() && pl.plot_city.is_none() && !g.plot_is_city_radius(p)
 }
 
-/// The sea: the water area with the most receding plots (ties: the lower area id), and those
-/// plots in plot order; `None` when no sea has `SEA_MIN_PLOTS`.
+/// How far the named sea reaches from its centre, in plots: a map's ocean is often one water
+/// area, and the card names a stretch of it, not all of it.
+const SEA_RADIUS: i32 = 7;
+
+/// The sea: the receding plots within [`SEA_RADIUS`] of the receding plot that has the most of
+/// them in its own water area (ties: the lower plot index), in plot order; `None` when it has
+/// fewer than `SEA_MIN_PLOTS`.
 fn sea(g: &Game) -> Option<Vec<PlotIdx>> {
     let coast = g.d.t::<TerrainType>("TERRAIN_COAST");
-    let mut by_area: std::collections::BTreeMap<AreaId, Vec<PlotIdx>> = std::collections::BTreeMap::new();
-    for p in g.map.plot_ids() {
-        if receding(g, p, coast) {
-            if let Some(a) = g.plot_area(p) {
-                by_area.entry(a).or_default().push(p);
-            }
-        }
+    let all: Vec<PlotIdx> = g.map.plot_ids().filter(|&p| receding(g, p, coast)).collect();
+    let mut is = vec![false; g.map.plots.len()];
+    for &p in &all {
+        is[p.idx()] = true;
     }
     let mut best: Option<Vec<PlotIdx>> = None;
-    for (_, plots) in by_area {
-        if best.as_ref().map_or(true, |b| plots.len() > b.len()) {
-            best = Some(plots);
+    for &c in &all {
+        let (x, y) = g.map.xy(c);
+        let area = g.plot_area(c);
+        let around: Vec<PlotIdx> = plots_within(g, x, y, SEA_RADIUS).into_iter().filter(|&q| is[q.idx()] && g.plot_area(q) == area).collect();
+        if best.as_ref().map_or(true, |b| around.len() > b.len()) {
+            best = Some(around);
         }
     }
     best.filter(|b| b.len() >= SEA_MIN_PLOTS)
