@@ -81,7 +81,6 @@
       "obsolete_safe_commerce_changes": [0, 0, 2],
       "specialist_yield_changes": "",
       "bonus_yield_modifiers": "",
-      "crime": -10,
       "free_bonus2": "BONUS_MANA_EARTH",
       "free_bonus3": "BONUS_MANA_WATER",
       "specialist_commerce_changes": ""
