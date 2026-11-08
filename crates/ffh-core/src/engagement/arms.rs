@@ -99,6 +99,7 @@ impl Game {
                 a.heal_behind = a.heal_behind.max(info.heal_behind.max(0) * 100);
             }
         }
+        self.engage_arms_weather(setup);
         let Some(c) = self.engage_arms_city(setup.ctx.to) else { return };
         let hold = if self.city_first_battle_this_turn(c) { self.city_battle_max(c, |b| b.hold_melee_rounds) } else { 0 };
         let last = self.city_battle_max(c, |b| b.last_stand_damage);
@@ -110,7 +111,8 @@ impl Game {
             let a = &mut setup.fighters[i].arms;
             match setup.sides[i] {
                 Side::Attacker => a.hold_melee_rounds = hold,
-                Side::Defender if sentinel => a.ranged_resist = resist,
+                // (With a Storm's resistance, the two combine.)
+                Side::Defender if sentinel => a.ranged_resist = 100 - (100 - a.ranged_resist) * (100 - resist) / 100,
                 Side::Defender => a.last_stand_pct = last,
             }
         }
@@ -120,6 +122,27 @@ impl Game {
                     let p = &mut setup.pairs[h * n + t];
                     p.pct = (p.pct.max(0) as i64 * (100 + never) as i64 / 100) as i32;
                 }
+            }
+        }
+    }
+
+    /// The Weather Engine's weathers on a set-up's battle plot (docs/CARDS.md): under a Storm every
+    /// fighter takes half the damage of SHOOT and BOMBARD (an Arcane Fortress's Sentinels combine
+    /// it with theirs); under a Fog no fighter shoots in round 1.
+    fn engage_arms_weather(&self, setup: &mut Setup) {
+        use crate::structs::AreaEffectKind;
+        if self.area_effects.is_empty() {
+            return;
+        }
+        let to = setup.ctx.to;
+        let storm = self.plot_has_weather(to, AreaEffectKind::Storm);
+        let fog = self.plot_has_weather(to, AreaEffectKind::Fog);
+        for f in setup.fighters.iter_mut() {
+            if storm {
+                f.arms.ranged_resist = 100 - (100 - f.arms.ranged_resist) * (100 - crate::ffh::cards::world_spells_2::STORM_RANGED_PERCENT) / 100;
+            }
+            if fog {
+                f.arms.hold_shot_rounds = f.arms.hold_shot_rounds.max(1);
             }
         }
     }

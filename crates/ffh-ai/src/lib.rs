@@ -31,6 +31,7 @@ pub mod cards_economy;
 pub mod cards_map_rules;
 pub mod cards_new_civs;
 pub mod cards_world_spells;
+pub mod cards_world_spells_2;
 pub mod casting;
 pub mod combat_sim;
 pub mod civs;

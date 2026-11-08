@@ -1,0 +1,96 @@
+// The Weather Engine (docs/DECKS.md 3.3: Engineer, band III, needs Machinery; 10.2a and 10.4: each
+// use is a ritual). The ritual, repeatable, leaves a charge in its city (`ritual_charge`); a unit in
+// that city spends it on one of three weathers centred on a plot within 10 plots of the city, over
+// the plots within 5 plots of that centre, for the rest of the turn and the next 5:
+// - Blizzard: units there do not heal and start their turns with one move fewer (never below one);
+// - Storm: SHOOT and BOMBARD actions deal half damage in battles there;
+// - Fog: no SHOOT actions in the first round of battles there, and units there are hidden from
+//   other teams that have no unit or city within 1 plot of them.
+// Rules: crates/ffh-core/src/ffh/cards/world_spells_2.rs (the weathers: `Game::area_effects`).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_WEATHER_ENGINE",
+      "description": "TXT_KEY_TECH_CARD_WEATHER_ENGINE",
+      "help": "TXT_KEY_TECH_CARD_WEATHER_ENGINE_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_WEATHER_ENGINE_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_MACHINERY"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "projects": [
+    {
+      "type": "PROJECT_WEATHER_ENGINE",
+      "description": "TXT_KEY_PROJECT_WEATHER_ENGINE",
+      "civilopedia": "TXT_KEY_PROJECT_WEATHER_ENGINE_STRATEGY",
+      "strategy": "TXT_KEY_PROJECT_WEATHER_ENGINE_STRATEGY",
+      "tech_prereq": "TECH_CARD_WEATHER_ENGINE",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "cost": 300,
+      "button": "Art/Interface/Buttons/Promotions/Air1.dds"
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_WEATHER_BLIZZARD",
+      "description": "TXT_KEY_SPELL_WEATHER_BLIZZARD",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_WEATHER_BLIZZARD_HELP",
+      "tech_prereq": "TECH_CARD_WEATHER_ENGINE",
+      "ritual_charge": "PROJECT_WEATHER_ENGINE",
+      "target": "plot",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_targets": "targetsWeather(pCaster)",
+      "py_result": "spellWeather(pCaster, 'BLIZZARD')",
+      "button": "Art/Interface/Buttons/Promotions/Ice1.dds"
+    },
+    {
+      "type": "SPELL_WEATHER_STORM",
+      "description": "TXT_KEY_SPELL_WEATHER_STORM",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_WEATHER_STORM_HELP",
+      "tech_prereq": "TECH_CARD_WEATHER_ENGINE",
+      "ritual_charge": "PROJECT_WEATHER_ENGINE",
+      "target": "plot",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_targets": "targetsWeather(pCaster)",
+      "py_result": "spellWeather(pCaster, 'STORM')",
+      "button": "Art/Interface/Buttons/Promotions/ImmuneLightning.dds"
+    },
+    {
+      "type": "SPELL_WEATHER_FOG",
+      "description": "TXT_KEY_SPELL_WEATHER_FOG",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_WEATHER_FOG_HELP",
+      "tech_prereq": "TECH_CARD_WEATHER_ENGINE",
+      "ritual_charge": "PROJECT_WEATHER_ENGINE",
+      "target": "plot",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_targets": "targetsWeather(pCaster)",
+      "py_result": "spellWeather(pCaster, 'FOG')",
+      "button": "Art/Interface/Buttons/Promotions/Blur.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_WEATHER_ENGINE": "Weather Engine",
+    "TXT_KEY_TECH_CARD_WEATHER_ENGINE_HELP": "[ICON_BULLET]Allows the Weather Engine ritual (300 [ICON_PRODUCTION], repeatable). Each completion: one weather, cast by a unit in its city, centred on a plot within 10 plots of the city, over the plots within 5 plots of the centre, for the rest of the turn and the next 5.[NEWLINE][ICON_BULLET]Blizzard: units there do not heal and start their turns with one move fewer (never below one).[NEWLINE][ICON_BULLET]Storm: SHOOT and BOMBARD deal half damage in battles there.[NEWLINE][ICON_BULLET]Fog: no SHOOT in the first round of battles there; units there are hidden from other teams with no unit or city within 1 plot of them.",
+    "TXT_KEY_TECH_CARD_WEATHER_ENGINE_PEDIA": "Brass vanes on a tower of copper, and engineers who read the wind's pressure like a ledger and change it.",
+    "TXT_KEY_PROJECT_WEATHER_ENGINE": "Weather Engine",
+    "TXT_KEY_PROJECT_WEATHER_ENGINE_STRATEGY": "[ICON_BULLET]Each completion: one weather (Blizzard, Storm or Fog), cast by a unit in this city at a plot within 10 plots of it. It covers the plots within 5 plots of that plot for the rest of the turn and the next 5.[NEWLINE][ICON_BULLET]Not while the city holds a weather not yet cast.",
+    "TXT_KEY_SPELL_WEATHER_BLIZZARD": "Blizzard",
+    "TXT_KEY_SPELL_WEATHER_BLIZZARD_HELP": "[ICON_BULLET]Spends the Weather Engine of the caster's city.[NEWLINE][ICON_BULLET]The target: a plot within 10 plots of the city. For the rest of the turn and the next 5, units within 5 plots of it do not heal and start their turns with one move fewer (never below one).",
+    "TXT_KEY_SPELL_WEATHER_STORM": "Storm",
+    "TXT_KEY_SPELL_WEATHER_STORM_HELP": "[ICON_BULLET]Spends the Weather Engine of the caster's city.[NEWLINE][ICON_BULLET]The target: a plot within 10 plots of the city. For the rest of the turn and the next 5, SHOOT and BOMBARD deal half damage in battles within 5 plots of it.",
+    "TXT_KEY_SPELL_WEATHER_FOG": "Fog",
+    "TXT_KEY_SPELL_WEATHER_FOG_HELP": "[ICON_BULLET]Spends the Weather Engine of the caster's city.[NEWLINE][ICON_BULLET]The target: a plot within 10 plots of the city. For the rest of the turn and the next 5, within 5 plots of it: no SHOOT in the first round of battles, and units are hidden from other teams with no unit or city within 1 plot of them."
+  }
+}

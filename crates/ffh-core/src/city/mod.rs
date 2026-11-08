@@ -298,6 +298,10 @@ pub struct City {
     /// The Muster card: the hammers the city's Muster process has toward the next point of
     /// experience (`ProcessInfo::production_to_experience`).
     pub muster_production: i32,
+    /// This game's (docs/CARDS.md, `ritual_charge`): the rituals completed here whose spell has
+    /// not been cast yet, one entry a completion (the Weather Engine, the Tidecall of Danalin).
+    /// Lost with the city.
+    pub ritual_charges: Vec<ProjectType>,
 }
 
 impl City {
@@ -515,6 +519,7 @@ impl City {
             building_tiers: IdxVec::from_elem(BuildingTierType::STANDARD, d.building_classes.len()),
             free_bonus_choices: Vec::new(),
             muster_production: 0,
+            ritual_charges: Vec::new(),
         }
     }
 

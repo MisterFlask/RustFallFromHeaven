@@ -1,0 +1,62 @@
+// Tidecall of Danalin (docs/DECKS.md 3.2 and 9.1: Prophet, band II, needs Message from the Deep;
+// 10.4: the Drown becomes a ritual in a coastal city; DECKS_ROUND8.md C.2: water is Coast). The
+// ritual, repeatable, built in a coastal city, leaves a charge there (`ritual_charge`); a unit in
+// that city spends it on a flat land plot within 3 plots of the city, next to water, with no city or
+// unique feature, that its team sees: the plot becomes Coast for good (its improvement, feature,
+// route and land resource are lost; units that cannot be on water move to the nearest land).
+// Rules: crates/ffh-core/src/ffh/cards/world_spells_2.rs.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_TIDECALL_OF_DANALIN",
+      "description": "TXT_KEY_TECH_CARD_TIDECALL_OF_DANALIN",
+      "help": "TXT_KEY_TECH_CARD_TIDECALL_OF_DANALIN_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_TIDECALL_OF_DANALIN_PEDIA",
+      "advisor": "ADVISOR_RELIGION",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_MESSAGE_FROM_THE_DEEP"],
+      "card_suit": "UNITCLASS_PROPHET",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "projects": [
+    {
+      "type": "PROJECT_TIDECALL_OF_DANALIN",
+      "description": "TXT_KEY_PROJECT_TIDECALL_OF_DANALIN",
+      "civilopedia": "TXT_KEY_PROJECT_TIDECALL_OF_DANALIN_STRATEGY",
+      "strategy": "TXT_KEY_PROJECT_TIDECALL_OF_DANALIN_STRATEGY",
+      "tech_prereq": "TECH_CARD_TIDECALL_OF_DANALIN",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "cost": 150,
+      "button": "Art/Interface/Buttons/Promotions/Water1.dds"
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_TIDECALL_OF_DANALIN",
+      "description": "TXT_KEY_SPELL_TIDECALL_OF_DANALIN",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_TIDECALL_OF_DANALIN_HELP",
+      "tech_prereq": "TECH_CARD_TIDECALL_OF_DANALIN",
+      "ritual_charge": "PROJECT_TIDECALL_OF_DANALIN",
+      "target": "plot",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_targets": "targetsTidecall(pCaster)",
+      "py_result": "spellTidecall(pCaster)",
+      "button": "Art/Interface/Buttons/Promotions/Water1.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_TIDECALL_OF_DANALIN": "Tidecall of Danalin",
+    "TXT_KEY_TECH_CARD_TIDECALL_OF_DANALIN_HELP": "[ICON_BULLET]Allows the Tidecall of Danalin ritual in coastal cities (150 [ICON_PRODUCTION], repeatable).[NEWLINE][ICON_BULLET]Each completion: a unit in its city turns a flat land plot within 3 plots of the city, next to water, into Coast for good. Not a city's plot or a unique feature's. Its improvement, feature, route and land resource are lost; units that cannot be on water move to the nearest land.",
+    "TXT_KEY_TECH_CARD_TIDECALL_OF_DANALIN_PEDIA": "The prophet calls the tide by Danalin's name, and the sea comes in and does not go out again.",
+    "TXT_KEY_PROJECT_TIDECALL_OF_DANALIN": "Tidecall of Danalin",
+    "TXT_KEY_PROJECT_TIDECALL_OF_DANALIN_STRATEGY": "[ICON_BULLET]Coastal cities only.[NEWLINE][ICON_BULLET]Each completion: a unit in this city turns a flat land plot within 3 plots of it, next to water, into Coast for good.[NEWLINE][ICON_BULLET]Not while the city holds a Tidecall not yet cast.",
+    "TXT_KEY_SPELL_TIDECALL_OF_DANALIN": "Tidecall of Danalin",
+    "TXT_KEY_SPELL_TIDECALL_OF_DANALIN_HELP": "[ICON_BULLET]Spends the Tidecall of Danalin of the caster's city.[NEWLINE][ICON_BULLET]The target: a flat land plot you see within 3 plots of the city, next to water, with no city and no unique feature.[NEWLINE][ICON_BULLET]It becomes Coast for good: its improvement, feature, route and land resource are lost; units that cannot be on water move to the nearest land."
+  }
+}

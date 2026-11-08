@@ -261,6 +261,11 @@ impl Game {
         if is("PROJECT_GENESIS") && self.player_get_civilization_type(owner) == d.ty::<CivilizationType>("CIVILIZATION_ILLIANS") {
             return true;
         }
+        // Cards: the Weather Engine, the Tidecall of Danalin (docs/CARDS.md): not while the city
+        // holds the ritual's charge; the Tidecall in coastal cities only.
+        if crate::ffh::cards::world_spells_2::cannot_create(self, c, project) {
+            return true;
+        }
         false
     }
 

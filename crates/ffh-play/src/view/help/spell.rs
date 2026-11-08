@@ -118,6 +118,7 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         target,
         py_targets: _,
         py_target_label: _,
+        ritual_charge,
     } = &d.spells[s];
     let b = &mut String::new();
 
@@ -156,6 +157,11 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         };
         b.push_str(NEWLINE);
         b.push_str(&format!("[ICON_BULLET]Cast at {what} you choose"));
+    }
+    // This game's (docs/CARDS.md): a spell that spends a ritual's completion.
+    if let Some(ritual) = ritual_charge {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]Cast by a unit in a city of yours that has completed the {} ritual; it spends that completion", display(d, *ritual)));
     }
     if *prereq_slave_trade {
         line(b, d, "TXT_KEY_SPELL_PREREQ_SLAVE_TRADE", &[]);

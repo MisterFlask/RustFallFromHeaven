@@ -298,6 +298,13 @@ impl Game {
         if info.once && self.players[owner].once_spells.contains(&spell) {
             return false;
         }
+        // This game's (docs/CARDS.md, `ritual_charge`): a ritual's spell is cast from a city of its
+        // owner holding a charge of the ritual.
+        if let Some(ritual) = info.ritual_charge {
+            if !self.unit_has_ritual_charge(u, ritual) {
+                return false;
+            }
+        }
         if info.prereq_slave_trade {
             if !self.player_is_slave_trade(owner) {
                 return false;
@@ -891,6 +898,10 @@ impl Game {
             self.players[owner].once_spells.push(spell);
             let turn = self.game_turn();
             self.log.msg(turn, Some(owner), || format!("Card spell: {}", d.text.name(&info.base.description)));
+        }
+        // This game's (docs/CARDS.md, `ritual_charge`): the cast spends the city's charge.
+        if let Some(ritual) = info.ritual_charge {
+            self.unit_spend_ritual_charge(u, ritual);
         }
         if info.global {
             let owner = self.units[u].owner;

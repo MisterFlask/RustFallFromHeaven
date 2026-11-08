@@ -30,6 +30,8 @@ use super::{Event, FighterIdx, Formation, Heal, Pcts, Run, State};
 pub struct Arms {
     /// Its STRIKE, CHARGE and STAB actions in rounds `1..=hold_melee_rounds` are spent (a Moat).
     pub hold_melee_rounds: i32,
+    /// Its SHOOT actions in rounds `1..=hold_shot_rounds` are spent (the Weather Engine's Fog).
+    pub hold_shot_rounds: i32,
     /// What it does in round 1 in place of its row's action (the row's count), and its pattern
     /// then (the Siege Colossus).
     pub first_round: Option<(ActionKind, AttackPattern)>,
@@ -56,9 +58,11 @@ impl Formation {
     }
 
     /// Whether `h`'s action of `kind` (as fought) in round `round` is spent: a STRIKE, CHARGE or
-    /// STAB while its melee is held.
+    /// STAB while its melee is held, a SHOOT while its shots are.
     pub fn arms_held(&self, h: usize, kind: ActionKind, round: i32) -> bool {
-        round <= self.fighters[h].arms.hold_melee_rounds && matches!(kind, ActionKind::Strike | ActionKind::Charge | ActionKind::Stab)
+        let a = &self.fighters[h].arms;
+        (round <= a.hold_melee_rounds && matches!(kind, ActionKind::Strike | ActionKind::Charge | ActionKind::Stab))
+            || (round <= a.hold_shot_rounds && kind == ActionKind::Shoot)
     }
 
     /// The attack pattern of `h`'s action of `kind` (as fought) from row `row` in round `round`,

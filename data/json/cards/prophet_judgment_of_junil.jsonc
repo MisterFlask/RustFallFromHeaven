@@ -1,0 +1,48 @@
+// Judgment of Junil (docs/DECKS.md 7.3, 9.1, 10.4, 14: the Scales of Junil reworked; a good card,
+// band II; it needs Orders from Heaven, as the Scales did). Name a civilization: for 20 turns
+// there is no war between your team and its, enforced both ways. A war between them ends at once.
+// Neither can declare war on the other, and nothing else starts one (defensive pacts, vassals,
+// events, False Colours); hidden units of either cannot attack the other. Once a game.
+// Rules: crates/ffh-core/src/ffh/cards/world_spells_2.rs (the truce: `Team::truce_until`).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_JUDGMENT_OF_JUNIL",
+      "description": "TXT_KEY_TECH_CARD_JUDGMENT_OF_JUNIL",
+      "help": "TXT_KEY_TECH_CARD_JUDGMENT_OF_JUNIL_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_JUDGMENT_OF_JUNIL_PEDIA",
+      "advisor": "ADVISOR_RELIGION",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_ORDERS_FROM_HEAVEN"],
+      "card_suit": "UNITCLASS_PROPHET",
+      "card_alignment": "ALIGNMENT_GOOD",
+      "flavors": {"FLAVOR_RELIGION": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_JUDGMENT_OF_JUNIL",
+      "description": "TXT_KEY_SPELL_JUDGMENT_OF_JUNIL",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_JUDGMENT_OF_JUNIL_HELP",
+      "tech_prereq": "TECH_CARD_JUDGMENT_OF_JUNIL",
+      "once": true,
+      "target": "player",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_targets": "targetsJudgmentOfJunil(pCaster)",
+      "py_target_label": "labelJudgmentOfJunil(pCaster)",
+      "py_result": "spellJudgmentOfJunil(pCaster)",
+      "button": "Art/Interface/Buttons/Buildings/Templeorder.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_JUDGMENT_OF_JUNIL": "Judgment of Junil",
+    "TXT_KEY_TECH_CARD_JUDGMENT_OF_JUNIL_HELP": "[ICON_BULLET]World spell, once a game: Judgment of Junil.[NEWLINE][ICON_BULLET]Name a civilization you have met: for 20 turns there is no war between you and it. A war between you ends at once.[NEWLINE][ICON_BULLET]Neither of you can declare war on the other, and nothing else starts that war: defensive pacts, vassals, events and False Colours do not. Hidden units of either cannot attack the other.",
+    "TXT_KEY_TECH_CARD_JUDGMENT_OF_JUNIL_PEDIA": "Junil's prophet names two peoples before the god of law, and for a time neither may lift a sword against the other.",
+    "TXT_KEY_SPELL_JUDGMENT_OF_JUNIL": "Judgment of Junil",
+    "TXT_KEY_SPELL_JUDGMENT_OF_JUNIL_HELP": "[ICON_BULLET]The target: a civilization you have met.[NEWLINE][ICON_BULLET]For 20 turns there is no war between you and it; a war between you ends at once.[NEWLINE][ICON_BULLET]Neither can declare war on the other; defensive pacts, vassals, events and False Colours do not start it; hidden units of either cannot attack the other."
+  }
+}

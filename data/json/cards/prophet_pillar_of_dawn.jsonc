@@ -1,0 +1,43 @@
+// P12 Pillar of Dawn (docs/DECKS_ROUND8.md; a faith card, the Empyrean; C.4: each completion costs
+// twice the last, `repeat_cost_percent`). A repeatable ritual of 500 hammers: for the next 10 turns
+// the builder's units within 5 plots of the city heal fully at the start of each of its turns
+// (`Game::area_effects`). Rules: crates/ffh-core/src/ffh/cards/world_spells_2.rs.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_PILLAR_OF_DAWN",
+      "description": "TXT_KEY_TECH_CARD_PILLAR_OF_DAWN",
+      "help": "TXT_KEY_TECH_CARD_PILLAR_OF_DAWN_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_PILLAR_OF_DAWN_PEDIA",
+      "advisor": "ADVISOR_RELIGION",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_RIGHTEOUSNESS"],
+      "card_suit": "UNITCLASS_PROPHET",
+      "card_religion": "RELIGION_THE_EMPYREAN",
+      "flavors": {"FLAVOR_MILITARY": 1, "FLAVOR_RELIGION": 1}
+    }
+  ],
+  "projects": [
+    {
+      "type": "PROJECT_PILLAR_OF_DAWN",
+      "description": "TXT_KEY_PROJECT_PILLAR_OF_DAWN",
+      "civilopedia": "TXT_KEY_PROJECT_PILLAR_OF_DAWN_STRATEGY",
+      "strategy": "TXT_KEY_PROJECT_PILLAR_OF_DAWN_STRATEGY",
+      "tech_prereq": "TECH_CARD_PILLAR_OF_DAWN",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "cost": 500,
+      "repeat_cost_percent": 200,
+      "button": "Art/Interface/Buttons/Promotions/Sun1.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_PILLAR_OF_DAWN": "Pillar of Dawn",
+    "TXT_KEY_TECH_CARD_PILLAR_OF_DAWN_HELP": "[ICON_BULLET]Allows the Pillar of Dawn ritual (500 [ICON_PRODUCTION], repeatable; each completion doubles the cost of the next).[NEWLINE][ICON_BULLET]For the next 10 turns, your units within 5 plots of its city heal fully at the start of each of your turns.[NEWLINE][ICON_BULLET]Spreads the Empyrean to three of your cities.",
+    "TXT_KEY_TECH_CARD_PILLAR_OF_DAWN_PEDIA": "A column of morning light stands over the city, and those who fight under it rise each day whole.",
+    "TXT_KEY_PROJECT_PILLAR_OF_DAWN": "Pillar of Dawn",
+    "TXT_KEY_PROJECT_PILLAR_OF_DAWN_STRATEGY": "[ICON_BULLET]For the next 10 turns, your units within 5 plots of this city heal fully at the start of each of your turns."
+  }
+}

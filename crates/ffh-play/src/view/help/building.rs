@@ -103,6 +103,7 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         rebirth_promotion,
         free_unit_turns,
         free_unit_classes,
+        reveals_sites,
         building_class_type,
         victory_prereq,
         free_start_era,
@@ -559,6 +560,10 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         if free_unit_classes.iter().any(|&k| d.unit_classes[k].default_unit_index.is_some_and(|u| d.units[u].found)) {
             h.push_str(&format!(" (a unit that founds cities only while a city site is free within {} plots)", ffh_core::ffh::cards::economy::FREE_UNIT_SITE_RANGE));
         }
+    }
+    if *reveals_sites {
+        h.push_str(NEWLINE);
+        h.push_str("[ICON_BULLET]When built: you see every mana node, unique feature, lair and goody hut on the map");
     }
     if let (Some(t), Some(of)) = (*tier, *variant_of) {
         h.push_str(NEWLINE);

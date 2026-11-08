@@ -340,6 +340,8 @@ persist_struct!(PackedBuilding { building, count, original_owner, original_time 
 persist_struct!(PackedCity { name, origin, population, buildings, tiers });
 
 persist_struct!(Doom { dealt, slots });
+persist_enum!(AreaEffectKind { 0 => Blizzard, 1 => Storm, 2 => Fog, 3 => PillarOfDawn });
+persist_struct!(AreaEffect { kind, owner, plot, radius, until });
 persist_struct!(DoomSlot { threshold, card, revealed, fired, targets });
 
 persist_struct!(City {
@@ -386,7 +388,7 @@ persist_struct!(City {
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
     ai_emphasize_avoid_unhealthy_citizens_count, culture_channel, culture_diverted, culture_pressure,
     culture_revolt_level, recruit_default, direct_rule, rule_changed_turn, governor,
-    governor_penalty_turns, building_tiers, free_bonus_choices, muster_production,
+    governor_penalty_turns, building_tiers, free_bonus_choices, muster_production, ritual_charges,
 });
 
 persist_struct!(Player {
@@ -462,7 +464,7 @@ persist_struct!(Team {
     no_trade_tech, improvement_yield_change, revealed_bonuses, ai_worst_enemy,
     ai_war_plan_state_counter, ai_at_war_counter, ai_at_peace_counter, ai_has_met_counter,
     ai_open_borders_counter, ai_defensive_pact_counter, ai_share_war_counter, ai_war_success,
-    ai_enemy_peacetime_trade_value, ai_enemy_peacetime_grant_value, ai_war_plan,
+    ai_enemy_peacetime_trade_value, ai_enemy_peacetime_grant_value, ai_war_plan, truce_until,
 });
 
 persist_struct!(Plot {

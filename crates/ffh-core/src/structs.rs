@@ -84,6 +84,34 @@ pub enum SpellTarget {
     Choice(i32),
 }
 
+/// This game's: what a timed effect over an area does (docs/CARDS.md: the Weather Engine's
+/// weathers, the Pillar of Dawn).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum AreaEffectKind {
+    /// Units there do not heal and start their turns with one move fewer (never below one).
+    Blizzard,
+    /// SHOOT and BOMBARD deal half damage in battles there.
+    Storm,
+    /// No SHOOT in the first round of battles there; units there are hidden from other teams that
+    /// have no unit or city within 1 plot of them.
+    Fog,
+    /// The owner's units there heal fully at the start of each of its turns.
+    PillarOfDawn,
+}
+
+/// This game's: a timed effect over the plots within `radius` plots of `plot`, while the game turn
+/// is before `until` (`Game::area_effects`; docs/CARDS.md).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct AreaEffect {
+    pub kind: AreaEffectKind,
+    /// The player that made it.
+    pub owner: PlayerId,
+    pub plot: PlotIdx,
+    pub radius: i32,
+    /// The first game turn it no longer holds.
+    pub until: i32,
+}
+
 /// C++ `EventTriggeredData`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EventTriggeredData {

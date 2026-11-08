@@ -286,6 +286,10 @@ pub struct Game {
     pub crusade_reports: Vec<crate::crusade::CrusadeReport>,
     /// Not in C++: the Armageddon deck (docs/DECKS.md, "The Armageddon deck as built").
     pub doom: crate::deck::doom::Doom,
+    /// Not in C++: the timed effects over areas the cards make (docs/CARDS.md: the Weather
+    /// Engine's weathers, the Pillar of Dawn), in the order made; an effect is dropped at the end
+    /// of the game turn it ends (`AreaEffect::until`).
+    pub area_effects: Vec<crate::structs::AreaEffect>,
     /// Not in C++: the target of the targeted spell being cast (`unit_cast_at`), read by its
     /// result; `None` outside such a cast. Not saved (a cast is over within one call).
     pub spell_target: Option<crate::structs::SpellTarget>,
@@ -447,6 +451,7 @@ impl Game {
             next_crusade_id: 0,
             crusade_reports: Vec::new(),
             doom: Default::default(),
+            area_effects: Vec::new(),
             spell_target: None,
             trophies: BTreeMap::new(),
             map_script: default_map_script(),

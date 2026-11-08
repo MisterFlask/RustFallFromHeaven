@@ -1235,6 +1235,11 @@ pub struct SpellInfo {
     /// This game's: the callback naming a `choice` target for people (`py_target_label`: a trait,
     /// a wonder, ...); a choice spell without one shows "Option n" (docs/CARDS.md, section 3).
     pub py_target_label: String,
+    /// This game's (`ritual_charge`, docs/CARDS.md): the ritual whose completion it spends. Each
+    /// completion of the ritual leaves its city a charge; the spell is cast only by a unit in a
+    /// city of its owner that holds one, and the cast spends it (the Weather Engine, the Tidecall
+    /// of Danalin).
+    pub ritual_charge: Option<ProjectType>,
 }
 
 /// What a remotely targeted spell is cast at (`SpellInfo::target`).
@@ -1363,6 +1368,7 @@ pub fn read_spell(rd: &Rd) -> SpellInfo {
         },
         py_targets: rd.string("py_targets"),
         py_target_label: rd.string("py_target_label"),
+        ritual_charge: rd.rf::<ProjectType>("ritual_charge"),
     }
 }
 

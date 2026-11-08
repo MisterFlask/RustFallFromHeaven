@@ -1363,14 +1363,18 @@ impl Game {
             self.unit_get_team(u)
         };
 
+        // Card: Judgment of Junil (docs/CARDS.md): an always-hostile unit is no enemy of a team
+        // under truce with its own, either way.
+        let truce = self.team_has_truce(other_team, our_team);
+
         // FfH: Added by Kael 10/01/2007
-        if other_team != our_team && always_hostile {
+        if other_team != our_team && always_hostile && !truce {
             return true;
         }
         // FfH: End Add
 
         if data2 != 0 {
-            other_team != our_team
+            other_team != our_team && !truce
         } else {
             at_war(other_team, our_team)
         }
@@ -1405,7 +1409,8 @@ impl Game {
         }
 
         if data2 != 0 {
-            other_team != our_team
+            // Card: Judgment of Junil (docs/CARDS.md), as in `puf_is_enemy_with`.
+            other_team != our_team && !self.team_has_truce(other_team, our_team)
         } else {
             self.is_potential_enemy(other_team, Some(our_team))
         }

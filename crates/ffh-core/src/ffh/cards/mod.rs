@@ -15,6 +15,7 @@ pub mod map_rules;
 pub mod new_civs;
 pub mod world;
 pub mod world_spells;
+pub mod world_spells_2;
 
 /// The lookups of one module: `find_spell`, `find_req`, `find_targets`, `find_unit_fn`.
 pub struct Lookups {
@@ -38,11 +39,12 @@ const MODULES: &[Lookups] = &[
     Lookups { spell: battle_magic::find_spell, req: battle_magic::find_req, targets: none, unit_fn: battle_magic::find_unit_fn },
     Lookups { spell: new_civs::find_spell, req: new_civs::find_req, targets: new_civs::find_targets, unit_fn: none },
     Lookups { spell: economy::find_spell, req: economy::find_req, targets: economy::find_targets, unit_fn: none },
+    Lookups { spell: world_spells_2::find_spell, req: world_spells_2::find_req, targets: world_spells_2::find_targets, unit_fn: none },
 ];
 
 /// Every card module's `py_target_label` lookup (the names of a choice spell's options), searched
 /// in order.
-const LABELS: &[fn(&str) -> Option<TargetLabelFn>] = &[world::find_target_label, world_spells::find_target_label, economy::find_target_label];
+const LABELS: &[fn(&str) -> Option<TargetLabelFn>] = &[world::find_target_label, world_spells::find_target_label, economy::find_target_label, world_spells_2::find_target_label];
 
 /// `PyResult` functions.
 pub fn find_spell(name: &str) -> Option<SpellFn> {

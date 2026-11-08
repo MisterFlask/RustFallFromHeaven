@@ -345,11 +345,12 @@ impl Game {
     }
 
     /// Forest Paths: the moves `u` starts a turn with on plot `p` (one fewer in an enemy's
-    /// Forest Paths, never below one).
+    /// Forest Paths, never below one). The Weather Engine's Blizzard (docs/CARDS.md) takes the
+    /// same move (one fewer under it, not two with Forest Paths).
     pub fn unit_turn_moves_at(&self, u: UnitId, p: PlotIdx) -> i32 {
         let max = self.unit_max_moves(u);
         let one = self.d.defines.move_denominator;
-        if max > one && self.unit_slowed_by_forest(u, p) {
+        if max > one && (self.unit_slowed_by_forest(u, p) || self.plot_has_weather(p, crate::structs::AreaEffectKind::Blizzard)) {
             max - one
         } else {
             max
@@ -380,6 +381,8 @@ impl Game {
                 && !self.teams[team].vassal[dt]
                 && !self.teams[dt].vassal[team]
                 && !self.team_is_crusade_host(dt)
+                // Card: Judgment of Junil (docs/CARDS.md): no surprise attack on a team under truce.
+                && !self.team_has_truce(team, dt)
                 && !self.unit_is_invisible(d, team, false))
             .then_some(dt)
         })

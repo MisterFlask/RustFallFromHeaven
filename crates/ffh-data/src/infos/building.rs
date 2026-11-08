@@ -163,6 +163,9 @@ pub struct BuildingInfo {
     pub global_counter_commerce: [i32; CommerceType::NUM],
     /// How many unrevealed Armageddon cards ahead its owner sees (`doom_sight`: the Orrery 2).
     pub doom_sight: i32,
+    /// This game's (`reveals_sites`, docs/CARDS.md: the Second Sky): when built, its owner's team
+    /// has every plot with a mana node, a unique feature, a lair or a goody hut revealed.
+    pub reveals_sites: bool,
 
     // ---- the cards (this game's, docs/CARDS.md; not in FFH2) ----
     /// The units its city can train while it has the building, each at a cost of its own
@@ -456,6 +459,7 @@ pub fn read_building(rd: &Rd) -> BuildingInfo {
 
         global_counter_commerce: rd.commerces("global_counter_commerces"),
         doom_sight: rd.int("doom_sight"),
+        reveals_sites: rd.bool("reveals_sites"),
 
         train_units: list_entries(rd, "train_units", "train_unit").iter().filter_map(read_train_unit).collect(),
         free_bonus_choices: rd.ref_list("free_bonus_choices"),

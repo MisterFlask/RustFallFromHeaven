@@ -145,6 +145,17 @@ impl Game {
             }
         }
 
+        // Card: Judgment of Junil (docs/CARDS.md): no war while a truce holds, nor on the vassal of
+        // a master under truce (the war would reach the master).
+        if self.team_has_truce(t, other) {
+            return false;
+        }
+        for o in self.team_ids() {
+            if o != other && o != t && self.teams[other].vassal[o] && self.team_has_truce(t, o) {
+                return false;
+            }
+        }
+
         if !self.team_can_change_war_peace(t, other, true) {
             return false;
         }
@@ -169,6 +180,12 @@ impl Game {
 
         // Not in C++: no declaration (nor cascade) reaches a crusade Host (docs/CRUSADE.md).
         if self.team_is_crusade_host(t) || self.team_is_crusade_host(other) {
+            return;
+        }
+
+        // Card: Judgment of Junil (docs/CARDS.md): nothing starts a war between two teams under
+        // truce, a declaration other wars drag in (defensive pacts, vassals) included.
+        if self.team_has_truce(t, other) {
             return;
         }
 
@@ -430,7 +447,8 @@ impl Game {
             }
         }
         fn declare(g: &Game, war: &mut Matrix, pact: &mut Matrix, t: TeamId, other: TeamId) {
-            if t == other || war[t][other] {
+            // Card: Judgment of Junil (docs/CARDS.md): a truce stops the declaration.
+            if t == other || war[t][other] || g.team_has_truce(t, other) {
                 return;
             }
             war[t][other] = true;
