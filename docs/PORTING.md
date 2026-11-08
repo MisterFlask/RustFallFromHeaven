@@ -538,6 +538,34 @@ flag.
       water; the caster's vassal.
     - **Civilizations born without a founder** (the Armageddon cards below) know every tech that at
       least half the civilizations' teams know, and are played by the AI.
+    - *Sanctified Steel* (Prophet, II, Priesthood; building): the melee, beast and disciple units
+      its city trains have Demon Slaying and Undead Slaying.
+    - *Shieldbearer* (Engineer, II, Bronze Working; promotion, melee units of level 3): in the front
+      row it takes the shots, stones and damage spells aimed down its lanes, at 50% less damage.
+    - *Fire Arrows* (Engineer, I, Archery; promotion, archers): its shots hit the standing Sentinels
+      first, at a stone's damage, with +100% damage to walls.
+    - *War Drums* (Bard, I, Festivals; the War Drummer, national unit, 2): while it fights, its side
+      is immune to fear and has +1 speed in round 1.
+    - *Leviathan Harpoons* (Merchant, II, Optics; promotion, ships): double naval damage against sea
+      beasts and the largest ships; its ship captures the Kraken and the Leviathan it defeats.
+    - *Runeguard* (Engineer, II, Construction; national unit, 4): in battle immune to spell damage,
+      charms and hexes.
+    - *Witch-Hunter* (Prophet, II, Priesthood; national unit, 3): a stabber with +100% damage to
+      adepts and disciples, which it attacks first; immune to hexes.
+    - *Gryphon Riders* (Bard, II, Animal Handling; national unit, 4, needs a Stable): flying, it
+      cannot end a turn over water, and its charge works as in the open on any ground.
+    - *The Gilded Legion* (Merchant, III, Mercantilism; national building): its city chooses a
+      civilization it has met and trains that civilization's units at 150% cost.
+    - *Cairn Golem* (Engineer, I, Masonry; national unit, 3): Raise the Cairn turns it into a
+      permanent Cairn on a hill: +50% defence and a Sentinel for the defender in battles there, sight
+      3 for units on it.
+    - *Automatons* (Engineer, III, Mithril Working; national unit, 6): not alive (immune to fear),
+      immune to charms and hexes in battle, no experience, healing only in a city with a Forge.
+    - *Bastion* (Engineer, III, Machinery; one per player, cannot attack): when its plot is
+      attacked, its side fights with two more Sentinels at +100% HP and defence.
+    - *Lantern of Lugus* (Prophet, I, Ancient Chants, not drawn by evil players; the Dawnbringer,
+      national unit, 2): an archer whose shots deal holy damage; it sees invisible units within 2
+      plots.
     - *Orrery of Ceridwen* (Sage, II, Astronomy; world wonder): its city has +2 research per 10
       points of the Armageddon counter, and its owner sees the next two Armageddon cards before
       they are revealed.
