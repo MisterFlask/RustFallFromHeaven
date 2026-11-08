@@ -1,4 +1,5 @@
-//! Batch B8's civilizations under the AI (docs/CARDS.md, section 6): each is born on a generated
+//! Batch B8's civilizations (and The Sundering's factions) under the AI (docs/CARDS.md, sections 4
+//! and 6): each is born on a generated
 //! world as its card makes it (the land it needs painted by hand), then the AI plays every
 //! civilization for some turns of a steady game (always peace, no barbarians). Each born
 //! civilization keeps its cities, produces, and its turns run without a fault.
@@ -261,5 +262,34 @@ fn the_great_person_civilizations_play_under_the_ai() {
             .collect();
     }
     assert_eq!(born.len(), cards.len(), "the AI casts the three births at once: {born:?}");
+    play_and_check(&mut g, &born);
+}
+
+#[test]
+fn the_sundering_factions_play_under_the_ai() {
+    use ffh_core::ffh::cards::sundering as sd;
+    let mut g = new_game(9);
+    let d = g.d;
+    // Player 0 holds eight cities (its capital and seven on free sites), each with an Archer.
+    let p0 = world::civ_players(&g)[0];
+    let land: Vec<PlotIdx> = g.map.plot_ids().filter(|&q| !g.plot_is_water(q)).collect();
+    for _ in g.players[p0].cities.len()..8 {
+        let taken: Vec<PlotIdx> = g.cities.ids().into_iter().map(|c| g.city_plot(c)).collect();
+        let Some(&site) = world::best_sites(&g, &land, 1, None, &taken).first() else { break };
+        let (x, y) = g.map.xy(site);
+        g.player_init_city(p0, x, y, true, true);
+    }
+    let archer = d.t::<UnitType>("UNIT_ARCHER");
+    for c in g.players[p0].cities.clone() {
+        let (x, y) = g.map.xy(g.city_plot(c));
+        g.player_init_unit(p0, archer, x, y, None, None);
+    }
+    assert!(g.players[p0].cities.len() >= 4, "room for the cities");
+    let plan = sd::sundering_plan(&g);
+    assert!(plan.iter().any(|&(q, _)| q == p0), "player 0 splits");
+    let first = world::next_player(&g);
+    sd::fire_sundering(&mut g, 0);
+    let born: Vec<(PlayerId, &str)> = (first.0..g.num_players() as u8).map(|i| (PlayerId(i), "a faction of the Sundering")).collect();
+    assert_eq!(born.len(), plan.len());
     play_and_check(&mut g, &born);
 }

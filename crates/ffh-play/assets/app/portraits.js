@@ -19,6 +19,12 @@ const PORTRAIT_ALIASES = {
   LEADER_AURELIAN: "valledia", LEADER_HALRIC: "sabathiel", LEADER_AINE: "amelanchier", LEADER_VESK: "hannah",
   LEADER_BURGOMASTER: "cardith", LEADER_LICH_PRINCE: "tebryn", LEADER_THRUMM: "charadon", LEADER_USURPER: "decius",
   LEADER_DEEP_MOTHER: "falamar", LEADER_SLITHERKING: "sheelba", LEADER_SPIDER_QUEEN: "faeryl", LEADER_AURIVANE: "flauros",
+  // The Sundering's minor leaders (docs/CARDS.md section 4): the random portrait for now.
+  ...Object.fromEntries([
+    "TETHIRA", "KANE", "THESSALONICA", "SHEKINAH", "KOUN", "OSTANES", "ULDANOR", "TYA", "DUIN", "FURIA", "MELISANDRE",
+    "HAFGAN", "RIVANNA", "VOLANNA", "MAHON", "DUMANNIOS", "RIUROS", "ANAGANTIOS",
+    "TORRIN", "YSOLDE", "CAELITH", "DURGRIM", "SELKA", "RAZIEL",
+  ].map((n) => [`LEADER_${n}`, "random"])),
 };
 
 /** The sprite key of leader type `type` ("LEADER_OS-GABELLA" -> "leader_os_gabella"; every random

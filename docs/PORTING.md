@@ -611,6 +611,19 @@ flag.
       to one of them at random while both are (a draw only then). -4 attitude between it and the
       Infernals, both ways. Not under the No Hyborem or Basium option's rule: the Court is not
       Hyborem.
+    - *The Sundering* (90, sharing the slot with Wrath; the owner's design, 2026-11-08): every
+      civilization with more than 3 cities and a capital (not the Sheaim, the Infernals, the
+      barbarians or crusade Hosts) loses the quarter of its cities farthest from its capital
+      (rounded down, at least one; ties to the lower city id). They secede as a new faction of the
+      same civilization type, released as the Usurper's Crown releases (buildings, culture, land
+      garrisons; heroes stay), the most populous its capital, named "<civilization> of <capital>".
+      Its leader is one of its civilization's leaders not in play, else a minor leader of it (a new
+      `leader_heads` key, `minor_leader_of`: FFH2's scenario leaders by the civilization their
+      scenarios gave them, and six invented in the card's file); a civilization with no free
+      leader does not split (so the card-born civilizations never do). The faction knows its
+      parent's techs (not its cards), has met who its parent has met, is nobody's vassal and at
+      peace (a Barbarian-trait leader's at peace with the barbarians too), with -4 attitude
+      between it and its parent both ways. The AI plays it. Played only when a civilization splits.
     - **The Infernal Pact is FFH2's again** (2026-11-08): the first team to learn it brings the
       Infernals whatever the Armageddon deck did (batch B8 had made them come once a game, by the
       Pact or the card). Whoever brings them, they do not learn their patron's cards.

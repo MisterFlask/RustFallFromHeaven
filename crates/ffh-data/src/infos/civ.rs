@@ -387,6 +387,10 @@ pub struct LeaderHeadInfo {
     /// percent (100 = normal). XML `iCulturalAggression`; when absent, derived at load from
     /// the leader's war eagerness and culture flavor (`GameData::derive`).
     pub cultural_aggression: i32,
+    /// This game's own (The Sundering, docs/CARDS.md section 4): a minor leader of this
+    /// civilization, which no civilization lists and no game starts with. When the card splits a
+    /// civilization of this type and none of its own leaders is free, the new faction may have it.
+    pub minor_leader_of: Option<CivilizationType>,
     // ---- arrays ----
     /// C++ `hasTrait(i)`.
     pub has_trait: IdxVec<TraitType, bool>,
@@ -523,6 +527,7 @@ pub fn read_leader_head(rd: &Rd) -> LeaderHeadInfo {
         favorite_civic: rd.rf("favorite_civic"),
         favorite_religion: rd.rf("favorite_religion"),
         cultural_aggression: rd.int_or("cultural_aggression", -1),
+        minor_leader_of: rd.rf("minor_leader_of"),
         has_trait: rd.pairs_bool("traits"),
         flavor_value: rd.pairs_int("flavors", 0),
         contact_rand: rd.pairs_int("contact_rands", 0),

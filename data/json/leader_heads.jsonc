@@ -728,6 +728,8 @@
   },
   {
     "type": "LEADER_TETHIRA",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_BANNOR",
     "description": "TXT_KEY_LEADER_TETHIRA",
     "civilopedia": "TXT_KEY_LEADER_TETHIRA_PEDIA",
     "base_attitude": 2,
@@ -1223,6 +1225,8 @@
   },
   {
     "type": "LEADER_KANE",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_MALAKIM",
     "description": "TXT_KEY_LEADER_KANE",
     "civilopedia": "TXT_KEY_LEADER_KANE_PEDIA",
     "base_attitude": 2,
@@ -1752,6 +1756,8 @@
   },
   {
     "type": "LEADER_THESSALONICA",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_ELOHIM",
     "description": "TXT_KEY_LEADER_THESSALONICA",
     "civilopedia": "TXT_KEY_LEADER_THESSALONICA_PEDIA",
     "base_attitude": 2,
@@ -3595,6 +3601,8 @@
   },
   {
     "type": "LEADER_SHEKINAH",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_SIDAR",
     "description": "TXT_KEY_LEADER_SHEKINAH",
     "civilopedia": "TXT_KEY_LEADER_SHEKINAH_PEDIA",
     "base_attitude": 1,
@@ -4274,6 +4282,8 @@
   },
   {
     "type": "LEADER_KOUN",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_GRIGORI",
     "description": "TXT_KEY_LEADER_KOUN",
     "civilopedia": "TXT_KEY_LEADER_KOUN_PEDIA",
     "base_attitude": 2,
@@ -4777,6 +4787,8 @@
   },
   {
     "type": "LEADER_OSTANES",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_HIPPUS",
     "description": "TXT_KEY_LEADER_OSTANES",
     "civilopedia": "TXT_KEY_LEADER_OSTANES_PEDIA",
     "peace_weight_rand": 3,
@@ -4943,6 +4955,8 @@
   },
   {
     "type": "LEADER_ULDANOR",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_HIPPUS",
     "description": "TXT_KEY_LEADER_ULDANOR",
     "civilopedia": "TXT_KEY_LEADER_ULDANOR_PEDIA",
     "peace_weight_rand": 3,
@@ -5429,6 +5443,8 @@
   },
   {
     "type": "LEADER_TYA",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_AMURITES",
     "description": "TXT_KEY_LEADER_TYA",
     "civilopedia": "TXT_KEY_LEADER_TYA_PEDIA",
     "base_attitude": 2,
@@ -5909,6 +5925,8 @@
   },
   {
     "type": "LEADER_DUIN",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_DOVIELLO",
     "description": "TXT_KEY_LEADER_DUIN",
     "civilopedia": "TXT_KEY_LEADER_DUIN_PEDIA",
     "base_attitude": -2,
@@ -6578,6 +6596,8 @@
   },
   {
     "type": "LEADER_FURIA",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_BALSERAPHS",
     "description": "TXT_KEY_LEADER_FURIA",
     "civilopedia": "TXT_KEY_LEADER_FURIA_PEDIA",
     "base_attitude": -2,
@@ -6743,6 +6763,8 @@
   },
   {
     "type": "LEADER_MELISANDRE",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_BALSERAPHS",
     "description": "TXT_KEY_LEADER_MELISANDRE",
     "civilopedia": "TXT_KEY_LEADER_MELISANDRE_PEDIA",
     "base_attitude": -2,
@@ -7256,6 +7278,8 @@
   },
   {
     "type": "LEADER_HAFGAN",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_CLAN_OF_EMBERS",
     "description": "TXT_KEY_LEADER_HAFGAN",
     "civilopedia": "TXT_KEY_LEADER_HAFGAN_PEDIA",
     "base_attitude": -2,
@@ -7590,6 +7614,8 @@
   },
   {
     "type": "LEADER_RIVANNA",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_SVARTALFAR",
     "description": "TXT_KEY_LEADER_RIVANNA",
     "civilopedia": "TXT_KEY_LEADER_RIVANNA_PEDIA",
     "base_attitude": 1,
@@ -7755,6 +7781,8 @@
   },
   {
     "type": "LEADER_VOLANNA",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_SVARTALFAR",
     "description": "TXT_KEY_LEADER_VOLANNA",
     "civilopedia": "TXT_KEY_LEADER_VOLANNA_PEDIA",
     "base_attitude": 1,
@@ -8247,6 +8275,8 @@
   },
   {
     "type": "LEADER_MAHON",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_CALABIM",
     "description": "TXT_KEY_LEADER_MAHON",
     "civilopedia": "TXT_KEY_LEADER_MAHON_PEDIA",
     "peace_weight_rand": 3,
@@ -10700,6 +10730,8 @@
   },
   {
     "type": "LEADER_DUMANNIOS",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_ILLIANS",
     "description": "TXT_KEY_LEADER_DUMANNIOS",
     "civilopedia": "TXT_KEY_LEADER_DUMANNIOS_PEDIA",
     "base_attitude": -2,
@@ -10873,6 +10905,8 @@
   },
   {
     "type": "LEADER_RIUROS",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_ILLIANS",
     "description": "TXT_KEY_LEADER_RIUROS",
     "civilopedia": "TXT_KEY_LEADER_RIUROS_PEDIA",
     "base_attitude": -2,
@@ -11046,6 +11080,8 @@
   },
   {
     "type": "LEADER_ANAGANTIOS",
+    // A minor leader of this civilization (an FFH2 scenario's), for a faction of The Sundering.
+    "minor_leader_of": "CIVILIZATION_ILLIANS",
     "description": "TXT_KEY_LEADER_ANAGANTIOS",
     "civilopedia": "TXT_KEY_LEADER_ANAGANTIOS_PEDIA",
     "base_attitude": -2,

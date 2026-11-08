@@ -200,6 +200,7 @@ help):
 | units, promotions | `battle_sentinels`, `battle_sentinel_defense` | Bastion | when its plot is attacked, its side fights with this many more Sentinels, their HP and defence grown by `battle_sentinel_defense` percent (below, "Field Sentinels") |
 | improvements | `battle_sentinels`, `engagement_defense` | Cairn Golem | in battles on its plot the defender fights with this many Sentinels (grown by `engagement_defense`), and its units have `engagement_defense` percent more Dv (not A) |
 | promotions | `naval_damage_vs` (unit classes) | Leviathan Harpoons | percent more damage its ship deals in the rounds it wins of a naval battle against units of these classes |
+| leader_heads | `minor_leader_of` (a civilization) | The Sundering | a minor leader of the civilization, which none lists: a faction the card splits from it may have it when the civilization's own leaders are in play (section 4); the leader's help names the civilization |
 | buildings | `legion_cost_percent` | The Gilded Legion | once built, the city chooses a civilization it has met (`SPELL_GILDED_LEGION`, at a player: `City::legion_civ`); it then trains that civilization's unit of each class (not world units) as that civilization's city would, at this percent of its cost (`city_legion_unit_civ`) |
 
 The battle effects are in `crates/ffh-core/src/engagement/arms.rs` (the set-up, `Game`) and
@@ -355,8 +356,8 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   it evenly (a test checks the lists): 20 the Wild Awakens; 30 four ways (Blight, the Sea
   Recedes, the Scaled Kingdom, the Brood, which then takes 50); 40 three ways (Volcanic Spring,
   Werewolf Moon, the Horsemen, who then take 50-70); 50 the Blade Returns; 60 the Infernal Gate
-  Opens; 80 two ways (Hellfire, the Sky Falls); 90 Wrath; 100 two ways (Apocalypse, the Long
-  Night).
+  Opens; 80 two ways (Hellfire, the Sky Falls); 90 two ways (Wrath, the Sundering); 100 two ways
+  (Apocalypse, the Long Night).
 - **Crater** (`TERRAIN_CRATER`, defined in `cards/doom_sky_falls.jsonc`): what The Sky Falls
   leaves. In each struck city (largest first) half of its work radius's land plots, rounded down,
   become Crater: not the city's plot, peaks, water, another city's plot or Crater already; drawn
@@ -394,6 +395,40 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   (`cards_economy`, at the start of its turn and once its units have moved). -4 attitude between
   it and the Infernals, both ways, set when the second of them arrives (`court_infernal_grudge`;
   no war is forced). It is played with a free site beside the richest civilization.
+- **The Sundering** (90, the owner's design of 2026-11-08; `ffh/cards/sundering.rs`, its text
+  and invented leaders in `doom_sundering.jsonc`): in player id order, every living civilization
+  (`world::civ_players`: not the barbarians, minor civilizations or crusade Hosts; not the Sheaim
+  or the Infernals) with 4 cities or more and a capital splits (`sundering_plan`, drawn before the
+  first split, so a faction born now does not split again). The quarter of its cities farthest
+  from its capital (plot distance, rounded down, at least one; ties: the lower city id;
+  `seceding_cities`) go to a new faction, a `world::birth` of its civilization type with `release`
+  (as the Usurper's Crown: buildings, culture and land garrisons stay, heroes go with the parent;
+  the most populous city its capital), named "<short description> of <capital>" ("Bannor of
+  Elam"). It is `Birth::wild` with a `parent`: the AI plays it, it knows its parent's techs (not
+  the cards), it is nobody's vassal and at peace with every civilization (a leader with the
+  Barbarian trait, `barbarian_ally`, is at peace with the barbarians as at a game's start), it
+  has met every civilization its parent has met, and `ai_attitude_extra` is -4 between it and
+  its parent both ways. **Its leader** (`faction_leader`): the first by id of its civilization's
+  `leaders` not in play this game (the leader of a player ever alive) nor given to a faction of
+  the same firing, else the first such of its minor leaders (`leader_heads` `minor_leader_of`,
+  which no civilization lists, so no game starts with one): FFH2's scenario leaders, each by the
+  civilization its scenario gave it (Tethira: Bannor; Kane: Malakim; Thessalonica: Elohim;
+  Shekinah: Sidar; Koun: Grigori; Ostanes, Uldanor: Hippus; Tya Kiri: Amurites; Duin Halfmorn:
+  Doviello; Furia, Melisandre: Balseraphs; Hafgan: Clan of Embers; Rivanna, Volanna: Svartalfar;
+  Mahon: Calabim; Dumannios, Riuros, Anagantios: Illians; Weevil and Braeden, whose traits are
+  Foolish and Weak, are left out), and six invented for the civilizations FFH2 gave none, each
+  with the AI personality of a leader of its civilization: Torrin Coldforge (Luchuirp: Industrious,
+  Organized), Ysolde Lorda (Kuriotates: Expansive, Organized), Caelith Sunbough (Ljosalfar:
+  Creative, Defender), Durgrim Deepvault (Khazad: Defender, Financial), Selka Saltreach (Lanun:
+  Expansive, Raiders), Raziel (Mercurians: Defender, Spiritual). A civilization with no free leader
+  does not split: the civilizations born of cards have one leader each, in play. The card is
+  played only when some civilization splits (`valid_sundering`). The minor leaders show the
+  random portrait (`PORTRAIT_ALIASES`). **Under the AI** (the card fired by hand at turn 150 of
+  four 6-civilization standard games, seeds 1-4, then 40 turns played; 16 factions): the
+  factions keep their garrisons (none shrank: with one or two cities they are fully funded at 0
+  gold) and build more (1-4 land units at the split, 3-7 forty turns later). They are weak (most
+  have one city), and in 4 of 16 the parent, or once a neighbour, declared war and took the
+  faction's city within 20-35 turns; the others lived on at peace.
 - **No card alters a victory condition** (the owner's rule, 2026-11-08): what a card produces
   counts normally toward every victory.
 - **The human's view:** `me.doom` (`view/cards.rs`) lists the slots with what the human knows:
@@ -518,6 +553,7 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | A04 The Scaled Kingdom (30) | Armageddon | built (batch B8) |
 | A06 The Brood (30, 50) | Armageddon | built (batch B8; not played without barbarians) |
 | A22 The Infernal Gate Opens (60) | Armageddon | built (batch B8; reworked 2026-11-08: the Court of Mammon, beside the richest civilization; no tie to the Infernal Pact) |
+| The Sundering (90) | Armageddon | built (the owner's design, 2026-11-08; `doom_sundering.jsonc`: six invented minor leaders, 18 of FFH2's scenario leaders repurposed; the card-born civilizations do not split) |
 
 | P17 Sanctified Steel (`prophet_sanctified_steel`) | Prophet | built (no religion needed in the city) |
 | Shieldbearer (`engineer_shieldbearer`) | Engineer | built |

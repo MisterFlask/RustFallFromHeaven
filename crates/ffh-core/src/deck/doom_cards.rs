@@ -15,12 +15,13 @@
 //!
 //! The cards that bring a civilization into the game (A04 The Scaled Kingdom, A06 The Brood, A22
 //! The Infernal Gate Opens) are batch B8's: their `valid` and `fire` functions are in
-//! `ffh/cards/new_civs_2.rs`.
+//! `ffh/cards/new_civs_2.rs`. The Sundering (90), which splits civilizations, is in
+//! `ffh/cards/sundering.rs`.
 
 use std::cmp::Reverse;
 
 use crate::deck::doom::DoomCard;
-use crate::ffh::cards::new_civs_2;
+use crate::ffh::cards::{new_civs_2, sundering};
 use crate::game::Game;
 use crate::ids::*;
 use ffh_data::*;
@@ -35,6 +36,7 @@ pub const LONG_NIGHT: &str = "DOOM_LONG_NIGHT";
 pub const SCALED_KINGDOM: &str = "DOOM_SCALED_KINGDOM";
 pub const BROOD: &str = "DOOM_BROOD";
 pub const INFERNAL_GATE: &str = "DOOM_INFERNAL_GATE";
+pub const SUNDERING: &str = "DOOM_SUNDERING";
 
 /// The new cards (FFH2's are in `doom::CARDS`).
 pub const CARDS: &[DoomCard] = &[
@@ -48,6 +50,7 @@ pub const CARDS: &[DoomCard] = &[
     DoomCard { key: SCALED_KINGDOM, stages: &[30], fire: new_civs_2::fire_scaled_kingdom, valid: Some(new_civs_2::valid_scaled_kingdom), on_reveal: None },
     DoomCard { key: BROOD, stages: &[30, 50], fire: new_civs_2::fire_brood, valid: Some(new_civs_2::valid_brood), on_reveal: None },
     DoomCard { key: INFERNAL_GATE, stages: &[60], fire: new_civs_2::fire_infernal_gate, valid: Some(new_civs_2::valid_infernal_gate), on_reveal: None },
+    DoomCard { key: SUNDERING, stages: &[90], fire: sundering::fire_sundering, valid: Some(sundering::valid_sundering), on_reveal: None },
 ];
 
 /// How many unrevealed Armageddon cards ahead `p` sees: the most any building of theirs shows
