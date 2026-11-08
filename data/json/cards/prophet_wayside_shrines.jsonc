@@ -49,7 +49,7 @@
       "prereq_tech": "TECH_CARD_WAYSIDE_SHRINES",
       "time": 300,
       "improvement_type": "IMPROVEMENT_WAYSIDE_SHRINE",
-      "built_by": ["UNITCLASS_WORKER", "UNITCLASS_SLAVE"],
+      "same_builders_as": "BUILD_ROAD",
       "button": ",Art/Interface/Buttons/Builds/BuildFort.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,4,8"
     }
   ],

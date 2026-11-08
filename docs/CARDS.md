@@ -126,7 +126,7 @@ help):
 | improvements | `city_heal_tech` (tech) | Siege Lines, Wayside Shrines | units of a team that knows the tech heal on the plot as in a city of their own |
 | improvements | `enemy_city_adjacent` | Siege Lines | built only next to a city of a civ the builder is at war with, then also in that civ's land |
 | improvements | `requires_route` | Wayside Shrines | built only on a plot with a route |
-| builds | `built_by` (unit classes) | Siege Lines, Causeway, Canal Locks, Wayside Shrines | the classes whose units can make the build (added to their `builds` at load) |
+| builds | `built_by` (unit classes) | Causeway | the classes whose units can make the build (added to their `builds` at load) |
 | buildings | `border_stops_enemies` | Wall of the Kings | land units at war with the owner, and barbarians, that enter its borders end their move there |
 | buildings | `blocks_enemy_ships` | Harbor Chain | ships at war with the city's owner cannot enter the water plots next to the city |
 | buildings | `conquest_keeps_all` | Hall of Judgment | the owner's conquests keep every building that can be captured, and lose no population |
@@ -184,7 +184,7 @@ help):
 | hurries | `units_only` | Gold Standard | the hurry buys units only |
 | processes | `production_to_experience` | Muster | hammers per point of experience to the units in the city |
 | improvements | `claim_range`, `min_city_distance` | Trading Post | its plot and the land plots within the range are its builder's territory whatever the culture (it is built only outside every border); built only that many plots or more from every city |
-| builds | `same_builders_as` | Trading Post | every unit that can do that build can do this one (set in the units' `builds` at load) |
+| builds | `same_builders_as` | Trading Post (the Fort's builders); Siege Lines, Canal Locks, Wayside Shrines (the Road's: Workers, Slaves, Mud Golems, Pioneers) | every unit that can do that build can do this one (set in the units' `builds` at load) |
 
 The battle effects are in `crates/ffh-core/src/engagement/arms.rs` (the set-up, `Game`) and
 `engagement/formation/arms_cards.rs` (the resolver, a fighter's `Arms`); their AI in

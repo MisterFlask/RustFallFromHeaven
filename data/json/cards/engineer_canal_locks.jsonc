@@ -46,7 +46,7 @@
       "prereq_tech": "TECH_CARD_CANAL_LOCKS",
       "time": 600,
       "improvement_type": "IMPROVEMENT_CANAL",
-      "built_by": ["UNITCLASS_WORKER", "UNITCLASS_SLAVE"],
+      "same_builders_as": "BUILD_ROAD",
       "button": ",Art/Interface/Buttons/Builds/BuildFishingBoats.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,7,7"
     }
   ],
