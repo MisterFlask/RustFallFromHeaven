@@ -283,7 +283,8 @@ flag.
   - **No random events.** The weighted roll for a random event each turn is gone, and with it
     every random event and quest. The triggers rules code fires (the Adaptive and Insane traits,
     lairs, Aeron's Chosen, alignment picks) still fire. Crime, which only enabled random
-    events, has no effect left.
+    events, is gone: the global and city crime, the crime of buildings, votes and events, and the
+    triggers' crime thresholds (a new city no longer draws two random numbers for it).
   - **The cards' rules** (one line a card: suit, band, needs; docs/CARDS.md section 5 has their
     status and section 2 the data keys they added):
     - *Wall of the Kings* (Engineer, II, Engineering; world wonder): land units at war with the
@@ -385,6 +386,38 @@ flag.
       first Strike or Charge each round cleaves.
     - Map generation draws no random number for a card's improvement that never appears, so the
       cards leave the generated maps as they were.
+    - *Orrery of Ceridwen* (Sage, II, Astronomy; world wonder): its city has +2 research per 10
+      points of the Armageddon counter, and its owner sees the next two Armageddon cards before
+      they are revealed.
+  - **The Armageddon cards** (the counter's slot; each is dealt to its slot or not, docs/CARDS.md
+    section 4). A card that brings barbarians is dealt again under No Barbarians, and the
+    Gathering under No Vassal States.
+    - *The Wild Awakens* (20): every lair spawns three of its units at once (Barrow, Bear Den,
+      Goblin Fort, Hellfire, Lion Den, Ruins), unless another civilization's unit stands on it.
+    - *The Sea Recedes* (30): a stretch of sea named at the reveal (the open coast within 7 plots
+      of the coast plot with the most of it, at least 10 plots); its unimproved Coast outside city
+      radii becomes Grassland, its sea resources go, its ships move to the nearest water.
+    - *Volcanic Spring* (40): a hill within 3 plots of each of the six largest cities, named at
+      the reveal, becomes flat land with a Volcano; within 1 plot of it units lose half their max
+      HP, improvements (not permanent ones) are destroyed and cities lose 2 population; the plots
+      next to it give +1 food from then on.
+    - *Werewolf Moon* (40): three barbarian Ravenous Werewolves next to each civilization's
+      largest city; every barbarian Wolf and Wolf Pack becomes a Greater Werewolf.
+    - *The Blade Returns* (50): if no Godslayer is in the world, it appears on the unowned land
+      plot farthest from any city, guarded by four barbarian Greater Werewolves.
+    - *The Lairs Deepen* (60, lasting): lairs spawn stronger creatures (Barrow: Wraith; Bear and
+      Lion Dens: Greater Werewolf; Goblin Fort: Ogre; Ruins: Lizardman Ranger; Hellfire: Balor).
+    - *The Second Sun* (60): Ice becomes Tundra and Tundra becomes Plains (a feature the new
+      terrain cannot have is removed).
+    - *The Twilight of the Gods* (80): every holy city's shrine is destroyed (and cannot be rebuilt).
+    - *The Sky Falls* (80): the ten largest cities lose 2 population (never below 1), and the units
+      in them half their max HP.
+    - *The Gathering* (100): every civilization with less than half the power of the strongest
+      civilization whose capital is within 15 plots of its own capitulates to it; these vassals
+      count toward neither their master's domination nor its conquest victory.
+    - *The Long Night* (100, lasting): -1 food on every plot; units heal each turn only in cities.
+    - *The Godless Age* (100): every shrine, holy city and religion is removed, and state religions
+      end (without anarchy).
 
 **Balance** (after `classic-1`, each the owner's decision)
 
