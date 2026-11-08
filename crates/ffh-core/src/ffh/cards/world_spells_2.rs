@@ -489,13 +489,19 @@ pub fn project_built(g: &mut Game, c: CityId, project: ProjectType) {
     }
 }
 
+/// The Tidecall of Danalin's ritual (looked up once).
+fn tidecall_project(d: &GameData) -> Option<ProjectType> {
+    static P: std::sync::OnceLock<Option<ProjectType>> = std::sync::OnceLock::new();
+    *P.get_or_init(|| d.ty::<ProjectType>("PROJECT_TIDECALL_OF_DANALIN"))
+}
+
 /// Card rituals that city `c` cannot build (`cannotCreate`): one whose charge it holds; the
 /// Tidecall of Danalin away from the ocean.
 pub fn cannot_create(g: &Game, c: CityId, project: ProjectType) -> bool {
     if g.cities[c].ritual_charges.contains(&project) {
         return true;
     }
-    g.d.ty::<ProjectType>("PROJECT_TIDECALL_OF_DANALIN") == Some(project) && !g.city_is_coastal(c, g.d.defines.min_water_size_for_ocean)
+    tidecall_project(g.d) == Some(project) && !g.city_is_coastal(c, g.d.defines.min_water_size_for_ocean)
 }
 
 impl Game {

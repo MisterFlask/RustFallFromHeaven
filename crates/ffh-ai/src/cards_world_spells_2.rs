@@ -7,15 +7,17 @@
 //! - **Dragon's Oath:** at once (Sylvarith fights for us from that turn).
 //! - **Call the Leviathan:** at once, in the coastal capital, else the largest coastal city.
 //! - **Judgment of Junil:** a war we are losing ends (an enemy civilization of half again our
-//!   power); else, while we fight or prepare a war, the strongest other neighbour we can reach (of
-//!   at least four fifths of our power) is held to peace.
+//!   power, its war success against us at least ours); else, while we fight or prepare a war, the
+//!   strongest other neighbour we can reach (of at least four fifths of our power) is held to
+//!   peace.
 //! - **Earthshaper's Decree:** once it improves at least [`DECREE_MIN_PLOTS`] plots and three per
 //!   city.
 //! - **The Plagiarist's Lens:** at once, on the card of the highest band (then the most holders).
-//! - **Rituals:** at war with a civilization, a city of ours that finishes the ritual within
-//!   [`RITUAL_MAX_TURNS`] turns starts it: the Pillar of Dawn in a city in danger (no Pillar of ours
-//!   standing), the Weather Engine near a front (an enemy city or stack within 10 plots), the
-//!   Tidecall where an enemy's improved shore lies within 3 plots. One of each at a time.
+//! - **Rituals:** at war with a civilization, a city of ours not in peril that finishes the ritual
+//!   within [`RITUAL_MAX_TURNS`] turns starts it, at the front of its queue: the Pillar of Dawn
+//!   where an enemy army (3 units) stands within 5 plots (no Pillar of ours standing), the Weather
+//!   Engine near a front (an enemy city, or an enemy army, within 10 plots), the Tidecall where an
+//!   enemy's improved shore lies within 3 plots. One of each at a time.
 //! - **Weathers:** a Storm on a city of ours that enemy shooters or siege engines threaten; a
 //!   Blizzard on an enemy stack in or by our land; a Fog on an enemy city our army stands next to.
 //! - **Tidecall:** the enemy's improved shore plot that yields most.
@@ -146,11 +148,15 @@ pub fn junil_target(g: &Game, v: &View, caster: UnitId) -> Option<PlayerId> {
     let team = v.team;
     let ours = g.team_get_power(team, true).max(1) as i64;
     let candidates: Vec<PlayerId> = g.player_ids().filter(|&o| ws::junil_ok(g, caster, o)).collect();
-    // A war we are losing: the enemy of half again our power (the strongest first).
+    // A war we are losing: the enemy of half again our power that we are not beating (its war
+    // success against us at least ours), the strongest first.
     let losing = candidates
         .iter()
         .copied()
-        .filter(|&o| g.at_war(team, g.players[o].team))
+        .filter(|&o| {
+            let ot = g.players[o].team;
+            g.at_war(team, ot) && g.teams[ot].ai_war_success[team] >= g.teams[team].ai_war_success[ot]
+        })
         .map(|o| (g.team_get_power(g.players[o].team, true) as i64, o))
         .filter(|&(power, _)| power * 2 > ours * 3)
         .max_by_key(|&(power, o)| (power, std::cmp::Reverse(o)));
@@ -286,18 +292,17 @@ fn rituals(g: &mut Game, v: &View) {
     if !civ_war(v) {
         return;
     }
-    let cities = g.players[p].cities.clone();
-    // The Pillar of Dawn: in a city in danger, while no Pillar of ours stands.
+    // A city in peril builds its defence, not a ritual.
+    let cities: Vec<CityId> = g.players[p].cities.iter().copied().filter(|&c| !v.peril.iter().any(|&(q, _)| q == g.city_plot(c))).collect();
+    // The Pillar of Dawn: where an enemy army (3 units or more) stands within its reach, while no
+    // Pillar of ours stands; the city with the most production first.
     if let Some(pr) = ritual(g, p, "PROJECT_PILLAR_OF_DAWN") {
         let standing = g.area_effects.iter().any(|e| e.owner == p && e.kind == AreaEffectKind::PillarOfDawn && e.until > g.game_turn());
         if !standing && !ritual_pending(g, p, pr) {
-            let mut threatened: Vec<CityId> = cities.iter().copied().filter(|&c| {
-                let plot = g.city_plot(c);
-                v.danger_at(plot) > 0 || v.peril.iter().any(|&(q, _)| q == plot)
-            }).collect();
-            threatened.sort_by_key(|&c| (std::cmp::Reverse(g.cities[c].population), c));
-            for c in threatened {
-                if start_ritual(g, c, pr, "a city in danger") {
+            let mut fronts: Vec<CityId> = cities.iter().copied().filter(|&c| enemies_near(g, v, g.city_plot(c), ws::PILLAR_RADIUS).len() >= 3).collect();
+            fronts.sort_by_key(|&c| (std::cmp::Reverse(g.city_current_production_difference(c, false, false)), c));
+            for c in fronts {
+                if start_ritual(g, c, pr, "an enemy army near") {
                     break;
                 }
             }
@@ -562,6 +567,52 @@ mod tests {
         let their = g.players[THEM].cities[0];
         assert!(g.plot_has_weather(g.city_plot(their), AreaEffectKind::Fog));
         assert!(g.cities[c].ritual_charges.is_empty());
+    }
+
+    #[test]
+    fn the_tidecall_drowns_an_enemy_shore() {
+        let mut g = one_landmass_game(55);
+        learn(&mut g, US, "TECH_CARD_TIDECALL_OF_DANALIN");
+        g.player_found(US, 4, 3);
+        let c = g.players[US].cities[0];
+        unit(&mut g, US, "UNIT_WARRIOR", 4, 3);
+        g.player_found(THEM, 12, 5);
+        war(&mut g);
+        // An enemy cottage on the shore, 2 plots from our city.
+        let shore = g.map.plot_xy(6, 3).unwrap();
+        g.plot_set_owner(shore, Some(THEM), false, false);
+        g.plot_set_improvement_type(shore, Some(g.d.t::<ImprovementType>("IMPROVEMENT_COTTAGE")));
+        unit(&mut g, US, "UNIT_SCOUT", 5, 3);
+        g.cities[c].base_yield_rate[YieldType::YIELD_PRODUCTION.idx()] = 200;
+        play(&mut g);
+        let pr = g.d.t::<ProjectType>("PROJECT_TIDECALL_OF_DANALIN");
+        assert!(g.cities[c].order_queue.iter().any(|o| o.order_type == OrderType::ORDER_CREATE && o.data1 == pr.i()), "the ritual is started");
+        g.cities[c].order_queue.clear();
+        ws::project_built(&mut g, c, pr);
+        play(&mut g);
+        assert!(g.plot_is_water(shore), "the shore is drowned");
+    }
+
+    #[test]
+    fn the_pillar_of_dawn_is_raised_where_an_enemy_army_stands() {
+        let mut g = one_landmass_game(56);
+        learn(&mut g, US, "TECH_CARD_PILLAR_OF_DAWN");
+        g.player_found(US, 4, 5);
+        let c = g.players[US].cities[0];
+        for _ in 0..4 {
+            let u = unit(&mut g, US, "UNIT_AXEMAN", 4, 5);
+            g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_CITY_DEFENSE);
+        }
+        g.player_found(THEM, 15, 5);
+        war(&mut g);
+        for _ in 0..3 {
+            unit(&mut g, THEM, "UNIT_WARRIOR", 9, 5);
+        }
+        unit(&mut g, US, "UNIT_SCOUT", 8, 5);
+        g.cities[c].base_yield_rate[YieldType::YIELD_PRODUCTION.idx()] = 200;
+        play(&mut g);
+        let pr = g.d.t::<ProjectType>("PROJECT_PILLAR_OF_DAWN");
+        assert!(g.cities[c].order_queue.iter().any(|o| o.order_type == OrderType::ORDER_CREATE && o.data1 == pr.i()), "the Pillar is started");
     }
 
     #[test]

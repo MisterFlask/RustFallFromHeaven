@@ -163,6 +163,9 @@ help):
 | units | `battle_familiar` | Familiars | it binds to a caster (its `summoner`, `SPELL_BIND_FAMILIAR`); in a battle it takes the first spell or shot aimed at that caster, and the auto formation puts it in the caster's lane |
 | spells | `battle_illusions` `{count, hp}` | Illusory Host | illusory soldiers cast with the caster's first spell action (below) |
 | spells | `battle_charm` `"rows": "REAR"`, `"skip"` | Lullaby of Ceridwen | a charm or hex on the side's rearmost row in use; a hex that makes the fighters it lands on skip their next action |
+| spells | `ritual_charge` (a project) | Weather Engine, Tidecall of Danalin | each completion of the ritual leaves its city a charge (`City::ritual_charges`); the spell is cast only by a unit in a city of its owner holding one, and spends it; a city holding a charge does not build the ritual again (section 3, "Rituals") |
+| projects | `repeat_cost_percent` | Pillar of Dawn | each completion by a team makes the ritual's next cost this percent of the last (200: twice; at most 16 times) |
+| buildings | `reveals_sites` | The Second Sky | when built, its owner's team has every plot with a mana resource, a unique feature, a lair (an improvement that spawns) or a goody hut revealed |
 
 The battle effects are in `crates/ffh-core/src/engagement/arms.rs` (the set-up, `Game`) and
 `engagement/formation/arms_cards.rs` (the resolver, a fighter's `Arms`); their AI in
@@ -236,6 +239,34 @@ a fighter revived), each `{unit, lane, row, hp}`; the battle screens fold it
   unit is picked on the map (its plots outlined; a plot with several targets asks which), a player
   or a choice from a list. A card's world spell asks to confirm (once a game) and stays listed,
   spent, once cast. `do_command COMMAND_CAST` refuses a targeted spell.
+
+**Rituals** (a card's projects, `crates/ffh-core/src/ffh/cards/world_spells_2.rs`):
+- A ritual is a project with `max_global_instances` and `max_team_instances` -1: built again
+  after it completes. Its effect is the project's own, at completion (`ev_project_built` calls the
+  batch's `project_built`; FFH2's rituals act there too).
+- **A ritual with a choice** (where its effect falls) leaves a charge instead: a spell naming it as
+  `ritual_charge` is targeted, cast by a unit in the city that holds the charge (a selected unit's
+  spell in the UI: the spell is not `once`), and the cast spends the charge. The city builds the
+  ritual again only once the charge is spent (`cannot_create`). A captured city loses its charges.
+- **A ritual whose cost grows** names `repeat_cost_percent` (`team_repeat_project_cost`, from the
+  team's `project_count`).
+
+**Area effects:** `Game::area_effects` (saved) holds the timed effects over the plots within a
+radius of a plot (`AreaEffect`: its kind, owner, plot, radius and the first turn it no longer
+holds): the Weather Engine's Blizzard, Storm and Fog, the Pillar of Dawn. An effect ended is
+dropped at the end of a game turn (`area_effects_do_turn`). Where the rules ask
+(`plot_has_weather`, `unit_in_pillar_of_dawn`, `plot_fog_hides`): healing (`unit_heal_rate`), the
+moves a turn starts with (`unit_turn_moves_at`), a battle's set-up (`engage_arms_weather`: a
+fighter's `ranged_resist`, its `hold_shot_rounds`), invisibility (`unit_is_invisible`,
+`unit_is_invisible_in_plot`), a unit's turn (`unit_do_turn`: the Pillar's heal).
+
+**Truces:** `Team::truce_until` (saved, the same on both teams): Judgment of Junil's. While
+`team_has_truce` holds there is no war between the two teams: `team_can_declare_war` refuses it
+(and a war on a vassal of the other), `team_declare_war` does nothing (so the declarations other
+wars drag in, defensive pacts and vassals, skip the pair; `team_wars_after_declaring` previews the
+same), False Colours do not reach them, and their always-hostile (hidden nationality) units are no
+enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_with`,
+`puf_is_potential_enemy`). The AI's war planning sees it through `team_can_declare_war`.
 
 ## 4. The Armageddon deck
 
@@ -360,3 +391,13 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | Illusory Host (`bard_illusory_host`: `UNIT_HOST_ILLUSIONIST`) | Bard | built |
 | Familiars (`sage_familiars`) | Sage | built |
 | Homunculus Vats (`sage_homunculus_vats`: a spell promotion chosen when trained) | Sage | built |
+| B02 Sing the Stones (`bard_sing_the_stones`) | Bard | built (world spell; batch B7, `cards/world_spells_2.rs`): the City Ruins within 3 plots of the borders where a city may be founded |
+| B13 Dragon's Oath (`bard_dragons_oath`: `UNIT_SYLVARITH`) | Bard | built (world spell; B7): Sylvarith in the capital, one in the world; Breath Fire is its own copy (no Dragon promotion, which gives Fear) |
+| P06 Call the Leviathan (`prophet_call_the_leviathan`) | Prophet (the Octopus Overlords) | built (world spell at a coastal city; B7): a Kraken while a Leviathan lives |
+| Judgment of Junil (`prophet_judgment_of_junil`) | Prophet [good] | built (world spell at a player; B7): needs Orders from Heaven (the Scales of Junil's); a war ends; 20 turns of truce (`Team::truce_until`) |
+| Earthshaper's Decree (`engineer_earthshapers_decree`) | Engineer | built (world spell; B7): the Workers' builds that keep the plot's feature and resource |
+| The Second Sky (`sage_second_sky`) | Sage | built (national wonder, `reveals_sites`; B7): at completion; recon units trained there +1 sight |
+| The Plagiarist's Lens (`sage_plagiarists_lens`) | Sage | built (world spell at a choice; B7): a once-a-game spell, not a national building; -2 attitude from each holder, for good (no 50-turn timer) |
+| Weather Engine (`engineer_weather_engine`) | Engineer | built (ritual, 300, with a charge; B7): Blizzard, Storm, Fog |
+| Tidecall of Danalin (`prophet_tidecall_of_danalin`) | Prophet | built (ritual in a coastal city, 150, with a charge; B7) |
+| P12 Pillar of Dawn (`prophet_pillar_of_dawn`) | Prophet (the Empyrean) | built (ritual, 500, each completion twice the last; B7) |
