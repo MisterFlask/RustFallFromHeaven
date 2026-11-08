@@ -188,6 +188,9 @@ const UNIT_ALIASES = {
   minotaur: ["ogre_embers"], brigit_held: ["brigit"], rosier_oathtaker: ["rosier"],
   // The battle cards' units (docs/CARDS.md).
   lutist: ["harlequin", "artist"], host_illusionist: ["mage"], whisperer: ["disciple_octopus_overlords", "disciple"], familiar: ["imp"], homunculus: ["adept"],
+  // The great-person cards' new units (docs/CARDS.md), until they have sprites of their own.
+  archon: ["archmage", "mage"], dawn_knight: ["paladin"], grand_master: ["paladin"], erlking: ["treant"],
+  captain_general: ["champion"],
 };
 
 /** The last resorts by combat type and domain. */

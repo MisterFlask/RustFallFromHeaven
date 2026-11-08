@@ -183,6 +183,13 @@ impl Game {
             }
         }
         // FfH: End Add
+        // This game's (docs/CARDS.md, "New civilizations"): the civilization's own promotion for
+        // its land units (the Fey Court's Glamour, the Dawn Knights' Vow).
+        if let Some(promotion) = d.civilizations[civilization].unit_promotion {
+            if self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND {
+                self.unit_set_has_promotion(u, promotion, true);
+            }
+        }
 
         self.ev_unit_created(u);
     }

@@ -1011,7 +1011,7 @@ impl Game {
     pub fn city_can_hurry(&self, c: CityId, hurry: HurryType, test_visible: bool) -> bool {
         let owner = self.cities[c].owner;
 
-        if !self.player_can_hurry(owner, hurry) {
+        if !self.player_can_hurry(owner, hurry) && self.city_unit_rush_gold(c, hurry).is_none() {
             return false;
         }
 
@@ -1048,8 +1048,11 @@ impl Game {
     /// C++ `CvCity::canHurryUnit` (CvCity.cpp:3493-3521).
     pub fn city_can_hurry_unit(&self, c: CityId, hurry: HurryType, unit: UnitType, ignore_new: bool) -> bool {
         let owner = self.cities[c].owner;
+        // Card: the Condottieri Free State (docs/CARDS.md): units bought at the trait's rate.
+        let rush = self.player_unit_rush_gold(owner);
+        let rush = (rush > 0 && self.d.hurries[hurry].gold_per_production > 0).then_some(rush);
 
-        if !self.player_can_hurry(owner, hurry) {
+        if !self.player_can_hurry(owner, hurry) && rush.is_none() {
             return false;
         }
 
@@ -1061,7 +1064,11 @@ impl Game {
             return false;
         }
 
-        if self.players[owner].gold < self.city_hurry_gold_for_cost(c, hurry, self.city_hurry_cost_unit(c, false, unit, ignore_new)) {
+        let gold = match rush {
+            Some(rate) => (rate * (self.city_production_needed_unit(c, unit) - self.cities[c].unit_production[unit])).max(1),
+            None => self.city_hurry_gold_for_cost(c, hurry, self.city_hurry_cost_unit(c, false, unit, ignore_new)),
+        };
+        if self.players[owner].gold < gold {
             return false;
         }
 
@@ -1355,7 +1362,35 @@ impl Game {
 
     /// C++ `CvCity::hurryGold` (CvCity.cpp:5073-5076).
     pub fn city_hurry_gold(&self, c: CityId, hurry: HurryType) -> i32 {
+        if let Some(rate) = self.city_unit_rush_gold(c, hurry) {
+            return (rate * self.city_production_left(c)).max(1);
+        }
+        self.city_hurry_cost_gold(c, hurry)
+    }
+
+    /// [`Game::city_hurry_gold`] by the hurry's own cost (C++ `hurryGold`).
+    fn city_hurry_cost_gold(&self, c: CityId, hurry: HurryType) -> i32 {
         self.city_hurry_gold_for_cost(c, hurry, self.city_hurry_cost(c, false))
+    }
+
+    /// This game's (docs/CARDS.md, the Condottieri Free State): the gold per hammer left at which
+    /// `p` buys units whatever its civics, the most its traits give (`unit_rush_gold`; 0: none).
+    pub fn player_unit_rush_gold(&self, p: PlayerId) -> i32 {
+        let d = self.d;
+        d.traits.keys().filter(|&t| d.traits[t].unit_rush_gold > 0 && self.players[p].traits[t]).map(|t| d.traits[t].unit_rush_gold).max().unwrap_or(0)
+    }
+
+    /// Card: the Condottieri Free State (docs/CARDS.md). The gold per hammer left at which city
+    /// `c` buys the unit it is training with gold hurry `hurry` (its owner's
+    /// [`Game::player_unit_rush_gold`], flat: no hurry modifier applies, so it never goes below
+    /// the decks' 2-gold floor); `None` when it does not apply (no such trait, not a gold hurry,
+    /// not training a unit).
+    pub fn city_unit_rush_gold(&self, c: CityId, hurry: HurryType) -> Option<i32> {
+        let rate = self.player_unit_rush_gold(self.cities[c].owner);
+        if rate <= 0 || self.d.hurries[hurry].gold_per_production <= 0 || !self.city_is_production_unit(c) {
+            return None;
+        }
+        Some(rate)
     }
 
     /// C++ `CvCity::getHurryGold(HurryTypes, int iHurryCost)` (CvCity.cpp:5078-5090).

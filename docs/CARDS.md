@@ -163,6 +163,9 @@ help):
 | units | `battle_familiar` | Familiars | it binds to a caster (its `summoner`, `SPELL_BIND_FAMILIAR`); in a battle it takes the first spell or shot aimed at that caster, and the auto formation puts it in the caster's lane |
 | spells | `battle_illusions` `{count, hp}` | Illusory Host | illusory soldiers cast with the caster's first spell action (below) |
 | spells | `battle_charm` `"rows": "REAR"`, `"skip"` | Lullaby of Ceridwen | a charm or hex on the side's rearmost row in use; a hex that makes the fighters it lands on skip their next action |
+| civilizations | `unit_promotion` | The Fey Court Awakens, Founding of the Dawn Knights | a promotion every land unit of the civilization gets when it is created (`unit_init`) |
+| traits | `unit_rush_gold` | The Condottieri Free State | its player buys units at this many gold per hammer left, under any civic (the hurry rules) |
+| buildings | `defender_defense` | Free City Charter | percent more defence for the units fighting in the city (the most of its buildings; an engagement's defence terms) |
 
 The battle effects are in `crates/ffh-core/src/engagement/arms.rs` (the set-up, `Game`) and
 `engagement/formation/arms_cards.rs` (the resolver, a fighter's `Arms`); their AI in
@@ -208,12 +211,13 @@ a fighter revived), each `{unit, lane, row, hp}`; the battle screens fold it
   largest connected group of unowned plots of a terrain or feature), the plots within N plots of
   a player's borders (`near_borders`, by steps, for every plot at once; `within_range_of_borders`
   for one plot, by plot distance), a unit gaining levels (`unit_gain_levels`, rule 10: the XP for
-  N more promotions than it can take now), a new civilization born mid-game, "+N to the
-  Armageddon counter" in the points of its percentage, whatever its limit
-  (`counter_change_for_points`), ...
+  N more promotions than it can take now), "+N to the Armageddon counter" in the points of its
+  percentage, whatever its limit (`counter_change_for_points`), city sites and a new civilization
+  born mid-game (section 6), ...
 - **Attitude:** a card that changes what a leader thinks of another (Purchase Charter, Cultural
-  Annexation: -4) adds to `Player::ai_attitude_extra`. The AI reads it as a term of its relation,
-  "acts toward us" (`ffh-ai/src/diplomacy.rs`), on the relation's own scale (2 is a step).
+  Annexation: -4; a born civilization toward its founder: +4) adds to `Player::ai_attitude_extra`,
+  on FFH's scale (4 is about a step). The AI counts it at half, its "attitude modifier" term
+  (`ffh-ai/src/diplomacy.rs`, `relation_parts`; its step is 2, as for the Trust spell).
 - **Naming a target for people:** `Game::spell_target_label(caster, spell, target)`: a plot's
   terrain and feature with its coordinates, a city's name, a unit's name and level, a player's
   name. A `choice` target's option is named by the spell's `py_target_label`, a `TargetLabelFn`
@@ -360,3 +364,50 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | Illusory Host (`bard_illusory_host`: `UNIT_HOST_ILLUSIONIST`) | Bard | built |
 | Familiars (`sage_familiars`) | Sage | built |
 | Homunculus Vats (`sage_homunculus_vats`: a spell promotion chosen when trained) | Sage | built |
+| G12 The Patrian Awakening | Sage | built (batch B4) |
+| P18 Founding of the Dawn Knights | Prophet | built (batch B4) |
+| P19 The Fey Court Awakens | Prophet | built (batch B4) |
+| M07 The Condottieri Free State | Merchant | built (batch B4) |
+| Free City Charter (reworked) | Engineer | built (batch B4) |
+| Mirror Colony | Sage | built (batch B4) |
+
+## 6. New civilizations
+
+`world::birth(g, &Birth)` gives a new civilization a player slot mid-game; the cards of batch B4
+(`cards/new_civs.rs`) use it, and later cards can.
+
+- **The slot:** `world::open_slot`, a spare slot never alive (`GameSetup::SPARE_SLOTS`, 4, shared
+  with Hyborem and Basium; never a crusade Host's). With none free, a card that makes a
+  civilization cannot be cast: its requirement tests the slot.
+- **Who it is:** a civilization and a leader of its own (`civilizations` and `leader_heads` in the
+  card's file; neither playable nor AI-playable, so no game starts with it and no colony takes it).
+  The slot is added as the Infernals' is (`add_player_advanced`, on a team of its own) and played
+  by the founder's controller. Its parent is the founder (`Player::parent`).
+- **What it starts with** (`Birth`): the cities it founds at given plots (`NewCity`: the first its
+  capital, each with its buildings and units), or cities of the founder it takes over (`release`:
+  a trade, so they keep their buildings, with their culture and garrison: the founder's land
+  combat units in them but heroes and the caster), a hero in its capital, every tech the founder's
+  team knows but the cards (and `techs`), a state religion in all its cities, gold.
+- **Its relation to the founder:** it has met it. As a vassal (`vassal`) it is the founder's, by
+  the ordinary vassal rules (it joins its master's wars). Like every civilization it is at war
+  with the barbarians on both sides (`add_player_advanced` sets only its own side; the other left
+  at peace made `ai_vassal_trade` deny the vassal trade). Its AI keeps the vassalage until the
+  ordinary revolt rule would free it (`team_can_vassal_revolt`; `diplomacy::reconsider_deals`),
+  where a vassal that is not hopeless would otherwise leave after 20 turns. **Where vassals cannot be** (No Vassal
+  States, or a founder that is a vassal itself) it signs open borders and a defensive pact with the
+  founder instead, a deal like any other. No other war or peace is forced (docs/DECKS.md, principle
+  27): its leanings are attitude modifiers, toward the founder (`ai_attitude_extra`) and toward
+  every civilization of an alignment (`Player::alignment_attitude`).
+- **The AI's attitude** (`ffh-ai`, `diplomacy::relation_parts`) counts both, at half (they are on
+  FFH's scale, where 4 is about a step; the AI's step is 2, as for the Trust spell).
+- **City sites** (`world::free_site`, `site_value`, `best_sites`, `land_near_borders`): a free site is
+  land a city can stand on (`player_can_found`'s terrain, feature, peak, permanent improvement and
+  mana rules), with no unit, no city within `MIN_CITY_RANGE`, unowned; the best are taken by the
+  land, bonuses, water and fresh water in their radius.
+- **Its own rules** are data where they can be: a civilization's `unit_promotion` (the Fey
+  Glamour, the Dawn Vow), a civilization trait (`civ_trait`: the Free Companies'), a palace's
+  `free_building` (the Patrians' Mage Guilds), unique units in its `units`. What data cannot say is
+  a rule hooked where it lives (section 2), each naming its card.
+- **Art:** a new leader shows an existing leader's portrait and a new unit an existing unit's
+  sprite (`PORTRAIT_ALIASES` in `crates/ffh-play/assets/app/portraits.js`, `UNIT_ALIASES` in
+  `iso.js`).

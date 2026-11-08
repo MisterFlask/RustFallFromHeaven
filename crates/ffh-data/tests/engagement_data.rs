@@ -315,9 +315,12 @@ fn the_religions_fighters_strike_and_every_stabber_has_marksman() {
     let channeling = d.t::<PromotionType>("PROMOTION_CHANNELING1");
     let divine = d.t::<PromotionType>("PROMOTION_DIVINE");
     let disciple = d.t::<UnitCombatType>("UNITCOMBAT_DISCIPLE");
+    // The game's own unit types (the cards' come after them, docs/CARDS.md).
+    let own = d.units.len() - ffh_data::card_entry_count("units");
     let mut strikers: Vec<&str> = d
         .units
         .keys()
+        .take(own)
         .filter(|&u| d.units[u].unit_combat_type == Some(disciple) && d.units[u].engage_rows.is_some() && d.engage_kind(u) == ActionKind::Strike)
         .map(|u| d.type_name(u))
         .collect();

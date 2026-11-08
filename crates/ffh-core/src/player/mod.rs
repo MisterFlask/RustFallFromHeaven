@@ -382,6 +382,10 @@ pub struct Player {
     /// Not in C++: the traits a card gave the leader (Legacy of Kings, docs/CARDS.md), in the
     /// order given. The Adaptive and Insane trait swaps keep them.
     pub card_traits: Vec<TraitType>,
+    /// Not in C++: attitude modifiers toward every civilization of an alignment, on the scale of
+    /// `ai_attitude_extra` (a civilization born of a card leans toward good civs, ...:
+    /// docs/CARDS.md, "New civilizations").
+    pub alignment_attitude: IdxVec<AlignmentType, i32>,
 }
 
 impl Player {
@@ -640,6 +644,7 @@ impl Player {
             governor_count: 0,
             once_spells: Vec::new(),
             card_traits: Vec::new(),
+            alignment_attitude: IdxVec::from_elem(0, d.alignments.len()),
         }
     }
 
@@ -872,6 +877,7 @@ fn ai_reset(g: &mut Game, p: PlayerId) {
         pl.ai_peacetime_grant_value.fill(0);
         pl.ai_gold_traded_to.fill(0);
         pl.ai_attitude_extra.fill(0);
+        pl.alignment_attitude.fill(0);
         pl.ai_first_contact.fill(false);
         for memory in pl.ai_memory_count.iter_mut() {
             memory.fill(0);

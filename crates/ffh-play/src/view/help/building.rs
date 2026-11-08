@@ -187,6 +187,7 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         defense_modifier,
         bombard_defense_modifier,
         sentinels,
+        defender_defense,
         all_city_defense_modifier,
         naval_capture_percent,
         espionage_defense_modifier,
@@ -658,6 +659,11 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         let names: Vec<String> = exclusive_with.iter().map(|&k| display(d, k).to_string()).collect();
         h.push_str(NEWLINE);
         h.push_str(&format!("[ICON_BULLET]Cannot be built in a city with: {}", names.join(", ")));
+    }
+    // This game's (docs/CARDS.md, the Free City Charter).
+    if *defender_defense != 0 {
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]{defender_defense:+}% defence for the units fighting in the city"));
     }
     if *all_city_defense_modifier != 0 {
         add(&mut h, "TXT_KEY_BUILDING_DEFENSE_MOD_ALL_CITIES", &[Arg::N(*all_city_defense_modifier)]);

@@ -58,6 +58,9 @@ pub struct TraitInfo {
     /// This game's: the promotion every unit a spell of its leader's units summons gets
     /// (`Game::unit_summon`): the Summoner trait's Summoner's Bond.
     pub summon_promotion: Option<PromotionType>,
+    /// This game's (docs/CARDS.md, the Condottieri Free State): its player buys the production of
+    /// units at this many gold per hammer left, whatever its civics (`unit_rush_gold`; 0: no).
+    pub unit_rush_gold: i32,
 }
 
 /// C++ `CvTraitInfo::read`.
@@ -97,6 +100,7 @@ pub fn read_trait(rd: &Rd) -> TraitInfo {
         free_promotion: rd.pairs_bool("free_promotions"),
         free_promotion_unit_combat: rd.pairs_bool("free_promotion_unit_combats"),
         summon_promotion: rd.rf::<PromotionType>("summon_promotion"),
+        unit_rush_gold: rd.int("unit_rush_gold"),
     }
 }
 
@@ -151,6 +155,9 @@ pub struct CivilizationInfo {
     /// C++ `getDefaultRace()`: race promotion given to the civ's units.
     pub default_race: Option<PromotionType>,
     pub hero: Option<UnitType>,
+    /// This game's (docs/CARDS.md): the promotion every land unit of the civilization gets when it
+    /// is created (`unit_promotion`; the new civilizations' own rules).
+    pub unit_promotion: Option<PromotionType>,
     /// C++ `isMaintainFeatures(i)`.
     pub maintain_features: IdxVec<FeatureType, bool>,
     // ---- Better AI ----
@@ -212,6 +219,7 @@ pub fn read_civilization(rd: &Rd) -> CivilizationInfo {
         civ_trait: rd.rf("civ_trait"),
         default_race: rd.rf("default_race"),
         hero: rd.rf("hero"),
+        unit_promotion: rd.rf("unit_promotion"),
         maintain_features: rd.pairs_bool("maintain_features"),
         best_defender1: rf_or(rd, "e_best_defender1", "UNITCLASS_ARCHER"),
         best_defender2: rf_or(rd, "e_best_defender2", "UNITCLASS_LONGBOWMAN"),

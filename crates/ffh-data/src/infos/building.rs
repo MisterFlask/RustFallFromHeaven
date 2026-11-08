@@ -278,6 +278,9 @@ pub struct BuildingInfo {
     /// Not in C++: XML `<iSentinels>` (docs/SIEGES.md): the Sentinels a city with this building has
     /// (the most any of its buildings gives).
     pub sentinels: i32,
+    /// This game's (docs/CARDS.md, the Free City Charter): percent more defence for the units of
+    /// the city's team fighting in it (`defender_defense`).
+    pub defender_defense: i32,
     /// C++ `getAllCityDefenseModifier()`, XML `<iAllCityDefense>`.
     pub all_city_defense_modifier: i32,
     /// This game's (docs/CARDS.md, Prize Courts): the owner's ships capture the enemy ships they
@@ -545,6 +548,7 @@ pub fn read_building(rd: &Rd) -> BuildingInfo {
         defense_modifier: rd.int("defense"),
         bombard_defense_modifier: rd.int("bombard_defense"),
         sentinels: rd.int("sentinels"),
+        defender_defense: rd.int("defender_defense"),
         all_city_defense_modifier: rd.int("all_city_defense"),
         naval_capture_percent: rd.int("naval_capture_percent"),
         espionage_defense_modifier: rd.int("espionage_defense"),

@@ -690,6 +690,8 @@ impl Game {
         if self.telemetry.on() {
             self.tel_built_unit(u);
         }
+        // Card: The Patrian Awakening (docs/CARDS.md): the Patrians' casters start at level 3.
+        crate::ffh::cards::new_civs::on_unit_built(self, c, u);
         // `pPlayer` is the unit's owner.
         let p = self.units[u].owner;
         let free_promotion_pick = self.units[u].free_promotion_pick;

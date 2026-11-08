@@ -1,0 +1,85 @@
+// Mirror Colony (docs/DECKS.md, sections 3.1, 7.3 and 10.2; docs/CARDS.md, section 5).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_MIRROR_COLONY",
+      "description": "TXT_KEY_TECH_CARD_MIRROR_COLONY",
+      "help": "TXT_KEY_TECH_CARD_MIRROR_COLONY_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_MIRROR_COLONY_PEDIA",
+      "advisor": "ADVISOR_SCIENCE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_PASS_THROUGH_THE_ETHER"],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {"FLAVOR_SCIENCE": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_MIRROR_COLONY",
+      "description": "TXT_KEY_SPELL_MIRROR_COLONY",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_MIRROR_COLONY_HELP",
+      "tech_prereq": "TECH_CARD_MIRROR_COLONY",
+      "once": true,
+      "display_when_disabled": true,
+      "has_casted": true,
+      "py_result": "spellMirrorColony(pCaster)",
+      "py_requirement": "reqMirrorColony(pCaster)",
+      "button": "Art/Interface/Buttons/Improvements/Portal.dds"
+    },
+    {
+      "type": "SPELL_MIRROR_GATE",
+      "description": "TXT_KEY_SPELL_MIRROR_GATE",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_MIRROR_GATE_HELP",
+      "tech_prereq": "TECH_CARD_MIRROR_COLONY",
+      "display_when_disabled": true,
+      "has_casted": true,
+      "target": "city",
+      "py_targets": "targetsMirrorGate(pCaster)",
+      "py_result": "spellMirrorGate(pCaster)",
+      "py_requirement": "reqMirrorGate(pCaster)",
+      "button": "Art/Interface/Buttons/Improvements/Portal.dds"
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_MIRROR_GATE",
+      "description": "TXT_KEY_BUILDING_MIRROR_GATE",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": -1,
+      "default_building": "BUILDING_MIRROR_GATE"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_MIRROR_GATE",
+      "building_class": "BUILDINGCLASS_MIRROR_GATE",
+      "description": "TXT_KEY_BUILDING_MIRROR_GATE",
+      "civilopedia": "TXT_KEY_BUILDING_MIRROR_GATE_PEDIA",
+      "help": "TXT_KEY_BUILDING_MIRROR_GATE_HELP",
+      "never_capture": true,
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "specialist_yield_changes": "",
+      "bonus_yield_modifiers": "",
+      "specialist_commerce_changes": ""
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_MIRROR_COLONY": "Mirror Colony",
+    "TXT_KEY_TECH_CARD_MIRROR_COLONY_HELP": "[ICON_BULLET]World spell, once: two cities of yours are founded on the largest unowned region.[NEWLINE][ICON_BULLET]The first and your capital get a Mirror Gate: a land unit in a city of yours with a Mirror Gate can step through to another one with no enemy unit, its moves spent.",
+    "TXT_KEY_TECH_CARD_MIRROR_COLONY_PEDIA": "A city seen in a mirror is a city that can be walked to.[NEWLINE][NEWLINE]Expert: claim the far land before a rival does; the Mirror Gate takes your army there in a turn.",
+    "TXT_KEY_SPELL_MIRROR_COLONY": "Mirror Colony",
+    "TXT_KEY_SPELL_MIRROR_COLONY_HELP": "[ICON_BULLET]Two cities of yours are founded on the largest unowned region.[NEWLINE][ICON_BULLET]The first and your capital get a Mirror Gate.[NEWLINE][ICON_BULLET]Once per game.",
+    "TXT_KEY_SPELL_MIRROR_GATE": "Step Through the Mirror Gate",
+    "TXT_KEY_SPELL_MIRROR_GATE_HELP": "[ICON_BULLET]The unit moves to another city of yours with a Mirror Gate and no enemy unit.[NEWLINE][ICON_BULLET]Its moves are spent.",
+    "TXT_KEY_BUILDING_MIRROR_GATE": "Mirror Gate",
+    "TXT_KEY_BUILDING_MIRROR_GATE_HELP": "[ICON_BULLET]A land unit here can step through to another city of yours with a Mirror Gate.",
+    "TXT_KEY_BUILDING_MIRROR_GATE_PEDIA": "Two silvered arches, a world apart, that open on each other."
+  }
+}

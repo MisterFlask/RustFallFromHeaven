@@ -74,6 +74,7 @@ pub fn trait_help(d: &GameData, t: TraitType, civ: Option<CivilizationType>) -> 
         free_promotion,
         free_promotion_unit_combat,
         summon_promotion,
+        unit_rush_gold,
     } = &d.traits[t];
     let mut b = String::new();
     b.push_str(NEWLINE);
@@ -247,6 +248,10 @@ pub fn trait_help(d: &GameData, t: TraitType, civ: Option<CivilizationType>) -> 
     if let Some(p) = summon_promotion {
         b.push_str(&format!("{NEWLINE}[ICON_BULLET]Units summoned by spells start with the [LINK=literal]{}[\\LINK] promotion", display(d, *p)));
     }
+    // This game's (docs/CARDS.md, the Condottieri Free State).
+    if *unit_rush_gold > 0 {
+        b.push_str(&format!("{NEWLINE}[ICON_BULLET]Buys units at {unit_rush_gold} gold per hammer left, under any civic"));
+    }
     finish(b)
 }
 
@@ -304,6 +309,10 @@ pub fn civ_help(d: &GameData, c: CivilizationType) -> String {
     if let Some(hero) = info.hero {
         head(&mut b, "TXT_KEY_HERO_PEDIA");
         item(&mut b, &display(d, hero));
+    }
+    // This game's (docs/CARDS.md, "New civilizations").
+    if let Some(p) = info.unit_promotion {
+        b.push_str(&format!("{NEWLINE}[ICON_BULLET]Its land units start with the [LINK=literal]{}[\\LINK] promotion", display(d, p)));
     }
     head(&mut b, "TXT_KEY_GLOBAL_SPELL_PEDIA");
     for s in d.spells.keys().filter(|&s| d.spells[s].global && d.spells[s].civilization_prereq == Some(c)) {
