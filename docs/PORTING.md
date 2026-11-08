@@ -284,6 +284,46 @@ flag.
     every random event and quest. The triggers rules code fires (the Adaptive and Insane traits,
     lairs, Aeron's Chosen, alignment picks) still fire. Crime, which only enabled random
     events, has no effect left.
+  - **The cards' rules** (one line a card: suit, band, needs; docs/CARDS.md section 5 has their
+    status and section 2 the data keys they added):
+    - *Wall of the Kings* (Engineer, II, Engineering; world wonder): land units at war with the
+      owner, and barbarians, end their move when they enter its borders from outside (the path
+      finder knows it).
+    - *Harbor Chain* (Engineer, II, Sailing; coastal building): ships at war with the city's
+      owner, and barbarian ships, cannot enter the water plots next to the city.
+    - *Siege Lines* (Engineer, II, Construction; worker build): only next to a city of a civ at
+      war with the builder, also in that civ's land; the holder's units on it heal as in their own
+      city.
+    - *Powder Charge* (Engineer, III, Blasting Powder; national unit, 2): Detonate next to a city
+      of a civ at war breaches every Sentinel of that city, with no battle, and uses the Charge up.
+    - *Prize Courts* (Merchant, II, Sailing; national building): the owner's ships capture an
+      enemy ship they defeat half the time.
+    - *Hall of Judgment* (Prophet, the Order, Orders from Heaven; national building): the owner's
+      conquests keep every capturable building and lose no population.
+    - *Causeway* (Engineer, I, Fishing): Work Boats build a dam on a Coast plot next to land
+      (the boat is used up); land units walk onto and over it, with +50% defence there; ships
+      cannot enter it.
+    - *Canal Locks* (Engineer, II, Engineering): Workers dig a canal on a land plot in their
+      borders next to water or another canal; ships enter it unless it is in the land of a civ at
+      war with them, and cannot defend there.
+    - *Mountaineering* (Engineer, II, Engineering): the holder's land units enter peaks at 3 moves,
+      with +50% defence and sight 3 there.
+    - *Ferries* (Engineer, I, Fishing): the holder's land units cross a one-plot strait (water
+      with land on two opposite sides) as land.
+    - *Wheeled City* (Engineer, III, Mithril Working; building): Pack Up turns a city (not the
+      capital or a holy city) into a City Caravan keeping its name, population, buildings and
+      tiers (its culture, religions and stores are lost); Unpack refounds it within 12 plots of
+      where it packed up. The caravan cannot fight and is destroyed when captured.
+    - *Forest Paths* (Prophet, I, Way of the Forests): in the holder's borders its units cross
+      forest and jungle as open ground; enemies that start their turn in such a plot there have a
+      move less (never below one).
+    - *Wayside Shrines* (Prophet, I, Priesthood; worker build on a route, also outside the
+      borders): the holder's units on it heal as in their own city.
+    - *False Colours* (Prophet, evil, II, Deception): the Masker (national unit, 2) raises false
+      colours over the owner's units on its plot until their next turn; under them they may attack
+      units of a civ at peace on land without a declaration (not vassals, masters, barbarians or
+      crusade hosts). The war is declared at the battle, whose defenders have no fortification and
+      no defensive strikes; the colours are spent by that battle.
 
 **Balance** (after `classic-1`, each the owner's decision)
 
