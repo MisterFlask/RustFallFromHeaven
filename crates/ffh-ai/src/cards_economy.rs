@@ -232,6 +232,11 @@ fn trading_posts(g: &mut Game, v: &View) {
         let (cx, cy) = (g.cities[city].x, g.cities[city].y);
         push(g, grp, MissionType::MISSION_ROUTE_TO, cx, cy, 0, true);
     }
+    // An idle group starts its turn flagged to re-plan (`group_do_turn`); these orders are its
+    // plan (`units::play` would clear them).
+    if alive(g, grp) {
+        g.groups[grp].force_update = false;
+    }
 }
 
 // ---------------------------------------------------------------------------------------------
