@@ -426,6 +426,36 @@ flag.
       3), which takes one of 18 promotions each teaching one sphere I battle spell.
     - A charm or hex aimed at the "rear" lands on the side's rearmost row in use; a unit holds at
       most one battle-spell promotion and one strike-spell promotion.
+    - **Civilizations born mid-game** (docs/CARDS.md section 6): a card's new civilization takes a
+      spare player slot (the card cannot be cast without one), knows its founder's techs but the
+      cards, and is its founder's vassal (under No Vassal States, or with a founder that is a
+      vassal, it signs open borders and a defensive pact instead). No other war or peace is forced:
+      its leanings are attitude modifiers. Like every civilization it is at war with the
+      barbarians on both sides.
+    - *The Patrian Awakening* (Sage, III, Arcane Lore; world spell): the Patrians, two cities (the
+      first beside the Remnants of Patria when no civilization owns them), Mage Guilds in every
+      city, casters trained at level 3 with Channeling II; the Archon leads them; +4 toward the
+      caster.
+    - *Founding of the Dawn Knights* (Prophet, the Order, good, Righteousness; world spell): a good
+      order of two cities with four Dawn Knights (Paladin strength, its own uncapped class) and the
+      Grand Master; its units heal fully after a battle won against evil civilizations; +4 toward
+      good civilizations.
+    - *The Fey Court Awakens* (Prophet, the Fellowship of Leaves, Commune with Nature; world spell):
+      the Fey Court in the largest unclaimed forest, with Satyrs, Fawns, Treants and the Erlking;
+      its units have +50% defence and +2 first strikes in forest.
+    - *The Condottieri Free State* (Merchant, III, Mercantilism; world spell): the Free Companies,
+      with 6 Mercenaries, 1000 gold and the Captain-General; they have +100% gold and buy units at
+      2 gold a hammer left under any civic.
+    - *Free City Charter* (Engineer, II, Construction; world spell at a city): one of your cities
+      other than the capital becomes the Free City of its name, an independent civilization (not a
+      vassal) with your land units in it, a Wall of Stone, 3 Sentinels and +50% defence for the
+      units fighting in it; +4 toward you.
+    - *Mirror Colony* (Sage, III, Pass Through the Ether; world spell): two cities of yours on the
+      largest unclaimed region; a Mirror Gate in your capital and the first of them, through which
+      a land unit steps between your gate cities that hold no enemy unit (its moves spent).
+    - **The AI's attitude counts the rules' attitude modifiers** (`ai_attitude_extra`, at half: FFH's
+      4 is about a step, the AI's step is 2): the Infernal Pact's +4 toward its founder and the
+      cards' modifiers now change what the AI thinks.
     - *Orrery of Ceridwen* (Sage, II, Astronomy; world wonder): its city has +2 research per 10
       points of the Armageddon counter, and its owner sees the next two Armageddon cards before
       they are revealed.
