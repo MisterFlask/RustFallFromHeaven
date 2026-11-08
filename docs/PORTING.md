@@ -456,6 +456,41 @@ flag.
     - **The AI's attitude counts the rules' attitude modifiers** (`ai_attitude_extra`, at half: FFH's
       4 is about a step, the AI's step is 2): the Infernal Pact's +4 toward its founder and the
       cards' modifiers now change what the AI thinks.
+    - *Pioneers* (Engineer, I, Crafting; national unit, 4): a worker with three times the work rate;
+      captured, it becomes a Worker.
+    - *Gold Standard* (Merchant, III, Mercantilism; Economy civic): units can be hurried for 2 gold a
+      hammer under any Labor civic; -20% research.
+    - *Beast Market* (Merchant, I, Hunting; building): the city trains Bears (75), Lions (50) and
+      Tigers (75).
+    - *Admiralty* (Merchant, II, Sailing; national building, water cities) and *Academy of War*
+      (Bard, II, Military Strategy; national building): ships, or land units, trained there start
+      with 5 experience.
+    - *Elemental Foundry* (Sage, II, Elementalism; national building): trains Air, Earth, Fire and
+      Water Elementals at 300 where its owner has that mana, one of each, then at 500%.
+    - *Magocracy* (Sage, III, Arcane Lore; Government civic): adept units cost 50% less, other units
+      25% more.
+    - *Golems of the Earthmother* (Prophet, the Runes of Kilmorph, Mithril Working): the Mithril
+      Golem needs no Armageddon counter and costs 600.
+    - *Trading Post* (Merchant, II, Trade; worker build): only outside every border, 3 plots or more
+      from every city; its plot and the land plots around it are its builder's territory whatever
+      the culture, until it is pillaged.
+    - *Font of Rebirth* (Prophet, II, Priesthood, not drawn by evil players; building): the first
+      time a land unit of its owner would die in a battle within 3 plots, it is carried to the city
+      at 10% HP instead; a second death is final.
+    - *Spire of the Archmagi* (Sage, II, Sorcery; national building): each unit trained there takes
+      one sphere I promotion it can acquire, its owner's choice.
+    - *Mana Grafting* (Sage, II, Elementalism; spell for adept units on a mana node in their borders):
+      the node becomes the type of another node its owner has; once a node, for good.
+    - *Stoicism* (Sage, II, Philosophy; Cultural Values civic): war weariness causes no unhappiness;
+      -15% culture.
+    - *Maponos's Cradle* (Prophet, I, Agriculture; national building): +2 food, and every 20 turns a
+      free Settler (a Worker when no city site is free within 10 plots).
+    - *Agares's Well* (Prophet, evil, II, Way of the Wicked; national building): its owner picks one
+      of 17 mana resources for the city; +3 to the Armageddon counter when built.
+    - *Paymaster* (Merchant, III, Guilds; national unit, 1): Buy Out takes an adjacent enemy unit
+      (not a hero or a world unit) for three times its hammer cost in gold.
+    - *Muster* (Bard, II, Military Strategy; a process): 1 experience per 30 hammers, spread over the
+      city's units.
     - *Orrery of Ceridwen* (Sage, II, Astronomy; world wonder): its city has +2 research per 10
       points of the Armageddon counter, and its owner sees the next two Armageddon cards before
       they are revealed.
