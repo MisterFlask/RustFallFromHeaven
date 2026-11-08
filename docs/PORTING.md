@@ -351,6 +351,40 @@ flag.
       building gets up to 10 turns of the city's production, completing it if enough.
     - *Mammon's Bargain* (Merchant, evil, II, Currency; world spell): +1500 gold and +10 to the
       Armageddon counter.
+    - *Thunderhead Tower* (Sage, II, Elementalism; building): at the start of every battle at its
+      city, after the morale check and the defensive strikes, each attacking unit in the rear row
+      loses 30% of its max HP, less its lightning resistance, never below 1 HP.
+    - *Arcane Fortress* (Sage, III, Arcane Lore; national wonder, never captured): its city's
+      Sentinels take 50% less damage from map bombards and from Bombard and Shoot in battle.
+    - *Elemental Forge* (Sage, II, Elementalism; buildings): a city builds a Fire Forge (needs
+      Fire mana) or a Storm Forge (needs Air mana), not both; the units it trains deal fire or
+      lightning damage with their physical attack (cut by the target's resistance) and are immune
+      to that element.
+    - *Living Walls* (Prophet, the Fellowship of Leaves, Way of the Forests; national building):
+      its city's Sentinels have the Treant's base HP (180) and attack (100), still grown by the
+      city's defence.
+    - *Templar* (Prophet, the Order, Orders from Heaven; promotion for Crusaders): at the end of
+      each battle round the unit heals the nearest ally behind it 20 HP; immune to fear.
+    - *Herald of Agares* (Prophet, the Ashen Veil, Malevolent Designs; one per player): a tier 4
+      demon with Fear, trained in a city with the Ashen Veil.
+    - *Siege Ballista* (Engineer, II, Mathematics; tier 2): Bombard Pierce from the middle and rear
+      rows, combat limit 100, no collateral damage; upgrades to the Cannon.
+    - *Trench* (Engineer, I, Mining; any worker, on the Fort's terrains or hills in its borders):
+      the attacker of its plot has 3 fewer battle slots (the minimum still applies).
+    - *Moat* (Engineer, I, Masonry; building): in the first battle at its city each game turn, the
+      attacker's Strike, Charge and Stab in round 1 are spent.
+    - *Siege Colossus* (Engineer, III, Machinery; one per player, tier 4, large): Bombard in round
+      1, then Strike with Trample from the front, +100% damage to Sentinels; it bombards cities up
+      to 2 plots away, and a city it bombards counts as besieged until its next turn (its Sentinels
+      do not repair).
+    - *The Unconquered City* (Bard, II, Code of Laws; building, never captured): while its city has
+      never changed hands, its defenders (units and Sentinels) deal 50% more damage.
+    - *Last Stand Hymn* (Bard, II, Drama; building): in a battle at its city, once half the
+      defender's units in the battle have fallen, the rest deal double damage.
+    - *Wardance* (Bard, II, Bronze Working; promotion for melee units of level 5): the unit's
+      first Strike or Charge each round cleaves.
+    - Map generation draws no random number for a card's improvement that never appears, so the
+      cards leave the generated maps as they were.
 
 **Balance** (after `classic-1`, each the owner's decision)
 
