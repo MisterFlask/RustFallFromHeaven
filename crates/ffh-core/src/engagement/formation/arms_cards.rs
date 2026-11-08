@@ -156,6 +156,7 @@ impl Run<'_> {
                 heal: Some(Heal { target: t as FighterIdx, amount: got, r: 100 }),
                 knocked: None,
                 note: None,
+                entered: Vec::new(),
             };
             self.push(ev);
         }
