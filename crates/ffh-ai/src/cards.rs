@@ -42,7 +42,10 @@ pub fn end_turn(g: &mut Game, p: PlayerId) {
 }
 
 /// Each card batch's end-of-turn function.
-const END_TURNS: &[fn(&mut Game, PlayerId)] = &[crate::cards_battle_arms::end_turn];
+const END_TURNS: &[fn(&mut Game, PlayerId)] = &[
+    crate::cards_battle_arms::end_turn,
+    crate::cards_economy::end_turn, // the Court of Mammon's Buy Out (batch B8's Infernal Gate)
+];
 
 /// How many turns a great person waits for its card's needs.
 const WAIT_TURNS: i32 = 30;

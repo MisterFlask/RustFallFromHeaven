@@ -160,19 +160,61 @@ fn the_armageddon_civilizations_play_under_the_ai() {
             born.push((brood, "the Brood"));
         }
     }
-    // The Infernals, beside the civilization with the most cities, made evil.
-    let civs = world::civ_players(&g);
-    let patron = civs.iter().copied().filter(|&p| !g.players[p].cities.is_empty()).find(|&p| !born.iter().any(|&(b, _)| b == p)).unwrap();
-    for p in civs {
-        g.players[p].alignment = Some(if p == patron { AlignmentType::ALIGNMENT_EVIL } else { AlignmentType::ALIGNMENT_NEUTRAL });
-    }
+    // The Court of Mammon, beside the civilization with the most gold.
     if nc::valid_infernal_gate(&g) {
-        let infernals = world::open_slot(&g).unwrap();
+        let court = world::open_slot(&g).unwrap();
         nc::fire_infernal_gate(&mut g, 0);
-        assert!(g.players[infernals].alive);
-        // The Infernals start with settlers, not cities: they are checked for living only.
+        assert!(g.players[court].alive);
+        // The Court starts with settlers, not cities: it is checked for living only.
     }
     play_and_check(&mut g, &born);
+}
+
+/// The Court of Mammon on a steady world: its player and where it arrived.
+fn court_game(seed: u32) -> (Game, PlayerId, PlotIdx) {
+    let mut g = new_game(seed);
+    let patron = nc::court_patron(&g).expect("a civilization with a city");
+    let site = nc::court_site(&g, patron).expect("a free site");
+    let court = world::open_slot(&g).unwrap();
+    nc::fire_infernal_gate(&mut g, 0);
+    assert!(g.players[court].alive);
+    (g, court, site)
+}
+
+#[test]
+fn the_court_of_mammon_buys_out_the_enemy_units_next_to_it() {
+    let (mut g, court, site) = court_game(7);
+    let d = g.d;
+    // A barbarian Warrior next to the Court's camp (the Court is at war with the barbarians).
+    let (x, y) = g.map.xy(site);
+    let next = (0..9)
+        .filter_map(|i| g.map.plot_xy(x + i % 3 - 1, y + i / 3 - 1))
+        .find(|&q| q != site && !g.plot_is_water(q) && !g.plot_is_impassable(q) && g.map.plots[q].units.is_empty() && g.map.plots[q].plot_city.is_none())
+        .expect("land next to the camp");
+    let (nx, ny) = g.map.xy(next);
+    let warrior = d.t::<UnitType>("UNIT_WARRIOR");
+    let barbarian = g.barbarian_player();
+    let t = g.player_init_unit(barbarian, warrior, nx, ny, None, None);
+    assert!(g.unit_buy_out_price(t).unwrap() + 30 <= g.players[court].gold, "the Court can pay");
+    play_turn(&mut g);
+    assert!(!g.units.contains(t), "the Warrior was bought");
+    assert!(g.players[court].units.iter().any(|&u| g.units[u].unit_type == warrior), "it serves the Court");
+}
+
+#[test]
+fn the_court_of_mammon_joins_its_manes_to_its_cities() {
+    let (mut g, court, site) = court_game(8);
+    let d = g.d;
+    let (x, y) = g.map.xy(site);
+    g.player_found(court, x, y);
+    let c = g.map.plots[site].plot_city.expect("its city");
+    assert_eq!(g.cities[c].population, 3, "a Fallow city of 3");
+    let manes = d.t::<UnitType>("UNIT_MANES");
+    let count = |g: &Game| g.players[court].units.iter().filter(|&&u| g.units[u].unit_type == manes).count();
+    assert_eq!(count(&g), 2);
+    play_turn(&mut g);
+    assert!(g.cities[c].population > 3, "its Manes join the city");
+    assert!(count(&g) < 2);
 }
 
 #[test]

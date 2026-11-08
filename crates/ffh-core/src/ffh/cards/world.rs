@@ -421,7 +421,10 @@ pub struct Birth {
     pub release: Vec<CityId>,
     /// A unit that stays its owner's in a released city (the caster).
     pub keep: Option<UnitId>,
-    /// Its hero, in its capital.
+    /// Units that arrive on a plot of their own, without a city (the Court of Mammon: its settlers
+    /// found its cities), after the cities' units.
+    pub camp: Option<(PlotIdx, Vec<NewUnit>)>,
+    /// Its hero, in its capital (without a city, in its [`Birth::camp`]).
     pub hero: Option<NewUnit>,
     /// Techs beyond its parent's (or the world's).
     pub techs: Vec<TechType>,
@@ -458,6 +461,7 @@ impl Birth {
             found: Vec::new(),
             release: Vec::new(),
             keep: None,
+            camp: None,
             hero: None,
             techs: Vec::new(),
             state_religion: None,
@@ -497,11 +501,11 @@ pub fn world_techs(g: &Game) -> Vec<TechType> {
 /// Infernals are), or by its own without a founder; its parent is `b.parent`, and it knows its
 /// parent's team's techs (never the cards), or without a parent the world's ([`world_techs`]), and
 /// `b.techs`. It founds its cities (the first its capital) with their buildings and takes over the
-/// released cities, its state religion in every one; its units stand in their cities, its hero in
-/// the capital. It has met its founder and its parent. As a vassal it is the founder's (ordinary
-/// vassal rules: it joins its master's wars); where vassals cannot be (No Vassal States, or the
-/// founder a vassal itself) it signs open borders and a defensive pact with the founder instead, a
-/// deal like any other. No other war or peace is forced (docs/DECKS.md, principle 27): its
+/// released cities, its state religion in every one; its units stand in their cities (or in its
+/// camp), its hero in the capital (or the camp). It has met its founder and its parent. As a
+/// vassal it is the founder's (ordinary vassal rules: it joins its master's wars); where vassals
+/// cannot be (No Vassal States, or the founder a vassal itself) it signs open borders and a
+/// defensive pact with the founder instead, a deal like any other. No other war or peace is forced (docs/DECKS.md, principle 27): its
 /// leanings are its attitude modifiers.
 pub fn birth(g: &mut Game, b: &Birth) -> Option<PlayerId> {
     let d = g.d;
@@ -567,8 +571,15 @@ pub fn birth(g: &mut Game, b: &Birth) -> Option<PlayerId> {
             new_unit(g, p, nu, x, y);
         }
     }
-    if let (Some(hero), Some(&capital)) = (&b.hero, cities.first()) {
-        let (x, y) = g.map.xy(g.city_plot(capital));
+    if let Some((plot, units)) = &b.camp {
+        let (x, y) = g.map.xy(*plot);
+        for nu in units {
+            new_unit(g, p, nu, x, y);
+        }
+    }
+    let hero_at = cities.first().map(|&capital| g.city_plot(capital)).or(b.camp.as_ref().map(|(plot, _)| *plot));
+    if let (Some(hero), Some(at)) = (&b.hero, hero_at) {
+        let (x, y) = g.map.xy(at);
         new_unit(g, p, hero, x, y);
     }
 

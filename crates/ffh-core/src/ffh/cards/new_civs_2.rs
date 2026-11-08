@@ -16,8 +16,10 @@
 //! - **A04 The Scaled Kingdom** (Armageddon, 30), **A06 The Brood** (30, 50) and **A22 The Infernal
 //!   Gate Opens** (60): their `valid` and `fire` functions, listed in `deck::doom_cards::CARDS`. Their
 //!   civilizations have no founder ([`Birth::wild`]): the AI plays them, and they know the world's
-//!   techs. The Infernal Gate brings the Infernals that exist (`Game::infernals_arrive`, shared with
-//!   the Infernal Pact), once a game.
+//!   techs. The Infernal Gate brings the Court of Mammon (the owner's design, 2026-11-08), an
+//!   infernal faction of its own beside the richest civilization: the Infernals' population rules
+//!   ([`infernal_population`]), the Manes of the evil dead shared with them ([`manes_civ`]), the
+//!   Paymaster's Buy Out for its land units, -4 attitude with the Infernals.
 
 use std::cmp::Reverse;
 use std::sync::OnceLock;
@@ -62,8 +64,12 @@ pub const BROOD_NESTS: usize = 3;
 pub const BROOD_FOREST_PLOTS: usize = 8;
 /// The Giant Spiders the Brood starts with.
 pub const BROOD_SPIDERS: usize = 6;
-/// How far from the evil civilization's borders the Infernal Gate opens.
-pub const INFERNAL_GATE_RANGE: i32 = 4;
+/// How far from the richest civilization's borders the Court of Mammon arrives (the Infernal Gate).
+pub const COURT_RANGE: i32 = 4;
+/// The Court of Mammon's gold when it arrives.
+pub const COURT_GOLD: i32 = 200;
+/// The attitude modifier between the Court of Mammon and the Infernals, both ways.
+pub const COURT_INFERNAL_ATTITUDE: i32 = -4;
 
 /// The forest features (the Brood's regions).
 const FORESTS: [&str; 3] = ["FEATURE_FOREST", "FEATURE_FOREST_ANCIENT", "FEATURE_FOREST_NEW"];
@@ -637,54 +643,114 @@ pub fn fire_brood(g: &mut Game, stage: usize) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// A22 The Infernal Gate Opens (Armageddon, 60).
+// A22 The Infernal Gate Opens (Armageddon, 60): the Court of Mammon.
 
-/// The civilization the Infernal Gate opens beside: the evil civilization with the most cities
-/// (ties: the lower player id).
-pub fn infernal_patron(g: &Game) -> Option<PlayerId> {
-    world::civ_players(g)
-        .into_iter()
-        .filter(|&p| g.players[p].alignment == Some(AlignmentType::ALIGNMENT_EVIL) && !g.players[p].cities.is_empty())
-        .max_by_key(|&p| (g.players[p].cities.len(), Reverse(p)))
+/// The Court of Mammon's civilization.
+pub fn court_civ(d: &GameData) -> Option<CivilizationType> {
+    static C: OnceLock<Option<CivilizationType>> = OnceLock::new();
+    civ_named(d, &C, "CIVILIZATION_COURT_OF_MAMMON")
 }
 
-/// Where the Infernals arrive beside `patron`: the best free site (unowned) within
-/// [`INFERNAL_GATE_RANGE`] plots of its borders; else the empty passable land plot of its own
-/// nearest its capital (ties: the lower plot index).
-pub fn infernal_gate_plot(g: &Game, patron: PlayerId) -> Option<PlotIdx> {
-    let near = world::land_near_borders(g, patron, INFERNAL_GATE_RANGE);
-    if let Some(&q) = world::best_sites(g, &near, 1, None, &[]).first() {
-        return Some(q);
+/// The Infernals' civilization (Hyborem's).
+pub fn infernal_civ(d: &GameData) -> Option<CivilizationType> {
+    static C: OnceLock<Option<CivilizationType>> = OnceLock::new();
+    civ_named(d, &C, "CIVILIZATION_INFERNAL")
+}
+
+/// Card: The Infernal Gate Opens. Do the Infernals' population rules apply to civilization `civ`?
+/// The Infernals' and the Court of Mammon's: their cities start at size 3 with Demonic Citizens, a
+/// city they founded gives no Manes when razed, the Beast of Agares costs their cities no
+/// population, the Blight and the Pestilence make their cities no unhealthier (Fallow is the
+/// civilizations' trait, data).
+pub fn infernal_population(d: &GameData, civ: Option<CivilizationType>) -> bool {
+    civ.is_some() && (civ == infernal_civ(d) || civ == court_civ(d))
+}
+
+/// Is a player of `civ` alive with a city (one `cf_gift_unit` gives to)?
+fn in_play_with_city(g: &Game, civ: Option<CivilizationType>) -> bool {
+    civ.is_some() && g.player_ids().any(|q| g.players[q].alive && g.player_get_civilization_type(q) == civ && g.players[q].num_cities() > 0)
+}
+
+/// Card: The Infernal Gate Opens. The civilization a Manes of the evil dead goes to
+/// (`cf_gift_unit`): the Infernals or the Court of Mammon, whichever is in play with a city; while
+/// both are, one of the two, drawn with the game RNG (one draw, only then: a game without the
+/// Court keeps its random sequence); the Infernals when neither is.
+pub fn manes_civ(g: &mut Game) -> CivilizationType {
+    let d = g.d;
+    let infernal = d.t::<CivilizationType>("CIVILIZATION_INFERNAL");
+    let Some(court) = court_civ(d) else { return infernal };
+    match (in_play_with_city(g, Some(infernal)), in_play_with_city(g, Some(court))) {
+        (false, true) => court,
+        (true, true) if g.soren_rand_num(2, "Manes of Mammon") == 1 => court,
+        _ => infernal,
     }
-    let capital = g.city_plot(g.player_get_capital_city(patron)?);
-    g.map
-        .plot_ids()
-        .filter(|&q| {
-            let pl = &g.map.plots[q];
-            pl.owner == Some(patron) && !g.plot_is_water(q) && !g.plot_is_impassable(q) && pl.plot_city.is_none() && pl.units.is_empty()
-        })
-        .min_by_key(|&q| (dist(g, q, capital), q))
 }
 
-/// The Infernals come once a game: played if they have never been in play, an evil civilization
-/// has a city and room beside it, a slot is free, and Hyborem may come (not No Hyborem or Basium).
+/// Card: The Infernal Gate Opens. After `p` arrives (the Court of Mammon by the card, the Infernals
+/// by the Infernal Pact): -4 attitude between it and every living player of the other faction, both
+/// ways (`ai_attitude_extra`; no war is forced).
+pub fn court_infernal_grudge(g: &mut Game, p: PlayerId) {
+    let d = g.d;
+    let (court, infernal) = (court_civ(d), infernal_civ(d));
+    if court.is_none() || infernal.is_none() {
+        return;
+    }
+    let civ = g.player_get_civilization_type(p);
+    let other = if civ == court {
+        infernal
+    } else if civ == infernal {
+        court
+    } else {
+        return;
+    };
+    for q in g.player_ids() {
+        if q != p && g.players[q].alive && g.player_get_civilization_type(q) == other {
+            g.players[p].ai_attitude_extra[q] += COURT_INFERNAL_ATTITUDE;
+            g.players[q].ai_attitude_extra[p] += COURT_INFERNAL_ATTITUDE;
+        }
+    }
+}
+
+/// The civilization the Court of Mammon arrives beside: the one with the most gold that has a city
+/// (ties: the lower player id).
+pub fn court_patron(g: &Game) -> Option<PlayerId> {
+    world::civ_players(g).into_iter().filter(|&p| !g.players[p].cities.is_empty()).max_by_key(|&p| (g.players[p].gold, Reverse(p)))
+}
+
+/// Where the Court arrives beside `patron`: the best free site (unowned) within [`COURT_RANGE`]
+/// plots of its borders.
+pub fn court_site(g: &Game, patron: PlayerId) -> Option<PlotIdx> {
+    let near = world::land_near_borders(g, patron, COURT_RANGE);
+    world::best_sites(g, &near, 1, None, &[]).first().copied()
+}
+
+/// The Court of Mammon is played with a free player slot and a free site beside the richest
+/// civilization.
 pub fn valid_infernal_gate(g: &Game) -> bool {
-    !g.is_option(GameOptionType::GAMEOPTION_NO_HYBOREM_OR_BASIUM)
-        && !g.infernals_ever_in_play()
-        && world::open_slot(g).is_some()
-        && infernal_patron(g).is_some_and(|p| infernal_gate_plot(g, p).is_some())
+    court_civ(g.d).is_some() && world::open_slot(g).is_some() && court_patron(g).is_some_and(|p| court_site(g, p).is_some())
 }
 
-/// The Infernals arrive as with the Infernal Pact beside the evil civilization with the most cities
-/// (`Game::infernals_arrive`; the AI plays them). Nothing if they came meanwhile.
+/// The Court of Mammon arrives on the best free site beside the civilization with the most gold
+/// ([`court_patron`], [`court_site`]), without a founder (the AI plays it; it knows the world's
+/// techs): Aurivane, two Champions, two Longbowmen, two Settlers, a Worker and two Manes, with
+/// [`COURT_GOLD`] gold; -4 attitude between it and the Infernals ([`court_infernal_grudge`]).
 pub fn fire_infernal_gate(g: &mut Game, _: usize) {
+    let d = g.d;
     if !valid_infernal_gate(g) {
         return;
     }
-    let (Some(patron), Some(slot)) = (infernal_patron(g), world::open_slot(g)) else { return };
-    let Some(plot) = infernal_gate_plot(g, patron) else { return };
-    g.infernals_arrive(slot, patron, plot, false);
+    let (Some(court), Some(patron)) = (court_civ(d), court_patron(g)) else { return };
+    let Some(site) = court_site(g, patron) else { return };
+    let mut b = Birth::wild(court, d.t("LEADER_AURIVANE"));
+    let settler = NewUnit { unit: d.t("UNIT_SETTLER"), promotions: vec![d.t("PROMOTION_STARTING_SETTLER")] };
+    let mut units = vec![unit(d, "UNIT_CHAMPION"), unit(d, "UNIT_CHAMPION"), unit(d, "UNIT_LONGBOWMAN"), unit(d, "UNIT_LONGBOWMAN")];
+    units.extend([settler.clone(), settler, unit(d, "UNIT_WORKER"), unit(d, "UNIT_MANES"), unit(d, "UNIT_MANES")]);
+    b.camp = Some((site, units));
+    b.hero = Some(unit(d, "UNIT_AURIVANE"));
+    b.gold = COURT_GOLD;
+    let Some(np) = world::birth(g, &b) else { return };
+    court_infernal_grudge(g, np);
     let turn = g.game_turn();
     let by = g.player_get_civilization_description(patron);
-    g.log.msg(turn, None, || format!("The Infernal Gate opens beside {by}."));
+    g.log.msg(turn, None, || format!("The Infernal Gate opens beside {by}: the Court of Mammon arrives."));
 }

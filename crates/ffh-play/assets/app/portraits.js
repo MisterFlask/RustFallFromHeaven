@@ -18,7 +18,7 @@ export const PORTRAIT = { large: 192, medium: 80, small: 40 };
 const PORTRAIT_ALIASES = {
   LEADER_AURELIAN: "valledia", LEADER_HALRIC: "sabathiel", LEADER_AINE: "amelanchier", LEADER_VESK: "hannah",
   LEADER_BURGOMASTER: "cardith", LEADER_LICH_PRINCE: "tebryn", LEADER_THRUMM: "charadon", LEADER_USURPER: "decius",
-  LEADER_DEEP_MOTHER: "falamar", LEADER_SLITHERKING: "sheelba", LEADER_SPIDER_QUEEN: "faeryl",
+  LEADER_DEEP_MOTHER: "falamar", LEADER_SLITHERKING: "sheelba", LEADER_SPIDER_QUEEN: "faeryl", LEADER_AURIVANE: "flauros",
 };
 
 /** The sprite key of leader type `type` ("LEADER_OS-GABELLA" -> "leader_os_gabella"; every random

@@ -35,6 +35,7 @@
 //!   is a NULL CyUnit whose calls do nothing.
 
 
+use crate::ffh::cards::new_civs_2;
 use crate::ffh::game_utils::py_div;
 use crate::controller::AiHook;
 use crate::game::Game;
@@ -421,6 +422,11 @@ impl Game {
             for building in INFERNAL_CITY_BUILDINGS {
                 self.city_set_num_real_building(c, d.t::<BuildingType>(building), 1);
             }
+        } else if new_civs_2::infernal_population(d, self.player_get_civilization_type(p)) {
+            // Card: The Infernal Gate Opens (docs/CARDS.md): the Court of Mammon's cities start as
+            // the Infernals' do as far as their population goes (3, Demonic Citizens).
+            self.city_set_population(c, 3);
+            self.city_set_num_real_building(c, d.t::<BuildingType>("BUILDING_DEMONIC_CITIZENS"), 1);
         }
 
         if self.player_get_civilization_type(p) == Some(d.t::<CivilizationType>("CIVILIZATION_BARBARIAN")) {
@@ -465,18 +471,20 @@ impl Game {
         let d = self.d;
         // `city.findHighestCulture()` is only used by the commented-out Partisans event.
         let angel = d.t::<UnitType>("UNIT_ANGEL");
-        let infernal = d.t::<CivilizationType>("CIVILIZATION_INFERNAL");
         let manes = d.t::<UnitType>("UNIT_MANES");
         let mercurians = d.t::<CivilizationType>("CIVILIZATION_MERCURIANS");
         let original_owner = self.cities[c].original_owner;
 
         // Each `range(..)` is evaluated once, when its loop starts (a gifted Manes may grow a
-        // city of the receiving player).
+        // city of the receiving player). Card: The Infernal Gate Opens (docs/CARDS.md): each Manes
+        // goes to the Infernals or the Court of Mammon (`manes_civ`), and a city the Court founded
+        // gives none, as an Infernal one.
         if self.players[original_owner].alignment == Some(d.t::<AlignmentType>("ALIGNMENT_EVIL")) {
-            if self.player_get_civilization_type(original_owner) != Some(infernal) {
+            if !new_civs_2::infernal_population(d, self.player_get_civilization_type(original_owner)) {
                 for _ in 0..self.cities[c].population {
                     let (plot, owner) = (self.city_plot(c), self.cities[c].owner);
-                    self.cf_gift_unit(manes, infernal, 0, Some(plot), Some(owner));
+                    let civ = new_civs_2::manes_civ(self);
+                    self.cf_gift_unit(manes, civ, 0, Some(plot), Some(owner));
                 }
             }
         }
@@ -484,9 +492,11 @@ impl Game {
         if self.players[original_owner].alignment == Some(d.t::<AlignmentType>("ALIGNMENT_NEUTRAL")) {
             for _ in 0..py_div(self.cities[c].population, 4) + 1 {
                 let (plot, owner) = (self.city_plot(c), self.cities[c].owner);
-                self.cf_gift_unit(manes, infernal, 0, Some(plot), Some(owner));
+                let civ = new_civs_2::manes_civ(self);
+                self.cf_gift_unit(manes, civ, 0, Some(plot), Some(owner));
                 let (plot, owner) = (self.city_plot(c), self.cities[c].owner);
-                self.cf_gift_unit(manes, infernal, 0, Some(plot), Some(owner));
+                let civ = new_civs_2::manes_civ(self);
+                self.cf_gift_unit(manes, civ, 0, Some(plot), Some(owner));
                 let (plot, owner) = (self.city_plot(c), self.cities[c].owner);
                 self.cf_gift_unit(angel, mercurians, 0, Some(plot), Some(owner));
             }
@@ -518,6 +528,10 @@ impl Game {
             for building in INFERNAL_CITY_BUILDINGS {
                 self.city_set_num_real_building(c, d.t::<BuildingType>(building), 1);
             }
+        } else if new_civs_2::infernal_population(d, self.player_get_civilization_type(p)) {
+            // Card: The Infernal Gate Opens (docs/CARDS.md): the Court of Mammon's conquests take
+            // Demonic Citizens, as the Infernals' do.
+            self.city_set_num_real_building(c, d.t::<BuildingType>("BUILDING_DEMONIC_CITIZENS"), 1);
         }
 
         // Scenario: sf.onCityAcquired(..).
@@ -707,7 +721,8 @@ impl Game {
         let (x, y) = (self.cities[c].x, self.cities[c].y);
 
         if self.units[u].unit_type == d.t::<UnitType>("UNIT_BEAST_OF_AGARES") {
-            if self.city_civilization_type(c) != d.t::<CivilizationType>("CIVILIZATION_INFERNAL") {
+            // Card: The Infernal Gate Opens (docs/CARDS.md): nor in a city of the Court of Mammon.
+            if !new_civs_2::infernal_population(d, Some(self.city_civilization_type(c))) {
                 let mut pop = self.cities[c].population - 4;
                 if pop <= 1 {
                     pop = 1;
@@ -914,12 +929,15 @@ impl Game {
                 || self.units[u].has_promotion[d.t::<PromotionType>("PROMOTION_DEATH1")]
                 || self.units[u].has_promotion[d.t::<PromotionType>("PROMOTION_ENTROPY1")]
             {
+                // Card: The Infernal Gate Opens (docs/CARDS.md): each Manes goes to the Infernals
+                // or the Court of Mammon (`manes_civ`).
                 let manes = d.t::<UnitType>("UNIT_MANES");
-                let infernal = d.t::<CivilizationType>("CIVILIZATION_INFERNAL");
                 let plot = self.unit_plot(u);
-                self.cf_gift_unit(manes, infernal, 0, Some(plot), Some(p));
+                let civ = new_civs_2::manes_civ(self);
+                self.cf_gift_unit(manes, civ, 0, Some(plot), Some(p));
                 let plot = self.unit_plot(u);
-                self.cf_gift_unit(manes, infernal, 0, Some(plot), Some(p));
+                let civ = new_civs_2::manes_civ(self);
+                self.cf_gift_unit(manes, civ, 0, Some(plot), Some(p));
             }
 
             // (The Python tests the unit combat before the civilization; both are pure.)
@@ -1317,9 +1335,7 @@ impl Game {
                             count += 1;
                         }
                     }
-                    // Card: The Infernal Gate Opens (docs/CARDS.md): the Infernals come once a game,
-                    // by the Pact or by the card.
-                    if count == 1 && !self.infernals_ever_in_play() {
+                    if count == 1 {
                         self.ev_infernal_pact(player);
                     }
                 }
@@ -1557,33 +1573,12 @@ impl Game {
         }
 
         let (Some(infernal_player), Some(best_plot)) = (infernal_player, best_plot) else { return };
-        self.infernals_arrive(infernal_player, p, best_plot, true);
-    }
-
-    /// Has a player of the Infernals ever lived in this game? They come once a game: by the
-    /// Infernal Pact or by the Armageddon card The Infernal Gate Opens (docs/CARDS.md).
-    pub fn infernals_ever_in_play(&self) -> bool {
-        let infernal = self.d.ty::<CivilizationType>("CIVILIZATION_INFERNAL");
-        self.player_ids().any(|q| self.players[q].ever_alive && infernal.is_some() && self.player_get_civilization_type(q) == infernal)
-    }
-
-    /// The Infernals arrive in slot `infernal_player` at `plot`, beside `patron` (the Infernal
-    /// Pact's founder, or the evil civilization The Infernal Gate Opens names): Hyborem's
-    /// civilization, which knows the patron's techs (not its cards: docs/CARDS.md), makes peace
-    /// with the barbarians, joins the patron's wars and has +4 attitude toward it, with Hyborem
-    /// and his host. By the Pact (`pact`) they are played by the patron's controller and a human
-    /// patron is offered control of them; otherwise by the slot's own (the AI's).
-    pub fn infernals_arrive(&mut self, infernal_player: PlayerId, patron: PlayerId, plot: PlotIdx, pact: bool) {
         let d = self.d;
-        let p = patron;
-        let best_plot = plot;
         let hyborem = d.t::<LeaderHeadType>("LEADER_HYBOREM");
         let infernal = d.t::<CivilizationType>("CIVILIZATION_INFERNAL");
         self.add_player_advanced(infernal_player, None, hyborem, infernal);
-        if pact {
-            // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
-            self.controllers[infernal_player] = self.controllers[p].clone();
-        }
+        // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
+        self.controllers[infernal_player] = self.controllers[p].clone();
         let founder_team = self.players[p].team;
         let infernal_team = self.players[infernal_player].team;
         for tech in d.techs.keys() {
@@ -1606,6 +1601,9 @@ impl Game {
             }
         }
         self.players[infernal_player].ai_attitude_extra[p] += 4;
+        // Card: The Infernal Gate Opens (docs/CARDS.md): -4 attitude between the Infernals and the
+        // Court of Mammon, when it is in play.
+        new_civs_2::court_infernal_grudge(self, infernal_player);
 
         let (x, y) = self.map.xy(best_plot);
         let north = Some(DirectionType::DIRECTION_NORTH);
@@ -1636,9 +1634,7 @@ impl Game {
         }
         // `if gc.getPlayer(iPlayer).isHuman()`: the TXT_KEY_POPUP_CONTROL_INFERNAL popup, whose
         // `reassignPlayer` callback moves the human to the Infernals on "yes" (button 0).
-        if pact {
-            self.ev_offer_control(p, infernal_player);
-        }
+        self.ev_offer_control(p, infernal_player);
     }
 
     /// The human-only "take control" popup of the Infernal Pact and the Mercurian Gate

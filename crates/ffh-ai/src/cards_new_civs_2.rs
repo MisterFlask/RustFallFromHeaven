@@ -1,7 +1,9 @@
 //! Batch B8's cards (docs/CARDS.md, section 5): when the AI casts the world spells of the second
 //! batch of new civilizations, and at what. The civilizations they make are played by the normal
 //! AI: a born one by its founder's controller, an Armageddon one (the Scaled Kingdom, the Brood, the
-//! Infernals of the Infernal Gate) by the AI; their own units and rules need nothing here.
+//! Infernal Gate's Court of Mammon) by the AI; their own units and rules need nothing here but the
+//! Court's: its Manes join its cities as the Infernals' do (`civs`, the Infernals' play), and its
+//! units Buy Out (`cards_economy`).
 //!
 //! - **Rite of the Necropolis, Wake the Hill Clans, Call the Aifon** are cast as soon as they can
 //!   be: each makes a civilization on land that is free now (ruins, hills, a coast), and the land

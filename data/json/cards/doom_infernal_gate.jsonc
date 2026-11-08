@@ -1,10 +1,281 @@
-// A22 The Infernal Gate Opens (docs/DECKS_ROUND8.md section B, the Host of Nyx as reworked in C.5
-// and C.6; the Armageddon card is code: crates/ffh-core/src/deck/doom_cards.rs, its rules
-// crates/ffh-core/src/ffh/cards/new_civs_2.rs). It brings the Infernals that exist, as the Infernal
-// Pact does (Game::infernals_arrive), never a copy of them.
+// A22 The Infernal Gate Opens: the Court of Mammon (the owner's design, 2026-11-08; the Armageddon
+// card is code: crates/ffh-core/src/deck/doom_cards.rs, its rules crates/ffh-core/src/ffh/cards/new_civs_2.rs).
+// Mammon's servants, not Hyborem's: a civilization of its own, born without a founder beside the
+// richest civilization. Its population rules are the Infernals' (Fallow, cities of 3, the Manes of
+// the evil dead, shared with the Infernals); its land units Buy Out as the Paymaster does (the
+// Paymaster's callbacks, cards/economy.rs, under a spell of its own).
 {
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_AURIVANE",
+      "description": "TXT_KEY_UNIT_AURIVANE",
+      "max_global_instances": 1,
+      "max_team_instances": -1,
+      "max_player_instances": -1,
+      "default_unit": "UNIT_AURIVANE"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_AURIVANE",
+      "stats": {"hp": 120, "attack": 70, "defense": 60, "magic": 0, "magic_defense": 52, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
+      "engage_rows": [{"action": "STRIKE", "count": 2}, {"action": "STRIKE", "count": 1}, {"action": "STRIKE", "count": 1}],
+      "engage_row_order": ["FRONT", "MIDDLE", "REAR"],
+      "class": "UNITCLASS_AURIVANE",
+      "unit_combat": "UNITCOMBAT_MELEE",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_HERO",
+      "description": "TXT_KEY_UNIT_AURIVANE",
+      "civilopedia": "TXT_KEY_UNIT_AURIVANE_PEDIA",
+      "strategy": "TXT_KEY_UNIT_AURIVANE_STRATEGY",
+      "military_happiness": true,
+      "military_support": true,
+      "military_production": true,
+      "pillage": true,
+      "unit_ais": {"UNITAI_ATTACK": true, "UNITAI_COUNTER": true, "UNITAI_CITY_DEFENSE": true},
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 2,
+      "nuke_range": -1,
+      "combat": 7,
+      "combat_limit": 100,
+      "xp_value_attack": 32,
+      "xp_value_defense": 16,
+      "culture_garrison": 8,
+      "asset": 14,
+      "power": 28,
+      "free_promotions": {"PROMOTION_HERO": true, "PROMOTION_DEMON": true},
+      "combat_defense": 6,
+      "tier": 4,
+      "weapon_tier": 3,
+      "damage_type_combats": {"DAMAGE_UNHOLY": 2}
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_MAMMONS_COIN",
+      "description": "TXT_KEY_PROMOTION_MAMMONS_COIN",
+      "help": "TXT_KEY_PROMOTION_MAMMONS_COIN_HELP",
+      "tech_prereq": "TECH_NEVER",
+      "min_level": -1,
+      "button": "Art/Interface/Buttons/Spells/Domination.dds"
+    }
+  ],
+  "spells": [
+    {
+      // The Paymaster's Buy Out (cards/economy.rs: its targets, price and result) for the Court's
+      // land units: the promotion every one of them has, while the Court owns it.
+      "type": "SPELL_COURT_BUY_OUT",
+      "description": "TXT_KEY_SPELL_BUY_OUT",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_BUY_OUT_HELP",
+      "promotion_prereq1": "PROMOTION_MAMMONS_COIN",
+      "civilization_prereq": "CIVILIZATION_COURT_OF_MAMMON",
+      // The AI casts it from cards_economy.rs (a targeted spell).
+      "allow_ai": false,
+      "display_when_disabled": true,
+      "has_casted": true,
+      "target": "unit",
+      "py_targets": "targetsBuyOut(pCaster)",
+      "py_target_label": "labelBuyOut(pCaster, pTarget)",
+      "py_requirement": "reqBuyOut(pCaster)",
+      "py_result": "spellBuyOut(pCaster)",
+      "button": "Art/Interface/Buttons/Spells/Domination.dds"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_PALACE_COURT_OF_MAMMON",
+      "building_class": "BUILDINGCLASS_PALACE",
+      "description": "TXT_KEY_BUILDING_PALACE_COURT_OF_MAMMON",
+      "civilopedia": "TXT_KEY_BUILDING_PALACE_PEDIA",
+      "free_bonus": "BONUS_MANA_ENTROPY",
+      "num_free_bonuses": 1,
+      "capital": true,
+      "government_center": true,
+      "never_capture": true,
+      "nuke_immune": true,
+      "cost": 160,
+      "hurry_cost_modifier": 50,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "cities_prereq": 4,
+      "global_war_weariness_modifier": -10,
+      "happiness": 1,
+      "yield_changes": [0, 3, 8],
+      "obsolete_safe_commerce_changes": [0, 0, 2],
+      "specialist_yield_changes": "",
+      "bonus_yield_modifiers": "",
+      "free_bonus2": "BONUS_MANA_MIND",
+      "free_bonus3": "BONUS_GOLD",
+      "specialist_commerce_changes": ""
+    }
+  ],
+  "traits": [
+    {
+      "type": "TRAIT_AVARICIOUS",
+      "description": "TXT_KEY_TRAIT_AVARICIOUS",
+      "short_description": "TXT_KEY_TRAIT_AVARICIOUS_SHORT",
+      "max_anarchy": -1,
+      "max_cities": -1,
+      "commerce_modifiers": [100, 0, 0, 0],
+      "unit_rush_gold": 2
+    }
+  ],
+  "civilizations": [
+    {
+      "type": "CIVILIZATION_COURT_OF_MAMMON",
+      "description": "TXT_KEY_CIV_COURT_OF_MAMMON_DESC",
+      "short_description": "TXT_KEY_CIV_COURT_OF_MAMMON_SHORT_DESC",
+      "adjective": "TXT_KEY_CIV_COURT_OF_MAMMON_ADJECTIVE",
+      "civilopedia": "TXT_KEY_CIV_COURT_OF_MAMMON_PEDIA",
+      "cities": [
+        "TXT_KEY_CITY_COURT_OF_MAMMON_1",
+        "TXT_KEY_CITY_COURT_OF_MAMMON_2",
+        "TXT_KEY_CITY_COURT_OF_MAMMON_3",
+        "TXT_KEY_CITY_COURT_OF_MAMMON_4",
+        "TXT_KEY_CITY_COURT_OF_MAMMON_5",
+        "TXT_KEY_CITY_COURT_OF_MAMMON_6",
+        "TXT_KEY_CITY_COURT_OF_MAMMON_7",
+        "TXT_KEY_CITY_COURT_OF_MAMMON_8",
+        "TXT_KEY_CITY_COURT_OF_MAMMON_9",
+        "TXT_KEY_CITY_COURT_OF_MAMMON_10",
+        "TXT_KEY_CITY_COURT_OF_MAMMON_11",
+        "TXT_KEY_CITY_COURT_OF_MAMMON_12"
+      ],
+      // The Infernals' food and health buildings are left out, as theirs are (Fallow).
+      "buildings": [
+        ["BUILDINGCLASS_AQUEDUCT", "NONE"],
+        ["BUILDINGCLASS_GRANARY", "NONE"],
+        ["BUILDINGCLASS_HERBALIST", "NONE"],
+        ["BUILDINGCLASS_INFIRMARY", "NONE"],
+        ["BUILDINGCLASS_PALACE", "BUILDING_PALACE_COURT_OF_MAMMON"],
+        ["BUILDINGCLASS_PUBLIC_BATHS", "NONE"],
+        ["BUILDINGCLASS_SMOKEHOUSE", "NONE"]
+      ],
+      "units": [
+        ["UNITCLASS_HIGH_PRIEST_OF_WINTER", "NONE"],
+        ["UNITCLASS_ADVENTURER", "NONE"],
+        ["UNITCLASS_FREAK", "NONE"],
+        ["UNITCLASS_HERALD", "NONE"],
+        ["UNITCLASS_VALKYRIE", "NONE"],
+        ["UNITCLASS_SERAPH", "NONE"],
+        ["UNITCLASS_REPENTANT_ANGEL", "NONE"],
+        ["UNITCLASS_ANGEL_OF_DEATH", "NONE"],
+        ["UNITCLASS_OPHANIM", "NONE"],
+        ["UNITCLASS_LIGHTBRINGER", "NONE"],
+        ["UNITCLASS_MONK", "NONE"],
+        ["UNITCLASS_GRIGORI_MEDIC", "NONE"],
+        ["UNITCLASS_ABASHI", "NONE"],
+        ["UNITCLASS_ACHERON", "NONE"],
+        ["UNITCLASS_ALAZKAN", "NONE"],
+        ["UNITCLASS_BARNAXUS", "NONE"],
+        ["UNITCLASS_BASIUM", "NONE"],
+        ["UNITCLASS_BLACK_WIND", "NONE"],
+        ["UNITCLASS_LUCIAN", "NONE"],
+        ["UNITCLASS_CORLINDALE", "NONE"],
+        ["UNITCLASS_EURABATRES", "NONE"],
+        ["UNITCLASS_GILDEN", "NONE"],
+        ["UNITCLASS_GOVANNON", "NONE"],
+        ["UNITCLASS_GUYBRUSH", "NONE"],
+        ["UNITCLASS_HERNE", "NONE"],
+        ["UNITCLASS_HYBOREM", "NONE"],
+        ["UNITCLASS_LOKI", "NONE"],
+        ["UNITCLASS_LOSHA", "NONE"],
+        ["UNITCLASS_MAGNADINE", "NONE"],
+        ["UNITCLASS_MAROS", "NONE"],
+        ["UNITCLASS_RANTINE", "NONE"],
+        ["UNITCLASS_RATHUS", "NONE"],
+        ["UNITCLASS_TEUTORIX", "NONE"],
+        ["UNITCLASS_TUMTUM", "NONE"],
+        ["UNITCLASS_WAR_MACHINE", "NONE"],
+        ["UNITCLASS_WILBOMAN", "NONE"],
+        ["UNITCLASS_DONAL", "NONE"]
+      ],
+      "free_building_classes": {"BUILDINGCLASS_PALACE": true},
+      "initial_civics": [
+        "CIVIC_DESPOTISM",
+        "CIVIC_RELIGION",
+        "CIVIC_TRIBALISM",
+        "CIVIC_DECENTRALIZATION",
+        "CIVIC_NO_MEMBERSHIP"
+      ],
+      "leaders": {"LEADER_AURIVANE": true},
+      "civ_trait": "TRAIT_FALLOW",
+      "default_race": "PROMOTION_DEMON",
+      "unit_promotion": "PROMOTION_MAMMONS_COIN",
+      "help": "TXT_KEY_CIV_COURT_OF_MAMMON_HELP",
+      "hero": "UNIT_AURIVANE"
+    }
+  ],
+  "leader_heads": [
+    {
+      "type": "LEADER_AURIVANE",
+      "description": "TXT_KEY_LEADER_AURIVANE",
+      "civilopedia": "TXT_KEY_LEADER_AURIVANE_PEDIA",
+      "base_attitude": -1,
+      "peace_weight_rand": 3,
+      "refuse_to_talk_war_threshold": 10,
+      "no_tech_trade_threshold": 5,
+      "tech_trade_known_percent": 25,
+      "max_gold_trade_percent": 20,
+      "max_gold_per_turn_trade_percent": 10,
+      "max_war_nearby_power_ratio": 100,
+      "max_war_distant_power_ratio": 40,
+      "max_war_min_adjacent_land_percent": 2,
+      "limited_war_rand": 80,
+      "limited_war_power_ratio": 80,
+      "dogpile_war_rand": 15,
+      "make_peace_rand": 50,
+      "declare_war_trade_rand": 20,
+      "demand_rebuked_sneak_prob": 25,
+      "demand_rebuked_war_prob": 20,
+      "build_unit_prob": 30,
+      "worse_rank_difference_attitude_change": -4,
+      "close_borders_attitude_change": -4,
+      "lost_war_attitude_change": -1,
+      "at_war_attitude_divisor": -5,
+      "at_war_attitude_change_limit": 5,
+      "same_religion_attitude_change": 4,
+      "demand_tribute_attitude_threshold": "ATTITUDE_CAUTIOUS",
+      "no_give_help_attitude_threshold": "ATTITUDE_CAUTIOUS",
+      "traits": {"TRAIT_AVARICIOUS": true, "TRAIT_ORGANIZED": true},
+      "flavors": {"FLAVOR_GOLD": 8, "FLAVOR_MILITARY": 4},
+      "somnium_aggressiveness": 40,
+      "alignment": "ALIGNMENT_EVIL",
+      "favorite_unit_combat": "UNITCOMBAT_MELEE"
+    }
+  ],
   "text": {
     "TXT_KEY_DOOM_INFERNAL_GATE": "The Infernal Gate Opens",
-    "TXT_KEY_DOOM_INFERNAL_GATE_HELP": "The Infernals arrive as with the Infernal Pact, beside the evil civilization with the most cities: Hyborem and his host on the best free site within 4 plots of its borders. They know its techs, join its wars and have +4 attitude toward it. The Infernals come once a game: the card is not played if they have been in play, without an evil civilization with a city, without a free player slot, or under No Hyborem or Basium."
+    "TXT_KEY_DOOM_INFERNAL_GATE_HELP": "A new civilization, the Court of Mammon (evil), arrives beside the civilization with the most gold, on the best free site within 4 plots of its borders: Aurivane (its hero), two Champions, two Longbowmen, two Settlers, a Worker, two Manes and 200 gold. It knows the techs half the civilizations know.[NEWLINE][ICON_BULLET]Avaricious: +100% gold; buys units at 2 gold per hammer left, under any civic.[NEWLINE][ICON_BULLET]Buy Out: each of its land units may take an adjacent unit of a civilization it is at war with for 3 times its production cost in gold (not heroes or world units).[NEWLINE][ICON_BULLET]Fallow: its cities produce no food and start at size 3; Manes join them as population.[NEWLINE][ICON_BULLET]The Manes of the evil dead go to the Court or to the Infernals: to the one in play, to one of the two at random while both are.[NEWLINE][ICON_BULLET]-4 attitude between the Court and the Infernals.[NEWLINE]Played only with a free site and a free player slot.",
+    "TXT_KEY_UNIT_AURIVANE": "Aurivane",
+    "TXT_KEY_UNIT_AURIVANE_PEDIA": "Aurivane keeps Mammon's ledger. Every soul in it has a price, and he has paid most of them.",
+    "TXT_KEY_UNIT_AURIVANE_STRATEGY": "A demon hero with attack 70 and defence 60.",
+    "TXT_KEY_PROMOTION_MAMMONS_COIN": "Mammon's Coin",
+    "TXT_KEY_PROMOTION_MAMMONS_COIN_HELP": "[ICON_BULLET]Buy Out (while the Court of Mammon owns the unit): an adjacent unit of a civilization you are at war with joins you, for 3 times its production cost in gold. Not heroes or world units.",
+    "TXT_KEY_BUILDING_PALACE_COURT_OF_MAMMON": "Palace",
+    "TXT_KEY_TRAIT_AVARICIOUS": "Avaricious",
+    "TXT_KEY_TRAIT_AVARICIOUS_SHORT": "Avaricious",
+    "TXT_KEY_CIV_COURT_OF_MAMMON_DESC": "The Court of Mammon",
+    "TXT_KEY_CIV_COURT_OF_MAMMON_SHORT_DESC": "Court of Mammon",
+    "TXT_KEY_CIV_COURT_OF_MAMMON_ADJECTIVE": "Mammonite",
+    "TXT_KEY_CIV_COURT_OF_MAMMON_HELP": "[ICON_BULLET]Buy Out: each of its land units may take an adjacent unit of a civilization it is at war with for 3 times its production cost in gold (not heroes or world units).[NEWLINE][ICON_BULLET]Its cities start at size 3 and grow only by Manes: the Manes of the evil dead go to it or to the Infernals (one of the two at random while both are in play).[NEWLINE][ICON_BULLET]Its cities have Demonic Citizens: their population causes no unhappiness or unhealthiness.[NEWLINE][ICON_BULLET]-4 attitude between it and the Infernals.[NEWLINE][ICON_BULLET]Hero: Aurivane.",
+    "TXT_KEY_CIV_COURT_OF_MAMMON_PEDIA": "The Court of Mammon is hell's counting house. Its demons come through the gate with chests of gold, to buy the world rather than burn it.",
+    "TXT_KEY_CITY_COURT_OF_MAMMON_1": "Gildmaw",
+    "TXT_KEY_CITY_COURT_OF_MAMMON_2": "The Counting House",
+    "TXT_KEY_CITY_COURT_OF_MAMMON_3": "Tithegate",
+    "TXT_KEY_CITY_COURT_OF_MAMMON_4": "Brassvault",
+    "TXT_KEY_CITY_COURT_OF_MAMMON_5": "Usurer's Rest",
+    "TXT_KEY_CITY_COURT_OF_MAMMON_6": "Goldrot",
+    "TXT_KEY_CITY_COURT_OF_MAMMON_7": "Ledgerdeep",
+    "TXT_KEY_CITY_COURT_OF_MAMMON_8": "Avarice",
+    "TXT_KEY_CITY_COURT_OF_MAMMON_9": "Debtor's Pit",
+    "TXT_KEY_CITY_COURT_OF_MAMMON_10": "Mintfire",
+    "TXT_KEY_CITY_COURT_OF_MAMMON_11": "Pawnmarch",
+    "TXT_KEY_CITY_COURT_OF_MAMMON_12": "The Last Coffer",
+    "TXT_KEY_LEADER_AURIVANE": "Aurivane",
+    "TXT_KEY_LEADER_AURIVANE_PEDIA": "Aurivane, the Gilded Prince, is Mammon's steward on the mortal side of the gate. He does not burn what he can buy."
   }
 }

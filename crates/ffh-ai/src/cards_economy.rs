@@ -14,7 +14,9 @@
 //! - Muster ([`process_value`]): an idle city with units, at war or preparing one.
 //! - The Paymaster ([`production`], [`unit`]): one, trained at war; it follows the largest stack
 //!   and buys the strongest enemy unit next to it that the treasury can spare (above the reserve
-//!   `empire::hurry` keeps).
+//!   `empire::hurry` keeps). The Court of Mammon's land units (the Infernal Gate's civilization,
+//!   `SPELL_COURT_BUY_OUT`) buy the same way, at the start of the turn and once they have moved
+//!   ([`end_turn`]).
 //! - Mana Grafting ([`unit`]): a caster on a node of a type the empire has several of grafts it
 //!   into the type worth most.
 //! - Trading Posts ([`turn`]): a worker claims the best free site near our cities (a resource we
@@ -35,6 +37,8 @@ use crate::view::View;
 struct Names {
     paymaster: Option<UnitClassType>,
     buy_out: Option<SpellType>,
+    court: Option<CivilizationType>,
+    court_buy_out: Option<SpellType>,
     graft: Option<SpellType>,
     graft_card: Option<TechType>,
     trading_post_build: Option<BuildType>,
@@ -47,6 +51,8 @@ fn names(d: &GameData) -> &'static Names {
     N.get_or_init(|| Names {
         paymaster: d.ty::<UnitClassType>("UNITCLASS_PAYMASTER"),
         buy_out: d.ty::<SpellType>("SPELL_BUY_OUT"),
+        court: d.ty::<CivilizationType>("CIVILIZATION_COURT_OF_MAMMON"),
+        court_buy_out: d.ty::<SpellType>("SPELL_COURT_BUY_OUT"),
         graft: d.ty::<SpellType>("SPELL_MANA_GRAFT"),
         graft_card: d.ty::<TechType>("TECH_CARD_MANA_GRAFTING"),
         trading_post_build: d.ty::<BuildType>("BUILD_TRADING_POST"),
@@ -70,21 +76,49 @@ fn at_war(g: &Game, p: PlayerId) -> bool {
 /// Once a turn, after the empire decisions ([`crate::cards::turn`]).
 pub fn turn(g: &mut Game, v: &View) {
     trading_posts(g, v);
-    // A Paymaster in a stack (not its head) buys too.
-    if let Some(class) = names(g.d).paymaster {
-        for u in g.players[v.p].units.clone() {
-            if g.units.contains(u) && g.d.units[g.units[u].unit_type].unit_class_type == Some(class) {
-                buy_out(g, v.p, u);
-            }
+    // A Paymaster in a stack (not its head) buys too, and so does every unit of the Court.
+    buyers(g, v.p);
+}
+
+/// Once our units have moved ([`crate::cards::end_turn`]): the Court of Mammon's units that came
+/// next to an enemy buy.
+pub fn end_turn(g: &mut Game, p: PlayerId) {
+    if is_court(g, p) {
+        buyers(g, p);
+    }
+}
+
+/// Is `p` the Court of Mammon (whose land units may all Buy Out)?
+fn is_court(g: &Game, p: PlayerId) -> bool {
+    let court = names(g.d).court;
+    court.is_some() && g.player_get_civilization_type(p) == court
+}
+
+/// Each of `p`'s units that may Buy Out (a Paymaster; every unit of the Court) buys ([`buy_out`]).
+fn buyers(g: &mut Game, p: PlayerId) {
+    let d = g.d;
+    let class = names(d).paymaster;
+    let court = is_court(g, p);
+    if class.is_none() && !court {
+        return;
+    }
+    for u in g.players[p].units.clone() {
+        if g.units.contains(u) && (court || (class.is_some() && d.units[g.units[u].unit_type].unit_class_type == class)) {
+            buy_out(g, p, u);
         }
     }
 }
 
-/// The Paymaster `u` of `p` buys the strongest enemy unit next to it that the treasury can spare
-/// (keeping the reserve). True when it bought one.
+/// The Paymaster `u` of `p` (or a unit of the Court of Mammon) buys the strongest enemy unit next to
+/// it that the treasury can spare (keeping the reserve). True when it bought one.
 fn buy_out(g: &mut Game, p: PlayerId, u: UnitId) -> bool {
     let d = g.d;
-    let Some(spell) = names(d).buy_out else { return false };
+    let n = names(d);
+    let paymaster = n.paymaster.is_some() && d.units[g.units[u].unit_type].unit_class_type == n.paymaster;
+    let Some(spell) = (if paymaster { n.buy_out } else { n.court_buy_out }) else { return false };
+    if g.units[u].has_casted || g.unit_plot_opt(u).is_none() {
+        return false;
+    }
     let gold = g.players[p].gold;
     let keep = reserve(g, p);
     let best = g
@@ -96,7 +130,7 @@ fn buy_out(g: &mut Game, p: PlayerId, u: UnitId) -> bool {
     if !g.unit_can_cast_at(u, spell, SpellTarget::Unit(t)) {
         return false;
     }
-    crate::trace!(g, p, "paymaster buys {} for {}", d.units[g.units[t].unit_type].base.type_, g.unit_buy_out_price(t).unwrap_or(0));
+    crate::trace!(g, p, "{} buys {} for {}", if paymaster { "paymaster" } else { "court unit" }, d.units[g.units[t].unit_type].base.type_, g.unit_buy_out_price(t).unwrap_or(0));
     g.unit_cast_at(u, spell, SpellTarget::Unit(t));
     true
 }
