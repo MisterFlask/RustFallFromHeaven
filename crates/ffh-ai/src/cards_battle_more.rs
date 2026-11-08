@@ -167,8 +167,9 @@ fn train(g: &mut Game, p: PlayerId) {
             wish.extend(tt.gryphon.map(|t| (t, 2)));
         }
     }
+    // (The sites are a scan of the map: only for a player that could train a golem now.)
     if let Some(t) = tt.cairn_golem {
-        if !cairn_sites(g, p).is_empty() {
+        if g.player_can_train(p, t, false, false, false) && wanted(g, p, t, 1) > 0 && !cairn_sites(g, p).is_empty() {
             wish.push((t, 1));
         }
     }
