@@ -188,7 +188,11 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
   combat units in them but heroes and the caster), a hero in its capital, every tech the founder's
   team knows but the cards (and `techs`), a state religion in all its cities, gold.
 - **Its relation to the founder:** it has met it. As a vassal (`vassal`) it is the founder's, by
-  the ordinary vassal rules (it joins its master's wars). **Where vassals cannot be** (No Vassal
+  the ordinary vassal rules (it joins its master's wars). Like every civilization it is at war
+  with the barbarians on both sides (`add_player_advanced` sets only its own side; the other left
+  at peace made `ai_vassal_trade` deny the vassal trade). Its AI keeps the vassalage until the
+  ordinary revolt rule would free it (`team_can_vassal_revolt`; `diplomacy::reconsider_deals`),
+  where a vassal that is not hopeless would otherwise leave after 20 turns. **Where vassals cannot be** (No Vassal
   States, or a founder that is a vassal itself) it signs open borders and a defensive pact with the
   founder instead, a deal like any other. No other war or peace is forced (docs/DECKS.md, principle
   27): its leanings are attitude modifiers, toward the founder (`ai_attitude_extra`) and toward
