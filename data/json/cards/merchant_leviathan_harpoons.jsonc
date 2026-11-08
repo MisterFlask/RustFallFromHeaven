@@ -1,0 +1,49 @@
+// Leviathan Harpoons (docs/DECKS.md, section 15, "Ships"; 9.4: ships are fine): a promotion for
+// ships. Double damage against sea monsters and large ships (`naval_damage_vs`, enumerated: the
+// Kraken, the Leviathan, the Sea Serpent and the Giant Tortoise; the tier 4 ships, the Man-o-War and
+// the Queen of the Line); a Kraken or Leviathan it kills is captured (`capture_unit_combat`: the
+// beasts, which at sea are those two).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_LEVIATHAN_HARPOONS",
+      "description": "TXT_KEY_TECH_CARD_LEVIATHAN_HARPOONS",
+      "help": "TXT_KEY_TECH_CARD_LEVIATHAN_HARPOONS_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_LEVIATHAN_HARPOONS_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_OPTICS"],
+      "card_suit": "UNITCLASS_MERCHANT",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_LEVIATHAN_HARPOONS",
+      "description": "TXT_KEY_PROMOTION_LEVIATHAN_HARPOONS",
+      "civilopedia": "TXT_KEY_PROMOTION_LEVIATHAN_HARPOONS_PEDIA",
+      "tech_prereq": "TECH_CARD_LEVIATHAN_HARPOONS",
+      "unit_combats": {"UNITCOMBAT_NAVAL": true},
+      "naval_damage_vs": {
+        "UNITCLASS_KRAKEN": 100,
+        "UNITCLASS_LEVIATHAN": 100,
+        "UNITCLASS_SEA_SERPENT": 100,
+        "UNITCLASS_GIANT_TORTOISE": 100,
+        "UNITCLASS_MAN_O_WAR": 100,
+        "UNITCLASS_QUEEN_OF_THE_LINE": 100
+      },
+      "capture_unit_combat": "UNITCOMBAT_BEAST",
+      "ai_weight": 20,
+      "button": ",Art/Interface/Buttons/Promotions/Navigation1.dds,Art/Interface/Buttons/Promotions_Atlas.dds,7,4"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_LEVIATHAN_HARPOONS": "Leviathan Harpoons",
+    "TXT_KEY_TECH_CARD_LEVIATHAN_HARPOONS_HELP": "[ICON_BULLET]Allows the Leviathan Harpoons promotion (ships).[NEWLINE][ICON_BULLET]Leviathan Harpoons: in naval combat, +100% damage to the Kraken, the Leviathan, the Sea Serpent, the Giant Tortoise, the Man-o-War and the Queen of the Line. A Kraken or Leviathan it defeats is captured.",
+    "TXT_KEY_TECH_CARD_LEVIATHAN_HARPOONS_PEDIA": "Barbed iron on a cable of tarred hemp, and a winch that a whole crew turns.",
+    "TXT_KEY_PROMOTION_LEVIATHAN_HARPOONS": "Leviathan Harpoons",
+    "TXT_KEY_PROMOTION_LEVIATHAN_HARPOONS_PEDIA": "What closes the sea lanes is towed home and put to work."
+  }
+}

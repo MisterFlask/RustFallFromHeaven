@@ -31,6 +31,11 @@ pub struct Slots {
     pub sides: [SideSlots; 2],
     /// The defender's Sentinels: cells of its grid beside its soldiers' slots (docs/SIEGES.md).
     pub sentinels: u8,
+    /// Card: the defender's Sentinels from the field (a Bastion's, a Cairn's: docs/CARDS.md;
+    /// `more_cards.rs`), cells of its grid after the city's, at no slot; and the percent their
+    /// values grow by (the plot's improvement's defence). Set by the set-up, from the defenders.
+    pub field_sentinels: u8,
+    pub field_grow: i32,
 }
 
 impl Slots {
@@ -118,6 +123,8 @@ impl Game {
                 SideSlots { base, changes: def_changes, total: def, river_only: 0 },
             ],
             sentinels: n as u8,
+            field_sentinels: 0,
+            field_grow: 0,
         }
     }
 

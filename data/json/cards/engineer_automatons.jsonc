@@ -1,0 +1,98 @@
+// Automatons (docs/DECKS.md, section 3.3; 9.1; 9.4 and 10.3: without supply): national unit, 6.
+// Not alive (`PROMOTION_AUTOMATON`: so immune to fear), immune to charms and hexes in battle
+// (`battle_immune`). They gain no XP (`no_experience`) and heal only in a city of their team with a
+// Forge (`heal_building_class`).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_AUTOMATONS",
+      "description": "TXT_KEY_TECH_CARD_AUTOMATONS",
+      "help": "TXT_KEY_TECH_CARD_AUTOMATONS_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_AUTOMATONS_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_MITHRIL_WORKING"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_MILITARY": 1, "FLAVOR_PRODUCTION": 1}
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_AUTOMATON",
+      "description": "TXT_KEY_PROMOTION_AUTOMATON",
+      "civilopedia": "TXT_KEY_PROMOTION_AUTOMATON_PEDIA",
+      "tech_prereq": "TECH_NEVER",
+      "not_alive": true,
+      "immune_to_fear": true,
+      "damage_type_resists": {"DAMAGE_DEATH": 100, "DAMAGE_POISON": 100},
+      "button": "Art/Interface/Buttons/Promotions/Golem.dds"
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_AUTOMATON",
+      "description": "TXT_KEY_UNIT_AUTOMATON",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 6,
+      "default_unit": "UNIT_AUTOMATON"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_AUTOMATON",
+      "stats": {"hp": 120, "attack": 110, "defense": 110, "magic": 0, "magic_defense": 82, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
+      "engage_rows": [
+        {"action": "STRIKE", "count": 2},
+        {"action": "STRIKE", "count": 1},
+        {"action": "STRIKE", "count": 1}
+      ],
+      "engage_row_order": ["FRONT", "MIDDLE", "REAR"],
+      "armor": 3,
+      "battle_immune": ["CHARMS", "HEXES"],
+      "no_experience": true,
+      "heal_building_class": "BUILDINGCLASS_FORGE",
+      "class": "UNITCLASS_AUTOMATON",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_ATTACK",
+      "description": "TXT_KEY_UNIT_AUTOMATON",
+      "civilopedia": "TXT_KEY_UNIT_AUTOMATON_PEDIA",
+      "strategy": "TXT_KEY_UNIT_AUTOMATON_STRATEGY",
+      "military_happiness": true,
+      "military_support": true,
+      "military_production": true,
+      "pillage": true,
+      "mechanized": true,
+      "unit_ais": {"UNITAI_ATTACK": true, "UNITAI_ATTACK_CITY": true, "UNITAI_COUNTER": true},
+      "prereq_tech": "TECH_CARD_AUTOMATONS",
+      "free_promotions": {"PROMOTION_AUTOMATON": true},
+      "cost": 240,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 1,
+      "nuke_range": -1,
+      "combat": 11,
+      "combat_defense": 11,
+      "combat_limit": 100,
+      "xp_value_attack": 8,
+      "xp_value_defense": 4,
+      "culture_garrison": 6,
+      "asset": 12,
+      "power": 24,
+      "never_obsolete": true,
+      "tier": 4
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_AUTOMATONS": "Automatons",
+    "TXT_KEY_TECH_CARD_AUTOMATONS_HELP": "[ICON_BULLET]Can train the Automaton (national unit, 6): tier 4, HP 120, attack 110, defence 110, armor 3.[NEWLINE][ICON_BULLET]Not alive: immune to fear. In battle immune to charms and hexes.[NEWLINE][ICON_BULLET]It gains no XP and heals only in a city of yours with a Forge.",
+    "TXT_KEY_TECH_CARD_AUTOMATONS_PEDIA": "Brass and mithril, wound at the forge, marching on what the forge put into them and nothing else.",
+    "TXT_KEY_PROMOTION_AUTOMATON": "Automaton",
+    "TXT_KEY_PROMOTION_AUTOMATON_PEDIA": "A made thing, without fear or blood.",
+    "TXT_KEY_UNIT_AUTOMATON": "Automaton",
+    "TXT_KEY_UNIT_AUTOMATON_PEDIA": "A soldier of wound springs that no song stirs and no curse slows.",
+    "TXT_KEY_UNIT_AUTOMATON_STRATEGY": "The core of a long campaign against fear armies and casters' charms; repair it in a city with a Forge, and keep it out of the garrison of a city without one."
+  }
+}

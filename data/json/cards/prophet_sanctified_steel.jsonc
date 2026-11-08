@@ -1,0 +1,56 @@
+// P17 Sanctified Steel (docs/DECKS_ROUND8.md; C.4: it reaches melee, beast and disciple units only,
+// the existing promotions' unit combats; C.7: kept, rank B). Any religion: no faith of its own, it
+// spreads none. The building's two free promotions are the existing Demon Slaying and Undead
+// Slaying, given where their unit combats allow (`free_promotion`, `extra_free_promotion`).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_SANCTIFIED_STEEL",
+      "description": "TXT_KEY_TECH_CARD_SANCTIFIED_STEEL",
+      "help": "TXT_KEY_TECH_CARD_SANCTIFIED_STEEL_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_SANCTIFIED_STEEL_PEDIA",
+      "advisor": "ADVISOR_RELIGION",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_PRIESTHOOD"],
+      "card_suit": "UNITCLASS_PROPHET",
+      "flavors": {"FLAVOR_MILITARY": 1, "FLAVOR_RELIGION": 1}
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_SANCTIFIED_STEEL",
+      "description": "TXT_KEY_BUILDING_SANCTIFIED_STEEL",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": -1,
+      "default_building": "BUILDING_SANCTIFIED_STEEL"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_SANCTIFIED_STEEL",
+      "building_class": "BUILDINGCLASS_SANCTIFIED_STEEL",
+      "description": "TXT_KEY_BUILDING_SANCTIFIED_STEEL",
+      "civilopedia": "TXT_KEY_BUILDING_SANCTIFIED_STEEL_PEDIA",
+      "prereq_tech": "TECH_CARD_SANCTIFIED_STEEL",
+      "cost": 120,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "conquest_prob": 50,
+      "asset": 2,
+      "power_value": 3,
+      "free_promotion": "PROMOTION_DEMON_SLAYING",
+      "extra_free_promotion": "PROMOTION_UNDEAD_SLAYING",
+      "flavors": {"FLAVOR_MILITARY": 8, "FLAVOR_RELIGION": 2}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_SANCTIFIED_STEEL": "Sanctified Steel",
+    "TXT_KEY_TECH_CARD_SANCTIFIED_STEEL_HELP": "[ICON_BULLET]Allows Sanctified Steel (a building, 120 [ICON_PRODUCTION]).[NEWLINE][ICON_BULLET]Sanctified Steel: melee, beast and disciple units trained in the city get Demon Slaying and Undead Slaying.",
+    "TXT_KEY_TECH_CARD_SANCTIFIED_STEEL_PEDIA": "Blades quenched in blessed water and named before an altar. They bite what should not walk.",
+    "TXT_KEY_BUILDING_SANCTIFIED_STEEL": "Sanctified Steel",
+    "TXT_KEY_BUILDING_SANCTIFIED_STEEL_PEDIA": "A forge beside a shrine, where every blade is blessed before it leaves."
+  }
+}

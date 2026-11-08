@@ -1,0 +1,79 @@
+// Runeguard (docs/DECKS.md, section 13, batch 2, card 3): national unit, 4. Tier 3 frontline: HP
+// 140, attack 55, defence 70. Immune to spell damage, charms and hexes in battle (`battle_immune`;
+// the battle kit's own key: FFH2's `immune_to_magic` is a map flag the battles do not read).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_RUNEGUARD",
+      "description": "TXT_KEY_TECH_CARD_RUNEGUARD",
+      "help": "TXT_KEY_TECH_CARD_RUNEGUARD_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_RUNEGUARD_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_CONSTRUCTION"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_RUNEGUARD",
+      "description": "TXT_KEY_UNIT_RUNEGUARD",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 4,
+      "default_unit": "UNIT_RUNEGUARD"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_RUNEGUARD",
+      "stats": {"hp": 140, "attack": 55, "defense": 70, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
+      "engage_rows": [
+        {"action": "STRIKE", "count": 2},
+        {"action": "STRIKE", "count": 1},
+        {"action": "STRIKE", "count": 1}
+      ],
+      "engage_row_order": ["FRONT", "MIDDLE", "REAR"],
+      "battle_immune": ["SPELLS", "CHARMS", "HEXES"],
+      "class": "UNITCLASS_RUNEGUARD",
+      "unit_combat": "UNITCOMBAT_MELEE",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_ATTACK",
+      "description": "TXT_KEY_UNIT_RUNEGUARD",
+      "civilopedia": "TXT_KEY_UNIT_RUNEGUARD_PEDIA",
+      "strategy": "TXT_KEY_UNIT_RUNEGUARD_STRATEGY",
+      "military_happiness": true,
+      "military_support": true,
+      "military_production": true,
+      "pillage": true,
+      "unit_ais": {"UNITAI_ATTACK": true, "UNITAI_ATTACK_CITY": true, "UNITAI_COUNTER": true, "UNITAI_CITY_DEFENSE": true},
+      "prereq_tech": "TECH_CARD_RUNEGUARD",
+      "cost": 130,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 1,
+      "nuke_range": -1,
+      "combat": 6,
+      "combat_defense": 7,
+      "combat_limit": 100,
+      "xp_value_attack": 8,
+      "xp_value_defense": 4,
+      "culture_garrison": 6,
+      "asset": 9,
+      "power": 18,
+      "never_obsolete": true,
+      "tier": 3
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_RUNEGUARD": "Runeguard",
+    "TXT_KEY_TECH_CARD_RUNEGUARD_HELP": "[ICON_BULLET]Can train the Runeguard (national unit, 4): tier 3, HP 140, attack 55, defence 70.[NEWLINE][ICON_BULLET]In battle it is immune to spell damage, charms and hexes.",
+    "TXT_KEY_TECH_CARD_RUNEGUARD_PEDIA": "Shields cut with runes of unmaking: the fire splits around them.",
+    "TXT_KEY_UNIT_RUNEGUARD": "Runeguard",
+    "TXT_KEY_UNIT_RUNEGUARD_PEDIA": "Soldiers sworn to the runes, on whom no spell takes hold.",
+    "TXT_KEY_UNIT_RUNEGUARD_STRATEGY": "The front row against a caster army; against plain steel it is a soldier like any other."
+  }
+}

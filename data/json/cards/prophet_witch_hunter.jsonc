@@ -1,0 +1,81 @@
+// Witch-Hunter (docs/DECKS.md, section 13, batch 2, card 4): national unit, 3. Tier 3 recon that
+// stabs: HP 90, attack 55. Double damage to adepts and disciples (`damage_vs`), goes for them first
+// (`target_preference`), immune to hexes (`battle_immune`).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_WITCH_HUNTER",
+      "description": "TXT_KEY_TECH_CARD_WITCH_HUNTER",
+      "help": "TXT_KEY_TECH_CARD_WITCH_HUNTER_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_WITCH_HUNTER_PEDIA",
+      "advisor": "ADVISOR_RELIGION",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_PRIESTHOOD"],
+      "card_suit": "UNITCLASS_PROPHET",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_WITCH_HUNTER",
+      "description": "TXT_KEY_UNIT_WITCH_HUNTER",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 3,
+      "default_unit": "UNIT_WITCH_HUNTER"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_WITCH_HUNTER",
+      "stats": {"hp": 90, "attack": 55, "defense": 30, "magic": 0, "magic_defense": 50, "accuracy": 90, "evasion": 15, "crit": 15, "speed": 7},
+      "engage_rows": [
+        {"action": "STAB", "count": 1},
+        {"action": "STAB", "count": 2},
+        {"action": "STAB", "count": 1}
+      ],
+      "engage_row_order": ["MIDDLE", "REAR", "FRONT"],
+      "target_preference": ["UNITCOMBAT_ADEPT", "UNITCOMBAT_DISCIPLE"],
+      "damage_vs": {"UNITCOMBAT_ADEPT": 100, "UNITCOMBAT_DISCIPLE": 100},
+      "battle_immune": ["HEXES"],
+      "class": "UNITCLASS_WITCH_HUNTER",
+      "unit_combat": "UNITCOMBAT_RECON",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_ATTACK",
+      "description": "TXT_KEY_UNIT_WITCH_HUNTER",
+      "civilopedia": "TXT_KEY_UNIT_WITCH_HUNTER_PEDIA",
+      "strategy": "TXT_KEY_UNIT_WITCH_HUNTER_STRATEGY",
+      "military_happiness": true,
+      "military_support": true,
+      "military_production": true,
+      "pillage": true,
+      "unit_ais": {"UNITAI_ATTACK": true, "UNITAI_COUNTER": true},
+      "prereq_tech": "TECH_CARD_WITCH_HUNTER",
+      "cost": 110,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 2,
+      "nuke_range": -1,
+      "combat": 5,
+      "combat_defense": 3,
+      "combat_limit": 100,
+      "xp_value_attack": 8,
+      "xp_value_defense": 4,
+      "culture_garrison": 4,
+      "asset": 7,
+      "power": 14,
+      "never_obsolete": true,
+      "tier": 3
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_WITCH_HUNTER": "Witch-Hunter",
+    "TXT_KEY_TECH_CARD_WITCH_HUNTER_HELP": "[ICON_BULLET]Can train the Witch-Hunter (national unit, 3): tier 3, HP 90, attack 55; it stabs.[NEWLINE][ICON_BULLET]In battle: +100% damage to adepts and disciples, which it attacks first; immune to hexes.",
+    "TXT_KEY_TECH_CARD_WITCH_HUNTER_PEDIA": "A grey coat, a silvered blade and a list of names.",
+    "TXT_KEY_UNIT_WITCH_HUNTER": "Witch-Hunter",
+    "TXT_KEY_UNIT_WITCH_HUNTER_PEDIA": "The temple's answer to the sorcerers of its enemies.",
+    "TXT_KEY_UNIT_WITCH_HUNTER_STRATEGY": "Two in every army that faces mages or priests: they reach the casters wherever they stand."
+  }
+}

@@ -1,0 +1,77 @@
+// War Drums (docs/DECKS.md, section 3.5; 9.1: +1 speed and fear immunity in round 1). The Drummer
+// (national unit, 2) beats the Drums while it fights: its side is immune to fear (the morale check
+// before round 1) and has +1 speed in round 1 (`battle_drums`).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_WAR_DRUMS",
+      "description": "TXT_KEY_TECH_CARD_WAR_DRUMS",
+      "help": "TXT_KEY_TECH_CARD_WAR_DRUMS_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_WAR_DRUMS_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_ANCIENT",
+      "and_pre_reqs": ["TECH_FESTIVALS"],
+      "card_suit": "UNITCLASS_ARTIST",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_WAR_DRUMMER",
+      "description": "TXT_KEY_UNIT_WAR_DRUMMER",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 2,
+      "default_unit": "UNIT_WAR_DRUMMER"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_WAR_DRUMMER",
+      "stats": {"hp": 80, "attack": 20, "defense": 25, "magic": 0, "magic_defense": 30, "accuracy": 90, "evasion": 10, "crit": 5, "speed": 4},
+      "engage_rows": [
+        {"action": "STRIKE", "count": 1},
+        {"action": "STRIKE", "count": 1},
+        {"action": "STRIKE", "count": 1}
+      ],
+      "engage_row_order": ["REAR", "MIDDLE", "FRONT"],
+      "battle_drums": 1,
+      "class": "UNITCLASS_WAR_DRUMMER",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_ATTACK",
+      "description": "TXT_KEY_UNIT_WAR_DRUMMER",
+      "civilopedia": "TXT_KEY_UNIT_WAR_DRUMMER_PEDIA",
+      "strategy": "TXT_KEY_UNIT_WAR_DRUMMER_STRATEGY",
+      "military_happiness": true,
+      "military_support": true,
+      "military_production": true,
+      "unit_ais": {"UNITAI_ATTACK": true},
+      "prereq_tech": "TECH_CARD_WAR_DRUMS",
+      "ai_weight": 0,
+      "cost": 50,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 1,
+      "nuke_range": -1,
+      "combat": 2,
+      "combat_defense": 2,
+      "combat_limit": 100,
+      "xp_value_attack": 8,
+      "xp_value_defense": 4,
+      "culture_garrison": 2,
+      "asset": 2,
+      "power": 3,
+      "tier": 2
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_WAR_DRUMS": "War Drums",
+    "TXT_KEY_TECH_CARD_WAR_DRUMS_HELP": "[ICON_BULLET]Can train the War Drummer (national unit, 2).[NEWLINE][ICON_BULLET]Drums: while a War Drummer fights in a battle, its side is immune to fear and has +1 speed in round 1.",
+    "TXT_KEY_TECH_CARD_WAR_DRUMS_PEDIA": "A beat the whole line marches to, and that no howl from the dark can drown.",
+    "TXT_KEY_UNIT_WAR_DRUMMER": "War Drummer",
+    "TXT_KEY_UNIT_WAR_DRUMMER_PEDIA": "A drummer of the host, who sets the pace of the charge.",
+    "TXT_KEY_UNIT_WAR_DRUMMER_STRATEGY": "March it with the army that will meet undead, demons or dragons: the line does not break in fear, and acts first in round 1 against units of its own speed."
+  }
+}

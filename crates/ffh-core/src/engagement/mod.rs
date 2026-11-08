@@ -23,6 +23,7 @@ pub mod arrange;
 mod battle_magic;
 pub(crate) mod engage;
 pub mod formation;
+pub mod more_cards;
 pub mod pick;
 pub mod preview;
 pub mod report;
@@ -33,6 +34,7 @@ pub mod state;
 pub mod stats;
 
 pub use arrange::Place;
+pub use more_cards::SentinelSource;
 pub use engage::{damage_from_hp, hp_from_damage, BattleEffect, EngageOutcome};
 pub use formation::{BattleRng, FighterIdx, Ground, GroundRule, Pair, Side};
 pub use pick::WarTest;

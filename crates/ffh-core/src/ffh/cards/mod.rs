@@ -8,6 +8,7 @@
 use crate::ffh::dispatch::*;
 
 pub mod battle_magic;
+pub mod battle_more;
 pub mod deck;
 pub mod deck_ui;
 pub mod economy;
@@ -42,11 +43,12 @@ const MODULES: &[Lookups] = &[
     Lookups { spell: economy::find_spell, req: economy::find_req, targets: economy::find_targets, unit_fn: none },
     Lookups { spell: world_spells_2::find_spell, req: world_spells_2::find_req, targets: world_spells_2::find_targets, unit_fn: none },
     Lookups { spell: new_civs_2::find_spell, req: new_civs_2::find_req, targets: new_civs_2::find_targets, unit_fn: none },
+    Lookups { spell: battle_more::find_spell, req: battle_more::find_req, targets: battle_more::find_targets, unit_fn: none },
 ];
 
 /// Every card module's `py_target_label` lookup (the names of a choice spell's options), searched
 /// in order.
-const LABELS: &[fn(&str) -> Option<TargetLabelFn>] = &[world::find_target_label, world_spells::find_target_label, economy::find_target_label, world_spells_2::find_target_label, new_civs_2::find_target_label];
+const LABELS: &[fn(&str) -> Option<TargetLabelFn>] = &[world::find_target_label, world_spells::find_target_label, economy::find_target_label, world_spells_2::find_target_label, new_civs_2::find_target_label, battle_more::find_target_label];
 
 /// `PyResult` functions.
 pub fn find_spell(name: &str) -> Option<SpellFn> {

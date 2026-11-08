@@ -188,11 +188,12 @@ impl Game {
     }
 
     /// The damage type unit `u`'s physical attack deals (`attack_damage_type`, the Elemental
-    /// Forge's promotions), if a promotion of it gives one.
+    /// Forge's promotions; card: the Lantern of Lugus's unit type), if a promotion of it or its type
+    /// gives one (the promotion's first).
     pub fn unit_attack_damage_type(&self, u: UnitId) -> Option<DamageType> {
         let d = self.d;
         let unit = &self.units[u];
-        d.promotions.keys().filter(|&p| unit.has_promotion[p]).find_map(|p| d.promotions[p].attack_damage_type)
+        d.promotions.keys().filter(|&p| unit.has_promotion[p]).find_map(|p| d.promotions[p].attack_damage_type).or(d.units[unit.unit_type].attack_damage_type)
     }
 
     /// Unit `u`'s physical attack base `own` (x100) against `opponent`: cut by the opponent's

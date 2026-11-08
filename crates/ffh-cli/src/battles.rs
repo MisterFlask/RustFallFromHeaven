@@ -12,7 +12,8 @@
 //! fortify turns), `dmg:N` (every unit's damage, percent), `waves:N` (up to N attack orders in
 //! the turn, each committing the attackers that have not attacked yet, until the plot falls),
 //! `bombard:N` (N turns of siege first: each attacker that can bombard does, then the attackers'
-//! attacks and moves are reset; the defenders do not heal, as in a besieged city).
+//! attacks and moves are reset; the defenders do not heal, as in a besieged city), `imp:NAME` (the
+//! defended plot's improvement, `IMPROVEMENT_` prefix optional: a card's Cairn).
 //!
 //! The world is a duel map, players 0 (attacker) and 1 (defender) at war, no controllers. Every
 //! unit keeps only its unit type's free promotions and the ones the line names (the civs' races and
@@ -50,6 +51,7 @@ struct Spec {
     dmg: i32,
     waves: usize,
     bombard: usize,
+    improvement: Option<ImprovementType>,
 }
 
 fn parse_stacks(d: &GameData, s: &str) -> Result<Vec<Stack>, String> {
@@ -121,6 +123,7 @@ fn parse_line(d: &GameData, line: &str) -> Result<Option<Spec>, String> {
         dmg: 0,
         waves: 1,
         bombard: 0,
+        improvement: None,
     };
     for w in f.get(3).copied().unwrap_or("").split_whitespace() {
         match w {
@@ -141,6 +144,9 @@ fn parse_line(d: &GameData, line: &str) -> Result<Option<Spec>, String> {
                     s.waves = n.parse().map_err(|_| format!("bad {w}"))?;
                 } else if let Some(n) = w.strip_prefix("dmg:") {
                     s.dmg = n.parse().map_err(|_| format!("bad {w}"))?;
+                } else if let Some(n) = w.strip_prefix("imp:") {
+                    let name = if n.starts_with("IMPROVEMENT_") { n.to_string() } else { format!("IMPROVEMENT_{n}") };
+                    s.improvement = Some(d.ty::<ImprovementType>(&name).ok_or_else(|| format!("unknown improvement {name}"))?);
                 } else {
                     return Err(format!("unknown ground word {w:?}"));
                 }
@@ -187,6 +193,9 @@ fn stage(s: &Spec) -> (Game, PlotIdx, PlotIdx, UnitId, Vec<(UnitId, u8)>) {
     }
     if s.hills {
         g.map.plots[to].plot_type = PlotType::PLOT_HILLS;
+    }
+    if let Some(i) = s.improvement {
+        g.map.plots[to].improvement_type = Some(i);
     }
     let (p0, p1) = (PlayerId(0), PlayerId(1));
     let (t0, t1) = (g.players[p0].team, g.players[p1].team);

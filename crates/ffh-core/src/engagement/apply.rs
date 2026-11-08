@@ -115,12 +115,18 @@ impl Game {
             }
         }
         if let Some(c) = e.setup.sentinel_city.filter(|&c| self.cities.contains(c)) {
-            for (j, i) in e.setup.sentinel_range().enumerate() {
+            // Card: the field's Sentinels keep nothing (more_cards.rs).
+            for (j, i) in e.setup.city_sentinel_range().enumerate() {
                 let dmg = if r.killed(i) { 100 } else { damage_from_hp(r.hp[i], r.max_hp[i]) };
                 self.city_set_sentinel_damage(c, e.setup.sentinels[j], dmg);
             }
         }
-        let city_owner = e.setup.sentinel_city.filter(|&c| self.cities.contains(c)).map(|c| self.cities[c].owner);
+        // Card: a field Sentinel's kill is its owner's (more_cards.rs).
+        let field_owner = match e.setup.field {
+            Some(super::more_cards::SentinelSource::Field { owner, .. }) => Some(owner),
+            _ => None,
+        };
+        let city_owner = e.setup.sentinel_city.filter(|&c| self.cities.contains(c)).map(|c| self.cities[c].owner).or(field_owner);
         let max_hp = d.defines.max_hit_points;
         for k in &r.kills {
             if k.victim >= n {
@@ -367,7 +373,8 @@ impl Game {
         let mover = launcher.and_then(|g| self.groups[g].units.iter().copied().find(|&u| self.engage_alive(u)));
         let leaving = r.kills.iter().filter(|k| k.victim < n && e.side(k.victim) == Side::Defender).count() as i32
             + e.of(Side::Defender).filter(|&i| r.withdrew(i) && !e.in_city()).count() as i32;
-        let walls_left = e.setup.sentinel_range().filter(|&i| !r.killed(i)).count() as i32;
+        // Card: the field's Sentinels hold no plot (more_cards.rs).
+        let walls_left = e.setup.city_sentinel_range().filter(|&i| !r.killed(i)).count() as i32;
         let will_advance = walls_left == 0 && mover.is_some_and(|m| self.plot_get_num_visible_enemy_defenders(to, m) - leaving <= 0);
         if will_advance {
             let capture = mover.is_some_and(|m| !self.unit_is_no_capture(m));
@@ -510,6 +517,10 @@ impl Game {
     /// `healRate` takes them; `(heal, medic, adjacent)`.
     fn engage_medic_heal(&self, u: UnitId) -> Option<(i32, UnitId, bool)> {
         let plot = self.unit_plot_opt(u)?;
+        // Card: Automatons heal only at a Forge (more_cards.rs).
+        if !self.unit_heals_at(u, plot) {
+            return None;
+        }
         let team = self.unit_get_team(u);
         let mut best: Option<(i32, UnitId, bool)> = None;
         for &lu in &self.map.plots[plot].units {

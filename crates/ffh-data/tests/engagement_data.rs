@@ -336,11 +336,14 @@ fn the_religions_fighters_strike_and_every_stabber_has_marksman() {
         assert_eq!(u.stats.is_some(), u.engage_rows.is_some(), "{}", u.base.type_);
         assert_eq!(u.engage_rows.is_some(), u.engage_row_order.is_some(), "{}", u.base.type_);
     }
-    // Q6: the stabbers are exactly the recon units with Marksman free.
+    // Q6: the stabbers are exactly the recon units with Marksman free (the game's own units: the
+    // great-person cards' follow their own rules, docs/CARDS.md).
     let marksman = d.t::<PromotionType>("PROMOTION_MARKSMAN");
     let recon = d.t::<UnitCombatType>("UNITCOMBAT_RECON");
     let stab = |u: UnitType| d.units[u].engage_rows.is_some() && d.engage_kind(u) == ActionKind::Stab;
-    for u in d.units.keys().filter(|&u| stab(u)) {
+    // (Only the game's own: a card's stabber follows its card, as the Witch-Hunter, which stabs
+    // without Marksman.)
+    for u in d.units.keys().take(own).filter(|&u| stab(u)) {
         let (name, u) = (d.type_name(u), &d.units[u]);
         assert!(u.free_promotions[marksman] && u.unit_combat_type == Some(recon), "{name}");
     }

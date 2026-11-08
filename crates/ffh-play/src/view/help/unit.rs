@@ -299,6 +299,11 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         bombard_range,
         bombard_besieges,
         magic,
+        kit,
+        attack_damage_type,
+        no_rest_on_water,
+        no_experience,
+        heal_building_class,
     } = &d.units[u];
     let class = *unit_class_type;
     let mut b = String::new();
@@ -345,6 +350,23 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     }
     super::promotion::lever_lines(&mut b, d, damage_vs, resist_vs, *armor, *armor_piercing, *pursuit);
     super::promotion::magic_lines(&mut b, d, magic);
+    super::promotion::kit_lines(&mut b, kit);
+    if let Some(dt) = attack_damage_type {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]In battle: its physical attack deals {} damage (the target's resistance to it cuts the attack)", display(d, *dt).to_lowercase()));
+    }
+    if *no_rest_on_water {
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]Cannot end a turn over water: at the end of the turn it lands on the nearest land plot");
+    }
+    if *no_experience {
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]Gains no experience");
+    }
+    if let Some(k) = heal_building_class {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]Heals only in a city of its team with a {}", display(d, *k)));
+    }
     if *damage_vs_large != 0 {
         b.push_str(NEWLINE);
         b.push_str(&format!("[ICON_BULLET]In battle: {damage_vs_large:+}% damage to large units"));

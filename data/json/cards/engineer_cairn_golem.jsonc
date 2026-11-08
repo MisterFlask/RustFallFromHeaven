@@ -1,0 +1,117 @@
+// Cairn Golem (docs/DECKS.md, section 3.3; 9.1: a construct that becomes a permanent fortified hill):
+// national unit, 3. Large, armored, 1 move. Raise the Cairn (on a hill of its owner or nobody's): it
+// becomes a permanent Cairn, +50% defence for the units on it in battle (`engagement_defense`) and
+// sight 3 (`visibility_change`). A battle on the Cairn counts it as a Sentinel on open ground
+// (`battle_sentinels`: the defender's, grown by the Cairn's defence; whole each battle).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_CAIRN_GOLEM",
+      "description": "TXT_KEY_TECH_CARD_CAIRN_GOLEM",
+      "help": "TXT_KEY_TECH_CARD_CAIRN_GOLEM_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_CAIRN_GOLEM_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_ANCIENT",
+      "and_pre_reqs": ["TECH_MASONRY"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_CAIRN_GOLEM",
+      "description": "TXT_KEY_UNIT_CAIRN_GOLEM",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 3,
+      "default_unit": "UNIT_CAIRN_GOLEM"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_CAIRN_GOLEM",
+      "stats": {"hp": 180, "attack": 50, "defense": 60, "magic": 0, "magic_defense": 30, "accuracy": 85, "evasion": 0, "crit": 5, "speed": 3},
+      "engage_rows": [
+        {"action": "STRIKE", "count": 2},
+        {"action": "STRIKE", "count": 1},
+        {"action": "STRIKE", "count": 1}
+      ],
+      "engage_row_order": ["FRONT", "MIDDLE", "REAR"],
+      "large": true,
+      "armor": 4,
+      "class": "UNITCLASS_CAIRN_GOLEM",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_ATTACK",
+      "description": "TXT_KEY_UNIT_CAIRN_GOLEM",
+      "civilopedia": "TXT_KEY_UNIT_CAIRN_GOLEM_PEDIA",
+      "strategy": "TXT_KEY_UNIT_CAIRN_GOLEM_STRATEGY",
+      "military_happiness": true,
+      "military_support": true,
+      "military_production": true,
+      "unit_ais": {"UNITAI_ATTACK": true, "UNITAI_CITY_DEFENSE": true},
+      "prereq_tech": "TECH_CARD_CAIRN_GOLEM",
+      "free_promotions": {"PROMOTION_GOLEM": true},
+      "ai_weight": 0,
+      "cost": 90,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 1,
+      "nuke_range": -1,
+      "combat": 4,
+      "combat_defense": 5,
+      "combat_limit": 100,
+      "xp_value_attack": 8,
+      "xp_value_defense": 4,
+      "culture_garrison": 4,
+      "asset": 4,
+      "power": 8,
+      "never_obsolete": true,
+      "tier": 2
+    }
+  ],
+  "improvements": [
+    {
+      "type": "IMPROVEMENT_CAIRN",
+      "description": "TXT_KEY_IMPROVEMENT_CAIRN",
+      "civilopedia": "TXT_KEY_IMPROVEMENT_CAIRN_PEDIA",
+      "advanced_start_cost": -1,
+      "hills_makes_valid": true,
+      "outside_borders": true,
+      "permanent": true,
+      "defense_modifier": 50,
+      "visibility_change": 2,
+      "engagement_defense": 50,
+      "battle_sentinels": 1
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_RAISE_THE_CAIRN",
+      "description": "TXT_KEY_SPELL_RAISE_THE_CAIRN",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_RAISE_THE_CAIRN_HELP",
+      "unit_prereq": "UNIT_CAIRN_GOLEM",
+      "ability": true,
+      "has_casted": true,
+      "display_when_disabled": true,
+      "sacrifice_caster": true,
+      "create_improvement_type": "IMPROVEMENT_CAIRN",
+      "py_requirement": "reqRaiseCairn(pCaster)",
+      "button": "Art/Interface/Buttons/Spells/Earthquake.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_CAIRN_GOLEM": "Cairn Golem",
+    "TXT_KEY_TECH_CARD_CAIRN_GOLEM_HELP": "[ICON_BULLET]Can train the Cairn Golem (national unit, 3): large, armor 4, 1 move.[NEWLINE][ICON_BULLET]Raise the Cairn: on a hill of yours or of nobody's, the golem becomes a Cairn. In battles on the Cairn, the defender's units have +50% defence and fight with one Sentinel (+50% HP and defence). Units on it see 3 plots.",
+    "TXT_KEY_TECH_CARD_CAIRN_GOLEM_PEDIA": "Stones that walk to the pass and lie down there for good.",
+    "TXT_KEY_UNIT_CAIRN_GOLEM": "Cairn Golem",
+    "TXT_KEY_UNIT_CAIRN_GOLEM_PEDIA": "A golem of piled stones, made to become a hill fort where it stands.",
+    "TXT_KEY_UNIT_CAIRN_GOLEM_STRATEGY": "Walk it to the hill at a chokepoint before the borders harden, and raise the Cairn: the next war is fought there.",
+    "TXT_KEY_IMPROVEMENT_CAIRN": "Cairn",
+    "TXT_KEY_IMPROVEMENT_CAIRN_PEDIA": "A ring of standing stones on a hilltop, wide enough for a company to hold.",
+    "TXT_KEY_SPELL_RAISE_THE_CAIRN": "Raise the Cairn",
+    "TXT_KEY_SPELL_RAISE_THE_CAIRN_HELP": "On a hill of yours or of nobody's: the golem becomes a Cairn (the golem is used up)."
+  }
+}

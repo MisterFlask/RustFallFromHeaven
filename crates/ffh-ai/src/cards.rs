@@ -30,6 +30,7 @@ const TURNS: &[fn(&mut Game, &crate::view::View)] = &[
     crate::cards_economy::turn, // batch B10: the economy cards
     crate::cards_world_spells_2::turn, // batch B7: the second card world spells and the rituals
     crate::cards_new_civs_2::turn, // batch B8: the new civilizations, second batch
+    crate::cards_battle_more::turn, // batch B6: the battle cards, second batch
 ];
 
 /// The cards' content that acts once the player's units have moved this turn (a unit's own action

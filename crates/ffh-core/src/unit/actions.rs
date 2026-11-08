@@ -594,6 +594,12 @@ impl Game {
 
         let city = self.map.plots[plot].plot_city;
 
+        // Card: Automatons (docs/CARDS.md): a unit type that heals only in a city of its team with
+        // a building of a class.
+        if !self.unit_heals_at(u, plot) {
+            return 0;
+        }
+
         // Not in FFH2: the Armageddon card The Long Night, no healing outside cities for the rest
         // of the game (docs/CARDS.md).
         if city.is_none() && self.doom_fired(crate::deck::doom_cards::LONG_NIGHT) {

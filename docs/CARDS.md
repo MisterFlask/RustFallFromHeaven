@@ -189,6 +189,20 @@ help):
 | projects | `repeat_cost_percent` | Pillar of Dawn | each completion by a team makes the ritual's next cost this percent of the last (200: twice; at most 16 times) |
 | buildings | `reveals_sites` | The Second Sky | when built, its owner's team has every plot with a mana resource, a unique feature, a lair (an improvement that spawns) or a goody hut revealed |
 | civilizations | `hills_yield_change` (yields) | Wake the Hill Clans | the yields each plot on hills it owns gives more (`plot_calculate_nature_yield`) |
+| units, promotions | `battle_shield` | Shieldbearer | in the front row, the SHOOT, BOMBARD and SPELL aimed at a unit in its lanes hit it instead (as a Sentinel takes them); it takes this percent less damage from SHOOT, BOMBARD and SPELL hits |
+| units, promotions | `shots_at_walls` | Fire Arrows | its SHOOT takes the enemy's standing Sentinels first, as BOMBARD does, at a stone's damage (no city penalty on a Sentinel) |
+| promotions | `damage_vs_walls` (the unit key, on a promotion too) | Fire Arrows | percent more damage to Sentinels, added to its unit type's |
+| units, promotions | `battle_drums` | War Drums | while it is committed (and does not sit out), its side is immune to fear at the morale check, and has this much more speed in round 1 (the most of its side's drums) |
+| units, promotions | `charge_anywhere` | Gryphon Riders | its CHARGE is a charge where flanking works, whatever the ground: any enemy, the highest threat for its HP, the first round's bonus |
+| units | `no_rest_on_water` | Gryphon Riders | a path ends none of its turns over water, and at the end of its owner's turn it lands on the nearest land plot it could enter (`player_do_turn`) |
+| units, promotions | `battle_immune` `["SPELLS", "CHARMS", "HEXES"]` | Runeguard, Witch-Hunter, Automatons | spell damage does nothing to it (its expected damage is 0, so casters aim elsewhere); its side's charms, the enemy's hexes (a presence's too: not maddened, not grounded) do not land on it |
+| units | `attack_damage_type` (the promotion key, on a unit type too) | Lantern of Lugus | its physical attack deals this damage type (the Dawnbringer: holy) |
+| units | `no_experience` | Automatons | it gains no experience |
+| units | `heal_building_class` | Automatons | it heals only in a city of its team with a building of this class (a Forge) |
+| units, promotions | `battle_sentinels`, `battle_sentinel_defense` | Bastion | when its plot is attacked, its side fights with this many more Sentinels, their HP and defence grown by `battle_sentinel_defense` percent (below, "Field Sentinels") |
+| improvements | `battle_sentinels`, `engagement_defense` | Cairn Golem | in battles on its plot the defender fights with this many Sentinels (grown by `engagement_defense`), and its units have `engagement_defense` percent more Dv (not A) |
+| promotions | `naval_damage_vs` (unit classes) | Leviathan Harpoons | percent more damage its ship deals in the rounds it wins of a naval battle against units of these classes |
+| buildings | `legion_cost_percent` | The Gilded Legion | once built, the city chooses a civilization it has met (`SPELL_GILDED_LEGION`, at a player: `City::legion_civ`); it then trains that civilization's unit of each class (not world units) as that civilization's city would, at this percent of its cost (`city_legion_unit_civ`) |
 
 The battle effects are in `crates/ffh-core/src/engagement/arms.rs` (the set-up, `Game`) and
 `engagement/formation/arms_cards.rs` (the resolver, a fighter's `Arms`); their AI in
@@ -217,6 +231,22 @@ fighter it lands on skips: its next ones; the log's `Skipped` note).
 **The log:** an action's `entered` lists the fighters that enter the field with it (illusions cast,
 a fighter revived), each `{unit, lane, row, hp}`; the battle screens fold it
 (`battle_log.js`).
+
+**Battle kit** (the batch "battle more"; `ffh_data::BattleKit`, `crates/ffh-data/src/infos/battle_kit.rs`),
+read the same way on a unit type and a promotion; a unit has its type's and its promotions'
+(`GameData::unit_battle_kit`). The rules are `engagement/more_cards.rs` (the fighters' `Kit`, the field
+Sentinels, the Cairn's defence, the drums at the morale check, the harpoons at sea) and the resolver's
+`formation/more_cards.rs` (reach, flanking, damage, charms and hexes, the drums' round); their AI is
+`crates/ffh-ai/src/cards_battle_more.rs`; ffh-play's help describes every key (`kit_lines`).
+
+**Field Sentinels** (the Bastion, the Cairn): the defender's candidates' `battle_sentinels` and the
+defended plot's improvement's are Sentinels of the defender: `UNIT_SENTINEL`'s values, HP and
+defence grown by the most of their sources' growth (`battle_sentinel_defense`, the improvement's
+`engagement_defense`). They take the defender's cells after the city's Sentinels (`Slots::field_sentinels`,
+the front row, the lanes nearest the centre first), cost no slot, are whole at the start of each
+battle (nothing keeps their damage: `Setup::field`, `SentinelSource::Field`) and hold no plot: the
+plot falls once the defender's units are gone. A Bastion that cannot attack brings none to its stack's
+attacks.
 
 ## 3. Card world spells and remote targets
 
@@ -465,6 +495,19 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | A06 The Brood (30, 50) | Armageddon | built (batch B8; not played without barbarians) |
 | A22 The Infernal Gate Opens (60) | Armageddon | built (batch B8; once a game with the Infernal Pact) |
 
+| P17 Sanctified Steel (`prophet_sanctified_steel`) | Prophet | built (no religion needed in the city) |
+| Shieldbearer (`engineer_shieldbearer`) | Engineer | built |
+| Fire Arrows (`engineer_fire_arrows`) | Engineer | built |
+| War Drums (`bard_war_drums`: the War Drummer) | Bard | built |
+| Leviathan Harpoons (`merchant_leviathan_harpoons`) | Merchant | built (the large ships are the tier 4 ones, the Man-o-War and the Queen of the Line) |
+| Runeguard (`engineer_runeguard`) | Engineer | built (`battle_immune`; FFH2's `immune_to_magic` is still map only) |
+| Witch-Hunter (`prophet_witch_hunter`) | Prophet | built |
+| Gryphon Riders (`bard_gryphon_riders`) | Bard | built (withdrawal 25%, as the other riders: not in the spec's sheet) |
+| The Gilded Legion (`merchant_gilded_legion`) | Merchant | built (the choice is a spell of a unit in the city) |
+| Cairn Golem (`engineer_cairn_golem`: Raise the Cairn) | Engineer | built |
+| Automatons (`engineer_automatons`) | Engineer | built (no supply) |
+| Bastion (`engineer_bastion`) | Engineer | built (its Sentinels fight when its plot is attacked, not in its stack's attacks) |
+| Lantern of Lugus (`prophet_lantern_of_lugus`: the Dawnbringer) | Prophet | built (no Glare; an archer's rows and levers, its shots holy) |
 ## 6. New civilizations
 
 `world::birth(g, &Birth)` gives a new civilization a player slot mid-game; the cards of batches B4

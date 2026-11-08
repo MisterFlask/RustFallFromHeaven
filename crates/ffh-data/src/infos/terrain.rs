@@ -514,6 +514,13 @@ pub struct ImprovementInfo {
     /// The improvement is built only this many plots or more from every city
     /// (`min_city_distance`; 0: anywhere).
     pub min_city_distance: i32,
+    /// This game's own (the Cairn Golem's Cairn, docs/CARDS.md section 2): `battle_sentinels`, the
+    /// Sentinels the defender fights with in battles on its plot (`UNIT_SENTINEL`'s values grown by
+    /// `engagement_defense`, whole at the start of each battle).
+    pub battle_sentinels: i32,
+    /// `engagement_defense`: percent more defence (Dv) for the defender's units in battles on its
+    /// plot (and for its Sentinels' HP and Dv).
+    pub engagement_defense: i32,
 }
 
 /// C++ `CvImprovementInfo::read`, plus `readPass2` (`ImprovementPillage`,
@@ -581,6 +588,8 @@ pub fn read_improvement(rd: &Rd) -> ImprovementInfo {
         engagement_attacker_slots_change: rd.int("engagement_attacker_slots_change"),
         claim_range: rd.int("claim_range"),
         min_city_distance: rd.int("min_city_distance"),
+        battle_sentinels: rd.int("battle_sentinels"),
+        engagement_defense: rd.int("engagement_defense"),
     }
 }
 

@@ -1,0 +1,41 @@
+// Fire Arrows (docs/DECKS.md, section 13, batch 2, card 10): a promotion for archers. The archer's
+// shots strike Sentinels as a siege engine's stones do: they take the enemy's standing Sentinels
+// first (`shots_at_walls`, as BOMBARD), at a stone's damage (no city penalty on a Sentinel) and the
+// siege engines' +100% to Sentinels (`damage_vs_walls`).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_FIRE_ARROWS",
+      "description": "TXT_KEY_TECH_CARD_FIRE_ARROWS",
+      "help": "TXT_KEY_TECH_CARD_FIRE_ARROWS_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_FIRE_ARROWS_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_ANCIENT",
+      "and_pre_reqs": ["TECH_ARCHERY"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_FIRE_ARROWS",
+      "description": "TXT_KEY_PROMOTION_FIRE_ARROWS",
+      "civilopedia": "TXT_KEY_PROMOTION_FIRE_ARROWS_PEDIA",
+      "tech_prereq": "TECH_CARD_FIRE_ARROWS",
+      "unit_combats": {"UNITCOMBAT_ARCHER": true},
+      "shots_at_walls": true,
+      "damage_vs_walls": 100,
+      "ai_weight": 20,
+      "button": "Art/Interface/Buttons/Promotions/Fire1.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_FIRE_ARROWS": "Fire Arrows",
+    "TXT_KEY_TECH_CARD_FIRE_ARROWS_HELP": "[ICON_BULLET]Allows the Fire Arrows promotion (archers).[NEWLINE][ICON_BULLET]Fire Arrows: its shots hit the enemy's standing Sentinels first, as stones do (no city penalty on a Sentinel), with +100% damage to Sentinels.",
+    "TXT_KEY_TECH_CARD_FIRE_ARROWS_PEDIA": "Pitch, tow and a brazier behind the line: the palisade burns before the gate is reached.",
+    "TXT_KEY_PROMOTION_FIRE_ARROWS": "Fire Arrows",
+    "TXT_KEY_PROMOTION_FIRE_ARROWS_PEDIA": "Arrows that burn the walls instead of the men behind them."
+  }
+}

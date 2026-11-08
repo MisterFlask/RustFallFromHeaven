@@ -18,7 +18,7 @@
 use crate::enums::*;
 use crate::idx::IdxVec;
 use crate::infos::{
-    read_battle_charm, read_battle_illusions, read_battle_magic, BattleIllusions, BattleMagic, read_engage_patterns, read_engage_row_order, read_engage_rows, read_round_percent, read_stat_changes, read_stats, AttackPattern, BattleCharm,
+    read_battle_charm, read_battle_illusions, read_battle_kit, read_battle_magic, BattleIllusions, BattleKit, BattleMagic, read_engage_patterns, read_engage_row_order, read_engage_rows, read_round_percent, read_stat_changes, read_stats, AttackPattern, BattleCharm,
     ActionKind, InfoBase, RowActions, StatChange,
     StatSheet, StatType, ROWS,
 };
@@ -228,6 +228,15 @@ pub struct PromotionInfo {
     /// This game's own (docs/CARDS.md, "New data keys"): its battle magic (the cards' spell,
     /// ward, presence, revive, dispel and contingency keys).
     pub magic: BattleMagic,
+    /// This game's own (docs/CARDS.md, "New data keys"): its battle kit (a shield, arrows at the
+    /// walls, wards against magic; `ffh_data::BattleKit`).
+    pub kit: BattleKit,
+    /// This game's own (a card's key, docs/CARDS.md section 2): `damage_vs_walls`, percent more
+    /// damage of its unit's hits to Sentinels (added to its unit type's).
+    pub damage_vs_walls: i32,
+    /// This game's own (a card's key): `naval_damage_vs`, percent more damage its ship deals in a
+    /// naval battle to units of each class (the rounds it wins).
+    pub naval_damage_vs: IdxVec<UnitClassType, i32>,
     /// C++ `getSpellDamageModify()`: damage added to its unit's spells outside battles (FfH's
     /// `doDamage`); a battle's spells use magic (`stat_changes`).
     pub spell_damage_modify: i32,
@@ -418,6 +427,9 @@ pub fn read_promotion(rd: &Rd) -> PromotionInfo {
         armor_piercing: rd.bool("armor_piercing"),
         pursuit: rd.bool("pursuit"),
         magic: read_battle_magic(rd, &rd.string("type")),
+        kit: read_battle_kit(rd, &rd.string("type")),
+        damage_vs_walls: rd.int("damage_vs_walls"),
+        naval_damage_vs: rd.pairs_int::<UnitClassType>("naval_damage_vs", 0),
         spell_damage_modify: rd.int("spell_damage_modify"),
         combat_percent_global_counter: rd.int("combat_percent_global_counter"),
         combat_percent_in_borders: rd.int("combat_percent_in_borders"),
@@ -889,6 +901,20 @@ pub struct UnitInfo {
     pub bombard_besieges: bool,
     /// This game's own (docs/CARDS.md, "New data keys"): its battle magic (a presence, a familiar).
     pub magic: BattleMagic,
+    /// This game's own (docs/CARDS.md, "New data keys"): its battle kit (drums, wings, wards,
+    /// walls; `ffh_data::BattleKit`).
+    pub kit: BattleKit,
+    /// `attack_damage_type` (the promotion key, on a unit type): its physical attack deals this
+    /// damage type: in a battle the target's resistance to it cuts the unit's attack.
+    pub attack_damage_type: Option<DamageType>,
+    /// `no_rest_on_water`: it cannot end its owner's turn over water: a path ends no turn on water,
+    /// and at the end of its owner's turn a unit of it over water lands on the nearest land plot.
+    pub no_rest_on_water: bool,
+    /// `no_experience`: it gains no experience.
+    pub no_experience: bool,
+    /// `heal_building_class`: it heals only in a city of its team that has a building of this
+    /// class.
+    pub heal_building_class: Option<BuildingClassType>,
 }
 
 /// C++ `CvUnitInfo::read` + `readPass2` + `readPass3`.
@@ -1098,6 +1124,11 @@ pub fn read_unit(rd: &Rd) -> UnitInfo {
         bombard_range: rd.int("bombard_range"),
         bombard_besieges: rd.bool("bombard_besieges"),
         magic: read_battle_magic(rd, &rd.string("type")),
+        kit: read_battle_kit(rd, &rd.string("type")),
+        attack_damage_type: rd.rf::<DamageType>("attack_damage_type"),
+        no_rest_on_water: rd.bool("no_rest_on_water"),
+        no_experience: rd.bool("no_experience"),
+        heal_building_class: rd.rf::<BuildingClassType>("heal_building_class"),
         // ---- readPass2 ----
         unit_convert_from_combat: rd.rf::<UnitType>("unit_convert_from_combat"),
         unit_create_from_combat: rd.rf::<UnitType>("unit_create_from_combat"),

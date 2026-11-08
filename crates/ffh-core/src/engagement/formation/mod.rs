@@ -54,6 +54,7 @@ use crate::rng::Rng;
 
 pub mod arms_cards;
 mod magic;
+pub mod more_cards;
 #[cfg(test)]
 mod magic_tests;
 #[cfg(test)]
@@ -435,6 +436,8 @@ pub struct Fighter {
     pub arms: arms_cards::Arms,
     /// Card: its battle magic (docs/CARDS.md; `magic.rs`).
     pub magic: FighterMagic,
+    /// Card: its battle kit (docs/CARDS.md; [`more_cards`]).
+    pub kit: more_cards::Kit,
 }
 
 impl Fighter {
@@ -480,6 +483,7 @@ impl Fighter {
             prefer: 0,
             arms: arms_cards::Arms::default(),
             magic: FighterMagic::default(),
+            kit: more_cards::Kit::default(),
         }
     }
 
@@ -590,12 +594,14 @@ impl Formation {
         Pair { a: p.a.max(1), dv: p.dv.max(1), ma: p.ma.max(1), md: p.md.max(1), spell_pct: p.spell_pct.max(0), pct: p.pct.max(0) }
     }
 
-    /// The ground's percentages on a hit of `kind` by `h`, multiplied into `x` (several multiply).
-    fn ground_pcts(&self, h: usize, kind: ActionKind, x: &mut Pcts) {
+    /// The ground's percentages on a hit of `kind` by `h` on `t`, multiplied into `x` (several
+    /// multiply).
+    fn ground_pcts(&self, h: usize, t: usize, kind: ActionKind, x: &mut Pcts) {
         let (p, g) = (&self.params, &self.ground);
         let attacker = self.fighters[h].side == Side::Attacker;
         let shot_or_stone = matches!(kind, ActionKind::Shoot | ActionKind::Bombard);
-        if g.city && attacker && kind == ActionKind::Shoot {
+        // Card: arrows at the walls strike a Sentinel as a stone does (more_cards.rs).
+        if g.city && attacker && self.kit_city_shot(h, t, kind) {
             x.mul(p.city_attacker_shot_pct);
         }
         if g.forest && shot_or_stone {
@@ -637,12 +643,15 @@ impl Formation {
             x.mul(power);
             x.mul(p.spell_pct);
         }
-        self.ground_pcts(h, kind, &mut x);
-        if kind == ActionKind::Charge && round == 1 && self.ground.flanking() {
+        self.ground_pcts(h, t, kind, &mut x);
+        // Card: a charge that reaches anywhere (more_cards.rs).
+        if kind == ActionKind::Charge && round == 1 && self.flanks(h) {
             x.mul(100 + self.params.charge_bonus);
         }
         x.mul(p.pct);
         self.arms_taken(t, kind, &mut x);
+        // Card: a shield bearer (more_cards.rs).
+        self.kit_taken(t, kind, &mut x);
         x.mul(self.fighters[h].round_pct[(round.max(1) as usize - 1).min(ROWS - 1)]);
         if let Extra::Pattern(pct) = extra {
             x.mul(pct);
@@ -960,6 +969,8 @@ struct Run<'a> {
     pass: u8,
     /// The damage spell of the action being fought, when a Wonder rolled one.
     spell_now: Option<Spell>,
+    /// Card: the speed each side's drums gave it in round 1 (more_cards.rs).
+    drummed: [i32; 2],
 }
 
 impl Formation {
@@ -992,8 +1003,9 @@ impl Formation {
         // Card: a mad fighter's foes are its own side.
         let foe = self.foe_of(s, h);
         let mut list: Vec<usize> = Vec::new();
-        let everyone = kind == ActionKind::Stab || (kind == ActionKind::Charge && self.ground.flanking());
-        if kind == ActionKind::Bombard {
+        // Card: a charge that reaches anywhere; arrows at the walls (more_cards.rs).
+        let everyone = kind == ActionKind::Stab || (kind == ActionKind::Charge && self.flanks(h));
+        if self.kit_walls_first(h, kind) {
             let walls: Vec<usize> = (0..self.len()).filter(|&t| s.on_field(t) && self.fighters[t].side == foe && self.fighters[t].fixed && s.hp[t] > self.floor(h, t)).collect();
             if !walls.is_empty() {
                 return walls;
@@ -1006,7 +1018,8 @@ impl Formation {
                 let mut units = self.lane_units(s, foe, lane);
                 let pick = if kind.ranged() {
                     let units: Vec<usize> = units.collect();
-                    let wall = (kind != ActionKind::Bombard).then(|| units.iter().copied().find(|&t| self.fighters[t].fixed)).flatten();
+                    // Card: a shield bearer in the front row takes them too (more_cards.rs).
+                    let wall = units.iter().copied().find(|&t| self.fighters[t].fixed && kind != ActionKind::Bombard).or_else(|| units.iter().copied().find(|&t| self.kit_intercepts(t, s.row[t], kind)));
                     wall.or_else(|| units.iter().copied().max_by_key(|&t| s.row[t]))
                 } else {
                     units.by_ref().min_by_key(|&t| s.row[t])
@@ -1061,13 +1074,13 @@ impl Formation {
         if hunting {
             pool.retain(|&t| self.fighters[t].class_bit & prefer != 0);
         }
-        if !missile && !hunting && !(kind == ActionKind::Charge && self.ground.flanking()) && pool.iter().any(|&t| self.lane_distance(h, t) <= 1) {
+        if !missile && !hunting && !(kind == ActionKind::Charge && self.flanks(h)) && pool.iter().any(|&t| self.lane_distance(h, t) <= 1) {
             pool.retain(|&t| self.lane_distance(h, t) <= 1);
         }
         let a = |t: usize| self.fighters[t].a;
         let hp = |t: usize| s.hp[t].max(1) as i64;
         let tie = |x: usize, y: usize| a(y).cmp(&a(x)).then_with(|| self.place(s, x, y));
-        if kind == ActionKind::Charge && self.ground.flanking() {
+        if kind == ActionKind::Charge && self.flanks(h) {
             // threat_x / hp_x > threat_y / hp_y  <=>  threat_x * hp_y > threat_y * hp_x
             let scored: Vec<(usize, i64)> = pool.iter().map(|&t| (t, self.threat(s, t))).collect();
             return scored.into_iter().min_by(|&(x, tx), &(y, ty)| (ty * hp(x)).cmp(&(tx * hp(y))).then_with(|| tie(x, y))).map(|(t, _)| t);
@@ -1140,7 +1153,8 @@ impl Formation {
         let lane_pick = |lane: u8, back: bool| -> Option<usize> {
             let units: Vec<usize> = (0..self.len()).filter(|&t| ours(t) && self.fighters[t].lanes().contains(&lane)).collect();
             if back {
-                let wall = (kind != ActionKind::Bombard).then(|| units.iter().copied().find(|&t| self.fighters[t].fixed)).flatten();
+                // Card: a shield bearer in the front row takes them too (more_cards.rs).
+                let wall = units.iter().copied().find(|&t| self.fighters[t].fixed && kind != ActionKind::Bombard).or_else(|| units.iter().copied().find(|&t| self.kit_intercepts(t, s.row[t], kind)));
                 wall.or_else(|| units.iter().copied().max_by_key(|&t| (s.row[t], std::cmp::Reverse(t))))
             } else {
                 units.iter().copied().min_by_key(|&t| (s.row[t], t))
@@ -1193,6 +1207,7 @@ impl<'a> Run<'a> {
             round: 0,
             pass: 0,
             spell_now: None,
+            drummed: [0; 2],
         }
     }
 
@@ -1215,6 +1230,8 @@ impl<'a> Run<'a> {
         while round <= p.rounds && !ended {
             self.round = round as u8;
             self.magic_round(round);
+            // Card: the drums (more_cards.rs).
+            self.kit_round(round);
             let passes = (0..f.len())
                 .filter(|&i| self.s.on_field(i))
                 .map(|i| f.actions_at(i, self.s.row[i]))
@@ -1297,7 +1314,8 @@ impl<'a> Run<'a> {
             return;
         }
         let row_kind = forced.unwrap_or_else(|| f.arms_kind(h, f.actions_at(h, self.s.row[h]).kind, round));
-        let kind = if row_kind == ActionKind::Charge && !f.ground.flanking() { ActionKind::Strike } else { row_kind };
+        // Card: a charge that reaches anywhere (more_cards.rs).
+        let kind = if row_kind == ActionKind::Charge && !f.flanks(h) { ActionKind::Strike } else { row_kind };
         // Card: grounded charges, a Spellsword's first strike.
         let kind = self.magic_kind(h, kind);
         let mut ev = Event {
@@ -1529,6 +1547,8 @@ impl<'a> Run<'a> {
         }
         // Card: a spell's hit takes an illusion's HP; a Spellbreaker's hit dispels.
         let raw = self.magic_landed(h, t, kind, raw);
+        // Card: no spell damage on a fighter immune to spells (more_cards.rs).
+        let raw = self.kit_landed(t, kind, raw);
         let dmg = raw.min((self.s.hp[t] - floor).max(0));
         let mut out = Hit { target: t as FighterIdx, dmg, expected, r, crit, miss: false, killed: false, withdrew: false, splash: extra != Extra::Target };
         if dmg >= self.s.hp[t] {

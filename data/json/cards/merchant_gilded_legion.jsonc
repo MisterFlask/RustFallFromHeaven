@@ -1,0 +1,76 @@
+// The Gilded Legion (docs/DECKS.md, section 12, batch 1, card 7): a national building. When built,
+// choose one civilization you have met (`SPELL_GILDED_LEGION`, cast by a unit in the city at a player
+// of that civilization: the choice is the city's, `City::legion_civ`). The city can train that
+// civilization's versions of each unit class (its unique units; not heroes or world units) at 150%
+// of their cost, with their own building prerequisites (`legion_cost_percent`; rules:
+// crates/ffh-core/src/ffh/cards/battle_more.rs).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_GILDED_LEGION",
+      "description": "TXT_KEY_TECH_CARD_GILDED_LEGION",
+      "help": "TXT_KEY_TECH_CARD_GILDED_LEGION_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_GILDED_LEGION_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_MERCANTILISM"],
+      "card_suit": "UNITCLASS_MERCHANT",
+      "flavors": {"FLAVOR_MILITARY": 1, "FLAVOR_GOLD": 1}
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_GILDED_LEGION",
+      "description": "TXT_KEY_BUILDING_GILDED_LEGION",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 1,
+      "default_building": "BUILDING_GILDED_LEGION"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_GILDED_LEGION",
+      "building_class": "BUILDINGCLASS_GILDED_LEGION",
+      "description": "TXT_KEY_BUILDING_GILDED_LEGION",
+      "civilopedia": "TXT_KEY_BUILDING_GILDED_LEGION_PEDIA",
+      "prereq_tech": "TECH_CARD_GILDED_LEGION",
+      "cost": 250,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "conquest_prob": 0,
+      "never_capture": true,
+      "asset": 4,
+      "power_value": 4,
+      "legion_cost_percent": 150,
+      "flavors": {"FLAVOR_MILITARY": 6, "FLAVOR_GOLD": 2}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_GILDED_LEGION",
+      "description": "TXT_KEY_SPELL_GILDED_LEGION",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_GILDED_LEGION_HELP",
+      "tech_prereq": "TECH_CARD_GILDED_LEGION",
+      "target": "player",
+      "display_when_disabled": false,
+      "py_requirement": "reqGildedLegion(pCaster)",
+      "py_result": "spellGildedLegion(pCaster)",
+      "py_targets": "targetsGildedLegion(pCaster)",
+      "py_target_label": "labelGildedLegion(pCaster, pTarget)",
+      "button": "Art/Interface/Buttons/Spells/Hire Units.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_GILDED_LEGION": "The Gilded Legion",
+    "TXT_KEY_TECH_CARD_GILDED_LEGION_HELP": "[ICON_BULLET]Allows the Gilded Legion (national building, 250 [ICON_PRODUCTION]).[NEWLINE][ICON_BULLET]Once it is built, choose a civilization you have met (the Gilded Legion action of a unit in the city). The city then trains that civilization's unit of each class (its unique units; not world units), with its own prerequisites, at 150% of its cost.",
+    "TXT_KEY_TECH_CARD_GILDED_LEGION_PEDIA": "Gold buys what blood and faith keep for their own: drillmasters, smiths and recruiters from abroad.",
+    "TXT_KEY_BUILDING_GILDED_LEGION": "The Gilded Legion",
+    "TXT_KEY_BUILDING_GILDED_LEGION_PEDIA": "Barracks of foreign captains, paid in gold to raise their homeland's troops under your banner.",
+    "TXT_KEY_SPELL_GILDED_LEGION": "Gilded Legion",
+    "TXT_KEY_SPELL_GILDED_LEGION_HELP": "The city's Gilded Legion chooses the civilization whose units it trains: once, from the civilizations you have met."
+  }
+}

@@ -201,8 +201,9 @@ impl<'a> Run<'a> {
             }
             if present(side, Presence::Madness, &self.s) {
                 // The enemy's highest A (ties: the lower index), not a Sentinel or an illusion.
+                // Card: not one immune to hexes (more_cards.rs).
                 let top = (0..f.len())
-                    .filter(|&i| f.fighters[i].side == foe && self.s.on_field(i) && !f.fighters[i].fixed && !f.fighters[i].magic.illusion)
+                    .filter(|&i| f.fighters[i].side == foe && self.s.on_field(i) && !f.fighters[i].fixed && !f.fighters[i].magic.illusion && !f.kit_unaffected(i, true))
                     .max_by(|&x, &y| f.fighters[x].a.cmp(&f.fighters[y].a).then(y.cmp(&x)));
                 self.s.mx.mad[foe.index()] = top;
             }
@@ -264,7 +265,8 @@ impl<'a> Run<'a> {
     /// charge is a strike; a Spellsword's first strike each round is its spell.
     pub(super) fn magic_kind(&mut self, h: usize, kind: ActionKind) -> ActionKind {
         let fh = &self.f.fighters[h];
-        if kind == ActionKind::Charge && self.s.mx.grounded[fh.side.index()] {
+        // Card: a fighter immune to hexes is not grounded (more_cards.rs).
+        if kind == ActionKind::Charge && self.s.mx.grounded[fh.side.index()] && !self.f.kit_unaffected(h, true) {
             return ActionKind::Strike;
         }
         if kind == ActionKind::Strike && fh.magic.strike_spell && self.s.mx.struck[h] != self.round {
@@ -334,7 +336,8 @@ impl<'a> Run<'a> {
         let on: Vec<usize> = (0..f.len()).filter(|&t| self.s.on_field(t) && f.fighters[t].side == side && !f.fighters[t].magic.illusion).collect();
         // The rear row: the side's rearmost row in use (the middle row of an army of two rows).
         let rear = on.iter().map(|&t| self.s.row[t]).max().unwrap_or(0);
-        on.into_iter().filter(|&t| c.whole_side || if c.rear { self.s.row[t] == rear } else { self.s.row[t] == 0 }).collect()
+        // Card: not on a fighter immune to them (more_cards.rs).
+        on.into_iter().filter(|&t| c.whole_side || if c.rear { self.s.row[t] == rear } else { self.s.row[t] == 0 }).filter(|&t| !f.kit_unaffected(t, c.enemy)).collect()
     }
 
     /// A charm or hex `c` of `h` landed on `t`: its skips, and its record.

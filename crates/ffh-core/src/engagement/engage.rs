@@ -55,6 +55,7 @@ use ffh_data::*;
 
 use super::apply::Post;
 use super::arrange::Place;
+use super::more_cards::SentinelSource;
 use super::formation::{self, missile_hit, Fate, Fighter, Formation, Ground, HealSpell, Outcome, Pair, Params, Side, Spell, WonderOutcome};
 use super::pick::WarTest;
 use super::report::{BattleLog, BattleReport, CitySnap, EngageResult, LogFate, Outcome as ReportOutcome, PlotSnap, ReportSide};
@@ -154,6 +155,9 @@ pub(crate) struct Setup {
     /// The city whose Sentinels fight, and which of its Sentinels each Sentinel fighter is.
     pub sentinel_city: Option<CityId>,
     pub sentinels: Vec<usize>,
+    /// Card: the source of the field's Sentinels (a Bastion's, a Cairn's: `more_cards.rs`), the
+    /// Sentinel fighters after the city's.
+    pub field: Option<SentinelSource>,
 }
 
 impl Setup {
@@ -165,6 +169,20 @@ impl Setup {
     /// Whether set-up index `i` is a Sentinel.
     pub fn is_sentinel(&self, i: usize) -> bool {
         i >= self.units.len()
+    }
+
+    /// The city's Sentinels' set-up indices (card: the field's come after them).
+    pub fn city_sentinel_range(&self) -> std::ops::Range<usize> {
+        self.units.len()..self.units.len() + self.sentinels.len()
+    }
+
+    /// Where Sentinel `i` (a set-up index) comes from: the city, or (card) the field.
+    pub fn sentinel_source(&self, i: usize) -> Option<SentinelSource> {
+        if self.city_sentinel_range().contains(&i) {
+            self.sentinel_city.map(SentinelSource::City)
+        } else {
+            self.field
+        }
     }
 
     /// The committed units of side `s` (indices; Sentinels not included).
@@ -447,6 +465,8 @@ impl Game {
         f.prefer = ty.target_preference.iter().fold(0u64, |m, c| m | 1u64 << (c.idx() % 64));
         // Card: its battle magic (battle_magic.rs).
         self.engage_fighter_magic(u, side, &mut f, ctx, params);
+        // Card: its battle kit (more_cards.rs).
+        self.engage_fighter_kit(u, &mut f);
         f
     }
 
@@ -480,6 +500,13 @@ impl Game {
     pub(crate) fn engage_setup(&self, ctx: HitCtx, slots: Slots, att: Vec<Place>, candidates: Vec<UnitId>, sentinels: bool) -> Result<Setup, &'static str> {
         if att.is_empty() {
             return Err("no unit can attack there");
+        }
+        // Card: the defender's Sentinels from the field, a Bastion's, a Cairn's (more_cards.rs).
+        let mut slots = slots;
+        if sentinels {
+            self.engage_add_field_sentinels(&mut slots, &candidates, ctx.to);
+        } else {
+            slots.field_sentinels = 0;
         }
         let walls = if sentinels && slots.sentinels > 0 { self.engage_city_sentinels(ctx.to) } else { None };
         if candidates.is_empty() && walls.is_none() {
@@ -517,6 +544,20 @@ impl Game {
                 fighters.push(self.engage_sentinel_fighter(c, k, cells[j], &params));
             }
         }
+        // Card: the field's Sentinels in the cells after the city's (more_cards.rs).
+        let grow = slots.field_grow;
+        let field = (slots.field_sentinels > 0).then(|| SentinelSource::Field {
+            owner: self.units[candidates[0]].owner,
+            improvement: self.plot_engagement_defense(ctx.to).map(|(i, _)| i),
+            grow,
+        });
+        let n_city = units.len() + ks.len();
+        for j in 0..slots.field_sentinels as usize {
+            let Some(&cell) = cells.get(slots.sentinels as usize + j) else { break };
+            sides.push(Side::Defender);
+            places.push(cell);
+            fighters.push(self.engage_field_sentinel_fighter(j, cell, grow, &params));
+        }
         let n_units = units.len();
         let n = fighters.len();
         let mut pairs = vec![Pair::default(); n * n];
@@ -525,18 +566,20 @@ impl Game {
                 if sides[h] == sides[t] {
                     continue;
                 }
-                pairs[h * n + t] = match (h < n_units, t < n_units, sentinel_city) {
-                    (true, true, _) => self.engage_hit(units[h], units[t], sides[h], &ctx),
-                    (true, false, Some(c)) => Pair {
+                // Card: a field Sentinel's defence (more_cards.rs).
+                let wall = |i: usize| sentinel_city.filter(|_| i < n_city);
+                pairs[h * n + t] = match (h < n_units, t < n_units) {
+                    (true, true) => self.engage_hit(units[h], units[t], sides[h], &ctx),
+                    (true, false) => Pair {
                         a: self.engage_a_alone(units[h], sides[h], &ctx),
-                        dv: self.city_sentinel_dv_x100(c),
+                        dv: wall(t).map_or_else(|| self.field_sentinel_def_x100(grow, false), |c| self.city_sentinel_dv_x100(c)),
                         ma: self.engage_magic_x100(units[h], true),
-                        md: self.city_sentinel_md_x100(c),
+                        md: wall(t).map_or_else(|| self.field_sentinel_def_x100(grow, true), |c| self.city_sentinel_md_x100(c)),
                         spell_pct: self.engage_spell_pct(units[h], None),
                         pct: self.engage_pair_pct(units[h], None),
                     },
-                    (false, true, _) => Pair {
-                        a: sentinel_city.map_or_else(|| self.sentinel_a_x100(), |c| self.city_sentinel_a_x100(c)),
+                    (false, true) => Pair {
+                        a: wall(h).map_or_else(|| self.sentinel_a_x100(), |c| self.city_sentinel_a_x100(c)),
                         dv: self.engage_dv_alone(units[t], sides[t], &ctx),
                         ma: self.sentinel_stat(StatType::Magic) * 10,
                         md: self.engage_magic_x100(units[t], false),
@@ -549,7 +592,7 @@ impl Game {
         }
         // Card: familiars, the maddened's own side, damage against summons (battle_magic.rs).
         self.engage_magic_setup(&units, &sides, &mut fighters, &mut pairs, &ctx);
-        let mut setup = Setup { ctx, slots, lanes, ground, params, in_city, candidates, units, sides, places, n_att, fighters, pairs, sentinel_city, sentinels: ks };
+        let mut setup = Setup { ctx, slots, lanes, ground, params, in_city, candidates, units, sides, places, n_att, fighters, pairs, sentinel_city, sentinels: ks, field };
         // The great-person cards' battle effects (docs/CARDS.md; `arms.rs`).
         self.engage_arms_setup(&mut setup);
         Ok(setup)
@@ -823,7 +866,8 @@ impl Game {
                 city_captured: post.city_captured,
                 moved_in: post.moved_in,
                 defenders_left: post.defenders_left,
-                sentinels: e.setup.sentinels.len() as i32,
+                // Card: the field's Sentinels too (more_cards.rs).
+                sentinels: e.setup.sentinel_range().len() as i32,
                 sentinels_breached: e.setup.sentinel_range().filter(|&i| matches!(f.fate[i], LogFate::Fell { .. })).count() as i32,
             },
             log: log.map(Box::new),
@@ -895,6 +939,10 @@ impl Game {
         let n = units.len();
         for (src_side, rollers) in [(n_att..n, 0..n_att), (0..n_att, n_att..n)] {
             let Some(src) = self.engage_fear_source(units, src_side, sat_out) else { continue };
+            // Card: War Drums: a side with drums is immune to fear (more_cards.rs).
+            if self.engage_drummed(units, rollers.clone(), sat_out) {
+                continue;
+            }
             let su = units[src];
             let (src_str, src_level) = (self.unit_base_combat_str(su), self.units[su].level);
             for i in rollers {

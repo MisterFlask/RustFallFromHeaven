@@ -270,7 +270,8 @@ impl Game {
                 }
                 v
             }
-            None => ht.damage_vs_walls,
+            // Card: Fire Arrows: a promotion's damage to walls too (more_cards.rs).
+            None => self.unit_damage_vs_walls(hitter),
         };
         let down = target.map_or(0, |t| self.unit_engage_resist_vs(t, self.unit_get_unit_combat_type(hitter)));
         ((100 + up).max(0) as i64 * (100 - down).max(0) as i64 / 100) as i32
@@ -492,6 +493,10 @@ impl Game {
                 }
             } else if side == Side::Defender {
                 modifier += self.engage_own_defense_terms(u, ctx.to, log);
+                // Card: the Cairn's defence, on the defender's Dv only (more_cards.rs).
+                if let Some((i, pct)) = self.plot_engagement_defense(ctx.to) {
+                    modifier += log.push(pct, || TermSource::Improvement(i));
+                }
             }
         }
 
