@@ -1,0 +1,48 @@
+// Mana Grafting (docs/DECKS.md section 3.1; 10.4: a node is grafted once, for good, no cooldown): a
+// spell for an arcane unit on a mana node in its owner's borders. The node becomes the type of
+// another node its owner has; a node grafted once cannot be grafted again (Plot::grafted).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_MANA_GRAFTING",
+      "description": "TXT_KEY_TECH_CARD_MANA_GRAFTING",
+      "help": "TXT_KEY_TECH_CARD_MANA_GRAFTING_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_MANA_GRAFTING_PEDIA",
+      "advisor": "ADVISOR_SCIENCE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_ELEMENTALISM"],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {"FLAVOR_SCIENCE": 1}
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_MANA_GRAFT",
+      "description": "TXT_KEY_SPELL_MANA_GRAFT",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_MANA_GRAFT_HELP",
+      "unit_combat_prereq": "UNITCOMBAT_ADEPT",
+      "tech_prereq": "TECH_CARD_MANA_GRAFTING",
+      // The AI casts it from cards_economy.rs (a targeted spell).
+      "allow_ai": false,
+      "display_when_disabled": true,
+      "has_casted": true,
+      "in_borders_only": true,
+      "target": "choice",
+      "py_targets": "targetsManaGraft(pCaster)",
+      "py_target_label": "labelInfo(pCaster, iChoice, 'BonusType')",
+      "py_requirement": "reqManaGraft(pCaster)",
+      "py_result": "spellManaGraft(pCaster)",
+      "button": "Art/Interface/Buttons/Spells/Dispel Magic.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_MANA_GRAFTING": "Mana Grafting",
+    "TXT_KEY_TECH_CARD_MANA_GRAFTING_HELP": "[ICON_BULLET]Arcane units can cast Graft on a mana node in your borders: the node becomes the type of another node you have.[NEWLINE][ICON_BULLET]A node is grafted once: it cannot be grafted again.",
+    "TXT_KEY_TECH_CARD_MANA_GRAFTING_PEDIA": "A great sage learns to graft one sphere's current onto another's spring.",
+    "TXT_KEY_SPELL_MANA_GRAFT": "Graft",
+    "TXT_KEY_SPELL_MANA_GRAFT_HELP": "[ICON_BULLET]Target: a mana type of another of your nodes.[NEWLINE][ICON_BULLET]The node the caster stands on becomes a node of that type.[NEWLINE][ICON_BULLET]A node is grafted once: it cannot be grafted again."
+  }
+}

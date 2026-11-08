@@ -1,0 +1,67 @@
+// Font of Rebirth [good or neutral] (docs/DECKS.md section 12, card 9): the first time a unit of
+// its owner would die in a battle within 3 plots of the city, it is carried to the city at 10% of
+// its HP and marked Reborn (BuildingInfo::rebirth_range).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_FONT_OF_REBIRTH",
+      "description": "TXT_KEY_TECH_CARD_FONT_OF_REBIRTH",
+      "help": "TXT_KEY_TECH_CARD_FONT_OF_REBIRTH_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_FONT_OF_REBIRTH_PEDIA",
+      "advisor": "ADVISOR_RELIGION",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_PRIESTHOOD"],
+      "card_suit": "UNITCLASS_PROPHET",
+      "card_block_alignment": "ALIGNMENT_EVIL",
+      "flavors": {"FLAVOR_MILITARY": 1, "FLAVOR_RELIGION": 1}
+    }
+  ],
+  "promotions": [
+    {
+      "type": "PROMOTION_REBORN",
+      "description": "TXT_KEY_PROMOTION_REBORN",
+      "help": "TXT_KEY_PROMOTION_REBORN_HELP",
+      "button": "Art/Interface/Buttons/Promotions/Divine.dds",
+      "min_level": -1
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_FONT_OF_REBIRTH",
+      "description": "TXT_KEY_BUILDING_FONT_OF_REBIRTH",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": -1,
+      "default_building": "BUILDING_FONT_OF_REBIRTH"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_FONT_OF_REBIRTH",
+      "building_class": "BUILDINGCLASS_FONT_OF_REBIRTH",
+      "description": "TXT_KEY_BUILDING_FONT_OF_REBIRTH",
+      "civilopedia": "TXT_KEY_BUILDING_FONT_OF_REBIRTH_PEDIA",
+      "prereq_tech": "TECH_CARD_FONT_OF_REBIRTH",
+      "cost": 150,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "conquest_prob": 50,
+      "asset": 2,
+      "power_value": 4,
+      "rebirth_range": 3,
+      "rebirth_promotion": "PROMOTION_REBORN",
+      "flavors": {"FLAVOR_MILITARY": 4, "FLAVOR_RELIGION": 2}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_FONT_OF_REBIRTH": "Font of Rebirth",
+    "TXT_KEY_TECH_CARD_FONT_OF_REBIRTH_HELP": "[ICON_BULLET]Allows the Font of Rebirth: the first time a unit of yours would die in a battle within 3 plots of its city, it is carried to the city at 10% of its HP and gains Reborn instead.[NEWLINE][ICON_BULLET]A Reborn unit dies normally.[NEWLINE][ICON_BULLET]Not drawn by evil civilizations.",
+    "TXT_KEY_TECH_CARD_FONT_OF_REBIRTH_PEDIA": "A great prophet blesses a spring whose waters call the fallen back from the threshold.",
+    "TXT_KEY_PROMOTION_REBORN": "Reborn",
+    "TXT_KEY_PROMOTION_REBORN_HELP": "[ICON_BULLET]A Font of Rebirth has saved this unit once: it dies normally.",
+    "TXT_KEY_BUILDING_FONT_OF_REBIRTH": "Font of Rebirth",
+    "TXT_KEY_BUILDING_FONT_OF_REBIRTH_PEDIA": "A spring in a cloister, where the dying are carried."
+  }
+}

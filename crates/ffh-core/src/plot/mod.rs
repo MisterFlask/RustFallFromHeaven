@@ -172,6 +172,9 @@ pub struct Plot {
     pub temp_terrain_timer: i32,
     /// C++ `m_eRealTerrainType` (short): terrain to restore when the temp terrain expires.
     pub real_terrain_type: Option<TerrainType>,
+    /// This game's Mana Grafting card (docs/CARDS.md): the plot's mana node has been grafted,
+    /// and cannot be grafted again.
+    pub grafted: bool,
 }
 
 impl Plot {
@@ -251,6 +254,7 @@ impl Plot {
             portal_exit_y: 0,
             temp_terrain_timer: 0,
             real_terrain_type: None,
+            grafted: false,
         }
     }
 }

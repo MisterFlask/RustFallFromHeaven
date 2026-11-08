@@ -709,6 +709,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     }
     if let Some(choice) = crate::civs::production(ai, g, c, ctx.threat) { return Some((choice, "civ_mechanics")); } // civ-mechanics
     if let Some(choice) = crate::traits::production(g, c, ctx.threat) { return Some((choice, "trait_play")); } // trait-play
+    if let Some(choice) = crate::cards_economy::production(g, c, ctx.threat, ctx.at_war) { return Some((choice, "card_economy")); } // the cards (docs/CARDS.md)
     // An assault fleet (transport + attackers) for an overseas enemy city we can take.
     if safe && crate::naval::is_coastal_city(g, c) {
         if let Some(choice) = crate::naval::assault_production(g, c) {
@@ -993,6 +994,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
         }
         let m = &d.processes[pr].production_to_commerce_modifier;
         let v = m[CommerceType::COMMERCE_RESEARCH.idx()] * 2 + m[CommerceType::COMMERCE_GOLD.idx()] * 2 + m[CommerceType::COMMERCE_CULTURE.idx()];
+        let v = v + crate::cards_economy::process_value(g, c, pr); // Muster (docs/CARDS.md)
         if best_process.map_or(true, |(_, s)| v > s) {
             best_process = Some((pr, v));
         }
@@ -1241,7 +1243,8 @@ fn role_ok(d: &GameData, info: &UnitInfo, role: Role) -> bool {
             fighter && (has(UnitAIType::UNITAI_CITY_DEFENSE) || has(UnitAIType::UNITAI_CITY_COUNTER) || has(UnitAIType::UNITAI_ATTACK) || has(UnitAIType::UNITAI_COUNTER))
                 && info.default_unit_ai_type != Some(UnitAIType::UNITAI_EXPLORE)
         }
-        Role::Attack | Role::CityAttack => fighter && !info.only_defensive && (has(UnitAIType::UNITAI_ATTACK) || has(UnitAIType::UNITAI_ATTACK_CITY)) && !siege_engine(info),
+        // (An animal is trained only where a building trains it: the Beast Market's, docs/CARDS.md.)
+        Role::Attack | Role::CityAttack => fighter && !info.only_defensive && (has(UnitAIType::UNITAI_ATTACK) || has(UnitAIType::UNITAI_ATTACK_CITY) || info.animal) && !siege_engine(info),
         Role::Worker => has(UnitAIType::UNITAI_WORKER) && info.combat == 0,
         Role::Settler => has(UnitAIType::UNITAI_SETTLE) && info.found,
         Role::Hero => is_hero(d, info) && (info.combat > 0 || born_caster(d, info)),
@@ -1520,6 +1523,7 @@ fn is_economy_building(g: &Game, c: CityId, b: BuildingType, threat: i32) -> boo
 /// (civs/, e.g. a unique building whose effect lives in Python).
 pub fn building_value(g: &Game, c: CityId, b: BuildingType, threat: i32) -> i32 {
     let v = crate::civs::building_value(g, c, b, generic_building_value(g, c, b, threat)); // civ-mechanics
+    let v = crate::cards_economy::building_value(g, c, b, v); // the cards (docs/CARDS.md)
     crate::traits::building_value(g, c, b, v) // trait-play
 }
 

@@ -1,0 +1,58 @@
+// Spire of the Archmagi (docs/DECKS.md section 12, card 5): casters trained in its city start with
+// one sphere I promotion of a mana their empire holds, chosen at training, with no level
+// requirement (BuildingInfo::free_promotion_choices).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_SPIRE_OF_THE_ARCHMAGI",
+      "description": "TXT_KEY_TECH_CARD_SPIRE_OF_THE_ARCHMAGI",
+      "help": "TXT_KEY_TECH_CARD_SPIRE_OF_THE_ARCHMAGI_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_SPIRE_OF_THE_ARCHMAGI_PEDIA",
+      "advisor": "ADVISOR_SCIENCE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_SORCERY"],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {"FLAVOR_SCIENCE": 1}
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_SPIRE_OF_THE_ARCHMAGI",
+      "description": "TXT_KEY_BUILDING_SPIRE_OF_THE_ARCHMAGI",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 1,
+      "default_building": "BUILDING_SPIRE_OF_THE_ARCHMAGI"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_SPIRE_OF_THE_ARCHMAGI",
+      "building_class": "BUILDINGCLASS_SPIRE_OF_THE_ARCHMAGI",
+      "description": "TXT_KEY_BUILDING_SPIRE_OF_THE_ARCHMAGI",
+      "civilopedia": "TXT_KEY_BUILDING_SPIRE_OF_THE_ARCHMAGI_PEDIA",
+      "prereq_tech": "TECH_CARD_SPIRE_OF_THE_ARCHMAGI",
+      "cost": 200,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "asset": 4,
+      "power_value": 4,
+      "free_promotion_choices": [
+        "PROMOTION_AIR1", "PROMOTION_BODY1", "PROMOTION_CHAOS1", "PROMOTION_DEATH1", "PROMOTION_EARTH1",
+        "PROMOTION_ENCHANTMENT1", "PROMOTION_ENTROPY1", "PROMOTION_FIRE1", "PROMOTION_ICE1", "PROMOTION_LAW1",
+        "PROMOTION_LIFE1", "PROMOTION_METAMAGIC1", "PROMOTION_MIND1", "PROMOTION_NATURE1", "PROMOTION_SHADOW1",
+        "PROMOTION_SPIRIT1", "PROMOTION_SUN1", "PROMOTION_WATER1"
+      ],
+      "flavors": {"FLAVOR_SCIENCE": 4, "FLAVOR_MILITARY": 2}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_SPIRE_OF_THE_ARCHMAGI": "Spire of the Archmagi",
+    "TXT_KEY_TECH_CARD_SPIRE_OF_THE_ARCHMAGI_HELP": "[ICON_BULLET]Allows the Spire of the Archmagi (national): a caster trained in its city starts with one sphere I promotion of a mana you have, chosen at training, without experience.",
+    "TXT_KEY_TECH_CARD_SPIRE_OF_THE_ARCHMAGI_PEDIA": "A great sage raises a tower where the apprentices learn a sphere before they leave.",
+    "TXT_KEY_BUILDING_SPIRE_OF_THE_ARCHMAGI": "Spire of the Archmagi",
+    "TXT_KEY_BUILDING_SPIRE_OF_THE_ARCHMAGI_PEDIA": "The mage school of the realm."
+  }
+}

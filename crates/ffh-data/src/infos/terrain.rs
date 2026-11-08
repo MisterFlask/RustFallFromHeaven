@@ -506,6 +506,14 @@ pub struct ImprovementInfo {
     /// `engagement_attacker_slots_change`, the change to the attacker's slots in battles on its
     /// plot (before the minimum).
     pub engagement_attacker_slots_change: i32,
+    // This game's (the Trading Post card, docs/CARDS.md)
+    /// The plots within this distance of the improvement (its own included) are its builder's
+    /// territory, whatever their culture (`claim_range`; 0: no claim). An improvement with a
+    /// claim is built only outside every civilization's borders.
+    pub claim_range: i32,
+    /// The improvement is built only this many plots or more from every city
+    /// (`min_city_distance`; 0: anywhere).
+    pub min_city_distance: i32,
 }
 
 /// C++ `CvImprovementInfo::read`, plus `readPass2` (`ImprovementPillage`,
@@ -571,6 +579,8 @@ pub fn read_improvement(rd: &Rd) -> ImprovementInfo {
         route_yield_changes: yields_by_type(rd, "route_yield_changes", "route_type", "route_yields"),
         improvement_bonus: improvement_bonuses(rd),
         engagement_attacker_slots_change: rd.int("engagement_attacker_slots_change"),
+        claim_range: rd.int("claim_range"),
+        min_city_distance: rd.int("min_city_distance"),
     }
 }
 

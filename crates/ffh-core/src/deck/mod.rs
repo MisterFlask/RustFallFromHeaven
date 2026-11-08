@@ -39,7 +39,8 @@ impl Game {
     }
 
     /// The cards a great person of class `suit` born to `p` may be dealt now, in id order:
-    /// the cards of the suit still in the deck whose alignment (if any) is the player's, from
+    /// the cards of the suit still in the deck whose alignment (if any) is the player's and whose
+    /// blocked alignment (if any) is not, from
     /// the band of the player's era (I Ancient, II Classical, III Medieval and later); if that
     /// band is empty, from the nearest band below it, else the nearest above.
     pub fn deck_candidates(&self, p: PlayerId, suit: UnitClassType) -> Vec<TechType> {
@@ -50,7 +51,7 @@ impl Game {
             .keys()
             .filter_map(|t| {
                 let c = d.techs[t].card.as_ref()?;
-                if c.suit != suit || c.alignment.is_some_and(|a| Some(a) != alignment) {
+                if c.suit != suit || c.alignment.is_some_and(|a| Some(a) != alignment) || c.block_alignment.is_some_and(|a| Some(a) == alignment) {
                     return None;
                 }
                 Some((t, d.techs[t].era.map_or(0, band)))

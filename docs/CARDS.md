@@ -22,7 +22,9 @@ A card tech is never researched or traded: the reader forces `disable` and `!tra
 - **Band:** the tech's `era` (I `ERA_ANCIENT`, II `ERA_CLASSICAL`, III `ERA_MEDIEVAL`).
 - **Needs:** the tech's `and_pre_reqs` / `or_pre_reqs`, the ordinary techs its content needs. A
   card is discovered only once its owner knows them.
-- **Alignment:** `card_alignment` (`ALIGNMENT_GOOD`, `ALIGNMENT_EVIL`) limits who draws it.
+- **Alignment:** `card_alignment` (`ALIGNMENT_GOOD`, `ALIGNMENT_EVIL`) limits who draws it;
+  `card_block_alignment` keeps one alignment from drawing it (a [good or neutral] card blocks
+  `ALIGNMENT_EVIL`).
 - **Faith:** `card_religion` names a religion card. It is drawn whatever the drawer's
   religion; discovering it spreads the religion to three of the owner's cities without it, the
   most populous first.
@@ -103,6 +105,11 @@ bare rules text (CLAUDE.md, "Rules text and tooltips").
 in its `find_*` lookups. Rules that are not callbacks go where the rule they change lives, with a
 comment naming the card.
 
+**Tiers and counts:** a card's buildings have no tier variants (`building_variants.jsonc` is read
+before the card files): an ordinary one is Standard everywhere, a national one rolls a tier for its
+cost only. Tests that count a table, or check every entry of it against FFH2's numbers, count the
+game's own entries: the first `len() - card_entry_count(table)` ids.
+
 **Records:** each card that changes the rules is listed in docs/PORTING.md ("Changes from
 FFH2", the decks entry). Its row in section 5 below gets its status.
 
@@ -166,6 +173,18 @@ help):
 | civilizations | `unit_promotion` | The Fey Court Awakens, Founding of the Dawn Knights | a promotion every land unit of the civilization gets when it is created (`unit_init`) |
 | traits | `unit_rush_gold` | The Condottieri Free State | its player buys units at this many gold per hammer left, under any civic (the hurry rules) |
 | buildings | `defender_defense` | Free City Charter | percent more defence for the units fighting in the city (the most of its buildings; an engagement's defence terms) |
+| techs | `card_block_alignment` | Font of Rebirth | players of this alignment do not draw the card (a [good or neutral] card blocks evil; section 1) |
+| buildings | `train_units` `[{unit, cost, bonus, national}]` | Beast Market, Elemental Foundry | the city trains each unit (one without a cost of its own) at `cost`, where it has `bonus`; past `national` units of the class, each costs `NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT` |
+| buildings | `free_bonus_choices` | Agares's Well | when it is built its owner chooses one of these resources (`Controller::choose_free_bonus`; kept in `City::free_bonus_choices` while the city has the building); the city has one of it |
+| buildings | `free_promotion_choices` | Spire of the Archmagi | a unit trained in the city takes one it can acquire, its owner's choice (`Controller::choose_free_promotion`) |
+| buildings | `rebirth_range`, `rebirth_promotion` | Font of Rebirth | the first time a unit of the owner would die in a battle within the range, it is carried to the city at 10% of its HP and gains the promotion; a unit with it dies normally (`engagement/apply.rs`) |
+| buildings | `free_unit_turns`, `free_unit_classes` | Maponos's Cradle | every N turns after it is built, a free unit of the first class that applies (a city founder only while a site within 10 plots is free) |
+| civics | `unit_cost_modifier`, `unit_combat_cost_modifiers` | Magocracy | percent change to the cost of every unit, and of the units of each unit combat |
+| civics | `no_war_weariness` | Stoicism | war weariness causes no unhappiness |
+| hurries | `units_only` | Gold Standard | the hurry buys units only |
+| processes | `production_to_experience` | Muster | hammers per point of experience to the units in the city |
+| improvements | `claim_range`, `min_city_distance` | Trading Post | its plot and the land plots within the range are its builder's territory whatever the culture (it is built only outside every border); built only that many plots or more from every city |
+| builds | `same_builders_as` | Trading Post | every unit that can do that build can do this one (set in the units' `builds` at load) |
 
 The battle effects are in `crates/ffh-core/src/engagement/arms.rs` (the set-up, `Game`) and
 `engagement/formation/arms_cards.rs` (the resolver, a fighter's `Arms`); their AI in
@@ -297,6 +316,23 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | Card | Suit | Status |
 |---|---|---|
 | (the deck itself: deal, discover, once spells, targets, Armageddon deck) | | built |
+| E11 Pioneers | Engineer | built |
+| M01 Gold Standard | Merchant | built |
+| M06 Beast Market | Merchant | built |
+| M10 Admiralty | Merchant | built (free picks: 5 experience, two promotions) |
+| G01 Elemental Foundry | Sage | built (300 hammers an elemental) |
+| G19 Magocracy | Sage | built |
+| P07 Golems of the Earthmother | Prophet (Runes of Kilmorph) | built |
+| Trading Post | Merchant | built (II; claims land plots only) |
+| Font of Rebirth | Prophet [good or neutral] | built |
+| Spire of the Archmagi | Sage | built |
+| Academy of War | Bard | built (free picks: 5 experience, two promotions) |
+| Mana Grafting | Sage | built (once a node, for good) |
+| Stoicism | Sage | built |
+| Maponos's Cradle | Prophet | built |
+| Agares's Well | Prophet [evil] | built (II) |
+| Paymaster | Merchant | built |
+| Muster | Bard | built (II) |
 | E07 Wall of the Kings | Engineer | built |
 | E10 Harbor Chain | Engineer | built |
 | E12 Siege Lines | Engineer | built |

@@ -27,6 +27,7 @@ pub mod cards;
 pub mod cards_battle_arms;
 pub mod cards_battle_magic;
 pub mod cards_deck_ui;
+pub mod cards_economy;
 pub mod cards_map_rules;
 pub mod cards_new_civs;
 pub mod cards_world_spells;
@@ -267,6 +268,14 @@ impl Controller for Ai {
 
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
         crusade::pick_units(g, p, terms.strength as i64)
+    }
+
+    fn choose_free_promotion(&self, g: &Game, p: PlayerId, _u: UnitId, options: &[PromotionType]) -> Option<PromotionType> {
+        cards_economy::choose_free_promotion(g, p, options)
+    }
+
+    fn choose_free_bonus(&self, g: &Game, p: PlayerId, _c: CityId, _b: BuildingType, options: &[BonusType]) -> Option<BonusType> {
+        cards_economy::choose_free_bonus(g, p, options)
     }
 }
 

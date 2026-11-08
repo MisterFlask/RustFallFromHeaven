@@ -1528,6 +1528,10 @@ impl Game {
             if self.telemetry.on() {
                 self.tel_improvement(u, build);
             }
+            // Card: the Trading Post (docs/CARDS.md): its builder's owner claims the plots around.
+            if self.d.builds[build].improvement.is_some_and(|i| self.d.improvements[i].claim_range > 0) {
+                self.plot_claim(plot, owner);
+            }
             if self.d.builds[build].kill {
                 self.unit_kill(u, true, None);
             }

@@ -183,6 +183,7 @@ Notes on `settle` and `EndTurn`:
 | `choose_election(&g, p, vs)` | CHOOSEELECTION popup | **Blocking** `Decision::Election`. Options are `vs.vote_options[i]`. The advisor suggestion is the trait default (`None`, which means "no election", as the AI does). |
 | `consider_offer(&g, p, from, ..)` | diplomacy screen | **Blocking** `Decision::Offer`. Unreachable today (F15). |
 | `choose_religion(&g, p)` | FOUND_RELIGION (PICK_RELIGION is locked off in FfH) | **Blocking** `Decision::Religion`. Unreachable. |
+| `choose_free_promotion(&g, p, u, options)`, `choose_free_bonus(&g, p, c, b, options)` | none (this game's cards, docs/CARDS.md: the Spire of the Archmagi, Agares's Well) | **Blocking** `Decision::FreePromotion` / `Decision::FreeBonus` when there are two options or more; the advisor's pick (`cards_economy`) otherwise. |
 | `keep_captured_unit`, `accept_unit` | the human keeps or accepts without asking | `true` |
 | `attitude(&g, p, towards)` | `CvPlayerAI::AI_getAttitude` is computed for humans too | `advisor.attitude` (a pure function of state) |
 | `update_automated_group` | `CvSelectionGroupAI::AI_update` | `advisor.update_automated_group` |

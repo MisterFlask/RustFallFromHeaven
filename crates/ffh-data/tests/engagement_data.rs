@@ -381,7 +381,7 @@ fn every_land_type_has_rows() {
     // The game's own unit types (the cards' come after them, docs/CARDS.md).
     let own = d.units.len() - ffh_data::card_entry_count("units");
     let count = |want: Option<ActionKind>| d.units.keys().filter(|&u| u.idx() < own && d.units[u].engage_rows.map(|_| d.engage_kind(u)) == want).count();
-    // (kind, unit types) at the time of writing; the sum is every unit type.
+    // (kind, unit types) at the time of writing; the sum is every unit type of the game's own.
     let want = [
         (Some(ActionKind::Strike), 170),
         (Some(ActionKind::Charge), 38),

@@ -24,10 +24,14 @@ fn hurry(g: &mut Game, p: PlayerId) {
     // Card: the Condottieri Free State (docs/CARDS.md): a player that buys units at its trait's
     // rate hurries them with gold whatever its civics.
     let rush = g.player_unit_rush_gold(p) > 0;
-    let hurries: Vec<HurryType> = d.hurries.keys().filter(|&h| g.player_can_hurry(p, h) || rush && d.hurries[h].gold_per_production > 0).collect();
+    let mut hurries: Vec<HurryType> = d.hurries.keys().filter(|&h| g.player_can_hurry(p, h) || rush && d.hurries[h].gold_per_production > 0).collect();
     if hurries.is_empty() {
         return;
     }
+    // The cheapest gold first (Gold Standard's units-only hurry, docs/CARDS.md, before the Labor
+    // civics' gold), then the population hurries.
+    hurries.sort_by_key(|&h| (d.hurries[h].gold_per_production == 0, d.hurries[h].gold_per_production, h));
+    let at_war = crate::production::civ_enemies_at_war(g, p) || crate::diplomacy::preparing_target(g, g.players[p].team).is_some();
     let reserve = 30 + 5 * g.players[p].cities.len() as i32;
     // Gold a civilization keeps (the Khazad's vault level) is not spent.
     let reserve = reserve + crate::civs::gold_floor(g, p);
@@ -57,7 +61,9 @@ fn hurry(g: &mut Game, p: PlayerId) {
             if d.hurries[h].gold_per_production > 0 {
                 let cost = g.city_hurry_gold(c, h);
                 let rich = g.players[p].gold - cost > reserve * 3 && turns <= 4;
-                if (urgent && g.players[p].gold - cost >= reserve) || rich {
+                // Gold Standard (docs/CARDS.md): the rich empire buys its army at war.
+                let buys_army = d.hurries[h].units_only && at_war && g.city_production_unit(c).is_some_and(|u| d.units[u].combat > 0) && g.players[p].gold - cost > reserve * 2;
+                if (urgent && g.players[p].gold - cost >= reserve) || rich || buys_army {
                     crate::trace!(g, p, "hurries {} with {} gold", g.cities[c].name, cost);
                     g.city_hurry(c, h);
                     break;
@@ -162,6 +168,7 @@ pub(crate) fn civic_value(g: &Game, p: PlayerId, civic: CivicType) -> i32 {
     for k in 0..CommerceType::NUM {
         v += info.specialist_extra_commerce[k] * pl.cities.iter().map(|&c| g.cities[c].specialist_population).sum::<i32>() * 8;
     }
+    let v = crate::cards_economy::civic_value(g, p, civic, v); // the cards (docs/CARDS.md)
     crate::civs::civic_value(g, p, civic, v) // civ-mechanics
 }
 

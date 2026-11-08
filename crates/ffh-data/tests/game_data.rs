@@ -25,11 +25,11 @@ fn table_sizes() {
     assert_eq!(d.handicaps.len(), 9);
     assert_eq!(d.game_options.len(), GameOptionType::NUM);
     assert_eq!(d.goodies.len() - ffh_data::card_entry_count("goodies"), 54);
-    assert_eq!(d.hurries.len(), 2);
+    assert_eq!(d.hurries.len() - ffh_data::card_entry_count("hurries"), 2);
     assert_eq!(d.upkeeps.len(), 3);
     assert_eq!(d.culture_levels.len(), 7);
     assert_eq!(d.victories.len(), 8);
-    assert_eq!(d.processes.len(), 3);
+    assert_eq!(d.processes.len() - ffh_data::card_entry_count("processes"), 3);
     assert_eq!(d.emphasizes.len(), 8);
 }
 

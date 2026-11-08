@@ -1,0 +1,56 @@
+// M06 Beast Market (docs/DECKS_ROUND8.md; C.4: Bears 75, Lions 50, Tigers 75, no Griffons): the
+// city trains the existing animals.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_BEAST_MARKET",
+      "description": "TXT_KEY_TECH_CARD_BEAST_MARKET",
+      "help": "TXT_KEY_TECH_CARD_BEAST_MARKET_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_BEAST_MARKET_PEDIA",
+      "advisor": "ADVISOR_MILITARY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_ANCIENT",
+      "and_pre_reqs": ["TECH_HUNTING"],
+      "card_suit": "UNITCLASS_MERCHANT",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "building_classes": [
+    {
+      "type": "BUILDINGCLASS_BEAST_MARKET",
+      "description": "TXT_KEY_BUILDING_BEAST_MARKET",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": -1,
+      "default_building": "BUILDING_BEAST_MARKET"
+    }
+  ],
+  "buildings": [
+    {
+      "type": "BUILDING_BEAST_MARKET",
+      "building_class": "BUILDINGCLASS_BEAST_MARKET",
+      "description": "TXT_KEY_BUILDING_BEAST_MARKET",
+      "civilopedia": "TXT_KEY_BUILDING_BEAST_MARKET_PEDIA",
+      "prereq_tech": "TECH_CARD_BEAST_MARKET",
+      "cost": 90,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "conquest_prob": 50,
+      "asset": 2,
+      "train_units": [
+        {"unit": "UNIT_BEAR", "cost": 75},
+        {"unit": "UNIT_LION", "cost": 50},
+        {"unit": "UNIT_TIGER", "cost": 75}
+      ],
+      "flavors": {"FLAVOR_MILITARY": 4}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_BEAST_MARKET": "Beast Market",
+    "TXT_KEY_TECH_CARD_BEAST_MARKET_HELP": "[ICON_BULLET]Allows the Beast Market: its city can train Bears (75[ICON_PRODUCTION]), Lions (50[ICON_PRODUCTION]) and Tigers (75[ICON_PRODUCTION]).",
+    "TXT_KEY_TECH_CARD_BEAST_MARKET_PEDIA": "A great merchant opens a market where trappers sell the beasts of the wild to the army.",
+    "TXT_KEY_BUILDING_BEAST_MARKET": "Beast Market",
+    "TXT_KEY_BUILDING_BEAST_MARKET_PEDIA": "Cages of bears, lions and tigers, sold to whoever pays."
+  }
+}

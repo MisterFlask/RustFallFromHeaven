@@ -75,6 +75,9 @@ pub const POLICIES: &[(&str, Policy)] = &[
     ("crusade_draft_pick", Policy::Blocking),
     ("consider_loan", Policy::Blocking),
     ("choose_loan_units", Policy::Advisor),
+    // (the cards, docs/CARDS.md: the Spire of the Archmagi's sphere, Agares's Well's mana)
+    ("choose_free_promotion", Policy::Blocking),
+    ("choose_free_bonus", Policy::Blocking),
     ("hook", Policy::Advisor),
     ("assign_working_plots", Policy::Advisor),
 ];
@@ -502,6 +505,26 @@ impl Controller for HumanController {
         let advice = self.suggest(g, |g| self.advisor.choose_religion(g, p));
         let i = self.block(g, decision::religion(g, p, &religions, advice));
         Some(religions[i])
+    }
+
+    /// The cards (docs/CARDS.md): the Spire of the Archmagi's free promotion, blocking.
+    fn choose_free_promotion(&self, g: &Game, p: PlayerId, u: UnitId, options: &[PromotionType]) -> Option<PromotionType> {
+        let advice = self.suggest(g, |g| self.advisor.choose_free_promotion(g, p, u, options));
+        if !g.players[p].human || options.len() < 2 {
+            return advice;
+        }
+        let i = self.block(g, decision::free_promotion(g, p, u, options, advice));
+        options.get(i).copied()
+    }
+
+    /// The cards: the resource of Agares's Well, blocking.
+    fn choose_free_bonus(&self, g: &Game, p: PlayerId, c: CityId, b: BuildingType, options: &[BonusType]) -> Option<BonusType> {
+        let advice = self.suggest(g, |g| self.advisor.choose_free_bonus(g, p, c, b, options));
+        if !g.players[p].human || options.len() < 2 {
+            return advice;
+        }
+        let i = self.block(g, decision::free_bonus(g, p, c, b, options, advice));
+        options.get(i).copied()
     }
 
     /// C++ computes `AI_getAttitude` for humans too: a function of the game state.

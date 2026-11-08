@@ -1,0 +1,26 @@
+// P07 Golems of the Earthmother (docs/DECKS_ROUND8.md; C.4: the Mithril Golem, one in the world,
+// at 600 hammers whatever the counter; Kilmorph still its state religion): a rule
+// (`player_can_train`, `player_get_production_needed_unit`).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_GOLEMS_OF_THE_EARTHMOTHER",
+      "description": "TXT_KEY_TECH_CARD_GOLEMS_OF_THE_EARTHMOTHER",
+      "help": "TXT_KEY_TECH_CARD_GOLEMS_OF_THE_EARTHMOTHER_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_GOLEMS_OF_THE_EARTHMOTHER_PEDIA",
+      "advisor": "ADVISOR_RELIGION",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_MITHRIL_WORKING"],
+      "card_suit": "UNITCLASS_PROPHET",
+      "card_religion": "RELIGION_RUNES_OF_KILMORPH",
+      "flavors": {"FLAVOR_MILITARY": 1, "FLAVOR_RELIGION": 1}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_GOLEMS_OF_THE_EARTHMOTHER": "Golems of the Earthmother",
+    "TXT_KEY_TECH_CARD_GOLEMS_OF_THE_EARTHMOTHER_HELP": "[ICON_BULLET]The Mithril Golem needs no Armageddon counter for you, and costs you 600[ICON_PRODUCTION] (half).[NEWLINE][ICON_BULLET]Its other requirements remain: the Runes of Kilmorph as state religion, the Runes' holy city, Mithril Working and Mithril. One in the world.",
+    "TXT_KEY_TECH_CARD_GOLEMS_OF_THE_EARTHMOTHER_PEDIA": "A great prophet of Kilmorph learns the rite that wakes the mithril giant before the world's last days."
+  }
+}

@@ -95,6 +95,14 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         // ---- the Armageddon deck (docs/CARDS.md) ----
         global_counter_commerce,
         doom_sight,
+        // ---- the cards (docs/CARDS.md) ----
+        train_units,
+        free_bonus_choices,
+        free_promotion_choices,
+        rebirth_range,
+        rebirth_promotion,
+        free_unit_turns,
+        free_unit_classes,
         building_class_type,
         victory_prereq,
         free_start_era,
@@ -512,6 +520,45 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     if *doom_sight > 0 {
         h.push_str(NEWLINE);
         h.push_str(&format!("[ICON_BULLET]Shows the next {} Armageddon cards and their thresholds", doom_sight));
+    }
+    // The cards (docs/CARDS.md).
+    for t in train_units {
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]Can train {} ({}{})", highlight(&display(d, t.unit)), t.cost, YIELD_ICONS[YieldType::YIELD_PRODUCTION.idx()]));
+        if let Some(bonus) = t.bonus {
+            h.push_str(&format!(" with {}", display(d, bonus)));
+        }
+        if t.national > 0 {
+            h.push_str(&format!("; {} at that cost, then {}% each", t.national, d.defines.national_unit_over_limit_cost_percent));
+        }
+    }
+    if !free_bonus_choices.is_empty() {
+        let names: Vec<String> = free_bonus_choices.iter().map(|&x| display(d, x).into_owned()).collect();
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]When built, choose one resource; the city has one of it: {}", names.join(", ")));
+    }
+    if !free_promotion_choices.is_empty() {
+        let names: Vec<String> = free_promotion_choices.iter().map(|&x| display(d, x).into_owned()).collect();
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]A unit trained here starts with one of these promotions that it can acquire, its owner's choice, without experience: {}", names.join(", ")));
+    }
+    if *rebirth_range > 0 {
+        h.push_str(NEWLINE);
+        h.push_str(&format!(
+            "[ICON_BULLET]The first time a unit of yours would die in a battle within {} plots of the city, it is carried to the city at 10% of its HP instead",
+            rebirth_range
+        ));
+        if let Some(mark) = *rebirth_promotion {
+            h.push_str(&format!(" and gains {}; a unit with {} dies normally", highlight(&display(d, mark)), display(d, mark)));
+        }
+    }
+    if *free_unit_turns > 0 && !free_unit_classes.is_empty() {
+        let names: Vec<String> = free_unit_classes.iter().map(|&x| display(d, x).into_owned()).collect();
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]Every {free_unit_turns} turns after it is built, a free unit, the first that applies: {}", names.join(", ")));
+        if free_unit_classes.iter().any(|&k| d.unit_classes[k].default_unit_index.is_some_and(|u| d.units[u].found)) {
+            h.push_str(&format!(" (a unit that founds cities only while a city site is free within {} plots)", ffh_core::ffh::cards::economy::FREE_UNIT_SITE_RANGE));
+        }
     }
     if let (Some(t), Some(of)) = (*tier, *variant_of) {
         h.push_str(NEWLINE);

@@ -430,6 +430,10 @@ impl Game {
         let owner = self.cities[c].owner;
         self.city_do_plot_culture(c, false, owner, culture_rate);
         self.city_do_production(c, allow_no_production);
+        // Card: Maponos's Cradle (docs/CARDS.md): the free units of the city's buildings.
+        if self.cities.contains(c) {
+            self.city_do_free_units(c);
+        }
         self.city_do_decay(c);
         self.city_do_religion(c);
         self.city_do_great_people(c);
@@ -1092,6 +1096,8 @@ impl Game {
         }
 
         if self.city_is_production_process(c) {
+            // Card: Muster (docs/CARDS.md): the process's hammers drill the city's units.
+            self.city_do_muster(c);
             return;
         }
 
