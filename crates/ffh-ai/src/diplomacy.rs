@@ -75,6 +75,13 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
     if demands < 0 {
         out.push(("demands paid", demands));
     }
+    // What the rules recorded of `other`'s acts toward us (`ai_attitude_extra`, C++
+    // `AI_getAttitudeExtra`): a city it bought or annexed from us (the cards Purchase Charter and
+    // Cultural Annexation, -4 each; docs/CARDS.md).
+    let extra = a.ai_attitude_extra[other];
+    if extra != 0 {
+        out.push(("acts toward us", extra));
+    }
     out
 }
 
