@@ -490,48 +490,79 @@ impl Game {
         self.teams.len()
     }
 
-    /// C++ `BARBARIAN_PLAYER`.
+    /// C++ `BARBARIAN_PLAYER`: the last slot the game started with (`GameSetup::barbarian`);
+    /// players added mid-game (`add_player_slot`) come after it.
     #[inline]
     pub fn barbarian_player(&self) -> PlayerId {
-        PlayerId((self.players.len() - 1) as u8)
+        self.setup.barbarian
     }
 
-    /// C++ `BARBARIAN_TEAM`.
+    /// C++ `BARBARIAN_TEAM`: the barbarian slot's team slot (every player slot comes with a team
+    /// slot of the same id).
     #[inline]
     pub fn barbarian_team(&self) -> TeamId {
-        TeamId((self.teams.len() - 1) as u8)
+        TeamId(self.setup.barbarian.0)
     }
 
-    /// C++ `MAX_CIV_PLAYERS` sized to this game: civ players are `0..num_civ_players()`.
+    /// C++ `MAX_CIV_PLAYERS` sized to this game: every player slot but the barbarian's.
     #[inline]
     pub fn num_civ_players(&self) -> usize {
         self.players.len() - 1
     }
 
-    /// C++ `MAX_CIV_TEAMS` sized to this game.
+    /// C++ `MAX_CIV_TEAMS` sized to this game: every team slot but the barbarian's.
     #[inline]
     pub fn num_civ_teams(&self) -> usize {
         self.teams.len() - 1
     }
 
-    /// All player ids (C++ `for (iI = 0; iI < MAX_PLAYERS; iI++)`).
+    /// Is `p` a civ slot (C++ `p < MAX_CIV_PLAYERS`: any slot but the barbarian's, including the
+    /// players added mid-game, which come after it)?
+    #[inline]
+    pub fn is_civ_player_slot(&self, p: PlayerId) -> bool {
+        p != self.setup.barbarian && p.idx() < self.players.len()
+    }
+
+    /// Is `t` a civ team slot (C++ `t < MAX_CIV_TEAMS`)?
+    #[inline]
+    pub fn is_civ_team_slot(&self, t: TeamId) -> bool {
+        t != self.barbarian_team() && t.idx() < self.teams.len()
+    }
+
+    /// All player ids (C++ `for (iI = 0; iI < MAX_PLAYERS; iI++)`), in id order.
     pub fn player_ids(&self) -> impl Iterator<Item = PlayerId> + 'static {
         (0..self.players.len()).map(|i| PlayerId(i as u8))
     }
 
-    /// All team ids (C++ `for (iI = 0; iI < MAX_TEAMS; iI++)`).
+    /// All team ids (C++ `for (iI = 0; iI < MAX_TEAMS; iI++)`), in id order.
     pub fn team_ids(&self) -> impl Iterator<Item = TeamId> + 'static {
         (0..self.teams.len()).map(|i| TeamId(i as u8))
     }
 
-    /// Civ player ids (C++ `for (iI = 0; iI < MAX_CIV_PLAYERS; iI++)`).
+    /// Civ player ids (C++ `for (iI = 0; iI < MAX_CIV_PLAYERS; iI++)`): every slot but the
+    /// barbarian's, in id order.
     pub fn civ_player_ids(&self) -> impl Iterator<Item = PlayerId> + 'static {
-        (0..self.players.len() - 1).map(|i| PlayerId(i as u8))
+        let barbarian = self.setup.barbarian;
+        self.player_ids().filter(move |&p| p != barbarian)
     }
 
-    /// Civ team ids (C++ `for (iI = 0; iI < MAX_CIV_TEAMS; iI++)`).
+    /// Civ team ids (C++ `for (iI = 0; iI < MAX_CIV_TEAMS; iI++)`): every team slot but the
+    /// barbarian's, in id order.
     pub fn civ_team_ids(&self) -> impl Iterator<Item = TeamId> + 'static {
-        (0..self.teams.len() - 1).map(|i| TeamId(i as u8))
+        let barbarian = self.barbarian_team();
+        self.team_ids().filter(move |&t| t != barbarian)
+    }
+
+    /// The order players take their turns in (C++: slot order, which ends with the barbarian):
+    /// the civ slots in id order, then the barbarian, so that the players added mid-game, whose
+    /// ids follow the barbarian's, still move before it.
+    pub fn turn_order(&self) -> impl Iterator<Item = PlayerId> + 'static {
+        self.civ_player_ids().chain(std::iter::once(self.setup.barbarian))
+    }
+
+    /// The players after `p` in [`Game::turn_order`].
+    pub fn turn_order_after(&self, p: PlayerId) -> impl Iterator<Item = PlayerId> + 'static {
+        self.turn_order().skip_while(move |&q| q != p).skip(1)
     }
 
     /// Controller for player `p` (cheap Arc clone; call methods on the result).
@@ -629,8 +660,8 @@ impl Game {
 
     /// C++ `getNumHumanPlayers()` (CvInitCore::getNumHumans: human civ slots).
     pub fn num_human_players(&self) -> i32 {
-        let num_civ = self.setup.players.len().saturating_sub(1);
-        self.setup.players.iter().take(num_civ).filter(|p| p.human).count() as i32
+        let barbarian = self.setup.barbarian.idx();
+        self.setup.players.iter().enumerate().filter(|&(i, p)| i != barbarian && p.human).count() as i32
     }
 
     // ---- network / multiplayer queries used by rules code (single process: always false) ----
@@ -674,8 +705,8 @@ mod tests {
     fn new_game_has_reset_defaults() {
         let d = ffh_data::global();
         let setup = GameSetup::standard(d, 4, "WORLDSIZE_SMALL", 1234);
-        // civs, open slots, crusade Host slots, barbarian
-        let n = 4 + GameSetup::SPARE_SLOTS + crate::crusade::CrusadeRules::default().host_slots + 1;
+        // civs, barbarian
+        let n = 4 + 1;
         let g = Game::new(d, setup);
         assert_eq!(g.num_players(), n);
         assert_eq!(g.num_teams(), n);

@@ -575,9 +575,10 @@ pub const PLAYER_VOTE_CHOICES: &[(&str, PlayerVote)] = &[
     ("PLAYER_VOTE_ABSTAIN", PlayerVote::PLAYER_VOTE_ABSTAIN),
 ];
 
-/// Exclusive upper bound of a team id in a vote choice: C++ `MAX_CIV_TEAMS` (=
-/// `MAX_CIV_PLAYERS`, 35 in FfH2 0.41). The barbarian team is never a candidate.
-pub const MAX_CIV_TEAMS: usize = ffh_core::defs::MAX_CIV_PLAYERS;
+/// Exclusive upper bound of a team id in a vote choice: every id a team slot can have (C++
+/// `MAX_CIV_TEAMS`; here a game grows by the players added mid-game, `Game::add_player_slot`,
+/// up to 255 slots). The barbarian team is never a candidate (the `vote` command checks it).
+pub const MAX_CIV_TEAMS: usize = u8::MAX as usize;
 
 /// C++ name of a sentinel vote (`None` for a team vote).
 pub fn player_vote_name(v: PlayerVote) -> Option<&'static str> {
@@ -645,7 +646,7 @@ mod tests {
         assert_eq!(PlayerVote::PLAYER_VOTE_NEVER.0..=PlayerVote::PLAYER_VOTE_YES.0, -5..=-2);
 
         // Team votes: a team id (C++ (PlayerVoteTypes)eTeam), barbarians excluded.
-        assert_eq!(MAX_CIV_TEAMS, 35);
+        assert_eq!(MAX_CIV_TEAMS, 255);
         assert_eq!(decode_player_vote(&Json::Int(0)), Ok(PlayerVote::for_team(TeamId(0))));
         assert_eq!(decode_player_vote(&Json::Int(3)), Ok(PlayerVote::for_team(TeamId(3))));
         assert_eq!(decode_player_vote(&Json::Int(34)), Ok(PlayerVote::for_team(TeamId(34))));
@@ -664,8 +665,8 @@ mod tests {
             Err(format!("NO_PLAYER_VOTE_CHECKED {state}"))
         );
 
-        let range = "out of range: -5..=-2 or a team id in 0..35";
-        assert_eq!(decode_player_vote(&Json::Int(35)), Err(format!("vote choice 35 {range}")));
+        let range = "out of range: -5..=-2 or a team id in 0..255";
+        assert_eq!(decode_player_vote(&Json::Int(255)), Err(format!("vote choice 255 {range}")));
         assert_eq!(decode_player_vote(&Json::Int(-7)), Err(format!("vote choice -7 {range}")));
         assert_eq!(decode_player_vote(&Json::Int(i64::MAX)), Err(format!("vote choice {} {range}", i64::MAX)));
         assert!(decode_player_vote(&Json::from("MAYBE")).unwrap_err().starts_with("unknown vote choice \"MAYBE\""));

@@ -727,7 +727,7 @@ pub fn spawn_civ(game: &SoakGame, civ: CivilizationType) -> Result<(Vec<u8>, Pla
                 found_spawned_civ(&mut g, founder, civ)?;
                 spawned = g.player_ids().find(|&p| !before.contains(&p) && g.player_get_civilization_type(p) == Some(civ));
                 if spawned.is_none() {
-                    return Err(format!("{} did not appear at turn {} (no open player slot?)", d.type_name(civ), g.game_turn()));
+                    return Err(format!("{} did not appear at turn {}", d.type_name(civ), g.game_turn()));
                 }
                 continue;
             }

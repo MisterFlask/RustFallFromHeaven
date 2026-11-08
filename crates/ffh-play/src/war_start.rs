@@ -65,7 +65,7 @@ impl Battle {
     /// `n` when it is a battle of `min_stack` a side between two civilizations at war (not a
     /// barbarian, an animal or a unit of hidden nationality).
     fn of(g: &Game, n: &CombatNote, min_stack: i32) -> Option<Battle> {
-        let civ = |p: PlayerId| p.idx() < g.num_civ_players();
+        let civ = |p: PlayerId| g.is_civ_player_slot(p);
         let (ta, td) = (g.players[n.attacker_owner].team, g.players[n.defender_owner].team);
         let war = ta != td && g.teams[ta].at_war[td];
         (civ(n.attacker_owner) && civ(n.defender_owner) && war && n.attacker_stack >= min_stack && n.defender_stack >= min_stack).then(|| Battle {

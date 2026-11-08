@@ -177,8 +177,8 @@ impl Game {
         self.lair_explore_tier(caster, crate::ffh::lairs::LairTier::BigGood)
     }
 
-    /// `formEmpire(iCiv, iLeader, iTeam, pCity, iAlignment, pFromPlayer)`: a new player (first
-    /// never-alive slot) on `team` (None: a fresh team) takes over `city` with four archers and
+    /// `formEmpire(iCiv, iLeader, iTeam, pCity, iAlignment, pFromPlayer)`: a new player (a new
+    /// slot: `add_player_advanced`) on `team` (None: a fresh team) takes over `city` with four archers and
     /// a worker; the units in the city are moved to a clear adjacent plot first. With
     /// `from_player`, the new team gets every tech of that player's team.
     pub fn cf_form_empire(
@@ -191,10 +191,8 @@ impl Game {
         from_player: Option<PlayerId>,
     ) {
         let d = self.d;
-        let new_player = self.cf_get_open_player();
         let plot = self.city_plot(city);
-        let plot2 = self.cf_find_clear_plot(None, plot);
-        let (Some(new_player), Some(plot2)) = (new_player, plot2) else { return };
+        let Some(plot2) = self.cf_find_clear_plot(None, plot) else { return };
         let (x2, y2) = self.map.xy(plot2);
         for i in (0..=self.map.plots[plot].units.len()).rev() {
             if let Some(&unit) = self.map.plots[plot].units.get(i) {
@@ -202,7 +200,7 @@ impl Game {
             }
         }
         let creator = from_player.unwrap_or(self.cities[city].owner);
-        self.add_player_advanced(new_player, team, leader, civ);
+        let new_player = self.add_player_advanced(team, leader, civ);
         // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
         self.controllers[new_player] = self.controllers[creator].clone();
         self.player_acquire_city(new_player, city, false, false, true);
@@ -665,12 +663,6 @@ impl Game {
     /// `getLeader(iLeader)`: the last player slot (dead or alive) with this leader.
     pub fn cf_get_leader(&self, leader: LeaderHeadType) -> Option<PlayerId> {
         self.player_ids().filter(|&p| self.player_get_leader_type(p) == Some(leader)).last()
-    }
-
-    /// `getOpenPlayer()`: the first never-alive player slot (`None`: Python -1).
-    pub fn cf_get_open_player(&self) -> Option<PlayerId> {
-        // (not in Python: crusade Host slots are reserved; docs/CRUSADE.md)
-        self.player_ids().find(|&p| !self.players[p].ever_alive && !self.player_is_host_slot(p))
     }
 
     /// `getUnholyVersion(pUnit)`: the unit type a unit becomes when it turns to evil (by unit
@@ -1562,15 +1554,6 @@ mod tests {
         assert_eq!(g.cf_get_hero(PlayerId(0)), Some(d.t::<UnitClassType>("UNITCLASS_MAROS")));
         assert_eq!(g.cf_get_hero(PlayerId(1)), Some(d.t::<UnitClassType>("UNITCLASS_ABASHI")));
         assert_eq!(g.cf_get_hero(PlayerId(3)), None);
-        // getOpenPlayer: the first never-alive slot.
-        for p in [0, 1, 2] {
-            g.players[PlayerId(p)].ever_alive = true;
-        }
-        assert_eq!(g.cf_get_open_player(), Some(PlayerId(3)));
-        for p in g.player_ids() {
-            g.players[p].ever_alive = true;
-        }
-        assert_eq!(g.cf_get_open_player(), None);
     }
 
     #[test]

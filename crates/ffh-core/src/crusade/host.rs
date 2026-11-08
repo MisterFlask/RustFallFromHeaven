@@ -1,10 +1,10 @@
-//! The Host player: a reserved slot brought alive for one crusade and freed at dissolution.
+//! The Host player: a slot brought alive for one crusade and freed at dissolution.
 //!
-//! `GameSetup::from_options` reserves `CrusadeRules::host_slots` open slots (flagged
-//! `PlayerSetup::host`) after the spare slots when crusades are on; FfH's mid-game players
-//! (Infernals, Mercurians, `formEmpire`) never take them. A Host is initialized like a player
-//! FfH adds mid-game (`CvGame::addPlayer`: team and player reset, which also clears every other
-//! player's and team's entries about the slot), with:
+//! A crusade takes a free Host slot (flagged `PlayerSetup::host`: one an earlier crusade added and
+//! freed), or adds one (`Game::add_player_slot`); FfH's mid-game players (Infernals, Mercurians,
+//! `formEmpire`, the cards' civilizations) have slots of their own. A Host is initialized like a
+//! player FfH adds mid-game (`CvGame::addPlayer`: team and player reset, which also clears every
+//! other player's and team's entries about the slot), with:
 //!
 //! - the target's civilization (so the cities it captures keep their buildings by class) and the
 //!   barbarian leader (no leader traits), the civilization trait removed and a neutral alignment:
@@ -24,9 +24,20 @@ use crate::setup::SlotStatus;
 use ffh_data::*;
 
 impl Game {
-    /// A reserved Host slot that is free now.
+    /// A Host slot that is free now (an earlier crusade's).
     pub fn crusade_free_host_slot(&self) -> Option<PlayerId> {
         self.civ_player_ids().find(|&p| self.player_is_host_slot(p) && !self.players[p].alive && self.crusade_of_host(p).is_none())
+    }
+
+    /// The slot for a new crusade's Host: a free Host slot, else a new one
+    /// (`Game::add_player_slot`, flagged `PlayerSetup::host`).
+    pub(crate) fn crusade_host_slot(&mut self) -> PlayerId {
+        if let Some(p) = self.crusade_free_host_slot() {
+            return p;
+        }
+        let p = self.add_player_slot();
+        self.setup.players[p.idx()].host = true;
+        p
     }
 
     /// Bring slot `p` alive as the Host of a crusade against `target`, named `name`.

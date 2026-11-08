@@ -144,14 +144,14 @@ persist_struct!(PlayerSetup { civ, leader, team, handicap, art_style, slot_statu
 persist_struct!(GameSetup {
     world_size, climate, sea_level, era, game_speed, calendar, options, victories, game_turn, max_turns,
     target_score, max_city_elimination, num_advanced_start_points, sync_rand_seed, map_rand_seed,
-    map_script, players, crusade,
+    map_script, players, barbarian, crusade,
 });
 
 // ---- crusades (docs/CRUSADE.md) ----
 
 persist_newtype!(CrusadeId);
 persist_struct!(CrusadeRules {
-    host_slots, term, pledge_deadline, obligation_percent, far_obligation_percent,
+    term, pledge_deadline, obligation_percent, far_obligation_percent,
     muster_percent, recover_health_percent, recover_turns, engage_turns, city_pop_gold,
     city_building_percent, loan_max_turns,
 });

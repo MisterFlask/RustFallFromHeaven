@@ -23,8 +23,8 @@ pub fn call_refused(call: &Call, delivered: i32) -> bool {
 
 impl Game {
     /// Start a crusade: a Host comes alive at war with `target`'s bloc, and `called` civs are
-    /// asked to pledge. `term` and `deadline` are in turns at this game's speed. `None` when
-    /// crusades are off, the target is dead or no Host slot is free.
+    /// asked to pledge. `term` and `deadline` are in turns at this game's speed. `None` when the
+    /// target is dead, the barbarians or a Host.
     #[allow(clippy::too_many_arguments)]
     pub fn crusade_call(
         &mut self,
@@ -39,12 +39,12 @@ impl Game {
         if !self.team_is_alive(target) || self.team_is_barbarian(target) || self.team_is_crusade_host(target) {
             return None;
         }
-        let host = self.crusade_free_host_slot()?;
+        let target_leader = self.team_get_leader_id(target)?;
+        let host = self.crusade_host_slot();
         let turn = self.game_turn();
         let id = CrusadeId(self.next_crusade_id);
         self.next_crusade_id += 1;
 
-        let target_leader = self.team_get_leader_id(target)?;
         let name = match kind {
             CrusadeKind::Loan { borrower } => {
                 format!("Host of {} against {}", self.player_get_civilization_description(borrower), self.player_get_civilization_description(target_leader))

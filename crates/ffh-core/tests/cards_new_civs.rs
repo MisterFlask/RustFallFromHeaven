@@ -67,7 +67,7 @@ impl World {
     fn cast(&mut self, name: &str) -> PlayerId {
         let spell = self.spell(name);
         let u = self.caster();
-        let np = world::open_slot(&self.g).expect("a free slot");
+        let np = world::next_player(&self.g);
         assert!(self.g.unit_can_cast(u, spell, false), "{name} can be cast");
         self.g.unit_cast(u, spell);
         assert!(self.g.players[np].alive, "{name}: the new civilization lives");
@@ -370,7 +370,7 @@ fn a_city_released_by_the_charter_keeps_its_garrison_behind_stronger_walls() {
     let targets = w.g.unit_spell_targets(u, spell);
     assert!(targets.contains(&SpellTarget::City(town)));
     assert!(!targets.contains(&SpellTarget::City(capital)), "never the capital");
-    let np = world::open_slot(&w.g).unwrap();
+    let np = world::next_player(&w.g);
     assert!(w.g.unit_can_cast_at(u, spell, SpellTarget::City(town)));
     w.g.unit_cast_at(u, spell, SpellTarget::City(town));
 
@@ -425,19 +425,18 @@ fn mirror_colony_founds_two_cities_joined_by_the_mirror_gate() {
 }
 
 #[test]
-fn a_birth_needs_a_free_slot_and_without_vassals_signs_a_pact() {
-    // No free slot: no birth.
+fn a_birth_gets_a_new_slot_and_without_vassals_signs_a_pact() {
+    // Every slot of the game's start is taken: the birth adds one, after the barbarians.
     let mut w = world();
     w.city(&[]);
     w.card("DAWN_KNIGHTS");
-    let spell = w.spell("SPELL_DAWN_KNIGHTS");
-    let u = w.caster();
-    assert!(w.g.unit_can_cast(u, spell, false));
-    for p in w.g.player_ids() {
-        w.g.players[p].ever_alive = true;
-    }
-    assert!(world::open_slot(&w.g).is_none());
-    assert!(!w.g.unit_can_cast(u, spell, false), "no slot, no card");
+    assert!(w.g.player_ids().all(|p| w.g.players[p].ever_alive));
+    let (n, barbarian) = (w.g.num_players(), w.g.barbarian_player());
+    let np = w.cast("SPELL_DAWN_KNIGHTS");
+    assert_eq!(np, PlayerId(n as u8));
+    assert_eq!((w.g.num_players(), w.g.num_teams()), (n + 1, n + 1));
+    assert_eq!(w.g.barbarian_player(), barbarian);
+    assert!(w.g.civ_player_ids().any(|p| p == np) && !w.g.player_is_barbarian(np));
 
     // No Vassal States: open borders and a defensive pact with the founder instead.
     let mut w = world_with(true);

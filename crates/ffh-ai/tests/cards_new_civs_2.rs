@@ -141,7 +141,7 @@ fn the_armageddon_civilizations_play_under_the_ai() {
         g.plot_set_feature_type(q, None);
         g.plot_set_terrain_type(q, marsh, true);
     }
-    let kingdom = world::open_slot(&g).unwrap();
+    let kingdom = world::next_player(&g);
     assert!(nc::valid_scaled_kingdom(&g));
     nc::fire_scaled_kingdom(&mut g, 0);
     born.push((kingdom, "the Scaled Kingdom"));
@@ -154,7 +154,7 @@ fn the_armageddon_civilizations_play_under_the_ai() {
             g.plot_set_feature_type(q, Some(forest));
         }
         nc::fire_brood(&mut g, 0);
-        let brood = world::open_slot(&g).unwrap();
+        let brood = world::next_player(&g);
         nc::fire_brood(&mut g, 1);
         if g.players[brood].alive {
             born.push((brood, "the Brood"));
@@ -162,7 +162,7 @@ fn the_armageddon_civilizations_play_under_the_ai() {
     }
     // The Court of Mammon, beside the civilization with the most gold.
     if nc::valid_infernal_gate(&g) {
-        let court = world::open_slot(&g).unwrap();
+        let court = world::next_player(&g);
         nc::fire_infernal_gate(&mut g, 0);
         assert!(g.players[court].alive);
         // The Court starts with settlers, not cities: it is checked for living only.
@@ -175,7 +175,7 @@ fn court_game(seed: u32) -> (Game, PlayerId, PlotIdx) {
     let mut g = new_game(seed);
     let patron = nc::court_patron(&g).expect("a civilization with a city");
     let site = nc::court_site(&g, patron).expect("a free site");
-    let court = world::open_slot(&g).unwrap();
+    let court = world::next_player(&g);
     nc::fire_infernal_gate(&mut g, 0);
     assert!(g.players[court].alive);
     (g, court, site)

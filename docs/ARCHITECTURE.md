@@ -33,7 +33,8 @@ C++ is an object graph reached through globals (`GC`, `GET_PLAYER`, `GET_TEAM`).
 Rust uses one owning root, `Game`, with id-keyed storage:
 
 - `players`, `teams`: `IdxVec` sized to the players in this game (FFH2's DLL reserves
-  35 civ slots; arrays here are sized to the actual game).
+  35 civ slots; arrays here are sized to the actual game, and grow when a player is added
+  mid-game: "Players added mid-game" below). One team slot per player slot, of the same id.
 - `units`, `cities`, `groups`, `plot_groups`, `deals`: `Slab`s keyed by
   never-reused ids. Owners keep ordered id lists (`Player::units`, ...).
 - `map`: plots in a flat `Vec` (index `y * width + x`), areas in a `Slab`.
@@ -42,6 +43,39 @@ Rust uses one owning root, `Game`, with id-keyed storage:
 C++ methods become `impl Game` methods prefixed by class (`unit_can_move_into(u, ..)`),
 so any rules function can touch any object through `&mut self` without aliasing
 problems, and the C++ call graph maps one-to-one onto Rust.
+
+## Players added mid-game
+
+A game starts with its civ slots and the barbarian slot, nothing reserved. A civilization that
+appears later (the Infernal Pact's Infernals, the Mercurian Gate's Mercurians, FfH's `formEmpire`
+events, colonies, the cards' civilizations through `ffh::cards::world::birth`, the Armageddon
+cards') or a crusade's Host gets a slot of its own, appended to the game:
+
+- `Game::add_player_slot() -> PlayerId` appends a player slot and a team slot of the same id,
+  grows every per-player (`IdxVec<PlayerId, _>`) and per-team (`IdxVec<TeamId, _>`) array by one
+  entry at its reset value, and initializes the slot as C++ initializes an open slot (`Open`,
+  team and player `init`, never alive), played by the barbarian slot's controller (the game's own
+  AI) until its creator hands it another. `Game::add_player(leader, civ)` and
+  `Game::add_player_advanced(team, leader, civ)` (C++ `addPlayer`/`addPlayerAdvanced`) bring a
+  new slot alive and return it; `crusade_host_slot` reuses a freed Host slot or adds one.
+- **The inventory is the save lists.** `Persist` has a `grow` method that `persist_struct!` and
+  `persist_enum!` generate from the same field lists as `write`/`read`; containers recurse, and an
+  `IdxVec` keyed by `PlayerId` or `TeamId` pushes fresh entries (`Persist::fresh`: zero, `false`,
+  `None`, empty; an inner array by an info type sized like its neighbour). `save::grow_game`
+  destructures `Game` exhaustively like `write_game` and adds the vectors that are per-slot but
+  not keyed by an id (`rank_player`, `rank_team`, `Team::tech_share_count`). So a per-player
+  field added to a saved struct grows with no further code. An empty per-slot array is storage
+  not sized yet (a placeholder `Player::default()`) and stays empty.
+- **Ids.** New ids come after every existing one, the barbarian's included: the barbarian slot is
+  stored (`GameSetup::barbarian`), not the last id. Code says what it means instead of using
+  index ranges: `civ_player_ids()` / `civ_team_ids()` (every slot but the barbarian's, in id
+  order), `is_civ_player_slot` / `is_civ_team_slot`, `turn_order()` (the civ slots in id order,
+  then the barbarian, so the barbarian still moves last). Only `game_init`'s start-up steps,
+  which run before any slot is added, index the civ slots as `0..num_civ_players()`.
+- Ids are `u8`: a game holds at most 255 slots. Per-turn loops visit only the slots the game
+  has: no dead spare slots.
+- Controllers keep no per-player arrays (the AI's caches are maps by `PlayerId`, rebuilt per
+  turn), so nothing outside `Game` needs growing; a loaded game has as many controllers as slots.
 
 ## Randomness and determinism
 
@@ -145,7 +179,10 @@ options; slabs keep their ids and next id). Encoding details: `save/io.rs`.
   a fresh controller decides the same way. Mid-turn saves restore the rules state exactly but
   not the controllers' memory of what they already did this turn.
 - Every saved struct is written by exhaustive destructuring, so adding a field fails to compile
-  until the save code lists it (bump `save::FORMAT_VERSION` when the layout changes).
+  until the save code lists it (bump `save::FORMAT_VERSION` when the layout changes). The same
+  lists grow the state when a player is added mid-game (above).
+- A save holds as many slots as the game had when it was saved: the arrays are length-prefixed,
+  so a game with players added mid-game loads like any other.
 
 ## Python
 

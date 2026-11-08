@@ -36,6 +36,9 @@ impl Game {
     /// game elements, starting items, score calculation, events.
     /// ORDER NOTE: the exe's placement of `initEvents` (soren rand) is not visible in the DLL.
     pub fn game_init(&mut self) {
+        // At the start the barbarian slot is the last: the civ slots are `0..num_civ_players()`,
+        // which the start-up steps index by (players added mid-game come after the barbarian).
+        assert_eq!(self.barbarian_player().idx(), self.num_civ_players(), "game_init: the barbarian slot is the last");
         // CvMap::init(NULL): grid size from the world size / map script, plots, areas.
         self.map_init(None);
         // CvGame::init(eHandicap)
@@ -1579,17 +1582,65 @@ impl Game {
         !self.inactive_triggers.contains(&trigger)
     }
 
-    /// C++ `CvGame::addPlayer(eNewPlayer, eLeader, eCiv)` (Python: add a civ mid-game).
+    /// Not in C++, whose player arrays are sized `MAX_PLAYERS` when the game starts: appends a
+    /// player slot to the game, with a team slot of its own of the same id (as C++, every player
+    /// slot has a team slot: `num_teams() == num_players()`), and returns it. The new ids come
+    /// after every existing one, the barbarian's included (`barbarian_player` is stored, not the
+    /// last id; `turn_order` still ends with the barbarian).
+    ///
+    /// Every per-player and per-team array of the game grows by one entry at its reset value
+    /// (`save::grow_game`: the save lists are the inventory). The slot is then what a C++ open
+    /// slot is after `CvGame::init`: an `Open` slot, `CvTeam::init` and `CvPlayer::init` done,
+    /// never alive; the barbarian slot's handicap; played by the barbarian slot's controller (the
+    /// game's own AI: a slot nobody chose is no human's) until its creator gives it another.
+    /// Bring it alive with [`Game::add_player`] / [`Game::add_player_advanced`] (a civilization
+    /// born mid-game) or as a crusade Host.
+    ///
+    /// Ids are `u8`: a game holds at most 255 slots.
+    pub fn add_player_slot(&mut self) -> PlayerId {
+        let n = self.players.len();
+        assert_eq!(n, self.teams.len(), "one team slot per player slot");
+        assert!(n < u8::MAX as usize, "a game holds at most {} player slots", u8::MAX);
+        let (p, t) = (PlayerId(n as u8), TeamId(n as u8));
+        let barbarian = self.barbarian_player();
+        let handicap = self.setup.players[barbarian.idx()].handicap;
+        self.setup.players.push(crate::setup::PlayerSetup {
+            civ: None,
+            leader: None,
+            team: t,
+            handicap,
+            art_style: None,
+            slot_status: SlotStatus::Open,
+            human: false,
+            leader_name: String::new(),
+            civ_description: String::new(),
+            host: false,
+        });
+        // Placeholders, made by the inits below (as `Game::new` makes its slots).
+        self.players.push(crate::player::Player::default());
+        self.teams.push(crate::team::Team::new(t, n + 1, self.d));
+        let controller = self.controllers[barbarian].clone();
+        self.controllers.push(controller);
+        crate::save::grow_game(self, crate::save::Slots { players: n + 1, teams: n + 1 });
+        self.team_init(t);
+        self.player_init(p);
+        p
+    }
+
+    /// C++ `CvGame::addPlayer(eNewPlayer, eLeader, eCiv)` (Python: add a civ mid-game) on a new
+    /// slot ([`Game::add_player_slot`]), which it returns.
     ///
     /// The C++ first picks a player color not used by any civ slot (graphics only; `GameSetup`
     /// has no color slot, so that part is not ported).
-    pub fn add_player(&mut self, new_player: PlayerId, leader: LeaderHeadType, civ: CivilizationType) {
+    pub fn add_player(&mut self, leader: LeaderHeadType, civ: CivilizationType) -> PlayerId {
+        let new_player = self.add_player_slot();
         let team = self.players[new_player].team;
         self.setup.players[new_player.idx()].leader = Some(leader);
         self.setup.players[new_player.idx()].civ = Some(civ);
         self.setup_set_slot_status(new_player, SlotStatus::Computer);
         self.team_init(team);
         self.player_init(new_player);
+        new_player
     }
 
     /// C++ `CvInitCore::setTeam(eID, eTeam)`: on change, `CvPlayer::updateTeamType`.
@@ -1609,26 +1660,24 @@ impl Game {
     }
 
     /// C++ `CvGame::addPlayerAdvanced(eNewPlayer, iNewTeam, eLeader, eCiv)` (FfH: also picks a
-    /// fresh team, sets war with barbarians/minors and credits the team's techs).
+    /// fresh team, sets war with barbarians/minors and credits the team's techs) on a new slot
+    /// ([`Game::add_player_slot`]), which it returns: the civilization joins `new_team`, or with
+    /// `None` the new slot's own team (C++ takes the first never-alive team slot; the new slot's
+    /// is always one).
     ///
     /// The C++ player color pick is not ported (see [`Game::add_player`]).
-    pub fn add_player_advanced(&mut self, new_player: PlayerId, new_team: Option<TeamId>, leader: LeaderHeadType, civ: CivilizationType) {
+    pub fn add_player_advanced(&mut self, new_team: Option<TeamId>, leader: LeaderHeadType, civ: CivilizationType) -> PlayerId {
         let d = self.d;
-        let mut new_team = new_team;
-        if let Some(t) = new_team {
-            self.player_set_team(new_player, t);
-            // gDLL->getInterfaceIFace()->setDirty(Fog_DIRTY_BIT, true) (UI)
-        } else {
-            let mut valid = false;
-            for i in self.civ_team_ids() {
-                // (not in C++: crusade Host slots' teams are reserved; docs/CRUSADE.md)
-                if !self.team_is_ever_alive(i) && !valid && !self.player_is_host_slot(PlayerId(i.0)) {
-                    new_team = Some(i);
-                    valid = true;
-                }
+        let new_player = self.add_player_slot();
+        let new_team = match new_team {
+            Some(t) => {
+                self.player_set_team(new_player, t);
+                // gDLL->getInterfaceIFace()->setDirty(Fog_DIRTY_BIT, true) (UI)
+                t
             }
-            // (bValid <=> a never-alive team slot was found)
-            if let Some(nt) = new_team {
+            None => {
+                let nt = self.players[new_player].team;
+                debug_assert!(!self.team_is_ever_alive(nt));
                 self.team_init(nt);
                 for j in self.team_ids() {
                     if (self.team_is_barbarian(j) || self.team_is_minor_civ(j)) && nt != j {
@@ -1637,11 +1686,9 @@ impl Game {
                         self.teams[nt].at_war[j] = true;
                     }
                 }
+                nt
             }
-        }
-        // C++ continues with NO_TEAM when every civ team slot was ever alive (undefined
-        // behaviour in CvPlayer::init); keep the slot's current team instead.
-        let new_team = new_team.unwrap_or(self.setup.players[new_player.idx()].team);
+        };
 
         self.setup_set_team(new_player, new_team);
         self.setup.players[new_player.idx()].leader = Some(leader);
@@ -1657,6 +1704,7 @@ impl Game {
                 self.player_change_tech_score(new_player, get_tech_score(d, tech));
             }
         }
+        new_player
     }
 
     /// C++ `CvGame::pythonIsBonusIgnoreLatitudes` (map script `isBonusIgnoreLatitude`).

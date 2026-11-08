@@ -7,7 +7,7 @@
 //!
 //! - **Rite of the Necropolis, Wake the Hill Clans, Call the Aifon** are cast as soon as they can
 //!   be: each makes a civilization on land that is free now (ruins, hills, a coast), and the land
-//!   and the player slots go to whoever is first.
+//!   goes to whoever is first.
 //! - **The Usurper's Crown** splits the rival an expert would weaken before a war on it: of the
 //!   civilizations it may split, one we are at war with, else one we plan a war on, else one we are
 //!   at most Cautious toward; the strongest of them. Never our vassal, our master or a defensive

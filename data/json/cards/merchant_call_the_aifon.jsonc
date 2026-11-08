@@ -219,10 +219,10 @@
   ],
   "text": {
     "TXT_KEY_TECH_CARD_CALL_THE_AIFON": "Call the Aifon",
-    "TXT_KEY_TECH_CARD_CALL_THE_AIFON_HELP": "[ICON_BULLET]World spell, once: the Aifon are born as your vassal in two coastal cities of unowned land, with four Axemen and two Archers.[NEWLINE][ICON_BULLET]Their hero: the Deep Mother, a Kraken.[NEWLINE][ICON_BULLET]Their land units have Water Walking: they cross water without ships.[NEWLINE][ICON_BULLET]Needs an unowned coast or island with two free coastal sites, and a free player slot.",
+    "TXT_KEY_TECH_CARD_CALL_THE_AIFON_HELP": "[ICON_BULLET]World spell, once: the Aifon are born as your vassal in two coastal cities of unowned land, with four Axemen and two Archers.[NEWLINE][ICON_BULLET]Their hero: the Deep Mother, a Kraken.[NEWLINE][ICON_BULLET]Their land units have Water Walking: they cross water without ships.[NEWLINE][ICON_BULLET]Needs an unowned coast or island with two free coastal sites.",
     "TXT_KEY_TECH_CARD_CALL_THE_AIFON_PEDIA": "The Lanun tell of an isle that rises from the sea for the people of the deep. Call, and the deep answers.[NEWLINE][NEWLINE]Expert: call them to the far coast of the rival you will fight across the water.",
     "TXT_KEY_SPELL_CALL_THE_AIFON": "Call the Aifon",
-    "TXT_KEY_SPELL_CALL_THE_AIFON_HELP": "[ICON_BULLET]The Aifon are born as your vassal in two coastal cities of the largest unowned land region with two free coastal sites.[NEWLINE][ICON_BULLET]Each city has two Axemen and an Archer; the Deep Mother, a Kraken, in the first.[NEWLINE][ICON_BULLET]Once per game. Needs a free player slot.",
+    "TXT_KEY_SPELL_CALL_THE_AIFON_HELP": "[ICON_BULLET]The Aifon are born as your vassal in two coastal cities of the largest unowned land region with two free coastal sites.[NEWLINE][ICON_BULLET]Each city has two Axemen and an Archer; the Deep Mother, a Kraken, in the first.[NEWLINE][ICON_BULLET]Once per game.",
     "TXT_KEY_BUILDING_PALACE_AIFON": "Palace",
     "TXT_KEY_UNIT_DEEP_MOTHER": "The Deep Mother",
     "TXT_KEY_UNIT_DEEP_MOTHER_PEDIA": "The Deep Mother is older than the Lanun's oldest songs. The Aifon say the sea is only her shadow.",

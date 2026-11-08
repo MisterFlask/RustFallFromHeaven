@@ -551,7 +551,7 @@ impl Game {
 
         if self.is_team_vote(vote) {
             // C++ `ePlayerVote >= 0 && ePlayerVote < MAX_CIV_TEAMS`
-            player_vote.team().is_some_and(|t| t.idx() < self.num_civ_teams())
+            player_vote.team().is_some_and(|t| self.is_civ_team_slot(t))
         } else {
             player_vote == PlayerVote::PLAYER_VOTE_YES
         }
@@ -582,7 +582,7 @@ impl Game {
 
     /// C++ `CvGame::getPlayerVote(eOwnerIndex, iVoteId)` (stored on the player).
     pub fn player_vote(&self, owner: PlayerId, vote_id: VoteId) -> PlayerVote {
-        debug_assert!(owner.idx() < self.num_civ_players());
+        debug_assert!(self.is_civ_player_slot(owner));
         debug_assert!(self.vote_triggered(vote_id).is_some());
 
         self.player_get_vote(owner, vote_id)
@@ -590,7 +590,7 @@ impl Game {
 
     /// C++ `CvGame::setPlayerVote(eOwnerIndex, iVoteId, eNewValue)`.
     pub fn set_player_vote(&mut self, owner: PlayerId, vote_id: VoteId, new_value: PlayerVote) {
-        debug_assert!(owner.idx() < self.num_civ_players());
+        debug_assert!(self.is_civ_player_slot(owner));
         debug_assert!(self.vote_triggered(vote_id).is_some());
 
         self.player_set_vote(owner, vote_id, new_value);

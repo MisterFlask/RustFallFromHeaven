@@ -1863,7 +1863,10 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         }
 
         Command::ProposeLoan { to, lend, target, defend, strength, duration, give, get, units } => {
-            in_range("player", to.0 as i32, g.num_civ_players())?;
+            in_range("player", to.0 as i32, g.num_players())?;
+            if !g.is_civ_player_slot(*to) {
+                return Err(invalid("field `to`: not a civilization"));
+            }
             in_range("team", target.0 as i32, g.num_teams())?;
             if *to == h {
                 return Err(invalid("field `to`: yourself"));
@@ -1955,7 +1958,7 @@ pub(crate) fn loan_error(e: LoanError) -> String {
         LoanError::CannotLend(l) => format!("the lender cannot lend against that team: {}", lend_error(l)),
         LoanError::NotEnoughUnits => "the lender has not that much strength to spare".into(),
         LoanError::BadPayment => "a payment item cannot be traded".into(),
-        LoanError::NoGeneral => "no player slot is free for a new general".into(),
+        LoanError::NoGeneral => "no general can be called against that team".into(),
     }
 }
 

@@ -211,9 +211,9 @@ pub fn necropolis_sites(g: &Game, p: PlayerId) -> Option<Vec<PlotIdx>> {
     (out.len() == NECROPOLIS_RUINS).then_some(out)
 }
 
-/// `reqRiteOfTheNecropolis(caster)`: a player slot is free and the Necropolis has its ruins.
+/// `reqRiteOfTheNecropolis(caster)`: the Necropolis has its ruins.
 fn req_rite_of_the_necropolis(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    world::open_slot(g).is_some() && necropolis_sites(g, g.units[caster].owner).is_some()
+    necropolis_sites(g, g.units[caster].owner).is_some()
 }
 
 /// `spellRiteOfTheNecropolis(caster)`: the Necropolis (+4 attitude toward the caster, -4 toward
@@ -228,7 +228,7 @@ fn spell_rite_of_the_necropolis(g: &mut Game, caster: UnitId, _call: &PyCall) {
     b.hero = Some(unit(d, "UNIT_LICH_PRINCE"));
     b.founder_attitude = ATTITUDE;
     b.alignment_attitude = Some((AlignmentType::ALIGNMENT_GOOD, NECROPOLIS_GOOD_ATTITUDE));
-    let Some(np) = world::birth(g, &b) else { return };
+    let np = world::birth(g, &b);
     for c in g.players[np].cities.clone() {
         if g.cities[c].population < NECROPOLIS_POPULATION {
             g.city_set_population(c, NECROPOLIS_POPULATION);
@@ -316,9 +316,9 @@ pub fn hill_clan_sites(g: &Game, p: PlayerId) -> Option<Vec<PlotIdx>> {
     None
 }
 
-/// `reqWakeTheHillClans(caster)`: a player slot is free and the Hill Clans have their hills.
+/// `reqWakeTheHillClans(caster)`: the Hill Clans have their hills.
 fn req_wake_the_hill_clans(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    world::open_slot(g).is_some() && hill_clan_sites(g, g.units[caster].owner).is_some()
+    hill_clan_sites(g, g.units[caster].owner).is_some()
 }
 
 /// `spellWakeTheHillClans(caster)`: the Hill Clans, the caster's vassal, in two cities on the
@@ -381,9 +381,9 @@ pub fn usurper_unit(g: &Game, q: PlayerId) -> Option<UnitType> {
     best.or_else(|| d.ty::<UnitClassType>("UNITCLASS_WARRIOR").and_then(|class| d.civ_unit(civ, class)))
 }
 
-/// `reqUsurpersCrown(caster)`: a player slot is free (the target is its own test).
-fn req_usurpers_crown(g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
-    world::open_slot(g).is_some()
+/// `reqUsurpersCrown(caster)`: always (the target is its own test).
+fn req_usurpers_crown(_g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
+    true
 }
 
 /// `targetsUsurpersCrown(caster)`: [`usurper_targets`] of the caster's owner.
@@ -416,7 +416,7 @@ fn spell_usurpers_crown(g: &mut Game, caster: UnitId, _call: &PyCall) {
     b.founder_attitude = ATTITUDE;
     b.parent_attitude = USURPER_GRUDGE;
     b.description = Some(format!("{} Usurpers", g.player_get_civilization_adjective(q)));
-    let Some(np) = world::birth(g, &b) else { return };
+    let np = world::birth(g, &b);
     g.players[np].alignment = g.players[q].alignment;
 }
 
@@ -493,9 +493,9 @@ pub fn aifon_sites(g: &Game) -> Option<Vec<PlotIdx>> {
     None
 }
 
-/// `reqCallTheAifon(caster)`: a player slot is free and the Aifon have their coast.
+/// `reqCallTheAifon(caster)`: the Aifon have their coast.
 fn req_call_the_aifon(g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
-    world::open_slot(g).is_some() && aifon_sites(g).is_some()
+    aifon_sites(g).is_some()
 }
 
 /// `spellCallTheAifon(caster)`: the Aifon, the caster's vassal, in two coastal cities, each with two
@@ -530,9 +530,9 @@ pub fn scaled_sites(g: &Game) -> Vec<PlotIdx> {
     }
 }
 
-/// The Scaled Kingdom is played where its region has room for its three cities, with a free slot.
+/// The Scaled Kingdom is played where its region has room for its three cities.
 pub fn valid_scaled_kingdom(g: &Game) -> bool {
-    world::open_slot(g).is_some() && scaled_sites(g).len() == SCALED_CITIES
+    scaled_sites(g).len() == SCALED_CITIES
 }
 
 /// The civilizations whose land lies within `range` plots of a city of `p`'s.
@@ -556,7 +556,7 @@ pub fn fire_scaled_kingdom(g: &mut Game, _: usize) {
     if let Some(t) = d.units[d.t::<UnitType>("UNIT_LIZARDMAN_RANGER")].prereq_and_tech {
         b.techs = tech_with_prereqs(d, t);
     }
-    let Some(np) = world::birth(g, &b) else { return };
+    let np = world::birth(g, &b);
     for q in neighbours(g, np, SCALED_NEIGHBOUR_RANGE) {
         g.players[np].ai_attitude_extra[q] += SCALED_NEIGHBOUR_ATTITUDE;
     }
@@ -586,10 +586,10 @@ pub fn nest_sites(g: &Game) -> Vec<PlotIdx> {
     out
 }
 
-/// The Brood brings barbarians (its nests' spiders): played only with barbarians, a free slot and
-/// a forest region for a nest.
+/// The Brood brings barbarians (its nests' spiders): played only with barbarians and a forest
+/// region for a nest.
 pub fn valid_brood(g: &Game) -> bool {
-    !g.is_option(GameOptionType::GAMEOPTION_NO_BARBARIANS) && world::open_slot(g).is_some() && spider_nest(g.d).is_some() && !nest_sites(g).is_empty()
+    !g.is_option(GameOptionType::GAMEOPTION_NO_BARBARIANS) && spider_nest(g.d).is_some() && !nest_sites(g).is_empty()
 }
 
 /// The nests the Brood takes: every Spider Nest still standing on land, none within
@@ -613,7 +613,7 @@ pub fn brood_sites(g: &Game) -> Vec<PlotIdx> {
 
 /// Stage 0 (30): a Spider Nest appears at each [`nest_sites`] plot. Stage 1 (50): each nest still
 /// standing becomes a city of the Brood, with six Giant Spiders shared among them and the Spider
-/// Queen; nothing when no nest stands or no slot is free.
+/// Queen; nothing when no nest stands.
 pub fn fire_brood(g: &mut Game, stage: usize) {
     let d = g.d;
     let Some(nest) = spider_nest(d) else { return };
@@ -627,7 +627,7 @@ pub fn fire_brood(g: &mut Game, stage: usize) {
         return;
     }
     let sites = brood_sites(g);
-    if sites.is_empty() || world::open_slot(g).is_none() {
+    if sites.is_empty() {
         g.log.msg(turn, None, || "The Brood: no nest stands.".to_string());
         return;
     }
@@ -724,10 +724,9 @@ pub fn court_site(g: &Game, patron: PlayerId) -> Option<PlotIdx> {
     world::best_sites(g, &near, 1, None, &[]).first().copied()
 }
 
-/// The Court of Mammon is played with a free player slot and a free site beside the richest
-/// civilization.
+/// The Court of Mammon is played with a free site beside the richest civilization.
 pub fn valid_infernal_gate(g: &Game) -> bool {
-    court_civ(g.d).is_some() && world::open_slot(g).is_some() && court_patron(g).is_some_and(|p| court_site(g, p).is_some())
+    court_civ(g.d).is_some() && court_patron(g).is_some_and(|p| court_site(g, p).is_some())
 }
 
 /// The Court of Mammon arrives on the best free site beside the civilization with the most gold
@@ -748,7 +747,7 @@ pub fn fire_infernal_gate(g: &mut Game, _: usize) {
     b.camp = Some((site, units));
     b.hero = Some(unit(d, "UNIT_AURIVANE"));
     b.gold = COURT_GOLD;
-    let Some(np) = world::birth(g, &b) else { return };
+    let np = world::birth(g, &b);
     court_infernal_grudge(g, np);
     let turn = g.game_turn();
     let by = g.player_get_civilization_description(patron);

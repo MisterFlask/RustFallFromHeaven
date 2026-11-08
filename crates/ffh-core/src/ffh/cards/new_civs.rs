@@ -162,9 +162,9 @@ fn city(d: &GameData, plot: PlotIdx, buildings: &[&str], units: &[&str]) -> NewC
     NewCity { plot, buildings: buildings.iter().map(|&b| d.t::<BuildingType>(b)).collect(), units: units.iter().map(|&u| unit(d, u)).collect() }
 }
 
-/// `reqPatrianAwakening(caster)`: a player slot is free and the Patrians have their two sites.
+/// `reqPatrianAwakening(caster)`: the Patrians have their two sites.
 fn req_patrian_awakening(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    world::open_slot(g).is_some() && patrian_sites(g, g.units[caster].owner).is_some()
+    patrian_sites(g, g.units[caster].owner).is_some()
 }
 
 /// `spellPatrianAwakening(caster)`: the Patrians, the caster's vassal (+4 attitude toward it), in
@@ -181,16 +181,16 @@ fn spell_patrian_awakening(g: &mut Game, caster: UnitId, _call: &PyCall) {
     b.hero = Some(unit(d, "UNIT_ARCHON"));
     b.vassal = true;
     b.founder_attitude = ATTITUDE;
-    let Some(np) = world::birth(g, &b) else { return };
+    let np = world::birth(g, &b);
     for u in g.players[np].units.clone() {
         patrian_caster(g, u);
     }
 }
 
-/// `reqDawnKnights(caster)`: a player slot is free and there are two free sites within
-/// [`DAWN_RANGE`] of the caster's borders.
+/// `reqDawnKnights(caster)`: there are two free sites within [`DAWN_RANGE`] of the caster's
+/// borders.
 fn req_dawn_knights(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    world::open_slot(g).is_some() && border_sites(g, g.units[caster].owner, DAWN_RANGE).is_some()
+    border_sites(g, g.units[caster].owner, DAWN_RANGE).is_some()
 }
 
 /// `spellDawnKnights(caster)`: the Knights of the Dawn, the caster's vassal (+4 attitude toward
@@ -212,10 +212,10 @@ fn spell_dawn_knights(g: &mut Game, caster: UnitId, _call: &PyCall) {
     world::birth(g, &b);
 }
 
-/// `reqFeyCourt(caster)`: a player slot is free and an unclaimed forest region of
-/// [`FEY_FOREST_PLOTS`] plots or more has two free sites.
+/// `reqFeyCourt(caster)`: an unclaimed forest region of [`FEY_FOREST_PLOTS`] plots or more has
+/// two free sites.
 fn req_fey_court(g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
-    world::open_slot(g).is_some() && fey_sites(g).is_some()
+    fey_sites(g).is_some()
 }
 
 /// `spellFeyCourt(caster)`: the Fey Court, the caster's vassal, of the Fellowship of Leaves, in
@@ -235,10 +235,10 @@ fn spell_fey_court(g: &mut Game, caster: UnitId, _call: &PyCall) {
     world::birth(g, &b);
 }
 
-/// `reqCondottieri(caster)`: a player slot is free and there are two free sites within
-/// [`CONDOTTIERI_RANGE`] of the caster's borders.
+/// `reqCondottieri(caster)`: there are two free sites within [`CONDOTTIERI_RANGE`] of the
+/// caster's borders.
 fn req_condottieri(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    world::open_slot(g).is_some() && border_sites(g, g.units[caster].owner, CONDOTTIERI_RANGE).is_some()
+    border_sites(g, g.units[caster].owner, CONDOTTIERI_RANGE).is_some()
 }
 
 /// `spellCondottieri(caster)`: the Free Companies, the caster's vassal, in two cities, with six
@@ -262,9 +262,9 @@ fn targets_free_city_charter(g: &Game, caster: UnitId, _call: &PyCall) -> Vec<Sp
     g.players[p].cities.iter().copied().filter(|&c| !g.city_is_capital(c)).map(SpellTarget::City).collect()
 }
 
-/// `reqFreeCityCharter(caster)`: a player slot is free (the target is its own test).
-fn req_free_city_charter(g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
-    world::open_slot(g).is_some()
+/// `reqFreeCityCharter(caster)`: always (the target is its own test).
+fn req_free_city_charter(_g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
+    true
 }
 
 /// `spellFreeCityCharter(caster)` at a city: it becomes the Free City, a civilization of its own
@@ -282,7 +282,7 @@ fn spell_free_city_charter(g: &mut Game, caster: UnitId, _call: &PyCall) {
     b.release = vec![c];
     b.keep = Some(caster);
     b.founder_attitude = ATTITUDE;
-    let Some(np) = world::birth(g, &b) else { return };
+    let np = world::birth(g, &b);
     g.setup.players[np.idx()].civ_description = format!("Free City of {name}");
     let Some(&city) = g.players[np].cities.first() else { return };
     for building in ["BUILDING_WALL_OF_STONE", "BUILDING_FREE_CITY_CHARTER"] {

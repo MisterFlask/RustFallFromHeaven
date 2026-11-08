@@ -25,8 +25,6 @@ pub struct Settings {
     pub target_score: i32,
     pub max_city_elimination: i32,
     pub no_victory: Vec<String>,
-    /// Open slots after the civs (None = the standard count).
-    pub spare: Option<usize>,
     /// `VICTORY_X@T`: at turn T, the capital of the first alive civ gets every building whose
     /// class has a victory threshold for VICTORY_X (forces the FfH tower/altar victories).
     pub grant_victory: Option<String>,
@@ -53,7 +51,6 @@ impl Settings {
             target_score: 0,
             max_city_elimination: 0,
             no_victory: Vec::new(),
-            spare: None,
             grant_victory: None,
         }
     }
@@ -85,7 +82,6 @@ impl Settings {
                 "--target-score" => s.target_score = num(&v)? as i32,
                 "--max-city-elimination" => s.max_city_elimination = num(&v)? as i32,
                 "--no-victory" => s.no_victory = list(&v),
-                "--spare" => s.spare = Some(num(&v)? as usize),
                 "--grant-victory" => s.grant_victory = Some(v),
                 a => return Err(format!("unknown option {a}")),
             }
@@ -133,9 +129,6 @@ impl Settings {
         if !self.no_victory.is_empty() {
             push("--no-victory", self.no_victory.join(","));
         }
-        if let Some(n) = self.spare {
-            push("--spare", n.to_string());
-        }
         if let Some(g) = &self.grant_victory {
             push("--grant-victory", g.clone());
         }
@@ -178,9 +171,6 @@ impl Settings {
         if !self.no_victory.is_empty() {
             out += &format!(" novic={}", self.no_victory.iter().map(|o| short(o)).collect::<Vec<_>>().join(","));
         }
-        if let Some(n) = self.spare {
-            out += &format!(" spare={n}");
-        }
         if let Some(g) = &self.grant_victory {
             out += &format!(" grant={}", short(g));
         }
@@ -206,9 +196,6 @@ impl Settings {
         o.target_score = self.target_score;
         o.max_city_elimination = self.max_city_elimination;
         o.teams = if self.teams > 1 { TeamSetup::TeamsOf(self.teams) } else { TeamSetup::Solo };
-        if let Some(n) = self.spare {
-            o.spare_slots = n;
-        }
         if self.civs == 0 || self.civs > ffh_core::GameSetup::MAX_CIVS {
             return Err(format!("civs must be in 1..={}", ffh_core::GameSetup::MAX_CIVS));
         }

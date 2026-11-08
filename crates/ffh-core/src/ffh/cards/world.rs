@@ -406,8 +406,8 @@ pub struct Birth {
     pub description: Option<String>,
     /// The player whose card makes it: its controller plays the new civilization, it has met it,
     /// and it is a vassal birth's master. `None`: an Armageddon card's civilization
-    /// ([`Birth::wild`]), played by its slot's own controller (the host's AI: a slot that never
-    /// lived is no human's).
+    /// ([`Birth::wild`]), played by its new slot's own controller (the game's AI:
+    /// `Game::add_player_slot`).
     pub founder: Option<PlayerId>,
     /// Its parent (`Player::parent`), whose team's techs it knows (never the cards) and which it
     /// has met: the founder unless set otherwise (the Usurper's Crown: the civilization it secedes
@@ -449,8 +449,8 @@ impl Birth {
         Birth { founder: Some(founder), parent: Some(founder), ..Birth::wild(civ, leader) }
     }
 
-    /// An Armageddon card's civilization, with nothing yet: no founder and no parent (its slot's
-    /// own controller, the world's techs, nobody's vassal).
+    /// An Armageddon card's civilization, with nothing yet: no founder and no parent (its new
+    /// slot's own controller, the world's techs, nobody's vassal).
     pub fn wild(civ: CivilizationType, leader: LeaderHeadType) -> Birth {
         Birth {
             civ,
@@ -474,10 +474,10 @@ impl Birth {
     }
 }
 
-/// The player slot a new civilization would take: a spare slot never alive (shared with Hyborem
-/// and Basium; never a crusade Host's). `None`: a card that makes a civilization cannot be cast.
-pub fn open_slot(g: &Game) -> Option<PlayerId> {
-    g.cf_get_open_player()
+/// The id the next civilization born gets: a new player slot, after every existing one
+/// (`Game::add_player_slot`). A birth never fails for lack of a slot.
+pub fn next_player(g: &Game) -> PlayerId {
+    PlayerId(g.num_players() as u8)
 }
 
 /// The living civilizations: not the barbarians, a minor civilization or a crusade Host.
@@ -496,9 +496,9 @@ pub fn world_techs(g: &Game) -> Vec<TechType> {
     d.techs.keys().filter(|&t| d.techs[t].card.is_none() && !teams.is_empty() && half(t)).collect()
 }
 
-/// Gives birth to `b` in an [`open_slot`] (`None` when there is none). The slot is added
-/// (`add_player_advanced`, on a team of its own) and played by the founder's controller (as the
-/// Infernals are), or by its own without a founder; its parent is `b.parent`, and it knows its
+/// Gives birth to `b` as a new player, which it returns: the player is added
+/// (`add_player_advanced`: a new slot, on a team of its own) and played by the founder's
+/// controller (as the Infernals are), or by its own (the game's AI) without a founder; its parent is `b.parent`, and it knows its
 /// parent's team's techs (never the cards), or without a parent the world's ([`world_techs`]), and
 /// `b.techs`. It founds its cities (the first its capital) with their buildings and takes over the
 /// released cities, its state religion in every one; its units stand in their cities (or in its
@@ -507,9 +507,8 @@ pub fn world_techs(g: &Game) -> Vec<TechType> {
 /// cannot be (No Vassal States, or the founder a vassal itself) it signs open borders and a
 /// defensive pact with the founder instead, a deal like any other. No other war or peace is forced (docs/DECKS.md, principle 27): its
 /// leanings are its attitude modifiers.
-pub fn birth(g: &mut Game, b: &Birth) -> Option<PlayerId> {
+pub fn birth(g: &mut Game, b: &Birth) -> PlayerId {
     let d = g.d;
-    let p = open_slot(g)?;
     let techs: Vec<TechType> = match b.parent {
         Some(parent) => {
             let pt = g.players[parent].team;
@@ -517,7 +516,7 @@ pub fn birth(g: &mut Game, b: &Birth) -> Option<PlayerId> {
         }
         None => world_techs(g),
     };
-    g.add_player_advanced(p, None, b.leader, b.civ);
+    let p = g.add_player_advanced(None, b.leader, b.civ);
     if let Some(description) = &b.description {
         g.setup.players[p.idx()].civ_description = description.clone();
     }
@@ -611,7 +610,7 @@ pub fn birth(g: &mut Game, b: &Birth) -> Option<PlayerId> {
         }
         None => g.log.msg(turn, None, || format!("{name} rises")),
     }
-    Some(p)
+    p
 }
 
 /// A unit of a new civilization's at (x, y), with its promotions.

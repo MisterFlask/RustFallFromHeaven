@@ -220,7 +220,7 @@
   ],
   "text": {
     "TXT_KEY_DOOM_SCALED_KINGDOM": "The Scaled Kingdom",
-    "TXT_KEY_DOOM_SCALED_KINGDOM_HELP": "A new civilization, the Scaled Kingdom, rises in the largest unowned region of jungle and marsh: three cities, each with a Palisade and two Lizardman Rangers, and its hero the Slitherking (a Lizardman Assassin, attack 90). Its units move through jungle and marsh at the cost of open ground, with +50% defence there. -2 attitude toward the civilizations whose land is within 6 plots of its cities. It knows the techs half the civilizations know. Played only where the region has room for three cities, with a free player slot.",
+    "TXT_KEY_DOOM_SCALED_KINGDOM_HELP": "A new civilization, the Scaled Kingdom, rises in the largest unowned region of jungle and marsh: three cities, each with a Palisade and two Lizardman Rangers, and its hero the Slitherking (a Lizardman Assassin, attack 90). Its units move through jungle and marsh at the cost of open ground, with +50% defence there. -2 attitude toward the civilizations whose land is within 6 plots of its cities. It knows the techs half the civilizations know. Played only where the region has room for three cities.",
     "TXT_KEY_UNIT_SLITHERKING": "The Slitherking",
     "TXT_KEY_UNIT_SLITHERKING_PEDIA": "The Slitherking crawled out of the deepest marsh with a crown on his head and nobody left alive to ask where he found it.",
     "TXT_KEY_UNIT_SLITHERKING_STRATEGY": "A Lizardman Assassin hero with attack 90: it strikes the enemy's casters first.",

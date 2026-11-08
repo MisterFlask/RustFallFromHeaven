@@ -980,14 +980,11 @@ fn do_city_feud_start3(g: &mut Game, _event: EventType, data: &EventTriggeredDat
     }
 }
 
-/// `canTriggerCitySplit(argsList)`: not the capital, a free player slot, not barbarian-trait
-/// and no Koun in the game.
+/// `canTriggerCitySplit(argsList)`: not the capital, not barbarian-trait and no Koun in the game
+/// (FFH2's "a free player slot" is gone: a new civilization gets a new slot).
 fn can_trigger_city_split(g: &Game, _trigger: EventTriggerType, p: PlayerId, c: CityId) -> bool {
     let d = g.d;
     if g.city_is_capital(c) {
-        return false;
-    }
-    if g.cf_get_open_player().is_none() {
         return false;
     }
     // `CyGame().getWBMapScript()` is always false.

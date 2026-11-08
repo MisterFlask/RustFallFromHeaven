@@ -214,8 +214,8 @@ The engine already adds players mid-game (Hyborem, Basium, the crusade Hosts), a
 any civilization. These two rules turn that into a lever cards and crises can call.
 
 **A civ's birth.** Every birth needs:
-- **A slot.** Reserve spare player slots, as crusades reserve Host slots. With none free, the
-  birth's cities go to the barbarians instead.
+- **A slot.** Every birth adds a player slot (`Game::add_player_slot`, since 2026-11-08: no
+  slots are reserved, so no birth fails for lack of one).
 - **A civilization.** Prefer one not in play this game that fits the birth (its alignment,
   religion, race): a 6-civ game leaves 15 of the 21 unused. Otherwise the parent's own
   civilization under a new name (the Free Bannor).

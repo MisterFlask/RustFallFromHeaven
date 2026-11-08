@@ -1297,7 +1297,7 @@ mod tests {
     use crate::setup::GameSetup;
     use ffh_data::*;
 
-    /// A game with `n` civ slots alive (each on its own team) plus the open spare slots, with
+    /// A game with `n` civ slots alive (each on its own team) and the barbarian slot, with
     /// real `Player` objects (not `player_init`ed) and no map.
     fn game(n: usize) -> Game {
         let d = ffh_data::global();

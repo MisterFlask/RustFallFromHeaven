@@ -1546,7 +1546,6 @@ impl Game {
     /// plot (random 0..500, plus area size, unowned area tiles, unowned plot and the founder's
     /// territory), share the founder's techs and wars, make peace with the barbarians.
     fn ev_infernal_pact(&mut self, p: PlayerId) {
-        let infernal_player = self.cf_get_open_player();
         let mut best_plot = None;
         let mut best_value = -1;
         for plot in self.map.plot_ids() {
@@ -1572,13 +1571,25 @@ impl Game {
             }
         }
 
-        let (Some(infernal_player), Some(best_plot)) = (infernal_player, best_plot) else { return };
+        let Some(best_plot) = best_plot else { return };
+        self.infernals_arrive(p, best_plot, true);
+    }
+
+    /// The Infernals arrive at `plot`, beside `patron` (the Infernal Pact's founder), as a new player (`add_player_advanced`), which
+    /// this returns: Hyborem's civilization, which knows the patron's techs (not its cards:
+    /// docs/CARDS.md), makes peace with the barbarians, joins the patron's wars and has +4
+    /// attitude toward it, with Hyborem and his host. By the Pact (`pact`) they are played by the
+    /// patron's controller and a human patron is offered control of them; otherwise by the new
+    /// slot's own (the AI's).
+    pub fn infernals_arrive(&mut self, patron: PlayerId, plot: PlotIdx, pact: bool) -> PlayerId {
         let d = self.d;
         let hyborem = d.t::<LeaderHeadType>("LEADER_HYBOREM");
         let infernal = d.t::<CivilizationType>("CIVILIZATION_INFERNAL");
-        self.add_player_advanced(infernal_player, None, hyborem, infernal);
-        // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
-        self.controllers[infernal_player] = self.controllers[p].clone();
+        let infernal_player = self.add_player_advanced(None, hyborem, infernal);
+        if pact {
+            // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
+            self.controllers[infernal_player] = self.controllers[p].clone();
+        }
         let founder_team = self.players[p].team;
         let infernal_team = self.players[infernal_player].team;
         for tech in d.techs.keys() {
@@ -1634,7 +1645,10 @@ impl Game {
         }
         // `if gc.getPlayer(iPlayer).isHuman()`: the TXT_KEY_POPUP_CONTROL_INFERNAL popup, whose
         // `reassignPlayer` callback moves the human to the Infernals on "yes" (button 0).
-        self.ev_offer_control(p, infernal_player);
+        if pact {
+            self.ev_offer_control(p, infernal_player);
+        }
+        infernal_player
     }
 
     /// The human-only "take control" popup of the Infernal Pact and the Mercurian Gate
@@ -1651,10 +1665,8 @@ impl Game {
     /// the builder's team in the city.
     fn ev_mercurian_gate(&mut self, player: PlayerId, plot: PlotIdx) {
         let d = self.d;
-        let mercurian_player = self.cf_get_open_player();
         let team = self.players[player].team;
-        let plot2 = self.cf_find_clear_plot(None, plot);
-        let (Some(mercurian_player), Some(plot2)) = (mercurian_player, plot2) else { return };
+        let Some(plot2) = self.cf_find_clear_plot(None, plot) else { return };
         let (x2, y2) = self.map.xy(plot2);
         // `for i in range(pPlot.getNumUnits(), -1, -1): pPlot.getUnit(i).setXY(..)`.
         let num_units = self.map.plots[plot].units.len();
@@ -1665,7 +1677,7 @@ impl Game {
         }
         let basium = d.t::<LeaderHeadType>("LEADER_BASIUM");
         let mercurians = d.t::<CivilizationType>("CIVILIZATION_MERCURIANS");
-        self.add_player_advanced(mercurian_player, Some(team), basium, mercurians);
+        let mercurian_player = self.add_player_advanced(Some(team), basium, mercurians);
         // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
         self.controllers[mercurian_player] = self.controllers[player].clone();
         let (x, y) = self.map.xy(plot);

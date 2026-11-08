@@ -427,8 +427,8 @@ flag.
       3), which takes one of 18 promotions each teaching one sphere I battle spell.
     - A charm or hex aimed at the "rear" lands on the side's rearmost row in use; a unit holds at
       most one battle-spell promotion and one strike-spell promotion.
-    - **Civilizations born mid-game** (docs/CARDS.md section 6): a card's new civilization takes a
-      spare player slot (the card cannot be cast without one), knows its founder's techs but the
+    - **Civilizations born mid-game** (docs/CARDS.md section 6): a card's new civilization gets a
+      new player slot (`Game::add_player_slot`: no card waits for a free one), knows its founder's techs but the
       cards, and is its founder's vassal (under No Vassal States, or with a founder that is a
       vassal, it signs open borders and a defensive pact instead). No other war or peace is forced:
       its leanings are attitude modifiers. Like every civilization it is at war with the
@@ -918,6 +918,16 @@ could never run them.
 
 **Small differences**
 
+- **Players are added mid-game without a limit** (the owner's decision, 2026-11-08). FFH2 sizes
+  its player arrays at 35 civ slots, and a civilization that appears mid-game (`addPlayerAdvanced`:
+  the Infernal Pact, the Mercurian Gate, `formEmpire`'s events; BtS colonies) needs a slot no
+  civilization has used, else nothing happens (the colony recycles a dead player's). Here such a
+  civilization, a card's civilization and a crusade Host each get a new slot
+  (`Game::add_player_slot`, docs/ARCHITECTURE.md): none of them fails or is withheld for lack of
+  a slot (the Split City and Sovereign City events, the cards' "Needs a free player slot", a
+  crusade that found no Host slot), a colony never takes over a dead civilization's slot, and the
+  barbarians still move last in a turn.
+
 - **No civilization trains another's unique units** (user decision: an FFH2 bug). FFH2's
   `canTrain` checks a unit with `UpgradeCiv` (the Kuriotates Centaurs, the Clan of Embers' Ogres,
   Goblins and Wolf Riders, the Calabim Vampires and Brujah, the Infernal Balor) only against that
@@ -956,8 +966,8 @@ could never run them.
 **Crusades and allied loans (docs/CRUSADE.md; a ruleset flag, off by default, until 2026-11-05:
 the owner's decision made them part of every game, the AI-only ones too)**
 
-- Not FFH2: `CrusadeRules::host_slots` player slots are reserved
-  for crusade Hosts (temporary AI players that own lent units and fight one war), a passed
+- Not FFH2: crusade Hosts (temporary AI players that own lent units and fight one war) take a
+  player slot of their own (a freed Host slot, else a new one: `Game::add_player_slot`), a passed
   `VOTE_FORCE_WAR` calls the voting members to pledge forces instead of declaring war for them
   ("dedicate or defy": refusing defies the resolution at the deadline), lending declares war on the
   target, lent units earn their lender contribution when they kill or die, and dissolution drafts

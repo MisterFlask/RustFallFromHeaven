@@ -260,7 +260,7 @@
   ],
   "text": {
     "TXT_KEY_DOOM_BROOD": "The Brood",
-    "TXT_KEY_DOOM_BROOD_HELP": "30: a Spider Nest, a lair of Baby Spiders, appears in each of the three largest unowned forest regions (8 forest plots or more); a unit at war with the barbarians that enters one destroys it. 50: each nest still standing becomes a city of the Brood, a new civilization with six Giant Spiders and its hero the Spider Queen (large, HP 160, attack 90, poisoned hits). The Brood trains Giant Spiders at 60 hammers. It knows the techs half the civilizations know. Played only with barbarians and a free player slot.",
+    "TXT_KEY_DOOM_BROOD_HELP": "30: a Spider Nest, a lair of Baby Spiders, appears in each of the three largest unowned forest regions (8 forest plots or more); a unit at war with the barbarians that enters one destroys it. 50: each nest still standing becomes a city of the Brood, a new civilization with six Giant Spiders and its hero the Spider Queen (large, HP 160, attack 90, poisoned hits). The Brood trains Giant Spiders at 60 hammers. It knows the techs half the civilizations know. Played only with barbarians.",
     "TXT_KEY_IMPROVEMENT_SPIDER_NEST": "Spider Nest",
     "TXT_KEY_IMPROVEMENT_SPIDER_NEST_PEDIA": "Webs from tree to tree, and under them the eggs.",
     "TXT_KEY_UNIT_BROOD_SPIDER_STRATEGY": "The Brood's own unit: a Giant Spider for 60 hammers, with poisoned hits.",

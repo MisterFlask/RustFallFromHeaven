@@ -374,7 +374,7 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
 - **Civilizations of the deck** (batch B8, `ffh/cards/new_civs_2.rs`): the Scaled Kingdom (30),
   the Brood (its nests at 30, the civilization at 50 where a nest still stands) and the Infernal
   Gate (60: the Court of Mammon, below). They are born as section 6 says, without a founder
-  (`Birth::wild`); a card that finds no free player slot is not valid at its reveal.
+  (`Birth::wild`), each in a player slot added for it.
 - **The Court of Mammon** (the Infernal Gate, the owner's design of 2026-11-08; its data in
   `doom_infernal_gate.jsonc`): an evil infernal faction of Mammon's, not Hyborem's, and no part of
   the Infernal Pact (which is FFH2's again). It arrives without a city (`Birth::camp`) on the best
@@ -393,7 +393,7 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   as the Infernals' (`civs`: they walk home and join cities) and buys with every unit
   (`cards_economy`, at the start of its turn and once its units have moved). -4 attitude between
   it and the Infernals, both ways, set when the second of them arrives (`court_infernal_grudge`;
-  no war is forced). It is played with a free site and a free player slot.
+  no war is forced). It is played with a free site beside the richest civilization.
 - **No card alters a victory condition** (the owner's rule, 2026-11-08): what a card produces
   counts normally toward every victory.
 - **The human's view:** `me.doom` (`view/cards.rs`) lists the slots with what the human knows:
@@ -534,13 +534,14 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | Lantern of Lugus (`prophet_lantern_of_lugus`: the Dawnbringer) | Prophet | built (no Glare; an archer's rows and levers, its shots holy) |
 ## 6. New civilizations
 
-`world::birth(g, &Birth)` gives a new civilization a player slot mid-game; the cards of batches B4
-(`cards/new_civs.rs`) and B8 (`cards/new_civs_2.rs`, the Armageddon cards' too) use it, and later
-cards can.
+`world::birth(g, &Birth)` gives a new civilization a player slot mid-game and returns it; the
+cards of batches B4 (`cards/new_civs.rs`) and B8 (`cards/new_civs_2.rs`, the Armageddon cards'
+too) use it, and later cards can.
 
-- **The slot:** `world::open_slot`, a spare slot never alive (`GameSetup::SPARE_SLOTS`, 4, shared
-  with Hyborem and Basium; never a crusade Host's). With none free, a card that makes a
-  civilization cannot be cast: its requirement tests the slot (an Armageddon card's `valid` does).
+- **The slot:** a new one, after every existing id, the barbarian's included
+  (`Game::add_player_slot`, docs/ARCHITECTURE.md, "Players added mid-game"; `world::next_player`
+  names it before the birth). Nothing is reserved and there is no limit, so no card waits for a
+  slot: its requirement or `valid` tests only its land and its once-a-game rule.
 - **Who it is:** a civilization and a leader of its own (`civilizations` and `leader_heads` in the
   card's file; neither playable nor AI-playable, so no game starts with it and no colony takes it),
   or a civilization that exists with a leader of its own (the Usurper's Crown: its parent's
@@ -549,7 +550,7 @@ cards can.
   and played by the founder's controller. Its parent (`Player::parent`) is the founder, or
   `parent` (the civilization the Usurper secedes from).
 - **Without a founder** (`Birth::wild`: an Armageddon card's civilization) it is played by its
-  slot's own controller (the host's AI: a slot that never lived is no human's), has no parent, is
+  new slot's own controller (the barbarian slot's: the game's AI, never a human), has no parent, is
   nobody's vassal and knows the world's techs (`world::world_techs`: those at least half the
   civilizations' teams know, never a card), with `techs` (the Scaled Kingdom's Animal Handling).
 - **What it starts with** (`Birth`): the cities it founds at given plots (`NewCity`: the first its

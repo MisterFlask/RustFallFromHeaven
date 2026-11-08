@@ -300,10 +300,10 @@ fn is_option(g: &Game, o: GameOptionType) -> bool {
     g.setup.option(o)
 }
 
-/// Team ids `0..MAX_CIV_TEAMS` (C++ `for (iI = 0; iI < MAX_CIV_TEAMS; iI++)`), sized to this game.
+/// Civ team ids (C++ `for (iI = 0; iI < MAX_CIV_TEAMS; iI++)`): `Game::civ_team_ids`.
 #[inline]
 fn civ_team_ids(g: &Game) -> impl Iterator<Item = TeamId> + 'static {
-    (0..g.num_civ_teams()).map(|i| TeamId(i as u8))
+    g.civ_team_ids()
 }
 
 impl Game {

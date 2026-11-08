@@ -2,8 +2,8 @@
 //!
 //! Not FFH2: a rules layer of this game, always on (parameters in `GameSetup::crusade`).
 //!
-//! A *crusade* is one called war plus its *Host*: a temporary AI player (a reserved player slot,
-//! see [`host`]) that owns every unit lent to the war, is at war only with the *target* (and the
+//! A *crusade* is one called war plus its *Host*: a temporary AI player (a Host slot, added for
+//! the crusade or freed by an earlier one, see [`host`]) that owns every unit lent to the war, is at war only with the *target* (and the
 //! target's vassals) and is deleted at dissolution. Civs lend units ([`lend`]); a lent unit
 //! counts toward its lender's *contribution* only once it has killed an enemy or died. At
 //! dissolution ([`dissolve`]) the cities the Host still holds and the wealth it sacked are
@@ -34,8 +34,6 @@ pub struct CrusadeId(pub u32);
 /// in [`Game::crusade_unit_strength`] units (combat strength x 100).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CrusadeRules {
-    /// Player slots reserved for Hosts (one per running crusade or loan general).
-    pub host_slots: usize,
     /// Most turns a council crusade runs.
     pub term: i32,
     /// Turns a called civ has to deliver its pledge (answering later counts as refusing).
@@ -63,7 +61,6 @@ pub struct CrusadeRules {
 impl Default for CrusadeRules {
     fn default() -> Self {
         CrusadeRules {
-            host_slots: 4,
             term: 40,
             pledge_deadline: 10,
             obligation_percent: 25,
@@ -174,7 +171,7 @@ pub struct HostAi {
 pub struct Crusade {
     pub id: CrusadeId,
     pub kind: CrusadeKind,
-    /// The Host player (a reserved slot).
+    /// The Host player (a Host slot: `crusade_host_slot`).
     pub host: PlayerId,
     pub target: TeamId,
     /// League-defence victim, or a loan's borrower: its cities taken by the Host go back to it.
@@ -320,7 +317,7 @@ impl Game {
         self.crusade_of_host_team(t).is_some()
     }
 
-    /// Is slot `p` reserved for Hosts (never used by FfH's mid-game players)?
+    /// Is slot `p` a Host's (added for a crusade by `crusade_host_slot`, reused by later ones)?
     #[inline]
     pub fn player_is_host_slot(&self, p: PlayerId) -> bool {
         self.setup.players.get(p.idx()).is_some_and(|s| s.host)

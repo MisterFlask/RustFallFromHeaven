@@ -591,8 +591,9 @@ impl Game {
                             }
                         }
                     } else {
-                        for i in (p.idx() + 1)..self.num_players() {
-                            let next = PlayerId(i as u8);
+                        // The next in turn order: slot order, with the barbarian last
+                        // (`Game::turn_order`).
+                        for next in self.turn_order_after(p) {
                             if self.players[next].alive {
                                 // (PBEM human: the turn is e-mailed instead -- no PBEM here.)
                                 self.player_set_turn_active(next, true, true);
@@ -896,28 +897,22 @@ impl Game {
 
     // ------------------------------------------------------------------ split empire (colonies): creating a new player
 
-    /// C++ `CvPlayer::getSplitEmpirePlayer(iAreaId)`: slot for a new colony on `area`.
-    pub fn player_get_split_empire_player(&self, p: PlayerId, area: AreaId) -> Option<PlayerId> {
+    /// C++ `CvPlayer::getSplitEmpirePlayer(iAreaId) != NO_PLAYER`: may a new colony of `p` be
+    /// made on `area` (no colony of `p` has its capital there)? C++ then takes a never-alive slot,
+    /// or recycles a dead player; here a colony always gets a new slot (`Game::add_player`), so
+    /// the slot it takes is never alive.
+    pub fn player_split_empire_area_free(&self, p: PlayerId, area: AreaId) -> bool {
         // can't create different derivative civs on the same continent
         for other in self.civ_player_ids() {
             if self.players[other].alive && self.players[other].parent == Some(p) {
                 if let Some(capital) = self.player_get_capital_city(other) {
                     if self.city_area(capital) == area {
-                        return None;
+                        return false;
                     }
                 }
             }
         }
-
-        // Try to find a player who's never been in the game before
-        let mut new_player = self.civ_player_ids().find(|&i| !self.players[i].ever_alive);
-
-        if new_player.is_none() {
-            // Try to recycle a dead player
-            new_player = self.civ_player_ids().find(|&i| !self.players[i].alive);
-        }
-
-        new_player
+        true
     }
 
     /// C++ `CvPlayer::canSplitEmpire`.
@@ -959,9 +954,13 @@ impl Game {
             return false;
         }
 
-        let Some(new_player) = self.player_get_split_empire_player(p, area) else { return false };
+        if !self.player_split_empire_area_free(p, area) {
+            return false;
+        }
 
-        if !self.players[new_player].alive && area_info.cities_per_player[p] <= 1 {
+        // (C++: `!GET_PLAYER(eNewPlayer).isAlive() &&`; the colony's slot is a new one, never
+        // alive.)
+        if area_info.cities_per_player[p] <= 1 {
             return false;
         }
 
@@ -1043,11 +1042,13 @@ impl Game {
             return false;
         }
 
-        let Some(new_player) = self.player_get_split_empire_player(p, area) else { return false };
+        if !self.player_split_empire_area_free(p, area) {
+            return false;
+        }
 
-        let player_exists = self.team_is_alive(self.players[new_player].team);
-        // C++ FAssert(!bPlayerExists)
-        if !player_exists {
+        // C++ `bPlayerExists` (a recycled slot whose team is alive) is never true here: the
+        // colony gets a new slot.
+        let new_player = {
             let d = self.d;
             let our_civ = self.player_get_civilization_type(p);
             let mut best_value = -1;
@@ -1087,12 +1088,8 @@ impl Game {
                 self.log.msg(turn, Some(p), || format!("{} splits the empire: {} of the {} takes control of the colony", name, leader_name, civ_name));
             }
 
-            // remove leftover culture from old recycled player
-            for plot in self.map.plot_ids() {
-                self.plot_set_culture(plot, new_player, 0, false, false);
-            }
-
-            self.add_player(new_player, best_leader, best_civ);
+            // (C++ removes the leftover culture of a recycled player here: a new slot has none.)
+            let new_player = self.add_player(best_leader, best_civ);
             // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
             self.controllers[new_player] = self.controllers[p].clone();
             self.players[new_player].parent = Some(p);
@@ -1122,7 +1119,8 @@ impl Game {
             self.teams[new_team].espionage_points_ever = self.teams[team].espionage_points_ever;
 
             self.team_assign_vassal(team, new_team, false);
-        }
+            new_player
+        };
 
         let team = self.players[p].team;
         let new_team = self.players[new_player].team;
@@ -1147,12 +1145,7 @@ impl Game {
             }
 
             if transfer_plot {
-                let mut culture = self.map.plots[plot].culture[p];
-
-                if player_exists {
-                    culture = std::cmp::max(culture, self.map.plots[plot].culture[new_player]);
-                }
-
+                let culture = self.map.plots[plot].culture[p];
                 cultures.push((plot, culture));
             }
 
@@ -1249,8 +1242,7 @@ fn city_ai_assign_working_plots(g: &mut Game, c: CityId) {
 /// derives `getHuman` from the slot status.
 pub(crate) fn reassign_player_advanced(g: &mut Game, old: PlayerId, new: PlayerId, timer: i32) {
     // checkBounds(eOldID, 0, MAX_CIV_PLAYERS) && checkBounds(eNewID, 0, MAX_CIV_PLAYERS)
-    let num_civ_players = g.num_civ_players();
-    if old.idx() >= num_civ_players || new.idx() >= num_civ_players {
+    if !g.is_civ_player_slot(old) || !g.is_civ_player_slot(new) {
         return;
     }
 
@@ -1417,7 +1409,7 @@ mod tests {
 
     #[test]
     fn civilization_names_come_from_the_civ_info() {
-        let g = game(&[("CIVILIZATION_BANNOR", "LEADER_SABATHIEL")]);
+        let mut g = game(&[("CIVILIZATION_BANNOR", "LEADER_SABATHIEL")]);
         let d = g.d;
         let civ = d.t::<CivilizationType>("CIVILIZATION_BANNOR");
         let short = g.player_get_civilization_short_description(PlayerId(0));
@@ -1426,8 +1418,9 @@ mod tests {
         assert_eq!(adjective, d.text.name(&d.civilizations[civ].adjective_key));
         assert!(!short.is_empty() && !adjective.is_empty());
         // a slot without a civilization has no names
-        assert_eq!(g.player_get_civilization_short_description(PlayerId(3)), "");
-        assert_eq!(g.player_get_civilization_adjective(PlayerId(3)), "");
+        let open = g.add_player_slot();
+        assert_eq!(g.player_get_civilization_short_description(open), "");
+        assert_eq!(g.player_get_civilization_adjective(open), "");
     }
 
     #[test]
@@ -1577,40 +1570,49 @@ mod tests {
         }
         // no colony slot without a capital
         assert!(!g.player_can_split_area(PlayerId(0), AreaId(0)));
-        // the first never-alive civ slot is the colony slot
-        assert_eq!(g.player_get_split_empire_player(PlayerId(0), AreaId(0)), Some(PlayerId(2)));
+        // no colony of ours on the area yet: one may be made there (in a new slot)
+        assert!(g.player_split_empire_area_free(PlayerId(0), AreaId(0)));
     }
 
     #[test]
-    fn init_of_an_open_slot_resets_and_joins_the_team() {
+    fn an_added_slot_is_an_initialized_open_slot() {
         let mut g = game(&[("CIVILIZATION_BANNOR", "LEADER_SABATHIEL"), ("CIVILIZATION_LJOSALFAR", "LEADER_ARENDEL")]);
-        let open = PlayerId(2);
-        assert_eq!(g.setup.players[2].slot_status, SlotStatus::Open);
-        // other players' entries about the slot, which the reset clears
-        let p0 = PlayerId(0);
-        g.players[p0].gold_per_turn_by_player[open] = 5;
-        g.players[p0].espionage_spending_weight_against_team[TeamId(2)] = 3;
-        g.players[p0].ai_memory_count[open][MemoryType(0)] = 4;
-        g.players[p0].ai_first_contact[open] = true;
-        g.players[p0].ai_peacetime_trade_value[open] = 9;
-        g.players[PlayerId(1)].ai_attitude_extra[open] = -2;
-        g.players[PlayerId(1)].ai_gold_traded_to[open] = 8;
+        let (p0, p1) = (PlayerId(0), PlayerId(1));
+        let n = g.num_players();
+        let barbarian = g.barbarian_player();
+        // entries about the existing slots stay as they are
+        g.players[p0].gold_per_turn_by_player[p1] = 5;
+        g.players[p0].ai_memory_count[p1][MemoryType(0)] = 4;
+        g.teams[TeamId(0)].at_war[TeamId(1)] = true;
         let seed = g.soren_rand.seed();
 
-        g.player_init(open);
+        let open = g.add_player_slot();
+        let ot = TeamId(open.0);
+        assert_eq!(open, PlayerId(n as u8));
+        assert_eq!((g.num_players(), g.num_teams(), g.setup.players.len()), (n + 1, n + 1, n + 1));
+        assert_eq!(g.barbarian_player(), barbarian, "the barbarian keeps its id");
+        assert_eq!(g.turn_order().last(), Some(barbarian), "and moves last");
+        assert!(g.is_civ_player_slot(open) && g.civ_player_ids().any(|p| p == open));
+        assert_eq!(g.setup.players[open.idx()].slot_status, SlotStatus::Open);
         let pl = &g.players[open];
-        assert_eq!((pl.id, pl.team), (open, TeamId(2)));
+        assert_eq!((pl.id, pl.team), (open, ot));
         assert!(!pl.alive && !pl.ever_alive);
-        assert_eq!(pl.gold_per_turn_by_player.len(), g.num_players());
-        assert_eq!((pl.ai_civic_timer, pl.ai_religion_timer), (0, 0));
-        assert_eq!(g.teams[TeamId(2)].num_members, 1);
+        assert_eq!(pl.gold_per_turn_by_player.len(), n + 1);
+        assert_eq!(pl.ai_memory_count[p0].len(), MemoryType::NUM);
+        assert_eq!(g.teams[ot].num_members, 1);
+        assert_eq!(g.teams[ot].at_war.len(), n + 1);
+        // every other player's and team's arrays have an entry for it, at its reset value
+        assert_eq!(g.players[p0].gold_per_turn_by_player.len(), n + 1);
         assert_eq!(g.players[p0].gold_per_turn_by_player[open], 0);
-        assert_eq!(g.players[p0].espionage_spending_weight_against_team[TeamId(2)], 0);
+        assert_eq!(g.players[p0].gold_per_turn_by_player[p1], 5);
+        assert_eq!(g.players[p0].ai_memory_count[open].len(), MemoryType::NUM);
         assert_eq!(g.players[p0].ai_memory_count[open][MemoryType(0)], 0);
-        assert!(!g.players[p0].ai_first_contact[open]);
-        assert_eq!(g.players[p0].ai_peacetime_trade_value[open], 0);
-        assert_eq!(g.players[PlayerId(1)].ai_attitude_extra[open], 0);
-        assert_eq!(g.players[PlayerId(1)].ai_gold_traded_to[open], 0);
+        assert_eq!(g.players[p0].ai_memory_count[p1][MemoryType(0)], 4);
+        assert!(!g.players[p1].ai_first_contact[open]);
+        assert!(!g.teams[TeamId(0)].at_war[ot] && g.teams[TeamId(0)].at_war[TeamId(1)]);
+        assert_eq!(g.teams[TeamId(0)].tech_share_count.len(), n + 1);
+        assert_eq!((g.player_rank.len(), g.rank_player.len(), g.team_score.len()), (n + 1, n + 1, n + 1));
+        assert_eq!(g.controllers.len(), n + 1);
         // an open slot draws nothing (the peace weight draw is for taken/computer slots)
         assert_eq!(g.soren_rand.seed(), seed);
         // the global counter limit only grows for taken/computer slots

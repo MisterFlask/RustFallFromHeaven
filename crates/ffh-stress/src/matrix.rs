@@ -71,7 +71,7 @@ pub fn build(d: &GameData, group: &str, seeds: &[u32], turns: i32, n_random: usi
             }
         }
         "civs" => {
-            // Crowded maps up to MAX_CIV_PLAYERS (no open slot left for mid-game players).
+            // Crowded maps up to MAX_CIV_PLAYERS.
             let max = ffh_core::GameSetup::MAX_CIVS;
             for (w, counts) in [
                 ("WORLDSIZE_DUEL", vec![4, 8]),
