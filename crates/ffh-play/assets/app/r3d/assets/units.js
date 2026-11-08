@@ -4201,7 +4201,7 @@ const UNIT_RULES = [
   [/AIRSHIP/, { asset: "unit.ship", variant: 0, fly: 0.3, scale: 0.8 }],
   [/CATAPULT|TREBUCHET|BATTERING_RAM|CANNON/, { asset: "unit.catapult", param: "@race" }],
   [/SETTLER|SUPPLIES/, { asset: "unit.settler", param: "@race" }],
-  [/WORKER|SLAVE|ENGINEER|MERCHANT/, { asset: "unit.worker", param: "@race" }],
+  [/WORKER|SLAVE|ENGINEER|MERCHANT|PIONEER|PAYMASTER/, { asset: "unit.worker", param: "@race" }],
   [/PROPHET|ARTIST/, { asset: "unit.priest", param: "@race" }],
   [/SCIENTIST/, { asset: "unit.mage", param: "@race", variant: 2 }],
   [/COMMANDER|ADVENTURER/, { asset: "unit.hero", param: "@race" }],

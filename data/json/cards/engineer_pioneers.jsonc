@@ -1,0 +1,84 @@
+// E11 Pioneers (docs/DECKS_ROUND8.md): a national worker, 4, that builds improvements three
+// times as fast.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_PIONEERS",
+      "description": "TXT_KEY_TECH_CARD_PIONEERS",
+      "help": "TXT_KEY_TECH_CARD_PIONEERS_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_PIONEERS_PEDIA",
+      "advisor": "ADVISOR_GROWTH",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_ANCIENT",
+      "and_pre_reqs": ["TECH_CRAFTING"],
+      "card_suit": "UNITCLASS_ENGINEER",
+      "flavors": {"FLAVOR_GROWTH": 1, "FLAVOR_PRODUCTION": 1}
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_PIONEER",
+      "description": "TXT_KEY_UNIT_PIONEER",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 4,
+      "default_unit": "UNIT_PIONEER"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_PIONEER",
+      "stats": {"hp": 120, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
+      "engage_rows": [{"action": "STRIKE", "count": 2}, {"action": "STRIKE", "count": 1}, {"action": "STRIKE", "count": 1}],
+      "engage_row_order": ["FRONT", "MIDDLE", "REAR"],
+      "class": "UNITCLASS_PIONEER",
+      // Captured, it becomes a plain Worker.
+      "capture": "UNITCLASS_WORKER",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_WORKER",
+      "description": "TXT_KEY_UNIT_PIONEER",
+      "civilopedia": "TXT_KEY_UNIT_PIONEER_PEDIA",
+      "strategy": "TXT_KEY_UNIT_PIONEER_STRATEGY",
+      "food": true,
+      "only_defensive": true,
+      "unit_ais": {"UNITAI_WORKER": true},
+      "builds": {
+        "BUILD_ROAD": true,
+        "BUILD_FARM": true,
+        "BUILD_MINE": true,
+        "BUILD_WORKSHOP": true,
+        "BUILD_LUMBERMILL": true,
+        "BUILD_WINDMILL": true,
+        "BUILD_PLANTATION": true,
+        "BUILD_QUARRY": true,
+        "BUILD_PASTURE": true,
+        "BUILD_CAMP": true,
+        "BUILD_WINERY": true,
+        "BUILD_COTTAGE": true,
+        "BUILD_FORT": true,
+        "BUILD_REMOVE_JUNGLE": true,
+        "BUILD_REMOVE_FOREST": true
+      },
+      "prereq_tech": "TECH_CARD_PIONEERS",
+      "cost": 90,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 2,
+      "nuke_range": -1,
+      "work_rate": 300,
+      "combat_limit": 100,
+      "xp_value_attack": 8,
+      "xp_value_defense": 4,
+      "tier": 1
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_PIONEERS": "Pioneers",
+    "TXT_KEY_TECH_CARD_PIONEERS_HELP": "[ICON_BULLET]Allows the Pioneer: a worker with work rate 300 (a Worker has 100).[NEWLINE][ICON_BULLET]National: 4 at the normal cost, then 500% each.",
+    "TXT_KEY_TECH_CARD_PIONEERS_PEDIA": "Great engineers train crews that clear and build three times as fast as common workers.",
+    "TXT_KEY_UNIT_PIONEER": "Pioneer",
+    "TXT_KEY_UNIT_PIONEER_PEDIA": "Pioneers are work crews drilled by a great engineer.",
+    "TXT_KEY_UNIT_PIONEER_STRATEGY": "Builds improvements three times as fast as a Worker."
+  }
+}

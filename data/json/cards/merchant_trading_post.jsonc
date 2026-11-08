@@ -1,0 +1,69 @@
+// Trading Post (docs/DECKS.md section 12, card 8): a worker build outside every civilization's
+// borders, at least 3 plots from any city; its plot and the 8 around it are its builder's
+// territory whatever the culture (ImprovementInfo::claim_range), until it is pillaged.
+// Band II: Trade is Classical (as the round-8 review moved the Harbor Chain).
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_TRADING_POST",
+      "description": "TXT_KEY_TECH_CARD_TRADING_POST",
+      "help": "TXT_KEY_TECH_CARD_TRADING_POST_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_TRADING_POST_PEDIA",
+      "advisor": "ADVISOR_ECONOMY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_TRADE"],
+      "card_suit": "UNITCLASS_MERCHANT",
+      "flavors": {"FLAVOR_GOLD": 1, "FLAVOR_GROWTH": 1}
+    }
+  ],
+  "improvements": [
+    {
+      "type": "IMPROVEMENT_TRADING_POST",
+      "description": "TXT_KEY_IMPROVEMENT_TRADING_POST",
+      "civilopedia": "TXT_KEY_IMPROVEMENT_TRADING_POST_PEDIA",
+      "advanced_start_cost": -1,
+      "pillage_gold": 10,
+      "outside_borders": true,
+      "claim_range": 1,
+      "min_city_distance": 3,
+      "terrain_makes_valids": {
+        "TERRAIN_BROKEN_LANDS": true,
+        "TERRAIN_BURNING_SANDS": true,
+        "TERRAIN_FIELDS_OF_PERDITION": true,
+        "TERRAIN_SHALLOWS": true,
+        "TERRAIN_GRASS": true,
+        "TERRAIN_PLAINS": true,
+        "TERRAIN_DESERT": true,
+        "TERRAIN_MARSH": true,
+        "TERRAIN_TUNDRA": true,
+        "TERRAIN_SNOW": true
+      },
+      "tech_yield_changes": "",
+      "route_yield_changes": ""
+    }
+  ],
+  "builds": [
+    {
+      "type": "BUILD_TRADING_POST",
+      "description": "TXT_KEY_BUILD_TRADING_POST",
+      "help": "TXT_KEY_IMPROVEMENT_TRADING_POST_HELP",
+      "prereq_tech": "TECH_CARD_TRADING_POST",
+      "time": 500,
+      "improvement_type": "IMPROVEMENT_TRADING_POST",
+      // Every unit that builds Forts builds Trading Posts.
+      "same_builders_as": "BUILD_FORT",
+      "button": ",Art/Interface/Buttons/Builds/BuildFort.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,7,9"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_TRADING_POST": "Trading Post",
+    "TXT_KEY_TECH_CARD_TRADING_POST_HELP": "[ICON_BULLET]Workers can build the Trading Post: outside every civilization's borders, at least 3 plots from any city.[NEWLINE][ICON_BULLET]Its plot and the land plots around it are your territory, whatever the culture, until it is pillaged.",
+    "TXT_KEY_TECH_CARD_TRADING_POST_PEDIA": "A great merchant charters a fortified post in the wilds, and the land around it answers to the crown.",
+    "TXT_KEY_IMPROVEMENT_TRADING_POST": "Trading Post",
+    "TXT_KEY_IMPROVEMENT_TRADING_POST_PEDIA": "A stockade, a storehouse and a flag far from the cities.",
+    "TXT_KEY_IMPROVEMENT_TRADING_POST_HELP": "[ICON_BULLET]Built only outside every civilization's borders, at least 3 plots from any city.[NEWLINE][ICON_BULLET]Its plot and the land plots around it are its builder's territory, whatever the culture.[NEWLINE][ICON_BULLET]The claim ends when it is pillaged.",
+    "TXT_KEY_BUILD_TRADING_POST": "Build Trading Post"
+  }
+}

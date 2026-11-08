@@ -7,6 +7,7 @@
 use crate::ffh::dispatch::*;
 
 pub mod deck;
+pub mod economy;
 pub mod world;
 
 /// The lookups of one module: `find_spell`, `find_req`, `find_targets`, `find_unit_fn`.
@@ -25,6 +26,7 @@ fn none<T>(_: &str) -> Option<T> {
 const MODULES: &[Lookups] = &[
     Lookups { spell: deck::find_spell, req: deck::find_req, targets: none, unit_fn: none },
     Lookups { spell: world::find_spell, req: world::find_req, targets: world::find_targets, unit_fn: world::find_unit_fn },
+    Lookups { spell: economy::find_spell, req: economy::find_req, targets: economy::find_targets, unit_fn: none },
 ];
 
 /// `PyResult` functions.

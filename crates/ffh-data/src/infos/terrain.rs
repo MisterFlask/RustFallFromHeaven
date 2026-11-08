@@ -484,6 +484,14 @@ pub struct ImprovementInfo {
     /// `isImprovementBonusMakesValid(b)`, `isImprovementBonusTrade(b)` and
     /// `getImprovementBonusDiscoverRand(b)` are its other fields.
     pub improvement_bonus: IdxVec<BonusType, ImprovementBonusInfo>,
+    // This game's (the Trading Post card, docs/CARDS.md)
+    /// The plots within this distance of the improvement (its own included) are its builder's
+    /// territory, whatever their culture (`claim_range`; 0: no claim). An improvement with a
+    /// claim is built only outside every civilization's borders.
+    pub claim_range: i32,
+    /// The improvement is built only this many plots or more from every city
+    /// (`min_city_distance`; 0: anywhere).
+    pub min_city_distance: i32,
 }
 
 /// C++ `CvImprovementInfo::read`, plus `readPass2` (`ImprovementPillage`,
@@ -542,6 +550,8 @@ pub fn read_improvement(rd: &Rd) -> ImprovementInfo {
         tech_yield_changes: yields_by_type(rd, "tech_yield_changes", "prereq_tech", "tech_yields"),
         route_yield_changes: yields_by_type(rd, "route_yield_changes", "route_type", "route_yields"),
         improvement_bonus: improvement_bonuses(rd),
+        claim_range: rd.int("claim_range"),
+        min_city_distance: rd.int("min_city_distance"),
     }
 }
 

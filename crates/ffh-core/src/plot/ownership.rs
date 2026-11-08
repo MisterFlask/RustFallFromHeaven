@@ -311,6 +311,11 @@ impl Game {
             return None;
         }
 
+        // Card: the Trading Post (docs/CARDS.md): a claim, whatever the culture.
+        if let Some(claimant) = self.plot_claim_owner(p) {
+            return Some(claimant);
+        }
+
         let plot = &self.map.plots[p];
         let mut best_culture = 0;
         let mut best_player: Option<PlayerId> = None;

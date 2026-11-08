@@ -373,8 +373,10 @@ fn recon_units_fight_from_any_row_and_prefer_the_middle() {
 #[test]
 fn every_land_type_has_rows() {
     let d = d();
-    let count = |want: Option<ActionKind>| d.units.keys().filter(|&u| d.units[u].engage_rows.map(|_| d.engage_kind(u)) == want).count();
-    // (kind, unit types) at the time of writing; the sum is every unit type.
+    // The game's own unit types (the cards' come after them, docs/CARDS.md).
+    let own = d.units.len() - ffh_data::card_entry_count("units");
+    let count = |want: Option<ActionKind>| d.units.keys().filter(|&u| u.idx() < own && d.units[u].engage_rows.map(|_| d.engage_kind(u)) == want).count();
+    // (kind, unit types) at the time of writing; the sum is every unit type of the game's own.
     let want = [
         (Some(ActionKind::Strike), 170),
         (Some(ActionKind::Charge), 38),
@@ -388,7 +390,7 @@ fn every_land_type_has_rows() {
     for (k, n) in want {
         assert_eq!(count(k), n, "{k:?}");
     }
-    assert_eq!(want.iter().map(|w| w.1).sum::<usize>(), d.units.len());
+    assert_eq!(want.iter().map(|w| w.1).sum::<usize>(), own);
     // Whether a unit fights is its own strength, not its type's (promotions add to it), so every
     // land and immobile type has rows, with or without strength; sea and air types have none.
     for (u, info) in d.units.iter_enumerated() {

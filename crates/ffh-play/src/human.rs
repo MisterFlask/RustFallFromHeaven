@@ -504,6 +504,26 @@ impl Controller for HumanController {
         Some(religions[i])
     }
 
+    /// The cards (docs/CARDS.md): the Spire of the Archmagi's free promotion, blocking.
+    fn choose_free_promotion(&self, g: &Game, p: PlayerId, u: UnitId, options: &[PromotionType]) -> Option<PromotionType> {
+        let advice = self.suggest(g, |g| self.advisor.choose_free_promotion(g, p, u, options));
+        if !g.players[p].human || options.len() < 2 {
+            return advice;
+        }
+        let i = self.block(g, decision::free_promotion(g, p, u, options, advice));
+        options.get(i).copied()
+    }
+
+    /// The cards: the resource of Agares's Well, blocking.
+    fn choose_free_bonus(&self, g: &Game, p: PlayerId, c: CityId, b: BuildingType, options: &[BonusType]) -> Option<BonusType> {
+        let advice = self.suggest(g, |g| self.advisor.choose_free_bonus(g, p, c, b, options));
+        if !g.players[p].human || options.len() < 2 {
+            return advice;
+        }
+        let i = self.block(g, decision::free_bonus(g, p, c, b, options, advice));
+        options.get(i).copied()
+    }
+
     /// C++ computes `AI_getAttitude` for humans too: a function of the game state.
     fn attitude(&self, g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {
         self.advisor.attitude(g, p, towards)

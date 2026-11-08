@@ -382,7 +382,7 @@ persist_struct!(City {
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
     ai_emphasize_avoid_unhealthy_citizens_count, culture_channel, culture_diverted, culture_pressure,
     culture_revolt_level, recruit_default, direct_rule, rule_changed_turn, governor,
-    governor_penalty_turns, building_tiers,
+    governor_penalty_turns, building_tiers, free_bonus_choices, muster_production,
 });
 
 persist_struct!(Player {
@@ -472,7 +472,7 @@ persist_struct!(Plot {
     revealed_route_type, script_data, build_progress, culture_range_cities,
     invisible_visibility_count, units, move_disabled_ai, move_disabled_human, build_disabled,
     found_disabled, python_active, min_level, plot_counter, portal_exit_x, portal_exit_y,
-    temp_terrain_timer, real_terrain_type,
+    temp_terrain_timer, real_terrain_type, grafted,
 });
 
 persist_struct!(Area {

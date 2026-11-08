@@ -98,6 +98,18 @@ pub fn effects(d: &GameData, i: ImprovementType) -> String {
         }
     }
 
+    // Not in FFH2: the Trading Post card (docs/CARDS.md).
+    if info.claim_range > 0 {
+        lines.push("[ICON_BULLET]Built only outside every civilization's borders".to_string());
+    }
+    if info.min_city_distance > 0 {
+        lines.push(format!("[ICON_BULLET]Built only {} plots or more from every city", info.min_city_distance));
+    }
+    if info.claim_range > 0 {
+        let plots = (2 * info.claim_range + 1) * (2 * info.claim_range + 1) - 1;
+        lines.push(format!("[ICON_BULLET]Its plot and the {plots} land plots around it are its builder's territory, whatever the culture, until it is pillaged"));
+    }
+
     // Not in FFH2 (`tech_research_bonus`, applied by `player_calculate_research_modifier`).
     if let Some(t) = info.tech_research_bonus.filter(|_| info.tech_research_percent > 0) {
         lines.push(format!("[ICON_BULLET]Inside your borders: {:+}% [ICON_RESEARCH] on {}", info.tech_research_percent, names::display(d, t)));

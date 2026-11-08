@@ -123,6 +123,10 @@ fn help(d: &GameData, c: CivicType, requirements: bool) -> String {
         special_building_not_required,
         specialist_valid,
         improvement_yield_changes,
+        // This game's (the cards, docs/CARDS.md).
+        unit_cost_modifier,
+        unit_combat_cost_modifiers,
+        no_war_weariness,
     } = &d.civics[c];
     let mut b = String::new();
     let line = |b: &mut String, s: String| {
@@ -252,6 +256,20 @@ fn help(d: &GameData, c: CivicType, requirements: bool) -> String {
                 txt(d, "TXT_KEY_CIVIC_EXTRA_WAR_WEARINESS", &[Arg::N(*war_weariness_modifier)])
             },
         );
+    }
+    // This game's (Stoicism, docs/CARDS.md).
+    if *no_war_weariness {
+        line(&mut b, txt(d, "TXT_KEY_CIVIC_NO_WAR_WEARINESS", &[]));
+    }
+    // This game's (Magocracy): the unit combats with a cost of their own, then every other unit.
+    for &(k, n) in unit_combat_cost_modifiers {
+        if n != 0 {
+            line(&mut b, format!("[ICON_BULLET]{n:+}% production cost of {}", display(d, k)));
+        }
+    }
+    if *unit_cost_modifier != 0 {
+        let others = if unit_combat_cost_modifiers.is_empty() { "units" } else { "other units" };
+        line(&mut b, format!("[ICON_BULLET]{:+}% production cost of {others}", *unit_cost_modifier));
     }
     if *free_specialist != 0 {
         line(&mut b, txt(d, "TXT_KEY_CIVIC_FREE_SPECIALISTS", &[Arg::N(*free_specialist)]));

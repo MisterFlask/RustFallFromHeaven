@@ -487,6 +487,9 @@ pub struct BuildInfo {
     pub feature_production: IdxVec<FeatureType, i32>,
     /// C++ `isFeatureRemove(i)`.
     pub feature_remove: IdxVec<FeatureType, bool>,
+    /// This game's (a card's build, docs/CARDS.md): the units that can do this build can do this
+    /// one too (`same_builders_as`; set in the units' `builds` at load).
+    pub same_builders_as: Option<BuildType>,
 }
 
 /// C++ `CvBuildInfo::read`.
@@ -501,6 +504,7 @@ pub fn read_build(rd: &Rd) -> BuildInfo {
         kill: rd.bool("kill"),
         improvement: rd.rf::<ImprovementType>("improvement_type"),
         route: rd.rf::<RouteType>("route_type"),
+        same_builders_as: rd.rf::<BuildType>("same_builders_as"),
         ..Default::default()
     };
     set_feature_struct(rd, &mut info);

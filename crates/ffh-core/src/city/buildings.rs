@@ -239,6 +239,16 @@ impl Game {
                 let num_free_bonuses = self.num_free_bonuses(building);
                 self.city_change_free_bonus(c, bonus, num_free_bonuses * change);
             }
+            // Card: Agares's Well (docs/CARDS.md): one of the resource its owner chose (chosen
+            // again if it is built again).
+            if !info.free_bonus_choices.is_empty() {
+                if let Some(bonus) = self.city_free_bonus_choice(c, building, change > 0) {
+                    self.city_change_free_bonus(c, bonus, change);
+                    if change < 0 {
+                        self.cities[c].free_bonus_choices.retain(|&(x, _)| x != building);
+                    }
+                }
+            }
 
             // FfH: Added by Kael 08/04/2007
             // changeCrime

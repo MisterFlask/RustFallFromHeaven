@@ -546,7 +546,8 @@ impl Game {
             }
         }
         if info.prereq_global_counter != 0 {
-            if self.get_global_counter() < info.prereq_global_counter {
+            // Card: Golems of the Earthmother (docs/CARDS.md): no counter for the Mithril Golem.
+            if self.get_global_counter() < info.prereq_global_counter && !self.player_earthmother_golem(p, unit) {
                 return false;
             }
         }
@@ -585,7 +586,9 @@ impl Game {
         let unit_class = unit_class_of(d, unit);
         let pl = &self.players[p];
 
-        let mut production_needed = d.units[unit].production_cost;
+        // Card: the Beast Market, the Elemental Foundry, Golems of the Earthmother (docs/CARDS.md):
+        // a building's price for a unit it trains, the Mithril Golem at half.
+        let mut production_needed = self.player_unit_base_cost(p, unit);
 
         production_needed *= 100 + pl.unit_class_count[unit_class] * d.unit_classes[unit_class].instance_cost_modifier;
         production_needed /= 100;
@@ -625,10 +628,18 @@ impl Game {
             }
         }
 
+        // Card: Magocracy (docs/CARDS.md): the civics' unit cost modifiers.
+        let civic_modifier = self.player_civic_unit_cost_modifier(p, unit);
+        if civic_modifier != 0 {
+            production_needed *= max(0, 100 + civic_modifier);
+            production_needed /= 100;
+        }
+
         // This game, not FFH2: a national class's limit is a price (docs/PORTING.md, "Changes
         // from FFH2"). The units its owner has now count, so a unit still in production costs more
-        // once others of its class are finished.
-        if self.player_is_over_unit_class_limit(p, unit_class) {
+        // once others of its class are finished. (Card: the Elemental Foundry's limit per element
+        // is one too.)
+        if self.player_is_over_unit_class_limit(p, unit_class) || self.player_is_over_train_unit_limit(p, unit) {
             production_needed *= d.defines.national_unit_over_limit_cost_percent;
             production_needed /= 100;
         }

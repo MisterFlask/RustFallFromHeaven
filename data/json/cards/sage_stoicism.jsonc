@@ -1,0 +1,42 @@
+// Stoicism (docs/DECKS.md section 3.6; 10.2: the Unrest part is parked with Unrest): a Cultural
+// Values civic. War weariness causes no unhappiness; -15% culture.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_STOICISM",
+      "description": "TXT_KEY_TECH_CARD_STOICISM",
+      "help": "TXT_KEY_TECH_CARD_STOICISM_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_STOICISM_PEDIA",
+      "advisor": "ADVISOR_RELIGION",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_CLASSICAL",
+      "and_pre_reqs": ["TECH_PHILOSOPHY"],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {"FLAVOR_MILITARY": 1}
+    }
+  ],
+  "civics": [
+    {
+      "type": "CIVIC_STOICISM",
+      "civic_option_type": "CIVICOPTION_CULTURAL_VALUES",
+      "description": "TXT_KEY_CIVIC_STOICISM",
+      "civilopedia": "TXT_KEY_CIVIC_STOICISM_PEDIA",
+      "strategy": "TXT_KEY_CIVIC_STOICISM_STRATEGY",
+      "button": ",Art/Interface/Buttons/Civics/Nationhood.dds,Art/Interface/Buttons/Civics_Civilizations_Religions_Atlas.dds,1,2",
+      "tech_prereq": "TECH_CARD_STOICISM",
+      "anarchy_length": 1,
+      "upkeep": "UPKEEP_LOW",
+      "no_war_weariness": true,
+      "commerce_modifiers": [0, 0, -15]
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_STOICISM": "Stoicism",
+    "TXT_KEY_TECH_CARD_STOICISM_HELP": "[ICON_BULLET]Allows the civic Stoicism (Cultural Values): war weariness causes no unhappiness; -15% culture.",
+    "TXT_KEY_TECH_CARD_STOICISM_PEDIA": "A great sage teaches that what cannot be changed must be endured.",
+    "TXT_KEY_CIVIC_STOICISM": "Stoicism",
+    "TXT_KEY_CIVIC_STOICISM_PEDIA": "The people bear the long war without complaint.",
+    "TXT_KEY_CIVIC_STOICISM_STRATEGY": "No unhappiness from war weariness. -15% culture."
+  }
+}

@@ -976,6 +976,13 @@ impl Game {
             }
         }
 
+        // Card: the Trading Post (docs/CARDS.md): a claim built or lost moves the plots around.
+        for imp in [old_improvement, improvement].into_iter().flatten() {
+            if d.improvements[imp].claim_range > 0 {
+                self.plot_update_claims_around(p, imp);
+            }
+        }
+
         // Building or removing a fort will now force a plotgroup update to verify resource connections.
         let acts_as_city = |i: Option<ImprovementType>| i.is_some_and(|i| d.improvements[i].acts_as_city);
         if acts_as_city(self.map.plots[p].improvement_type) != acts_as_city(old_improvement) {
@@ -1273,6 +1280,11 @@ impl Game {
 
         if let Some(improvement) = build_info.improvement {
             if !self.plot_can_have_improvement(p, improvement, Some(player_team), test_visible) {
+                return false;
+            }
+
+            // Card: the Trading Post (docs/CARDS.md): outside every border, away from the cities.
+            if !self.plot_card_improvement_site_ok(p, improvement) {
                 return false;
             }
 

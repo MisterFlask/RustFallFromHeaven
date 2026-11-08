@@ -55,6 +55,15 @@ macro_rules! game_data {
             pub sentinel_repair_buildings: Vec<BuildingType>,
             /// Derived at load: the buildings with a `bonus_yield_change`, in id order.
             pub bonus_yield_buildings: Vec<BuildingType>,
+            /// Derived at load: the buildings with `train_units` (the cards', docs/CARDS.md), in
+            /// id order.
+            pub train_unit_buildings: Vec<BuildingType>,
+            /// Derived at load: the buildings with `rebirth_range` (the Font of Rebirth), in id
+            /// order.
+            pub rebirth_buildings: Vec<BuildingType>,
+            /// Derived at load: the improvements with `claim_range` (the Trading Post), in id
+            /// order.
+            pub claim_improvements: Vec<ImprovementType>,
             /// Derived at load: for each tech, the improvements that raise the research rate on it
             /// and by how many percent (`ImprovementInfo::tech_research_bonus`), in improvement id
             /// order.
@@ -85,7 +94,7 @@ macro_rules! game_data {
                 )*
                 let defines = Defines::from_map(&define_map);
                 // (derived tables are filled by `GameData::derive`)
-                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unlocking_buildings: Vec::new(), population_commerce_buildings: Vec::new(), sentinel_repair_buildings: Vec::new(), bonus_yield_buildings: Vec::new(), tech_research_bonuses: IdxVec::new() }
+                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unlocking_buildings: Vec::new(), population_commerce_buildings: Vec::new(), sentinel_repair_buildings: Vec::new(), bonus_yield_buildings: Vec::new(), train_unit_buildings: Vec::new(), rebirth_buildings: Vec::new(), claim_improvements: Vec::new(), tech_research_bonuses: IdxVec::new() }
             }
 
             /// Everything loaded, one `(name, Debug text)` line per table entry, in a fixed order
@@ -482,6 +491,24 @@ impl GameData {
         self.population_commerce_buildings = list(&|b| b.population_commerce.iter().any(|&v| v != 0));
         self.sentinel_repair_buildings = list(&|b| b.sentinel_repair_change != 0);
         self.bonus_yield_buildings = list(&|b| b.bonus_yield_change.iter().any(|y| y.iter().any(|&v| v != 0)));
+        self.train_unit_buildings = list(&|b| !b.train_units.is_empty());
+        self.rebirth_buildings = list(&|b| b.rebirth_range > 0 && b.rebirth_promotion.is_some());
+        self.claim_improvements = self.improvements.keys().filter(|&i| self.improvements[i].claim_range > 0).collect();
+        // A card's build (docs/CARDS.md): the units that can do its `same_builders_as` build.
+        for build in self.builds.keys() {
+            if let Some(like) = self.builds[build].same_builders_as {
+                for info in self.units.iter_mut() {
+                    if info.builds[like] {
+                        info.builds[build] = true;
+                    }
+                }
+            }
+        }
+    }
+
+    /// The `train_units` entry of building `b` for unit `u` (the cards', docs/CARDS.md).
+    pub fn train_unit_entry(&self, b: BuildingType, u: UnitType) -> Option<&TrainUnit> {
+        self.buildings[b].train_units.iter().find(|t| t.unit == u)
     }
 
     /// The building `u` needs (`prereq_building`, `prereq_building_class`) is `b`, at any tier

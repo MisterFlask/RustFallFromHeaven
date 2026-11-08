@@ -597,6 +597,9 @@ pub struct HurryInfo {
     pub production_per_population: i32,
     /// C++ `isAnger()`
     pub anger: bool,
+    /// This game's (the Gold Standard card, docs/CARDS.md): the hurry finishes units only, never
+    /// buildings (`units_only`).
+    pub units_only: bool,
 }
 
 /// C++ `CvHurryInfo::read`.
@@ -606,6 +609,7 @@ pub fn read_hurry(rd: &Rd) -> HurryInfo {
         gold_per_production: rd.int("gold_per_production"),
         production_per_population: rd.int("production_per_population"),
         anger: rd.bool("anger"),
+        units_only: rd.bool("units_only"),
     }
 }
 
@@ -712,6 +716,9 @@ pub struct ProcessInfo {
     pub tech_prereq: Option<TechType>,
     /// C++ `getProductionToCommerceModifier(eCommerce)`
     pub production_to_commerce_modifier: [i32; CommerceType::NUM],
+    /// This game's (the Muster card, docs/CARDS.md): the hammers per point of experience the
+    /// process gives the units in its city (`production_to_experience`; 0: none).
+    pub production_to_experience: i32,
 }
 
 /// C++ `CvProcessInfo::read`.
@@ -721,6 +728,7 @@ pub fn read_process(rd: &Rd) -> ProcessInfo {
         tech_prereq: rd.rf::<TechType>("tech_prereq"),
         // SetCommerce if the tag exists, else InitList(.., 0): zeros either way when absent.
         production_to_commerce_modifier: rd.commerces("production_to_commerce_modifiers"),
+        production_to_experience: rd.int("production_to_experience"),
     }
 }
 

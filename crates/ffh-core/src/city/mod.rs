@@ -289,6 +289,12 @@ pub struct City {
     /// class, rolled at founding (`Game::city_roll_building_tiers`) and kept for the city's life
     /// (a city changing hands keeps it). Standard for a class no city rolls.
     pub building_tiers: IdxVec<BuildingClassType, BuildingTierType>,
+    /// This game's cards (docs/CARDS.md): the resource its owner chose for each building of the
+    /// city with `free_bonus_choices` (Agares's Well), in the order they were built.
+    pub free_bonus_choices: Vec<(BuildingType, BonusType)>,
+    /// The Muster card: the hammers the city's Muster process has toward the next point of
+    /// experience (`ProcessInfo::production_to_experience`).
+    pub muster_production: i32,
 }
 
 impl City {
@@ -506,6 +512,8 @@ impl City {
             governor: None,
             governor_penalty_turns: 0,
             building_tiers: IdxVec::from_elem(BuildingTierType::STANDARD, d.building_classes.len()),
+            free_bonus_choices: Vec::new(),
+            muster_production: 0,
         }
     }
 

@@ -181,7 +181,16 @@ impl Game {
             return true;
         }
 
-        if !self.player_can_train(owner, unit, cont, test_visible, ignore_cost) {
+        // Card: the Beast Market, the Elemental Foundry (docs/CARDS.md): a building of the city
+        // trains a unit that has no cost of its own, where the city has the resource it needs.
+        let trained = self.city_train_unit_entry(c, unit);
+        if let Some(bonus) = trained.and_then(|t| t.bonus) {
+            if !test_visible && !self.city_has_bonus(c, bonus) {
+                return false;
+            }
+        }
+
+        if !self.player_can_train(owner, unit, cont, test_visible, ignore_cost || trained.is_some()) {
             return false;
         }
 
@@ -606,6 +615,11 @@ impl Game {
                 }
             }
         }
+        // Card: the Spire of the Archmagi (docs/CARDS.md): a free promotion of the owner's choice.
+        self.city_free_promotion_choice(c, unit);
+        if !self.units.contains(unit) {
+            return;
+        }
         self.unit_test_promotion_ready(unit);
     }
 
@@ -1010,6 +1024,11 @@ impl Game {
             return false;
         }
 
+        // Card: Gold Standard (docs/CARDS.md): a hurry for units only.
+        if self.d.hurries[hurry].units_only && !self.city_is_production_unit(c) {
+            return false;
+        }
+
         if self.city_is_disorder(c) {
             return false;
         }
@@ -1072,6 +1091,11 @@ impl Game {
         let owner = self.cities[c].owner;
 
         if !self.player_can_hurry(owner, hurry) {
+            return false;
+        }
+
+        // Card: Gold Standard (docs/CARDS.md): a hurry for units only.
+        if self.d.hurries[hurry].units_only {
             return false;
         }
 

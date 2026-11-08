@@ -1,0 +1,42 @@
+// G19 Magocracy (docs/DECKS_ROUND8.md; C.4: adept-combat units cost 50% less, others 25% more):
+// a Government civic.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_MAGOCRACY",
+      "description": "TXT_KEY_TECH_CARD_MAGOCRACY",
+      "help": "TXT_KEY_TECH_CARD_MAGOCRACY_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_MAGOCRACY_PEDIA",
+      "advisor": "ADVISOR_SCIENCE",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_ARCANE_LORE"],
+      "card_suit": "UNITCLASS_SCIENTIST",
+      "flavors": {"FLAVOR_SCIENCE": 1}
+    }
+  ],
+  "civics": [
+    {
+      "type": "CIVIC_MAGOCRACY",
+      "civic_option_type": "CIVICOPTION_GOVERNMENT",
+      "description": "TXT_KEY_CIVIC_MAGOCRACY",
+      "civilopedia": "TXT_KEY_CIVIC_MAGOCRACY_PEDIA",
+      "strategy": "TXT_KEY_CIVIC_MAGOCRACY_STRATEGY",
+      "button": "Art/Interface/Buttons/Civics/Statefundededucation.dds",
+      "tech_prereq": "TECH_CARD_MAGOCRACY",
+      "anarchy_length": 1,
+      "upkeep": "UPKEEP_MEDIUM",
+      "unit_cost_modifier": 25,
+      "unit_combat_cost_modifiers": {"UNITCOMBAT_ADEPT": -50}
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_MAGOCRACY": "Magocracy",
+    "TXT_KEY_TECH_CARD_MAGOCRACY_HELP": "[ICON_BULLET]Allows the civic Magocracy (Government): arcane units cost 50% less; other units cost 25% more.",
+    "TXT_KEY_TECH_CARD_MAGOCRACY_PEDIA": "A great sage teaches that the realm is best ruled by those who command the spheres.",
+    "TXT_KEY_CIVIC_MAGOCRACY": "Magocracy",
+    "TXT_KEY_CIVIC_MAGOCRACY_PEDIA": "The council of mages rules, and the treasury trains mages first.",
+    "TXT_KEY_CIVIC_MAGOCRACY_STRATEGY": "Arcane units cost 50% less. Other units cost 25% more."
+  }
+}

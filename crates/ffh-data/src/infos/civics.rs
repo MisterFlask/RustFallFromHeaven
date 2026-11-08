@@ -309,6 +309,22 @@ pub struct CivicInfo {
     pub specialist_valid: IdxVec<SpecialistType, bool>,
     /// `getImprovementYieldChanges(i, j)`: per improvement, per yield.
     pub improvement_yield_changes: IdxVec<ImprovementType, [i32; YieldType::NUM]>,
+    // This game's (the cards, docs/CARDS.md)
+    /// Magocracy: the percent every unit's production cost changes by (`unit_cost_modifier`),
+    /// unless its unit combat is in `unit_combat_cost_modifiers`.
+    pub unit_cost_modifier: i32,
+    /// Magocracy: the percent the units of a unit combat cost more or less, in place of
+    /// `unit_cost_modifier` (`unit_combat_cost_modifiers`, in file order).
+    pub unit_combat_cost_modifiers: Vec<(UnitCombatType, i32)>,
+    /// Stoicism: war weariness causes no unhappiness in its player's cities (`no_war_weariness`).
+    pub no_war_weariness: bool,
+}
+
+impl CivicInfo {
+    /// The percent this civic changes the production cost of a unit of `combat` by.
+    pub fn unit_cost_modifier_for(&self, combat: Option<UnitCombatType>) -> i32 {
+        combat.and_then(|c| self.unit_combat_cost_modifiers.iter().find(|&&(k, _)| k == c)).map_or(self.unit_cost_modifier, |&(_, m)| m)
+    }
 }
 
 /// C++ `CvCivicInfo::read` + `readPass3` (`PrereqCivilization`).
@@ -385,6 +401,9 @@ pub fn read_civic(rd: &Rd) -> CivicInfo {
         // readPass3 in C++ (civilizations load after civics)
         prereq_civilization: rd.rf("prereq_civilization"),
         prereq_religion: rd.rf("prereq_religion"),
+        unit_cost_modifier: rd.int("unit_cost_modifier"),
+        unit_combat_cost_modifiers: rd.pair_list_int("unit_combat_cost_modifiers"),
+        no_war_weariness: rd.bool("no_war_weariness"),
     }
 }
 
@@ -752,6 +771,9 @@ pub struct CardInfo {
     pub suit: UnitClassType,
     /// Drawn only by civilizations of this alignment (`card_alignment`).
     pub alignment: Option<AlignmentType>,
+    /// Never drawn by civilizations of this alignment (`card_block_alignment`: a [good or
+    /// neutral] card blocks evil).
+    pub block_alignment: Option<AlignmentType>,
     /// The card's faith (`card_religion`): drawn whatever the drawer's religion; discovering it
     /// also spreads this religion to three of the discoverer's cities.
     pub religion: Option<ReligionType>,
@@ -811,7 +833,7 @@ pub fn read_tech(rd: &Rd) -> TechInfo {
         card: None,
     };
     if let Some(suit) = rd.rf::<UnitClassType>("card_suit") {
-        tech.card = Some(CardInfo { suit, alignment: rd.rf("card_alignment"), religion: rd.rf("card_religion") });
+        tech.card = Some(CardInfo { suit, alignment: rd.rf("card_alignment"), block_alignment: rd.rf("card_block_alignment"), religion: rd.rf("card_religion") });
         tech.disable = true;
         tech.trade = false;
     }

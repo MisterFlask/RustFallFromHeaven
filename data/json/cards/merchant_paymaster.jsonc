@@ -1,0 +1,84 @@
+// Paymaster (docs/DECKS.md section 3.4): a national unit, 1, whose Buy Out takes an adjacent
+// enemy unit (not a hero or world unit) for 3 times its hammer cost in gold.
+{
+  "techs": [
+    {
+      "type": "TECH_CARD_PAYMASTER",
+      "description": "TXT_KEY_TECH_CARD_PAYMASTER",
+      "help": "TXT_KEY_TECH_CARD_PAYMASTER_HELP",
+      "civilopedia": "TXT_KEY_TECH_CARD_PAYMASTER_PEDIA",
+      "advisor": "ADVISOR_ECONOMY",
+      "cost": -1,
+      "advanced_start_cost": -1,
+      "era": "ERA_MEDIEVAL",
+      "and_pre_reqs": ["TECH_GUILDS"],
+      "card_suit": "UNITCLASS_MERCHANT",
+      "flavors": {"FLAVOR_GOLD": 1, "FLAVOR_MILITARY": 1}
+    }
+  ],
+  "unit_classes": [
+    {
+      "type": "UNITCLASS_PAYMASTER",
+      "description": "TXT_KEY_UNIT_PAYMASTER",
+      "max_global_instances": -1,
+      "max_team_instances": -1,
+      "max_player_instances": 1,
+      "default_unit": "UNIT_PAYMASTER"
+    }
+  ],
+  "units": [
+    {
+      "type": "UNIT_PAYMASTER",
+      "stats": {"hp": 100, "attack": 0, "defense": 0, "magic": 0, "magic_defense": 0, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
+      "engage_rows": [{"action": "STRIKE", "count": 2}, {"action": "STRIKE", "count": 1}, {"action": "STRIKE", "count": 1}],
+      "engage_row_order": ["FRONT", "MIDDLE", "REAR"],
+      "class": "UNITCLASS_PAYMASTER",
+      "domain": "DOMAIN_LAND",
+      "default_unit_ai": "UNITAI_RESERVE",
+      "description": "TXT_KEY_UNIT_PAYMASTER",
+      "civilopedia": "TXT_KEY_UNIT_PAYMASTER_PEDIA",
+      "strategy": "TXT_KEY_UNIT_PAYMASTER_STRATEGY",
+      "only_defensive": true,
+      "unit_ais": {"UNITAI_RESERVE": true},
+      "prereq_tech": "TECH_CARD_PAYMASTER",
+      "cost": 120,
+      "advanced_start_cost": -1,
+      "min_area_size": -1,
+      "moves": 2,
+      "nuke_range": -1,
+      "combat_limit": 100,
+      "xp_value_attack": 8,
+      "xp_value_defense": 4,
+      "tier": 2
+    }
+  ],
+  "spells": [
+    {
+      "type": "SPELL_BUY_OUT",
+      "description": "TXT_KEY_SPELL_BUY_OUT",
+      "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+      "help": "TXT_KEY_SPELL_BUY_OUT_HELP",
+      "unit_class_prereq": "UNITCLASS_PAYMASTER",
+      "tech_prereq": "TECH_CARD_PAYMASTER",
+      // The AI casts it from cards_economy.rs (a targeted spell).
+      "allow_ai": false,
+      "display_when_disabled": true,
+      "has_casted": true,
+      "target": "unit",
+      "py_targets": "targetsBuyOut(pCaster)",
+      "py_requirement": "reqBuyOut(pCaster)",
+      "py_result": "spellBuyOut(pCaster)",
+      "button": "Art/Interface/Buttons/Spells/Domination.dds"
+    }
+  ],
+  "text": {
+    "TXT_KEY_TECH_CARD_PAYMASTER": "Paymaster",
+    "TXT_KEY_TECH_CARD_PAYMASTER_HELP": "[ICON_BULLET]Allows the Paymaster (national: 1 at the normal cost, then 500% each).[NEWLINE][ICON_BULLET]Buy Out: an adjacent unit of a civilization you are at war with joins you, for 3 times its production cost in gold. Not heroes or world units.",
+    "TXT_KEY_TECH_CARD_PAYMASTER_PEDIA": "A great merchant's paymaster knows that every soldier has a price.",
+    "TXT_KEY_UNIT_PAYMASTER": "Paymaster",
+    "TXT_KEY_UNIT_PAYMASTER_PEDIA": "A paymaster with a chest of coin and a list of names in the enemy camp.",
+    "TXT_KEY_UNIT_PAYMASTER_STRATEGY": "Buy Out: an adjacent enemy unit joins you for 3 times its production cost in gold.",
+    "TXT_KEY_SPELL_BUY_OUT": "Buy Out",
+    "TXT_KEY_SPELL_BUY_OUT_HELP": "[ICON_BULLET]Target: an adjacent unit of a civilization you are at war with (not a hero or world unit).[NEWLINE][ICON_BULLET]It joins you, for 3 times its production cost in gold."
+  }
+}
