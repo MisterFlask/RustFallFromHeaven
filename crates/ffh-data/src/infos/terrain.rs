@@ -113,9 +113,15 @@ pub struct TerrainInfo {
     /// `iEngagementSlotsChange`: each side's engagement slots on a flat plot of this terrain
     /// without a feature that sets its own change (`GameData::engagement_slots_change`).
     pub engagement_slots_change: i32,
+    // ---- This game's own: the cards' terrains (docs/CARDS.md) ----
+    /// The Sky Falls' Crater: no improvement can be built on a plot of this terrain
+    /// (`Game::plot_can_have_improvement`).
+    pub no_improvement: bool,
+    /// The Sky Falls' Crater: no city works a plot of this terrain (`Game::city_can_work`).
+    pub unworkable: bool,
 }
 
-/// C++ `CvTerrainInfo::read` + `readPass2` (`TerrainDown`/`TerrainUp`) + `readPass3`
+/// C++ `CvTerrainInfo::read` +`readPass2` (`TerrainDown`/`TerrainUp`) + `readPass3`
 /// (`CivilizationYieldType`).
 pub fn read_terrain(rd: &Rd) -> TerrainInfo {
     TerrainInfo {
@@ -141,6 +147,8 @@ pub fn read_terrain(rd: &Rd) -> TerrainInfo {
         river_yield_change: rd.yields("river_yield_change"),
         hills_yield_change: rd.yields("hills_yield_change"),
         engagement_slots_change: rd.int("engagement_slots_change"),
+        no_improvement: rd.bool("no_improvement"),
+        unworkable: rd.bool("unworkable"),
     }
 }
 

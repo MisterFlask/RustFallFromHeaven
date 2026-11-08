@@ -117,6 +117,24 @@ impl Game {
         //FfH: End Add
     }
 
+    /// Whether `p`'s terrain, or the real terrain under a temporary one, has `flag`.
+    fn plot_terrain_flag(&self, p: PlotIdx, flag: fn(&TerrainInfo) -> bool) -> bool {
+        let pl = &self.map.plots[p];
+        [pl.terrain_type, pl.real_terrain_type].into_iter().flatten().any(|t| flag(&self.d.terrains[t]))
+    }
+
+    /// Card: The Sky Falls (docs/CARDS.md): no improvement can be built on `p`, Crater (a terrain
+    /// with `no_improvement`, under a temporary terrain too).
+    pub fn plot_is_unimprovable(&self, p: PlotIdx) -> bool {
+        self.plot_terrain_flag(p, |t| t.no_improvement)
+    }
+
+    /// Card: The Sky Falls (docs/CARDS.md): no city works `p`, Crater (a terrain with
+    /// `unworkable`, under a temporary terrain too).
+    pub fn plot_is_unworkable(&self, p: PlotIdx) -> bool {
+        self.plot_terrain_flag(p, |t| t.unworkable)
+    }
+
     /// What the lair on `p` spawns (`None`: no lair): its improvement's `spawn_unit_type`.
     pub fn plot_lair_spawn_unit(&self, p: PlotIdx) -> Option<UnitType> {
         self.d.improvements[self.map.plots[p].improvement_type?].spawn_unit_type
@@ -816,6 +834,12 @@ impl Game {
         let mut valid = false;
 
         if live_plot_city(self, p).is_some() {
+            return false;
+        }
+
+        // Card: The Sky Falls (docs/CARDS.md): nothing is built on Crater, not even what hills
+        // allow (mines).
+        if self.plot_is_unimprovable(p) {
             return false;
         }
 

@@ -13,7 +13,8 @@
 {"type":"TERRAIN_COAST","water":1,"impassable":0,"graphical":0,"up":"NONE","down":"NONE","hell":0,"twin":"NONE"},
 {"type":"TERRAIN_OCEAN","water":1,"impassable":0,"graphical":0,"up":"NONE","down":"NONE","hell":0,"twin":"NONE"},
 {"type":"TERRAIN_PEAK","water":1,"impassable":0,"graphical":1,"up":"NONE","down":"NONE","hell":0,"twin":"NONE"},
-{"type":"TERRAIN_HILL","water":1,"impassable":0,"graphical":1,"up":"NONE","down":"NONE","hell":0,"twin":"NONE"}
+{"type":"TERRAIN_HILL","water":1,"impassable":0,"graphical":1,"up":"NONE","down":"NONE","hell":0,"twin":"NONE"},
+{"type":"TERRAIN_CRATER","water":0,"impassable":0,"graphical":0,"up":"NONE","down":"NONE","hell":0,"twin":"NONE"}
 ],
 "feature": [
 {"type":"FEATURE_ICE","impassable":1,"graphical":0},

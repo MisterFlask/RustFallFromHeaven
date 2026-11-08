@@ -588,7 +588,10 @@ flag.
     - *The Blade Returns* (50): if no Godslayer is in the world, it appears on the unowned land
       plot farthest from any city, guarded by four barbarian Greater Werewolves.
     - *The Sky Falls* (80): the ten largest cities lose 2 population (never below 1), and the units
-      in them half their max HP.
+      in them half their max HP; in each, half of the land plots of its work radius (rounded
+      down; not the city's plot, peaks, water, other cities or Crater) become Crater, a new
+      terrain (2026-11-08): hills with no improvement, feature or resource (routes stay), no
+      yields; no improvement can be built on it (mines neither) and no city works it.
     - *The Long Night* (100, lasting): -1 food on every plot; units heal each turn only in cities.
     - *The Scaled Kingdom* (30): a new civilization of lizardmen rises in the largest unowned region
       of jungle and marsh: three cities and the Slitherking; its units move through jungle and marsh

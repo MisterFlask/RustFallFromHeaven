@@ -7,6 +7,9 @@
 //! - The Long Night: `Game::plot_calculate_yield` (plot/geography.rs), `Game::unit_heal_rate`
 //!   (unit/actions.rs).
 //!
+//! The Sky Falls leaves Crater (`TERRAIN_CRATER`, in its card file): its rules are the terrain's
+//! keys, asked by `Game::plot_is_unimprovable` and `Game::plot_is_unworkable` (plot/terrain.rs).
+//!
 //! The Godless Age, The Gathering, The Twilight of the Gods, The Lairs Deepen and The Second Sun
 //! were cut (the owner's call, 2026-11-08).
 //!
@@ -449,9 +452,15 @@ fn fire_blade_returns(g: &mut Game, _: usize) {
 // ---------------------------------------------------------------------------------------------
 // A40 The Sky Falls (80).
 
-/// Meteors strike the ten largest cities: units there take damage equal to 50% of their hit
-/// points, and each city loses 2 population.
+/// The terrain the meteors leave.
+pub const CRATER: &str = "TERRAIN_CRATER";
+
+/// Meteors strike the ten largest cities, largest first: units there take damage equal to 50% of
+/// their hit points, each city loses 2 population, and half of its [`crater_sites`] (rounded
+/// down) become Crater, drawn one at a time with the game's random numbers. Then every city stops
+/// working the plots that are Crater now (the citizens are placed again on its turn).
 fn fire_sky_falls(g: &mut Game, _: usize) {
+    let crater = g.d.t::<TerrainType>(CRATER);
     for c in cities_by_size(g).into_iter().take(10) {
         if !g.cities.contains(c) {
             continue;
@@ -459,7 +468,49 @@ fn fire_sky_falls(g: &mut Game, _: usize) {
         let p = g.city_plot(c);
         damage_units(g, p, 50);
         lose_population(g, c, 2);
+        let mut sites = crater_sites(g, c, crater);
+        for _ in 0..sites.len() / 2 {
+            let k = g.soren_rand_num(sites.len() as i32, "The Sky Falls") as usize;
+            make_crater(g, sites.remove(k), crater);
+        }
     }
+    for c in g.cities.ids() {
+        g.city_verify_working_plots(c);
+    }
+}
+
+/// The land plots of `c`'s work radius a meteor may turn to Crater, in the radius's order: not
+/// the city's own plot, a peak, water, another city's plot or Crater already.
+pub(crate) fn crater_sites(g: &Game, c: CityId, crater: TerrainType) -> Vec<PlotIdx> {
+    let mut out = Vec::new();
+    for i in 0..g.city_num_city_plots(c) as usize {
+        let Some(q) = g.city_index_plot(c, i) else { continue };
+        let pl = &g.map.plots[q];
+        if i == crate::defs::CITY_HOME_PLOT
+            || g.plot_is_water(q)
+            || g.plot_is_peak(q)
+            || pl.plot_city.is_some()
+            || pl.terrain_type == Some(crater)
+            || out.contains(&q)
+        {
+            continue;
+        }
+        out.push(q);
+    }
+    out
+}
+
+/// `p` becomes Crater: a hills plot of terrain Crater, without improvement, feature or resource
+/// (its route stays); a temporary terrain on it ends. Crater can carry no improvement and no city
+/// works it (`Game::plot_is_unimprovable`, `Game::plot_is_unworkable`).
+fn make_crater(g: &mut Game, p: PlotIdx, crater: TerrainType) {
+    g.plot_set_improvement_type(p, None);
+    g.plot_set_feature_type(p, None);
+    g.plot_set_bonus_type(p, None);
+    g.map.plots[p].temp_terrain_timer = 0;
+    g.map.plots[p].real_terrain_type = None;
+    g.plot_set_plot_type(p, PlotType::PLOT_HILLS, true);
+    g.plot_set_terrain_type(p, crater, true);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -743,6 +794,140 @@ mod tests {
         }
         assert_eq!(g.units[fresh].damage, g.unit_max_hit_points(fresh) / 2);
         assert!(!g.units.contains(hurt) || g.units[hurt].death_delay, "a unit already half hurt dies");
+    }
+
+    /// The plots of `c`'s work radius (distinct).
+    fn radius(g: &Game, c: CityId) -> Vec<PlotIdx> {
+        let mut out: Vec<PlotIdx> = (0..g.city_num_city_plots(c) as usize).filter_map(|i| g.city_index_plot(c, i)).collect();
+        out.sort();
+        out.dedup();
+        out
+    }
+
+    #[test]
+    fn the_sky_falls_turns_half_of_a_struck_citys_land_to_crater() {
+        let mut g = game(2);
+        let d = g.d;
+        let crater = d.t::<TerrainType>(CRATER);
+        let p0 = civ(&g, 0);
+        let land = open_land(&g);
+        let site = land[land.len() / 2];
+        let city = city_at(&mut g, p0, site, 8);
+        // In the radius: a peak, and on every other plot but the city's an improvement, a forest,
+        // a resource and a road (the land the meteors may take).
+        let around: Vec<PlotIdx> = radius(&g, city).into_iter().filter(|&q| q != site && !g.plot_is_water(q)).collect();
+        let peak = around[0];
+        g.plot_set_plot_type(peak, PlotType::PLOT_PEAK, true);
+        let (farm, forest, wheat, road) = (
+            d.t::<ImprovementType>("IMPROVEMENT_FARM"),
+            d.t::<FeatureType>("FEATURE_FOREST"),
+            d.t::<BonusType>("BONUS_WHEAT"),
+            d.t::<RouteType>("ROUTE_ROAD"),
+        );
+        for &q in &around[1..] {
+            g.plot_set_feature_type(q, Some(forest));
+            g.plot_set_bonus_type(q, Some(wheat));
+            g.plot_set_improvement_type(q, Some(farm));
+            g.plot_set_route_type(q, Some(road), true);
+        }
+        let sites = crater_sites(&g, city, crater);
+        assert!(!sites.contains(&site) && !sites.contains(&peak));
+        assert_eq!(sites.len(), around.len() - 1, "every land plot of the radius but the city's and the peak");
+
+        fire_sky_falls(&mut g, 0);
+        let craters: Vec<PlotIdx> = radius(&g, city).into_iter().filter(|&q| g.map.plots[q].terrain_type == Some(crater)).collect();
+        assert_eq!(craters.len(), sites.len() / 2, "half, rounded down");
+        for &q in &craters {
+            let pl = &g.map.plots[q];
+            assert!(sites.contains(&q) && g.plot_is_hills(q));
+            assert_eq!((pl.improvement_type, pl.feature_type, pl.bonus_type), (None, None, None));
+            assert_eq!(pl.route_type, Some(road), "the road stays");
+            assert_eq!(pl.yields, [0, 0, 0], "Crater yields nothing");
+            assert!(!g.cities[city].working_plot[g.city_plot_index(city, q).unwrap()], "no citizen on it");
+        }
+        assert!(g.plot_is_peak(peak) && g.map.plots[site].terrain_type != Some(crater));
+        // The rest of the land keeps what it had.
+        for &q in sites.iter().filter(|q| !craters.contains(q)) {
+            assert_eq!(g.map.plots[q].improvement_type, Some(farm));
+        }
+        // The citizens the craters took are placed again, never on Crater.
+        g.city_assign_working_plots(city);
+        assert!(craters.iter().all(|&q| !g.cities[city].working_plot[g.city_plot_index(city, q).unwrap()]));
+        // A city struck again: half of what is left (the craters are not counted).
+        assert_eq!(crater_sites(&g, city, crater).len(), sites.len() - craters.len());
+    }
+
+    #[test]
+    fn crater_cannot_be_improved_or_worked_but_takes_a_road() {
+        let mut g = game(2);
+        let d = g.d;
+        let crater = d.t::<TerrainType>(CRATER);
+        let p0 = civ(&g, 0);
+        let land = open_land(&g);
+        let site = land[land.len() / 2];
+        let city = city_at(&mut g, p0, site, 4);
+        let (sx, sy) = g.map.xy(site);
+        let next: Vec<PlotIdx> = plots_within(&g, sx, sy, 1).into_iter().filter(|&q| q != site && !g.plot_is_water(q) && !g.plot_is_peak(q)).collect();
+        let (hill, pit) = (next[0], next[1]);
+        for q in [hill, pit] {
+            g.plot_set_feature_type(q, None);
+            g.plot_set_plot_type(q, PlotType::PLOT_HILLS, true);
+            g.plot_set_terrain_type(q, d.t::<TerrainType>("TERRAIN_GRASS"), true);
+        }
+        let mine = d.t::<ImprovementType>("IMPROVEMENT_MINE");
+        let team = Some(g.players[p0].team);
+        assert!(g.plot_can_have_improvement(hill, mine, team, false) && g.plot_can_have_improvement(pit, mine, team, false), "hills take a mine");
+        assert!(g.city_can_work(city, hill) && g.city_can_work(city, pit));
+
+        make_crater(&mut g, pit, crater);
+        assert!(g.plot_is_unimprovable(pit) && g.plot_is_unworkable(pit));
+        assert!(d.improvements.keys().all(|i| !g.plot_can_have_improvement(pit, i, team, false)), "no improvement on Crater");
+        assert!(g.plot_can_have_improvement(hill, mine, team, false));
+        assert!(!g.city_can_work(city, pit), "no city works Crater");
+        assert!(g.city_can_work(city, hill));
+        assert!(g.plot_can_build(pit, d.t::<BuildType>("BUILD_ROAD"), p0, false), "a road can be built");
+        assert!(!g.plot_can_build(pit, d.t::<BuildType>("BUILD_MINE"), p0, false));
+        // Under a temporary terrain it stays Crater for these rules.
+        g.map.plots[pit].real_terrain_type = Some(crater);
+        g.map.plots[pit].terrain_type = Some(d.t::<TerrainType>("TERRAIN_SNOW"));
+        assert!(g.plot_is_unimprovable(pit) && g.plot_is_unworkable(pit));
+    }
+
+    #[test]
+    fn crater_moves_defends_and_fights_as_hills() {
+        let mut g = game(2);
+        let d = g.d;
+        let crater = d.t::<TerrainType>(CRATER);
+        let grass = d.t::<TerrainType>("TERRAIN_GRASS");
+        let p0 = civ(&g, 0);
+        // A plot with two land neighbours, none of them by a river.
+        let dry = |g: &Game, q: PlotIdx| !g.plot_is_water(q) && !g.plot_is_peak(q) && !g.plot_is_river_side(q) && g.map.plots[q].plot_city.is_none();
+        let (from, hill, pit) = open_land(&g)
+            .into_iter()
+            .filter(|&o| dry(&g, o))
+            .find_map(|o| {
+                let (x, y) = g.map.xy(o);
+                let n: Vec<PlotIdx> = plots_within(&g, x, y, 1).into_iter().filter(|&q| q != o && dry(&g, q)).collect();
+                (n.len() >= 2).then(|| (o, n[0], n[1]))
+            })
+            .expect("dry land");
+        for q in [hill, pit] {
+            g.plot_set_improvement_type(q, None);
+            g.plot_set_route_type(q, None, true);
+            g.plot_set_feature_type(q, None);
+            g.plot_set_plot_type(q, PlotType::PLOT_HILLS, true);
+            g.plot_set_terrain_type(q, grass, true);
+        }
+        make_crater(&mut g, pit, crater);
+        // A Horseman (3 moves): a hill's cost is not cut to the unit's moves.
+        let rider = unit_at(&mut g, p0, "UNIT_HORSEMAN", from);
+        assert_eq!(g.plot_movement_cost(pit, rider, from), g.plot_movement_cost(hill, rider, from));
+        assert!(g.plot_movement_cost(pit, rider, from) > d.defines.move_denominator, "hills cost more than open ground");
+        assert_eq!(g.plot_defense_modifier(pit, None, false), g.plot_defense_modifier(hill, None, false));
+        assert_eq!(g.engage_ground(pit), g.engage_ground(hill));
+        assert!(g.engage_ground(pit).hills);
+        let team = g.players[p0].team;
+        assert_eq!(g.plot_see_from_level(pit, team), g.plot_see_from_level(hill, team));
     }
 
     #[test]

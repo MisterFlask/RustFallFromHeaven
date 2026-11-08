@@ -130,7 +130,7 @@ export const keyPoses = (sides) => (f) => figOf(f, sides).poses;
 /** Fighter `f`'s own impact card (its blows land as it, from its cell), or null. */
 export const unitCard = (sides) => (f) => figOf(f, sides).card;
 
-const DRY = /PLAINS|DESERT|BURNING_SANDS|BROKEN_LANDS|FIELDS_OF_PERDITION/;
+const DRY = /PLAINS|DESERT|BURNING_SANDS|BROKEN_LANDS|FIELDS_OF_PERDITION|CRATER/;
 const COLD = /TUNDRA|SNOW/;
 
 function tileKey(terrain) {

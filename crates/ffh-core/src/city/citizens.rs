@@ -45,6 +45,11 @@ impl Game {
             return false;
         }
 
+        // Card: The Sky Falls (docs/CARDS.md): a city does not work Crater.
+        if self.plot_is_unworkable(plot) && plot != self.city_plot(c) {
+            return false;
+        }
+
         let owner = self.cities[c].owner;
         if self.plot_plot_check(plot, Game::puf_can_siege, owner.i(), -1, None, None, None, -1, -1).is_some() {
             return false;

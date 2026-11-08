@@ -65,13 +65,15 @@ const TERRAIN_TILE = {
   TERRAIN_BURNING_SANDS: "tile_burning_sands",
   TERRAIN_BROKEN_LANDS: "tile_broken_lands",
   TERRAIN_FIELDS_OF_PERDITION: "tile_fields_of_perdition",
+  // The Sky Falls' Crater (docs/CARDS.md, always hills): the tundra's grey ground, dry hills.
+  TERRAIN_CRATER: "tile_tundra",
 };
 
 /** Where a tile sprite is missing, the nearest one that exists. */
 const TILE_FALLBACK = { tile_ocean: "tile_water", tile_marsh: "tile_grass", tile_tundra: "tile_plains" };
 
 /** The terrains whose hills are dry, snowy or hellish (the hills overlay); the rest are green. */
-const DRY = new Set(["TERRAIN_PLAINS", "TERRAIN_DESERT", "TERRAIN_BURNING_SANDS", "TERRAIN_BROKEN_LANDS", "TERRAIN_FIELDS_OF_PERDITION"]);
+const DRY = new Set(["TERRAIN_PLAINS", "TERRAIN_DESERT", "TERRAIN_BURNING_SANDS", "TERRAIN_BROKEN_LANDS", "TERRAIN_FIELDS_OF_PERDITION", "TERRAIN_CRATER"]);
 const COLD = new Set(["TERRAIN_TUNDRA", "TERRAIN_SNOW"]);
 const HELL = new Set(["TERRAIN_BURNING_SANDS", "TERRAIN_BROKEN_LANDS", "TERRAIN_FIELDS_OF_PERDITION"]);
 

@@ -1,8 +1,29 @@
 // A40 The Sky Falls (docs/DECKS_ROUND8.md section B; the Armageddon card is code:
 // crates/ffh-core/src/deck/doom_cards.rs).
+// TERRAIN_CRATER is the terrain of the plots the meteors leave: always a hills plot (the card makes
+// it one), so its movement, defence, sight and battle ground are the hills'. No yields of its own
+// (hills_yield_change takes back the hills' production); no feature or resource is valid on it.
+// no_improvement and unworkable are this game's keys (docs/CARDS.md section 2).
 {
+  "terrains": [
+    {
+      "type": "TERRAIN_CRATER",
+      "description": "TXT_KEY_TERRAIN_CRATER",
+      "civilopedia": "TXT_KEY_TERRAIN_CRATER_PEDIA",
+      "hills_yield_change": [0, -1, 0],
+      "movement": 1,
+      "see_from": 1,
+      "see_through": 1,
+      "button": "Art/Interface\\Buttons\\WorldBuilder\\Terrain_Tundra.dds",
+      "plot_counter_up": 100,
+      "no_improvement": true,
+      "unworkable": true
+    }
+  ],
   "text": {
     "TXT_KEY_DOOM_SKY_FALLS": "The Sky Falls",
-    "TXT_KEY_DOOM_SKY_FALLS_HELP": "Meteors strike the ten largest cities. Units in them take damage equal to 50% of their hit points. Each of these cities loses 2 population."
+    "TXT_KEY_DOOM_SKY_FALLS_HELP": "Meteors strike the ten largest cities. Units in them take damage equal to 50% of their hit points. Each of these cities loses 2 population. In each of these cities, half of the land plots of its work radius (rounded down; not the city's plot, peaks, water, other cities or Crater) become Crater: hills with Crater terrain, without improvement, feature or resource. Crater yields nothing. No improvement can be built on it; routes can. Cities cannot work it.",
+    "TXT_KEY_TERRAIN_CRATER": "Crater",
+    "TXT_KEY_TERRAIN_CRATER_PEDIA": "Where the stars came down the ground is glass and slag, ringed with shattered rock. Nothing takes root, and no plough will turn it."
   }
 }

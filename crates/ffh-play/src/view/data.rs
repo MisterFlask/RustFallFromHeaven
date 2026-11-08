@@ -62,6 +62,17 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
             j.set("defense", t.defense_modifier);
             j.set("water", t.water);
             j.set("impassable", t.impassable);
+            // This game's cards' terrains (docs/CARDS.md): the Sky Falls' Crater.
+            let mut effects = Vec::new();
+            if t.no_improvement {
+                effects.push("[ICON_BULLET]No improvement can be built here (routes can)");
+            }
+            if t.unworkable {
+                effects.push("[ICON_BULLET]Cities cannot work this plot");
+            }
+            if !effects.is_empty() {
+                j.set("effects", effects.join("[NEWLINE]"));
+            }
         }
         "CulturalActionType" => {
             let a = &d.cultural_actions[CulturalActionType::from_usize(i)];

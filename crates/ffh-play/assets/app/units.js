@@ -762,6 +762,9 @@ function showTip() {
   if (m.river[i] > 0 && (m.river[i] & 3)) extra.push("River");
   if (extra.length) lines.push(h("div", extra.join(" · ")));
   if (bonusHelp) lines.push(h("div.tip-effects.tip-bonus", markup(bonusHelp)));
+  // What the terrain's own rules do (the cards' terrains: the Sky Falls' Crater).
+  const terrainHelp = m.terrain[i] >= 0 ? effectsOf("TerrainType", m.terrain[i]) : "";
+  if (terrainHelp) lines.push(h("div.tip-effects", markup(terrainHelp)));
   if (m.owner[i] >= 0) lines.push(h("div.dim", `Owner: ${playerName(m.owner[i])}`));
   const p = preview.plot;
   // C++ plot help's line (the Ring of Carcer's).

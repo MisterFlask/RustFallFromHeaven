@@ -56,6 +56,8 @@ map terrain TERRAIN_BURNING_SANDS -> terrain/burning_sands mini=x
 map terrain TERRAIN_SHALLOWS -> terrain/shallows mini=v
 map terrain TERRAIN_COAST -> terrain/coast mini=n
 map terrain TERRAIN_OCEAN -> terrain/ocean deep mini=d
+; the Sky Falls' Crater (docs/CARDS.md; always hills): the tundra's grey, cracked ground
+map terrain TERRAIN_CRATER -> terrain/tundra mini=4
 ; graphics-only types in the XML (peaks and hills are plot types drawn over the real terrain)
 map terrain TERRAIN_PEAK -> terrain/tundra mini=5
 map terrain TERRAIN_HILL -> terrain/grass mini=o
@@ -74,6 +76,7 @@ map hill TERRAIN_BROKEN_LANDS -> hill/hump remap=Ox,or,mu,qh,w0 mini=u
 map hill TERRAIN_FIELDS_OF_PERDITION -> hill/hump remap=OP,oP,mp,qv,w1 mini=p
 map hill TERRAIN_BURNING_SANDS -> hill/hump remap=Ol,oE,mx,qr,we mini=x
 map hill TERRAIN_SHALLOWS -> hill/hump remap=Op,op,mv,q1,w0 mini=v
+map hill TERRAIN_CRATER -> hill/hump remap=OH,o6,mG,qD,wB mini=G
 map hill * -> hill/hump mini=o
 
 ; ---- peaks (5.3): snow and tundra wear the tall cap; hell peaks are scorched or dusk-lit

@@ -231,6 +231,8 @@ export const TERRAIN_COLORS = {
   TERRAIN_OCEAN: "#1b3b68",
   TERRAIN_PEAK: "#6c6863",
   TERRAIN_HILL: "#7a6c4e",
+  // The Sky Falls' Crater (docs/CARDS.md): scorched rock.
+  TERRAIN_CRATER: "#5c5650",
 };
 
 export function terrainColor(type) {

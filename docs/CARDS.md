@@ -146,6 +146,8 @@ help):
 | promotions | `heal_behind` | Templar | at the end of each round its unit heals the nearest ally behind it in its lanes this many HP (an event with pass 0; nothing drawn) |
 | promotions | `unit_classes` `[class]` | Templar | only units of these classes may take it |
 | promotions | `attack_damage_type` | Elemental Forge | its unit's physical attack deals this damage type: the target's resistance to it cuts the attack (as a typed strength's) |
+| terrains | `no_improvement` | The Sky Falls (Crater) | no improvement can be built on a plot of this terrain, or of a temporary terrain over it, whatever its plot type allows (no mine on Crater's hills); routes can (`plot_can_have_improvement`) |
+| terrains | `unworkable` | The Sky Falls (Crater) | no city works a plot of this terrain, or of a temporary terrain over it (`city_can_work`; the governor and the AI place citizens through it) |
 | buildings | `global_counter_commerces` (commerces) | Orrery of Ceridwen | its city's commerce per 10 points of the Armageddon counter |
 | buildings | `doom_sight` | Orrery of Ceridwen | how many unrevealed Armageddon cards ahead its owner sees (the Orrery: 2) |
 | spells | `py_target_label` | (choice spells; Purchase Charter, Bazaar of Wonders) | the callback naming a `choice` target's option, or adding to another target's name (a city's price; section 3) |
@@ -355,6 +357,18 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   Werewolf Moon, the Horsemen, who then take 50-70); 50 the Blade Returns; 60 the Infernal Gate
   Opens; 80 two ways (Hellfire, the Sky Falls); 90 Wrath; 100 two ways (Apocalypse, the Long
   Night).
+- **Crater** (`TERRAIN_CRATER`, defined in `cards/doom_sky_falls.jsonc`): what The Sky Falls
+  leaves. In each struck city (largest first) half of its work radius's land plots, rounded down,
+  become Crater: not the city's plot, peaks, water, another city's plot or Crater already; drawn
+  one at a time with `soren_rand_num` from the plots in the radius's order (`crater_sites`). The
+  plot becomes hills (`PLOT_HILLS`) with terrain Crater and loses its improvement, feature and
+  resource; its route stays. Its movement, defence, sight and battle ground are the hills'
+  (terrain movement 1, defence 0, as Grassland); it yields nothing (no yields of its own, and
+  `hills_yield_change` takes back the hills' production); no feature or resource is valid on it.
+  It is unimprovable and unworkable (section 2: `no_improvement`, `unworkable`). The clients draw
+  it with the tundra's ground and hills (`TERRAIN_CRATER` in `iso.js`, `r3d/world.js`,
+  `tiles.js`, `battle_stage.js`, `web/art/terrain/manifest.txt`); the plot tooltip shows its
+  rules (the terrain's `effects` in `data`).
 - **Cut cards** (the owner's call, 2026-11-08): The Godless Age, The Gathering, The Twilight of
   the Gods, The Lairs Deepen and The Second Sun are gone, with their rules and text.
 - **Civilizations of the deck** (batch B8, `ffh/cards/new_civs_2.rs`): the Scaled Kingdom (30),
@@ -443,7 +457,7 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | A09 Volcanic Spring (40) | Armageddon | built: the hills named at the reveal |
 | A11 Werewolf Moon (40) | Armageddon | built |
 | A33 The Blade Returns (50) | Armageddon | built |
-| A40 The Sky Falls (80) | Armageddon | built |
+| A40 The Sky Falls (80) | Armageddon | built: Crater (half the land of each struck city's radius; unimprovable, unworkable) |
 | A49 The Long Night (100) | Armageddon | built: lasting |
 | (the decks' UI: a held card, Discover, cards in the help and the tech tree, card world spells, `cast_at` and target picks, the Armageddon deck in the HUD) | | built |
 | G17 Starmetal Meteor | Sage | built |

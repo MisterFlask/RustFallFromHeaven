@@ -47,6 +47,8 @@ const GROUND_OF = {
   TERRAIN_SHALLOWS: GROUND.SHALLOWS,
   TERRAIN_COAST: GROUND.COAST,
   TERRAIN_OCEAN: GROUND.OCEAN,
+  // The Sky Falls' Crater (docs/CARDS.md, always hills): the tundra's grey, cracked ground.
+  TERRAIN_CRATER: GROUND.TUNDRA,
 };
 
 /** Feature classes (terrain texture G). */
