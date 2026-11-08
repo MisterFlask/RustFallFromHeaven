@@ -279,6 +279,10 @@ impl Game {
             if let Some(promotion) = info.extra_free_promotion {
                 self.cities[c].free_promotion_count[promotion] += change;
             }
+            // Card: the Gilded Legion (docs/CARDS.md): a new one chooses anew, a lost one forgets.
+            if info.legion_cost_percent > 0 {
+                self.cities[c].legion_civ = None;
+            }
 
             {
                 let city = &mut self.cities[c];

@@ -655,7 +655,7 @@ impl Game {
             return false;
         }
         let Some(plot) = self.unit_plot_opt(u) else { return false };
-        self.plot_is_water(plot) && !self.plot_is_city(plot, false, None)
+        self.plot_is_water(plot) && !self.plot_is_land_bridge(plot) && !self.plot_is_city(plot, false, None)
     }
 
     /// Card: Gryphon Riders (docs/CARDS.md): a unit that cannot end a turn over water lands, at the

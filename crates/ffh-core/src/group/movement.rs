@@ -1314,6 +1314,22 @@ mod tests {
         assert_eq!(g.group_find_path(grp, from, peak, 0), None);
     }
 
+    /// Card: Gryphon Riders (docs/CARDS.md): a flier that cannot end a turn over water crosses two
+    /// plots of water with its three moves, and finds no path where a turn would end over water.
+    #[test]
+    fn a_flier_ends_no_turn_over_water() {
+        let mut g = test_game(&[".~~.~~~.", "~~~~~~~~"]);
+        let (u, grp) = add_unit_group(&mut g, PlayerId(0), "UNIT_GRYPHON_RIDER", 0, 0);
+        let flying = g.d.t::<PromotionType>("PROMOTION_FLYING");
+        g.unit_set_has_promotion(u, flying, true);
+        assert_eq!(g.unit_max_moves(u), 3 * g.d.defines.move_denominator);
+        let from = g.map.plot_idx(0, 0).unwrap();
+        let shore = g.map.plot_idx(3, 0).unwrap();
+        let far = g.map.plot_idx(7, 0).unwrap();
+        assert_eq!(g.group_find_path(grp, from, shore, 0).map(|p| p.turns), Some(1), "two plots of water and the shore");
+        assert_eq!(g.group_find_path(grp, shore, far, 0), None, "three plots of water: a turn would end over them");
+    }
+
     /// pushMission -> startMission -> continueMission (groupAttack, groupPathTo, groupMove) and
     /// autoMission on the following turns.
     #[test]

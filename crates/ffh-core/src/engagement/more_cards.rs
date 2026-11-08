@@ -205,6 +205,14 @@ impl Game {
         }
     }
 
+    /// Whether unit `u` heals on `plot` (its type's `heal_building_class`, the Automatons: only in a
+    /// city of its team with a building of that class; any other unit: yes).
+    pub fn unit_heals_at(&self, u: UnitId, plot: PlotIdx) -> bool {
+        let Some(class) = self.d.units[self.units[u].unit_type].heal_building_class else { return true };
+        let team = self.unit_get_team(u);
+        self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c) && self.city_team(c) == team).is_some_and(|c| self.city_is_has_building_class(c, class))
+    }
+
     /// The percentage of the damage ship `u` deals to `other` in the rounds it wins of a naval
     /// battle (`naval_damage_vs`, its promotions' against `other`'s class: the Leviathan Harpoons).
     pub fn unit_naval_damage_pct(&self, u: UnitId, other: UnitId) -> i32 {

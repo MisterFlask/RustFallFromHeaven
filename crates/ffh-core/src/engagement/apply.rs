@@ -107,7 +107,12 @@ impl Game {
                 self.city_set_sentinel_damage(c, e.setup.sentinels[j], dmg);
             }
         }
-        let city_owner = e.setup.sentinel_city.filter(|&c| self.cities.contains(c)).map(|c| self.cities[c].owner);
+        // Card: a field Sentinel's kill is its owner's (more_cards.rs).
+        let field_owner = match e.setup.field {
+            Some(super::more_cards::SentinelSource::Field { owner, .. }) => Some(owner),
+            _ => None,
+        };
+        let city_owner = e.setup.sentinel_city.filter(|&c| self.cities.contains(c)).map(|c| self.cities[c].owner).or(field_owner);
         let max_hp = d.defines.max_hit_points;
         for k in &r.kills {
             if k.victim >= n {
@@ -474,6 +479,10 @@ impl Game {
     /// `healRate` takes them; `(heal, medic, adjacent)`.
     fn engage_medic_heal(&self, u: UnitId) -> Option<(i32, UnitId, bool)> {
         let plot = self.unit_plot_opt(u)?;
+        // Card: Automatons heal only at a Forge (more_cards.rs).
+        if !self.unit_heals_at(u, plot) {
+            return None;
+        }
         let team = self.unit_get_team(u);
         let mut best: Option<(i32, UnitId, bool)> = None;
         for &lu in &self.map.plots[plot].units {

@@ -596,12 +596,8 @@ impl Game {
 
         // Card: Automatons (docs/CARDS.md): a unit type that heals only in a city of its team with
         // a building of a class.
-        if let Some(class) = d.units[self.units[u].unit_type].heal_building_class {
-            let team = self.unit_get_team(u);
-            let ok = city.filter(|&c| self.cities.contains(c) && self.city_team(c) == team).is_some_and(|c| self.city_is_has_building_class(c, class));
-            if !ok {
-                return 0;
-            }
+        if !self.unit_heals_at(u, plot) {
+            return 0;
         }
 
         // Not in FFH2: the Armageddon card The Long Night, no healing outside cities for the rest
