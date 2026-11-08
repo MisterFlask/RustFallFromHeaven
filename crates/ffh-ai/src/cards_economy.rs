@@ -163,6 +163,11 @@ fn trading_posts(g: &mut Game, v: &View) {
     if g.players[p].improvement_count[post] >= 3 {
         return;
     }
+    // One post at a time: a worker with the job (on its way or building) keeps it.
+    let ordered = |grp: GroupId| g.groups[grp].mission_queue.iter().any(|m| m.mission_type == MissionType::MISSION_BUILD && m.data1 == build.i());
+    if g.players[p].groups.iter().any(|&grp| alive(g, grp) && ordered(grp)) {
+        return;
+    }
     // The idle workers (alone in their group, with nothing ordered), at most four, by id.
     let mut workers: Vec<UnitId> = g.players[p]
         .units
@@ -178,7 +183,8 @@ fn trading_posts(g: &mut Game, v: &View) {
     for &u in &workers {
         for r in flood.run(g, u, 15, false) {
             let q = r.plot;
-            if g.map.plots[q].build_progress[build] > 0 || v.danger_at(q) > 0 || !g.player_can_build(p, q, build, false, false) {
+            // (A post a worker left half built, fleeing danger, is a site like any other.)
+            if v.danger_at(q) > 0 || !g.player_can_build(p, q, build, false, false) {
                 continue;
             }
             let value = post_site_value(g, p, q);
@@ -194,7 +200,7 @@ fn trading_posts(g: &mut Game, v: &View) {
     let Some((score, u, site)) = best else { return };
     let Some(grp) = g.units[u].group else { return };
     let (sx, sy) = g.map.xy(site);
-    crate::trace!(g, p, "trading post at {:?} (score {score}) by worker {:?}", (sx, sy), u);
+    crate::trace!(g, p, "trading post at {:?} (score {score}; {} built) by worker {:?}", (sx, sy), g.players[p].improvement_count[post], u);
     let start = g.unit_plot(u);
     if start != site {
         move_to(g, grp, site, 0);
