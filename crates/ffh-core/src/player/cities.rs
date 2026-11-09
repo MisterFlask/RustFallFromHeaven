@@ -1023,14 +1023,6 @@ impl Game {
         true
     }
 
-    /// C++ `CvPlayer::getCityName(iIndex)`: entry `index` of `city_names`, "" if out of range.
-    pub fn player_get_city_name(&self, p: PlayerId, index: i32) -> String {
-        if index < 0 {
-            return String::new();
-        }
-        self.players[p].city_names.get(index as usize).cloned().unwrap_or_default()
-    }
-
     // ------------------------------------------------------------------ capital
 
     /// C++ `CvPlayer::getCapitalCity`: `capital_city` if that city still exists (C++ looks
@@ -1207,11 +1199,6 @@ impl Game {
         }
 
         count
-    }
-
-    /// C++ `CvPlayer::countNumCitiesConnectedToCapital`.
-    pub fn player_count_num_cities_connected_to_capital(&self, p: PlayerId) -> i32 {
-        self.players[p].cities.iter().filter(|&&c| self.city_is_connected_to_capital(c, None)).count() as i32
     }
 
     /// C++ `CvPlayer::getNumBuilding(iBuilding)` (FFH: real buildings of a type over all cities).

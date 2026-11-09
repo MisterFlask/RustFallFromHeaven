@@ -1020,21 +1020,6 @@ impl Game {
         self.city_extra_production_difference_modifier(c, extra, self.city_production_modifier(c))
     }
 
-    /// C++ `CvCity::getExtraProductionDifference(int, UnitTypes)` (CvCity.cpp:3427-3430).
-    pub fn city_extra_production_difference_unit(&self, c: CityId, extra: i32, unit: UnitType) -> i32 {
-        self.city_extra_production_difference_modifier(c, extra, self.city_production_modifier_unit(c, unit))
-    }
-
-    /// C++ `CvCity::getExtraProductionDifference(int, BuildingTypes)` (CvCity.cpp:3432-3435).
-    pub fn city_extra_production_difference_building(&self, c: CityId, extra: i32, building: BuildingType) -> i32 {
-        self.city_extra_production_difference_modifier(c, extra, self.city_production_modifier_building(c, building))
-    }
-
-    /// C++ `CvCity::getExtraProductionDifference(int, ProjectTypes)` (CvCity.cpp:3437-3440).
-    pub fn city_extra_production_difference_project(&self, c: CityId, extra: i32, project: ProjectType) -> i32 {
-        self.city_extra_production_difference_modifier(c, extra, self.city_production_modifier_project(c, project))
-    }
-
     /// C++ `CvCity::getExtraProductionDifference(int, int iModifier)` (CvCity.cpp:3442-3445).
     pub fn city_extra_production_difference_modifier(&self, c: CityId, extra: i32, modifier: i32) -> i32 {
         (extra * self.city_base_yield_rate_modifier(c, YieldType::YIELD_PRODUCTION, modifier)) / 100

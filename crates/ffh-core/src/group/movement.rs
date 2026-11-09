@@ -277,22 +277,6 @@ impl Game {
     // Can move / enter
     // ------------------------------------------------------------------
 
-    /// C++ `CvSelectionGroup::canEnterTerritory` (`team = None` is NO_TEAM; C++ default
-    /// `bIgnoreRightOfPassage = false`).
-    pub fn group_can_enter_territory(&self, g: GroupId, team: Option<TeamId>, ignore_right_of_passage: bool) -> bool {
-        let units = &self.groups[g].units;
-        if units.is_empty() {
-            return false;
-        }
-
-        units.iter().all(|&u| self.unit_can_enter_territory(u, team, ignore_right_of_passage))
-    }
-
-    /// C++ `CvSelectionGroup::canEnterArea` (C++ default `bIgnoreRightOfPassage = false`).
-    pub fn group_can_enter_area(&self, g: GroupId, team: Option<TeamId>, area: AreaId, ignore_right_of_passage: bool) -> bool {
-        can_enter_area(self, g, team, Some(area), ignore_right_of_passage)
-    }
-
     /// C++ `CvSelectionGroup::canMoveInto` (any unit can; C++ default `bAttack = false`;
     /// non-const in C++, read-only).
     pub fn group_can_move_into(&self, g: GroupId, plot: PlotIdx, attack: bool) -> bool {

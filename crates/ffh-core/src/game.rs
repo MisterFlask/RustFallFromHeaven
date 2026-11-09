@@ -678,18 +678,6 @@ impl Game {
         false
     }
 
-    /// C++ `isPbem()`.
-    #[inline]
-    pub fn is_pbem(&self) -> bool {
-        false
-    }
-
-    /// C++ `isHotSeat()`.
-    #[inline]
-    pub fn is_hot_seat(&self) -> bool {
-        false
-    }
-
     /// C++ `isSimultaneousTeamTurns()` (only in network games).
     #[inline]
     pub fn is_simultaneous_team_turns(&self) -> bool {

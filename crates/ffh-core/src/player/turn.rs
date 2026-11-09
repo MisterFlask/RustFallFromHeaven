@@ -679,15 +679,6 @@ impl Game {
         self.py_calculate_score(p)
     }
 
-    /// C++ `CvPlayer::getAveragePopulation`.
-    pub fn player_get_average_population(&self, p: PlayerId) -> i32 {
-        let pl = &self.players[p];
-        if pl.num_cities() == 0 {
-            return 0;
-        }
-        (pl.total_population / pl.num_cities()) + 1
-    }
-
     /// C++ `CvPlayer::changeTotalPopulation`: also updates assets, power and population score.
     pub fn player_change_total_population(&mut self, p: PlayerId, change: i32) {
         let old_population = self.players[p].total_population;

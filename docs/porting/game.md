@@ -81,8 +81,8 @@ used in the C++. `m_bScoreDirty` is kept (rank update timing feeds the FfH chall
 | `getNumHumanPlayers` | CvGame.cpp:3481-3484 | 4 | `num_human_players` | ported |
 | `isNetworkMultiPlayer` | CvGame.cpp:3419-3422 | 4 | `is_network_multi_player` (false) | ported |
 | `isGameMultiPlayer` | CvGame.cpp:3425-3428 | 4 | `is_game_multi_player` (false) | ported |
-| `isHotSeat` | CvGame.cpp:4589-4592 | 4 | `is_hot_seat` (false) | ported |
-| `isPbem` | CvGame.cpp:4594-4597 | 4 | `is_pbem` (false) | ported |
+| `isHotSeat` | CvGame.cpp:4589-4592 | 4 | — | removed (no callers) |
+| `isPbem` | CvGame.cpp:4594-4597 | 4 | — | removed (no callers) |
 | `isSimultaneousTeamTurns` | CvGame.cpp:4606-4619 | 14 | `is_simultaneous_team_turns` (false) | ported |
 
 ## `game/setup_init.rs` — new game creation (2,338 lines)
@@ -396,7 +396,7 @@ distance wrappers go through it, the plot lookups through `Map::plot_xy` / `Map:
 | `isPlotEventTrigger` | 898-946 | 49 | `is_plot_event_trigger(d, ..)` | ported |
 | `getDiscoveryTech` | 948-973 | 26 | `Game::get_discovery_tech` | ported |
 | `PUF_*` (37 filters) | 1018-1251 | ~225 | `Game::puf_*` (`PlotUnitFunc`); the 5 composed ones ported | ported |
-| `baseYieldToSymbol` | 1906-1917 | 12 | `base_yield_to_symbol` | ported |
+| `baseYieldToSymbol` | 1906-1917 | 12 | — | removed (no callers) |
 | `isPickableName` | 1920-1933 | 14 | `is_pickable_name` | ported |
 | `shuffle`, `shuffleArray` | 1937-1965 | 27 | `shuffle`, `shuffle_array` | ported |
 | `getTurnYearForGame` | 1967-1970 | 4 | `get_turn_year_for_game` | ported |

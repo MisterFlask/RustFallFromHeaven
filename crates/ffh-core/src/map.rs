@@ -14,7 +14,6 @@ use crate::ids::*;
 use crate::path::{FinderCtx, FinderKind, PathNode, ASNL_ADDCLOSED};
 use crate::plot::Plot;
 use crate::slab::Slab;
-use crate::structs::XYCoords;
 use crate::utils::estimate_direction;
 use ffh_data::*;
 
@@ -250,13 +249,6 @@ impl Map {
         (i % self.grid_width, i / self.grid_width)
     }
 
-    /// Coordinates of a plot as C++ `XYCoords`.
-    #[inline]
-    pub fn xy_coords(&self, p: PlotIdx) -> XYCoords {
-        let (x, y) = self.xy(p);
-        XYCoords { x, y }
-    }
-
     /// C++ `CvMap::isWrap`.
     #[inline]
     pub fn is_wrap(&self) -> bool {
@@ -400,33 +392,6 @@ impl Game {
         self.border_finder.get_mut().initialize(geom);
     }
 
-    /// C++ `CvMap::rebuild` (world builder / Python): sets world size, climate and sea level
-    /// in the setup, then `init` with explicit dimensions. Custom map options are not ported.
-    #[allow(clippy::too_many_arguments)]
-    pub fn map_rebuild(
-        &mut self,
-        grid_w: i32,
-        grid_h: i32,
-        top_latitude: i32,
-        bottom_latitude: i32,
-        wrap_x: bool,
-        wrap_y: bool,
-        world_size: WorldSizeType,
-        climate: ClimateType,
-        sea_level: SeaLevelType,
-    ) {
-        let init_data = MapInitData { grid_w, grid_h, top_latitude, bottom_latitude, wrap_x, wrap_y };
-
-        // Set init core data
-        self.setup.world_size = world_size;
-        self.setup.climate = climate;
-        self.setup.sea_level = sea_level;
-        // setCustomMapOptions: custom map options are not ported.
-
-        // Init map
-        self.map_init(Some(&init_data));
-    }
-
     /// C++ `CvMap::calculateAreas` (protected): every plot without an area starts a new area
     /// and flood-fills it (C++ area finder: `areaValid` / `joinArea`).
     pub fn map_calculate_areas(&mut self) {
@@ -499,14 +464,6 @@ impl Game {
         }
 
         self.update_plot_groups();
-    }
-
-    /// C++ `CvMap::setAllPlotTypes` (graphics rebuild dropped).
-    pub fn map_set_all_plot_types(&mut self, plot_type: PlotType) {
-        for p in self.map.plot_ids() {
-            self.plot_set_plot_type(p, plot_type, false);
-        }
-        self.map_recalculate_areas();
     }
 
     /// C++ `CvMap::doTurn`.
@@ -740,38 +697,6 @@ impl Game {
         }
 
         best_city
-    }
-
-    /// C++ `CvMap::findSelectionGroup` (C++ defaults: no owner, `bReadyToSelect = false`,
-    /// `bWorkers = false`).
-    pub fn map_find_selection_group(&self, x: i32, y: i32, owner: Option<PlayerId>, ready_to_select: bool, workers: bool) -> Option<GroupId> {
-        // XXX look for barbarian cities???
-
-        let mut best_value = MAX_INT;
-        let mut best_group = None;
-
-        for i in self.player_ids() {
-            if !self.players[i].alive {
-                continue;
-            }
-            if owner.is_some() && owner != Some(i) {
-                continue;
-            }
-            for &g in &self.players[i].groups {
-                if !ready_to_select || self.group_ready_to_select(g, false) {
-                    if !workers || self.group_has_worker(g) {
-                        let value = self.plot_distance(x, y, self.group_get_x(g), self.group_get_y(g));
-
-                        if value < best_value {
-                            best_value = value;
-                            best_group = Some(g);
-                        }
-                    }
-                }
-            }
-        }
-
-        best_group
     }
 
     /// C++ `CvMap::findWater`: water (or fresh water) within `range` of `plot`.

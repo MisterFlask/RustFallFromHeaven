@@ -13,7 +13,7 @@ use ffh_play::command::{CmdErr, CmdOk, Command};
 use ffh_play::human::AdvisorAnswerer;
 use ffh_play::journal;
 use ffh_play::session::replay;
-use ffh_play::{NewGame, Phase, Session, SessionOptions, Stop};
+use ffh_play::{Phase, Session, SessionOptions, Stop};
 
 /// A duel that cannot end (`common::STEADY`) at the human's first control point, its capital
 /// founded; `techs`: the human also gets the techs for roads, farms and mines (not journaled: no

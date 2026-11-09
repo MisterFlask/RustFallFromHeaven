@@ -325,22 +325,6 @@ impl Game {
         self.groups[g].mission_queue.get(node as usize).map(|m| m.mission_type)
     }
 
-    /// C++ `CvSelectionGroup::getMissionData1(iNode)`: -1 if there is no such node.
-    pub fn group_get_mission_data1(&self, g: GroupId, node: i32) -> i32 {
-        if node < 0 {
-            return -1;
-        }
-        self.groups[g].mission_queue.get(node as usize).map_or(-1, |m| m.data1)
-    }
-
-    /// C++ `CvSelectionGroup::getMissionData2(iNode)`: -1 if there is no such node.
-    pub fn group_get_mission_data2(&self, g: GroupId, node: i32) -> i32 {
-        if node < 0 {
-            return -1;
-        }
-        self.groups[g].mission_queue.get(node as usize).map_or(-1, |m| m.data2)
-    }
-
     /// C++ `CvSelectionGroup::activateHeadMission` (protected).
     pub fn group_activate_head_mission(&mut self, g: GroupId) {
         if !self.groups[g].mission_queue.is_empty() {

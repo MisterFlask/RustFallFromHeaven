@@ -46,7 +46,7 @@ use ffh_data::*;
 
 use crate::combat_sim::{covers, covers_sim, covers_with, fight, simulate, visible_defenders, wall_cut, Order};
 use crate::military::is_army_unit;
-use crate::production::{best_unit, count_ai, Choice, Role};
+use crate::production::{best_unit, Choice, Role};
 use crate::units::{alive, skip};
 use crate::view::{attack_power, View};
 
@@ -1337,13 +1337,6 @@ fn siege_building(g: &Game, c: CityId) -> Option<BuildingType> {
         return Some(b);
     }
     None
-}
-
-/// Siege engines and attackers we have (alive or in training), for traces.
-pub fn army_counts(g: &Game, p: PlayerId) -> (i32, i32) {
-    let att = count_ai(g, p, UnitAIType::UNITAI_ATTACK);
-    let siege = count_ai(g, p, UnitAIType::UNITAI_ATTACK_CITY) + count_ai(g, p, UnitAIType::UNITAI_COLLATERAL);
-    (att, siege)
 }
 
 #[cfg(test)]

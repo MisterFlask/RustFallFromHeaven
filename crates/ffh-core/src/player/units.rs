@@ -288,22 +288,6 @@ impl Game {
         }
     }
 
-    /// C++ `CvPlayer::upgradeAllPrice(eUpgradeUnit, eFromUnit)`.
-    pub fn player_upgrade_all_price(&self, p: PlayerId, upgrade_unit: UnitType, from_unit: UnitType) -> i32 {
-        let mut price = 0;
-
-        // Loop through units and determine the total power of this player's military (sic)
-        for &loop_unit in &self.players[p].units {
-            if self.units[loop_unit].unit_type == from_unit {
-                if self.unit_can_upgrade(loop_unit, Some(upgrade_unit), true) {
-                    price += self.unit_upgrade_price(loop_unit, upgrade_unit);
-                }
-            }
-        }
-
-        price
-    }
-
     /// C++ `CvPlayer::countReligionSpreadUnits(pArea, eReligion)`.
     pub fn player_count_religion_spread_units(&self, p: PlayerId, area: AreaId, religion: ReligionType) -> i32 {
         let d = self.d;
@@ -768,19 +752,6 @@ impl Game {
     /// C++ `CvPlayer::unitsRequiredForGoldenAge`.
     pub fn player_units_required_for_golden_age(&self, p: PlayerId) -> i32 {
         self.d.defines.base_golden_age_units + self.players[p].num_unit_golden_ages * self.d.defines.golden_age_units_multiplier
-    }
-
-    /// C++ `CvPlayer::unitsGoldenAgeCapable`.
-    pub fn player_units_golden_age_capable(&self, p: PlayerId) -> i32 {
-        let mut count = 0;
-
-        for &loop_unit in &self.players[p].units {
-            if self.unit_is_golden_age(loop_unit) {
-                count += 1;
-            }
-        }
-
-        count
     }
 
     /// C++ `CvPlayer::unitsGoldenAgeReady` (distinct golden-age-capable unit types).

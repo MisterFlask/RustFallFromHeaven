@@ -1156,37 +1156,9 @@ impl Game {
         }
     }
 
-    /// C++ `CvPlayer::hasShrine(eReligion)`.
-    pub fn player_has_shrine(&self, p: PlayerId, religion: Option<ReligionType>) -> bool {
-        let mut has_shrine = false;
-
-        if let Some(religion) = religion {
-            let holy_city = self.get_holy_city(religion);
-
-            // if the holy city exists, and we own it
-            if let Some(holy_city) = holy_city {
-                if self.cities[holy_city].owner == p {
-                    has_shrine = self.city_has_shrine(holy_city, religion);
-                }
-            }
-        }
-        has_shrine
-    }
-
     /// C++ `CvPlayer::countTotalHasReligion`.
     pub fn player_count_total_has_religion(&self, p: PlayerId) -> i32 {
         self.players[p].has_religion_count.iter().sum()
-    }
-
-    /// C++ `CvPlayer::findHighestHasReligionCount`.
-    pub fn player_find_highest_has_religion_count(&self, p: PlayerId) -> i32 {
-        let mut best_value = 0;
-        for &value in self.players[p].has_religion_count.iter() {
-            if value > best_value {
-                best_value = value;
-            }
-        }
-        best_value
     }
 
     /// C++ `CvPlayer::changeHasReligionCount` (updates building commerce and citizen
@@ -1315,15 +1287,6 @@ impl Game {
             return 0;
         }
         self.players[p].has_corporation_count[corporation]
-    }
-
-    /// C++ `CvPlayer::countTotalHasCorporation`.
-    pub fn player_count_total_has_corporation(&self, p: PlayerId) -> i32 {
-        let mut count = 0;
-        for corporation in self.d.corporations.keys() {
-            count += self.player_get_has_corporation_count(p, corporation);
-        }
-        count
     }
 
     /// C++ `CvPlayer::changeHasCorporationCount` (updates building commerce and citizen

@@ -245,11 +245,6 @@ impl Game {
         best_unit
     }
 
-    /// C++ `CvPlot::isInvestigate`.
-    pub fn plot_is_investigate(&self, p: PlotIdx, team: TeamId) -> bool {
-        self.plot_any_unit(p, |u| self.unit_get_team(u) == team && self.unit_is_investigate(u))
-    }
-
     /// C++ `CvPlot::isVisibleEnemyDefender`.
     pub fn plot_is_visible_enemy_defender(&self, p: PlotIdx, unit: UnitId) -> bool {
         // (No unit to check: skip the side-effect-free `isAlwaysHostile` argument.)
@@ -259,12 +254,6 @@ impl Game {
         let team = self.unit_get_team(unit);
         let always_hostile = self.unit_is_always_hostile(unit, Some(p));
         self.plot_any_unit(p, |u| self.unit_is_visible_enemy_defender(u, team, always_hostile))
-    }
-
-    /// C++ `CvPlot::getVisibleEnemyDefender`.
-    pub fn plot_get_visible_enemy_defender(&self, p: PlotIdx, player: PlayerId) -> Option<UnitId> {
-        let team = self.players[player].team;
-        self.plot_find_unit(p, |u| self.unit_is_visible_enemy_defender(u, team, false))
     }
 
     /// C++ `CvPlot::getNumDefenders`.
@@ -311,12 +300,6 @@ impl Game {
         let team = self.unit_get_team(unit);
         let always_hostile = self.unit_is_always_hostile(unit, Some(p));
         self.plot_any_unit(p, |u| self.unit_is_enemy_of(u, team, always_hostile) && self.unit_is_visible_to(u, team))
-    }
-
-    /// C++ `CvPlot::getNumVisibleUnits`.
-    pub fn plot_get_num_visible_units(&self, p: PlotIdx, player: PlayerId) -> i32 {
-        let team = self.players[player].team;
-        self.plot_count_units(p, |u| self.unit_is_visible_to(u, team))
     }
 
     /// C++ `CvPlot::isVisibleOtherUnit`.

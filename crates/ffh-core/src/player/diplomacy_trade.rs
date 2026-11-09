@@ -299,50 +299,6 @@ impl Game {
 
     // ------------------------------------------------------------------ trade items and deals
 
-    /// C++ `CvPlayer::canTradeWith(eWhoTo)`.
-    pub fn player_can_trade_with(&self, p: PlayerId, who_to: PlayerId) -> bool {
-        let team = self.players[p].team;
-        let to_team = self.players[who_to].team;
-
-        if self.at_war(team, to_team) {
-            return true;
-        }
-
-        if self.team_is_tech_trading(team) || self.team_is_tech_trading(to_team) {
-            return true;
-        }
-
-        if self.team_is_gold_trading(team) || self.team_is_gold_trading(to_team) {
-            return true;
-        }
-
-        if self.team_is_map_trading(team) || self.team_is_map_trading(to_team) {
-            return true;
-        }
-
-        if self.player_can_trade_network_with(p, who_to) {
-            return true;
-        }
-
-        if self.team_is_open_borders_trading(team) || self.team_is_open_borders_trading(to_team) {
-            return true;
-        }
-
-        if self.team_is_defensive_pact_trading(team) || self.team_is_defensive_pact_trading(to_team) {
-            return true;
-        }
-
-        if self.team_is_permanent_alliance_trading(team) || self.team_is_permanent_alliance_trading(to_team) {
-            return true;
-        }
-
-        if self.team_is_vassal_state_trading(team) || self.team_is_vassal_state_trading(to_team) {
-            return true;
-        }
-
-        false
-    }
-
     /// C++ `CvPlayer::canReceiveTradeCity` (not for humans in One City Challenge).
     pub fn player_can_receive_trade_city(&self, p: PlayerId) -> bool {
         if self.is_option(GameOptionType::GAMEOPTION_ONE_CITY_CHALLENGE) && self.players[p].human {

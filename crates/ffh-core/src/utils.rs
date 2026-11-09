@@ -741,11 +741,6 @@ pub fn is_plot_event_trigger(d: &GameData, trigger: EventTriggerType) -> bool {
     false
 }
 
-/// C++ `baseYieldToSymbol`.
-pub fn base_yield_to_symbol(d: &GameData, num_yield_types: i32, yield_stack: i32) -> i32 {
-    num_yield_types * d.defines.max_yield_stack + yield_stack
-}
-
 /// C++ `isPickableName`: false for names ending in "NOPICK" (case-insensitive).
 pub fn is_pickable_name(name: &str) -> bool {
     let b = name.as_bytes();

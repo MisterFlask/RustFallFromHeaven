@@ -32,11 +32,6 @@ pub fn gold_item(amount: i32) -> TradeData {
     TradeData { item_type: TradeableItem::TRADE_GOLD, data: amount, offering: false, hidden: false }
 }
 
-/// A gold-per-turn trade item.
-pub fn gold_per_turn_item(per_turn: i32) -> TradeData {
-    TradeData { item_type: TradeableItem::TRADE_GOLD_PER_TURN, data: per_turn, offering: false, hidden: false }
-}
-
 /// C++ `AI_goldTradeValuePercent`: 200, or 300 when our finances are stretched (we value gold more
 /// when broke). `AI_isFinancialTrouble` is the simplified `production::financial_trouble`.
 pub fn gold_trade_value_percent(g: &Game, p: PlayerId) -> i32 {
@@ -213,18 +208,6 @@ pub fn max_gold_trade(g: &Game, p: PlayerId, other: PlayerId) -> i32 {
     let remainder = g.d.defines.diplomacy_value_remainder.max(1);
     max -= max.rem_euclid(remainder);
     max.max(0)
-}
-
-/// C++ `AI_maxGoldPerTurnTrade`: the most gold-per-turn player `p` will commit to `other`, capped
-/// by its actual income.
-pub fn max_gold_per_turn_trade(g: &Game, p: PlayerId, other: PlayerId) -> i32 {
-    let leader = match g.players[p].personality_type {
-        Some(l) => &g.d.leader_heads[l],
-        None => return 0,
-    };
-    let mut max = g.players[p].total_population * leader.max_gold_per_turn_trade_percent / 100;
-    max += g.players[p].gold_per_turn_by_player[other].min(0);
-    max.min(g.player_calculate_gold_rate(p)).max(0)
 }
 
 /// Build the loser's tribute (what they hand the winner) to close an end-war-value gap of `want`

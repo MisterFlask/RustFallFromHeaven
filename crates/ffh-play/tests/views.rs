@@ -6,7 +6,7 @@ mod common;
 use std::sync::Arc;
 use std::time::Instant;
 
-use common::{bot_session, new_game, peaceful_game};
+use common::{bot_session, peaceful_game};
 use ffh_core::ids::*;
 use ffh_core::structs::TradeData;
 use ffh_data::*;

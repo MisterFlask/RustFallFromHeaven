@@ -201,11 +201,6 @@ impl Game {
             || (self.plot_is_water(p) && self.team_strait_crossing(self.unit_get_team(u)) && self.plot_is_strait(p) && !self.unit_is_cargo(u))
     }
 
-    /// Whether plot `p` is land for land unit `u`: not water, or water it walks on.
-    pub fn unit_is_on_land_at(&self, u: UnitId, p: PlotIdx) -> bool {
-        !self.plot_is_water(p) || self.unit_walks_on_water(u, p)
-    }
-
     /// Whether any Causeway stands in the world (the AI path finder then lets land groups reach
     /// other land areas).
     pub fn map_has_land_bridges(&self) -> bool {

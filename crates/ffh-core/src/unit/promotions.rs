@@ -447,12 +447,6 @@ impl Game {
         true
     }
 
-    /// C++ `CvUnit::hasUpgrade` (CvUnit.cpp:8159-8162).
-    /// C++ overload `hasUpgrade(bool bSearch)`.
-    pub fn unit_has_upgrade(&self, u: UnitId, search: bool) -> bool {
-        self.unit_get_upgrade_city(u, search).is_some()
-    }
-
     /// C++ `CvUnit::hasUpgrade` (CvUnit.cpp:8168-8171).
     /// C++ overload `hasUpgrade(UnitTypes eUnit, bool bSearch)`.
     pub fn unit_has_upgrade_to(&self, u: UnitId, unit_type: Option<UnitType>, search: bool) -> bool {
@@ -733,13 +727,6 @@ impl Game {
         }
     }
 
-    /// C++ `CvUnit::getHandicapType` (CvUnit.cpp:8473-8476).
-    pub fn unit_get_handicap_type(&self, u: UnitId) -> HandicapType {
-        // C++ `GET_PLAYER(getOwnerINLINE()).getHandicapType()` (CvInitCore always holds one).
-        self.player_get_handicap_type(self.units[u].owner)
-            .expect("CvUnit::getHandicapType: owner without a handicap")
-    }
-
     /// C++ `CvUnit::getCivilizationType` (CvUnit.cpp:8479-8482).
     pub fn unit_get_civilization_type(&self, u: UnitId) -> CivilizationType {
         // C++ `GET_PLAYER(getOwnerINLINE()).getCivilizationType()` (a unit's owner always has a
@@ -770,11 +757,6 @@ impl Game {
     pub fn unit_get_domain_type(&self, u: UnitId) -> DomainType {
         // Every FFH2 unit info names a domain.
         self.d.units[self.units[u].unit_type].domain_type.expect("CvUnitInfo without a domain")
-    }
-
-    /// C++ `CvUnit::flavorValue` (CvUnit.cpp:8586-8589).
-    pub fn unit_flavor_value(&self, u: UnitId, flavor: FlavorType) -> i32 {
-        self.d.units[self.units[u].unit_type].flavor_value[flavor]
     }
 
     /// C++ `CvUnit::isBarbarian` (CvUnit.cpp:8592-8595).

@@ -171,9 +171,9 @@ bumps the culture emphasize count, which only the AI reads).
 | `getProductionDifference(int iProductionNeeded, int iProduction, int iProductionModifier, bool bFoodProduction, bool bOverflow) const` | 3388-3413 | 26 | `city_production_difference` | ported |
 | `getCurrentProductionDifference(bool bIgnoreFood, bool bOverflow) const` | 3416-3419 | 4 | `city_current_production_difference` | ported |
 | `getExtraProductionDifference(int iExtra) const` | 3422-3425 | 4 | `city_extra_production_difference` | ported |
-| `getExtraProductionDifference(int iExtra, UnitTypes eUnit) const` | 3427-3430 | 4 | `city_extra_production_difference_unit` | ported |
-| `getExtraProductionDifference(int iExtra, BuildingTypes eBuilding) const` | 3432-3435 | 4 | `city_extra_production_difference_building` | ported |
-| `getExtraProductionDifference(int iExtra, ProjectTypes eProject) const` | 3437-3440 | 4 | `city_extra_production_difference_project` | ported |
+| `getExtraProductionDifference(int iExtra, UnitTypes eUnit) const` | 3427-3430 | 4 | — | removed (no callers) |
+| `getExtraProductionDifference(int iExtra, BuildingTypes eBuilding) const` | 3432-3435 | 4 | — | removed (no callers) |
+| `getExtraProductionDifference(int iExtra, ProjectTypes eProject) const` | 3437-3440 | 4 | — | removed (no callers) |
 | `getExtraProductionDifference(int iExtra, int iModifier) const` | 3442-3445 | 4 | `city_extra_production_difference_modifier` | ported |
 | `canHurry(HurryTypes eHurry, bool bTestVisible) const` | 3448-3491 | 44 | `city_can_hurry` | ported |
 | `canHurryUnit(HurryTypes eHurry, UnitTypes eUnit, bool bIgnoreNew) const` | 3493-3521 | 29 | `city_can_hurry_unit` | ported |
@@ -360,7 +360,7 @@ bumps the culture emphasize count, which only the AI reads).
 | `changeStateReligionHappiness(ReligionTypes eIndex, int iChange)` | 10202-10213 | 12 | `city_change_state_religion_happiness` | ported |
 | `isWorkingPlot(const CvPlot* pPlot) const` | 10292-10304 | 13 | `city_is_working_plot` | ported |
 | `setWorkingPlot(int iIndex, bool bNewValue)` | 10307-10366 | 60 | `city_set_working_plot` | ported |
-| `setWorkingPlot(CvPlot* pPlot, bool bNewValue)` | 10369-10372 | 4 | `city_set_working_plot_at` | ported |
+| `setWorkingPlot(CvPlot* pPlot, bool bNewValue)` | 10369-10372 | 4 | — | removed (no callers) |
 | `alterWorkingPlot(int iIndex)` | 10375-10423 | 49 | `city_alter_working_plot` | ported |
 | `doGrowth()` | 11743-11800 | 58 | `city_do_growth` | ported |
 | `doGreatPeople()` | 12218-12279 | 62 | `city_do_great_people` | ported |
@@ -382,8 +382,8 @@ bumps the culture emphasize count, which only the AI reads).
 
 | C++ function | C++ lines (CvCity.cpp) | count | Rust | status |
 |---|---|---:|---|---|
-| `getBonusHealth(BonusTypes eBonus) const` | 3797-3810 | 14 | `city_bonus_health` | ported |
-| `getBonusHappiness(BonusTypes eBonus) const` | 3813-3826 | 14 | `city_bonus_happiness` | ported |
+| `getBonusHealth(BonusTypes eBonus) const` | 3797-3810 | 14 | — | removed (no callers) |
+| `getBonusHappiness(BonusTypes eBonus) const` | 3813-3826 | 14 | — | removed (no callers) |
 | `getBonusPower(BonusTypes eBonus, bool bDirty) const` | 3829-3851 | 23 | `city_bonus_power` | ported |
 | `getBonusYieldRateModifier(YieldTypes eIndex, BonusTypes eBonus) const` | 3854-3867 | 14 | `city_bonus_yield_rate_modifier` | ported |
 | `processBonus(BonusTypes eBonus, int iChange)` | 3870-3972 | 103 | `city_process_bonus` | ported |
@@ -401,11 +401,11 @@ bumps the culture emphasize count, which only the AI reads).
 | `updateMaintenance()` | 5776-5800 | 25 | `city_update_maintenance` | ported |
 | `calculateDistanceMaintenance() const` | 5802-5805 | 4 | `city_calculate_distance_maintenance` | ported |
 | `calculateDistanceMaintenanceTimes100() const` | 5807-5855 | 49 | `city_calculate_distance_maintenance_times100` | ported |
-| `calculateNumCitiesMaintenance() const` | 5857-5860 | 4 | `city_calculate_num_cities_maintenance` | ported |
+| `calculateNumCitiesMaintenance() const` | 5857-5860 | 4 | — | removed (no callers) |
 | `calculateNumCitiesMaintenanceTimes100() const` | 5862-5905 | 44 | `city_calculate_num_cities_maintenance_times100` | ported |
-| `calculateColonyMaintenance() const` | 5908-5911 | 4 | `city_calculate_colony_maintenance` | ported |
+| `calculateColonyMaintenance() const` | 5908-5911 | 4 | — | removed (no callers) |
 | `calculateColonyMaintenanceTimes100() const` | 5913-5959 | 47 | `city_calculate_colony_maintenance_times100` | ported |
-| `calculateCorporationMaintenance() const` | 5962-5965 | 4 | `city_calculate_corporation_maintenance` | ported |
+| `calculateCorporationMaintenance() const` | 5962-5965 | 4 | — | removed (no callers) |
 | `calculateCorporationMaintenanceTimes100() const` | 5967-5982 | 16 | `city_calculate_corporation_maintenance_times100` | ported |
 | `calculateCorporationMaintenanceTimes100(CorporationTypes eCorporation) const` | 5984-6027 | 44 | `city_calculate_corporation_maintenance_times100_for` | ported |
 | `calculateBaseMaintenanceTimes100() const` | 6030-6033 | 4 | `city_calculate_base_maintenance_times100` | ported |

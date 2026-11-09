@@ -106,7 +106,7 @@ Turn flow and turn-loop unit checks, alive/turn-active state, identity and names
 | `player_has_auto_unit` | `CvPlayer::hasAutoUnit` | 3400-3416 | 17 | **ported** |
 | `player_has_busy_unit` | `CvPlayer::hasBusyUnit` | 3419-3441 | 23 | **ported** |
 | `player_calculate_score` | `CvPlayer::calculateScore` | 3456-3479 | 24 | **replaced** by score v2 (`world_scores`, docs/SCORE.md); FFH2's formula is `player_legacy_score` |
-| `player_get_average_population` | `CvPlayer::getAveragePopulation` | 8482-8490 | 9 | **ported** |
+| — | `CvPlayer::getAveragePopulation` | 8482-8490 | 9 | removed (no callers) |
 | `player_change_total_population` | `CvPlayer::changeTotalPopulation` | 8493-8505 | 13 | **ported** |
 | `player_get_real_population` | `CvPlayer::getRealPopulation` | 8508-8525 | 18 | **ported** |
 | `player_change_total_land_scored` | `CvPlayer::changeTotalLandScored` | 8547-8560 | 14 | **ported** |
@@ -153,7 +153,7 @@ Initial state, free starting units, starting area/plot, advanced start.
 | `player_add_free_unit_ai` | `CvPlayer::addFreeUnitAI` | 971-1033 | 63 | **ported** |
 | `player_add_free_unit` | `CvPlayer::addFreeUnit` | 1036-1125 | 90 | **ported** |
 | `player_starting_plot_range` | `CvPlayer::startingPlotRange` | 1128-1154 | 27 | **ported** |
-| `player_starting_plot_within_range` | `CvPlayer::startingPlotWithinRange` | 1157-1164 | 8 | **ported** |
+| — | `CvPlayer::startingPlotWithinRange` | 1157-1164 | 8 | removed (no callers) |
 | `player_starting_plot_distance_factor` | `CvPlayer::startingPlotDistanceFactor` | 1166-1208 | 43 | **ported** |
 | `player_find_starting_area` | `CvPlayer::findStartingArea` | 1212-1269 | 58 | **ported** |
 | `player_find_starting_plot` | `CvPlayer::findStartingPlot` | 1272-1360 | 89 | **ported** |
@@ -191,7 +191,7 @@ City/plot-group lists, found/acquire/raze/disband, city names, capital, counts o
 | `player_count_total_culture` | `CvPlayer::countTotalCulture` | 3618-3632 | 15 | **ported** |
 | `player_count_city_features` | `CvPlayer::countCityFeatures` | 3743-3772 | 30 | **ported** |
 | `player_count_num_buildings` | `CvPlayer::countNumBuildings` | 3775-3794 | 20 | **ported** |
-| `player_count_num_cities_connected_to_capital` | `CvPlayer::countNumCitiesConnectedToCapital` | 3797-3814 | 18 | **ported** |
+| — | `CvPlayer::countNumCitiesConnectedToCapital` | 3797-3814 | 18 | removed (no callers) |
 | `player_find_new_capital` | `CvPlayer::findNewCapital` | 4849-4908 | 60 | **ported** |
 | `player_get_num_government_centers` | `CvPlayer::getNumGovernmentCenters` | 4911-4928 | 18 | **ported** |
 | `player_can_raze` | `CvPlayer::canRaze` | 4931-4964 | 34 | **ported** |
@@ -204,7 +204,7 @@ City/plot-group lists, found/acquire/raze/disband, city names, capital, counts o
 | `player_found` | `CvPlayer::found` | 5638-5731 | 94 | **ported** |
 | `player_get_capital_city` | `CvPlayer::getCapitalCity` | 10049-10052 | 4 | **ported** |
 | `player_set_capital_city` | `CvPlayer::setCapitalCity` | 10055-10115 | 61 | **ported** |
-| `player_get_city_name` | `CvPlayer::getCityName` | 13063-13077 | 15 | **ported** |
+| — | `CvPlayer::getCityName` | 13063-13077 | 15 | removed (no callers) |
 | `player_add_plot_group` | `CvPlayer::addPlotGroup` | 13116-13119 | 4 | **ported** |
 | `player_delete_plot_group` | `CvPlayer::deletePlotGroup` | 13122-13125 | 4 | **ported** |
 | `player_add_city` | `CvPlayer::addCity` | 13152-13155 | 4 | **ported** |
@@ -223,7 +223,7 @@ Unit/group lists and lifecycle, train/construct/create checks and production cos
 | `player_disband_unit` | `CvPlayer::disbandUnit` | 2089-2262 | 174 | **ported** |
 | `player_kill_units` | `CvPlayer::killUnits` | 2265-2301 | 37 | **ported** |
 | `player_update_plunder` | `CvPlayer::updatePlunder` | 3346-3356 | 11 | **ported** |
-| `player_upgrade_all_price` | `CvPlayer::upgradeAllPrice` | 3505-3526 | 22 | **ported** |
+| — | `CvPlayer::upgradeAllPrice` | 3505-3526 | 22 | removed (no callers) |
 | `player_count_religion_spread_units` | `CvPlayer::countReligionSpreadUnits` | 3529-3551 | 23 | **ported** |
 | `player_count_corporation_spread_units` | `CvPlayer::countCorporationSpreadUnits` | 3553-3571 | 19 | **ported** |
 | `player_can_train` | `CvPlayer::canTrain` | 5734-5882 | 149 | **ported** |
@@ -247,7 +247,7 @@ Unit/group lists and lifecycle, train/construct/create checks and production cos
 | `player_get_best_route` | `CvPlayer::getBestRoute` | 6713-6746 | 34 | **ported** |
 | `player_get_improvement_upgrade_rate` | `CvPlayer::getImprovementUpgradeRate` | 6749-6759 | 11 | **ported** |
 | `player_units_required_for_golden_age` | `CvPlayer::unitsRequiredForGoldenAge` | 8250-8253 | 4 | **ported** |
-| `player_units_golden_age_capable` | `CvPlayer::unitsGoldenAgeCapable` | 8256-8273 | 18 | **ported** |
+| — | `CvPlayer::unitsGoldenAgeCapable` | 8256-8273 | 18 | removed (no callers) |
 | `player_units_golden_age_ready` | `CvPlayer::unitsGoldenAgeReady` | 8276-8310 | 35 | **ported** |
 | `player_kill_golden_age_units` | `CvPlayer::killGoldenAgeUnits` | 8313-8380 | 68 | **ported** |
 | `player_great_people_threshold` | `CvPlayer::greatPeopleThreshold` | 8383-8411 | 29 | **ported** |
@@ -302,17 +302,17 @@ City-update helpers, totals, unit cost/supply, inflation, gold, commerce, resear
 | `player_update_building_commerce` | `CvPlayer::updateBuildingCommerce` | 3236-3245 | 10 | **ported** |
 | `player_update_religion_commerce` | `CvPlayer::updateReligionCommerce` | 3248-3257 | 10 | **ported** |
 | `player_update_corporation` | `CvPlayer::updateCorporation` | 3260-3267 | 8 | **ported** |
-| `player_update_city_plot_yield` | `CvPlayer::updateCityPlotYield` | 3270-3279 | 10 | **ported** |
+| — | `CvPlayer::updateCityPlotYield` | 3270-3279 | 10 | removed (no callers) |
 | `player_update_city_sight` | `CvPlayer::updateCitySight` | 3282-3291 | 10 | **ported** |
 | `player_update_trade_routes` | `CvPlayer::updateTradeRoutes` | 3294-3344 | 51 | **ported** |
 | `player_choose_tech` | `CvPlayer::chooseTech` | 3444-3453 | 10 | **ported** |
 | `player_calculate_total_yield` | `CvPlayer::calculateTotalYield` | 6762-6774 | 13 | **ported** |
-| `player_calculate_total_city_happiness` | `CvPlayer::calculateTotalCityHappiness` | 6777-6789 | 13 | **ported** |
-| `player_calculate_total_exports` | `CvPlayer::calculateTotalExports` | 6792-6815 | 24 | **ported** |
-| `player_calculate_total_imports` | `CvPlayer::calculateTotalImports` | 6818-6847 | 30 | **ported** |
-| `player_calculate_total_city_unhappiness` | `CvPlayer::calculateTotalCityUnhappiness` | 6850-6862 | 13 | **ported** |
-| `player_calculate_total_city_healthiness` | `CvPlayer::calculateTotalCityHealthiness` | 6865-6877 | 13 | **ported** |
-| `player_calculate_total_city_unhealthiness` | `CvPlayer::calculateTotalCityUnhealthiness` | 6879-6891 | 13 | **ported** |
+| — | `CvPlayer::calculateTotalCityHappiness` | 6777-6789 | 13 | removed (no callers) |
+| — | `CvPlayer::calculateTotalExports` | 6792-6815 | 24 | removed (no callers) |
+| — | `CvPlayer::calculateTotalImports` | 6818-6847 | 30 | removed (no callers) |
+| — | `CvPlayer::calculateTotalCityUnhappiness` | 6850-6862 | 13 | removed (no callers) |
+| — | `CvPlayer::calculateTotalCityHealthiness` | 6865-6877 | 13 | removed (no callers) |
+| — | `CvPlayer::calculateTotalCityUnhealthiness` | 6879-6891 | 13 | removed (no callers) |
 | `player_calculate_unit_cost_breakdown` | `CvPlayer::calculateUnitCost(int& iFreeUnits, ...)` | 6894-6953 | 60 | **ported** |
 | `player_calculate_unit_cost` | `CvPlayer::calculateUnitCost()` | 6956-6979 | 24 | **ported** |
 | `player_calculate_unit_supply` | `CvPlayer::calculateUnitSupply()` | 6981-6999 | 19 | **ported** |
@@ -446,9 +446,9 @@ Civics/revolution/upkeep, anarchy, state religion and conversion, holy cities, c
 | `player_is_no_civic_upkeep` | `CvPlayer::isNoCivicUpkeep` | 12163-12166 | 4 | **ported** |
 | `player_count_total_has_religion` | `CvPlayer::countTotalHasReligion` | 12195-12208 | 14 | **ported** |
 | `player_get_has_corporation_count` | `CvPlayer::getHasCorporationCount` | 12210-12218 | 9 | **ported** |
-| `player_count_total_has_corporation` | `CvPlayer::countTotalHasCorporation` | 12221-12231 | 11 | **ported** |
+| — | `CvPlayer::countTotalHasCorporation` | 12221-12231 | 11 | removed (no callers) |
 | `player_is_active_corporation` | `CvPlayer::isActiveCorporation` | 12233-12246 | 14 | **ported** |
-| `player_find_highest_has_religion_count` | `CvPlayer::findHighestHasReligionCount` | 12249-12268 | 20 | **ported** |
+| — | `CvPlayer::findHighestHasReligionCount` | 12249-12268 | 20 | removed (no callers) |
 | `player_change_has_religion_count` | `CvPlayer::changeHasReligionCount` | 12271-12285 | 15 | **ported** |
 | `player_change_has_corporation_count` | `CvPlayer::changeHasCorporationCount` | 12288-12302 | 15 | **ported** |
 | `player_set_loyal_member` | `CvPlayer::setLoyalMember` | 12395-12408 | 14 | **ported** |
@@ -458,7 +458,7 @@ Civics/revolution/upkeep, anarchy, state religion and conversion, holy cities, c
 | `player_process_civics` | `CvPlayer::processCivics` | 16468-16581 | 114 | **ported** |
 | `player_get_vote` | `CvPlayer::getVote` | 21069-21080 | 12 | **ported** |
 | `player_set_vote` | `CvPlayer::setVote` | 21082-21104 | 23 | **ported** |
-| `player_has_shrine` | `CvPlayer::hasShrine` | 21145-21158 | 14 | **ported** |
+| — | `CvPlayer::hasShrine` | 21145-21158 | 14 | removed (no callers) |
 | `player_process_vote_source_bonus` | `CvPlayer::processVoteSourceBonus` | 21197-21204 | 8 | **ported** |
 | `player_get_votes` | `CvPlayer::getVotes` | 21206-21290 | 85 | **ported** |
 | `player_can_do_resolution` | `CvPlayer::canDoResolution` | 21292-21420 | 129 | **ported** |
@@ -487,7 +487,7 @@ Contact, diplomacy events, trade items/denials, deals, bonuses, foreign trade, e
 | `player_count_potential_foreign_trade_cities_connected` | `CvPlayer::countPotentialForeignTradeCitiesConnected` | 3850-3889 | 40 | **ported** |
 | `player_can_contact` | `CvPlayer::canContact` | 3893-3955 | 63 | **ported** |
 | `player_handle_diplo_event` | `CvPlayer::handleDiploEvent` | 4005-4162 | 158 | **ported** |
-| `player_can_trade_with` | `CvPlayer::canTradeWith` | 4165-4213 | 49 | **ported** |
+| — | `CvPlayer::canTradeWith` | 4165-4213 | 49 | removed (no callers) |
 | `player_can_receive_trade_city` | `CvPlayer::canReceiveTradeCity` | 4215-4223 | 9 | **ported** |
 | `player_can_trade_item` | `CvPlayer::canTradeItem` | 4225-4553 | 329 | **ported** |
 | `player_get_trade_denial` | `CvPlayer::getTradeDenial` | 4556-4631 | 76 | **ported** |

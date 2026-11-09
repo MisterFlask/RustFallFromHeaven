@@ -397,13 +397,6 @@ impl Game {
     // Unit membership
     // ------------------------------------------------------------------
 
-    /// C++ `CvSelectionGroup::clearUnits`.
-    pub fn group_clear_units(&mut self, g: GroupId) {
-        while !self.groups[g].units.is_empty() {
-            self.group_delete_unit_node(g, 0);
-        }
-    }
-
     /// C++ `CvSelectionGroup::addUnit`: inserts `u` ordered by `AI_groupFirstVal` /
     /// `AI_groupSecondVal` (which decides the head unit). Returns false if the unit cannot
     /// join (`CvUnit::canJoinGroup`).

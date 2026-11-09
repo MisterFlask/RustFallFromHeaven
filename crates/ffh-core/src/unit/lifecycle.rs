@@ -751,11 +751,6 @@ impl Game {
         }
     }
 
-    /// C++ `CvUnit::isInGroup` (CvUnit.cpp:10724-10727).
-    pub fn unit_is_in_group(&self, u: UnitId) -> bool {
-        self.units[u].group.is_some()
-    }
-
     /// C++ `CvUnit::isGroupHead` (CvUnit.cpp:10730-10733).
     pub fn unit_is_group_head(&self, u: UnitId) -> bool {
         // C++ dereferences `getGroup()` (crashes for a unit without a group).

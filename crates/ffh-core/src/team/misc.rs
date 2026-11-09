@@ -691,21 +691,6 @@ impl Game {
         count
     }
 
-    /// C++ `CvTeam::getHasCorporationCount` (alive members).
-    pub fn team_get_has_corporation_count(&self, t: TeamId, corporation: CorporationType) -> i32 {
-        let mut count = 0;
-
-        for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    count += self.player_get_has_corporation_count(p, corporation);
-                }
-            }
-        }
-
-        count
-    }
-
     /// C++ `CvTeam::countTotalCulture` (alive members; non-const in C++, read-only).
     pub fn team_count_total_culture(&self, t: TeamId) -> i32 {
         let mut count = 0;

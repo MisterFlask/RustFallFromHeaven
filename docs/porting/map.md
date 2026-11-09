@@ -157,7 +157,7 @@ are `impl Game` methods.
 | `CvMap::reset` | 117-238 | 122 | `Map::new` | ported (init-data branch; the `NULL` branch (world size, map script) is in `map_init`) |
 | `CvMap::erasePlots` | 277-285 | 9 | `map_erase_plots` | ported |
 | `CvMap::setRevealedPlots` | 288-300 | 13 | `map_set_revealed_plots` | ported |
-| `CvMap::setAllPlotTypes` | 303-323 | 21 | `map_set_all_plot_types` | ported |
+| `CvMap::setAllPlotTypes` | 303-323 | 21 | — | removed (no callers) |
 | `CvMap::doTurn` | 327-337 | 11 | `map_do_turn` | ported |
 | `CvMap::updateSight` | 415-423 | 9 | `map_update_sight` | ported |
 | `CvMap::updateIrrigated` | 426-434 | 9 | `map_update_irrigated` | ported |
@@ -168,7 +168,7 @@ are `impl Game` methods.
 | `CvMap::combinePlotGroups` | 533-566 | 34 | `map_combine_plot_groups` | ported |
 | `CvMap::syncRandPlot` | 568-701 | 134 | `map_sync_rand_plot` | ported |
 | `CvMap::findCity` | 704-759 | 56 | `map_find_city` | ported |
-| `CvMap::findSelectionGroup` | 762-803 | 42 | `map_find_selection_group` | ported |
+| `CvMap::findSelectionGroup` | 762-803 | 42 | — | removed (no callers) |
 | `CvMap::findBiggestArea` | 806-832 | 27 | `Map::find_biggest_area` | ported |
 | `CvMap::getMapFractalFlags` | 835-850 | 16 | `Map::get_map_fractal_flags` | ported |
 | `CvMap::findWater` | 854-888 | 35 | `map_find_water` | ported |
@@ -188,7 +188,7 @@ are `impl Game` methods.
 | `CvMap::recalculateAreas` | 1200-1214 | 15 | `map_recalculate_areas` | ported |
 | `CvMap::resetPathDistance` | 1217-1220 | 4 | `map_reset_path_distance` | ported |
 | `CvMap::calculatePathDistance` | 1223-1243 | 21 | `map_calculate_path_distance` | ported |
-| `CvMap::rebuild` | 1327-1339 | 13 | `map_rebuild` | ported |
+| `CvMap::rebuild` | 1327-1339 | 13 | — | removed (no callers) |
 | `CvMap::calculateAreas` | 1346-1372 | 27 | `map_calculate_areas` | ported |
 
 ### `area.rs` (25 C++ functions, 415 C++ lines, all ported)
@@ -430,14 +430,14 @@ are `impl Game` methods.
 | `CvPlot::isFriendlyCity` | 3561-3601 | 41 | `plot_is_friendly_city` | ported |
 | `CvPlot::isEnemyCity` | 3604-3614 | 11 | `plot_is_enemy_city` | ported |
 | `CvPlot::isUnit` | 3647-3650 | 4 | `plot_is_unit` | ported |
-| `CvPlot::isInvestigate` | 3653-3656 | 4 | `plot_is_investigate` | ported |
+| `CvPlot::isInvestigate` | 3653-3656 | 4 | — | removed (no callers) |
 | `CvPlot::isVisibleEnemyDefender` | 3659-3662 | 4 | `plot_is_visible_enemy_defender` | ported |
-| `CvPlot::getVisibleEnemyDefender` | 3665-3668 | 4 | `plot_get_visible_enemy_defender` | ported |
+| `CvPlot::getVisibleEnemyDefender` | 3665-3668 | 4 | — | removed (no callers) |
 | `CvPlot::getNumDefenders` | 3671-3674 | 4 | `plot_get_num_defenders` | ported |
 | `CvPlot::getNumVisibleEnemyDefenders` | 3677-3680 | 4 | `plot_get_num_visible_enemy_defenders` | ported |
 | `CvPlot::getNumVisiblePotentialEnemyDefenders` | 3683-3686 | 4 | `plot_get_num_visible_potential_enemy_defenders` | ported |
 | `CvPlot::isVisibleEnemyUnit` | 3689-3692 | 4 | `plot_is_visible_enemy_unit` | ported |
-| `CvPlot::getNumVisibleUnits` | 3694-3697 | 4 | `plot_get_num_visible_units` | ported |
+| `CvPlot::getNumVisibleUnits` | 3694-3697 | 4 | — | removed (no callers) |
 | `CvPlot::isVisibleEnemyUnit` | 3700-3703 | 4 | `plot_is_visible_enemy_unit_for_unit` | ported |
 | `CvPlot::isVisibleOtherUnit` | 3705-3708 | 4 | `plot_is_visible_other_unit` | ported |
 | `CvPlot::isFighting` | 3711-3714 | 4 | `plot_is_fighting` | ported |

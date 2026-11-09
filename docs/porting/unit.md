@@ -78,7 +78,7 @@ CvUnit lifecycle: `init`, `convert`, `kill`, `doTurn`, selection-group membershi
 | `CvUnit::convert` | CvUnit.cpp:570-719 | 150 | `unit_convert` | ported |
 | `CvUnit::kill` | CvUnit.cpp:722-1002 | 281 | `unit_kill` | ported |
 | `CvUnit::doTurn` | CvUnit.cpp:1011-1269 | 259 | `unit_do_turn` | ported |
-| `CvUnit::isInGroup` | CvUnit.cpp:10724-10727 | 4 | `unit_is_in_group` | ported |
+| `CvUnit::isInGroup` | CvUnit.cpp:10724-10727 | 4 | — | removed (no callers) |
 | `CvUnit::isGroupHead` | CvUnit.cpp:10730-10733 | 4 | `unit_is_group_head` | ported |
 | `CvUnit::canJoinGroup` | CvUnit.cpp:10742-10811 | 70 | `unit_can_join_group` | ported |
 | `CvUnit::joinGroup` | CvUnit.cpp:10814-10944 | 131 | `unit_join_group` | ported |
@@ -261,18 +261,18 @@ CvUnit promotions, experience and levels, leaders (great generals), upgrades, an
 | `CvUnit::upgradeAvailable` | CvUnit.cpp:8030-8064 | 35 | `unit_upgrade_available` | ported |
 | `CvUnit::canUpgrade` | CvUnit.cpp:8067-8138 | 72 | `unit_can_upgrade` | ported |
 | `CvUnit::isReadyForUpgrade` | CvUnit.cpp:8140-8153 | 14 | `unit_is_ready_for_upgrade` | ported |
-| `CvUnit::hasUpgrade` | CvUnit.cpp:8159-8162 | 4 | `unit_has_upgrade` | ported |
+| `CvUnit::hasUpgrade` | CvUnit.cpp:8159-8162 | 4 | — | removed (no callers) |
 | `CvUnit::hasUpgrade` | CvUnit.cpp:8168-8171 | 4 | `unit_has_upgrade_to` | ported |
 | `CvUnit::getUpgradeCity` | CvUnit.cpp:8178-8214 | 37 | `unit_get_upgrade_city` | ported |
 | `CvUnit::getUpgradeCity` | CvUnit.cpp:8222-8428 | 207 | `unit_get_upgrade_city_for` | ported |
 | `CvUnit::upgrade` | CvUnit.cpp:8430-8470 | 41 | `unit_upgrade` | ported |
-| `CvUnit::getHandicapType` | CvUnit.cpp:8473-8476 | 4 | `unit_get_handicap_type` | ported |
+| `CvUnit::getHandicapType` | CvUnit.cpp:8473-8476 | 4 | — | removed (no callers) |
 | `CvUnit::getCivilizationType` | CvUnit.cpp:8479-8482 | 4 | `unit_get_civilization_type` | ported |
 | `CvUnit::getSpecialUnitType` | CvUnit.cpp:8494-8497 | 4 | `unit_get_special_unit_type` | ported |
 | `CvUnit::getCaptureUnitType` | CvUnit.cpp:8500-8504 | 5 | `unit_get_capture_unit_type` | ported |
 | `CvUnit::getUnitCombatType` | CvUnit.cpp:8507-8510 | 4 | `unit_get_unit_combat_type` | ported |
 | `CvUnit::getDomainType` | CvUnit.cpp:8513-8516 | 4 | `unit_get_domain_type` | ported |
-| `CvUnit::flavorValue` | CvUnit.cpp:8586-8589 | 4 | `unit_flavor_value` | ported |
+| `CvUnit::flavorValue` | CvUnit.cpp:8586-8589 | 4 | — | removed (no callers) |
 | `CvUnit::isBarbarian` | CvUnit.cpp:8592-8595 | 4 | `unit_is_barbarian` | ported |
 | `CvUnit::isHuman` | CvUnit.cpp:8598-8601 | 4 | `unit_is_human` | ported |
 | `CvUnit::airRange` | CvUnit.cpp:8666-8669 | 4 | `unit_air_range` | ported |

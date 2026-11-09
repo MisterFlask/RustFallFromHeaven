@@ -7,13 +7,13 @@ mod common;
 
 use std::sync::Arc;
 
-use common::{apply_map, assert_same_map, bot_session, new_game, peaceful_game};
+use common::{apply_map, assert_same_map, bot_session, peaceful_game};
 use ffh_core::ids::*;
 use ffh_data::*;
 use ffh_play::command::{CmdErr, CmdOk, Command};
 use ffh_play::human::AdvisorAnswerer;
 use ffh_play::query::Query;
-use ffh_play::{bot, Json, NewGame, Session, SessionOptions, Stop};
+use ffh_play::{bot, Json, Session, SessionOptions, Stop};
 
 fn map_query(s: &Session, since: Option<i64>, epoch: Option<&str>) -> Json {
     s.query(&Query::Map { since, epoch: epoch.map(str::to_string) }).unwrap()

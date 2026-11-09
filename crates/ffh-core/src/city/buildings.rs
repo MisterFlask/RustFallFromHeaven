@@ -39,29 +39,6 @@ fn ai_choose_free_tech(g: &mut Game, p: PlayerId) {
 }
 
 impl Game {
-    /// C++ `CvCity::getBonusHealth` (CvCity.cpp:3797-3810).
-    pub fn city_bonus_health(&self, c: CityId, bonus: BonusType) -> i32 {
-        let d = self.d;
-        let mut health = d.bonuses[bonus].health;
-
-        for building in d.buildings.keys() {
-            health += self.city_num_active_building(c, building) * d.buildings[building].bonus_health_changes[bonus];
-        }
-
-        health
-    }
-
-    /// C++ `CvCity::getBonusHappiness` (CvCity.cpp:3813-3826).
-    pub fn city_bonus_happiness(&self, c: CityId, bonus: BonusType) -> i32 {
-        let d = self.d;
-        let mut happiness = d.bonuses[bonus].happiness;
-
-        for building in d.buildings.keys() {
-            happiness += self.city_num_active_building(c, building) * d.buildings[building].bonus_happiness_changes[bonus];
-        }
-
-        happiness
-    }
 
     /// C++ `CvCity::getBonusPower` (CvCity.cpp:3829-3851).
     pub fn city_bonus_power(&self, c: CityId, bonus: BonusType, dirty: bool) -> i32 {
@@ -629,11 +606,6 @@ impl Game {
         temp_maintenance
     }
 
-    /// C++ `CvCity::calculateNumCitiesMaintenance` (CvCity.cpp:5857-5860).
-    pub fn city_calculate_num_cities_maintenance(&self, c: CityId) -> i32 {
-        self.city_calculate_num_cities_maintenance_times100(c) / 100
-    }
-
     /// C++ `CvCity::calculateNumCitiesMaintenanceTimes100` (CvCity.cpp:5862-5905).
     pub fn city_calculate_num_cities_maintenance_times100(&self, c: CityId) -> i32 {
         let d = self.d;
@@ -679,11 +651,6 @@ impl Game {
         num_cities_maintenance
     }
 
-    /// C++ `CvCity::calculateColonyMaintenance` (CvCity.cpp:5908-5911).
-    pub fn city_calculate_colony_maintenance(&self, c: CityId) -> i32 {
-        self.city_calculate_colony_maintenance_times100(c) / 100
-    }
-
     /// C++ `CvCity::calculateColonyMaintenanceTimes100` (CvCity.cpp:5913-5959). FFH: no
     /// colony maintenance on a landmass with any government center of the owner.
     pub fn city_calculate_colony_maintenance_times100(&self, c: CityId) -> i32 {
@@ -725,11 +692,6 @@ impl Game {
         maintenance = std::cmp::min(maintenance, (handicap.max_colony_maintenance * self.city_calculate_distance_maintenance_times100(c)) / 100);
 
         maintenance
-    }
-
-    /// C++ `CvCity::calculateCorporationMaintenance` (CvCity.cpp:5962-5965).
-    pub fn city_calculate_corporation_maintenance(&self, c: CityId) -> i32 {
-        self.city_calculate_corporation_maintenance_times100(c) / 100
     }
 
     /// C++ `CvCity::calculateCorporationMaintenanceTimes100()` (CvCity.cpp:5967-5982).

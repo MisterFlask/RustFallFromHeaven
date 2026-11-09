@@ -10,7 +10,7 @@ mod common;
 
 use std::sync::Arc;
 
-use common::{checkpoint, new_game, peaceful_game};
+use common::{checkpoint, peaceful_game};
 use ffh_play::bot::{self, Bot};
 use ffh_play::command::{CmdOk, Command};
 use ffh_play::human::Answerer;

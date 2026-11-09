@@ -147,14 +147,6 @@ impl Game {
         }
     }
 
-    /// C++ `CvPlayer::updateCityPlotYield`: recomputes the yield of every city's own plot.
-    pub fn player_update_city_plot_yield(&mut self, p: PlayerId) {
-        for c in self.players[p].cities.clone() {
-            let plot = self.city_plot(c);
-            self.plot_update_yield(plot);
-        }
-    }
-
     /// C++ `CvPlayer::updateCitySight(bIncrement, bUpdatePlotGroups)`: applies/removes the
     /// sight of every city's own plot.
     pub fn player_update_city_sight(&mut self, p: PlayerId, increment: bool, update_plot_groups: bool) {
@@ -191,82 +183,6 @@ impl Game {
         let mut total = 0;
         for &c in &self.players[p].cities {
             total += self.city_yield_rate(c, yield_type);
-        }
-        total
-    }
-
-    /// C++ `CvPlayer::calculateTotalExports(eYield)`: trade yield of routes to foreign cities.
-    pub fn player_calculate_total_exports(&self, p: PlayerId, yield_type: YieldType) -> i32 {
-        let mut total_exports = 0;
-
-        for &c in &self.players[p].cities {
-            for trade_loop in 0..self.city_trade_routes(c) {
-                if let Some(trade_city) = self.city_trade_city(c, trade_loop as usize) {
-                    if self.cities[trade_city].owner != p {
-                        total_exports += self.city_calculate_trade_yield(c, yield_type, self.city_calculate_trade_profit(c, trade_city));
-                    }
-                }
-            }
-        }
-
-        total_exports
-    }
-
-    /// C++ `CvPlayer::calculateTotalImports(eYield)`: trade yield of other civs' routes to
-    /// this player's cities.
-    pub fn player_calculate_total_imports(&self, p: PlayerId, yield_type: YieldType) -> i32 {
-        let mut total_imports = 0;
-
-        // Loop through players
-        for other in self.civ_player_ids() {
-            if other != p {
-                for &c in &self.players[other].cities {
-                    for trade_loop in 0..self.city_trade_routes(c) {
-                        if let Some(trade_city) = self.city_trade_city(c, trade_loop as usize) {
-                            if self.cities[trade_city].owner == p {
-                                total_imports += self.city_calculate_trade_yield(c, yield_type, self.city_calculate_trade_profit(c, trade_city));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        total_imports
-    }
-
-    /// C++ `CvPlayer::calculateTotalCityHappiness`.
-    pub fn player_calculate_total_city_happiness(&self, p: PlayerId) -> i32 {
-        let mut total = 0;
-        for &c in &self.players[p].cities {
-            total += self.city_happy_level(c);
-        }
-        total
-    }
-
-    /// C++ `CvPlayer::calculateTotalCityUnhappiness`.
-    pub fn player_calculate_total_city_unhappiness(&self, p: PlayerId) -> i32 {
-        let mut total = 0;
-        for &c in &self.players[p].cities {
-            total += self.city_unhappy_level(c, 0);
-        }
-        total
-    }
-
-    /// C++ `CvPlayer::calculateTotalCityHealthiness`.
-    pub fn player_calculate_total_city_healthiness(&self, p: PlayerId) -> i32 {
-        let mut total = 0;
-        for &c in &self.players[p].cities {
-            total += self.city_good_health(c);
-        }
-        total
-    }
-
-    /// C++ `CvPlayer::calculateTotalCityUnhealthiness`.
-    pub fn player_calculate_total_city_unhealthiness(&self, p: PlayerId) -> i32 {
-        let mut total = 0;
-        for &c in &self.players[p].cities {
-            total += self.city_bad_health(c, false, 0);
         }
         total
     }

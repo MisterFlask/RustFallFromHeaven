@@ -7,7 +7,7 @@ mod common;
 
 use std::path::Path;
 
-use common::{bot_session, new_game, peaceful_game, TempDir};
+use common::{bot_session, peaceful_game, TempDir};
 use ffh_play::journal::{self, Line};
 use ffh_play::save::read_bundle;
 use ffh_play::session::{replay, ReplayFrom};

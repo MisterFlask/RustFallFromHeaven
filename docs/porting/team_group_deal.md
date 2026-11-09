@@ -264,7 +264,7 @@ C++ lines: **1519** total; 63 functions, all ported.
 | `CvTeam::getBuildingClassMaking` | CvTeam.cpp:2195-2214 | 20 | `team_get_building_class_making` | ported |
 | `CvTeam::getBuildingClassCountPlusMaking` | CvTeam.cpp:2217-2220 | 4 | `team_get_building_class_count_plus_making` | ported |
 | `CvTeam::getHasReligionCount` | CvTeam.cpp:2223-2242 | 20 | `team_get_has_religion_count` | ported |
-| `CvTeam::getHasCorporationCount` | CvTeam.cpp:2245-2261 | 17 | `team_get_has_corporation_count` | ported |
+| `CvTeam::getHasCorporationCount` | CvTeam.cpp:2245-2261 | 17 | — | removed (no callers) |
 | `CvTeam::countTotalCulture` | CvTeam.cpp:2264-2283 | 20 | `team_count_total_culture` | ported |
 | `CvTeam::countNumUnitsByArea` | CvTeam.cpp:2286-2307 | 22 | `team_count_num_units_by_area` | ported |
 | `CvTeam::countNumCitiesByArea` | CvTeam.cpp:2310-2331 | 22 | `team_count_num_cities_by_area` | ported |
@@ -346,8 +346,8 @@ C++ lines: **1549** total; 18 functions, all ported.
 | `CvSelectionGroup::insertAtEndMissionQueue` | CvSelectionGroup.cpp:4540-4557 | 18 | `group_insert_at_end_mission_queue` | ported |
 | `CvSelectionGroup::deleteMissionQueueNode` | CvSelectionGroup.cpp:4560-4587 | 28 | `group_delete_mission_queue_node` | ported |
 | `CvSelectionGroup::getMissionType` | CvSelectionGroup.cpp:4614-4634 | 21 | `group_get_mission_type` | ported |
-| `CvSelectionGroup::getMissionData1` | CvSelectionGroup.cpp:4637-4657 | 21 | `group_get_mission_data1` | ported |
-| `CvSelectionGroup::getMissionData2` | CvSelectionGroup.cpp:4660-4680 | 21 | `group_get_mission_data2` | ported |
+| `CvSelectionGroup::getMissionData1` | CvSelectionGroup.cpp:4637-4657 | 21 | — | removed (no callers) |
+| `CvSelectionGroup::getMissionData2` | CvSelectionGroup.cpp:4660-4680 | 21 | — | removed (no callers) |
 | `CvSelectionGroup::activateHeadMission` | CvSelectionGroup.cpp:4725-4736 | 12 | `group_activate_head_mission` | ported |
 | `CvSelectionGroup::deactivateHeadMission` | CvSelectionGroup.cpp:4739-4760 | 22 | `group_deactivate_head_mission` | ported |
 
@@ -358,8 +358,8 @@ C++ lines: **1348** total; 26 functions, all ported.
 | C++ function | C++ lines | # | Rust | Status |
 |---|---|---:|---|---|
 | `CvSelectionGroup::lastMissionPlot` | CvSelectionGroup.cpp:600-669 | 70 | `group_last_mission_plot` | ported |
-| `CvSelectionGroup::canEnterTerritory` | CvSelectionGroup.cpp:2471-2495 | 25 | `group_can_enter_territory` | ported |
-| `CvSelectionGroup::canEnterArea` | CvSelectionGroup.cpp:2497-2521 | 25 | `group_can_enter_area` | ported |
+| `CvSelectionGroup::canEnterTerritory` | CvSelectionGroup.cpp:2471-2495 | 25 | — | removed (no callers) |
+| `CvSelectionGroup::canEnterArea` | CvSelectionGroup.cpp:2497-2521 | 25 | — | removed (no callers) |
 | `CvSelectionGroup::canMoveInto` | CvSelectionGroup.cpp:2524-2546 | 23 | `group_can_move_into` | ported |
 | `CvSelectionGroup::canMoveOrAttackInto` | CvSelectionGroup.cpp:2549-2571 | 23 | `group_can_move_or_attack_into` | ported |
 | `CvSelectionGroup::canMoveThrough` | CvSelectionGroup.cpp:2574-2598 | 25 | `group_can_move_through` | ported |
@@ -430,7 +430,7 @@ C++ lines: **1464** total; 60 functions, all ported.
 | `CvSelectionGroup::setActivityType` | CvSelectionGroup.cpp:3809-3868 | 60 | `group_set_activity_type` | ported |
 | `CvSelectionGroup::isAutomated` | CvSelectionGroup.cpp:3877-3891 | 15 | `group_is_automated` | ported |
 | `CvSelectionGroup::setAutomateType` | CvSelectionGroup.cpp:3894-3927 | 34 | `group_set_automate_type` | ported |
-| `CvSelectionGroup::clearUnits` | CvSelectionGroup.cpp:4029-4039 | 11 | `group_clear_units` | ported |
+| `CvSelectionGroup::clearUnits` | CvSelectionGroup.cpp:4029-4039 | 11 | — | removed (no callers) |
 | `CvSelectionGroup::addUnit` | CvSelectionGroup.cpp:4043-4099 | 57 | `group_add_unit` | ported |
 | `CvSelectionGroup::removeUnit` | CvSelectionGroup.cpp:4102-4120 | 19 | `group_remove_unit` | ported |
 | `CvSelectionGroup::deleteUnitNode` | CvSelectionGroup.cpp:4123-4148 | 26 | `group_delete_unit_node` | ported |

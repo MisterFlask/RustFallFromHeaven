@@ -84,11 +84,6 @@ impl Game {
         self.city_num_building(c, self.city_building_variant(c, b))
     }
 
-    /// C++ `getNumActiveBuilding` for `b`'s building at any tier.
-    pub fn city_num_active_family(&self, c: CityId, b: BuildingType) -> i32 {
-        self.city_num_active_building(c, self.city_building_variant(c, b))
-    }
-
     /// C++ `getNumRealBuilding` for `b`'s building at any tier.
     pub fn city_num_real_family(&self, c: CityId, b: BuildingType) -> i32 {
         self.cities[c].num_real_building[self.city_building_variant(c, b)]

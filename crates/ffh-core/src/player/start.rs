@@ -318,12 +318,6 @@ impl Game {
         max(range, d.defines.min_civ_starting_distance)
     }
 
-    /// C++ `CvPlayer::startingPlotWithinRange`: always false since BtS ("XXX changes to
-    /// AI_foundValue ... make this function redundant but it is still called from Python").
-    pub fn player_starting_plot_within_range(&self, _p: PlayerId, _plot: PlotIdx, _other: PlayerId, _range: i32, _pass: i32) -> bool {
-        false
-    }
-
     /// C++ `CvPlayer::startingPlotDistanceFactor` (called on the player whose starting plot is
     /// measured, `p`, for the evaluating player `other`).
     pub fn player_starting_plot_distance_factor(&self, p: PlayerId, plot: PlotIdx, other: PlayerId, range: i32) -> i32 {

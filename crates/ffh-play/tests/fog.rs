@@ -7,7 +7,7 @@
 
 mod common;
 
-use common::{bot_session, new_game, peaceful_game};
+use common::{bot_session, peaceful_game};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_data::*;

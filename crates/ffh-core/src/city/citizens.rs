@@ -1687,13 +1687,6 @@ impl Game {
         // UI: info pane, city screen and colored plots dirty bits.
     }
 
-    /// C++ `CvCity::setWorkingPlot(CvPlot*, bool)` (CvCity.cpp:10369-10372).
-    pub fn city_set_working_plot_at(&mut self, c: CityId, plot: PlotIdx, new_value: bool) {
-        // C++ passes -1 on (UB); a plot outside the radius is a caller bug.
-        let index = self.city_plot_index(c, plot).expect("CvCity::setWorkingPlot: plot outside the city radius");
-        self.city_set_working_plot(c, index, new_value);
-    }
-
     /// C++ `CvCity::alterWorkingPlot` (CvCity.cpp:10375-10423): the player clicking a city
     /// plot (governor calls `AI_addBestCitizen` / `AI_removeWorstCitizen`).
     pub fn city_alter_working_plot(&mut self, c: CityId, index: usize) {
