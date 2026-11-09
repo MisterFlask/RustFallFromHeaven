@@ -1546,7 +1546,7 @@ mod tests {
         setup.players[1].civ = Some(sheaim);
         setup.players[2].civ = Some(khazad);
         setup.players[1].leader = Some(arendel);
-        let mut g = Game::new(d, setup);
+        let g = Game::new(d, setup);
         // getCivilization / getLeader return the last matching slot.
         assert_eq!(g.cf_get_civilization(khazad), Some(PlayerId(2)));
         assert_eq!(g.cf_get_civilization(d.t::<CivilizationType>("CIVILIZATION_LANUN")), None);

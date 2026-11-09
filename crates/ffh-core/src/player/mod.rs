@@ -820,7 +820,8 @@ impl Game {
 ///
 /// `Player::new` holds the per-member defaults; this adds what `reset` does outside the
 /// player itself: the C++ `removeAll()` of the plot group / city / unit / selection group
-/// lists deletes those objects (here: from the game slabs; the lists are empty for every slot
+/// lists (and this game's armies and governors) deletes those objects (here: from the game
+/// slabs; the lists are empty for every slot
 /// C++ (re)initializes in practice), and other players' entries about this player are cleared.
 fn reset_player(g: &mut Game, p: PlayerId) {
     let old = std::mem::take(&mut g.players[p]);
@@ -835,6 +836,14 @@ fn reset_player(g: &mut Game, p: PlayerId) {
     }
     for id in old.groups {
         g.groups.remove(id);
+    }
+    // This game's armies and governors are the player's too (a crusade Host slot is reused
+    // after its crusade ends: left in the slabs, its old armies were orphans).
+    for id in old.armies {
+        g.armies.remove(id);
+    }
+    for id in old.governors {
+        g.governors.remove(id);
     }
 
     let (num_players, num_teams) = (g.num_players(), g.num_teams());

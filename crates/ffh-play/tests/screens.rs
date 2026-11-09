@@ -313,7 +313,7 @@ fn the_advance_profile_splits_update_own_work_and_autosave() {
     let dir = common::TempDir::new("profile");
     let play = |saves: Option<std::path::PathBuf>, profile: bool| {
         let d = ffh_data::global();
-        let mut ng = common::steady_duel(4);
+        let ng = common::steady_duel(4);
         let _ = d;
         let opts = SessionOptions { saves_dir: saves, ..SessionOptions::default() };
         let mut s = Session::new_game(&ng, Arc::new(AdvisorAnswerer), opts).unwrap();
