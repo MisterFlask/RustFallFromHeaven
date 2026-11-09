@@ -14,7 +14,7 @@ persist_enum!(Side { 0 => Attacker, 1 => Defender });
 persist_enum!(EngageResult { 0 => Taken, 1 => Cleared, 2 => Repulsed, 3 => Held });
 
 persist_struct!(BattleReport { id, turn, plot, from, place, sides, outcome, log });
-persist_struct!(ReportSide { player, shown_player, players, slots, lanes, used, committed, sat_out, fallen, escaped, standing, lost });
+persist_struct!(ReportSide { player, shown_player, players, slots, lanes, used, committed, sat_out, fallen, escaped, standing, lost, summons });
 persist_struct!(PlotSnap { x, y, terrain, feature, hills, river_crossing, city });
 persist_struct!(CitySnap { id, name, owner, size, defense_pct });
 persist_struct!(Outcome { result, rounds, plot_taken, city_captured, moved_in, defenders_left, sentinels, sentinels_breached });
@@ -46,7 +46,7 @@ persist_struct!(LogFighter {
     unit, sentinel, unit_type, name, owner, shown_owner, side, place, large, level, xp, hero, max_hp,
     hp_start, hp_battle, speed, first_strikes, chance_first_strikes, rolled_first_strikes, actions,
     spell, accuracy, evasion, crit, anti_flank, flanker, withdraw_pct, combat_limit, collateral_limit,
-    def_strike, immune, fear, a, dv, mag, mdef, fate, dealt, taken, healed,
+    def_strike, immune, fear, a, dv, mag, mdef, fate, dealt, taken, healed, summoner, on_kill,
 });
 persist_enum!(LogFate { 0 => Standing, 1 => Fell { by, round }, 2 => Withdrew { round }, 3 => SatOut });
 persist_newtype!(Immunities);
@@ -194,6 +194,8 @@ mod tests {
             dealt: 2400,
             taken: 1000,
             healed: 300,
+            summoner: None,
+            on_kill: false,
         }
     }
 
@@ -357,6 +359,7 @@ mod tests {
             escaped: 1,
             standing: 1,
             lost: vec![(UnitType(2), 2), (UnitType(7), 1)],
+            summons: 1,
         };
         BattleReport {
             id: 41,

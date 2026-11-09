@@ -103,7 +103,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 21: players added mid-game (`Game::add_player_slot`): `GameSetup::barbarian` (the barbarian
 ///   slot is no longer the last), `CrusadeRules::host_slots` gone (no slots are reserved); the
 ///   per-player and per-team arrays hold one entry per slot the game has now.
-pub const FORMAT_VERSION: u32 = 21;
+/// - 22: `Unit::battle_summon` (a caster's summons fight in its battles), the battle log's
+///   `LogFighter::summoner` and `on_kill`; Extension I and II gone.
+pub const FORMAT_VERSION: u32 = 22;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

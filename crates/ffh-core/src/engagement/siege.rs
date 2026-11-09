@@ -153,6 +153,8 @@ impl Game {
             dealt: 0,
             taken: 0,
             healed: 0,
+            summoner: None,
+            on_kill: false,
         }
     }
 

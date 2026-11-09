@@ -137,6 +137,7 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
         escaped: 0,
         standing: 1,
         lost: Vec::new(),
+        summons: 0,
     };
     let stat = |x| Stat { base_x100: x, terms: vec![Term { src: TermSource::Fortify, pct: 25 }], total_x100: x * 125 / 100 };
     let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
@@ -182,6 +183,8 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
         dealt: 0,
         taken: 0,
         healed: 0,
+        summoner: None,
+        on_kill: false,
     };
     let hit = Hit { target: 1, dmg: 1800, expected: 1777, r: 101, crit: false, miss: false, killed: true, withdrew: false, splash: false };
     let log = BattleLog {

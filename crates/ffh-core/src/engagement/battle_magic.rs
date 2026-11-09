@@ -445,7 +445,7 @@ mod tests {
         let place = |u: UnitId| f.iter().find(|p| p.unit == u).copied().expect("placed");
         assert_eq!(place(fam).lane, place(mage).lane, "{f:?}");
         let defenders = g.engage_defenders(to, PlayerId(0), &att, crate::engagement::WarTest::AtWar);
-        let setup = g.engage_setup(ctx, slots, f, defenders, true).unwrap();
+        let setup = g.engage_setup(ctx, slots, f, defenders, true, &[]).unwrap();
         let (i, j) = (setup.units.iter().position(|&u| u == fam).unwrap(), setup.units.iter().position(|&u| u == mage).unwrap());
         assert_eq!(setup.fighters[i].magic.guards, Some(j as u16));
     }

@@ -42,7 +42,10 @@
 //     attacker's pool, the defenders' reserve the viewer sees: `lane` null):
 //     {b, unit, sentinel (a Sentinel of the defended city: its wall section, no unit; docs/SIEGES.md), illusion (an
 //      illusory soldier of the battle: no unit, out of the line until an event's `entered` brings it in; it holds no
-//      field, so the fates leave it out; docs/CARDS.md), unit_type, name, owner, side, level, hero, promotions, large (fills two
+//      field, so the fates leave it out; docs/CARDS.md), summoner (b of the fighter that called it into the battle: a
+//      summon's caster, or the unit whose kill may create it; null: none), on_kill (a unit a kill may create: out of
+//      the line until an event's `entered` brings it in; one none brought never fought, so the fates leave it out;
+//      docs/ENGAGEMENTS.md, "Summons"), unit_type, name, owner, side, level, hero, promotions, large (fills two
 //      cells of a row, lanes `lane` and `lane + 1`), lane, row (null: not in the line), max_hp (HP), hp_start,
 //      a_x100, dv_x100 (its attack and defence in this battle, before the terms of a pair), ma_x100, md_x100
 //      (its magic and magic defence; a stat of the unit's sheet is x10 of it: docs/UNIT_STATS.md), speed,
@@ -89,6 +92,9 @@
 //   params, slots, lanes, sides, fighters (the attacker's pool in the formation asked for, checked, else in the
 //   rules' auto formation; the defenders it sees in their formation as it knows it), formation and auto_formation
 //   ([{unit, lane, row}]: the attacker's in `fighters`, the one the forecast is for, and the rules' own),
+//   summons: [{caster (b), unit_type, spell (null: on_kill), on_kill (a unit a kill may create), side, lane, row, hp,
+//   max_hp, a_x100, fall_pct}] (the units the battle calls, made for it: no fighter of the plan, not in `per`;
+//   docs/ENGAGEMENTS.md, "Summons"),
 //   forecast: Forecast | null (run before the reply: there is no later one; null whenever `errors` is not empty),
 //   declare_war (the team the attack declares war on, or null), errors (why the formation or the attack is
 //   refused: a refused formation's reply is the auto formation's, with no forecast; a plot the attackers do not see
@@ -613,6 +619,8 @@ export function fates(log, st) {
     const s = out[f.side];
     if (!s || f.illusion) return;
     const k = st.status[b];
+    // A unit a kill could have created that none did was never in the battle.
+    if (f.on_kill && k === "out") return;
     if (k === "dead") s.fallen.push(b);
     else if (k === "gone") s.escaped.push(b);
     else if (k === "afraid") s.afraid.push(b);
@@ -716,7 +724,9 @@ export function logLines(log) {
       out.push({ i, parts, speed });
       return;
     }
-    if (e.entered?.length) {
+    // Units a kill creates enter with the killing action (`on_kill` fighters): its hits first.
+    const created = (e.entered ?? []).filter((x) => F[x.unit]?.on_kill);
+    if (e.entered?.length && created.length < e.entered.length) {
       const brought = kindKey(e.kind) === "Heal";
       parts.push(who(e.actor), t(brought ? " brings back " : ` casts ${spellName(e.spell)}: `));
       e.entered.forEach((x, k) => {
@@ -760,6 +770,10 @@ export function logLines(log) {
       parts.push(t("."));
     } else {
       parts.push(who(e.actor), t(` has ${e.note === "NoOneHurt" || kindKey(e.kind) === "Heal" ? "no one to heal" : "no one in reach"}.`, "dim"));
+    }
+    if (created.length) {
+      created.forEach((x, k) => parts.push(t(k ? ", " : " "), who(x.unit)));
+      parts.push(t(created.length > 1 ? " enter the field." : " enters the field."));
     }
     out.push({ i, parts, speed });
   });

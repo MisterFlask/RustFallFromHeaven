@@ -573,6 +573,11 @@ impl GameData {
                 warnings.push(format!("{}: a battle_wonder outcome must be battle_only and no wonder itself", info.base.type_));
             }
         }
+        // The battle summons (docs/ENGAGEMENTS.md, "Summons").
+        let summons: Vec<SpellType> = self.spells.keys().filter(|&s| self.spell_summons_in_battle(s)).collect();
+        for s in summons {
+            self.spells[s].battle_summon = true;
+        }
         for (u, info) in self.units.iter_enumerated() {
             if !self.type_engages_on_land(u) {
                 continue;
@@ -588,6 +593,50 @@ impl GameData {
             }
         }
         self.warnings.extend(warnings);
+    }
+
+    /// Whether spell `s` is a battle summon (`SpellInfo::battle_summon`): it creates a temporary
+    /// unit (`create_unit_type` without `permanent_unit_create`) of a land type with a stat sheet
+    /// and strength (attack, defence or a typed strength) that is not a missile (`bSuicide`).
+    fn spell_summons_in_battle(&self, s: SpellType) -> bool {
+        let info = &self.spells[s];
+        let Some(t) = info.create_unit_type else { return false };
+        let ty = &self.units[t];
+        !info.permanent_unit_create && self.type_engages_on_land(t) && ty.stats.is_some() && !ty.suicide && (ty.combat > 0 || ty.combat_defense > 0 || ty.damage_type_combat.iter().any(|&x| x > 0))
+    }
+
+    /// A battle summon's strength, to choose a caster's strongest summon: its type's attack and
+    /// defence (the stat sheet's) plus ten times its typed strength, then its HP.
+    pub fn battle_summon_strength(&self, s: SpellType) -> (i32, i32) {
+        let Some(t) = self.spells[s].create_unit_type else { return (0, 0) };
+        let typed: i32 = self.units[t].damage_type_combat.iter().sum();
+        (self.unit_stat(t, StatType::Attack) + self.unit_stat(t, StatType::Defense) + 10 * typed, self.unit_stat(t, StatType::Hp))
+    }
+
+    /// The battle summons a unit of type `unit_type` holding the promotions `has_promotion` accepts
+    /// knows (docs/ENGAGEMENTS.md, "Summons"): the battle summon spells whose promotion, unit,
+    /// unit class, unit combat and religion prerequisites it meets (as its battle spells,
+    /// [`Self::engage_battle_spells`]) and whose civilization prerequisite is `civ`'s, the
+    /// strongest first ([`Self::battle_summon_strength`], then the lower id).
+    pub fn battle_summons(&self, unit_type: UnitType, has_promotion: impl Fn(PromotionType) -> bool, religion: Option<ReligionType>, civ: Option<CivilizationType>) -> Vec<SpellType> {
+        let info = &self.units[unit_type];
+        let mut out: Vec<SpellType> = self
+            .spells
+            .keys()
+            .filter(|&s| {
+                let spell = &self.spells[s];
+                spell.battle_summon
+                    && spell.promotion_prereq1.map_or(true, &has_promotion)
+                    && spell.promotion_prereq2.map_or(true, &has_promotion)
+                    && spell.unit_prereq.map_or(true, |t| t == unit_type)
+                    && spell.unit_class_prereq.map_or(true, |c| info.unit_class_type == Some(c))
+                    && spell.unit_combat_prereq.map_or(true, |c| info.unit_combat_type == Some(c))
+                    && spell.religion_prereq.map_or(true, |r| religion == Some(r))
+                    && spell.civilization_prereq.map_or(true, |c| civ == Some(c))
+            })
+            .collect();
+        out.sort_by_key(|&s| (std::cmp::Reverse(self.battle_summon_strength(s)), s));
+        out
     }
 
     /// Whether units of a type can take part in a land engagement once they have strength: a land

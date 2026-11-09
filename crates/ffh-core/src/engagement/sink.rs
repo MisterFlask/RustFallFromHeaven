@@ -78,7 +78,19 @@ impl Sink {
             index: Vec::new(),
         };
         for (i, &u) in e.units.iter().enumerate() {
-            sink.push(g, e, u, e.side(i), Some(s.places[i]));
+            // A unit a kill may create is off the field until it enters (its event's cell).
+            let place = (!s.is_on_kill(i)).then_some(s.places[i]);
+            sink.push(g, e, u, e.side(i), place);
+        }
+        // The units called into the battle (summons.rs): who called each.
+        for (i, &u) in e.units.iter().enumerate() {
+            let lf = &mut sink.log.fighters[i];
+            if s.is_on_kill(i) {
+                lf.on_kill = true;
+                lf.summoner = s.fighters[i].spawner;
+            } else if g.units[u].battle_summon {
+                lf.summoner = g.units[u].summoner.and_then(|c| e.units.iter().position(|&x| x == c)).map(|k| k as FighterIdx);
+            }
         }
         for i in s.sentinel_range() {
             sink.push_sentinel(g, e, i);
@@ -146,6 +158,8 @@ impl Sink {
             dealt: 0,
             taken: 0,
             healed: 0,
+            summoner: None,
+            on_kill: false,
         };
         self.log.fighters.push(f);
         self.index.push((Some(u), side));

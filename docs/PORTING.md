@@ -726,6 +726,29 @@ flag.
   Bond too. Keelyn, Tebryn, Os-Gabella and Hyborem have it (and
   Malchavic, who leads no civilization). One new promotion: saves made before do not load.
 
+- **A caster's summons fight in its battles, not on the map** (2026-11-09, the owner's decisions of
+  2026-11-05; docs/ENGAGEMENTS.md, "Summons"). The temporary summon spells (`SpellInfo::battle_summon`,
+  derived: a temporary land unit that can fight, not a missile: Summon Air, Earth, Fire, Ice and
+  Water Elemental, Aurealis, Balor, Djinn, Einherjar, Mistform, Pit Beast, Sand Lion, Spectre and
+  Wraith, Create Puppet and Loki's) are no longer cast on the map. Every committed unit that knows
+  one calls its strongest into each battle it fights, on either side (twice with Twincast), within
+  `ENGAGEMENT_SUMMON_EXTRA_SLOTS` (2) slots a side beyond its committed units, in free cells near
+  its caster; the summon is a real unit made as the spell made it (summon perks, copied promotions,
+  the Summoner's Bond) and leaves the game after the battle, before the result (a plot whose last
+  defenders were summons falls). It shares no battle XP. FFH2's summons lasted a turn on the map
+  and attacked or covered the stack there. Lasting summons (Raise Skeleton, Summon Tiger and
+  Treant, Graft Flesh, the Kraken), missiles (Breathe Fire, the Barge's Fireball), the Floating Eye,
+  Sever, Wonder's creatures and Hall of Mirrors stay as they were.
+- **A unit created on a kill fights on in the battle** (2026-11-09, the owner's decision of
+  2026-11-05). `UnitCreateFromCombat` (the Air Elemental's Lightning Elemental, Ars's Wraith, the
+  werewolves' and the Wolf Pack's) is rolled in the battle on the kill (`Engagement create`, the
+  same chance), and the unit enters the field in a free cell near its creator (up to two a creator
+  and battle); with no room it is made after the battle, as before. A unit a summon created leaves
+  with it after the battle; one a unit of the map created stays.
+- **Extension I and II are gone** (2026-11-09; `promotions.jsonc`, Loki's free promotion). Their
+  only effect was their caster's summons' moves on the map (Mobility I and II), and summons no longer
+  move on the map. Save format 22.
+
 - **The palace gives +3 production instead of +1** (all 21 civilization palaces, `buildings.jsonc`;
   2026-11-01). Meant to speed up the early game without a second starting settler. Measured on
   seeds 1-24 (6 AIs, standard map, 300 turns) against the old palace: production +46% at turn 25;

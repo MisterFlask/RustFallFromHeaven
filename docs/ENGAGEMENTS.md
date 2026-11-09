@@ -335,6 +335,64 @@ Margalard and Wilboman (a frost giant), Barnaxus (a golem), the War Machine, the
 golem of rock) and the War Tortoise. Demons (the Balor, the Pit Beast) and the great beasts (the
 Giant Spider, the Manticore) stay one cell.
 
+## Summons
+
+The owner's decisions (2026-11-05), built 2026-11-09 (`engagement/summons.rs`; the resolver's
+`formation/spawn.rs`; tests in `crates/ffh-core/tests/engagement_summons.rs`). A caster's summon is
+an extra unit in its battles, not a swap for the caster, and has no duration: it is in the battle
+it is called to, not on the map for some turns.
+
+- **The spells.** A battle summon (`SpellInfo::battle_summon`, derived at load) is a spell that
+  creates a temporary land unit with a stat sheet and strength that is not a missile: Summon Air,
+  Earth, Fire, Ice and Water Elemental, Aurealis, Balor, Djinn, Einherjar, Mistform, Pit Beast,
+  Sand Lion, Spectre and Wraith, Create Puppet and Loki's. It is never cast on the map
+  (`unit_can_cast` refuses it). Lasting summons (Raise Skeleton, Summon Tiger and Treant, Graft
+  Flesh, the Kraken), the missiles (Breathe Fire, the Barge's Fireball), the Floating Eye and Sever
+  stay map spells.
+- **Who calls one** (`Game::unit_battle_summons`): every committed unit, on either side, that knows
+  a battle summon (its promotion, unit, unit class, unit combat and religion prerequisites as for
+  battle spells, the spell's civilization and its Python requirement: the Sand Lion's desert)
+  calls its strongest one (`GameData::battle_summons`: the summoned type's attack plus defence plus
+  ten times its typed strength, then its HP, then the lower id), twice with Twincast. A summon calls
+  none.
+- **How many and where** (`Game::engage_summon_calls`, at the set-up, after both formations): a side
+  calls at most `ENGAGEMENT_SUMMON_EXTRA_SLOTS` (2) slots of summons beyond its committed units (a
+  large summon, the Earth Elemental, counts 2), the strongest summons first, then the caster's
+  place in the engagement's order; each in a free cell of its side's grid (the lanes formula leaves
+  room for two: `(slots + 2) / 3`), in the rows of its rank order, the lanes nearest its caster's
+  first. One with no free cell is not called. No RNG; the defender's are planned on its auto
+  formation.
+- **The units** (`Game::engage_call_summons`): each summon is a real unit made on its caster's plot
+  as the spell made it on the map (`Game::unit_init_summon`: its summoner, a duration, the caster's
+  summon perks or, Create Puppet, its promotions, the spell's promotion, the Summoner's Bond), marked
+  `Unit::battle_summon` (no attacker pool or defence picks it), and committed like any unit: the
+  morale check, the opening's defensive strikes, its own stats and rows. It shares no battle XP.
+- **After the battle** (`apply.rs`, after the per-kill and per-engagement steps): the summons that
+  did not fall leave the game (`Game::engage_dismiss_summons`, telemetry cause `dismissed`); the
+  fallen die as victims. Then the result: a plot whose last defenders were summons falls.
+- **A unit created on a kill** (`UnitCreateFromCombat`: the Air Elemental's Lightning Elemental,
+  Ars's Wraith, the werewolves', the Wolf Pack's Wolf, the Giant Spider's Baby Spider) fights on in
+  the battle. Its creator brings up to two such units (no more than the enemy's committed units),
+  made at the set-up as `combatWon` makes them (the creator's duration and hidden nationality), each
+  in a free cell near it, off the field (`Fighter::spawner`; they sit out the morale check and the
+  opening). When the creator kills a unit that can create one (alive, capturable, no equipment:
+  `Fighter::fodder`) it rolls its chance in the battle (`Engagement create`, `0..100` at most the
+  chance); on a success its first waiting unit whose cell is free enters there with the action's
+  event (`entered`) and fights from the next pass. A success with none left is made after the battle
+  without a roll, as before; a failed roll makes none. After the battle a unit that entered stays
+  on the map when a unit of the map created it, and leaves with its creator when a summon did; the
+  ones that never entered leave and count nowhere (not committed, not sat out).
+- **The preview** makes the summons (and the units a kill may create) for the battle in a copy of
+  the game (a save and load, only when the battle calls one), so its forecast is the real fight's
+  set-up; the plan lists them apart (`EngagePreview::summons`, the view's `summons`: no unit of the
+  game yet), not in `forecast.per`. The battle log marks them (`LogFighter::summoner`, `on_kill`;
+  the client's `summoner`, `on_kill`). A human attacker's frozen plan is made before the real
+  summons, so it names the same units.
+- **The AI** uses them without deciding anything: its casters' summons appear in their battles. Its
+  attacks are still decided on the duel's odds (the AI is paused), which count no summon. The map
+  summon logic (`casting.rs`, `magic.rs`) still runs for Wonder's creatures, Hall of Mirrors and the
+  lasting summons. Extension I and II, whose only effect was summons' moves on the map, are gone.
+
 ## A and Dv per hit
 
 `Game::engage_hit` (stats.rs; G1, Q1, Q2, Q9): the hitter's A and the target's Dv are its base (its
@@ -481,7 +539,7 @@ fighter with chance first strikes in fighter order ("Engagement first strikes", 
 pass each mover's coin in fighter order ("Engagement order"); per action a Wonder's outcome
 ("Engagement wonder"), a physical one's miss ("Engagement miss"), if it lands the crit roll of strike, charge, stab and shoot ("Engagement
 crit"), r ("Engagement hit"), the target's withdrawal if the hit would kill it ("Engagement
-withdraw"), then each splashed neighbour's r and withdrawal in (lane, row) order (not one at its
+withdraw"), a creator's roll on a kill ("Engagement create", "Summons" above), then each splashed neighbour's r and withdrawal in (lane, row) order (not one at its
 floor or fully protected from collateral damage); a heal's r
 ("Engagement heal"); an action with no target and a heal with no one hurt draw nothing; then the
 post-battle steps' (combat-apply, poison, the per-kill effects' own rolls, the flight's plot).
@@ -750,14 +808,14 @@ The spec (the owner's, revision 4) holds; these were left open and are decided s
   land in an engagement, but nothing else defends there).
 - **Mages and summons** (the owner's decisions, 2026-11-05): mages fight in person, in the line,
   as they do (that they are harder to keep alive is accepted; easier training can make up for it
-  if they turn out too weak); battle spells are done ("Battle spells" above). A caster's summon is
-  an extra unit in its battles (not a swap for the caster); summons have no duration (a summon is
-  in the battle it is called to, not on the map for some turns); a unit created in the middle of a
-  battle (the Air Elemental's Lightning Elemental on a kill) fights on until the battle ends;
-  Extension I and II, whose only effect is summons' moves, may go. Not built yet. The Summoner
+  if they turn out too weak); battle spells are done ("Battle spells" above); summons in battle,
+  units created on a kill and the end of Extension I and II are done ("Summons" above). The Summoner
   trait is a large bonus to its summons' strength, not more turns (done: Summoner's Bond, +50% HP,
   attack, defence, magic and magic defence; docs/PORTING.md, "Balance").
-- Phase 7: spells in combat phases, summons in battle, the Guardsman's bodyguard, commander auras
+- The summons' open points: Wonder's creatures and the Black Mirror's and Hall of Mirrors' copies
+  are still map summons with a duration; the plan's figures do not show the summons (the forecast
+  panel lists them); the AI's attack odds count none.
+- Phase 7: spells in combat phases, the Guardsman's bodyguard, commander auras
   (the hooks are in place: plan section 14). The three spell hooks, `engage_pre_battle`,
   `engage_opening_spells` and `engage_post_battle_spells` (`engage.rs`), are called at their places
   and return nothing yet; the first two return `BattleEffect`s (a modifier scales the pair table, a

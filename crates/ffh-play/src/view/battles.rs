@@ -312,6 +312,8 @@ fn plan_fighter(g: &Game, u: UnitId, side: Side, place: Option<(u8, u8)>, in_cit
         dealt: 0,
         taken: 0,
         healed: 0,
+        summoner: None,
+        on_kill: false,
     }
 }
 
@@ -350,6 +352,10 @@ fn fighter_json(g: &Game, b: usize, f: &LogFighter, owner: PlayerId) -> Json {
         "sentinel" => f.sentinel,
         // An illusion of the battle (docs/CARDS.md, battle_illusions): no unit, no cell until cast.
         "illusion" => !f.sentinel && f.unit == LogFighter::SENTINEL_UNIT,
+        // A unit called into the battle (docs/ENGAGEMENTS.md, "Summons"): who called it, and
+        // whether a kill brings it (out of the line until it enters).
+        "summoner" => f.summoner,
+        "on_kill" => f.on_kill,
         "unit_type" => Json::idx(f.unit_type),
         "name" => name,
         "owner" => owner,
@@ -889,6 +895,28 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Opti
     let forecast = refused.is_none().then(|| {
         forecast_fields(fc.runs, fc.wiped_permille, fc.falls_permille, fc.repulsed_permille, fc.lost_x100, per).with("escaped_x100", crate::jarr![fc.escaped_x100[0], fc.escaped_x100[1]])
     });
+    // The units the battle calls (docs/ENGAGEMENTS.md, "Summons"): made for the battle, so no
+    // fighter of the plan; each with its caster (`b`), its cell and its forecast.
+    let summons = Json::Arr(
+        pv.summons
+            .iter()
+            .map(|s| {
+                crate::jobj! {
+                    "caster" => b_of(s.caster, s.side),
+                    "unit_type" => Json::idx(s.unit_type),
+                    "spell" => Json::opt_idx(s.spell),
+                    "on_kill" => s.spell.is_none(),
+                    "side" => side_ix(s.side),
+                    "lane" => s.lane,
+                    "row" => s.row,
+                    "hp" => s.hp,
+                    "max_hp" => s.max_hp,
+                    "a_x100" => s.a,
+                    "fall_pct" => s.fall_pct,
+                }
+            })
+            .collect(),
+    );
     let crossing = g.plot_is_river_crossing(from, g.direction_xy_plots(from, dest));
     Ok(crate::jobj! {
         "plot" => plot_now(v, dest, crossing),
@@ -904,6 +932,7 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Opti
         "reserve" => bs(&pv.reserve, Side::Attacker),
         "def_formation" => formation_json(&pv.def_formation),
         "def_reserve" => bs(&pv.def_reserve, Side::Defender),
+        "summons" => summons,
         "forecast" => forecast,
         "declare_war" => rival,
         "errors" => Json::Arr(refused.into_iter().map(Json::from).collect()),

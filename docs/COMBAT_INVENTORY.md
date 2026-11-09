@@ -1202,6 +1202,10 @@ Charm Person, Blinding Light, Entangle and Spores only bite in battle when cast 
 
 ### Pre-battle: summons (17)
 
+Built 2026-11-09 as the owner decided (2026-11-05): docs/ENGAGEMENTS.md, "Summons" (a caster's
+summon is an extra unit of each of its battles, within the extra summon slots; Mirror stays a map
+spell).
+
 Rule: a summon spell is pre-battle when its unit is temporary and can fight. `SPELL_SUMMON_AIR_ELEMENTAL`,
 `SPELL_SUMMON_AUREALIS`, `SPELL_SUMMON_BALOR`, `SPELL_SUMMON_DJINN`, `SPELL_SUMMON_EARTH_ELEMENTAL`,
 `SPELL_SUMMON_FIRE_ELEMENTAL`, `SPELL_SUMMON_EINHERJAR`, `SPELL_SUMMON_ICE_ELEMENTAL`,

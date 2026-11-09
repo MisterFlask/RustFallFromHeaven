@@ -7,7 +7,7 @@
 //! 2. **Battle XP**, before any per-kill effect (docs/SIEGES.md, "XP"): each kill of a unit is
 //!    worth `clamp(xp_value(v) x Dv(v <- k) / A(k -> v), MIN, MAX)` (`k` its killer), shared
 //!    equally, in hundredths, by the killing side's units that fought (not sat out) and are alive
-//!    after the battle, withdrawn ones included (`Unit::xp_carry` keeps what is below a point; the
+//!    after the battle (not the summons called into it), withdrawn ones included (`Unit::xp_carry` keeps what is below a point; the
 //!    remainder of the division goes to the killer, else the first sharer). `xp_value` is the
 //!    victim's defense XP value if it attacked, its attack XP value if it defended (open point 4).
 //!    A Sentinel gives and takes no XP. Withdrawn units get the withdrawal XP.
@@ -22,6 +22,7 @@
 //!    and lives (standing or withdrawn: Hidden's quirk may move or kill it, so every later step
 //!    re-checks); `PromotionCombatApply` once per holder that killed (on its victims' plot) or died
 //!    (on its killer); poison: each survivor that took damage from a poison-typed enemy rolls once.
+//!    Then the summons called into the battle that did not fall leave the game (summons.rs).
 //! 5. The victims are killed (immortals are reborn); a defending victim's capturing player is set
 //!    first when the attackers will move in. (Phase 7: the writes of the battle's `Cast` records
 //!    go here.)
@@ -49,7 +50,7 @@ use super::report::{EngageResult, HealSource, KillKind, LogEvent, Stage, XpSourc
 use super::sink::Sink;
 use crate::game::Game;
 use crate::ids::*;
-use crate::unit::{WonEffect, WonMode};
+use crate::unit::{KillCreate, WonEffect, WonMode};
 
 /// What the post-battle steps did (for the report).
 #[derive(Clone, Debug)]
@@ -161,7 +162,8 @@ impl Game {
             let global = !self.unit_is_barbarian(vu);
             let pr = e.setup.pair(k.killer, vi);
             let full = (xp_value as i64 * pr.dv as i64 / pr.a.max(1) as i64).clamp(min_xp as i64, max_xp.max(min_xp) as i64);
-            let sharers: Vec<usize> = e.of(e.side(vi).other()).filter(|&h| !e.sat_out[h] && r.survived(h) && self.engage_alive(e.units[h])).collect();
+            // A summon called into the battle shares none (summons.rs).
+            let sharers: Vec<usize> = e.of(e.side(vi).other()).filter(|&h| !e.sat_out[h] && r.survived(h) && self.engage_alive(e.units[h]) && !self.units[e.units[h]].battle_summon).collect();
             if sharers.is_empty() || full <= 0 {
                 continue;
             }
@@ -243,7 +245,20 @@ impl Game {
             if !r.killed(kf) && !self.unit_is_dead(ku) {
                 let mut effects = Vec::new();
                 let roll_convert = !convert_ok[kf];
-                let ok = self.unit_combat_won_as(ku, vu, WonMode::Kill { roll_convert }, sink.is_some().then_some(&mut effects));
+                // The battle rolled the kill's created unit (summons.rs, formation/spawn.rs).
+                let create = if e.setup.fighters[kf].spawn_chance.is_none() {
+                    KillCreate::Roll
+                } else {
+                    match r.spawned.iter().find(|s| (s.0, s.1) == (kf, vi)) {
+                        Some((_, _, Some(_))) => KillCreate::Made,
+                        // No room on the field: made now, unless a summon made it (it would be the
+                        // battle's only).
+                        Some((_, _, None)) if self.units[ku].battle_summon => KillCreate::Made,
+                        Some((_, _, None)) => KillCreate::Due,
+                        None => KillCreate::Failed,
+                    }
+                };
+                let ok = self.unit_combat_won_as(ku, vu, WonMode::Kill { roll_convert, create }, sink.is_some().then_some(&mut effects));
                 convert_ok[kf] |= ok;
                 if let Some(s) = sink.as_mut() {
                     for eff in effects {
@@ -359,6 +374,21 @@ impl Game {
                 }
             }
         }
+
+        // The units kills created that fought stay, unless a summon created them; then the
+        // summons called into the battle that did not fall leave the game (summons.rs), and the
+        // units kills could have created that none did.
+        let created: Vec<(UnitId, UnitId)> = r
+            .entered
+            .iter()
+            .filter_map(|&i| {
+                let c = e.setup.fighters[i].spawner? as usize;
+                Some((e.units[i], *e.units.get(c)?))
+            })
+            .collect();
+        self.engage_keep_created(&created);
+        let summons: Vec<UnitId> = (0..n).filter(|&i| !r.killed(i)).map(|i| e.units[i]).filter(|&u| self.units.contains(u) && self.units[u].battle_summon).collect();
+        self.engage_dismiss_summons(&summons);
 
         // Card: the Font of Rebirth: the saved go to their Font's city.
         for &(i, c, mark) in &saved {
@@ -478,7 +508,11 @@ impl Game {
             }
         }
         // 9. The result: the plot fell when none of the defender's units is left on it.
-        post.defenders_left = e.setup.candidates.iter().filter(|&&u| self.engage_alive(u) && self.unit_plot_opt(u) == Some(to)).count() as i32 + walls_left;
+        // (A unit a defender's kill created that stays is a defender left too: summons.rs.)
+        let mut left: Vec<UnitId> = e.setup.candidates.iter().copied().chain(e.of(Side::Defender).map(|i| e.units[i])).filter(|&u| self.engage_alive(u) && self.unit_plot_opt(u) == Some(to)).collect();
+        left.sort();
+        left.dedup();
+        post.defenders_left = left.len() as i32 + walls_left;
         post.result = if post.defenders_left == 0 {
             EngageResult::Taken
         } else if r.down[1] {

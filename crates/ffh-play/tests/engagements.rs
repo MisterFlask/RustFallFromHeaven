@@ -56,7 +56,7 @@ const LOG: &[&str] = &[
 ];
 const SIDE: &[&str] = &["player", "shown_player", "civ", "label", "lanes", "ordered"];
 const FIGHTER: &[&str] = &[
-    "b", "unit", "sentinel", "illusion", "unit_type", "name", "owner", "side", "lane", "row", "large", "level", "xp", "hero", "promotions", "max_hp", "hp_start", "hp_battle", "speed",
+    "b", "unit", "sentinel", "illusion", "summoner", "on_kill", "unit_type", "name", "owner", "side", "lane", "row", "large", "level", "xp", "hero", "promotions", "max_hp", "hp_start", "hp_battle", "speed",
     "first_strikes", "chance_first_strikes", "rolled_first_strikes", "actions", "bonus_action", "spell", "accuracy", "evasion", "crit", "anti_flank", "flanker", "withdraw_pct",
     "combat_limit", "collateral_limit", "splash", "def_strike", "immune", "fear", "a_x100", "dv_x100", "ma_x100", "md_x100", "a", "dv", "mag", "mdef", "fate", "dealt", "taken", "healed",
 ];
@@ -69,8 +69,8 @@ const LINE: &[&str] = &["committed", "sat_out", "fallen", "escaped", "standing"]
 const SUMMARY: &[&str] = &["id", "turn", "x", "y", "from", "place", "city", "viewer_side", "result", "rounds", "plot_taken", "city_captured", "defenders_left", "has_log", "sides"];
 const SUMMARY_SIDE: &[&str] = &["player", "civ", "label", "slots", "lanes", "used", "committed", "sat_out", "lost", "lost_types", "escaped", "standing"];
 const PLAN: &[&str] = &[
-    "plot", "from", "ground", "params", "slots", "lanes", "sides", "fighters", "formation", "auto_formation", "reserve", "def_formation", "def_reserve", "forecast", "declare_war",
-    "errors",
+    "plot", "from", "ground", "params", "slots", "lanes", "sides", "fighters", "formation", "auto_formation", "reserve", "def_formation", "def_reserve", "summons", "forecast",
+    "declare_war", "errors",
 ];
 const FORECAST: &[&str] = &["runs", "line_wiped_permille", "plot_falls_permille", "attackers_wiped_permille", "lost_x100", "escaped_x100", "per"];
 const HIT: &[&str] = &["target", "dmg", "expected", "r", "crit", "miss", "killed", "withdrew", "splash"];

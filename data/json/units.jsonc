@@ -8334,7 +8334,6 @@
       "PROMOTION_CHANNELING2": true,
       "PROMOTION_MIND1": true,
       "PROMOTION_CHAOS1": true,
-      "PROMOTION_EXTENSION1": true,
       "PROMOTION_MAGIC_IMMUNE": true
     },
     "combat_defense": 2,

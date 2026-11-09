@@ -67,6 +67,7 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         battle_charm,
         battle_wonder,
         wonder_outcome,
+        battle_summon,
         battle_illusions,
         push: _,
         change_population: _,
@@ -250,6 +251,14 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
     if *wonder_outcome {
         b.push_str(NEWLINE);
         b.push_str("[ICON_BULLET]Cast only as an outcome of Wonder");
+    }
+    if *battle_summon {
+        if let Some(u) = create_unit_type {
+            b.push_str(NEWLINE);
+            b.push_str(&format!("[ICON_BULLET]Battle summon: the caster calls a {} into each battle it fights; it leaves after the battle", display(d, *u)));
+        }
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]Cannot be cast on the map");
     }
     if *battle_only {
         b.push_str(NEWLINE);

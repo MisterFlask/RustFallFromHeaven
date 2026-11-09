@@ -333,6 +333,7 @@ persist_struct!(Unit {
     extra_unit_combat_modifier, ai_birthmark, ai_type, ai_groupflag, ai_origin_x, ai_origin_y,
     ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, army, march,
     stat_flat, stat_pct, attacks_made, battle_heal_turn, xp_carry, lent, card, packed_city,
+    battle_summon,
 });
 
 use crate::ffh::cards::map_rules::{PackedBuilding, PackedCity};

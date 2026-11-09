@@ -145,7 +145,21 @@ pub(crate) struct DefStrikeHit {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub(crate) enum WonMode {
     Duel,
-    Kill { roll_convert: bool },
+    Kill { roll_convert: bool, create: KillCreate },
+}
+
+/// An engagement kill's `UnitCreateFromCombat` (docs/ENGAGEMENTS.md, "Summons"): the battle rolls
+/// it, and a unit it creates fights on in the battle.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub(crate) enum KillCreate {
+    /// Rolled here, as in a duel (a missile's kill).
+    Roll,
+    /// Made in the battle (the unit fought on): nothing more, and nothing captured.
+    Made,
+    /// Rolled in the battle with no room for it on the field: made here, without a roll.
+    Due,
+    /// Rolled in the battle and failed.
+    Failed,
 }
 
 /// What a kill's `combatWon` did (the battle log's kill effects).
@@ -2216,10 +2230,17 @@ impl Game {
                 }
             }
         }
-        if let Some(create_unit_type) = info.unit_create_from_combat {
+        let create = match mode {
+            WonMode::Duel => KillCreate::Roll,
+            WonMode::Kill { create, .. } => create,
+        };
+        if create == KillCreate::Made {
+            new_unit_type = None;
+        }
+        if let Some(create_unit_type) = info.unit_create_from_combat.filter(|_| matches!(create, KillCreate::Roll | KillCreate::Due)) {
             let loser_info = &d.units[self.units[loser].unit_type];
             if !self.unit_is_immune_to_capture(loser) && self.unit_is_alive(loser) && loser_info.equipment_promotion.is_none() {
-                if self.soren_rand_num(100, "Create Unit from Combat") <= info.unit_create_from_combat_chance {
+                if create == KillCreate::Due || self.soren_rand_num(100, "Create Unit from Combat") <= info.unit_create_from_combat_chance {
                     let (x, y) = self.map.xy(self.unit_plot(u));
                     let new_unit = self.player_init_unit(owner, create_unit_type, x, y, None, None);
                     effect(WonEffect::Create(create_unit_type));
@@ -2271,7 +2292,7 @@ impl Game {
         }
         let roll_convert = match mode {
             WonMode::Duel => true,
-            WonMode::Kill { roll_convert } => roll_convert,
+            WonMode::Kill { roll_convert, .. } => roll_convert,
         };
         if let Some(convert_unit_type) = info.unit_convert_from_combat.filter(|_| roll_convert) {
             if self.soren_rand_num(100, "Convert Unit from Combat") <= info.unit_convert_from_combat_chance {

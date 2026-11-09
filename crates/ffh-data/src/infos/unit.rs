@@ -1233,6 +1233,11 @@ pub struct SpellInfo {
     /// Derived (`GameData::derive`): one of a `battle_wonder`'s outcomes, cast only through it, so
     /// no unit knows it as its own battle spell.
     pub wonder_outcome: bool,
+    /// Derived (`GameData::derive`): a battle summon (docs/ENGAGEMENTS.md, "Summons"): a spell
+    /// that creates a temporary land unit that can fight (`create_unit_type`, not
+    /// `permanent_unit_create`, not a missile). Its caster calls the unit into each of its
+    /// battles; it is never cast on the map (`Game::unit_can_cast` refuses it).
+    pub battle_summon: bool,
     pub dispel: bool,
     pub push: bool,
     pub remove_has_casted: bool,
@@ -1367,6 +1372,7 @@ pub fn read_spell(rd: &Rd) -> SpellInfo {
         battle_wonder: rd.pair_list_int::<SpellType>("battle_wonder"),
         battle_illusions: read_battle_illusions(rd, &rd.string("type")),
         wonder_outcome: false,
+        battle_summon: false,
         dispel: rd.bool("dispel"),
         push: rd.bool("push"),
         remove_has_casted: rd.bool("remove_has_casted"),

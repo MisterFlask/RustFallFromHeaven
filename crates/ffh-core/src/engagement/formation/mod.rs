@@ -55,6 +55,7 @@ use crate::rng::Rng;
 pub mod arms_cards;
 mod magic;
 pub mod more_cards;
+pub mod spawn;
 #[cfg(test)]
 mod magic_tests;
 #[cfg(test)]
@@ -438,6 +439,13 @@ pub struct Fighter {
     pub magic: FighterMagic,
     /// Card: its battle kit (docs/CARDS.md; [`more_cards`]).
     pub kit: more_cards::Kit,
+    /// Units created on a kill (`spawn.rs`): its chance (percent, a roll of `0..100` at most this)
+    /// that a kill of a [`Fighter::fodder`] enemy creates one; `None`: it creates none.
+    pub spawn_chance: Option<i32>,
+    /// A unit fighter `spawner`'s kills create: off the field until one does.
+    pub spawner: Option<FighterIdx>,
+    /// A kill of it can create a unit (it is alive, can be captured, is no equipment).
+    pub fodder: bool,
 }
 
 impl Fighter {
@@ -484,6 +492,9 @@ impl Fighter {
             arms: arms_cards::Arms::default(),
             magic: FighterMagic::default(),
             kit: more_cards::Kit::default(),
+            spawn_chance: None,
+            spawner: None,
+            fodder: false,
         }
     }
 
@@ -907,6 +918,8 @@ pub struct Outcome {
     pub events: Vec<Event>,
     /// `n * n`: damage `h` dealt `t` (centi-HP; the shares for battle XP).
     dealt: Vec<i32>,
+    /// The kills that created a unit (`spawn.rs`), in kill order.
+    pub spawned: Vec<spawn::Spawned>,
 }
 
 impl Outcome {
@@ -971,6 +984,10 @@ struct Run<'a> {
     spell_now: Option<Spell>,
     /// Card: the speed each side's drums gave it in round 1 (more_cards.rs).
     drummed: [i32; 2],
+    /// The kills that created a unit, and the fighters that entered the field since the last
+    /// event (`spawn.rs`).
+    spawned: Vec<spawn::Spawned>,
+    entered_now: Vec<Entry>,
 }
 
 impl Formation {
@@ -1208,6 +1225,8 @@ impl<'a> Run<'a> {
             pass: 0,
             spell_now: None,
             drummed: [0; 2],
+            spawned: Vec::new(),
+            entered_now: Vec::new(),
         }
     }
 
@@ -1296,6 +1315,7 @@ impl<'a> Run<'a> {
             down: [f.side_down(&self.s, Side::Attacker), f.side_down(&self.s, Side::Defender)],
             events: self.events,
             dealt: self.dealt,
+            spawned: self.spawned,
         }
     }
 
@@ -1568,6 +1588,8 @@ impl<'a> Run<'a> {
                 self.fate[t] = Fate::Fell { by: h as FighterIdx, round: self.round };
                 self.kills.push(Kill { victim: t as FighterIdx, killer: h as FighterIdx, round: self.round });
                 out.killed = true;
+                // A unit the kill creates enters the field (spawn.rs).
+                self.spawn_on_kill(h, t, rng);
             }
         } else {
             self.s.hp[t] -= dmg;
@@ -1595,8 +1617,11 @@ impl<'a> Run<'a> {
         Some(Knock { unit: t as FighterIdx, from: row, to: row + 1 })
     }
 
-    fn push(&mut self, ev: Event) {
+    fn push(&mut self, mut ev: Event) {
+        // The units its kills created enter the field with it (spawn.rs).
+        let entered = std::mem::take(&mut self.entered_now);
         if self.log {
+            ev.entered.extend(entered);
             self.events.push(ev);
         }
     }
