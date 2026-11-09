@@ -161,6 +161,9 @@ export class MapView {
     this.flashRaf = 0;
     /** Whether the last pointer on the map was a finger (taps instead of hover and right-click). */
     this.touch = false;
+    /** Whether a game controller drives the map (gamepad.js: its cursor hovers plots, the
+     *  tooltip stands above the plot as for a finger). */
+    this.pad = false;
     this.listen();
     new ResizeObserver(() => this.resize()).observe(wrap);
     this.resize();
@@ -363,6 +366,24 @@ export class MapView {
     this.overlay.hover = p;
     this.request();
     this.h.hover?.(p?.x ?? null, p?.y ?? null, ev);
+  }
+
+  /** The controller's cursor is on plot (x, y) (gamepad.js): the hover a mouse there gives (the
+   *  outline, the tooltip, the selection's path and odds), the tooltip placed by the plot. */
+  hoverPlot(x, y) {
+    const s = this.screenOf(x, y);
+    if (!s) return;
+    const c = this.canvas.getBoundingClientRect();
+    const r = this.wrap.getBoundingClientRect();
+    this.tipAt = { x: s.x + c.left - r.left, y: s.y + c.top - r.top };
+    const old = this.overlay.hover;
+    if (x === old?.x && y === old?.y) {
+      this.placeTip();
+      return;
+    }
+    this.overlay.hover = { x, y };
+    this.request();
+    this.h.hover?.(x, y, null);
   }
 
   // ------------------------------------------------------------------------------------------
@@ -1680,8 +1701,8 @@ export class MapView {
     const hi = this.overlay.city ? r.width - CITY_FRAME.side : r.width - 4;
     let x = this.tipAt.x + 16;
     let y = this.tipAt.y + 16;
-    if (this.touch) {
-      // Above the finger, which would hide it below; under it when there is no room above.
+    if (this.touch || this.pad) {
+      // Above the finger (or the controller's cursor), which would hide it below; under it when there is no room above.
       x = Math.min(this.tipAt.x - tw / 2, hi - tw);
       y = this.tipAt.y - th - 28;
       if (y < 4) y = Math.min(this.tipAt.y + 36, Math.max(4, r.height - th - 4));

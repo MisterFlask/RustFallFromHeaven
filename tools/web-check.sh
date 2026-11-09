@@ -10,7 +10,8 @@
 #                                   (tools/web-api-smoke.mjs; builds nothing, needs
 #                                   target/release/ffh-play)
 #   tools/web-check.sh --browser    also the headless-Chromium smoke tests (tools/web-smoke.mjs and,
-#                                   on an emulated phone, tools/web-touch-smoke.mjs; SKIPPED when no
+#                                   on an emulated phone, tools/web-touch-smoke.mjs and, with an
+#                                   emulated controller, tools/web-pad-smoke.mjs; SKIPPED when no
 #                                   browser is found, a failure when $CI is set)
 #
 # NODE=/path/to/node overrides the node binary.
@@ -76,4 +77,5 @@ fi
 if [ "$browser" = 1 ]; then
   "$node" "$root/tools/web-smoke.mjs"
   "$node" "$root/tools/web-touch-smoke.mjs"
+  "$node" "$root/tools/web-pad-smoke.mjs"
 fi

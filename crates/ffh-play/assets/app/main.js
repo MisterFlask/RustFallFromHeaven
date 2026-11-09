@@ -26,6 +26,7 @@ import * as crusade from "./crusade.js";
 import * as tools from "./tools.js";
 import { applyMapDelta, plotDistance } from "./tiles.js";
 import * as K from "./hotkeys.js";
+import { initGamepad } from "./gamepad.js";
 import * as screens from "./screens.js";
 import * as title from "./title.js";
 import { showDecision, modalOpen, closeTag, closeAll, onEscape, openTags, openModal } from "./modals.js";
@@ -770,6 +771,8 @@ async function boot() {
     },
   });
   units.initUnits(mapView, $("#unit-panel"));
+  // A game controller on a phone (gamepad.js; idle on a computer and without a controller).
+  initGamepad(mapView);
   renderTop();
   renderBottom();
   // The isometric renderer (docs/ISO.md), the M7 "HD pixel" sprites on a 2:1 board: the HD-2D

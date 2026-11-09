@@ -684,8 +684,24 @@ function keysTable() {
     ["☰, ▾, ×", "the screens and files; fold the unit panel; deselect"],
     ["A tap: …", "in the city, research and tech screens: what a tap does (now, add to the queue, put first), where a keyboard holds Shift or Ctrl"],
   ];
+  // A game controller on a phone (gamepad.js): Xbox labels (on a PlayStation pad A is Cross, B
+  // Circle, X Square, Y Triangle).
+  const pad = [
+    ["Controller (a pad's first press turns it on; a tap turns it off)", ""],
+    ["Left stick, D-pad", "move the map's cursor; in a dialog or a menu, move between its buttons"],
+    ["Right stick", "pan the map; in a dialog, scroll"],
+    ["A", "at the cursor: select units, open your city, show a plot; with units selected, go there or attack; in a plot pick, pick it. In a dialog: press the button"],
+    ["B", "back: cancel a plot pick, close a dialog, deselect"],
+    ["X", "skip the unit (with none selected: end the turn when none waits)"],
+    ["Y", "the buttons around the map, starting at the selection's orders (B: the map again)"],
+    ["LB / RB", "the previous / next unit"],
+    ["LT / RT", "zoom out / in"],
+    ["Start", "end the turn"],
+    ["Back", "the menu"],
+  ];
   const keys = [
     ...(coarse() ? touch : []),
+    ...(coarse() ? pad : []),
     ["Mouse", ""],
     ["Left click", "select units (again: the next group there), open your city, show a plot"],
     ["Right click", "move or attack with the selection; with Shift held, add waypoints (sent when Shift is released)"],

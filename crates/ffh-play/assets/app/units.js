@@ -840,7 +840,7 @@ function showTip() {
       if (path.attack) bits.push("attack");
       if (path.declare_war_team !== null) bits.push("declares war");
       if (path.approximate) bits.push("approximate");
-      lines.push(h("div.tip-path", `Move: ${bits.join(", ")} · ${mapView.touch ? "tap again" : "right-click"} to go`));
+      lines.push(h("div.tip-path", `Move: ${bits.join(", ")} · ${mapView.pad ? "A" : mapView.touch ? "tap again" : "right-click"} to go`));
     }
   }
   mapView.showTip(lines);
@@ -908,10 +908,10 @@ export function combatLines(c, at = null) {
     if (c.on_arrival) {
       const next = !!(at && S.sel && S.map) && plotDistance(S.map, S.sel.x, S.sel.y, at.x, at.y) === 1;
       box.append(h("div.battle", `Battle ${next ? "once they can attack" : "on arrival"}: ${c.pool} of yours could fight, against ${foes}`));
-      box.append(h("div.dim.small", `${mapView?.touch ? "Tap again" : "Right-click"}: ${next ? "attack when they can" : "go there and attack"}, in the rules' formation`));
+      box.append(h("div.dim.small", `${mapView?.pad ? "A" : mapView?.touch ? "Tap again" : "Right-click"}: ${next ? "attack when they can" : "go there and attack"}, in the rules' formation`));
     } else {
       box.append(h("div.battle", `Battle: ${c.pool} of yours can fight, against ${foes}`));
-      box.append(h("div.dim.small", mapView?.touch ? "Tap again: the battle plan" : "Right-click: the battle plan · Shift+right-click: attack in the rules' formation"));
+      box.append(h("div.dim.small", mapView?.pad ? "A: the battle plan" : mapView?.touch ? "Tap again: the battle plan" : "Right-click: the battle plan · Shift+right-click: attack in the rules' formation"));
     }
     if (c.odds === undefined || c.odds === null) {
       if (c.declare_war_team !== null && c.declare_war_team !== undefined) box.append(h("div.warn", "Attacking declares war"));
@@ -1480,7 +1480,9 @@ export function renderPanel() {
     if (!panel.dataset.plot) {
       const hint = observing()
         ? `${touchy() ? "Tap" : "Click"} a plot to see its stack (the AI's role and orders of each unit) and this turn's fights there; ⚑ flags it for a bug report.`
-        : touchy()
+        : mapView?.pad
+          ? "A: select the unit or open the city under the cursor. With units selected, the cursor shows the way; A goes. Y: the orders."
+          : touchy()
           ? "Tap a unit or a city. With units selected, tap a plot to see the way there; tap it again to go."
           : "Select a unit or a city. Right-click moves the selected units.";
       fill(panel, isoSkin() ? [] : h("p.dim", hint));
@@ -1563,7 +1565,7 @@ export function renderPanel() {
   }
   const others = foreign.length ? h("div.section", h("h4", "Others here"), foreign.map((u) => h("div.dim", `${dname("UnitType", u.type)} (${ownerText(u)})`))) : null;
   const what = mode?.cast ? "a target" : "a plot";
-  const pick = touchy() ? (isGoTo(mode?.action) ? "Tap a plot to go there." : `Tap ${what}: ${mode && actionLabel(mode.action)}.`) : isGoTo(mode?.action) ? "Click a plot to go there (Shift: add waypoints; Esc cancels)." : `Pick ${what}: ${mode && actionLabel(mode.action)} (Esc cancels).`;
+  const pick = mapView?.pad ? (isGoTo(mode?.action) ? "Move the cursor to the destination and press A (B cancels)." : `Move the cursor to ${what} and press A: ${mode && actionLabel(mode.action)} (B cancels).`) : touchy() ? (isGoTo(mode?.action) ? "Tap a plot to go there." : `Tap ${what}: ${mode && actionLabel(mode.action)}.`) : isGoTo(mode?.action) ? "Click a plot to go there (Shift: add waypoints; Esc cancels)." : `Pick ${what}: ${mode && actionLabel(mode.action)} (Esc cancels).`;
   // One hint at a time: waypoints being laid say more than the go-to mode they are laid in.
   const way = waypoints && unitsKey(waypoints.units) === unitsKey(S.sel.units)
     ? h("p.mode-hint", `${waypoints.points.length === 1 ? "1 waypoint" : `${waypoints.points.length} waypoints`}: release Shift to send (Esc drops them).`)

@@ -153,7 +153,7 @@ without changing the rules engine:
   `<canvas>` in offscreen chunks redrawn where the map changed, in the classic interface of the
   pixel art (docs/ART.md). Checked by `tests/web.rs` (files and
   imports), and with node by `tools/web-check.sh`, `tools/web-api-smoke.mjs`, the
-  headless-Chromium `tools/web-smoke.mjs` and `tools/web-touch-smoke.mjs`, and for the static site
+  headless-Chromium `tools/web-smoke.mjs`, `tools/web-touch-smoke.mjs` and `tools/web-pad-smoke.mjs`, and for the static site
   `tools/web-site-smoke.mjs`.
 
 ## Saved games

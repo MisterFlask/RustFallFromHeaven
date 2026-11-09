@@ -1078,3 +1078,12 @@ html.iso .civ-summary { font-size: inherit; }
 .tier-row { margin: 2px 0; }
 .tier-label { font-weight: bold; }
 
+
+/* A game controller on a phone (gamepad.js, docs/HUMAN.md "A controller on a phone"): the focused
+   button of a layer, and the map's cursor. Only in the controller's mode (body.pad-mode). */
+body.pad-mode .pad-focus { outline: 3px solid var(--c-amber, #ffb63b) !important; outline-offset: 2px; box-shadow: 0 0 0 5px rgba(0, 0, 0, 0.45); }
+.pad-cursor { position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none; border: 3px solid #ffe78c; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55), inset 0 0 0 2px rgba(0, 0, 0, 0.55); animation: pad-cursor 1.2s ease-in-out infinite; }
+.pad-cursor[hidden] { display: none; }
+body:not(.pad-mode) .pad-cursor { display: none; }
+@keyframes pad-cursor { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .pad-cursor { animation: none; } }

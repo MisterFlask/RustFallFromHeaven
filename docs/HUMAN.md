@@ -204,6 +204,48 @@ A long press and a double tap do nothing on the map. What touch does not have: S
 (use Go to for one destination), Ctrl-click on a unit row (Split, then a row), and the keys
 (the panel's buttons, the menu and the Cities list cover them; `?` in the menu lists the controls).
 
+**A controller on a phone.** A game controller paired with the phone (a Bluetooth pad, or a phone
+grip such as a Backbone or a Kishi) plays the game through the browser's Gamepad API
+(`assets/app/gamepad.js`; its pure parts, the button reading, the repeat and the direction picks,
+in `pad.js`, tested by `assets/test/pad.test.mjs`). Only a pad with the API's standard mapping is
+read (its buttons are in the same places on every brand; the labels below are the Xbox ones, so
+A is Cross and B is Circle on a PlayStation pad). Only a device whose main pointer is a finger
+(`pointer: coarse`) has the controller's mode: on a computer a pad does nothing, and a phone
+without one runs nothing of it. A browser shows a pad to the page only after one of its buttons is
+pressed, so the pad's first press starts the mode and does nothing else (a note points at the
+menu's Controls, which lists the buttons on a touch screen). A finger on the screen or a key on a keyboard ends the mode (the last input wins: the
+touch controls above work as before), and the pad's next press starts it again.
+
+On the map the mode has a cursor, a ring on a plot. The cursor hovers its plot as the mouse does:
+the outline, the tooltip above the plot, and with units selected the way there with its turns
+and attack odds. The stick and the D-pad move it plot by plot by screen direction, in every
+renderer, repeating while held.
+
+| | |
+|---|---|
+| left stick, D-pad | move the cursor |
+| right stick | pan the view (the cursor comes to its centre when the pan leaves it out of view) |
+| A | a plot pick: pick the cursor's plot. Units selected, none of ours there: go there or attack (the right-click's move, its preview was the cursor's hover). Else the click: select the units there (again: the next group), open our city, show the plot |
+| B | back: as Esc (leave a plot pick, close the dialog, clear the selection) |
+| X | as Space: skip the unit, or end the turn when nothing waits |
+| Y | the interface: the focus goes to the selection's orders (else End turn) |
+| LB, RB | the previous and next unit (Shift+Tab, Tab); the cursor goes to it |
+| LT, RT | zoom out and in, about the cursor |
+| Start | End turn (its checks as the button's) |
+| Back | the menu (☰), with the focus on its buttons |
+| a stick's click | centre on the selection (C) |
+
+Every other layer has a focus, an outlined button: the battle screens, the top dialog, the title
+screen, the open menu and, after Y, the interface around the map (only what is on screen). The
+D-pad or the left stick moves the focus to the nearest button that way, the right stick scrolls
+the list it is in, A presses it (a drop-down opens its list where the browser lets a script; a
+text field takes the focus, which brings the keyboard up), and B is Esc (around the map: back to
+the map's cursor; in a text field: leave it). A layer opening takes the focus (a dialog on its
+primary button), and a re-render keeps it at the same place. An order or a unit pressed on the
+selection's card gives the focus back to the map, for the next unit or the plot pick. What the
+controller does not reach: the battle plan's board (the formation by dragging: its buttons,
+"Auto" among them, are reached), Shift waypoints, and Ctrl-click on a unit row.
+
 **Units.** The selection panel lists your units on the plot (click a row: its group;
 Ctrl-click: add or remove that unit; on the isometric and HD-2D maps they are a strip of icons
 standing over the card, as Civ4's unit buttons: the selected ones lit, each with its health,
@@ -1098,6 +1140,7 @@ tools/web-check.sh --smoke --browser     # also the smoke tests below
 node tools/web-api-smoke.mjs             # 20 turns through the client's api.js against `ffh-play serve`
 node tools/web-smoke.mjs                 # headless Chromium plays through the page; screenshots in target/web-smoke
 node tools/web-touch-smoke.mjs           # the same on an emulated phone, with touch only; target/web-touch-smoke
+node tools/web-pad-smoke.mjs             # an emulated phone with an emulated controller; target/web-pad-smoke
 ```
 
 * `web-check.sh` needs node (it is skipped without it); the pure modules (map maths and map
@@ -1128,6 +1171,16 @@ node tools/web-touch-smoke.mjs           # the same on an emulated phone, with t
   screen from the Cities list (the whole-screen dialog with its plot grid, within the screen),
   the tech tree from the menu, a tab opens the report, and End turn through the gate to the next
   turn. Any console error, page error, failed request or HTTP error fails it.
+* `web-pad-smoke.mjs [--seed 3] [--out DIR] [--assets DIR] [--headed]` drives the page with an
+  emulated standard gamepad (the page's `navigator.getGamepads` answers a pad the test presses),
+  against one `ffh-play serve --new`. On a computer (a fine pointer) the pad changes nothing. On
+  an emulated phone (touch, a coarse pointer, the isometric map, on its side): the first press
+  starts the controller's mode and does nothing else, RB selects a unit and the cursor goes to it,
+  the D-pad walks the cursor to a free plot ("A to go" in its tooltip) and A moves the unit there,
+  Y gives the focus to the interface and B gives it back to the map, Back opens the menu with the
+  focus on its buttons, the D-pad moves it and B closes the menu, Start ends the turn (the end-turn
+  check's dialog takes the focus; the D-pad reaches "End turn anyway" and A answers it), and a tap
+  ends the mode. Any console error, page error, failed request or HTTP error fails it.
 * `web-smoke.mjs [--turns 4] [--seed 5] [--out DIR] [--assets DIR] [--cdp] [--headed]` drives the
   page with the mouse and keyboard in headless Chromium (the `playwright` package if it resolves,
   else Chromium over the DevTools protocol; skipped without a browser): new game (Start
