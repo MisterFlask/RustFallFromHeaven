@@ -387,12 +387,10 @@ pub struct Player {
     /// `ai_attitude_extra` (a civilization born of a card leans toward good civs, ...:
     /// docs/CARDS.md, "New civilizations").
     pub alignment_attitude: IdxVec<AlignmentType, i32>,
-    /// Not in C++: the research path this player is committed to (research_paths.jsonc;
-    /// docs/PORTING.md, "Research paths"); changed only through `player_commit_research_path`
-    /// and `player_update_research_path`.
+    /// Not in C++: the research path this player is committed to, for the rest of the game
+    /// (research_paths.jsonc; docs/PORTING.md, "Research paths"); set only through
+    /// `player_commit_research_path`.
     pub research_path: Option<ResearchPathType>,
-    /// Not in C++: the research paths this player completed, in the order completed.
-    pub research_paths_done: Vec<ResearchPathType>,
 }
 
 impl Player {
@@ -653,7 +651,6 @@ impl Player {
             card_traits: Vec::new(),
             alignment_attitude: IdxVec::from_elem(0, d.alignments.len()),
             research_path: None,
-            research_paths_done: Vec::new(),
         }
     }
 

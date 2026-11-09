@@ -264,6 +264,10 @@ export function renderTop() {
       r ? small(dname("TechType", r.tech)) : h("span.warn", pix("choose research")),
       r ? tweenBar("research", r.progress, r.cost, next, r.tech) : null,
       r ? small(iso ? `(${r.turns ?? "–"})` : turns(r.turns), ".dim") : null,
+      // The research path (docs/PORTING.md, "Research paths"), or a reminder that none is chosen.
+      m.research_path !== null && m.research_path !== undefined
+        ? small(`· ${dname("ResearchPathType", m.research_path)}`, ".path-tag")
+        : small("· no path", ".warn"),
     ),
     sep(),
     h(

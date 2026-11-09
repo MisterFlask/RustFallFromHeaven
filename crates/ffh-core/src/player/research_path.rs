@@ -1,7 +1,7 @@
 //! Research paths (this game's own rules, not FFH2's; `research_paths.jsonc`, docs/PORTING.md,
-//! "Research paths"). A player commits to one path at a time; while committed it researches the
-//! path's techs `RESEARCH_PATH_PERCENT` percent faster. Once its team knows every tech of the
-//! path, the path is complete and the player may commit to another path.
+//! "Research paths"). A player commits to one path for the rest of the game (enforced
+//! specialization: no other path, ever, even once every tech of its own is known) and researches
+//! the path's techs `RESEARCH_PATH_PERCENT` percent faster.
 
 use crate::game::Game;
 use crate::ids::*;
@@ -13,10 +13,8 @@ use ffh_data::*;
 pub enum ResearchPathRefusal {
     /// Not a living civilization (the barbarians, a dead player).
     NotACiv,
-    /// Committed to a path that is not complete yet.
+    /// Committed to a path already (for the rest of the game).
     Committed(ResearchPathType),
-    /// Completed earlier.
-    Done,
     /// The team knows every tech of the path it can research.
     Known,
     /// None of the path's late techs unlocks a unit this civilization can train.
@@ -123,9 +121,6 @@ impl Game {
         if let Some(current) = pl.research_path {
             return Some(ResearchPathRefusal::Committed(current));
         }
-        if pl.research_paths_done.contains(&path) {
-            return Some(ResearchPathRefusal::Done);
-        }
         if self.player_research_path_known(p, path) {
             return Some(ResearchPathRefusal::Known);
         }
@@ -135,8 +130,8 @@ impl Game {
         None
     }
 
-    /// Commits `p` to `path`: its techs are researched faster from now on. Returns false (and
-    /// changes nothing) when `p` may not.
+    /// Commits `p` to `path` for the rest of the game: its techs are researched faster from now
+    /// on. Returns false (and changes nothing) when `p` may not.
     pub fn player_commit_research_path(&mut self, p: PlayerId, path: ResearchPathType) -> bool {
         if self.player_research_path_refusal(p, path).is_some() {
             return false;
@@ -145,24 +140,7 @@ impl Game {
         let d = self.d;
         let turn = self.game_turn();
         self.log.msg(turn, Some(p), || format!("Research path: {}", d.text.name(&d.research_paths[path].base.description)));
-        self.player_update_research_path(p);
         true
-    }
-
-    /// Completes the research path of `p` once its team knows every tech of it: the path joins
-    /// `research_paths_done` and `p` may commit to another.
-    pub fn player_update_research_path(&mut self, p: PlayerId) {
-        let Some(path) = self.players[p].research_path else {
-            return;
-        };
-        if self.player_research_path_known(p, path) {
-            let pl = &mut self.players[p];
-            pl.research_path = None;
-            pl.research_paths_done.push(path);
-            let d = self.d;
-            let turn = self.game_turn();
-            self.log.msg(turn, Some(p), || format!("Research path complete: {}", d.text.name(&d.research_paths[path].base.description)));
-        }
     }
 }
 
@@ -219,25 +197,22 @@ mod tests {
     }
 
     #[test]
-    fn a_path_completes_with_its_last_tech_and_frees_the_commitment() {
+    fn the_path_is_for_the_rest_of_the_game_even_once_known() {
         let mut g = small_world_game();
         let p = PlayerId(0);
         let team = g.players[p].team;
         let cavalry = path(&g, "RESEARCHPATH_CAVALRY");
         assert!(g.player_commit_research_path(p, cavalry));
-        let techs = g.player_research_path_techs(p, cavalry);
-        let (last, rest) = techs.split_last().unwrap();
-        for &t in rest {
+        for t in g.player_research_path_techs(p, cavalry) {
             g.team_set_has_tech(team, t, true, Some(p), false, false);
         }
-        assert_eq!(g.players[p].research_path, Some(cavalry));
-        g.team_set_has_tech(team, *last, true, Some(p), false, false);
-        assert_eq!(g.players[p].research_path, None);
-        assert_eq!(g.players[p].research_paths_done, vec![cavalry]);
-        // Completed paths are not taken again; another one is.
         assert!(g.player_research_path_known(p, cavalry));
-        assert_eq!(g.player_research_path_refusal(p, cavalry), Some(ResearchPathRefusal::Done));
-        assert_eq!(g.player_research_path_refusal(p, path(&g, "RESEARCHPATH_ARCANE")), None);
+        // Enforced specialization: the path stays, and no other can be taken.
+        assert_eq!(g.players[p].research_path, Some(cavalry));
+        let arcane = path(&g, "RESEARCHPATH_ARCANE");
+        assert_eq!(g.player_research_path_refusal(p, arcane), Some(ResearchPathRefusal::Committed(cavalry)));
+        assert!(!g.player_commit_research_path(p, arcane));
+        assert_eq!(g.players[p].research_path, Some(cavalry));
     }
 
     #[test]

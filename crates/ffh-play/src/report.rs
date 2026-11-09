@@ -561,6 +561,15 @@ impl Report {
         for &t in &techs {
             lines.push(format!("learned {}", crate::names::display(d, t)));
         }
+        // The research path's last tech came (docs/PORTING.md, "Research paths"): the path stays,
+        // its techs all known.
+        let path_complete = g.players[h].research_path.filter(|&path| {
+            let was = g.player_research_path_techs(h, path).iter().all(|&t| before.techs.contains(&t) || !g.player_can_ever_research(h, t));
+            !was && g.player_research_path_known(h, path)
+        });
+        if let Some(path) = path_complete {
+            lines.push(format!("research path complete: {} (every tech known)", d.text.name(&d.research_paths[path].base.description)));
+        }
 
         // Contacts, wars and peace. A war or peace is news only between teams the human had met
         // at the snapshot: a team met since brings its wars along, which are not new.
@@ -640,6 +649,7 @@ impl Report {
             "buildings_completed" => Json::Arr(built),
             "foreign_cities_gone" => Json::Arr(foreign_changed),
             "techs_gained" => Json::Arr(techs.iter().map(|&t| Json::idx(t)).collect()),
+            "research_path_complete" => Json::opt_idx(path_complete),
             "contacts" => contacts,
             "wars" => Json::Arr(new_wars.iter().map(|&(a, b)| crate::jarr![a, b]).collect()),
             "peace" => Json::Arr(peace.iter().map(|&(a, b)| crate::jarr![a, b]).collect()),
@@ -709,6 +719,29 @@ mod tests {
         // Asking for dropped messages starts at the oldest kept one.
         assert_eq!(big.since_json(0).get("from"), Some(&Json::Int(10)));
         assert_eq!(big.tail(2).len(), 2);
+    }
+
+    /// The turn its research path's last tech comes, the report says so, once.
+    #[test]
+    fn the_report_tells_when_the_research_path_is_complete() {
+        let d = ffh_data::global();
+        let mut g = Game::new(d, ffh_core::setup::GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5));
+        g.autorun = true;
+        g.game_init();
+        let h = PlayerId(0);
+        let team = g.players[h].team;
+        let cavalry = d.t::<ResearchPathType>("RESEARCHPATH_CAVALRY");
+        g.players[h].research_path = Some(cavalry);
+        let before = snapshot(&g, h, 0);
+        for t in g.player_research_path_techs(h, cavalry) {
+            g.team_set_has_tech(team, t, true, Some(h), false, false);
+        }
+        let r = Report::build(&before, &Viewer::new(&g, h, false), Vec::new());
+        assert!(r.lines.iter().any(|l| l == "research path complete: Cavalry (every tech known)"), "{:?}", r.lines);
+        assert_eq!(r.items.get("research_path_complete"), Some(&Json::idx(cavalry)));
+        // The next report: nothing new.
+        let again = Report::build(&snapshot(&g, h, 0), &Viewer::new(&g, h, false), Vec::new());
+        assert_eq!(again.items.get("research_path_complete"), Some(&Json::Null));
     }
 
     #[test]

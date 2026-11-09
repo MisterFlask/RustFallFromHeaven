@@ -1,14 +1,13 @@
 //! Research paths (docs/AI.md, "Research paths"; the rule: docs/PORTING.md, "Research paths").
 //!
-//! An expert commits at once: the commitment costs nothing but the freedom to switch before the
-//! path is complete, and every turn uncommitted is research given away. It takes the path its
-//! civilization is built for -- the one its own units, spells and heroes sit on (`CIV_PATHS`) --
-//! and otherwise the path whose techs its leader cares for most, weighted by the research the
+//! The commitment is for the rest of the game. An expert still commits at once: every turn
+//! uncommitted is research given away, and the path a civilization is built for -- the one its own
+//! units, spells and heroes sit on (`CIV_PATHS`) -- is its path whatever the map shows. Without one,
+//! it takes the path whose techs its leader cares for most, weighted by the research the
 //! commitment saves and by its access to the resources the path's late units need
-//! (`resource_pct`: Knights without horses are no plan). Once a path is complete it commits to the
-//! next, knowing more of the map's resources by then. The path's late techs then
-//! join the research plan (`tech_plan`, step `ResearchPath`), and the research score counts
-//! their halved research time (`tech_plan::effective_left`).
+//! (`resource_pct`: Knights without horses are no plan). The path's late techs then join the
+//! research plan (`tech_plan`, step `ResearchPath`), and the research score counts their halved
+//! research time (`tech_plan::effective_left`).
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;

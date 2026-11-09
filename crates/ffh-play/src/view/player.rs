@@ -68,6 +68,10 @@ pub fn techs(v: &Viewer) -> Json {
             // The research rate bonus (percent) of the human's research path on it (0 off the
             // path; docs/PORTING.md, "Research paths").
             "path_bonus" => g.player_research_path_percent(h, t),
+            // The research rate bonus (percent) of a unique feature the human's team holds on it
+            // (docs/PORTING.md, "Unique features double research on a tech"); with the path's, both
+            // multiply.
+            "feature_bonus" => g.team_tech_research_bonus_percent(v.team, t),
             "disabled" => info.disable,
             // What it brings the human (C++ `setTechHelp`), for the research screens' tooltips.
             "help" => crate::view::help::tech::tech_help_with(g, h, t, &un),
@@ -92,14 +96,15 @@ pub fn techs(v: &Viewer) -> Json {
         "techs" => Json::Arr(out.collect()),
         "path" => Json::opt_idx(g.players[h].research_path),
         "path_percent" => g.d.defines.research_path_percent,
-        "paths_done" => ids(&g.players[h].research_paths_done),
         "paths" => research_paths(v),
     }
 }
 
 /// The research paths for the human (docs/PORTING.md, "Research paths"): each path's techs (for
-/// the human's alignment), which of them its team knows, the research left on the others, and
-/// whether the human may commit to it now (`refusal`: the reason it may not).
+/// the human's alignment), which of them its team knows and which it can never research, the
+/// research left on the others, whether every tech it can research is known (`complete`), and
+/// whether the human may commit to it now (`refusal`: the reason it may not; once committed, every
+/// path answers `Committed`).
 pub fn research_paths(v: &Viewer) -> Json {
     let g = v.g;
     let d = g.d;
@@ -121,6 +126,7 @@ pub fn research_paths(v: &Viewer) -> Json {
                     "closed" => ids(&techs.iter().copied().filter(|&t| !g.player_can_ever_research(h, t)).collect::<Vec<_>>()),
                     "capstones" => ids(&d.research_paths[path].capstones),
                     "left" => left,
+                    "complete" => g.player_research_path_known(h, path),
                     "can_commit" => refusal.is_none(),
                     "refusal" => refusal.map_or(Json::Null, |r| Json::from(research_path_refusal_text(g, r))),
                 }
@@ -136,8 +142,7 @@ pub fn research_path_refusal_text(g: &ffh_core::game::Game, r: ffh_core::player:
     let d = g.d;
     match r {
         R::NotACiv => "Reason: no civilization.".to_string(),
-        R::Committed(path) => format!("Reason: committed to the {} path until it is complete.", d.text.name(&d.research_paths[path].base.description)),
-        R::Done => "Reason: path already completed.".to_string(),
+        R::Committed(path) => format!("Reason: committed to the {} path for the rest of the game.", d.text.name(&d.research_paths[path].base.description)),
         R::Known => "Reason: every tech of the path that this civilization can research is known.".to_string(),
         R::Closed => "Reason: the path's late techs bring this civilization no unit.".to_string(),
     }

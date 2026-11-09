@@ -6,7 +6,7 @@ import * as api from "./api.js";
 import { S, emit, dname, tname, turns, voteChoiceLabel, teamName, me, saveNameOfPath, scoreText } from "./state.js";
 import { h, fill, toast, tapModes, coarse } from "./dom.js";
 import { tip } from "./tips.js";
-import { openModal } from "./modals.js";
+import { openModal, ask } from "./modals.js";
 import { addHelp, openHelp } from "./help.js";
 import { run } from "./commands.js";
 import { render as markup, plain } from "./markup.js";
@@ -64,7 +64,7 @@ export async function openResearch({ popup = false } = {}) {
             },
           },
           h("span", dname("TechType", x.tech)),
-          h("span.dim", `${turns(x.turns)} · ${x.cost}${x.progress ? ` (${x.progress})` : ""}${x.path_bonus ? ` · path +${x.path_bonus}%` : ""}`),
+          h("span.dim", `${turns(x.turns)} · ${x.cost}${x.progress ? ` (${x.progress})` : ""}${bonusLabel(x)}`),
           unlockRow(x),
         );
       }),
@@ -76,23 +76,48 @@ export async function openResearch({ popup = false } = {}) {
   return result ?? v;
 }
 
+/** The research bonuses on tech `x` of the `techs` query, for its card: " · path +100%",
+ *  " · feature +100%", both multiplying (" · path +100% · feature +100% (x4)"); "" without. */
+export function bonusLabel(x) {
+  const parts = [x.path_bonus ? `path +${x.path_bonus}%` : null, x.feature_bonus ? `feature +${x.feature_bonus}%` : null].filter(Boolean);
+  if (!parts.length) return "";
+  const times = ((100 + (x.path_bonus ?? 0)) * (100 + (x.feature_bonus ?? 0))) / 10000;
+  return ` · ${parts.join(" · ")}${parts.length > 1 ? ` (x${times})` : ""}`;
+}
+
 /** The research screen's line for the research path (docs/PORTING.md, "Research paths"): the
- *  path committed to, or none, and a button that opens the path chooser; `reload` refreshes the
- *  research screen after a commitment. */
+ *  path committed to for the rest of the game with its progress, or none, and a button that
+ *  opens the path chooser; `reload` refreshes the research screen after a commitment. */
 function researchPathLine(t, reload) {
-  const committed = t.path !== null && t.path !== undefined;
+  const p = pathOf(t, t.path);
   return h(
     "div.research-path",
-    committed
-      ? h("span", "Research path: ", h("b", dname("ResearchPathType", t.path)), ` (+${t.path_percent}% research on its techs) `)
+    p
+      ? h("span", "Research path: ", h("b", dname("ResearchPathType", p.path)), ` (+${t.path_percent}% research on its techs) · ${pathProgress(p)} `)
       : h("span.warn", "No research path. "),
-    h("button.link", { "data-paths": "", onclick: async () => ((await openResearchPaths()) === "chosen" ? reload() : null) }, committed ? "Paths" : "Choose a path"),
+    h("button.link", { "data-paths": "", onclick: async () => ((await openResearchPaths()) === "chosen" ? reload() : null) }, p ? "Paths" : "Choose a path"),
   );
 }
 
-/** The research path chooser: every path with its techs, the research left on them and whether
- *  the human may commit to it now. A click commits.
- *  Resolves "chosen" or null. */
+/** Entry `path` of the `techs` query's `paths`, or null. */
+function pathOf(t, path) {
+  return path === null || path === undefined ? null : t.paths.find((p) => p.path === path) ?? null;
+}
+
+/** A path's progress: "3 of 9 techs known" or "complete". */
+function pathProgress(p) {
+  return p.complete ? "complete" : `${p.known.length} of ${p.techs.length - p.closed.length} techs known`;
+}
+
+/** A path's techs on one line: known ones ticked, those the human can never research marked. */
+function pathTechs(p) {
+  return p.techs.map((x) => (p.known.includes(x) ? `${dname("TechType", x)} ✓` : p.closed.includes(x) ? `${dname("TechType", x)} (closed)` : dname("TechType", x))).join(" · ");
+}
+
+/** The research path chooser. Before the commitment: every path with its techs and the research
+ *  left on them, a refused one greyed with its reason; a click asks for confirmation, then
+ *  commits for the rest of the game. After: the committed path on top with its progress, the
+ *  others below for reference. Resolves "chosen" or null. */
 export async function openResearchPaths() {
   let result = null;
   const m = openModal({ title: "Research paths", body: [h("p.dim", "…")], tag: "research-paths", wide: true, buttons: [{ label: "Close", value: null }] });
@@ -103,30 +128,54 @@ export async function openResearchPaths() {
     m.setBody(h("p.warn", e.detail ?? e.message));
     return m.done;
   }
-  const known = (p, tech) => p.known.includes(tech);
+  const name = (p) => dname("ResearchPathType", p.path);
+  const mine = pathOf(t, t.path);
+  if (mine) {
+    // Committed: no choice left; the path, then the others as reference.
+    m.setBody(
+      h("p.dim", `One path for the rest of the game: its techs are researched ${t.path_percent}% faster.`),
+      h(
+        "div.path-card.current",
+        { "data-path": mine.path },
+        h("span", h("b", name(mine)), " (committed)"),
+        h("small", pathTechs(mine)),
+        h("small", mine.complete ? "Complete: every tech known." : `${pathProgress(mine)} · Research left: ${mine.left}`),
+      ),
+      h("h4", "Other paths"),
+      h(
+        "div.path-list",
+        t.paths
+          .filter((p) => p.path !== mine.path)
+          .map((p) => h("div.path-card.other", { "data-path": p.path }, h("span", h("b", name(p))), h("small", pathTechs(p)), h("small", `Research left: ${p.left}`))),
+      ),
+    );
+    const v = await m.done;
+    return result ?? v;
+  }
+  const commit = async (p) => {
+    const answer = await ask(`Commit to ${name(p)}?`, [`Its techs are researched ${t.path_percent}% faster for the rest of the game.`, "No other path can be chosen afterwards."], [
+      { label: "Commit", value: "commit", primary: true },
+      { label: "Cancel", value: null },
+    ]);
+    if (answer !== "commit") return;
+    const reply = await run({ c: "research_path", path: p.path });
+    if (reply) {
+      result = "chosen";
+      m.close("chosen");
+    }
+  };
   const rows = t.paths.map((p) =>
     h(
       "button.option",
-      {
-        "data-path": p.path,
-        disabled: !p.can_commit,
-        class: t.path === p.path ? "current" : t.paths_done.includes(p.path) ? "done" : "",
-        onclick: async () => {
-          const reply = await run({ c: "research_path", path: p.path });
-          if (reply) {
-            result = "chosen";
-            m.close("chosen");
-          }
-        },
-      },
-      h("span", h("b", dname("ResearchPathType", p.path)), t.path === p.path ? " (committed)" : t.paths_done.includes(p.path) ? " (complete)" : ""),
-      h("small", p.techs.map((x) => (known(p, x) ? `${dname("TechType", x)} ✓` : p.closed.includes(x) ? `${dname("TechType", x)} (closed)` : dname("TechType", x))).join(" · ")),
+      { "data-path": p.path, disabled: !p.can_commit, onclick: () => commit(p) },
+      h("span", h("b", name(p))),
+      h("small", pathTechs(p)),
       h("small", `Research left: ${p.left}`),
       p.refusal ? h("small.dim", p.refusal) : null,
     ),
   );
   m.setBody(
-    h("p.dim", `Commit to one path at a time: its techs are researched ${t.path_percent}% faster. Once every tech of the path is known, another path can be chosen.`),
+    h("p.dim", `Choose one path for the rest of the game: its techs are researched ${t.path_percent}% faster. The choice cannot be changed.`),
     h("div.options", rows),
   );
   const v = await m.done;
