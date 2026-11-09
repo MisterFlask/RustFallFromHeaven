@@ -1415,9 +1415,13 @@ impl Game {
 
     /// C++ `CvUnit::withdrawlToNearestValidPlot` (CvUnit.cpp:16805-16864).
     /// FfH: move to the best adjacent valid plot; if none, kill the unit when `kill`.
+    /// Not in FFH2: a withdrawing unit never enters another team's city. In C++ it could take an
+    /// empty one: a unit a goody hut gave next to a city just being founded pushed an enemy unit
+    /// into that city, which it captured before the city was set up (a crash).
     pub fn unit_withdrawl_to_nearest_valid_plot(&mut self, u: UnitId, kill: bool) -> bool {
         let (x, y) = (self.units[u].x, self.units[u].y);
         let domain = self.unit_get_domain_type(u);
+        let team = self.unit_get_team(u);
 
         let mut best_plot: Option<PlotIdx> = None;
         let mut best_value = MAX_INT;
@@ -1425,7 +1429,8 @@ impl Game {
         for i in -1..=1 {
             for j in -1..=1 {
                 if let Some(loop_plot) = self.plot_xy(x, y, i, j) {
-                    if self.plot_is_valid_domain_for_location(loop_plot, u) && self.unit_can_move_into(u, loop_plot, false, false, false) {
+                    let foreign_city = self.map.plots[loop_plot].plot_city.is_some() && self.map.plots[loop_plot].owner.map(|o| self.players[o].team) != Some(team);
+                    if !foreign_city && self.plot_is_valid_domain_for_location(loop_plot, u) && self.unit_can_move_into(u, loop_plot, false, false, false) {
                         let (loop_x, loop_y) = self.map.xy(loop_plot);
                         let mut value = self.plot_distance(x, y, loop_x, loop_y) * 2;
                         if domain == DomainType::DOMAIN_SEA && !self.plot_is_water(self.unit_plot(u)) {
@@ -1581,6 +1586,49 @@ mod tests {
         assert_eq!(g.unit_cargo_space_available(warrior, None, land), 0);
         assert!(!g.unit_has_cargo(warrior));
         assert!(!g.unit_can_unload_all(warrior));
+    }
+
+    /// A unit pushed out of its plot never takes another team's city on the way (it took an
+    /// empty one in C++: a city being founded, before it was set up).
+    #[test]
+    fn a_withdrawing_unit_does_not_take_a_city() {
+        let d = ffh_data::global();
+        let mut g = Game::new(d, GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5));
+        g.autorun = true;
+        g.game_init();
+        let p = PlayerId(0);
+        let barbarian = g.barbarian_player();
+        let open = |g: &Game, q: PlotIdx| !g.plot_is_water(q) && !g.plot_is_impassable(q) && !g.plot_is_peak(q) && g.map.plots[q].units.is_empty() && g.map.plots[q].plot_city.is_none();
+        let ring = |g: &Game, q: PlotIdx| -> Vec<PlotIdx> {
+            let (x, y) = g.map.xy(q);
+            (-1..=1).flat_map(|i| (-1..=1).map(move |j| (i, j))).filter(|&(i, j)| (i, j) != (0, 0)).filter_map(|(i, j)| g.plot_xy(x, y, i, j)).collect()
+        };
+        // A barbarian's plot with open land all around, its east neighbour the city's.
+        let (city_plot, barb_plot) = g
+            .map
+            .plot_ids()
+            .filter_map(|q| {
+                let (x, y) = g.map.xy(q);
+                let east = g.plot_xy(x, y, 1, 0)?;
+                let around = ring(&g, q);
+                (around.len() == 8 && open(&g, q) && around.iter().chain(ring(&g, east).iter()).all(|&n| open(&g, n))).then_some((east, q))
+            })
+            .next()
+            .expect("open land");
+        let (cx, cy) = g.map.xy(city_plot);
+        let city = g.player_init_city(p, cx, cy, true, true);
+        let warrior = d.t::<UnitType>("UNIT_WARRIOR");
+        let (bx, by) = g.map.xy(barb_plot);
+        let raider = g.player_init_unit(barbarian, warrior, bx, by, None, None);
+        // Our warriors on every other plot around it: the empty city is its only way out.
+        for n in ring(&g, barb_plot).into_iter().filter(|&n| n != city_plot) {
+            let (x, y) = g.map.xy(n);
+            g.player_init_unit(p, warrior, x, y, None, None);
+        }
+        assert!(g.unit_can_move_into(raider, city_plot, false, false, false), "it could take the city");
+        assert!(!g.unit_withdrawl_to_nearest_valid_plot(raider, true));
+        assert!(!g.units.contains(raider), "no way out: it dies");
+        assert!(g.cities.contains(city) && g.cities[city].owner == p);
     }
 
     #[test]

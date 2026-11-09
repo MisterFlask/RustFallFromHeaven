@@ -776,6 +776,13 @@ flag.
   Mastery; Remnants of Patria: Taxation; Pool of Tears: Medicine. The AI compares techs by research
   left at the rate it gets (`tech_plan::effective_left`) and values city sites with an unclaimed
   feature in reach a quarter higher per feature (`sites::research_feature_bonus`).
+- **A withdrawing unit never enters another team's city** (2026-11-09,
+  `unit_withdrawl_to_nearest_valid_plot`). In FFH2 a unit pushed off its plot (an enemy unit
+  arriving there) could step into an adjacent empty enemy city and take it. A city being founded
+  next to a goody hut met it: its culture claimed the hut, the hut gave a unit on a plot held by a
+  barbarian, and the barbarian, pushed off, took the half-built city (a crash: seed 16, 5 civs,
+  small map, with research paths off). The unit now withdraws elsewhere, or dies when it has
+  nowhere else to go.
 - **The Skirmisher, an early national unit** (2026-11-06, the owner's decision: national units
   are above their era's curve, with no upgrade). New `UNITCLASS_SKIRMISHER` (national: 2 per
   player at the normal cost, then 500% each, 250 hammers, as for every national class above) and
