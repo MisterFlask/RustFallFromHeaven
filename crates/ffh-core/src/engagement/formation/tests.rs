@@ -1100,7 +1100,7 @@ fn order_from(home: u8) -> [u8; ROWS] {
 }
 
 fn cand(pick_order: i32, home_row: u8, value: i64) -> Candidate {
-    Candidate { pick_order, row_order: order_from(home_row), large: false, value, healthy: true, river: true }
+    Candidate { pick_order, row_order: order_from(home_row), large: false, value, healthy: true, river: true, veteran: false }
 }
 
 #[test]
@@ -1261,7 +1261,7 @@ fn proto_scenario(key: &str) -> (Formation, Vec<String>) {
             .iter()
             .map(|u| {
                 let r = &PROTO_ROLES[u.role];
-                Candidate { pick_order: r.8, row_order: order_from(r.9), large: u.large, value: (u.str_ * (100 + 10 * (u.level - 1))) as i64, healthy: true, river: true }
+                Candidate { pick_order: r.8, row_order: order_from(r.9), large: u.large, value: (u.str_ * (100 + 10 * (u.level - 1))) as i64, healthy: true, river: true, veteran: false }
             })
             .collect();
         let tag = if side == Side::Attacker { "att" } else { "def" };

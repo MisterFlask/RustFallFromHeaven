@@ -125,6 +125,9 @@ pub struct EngagePreview {
     pub forecast: Forecast,
     /// The team an attack would declare war on.
     pub declare_war: Option<TeamId>,
+    /// Each side's battle array (attacker, defender; docs/ARRAYS.md): what arranges `auto` and
+    /// `def_formation`.
+    pub arrays: [ffh_data::BattleArrayType; 2],
 }
 
 /// What the attacker knows of the defense: the defender's candidates, the units on the plot its
@@ -257,6 +260,7 @@ impl Game {
             summons,
             forecast,
             declare_war,
+            arrays: [self.engage_pool_array(&plan.pool, Side::Attacker, &HitCtx::new(inp.from, inp.to)), self.engage_pool_array(&plan.view.candidates, Side::Defender, &HitCtx::new(inp.from, inp.to))],
         })
     }
 

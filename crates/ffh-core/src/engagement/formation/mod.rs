@@ -48,7 +48,7 @@
 //! Integers throughout: HP in centi-HP, A and Dv x100, percentages multiplied in `i128` and
 //! divided once. No map iteration, every sort a total order (ties by fighter index last).
 
-use ffh_data::{ActionKind, AttackPattern, BattleCharm, Defines, RowActions, ROWS};
+use ffh_data::{ActionKind, ArrayKind, ArrayKnobs, ArrayPlacement, AttackPattern, BattleCharm, Defines, RowActions, ROWS};
 
 use crate::rng::Rng;
 
@@ -60,6 +60,8 @@ pub mod spawn;
 mod magic_tests;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod array_tests;
 
 pub use magic::{add_illusions, Applied, Bare, FighterMagic, IllusionSpell, MagicState};
 
@@ -1629,25 +1631,16 @@ impl<'a> Run<'a> {
 
 /// The auto formation's order of a unit's kind (the action of the row it prefers), lowest first:
 /// anti-flanking strikers, strikers, shooters, chargers, casters, healers, bombards, stabbers
-/// (docs/ENGAGEMENTS.md, "The auto formation").
+/// (docs/ENGAGEMENTS.md, "The auto formation"): Line's pick order, [`ArrayKind`]'s.
 pub fn kind_pick_order(kind: ActionKind, anti_flank: bool) -> i32 {
-    match kind {
-        ActionKind::Strike if anti_flank => 1,
-        ActionKind::Strike => 2,
-        ActionKind::Shoot => 3,
-        ActionKind::Charge => 4,
-        ActionKind::Spell => 5,
-        ActionKind::Heal => 6,
-        ActionKind::Bombard => 7,
-        ActionKind::Stab => 8,
-        ActionKind::None => 9,
-    }
+    ArrayKind::of(kind, anti_flank).pick_order()
 }
 
 /// A unit the auto formation may place ([`auto_arrange`]).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Candidate {
-    /// Its kind's place in the auto formation's order ([`kind_pick_order`], lowest first).
+    /// Its kind's place in Line's order ([`kind_pick_order`], lowest first; [`ArrayKind`]'s
+    /// discriminant).
     pub pick_order: i32,
     /// Its rank preference: the rows in the order it is placed in them (`engage_row_order`).
     pub row_order: [u8; ROWS],
@@ -1659,6 +1652,30 @@ pub struct Candidate {
     /// It may fill the river slots (`bRiver`: it crosses rivers freely): only such units fill the
     /// slots above `ordinary` ([`auto_arrange`]).
     pub river: bool,
+    /// A veteran for the Vanguard array: the Hero promotion, or level `ARRAY_VETERAN_LEVEL` or
+    /// above (docs/ARRAYS.md).
+    pub veteran: bool,
+}
+
+impl Candidate {
+    /// Its kind ([`ArrayKind`]; a pick order that is none of Line's reads as `None`).
+    pub fn kind(&self) -> ArrayKind {
+        ArrayKind::from_pick_order(self.pick_order).unwrap_or(ArrayKind::None)
+    }
+
+    /// A guard: a strike or a charge (docs/ARRAYS.md, section 2).
+    pub fn guard(&self) -> bool {
+        self.kind().guard()
+    }
+
+    fn size(&self) -> i32 {
+        1 + self.large as i32
+    }
+
+    /// Its value for the order of choice (a large unit's counts double).
+    fn weight(&self) -> i64 {
+        self.value * if self.large { 2 } else { 1 }
+    }
 }
 
 /// Where the auto formation puts a candidate.
@@ -1670,15 +1687,15 @@ pub struct Placement {
     pub row: u8,
 }
 
-/// The rules' auto formation (the prototype's `autoArrange`): one unit of each kind first, in
-/// the kinds' pick order, then the rest in that order, each kind's healthy units first and the
-/// strongest first (a large unit's value counts double), while the slots last (a large unit
-/// needs 2; units that cannot fill river slots at most `ordinary` of them: Q9's river rule);
-/// then the large units placed first, each unit in the first row of its rank preference with
-/// room, the lanes nearest the centre first (then the lower). A unit with no room is left out.
-/// In candidate order.
+/// The rules' auto formation in Line, the default array (the prototype's `autoArrange`): one
+/// unit of each kind first, in the kinds' pick order, then the rest in that order, each kind's
+/// healthy units first and the strongest first (a large unit's value counts double), while the
+/// slots last (a large unit needs 2; units that cannot fill river slots at most `ordinary` of
+/// them: Q9's river rule); then the large units placed first, each unit in the first row of its
+/// rank preference with room, the lanes nearest the centre first (then the lower). A unit with no
+/// room is left out. In candidate order.
 pub fn auto_arrange(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32) -> Vec<Placement> {
-    auto_arrange_around(cands, lanes, slots, ordinary, &[])
+    auto_arrange_around(cands, lanes, slots, ordinary, &[], &ArrayKnobs::line())
 }
 
 /// The cells of `n` Sentinels on a side of `lanes` lanes (docs/SIEGES.md): the front row, the
@@ -1691,77 +1708,235 @@ pub fn sentinel_cells(lanes: u8, n: usize) -> Vec<(u8, u8)> {
     (0..ROWS as u8).flat_map(|r| order.iter().map(move |&l| (l, r))).take(n).collect()
 }
 
-/// [`auto_arrange`] with the cells in `blocked` already taken (a city's Sentinels).
-pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32, blocked: &[(u8, u8)]) -> Vec<Placement> {
-    let value = |c: &Candidate| c.value * if c.large { 2 } else { 1 };
-    let mut order: Vec<usize> = (0..cands.len()).collect();
-    order.sort_by(|&x, &y| {
-        let (a, b) = (&cands[x], &cands[y]);
-        a.pick_order.cmp(&b.pick_order).then(b.healthy.cmp(&a.healthy)).then(value(b).cmp(&value(a))).then(x.cmp(&y))
-    });
-    let mut first: Vec<usize> = Vec::new();
-    let mut rest: Vec<usize> = Vec::new();
-    for &i in &order {
-        if first.iter().any(|&j| cands[j].pick_order == cands[i].pick_order) {
-            rest.push(i);
-        } else {
-            first.push(i);
-        }
-    }
-    let (mut used, mut non_river) = (0, 0);
-    let mut chosen: Vec<usize> = Vec::new();
-    for i in first.into_iter().chain(rest) {
-        let size = 1 + cands[i].large as i32;
-        let river = cands[i].river;
-        if used + size <= slots && (river || non_river + size <= ordinary) {
-            chosen.push(i);
-            used += size;
-            if !river {
-                non_river += size;
+/// The free cells of a side while the auto formation places its units.
+struct Grid {
+    lanes: usize,
+    taken: Vec<[bool; ROWS]>,
+}
+
+impl Grid {
+    fn new(lanes: u8, blocked: &[(u8, u8)]) -> Grid {
+        let mut taken = vec![[false; ROWS]; lanes as usize];
+        for &(l, r) in blocked {
+            if let Some(cell) = taken.get_mut(l as usize).and_then(|g| g.get_mut(r as usize)) {
+                *cell = true;
             }
         }
+        Grid { lanes: lanes as usize, taken }
     }
-    let lanes_n = lanes as usize;
-    let mut grid = vec![[false; ROWS]; lanes_n];
-    for &(l, r) in blocked {
-        if let Some(cell) = grid.get_mut(l as usize).and_then(|g| g.get_mut(r as usize)) {
-            *cell = true;
-        }
+
+    fn free(&self, l: usize, r: usize) -> bool {
+        l < self.lanes && !self.taken[l][r]
     }
-    // twice the distance from the centre lane: |2l - (lanes - 1)|, a large unit's from l + 1/2
-    let centre = |l: usize, large: bool| (2 * l as i32 + large as i32 - (lanes as i32 - 1)).abs();
-    let mut out: Vec<Placement> = Vec::new();
-    let larges = chosen.iter().copied().filter(|&i| cands[i].large);
-    let smalls = chosen.iter().copied().filter(|&i| !cands[i].large);
-    let mut larges_left = chosen.iter().filter(|&&i| cands[i].large).count();
-    for i in larges.chain(smalls).collect::<Vec<_>>() {
-        let c = &cands[i];
-        if c.large {
-            larges_left -= 1;
+
+    /// Twice the distance from the centre lane: |2l - (lanes - 1)|, a large unit's from l + 1/2.
+    fn centre(&self, l: usize, large: bool) -> i32 {
+        (2 * l as i32 + large as i32 - (self.lanes as i32 - 1)).abs()
+    }
+
+    /// The lanes from the centre out (then the lower).
+    fn lanes_out(&self) -> Vec<usize> {
+        let mut ls: Vec<usize> = (0..self.lanes).collect();
+        ls.sort_by_key(|&l| (self.centre(l, false), l));
+        ls
+    }
+
+    /// The cell of row `r` Line's placement gives candidate `c` (the lanes nearest the centre
+    /// first; `larges_left`: other large units still to place), if any is free.
+    fn cell_in_row(&self, c: &Candidate, r: usize, larges_left: usize) -> Option<usize> {
+        let mut free: Vec<usize> = (0..self.lanes).filter(|&l| if c.large { self.free(l, r) && self.free(l + 1, r) } else { self.free(l, r) }).collect();
+        // With another large unit still to place, a large unit does not split a pair of free
+        // cells: it starts after an even run of free cells on its left, so a row of 4 lanes
+        // holds two (lanes 0-1 and 2-3). A lone one takes the centre.
+        let odd_left = |l: usize| c.large && larges_left > 0 && (0..l).rev().take_while(|&k| !self.taken[k][r]).count() % 2 == 1;
+        free.sort_by_key(|&l| (odd_left(l), self.centre(l, c.large), l));
+        free.first().copied()
+    }
+
+    /// Puts candidate `i` in lane `l`, row `r`.
+    fn put(&mut self, out: &mut Vec<Placement>, cands: &[Candidate], i: usize, l: usize, r: usize) {
+        self.taken[l][r] = true;
+        if cands[i].large {
+            self.taken[l + 1][r] = true;
         }
-        let mut cell = None;
-        for r in c.row_order {
-            let r = (r as usize).min(ROWS - 1);
-            let mut free: Vec<usize> =
-                (0..lanes_n).filter(|&l| if c.large { l + 1 < lanes_n && !grid[l][r] && !grid[l + 1][r] } else { !grid[l][r] }).collect();
-            // With another large unit still to place, a large unit does not split a pair of free
-            // cells: it starts after an even run of free cells on its left, so a row of 4 lanes
-            // holds two (lanes 0-1 and 2-3). A lone one takes the centre.
-            let odd_left = |l: usize| c.large && larges_left > 0 && (0..l).rev().take_while(|&k| !grid[k][r]).count() % 2 == 1;
-            free.sort_by_key(|&l| (odd_left(l), centre(l, c.large), l));
-            if let Some(&l) = free.first() {
-                cell = Some((l, r));
-                break;
-            }
-        }
-        if let Some((l, r)) = cell {
-            grid[l][r] = true;
+        out.push(Placement { unit: i, lane: l as u8, row: r as u8 });
+    }
+
+    /// Line's placement of `seq`, in that order: each unit in the first row of `rows(c)` with
+    /// room. A unit with no room is left out.
+    fn place_in_rows(&mut self, out: &mut Vec<Placement>, cands: &[Candidate], seq: &[usize], rows: impl Fn(&Candidate) -> [u8; ROWS]) {
+        let mut larges_left = seq.iter().filter(|&&i| cands[i].large).count();
+        for &i in seq {
+            let c = &cands[i];
             if c.large {
-                grid[l + 1][r] = true;
+                larges_left -= 1;
             }
-            out.push(Placement { unit: i, lane: l as u8, row: r as u8 });
+            let cell = rows(c).into_iter().map(|r| (r as usize).min(ROWS - 1)).find_map(|r| self.cell_in_row(c, r, larges_left).map(|l| (l, r)));
+            if let Some((l, r)) = cell {
+                self.put(out, cands, i, l, r);
+            }
+        }
+    }
+}
+
+/// [`auto_arrange`] with the cells in `blocked` already taken (a city's Sentinels), arranged by
+/// the array whose knobs are `knobs` (docs/ARRAYS.md, section 3). With Line's knobs
+/// ([`ArrayKnobs::line`]) it is the auto formation as it was.
+///
+/// **Selection.** A screen first (`screen_per_lane` guards per lane with a free front cell, the
+/// healthy and then the strongest first, a large one screening two lanes); then the candidates in
+/// the array's pick order, the healthy and then the strongest first within a kind, one of each
+/// kind before the rest when `one_of_each`; each while the slots last (a large unit needs 2; the
+/// river rule).
+///
+/// **Placement.** `Line`: large units first, then `place_first` kinds, each in the first row of
+/// its rank preference with room, the lanes nearest the centre first. `Square`: large units
+/// first (a guard in a front pair of cells, else a rear one; a support unit the other way round),
+/// then lane by lane from the centre out, a guard in front (the strongest that is not
+/// anti-flanking first), a support unit in the middle, a guard in the rear (anti-flanking first),
+/// a support unit where guards ran out (the rear and then the front cell), a guard where support
+/// ran out. `Vanguard`: Line's, but first, lanes from the centre out, a guard that is no veteran
+/// (the weakest first) in front of a veteran guard (the most valuable first) in the middle, while
+/// there are both.
+pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32, blocked: &[(u8, u8)], knobs: &ArrayKnobs) -> Vec<Placement> {
+    let chosen = arrange_select(cands, lanes, slots, ordinary, blocked, knobs);
+    let mut grid = Grid::new(lanes, blocked);
+    let mut out: Vec<Placement> = Vec::new();
+    let place_first = |c: &Candidate| knobs.place_first.contains(&c.kind());
+    match knobs.placement {
+        ArrayPlacement::Line => {
+            let mut seq = chosen.clone();
+            // Stable: large units first, then the kinds placed first, each in the order taken.
+            seq.sort_by_key(|&i| (!cands[i].large, !place_first(&cands[i])));
+            grid.place_in_rows(&mut out, cands, &seq, |c| c.row_order);
+        }
+        ArrayPlacement::Vanguard => {
+            let larges: Vec<usize> = chosen.iter().copied().filter(|&i| cands[i].large).collect();
+            grid.place_in_rows(&mut out, cands, &larges, |c| c.row_order);
+            let small_guard = |i: usize| !cands[i].large && cands[i].guard();
+            let mut vets: Vec<usize> = chosen.iter().copied().filter(|&i| small_guard(i) && cands[i].veteran).collect();
+            vets.sort_by_key(|&i| (std::cmp::Reverse(cands[i].weight()), i));
+            let mut fronts: Vec<usize> = chosen.iter().copied().filter(|&i| small_guard(i) && !cands[i].veteran).collect();
+            fronts.sort_by_key(|&i| (cands[i].weight(), i));
+            let (mut vi, mut fi) = (0, 0);
+            for l in grid.lanes_out() {
+                if vi >= vets.len() || fi >= fronts.len() {
+                    break;
+                }
+                if grid.free(l, 0) && grid.free(l, 1) {
+                    grid.put(&mut out, cands, fronts[fi], l, 0);
+                    grid.put(&mut out, cands, vets[vi], l, 1);
+                    fi += 1;
+                    vi += 1;
+                }
+            }
+            let rest: Vec<usize> = chosen.iter().copied().filter(|&i| !cands[i].large && !out.iter().any(|p| p.unit == i)).collect();
+            grid.place_in_rows(&mut out, cands, &rest, |c| c.row_order);
+        }
+        ArrayPlacement::Square => {
+            // Large units: a guard in front (else the rear, else the middle), a support unit in
+            // the rear (else the front, else the middle).
+            let larges: Vec<usize> = chosen.iter().copied().filter(|&i| cands[i].large).collect();
+            grid.place_in_rows(&mut out, cands, &larges, |c| if c.guard() { [0, 2, 1] } else { [2, 0, 1] });
+            let strongest = |v: &mut Vec<usize>| v.sort_by_key(|&i| (std::cmp::Reverse(cands[i].weight()), i));
+            let mut guards: Vec<usize> = chosen.iter().copied().filter(|&i| !cands[i].large && cands[i].guard()).collect();
+            let mut support: Vec<usize> = chosen.iter().copied().filter(|&i| !cands[i].large && !cands[i].guard()).collect();
+            strongest(&mut guards);
+            strongest(&mut support);
+            let anti = |i: usize| cands[i].kind() == ArrayKind::AntiFlank;
+            // The next guard for a front cell (not anti-flanking first) or a rear one
+            // (anti-flanking first).
+            let take_guard = |guards: &mut Vec<usize>, rear: bool| -> Option<usize> {
+                let k = guards.iter().position(|&i| anti(i) == rear).or(if guards.is_empty() { None } else { Some(0) })?;
+                Some(guards.remove(k))
+            };
+            let take = |v: &mut Vec<usize>| if v.is_empty() { None } else { Some(v.remove(0)) };
+            'lanes: for l in grid.lanes_out() {
+                for r in 0..ROWS {
+                    if guards.is_empty() && support.is_empty() {
+                        break 'lanes;
+                    }
+                    if !grid.free(l, r) {
+                        continue;
+                    }
+                    let i = match r {
+                        1 => take(&mut support).or_else(|| take_guard(&mut guards, false)),
+                        _ => take_guard(&mut guards, r == 2).or_else(|| take(&mut support)),
+                    };
+                    if let Some(i) = i {
+                        grid.put(&mut out, cands, i, l, r);
+                    }
+                }
+            }
         }
     }
     out.sort_by_key(|p| p.unit);
     out
+}
+
+/// The auto formation's selection (see [`auto_arrange_around`]): the candidates that fight, in
+/// the order they were taken.
+fn arrange_select(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32, blocked: &[(u8, u8)], knobs: &ArrayKnobs) -> Vec<usize> {
+    // A kind's rank in the array's pick order: Line's order when the array gives none; kinds the
+    // array leaves out after the others, in Line's order.
+    let rank = |c: &Candidate| -> (u8, i32) {
+        if knobs.pick_order.is_empty() {
+            return (0, c.pick_order);
+        }
+        match knobs.pick_order.iter().position(|&k| k == c.kind()) {
+            Some(i) => (0, i as i32),
+            None => (1, c.pick_order),
+        }
+    };
+    let mut order: Vec<usize> = (0..cands.len()).collect();
+    order.sort_by(|&x, &y| {
+        let (a, b) = (&cands[x], &cands[y]);
+        rank(a).cmp(&rank(b)).then(b.healthy.cmp(&a.healthy)).then(b.weight().cmp(&a.weight())).then(x.cmp(&y))
+    });
+    let (mut used, mut non_river) = (0, 0);
+    let mut chosen: Vec<usize> = Vec::new();
+    let mut take = |i: usize, chosen: &mut Vec<usize>| -> bool {
+        let c = &cands[i];
+        if used + c.size() <= slots && (c.river || non_river + c.size() <= ordinary) {
+            chosen.push(i);
+            used += c.size();
+            if !c.river {
+                non_river += c.size();
+            }
+            true
+        } else {
+            false
+        }
+    };
+    if knobs.screen_per_lane > 0 {
+        let front = (0..lanes).filter(|&l| !blocked.contains(&(l, 0))).count() as i32;
+        let need = knobs.screen_per_lane * front;
+        let mut guards: Vec<usize> = (0..cands.len()).filter(|&i| cands[i].guard()).collect();
+        guards.sort_by(|&x, &y| {
+            let (a, b) = (&cands[x], &cands[y]);
+            b.healthy.cmp(&a.healthy).then(b.weight().cmp(&a.weight())).then(x.cmp(&y))
+        });
+        let mut covered = 0;
+        for i in guards {
+            if covered >= need {
+                break;
+            }
+            if take(i, &mut chosen) {
+                covered += cands[i].size();
+            }
+        }
+    }
+    let mut first: Vec<usize> = Vec::new();
+    let mut rest: Vec<usize> = Vec::new();
+    for &i in order.iter().filter(|i| !chosen.contains(i)) {
+        if knobs.one_of_each && !first.iter().any(|&j| rank(&cands[j]) == rank(&cands[i])) {
+            first.push(i);
+        } else {
+            rest.push(i);
+        }
+    }
+    for i in first.into_iter().chain(rest) {
+        take(i, &mut chosen);
+    }
+    chosen
 }

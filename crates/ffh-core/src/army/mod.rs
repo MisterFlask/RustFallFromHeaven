@@ -71,6 +71,11 @@ pub struct Army {
     /// The cities it requisitions units from, in the order its owner picked them (only its
     /// owner's cities: a city lost, traded, razed or flipped leaves every list).
     pub requisition: Vec<CityId>,
+    /// Its battle array (docs/ARRAYS.md): how its units are arranged in every battle it fights.
+    pub array: BattleArrayType,
+    /// The array it takes at the start of its owner's next turn processing (the same as `array`
+    /// when no change is pending): [`Game::army_set_array`].
+    pub array_next: BattleArrayType,
 }
 
 /// Where a recruited unit goes.
@@ -175,7 +180,8 @@ impl Game {
         let taken: BTreeSet<String> = self.players[p].armies.iter().map(|&a| self.armies[a].name.clone()).collect();
         let name = (1..).map(|n| format!("{} Army", ordinal(n))).find(|n| !taken.contains(n)).expect("a free name");
         let turn = self.game_turn();
-        let a = self.armies.insert_with(|id| Army { id, owner: p, name, group: None, target_size: 0, commander: None, disband_to: None, formed_turn: turn, requisition: Vec::new() });
+        let line = self.array_line();
+        let a = self.armies.insert_with(|id| Army { id, owner: p, name, group: None, target_size: 0, commander: None, disband_to: None, formed_turn: turn, requisition: Vec::new(), array: line, array_next: line });
         self.players[p].armies.push(a);
         a
     }
@@ -280,7 +286,16 @@ impl Game {
             // Its army: the first not yet claimed among its units', else a new one.
             let a = match members.iter().filter_map(|&u| self.units[u].army).find(|a| self.armies.contains(*a) && !claimed.contains(a)) {
                 Some(a) => a,
-                None => self.army_create(p),
+                None => {
+                    // A split-off part: the array of the army most of its units came from.
+                    let from = self.units_source_arrays(&members, None);
+                    let a = self.army_create(p);
+                    if let Some((array, next)) = from {
+                        self.armies[a].array = array;
+                        self.armies[a].array_next = next;
+                    }
+                    a
+                }
             };
             claimed.insert(a);
             for &u in &members {
@@ -338,8 +353,14 @@ impl Game {
 
     /// Forms a new army of `units` (army units of `p` on one plot), in one group of their own.
     pub fn army_form(&mut self, p: PlayerId, units: &[UnitId]) -> Result<ArmyId, &'static str> {
-        self.army_units_plot(p, units)?;
+        let plot = self.army_units_plot(p, units)?;
+        // Its array: that of the army or garrison most of its units came from (docs/ARRAYS.md).
+        let from = self.units_source_arrays(units, Some(plot));
         let a = self.army_create(p);
+        if let Some((array, next)) = from {
+            self.armies[a].array = array;
+            self.armies[a].array_next = next;
+        }
         let first = units[0];
         self.unit_join_group(first, None, true);
         let grp = self.units[first].group.expect("joined a new group");
@@ -441,6 +462,75 @@ impl Game {
         }
         self.armies[a].target_size = size.clamp(0, 99);
         Ok(())
+    }
+
+    /// Sets army `a`'s battle array (docs/ARRAYS.md): it takes effect at the start of `p`'s next
+    /// turn processing (`Army::array_next`); setting the array it has cancels a pending change.
+    pub fn army_set_array(&mut self, p: PlayerId, a: ArmyId, array: BattleArrayType) -> ArmyResult {
+        if !self.armies.contains(a) || self.armies[a].owner != p {
+            return Err("no such army");
+        }
+        if array.idx() >= self.d.battle_arrays.len() {
+            return Err("no such array");
+        }
+        self.armies[a].array_next = array;
+        Ok(())
+    }
+
+    /// Sets the battle array of city `c`'s garrison (docs/ARRAYS.md): it takes effect at the start
+    /// of `p`'s next turn processing (`City::garrison_array_next`).
+    pub fn city_set_garrison_array(&mut self, p: PlayerId, c: CityId, array: BattleArrayType) -> ArmyResult {
+        if !self.cities.contains(c) || self.cities[c].owner != p {
+            return Err("not your city");
+        }
+        if array.idx() >= self.d.battle_arrays.len() {
+            return Err("no such array");
+        }
+        self.cities[c].garrison_array_next = array;
+        Ok(())
+    }
+
+    /// The arrays changed for `p`'s armies and garrisons take effect (docs/ARRAYS.md; the start of
+    /// its turn processing, `player_do_turn`).
+    pub fn player_apply_arrays(&mut self, p: PlayerId) {
+        for a in self.players[p].armies.clone() {
+            if self.armies.contains(a) {
+                let army = &mut self.armies[a];
+                army.array = army.array_next;
+            }
+        }
+        for c in self.players[p].cities.clone() {
+            if self.cities.contains(c) {
+                let city = &mut self.cities[c];
+                city.garrison_array = city.garrison_array_next;
+            }
+        }
+    }
+
+    /// The arrays (`array`, `array_next`) of the body most of `units` come from: by army, and with
+    /// `plot`, the garrison of its city counting for the city (as [`Game::engage_side_array`]
+    /// counts them; an army first on a tie, then the lower army id). `None`: none of them is in an
+    /// army or that garrison.
+    fn units_source_arrays(&self, units: &[UnitId], plot: Option<PlotIdx>) -> Option<(BattleArrayType, BattleArrayType)> {
+        let city = plot.and_then(|q| self.map.plots[q].plot_city).filter(|&c| self.cities.contains(c));
+        let mut armies: Vec<(ArmyId, i32)> = Vec::new();
+        let mut garrison = 0;
+        for &u in units {
+            if let Some(a) = self.units[u].army.filter(|&a| self.armies.contains(a)) {
+                match armies.iter_mut().find(|x| x.0 == a) {
+                    Some(x) => x.1 += 1,
+                    None => armies.push((a, 1)),
+                }
+            } else if city.is_some() && self.unit_garrison_city(u) == city {
+                garrison += 1;
+            }
+        }
+        armies.sort_by_key(|&(a, n)| (Reverse(n), a));
+        match (armies.first(), city) {
+            (Some(&(a, n)), _) if n >= garrison => Some((self.armies[a].array, self.armies[a].array_next)),
+            (_, Some(c)) if garrison > 0 => Some((self.cities[c].garrison_array, self.cities[c].garrison_array_next)),
+            _ => None,
+        }
     }
 
     /// Disbands army `a`: its units join the garrison of their city, or march to the nearest city

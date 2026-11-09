@@ -308,6 +308,11 @@ pub struct City {
     /// This game's city works (docs/WORKS.md): the build the city's crews are working on and its
     /// plot; `None` until the city's turn chooses one. Its progress is the plot's.
     pub crew_build: Option<(PlotIdx, BuildType)>,
+    /// This game's battle arrays (docs/ARRAYS.md): the array of the city's garrison, and the one
+    /// it takes at the start of its owner's next turn processing (`Game::city_set_garrison_array`).
+    /// Line for a new city and for a city that changed hands.
+    pub garrison_array: BattleArrayType,
+    pub garrison_array_next: BattleArrayType,
 }
 
 impl City {
@@ -528,6 +533,8 @@ impl City {
             muster_production: 0,
             ritual_charges: Vec::new(),
             crew_build: None,
+            garrison_array: d.t::<BattleArrayType>("ARRAY_LINE"),
+            garrison_array_next: d.t::<BattleArrayType>("ARRAY_LINE"),
         }
     }
 

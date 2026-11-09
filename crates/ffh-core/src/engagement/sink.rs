@@ -60,8 +60,8 @@ fn renumber(mut ev: Event, map: &[usize]) -> Event {
 impl Sink {
     /// A log for engagement `e`: its committed units (in the engagement's order), the defended
     /// city's Sentinels (so a log index is the set-up index), then `reserves`; `ordered`: each
-    /// side's formation was its order's.
-    pub fn new(g: &Game, e: &Eng, reserves: &[(UnitId, Side)], ordered: [bool; 2]) -> Sink {
+    /// side's formation was its order's; `arrays`: each side's array.
+    pub fn new(g: &Game, e: &Eng, reserves: &[(UnitId, Side)], ordered: [bool; 2], arrays: [ffh_data::BattleArrayType; 2]) -> Sink {
         let s = &e.setup;
         let mut sink = Sink {
             log: BattleLog {
@@ -70,6 +70,7 @@ impl Sink {
                 ground: s.ground,
                 rules: s.ground.rules(&s.params),
                 ordered,
+                arrays,
                 fighters: Vec::new(),
                 pairs: Vec::new(),
                 events: Vec::new(),
