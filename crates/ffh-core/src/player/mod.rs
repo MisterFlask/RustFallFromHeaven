@@ -711,32 +711,30 @@ impl Game {
             self.player_set_alive(p, true);
 
             // Dead code in FfH (CvGame::isOption locks RANDOM_PERSONALITIES off); kept as in C++.
-            if self.is_option(GameOptionType::GAMEOPTION_RANDOM_PERSONALITIES) {
-                if !self.player_is_barbarian(p) && !self.player_is_minor_civ(p) {
-                    let mut best_value = 0;
-                    let mut best_personality: Option<LeaderHeadType> = None;
+            if self.is_option(GameOptionType::GAMEOPTION_RANDOM_PERSONALITIES) && !self.player_is_barbarian(p) && !self.player_is_minor_civ(p) {
+                let mut best_value = 0;
+                let mut best_personality: Option<LeaderHeadType> = None;
 
-                    for leader in d.leader_heads.keys() {
-                        if leader.i() != d.defines.barbarian_leader {
-                            // XXX minor civ???
-                            let mut value = 1 + self.soren_rand_num(10000, "Choosing Personality");
+                for leader in d.leader_heads.keys() {
+                    if leader.i() != d.defines.barbarian_leader {
+                        // XXX minor civ???
+                        let mut value = 1 + self.soren_rand_num(10000, "Choosing Personality");
 
-                            for other in self.civ_player_ids() {
-                                if self.players[other].alive && self.players[other].personality_type == Some(leader) {
-                                    value /= 2;
-                                }
-                            }
-
-                            if value > best_value {
-                                best_value = value;
-                                best_personality = Some(leader);
+                        for other in self.civ_player_ids() {
+                            if self.players[other].alive && self.players[other].personality_type == Some(leader) {
+                                value /= 2;
                             }
                         }
-                    }
 
-                    if best_personality.is_some() {
-                        self.players[p].personality_type = best_personality;
+                        if value > best_value {
+                            best_value = value;
+                            best_personality = Some(leader);
+                        }
                     }
+                }
+
+                if best_personality.is_some() {
+                    self.players[p].personality_type = best_personality;
                 }
             }
 

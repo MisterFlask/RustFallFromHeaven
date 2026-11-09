@@ -447,17 +447,17 @@ impl Game {
 
                 if let Some(new_building) = new_building {
                     if trade || !d.buildings[building].never_capture {
-                        if !self.player_is_production_maxed_building_class(p, building_class_of(d, new_building), true) {
-                            if self.city_is_valid_building_location(new_city, new_building) {
-                                // Short-circuit: the RNG is drawn only for a conquest that is no
-                                // recapture.
-                                if !conquest
-                                    || recapture
-                                    || judged
-                                    || self.soren_rand_num(100, "Capture Probability") < d.buildings[building].conquest_probability
-                                {
-                                    num += num_real_building[building];
-                                }
+                        if !self.player_is_production_maxed_building_class(p, building_class_of(d, new_building), true)
+                            && self.city_is_valid_building_location(new_city, new_building)
+                        {
+                            // Short-circuit: the RNG is drawn only for a conquest that is no
+                            // recapture.
+                            if !conquest
+                                || recapture
+                                || judged
+                                || self.soren_rand_num(100, "Capture Probability") < d.buildings[building].conquest_probability
+                            {
+                                num += num_real_building[building];
                             }
                         }
                     }

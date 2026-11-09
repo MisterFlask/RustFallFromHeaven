@@ -388,19 +388,15 @@ impl Game {
         }
 
         let owner = self.units[u].owner;
-        if !test_visible {
-            if self.players[owner].gold < self.unit_upgrade_price(u, unit_type) {
-                return false;
-            }
+        if !test_visible && self.players[owner].gold < self.unit_upgrade_price(u, unit_type) {
+            return false;
         }
 
         let info = &self.d.units[unit_type];
 
         // FfH Units: Added by Kael 05/24/2008
-        if self.units[u].level < info.min_level {
-            if self.unit_is_human(u) || !self.is_option(GameOptionType::GAMEOPTION_AI_NO_MINIMUM_LEVEL) {
-                return false;
-            }
+        if self.units[u].level < info.min_level && (self.unit_is_human(u) || !self.is_option(GameOptionType::GAMEOPTION_AI_NO_MINIMUM_LEVEL)) {
+            return false;
         }
         if info.disable_upgrade_to {
             return false;
@@ -419,10 +415,8 @@ impl Game {
         // BETTER AI (Smarter Upgrading) Sephi 0.41k
         if !self.unit_is_human(u) {
             let group_flag = self.units[u].ai_groupflag;
-            if group_flag == GROUPFLAG_PERMDEFENSE || group_flag == GROUPFLAG_PERMDEFENSE_NEW {
-                if info.no_defensive_bonus {
-                    return false;
-                }
+            if (group_flag == GROUPFLAG_PERMDEFENSE || group_flag == GROUPFLAG_PERMDEFENSE_NEW) && info.no_defensive_bonus {
+                return false;
             }
         }
         // END
@@ -1637,10 +1631,8 @@ impl Game {
                 }
             }
         }
-        if info.prereq_alive {
-            if !self.unit_is_alive(u) {
-                return false;
-            }
+        if info.prereq_alive && !self.unit_is_alive(u) {
+            return false;
         }
         // FfH: End Add
 

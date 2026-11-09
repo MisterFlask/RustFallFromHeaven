@@ -304,13 +304,11 @@ fn spell_march_of_the_trees(g: &mut Game, caster: UnitId, _call: &PyCall) {
     for plot in g.map.plot_ids() {
         if g.plot_is_owned(plot) && g.map.plots[plot].owner == Some(p) {
             let feature = g.map.plots[plot].feature_type;
-            if feature == Some(forest) || feature == Some(ancient_forest) {
-                if !g.plot_is_visible_enemy_unit(plot, p) {
-                    let (x, y) = g.map.xy(plot);
-                    let new_unit = g.player_init_unit(p, treant, x, y, None, SOUTH);
-                    g.units[new_unit].duration = 5;
-                    g.plot_set_feature_type(plot, Some(new_forest));
-                }
+            if (feature == Some(forest) || feature == Some(ancient_forest)) && !g.plot_is_visible_enemy_unit(plot, p) {
+                let (x, y) = g.map.xy(plot);
+                let new_unit = g.player_init_unit(p, treant, x, y, None, SOUTH);
+                g.units[new_unit].duration = 5;
+                g.plot_set_feature_type(plot, Some(new_forest));
             }
         }
     }
@@ -452,10 +450,8 @@ fn spell_raging_seas(g: &mut Game, _caster: UnitId, _call: &PyCall) {
                     let Some(improvement) = g.map.plots[plot].improvement_type else { return };
                     if !is_permanent(g, improvement) {
                         let owner = g.map.plots[plot].owner.expect("owned plot");
-                        if g.player_get_civilization_type(owner) != Some(lanun) {
-                            if g.soren_rand_num(100, "Raging Seas") <= 25 {
-                                g.plot_set_improvement_type(plot, None);
-                            }
+                        if g.player_get_civilization_type(owner) != Some(lanun) && g.soren_rand_num(100, "Raging Seas") <= 25 {
+                            g.plot_set_improvement_type(plot, None);
                         }
                     }
                 }
@@ -496,16 +492,14 @@ fn spell_rally(g: &mut Game, caster: UnitId, _call: &PyCall) {
     let town = d.t::<ImprovementType>("IMPROVEMENT_TOWN");
     let village = d.t::<ImprovementType>("IMPROVEMENT_VILLAGE");
     for plot in g.map.plot_ids() {
-        if g.map.plots[plot].owner == Some(owner) {
-            if !g.plot_is_visible_enemy_unit(plot, owner) {
-                let (x, y) = g.map.xy(plot);
-                if g.map.plots[plot].plot_city.is_some() {
-                    g.player_init_unit(owner, demagog, x, y, None, SOUTH);
-                }
-                if g.map.plots[plot].improvement_type == Some(town) {
-                    g.plot_set_improvement_type(plot, Some(village));
-                    g.player_init_unit(owner, demagog, x, y, None, SOUTH);
-                }
+        if g.map.plots[plot].owner == Some(owner) && !g.plot_is_visible_enemy_unit(plot, owner) {
+            let (x, y) = g.map.xy(plot);
+            if g.map.plots[plot].plot_city.is_some() {
+                g.player_init_unit(owner, demagog, x, y, None, SOUTH);
+            }
+            if g.map.plots[plot].improvement_type == Some(town) {
+                g.plot_set_improvement_type(plot, Some(village));
+                g.player_init_unit(owner, demagog, x, y, None, SOUTH);
             }
         }
     }
@@ -771,10 +765,8 @@ fn req_repair(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
     let targets = RepairTargets::new(g.d);
     let plot = g.unit_plot(caster);
     for &u in &g.map.plots[plot].units {
-        if targets.matches(g, u) {
-            if g.units[u].damage > 0 {
-                return true;
-            }
+        if targets.matches(g, u) && g.units[u].damage > 0 {
+            return true;
         }
     }
     false
@@ -849,10 +841,8 @@ fn spell_ressurection(g: &mut Game, caster: UnitId, _call: &PyCall) {
     let (x, y) = g.map.xy(plot);
     let new_unit = g.player_init_unit(p, unit, x, y, None, NORTH);
     for promotion in d.promotions.keys() {
-        if g.units[new_unit].has_promotion[promotion] {
-            if d.promotions[promotion].equipment {
-                g.unit_set_has_promotion(new_unit, promotion, false);
-            }
+        if g.units[new_unit].has_promotion[promotion] && d.promotions[promotion].equipment {
+            g.unit_set_has_promotion(new_unit, promotion, false);
         }
     }
 }
@@ -998,10 +988,10 @@ fn spell_ring_of_flames(g: &mut Game, caster: UnitId, _call: &PyCall) {
                 }
                 if valid {
                     let feature = g.map.plots[plot].feature_type;
-                    if feature == Some(forest) || feature == Some(jungle) || feature == Some(new_forest) {
-                        if g.soren_rand_num(100, "Flames Spread") <= d.defines.flames_spread_chance {
-                            g.plot_set_improvement_type(plot, Some(smoke));
-                        }
+                    if (feature == Some(forest) || feature == Some(jungle) || feature == Some(new_forest))
+                        && g.soren_rand_num(100, "Flames Spread") <= d.defines.flames_spread_chance
+                    {
+                        g.plot_set_improvement_type(plot, Some(smoke));
                     }
                 }
             }
@@ -1089,10 +1079,8 @@ fn spell_roar(g: &mut Game, caster: UnitId, _call: &PyCall) {
 /// `reqRobGrave(caster)`.
 fn req_rob_grave(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
     let p = g.units[caster].owner;
-    if !g.players[p].human {
-        if g.players[p].alignment == Some(g.d.t::<AlignmentType>("ALIGNMENT_GOOD")) {
-            return false;
-        }
+    if !g.players[p].human && g.players[p].alignment == Some(g.d.t::<AlignmentType>("ALIGNMENT_GOOD")) {
+        return false;
     }
     true
 }
@@ -1319,10 +1307,8 @@ fn req_scorch(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
     let p = g.units[caster].owner;
     let terrain = g.map.plots[plot].terrain_type;
     if terrain == Some(d.t::<TerrainType>("TERRAIN_PLAINS")) || terrain == Some(d.t::<TerrainType>("TERRAIN_FIELDS_OF_PERDITION")) {
-        if !g.players[p].human {
-            if Some(p) == g.map.plots[plot].owner {
-                return false;
-            }
+        if !g.players[p].human && Some(p) == g.map.plots[plot].owner {
+            return false;
         }
         return true;
     }
@@ -1376,10 +1362,8 @@ fn req_sironas_touch(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
     if g.units[caster].damage == 0 {
         return false;
     }
-    if !g.players[p].human {
-        if g.units[caster].damage < 15 {
-            return false;
-        }
+    if !g.players[p].human && g.units[caster].damage < 15 {
+        return false;
     }
     true
 }
@@ -1426,16 +1410,14 @@ fn snowfall(g: &mut Game, caster: UnitId, radius: i32, rand_num: i32, rand_base:
     for ix in x - radius..x + radius + 1 {
         for iy in y - radius..y + radius + 1 {
             let Some(plot) = g.map.plot_xy(ix, iy) else { continue };
-            if !g.plot_is_water(plot) {
-                if g.map.plots[plot].terrain_type != Some(snow) {
-                    let rnd = g.soren_rand_num(rand_num, "Snowfall") + rand_base;
-                    g.plot_set_temp_terrain_type(plot, snow, rnd);
-                    if g.map.plots[plot].feature_type == Some(flames) {
-                        g.plot_set_feature_type(plot, None);
-                    }
-                    if g.map.plots[plot].improvement_type == Some(smoke) {
-                        g.plot_set_improvement_type(plot, None);
-                    }
+            if !g.plot_is_water(plot) && g.map.plots[plot].terrain_type != Some(snow) {
+                let rnd = g.soren_rand_num(rand_num, "Snowfall") + rand_base;
+                g.plot_set_temp_terrain_type(plot, snow, rnd);
+                if g.map.plots[plot].feature_type == Some(flames) {
+                    g.plot_set_feature_type(plot, None);
+                }
+                if g.map.plots[plot].improvement_type == Some(smoke) {
+                    g.plot_set_improvement_type(plot, None);
                 }
             }
         }
@@ -1461,10 +1443,8 @@ fn req_spread_the_council_of_esus(g: &Game, caster: UnitId, _call: &PyCall) -> b
     if g.map.plots[plot].plot_city.map_or(false, |c| g.cities[c].has_religion[esus]) {
         return false;
     }
-    if !g.players[p].human {
-        if g.player_get_state_religion(p) != Some(esus) {
-            return false;
-        }
+    if !g.players[p].human && g.player_get_state_religion(p) != Some(esus) {
+        return false;
     }
     true
 }
@@ -1493,16 +1473,12 @@ fn req_spring(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
         if g.map.plots[plot].feature_type == Some(d.t::<FeatureType>("FEATURE_FLOOD_PLAINS")) {
             return false;
         }
-        if !g.players[p].human {
-            if Some(p) != g.map.plots[plot].owner {
-                return false;
-            }
-        }
-    }
-    if !g.players[p].human {
-        if g.player_get_civilization_type(p) == Some(d.t::<CivilizationType>("CIVILIZATION_INFERNAL")) {
+        if !g.players[p].human && Some(p) != g.map.plots[plot].owner {
             return false;
         }
+    }
+    if !g.players[p].human && g.player_get_civilization_type(p) == Some(d.t::<CivilizationType>("CIVILIZATION_INFERNAL")) {
+        return false;
     }
     true
 }
@@ -1566,11 +1542,9 @@ fn spell_stasis(g: &mut Game, caster: UnitId, _call: &PyCall) {
         delay = 60;
     }
     for p2 in g.player_ids() {
-        if g.players[p2].alive {
-            if g.players[p2].team != team {
-                g.players[p2].disable_production += delay;
-                g.players[p2].disable_research += delay;
-            }
+        if g.players[p2].alive && g.players[p2].team != team {
+            g.players[p2].disable_production += delay;
+            g.players[p2].disable_research += delay;
         }
     }
 }
@@ -1583,10 +1557,8 @@ fn req_steal(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
     for &u in &g.map.plots[plot].units {
         if g.unit_get_team(u) != team {
             for promotion in d.promotions.keys() {
-                if g.units[u].has_promotion[promotion] {
-                    if d.promotions[promotion].equipment {
-                        return true;
-                    }
+                if g.units[u].has_promotion[promotion] && d.promotions[promotion].equipment {
+                    return true;
                 }
             }
         }
@@ -1594,10 +1566,8 @@ fn req_steal(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
     if let Some(city) = g.map.plots[plot].plot_city {
         if g.city_team(city) != team {
             for building in d.buildings.keys() {
-                if g.cities[city].num_real_building[building] > 0 {
-                    if d.buildings[building].equipment {
-                        return true;
-                    }
+                if g.cities[city].num_real_building[building] > 0 && d.buildings[building].equipment {
+                    return true;
                 }
             }
         }
@@ -1619,15 +1589,13 @@ fn spell_steal(g: &mut Game, caster: UnitId, _call: &PyCall) {
         let Some(u) = unit else { continue };
         if g.unit_get_team(u) != team {
             for promotion in d.promotions.keys() {
-                if g.units[u].has_promotion[promotion] {
-                    if d.promotions[promotion].equipment {
-                        if g.soren_rand_num(100, "Steal") <= 20 {
-                            let (p, p2) = (g.units[caster].owner, g.units[u].owner);
-                            g.cf_start_war(p, p2, WarPlanType::WARPLAN_TOTAL);
-                        } else {
-                            g.unit_set_has_promotion(caster, promotion, true);
-                            g.unit_set_has_promotion(u, promotion, false);
-                        }
+                if g.units[u].has_promotion[promotion] && d.promotions[promotion].equipment {
+                    if g.soren_rand_num(100, "Steal") <= 20 {
+                        let (p, p2) = (g.units[caster].owner, g.units[u].owner);
+                        g.cf_start_war(p, p2, WarPlanType::WARPLAN_TOTAL);
+                    } else {
+                        g.unit_set_has_promotion(caster, promotion, true);
+                        g.unit_set_has_promotion(u, promotion, false);
                     }
                 }
             }
@@ -1636,22 +1604,20 @@ fn spell_steal(g: &mut Game, caster: UnitId, _call: &PyCall) {
     if let Some(city) = g.map.plots[plot].plot_city {
         if g.city_team(city) != team {
             for building in d.buildings.keys() {
-                if g.cities[city].num_real_building[building] > 0 {
-                    if d.buildings[building].equipment {
-                        if g.soren_rand_num(100, "Steal") <= 20 {
-                            // Python quirk: war on the owner of `pUnit`, the last unit of the loop
-                            // above, not on the city owner. A NULL unit's owner is -1 and
-                            // `gc.getPlayer(-1).getTeam()` raises, ending the spell.
-                            let Some(last_owner) = last_unit.and_then(|u| g.units.get(u)).map(|u| u.owner) else { return };
-                            let p = g.units[caster].owner;
-                            g.cf_start_war(p, last_owner, WarPlanType::WARPLAN_TOTAL);
-                        } else {
-                            for unit in d.units.keys() {
-                                if d.units[unit].buildings[building] {
-                                    g.city_set_num_real_building(city, building, 0);
-                                    if let Some(promotion) = d.units[unit].equipment_promotion {
-                                        g.unit_set_has_promotion(caster, promotion, true);
-                                    }
+                if g.cities[city].num_real_building[building] > 0 && d.buildings[building].equipment {
+                    if g.soren_rand_num(100, "Steal") <= 20 {
+                        // Python quirk: war on the owner of `pUnit`, the last unit of the loop
+                        // above, not on the city owner. A NULL unit's owner is -1 and
+                        // `gc.getPlayer(-1).getTeam()` raises, ending the spell.
+                        let Some(last_owner) = last_unit.and_then(|u| g.units.get(u)).map(|u| u.owner) else { return };
+                        let p = g.units[caster].owner;
+                        g.cf_start_war(p, last_owner, WarPlanType::WARPLAN_TOTAL);
+                    } else {
+                        for unit in d.units.keys() {
+                            if d.units[unit].buildings[building] {
+                                g.city_set_num_real_building(city, building, 0);
+                                if let Some(promotion) = d.units[unit].equipment_promotion {
+                                    g.unit_set_has_promotion(caster, promotion, true);
                                 }
                             }
                         }
@@ -1722,10 +1688,8 @@ fn req_take_equipment_promotion(g: &Game, caster: UnitId, call: &PyCall) -> bool
     if g.units[holder].has_casted {
         return false;
     }
-    if g.units[holder].unit_type == d.t::<UnitType>("UNIT_BARNAXUS") {
-        if promotion == Some(d.t::<PromotionType>("PROMOTION_PIECES_OF_BARNAXUS")) {
-            return false;
-        }
+    if g.units[holder].unit_type == d.t::<UnitType>("UNIT_BARNAXUS") && promotion == Some(d.t::<PromotionType>("PROMOTION_PIECES_OF_BARNAXUS")) {
+        return false;
     }
     if !g.players[p].human {
         if g.unit_base_combat_str(caster) - 2 <= g.unit_base_combat_str(holder) {
@@ -1764,10 +1728,8 @@ fn spell_take_equipment_promotion(g: &mut Game, caster: UnitId, call: &PyCall) {
 fn equipment_unit_holder(g: &Game, p: PlayerId, plot: PlotIdx, unit: UnitType) -> Option<UnitId> {
     let mut holder = None;
     for &u in &g.map.plots[plot].units {
-        if g.units[u].owner == p && g.units[u].unit_type == unit {
-            if !g.units[u].death_delay {
-                holder = Some(u);
-            }
+        if g.units[u].owner == p && g.units[u].unit_type == unit && !g.units[u].death_delay {
+            holder = Some(u);
         }
     }
     holder
@@ -1801,14 +1763,10 @@ fn req_taunt(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
         for iy in y - 1..y + 2 {
             let Some(loop_plot) = g.map.plot_xy(ix, iy) else { continue };
             for &u in &g.map.plots[loop_plot].units {
-                if g.teams[team].at_war[g.unit_get_team(u)] {
-                    if g.unit_is_alive(u) {
-                        if g.unit_can_attack(u) {
-                            if g.unit_get_domain_type(caster) == g.unit_get_domain_type(u) {
-                                valid = true;
-                            }
-                        }
-                    }
+                if g.teams[team].at_war[g.unit_get_team(u)]
+                    && g.unit_is_alive(u) && g.unit_can_attack(u) && g.unit_get_domain_type(caster) == g.unit_get_domain_type(u)
+                {
+                    valid = true;
                 }
             }
         }
@@ -1829,20 +1787,14 @@ fn spell_taunt(g: &mut Game, caster: UnitId, _call: &PyCall) {
             let n = g.map.plots[loop_plot].units.len();
             for i in 0..n {
                 let Some(u) = plot_unit_at(g, loop_plot, i) else { continue };
-                if g.teams[team].at_war[g.unit_get_team(u)] {
-                    if g.unit_is_alive(u) {
-                        if g.unit_can_attack(u) {
-                            // Deviation: once an attack has killed the caster the C++ would read
-                            // the deleted unit; the spell ends instead.
-                            if !g.units.contains(caster) {
-                                return;
-                            }
-                            if g.unit_get_domain_type(caster) == g.unit_get_domain_type(u) {
-                                if !g.unit_is_resisted(u, caster, spell) {
-                                    g.unit_attack(u, plot);
-                                }
-                            }
-                        }
+                if g.teams[team].at_war[g.unit_get_team(u)] && g.unit_is_alive(u) && g.unit_can_attack(u) {
+                    // Deviation: once an attack has killed the caster the C++ would read
+                    // the deleted unit; the spell ends instead.
+                    if !g.units.contains(caster) {
+                        return;
+                    }
+                    if g.unit_get_domain_type(caster) == g.unit_get_domain_type(u) && !g.unit_is_resisted(u, caster, spell) {
+                        g.unit_attack(u, plot);
                     }
                 }
             }
@@ -1998,22 +1950,18 @@ fn spell_tsunami(g: &mut Game, caster: UnitId, _call: &PyCall) {
         for iy in y - 2..y + 3 {
             // (No isNone() check: a NULL plot is not adjacent to water.)
             let Some(plot) = g.map.plot_xy(ix, iy) else { continue };
-            if g.plot_is_adjacent_to_water(plot) {
-                if x != ix || y != iy {
-                    let n = g.map.plots[plot].units.len();
-                    for i in 0..n {
-                        let Some(u) = plot_unit_at(g, plot, i) else { continue };
-                        g.unit_do_damage(u, 30, 75, Some(caster), Some(cold), true);
-                    }
-                    if let Some(improvement) = g.map.plots[plot].improvement_type {
-                        if !is_permanent(g, improvement) {
-                            if g.soren_rand_num(100, "Tsunami") <= 25 {
-                                g.plot_set_improvement_type(plot, None);
-                            }
-                        }
-                    }
-                    // (EFFECT_SPRING: graphics.)
+            if g.plot_is_adjacent_to_water(plot) && (x != ix || y != iy) {
+                let n = g.map.plots[plot].units.len();
+                for i in 0..n {
+                    let Some(u) = plot_unit_at(g, plot, i) else { continue };
+                    g.unit_do_damage(u, 30, 75, Some(caster), Some(cold), true);
                 }
+                if let Some(improvement) = g.map.plots[plot].improvement_type {
+                    if !is_permanent(g, improvement) && g.soren_rand_num(100, "Tsunami") <= 25 {
+                        g.plot_set_improvement_type(plot, None);
+                    }
+                }
+                // (EFFECT_SPRING: graphics.)
             }
         }
     }
@@ -2288,10 +2236,8 @@ fn spell_wonder(g: &mut Game, caster: UnitId, _call: &PyCall) {
             }
             60 => {
                 for promotion in d.promotions.keys() {
-                    if g.units[caster].has_promotion[promotion] {
-                        if d.promotions[promotion].race {
-                            g.unit_set_has_promotion(caster, promotion, false);
-                        }
+                    if g.units[caster].has_promotion[promotion] && d.promotions[promotion].race {
+                        g.unit_set_has_promotion(caster, promotion, false);
                     }
                 }
                 // (`setUnitArtStyleType(UNIT_ARTSTYLE_BABOON)`: graphics.)
@@ -2347,10 +2293,8 @@ fn spell_worldbreak(g: &mut Game, caster: UnitId, _call: &PyCall) {
     let smoke = d.t::<ImprovementType>("IMPROVEMENT_SMOKE");
     for plot in g.map.plot_ids() {
         let mut valid = true;
-        if g.plot_is_owned(plot) {
-            if g.map.plots[plot].owner == Some(g.units[caster].owner) {
-                valid = false;
-            }
+        if g.plot_is_owned(plot) && g.map.plots[plot].owner == Some(g.units[caster].owner) {
+            valid = false;
         }
         if valid {
             if let Some(city) = g.map.plots[plot].plot_city {
@@ -2365,12 +2309,10 @@ fn spell_worldbreak(g: &mut Game, caster: UnitId, _call: &PyCall) {
                 // (EFFECT_PILLAR_OF_FIRE: graphics.)
             }
             let feature = g.map.plots[plot].feature_type;
-            if feature == Some(forest) || feature == Some(jungle) {
-                if g.map.plots[plot].improvement_type.is_none() {
-                    if g.soren_rand_num(100, "Flames Spread") <= py_div(counter, 4) {
-                        g.plot_set_improvement_type(plot, Some(smoke));
-                    }
-                }
+            if (feature == Some(forest) || feature == Some(jungle))
+                && g.map.plots[plot].improvement_type.is_none() && g.soren_rand_num(100, "Flames Spread") <= py_div(counter, 4)
+            {
+                g.plot_set_improvement_type(plot, Some(smoke));
             }
         }
     }
@@ -2414,42 +2356,38 @@ fn at_range_necrototem(g: &mut Game, caster: UnitId, plot: PlotIdx, _call: &PyCa
 /// owner.
 fn on_move_ancient_forest(g: &mut Game, caster: UnitId, plot: PlotIdx, _call: &PyCall) {
     let d = g.d;
-    if g.plot_is_owned(plot) {
-        if g.map.plots[plot].units.len() == 1 {
-            if !g.unit_is_flying(caster) {
-                let mut chance = d.defines.treant_spawn_chance;
-                if g.plot_is_being_worked(plot) {
-                    let city = g.map.plots[plot].working_city;
-                    // (A NULL CyCity's getNumBuilding() is -1.)
-                    if city.map_or(false, |c| g.city_num_family(c, d.t::<BuildingType>("BUILDING_TEMPLE_OF_LEAVES")) > 0) {
-                        chance *= 3;
+    if g.plot_is_owned(plot) && g.map.plots[plot].units.len() == 1 && !g.unit_is_flying(caster) {
+        let mut chance = d.defines.treant_spawn_chance;
+        if g.plot_is_being_worked(plot) {
+            let city = g.map.plots[plot].working_city;
+            // (A NULL CyCity's getNumBuilding() is -1.)
+            if city.map_or(false, |c| g.city_num_family(c, d.t::<BuildingType>("BUILDING_TEMPLE_OF_LEAVES")) > 0) {
+                chance *= 3;
+            }
+        }
+        if g.soren_rand_num(100, "Treant Spawn Chance") <= chance {
+            let p = g.units[caster].owner;
+            let p2 = g.map.plots[plot].owner.expect("owned plot");
+            let team = g.players[p].team;
+            let team2 = g.players[p2].team;
+            if g.teams[team].at_war[team2]
+                && g.player_get_state_religion(p2) == Some(d.t::<ReligionType>("RELIGION_FELLOWSHIP_OF_LEAVES"))
+            {
+                let n = g.map.plots[plot].units.len();
+                for i in 0..n {
+                    let Some(u2) = plot_unit_at(g, plot, i) else { continue };
+                    // `cf.findClearPlot(p2Unit, -1)`: the plot argument is only read
+                    // when no unit is given.
+                    if let Some(plot2) = g.cf_find_clear_plot(Some(u2), plot) {
+                        let (x2, y2) = g.map.xy(plot2);
+                        g.unit_set_xy(u2, x2, y2, false);
+                        g.unit_finish_moves(u2);
                     }
                 }
-                if g.soren_rand_num(100, "Treant Spawn Chance") <= chance {
-                    let p = g.units[caster].owner;
-                    let p2 = g.map.plots[plot].owner.expect("owned plot");
-                    let team = g.players[p].team;
-                    let team2 = g.players[p2].team;
-                    if g.teams[team].at_war[team2]
-                        && g.player_get_state_religion(p2) == Some(d.t::<ReligionType>("RELIGION_FELLOWSHIP_OF_LEAVES"))
-                    {
-                        let n = g.map.plots[plot].units.len();
-                        for i in 0..n {
-                            let Some(u2) = plot_unit_at(g, plot, i) else { continue };
-                            // `cf.findClearPlot(p2Unit, -1)`: the plot argument is only read
-                            // when no unit is given.
-                            if let Some(plot2) = g.cf_find_clear_plot(Some(u2), plot) {
-                                let (x2, y2) = g.map.xy(plot2);
-                                g.unit_set_xy(u2, x2, y2, false);
-                                g.unit_finish_moves(u2);
-                            }
-                        }
-                        if g.map.plots[plot].units.is_empty() {
-                            let (x, y) = g.map.xy(plot);
-                            let new_unit = g.player_init_unit(p2, d.t::<UnitType>("UNIT_TREANT"), x, y, None, SOUTH);
-                            g.units[new_unit].duration = 3;
-                        }
-                    }
+                if g.map.plots[plot].units.is_empty() {
+                    let (x, y) = g.map.xy(plot);
+                    let new_unit = g.player_init_unit(p2, d.t::<UnitType>("UNIT_TREANT"), x, y, None, SOUTH);
+                    g.units[new_unit].duration = 3;
                 }
             }
         }
@@ -2545,13 +2483,11 @@ fn on_move_warning_post(_g: &mut Game, _caster: UnitId, _plot: PlotIdx, _call: &
 fn vote_fund_dissidents(g: &mut Game, _vote: VoteType, _data: i32, _call: &PyCall) {
     let overcouncil = g.d.t::<VoteSourceType>("DIPLOVOTE_OVERCOUNCIL");
     for p in g.player_ids() {
-        if g.players[p].alive {
-            if g.player_is_full_member(p, overcouncil) {
-                for city in py_city_list(g, p) {
-                    if g.soren_rand_num(100, "Fund Dissidents") < 50 {
-                        let change = 1 + g.soren_rand_num(3, "Fund Dissidents");
-                        g.city_change_hurry_anger_timer(city, change);
-                    }
+        if g.players[p].alive && g.player_is_full_member(p, overcouncil) {
+            for city in py_city_list(g, p) {
+                if g.soren_rand_num(100, "Fund Dissidents") < 50 {
+                    let change = 1 + g.soren_rand_num(3, "Fund Dissidents");
+                    g.city_change_hurry_anger_timer(city, change);
                 }
             }
         }

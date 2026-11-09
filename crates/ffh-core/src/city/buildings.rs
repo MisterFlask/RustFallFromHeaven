@@ -48,10 +48,8 @@ impl Game {
         // (The building's own fields are tested before the pure `getNumActiveBuilding`.)
         for building in d.buildings.keys() {
             let info = &d.buildings[building];
-            if info.power_bonus == Some(bonus) && info.dirty_power == dirty {
-                if self.city_num_active_building(c, building) > 0 {
-                    count += self.city_num_active_building(c, building);
-                }
+            if info.power_bonus == Some(bonus) && info.dirty_power == dirty && self.city_num_active_building(c, building) > 0 {
+                count += self.city_num_active_building(c, building);
             }
         }
 
@@ -397,11 +395,9 @@ impl Game {
 
             let team = self.city_team(c);
             for p in self.player_ids() {
-                if self.players[p].team == team {
-                    if info.team_share || p == owner {
-                        let area = self.city_area(c);
-                        self.player_process_building(p, building, change, area);
-                    }
+                if self.players[p].team == team && (info.team_share || p == owner) {
+                    let area = self.city_area(c);
+                    self.player_process_building(p, building, change, area);
                 }
             }
 
@@ -499,10 +495,10 @@ impl Game {
         let d = self.d;
 
         for building in d.buildings.keys() {
-            if is_world_wonder_class(d, building_class_of(d, building)) {
-                if self.cities[c].num_real_building[building] > 0 && !self.team_is_obsolete_building(self.city_team(c), building) {
-                    return true;
-                }
+            if is_world_wonder_class(d, building_class_of(d, building))
+                && self.cities[c].num_real_building[building] > 0 && !self.team_is_obsolete_building(self.city_team(c), building)
+            {
+                return true;
             }
         }
 
@@ -665,10 +661,8 @@ impl Game {
         // FfH: Modified by Kael 10/09/2008 (colony maintenance is determined by the closest
         // palace: none on a landmass with any of the owner's government centers)
         for &loop_city in &self.players[owner].cities {
-            if self.city_is_government_center(loop_city) {
-                if self.city_area(loop_city) == area {
-                    return 0;
-                }
+            if self.city_is_government_center(loop_city) && self.city_area(loop_city) == area {
+                return 0;
             }
         }
         // FfH: End Modify
@@ -989,11 +983,11 @@ impl Game {
             for corporation in d.corporations.keys() {
                 if let Some(bonus_produced) = d.corporations[corporation].bonus_produced {
                     if !self.team_is_bonus_obsolete(team, bonus_produced) {
-                        if self.team_is_has_tech(team, d.bonuses[bonus_produced].tech_city_trade) {
-                            if self.cities[c].has_corporation[corporation] && self.player_is_active_corporation(owner, corporation) {
-                                for bonus_consumed in corporation_prereq_bonuses(d, corporation) {
-                                    extra_corp_produced_bonuses[bonus_produced.idx()] += last_corp_produced_bonuses[bonus_consumed.idx()];
-                                }
+                        if self.team_is_has_tech(team, d.bonuses[bonus_produced].tech_city_trade)
+                            && self.cities[c].has_corporation[corporation] && self.player_is_active_corporation(owner, corporation)
+                        {
+                            for bonus_consumed in corporation_prereq_bonuses(d, corporation) {
+                                extra_corp_produced_bonuses[bonus_produced.idx()] += last_corp_produced_bonuses[bonus_consumed.idx()];
                             }
                         }
                     }
@@ -1192,16 +1186,12 @@ impl Game {
             }
 
             if old_num_building != self.city_num_building(c, building) {
-                if self.cities[c].num_real_building[building] > 0 {
-                    if info.is_state_religion {
-                        for vote_source in d.vote_sources.keys() {
-                            if info.vote_source_type == Some(vote_source) {
-                                if self.vote_source_religions[vote_source].is_none() {
-                                    let owner = self.cities[c].owner;
-                                    let state_religion = self.player_get_state_religion(owner);
-                                    self.set_vote_source_religion(vote_source, state_religion, true);
-                                }
-                            }
+                if self.cities[c].num_real_building[building] > 0 && info.is_state_religion {
+                    for vote_source in d.vote_sources.keys() {
+                        if info.vote_source_type == Some(vote_source) && self.vote_source_religions[vote_source].is_none() {
+                            let owner = self.cities[c].owner;
+                            let state_religion = self.player_get_state_religion(owner);
+                            self.set_vote_source_religion(vote_source, state_religion, true);
                         }
                     }
                 }
@@ -1223,81 +1213,75 @@ impl Game {
                 }
             }
 
-            if change_num_real_building > 0 {
-                if first {
-                    let owner = self.cities[c].owner;
+            if change_num_real_building > 0 && first {
+                let owner = self.cities[c].owner;
 
-                    if info.capital {
-                        self.player_set_capital_city(owner, Some(c));
-                    }
-
-                    // C++ `!gDLL->GetWorldBuilderMode()`: always true headless.
-                    if self.final_initialized {
-                        if info.golden_age {
-                            let golden_age_length = self.player_get_golden_age_length(owner);
-                            self.player_change_golden_age_turns(owner, change_num_real_building * (golden_age_length + 1));
-                        }
-
-                        if info.global_population_change != 0 {
-                            let team = self.city_team(c);
-                            for p in self.player_ids() {
-                                if self.players[p].alive {
-                                    if self.players[p].team == team {
-                                        if info.team_share || p == owner {
-                                            for loop_city in self.players[p].cities.clone() {
-                                                let new_population = std::cmp::max(
-                                                    1,
-                                                    self.cities[loop_city].population + change_num_real_building * info.global_population_change,
-                                                );
-                                                self.city_set_population(loop_city, new_population);
-                                                // pLoopCity->AI_updateAssignWork(): so subsequent cities don't
-                                                // starve with the extra citizen working nothing.
-                                                if self.cities[loop_city].ai_assign_work_dirty {
-                                                    self.city_assign_working_plots(loop_city);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        for religion in d.religions.keys() {
-                            if info.religion_change[religion] > 0 {
-                                self.city_set_has_religion(c, religion, true, true, true);
-                            }
-                        }
-
-                        if info.free_techs > 0 {
-                            if !self.city_is_human(c) {
-                                for _ in 0..info.free_techs {
-                                    for _ in 0..change_num_real_building {
-                                        ai_choose_free_tech(self, owner);
-                                    }
-                                }
-                            } else {
-                                // C++ text TXT_KEY_MISC_COMPLETED_WONDER_CHOOSE_TECH (popup title).
-                                self.player_choose_tech(owner, info.free_techs * change_num_real_building);
-                            }
-                        }
-
-                        if is_world_wonder_class(d, building_class) {
-                            // UI: replay message TXT_KEY_MISC_COMPLETES_WONDER and the
-                            // TXT_KEY_MISC_WONDER_COMPLETED(_UNKNOWN) message to every alive player.
-                            let turn = self.game_turn();
-                            let player_name = self.player_get_name(owner);
-                            self.log.msg(turn, Some(owner), || format!("{} completes {}", player_name, d.text.name(&info.base.description)));
-                        }
-                    }
-
-                    if info.allows_nukes {
-                        // makeNukesValid(true)
-                        self.nukes_valid = true;
-                    }
-
-                    // incrementBuildingClassCreatedCount
-                    self.building_class_created_count[building_class] += 1;
+                if info.capital {
+                    self.player_set_capital_city(owner, Some(c));
                 }
+
+                // C++ `!gDLL->GetWorldBuilderMode()`: always true headless.
+                if self.final_initialized {
+                    if info.golden_age {
+                        let golden_age_length = self.player_get_golden_age_length(owner);
+                        self.player_change_golden_age_turns(owner, change_num_real_building * (golden_age_length + 1));
+                    }
+
+                    if info.global_population_change != 0 {
+                        let team = self.city_team(c);
+                        for p in self.player_ids() {
+                            if self.players[p].alive && self.players[p].team == team && (info.team_share || p == owner) {
+                                for loop_city in self.players[p].cities.clone() {
+                                    let new_population = std::cmp::max(
+                                        1,
+                                        self.cities[loop_city].population + change_num_real_building * info.global_population_change,
+                                    );
+                                    self.city_set_population(loop_city, new_population);
+                                    // pLoopCity->AI_updateAssignWork(): so subsequent cities don't
+                                    // starve with the extra citizen working nothing.
+                                    if self.cities[loop_city].ai_assign_work_dirty {
+                                        self.city_assign_working_plots(loop_city);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    for religion in d.religions.keys() {
+                        if info.religion_change[religion] > 0 {
+                            self.city_set_has_religion(c, religion, true, true, true);
+                        }
+                    }
+
+                    if info.free_techs > 0 {
+                        if !self.city_is_human(c) {
+                            for _ in 0..info.free_techs {
+                                for _ in 0..change_num_real_building {
+                                    ai_choose_free_tech(self, owner);
+                                }
+                            }
+                        } else {
+                            // C++ text TXT_KEY_MISC_COMPLETED_WONDER_CHOOSE_TECH (popup title).
+                            self.player_choose_tech(owner, info.free_techs * change_num_real_building);
+                        }
+                    }
+
+                    if is_world_wonder_class(d, building_class) {
+                        // UI: replay message TXT_KEY_MISC_COMPLETES_WONDER and the
+                        // TXT_KEY_MISC_WONDER_COMPLETED(_UNKNOWN) message to every alive player.
+                        let turn = self.game_turn();
+                        let player_name = self.player_get_name(owner);
+                        self.log.msg(turn, Some(owner), || format!("{} completes {}", player_name, d.text.name(&info.base.description)));
+                    }
+                }
+
+                if info.allows_nukes {
+                    // makeNukesValid(true)
+                    self.nukes_valid = true;
+                }
+
+                // incrementBuildingClassCreatedCount
+                self.building_class_created_count[building_class] += 1;
             }
 
             // Graphics: the great wall (AddGreatWall / RemoveGreatWall for
@@ -1326,14 +1310,12 @@ impl Game {
             if new_value {
                 let mut replaced_headquarters = false;
                 for other in self.d.corporations.keys() {
-                    if other != corporation && self.cities[c].has_corporation[other] {
-                        if self.is_competing_corporation(other, corporation) {
-                            if self.get_headquarters(other) == Some(c) {
-                                self.replace_corporation(other, corporation);
-                                replaced_headquarters = true;
-                            } else {
-                                self.city_set_has_corporation(c, other, false, false, true);
-                            }
+                    if other != corporation && self.cities[c].has_corporation[other] && self.is_competing_corporation(other, corporation) {
+                        if self.get_headquarters(other) == Some(c) {
+                            self.replace_corporation(other, corporation);
+                            replaced_headquarters = true;
+                        } else {
+                            self.city_set_has_corporation(c, other, false, false, true);
                         }
                     }
                 }
@@ -1393,20 +1375,16 @@ impl Game {
 
         // if both the river and water flags are set, we require one of the two conditions, not both
         if info.water {
-            if !info.river || !self.plot_is_river(self.city_plot(c)) {
-                if !self.city_is_coastal(c, info.min_area_size) {
-                    return false;
-                }
+            if (!info.river || !self.plot_is_river(self.city_plot(c))) && !self.city_is_coastal(c, info.min_area_size) {
+                return false;
             }
         } else {
             if self.map.areas[self.city_area(c)].num_tiles < info.min_area_size {
                 return false;
             }
 
-            if info.river {
-                if !self.plot_is_river(self.city_plot(c)) {
-                    return false;
-                }
+            if info.river && !self.plot_is_river(self.city_plot(c)) {
+                return false;
             }
         }
 
@@ -1624,10 +1602,8 @@ impl Game {
         let d = self.d;
 
         for building in d.buildings.keys() {
-            if self.city_num_building(c, building) > 0 {
-                if d.buildings[building].building_class_type == Some(building_class) {
-                    return true;
-                }
+            if self.city_num_building(c, building) > 0 && d.buildings[building].building_class_type == Some(building_class) {
+                return true;
             }
         }
 

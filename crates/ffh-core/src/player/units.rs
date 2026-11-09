@@ -178,38 +178,36 @@ impl Game {
                 // FfH: Added by Kael 11/24/2007
                 && info.military_support
             {
-                if !self.unit_is_golden_age(loop_unit) {
-                    if info.production_cost > 0 {
-                        let plot = self.unit_plot(loop_unit);
-                        if !self.unit_is_military_happiness(loop_unit)
-                            || !self.plot_is_city(plot, false, None)
-                            || self.plot_count_units(plot, |u| self.units[u].owner == p && self.unit_is_military_happiness(u)) > 1
-                        {
-                            let mut value = 10000 + self.soren_rand_num(1000, "Disband Unit");
+                if !self.unit_is_golden_age(loop_unit) && info.production_cost > 0 {
+                    let plot = self.unit_plot(loop_unit);
+                    if !self.unit_is_military_happiness(loop_unit)
+                        || !self.plot_is_city(plot, false, None)
+                        || self.plot_count_units(plot, |u| self.units[u].owner == p && self.unit_is_military_happiness(u)) > 1
+                    {
+                        let mut value = 10000 + self.soren_rand_num(1000, "Disband Unit");
 
-                            value += info.production_cost * 5;
+                        value += info.production_cost * 5;
 
-                            value += self.units[loop_unit].experience * 20;
-                            value += self.units[loop_unit].level * 100;
+                        value += self.units[loop_unit].experience * 20;
+                        value += self.units[loop_unit].level * 100;
 
-                            if self.unit_can_defend(loop_unit, None) && self.plot_is_city(plot, false, None) {
-                                value *= 2;
-                            }
+                        if self.unit_can_defend(loop_unit, None) && self.plot_is_city(plot, false, None) {
+                            value *= 2;
+                        }
 
-                            if self.plot_get_team(plot) == Some(self.unit_get_team(loop_unit)) {
-                                value *= 3;
-                            }
+                        if self.plot_get_team(plot) == Some(self.unit_get_team(loop_unit)) {
+                            value *= 3;
+                        }
 
-                            value *= disband_unit_ai_multiplier(self.units[loop_unit].ai_type);
+                        value *= disband_unit_ai_multiplier(self.units[loop_unit].ai_type);
 
-                            if info.extra_cost > 0 {
-                                value /= info.extra_cost + 1;
-                            }
+                        if info.extra_cost > 0 {
+                            value /= info.extra_cost + 1;
+                        }
 
-                            if value < best_value {
-                                best_value = value;
-                                best_unit = Some(loop_unit);
-                            }
+                        if value < best_value {
+                            best_value = value;
+                            best_unit = Some(loop_unit);
                         }
                     }
                 }
@@ -247,10 +245,8 @@ impl Game {
 
             // FfH: Modified by Kael 06/13/2008 (was `pLoopUnit->kill(false)`)
             for promotion in d.promotions.keys() {
-                if self.units[loop_unit].has_promotion[promotion] {
-                    if d.promotions[promotion].equipment {
-                        self.unit_set_has_promotion(loop_unit, promotion, false);
-                    }
+                if self.units[loop_unit].has_promotion[promotion] && d.promotions[promotion].equipment {
+                    self.unit_set_has_promotion(loop_unit, promotion, false);
                 }
             }
             if self.unit_is_immortal(loop_unit) {
@@ -294,10 +290,8 @@ impl Game {
         let mut count = 0;
 
         for &loop_unit in &self.players[p].units {
-            if self.unit_area(loop_unit) == area {
-                if d.units[self.units[loop_unit].unit_type].religion_spreads[religion] > 0 {
-                    count += 1;
-                }
+            if self.unit_area(loop_unit) == area && d.units[self.units[loop_unit].unit_type].religion_spreads[religion] > 0 {
+                count += 1;
             }
         }
 
@@ -310,10 +304,8 @@ impl Game {
         let mut count = 0;
 
         for &loop_unit in &self.players[p].units {
-            if self.unit_area(loop_unit) == area {
-                if d.units[self.units[loop_unit].unit_type].corporation_spreads[corporation] > 0 {
-                    count += 1;
-                }
+            if self.unit_area(loop_unit) == area && d.units[self.units[loop_unit].unit_type].corporation_spreads[corporation] > 0 {
+                count += 1;
             }
         }
 
@@ -370,14 +362,12 @@ impl Game {
         let mut after_unit: Option<UnitId> = None;
 
         for &loop_unit in &self.map.plots[plot].units {
-            if self.unit_is_group_head(loop_unit) {
-                if loop_unit != unit {
-                    if !self.is_before_unit_cycle(loop_unit, unit) {
-                        before_unit = Some(loop_unit);
-                        break;
-                    } else {
-                        after_unit = Some(loop_unit);
-                    }
+            if self.unit_is_group_head(loop_unit) && loop_unit != unit {
+                if !self.is_before_unit_cycle(loop_unit, unit) {
+                    before_unit = Some(loop_unit);
+                    break;
+                } else {
+                    after_unit = Some(loop_unit);
                 }
             }
         }
@@ -441,22 +431,16 @@ impl Game {
         // FfH: Modified by Kael 05/09/2008 (the `getCivilizationUnits(eUnitClass) != eUnit`
         // check is commented out)
 
-        if !ignore_cost {
-            if info.production_cost == -1 {
-                return false;
-            }
+        if !ignore_cost && info.production_cost == -1 {
+            return false;
         }
 
-        if self.is_option(GameOptionType::GAMEOPTION_ONE_CITY_CHALLENGE) && self.players[p].human {
-            if info.found {
-                return false;
-            }
+        if self.is_option(GameOptionType::GAMEOPTION_ONE_CITY_CHALLENGE) && self.players[p].human && info.found {
+            return false;
         }
 
-        if self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
-            if info.spy || info.espionage_points > 0 {
-                return false;
-            }
+        if self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) && (info.spy || info.espionage_points > 0) {
+            return false;
         }
 
         if !self.team_is_has_tech(team, info.prereq_and_tech) {
@@ -503,10 +487,8 @@ impl Game {
                 return false;
             }
 
-            if self.is_no_nukes() || !self.nukes_valid {
-                if info.nuke_range != -1 {
-                    return false;
-                }
+            if (self.is_no_nukes() || !self.nukes_valid) && info.nuke_range != -1 {
+                return false;
             }
 
             if let Some(special_unit) = info.special_unit_type {
@@ -761,11 +743,9 @@ impl Game {
 
         for &loop_unit in &self.players[p].units {
             let unit_type = self.units[loop_unit].unit_type;
-            if !unit_used[unit_type] {
-                if self.unit_is_golden_age(loop_unit) {
-                    unit_used[unit_type] = true;
-                    count += 1;
-                }
+            if !unit_used[unit_type] && self.unit_is_golden_age(loop_unit) {
+                unit_used[unit_type] = true;
+                count += 1;
             }
         }
 
@@ -790,21 +770,19 @@ impl Game {
             let mut best_unit: Option<UnitId> = None;
 
             for &loop_unit in &self.players[p].units {
-                if self.unit_is_golden_age(loop_unit) {
-                    if !unit_used[self.units[loop_unit].unit_type] {
-                        let mut value = 10000;
+                if self.unit_is_golden_age(loop_unit) && !unit_used[self.units[loop_unit].unit_type] {
+                    let mut value = 10000;
 
-                        // C++ quirk: `pUnitAlive` is dereferenced unchecked (C++ crashes for NULL;
-                        // every C++ caller passes the unit starting the golden age).
-                        let alive = unit_alive.expect("CvPlayer::killGoldenAgeUnits: pUnitAlive is NULL");
-                        let (loop_x, loop_y) = (self.units[loop_unit].x, self.units[loop_unit].y);
-                        let (alive_x, alive_y) = (self.units[alive].x, self.units[alive].y);
-                        value /= self.plot_distance(loop_x, loop_y, alive_x, alive_y) + 1;
+                    // C++ quirk: `pUnitAlive` is dereferenced unchecked (C++ crashes for NULL;
+                    // every C++ caller passes the unit starting the golden age).
+                    let alive = unit_alive.expect("CvPlayer::killGoldenAgeUnits: pUnitAlive is NULL");
+                    let (loop_x, loop_y) = (self.units[loop_unit].x, self.units[loop_unit].y);
+                    let (alive_x, alive_y) = (self.units[alive].x, self.units[alive].y);
+                    value /= self.plot_distance(loop_x, loop_y, alive_x, alive_y) + 1;
 
-                        if value > best_value {
-                            best_value = value;
-                            best_unit = Some(loop_unit);
-                        }
+                    if value > best_value {
+                        best_value = value;
+                        best_unit = Some(loop_unit);
                     }
                 }
             }
@@ -984,10 +962,8 @@ impl Game {
         // FfH: Modified by Kael 07/05/2008 (the `getCivilizationBuildings(eBuildingClass) !=
         // eBuilding` check is commented out)
 
-        if !ignore_cost {
-            if info.production_cost == -1 {
-                return false;
-            }
+        if !ignore_cost && info.production_cost == -1 {
+            return false;
         }
 
         if !self.team_is_has_tech(team, info.prereq_and_tech) {
@@ -1057,10 +1033,10 @@ impl Game {
         let civ = civ_of(self, p);
         for i in d.building_classes.keys() {
             if let Some(prereq_building) = d.civ_building(civ, i) {
-                if self.team_is_obsolete_building(team, prereq_building) {
-                    if self.players[p].building_class_count[i] < self.player_get_building_class_prereq_building(p, building, i, 0) {
-                        return false;
-                    }
+                if self.team_is_obsolete_building(team, prereq_building)
+                    && self.players[p].building_class_count[i] < self.player_get_building_class_prereq_building(p, building, i, 0)
+                {
+                    return false;
                 }
             }
         }
@@ -1081,12 +1057,10 @@ impl Game {
                 return false;
             }
 
-            if self.is_no_nukes() {
-                if info.allows_nukes {
-                    for loop_unit in d.units.keys() {
-                        if d.units[loop_unit].nuke_range != -1 {
-                            return false;
-                        }
+            if self.is_no_nukes() && info.allows_nukes {
+                for loop_unit in d.units.keys() {
+                    if d.units[loop_unit].nuke_range != -1 {
+                        return false;
                     }
                 }
             }
@@ -1171,12 +1145,10 @@ impl Game {
                 return false;
             }
 
-            if self.is_no_nukes() {
-                if info.allows_nukes {
-                    for loop_unit in d.units.keys() {
-                        if d.units[loop_unit].nuke_range != -1 {
-                            return false;
-                        }
+            if self.is_no_nukes() && info.allows_nukes {
+                for loop_unit in d.units.keys() {
+                    if d.units[loop_unit].nuke_range != -1 {
+                        return false;
                     }
                 }
             }
@@ -1213,10 +1185,8 @@ impl Game {
     pub fn player_is_production_maxed_building_class(&self, p: PlayerId, building_class: BuildingClassType, acquire_city: bool) -> bool {
         // (C++ returns false for NO_BUILDINGCLASS; `building_class` is never none here.)
 
-        if !acquire_city {
-            if self.is_building_class_maxed_out(building_class, 0) {
-                return true;
-            }
+        if !acquire_city && self.is_building_class_maxed_out(building_class, 0) {
+            return true;
         }
 
         if self.team_is_building_class_maxed_out(self.players[p].team, building_class, 0) {
@@ -1398,10 +1368,8 @@ impl Game {
         // the first city that has it)
         for loop_city in self.players[p].cities.clone() {
             for building in d.buildings.keys() {
-                if d.buildings[building].building_class_type == Some(building_class) {
-                    if self.cities[loop_city].num_real_building[building] > 0 {
-                        self.city_set_num_real_building(loop_city, building, 0);
-                    }
+                if d.buildings[building].building_class_type == Some(building_class) && self.cities[loop_city].num_real_building[building] > 0 {
+                    self.city_set_num_real_building(loop_city, building, 0);
                 }
             }
         }
@@ -1658,20 +1626,18 @@ impl Game {
         }
 
         if let Some(tech_prereq) = info.tech_prereq {
-            if !self.team_is_has_tech(team, Some(tech_prereq)) {
-                if (!test_era && !test_visible) || ((self.players[p].current_era.i() + 1) < opt_to_i32(d.techs[tech_prereq].era)) {
-                    return false;
-                }
+            if !self.team_is_has_tech(team, Some(tech_prereq))
+                && ((!test_era && !test_visible) || ((self.players[p].current_era.i() + 1) < opt_to_i32(d.techs[tech_prereq].era)))
+            {
+                return false;
             }
         }
 
         if !test_visible {
             if let Some(feature) = self.map.plots[plot].feature_type {
                 // FfH: Added by Kael 12/16/2007
-                if !d.civilizations[civ_of(self, p)].maintain_features[feature] {
-                    if !self.team_is_has_tech(team, info.feature_tech[feature]) {
-                        return false;
-                    }
+                if !d.civilizations[civ_of(self, p)].maintain_features[feature] && !self.team_is_has_tech(team, info.feature_tech[feature]) {
+                    return false;
                 }
             }
 

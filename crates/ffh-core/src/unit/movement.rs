@@ -85,10 +85,8 @@ impl Game {
             return true;
         }
 
-        if !ignore_right_of_passage {
-            if self.team_is_open_borders(our_team, team) {
-                return true;
-            }
+        if !ignore_right_of_passage && self.team_is_open_borders(our_team, team) {
+            return true;
         }
 
         //FfH: Added by Kael 09/02/2007 (so hidden nationality units can enter all territories)
@@ -173,17 +171,15 @@ impl Game {
                         return Some(revealed_team);
                     }
                 }
-            } else if plot_is_active_visible(self, plot) {
-                if self.unit_can_move_into(u, plot, true, true, true) {
-                    let team = self.unit_get_team(u);
-                    let always_hostile = self.unit_is_always_hostile(u, Some(plot));
-                    let unit = self.plot_find_unit(plot, |x| {
-                        self.unit_can_be_declared_war_on(x, team, always_hostile) && self.unit_is_visible_to(x, team)
-                    });
+            } else if plot_is_active_visible(self, plot) && self.unit_can_move_into(u, plot, true, true, true) {
+                let team = self.unit_get_team(u);
+                let always_hostile = self.unit_is_always_hostile(u, Some(plot));
+                let unit = self.plot_find_unit(plot, |x| {
+                    self.unit_can_be_declared_war_on(x, team, always_hostile) && self.unit_is_visible_to(x, team)
+                });
 
-                    if let Some(unit) = unit {
-                        return Some(self.unit_get_team(unit));
-                    }
+                if let Some(unit) = unit {
+                    return Some(self.unit_get_team(unit));
                 }
             }
         }
@@ -248,12 +244,10 @@ impl Game {
             return false;
         }
 
-        if d.defines.use_spies_no_enter_borders != 0 {
-            if self.unit_is_spy(u) {
-                if let Some(plot_owner) = self.map.plots[plot].owner {
-                    if !self.player_can_spies_enter_borders(owner, plot_owner) {
-                        return false;
-                    }
+        if d.defines.use_spies_no_enter_borders != 0 && self.unit_is_spy(u) {
+            if let Some(plot_owner) = self.map.plots[plot].owner {
+                if !self.player_can_spies_enter_borders(owner, plot_owner) {
+                    return false;
                 }
             }
         }
@@ -266,12 +260,10 @@ impl Game {
         let mut can_enter_area = self.unit_can_enter_area(u, plot_team, plot_area, false);
         if can_enter_area {
             if let Some(feature) = self.map.plots[plot].feature_type {
-                if info.feature_impassable[feature] {
-                    if lacks_passable_tech(self, team, info.feature_passable_tech[feature]) {
-                        // sea units can enter impassable in own cultural borders
-                        if DomainType::DOMAIN_SEA != domain || self.plot_get_team(plot) != Some(team) {
-                            return false;
-                        }
+                if info.feature_impassable[feature] && lacks_passable_tech(self, team, info.feature_passable_tech[feature]) {
+                    // sea units can enter impassable in own cultural borders
+                    if DomainType::DOMAIN_SEA != domain || self.plot_get_team(plot) != Some(team) {
+                        return false;
                     }
                 }
             }
@@ -280,14 +272,10 @@ impl Game {
             // did in an `else` of the feature test).
             // (C++ indexes with the plot's terrain unchecked; every map plot has one.)
             if let Some(terrain) = self.map.plots[plot].terrain_type {
-                if info.terrain_impassable[terrain] {
-                    if lacks_passable_tech(self, team, info.terrain_passable_tech[terrain]) {
-                        // sea units can enter impassable in own cultural borders
-                        if DomainType::DOMAIN_SEA != domain || self.plot_get_team(plot) != Some(team) {
-                            if ignore_load || !self.unit_can_load(u, plot) {
-                                return false;
-                            }
-                        }
+                if info.terrain_impassable[terrain] && lacks_passable_tech(self, team, info.terrain_passable_tech[terrain]) {
+                    // sea units can enter impassable in own cultural borders
+                    if (DomainType::DOMAIN_SEA != domain || self.plot_get_team(plot) != Some(team)) && (ignore_load || !self.unit_can_load(u, plot)) {
+                        return false;
                     }
                 }
             }
@@ -316,17 +304,13 @@ impl Game {
                     if self.plot_is_friendly_city(plot, u, true) {
                         valid = true;
 
-                        if info.air_unit_cap > 0 {
-                            if self.plot_air_unit_space_available(plot, team) <= 0 {
-                                valid = false;
-                            }
+                        if info.air_unit_cap > 0 && self.plot_air_unit_space_available(plot, team) <= 0 {
+                            valid = false;
                         }
                     }
 
-                    if !valid {
-                        if ignore_load || !self.unit_can_load(u, plot) {
-                            return false;
-                        }
+                    if !valid && (ignore_load || !self.unit_can_load(u, plot)) {
+                        return false;
                     }
                 }
             }
@@ -379,12 +363,8 @@ impl Game {
             }
         }
 
-        if self.unit_is_no_capture(u) {
-            if !attack {
-                if self.plot_is_enemy_city(plot, u) {
-                    return false;
-                }
-            }
+        if self.unit_is_no_capture(u) && !attack && self.plot_is_enemy_city(plot, u) {
+            return false;
         }
 
         // Engagement combat (plan 5.2): an engagement's attack gates replace the duel's.
@@ -402,29 +382,25 @@ impl Game {
         }
 
         if domain == DomainType::DOMAIN_AIR {
-            if attack {
-                if !self.unit_can_air_strike(u, plot) {
-                    return false;
-                }
+            if attack && !self.unit_can_air_strike(u, plot) {
+                return false;
             }
         } else {
             // Card: False Colours (docs/CARDS.md): units of a civ at peace are fought as enemies.
             let colours = attack && self.unit_false_colours_team(u, plot).is_some();
             if self.unit_can_attack(u) {
-                if attack || !self.unit_can_coexist_with_enemy_unit(u, None) {
-                    if !self.unit_is_human(u) || self.plot_is_visible(plot, team) {
-                        // Not in C++ (docs/SIEGES.md): an enemy city's standing Sentinels defend it,
-                        // so moving into it is an attack even with no unit there.
-                        let walls = self.engage_applies(u, plot) && self.plot_has_enemy_sentinels(plot, team);
-                        if (self.plot_is_visible_enemy_unit_for_unit(plot, u) || walls || colours) != attack {
-                            if !declare_war
-                                || (self.plot_is_visible_other_unit(plot, owner) != attack
-                                    && !(attack
-                                        && live_city(self, self.map.plots[plot].plot_city).is_some()
-                                        && !self.unit_is_no_capture(u)))
-                            {
-                                return false;
-                            }
+                if (attack || !self.unit_can_coexist_with_enemy_unit(u, None)) && (!self.unit_is_human(u) || self.plot_is_visible(plot, team)) {
+                    // Not in C++ (docs/SIEGES.md): an enemy city's standing Sentinels defend it,
+                    // so moving into it is an attack even with no unit there.
+                    let walls = self.engage_applies(u, plot) && self.plot_has_enemy_sentinels(plot, team);
+                    if (self.plot_is_visible_enemy_unit_for_unit(plot, u) || walls || colours) != attack {
+                        if !declare_war
+                            || (self.plot_is_visible_other_unit(plot, owner) != attack
+                                && !(attack
+                                    && live_city(self, self.map.plots[plot].plot_city).is_some()
+                                    && !self.unit_is_no_capture(u)))
+                        {
+                            return false;
                         }
                     }
                 }
@@ -448,15 +424,13 @@ impl Game {
                     return false;
                 }
 
-                if !self.unit_can_coexist_with_enemy_unit(u, None) {
-                    if !self.unit_is_human(u) || self.plot_is_visible(plot, team) {
-                        if self.plot_is_enemy_city(plot, u) {
-                            return false;
-                        }
+                if !self.unit_can_coexist_with_enemy_unit(u, None) && (!self.unit_is_human(u) || self.plot_is_visible(plot, team)) {
+                    if self.plot_is_enemy_city(plot, u) {
+                        return false;
+                    }
 
-                        if self.plot_is_visible_enemy_unit_for_unit(plot, u) {
-                            return false;
-                        }
+                    if self.plot_is_visible_enemy_unit_for_unit(plot, u) {
+                        return false;
                     }
                 }
             }
@@ -498,24 +472,18 @@ impl Game {
             }
         }
         if let Some(plot_owner) = self.map.plots[plot].owner {
-            if self.plot_get_team(plot) != Some(team) {
-                if self.players[plot_owner].sanctuary_timer != 0 {
-                    return false;
-                }
+            if self.plot_get_team(plot) != Some(team) && self.players[plot_owner].sanctuary_timer != 0 {
+                return false;
             }
         }
         if self.units[u].level < self.map.plots[plot].min_level {
             return false;
         }
-        if self.map.plots[plot].move_disabled_human {
-            if self.unit_is_human(u) {
-                return false;
-            }
+        if self.map.plots[plot].move_disabled_human && self.unit_is_human(u) {
+            return false;
         }
-        if self.map.plots[plot].move_disabled_ai {
-            if !self.unit_is_human(u) {
-                return false;
-            }
+        if self.map.plots[plot].move_disabled_ai && !self.unit_is_human(u) {
+            return false;
         }
         //FfH: End Add
 
@@ -590,38 +558,34 @@ impl Game {
         let mut best_plot: Option<PlotIdx> = None;
 
         for loop_plot in self.map.plot_ids() {
-            if self.plot_is_valid_domain_for_location(loop_plot, u) {
-                if self.unit_can_move_into(u, loop_plot, false, false, false) {
-                    let loop_team = self.plot_get_team(loop_plot);
-                    if self.unit_can_enter_area(u, loop_team, self.map.plots[loop_plot].area, false)
-                        && !self.unit_is_enemy(u, loop_team, Some(loop_plot))
-                    {
-                        // (C++ FAssertMsg(!atPlot(pLoopPlot)))
-                        if domain != DomainType::DOMAIN_AIR || self.plot_is_friendly_city(loop_plot, u, true) {
-                            if self.map.plots[loop_plot].revealed[team] {
-                                let (loop_x, loop_y) = self.map.xy(loop_plot);
-                                let mut value = self.plot_distance(x, y, loop_x, loop_y) * 2;
+            if self.plot_is_valid_domain_for_location(loop_plot, u) && self.unit_can_move_into(u, loop_plot, false, false, false) {
+                let loop_team = self.plot_get_team(loop_plot);
+                if self.unit_can_enter_area(u, loop_team, self.map.plots[loop_plot].area, false)
+                    && !self.unit_is_enemy(u, loop_team, Some(loop_plot))
+                {
+                    // (C++ FAssertMsg(!atPlot(pLoopPlot)))
+                    if (domain != DomainType::DOMAIN_AIR || self.plot_is_friendly_city(loop_plot, u, true)) && self.map.plots[loop_plot].revealed[team] {
+                        let (loop_x, loop_y) = self.map.xy(loop_plot);
+                        let mut value = self.plot_distance(x, y, loop_x, loop_y) * 2;
 
-                                if let Some(city) = nearest_city {
-                                    let (city_x, city_y) = (self.cities[city].x, self.cities[city].y);
-                                    value += self.plot_distance(loop_x, loop_y, city_x, city_y);
-                                }
+                        if let Some(city) = nearest_city {
+                            let (city_x, city_y) = (self.cities[city].x, self.cities[city].y);
+                            value += self.plot_distance(loop_x, loop_y, city_x, city_y);
+                        }
 
-                                if domain == DomainType::DOMAIN_SEA && !self.plot_is_water(self.unit_plot(u)) {
-                                    if !self.plot_is_water(loop_plot)
-                                        || !self.plot_is_adjacent_to_area(loop_plot, self.unit_area(u))
-                                    {
-                                        value *= 3;
-                                    }
-                                } else if self.map.plots[loop_plot].area != Some(self.unit_area(u)) {
-                                    value *= 3;
-                                }
-
-                                if value < best_value {
-                                    best_value = value;
-                                    best_plot = Some(loop_plot);
-                                }
+                        if domain == DomainType::DOMAIN_SEA && !self.plot_is_water(self.unit_plot(u)) {
+                            if !self.plot_is_water(loop_plot)
+                                || !self.plot_is_adjacent_to_area(loop_plot, self.unit_area(u))
+                            {
+                                value *= 3;
                             }
+                        } else if self.map.plots[loop_plot].area != Some(self.unit_area(u)) {
+                            value *= 3;
+                        }
+
+                        if value < best_value {
+                            best_value = value;
+                            best_plot = Some(loop_plot);
                         }
                     }
                 }
@@ -715,10 +679,8 @@ impl Game {
         }
 
         if let Some(special_unit) = special_unit {
-            if self.d.special_units[special_unit].city_load {
-                if !self.plot_is_city(plot, true, Some(self.unit_get_team(u))) {
-                    return false;
-                }
+            if self.d.special_units[special_unit].city_load && !self.plot_is_city(plot, true, Some(self.unit_get_team(u))) {
+                return false;
             }
         }
 
@@ -752,10 +714,8 @@ impl Game {
                     return true;
                 }
 
-                if self.d.units[self.units[u].unit_type].air_unit_cap > 0 {
-                    if self.plot_air_unit_space_available(plot, self.unit_get_team(u)) <= 0 {
-                        return true;
-                    }
+                if self.d.units[self.units[u].unit_type].air_unit_cap > 0 && self.plot_air_unit_space_available(plot, self.unit_get_team(u)) <= 0 {
+                    return true;
                 }
             }
             _ => {}
@@ -764,10 +724,8 @@ impl Game {
         // (C++ indexes with the plot's terrain unchecked; every map plot has one.)
         if let Some(terrain) = self.map.plots[plot].terrain_type {
             let info = &self.d.units[self.units[u].unit_type];
-            if info.terrain_impassable[terrain] {
-                if lacks_passable_tech(self, self.unit_get_team(u), info.terrain_passable_tech[terrain]) {
-                    return true;
-                }
+            if info.terrain_impassable[terrain] && lacks_passable_tech(self, self.unit_get_team(u), info.terrain_passable_tech[terrain]) {
+                return true;
             }
         }
 
@@ -828,17 +786,15 @@ impl Game {
             return false;
         }
 
-        if self.unit_get_domain_type(u) == DomainType::DOMAIN_AIR {
-            if self.plot_is_friendly_city(plot, u, true) {
-                let team = self.unit_get_team(u);
-                let num_air_units = self.plot_count_num_air_units(plot, team);
-                if let Some(city) = live_city(self, self.map.plots[plot].plot_city) {
-                    if num_air_units >= self.city_air_unit_capacity(city, team) {
-                        return false;
-                    }
-                } else if num_air_units >= self.d.defines.city_air_unit_capacity {
+        if self.unit_get_domain_type(u) == DomainType::DOMAIN_AIR && self.plot_is_friendly_city(plot, u, true) {
+            let team = self.unit_get_team(u);
+            let num_air_units = self.plot_count_num_air_units(plot, team);
+            if let Some(city) = live_city(self, self.map.plots[plot].plot_city) {
+                if num_air_units >= self.city_air_unit_capacity(city, team) {
                     return false;
                 }
+            } else if num_air_units >= self.d.defines.city_air_unit_capacity {
+                return false;
             }
         }
 
@@ -886,12 +842,10 @@ impl Game {
         if unit.invisible_type.is_none() {
             if let Some(plot) = self.unit_plot_opt(u) {
                 if let Some(plot_owner) = self.map.plots[plot].owner {
-                    if self.players[plot_owner].hide_units && !unit.ignore_hide {
-                        if self.plot_get_team(plot) == Some(self.unit_get_team(u)) {
-                            if !self.plot_is_city(plot, false, None) {
-                                return invisible_type_define(self);
-                            }
-                        }
+                    if self.players[plot_owner].hide_units && !unit.ignore_hide
+                        && self.plot_get_team(plot) == Some(self.unit_get_team(u)) && !self.plot_is_city(plot, false, None)
+                    {
+                        return invisible_type_define(self);
                     }
                 }
             }
@@ -1065,22 +1019,16 @@ impl Game {
         //FfH: Added by Kael 04/11/2008
         let plot = self.unit_plot_opt(u);
         if let Some(plot) = plot {
-            if self.plot_is_city(plot, false, None) {
-                if Some(our_team) == self.plot_get_team(plot) {
-                    return false;
-                }
+            if self.plot_is_city(plot, false, None) && Some(our_team) == self.plot_get_team(plot) {
+                return false;
             }
             if let Some(plot_owner) = self.map.plots[plot].owner {
                 let plot_team = self.players[plot_owner].team;
-                if plot_team != our_team {
-                    if self.players[plot_owner].see_invisible {
-                        return false;
-                    }
+                if plot_team != our_team && self.players[plot_owner].see_invisible {
+                    return false;
                 }
-                if plot_team == our_team {
-                    if self.players[plot_owner].hide_units && !self.units[u].ignore_hide {
-                        return true;
-                    }
+                if plot_team == our_team && self.players[plot_owner].hide_units && !self.units[u].ignore_hide {
+                    return true;
                 }
             }
         }
@@ -1124,22 +1072,16 @@ impl Game {
         }
 
         if let Some(plot) = plot {
-            if self.plot_is_city(plot, false, None) {
-                if Some(our_team) == self.plot_get_team(plot) {
-                    return false;
-                }
+            if self.plot_is_city(plot, false, None) && Some(our_team) == self.plot_get_team(plot) {
+                return false;
             }
             if let Some(plot_owner) = self.map.plots[plot].owner {
                 let plot_team = self.players[plot_owner].team;
-                if plot_team != our_team {
-                    if self.players[plot_owner].see_invisible {
-                        return false;
-                    }
+                if plot_team != our_team && self.players[plot_owner].see_invisible {
+                    return false;
                 }
-                if plot_team == our_team {
-                    if self.players[plot_owner].hide_units && !self.units[u].ignore_hide {
-                        return true;
-                    }
+                if plot_team == our_team && self.players[plot_owner].hide_units && !self.units[u].ignore_hide {
+                    return true;
                 }
             }
         }
@@ -1227,12 +1169,10 @@ impl Game {
 
         for &loop_unit in &self.map.plots[plot].units {
             // C++ `pLoopUnit->getTransportUnit() == this`.
-            if self.units[loop_unit].transport_unit == Some(u) {
-                if self.unit_get_domain_type(loop_unit) == DomainType::DOMAIN_LAND {
-                    if !self.unit_can_move(loop_unit) {
-                        return false;
-                    }
-                }
+            if self.units[loop_unit].transport_unit == Some(u)
+                && self.unit_get_domain_type(loop_unit) == DomainType::DOMAIN_LAND && !self.unit_can_move(loop_unit)
+            {
+                return false;
             }
         }
 
@@ -1250,10 +1190,8 @@ impl Game {
         let plot = self.unit_plot(u);
 
         for &loop_unit in &self.map.plots[plot].units {
-            if self.units[loop_unit].transport_unit == Some(u) {
-                if !self.unit_can_enter_area(loop_unit, team, area, ignore_right_of_passage) {
-                    return false;
-                }
+            if self.units[loop_unit].transport_unit == Some(u) && !self.unit_can_enter_area(loop_unit, team, area, ignore_right_of_passage) {
+                return false;
             }
         }
 
@@ -1457,19 +1395,17 @@ impl Game {
         let mut best_value = MAX_INT;
 
         for loop_plot in self.map.plot_ids() {
-            if self.plot_is_valid_domain_for_location(loop_plot, u) {
-                if self.unit_can_move_into(u, loop_plot, false, false, false) || equipment {
-                    if self.map.plots[loop_plot].units.is_empty() {
-                        let (loop_x, loop_y) = self.map.xy(loop_plot);
-                        let mut value = self.plot_distance(x, y, loop_x, loop_y) * 2;
-                        if self.map.plots[loop_plot].area != Some(self.unit_area(u)) {
-                            value *= 3;
-                        }
-                        if value < best_value {
-                            best_value = value;
-                            best_plot = Some(loop_plot);
-                        }
-                    }
+            if self.plot_is_valid_domain_for_location(loop_plot, u)
+                && (self.unit_can_move_into(u, loop_plot, false, false, false) || equipment) && self.map.plots[loop_plot].units.is_empty()
+            {
+                let (loop_x, loop_y) = self.map.xy(loop_plot);
+                let mut value = self.plot_distance(x, y, loop_x, loop_y) * 2;
+                if self.map.plots[loop_plot].area != Some(self.unit_area(u)) {
+                    value *= 3;
+                }
+                if value < best_value {
+                    best_value = value;
+                    best_plot = Some(loop_plot);
                 }
             }
         }
@@ -1489,23 +1425,21 @@ impl Game {
         for i in -1..=1 {
             for j in -1..=1 {
                 if let Some(loop_plot) = self.plot_xy(x, y, i, j) {
-                    if self.plot_is_valid_domain_for_location(loop_plot, u) {
-                        if self.unit_can_move_into(u, loop_plot, false, false, false) {
-                            let (loop_x, loop_y) = self.map.xy(loop_plot);
-                            let mut value = self.plot_distance(x, y, loop_x, loop_y) * 2;
-                            if domain == DomainType::DOMAIN_SEA && !self.plot_is_water(self.unit_plot(u)) {
-                                if !self.plot_is_water(loop_plot)
-                                    || !self.plot_is_adjacent_to_area(loop_plot, self.unit_area(u))
-                                {
-                                    value *= 3;
-                                }
-                            } else if self.map.plots[loop_plot].area != Some(self.unit_area(u)) {
+                    if self.plot_is_valid_domain_for_location(loop_plot, u) && self.unit_can_move_into(u, loop_plot, false, false, false) {
+                        let (loop_x, loop_y) = self.map.xy(loop_plot);
+                        let mut value = self.plot_distance(x, y, loop_x, loop_y) * 2;
+                        if domain == DomainType::DOMAIN_SEA && !self.plot_is_water(self.unit_plot(u)) {
+                            if !self.plot_is_water(loop_plot)
+                                || !self.plot_is_adjacent_to_area(loop_plot, self.unit_area(u))
+                            {
                                 value *= 3;
                             }
-                            if value < best_value {
-                                best_value = value;
-                                best_plot = Some(loop_plot);
-                            }
+                        } else if self.map.plots[loop_plot].area != Some(self.unit_area(u)) {
+                            value *= 3;
+                        }
+                        if value < best_value {
+                            best_value = value;
+                            best_plot = Some(loop_plot);
                         }
                     }
                 }
@@ -1575,10 +1509,8 @@ impl Game {
 
     /// C++ `CvUnit::verifyStackValid` (CvUnit.cpp:18362-18373).
     pub fn unit_verify_stack_valid(&mut self, u: UnitId) -> bool {
-        if !self.unit_always_invisible(u) {
-            if self.plot_is_visible_enemy_unit_for_unit(self.unit_plot(u), u) {
-                return self.unit_jump_to_nearest_valid_plot(u);
-            }
+        if !self.unit_always_invisible(u) && self.plot_is_visible_enemy_unit_for_unit(self.unit_plot(u), u) {
+            return self.unit_jump_to_nearest_valid_plot(u);
         }
 
         true

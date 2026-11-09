@@ -890,18 +890,16 @@ pub(crate) fn ai_get_plot_danger(g: &Game, player: PlayerId, plot: PlotIdx, rang
 
                 for &loop_unit in &g.map.plots[loop_plot].units {
                     if g.unit_is_enemy(loop_unit, Some(team), None) {
-                        if g.unit_can_attack(loop_unit) {
-                            if !g.unit_is_invisible(loop_unit, team, true) {
-                                if g.unit_can_move_or_attack_into(loop_unit, plot, false) {
-                                    if !test_moves {
-                                        count += 1;
-                                    } else {
-                                        let mut danger_range = g.unit_base_moves(loop_unit);
-                                        danger_range += if g.plot_is_valid_route(loop_plot, loop_unit) { 1 } else { 0 };
-                                        if danger_range >= distance {
-                                            count += 1;
-                                        }
-                                    }
+                        if g.unit_can_attack(loop_unit)
+                            && !g.unit_is_invisible(loop_unit, team, true) && g.unit_can_move_or_attack_into(loop_unit, plot, false)
+                        {
+                            if !test_moves {
+                                count += 1;
+                            } else {
+                                let mut danger_range = g.unit_base_moves(loop_unit);
+                                danger_range += if g.plot_is_valid_route(loop_plot, loop_unit) { 1 } else { 0 };
+                                if danger_range >= distance {
+                                    count += 1;
                                 }
                             }
                         }
@@ -911,10 +909,8 @@ pub(crate) fn ai_get_plot_danger(g: &Game, player: PlayerId, plot: PlotIdx, rang
         }
     }
 
-    if border_danger > 0 {
-        if !g.players[player].human && g.map.plots[plot].plot_city.is_none() {
-            count += border_danger;
-        }
+    if border_danger > 0 && !g.players[player].human && g.map.plots[plot].plot_city.is_none() {
+        count += border_danger;
     }
 
     count
@@ -937,12 +933,10 @@ impl Game {
         let ai_control = self.group_ai_is_controlled(group);
 
         if ai_control {
-            if finder.info & MOVE_IGNORE_DANGER == 0 {
-                if !self.group_can_fight(group) && !self.group_always_invisible(group) {
-                    let head_owner = self.group_get_head_owner(group).expect("pathDestValid: group without a head unit");
-                    if ai_get_plot_danger(self, head_owner, to_plot, -1, true) > 0 {
-                        return false;
-                    }
+            if finder.info & MOVE_IGNORE_DANGER == 0 && !self.group_can_fight(group) && !self.group_always_invisible(group) {
+                let head_owner = self.group_get_head_owner(group).expect("pathDestValid: group without a head unit");
+                if ai_get_plot_danger(self, head_owner, to_plot, -1, true) > 0 {
+                    return false;
                 }
             }
 
@@ -970,13 +964,11 @@ impl Game {
 
                         let unit1_plot = self.unit_plot(loop_unit1);
                         for &loop_unit2 in &self.map.plots[unit1_plot].units {
-                            if self.units[loop_unit2].transport_unit == Some(loop_unit1) {
-                                if self.unit_is_group_head(loop_unit2) {
-                                    let cargo_group = self.units[loop_unit2].group.expect("pathDestValid: group head without a group");
-                                    if self.group_can_move_or_attack_into(cargo_group, to_plot, declare_war) {
-                                        valid = true;
-                                        break;
-                                    }
+                            if self.units[loop_unit2].transport_unit == Some(loop_unit1) && self.unit_is_group_head(loop_unit2) {
+                                let cargo_group = self.units[loop_unit2].group.expect("pathDestValid: group head without a group");
+                                if self.group_can_move_or_attack_into(cargo_group, to_plot, declare_war) {
+                                    valid = true;
+                                    break;
                                 }
                             }
                         }
@@ -1051,67 +1043,59 @@ impl Game {
 
             let moves_left = 0.max(max - cost);
 
-            if moves_left <= worst_moves_left {
-                if moves_left < worst_moves_left || max <= worst_max {
-                    let unit_team = self.unit_get_team(loop_unit);
+            if moves_left <= worst_moves_left && (moves_left < worst_moves_left || max <= worst_max) {
+                let unit_team = self.unit_get_team(loop_unit);
+
+                if moves_left == 0 {
+                    cost = PATH_MOVEMENT_WEIGHT * max;
+
+                    if to_team != Some(unit_team) {
+                        cost += PATH_TERRITORY_WEIGHT;
+                    }
+
+                    // Damage caused by features (mods)
+                    if d.defines.path_damage_weight != 0 {
+                        if let Some(feature) = self.map.plots[to_plot].feature_type {
+                            cost += (d.defines.path_damage_weight * 0.max(d.features[feature].turn_damage)) / d.defines.max_hit_points;
+                        }
+
+                        if self.plot_get_extra_move_path_cost(to_plot) > 0 {
+                            cost += PATH_MOVEMENT_WEIGHT * self.plot_get_extra_move_path_cost(to_plot);
+                        }
+                    }
+                } else {
+                    cost *= PATH_MOVEMENT_WEIGHT;
+                }
+
+                if self.unit_can_fight(loop_unit) {
+                    let no_defensive_bonus = self.unit_no_defensive_bonus(loop_unit);
 
                     if moves_left == 0 {
-                        cost = PATH_MOVEMENT_WEIGHT * max;
-
-                        if to_team != Some(unit_team) {
-                            cost += PATH_TERRITORY_WEIGHT;
-                        }
-
-                        // Damage caused by features (mods)
-                        if d.defines.path_damage_weight != 0 {
-                            if let Some(feature) = self.map.plots[to_plot].feature_type {
-                                cost += (d.defines.path_damage_weight * 0.max(d.features[feature].turn_damage)) / d.defines.max_hit_points;
-                            }
-
-                            if self.plot_get_extra_move_path_cost(to_plot) > 0 {
-                                cost += PATH_MOVEMENT_WEIGHT * self.plot_get_extra_move_path_cost(to_plot);
-                            }
-                        }
-                    } else {
-                        cost *= PATH_MOVEMENT_WEIGHT;
+                        let defense = if no_defensive_bonus { 0 } else { defense_modifier(to_plot, unit_team) };
+                        cost += PATH_DEFENSE_WEIGHT * 0.max(200 - defense);
                     }
 
-                    if self.unit_can_fight(loop_unit) {
-                        let no_defensive_bonus = self.unit_no_defensive_bonus(loop_unit);
+                    if ai_control && self.unit_can_attack(loop_unit) && is_path_dest && self.plot_is_visible_enemy_defender(to_plot, loop_unit) {
+                        let defense = if no_defensive_bonus { 0 } else { defense_modifier(from_plot, unit_team) };
+                        cost += PATH_DEFENSE_WEIGHT * 0.max(200 - defense);
 
-                        if moves_left == 0 {
-                            let defense = if no_defensive_bonus { 0 } else { defense_modifier(to_plot, unit_team) };
-                            cost += PATH_DEFENSE_WEIGHT * 0.max(200 - defense);
+                        if self.map.plots[from_plot].plot_city.is_none() {
+                            cost += PATH_CITY_WEIGHT;
                         }
 
-                        if ai_control {
-                            if self.unit_can_attack(loop_unit) {
-                                if is_path_dest {
-                                    if self.plot_is_visible_enemy_defender(to_plot, loop_unit) {
-                                        let defense = if no_defensive_bonus { 0 } else { defense_modifier(from_plot, unit_team) };
-                                        cost += PATH_DEFENSE_WEIGHT * 0.max(200 - defense);
-
-                                        if self.map.plots[from_plot].plot_city.is_none() {
-                                            cost += PATH_CITY_WEIGHT;
-                                        }
-
-                                        if self.plot_is_river_crossing(from_plot, self.direction_xy_plots(from_plot, to_plot)) {
-                                            if !self.unit_is_river(loop_unit) {
-                                                cost += PATH_RIVER_WEIGHT * -d.defines.river_attack_modifier;
-                                                cost += PATH_MOVEMENT_WEIGHT * moves_left;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                        if self.plot_is_river_crossing(from_plot, self.direction_xy_plots(from_plot, to_plot))
+                            && !self.unit_is_river(loop_unit)
+                        {
+                            cost += PATH_RIVER_WEIGHT * -d.defines.river_attack_modifier;
+                            cost += PATH_MOVEMENT_WEIGHT * moves_left;
                         }
                     }
+                }
 
-                    if cost < worst_cost {
-                        worst_cost = cost;
-                        worst_moves_left = moves_left;
-                        worst_max = max;
-                    }
+                if cost < worst_cost {
+                    worst_cost = cost;
+                    worst_moves_left = moves_left;
+                    worst_max = max;
                 }
             }
         }
@@ -1147,13 +1131,11 @@ impl Game {
         let to_plot = self.map.plot_soren(node.x, node.y).expect("pathValid: ToPlot");
 
         // XXX might want to take this out...
-        if self.group_get_domain_type(group) == Some(DomainType::DOMAIN_SEA) {
-            if self.plot_is_water(from_plot) && self.plot_is_water(to_plot) {
-                let corner1 = self.map.plot_xy(parent.x, node.y).expect("pathValid: diagonal corner");
-                let corner2 = self.map.plot_xy(node.x, parent.y).expect("pathValid: diagonal corner");
-                if !self.plot_is_water(corner1) && !self.plot_is_water(corner2) {
-                    return false;
-                }
+        if self.group_get_domain_type(group) == Some(DomainType::DOMAIN_SEA) && self.plot_is_water(from_plot) && self.plot_is_water(to_plot) {
+            let corner1 = self.map.plot_xy(parent.x, node.y).expect("pathValid: diagonal corner");
+            let corner2 = self.map.plot_xy(node.x, parent.y).expect("pathValid: diagonal corner");
+            if !self.plot_is_water(corner1) && !self.plot_is_water(corner2) {
+                return false;
             }
         }
         true
@@ -1187,32 +1169,24 @@ impl Game {
                 return false;
             }
 
-            if self.plot_is_owned(from_plot) {
-                if self.plot_get_team(from_plot) != head_team {
-                    return false;
-                }
+            if self.plot_is_owned(from_plot) && self.plot_get_team(from_plot) != head_team {
+                return false;
             }
         }
 
-        if finder.info & MOVE_NO_ENEMY_TERRITORY != 0 {
-            if self.plot_is_owned(from_plot) {
-                if self.at_war_opt(self.plot_get_team(from_plot), head_team) {
-                    return false;
-                }
-            }
+        if finder.info & MOVE_NO_ENEMY_TERRITORY != 0 && self.plot_is_owned(from_plot) && self.at_war_opt(self.plot_get_team(from_plot), head_team) {
+            return false;
         }
 
         let ai_control = self.group_ai_is_controlled(group);
 
         if ai_control {
-            if parent.data2 > 1 || parent.data1 == 0 {
-                if finder.info & MOVE_IGNORE_DANGER == 0 {
-                    if !self.group_can_fight(group) && !self.group_always_invisible(group) {
-                        let head_owner = self.group_get_head_owner(group).expect("pathValid: group without a head unit");
-                        if ai_get_plot_danger(self, head_owner, from_plot, -1, true) > 0 {
-                            return false;
-                        }
-                    }
+            if (parent.data2 > 1 || parent.data1 == 0)
+                && finder.info & MOVE_IGNORE_DANGER == 0 && !self.group_can_fight(group) && !self.group_always_invisible(group)
+            {
+                let head_owner = self.group_get_head_owner(group).expect("pathValid: group without a head unit");
+                if ai_get_plot_danger(self, head_owner, from_plot, -1, true) > 0 {
+                    return false;
                 }
             }
         }
@@ -1325,10 +1299,10 @@ impl Game {
         let player = finder_player(finder);
         let team = self.players[player].team;
 
-        if !self.plot_is_owned(new_plot) || self.plot_get_team(new_plot) == Some(team) {
-            if self.map.plots[new_plot].route_type == self.player_get_best_route(player, Some(new_plot)) {
-                return true;
-            }
+        if (!self.plot_is_owned(new_plot) || self.plot_get_team(new_plot) == Some(team))
+            && self.map.plots[new_plot].route_type == self.player_get_best_route(player, Some(new_plot))
+        {
+            return true;
         }
 
         false
@@ -1387,12 +1361,10 @@ impl Game {
     pub fn plot_group_valid_step(&self, old_plot: PlotIdx, new_plot: PlotIdx, player: PlayerId) -> bool {
         let team = self.players[player].team;
 
-        if self.plot_get_plot_group(old_plot, player) == self.plot_get_plot_group(new_plot, player) {
-            if self.plot_is_trade_network(new_plot, team) {
-                if self.plot_is_trade_network_connected(new_plot, old_plot, team) {
-                    return true;
-                }
-            }
+        if self.plot_get_plot_group(old_plot, player) == self.plot_get_plot_group(new_plot, player)
+            && self.plot_is_trade_network(new_plot, team) && self.plot_is_trade_network_connected(new_plot, old_plot, team)
+        {
+            return true;
         }
 
         false

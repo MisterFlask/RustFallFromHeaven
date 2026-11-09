@@ -331,10 +331,8 @@ impl Game {
 
         if force || !can_enter_area(self, g, plot_team, self.map.plots[plot].area, true) {
             if let Some(plot_team) = plot_team {
-                if self.team_ai_is_sneak_attack_ready(team, plot_team) {
-                    if self.team_can_declare_war(team, plot_team) {
-                        self.team_declare_war(team, plot_team, true, None);
-                    }
+                if self.team_ai_is_sneak_attack_ready(team, plot_team) && self.team_can_declare_war(team, plot_team) {
+                    self.team_declare_war(team, plot_team, true, None);
                 }
             }
         }
@@ -684,10 +682,8 @@ impl Game {
         if self.group_is_amphib_plot(g, plot) {
             // Alertness (Pep / Xienwolf): no landings onto plots that were not revealed when the
             // move mission started.
-            if self.group_is_human(g) {
-                if !self.groups[g].last_plot_revealed {
-                    return false;
-                }
+            if self.group_is_human(g) && !self.groups[g].last_plot_revealed {
+                return false;
             }
 
             let (plot_x, plot_y) = self.map.xy(plot);
@@ -970,50 +966,42 @@ impl Game {
                     can_attack
                 };
 
-                if can_attack {
-                    if force || self.unit_can_move(loop_unit) {
-                        if force || self.unit_can_move_into(loop_unit, plot, true, potential_enemy, false) {
-                            let odds = ai_attack_odds(self, loop_unit, plot, potential_enemy);
+                if can_attack && (force || self.unit_can_move(loop_unit)) && (force || self.unit_can_move_into(loop_unit, plot, true, potential_enemy, false)) {
+                    let odds = ai_attack_odds(self, loop_unit, plot, potential_enemy);
 
-                            let mut value = odds;
-                            // BETTER AI (Block some Units from attacking at low odds) Sephi
-                            if !self.players[self.units[loop_unit].owner].human {
-                                let unit_ai = self.units[loop_unit].ai_type;
-                                if unit_ai == Some(UnitAIType::UNITAI_WARWIZARD) {
-                                    if odds < 95 {
-                                        value = 0; //Need to put the min to 1 to prevent WoC
-                                    }
-                                }
-
-                                if unit_ai == Some(UnitAIType::UNITAI_HERO) {
-                                    if odds < 85 {
-                                        value = 0;
-                                    }
-                                }
-                                if self.units[loop_unit].level > 4 && odds < 95 {
-                                    value /= 2;
-                                }
-                            }
-                            value = value.max(1);
-                            debug_assert!(value > 0, "iValue is expected to be greater than 0");
-
-                            if self.unit_collateral_damage(loop_unit) > 0 {
-                                let possible_targets = (self.plot_get_num_visible_enemy_defenders(plot, loop_unit) - 1)
-                                    .min(self.unit_collateral_damage_max_units(loop_unit));
-
-                                if possible_targets > 0 {
-                                    value *= 100 + ((self.unit_collateral_damage(loop_unit) * possible_targets) / 5);
-                                    value /= 100;
-                                }
-                            }
-
-                            // if non-human, prefer the last unit that has the best value (so as to avoid splitting the group)
-                            if value > best_value || (!is_human && value > 0 && value == best_value) {
-                                best_value = value;
-                                best_odds = odds;
-                                best_unit = Some(loop_unit);
-                            }
+                    let mut value = odds;
+                    // BETTER AI (Block some Units from attacking at low odds) Sephi
+                    if !self.players[self.units[loop_unit].owner].human {
+                        let unit_ai = self.units[loop_unit].ai_type;
+                        if unit_ai == Some(UnitAIType::UNITAI_WARWIZARD) && odds < 95 {
+                            value = 0; //Need to put the min to 1 to prevent WoC
                         }
+
+                        if unit_ai == Some(UnitAIType::UNITAI_HERO) && odds < 85 {
+                            value = 0;
+                        }
+                        if self.units[loop_unit].level > 4 && odds < 95 {
+                            value /= 2;
+                        }
+                    }
+                    value = value.max(1);
+                    debug_assert!(value > 0, "iValue is expected to be greater than 0");
+
+                    if self.unit_collateral_damage(loop_unit) > 0 {
+                        let possible_targets = (self.plot_get_num_visible_enemy_defenders(plot, loop_unit) - 1)
+                            .min(self.unit_collateral_damage_max_units(loop_unit));
+
+                        if possible_targets > 0 {
+                            value *= 100 + ((self.unit_collateral_damage(loop_unit) * possible_targets) / 5);
+                            value /= 100;
+                        }
+                    }
+
+                    // if non-human, prefer the last unit that has the best value (so as to avoid splitting the group)
+                    if value > best_value || (!is_human && value > 0 && value == best_value) {
+                        best_value = value;
+                        best_odds = odds;
+                        best_unit = Some(loop_unit);
                     }
                 }
             }
@@ -1041,38 +1029,36 @@ impl Game {
                     can_attack
                 };
 
-                if can_attack {
-                    if force || self.unit_can_move(loop_unit) {
-                        // C++ quirk: bPotentialEnemy is not passed on (canMoveInto(pPlot, true)).
-                        if force || self.unit_can_move_into(loop_unit, plot, true, false, false) {
-                            let mut value = ai_sacrifice_value(self, loop_unit, Some(plot));
-                            debug_assert!(value > 0, "iValue is expected to be greater than 0");
+                if can_attack && (force || self.unit_can_move(loop_unit)) {
+                    // C++ quirk: bPotentialEnemy is not passed on (canMoveInto(pPlot, true)).
+                    if force || self.unit_can_move_into(loop_unit, plot, true, false, false) {
+                        let mut value = ai_sacrifice_value(self, loop_unit, Some(plot));
+                        debug_assert!(value > 0, "iValue is expected to be greater than 0");
 
-                            // BETTER AI (Summons make good groupattack sacrifice units) Sephi
-                            if self.units[loop_unit].duration > 0 {
-                                value += 10000;
+                        // BETTER AI (Summons make good groupattack sacrifice units) Sephi
+                        if self.units[loop_unit].duration > 0 {
+                            value += 10000;
+                        }
+
+                        // BETTER AI (Block some Units from attacking at low odds) Sephi
+                        if !self.players[self.units[loop_unit].owner].human {
+                            let unit_ai = self.units[loop_unit].ai_type;
+                            if unit_ai == Some(UnitAIType::UNITAI_WARWIZARD) {
+                                value = 1;
                             }
 
-                            // BETTER AI (Block some Units from attacking at low odds) Sephi
-                            if !self.players[self.units[loop_unit].owner].human {
-                                let unit_ai = self.units[loop_unit].ai_type;
-                                if unit_ai == Some(UnitAIType::UNITAI_WARWIZARD) {
-                                    value = 1;
-                                }
-
-                                if unit_ai == Some(UnitAIType::UNITAI_HERO) {
-                                    value = 1;
-                                }
-                                if self.units[loop_unit].level > 4 {
-                                    value = 1;
-                                }
+                            if unit_ai == Some(UnitAIType::UNITAI_HERO) {
+                                value = 1;
                             }
-
-                            // we want to pick the last unit of highest value, so pick the last unit with a good value
-                            if value >= best_value {
-                                best_value = value;
-                                best_unit = Some(loop_unit);
+                            if self.units[loop_unit].level > 4 {
+                                value = 1;
                             }
+                        }
+
+                        // we want to pick the last unit of highest value, so pick the last unit with a good value
+                        if value >= best_value {
+                            best_value = value;
+                            best_unit = Some(loop_unit);
                         }
                     }
                 }
@@ -1112,10 +1098,10 @@ impl Game {
                     let plot_improvement = self.map.plots[plot].improvement_type;
                     if plot_improvement.is_some() && plot_improvement != opt_from_i32::<ImprovementType>(d.defines.ruins_improvement) {
                         let bonus = self.plot_get_non_obsolete_bonus_type(plot, self.players[owner].team);
-                        if bonus.map_or(true, |bonus| !d.improvements[improvement].improvement_bonus[bonus].bonus_trade) {
-                            if d.improvements[improvement].improvement_pillage.is_some() {
-                                return false;
-                            }
+                        if bonus.map_or(true, |bonus| !d.improvements[improvement].improvement_bonus[bonus].bonus_trade)
+                            && d.improvements[improvement].improvement_pillage.is_some()
+                        {
+                            return false;
                         }
                     }
                 }

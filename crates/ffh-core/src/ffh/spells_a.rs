@@ -424,17 +424,17 @@ fn post_combat_explode(g: &mut Game, caster: UnitId, _opponent: UnitId, _call: &
         }
         let Some(pl) = pl else { continue };
         let feature = g.map.plots[pl].feature_type;
-        if feature == Some(forest) || feature == Some(jungle) || feature == Some(forest_new) {
-            if g.soren_rand_num(100, "Flames Spread") <= d.defines.flames_spread_chance {
-                let mut valid = true;
-                if let Some(imp) = g.map.plots[pl].improvement_type {
-                    if d.improvements[imp].permanent {
-                        valid = false;
-                    }
+        if (feature == Some(forest) || feature == Some(jungle) || feature == Some(forest_new))
+            && g.soren_rand_num(100, "Flames Spread") <= d.defines.flames_spread_chance
+        {
+            let mut valid = true;
+            if let Some(imp) = g.map.plots[pl].improvement_type {
+                if d.improvements[imp].permanent {
+                    valid = false;
                 }
-                if valid {
-                    g.plot_set_improvement_type(pl, Some(smoke));
-                }
+            }
+            if valid {
+                g.plot_set_improvement_type(pl, Some(smoke));
             }
         }
         for i in 0..num_units(g, pl) {
@@ -1777,10 +1777,8 @@ fn spell_feed(g: &mut Game, caster: UnitId, _call: &PyCall) {
     let pl = g.unit_plot(caster);
     let mut victim: Option<UnitId> = None;
     for &u in &g.map.plots[pl].units {
-        if g.units[u].owner == p && g.units[u].unit_type == bloodpet {
-            if victim.is_none_or(|v| g.units[v].level > g.units[u].level) {
-                victim = Some(u);
-            }
+        if g.units[u].owner == p && g.units[u].unit_type == bloodpet && victim.is_none_or(|v| g.units[v].level > g.units[u].level) {
+            victim = Some(u);
         }
     }
     if let Some(v) = victim {

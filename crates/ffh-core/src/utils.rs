@@ -528,10 +528,10 @@ pub fn is_promotion_valid(d: &GameData, promotion: PromotionType, unit: UnitType
 
     // FfH: Modified by Kael 06/28/2008 -- BtS rejected Blitz for units with 1 move; removed.
 
-    if k_unit.collateral_damage == 0 || k_unit.collateral_damage_limit == 0 || k_unit.collateral_damage_max_units == 0 {
-        if k_promotion.collateral_damage_change != 0 {
-            return false;
-        }
+    if (k_unit.collateral_damage == 0 || k_unit.collateral_damage_limit == 0 || k_unit.collateral_damage_max_units == 0)
+        && k_promotion.collateral_damage_change != 0
+    {
+        return false;
     }
 
     if k_unit.interception_probability == 0 && k_promotion.intercept_change != 0 {

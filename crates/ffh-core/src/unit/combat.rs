@@ -490,13 +490,11 @@ impl Game {
                 }
             } else if self.units[defender].combat_first_strikes == 0 {
                 // FfH: defensive withdrawal (outside cities)
-                if self.units[defender].damage + defender_damage >= self.unit_max_hit_points(defender) {
-                    if !self.plot_is_city(plot, false, None) {
-                        if self.soren_rand_num(100, "Withdrawal") < self.unit_get_withdrawl_prob_defensive(defender) {
-                            self.units[defender].flee_withdrawl = true;
-                            break;
-                        }
-                    }
+                if self.units[defender].damage + defender_damage >= self.unit_max_hit_points(defender)
+                    && !self.plot_is_city(plot, false, None) && self.soren_rand_num(100, "Withdrawal") < self.unit_get_withdrawl_prob_defensive(defender)
+                {
+                    self.units[defender].flee_withdrawl = true;
+                    break;
                 }
                 // FfH: End Add
 
@@ -631,22 +629,20 @@ impl Game {
         if !self.unit_is_immune_to_defensive_strike(u) {
             self.unit_do_defensive_strike(defender, u);
         }
-        if self.unit_is_fear(defender) {
-            if !self.unit_is_immune_to_fear(u) {
-                let mut chance = self.unit_base_combat_str(u) + 20 + self.units[u].level
-                    - self.unit_base_combat_str(defender)
-                    - self.units[defender].level;
-                if chance < 4 {
-                    chance = 4;
-                }
-                if self.soren_rand_num(40, "Im afeared!") > chance {
-                    self.units[u].made_attack = true;
-                    let cost = attack_move_cost(self, u, plot);
-                    self.unit_change_moves(u, cost);
-                    let unit_type = self.units[u].unit_type;
-                    self.log.msg_at(turn, Some(owner), at, || format!("{} is afraid to attack", unit_type_name(d, unit_type)));
-                    finish = true;
-                }
+        if self.unit_is_fear(defender) && !self.unit_is_immune_to_fear(u) {
+            let mut chance = self.unit_base_combat_str(u) + 20 + self.units[u].level
+                - self.unit_base_combat_str(defender)
+                - self.units[defender].level;
+            if chance < 4 {
+                chance = 4;
+            }
+            if self.soren_rand_num(40, "Im afeared!") > chance {
+                self.units[u].made_attack = true;
+                let cost = attack_move_cost(self, u, plot);
+                self.unit_change_moves(u, cost);
+                let unit_type = self.units[u].unit_type;
+                self.log.msg_at(turn, Some(owner), at, || format!("{} is afraid to attack", unit_type_name(d, unit_type)));
+                finish = true;
             }
         }
         // FfH: End Add
@@ -832,13 +828,11 @@ impl Game {
                             if !self.units.contains(loop_unit) {
                                 continue;
                             }
-                            if self.unit_is_enemy(loop_unit, Some(team), None) {
-                                if !self.unit_is_immune_to_fear(loop_unit) {
-                                    let threshold = self.unit_base_combat_str(u) + 10 - self.unit_base_combat_str(loop_unit);
-                                    if self.soren_rand_num(20, "Im afeared!") <= threshold {
-                                        self.unit_join_group(loop_unit, None, true);
-                                        self.unit_withdrawl_to_nearest_valid_plot(loop_unit, false);
-                                    }
+                            if self.unit_is_enemy(loop_unit, Some(team), None) && !self.unit_is_immune_to_fear(loop_unit) {
+                                let threshold = self.unit_base_combat_str(u) + 10 - self.unit_base_combat_str(loop_unit);
+                                if self.soren_rand_num(20, "Im afeared!") <= threshold {
+                                    self.unit_join_group(loop_unit, None, true);
+                                    self.unit_withdrawl_to_nearest_valid_plot(loop_unit, false);
                                 }
                             }
                         }
@@ -1301,10 +1295,8 @@ impl Game {
             }
 
             let attacker_plot = self.unit_plot(a);
-            if !self.unit_is_river(a) {
-                if self.plot_is_river_crossing(attacker_plot, self.direction_xy_plots(attacker_plot, ap)) {
-                    temp_modifier += term!(log, river_attack_modifier, -d.defines.river_attack_modifier);
-                }
+            if !self.unit_is_river(a) && self.plot_is_river_crossing(attacker_plot, self.direction_xy_plots(attacker_plot, ap)) {
+                temp_modifier += term!(log, river_attack_modifier, -d.defines.river_attack_modifier);
             }
 
             let amphib = self.unit_amphib_attack_modifier(a, attacker_plot, ap);
@@ -1624,10 +1616,8 @@ impl Game {
         }
 
         // Artillery can't amphibious attack
-        if self.plot_is_water(self.unit_plot(u)) && !self.plot_is_water(self.unit_plot(defender)) {
-            if self.units[u].combat_limit < 100 {
-                return false;
-            }
+        if self.plot_is_water(self.unit_plot(u)) && !self.plot_is_water(self.unit_plot(defender)) && self.units[u].combat_limit < 100 {
+            return false;
         }
 
         true
@@ -1642,10 +1632,8 @@ impl Game {
 
         // (C++ dereferences `plot()` for a NULL `pPlot`)
         let plot = plot.unwrap_or_else(|| self.unit_plot(u));
-        if !self.plot_is_valid_domain_for_action(plot, u) {
-            if self.d.defines.land_units_can_attack_water_cities == 0 {
-                return false;
-            }
+        if !self.plot_is_valid_domain_for_action(plot, u) && self.d.defines.land_units_can_attack_water_cities == 0 {
+            return false;
         }
 
         // FfH: Added by Kael 10/31/2007
@@ -1859,10 +1847,10 @@ impl Game {
                     if self.groups[group_of(self, loop_unit)].activity_type != ActivityType::ACTIVITY_PATROL {
                         continue;
                     }
-                    if best_unit.is_none() || self.unit_is_better_defender_than(loop_unit, best_unit, Some(u)) {
-                        if self.get_combat_odds(pillager, loop_unit) < min_odds {
-                            best_unit = Some(loop_unit);
-                        }
+                    if (best_unit.is_none() || self.unit_is_better_defender_than(loop_unit, best_unit, Some(u)))
+                        && self.get_combat_odds(pillager, loop_unit) < min_odds
+                    {
+                        best_unit = Some(loop_unit);
                     }
                 }
             }
@@ -1976,21 +1964,17 @@ impl Game {
         let attacker_team = self.unit_get_team(attacker);
 
         for &loop_unit in on_plot {
-            if self.units[loop_unit].defensive_strike_chance > 0 {
-                if ov.at_war(self, self.unit_get_team(loop_unit), attacker_team) {
-                    if self.unit_is_blitz(loop_unit) || !ov.made_attack(self, loop_unit) {
-                        let chance = self.units[loop_unit].defensive_strike_chance;
-                        out.rolled += 1;
-                        let roll = rng.rand(100, "Defensive Strike");
-                        if roll < chance {
-                            if self.units[loop_unit].defensive_strike_damage > best_damage {
-                                best_damage = self.units[loop_unit].defensive_strike_damage;
-                                out.best = Some(loop_unit);
-                                out.chance = chance;
-                                out.roll = roll;
-                            }
-                        }
-                    }
+            if self.units[loop_unit].defensive_strike_chance > 0
+                && ov.at_war(self, self.unit_get_team(loop_unit), attacker_team) && (self.unit_is_blitz(loop_unit) || !ov.made_attack(self, loop_unit))
+            {
+                let chance = self.units[loop_unit].defensive_strike_chance;
+                out.rolled += 1;
+                let roll = rng.rand(100, "Defensive Strike");
+                if roll < chance && self.units[loop_unit].defensive_strike_damage > best_damage {
+                    best_damage = self.units[loop_unit].defensive_strike_damage;
+                    out.best = Some(loop_unit);
+                    out.chance = chance;
+                    out.roll = roll;
                 }
             }
         }
@@ -2090,10 +2074,8 @@ impl Game {
                 if promotion_info.free_xp_from_combat != 0 {
                     self.unit_change_experience(u, promotion_info.free_xp_from_combat, -1, false, false, false);
                 }
-                if promotion_info.modify_global_counter_on_combat != 0 {
-                    if self.unit_is_alive(loser) {
-                        self.change_global_counter(promotion_info.modify_global_counter_on_combat);
-                    }
+                if promotion_info.modify_global_counter_on_combat != 0 && self.unit_is_alive(loser) {
+                    self.change_global_counter(promotion_info.modify_global_counter_on_combat);
                 }
                 if duel && promotion_info.removed_by_combat {
                     self.unit_set_has_promotion(u, promotion, false);
@@ -2112,27 +2094,23 @@ impl Game {
                         if !self.units.contains(loop_unit) {
                             continue;
                         }
-                        if !self.units[loop_unit].has_promotion[apply] {
-                            if self.unit_is_alive(loop_unit) || !d.promotions[apply].prereq_alive {
-                                let loop_team = self.unit_get_team(loop_unit);
-                                if self.unit_is_enemy(u, Some(loop_team), None) {
-                                    if self.unit_can_acquire_promotion(loop_unit, apply) {
-                                        if self.soren_rand_num(100, "Combat Apply") <= combat_apply_chance {
-                                            self.unit_set_has_promotion(loop_unit, apply, true);
-                                            // UI: promotion messages to both owners.
-                                        }
-                                    }
-                                }
+                        if !self.units[loop_unit].has_promotion[apply] && (self.unit_is_alive(loop_unit) || !d.promotions[apply].prereq_alive) {
+                            let loop_team = self.unit_get_team(loop_unit);
+                            if self.unit_is_enemy(u, Some(loop_team), None)
+                                && self.unit_can_acquire_promotion(loop_unit, apply) && self.soren_rand_num(100, "Combat Apply") <= combat_apply_chance
+                            {
+                                self.unit_set_has_promotion(loop_unit, apply, true);
+                                // UI: promotion messages to both owners.
                             }
                         }
                     }
                 }
                 if promotion_info.combat_capture_percent != 0 {
-                    if new_unit_type.is_none() && self.unit_is_alive(loser) {
-                        if self.soren_rand_num(100, "Combat Capture") <= promotion_info.combat_capture_percent {
-                            new_unit_type = Some(self.units[loser].unit_type);
-                            convert = true;
-                        }
+                    if new_unit_type.is_none() && self.unit_is_alive(loser)
+                        && self.soren_rand_num(100, "Combat Capture") <= promotion_info.combat_capture_percent
+                    {
+                        new_unit_type = Some(self.units[loser].unit_type);
+                        convert = true;
                     }
                 }
                 if let Some(capture_unit_combat) = promotion_info.capture_unit_combat {
@@ -2144,15 +2122,11 @@ impl Game {
             }
             if duel && self.units[loser].has_promotion[promotion] {
                 if let Some(apply) = promotion_info.promotion_combat_apply {
-                    if !self.units[u].has_promotion[apply] {
-                        if self.unit_is_alive(u) || !d.promotions[apply].prereq_alive {
-                            let team = self.unit_get_team(u);
-                            if self.unit_is_enemy(loser, Some(team), None) {
-                                if self.soren_rand_num(100, "Combat Apply") <= combat_apply_chance {
-                                    self.unit_set_has_promotion(u, apply, true);
-                                    // UI: promotion messages to both owners.
-                                }
-                            }
+                    if !self.units[u].has_promotion[apply] && (self.unit_is_alive(u) || !d.promotions[apply].prereq_alive) {
+                        let team = self.unit_get_team(u);
+                        if self.unit_is_enemy(loser, Some(team), None) && self.soren_rand_num(100, "Combat Apply") <= combat_apply_chance {
+                            self.unit_set_has_promotion(u, apply, true);
+                            // UI: promotion messages to both owners.
                         }
                     }
                 }
@@ -2176,16 +2150,14 @@ impl Game {
             let free_xp = self.players[owner].free_xp_from_combat;
             self.unit_change_experience(u, free_xp, -1, false, false, false);
         }
-        if self.units[u].combat_heal_percent != 0 {
-            if self.unit_is_alive(loser) {
-                let mut heal = self.units[u].combat_heal_percent;
-                if heal > self.units[u].damage {
-                    heal = self.units[u].damage;
-                }
-                if heal != 0 {
-                    self.unit_change_damage(u, -heal, None);
-                    effect(WonEffect::Heal(heal));
-                }
+        if self.units[u].combat_heal_percent != 0 && self.unit_is_alive(loser) {
+            let mut heal = self.units[u].combat_heal_percent;
+            if heal > self.units[u].damage {
+                heal = self.units[u].damage;
+            }
+            if heal != 0 {
+                self.unit_change_damage(u, -heal, None);
+                effect(WonEffect::Heal(heal));
             }
         }
         // UI: explode-in-combat effects and sounds (suicide exploders, exploding losers).
@@ -2208,25 +2180,23 @@ impl Game {
                 effect(WonEffect::Promotion(promotion));
             }
         }
-        if self.units[u].gold_from_combat != 0 {
-            if !self.unit_is_animal(loser) {
-                let gold = self.units[u].gold_from_combat;
-                self.players[owner].gold += gold;
-                effect(WonEffect::Gold(gold));
-                let turn = self.game_turn();
-                self.log.msg(turn, Some(owner), || format!("{gold} gold from combat"));
-            }
+        if self.units[u].gold_from_combat != 0 && !self.unit_is_animal(loser) {
+            let gold = self.units[u].gold_from_combat;
+            self.players[owner].gold += gold;
+            effect(WonEffect::Gold(gold));
+            let turn = self.game_turn();
+            self.log.msg(turn, Some(owner), || format!("{gold} gold from combat"));
         }
         if self.units[u].duration > 0 {
             self.unit_change_duration(u, info.duration_from_combat);
         }
-        if duel && self.units[loser].damage_type_combat[DamageType::DAMAGE_POISON] > 0 && d.defines.poisoned_promotion != -1 {
-            if self.unit_is_alive(u) && self.units[u].damage > 0 {
-                let resist = self.unit_get_damage_type_resist(u, DamageType::DAMAGE_POISON);
-                if self.soren_rand_num(100, "Poisoned") >= resist {
-                    if let Some(poisoned) = opt_from_i32::<PromotionType>(d.defines.poisoned_promotion) {
-                        self.unit_set_has_promotion(u, poisoned, true);
-                    }
+        if duel && self.units[loser].damage_type_combat[DamageType::DAMAGE_POISON] > 0 && d.defines.poisoned_promotion != -1
+            && self.unit_is_alive(u) && self.units[u].damage > 0
+        {
+            let resist = self.unit_get_damage_type_resist(u, DamageType::DAMAGE_POISON);
+            if self.soren_rand_num(100, "Poisoned") >= resist {
+                if let Some(poisoned) = opt_from_i32::<PromotionType>(d.defines.poisoned_promotion) {
+                    self.unit_set_has_promotion(u, poisoned, true);
                 }
             }
         }
@@ -2239,20 +2209,20 @@ impl Game {
         }
         if let Some(create_unit_type) = info.unit_create_from_combat.filter(|_| matches!(create, KillCreate::Roll | KillCreate::Due)) {
             let loser_info = &d.units[self.units[loser].unit_type];
-            if !self.unit_is_immune_to_capture(loser) && self.unit_is_alive(loser) && loser_info.equipment_promotion.is_none() {
-                if create == KillCreate::Due || self.soren_rand_num(100, "Create Unit from Combat") <= info.unit_create_from_combat_chance {
-                    let (x, y) = self.map.xy(self.unit_plot(u));
-                    let new_unit = self.player_init_unit(owner, create_unit_type, x, y, None, None);
-                    effect(WonEffect::Create(create_unit_type));
-                    self.units[new_unit].duration = self.units[u].duration;
-                    if self.unit_is_hidden_nationality(u) {
-                        // (C++ casts the define unchecked; it always names a promotion)
-                        if let Some(hidden) = opt_from_i32::<PromotionType>(d.defines.hidden_nationality_promotion) {
-                            self.unit_set_has_promotion(new_unit, hidden, true);
-                        }
+            if !self.unit_is_immune_to_capture(loser) && self.unit_is_alive(loser) && loser_info.equipment_promotion.is_none()
+                && (create == KillCreate::Due || self.soren_rand_num(100, "Create Unit from Combat") <= info.unit_create_from_combat_chance)
+            {
+                let (x, y) = self.map.xy(self.unit_plot(u));
+                let new_unit = self.player_init_unit(owner, create_unit_type, x, y, None, None);
+                effect(WonEffect::Create(create_unit_type));
+                self.units[new_unit].duration = self.units[u].duration;
+                if self.unit_is_hidden_nationality(u) {
+                    // (C++ casts the define unchecked; it always names a promotion)
+                    if let Some(hidden) = opt_from_i32::<PromotionType>(d.defines.hidden_nationality_promotion) {
+                        self.unit_set_has_promotion(new_unit, hidden, true);
                     }
-                    new_unit_type = None;
                 }
+                new_unit_type = None;
             }
         }
         if let Some(new_type) = new_unit_type {
@@ -2326,10 +2296,8 @@ impl Game {
             return false;
         }
 
-        if self.unit_is_no_capture(u) {
-            if self.plot_is_enemy_city(plot, u) {
-                return false;
-            }
+        if self.unit_is_no_capture(u) && self.plot_is_enemy_city(plot, u) {
+            return false;
         }
 
         true
@@ -2548,33 +2516,31 @@ impl Game {
                 continue;
             }
             let loop_team = self.unit_get_team(loop_unit);
-            if !self.unit_is_dead(loop_unit) && self.unit_is_enemy(u, Some(loop_team), Some(plot)) {
-                if !self.unit_is_invisible(loop_unit, team, true) {
-                    if self.unit_can_defend(loop_unit, None) {
-                        let flanking_strength = info.flanking_strike_unit_class[self.unit_get_unit_class_type(loop_unit)];
+            if !self.unit_is_dead(loop_unit) && self.unit_is_enemy(u, Some(loop_team), Some(plot))
+                && !self.unit_is_invisible(loop_unit, team, true) && self.unit_can_defend(loop_unit, None)
+            {
+                let flanking_strength = info.flanking_strike_unit_class[self.unit_get_unit_class_type(loop_unit)];
 
-                        if flanking_strength > 0 {
-                            // C++ quirk: the flanked unit's combat values are computed but unused; the
-                            // roll below uses the odds passed in for the main defender.
-                            let _ = self.unit_get_defender_combat_values(
-                                u,
-                                loop_unit,
-                                plot,
-                                attacker_strength,
-                                attacker_firepower,
-                                None,
-                            );
+                if flanking_strength > 0 {
+                    // C++ quirk: the flanked unit's combat values are computed but unused; the
+                    // roll below uses the odds passed in for the main defender.
+                    let _ = self.unit_get_defender_combat_values(
+                        u,
+                        loop_unit,
+                        plot,
+                        attacker_strength,
+                        attacker_firepower,
+                        None,
+                    );
 
-                            if self.soren_rand_num(d.defines.combat_die_sides, "Flanking Combat") >= defender_odds {
-                                let collateral_damage = (flanking_strength * defender_damage) / 100;
-                                let damage = self.units[loop_unit].damage;
-                                let unit_damage =
-                                    damage.max((damage + collateral_damage).min(self.unit_collateral_damage_limit(u)));
+                    if self.soren_rand_num(d.defines.combat_die_sides, "Flanking Combat") >= defender_odds {
+                        let collateral_damage = (flanking_strength * defender_damage) / 100;
+                        let damage = self.units[loop_unit].damage;
+                        let unit_damage =
+                            damage.max((damage + collateral_damage).min(self.unit_collateral_damage_limit(u)));
 
-                                if damage != unit_damage {
-                                    flanked_units.push((loop_unit, unit_damage));
-                                }
-                            }
+                        if damage != unit_damage {
+                            flanked_units.push((loop_unit, unit_damage));
                         }
                     }
                 }

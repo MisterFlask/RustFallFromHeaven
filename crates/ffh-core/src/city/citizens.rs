@@ -1500,10 +1500,10 @@ impl Game {
             for _ in 0..change {
                 // C++ quirk: a citizen is freed before the validity test, and stays idle if the
                 // specialist then turns out not to be valid.
-                if self.city_extra_population(c) > 0 || self.city_ai_remove_worst_citizen(c, Some(specialist)) {
-                    if self.city_is_specialist_valid(c, specialist, 1) {
-                        self.city_change_specialist_count(c, specialist, 1);
-                    }
+                if (self.city_extra_population(c) > 0 || self.city_ai_remove_worst_citizen(c, Some(specialist)))
+                    && self.city_is_specialist_valid(c, specialist, 1)
+                {
+                    self.city_change_specialist_count(c, specialist, 1);
                 }
             }
         } else {

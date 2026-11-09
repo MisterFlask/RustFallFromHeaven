@@ -144,10 +144,10 @@ impl Game {
             for x in -max_range..=max_range {
                 for y in -max_range..=max_range {
                     if let Some(p) = self.plot_xy(head_x, head_y, x, y) {
-                        if self.plot_can_see_plot(self.unit_plot(head_unit), p, self.unit_get_team(head_unit), max_range - 1, None) {
-                            if self.plot_is_visible_enemy_unit_for_unit(p, head_unit) {
-                                return true;
-                            }
+                        if self.plot_can_see_plot(self.unit_plot(head_unit), p, self.unit_get_team(head_unit), max_range - 1, None)
+                            && self.plot_is_visible_enemy_unit_for_unit(p, head_unit)
+                        {
+                            return true;
                         }
                     }
                 }

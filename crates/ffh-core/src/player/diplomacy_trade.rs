@@ -111,10 +111,8 @@ impl Game {
                 }
             }
 
-            if self.players[p].human || self.players[other].human {
-                if self.is_option(GameOptionType::GAMEOPTION_ALWAYS_WAR) {
-                    return false;
-                }
+            if (self.players[p].human || self.players[other].human) && self.is_option(GameOptionType::GAMEOPTION_ALWAYS_WAR) {
+                return false;
             }
         }
 
@@ -219,10 +217,8 @@ impl Game {
                 self.team_declare_war(other_team, target, false, Some(WarPlanType::WARPLAN_DOGPILE));
 
                 for i in self.player_ids() {
-                    if self.players[i].alive {
-                        if self.players[i].team == target {
-                            ai_change_memory_count(self, i, p, MemoryType::MEMORY_HIRED_WAR_ALLY, 1);
-                        }
+                    if self.players[i].alive && self.players[i].team == target {
+                        ai_change_memory_count(self, i, p, MemoryType::MEMORY_HIRED_WAR_ALLY, 1);
                     }
                 }
             }
@@ -237,10 +233,8 @@ impl Game {
                 self.player_stop_trading_with_team(other, target);
 
                 for i in self.player_ids() {
-                    if self.players[i].alive {
-                        if self.players[i].team == target {
-                            ai_change_memory_count(self, i, p, MemoryType::MEMORY_HIRED_TRADE_EMBARGO, 1);
-                        }
+                    if self.players[i].alive && self.players[i].team == target {
+                        ai_change_memory_count(self, i, p, MemoryType::MEMORY_HIRED_TRADE_EMBARGO, 1);
                     }
                 }
             }
@@ -310,10 +304,8 @@ impl Game {
 
     /// C++ `CvPlayer::canTradeItem(eWhoTo, item, bTestDenial = false)`.
     pub fn player_can_trade_item(&self, p: PlayerId, who_to: PlayerId, item: &TradeData, test_denial: bool) -> bool {
-        if test_denial {
-            if self.player_get_trade_denial(p, who_to, item).is_some() {
-                return false;
-            }
+        if test_denial && self.player_get_trade_denial(p, who_to, item).is_some() {
+            return false;
         }
 
         let team = self.players[p].team;
@@ -322,12 +314,8 @@ impl Game {
         //FfH: Added by Kael 11/20/2007
         let mut can_trade = true;
         for vote_source in self.d.vote_sources.keys() {
-            if self.player_is_full_member(p, vote_source) {
-                if self.no_outside_tech_trades[vote_source] {
-                    if !self.player_is_full_member(who_to, vote_source) {
-                        can_trade = false;
-                    }
-                }
+            if self.player_is_full_member(p, vote_source) && self.no_outside_tech_trades[vote_source] && !self.player_is_full_member(who_to, vote_source) {
+                can_trade = false;
             }
         }
         //FfH: End Add
@@ -344,10 +332,8 @@ impl Game {
                         {
                             if !self.teams[to_team].has_tech[tech] {
                                 // (BTS: `if (GET_PLAYER(eWhoTo).isHuman() || (GET_PLAYER(eWhoTo).getCurrentResearch() != item.m_iData))` commented out)
-                                if self.team_is_tech_trading(team) || self.team_is_tech_trading(to_team) {
-                                    if self.player_can_research(who_to, tech, true) {
-                                        return true;
-                                    }
+                                if (self.team_is_tech_trading(team) || self.team_is_tech_trading(to_team)) && self.player_can_research(who_to, tech, true) {
+                                    return true;
                                 }
                             }
                         }
@@ -380,26 +366,22 @@ impl Game {
                     }
                 }
 
-                if self.player_can_receive_trade_city(who_to) {
-                    if 0 == self.max_city_elimination() {
-                        if !self.team_is_a_vassal(team) && !self.teams[to_team].vassal[team] {
-                            // C++ quirk: this branch does not check that the item's city exists or
-                            // is ours (only that it is not our capital); CvDeal::startTrade does.
-                            if let Some(our_capital) = self.player_get_capital_city(p) {
-                                if our_capital.0 as i64 != item.data as i64 {
-                                    return true;
-                                }
-                            }
+                if self.player_can_receive_trade_city(who_to)
+                    && 0 == self.max_city_elimination() && !self.team_is_a_vassal(team) && !self.teams[to_team].vassal[team]
+                {
+                    // C++ quirk: this branch does not check that the item's city exists or
+                    // is ours (only that it is not our capital); CvDeal::startTrade does.
+                    if let Some(our_capital) = self.player_get_capital_city(p) {
+                        if our_capital.0 as i64 != item.data as i64 {
+                            return true;
                         }
                     }
                 }
             }
 
             TradeableItem::TRADE_GOLD => {
-                if self.team_is_gold_trading(team) || self.team_is_gold_trading(to_team) {
-                    if self.players[p].gold >= item.data {
-                        return true;
-                    }
+                if (self.team_is_gold_trading(team) || self.team_is_gold_trading(to_team)) && self.players[p].gold >= item.data {
+                    return true;
                 }
             }
 
@@ -410,10 +392,8 @@ impl Game {
             }
 
             TradeableItem::TRADE_MAPS => {
-                if team != to_team {
-                    if self.team_is_map_trading(team) || self.team_is_map_trading(to_team) {
-                        return true;
-                    }
+                if team != to_team && (self.team_is_map_trading(team) || self.team_is_map_trading(to_team)) {
+                    return true;
                 }
             }
 
@@ -438,29 +418,21 @@ impl Game {
             }
 
             TradeableItem::TRADE_PEACE => {
-                if !self.team_is_human(team) {
-                    if !self.team_is_a_vassal(team) {
-                        let peace_team = data_team(item.data);
-                        if self.teams[team].has_met[peace_team] && self.teams[to_team].has_met[peace_team] {
-                            if self.at_war(team, peace_team) {
-                                return true;
-                            }
-                        }
+                if !self.team_is_human(team) && !self.team_is_a_vassal(team) {
+                    let peace_team = data_team(item.data);
+                    if self.teams[team].has_met[peace_team] && self.teams[to_team].has_met[peace_team] && self.at_war(team, peace_team) {
+                        return true;
                     }
                 }
             }
 
             TradeableItem::TRADE_WAR => {
-                if !self.team_is_human(team) {
-                    if !self.team_is_a_vassal(team) {
-                        let war_team = data_team(item.data);
-                        if !self.team_is_a_vassal(war_team) {
-                            if self.teams[team].has_met[war_team] && self.teams[to_team].has_met[war_team] {
-                                if self.team_can_declare_war(team, war_team) {
-                                    return true;
-                                }
-                            }
-                        }
+                if !self.team_is_human(team) && !self.team_is_a_vassal(team) {
+                    let war_team = data_team(item.data);
+                    if !self.team_is_a_vassal(war_team)
+                        && self.teams[team].has_met[war_team] && self.teams[to_team].has_met[war_team] && self.team_can_declare_war(team, war_team)
+                    {
+                        return true;
                     }
                 }
             }
@@ -482,12 +454,10 @@ impl Game {
                 // (original BTS: `if (!(GET_TEAM(getTeam()).isHuman()))`).
                 if !self.team_is_human(team) || team == to_team {
                     let civic: CivicType = data_index(item.data);
-                    if self.player_is_civic(who_to, civic) {
-                        if self.player_can_do_civics(p, Some(civic)) && !self.player_is_civic(p, civic) {
-                            if self.player_can_revolution(p, None) {
-                                return true;
-                            }
-                        }
+                    if self.player_is_civic(who_to, civic)
+                        && self.player_can_do_civics(p, Some(civic)) && !self.player_is_civic(p, civic) && self.player_can_revolution(p, None)
+                    {
+                        return true;
                     }
                 }
             }
@@ -496,54 +466,46 @@ impl Game {
                 // UNOFFICIAL_PATCH 10/22/09 (denev & jdog5000): also within a team.
                 if !self.team_is_human(team) || team == to_team {
                     let religion: Option<ReligionType> = opt_from_i32(item.data);
-                    if self.player_get_state_religion(who_to) == religion {
-                        if self.player_can_convert(p, religion) {
+                    if self.player_get_state_religion(who_to) == religion && self.player_can_convert(p, religion) {
+                        return true;
+                    }
+                }
+            }
+
+            TradeableItem::TRADE_OPEN_BORDERS => {
+                if team != to_team && !self.at_war(team, to_team) {
+                    if !self.team_is_open_borders(team, to_team)
+                        && (self.team_is_open_borders_trading(team) || self.team_is_open_borders_trading(to_team))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            TradeableItem::TRADE_DEFENSIVE_PACT => {
+                if !self.team_is_a_vassal(team) && !self.team_is_a_vassal(to_team)
+                    && team != to_team && !self.teams[to_team].vassal[team] && !self.at_war(team, to_team)
+                {
+                    if !self.teams[team].defensive_pact[to_team]
+                        && (self.team_is_defensive_pact_trading(team) || self.team_is_defensive_pact_trading(to_team))
+                    {
+                        if self.team_get_at_war_count(team, true) == 0 && self.team_get_at_war_count(to_team, true) == 0
+                            && self.team_can_sign_defensive_pact(team, to_team)
+                        {
                             return true;
                         }
                     }
                 }
             }
 
-            TradeableItem::TRADE_OPEN_BORDERS => {
-                if team != to_team {
-                    if !self.at_war(team, to_team) {
-                        if !self.team_is_open_borders(team, to_team) {
-                            if self.team_is_open_borders_trading(team) || self.team_is_open_borders_trading(to_team) {
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
-
-            TradeableItem::TRADE_DEFENSIVE_PACT => {
-                if !self.team_is_a_vassal(team) && !self.team_is_a_vassal(to_team) {
-                    if team != to_team && !self.teams[to_team].vassal[team] {
-                        if !self.at_war(team, to_team) {
-                            if !self.teams[team].defensive_pact[to_team] {
-                                if self.team_is_defensive_pact_trading(team) || self.team_is_defensive_pact_trading(to_team) {
-                                    if self.team_get_at_war_count(team, true) == 0 && self.team_get_at_war_count(to_team, true) == 0 {
-                                        if self.team_can_sign_defensive_pact(team, to_team) {
-                                            return true;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             TradeableItem::TRADE_PERMANENT_ALLIANCE => {
-                if !self.team_is_a_vassal(team) && !self.team_is_a_vassal(to_team) {
-                    if team != to_team && !self.teams[to_team].vassal[team] {
-                        if !self.at_war(team, to_team) {
-                            if self.team_is_permanent_alliance_trading(team) || self.team_is_permanent_alliance_trading(to_team) {
-                                if self.teams[team].num_members == 1 && self.teams[to_team].num_members == 1 {
-                                    return true;
-                                }
-                            }
-                        }
+                if !self.team_is_a_vassal(team) && !self.team_is_a_vassal(to_team)
+                    && team != to_team && !self.teams[to_team].vassal[team] && !self.at_war(team, to_team)
+                {
+                    if (self.team_is_permanent_alliance_trading(team) || self.team_is_permanent_alliance_trading(to_team))
+                        && self.teams[team].num_members == 1 && self.teams[to_team].num_members == 1
+                    {
+                        return true;
                     }
                 }
             }
@@ -673,19 +635,13 @@ impl Game {
         }
 
         for (d, deal) in self.deals.iter() {
-            if include_cancelable || self.deal_is_cancelable(d, Some(p)) {
-                if !self.deal_is_peace_deal(d) {
-                    if deal.first_player == p && self.players[deal.second_player].team == team {
-                        if !deal.first_trades.is_empty() {
-                            return true;
-                        }
-                    }
+            if (include_cancelable || self.deal_is_cancelable(d, Some(p))) && !self.deal_is_peace_deal(d) {
+                if deal.first_player == p && self.players[deal.second_player].team == team && !deal.first_trades.is_empty() {
+                    return true;
+                }
 
-                    if deal.second_player == p && self.players[deal.first_player].team == team {
-                        if !deal.second_trades.is_empty() {
-                            return true;
-                        }
-                    }
+                if deal.second_player == p && self.players[deal.first_player].team == team && !deal.second_trades.is_empty() {
+                    return true;
                 }
             }
         }
@@ -738,11 +694,9 @@ impl Game {
         }
 
         for i in self.player_ids() {
-            if self.players[i].alive {
-                if self.players[i].team == team {
-                    ai_change_memory_count(self, i, p, MemoryType::MEMORY_STOPPED_TRADING, 1);
-                    ai_change_memory_count(self, i, p, MemoryType::MEMORY_STOPPED_TRADING_RECENT, 1);
-                }
+            if self.players[i].alive && self.players[i].team == team {
+                ai_change_memory_count(self, i, p, MemoryType::MEMORY_STOPPED_TRADING, 1);
+                ai_change_memory_count(self, i, p, MemoryType::MEMORY_STOPPED_TRADING_RECENT, 1);
             }
         }
     }
@@ -784,10 +738,8 @@ impl Game {
         };
 
         //FfH: Added by Kael 11/14/2007
-        if self.player_is_full_member(p, VoteSourceType(0)) {
-            if self.no_bonus[bonus] {
-                return 0;
-            }
+        if self.player_is_full_member(p, VoteSourceType(0)) && self.no_bonus[bonus] {
+            return 0;
         }
         //FfH: End Add
 
@@ -854,10 +806,8 @@ impl Game {
                 if self.plot_get_bonus_type(pl, Some(team)) == Some(bonus) {
                     count += 1;
                 }
-            } else if advanced_start && self.map.plots[pl].revealed[team] {
-                if self.plot_get_bonus_type(pl, Some(team)) == Some(bonus) {
-                    count += 1;
-                }
+            } else if advanced_start && self.map.plots[pl].revealed[team] && self.plot_get_bonus_type(pl, Some(team)) == Some(bonus) {
+                count += 1;
             }
         }
 
@@ -895,24 +845,20 @@ impl Game {
         let mut count = 0;
 
         for pl in self.map.plot_ids() {
-            if self.map.plots[pl].area == Some(area) {
-                if self.map.plots[pl].owner == Some(p) {
-                    if !self.plot_is_city(pl, false, None) {
-                        if let Some(non_obsolete_bonus) = self.plot_get_non_obsolete_bonus_type(pl, team) {
-                            let improvement = self.map.plots[pl].improvement_type;
+            if self.map.plots[pl].area == Some(area) && self.map.plots[pl].owner == Some(p) && !self.plot_is_city(pl, false, None) {
+                if let Some(non_obsolete_bonus) = self.plot_get_non_obsolete_bonus_type(pl, team) {
+                    let improvement = self.map.plots[pl].improvement_type;
 
-                            if improvement.map_or(true, |i| !d.improvements[i].improvement_bonus[non_obsolete_bonus].bonus_trade) {
-                                let reachable = reachable_from.as_ref().map_or(true, |r| r[pl.idx()]);
+                    if improvement.map_or(true, |i| !d.improvements[i].improvement_bonus[non_obsolete_bonus].bonus_trade) {
+                        let reachable = reachable_from.as_ref().map_or(true, |r| r[pl.idx()]);
 
-                                if reachable {
-                                    for build in d.builds.keys() {
-                                        if let Some(build_improvement) = d.builds[build].improvement {
-                                            if d.improvements[build_improvement].improvement_bonus[non_obsolete_bonus].bonus_trade {
-                                                // C++ defaults `bTestEra = false`, `bTestVisible = false`.
-                                                if self.player_can_build(p, pl, build, false, false) {
-                                                    count += 1;
-                                                }
-                                            }
+                        if reachable {
+                            for build in d.builds.keys() {
+                                if let Some(build_improvement) = d.builds[build].improvement {
+                                    if d.improvements[build_improvement].improvement_bonus[non_obsolete_bonus].bonus_trade {
+                                        // C++ defaults `bTestEra = false`, `bTestVisible = false`.
+                                        if self.player_can_build(p, pl, build, false, false) {
+                                            count += 1;
                                         }
                                     }
                                 }
@@ -968,18 +914,14 @@ impl Game {
         let mut count = 0;
 
         for o in self.civ_team_ids() {
-            if self.team_is_alive(o) {
-                if o != team {
-                    if self.team_is_free_trade(team, o) {
-                        let mut temp_value = self.teams[o].num_cities;
+            if self.team_is_alive(o) && o != team && self.team_is_free_trade(team, o) {
+                let mut temp_value = self.teams[o].num_cities;
 
-                        if let Some(area) = ignore_area {
-                            temp_value -= self.team_count_num_cities_by_area(o, area);
-                        }
-
-                        count += temp_value;
-                    }
+                if let Some(area) = ignore_area {
+                    temp_value -= self.team_count_num_cities_by_area(o, area);
                 }
+
+                count += temp_value;
             }
         }
 
@@ -997,15 +939,13 @@ impl Game {
             for i in self.civ_player_ids() {
                 if self.players[i].alive {
                     let other_team = self.players[i].team;
-                    if other_team != team {
-                        if self.team_is_free_trade(team, other_team) {
-                            for &c in &self.players[i].cities {
-                                debug_assert!(self.cities[c].owner != p);
+                    if other_team != team && self.team_is_free_trade(team, other_team) {
+                        for &c in &self.players[i].cities {
+                            debug_assert!(self.cities[c].owner != p);
 
-                                // C++ compares plot group pointers: two NULL groups are equal too.
-                                if self.city_plot_group(c, p) == capital_plot_group {
-                                    count += 1;
-                                }
+                            // C++ compares plot group pointers: two NULL groups are equal too.
+                            if self.city_plot_group(c, p) == capital_plot_group {
+                                count += 1;
                             }
                         }
                     }
@@ -1058,15 +998,11 @@ impl Game {
 
             // Divide up Espionage between Teams
             for o in self.civ_team_ids() {
-                if team != o {
-                    if self.team_is_alive(o) {
-                        if self.teams[team].has_met[o] {
-                            let spending = self.player_get_espionage_spending(p, o);
+                if team != o && self.team_is_alive(o) && self.teams[team].has_met[o] {
+                    let spending = self.player_get_espionage_spending(p, o);
 
-                            if spending > 0 {
-                                self.team_change_espionage_points_against_team(team, o, spending);
-                            }
-                        }
+                    if spending > 0 {
+                        self.team_change_espionage_points_against_team(team, o, spending);
                     }
                 }
             }
@@ -1128,16 +1064,14 @@ impl Game {
         // Divide remainder evenly among top Teams
         while available_points > 0 {
             for o in self.civ_team_ids() {
-                if is_met_team(o) {
-                    if weights[o] == best_weight {
-                        if o == against {
-                            spending_value += 1;
-                        }
-                        available_points -= 1;
+                if is_met_team(o) && weights[o] == best_weight {
+                    if o == against {
+                        spending_value += 1;
+                    }
+                    available_points -= 1;
 
-                        if available_points <= 0 {
-                            break;
-                        }
+                    if available_points <= 0 {
+                        break;
                     }
                 }
             }
@@ -1436,14 +1370,12 @@ impl Game {
                 None => {
                     for loop_building in d.buildings.keys() {
                         if let Some(c) = city {
-                            if self.cities[c].num_real_building[loop_building] > 0 {
-                                if self.player_can_spy_destroy_building(p, target_player, loop_building) {
-                                    let value = self.player_get_production_needed_building(p, loop_building);
+                            if self.cities[c].num_real_building[loop_building] > 0 && self.player_can_spy_destroy_building(p, target_player, loop_building) {
+                                let value = self.player_get_production_needed_building(p, loop_building);
 
-                                    if value < cost {
-                                        cost = value;
-                                        building = Some(loop_building);
-                                    }
+                                if value < cost {
+                                    cost = value;
+                                    building = Some(loop_building);
                                 }
                             }
                         }
@@ -1456,10 +1388,8 @@ impl Game {
 
             if let Some(b) = building {
                 if let Some(c) = city {
-                    if self.cities[c].num_real_building[b] > 0 {
-                        if self.player_can_spy_destroy_building(p, target_player, b) {
-                            mission_cost = base_mission_cost + ((100 + kmission.destroy_building_cost_factor) * cost) / 100;
-                        }
+                    if self.cities[c].num_real_building[b] > 0 && self.player_can_spy_destroy_building(p, target_player, b) {
+                        mission_cost = base_mission_cost + ((100 + kmission.destroy_building_cost_factor) * cost) / 100;
                     }
                 }
             }
@@ -1484,10 +1414,8 @@ impl Game {
             }
         } else if kmission.destroy_improvement {
             if let Some(pl) = plot {
-                if !self.plot_is_city(pl, false, None) {
-                    if self.map.plots[pl].improvement_type.is_some() || self.map.plots[pl].route_type.is_some() {
-                        mission_cost = (base_mission_cost * speed.build_percent) / 100;
-                    }
+                if !self.plot_is_city(pl, false, None) && (self.map.plots[pl].improvement_type.is_some() || self.map.plots[pl].route_type.is_some()) {
+                    mission_cost = (base_mission_cost * speed.build_percent) / 100;
                 }
             }
         } else if kmission.city_poison_water_counter > 0 {
@@ -2081,11 +2009,9 @@ impl Game {
 
         let unit_plot = self.unit_plot(unit);
         for &loop_unit in &self.map.plots[unit_plot].units {
-            if loop_unit != unit {
-                if self.unit_is_enemy(loop_unit, Some(team), None) {
-                    // If we buy the unit, we will be on the same plot as an enemy unit! Not good.
-                    return false;
-                }
+            if loop_unit != unit && self.unit_is_enemy(loop_unit, Some(team), None) {
+                // If we buy the unit, we will be on the same plot as an enemy unit! Not good.
+                return false;
             }
         }
 
@@ -2140,10 +2066,8 @@ impl Game {
     pub fn player_can_spies_enter_borders(&self, p: PlayerId, other: PlayerId) -> bool {
         for mission in self.d.espionage_missions.keys() {
             let kmission = &self.d.espionage_missions[mission];
-            if kmission.no_active_missions && kmission.passive {
-                if self.player_can_do_espionage_mission(other, mission, Some(p), None, -1, None) {
-                    return false;
-                }
+            if kmission.no_active_missions && kmission.passive && self.player_can_do_espionage_mission(other, mission, Some(p), None, -1, None) {
+                return false;
             }
         }
 
@@ -2168,14 +2092,12 @@ impl Game {
 
                 if other_team != team {
                     for o in self.civ_team_ids() {
-                        if self.team_is_alive(o) {
-                            if self.teams[o].ai_worst_enemy == Some(team) {
-                                // BETTER AI (Better Diplomatics, Sephi): only if that team has met
-                                // the trading partner (orig: unconditional).
-                                if self.teams[o].has_met[other_team] {
-                                    // CvTeamAI::AI_changeEnemyPeacetimeTradeValue
-                                    self.teams[o].ai_enemy_peacetime_trade_value[other_team] += change;
-                                }
+                        if self.team_is_alive(o) && self.teams[o].ai_worst_enemy == Some(team) {
+                            // BETTER AI (Better Diplomatics, Sephi): only if that team has met
+                            // the trading partner (orig: unconditional).
+                            if self.teams[o].has_met[other_team] {
+                                // CvTeamAI::AI_changeEnemyPeacetimeTradeValue
+                                self.teams[o].ai_enemy_peacetime_trade_value[other_team] += change;
                             }
                         }
                     }
@@ -2199,14 +2121,12 @@ impl Game {
 
                 if other_team != team {
                     for o in self.civ_team_ids() {
-                        if self.team_is_alive(o) {
-                            if self.teams[o].ai_worst_enemy == Some(team) {
-                                // BETTER AI (Better Diplomatics, Sephi): only if that team has met
-                                // the trading partner (orig: unconditional).
-                                if self.teams[o].has_met[other_team] {
-                                    // CvTeamAI::AI_changeEnemyPeacetimeGrantValue
-                                    self.teams[o].ai_enemy_peacetime_grant_value[other_team] += change;
-                                }
+                        if self.team_is_alive(o) && self.teams[o].ai_worst_enemy == Some(team) {
+                            // BETTER AI (Better Diplomatics, Sephi): only if that team has met
+                            // the trading partner (orig: unconditional).
+                            if self.teams[o].has_met[other_team] {
+                                // CvTeamAI::AI_changeEnemyPeacetimeGrantValue
+                                self.teams[o].ai_enemy_peacetime_grant_value[other_team] += change;
                             }
                         }
                     }
@@ -2338,17 +2258,11 @@ fn ai_surrender_trade(g: &Game, t: TeamId, master: TeamId, _power_multiplier: i3
     for o in g.team_ids() {
         if g.team_is_alive(o) && o != t && o != master {
             if g.teams[o].at_war[master] && !g.teams[o].at_war[t] {
-                if g.teams[t].force_peace[o] || !g.team_can_change_war_peace(t, o, false) {
-                    if !g.team_is_a_vassal(o) {
-                        return Some(DenialType::DENIAL_WAR_NOT_POSSIBLE_US);
-                    }
+                if (g.teams[t].force_peace[o] || !g.team_can_change_war_peace(t, o, false)) && !g.team_is_a_vassal(o) {
+                    return Some(DenialType::DENIAL_WAR_NOT_POSSIBLE_US);
                 }
-            } else if !g.teams[o].at_war[master] && g.teams[o].at_war[t] {
-                if !g.team_can_change_war_peace(t, o, false) {
-                    if !g.team_is_a_vassal(o) {
-                        return Some(DenialType::DENIAL_PEACE_NOT_POSSIBLE_US);
-                    }
-                }
+            } else if !g.teams[o].at_war[master] && g.teams[o].at_war[t] && !g.team_can_change_war_peace(t, o, false) && !g.team_is_a_vassal(o) {
+                return Some(DenialType::DENIAL_PEACE_NOT_POSSIBLE_US);
             }
         }
     }
@@ -2369,10 +2283,8 @@ fn ai_vassal_trade(g: &Game, t: TeamId, master: TeamId) -> Option<DenialType> {
     for o in g.team_ids() {
         if g.team_is_alive(o) && o != t && o != master {
             if !g.teams[o].at_war[master] && g.teams[o].at_war[t] {
-                if g.teams[master].force_peace[o] || !g.team_can_change_war_peace(master, o, false) {
-                    if !g.team_is_a_vassal(o) {
-                        return Some(DenialType::DENIAL_WAR_NOT_POSSIBLE_YOU);
-                    }
+                if (g.teams[master].force_peace[o] || !g.team_can_change_war_peace(master, o, false)) && !g.team_is_a_vassal(o) {
+                    return Some(DenialType::DENIAL_WAR_NOT_POSSIBLE_YOU);
                 }
 
                 if !g.team_is_human(master) {
@@ -2383,10 +2295,8 @@ fn ai_vassal_trade(g: &Game, t: TeamId, master: TeamId) -> Option<DenialType> {
                     }
                 }
             } else if g.teams[o].at_war[master] && !g.teams[o].at_war[t] {
-                if !g.team_can_change_war_peace(master, o, false) {
-                    if !g.team_is_a_vassal(o) {
-                        return Some(DenialType::DENIAL_PEACE_NOT_POSSIBLE_YOU);
-                    }
+                if !g.team_can_change_war_peace(master, o, false) && !g.team_is_a_vassal(o) {
+                    return Some(DenialType::DENIAL_PEACE_NOT_POSSIBLE_YOU);
                 }
 
                 if !g.team_is_human(master) {

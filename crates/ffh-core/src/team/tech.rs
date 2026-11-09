@@ -139,10 +139,8 @@ impl Game {
     /// C++ `CvTeam::updateYield` (updates every alive member player).
     pub fn team_update_yield(&mut self, t: TeamId) {
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    self.player_update_yield(p);
-                }
+            if self.players[p].alive && self.players[p].team == t {
+                self.player_update_yield(p);
             }
         }
     }
@@ -150,10 +148,8 @@ impl Game {
     /// C++ `CvTeam::updatePowerHealth`.
     pub fn team_update_power_health(&mut self, t: TeamId) {
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    self.player_update_power_health(p);
-                }
+            if self.players[p].alive && self.players[p].team == t {
+                self.player_update_power_health(p);
             }
         }
     }
@@ -161,10 +157,8 @@ impl Game {
     /// C++ `CvTeam::updateCommerce`.
     pub fn team_update_commerce(&mut self, t: TeamId) {
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    self.player_update_commerce(p);
-                }
+            if self.players[p].alive && self.players[p].team == t {
+                self.player_update_commerce(p);
             }
         }
     }
@@ -182,11 +176,9 @@ impl Game {
             }
         }
 
-        if info.map_centering {
-            if change > 0 {
-                // setMapCentering(true): the C++ side effect is UI only.
-                self.teams[t].map_centering = true;
-            }
+        if info.map_centering && change > 0 {
+            // setMapCentering(true): the C++ side effect is UI only.
+            self.teams[t].map_centering = true;
         }
 
         self.teams[t].enemy_war_weariness_modifier += info.enemy_war_weariness_modifier * change;
@@ -415,12 +407,8 @@ impl Game {
                 let first_time = 1 == self.teams[t].tech_count[tech];
                 self.ev_tech_acquired(tech, t, Some(player), announce && first_time);
 
-                if first_time {
-                    if announce {
-                        if self.final_initialized {
-                            // UI: announceTechToPlayers(eIndex) (messages only).
-                        }
-                    }
+                if first_time && announce && self.final_initialized {
+                    // UI: announceTechToPlayers(eIndex) (messages only).
                 }
             } else {
                 update_tech_bonus_plot_groups(self, t, tech, false);
@@ -473,95 +461,87 @@ impl Game {
                 let mut _religion_founded = false;
                 let mut first_bonus = false;
 
-                if first {
-                    if self.count_known_tech_num_teams(tech) == 1 {
-                        // C++ `if (lResult != 1)` with the Python result (False -> 0).
-                        if !py_do_holy_city_tech(self, t, player, tech, first) {
-                            for religion in d.religions.keys() {
-                                if d.religions[religion].tech_prereq == Some(tech)
-                                    //FfH: Added by Kael 10/10/2008
-                                    && !self.is_religion_founded(religion)
-                                //FfH: End Add
-                                {
-                                    let mut best_value = MAX_INT;
-                                    let mut best_player = None;
+                if first && self.count_known_tech_num_teams(tech) == 1 {
+                    // C++ `if (lResult != 1)` with the Python result (False -> 0).
+                    if !py_do_holy_city_tech(self, t, player, tech, first) {
+                        for religion in d.religions.keys() {
+                            if d.religions[religion].tech_prereq == Some(tech)
+                                //FfH: Added by Kael 10/10/2008
+                                && !self.is_religion_founded(religion)
+                            //FfH: End Add
+                            {
+                                let mut best_value = MAX_INT;
+                                let mut best_player = None;
 
-                                    for j in self.player_ids() {
-                                        if self.players[j].alive {
-                                            if self.players[j].team == t {
-                                                let mut v = 10;
+                                for j in self.player_ids() {
+                                    if self.players[j].alive && self.players[j].team == t {
+                                        let mut v = 10;
 
-                                                v += self.soren_rand_num(10, "Found Religion (Player)");
+                                        v += self.soren_rand_num(10, "Found Religion (Player)");
 
-                                                for k in d.religions.keys() {
-                                                    v += self.players[j].has_religion_count[k] * 10;
-                                                }
-
-                                                if self.player_get_current_research(j) != Some(tech) {
-                                                    v *= 10;
-                                                }
-
-                                                if v < best_value {
-                                                    best_value = v;
-                                                    best_player = Some(j);
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    if let Some(best_player) = best_player {
-                                        // CvGame::setReligionSlotTaken
-                                        self.religion_slot_taken[religion] = true;
-
-                                        if self.is_option(GameOptionType::GAMEOPTION_PICK_RELIGION) {
-                                            // Never true in FFH (CvGame::isOption locks PICK_RELIGION off).
-                                            // C++: humans get BUTTONPOPUP_FOUND_RELIGION (their pick is founded in
-                                            // this religion's slot), AIs pick with AI_chooseReligion(); both are
-                                            // the controller's decision here.
-                                            let chosen = self.controller(best_player).choose_religion(self, best_player);
-                                            if let Some(chosen) = chosen {
-                                                self.player_found_religion(best_player, Some(chosen), religion, true);
-                                            }
-                                        } else {
-                                            self.player_found_religion(best_player, Some(religion), religion, true);
+                                        for k in d.religions.keys() {
+                                            v += self.players[j].has_religion_count[k] * 10;
                                         }
 
-                                        _religion_founded = true;
-                                        first_bonus = true;
+                                        if self.player_get_current_research(j) != Some(tech) {
+                                            v *= 10;
+                                        }
+
+                                        if v < best_value {
+                                            best_value = v;
+                                            best_player = Some(j);
+                                        }
                                     }
                                 }
+
+                                if let Some(best_player) = best_player {
+                                    // CvGame::setReligionSlotTaken
+                                    self.religion_slot_taken[religion] = true;
+
+                                    if self.is_option(GameOptionType::GAMEOPTION_PICK_RELIGION) {
+                                        // Never true in FFH (CvGame::isOption locks PICK_RELIGION off).
+                                        // C++: humans get BUTTONPOPUP_FOUND_RELIGION (their pick is founded in
+                                        // this religion's slot), AIs pick with AI_chooseReligion(); both are
+                                        // the controller's decision here.
+                                        let chosen = self.controller(best_player).choose_religion(self, best_player);
+                                        if let Some(chosen) = chosen {
+                                            self.player_found_religion(best_player, Some(chosen), religion, true);
+                                        }
+                                    } else {
+                                        self.player_found_religion(best_player, Some(religion), religion, true);
+                                    }
+
+                                    _religion_founded = true;
+                                    first_bonus = true;
+                                }
                             }
+                        }
 
-                            for corporation in d.corporations.keys() {
-                                if d.corporations[corporation].tech_prereq == Some(tech) {
-                                    if !self.is_corporation_founded(corporation) {
-                                        let mut best_value = MAX_INT;
-                                        let mut best_player = None;
+                        for corporation in d.corporations.keys() {
+                            if d.corporations[corporation].tech_prereq == Some(tech) && !self.is_corporation_founded(corporation) {
+                                let mut best_value = MAX_INT;
+                                let mut best_player = None;
 
-                                        for j in self.player_ids() {
-                                            if self.players[j].alive {
-                                                if self.players[j].team == t {
-                                                    let mut v = 10;
+                                for j in self.player_ids() {
+                                    if self.players[j].alive && self.players[j].team == t {
+                                        let mut v = 10;
 
-                                                    v += self.soren_rand_num(10, "Found Corporation (Player)");
+                                        v += self.soren_rand_num(10, "Found Corporation (Player)");
 
-                                                    if self.player_get_current_research(j) != Some(tech) {
-                                                        v *= 10;
-                                                    }
-
-                                                    if v < best_value {
-                                                        best_value = v;
-                                                        best_player = Some(j);
-                                                    }
-                                                }
-                                            }
+                                        if self.player_get_current_research(j) != Some(tech) {
+                                            v *= 10;
                                         }
 
-                                        if let Some(best_player) = best_player {
-                                            self.player_found_corporation(best_player, corporation);
-                                            first_bonus = true;
+                                        if v < best_value {
+                                            best_value = v;
+                                            best_player = Some(j);
                                         }
                                     }
+                                }
+
+                                if let Some(best_player) = best_player {
+                                    self.player_found_corporation(best_player, corporation);
+                                    first_bonus = true;
                                 }
                             }
                         }
@@ -581,87 +561,71 @@ impl Game {
                     }
                 }
 
-                if first {
-                    if self.count_known_tech_num_teams(tech) == 1 {
-                        let free_unit = self.player_get_tech_free_unit(player, tech);
-                        if let Some(free_unit) = free_unit {
-                            first_bonus = true;
+                if first && self.count_known_tech_num_teams(tech) == 1 {
+                    let free_unit = self.player_get_tech_free_unit(player, tech);
+                    if let Some(free_unit) = free_unit {
+                        first_bonus = true;
 
-                            if let Some(capital_city) = self.player_get_capital_city(player) {
-                                self.city_create_great_people(capital_city, free_unit, false, false);
+                        if let Some(capital_city) = self.player_get_capital_city(player) {
+                            self.city_create_great_people(capital_city, free_unit, false, false);
+                        }
+                    }
+
+                    let first_free_techs = d.techs[tech].first_free_techs;
+                    if first_free_techs > 0 {
+                        first_bonus = true;
+
+                        if !self.team_is_human(t) {
+                            for _ in 0..first_free_techs {
+                                ai_choose_free_tech(self, player);
+                            }
+                        } else {
+                            // TXT_KEY_MISC_FIRST_TECH_CHOOSE_FREE tech chooser (CvPlayer::chooseTech): a
+                            // popup, which CvPlayer::addPopup drops for a non-human ePlayer (an AI
+                            // member of a human team gets no free tech).
+                            if self.players[player].human {
+                                self.player_choose_tech(player, first_free_techs);
                             }
                         }
 
-                        let first_free_techs = d.techs[tech].first_free_techs;
-                        if first_free_techs > 0 {
-                            first_bonus = true;
+                        // TXT_KEY_MISC_SOMEONE_FIRST_TO_TECH / UNKNOWN_FIRST_TO_TECH messages to every
+                        // alive player and the replay message.
+                        let turn = self.game_turn();
+                        self.log.msg(turn, Some(player), || {
+                            format!("Player {} was the first to discover {}", player, d.text.name(&d.techs[tech].base.description))
+                        });
+                    }
 
-                            if !self.team_is_human(t) {
-                                for _ in 0..first_free_techs {
-                                    ai_choose_free_tech(self, player);
-                                }
-                            } else {
-                                // TXT_KEY_MISC_FIRST_TECH_CHOOSE_FREE tech chooser (CvPlayer::chooseTech): a
-                                // popup, which CvPlayer::addPopup drops for a non-human ePlayer (an AI
-                                // member of a human team gets no free tech).
-                                if self.players[player].human {
-                                    self.player_choose_tech(player, first_free_techs);
-                                }
-                            }
-
-                            // TXT_KEY_MISC_SOMEONE_FIRST_TO_TECH / UNKNOWN_FIRST_TO_TECH messages to every
-                            // alive player and the replay message.
-                            let turn = self.game_turn();
-                            self.log.msg(turn, Some(player), || {
-                                format!("Player {} was the first to discover {}", player, d.text.name(&d.techs[tech].base.description))
-                            });
-                        }
-
-                        if first_bonus {
-                            for p in self.player_ids() {
-                                if self.players[p].alive {
-                                    if !self.players[p].human {
-                                        if self.players[p].researching_tech[tech] {
-                                            self.player_clear_research_queue(p);
-                                        }
-                                    }
-                                }
+                    if first_bonus {
+                        for p in self.player_ids() {
+                            if self.players[p].alive && !self.players[p].human && self.players[p].researching_tech[tech] {
+                                self.player_clear_research_queue(p);
                             }
                         }
                     }
                 }
 
-                if announce {
-                    if self.final_initialized {
-                        // UI: announceTechToPlayers(eIndex) and TXT_KEY_MISC_YOU_DISCOVERED_BONUS messages
-                        // for the team's plots whose bonus this tech reveals.
-                        // UI: BUTTONPOPUP_CHANGECIVIC for human members that can revolt and lack a civic
-                        // this tech enables (unless they just founded a religion without a state
-                        // religion; FfH: only if canDoCivics); the checks are read-only.
-                    }
+                if announce && self.final_initialized {
+                    // UI: announceTechToPlayers(eIndex) and TXT_KEY_MISC_YOU_DISCOVERED_BONUS messages
+                    // for the team's plots whose bonus this tech reveals.
+                    // UI: BUTTONPOPUP_CHANGECIVIC for human members that can revolt and lack a civic
+                    // this tech enables (unless they just founded a religion without a state
+                    // religion; FfH: only if canDoCivics); the checks are read-only.
                 }
 
                 for o in self.team_ids() {
-                    if self.team_is_alive(o) {
-                        if o != t {
-                            self.team_update_tech_share_tech(o, tech);
-                        }
+                    if self.team_is_alive(o) && o != t {
+                        self.team_update_tech_share_tech(o, tech);
                     }
                 }
             }
 
-            if value {
-                if announce {
-                    if self.final_initialized {
-                        if self.player_is_research(player) && self.player_get_current_research(player).is_none() {
-                            // TXT_KEY_MISC_WHAT_TO_RESEARCH_NEXT tech chooser (CvPlayer::chooseTech): a
-                            // popup, which CvPlayer::addPopup drops for non-human players (AI players
-                            // choose their research in their own turn).
-                            if self.players[player].human {
-                                self.player_choose_tech(player, 0);
-                            }
-                        }
-                    }
+            if value && announce && self.final_initialized && self.player_is_research(player) && self.player_get_current_research(player).is_none() {
+                // TXT_KEY_MISC_WHAT_TO_RESEARCH_NEXT tech chooser (CvPlayer::chooseTech): a
+                // popup, which CvPlayer::addPopup drops for non-human players (AI players
+                // choose their research in their own turn).
+                if self.players[player].human {
+                    self.player_choose_tech(player, 0);
                 }
             }
 
@@ -678,11 +642,9 @@ impl Game {
             self.team_change_extra_water_see_from_count(t, change);
         }
 
-        if info.map_centering {
-            if change > 0 {
-                // setMapCentering(true): the C++ side effect is UI only.
-                self.teams[t].map_centering = true;
-            }
+        if info.map_centering && change > 0 {
+            // setMapCentering(true): the C++ side effect is UI only.
+            self.teams[t].map_centering = true;
         }
 
         if info.map_trading {
@@ -807,23 +769,21 @@ impl Game {
         let mut i: i32 = 0;
         while i < num_builds {
             let build = BuildType::from_usize(i as usize);
-            if d.builds[build].tech_prereq == Some(tech) {
-                if d.builds[build].route.is_some() {
-                    i = 0;
-                    while i < num_plots {
-                        let p = PlotIdx(i as u32);
+            if d.builds[build].tech_prereq == Some(tech) && d.builds[build].route.is_some() {
+                i = 0;
+                while i < num_plots {
+                    let p = PlotIdx(i as u32);
 
-                        // CvPlot::getPlotCity (NULL for a deleted city)
-                        let city = self.map.plots[p].plot_city.filter(|&c| self.cities.contains(c));
+                    // CvPlot::getPlotCity (NULL for a deleted city)
+                    let city = self.map.plots[p].plot_city.filter(|&c| self.cities.contains(c));
 
-                        if let Some(city) = city {
-                            if self.city_team(city) == t {
-                                self.plot_update_city_route(p, true);
-                            }
+                    if let Some(city) = city {
+                        if self.city_team(city) == t {
+                            self.plot_update_city_route(p, true);
                         }
-
-                        i += 1;
                     }
+
+                    i += 1;
                 }
             }
 
@@ -862,26 +822,22 @@ impl Game {
         }
 
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == other {
-                    for c in self.players[p].cities.clone() {
-                        for building in d.buildings.keys() {
-                            if self.city_num_building(c, building) > 0 {
-                                if !self.team_is_obsolete_building(t, building) {
-                                    if d.buildings[building].team_share {
-                                        for k in self.player_ids() {
-                                            if self.players[k].team == t {
-                                                let num = self.city_num_building(c, building);
-                                                let area = self.city_area(c);
-                                                self.player_process_building(k, building, num, area);
-                                            }
-                                        }
+            if self.players[p].alive && self.players[p].team == other {
+                for c in self.players[p].cities.clone() {
+                    for building in d.buildings.keys() {
+                        if self.city_num_building(c, building) > 0 && !self.team_is_obsolete_building(t, building) {
+                            if d.buildings[building].team_share {
+                                for k in self.player_ids() {
+                                    if self.players[k].team == t {
+                                        let num = self.city_num_building(c, building);
+                                        let area = self.city_area(c);
+                                        self.player_process_building(k, building, num, area);
                                     }
-
-                                    let num = self.city_num_building(c, building);
-                                    self.team_process_building(t, building, num);
                                 }
                             }
+
+                            let num = self.city_num_building(c, building);
+                            self.team_process_building(t, building, num);
                         }
                     }
                 }
@@ -923,12 +879,8 @@ impl Game {
             let mut count = 0;
 
             for o in civ_team_ids(self) {
-                if self.team_is_alive(o) {
-                    if self.team_is_has_tech(o, Some(tech)) {
-                        if self.teams[t].has_met[o] {
-                            count += 1;
-                        }
-                    }
+                if self.team_is_alive(o) && self.team_is_has_tech(o, Some(tech)) && self.teams[t].has_met[o] {
+                    count += 1;
                 }
             }
 
@@ -952,10 +904,8 @@ impl Game {
     /// C++ `CvTeam::hasBonus` (any member player has the bonus).
     pub fn team_has_bonus(&self, t: TeamId, bonus: BonusType) -> bool {
         for p in self.player_ids() {
-            if self.players[p].team == t {
-                if self.player_has_bonus(p, bonus) {
-                    return true;
-                }
+            if self.players[p].team == t && self.player_has_bonus(p, bonus) {
+                return true;
             }
         }
 
@@ -978,10 +928,8 @@ impl Game {
         }
 
         for p in self.map.plot_ids() {
-            if self.map.plots[p].bonus_type == Some(bonus) {
-                if self.plot_get_team(p) == Some(t) {
-                    self.plot_update_plot_group_bonus(p, false);
-                }
+            if self.map.plots[p].bonus_type == Some(bonus) && self.plot_get_team(p) == Some(t) {
+                self.plot_update_plot_group_bonus(p, false);
             }
         }
 
@@ -992,10 +940,8 @@ impl Game {
         }
 
         for p in self.map.plot_ids() {
-            if self.map.plots[p].bonus_type == Some(bonus) {
-                if self.plot_get_team(p) == Some(t) {
-                    self.plot_update_plot_group_bonus(p, true);
-                }
+            if self.map.plots[p].bonus_type == Some(bonus) && self.plot_get_team(p) == Some(t) {
+                self.plot_update_plot_group_bonus(p, true);
             }
         }
 
@@ -1028,10 +974,8 @@ impl Game {
             debug_assert!(self.teams[t].terrain_trade_count[terrain] >= 0);
 
             for p in self.player_ids() {
-                if self.players[p].alive {
-                    if self.players[p].team == t {
-                        self.player_update_plot_groups(p);
-                    }
+                if self.players[p].alive && self.players[p].team == t {
+                    self.player_update_plot_groups(p);
                 }
             }
         }
@@ -1049,10 +993,8 @@ impl Game {
             debug_assert!(self.teams[t].river_trade_count >= 0);
 
             for p in self.player_ids() {
-                if self.players[p].alive {
-                    if self.players[p].team == t {
-                        self.player_update_plot_groups(p);
-                    }
+                if self.players[p].alive && self.players[p].team == t {
+                    self.player_update_plot_groups(p);
                 }
             }
         }
@@ -1102,10 +1044,8 @@ impl Game {
     /// citizen re-assignment (governor bookkeeping, see `governor.rs`).
     pub fn team_ai_make_assign_work_dirty(&mut self, t: TeamId) {
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    self.player_ai_make_assign_work_dirty(p);
-                }
+            if self.players[p].alive && self.players[p].team == t {
+                self.player_ai_make_assign_work_dirty(p);
             }
         }
     }
@@ -1155,14 +1095,12 @@ impl Game {
 
             if old_obsolete_building != self.team_is_obsolete_building(t, building) {
                 for p in self.player_ids() {
-                    if self.players[p].alive {
-                        if self.players[p].team == t {
-                            for c in self.players[p].cities.clone() {
-                                if self.city_num_building(c, building) > 0 {
-                                    let num = self.city_num_building(c, building);
-                                    let num = if self.team_is_obsolete_building(t, building) { -num } else { num };
-                                    self.city_process_building(c, building, num, true);
-                                }
+                    if self.players[p].alive && self.players[p].team == t {
+                        for c in self.players[p].cities.clone() {
+                            if self.city_num_building(c, building) > 0 {
+                                let num = self.city_num_building(c, building);
+                                let num = if self.team_is_obsolete_building(t, building) { -num } else { num };
+                                self.city_process_building(c, building, num, true);
                             }
                         }
                     }

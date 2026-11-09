@@ -74,16 +74,12 @@ impl Game {
         let civic_option = civic_option_of(d, civic);
 
         //FfH: Added by Kael 11/23/2007 (forced civics only bind full members of vote source 0)
-        if self.player_is_full_member(p, VoteSourceType(0)) {
-            if self.is_force_civic_option(civic_option) {
-                return self.is_force_civic(civic);
-            }
+        if self.player_is_full_member(p, VoteSourceType(0)) && self.is_force_civic_option(civic_option) {
+            return self.is_force_civic(civic);
         }
 
-        if d.defines.use_can_do_civic_callback != 0 {
-            if py_can_do_civic(self, p, civic) {
-                return true;
-            }
+        if d.defines.use_can_do_civic_callback != 0 && py_can_do_civic(self, p, civic) {
+            return true;
         }
 
         let team = self.players[p].team;
@@ -92,37 +88,25 @@ impl Game {
         }
 
         //FfH Civics: Added by Kael 08/11/2007
-        if info.prereq_war {
-            if self.team_get_at_war_count(team, true) == 0 {
-                return false;
-            }
+        if info.prereq_war && self.team_get_at_war_count(team, true) == 0 {
+            return false;
         }
-        if info.block_alignment.is_some() {
-            if self.players[p].alignment == info.block_alignment {
-                return false;
-            }
+        if info.block_alignment.is_some() && self.players[p].alignment == info.block_alignment {
+            return false;
         }
-        if info.prereq_alignment.is_some() {
-            if self.players[p].alignment != info.prereq_alignment {
-                return false;
-            }
+        if info.prereq_alignment.is_some() && self.players[p].alignment != info.prereq_alignment {
+            return false;
         }
-        if info.prereq_civilization.is_some() {
-            if self.player_get_civilization_type(p) != info.prereq_civilization {
-                return false;
-            }
+        if info.prereq_civilization.is_some() && self.player_get_civilization_type(p) != info.prereq_civilization {
+            return false;
         }
-        if info.prereq_religion.is_some() {
-            if self.player_get_state_religion(p) != info.prereq_religion {
-                return false;
-            }
+        if info.prereq_religion.is_some() && self.player_get_state_religion(p) != info.prereq_religion {
+            return false;
         }
         //FfH: End Add
 
-        if d.defines.use_cannot_do_civic_callback != 0 {
-            if self.py_cannot_do_civic(p, civic) {
-                return false;
-            }
+        if d.defines.use_cannot_do_civic_callback != 0 && self.py_cannot_do_civic(p, civic) {
+            return false;
         }
 
         true
@@ -144,23 +128,19 @@ impl Game {
             None => {
                 // XXX is this necessary?
                 for civic in d.civics.keys() {
-                    if self.player_can_do_civics(p, Some(civic)) {
-                        if self.players[p].civics[civic_option_of(d, civic)] != Some(civic) {
-                            return true;
-                        }
+                    if self.player_can_do_civics(p, Some(civic)) && self.players[p].civics[civic_option_of(d, civic)] != Some(civic) {
+                        return true;
                     }
                 }
             }
             Some(new_civics) => {
                 for civic_option in d.civic_options.keys() {
                     //FfH: Added by Kael 12/30/2007 (forced civics only bind full members)
-                    if self.player_is_full_member(p, VoteSourceType(0)) {
-                        if self.is_force_civic_option(civic_option) {
-                            // C++ `isForceCivic(paeNewCivics[iI])`; a NO_CIVIC entry (never passed
-                            // by callers) would index -1: here it is not forced.
-                            if !new_civics[civic_option].is_some_and(|c| self.is_force_civic(c)) {
-                                return false;
-                            }
+                    if self.player_is_full_member(p, VoteSourceType(0)) && self.is_force_civic_option(civic_option) {
+                        // C++ `isForceCivic(paeNewCivics[iI])`; a NO_CIVIC entry (never passed
+                        // by callers) would index -1: here it is not forced.
+                        if !new_civics[civic_option].is_some_and(|c| self.is_force_civic(c)) {
+                            return false;
                         }
                     }
 
@@ -215,11 +195,9 @@ impl Game {
             for civic_option in d.civic_options.keys() {
                 if !self.player_can_do_civics(p, self.players[p].civics[civic_option]) {
                     for civic in d.civics.keys() {
-                        if d.civics[civic].civic_option_type == Some(civic_option) {
-                            if self.player_can_do_civics(p, Some(civic)) {
-                                self.player_set_civics(p, civic_option, Some(civic));
-                                break;
-                            }
+                        if d.civics[civic].civic_option_type == Some(civic_option) && self.player_can_do_civics(p, Some(civic)) {
+                            self.player_set_civics(p, civic_option, Some(civic));
+                            break;
                         }
                     }
                 }
@@ -337,10 +315,8 @@ impl Game {
         self.players[p].no_diplomacy_with_enemies += info.no_diplomacy_with_enemies as i32 * change;
         if change == -1 {
             for vote_source in d.vote_sources.keys() {
-                if d.vote_sources[vote_source].civic == Some(civic) {
-                    if self.secretary_general(vote_source) == Some(self.players[p].team) {
-                        self.clear_secretary_general(vote_source);
-                    }
+                if d.vote_sources[vote_source].civic == Some(civic) && self.secretary_general(vote_source) == Some(self.players[p].team) {
+                    self.clear_secretary_general(vote_source);
                 }
             }
         }
@@ -428,14 +404,12 @@ impl Game {
 
         for other in self.civ_player_ids() {
             let other = &self.players[other];
-            if other.alive {
-                if other.team != team {
-                    if other.civics[civic_option] == Some(civic) {
-                        count += other.num_cities();
-                    }
-
-                    possible_count += other.num_cities();
+            if other.alive && other.team != team {
+                if other.civics[civic_option] == Some(civic) {
+                    count += other.num_cities();
                 }
+
+                possible_count += other.num_cities();
             }
         }
 
@@ -649,10 +623,8 @@ impl Game {
         for trait_type in d.traits.keys() {
             if self.players[p].traits[trait_type] {
                 let max_anarchy = d.traits[trait_type].max_anarchy;
-                if max_anarchy >= 0 {
-                    if max_anarchy < best_value {
-                        best_value = max_anarchy;
-                    }
+                if max_anarchy >= 0 && max_anarchy < best_value {
+                    best_value = max_anarchy;
                 }
             }
         }
@@ -833,10 +805,8 @@ impl Game {
         //FfH: End Add
 
         // BETTER AI (favorite Religions) Sephi
-        if !self.players[p].human {
-            if weight < 0 {
-                return false;
-            }
+        if !self.players[p].human && weight < 0 {
+            return false;
         }
         // BETTER AI: END
 
@@ -964,10 +934,8 @@ impl Game {
         let d = self.d;
 
         for trait_type in d.traits.keys() {
-            if self.players[p].traits[trait_type] {
-                if d.traits[trait_type].agnostic {
-                    return;
-                }
+            if self.players[p].traits[trait_type] && d.traits[trait_type].agnostic {
+                return;
             }
         }
 
@@ -1138,18 +1106,16 @@ impl Game {
 
             self.set_holy_city(religion, Some(best_city), true);
 
-            if award {
-                if d.religions[slot_religion].num_free_units > 0 {
-                    // C++ `getCivilizationUnits(GC.getReligionInfo(eReligion).getFreeUnitClass())`
-                    // (eReligion's class, eSlotReligion's count); no class (C++ would index -1)
-                    // gives no unit here.
-                    let civ = self.player_get_civilization_type(p).expect("CvPlayer::foundReligion: player without a civilization");
-                    let free_unit = d.religions[religion].free_unit_class.and_then(|unit_class| d.civ_unit(civ, unit_class));
+            if award && d.religions[slot_religion].num_free_units > 0 {
+                // C++ `getCivilizationUnits(GC.getReligionInfo(eReligion).getFreeUnitClass())`
+                // (eReligion's class, eSlotReligion's count); no class (C++ would index -1)
+                // gives no unit here.
+                let civ = self.player_get_civilization_type(p).expect("CvPlayer::foundReligion: player without a civilization");
+                let free_unit = d.religions[religion].free_unit_class.and_then(|unit_class| d.civ_unit(civ, unit_class));
 
-                    if let Some(free_unit) = free_unit {
-                        for _ in 0..d.religions[slot_religion].num_free_units {
-                            self.player_init_unit(p, free_unit, x, y, None, None);
-                        }
+                if let Some(free_unit) = free_unit {
+                    for _ in 0..d.religions[slot_religion].num_free_units {
+                        self.player_init_unit(p, free_unit, x, y, None, None);
                     }
                 }
             }
@@ -1462,22 +1428,18 @@ impl Game {
             let player = data.player.expect("CvPlayer::canDoResolution: force peace vote without a player");
             let their_team = self.players[player].team;
 
-            if their_team != our_team {
-                if self.teams[our_team].at_war[their_team] {
-                    let mut master = our_team;
-                    for team in self.civ_team_ids() {
-                        // C++ quirk: `iMaster != getID()` compares the team with the player id.
-                        if team.idx() != p.idx() && self.teams[our_team].vassal[team] {
-                            if self.team_is_voting_member(team, vote_source) {
-                                master = team;
-                                break;
-                            }
-                        }
+            if their_team != our_team && self.teams[our_team].at_war[their_team] {
+                let mut master = our_team;
+                for team in self.civ_team_ids() {
+                    // C++ quirk: `iMaster != getID()` compares the team with the player id.
+                    if team.idx() != p.idx() && self.teams[our_team].vassal[team] && self.team_is_voting_member(team, vote_source) {
+                        master = team;
+                        break;
                     }
+                }
 
-                    if !self.team_can_contact(master, their_team) {
-                        return false;
-                    }
+                if !self.team_can_contact(master, their_team) {
+                    return false;
                 }
             }
         } else if vote_info.force_war {
@@ -1488,11 +1450,9 @@ impl Game {
                 let mut master = our_team;
                 for team in self.civ_team_ids() {
                     // C++ quirk: `iMaster != getID()` compares the team with the player id.
-                    if team.idx() != p.idx() && self.teams[our_team].vassal[team] {
-                        if self.team_is_voting_member(team, vote_source) {
-                            master = team;
-                            break;
-                        }
+                    if team.idx() != p.idx() && self.teams[our_team].vassal[team] && self.team_is_voting_member(team, vote_source) {
+                        master = team;
+                        break;
                     }
                 }
 
@@ -1531,22 +1491,14 @@ impl Game {
         if vote_info.open_borders {
             for team in self.civ_team_ids() {
                 // C++ `(PlayerTypes)iTeam != getTeam()` (same values).
-                if team != our_team {
-                    if self.team_is_voting_member(team, vote_source) {
-                        if !self.team_is_open_borders(team, our_team) {
-                            return true;
-                        }
-                    }
+                if team != our_team && self.team_is_voting_member(team, vote_source) && !self.team_is_open_borders(team, our_team) {
+                    return true;
                 }
             }
         } else if vote_info.defensive_pact {
             for team in self.civ_team_ids() {
-                if team != our_team {
-                    if self.team_is_voting_member(team, vote_source) {
-                        if !self.teams[team].defensive_pact[our_team] {
-                            return true;
-                        }
-                    }
+                if team != our_team && self.team_is_voting_member(team, vote_source) && !self.teams[team].defensive_pact[our_team] {
+                    return true;
                 }
             }
         } else if vote_info.force_no_trade {
@@ -1641,10 +1593,8 @@ impl Game {
     /// C++ `CvPlayer::isGamblingRing` (FFH: full member of a vote source with the gambling ring resolution).
     pub fn player_is_gambling_ring(&self, p: PlayerId) -> bool {
         for vote_source in self.d.vote_sources.keys() {
-            if self.player_is_full_member(p, vote_source) {
-                if self.gambling_ring[vote_source] {
-                    return true;
-                }
+            if self.player_is_full_member(p, vote_source) && self.gambling_ring[vote_source] {
+                return true;
             }
         }
         false
@@ -1653,10 +1603,8 @@ impl Game {
     /// C++ `CvPlayer::isSlaveTrade` (FFH vote source resolution).
     pub fn player_is_slave_trade(&self, p: PlayerId) -> bool {
         for vote_source in self.d.vote_sources.keys() {
-            if self.player_is_full_member(p, vote_source) {
-                if self.slave_trade[vote_source] {
-                    return true;
-                }
+            if self.player_is_full_member(p, vote_source) && self.slave_trade[vote_source] {
+                return true;
             }
         }
         false
@@ -1665,10 +1613,8 @@ impl Game {
     /// C++ `CvPlayer::isSmugglingRing` (FFH vote source resolution).
     pub fn player_is_smuggling_ring(&self, p: PlayerId) -> bool {
         for vote_source in self.d.vote_sources.keys() {
-            if self.player_is_full_member(p, vote_source) {
-                if self.smuggling_ring[vote_source] {
-                    return true;
-                }
+            if self.player_is_full_member(p, vote_source) && self.smuggling_ring[vote_source] {
+                return true;
             }
         }
         false

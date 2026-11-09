@@ -203,23 +203,21 @@ impl Game {
                     for civ in d.civilizations.keys() {
                         if self.civ_is_ai_playable(civ) {
                             for leader in d.leader_heads.keys() {
-                                if d.civilizations[civ].leaders[leader] {
-                                    if alignment == -1 || opt_to_i32(d.leader_heads[leader].alignment) == alignment {
-                                        let mut value = 40000 + self.soren_rand_num(1000, "Random Leader");
-                                        for ii in 0..num_civ_players {
-                                            if self.setup.players[ii].leader == Some(leader) {
-                                                value -= 2000;
-                                            }
-                                            if self.setup.players[ii].civ == Some(civ) {
-                                                value -= 1000;
-                                            }
+                                if d.civilizations[civ].leaders[leader] && (alignment == -1 || opt_to_i32(d.leader_heads[leader].alignment) == alignment) {
+                                    let mut value = 40000 + self.soren_rand_num(1000, "Random Leader");
+                                    for ii in 0..num_civ_players {
+                                        if self.setup.players[ii].leader == Some(leader) {
+                                            value -= 2000;
                                         }
+                                        if self.setup.players[ii].civ == Some(civ) {
+                                            value -= 1000;
+                                        }
+                                    }
 
-                                        if value > best_value {
-                                            best_civ = Some(civ);
-                                            best_leader = Some(leader);
-                                            best_value = value;
-                                        }
+                                    if value > best_value {
+                                        best_civ = Some(civ);
+                                        best_leader = Some(leader);
+                                        best_value = value;
                                     }
                                 }
                             }
@@ -537,10 +535,8 @@ impl Game {
     /// units and cities.
     pub fn init_free_units(&mut self) {
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].num_units() == 0 && self.players[p].num_cities() == 0 {
-                    self.player_init_free_units(p);
-                }
+            if self.players[p].alive && self.players[p].num_units() == 0 && self.players[p].num_cities() == 0 {
+                self.player_init_free_units(p);
             }
         }
     }
@@ -805,14 +801,12 @@ impl Game {
             // add floodplains to any desert tiles the new river passes through
             for plot in self.map.plot_ids() {
                 for f in d.features.keys() {
-                    if d.features[f].requires_river && self.plot_can_have_feature(plot, Some(f)) {
-                        if d.features[f].appearance_probability == 10000 {
-                            if self.map.plots[plot].bonus_type.is_some() {
-                                self.plot_set_bonus_type(plot, None);
-                            }
-                            self.plot_set_feature_type(plot, Some(f));
-                            break;
+                    if d.features[f].requires_river && self.plot_can_have_feature(plot, Some(f)) && d.features[f].appearance_probability == 10000 {
+                        if self.map.plots[plot].bonus_type.is_some() {
+                            self.plot_set_bonus_type(plot, None);
                         }
+                        self.plot_set_feature_type(plot, Some(f));
+                        break;
                     }
                 }
             }

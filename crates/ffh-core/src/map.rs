@@ -677,18 +677,18 @@ impl Game {
             }
             for &c in &self.players[i].cities {
                 if !same_area || Some(self.city_area(c)) == plot_area || (coastal_only && self.city_water_area(c) == plot_area) {
-                    if !coastal_only || self.city_is_coastal(c, self.d.defines.min_water_size_for_ocean) {
-                        if team_at_war_with.is_none_or(|t| self.at_war(player_team, t)) {
-                            let (cx, cy) = (self.cities[c].x, self.cities[c].y);
-                            if direction.is_none() || estimate_direction(self.dx_wrap(cx - x), self.dy_wrap(cy - y)) == direction {
-                                if skip_city.is_none() || Some(c) != skip_city {
-                                    let value = self.plot_distance(x, y, cx, cy);
+                    if (!coastal_only || self.city_is_coastal(c, self.d.defines.min_water_size_for_ocean))
+                        && team_at_war_with.is_none_or(|t| self.at_war(player_team, t))
+                    {
+                        let (cx, cy) = (self.cities[c].x, self.cities[c].y);
+                        if (direction.is_none() || estimate_direction(self.dx_wrap(cx - x), self.dy_wrap(cy - y)) == direction)
+                            && (skip_city.is_none() || Some(c) != skip_city)
+                        {
+                            let value = self.plot_distance(x, y, cx, cy);
 
-                                    if value < best_value {
-                                        best_value = value;
-                                        best_city = Some(c);
-                                    }
-                                }
+                            if value < best_value {
+                                best_value = value;
+                                best_city = Some(c);
                             }
                         }
                     }

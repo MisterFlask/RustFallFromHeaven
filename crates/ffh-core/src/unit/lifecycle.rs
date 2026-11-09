@@ -133,13 +133,11 @@ impl Game {
             }
         }
 
-        if self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND {
-            if self.unit_base_combat_str(u) > 0 {
-                if self.best_land_unit.is_none() || self.unit_base_combat_str(u) > self.best_land_unit_combat() {
-                    // `setBestLandUnit` (its only other effect is an interface dirty bit).
-                    self.best_land_unit = Some(unit_type);
-                }
-            }
+        if self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
+            && self.unit_base_combat_str(u) > 0 && (self.best_land_unit.is_none() || self.unit_base_combat_str(u) > self.best_land_unit_combat())
+        {
+            // `setBestLandUnit` (its only other effect is an interface dirty bit).
+            self.best_land_unit = Some(unit_type);
         }
 
         // UI: the active player's GameData dirty bit.
@@ -259,24 +257,20 @@ impl Game {
         let tier2 = d.defines.weapon_promotion_tier2;
         let tier3 = d.defines.weapon_promotion_tier3;
         if let Some(promotion) = opt_from_i32::<PromotionType>(tier1) {
-            if self.units[u].has_promotion[promotion] {
-                if info.weapon_tier < 1 || has_promotion_define(self, u, tier2) || has_promotion_define(self, u, tier3) {
-                    self.unit_set_has_promotion(u, promotion, false);
-                }
+            if self.units[u].has_promotion[promotion]
+                && (info.weapon_tier < 1 || has_promotion_define(self, u, tier2) || has_promotion_define(self, u, tier3))
+            {
+                self.unit_set_has_promotion(u, promotion, false);
             }
         }
         if let Some(promotion) = opt_from_i32::<PromotionType>(tier2) {
-            if self.units[u].has_promotion[promotion] {
-                if info.weapon_tier < 2 || has_promotion_define(self, u, tier3) {
-                    self.unit_set_has_promotion(u, promotion, false);
-                }
+            if self.units[u].has_promotion[promotion] && (info.weapon_tier < 2 || has_promotion_define(self, u, tier3)) {
+                self.unit_set_has_promotion(u, promotion, false);
             }
         }
         if let Some(promotion) = opt_from_i32::<PromotionType>(tier3) {
-            if self.units[u].has_promotion[promotion] {
-                if info.weapon_tier < 3 {
-                    self.unit_set_has_promotion(u, promotion, false);
-                }
+            if self.units[u].has_promotion[promotion] && info.weapon_tier < 3 {
+                self.unit_set_has_promotion(u, promotion, false);
             }
         }
         if info.free_promotion_pick > 0 && self.units[u].game_turn_created == self.game_turn() {
@@ -590,56 +584,50 @@ impl Game {
                 self.unit_change_fortify_turns(u, 1);
             }
         }
-        if info.abandon {
-            if !self.unit_is_barbarian(u) {
-                let owner = self.units[u].owner;
-                let mut valid = true;
-                if let Some(prereq_civic) = info.prereq_civic {
-                    valid = false;
-                    for i in 0..d.defines.max_civic_options.max(0) as usize {
-                        if self.players[owner].civics.get(CivicOptionType::from_usize(i)) == Some(&Some(prereq_civic)) {
-                            valid = true;
-                        }
-                    }
-                    if self.player_is_anarchy(owner) {
+        if info.abandon && !self.unit_is_barbarian(u) {
+            let owner = self.units[u].owner;
+            let mut valid = true;
+            if let Some(prereq_civic) = info.prereq_civic {
+                valid = false;
+                for i in 0..d.defines.max_civic_options.max(0) as usize {
+                    if self.players[owner].civics.get(CivicOptionType::from_usize(i)) == Some(&Some(prereq_civic)) {
                         valid = true;
                     }
                 }
-                if valid {
-                    if let Some(state_religion) = info.state_religion {
-                        valid = false;
-                        if self.player_get_state_religion(owner) == Some(state_religion) {
-                            valid = true;
-                        }
+                if self.player_is_anarchy(owner) {
+                    valid = true;
+                }
+            }
+            if valid {
+                if let Some(state_religion) = info.state_religion {
+                    valid = false;
+                    if self.player_get_state_religion(owner) == Some(state_religion) {
+                        valid = true;
                     }
                 }
-                if !valid {
-                    // UI: TXT_KEY_MESSAGE_UNIT_ABANDON.
-                    let turn = self.game_turn();
-                    self.log.msg(turn, Some(owner), || format!("{} abandoned", d.text.name(&info.base.description)));
-                    self.unit_kill(u, true, None);
-                    self.unit_created_count[unit_type] -= 1;
-                    let unit_class = info_unit_class(info);
-                    self.unit_class_created_count[unit_class] -= 1;
-                    // (C++ also takes the unit off the team/player unit class counts and the extra
-                    // unit cost here, which the delayed `kill(false)` does as well: the counts went
-                    // negative, and a civ could then build past a class's hard limit.)
-                }
+            }
+            if !valid {
+                // UI: TXT_KEY_MESSAGE_UNIT_ABANDON.
+                let turn = self.game_turn();
+                self.log.msg(turn, Some(owner), || format!("{} abandoned", d.text.name(&info.base.description)));
+                self.unit_kill(u, true, None);
+                self.unit_created_count[unit_type] -= 1;
+                let unit_class = info_unit_class(info);
+                self.unit_class_created_count[unit_class] -= 1;
+                // (C++ also takes the unit off the team/player unit class counts and the extra
+                // unit cost here, which the delayed `kill(false)` does as well: the counts went
+                // negative, and a civ could then build past a class's hard limit.)
             }
         }
         for promotion in d.promotions.keys() {
             if self.units[u].has_promotion[promotion] {
                 let promotion_info = &d.promotions[promotion];
-                if promotion_info.free_xp_per_turn != 0 {
-                    if self.units[u].experience < d.defines.free_xp_max {
-                        self.unit_change_experience(u, promotion_info.free_xp_per_turn, -1, false, false, false);
-                    }
+                if promotion_info.free_xp_per_turn != 0 && self.units[u].experience < d.defines.free_xp_max {
+                    self.unit_change_experience(u, promotion_info.free_xp_per_turn, -1, false, false, false);
                 }
                 if let Some(random_apply) = promotion_info.promotion_random_apply {
-                    if !self.units[u].has_promotion[random_apply] {
-                        if self.soren_rand_num(100, "Promotion Random Apply") <= 3 {
-                            self.unit_set_has_promotion(u, random_apply, true);
-                        }
+                    if !self.units[u].has_promotion[random_apply] && self.soren_rand_num(100, "Promotion Random Apply") <= 3 {
+                        self.unit_set_has_promotion(u, random_apply, true);
                     }
                 }
                 if promotion_info.betrayal_chance != 0 {
@@ -661,25 +649,19 @@ impl Game {
                         return;
                     }
                 }
-                if promotion_info.expire_chance != 0 {
-                    if self.soren_rand_num(100, "Promotion Expire") <= promotion_info.expire_chance {
-                        self.unit_set_has_promotion(u, promotion, false);
-                    }
+                if promotion_info.expire_chance != 0 && self.soren_rand_num(100, "Promotion Expire") <= promotion_info.expire_chance {
+                    self.unit_set_has_promotion(u, promotion, false);
                 }
-                if !self.unit_is_hurt(u) {
-                    if promotion_info.removed_when_healed {
-                        self.unit_set_has_promotion(u, promotion, false);
-                    }
+                if !self.unit_is_hurt(u) && promotion_info.removed_when_healed {
+                    self.unit_set_has_promotion(u, promotion, false);
                 }
             }
         }
 
         self.units[u].has_casted = false;
 
-        if self.unit_get_spell_caster_xp(u) > 0 {
-            if self.soren_rand_num(100, "SpellCasterXP") < self.unit_get_spell_caster_xp(u) - self.units[u].experience {
-                self.unit_change_experience(u, 1, -1, false, false, false);
-            }
+        if self.unit_get_spell_caster_xp(u) > 0 && self.soren_rand_num(100, "SpellCasterXP") < self.unit_get_spell_caster_xp(u) - self.units[u].experience {
+            self.unit_change_experience(u, 1, -1, false, false, false);
         }
         if self.units[u].duration > 0 {
             self.unit_change_duration(u, -1);
@@ -696,25 +678,19 @@ impl Game {
             if info.weapon_tier > 0 {
                 self.unit_set_weapons(u);
             }
-            if self.unit_is_barbarian(u) {
-                if info.auto_raze {
-                    if self.map.plots[plot].owner == Some(self.units[u].owner) {
-                        if let Some(city) = self.map.plots[plot].plot_city {
-                            self.city_kill(city, true);
-                            // C++ keeps using `this` (a unit bumped to death by the razing would be
-                            // a use-after-free there).
-                            if !self.units.contains(u) {
-                                return;
-                            }
-                        }
+            if self.unit_is_barbarian(u) && info.auto_raze && self.map.plots[plot].owner == Some(self.units[u].owner) {
+                if let Some(city) = self.map.plots[plot].plot_city {
+                    self.city_kill(city, true);
+                    // C++ keeps using `this` (a unit bumped to death by the razing would be
+                    // a use-after-free there).
+                    if !self.units.contains(u) {
+                        return;
                     }
                 }
             }
         }
-        if info.immortal {
-            if !self.unit_is_immortal(u) {
-                self.unit_change_immortal(u, 1);
-            }
+        if info.immortal && !self.unit_is_immortal(u) {
+            self.unit_change_immortal(u, 1);
         }
         // FfH: End Add
 
@@ -843,12 +819,8 @@ impl Game {
             if can_join {
                 if let Some(old) = old_group {
                     let mut was_head = false;
-                    if !self.unit_is_human(u) {
-                        if self.groups[old].units.len() > 1 {
-                            if self.group_get_head_unit(old) == Some(u) {
-                                was_head = true;
-                            }
-                        }
+                    if !self.unit_is_human(u) && self.groups[old].units.len() > 1 && self.group_get_head_unit(old) == Some(u) {
+                        was_head = true;
                     }
 
                     self.group_remove_unit(old, u);
@@ -942,34 +914,30 @@ impl Game {
                         continue;
                     }
                     let loop_team = self.unit_get_team(loop_unit);
-                    if self.unit_is_enemy(u, Some(loop_team), Some(np)) || self.unit_is_enemy(loop_unit, Some(team), None) {
-                        if !self.unit_can_coexist_with_enemy_unit(loop_unit, Some(team)) {
-                            let loop_info = &d.units[self.units[loop_unit].unit_type];
-                            if loop_info.unit_capture_class_type.is_none() && self.unit_can_defend(loop_unit, Some(np)) {
-                                // FfH: Modified by Kael 04/25/2010 (was `jumpToNearestValidPlot()`)
-                                if self.unit_plot_opt(loop_unit).is_some() {
-                                    if !self.unit_is_invisible_in_plot(u, loop_team, Some(np), true) {
-                                        self.unit_withdrawl_to_nearest_valid_plot(loop_unit, true); // can kill unit
-                                    }
-                                }
-                            } else {
-                                // FfH Hidden Nationality: Modified by Kael 08/27/2007
-                                if !self.unit_is_hidden_nationality(u) && !self.unit_is_hidden_nationality(loop_unit) {
-                                    self.team_change_war_weariness_at_plot(loop_team, team, np, d.defines.ww_unit_captured);
-                                    self.team_change_war_weariness_at_plot(team, loop_team, np, d.defines.ww_captured_unit);
-                                    // `AI_changeWarSuccess`
-                                    self.teams[team].ai_war_success[loop_team] += d.defines.war_success_unit_capturing;
-                                }
-
-                                // FfH: Modified by Kael 12/30/2207 (equipment is always captured)
-                                if !self.unit_is_no_capture(u) || loop_info.equipment_promotion.is_some() {
-                                    if !self.unit_is_hidden_nationality(loop_unit) {
-                                        self.unit_set_capturing_player(loop_unit, Some(owner));
-                                    }
-                                }
-
-                                self.unit_kill(loop_unit, false, Some(owner));
+                    if (self.unit_is_enemy(u, Some(loop_team), Some(np)) || self.unit_is_enemy(loop_unit, Some(team), None))
+                        && !self.unit_can_coexist_with_enemy_unit(loop_unit, Some(team))
+                    {
+                        let loop_info = &d.units[self.units[loop_unit].unit_type];
+                        if loop_info.unit_capture_class_type.is_none() && self.unit_can_defend(loop_unit, Some(np)) {
+                            // FfH: Modified by Kael 04/25/2010 (was `jumpToNearestValidPlot()`)
+                            if self.unit_plot_opt(loop_unit).is_some() && !self.unit_is_invisible_in_plot(u, loop_team, Some(np), true) {
+                                self.unit_withdrawl_to_nearest_valid_plot(loop_unit, true); // can kill unit
                             }
+                        } else {
+                            // FfH Hidden Nationality: Modified by Kael 08/27/2007
+                            if !self.unit_is_hidden_nationality(u) && !self.unit_is_hidden_nationality(loop_unit) {
+                                self.team_change_war_weariness_at_plot(loop_team, team, np, d.defines.ww_unit_captured);
+                                self.team_change_war_weariness_at_plot(team, loop_team, np, d.defines.ww_captured_unit);
+                                // `AI_changeWarSuccess`
+                                self.teams[team].ai_war_success[loop_team] += d.defines.war_success_unit_capturing;
+                            }
+
+                            // FfH: Modified by Kael 12/30/2207 (equipment is always captured)
+                            if (!self.unit_is_no_capture(u) || loop_info.equipment_promotion.is_some()) && !self.unit_is_hidden_nationality(loop_unit) {
+                                self.unit_set_capturing_player(loop_unit, Some(owner));
+                            }
+
+                            self.unit_kill(loop_unit, false, Some(owner));
                         }
                     }
                 }
@@ -1076,13 +1044,11 @@ impl Game {
             // Facing direction: graphics.
 
             // update cargo mission animations
-            if self.unit_is_cargo(u) {
-                if old_activity_type != Some(ActivityType::ACTIVITY_MISSION) {
-                    // C++ `getGroup()->setActivityType(eOldActivityType)`; cargo always had a group
-                    // when it started moving (NO_ACTIVITY cannot occur here).
-                    if let (Some(g), Some(activity)) = (self.unit_group(u), old_activity_type) {
-                        self.group_set_activity_type(g, activity);
-                    }
+            if self.unit_is_cargo(u) && old_activity_type != Some(ActivityType::ACTIVITY_MISSION) {
+                // C++ `getGroup()->setActivityType(eOldActivityType)`; cargo always had a group
+                // when it started moving (NO_ACTIVITY cannot occur here).
+                if let (Some(g), Some(activity)) = (self.unit_group(u), old_activity_type) {
+                    self.group_set_activity_type(g, activity);
                 }
             }
 
@@ -1116,12 +1082,8 @@ impl Game {
             }
 
             for t in self.civ_team_ids() {
-                if self.team_is_alive(t) {
-                    if !self.unit_is_invisible(u, t, true) {
-                        if self.plot_is_visible(np, t) {
-                            self.team_meet(t, team, true);
-                        }
-                    }
+                if self.team_is_alive(t) && !self.unit_is_invisible(u, t, true) && self.plot_is_visible(np, t) {
+                    self.team_meet(t, team, true);
                 }
             }
 
@@ -1182,28 +1144,24 @@ impl Game {
         if let Some(np) = new_plot {
             if let Some(improvement) = self.map.plots[np].improvement_type {
                 let improvement_info = &d.improvements[improvement];
-                if improvement_info.spawn_unit_type.is_some() {
-                    if !self.unit_is_human(u) || !improvement_info.permanent {
-                        let barbarian_team = self.players[self.barbarian_player()].team;
-                        if self.at_war(team, barbarian_team) {
-                            if self.unit_is_human(u) {
-                                // UI: TXT_KEY_MESSAGE_LAIR_DESTROYED.
-                                let turn = self.game_turn();
-                                self.log.msg(turn, Some(owner), || format!("{} destroyed", d.text.name(&improvement_info.base.description)));
-                            }
-                            self.plot_set_improvement_type(np, None);
+                if improvement_info.spawn_unit_type.is_some() && (!self.unit_is_human(u) || !improvement_info.permanent) {
+                    let barbarian_team = self.players[self.barbarian_player()].team;
+                    if self.at_war(team, barbarian_team) {
+                        if self.unit_is_human(u) {
+                            // UI: TXT_KEY_MESSAGE_LAIR_DESTROYED.
+                            let turn = self.game_turn();
+                            self.log.msg(turn, Some(owner), || format!("{} destroyed", d.text.name(&improvement_info.base.description)));
                         }
+                        self.plot_set_improvement_type(np, None);
                     }
                 }
             }
             // rechecking because the previous function may have deleted the improvement
             if let Some(improvement) = self.map.plots[np].improvement_type {
-                if !d.improvements[improvement].python_on_move.is_empty() {
-                    if self.map.plots[np].python_active {
-                        self.py_improvement_on_move(u, np, improvement);
-                        if !self.units.contains(u) {
-                            return;
-                        }
+                if !d.improvements[improvement].python_on_move.is_empty() && self.map.plots[np].python_active {
+                    self.py_improvement_on_move(u, np, improvement);
+                    if !self.units.contains(u) {
+                        return;
                     }
                 }
             }
@@ -1211,12 +1169,10 @@ impl Game {
             for i in 0..DirectionType::NUM {
                 if let Some(loop_plot) = self.plot_direction(nx, ny, DirectionType::from_usize(i)) {
                     if let Some(improvement) = self.map.plots[loop_plot].improvement_type {
-                        if !d.improvements[improvement].python_at_range.is_empty() {
-                            if self.map.plots[loop_plot].python_active {
-                                self.py_improvement_at_range(u, loop_plot, improvement);
-                                if !self.units.contains(u) {
-                                    return;
-                                }
+                        if !d.improvements[improvement].python_at_range.is_empty() && self.map.plots[loop_plot].python_active {
+                            self.py_improvement_at_range(u, loop_plot, improvement);
+                            if !self.units.contains(u) {
+                                return;
                             }
                         }
                     }
@@ -1230,10 +1186,8 @@ impl Game {
                     }
                 }
             }
-            if self.plot_is_city(np, false, None) && info.weapon_tier > 0 {
-                if Some(self.units[u].owner) == self.map.plots[np].owner {
-                    self.unit_set_weapons(u);
-                }
+            if self.plot_is_city(np, false, None) && info.weapon_tier > 0 && Some(self.units[u].owner) == self.map.plots[np].owner {
+                self.unit_set_weapons(u);
             }
             if info.auto_raze {
                 if self.plot_is_owned(np) {
@@ -1376,10 +1330,8 @@ impl Game {
         let team = self.unit_get_team(u);
         if for_team != Some(team) && for_team != Some(self.barbarian_team()) {
             // FfH Hidden Nationality: Modified by Kael 08/27/2007
-            if self.unit_is_hidden_nationality(u) {
-                if !self.plot_is_city(self.unit_plot(u), true, Some(team)) {
-                    return self.barbarian_player();
-                }
+            if self.unit_is_hidden_nationality(u) && !self.plot_is_city(self.unit_plot(u), true, Some(team)) {
+                return self.barbarian_player();
             }
         }
 
@@ -1391,10 +1343,10 @@ impl Game {
         if let Some(for_team) = for_team {
             // Card: Judgment of Junil (docs/CARDS.md): an always-hostile unit fights a team under
             // truce with its own as its owner's, at peace.
-            if self.unit_get_team(u) != for_team && for_team != self.barbarian_team() && !self.team_has_truce(self.unit_get_team(u), for_team) {
-                if self.unit_is_always_hostile(u, plot) {
-                    return self.barbarian_player();
-                }
+            if self.unit_get_team(u) != for_team && for_team != self.barbarian_team() && !self.team_has_truce(self.unit_get_team(u), for_team)
+                && self.unit_is_always_hostile(u, plot)
+            {
+                return self.barbarian_player();
             }
         }
 
@@ -1467,10 +1419,8 @@ impl Game {
 
         let owner = self.units[u].owner;
 
-        if !k_trigger.python_can_do_unit.is_empty() {
-            if !self.unit_trigger_python_can_do_unit(trigger, owner, u) {
-                return MIN_INT;
-            }
+        if !k_trigger.python_can_do_unit.is_empty() && !self.unit_trigger_python_can_do_unit(trigger, owner, u) {
+            return MIN_INT;
         }
 
         if !k_trigger.units_required.is_empty() {
@@ -1482,12 +1432,8 @@ impl Game {
             }
         }
 
-        if check_plot {
-            if k_trigger.units_on_plot {
-                if !self.plot_can_trigger(self.unit_plot(u), trigger, owner) {
-                    return MIN_INT;
-                }
-            }
+        if check_plot && k_trigger.units_on_plot && !self.plot_can_trigger(self.unit_plot(u), trigger, owner) {
+            return MIN_INT;
         }
 
         let mut value = 0;
@@ -1519,10 +1465,8 @@ impl Game {
     pub fn unit_can_apply_event(&self, u: UnitId, event: EventType) -> bool {
         let k_event = &self.d.events[event];
 
-        if 0 != k_event.unit_experience {
-            if !self.unit_can_acquire_promotion_any(u) {
-                return false;
-            }
+        if 0 != k_event.unit_experience && !self.unit_can_acquire_promotion_any(u) {
+            return false;
         }
 
         if let Some(promotion) = k_event.unit_promotion {
@@ -1532,10 +1476,8 @@ impl Game {
             }
         }
 
-        if k_event.unit_immobile_turns > 0 {
-            if !self.unit_can_attack(u) {
-                return false;
-            }
+        if k_event.unit_immobile_turns > 0 && !self.unit_can_attack(u) {
+            return false;
         }
 
         true
@@ -1620,29 +1562,25 @@ impl Game {
     /// spread them over the wrap directions when circumnavigation is still available.
     fn unit_ai_set_birthmark(&mut self, u: UnitId, value: i32) {
         self.units[u].ai_birthmark = value;
-        if self.units[u].ai_type == Some(UnitAIType::UNITAI_EXPLORE_SEA) {
-            if self.circumnavigation_available() {
-                let owner = self.units[u].owner;
-                let mut birthmark = self.units[u].ai_birthmark;
-                birthmark -= birthmark % 4;
-                let mut explorer_count = self.players[owner].ai_num_ai_units[UnitAIType::UNITAI_EXPLORE_SEA];
-                explorer_count += owner.i() % 4;
-                if self.map.wrap_x {
-                    if (explorer_count % 2) == 1 {
-                        birthmark += 1;
-                    }
-                }
-                if self.map.wrap_y {
-                    if !self.map.wrap_x {
-                        explorer_count *= 2;
-                    }
-
-                    if ((explorer_count >> 1) % 2) == 1 {
-                        birthmark += 2;
-                    }
-                }
-                self.units[u].ai_birthmark = birthmark;
+        if self.units[u].ai_type == Some(UnitAIType::UNITAI_EXPLORE_SEA) && self.circumnavigation_available() {
+            let owner = self.units[u].owner;
+            let mut birthmark = self.units[u].ai_birthmark;
+            birthmark -= birthmark % 4;
+            let mut explorer_count = self.players[owner].ai_num_ai_units[UnitAIType::UNITAI_EXPLORE_SEA];
+            explorer_count += owner.i() % 4;
+            if self.map.wrap_x && (explorer_count % 2) == 1 {
+                birthmark += 1;
             }
+            if self.map.wrap_y {
+                if !self.map.wrap_x {
+                    explorer_count *= 2;
+                }
+
+                if ((explorer_count >> 1) % 2) == 1 {
+                    birthmark += 2;
+                }
+            }
+            self.units[u].ai_birthmark = birthmark;
         }
     }
 

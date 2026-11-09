@@ -287,10 +287,8 @@ impl Game {
     /// C++ `CvPlot::isAdjacentPlayer` (C++ default `bLandOnly = false`).
     pub fn plot_is_adjacent_player(&self, p: PlotIdx, player: PlayerId, land_only: bool) -> bool {
         for adj in adjacent_plots(self, p).into_iter().flatten() {
-            if self.map.plots[adj].owner == Some(player) {
-                if !land_only || !self.plot_is_water(adj) {
-                    return true;
-                }
+            if self.map.plots[adj].owner == Some(player) && (!land_only || !self.plot_is_water(adj)) {
+                return true;
             }
         }
         false
@@ -299,10 +297,8 @@ impl Game {
     /// C++ `CvPlot::isAdjacentTeam` (C++ default `bLandOnly = false`).
     pub fn plot_is_adjacent_team(&self, p: PlotIdx, team: TeamId, land_only: bool) -> bool {
         for adj in adjacent_plots(self, p).into_iter().flatten() {
-            if self.plot_get_team(adj) == Some(team) {
-                if !land_only || !self.plot_is_water(adj) {
-                    return true;
-                }
+            if self.plot_get_team(adj) == Some(team) && (!land_only || !self.plot_is_water(adj)) {
+                return true;
             }
         }
         false
@@ -331,11 +327,9 @@ impl Game {
             if self.players[pl].alive {
                 let culture = plot.culture[pl];
 
-                if culture > 0 && self.plot_is_within_culture_range(p, pl) {
-                    if culture > best_culture || (culture == best_culture && plot.owner == Some(pl)) {
-                        best_culture = culture;
-                        best_player = Some(pl);
-                    }
+                if culture > 0 && self.plot_is_within_culture_range(p, pl) && (culture > best_culture || (culture == best_culture && plot.owner == Some(pl))) {
+                    best_culture = culture;
+                    best_player = Some(pl);
                 }
             }
         }
@@ -626,12 +620,10 @@ impl Game {
     /// C++ `CvPlot::isWithinTeamCityRadius` (C++ default `eIgnorePlayer = NO_PLAYER`).
     pub fn plot_is_within_team_city_radius(&self, p: PlotIdx, team: TeamId, ignore_player: Option<PlayerId>) -> bool {
         for pl in self.player_ids() {
-            if self.players[pl].alive && self.players[pl].team == team {
-                if ignore_player.map_or(true, |ignore| pl != ignore) {
-                    if self.plot_is_player_city_radius(p, pl) {
-                        return true;
-                    }
-                }
+            if self.players[pl].alive && self.players[pl].team == team
+                && ignore_player.map_or(true, |ignore| pl != ignore) && self.plot_is_player_city_radius(p, pl)
+            {
+                return true;
             }
         }
         false
@@ -764,23 +756,21 @@ impl Game {
 
                 // BUGFIX (modified CityRadius) Sephi 0.41k: an AI city only tries to work plots
                 // it can actually use.
-                if self.cities[loop_city].plot_radius == 3 || (i as i32) < NUM_CITY_PLOTS_RADIUS_2 {
-                    if Some(self.cities[loop_city].owner) == owner {
-                        // XXX use getGameTurnAcquired() instead???
-                        let better = match best_city {
-                            None => true,
-                            Some(best) => {
-                                let (lc, bc) = (&self.cities[loop_city], &self.cities[best]);
-                                CITY_PLOT_PRIORITY[i] < CITY_PLOT_PRIORITY[best_plot]
-                                    || (CITY_PLOT_PRIORITY[i] == CITY_PLOT_PRIORITY[best_plot]
-                                        && (lc.game_turn_founded < bc.game_turn_founded
-                                            || (lc.game_turn_founded == bc.game_turn_founded && lc.id < bc.id)))
-                            }
-                        };
-                        if better {
-                            best_plot = i;
-                            best_city = Some(loop_city);
+                if (self.cities[loop_city].plot_radius == 3 || (i as i32) < NUM_CITY_PLOTS_RADIUS_2) && Some(self.cities[loop_city].owner) == owner {
+                    // XXX use getGameTurnAcquired() instead???
+                    let better = match best_city {
+                        None => true,
+                        Some(best) => {
+                            let (lc, bc) = (&self.cities[loop_city], &self.cities[best]);
+                            CITY_PLOT_PRIORITY[i] < CITY_PLOT_PRIORITY[best_plot]
+                                || (CITY_PLOT_PRIORITY[i] == CITY_PLOT_PRIORITY[best_plot]
+                                    && (lc.game_turn_founded < bc.game_turn_founded
+                                        || (lc.game_turn_founded == bc.game_turn_founded && lc.id < bc.id)))
                         }
+                    };
+                    if better {
+                        best_plot = i;
+                        best_city = Some(loop_city);
                     }
                 }
             }
@@ -977,11 +967,9 @@ impl Game {
                     connected = true;
 
                     for adj in adjacent_plots(self, p).into_iter().flatten() {
-                        if self.plot_get_plot_group(adj, player) == Some(group) {
-                            if !self.plot_is_trade_network_connected(p, adj, team) {
-                                connected = false;
-                                break;
-                            }
+                        if self.plot_get_plot_group(adj, player) == Some(group) && !self.plot_is_trade_network_connected(p, adj, team) {
+                            connected = false;
+                            break;
                         }
                     }
                 }

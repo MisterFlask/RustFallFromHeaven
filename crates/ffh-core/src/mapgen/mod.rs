@@ -47,10 +47,8 @@ impl Game {
 
         let info = &d.bonuses[bonus];
 
-        if self.plot_is_water(plot) {
-            if (self.map.num_bonus_on_land[bonus] * 100) / (self.map.num_bonus[bonus] + 1) < info.min_land_percent {
-                return false;
-            }
+        if self.plot_is_water(plot) && (self.map.num_bonus_on_land[bonus] * 100) / (self.map.num_bonus[bonus] + 1) < info.min_land_percent {
+            return false;
         }
 
         // Make sure there are no bonuses of the same class (but a different type) nearby:

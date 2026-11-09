@@ -72,10 +72,8 @@ impl Game {
                                     let mut chance = d.handicaps[self.handicap].lair_spawn_rate;
                                     chance *= 10000;
                                     chance /= d.game_speeds[self.game_speed_type()].train_percent;
-                                    if self.soren_rand_num(10000, "Spawn Unit") < chance {
-                                        if !self.plot_is_visible_other_unit(p, barbarian) {
-                                            self.plot_spawn_lair_unit(p, unit);
-                                        }
+                                    if self.soren_rand_num(10000, "Spawn Unit") < chance && !self.plot_is_visible_other_unit(p, barbarian) {
+                                        self.plot_spawn_lair_unit(p, unit);
                                     }
                                 }
                             }
@@ -274,37 +272,35 @@ impl Game {
             }
             let flames_feature = d.defines.flames_feature;
             let flames_spread_effect = d.defines.flames_spread_effect;
-            if flames_feature != -1 && flames_spread_effect != -1 {
-                if opt_to_i32(self.map.plots[p].feature_type) == flames_feature {
-                    if self.soren_rand_num(100, "Flames Spread") < d.defines.flames_spread_chance {
-                        for i in 0..DirectionType::NUM {
-                            let Some(adjacent) = self.plot_direction(x, y, DirectionType::from_usize(i)) else {
-                                continue;
-                            };
-                            if let Some(adjacent_feature) = self.map.plots[adjacent].feature_type {
-                                if d.features[adjacent_feature].flammable && self.map.plots[adjacent].improvement_type.is_none() {
-                                    self.plot_set_improvement_type(adjacent, opt_from_i32(flames_spread_effect));
-                                }
+            if flames_feature != -1 && flames_spread_effect != -1 && opt_to_i32(self.map.plots[p].feature_type) == flames_feature {
+                if self.soren_rand_num(100, "Flames Spread") < d.defines.flames_spread_chance {
+                    for i in 0..DirectionType::NUM {
+                        let Some(adjacent) = self.plot_direction(x, y, DirectionType::from_usize(i)) else {
+                            continue;
+                        };
+                        if let Some(adjacent_feature) = self.map.plots[adjacent].feature_type {
+                            if d.features[adjacent_feature].flammable && self.map.plots[adjacent].improvement_type.is_none() {
+                                self.plot_set_improvement_type(adjacent, opt_from_i32(flames_spread_effect));
                             }
                         }
                     }
-                    let flames = FeatureType::from_usize(flames_feature as usize);
-                    // isTerrain(getTerrainType()): a plot without terrain matches nothing.
-                    let flames_terrain = self.map.plots[p].terrain_type.map_or(false, |t| d.features[flames].terrain[t]);
-                    if !flames_terrain {
-                        // C++ quirk (kept): the expiry roll reuses the "Flames Spread" log string.
-                        if self.soren_rand_num(100, "Flames Spread") < d.defines.flames_expire_chance {
-                            self.plot_set_feature_type(p, None);
-                            let flames_expire_effect = d.defines.flames_expire_effect;
-                            if flames_expire_effect != -1 {
-                                let expire_feature = opt_from_i32(flames_expire_effect);
-                                if self.plot_can_have_feature(p, expire_feature) {
-                                    self.plot_set_feature_type(p, expire_feature);
-                                }
+                }
+                let flames = FeatureType::from_usize(flames_feature as usize);
+                // isTerrain(getTerrainType()): a plot without terrain matches nothing.
+                let flames_terrain = self.map.plots[p].terrain_type.map_or(false, |t| d.features[flames].terrain[t]);
+                if !flames_terrain {
+                    // C++ quirk (kept): the expiry roll reuses the "Flames Spread" log string.
+                    if self.soren_rand_num(100, "Flames Spread") < d.defines.flames_expire_chance {
+                        self.plot_set_feature_type(p, None);
+                        let flames_expire_effect = d.defines.flames_expire_effect;
+                        if flames_expire_effect != -1 {
+                            let expire_feature = opt_from_i32(flames_expire_effect);
+                            if self.plot_can_have_feature(p, expire_feature) {
+                                self.plot_set_feature_type(p, expire_feature);
                             }
-                            if self.map.plots[p].feature_type.is_none() {
-                                return;
-                            }
+                        }
+                        if self.map.plots[p].feature_type.is_none() {
+                            return;
                         }
                     }
                 }

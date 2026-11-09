@@ -513,17 +513,15 @@ impl Game {
 
             if !kill && !self.player_is_barbarian(p) {
                 let pl = &self.players[p];
-                if pl.num_cities() == 0 && pl.advanced_start_points < 0 {
-                    if pl.num_units() == 0 || (!self.is_option(GameOptionType::GAMEOPTION_COMPLETE_KILLS) && pl.founded_first_city) {
-                        kill = true;
-                    }
+                if pl.num_cities() == 0 && pl.advanced_start_points < 0
+                    && (pl.num_units() == 0 || (!self.is_option(GameOptionType::GAMEOPTION_COMPLETE_KILLS) && pl.founded_first_city))
+                {
+                    kill = true;
                 }
             }
 
-            if !kill && !self.player_is_barbarian(p) {
-                if self.max_city_elimination() > 0 && self.players[p].cities_lost >= self.max_city_elimination() {
-                    kill = true;
-                }
+            if !kill && !self.player_is_barbarian(p) && self.max_city_elimination() > 0 && self.players[p].cities_lost >= self.max_city_elimination() {
+                kill = true;
             }
 
             if kill {

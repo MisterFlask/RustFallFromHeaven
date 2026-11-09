@@ -113,10 +113,8 @@ impl Game {
             return false;
         }
 
-        if !test_visible {
-            if self.players[self.units[u].owner].gold < self.unit_sabotage_cost(u, plot) {
-                return false;
-            }
+        if !test_visible && self.players[self.units[u].owner].gold < self.unit_sabotage_cost(u, plot) {
+            return false;
         }
 
         true
@@ -242,10 +240,8 @@ impl Game {
             return false;
         }
 
-        if !test_visible {
-            if self.players[self.units[u].owner].gold < self.unit_destroy_cost(u, plot) {
-                return false;
-            }
+        if !test_visible && self.players[self.units[u].owner].gold < self.unit_destroy_cost(u, plot) {
+            return false;
         }
 
         true
@@ -342,10 +338,8 @@ impl Game {
             return false;
         }
 
-        if !test_visible {
-            if self.players[self.units[u].owner].gold < self.unit_steal_plans_cost(u, plot) {
-                return false;
-            }
+        if !test_visible && self.players[self.units[u].owner].gold < self.unit_steal_plans_cost(u, plot) {
+            return false;
         }
 
         true
@@ -498,14 +492,10 @@ impl Game {
             return false;
         }
 
-        if !test_visible {
-            if self.city_team(city) != self.unit_get_team(u) {
-                let city_owner = self.cities[city].owner;
-                if self.player_is_no_non_state_religion_spread(city_owner) {
-                    if Some(religion) != self.player_get_state_religion(city_owner) {
-                        return false;
-                    }
-                }
+        if !test_visible && self.city_team(city) != self.unit_get_team(u) {
+            let city_owner = self.cities[city].owner;
+            if self.player_is_no_non_state_religion_spread(city_owner) && Some(religion) != self.player_get_state_religion(city_owner) {
+                return false;
             }
         }
 
@@ -624,10 +614,8 @@ impl Game {
             }
 
             for loop_corporation in d.corporations.keys() {
-                if self.city_is_headquarters(city, loop_corporation) {
-                    if self.is_competing_corporation(loop_corporation, corporation) {
-                        return false;
-                    }
+                if self.city_is_headquarters(city, loop_corporation) && self.is_competing_corporation(loop_corporation, corporation) {
+                    return false;
                 }
             }
 
@@ -681,13 +669,11 @@ impl Game {
             }
 
             for loop_corporation in d.corporations.keys() {
-                if loop_corporation != corporation {
-                    if self.city_is_active_corporation(city, loop_corporation) {
-                        if self.is_competing_corporation(corporation, loop_corporation) {
-                            cost *= 100 + d.corporations[loop_corporation].spread_factor;
-                            cost /= 100;
-                        }
-                    }
+                if loop_corporation != corporation
+                    && self.city_is_active_corporation(city, loop_corporation) && self.is_competing_corporation(corporation, loop_corporation)
+                {
+                    cost *= 100 + d.corporations[loop_corporation].spread_factor;
+                    cost /= 100;
                 }
             }
         }
@@ -999,10 +985,8 @@ impl Game {
             return false;
         }
 
-        if !test_visible {
-            if !self.city_is_production_building(city) {
-                return false;
-            }
+        if !test_visible && !self.city_is_production_building(city) {
+            return false;
         }
 
         true
@@ -1076,10 +1060,8 @@ impl Game {
             return false;
         }
 
-        if !test_visible {
-            if self.city_team(city) == self.unit_get_team(u) {
-                return false;
-            }
+        if !test_visible && self.city_team(city) == self.unit_get_team(u) {
+            return false;
         }
 
         true
@@ -1207,10 +1189,8 @@ impl Game {
             _ => return false,
         };
 
-        if !test_visible {
-            if self.city_team(city) == self.unit_get_team(u) {
-                return false;
-            }
+        if !test_visible && self.city_team(city) == self.unit_get_team(u) {
+            return false;
         }
 
         true
@@ -1490,10 +1470,8 @@ impl Game {
         }
 
         // ADDON (stop automated workers from building forts) Sephi
-        if self.unit_is_automated(u) {
-            if build.i() == self.d.defines.build_fort {
-                return false;
-            }
+        if self.unit_is_automated(u) && build.i() == self.d.defines.build_fort {
+            return false;
         }
 
         true
@@ -1551,12 +1529,8 @@ impl Game {
         let team = self.unit_get_team(u);
 
         for build in d.builds.keys() {
-            if d.builds[build].route.is_some() {
-                if info.builds[build] {
-                    if self.team_is_has_tech(team, d.builds[build].tech_prereq) {
-                        return true;
-                    }
-                }
+            if d.builds[build].route.is_some() && info.builds[build] && self.team_is_has_tech(team, d.builds[build].tech_prereq) {
+                return true;
             }
         }
 
@@ -1591,10 +1565,8 @@ impl Game {
 
     /// C++ `CvUnit::workRate` (CvUnit.cpp:8768-8796).
     pub fn unit_work_rate(&self, u: UnitId, max: bool) -> i32 {
-        if !max {
-            if !self.unit_can_move(u) {
-                return 0;
-            }
+        if !max && !self.unit_can_move(u) {
+            return 0;
         }
 
         let unit = &self.units[u];

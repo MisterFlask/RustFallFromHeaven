@@ -347,11 +347,9 @@ impl Game {
             if !self.units.contains(u) {
                 return;
             }
-            if self.units[u].has_promotion[promotion] {
-                if d.promotions[promotion].betrayal_chance != 0 {
-                    let barbarian = self.barbarian_player();
-                    self.unit_betray(u, barbarian);
-                }
+            if self.units[u].has_promotion[promotion] && d.promotions[promotion].betrayal_chance != 0 {
+                let barbarian = self.barbarian_player();
+                self.unit_betray(u, barbarian);
             }
         }
         // FfH: End Add
@@ -583,12 +581,8 @@ impl Game {
         let d = self.d;
 
         // FfH: Added by Kael 11/05/2008
-        if self.is_option(GameOptionType::GAMEOPTION_NO_HEALING_FOR_HUMANS) {
-            if self.unit_is_human(u) {
-                if self.unit_is_alive(u) {
-                    return 0;
-                }
-            }
+        if self.is_option(GameOptionType::GAMEOPTION_NO_HEALING_FOR_HUMANS) && self.unit_is_human(u) && self.unit_is_alive(u) {
+            return 0;
         }
         // FfH: End Add
 
@@ -873,10 +867,8 @@ impl Game {
         let target_plot = self.map.plot_xy(x, y).expect("CvUnit::canNukeAt: target plot is off the map");
 
         for team in self.team_ids() {
-            if self.unit_is_nuke_victim(u, target_plot, team) {
-                if !self.unit_is_enemy(u, Some(team), Some(plot)) {
-                    return false;
-                }
+            if self.unit_is_nuke_victim(u, target_plot, team) && !self.unit_is_enemy(u, Some(team), Some(plot)) {
+                return false;
             }
         }
 
@@ -899,14 +891,12 @@ impl Game {
         let teams_affected: Vec<bool> = teams.iter().map(|&t| self.unit_is_nuke_victim(u, plot, t)).collect();
 
         for (&team, &affected) in teams.iter().zip(&teams_affected) {
-            if affected {
-                if !self.unit_is_enemy(u, Some(team), None) {
-                    let unit_team = self.unit_get_team(u);
-                    self.team_declare_war(unit_team, team, false, Some(WarPlanType::WARPLAN_LIMITED));
-                    // (C++ uses `this` unchecked after declaring war, which can bump units.)
-                    if !self.units.contains(u) {
-                        return false;
-                    }
+            if affected && !self.unit_is_enemy(u, Some(team), None) {
+                let unit_team = self.unit_get_team(u);
+                self.team_declare_war(unit_team, team, false, Some(WarPlanType::WARPLAN_LIMITED));
+                // (C++ uses `this` unchecked after declaring war, which can bump units.)
+                if !self.units.contains(u) {
+                    return false;
                 }
             }
         }
@@ -915,11 +905,9 @@ impl Game {
         let mut best_team: Option<TeamId> = None;
 
         for (&team, &affected) in teams.iter().zip(&teams_affected) {
-            if affected {
-                if self.teams[team].nuke_interception > best_interception {
-                    best_interception = self.teams[team].nuke_interception;
-                    best_team = Some(team);
-                }
+            if affected && self.teams[team].nuke_interception > best_interception {
+                best_interception = self.teams[team].nuke_interception;
+                best_team = Some(team);
             }
         }
 
@@ -958,34 +946,26 @@ impl Game {
 
         let owner = self.units[u].owner;
         for (&team_i, &affected_i) in teams.iter().zip(&teams_affected) {
-            if self.team_is_alive(team_i) {
-                if team_i != unit_team {
-                    if affected_i {
-                        for player in self.player_ids() {
-                            if self.players[player].alive {
-                                if self.players[player].team == team_i {
-                                    // `AI_changeMemoryCount` (AI bookkeeping read by rules)
-                                    self.players[player].ai_memory_count[owner][MemoryType::MEMORY_NUKED_US] += 1;
-                                }
-                            }
+            if self.team_is_alive(team_i) && team_i != unit_team {
+                if affected_i {
+                    for player in self.player_ids() {
+                        if self.players[player].alive && self.players[player].team == team_i {
+                            // `AI_changeMemoryCount` (AI bookkeeping read by rules)
+                            self.players[player].ai_memory_count[owner][MemoryType::MEMORY_NUKED_US] += 1;
                         }
-                    } else {
-                        for (&team_j, &affected_j) in teams.iter().zip(&teams_affected) {
-                            if self.team_is_alive(team_j) {
-                                if affected_j {
-                                    if self.teams[team_i].has_met[team_j] {
-                                        if self.team_ai_get_attitude(team_i, team_j, true) >= AttitudeType::ATTITUDE_CAUTIOUS {
-                                            for player in self.player_ids() {
-                                                if self.players[player].alive {
-                                                    if self.players[player].team == team_i {
-                                                        self.players[player].ai_memory_count[owner][MemoryType::MEMORY_NUKED_FRIEND] += 1;
-                                                    }
-                                                }
-                                            }
-                                            break;
-                                        }
+                    }
+                } else {
+                    for (&team_j, &affected_j) in teams.iter().zip(&teams_affected) {
+                        if self.team_is_alive(team_j) && affected_j {
+                            if self.teams[team_i].has_met[team_j]
+                                && self.team_ai_get_attitude(team_i, team_j, true) >= AttitudeType::ATTITUDE_CAUTIOUS
+                            {
+                                for player in self.player_ids() {
+                                    if self.players[player].alive && self.players[player].team == team_i {
+                                        self.players[player].ai_memory_count[owner][MemoryType::MEMORY_NUKED_FRIEND] += 1;
                                     }
                                 }
+                                break;
                             }
                         }
                     }
@@ -1172,10 +1152,8 @@ impl Game {
             return false;
         }
 
-        if self.plot_is_owned(target_plot) {
-            if !self.unit_potential_war_action(u, target_plot) {
-                return false;
-            }
+        if self.plot_is_owned(target_plot) && !self.unit_potential_war_action(u, target_plot) {
+            return false;
         }
 
         match self.map.plots[target_plot].plot_city {
@@ -1419,12 +1397,10 @@ impl Game {
             }
         }
 
-        if self.plot_is_owned(plot) {
-            if !self.unit_potential_war_action(u, plot) {
-                if improvement.is_none() || self.map.plots[plot].owner != Some(self.units[u].owner) {
-                    return false;
-                }
-            }
+        if self.plot_is_owned(plot)
+            && !self.unit_potential_war_action(u, plot) && (improvement.is_none() || self.map.plots[plot].owner != Some(self.units[u].owner))
+        {
+            return false;
         }
 
         if !self.plot_is_valid_domain_for_action(plot, u) {
@@ -1459,10 +1435,10 @@ impl Game {
 
         if self.plot_is_owned(plot) {
             // we should not be calling this without declaring war first, so do not declare war here
-            if !self.unit_is_enemy(u, self.plot_get_team(plot), Some(plot)) {
-                if self.map.plots[plot].improvement_type.is_none() || self.map.plots[plot].owner != Some(self.units[u].owner) {
-                    return false;
-                }
+            if !self.unit_is_enemy(u, self.plot_get_team(plot), Some(plot))
+                && (self.map.plots[plot].improvement_type.is_none() || self.map.plots[plot].owner != Some(self.units[u].owner))
+            {
+                return false;
             }
         }
 
@@ -1531,10 +1507,8 @@ impl Game {
 
         // FfH: Added by Kael 03/02/2009
         for promotion in d.promotions.keys() {
-            if self.units[u].has_promotion[promotion] {
-                if d.promotions[promotion].removed_by_combat {
-                    self.unit_set_has_promotion(u, promotion, false);
-                }
+            if self.units[u].has_promotion[promotion] && d.promotions[promotion].removed_by_combat {
+                self.unit_set_has_promotion(u, promotion, false);
             }
         }
         // FfH: End Add
@@ -1565,10 +1539,8 @@ impl Game {
             return false;
         }
 
-        if !test_visible {
-            if self.plot_get_team(plot) == Some(self.unit_get_team(u)) {
-                return false;
-            }
+        if !test_visible && self.plot_get_team(plot) == Some(self.unit_get_team(u)) {
+            return false;
         }
 
         true
@@ -1679,23 +1651,23 @@ impl Game {
                 };
 
                 let city_team = self.city_team(city);
-                if !self.cities[city].plundered && self.unit_is_enemy(u, Some(city_team), None) && !self.at_war(city_team, team) {
-                    if self.city_area(city) == self.unit_area(u) || self.plot_is_adjacent_to_area(self.city_plot(city), self.unit_area(u)) {
-                        // (The city's trade profit with itself, times its trade routes.)
-                        let gold = self.city_calculate_trade_profit(city, city) * self.city_trade_routes(city);
-                        if gold > 0 {
-                            self.city_set_plundered(city, true);
-                            let owner = self.units[u].owner;
-                            let city_owner = self.cities[city].owner;
-                            // `changeGold`
-                            self.players[owner].gold += gold;
-                            self.players[city_owner].gold -= gold;
+                if !self.cities[city].plundered && self.unit_is_enemy(u, Some(city_team), None) && !self.at_war(city_team, team)
+                    && (self.city_area(city) == self.unit_area(u) || self.plot_is_adjacent_to_area(self.city_plot(city), self.unit_area(u)))
+                {
+                    // (The city's trade profit with itself, times its trade routes.)
+                    let gold = self.city_calculate_trade_profit(city, city) * self.city_trade_routes(city);
+                    if gold > 0 {
+                        self.city_set_plundered(city, true);
+                        let owner = self.units[u].owner;
+                        let city_owner = self.cities[city].owner;
+                        // `changeGold`
+                        self.players[owner].gold += gold;
+                        self.players[city_owner].gold -= gold;
 
-                            // UI: TXT_KEY_MISC_TRADE_ROUTE_PLUNDERED to the unit owner and
-                            // TXT_KEY_MISC_TRADE_ROUTE_PLUNDER to the city owner.
-                            let turn = self.game_turn();
-                            self.log.msg(turn, Some(owner), || format!("Plundered {} gold from the trade routes of {}", gold, self.cities[city].name));
-                        }
+                        // UI: TXT_KEY_MISC_TRADE_ROUTE_PLUNDERED to the unit owner and
+                        // TXT_KEY_MISC_TRADE_ROUTE_PLUNDER to the city owner.
+                        let turn = self.game_turn();
+                        self.log.msg(turn, Some(owner), || format!("Plundered {} gold from the trade routes of {}", gold, self.cities[city].name));
                     }
                 }
             }

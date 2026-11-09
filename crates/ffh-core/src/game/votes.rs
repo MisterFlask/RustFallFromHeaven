@@ -110,10 +110,8 @@ impl Game {
 
         let mut count = 0;
         for t in self.civ_team_ids() {
-            if self.team_is_alive(t) {
-                if self.team_is_force_team_vote_eligible(t, vote_source) {
-                    count += 1;
-                }
+            if self.team_is_alive(t) && self.team_is_force_team_vote_eligible(t, vote_source) {
+                count += 1;
             }
         }
 
@@ -123,17 +121,11 @@ impl Game {
         }
 
         for t in self.civ_team_ids() {
-            if t != team {
-                if self.team_is_alive(t) {
-                    if !self.team_is_force_team_vote_eligible(t, vote_source) {
-                        if self.team_is_full_member(t, vote_source) {
-                            let loop_votes = self.team_get_votes(t, None, vote_source);
-                            let votes = self.team_get_votes(team, None, vote_source);
-                            if loop_votes > votes || (loop_votes == votes && t < team) {
-                                extra_eligible -= 1;
-                            }
-                        }
-                    }
+            if t != team && self.team_is_alive(t) && !self.team_is_force_team_vote_eligible(t, vote_source) && self.team_is_full_member(t, vote_source) {
+                let loop_votes = self.team_get_votes(t, None, vote_source);
+                let votes = self.team_get_votes(team, None, vote_source);
+                if loop_votes > votes || (loop_votes == votes && t < team) {
+                    extra_eligible -= 1;
                 }
             }
         }
@@ -146,10 +138,8 @@ impl Game {
         let mut count = 0;
 
         for p in self.civ_player_ids() {
-            if self.players[p].alive {
-                if self.player_vote(p, data.id) == choice {
-                    count += self.player_get_votes(p, Some(data.vote_option.vote), data.vote_source);
-                }
+            if self.players[p].alive && self.player_vote(p, data.id) == choice {
+                count += self.player_get_votes(p, Some(data.vote_option.vote), data.vote_source);
             }
         }
 
@@ -218,12 +208,8 @@ impl Game {
             }
         } else {
             for vote in d.votes.keys() {
-                if d.votes[vote].vote_source_type[vote_source] {
-                    if d.votes[vote].secretary_general {
-                        if self.is_vote_passed(vote) {
-                            return self.vote_outcome[vote].team();
-                        }
-                    }
+                if d.votes[vote].vote_source_type[vote_source] && d.votes[vote].secretary_general && self.is_vote_passed(vote) {
+                    return self.vote_outcome[vote].team();
                 }
             }
         }
@@ -244,25 +230,23 @@ impl Game {
         let d = self.d;
 
         for vote in d.votes.keys() {
-            if d.votes[vote].vote_source_type[vote_source] {
-                if d.votes[vote].secretary_general {
-                    // C++ quirk: `kData.iId` and `kData.kVoteOption.eOtherPlayer` are left
-                    // uninitialized; setVoteOutcome clears the players' votes under that stack
-                    // garbage id, taken here as an id no triggered vote has.
-                    let data = VoteTriggeredData {
-                        id: VoteId(0),
-                        vote_source,
-                        vote_option: VoteSelectionSubData {
-                            vote,
-                            player: None,
-                            city: None,
-                            other_player: None,
-                            text: String::new(),
-                        },
-                    };
-                    self.set_vote_outcome(&data, PlayerVote::NO_PLAYER_VOTE);
-                    self.secretary_general_timer[vote_source] = 0;
-                }
+            if d.votes[vote].vote_source_type[vote_source] && d.votes[vote].secretary_general {
+                // C++ quirk: `kData.iId` and `kData.kVoteOption.eOtherPlayer` are left
+                // uninitialized; setVoteOutcome clears the players' votes under that stack
+                // garbage id, taken here as an id no triggered vote has.
+                let data = VoteTriggeredData {
+                    id: VoteId(0),
+                    vote_source,
+                    vote_option: VoteSelectionSubData {
+                        vote,
+                        player: None,
+                        city: None,
+                        other_player: None,
+                        text: String::new(),
+                    },
+                };
+                self.set_vote_outcome(&data, PlayerVote::NO_PLAYER_VOTE);
+                self.secretary_general_timer[vote_source] = 0;
             }
         }
     }
@@ -319,11 +303,11 @@ impl Game {
 
         if victory {
             for t in self.civ_team_ids() {
-                if self.team_is_voting_member(t, vote_source) {
-                    if self.team_get_votes(t, Some(data.vote), vote_source) >= self.vote_required(data.vote, vote_source) {
-                        // Can't vote on a winner if one team already has all the votes necessary to win
-                        return false;
-                    }
+                if self.team_is_voting_member(t, vote_source)
+                    && self.team_get_votes(t, Some(data.vote), vote_source) >= self.vote_required(data.vote, vote_source)
+                {
+                    // Can't vote on a winner if one team already has all the votes necessary to win
+                    return false;
                 }
             }
         }
@@ -380,11 +364,9 @@ impl Game {
             for t1 in self.civ_team_ids() {
                 if self.team_is_full_member(t1, vote_source) {
                     for t2 in self.civ_team_ids().filter(|&t2| t2 > t1) {
-                        if self.team_is_full_member(t2, vote_source) {
-                            if !self.team_is_open_borders(t2, t1) {
-                                open_with_everyone = false;
-                                break;
-                            }
+                        if self.team_is_full_member(t2, vote_source) && !self.team_is_open_borders(t2, t1) {
+                            open_with_everyone = false;
+                            break;
                         }
                     }
                 }
@@ -397,11 +379,9 @@ impl Game {
             for t1 in self.civ_team_ids() {
                 if self.team_is_full_member(t1, vote_source) {
                     for t2 in self.civ_team_ids().filter(|&t2| t2 > t1) {
-                        if self.team_is_full_member(t2, vote_source) {
-                            if !self.teams[t2].defensive_pact[t1] {
-                                pact_with_everyone = false;
-                                break;
-                            }
+                        if self.team_is_full_member(t2, vote_source) && !self.teams[t2].defensive_pact[t1] {
+                            pact_with_everyone = false;
+                            break;
                         }
                     }
                 }
@@ -424,11 +404,9 @@ impl Game {
             let mut valid = false;
 
             for t2 in self.civ_team_ids() {
-                if self.at_war(team, t2) {
-                    if self.team_is_voting_member(t2, vote_source) {
-                        valid = true;
-                        break;
-                    }
+                if self.at_war(team, t2) && self.team_is_voting_member(t2, vote_source) {
+                    valid = true;
+                    break;
                 }
             }
 
@@ -445,13 +423,9 @@ impl Game {
 
             let mut no_trade_with_everyone = true;
             for p2 in self.civ_player_ids() {
-                if self.players[p2].team != team {
-                    if self.player_is_full_member(p2, vote_source) {
-                        if self.player_can_stop_trading_with_team(p2, team, false) {
-                            no_trade_with_everyone = false;
-                            break;
-                        }
-                    }
+                if self.players[p2].team != team && self.player_is_full_member(p2, vote_source) && self.player_can_stop_trading_with_team(p2, team, false) {
+                    no_trade_with_everyone = false;
+                    break;
                 }
             }
             // Not an option if already at war with everyone
@@ -472,13 +446,9 @@ impl Game {
 
             let mut at_war_with_everyone = true;
             for t2 in self.civ_team_ids() {
-                if t2 != team {
-                    if self.team_is_full_member(t2, vote_source) {
-                        if !self.teams[t2].at_war[team] && self.team_can_change_war_peace(t2, team, false) {
-                            at_war_with_everyone = false;
-                            break;
-                        }
-                    }
+                if t2 != team && self.team_is_full_member(t2, vote_source) && !self.teams[t2].at_war[team] && self.team_can_change_war_peace(t2, team, false) {
+                    at_war_with_everyone = false;
+                    break;
                 }
             }
             // Not an option if already at war with everyone
@@ -490,11 +460,9 @@ impl Game {
             if !self.player_is_voting_member(p, vote_source) {
                 let mut valid = false;
                 for t2 in self.civ_team_ids() {
-                    if self.at_war(team, t2) {
-                        if self.team_is_full_member(t2, vote_source) {
-                            valid = true;
-                            break;
-                        }
+                    if self.at_war(team, t2) && self.team_is_full_member(t2, vote_source) {
+                        valid = true;
+                        break;
                     }
                 }
 
@@ -618,14 +586,12 @@ impl Game {
                     _ => {}
                 }
             }
-        } else if self.is_team_vote(vote_option.vote) {
-            if PlayerVote::for_team(owner_team) != player_vote {
-                for p in self.civ_player_ids() {
-                    if self.players[p].alive {
-                        let team = self.players[p].team;
-                        if team != owner_team && PlayerVote::for_team(team) == player_vote {
-                            self.players[p].ai_memory_count[owner][MemoryType::MEMORY_VOTED_FOR_US] += 1;
-                        }
+        } else if self.is_team_vote(vote_option.vote) && PlayerVote::for_team(owner_team) != player_vote {
+            for p in self.civ_player_ids() {
+                if self.players[p].alive {
+                    let team = self.players[p].team;
+                    if team != owner_team && PlayerVote::for_team(team) == player_vote {
+                        self.players[p].ai_memory_count[owner][MemoryType::MEMORY_VOTED_FOR_US] += 1;
                     }
                 }
             }
@@ -740,10 +706,8 @@ impl Game {
                 let team = self.players[vote_player].team;
 
                 for p in self.civ_player_ids() {
-                    if self.players[p].team != team {
-                        if self.player_is_voting_member(p, data.vote_source) {
-                            self.player_force_peace(p, vote_player);
-                        }
+                    if self.players[p].team != team && self.player_is_voting_member(p, data.vote_source) {
+                        self.player_force_peace(p, vote_player);
                     }
                 }
 
@@ -753,10 +717,8 @@ impl Game {
                 let team = self.players[vote_player].team;
 
                 for p in self.civ_player_ids() {
-                    if self.player_is_voting_member(p, data.vote_source) {
-                        if self.player_can_stop_trading_with_team(p, team, false) {
-                            self.player_stop_trading_with_team(p, team);
-                        }
+                    if self.player_is_voting_member(p, data.vote_source) && self.player_can_stop_trading_with_team(p, team, false) {
+                        self.player_stop_trading_with_team(p, team);
                     }
                 }
 
@@ -818,77 +780,75 @@ impl Game {
         let mut vote_options = Vec::new();
 
         for vote in d.votes.keys() {
-            if d.votes[vote].vote_source_type[vote_source] {
-                if self.is_choose_election(vote) {
-                    let info = &d.votes[vote];
-                    let mut data = VoteSelectionSubData {
-                        vote,
-                        player: None,
-                        city: None,
-                        other_player: None,
-                        text: String::new(),
-                    };
+            if d.votes[vote].vote_source_type[vote_source] && self.is_choose_election(vote) {
+                let info = &d.votes[vote];
+                let mut data = VoteSelectionSubData {
+                    vote,
+                    player: None,
+                    city: None,
+                    other_player: None,
+                    text: String::new(),
+                };
 
-                    if info.open_borders {
-                        if self.is_valid_vote_selection(vote_source, &data) {
-                            data.text = format!("Open borders between all members{}", votes_needed_text(self, vote, vote_source));
-                            vote_options.push(data.clone());
+                if info.open_borders {
+                    if self.is_valid_vote_selection(vote_source, &data) {
+                        data.text = format!("Open borders between all members{}", votes_needed_text(self, vote, vote_source));
+                        vote_options.push(data.clone());
+                    }
+                } else if info.defensive_pact {
+                    if self.is_valid_vote_selection(vote_source, &data) {
+                        data.text = format!("Defensive pact between all members{}", votes_needed_text(self, vote, vote_source));
+                        vote_options.push(data.clone());
+                    }
+                } else if info.force_peace || info.force_no_trade || info.force_war {
+                    // (three C++ branches, identical but for the text)
+                    for t1 in self.civ_team_ids() {
+                        if self.team_is_alive(t1) {
+                            data.player = self.team_get_leader_id(t1);
+
+                            if self.is_valid_vote_selection(vote_source, &data) {
+                                let what = if info.force_peace {
+                                    "Force peace with"
+                                } else if info.force_no_trade {
+                                    "Stop trading with"
+                                } else {
+                                    "Declare war on"
+                                };
+                                data.text = format!("{} {}{}", what, self.team_get_name(t1), votes_needed_text(self, vote, vote_source));
+                                vote_options.push(data.clone());
+                            }
                         }
-                    } else if info.defensive_pact {
-                        if self.is_valid_vote_selection(vote_source, &data) {
-                            data.text = format!("Defensive pact between all members{}", votes_needed_text(self, vote, vote_source));
-                            vote_options.push(data.clone());
-                        }
-                    } else if info.force_peace || info.force_no_trade || info.force_war {
-                        // (three C++ branches, identical but for the text)
-                        for t1 in self.civ_team_ids() {
-                            if self.team_is_alive(t1) {
-                                data.player = self.team_get_leader_id(t1);
+                    }
+                } else if info.assign_city {
+                    for p1 in self.civ_player_ids() {
+                        for &c in &self.players[p1].cities {
+                            let new_owner = self.plot_find_highest_culture_player(self.city_plot(c));
+                            if let Some(new_owner) = new_owner {
+                                data.player = Some(p1);
+                                data.city = Some(c);
+                                data.other_player = Some(new_owner);
 
                                 if self.is_valid_vote_selection(vote_source, &data) {
-                                    let what = if info.force_peace {
-                                        "Force peace with"
-                                    } else if info.force_no_trade {
-                                        "Stop trading with"
-                                    } else {
-                                        "Declare war on"
-                                    };
-                                    data.text = format!("{} {}{}", what, self.team_get_name(t1), votes_needed_text(self, vote, vote_source));
+                                    data.text = format!(
+                                        "Assign the {} city of {} to {}{}",
+                                        self.player_get_civilization_adjective(p1),
+                                        self.cities[c].name,
+                                        self.player_get_name(new_owner),
+                                        votes_needed_text(self, vote, vote_source)
+                                    );
                                     vote_options.push(data.clone());
                                 }
                             }
                         }
-                    } else if info.assign_city {
-                        for p1 in self.civ_player_ids() {
-                            for &c in &self.players[p1].cities {
-                                let new_owner = self.plot_find_highest_culture_player(self.city_plot(c));
-                                if let Some(new_owner) = new_owner {
-                                    data.player = Some(p1);
-                                    data.city = Some(c);
-                                    data.other_player = Some(new_owner);
+                    }
+                } else {
+                    data.text = format!("{}{}", d.text.name(&info.base.description), votes_needed_text(self, vote, vote_source));
+                    if self.is_vote_passed(vote) {
+                        data.text += " (passed)";
+                    }
 
-                                    if self.is_valid_vote_selection(vote_source, &data) {
-                                        data.text = format!(
-                                            "Assign the {} city of {} to {}{}",
-                                            self.player_get_civilization_adjective(p1),
-                                            self.cities[c].name,
-                                            self.player_get_name(new_owner),
-                                            votes_needed_text(self, vote, vote_source)
-                                        );
-                                        vote_options.push(data.clone());
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        data.text = format!("{}{}", d.text.name(&info.base.description), votes_needed_text(self, vote, vote_source));
-                        if self.is_vote_passed(vote) {
-                            data.text += " (passed)";
-                        }
-
-                        if self.can_do_resolution(vote_source, &data) {
-                            vote_options.push(data.clone());
-                        }
+                    if self.can_do_resolution(vote_source, &data) {
+                        vote_options.push(data.clone());
                     }
                 }
             }
@@ -1039,10 +999,8 @@ impl Game {
 
                     if passed {
                         for p in self.civ_player_ids() {
-                            if self.player_is_voting_member(p, vote_source) {
-                                if self.player_vote(p, id) == PlayerVote::PLAYER_VOTE_YES {
-                                    self.player_set_endorsed_resolution(p, vote_source, &data.vote_option);
-                                }
+                            if self.player_is_voting_member(p, vote_source) && self.player_vote(p, id) == PlayerVote::PLAYER_VOTE_YES {
+                                self.player_set_endorsed_resolution(p, vote_source, &data.vote_option);
                             }
                         }
                     }

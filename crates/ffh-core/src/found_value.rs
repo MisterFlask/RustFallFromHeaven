@@ -81,12 +81,8 @@ impl Game {
         let (plot_x, plot_y) = self.map.xy(plot);
 
         // BETTER AI (Better City Placement) Sephi: Pirates love the open sea
-        if pl.num_cities() == 0 {
-            if self.player_is_pirate(p) {
-                if !self.plot_is_coastal_land(plot, 5) {
-                    return 0;
-                }
-            }
+        if pl.num_cities() == 0 && self.player_is_pirate(p) && !self.plot_is_coastal_land(plot, 5) {
+            return 0;
         }
 
         // stop AI from founding Cities on Bonus
@@ -100,10 +96,8 @@ impl Game {
 
         let mut advanced_start = pl.advanced_start_points >= 0;
         // BETTER AI (Better City Placement) Sephi: adjust free first City selection
-        if !starting_loc && !advanced_start && !(pl.num_cities() == 0) {
-            if !is_coastal && num_area_cities == 0 {
-                return 0;
-            }
+        if !starting_loc && !advanced_start && !(pl.num_cities() == 0) && !is_coastal && num_area_cities == 0 {
+            return 0;
         }
 
         if advanced_start {
@@ -119,21 +113,19 @@ impl Game {
         // (BETTER AI, Sephi: sized iNumCityPlots instead of NUM_CITY_PLOTS)
         let mut city_site_radius = vec![false; city_plots];
 
-        if !starting_loc {
-            if !is_plot_city_site(city_sites, plot) {
-                // FfH: Modified by Kael 11/18/2007 (iNumCityPlots instead of NUM_CITY_PLOTS)
-                for (i, site_radius) in city_site_radius.iter_mut().enumerate() {
-                    if let Some(loop_plot) = self.plot_city(x, y, i) {
-                        let (lx, ly) = self.map.xy(loop_plot);
-                        // AI_getNumCitySites() / AI_getCitySite(iJ)
-                        for &city_site_plot in city_sites {
-                            if city_site_plot != plot {
-                                let (cx, cy) = self.map.xy(city_site_plot);
-                                if self.plot_distance(lx, ly, cx, cy) <= CITY_PLOTS_RADIUS {
-                                    // Plot is inside the radius of a city site
-                                    *site_radius = true;
-                                    break;
-                                }
+        if !starting_loc && !is_plot_city_site(city_sites, plot) {
+            // FfH: Modified by Kael 11/18/2007 (iNumCityPlots instead of NUM_CITY_PLOTS)
+            for (i, site_radius) in city_site_radius.iter_mut().enumerate() {
+                if let Some(loop_plot) = self.plot_city(x, y, i) {
+                    let (lx, ly) = self.map.xy(loop_plot);
+                    // AI_getNumCitySites() / AI_getCitySite(iJ)
+                    for &city_site_plot in city_sites {
+                        if city_site_plot != plot {
+                            let (cx, cy) = self.map.xy(city_site_plot);
+                            if self.plot_distance(lx, ly, cx, cy) <= CITY_PLOTS_RADIUS {
+                                // Plot is inside the radius of a city site
+                                *site_radius = true;
+                                break;
                             }
                         }
                     }
@@ -175,10 +167,8 @@ impl Game {
             match self.plot_city(x, y, i) {
                 None => owned_tiles += 1,
                 Some(loop_plot) => {
-                    if self.plot_is_owned(loop_plot) {
-                        if self.plot_get_team(loop_plot) != Some(team) {
-                            owned_tiles += 1;
-                        }
+                    if self.plot_is_owned(loop_plot) && self.plot_get_team(loop_plot) != Some(team) {
+                        owned_tiles += 1;
                     }
                 }
             }
@@ -216,10 +206,8 @@ impl Game {
                         } else if self.plot_is_owned(lp) {
                             // (As in BtS this `else` branch is only reached by fresh-water or
                             // hills plots.)
-                            if self.plot_get_team(lp) == Some(team) {
-                                if self.plot_is_city_radius(lp) || site_radius {
-                                    bad_tile += if advanced_start { 2 } else { 1 };
-                                }
+                            if self.plot_get_team(lp) == Some(team) && (self.plot_is_city_radius(lp) || site_radius) {
+                                bad_tile += if advanced_start { 2 } else { 1 };
                             }
                         }
                     }
@@ -469,14 +457,12 @@ impl Game {
                         temp_value = temp_value.wrapping_mul(if starting_loc { 100 } else { greed });
                         temp_value /= 100;
 
-                        if i != CITY_HOME_PLOT && !starting_loc {
-                            if lp.owner != Some(p) && self.step_distance(plot_x, plot_y, lx, ly) > 1 {
-                                temp_value = temp_value.wrapping_mul(2);
-                                temp_value /= 3;
+                        if i != CITY_HOME_PLOT && !starting_loc && lp.owner != Some(p) && self.step_distance(plot_x, plot_y, lx, ly) > 1 {
+                            temp_value = temp_value.wrapping_mul(2);
+                            temp_value /= 3;
 
-                                temp_value = temp_value.wrapping_mul(min(150, greed));
-                                temp_value /= 100;
-                            }
+                            temp_value = temp_value.wrapping_mul(min(150, greed));
+                            temp_value /= 100;
                         }
 
                         value = value.wrapping_add(temp_value.wrapping_add(10));
@@ -571,10 +557,8 @@ impl Game {
             } else {
                 // let other penalties bring this down.
                 value = value.wrapping_add(600);
-                if !self.map.plots[plot].starting_plot {
-                    if self.map.areas[area].num_starting_plots == 0 {
-                        value = value.wrapping_add(1000);
-                    }
+                if !self.map.plots[plot].starting_plot && self.map.areas[area].num_starting_plots == 0 {
+                    value = value.wrapping_add(1000);
                 }
             }
         }
@@ -612,10 +596,10 @@ impl Game {
                             value = value.wrapping_add(temp_value);
                             if temp_value < 21 {
                                 greater_bad_tile += 2;
-                                if self.map.plots[loop_plot].feature_type.is_some() {
-                                    if self.plot_calculate_best_nature_yield(loop_plot, YieldType::YIELD_FOOD, Some(team)) > 1 {
-                                        greater_bad_tile -= 1;
-                                    }
+                                if self.map.plots[loop_plot].feature_type.is_some()
+                                    && self.plot_calculate_best_nature_yield(loop_plot, YieldType::YIELD_FOOD, Some(team)) > 1
+                                {
+                                    greater_bad_tile -= 1;
                                 }
                             }
                         }
@@ -672,15 +656,13 @@ impl Game {
                 // C++ quirk: these products overflow `int` for good sites (MSVC wraps them).
                 value = value.wrapping_mul(100);
                 for j in self.civ_player_ids() {
-                    if self.players[j].alive {
-                        if j != p {
-                            let closeness_factor = self.player_starting_plot_distance_factor(j, plot, p, min_range);
-                            min_distance_factor = min(closeness_factor, min_distance_factor);
+                    if self.players[j].alive && j != p {
+                        let closeness_factor = self.player_starting_plot_distance_factor(j, plot, p, min_range);
+                        min_distance_factor = min(closeness_factor, min_distance_factor);
 
-                            if closeness_factor < 1000 {
-                                value = value.wrapping_mul(2000 + closeness_factor);
-                                value /= 3000;
-                            }
+                        if closeness_factor < 1000 {
+                            value = value.wrapping_mul(2000 + closeness_factor);
+                            value /= 3000;
                         }
                     }
                 }
@@ -706,11 +688,9 @@ impl Game {
             }
         }
 
-        if advanced_start {
-            if self.plot_get_bonus_type(plot, None).is_some() {
-                value = value.wrapping_mul(70);
-                value /= 100;
-            }
+        if advanced_start && self.plot_get_bonus_type(plot, None).is_some() {
+            value = value.wrapping_mul(70);
+            value /= 100;
         }
 
         let barbarian = self.player_is_barbarian(p);
@@ -1040,10 +1020,8 @@ impl Game {
                         if !has_tech_for_building {
                             break;
                         }
-                        if and_tech.is_some() {
-                            if !self.team_is_has_tech(team, and_tech) {
-                                has_tech_for_building = false;
-                            }
+                        if and_tech.is_some() && !self.team_is_has_tech(team, and_tech) {
+                            has_tech_for_building = false;
                         }
                     }
 
@@ -1278,29 +1256,29 @@ fn count_deadlocked_bonuses(g: &Game, p: PlayerId, plot: PlotIdx) -> i32 {
                 let Some(loop_plot) = g.plot_xy(px, py, dx, dy) else {
                     continue;
                 };
-                if g.plot_get_bonus_type(loop_plot, Some(team)).is_some() {
-                    if !g.plot_is_city_radius(loop_plot) && (g.plot_area(loop_plot) == plot_area || g.plot_is_water(loop_plot)) {
-                        let mut can_found = false;
-                        let mut never_found = true;
-                        //potentially blockable resource
-                        //look for a city site within a city radius
-                        let (lx, ly) = g.map.xy(loop_plot);
-                        for i in 0..NUM_CITY_PLOTS {
-                            if let Some(loop_plot2) = g.plot_city(lx, ly, i) {
-                                let (l2x, l2y) = g.map.xy(loop_plot2);
-                                //canFound usually returns very quickly
-                                if g.player_can_found(p, l2x, l2y, false) {
-                                    never_found = false;
-                                    if g.step_distance(px, py, l2x, l2y) > min_range {
-                                        can_found = true;
-                                        break;
-                                    }
+                if g.plot_get_bonus_type(loop_plot, Some(team)).is_some()
+                    && !g.plot_is_city_radius(loop_plot) && (g.plot_area(loop_plot) == plot_area || g.plot_is_water(loop_plot))
+                {
+                    let mut can_found = false;
+                    let mut never_found = true;
+                    //potentially blockable resource
+                    //look for a city site within a city radius
+                    let (lx, ly) = g.map.xy(loop_plot);
+                    for i in 0..NUM_CITY_PLOTS {
+                        if let Some(loop_plot2) = g.plot_city(lx, ly, i) {
+                            let (l2x, l2y) = g.map.xy(loop_plot2);
+                            //canFound usually returns very quickly
+                            if g.player_can_found(p, l2x, l2y, false) {
+                                never_found = false;
+                                if g.step_distance(px, py, l2x, l2y) > min_range {
+                                    can_found = true;
+                                    break;
                                 }
                             }
                         }
-                        if !never_found && !can_found {
-                            count += 1;
-                        }
+                    }
+                    if !never_found && !can_found {
+                        count += 1;
                     }
                 }
             }

@@ -229,10 +229,10 @@ impl Game {
         let info = &d.units[unit];
 
         if self.is_option(GameOptionType::GAMEOPTION_ONE_CITY_CHALLENGE) && self.players[p].human {
-            if unit_ai == Some(UnitAIType::UNITAI_SETTLE) || info.default_unit_ai_type == Some(UnitAIType::UNITAI_SETTLE) {
-                if self.players[p].ai_num_ai_units[UnitAIType::UNITAI_SETTLE] >= 1 {
-                    return;
-                }
+            if (unit_ai == Some(UnitAIType::UNITAI_SETTLE) || info.default_unit_ai_type == Some(UnitAIType::UNITAI_SETTLE))
+                && self.players[p].ai_num_ai_units[UnitAIType::UNITAI_SETTLE] >= 1
+            {
+                return;
             }
         }
 
@@ -245,28 +245,26 @@ impl Game {
         if self.players[p].human {
             // Map script `startHumansOnSameTile` (lResult stays 0 unless it returns true).
             let ms = self.map_script.clone();
-            if !ms.start_humans_on_same_tile(self).unwrap_or(false) {
-                if !info.found {
-                    // FfH: Modified by Kael 09/16/2008 (21 tries instead of NUM_CITY_PLOTS)
-                    let rand_offset = self.soren_rand_num(21, "Place Units (Player)");
-                    let (sx, sy) = self.map.xy(starting_plot);
-                    let starting_area = self.map.plots[starting_plot].area;
-                    for i in 0..21 {
-                        // C++ quirk: the index still wraps at NUM_CITY_PLOTS (37), so offsets past
-                        // the 21 inner plots look at the outer ring (and only 0..3 wrap around).
-                        let index = ((i + rand_offset) as usize) % NUM_CITY_PLOTS;
-                        let Some(loop_plot) = self.plot_city(sx, sy, index) else {
-                            continue;
-                        };
-                        if self.map.plots[loop_plot].area == starting_area
-                            && !self.plot_is_impassable(loop_plot)
-                            && !self.plot_is_unit(loop_plot)
-                            // FfH: Modified by Kael 09/16/2008 (was `!isGoody()`)
-                            && self.map.plots[loop_plot].improvement_type.is_none()
-                        {
-                            best_plot = Some(loop_plot);
-                            break;
-                        }
+            if !ms.start_humans_on_same_tile(self).unwrap_or(false) && !info.found {
+                // FfH: Modified by Kael 09/16/2008 (21 tries instead of NUM_CITY_PLOTS)
+                let rand_offset = self.soren_rand_num(21, "Place Units (Player)");
+                let (sx, sy) = self.map.xy(starting_plot);
+                let starting_area = self.map.plots[starting_plot].area;
+                for i in 0..21 {
+                    // C++ quirk: the index still wraps at NUM_CITY_PLOTS (37), so offsets past
+                    // the 21 inner plots look at the outer ring (and only 0..3 wrap around).
+                    let index = ((i + rand_offset) as usize) % NUM_CITY_PLOTS;
+                    let Some(loop_plot) = self.plot_city(sx, sy, index) else {
+                        continue;
+                    };
+                    if self.map.plots[loop_plot].area == starting_area
+                        && !self.plot_is_impassable(loop_plot)
+                        && !self.plot_is_unit(loop_plot)
+                        // FfH: Modified by Kael 09/16/2008 (was `!isGoody()`)
+                        && self.map.plots[loop_plot].improvement_type.is_none()
+                    {
+                        best_plot = Some(loop_plot);
+                        break;
                     }
                 }
             }
@@ -1028,10 +1026,8 @@ impl Game {
 
                 if add {
                     let max_units_per_city = d.defines.advanced_start_max_units_per_city;
-                    if max_units_per_city >= 0 {
-                        if info.military_support && pl.num_military_units >= max_units_per_city * pl.num_cities() {
-                            return -1;
-                        }
+                    if max_units_per_city >= 0 && info.military_support && pl.num_military_units >= max_units_per_city * pl.num_cities() {
+                        return -1;
                     }
 
                     if let Some(c) = city {
@@ -1145,11 +1141,9 @@ impl Game {
                         if let Some(starting_plot) = self.player_get_starting_plot(other) {
                             let (sx, sy) = self.map.xy(starting_plot);
                             let distance = self.plot_distance(px, py, sx, sy);
-                            if distance <= max_range {
-                                if distance < closest_distance || (distance == closest_distance && team != self.players[other].team) {
-                                    closest_distance = distance;
-                                    closest_player = Some(other);
-                                }
+                            if distance <= max_range && (distance < closest_distance || (distance == closest_distance && team != self.players[other].team)) {
+                                closest_distance = distance;
+                                closest_player = Some(other);
                             }
                         }
                     }
@@ -1245,10 +1239,8 @@ impl Game {
             let level = opt_to_i32(self.cities[c].culture_level);
 
             // Need to have enough culture to remove it
-            if !add {
-                if level <= 0 {
-                    return -1;
-                }
+            if !add && level <= 0 {
+                return -1;
             }
 
             let culture = if add {
@@ -1288,19 +1280,17 @@ impl Game {
             }
         }
 
-        if city.is_none() {
-            if add {
-                let mut valid = false;
-                for &c in &self.players[p].cities {
-                    if self.city_can_construct(c, building, false, false, false) {
-                        valid = true;
-                        break;
-                    }
+        if city.is_none() && add {
+            let mut valid = false;
+            for &c in &self.players[p].cities {
+                if self.city_can_construct(c, building, false, false, false) {
+                    valid = true;
+                    break;
                 }
+            }
 
-                if !valid {
-                    return -1;
-                }
+            if !valid {
+                return -1;
             }
         }
         if let Some(c) = city {
@@ -1328,10 +1318,10 @@ impl Game {
                     if self.city_num_building(c, loop_building) > 0 {
                         // Loop through present Building's requirements
                         for class in d.building_classes.keys() {
-                            if d.buildings[loop_building].building_class_needed_in_city[class] {
-                                if d.civ_building(civ, class).is_some_and(|b| d.same_building(b, building)) {
-                                    return -1;
-                                }
+                            if d.buildings[loop_building].building_class_needed_in_city[class]
+                                && d.civ_building(civ, class).is_some_and(|b| d.same_building(b, building))
+                            {
+                                return -1;
                             }
                         }
                     }
@@ -1435,10 +1425,8 @@ impl Game {
 
         // Tech requirement
         for build in d.builds.keys() {
-            if d.builds[build].improvement == Some(improvement) {
-                if !self.team_is_has_tech(team, d.builds[build].tech_prereq) {
-                    return -1;
-                }
+            if d.builds[build].improvement == Some(improvement) && !self.team_is_has_tech(team, d.builds[build].tech_prereq) {
+                return -1;
             }
         }
 
@@ -1519,10 +1507,8 @@ impl Game {
 
         // Tech requirement
         for build in d.builds.keys() {
-            if d.builds[build].route == Some(route) {
-                if !self.team_is_has_tech(team, d.builds[build].tech_prereq) {
-                    return -1;
-                }
+            if d.builds[build].route == Some(route) && !self.team_is_has_tech(team, d.builds[build].tech_prereq) {
+                return -1;
             }
         }
 
@@ -1731,11 +1717,9 @@ fn ai_unit_value(g: &Game, p: PlayerId, unit: UnitType, unit_ai: UnitAIType) -> 
     let d = g.d;
     let info = &d.units[unit];
 
-    if info.domain_type != ai_unit_ai_domain_type(unit_ai) {
-        if unit_ai != UnitAIType::UNITAI_ICBM {
-            //XXX
-            return 0;
-        }
+    if info.domain_type != ai_unit_ai_domain_type(unit_ai) && unit_ai != UnitAIType::UNITAI_ICBM {
+        //XXX
+        return 0;
     }
 
     if info.not_unit_ai_type[unit_ai] {

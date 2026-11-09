@@ -254,23 +254,19 @@ impl Game {
     /// C++ `CvSelectionGroup::autoMission`: start or continue the head mission (human groups
     /// with visible units clear their queue when in danger).
     pub fn group_auto_mission(&mut self, g: GroupId) {
-        if num_units(self, g) > 0 {
-            if head_mission(self, g).is_some() {
-                if !self.group_is_busy(g) {
-                    let mut visible_human = false;
-                    if self.group_is_human(g) {
-                        visible_human = self.groups[g].units.iter().any(|&u| !self.unit_always_invisible(u));
-                    }
+        if num_units(self, g) > 0 && head_mission(self, g).is_some() && !self.group_is_busy(g) {
+            let mut visible_human = false;
+            if self.group_is_human(g) {
+                visible_human = self.groups[g].units.iter().any(|&u| !self.unit_always_invisible(u));
+            }
 
-                    let owner = self.groups[g].owner;
-                    if visible_human && self.group_plot(g).is_some_and(|plot| ai_get_plot_danger(self, owner, plot, 1, true) > 0) {
-                        self.group_clear_mission_queue(g);
-                    } else if self.groups[g].activity_type == ActivityType::ACTIVITY_MISSION {
-                        self.group_continue_mission(g, 0);
-                    } else {
-                        self.group_start_mission(g);
-                    }
-                }
+            let owner = self.groups[g].owner;
+            if visible_human && self.group_plot(g).is_some_and(|plot| ai_get_plot_danger(self, owner, plot, 1, true) > 0) {
+                self.group_clear_mission_queue(g);
+            } else if self.groups[g].activity_type == ActivityType::ACTIVITY_MISSION {
+                self.group_continue_mission(g, 0);
+            } else {
+                self.group_start_mission(g);
             }
         }
 
@@ -327,10 +323,8 @@ impl Game {
 
     /// C++ `CvSelectionGroup::activateHeadMission` (protected).
     pub fn group_activate_head_mission(&mut self, g: GroupId) {
-        if !self.groups[g].mission_queue.is_empty() {
-            if !self.group_is_busy(g) {
-                self.group_start_mission(g);
-            }
+        if !self.groups[g].mission_queue.is_empty() && !self.group_is_busy(g) {
+            self.group_start_mission(g);
         }
     }
 
@@ -962,12 +956,8 @@ impl Game {
         }
 
         if num_units(self, g) > 0 && head_mission(self, g).is_some() {
-            if action {
-                if self.group_is_human(g) {
-                    if self.group_plot(g).is_some_and(|p| self.plot_is_visible_to_watching_human(p)) {
-                        self.group_update_mission_timer(g, 0);
-                    }
-                }
+            if action && self.group_is_human(g) && self.group_plot(g).is_some_and(|p| self.plot_is_visible_to_watching_human(p)) {
+                self.group_update_mission_timer(g, 0);
             }
 
             if nuke {
@@ -1004,12 +994,10 @@ impl Game {
             let mut done = false;
             let mut action = false;
 
-            if head.push_turn == self.game_turn() || head.flags & MOVE_THROUGH_ENEMY != 0 {
-                if head.mission_type == MissionType::MISSION_MOVE_TO {
-                    let (attacked, _failed_already_fighting) = self.group_attack(g, head.data1, head.data2, head.flags);
-                    if attacked {
-                        done = true;
-                    }
+            if (head.push_turn == self.game_turn() || head.flags & MOVE_THROUGH_ENEMY != 0) && head.mission_type == MissionType::MISSION_MOVE_TO {
+                let (attacked, _failed_already_fighting) = self.group_attack(g, head.data1, head.data2, head.flags);
+                if attacked {
+                    done = true;
                 }
             }
 
@@ -1024,54 +1012,79 @@ impl Game {
                 return;
             };
 
-            if !done {
-                if num_units(self, g) > 0 {
-                    if self.group_can_all_move(g) {
-                        match head.mission_type {
-                            MissionType::MISSION_MOVE_TO => {
-                                if self.group_get_domain_type(g) == Some(DomainType::DOMAIN_AIR) {
-                                    self.group_path_to(g, head.data1, head.data2, head.flags);
-                                    done = true;
-                                } else if self.group_path_to(g, head.data1, head.data2, head.flags) {
-                                    action = true;
+            if !done && num_units(self, g) > 0 && self.group_can_all_move(g) {
+                match head.mission_type {
+                    MissionType::MISSION_MOVE_TO => {
+                        if self.group_get_domain_type(g) == Some(DomainType::DOMAIN_AIR) {
+                            self.group_path_to(g, head.data1, head.data2, head.flags);
+                            done = true;
+                        } else if self.group_path_to(g, head.data1, head.data2, head.flags) {
+                            action = true;
 
-                                    if num_units(self, g) > 0 {
-                                        if !self.group_can_all_move(g) {
-                                            if let Some(mission) = head_mission(self, g) {
-                                                // C++ dereferences plotINLINE(iData1, iData2).
-                                                if let Some(plot) = self.map.plot_xy(mission.data1, mission.data2) {
-                                                    if self.group_amphib_move(g, plot, mission.flags) {
-                                                        action = false;
-                                                        done = true;
-                                                    }
-                                                }
-                                            }
+                            if num_units(self, g) > 0 && !self.group_can_all_move(g) {
+                                if let Some(mission) = head_mission(self, g) {
+                                    // C++ dereferences plotINLINE(iData1, iData2).
+                                    if let Some(plot) = self.map.plot_xy(mission.data1, mission.data2) {
+                                        if self.group_amphib_move(g, plot, mission.flags) {
+                                            action = false;
+                                            done = true;
                                         }
                                     }
-                                } else {
-                                    done = true;
                                 }
                             }
+                        } else {
+                            done = true;
+                        }
+                    }
 
-                            MissionType::MISSION_ROUTE_TO => {
-                                if self.group_road_to(g, head.data1, head.data2, head.flags) {
-                                    action = true;
-                                } else {
-                                    done = true;
+                    MissionType::MISSION_ROUTE_TO => {
+                        if self.group_road_to(g, head.data1, head.data2, head.flags) {
+                            action = true;
+                        } else {
+                            done = true;
+                        }
+                    }
+
+                    MissionType::MISSION_MOVE_TO_UNIT => 'move_to_unit: {
+                        if self.group_get_head_unit_ai(g) == Some(UnitAIType::UNITAI_CITY_DEFENSE) {
+                            if let Some(plot) = self.group_plot(g) {
+                                let our_city = self.map.plots[plot].plot_city.is_some()
+                                    && self.plot_get_team(plot) == Some(self.group_get_team(g));
+                                if our_city {
+                                    let owner = self.groups[g].owner;
+                                    // C++ dereferences getBestDefender(getOwnerINLINE()).
+                                    let best_defender =
+                                        self.plot_get_best_defender(plot, Some(owner), None, None, false, false, false);
+                                    if best_defender.and_then(|u| self.units[u].group) == Some(g) {
+                                        action = false;
+                                        done = true;
+                                        break 'move_to_unit;
+                                    }
                                 }
                             }
+                        }
 
-                            MissionType::MISSION_MOVE_TO_UNIT => 'move_to_unit: {
-                                if self.group_get_head_unit_ai(g) == Some(UnitAIType::UNITAI_CITY_DEFENSE) {
-                                    if let Some(plot) = self.group_plot(g) {
-                                        let our_city = self.map.plots[plot].plot_city.is_some()
-                                            && self.plot_get_team(plot) == Some(self.group_get_team(g));
-                                        if our_city {
-                                            let owner = self.groups[g].owner;
-                                            // C++ dereferences getBestDefender(getOwnerINLINE()).
-                                            let best_defender =
-                                                self.plot_get_best_defender(plot, Some(owner), None, None, false, false, false);
-                                            if best_defender.and_then(|u| self.units[u].group) == Some(g) {
+                        let Some(target) = mission_target_unit(self, head.data1, head.data2) else {
+                            done = true;
+                            break 'move_to_unit;
+                        };
+
+                        let mission_ai = self.groups[g].ai_mission_ai_type;
+                        if mission_ai != Some(MissionAIType::MISSIONAI_SHADOW)
+                            && mission_ai != Some(MissionAIType::MISSIONAI_GROUP)
+                        {
+                            let owner = self.groups[g].owner;
+                            if let Some(plot) = self.group_plot(g) {
+                                if !self.plot_is_owned(plot) || self.map.plots[plot].owner == Some(owner) {
+                                    let mission_plot = self.units[target]
+                                        .group
+                                        .filter(|&target_group| self.groups.contains(target_group))
+                                        .and_then(|target_group| self.group_ai_get_mission_ai_plot(target_group));
+                                    if let Some(mission_plot) = mission_plot {
+                                        if let Some(mission_team) = self.plot_get_team(mission_plot) {
+                                            if self.plot_is_owned(mission_plot)
+                                                && self.unit_is_potential_enemy(target, Some(mission_team), Some(mission_plot))
+                                            {
                                                 action = false;
                                                 done = true;
                                                 break 'move_to_unit;
@@ -1079,96 +1092,65 @@ impl Game {
                                         }
                                     }
                                 }
-
-                                let Some(target) = mission_target_unit(self, head.data1, head.data2) else {
-                                    done = true;
-                                    break 'move_to_unit;
-                                };
-
-                                let mission_ai = self.groups[g].ai_mission_ai_type;
-                                if mission_ai != Some(MissionAIType::MISSIONAI_SHADOW)
-                                    && mission_ai != Some(MissionAIType::MISSIONAI_GROUP)
-                                {
-                                    let owner = self.groups[g].owner;
-                                    if let Some(plot) = self.group_plot(g) {
-                                        if !self.plot_is_owned(plot) || self.map.plots[plot].owner == Some(owner) {
-                                            let mission_plot = self.units[target]
-                                                .group
-                                                .filter(|&target_group| self.groups.contains(target_group))
-                                                .and_then(|target_group| self.group_ai_get_mission_ai_plot(target_group));
-                                            if let Some(mission_plot) = mission_plot {
-                                                if let Some(mission_team) = self.plot_get_team(mission_plot) {
-                                                    if self.plot_is_owned(mission_plot)
-                                                        && self.unit_is_potential_enemy(target, Some(mission_team), Some(mission_plot))
-                                                    {
-                                                        action = false;
-                                                        done = true;
-                                                        break 'move_to_unit;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                let (target_x, target_y) = (self.units[target].x, self.units[target].y);
-                                if self.group_path_to(g, target_x, target_y, head.flags) {
-                                    action = true;
-                                } else {
-                                    done = true;
-                                }
                             }
+                        }
 
-                            MissionType::MISSION_SKIP
-                            | MissionType::MISSION_SLEEP
-                            | MissionType::MISSION_FORTIFY
-                            | MissionType::MISSION_PLUNDER
-                            | MissionType::MISSION_AIRPATROL
-                            | MissionType::MISSION_SEAPATROL
-                            | MissionType::MISSION_HEAL
-                            | MissionType::MISSION_SENTRY => {
-                                debug_assert!(false, "continueMission: {:?} is not a continued mission", head.mission_type);
-                            }
-
-                            MissionType::MISSION_AIRLIFT
-                            | MissionType::MISSION_NUKE
-                            | MissionType::MISSION_RECON
-                            | MissionType::MISSION_PARADROP
-                            | MissionType::MISSION_AIRBOMB
-                            | MissionType::MISSION_BOMBARD
-                            | MissionType::MISSION_RANGE_ATTACK
-                            | MissionType::MISSION_PILLAGE
-                            | MissionType::MISSION_SABOTAGE
-                            | MissionType::MISSION_DESTROY
-                            | MissionType::MISSION_STEAL_PLANS
-                            | MissionType::MISSION_FOUND
-                            | MissionType::MISSION_SPREAD
-                            | MissionType::MISSION_SPREAD_CORPORATION
-                            | MissionType::MISSION_JOIN
-                            | MissionType::MISSION_CONSTRUCT
-                            | MissionType::MISSION_DISCOVER
-                            | MissionType::MISSION_HURRY
-                            | MissionType::MISSION_TRADE
-                            | MissionType::MISSION_GREAT_WORK
-                            | MissionType::MISSION_INFILTRATE
-                            | MissionType::MISSION_GOLDEN_AGE
-                            | MissionType::MISSION_LEAD
-                            | MissionType::MISSION_ESPIONAGE
-                            | MissionType::MISSION_DIE_ANIMATION => {}
-
-                            MissionType::MISSION_BUILD => match mission_build(self, head.data1) {
-                                Some(build) => {
-                                    if !self.group_build(g, build) {
-                                        done = true;
-                                    }
-                                }
-                                // C++ asserts a valid build (an invalid one would index past the infos).
-                                None => done = true,
-                            },
-
-                            _ => debug_assert!(false, "continueMission: unexpected mission {:?}", head.mission_type),
+                        let (target_x, target_y) = (self.units[target].x, self.units[target].y);
+                        if self.group_path_to(g, target_x, target_y, head.flags) {
+                            action = true;
+                        } else {
+                            done = true;
                         }
                     }
+
+                    MissionType::MISSION_SKIP
+                    | MissionType::MISSION_SLEEP
+                    | MissionType::MISSION_FORTIFY
+                    | MissionType::MISSION_PLUNDER
+                    | MissionType::MISSION_AIRPATROL
+                    | MissionType::MISSION_SEAPATROL
+                    | MissionType::MISSION_HEAL
+                    | MissionType::MISSION_SENTRY => {
+                        debug_assert!(false, "continueMission: {:?} is not a continued mission", head.mission_type);
+                    }
+
+                    MissionType::MISSION_AIRLIFT
+                    | MissionType::MISSION_NUKE
+                    | MissionType::MISSION_RECON
+                    | MissionType::MISSION_PARADROP
+                    | MissionType::MISSION_AIRBOMB
+                    | MissionType::MISSION_BOMBARD
+                    | MissionType::MISSION_RANGE_ATTACK
+                    | MissionType::MISSION_PILLAGE
+                    | MissionType::MISSION_SABOTAGE
+                    | MissionType::MISSION_DESTROY
+                    | MissionType::MISSION_STEAL_PLANS
+                    | MissionType::MISSION_FOUND
+                    | MissionType::MISSION_SPREAD
+                    | MissionType::MISSION_SPREAD_CORPORATION
+                    | MissionType::MISSION_JOIN
+                    | MissionType::MISSION_CONSTRUCT
+                    | MissionType::MISSION_DISCOVER
+                    | MissionType::MISSION_HURRY
+                    | MissionType::MISSION_TRADE
+                    | MissionType::MISSION_GREAT_WORK
+                    | MissionType::MISSION_INFILTRATE
+                    | MissionType::MISSION_GOLDEN_AGE
+                    | MissionType::MISSION_LEAD
+                    | MissionType::MISSION_ESPIONAGE
+                    | MissionType::MISSION_DIE_ANIMATION => {}
+
+                    MissionType::MISSION_BUILD => match mission_build(self, head.data1) {
+                        Some(build) => {
+                            if !self.group_build(g, build) {
+                                done = true;
+                            }
+                        }
+                        // C++ asserts a valid build (an invalid one would index past the infos).
+                        None => done = true,
+                    },
+
+                    _ => debug_assert!(false, "continueMission: unexpected mission {:?}", head.mission_type),
                 }
             }
 
@@ -1254,14 +1236,10 @@ impl Game {
             }
 
             if num_units(self, g) > 0 && head_mission(self, g).is_some() {
-                if action {
-                    if done || !self.group_can_all_move(g) {
-                        if self.group_plot(g).is_some_and(|p| self.plot_is_visible_to_watching_human(p)) {
-                            self.group_update_mission_timer(g, steps);
+                if action && (done || !self.group_can_all_move(g)) && self.group_plot(g).is_some_and(|p| self.plot_is_visible_to_watching_human(p)) {
+                    self.group_update_mission_timer(g, steps);
 
-                            // UI: camera lookAt for the active player when `showMoves()`.
-                        }
-                    }
+                    // UI: camera lookAt for the active player when `showMoves()`.
                 }
 
                 if done {

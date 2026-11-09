@@ -138,10 +138,8 @@ impl Game {
         }
 
         for o in self.team_ids() {
-            if o != other && o != t && self.teams[other].vassal[o] {
-                if self.teams[t].force_peace[o] {
-                    return false;
-                }
+            if o != other && o != t && self.teams[other].vassal[o] && self.teams[t].force_peace[o] {
+                return false;
             }
         }
 
@@ -246,10 +244,8 @@ impl Game {
             self.team_ai_set_war_plan(other, t, Some(attacked_plan), true);
 
             for o in self.team_ids() {
-                if self.team_is_alive(o) {
-                    if !self.teams[other].at_war[o] && self.team_ai_is_chosen_war(other, o) {
-                        self.team_ai_set_war_plan(other, o, None, true);
-                    }
+                if self.team_is_alive(o) && !self.teams[other].at_war[o] && self.team_ai_is_chosen_war(other, o) {
+                    self.team_ai_set_war_plan(other, o, None, true);
                 }
             }
 
@@ -283,12 +279,10 @@ impl Game {
             for i in self.player_ids() {
                 if self.players[i].alive {
                     for j in self.player_ids() {
-                        if self.players[j].alive {
-                            if (self.players[i].team == t) && (self.players[j].team == other) {
-                                // AI_setFirstContact (AI bookkeeping)
-                                self.players[i].ai_first_contact[j] = true;
-                                self.players[j].ai_first_contact[i] = true;
-                            }
+                        if self.players[j].alive && (self.players[i].team == t) && (self.players[j].team == other) {
+                            // AI_setFirstContact (AI bookkeeping)
+                            self.players[i].ai_first_contact[j] = true;
+                            self.players[j].ai_first_contact[i] = true;
                         }
                     }
                 }
@@ -297,18 +291,16 @@ impl Game {
             for i in self.player_ids() {
                 if self.players[i].alive {
                     for j in self.player_ids() {
-                        if self.players[j].alive {
-                            if self.players[i].team == t {
-                                let j_team = self.players[j].team;
-                                if j_team == other {
-                                    // AI_changeMemoryCount (AI bookkeeping)
-                                    self.players[j].ai_memory_count[i][MemoryType::MEMORY_DECLARED_WAR] += 1;
-                                } else if j_team != t {
-                                    if self.teams[j_team].has_met[other] {
-                                        if (self.team_ai_get_attitude(j_team, other, true) >= AttitudeType::ATTITUDE_PLEASED) && !self.teams[j_team].at_war[other] {
-                                            self.players[j].ai_memory_count[i][MemoryType::MEMORY_DECLARED_WAR_ON_FRIEND] += 1;
-                                        }
-                                    }
+                        if self.players[j].alive && self.players[i].team == t {
+                            let j_team = self.players[j].team;
+                            if j_team == other {
+                                // AI_changeMemoryCount (AI bookkeeping)
+                                self.players[j].ai_memory_count[i][MemoryType::MEMORY_DECLARED_WAR] += 1;
+                            } else if j_team != t {
+                                if self.teams[j_team].has_met[other]
+                                    && (self.team_ai_get_attitude(j_team, other, true) >= AttitudeType::ATTITUDE_PLEASED) && !self.teams[j_team].at_war[other]
+                                {
+                                    self.players[j].ai_memory_count[i][MemoryType::MEMORY_DECLARED_WAR_ON_FRIEND] += 1;
                                 }
                             }
                         }
@@ -317,26 +309,20 @@ impl Game {
             }
 
             for p in self.player_ids() {
-                if self.players[p].alive {
-                    if (self.players[p].team == t) || (self.players[p].team == other) {
-                        self.player_update_war_weariness_percent_anger(p);
-                    }
+                if self.players[p].alive && ((self.players[p].team == t) || (self.players[p].team == other)) {
+                    self.player_update_war_weariness_percent_anger(p);
                 }
             }
 
             for p in self.player_ids() {
-                if self.players[p].alive {
-                    if (self.players[p].team == t) || (self.players[p].team == other) {
-                        self.player_update_plot_groups(p);
-                    }
+                if self.players[p].alive && ((self.players[p].team == t) || (self.players[p].team == other)) {
+                    self.player_update_plot_groups(p);
                 }
             }
 
             for p in self.player_ids() {
-                if self.players[p].alive {
-                    if (self.players[p].team == t) || (self.players[p].team == other) {
-                        self.player_update_trade_routes(p);
-                    }
+                if self.players[p].alive && ((self.players[p].team == t) || (self.players[p].team == other)) {
+                    self.player_update_trade_routes(p);
                 }
             }
 
@@ -364,29 +350,27 @@ impl Game {
 
             if !self.team_is_minor_civ(other) {
                 for i in self.player_ids() {
-                    if self.players[i].alive {
-                        if self.players[i].team == t {
-                            for d in self.deals.ids() {
-                                if !self.deals.contains(d) {
-                                    continue;
+                    if self.players[i].alive && self.players[i].team == t {
+                        for d in self.deals.ids() {
+                            if !self.deals.contains(d) {
+                                continue;
+                            }
+
+                            let mut cancel_deal = false;
+
+                            let deal = &self.deals[d];
+                            if (deal.first_player == i) || (deal.second_player == i) {
+                                if has_trade_item(&deal.first_trades, &[TradeableItem::TRADE_DEFENSIVE_PACT]) {
+                                    cancel_deal = true;
                                 }
 
-                                let mut cancel_deal = false;
-
-                                let deal = &self.deals[d];
-                                if (deal.first_player == i) || (deal.second_player == i) {
-                                    if has_trade_item(&deal.first_trades, &[TradeableItem::TRADE_DEFENSIVE_PACT]) {
-                                        cancel_deal = true;
-                                    }
-
-                                    if has_trade_item(&deal.second_trades, &[TradeableItem::TRADE_DEFENSIVE_PACT]) {
-                                        cancel_deal = true;
-                                    }
+                                if has_trade_item(&deal.second_trades, &[TradeableItem::TRADE_DEFENSIVE_PACT]) {
+                                    cancel_deal = true;
                                 }
+                            }
 
-                                if cancel_deal {
-                                    self.deal_kill(d, true);
-                                }
+                            if cancel_deal {
+                                self.deal_kill(d, true);
                             }
                         }
                     }
@@ -398,24 +382,20 @@ impl Game {
             self.team_cancel_defensive_pacts(t);
 
             for o in self.team_ids() {
-                if self.team_is_alive(o) {
-                    if self.teams[o].defensive_pact[other] {
-                        self.team_declare_war(o, t, new_diplo, Some(WarPlanType::WARPLAN_DOGPILE));
-                    }
+                if self.team_is_alive(o) && self.teams[o].defensive_pact[other] {
+                    self.team_declare_war(o, t, new_diplo, Some(WarPlanType::WARPLAN_DOGPILE));
                 }
             }
 
             self.team_cancel_defensive_pacts(other);
 
             for o in self.team_ids() {
-                if o != t && o != other {
-                    if self.team_is_alive(o) {
-                        if self.teams[o].vassal[other] || self.teams[other].vassal[o] {
-                            let plan = self.teams[t].ai_war_plan[other];
-                            self.team_declare_war(t, o, new_diplo, plan);
-                        } else if self.teams[o].vassal[t] || self.teams[t].vassal[o] {
-                            self.team_declare_war(o, other, new_diplo, Some(WarPlanType::WARPLAN_DOGPILE));
-                        }
+                if o != t && o != other && self.team_is_alive(o) {
+                    if self.teams[o].vassal[other] || self.teams[other].vassal[o] {
+                        let plan = self.teams[t].ai_war_plan[other];
+                        self.team_declare_war(t, o, new_diplo, plan);
+                    } else if self.teams[o].vassal[t] || self.teams[t].vassal[o] {
+                        self.team_declare_war(o, other, new_diplo, Some(WarPlanType::WARPLAN_DOGPILE));
                     }
                 }
             }
@@ -528,26 +508,20 @@ impl Game {
             // UI: Score / CityInfo dirty bits for the active team.
 
             for p in self.player_ids() {
-                if self.players[p].alive {
-                    if (self.players[p].team == t) || (self.players[p].team == other) {
-                        self.player_update_war_weariness_percent_anger(p);
-                    }
+                if self.players[p].alive && ((self.players[p].team == t) || (self.players[p].team == other)) {
+                    self.player_update_war_weariness_percent_anger(p);
                 }
             }
 
             for p in self.player_ids() {
-                if self.players[p].alive {
-                    if (self.players[p].team == t) || (self.players[p].team == other) {
-                        self.player_update_plot_groups(p);
-                    }
+                if self.players[p].alive && ((self.players[p].team == t) || (self.players[p].team == other)) {
+                    self.player_update_plot_groups(p);
                 }
             }
 
             for p in self.player_ids() {
-                if self.players[p].alive {
-                    if (self.players[p].team == t) || (self.players[p].team == other) {
-                        self.player_update_trade_routes(p);
-                    }
+                if self.players[p].alive && ((self.players[p].team == t) || (self.players[p].team == other)) {
+                    self.player_update_trade_routes(p);
                 }
             }
 
@@ -558,13 +532,11 @@ impl Game {
             self.ev_change_war(false, t, other);
 
             for o in self.team_ids() {
-                if o != t && o != other {
-                    if self.team_is_alive(o) {
-                        if self.teams[o].vassal[other] {
-                            self.team_make_peace(o, t, bump_units);
-                        } else if self.teams[o].vassal[t] {
-                            self.team_make_peace(o, other, bump_units);
-                        }
+                if o != t && o != other && self.team_is_alive(o) {
+                    if self.teams[o].vassal[other] {
+                        self.team_make_peace(o, t, bump_units);
+                    } else if self.teams[o].vassal[t] {
+                        self.team_make_peace(o, other, bump_units);
                     }
                 }
             }
@@ -576,12 +548,8 @@ impl Game {
         let mut count = 0;
 
         for o in civ_team_ids(self) {
-            if self.team_is_alive(o) {
-                if !ignore_minors || !self.team_is_minor_civ(o) {
-                    if self.teams[t].at_war[o] {
-                        count += 1;
-                    }
-                }
+            if self.team_is_alive(o) && (!ignore_minors || !self.team_is_minor_civ(o)) && self.teams[t].at_war[o] {
+                count += 1;
             }
         }
 
@@ -593,12 +561,8 @@ impl Game {
         let mut count = 0;
 
         for o in civ_team_ids(self) {
-            if self.team_is_alive(o) {
-                if !ignore_minors || !self.team_is_minor_civ(o) {
-                    if self.teams[t].ai_war_plan[o] == Some(war_plan) {
-                        count += 1;
-                    }
-                }
+            if self.team_is_alive(o) && (!ignore_minors || !self.team_is_minor_civ(o)) && self.teams[t].ai_war_plan[o] == Some(war_plan) {
+                count += 1;
             }
         }
 
@@ -610,12 +574,8 @@ impl Game {
         let mut count = 0;
 
         for o in civ_team_ids(self) {
-            if self.team_is_alive(o) {
-                if !ignore_minors || !self.team_is_minor_civ(o) {
-                    if self.teams[t].ai_war_plan[o].is_some() {
-                        count += 1;
-                    }
-                }
+            if self.team_is_alive(o) && (!ignore_minors || !self.team_is_minor_civ(o)) && self.teams[t].ai_war_plan[o].is_some() {
+                count += 1;
             }
         }
 
@@ -627,12 +587,8 @@ impl Game {
         let mut count = 0;
 
         for o in civ_team_ids(self) {
-            if self.team_is_alive(o) {
-                if !ignore_minors || !self.team_is_minor_civ(o) {
-                    if self.team_ai_is_chosen_war(t, o) {
-                        count += 1;
-                    }
-                }
+            if self.team_is_alive(o) && (!ignore_minors || !self.team_is_minor_civ(o)) && self.team_ai_is_chosen_war(t, o) {
+                count += 1;
             }
         }
 
@@ -689,16 +645,10 @@ impl Game {
     /// C++ `CvTeam::canContact`.
     pub fn team_can_contact(&self, t: TeamId, other: TeamId) -> bool {
         for i in self.player_ids() {
-            if self.players[i].alive {
-                if self.players[i].team == t {
-                    for j in self.player_ids() {
-                        if self.players[j].alive {
-                            if self.players[j].team == other {
-                                if self.player_can_contact(i, j) {
-                                    return true;
-                                }
-                            }
-                        }
+            if self.players[i].alive && self.players[i].team == t {
+                for j in self.player_ids() {
+                    if self.players[j].alive && self.players[j].team == other && self.player_can_contact(i, j) {
+                        return true;
                     }
                 }
             }
@@ -724,22 +674,16 @@ impl Game {
 
             if self.team_is_human(other) {
                 for p in self.player_ids() {
-                    if self.players[p].alive {
-                        if self.players[p].team == t {
-                            if !self.players[p].human {
-                                self.player_clear_research_queue(p);
-                                self.player_ai_make_production_dirty(p);
-                            }
-                        }
+                    if self.players[p].alive && self.players[p].team == t && !self.players[p].human {
+                        self.player_clear_research_queue(p);
+                        self.player_ai_make_production_dirty(p);
                     }
                 }
             }
 
             for o in civ_team_ids(self) {
-                if self.team_is_alive(o) {
-                    if self.teams[o].vassal[t] || self.teams[t].vassal[o] {
-                        self.team_meet(o, other, new_diplo);
-                    }
+                if self.team_is_alive(o) && (self.teams[o].vassal[t] || self.teams[t].vassal[o]) {
+                    self.team_meet(o, other, new_diplo);
                 }
             }
 
@@ -782,14 +726,8 @@ impl Game {
         let mut count = 0;
 
         for o in civ_team_ids(self) {
-            if self.team_is_alive(o) {
-                if o != t {
-                    if !ignore_minors || !self.team_is_minor_civ(o) {
-                        if self.teams[t].has_met[o] {
-                            count += 1;
-                        }
-                    }
-                }
+            if self.team_is_alive(o) && o != t && (!ignore_minors || !self.team_is_minor_civ(o)) && self.teams[t].has_met[o] {
+                count += 1;
             }
         }
 
@@ -799,14 +737,8 @@ impl Game {
     /// C++ `CvTeam::hasMetHuman`.
     pub fn team_has_met_human(&self, t: TeamId) -> bool {
         for o in civ_team_ids(self) {
-            if self.team_is_alive(o) {
-                if o != t {
-                    if self.team_is_human(o) {
-                        if self.teams[t].has_met[o] {
-                            return true;
-                        }
-                    }
-                }
+            if self.team_is_alive(o) && o != t && self.team_is_human(o) && self.teams[t].has_met[o] {
+                return true;
             }
         }
 
@@ -870,14 +802,8 @@ impl Game {
         let mut count = 0;
 
         for o in civ_team_ids(self) {
-            if self.team_is_alive(o) {
-                if o != t {
-                    if self.teams[t].defensive_pact[o] {
-                        if other.map_or(true, |e| self.teams[e].has_met[o]) {
-                            count += 1;
-                        }
-                    }
-                }
+            if self.team_is_alive(o) && o != t && self.teams[t].defensive_pact[o] && other.map_or(true, |e| self.teams[e].has_met[o]) {
+                count += 1;
             }
         }
 
@@ -928,10 +854,8 @@ impl Game {
 
             if old_free_trade != self.team_is_free_trade(t, other) {
                 for p in self.player_ids() {
-                    if self.players[p].alive {
-                        if self.players[p].team == t {
-                            self.player_update_trade_routes(p);
-                        }
+                    if self.players[p].alive && self.players[p].team == t {
+                        self.player_update_trade_routes(p);
                     }
                 }
             }
@@ -959,10 +883,8 @@ impl Game {
             }
 
             for o in self.team_ids() {
-                if self.teams[o].vassal[other] {
-                    if self.team_ai_is_sneak_attack_preparing(t, o) {
-                        self.team_ai_set_war_plan(t, o, None, true);
-                    }
+                if self.teams[o].vassal[other] && self.team_ai_is_sneak_attack_preparing(t, o) {
+                    self.team_ai_set_war_plan(t, o, None, true);
                 }
             }
         }
@@ -985,10 +907,8 @@ impl Game {
                     cancel_deal = true;
                 }
 
-                if !cancel_deal {
-                    if has_trade_item(&deal.second_trades, &[TradeableItem::TRADE_DEFENSIVE_PACT]) {
-                        cancel_deal = true;
-                    }
+                if !cancel_deal && has_trade_item(&deal.second_trades, &[TradeableItem::TRADE_DEFENSIVE_PACT]) {
+                    cancel_deal = true;
                 }
             }
 
@@ -1028,14 +948,8 @@ impl Game {
         let mut count = 0;
 
         for o in civ_team_ids(self) {
-            if self.team_is_alive(o) {
-                if o != t {
-                    if self.teams[o].vassal[t] {
-                        if other.map_or(true, |e| self.teams[e].has_met[o]) {
-                            count += 1;
-                        }
-                    }
-                }
+            if self.team_is_alive(o) && o != t && self.teams[o].vassal[t] && other.map_or(true, |e| self.teams[e].has_met[o]) {
+                count += 1;
             }
         }
 
@@ -1045,12 +959,8 @@ impl Game {
     /// C++ `CvTeam::isAVassal`.
     pub fn team_is_a_vassal(&self, t: TeamId) -> bool {
         for o in civ_team_ids(self) {
-            if self.team_is_alive(o) {
-                if o != t {
-                    if self.teams[t].vassal[o] {
-                        return true;
-                    }
-                }
+            if self.team_is_alive(o) && o != t && self.teams[t].vassal[o] {
+                return true;
             }
         }
 
@@ -1160,24 +1070,22 @@ impl Game {
 
                 // Declare war on teams you should be at war with
                 for o in self.team_ids() {
-                    if (o != t) && (o != master) {
-                        if self.team_is_alive(o) {
-                            if self.teams[master].has_met[o] {
-                                self.team_meet(t, o, true);
-                            }
+                    if (o != t) && (o != master) && self.team_is_alive(o) {
+                        if self.teams[master].has_met[o] {
+                            self.team_meet(t, o, true);
+                        }
 
-                            if self.teams[t].has_met[o] {
-                                self.team_meet(master, o, true);
-                            }
+                        if self.teams[t].has_met[o] {
+                            self.team_meet(master, o, true);
+                        }
 
-                            if self.teams[master].at_war[o] {
-                                self.team_declare_war(t, o, false, Some(WarPlanType::WARPLAN_DOGPILE));
-                            } else if self.teams[t].at_war[o] {
-                                if capitulated {
-                                    self.team_make_peace(t, o, true);
-                                } else {
-                                    self.team_declare_war(master, o, false, Some(WarPlanType::WARPLAN_DOGPILE));
-                                }
+                        if self.teams[master].at_war[o] {
+                            self.team_declare_war(t, o, false, Some(WarPlanType::WARPLAN_DOGPILE));
+                        } else if self.teams[t].at_war[o] {
+                            if capitulated {
+                                self.team_make_peace(t, o, true);
+                            } else {
+                                self.team_declare_war(master, o, false, Some(WarPlanType::WARPLAN_DOGPILE));
                             }
                         }
                     }
@@ -1198,10 +1106,8 @@ impl Game {
 
                 // All our vassals now become free
                 for o in self.team_ids() {
-                    if (o != t) && (o != master) {
-                        if self.team_is_alive(o) && self.teams[o].vassal[t] {
-                            self.team_free_vassal(t, o);
-                        }
+                    if (o != t) && (o != master) && self.team_is_alive(o) && self.teams[o].vassal[t] {
+                        self.team_free_vassal(t, o);
                     }
                 }
 
@@ -1280,18 +1186,12 @@ impl Game {
             let first_team = self.players[deal.first_player].team;
             let second_team = self.players[deal.second_player].team;
 
-            if (first_team == vassal) && (second_team == t) {
-                if has_trade_item(&deal.first_trades, &vassal_items) {
-                    valid = false;
-                }
+            if (first_team == vassal) && (second_team == t) && has_trade_item(&deal.first_trades, &vassal_items) {
+                valid = false;
             }
 
-            if valid {
-                if (first_team == t) && (second_team == vassal) {
-                    if has_trade_item(&deal.second_trades, &vassal_items) {
-                        valid = false;
-                    }
-                }
+            if valid && (first_team == t) && (second_team == vassal) && has_trade_item(&deal.second_trades, &vassal_items) {
+                valid = false;
             }
 
             if !valid {
@@ -1323,28 +1223,22 @@ impl Game {
 
     /// C++ `CvTeamAI::AI_setWarPlan` (C++ default `bWar = true`). `plan = None` is `NO_WARPLAN`.
     pub fn team_ai_set_war_plan(&mut self, t: TeamId, other: TeamId, plan: Option<WarPlanType>, war: bool) {
-        if self.teams[t].ai_war_plan[other] != plan {
-            if war || !self.teams[t].at_war[other] {
-                if self.telemetry.on() {
-                    self.tel_war_plan(t, other, plan);
-                }
-                self.teams[t].ai_war_plan[other] = plan;
+        if self.teams[t].ai_war_plan[other] != plan && (war || !self.teams[t].at_war[other]) {
+            if self.telemetry.on() {
+                self.tel_war_plan(t, other, plan);
+            }
+            self.teams[t].ai_war_plan[other] = plan;
 
-                // AI_setWarPlanStateCounter(eIndex, 0)
-                self.teams[t].ai_war_plan_state_counter[other] = 0;
+            // AI_setWarPlanStateCounter(eIndex, 0)
+            self.teams[t].ai_war_plan_state_counter[other] = 0;
 
-                // AI: AI_updateAreaStragies() (area AI types, AI-only state).
-                self.ai_hook_team(t, AiHook::TeamAreaStrategies(t));
+            // AI: AI_updateAreaStragies() (area AI types, AI-only state).
+            self.ai_hook_team(t, AiHook::TeamAreaStrategies(t));
 
-                for p in self.player_ids() {
-                    if self.players[p].alive {
-                        if self.players[p].team == t {
-                            if !self.players[p].human {
-                                // AI_makeProductionDirty (city bookkeeping flag)
-                                self.player_ai_make_production_dirty(p);
-                            }
-                        }
-                    }
+            for p in self.player_ids() {
+                if self.players[p].alive && self.players[p].team == t && !self.players[p].human {
+                    // AI_makeProductionDirty (city bookkeeping flag)
+                    self.player_ai_make_production_dirty(p);
                 }
             }
         }
@@ -1377,12 +1271,8 @@ impl Game {
     /// C++ `CvTeamAI::AI_shareWar`.
     pub fn team_ai_share_war(&self, t: TeamId, other: TeamId) -> bool {
         for o in civ_team_ids(self) {
-            if self.team_is_alive(o) && !self.team_is_minor_civ(o) {
-                if o != t && o != other {
-                    if self.teams[t].at_war[o] && self.teams[other].at_war[o] {
-                        return true;
-                    }
-                }
+            if self.team_is_alive(o) && !self.team_is_minor_civ(o) && o != t && o != other && self.teams[t].at_war[o] && self.teams[other].at_war[o] {
+                return true;
             }
         }
 
@@ -1406,15 +1296,13 @@ impl Game {
         let mut count = 0;
 
         for i in self.player_ids() {
-            if self.players[i].alive {
-                if self.players[i].team == t {
-                    for j in self.player_ids() {
-                        if self.players[j].alive && i != j {
-                            let team_loop = self.players[j].team;
-                            if team_loop == other || self.teams[team_loop].vassal[other] || self.teams[other].vassal[team_loop] {
-                                attitude += self.player_ai_get_attitude(i, j, forced).i();
-                                count += 1;
-                            }
+            if self.players[i].alive && self.players[i].team == t {
+                for j in self.player_ids() {
+                    if self.players[j].alive && i != j {
+                        let team_loop = self.players[j].team;
+                        if team_loop == other || self.teams[team_loop].vassal[other] || self.teams[other].vassal[team_loop] {
+                            attitude += self.player_ai_get_attitude(i, j, forced).i();
+                            count += 1;
                         }
                     }
                 }
@@ -1443,15 +1331,11 @@ impl Game {
         let mut count = 0;
 
         for i in self.player_ids() {
-            if self.players[i].alive {
-                if self.players[i].team == t {
-                    for j in self.player_ids() {
-                        if self.players[j].alive {
-                            if self.players[j].team == other {
-                                attitude_val += self.player_ai_get_attitude(i, j, forced).i();
-                                count += 1;
-                            }
-                        }
+            if self.players[i].alive && self.players[i].team == t {
+                for j in self.player_ids() {
+                    if self.players[j].alive && self.players[j].team == other {
+                        attitude_val += self.player_ai_get_attitude(i, j, forced).i();
+                        count += 1;
                     }
                 }
             }
@@ -1468,36 +1352,32 @@ impl Game {
     /// `CvTeam::doTurn`): advances the per-team contact counters read by rules code.
     pub fn team_ai_do_counter(&mut self, t: TeamId) {
         for o in self.team_ids() {
-            if self.team_is_alive(o) {
-                if o != t {
-                    // AI_changeWarPlanStateCounter
-                    self.teams[t].ai_war_plan_state_counter[o] += 1;
+            if self.team_is_alive(o) && o != t {
+                // AI_changeWarPlanStateCounter
+                self.teams[t].ai_war_plan_state_counter[o] += 1;
 
-                    if self.teams[t].at_war[o] {
-                        self.teams[t].ai_at_war_counter[o] += 1;
-                    } else {
-                        self.teams[t].ai_at_peace_counter[o] += 1;
-                    }
+                if self.teams[t].at_war[o] {
+                    self.teams[t].ai_at_war_counter[o] += 1;
+                } else {
+                    self.teams[t].ai_at_peace_counter[o] += 1;
+                }
 
-                    if self.teams[t].has_met[o] {
-                        self.teams[t].ai_has_met_counter[o] += 1;
-                    }
+                if self.teams[t].has_met[o] {
+                    self.teams[t].ai_has_met_counter[o] += 1;
+                }
 
-                    if self.team_is_open_borders(t, o) {
-                        self.teams[t].ai_open_borders_counter[o] += 1;
-                    }
+                if self.team_is_open_borders(t, o) {
+                    self.teams[t].ai_open_borders_counter[o] += 1;
+                }
 
-                    if self.teams[t].defensive_pact[o] {
-                        self.teams[t].ai_defensive_pact_counter[o] += 1;
-                    } else if self.teams[t].ai_defensive_pact_counter[o] > 0 {
-                        self.teams[t].ai_defensive_pact_counter[o] -= 1;
-                    }
+                if self.teams[t].defensive_pact[o] {
+                    self.teams[t].ai_defensive_pact_counter[o] += 1;
+                } else if self.teams[t].ai_defensive_pact_counter[o] > 0 {
+                    self.teams[t].ai_defensive_pact_counter[o] -= 1;
+                }
 
-                    if self.teams[t].has_met[o] {
-                        if self.team_ai_share_war(t, o) {
-                            self.teams[t].ai_share_war_counter[o] += 1;
-                        }
-                    }
+                if self.teams[t].has_met[o] && self.team_ai_share_war(t, o) {
+                    self.teams[t].ai_share_war_counter[o] += 1;
                 }
             }
         }
@@ -1510,17 +1390,13 @@ impl Game {
         let mut best_value = MAX_INT;
 
         for o in civ_team_ids(self) {
-            if self.team_is_alive(o) {
-                if o != t && !self.teams[o].vassal[t] {
-                    if self.teams[t].has_met[o] {
-                        if self.team_ai_get_attitude(t, o, true) < AttitudeType::ATTITUDE_CAUTIOUS {
-                            let value = self.team_ai_get_attitude_val(t, o, true);
-                            if value < best_value {
-                                best_value = value;
-                                best_team = Some(o);
-                            }
-                        }
-                    }
+            if self.team_is_alive(o)
+                && o != t && !self.teams[o].vassal[t] && self.teams[t].has_met[o] && self.team_ai_get_attitude(t, o, true) < AttitudeType::ATTITUDE_CAUTIOUS
+            {
+                let value = self.team_ai_get_attitude_val(t, o, true);
+                if value < best_value {
+                    best_value = value;
+                    best_team = Some(o);
                 }
             }
         }

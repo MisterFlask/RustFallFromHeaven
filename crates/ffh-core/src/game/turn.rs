@@ -57,10 +57,8 @@ impl Game {
 
         self.test_alive();
 
-        if self.ai_auto_play == 0 && !self.autorun && self.game_state != GameStateType::GAMESTATE_EXTENDED {
-            if self.count_human_players_alive() == 0 {
-                self.set_game_state(GameStateType::GAMESTATE_OVER);
-            }
+        if self.ai_auto_play == 0 && !self.autorun && self.game_state != GameStateType::GAMESTATE_EXTENDED && self.count_human_players_alive() == 0 {
+            self.set_game_state(GameStateType::GAMESTATE_OVER);
         }
 
         // changeTurnSlice(1)
@@ -170,47 +168,37 @@ impl Game {
         // Sephi): the escalation turn counts are scaled by the game speed's growth percent.
         let growth_percent = self.d.game_speeds[self.game_speed_type()].growth_percent;
 
-        if self.is_option(GameOptionType::GAMEOPTION_CHALLENGE_CUT_LOSERS) {
-            if self.count_civ_players_alive() > 5 {
-                // changeCutLosersCounter(-1)
-                self.cut_losers_counter -= 1;
-                if self.cut_losers_counter == 0 {
-                    // GET_PLAYER(getRankPlayer(countCivPlayersAlive() - 1)).setAlive(false): an
-                    // empty C++ slot is not alive (see `cpp_rank_player`), so that is a no-op.
-                    let rank = self.count_civ_players_alive() - 1;
-                    if let Some(loser) = self.cpp_rank_player(rank) {
-                        self.player_set_alive(loser, false);
-                    }
-                    // changeCutLosersCounter(50 * growth percent / 100)
-                    self.cut_losers_counter += 50 * growth_percent / 100;
+        if self.is_option(GameOptionType::GAMEOPTION_CHALLENGE_CUT_LOSERS) && self.count_civ_players_alive() > 5 {
+            // changeCutLosersCounter(-1)
+            self.cut_losers_counter -= 1;
+            if self.cut_losers_counter == 0 {
+                // GET_PLAYER(getRankPlayer(countCivPlayersAlive() - 1)).setAlive(false): an
+                // empty C++ slot is not alive (see `cpp_rank_player`), so that is a no-op.
+                let rank = self.count_civ_players_alive() - 1;
+                if let Some(loser) = self.cpp_rank_player(rank) {
+                    self.player_set_alive(loser, false);
                 }
+                // changeCutLosersCounter(50 * growth percent / 100)
+                self.cut_losers_counter += 50 * growth_percent / 100;
             }
         }
 
-        if self.is_option(GameOptionType::GAMEOPTION_CHALLENGE_HIGH_TO_LOW) {
-            if !self.is_game_multi_player() {
-                if self.game_turn() >= 50 * growth_percent / 100 {
-                    if self.high_to_low_counter < 2 {
-                        for p in self.player_ids() {
-                            if self.players[p].alive {
-                                if self.players[p].human {
-                                    if self.player_rank[p] == 0 {
-                                        // GC.getInitCore().reassignPlayerAdvanced(p,
-                                        // getRankPlayer(countCivPlayersAlive() - 1), -1). Where
-                                        // C++ names an empty slot (see `cpp_rank_player`) the
-                                        // human would move to that slot; this game has no
-                                        // such slot, so nothing is reassigned.
-                                        let rank = self.count_civ_players_alive() - 1;
-                                        if let Some(target) = self.cpp_rank_player(rank) {
-                                            reassign_player_advanced(self, p, target, -1);
-                                        }
-                                        // changeHighToLowCounter(1)
-                                        self.high_to_low_counter += 1;
-                                    }
-                                }
-                            }
-                        }
+        if self.is_option(GameOptionType::GAMEOPTION_CHALLENGE_HIGH_TO_LOW)
+            && !self.is_game_multi_player() && self.game_turn() >= 50 * growth_percent / 100 && self.high_to_low_counter < 2
+        {
+            for p in self.player_ids() {
+                if self.players[p].alive && self.players[p].human && self.player_rank[p] == 0 {
+                    // GC.getInitCore().reassignPlayerAdvanced(p,
+                    // getRankPlayer(countCivPlayersAlive() - 1), -1). Where
+                    // C++ names an empty slot (see `cpp_rank_player`) the
+                    // human would move to that slot; this game has no
+                    // such slot, so nothing is reassigned.
+                    let rank = self.count_civ_players_alive() - 1;
+                    if let Some(target) = self.cpp_rank_player(rank) {
+                        reassign_player_advanced(self, p, target, -1);
                     }
+                    // changeHighToLowCounter(1)
+                    self.high_to_low_counter += 1;
                 }
             }
         }
@@ -221,49 +209,41 @@ impl Game {
             // changeIncreasingDifficultyCounter(1)
             self.increasing_difficulty_counter += 1;
 
-            if self.increasing_difficulty_counter >= 50 * growth_percent / 100 {
-                if self.handicap.i() < num_handicaps - 1 {
-                    for p in self.player_ids() {
-                        if self.players[p].alive {
-                            if self.players[p].human {
-                                // GC.getInitCore().setHandicap(p, getHandicapType() + 1)
-                                self.setup.players[p.idx()].handicap = Some(HandicapType(self.handicap.0 + 1));
-                            }
-                        }
+            if self.increasing_difficulty_counter >= 50 * growth_percent / 100 && self.handicap.i() < num_handicaps - 1 {
+                for p in self.player_ids() {
+                    if self.players[p].alive && self.players[p].human {
+                        // GC.getInitCore().setHandicap(p, getHandicapType() + 1)
+                        self.setup.players[p.idx()].handicap = Some(HandicapType(self.handicap.0 + 1));
                     }
-                    // setHandicapType(getHandicapType() + 1)
-                    self.handicap = HandicapType(self.handicap.0 + 1);
-                    // changeIncreasingDifficultyCounter(getIncreasingDifficultyCounter() * -1)
-                    let counter = self.increasing_difficulty_counter;
-                    self.increasing_difficulty_counter += counter * -1;
                 }
+                // setHandicapType(getHandicapType() + 1)
+                self.handicap = HandicapType(self.handicap.0 + 1);
+                // changeIncreasingDifficultyCounter(getIncreasingDifficultyCounter() * -1)
+                let counter = self.increasing_difficulty_counter;
+                self.increasing_difficulty_counter += counter * -1;
             }
         }
 
-        if self.is_option(GameOptionType::GAMEOPTION_FLEXIBLE_DIFFICULTY) {
-            if !self.is_game_multi_player() {
-                // changeFlexibleDifficultyCounter(1)
-                self.flexible_difficulty_counter += 1;
+        if self.is_option(GameOptionType::GAMEOPTION_FLEXIBLE_DIFFICULTY) && !self.is_game_multi_player() {
+            // changeFlexibleDifficultyCounter(1)
+            self.flexible_difficulty_counter += 1;
 
-                if self.flexible_difficulty_counter >= 20 * growth_percent / 100 {
-                    for p in self.player_ids() {
-                        if self.players[p].alive {
-                            if self.players[p].human {
-                                if self.player_rank[p] <= self.count_civ_players_alive() / 3 && self.handicap.i() < num_handicaps - 1 {
-                                    // GC.getInitCore().setHandicap(p, getHandicapType() + 1)
-                                    self.setup.players[p.idx()].handicap = Some(HandicapType(self.handicap.0 + 1));
-                                    self.handicap = HandicapType(self.handicap.0 + 1);
-                                    let counter = self.flexible_difficulty_counter;
-                                    self.flexible_difficulty_counter += counter * -1;
-                                }
-                                if self.player_rank[p] > self.count_civ_players_alive() * 2 / 3 && self.handicap.0 > 0 {
-                                    // GC.getInitCore().setHandicap(p, getHandicapType() - 1)
-                                    self.setup.players[p.idx()].handicap = Some(HandicapType(self.handicap.0 - 1));
-                                    self.handicap = HandicapType(self.handicap.0 - 1);
-                                    let counter = self.flexible_difficulty_counter;
-                                    self.flexible_difficulty_counter += counter * -1;
-                                }
-                            }
+            if self.flexible_difficulty_counter >= 20 * growth_percent / 100 {
+                for p in self.player_ids() {
+                    if self.players[p].alive && self.players[p].human {
+                        if self.player_rank[p] <= self.count_civ_players_alive() / 3 && self.handicap.i() < num_handicaps - 1 {
+                            // GC.getInitCore().setHandicap(p, getHandicapType() + 1)
+                            self.setup.players[p.idx()].handicap = Some(HandicapType(self.handicap.0 + 1));
+                            self.handicap = HandicapType(self.handicap.0 + 1);
+                            let counter = self.flexible_difficulty_counter;
+                            self.flexible_difficulty_counter += counter * -1;
+                        }
+                        if self.player_rank[p] > self.count_civ_players_alive() * 2 / 3 && self.handicap.0 > 0 {
+                            // GC.getInitCore().setHandicap(p, getHandicapType() - 1)
+                            self.setup.players[p.idx()].handicap = Some(HandicapType(self.handicap.0 - 1));
+                            self.handicap = HandicapType(self.handicap.0 - 1);
+                            let counter = self.flexible_difficulty_counter;
+                            self.flexible_difficulty_counter += counter * -1;
                         }
                     }
                 }
@@ -286,39 +266,35 @@ impl Game {
         // player whose turn ends here activates the next alive player, who is then visited in the
         // same pass, as in C++.
         for p in self.turn_order() {
-            if self.players[p].alive {
-                if self.players[p].turn_active {
-                    if !self.players[p].auto_moves {
-                        // player.AI_unitUpdate(): the controller plays all of the player's units.
-                        let c = self.controller(p);
-                        c.play_turn(self, p);
+            if self.players[p].alive && self.players[p].turn_active {
+                if !self.players[p].auto_moves {
+                    // player.AI_unitUpdate(): the controller plays all of the player's units.
+                    let c = self.controller(p);
+                    c.play_turn(self, p);
 
-                        if !self.players[p].human {
-                            if !self.player_has_busy_unit(p) && !self.player_has_ready_unit(p, true) {
-                                self.player_set_auto_moves(p, true);
-                            }
+                    if !self.players[p].human && !self.player_has_busy_unit(p) && !self.player_has_ready_unit(p, true) {
+                        self.player_set_auto_moves(p, true);
+                    }
+                }
+
+                if self.players[p].auto_moves {
+                    for g in self.players[p].groups.clone() {
+                        if self.groups.contains(g) {
+                            self.group_auto_mission(g);
                         }
                     }
 
-                    if self.players[p].auto_moves {
-                        for g in self.players[p].groups.clone() {
-                            if self.groups.contains(g) {
-                                self.group_auto_mission(g);
-                            }
+                    if !self.player_has_busy_unit(p) {
+                        // AI: BETTER AI (Spellcasting end of turn, Sephi) -- for non-human
+                        // players: AI_setSummonSuicideMode(true); every unit casts the spell
+                        // chosen by chooseSpell(), then AI_BuffCast() / AI_SummonCast();
+                        // AI_setSummonSuicideMode(false). The controller casts its own
+                        // end-of-turn spells inside play_turn.
+                        if !self.players[p].human {
+                            self.ai_hook(p, AiHook::EndTurnSpells(p));
                         }
 
-                        if !self.player_has_busy_unit(p) {
-                            // AI: BETTER AI (Spellcasting end of turn, Sephi) -- for non-human
-                            // players: AI_setSummonSuicideMode(true); every unit casts the spell
-                            // chosen by chooseSpell(), then AI_BuffCast() / AI_SummonCast();
-                            // AI_setSummonSuicideMode(false). The controller casts its own
-                            // end-of-turn spells inside play_turn.
-                            if !self.players[p].human {
-                                self.ai_hook(p, AiHook::EndTurnSpells(p));
-                            }
-
-                            self.player_set_auto_moves(p, false);
-                        }
+                        self.player_set_auto_moves(p, false);
                     }
                 }
             }
@@ -334,10 +310,8 @@ impl Game {
                         if self.team_is_alive(t2) && !self.team_is_human(t2) {
                             debug_assert!(t1 != t2);
 
-                            if self.teams[t1].has_met[t2] {
-                                if !self.teams[t1].at_war[t2] {
-                                    self.team_declare_war(t1, t2, false, None);
-                                }
+                            if self.teams[t1].has_met[t2] && !self.teams[t1].at_war[t2] {
+                                self.team_declare_war(t1, t2, false, None);
                             }
                         }
                     }
@@ -531,13 +505,11 @@ impl Game {
                         self.plot_set_feature_type(plot, None);
                         changed = true;
                     }
-                } else if self.map.plots[plot].terrain_type != warming_terrain {
-                    if self.plot_calculate_total_best_nature_yield(plot, None) > 1 {
-                        // (C++ would set NO_TERRAIN if the define were missing; FFH2 defines it.)
-                        if let Some(terrain) = warming_terrain {
-                            self.plot_set_terrain_type(plot, terrain, true);
-                            changed = true;
-                        }
+                } else if self.map.plots[plot].terrain_type != warming_terrain && self.plot_calculate_total_best_nature_yield(plot, None) > 1 {
+                    // (C++ would set NO_TERRAIN if the define were missing; FFH2 defines it.)
+                    if let Some(terrain) = warming_terrain {
+                        self.plot_set_terrain_type(plot, terrain, true);
+                        changed = true;
                     }
                 }
 
@@ -1156,13 +1128,9 @@ impl Game {
 
         for p in self.civ_player_ids() {
             let pl = &self.players[p];
-            if pl.alive {
-                if pl.human {
-                    if pl.extended_game {
-                        self.set_game_state(GameStateType::GAMESTATE_EXTENDED);
-                        break;
-                    }
-                }
+            if pl.alive && pl.human && pl.extended_game {
+                self.set_game_state(GameStateType::GAMESTATE_EXTENDED);
+                break;
             }
         }
     }
@@ -1214,189 +1182,155 @@ impl Game {
         let mut valid = self.is_victory_valid(victory);
         let mut end_score = false;
 
-        if valid {
-            if info.end_score {
-                end_score = true;
+        if valid && info.end_score {
+            end_score = true;
 
-                if self.max_turns() == 0 {
-                    valid = false;
-                } else if self.elapsed_game_turns < self.max_turns() {
-                    valid = false;
-                } else {
-                    let mut found = false;
-
-                    for k in self.civ_team_ids() {
-                        if self.team_is_alive(k) {
-                            if k != team {
-                                if self.team_score[k] >= self.team_score[team] {
-                                    found = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if found {
-                        valid = false;
-                    }
-                }
-            }
-        }
-
-        if valid {
-            if info.target_score {
-                if self.target_score() == 0 {
-                    valid = false;
-                } else if self.team_score[team] < self.target_score() {
-                    valid = false;
-                } else {
-                    let mut found = false;
-
-                    for k in self.civ_team_ids() {
-                        if self.team_is_alive(k) {
-                            if k != team {
-                                if self.team_score[k] >= self.team_score[team] {
-                                    found = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if found {
-                        valid = false;
-                    }
-                }
-            }
-        }
-
-        if valid {
-            if info.conquest {
-                if self.teams[team].num_cities == 0 {
-                    valid = false;
-                } else {
-                    let mut found = false;
-
-                    for k in self.civ_team_ids() {
-                        if self.team_is_alive(k) {
-                            if k != team && !self.teams[k].vassal[team] {
-                                if self.teams[k].num_cities > 0 {
-                                    found = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if found {
-                        valid = false;
-                    }
-                }
-            }
-        }
-
-        if valid {
-            if info.diplo_vote {
-                let mut found = false;
-
-                for vote in d.votes.keys() {
-                    if d.votes[vote].victory {
-                        // Team votes store the elected team as a PlayerVoteTypes value.
-                        if self.vote_outcome[vote].team() == Some(team) {
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-
-                if !found {
-                    valid = false;
-                }
-            }
-        }
-
-        if valid {
-            if self.adjusted_population_percent(victory) > 0 {
-                if 100 * self.team_get_total_population(team, true) < self.total_population * self.adjusted_population_percent(victory) {
-                    valid = false;
-                }
-            }
-        }
-
-        if valid {
-            if self.adjusted_land_percent(victory) > 0 {
-                if 100 * self.team_get_total_land(team, true) < self.map.land_plots * self.adjusted_land_percent(victory) {
-                    valid = false;
-                }
-            }
-        }
-
-        if valid {
-            if info.religion_percent > 0 {
-                let mut found = false;
-
-                if self.num_civ_cities() > (self.count_civ_players_alive() * 2) {
-                    for religion in d.religions.keys() {
-                        if self.team_has_holy_city(team, religion) {
-                            if self.calculate_religion_percent(religion) >= info.religion_percent {
-                                found = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if !found {
-                    valid = false;
-                }
-            }
-        }
-
-        if valid {
-            if info.city_culture.is_some() && info.num_culture_cities > 0 {
-                let mut count = 0;
-
-                for p in self.civ_player_ids() {
-                    let pl = &self.players[p];
-                    if pl.alive {
-                        if pl.team == team {
-                            for &c in &pl.cities {
-                                // CultureLevelTypes compare as ints (NO_CULTURELEVEL = None is lowest).
-                                if self.cities[c].culture_level >= info.city_culture {
-                                    count += 1;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if count < info.num_culture_cities {
-                    valid = false;
-                }
-            }
-        }
-
-        if valid {
-            if info.total_culture_ratio > 0 {
-                // C++ int arithmetic (wraps on MSVC for huge culture totals).
-                let threshold = self.team_count_total_culture(team).wrapping_mul(100) / info.total_culture_ratio;
-
+            if self.max_turns() == 0 {
+                valid = false;
+            } else if self.elapsed_game_turns < self.max_turns() {
+                valid = false;
+            } else {
                 let mut found = false;
 
                 for k in self.civ_team_ids() {
-                    if self.team_is_alive(k) {
-                        if k != team {
-                            if self.team_count_total_culture(k) > threshold {
-                                found = true;
-                                break;
-                            }
-                        }
+                    if self.team_is_alive(k) && k != team && self.team_score[k] >= self.team_score[team] {
+                        found = true;
+                        break;
                     }
                 }
 
                 if found {
                     valid = false;
                 }
+            }
+        }
+
+        if valid && info.target_score {
+            if self.target_score() == 0 {
+                valid = false;
+            } else if self.team_score[team] < self.target_score() {
+                valid = false;
+            } else {
+                let mut found = false;
+
+                for k in self.civ_team_ids() {
+                    if self.team_is_alive(k) && k != team && self.team_score[k] >= self.team_score[team] {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if found {
+                    valid = false;
+                }
+            }
+        }
+
+        if valid && info.conquest {
+            if self.teams[team].num_cities == 0 {
+                valid = false;
+            } else {
+                let mut found = false;
+
+                for k in self.civ_team_ids() {
+                    if self.team_is_alive(k) && k != team && !self.teams[k].vassal[team] && self.teams[k].num_cities > 0 {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if found {
+                    valid = false;
+                }
+            }
+        }
+
+        if valid && info.diplo_vote {
+            let mut found = false;
+
+            for vote in d.votes.keys() {
+                if d.votes[vote].victory {
+                    // Team votes store the elected team as a PlayerVoteTypes value.
+                    if self.vote_outcome[vote].team() == Some(team) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            if !found {
+                valid = false;
+            }
+        }
+
+        if valid {
+            if self.adjusted_population_percent(victory) > 0
+                && 100 * self.team_get_total_population(team, true) < self.total_population * self.adjusted_population_percent(victory)
+            {
+                valid = false;
+            }
+        }
+
+        if valid {
+            if self.adjusted_land_percent(victory) > 0
+                && 100 * self.team_get_total_land(team, true) < self.map.land_plots * self.adjusted_land_percent(victory)
+            {
+                valid = false;
+            }
+        }
+
+        if valid && info.religion_percent > 0 {
+            let mut found = false;
+
+            if self.num_civ_cities() > (self.count_civ_players_alive() * 2) {
+                for religion in d.religions.keys() {
+                    if self.team_has_holy_city(team, religion) && self.calculate_religion_percent(religion) >= info.religion_percent {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            if !found {
+                valid = false;
+            }
+        }
+
+        if valid && info.city_culture.is_some() && info.num_culture_cities > 0 {
+            let mut count = 0;
+
+            for p in self.civ_player_ids() {
+                let pl = &self.players[p];
+                if pl.alive && pl.team == team {
+                    for &c in &pl.cities {
+                        // CultureLevelTypes compare as ints (NO_CULTURELEVEL = None is lowest).
+                        if self.cities[c].culture_level >= info.city_culture {
+                            count += 1;
+                        }
+                    }
+                }
+            }
+
+            if count < info.num_culture_cities {
+                valid = false;
+            }
+        }
+
+        if valid && info.total_culture_ratio > 0 {
+            // C++ int arithmetic (wraps on MSVC for huge culture totals).
+            let threshold = self.team_count_total_culture(team).wrapping_mul(100) / info.total_culture_ratio;
+
+            let mut found = false;
+
+            for k in self.civ_team_ids() {
+                if self.team_is_alive(k) && k != team && self.team_count_total_culture(k) > threshold {
+                    found = true;
+                    break;
+                }
+            }
+
+            if found {
+                valid = false;
             }
         }
 
@@ -1446,33 +1380,29 @@ impl Game {
         let mut winners: Vec<(TeamId, VictoryType)> = Vec::new();
 
         for t in self.civ_team_ids() {
-            if self.team_is_alive(t) {
-                if !self.team_is_minor_civ(t) {
-                    for v in self.d.victories.keys() {
-                        // C++ quirk: bEndScore is overwritten by every test, so after the loops it
-                        // only tells whether the last victory type tested is an end-score victory.
-                        let (valid, is_end_score) = self.test_victory_team(v, t);
-                        end_score = is_end_score;
+            if self.team_is_alive(t) && !self.team_is_minor_civ(t) {
+                for v in self.d.victories.keys() {
+                    // C++ quirk: bEndScore is overwritten by every test, so after the loops it
+                    // only tells whether the last victory type tested is an end-score victory.
+                    let (valid, is_end_score) = self.test_victory_team(v, t);
+                    end_score = is_end_score;
 
-                        if valid {
-                            if self.teams[t].victory_countdown[v] < 0 {
-                                if self.team_get_victory_delay(t, v) == 0 {
-                                    self.teams[t].victory_countdown[v] = 0;
-                                }
-                            }
+                    if valid {
+                        if self.teams[t].victory_countdown[v] < 0 && self.team_get_victory_delay(t, v) == 0 {
+                            self.teams[t].victory_countdown[v] = 0;
+                        }
 
-                            //update victory countdown
-                            if self.teams[t].victory_countdown[v] > 0 {
-                                // changeVictoryCountdown(-1)
-                                self.teams[t].victory_countdown[v] -= 1;
-                            }
+                        //update victory countdown
+                        if self.teams[t].victory_countdown[v] > 0 {
+                            // changeVictoryCountdown(-1)
+                            self.teams[t].victory_countdown[v] -= 1;
+                        }
 
-                            if self.teams[t].victory_countdown[v] == 0 {
-                                if self.soren_rand_num(100, "Victory Success") < self.team_get_launch_success_rate(t, v) {
-                                    winners.push((t, v));
-                                } else {
-                                    self.team_reset_victory_progress(t);
-                                }
+                        if self.teams[t].victory_countdown[v] == 0 {
+                            if self.soren_rand_num(100, "Victory Success") < self.team_get_launch_success_rate(t, v) {
+                                winners.push((t, v));
+                            } else {
+                                self.team_reset_victory_progress(t);
                             }
                         }
                     }
@@ -1486,17 +1416,11 @@ impl Game {
             self.set_winner(Some(team), Some(victory));
         }
 
-        if self.victory.is_none() {
-            if self.max_turns() > 0 {
-                if self.elapsed_game_turns >= self.max_turns() {
-                    if !end_score {
-                        if self.ai_auto_play > 0 || self.autorun {
-                            self.set_game_state(GameStateType::GAMESTATE_EXTENDED);
-                        } else {
-                            self.set_game_state(GameStateType::GAMESTATE_OVER);
-                        }
-                    }
-                }
+        if self.victory.is_none() && self.max_turns() > 0 && self.elapsed_game_turns >= self.max_turns() && !end_score {
+            if self.ai_auto_play > 0 || self.autorun {
+                self.set_game_state(GameStateType::GAMESTATE_EXTENDED);
+            } else {
+                self.set_game_state(GameStateType::GAMESTATE_OVER);
             }
         }
     }

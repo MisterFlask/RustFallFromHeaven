@@ -326,10 +326,10 @@ impl Game {
                         break;
                     }
                     let kt = self.unit_get_team(ku);
-                    if !self.units[ku].has_promotion[apply] && (self.unit_is_alive(ku) || !d.promotions[apply].prereq_alive) && self.unit_is_enemy(u, Some(kt), None) {
-                        if self.soren_rand_num(100, "Combat Apply") <= apply_chance {
-                            self.unit_set_has_promotion(ku, apply, true);
-                        }
+                    if !self.units[ku].has_promotion[apply] && (self.unit_is_alive(ku) || !d.promotions[apply].prereq_alive) && self.unit_is_enemy(u, Some(kt), None)
+                        && self.soren_rand_num(100, "Combat Apply") <= apply_chance
+                    {
+                        self.unit_set_has_promotion(ku, apply, true);
                     }
                 }
             } else if post.kills[i] > 0 && self.engage_alive(u) {
@@ -342,10 +342,10 @@ impl Game {
                         }
                         if !self.units[lu].has_promotion[apply] && (self.unit_is_alive(lu) || !d.promotions[apply].prereq_alive) {
                             let lt = self.unit_get_team(lu);
-                            if self.unit_is_enemy(u, Some(lt), None) && self.unit_can_acquire_promotion(lu, apply) {
-                                if self.soren_rand_num(100, "Combat Apply") <= apply_chance {
-                                    self.unit_set_has_promotion(lu, apply, true);
-                                }
+                            if self.unit_is_enemy(u, Some(lt), None) && self.unit_can_acquire_promotion(lu, apply)
+                                && self.soren_rand_num(100, "Combat Apply") <= apply_chance
+                            {
+                                self.unit_set_has_promotion(lu, apply, true);
                             }
                         }
                     }
@@ -410,10 +410,8 @@ impl Game {
             let capture = mover.is_some_and(|m| !self.unit_is_no_capture(m));
             for k in r.kills.iter().filter(|k| k.victim < n) {
                 let v = e.units[k.victim];
-                if e.side(k.victim) == Side::Defender && self.units.contains(v) {
-                    if capture || d.units[self.units[v].unit_type].equipment_promotion.is_some() {
-                        self.unit_set_capturing_player(v, Some(e.p));
-                    }
+                if e.side(k.victim) == Side::Defender && self.units.contains(v) && (capture || d.units[self.units[v].unit_type].equipment_promotion.is_some()) {
+                    self.unit_set_capturing_player(v, Some(e.p));
                 }
             }
         }

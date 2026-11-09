@@ -78,112 +78,96 @@ impl Game {
         self.team_share_items(other, t);
 
         for i in self.team_ids() {
-            if i != t && i != other {
-                if self.team_is_alive(i) {
-                    if self.teams[other].has_met[i] {
-                        self.team_meet(t, i, false);
-                    } else if self.teams[t].has_met[i] {
-                        self.team_meet(other, i, false);
-                    }
+            if i != t && i != other && self.team_is_alive(i) {
+                if self.teams[other].has_met[i] {
+                    self.team_meet(t, i, false);
+                } else if self.teams[t].has_met[i] {
+                    self.team_meet(other, i, false);
                 }
             }
         }
 
         for i in self.team_ids() {
-            if i != t && i != other {
-                if self.team_is_alive(i) {
-                    if self.teams[other].at_war[i] {
-                        let war_plan = self.teams[other].ai_war_plan[i];
-                        self.team_declare_war(t, i, false, war_plan);
-                    } else if self.teams[t].at_war[i] {
-                        let war_plan = self.teams[t].ai_war_plan[i];
-                        self.team_declare_war(other, i, false, war_plan);
-                    }
+            if i != t && i != other && self.team_is_alive(i) {
+                if self.teams[other].at_war[i] {
+                    let war_plan = self.teams[other].ai_war_plan[i];
+                    self.team_declare_war(t, i, false, war_plan);
+                } else if self.teams[t].at_war[i] {
+                    let war_plan = self.teams[t].ai_war_plan[i];
+                    self.team_declare_war(other, i, false, war_plan);
                 }
             }
         }
 
         for i in self.team_ids() {
-            if i != t && i != other {
-                if self.team_is_alive(i) {
-                    // setPermanentWarPeace: plain store.
-                    if self.teams[other].permanent_war_peace[i] {
-                        self.teams[t].permanent_war_peace[i] = true;
-                    } else if self.teams[t].permanent_war_peace[i] {
-                        self.teams[other].permanent_war_peace[i] = true;
-                    }
+            if i != t && i != other && self.team_is_alive(i) {
+                // setPermanentWarPeace: plain store.
+                if self.teams[other].permanent_war_peace[i] {
+                    self.teams[t].permanent_war_peace[i] = true;
+                } else if self.teams[t].permanent_war_peace[i] {
+                    self.teams[other].permanent_war_peace[i] = true;
                 }
             }
         }
 
         for i in self.team_ids() {
-            if i != t && i != other {
-                if self.team_is_alive(i) {
-                    if self.team_is_open_borders(other, i) {
-                        self.team_set_open_borders(t, i, true);
-                        self.team_set_open_borders(i, t, true);
-                    } else if self.team_is_open_borders(t, i) {
-                        self.team_set_open_borders(other, i, true);
-                        self.team_set_open_borders(i, other, true);
-                    }
+            if i != t && i != other && self.team_is_alive(i) {
+                if self.team_is_open_borders(other, i) {
+                    self.team_set_open_borders(t, i, true);
+                    self.team_set_open_borders(i, t, true);
+                } else if self.team_is_open_borders(t, i) {
+                    self.team_set_open_borders(other, i, true);
+                    self.team_set_open_borders(i, other, true);
                 }
             }
         }
 
         for i in self.team_ids() {
-            if i != t && i != other {
-                if self.team_is_alive(i) {
-                    if self.teams[other].defensive_pact[i] {
-                        self.team_set_defensive_pact(t, i, true);
-                        self.team_set_defensive_pact(i, t, true);
-                    } else if self.teams[t].defensive_pact[i] {
-                        self.team_set_defensive_pact(other, i, true);
-                        self.team_set_defensive_pact(i, other, true);
-                    }
+            if i != t && i != other && self.team_is_alive(i) {
+                if self.teams[other].defensive_pact[i] {
+                    self.team_set_defensive_pact(t, i, true);
+                    self.team_set_defensive_pact(i, t, true);
+                } else if self.teams[t].defensive_pact[i] {
+                    self.team_set_defensive_pact(other, i, true);
+                    self.team_set_defensive_pact(i, other, true);
                 }
             }
         }
 
         for i in self.team_ids() {
-            if i != t && i != other {
-                if self.team_is_alive(i) {
-                    if self.teams[other].force_peace[i] {
-                        self.team_set_force_peace(t, i, true);
-                        self.team_set_force_peace(i, t, true);
-                    } else if self.teams[t].force_peace[i] {
-                        self.team_set_force_peace(other, i, true);
-                        self.team_set_force_peace(i, other, true);
-                    }
+            if i != t && i != other && self.team_is_alive(i) {
+                if self.teams[other].force_peace[i] {
+                    self.team_set_force_peace(t, i, true);
+                    self.team_set_force_peace(i, t, true);
+                } else if self.teams[t].force_peace[i] {
+                    self.team_set_force_peace(other, i, true);
+                    self.team_set_force_peace(i, other, true);
                 }
             }
         }
 
         for i in self.team_ids() {
-            if i != t && i != other {
-                if self.team_is_alive(i) {
-                    if self.teams[other].vassal[i] {
-                        // C++ quirk: passes this team's isCapitulated() (FAsserts that this team
-                        // is a vassal), not that of `other`, whose vassal agreement is copied.
-                        let capitulated = self.teams[t].capitulated;
-                        self.team_set_vassal(t, i, true, capitulated);
-                    } else if self.teams[t].vassal[i] {
-                        let capitulated = self.teams[t].capitulated;
-                        self.team_set_vassal(other, i, true, capitulated);
-                    }
+            if i != t && i != other && self.team_is_alive(i) {
+                if self.teams[other].vassal[i] {
+                    // C++ quirk: passes this team's isCapitulated() (FAsserts that this team
+                    // is a vassal), not that of `other`, whose vassal agreement is copied.
+                    let capitulated = self.teams[t].capitulated;
+                    self.team_set_vassal(t, i, true, capitulated);
+                } else if self.teams[t].vassal[i] {
+                    let capitulated = self.teams[t].capitulated;
+                    self.team_set_vassal(other, i, true, capitulated);
                 }
             }
         }
 
         for i in self.team_ids() {
-            if i != t && i != other {
-                if self.team_is_alive(i) {
-                    if self.teams[i].vassal[other] {
-                        let capitulated = self.teams[i].capitulated;
-                        self.team_set_vassal(i, t, true, capitulated);
-                    } else if self.teams[i].vassal[t] {
-                        let capitulated = self.teams[i].capitulated;
-                        self.team_set_vassal(i, other, true, capitulated);
-                    }
+            if i != t && i != other && self.team_is_alive(i) {
+                if self.teams[i].vassal[other] {
+                    let capitulated = self.teams[i].capitulated;
+                    self.team_set_vassal(i, t, true, capitulated);
+                } else if self.teams[i].vassal[t] {
+                    let capitulated = self.teams[i].capitulated;
+                    self.team_set_vassal(i, other, true, capitulated);
                 }
             }
         }
@@ -373,10 +357,8 @@ impl Game {
         // free vassals
         if 0 == self.teams[t].alive_count {
             for o in self.team_ids() {
-                if o != t {
-                    if self.team_is_alive(o) && self.teams[o].vassal[t] {
-                        self.team_set_vassal(o, t, false, false);
-                    }
+                if o != t && self.team_is_alive(o) && self.teams[o].vassal[t] {
+                    self.team_set_vassal(o, t, false, false);
                 }
             }
         }
@@ -390,10 +372,8 @@ impl Game {
     /// C++ `CvTeam::isHuman` (any member player is human).
     pub fn team_is_human(&self, t: TeamId) -> bool {
         for p in self.player_ids() {
-            if self.players[p].team == t {
-                if self.players[p].human {
-                    return true;
-                }
+            if self.players[p].team == t && self.players[p].human {
+                return true;
             }
         }
 
@@ -432,12 +412,8 @@ impl Game {
     /// C++ `CvTeam::getSecretaryID`: first alive human member, else the leader.
     pub fn team_get_secretary_id(&self, t: TeamId) -> Option<PlayerId> {
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].human {
-                    if self.players[p].team == t {
-                        return Some(p);
-                    }
-                }
+            if self.players[p].alive && self.players[p].human && self.players[p].team == t {
+                return Some(p);
             }
         }
 
@@ -451,11 +427,9 @@ impl Game {
         let mut count = 0;
 
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    game_handicap += opt_to_i32(self.player_get_handicap_type(p));
-                    count += 1;
-                }
+            if self.players[p].alive && self.players[p].team == t {
+                game_handicap += opt_to_i32(self.player_get_handicap_type(p));
+                count += 1;
             }
         }
 
@@ -501,10 +475,8 @@ impl Game {
         // C++ FAssert(GC.getGameINLINE().isSimultaneousTeamTurns()) (debug-only).
 
         for p in self.player_ids() {
-            if self.players[p].team == t {
-                if self.players[p].turn_active {
-                    return true;
-                }
+            if self.players[p].team == t && self.players[p].turn_active {
+                return true;
             }
         }
 
@@ -520,10 +492,8 @@ impl Game {
         let mut count = 0;
 
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    count += self.players[p].assets;
-                }
+            if self.players[p].alive && self.players[p].team == t {
+                count += self.players[p].assets;
             }
         }
 
@@ -537,10 +507,8 @@ impl Game {
 
         for p in self.player_ids() {
             let loop_player = &self.players[p];
-            if loop_player.alive {
-                if loop_player.team == t || (include_vassals && self.teams[loop_player.team].vassal[t]) {
-                    count += loop_player.power;
-                }
+            if loop_player.alive && (loop_player.team == t || (include_vassals && self.teams[loop_player.team].vassal[t])) {
+                count += loop_player.power;
             }
         }
 
@@ -552,10 +520,8 @@ impl Game {
         let mut count = 0;
 
         for o in civ_team_ids(self) {
-            if self.team_is_alive(o) && !self.team_is_a_vassal(o) {
-                if t == o || self.teams[t].vassal[o] || self.teams[t].defensive_pact[o] {
-                    count += self.team_get_power(o, true);
-                }
+            if self.team_is_alive(o) && !self.team_is_a_vassal(o) && (t == o || self.teams[t].vassal[o] || self.teams[t].defensive_pact[o]) {
+                count += self.team_get_power(o, true);
             }
         }
 
@@ -567,10 +533,8 @@ impl Game {
         let mut count = 0;
 
         for o in civ_team_ids(self) {
-            if self.team_is_alive(o) {
-                if t != o && self.teams[t].at_war[o] {
-                    count += self.team_get_power(o, false);
-                }
+            if self.team_is_alive(o) && t != o && self.teams[t].at_war[o] {
+                count += self.team_get_power(o, false);
             }
         }
 
@@ -583,10 +547,8 @@ impl Game {
 
         for p in self.player_ids() {
             let loop_player = &self.players[p];
-            if loop_player.alive {
-                if loop_player.team == t || self.teams[loop_player.team].vassal[t] {
-                    count += loop_player.num_nuke_units;
-                }
+            if loop_player.alive && (loop_player.team == t || self.teams[loop_player.team].vassal[t]) {
+                count += loop_player.num_nuke_units;
             }
         }
 
@@ -603,10 +565,8 @@ impl Game {
             }
 
             for o in self.team_ids() {
-                if o != t {
-                    if self.team_is_alive(o) && self.teams[o].vassal[t] {
-                        vassal_pop += self.team_get_total_population(o, false) / 2;
-                    }
+                if o != t && self.team_is_alive(o) && self.teams[o].vassal[t] {
+                    vassal_pop += self.team_get_total_population(o, false) / 2;
                 }
             }
         }
@@ -625,10 +585,8 @@ impl Game {
             }
 
             for o in self.team_ids() {
-                if o != t {
-                    if self.team_is_alive(o) && self.teams[o].vassal[t] {
-                        vassal_land += self.team_get_total_land(o, false) / 2;
-                    }
+                if o != t && self.team_is_alive(o) && self.teams[o].vassal[t] {
+                    vassal_land += self.team_get_total_land(o, false) / 2;
                 }
             }
         }
@@ -641,10 +599,8 @@ impl Game {
         let mut count = 0;
 
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    count += self.players[p].unit_class_making[unit_class];
-                }
+            if self.players[p].alive && self.players[p].team == t {
+                count += self.players[p].unit_class_making[unit_class];
             }
         }
 
@@ -661,10 +617,8 @@ impl Game {
         let mut count = 0;
 
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    count += self.players[p].building_class_making[building_class];
-                }
+            if self.players[p].alive && self.players[p].team == t {
+                count += self.players[p].building_class_making[building_class];
             }
         }
 
@@ -681,10 +635,8 @@ impl Game {
         let mut count = 0;
 
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    count += self.players[p].has_religion_count[religion];
-                }
+            if self.players[p].alive && self.players[p].team == t {
+                count += self.players[p].has_religion_count[religion];
             }
         }
 
@@ -696,10 +648,8 @@ impl Game {
         let mut count = 0;
 
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    count += self.player_count_total_culture(p);
-                }
+            if self.players[p].alive && self.players[p].team == t {
+                count += self.player_count_total_culture(p);
             }
         }
 
@@ -711,10 +661,8 @@ impl Game {
         let mut count = 0;
 
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    count += self.map.areas[area].units_per_player[p];
-                }
+            if self.players[p].alive && self.players[p].team == t {
+                count += self.map.areas[area].units_per_player[p];
             }
         }
 
@@ -726,10 +674,8 @@ impl Game {
         let mut count = 0;
 
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    count += self.map.areas[area].cities_per_player[p];
-                }
+            if self.players[p].alive && self.players[p].team == t {
+                count += self.map.areas[area].cities_per_player[p];
             }
         }
 
@@ -741,10 +687,8 @@ impl Game {
         let mut count = 0;
 
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    count += self.map.areas[area].population_per_player[p];
-                }
+            if self.players[p].alive && self.players[p].team == t {
+                count += self.map.areas[area].population_per_player[p];
             }
         }
 
@@ -756,10 +700,8 @@ impl Game {
         let mut count = 0;
 
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    count += self.map.areas[area].power[p];
-                }
+            if self.players[p].alive && self.players[p].team == t {
+                count += self.map.areas[area].power[p];
             }
         }
 
@@ -792,10 +734,8 @@ impl Game {
         let mut count = 0;
 
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    count += self.map.areas[area].num_ai_units[p][unit_ai];
-                }
+            if self.players[p].alive && self.players[p].team == t {
+                count += self.map.areas[area].num_ai_units[p][unit_ai];
             }
         }
 
@@ -809,10 +749,8 @@ impl Game {
         let mut count = 0;
 
         for p in self.map.plot_ids() {
-            if self.map.plots[p].area == Some(area) {
-                if self.plot_get_team(p) == Some(t) {
-                    count += self.plot_count_units(p, |u| self.unit_is_visible_enemy_defender(u, t, false));
-                }
+            if self.map.plots[p].area == Some(area) && self.plot_get_team(p) == Some(t) {
+                count += self.plot_count_units(p, |u| self.unit_is_visible_enemy_defender(u, t, false));
             }
         }
 
@@ -867,10 +805,8 @@ impl Game {
         // BUGFIX (Votes for the Councils) Sephi: MAX_CIV_PLAYERS and alive members only
         // (BtS: every MAX_PLAYERS member).
         for p in self.civ_player_ids() {
-            if self.players[p].team == t {
-                if self.players[p].alive {
-                    count += self.player_get_votes(p, vote, vote_source);
-                }
+            if self.players[p].team == t && self.players[p].alive {
+                count += self.player_get_votes(p, vote, vote_source);
             }
         }
 
@@ -890,10 +826,8 @@ impl Game {
         }
 
         for p in self.player_ids() {
-            if self.players[p].team == t {
-                if !self.player_is_full_member(p, vote_source) {
-                    return false;
-                }
+            if self.players[p].team == t && !self.player_is_full_member(p, vote_source) {
+                return false;
             }
         }
 
@@ -1025,23 +959,19 @@ impl Game {
                 }
 
                 for p in self.player_ids() {
-                    if self.players[p].alive {
-                        if self.players[p].team == t {
-                            if !self.players[p].human {
-                                let mut change_production = false;
+                    if self.players[p].alive && self.players[p].team == t && !self.players[p].human {
+                        let mut change_production = false;
 
-                                for other_project in d.projects.keys() {
-                                    let needed = d.projects[other_project].projects_needed[project];
-                                    if self.teams[t].project_count[project] >= needed && old_project_count < needed {
-                                        change_production = true;
-                                        break;
-                                    }
-                                }
-
-                                if change_production {
-                                    self.player_ai_make_production_dirty(p);
-                                }
+                        for other_project in d.projects.keys() {
+                            let needed = d.projects[other_project].projects_needed[project];
+                            if self.teams[t].project_count[project] >= needed && old_project_count < needed {
+                                change_production = true;
+                                break;
                             }
+                        }
+
+                        if change_production {
+                            self.player_ai_make_production_dirty(p);
                         }
                     }
                 }
@@ -1125,10 +1055,8 @@ impl Game {
                 return 0;
             }
 
-            if count < k_project.victory_threshold[victory] {
-                if k_project.success_rate > 0 {
-                    success_rate -= k_project.success_rate * (k_project.victory_threshold[victory] - count);
-                }
+            if count < k_project.victory_threshold[victory] && k_project.success_rate > 0 {
+                success_rate -= k_project.success_rate * (k_project.victory_threshold[victory] - count);
             }
         }
 
@@ -1198,10 +1126,8 @@ impl Game {
                 for &u in &self.players[p].units {
                     let owner = self.map.plots[self.unit_plot(u)].owner;
                     if let Some(owner) = owner {
-                        if self.unit_is_spy(u) {
-                            if !self.player_can_spies_enter_borders(p, owner) {
-                                units.push(u);
-                            }
+                        if self.unit_is_spy(u) && !self.player_can_spies_enter_borders(p, owner) {
+                            units.push(u);
                         }
                     }
                 }

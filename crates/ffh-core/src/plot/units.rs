@@ -61,18 +61,12 @@ impl Game {
             let loop_unit = units[i];
             let mut erased = false;
 
-            if self.units.contains(loop_unit) {
-                if self.unit_at_plot(loop_unit, p) {
-                    if !self.unit_is_cargo(loop_unit) {
-                        if !self.unit_is_combat(loop_unit) {
-                            if !self.plot_is_valid_domain_for_location(p, loop_unit)
-                                || !self.unit_can_enter_area(loop_unit, self.plot_get_team(p), self.map.plots[p].area, false)
-                            {
-                                if !self.unit_jump_to_nearest_valid_plot(loop_unit) {
-                                    erased = true;
-                                }
-                            }
-                        }
+            if self.units.contains(loop_unit) && self.unit_at_plot(loop_unit, p) && !self.unit_is_cargo(loop_unit) && !self.unit_is_combat(loop_unit) {
+                if !self.plot_is_valid_domain_for_location(p, loop_unit)
+                    || !self.unit_can_enter_area(loop_unit, self.plot_get_team(p), self.map.plots[p].area, false)
+                {
+                    if !self.unit_jump_to_nearest_valid_plot(loop_unit) {
+                        erased = true;
                     }
                 }
             }
@@ -90,23 +84,17 @@ impl Game {
                 let loop_unit = units[i];
                 let mut erased = false;
 
-                if self.units.contains(loop_unit) {
-                    if self.unit_at_plot(loop_unit, p) {
-                        if !self.unit_is_combat(loop_unit) {
-                            let plot_team = self.plot_get_team(p);
-                            let unit_team = self.unit_get_team(loop_unit);
-                            if Some(unit_team) != plot_team
-                                && plot_team.map_or(true, |t| !self.teams[t].vassal[unit_team])
-                            {
-                                if self.plot_is_visible_enemy_unit_for_unit(p, loop_unit) {
-                                    // `isOwned()` holds, so the plot has a team.
-                                    let plot_team = plot_team.expect("CvPlot::verifyUnitValidPlot: owned plot without a team");
-                                    if !self.unit_is_invisible(loop_unit, plot_team, true) {
-                                        if !self.unit_jump_to_nearest_valid_plot(loop_unit) {
-                                            erased = true;
-                                        }
-                                    }
-                                }
+                if self.units.contains(loop_unit) && self.unit_at_plot(loop_unit, p) && !self.unit_is_combat(loop_unit) {
+                    let plot_team = self.plot_get_team(p);
+                    let unit_team = self.unit_get_team(loop_unit);
+                    if Some(unit_team) != plot_team
+                        && plot_team.map_or(true, |t| !self.teams[t].vassal[unit_team])
+                    {
+                        if self.plot_is_visible_enemy_unit_for_unit(p, loop_unit) {
+                            // `isOwned()` holds, so the plot has a team.
+                            let plot_team = plot_team.expect("CvPlot::verifyUnitValidPlot: owned plot without a team");
+                            if !self.unit_is_invisible(loop_unit, plot_team, true) && !self.unit_jump_to_nearest_valid_plot(loop_unit) {
+                                erased = true;
                             }
                         }
                     }
@@ -190,51 +178,49 @@ impl Game {
         for &loop_unit in units {
             let loop_owner = self.units[loop_unit].owner;
 
-            if owner.map_or(true, |o| loop_owner == o) {
-                if attacking_team.map_or(true, |at| !self.unit_is_invisible(loop_unit, at, true)) {
-                    if !test_at_war
+            if owner.map_or(true, |o| loop_owner == o) && attacking_team.map_or(true, |at| !self.unit_is_invisible(loop_unit, at, true)) {
+                if !test_at_war
+                    || attacking_team.is_none()
+                    || self.unit_is_enemy(loop_unit, attacking_team, Some(p))
+                    || attacker.is_some_and(|a| self.unit_is_enemy(a, Some(self.players[loop_owner].team), Some(p)))
+                {
+                    if !test_potential_enemy
                         || attacking_team.is_none()
-                        || self.unit_is_enemy(loop_unit, attacking_team, Some(p))
-                        || attacker.is_some_and(|a| self.unit_is_enemy(a, Some(self.players[loop_owner].team), Some(p)))
+                        || self.unit_is_potential_enemy(loop_unit, attacking_team, Some(p))
+                        || attacker.is_some_and(|a| self.unit_is_potential_enemy(a, Some(self.players[loop_owner].team), Some(p)))
                     {
-                        if !test_potential_enemy
-                            || attacking_team.is_none()
-                            || self.unit_is_potential_enemy(loop_unit, attacking_team, Some(p))
-                            || attacker.is_some_and(|a| self.unit_is_potential_enemy(a, Some(self.players[loop_owner].team), Some(p)))
-                        {
-                            if !test_can_move || (self.unit_can_move(loop_unit) && !self.unit_is_cargo(loop_unit)) {
-                                if attacker.map_or(true, |a| {
-                                    self.unit_get_domain_type(a) != DomainType::DOMAIN_AIR
-                                        || self.units[loop_unit].damage < self.unit_air_combat_limit(a)
-                                }) {
-                                    //FfH: Modified by Kael 10/28/2008
-                                    let targets_weakest = match attacker {
-                                        Some(a) => {
-                                            self.unit_is_target_weakest_unit(a)
-                                                && self.unit_get_domain_type(a) == self.unit_get_domain_type(loop_unit)
-                                                && self.unit_base_combat_str_defense(loop_unit) != 0
-                                                && no_guard
+                        if !test_can_move || (self.unit_can_move(loop_unit) && !self.unit_is_cargo(loop_unit)) {
+                            if attacker.map_or(true, |a| {
+                                self.unit_get_domain_type(a) != DomainType::DOMAIN_AIR
+                                    || self.units[loop_unit].damage < self.unit_air_combat_limit(a)
+                            }) {
+                                //FfH: Modified by Kael 10/28/2008
+                                let targets_weakest = match attacker {
+                                    Some(a) => {
+                                        self.unit_is_target_weakest_unit(a)
+                                            && self.unit_get_domain_type(a) == self.unit_get_domain_type(loop_unit)
+                                            && self.unit_base_combat_str_defense(loop_unit) != 0
+                                            && no_guard
+                                    }
+                                    None => false,
+                                };
+                                if let (true, Some(a)) = (targets_weakest, attacker) {
+                                    if let Some(best) = best_unit {
+                                        if self.unit_get_domain_type(a) != self.unit_get_domain_type(best)
+                                            || self.unit_base_combat_str_defense(best) == 0
+                                        {
+                                            best_unit = None;
                                         }
-                                        None => false,
-                                    };
-                                    if let (true, Some(a)) = (targets_weakest, attacker) {
-                                        if let Some(best) = best_unit {
-                                            if self.unit_get_domain_type(a) != self.unit_get_domain_type(best)
-                                                || self.unit_base_combat_str_defense(best) == 0
-                                            {
-                                                best_unit = None;
-                                            }
-                                        }
-                                        if best_unit.map_or(true, |best| self.unit_is_better_defender_than(best, Some(loop_unit), attacker)) {
-                                            best_unit = Some(loop_unit);
-                                        }
-                                    } else if self.unit_is_better_defender_than(loop_unit, best_unit, attacker)
-                                        && attacker.map_or(true, |a| self.units[a].owner != loop_owner)
-                                    {
+                                    }
+                                    if best_unit.map_or(true, |best| self.unit_is_better_defender_than(best, Some(loop_unit), attacker)) {
                                         best_unit = Some(loop_unit);
                                     }
-                                    //FfH: End Modify
+                                } else if self.unit_is_better_defender_than(loop_unit, best_unit, attacker)
+                                    && attacker.map_or(true, |a| self.units[a].owner != loop_owner)
+                                {
+                                    best_unit = Some(loop_unit);
                                 }
+                                //FfH: End Modify
                             }
                         }
                     }
@@ -415,10 +401,8 @@ impl Game {
             return move_denominator;
         }
 
-        if self.unit_is_human(unit) {
-            if !self.map.plots[p].revealed[self.unit_get_team(unit)] {
-                return self.unit_max_moves(unit);
-            }
+        if self.unit_is_human(unit) && !self.map.plots[p].revealed[self.unit_get_team(unit)] {
+            return self.unit_max_moves(unit);
         }
 
         if !self.plot_is_valid_domain_for_location(from_plot, unit) {
@@ -690,20 +674,18 @@ impl Game {
                 }
 
                 // (The plot's team is its owner's: `defender`.)
-                if self.plot_get_team(loop_plot) == Some(defender) {
-                    if !self.plot_any_unit(loop_plot, |u| self.unit_is_enemy_of(u, defender, false)) {
-                        let mut modifier = 0;
-                        let info = &d.improvements[improvement];
-                        if dx == 0 && dy == 0 {
-                            if !exclude_center {
-                                modifier = info.defense_modifier;
-                            }
-                        } else if dx.abs() <= info.range && dy.abs() <= info.range {
-                            modifier = info.range_defense_modifier;
+                if self.plot_get_team(loop_plot) == Some(defender) && !self.plot_any_unit(loop_plot, |u| self.unit_is_enemy_of(u, defender, false)) {
+                    let mut modifier = 0;
+                    let info = &d.improvements[improvement];
+                    if dx == 0 && dy == 0 {
+                        if !exclude_center {
+                            modifier = info.defense_modifier;
                         }
-                        if modifier > best_modifier {
-                            best_modifier = modifier;
-                        }
+                    } else if dx.abs() <= info.range && dy.abs() <= info.range {
+                        modifier = info.range_defense_modifier;
+                    }
+                    if modifier > best_modifier {
+                        best_modifier = modifier;
                     }
                 }
             }
@@ -745,10 +727,8 @@ impl Game {
     /// C++ `CvPlot::isEspionageCounterSpy`.
     pub fn plot_is_espionage_counter_spy(&self, p: PlotIdx, team: TeamId) -> bool {
         if let Some(city) = self.map.plots[p].plot_city {
-            if self.city_team(city) == team {
-                if self.cities[city].espionage_defense_modifier > 0 {
-                    return true;
-                }
+            if self.city_team(city) == team && self.cities[city].espionage_defense_modifier > 0 {
+                return true;
             }
         }
 
@@ -779,14 +759,12 @@ impl Game {
 
                 let loop_city = self.map.plots[loop_plot].plot_city;
 
-                if loop_city.is_none() {
-                    if !self.plot_is_water(loop_plot) && !self.plot_is_impassable(loop_plot) {
-                        if self.map.plots[loop_plot].feature_type.map_or(true, |f| !d.features[f].nuke_immune) {
-                            if self.soren_rand_num(100, "Nuke Fallout") < d.defines.nuke_fallout_prob {
-                                self.plot_set_improvement_type(loop_plot, None);
-                                self.plot_set_feature_type(loop_plot, opt_from_i32(d.defines.nuke_feature));
-                            }
-                        }
+                if loop_city.is_none() && !self.plot_is_water(loop_plot) && !self.plot_is_impassable(loop_plot) {
+                    if self.map.plots[loop_plot].feature_type.map_or(true, |f| !d.features[f].nuke_immune)
+                        && self.soren_rand_num(100, "Nuke Fallout") < d.defines.nuke_fallout_prob
+                    {
+                        self.plot_set_improvement_type(loop_plot, None);
+                        self.plot_set_feature_type(loop_plot, opt_from_i32(d.defines.nuke_feature));
                     }
                 }
 
@@ -797,37 +775,33 @@ impl Game {
                         continue;
                     }
 
-                    if Some(loop_unit) != nuke_unit {
-                        if !self.unit_is_nuke_immune(loop_unit) && !self.units[loop_unit].death_delay {
-                            // The two draws in source order (C++ leaves the operand order of
-                            // `+` unspecified; MSVC evaluates left to right).
-                            let damage_rand_1 = self.soren_rand_num(d.defines.nuke_unit_damage_rand_1, "Nuke Damage 1");
-                            let damage_rand_2 = self.soren_rand_num(d.defines.nuke_unit_damage_rand_2, "Nuke Damage 2");
-                            let mut nuke_damage = d.defines.nuke_unit_damage_base + damage_rand_1 + damage_rand_2;
+                    if Some(loop_unit) != nuke_unit && !self.unit_is_nuke_immune(loop_unit) && !self.units[loop_unit].death_delay {
+                        // The two draws in source order (C++ leaves the operand order of
+                        // `+` unspecified; MSVC evaluates left to right).
+                        let damage_rand_1 = self.soren_rand_num(d.defines.nuke_unit_damage_rand_1, "Nuke Damage 1");
+                        let damage_rand_2 = self.soren_rand_num(d.defines.nuke_unit_damage_rand_2, "Nuke Damage 2");
+                        let mut nuke_damage = d.defines.nuke_unit_damage_base + damage_rand_1 + damage_rand_2;
 
-                            if let Some(city) = loop_city {
-                                nuke_damage *= (self.cities[city].nuke_modifier + 100).max(0);
-                                nuke_damage /= 100;
-                            }
+                        if let Some(city) = loop_city {
+                            nuke_damage *= (self.cities[city].nuke_modifier + 100).max(0);
+                            nuke_damage /= 100;
+                        }
 
-                            if self.unit_can_fight(loop_unit) || self.unit_air_base_combat_str(loop_unit) > 0 {
-                                self.unit_change_damage(loop_unit, nuke_damage, nuke_owner);
-                            } else if nuke_damage >= d.defines.nuke_non_combat_death_threshold {
-                                self.unit_kill(loop_unit, false, nuke_owner);
-                            }
+                        if self.unit_can_fight(loop_unit) || self.unit_air_base_combat_str(loop_unit) > 0 {
+                            self.unit_change_damage(loop_unit, nuke_damage, nuke_owner);
+                        } else if nuke_damage >= d.defines.nuke_non_combat_death_threshold {
+                            self.unit_kill(loop_unit, false, nuke_owner);
                         }
                     }
                 }
 
                 if let Some(city) = loop_city {
                     for building in d.buildings.keys() {
-                        if self.cities[city].num_real_building[building] > 0 {
-                            if !d.buildings[building].nuke_immune {
-                                if self.soren_rand_num(100, "Building Nuked") < d.defines.nuke_building_destruction_prob {
-                                    let num = self.cities[city].num_real_building[building];
-                                    self.city_set_num_real_building(city, building, num - 1);
-                                }
-                            }
+                        if self.cities[city].num_real_building[building] > 0
+                            && !d.buildings[building].nuke_immune && self.soren_rand_num(100, "Building Nuked") < d.defines.nuke_building_destruction_prob
+                        {
+                            let num = self.cities[city].num_real_building[building];
+                            self.city_set_num_real_building(city, building, num - 1);
                         }
                     }
 
@@ -1040,30 +1014,30 @@ impl Game {
             let next_dx = displacements[i][0];
             let next_dy = displacements[i][1];
             // make sure we change plots
-            if (next_dx != dx || next_dy != dy) && all_closest[i] == closest {
-                if self.plot_can_see_displacement_plot(p, team, next_dx, next_dy, original_dx, original_dy, false, false) {
-                    let from_level = self.plot_see_from_level(p, team);
-                    let through_level = self.plot_see_through_level(plot);
-                    if outer_ring {
-                        // check strictly higher level
-                        // (the recursive call above found this plot, so it exists)
-                        let pass_through_plot = self
-                            .plot_xy(x, y, next_dx, next_dy)
-                            .expect("CvPlot::canSeeDisplacementPlot: pass-through plot");
-                        let pass_through_level = self.plot_see_through_level(pass_through_plot);
-                        if from_level >= pass_through_level {
-                            // either we can see through to it or it is high enough to see from far
-                            if from_level > pass_through_level || self.plot_see_from_level(plot, team) > from_level {
-                                return true;
-                            }
+            if (next_dx != dx || next_dy != dy) && all_closest[i] == closest
+                && self.plot_can_see_displacement_plot(p, team, next_dx, next_dy, original_dx, original_dy, false, false)
+            {
+                let from_level = self.plot_see_from_level(p, team);
+                let through_level = self.plot_see_through_level(plot);
+                if outer_ring {
+                    // check strictly higher level
+                    // (the recursive call above found this plot, so it exists)
+                    let pass_through_plot = self
+                        .plot_xy(x, y, next_dx, next_dy)
+                        .expect("CvPlot::canSeeDisplacementPlot: pass-through plot");
+                    let pass_through_level = self.plot_see_through_level(pass_through_plot);
+                    if from_level >= pass_through_level {
+                        // either we can see through to it or it is high enough to see from far
+                        if from_level > pass_through_level || self.plot_see_from_level(plot, team) > from_level {
+                            return true;
                         }
-                    } else if from_level >= through_level {
-                        // we can clearly see this level
-                        return true;
-                    } else if first_plot {
-                        // we can also see it if it is the first plot that is too tall
-                        return true;
                     }
+                } else if from_level >= through_level {
+                    // we can clearly see this level
+                    return true;
+                } else if first_plot {
+                    // we can also see it if it is the first plot that is too tall
+                    return true;
                 }
             }
         }
@@ -1092,13 +1066,11 @@ impl Game {
 
             //FfH: Added by Kael 11/03/2007
             for religion in d.religions.keys() {
-                if self.cities[city].has_religion[religion] {
-                    if d.religions[religion].update_sight {
-                        if let Some(holy_city) = self.get_holy_city(religion) {
-                            if self.player_get_state_religion(self.cities[holy_city].owner) == Some(religion) {
-                                let holy_team = self.city_team(holy_city);
-                                self.plot_change_adjacent_sight(p, holy_team, plot_visibility_range, increment, None, update_plot_groups);
-                            }
+                if self.cities[city].has_religion[religion] && d.religions[religion].update_sight {
+                    if let Some(holy_city) = self.get_holy_city(religion) {
+                        if self.player_get_state_religion(self.cities[holy_city].owner) == Some(religion) {
+                            let holy_team = self.city_team(holy_city);
+                            self.plot_change_adjacent_sight(p, holy_team, plot_visibility_range, increment, None, update_plot_groups);
                         }
                     }
                 }
@@ -1248,11 +1220,9 @@ impl Game {
             let mut found_valid = false;
 
             for &loop_unit in &plot.units {
-                if self.units[loop_unit].owner == player {
-                    if self.unit_get_trigger_value(loop_unit, trigger, Some(p), false) != -1 {
-                        found_valid = true;
-                        break;
-                    }
+                if self.units[loop_unit].owner == player && self.unit_get_trigger_value(loop_unit, trigger, Some(p), false) != -1 {
+                    found_valid = true;
+                    break;
                 }
             }
 
@@ -1291,10 +1261,8 @@ impl Game {
                     return false;
                 }
             }
-        } else if k_event.feature_change < 0 {
-            if plot.feature_type.is_none() {
-                return false;
-            }
+        } else if k_event.feature_change < 0 && plot.feature_type.is_none() {
+            return false;
         }
 
         if k_event.improvement_change > 0 {
@@ -1303,10 +1271,8 @@ impl Game {
                     return false;
                 }
             }
-        } else if k_event.improvement_change < 0 {
-            if plot.improvement_type.is_none() {
-                return false;
-            }
+        } else if k_event.improvement_change < 0 && plot.improvement_type.is_none() {
+            return false;
         }
 
         //FfH: Modified by Kael 03/19/2008 (the BTS bonus checks are commented out)
@@ -1379,10 +1345,8 @@ impl Game {
         let city = plot.plot_city;
         let (x, y) = (plot.x, plot.y);
 
-        if info.is_prereq_religion {
-            if city.map_or(true, |c| self.city_religion_count(c) > 0) {
-                return false;
-            }
+        if info.is_prereq_religion && city.map_or(true, |c| self.city_religion_count(c) > 0) {
+            return false;
         }
 
         if let Some(religion) = info.prereq_religion {
@@ -1403,11 +1367,9 @@ impl Game {
 
                 for i in 0..DirectionType::NUM {
                     if let Some(loop_plot) = self.plot_direction(x, y, DirectionType::from_usize(i)) {
-                        if self.plot_is_water(loop_plot) {
-                            if self.area_get_num_total_bonuses(assigned_area(self, loop_plot)) > 0 {
-                                valid = true;
-                                break;
-                            }
+                        if self.plot_is_water(loop_plot) && self.area_get_num_total_bonuses(assigned_area(self, loop_plot)) > 0 {
+                            valid = true;
+                            break;
                         }
                     }
                 }

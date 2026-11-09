@@ -220,26 +220,24 @@ impl Game {
     pub fn ev_begin_game_turn(&mut self, game_turn: i32) {
         let d = self.d;
         let orthus_turn = 75;
-        if !self.is_unit_class_maxed_out(d.t::<UnitClassType>("UNITCLASS_ORTHUS"), 0) {
-            if !self.is_option(GameOptionType::GAMEOPTION_NO_ORTHUS) {
-                let mut orthus = false;
-                let speed = self.game_speed_type();
-                if speed == d.t::<GameSpeedType>("GAMESPEED_QUICK") && game_turn >= py_div(orthus_turn, 3) * 2 {
-                    orthus = true;
-                }
-                if speed == d.t::<GameSpeedType>("GAMESPEED_NORMAL") && game_turn >= orthus_turn {
-                    orthus = true;
-                }
-                if speed == d.t::<GameSpeedType>("GAMESPEED_EPIC") && game_turn >= py_div(orthus_turn * 3, 2) {
-                    orthus = true;
-                }
-                if speed == d.t::<GameSpeedType>("GAMESPEED_MARATHON") && game_turn >= orthus_turn * 3 {
-                    orthus = true;
-                }
-                if orthus {
-                    self.cf_add_unit(d.t::<UnitType>("UNIT_ORTHUS"));
-                    // UI: cf.addPopup(TXT_KEY_POPUP_ORTHUS_CREATION).
-                }
+        if !self.is_unit_class_maxed_out(d.t::<UnitClassType>("UNITCLASS_ORTHUS"), 0) && !self.is_option(GameOptionType::GAMEOPTION_NO_ORTHUS) {
+            let mut orthus = false;
+            let speed = self.game_speed_type();
+            if speed == d.t::<GameSpeedType>("GAMESPEED_QUICK") && game_turn >= py_div(orthus_turn, 3) * 2 {
+                orthus = true;
+            }
+            if speed == d.t::<GameSpeedType>("GAMESPEED_NORMAL") && game_turn >= orthus_turn {
+                orthus = true;
+            }
+            if speed == d.t::<GameSpeedType>("GAMESPEED_EPIC") && game_turn >= py_div(orthus_turn * 3, 2) {
+                orthus = true;
+            }
+            if speed == d.t::<GameSpeedType>("GAMESPEED_MARATHON") && game_turn >= orthus_turn * 3 {
+                orthus = true;
+            }
+            if orthus {
+                self.cf_add_unit(d.t::<UnitType>("UNIT_ORTHUS"));
+                // UI: cf.addPopup(TXT_KEY_POPUP_ORTHUS_CREATION).
             }
         }
 
@@ -304,12 +302,10 @@ impl Game {
 
         // Better AI: Doviello `startConquestMode()` is commented out in the Python.
 
-        if self.players[p].traits[d.t::<TraitType>("TRAIT_INSANE")] {
-            if self.soren_rand_num(1000, "Insane") < 20 {
-                let trigger = d.t::<EventTriggerType>("EVENTTRIGGER_TRAIT_INSANE");
-                // Python passes -1 (not INVALID_PLOT_COORD) for the plot coordinates.
-                self.player_init_triggered_data(p, trigger, true, None, -1, -1, Some(p), None, None, None, None, None);
-            }
+        if self.players[p].traits[d.t::<TraitType>("TRAIT_INSANE")] && self.soren_rand_num(1000, "Insane") < 20 {
+            let trigger = d.t::<EventTriggerType>("EVENTTRIGGER_TRAIT_INSANE");
+            // Python passes -1 (not INVALID_PLOT_COORD) for the plot coordinates.
+            self.player_init_triggered_data(p, trigger, true, None, -1, -1, Some(p), None, None, None, None, None);
         }
 
         if self.players[p].traits[d.t::<TraitType>("TRAIT_ADAPTIVE")] {
@@ -332,18 +328,14 @@ impl Game {
             }
         }
 
-        if self.players[p].human {
-            if self.players[p].traits[d.t::<TraitType>("TRAIT_BARBARIAN")] {
-                let barbarian_team = self.players[self.barbarian_player()].team;
-                let team = self.players[p].team;
-                if !self.teams[barbarian_team].at_war[team] {
-                    let runner_up = self.rank_player[1];
-                    if 2 * self.player_score[p] >= 3 * self.player_score[runner_up] {
-                        if game_turn >= 20 {
-                            self.team_declare_war(barbarian_team, team, false, Some(WarPlanType::WARPLAN_TOTAL));
-                            // UI: popup TXT_KEY_POPUP_BARBARIAN_DECLARE_WAR for the active player.
-                        }
-                    }
+        if self.players[p].human && self.players[p].traits[d.t::<TraitType>("TRAIT_BARBARIAN")] {
+            let barbarian_team = self.players[self.barbarian_player()].team;
+            let team = self.players[p].team;
+            if !self.teams[barbarian_team].at_war[team] {
+                let runner_up = self.rank_player[1];
+                if 2 * self.player_score[p] >= 3 * self.player_score[runner_up] && game_turn >= 20 {
+                    self.team_declare_war(barbarian_team, team, false, Some(WarPlanType::WARPLAN_TOTAL));
+                    // UI: popup TXT_KEY_POPUP_BARBARIAN_DECLARE_WAR for the active player.
                 }
             }
         }
@@ -479,13 +471,13 @@ impl Game {
         // city of the receiving player). Card: The Infernal Gate Opens (docs/CARDS.md): each Manes
         // goes to the Infernals or the Court of Mammon (`manes_civ`), and a city the Court founded
         // gives none, as an Infernal one.
-        if self.players[original_owner].alignment == Some(d.t::<AlignmentType>("ALIGNMENT_EVIL")) {
-            if !new_civs_2::infernal_population(d, self.player_get_civilization_type(original_owner)) {
-                for _ in 0..self.cities[c].population {
-                    let (plot, owner) = (self.city_plot(c), self.cities[c].owner);
-                    let civ = new_civs_2::manes_civ(self);
-                    self.cf_gift_unit(manes, civ, 0, Some(plot), Some(owner));
-                }
+        if self.players[original_owner].alignment == Some(d.t::<AlignmentType>("ALIGNMENT_EVIL"))
+            && !new_civs_2::infernal_population(d, self.player_get_civilization_type(original_owner))
+        {
+            for _ in 0..self.cities[c].population {
+                let (plot, owner) = (self.city_plot(c), self.cities[c].owner);
+                let civ = new_civs_2::manes_civ(self);
+                self.cf_gift_unit(manes, civ, 0, Some(plot), Some(owner));
             }
         }
 
@@ -584,28 +576,26 @@ impl Game {
             }
         }
 
-        if self.player_get_civilization_type(self.cities[c].owner) == Some(d.t::<CivilizationType>("CIVILIZATION_MERCURIANS")) {
-            if self.cities[c].has_religion[veil] {
-                self.city_set_has_religion(c, veil, false, true, true);
-            }
+        if self.player_get_civilization_type(self.cities[c].owner) == Some(d.t::<CivilizationType>("CIVILIZATION_MERCURIANS"))
+            && self.cities[c].has_religion[veil]
+        {
+            self.city_set_has_religion(c, veil, false, true, true);
         }
 
         if self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_SHRINE_OF_SIRONA")] > 0 {
             self.players[p].feat_accomplished[FeatType::FEAT_HEAL_UNIT_PER_TURN] = true;
         }
 
-        if self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_THE_DRAGONS_HORDE")] > 0 {
-            if self.player_is_barbarian(p) {
-                if self.soren_rand_num(100, "Bob") <= d.handicaps[self.handicap].lair_spawn_rate {
-                    let mut unit = d.t::<UnitType>("UNIT_DISCIPLE_OF_ACHERON");
-                    let team = self.players[p].team;
-                    if self.team_is_has_tech(team, Some(d.t::<TechType>("TECH_SORCERY"))) {
-                        unit = d.t::<UnitType>("UNIT_SON_OF_THE_INFERNO");
-                    }
-                    let (x, y) = self.map.xy(plot);
-                    self.player_init_unit(p, unit, x, y, None, Some(DirectionType::DIRECTION_SOUTH));
-                }
+        if self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_THE_DRAGONS_HORDE")] > 0
+            && self.player_is_barbarian(p) && self.soren_rand_num(100, "Bob") <= d.handicaps[self.handicap].lair_spawn_rate
+        {
+            let mut unit = d.t::<UnitType>("UNIT_DISCIPLE_OF_ACHERON");
+            let team = self.players[p].team;
+            if self.team_is_has_tech(team, Some(d.t::<TechType>("TECH_SORCERY"))) {
+                unit = d.t::<UnitType>("UNIT_SON_OF_THE_INFERNO");
             }
+            let (x, y) = self.map.xy(plot);
+            self.player_init_unit(p, unit, x, y, None, Some(DirectionType::DIRECTION_SOUTH));
         }
 
         // UI: CvAdvisorUtils.cityAdvise(pCity, iPlayer) (advisor popups for humans).
@@ -681,16 +671,16 @@ impl Game {
         }
 
         let strong = d.t::<PromotionType>("PROMOTION_STRONG");
-        if self.units[u].has_promotion[d.t::<PromotionType>("PROMOTION_ELEMENTAL")] {
-            if self.player_get_num_building(p, d.t::<BuildingType>("BUILDING_TOWER_OF_THE_ELEMENTS")) > 0 {
-                self.unit_set_has_promotion(u, strong, true);
-            }
+        if self.units[u].has_promotion[d.t::<PromotionType>("PROMOTION_ELEMENTAL")]
+            && self.player_get_num_building(p, d.t::<BuildingType>("BUILDING_TOWER_OF_THE_ELEMENTS")) > 0
+        {
+            self.unit_set_has_promotion(u, strong, true);
         }
 
-        if self.units[u].has_promotion[d.t::<PromotionType>("PROMOTION_UNDEAD")] {
-            if self.player_get_num_building(p, d.t::<BuildingType>("BUILDING_TOWER_OF_NECROMANCY")) > 0 {
-                self.unit_set_has_promotion(u, strong, true);
-            }
+        if self.units[u].has_promotion[d.t::<PromotionType>("PROMOTION_UNDEAD")]
+            && self.player_get_num_building(p, d.t::<BuildingType>("BUILDING_TOWER_OF_NECROMANCY")) > 0
+        {
+            self.unit_set_has_promotion(u, strong, true);
         }
 
         // Scenario: sf.onUnitCreated(unit).
@@ -802,15 +792,11 @@ impl Game {
             }
         }
 
-        if self.city_num_real_family(c, d.t::<BuildingType>("BUILDING_ASYLUM")) > 0 {
-            if self.unit_is_alive(u) {
-                if !is_world_unit_class(d, self.unit_get_unit_class_type(u)) {
-                    if self.soren_rand_num(100, "Bob") <= 10 {
-                        self.unit_set_has_promotion(u, d.t::<PromotionType>("PROMOTION_CRAZED"), true);
-                        self.unit_set_has_promotion(u, d.t::<PromotionType>("PROMOTION_ENRAGED"), true);
-                    }
-                }
-            }
+        if self.city_num_real_family(c, d.t::<BuildingType>("BUILDING_ASYLUM")) > 0
+            && self.unit_is_alive(u) && !is_world_unit_class(d, self.unit_get_unit_class_type(u)) && self.soren_rand_num(100, "Bob") <= 10
+        {
+            self.unit_set_has_promotion(u, d.t::<PromotionType>("PROMOTION_CRAZED"), true);
+            self.unit_set_has_promotion(u, d.t::<PromotionType>("PROMOTION_ENRAGED"), true);
         }
 
         if self.units[u].unit_type == d.t::<UnitType>("UNIT_ACHERON") {
@@ -833,16 +819,16 @@ impl Game {
             // UI: cf.addPopup(TXT_KEY_POPUP_ACHERON_CREATION).
         }
 
-        if self.units[u].has_promotion[d.t::<PromotionType>("PROMOTION_DWARF")] {
-            if self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_BREWERY")] > 0 {
-                self.unit_change_experience(u, 2, -1, false, false, false);
-            }
+        if self.units[u].has_promotion[d.t::<PromotionType>("PROMOTION_DWARF")]
+            && self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_BREWERY")] > 0
+        {
+            self.unit_change_experience(u, 2, -1, false, false, false);
         }
 
-        if self.units[u].has_promotion[d.t::<PromotionType>("PROMOTION_DEMON")] {
-            if self.city_num_real_family(c, d.t::<BuildingType>("BUILDING_DEMONS_ALTAR")) > 0 {
-                self.unit_change_experience(u, 2, -1, false, false, false);
-            }
+        if self.units[u].has_promotion[d.t::<PromotionType>("PROMOTION_DEMON")]
+            && self.city_num_real_family(c, d.t::<BuildingType>("BUILDING_DEMONS_ALTAR")) > 0
+        {
+            self.unit_change_experience(u, 2, -1, false, false, false);
         }
 
         if self.units[u].free_promotion_pick < free_promotion_pick {
@@ -906,16 +892,16 @@ impl Game {
 
             if let Some(plot) = self.map.plot_xy(x, y) {
                 if let Some(city) = self.map.plots[plot].plot_city {
-                    if self.cities[city].num_real_building[d.t::<BuildingType>("BUILDING_MOKKAS_CAULDRON")] > 0 {
-                        if self.cities[city].owner == self.units[u].owner {
-                            if let Some(unholy) = self.cf_get_unholy_version(u) {
-                                let (cx, cy) = (self.cities[city].x, self.cities[city].y);
-                                let new_unit = self.player_init_unit(p, unholy, cx, cy, None, Some(DirectionType::DIRECTION_SOUTH));
-                                self.unit_set_has_promotion(new_unit, d.t::<PromotionType>("PROMOTION_DEMON"), true);
-                                self.unit_set_damage(new_unit, 50, None);
-                                self.unit_finish_moves(new_unit);
-                                self.ev_msg(p, "TXT_KEY_MESSAGE_MOKKAS_CAULDRON");
-                            }
+                    if self.cities[city].num_real_building[d.t::<BuildingType>("BUILDING_MOKKAS_CAULDRON")] > 0
+                        && self.cities[city].owner == self.units[u].owner
+                    {
+                        if let Some(unholy) = self.cf_get_unholy_version(u) {
+                            let (cx, cy) = (self.cities[city].x, self.cities[city].y);
+                            let new_unit = self.player_init_unit(p, unholy, cx, cy, None, Some(DirectionType::DIRECTION_SOUTH));
+                            self.unit_set_has_promotion(new_unit, d.t::<PromotionType>("PROMOTION_DEMON"), true);
+                            self.unit_set_damage(new_unit, 50, None);
+                            self.unit_finish_moves(new_unit);
+                            self.ev_msg(p, "TXT_KEY_MESSAGE_MOKKAS_CAULDRON");
                         }
                     }
                 }
@@ -953,25 +939,23 @@ impl Game {
                 self.cf_gift_unit(angel, mercurians, xp, Some(plot), Some(p));
             }
 
-            if self.units[u].has_promotion[d.t::<PromotionType>("PROMOTION_SPIRIT_GUIDE")] {
-                if self.units[u].experience > 0 {
-                    let mut candidates = Vec::new();
-                    for loop_unit in self.ev_unit_list(p) {
-                        if self.unit_is_alive(loop_unit)
-                            && !self.unit_is_only_defensive(loop_unit)
-                            && !self.units[loop_unit].death_delay
-                        {
-                            candidates.push(loop_unit);
-                        }
+            if self.units[u].has_promotion[d.t::<PromotionType>("PROMOTION_SPIRIT_GUIDE")] && self.units[u].experience > 0 {
+                let mut candidates = Vec::new();
+                for loop_unit in self.ev_unit_list(p) {
+                    if self.unit_is_alive(loop_unit)
+                        && !self.unit_is_only_defensive(loop_unit)
+                        && !self.units[loop_unit].death_delay
+                    {
+                        candidates.push(loop_unit);
                     }
-                    if !candidates.is_empty() {
-                        let roll = self.soren_rand_num(candidates.len() as i32, "Spirit Guide");
-                        let target = candidates[py_list_index(roll, candidates.len())];
-                        let xp = py_div(self.units[u].experience, 2);
-                        self.unit_change_experience(target, xp, -1, false, false, false);
-                        self.unit_change_experience(u, xp * -1, -1, false, false, false);
-                        self.ev_msg(p, "TXT_KEY_MESSAGE_SPIRIT_GUIDE");
-                    }
+                }
+                if !candidates.is_empty() {
+                    let roll = self.soren_rand_num(candidates.len() as i32, "Spirit Guide");
+                    let target = candidates[py_list_index(roll, candidates.len())];
+                    let xp = py_div(self.units[u].experience, 2);
+                    self.unit_change_experience(target, xp, -1, false, false, false);
+                    self.unit_change_experience(u, xp * -1, -1, false, false, false);
+                    self.ev_msg(p, "TXT_KEY_MESSAGE_SPIRIT_GUIDE");
                 }
             }
         }
@@ -1028,16 +1012,14 @@ impl Game {
             crate::ffh::cards::world_spells_2::team_reveal_sites(self, team);
         }
 
-        if is("BUILDING_INFERNAL_GRIMOIRE") {
-            if self.soren_rand_num(100, "Bob") <= 20 {
-                if let Some(plot2) = self.cf_find_clear_plot(None, plot) {
-                    let barbarian = self.barbarian_player();
-                    let (x2, y2) = self.map.xy(plot2);
-                    let balor = d.t::<UnitType>("UNIT_BALOR");
-                    self.player_init_unit(barbarian, balor, x2, y2, None, Some(DirectionType::DIRECTION_NORTH));
-                    self.ev_msg(player, "TXT_KEY_MESSAGE_INFERNAL_GRIMOIRE_BALOR");
-                    // UI: popup TXT_KEY_POPUP_INFERNAL_GRIMOIRE_BALOR for the active player.
-                }
+        if is("BUILDING_INFERNAL_GRIMOIRE") && self.soren_rand_num(100, "Bob") <= 20 {
+            if let Some(plot2) = self.cf_find_clear_plot(None, plot) {
+                let barbarian = self.barbarian_player();
+                let (x2, y2) = self.map.xy(plot2);
+                let balor = d.t::<UnitType>("UNIT_BALOR");
+                self.player_init_unit(barbarian, balor, x2, y2, None, Some(DirectionType::DIRECTION_NORTH));
+                self.ev_msg(player, "TXT_KEY_MESSAGE_INFERNAL_GRIMOIRE_BALOR");
+                // UI: popup TXT_KEY_POPUP_INFERNAL_GRIMOIRE_BALOR for the active player.
             }
         }
 
@@ -1128,13 +1110,11 @@ impl Game {
             // UI: EFFECT_SNOWFALL.
         }
 
-        if is("BUILDING_GRAND_MENAGERIE") {
-            if self.players[player].human {
-                // Not a scenario.
-                let trophy = "TROPHY_FEAT_GRAND_MENAGERIE";
-                if !self.is_has_trophy(trophy) {
-                    self.change_trophy_value(trophy, 1);
-                }
+        if is("BUILDING_GRAND_MENAGERIE") && self.players[player].human {
+            // Not a scenario.
+            let trophy = "TROPHY_FEAT_GRAND_MENAGERIE";
+            if !self.is_has_trophy(trophy) {
+                self.change_trophy_value(trophy, 1);
             }
         }
 
@@ -1357,19 +1337,19 @@ impl Game {
         let d = self.d;
         let order = d.t::<ReligionType>("RELIGION_THE_ORDER");
         if religion == order && self.game_turn() != self.start_turn {
-            if self.player_get_state_religion(p) == Some(order) && self.cities[c].occupation_timer <= 0 {
-                if self.soren_rand_num(100, "Order Spawn") < d.defines.order_spawn_chance {
-                    let team = self.players[p].team;
-                    let unit = if self.team_is_has_tech(team, Some(d.t::<TechType>("TECH_FANATICISM"))) {
-                        self.ev_msg(p, "TXT_KEY_MESSAGE_ORDER_SPAWN_CRUSADER");
-                        d.t::<UnitType>("UNIT_CRUSADER")
-                    } else {
-                        self.ev_msg(p, "TXT_KEY_MESSAGE_ORDER_SPAWN_ACOLYTE");
-                        d.t::<UnitType>("UNIT_DISCIPLE_THE_ORDER")
-                    };
-                    let (x, y) = (self.cities[c].x, self.cities[c].y);
-                    self.player_init_unit(p, unit, x, y, None, Some(DirectionType::DIRECTION_SOUTH));
-                }
+            if self.player_get_state_religion(p) == Some(order) && self.cities[c].occupation_timer <= 0
+                && self.soren_rand_num(100, "Order Spawn") < d.defines.order_spawn_chance
+            {
+                let team = self.players[p].team;
+                let unit = if self.team_is_has_tech(team, Some(d.t::<TechType>("TECH_FANATICISM"))) {
+                    self.ev_msg(p, "TXT_KEY_MESSAGE_ORDER_SPAWN_CRUSADER");
+                    d.t::<UnitType>("UNIT_CRUSADER")
+                } else {
+                    self.ev_msg(p, "TXT_KEY_MESSAGE_ORDER_SPAWN_ACOLYTE");
+                    d.t::<UnitType>("UNIT_DISCIPLE_THE_ORDER")
+                };
+                let (x, y) = (self.cities[c].x, self.cities[c].y);
+                self.player_init_unit(p, unit, x, y, None, Some(DirectionType::DIRECTION_SOUTH));
             }
         }
     }
@@ -1489,10 +1469,8 @@ impl Game {
             if is_tech("TECH_BRONZE_WORKING") {
                 start = true;
             }
-        } else if is_civ("CIVILIZATION_CALABIM") {
-            if is_tech("TECH_FEUDALISM") {
-                start = true;
-            }
+        } else if is_civ("CIVILIZATION_CALABIM") && is_tech("TECH_FEUDALISM") {
+            start = true;
         }
         if is_civ("CIVILIZATION_CLAN_OF_EMBERS") && is_tech("TECH_MASONRY") {
             start = true;
@@ -1510,10 +1488,8 @@ impl Game {
             if is_tech("TECH_HORSEBACK_RIDING") {
                 start = true;
             }
-        } else if is_leader("LEADER_RHOANNA") {
-            if is_tech("TECH_STIRRUPS") {
-                start = true;
-            }
+        } else if is_leader("LEADER_RHOANNA") && is_tech("TECH_STIRRUPS") {
+            start = true;
         }
         const CIV_TECHS: [(&str, &str); 13] = [
             ("CIVILIZATION_HIPPUS", "TECH_STIRRUPS"),
@@ -1797,36 +1773,32 @@ impl Game {
         let timer = 40 + self.game_speed_type().i() * 20;
         for plot in self.map.plot_ids() {
             let mut valid = false;
-            if !self.plot_is_water(plot) {
-                if self.soren_rand_num(100, "The Deepening") < 25 {
-                    let terrain = self.map.plots[plot].terrain_type;
-                    if terrain == Some(snow) {
-                        valid = true;
-                    }
-                    if terrain == Some(tundra) {
-                        let turns = self.soren_rand_num(timer, "Bob") + 10;
-                        self.plot_set_temp_terrain_type(plot, snow, turns);
-                        valid = true;
-                    }
-                    if terrain == Some(grass) || terrain == Some(marsh) {
-                        let turns = self.soren_rand_num(timer, "Bob") + 10;
-                        self.plot_set_temp_terrain_type(plot, tundra, turns);
-                        valid = true;
-                    }
-                    if terrain == Some(plains) {
-                        let turns = self.soren_rand_num(timer, "Bob") + 10;
-                        self.plot_set_temp_terrain_type(plot, tundra, turns);
-                        valid = true;
-                    }
-                    if terrain == Some(desert) {
-                        let turns = self.soren_rand_num(timer, "Bob") + 10;
-                        self.plot_set_temp_terrain_type(plot, plains, turns);
-                    }
-                    if valid {
-                        if self.soren_rand_num(750, "The Deepening") < 10 {
-                            self.plot_set_feature_type(plot, Some(blizzard));
-                        }
-                    }
+            if !self.plot_is_water(plot) && self.soren_rand_num(100, "The Deepening") < 25 {
+                let terrain = self.map.plots[plot].terrain_type;
+                if terrain == Some(snow) {
+                    valid = true;
+                }
+                if terrain == Some(tundra) {
+                    let turns = self.soren_rand_num(timer, "Bob") + 10;
+                    self.plot_set_temp_terrain_type(plot, snow, turns);
+                    valid = true;
+                }
+                if terrain == Some(grass) || terrain == Some(marsh) {
+                    let turns = self.soren_rand_num(timer, "Bob") + 10;
+                    self.plot_set_temp_terrain_type(plot, tundra, turns);
+                    valid = true;
+                }
+                if terrain == Some(plains) {
+                    let turns = self.soren_rand_num(timer, "Bob") + 10;
+                    self.plot_set_temp_terrain_type(plot, tundra, turns);
+                    valid = true;
+                }
+                if terrain == Some(desert) {
+                    let turns = self.soren_rand_num(timer, "Bob") + 10;
+                    self.plot_set_temp_terrain_type(plot, plains, turns);
+                }
+                if valid && self.soren_rand_num(750, "The Deepening") < 10 {
+                    self.plot_set_feature_type(plot, Some(blizzard));
                 }
             }
         }
@@ -1839,10 +1811,8 @@ impl Game {
         let team = self.players[p].team;
         let barbarian_team = self.players[self.barbarian_player()].team;
         for loop_team in self.team_ids() {
-            if loop_team != team && loop_team != barbarian_team {
-                if self.team_is_alive(loop_team) && !self.team_is_a_vassal(loop_team) {
-                    self.team_declare_war(team, loop_team, false, Some(WarPlanType::WARPLAN_LIMITED));
-                }
+            if loop_team != team && loop_team != barbarian_team && self.team_is_alive(loop_team) && !self.team_is_a_vassal(loop_team) {
+                self.team_declare_war(team, loop_team, false, Some(WarPlanType::WARPLAN_LIMITED));
             }
         }
         for unit in self.ev_unit_list(p) {
@@ -1992,10 +1962,8 @@ impl Game {
                     valid = false;
                 }
             }
-            if valid {
-                if self.soren_rand_num(100, "Flames Spread") <= d.defines.flames_spread_chance {
-                    self.plot_set_improvement_type(best_plot, Some(d.t::<ImprovementType>("IMPROVEMENT_SMOKE")));
-                }
+            if valid && self.soren_rand_num(100, "Flames Spread") <= d.defines.flames_spread_chance {
+                self.plot_set_improvement_type(best_plot, Some(d.t::<ImprovementType>("IMPROVEMENT_SMOKE")));
             }
         }
         // UI: EFFECT_PILLAR_OF_FIRE.
@@ -2067,13 +2035,13 @@ impl Game {
         }
         if list_teams.len() >= 3 {
             for tech in d.techs.keys() {
-                if tech != arete && tech != mind_stapling && tech != hidden_paths && tech != infernal_pact && tech != seafaring {
-                    if !self.team_is_has_tech(team, Some(tech)) {
-                        let count = list_teams.iter().filter(|&&t| self.team_is_has_tech(t, Some(tech))).count();
-                        if count >= 3 {
-                            self.team_set_has_tech(team, tech, true, Some(p), false, true);
-                            self.ev_msg(p, "TXT_KEY_MESSAGE_EYES_AND_EARS_NETWORK_FREE_TECH");
-                        }
+                if tech != arete && tech != mind_stapling && tech != hidden_paths && tech != infernal_pact && tech != seafaring
+                    && !self.team_is_has_tech(team, Some(tech))
+                {
+                    let count = list_teams.iter().filter(|&&t| self.team_is_has_tech(t, Some(tech))).count();
+                    if count >= 3 {
+                        self.team_set_has_tech(team, tech, true, Some(p), false, true);
+                        self.ev_msg(p, "TXT_KEY_MESSAGE_EYES_AND_EARS_NETWORK_FREE_TECH");
                     }
                 }
             }

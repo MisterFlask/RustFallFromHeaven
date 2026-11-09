@@ -310,10 +310,8 @@ impl Game {
                 return false;
             }
         }
-        if info.prereq_slave_trade {
-            if !self.player_is_slave_trade(owner) {
-                return false;
-            }
+        if info.prereq_slave_trade && !self.player_is_slave_trade(owner) {
+            return false;
         }
         if d.units[unit.unit_type].equipment_promotion.is_some() {
             // C++ compares `getUnitClassPrereq()` (-1 when unset) with the unit's class.
@@ -321,25 +319,17 @@ impl Game {
                 return false;
             }
         }
-        if info.caster_min_level != 0 {
-            if unit.level < info.caster_min_level {
-                return false;
-            }
+        if info.caster_min_level != 0 && unit.level < info.caster_min_level {
+            return false;
         }
-        if info.caster_must_be_alive {
-            if !self.unit_is_alive(u) {
-                return false;
-            }
+        if info.caster_must_be_alive && !self.unit_is_alive(u) {
+            return false;
         }
-        if info.caster_no_duration {
-            if unit.duration != 0 {
-                return false;
-            }
+        if info.caster_no_duration && unit.duration != 0 {
+            return false;
         }
-        if self.players[owner].disable_spellcasting > 0 {
-            if !info.ability {
-                return false;
-            }
+        if self.players[owner].disable_spellcasting > 0 && !info.ability {
+            return false;
         }
         if let Some(promotion) = info.promotion_in_stack_prereq {
             if unit.has_promotion[promotion] {
@@ -347,10 +337,8 @@ impl Game {
             }
             let mut valid = false;
             for &loop_unit in &self.map.plots[plot()].units {
-                if self.units[loop_unit].has_promotion[promotion] {
-                    if owner == self.units[loop_unit].owner {
-                        valid = true;
-                    }
+                if self.units[loop_unit].has_promotion[promotion] && owner == self.units[loop_unit].owner {
+                    valid = true;
                 }
             }
             if !valid {
@@ -364,50 +352,34 @@ impl Game {
             let mut valid = false;
             for &loop_unit in &self.map.plots[plot()].units {
                 let other = &self.units[loop_unit];
-                if other.unit_type == unit_in_stack {
-                    if owner == other.owner {
-                        if !other.death_delay {
-                            valid = true;
-                        }
-                    }
+                if other.unit_type == unit_in_stack && owner == other.owner && !other.death_delay {
+                    valid = true;
                 }
             }
             if !valid {
                 return false;
             }
         }
-        if test_visible {
-            if info.display_when_disabled {
-                return true;
-            }
+        if test_visible && info.display_when_disabled {
+            return true;
         }
         if let Some(feature_prereq1) = info.feature_or_prereq1 {
             let feature = self.map.plots[plot()].feature_type;
-            if feature != Some(feature_prereq1) {
-                if info.feature_or_prereq2.is_none() || feature != info.feature_or_prereq2 {
-                    return false;
-                }
-            }
-        }
-        if !info.ignore_has_casted {
-            if unit.has_casted {
+            if feature != Some(feature_prereq1) && (info.feature_or_prereq2.is_none() || feature != info.feature_or_prereq2) {
                 return false;
             }
         }
-        if info.adjacent_to_water_only {
-            if !self.plot_is_adjacent_to_water(plot()) {
-                return false;
-            }
+        if !info.ignore_has_casted && unit.has_casted {
+            return false;
         }
-        if info.in_borders_only {
-            if self.map.plots[plot()].owner != Some(owner) {
-                return false;
-            }
+        if info.adjacent_to_water_only && !self.plot_is_adjacent_to_water(plot()) {
+            return false;
         }
-        if info.in_city_only {
-            if !self.plot_is_city(plot(), false, None) {
-                return false;
-            }
+        if info.in_borders_only && self.map.plots[plot()].owner != Some(owner) {
+            return false;
+        }
+        if info.in_city_only && !self.plot_is_city(plot(), false, None) {
+            return false;
         }
         if info.change_population != 0 {
             if !self.plot_is_city(plot(), false, None) {
@@ -436,15 +408,11 @@ impl Game {
                 return false;
             }
         }
-        if info.create_unit_type.is_some() {
-            if !self.unit_can_create_unit(u, spell) {
-                return false;
-            }
+        if info.create_unit_type.is_some() && !self.unit_can_create_unit(u, spell) {
+            return false;
         }
-        if info.create_building_type.is_some() {
-            if !self.unit_can_create_building(u, spell) {
-                return false;
-            }
+        if info.create_building_type.is_some() && !self.unit_can_create_building(u, spell) {
+            return false;
         }
         // This game's: a targeted spell needs a valid target (docs/DECKS.md, "Remote targeting").
         if info.target.is_some() {
@@ -457,38 +425,26 @@ impl Game {
             // Python `canCast(pCaster, eSpell)` decides alone once the XML prereqs pass.
             return self.py_can_cast(u, spell);
         }
-        if info.remove_has_casted {
-            if unit.has_casted {
-                return true;
-            }
+        if info.remove_has_casted && unit.has_casted {
+            return true;
         }
-        if info.add_promotion_type1.is_some() {
-            if self.unit_can_add_promotion(u, spell) {
-                return true;
-            }
+        if info.add_promotion_type1.is_some() && self.unit_can_add_promotion(u, spell) {
+            return true;
         }
-        if info.remove_promotion_type1.is_some() {
-            if self.unit_can_remove_promotion(u, spell) {
-                return true;
-            }
+        if info.remove_promotion_type1.is_some() && self.unit_can_remove_promotion(u, spell) {
+            return true;
         }
         if info.convert_unit_type.is_some() {
             return true;
         }
-        if info.create_feature_type.is_some() {
-            if self.unit_can_create_feature(u, spell) {
-                return true;
-            }
+        if info.create_feature_type.is_some() && self.unit_can_create_feature(u, spell) {
+            return true;
         }
-        if info.create_improvement_type.is_some() {
-            if self.unit_can_create_improvement(u, spell) {
-                return true;
-            }
+        if info.create_improvement_type.is_some() && self.unit_can_create_improvement(u, spell) {
+            return true;
         }
-        if info.spread_religion.is_some() {
-            if self.unit_can_spread_religion(u, spell) {
-                return true;
-            }
+        if info.spread_religion.is_some() && self.unit_can_spread_religion(u, spell) {
+            return true;
         }
         if info.create_building_type.is_some() {
             return true;
@@ -499,20 +455,14 @@ impl Game {
         if info.damage != 0 {
             return true;
         }
-        if info.dispel {
-            if self.unit_can_dispel(u, spell) {
-                return true;
-            }
+        if info.dispel && self.unit_can_dispel(u, spell) {
+            return true;
         }
-        if info.immobile_turns > 0 {
-            if self.unit_can_immobile(u, spell) {
-                return true;
-            }
+        if info.immobile_turns > 0 && self.unit_can_immobile(u, spell) {
+            return true;
         }
-        if info.push {
-            if self.unit_can_push(u, spell) {
-                return true;
-            }
+        if info.push && self.unit_can_push(u, spell) {
+            return true;
         }
         if info.change_population > 0 {
             return true;
@@ -531,10 +481,8 @@ impl Game {
         let owner = unit.owner;
 
         // to prevent summons summoning spinlocks
-        if unit.duration > 0 {
-            if info.create_unit_type == Some(unit.unit_type) {
-                return false;
-            }
+        if unit.duration > 0 && info.create_unit_type == Some(unit.unit_type) {
+            return false;
         }
         // keeps invisible units from CtDing summoning on top of enemies
         if self.plot_is_visible_enemy_unit(self.unit_plot(u), owner) {
@@ -588,10 +536,8 @@ impl Game {
                     if !self.unit_is_immune_to_spell(loop_unit, u, spell) {
                         for promotion in promotions.into_iter().flatten() {
                             if let Some(unit_combat) = self.unit_get_unit_combat_type(loop_unit) {
-                                if d.promotions[promotion].unit_combat[unit_combat] {
-                                    if !self.units[loop_unit].has_promotion[promotion] {
-                                        return true;
-                                    }
+                                if d.promotions[promotion].unit_combat[unit_combat] && !self.units[loop_unit].has_promotion[promotion] {
+                                    return true;
                                 }
                             }
                         }
@@ -895,14 +841,12 @@ impl Game {
             self.units[u].has_casted = true;
         }
         for promotion in d.promotions.keys() {
-            if self.units[u].has_promotion[promotion] {
-                if d.promotions[promotion].removed_by_casting {
-                    self.unit_set_has_promotion(u, promotion, false);
-                    // Losing PROMOTION_HIDDEN next to an enemy withdraws the caster, or deletes it
-                    // when no plot is free (C++ then reads the deleted unit).
-                    if !self.units.contains(u) {
-                        return;
-                    }
+            if self.units[u].has_promotion[promotion] && d.promotions[promotion].removed_by_casting {
+                self.unit_set_has_promotion(u, promotion, false);
+                // Losing PROMOTION_HIDDEN next to an enemy withdraws the caster, or deletes it
+                // when no plot is free (C++ then reads the deleted unit).
+                if !self.units.contains(u) {
+                    return;
                 }
             }
         }
@@ -924,17 +868,15 @@ impl Game {
             self.log.msg(turn, Some(owner), || format!("World spell: {}", d.text.name(&info.base.description)));
         }
         let miscast_chance = info.miscast_chance + d.units[self.units[u].unit_type].miscast_chance;
-        if miscast_chance > 0 {
-            if self.soren_rand_num(100, "Miscast") < miscast_chance {
-                if !info.py_miscast.is_empty() {
-                    self.py_miscast(u, spell);
-                }
-                // UI: TXT_KEY_MESSAGE_SPELL_MISCAST, selection buttons.
-                let turn = self.game_turn();
-                let owner = self.units.get(u).map(|unit| unit.owner);
-                self.log.msg(turn, owner, || format!("Miscast: {}", d.text.name(&info.base.description)));
-                return;
+        if miscast_chance > 0 && self.soren_rand_num(100, "Miscast") < miscast_chance {
+            if !info.py_miscast.is_empty() {
+                self.py_miscast(u, spell);
             }
+            // UI: TXT_KEY_MESSAGE_SPELL_MISCAST, selection buttons.
+            let turn = self.game_turn();
+            let owner = self.units.get(u).map(|unit| unit.owner);
+            self.log.msg(turn, owner, || format!("Miscast: {}", d.text.name(&info.base.description)));
+            return;
         }
         // A delayed spell is cast again by `setImmobileTimer` when the timer runs out; that cast
         // repeats everything above (removed-by-casting promotions, a new "Miscast" roll).
@@ -1015,10 +957,8 @@ impl Game {
         if !self.units.contains(u) {
             return;
         }
-        if info.remove_has_casted {
-            if self.units[u].duration == 0 {
-                self.units[u].has_casted = false;
-            }
+        if info.remove_has_casted && self.units[u].duration == 0 {
+            self.units[u].has_casted = false;
         }
         let mut cost = info.cost;
         if cost != 0 {
@@ -1169,12 +1109,8 @@ impl Game {
                     let team = self.unit_get_team(u);
                     // Enemies lose their good dispellable promotions, everyone else the bad ones.
                     let enemy = self.unit_is_enemy(loop_unit, Some(team), None);
-                    if enemy {
-                        if resistable {
-                            if self.unit_is_resisted(loop_unit, u, spell) {
-                                continue;
-                            }
-                        }
+                    if enemy && resistable && self.unit_is_resisted(loop_unit, u, spell) {
+                        continue;
                     }
                     for promotion in d.promotions.keys() {
                         let promotion_info = &d.promotions[promotion];
@@ -1375,16 +1311,12 @@ impl Game {
                     // AI: `pUnit->AI_update()` (the summon acts at once).
                     self.ai_hook(owner, AiHook::UnitUpdate(summon));
                 }
-            } else if self.units[summon].unit_type.i() == self.d.defines.unit_fireball {
-                if self.unit_bombard(summon) {
-                    return;
-                }
+            } else if self.units[summon].unit_type.i() == self.d.defines.unit_fireball && self.unit_bombard(summon) {
+                return;
             }
-            if self.units[summon].duration > 0 {
-                if self.units[summon].moves > 0 {
-                    let group = live_group(self, u);
-                    self.unit_join_group(summon, group, true);
-                }
+            if self.units[summon].duration > 0 && self.units[summon].moves > 0 {
+                let group = live_group(self, u);
+                self.unit_join_group(summon, group, true);
             }
         }
     }
@@ -1458,38 +1390,24 @@ impl Game {
     /// C++ `CvUnit::isImmuneToSpell` (CvUnit.cpp:15197-15245).
     pub fn unit_is_immune_to_spell(&self, u: UnitId, caster: UnitId, spell: SpellType) -> bool {
         let info = &self.d.spells[spell];
-        if self.unit_is_immune_to_magic(u) {
-            if !info.ability {
-                return true;
-            }
+        if self.unit_is_immune_to_magic(u) && !info.ability {
+            return true;
         }
         let caster_team = self.unit_get_team(caster);
-        if info.immune_team {
-            if self.unit_get_team(u) == caster_team {
-                return true;
-            }
+        if info.immune_team && self.unit_get_team(u) == caster_team {
+            return true;
         }
-        if info.immune_neutral {
-            if self.unit_get_team(u) != caster_team {
-                if !self.unit_is_enemy(u, Some(caster_team), None) {
-                    return true;
-                }
-            }
+        if info.immune_neutral && self.unit_get_team(u) != caster_team && !self.unit_is_enemy(u, Some(caster_team), None) {
+            return true;
         }
-        if info.immune_enemy {
-            if self.unit_is_enemy(u, Some(caster_team), None) {
-                return true;
-            }
+        if info.immune_enemy && self.unit_is_enemy(u, Some(caster_team), None) {
+            return true;
         }
-        if info.immune_flying {
-            if self.unit_is_flying(u) {
-                return true;
-            }
+        if info.immune_flying && self.unit_is_flying(u) {
+            return true;
         }
-        if info.immune_not_alive {
-            if !self.unit_is_alive(u) {
-                return true;
-            }
+        if info.immune_not_alive && !self.unit_is_alive(u) {
+            return true;
         }
         false
     }
@@ -1729,11 +1647,9 @@ impl Game {
             if !self.unit_is_invisible_from_promotion(u) {
                 // C++ dereferences `plot()` here.
                 let plot = self.unit_plot(u);
-                if self.plot_is_visible_enemy_unit_for_unit(plot, u) {
-                    if self.unit_get_domain_type(u) != DomainType::DOMAIN_IMMOBILE {
-                        // Kills the unit (without delay) when no plot around is free.
-                        self.unit_withdrawl_to_nearest_valid_plot(u, true);
-                    }
+                if self.plot_is_visible_enemy_unit_for_unit(plot, u) && self.unit_get_domain_type(u) != DomainType::DOMAIN_IMMOBILE {
+                    // Kills the unit (without delay) when no plot around is free.
+                    self.unit_withdrawl_to_nearest_valid_plot(u, true);
                 }
             }
         }
@@ -1829,10 +1745,8 @@ impl Game {
         for promotion in d.promotions.keys() {
             if self.units[u].has_promotion[promotion] {
                 let value = d.promotions[promotion].combat_limit;
-                if value != 0 {
-                    if value < best_value {
-                        best_value = value;
-                    }
+                if value != 0 && value < best_value {
+                    best_value = value;
                 }
             }
         }
@@ -1872,10 +1786,8 @@ impl Game {
         let d = self.d;
         let mutation_chance = d.defines.mutation_chance;
         for promotion in d.promotions.keys() {
-            if d.promotions[promotion].mutation {
-                if self.soren_rand_num(100, "Mutation") <= mutation_chance {
-                    self.unit_set_has_promotion(u, promotion, true);
-                }
+            if d.promotions[promotion].mutation && self.soren_rand_num(100, "Mutation") <= mutation_chance {
+                self.unit_set_has_promotion(u, promotion, true);
             }
         }
     }
@@ -2079,20 +1991,16 @@ impl Game {
                     if !self.units.contains(u) || !self.units.contains(attacker) {
                         return;
                     }
-                    if start_war {
-                        if !self.unit_is_hidden_nationality(attacker) && !self.unit_is_hidden_nationality(u) {
-                            // GAMECHANGE (Sephi): area spells only start a war on the victim's own
-                            // territory (was: on any team difference).
-                            let team = self.unit_get_team(u);
-                            let attacker_team = self.unit_get_team(attacker);
-                            if self.plot_get_team(self.unit_plot(u)) == Some(team) {
-                                if !self.teams[team].vassal[attacker_team] && !self.teams[attacker_team].vassal[team] {
-                                    if team != attacker_team {
-                                        if !self.teams[attacker_team].permanent_war_peace[team] {
-                                            self.team_declare_war(attacker_team, team, false, Some(WarPlanType::WARPLAN_TOTAL));
-                                        }
-                                    }
-                                }
+                    if start_war && !self.unit_is_hidden_nationality(attacker) && !self.unit_is_hidden_nationality(u) {
+                        // GAMECHANGE (Sephi): area spells only start a war on the victim's own
+                        // territory (was: on any team difference).
+                        let team = self.unit_get_team(u);
+                        let attacker_team = self.unit_get_team(attacker);
+                        if self.plot_get_team(self.unit_plot(u)) == Some(team) {
+                            if !self.teams[team].vassal[attacker_team] && !self.teams[attacker_team].vassal[team]
+                                && team != attacker_team && !self.teams[attacker_team].permanent_war_peace[team]
+                            {
+                                self.team_declare_war(attacker_team, team, false, Some(WarPlanType::WARPLAN_TOTAL));
                             }
                         }
                     }
@@ -2123,12 +2031,10 @@ impl Game {
         self.unit_set_damage(u, 75, None);
         let mut from_promotion = false;
         for promotion in d.promotions.keys() {
-            if self.units[u].has_promotion[promotion] {
-                if d.promotions[promotion].immortal {
-                    self.unit_set_has_promotion(u, promotion, false);
-                    from_promotion = true;
-                    break;
-                }
+            if self.units[u].has_promotion[promotion] && d.promotions[promotion].immortal {
+                self.unit_set_has_promotion(u, promotion, false);
+                from_promotion = true;
+                break;
             }
         }
         if !from_promotion {
@@ -2183,11 +2089,9 @@ impl Game {
                     set_promotion(self, tier2, true);
                     // UI: TXT_KEY_MESSAGE_WEAPONS_IRON.
                     set_promotion(self, tier1, false);
-                } else if !has_promotion_define(self, u, tier1) {
-                    if city_has_bonus(self, d.defines.weapon_req_bonus_tier1) && weapon_tier >= 1 {
-                        // UI: TXT_KEY_MESSAGE_WEAPONS_BRONZE.
-                        set_promotion(self, tier1, true);
-                    }
+                } else if !has_promotion_define(self, u, tier1) && city_has_bonus(self, d.defines.weapon_req_bonus_tier1) && weapon_tier >= 1 {
+                    // UI: TXT_KEY_MESSAGE_WEAPONS_BRONZE.
+                    set_promotion(self, tier1, true);
                 }
             }
         }
@@ -2307,11 +2211,9 @@ impl Game {
         let d = self.d;
         self.units[u].terraformer = false;
         for spell in d.spells.keys() {
-            if d.spells[spell].allow_automate_terrain {
-                if self.unit_can_cast(u, spell, false) {
-                    self.units[u].terraformer = true;
-                    return;
-                }
+            if d.spells[spell].allow_automate_terrain && self.unit_can_cast(u, spell, false) {
+                self.units[u].terraformer = true;
+                return;
             }
         }
     }

@@ -991,10 +991,8 @@ impl Game {
         let (x, y) = self.map.xy(p);
         for i in 0..NUM_CITY_PLOTS {
             if let Some(loop_plot) = self.plot_city(x, y, i) {
-                if !self.plot_is_water(loop_plot) || self.d.defines.water_potential_city_work_for_area != 0 {
-                    if self.plot_area(loop_plot) == Some(area) {
-                        return true;
-                    }
+                if (!self.plot_is_water(loop_plot) || self.d.defines.water_potential_city_work_for_area != 0) && self.plot_area(loop_plot) == Some(area) {
+                    return true;
                 }
             }
         }

@@ -383,14 +383,12 @@ impl Game {
                     for dy in -old_level..=old_level {
                         let culture_range = self.city_culture_distance(c, dx, dy);
 
-                        if culture_range > new_level {
-                            if culture_range <= old_level {
-                                debug_assert!(culture_range <= self.d.culture_levels.len() as i32);
+                        if culture_range > new_level && culture_range <= old_level {
+                            debug_assert!(culture_range <= self.d.culture_levels.len() as i32);
 
-                                if let Some(loop_plot) = self.plot_xy(x, y, dx, dy) {
-                                    let level = CultureLevelType::from_usize(culture_range as usize);
-                                    self.plot_change_culture_range_cities(loop_plot, owner, level, -1, update_plot_groups);
-                                }
+                            if let Some(loop_plot) = self.plot_xy(x, y, dx, dy) {
+                                let level = CultureLevelType::from_usize(culture_range as usize);
+                                self.plot_change_culture_range_cities(loop_plot, owner, level, -1, update_plot_groups);
                             }
                         }
                     }
@@ -402,40 +400,34 @@ impl Game {
                     for dy in -new_level..=new_level {
                         let culture_range = self.city_culture_distance(c, dx, dy);
 
-                        if culture_range > old_level {
-                            if culture_range <= new_level {
-                                debug_assert!(culture_range <= self.d.culture_levels.len() as i32);
+                        if culture_range > old_level && culture_range <= new_level {
+                            debug_assert!(culture_range <= self.d.culture_levels.len() as i32);
 
-                                if let Some(loop_plot) = self.plot_xy(x, y, dx, dy) {
-                                    let level = CultureLevelType::from_usize(culture_range as usize);
-                                    self.plot_change_culture_range_cities(loop_plot, owner, level, 1, update_plot_groups);
-                                }
+                            if let Some(loop_plot) = self.plot_xy(x, y, dx, dy) {
+                                let level = CultureLevelType::from_usize(culture_range as usize);
+                                self.plot_change_culture_range_cities(loop_plot, owner, level, 1, update_plot_groups);
                             }
                         }
                     }
                 }
             }
 
-            if self.final_initialized {
-                if (new_level > old_level) && (new_level > 1) {
-                    // TXT_KEY_MISC_BORDERS_EXPANDED (and, at the last culture level,
-                    // TXT_KEY_MISC_CULTURE_LEVEL to every alive player): messages only.
-                    let turn = self.game_turn();
-                    self.log.msg(turn, Some(owner), || format!("The borders of {} have expanded", self.cities[c].name));
+            if self.final_initialized && (new_level > old_level) && (new_level > 1) {
+                // TXT_KEY_MISC_BORDERS_EXPANDED (and, at the last culture level,
+                // TXT_KEY_MISC_CULTURE_LEVEL to every alive player): messages only.
+                let turn = self.game_turn();
+                self.log.msg(turn, Some(owner), || format!("The borders of {} have expanded", self.cities[c].name));
 
-                    // ONEVENT - Culture growth
-                    self.ev_culture_expansion(c, owner);
+                // ONEVENT - Culture growth
+                self.ev_culture_expansion(c, owner);
 
-                    // Stop Build Culture
-                    // UNOFFICIAL_PATCH 07/17/09 (jdog5000): only for a human owner without
-                    // automated production (for the AI the timing gave extra overflow hammers).
-                    if self.city_is_human(c) && !self.cities[c].production_automated {
-                        if self.city_is_production_process(c) {
-                            if let Some(process) = self.city_production_process(c) {
-                                if self.d.processes[process].production_to_commerce_modifier[CommerceType::COMMERCE_CULTURE.idx()] > 0 {
-                                    self.city_pop_order(c, 0, false, true);
-                                }
-                            }
+                // Stop Build Culture
+                // UNOFFICIAL_PATCH 07/17/09 (jdog5000): only for a human owner without
+                // automated production (for the AI the timing gave extra overflow hammers).
+                if self.city_is_human(c) && !self.cities[c].production_automated && self.city_is_production_process(c) {
+                    if let Some(process) = self.city_production_process(c) {
+                        if self.d.processes[process].production_to_commerce_modifier[CommerceType::COMMERCE_CULTURE.idx()] > 0 {
+                            self.city_pop_order(c, 0, false, true);
                         }
                     }
                 }
@@ -925,13 +917,11 @@ impl Game {
 
         let mut total = 0;
 
-        if (state_religion == Some(religion)) || state_religion.is_none() {
-            if self.cities[c].has_religion[religion] {
-                total += self.d.religions[religion].state_religion_commerce[i];
+        if ((state_religion == Some(religion)) || state_religion.is_none()) && self.cities[c].has_religion[religion] {
+            total += self.d.religions[religion].state_religion_commerce[i];
 
-                if self.city_is_holy_city(c, religion) {
-                    total += self.d.religions[religion].holy_city_commerce[i];
-                }
+            if self.city_is_holy_city(c, religion) {
+                total += self.d.religions[religion].holy_city_commerce[i];
             }
         }
 
@@ -1020,10 +1010,8 @@ impl Game {
         let mut team_culture_percent = 0;
 
         for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == team {
-                    team_culture_percent += self.city_calculate_culture_percent(c, p);
-                }
+            if self.players[p].alive && self.players[p].team == team {
+                team_culture_percent += self.city_calculate_culture_percent(c, p);
             }
         }
 
@@ -1107,23 +1095,21 @@ impl Game {
         for team in self.civ_team_ids() {
             let mut visibility = false;
 
-            if team != self.city_team(c) {
-                if self.city_is_revealed(c, team, false) {
-                    let owner = self.cities[c].owner;
-                    let plot = self.city_plot(c);
-                    for p in self.civ_player_ids() {
-                        let player = &self.players[p];
-                        if player.alive && player.team == team {
-                            for &mission in &missions {
-                                if self.player_can_do_espionage_mission(p, mission, Some(owner), Some(plot), -1, None) {
-                                    visibility = true;
-                                    break;
-                                }
-                            }
-
-                            if visibility {
+            if team != self.city_team(c) && self.city_is_revealed(c, team, false) {
+                let owner = self.cities[c].owner;
+                let plot = self.city_plot(c);
+                for p in self.civ_player_ids() {
+                    let player = &self.players[p];
+                    if player.alive && player.team == team {
+                        for &mission in &missions {
+                            if self.player_can_do_espionage_mission(p, mission, Some(owner), Some(plot), -1, None) {
+                                visibility = true;
                                 break;
                             }
+                        }
+
+                        if visibility {
+                            break;
                         }
                     }
                 }
@@ -1313,25 +1299,23 @@ impl Game {
                     // (the loop changes no city list: iterate by index)
                     for n in 0..self.players[p].cities.len() {
                         let loop_city = self.players[p].cities[n];
-                        if loop_city != c {
-                            if !self.cities[loop_city].trade_route[owner] || (self.city_team(c) == self.players[p].team) {
-                                if self.city_plot_group(loop_city, owner) == self.city_plot_group(c, owner)
-                                    || self.d.defines.ignore_plot_group_for_trade_routes != 0
-                                {
-                                    let value = self.city_calculate_trade_profit(c, loop_city);
+                        if loop_city != c && (!self.cities[loop_city].trade_route[owner] || (self.city_team(c) == self.players[p].team)) {
+                            if self.city_plot_group(loop_city, owner) == self.city_plot_group(c, owner)
+                                || self.d.defines.ignore_plot_group_for_trade_routes != 0
+                            {
+                                let value = self.city_calculate_trade_profit(c, loop_city);
 
-                                    for j in 0..trade_routes {
-                                        if value > best_value[j] {
-                                            for k in ((j + 1)..trade_routes).rev() {
-                                                best_value[k] = best_value[k - 1];
-                                                self.cities[c].trade_cities[k] = self.cities[c].trade_cities[k - 1];
-                                            }
-
-                                            best_value[j] = value;
-                                            self.cities[c].trade_cities[j] = Some(loop_city);
-
-                                            break;
+                                for j in 0..trade_routes {
+                                    if value > best_value[j] {
+                                        for k in ((j + 1)..trade_routes).rev() {
+                                            best_value[k] = best_value[k - 1];
+                                            self.cities[c].trade_cities[k] = self.cities[c].trade_cities[k - 1];
                                         }
+
+                                        best_value[j] = value;
+                                        self.cities[c].trade_cities[j] = Some(loop_city);
+
+                                        break;
                                     }
                                 }
                             }
@@ -1395,20 +1379,18 @@ impl Game {
         }
 
         let free_culture_rate = self.d.defines.city_free_culture_growth_factor;
-        if self.cities[c].culture[player] > 0 {
-            if culture_level != -1 {
-                let (x, y) = (self.cities[c].x, self.cities[c].y);
-                for dx in -culture_level..=culture_level {
-                    for dy in -culture_level..=culture_level {
-                        let culture_range = self.city_culture_distance(c, dx, dy);
+        if self.cities[c].culture[player] > 0 && culture_level != -1 {
+            let (x, y) = (self.cities[c].x, self.cities[c].y);
+            for dx in -culture_level..=culture_level {
+                for dy in -culture_level..=culture_level {
+                    let culture_range = self.city_culture_distance(c, dx, dy);
 
-                        if culture_range <= culture_level {
-                            if let Some(loop_plot) = self.plot_xy(x, y, dx, dy) {
-                                if self.plot_is_potential_city_work_for_area(loop_plot, self.city_area(c)) {
-                                    let change = ((culture_level - culture_range) * free_culture_rate) + culture_rate + 1;
-                                    let update_plot = update || !self.plot_is_owned(loop_plot);
-                                    self.plot_change_culture(loop_plot, player, change, update_plot);
-                                }
+                    if culture_range <= culture_level {
+                        if let Some(loop_plot) = self.plot_xy(x, y, dx, dy) {
+                            if self.plot_is_potential_city_work_for_area(loop_plot, self.city_area(c)) {
+                                let change = ((culture_level - culture_range) * free_culture_rate) + culture_rate + 1;
+                                let update_plot = update || !self.plot_is_owned(loop_plot);
+                                self.plot_change_culture(loop_plot, player, change, update_plot);
                             }
                         }
                     }

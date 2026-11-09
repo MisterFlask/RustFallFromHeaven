@@ -195,10 +195,8 @@ impl Game {
 
         // FfH: Modified by Kael 09/25/2008 (BTS calls the callback with the triggered data only,
         // and for dead players too)
-        if self.players[p].alive {
-            if !k_trigger.python_callback.is_empty() {
-                self.py_trigger_callback(data, p);
-            }
+        if self.players[p].alive && !k_trigger.python_callback.is_empty() {
+            self.py_trigger_callback(data, p);
         }
         self.event_triggered[data.trigger] = true;
         // FfH: End Modify
@@ -377,10 +375,8 @@ impl Game {
             }
 
             // FfH: Added by Kael 09/19/2008 (a global trigger fires once per game)
-            if k_trigger.global {
-                if self.event_triggered[trigger] {
-                    return 0;
-                }
+            if k_trigger.global && self.event_triggered[trigger] {
+                return 0;
             }
             // FfH: End Add
         }
@@ -445,10 +441,8 @@ impl Game {
         }
 
         // FfH Events: Added by Kael 08/08/2007
-        if k_trigger.prereq_global_counter != 0 {
-            if self.get_global_counter() < k_trigger.prereq_global_counter {
-                return 0;
-            }
+        if k_trigger.prereq_global_counter != 0 && self.get_global_counter() < k_trigger.prereq_global_counter {
+            return 0;
         }
         if let Some(alignment) = k_trigger.prereq_alignment {
             if self.players[p].alignment != Some(alignment) {
@@ -466,14 +460,10 @@ impl Game {
             }
             let mut valid = false;
             for i in self.player_ids() {
-                if self.players[i].alive {
-                    if self.player_get_civilization_type(i) == Some(civilization) {
-                        if self.teams[team].has_met[self.players[i].team] {
-                            // C++ `AI_getAttitude(getID())` (bForced = true)
-                            if self.player_ai_get_attitude(i, p, true) >= AttitudeType::ATTITUDE_PLEASED {
-                                valid = true;
-                            }
-                        }
+                if self.players[i].alive && self.player_get_civilization_type(i) == Some(civilization) && self.teams[team].has_met[self.players[i].team] {
+                    // C++ `AI_getAttitude(getID())` (bForced = true)
+                    if self.player_ai_get_attitude(i, p, true) >= AttitudeType::ATTITUDE_PLEASED {
+                        valid = true;
                     }
                 }
             }
@@ -488,10 +478,8 @@ impl Game {
         }
         // FfH: End Add
 
-        if k_trigger.min_treasury > 0 {
-            if self.players[p].gold < k_trigger.min_treasury {
-                return 0;
-            }
+        if k_trigger.min_treasury > 0 && self.players[p].gold < k_trigger.min_treasury {
+            return 0;
         }
 
         if self.map.get_num_land_areas() < k_trigger.min_map_landmass {
@@ -502,10 +490,8 @@ impl Game {
             let mut num_landmass = 0;
 
             for (_, area) in self.map.areas.iter() {
-                if !area.water {
-                    if area.cities_per_player[p] > 0 {
-                        num_landmass += 1;
-                    }
+                if !area.water && area.cities_per_player[p] > 0 {
+                    num_landmass += 1;
                 }
             }
 
@@ -665,16 +651,12 @@ impl Game {
                 }
             }
 
-            if k_trigger.min_population > 0 {
-                if self.players[p].total_population < k_trigger.min_population {
-                    return None;
-                }
+            if k_trigger.min_population > 0 && self.players[p].total_population < k_trigger.min_population {
+                return None;
             }
 
-            if k_trigger.max_population > 0 {
-                if self.players[p].total_population > k_trigger.max_population {
-                    return None;
-                }
+            if k_trigger.max_population > 0 && self.players[p].total_population > k_trigger.max_population {
+                return None;
             }
 
             if pick_plot {
@@ -1022,10 +1004,8 @@ impl Game {
             let mut count = 0;
 
             for loop_plot in self.map.plot_ids() {
-                if !self.plot_is_water(loop_plot) {
-                    if self.map.plots[loop_plot].owner == Some(p) && self.plot_is_adjacent_player(loop_plot, other, true) {
-                        count += 1;
-                    }
+                if !self.plot_is_water(loop_plot) && self.map.plots[loop_plot].owner == Some(p) && self.plot_is_adjacent_player(loop_plot, other, true) {
+                    count += 1;
                 }
             }
 
@@ -1041,10 +1021,8 @@ impl Game {
                 self.players[p].has_religion_count[religion] > 0
             };
 
-            if k_trigger.other_player_has_religion {
-                if !has_religion {
-                    return false;
-                }
+            if k_trigger.other_player_has_religion && !has_religion {
+                return false;
             }
 
             if k_trigger.other_player_has_other_religion {
@@ -1127,10 +1105,8 @@ impl Game {
                 return false;
             }
 
-            if k_trigger.holy_city {
-                if !self.city_is_holy_city(c, religion) {
-                    return false;
-                }
+            if k_trigger.holy_city && !self.city_is_holy_city(c, religion) {
+                return false;
             }
         } else {
             if 0 == self.players[p].has_religion_count[religion] {
@@ -1165,10 +1141,8 @@ impl Game {
                 return false;
             }
 
-            if k_trigger.headquarters {
-                if !self.city_is_headquarters(c, corporation) {
-                    return false;
-                }
+            if k_trigger.headquarters && !self.city_is_headquarters(c, corporation) {
+                return false;
             }
         } else {
             if self.player_get_has_corporation_count(p, corporation) > 0 {
@@ -1205,10 +1179,8 @@ impl Game {
                         return false;
                     }
                 }
-            } else if gold < 0 {
-                if self.players[p].gold < -gold {
-                    return false;
-                }
+            } else if gold < 0 && self.players[p].gold < -gold {
+                return false;
             }
         }
 
@@ -1240,10 +1212,8 @@ impl Game {
             }
         }
 
-        if 0 != k_event.tech_percent || 0 != k_event.tech_cost_percent {
-            if self.player_get_best_event_tech(p, event, data.other_player).is_none() {
-                return false;
-            }
+        if (0 != k_event.tech_percent || 0 != k_event.tech_cost_percent) && self.player_get_best_event_tech(p, event, data.other_player).is_none() {
+            return false;
         }
 
         if let Some(prereq_tech) = k_event.prereq_tech {
@@ -1321,11 +1291,11 @@ impl Game {
 
             if let Some(religion) = data.religion {
                 for &loop_city in &self.players[p].cities {
-                    if !self.cities[loop_city].has_religion[religion] {
-                        if -1 == k_event.max_num_religions || self.city_religion_count(loop_city) <= k_event.max_num_religions {
-                            found_valid = true;
-                            break;
-                        }
+                    if !self.cities[loop_city].has_religion[religion]
+                        && (-1 == k_event.max_num_religions || self.city_religion_count(loop_city) <= k_event.max_num_religions)
+                    {
+                        found_valid = true;
+                        break;
                     }
                 }
             }
@@ -1341,11 +1311,11 @@ impl Game {
             if let Some(religion) = data.religion {
                 if let Some(other) = data.other_player {
                     for &loop_city in &self.players[other].cities {
-                        if !self.cities[loop_city].has_religion[religion] {
-                            if -1 == k_event.max_num_religions || self.city_religion_count(loop_city) <= k_event.max_num_religions {
-                                found_valid = true;
-                                break;
-                            }
+                        if !self.cities[loop_city].has_religion[religion]
+                            && (-1 == k_event.max_num_religions || self.city_religion_count(loop_city) <= k_event.max_num_religions)
+                        {
+                            found_valid = true;
+                            break;
                         }
                     }
                 }
@@ -1365,10 +1335,8 @@ impl Game {
                 return false;
             }
 
-            if self.players[other].human {
-                if 0 == k_event.our_attitude_modifier {
-                    return false;
-                }
+            if self.players[other].human && 0 == k_event.our_attitude_modifier {
+                return false;
             }
         }
 
@@ -1410,10 +1378,8 @@ impl Game {
                 let k_trigger = &d.event_triggers[loop_trigger];
                 if !k_trigger.recurring {
                     for &prereq_event in &k_trigger.prereq_events {
-                        if prereq_event == event {
-                            if self.player_is_trigger_fired(p, loop_trigger) {
-                                return false;
-                            }
+                        if prereq_event == event && self.player_is_trigger_fired(p, loop_trigger) {
+                            return false;
                         }
                     }
                 }
@@ -1457,10 +1423,8 @@ impl Game {
         }
         // FfH: End Add
 
-        if !k_event.python_can_do.is_empty() {
-            if !self.py_event_can_do(event, data) {
-                return false;
-            }
+        if !k_event.python_can_do.is_empty() && !self.py_event_can_do(event, data) {
+            return false;
         }
 
         true
@@ -1735,10 +1699,8 @@ impl Game {
 
             if k_event.population_change != 0 {
                 for loop_city in self.players[p].cities.clone() {
-                    if self.cities.contains(loop_city) {
-                        if self.cities[loop_city].population + k_event.population_change > 0 {
-                            self.city_change_population(loop_city, k_event.population_change);
-                        }
+                    if self.cities.contains(loop_city) && self.cities[loop_city].population + k_event.population_change > 0 {
+                        self.city_change_population(loop_city, k_event.population_change);
                     }
                 }
             }
@@ -1772,10 +1734,8 @@ impl Game {
                                     self.unit_set_has_promotion(new_unit, promotion, true);
                                 }
                             }
-                            if k_event.unit_experience != 0 {
-                                if self.units.contains(new_unit) {
-                                    self.unit_change_experience(new_unit, k_event.unit_experience, -1, false, false, false);
-                                }
+                            if k_event.unit_experience != 0 && self.units.contains(new_unit) {
+                                self.unit_change_experience(new_unit, k_event.unit_experience, -1, false, false, false);
                             }
                             // FfH: End Modify
                         }
@@ -1800,10 +1760,8 @@ impl Game {
         for unit_combat in d.unit_combats.keys() {
             if let Some(promotion) = k_event.unit_combat_promotion[unit_combat] {
                 for loop_unit in self.players[p].units.clone() {
-                    if self.units.contains(loop_unit) {
-                        if self.unit_get_unit_combat_type(loop_unit) == Some(unit_combat) {
-                            self.unit_set_has_promotion(loop_unit, promotion, true);
-                        }
+                    if self.units.contains(loop_unit) && self.unit_get_unit_combat_type(loop_unit) == Some(unit_combat) {
+                        self.unit_set_has_promotion(loop_unit, promotion, true);
                     }
                 }
 
@@ -1814,10 +1772,8 @@ impl Game {
         for unit_class in d.unit_classes.keys() {
             if let Some(promotion) = k_event.unit_class_promotion[unit_class] {
                 for loop_unit in self.players[p].units.clone() {
-                    if self.units.contains(loop_unit) {
-                        if self.unit_get_unit_class_type(loop_unit) == unit_class {
-                            self.unit_set_has_promotion(loop_unit, promotion, true);
-                        }
+                    if self.units.contains(loop_unit) && self.unit_get_unit_class_type(loop_unit) == unit_class {
+                        self.unit_set_has_promotion(loop_unit, promotion, true);
                     }
                 }
 
@@ -1835,10 +1791,10 @@ impl Game {
         if k_event.convert_own_cities > 0 {
             if let Some(religion) = data.religion {
                 for &loop_city in &self.players[p].cities {
-                    if !self.cities[loop_city].has_religion[religion] {
-                        if -1 == k_event.max_num_religions || self.city_religion_count(loop_city) <= k_event.max_num_religions {
-                            spread_religion_cities.push(loop_city);
-                        }
+                    if !self.cities[loop_city].has_religion[religion]
+                        && (-1 == k_event.max_num_religions || self.city_religion_count(loop_city) <= k_event.max_num_religions)
+                    {
+                        spread_religion_cities.push(loop_city);
                     }
                 }
             }
@@ -1863,10 +1819,10 @@ impl Game {
             if let Some(religion) = data.religion {
                 if let Some(other) = data.other_player {
                     for &loop_city in &self.players[other].cities {
-                        if !self.cities[loop_city].has_religion[religion] {
-                            if -1 == k_event.max_num_religions || self.city_religion_count(loop_city) <= k_event.max_num_religions {
-                                spread_religion_cities.push(loop_city);
-                            }
+                        if !self.cities[loop_city].has_religion[religion]
+                            && (-1 == k_event.max_num_religions || self.city_religion_count(loop_city) <= k_event.max_num_religions)
+                        {
+                            spread_religion_cities.push(loop_city);
                         }
                     }
                 }
@@ -1952,18 +1908,18 @@ impl Game {
         for loop_event in d.events.keys() {
             if 0 == k_event.additional_event_time[loop_event] {
                 if k_event.additional_event_chance[loop_event] > 0 {
-                    if self.player_can_do_event(p, loop_event, &data) {
-                        if self.soren_rand_num(100, "Additional Event") < k_event.additional_event_chance[loop_event] {
-                            self.player_apply_event(p, loop_event, triggered, false);
-                        }
+                    if self.player_can_do_event(p, loop_event, &data)
+                        && self.soren_rand_num(100, "Additional Event") < k_event.additional_event_chance[loop_event]
+                    {
+                        self.player_apply_event(p, loop_event, triggered, false);
                     }
                 }
             } else {
                 let mut set_timer = true;
-                if k_event.additional_event_chance[loop_event] > 0 {
-                    if self.soren_rand_num(100, "Additional Event 2") >= k_event.additional_event_chance[loop_event] {
-                        set_timer = false;
-                    }
+                if k_event.additional_event_chance[loop_event] > 0
+                    && self.soren_rand_num(100, "Additional Event 2") >= k_event.additional_event_chance[loop_event]
+                {
+                    set_timer = false;
                 }
 
                 if set_timer {
@@ -2098,10 +2054,8 @@ impl Game {
         let d = self.d;
         let k_event = &d.events[event];
 
-        if !k_event.python_expire_check.is_empty() {
-            if self.py_event_expire_check(event, data) {
-                return true;
-            }
+        if !k_event.python_expire_check.is_empty() && self.py_event_expire_check(event, data) {
+            return true;
         }
 
         if !k_event.quest {
@@ -2116,10 +2070,8 @@ impl Game {
 
         let k_player = data.player;
 
-        if k_trigger.state_religion & k_trigger.pick_religion {
-            if self.player_get_state_religion(k_player) != data.religion {
-                return true;
-            }
+        if k_trigger.state_religion & k_trigger.pick_religion && self.player_get_state_religion(k_player) != data.religion {
+            return true;
         }
 
         if let Some(civic) = k_trigger.civic {
@@ -2128,16 +2080,12 @@ impl Game {
             }
         }
 
-        if data.city.is_some() {
-            if player_city(self, k_player, data.city).is_none() {
-                return true;
-            }
+        if data.city.is_some() && player_city(self, k_player, data.city).is_none() {
+            return true;
         }
 
-        if data.unit.is_some() {
-            if player_unit(self, k_player, data.unit).is_none() {
-                return true;
-            }
+        if data.unit.is_some() && player_unit(self, k_player, data.unit).is_none() {
+            return true;
         }
 
         if let Some(other) = data.other_player {
@@ -2145,10 +2093,8 @@ impl Game {
                 return true;
             }
 
-            if data.other_player_city.is_some() {
-                if player_city(self, other, data.other_player_city).is_none() {
-                    return true;
-                }
+            if data.other_player_city.is_some() && player_city(self, other, data.other_player_city).is_none() {
+                return true;
             }
         }
 

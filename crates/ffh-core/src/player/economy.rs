@@ -212,11 +212,9 @@ impl Game {
         let mut free_military_units = pl.base_free_military_units;
         free_military_units += (pl.total_population * pl.free_military_units_population_percent) / 100;
 
-        if !pl.human {
-            if self.team_has_met_human(pl.team) {
-                free_units += pl.num_cities(); // XXX
-                free_military_units += pl.num_cities(); // XXX
-            }
+        if !pl.human && self.team_has_met_human(pl.team) {
+            free_units += pl.num_cities(); // XXX
+            free_military_units += pl.num_cities(); // XXX
         }
 
         let paid_units = 0.max(pl.num_units() - free_units);
@@ -654,10 +652,10 @@ impl Game {
             return false;
         }
 
-        if commerce == CommerceType::COMMERCE_ESPIONAGE {
-            if 0 == self.team_get_has_met_civ_count(pl.team, true) || self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
-                return false;
-            }
+        if commerce == CommerceType::COMMERCE_ESPIONAGE
+            && (0 == self.team_get_has_met_civ_count(pl.team, true) || self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE))
+        {
+            return false;
         }
 
         self.d.commerces[commerce].flexible_percent
@@ -765,10 +763,8 @@ impl Game {
 
         for t in self.civ_team_ids() {
             if self.team_is_alive(t) {
-                if self.teams[team].has_met[t] {
-                    if self.team_is_has_tech(t, Some(tech)) {
-                        known_count += 1;
-                    }
+                if self.teams[team].has_met[t] && self.team_is_has_tech(t, Some(tech)) {
+                    known_count += 1;
                 }
 
                 possible_known_count += 1;
@@ -886,11 +882,11 @@ impl Game {
         for &prereq in &d.techs[tech].prereq_or_techs {
             found_possible = true;
 
-            if self.team_is_has_tech(team, Some(prereq)) {
-                if !trade || self.is_option(GameOptionType::GAMEOPTION_NO_TECH_BROKERING) || !self.teams[team].no_trade_tech[prereq] {
-                    found_valid = true;
-                    break;
-                }
+            if self.team_is_has_tech(team, Some(prereq))
+                && (!trade || self.is_option(GameOptionType::GAMEOPTION_NO_TECH_BROKERING) || !self.teams[team].no_trade_tech[prereq])
+            {
+                found_valid = true;
+                break;
             }
         }
 
@@ -959,14 +955,10 @@ impl Game {
         let mut overflow_research = 0;
 
         for other in self.player_ids() {
-            if self.players[other].alive {
-                if self.players[other].team == team {
-                    if other == p || self.player_get_current_research(other) == Some(tech) {
-                        research_rate += self.player_calculate_research_rate(other, Some(tech));
-                        // C++: the modifier is this player's (`calculateResearchModifier(eTech)`).
-                        overflow_research += (self.players[other].overflow_research * self.player_calculate_research_modifier(p, Some(tech))) / 100;
-                    }
-                }
+            if self.players[other].alive && self.players[other].team == team && (other == p || self.player_get_current_research(other) == Some(tech)) {
+                research_rate += self.player_calculate_research_rate(other, Some(tech));
+                // C++: the modifier is this player's (`calculateResearchModifier(eTech)`).
+                overflow_research += (self.players[other].overflow_research * self.player_calculate_research_modifier(p, Some(tech))) / 100;
             }
         }
 
@@ -1309,10 +1301,8 @@ impl Game {
         for t in d.traits.keys() {
             if self.players[p].traits[t] {
                 let threshold = d.traits[t].extra_yield_threshold[yi];
-                if threshold > 0 {
-                    if best_value == 0 || threshold < best_value {
-                        best_value = threshold;
-                    }
+                if threshold > 0 && (best_value == 0 || threshold < best_value) {
+                    best_value = threshold;
                 }
             }
         }
@@ -1534,11 +1524,9 @@ impl Game {
             let team = self.players[p].team;
 
             for t in self.civ_team_ids() {
-                if self.team_is_alive(t) && !self.team_is_minor_civ(t) {
-                    if self.teams[t].at_war[team] {
-                        new_war_weariness_percent_anger +=
-                            (self.teams[team].war_weariness[t] * 0.max(100 + self.teams[t].enemy_war_weariness_modifier)) / 10000;
-                    }
+                if self.team_is_alive(t) && !self.team_is_minor_civ(t) && self.teams[t].at_war[team] {
+                    new_war_weariness_percent_anger +=
+                        (self.teams[team].war_weariness[t] * 0.max(100 + self.teams[t].enemy_war_weariness_modifier)) / 10000;
                 }
             }
         }

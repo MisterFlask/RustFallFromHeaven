@@ -60,24 +60,20 @@ impl Game {
                 let mut best_team = None;
 
                 for t in self.team_ids() {
-                    if self.team_is_alive(t) {
-                        if self.team_is_has_tech(t, d.religions[religion].tech_prereq) {
-                            if self.teams[t].num_cities > 0 {
-                                let mut value = self.soren_rand_num(10, "Found Religion (Team)");
+                    if self.team_is_alive(t) && self.team_is_has_tech(t, d.religions[religion].tech_prereq) && self.teams[t].num_cities > 0 {
+                        let mut value = self.soren_rand_num(10, "Found Religion (Team)");
 
-                                for k in d.religions.keys() {
-                                    let religion_count = self.team_get_has_religion_count(t, k);
+                        for k in d.religions.keys() {
+                            let religion_count = self.team_get_has_religion_count(t, k);
 
-                                    if religion_count > 0 {
-                                        value += religion_count * 20;
-                                    }
-                                }
-
-                                if value < best_value {
-                                    best_value = value;
-                                    best_team = Some(t);
-                                }
+                            if religion_count > 0 {
+                                value += religion_count * 20;
                             }
+                        }
+
+                        if value < best_value {
+                            best_value = value;
+                            best_team = Some(t);
                         }
                     }
                 }
@@ -87,28 +83,24 @@ impl Game {
                     let mut best_player = None;
 
                     for p in self.player_ids() {
-                        if self.players[p].alive {
-                            if self.players[p].team == best_team {
-                                if self.players[p].num_cities() > 0 {
-                                    let mut value = self.soren_rand_num(10, "Found Religion (Player)");
+                        if self.players[p].alive && self.players[p].team == best_team && self.players[p].num_cities() > 0 {
+                            let mut value = self.soren_rand_num(10, "Found Religion (Player)");
 
-                                    if !self.players[p].human {
-                                        value += 10;
-                                    }
+                            if !self.players[p].human {
+                                value += 10;
+                            }
 
-                                    for k in d.religions.keys() {
-                                        let religion_count = self.players[p].has_religion_count[k];
+                            for k in d.religions.keys() {
+                                let religion_count = self.players[p].has_religion_count[k];
 
-                                        if religion_count > 0 {
-                                            value += religion_count * 20;
-                                        }
-                                    }
-
-                                    if value < best_value {
-                                        best_value = value;
-                                        best_player = Some(p);
-                                    }
+                                if religion_count > 0 {
+                                    value += religion_count * 20;
                                 }
+                            }
+
+                            if value < best_value {
+                                best_value = value;
+                                best_player = Some(p);
                             }
                         }
                     }
@@ -148,31 +140,27 @@ impl Game {
                 let mut best_team = None;
 
                 for t in self.team_ids() {
-                    if self.team_is_alive(t) {
-                        if info.tech_prereq.is_some() && self.team_is_has_tech(t, info.tech_prereq) {
-                            if self.teams[t].num_cities > 0 {
-                                // (`prereq_bonus` lists only the non-NONE slots of
-                                // NUM_CORPORATION_PREREQ_BONUSES.)
-                                let has_bonus = info.prereq_bonus.iter().any(|&b| self.team_has_bonus(t, b));
+                    if self.team_is_alive(t) && info.tech_prereq.is_some() && self.team_is_has_tech(t, info.tech_prereq) && self.teams[t].num_cities > 0 {
+                        // (`prereq_bonus` lists only the non-NONE slots of
+                        // NUM_CORPORATION_PREREQ_BONUSES.)
+                        let has_bonus = info.prereq_bonus.iter().any(|&b| self.team_has_bonus(t, b));
 
-                                if has_bonus {
-                                    let mut value = self.soren_rand_num(10, "Found Corporation (Team)");
+                        if has_bonus {
+                            let mut value = self.soren_rand_num(10, "Found Corporation (Team)");
 
-                                    for k in d.corporations.keys() {
-                                        // C++ quirk: GET_PLAYER((PlayerTypes)iJ) with the team
-                                        // index iJ (team slot = player slot in sized arrays).
-                                        let corporation_count = self.player_get_has_corporation_count(PlayerId(t.0), k);
+                            for k in d.corporations.keys() {
+                                // C++ quirk: GET_PLAYER((PlayerTypes)iJ) with the team
+                                // index iJ (team slot = player slot in sized arrays).
+                                let corporation_count = self.player_get_has_corporation_count(PlayerId(t.0), k);
 
-                                        if corporation_count > 0 {
-                                            value += corporation_count * 20;
-                                        }
-                                    }
-
-                                    if value < best_value {
-                                        best_value = value;
-                                        best_team = Some(t);
-                                    }
+                                if corporation_count > 0 {
+                                    value += corporation_count * 20;
                                 }
+                            }
+
+                            if value < best_value {
+                                best_value = value;
+                                best_team = Some(t);
                             }
                         }
                     }
@@ -183,32 +171,28 @@ impl Game {
                     let mut best_player = None;
 
                     for p in self.player_ids() {
-                        if self.players[p].alive {
-                            if self.players[p].team == best_team {
-                                if self.players[p].num_cities() > 0 {
-                                    let has_bonus = info.prereq_bonus.iter().any(|&b| self.player_has_bonus(p, b));
+                        if self.players[p].alive && self.players[p].team == best_team && self.players[p].num_cities() > 0 {
+                            let has_bonus = info.prereq_bonus.iter().any(|&b| self.player_has_bonus(p, b));
 
-                                    if has_bonus {
-                                        // C++ quirk: the log string says "Religion".
-                                        let mut value = self.soren_rand_num(10, "Found Religion (Player)");
+                            if has_bonus {
+                                // C++ quirk: the log string says "Religion".
+                                let mut value = self.soren_rand_num(10, "Found Religion (Player)");
 
-                                        if !self.players[p].human {
-                                            value += 10;
-                                        }
+                                if !self.players[p].human {
+                                    value += 10;
+                                }
 
-                                        for k in d.corporations.keys() {
-                                            let corporation_count = self.player_get_has_corporation_count(p, k);
+                                for k in d.corporations.keys() {
+                                    let corporation_count = self.player_get_has_corporation_count(p, k);
 
-                                            if corporation_count > 0 {
-                                                value += corporation_count * 20;
-                                            }
-                                        }
-
-                                        if value < best_value {
-                                            best_value = value;
-                                            best_player = Some(p);
-                                        }
+                                    if corporation_count > 0 {
+                                        value += corporation_count * 20;
                                     }
+                                }
+
+                                if value < best_value {
+                                    best_value = value;
+                                    best_player = Some(p);
                                 }
                             }
                         }
@@ -519,10 +503,8 @@ impl Game {
     /// C++ `CvGame::isForceCivicOption(eCivicOption)`.
     pub fn is_force_civic_option(&self, civic_option: CivicOptionType) -> bool {
         for civic in self.d.civics.keys() {
-            if self.d.civics[civic].civic_option_type == Some(civic_option) {
-                if self.is_force_civic(civic) {
-                    return true;
-                }
+            if self.d.civics[civic].civic_option_type == Some(civic_option) && self.is_force_civic(civic) {
+                return true;
             }
         }
 
@@ -569,10 +551,8 @@ impl Game {
                 let civ = civ_of(self, p);
                 for unit_class in d.unit_classes.keys() {
                     if let Some(unit) = d.civ_unit(civ, unit_class) {
-                        if d.units[unit].nuke_range != -1 {
-                            if self.player_can_train(p, unit, false, false, false) {
-                                return true;
-                            }
+                        if d.units[unit].nuke_range != -1 && self.player_can_train(p, unit, false, false, false) {
+                            return true;
                         }
                     }
                 }
@@ -845,10 +825,8 @@ impl Game {
     /// C++ `CvGame::isCivEverActive(eCivilization)`.
     pub fn is_civ_ever_active(&self, civilization: CivilizationType) -> bool {
         for p in self.player_ids() {
-            if self.players[p].ever_alive {
-                if self.player_get_civilization_type(p) == Some(civilization) {
-                    return true;
-                }
+            if self.players[p].ever_alive && self.player_get_civilization_type(p) == Some(civilization) {
+                return true;
             }
         }
 
@@ -858,10 +836,8 @@ impl Game {
     /// C++ `CvGame::isLeaderEverActive(eLeader)`.
     pub fn is_leader_ever_active(&self, leader: LeaderHeadType) -> bool {
         for p in self.player_ids() {
-            if self.players[p].ever_alive {
-                if self.player_get_leader_type(p) == Some(leader) {
-                    return true;
-                }
+            if self.players[p].ever_alive && self.player_get_leader_type(p) == Some(leader) {
+                return true;
             }
         }
 
@@ -974,38 +950,36 @@ impl Game {
         }
 
         for p in self.map.plot_ids() {
-            if !self.plot_is_water(p) {
-                if !self.plot_is_visible_to_civ_team(p) {
-                    let area = self.plot_area(p).expect("CvPlot::area() is NULL");
-                    let mut target_cities = self.area_get_num_unowned_tiles(area);
+            if !self.plot_is_water(p) && !self.plot_is_visible_to_civ_team(p) {
+                let area = self.plot_area(p).expect("CvPlot::area() is NULL");
+                let mut target_cities = self.area_get_num_unowned_tiles(area);
 
-                    if self.map.areas[area].num_cities == self.map.areas[area].cities_per_player[barbarian] {
-                        target_cities *= 3;
+                if self.map.areas[area].num_cities == self.map.areas[area].cities_per_player[barbarian] {
+                    target_cities *= 3;
+                }
+
+                let unowned_tiles_threshold = handicap.unowned_tiles_per_barbarian_city;
+
+                if self.map.areas[area].num_tiles < (unowned_tiles_threshold / 3) {
+                    target_cities *= target_cities_multiplier;
+                    target_cities /= 100;
+                }
+
+                target_cities /= std::cmp::max(1, unowned_tiles_threshold);
+
+                if self.map.areas[area].cities_per_player[barbarian] < target_cities {
+                    let (x, y) = self.map.xy(p);
+                    let mut value = self.player_ai_found_value(barbarian, x, y, d.defines.min_barbarian_city_starting_distance, false, &[]);
+                    if target_cities_multiplier > 100 {
+                        value *= self.map.areas[area].num_owned_tiles;
                     }
 
-                    let unowned_tiles_threshold = handicap.unowned_tiles_per_barbarian_city;
+                    value += 100 + self.soren_rand_num(50, "Barb City Found");
+                    value /= 100;
 
-                    if self.map.areas[area].num_tiles < (unowned_tiles_threshold / 3) {
-                        target_cities *= target_cities_multiplier;
-                        target_cities /= 100;
-                    }
-
-                    target_cities /= std::cmp::max(1, unowned_tiles_threshold);
-
-                    if self.map.areas[area].cities_per_player[barbarian] < target_cities {
-                        let (x, y) = self.map.xy(p);
-                        let mut value = self.player_ai_found_value(barbarian, x, y, d.defines.min_barbarian_city_starting_distance, false, &[]);
-                        if target_cities_multiplier > 100 {
-                            value *= self.map.areas[area].num_owned_tiles;
-                        }
-
-                        value += 100 + self.soren_rand_num(50, "Barb City Found");
-                        value /= 100;
-
-                        if value > best_value {
-                            best_value = value;
-                            best_plot = Some(p);
-                        }
+                    if value > best_value {
+                        best_value = value;
+                        best_plot = Some(p);
                     }
                 }
             }
@@ -1113,10 +1087,8 @@ impl Game {
                                         }
                                     }
 
-                                    if valid {
-                                        if !self.player_can_train(barbarian, loop_unit, false, false, false) {
-                                            valid = false;
-                                        }
+                                    if valid && !self.player_can_train(barbarian, loop_unit, false, false, false) {
+                                        valid = false;
                                     }
 
                                     if valid {
@@ -1300,10 +1272,8 @@ impl Game {
                 valid = false;
             } else if self.map.plots[p].found_disabled {
                 valid = false;
-            } else if bonus_mana != -1 {
-                if opt_to_i32(self.plot_get_bonus_type(p, None)) == bonus_mana {
-                    valid = false;
-                }
+            } else if bonus_mana != -1 && opt_to_i32(self.plot_get_bonus_type(p, None)) == bonus_mana {
+                valid = false;
             }
 
             if valid {
