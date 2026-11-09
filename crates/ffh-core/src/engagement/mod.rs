@@ -32,13 +32,15 @@ mod sink;
 pub mod slots;
 pub mod state;
 pub mod stats;
+pub mod summons;
 
 pub use arrange::Place;
 pub use more_cards::SentinelSource;
 pub use engage::{damage_from_hp, hp_from_damage, BattleEffect, EngageOutcome};
 pub use formation::{BattleRng, FighterIdx, Ground, GroundRule, Pair, Side};
 pub use pick::WarTest;
-pub use preview::{EngagePreview, Forecast, PreviewFighter, PreviewInput, PreviewSentinel};
+pub use preview::{EngagePreview, Forecast, PreviewFighter, PreviewInput, PreviewSentinel, PreviewSummon};
 pub use report::EngageResult;
 pub use slots::Slots;
 pub use stats::HitCtx;
+pub use summons::SummonCall;

@@ -246,7 +246,8 @@ pub fn check(g: &Game) {
             if s.lost.iter().map(|(_, n)| n).sum::<i32>() != s.fallen {
                 fail(format!("battle report #{} side {i}: {} fell, its losses by type {:?}", r.id, s.fallen, s.lost));
             }
-            if s.used > s.slots || s.used < s.committed {
+            // The units called into the battle (summons, units a kill created) fill no slot.
+            if s.used > s.slots || s.used < s.committed - s.summons {
                 fail(format!("battle report #{} side {i}: {} units filled {} of {} slots", r.id, s.committed, s.used, s.slots));
             }
         }
@@ -267,9 +268,12 @@ pub fn check(g: &Game) {
                 // `sentinels`, not among its committed units (docs/SIEGES.md).
                 let placed: Vec<&ffh_core::engagement::report::LogFighter> = log.fighters.iter().filter(|f| f.side.index() == i && f.place.is_some()).collect();
                 let sentinels = placed.iter().filter(|f| f.sentinel).count() as i32;
-                let units = placed.len() as i32 - sentinels;
+                // A unit a kill created enters the field with an event (no cell in the log); one
+                // none created never fought.
+                let entered = log.fighters.iter().filter(|f| f.side.index() == i && f.on_kill && !matches!(f.fate, Some(ffh_core::engagement::report::LogFate::SatOut))).count() as i32;
+                let units = placed.len() as i32 - sentinels + entered;
                 let want_sentinels = if i == 1 { r.outcome.sentinels } else { 0 };
-                if units != s.committed || sentinels != want_sentinels || log.fighters.iter().any(|f| f.place.is_some() != f.fate.is_some()) {
+                if units != s.committed || sentinels != want_sentinels || log.fighters.iter().any(|f| !f.on_kill && f.place.is_some() != f.fate.is_some()) {
                     fail(format!(
                         "battle report #{} side {i}: {} committed and {want_sentinels} Sentinels, {units} placed units and {sentinels} placed Sentinels in its log",
                         r.id, s.committed

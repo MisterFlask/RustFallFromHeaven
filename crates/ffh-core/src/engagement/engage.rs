@@ -62,6 +62,7 @@ use super::report::{BattleLog, BattleReport, CitySnap, EngageResult, LogFate, Ou
 use super::sink::Sink;
 use super::slots::Slots;
 use super::stats::HitCtx;
+use super::summons::CalledUnit;
 use crate::game::Game;
 use crate::ids::*;
 use crate::unit::{DefStrikeHit, DefStrikeRoll, UnitOverlay};
@@ -158,6 +159,8 @@ pub(crate) struct Setup {
     /// Card: the source of the field's Sentinels (a Bastion's, a Cairn's: `more_cards.rs`), the
     /// Sentinel fighters after the city's.
     pub field: Option<SentinelSource>,
+    /// Per committed unit: called into the battle (summons.rs), beyond its side's slots.
+    pub called: Vec<bool>,
 }
 
 impl Setup {
@@ -210,11 +213,26 @@ impl Setup {
         self.of(s).map(|i| Place { unit: self.units[i], lane: self.places[i].0, row: self.places[i].1 }).collect()
     }
 
-    /// The battle of the committed units that fight (not `sat_out`, by unit) and the Sentinels,
-    /// with HP `hp` (centi-HP, by set-up index): the resolver's formation, and each fighter's
-    /// set-up index.
+    /// Whether committed unit `i` is a unit a kill may create (summons.rs): off the field until
+    /// one does, it sits out the morale check and the opening.
+    pub fn is_on_kill(&self, i: usize) -> bool {
+        self.fighters[i].spawner.is_some()
+    }
+
+    /// Who sits out before the morale check: the units kills may create.
+    pub fn initial_sat_out(&self) -> Vec<bool> {
+        (0..self.units.len()).map(|i| self.is_on_kill(i)).collect()
+    }
+
+    /// The battle of the committed units that fight (not `sat_out`, by unit; a unit a kill may
+    /// create while its creator fights) and the Sentinels, with HP `hp` (centi-HP, by set-up
+    /// index): the resolver's formation, and each fighter's set-up index.
     pub fn battle(&self, sat_out: &[bool], hp: &[i32]) -> (Formation, Vec<usize>) {
-        let mut map: Vec<usize> = (0..self.units.len()).filter(|&i| !sat_out[i]).chain(self.sentinel_range()).collect();
+        let fights = |i: usize| match self.fighters[i].spawner {
+            Some(c) => !sat_out[c as usize],
+            None => !sat_out[i],
+        };
+        let mut map: Vec<usize> = (0..self.units.len()).filter(|&i| fights(i)).chain(self.sentinel_range()).collect();
         let mut fighters: Vec<Fighter> = map
             .iter()
             .map(|&i| {
@@ -223,6 +241,10 @@ impl Setup {
                 f
             })
             .collect();
+        // Set-up indices to the battle's.
+        for f in fighters.iter_mut() {
+            f.spawner = f.spawner.and_then(|c| map.iter().position(|&m| m == c as usize)).map(|k| k as formation::FighterIdx);
+        }
         // Card: the battle's illusions (past the set-up's fighters in `map`), the familiars.
         let casters = self.battle_magic(&mut fighters, &mut map);
         let base = map.len() - casters.len();
@@ -278,6 +300,10 @@ pub(crate) struct Fought {
     pub rounds: i32,
     /// Per side: its line is gone (no unit of it on the field at the end).
     pub down: [bool; 2],
+    /// The kills that created a unit (killer, victim, the unit that entered the field: `None`,
+    /// none could), and the units kills created that entered it (set-up indices).
+    pub spawned: Vec<(usize, usize, Option<usize>)>,
+    pub entered: Vec<usize>,
 }
 
 impl Fought {
@@ -286,10 +312,16 @@ impl Fought {
         let n = setup.fighters.len();
         let mut fate = vec![LogFate::SatOut; n];
         let mut end_hp = hp.to_vec();
+        let spawned: Vec<(usize, usize, Option<usize>)> = out.spawned.iter().map(|s| (map[s.killer as usize], map[s.victim as usize], s.unit.map(|u| map[u as usize]))).collect();
+        let entered: Vec<usize> = spawned.iter().filter_map(|s| s.2).collect();
         for (k, e) in out.fighters.iter().enumerate() {
             let i = map[k];
             // Card: an illusion is the battle's only.
             if i >= n {
+                continue;
+            }
+            // A unit a kill may create that none did never fought.
+            if setup.is_on_kill(i) && !entered.contains(&i) {
                 continue;
             }
             end_hp[i] = e.hp;
@@ -318,6 +350,8 @@ impl Fought {
             dealt,
             rounds: out.rounds as i32,
             down: out.down,
+            spawned,
+            entered,
         }
     }
 
@@ -497,31 +531,24 @@ impl Game {
     /// pair table. The real fight ([`Game::engage`]) and the preview ([`Game::engage_preview`])
     /// both build their battle here, so its fighters and pairs are the fight's own. `Err`: an
     /// empty formation, or no defender (no unit and no Sentinel).
-    pub(crate) fn engage_setup(&self, ctx: HitCtx, slots: Slots, att: Vec<Place>, candidates: Vec<UnitId>, sentinels: bool) -> Result<Setup, &'static str> {
+    pub(crate) fn engage_setup(&self, ctx: HitCtx, slots: Slots, att: Vec<Place>, candidates: Vec<UnitId>, sentinels: bool, summons: &[CalledUnit]) -> Result<Setup, &'static str> {
         if att.is_empty() {
             return Err("no unit can attack there");
         }
-        // Card: the defender's Sentinels from the field, a Bastion's, a Cairn's (more_cards.rs).
-        let mut slots = slots;
-        if sentinels {
-            self.engage_add_field_sentinels(&mut slots, &candidates, ctx.to);
-        } else {
-            slots.field_sentinels = 0;
-        }
-        let walls = if sentinels && slots.sentinels > 0 { self.engage_city_sentinels(ctx.to) } else { None };
-        if candidates.is_empty() && walls.is_none() {
-            return Err("there is nobody to fight there");
-        }
-        let def = self.engage_defense_formation(&candidates, &slots, &ctx);
-        if def.is_empty() && walls.is_none() {
-            return Err("there is nobody to fight there");
+        let (slots, walls, def) = self.engage_def_layout(&ctx, slots, &candidates, sentinels)?;
+        // The units called into the battle (summons.rs), each in its side's formation.
+        let mut att = att;
+        let mut def = def;
+        for c in summons {
+            match c.side {
+                Side::Attacker => att.push(c.place),
+                Side::Defender => def.push(c.place),
+            }
         }
         let params = Params::from_defines(&self.d.defines);
         let in_city = self.plot_is_city(ctx.to, false, None);
         let ground = self.engage_ground(ctx.to);
         let lanes = self.engage_lanes(&slots);
-        let mut att = att;
-        let mut def = def;
         att.sort_by_key(|p| (p.lane, p.row));
         def.sort_by_key(|p| (p.lane, p.row));
         let n_att = att.len();
@@ -590,12 +617,46 @@ impl Game {
                 };
             }
         }
+        // The units kills create (summons.rs, formation/spawn.rs): each creator's chance, the
+        // enemies whose death can create one, each created unit's creator.
+        for (i, &u) in units.iter().enumerate() {
+            let info = &self.d.units[self.units[u].unit_type];
+            fighters[i].spawn_chance = info.unit_create_from_combat.map(|_| info.unit_create_from_combat_chance);
+            fighters[i].fodder = self.unit_is_alive(u) && !self.unit_is_immune_to_capture(u) && info.equipment_promotion.is_none();
+            if let Some(c) = summons.iter().find(|c| c.place.unit == u).and_then(|c| c.spawner) {
+                fighters[i].spawner = units.iter().position(|&x| x == c).map(|k| k as formation::FighterIdx);
+            }
+        }
         // Card: familiars, the maddened's own side, damage against summons (battle_magic.rs).
         self.engage_magic_setup(&units, &sides, &mut fighters, &mut pairs, &ctx);
-        let mut setup = Setup { ctx, slots, lanes, ground, params, in_city, candidates, units, sides, places, n_att, fighters, pairs, sentinel_city, sentinels: ks, field };
+        let called = units.iter().map(|&u| summons.iter().any(|c| c.place.unit == u)).collect();
+        let mut setup = Setup { ctx, slots, lanes, ground, params, in_city, candidates, units, sides, places, n_att, fighters, pairs, sentinel_city, sentinels: ks, field, called };
         // The great-person cards' battle effects (docs/CARDS.md; `arms.rs`).
         self.engage_arms_setup(&mut setup);
         Ok(setup)
+    }
+
+    /// The defender's side of a set-up before its summons ([`Game::engage_setup`] and the
+    /// summons' plan share it): the slots with (`sentinels`) the field's Sentinels, the defended
+    /// city's standing Sentinels, and the defender's formation of `candidates`. `Err`: nobody to
+    /// fight (no unit and no Sentinel).
+    pub(crate) fn engage_def_layout(&self, ctx: &HitCtx, slots: Slots, candidates: &[UnitId], sentinels: bool) -> Result<(Slots, Option<(CityId, Vec<usize>)>, Vec<Place>), &'static str> {
+        // Card: the defender's Sentinels from the field, a Bastion's, a Cairn's (more_cards.rs).
+        let mut slots = slots;
+        if sentinels {
+            self.engage_add_field_sentinels(&mut slots, candidates, ctx.to);
+        } else {
+            slots.field_sentinels = 0;
+        }
+        let walls = if sentinels && slots.sentinels > 0 { self.engage_city_sentinels(ctx.to) } else { None };
+        if candidates.is_empty() && walls.is_none() {
+            return Err("there is nobody to fight there");
+        }
+        let def = self.engage_defense_formation(candidates, &slots, ctx);
+        if def.is_empty() && walls.is_none() {
+            return Err("there is nobody to fight there");
+        }
+        Ok((slots, walls, def))
     }
 
     /// Phase 7 hook (plan 6.2, 14): the pre-battle spells' effects on the battle of `setup` (its
@@ -675,7 +736,21 @@ impl Game {
         if candidates.is_empty() && slots.sentinels == 0 {
             return Err("there is nobody to fight there");
         }
-        let setup = self.engage_setup(ctx, slots, att, candidates, true)?;
+        // The plan as a human attacker saw it (preview.rs), before the summons are made: a
+        // preview makes the same summons, with the same ids, in a copy of the game.
+        let wants_log = log.unwrap_or_else(|| self.engage_seen_by_human(&force, p, to));
+        let frozen = if wants_log { self.engage_forecast_frozen(p, from, to, &att) } else { None };
+        // The summons the battle calls (summons.rs).
+        let calls = self.engage_summon_calls(&ctx, &slots, &att, &candidates, true);
+        let summons = self.engage_call_summons(&calls);
+        let setup = match self.engage_setup(ctx, slots, att, candidates, true, &summons) {
+            Ok(s) => s,
+            Err(e) => {
+                let made: Vec<UnitId> = summons.iter().map(|c| c.place.unit).collect();
+                self.engage_dismiss_summons(&made);
+                return Err(e);
+            }
+        };
         let n = setup.units.len();
         let def_units: Vec<UnitId> = setup.units[setup.n_att..].to_vec();
         let att_units: Vec<UnitId> = setup.units[..setup.n_att].to_vec();
@@ -686,7 +761,7 @@ impl Game {
             to,
             launcher,
             units: setup.units.clone(),
-            sat_out: vec![false; n],
+            sat_out: setup.initial_sat_out(),
             strikes: 0,
             place: self.engage_place(from, to),
             players: [
@@ -714,7 +789,6 @@ impl Game {
                 notes.push(note);
             }
         }
-        let wants_log = log.unwrap_or_else(|| self.engage_seen_by_human(&e.units, p, to));
         let mut sink = if wants_log {
             let reserves: Vec<(UnitId, Side)> = pool
                 .iter()
@@ -723,8 +797,7 @@ impl Game {
                 .chain(e.setup.def_reserve().into_iter().map(|u| (u, Side::Defender)))
                 .collect();
             let mut s = Sink::new(self, &e, &reserves, [ordered, false]);
-            // The plan as the attacker saw it, before anything changes.
-            let forecast = self.engage_forecast_frozen(p, from, to, &e.setup.formation(Side::Attacker), |u| s.index_of(u));
+            let forecast = frozen.as_ref().map(|f| f.frozen(|u| s.index_of(u)));
             s.set_forecast(forecast);
             Some(s)
         } else {
@@ -755,6 +828,10 @@ impl Game {
         let (f, map) = e.setup.battle(&e.sat_out, &hp);
         let out = if sink.is_some() { formation::resolve(&f, &mut self.soren_rand) } else { formation::resolve_quiet(&f, &mut self.soren_rand) };
         let fought = Fought::new(&e.setup, &hp, &map, &out);
+        // The units kills created that entered the field fought.
+        for &i in &fought.entered {
+            e.sat_out[i] = false;
+        }
         if let Some(s) = sink.as_mut() {
             s.battle(self, &e, &f, &map, &out);
         }
@@ -822,7 +899,9 @@ impl Game {
             let (player, shown_player, players) = e.players[s.index()].clone();
             let mut lost: Vec<(UnitType, i32)> = Vec::new();
             let (mut sat_out, mut fallen, mut escaped, mut standing) = (0, 0, 0, 0);
-            for i in e.of(s) {
+            // A unit a kill could have created that none did was never in the battle.
+            let in_battle = |i: usize| !e.setup.is_on_kill(i) || f.entered.contains(&i);
+            for i in e.of(s).filter(|&i| in_battle(i)) {
                 match f.fate[i] {
                     LogFate::Fell { .. } => {
                         fallen += 1;
@@ -843,13 +922,14 @@ impl Game {
                 players,
                 slots: e.setup.slots.max(s),
                 lanes: e.setup.lanes[s.index()] as i32,
-                used: e.of(s).map(|i| e.setup.fighters[i].slots()).sum(),
-                committed: e.of(s).len() as i32,
+                used: e.of(s).filter(|&i| !e.setup.called[i]).map(|i| e.setup.fighters[i].slots()).sum(),
+                committed: e.of(s).filter(|&i| in_battle(i)).count() as i32,
                 sat_out,
                 fallen,
                 escaped,
                 standing,
                 lost,
+                summons: e.of(s).filter(|&i| e.setup.called[i] && in_battle(i)).count() as i32,
             }
         });
         BattleReport {
@@ -1061,7 +1141,7 @@ impl Game {
             return Err("there is nobody to fight there");
         }
         let slots = self.engage_slots(&ctx);
-        self.engage_setup(ctx, slots, vec![Place { unit: m, lane: 0, row: 0 }], candidates, false)
+        self.engage_setup(ctx, slots, vec![Place { unit: m, lane: 0, row: 0 }], candidates, false, &[])
     }
 
     fn engage_missile_inner(&mut self, m: UnitId, to: PlotIdx) -> Result<(), &'static str> {
@@ -1100,7 +1180,7 @@ impl Game {
                 self.tel_engage_kill(m, v);
             }
             if self.units.contains(m) && self.units.contains(v) {
-                self.unit_combat_won_as(m, v, crate::unit::WonMode::Kill { roll_convert: false }, None);
+                self.unit_combat_won_as(m, v, crate::unit::WonMode::Kill { roll_convert: false, create: crate::unit::KillCreate::Roll }, None);
                 if d.defines.use_combat_result_callback != 0 && self.units.contains(m) && self.units.contains(v) {
                     self.ev_combat_result(m, v);
                 }

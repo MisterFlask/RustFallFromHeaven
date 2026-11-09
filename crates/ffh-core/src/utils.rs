@@ -1956,8 +1956,9 @@ mod tests {
         // +326 in all and no pair: PROMOTION_SUMMONERS_BOND, which no unit combat allows;
         // +263 in all: this game's UNIT_SKIRMISHER, with the Archer's promotions, below;
         // +1 pair: Formation, free on the Phalanx's class (docs/UNIT_ROLES.md), on the Nullstone
-        // Golem, which has no unit combat.)
-        assert_eq!((n, own_promotions * own_units), (26629, 86001));
+        // Golem, which has no unit combat; -37 pairs and -654 in all: Extension I and II gone,
+        // docs/ENGAGEMENTS.md, "Summons".)
+        assert_eq!((n, own_promotions * own_units), (26592, 85347));
         let archer = d.t::<UnitType>("UNIT_ARCHER");
         let skirmisher = d.t::<UnitType>("UNIT_SKIRMISHER");
         let takes = |u: UnitType| d.promotions.keys().filter(|&p| p.idx() < own_promotions && is_promotion_valid(d, p, u, false)).collect::<Vec<_>>();

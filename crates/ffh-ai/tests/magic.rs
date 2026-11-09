@@ -232,39 +232,6 @@ fn a_summon_with_two_moves_reaches_an_enemy_two_plots_away() {
 }
 
 #[test]
-fn a_summon_is_worth_only_the_fights_it_would_take() {
-    let d = ffh_data::global();
-    let mut g = one_landmass_game(15);
-    let (us, them) = (PlayerId(0), PlayerId(1));
-    if !magic::enabled(&g, us) {
-        return;
-    }
-    g.player_found(us, 3, 5);
-    g.player_found(them, 12, 5);
-    for _ in 0..2 {
-        g.player_init_unit(them, d.t::<UnitType>("UNIT_CHAMPION"), 12, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
-    }
-    let (ut, tt) = (g.players[us].team, g.players[them].team);
-    g.team_declare_war(ut, tt, true, None);
-    // A mage that knows Summon Spectre next to a city its Spectre could not hurt at 5% odds.
-    let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_MAGE"), 11, 5, Some(UnitAIType::UNITAI_MAGE), None);
-    give(&mut g, mage, &["PROMOTION_DEATH1", "PROMOTION_DEATH2"]);
-    let spectre = d.t::<SpellType>("SPELL_SUMMON_SPECTRE");
-    assert!(g.unit_can_cast(mage, spectre, false));
-    let weight = d.spells[spectre].ai_weight;
-    let v = View::new(&g, us);
-    // (Even one that spends itself at bad odds, `SUMMON_SPEND`, leaves a city alone at the end of
-    // the turn: its defenders heal before we strike.)
-    let at_city = magic::turn_value(&g, &v, mage, spectre).expect("a summon is valued");
-    assert_eq!(at_city, weight, "a Spectre that would not attack is worth nothing");
-    // A wounded Warrior two plots away: the Spectre walks up and takes it on.
-    let warrior = g.player_init_unit(them, d.t::<UnitType>("UNIT_WARRIOR"), 9, 5, Some(UnitAIType::UNITAI_ATTACK), None);
-    g.units[warrior].damage = 60;
-    let v = View::new(&g, us);
-    assert!(magic::turn_value(&g, &v, mage, spectre).is_some_and(|value| value > at_city), "the Warrior in reach is worth a Spectre");
-}
-
-#[test]
 fn donal_recruits_once_in_a_big_city() {
     let d = ffh_data::global();
     let mut g = one_landmass_game(14);

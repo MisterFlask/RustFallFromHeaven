@@ -148,7 +148,7 @@ pub struct MagicState {
     pub revived: Vec<bool>,
     pub intercepted: Vec<bool>,
     pub summoned: Vec<bool>,
-    /// Illusions not on the field yet.
+    /// Illusions not on the field yet (and the units kills create: `spawn.rs`).
     pub pending: Vec<bool>,
 }
 
@@ -165,7 +165,7 @@ impl MagicState {
             revived: vec![false; n],
             intercepted: vec![false; n],
             summoned: vec![false; n],
-            pending: f.fighters.iter().map(|x| x.magic.summoner.is_some()).collect(),
+            pending: f.fighters.iter().map(|x| x.magic.summoner.is_some() || x.spawner.is_some()).collect(),
         }
     }
 }

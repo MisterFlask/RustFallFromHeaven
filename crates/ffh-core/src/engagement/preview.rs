@@ -29,6 +29,8 @@ use super::pick::WarTest;
 use super::report::{ForecastFighter, FrozenForecast};
 use super::slots::Slots;
 use super::stats::HitCtx;
+use super::summons::{Called, SummonCall};
+use ffh_data::{SpellType, UnitType};
 use crate::game::Game;
 use crate::ids::*;
 use crate::rng::Rng;
@@ -118,6 +120,8 @@ pub struct EngagePreview {
     pub def_reserve: Vec<UnitId>,
     /// The defended city's Sentinels that fight (docs/SIEGES.md).
     pub sentinels: Vec<PreviewSentinel>,
+    /// The summons the battle calls, each side's (summons.rs); not in `forecast.per`.
+    pub summons: Vec<PreviewSummon>,
     pub forecast: Forecast,
     /// The team an attack would declare war on.
     pub declare_war: Option<TeamId>,
@@ -146,7 +150,8 @@ fn seed_of(words: &[u32]) -> u32 {
 }
 
 /// The preview's set-up: the pool, the plan's formation (as given, else the auto formation), the
-/// auto formation, the defender's formation, the view of the defense and the battle's set-up.
+/// auto formation, the defender's formation, the view of the defense and the battle's set-up;
+/// with summons (summons.rs), the copy of the game they were made in, whose set-up it is.
 struct Plan {
     pool: Vec<UnitId>,
     formation: Vec<Place>,
@@ -154,6 +159,41 @@ struct Plan {
     def_formation: Vec<Place>,
     view: DefView,
     setup: Setup,
+    scratch: Option<Box<Game>>,
+    summons: Vec<SummonCall>,
+}
+
+/// A summon of a plan (summons.rs): who calls it, its unit type, side and cell, its HP and max
+/// HP (centi-HP and HP) and A against nobody (x100), and its chance to fall (percent). It is made
+/// for the battle, so it has no unit in the game yet.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PreviewSummon {
+    /// Its caster (a unit a kill may create: its creator, or the caster of the summon that is).
+    pub caster: UnitId,
+    /// The summon's spell; `None`: a unit a kill may create, off the field until one does.
+    pub spell: Option<SpellType>,
+    pub unit_type: UnitType,
+    pub side: Side,
+    pub lane: u8,
+    pub row: u8,
+    pub hp: i32,
+    pub max_hp: i32,
+    pub a: i32,
+    pub fall_pct: i32,
+}
+
+impl Forecast {
+    /// This forecast frozen for a battle log, each fighter named by its log index (`index_of`).
+    pub(crate) fn frozen(&self, index_of: impl Fn(UnitId) -> Option<FighterIdx>) -> FrozenForecast {
+        FrozenForecast {
+            runs: self.runs,
+            wiped_permille: self.wiped_permille,
+            falls_permille: self.falls_permille,
+            repulsed_permille: self.repulsed_permille,
+            lost_x100: self.lost_x100,
+            per: self.per.iter().filter_map(|x| Some(ForecastFighter { b: index_of(x.unit)?, fall_pct: x.fall_pct, escape_pct: x.escape_pct })).collect(),
+        }
+    }
 }
 
 impl Game {
@@ -163,8 +203,25 @@ impl Game {
     pub fn engage_preview(&self, inp: &PreviewInput) -> Result<EngagePreview, &'static str> {
         let plan = self.engage_preview_plan(inp)?;
         let runs = self.d.defines.engagement_preview_runs.max(1);
-        let forecast = self.engage_forecast_sampled(&plan.setup, &plan.view, runs);
+        let g = plan.scratch.as_deref().unwrap_or(self);
+        let mut forecast = g.engage_forecast_sampled(&plan.setup, &plan.view, runs);
         let s = &plan.setup;
+        // The summons, which have no unit in this game, apart from the units.
+        let summons: Vec<PreviewSummon> = (0..s.units.len())
+            .filter(|&i| g.units[s.units[i]].battle_summon)
+            .filter_map(|i| {
+                let u = s.units[i];
+                let call = plan.summons.iter().find(|c| c.side == s.sides[i] && (c.lane, c.row) == s.places[i])?;
+                let f = &s.fighters[i];
+                let fall_pct = forecast.per.iter().find(|x| x.unit == u).map_or(0, |x| x.fall_pct);
+                let spell = match call.what {
+                    Called::Summon(sp) => Some(sp),
+                    Called::OnKill(_) => None,
+                };
+                Some(PreviewSummon { caster: call.caster, spell, unit_type: call.unit_type, side: call.side, lane: call.lane, row: call.row, hp: f.hp, max_hp: f.max_hp, a: f.a, fall_pct })
+            })
+            .collect();
+        forecast.per.retain(|x| !g.units[x.unit].battle_summon);
         let formation = plan.formation.clone();
         let reserve = plan.pool.iter().copied().filter(|u| !formation.iter().any(|p| p.unit == *u)).collect();
         let declare_war = match inp.war {
@@ -197,6 +254,7 @@ impl Game {
             def_formation: plan.def_formation.clone(),
             def_reserve: s.def_reserve(),
             sentinels,
+            summons,
             forecast,
             declare_war,
         })
@@ -237,8 +295,17 @@ impl Game {
         let mut slots = slots;
         self.engage_add_field_sentinels(&mut slots, &view.candidates, to);
         let def_formation = self.engage_defense_formation(&view.candidates, &slots, &ctx);
-        let setup = self.engage_setup(ctx, slots, formation.clone(), view.candidates.clone(), true)?;
-        Ok(Plan { pool, formation, auto, def_formation, view, setup })
+        // The summons (summons.rs) are made for the battle: the plan makes them in a copy of the
+        // game, as the real fight will (the same units, the same ids), and is that copy's.
+        let summons = self.engage_summon_calls(&ctx, &slots, &formation, &view.candidates, true);
+        if summons.is_empty() {
+            let setup = self.engage_setup(ctx, slots, formation.clone(), view.candidates.clone(), true, &[])?;
+            return Ok(Plan { pool, formation, auto, def_formation, view, setup, scratch: None, summons });
+        }
+        let mut scratch = Box::new(Game::load(self.d, &self.save()).expect("a game loads its own save"));
+        let made = scratch.engage_call_summons(&summons);
+        let setup = scratch.engage_setup(ctx, slots, formation.clone(), view.candidates.clone(), true, &made)?;
+        Ok(Plan { pool, formation, auto, def_formation, view, setup, scratch: Some(scratch), summons })
     }
 
     /// The seed of a set-up's forecast: both formations (sorted), the plots, the turn.
@@ -276,7 +343,7 @@ impl Game {
         let mut fell = vec![0i64; n_all];
         let mut escaped = vec![0i64; n_all];
         for _ in 0..runs {
-            let mut sat = vec![false; n];
+            let mut sat = setup.initial_sat_out();
             self.engage_morale_rolls(&setup.units, n_att, &mut sat, &mut rng);
             let mut ov = fresh.clone();
             self.engage_opening_rolls(&setup.units, n_att, &sat, &view.on_plot, &mut ov, &mut rng);
@@ -335,23 +402,18 @@ impl Game {
     }
 
     /// The plan of `p`'s attack from `from` on `to` with `formation`, frozen for its battle log
-    /// (module comment): a human attacker's preview. Each unit is named by its log index
-    /// (`index_of`); `None` for an AI attacker or when the plan cannot be made.
-    pub(crate) fn engage_forecast_frozen(&self, p: PlayerId, from: PlotIdx, to: PlotIdx, formation: &[Place], index_of: impl Fn(UnitId) -> Option<FighterIdx>) -> Option<FrozenForecast> {
+    /// (module comment): a human attacker's preview; `None` for an AI attacker or when the plan
+    /// cannot be made.
+    /// Its summons are in `per` with the ids the real fight gives them, when it is made before
+    /// them ([`Forecast::frozen`] names them by log index).
+    pub(crate) fn engage_forecast_frozen(&self, p: PlayerId, from: PlotIdx, to: PlotIdx, formation: &[Place]) -> Option<Forecast> {
         if !self.players[p].human {
             return None;
         }
         let inp = PreviewInput { player: p, from, to, formation: Some(formation), war: WarTest::AtWar };
         let plan = self.engage_preview_plan(&inp).ok()?;
         let runs = self.d.defines.engagement_preview_runs.max(1);
-        let f = self.engage_forecast_sampled(&plan.setup, &plan.view, runs);
-        Some(FrozenForecast {
-            runs,
-            wiped_permille: f.wiped_permille,
-            falls_permille: f.falls_permille,
-            repulsed_permille: f.repulsed_permille,
-            lost_x100: f.lost_x100,
-            per: f.per.iter().filter_map(|x| Some(ForecastFighter { b: index_of(x.unit)?, fall_pct: x.fall_pct, escape_pct: x.escape_pct })).collect(),
-        })
+        let g = plan.scratch.as_deref().unwrap_or(self);
+        Some(g.engage_forecast_sampled(&plan.setup, &plan.view, runs))
     }
 }

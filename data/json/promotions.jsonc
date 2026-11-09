@@ -1325,26 +1325,6 @@
     "button": "Art/Interface/Buttons/Promotions/Expandedhull.dds"
   },
   {
-    "type": "PROMOTION_EXTENSION1",
-    "description": "TXT_KEY_PROMOTION_EXTENSION1",
-    "promotion_prereq": "PROMOTION_CHANNELING1",
-    "unit_combats": {"UNITCOMBAT_ADEPT": true},
-    "button": "Art/Interface/Buttons/Promotions/Extension1.dds",
-    "ai_weight": 50,
-    "promotion_summon_perk": "PROMOTION_MOBILITY1",
-    "promotion_next_level": "PROMOTION_EXTENSION2"
-  },
-  {
-    "type": "PROMOTION_EXTENSION2",
-    "description": "TXT_KEY_PROMOTION_EXTENSION2",
-    "promotion_prereq": "PROMOTION_EXTENSION1",
-    "tech_prereq": "TECH_ARCANE_LORE",
-    "unit_combats": {"UNITCOMBAT_ADEPT": true},
-    "button": "Art/Interface/Buttons/Promotions/Extension2.dds",
-    "ai_weight": 100,
-    "promotion_summon_perk": "PROMOTION_MOBILITY2"
-  },
-  {
     "type": "PROMOTION_FAIR_WINDS",
     "description": "TXT_KEY_PROMOTION_FAIR_WINDS",
     "tech_prereq": "TECH_NEVER",

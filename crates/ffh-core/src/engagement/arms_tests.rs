@@ -101,7 +101,7 @@ impl World {
         let att = g.engage_auto_formation(&pool, Side::Attacker, &slots, &ctx);
         let force: Vec<UnitId> = att.iter().map(|p| p.unit).collect();
         let candidates = g.engage_defenders(self.to, self.p0, &force, WarTest::AtWar);
-        g.engage_setup(ctx, slots, att, candidates, true).expect("a battle")
+        g.engage_setup(ctx, slots, att, candidates, true, &[]).expect("a battle")
     }
 
     fn index(s: &Setup, u: UnitId) -> usize {

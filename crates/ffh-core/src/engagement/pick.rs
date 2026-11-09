@@ -54,7 +54,8 @@ impl Game {
     /// Whether unit `u` can attack plot `to` in an engagement (module comment; plan 5.2). Cheap:
     /// no best-defender search (a plot scan only for a unit with a combat limit).
     pub fn unit_can_engage(&self, u: UnitId, to: PlotIdx, war: WarTest) -> bool {
-        if !self.engage_applies(u, to) {
+        // A summon called into a battle is in that battle only (summons.rs).
+        if !self.engage_applies(u, to) || self.units[u].battle_summon {
             return false;
         }
         let Some(at) = self.unit_plot_opt(u) else { return false };
@@ -166,6 +167,6 @@ impl Game {
     /// Whether a unit the attack meets on `to` is one of its defenders ([`Game::engage_defenders`]):
     /// it can defend there and fights land battles (a land or immobile type).
     pub(crate) fn engage_can_defend(&self, d: UnitId, to: PlotIdx) -> bool {
-        self.unit_can_defend(d, Some(to)) && self.unit_engages_on_land(d)
+        !self.units[d].battle_summon && self.unit_can_defend(d, Some(to)) && self.unit_engages_on_land(d)
     }
 }

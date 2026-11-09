@@ -1599,6 +1599,13 @@ choices per civ in 300 turns), economy-positive throughout and no regression.
 
 ## Spellcasting (`magic.rs`)
 
+**Since 2026-11-09 the temporary summons are battle summons** (docs/ENGAGEMENTS.md, "Summons"):
+a caster's summon is called into each of its battles by the rules and is never cast on the map, so
+what follows about casting temporary summons and sending them at targets (`casting::summons_attack`,
+`SUMMON_SPEND`, the Summon phase before a strike) now applies only to the map's remaining temporary
+units (Wonder's creatures, the Black Mirror's and Hall of Mirrors' copies) and to the lasting
+summons; the AI's valuation of summoning spheres stands (their summons now fight in every battle).
+
 FfH's own AI casts by fixed priorities: at the end of every turn the best spell by
 `CvUnit::chooseSpell`'s weights, then a buff, then a summon when an enemy is in reach
 (`casting.rs`, ported term by term), and before every group attack its damage spells, summons and

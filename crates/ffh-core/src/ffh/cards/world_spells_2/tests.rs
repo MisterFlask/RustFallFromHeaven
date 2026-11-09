@@ -387,7 +387,7 @@ fn battle_setup(g: &Game, p0: PlayerId, from: PlotIdx, to: PlotIdx) -> crate::en
     let att = g.engage_auto_formation(&pool, Side::Attacker, &slots, &ctx);
     let force: Vec<UnitId> = att.iter().map(|p| p.unit).collect();
     let candidates = g.engage_defenders(to, p0, &force, WarTest::AtWar);
-    g.engage_setup(ctx, slots, att, candidates, true).expect("a battle")
+    g.engage_setup(ctx, slots, att, candidates, true, &[]).expect("a battle")
 }
 
 #[test]

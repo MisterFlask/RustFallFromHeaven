@@ -202,6 +202,11 @@ impl Game {
         if info.battle_only {
             return false;
         }
+        // This game's: a battle summon (a temporary summon spell) calls its unit into its caster's
+        // battles only (docs/ENGAGEMENTS.md, "Summons").
+        if info.battle_summon {
+            return false;
+        }
         // Change from FFH2: C++ refuses a spell without `bAllowAI` to every AI player. That is AI
         // policy, applied by the AIs themselves (ffh-ai casts such a spell only where it has logic
         // for it; docs/PORTING.md, "Changes from FFH2"), so the rule is the same for every player.
@@ -1355,6 +1360,41 @@ impl Game {
     /// with the fields `how` would (Wonder's Fireball calls it without a spell: Fire II's Fireball
     /// is a battle spell, docs/ENGAGEMENTS.md).
     pub fn unit_summon(&mut self, u: UnitId, create_unit_type: UnitType, how: SummonHow) {
+        let owner = self.units[u].owner;
+        let summon = self.unit_init_summon(u, create_unit_type, how);
+        self.unit_do_turn(summon);
+        if !self.units.contains(summon) || !self.units.contains(u) {
+            return;
+        }
+        if !self.unit_is_human(u) {
+            // BETTER AI (Better use of Summons) Sephi
+            if self.players[owner].sum_sui_mode {
+                if self.unit_can_move(summon) {
+                    self.units[summon].ai_groupflag = GROUPFLAG_NONE;
+                    self.units[summon].ai_suicide_summon = true;
+                    // AI: `pUnit->AI_update()` (the summon acts at once).
+                    self.ai_hook(owner, AiHook::UnitUpdate(summon));
+                }
+            } else if self.units[summon].unit_type.i() == self.d.defines.unit_fireball {
+                if self.unit_bombard(summon) {
+                    return;
+                }
+            }
+            if self.units[summon].duration > 0 {
+                if self.units[summon].moves > 0 {
+                    let group = live_group(self, u);
+                    self.unit_join_group(summon, group, true);
+                }
+            }
+        }
+    }
+
+    /// Unit `u`'s summon of a `create_unit_type` as a spell with the fields `how` would summon it,
+    /// on `u`'s plot ([`Game::unit_summon`]'s first part; a battle's summons are made here too,
+    /// docs/ENGAGEMENTS.md, "Summons"): the unit, its summoner, its duration (a temporary one) or
+    /// its immobile turns (a permanent one), the caster's summon perks (or, copying them, its
+    /// promotions), the spell's promotion and the owner's traits' summon promotions.
+    pub fn unit_init_summon(&mut self, u: UnitId, create_unit_type: UnitType, how: SummonHow) -> UnitId {
         let d = self.d;
         let unit = &self.units[u];
         let (owner, x, y) = (unit.owner, unit.x, unit.y);
@@ -1394,31 +1434,7 @@ impl Game {
             self.unit_set_has_promotion(summon, promotion, true);
         }
         self.unit_add_summon_promotions(summon);
-        self.unit_do_turn(summon);
-        if !self.units.contains(summon) || !self.units.contains(u) {
-            return;
-        }
-        if !self.unit_is_human(u) {
-            // BETTER AI (Better use of Summons) Sephi
-            if self.players[owner].sum_sui_mode {
-                if self.unit_can_move(summon) {
-                    self.units[summon].ai_groupflag = GROUPFLAG_NONE;
-                    self.units[summon].ai_suicide_summon = true;
-                    // AI: `pUnit->AI_update()` (the summon acts at once).
-                    self.ai_hook(owner, AiHook::UnitUpdate(summon));
-                }
-            } else if self.units[summon].unit_type.i() == d.defines.unit_fireball {
-                if self.unit_bombard(summon) {
-                    return;
-                }
-            }
-            if self.units[summon].duration > 0 {
-                if self.units[summon].moves > 0 {
-                    let group = live_group(self, u);
-                    self.unit_join_group(summon, group, true);
-                }
-            }
-        }
+        summon
     }
 
     /// This game's: summon `u` gets its owner's traits' summon promotions (the Summoner trait's
@@ -2467,11 +2483,8 @@ mod tests {
         g.unit_calc_combat_limit(u);
         assert_eq!(g.units[u].combat_limit, 100);
 
-        // getExtraSpellMove: the moves of the summon perks (Extension -> Mobility).
+        // getExtraSpellMove: the moves of the summon perks (none since Extension I and II went).
         assert_eq!(g.unit_get_extra_spell_move(u), 0);
-        g.units[u].has_promotion[promotion("PROMOTION_EXTENSION1")] = true;
-        g.units[u].has_promotion[promotion("PROMOTION_EXTENSION2")] = true;
-        assert_eq!(g.unit_get_extra_spell_move(u), 2);
 
         // getSpellCasterXP: only for bFreeXP units.
         g.unit_change_spell_caster_xp(u, 12);

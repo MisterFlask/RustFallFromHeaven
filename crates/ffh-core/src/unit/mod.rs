@@ -42,7 +42,7 @@ use crate::engagement::Side;
 use crate::ids::*;
 use ffh_data::*;
 
-pub(crate) use combat::{apply_combat_modifier, attack_move_cost, Declared, DefStrikeHit, DefStrikeRoll, UnitOverlay, WonEffect, WonMode};
+pub(crate) use combat::{apply_combat_modifier, attack_move_cost, Declared, DefStrikeHit, DefStrikeRoll, KillCreate, UnitOverlay, WonEffect, WonMode};
 
 /// Which strength [`Game::unit_combat_terms`](crate::game::Game::unit_combat_terms) computes.
 #[derive(Copy, Clone, Debug)]
@@ -582,6 +582,9 @@ pub struct Unit {
     pub card: Option<TechType>,
     /// Not in C++: on a City Caravan, the city it carries (docs/CARDS.md, Wheeled City).
     pub packed_city: Option<crate::ffh::cards::map_rules::PackedCity>,
+    /// Not in C++: a caster's summon called into a battle (docs/ENGAGEMENTS.md, "Summons"): it
+    /// exists only during that battle's engagement, and no pool or defence picks it.
+    pub battle_summon: bool,
 }
 
 impl Unit {
@@ -762,6 +765,7 @@ impl Unit {
             lent: None,
             card: None,
             packed_city: None,
+            battle_summon: false,
         }
     }
 }

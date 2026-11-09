@@ -49,8 +49,9 @@ fn table_sizes() {
     assert_eq!(own(d.units.len(), "units"), 327);
     assert_eq!(own(d.unit_classes.len(), "unit_classes"), 249);
     // 261 and this game's PROMOTION_SPIRIT_GUIDE2 (docs/SUITABILITY.md) and
-    // PROMOTION_SUMMONERS_BOND (the Summoner trait's).
-    assert_eq!(own(d.promotions.len(), "promotions"), 263);
+    // PROMOTION_SUMMONERS_BOND (the Summoner trait's), less Extension I and II (docs/ENGAGEMENTS.md,
+    // "Summons").
+    assert_eq!(own(d.promotions.len(), "promotions"), 261);
     // 267 and this game's SPELL_FIREBALL_BARGE, 40 sphere spells in battle and Wonder's 10
     // outcomes (docs/ENGAGEMENTS.md, "Battle spells").
     assert_eq!(own(d.spells.len(), "spells"), 318);

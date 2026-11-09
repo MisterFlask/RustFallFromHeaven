@@ -734,7 +734,9 @@ impl Game {
         let animal = barb && e.of(Side::Defender).all(|i| d.units[e.types[i]].animal);
         // A unit's kind (the action of the row it prefers: STRIKE, SHOOT, ...).
         let kind_of = |i: usize| d.engage_kind(e.types[i]).token();
-        let (n_att, n_def) = (e.of(Side::Attacker).len(), e.of(Side::Defender).len());
+        // A unit a kill could have created that none did was never in the battle.
+        let in_battle = |i: usize| !e.setup.is_on_kill(i) || f.entered.contains(&i);
+        let (n_att, n_def) = (e.of(Side::Attacker).filter(|&i| in_battle(i)).count(), e.of(Side::Defender).filter(|&i| in_battle(i)).count());
         let result = match r.outcome.result {
             EngageResult::Taken => "taken",
             EngageResult::Cleared => "cleared",
@@ -745,7 +747,7 @@ impl Game {
         let rounds_key = ROUND_KEYS[rounds.clamp(0, 4) as usize];
         let (x, y) = (r.place.x, r.place.y);
         self.telemetry.with(|t| {
-            for i in 0..e.units.len() {
+            for i in (0..e.units.len()).filter(|&i| in_battle(i)) {
                 let fate = f.fate[i];
                 let p = e.owners[i];
                 if e.side(i) == Side::Attacker {

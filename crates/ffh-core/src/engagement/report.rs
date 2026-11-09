@@ -88,6 +88,9 @@ pub struct ReportSide {
     pub standing: i32,
     /// Units killed, by unit type (types ascending).
     pub lost: Vec<(UnitType, i32)>,
+    /// Of the committed units, those called into the battle (summons.rs: summons, and units a kill
+    /// created that entered the field): beyond its slots, not in `used`.
+    pub summons: i32,
 }
 
 /// The defended plot (DESIGN `PlotSnap`).
@@ -272,6 +275,11 @@ pub struct LogFighter {
     pub dealt: i32,
     pub taken: i32,
     pub healed: i32,
+    /// A unit called into the battle (summons.rs): the fighter that called it (a summon's caster;
+    /// the unit whose kill may create it), and whether a kill brings it (`on_kill`: out of the
+    /// line until an event's `entered` does; one none brought never fought).
+    pub summoner: Option<FighterIdx>,
+    pub on_kill: bool,
 }
 
 impl LogFighter {

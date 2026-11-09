@@ -81,6 +81,8 @@ function takePreview(pv, sent = null) {
   P.refused = refused;
   P.errors = pv.errors ?? [];
   P.declare = pv.declare_war ?? null;
+  // The units the battle calls (docs/ENGAGEMENTS.md, "Summons"): made for it, no fighter here.
+  P.summons = forecast ? (pv.summons ?? []).filter((x) => !x.on_kill) : [];
 }
 
 /** The formation changed: the board now, the forecast when the source answers. */
@@ -465,6 +467,10 @@ function forecastPanel(ctx, { mineIn, theirsIn, theirsOut }) {
     );
   } else if (P.pending) body.push(h("div.bt-row", h("span.bt-h4", "Forecast"), h("span.dim", "estimating…")), h("div.small.dim", "The engine plays this formation many times over."));
   else body.push(h("div.bt-row", h("span.bt-h4", "Forecast")), h("div.small.dim", !P.place.size ? "Put at least one unit in the line." : P.refused ? "No forecast: the engine refuses this formation." : "No forecast for this formation."));
+  if (fc && P.summons?.length) {
+    const each = P.summons.map((x) => `${tyLabel("UnitType", x.unit_type)} (${x.side === me ? "yours" : "theirs"}, falls ${x.fall_pct}%)`);
+    body.push(h("div.small", { title: "Called into this battle by a caster in the line; not in the counts above." }, h("span.dim", "Summons: "), each.join(", ")));
+  }
   if (war) body.push(h("div.warn.small", "Attacking declares war."));
   for (const e of P.errors) body.push(h("div.bad.small", e));
   return pnl(
