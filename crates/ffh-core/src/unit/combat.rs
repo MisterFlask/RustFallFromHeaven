@@ -2434,12 +2434,16 @@ impl Game {
         let visible_defenders = if on_plot.is_empty() {
             0
         } else {
-            let owner_i = self.units[u].owner.i();
-            let always_hostile = self.unit_is_always_hostile(u, Some(plot)) as i32;
+            let team = self.unit_get_team(u);
+            let always_hostile = self.unit_is_always_hostile(u, Some(plot));
             // `PUF_canDefendEnemy` with `ov`'s wars.
             on_plot
                 .iter()
-                .filter(|&&x| self.puf_can_defend(x, owner_i, always_hostile) && self.puf_is_enemy_with(x, owner_i, always_hostile, |a, b| ov.at_war(self, a, b)) && self.puf_is_visible(x, owner_i, -1))
+                .filter(|&&x| {
+                    self.unit_can_defend(x, None)
+                        && self.unit_is_enemy_of_with(x, team, always_hostile, |a, b| ov.at_war(self, a, b))
+                        && self.unit_is_visible_to(x, team)
+                })
                 .count() as i32
         };
         (visible_defenders - if engagement { 0 } else { 1 }).min(self.unit_collateral_damage_max_units(u))

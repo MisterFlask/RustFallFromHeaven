@@ -1732,7 +1732,7 @@ impl Cai {
         if let Some(city) = g.map.plots[g.unit_plot(u)].plot_city {
             if g.cities[city].owner == owner {
                 let city_plot = g.city_plot(city);
-                if g.plot_plot_count(city_plot, Some(Game::puf_is_unit_ai_type), unit_ai.i(), -1, Some(owner), None, None, -1, -1) > 0 {
+                if g.plot_count_units(city_plot, |pu| g.units[pu].owner == owner && g.units[pu].ai_type == Some(unit_ai)) > 0 {
                     if !is_assault_sea || self.city_ai_is_defended(g, city, -1) {
                         push_mission(g, u, MissionType::MISSION_SKIP, -1, -1, 0, false, Some(MissionAIType::MISSIONAI_PICKUP), Some(city_plot));
                         return true;
@@ -1749,7 +1749,7 @@ impl Cai {
             let city_plot = g.city_plot(loop_city);
             if self.unit_ai_plot_valid(g, u, city_plot) {
                 if !is_assault_sea || self.city_ai_is_defended(g, loop_city, -1) {
-                    let mut count = g.plot_plot_count(city_plot, Some(Game::puf_is_unit_ai_type), unit_ai.i(), -1, Some(owner), None, Some(Game::puf_is_finite_range), -1, -1);
+                    let mut count = g.plot_count_units(city_plot, |pu| g.units[pu].owner == owner && g.units[pu].ai_type == Some(unit_ai) && (g.unit_get_domain_type(pu) != DomainType::DOMAIN_AIR || g.d.units[g.units[pu].unit_type].air_range > 0));
                     let mut value = count * 10;
 
                     if g.city_production_unit_ai(loop_city) == Some(unit_ai) {
@@ -1823,7 +1823,7 @@ impl Cai {
             let mut air_base_value = if loop_city.is_some() { 0 } else { self.player_ai_get_plot_airbase_value(g, owner, loop_plot) };
             air_base_value /= 6;
 
-            let mut defenders = g.plot_plot_count(loop_plot, Some(Game::puf_can_defend), -1, -1, Some(owner), None, None, -1, -1);
+            let mut defenders = g.plot_count_units(loop_plot, |pu| g.units[pu].owner == owner && g.unit_can_defend(pu, None));
 
             if let Some(loop_city) = loop_city {
                 if defenders > 2 {
@@ -1862,8 +1862,8 @@ impl Cai {
                         }
                     }
 
-                    let mut attack_air_count = g.plot_plot_count(loop_plot, Some(Game::puf_can_air_attack), -1, -1, None, Some(team), None, -1, -1);
-                    attack_air_count += 2 * g.plot_plot_count(loop_plot, Some(Game::puf_is_unit_ai_type), UnitAIType::UNITAI_ICBM.i(), -1, None, Some(team), None, -1, -1);
+                    let mut attack_air_count = g.plot_count_units(loop_plot, |pu| g.unit_get_team(pu) == team && g.unit_can_air_attack(pu));
+                    attack_air_count += 2 * g.plot_count_units(loop_plot, |pu| g.unit_get_team(pu) == team && g.units[pu].ai_type == Some(UnitAIType::UNITAI_ICBM));
                     if g.unit_at_plot(u, loop_plot) {
                         attack_air_count += if can_air_attack { -1 } else { 0 };
                         attack_air_count += if nuke_range >= 0 { -2 } else { 0 };

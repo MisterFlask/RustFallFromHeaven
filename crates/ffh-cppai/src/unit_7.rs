@@ -794,8 +794,8 @@ impl Cai {
             }
         } else {
             let here = if g.unit_at_plot(u, plot) { 1 } else { 0 };
-            if g.plot_plot_count(plot, Some(Game::puf_can_defend_group_head), -1, -1, Some(owner), None, None, -1, -1) <= here {
-                if g.plot_plot_count(plot, Some(Game::puf_cannot_defend), -1, -1, Some(owner), None, None, -1, -1) > 0 {
+            if g.plot_count_units(plot, |pu| g.units[pu].owner == owner && g.unit_can_defend(pu, None) && g.unit_is_group_head(pu)) <= here {
+                if g.plot_count_units(plot, |pu| g.units[pu].owner == owner && !g.unit_can_defend(pu, None)) > 0 {
                     return true;
                 }
             }

@@ -72,7 +72,7 @@ impl Cai {
 
             let mut defend = false;
 
-            if g.plot_plot_count(plot, Some(Game::puf_can_defend_group_head), -1, -1, Some(owner), None, None, -1, -1) == 1 {
+            if g.plot_count_units(plot, |pu| g.units[pu].owner == owner && g.unit_can_defend(pu, None) && g.unit_is_group_head(pu)) == 1 {
                 // XXX check for other team's units?
                 defend = true;
             } else if !self.city_ai_is_defended(g, city, (if g.unit_ai_is_city_ai_type(u) { -1 } else { 0 }) + extra) {
@@ -117,7 +117,7 @@ impl Cai {
                 let ejected = self.group_ai_eject_best_defender(g, old_group, plot);
 
                 if let Some(ej) = ejected {
-                    if g.plot_plot_count(plot, Some(Game::puf_is_city_ai_type), -1, -1, Some(owner), None, None, -1, -1) == 0 {
+                    if g.plot_count_units(plot, |pu| g.units[pu].owner == owner && g.unit_ai_is_city_ai_type(pu)) == 0 {
                         if g.unit_city_defense_modifier(ej) > 0 {
                             g.unit_ai_set_unit_ai_type(ej, UnitAIType::UNITAI_CITY_DEFENSE);
                         }
@@ -151,17 +151,7 @@ impl Cai {
                 let lc_plot = g.city_plot(lc);
                 if self.unit_ai_plot_valid(g, u, lc_plot) {
                     let extra = if !is_city_ai {
-                        g.plot_plot_count(
-                            lc_plot,
-                            Some(Game::puf_can_defend_group_head),
-                            -1,
-                            -1,
-                            Some(owner),
-                            None,
-                            Some(Game::puf_is_not_city_ai_type),
-                            -1,
-                            -1,
-                        )
+                        g.plot_count_units(lc_plot, |pu| g.units[pu].owner == owner && g.unit_can_defend(pu, None) && g.unit_is_group_head(pu) && !g.unit_ai_is_city_ai_type(pu))
                     } else {
                         0
                     };
@@ -257,17 +247,7 @@ impl Cai {
                 if g.unit_can_airlift_at(u, city_plot, lx, ly) {
                     let lc_plot = g.city_plot(lc);
                     let extra = if !is_city_ai {
-                        g.plot_plot_count(
-                            lc_plot,
-                            Some(Game::puf_can_defend_group_head),
-                            -1,
-                            -1,
-                            Some(owner),
-                            None,
-                            Some(Game::puf_is_not_city_ai_type),
-                            -1,
-                            -1,
-                        )
+                        g.plot_count_units(lc_plot, |pu| g.units[pu].owner == owner && g.unit_can_defend(pu, None) && g.unit_is_group_head(pu) && !g.unit_ai_is_city_ai_type(pu))
                     } else {
                         0
                     };
@@ -426,7 +406,7 @@ impl Cai {
         if g.map.plots[plot].owner == Some(owner) {
             if let Some(improvement) = g.map.plots[plot].improvement_type {
                 if g.d.improvements[improvement].acts_as_city {
-                    if g.plot_plot_count(plot, Some(Game::puf_is_city_ai_type), -1, -1, Some(owner), None, None, -1, -1)
+                    if g.plot_count_units(plot, |pu| g.units[pu].owner == owner && g.unit_ai_is_city_ai_type(pu))
                         <= self.unit_ai_get_plot_defenders_needed(g, u, plot, 0)
                     {
                         push_skip_ai(g, grp, MissionAIType::MISSIONAI_GUARD_BONUS, Some(plot));
@@ -805,17 +785,7 @@ impl Cai {
             if g.cities[city].owner == owner {
                 if self.city_ai_needed_defenders(g, city) > 1 {
                     let city_plot = g.city_plot(city);
-                    let count = g.plot_plot_count(
-                        city_plot,
-                        Some(Game::puf_can_defend_group_head),
-                        -1,
-                        -1,
-                        Some(owner),
-                        None,
-                        Some(Game::puf_is_not_city_ai_type),
-                        -1,
-                        -1,
-                    );
+                    let count = g.plot_count_units(city_plot, |pu| g.units[pu].owner == owner && g.unit_can_defend(pu, None) && g.unit_is_group_head(pu) && !g.unit_ai_is_city_ai_type(pu));
                     if self.city_ai_is_defended(g, city, count) {
                         let plot_danger = self.player_ai_get_plot_danger(g, owner, plot, 3, true);
 
@@ -1978,17 +1948,7 @@ impl Cai {
         let team = g.unit_get_team(u);
         let plot = g.unit_plot(u);
 
-        let paratrooper_count = g.plot_plot_count(
-            plot,
-            Some(Game::puf_is_unit_ai_type),
-            UnitAIType::UNITAI_PARADROP.i(),
-            -1,
-            Some(owner),
-            None,
-            None,
-            -1,
-            -1,
-        );
+        let paratrooper_count = g.plot_count_units(plot, |pu| g.units[pu].owner == owner && g.units[pu].ai_type == Some(UnitAIType::UNITAI_PARADROP));
 
         if !g.unit_can_paradrop(u, plot) {
             return false;

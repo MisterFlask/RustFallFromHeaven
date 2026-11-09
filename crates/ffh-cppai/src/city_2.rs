@@ -1473,24 +1473,14 @@ impl Cai {
     /// C++ `bool CvCityAI::AI_isDefended(int iExtra = 0)` (CvCityAI.cpp:4660-4665)
     pub fn city_ai_is_defended(&self, g: &Game, c: CityId, extra: i32) -> bool {
         let owner = g.cities[c].owner;
-        let count = g.plot_plot_count(g.city_plot(c), Some(Game::puf_can_defend_group_head), -1, -1, Some(owner), None, Some(Game::puf_is_city_ai_type), -1, -1);
+        let count = g.plot_count_units(g.city_plot(c), |pu| g.units[pu].owner == owner && g.unit_can_defend(pu, None) && g.unit_is_group_head(pu) && g.unit_ai_is_city_ai_type(pu));
         (count + extra) >= self.city_ai_needed_defenders(g, c) // XXX check for other team's units?
     }
 
     /// C++ `bool CvCityAI::AI_isAirDefended(int iExtra = 0)` (CvCityAI.cpp:4668-4673)
     pub fn city_ai_is_air_defended(&self, g: &Game, c: CityId, extra: i32) -> bool {
         let owner = g.cities[c].owner;
-        let count = g.plot_plot_count(
-            g.city_plot(c),
-            Some(Game::puf_can_air_defend),
-            -1,
-            -1,
-            Some(owner),
-            None,
-            Some(Game::puf_is_domain_type),
-            DomainType::DOMAIN_AIR.i(),
-            -1,
-        );
+        let count = g.plot_count_units(g.city_plot(c), |pu| g.units[pu].owner == owner && g.unit_can_air_defend(pu, None) && g.unit_get_domain_type(pu) == DomainType::DOMAIN_AIR);
         (count + extra) >= self.city_ai_needed_air_defenders(g, c) // XXX check for other team's units?
     }
 

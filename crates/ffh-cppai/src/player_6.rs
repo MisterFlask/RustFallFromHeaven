@@ -484,7 +484,7 @@ impl Cai {
                 || (neutral && !owned)
                 || (hostile && owned && plot_team.map_or(false, |t| g.teams[our_team].at_war[t]))
             {
-                count += g.plot_plot_count(loop_plot, Some(Game::puf_is_enemy), p.i(), false as i32, None, None, Some(Game::puf_is_visible), p.i(), -1);
+                count += g.plot_count_units(loop_plot, |pu| g.unit_is_enemy_of(pu, g.players[p].team, false) && g.unit_is_visible_to(pu, g.players[p].team));
             }
         }
         count
@@ -784,7 +784,7 @@ impl Cai {
                 for dx in -range..=range {
                     for dy in -range..=range {
                         if let Some(loop_plot2) = g.plot_xy(px, py, dx, dy) {
-                            explorer_count += g.plot_plot_count(loop_plot2, Some(Game::puf_is_unit_ai_type), unit_ai.i(), -1, None, Some(team), None, -1, -1);
+                            explorer_count += g.plot_count_units(loop_plot2, |pu| g.unit_get_team(pu) == team && g.units[pu].ai_type == Some(unit_ai));
                             if g.map.plots[loop_plot2].area == Some(loop_area) {
                                 if g.plot_is_goody(loop_plot2, None) {
                                     goody_count += 1;

@@ -183,7 +183,7 @@ impl Game {
                         let plot = self.unit_plot(loop_unit);
                         if !self.unit_is_military_happiness(loop_unit)
                             || !self.plot_is_city(plot, false, None)
-                            || self.plot_plot_count(plot, Some(Game::puf_is_military_happiness), -1, -1, Some(p), None, None, -1, -1) > 1
+                            || self.plot_count_units(plot, |u| self.units[u].owner == p && self.unit_is_military_happiness(u)) > 1
                         {
                             let mut value = 10000 + self.soren_rand_num(1000, "Disband Unit");
 

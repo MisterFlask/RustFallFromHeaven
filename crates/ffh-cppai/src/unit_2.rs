@@ -961,7 +961,7 @@ impl Cai {
             if g.cities[city].owner == p {
                 // XXX check for other team?
                 let unit_ai = opt_to_i32(g.units[u].ai_type);
-                let count = g.plot_plot_count(g.unit_plot(u), Some(Game::puf_can_defend_group_head), -1, -1, Some(p), None, Some(Game::puf_is_unit_ai_type), unit_ai, -1);
+                let count = g.plot_count_units(g.unit_plot(u), |pu| g.units[pu].owner == p && g.unit_can_defend(pu, None) && g.unit_is_group_head(pu) && opt_to_i32(g.units[pu].ai_type) == unit_ai);
                 if count == 1 {
                     push_mission(g, u, MissionType::MISSION_SKIP);
                     return;

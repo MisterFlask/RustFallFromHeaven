@@ -147,7 +147,7 @@ impl Game {
             for dx in -min_rival_range..=min_rival_range {
                 for dy in -min_rival_range..=min_rival_range {
                     if let Some(loop_plot) = self.plot_xy(x, y, dx, dy) {
-                        if self.plot_plot_check(loop_plot, Game::puf_is_other_team, p.i(), -1, None, None, None, -1, -1).is_some() {
+                        if self.plot_any_unit(loop_plot, |u| self.unit_is_other_team(u, team)) {
                             return 0;
                         }
                     }

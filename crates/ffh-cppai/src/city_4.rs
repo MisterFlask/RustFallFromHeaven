@@ -12,7 +12,6 @@
 #![allow(unused_variables, unused_mut, unused_imports, clippy::all)]
 
 use crate::prelude::*;
-use ffh_core::plot::ConstPlotUnitFunc;
 
 const FOOD: usize = 0;
 const PROD: usize = 1;
@@ -1497,17 +1496,7 @@ impl Cai {
             //by iterating groups and seeing if the plot target lands in this city
             //but since this is only called once/turn i'm not sure it matters.
             workers_have += self.player_ai_plot_target_mission_ais(g, owner, lp, MissionAIType::MISSIONAI_BUILD, None, 0);
-            workers_have += g.plot_plot_count(
-                lp,
-                Some(Game::puf_is_unit_ai_type as ConstPlotUnitFunc),
-                UnitAIType::UNITAI_WORKER.i(),
-                -1,
-                Some(owner),
-                Some(team),
-                Some(Game::puf_is_no_mission as ConstPlotUnitFunc),
-                -1,
-                -1,
-            );
+            workers_have += g.plot_count_units(lp, |pu| g.units[pu].owner == owner && g.unit_get_team(pu) == team && g.units[pu].ai_type == Some(UnitAIType::UNITAI_WORKER) && g.groups[g.units[pu].group.expect("PUF_isNoMission: unit without a selection group")].activity_type != ActivityType::ACTIVITY_MISSION);
             if i != CITY_HOME_PLOT {
                 let has_best_build = self.city_ai_get_best_build(g, c, i as i32).is_some();
                 if g.map.plots[lp].improvement_type.is_none() {

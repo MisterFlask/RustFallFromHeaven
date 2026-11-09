@@ -1766,7 +1766,7 @@ impl Cai {
                             let plot = g.unit_plot(u);
                             if !g.unit_is_military_happiness(u)
                                 || !g.plot_is_city(plot, false, None)
-                                || g.plot_plot_count(plot, Some(Game::puf_is_military_happiness), -1, -1, Some(p), None, None, -1, -1) > 2
+                                || g.plot_count_units(plot, |pu| g.units[pu].owner == p && g.unit_is_military_happiness(pu)) > 2
                             {
                                 let mut value = 10000 + self.rand(1000, "Disband Unit");
 

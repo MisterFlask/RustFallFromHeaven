@@ -729,7 +729,7 @@ impl Cai {
             }
 
             if production_unit_ai == Some(UnitAIType::UNITAI_CITY_DEFENSE) {
-                if g.plot_plot_check(g.city_plot(c), Game::puf_is_unit_ai_type, UnitAIType::UNITAI_SETTLE.i(), -1, Some(owner), None, None, -1, -1).is_some() {
+                if g.plot_find_unit(g.city_plot(c), |pu| g.units[pu].owner == owner && g.units[pu].ai_type == Some(UnitAIType::UNITAI_SETTLE)).is_some() {
                     if !self.city_ai_is_defended(g, c, -2) {
                         // XXX check for other team's units?
                         min_turns = min_turns.min(5);
@@ -990,13 +990,13 @@ impl Cai {
     pub fn city_ai_choose_defender(&self, g: &mut Game, c: CityId) -> bool {
         let owner = g.cities[c].owner;
         let plot = g.city_plot(c);
-        if g.plot_plot_check(plot, Game::puf_is_unit_ai_type, UnitAIType::UNITAI_CITY_SPECIAL.i(), -1, Some(owner), None, None, -1, -1).is_none() {
+        if g.plot_find_unit(plot, |pu| g.units[pu].owner == owner && g.units[pu].ai_type == Some(UnitAIType::UNITAI_CITY_SPECIAL)).is_none() {
             if self.city_ai_choose_unit(g, c, Some(UnitAIType::UNITAI_CITY_SPECIAL)) {
                 return true;
             }
         }
 
-        if g.plot_plot_check(plot, Game::puf_is_unit_ai_type, UnitAIType::UNITAI_CITY_COUNTER.i(), -1, Some(owner), None, None, -1, -1).is_none() {
+        if g.plot_find_unit(plot, |pu| g.units[pu].owner == owner && g.units[pu].ai_type == Some(UnitAIType::UNITAI_CITY_COUNTER)).is_none() {
             if self.city_ai_choose_unit(g, c, Some(UnitAIType::UNITAI_CITY_COUNTER)) {
                 return true;
             }

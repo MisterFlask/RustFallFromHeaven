@@ -1007,7 +1007,7 @@ impl Cai {
                     if (our_strength * 100) / enemy_strength < strength_threshold {
                         return false;
                     }
-                    let defenders = g.plot_plot_count(here, Some(Game::puf_can_defend_group_head), -1, -1, Some(owner), None, None, -1, -1);
+                    let defenders = g.plot_count_units(here, |pu| g.units[pu].owner == owner && g.unit_can_defend(pu, None) && g.unit_is_group_head(pu));
                     if defenders <= g.groups[grp].units.len() as i32 {
                         return false;
                     }
@@ -1678,7 +1678,7 @@ impl Cai {
                 if self.unit_ai_plot_valid(g, u, lp)
                     && (lp != here
                         || self.player_ai_get_plot_danger(g, owner, lp, 1, true)
-                            <= g.plot_plot_count(lp, Some(Game::puf_can_defend), -1, -1, Some(owner), None, None, -1, -1))
+                            <= g.plot_count_units(lp, |pu| g.units[pu].owner == owner && g.unit_can_defend(pu, None)))
                 {
                     if g.unit_can_found(u, lp, false) {
                         let value = g.plot_get_found_value(lp, owner);

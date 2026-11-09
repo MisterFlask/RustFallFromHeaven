@@ -26,16 +26,8 @@ pub mod units;
 
 use std::ops::{Index, IndexMut};
 
-use crate::game::Game;
 use crate::ids::*;
 use ffh_data::*;
-
-/// C++ `ConstPlotUnitFunc`: a `PUF_*` predicate (CvGameCoreUtils) called as
-/// `func(unit, iData1, iData2)` by `CvPlot::plotCount` / `CvPlot::plotCheck`.
-pub type ConstPlotUnitFunc = fn(&Game, UnitId, i32, i32) -> bool;
-
-/// C++ `PlotUnitFunc`: a mutating unit callback for `CvPlot::plotAction`.
-pub type PlotUnitFunc = fn(&mut Game, UnitId, i32, i32) -> bool;
 
 /// C++ `CvPlot`.
 ///

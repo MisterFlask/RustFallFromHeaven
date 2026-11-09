@@ -100,7 +100,7 @@ impl Game {
             }
         }
 
-        let military_happiness_units = self.plot_plot_count(plot, Some(Game::puf_is_military_happiness), -1, -1, None, None, None, -1, -1);
+        let military_happiness_units = self.plot_count_units(plot, |u| self.unit_is_military_happiness(u));
         self.city_change_military_happiness_units(c, military_happiness_units);
 
         for i in 0..CommerceType::NUM {

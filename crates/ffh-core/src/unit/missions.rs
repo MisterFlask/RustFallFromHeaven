@@ -32,14 +32,15 @@ fn game_speed_info(g: &Game) -> &'static GameSpeedInfo {
 fn spy_unit_counts(g: &Game, plot: PlotIdx) -> (i32, i32) {
     let team = g.plot_get_team(plot);
 
-    let defense_count = g.plot_plot_count(plot, Some(Game::puf_can_defend), -1, -1, None, team, None, -1, -1);
+    let of_team = |u: UnitId| team.map_or(true, |t| g.unit_get_team(u) == t);
+    let defense_count = g.plot_count_units(plot, |u| of_team(u) && g.unit_can_defend(u, None));
 
-    let mut counter_spy_count = g.plot_plot_count(plot, Some(Game::puf_is_counter_spy), -1, -1, None, team, None, -1, -1);
+    let mut counter_spy_count = g.plot_count_units(plot, |u| of_team(u) && g.unit_is_counter_spy(u));
 
     let (x, y) = g.map.xy(plot);
     for i in 0..DirectionType::NUM {
         if let Some(loop_plot) = g.plot_direction(x, y, DirectionType::from_usize(i)) {
-            counter_spy_count += g.plot_plot_count(loop_plot, Some(Game::puf_is_counter_spy), -1, -1, None, team, None, -1, -1);
+            counter_spy_count += g.plot_count_units(loop_plot, |u| of_team(u) && g.unit_is_counter_spy(u));
         }
     }
 
@@ -1408,7 +1409,7 @@ impl Game {
         }
 
         if 0 == self.units[u].fortify_turns
-            || self.plot_plot_count(plot, Some(Game::puf_is_spy), -1, -1, None, Some(team), None, -1, -1) > 1
+            || self.plot_count_units(plot, |x| self.unit_get_team(x) == team && self.unit_is_spy(x)) > 1
         {
             success += defines.espionage_intercept_recent_mission;
         }

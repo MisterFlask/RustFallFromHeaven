@@ -50,13 +50,12 @@ impl Game {
             return false;
         }
 
-        let owner = self.cities[c].owner;
-        if self.plot_plot_check(plot, Game::puf_can_siege, owner.i(), -1, None, None, None, -1, -1).is_some() {
+        let team = self.city_team(c);
+        if self.plot_any_unit(plot, |u| self.unit_can_siege(u, team)) {
             return false;
         }
 
         if self.plot_is_water(plot) {
-            let team = self.city_team(c);
             if !self.team_is_water_work(team) {
                 return false;
             }

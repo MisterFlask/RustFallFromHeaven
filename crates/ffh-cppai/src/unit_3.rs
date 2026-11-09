@@ -2399,7 +2399,7 @@ impl Cai {
             if g.cities[plot_city].owner == owner {
                 let city_plot = g.city_plot(plot_city);
                 let city_defender_count =
-                    g.plot_plot_count(city_plot, Some(Game::puf_is_unit_ai_type), city_defense, -1, Some(owner), None, None, -1, -1);
+                    g.plot_count_units(city_plot, |pu| g.units[pu].owner == owner && opt_to_i32(g.units[pu].ai_type) == city_defense);
                 if (city_defender_count - 1) < self.city_ai_min_defenders(g, plot_city) {
                     if (city_defender_count <= 2) || (self.rand(5, "AI shuffle defender") != 0) {
                         let grp = gr(g, u);
@@ -2435,7 +2435,7 @@ impl Cai {
                     continue;
                 }
                 let mut defenders_have =
-                    g.plot_plot_count(loop_city_plot, Some(Game::puf_is_unit_ai_type), city_defense, -1, Some(owner), None, None, -1, -1);
+                    g.plot_count_units(loop_city_plot, |pu| g.units[pu].owner == owner && opt_to_i32(g.units[pu].ai_type) == city_defense);
                 let defenders_need = self.city_ai_min_defenders(g, loop_city);
                 if defenders_have < defenders_need {
                     if !g.plot_is_visible_enemy_unit_for_unit(loop_city_plot, u) {

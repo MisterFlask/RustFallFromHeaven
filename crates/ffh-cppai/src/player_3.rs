@@ -2018,7 +2018,7 @@ impl Cai {
             if g.players[i].alive {
                 for &c in g.players[i].cities.iter() {
                     if g.city_water_area(c) == Some(area) {
-                        count += g.plot_plot_count(g.city_plot(c), Some(Game::puf_is_unit_ai_type), unit_ai.i(), -1, Some(p), None, None, -1, -1);
+                        count += g.plot_count_units(g.city_plot(c), |pu| g.units[pu].owner == p && g.units[pu].ai_type == Some(unit_ai));
 
                         if g.cities[c].owner == p {
                             count += g.city_num_train_unit_ai(c, unit_ai);

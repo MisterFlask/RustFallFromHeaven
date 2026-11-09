@@ -1537,7 +1537,7 @@ impl Cai {
             }
         }
 
-        if g.plot_plot_check(plot, Game::puf_is_unit_ai_type, UnitAIType::UNITAI_CITY_COUNTER.i(), -1, Some(p), None, None, -1, -1).is_none() {
+        if g.plot_find_unit(plot, |pu| g.units[pu].owner == p && g.units[pu].ai_type == Some(UnitAIType::UNITAI_CITY_COUNTER)).is_none() {
             if self.city_ai_choose_unit(g, c, Some(UnitAIType::UNITAI_CITY_COUNTER)) {
                 return;
             }
@@ -1977,7 +1977,7 @@ impl Cai {
 
 /// C++ `pPlot->plotCount(PUF_isUnitAIType, eUnitAI, -1, eOwner)`.
 fn plot_unit_ai_count(g: &Game, plot: PlotIdx, unit_ai: UnitAIType, owner: PlayerId) -> i32 {
-    g.plot_plot_count(plot, Some(Game::puf_is_unit_ai_type), unit_ai.i(), -1, Some(owner), None, None, -1, -1)
+    g.plot_count_units(plot, |pu| g.units[pu].owner == owner && g.units[pu].ai_type == Some(unit_ai))
 }
 
 /// C++ `CvCityAI::AI_countNumBonuses(NO_BONUS, bIncludeOurs, bIncludeNeutral,

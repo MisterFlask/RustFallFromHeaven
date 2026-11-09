@@ -175,19 +175,11 @@ impl Game {
                 }
             } else if plot_is_active_visible(self, plot) {
                 if self.unit_can_move_into(u, plot, true, true, true) {
-                    let owner = self.units[u].owner.i();
-                    let always_hostile = self.unit_is_always_hostile(u, Some(plot)) as i32;
-                    let unit = self.plot_plot_check(
-                        plot,
-                        Game::puf_can_declare_war,
-                        owner,
-                        always_hostile,
-                        None,
-                        None,
-                        Some(Game::puf_is_visible),
-                        owner,
-                        -1,
-                    );
+                    let team = self.unit_get_team(u);
+                    let always_hostile = self.unit_is_always_hostile(u, Some(plot));
+                    let unit = self.plot_find_unit(plot, |x| {
+                        self.unit_can_be_declared_war_on(x, team, always_hostile) && self.unit_is_visible_to(x, team)
+                    });
 
                     if let Some(unit) = unit {
                         return Some(self.unit_get_team(unit));

@@ -2,7 +2,6 @@
 //! `PUF_*` predicates), defenders, movement cost, defense modifiers, nukes, sight (line of
 //! sight and sight sources), plot events and unit training requirements.
 
-use super::{ConstPlotUnitFunc, PlotUnitFunc};
 use crate::game::Game;
 use crate::ids::*;
 use crate::defs::INVALID_PLOT_COORD;
@@ -122,106 +121,40 @@ impl Game {
         }
     }
 
-    /// C++ `CvPlot::plotAction` (C++ defaults: data -1, owner/team none).
-    pub fn plot_plot_action(&mut self, p: PlotIdx, func: PlotUnitFunc, data1: i32, data2: i32, owner: Option<PlayerId>, team: Option<TeamId>) {
-        // C++ walks the live list, fetching the next node before calling `func`; walk a copy
-        // and skip units that no longer exist.
-        for loop_unit in self.map.plots[p].units.clone() {
-            if !self.units.contains(loop_unit) {
-                continue;
-            }
-
-            if owner.map_or(true, |o| self.units[loop_unit].owner == o) {
-                if team.map_or(true, |t| self.unit_get_team(loop_unit) == t) {
-                    func(self, loop_unit, data1, data2);
-                }
-            }
-        }
+    /// C++ `CvPlot::plotCount`: the number of units on `p` for which `pred` holds. (C++ takes
+    /// an owner, a team and two `PUF_*` predicates with integer arguments; here one closure.)
+    #[inline]
+    pub fn plot_count_units(&self, p: PlotIdx, mut pred: impl FnMut(UnitId) -> bool) -> i32 {
+        self.map.plots[p].units.iter().filter(|&&u| pred(u)).count() as i32
     }
 
-    /// C++ `CvPlot::plotCount`: units of `owner`/`team` passing `func_a` and `func_b`
-    /// (a None predicate always passes).
-    #[allow(clippy::too_many_arguments)]
-    pub fn plot_plot_count(
-        &self,
-        p: PlotIdx,
-        func_a: Option<ConstPlotUnitFunc>,
-        data1_a: i32,
-        data2_a: i32,
-        owner: Option<PlayerId>,
-        team: Option<TeamId>,
-        func_b: Option<ConstPlotUnitFunc>,
-        data1_b: i32,
-        data2_b: i32,
-    ) -> i32 {
-        let mut count = 0;
-
-        for &loop_unit in &self.map.plots[p].units {
-            if owner.map_or(true, |o| self.units[loop_unit].owner == o) {
-                if team.map_or(true, |t| self.unit_get_team(loop_unit) == t) {
-                    if func_a.map_or(true, |f| f(self, loop_unit, data1_a, data2_a)) {
-                        if func_b.map_or(true, |f| f(self, loop_unit, data1_b, data2_b)) {
-                            count += 1;
-                        }
-                    }
-                }
-            }
-        }
-
-        count
+    /// C++ `CvPlot::plotCheck`: the first unit on `p`, in the plot's unit order, for which
+    /// `pred` holds.
+    #[inline]
+    pub fn plot_find_unit(&self, p: PlotIdx, mut pred: impl FnMut(UnitId) -> bool) -> Option<UnitId> {
+        self.map.plots[p].units.iter().copied().find(|&u| pred(u))
     }
 
-    /// C++ `CvPlot::plotCheck`: first unit of `owner`/`team` passing `func_a` and `func_b`
-    /// (`func_a` is required, a None `func_b` always passes).
-    #[allow(clippy::too_many_arguments)]
-    pub fn plot_plot_check(
-        &self,
-        p: PlotIdx,
-        func_a: ConstPlotUnitFunc,
-        data1_a: i32,
-        data2_a: i32,
-        owner: Option<PlayerId>,
-        team: Option<TeamId>,
-        func_b: Option<ConstPlotUnitFunc>,
-        data1_b: i32,
-        data2_b: i32,
-    ) -> Option<UnitId> {
-        for &loop_unit in &self.map.plots[p].units {
-            if owner.map_or(true, |o| self.units[loop_unit].owner == o) {
-                if team.map_or(true, |t| self.unit_get_team(loop_unit) == t) {
-                    if func_a(self, loop_unit, data1_a, data2_a) {
-                        if func_b.map_or(true, |f| f(self, loop_unit, data1_b, data2_b)) {
-                            return Some(loop_unit);
-                        }
-                    }
-                }
-            }
-        }
-
-        None
+    /// Whether `pred` holds for some unit on `p` (C++ `plotCheck(..) != NULL`).
+    #[inline]
+    pub fn plot_any_unit(&self, p: PlotIdx, mut pred: impl FnMut(UnitId) -> bool) -> bool {
+        self.map.plots[p].units.iter().any(|&u| pred(u))
     }
 
     /// C++ `CvPlot::getNumAnimalUnits` (FFH).
     pub fn plot_get_num_animal_units(&self, p: PlotIdx) -> i32 {
-        let mut count = 0;
-        for &loop_unit in &self.map.plots[p].units {
-            if self.unit_is_animal(loop_unit) {
-                count += 1;
-            }
-        }
-        count
+        self.plot_count_units(p, |u| self.unit_is_animal(u))
     }
 
     /// C++ `CvPlot::getUnitPower` (C++ default `eOwner = NO_PLAYER`).
     pub fn plot_get_unit_power(&self, p: PlotIdx, owner: Option<PlayerId>) -> i32 {
-        let mut count = 0;
-        for &loop_unit in &self.map.plots[p].units {
-            let unit = &self.units[loop_unit];
-            if owner.map_or(true, |o| unit.owner == o) {
-                count += self.d.units[unit.unit_type].power_value;
-            }
-        }
-        count
+        self.map.plots[p]
+            .units
+            .iter()
+            .map(|&u| &self.units[u])
+            .filter(|unit| owner.is_none_or(|o| unit.owner == o))
+            .map(|unit| self.d.units[unit.unit_type].power_value)
+            .sum()
     }
 
     // ------------------------------------------------------------------
@@ -314,7 +247,7 @@ impl Game {
 
     /// C++ `CvPlot::isInvestigate`.
     pub fn plot_is_investigate(&self, p: PlotIdx, team: TeamId) -> bool {
-        self.plot_plot_check(p, Game::puf_is_investigate, -1, -1, None, Some(team), None, -1, -1).is_some()
+        self.plot_any_unit(p, |u| self.unit_get_team(u) == team && self.unit_is_investigate(u))
     }
 
     /// C++ `CvPlot::isVisibleEnemyDefender`.
@@ -323,20 +256,20 @@ impl Game {
         if self.map.plots[p].units.is_empty() {
             return false;
         }
-        let owner = self.units[unit].owner.i();
-        let always_hostile = self.unit_is_always_hostile(unit, Some(p)) as i32;
-        self.plot_plot_check(p, Game::puf_can_defend_enemy, owner, always_hostile, None, None, Some(Game::puf_is_visible), owner, -1)
-            .is_some()
+        let team = self.unit_get_team(unit);
+        let always_hostile = self.unit_is_always_hostile(unit, Some(p));
+        self.plot_any_unit(p, |u| self.unit_is_visible_enemy_defender(u, team, always_hostile))
     }
 
     /// C++ `CvPlot::getVisibleEnemyDefender`.
     pub fn plot_get_visible_enemy_defender(&self, p: PlotIdx, player: PlayerId) -> Option<UnitId> {
-        self.plot_plot_check(p, Game::puf_can_defend_enemy, player.i(), false as i32, None, None, Some(Game::puf_is_visible), player.i(), -1)
+        let team = self.players[player].team;
+        self.plot_find_unit(p, |u| self.unit_is_visible_enemy_defender(u, team, false))
     }
 
     /// C++ `CvPlot::getNumDefenders`.
     pub fn plot_get_num_defenders(&self, p: PlotIdx, player: PlayerId) -> i32 {
-        self.plot_plot_count(p, Some(Game::puf_can_defend), -1, -1, Some(player), None, None, -1, -1)
+        self.plot_count_units(p, |u| self.units[u].owner == player && self.unit_can_defend(u, None))
     }
 
     /// C++ `CvPlot::getNumVisibleEnemyDefenders`.
@@ -345,9 +278,9 @@ impl Game {
         if self.map.plots[p].units.is_empty() {
             return 0;
         }
-        let owner = self.units[unit].owner.i();
-        let always_hostile = self.unit_is_always_hostile(unit, Some(p)) as i32;
-        self.plot_plot_count(p, Some(Game::puf_can_defend_enemy), owner, always_hostile, None, None, Some(Game::puf_is_visible), owner, -1)
+        let team = self.unit_get_team(unit);
+        let always_hostile = self.unit_is_always_hostile(unit, Some(p));
+        self.plot_count_units(p, |u| self.unit_is_visible_enemy_defender(u, team, always_hostile))
     }
 
     /// C++ `CvPlot::getNumVisiblePotentialEnemyDefenders`.
@@ -356,25 +289,17 @@ impl Game {
         if self.map.plots[p].units.is_empty() {
             return 0;
         }
-        let owner = self.units[unit].owner.i();
-        let always_hostile = self.unit_is_always_hostile(unit, Some(p)) as i32;
-        self.plot_plot_count(
-            p,
-            Some(Game::puf_can_defend_potential_enemy),
-            owner,
-            always_hostile,
-            None,
-            None,
-            Some(Game::puf_is_visible),
-            owner,
-            -1,
-        )
+        let team = self.unit_get_team(unit);
+        let always_hostile = self.unit_is_always_hostile(unit, Some(p));
+        self.plot_count_units(p, |u| {
+            self.unit_can_defend(u, None) && self.unit_is_potential_enemy_of(u, team, always_hostile) && self.unit_is_visible_to(u, team)
+        })
     }
 
     /// C++ `CvPlot::isVisibleEnemyUnit(PlayerTypes)`.
     pub fn plot_is_visible_enemy_unit(&self, p: PlotIdx, player: PlayerId) -> bool {
-        self.plot_plot_check(p, Game::puf_is_enemy, player.i(), false as i32, None, None, Some(Game::puf_is_visible), player.i(), -1)
-            .is_some()
+        let team = self.players[player].team;
+        self.plot_any_unit(p, |u| self.unit_is_enemy_of(u, team, false) && self.unit_is_visible_to(u, team))
     }
 
     /// C++ `CvPlot::isVisibleEnemyUnit(const CvUnit*)`.
@@ -383,25 +308,26 @@ impl Game {
         if self.map.plots[p].units.is_empty() {
             return false;
         }
-        let owner = self.units[unit].owner.i();
-        let always_hostile = self.unit_is_always_hostile(unit, Some(p)) as i32;
-        self.plot_plot_check(p, Game::puf_is_enemy, owner, always_hostile, None, None, Some(Game::puf_is_visible), owner, -1).is_some()
+        let team = self.unit_get_team(unit);
+        let always_hostile = self.unit_is_always_hostile(unit, Some(p));
+        self.plot_any_unit(p, |u| self.unit_is_enemy_of(u, team, always_hostile) && self.unit_is_visible_to(u, team))
     }
 
     /// C++ `CvPlot::getNumVisibleUnits`.
     pub fn plot_get_num_visible_units(&self, p: PlotIdx, player: PlayerId) -> i32 {
-        self.plot_plot_count(p, Some(Game::puf_is_visible_debug), player.i(), -1, None, None, None, -1, -1)
+        let team = self.players[player].team;
+        self.plot_count_units(p, |u| self.unit_is_visible_to(u, team))
     }
 
     /// C++ `CvPlot::isVisibleOtherUnit`.
     pub fn plot_is_visible_other_unit(&self, p: PlotIdx, player: PlayerId) -> bool {
-        self.plot_plot_check(p, Game::puf_is_other_team, player.i(), -1, None, None, Some(Game::puf_is_visible), player.i(), -1)
-            .is_some()
+        let team = self.players[player].team;
+        self.plot_any_unit(p, |u| self.unit_is_other_team(u, team) && self.unit_is_visible_to(u, team))
     }
 
     /// C++ `CvPlot::isFighting`.
     pub fn plot_is_fighting(&self, p: PlotIdx) -> bool {
-        self.plot_plot_check(p, Game::puf_is_fighting, -1, -1, None, None, None, -1, -1).is_some()
+        self.plot_any_unit(p, |u| self.unit_is_fighting(u))
     }
 
     /// C++ `CvPlot::isFriendlyCity`.
@@ -746,11 +672,7 @@ impl Game {
                 }
 
                 // `getTeam() == eDefender` (the plot is owned), then no enemy unit on it.
-                if self.players[loop_owner].team == defender
-                    && self
-                        .plot_plot_check(loop_plot, Game::puf_is_enemy, loop_owner.i(), false as i32, None, None, None, -1, -1)
-                        .is_none()
-                {
+                if self.players[loop_owner].team == defender && !self.plot_any_unit(loop_plot, |u| self.unit_is_enemy_of(u, defender, false)) {
                     best_modifier = modifier;
                 }
             }
@@ -771,9 +693,9 @@ impl Game {
                 let Some(loop_plot) = self.plot_xy(x, y, dx, dy) else {
                     continue;
                 };
-                let Some(loop_owner) = self.map.plots[loop_plot].owner else {
+                if self.map.plots[loop_plot].owner.is_none() {
                     continue;
-                };
+                }
                 let Some(mut improvement) = self.map.plots[loop_plot].improvement_type else {
                     continue;
                 };
@@ -784,11 +706,9 @@ impl Game {
                     }
                 }
 
+                // (The plot's team is its owner's: `defender`.)
                 if self.plot_get_team(loop_plot) == Some(defender) {
-                    if self
-                        .plot_plot_check(loop_plot, Game::puf_is_enemy, loop_owner.i(), false as i32, None, None, None, -1, -1)
-                        .is_none()
-                    {
+                    if !self.plot_any_unit(loop_plot, |u| self.unit_is_enemy_of(u, defender, false)) {
                         let mut modifier = 0;
                         let info = &d.improvements[improvement];
                         if dx == 0 && dy == 0 {
@@ -849,7 +769,7 @@ impl Game {
             }
         }
 
-        if self.plot_plot_count(p, Some(Game::puf_is_counter_spy), -1, -1, None, Some(team), None, -1, -1) > 0 {
+        if self.plot_any_unit(p, |u| self.unit_get_team(u) == team && self.unit_is_counter_spy(u)) {
             return true;
         }
 
@@ -1938,18 +1858,19 @@ mod tests {
         assert!(g.plot_is_unit(p));
         assert!(!g.plot_is_unit(at(&g, 0, 0)));
 
-        let hurt: ConstPlotUnitFunc = |g, u, min_damage, _| g.units[u].damage >= min_damage;
-        let is_type: ConstPlotUnitFunc = |g, u, t, _| g.units[u].unit_type.i() == t;
-        assert_eq!(g.plot_plot_count(p, None, -1, -1, None, None, None, -1, -1), 3);
-        assert_eq!(g.plot_plot_count(p, None, -1, -1, Some(p1), None, None, -1, -1), 2);
-        assert_eq!(g.plot_plot_count(p, Some(hurt), 30, -1, None, None, None, -1, -1), 2);
-        assert_eq!(g.plot_plot_count(p, Some(hurt), 30, -1, None, None, Some(is_type), warrior.i(), -1), 1);
-        assert_eq!(g.plot_plot_count(p, Some(hurt), 30, -1, Some(p0), None, None, -1, -1), 0);
+        let hurt = |g: &Game, u: UnitId, min_damage: i32| g.units[u].damage >= min_damage;
+        let is_warrior = |g: &Game, u: UnitId| g.units[u].unit_type == warrior;
+        assert_eq!(g.plot_count_units(p, |_| true), 3);
+        assert_eq!(g.plot_count_units(p, |u| g.units[u].owner == p1), 2);
+        assert_eq!(g.plot_count_units(p, |u| hurt(&g, u, 30)), 2);
+        assert_eq!(g.plot_count_units(p, |u| hurt(&g, u, 30) && is_warrior(&g, u)), 1);
+        assert_eq!(g.plot_count_units(p, |u| g.units[u].owner == p0 && hurt(&g, u, 30)), 0);
         // plotCheck returns the first match in list order
-        assert_eq!(g.plot_plot_check(p, hurt, 0, -1, None, None, None, -1, -1), Some(a));
-        assert_eq!(g.plot_plot_check(p, hurt, 1, -1, None, None, None, -1, -1), Some(b));
-        assert_eq!(g.plot_plot_check(p, hurt, 1, -1, None, None, Some(is_type), warrior.i(), -1), Some(c));
-        assert_eq!(g.plot_plot_check(p, hurt, 100, -1, None, None, None, -1, -1), None);
+        assert_eq!(g.plot_find_unit(p, |u| hurt(&g, u, 0)), Some(a));
+        assert_eq!(g.plot_find_unit(p, |u| hurt(&g, u, 1)), Some(b));
+        assert_eq!(g.plot_find_unit(p, |u| hurt(&g, u, 1) && is_warrior(&g, u)), Some(c));
+        assert_eq!(g.plot_find_unit(p, |u| hurt(&g, u, 100)), None);
+        assert!(g.plot_any_unit(p, |u| hurt(&g, u, 60)) && !g.plot_any_unit(p, |u| hurt(&g, u, 61)));
 
         let power = |t: UnitType| d.units[t].power_value;
         assert_eq!(g.plot_get_unit_power(p, None), 2 * power(warrior) + power(axeman));

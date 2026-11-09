@@ -1015,10 +1015,6 @@ pub fn get_turn_year_for_game(d: &GameData, game_turn: i32, start_year: i32, cal
     get_turn_month_for_game(d, game_turn, start_year, calendar, speed) / d.months.len() as i32
 }
 
-/// C++ `PlotUnitFunc` (`bool (*)(const CvUnit*, int iData1, int iData2)`): unit filters
-/// passed to plot unit queries (`CvPlot::plotCount`, `plotCheck`, ...). Unused data is -1.
-pub type PlotUnitFunc = fn(&Game, UnitId, i32, i32) -> bool;
-
 // ------------------------------------------------------------------------------------------
 // Helpers that need game objects
 // ------------------------------------------------------------------------------------------
@@ -1291,62 +1287,41 @@ impl Game {
         max_conscript
     }
 
-    // ---- PlotUnitFunc's (C++ PUF_*); signature `PlotUnitFunc` ----
+    // ---- Unit predicates of the plot unit queries (C++ `PUF_*`) ----
+    //
+    // C++ passes `PUF_*` functions with two `int` data arguments to `CvPlot::plotCount` /
+    // `plotCheck`; here callers pass closures to `plot_count_units` / `plot_find_unit` /
+    // `plot_any_unit`. The `PUF_*` that only call one unit method (`PUF_canDefend` ->
+    // `unit_can_defend(u, None)`, `PUF_isAnimal` -> `unit_is_animal`, ...) or compare one field
+    // (`PUF_isPlayer`, `PUF_isUnitAIType`, ...) have no counterpart; the ones below take typed
+    // arguments. `team` is the viewing side's team (C++ passes a player, `iData1`, and reads its
+    // team); `always_hostile` (C++ `iData2`) says that the viewer counts every other team's unit
+    // as an enemy (the viewing unit is always hostile).
 
-    /// C++ `PUF_isGroupHead`.
-    pub fn puf_is_group_head(&self, u: UnitId, _data1: i32, _data2: i32) -> bool {
-        self.unit_is_group_head(u)
-    }
-
-    /// C++ `PUF_isPlayer` (data1 = player).
-    pub fn puf_is_player(&self, u: UnitId, data1: i32, _data2: i32) -> bool {
-        debug_assert!(data1 != -1, "Invalid data argument, should be >= 0");
-        self.units[u].owner.i() == data1
-    }
-
-    /// C++ `PUF_isTeam` (data1 = team).
-    pub fn puf_is_team(&self, u: UnitId, data1: i32, _data2: i32) -> bool {
-        debug_assert!(data1 != -1, "Invalid data argument, should be >= 0");
-        self.unit_get_team(u).i() == data1
-    }
-
-    /// C++ `PUF_isCombatTeam` (data1 = team, data2 = viewing team).
-    pub fn puf_is_combat_team(&self, u: UnitId, data1: i32, data2: i32) -> bool {
-        debug_assert!(data1 != -1, "Invalid data argument, should be >= 0");
-        let for_team = puf_data_team(data2);
+    /// C++ `PUF_isCombatTeam(unit, team, for_team)`: `u` fights for `team` as `for_team` sees
+    /// it, and `for_team` can see `u`.
+    pub fn unit_is_combat_team(&self, u: UnitId, team: TeamId, for_team: TeamId) -> bool {
         let combat_owner = self.unit_get_combat_owner(u, Some(for_team), self.unit_plot_opt(u));
 
         // C++ `isInvisible(eTeam, bDebug = false, bCheckCargo = false)`.
-        self.players[combat_owner].team.i() == data1 && !self.unit_is_invisible(u, for_team, false)
+        self.players[combat_owner].team == team && !self.unit_is_invisible(u, for_team, false)
     }
 
-    /// C++ `PUF_isOtherPlayer` (data1 = player).
-    pub fn puf_is_other_player(&self, u: UnitId, data1: i32, _data2: i32) -> bool {
-        debug_assert!(data1 != -1, "Invalid data argument, should be >= 0");
-        self.units[u].owner.i() != data1
+    /// C++ `PUF_isOtherTeam`: `u` is of a team other than `team` and cannot share a plot with
+    /// `team`'s units.
+    pub fn unit_is_other_team(&self, u: UnitId, team: TeamId) -> bool {
+        !self.unit_can_coexist_with_enemy_unit(u, Some(team)) && self.unit_get_team(u) != team
     }
 
-    /// C++ `PUF_isOtherTeam` (data1 = player).
-    pub fn puf_is_other_team(&self, u: UnitId, data1: i32, _data2: i32) -> bool {
-        let team = self.players[puf_data_player(data1)].team;
-        if self.unit_can_coexist_with_enemy_unit(u, Some(team)) {
-            return false;
-        }
-
-        self.unit_get_team(u) != team
+    /// C++ `PUF_isEnemy`: `u` is an enemy of `team`. FfH: an always-hostile `u` is an enemy of
+    /// every other team.
+    pub fn unit_is_enemy_of(&self, u: UnitId, team: TeamId, always_hostile: bool) -> bool {
+        self.unit_is_enemy_of_with(u, team, always_hostile, |a, b| self.at_war(a, b))
     }
 
-    /// C++ `PUF_isEnemy` (data1 = player, data2 = alwaysHostile flag). FfH: `isAlwaysHostile`.
-    pub fn puf_is_enemy(&self, u: UnitId, data1: i32, data2: i32) -> bool {
-        self.puf_is_enemy_with(u, data1, data2, |a, b| self.at_war(a, b))
-    }
-
-    /// [`Game::puf_is_enemy`] with the war test `at_war` in place of the game's (an
+    /// [`Game::unit_is_enemy_of`] with the war test `at_war` in place of the game's (an
     /// engagement plan that declares war tests its wars once declared).
-    pub(crate) fn puf_is_enemy_with(&self, u: UnitId, data1: i32, data2: i32, at_war: impl Fn(TeamId, TeamId) -> bool) -> bool {
-        debug_assert!(data2 != -1, "Invalid data argument, should be >= 0");
-        let other_team = self.players[puf_data_player(data1)].team;
-
+    pub(crate) fn unit_is_enemy_of_with(&self, u: UnitId, other_team: TeamId, always_hostile: bool, at_war: impl Fn(TeamId, TeamId) -> bool) -> bool {
         // (C++ computes `eOurTeam` first; every test here is side-effect free.)
         if self.unit_can_coexist_with_enemy_unit(u, Some(other_team)) {
             return false;
@@ -1356,8 +1331,8 @@ impl Game {
         // combat owner is the owner unless `isAlwaysHostile(plot())`, which implies
         // `isAlwaysHostile(NULL)` (the plot only adds a city exception), so a unit that is not
         // always hostile anywhere skips it.
-        let always_hostile = self.unit_is_always_hostile(u, None);
-        let our_team = if always_hostile {
+        let unit_always_hostile = self.unit_is_always_hostile(u, None);
+        let our_team = if unit_always_hostile {
             self.players[self.unit_get_combat_owner(u, Some(other_team), self.unit_plot_opt(u))].team
         } else {
             self.unit_get_team(u)
@@ -1368,189 +1343,58 @@ impl Game {
         let truce = self.team_has_truce(other_team, our_team);
 
         // FfH: Added by Kael 10/01/2007
-        if other_team != our_team && always_hostile && !truce {
+        if other_team != our_team && unit_always_hostile && !truce {
             return true;
         }
         // FfH: End Add
 
-        if data2 != 0 {
+        if always_hostile {
             other_team != our_team && !truce
         } else {
             at_war(other_team, our_team)
         }
     }
 
-    /// C++ `PUF_isVisible` (data1 = player).
-    pub fn puf_is_visible(&self, u: UnitId, data1: i32, _data2: i32) -> bool {
+    /// C++ `PUF_isVisible` (and `PUF_isVisibleDebug`: its `bDebug` only matters in debug mode,
+    /// never on here): `team` can see `u`.
+    #[inline]
+    pub fn unit_is_visible_to(&self, u: UnitId, team: TeamId) -> bool {
         // C++ `isInvisible(eTeam, bDebug = false)` (default `bCheckCargo = true`).
-        !self.unit_is_invisible(u, self.players[puf_data_player(data1)].team, true)
+        !self.unit_is_invisible(u, team, true)
     }
 
-    /// C++ `PUF_isVisibleDebug` (data1 = player).
-    pub fn puf_is_visible_debug(&self, u: UnitId, data1: i32, _data2: i32) -> bool {
-        // C++ `isInvisible(eTeam, bDebug = true)`: `bDebug` only matters in debug mode (never on
-        // here; `unit_is_invisible` drops it), so this is `PUF_isVisible`.
-        !self.unit_is_invisible(u, self.players[puf_data_player(data1)].team, true)
+    /// C++ `PUF_canDefendEnemy` and `PUF_isVisible` (the pair the plot's enemy-defender queries
+    /// pass): `u` can defend, is an enemy of `team` and `team` can see it.
+    pub fn unit_is_visible_enemy_defender(&self, u: UnitId, team: TeamId, always_hostile: bool) -> bool {
+        self.unit_can_defend(u, None) && self.unit_is_enemy_of(u, team, always_hostile) && self.unit_is_visible_to(u, team)
     }
 
-    /// C++ `PUF_canSiege` (data1 = player).
-    pub fn puf_can_siege(&self, u: UnitId, data1: i32, _data2: i32) -> bool {
-        self.unit_can_siege(u, self.players[puf_data_player(data1)].team)
-    }
-
-    /// C++ `PUF_isPotentialEnemy` (data1 = player, data2 = alwaysHostile flag).
-    pub fn puf_is_potential_enemy(&self, u: UnitId, data1: i32, data2: i32) -> bool {
-        debug_assert!(data2 != -1, "Invalid data argument, should be >= 0");
-        let other_team = self.players[puf_data_player(data1)].team;
-        let our_team = self.players[self.unit_get_combat_owner(u, Some(other_team), self.unit_plot_opt(u))].team;
-
+    /// C++ `PUF_isPotentialEnemy`: `u` is of a team `team` is at war with or could go to war
+    /// with.
+    pub fn unit_is_potential_enemy_of(&self, u: UnitId, other_team: TeamId, always_hostile: bool) -> bool {
         if self.unit_can_coexist_with_enemy_unit(u, Some(other_team)) {
             return false;
         }
 
-        if data2 != 0 {
-            // Card: Judgment of Junil (docs/CARDS.md), as in `puf_is_enemy_with`.
+        let our_team = self.players[self.unit_get_combat_owner(u, Some(other_team), self.unit_plot_opt(u))].team;
+        if always_hostile {
+            // Card: Judgment of Junil (docs/CARDS.md), as in `unit_is_enemy_of_with`.
             other_team != our_team && !self.team_has_truce(other_team, our_team)
         } else {
             self.is_potential_enemy(other_team, Some(our_team))
         }
     }
 
-    /// C++ `PUF_canDeclareWar` (data1 = player, data2 = alwaysHostile flag).
-    pub fn puf_can_declare_war(&self, u: UnitId, data1: i32, data2: i32) -> bool {
-        debug_assert!(data2 != -1, "Invalid data argument, should be >= 0");
-        let other_team = self.players[puf_data_player(data1)].team;
-        let our_team = self.players[self.unit_get_combat_owner(u, Some(other_team), self.unit_plot_opt(u))].team;
-
-        if self.unit_can_coexist_with_enemy_unit(u, Some(other_team)) {
+    /// C++ `PUF_canDeclareWar`: `other_team` can declare war on the team `u` fights for (never
+    /// for an always-hostile viewer).
+    pub fn unit_can_be_declared_war_on(&self, u: UnitId, other_team: TeamId, always_hostile: bool) -> bool {
+        if always_hostile || self.unit_can_coexist_with_enemy_unit(u, Some(other_team)) {
             return false;
         }
 
-        if data2 != 0 {
-            false
-        } else {
-            self.team_can_declare_war(other_team, our_team)
-        }
+        let our_team = self.players[self.unit_get_combat_owner(u, Some(other_team), self.unit_plot_opt(u))].team;
+        self.team_can_declare_war(other_team, our_team)
     }
-
-    /// C++ `PUF_canDefend`.
-    pub fn puf_can_defend(&self, u: UnitId, _data1: i32, _data2: i32) -> bool {
-        self.unit_can_defend(u, None)
-    }
-
-    /// C++ `PUF_cannotDefend`.
-    pub fn puf_cannot_defend(&self, u: UnitId, data1: i32, data2: i32) -> bool {
-        !self.puf_can_defend(u, data1, data2)
-    }
-
-    /// C++ `PUF_canDefendGroupHead`.
-    pub fn puf_can_defend_group_head(&self, u: UnitId, data1: i32, data2: i32) -> bool {
-        self.puf_can_defend(u, data1, data2) && self.puf_is_group_head(u, data1, data2)
-    }
-
-    /// C++ `PUF_canDefendEnemy`.
-    pub fn puf_can_defend_enemy(&self, u: UnitId, data1: i32, data2: i32) -> bool {
-        self.puf_can_defend(u, data1, data2) && self.puf_is_enemy(u, data1, data2)
-    }
-
-    /// C++ `PUF_canDefendPotentialEnemy`.
-    pub fn puf_can_defend_potential_enemy(&self, u: UnitId, data1: i32, data2: i32) -> bool {
-        self.puf_can_defend(u, data1, data2) && self.puf_is_potential_enemy(u, data1, data2)
-    }
-
-    /// C++ `PUF_canAirAttack`.
-    pub fn puf_can_air_attack(&self, u: UnitId, _data1: i32, _data2: i32) -> bool {
-        self.unit_can_air_attack(u)
-    }
-
-    /// C++ `PUF_canAirDefend`.
-    pub fn puf_can_air_defend(&self, u: UnitId, _data1: i32, _data2: i32) -> bool {
-        self.unit_can_air_defend(u, None)
-    }
-
-    /// C++ `PUF_isFighting`.
-    pub fn puf_is_fighting(&self, u: UnitId, _data1: i32, _data2: i32) -> bool {
-        self.unit_is_fighting(u)
-    }
-
-    /// C++ `PUF_isAnimal`.
-    pub fn puf_is_animal(&self, u: UnitId, _data1: i32, _data2: i32) -> bool {
-        self.unit_is_animal(u)
-    }
-
-    /// C++ `PUF_isMilitaryHappiness`.
-    pub fn puf_is_military_happiness(&self, u: UnitId, _data1: i32, _data2: i32) -> bool {
-        self.unit_is_military_happiness(u)
-    }
-
-    /// C++ `PUF_isInvestigate`.
-    pub fn puf_is_investigate(&self, u: UnitId, _data1: i32, _data2: i32) -> bool {
-        self.unit_is_investigate(u)
-    }
-
-    /// C++ `PUF_isCounterSpy`.
-    pub fn puf_is_counter_spy(&self, u: UnitId, _data1: i32, _data2: i32) -> bool {
-        self.unit_is_counter_spy(u)
-    }
-
-    /// C++ `PUF_isSpy`.
-    pub fn puf_is_spy(&self, u: UnitId, _data1: i32, _data2: i32) -> bool {
-        self.unit_is_spy(u)
-    }
-
-    /// C++ `PUF_isDomainType` (data1 = domain).
-    pub fn puf_is_domain_type(&self, u: UnitId, data1: i32, _data2: i32) -> bool {
-        debug_assert!(data1 != -1, "Invalid data argument, should be >= 0");
-        self.unit_get_domain_type(u).i() == data1
-    }
-
-    /// C++ `PUF_isUnitType` (data1 = unit type).
-    pub fn puf_is_unit_type(&self, u: UnitId, data1: i32, _data2: i32) -> bool {
-        debug_assert!(data1 != -1, "Invalid data argument, should be >= 0");
-        self.units[u].unit_type.i() == data1
-    }
-
-    /// C++ `PUF_isUnitAIType` (data1 = unit AI type; reads the `Unit::ai_type` bookkeeping field).
-    pub fn puf_is_unit_ai_type(&self, u: UnitId, data1: i32, _data2: i32) -> bool {
-        debug_assert!(data1 != -1, "Invalid data argument, should be >= 0");
-        opt_to_i32(self.units[u].ai_type) == data1
-    }
-
-    /// C++ `PUF_isCityAIType` (`CvUnitAI::AI_isCityAIType`).
-    pub fn puf_is_city_ai_type(&self, u: UnitId, _data1: i32, _data2: i32) -> bool {
-        self.unit_ai_is_city_ai_type(u)
-    }
-
-    /// C++ `PUF_isNotCityAIType`.
-    pub fn puf_is_not_city_ai_type(&self, u: UnitId, data1: i32, data2: i32) -> bool {
-        !self.puf_is_city_ai_type(u, data1, data2)
-    }
-
-    /// C++ `PUF_isNoMission`.
-    pub fn puf_is_no_mission(&self, u: UnitId, _data1: i32, _data2: i32) -> bool {
-        // C++ dereferences `getGroup()` (crashes for a unit without a group).
-        let group = self.units[u].group.expect("PUF_isNoMission: unit without a selection group");
-        self.groups[group].activity_type != ActivityType::ACTIVITY_MISSION
-    }
-
-    /// C++ `PUF_isFiniteRange`.
-    pub fn puf_is_finite_range(&self, u: UnitId, _data1: i32, _data2: i32) -> bool {
-        self.unit_get_domain_type(u) != DomainType::DOMAIN_AIR || self.d.units[self.units[u].unit_type].air_range > 0
-    }
-}
-
-/// A `PlotUnitFunc` data argument naming a player (C++ `(PlayerTypes)iData`).
-#[inline]
-fn puf_data_player(data: i32) -> PlayerId {
-    debug_assert!(data != -1, "Invalid data argument, should be >= 0");
-    PlayerId::from_usize(data as usize)
-}
-
-/// A `PlotUnitFunc` data argument naming a team (C++ `(TeamTypes)iData`).
-#[inline]
-fn puf_data_team(data: i32) -> TeamId {
-    debug_assert!(data != -1, "Invalid data argument, should be >= 0");
-    TeamId::from_usize(data as usize)
 }
 
 #[cfg(test)]
@@ -2148,43 +1992,42 @@ mod tests {
     }
 
     #[test]
-    fn unit_filters_and_cycle_order() {
+    fn unit_predicates_and_cycle_order() {
         use crate::group::SelectionGroup;
         let mut g = test_game(6, 4, false);
-        let d = g.d;
         let (p0, p1) = (PlayerId(0), PlayerId(1));
+        let (t0, t1) = (g.players[p0].team, g.players[p1].team);
         let warrior = add_unit(&mut g, p0, "UNIT_WARRIOR", 1, 1);
         let worker = add_unit(&mut g, p0, "UNIT_WORKER", 1, 1);
         let other = add_unit(&mut g, p1, "UNIT_WARRIOR", 1, 1);
 
-        assert!(g.puf_is_player(warrior, p0.i(), -1) && !g.puf_is_player(warrior, p1.i(), -1));
-        assert!(g.puf_is_other_player(other, p0.i(), -1) && !g.puf_is_other_player(other, p1.i(), -1));
-        assert!(g.puf_is_team(other, 1, -1) && !g.puf_is_team(other, 0, -1));
-        assert!(g.puf_is_unit_type(warrior, d.t::<UnitType>("UNIT_WARRIOR").i(), -1));
-        assert!(!g.puf_is_unit_type(worker, d.t::<UnitType>("UNIT_WARRIOR").i(), -1));
+        // other team, enemy (at war, or for an always-hostile viewer), visibility
+        assert!(g.unit_is_other_team(other, t0) && !g.unit_is_other_team(warrior, t0));
+        assert!(!g.unit_is_enemy_of(other, t0, false) && g.unit_is_enemy_of(other, t0, true));
+        assert!(!g.unit_is_enemy_of(warrior, t0, true));
+        assert!(g.unit_is_visible_to(other, t0));
+        g.teams[t0].at_war[t1] = true;
+        g.teams[t1].at_war[t0] = true;
+        assert!(g.unit_is_enemy_of(other, t0, false) && g.unit_is_enemy_of(warrior, t1, false));
+        assert_eq!(g.unit_is_visible_enemy_defender(other, t0, false), g.unit_can_defend(other, None));
+        assert!(g.unit_is_combat_team(other, t1, t0) && !g.unit_is_combat_team(other, t0, t0));
 
         // unit AI type (NO_UNITAI after reset)
-        let city_defense = UnitAIType::UNITAI_CITY_DEFENSE;
-        assert!(!g.puf_is_unit_ai_type(warrior, city_defense.i(), -1));
-        assert!(!g.puf_is_city_ai_type(warrior, -1, -1) && g.puf_is_not_city_ai_type(warrior, -1, -1));
-        g.units[warrior].ai_type = Some(city_defense);
-        assert!(g.puf_is_unit_ai_type(warrior, city_defense.i(), -1));
-        assert!(g.puf_is_city_ai_type(warrior, -1, -1) && !g.puf_is_not_city_ai_type(warrior, -1, -1));
+        assert!(!g.unit_ai_is_city_ai_type(warrior));
+        g.units[warrior].ai_type = Some(UnitAIType::UNITAI_CITY_DEFENSE);
+        assert!(g.unit_ai_is_city_ai_type(warrior));
 
-        assert!(!g.puf_is_fighting(warrior, -1, -1));
+        assert!(!g.unit_is_fighting(warrior));
         g.units[warrior].combat_unit = Some(other);
-        assert!(g.puf_is_fighting(warrior, -1, -1));
+        assert!(g.unit_is_fighting(warrior));
 
-        // group head and mission activity
+        // group head
         let group = g.groups.next_id();
         g.player_add_selection_group(p0, SelectionGroup::new(group, p0));
         g.groups[group].units = vec![worker, warrior];
         g.units[warrior].group = Some(group);
         g.units[worker].group = Some(group);
-        assert!(g.puf_is_group_head(worker, -1, -1) && !g.puf_is_group_head(warrior, -1, -1));
-        assert!(g.puf_is_no_mission(warrior, -1, -1));
-        g.groups[group].activity_type = ActivityType::ACTIVITY_MISSION;
-        assert!(!g.puf_is_no_mission(warrior, -1, -1));
+        assert!(g.unit_is_group_head(worker) && !g.unit_is_group_head(warrior));
 
         // different owners: the lower player id cycles first
         assert!(g.is_before_unit_cycle(warrior, other));

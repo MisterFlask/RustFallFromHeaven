@@ -425,21 +425,8 @@ impl Game {
     /// C++ `CvTeam::getLeaderID`: first alive member, else first member; `None` (C++
     /// `NO_PLAYER`) if the team has no member at all.
     pub fn team_get_leader_id(&self, t: TeamId) -> Option<PlayerId> {
-        for p in self.player_ids() {
-            if self.players[p].alive {
-                if self.players[p].team == t {
-                    return Some(p);
-                }
-            }
-        }
-
-        for p in self.player_ids() {
-            if self.players[p].team == t {
-                return Some(p);
-            }
-        }
-
-        None
+        let member = |p: PlayerId| self.players[p].team == t;
+        self.player_ids().find(|&p| self.players[p].alive && member(p)).or_else(|| self.player_ids().find(|&p| member(p)))
     }
 
     /// C++ `CvTeam::getSecretaryID`: first alive human member, else the leader.
@@ -833,25 +820,13 @@ impl Game {
     /// C++ `CvTeam::countEnemyDangerByArea`: enemy defenders visible to our leader on our
     /// plots of the area.
     pub fn team_count_enemy_danger_by_area(&self, t: TeamId, area: AreaId) -> i32 {
-        // C++ calls getLeaderID() for each counted plot (the same player every time); a plot of
-        // team `t` implies `t` has members, so it is never NO_PLAYER there.
-        let leader = opt_to_i32(self.team_get_leader_id(t));
+        // (C++ passes the team leader to the `PUF_*` predicates, which read its team: `t`.)
         let mut count = 0;
 
         for p in self.map.plot_ids() {
             if self.map.plots[p].area == Some(area) {
                 if self.plot_get_team(p) == Some(t) {
-                    count += self.plot_plot_count(
-                        p,
-                        Some(Game::puf_can_defend_enemy),
-                        leader,
-                        false as i32,
-                        None,
-                        None,
-                        Some(Game::puf_is_visible),
-                        leader,
-                        -1,
-                    );
+                    count += self.plot_count_units(p, |u| self.unit_is_visible_enemy_defender(u, t, false));
                 }
             }
         }

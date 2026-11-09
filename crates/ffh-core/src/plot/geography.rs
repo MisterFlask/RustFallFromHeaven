@@ -261,16 +261,25 @@ impl Game {
             let unit_power = self.plot_get_unit_power(p, Some(i));
             self.map.areas[area].power[i] += unit_power * change;
 
-            let units = self.plot_plot_count(p, Some(Game::puf_is_player), i.i(), -1, None, None, None, -1, -1);
-            self.area_change_units_per_player(area, i, units * change);
-            let animals = self.plot_plot_count(p, Some(Game::puf_is_animal), -1, -1, Some(i), None, None, -1, -1);
-            self.map.areas[area].animals_per_player[i] += animals * change;
-
-            for j in 0..UnitAIType::NUM {
-                let unit_ai = UnitAIType::from_usize(j);
-                let count = self.plot_plot_count(p, Some(Game::puf_is_unit_ai_type), unit_ai.i(), -1, Some(i), None, None, -1, -1);
-                self.map.areas[area].num_ai_units[i][unit_ai] += count * change;
+            // `i`'s units, animals and units of each unit AI type here (C++ counts each with its own
+            // `plotCount`, one per unit AI type; the sums are the same).
+            let mut units = 0;
+            let mut animals = 0;
+            for k in 0..self.map.plots[p].units.len() {
+                let u = self.map.plots[p].units[k];
+                if self.units[u].owner != i {
+                    continue;
+                }
+                units += 1;
+                if self.unit_is_animal(u) {
+                    animals += 1;
+                }
+                if let Some(unit_ai) = self.units[u].ai_type {
+                    self.map.areas[area].num_ai_units[i][unit_ai] += change;
+                }
             }
+            self.area_change_units_per_player(area, i, units * change);
+            self.map.areas[area].animals_per_player[i] += animals * change;
         }
 
         for t in self.team_ids() {

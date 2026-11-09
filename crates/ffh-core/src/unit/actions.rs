@@ -834,10 +834,7 @@ impl Game {
                         return true;
                     }
 
-                    if self
-                        .plot_plot_check(loop_plot, Game::puf_is_combat_team, team.i(), unit_team.i(), None, None, None, -1, -1)
-                        .is_some()
-                    {
+                    if self.plot_any_unit(loop_plot, |x| self.unit_is_combat_team(x, team, unit_team)) {
                         return true;
                     }
                 }
