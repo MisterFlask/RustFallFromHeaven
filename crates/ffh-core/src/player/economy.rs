@@ -174,19 +174,10 @@ impl Game {
         }
 
         // C++ `CLinkList<int> cityList`: each city is inserted before the first listed city
-        // with a smaller total trade modifier (so ties keep city order), else at the end.
-        let mut city_list: Vec<CityId> = Vec::with_capacity(cities.len());
-
-        for &c in &cities {
-            let total_trade_modifier = self.city_total_trade_modifier(c, None);
-
-            let pos = city_list.iter().position(|&list_city| total_trade_modifier > self.city_total_trade_modifier(list_city, None));
-
-            match pos {
-                Some(i) => city_list.insert(i, c),
-                None => city_list.push(c),
-            }
-        }
+        // with a smaller total trade modifier, else at the end: a stable sort by descending
+        // modifier (ties keep city order), each modifier computed once.
+        let mut city_list = cities;
+        city_list.sort_by_cached_key(|&c| std::cmp::Reverse(self.city_total_trade_modifier(c, None)));
 
         for c in city_list {
             self.city_update_trade_routes(c);
@@ -1638,9 +1629,10 @@ impl Game {
 
         new_war_weariness_percent_anger = self.player_get_modified_war_weariness_percent_anger(p, new_war_weariness_percent_anger);
 
-        // C++ quirk: compares against the getter, which reads 0 under GAMEOPTION_NO_WAR_WEARINESS,
-        // so with that option a new value of 0 never resets a stale member.
-        if self.player_get_war_weariness_percent_anger(p) != new_war_weariness_percent_anger {
+        // (C++ compares against the getter, which reads 0 under GAMEOPTION_NO_WAR_WEARINESS and,
+        // here, Stoicism: a new value of 0 then never reset a stale member, which came back as
+        // anger when Stoicism ended.)
+        if self.players[p].war_weariness_percent_anger != new_war_weariness_percent_anger {
             self.players[p].war_weariness_percent_anger = new_war_weariness_percent_anger;
 
             self.player_ai_make_assign_work_dirty(p);

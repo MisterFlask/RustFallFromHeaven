@@ -71,12 +71,13 @@ blocks); `git log --grep audit` lists the commits. Most groups had no findings. 
 (game speeds, handicaps, start eras, world sizes, 2 to 35 civs, climates, sea levels, options, teams,
 victories), also on a build with debug assertions and overflow checks, with bookkeeping
 cross-checks (cities, units, groups, areas, teams) every 5 turns. Debug assertions that the C++
-itself violates became `// C++ quirk:` notes, the values kept as in C++: plot city-radius counts
-that go negative when a radius-3 city dies, war symmetry for players added mid-game, shared
-(`bTeamShare`) building counts for team members added mid-game, blockade and
+itself violates became `// C++ quirk:` notes, the values kept as in C++: war symmetry for
+players added mid-game, shared (`bTeamShare`) building counts for team members added mid-game,
 specialist-commerce counts that can go negative, and world wonder created counts above
 `iMaxGlobalInstances` (FfH's equipment wonder Syliven's Perfect Lyre is counted as created again
-each time a unit drops it in a city; found by the `ffh-play soak` human games).
+each time a unit drops it in a city; found by the `ffh-play soak` human games). (The city-radius
+and blockade counts that went negative were fixed by the November 2026 review: "Bookkeeping that
+went wrong", below.)
 
 ## Not ported (by design)
 
@@ -1010,6 +1011,42 @@ the owner's decision made them part of every game, the AI-only ones too)**
   the Host's cities and gold by contribution. Allied loans are small, agreed, time-limited crusades,
   priced freely by the rest of the deal (an ongoing payment runs as long as the loan). Save
   formats 11 and 12; 16 removed the flag (`CrusadeRules::enabled`).
+
+**Bookkeeping that went wrong** (2026-11-09, a code review; each a counter or event C++ got wrong
+that no player chooses):
+
+- **A civilization born mid-game waits for its turn** (Infernals, Mercurians, `formEmpire`, the
+  cards' civilizations, crusade Hosts): C++ `setAlive` starts a turn when none is active, which in a
+  sequential game is the case during `doTurn` and every player's end-of-turn processing, so the
+  newborn (and the players after it, the barbarians included) played that game turn twice.
+- **A unit killed by spell damage dies once** (`doDamage`): C++ killed it again after
+  `changeDamage` had, reporting `onUnitKilled` twice (two Manes, Angels, Soul Forge production...).
+- **Razing or capturing a city undoes its Armageddon-counter buildings once**: `CvCity::kill`
+  subtracted them on top of the building removal, which undoes them since "Add and remove are
+  symmetric".
+- **An abandoned unit** (state-religion units, Hard-limited classes) leaves the team and player unit
+  class counts and the extra unit cost once; C++ took it off twice, so a civ could later build past
+  a class limit.
+- **City-radius counts follow the radius**: a city whose radius grows or shrinks (Kuriotates
+  cities, radius buildings) updates the counts of the plots that enter or leave it, and a shrinking
+  city hands the plots that leave its radius back to their best city. C++ left the counts, so a
+  radius-3 city that died took 15 plots below zero for good (they no longer counted as in any city's
+  radius), and the plots stayed worked by the city that lost them.
+- **Losing hidden nationality** moves a blockade only for a blockading ship (C++ updated the counts
+  for any ship, leaving -1 on every peaceful team's water in range, which cancelled a later blockade).
+- **A summon made in a vassal's land** does not lower the owner's count of units outside its
+  borders (C++ tested only the plot's team, unlike `setXY`, so the count drifted down).
+- **A unit sent to a capital that does not exist stays where it is** (Escape, Wonder's teleport,
+  Kidnap, the Amurite and Malakim pilgrimage events): the Python sent it to (-1, -1), off the map,
+  and its next turn failed.
+- **Stoicism and war weariness**: a war weariness ended while Stoicism (or
+  GAMEOPTION_NO_WAR_WEARINESS) hid it is cleared, instead of coming back when Stoicism ends.
+- **Crusade Hosts are not counted as civilizations** in the domination land threshold, the
+  domination population runner-up and the barbarians' free-tech rate (docs/CRUSADE.md said so).
+- **Governors' military need** counts a war with a rival whose city is near, not any war (every
+  civ is at war with the barbarians, so every nearby rival read as a war).
+- **An army disbanding into a city that is lost** becomes an army again (it stayed "disbanding"
+  for good, refusing requisitions).
 
 **Human play (ffh-play; docs/PLAY_DESIGN.md §10)**
 

@@ -78,8 +78,9 @@ impl Game {
                     let mut count = 0;
                     let mut possible_count = 0;
 
+                    // (Not in C++: a crusade Host is no civilization, docs/CRUSADE.md.)
                     for o in civ_team_ids(self) {
-                        if self.team_is_alive(o) {
+                        if self.team_is_alive(o) && self.crusade_of_host_team(o).is_none() {
                             if self.team_is_has_tech(o, Some(tech)) {
                                 count += 1;
                             }

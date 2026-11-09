@@ -219,12 +219,9 @@ impl Game {
         self.city_set_culture_level(c, None, false);
 
         for building in d.buildings.keys() {
-            // FfH: Added by Kael 08/08/2007
-            if self.city_num_building(c, building) > 0 && d.buildings[building].modify_global_counter != 0 {
-                self.change_global_counter(-d.buildings[building].modify_global_counter);
-            }
-            // FfH: End Add
-
+            // (FfH subtracted each building's `iModifyGlobalCounter` here, to make up for C++
+            // adding it again on removal; removing the building undoes it here (docs/PORTING.md,
+            // "Add and remove are symmetric"), so that would subtract it twice.)
             self.city_set_num_real_building(c, building, 0);
             self.city_set_num_free_building(c, building, 0);
         }

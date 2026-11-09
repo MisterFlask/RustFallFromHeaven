@@ -1853,12 +1853,12 @@ fn spell_taunt(g: &mut Game, caster: UnitId, _call: &PyCall) {
 /// `spellTeleport(caster, loc)` (XML: `spellTeleport(pCaster,'Capital')`; `loc` is unused).
 fn spell_teleport(g: &mut Game, caster: UnitId, _call: &PyCall) {
     let p = g.units[caster].owner;
-    // Without a capital the NULL CyCity answers getX()/getY() -1 and setXY goes there.
-    let (x, y) = match g.player_get_capital_city(p) {
-        Some(city) => (g.cities[city].x, g.cities[city].y),
-        None => (-1, -1),
-    };
-    g.unit_set_xy(caster, x, y, false);
+    // Without a capital the Python moves the caster to the NULL CyCity's (-1, -1), off the map
+    // unless it wraps (its next turn then fails); here it stays where it is.
+    if let Some(city) = g.player_get_capital_city(p) {
+        let (x, y) = (g.cities[city].x, g.cities[city].y);
+        g.unit_set_xy(caster, x, y, false);
+    }
 }
 
 /// The first-level sphere promotions `reqTeachSpellcasting`/`spellTeachSpellcasting` look at,

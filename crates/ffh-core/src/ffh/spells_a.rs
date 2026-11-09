@@ -2333,9 +2333,12 @@ fn spell_kidnap(g: &mut Game, caster: UnitId, _call: &PyCall) {
         }
     } else {
         if g.soren_rand_num(100, "Kidnap") <= 50 {
-            // NULL capital: getX()/getY() are -1.
-            let (cx, cy) = g.player_get_capital_city(p).map_or((-1, -1), |c| (g.cities[c].x, g.cities[c].y));
-            g.unit_set_xy(caster, cx, cy, false);
+            // NULL capital: the Python moves the caster to (-1, -1), off the map unless it
+            // wraps; here it stays where it is.
+            if let Some(c) = g.player_get_capital_city(p) {
+                let (cx, cy) = (g.cities[c].x, g.cities[c].y);
+                g.unit_set_xy(caster, cx, cy, false);
+            }
         } else {
             // Python passes player 0 as the killer.
             g.unit_kill(caster, true, Some(PlayerId(0)));

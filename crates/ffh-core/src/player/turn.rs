@@ -462,8 +462,15 @@ impl Game {
                 self.player_update_plot_groups(p);
 
                 // MPOPTION_SIMULTANEOUS_TURNS is never set (no multiplayer).
+                // A player brought alive once the game has started (a civilization born
+                // mid-game, a crusade Host) waits for its turn in slot order: in this sequential
+                // port no turn is active during `do_turn` and during each player's end-of-turn
+                // `player_do_turn`, so starting its turn here (as C++ does) gave it a turn at once
+                // and a second one when the turn order reached its slot.
                 let team = self.players[p].team;
-                if self.num_game_turn_active == 0 || (self.is_simultaneous_team_turns() && self.team_is_turn_active(team)) {
+                if (self.num_game_turn_active == 0 && !self.final_initialized)
+                    || (self.is_simultaneous_team_turns() && self.team_is_turn_active(team))
+                {
                     self.player_set_turn_active(p, true, true);
                 }
 

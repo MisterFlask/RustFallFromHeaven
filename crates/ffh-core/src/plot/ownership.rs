@@ -43,6 +43,13 @@ impl Game {
         self.map.plots[p].owner.map(|owner| self.players[owner].team)
     }
 
+    /// Whether a unit of `team` on `p` counts as outside its borders (`num_outside_units`, the
+    /// test of C++ `CvUnit::setXY`): the plot is not `team`'s and not one of its vassals'.
+    pub fn plot_is_outside_borders_of(&self, p: PlotIdx, team: TeamId) -> bool {
+        let plot_team = self.plot_get_team(p);
+        plot_team != Some(team) && plot_team.is_none_or(|t| !self.teams[t].vassal[team])
+    }
+
     /// C++ `CvPlot::isOwned`.
     #[inline]
     pub fn plot_is_owned(&self, p: PlotIdx) -> bool {
@@ -667,12 +674,9 @@ impl Game {
             // C++ `plotCity` limits the indices by the city standing on this plot (the old one).
             for i in 0..NUM_CITY_PLOTS {
                 if let Some(loop_plot) = self.plot_city(x, y, i) {
+                    // (`city_set_plot_radius` keeps the counts of the plots `plotCity` gives in
+                    // step with the city's radius; C++ did not, and these went negative.)
                     self.map.plots[loop_plot].city_radius_count -= 1;
-                    // C++ quirk: the count can go negative (C++ `FAssert` in
-                    // `changePlayerCityRadiusCount`): a city added its radius over the 22 plots
-                    // `plotCity` allowed when `CvCity::init` called `setPlotCity` (radius 2), but
-                    // `setPlotRadius(3)` (Kuriotates cities, Wonder radius buildings) does not
-                    // update the counts, so removing it now subtracts over all 37 plots.
                     self.map.plots[loop_plot].player_city_radius_count[city_owner] -= 1;
                 }
             }
@@ -1251,9 +1255,8 @@ impl Game {
     pub fn plot_change_blockaded_count(&mut self, p: PlotIdx, team: TeamId, change: i32) {
         if change != 0 {
             self.map.plots[p].blockaded_count[team] += change;
-            // C++ quirk: can go negative (the C++ FAssert fails): `CvUnit::changeHiddenNationality`
-            // calls `updatePlunder(-1)` for any ship losing its hidden nationality (e.g. the
-            // Revelation spell), blockading or not, and with the hidden unit's enemies.
+            // (In C++ it could go negative: `CvUnit::changeHiddenNationality` updated the counts
+            // for a ship that was not blockading; `unit_change_hidden_nationality` does not.)
             debug_assert!(self.map.plots[p].blockaded_count[team] == 0 || self.plot_is_water(p));
 
             if let Some(working_city) = live_city(self, self.map.plots[p].working_city) {

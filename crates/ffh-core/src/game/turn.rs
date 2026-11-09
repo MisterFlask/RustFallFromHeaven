@@ -675,10 +675,11 @@ impl Game {
 
     /// C++ `CvGame::countCivPlayersEverAlive` (players without a parent).
     pub fn count_civ_players_ever_alive(&self) -> i32 {
+        // Not in C++: crusade Host slots are not civilizations (docs/CRUSADE.md).
         self.civ_player_ids()
             .filter(|&p| {
                 let pl = &self.players[p];
-                pl.ever_alive && pl.parent.is_none()
+                pl.ever_alive && pl.parent.is_none() && !self.player_is_host_slot(p)
             })
             .count() as i32
     }
@@ -695,10 +696,9 @@ impl Game {
 
         for p in self.civ_player_ids() {
             let pl = &self.players[p];
-            if pl.ever_alive {
-                if pl.parent.is_none() {
-                    teams_ever_alive.insert(pl.team);
-                }
+            // Not in C++: crusade Host slots are not civilizations (docs/CRUSADE.md).
+            if pl.ever_alive && pl.parent.is_none() && !self.player_is_host_slot(p) {
+                teams_ever_alive.insert(pl.team);
             }
         }
 
@@ -1517,7 +1517,8 @@ impl Game {
         let mut next_best_population = 0;
 
         for t in self.civ_team_ids() {
-            if self.team_is_alive(t) {
+            // (Not in C++: a crusade Host is no civilization, docs/CRUSADE.md.)
+            if self.team_is_alive(t) && self.crusade_of_host_team(t).is_none() {
                 let population = self.team_get_total_population(t, true);
 
                 if population > best_population {

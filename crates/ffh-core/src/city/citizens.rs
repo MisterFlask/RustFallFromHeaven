@@ -12,7 +12,7 @@ use super::range;
 use crate::defs::*;
 use crate::game::Game;
 use crate::ids::*;
-use crate::utils::{get_population_power, NUM_CITY_PLOTS_RADIUS_2};
+use crate::utils::{get_population_power, CITY_PLOT_X, CITY_PLOT_Y, NUM_CITY_PLOTS_RADIUS_2};
 use ffh_data::*;
 
 impl Game {
@@ -1879,11 +1879,33 @@ impl Game {
             }
         }
 
-        self.cities[c].plot_radius = new_value;
-
+        // The plots `plot_city` gives for this city before and after: their city-radius counts
+        // follow, as `plot_set_plot_city` counts them when the city goes (C++ left them, so a
+        // radius-3 city that died took 15 plots below zero for good).
         let (x, y) = (self.cities[c].x, self.cities[c].y);
+        let covered = |g: &Game| -> Vec<Option<PlotIdx>> { (0..NUM_CITY_PLOTS).map(|i| g.plot_city(x, y, i)).collect() };
+        let on_plot = self.map.plot_xy(x, y).is_some_and(|p| self.map.plots[p].plot_city == Some(c));
+        let before = covered(self);
+        self.cities[c].plot_radius = new_value;
+        if on_plot {
+            let owner = self.cities[c].owner;
+            let after = covered(self);
+            for (b, a) in before.into_iter().zip(after) {
+                let (plot, change) = match (b, a) {
+                    (None, Some(q)) => (q, 1),
+                    (Some(q), None) => (q, -1),
+                    _ => continue,
+                };
+                self.map.plots[plot].city_radius_count += change;
+                self.map.plots[plot].player_city_radius_count[owner] += change;
+            }
+        }
+
+        // Every plot of the larger radius: `plot_city` stops at the city's (new) radius, which
+        // after a shrink would skip the plots that just left it (they kept this city as their
+        // working city).
         for i in 8..NUM_CITY_PLOTS {
-            if let Some(loop_plot) = self.plot_city(x, y, i) {
+            if let Some(loop_plot) = self.plot_xy(x, y, CITY_PLOT_X[i], CITY_PLOT_Y[i]) {
                 self.plot_update_working_city(loop_plot);
             }
         }

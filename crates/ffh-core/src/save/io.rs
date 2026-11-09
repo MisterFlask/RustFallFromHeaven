@@ -126,7 +126,7 @@ impl<'a> Reader<'a> {
     }
 
     /// A length prefix. Every encoded element takes at least one byte, so a length larger than
-    /// the rest of the input is corrupt (this also bounds allocations).
+    /// the rest of the input is corrupt.
     pub fn len(&mut self) -> Result<usize, LoadError> {
         let n = self.varint()?;
         if n > self.remaining() as u64 {
@@ -387,7 +387,9 @@ impl<T: Persist> Persist for Vec<T> {
     }
     fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
         let n = r.len()?;
-        let mut v = Vec::with_capacity(n);
+        // `len` bounds `n` by the bytes left, not by the memory `n` elements take: reserve a
+        // bounded amount so a corrupt length gives `Truncated`/`Corrupt`, not a huge allocation.
+        let mut v = Vec::with_capacity(n.min(1024));
         for _ in 0..n {
             v.push(T::read(r)?);
         }

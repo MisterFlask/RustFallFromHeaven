@@ -19,8 +19,8 @@
 //!   NULL CyUnit/CyCity (the object is gone since the trigger fired), whose setters do nothing
 //!   and whose getters answer -1/false. RNG draws the Python makes regardless are kept. Where the
 //!   Python would carry the NULL object's (-1, -1) into `initUnit`, `findClearPlot` or the lair
-//!   code (a crash or an exception in the original), the port returns at that point; `setXY` to
-//!   a NULL capital's (-1, -1) is ported as written.
+//!   code (a crash or an exception in the original), the port returns at that point; a `setXY`
+//!   to a NULL capital's (-1, -1) leaves the unit where it is (off the map it could not play).
 //! - `CyMap().plot(x, y)` off the map is the NULL CyPlot (`None`): `getNumUnits()`, `getOwner()`,
 //!   `getFeatureType()` and `getImprovementType()` answer -1 and its setters do nothing. The BtS
 //!   functions' `plot == None` tests are never true (CyMap.plot always returns an object).
@@ -468,11 +468,11 @@ fn barbarian_unit_at_data_plot(g: &mut Game, data: &EventTriggeredData, unit: Un
 fn move_to_civ_capital(g: &mut Game, data: &EventTriggeredData, civ: CivilizationType) {
     let unit = data_unit(g, data);
     if let Some(p2) = g.cf_get_civilization(civ) {
-        // NULL capital: getX()/getY() are -1 (setXY then moves the unit to CvMap::plot(-1, -1),
-        // off the map unless it wraps).
-        let (x, y) = g.player_get_capital_city(p2).map_or((-1, -1), |c| city_xy(g, c));
-        // NULL unit: setXY is a no-op.
-        if let Some(u) = unit {
+        // NULL capital: the Python moves the unit to (-1, -1), off the map unless it wraps,
+        // where it stays alive and its next turn fails; here it stays where it is. (A civ's last
+        // slot can be a dead faction split off by `formEmpire`.) NULL unit: no move.
+        if let (Some(c), Some(u)) = (g.player_get_capital_city(p2), unit) {
+            let (x, y) = city_xy(g, c);
             g.unit_set_xy(u, x, y, false);
         }
     }

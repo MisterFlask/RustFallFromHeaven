@@ -201,8 +201,9 @@ impl Game {
                     let duration = self.units[creator].duration;
                     if duration > 0 {
                         self.unit_change_duration(u, duration);
-                        if self.plot_get_team(self.unit_plot(u)) != Some(self.unit_get_team(u)) {
-                            // Summons do not count as units outside the borders.
+                        if self.plot_is_outside_borders_of(self.unit_plot(u), self.unit_get_team(u)) {
+                            // Summons do not count as units outside the borders (undoing the
+                            // count `unit_set_xy` made).
                             self.players[owner].num_outside_units -= 1;
                         }
                     }

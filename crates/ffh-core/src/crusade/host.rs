@@ -56,13 +56,9 @@ impl Game {
         self.setup.players[p.idx()].civ_description = name;
         self.setup_set_slot_status(p, SlotStatus::Computer);
         self.team_init(team);
-        // A call between player turns (a council vote, at the start of the game turn) must not
-        // start the Host's turn at once (`setAlive` does when no turn is active): it plays in
-        // slot order like everyone else.
-        let active = self.num_game_turn_active;
-        self.num_game_turn_active = active.max(1);
+        // (Its turn comes in slot order, like every player brought alive mid-game:
+        // `player_set_alive`.)
         self.player_init(p);
-        self.num_game_turn_active = active;
 
         // Nothing changes for a unit by joining the Host.
         if let Some(civ_trait) = d.civilizations[civ].civ_trait {

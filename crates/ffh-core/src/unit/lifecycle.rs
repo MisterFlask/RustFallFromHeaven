@@ -621,12 +621,9 @@ impl Game {
                     self.unit_created_count[unit_type] -= 1;
                     let unit_class = info_unit_class(info);
                     self.unit_class_created_count[unit_class] -= 1;
-                    // C++ quirk: the team/player unit class counts and the extra unit cost are
-                    // also removed by the delayed `kill(false)`, so abandoning takes them off twice.
-                    let team = self.unit_get_team(u);
-                    self.teams[team].unit_class_count[unit_class] -= 1;
-                    self.players[owner].unit_class_count[unit_class] -= 1;
-                    self.players[owner].extra_unit_cost += info.extra_cost * -1;
+                    // (C++ also takes the unit off the team/player unit class counts and the extra
+                    // unit cost here, which the delayed `kill(false)` does as well: the counts went
+                    // negative, and a civ could then build past a class's hard limit.)
                 }
             }
         }
@@ -1012,8 +1009,7 @@ impl Game {
                 self.map.areas[old_area].animals_per_player[owner] -= 1;
             }
 
-            let old_plot_team = self.plot_get_team(op);
-            if old_plot_team != Some(team) && old_plot_team.map_or(true, |t| !self.teams[t].vassal[team]) {
+            if self.plot_is_outside_borders_of(op, team) {
                 // FfH: Modified by Kael 04/19/2009 (summons do not count as outside units)
                 if self.units[u].duration == 0 {
                     self.players[owner].num_outside_units -= 1;
@@ -1113,8 +1109,7 @@ impl Game {
                 self.map.areas[new_area].animals_per_player[owner] += 1;
             }
 
-            let new_plot_team = self.plot_get_team(np);
-            if new_plot_team != Some(team) && new_plot_team.map_or(true, |t| !self.teams[t].vassal[team]) {
+            if self.plot_is_outside_borders_of(np, team) {
                 // FfH: Modified by Kael 04/19/2009 (summons do not count as outside units)
                 if self.units[u].duration == 0 {
                     self.players[owner].num_outside_units += 1;

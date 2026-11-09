@@ -1408,8 +1408,10 @@ impl Game {
                 let summon_duration = self.players[owner].summon_duration;
                 self.unit_change_duration(summon, summon_duration);
             }
-            if self.plot_get_team(self.unit_plot(u)) != Some(self.unit_get_team(u)) {
-                // `changeNumOutsideUnits(-1)`: summons do not count as units outside the borders.
+            if self.plot_is_outside_borders_of(self.unit_plot(summon), self.unit_get_team(summon)) {
+                // `changeNumOutsideUnits(-1)`: summons do not count as units outside the borders
+                // (undoing the count `setXY` made; C++ tests only the plot's team, so a summon
+                // in a vassal's land lowered the count for good).
                 self.players[owner].num_outside_units += -1;
             }
         }
@@ -1619,12 +1621,20 @@ impl Game {
     pub fn unit_change_hidden_nationality(&mut self, u: UnitId, change: i32) {
         if change != 0 {
             if self.units[u].hidden_nationality + change == 0 {
-                self.unit_update_plunder(u, -1, false);
+                // A blockade moves to the teams the unit is now an enemy of. (C++ updated the
+                // counts for a ship that was not blockading too, leaving -1 on every peaceful
+                // team's water in range, which then cancelled a real blockade there.)
+                let blockading = self.units[u].blockading;
+                if blockading {
+                    self.unit_update_plunder(u, -1, false);
+                }
                 self.units[u].hidden_nationality += change;
                 // C++ `joinGroup(NULL, true)`: bRemoveSelected (interface) with the default
                 // bRejoin = true.
                 self.unit_join_group(u, None, true);
-                self.unit_update_plunder(u, 1, false);
+                if blockading && self.units.contains(u) {
+                    self.unit_update_plunder(u, 1, false);
+                }
             } else {
                 self.units[u].hidden_nationality += change;
             }
@@ -2029,7 +2039,6 @@ impl Game {
         damage_type: Option<DamageType>,
         start_war: bool,
     ) {
-        let d = self.d;
         // prevents some pyre zombie caused CtD's 05/23/2010
         if self.units[u].death_delay {
             return;
@@ -2061,18 +2070,12 @@ impl Game {
             if damage > 0 {
                 // UI: TXT_KEY_MESSAGE_KILLED_BY / TXT_KEY_MESSAGE_DAMAGED_BY to the owner (and the
                 // attacker's owner).
-                let max_hit_points = d.defines.max_hit_points;
                 if let Some(attacker) = attacker {
                     let attacker_owner = self.units[attacker].owner;
-                    // C++ quirk: `changeDamage` already kills a dead unit (`kill(true, ..)`), so
-                    // the dead unit is killed twice and `unitKilled` is reported twice.
+                    // `changeDamage` kills a dead unit (`kill(true, ..)`). (C++ then killed it
+                    // again, reporting `unitKilled` twice: twice the Manes, Angels and other
+                    // death gifts.)
                     self.unit_change_damage(u, damage, Some(attacker_owner));
-                    if !self.units.contains(u) {
-                        return;
-                    }
-                    if self.units[u].damage >= max_hit_points {
-                        self.unit_kill(u, true, Some(attacker_owner));
-                    }
                     if !self.units.contains(u) || !self.units.contains(attacker) {
                         return;
                     }
@@ -2094,14 +2097,8 @@ impl Game {
                         }
                     }
                 } else {
-                    // C++ quirk: killed twice, as above.
+                    // (Killed once, as above.)
                     self.unit_change_damage(u, damage, None);
-                    if !self.units.contains(u) {
-                        return;
-                    }
-                    if self.units[u].damage >= max_hit_points {
-                        self.unit_kill(u, true, None);
-                    }
                 }
             }
         }

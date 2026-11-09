@@ -592,11 +592,18 @@ impl Game {
         let plot = self.city_plot(c);
         let (x, y) = (city.x, city.y);
         let team = self.players[p].team;
-        let rival_near = self.player_ids().any(|q| {
-            let pl = &self.players[q];
-            q != p && pl.alive && pl.team != team && pl.cities.iter().any(|&o| self.plot_distance(x, y, self.cities[o].x, self.cities[o].y) <= 7)
-        });
-        let at_war_near = rival_near && self.team_ids().into_iter().any(|t| t != team && self.at_war(team, t));
+        // Rivals with a city within 7 plots; at war: with one of those (every civ is at war with
+        // the barbarians, so a war with anyone would make every rival a threat).
+        let near: Vec<TeamId> = self
+            .player_ids()
+            .filter(|&q| {
+                let pl = &self.players[q];
+                q != p && pl.alive && pl.team != team && pl.cities.iter().any(|&o| self.plot_distance(x, y, self.cities[o].x, self.cities[o].y) <= 7)
+            })
+            .map(|q| self.players[q].team)
+            .collect();
+        let rival_near = !near.is_empty();
+        let at_war_near = near.iter().any(|&t| self.at_war(team, t));
         set(&mut need, "FLAVOR_MILITARY", if at_war_near { 8 } else if rival_near { 5 } else { 1 });
         set(&mut need, "FLAVOR_SCIENCE", 2 + commerce / 4);
         set(&mut need, "FLAVOR_GOLD", 1 + commerce / 4);

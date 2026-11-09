@@ -136,7 +136,7 @@ fn spell_gilded_legion(g: &mut Game, caster: UnitId, _call: &PyCall) {
     let owner = g.units[caster].owner;
     if let Some(civ) = civ {
         let name = g.d.text.name(&g.d.civilizations[civ].base.description).to_string();
-        let city = g.cities[c].name.clone();
+        let city = g.d.text.name(&g.cities[c].name).to_string();
         g.log.msg(turn, Some(owner), || format!("{city} trains the units of the {name}"));
     }
 }

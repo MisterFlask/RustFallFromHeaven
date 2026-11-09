@@ -668,6 +668,11 @@ impl Game {
         let owner = self.cities[c].owner;
         for a in self.players[owner].armies.clone() {
             self.armies[a].requisition.retain(|&x| x != c);
+            // An army disbanding into `c` stays an army (its owner can disband it again);
+            // otherwise it would refuse requisitions and never reach a garrison.
+            if self.armies[a].disband_to == Some(c) {
+                self.armies[a].disband_to = None;
+            }
         }
         for u in self.players[owner].units.clone() {
             if self.units[u].march.as_ref().is_some_and(|m| m.dest == RecruitDest::Garrison(c)) {
