@@ -59,6 +59,24 @@ Other agents share this machine (4 cores) and repository. Follow docs/AGENTS.md:
   game runs in `tools/agents/slot.sh` (`--exclusive` for `ffh bench`).
 - If you did build in your worktree, `rm -rf target` before finishing.
 
+## Fable designs, Opus implements
+
+If you are a Fable model (the owner's rule, 2026-11-09), dispatch implementation to Opus
+aggressively: start subagents with the Agent tool's `model: "opus"` and hand them the writing.
+Your part is what needs the judgment: the design and its decisions, the rules' wording, the
+briefs, reading what comes back, the measurements' conclusions, the final gate and the merge.
+Theirs is the volume: writing the code of a settled design, mechanical edits across many files,
+fixing the tests a change broke, updating docs, data conversions, the client's JavaScript.
+
+- Dispatch by default. Keep a piece yourself only when it is a few lines, when it is the design
+  itself, or when briefing it would take longer than doing it.
+- Split the work into pieces that touch different files and run them in parallel; give each
+  agent the decision already made, the files to touch, what to leave alone, and how to check
+  its work (`tools/agents/build-tree.sh`: builds are serialized machine-wide, so say who builds).
+- Read every result before building on it: an agent's report is not a verification.
+
+A model other than Fable ignores this section.
+
 ## Reference source (read-only, NOT in this repo)
 
 `tools/fetch-reference.sh` clones the pinned sources to `/home/user/ref`:
