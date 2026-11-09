@@ -156,8 +156,8 @@ pub fn run(g: &mut Game, p: PlayerId) {
         }
     }
 
-    // Units: defenders, workers and field units in turn, while points last (C++ 10 passes).
-    let roles = [(Role::Defense, UnitAIType::UNITAI_CITY_DEFENSE), (Role::Worker, UnitAIType::UNITAI_WORKER), (Role::Attack, UnitAIType::UNITAI_RESERVE), (Role::Attack, UnitAIType::UNITAI_ATTACK)];
+    // Units: defenders and field units in turn, while points last (C++ 10 passes).
+    let roles = [(Role::Defense, UnitAIType::UNITAI_CITY_DEFENSE), (Role::Attack, UnitAIType::UNITAI_RESERVE), (Role::Attack, UnitAIType::UNITAI_ATTACK)];
     let start_area = g.map.plots[start].area;
     'units: for pass in 0..10 {
         for c in g.players[p].cities.clone() {
@@ -166,10 +166,6 @@ pub fn run(g: &mut Game, p: PlayerId) {
                 continue;
             }
             let (role, unit_ai) = roles[pass % roles.len()];
-            // Workers: one per city is plenty.
-            if role == Role::Worker && pass >= roles.len() {
-                continue;
-            }
             let Some(u) = best_unit(g, c, role) else { continue };
             let cost = g.player_get_advanced_start_unit_cost(p, u, true, Some(q));
             if cost < 0 {

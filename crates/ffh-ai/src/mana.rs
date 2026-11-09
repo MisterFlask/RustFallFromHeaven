@@ -361,6 +361,6 @@ mod tests {
         assert!(is_mana(d, fire));
         assert!(!is_mana(d, d.t::<BonusType>("BONUS_MANA")), "raw mana is its own class");
         assert!(can_build_nodes(d, d.t::<UnitType>("UNIT_ADEPT")));
-        assert!(!can_build_nodes(d, d.t::<UnitType>("UNIT_WORKER")));
+        assert!(!can_build_nodes(d, d.t::<UnitType>("UNIT_WARRIOR")));
     }
 }

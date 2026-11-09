@@ -10,7 +10,7 @@
 //!   Fortress) only where there are walls; the Unconquered City only in a city never lost; an
 //!   Elemental Forge in a city that trains (its production), less where the element is resisted
 //!   by the units of the civs we are at war with (or, at peace, have met).
-//! - **Trenches** ([`build_value`], workers): on a plot of ours where a military unit of ours
+//! - **Trenches** ([`build_value`], the cities' crews): on a plot of ours where a military unit of ours
 //!   holds outside a city, at war: the side that defends on a trench is the one it helps.
 //! - **The Siege Colossus** ([`end_turn`]): after the units have moved, a unit with a bombard
 //!   range that still has its attack and a move bombards an enemy city in reach whose Sentinels
@@ -109,7 +109,7 @@ pub fn building_value(g: &Game, c: CityId, b: BuildingType, threat: i32) -> i32 
     v
 }
 
-/// What a worker's `build` on `plot` is worth to `p` when its improvement narrows the attacker
+/// What a crew's `build` on `plot` is worth to `p` when its improvement narrows the attacker
 /// (the Trench; module comment): `None` for any other build.
 pub fn build_value(g: &Game, p: PlayerId, plot: PlotIdx, build: BuildType) -> Option<i32> {
     let d = g.d;
@@ -187,7 +187,7 @@ mod tests {
         assert_eq!(building_value(&g, near, living, 0), 0);
     }
 
-    /// Workers dig a trench only under a unit of ours that holds a plot of ours, at war.
+    /// Crews dig a trench only under a unit of ours that holds a plot of ours, at war.
     #[test]
     fn a_trench_goes_where_our_units_hold() {
         let (mut g, near, _, _) = front();

@@ -645,7 +645,7 @@ fn the_infernal_gate_brings_the_court_of_mammon_beside_the_richest_civilization(
     assert!(w.g.players[np].cities.is_empty(), "it arrives without a city");
     let hero = w.hero(np, "UNIT_AURIVANE");
     assert_eq!(w.g.unit_plot(hero), site);
-    for (unit, n) in [("UNIT_CHAMPION", 2), ("UNIT_LONGBOWMAN", 2), ("UNIT_SETTLER", 2), ("UNIT_WORKER", 1), ("UNIT_MANES", 2)] {
+    for (unit, n) in [("UNIT_CHAMPION", 2), ("UNIT_LONGBOWMAN", 2), ("UNIT_SETTLER", 2), ("UNIT_MANES", 2)] {
         let units = w.units_of(np, unit);
         assert_eq!(units.len(), n, "{unit}");
         assert!(units.iter().all(|&u| w.g.unit_plot(u) == site), "{unit} at the site");

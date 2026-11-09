@@ -3128,7 +3128,7 @@ mod tests {
         let (p0, p1) = (PlayerId(0), PlayerId(1));
         declare_war(&mut g, p0, p1);
         let warrior = d.t::<UnitType>("UNIT_WARRIOR");
-        let worker = d.t::<UnitType>("UNIT_WORKER");
+        let worker = d.t::<UnitType>("UNIT_SLAVE");
         let hidden = d.t::<PromotionType>("PROMOTION_HIDDEN");
         assert!(d.promotions[hidden].removed_by_combat && d.promotions[hidden].invisible);
 
@@ -3152,7 +3152,7 @@ mod tests {
         g.unit_set_has_promotion(attacker, hidden, true);
         assert!(g.unit_is_invisible(attacker, g.players[p1].team, true));
         // An enemy that does not see it moves in; every other way out is closed: enemies on the land
-        // around, and the defender on `b` (a worker, which cannot defend: no combat rolls).
+        // around, and the defender on `b` (a slave, which cannot defend: no combat rolls).
         let lurker = g.player_init_unit(p1, warrior, ax, ay, None, None);
         assert_eq!(g.map.plots[a].units, vec![attacker, lurker]);
         for p in block(&g, a) {
@@ -3171,7 +3171,7 @@ mod tests {
 
         assert!(!g.units.contains(attacker), "visible next to the lurker with nowhere to go: killed");
         assert!(!g.units.contains(defender), "the defender still dies");
-        assert_eq!(g.players[p0].units.len(), ours - 1, "nobody captures the worker");
+        assert_eq!(g.players[p0].units.len(), ours - 1, "nobody captures the slave");
         assert_eq!(g.players[p1].units.len(), theirs - 1);
         assert!(g.map.plots[b].units.is_empty());
         assert_eq!(g.map.plots[a].units, vec![lurker]);

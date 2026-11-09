@@ -6,9 +6,9 @@
 //! private seeded RNG. It is a test driver, not an AI: it exercises the command paths, the
 //! decisions and the views.
 //!
-//! Policy: research the cheapest tech; production rotation warrior, settler, worker, building
+//! Policy: research the cheapest tech; production rotation warrior, settler, warrior, building
 //! (a city with fewer than two defenders first trains its strongest land unit); settlers found
-//! cities (or walk to a site); workers take the first build; military units attack adjacent
+//! cities (or walk to a site); casters take the first build (a mana node); military units attack adjacent
 //! enemies at odds of 60% or more, fortify in cities or explore; sometimes cast a spell; take
 //! promotions; revolt when a civic unlocks; declare war on a met AI around turn 80 and propose
 //! peace from turn 120; answer popups and decisions with a seeded mix (first option, advisor,
@@ -471,7 +471,7 @@ impl Bot {
         }
     }
 
-    /// Production for idle cities: the rotation warrior, settler, worker, building.
+    /// Production for idle cities: the rotation warrior, settler, warrior, building.
     fn cities(&mut self, s: &mut Session, p: &Json) {
         let d = s.g.d;
         let class_of = |t: i64| d.units[UnitType::from_usize(t as usize)].unit_class_type;
@@ -500,7 +500,7 @@ impl Bot {
                 }
             }
             if choice.is_none() {
-                let rotation = ["UNITCLASS_WARRIOR", "UNITCLASS_SETTLER", "UNITCLASS_WORKER"].map(|n| d.ty::<UnitClassType>(n));
+                let rotation = ["UNITCLASS_WARRIOR", "UNITCLASS_SETTLER", "UNITCLASS_WARRIOR"].map(|n| d.ty::<UnitClassType>(n));
                 for k in 0..4 {
                     let slot = (start + k) % 4;
                     if slot < 3 {
@@ -617,17 +617,12 @@ impl Bot {
                     return Some(move_to(sites[pick % sites.len()], None));
                 }
             }
-            // Workers: the first build here, else go to a plot of ours without improvement.
-            if let Some(c) = mission(MissionType::MISSION_BUILD) {
-                return Some(c);
-            }
+            // Casters: the first build here (a mana node). The cities' crews do the other builds,
+            // and the soldiers' field works are left alone (docs/WORKS.md).
             if info.builds.iter().any(|&b| b) {
-                let spots: Vec<usize> =
-                    seen.near(x, y, 3).into_iter().filter(|&i| seen.land(i) && seen.owner[i] == seen.me && seen.improvement[i] < 0 && seen.city[i] < 0).collect();
-                if !spots.is_empty() {
-                    return Some(move_to(spots[pick % spots.len()], None));
+                if let Some(c) = mission(MissionType::MISSION_BUILD) {
+                    return Some(c);
                 }
-                return None;
             }
             if info.combat <= 0 {
                 return None;

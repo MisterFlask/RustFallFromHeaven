@@ -135,7 +135,7 @@ fn the_large_units() {
         [
             "UNIT_ABASHI", "UNIT_ACHERON", "UNIT_BARNAXUS", "UNIT_BONE_GOLEM", "UNIT_CLOCKWORK_GOLEM", "UNIT_DRIFA", "UNIT_EARTH_ELEMENTAL",
             "UNIT_ELEPHANT", "UNIT_EURABATRES", "UNIT_FLESH_GOLEM", "UNIT_GURID", "UNIT_HILL_GIANT", "UNIT_IRON_GOLEM", "UNIT_MARGALARD",
-            "UNIT_MITHRIL_GOLEM", "UNIT_MUD_GOLEM", "UNIT_NULLSTONE_GOLEM", "UNIT_TREANT", "UNIT_WAR_ELEPHANT", "UNIT_WAR_MACHINE",
+            "UNIT_MITHRIL_GOLEM", "UNIT_NULLSTONE_GOLEM", "UNIT_TREANT", "UNIT_WAR_ELEPHANT", "UNIT_WAR_MACHINE",
             "UNIT_WAR_TORTOISE", "UNIT_WILBOMAN", "UNIT_WOOD_GOLEM",
         ]
     );
@@ -286,14 +286,12 @@ fn named_units_have_their_kinds() {
         ("UNIT_AIRSHIP", "SHOOT"),
         // defends only, immobile: still a striker
         ("UNIT_GUARDIAN_VINES", "STRIKE"),
-        ("UNIT_MUD_GOLEM", "STRIKE"),
         // typed strength only (lightning 3)
         ("UNIT_LIGHTNING_ELEMENTAL", "STRIKE"),
         // missiles have rows (their strike targets by them); the rules never commit them
         ("UNIT_FIREBALL", "STRIKE"),
         // Types without strength have rows too: a unit's strength is its own, and promotions add
-        // to it (a Worker that takes the Godslayer is a 3/3 unit, and it defends).
-        ("UNIT_WORKER", "STRIKE"),
+        // to it (a Settler that takes the Godslayer is a 3/3 unit, and it defends).
         ("UNIT_SETTLER", "STRIKE"),
         ("UNIT_COMMANDER", "STRIKE"),
         ("UNIT_CORLINDALE", "SPELL"),
@@ -387,14 +385,14 @@ fn every_land_type_has_rows() {
     let count = |want: Option<ActionKind>| d.units.keys().filter(|&u| u.idx() < own && d.units[u].engage_rows.map(|_| d.engage_kind(u)) == want).count();
     // (kind, unit types) at the time of writing; the sum is every unit type of the game's own.
     let want = [
-        (Some(ActionKind::Strike), 170),
+        (Some(ActionKind::Strike), 168), // (170 less the Worker and the Mud Golem, docs/WORKS.md)
         (Some(ActionKind::Charge), 38),
         (Some(ActionKind::Stab), 11),
         (Some(ActionKind::Shoot), 37), // 16, this game's Skirmisher and the 20 recon units that do not stab
         (Some(ActionKind::Bombard), 5),
         (Some(ActionKind::Spell), 18),
         (Some(ActionKind::Heal), 29),
-        (None, 19),
+        (None, 18), // (19 less the Work Boat)
     ];
     for (k, n) in want {
         assert_eq!(count(k), n, "{k:?}");

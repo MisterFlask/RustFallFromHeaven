@@ -1461,14 +1461,6 @@
     "default_unit": "UNIT_DISCIPLE_THE_ASHEN_VEIL"
   },
   {
-    "type": "UNITCLASS_WORKBOAT",
-    "description": "TXT_KEY_UNIT_WORKBOAT",
-    "max_global_instances": -1,
-    "max_team_instances": -1,
-    "max_player_instances": -1,
-    "default_unit": "UNIT_WORKBOAT"
-  },
-  {
     "type": "UNITCLASS_GALLEY",
     "description": "TXT_KEY_UNIT_GALLEY",
     "max_global_instances": -1,
@@ -1611,14 +1603,6 @@
     "max_team_instances": -1,
     "max_player_instances": -1,
     "default_unit": "UNIT_SETTLER"
-  },
-  {
-    "type": "UNITCLASS_WORKER",
-    "description": "TXT_KEY_UNIT_WORKER",
-    "max_global_instances": -1,
-    "max_team_instances": -1,
-    "max_player_instances": -1,
-    "default_unit": "UNIT_WORKER"
   },
   {
     "type": "UNITCLASS_SCOUT",

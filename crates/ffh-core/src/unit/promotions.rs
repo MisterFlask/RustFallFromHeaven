@@ -2306,8 +2306,11 @@ mod tests {
         // Capture classes go through the capturing civilization's units.
         let bannor = d.t::<CivilizationType>("CIVILIZATION_BANNOR");
         let settler = add_unit(&mut g, PlayerId(0), "UNIT_SETTLER", 2, 1);
-        assert_eq!(g.unit_get_capture_unit_type(settler, bannor), d.civ_unit(bannor, class("UNITCLASS_WORKER")));
-        assert!(g.unit_get_capture_unit_type(settler, bannor).is_some());
+        let slave = add_unit(&mut g, PlayerId(0), "UNIT_SLAVE", 2, 1);
+        assert_eq!(g.unit_get_capture_unit_type(slave, bannor), d.civ_unit(bannor, class("UNITCLASS_SLAVE")));
+        assert!(g.unit_get_capture_unit_type(slave, bannor).is_some());
+        // (A Settler is not captured: it became a Worker, and there are none, docs/WORKS.md.)
+        assert_eq!(g.unit_get_capture_unit_type(settler, bannor), None);
         assert_eq!(g.unit_get_capture_unit_type(u, bannor), None);
     }
 }

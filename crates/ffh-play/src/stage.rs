@@ -470,19 +470,17 @@ fn free_plots_near_capital(g: &ffh_core::game::Game, h: PlayerId) -> Result<Vec<
 }
 
 /// A saved game at a human control point (turn 4 of a duel, seed 11, the Bannor) where a new
-/// worker `worker` and a new scout `scout` of the human wait for orders on free plots near the
-/// capital, and the human knows the techs for roads, farms and mines: the unit panel offers
-/// their automate buttons (P7).
+/// scout `scout` of the human waits for orders on a free plot near the capital: the unit panel
+/// offers its automate button (P7).
 pub struct StagedAutomate {
     pub save: PathBuf,
-    pub worker: UnitId,
     pub scout: UnitId,
     pub turn: i32,
 }
 
 impl StagedAutomate {
     pub fn to_json(&self) -> Json {
-        crate::jobj! { "stage" => "automate", "save" => self.save.display().to_string(), "worker" => self.worker, "scout" => self.scout, "turn" => self.turn }
+        crate::jobj! { "stage" => "automate", "save" => self.save.display().to_string(), "scout" => self.scout, "turn" => self.turn }
     }
 }
 
@@ -492,16 +490,11 @@ pub fn automate(dir: &Path) -> Result<StagedAutomate, String> {
     let mut s = duel_as(dir, 11, 4, Some("CIVILIZATION_BANNOR"))?;
     let h = s.human;
     let g = &mut s.g;
-    let team = g.players[h].team;
-    for t in ["TECH_EXPLORATION", "TECH_AGRICULTURE", "TECH_MINING"] {
-        g.team_set_has_tech(team, d.t::<TechType>(t), true, Some(h), false, false);
-    }
     let plots = free_plots_near_capital(g, h)?;
-    let (&(wx, wy), &(sx, sy)) = (plots.first().ok_or("no free plot")?, plots.get(1).ok_or("no second free plot")?);
-    let worker = g.player_init_unit(h, d.t::<UnitType>("UNIT_WORKER"), wx, wy, None, None);
+    let &(sx, sy) = plots.first().ok_or("no free plot")?;
     let scout = g.player_init_unit(h, d.t::<UnitType>("UNIT_SCOUT"), sx, sy, None, None);
     let paths = s.save("automate").map_err(|e| format!("save: {e:?}"))?;
-    Ok(StagedAutomate { save: paths.save, worker, scout, turn: s.g.game_turn() })
+    Ok(StagedAutomate { save: paths.save, scout, turn: s.g.game_turn() })
 }
 
 /// A saved game at a human control point (turn 4 of a duel, seed 11) with the decks in play

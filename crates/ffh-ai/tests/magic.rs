@@ -284,13 +284,13 @@ fn a_summon_on_its_last_turn_spends_itself_unless_it_is_cover() {
         g.units[n].duration = 1;
         n
     };
-    // Next to the Champion with a Worker to shield: it stays and defends.
+    // Next to the Champion with a Settler to shield: it stays and defends.
     let newest = g.players[us].units.iter().copied().max();
     let guard = summon(&mut g, 7);
-    g.player_init_unit(us, d.t::<UnitType>("UNIT_WORKER"), 7, 5, Some(UnitAIType::UNITAI_WORKER), None);
+    g.player_init_unit(us, d.t::<UnitType>("UNIT_SETTLER"), 7, 5, Some(UnitAIType::UNITAI_SETTLE), None);
     let v = View::new(&g, us);
     ffh_ai::casting::summons_attack(&mut g, &v, newest);
-    assert!(g.units.contains(guard) && !g.units[guard].made_attack, "the Puppet covers the Worker");
+    assert!(g.units.contains(guard) && !g.units[guard].made_attack, "the Puppet covers the Settler");
     // Alone on the other side of the Champion: it attacks whatever the odds.
     let newest = g.players[us].units.iter().copied().max();
     let alone = summon(&mut g, 9);

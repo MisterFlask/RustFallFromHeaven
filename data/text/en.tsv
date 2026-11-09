@@ -2709,7 +2709,7 @@ TXT_KEY_BUILDING_WITH_BONUS	[SPACE]with [LINK=literal]%s1_Bonus[\LINK]
 TXT_KEY_BUILDING_WITH_POWER	[SPACE]with Power ([ICON_POWER])
 TXT_KEY_BUILDING_WOLF_PEN	Wolf Pen
 TXT_KEY_BUILDING_WOLF_PEN_PEDIA	[TAB]If a wild Wolf is captured it can be taken to a city with a Carnival and added to the city as an attraction. This raises both the cultural and happiness effects of the Carnival.
-TXT_KEY_BUILDING_WORKER_MOD	[ICON_BULLET]Workers Build Improvements %D1_Mod%% Faster
+TXT_KEY_BUILDING_WORKER_MOD	[ICON_BULLET]City work crews work %D1_Mod%% faster
 TXT_KEY_BUILDING_WORLD_WONDERS_PER_CITY	[COLOR_WARNING_TEXT]Can only Construct %d1_Num World Wonders per City[COLOR_REVERT]
 TXT_KEY_BUILDING_WORLD_WONDER_ALLOWED	[ICON_BULLET]World Wonder (%d1_Num Allowed)
 TXT_KEY_BUILDING_WORLD_WONDER_LEFT	[SPACE](World Wonder: %d1_Num Left)
@@ -2722,6 +2722,7 @@ TXT_KEY_BUILD_CAMP	Build a [LINK=IMPROVEMENT_CAMP]Camp[\LINK]
 TXT_KEY_BUILD_COST	Cost: %d1_cost [ICON_GOLD]
 TXT_KEY_BUILD_COTTAGE	Build a [LINK=IMPROVEMENT_COTTAGE]Cottage[\LINK]
 TXT_KEY_BUILD_FARM	Build a [LINK=IMPROVEMENT_FARM]Farm[\LINK]
+TXT_KEY_BUILD_PIRATE_COVE	Build a [LINK=IMPROVEMENT_PIRATE_COVE]Pirate Cove[\LINK]
 TXT_KEY_BUILD_FISHING_BOATS	Create [LINK=IMPROVEMENT_FISHING_BOATS]Fishing Boats[\LINK]
 TXT_KEY_BUILD_FOREST_PRESERVE	Preserve [LINK=IMPROVEMENT_FOREST_PRESERVE]Forest[\LINK]
 TXT_KEY_BUILD_FORT	Build a [LINK=IMPROVEMENT_FORT]Fort[\LINK]
@@ -5226,7 +5227,7 @@ TXT_KEY_CIVIC_WE_LOVE_DICTATOR	"We Love the Dictator Day"
 TXT_KEY_CIVIC_WE_LOVE_MONARCH	"We Love the Monarch Day"
 TXT_KEY_CIVIC_WE_LOVE_PRESIDENT	"We Love the President Day"
 TXT_KEY_CIVIC_WE_LOVE_PRIME_MINISTER	"We Love the Prime Minister Day"
-TXT_KEY_CIVIC_WORKER_SPEED	[ICON_BULLET]Workers Build Improvements %D1_Mod%% Faster
+TXT_KEY_CIVIC_WORKER_SPEED	[ICON_BULLET]City work crews work %D1_Mod%% faster
 TXT_KEY_CIVILOPEDIA_BACKGROUND	[BOLD]Background:[\BOLD][NEWLINE]
 TXT_KEY_CIVILOPEDIA_HISTORY	History
 TXT_KEY_CIVILOPEDIA_STRATEGY	[BOLD]Strategy:[\BOLD][PARAGRAPH:1]
@@ -13052,6 +13053,7 @@ TXT_KEY_UNIT_CAN_CONSTRUCT	[ICON_BULLET]Can Construct[SPACE]
 TXT_KEY_UNIT_CAN_EXPAND	[ICON_BULLET]Can Expand[SPACE]
 TXT_KEY_UNIT_CAN_JOIN	[ICON_BULLET]Can Join City as[SPACE]
 TXT_KEY_UNIT_CAN_MOVE_IMPASSABLE	[ICON_BULLET]Can Move through Impassable Terrain
+TXT_KEY_UNIT_CREW_WORK	[ICON_BULLET]In a city of its owner: +%d1 work rate of the city's work crews
 TXT_KEY_UNIT_CAN_NUKE	[ICON_BULLET]Can [LINK=CONCEPT_NUKES]Nuke[\LINK] Enemy Lands
 TXT_KEY_UNIT_CAN_SPREAD	[ICON_BULLET]Can Spread[SPACE]
 TXT_KEY_UNIT_CARAVEL	Caravel
@@ -14037,7 +14039,7 @@ TXT_KEY_UNIT_WOOD_GOLEM	Wood Golem
 TXT_KEY_UNIT_WOOD_GOLEM_PEDIA	The novice Luchuirp crafters at the start of the age of rebirth tried working the exotic materials that their ancestors used, but found they needed more practice to get useful forms for their enchanting process. The wood golems produced by this practice turned out to make decent fighters, and could be found filling out the ranks amidst their sturdier relatives throughout the age.
 TXT_KEY_UNIT_WOOD_GOLEM_STRATEGY	The Luchuirp's first golem unit, Wood golems are good as attackers or defenders, being stronger than the units most civs are likely to have access to at the same time. Like all golems, however, they cannot level up to gain promotions. Beware their vulnerability to fire.
 TXT_KEY_UNIT_WORKER	Worker
-TXT_KEY_UNIT_WORKERS_FASTER	[ICON_BULLET]Workers Build Improvements %D1_Change%% Faster
+TXT_KEY_UNIT_WORKERS_FASTER	[ICON_BULLET]City work crews work %D1_Change%% faster
 TXT_KEY_UNIT_WORKER_PEDIA	[TAB]The majority of people in all civilizations throughout time have been workers. Whether engaged in farming, commerce, or industry, their actions form the economic infrastructure without which no nation can succeed. Over time, the endless activity of workers has reshaped the very surface of the land by mining hills, cutting down huge stretches of forest, and irrigating hostile terrain into fertile farmland. By the late 20th century it had become apparent that excessive deforestation and pollution from heavy industry posed a threat to the world's environment. 
 TXT_KEY_UNIT_WORKER_STRATEGY	Use [COLOR_UNIT_TEXT]Workers[COLOR_REVERT] to improve the land around your cities and build roads that help establish trade routes.
 TXT_KEY_UNIT_WORK_BOAT	Work Boat

@@ -256,10 +256,11 @@ fn a_trench_narrows_the_attacker() {
     assert!(dug.sides[0].changes.iter().any(|c| c.src == SlotSource::Improvement(trench) && c.delta == -3));
     let d = w.g.d;
     let build = d.t::<BuildType>("BUILD_TRENCH");
-    assert!(d.units[d.t::<UnitType>("UNIT_WORKER")].builds[build]);
+    // The Road's builders (`same_builders_as`, docs/WORKS.md): the cities' crews and the army
+    // units, by their kind (no unit type's own build), not the casters, whose mana-node builds
+    // are improvements too.
+    assert!(d.builds[build].city && d.builds[build].field);
     assert!(!d.units[d.t::<UnitType>("UNIT_AXEMAN")].builds[build]);
-    // The Road's builders (`same_builders_as`): not the casters, whose mana-node builds are
-    // improvements too.
     assert!(!d.units[d.t::<UnitType>("UNIT_ADEPT")].builds[build], "casters dig no trenches");
 }
 
@@ -288,8 +289,8 @@ fn the_siege_colossus_bombards_from_two_plots_and_besieges() {
     let (p0, west, from) = (w.p0, w.west, w.from);
     let c = w.city;
     w.build("BUILDING_WALLS");
-    // A worker next to the city: it sees the city and besieges nothing.
-    w.unit(p0, "UNIT_WORKER", from);
+    // A settler next to the city: it sees the city and besieges nothing.
+    w.unit(p0, "UNIT_SETTLER", from);
     let catapult = w.unit(p0, "UNIT_CATAPULT", west);
     let colossus = w.unit(p0, "UNIT_SIEGE_COLOSSUS", west);
     assert!(!w.g.unit_can_bombard(catapult, west), "a catapult reaches the next plot only");

@@ -1,5 +1,5 @@
-//! Port of CvSpellInterface.py (part b): every function from `reqPirateCove` to the end of the
-//! file (spells P..W, the improvement/feature `atRange*`/`onMove*` callbacks and
+//! Port of CvSpellInterface.py (part b): every function from `reqMarchOfTheTrees` to the end of
+//! the file (`reqPirateCove`, the first, went with the Work Boat: docs/WORKS.md); that is (spells P..W, the improvement/feature `atRange*`/`onMove*` callbacks and
 //! `voteFundDissidents`). Each Python function becomes a private Rust `fn` (named after it in
 //! snake_case, the Python name in its doc comment) registered by its Python name in the
 //! `find_*` lookups below (see dispatch.rs).
@@ -97,7 +97,6 @@ pub fn find_spell(name: &str) -> Option<SpellFn> {
 /// PyRequirement functions (`reqX`).
 pub fn find_req(name: &str) -> Option<ReqFn> {
     let f: ReqFn = match name {
-        "reqPirateCove" => req_pirate_cove,
         "reqMarchOfTheTrees" => req_march_of_the_trees,
         "reqMotherLode" => req_mother_lode,
         "reqPromoteSettlement" => req_promote_settlement,
@@ -246,46 +245,6 @@ fn has_promotion_opt(g: &Game, u: UnitId, promotion: Option<PromotionType>) -> b
 // ---------------------------------------------------------------------------------------------
 // Spells
 // ---------------------------------------------------------------------------------------------
-
-/// `reqPirateCove(caster)`.
-fn req_pirate_cove(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    let d = g.d;
-    let plot = g.unit_plot(caster);
-    let pirate_cove = d.t::<ImprovementType>("IMPROVEMENT_PIRATE_COVE");
-    if g.map.plots[plot].owner != Some(g.units[caster].owner) {
-        return false;
-    }
-    if !g.plot_can_have_improvement(plot, pirate_cove, None, false) {
-        return false;
-    }
-    if g.map.plots[plot].improvement_type.is_some() {
-        return false;
-    }
-    // `pPlot.getBonusType(-1)`: NO_TEAM reads the raw bonus.
-    if g.map.plots[plot].bonus_type.is_some() {
-        return false;
-    }
-    let pirate_harbor = d.t::<ImprovementType>("IMPROVEMENT_PIRATE_HARBOR");
-    let pirate_port = d.t::<ImprovementType>("IMPROVEMENT_PIRATE_PORT");
-    let (x, y) = (g.units[caster].x, g.units[caster].y);
-    for ix in x - 2..x + 3 {
-        for iy in y - 2..y + 3 {
-            if let Some(p) = g.map.plot_xy(ix, iy) {
-                let improvement = g.map.plots[p].improvement_type;
-                if improvement == Some(pirate_cove) {
-                    return false;
-                }
-                if improvement == Some(pirate_harbor) {
-                    return false;
-                }
-                if improvement == Some(pirate_port) {
-                    return false;
-                }
-            }
-        }
-    }
-    true
-}
 
 /// `reqMarchOfTheTrees(caster)`. Change from FFH2: its only condition was AI-only (at war with two
 /// teams); it is AI timing, in ffh-ai `world_spells` (docs/PORTING.md).
@@ -1985,9 +1944,6 @@ fn req_upgrade_doviello_warrior(g: &Game, caster: UnitId, _call: &PyCall) -> boo
         if g.team_get_at_war_count(team, true) == 0 {
             return false;
         }
-        if g.players[p].num_cities() > g.players[p].unit_class_count[g.d.t::<UnitClassType>("UNITCLASS_WORKER")] {
-            return false;
-        }
     }
     true
 }
@@ -2600,7 +2556,7 @@ mod tests {
     #[test]
     fn every_function_is_registered() {
         let req = [
-            "reqPirateCove", "reqMarchOfTheTrees", "reqMotherLode", "reqPromoteSettlement", "reqRagingSeas",
+            "reqMarchOfTheTrees", "reqMotherLode", "reqPromoteSettlement", "reqRagingSeas",
             "reqRally", "reqRebuildBarnaxus", "reqRecruitMercenary", "reqReligiousFervor", "reqRepair",
             "reqRessurection", "reqReveal", "reqRevelry", "reqRevelation", "reqRiverOfBlood", "reqRoar",
             "reqRobGrave", "reqSanctify", "reqSanctuary", "reqSandLion", "reqScorch", "reqSironasTouch",
@@ -2637,6 +2593,6 @@ mod tests {
             assert!(find_plot_fn(name).is_some(), "{name}");
         }
         assert!(find_vote_fn("voteFundDissidents").is_some());
-        assert_eq!(req.len() + spell.len() + plot.len() + 1, 106);
+        assert_eq!(req.len() + spell.len() + plot.len() + 1, 105);
     }
 }

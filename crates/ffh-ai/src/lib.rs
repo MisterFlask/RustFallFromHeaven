@@ -210,6 +210,11 @@ impl Controller for Ai {
         armies::requisition_unit(g, c, a)
     }
 
+    /// What a city's work crews build next (docs/WORKS.md): `workers::choose_crew_build`.
+    fn choose_crew_build(&self, g: &Game, c: CityId) -> Option<(PlotIdx, BuildType)> {
+        workers::choose_crew_build(g, c)
+    }
+
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         // The AI's own cities are its play (`play_turn`); a human's governors act here.
         if g.players[p].human {

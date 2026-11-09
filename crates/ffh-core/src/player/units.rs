@@ -1625,6 +1625,11 @@ impl Game {
             return false;
         }
 
+        // Not in C++ (docs/WORKS.md): a civilization's own build (the Lanun's Pirate Cove).
+        if info.prereq_civ.is_some_and(|civ| self.player_get_civilization_type(p) != Some(civ)) {
+            return false;
+        }
+
         if let Some(tech_prereq) = info.tech_prereq {
             if !self.team_is_has_tech(team, Some(tech_prereq))
                 && ((!test_era && !test_visible) || ((self.players[p].current_era.i() + 1) < opt_to_i32(d.techs[tech_prereq].era)))

@@ -41,6 +41,7 @@ pub mod tribute;
 mod test_world;
 pub mod unit;
 pub mod utils;
+pub mod works;
 
 pub use controller::{AiHook, Controller, ControllerRef, NullController};
 pub use game::Game;

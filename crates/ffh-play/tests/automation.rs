@@ -87,81 +87,36 @@ fn group_of(g: &Game, u: UnitId) -> GroupId {
     g.units[u].group.expect("a group")
 }
 
-/// The automate buttons are offered for what can be automated (no terraforming), the command
-/// automates the group, the AI moves it in the human's turns (it never waits for orders), and
-/// the workers improve the capital's land.
+/// There is nothing to automate about the land (docs/WORKS.md): no unit is offered the workers'
+/// automations, the rules refuse them, and the capital's crews improve its land in the human's
+/// turns without an order.
 #[test]
-fn automated_workers_improve_the_land() {
+fn the_capitals_crews_improve_the_land_without_orders() {
     let mut s = session(41, true);
     let h = s.human;
-    let w = unit(&mut s, "UNIT_WORKER");
+    let w = unit(&mut s, "UNIT_WARRIOR");
     ok(&mut s, Command::SetOption { option: PlayerOptionType::PLAYEROPTION_QUICK_MOVES, value: true });
     let actions = s.query_json(&ffh_play::jobj! { "q" => "group", "units" => vec![w] }).unwrap();
     let automates: Vec<i64> = actions.req_arr("actions").unwrap().iter().filter(|a| a.req_str("kind") == Ok("automate")).map(|a| a.req::<i64>("automate").unwrap()).collect();
     let d = s.g.d;
     let names: Vec<&str> = automates.iter().map(|&a| d.type_name(AutomateType::from_usize(a as usize))).collect();
-    assert!(names.contains(&"AUTOMATE_BUILD") && names.contains(&"AUTOMATE_NETWORK") && names.contains(&"AUTOMATE_CITY"), "{names:?}");
-    assert!(!names.contains(&"AUTOMATE_EXPLORE") && !names.contains(&"AUTOMATE_TERRAFORMING"), "{names:?}");
-    // Terraforming is refused (no AI for it).
-    let t = Command::DoCommand { units: vec![w], command: CommandType::COMMAND_AUTOMATE, data1: AutomateType::AUTOMATE_TERRAFORMING.idx() as i32, data2: -1, alt: false, confirmed: false };
-    assert!(matches!(s.execute(&t), Err(CmdErr::Cannot(_))));
+    assert!(!names.contains(&"AUTOMATE_BUILD") && !names.contains(&"AUTOMATE_NETWORK") && !names.contains(&"AUTOMATE_CITY"), "{names:?}");
+    for a in [AutomateType::AUTOMATE_BUILD, AutomateType::AUTOMATE_NETWORK, AutomateType::AUTOMATE_CITY, AutomateType::AUTOMATE_TERRAFORMING] {
+        let c = Command::DoCommand { units: vec![w], command: CommandType::COMMAND_AUTOMATE, data1: a.idx() as i32, data2: -1, alt: false, confirmed: false };
+        assert!(matches!(s.execute(&c), Err(CmdErr::Cannot(_))), "{}", d.type_name(a));
+    }
 
-    automate(&mut s, w, AutomateType::AUTOMATE_BUILD);
-    let grp = group_of(&s.g, w);
-    assert_eq!(s.g.groups[grp].automate_type, Some(AutomateType::AUTOMATE_BUILD));
-    assert!(!s.pending().ready_groups.contains(&grp), "the human gives it no orders");
-    assert!(!s.g.groups[grp].mission_queue.is_empty() || !s.g.group_ready_to_move(grp, true), "the AI gave it orders in the command's settle");
     let improved = |g: &Game| g.map.plot_ids().filter(|&q| g.map.plots[q].owner == Some(h) && (g.map.plots[q].improvement_type.is_some() || g.map.plots[q].route_type.is_some()) && g.map.plots[q].plot_city.is_none()).count();
     let before = improved(&s.g);
+    let capital = s.g.players[h].cities[0];
+    let mut worked = false;
     for _ in 0..25 {
         next_turn(&mut s);
-        if !s.g.units.contains(w) {
-            break;
-        }
-        assert!(s.g.group_is_automated(group_of(&s.g, w)), "stays automated");
+        worked |= s.g.cities[capital].crew_build.is_some();
     }
-    assert!(improved(&s.g) > before, "the automated worker built something ({} -> {})", before, improved(&s.g));
+    assert!(worked, "the crews had a build");
+    assert!(improved(&s.g) > before, "the crews built something ({} -> {})", before, improved(&s.g));
     assert_eq!(s.phase(), Phase::Human(h));
-}
-
-/// AUTOMATE_NETWORK builds only routes (and resource connections); AUTOMATE_CITY works only on
-/// its city's plots.
-#[test]
-fn network_and_city_automation_keep_to_their_jobs() {
-    let mut s = session(47, true);
-    let h = s.human;
-    let d = s.g.d;
-    let net = unit(&mut s, "UNIT_WORKER");
-    let city = unit(&mut s, "UNIT_WORKER");
-    automate(&mut s, net, AutomateType::AUTOMATE_NETWORK);
-    automate(&mut s, city, AutomateType::AUTOMATE_CITY);
-    let capital = s.g.players[h].cities[0];
-    let mut builds = 0;
-    for _ in 0..20 {
-        for (u, network) in [(net, true), (city, false)] {
-            if !s.g.units.contains(u) {
-                continue;
-            }
-            let grp = group_of(&s.g, u);
-            for m in &s.g.groups[grp].mission_queue {
-                if m.mission_type != MissionType::MISSION_BUILD {
-                    continue;
-                }
-                builds += 1;
-                let b = &d.builds[BuildType::from_usize(m.data1 as usize)];
-                let plot = s.g.unit_plot(u);
-                if network {
-                    let bonus = s.g.map.plots[plot].bonus_type;
-                    assert!(b.route.is_some() && b.improvement.is_none() || bonus.is_some(), "network automation builds {}", b.base.type_);
-                } else if m.data1 >= 0 && s.g.groups[grp].mission_queue.len() == 1 {
-                    // Building where it stands: a plot of its city.
-                    assert_eq!(s.g.map.plots[plot].working_city, Some(capital), "city automation works its city's plots");
-                }
-            }
-        }
-        next_turn(&mut s);
-    }
-    assert!(builds > 0, "the automated workers built");
 }
 
 /// AUTOMATE_EXPLORE: the explorer reveals the map on its own and never attacks (C++
@@ -220,30 +175,17 @@ fn ai_controlled_units_leave_the_stack_and_act() {
     assert_eq!(s.phase(), Phase::Human(h));
 }
 
-/// Automation is a function of the game state: the journal of a game with automated units
-/// (made through commands: a worker the capital trains, a starting unit exploring) replays to
-/// the same game.
+/// Automation is a function of the game state: the journal of a game with an automated unit
+/// (made through a command: a starting unit exploring) replays to the same game.
 #[test]
 fn a_game_with_automated_units_replays() {
     let mut s = session(45, false);
     let h = s.human;
-    let d = s.g.d;
     let explorer = s.g.players[h].units.iter().copied().find(|&u| s.g.unit_can_automate(u, Some(AutomateType::AUTOMATE_EXPLORE))).expect("a starting unit that can explore");
     automate(&mut s, explorer, AutomateType::AUTOMATE_EXPLORE);
-    let capital = s.g.players[h].cities[0];
-    let worker = d.t::<UnitType>("UNIT_WORKER");
-    ok(&mut s, Command::PushOrder { city: capital, order: OrderType::ORDER_TRAIN, data: worker.idx() as i32, alt: false, shift: false, ctrl: false });
-    let mut automated = false;
     for _ in 0..30 {
         next_turn(&mut s);
-        if !automated {
-            if let Some(w) = s.g.players[h].units.iter().copied().find(|&u| s.g.units[u].unit_type == worker) {
-                automate(&mut s, w, AutomateType::AUTOMATE_BUILD);
-                automated = true;
-            }
-        }
     }
-    assert!(automated, "the capital trained a worker");
     let lines = journal::parse_lines(&s.journal_lines().unwrap()).unwrap();
     let r = replay(lines, None, SessionOptions::default()).unwrap_or_else(|e| panic!("replay: {e}"));
     assert!(r.g.save() == s.g.save(), "the replay ends in a different game");

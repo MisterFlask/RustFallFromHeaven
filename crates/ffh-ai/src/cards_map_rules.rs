@@ -12,7 +12,7 @@
 //! - **Units** ([`production`]): two Powder Charges while at war with a walled neighbour, a Work
 //!   Boat for a Causeway between two landmasses, a Masker for an evil holder that prepares a war.
 //! - **Each turn** ([`turn`]): a Powder Charge next to a walled enemy city our stack besieges
-//!   blows its walls; a worker builds Siege Lines under a stack that besieges a city; a Masker
+//!   blows its walls; a unit of a stack that besieges a city builds Siege Lines under it; a Masker
 //!   in a stack next to the units of the civ we prepare war on raises false colours and the stack
 //!   strikes; a city with the Wheeled City that is about to fall packs up, and its caravan walks to
 //!   the best safe site within range and refounds it.
@@ -110,21 +110,7 @@ pub fn production(g: &Game, c: CityId, threat: i32) -> Option<Choice> {
             return Some(Choice::Train(charge, UnitAIType::UNITAI_ATTACK_CITY));
         }
     }
-    // A Work Boat for a Causeway between two landmasses in this city's plots.
-    if let Some(build) = g.d.builds.keys().find(|&b| g.d.builds[b].improvement.is_some_and(|i| g.d.improvements[i].land_bridge)) {
-        let boats = g.players[p].units.iter().any(|&u| g.d.units[g.units[u].unit_type].builds[build]);
-        if !boats && g.team_is_has_tech(team, g.d.builds[build].tech_prereq) {
-            let imp = g.d.builds[build].improvement.expect("a land bridge build");
-            let site = (0..ffh_core::defs::NUM_CITY_PLOTS).filter_map(|i| g.city_index_plot(c, i)).any(|q| {
-                g.map.plots[q].owner == Some(p) && g.plot_can_build(q, build, p, false) && build_value(g, p, q, imp).unwrap_or(0) > 0
-            });
-            if site {
-                if let Some(boat) = crate::production::best_unit(g, c, crate::production::Role::SeaWorker).filter(|&u| g.d.units[u].builds[build]) {
-                    return Some(Choice::Train(boat, UnitAIType::UNITAI_WORKER_SEA));
-                }
-            }
-        }
-    }
+    // (A Causeway between two landmasses is the city's crews' to build: `build_value`.)
     // A Masker for a war we prepare.
     if let Some(masker) = ty::<UnitType>(g, "UNIT_MASKER").filter(|&u| g.city_can_train(c, u, false, false, false, false)) {
         if count(masker) < 1 && crate::diplomacy::preparing_target(g, team).is_some() {
@@ -134,7 +120,7 @@ pub fn production(g: &Game, c: CityId, threat: i32) -> Option<Choice> {
     None
 }
 
-/// What a card improvement is worth on `plot` to `p`'s workers (`workers::build_value`'s scale),
+/// What a card improvement is worth on `plot` to `p`'s crews (`workers::build_value`'s scale),
 /// `None` for an improvement of no card of this batch.
 pub fn build_value(g: &Game, p: PlayerId, plot: PlotIdx, imp: ImprovementType) -> Option<i32> {
     let info = &g.d.improvements[imp];
@@ -304,8 +290,7 @@ fn powder_charges(g: &mut Game, v: &View) {
     }
 }
 
-/// Whether worker group `grp` has a Siege Lines job (it keeps it next to the enemy: the stack it
-/// works under escorts it).
+/// Whether group `grp` has a Siege Lines job.
 pub fn escorted_siege_work(g: &Game, grp: GroupId) -> bool {
     g.groups[grp].mission_queue.iter().any(|m| {
         m.mission_type == MissionType::MISSION_BUILD
@@ -315,7 +300,8 @@ pub fn escorted_siege_work(g: &Game, grp: GroupId) -> bool {
     })
 }
 
-/// Siege Lines: one worker at a time builds them under our largest stack next to an enemy city.
+/// Siege Lines: one unit at a time of our largest stack next to an enemy city builds them under it
+/// (army units build the field works, docs/WORKS.md).
 fn siege_lines(g: &mut Game, v: &View) {
     let p = v.p;
     let Some(build) = g.d.builds.keys().find(|&b| g.d.builds[b].improvement.is_some_and(|i| g.d.improvements[i].enemy_city_adjacent)) else { return };
@@ -341,34 +327,13 @@ fn siege_lines(g: &mut Game, v: &View) {
         }
     }
     let Some((_, site)) = best else { return };
-    let mut flood = Flood::default();
-    let mut pick: Option<(i32, UnitId)> = None;
-    for &u in &g.players[p].units {
-        if g.units[u].ai_type != Some(UnitAIType::UNITAI_WORKER) || !g.d.units[g.units[u].unit_type].builds[build] || g.unit_is_cargo(u) {
-            continue;
-        }
-        let Some(grp) = g.units[u].group else { continue };
-        if g.groups[grp].units.len() > 1 {
-            continue;
-        }
-        let reach = flood.run_until(g, u, 6, false, |r| r.plot == site);
-        if let Some(r) = reach.iter().find(|r| r.plot == site) {
-            if pick.map_or(true, |(t, _)| r.turns < t) {
-                pick = Some((r.turns, u));
-            }
-        }
-    }
-    let Some((_, worker)) = pick else { return };
-    let Some(grp) = g.units[worker].group else { return };
+    // The stack's weakest unit that can build them digs; the others stay free to fight.
+    let digger = fighters_on(g, p, site).into_iter().filter(|&u| g.unit_can_build(u, site, build, false) && !g.unit_is_cargo(u)).min_by_key(|&u| (g.unit_base_combat_str(u), u));
+    let Some(digger) = digger else { return };
+    let Some(grp) = own_group(g, digger) else { return };
     g.group_clear_mission_queue(grp);
-    if g.unit_plot(worker) != site {
-        move_to(g, grp, site, MOVE_IGNORE_DANGER);
-        if alive(g, grp) {
-            push(g, grp, MissionType::MISSION_BUILD, build.i(), -1, 0, true);
-        }
-    } else {
-        push(g, grp, MissionType::MISSION_BUILD, build.i(), -1, 0, false);
-    }
+    push(g, grp, MissionType::MISSION_BUILD, build.i(), -1, 0, false);
+    g.groups[grp].force_update = false;
 }
 
 /// False Colours: a Masker in a stack next to units of the civ we prepare war on strikes first;

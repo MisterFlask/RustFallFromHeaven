@@ -352,6 +352,8 @@
   },
   {
     "type": "CIVILIZATION_LUCHUIRP",
+    // Their Mud Golems worked half again as fast as Workers: their cities' crews do (docs/WORKS.md).
+    "work_rate_modifier": 50,
     "description": "TXT_KEY_CIV_LUCHUIRP_DESC",
     "short_description": "TXT_KEY_CIV_LUCHUIRP_SHORT_DESC",
     "adjective": "TXT_KEY_CIV_LUCHUIRP_ADJECTIVE",
@@ -387,7 +389,6 @@
       ["BUILDINGCLASS_CIV_BUILDING3", "BUILDING_ADULARIA_CHAMBER"]
     ],
     "units": [
-      ["UNITCLASS_WORKER", "UNIT_MUD_GOLEM"],
       ["UNITCLASS_AXEMAN", "UNIT_WOOD_GOLEM"],
       ["UNITCLASS_ARCHER", "UNIT_DWARVEN_SLINGER"],
       ["UNITCLASS_DEMAGOG", "NONE"],

@@ -51,6 +51,8 @@ pub const POLICIES: &[(&str, Policy)] = &[
     // (the rules' default unit for an army's requisition: the human picks the cities, not the unit)
     ("requisition_unit", Policy::Fixed),
     ("govern_cities", Policy::Advisor),
+    // (docs/WORKS.md: the cities' crews choose their next build as the AI's do)
+    ("choose_crew_build", Policy::Advisor),
     ("choose_research", Policy::Deferred),
     ("ai_choose_research", Policy::Advisor),
     ("choose_free_tech", Policy::Blocking),
@@ -336,6 +338,12 @@ impl Controller for HumanController {
     /// This game's governors: the governors of the human's governed cities act on their own.
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         self.advisor.govern_cities(g, p);
+    }
+
+    /// This game's city works (docs/WORKS.md): the crews of the human's cities choose their next
+    /// build as the AI's do.
+    fn choose_crew_build(&self, g: &Game, c: CityId) -> Option<(PlotIdx, BuildType)> {
+        self.advisor.choose_crew_build(g, c)
     }
 
     /// C++ BUTTONPOPUP_CHOOSEPRODUCTION (deferred: the empty queue is `pending.idle_cities`);

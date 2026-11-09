@@ -548,7 +548,7 @@ fn a_siege_unit_attacks_while_any_defender_is_below_its_limit_whoever_the_best_d
 /// refuse it), and from land it needs a unit below its limit even when the plot holds only
 /// non-combatants (the attack captures them).
 #[test]
-fn a_siege_unit_does_not_attack_from_the_water_even_onto_workers() {
+fn a_siege_unit_does_not_attack_from_the_water_even_onto_slaves() {
     let mut w = world_with(true);
     let (p0, p1) = (w.p0, w.p1);
     // A plot of land with no units, next to the water.
@@ -563,7 +563,7 @@ fn a_siege_unit_does_not_attack_from_the_water_even_onto_workers() {
             (g.plot_is_water(q) && g.map.plots[q].units.is_empty()).then_some((q, p))
         })
         .expect("a coast");
-    let worker = w.unit(p1, "UNIT_WORKER", coast);
+    let worker = w.unit(p1, "UNIT_SLAVE", coast);
     let aboard = |w: &mut World, name: &str| {
         let ship = w.unit(p0, "UNIT_TRIREME", sea);
         let u = w.unit(p0, name, sea);
@@ -578,8 +578,8 @@ fn a_siege_unit_does_not_attack_from_the_water_even_onto_workers() {
     assert!(!w.g.unit_can_move_into(cat, coast, true, false, false), "no amphibious artillery");
     assert!(w.g.unit_can_engage(axeman, coast, WarTest::AtWar));
     assert!(!w.g.unit_can_engage(cat, coast, WarTest::AtWar));
-    assert!(w.g.engage_defenders(coast, p0, &[axeman], WarTest::AtWar).is_empty(), "a worker does not defend");
-    // From land: the worker below the limit lets it capture, at the limit it does not.
+    assert!(w.g.engage_defenders(coast, p0, &[axeman], WarTest::AtWar).is_empty(), "a slave does not defend");
+    // From land: the slave below the limit lets it capture, at the limit it does not.
     let (x, y) = w.g.map.xy(coast);
     let land = w
         .g
@@ -601,7 +601,7 @@ fn the_pool_and_the_defenders() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     let warrior = w.unit(p1, "UNIT_WARRIOR", to);
-    let worker = w.unit(p1, "UNIT_WORKER", to);
+    let worker = w.unit(p1, "UNIT_SLAVE", to);
     let hidden = w.unit(p1, "UNIT_WARRIOR", to);
     w.promote(hidden, "PROMOTION_HIDDEN");
     let marcher = w.unit(p1, "UNIT_WARRIOR", to);
@@ -611,14 +611,14 @@ fn the_pool_and_the_defenders() {
     let axeman = w.unit(p0, "UNIT_AXEMAN", from);
     assert!(w.g.unit_is_invisible(hidden, w.g.players[p0].team, true));
     assert!(!w.g.unit_can_defend(worker, Some(to)));
-    assert_eq!(w.g.engage_defenders(to, p0, &[axeman], WarTest::AtWar), vec![warrior, marcher], "no worker, no invisible unit; the marching unit defends");
+    assert_eq!(w.g.engage_defenders(to, p0, &[axeman], WarTest::AtWar), vec![warrior, marcher], "no slave, no invisible unit; the marching unit defends");
 
     // The pool: no marching unit, no unit out of moves, no missile, nothing not next to `to`.
     let own_marcher = w.unit(p0, "UNIT_AXEMAN", from);
     w.g.units[own_marcher].march = Some(march);
     let tired = w.unit(p0, "UNIT_AXEMAN", from);
     w.g.units[tired].moves = w.g.unit_max_moves(tired);
-    let worker0 = w.unit(p0, "UNIT_WORKER", from);
+    let worker0 = w.unit(p0, "UNIT_SLAVE", from);
     let missile = w.unit(p0, "UNIT_FIREBALL", from);
     assert!(w.g.unit_is_suicide(missile));
     let (fx, fy) = w.g.map.xy(from);

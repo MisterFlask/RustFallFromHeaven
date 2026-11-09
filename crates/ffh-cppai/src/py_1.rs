@@ -31,9 +31,7 @@ const PROD: &[(&str, u8)] = &[
     ("PROJECT_ASCENSION", 3),
     ("PROJECT_PACT_OF_THE_NILHORN", 3),
     ("UNITCLASS_SETTLER", 2),
-    ("UNITCLASS_WORKER", 2),
     ("UNITCLASS_WARRIOR", 2),
-    ("UNITCLASS_WORKBOAT", 2),
     ("UNITCLASS_SCOUT", 2),
     ("UNITCLASS_ADEPT", 2),
     ("UNITCLASS_AXEMAN", 2),
@@ -1248,30 +1246,8 @@ impl Cai {
             specialization = defense_spec;
         }
 
-        // Civ Needs more workboats?
-        if let Some(water_area) = g.city_water_area(c) {
-            if self.player_ai_total_water_area_unit_ais(g, p, water_area, UnitAIType::UNITAI_WORKER_SEA) == 0 {
-                if self.city_ai_needed_sea_workers(g, c) > 0 {
-                    set!("UNITCLASS_WORKBOAT", 19002);
-                }
-            }
-        }
-
-        // Civ needs more workers?
-        let workers = uccpm("UNITCLASS_WORKER");
-        if 2 * num_cities > workers {
-            if capital || (g.city_current_production_difference(c, true, false) > 7 && pop > 3) {
-                if workers < num_cities + num_cities - 1 - py_div(num_cities, 3) {
-                    set!("UNITCLASS_WORKER", 16001);
-                }
-                if workers == 0 {
-                    set!("UNITCLASS_WORKER", 19001);
-                } else {
-                    // Python 2: 3/2 == 1.
-                    add!("UNITCLASS_WORKER", 300 + py_div(py_div(3, 2) * num_cities, 1 + workers) * 1000);
-                }
-            }
-        }
+        // ("Civ needs more workboats?" and "Civ needs more workers?": there are no worker units,
+        // docs/WORKS.md; the cities' crews do their builds.)
 
         // Civ needs more Settlers?
         if !conquest || flag10 > 20 {
@@ -1840,9 +1816,6 @@ impl Cai {
             // which Python 2 always finds true.
             if capital {
                 add!("BUILDINGCLASS_HERON_THRONE", 200);
-            }
-            if uccpm("UNITCLASS_WORKBOAT") < 1 {
-                add!("UNITCLASS_WORKBOAT", 1500);
             }
             if conquest {
                 if conquest_city(min_city_size) {

@@ -36,7 +36,6 @@
     "unit_class": "UNITCLASS_WARRIOR"
   },
   {"type": "GOODY_SCOUT", "description": "TXT_KEY_GOODY_SCOUT", "unit_class": "UNITCLASS_SCOUT"},
-  {"type": "GOODY_WORKER", "description": "TXT_KEY_GOODY_WORKER", "unit_class": "UNITCLASS_WORKER"},
   {"type": "GOODY_EXPERIENCE", "description": "TXT_KEY_GOODY_EXPERIENCE", "experience": 5},
   {
     "type": "GOODY_HEALING",

@@ -2,14 +2,12 @@
 //! `CvSelectionGroupAI::AI_update` for a human group the AI moves, with the automation branch of
 //! `CvUnitAI::AI_update`. Two kinds of group come here:
 //!
-//! * **Automated** (`COMMAND_AUTOMATE`): `AUTOMATE_BUILD` (workers and work boats improve the
-//!   empire), `AUTOMATE_NETWORK` (roads and resource connections only), `AUTOMATE_CITY` (the
-//!   plots of the worker's city), `AUTOMATE_EXPLORE` (land and sea explorers), `AUTOMATE_RELIGION`
-//!   (missionaries spread their religion). Each reuses the AI's own routine (`workers`,
-//!   `units::explore_target`, `naval::sea_explore_target`, `units::missionary`) with the
-//!   automation's restrictions; the human's `PLAYEROPTION_SAFE_AUTOMATION` keeps every improved
-//!   plot as it is (C++ `AI_bestPlotBuild`). FfH's `AUTOMATE_TERRAFORMING` (Python
-//!   `AI_MageTurn`) is not ported: such a group skips its turn.
+//! * **Automated** (`COMMAND_AUTOMATE`): `AUTOMATE_EXPLORE` (land and sea explorers),
+//!   `AUTOMATE_RELIGION` (missionaries spread their religion). Each reuses the AI's own routine
+//!   (`units::explore_target`, `naval::sea_explore_target`, `units::missionary`). The workers'
+//!   automations (`AUTOMATE_BUILD`, `NETWORK`, `CITY`) went with the workers (docs/WORKS.md: the
+//!   rules refuse them). FfH's `AUTOMATE_TERRAFORMING` (Python `AI_MageTurn`) is not ported: such
+//!   a group skips its turn.
 //! * **FfH AI-controlled** (a unit with an `bAIControl` promotion, e.g. enraged): Sephi's block
 //!   of `CvUnitAI::AI_update` -- a stack lets the unit go (`joinGroup(NULL)`), a defensive-only
 //!   unit gets its control back (`changeAIControl(-1)`), any other attacks what it can reach
@@ -136,21 +134,6 @@ fn act(g: &mut Game, v: &mut View, grp: GroupId, head: UnitId) -> bool {
 
     let ai_type = g.units[head].ai_type;
     match automate {
-        AutomateType::AUTOMATE_BUILD => match ai_type {
-            Some(UnitAIType::UNITAI_WORKER) => worker(g, v, grp, head, Restrict::None),
-            Some(UnitAIType::UNITAI_WORKER_SEA) => crate::workers::worker(g, v, grp, head, true),
-            _ => skip(g, grp),
-        },
-        AutomateType::AUTOMATE_NETWORK => worker(g, v, grp, head, Restrict::Network),
-        AutomateType::AUTOMATE_CITY => {
-            // The city whose plot the worker stands on, else the nearest (C++ `findCity`).
-            let p = v.p;
-            let city = g.map.plots[here].working_city.filter(|&c| g.map.plots[here].owner == Some(p) && g.cities[c].owner == p).or_else(|| nearest_city(g, p, here));
-            match city {
-                Some(c) => worker(g, v, grp, head, Restrict::City(c)),
-                None => skip(g, grp),
-            }
-        }
         AutomateType::AUTOMATE_EXPLORE => explore(g, v, grp, head),
         AutomateType::AUTOMATE_RELIGION => {
             if ai_type == Some(UnitAIType::UNITAI_MISSIONARY) {
@@ -164,40 +147,6 @@ fn act(g: &mut Game, v: &mut View, grp: GroupId, head: UnitId) -> bool {
     }
     // "if no longer automated, then we want to bail"
     !alive(g, grp) || !g.group_is_automated(grp)
-}
-
-/// What an automated worker may build.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-enum Restrict {
-    /// AUTOMATE_BUILD: anything the AI's workers would.
-    None,
-    /// AUTOMATE_NETWORK: routes, and improvements that connect a resource.
-    Network,
-    /// AUTOMATE_CITY: the plots this city works (and roads among them).
-    City(CityId),
-}
-
-fn worker(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, restrict: Restrict) {
-    let p = v.p;
-    let safe = g.players[p].options[PlayerOptionType::PLAYEROPTION_SAFE_AUTOMATION];
-    let ruins = g.d.defines.ruins_improvement;
-    let allow = move |g: &Game, q: PlotIdx, b: BuildType| -> bool {
-        let pl = &g.map.plots[q];
-        // C++ AI_bestPlotBuild: with safe automation an improved plot (ruins aside) is left alone.
-        if safe && pl.improvement_type.is_some_and(|i| i.idx() as i32 != ruins) {
-            return false;
-        }
-        let info = &g.d.builds[b];
-        match restrict {
-            Restrict::None => true,
-            Restrict::Network => {
-                (info.route.is_some() && info.improvement.is_none())
-                    || pl.bonus_type.is_some_and(|bonus| info.improvement.is_some_and(|imp| g.d.improvements[imp].improvement_bonus[bonus].bonus_trade))
-            }
-            Restrict::City(c) => pl.working_city == Some(c),
-        }
-    };
-    crate::workers::worker_with(g, v, grp, u, false, &allow);
 }
 
 /// AUTOMATE_EXPLORE (C++ `AI_exploreMove` / `AI_exploreSeaMove` for a human: no attacks): the

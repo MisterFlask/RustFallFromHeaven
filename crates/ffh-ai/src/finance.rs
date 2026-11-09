@@ -17,8 +17,7 @@
 //!   when a cheaper civic would win ([`civics_due`]);
 //! - **unit support** (`empire::disband`): built units are kept, More Naval AI's rule -- at
 //!   peace, the military unit of least value goes while costs take more than 60% of the commerce
-//!   ([`disband_military`]); idle workers beyond the need while support keeps research below its
-//!   target ([`disband_workers`]);
+//!   ([`disband_military`]);
 //! - **research** (`empire::research`): the cheapest tech that unlocks a cost-cutting civic or
 //!   a Courthouse-like building, while research is down to 30% or the deficit is structural
 //!   ([`escape_tech`]);
@@ -274,51 +273,6 @@ pub fn civics_due(g: &Game, p: PlayerId) -> bool {
 // Unit support
 // ---------------------------------------------------------------------------------------------
 
-/// While unit support keeps research below its target share
-/// ([`Finance::support_heavy`]) and we are not at war, disband idle workers (no job this turn)
-/// beyond twice what the worked plots need, as production counts them (that need moves as cities
-/// grow and switch tiles); up to two a turn, one when the deficit is a single gold. Military units
-/// go by [`disband_military`].
-pub fn disband_workers(g: &mut Game, p: PlayerId) {
-    let f = state(g, p);
-    if !f.support_heavy() || f.at_war || g.player_calculate_unit_cost(p) == 0 {
-        return;
-    }
-    let n = g.players[p].cities.len() as i32;
-    let unimproved = crate::production::unimproved_worked_plots(g, p);
-    let need = 2 * (n.min(3) + (unimproved + 1) / 3).min(n * 2).max(1);
-    let workers: Vec<UnitId> = g.players[p]
-        .units
-        .iter()
-        .copied()
-        .filter(|&u| g.units[u].ai_type == Some(UnitAIType::UNITAI_WORKER) && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND)
-        .collect();
-    if workers.len() as i32 <= need {
-        return;
-    }
-    let mut idle: Vec<UnitId> = workers
-        .iter()
-        .copied()
-        .filter(|&u| {
-            let betrays = g.d.promotions.keys().any(|pr| g.units[u].has_promotion[pr] && g.d.promotions[pr].betrayal_chance != 0);
-            !betrays && g.units[u].duration == 0 && g.unit_can_scrap(u) && g.units[u].group.is_some_and(|grp| g.groups[grp].mission_queue.is_empty())
-        })
-        .take((workers.len() as i32 - need) as usize)
-        .collect();
-    idle.sort();
-    let max = if f.deficit() > 1 { 2 } else { 1 };
-    for &u in idle.iter().take(max) {
-        if !g.units.contains(u) {
-            break;
-        }
-        crate::trace!(g, p, "finance: support {}% of commerce, disbanding {}", f.unit_share(), g.d.units[g.units[u].unit_type].base.type_);
-        g.tel_decision(p, "disband", &g.d.units[g.units[u].unit_type].base.type_, "idle_worker", 0, String::new);
-        if !crate::unflagged::sacrifice(g, u) {
-            g.unit_scrap(u);
-        }
-    }
-}
-
 /// More Naval AI's measure of financial trouble (C++ `CvPlayerAI::AI_getFundedPercent`): the
 /// percent of the commerce left once every cost is paid. `getGoldPerTurn` is the gold from deals.
 pub fn funded_percent(g: &Game, p: PlayerId) -> i32 {
@@ -422,7 +376,6 @@ fn least_valued(g: &Game, p: PlayerId) -> Option<UnitId> {
             Some(UnitAIType::UNITAI_PROPHET) | Some(UnitAIType::UNITAI_ARTIST) | Some(UnitAIType::UNITAI_SCIENTIST) | Some(UnitAIType::UNITAI_GENERAL) | Some(UnitAIType::UNITAI_MERCHANT) | Some(UnitAIType::UNITAI_ENGINEER) => 20,
             Some(UnitAIType::UNITAI_SPY) => 12,
             Some(UnitAIType::UNITAI_ICBM) => 4,
-            Some(UnitAIType::UNITAI_WORKER_SEA) => 18,
             Some(UnitAIType::UNITAI_EXPLORE_SEA) => {
                 if young_or_away {
                     12

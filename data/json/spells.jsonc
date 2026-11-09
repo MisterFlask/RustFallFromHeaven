@@ -2124,22 +2124,6 @@
     "button": "Art/Interface/Buttons/Spells/PillarofFire.dds"
   },
   {
-    "type": "SPELL_PIRATE_COVE",
-    "description": "TXT_KEY_SPELL_PIRATE_COVE",
-    "civilopedia": "TXT_KEY_SPELL_PIRATE_COVE_PEDIA",
-    "help": "TXT_KEY_SPELL_PIRATE_COVE_HELP",
-    "unit_prereq": "UNIT_WORKBOAT",
-    "civilization_prereq": "CIVILIZATION_LANUN",
-    "allow_ai": true,
-    "ai_weight": 300,
-    "has_casted": true,
-    "create_improvement_type": "IMPROVEMENT_PIRATE_COVE",
-    "ability": true,
-    "sacrifice_caster": true,
-    "py_requirement": "reqPirateCove(pCaster)",
-    "button": "Art/Interface/Buttons/Improvements/Pirate Cove.dds"
-  },
-  {
     "type": "SPELL_POISONED_BLADE",
     "description": "TXT_KEY_SPELL_POISONED_BLADE",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
@@ -4189,23 +4173,6 @@
     "cost": 80,
     "graphical_only": true,
     "button": "Art/Interface/Buttons/Units/Battlemaster.dds"
-  },
-  {
-    "type": "SPELL_UPGRADE_DOVIELLO_WARRIOR",
-    "description": "TXT_KEY_SPELL_UPGRADE_DOVIELLO_WARRIOR",
-    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
-    "unit_class_prereq": "UNITCLASS_WORKER",
-    "civilization_prereq": "CIVILIZATION_DOVIELLO",
-    "allow_ai": true,
-    "ai_weight": 25,
-    "display_when_disabled": true,
-    "has_casted": true,
-    "convert_unit_type": "UNIT_BEASTMAN",
-    "ability": true,
-    "cost": 20,
-    "py_requirement": "reqUpgradeDovielloWarrior(pCaster)",
-    "graphical_only": true,
-    "button": "Art/Interface/Buttons/Units/Beastman.dds"
   },
   {
     "type": "SPELL_UPGRADE_DOVIELLO_WARRIOR_SLAVE",

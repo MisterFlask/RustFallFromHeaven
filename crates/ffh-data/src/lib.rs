@@ -509,9 +509,13 @@ impl GameData {
         self.train_unit_buildings = list(&|b| !b.train_units.is_empty());
         self.rebirth_buildings = list(&|b| b.rebirth_range > 0 && b.rebirth_promotion.is_some());
         self.claim_improvements = self.improvements.keys().filter(|&i| self.improvements[i].claim_range > 0).collect();
-        // A card's build (docs/CARDS.md): the units that can do its `same_builders_as` build.
+        // A card's build (docs/CARDS.md): the units that can do its `same_builders_as` build, and
+        // the cities' crews and army units if they do it (docs/WORKS.md).
         for build in self.builds.keys() {
             if let Some(like) = self.builds[build].same_builders_as {
+                let (city, field) = (self.builds[like].city, self.builds[like].field);
+                self.builds[build].city |= city;
+                self.builds[build].field |= field;
                 for info in self.units.iter_mut() {
                     if info.builds[like] {
                         info.builds[build] = true;

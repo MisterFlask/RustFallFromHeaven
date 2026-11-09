@@ -33,8 +33,6 @@ pub struct View {
     pub amphibious: Option<crate::naval::Amph>,
     /// Our cities whose threat exceeds their garrison (city plot, shortfall).
     pub peril: Vec<(PlotIdx, i32)>,
-    /// Roads to build this turn (see `workers::road_plan`).
-    pub roads: Vec<(PlotIdx, i32)>,
     /// Plots (cities) where a settler waits for an escort.
     pub escort_requests: Vec<PlotIdx>,
     /// Our units committed to each city's garrison this turn (holding there, or sent there).
@@ -141,7 +139,6 @@ impl View {
             danger: Vec::new(),
             claimed: Vec::new(),
             escort_requests: Vec::new(),
-            roads: Vec::new(),
             peril: Vec::new(),
             targets: Vec::new(),
             target_claims: Vec::new(),
@@ -164,7 +161,6 @@ impl View {
         if !v.barbarian {
             v.targets = crate::military::find_targets(g, &*v);
             v.amphibious = crate::naval::amphibious_target(g, p);
-            v.roads = crate::workers::road_plan(g, p);
             v.rival_def = crate::defense::all_rival_defenders(g, p);
             for &c in &g.players[p].cities {
                 let cp = g.city_plot(c);

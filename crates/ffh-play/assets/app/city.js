@@ -671,7 +671,18 @@ function manageView(c, task) {
       ? null
       : h("label.toggle", h("input", { type: "checkbox", checked: c.production.automated, id: "city-auto-production", onchange: (ev) => task("TASK_SET_AUTOMATED_PRODUCTION", -1, -1, ev.target.checked) }), " Automate production (the governor chooses)"),
     emphasize.length ? h("details", h("summary", governed ? "Emphasis (the governor's)" : "Emphasis"), h("div.checks", emphasize)) : null,
+    crewsLine(c),
   );
+}
+
+/** This game's city works (docs/WORKS.md): what the city's work crews are building, where, and
+ *  for how long; the crews choose it themselves. */
+function crewsLine(c) {
+  const crews = c.crews;
+  if (!crews) return null;
+  const b = crews.build;
+  const what = b ? `${dname("BuildType", b.build)} at (${b.x}, ${b.y})${b.turns !== null ? `, ${turns(b.turns)}` : ""}` : crews.rate > 0 ? "no build" : "stopped";
+  return h("div.row.dim", { id: "city-crews", title: `Work rate: ${crews.rate}` }, `Work crews: ${what}`);
 }
 
 function productionView(c, choose, remove, [tapMode, setTapMode], reload) {

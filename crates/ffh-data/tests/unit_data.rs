@@ -45,17 +45,20 @@ fn table_sizes() {
     let d = data();
     // The game's own entries: the great-person cards' files add theirs (docs/CARDS.md).
     let own = |n: usize, table: &str| n - card_entry_count(table);
-    // 326 and 248, and this game's Skirmisher (docs/PORTING.md, "Changes from FFH2").
-    assert_eq!(own(d.units.len(), "units"), 327);
-    assert_eq!(own(d.unit_classes.len(), "unit_classes"), 249);
+    // 326 and 248, and this game's Skirmisher (docs/PORTING.md, "Changes from FFH2"), less the
+    // Worker, the Mud Golem and the Work Boat and their two classes (docs/WORKS.md).
+    assert_eq!(own(d.units.len(), "units"), 324);
+    assert_eq!(own(d.unit_classes.len(), "unit_classes"), 247);
     // 261 and this game's PROMOTION_SPIRIT_GUIDE2 (docs/SUITABILITY.md) and
     // PROMOTION_SUMMONERS_BOND (the Summoner trait's), less Extension I and II (docs/ENGAGEMENTS.md,
     // "Summons").
     assert_eq!(own(d.promotions.len(), "promotions"), 261);
     // 267 and this game's SPELL_FIREBALL_BARGE, 40 sphere spells in battle and Wonder's 10
     // outcomes (docs/ENGAGEMENTS.md, "Battle spells").
-    assert_eq!(own(d.spells.len(), "spells"), 318);
-    assert_eq!(own(d.builds.len(), "builds"), 35);
+    // (Less the Work Boat's Pirate Cove and the Doviello Worker's upgrade, docs/WORKS.md.)
+    assert_eq!(own(d.spells.len(), "spells"), 316);
+    // 35 and the Lanun's BUILD_PIRATE_COVE (docs/WORKS.md).
+    assert_eq!(own(d.builds.len(), "builds"), 36);
     assert_eq!(d.special_units.len(), 3);
     assert_eq!(d.missions.len(), MissionType::NUM);
     assert_eq!(d.commands.len(), CommandType::NUM);
@@ -206,7 +209,8 @@ fn galley_and_settler() {
     let s = unit("UNIT_SETTLER");
     assert_eq!(s.production_traits[d.t::<TraitType>("TRAIT_EXPANSIVE")], 100);
     assert!(s.food_production && s.found && s.only_defensive);
-    assert_eq!(s.unit_capture_class_type, Some(d.t::<UnitClassType>("UNITCLASS_WORKER")));
+    // (It was captured as a Worker; there are none, docs/WORKS.md.)
+    assert_eq!(s.unit_capture_class_type, None);
     assert_eq!(s.default_unit_ai_type, Some(UnitAIType::UNITAI_SETTLE));
     assert_eq!(s.advanced_start_cost_increase, 50);
 }
@@ -434,7 +438,7 @@ fn builds_feature_structs() {
     assert_eq!(road.tech_prereq, Some(d.t::<TechType>("TECH_EXPLORATION")));
     assert!(road.feature_tech.iter().all(|t| t.is_none()));
 
-    assert!(d.builds[d.t::<BuildType>("BUILD_FISHING_BOATS")].kill);
+    assert!(d.builds[d.t::<BuildType>("BUILD_FISHING_BOATS")].city);
 }
 
 #[test]

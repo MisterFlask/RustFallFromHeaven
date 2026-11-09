@@ -686,18 +686,18 @@ fn a_missile_strikes_and_dies() {
     assert!(ds.iter().any(|&u| !f.alive(u) || f.g.units[u].damage > 0), "it hit someone");
 }
 
-/// No defender, only a worker: today's attack captures it.
+/// No defender, only a slave: today's attack captures it.
 #[test]
 fn non_combatants_are_captured() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
-    w.unit(p1, "UNIT_WORKER", to);
+    w.unit(p1, "UNIT_SLAVE", to);
     let a = w.unit(p0, "UNIT_AXEMAN", from);
     let mut f = w.fork(1);
     let (attacked, reports) = f.attack(a);
     assert!(attacked && reports.is_empty());
     assert_eq!(f.g.unit_plot(a), to);
-    assert!(f.g.map.plots[to].units.iter().all(|&u| f.g.units[u].owner == p0), "the worker is ours");
+    assert!(f.g.map.plots[to].units.iter().all(|&u| f.g.units[u].owner == p0), "the slave is ours");
 }
 
 /// Ships fight ships in the duel: no engagement, no report.

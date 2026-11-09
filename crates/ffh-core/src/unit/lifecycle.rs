@@ -1919,9 +1919,9 @@ mod tests {
         assert!(g.units.contains(airship) && g.units.contains(warrior));
     }
 
-    /// A worker of the Ashen Veil dies in the Infernals' only city, as when the city flips to
-    /// them by culture with the worker inside: its death event gifts the Infernals two Manes,
-    /// which rise in that city, on the dying worker, and capture it there, killing it again. FFH2
+    /// A slave of the Ashen Veil dies in the Infernals' only city, as when the city flips to
+    /// them by culture with the slave inside: its death event gifts the Infernals two Manes,
+    /// which rise in that city, on the dying slave, and capture it there, killing it again. FFH2
     /// runs that kill, event included, as deep as the gift rolls go, and the outer kills go on
     /// with the deleted unit (seed 8210, Calabim forced, panicked on it at turn 495). Here it dies
     /// once: two Manes at most, and the Infernals capture it.
@@ -1944,7 +1944,7 @@ mod tests {
         g.teams[ti].at_war[tv] = true;
 
         let manes = d.t::<UnitType>("UNIT_MANES");
-        let worker = d.t::<UnitType>("UNIT_WORKER");
+        let worker = d.t::<UnitType>("UNIT_SLAVE");
         let worker_class = info_unit_class(&d.units[worker]);
         let count = |g: &Game, f: &dyn Fn(UnitType) -> bool| g.players[infernal].units.iter().filter(|&&u| f(g.units[u].unit_type)).count();
         let mut captured = 0;
@@ -1958,6 +1958,6 @@ mod tests {
             assert!(count(&g, &|t| t == manes) <= manes_before + 2, "the death event gifted its two Manes once");
             captured += count(&g, &|t| info_unit_class(&d.units[t]) == worker_class) - workers_before;
         }
-        assert!(captured > 0, "a Manes captured a dying worker");
+        assert!(captured > 0, "a Manes captured a dying slave");
     }
 }

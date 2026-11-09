@@ -6,6 +6,8 @@
 [
   {
     "type": "BUILD_ROAD",
+    "city": true,
+    "field": true,
     "description": "TXT_KEY_BUILD_ROAD",
     "prereq_tech": "TECH_EXPLORATION",
     "time": 200,
@@ -16,6 +18,7 @@
   },
   {
     "type": "BUILD_FARM",
+    "city": true,
     "description": "TXT_KEY_BUILD_FARM",
     "prereq_tech": "TECH_AGRICULTURE",
     "time": 500,
@@ -54,9 +57,10 @@
   },
   {
     "type": "BUILD_FISHING_BOATS",
+    "city": true,
     "description": "TXT_KEY_BUILD_FISHING_BOATS",
     "prereq_tech": "TECH_FISHING",
-    "kill": true,
+    "time": 400,
     "improvement_type": "IMPROVEMENT_FISHING_BOATS",
     "feature_structs": "",
     "button": ",Art/Interface/Buttons/Builds/BuildFishingBoats.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,7,7",
@@ -64,16 +68,31 @@
   },
   {
     "type": "BUILD_WHALING_BOATS",
+    "city": true,
     "description": "TXT_KEY_BUILD_WHALING_BOATS",
     "prereq_tech": "TECH_SAILING",
-    "kill": true,
+    "time": 400,
     "improvement_type": "IMPROVEMENT_WHALING_BOATS",
     "feature_structs": "",
     "button": ",Art/Interface/Buttons/Builds/BuildWhalingBoats.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,6,9",
     "hotkeys": [{"key": "KB_W", "shift": true, "priority": 1}]
   },
+  // The Lanun's Pirate Cove (FFH2: a Work Boat's spell): their cities' crews build it on an empty
+  // coast plot of theirs with no cove within 2 plots (docs/WORKS.md).
+  {
+    "type": "BUILD_PIRATE_COVE",
+    "city": true,
+    "description": "TXT_KEY_BUILD_PIRATE_COVE",
+    "prereq_tech": "TECH_FISHING",
+    "prereq_civ": "CIVILIZATION_LANUN",
+    "time": 400,
+    "improvement_type": "IMPROVEMENT_PIRATE_COVE",
+    "feature_structs": "",
+    "button": "Art/Interface/Buttons/Improvements/Pirate Cove.dds"
+  },
   {
     "type": "BUILD_MINE",
+    "city": true,
     "description": "TXT_KEY_BUILD_MINE",
     "prereq_tech": "TECH_MINING",
     "time": 400,
@@ -112,6 +131,7 @@
   },
   {
     "type": "BUILD_WORKSHOP",
+    "city": true,
     "description": "TXT_KEY_BUILD_WORKSHOP",
     "prereq_tech": "TECH_CONSTRUCTION",
     "time": 600,
@@ -150,6 +170,7 @@
   },
   {
     "type": "BUILD_LUMBERMILL",
+    "city": true,
     "description": "TXT_KEY_BUILD_LUMBERMILL",
     "prereq_tech": "TECH_ARCHERY",
     "time": 800,
@@ -160,6 +181,7 @@
   },
   {
     "type": "BUILD_WINDMILL",
+    "city": true,
     "description": "TXT_KEY_BUILD_WINDMILL",
     "prereq_tech": "TECH_ENGINEERING",
     "time": 500,
@@ -198,6 +220,7 @@
   },
   {
     "type": "BUILD_PLANTATION",
+    "city": true,
     "description": "TXT_KEY_BUILD_PLANTATION",
     "prereq_tech": "TECH_CALENDAR",
     "time": 500,
@@ -236,6 +259,7 @@
   },
   {
     "type": "BUILD_QUARRY",
+    "city": true,
     "description": "TXT_KEY_BUILD_QUARRY",
     "prereq_tech": "TECH_MASONRY",
     "time": 600,
@@ -274,6 +298,7 @@
   },
   {
     "type": "BUILD_PASTURE",
+    "city": true,
     "description": "TXT_KEY_BUILD_PASTURE",
     "prereq_tech": "TECH_ANIMAL_HUSBANDRY",
     "time": 400,
@@ -312,6 +337,7 @@
   },
   {
     "type": "BUILD_CAMP",
+    "city": true,
     "description": "TXT_KEY_BUILD_CAMP",
     "prereq_tech": "TECH_HUNTING",
     "time": 400,
@@ -322,6 +348,7 @@
   },
   {
     "type": "BUILD_WINERY",
+    "city": true,
     "description": "TXT_KEY_BUILD_WINERY",
     "prereq_tech": "TECH_CRAFTING",
     "time": 500,
@@ -360,6 +387,7 @@
   },
   {
     "type": "BUILD_COTTAGE",
+    "city": true,
     "description": "TXT_KEY_BUILD_COTTAGE",
     "prereq_tech": "TECH_EDUCATION",
     "time": 400,
@@ -398,6 +426,7 @@
   },
   {
     "type": "BUILD_FORT",
+    "field": true,
     "description": "TXT_KEY_BUILD_FORT",
     "prereq_tech": "TECH_CONSTRUCTION",
     "time": 800,
@@ -436,6 +465,7 @@
   },
   {
     "type": "BUILD_REMOVE_JUNGLE",
+    "city": true,
     "description": "TXT_KEY_BUILD_REMOVE_JUNGLE",
     "feature_structs": [
       {
@@ -450,6 +480,7 @@
   },
   {
     "type": "BUILD_REMOVE_FOREST",
+    "city": true,
     "description": "TXT_KEY_BUILD_REMOVE_FOREST",
     "feature_structs": [
       {

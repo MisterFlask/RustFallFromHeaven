@@ -164,6 +164,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         drop_range,
         nuke_range,
         work_rate: _,
+        crew_work,
         base_discover,
         discover_multiplier,
         base_hurry,
@@ -544,6 +545,10 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         add(d, &mut b, "TXT_KEY_UNIT_IMPROVE_PLOTS", &[]);
     } else {
         list(&mut b, &format!("{} ", start("TXT_KEY_UNIT_CAN")), &my_builds, ", ");
+    }
+    // This game's (docs/WORKS.md): what it adds to the crews of a city it stands in.
+    if *crew_work != 0 {
+        add(d, &mut b, "TXT_KEY_UNIT_CREW_WORK", &[Arg::N(*crew_work)]);
     }
     if *nuke_range != -1 {
         add(d, &mut b, "TXT_KEY_UNIT_CAN_NUKE", &[]);
@@ -980,23 +985,15 @@ mod tests {
         // FfH's defence strength.
         let archer = help("UNIT_ARCHER");
         assert!(archer.starts_with("3/5[ICON_STRENGTH], 1[ICON_MOVES] (Archery Units)"), "{archer}");
-        assert!(help("UNIT_MUD_GOLEM").starts_with("0/2[ICON_STRENGTH]"), "{}", help("UNIT_MUD_GOLEM"));
     }
 
     #[test]
-    fn workers_scouts_and_great_people_say_what_they_can_do() {
-        // 15 of the 35 builds: listed (more than three quarters would be "Can Improve Tiles").
-        let w = help("UNIT_WORKER");
+    fn slaves_scouts_and_great_people_say_what_they_can_do() {
+        // A Slave builds nothing; in a city it adds to the crews' work rate (docs/WORKS.md).
+        let w = help("UNIT_SLAVE");
         assert!(w.starts_with("2[ICON_MOVES]"), "{w}");
-        has(
-            &w,
-            &[
-                "[ICON_BULLET]Can  Build a [LINK=CONCEPT_MOVEMENT]Road[\\LINK], Build a [LINK=IMPROVEMENT_FARM]Farm[\\LINK], ",
-                "[ICON_BULLET]Unit cannot pillage",
-                "[ICON_BULLET]Unit doesn't provide military happiness",
-            ],
-        );
-        assert!(!w.contains("Can Improve Tiles"), "{w}");
+        has(&w, &["[ICON_BULLET]In a city of its owner: +25 work rate of the city's work crews", "[ICON_BULLET]Unit doesn't provide military happiness"]);
+        assert!(!w.contains("Can Improve Tiles") && !w.contains("Build a"), "{w}");
         let s = help("UNIT_SCOUT");
         assert!(s.starts_with("2[ICON_STRENGTH], 2[ICON_MOVES] (Recon Units)"), "{s}");
         has(&s, &["[ICON_BULLET]Better Results from Tribal Villages", "Upgrades To: "]);
@@ -1074,7 +1071,7 @@ mod tests {
     #[test]
     #[ignore]
     fn print_samples() {
-        for u in ["UNIT_WARRIOR", "UNIT_AXEMAN", "UNIT_ARCHER", "UNIT_WORKER", "UNIT_SCOUT", "UNIT_PROPHET", "UNIT_DONAL", "UNIT_GALLEY", "UNIT_ADEPT", "UNIT_ARCANE_BARGE", "UNIT_PRIEST_OF_LEAVES", "UNIT_ARCHMAGE", "UNIT_ANGEL", "EQUIPMENT_ATHAME", "UNIT_ACHERON"] {
+        for u in ["UNIT_WARRIOR", "UNIT_AXEMAN", "UNIT_ARCHER", "UNIT_SLAVE", "UNIT_SCOUT", "UNIT_PROPHET", "UNIT_DONAL", "UNIT_GALLEY", "UNIT_ADEPT", "UNIT_ARCANE_BARGE", "UNIT_PRIEST_OF_LEAVES", "UNIT_ARCHMAGE", "UNIT_ANGEL", "EQUIPMENT_ATHAME", "UNIT_ACHERON"] {
             println!("== {u}\n{}\n", help(u).replace("[NEWLINE]", "\n"));
         }
     }

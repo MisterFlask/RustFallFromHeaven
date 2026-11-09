@@ -305,6 +305,9 @@ pub struct City {
     /// not been cast yet, one entry a completion (the Weather Engine, the Tidecall of Danalin).
     /// Lost with the city.
     pub ritual_charges: Vec<ProjectType>,
+    /// This game's city works (docs/WORKS.md): the build the city's crews are working on and its
+    /// plot; `None` until the city's turn chooses one. Its progress is the plot's.
+    pub crew_build: Option<(PlotIdx, BuildType)>,
 }
 
 impl City {
@@ -524,6 +527,7 @@ impl City {
             free_bonus_choices: Vec::new(),
             muster_production: 0,
             ritual_charges: Vec::new(),
+            crew_build: None,
         }
     }
 

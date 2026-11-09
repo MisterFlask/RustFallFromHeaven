@@ -80,8 +80,7 @@ fn hurry(g: &mut Game, p: PlayerId) {
     }
 }
 
-/// Units the empire cannot pay for: idle workers while support keeps research below its target
-/// (`finance::disband_workers`), military units only by More Naval AI's rule
+/// Units the empire cannot pay for: military units by More Naval AI's rule
 /// (`finance::disband_military`; docs/AI.md, "Finance"). (The rule it replaced, surplus and
 /// obsolete units scrapped for their upkeep, was switch `KEEP_UNITS` off, removed once kept:
 /// docs/AI_LOG.md, "More Naval AI's disband rule".)
@@ -89,7 +88,6 @@ fn disband(g: &mut Game, p: PlayerId) {
     if !g.player_is_commerce_flexible(p, CommerceType::COMMERCE_RESEARCH) || g.player_calculate_unit_cost(p) == 0 {
         return;
     }
-    crate::finance::disband_workers(g, p); // bankruptcy-guard
     crate::finance::disband_military(g, p);
 }
 

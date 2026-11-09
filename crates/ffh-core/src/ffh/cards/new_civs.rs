@@ -175,7 +175,7 @@ fn spell_patrian_awakening(g: &mut Game, caster: UnitId, _call: &PyCall) {
     let Some(sites) = patrian_sites(g, p) else { return };
     let mut b = Birth::new(d.t("CIVILIZATION_PATRIANS"), d.t("LEADER_AURELIAN"), p);
     b.found = vec![
-        city(d, sites[0], &[], &["UNIT_MAGE", "UNIT_ADEPT", "UNIT_LONGBOWMAN", "UNIT_WORKER"]),
+        city(d, sites[0], &[], &["UNIT_MAGE", "UNIT_ADEPT", "UNIT_LONGBOWMAN"]),
         city(d, sites[1], &[], &["UNIT_ADEPT", "UNIT_LONGBOWMAN"]),
     ];
     b.hero = Some(unit(d, "UNIT_ARCHON"));

@@ -431,6 +431,11 @@ impl Game {
         if self.cities.contains(c) {
             self.city_do_free_units(c);
         }
+        // Not in C++ (docs/WORKS.md): the city's work crews.
+        if !self.cities.contains(c) {
+            return;
+        }
+        self.city_do_crews(c);
         self.city_do_decay(c);
         self.city_do_religion(c);
         self.city_do_great_people(c);

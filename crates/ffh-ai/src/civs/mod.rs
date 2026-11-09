@@ -170,10 +170,6 @@ pub trait CivPlay: Sync {
     fn unit(&self, ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, head: UnitId) -> bool {
         false
     }
-    /// Orders for a sea worker; true if given.
-    fn sea_worker(&self, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
-        false
-    }
     /// The end-of-turn spell choice's value of casting `spell` with `u` (`value` is FfH's
     /// estimate); 0 or less and it is not cast there.
     fn spell_value(&self, g: &Game, u: UnitId, spell: SpellType, value: i32) -> i32 {
@@ -264,10 +260,6 @@ pub fn turn(ai: &Ai, g: &mut Game, v: &mut View) {
 
 pub fn unit(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, head: UnitId) -> bool {
     of(g, v.p).unit(ai, g, v, grp, head)
-}
-
-pub fn sea_worker(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
-    of(g, v.p).sea_worker(g, v, grp, u)
 }
 
 pub fn spell_value(g: &Game, u: UnitId, spell: SpellType, value: i32) -> i32 {
@@ -440,7 +432,7 @@ mod tests {
         for u in ["UNIT_HORNGUARD", "UNIT_TREBUCHET", "UNIT_DWARVEN_CANNON", "UNIT_MAROS", "UNIT_DWARVEN_SLINGER"] {
             assert!(khazad.contains(&u), "{u} in {khazad:?}");
         }
-        for u in ["UNIT_AXEMAN", "UNIT_WORKER", "UNIT_CATAPULT", "UNIT_DONAL"] {
+        for u in ["UNIT_AXEMAN", "UNIT_SETTLER", "UNIT_CATAPULT", "UNIT_DONAL"] {
             assert!(!khazad.contains(&u), "{u} in {khazad:?}");
         }
         let bannor = names("CIVILIZATION_BANNOR");

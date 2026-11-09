@@ -153,5 +153,17 @@
   "NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT": 500,
   // ==== Research paths (research_paths.jsonc; docs/PORTING.md, "Changes from FFH2"). A player
   //      committed to a path researches its techs this percent faster. ====
-  "RESEARCH_PATH_PERCENT": 100
+  "RESEARCH_PATH_PERCENT": 100,
+  // ==== City works (docs/WORKS.md). There are no worker units: each city's work crews improve its
+  //      land, lay its roads and launch its fishing boats; army units build roads and forts. ====
+  // CITY_WORK_RATE: the build progress a city's crews add each turn (FFH2's Worker: 100), before
+  //      the owner's work rate modifiers. At 50 the AI's empires develop about as they did with
+  //      workers; at 100 the game ran some 40 turns ahead by turn 200 (docs/WORKS.md, "Measures")
+  "CITY_WORK_RATE": 50,
+  // CITY_WORK_ROAD_RANGE: a city lays a road toward another city of its owner at most this many
+  //      plots away
+  "CITY_WORK_ROAD_RANGE": 8,
+  // FIELD_WORK_RATE: the build progress an army unit adds each turn to a road, a fort or a card's
+  //      field work
+  "FIELD_WORK_RATE": 50
 }

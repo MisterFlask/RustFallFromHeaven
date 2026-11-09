@@ -524,8 +524,8 @@ fn target_actions_follow_the_interface_modes() {
     assert!(asks(s.execute(&Command::from_json(d, &cmd).unwrap())));
     assert!(before == s.g.save(), "the questions changed the game");
 
-    // ROUTE_TO: a worker that can build a route, not an adept (its builds are not routes and
-    // its AI type is not a worker's), nor a warrior.
+    // ROUTE_TO: an army unit, which builds roads (docs/WORKS.md), not an adept (its builds are
+    // not routes), nor a scout (no army unit).
     let (x, y) = s.read(|g| {
         let c = g.players[h].cities[0];
         (g.cities[c].x, g.cities[c].y)
@@ -535,18 +535,17 @@ fn target_actions_follow_the_interface_modes() {
         let t = s.g.d.civ_unit(civ, s.g.d.t(class)).unwrap_or_else(|| panic!("{class}"));
         s.g.player_init_unit(h, t, x, y, None, None)
     };
-    let worker = make(&mut s, "UNITCLASS_WORKER");
+    let scout = make(&mut s, "UNITCLASS_SCOUT");
     let adept = make(&mut s, "UNITCLASS_ADEPT");
     let warrior = make(&mut s, "UNITCLASS_WARRIOR");
     let modes = |s: &Session, u: UnitId| target_actions(s, &[u]).iter().map(mode).collect::<Vec<_>>();
-    assert_eq!(s.g.units[worker].ai_type, Some(UnitAIType::UNITAI_WORKER));
-    assert!(s.read(|g| g.unit_can_build_route(worker)), "the human has the road tech, so a worker can build a route");
-    assert_eq!(modes(&s, worker), ["INTERFACEMODE_GO_TO", "INTERFACEMODE_ROUTE_TO"]);
+    assert!(s.read(|g| g.unit_can_build_route(warrior)), "the human has the road tech, so a soldier can build a route");
+    assert_eq!(modes(&s, warrior), ["INTERFACEMODE_GO_TO", "INTERFACEMODE_ROUTE_TO"]);
     assert!(s.g.d.units[s.g.units[adept].unit_type].builds.iter().any(|&b| b), "adepts have builds (mana nodes)");
     assert_eq!(modes(&s, adept), ["INTERFACEMODE_GO_TO"]);
-    assert_eq!(modes(&s, warrior), ["INTERFACEMODE_GO_TO"]);
+    assert_eq!(modes(&s, scout), ["INTERFACEMODE_GO_TO"]);
     // A stack offers route-to when one of its units can.
-    assert_eq!(target_actions(&s, &[warrior, worker]).iter().map(mode).collect::<Vec<_>>(), ["INTERFACEMODE_GO_TO", "INTERFACEMODE_ROUTE_TO"]);
+    assert_eq!(target_actions(&s, &[scout, warrior]).iter().map(mode).collect::<Vec<_>>(), ["INTERFACEMODE_GO_TO", "INTERFACEMODE_ROUTE_TO"]);
 }
 
 /// Prints every reply of a control point (`cargo test --release -p ffh-play --test views --

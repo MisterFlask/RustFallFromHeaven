@@ -1457,7 +1457,8 @@ impl Game {
 
     /// C++ `CvUnit::canBuild` (CvUnit.cpp:7646-7679).
     pub fn unit_can_build(&self, u: UnitId, plot: PlotIdx, build: BuildType, test_visible: bool) -> bool {
-        if !self.d.units[self.units[u].unit_type].builds[build] {
+        // Not in C++ (docs/WORKS.md): army units build the field works (roads, forts).
+        if !self.d.units[self.units[u].unit_type].builds[build] && !(self.d.builds[build].field && self.unit_is_army_unit(u)) {
             return false;
         }
 
@@ -1529,7 +1530,7 @@ impl Game {
         let team = self.unit_get_team(u);
 
         for build in d.builds.keys() {
-            if d.builds[build].route.is_some() && info.builds[build] && self.team_is_has_tech(team, d.builds[build].tech_prereq) {
+            if d.builds[build].route.is_some() && (info.builds[build] || d.builds[build].field && self.unit_is_army_unit(u)) && self.team_is_has_tech(team, d.builds[build].tech_prereq) {
                 return true;
             }
         }
@@ -1571,6 +1572,10 @@ impl Game {
 
         let unit = &self.units[u];
         let mut rate = self.d.units[unit.unit_type].work_rate;
+        // Not in C++ (docs/WORKS.md): an army unit's rate at the field works.
+        if rate == 0 && self.unit_is_army_unit(u) {
+            rate = self.d.defines.field_work_rate;
+        }
 
         // FfH: Added by Kael 08/13/2008
         rate += unit.work_rate_modify;
@@ -1754,7 +1759,7 @@ mod tests {
         let mut g = test_game();
         let d = g.d;
         let owner = PlayerId(0);
-        let u = add_unit(&mut g, owner, "UNIT_WORKER", 1, 1);
+        let u = add_unit(&mut g, owner, "UNIT_WARRIOR", 1, 1);
 
         // No group, or no mission: no build.
         assert_eq!(g.unit_get_build_type(u), None);
@@ -1777,11 +1782,12 @@ mod tests {
     fn can_build_route_needs_the_build_tech() {
         let mut g = test_game();
         let d = g.d;
-        let u = add_unit(&mut g, PlayerId(0), "UNIT_WORKER", 1, 1);
+        // An army unit builds the field works (docs/WORKS.md): the Road.
+        let u = add_unit(&mut g, PlayerId(0), "UNIT_WARRIOR", 1, 1);
         let team = g.unit_get_team(u);
-        let info = &d.units[g.units[u].unit_type];
+        assert!(g.unit_is_army_unit(u));
 
-        let route_builds: Vec<BuildType> = d.builds.keys().filter(|&b| d.builds[b].route.is_some() && info.builds[b]).collect();
+        let route_builds: Vec<BuildType> = d.builds.keys().filter(|&b| d.builds[b].route.is_some() && d.builds[b].field).collect();
         assert!(!route_builds.is_empty());
         let free = route_builds.iter().any(|&b| d.builds[b].tech_prereq.is_none());
         assert_eq!(g.unit_can_build_route(u), free);
@@ -1793,8 +1799,8 @@ mod tests {
         }
         assert!(g.unit_can_build_route(u));
 
-        // A warrior builds nothing.
-        let warrior = add_unit(&mut g, PlayerId(0), "UNIT_WARRIOR", 1, 1);
-        assert!(!g.unit_can_build_route(warrior));
+        // A scout (no army unit) builds nothing.
+        let scout = add_unit(&mut g, PlayerId(0), "UNIT_SCOUT", 1, 1);
+        assert!(!g.unit_can_build_route(scout));
     }
 }

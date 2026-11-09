@@ -239,23 +239,10 @@ impl Game {
         let unit_ai = self.units[u].ai_type;
 
         match automate {
-            AutomateType::AUTOMATE_BUILD => {
-                if unit_ai != Some(UnitAIType::UNITAI_WORKER) && unit_ai != Some(UnitAIType::UNITAI_WORKER_SEA) {
-                    return false;
-                }
-            }
-
-            AutomateType::AUTOMATE_NETWORK => {
-                if unit_ai != Some(UnitAIType::UNITAI_WORKER) || !self.unit_can_build_route(u) {
-                    return false;
-                }
-            }
-
-            AutomateType::AUTOMATE_CITY => {
-                if unit_ai != Some(UnitAIType::UNITAI_WORKER) {
-                    return false;
-                }
-            }
+            // Not in C++ (docs/WORKS.md): no unit improves the land by itself. The cities' crews
+            // do the workers' builds, and the units' builds (mana nodes, the field works) are
+            // ordered one by one.
+            AutomateType::AUTOMATE_BUILD | AutomateType::AUTOMATE_NETWORK | AutomateType::AUTOMATE_CITY => return false,
 
             AutomateType::AUTOMATE_EXPLORE => {
                 // BETTER_BTS_AI_MOD 06/02/09 jdog5000: enable exploration for air units.

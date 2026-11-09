@@ -798,6 +798,15 @@ number of civ cities, so faster expansion brings more barbarian cities sooner.
 
 ## Workers (`workers.rs`)
 
+**Since 2026-11-09 there are no worker units** (docs/WORKS.md): each city's work crews do the
+workers' builds, and `workers::choose_crew_build` answers `Controller::choose_crew_build` for a city
+with the valuation below, over the plots the crews may work (`Game::city_crew_plots`) and the
+rules' road plan (`Game::player_road_plan`, the old `road_plan`): value x 100 / (turns left + 3).
+What follows about travel, reach, fleeing, the workers' number and their disbanding describes the
+units that are gone; the valuation of a build (yields by the city's needs, resources, chops, the
+build bans, the trait and card hooks) is the crews'. Slaves go to the nearest city
+(`units::laborer`: they add to its crews' work rate).
+
 A worker floods 8 turns of reach and scores every (plot, build) in our cities' radius:
 yield change weighted by the working city's needs (food while it can grow, production,
 commerce; cottages at two thirds of their grown yield), plus the value of connecting a

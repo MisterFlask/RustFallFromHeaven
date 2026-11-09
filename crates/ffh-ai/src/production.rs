@@ -1,12 +1,11 @@
 //! City production (C++ `CvCityAI::AI_chooseProduction`, FfH's `CvGameUtils.AI_chooseProduction`
-//! Python): a priority list -- garrison, emergency defense, the first worker, settlers while
-//! good sites remain, minimal army, more workers, buildings by marginal value per turn of
+//! Python): a priority list -- garrison, emergency defense, settlers while
+//! good sites remain, minimal army, buildings by marginal value per turn of
 //! production, army to its target, casters, missionaries -- then a process. Whatever happens,
 //! a city is never left without an order (`fallback`).
 
 use std::sync::OnceLock;
 
-use ffh_core::defs::{CITY_HOME_PLOT, NUM_CITY_PLOTS};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_data::*;
@@ -217,13 +216,7 @@ fn fallback(g: &Game, c: CityId) -> Option<Choice> {
     if let Some((b, _)) = best {
         return Some(Choice::Construct(b));
     }
-    // Nothing left to build: workers (they pay for themselves) before more soldiers.
     let p = g.cities[c].owner;
-    if count_ai(g, p, UnitAIType::UNITAI_WORKER) < 2 * g.players[p].cities.len() as i32 {
-        if let Some(u) = best_unit(g, c, Role::Worker) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_WORKER));
-        }
-    }
     // Field units (they hunt and campaign) rather than garrisons the treasury cannot carry.
     // When the treasury cannot carry more, the strongest one (support costs the same for any
     // unit, and the weakest are the ones disbanded): the hammers buy quality, not numbers.
@@ -441,65 +434,6 @@ pub fn count_ai(g: &Game, p: PlayerId, unit_ai: UnitAIType) -> i32 {
     pl.ai_num_ai_units[unit_ai] + pl.ai_num_train_ai_units[unit_ai]
 }
 
-/// The workers our land needs (step 6 of `decide`): one a city up to three, one more for every
-/// three worked plots without an improvement, at most two a city.
-pub(crate) fn worker_target(g: &Game, p: PlayerId) -> i32 {
-    let n_cities = g.players[p].cities.len() as i32;
-    (n_cities.min(3) + (unimproved_worked_plots(g, p) + 1) / 3).min(n_cities * 2).max(1)
-}
-
-/// Can our workers build anything useful yet (an improvement or route whose tech we have)?
-pub fn has_worker_builds(g: &Game, p: PlayerId) -> bool {
-    let team = g.players[p].team;
-    g.d.builds.iter().any(|b| (b.improvement.is_some() || b.route.is_some()) && b.tech_prereq.map_or(true, |t| g.team_is_has_tech(team, Some(t))))
-}
-
-/// Water resources in this city's radius (our borders) that a work boat could improve now.
-pub fn sea_resources_unimproved(g: &Game, c: CityId) -> i32 {
-    let p = g.cities[c].owner;
-    let team = g.players[p].team;
-    let d = g.d;
-    let mut n = 0;
-    for i in 0..NUM_CITY_PLOTS {
-        let Some(q) = g.city_index_plot(c, i) else { continue };
-        let plot = &g.map.plots[q];
-        if plot.owner != Some(p) || plot.improvement_type.is_some() || !g.plot_is_water(q) {
-            continue;
-        }
-        let Some(bonus) = plot.bonus_type else { continue };
-        if d.bonuses[bonus].tech_reveal.is_some_and(|t| !g.team_is_has_tech(team, Some(t))) {
-            continue;
-        }
-        let ok = d.builds.iter_enumerated().any(|(b, info)| {
-            info.improvement.is_some_and(|imp| d.improvements[imp].improvement_bonus[bonus].bonus_trade) && g.player_can_build(p, q, b, false, false)
-        });
-        if ok {
-            n += 1;
-        }
-    }
-    n
-}
-
-/// Plots worked by our cities that have no improvement (a measure of worker demand). Plots no
-/// known build improves yet count too: the worker that waits for the tech is the one ready the
-/// turn it comes (docs/AI_LOG.md, "Worker demand only where a build is possible now").
-pub fn unimproved_worked_plots(g: &Game, p: PlayerId) -> i32 {
-    let mut n = 0;
-    for &c in &g.players[p].cities {
-        for i in 0..NUM_CITY_PLOTS {
-            if i == CITY_HOME_PLOT || !g.cities[c].working_plot[i] {
-                continue;
-            }
-            if let Some(q) = g.city_index_plot(c, i) {
-                let plot = &g.map.plots[q];
-                if plot.improvement_type.is_none() && plot.plot_type != PlotType::PLOT_OCEAN {
-                    n += 1;
-                }
-            }
-        }
-    }
-    n
-}
 
 /// Buildings the AI never builds by itself: a new palace (moves the capital), buildings with
 /// no effect but a cost the generic valuation cannot see the downside of.
@@ -661,18 +595,8 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
         return best_unit(g, c, Role::Attack).map(|u| (Choice::Train(u, UnitAIType::UNITAI_ATTACK), "barbarian"));
     }
 
-    let workers = count_ai(g, p, UnitAIType::UNITAI_WORKER);
-    let can_improve = has_worker_builds(g, p);
-
     // Threats the garrison can hold (lair guards next door, say) do not stop expansion.
     let safe = ctx.threat * 2 <= ctx.defense;
-
-    // 2. The first worker, once workers have something to do.
-    if workers == 0 && can_improve && safe && (ctx.pop >= 2 || ctx.food_surplus <= 1) {
-        if let Some(u) = best_unit(g, c, Role::Worker) {
-            return Some((Choice::Train(u, UnitAIType::UNITAI_WORKER), "first_worker"));
-        }
-    }
 
     // A second defender before more settlers once the barbarians are about.
     if second_defender_wanted(g, p, c, plot, ctx.defenders, ctx.threat, ctx.defense) {
@@ -738,15 +662,6 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
             }
         }
     }
-    // Work boats for sea resources nobody improves yet.
-    if safe && sea_resources_unimproved(g, c) > 0 {
-        let need: i32 = pl.cities.iter().map(|&o| sea_resources_unimproved(g, o)).sum();
-        if count_ai(g, p, UnitAIType::UNITAI_WORKER_SEA) < need.min(ctx.n_cities) {
-            if let Some(u) = best_unit(g, c, Role::SeaWorker) {
-                return Some((Choice::Train(u, UnitAIType::UNITAI_WORKER_SEA), "work_boat"));
-            }
-        }
-    }
     // Growing toward a settler: nothing that ties the city up for long.
     let max_turns = if settler == SettlerPlan::Soon { 12 } else { 50 };
 
@@ -782,18 +697,8 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
         }
     }
 
-    // 6. More workers, as the land we work needs improving.
-    if can_improve && safe {
-        let target = worker_target(g, p);
-        if workers < target && ctx.pop >= 2 {
-            if let Some(u) = best_unit(g, c, Role::Worker) {
-                return Some((Choice::Train(u, UnitAIType::UNITAI_WORKER), "workers"));
-            }
-        }
-    }
-
     // Victory pursuit (victory.rs): the towers in our best cities, culture in the cities
-    // nearest legendary -- after the garrison, the first army and the workers.
+    // nearest legendary -- after the garrison and the first army.
     if safe {
         if let Some(choice) = crate::victory::production(g, c, false) { return Some((choice, "victory")); } // victory-pursuit
     }
@@ -1184,7 +1089,6 @@ fn best_project(g: &Game, c: CityId) -> Option<ProjectType> {
 pub enum Role {
     Defense,
     Attack,
-    Worker,
     Settler,
     Hero,
     Mage,
@@ -1193,8 +1097,6 @@ pub enum Role {
     /// Attackers for a war: strength against cities (city attack bonus, first strikes), not
     /// mobility.
     CityAttack,
-    /// Work boats (sea resources).
-    SeaWorker,
     /// Ships that carry land units.
     Transport,
     /// Ships that reveal the seas.
@@ -1205,7 +1107,7 @@ pub enum Role {
 
 impl Role {
     fn sea(self) -> bool {
-        matches!(self, Role::SeaWorker | Role::Transport | Role::SeaExplore | Role::SeaHero)
+        matches!(self, Role::Transport | Role::SeaExplore | Role::SeaHero)
     }
 }
 
@@ -1245,13 +1147,11 @@ fn role_ok(d: &GameData, info: &UnitInfo, role: Role) -> bool {
         }
         // (An animal is trained only where a building trains it: the Beast Market's, docs/CARDS.md.)
         Role::Attack | Role::CityAttack => fighter && !info.only_defensive && (has(UnitAIType::UNITAI_ATTACK) || has(UnitAIType::UNITAI_ATTACK_CITY) || info.animal) && !siege_engine(info),
-        Role::Worker => has(UnitAIType::UNITAI_WORKER) && info.combat == 0,
         Role::Settler => has(UnitAIType::UNITAI_SETTLE) && info.found,
         Role::Hero => is_hero(d, info) && (info.combat > 0 || born_caster(d, info)),
         Role::SeaHero => is_hero(d, info) && info.combat > 0,
         Role::Mage => info.default_unit_ai_type == Some(UnitAIType::UNITAI_MAGE) || has(UnitAIType::UNITAI_WARWIZARD),
         Role::Explore => has(UnitAIType::UNITAI_EXPLORE),
-        Role::SeaWorker => has(UnitAIType::UNITAI_WORKER_SEA) && info.combat == 0,
         Role::Transport => info.cargo_space > 0 && info.domain_cargo == Some(DomainType::DOMAIN_LAND) && info.special_cargo.is_none(),
         Role::SeaExplore => info.combat > 0 && (has(UnitAIType::UNITAI_EXPLORE_SEA) || has(UnitAIType::UNITAI_ATTACK_SEA)),
         Role::Siege => fighter && (has(UnitAIType::UNITAI_ATTACK_CITY) || has(UnitAIType::UNITAI_COLLATERAL)) && (info.bombard_rate > 0 || info.collateral_damage > 0),
@@ -1376,8 +1276,6 @@ pub(crate) fn best_unit_where(g: &Game, c: CityId, role: Role, keep: impl Fn(Uni
                 v += info.collateral_damage as i64 * 2;
                 v
             }
-            Role::Worker => 100 + info.work_rate as i64,
-            Role::SeaWorker => 100,
             Role::Transport => info.cargo_space as i64 * 100 + info.moves as i64 * 30 + info.combat as i64 * 5,
             Role::SeaExplore => info.moves as i64 * 60 + info.combat as i64 * 10 + 50 * i64::from(info.unit_ai_type[UnitAIType::UNITAI_EXPLORE_SEA]),
             Role::Settler => 100,
@@ -1388,7 +1286,7 @@ pub(crate) fn best_unit_where(g: &Game, c: CityId, role: Role, keep: impl Fn(Uni
         }
         // Strength matters more than cost: weaker but cheaper units only win by a margin.
         let score = match role {
-            Role::Worker | Role::Settler | Role::SeaWorker | Role::Transport | Role::SeaExplore => power * 1000 / turns,
+            Role::Settler | Role::Transport | Role::SeaExplore => power * 1000 / turns,
             _ => power * power / 100 * 1000 / (turns + 4),
         };
         if best.map_or(true, |(_, s)| score > s) {

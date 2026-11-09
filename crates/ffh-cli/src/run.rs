@@ -102,6 +102,9 @@ impl Controller for Timed {
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         self.time(|| self.inner.govern_cities(g, p))
     }
+    fn choose_crew_build(&self, g: &Game, c: CityId) -> Option<(PlotIdx, BuildType)> {
+        self.time(|| self.inner.choose_crew_build(g, c))
+    }
     fn ai_choose_research(&self, g: &Game, p: PlayerId) -> Option<TechType> {
         self.time(|| self.inner.ai_choose_research(g, p))
     }
@@ -264,6 +267,9 @@ impl Controller for CppCitizens {
     }
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         self.inner.govern_cities(g, p)
+    }
+    fn choose_crew_build(&self, g: &Game, c: CityId) -> Option<(PlotIdx, BuildType)> {
+        self.inner.choose_crew_build(g, c)
     }
     fn assign_working_plots(&self, g: &mut Game, c: CityId) -> bool {
         // Barbarian cities keep the rules' governor (the comparison is about the civs).
@@ -1143,6 +1149,9 @@ impl Controller for FreeRider {
     }
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         self.inner.govern_cities(g, p)
+    }
+    fn choose_crew_build(&self, g: &Game, c: CityId) -> Option<(PlotIdx, BuildType)> {
+        self.inner.choose_crew_build(g, c)
     }
     fn ai_choose_research(&self, g: &Game, p: PlayerId) -> Option<TechType> {
         self.inner.ai_choose_research(g, p)

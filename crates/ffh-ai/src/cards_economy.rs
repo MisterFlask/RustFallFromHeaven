@@ -19,8 +19,9 @@
 //!   ([`end_turn`]).
 //! - Mana Grafting ([`unit`]): a caster on a node of a type the empire has several of grafts it
 //!   into the type worth most.
-//! - Trading Posts ([`turn`]): a worker claims the best free site near our cities (a resource we
-//!   lack, a unique feature, mana), improves the resource and builds the road home.
+//! - Trading Posts ([`turn`]): a spare soldier of a garrison claims the best free site near our
+//!   cities (a resource we lack, a unique feature, mana) and builds the road home (army units
+//!   build the field works, docs/WORKS.md); the nearest city's crews improve the resource.
 
 use std::sync::OnceLock;
 
@@ -168,23 +169,22 @@ fn post_site_value(g: &Game, p: PlayerId, site: PlotIdx) -> i32 {
     v
 }
 
-/// A worker build that would connect resource `b` on plot `q` for `p` (its improvement trades the
-/// resource and suits the plot), if any.
+/// A build of the cities' crews that would connect resource `b` on plot `q` for `p` (its
+/// improvement trades the resource and suits the plot), if any.
 fn improvable(g: &Game, p: PlayerId, q: PlotIdx, b: BonusType) -> Option<BuildType> {
     let d = g.d;
     let team = g.players[p].team;
-    let worker = d.ty::<UnitType>("UNIT_WORKER")?;
     d.builds.keys().find(|&bu| {
         let info = &d.builds[bu];
-        d.units[worker].builds[bu]
+        info.city
             && info.improvement.is_some_and(|imp| d.improvements[imp].improvement_bonus[b].bonus_trade && g.plot_can_have_improvement(q, imp, Some(team), false))
             && g.team_is_has_tech(team, info.tech_prereq)
     })
 }
 
-/// A Trading Post job every 10 turns: the best free site a worker of ours reaches within 15 turns
-/// (its value per turn of the trip), at most three posts; then the claimed resource's improvement
-/// and the road to our nearest city.
+/// A Trading Post job every 10 turns: the best free site a spare soldier of ours reaches within
+/// 15 turns (its value per turn of the trip), at most three posts; then the road to our nearest
+/// city.
 fn trading_posts(g: &mut Game, v: &View) {
     let d = g.d;
     let n = names(d);
@@ -197,18 +197,24 @@ fn trading_posts(g: &mut Game, v: &View) {
     if g.players[p].improvement_count[post] >= 3 {
         return;
     }
-    // One post at a time: a worker with the job (on its way or building) keeps it.
+    // One post at a time: a unit with the job (on its way or building) keeps it.
     let ordered = |grp: GroupId| g.groups[grp].mission_queue.iter().any(|m| m.mission_type == MissionType::MISSION_BUILD && m.data1 == build.i());
     if g.players[p].groups.iter().any(|&grp| alive(g, grp) && ordered(grp)) {
         return;
     }
-    // The idle workers (alone in their group, with nothing ordered), at most four, by id.
+    // Spare soldiers: army units alone in their group, with nothing ordered, in a city of ours
+    // that keeps three fighters without them; at most four, by id.
+    let spare = |u: UnitId| {
+        let here = g.unit_plot(u);
+        g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p)
+            && g.map.plots[here].units.iter().filter(|&&o| g.units[o].owner == p && g.unit_is_army_unit(o)).count() > 3
+    };
     let mut workers: Vec<UnitId> = g.players[p]
         .units
         .iter()
         .copied()
-        .filter(|&u| g.units[u].ai_type == Some(UnitAIType::UNITAI_WORKER) && g.d.units[g.units[u].unit_type].builds[build] && !g.unit_is_automated(u))
-        .filter(|&u| g.units[u].group.is_some_and(|grp| g.groups.contains(grp) && g.groups[grp].units.len() == 1 && g.group_ready_to_move(grp, true)))
+        .filter(|&u| g.unit_is_army_unit(u) && !g.unit_is_automated(u) && !g.unit_is_cargo(u) && spare(u))
+        .filter(|&u| g.units[u].group.is_some_and(|grp| g.groups.contains(grp) && g.groups[grp].units.len() == 1 && g.groups[grp].mission_queue.is_empty()))
         .collect();
     workers.sort_unstable();
     workers.truncate(4);
@@ -217,7 +223,6 @@ fn trading_posts(g: &mut Game, v: &View) {
     for &u in &workers {
         for r in flood.run(g, u, 15, false) {
             let q = r.plot;
-            // (A post a worker left half built, fleeing danger, is a site like any other.)
             if v.danger_at(q) > 0 || !g.player_can_build(p, q, build, false, false) {
                 continue;
             }
@@ -234,40 +239,17 @@ fn trading_posts(g: &mut Game, v: &View) {
     let Some((score, u, site)) = best else { return };
     let Some(grp) = g.units[u].group else { return };
     let (sx, sy) = g.map.xy(site);
-    crate::trace!(g, p, "trading post at {:?} (score {score}; {} built) by worker {:?}", (sx, sy), g.players[p].improvement_count[post], u);
+    crate::trace!(g, p, "trading post at {:?} (score {score}; {} built) by {:?}", (sx, sy), g.players[p].improvement_count[post], u);
     let start = g.unit_plot(u);
     if start != site {
         move_to(g, grp, site, 0);
-        // (A move the path finder refuses leaves the worker to its usual jobs.)
+        // (A move the path finder refuses leaves the unit to its usual orders.)
         if !alive(g, grp) || g.groups[grp].mission_queue.is_empty() && g.unit_plot(u) == start {
             return;
         }
     }
     push(g, grp, MissionType::MISSION_BUILD, build.i(), -1, 0, true);
-    // Then the best resource it claims, and the road home.
-    let mut target: Option<(i32, PlotIdx, BuildType)> = None;
-    for dx in -1..=1 {
-        for dy in -1..=1 {
-            let Some(q) = g.plot_xy(sx, sy, dx, dy) else { continue };
-            let Some(b) = g.map.plots[q].bonus_type else { continue };
-            if g.player_has_bonus(p, b) {
-                continue;
-            }
-            if let Some(bu) = improvable(g, p, q, b) {
-                let val = g.player_ai_bonus_val(p, b, 1);
-                if target.map_or(true, |(tv, _, _)| val > tv) {
-                    target = Some((val, q, bu));
-                }
-            }
-        }
-    }
-    if let Some((_, q, bu)) = target {
-        let (qx, qy) = g.map.xy(q);
-        if q != site {
-            push(g, grp, MissionType::MISSION_MOVE_TO, qx, qy, 0, true);
-        }
-        push(g, grp, MissionType::MISSION_BUILD, bu.i(), -1, 0, true);
-    }
+    // Then the road home (the resource it claims is the nearest city's crews' to improve).
     if let Some(city) = crate::units::nearest_city(g, p, site) {
         let (cx, cy) = (g.cities[city].x, g.cities[city].y);
         push(g, grp, MissionType::MISSION_ROUTE_TO, cx, cy, 0, true);

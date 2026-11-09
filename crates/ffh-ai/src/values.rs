@@ -117,7 +117,7 @@ mod tests {
         let warrior = d.t::<UnitType>("UNIT_WARRIOR");
         let axe = d.t::<UnitType>("UNIT_AXEMAN");
         assert!(v.unit_power[axe] > v.unit_power[warrior]);
-        let worker = d.t::<UnitType>("UNIT_WORKER");
+        let worker = d.t::<UnitType>("UNIT_SETTLER");
         assert_eq!(v.unit_power[worker], 0);
         assert!(v.tech_unlocks.iter().any(|t| t.religion.is_some()));
     }

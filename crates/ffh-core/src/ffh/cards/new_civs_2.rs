@@ -743,7 +743,7 @@ pub fn fire_infernal_gate(g: &mut Game, _: usize) {
     let mut b = Birth::wild(court, d.t("LEADER_AURIVANE"));
     let settler = NewUnit { unit: d.t("UNIT_SETTLER"), promotions: vec![d.t("PROMOTION_STARTING_SETTLER")] };
     let mut units = vec![unit(d, "UNIT_CHAMPION"), unit(d, "UNIT_CHAMPION"), unit(d, "UNIT_LONGBOWMAN"), unit(d, "UNIT_LONGBOWMAN")];
-    units.extend([settler.clone(), settler, unit(d, "UNIT_WORKER"), unit(d, "UNIT_MANES"), unit(d, "UNIT_MANES")]);
+    units.extend([settler.clone(), settler, unit(d, "UNIT_MANES"), unit(d, "UNIT_MANES")]);
     b.camp = Some((site, units));
     b.hero = Some(unit(d, "UNIT_AURIVANE"));
     b.gold = COURT_GOLD;

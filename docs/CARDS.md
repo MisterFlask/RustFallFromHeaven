@@ -182,7 +182,7 @@ help):
 | civics | `no_war_weariness` | Stoicism | war weariness causes no unhappiness |
 | processes | `production_to_experience` | Muster | hammers per point of experience to the units in the city |
 | improvements | `claim_range`, `min_city_distance` | Trading Post | its plot and the land plots within the range are its builder's territory whatever the culture (it is built only outside every border); built only that many plots or more from every city |
-| builds | `same_builders_as` | Trading Post (the Fort's builders); Siege Lines, Canal Locks, Wayside Shrines, Trench (the Road's: Workers, Slaves, Mud Golems, Pioneers); Causeway (the Fishing Boats': Work Boats) | every unit that can do that build can do this one (set in the units' `builds` at load; a card's file cannot edit the units') |
+| builds | `same_builders_as` | Trading Post (the Fort's builders); Siege Lines, Canal Locks, Wayside Shrines, Trench (the Road's: the cities' crews and army units, docs/WORKS.md); Causeway (the Fishing Boats': Work Boats) | every unit that can do that build can do this one (set in the units' `builds` at load; a card's file cannot edit the units') |
 | spells | `ritual_charge` (a project) | Weather Engine, Tidecall of Danalin | each completion of the ritual leaves its city a charge (`City::ritual_charges`); the spell is cast only by a unit in a city of its owner holding one, and spends it; a city holding a charge does not build the ritual again (section 3, "Rituals") |
 | projects | `repeat_cost_percent` | Pillar of Dawn | each completion by a team makes the ritual's next cost this percent of the last (200: twice; at most 16 times) |
 | buildings | `reveals_sites` | The Second Sky | when built, its owner's team has every plot with a mana resource, a unique feature, a lair (an improvement that spawns) or a goody hut revealed |
@@ -381,7 +381,7 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   the Infernal Pact (which is FFH2's again). It arrives without a city (`Birth::camp`) on the best
   free site within 4 plots of the borders of the civilization with the most gold (`court_patron`:
   ties to the lower id; `court_site`): Aurivane (its hero), two Champions, two Longbowmen, two
-  Settlers, a Worker, two Manes, 200 gold. Its leader is Avaricious (`TRAIT_AVARICIOUS`: +100% gold,
+  Settlers, two Manes, 200 gold. Its leader is Avaricious (`TRAIT_AVARICIOUS`: +100% gold,
   `unit_rush_gold` 2) and Organized; every land unit of it has Mammon's Coin (its civilization's
   `unit_promotion`), whose Buy Out (`SPELL_COURT_BUY_OUT`, while the Court owns the unit) is the
   Paymaster's spell (`cards/economy.rs`'s callbacks and price). **Population:** the Infernals' rules
@@ -450,7 +450,7 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | Card | Suit | Status |
 |---|---|---|
 | (the deck itself: deal, discover, once spells, targets, Armageddon deck) | | built |
-| E11 Pioneers | Engineer | built |
+| E11 Pioneers | Engineer | built (+100% work rate of the cities' crews; a national worker until 2026-11-09, docs/WORKS.md) |
 | M01 Gold Standard | Merchant | built |
 | M06 Beast Market | Merchant | built |
 | M10 Admiralty | Merchant | built (free picks: 5 experience, two promotions) |
@@ -473,7 +473,7 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | E13 Powder Charge | Engineer | built |
 | M02 Prize Courts | Merchant | built |
 | P03 Hall of Judgment (Courts of Junil renamed) | Prophet | built |
-| Causeway | Engineer | built (a dam: ships cannot enter it; built by Work Boats) |
+| Causeway | Engineer | built (a dam: ships cannot enter it; built by the cities' crews) |
 | Canal Locks | Engineer | built |
 | Mountaineering | Engineer | built |
 | Ferries | Engineer | built |
@@ -533,7 +533,7 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | B13 Dragon's Oath (`bard_dragons_oath`: `UNIT_SYLVARITH`) | Bard | built (world spell; B7): Sylvarith in the capital, one in the world; Breath Fire is its own copy (no Dragon promotion, which gives Fear) |
 | P06 Call the Leviathan (`prophet_call_the_leviathan`) | Prophet (the Octopus Overlords) | built (world spell at a coastal city; B7): a Kraken while a Leviathan lives |
 | Judgment of Junil (`prophet_judgment_of_junil`) | Prophet [good] | built (world spell at a player; B7): needs Orders from Heaven (the Scales of Junil's); a war ends; 20 turns of truce (`Team::truce_until`) |
-| Earthshaper's Decree (`engineer_earthshapers_decree`) | Engineer | built (world spell; B7): the Workers' builds that keep the plot's feature and resource |
+| Earthshaper's Decree (`engineer_earthshapers_decree`) | Engineer | built (world spell; B7): the crews' builds that keep the plot's feature and resource |
 | The Second Sky (`sage_second_sky`) | Sage | built (national wonder, `reveals_sites`; B7): at completion; recon units trained there +1 sight |
 | The Plagiarist's Lens (`sage_plagiarists_lens`) | Sage | built (world spell at a choice; B7): a once-a-game spell, not a national building; -2 attitude from each holder, for good (no 50-turn timer) |
 | Weather Engine (`engineer_weather_engine`) | Engineer | built (ritual, 300, with a charge; B7): Blizzard, Storm, Fog |

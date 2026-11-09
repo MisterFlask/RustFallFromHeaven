@@ -38,7 +38,7 @@ new-game screen); the owner removed it, with those of the cultural actions and t
 (`UNITCOMBAT_RECON`), heroes (`PROMOTION_HERO`: a unit that has it, and so a unit type that gives
 it for free, whose orders have no destination and which no requisition picks), summons (a
 duration) and the barbarians' units.
-Ships, air units, workers, settlers and missionaries are not army units either. The others move on
+Ships, air units, settlers and missionaries are not army units either. The others move on
 their own, or along with an army's group (a hero travelling with an army is not in it: the
 commander slot is phase 6).
 

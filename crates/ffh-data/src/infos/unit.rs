@@ -525,8 +525,16 @@ pub struct BuildInfo {
     /// C++ `isFeatureRemove(i)`.
     pub feature_remove: IdxVec<FeatureType, bool>,
     /// This game's (a card's build, docs/CARDS.md): the units that can do this build can do this
-    /// one too (`same_builders_as`; set in the units' `builds` at load).
+    /// one too, and so can the cities' crews and the army units if they do that one
+    /// (`same_builders_as`; set in the units' `builds`, `city` and `field` at load).
     pub same_builders_as: Option<BuildType>,
+    /// This game's (docs/WORKS.md): a city's work crews do this build on its land (`city`).
+    pub city: bool,
+    /// This game's (docs/WORKS.md): army units do this build where they stand (`field`).
+    pub field: bool,
+    /// This game's (docs/WORKS.md): only this civilization does this build (`prereq_civ`; the
+    /// Lanun's Pirate Cove).
+    pub prereq_civ: Option<CivilizationType>,
 }
 
 /// C++ `CvBuildInfo::read`.
@@ -542,6 +550,9 @@ pub fn read_build(rd: &Rd) -> BuildInfo {
         improvement: rd.rf::<ImprovementType>("improvement_type"),
         route: rd.rf::<RouteType>("route_type"),
         same_builders_as: rd.rf::<BuildType>("same_builders_as"),
+        city: rd.bool("city"),
+        field: rd.bool("field"),
+        prereq_civ: rd.rf::<CivilizationType>("prereq_civ"),
         ..Default::default()
     };
     set_feature_struct(rd, &mut info);
@@ -702,6 +713,9 @@ pub struct UnitInfo {
     pub drop_range: i32,
     pub nuke_range: i32,
     pub work_rate: i32,
+    /// This game's (docs/WORKS.md): what a unit of this type adds to the work rate of the crews
+    /// of a city of its owner it stands in (`crew_work`; the Slave).
+    pub crew_work: i32,
     pub base_discover: i32,
     pub discover_multiplier: i32,
     pub base_hurry: i32,
@@ -996,6 +1010,7 @@ pub fn read_unit(rd: &Rd) -> UnitInfo {
         drop_range: rd.int("drop_range"),
         nuke_range: rd.int("nuke_range"),
         work_rate: rd.int("work_rate"),
+        crew_work: rd.int("crew_work"),
         base_discover: rd.int("base_discover"),
         discover_multiplier: rd.int("discover_multiplier"),
         base_hurry: rd.int("base_hurry"),

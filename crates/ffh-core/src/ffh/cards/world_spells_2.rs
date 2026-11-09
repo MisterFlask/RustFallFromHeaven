@@ -335,26 +335,20 @@ fn spell_judgment_of_junil(g: &mut Game, caster: UnitId, _call: &PyCall) {
 
 // ---------------------------------------------------------------------------------------------
 // Earthshaper's Decree: every land plot of the caster's owner without an improvement or a city gets
-// the improvement that suits it best, among those its civilization's Workers could build there
+// the improvement that suits it best, among those its cities' crews could build there
 // now without removing its feature and without changing its resource: the one that connects the
 // plot's resource (the most food and production among those), else the one that adds the most food
 // and production, then commerce (none that adds nothing).
 
-/// The builds of `p`'s Workers (its civilization's unit of `UNITCLASS_WORKER`) that make an
-/// improvement which changes no resource, in build order.
-fn worker_builds(g: &Game, p: PlayerId) -> Vec<BuildType> {
+/// The builds of the cities' crews (docs/WORKS.md) that make an improvement which changes no
+/// resource, in build order.
+fn crew_builds(g: &Game) -> Vec<BuildType> {
     let d = g.d;
-    let Some(class) = d.ty::<UnitClassType>("UNITCLASS_WORKER") else { return Vec::new() };
-    let worker = g.player_get_civilization_type(p).and_then(|civ| d.civ_unit(civ, class)).or(d.unit_classes[class].default_unit_index);
-    let Some(worker) = worker else { return Vec::new() };
-    d.builds
-        .keys()
-        .filter(|&b| d.units[worker].builds[b] && d.builds[b].improvement.is_some_and(|i| d.improvements[i].bonus_convert.is_none()) && !d.builds[b].kill)
-        .collect()
+    d.builds.keys().filter(|&b| d.builds[b].city && d.builds[b].improvement.is_some_and(|i| d.improvements[i].bonus_convert.is_none())).collect()
 }
 
 /// The improvement Earthshaper's Decree gives plot `t` of player `p`, from `builds`
-/// ([`worker_builds`]), if any.
+/// ([`crew_builds`]), if any.
 fn decree_improvement_with(g: &Game, p: PlayerId, t: PlotIdx, builds: &[BuildType]) -> Option<ImprovementType> {
     let d = g.d;
     let plot = &g.map.plots[t];
@@ -385,7 +379,7 @@ fn decree_improvement_with(g: &Game, p: PlayerId, t: PlotIdx, builds: &[BuildTyp
 
 /// The plots Earthshaper's Decree improves for `p` and their improvements, in plot order.
 pub fn decree_plots(g: &Game, p: PlayerId) -> Vec<(PlotIdx, ImprovementType)> {
-    let builds = worker_builds(g, p);
+    let builds = crew_builds(g);
     if builds.is_empty() {
         return Vec::new();
     }

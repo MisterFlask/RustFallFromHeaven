@@ -4,7 +4,7 @@
 //! **Production.** A governed city's production is the governor's, for the human's cities as
 //! for the AI's: the same choice ([`decide`]), reading its governor's profile. In order: a
 //! garrison the city's danger asks for (the city AI's garrison quota, plus the profile's
-//! defenders); the first worker and workers to the empire's need; work boats; the best building
+//! defenders); the best building
 //! by the city AI's value per turn of production, weighted by the profile's flavors against the
 //! building's; a missionary for a zealot whose religion misses our cities; then the process the
 //! profile prefers. World wonders, rituals, palaces and settlers are not for governed cities (the
@@ -44,7 +44,6 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
     let (defenders, defense) = prod::garrison(g, p, plot);
     let threat = prod::local_threat(g, p, plot, 3);
     let held = prod::garrison_holds(g, p, plot, threat, defense);
-    let safe = threat * 2 <= defense;
 
     // 1. The garrison the city's danger asks for.
     let mut needed = 1 + i32::from(threat > 0 && !held) + crate::defense::rival_defenders(g, c) + profile.map_or(0, |pr| pr.defenders);
@@ -69,22 +68,6 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
         }
     }
 
-    // 2. Workers, while the land needs improving.
-    let workers = prod::count_ai(g, p, UnitAIType::UNITAI_WORKER);
-    if safe && prod::has_worker_builds(g, p) && city.population >= 2 && (workers == 0 || workers < prod::worker_target(g, p)) {
-        if let Some(u) = prod::best_unit(g, c, Role::Worker) {
-            return Some((Choice::Train(u, UnitAIType::UNITAI_WORKER), "governor_worker", None));
-        }
-    }
-    // Work boats for sea resources nobody improves yet.
-    if safe && prod::sea_resources_unimproved(g, c) > 0 {
-        let need: i32 = g.players[p].cities.iter().map(|&o| prod::sea_resources_unimproved(g, o)).sum();
-        if prod::count_ai(g, p, UnitAIType::UNITAI_WORKER_SEA) < need.min(g.players[p].cities.len() as i32) {
-            if let Some(u) = prod::best_unit(g, c, Role::SeaWorker) {
-                return Some((Choice::Train(u, UnitAIType::UNITAI_WORKER_SEA), "governor_work_boat", None));
-            }
-        }
-    }
 
     // 3. The best building for the profile.
     let flavors: Vec<FlavorType> = (0..d.reg.count::<FlavorType>()).map(FlavorType::from_usize).collect();

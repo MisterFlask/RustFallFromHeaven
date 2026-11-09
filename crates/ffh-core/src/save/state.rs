@@ -389,7 +389,7 @@ persist_struct!(City {
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
     ai_emphasize_avoid_unhealthy_citizens_count, culture_channel, culture_diverted, culture_pressure,
     culture_revolt_level, recruit_default, direct_rule, rule_changed_turn, governor,
-    governor_penalty_turns, building_tiers, free_bonus_choices, muster_production, ritual_charges,
+    governor_penalty_turns, building_tiers, free_bonus_choices, muster_production, ritual_charges, crew_build,
 });
 
 persist_struct!(Player {

@@ -37,6 +37,14 @@ pub trait Controller: Send + Sync {
         g.requisition_unit_default(c, a)
     }
 
+    /// This game's city works (docs/WORKS.md): the build city `c`'s crews work on next and its
+    /// plot, `None` for nothing now. Called in the city's turn when its crews have no build they
+    /// can go on with; an answer [`Game::city_crews_can_build`] refuses counts as `None`. Default:
+    /// [`Game::city_choose_crew_build_default`].
+    fn choose_crew_build(&self, g: &Game, c: CityId) -> Option<(PlotIdx, BuildType)> {
+        g.city_choose_crew_build_default(c)
+    }
+
     /// This game's governors (docs/GOVERNORS.md): what the governors of player `p`'s governed
     /// cities do on their own besides production (a human's: their cultural actions), in its
     /// turn processing.

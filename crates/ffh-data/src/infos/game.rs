@@ -267,7 +267,6 @@ pub struct EraInfo {
     pub base: InfoBase,
     pub starting_unit_multiplier: i32,
     pub starting_defense_units: i32,
-    pub starting_worker_units: i32,
     pub starting_explore_units: i32,
     pub advanced_start_points: i32,
     pub starting_gold: i32,
@@ -303,7 +302,6 @@ pub fn read_era(rd: &Rd) -> EraInfo {
         no_barb_cities: rd.bool("no_barb_cities"),
         starting_unit_multiplier: rd.int("starting_unit_multiplier"),
         starting_defense_units: rd.int("starting_defense_units"),
-        starting_worker_units: rd.int("starting_worker_units"),
         starting_explore_units: rd.int("starting_explore_units"),
         advanced_start_points: rd.int("advanced_start_points"),
         starting_gold: rd.int("starting_gold"),
@@ -370,14 +368,11 @@ pub struct HandicapInfo {
     /// C++ `getAIBarbarianCombatModifier()` (XML `iAIBarbarianBonus`)
     pub ai_barbarian_combat_modifier: i32,
     pub starting_defense_units: i32,
-    pub starting_worker_units: i32,
     pub starting_explore_units: i32,
     /// C++ `getAIStartingUnitMultiplier()`
     pub ai_starting_unit_multiplier: i32,
     /// C++ `getAIStartingDefenseUnits()`
     pub ai_starting_defense_units: i32,
-    /// C++ `getAIStartingWorkerUnits()`
-    pub ai_starting_worker_units: i32,
     /// C++ `getAIStartingExploreUnits()`
     pub ai_starting_explore_units: i32,
     /// C++ `getBarbarianInitialDefenders()` (XML `iBarbarianDefenders`)
@@ -473,11 +468,9 @@ pub fn read_handicap(rd: &Rd) -> HandicapInfo {
         ai_animal_combat_modifier: rd.int("ai_animal_bonus"),
         ai_barbarian_combat_modifier: rd.int("ai_barbarian_bonus"),
         starting_defense_units: rd.int("starting_defense_units"),
-        starting_worker_units: rd.int("starting_worker_units"),
         starting_explore_units: rd.int("starting_explore_units"),
         ai_starting_unit_multiplier: rd.int("ai_starting_unit_multiplier"),
         ai_starting_defense_units: rd.int("ai_starting_defense_units"),
-        ai_starting_worker_units: rd.int("ai_starting_worker_units"),
         ai_starting_explore_units: rd.int("ai_starting_explore_units"),
         barbarian_initial_defenders: rd.int("barbarian_defenders"),
         ai_declare_war_prob: rd.int("ai_declare_war_prob"),

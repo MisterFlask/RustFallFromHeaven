@@ -1,6 +1,6 @@
 // Maponos's Cradle (docs/DECKS.md section 3.2): a national building, +2 food; every 20 turns
-// the city makes a free Settler without losing population, or a Worker when no site is free
-// within 10 plots (BuildingInfo::free_unit_turns).
+// the city makes a free Settler without losing population, while a site is free within 10 plots
+// (BuildingInfo::free_unit_turns).
 {
   "techs": [
     {
@@ -40,13 +40,13 @@
       "asset": 4,
       "yield_changes": [2, 0, 0],
       "free_unit_turns": 20,
-      "free_unit_classes": ["UNITCLASS_SETTLER", "UNITCLASS_WORKER"],
+      "free_unit_classes": ["UNITCLASS_SETTLER"],
       "flavors": {"FLAVOR_GROWTH": 8}
     }
   ],
   "text": {
     "TXT_KEY_TECH_CARD_MAPONOS_CRADLE": "Maponos's Cradle",
-    "TXT_KEY_TECH_CARD_MAPONOS_CRADLE_HELP": "[ICON_BULLET]Allows Maponos's Cradle (national): +2[ICON_FOOD].[NEWLINE][ICON_BULLET]Every 20 turns its city makes a free Settler, without losing population; with no free city site within 10 plots, a Worker instead.",
+    "TXT_KEY_TECH_CARD_MAPONOS_CRADLE_HELP": "[ICON_BULLET]Allows Maponos's Cradle (national): +2[ICON_FOOD].[NEWLINE][ICON_BULLET]Every 20 turns its city makes a free Settler, without losing population, while a free city site lies within 10 plots.",
     "TXT_KEY_TECH_CARD_MAPONOS_CRADLE_PEDIA": "A great prophet of Amathaon dedicates a cradle to Maponos the Young, and the city's children are many.",
     "TXT_KEY_BUILDING_MAPONOS_CRADLE": "Maponos's Cradle",
     "TXT_KEY_BUILDING_MAPONOS_CRADLE_PEDIA": "A shrine to Maponos the Young, where the families of settlers are blessed."

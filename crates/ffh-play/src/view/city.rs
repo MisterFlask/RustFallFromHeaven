@@ -518,6 +518,14 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
             "rate" => g.city_current_production_difference(c, false, true),
             "automated" => city.production_automated,
         },
+        // This game's city works (docs/WORKS.md): the crews' work rate and their build.
+        "crews" => crate::jobj! {
+            "rate" => g.city_crew_rate(c),
+            "build" => match city.crew_build {
+                Some((q, b)) => crate::jobj! { "build" => Json::idx(b), "x" => g.map.xy(q).0, "y" => g.map.xy(q).1, "turns" => g.city_crew_turns_left(c, q, b).map_or(Json::Null, Json::from) },
+                None => Json::Null,
+            },
+        },
         "citizens_automated" => city.citizens_automated,
         "emphasize" => emphasize,
         "extra_population" => g.city_extra_population(c),

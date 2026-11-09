@@ -111,7 +111,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 25: research paths grant no resource (the plot groups of an older save may hold one), and
 ///   the Shadow path is gone (a saved player may hold it).
 /// - 26: a research path is for the rest of the game: no `Player::research_paths_done`.
-pub const FORMAT_VERSION: u32 = 26;
+/// - 27: city works (docs/WORKS.md): `City::crew_build`; the Worker, Mud Golem, Work Boat and Pioneer
+///   unit types are gone.
+pub const FORMAT_VERSION: u32 = 27;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

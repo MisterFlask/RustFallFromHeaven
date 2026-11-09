@@ -832,6 +832,12 @@ impl Game {
         self.telemetry.with(|t| t.count(p, "build", name, 0));
     }
 
+    /// A build a city's crews finished (docs/WORKS.md), counted with the units' builds.
+    pub(crate) fn tel_crew_build(&self, p: PlayerId, build: BuildType) {
+        let name = self.d.builds[build].base.type_.as_str();
+        self.telemetry.with(|t| t.count(p, "build", name, 0));
+    }
+
     pub(crate) fn tel_built_unit(&self, u: UnitId) {
         let p = self.units[u].owner;
         let name = self.tel_name_unit(self.units[u].unit_type);

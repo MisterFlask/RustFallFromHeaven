@@ -210,8 +210,7 @@ impl Game {
         }
         let (x, y) = self.map.xy(plot);
         let archer = d.t::<UnitType>("UNIT_ARCHER");
-        let worker = d.t::<UnitType>("UNIT_WORKER");
-        for unit in [archer, archer, archer, archer, worker] {
+        for unit in [archer, archer, archer, archer] {
             self.player_init_unit(new_player, unit, x, y, None, Some(DirectionType::DIRECTION_SOUTH));
         }
         if let Some(alignment) = alignment {

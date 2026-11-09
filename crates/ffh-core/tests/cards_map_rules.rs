@@ -184,9 +184,8 @@ fn siege_lines_are_built_next_to_an_enemy_city_and_heal_as_a_city() {
     w.war();
     assert!(w.g.plot_can_build(b, build, p0, false), "at war: next to their city, in their land");
     assert!(!w.g.plot_can_build(a, build, p0, false), "not two plots away");
-    let worker = w.unit(p0, "UNIT_WORKER", b);
-    assert!(w.g.unit_can_build(worker, b, build, false), "a worker can build it");
     let soldier = w.unit(p0, "UNIT_WARRIOR", b);
+    assert!(w.g.unit_can_build(soldier, b, build, false), "an army unit can build it (docs/WORKS.md)");
     let before = w.g.unit_heal_rate(soldier, b);
     w.improve(b, "IMPROVEMENT_SIEGE_LINES");
     let heal = w.g.unit_heal_rate(soldier, b);
@@ -283,11 +282,11 @@ fn a_causeway_carries_land_units_and_stops_ships() {
     let next = w.water_below(water);
     let warrior = w.unit(p0, "UNIT_WARRIOR", w.row[1]);
     assert!(!w.g.unit_can_move_into(warrior, water, false, false, false), "a land unit cannot walk on water");
-    let boat = w.unit(p0, "UNIT_WORKBOAT", water);
     w.card(p0, "TECH_CARD_CAUSEWAY");
     let build = w.g.d.t::<BuildType>("BUILD_CAUSEWAY");
-    assert!(w.g.unit_can_build(boat, water, build, false), "a Work Boat builds it");
-    w.g.unit_kill(boat, false, None);
+    // The Fishing Boats' builders (docs/WORKS.md): a city's crews, on its owner's water.
+    assert!(w.g.d.builds[build].city && !w.g.d.builds[build].field);
+    assert!(w.g.plot_can_build(water, build, p0, false));
     let ship = w.unit(p0, "UNIT_TRIREME", next);
     assert!(w.g.unit_can_move_into(ship, water, false, false, false), "ships sail there before");
     w.improve(water, "IMPROVEMENT_CAUSEWAY");
@@ -337,8 +336,8 @@ fn mountaineering_opens_peaks_at_three_moves_with_defence_and_sight() {
     assert!(w.g.unit_can_move_into(u, peak, false, false, false), "the holder's land units climb");
     let moves = w.g.unit_base_moves(u).min(3) * w.g.d.defines.move_denominator;
     assert_eq!(w.g.plot_movement_cost(peak, u, w.row[1]), moves, "3 moves (at most its moves)");
-    let worker = w.unit(p0, "UNIT_WORKER", w.row[1]);
-    assert!(w.g.unit_can_move_into(worker, peak, false, false, false), "workers too");
+    let settler = w.unit(p0, "UNIT_SETTLER", w.row[1]);
+    assert!(w.g.unit_can_move_into(settler, peak, false, false, false), "settlers too");
     let (x, y) = w.g.map.xy(peak);
     w.g.unit_set_xy(u, x, y, false);
     assert_eq!(w.g.unit_visibility_range(u), 3, "sight 3 on a peak");

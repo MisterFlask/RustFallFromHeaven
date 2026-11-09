@@ -197,14 +197,13 @@ fn the_earthmother_lifts_the_mithril_golems_counter_and_halves_its_cost() {
 }
 
 #[test]
-fn maponos_cradle_makes_a_settler_every_twenty_turns_or_a_worker() {
+fn maponos_cradle_makes_a_settler_every_twenty_turns_while_a_site_is_free() {
     let (mut g, p, c) = game();
     let d = g.d;
     card(&mut g, p, "TECH_CARD_MAPONOS_CRADLE");
     let b = build(&mut g, c, "BUILDING_MAPONOS_CRADLE");
     let built = g.cities[c].building_original_time[b];
     let settler = d.t::<UnitType>("UNIT_SETTLER");
-    let worker = d.t::<UnitType>("UNIT_WORKER");
     let count = |g: &Game, t: UnitType| g.players[p].units.iter().filter(|&&u| g.units[u].unit_type == t).count();
     let pop = g.cities[c].population;
     // Not before the twentieth turn.
@@ -216,7 +215,7 @@ fn maponos_cradle_makes_a_settler_every_twenty_turns_or_a_worker() {
     g.city_do_free_units(c);
     assert_eq!(count(&g, settler), 1);
     assert_eq!(g.cities[c].population, pop, "without losing population");
-    // With no site free, a Worker (every plot within 10 marked as no-city land).
+    // With no site free, nothing (every plot within 10 marked as no-city land).
     let (x, y) = (g.cities[c].x, g.cities[c].y);
     for dx in -10..=10 {
         for dy in -10..=10 {
@@ -226,8 +225,9 @@ fn maponos_cradle_makes_a_settler_every_twenty_turns_or_a_worker() {
         }
     }
     g.set_game_turn(built + 40);
+    let units = g.players[p].units.len();
     g.city_do_free_units(c);
-    assert_eq!((count(&g, settler), count(&g, worker)), (1, 1));
+    assert_eq!((count(&g, settler), g.players[p].units.len()), (1, units));
 }
 
 #[test]
@@ -303,9 +303,8 @@ fn a_trading_post_claims_its_plots_until_it_is_pillaged() {
     let d = g.d;
     card(&mut g, p, "TECH_CARD_TRADING_POST");
     let post_build = d.t::<BuildType>("BUILD_TRADING_POST");
-    let worker_type = d.t::<UnitType>("UNIT_WORKER");
-    assert!(d.units[worker_type].builds[post_build], "workers build it (same_builders_as)");
-    assert!(d.units[d.t::<UnitType>("UNIT_PIONEER")].builds[post_build]);
+    // The Fort's builders (`same_builders_as`, docs/WORKS.md): army units, not the cities' crews.
+    assert!(d.builds[post_build].field && !d.builds[post_build].city);
     let (cx, cy) = (g.cities[c].x, g.cities[c].y);
     // Not in the city's borders, not within 2 plots of a city.
     let near = g.map.plot_xy(cx + 2, cy).unwrap();
@@ -324,7 +323,8 @@ fn a_trading_post_claims_its_plots_until_it_is_pillaged() {
         })
         .expect("a site for the post");
     let (sx, sy) = g.map.xy(site);
-    let w = unit(&mut g, p, "UNIT_WORKER", sx, sy);
+    let w = unit(&mut g, p, "UNIT_WARRIOR", sx, sy);
+    assert!(g.unit_can_build(w, site, post_build, false), "an army unit builds it");
     let mut done = false;
     for _ in 0..100 {
         g.units[w].moves = 0; // (moves spent)
@@ -333,7 +333,7 @@ fn a_trading_post_claims_its_plots_until_it_is_pillaged() {
             break;
         }
     }
-    assert!(done, "the worker finishes the post");
+    assert!(done, "the soldier finishes the post");
     let post = d.t::<ImprovementType>("IMPROVEMENT_TRADING_POST");
     assert_eq!(g.map.plots[site].improvement_type, Some(post));
     for dx in -1..=1 {
@@ -451,15 +451,11 @@ fn the_academy_and_the_admiralty_start_units_at_level_three() {
 }
 
 #[test]
-fn pioneers_build_three_times_as_fast() {
-    let d = ffh_data::global();
-    let pioneer = d.t::<UnitType>("UNIT_PIONEER");
-    let worker = d.t::<UnitType>("UNIT_WORKER");
-    assert_eq!(d.units[pioneer].work_rate, 3 * d.units[worker].work_rate);
-    let class = d.units[pioneer].unit_class_type.unwrap();
-    assert_eq!(d.unit_classes[class].max_player_instances, 4);
-    assert!(!d.unit_classes[class].hard_limit, "national: 4, then 500%");
-    for b in d.builds.keys() {
-        assert_eq!(d.units[pioneer].builds[b], d.units[worker].builds[b], "{}", d.builds[b].base.type_);
-    }
+fn pioneers_double_the_work_rate_of_the_cities_crews() {
+    let (mut g, p, c) = game();
+    let before = g.city_crew_rate(c);
+    assert!(before > 0);
+    card(&mut g, p, "TECH_CARD_PIONEERS");
+    assert_eq!(g.city_crew_rate(c), 2 * before);
+    assert!(g.d.ty::<UnitType>("UNIT_PIONEER").is_none(), "no national worker");
 }

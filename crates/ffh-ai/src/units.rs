@@ -56,8 +56,8 @@ pub(crate) fn alive(g: &Game, grp: GroupId) -> bool {
 enum Role {
     Garrison,
     Settler,
-    Worker,
-    SeaWorker,
+    /// A unit that helps a city's work crews (docs/WORKS.md: the Slave).
+    Laborer,
     Army,
     Explore,
     GreatPerson,
@@ -74,9 +74,7 @@ fn role_of(g: &Game, u: UnitId) -> Role {
     let unit = &g.units[u];
     let info = &g.d.units[unit.unit_type];
     if g.unit_get_domain_type(u) == DomainType::DOMAIN_SEA {
-        return if matches!(unit.ai_type, Some(UnitAIType::UNITAI_WORKER_SEA)) || info.unit_ai_type[UnitAIType::UNITAI_WORKER_SEA] && info.combat == 0 {
-            Role::SeaWorker
-        } else if unit.ai_type == Some(UnitAIType::UNITAI_EXPLORE_SEA) {
+        return if unit.ai_type == Some(UnitAIType::UNITAI_EXPLORE_SEA) {
             Role::SeaExplore
         } else if crate::naval::is_transport_type(info) {
             Role::Transport
@@ -93,7 +91,7 @@ fn role_of(g: &Game, u: UnitId) -> Role {
     }
     match ai {
         UnitAIType::UNITAI_SETTLE => Role::Settler,
-        UnitAIType::UNITAI_WORKER => Role::Worker,
+        UnitAIType::UNITAI_WORKER => Role::Laborer,
         UnitAIType::UNITAI_CITY_DEFENSE | UnitAIType::UNITAI_CITY_COUNTER | UnitAIType::UNITAI_CITY_SPECIAL => Role::Garrison,
         UnitAIType::UNITAI_EXPLORE => Role::Explore,
         UnitAIType::UNITAI_MISSIONARY => Role::Missionary,
@@ -105,8 +103,8 @@ fn role_of(g: &Game, u: UnitId) -> Role {
                 Role::Settler
             } else if info.combat > 0 || info.combat_defense > 0 {
                 Role::Army
-            } else if info.builds.iter().any(|&b| b) {
-                Role::Worker
+            } else if info.crew_work > 0 {
+                Role::Laborer
             } else {
                 Role::Other
             }
@@ -114,16 +112,14 @@ fn role_of(g: &Game, u: UnitId) -> Role {
     }
 }
 
-/// A unit cast into a fighter keeps the AI type it had (`CvUnit::convert`): a Doviello Worker
-/// made a Beastman (`SPELL_UPGRADE_DOVIELLO_WARRIOR`, cast at war while they have as many workers
-/// as cities) stayed `UNITAI_WORKER`, could build nothing, and was counted as a worker by
-/// production, which then trained none (docs/AI.md, "Unique units"). A fighter that cannot build
-/// takes its own type's default AI.
+/// A unit cast into a fighter keeps the AI type it had (`CvUnit::convert`): a Doviello Slave
+/// made a Beastman (`SPELL_UPGRADE_DOVIELLO_WARRIOR_SLAVE`, cast at war) stays `UNITAI_WORKER`
+/// (docs/AI.md, "Unique units"). A fighter takes its own type's default AI.
 pub(crate) fn fighters_off_worker_ai(g: &mut Game, p: PlayerId) {
     for u in g.players[p].units.clone() {
         let unit = &g.units[u];
         let info = &g.d.units[unit.unit_type];
-        if unit.ai_type == Some(UnitAIType::UNITAI_WORKER) && info.combat > 0 && !info.builds.iter().any(|&b| b) {
+        if unit.ai_type == Some(UnitAIType::UNITAI_WORKER) && info.combat > 0 {
             g.unit_ai_set_unit_ai_type(u, info.default_unit_ai_type.unwrap_or(UnitAIType::UNITAI_ATTACK));
         }
     }
@@ -188,13 +184,6 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             && match role {
                 // Settlers re-plan every turn (danger and sites change).
                 Role::Settler => g.groups[grp].mission_queue[0].mission_type == MissionType::MISSION_MOVE_TO,
-                // Workers drop their job when enemies come near.
-                // (A worker sent to build Siege Lines under a besieging stack keeps its job: the
-                // stack escorts it; docs/CARDS.md.)
-                Role::Worker => {
-                    g.group_get_head_unit(grp).is_some_and(|h| crate::workers::worker_in_danger(g, v, g.unit_plot(h)))
-                        && !crate::cards_map_rules::escorted_siege_work(g, grp)
-                }
                 _ => false,
             };
         // A settler never sleeps through a turn (a site may have opened up); cargo excepted.
@@ -244,8 +233,7 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
         }
         match role {
             Role::Settler => crate::expansion::settler(ai, g, v, grp, head),
-            Role::Worker => crate::workers::worker(g, v, grp, head, false),
-            Role::SeaWorker => crate::workers::worker(g, v, grp, head, true),
+            Role::Laborer => laborer(g, v, grp, head),
             Role::Garrison => garrison_unit(g, v, grp, head),
             Role::Army => crate::military::army(g, v, grp, head),
             Role::Explore => explore(g, v, grp, head),
@@ -404,8 +392,22 @@ fn best_promotion(g: &Game, u: UnitId) -> Option<PromotionType> {
 }
 
 // ----------------------------------------------------------------------------
-// Workers
+// Laborers
 // ----------------------------------------------------------------------------
+
+/// A Slave goes to our nearest city and stays: there it adds to the work rate of the city's crews
+/// (docs/WORKS.md), and its casts (sold, freed in the arena, made a Beastman) are the casting's.
+fn laborer(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
+    let here = g.unit_plot(u);
+    if g.map.plots[here].plot_city.map_or(true, |c| g.cities[c].owner != v.p) {
+        if let Some(c) = nearest_city(g, v.p, here) {
+            move_to(g, grp, g.city_plot(c), MOVE_SAFE_TERRITORY);
+        }
+    }
+    if alive(g, grp) && g.group_ready_to_move(grp, true) {
+        hold(g, grp);
+    }
+}
 
 // ----------------------------------------------------------------------------
 // Military
@@ -1049,20 +1051,20 @@ mod tests {
         assert_eq!(role_of(&g, donal), Role::Army, "Donal fights");
     }
 
-    /// `CvUnit::convert` keeps the old unit's AI type: a Doviello Worker cast into a Beastman is
+    /// `CvUnit::convert` keeps the old unit's AI type: a Doviello Slave cast into a Beastman is
     /// created as `player_init_unit` does it here, on the worker AI.
     #[test]
-    fn a_worker_cast_into_a_fighter_fights() {
+    fn a_slave_cast_into_a_fighter_fights() {
         let d = ffh_data::global();
         let mut g = one_landmass_game(16);
         let us = PlayerId(0);
         let worker_ai = UnitAIType::UNITAI_WORKER;
         let beastman = g.player_init_unit(us, d.t::<UnitType>("UNIT_BEASTMAN"), 4, 5, Some(worker_ai), None);
-        let worker = g.player_init_unit(us, d.t::<UnitType>("UNIT_WORKER"), 4, 5, Some(worker_ai), None);
+        let worker = g.player_init_unit(us, d.t::<UnitType>("UNIT_SLAVE"), 4, 5, Some(worker_ai), None);
         assert_eq!(g.players[us].ai_num_ai_units[worker_ai], 2);
         fighters_off_worker_ai(&mut g, us);
         assert_eq!(g.units[beastman].ai_type, d.units[g.units[beastman].unit_type].default_unit_ai_type);
         assert_eq!(g.units[worker].ai_type, Some(worker_ai));
-        assert_eq!(g.players[us].ai_num_ai_units[worker_ai], 1, "production counts the one real worker");
+        assert_eq!(g.players[us].ai_num_ai_units[worker_ai], 1, "the slave keeps it");
     }
 }

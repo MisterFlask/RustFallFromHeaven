@@ -266,6 +266,20 @@ flag.
   ability of its class (`SPELL_FIREBALL_BARGE`, the missile); the Wonder spell still summons the
   missile it summoned (`UNIT_FIREBALL`). New spell key `battle_only`; one new spell, so saves made
   before do not load.
+- **City works: no worker units** (docs/WORKS.md; the owner's direction, 2026-11-09; save format
+  27). No unit improves the land. Each city's work crews add half a Worker's work rate (50, with the
+  owner's work rate modifiers) each turn to one build on its land, chosen as the AI's workers chose
+  (`Controller::choose_crew_build`); they lay the roads between their owner's cities, through
+  unowned land too, and launch the fishing boats (400 work; FFH2: a Work Boat, used up). Army units
+  build roads, forts and the cards' field works where they stand (`FIELD_WORK_RATE` 50 a turn);
+  mages build mana nodes as before. Gone: the Worker, the Mud Golem (the Luchuirp's crews work 50%
+  faster), the Work Boat, the Pioneer (the card is +100% work rate), every grant of a worker (goody
+  huts, free starting workers, the Mercurians', the Infernals', `formEmpire`'s), the Doviello's
+  Worker -> Beastman cast, the workers' automations. A captured Settler is destroyed. The Lanun's
+  Pirate Cove is a build of their crews (FFH2: a Work Boat's spell, `reqPirateCove`). A Slave
+  builds nothing and adds 25 to the work rate of the city it stands in. Measured (8 games of 6 civs,
+  seeds 1-8, against the commit before): docs/WORKS.md, "Measures".
+
 - **The decks** (docs/CARDS.md; the owner's design, docs/DECKS.md, 2026-11-07; save format 19, 20 since the
   Gathering's vassals are ordinary ones):
   - **Great-person cards.** A Sage (Great Scientist), Prophet, Engineer, Merchant or Bard (Great

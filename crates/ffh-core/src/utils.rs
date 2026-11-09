@@ -1767,7 +1767,7 @@ mod tests {
         assert!(!valid("PROMOTION_BARRAGE1", "UNIT_WARRIOR")); // not for melee
 
         // no unit combat: only free promotions
-        assert!(!valid("PROMOTION_COMBAT1", "UNIT_WORKER"));
+        assert!(!valid("PROMOTION_COMBAT1", "UNIT_SETTLER"));
         assert!(!valid("PROMOTION_COMBAT1", "UNIT_AIR_ELEMENTAL"));
         assert!(valid("PROMOTION_FLYING", "UNIT_AIR_ELEMENTAL"));
         // only defensive (an animal): no city attack, no blitz
@@ -1796,8 +1796,9 @@ mod tests {
         // +263 in all: this game's UNIT_SKIRMISHER, with the Archer's promotions, below;
         // +1 pair: Formation, free on the Phalanx's class (docs/UNIT_ROLES.md), on the Nullstone
         // Golem, which has no unit combat; -37 pairs and -654 in all: Extension I and II gone,
-        // docs/ENGAGEMENTS.md, "Summons".)
-        assert_eq!((n, own_promotions * own_units), (26592, 85347));
+        // docs/ENGAGEMENTS.md, "Summons"; -1 pair and -783 in all: the Worker, the Mud Golem (its
+        // free Golem promotion) and the Work Boat gone, docs/WORKS.md.)
+        assert_eq!((n, own_promotions * own_units), (26591, 84564));
         let archer = d.t::<UnitType>("UNIT_ARCHER");
         let skirmisher = d.t::<UnitType>("UNIT_SKIRMISHER");
         let takes = |u: UnitType| d.promotions.keys().filter(|&p| p.idx() < own_promotions && is_promotion_valid(d, p, u, false)).collect::<Vec<_>>();
@@ -1993,7 +1994,7 @@ mod tests {
         let (p0, p1) = (PlayerId(0), PlayerId(1));
         let (t0, t1) = (g.players[p0].team, g.players[p1].team);
         let warrior = add_unit(&mut g, p0, "UNIT_WARRIOR", 1, 1);
-        let worker = add_unit(&mut g, p0, "UNIT_WORKER", 1, 1);
+        let worker = add_unit(&mut g, p0, "UNIT_SETTLER", 1, 1);
         let other = add_unit(&mut g, p1, "UNIT_WARRIOR", 1, 1);
 
         // other team, enemy (at war, or for an always-hostile viewer), visibility

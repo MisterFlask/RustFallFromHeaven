@@ -18,7 +18,7 @@
 // → Options and `?renderer=flat`; `?renderer=iso`, the isometric renderer (its sprites,
 // picking a unit by its figure, zoom, layers); `?renderer=hd2d`, the HD-2D map, the default (its
 // frame, the cards, picking, selection, zoom, pan, layers, a lost context's fallback). Phase 7: the automate buttons (`stage automate`: a
-// worker automated with a click, a scout exploring by its hotkey), this game's armies (`stage
+// scout exploring with a click), this game's armies (`stage
 // armies`: a marching recruit that takes no orders, a city added to an army's requisition on the
 // Armies screen, a requisition order in a city's queue), the secretary general's election
 // popup (`stage election`) and the Kuriotates city-or-settlement decision (`stage settlement`);
@@ -1433,27 +1433,24 @@ async function selectUnit(u) {
 
 const automated = (u) => `(() => { const S = window.ffh.S; const u = S.units.get(${u}); const g = u && S.groups.get(u.group); return !!g && g.automated !== null && g.automated !== undefined; })()`;
 
-/** P7, `stage automate`: the worker's Automation section; a click automates it and the AI gives
- *  it orders at once (it waits for none); the scout explores by its button (E zooms the map); the
- *  unit panel marks automated units. */
+/** P7, `stage automate`: the scout's Automation section; a click on Explore automates it and the
+ *  AI gives it orders at once (it waits for none); the unit panel marks automated units. (No unit
+ *  improves the land: the cities' crews do, docs/WORKS.md.) */
 async function stagedAutomate(bin, saves) {
   const st = await loadStaged(bin, saves, "automate");
-  await selectUnit(st.worker);
-  const build = '#unit-panel button.action[data-kind="automate"][data-type="AUTOMATE_BUILD"]';
-  await until2(`!!document.querySelector(${q(build)})`, "the automate buttons");
-  await shot("automate-actions");
-  await click(build);
-  await until2(automated(st.worker), "the worker automated");
-  await until2(`(() => { const S = window.ffh.S; const u = S.units.get(${st.worker}); const g = u && S.groups.get(u.group); return !!g && (g.missions.length > 0 || !g.ready); })()`, "the automated worker's orders");
   await selectUnit(st.scout);
   const explore = '#unit-panel button.action[data-kind="automate"][data-type="AUTOMATE_EXPLORE"]';
   await until2(`!!document.querySelector(${q(explore)})`, "the scout's explore button");
+  const build = '#unit-panel button.action[data-kind="automate"][data-type="AUTOMATE_BUILD"]';
+  if (await b.eval(`!!document.querySelector(${q(build)})`)) throw new Error("a unit is offered the workers' automation");
+  await shot("automate-actions");
   await click(explore);
   await until2(automated(st.scout), "the scout exploring");
-  await selectUnit(st.worker);
+  await until2(`(() => { const S = window.ffh.S; const u = S.units.get(${st.scout}); const g = u && S.groups.get(u.group); return !!g && (g.missions.length > 0 || !g.ready); })()`, "the automated scout's orders");
+  await selectUnit(st.scout);
   await until2(`!!document.querySelector("#unit-panel .badge.auto")`, "the automated badge");
   await shot("automated");
-  steps.push("automate buttons (stage automate): a worker and a scout (explore) automated with a click");
+  steps.push("automate buttons (stage automate): a scout (explore) automated with a click");
 }
 
 /** This game's armies, `stage armies` (docs/ARMIES.md): a marching recruit shows its march, no

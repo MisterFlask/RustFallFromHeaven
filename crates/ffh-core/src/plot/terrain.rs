@@ -1173,7 +1173,8 @@ impl Game {
         }
     }
 
-    /// C++ `CvPlot::isPirateCoveValid` (BETTER AI; AI-only callers).
+    /// C++ `CvPlot::isPirateCoveValid` (BETTER AI; there AI-only, here the rule of
+    /// `BUILD_PIRATE_COVE`, [`Game::plot_can_build`]).
     pub fn plot_is_pirate_cove_valid(&self, p: PlotIdx, player: PlayerId) -> bool {
         if !self.plot_is_water(p) {
             return false;
@@ -1334,6 +1335,12 @@ impl Game {
                 if card.land_bridge && !self.plot_is_adjacent_to_land(p) {
                     return false;
                 }
+            }
+
+            // Not in C++ (docs/WORKS.md; FFH2's `reqPirateCove`): a Pirate Cove goes on an empty
+            // coast plot of the builder with no cove within 2 plots.
+            if !test_visible && opt_from_i32::<ImprovementType>(d.defines.pirate_cove_improvement) == Some(improvement) && !self.plot_is_pirate_cove_valid(p, player) {
+                return false;
             }
 
             // Card: the Trading Post (docs/CARDS.md): outside every border, away from the cities.

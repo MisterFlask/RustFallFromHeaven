@@ -82,7 +82,7 @@ pub const PLANAR_GATE_SUMMONS: [(&str, &str, &str); 7] = [
 ];
 
 /// onBuildingBuilt, Mercurian Gate: the units the Mercurians start with.
-pub const MERCURIAN_GATE_UNITS: [&str; 10] = [
+pub const MERCURIAN_GATE_UNITS: [&str; 8] = [
     "UNIT_BASIUM",
     "UNIT_SETTLER",
     "UNIT_ANGEL",
@@ -91,8 +91,6 @@ pub const MERCURIAN_GATE_UNITS: [&str; 10] = [
     "UNIT_ANGEL",
     "UNIT_ANGEL",
     "UNIT_ANGEL",
-    "UNIT_WORKER",
-    "UNIT_WORKER",
 ];
 
 /// onCityBuilt / onCityAcquired: the buildings every Infernal city gets.
@@ -1597,13 +1595,12 @@ impl Game {
         let (x, y) = self.map.xy(best_plot);
         let north = Some(DirectionType::DIRECTION_NORTH);
         let promotion = |name: &str| d.t::<PromotionType>(name);
-        let units: [(&str, &[&str]); 12] = [
+        let units: [(&str, &[&str]); 11] = [
             ("UNIT_HYBOREM", &["PROMOTION_IMMORTAL"]),
             ("UNIT_LONGBOWMAN", &["PROMOTION_MOBILITY1"]),
             ("UNIT_LONGBOWMAN", &["PROMOTION_MOBILITY1"]),
             ("UNIT_CHAMPION", &["PROMOTION_IRON_WEAPONS", "PROMOTION_MOBILITY1"]),
             ("UNIT_CHAMPION", &["PROMOTION_IRON_WEAPONS", "PROMOTION_MOBILITY1"]),
-            ("UNIT_WORKER", &["PROMOTION_DEMON"]),
             ("UNIT_IMP", &["PROMOTION_MOBILITY1"]),
             ("UNIT_MANES", &[]),
             ("UNIT_MANES", &[]),
@@ -1683,17 +1680,12 @@ impl Game {
         let scout = d.t::<UnitClassType>("UNITCLASS_SCOUT");
         let tiger = d.t::<UnitType>("UNIT_TIGER");
         let warrior = d.t::<UnitClassType>("UNITCLASS_WARRIOR");
-        let wolf = d.t::<UnitType>("UNIT_WOLF");
-        let worker = d.t::<UnitClassType>("UNITCLASS_WORKER");
         for unit in self.ev_unit_list(barbarian) {
             if !self.units.contains(unit) {
                 continue;
             }
             let unit_class = self.unit_get_unit_class_type(unit);
             let mut new_unit = None;
-            if unit_class == worker {
-                new_unit = Some(wolf);
-            }
             if unit_class == scout {
                 new_unit = Some(lion);
             }

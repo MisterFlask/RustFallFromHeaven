@@ -57,7 +57,7 @@ rule drops it.
 **What a governor builds** (ffh-ai `governor.rs`, for the human's cities and the AI's alike):
 1. the garrison the city's danger asks for (the city AI's quota, the profile's `iDefenders`);
    Against a Foment Revolt or Flip City aimed at the city, defenders up to three.
-2. workers while the land needs improving, work boats for unimproved sea resources;
+2. (workers and work boats, until 2026-11-09: the city's crews improve its land, docs/WORKS.md);
 3. the best building by the city AI's value per turn of production, weighted by the profile:
    up to +50% for a building whose flavors are all ones the profile weighs 5;
 4. a missionary, for a profile that weighs religion, while its religion misses our cities;
@@ -121,8 +121,8 @@ revolt pressure aimed at its city.
 
 ## Open points for the owner
 
-- **Workers trained by a human's governed cities** are the human's to move (or automate), like any
-  other worker; the spec does not say whether governors should automate them.
+- (Settled, 2026-11-09: there are no workers. Every city's crews improve its land by themselves,
+  governed or not: docs/WORKS.md.)
 - **Role mix.** A requisition fills by a simple role mix (a third siege); formation battles have no
   stances (revision 4) to fill by.
 - **Conquest.** With governors on, a quarter fewer cities change hands (below), mostly because

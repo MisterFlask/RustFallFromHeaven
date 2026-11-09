@@ -224,12 +224,12 @@ same code by area, with the measurements behind each choice.
 ### Units: production
 
 `production::decide` is a priority list, run when a city's queue empties (docs/AI.md, "Cities"):
-a defender when the city has none or is outmatched; the first worker; a second defender after
+a defender when the city has none or is outmatched; a second defender after
 turn 30 (capital, cities near barbarians); a victory item (culture) when the goal is 30 turns away; an
 explorer from the capital while a fifth of the home landmass is unknown; settlers
 (`expansion::settler_choice`); the civilization's own items (`civs::production`); an amphibious
-assault fleet; a transport for a settler waiting in port; a sea explorer; work boats; a
-unit-enabling building; defenders up to the garrison quota; a small mobile force; more workers;
+assault fleet; a transport for a settler waiting in port; a sea explorer; a
+unit-enabling building; defenders up to the garrison quota; a small mobile force;
 the victory goal's items (culture); **heroes**; hero ships; the siege operation's force
 (`campaign::army_choice`) and siege engines; buildings by value (below); the army interleave;
 **casters** (`(cities + 2) / 4`, one more for a leader with `iAIValueMage` > 100, only while a unit
@@ -245,7 +245,6 @@ civilization has for their class (`city_offers_unit`) and that the rules let it 
 | Defense | a *fighter* (strength > 0, does not found cities, not a hero, default AI not `UNITAI_MAGE`) whose `UnitAIs` list holds `CITY_DEFENSE`, `CITY_COUNTER`, `ATTACK` or `COUNTER`, default AI not `EXPLORE` | city defense: defense strength (or strength) + damage types, x city defense %, + first strikes |
 | Attack, CityAttack | a fighter, not `bOnlyDefensive`, with `ATTACK` or `ATTACK_CITY` in `UnitAIs`, and not a siege engine (default AI `ATTACK_CITY`/`COLLATERAL` with bombard or collateral) | strength + damage types, + moves, first strikes, withdrawal, collateral (CityAttack: x city attack %, collateral x2) |
 | Siege | a fighter with `ATTACK_CITY` or `COLLATERAL` in `UnitAIs` and bombard or collateral damage | attack power + bombard x20 + collateral x3 |
-| Worker / SeaWorker | `WORKER` (`WORKER_SEA`) in `UnitAIs`, strength 0 | 100 + work rate, per turn |
 | Settler | `SETTLE` in `UnitAIs` and `bFound` | per turn |
 | Hero / SeaHero | default AI `UNITAI_HERO` or the Hero promotion for free; strength > 0, or Channeling I for free (Corlindale) | as Attack |
 | Mage | default AI `UNITAI_MAGE`, or `WARWIZARD` in `UnitAIs` | 100 + moves x10 + tier x50 |
@@ -284,7 +283,7 @@ from the unit's AI type, set by production when it trains the unit, or its defau
 | Role | Default AI types | What it does |
 |---|---|---|
 | Settler | `SETTLE`, or `bFound` | `expansion::settler`: to the best reachable site with an escort, overseas by transport |
-| Worker | `WORKER`, or anything that can build | `workers::worker`: best (plot, build) by yield and need; flees danger; chops for settlers, workers and world wonders |
+| Laborer | `WORKER` (the Slave) | `units::laborer`: to the nearest city, where it adds to the crews' work rate (docs/WORKS.md; there are no worker units) |
 | Garrison | `CITY_DEFENSE`, `CITY_COUNTER`, `CITY_SPECIAL` | fills the city that most needs a defender, fortifies |
 | Army | any other unit with base strength or defense above 0 (the `_` branch: `ATTACK`, `ATTACK_CITY`, `COLLATERAL`, `COUNTER`, `RESERVE`, `PILLAGE`, `FEASTING`, ...); a unit whose strength is all damage types (Lightning Elemental) falls to Other | `military::army`: merge into stacks, attack what it can beat, heal, defend cities in peril, escort settlers, the siege operation (`campaign.rs`: gather, march, strike), hunt barbarians and animals |
 | Explorer | `EXPLORE` | reveal the land and goody huts one safe turn at a time, then join the army |
@@ -400,8 +399,8 @@ players, plus the AI-only conditions some `req*` functions keep (docs/AI_ONLY_RU
   allows (FfH's AI-only timing, moved out of the rules, with three expert moments: Arcane Lacuna,
   Worldbreak, Religious Fervor); the Sidar hold Into the Mist for a war (`civs/sidar.rs`).
 - **Civilization hooks** (`civs::spell_value`, `civs::turn`, `civs::unit`): Calabim Feast and Gift
-  Vampirism, Clan of Embers For the Horde and Rantine's Convert City, Doviello worker upgrades,
-  Luchuirp Golden Hammers, Bannor Recruit, Balseraphs Loki's Disrupt, Lanun Pirate Cove, Infernal
+  Vampirism, Clan of Embers For the Horde and Rantine's Convert City, Doviello slave upgrades,
+  Luchuirp Golden Hammers, Bannor Recruit, Balseraphs Loki's Disrupt, Infernal
   Manes (Add to City), Sidar Into the Mist.
 - **Casters**: promoted toward the spheres whose spells they can cast (`magic::promotion_value`,
   `magic::spell_worth`); moved by `magic::caster_target`. The AI trains casters only through the

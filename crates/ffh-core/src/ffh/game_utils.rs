@@ -190,7 +190,7 @@ impl Game {
             return true;
         }
         if let (Some(cv), Some(cr)) = (d.ty::<CivicOptionType>("CIVICOPTION_CULTURAL_VALUES"), d.ty::<CivicType>("CIVIC_CRUSADE")) {
-            if self.players[owner].civics[cv] == Some(cr) && (is("UNIT_WORKER") || is("UNIT_SETTLER") || is("UNIT_WORKBOAT")) {
+            if self.players[owner].civics[cv] == Some(cr) && is("UNIT_SETTLER") {
                 return true;
             }
         }

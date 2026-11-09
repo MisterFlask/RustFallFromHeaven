@@ -90,7 +90,7 @@ impl Game {
     }
 
     /// C++ `CvPlayer::initFreeUnits`: advanced-start points and starting visibility, or the
-    /// civilization's free units plus era/handicap defense, worker and explore units.
+    /// civilization's free units plus era/handicap defense and explore units.
     pub fn player_init_free_units(&mut self, p: PlayerId) {
         let d = self.d;
 
@@ -150,16 +150,7 @@ impl Game {
                 self.player_add_free_unit_ai(p, UnitAIType::UNITAI_CITY_DEFENSE, free_count);
             }
 
-            let mut free_count = d.eras[start_era].starting_worker_units;
-            free_count += d.handicaps[handicap].starting_worker_units;
-
-            if !self.players[p].human {
-                free_count += d.handicaps[game_handicap].ai_starting_worker_units;
-            }
-
-            if free_count > 0 {
-                self.player_add_free_unit_ai(p, UnitAIType::UNITAI_WORKER, free_count);
-            }
+            // (No free workers, C++ `getStartingWorkerUnits`: there are none, docs/WORKS.md.)
 
             let mut free_count = d.eras[start_era].starting_explore_units;
             free_count += d.handicaps[handicap].starting_explore_units;

@@ -933,12 +933,6 @@ impl Game {
         count
     }
 
-    /// C++ `CvSelectionGroup::hasWorker`.
-    pub fn group_has_worker(&self, g: GroupId) -> bool {
-        self.group_count_num_unit_ai_type(g, Some(UnitAIType::UNITAI_WORKER)) > 0
-            || self.group_count_num_unit_ai_type(g, Some(UnitAIType::UNITAI_WORKER_SEA)) > 0
-    }
-
     /// C++ `CvSelectionGroup::setBlockading` (each unit's `setBlockading`, which updates plunder).
     pub fn group_set_blockading(&mut self, g: GroupId, start: bool) {
         // C++ reads the next node after the call; `setBlockading` changes no group.
@@ -1298,9 +1292,6 @@ mod tests {
         assert_eq!(g.group_count_num_unit_ai_type(grp, None), 3);
         assert_eq!(g.group_count_num_unit_ai_type(grp, Some(UnitAIType::UNITAI_ATTACK)), 2);
         assert_eq!(g.group_count_num_unit_ai_type(grp, Some(UnitAIType::UNITAI_SETTLE)), 0);
-        assert!(!g.group_has_worker(grp));
-        g.units[units[2]].ai_type = Some(UnitAIType::UNITAI_WORKER_SEA);
-        assert!(g.group_has_worker(grp));
     }
 
     #[test]

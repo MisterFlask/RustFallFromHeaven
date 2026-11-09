@@ -213,7 +213,7 @@ impl InterfaceMode {
 /// `CvSelectionGroup::canDoInterfaceMode(eMode)` over the selection (CvSelectionGroup.cpp:1936):
 /// whether the mode's action button shows (`canHandleAction` checks an interface-mode action with
 /// this alone, so a shown button is enabled). GO_TO needs the selection's domain (its head's) to
-/// be neither air nor immobile; ROUTE_TO a unit whose AI type is `UNITAI_WORKER` and that can
+/// be neither air nor immobile; ROUTE_TO a unit that can
 /// build a route; the others a unit that can do the mission at all, whatever the target.
 pub fn can_do_interface_mode(g: &Game, units: &[UnitId], mode: InterfaceMode) -> bool {
     if is_busy(g, units) {
@@ -225,7 +225,7 @@ pub fn can_do_interface_mode(g: &Game, units: &[UnitId], mode: InterfaceMode) ->
         let plot = g.unit_plot(u);
         let ok = match mode {
             InterfaceMode::GoTo => domain != DomainType::DOMAIN_AIR && domain != DomainType::DOMAIN_IMMOBILE,
-            InterfaceMode::RouteTo => g.units[u].ai_type == Some(UnitAIType::UNITAI_WORKER) && g.unit_can_build_route(u),
+            InterfaceMode::RouteTo => g.unit_can_build_route(u),
             InterfaceMode::Airlift => g.unit_can_airlift(u, plot),
             InterfaceMode::Nuke => g.unit_can_nuke(u, plot),
             InterfaceMode::Recon => g.unit_can_recon(u, Some(plot)),

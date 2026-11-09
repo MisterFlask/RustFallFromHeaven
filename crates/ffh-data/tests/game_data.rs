@@ -24,7 +24,7 @@ fn table_sizes() {
     assert_eq!(d.eras.len() - ffh_data::card_entry_count("eras"), 10);
     assert_eq!(d.handicaps.len(), 9);
     assert_eq!(d.game_options.len(), GameOptionType::NUM);
-    assert_eq!(d.goodies.len() - ffh_data::card_entry_count("goodies"), 54);
+    assert_eq!(d.goodies.len() - ffh_data::card_entry_count("goodies"), 53);
     assert_eq!(d.hurries.len() - ffh_data::card_entry_count("hurries"), 2);
     assert_eq!(d.upkeeps.len(), 3);
     assert_eq!(d.culture_levels.len(), 7);
@@ -121,7 +121,7 @@ fn eras() {
     assert_eq!((ancient.event_chance_per_turn, ancient.anarchy_percent, ancient.train_percent), (4, 50, 100));
     let classical = &d.eras[d.t::<EraType>("ERA_CLASSICAL")];
     assert_eq!((classical.start_percent, classical.starting_gold, classical.advanced_start_points), (10, 10, 1200));
-    assert_eq!((classical.starting_defense_units, classical.starting_worker_units), (1, 1));
+    assert_eq!(classical.starting_defense_units, 1);
     assert!(!classical.no_goodies);
     let medieval = &d.eras[d.t::<EraType>("ERA_MEDIEVAL")];
     assert!(medieval.no_goodies && !medieval.no_animals && !medieval.no_barb_units && !medieval.no_barb_cities);
@@ -173,8 +173,8 @@ fn handicap_settler_and_deity() {
     let deity = &d.handicaps[d.t::<HandicapType>("HANDICAP_DEITY")];
     assert_eq!((deity.ai_free_xp, deity.lair_spawn_rate, deity.ai_train_percent), (8, 6, 75));
     assert_eq!(
-        (deity.ai_starting_unit_multiplier, deity.ai_starting_defense_units, deity.ai_starting_worker_units, deity.ai_starting_explore_units),
-        (1, 4, 1, 1)
+        (deity.ai_starting_unit_multiplier, deity.ai_starting_defense_units, deity.ai_starting_explore_units),
+        (1, 4, 1)
     );
     assert!(deity.ai_free_techs[tech("TECH_ANCIENT_CHANTS")]);
     assert_eq!(deity.ai_free_techs.iter().filter(|&&b| b).count(), 4);
