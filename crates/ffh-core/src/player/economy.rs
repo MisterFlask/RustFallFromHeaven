@@ -796,6 +796,18 @@ impl Game {
             modifier = modifier * (100 + bonus) / 100;
         }
 
+        // EXPERIMENT (not for merge): FFH_RES_DISCOUNT=<pct> speeds research on a tech while the
+        // player has any of its thematic resources (owned or traded). Unset = off.
+        let pct = res_discount_pct();
+        if pct > 0 {
+            let table = res_discount_table(d);
+            if let Some((_, bonuses)) = table.iter().find(|(t, _)| *t == tech) {
+                if bonuses.iter().any(|&b| self.player_get_num_available_bonuses(p, b) > 0) {
+                    modifier = modifier * (100 + pct) / 100;
+                }
+            }
+        }
+
         modifier
     }
 
@@ -2094,4 +2106,48 @@ mod tests {
         assert_eq!(free_unit, d.civ_unit(civ, d.t::<UnitClassType>("UNITCLASS_SCIENTIST")));
         assert_eq!(g.player_get_tech_free_unit(p, tech(&g, "TECH_AGRICULTURE")), None);
     }
+}
+
+// EXPERIMENT (not for merge): resource-driven research discounts, see
+// `player_calculate_research_modifier`.
+fn res_discount_pct() -> i32 {
+    static PCT: std::sync::OnceLock<i32> = std::sync::OnceLock::new();
+    *PCT.get_or_init(|| std::env::var("FFH_RES_DISCOUNT").ok().and_then(|v| v.parse().ok()).unwrap_or(0))
+}
+
+fn res_discount_table(d: &GameData) -> &'static Vec<(TechType, Vec<BonusType>)> {
+    static TABLE: std::sync::OnceLock<Vec<(TechType, Vec<BonusType>)>> = std::sync::OnceLock::new();
+    TABLE.get_or_init(|| {
+        let mana_all: &[&str] = &["MANA", "MANA_AIR", "MANA_BODY", "MANA_CHAOS", "MANA_DEATH", "MANA_EARTH", "MANA_ENCHANTMENT", "MANA_ENTROPY", "MANA_FIRE", "MANA_ICE", "MANA_LAW", "MANA_LIFE", "MANA_METAMAGIC", "MANA_MIND", "MANA_NATURE", "MANA_SPIRIT", "MANA_WATER", "MANA_SUN", "MANA_SHADOW"];
+        let rows: Vec<(&[&str], &[&str])> = vec![
+            (&["BRONZE_WORKING"], &["COPPER"]),
+            (&["SMELTING"], &["COPPER", "IRON"]),
+            (&["IRON_WORKING"], &["IRON"]),
+            (&["MITHRIL_WORKING", "MITHRIL_WEAPONS"], &["MITHRIL"]),
+            (&["HORSEBACK_RIDING", "STIRRUPS", "WARHORSES"], &["HORSE"]),
+            (&["HUNTING", "ANIMAL_HANDLING", "FERAL_BOND", "ANIMAL_MASTERY"], &["DEER", "FUR", "IVORY"]),
+            (&["POISONS"], &["TOAD", "NIGHTMARE", "RAZORWEED"]),
+            (&["MASONRY", "CONSTRUCTION", "ENGINEERING"], &["MARBLE"]),
+            (&["MACHINERY", "BLASTING_POWDER"], &["GUNPOWDER", "IRON"]),
+            (&["CURRENCY", "TAXATION", "TRADE", "GUILDS", "MERCANTILISM"], &["GOLD", "GEMS", "SILK", "DYE"]),
+            (&["MEDICINE", "SANITATION"], &["REAGENTS"]),
+            (&["FESTIVALS", "DRAMA"], &["WINE", "SUGAR"]),
+            (&["SAILING", "OPTICS", "ASTRONOMY", "CARTOGRAPHY"], &["WHALE", "PEARL", "CRAB", "CLAM"]),
+            (&["PRIESTHOOD", "RELIGIOUS_LAW", "THEOLOGY", "FANATICISM", "DIVINE_ESSENCE"], &["INCENSE"]),
+            (&["KNOWLEDGE_OF_THE_ETHER", "SORCERY", "ARCANE_LORE", "STRENGTH_OF_WILL", "PASS_THROUGH_THE_ETHER", "OMNISCIENCE"], mana_all),
+            (&["ELEMENTALISM"], &["MANA_FIRE", "MANA_AIR", "MANA_WATER", "MANA_EARTH"]),
+            (&["NECROMANCY"], &["MANA_DEATH"]),
+            (&["DIVINATION"], &["MANA_MIND", "MANA_SPIRIT", "MANA_SUN"]),
+            (&["ALTERATION"], &["MANA_BODY", "MANA_ENCHANTMENT"]),
+            (&["COMMUNE_WITH_NATURE"], &["MANA_NATURE", "MANA_LIFE"]),
+        ];
+        let mut out = Vec::new();
+        for (techs, bonuses) in rows {
+            let bs: Vec<BonusType> = bonuses.iter().map(|b| d.t::<BonusType>(&format!("BONUS_{b}"))).collect();
+            for t in techs {
+                out.push((d.t::<TechType>(&format!("TECH_{t}")), bs.clone()));
+            }
+        }
+        out
+    })
 }
