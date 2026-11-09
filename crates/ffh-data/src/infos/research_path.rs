@@ -25,10 +25,6 @@ pub struct ResearchPathInfo {
     /// path's tech for its alignment) unlocks a unit it can train, unless none of them unlocks a
     /// unit for any civilization (a path of civics and buildings).
     pub capstones: Vec<TechType>,
-    /// The resource the commitment grants at the capital, kept after the path is complete. It
-    /// counts only once the team knows the techs that reveal it and let it be traded
-    /// (`BonusInfo::tech_reveal`, `tech_city_trade`).
-    pub bonus: Option<BonusType>,
 }
 
 pub fn read_research_path(rd: &Rd) -> ResearchPathInfo {
@@ -37,6 +33,5 @@ pub fn read_research_path(rd: &Rd) -> ResearchPathInfo {
         techs: rd.ref_list("techs"),
         alignment_techs: rd.pairs_ref("alignment_techs"),
         capstones: rd.ref_list("capstones"),
-        bonus: rd.rf("bonus"),
     }
 }

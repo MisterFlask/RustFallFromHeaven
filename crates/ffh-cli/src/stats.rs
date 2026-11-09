@@ -469,6 +469,9 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
             .str("late", &late.join("+"))
             .str("path", &pl.research_path.map_or("-".to_string(), path_name))
             .str("paths_done", &paths_done.join("+"))
+            // How well it can field its current path's late units for want of resources (ffh-ai's
+            // reading, percent; -1 without a path).
+            .int("path_res", pl.research_path.map_or(-1, |path| ffh_ai::research_path::resource_pct(g, p, path)))
             .int("research_commerce", research_commerce)
             // Economy.
             .int("food", food)

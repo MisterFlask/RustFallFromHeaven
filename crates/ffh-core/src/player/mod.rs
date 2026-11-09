@@ -391,8 +391,7 @@ pub struct Player {
     /// docs/PORTING.md, "Research paths"); changed only through `player_commit_research_path`
     /// and `player_update_research_path`.
     pub research_path: Option<ResearchPathType>,
-    /// Not in C++: the research paths this player completed, in the order completed. Each keeps
-    /// granting its resource at the capital (`player_research_path_bonus_count`).
+    /// Not in C++: the research paths this player completed, in the order completed.
     pub research_paths_done: Vec<ResearchPathType>,
 }
 

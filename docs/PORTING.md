@@ -780,30 +780,27 @@ flag.
   `rules_defines.jsonc`, `player/research_path.rs`). Games were decided before most civs reached
   the medieval techs (in AI games the tier-4 units came after turn 400): the era is three quarters
   of the tree's cost, each of its techs 5,400-10,000 beakers against 300-3,000 for a classical
-  one. A player now commits to one of eight paths -- Arcane, Faith, Steel, Cavalry, Artifice,
-  Wild, Mercantile, Shadow -- and researches that path's techs 100% faster (a unique feature's
-  doubling on the same tech does not add to it: the larger counts). One path at a time: once the
-  team knows every tech of the path that the player can research (a tech needing another state
-  religion does not hold it open), the path is complete and the player may commit to another; a
-  completed path is not taken again. A tech may be on several paths (Iron Working is on Steel,
-  Cavalry and Artifice). Faith's last tech follows the player's alignment of the moment:
+  one. A player now commits to one of seven paths -- Arcane, Faith, Steel, Cavalry, Artifice,
+  Wild, Mercantile -- and researches that path's techs 100% faster (a unique feature's doubling
+  on the same tech does not add to it: the larger counts). That is all a path gives: no resource,
+  no unit, no building (the owner's decision, 2026-11-09). One path at a time: once the team knows
+  every tech of the path that the player can research, the path is complete and the player may
+  commit to another; a completed path is not taken again. A tech may be on several paths (Iron
+  Working is on Steel, Cavalry and Artifice). No path holds a religion's tech -- one that founds a
+  religion, or one that needs a state religion (Arete, Hidden Paths, Infernal Pact, Mind
+  Stapling) -- so the religions stay a race of their own (the owner's preference, 2026-11-09; a
+  data test checks it). Faith's last tech follows the player's alignment of the moment:
   Righteousness (Paladins) for the good, Commune with Nature (Druids) for the neutral,
   Malevolent Designs (Eidolons) for the evil. A civilization may commit to a path only if one of
   its late techs (`capstones`) unlocks a unit it can train -- no hero, none needing a religion,
   none of another alignment -- unless the path's late techs bring no unit to anyone: the Khazad
-  have no Arcane path (no Archmage), the Sheaim no Steel, the Clan of Embers no Cavalry. Four
-  paths grant their key resource at the capital for good, like a resource import (not for trade),
-  once the team knows the techs that reveal it and let it be traded, as for a mined one: Arcane
-  Reagents (Archmages; Knowledge of the Ether), Faith Iron (Paladins, Eidolons; Smelting and Iron
-  Working), Cavalry Horse (Animal Husbandry), Artifice Gunpowder (Cannons; Blasting Powder). A
-  weapon resource in a city arms every melee unit trained there (Iron and Mithril Weapons), so a
-  grant never comes before its tech, and Steel grants none: Mithril stays Mithril Working's to
-  reveal and enable (the owner's decision, 2026-11-09). Two prerequisites changed so that paths do not run through each
-  other: Divine Essence needs Theology and Fanaticism (was Theology and Mithril Working, which put
-  16,000 beakers of Steel before Faith's last tech) and Animal Mastery needs Feral Bond alone (was
-  also Iron Working). The AI commits at its first city to the path its civilization is built for
-  (docs/AI.md, "Research paths"); humans choose in the research screen (`research_path` command,
-  docs/HUMAN.md). Saves: format 24.
+  have no Arcane path (no Archmage), the Sheaim no Steel, the Clan of Embers no Cavalry. Two
+  prerequisites changed so that paths do not run through each other: Divine Essence needs
+  Theology and Fanaticism (was Theology and Mithril Working, which put 16,000 beakers of Steel
+  before Faith's last tech) and Animal Mastery needs Feral Bond alone (was also Iron Working). The
+  AI commits at its first city to the path its civilization is built for (docs/AI.md, "Research
+  paths"); humans choose in the research screen (`research_path` command, docs/HUMAN.md). Saves:
+  format 25.
 - **A withdrawing unit never enters another team's city** (2026-11-09,
   `unit_withdrawl_to_nearest_valid_plot`). In FFH2 a unit pushed off its plot (an enemy unit
   arriving there) could step into an adjacent empty enemy city and take it. A city being founded

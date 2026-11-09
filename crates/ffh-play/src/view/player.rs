@@ -98,8 +98,8 @@ pub fn techs(v: &Viewer) -> Json {
 }
 
 /// The research paths for the human (docs/PORTING.md, "Research paths"): each path's techs (for
-/// the human's alignment), which of them its team knows, the research left on the others, its
-/// resource, and whether the human may commit to it now (`refusal`: the reason it may not).
+/// the human's alignment), which of them its team knows, the research left on the others, and
+/// whether the human may commit to it now (`refusal`: the reason it may not).
 pub fn research_paths(v: &Viewer) -> Json {
     let g = v.g;
     let d = g.d;
@@ -121,7 +121,6 @@ pub fn research_paths(v: &Viewer) -> Json {
                     "closed" => ids(&techs.iter().copied().filter(|&t| !g.player_can_ever_research(h, t)).collect::<Vec<_>>()),
                     "capstones" => ids(&d.research_paths[path].capstones),
                     "left" => left,
-                    "bonus" => Json::opt_idx(d.research_paths[path].bonus),
                     "can_commit" => refusal.is_none(),
                     "refusal" => refusal.map_or(Json::Null, |r| Json::from(research_path_refusal_text(g, r))),
                 }

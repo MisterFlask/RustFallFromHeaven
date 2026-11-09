@@ -90,8 +90,8 @@ function researchPathLine(t, reload) {
   );
 }
 
-/** The research path chooser: every path with its techs, the research left on them, the resource
- *  it grants at the capital and whether the human may commit to it now. A click commits.
+/** The research path chooser: every path with its techs, the research left on them and whether
+ *  the human may commit to it now. A click commits.
  *  Resolves "chosen" or null. */
 export async function openResearchPaths() {
   let result = null;
@@ -121,12 +121,12 @@ export async function openResearchPaths() {
       },
       h("span", h("b", dname("ResearchPathType", p.path)), t.path === p.path ? " (committed)" : t.paths_done.includes(p.path) ? " (complete)" : ""),
       h("small", p.techs.map((x) => (known(p, x) ? `${dname("TechType", x)} ✓` : p.closed.includes(x) ? `${dname("TechType", x)} (closed)` : dname("TechType", x))).join(" · ")),
-      h("small", `Research left: ${p.left}${p.bonus !== null ? ` · Resource at the capital: ${dname("BonusType", p.bonus)}` : ""}`),
+      h("small", `Research left: ${p.left}`),
       p.refusal ? h("small.dim", p.refusal) : null,
     ),
   );
   m.setBody(
-    h("p.dim", `Commit to one path at a time: its techs are researched ${t.path_percent}% faster, and its resource, if it has one, is granted at the capital for good once the techs that reveal and enable it are known. Once every tech of the path is known, another path can be chosen.`),
+    h("p.dim", `Commit to one path at a time: its techs are researched ${t.path_percent}% faster. Once every tech of the path is known, another path can be chosen.`),
     h("div.options", rows),
   );
   const v = await m.done;

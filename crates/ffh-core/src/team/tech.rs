@@ -40,38 +40,18 @@ fn ai_choose_free_tech(g: &mut Game, p: PlayerId) {
 
 /// `CvTeam::setHasTech`: `updatePlotGroupBonus(bAdd)` for every plot of team `t` whose bonus
 /// is revealed, traded or obsoleted by `tech` (run before and after the tech flag changes).
-/// Not in FFH2: also the capitals of the team's players whose research paths grant a resource
-/// that `tech` reveals or lets be traded (`player_research_path_bonuses`), each plot once.
 fn update_tech_bonus_plot_groups(g: &mut Game, t: TeamId, tech: TechType, add: bool) {
     let d = g.d;
-    let touches = |bonus: BonusType| {
-        let info = &d.bonuses[bonus];
-        (info.tech_reveal == Some(tech)) || (info.tech_city_trade == Some(tech)) || (info.tech_obsolete == Some(tech))
-    };
 
-    let mut plots: Vec<PlotIdx> = Vec::new();
     for p in g.map.plot_ids() {
         if let Some(bonus) = g.map.plots[p].bonus_type {
-            if g.plot_get_team(p) == Some(t) && touches(bonus) {
-                plots.push(p);
+            if g.plot_get_team(p) == Some(t) {
+                let info = &d.bonuses[bonus];
+                if (info.tech_reveal == Some(tech)) || (info.tech_city_trade == Some(tech)) || (info.tech_obsolete == Some(tech)) {
+                    g.plot_update_plot_group_bonus(p, add);
+                }
             }
         }
-    }
-    for p in g.player_ids() {
-        let pl = &g.players[p];
-        if pl.team != t || (pl.research_path.is_none() && pl.research_paths_done.is_empty()) {
-            continue;
-        }
-        let granted = pl.research_path.iter().chain(&pl.research_paths_done).filter_map(|&path| d.research_paths[path].bonus).any(|b| touches(b));
-        if let Some(capital) = g.player_get_capital_city(p).filter(|_| granted) {
-            let plot = g.city_plot(capital);
-            if !plots.contains(&plot) {
-                plots.push(plot);
-            }
-        }
-    }
-    for p in plots {
-        g.plot_update_plot_group_bonus(p, add);
     }
 }
 

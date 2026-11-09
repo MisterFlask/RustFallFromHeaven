@@ -375,7 +375,7 @@ fn espionage_mission() {
 fn research_paths() {
     let d = d();
     let path = |name: &str| &d.research_paths[d.t::<ResearchPathType>(name)];
-    assert_eq!(d.research_paths.len(), 8);
+    assert_eq!(d.research_paths.len(), 7);
     for p in d.research_paths.iter() {
         assert!(!p.techs.is_empty() && !p.capstones.is_empty(), "{}", p.base.type_);
         // A capstone is one of the path's techs or one of its alignment techs.
@@ -386,11 +386,15 @@ fn research_paths() {
     let faith = path("RESEARCHPATH_FAITH");
     assert_eq!(faith.alignment_techs[alignment("ALIGNMENT_GOOD")], Some(tech("TECH_RIGHTEOUSNESS")));
     assert_eq!(faith.alignment_techs[alignment("ALIGNMENT_EVIL")], Some(tech("TECH_MALEVOLENT_DESIGNS")));
-    assert_eq!(faith.bonus, d.ty::<BonusType>("BONUS_IRON"));
-    assert_eq!(path("RESEARCHPATH_WILD").bonus, None);
-    // Mithril stays Mithril Working's to reveal and enable.
-    assert_eq!(path("RESEARCHPATH_STEEL").bonus, None);
     assert!(path("RESEARCHPATH_CAVALRY").techs.contains(&tech("TECH_IRON_WORKING")));
+    // No path holds a religion's tech: one that founds a religion, or one that needs a state
+    // religion (the religions stay a race of their own).
+    for p in d.research_paths.iter() {
+        for t in p.techs.iter().chain(p.alignment_techs.iter().flatten()) {
+            let founds = d.religions.iter().any(|r| r.tech_prereq == Some(*t));
+            assert!(!founds && d.techs[*t].prereq_religion.is_none(), "{} holds {}", p.base.type_, d.techs[*t].base.type_);
+        }
+    }
     // The research paths' prerequisite changes.
     assert_eq!(d.techs[tech("TECH_DIVINE_ESSENCE")].prereq_or_techs, vec![tech("TECH_FANATICISM")]);
     assert!(d.techs[tech("TECH_ANIMAL_MASTERY")].prereq_and_techs.is_empty());

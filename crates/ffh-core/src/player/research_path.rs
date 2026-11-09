@@ -1,8 +1,7 @@
 //! Research paths (this game's own rules, not FFH2's; `research_paths.jsonc`, docs/PORTING.md,
 //! "Research paths"). A player commits to one path at a time; while committed it researches the
-//! path's techs `RESEARCH_PATH_PERCENT` percent faster, and its capital holds the path's
-//! resource. Once its team knows every tech of the path, the path is complete: the resource
-//! stays, and the player may commit to another path.
+//! path's techs `RESEARCH_PATH_PERCENT` percent faster. Once its team knows every tech of the
+//! path, the path is complete and the player may commit to another path.
 
 use crate::game::Game;
 use crate::ids::*;
@@ -59,35 +58,49 @@ impl Game {
         self.team_tech_research_bonus_percent(self.players[p].team, tech).max(self.player_research_path_percent(p, tech))
     }
 
-    /// Whether a civilization of alignment `alignment` may commit to `path`: one of the path's late
-    /// techs (`capstones`, and the tech its alignment adds) unlocks a unit the civilization can
-    /// train -- no world unit (heroes), no unit that needs a religion, none of another alignment
-    /// -- or none of the capstones unlocks a unit for any civilization (a path of civics and
-    /// buildings).
-    pub fn research_path_open_to(&self, civ: CivilizationType, alignment: Option<AlignmentType>, path: ResearchPathType) -> bool {
-        let d = self.d;
-        let info = &d.research_paths[path];
+    /// The late techs of `path` for alignment `alignment`: its `capstones` and the tech the
+    /// alignment adds.
+    fn research_path_capstones(&self, alignment: Option<AlignmentType>, path: ResearchPathType) -> Vec<TechType> {
+        let info = &self.d.research_paths[path];
         let mut capstones = info.capstones.clone();
         if let Some(t) = alignment.and_then(|a| info.alignment_techs[a]) {
             capstones.push(t);
         }
-        let unlocked_by = |u: UnitType| {
+        capstones
+    }
+
+    /// The units the late techs of `path` (`research_path_capstones`) unlock for civilization
+    /// `civ` of alignment `alignment`: no world unit (heroes), no unit that needs a religion, none
+    /// of another alignment.
+    pub fn research_path_units(&self, civ: CivilizationType, alignment: Option<AlignmentType>, path: ResearchPathType) -> Vec<UnitType> {
+        let d = self.d;
+        let capstones = self.research_path_capstones(alignment, path);
+        d.unit_classes
+            .keys()
+            .filter(|&cl| !is_world_unit_class(d, cl))
+            .filter_map(|cl| d.civ_unit(civ, cl))
+            .filter(|&u| {
+                let ui = &d.units[u];
+                capstones.iter().any(|&c| ui.prereq_and_tech == Some(c) || ui.prereq_and_techs.contains(&c))
+                    && ui.prereq_religion.is_none()
+                    && ui.state_religion.is_none()
+                    && ui.prereq_alignment.map_or(true, |a| Some(a) == alignment)
+            })
+            .collect()
+    }
+
+    /// Whether a civilization of alignment `alignment` may commit to `path`: one of the path's late
+    /// techs unlocks a unit for it (`research_path_units`), or none of them unlocks a unit for any
+    /// civilization (a path of civics and buildings).
+    pub fn research_path_open_to(&self, civ: CivilizationType, alignment: Option<AlignmentType>, path: ResearchPathType) -> bool {
+        let d = self.d;
+        let capstones = self.research_path_capstones(alignment, path);
+        let unit_path = d.units.keys().any(|u| {
             let ui = &d.units[u];
             capstones.iter().any(|&c| ui.prereq_and_tech == Some(c) || ui.prereq_and_techs.contains(&c))
-        };
-        let unit_path = d.units.keys().any(|u| {
-            unlocked_by(u) && d.units[u].unit_class_type.map_or(false, |cl| !is_world_unit_class(d, cl))
+                && ui.unit_class_type.map_or(false, |cl| !is_world_unit_class(d, cl))
         });
-        if !unit_path {
-            return true;
-        }
-        d.unit_classes.keys().filter(|&cl| !is_world_unit_class(d, cl)).filter_map(|cl| d.civ_unit(civ, cl)).any(|u| {
-            let ui = &d.units[u];
-            unlocked_by(u)
-                && ui.prereq_religion.is_none()
-                && ui.state_religion.is_none()
-                && ui.prereq_alignment.map_or(true, |a| Some(a) == alignment)
-        })
+        !unit_path || !self.research_path_units(civ, alignment, path).is_empty()
     }
 
     /// Whether the team of `p` knows every tech of `path` (for `p`'s alignment) that `p` can ever
@@ -119,22 +132,13 @@ impl Game {
         None
     }
 
-    /// Commits `p` to `path`: its techs are researched faster, and the capital holds the path's
-    /// resource from now on. Returns false (and changes nothing) when `p` may not.
+    /// Commits `p` to `path`: its techs are researched faster from now on. Returns false (and
+    /// changes nothing) when `p` may not.
     pub fn player_commit_research_path(&mut self, p: PlayerId, path: ResearchPathType) -> bool {
         if self.player_research_path_refusal(p, path).is_some() {
             return false;
         }
-        // The capital's plot group recounts its bonuses around the change, as for a resource
-        // import (`player_change_bonus_import`).
-        let capital = self.player_get_capital_city(p).map(|c| self.city_plot(c));
-        if let Some(plot) = capital {
-            self.plot_update_plot_group_bonus(plot, false);
-        }
         self.players[p].research_path = Some(path);
-        if let Some(plot) = capital {
-            self.plot_update_plot_group_bonus(plot, true);
-        }
         let d = self.d;
         let turn = self.game_turn();
         self.log.msg(turn, Some(p), || format!("Research path: {}", d.text.name(&d.research_paths[path].base.description)));
@@ -143,7 +147,7 @@ impl Game {
     }
 
     /// Completes the research path of `p` once its team knows every tech of it: the path joins
-    /// `research_paths_done` (its resource stays) and `p` may commit to another.
+    /// `research_paths_done` and `p` may commit to another.
     pub fn player_update_research_path(&mut self, p: PlayerId) {
         let Some(path) = self.players[p].research_path else {
             return;
@@ -156,34 +160,6 @@ impl Game {
             let turn = self.game_turn();
             self.log.msg(turn, Some(p), || format!("Research path complete: {}", d.text.name(&d.research_paths[path].base.description)));
         }
-    }
-
-    /// Whether team `t` can use a resource a research path grants: it knows the techs that reveal
-    /// it and let it be traded (`tech_reveal`, `tech_city_trade`), as for a mined one. The grant
-    /// never hands out a resource before its tech (Mithril before Mithril Working, Iron and its
-    /// weapons before Iron Working).
-    pub fn team_can_use_research_path_bonus(&self, t: TeamId, bonus: BonusType) -> bool {
-        let info = &self.d.bonuses[bonus];
-        self.team_is_has_tech(t, info.tech_reveal) && self.team_is_has_tech(t, info.tech_city_trade)
-    }
-
-    /// The resources the research paths of `p` grant at its capital now: one for its current
-    /// path and one for each completed path that has one, those its team can use
-    /// (`team_can_use_research_path_bonus`).
-    pub fn player_research_path_bonuses(&self, p: PlayerId) -> Vec<BonusType> {
-        let pl = &self.players[p];
-        pl.research_path
-            .iter()
-            .chain(&pl.research_paths_done)
-            .filter_map(|&path| self.d.research_paths[path].bonus)
-            .filter(|&b| self.team_can_use_research_path_bonus(pl.team, b))
-            .collect()
-    }
-
-    /// How many of resource `bonus` the research paths of `p` grant at its capital now
-    /// (`player_research_path_bonuses`).
-    pub fn player_research_path_bonus_count(&self, p: PlayerId, bonus: BonusType) -> i32 {
-        self.player_research_path_bonuses(p).iter().filter(|&&b| b == bonus).count() as i32
     }
 }
 
@@ -259,61 +235,6 @@ mod tests {
         assert!(g.player_research_path_known(p, cavalry));
         assert_eq!(g.player_research_path_refusal(p, cavalry), Some(ResearchPathRefusal::Done));
         assert_eq!(g.player_research_path_refusal(p, path(&g, "RESEARCHPATH_ARCANE")), None);
-        // The resource stays (once Animal Husbandry, Horseback Riding's prerequisite, is known).
-        let horse = g.d.t::<BonusType>("BONUS_HORSE");
-        g.team_set_has_tech(team, tech(&g, "TECH_ANIMAL_HUSBANDRY"), true, Some(p), false, false);
-        assert_eq!(g.player_research_path_bonus_count(p, horse), 1);
-    }
-
-    #[test]
-    fn a_tech_the_player_can_never_research_does_not_hold_the_path_open() {
-        let mut g = small_world_game();
-        let p = PlayerId(0);
-        let team = g.players[p].team;
-        let shadow = path(&g, "RESEARCHPATH_SHADOW");
-        assert!(g.player_commit_research_path(p, shadow));
-        // Infernal Pact needs the Ashen Veil as the state religion, Mind Stapling the Octopus
-        // Overlords: without them the path completes with the rest.
-        for t in g.player_research_path_techs(p, shadow) {
-            if g.player_can_ever_research(p, t) {
-                g.team_set_has_tech(team, t, true, Some(p), false, false);
-            }
-        }
-        assert!(!g.team_is_has_tech(team, Some(tech(&g, "TECH_INFERNAL_PACT"))));
-        assert_eq!(g.players[p].research_paths_done, vec![shadow]);
-        assert_eq!(g.players[p].research_path, None);
-    }
-
-    #[test]
-    fn the_capital_holds_the_paths_resource_once_its_tech_is_known() {
-        let mut g = small_world_game();
-        let p = PlayerId(0);
-        let team = g.players[p].team;
-        let capital = g.player_get_capital_city(p).expect("a capital");
-        let horse = g.d.t::<BonusType>("BONUS_HORSE");
-        let husbandry = tech(&g, "TECH_ANIMAL_HUSBANDRY");
-        assert!(!g.team_is_has_tech(team, Some(husbandry)));
-        let count = g.city_num_bonuses(capital, horse);
-        assert!(g.player_commit_research_path(p, path(&g, "RESEARCHPATH_CAVALRY")));
-        // Not before Animal Husbandry, which reveals horses and lets them be traded.
-        assert_eq!(g.city_num_bonuses(capital, horse), count);
-        g.team_set_has_tech(team, husbandry, true, Some(p), false, false);
-        assert_eq!(g.city_num_bonuses(capital, horse), count + 1);
-        assert!(g.city_has_bonus(capital, horse));
-        // It is not for trade.
-        assert_eq!(g.player_get_num_tradeable_bonuses(p, horse), g.player_get_num_available_bonuses(p, horse) - 1);
-        // Losing the tech takes it away again (the plot groups stay consistent).
-        g.team_set_has_tech(team, husbandry, false, Some(p), false, false);
-        assert_eq!(g.city_num_bonuses(capital, horse), count);
-    }
-
-    #[test]
-    fn the_steel_path_grants_no_mithril() {
-        let g = small_world_game();
-        // Mithril stays Mithril Working's to reveal and enable.
-        assert_eq!(g.d.research_paths[path(&g, "RESEARCHPATH_STEEL")].bonus, None);
-        let mithril = g.d.t::<BonusType>("BONUS_MITHRIL");
-        assert!(g.d.research_paths.iter().all(|p| p.bonus != Some(mithril)));
     }
 
     #[test]

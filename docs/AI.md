@@ -710,26 +710,38 @@ complete. It takes the path its civilization is built for (`CIV_PATHS`: the path
 heroes and mechanics sit on, first choice x4, second x2 -- the Amurites Arcane, the Bannor Faith,
 the Hippus Cavalry, the Khazad Steel then Artifice, the Luchuirp Artifice, ...), weighting each
 open path by the research the commitment saves on its techs left, times the leader's interest in
-them (its flavors against the techs'). Committed, the path's late techs (`capstones` and the
-alignment's tech) join the research plan after the civilization's own beelines (`tech_plan`,
-step `ResearchPath`), and the research score counts the halved research time on path techs
-(`tech_plan::effective_left`, now per player). Switch: `FFH_AI_RESEARCH_PATH_OFF` (the player
-never commits). Telemetry: `research_path` decisions.
+them (its flavors against the techs'), times its access to the resources the path's late units
+need (`resource_pct`, the best of those units): it has one 100%, one lies revealed in its land or
+unowned within 3 plots of a city 90%, it cannot see that resource yet 80%, it sees it and none is
+in reach 60%. Resources are an input, not a veto: at 25% for none in reach the Amurites left
+Arcane (Archmages need Reagents) in 7 games of 8, though their Wizards and Mages need none; at 60%
+they keep it in 9 of 9, and resources tip the choices of civilizations without a path of their
+own (the Mercurians, the Patrians, ...) and the later paths, chosen knowing more of the map.
+Committed, the path's late techs (`capstones` and the alignment's tech) join the research plan
+after the civilization's own beelines (`tech_plan`, step `ResearchPath`), and the research score
+counts the halved research time on path techs (`tech_plan::effective_left`, now per player).
+Switches: `FFH_AI_RESEARCH_PATH_OFF` (the player never commits), `FFH_AI_PATH_RESOURCES_OFF` (the
+choice ignores resources). Telemetry: `research_path` decisions; `ffh stats` reports each civ's
+`path`, `paths_done`, `path_res` (its `resource_pct` for the current path), `late_techs`.
 
-Measured on seeds 1-24 (5 AIs, small map, 500 turns), the switch off against on, same binary
-(paired by seed):
+Measured on seeds 1-24 (5 AIs, small map, 500 turns), `FFH_AI_RESEARCH_PATH_OFF=ALL` against
+the default, paired by seed (the rules without resource grants or the Shadow path):
 
 | | off | on |
 |---|---|---|
-| late (medieval) techs per civ, turns 300 / 400 / 500 | 0.60 / 3.57 / 8.32 | 1.19 / 5.78 / 11.01 |
-| civs with a tier-4 tech (Warhorses, Strength of Will, Mithril Weapons, ...) at 300 / 400 | 18% / 61% | 32% / 79% |
-| share of its first path's late techs a civ knows at 300 / 400 / 500 | 2% / 11% / 32% | 15% / 61% / 77% |
+| late (medieval) techs per civ, turns 300 / 400 / 500 | 0.60 / 3.57 / 8.32 | 1.19 / 5.43 / 11.83 |
+| civs with a tier-4 tech (Warhorses, Strength of Will, Mithril Weapons, ...) at 300 / 400 | 18% / 61% | 27% / 73% |
+| share of its first path's late techs a civ knows at 300 / 400 / 500 | 2% / 11% / 36% | 14% / 57% / 81% |
 
-The research known is worth more (sum of the known techs' costs +41% at turn 300, t 4.1; +42% at
-400) and the civs are stronger mid-game (power +30% at 300, t 3.2; +14% at 400), with no change in
-population (+0.3% at 400) or cities (+1.4%). More cities were razed (92 against 44) and captured
-(764 against 685). Paths taken by the end (current or complete): Steel 79, Faith 62, Artifice 57,
-Arcane 42, Wild 28, Cavalry 27, Mercantile 27, Shadow 20; about two paths completed per civ.
+The research known is worth more (sum of the known techs' costs +31% at turn 300, t 4.3; +47% at
+400, t 3.8) and the civs are stronger mid-game (power +23% at 300, t 2.5). The cost: more wars
+(659 declared against 536) and a smaller world later (population -6.4% at 400, t -2.1; cities
+-4.6%, t -2.4); with the resource grants (format 23, before the owner removed them) population
+was flat. Resources: committed civs that can field none of their path's late units for want of a
+resource, at turns 100 / 300 / 500: 17% / 14% / 14% with `FFH_AI_PATH_RESOURCES_OFF`, 16% / 13% /
+10% at the 60% weight (mostly the arcane civilizations' Archmages without Reagents), 0% / 0% / 5%
+at 25%. Paths taken by the end (current or complete): Steel 84, Faith 65, Artifice 63, Arcane 38,
+Cavalry 34, Mercantile 33, Wild 30; about two completed per civ.
 
 ## Settlers and escorts (`expansion.rs`)
 

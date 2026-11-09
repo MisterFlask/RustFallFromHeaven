@@ -108,7 +108,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 23: research paths: `Player::research_path`, `Player::research_paths_done`.
 /// - 24: a research path's resource counts only once its techs are known, and Steel grants none:
 ///   the plot groups of a format-23 save may hold a grant the rules would never take back.
-pub const FORMAT_VERSION: u32 = 24;
+/// - 25: research paths grant no resource (the plot groups of an older save may hold one), and
+///   the Shadow path is gone (a saved player may hold it).
+pub const FORMAT_VERSION: u32 = 25;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
