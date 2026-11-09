@@ -814,8 +814,8 @@ not next to the attackers, at sea, with nobody to fight, no unit that can attack
 the rules refuse; the reply carries `report`, the battle's report id, and `battle`, its summary;
 through `group_attack_force`, as every attack; a `move` onto an enemy land plot is one battle
 too, in the rules' auto formation, and its reply carries the same `report` and `battle`;
-`PLAYEROPTION_STACK_ATTACK` is ignored), `research`, `research_path {path}` (commit to a research
-path for the rest of the game, docs/PORTING.md "Research paths"; refused with the reason once
+`PLAYEROPTION_STACK_ATTACK` is ignored), `research`, `research_path {path}` (adopt a doctrine, the
+players' name for a research path, for the rest of the game, docs/PORTING.md "Research paths"; refused with the reason once
 committed, for a path whose techs are all known, or one closed to the civilization; the browser
 asks for confirmation first), `update_civics`, `percent_change`,
 `convert`, `declare_war`,

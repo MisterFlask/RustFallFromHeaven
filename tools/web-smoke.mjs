@@ -9,7 +9,7 @@
 // asked again after a load, the transport picker, Shift waypoints; a game started by another
 // client; and a server started with `--panic-at` for the crash screen. Phase 6: the city screen
 // (a worked plot clicked off and on, the citizens' automation), the tech tree (F6, a click
-// researches), the research path chooser (a commitment), civics (F3, a pick, the revolution),
+// researches), the doctrine (research path) chooser (an adoption), civics (F3, a pick, the revolution),
 // religion (F7), the sliders (F2 and the top bar), diplomacy (F4, the trade screen when a player was met), the cities list (F1), the keys
 // (?), the go-to mode (G, Esc), the map layers, the inspector, debug reveal, AI autoplay and the
 // spectator mode (play, pause, step, stop), and the trade screen (`stage trade`: gold offered and
@@ -990,25 +990,25 @@ async function empireScreens() {
     steps.push(`tech tree (F6): researching ${tech}`);
   }
   await closeDialog("Technology");
-  // The research chooser (the top bar's research button): the research path chooser, a commitment.
+  // The research chooser (the top bar's research button): the doctrine chooser (research paths), an adoption.
   await click("#research-button");
   await dialog("Research");
   await until2(`!!document.querySelector(${q(`${TOP} button[data-paths]`)})`, "the research path line");
   await click(`${TOP} button[data-paths]`);
-  await dialog("Research paths");
+  await dialog("Doctrines");
   await until2(`!!document.querySelector(${q(`${TOP} button.option[data-path]`)})`, "the research paths");
   await shot("research-paths");
   const path = await b.eval(`(() => { const e = document.querySelector(${q(`${TOP} button.option[data-path]:not([disabled])`)}); return e ? Number(e.dataset.path) : null; })()`);
   if (path === null) {
-    steps.push("research paths: none open");
-    await closeDialog("Research paths");
+    steps.push("doctrines: none open");
+    await closeDialog("Doctrines");
   } else {
     await click(`${TOP} button.option[data-path="${path}"]`);
     // A commitment is for the rest of the game: it asks first.
     await until2(`!!document.querySelector(${q(`${TOP} button[data-value="commit"]`)})`, "the commitment's confirmation");
     await shot("research-path-confirm");
     await click(`${TOP} button[data-value="commit"]`);
-    await until(async () => !(await modalTitles()).includes("Research paths"), "the research path chooser closed");
+    await until(async () => !(await modalTitles()).includes("Doctrines"), "the research path chooser closed");
     await until2(`!!document.querySelector(${q(`${TOP} .research-path b`)})`, "the research path committed");
     await until2(`!!document.querySelector("#research-button .path-tag")`, "the top bar showing the path");
     // Reopened, the chooser shows the committed path on top and nothing to choose.
@@ -1016,8 +1016,8 @@ async function empireScreens() {
     await until2(`!!document.querySelector(${q(`${TOP} .path-card.current[data-path="${path}"]`)})`, "the committed path's card");
     if (await b.eval(`!!document.querySelector(${q(`${TOP} button.option[data-path]`)})`)) throw new Error("the chooser offers paths after the commitment");
     await shot("research-path-committed");
-    await closeDialog("Research paths");
-    steps.push(`research path: committed to ${path} after the confirmation; the top bar names it; the chooser offers no other`);
+    await closeDialog("Doctrines");
+    steps.push(`doctrine: adopted ${path} after the confirmation; the top bar names it; the chooser offers no other`);
   }
   await closeDialog("Research");
   // F3: civics: a pick shows the change, the revolution when it is possible.

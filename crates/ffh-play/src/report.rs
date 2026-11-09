@@ -568,7 +568,7 @@ impl Report {
             !was && g.player_research_path_known(h, path)
         });
         if let Some(path) = path_complete {
-            lines.push(format!("research path complete: {} (every tech known)", d.text.name(&d.research_paths[path].base.description)));
+            lines.push(format!("doctrine complete: {} (every tech known)", d.text.name(&d.research_paths[path].base.description)));
         }
 
         // Contacts, wars and peace. A war or peace is news only between teams the human had met
@@ -737,7 +737,7 @@ mod tests {
             g.team_set_has_tech(team, t, true, Some(h), false, false);
         }
         let r = Report::build(&before, &Viewer::new(&g, h, false), Vec::new());
-        assert!(r.lines.iter().any(|l| l == "research path complete: Cavalry (every tech known)"), "{:?}", r.lines);
+        assert!(r.lines.iter().any(|l| l == "doctrine complete: Cavalry (every tech known)"), "{:?}", r.lines);
         assert_eq!(r.items.get("research_path_complete"), Some(&Json::idx(cavalry)));
         // The next report: nothing new.
         let again = Report::build(&snapshot(&g, h, 0), &Viewer::new(&g, h, false), Vec::new());

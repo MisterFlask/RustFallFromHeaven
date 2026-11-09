@@ -139,7 +139,7 @@ impl Game {
         self.players[p].research_path = Some(path);
         let d = self.d;
         let turn = self.game_turn();
-        self.log.msg(turn, Some(p), || format!("Research path: {}", d.text.name(&d.research_paths[path].base.description)));
+        self.log.msg(turn, Some(p), || format!("Doctrine adopted: {}", d.text.name(&d.research_paths[path].base.description)));
         true
     }
 }

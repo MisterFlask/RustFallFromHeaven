@@ -27,7 +27,7 @@ export function researchMods(x) {
     m.others ? { key: "others", short: `others +${m.others}%`, long: `Known by civilizations met: +${m.others}%` } : null,
     m.prereqs ? { key: "prereqs", short: `prereqs +${m.prereqs}%`, long: `Alternative prerequisites known: +${m.prereqs}%` } : null,
     m.feature ? { key: "feature", short: `feature ${times(100 + m.feature)}`, long: `Unique feature held: ${times(100 + m.feature)}` } : null,
-    m.path ? { key: "path", short: `path ${times(100 + m.path)}`, long: `Research path: ${times(100 + m.path)}` } : null,
+    m.path ? { key: "path", short: `doctrine ${times(100 + m.path)}`, long: `Doctrine: ${times(100 + m.path)}` } : null,
   ].filter(Boolean);
 }
 
@@ -53,7 +53,7 @@ export function techTip(x, hint) {
           "div.tip-mods",
           h("div", `Research on this tech: ${times(x.research_mods.total)}`),
           mods.map((md) => h("div.dim", `• ${md.long}`)),
-          h("div.dim", "Others and prerequisites add up; the feature and the path each multiply."),
+          h("div.dim", "Others and prerequisites add up; the feature and the doctrine each multiply."),
         )
       : null,
     e?.strategy ? h("div.tip-strategy", markup(e.strategy)) : null,
@@ -240,8 +240,8 @@ export async function openTechTree() {
         "div.research-head",
         cur ? h("div", "Researching ", h("b", cur)) : h("div.warn", "Nothing is being researched."),
         t.path !== null && t.path !== undefined
-          ? h("div", "Research path: ", h("b", dname("ResearchPathType", t.path)), ` (+${t.path_percent}% research on its techs, outlined `, h("span.path-mark"), ")")
-          : h("div.warn", "No research path (choose one in the research screen)."),
+          ? h("div", "Doctrine: ", h("b", dname("ResearchPathType", t.path)), ` (+${t.path_percent}% research on its techs, outlined `, h("span.path-mark"), ")")
+          : h("div.warn", "No doctrine (adopt one in the research screen)."),
         cardsLine(t),
         t.queue.length > 1 ? h("div.dim", `Queue: ${t.queue.map((q) => dname("TechType", q)).join(" → ")}`) : null,
         h("div.dim", `${t.rate} research per turn. Click a technology to research it (with what it needs); Shift-click to queue it. Point at one to see the path to it.`),

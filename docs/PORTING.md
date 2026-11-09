@@ -790,8 +790,10 @@ flag.
   Mastery; Remnants of Patria: Taxation; Pool of Tears: Medicine. The AI compares techs by research
   left at the rate it gets (`tech_plan::effective_left`) and values city sites with an unclaimed
   feature in reach a quarter higher per feature (`sites::research_feature_bonus`).
-- **Research paths** (2026-11-09; `research_paths.jsonc`, `RESEARCH_PATH_PERCENT` in
-  `rules_defines.jsonc`, `player/research_path.rs`). Games were decided before most civs reached
+- **Doctrines (research paths)** (2026-11-09; `research_paths.jsonc`, `RESEARCH_PATH_PERCENT` in
+  `rules_defines.jsonc`, `player/research_path.rs`). Players see them as doctrines (the owner's
+  naming): "Doctrine: Steel", "Adopt the Steel doctrine?"; the code, the data and the protocol call
+  them research paths. Games were decided before most civs reached
   the medieval techs (in AI games the tier-4 units came after turn 400): the era is three quarters
   of the tree's cost, each of its techs 5,400-10,000 beakers against 300-3,000 for a classical
   one. A player now commits to one of seven paths -- Arcane, Faith, Steel, Cavalry, Artifice,
