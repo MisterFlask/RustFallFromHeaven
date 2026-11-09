@@ -910,7 +910,7 @@ impl Command {
             Command::Research { tech, shift } => {
                 format!("research {}{}", tech.map_or("none".to_string(), |t| names::name(d, t).to_string()), if *shift { " (queue)" } else { "" })
             }
-            Command::ResearchPath { path } => format!("research path {}", names::name(d, *path)),
+            Command::ResearchPath { path } => format!("adopt doctrine {}", names::name(d, *path)),
             Command::UpdateCivics { civics } => format!("civics {}", civics.iter().map(|&c| names::name(d, c)).collect::<Vec<_>>().join(", ")),
             Command::Event { triggered, event } => format!("event {} for triggered {}", names::name(d, *event), triggered.0),
             Command::Vote { vote, choice } => format!("vote {} on {}", names::player_vote_name(*choice).map_or_else(|| format!("team {}", choice.0), str::to_string), vote.0),
@@ -1667,7 +1667,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         }
 
         Command::ResearchPath { path } => {
-            in_range("research path", path.idx() as i32, d.research_paths.len())?;
+            in_range("doctrine", path.idx() as i32, d.research_paths.len())?;
             if let Some(r) = g.player_research_path_refusal(h, *path) {
                 return Err(cannot(crate::view::player::research_path_refusal_text(g, r)));
             }

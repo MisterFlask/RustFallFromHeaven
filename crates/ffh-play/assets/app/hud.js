@@ -267,7 +267,7 @@ export function renderTop() {
       // The research path (docs/PORTING.md, "Research paths"), or a reminder that none is chosen.
       m.research_path !== null && m.research_path !== undefined
         ? small(`· ${dname("ResearchPathType", m.research_path)}`, ".path-tag")
-        : small("· no path", ".warn"),
+        : small("· no doctrine", ".warn"),
     ),
     sep(),
     h(

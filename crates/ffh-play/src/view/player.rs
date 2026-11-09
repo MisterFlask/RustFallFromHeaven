@@ -142,9 +142,9 @@ pub fn research_path_refusal_text(g: &ffh_core::game::Game, r: ffh_core::player:
     let d = g.d;
     match r {
         R::NotACiv => "Reason: no civilization.".to_string(),
-        R::Committed(path) => format!("Reason: committed to the {} path for the rest of the game.", d.text.name(&d.research_paths[path].base.description)),
-        R::Known => "Reason: every tech of the path that this civilization can research is known.".to_string(),
-        R::Closed => "Reason: the path's late techs bring this civilization no unit.".to_string(),
+        R::Committed(path) => format!("Reason: the {} doctrine is adopted for the rest of the game.", d.text.name(&d.research_paths[path].base.description)),
+        R::Known => "Reason: every tech of the doctrine that this civilization can research is known.".to_string(),
+        R::Closed => "Reason: the doctrine's late techs bring this civilization no unit.".to_string(),
     }
 }
 

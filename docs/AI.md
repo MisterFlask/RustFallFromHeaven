@@ -701,7 +701,7 @@ beeline for the rare dominant attacker who can. The ungated version is kept out;
 kept in as the holistically-correct (if seldom-triggered) policy, strictly better than a baseline
 that never deliberately chose siege at all.
 
-### Research paths (`research_path.rs`)
+### Research paths (`research_path.rs`; doctrines in the game)
 
 The rule: docs/PORTING.md, "Research paths" (one path for the rest of the game). An expert still
 commits at once: each turn uncommitted gives research away, and a civilization's own path is its

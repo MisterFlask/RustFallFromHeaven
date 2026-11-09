@@ -85,9 +85,9 @@ function researchPathLine(t, reload) {
   return h(
     "div.research-path",
     p
-      ? h("span", "Research path: ", h("b", dname("ResearchPathType", p.path)), ` (+${t.path_percent}% research on its techs) · ${pathProgress(p)} `)
-      : h("span.warn", "No research path. "),
-    h("button.link", { "data-paths": "", onclick: async () => ((await openResearchPaths()) === "chosen" ? reload() : null) }, p ? "Paths" : "Choose a path"),
+      ? h("span", "Doctrine: ", h("b", dname("ResearchPathType", p.path)), ` (+${t.path_percent}% research on its techs) · ${pathProgress(p)} `)
+      : h("span.warn", "No doctrine. "),
+    h("button.link", { "data-paths": "", onclick: async () => ((await openResearchPaths()) === "chosen" ? reload() : null) }, p ? "Doctrines" : "Adopt a doctrine"),
   );
 }
 
@@ -112,7 +112,7 @@ function pathTechs(p) {
  *  others below for reference. Resolves "chosen" or null. */
 export async function openResearchPaths() {
   let result = null;
-  const m = openModal({ title: "Research paths", body: [h("p.dim", "…")], tag: "research-paths", wide: true, buttons: [{ label: "Close", value: null }] });
+  const m = openModal({ title: "Doctrines", body: [h("p.dim", "…")], tag: "research-paths", wide: true, buttons: [{ label: "Close", value: null }] });
   let t;
   try {
     t = await api.query("techs");
@@ -125,15 +125,15 @@ export async function openResearchPaths() {
   if (mine) {
     // Committed: no choice left; the path, then the others as reference.
     m.setBody(
-      h("p.dim", `One path for the rest of the game: its techs are researched ${t.path_percent}% faster.`),
+      h("p.dim", `One doctrine for the rest of the game: its techs are researched ${t.path_percent}% faster.`),
       h(
         "div.path-card.current",
         { "data-path": mine.path },
-        h("span", h("b", name(mine)), " (committed)"),
+        h("span", h("b", name(mine)), " (adopted)"),
         h("small", pathTechs(mine)),
         h("small", mine.complete ? "Complete: every tech known." : `${pathProgress(mine)} · Research left: ${mine.left}`),
       ),
-      h("h4", "Other paths"),
+      h("h4", "Other doctrines"),
       h(
         "div.path-list",
         t.paths
@@ -145,8 +145,8 @@ export async function openResearchPaths() {
     return result ?? v;
   }
   const commit = async (p) => {
-    const answer = await ask(`Commit to ${name(p)}?`, [`Its techs are researched ${t.path_percent}% faster for the rest of the game.`, "No other path can be chosen afterwards."], [
-      { label: "Commit", value: "commit", primary: true },
+    const answer = await ask(`Adopt the ${name(p)} doctrine?`, [`Its techs are researched ${t.path_percent}% faster for the rest of the game.`, "No other doctrine can be adopted afterwards."], [
+      { label: "Adopt", value: "commit", primary: true },
       { label: "Cancel", value: null },
     ]);
     if (answer !== "commit") return;
@@ -167,7 +167,7 @@ export async function openResearchPaths() {
     ),
   );
   m.setBody(
-    h("p.dim", `Choose one path for the rest of the game: its techs are researched ${t.path_percent}% faster. The choice cannot be changed.`),
+    h("p.dim", `Adopt one doctrine for the rest of the game: its techs are researched ${t.path_percent}% faster. The choice cannot be changed.`),
     h("div.options", rows),
   );
   const v = await m.done;
