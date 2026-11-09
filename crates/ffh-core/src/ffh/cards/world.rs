@@ -1,50 +1,11 @@
 //! The helpers the cards share (docs/CARDS.md, section 3), and their lookups.
 
-// (Remove `unused_variables, unreachable_code` once every lookup has a card in it.)
-#![allow(unused_imports, unused_variables, unreachable_code)]
-
 use crate::ffh::dispatch::*;
 use crate::ffh::pycall::PyCall;
 use crate::game::Game;
 use crate::ids::*;
 use crate::structs::SpellTarget;
 use ffh_data::*;
-
-/// `PyResult` functions.
-pub fn find_spell(name: &str) -> Option<SpellFn> {
-    let f: SpellFn = match name {
-        _ => return None,
-    };
-    #[allow(unreachable_code)]
-    Some(f)
-}
-
-/// `PyRequirement` functions.
-pub fn find_req(name: &str) -> Option<ReqFn> {
-    let f: ReqFn = match name {
-        _ => return None,
-    };
-    #[allow(unreachable_code)]
-    Some(f)
-}
-
-/// `py_targets` functions.
-pub fn find_targets(name: &str) -> Option<TargetsFn> {
-    let f: TargetsFn = match name {
-        _ => return None,
-    };
-    #[allow(unreachable_code)]
-    Some(f)
-}
-
-/// Unit callbacks.
-pub fn find_unit_fn(name: &str) -> Option<UnitFn> {
-    let f: UnitFn = match name {
-        _ => return None,
-    };
-    #[allow(unreachable_code)]
-    Some(f)
-}
 
 /// `py_target_label` functions.
 pub fn find_target_label(name: &str) -> Option<TargetLabelFn> {

@@ -35,7 +35,6 @@ fn none<T>(_: &str) -> Option<T> {
 /// Every card module's lookups, searched in order.
 const MODULES: &[Lookups] = &[
     Lookups { spell: deck::find_spell, req: deck::find_req, targets: none, unit_fn: none },
-    Lookups { spell: world::find_spell, req: world::find_req, targets: world::find_targets, unit_fn: world::find_unit_fn },
     Lookups { spell: map_rules::find_spell, req: map_rules::find_req, targets: none, unit_fn: none },
     Lookups { spell: world_spells::find_spell, req: world_spells::find_req, targets: world_spells::find_targets, unit_fn: none },
     Lookups { spell: deck_ui::find_spell, req: none, targets: deck_ui::find_targets, unit_fn: none },

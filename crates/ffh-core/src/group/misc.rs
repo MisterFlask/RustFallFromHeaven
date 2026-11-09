@@ -12,8 +12,8 @@
 //! Some `CvUnitAI` / `CvPlayerAI` functions these rules depend on are AI code; they are
 //! reproduced as private helpers at the end of this file: `ai_group_first_val` /
 //! `ai_group_second_val` (the head-unit order of `addUnit`, exact ports), `ai_plot_danger`
-//! (`AI_getPlotDanger(..) > 0` in `doTurn`) and `ai_unit_ai_valid` (`AI_unitValue(..) > 0` in
-//! `mergeIntoGroup`, approximated).
+//! (`AI_getPlotDanger(..) > 0` in `doTurn`, through the port in `path.rs`) and
+//! `ai_unit_ai_valid` (`AI_unitValue(..) > 0` in `mergeIntoGroup`, approximated).
 
 use crate::defs::*;
 use crate::game::Game;
@@ -1151,62 +1151,12 @@ fn ai_group_second_val(game: &Game, u: UnitId) -> i32 {
     }
 }
 
-/// Stand-in for C++ `CvPlayerAI::AI_getPlotDanger(pPlot, iRange) > 0` (C++ default
-/// `bTestMoves = true`) for player `p`. `CvSelectionGroup::doTurn` uses it to force an update
-/// of AI-controlled groups that cannot fight (AI bookkeeping) and to cancel the missions of
-/// human groups (rules-visible).
-///
-/// AI: `AI_getPlotDanger` is CvPlayerAI code and is not ported as a player method. This private
-/// helper approximates it with the same tests, reduced to "is there any danger" (it stops at the
-/// first one, which is all a `> 0` test needs): within `range` plots of `plot` and in its area,
-/// a visible enemy unit that can attack -- an enemy of `p`'s team (`isEnemy`) that can attack,
-/// is not invisible to that team (`isInvisible(eTeam, false)`), can move or attack into `plot`,
-/// and reaches it (`baseMoves()`, +1 when it stands on a valid route, >= the step distance);
-/// or, for a non-human `p` and a plot without a city, an adjacent plot (or a route plot two steps
-/// away) owned by a team at war with `p`'s (C++ "border danger").
+/// C++ `CvPlayerAI::AI_getPlotDanger(pPlot, iRange) > 0` (C++ default `bTestMoves = true`) for
+/// player `p` ([`crate::path::ai_get_plot_danger`]). `CvSelectionGroup::doTurn` uses it to force
+/// an update of AI-controlled groups that cannot fight (AI bookkeeping) and to cancel the
+/// missions of human groups (rules-visible).
 fn ai_plot_danger(game: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> bool {
-    let team = game.players[p].team;
-    let plot_area = game.map.plots[plot].area;
-    let (x, y) = game.map.xy(plot);
-
-    let mut border_danger = 0;
-
-    for dx in -range..=range {
-        for dy in -range..=range {
-            let Some(loop_plot) = game.plot_xy(x, y, dx, dy) else {
-                continue;
-            };
-
-            if game.map.plots[loop_plot].area != plot_area {
-                continue;
-            }
-
-            let (loop_x, loop_y) = game.map.xy(loop_plot);
-            let distance = game.step_distance(x, y, loop_x, loop_y);
-            if game.at_war_opt(game.plot_get_team(loop_plot), Some(team)) {
-                if distance == 1 {
-                    border_danger += 1;
-                } else if distance == 2 && game.plot_is_route(loop_plot) {
-                    border_danger += 1;
-                }
-            }
-
-            for &loop_unit in &game.map.plots[loop_plot].units {
-                if game.unit_is_enemy(loop_unit, Some(team), None)
-                    && game.unit_can_attack(loop_unit)
-                    && !game.unit_is_invisible(loop_unit, team, true)
-                    && game.unit_can_move_or_attack_into(loop_unit, plot, false)
-                {
-                    let danger_range = game.unit_base_moves(loop_unit) + i32::from(game.plot_is_valid_route(loop_plot, loop_unit));
-                    if danger_range >= distance {
-                        return true;
-                    }
-                }
-            }
-        }
-    }
-
-    border_danger > 0 && !game.players[p].human && !game.plot_is_city(plot, false, None)
+    crate::path::ai_get_plot_danger(game, p, plot, range, true) > 0
 }
 
 /// Stand-in for C++ `CvPlayerAI::AI_unitValue(eUnit, eUnitAI, NULL) > 0`, which
