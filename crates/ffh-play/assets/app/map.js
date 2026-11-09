@@ -31,12 +31,17 @@ const ZOOMS = [12, 16, 24, 32, 48, 64];
 const BATTLE_MARKER_MIN_TS = 32;
 /** Keyboard scrolling (W A S D, `scrollHold`): the speed is SCROLL_VIEWS of the view's short side a
  *  second, within [SCROLL_MIN, SCROLL_MAX] CSS px; the velocity eases with this time constant (s)
- *  and the view is at rest below SCROLL_REST px a second. */
+ *  and the view is at rest below SCROLL_REST px a second. A press scrolls as a hold of at least
+ *  SCROLL_TAP_S would, and a frame moves the view by the time since the last one up to
+ *  SCROLL_FRAME_MAX_S (a page whose frames come slowly scrolls at the same speed, down to 4 frames
+ *  a second; after a longer stall, such as a hidden tab, it does not jump). */
 const SCROLL_VIEWS = 0.8;
 const SCROLL_MIN = 480;
 const SCROLL_MAX = 1000;
 const SCROLL_EASE_S = 0.07;
 const SCROLL_REST = 8;
+const SCROLL_TAP_S = 0.05;
+const SCROLL_FRAME_MAX_S = 0.25;
 /** How long after the game's map came the flat renderer draws only its backdrop while the page's
  *  HD-2D map starts (`holdBackdrop`): then the flat map, so the player can act (ms). */
 const BACKDROP_MS = 10000;
@@ -145,9 +150,11 @@ export class MapView {
      *  manipulation (drag, zoom, pan) cancels it; `prefers-reduced-motion` skips it. */
     this.anim = null;
     this.animRaf = 0;
-    /** Keyboard scrolling (`scrollHold`, W A S D held): the directions held and the view's
+    /** Keyboard scrolling (`scrollHold`, W A S D held): the directions held, the seconds of
+     *  scrolling the frames gave the directions pressed less than SCROLL_TAP_S of it ago
+     *  (`fresh`), the directions released meanwhile (`letGo`: held until then), and the view's
      *  velocity in screen px a second, eased towards SCROLL_SPEED and back to rest. */
-    this.scroll = { held: new Set(), vx: 0, vy: 0, t: 0, raf: 0 };
+    this.scroll = { held: new Set(), fresh: new Map(), letGo: new Set(), vx: 0, vy: 0, t: 0, raf: 0 };
     /** One-shot combat flashes (`flashTile`): `{ x, y, kind, t0, dur }`, drawn by both renderers
      *  and self-expiring. */
     this.flashes = [];
@@ -526,13 +533,21 @@ export class MapView {
 
   /** Starts (`on`) or ends scrolling in `dir` ("up", "left", "down", "right"): while a direction
    *  is held the view glides that way on screen, in any renderer (diagonals at the same speed),
-   *  easing in from rest and out to it after the last key is released. */
+   *  easing in from rest and out to it after the last key is released. A key let go before the
+   *  frames gave it SCROLL_TAP_S of scrolling (a tap, or a page whose frames come slowly) is
+   *  held until they have, so every press moves the view. */
   scrollHold(dir, on) {
     const s = this.scroll;
     if (on) {
       s.held.add(dir);
+      s.fresh.set(dir, 0);
+      s.letGo.delete(dir);
       this.cancelGlide();
-    } else s.held.delete(dir);
+    } else if (s.raf && s.fresh.has(dir)) s.letGo.add(dir);
+    else {
+      s.held.delete(dir);
+      s.fresh.delete(dir);
+    }
     if (!s.raf && this.map && (s.held.size || s.vx || s.vy)) {
       s.t = performance.now();
       this.stepScroll();
@@ -554,7 +569,7 @@ export class MapView {
     s.raf = requestAnimationFrame(() => {
       s.raf = 0;
       const now = performance.now();
-      const dt = Math.min(0.05, Math.max(0, (now - s.t) / 1000));
+      const dt = Math.min(SCROLL_FRAME_MAX_S, Math.max(0, (now - s.t) / 1000));
       s.t = now;
       let tx = (s.held.has("right") ? 1 : 0) - (s.held.has("left") ? 1 : 0);
       let ty = (s.held.has("down") ? 1 : 0) - (s.held.has("up") ? 1 : 0);
@@ -570,6 +585,15 @@ export class MapView {
         return;
       }
       this.moveView(s.vx * dt, s.vy * dt);
+      for (const [d, t] of s.fresh) {
+        if (t + dt < SCROLL_TAP_S) s.fresh.set(d, t + dt);
+        else s.fresh.delete(d);
+      }
+      for (const d of s.letGo) {
+        if (s.fresh.has(d)) continue;
+        s.held.delete(d);
+        s.letGo.delete(d);
+      }
       this.stepScroll();
     });
   }

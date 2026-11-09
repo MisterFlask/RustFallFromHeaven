@@ -1046,7 +1046,7 @@ without `X-FFH: 1`, so other web pages cannot drive it. A request must arrive wh
 decision on another connection (the status shows `phase: decision`). While the game runs (the
 AI turns), queries are answered, session operations get `busy` and commands `not_your_turn`,
 except `autoplay {turns: 0}` while an AI autoplay runs: it answers `{"stopping": true,
-"turns_left": N}` and the autoplay stops before the next turn slice (FfH `setAIAutoPlay(0)`,
+"turns_left": N, "turn": T}` (`T` the game turn the stop was taken at) and the autoplay stops before the next turn slice (FfH `setAIAutoPlay(0)`,
 journaled at that slice; your slot is human again at once, and you have control at your next
 turn, or at once during yours). The agent reads no input while the game runs, so there an
 autoplay runs all its turns. If the rules crash, the

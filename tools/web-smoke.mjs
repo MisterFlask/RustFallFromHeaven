@@ -1077,7 +1077,8 @@ async function keysAndLayers() {
   for (const [k, sign] of [["d", 1], ["a", -1]]) {
     const v0 = await view();
     await b.hold(k, 350);
-    await new Promise((r) => setTimeout(r, 300));
+    // The glide eases out after the release, on the page's frames (slow while the machine is busy).
+    await until2(`(() => { const s = window.ffh.mapView.scroll; return !s.raf && !s.held.size; })()`, `the map at rest after ${k.toUpperCase()}`, 20000);
     const v1 = await view();
     if (!(sign * east(v0, v1) > 0.3)) throw new Error(`${k.toUpperCase()} held did not scroll the map: ${JSON.stringify([v0, v1])}`);
     if (v1.sel !== v0.sel) throw new Error(`${k.toUpperCase()} changed the selection: ${v0.sel} -> ${v1.sel}`);
@@ -1131,13 +1132,17 @@ async function toolsAndSpectate() {
   await until2(`!!document.querySelector("#autoplay-stop")`, "the autoplay bar's Stop", 60000);
   await shot("autoplay-running");
   await click("#autoplay-stop");
+  // The server's reply: the turn it took the stop at (the turns played before the click depend
+  // on how fast the machine runs them; what Stop owes is control by the next turn after that).
+  await until2(`!!window.ffh.tools.lastAutoplayStop()`, "the server's answer to Stop", 60000);
+  const stop = await b.eval("window.ffh.tools.lastAutoplayStop()");
   await waitHuman("control after the stopped autoplay", 120000);
   const stoppedAt = await S("S.status.turn");
   if (await S("S.status.ai_auto_play")) throw new Error("the AI autoplay is still on after Stop");
-  if (stoppedAt > turn + 100) throw new Error(`Stop took ${stoppedAt - turn} turns`);
+  if (!stop.stopping || !(stop.turn >= turn) || stoppedAt > stop.turn + 1) throw new Error(`Stop taken at turn ${stop.turn} (autoplay from ${turn}), control at turn ${stoppedAt}`);
   if (await S("!!document.querySelector('#autoplay-stop')")) throw new Error("the autoplay bar stays after Stop");
   await answerPopups();
-  steps.push(`AI autoplay of 5000 turns from turn ${turn} stopped from the top bar: control at turn ${stoppedAt}`);
+  steps.push(`AI autoplay of 5000 turns from turn ${turn} stopped from the top bar at turn ${stop.turn}: control at turn ${stoppedAt}`);
   // The spectator mode: plays, pauses, steps, stops.
   turn = await S("S.status.turn");
   await tool("tool-spectate");

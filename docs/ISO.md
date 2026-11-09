@@ -357,5 +357,7 @@ fits across a phone. The map aims at the part the bars and the card leave (`upda
 
 Held, `W` `A` `S` `D` scroll the map smoothly in every renderer (`MapView.scrollHold`: a
 screen-space glide that eases in and out, at most of the view's short side a second), by the
-keys' place on the keyboard. Civ4's plain-letter orders on those keys keep their buttons (the
+keys' place on the keyboard. A tap scrolls as a 50 ms hold does (a key released before the frames
+applied it is held until they have, so a press always moves the view), and the glide keeps its
+speed in wall time down to 4 frames a second. Civ4's plain-letter orders on those keys keep their buttons (the
 group cycle is `Tab` and `Enter`).

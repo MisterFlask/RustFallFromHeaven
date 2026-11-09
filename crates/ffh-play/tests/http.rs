@@ -377,7 +377,9 @@ fn t12_a_running_autoplay_stops() {
     assert_eq!(phase(&st), "human", "{st}");
     assert_eq!(st.req::<i32>("ai_auto_play"), Ok(0));
     let turn: i32 = st.req("turn").unwrap();
-    assert!(turn > from && turn < from + 200, "turn {turn} (from {from})");
+    // The stop is taken between turn slices: control comes at the human's turn then or the next.
+    let at: i32 = stop.req("turn").unwrap();
+    assert!(turn > from && at >= from && turn <= at + 1, "turn {turn} (from {from}, stop taken at {at})");
     let journal = st.get("game").and_then(|g| g.req_str("journal").ok()).map(std::path::PathBuf::from).expect("the journal");
     let lines = ffh_play::journal::read_file(&journal).unwrap();
     assert!(lines.iter().any(|l| matches!(l, ffh_play::journal::Line::Cmd { cmd, .. } if ffh_play::journal::is_running_cmd(cmd))), "the stop journaled");

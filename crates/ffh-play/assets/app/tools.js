@@ -102,7 +102,7 @@ export function openInspector(kind = "unit", oid = null) {
 
 /** AI autoplay for N turns (`autoplay {turns}`, FfH `setAIAutoPlay`): the AI plays your slot
  *  meanwhile and gives it back at the start of the turn after the last. While it runs the top
- *  bar counts the turns left and offers Stop (`autoplayBar`). */
+ *  bar counts the turns left and offers Stop (`renderAutoplayBar`). */
 export function openAutoplay() {
   const n = h("input#autoplay-turns", { type: "number", min: 1, max: 10000, value: 5 });
   const err = h("p.error");
@@ -529,19 +529,26 @@ export function openOptions() {
   });
 }
 
-/** The spectator bar's buttons (the top bar shows them while spectating). */
-/** The top bar while an AI autoplay runs (not the spectator mode's own): the turns left and
- *  Stop, which sends `autoplay {turns: 0}` (FfH `setAIAutoPlay(0)`; the server stops it before
- *  its next turn slice and you have control at your next turn, or at once during yours). */
-export function autoplayBar() {
+/** The last stop of an AI autoplay the server took (`autoplay {turns: 0}`'s reply:
+ *  `{stopping, turns_left, turn}`, `turn` the game turn it was taken at), or null. */
+let autoplayStop = null;
+export function lastAutoplayStop() {
+  return autoplayStop;
+}
+
+/** Whether the top bar shows the AI autoplay's bar (not the spectator mode's own): an autoplay runs. */
+function autoplayShown() {
   const st = S.status ?? {};
   // Observed, the spectator mode plays one turn at a time; this bar is for longer runs.
-  if ((spect && !observing()) || st.phase !== "running" || !(st.ai_auto_play > (observing() ? 1 : 0))) return null;
-  const left = st.ai_auto_play;
+  return !((spect && !observing()) || st.phase !== "running" || !(st.ai_auto_play > (observing() ? 1 : 0)));
+}
+
+/** The top bar while an AI autoplay runs (not the spectator mode's own): Stop and the turns left.
+ *  Stop sends `autoplay {turns: 0}` (FfH `setAIAutoPlay(0)`; the server stops it before its next
+ *  turn slice and you have control at your next turn, or at once during yours). */
+function autoplayBar() {
   return h(
-    "span.spectate",
-    h("b", "AI autoplay"),
-    h("span.dim", ` ${left} turn${left === 1 ? "" : "s"} left `),
+    "span.spectate.autoplay",
     h(
       "button.small",
       {
@@ -550,7 +557,7 @@ export function autoplayBar() {
         onclick: async (ev) => {
           ev.currentTarget.disabled = true;
           try {
-            await api.cmd("autoplay", { turns: 0 });
+            autoplayStop = (await api.cmd("autoplay", { turns: 0 })).r;
             toast("The AI autoplay stops.");
           } catch (e) {
             toast(e.detail ?? e.message ?? String(e), "error");
@@ -559,7 +566,29 @@ export function autoplayBar() {
       },
       "■ Stop",
     ),
+    h("b", "AI autoplay"),
+    h("span.dim.autoplay-left"),
   );
+}
+
+/** Draws the AI autoplay's bar into `slot` while an autoplay runs. The status changes many times
+ *  a second then, so the bar is built once and only its count of turns left is updated: Stop
+ *  stays the same element in the same place (it comes first, before the counts that change
+ *  width), and a click on it is not lost to a redraw between the press and the release. */
+export function renderAutoplayBar(slot) {
+  if (!slot) return;
+  if (!autoplayShown()) {
+    if (slot.firstChild) slot.replaceChildren();
+    return;
+  }
+  if (!slot.querySelector("#autoplay-stop")) {
+    autoplayStop = null;
+    fill(slot, autoplayBar());
+  }
+  const left = S.status.ai_auto_play;
+  const text = ` ${left} turn${left === 1 ? "" : "s"} left`;
+  const span = slot.querySelector(".autoplay-left");
+  if (span.textContent !== text) span.textContent = text;
 }
 
 /** The spectator bar's state when it was last drawn (`renderSpectatorBar`). */

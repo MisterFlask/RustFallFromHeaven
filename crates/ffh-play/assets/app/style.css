@@ -487,6 +487,8 @@ textarea.raw { width: 100%; font: 12px var(--mono); }
 #mapwrap .layers button.active { border-color: var(--c-bone); color: var(--c-vellum); }
 .spectate { display: inline-flex; align-items: center; gap: 4px; margin-left: 10px; padding: 1px 6px; border: 1px solid var(--c-frost); }
 .spectate b { color: var(--c-rime); font-weight: normal; margin-right: 2px; }
+/* The AI autoplay's bar leads the phase group (hud.js phaseSlots): Stop first, where it stays. */
+.spectate.autoplay { margin-left: 0; }
 /* Watching the AI (tools.js, units.js, hud.js): the bar's selects, the stack line, the turn's
    events (crimson: a unit lost, amber: a retreat, gold: a city taken), the flags list. */
 .spectate select.small { font-size: 12px; padding: 0 2px; max-width: 13em; }

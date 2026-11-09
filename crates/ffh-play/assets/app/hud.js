@@ -8,7 +8,7 @@ import { h, fill } from "./dom.js";
 import { render as markup } from "./markup.js";
 import { look, pix, pixable, iconEl, uiIcon, barEl } from "./look.js";
 import { openCount, run } from "./commands.js";
-import { renderSpectatorBar, autoplayBar, flagsView } from "./tools.js";
+import { renderSpectatorBar, renderAutoplayBar, flagsView } from "./tools.js";
 import { isoSkin, isoIcon } from "./isoui.js";
 import { effectsOf, partsList } from "./infotips.js";
 import { battleLine, battleLinks } from "./engagements.js";
@@ -21,7 +21,9 @@ function phaseSlots(phase) {
   if (!main) {
     const slot = (id) => h(`span#${id}`, { style: { display: "contents" } });
     main = slot("phase-main");
-    phase.replaceChildren(main, slot("spectate-slot"), slot("autoplay-slot"));
+    // The AI autoplay's bar first: its Stop then stays put while the turn and the phase text
+    // after it change width (`renderAutoplayBar`).
+    phase.replaceChildren(slot("autoplay-slot"), main, slot("spectate-slot"));
   }
   return { main, spectate: phase.querySelector(":scope > #spectate-slot"), autoplay: phase.querySelector(":scope > #autoplay-slot") };
 }
@@ -203,7 +205,7 @@ export function renderTop() {
     // changes), so a click on Pause lands while the AIs move and the status changes many times
     // a second.
     renderSpectatorBar(phaseSlots(phase).spectate);
-    fill(phaseSlots(phase).autoplay, autoplayBar());
+    renderAutoplayBar(phaseSlots(phase).autoplay);
   }
   document.body.dataset.phase = st.phase ?? "";
   // A quiet one-shot flare on the crescent when control returns to the player (running -> human);
