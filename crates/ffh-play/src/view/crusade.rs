@@ -89,7 +89,8 @@ pub fn crusades(v: &Viewer) -> Json {
                 .player_ids()
                 .filter(|&q| g.players[q].alive && g.players[q].team == c.target)
                 .flat_map(|q| g.players[q].cities.iter().copied())
-                .filter(|&cc| v.reveal || g.map.plots[g.city_plot(cc)].revealed[v.team])
+                // The cities the viewer knows of (a revealed plot can hold a city founded since).
+                .filter(|&cc| v.city_revealed(cc))
                 .min_by_key(|&cc| (home.map_or(0, |(hx, hy)| g.plot_distance(hx, hy, g.cities[cc].x, g.cities[cc].y)), cc))
                 .map(|cc| crate::jarr![g.cities[cc].x, g.cities[cc].y]);
             crate::jobj! {

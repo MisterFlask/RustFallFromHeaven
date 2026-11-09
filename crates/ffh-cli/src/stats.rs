@@ -625,10 +625,12 @@ pub fn cmd_stats(cfg: &RunConfig, at: &[i32]) {
     let mut snaps: Vec<(i32, String, String)> = Vec::new();
     let barb = g.barbarian_player();
     let t = Instant::now();
+    // A later start era starts the game past turn 0 (`CvGame::init`).
+    let start_turn = g.start_turn;
     let played = run::play(&mut g, cfg, |g, stat| {
         // `stat.turn` is the turn just completed; snapshots are labelled with the number of
-        // turns played (turn 99 completed -> "100").
-        let played = stat.turn + 1;
+        // turns played (turn 99 completed in a game started at turn 0 -> "100").
+        let played = stat.turn + 1 - start_turn;
         let now = city_owners(g);
         for (&plot, &old) in &owners {
             match now.get(&plot) {
@@ -731,7 +733,7 @@ pub fn cmd_stats(cfg: &RunConfig, at: &[i32]) {
     });
     let stats = played.stats;
     // Always snapshot the final state (a game decided between two `--at` turns, or the cap).
-    let final_turn = stats.last().map_or(0, |s| s.turn + 1);
+    let final_turn = stats.last().map_or(0, |s| s.turn + 1 - start_turn);
     if snaps.last().map_or(true, |s| s.0 != final_turn) {
         snaps.push((final_turn, snapshot(&g, &civ_ev, cfg.detail), world_snapshot(&g)));
     }

@@ -1392,7 +1392,10 @@ pub fn read_spell(rd: &Rd) -> SpellInfo {
             "unit" => Some(SpellTargetKind::Unit),
             "player" => Some(SpellTargetKind::Player),
             "choice" => Some(SpellTargetKind::Choice),
-            other => panic!("spells: target {other:?} is none of plot, city, unit, player, choice"),
+            other => {
+                rd.cx.warn(format!("target {other:?} is none of plot, city, unit, player, choice"));
+                None
+            }
         },
         py_targets: rd.string("py_targets"),
         py_target_label: rd.string("py_target_label"),

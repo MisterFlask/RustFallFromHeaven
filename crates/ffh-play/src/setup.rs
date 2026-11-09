@@ -179,7 +179,7 @@ impl NewGame {
 
     /// Checks the settings (also done by [`build_game`]).
     pub fn validate(&self, d: &GameData) -> Result<(), String> {
-        if self.opponents < 1 || self.opponents + 1 > MAX_CIV_PLAYERS {
+        if self.opponents < 1 || self.opponents >= MAX_CIV_PLAYERS {
             return Err(format!("opponents must be in 1..={}", MAX_CIV_PLAYERS - 1));
         }
         if self.options.contains(&GameOptionType::GAMEOPTION_ADVANCED_START) {

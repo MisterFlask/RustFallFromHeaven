@@ -8,7 +8,8 @@
 //!                                    ffh frames of its backtrace
 //!   ffh-stress batch [opts]          play every game of a matrix, each in a child `run`
 //!                                    process (so aborts, stack overflows and hangs are caught
-//!                                    too), N at a time, then print a summary
+//!                                    too), N at a time, then print a summary; exits 1 if
+//!                                    any game panicked, crashed or timed out
 //!   ffh-stress list [opts]           print the games of a matrix (one `run` command each)
 //!
 //! FFH_STRESS_LOG=1 makes `run` print the game log (LOG lines) turn by turn.
@@ -128,6 +129,13 @@ fn batch(args: &[String], list_only: bool) {
         }
         return;
     }
+    // Opened before the games run: a bad path fails at once, not after the whole batch.
+    let mut out = o.out.as_ref().map(|path| {
+        std::fs::File::create(path).unwrap_or_else(|e| {
+            eprintln!("--out {path}: {e}");
+            std::process::exit(2)
+        })
+    });
     let exe = std::env::current_exe().expect("current_exe");
     let n = games.len();
     eprintln!("{n} games, {} jobs, timeout {} s", o.jobs, o.timeout.as_secs());
@@ -147,8 +155,7 @@ fn batch(args: &[String], list_only: bool) {
         done
     });
     summary(&results, t0.elapsed());
-    if let Some(path) = &o.out {
-        let mut f = std::fs::File::create(path).expect("create --out file");
+    if let Some(f) = &mut out {
         writeln!(f, "group\tsettings\tstatus\tturn\tend\tsecs\tdetail\tcommand").unwrap();
         for r in &results {
             writeln!(
@@ -165,6 +172,10 @@ fn batch(args: &[String], list_only: bool) {
             )
             .unwrap();
         }
+    }
+    // A batch with a panic, a crash or a timeout fails (scripts can gate on it).
+    if results.iter().any(|r| r.status != "ok") {
+        std::process::exit(1);
     }
 }
 

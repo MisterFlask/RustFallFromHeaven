@@ -102,6 +102,39 @@ impl Controller for Timed {
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         self.time(|| self.inner.govern_cities(g, p))
     }
+    fn ai_choose_research(&self, g: &Game, p: PlayerId) -> Option<TechType> {
+        self.time(|| self.inner.ai_choose_research(g, p))
+    }
+    fn conquered_city_choice(&self, g: &Game, p: PlayerId, c: CityId, can_raze: bool, gift_to: Option<PlayerId>) -> ffh_core::controller::ConqueredCityChoice {
+        self.time(|| self.inner.conquered_city_choice(g, p, c, can_raze, gift_to))
+    }
+    fn disband_acquired_city(&self, g: &Game, p: PlayerId, c: CityId) -> bool {
+        self.time(|| self.inner.disband_acquired_city(g, p, c))
+    }
+    fn confirm_settlement(&self, g: &Game, p: PlayerId, c: CityId) -> Option<bool> {
+        self.time(|| self.inner.confirm_settlement(g, p, c))
+    }
+    fn judge_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> ffh_core::controller::OfferVerdict {
+        self.time(|| self.inner.judge_offer(g, p, from, they_give, we_give))
+    }
+    fn trade_value(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<i32> {
+        self.time(|| self.inner.trade_value(g, p, other, item, p_gets))
+    }
+    fn take_control(&self, g: &Game, p: PlayerId, new: PlayerId) -> bool {
+        self.time(|| self.inner.take_control(g, p, new))
+    }
+    fn choose_free_promotion(&self, g: &Game, p: PlayerId, u: UnitId, options: &[PromotionType]) -> Option<PromotionType> {
+        self.time(|| self.inner.choose_free_promotion(g, p, u, options))
+    }
+    fn choose_free_bonus(&self, g: &Game, p: PlayerId, c: CityId, b: BuildingType, options: &[BonusType]) -> Option<BonusType> {
+        self.time(|| self.inner.choose_free_bonus(g, p, c, b, options))
+    }
+    fn hook(&self, g: &mut Game, h: ffh_core::controller::AiHook) {
+        self.time(|| self.inner.hook(g, h))
+    }
+    fn assign_working_plots(&self, g: &mut Game, c: CityId) -> bool {
+        self.time(|| self.inner.assign_working_plots(g, c))
+    }
 }
 
 pub struct RunConfig {
@@ -239,6 +272,57 @@ impl Controller for CppCitizens {
         }
         self.cai.city_ai_assign_working_plots(g, c);
         true
+    }
+    fn ai_choose_research(&self, g: &Game, p: PlayerId) -> Option<TechType> {
+        self.inner.ai_choose_research(g, p)
+    }
+    fn choose_free_tech(&self, g: &Game, p: PlayerId) -> Option<TechType> {
+        self.inner.choose_free_tech(g, p)
+    }
+    fn conquered_city_choice(&self, g: &Game, p: PlayerId, c: CityId, can_raze: bool, gift_to: Option<PlayerId>) -> ffh_core::controller::ConqueredCityChoice {
+        self.inner.conquered_city_choice(g, p, c, can_raze, gift_to)
+    }
+    fn disband_acquired_city(&self, g: &Game, p: PlayerId, c: CityId) -> bool {
+        self.inner.disband_acquired_city(g, p, c)
+    }
+    fn confirm_settlement(&self, g: &Game, p: PlayerId, c: CityId) -> Option<bool> {
+        self.inner.confirm_settlement(g, p, c)
+    }
+    fn keep_captured_unit(&self, g: &Game, p: PlayerId, unit: UnitType, plot: PlotIdx) -> bool {
+        self.inner.keep_captured_unit(g, p, unit, plot)
+    }
+    fn accept_unit(&self, g: &Game, p: PlayerId, unit: UnitId) -> bool {
+        self.inner.accept_unit(g, p, unit)
+    }
+    fn judge_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> ffh_core::controller::OfferVerdict {
+        self.inner.judge_offer(g, p, from, they_give, we_give)
+    }
+    fn trade_value(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<i32> {
+        self.inner.trade_value(g, p, other, item, p_gets)
+    }
+    fn take_control(&self, g: &Game, p: PlayerId, new: PlayerId) -> bool {
+        self.inner.take_control(g, p, new)
+    }
+    fn crusade_pledge(&self, g: &Game, p: PlayerId, c: ffh_core::crusade::CrusadeId) -> Option<ffh_core::crusade::Pledge> {
+        self.inner.crusade_pledge(g, p, c)
+    }
+    fn crusade_draft_pick(&self, g: &Game, p: PlayerId, c: ffh_core::crusade::CrusadeId, budget: i32, offered: &[(CityId, i32)]) -> Option<CityId> {
+        self.inner.crusade_draft_pick(g, p, c, budget, offered)
+    }
+    fn consider_loan(&self, g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanProposal) -> ffh_core::crusade::loan::LoanAnswer {
+        self.inner.consider_loan(g, p, proposal)
+    }
+    fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
+        self.inner.choose_loan_units(g, p, terms)
+    }
+    fn choose_free_promotion(&self, g: &Game, p: PlayerId, u: UnitId, options: &[PromotionType]) -> Option<PromotionType> {
+        self.inner.choose_free_promotion(g, p, u, options)
+    }
+    fn choose_free_bonus(&self, g: &Game, p: PlayerId, c: CityId, b: BuildingType, options: &[BonusType]) -> Option<BonusType> {
+        self.inner.choose_free_bonus(g, p, c, b, options)
+    }
+    fn hook(&self, g: &mut Game, h: ffh_core::controller::AiHook) {
+        self.inner.hook(g, h)
     }
 }
 
@@ -1086,5 +1170,56 @@ impl Controller for FreeRider {
     }
     fn assign_working_plots(&self, g: &mut Game, c: CityId) -> bool {
         self.inner.assign_working_plots(g, c)
+    }
+    fn judge_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> ffh_core::controller::OfferVerdict {
+        self.inner.judge_offer(g, p, from, they_give, we_give)
+    }
+    fn trade_value(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<i32> {
+        self.inner.trade_value(g, p, other, item, p_gets)
+    }
+    fn choose_free_promotion(&self, g: &Game, p: PlayerId, u: UnitId, options: &[PromotionType]) -> Option<PromotionType> {
+        self.inner.choose_free_promotion(g, p, u, options)
+    }
+    fn choose_free_bonus(&self, g: &Game, p: PlayerId, c: CityId, b: BuildingType, options: &[BonusType]) -> Option<BonusType> {
+        self.inner.choose_free_bonus(g, p, c, b, options)
+    }
+}
+
+#[cfg(test)]
+mod wrapper_tests {
+    /// `fn` names declared at the top level of the block that starts at `header`.
+    fn fns_in_block(src: &str, header: &str) -> Vec<String> {
+        let body = &src[src.find(header).unwrap_or_else(|| panic!("{header:?} not found"))..];
+        let mut depth = 0;
+        let mut names = Vec::new();
+        for line in body.lines() {
+            let t = line.trim_start();
+            if depth == 1 {
+                if let Some(rest) = t.strip_prefix("fn ") {
+                    names.push(rest.split(|c: char| !(c.is_alphanumeric() || c == '_')).next().unwrap().to_string());
+                }
+            }
+            depth += line.matches('{').count() as i32 - line.matches('}').count() as i32;
+            if depth == 0 && line.contains('}') {
+                break;
+            }
+        }
+        names
+    }
+
+    /// The CLI's controller wrappers pass every decision on: a method left to the trait default
+    /// would silently replace ffh-ai's decision with the default one (the CLI's games would no
+    /// longer be the AI's games).
+    #[test]
+    fn wrappers_forward_every_controller_method() {
+        let trait_fns = fns_in_block(include_str!("../../ffh-core/src/controller.rs"), "pub trait Controller");
+        assert!(trait_fns.len() >= 20, "parsed {trait_fns:?}");
+        let run = include_str!("run.rs");
+        for wrapper in ["Timed", "CppCitizens", "FreeRider"] {
+            let fns = fns_in_block(run, &format!("impl Controller for {wrapper}"));
+            for f in &trait_fns {
+                assert!(fns.contains(f), "{wrapper} does not implement Controller::{f}");
+            }
+        }
     }
 }
