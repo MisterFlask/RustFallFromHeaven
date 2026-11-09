@@ -241,7 +241,6 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
         let medieval = d.ty::<EraType>("ERA_MEDIEVAL");
         let late: Vec<&str> = known.iter().filter(|&&t| d.techs[t].era == medieval && !d.techs[t].repeat).map(|&t| short(&d.techs[t].base.type_, "TECH_")).collect();
         let path_name = |path: ResearchPathType| short(&d.research_paths[path].base.type_, "RESEARCHPATH_").to_string();
-        let paths_done: Vec<String> = pl.research_paths_done.iter().map(|&q| path_name(q)).collect();
 
         // Units.
         let mut mil = 0;
@@ -468,7 +467,7 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
             .int("late_techs", late.len() as i64)
             .str("late", &late.join("+"))
             .str("path", &pl.research_path.map_or("-".to_string(), path_name))
-            .str("paths_done", &paths_done.join("+"))
+            .boolean("path_known", pl.research_path.is_some_and(|q| g.player_research_path_known(p, q)))
             // How well it can field its current path's late units for want of resources (ffh-ai's
             // reading, percent; -1 without a path).
             .int("path_res", pl.research_path.map_or(-1, |path| ffh_ai::research_path::resource_pct(g, p, path)))

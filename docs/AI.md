@@ -703,10 +703,10 @@ that never deliberately chose siege at all.
 
 ### Research paths (`research_path.rs`)
 
-The rule: docs/PORTING.md, "Research paths". An expert commits at once: the commitment costs
-nothing but the freedom to switch before the path is complete, and each turn uncommitted gives
-research away. So the AI commits on the first turn it has a city, and again as soon as a path is
-complete. It takes the path its civilization is built for (`CIV_PATHS`: the paths its unique units,
+The rule: docs/PORTING.md, "Research paths" (one path for the rest of the game). An expert still
+commits at once: each turn uncommitted gives research away, and a civilization's own path is its
+path whatever the map shows. So the AI commits on the first turn it has a city. It takes the path
+its civilization is built for (`CIV_PATHS`: the paths its unique units,
 heroes and mechanics sit on, first choice x4, second x2 -- the Amurites Arcane, the Bannor Faith,
 the Hippus Cavalry, the Khazad Steel then Artifice, the Luchuirp Artifice, ...), weighting each
 open path by the research the commitment saves on its techs left, times the leader's interest in
@@ -722,26 +722,29 @@ after the civilization's own beelines (`tech_plan`, step `ResearchPath`), and th
 counts the halved research time on path techs (`tech_plan::effective_left`, now per player).
 Switches: `FFH_AI_RESEARCH_PATH_OFF` (the player never commits), `FFH_AI_PATH_RESOURCES_OFF` (the
 choice ignores resources). Telemetry: `research_path` decisions; `ffh stats` reports each civ's
-`path`, `paths_done`, `path_res` (its `resource_pct` for the current path), `late_techs`.
+`path`, `path_known` (every tech of it known), `path_res` (its `resource_pct` for the path),
+`late_techs`.
 
 Measured on seeds 1-24 (5 AIs, small map, 500 turns), `FFH_AI_RESEARCH_PATH_OFF=ALL` against
-the default, paired by seed (the rules without resource grants or the Shadow path):
+the default, paired by seed (one path for the rest of the game, no resource grants, no Shadow
+path):
 
 | | off | on |
 |---|---|---|
-| late (medieval) techs per civ, turns 300 / 400 / 500 | 0.60 / 3.57 / 8.32 | 1.19 / 5.43 / 11.83 |
-| civs with a tier-4 tech (Warhorses, Strength of Will, Mithril Weapons, ...) at 300 / 400 | 18% / 61% | 27% / 73% |
-| share of its first path's late techs a civ knows at 300 / 400 / 500 | 2% / 11% / 36% | 14% / 57% / 81% |
+| late (medieval) techs per civ, turns 300 / 400 / 500 | 0.60 / 3.57 / 8.32 | 1.26 / 4.93 / 9.83 |
+| civs with a tier-4 tech (Warhorses, Strength of Will, Mithril Weapons, ...) at 300 / 400 | 18% / 61% | 30% / 76% |
+| share of its path's late techs a civ knows at 300 / 400 / 500 | 2% / 11% / 34% | 14% / 59% / 78% |
 
-The research known is worth more (sum of the known techs' costs +31% at turn 300, t 4.3; +47% at
-400, t 3.8) and the civs are stronger mid-game (power +23% at 300, t 2.5). The cost: more wars
-(659 declared against 536) and a smaller world later (population -6.4% at 400, t -2.1; cities
--4.6%, t -2.4); with the resource grants (format 23, before the owner removed them) population
-was flat. Resources: committed civs that can field none of their path's late units for want of a
-resource, at turns 100 / 300 / 500: 17% / 14% / 14% with `FFH_AI_PATH_RESOURCES_OFF`, 16% / 13% /
-10% at the 60% weight (mostly the arcane civilizations' Archmages without Reagents), 0% / 0% / 5%
-at 25%. Paths taken by the end (current or complete): Steel 84, Faith 65, Artifice 63, Arcane 38,
-Cavalry 34, Mercantile 33, Wild 30; about two completed per civ.
+Civs knowing every tech of their path: 3% / 34% / 59% at turns 300 / 400 / 500. The research known
+is worth more (sum of the known techs' costs +36% at turns 300 and 400, t 4.8 and 2.6) and the
+civs are stronger mid-game (power +21% at 300, t 2.4). The cost: more wars (599 declared against
+536, 63 cities razed against 44) and a smaller world later (population -6.2% at 400, t -1.9;
+cities -3.5%, t -1.6). With sequential paths (a new one once the last was complete, before the
+owner made the commitment permanent) late techs at 500 were 11.8 a civ; with the resource grants
+(format 23) population was flat. Resources, measured with sequential paths: committed civs that
+can field none of their path's late units for want of a resource, at turns 100 / 300 / 500: 17% /
+14% / 14% with `FFH_AI_PATH_RESOURCES_OFF`, 16% / 13% / 10% at the 60% weight (mostly the arcane
+civilizations' Archmages without Reagents), 0% / 0% / 5% at 25%.
 
 ## Settlers and escorts (`expansion.rs`)
 

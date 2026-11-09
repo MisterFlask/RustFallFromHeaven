@@ -169,6 +169,10 @@ pub fn me(v: &Viewer) -> Json {
         "gold" => pl.gold,
         "gold_rate" => g.player_calculate_gold_rate(h),
         "research" => research,
+        // The research path committed to, for the rest of the game (docs/PORTING.md, "Research
+        // paths"), and whether every tech of it the human can research is known.
+        "research_path" => Json::opt_idx(pl.research_path),
+        "research_path_known" => pl.research_path.is_some_and(|q| g.player_research_path_known(h, q)),
         "research_queue" => Json::Arr(pl.research_queue.iter().map(|&t| Json::idx(t)).collect()),
         "research_rate" => g.player_calculate_research_rate(h, None),
         "commerce_percent" => pl.commerce_percent.to_vec(),

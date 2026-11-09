@@ -110,7 +110,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   the plot groups of a format-23 save may hold a grant the rules would never take back.
 /// - 25: research paths grant no resource (the plot groups of an older save may hold one), and
 ///   the Shadow path is gone (a saved player may hold it).
-pub const FORMAT_VERSION: u32 = 25;
+/// - 26: a research path is for the rest of the game: no `Player::research_paths_done`.
+pub const FORMAT_VERSION: u32 = 26;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

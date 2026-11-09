@@ -783,9 +783,9 @@ flag.
   one. A player now commits to one of seven paths -- Arcane, Faith, Steel, Cavalry, Artifice,
   Wild, Mercantile -- and researches that path's techs 100% faster; with a unique feature's
   doubling on the same tech both apply, multiplied (x4). That is all a path gives: no resource,
-  no unit, no building (both the owner's decisions, 2026-11-09). One path at a time: once the team knows
-  every tech of the path that the player can research, the path is complete and the player may
-  commit to another; a completed path is not taken again. A tech may be on several paths (Iron
+  no unit, no building (both the owner's decisions, 2026-11-09). One path for the rest of the
+  game: no other can be taken, even once every tech of the path is known (enforced specialization,
+  the owner's decision, 2026-11-09). A tech may be on several paths (Iron
   Working is on Steel, Cavalry and Artifice). No path holds a religion's tech -- one that founds a
   religion, or one that needs a state religion (Arete, Hidden Paths, Infernal Pact, Mind
   Stapling) -- so the religions stay a race of their own (the owner's preference, 2026-11-09; a
@@ -799,8 +799,8 @@ flag.
   Theology and Fanaticism (was Theology and Mithril Working, which put 16,000 beakers of Steel
   before Faith's last tech) and Animal Mastery needs Feral Bond alone (was also Iron Working). The
   AI commits at its first city to the path its civilization is built for (docs/AI.md, "Research
-  paths"); humans choose in the research screen (`research_path` command, docs/HUMAN.md). Saves:
-  format 25.
+  paths"); humans choose in the research screen, after a confirmation (`research_path` command,
+  docs/HUMAN.md). Saves: format 26.
 - **A withdrawing unit never enters another team's city** (2026-11-09,
   `unit_withdrawl_to_nearest_valid_plot`). In FFH2 a unit pushed off its plot (an enemy unit
   arriving there) could step into an adjacent empty enemy city and take it. A city being founded

@@ -1004,9 +1004,20 @@ async function empireScreens() {
     await closeDialog("Research paths");
   } else {
     await click(`${TOP} button.option[data-path="${path}"]`);
+    // A commitment is for the rest of the game: it asks first.
+    await until2(`!!document.querySelector(${q(`${TOP} button[data-value="commit"]`)})`, "the commitment's confirmation");
+    await shot("research-path-confirm");
+    await click(`${TOP} button[data-value="commit"]`);
     await until(async () => !(await modalTitles()).includes("Research paths"), "the research path chooser closed");
     await until2(`!!document.querySelector(${q(`${TOP} .research-path b`)})`, "the research path committed");
-    steps.push(`research path: committed to ${path}`);
+    await until2(`!!document.querySelector("#research-button .path-tag")`, "the top bar showing the path");
+    // Reopened, the chooser shows the committed path on top and nothing to choose.
+    await click(`${TOP} button[data-paths]`);
+    await until2(`!!document.querySelector(${q(`${TOP} .path-card.current[data-path="${path}"]`)})`, "the committed path's card");
+    if (await b.eval(`!!document.querySelector(${q(`${TOP} button.option[data-path]`)})`)) throw new Error("the chooser offers paths after the commitment");
+    await shot("research-path-committed");
+    await closeDialog("Research paths");
+    steps.push(`research path: committed to ${path} after the confirmation; the top bar names it; the chooser offers no other`);
   }
   await closeDialog("Research");
   // F3: civics: a pick shows the change, the revolution when it is possible.

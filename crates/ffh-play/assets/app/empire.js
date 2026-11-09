@@ -156,7 +156,8 @@ export async function openTechTree() {
       return h(
         "button.tech",
         {
-          class: state,
+          // A tech of the research path committed to (docs/PORTING.md, "Research paths").
+          class: x.path_bonus ? `${state} on-path` : state,
           "data-tech": x.tech,
           "data-era": x.era ?? "",
           onmouseenter: () => focus(x.tech),
@@ -171,7 +172,7 @@ export async function openTechTree() {
           },
         },
         h("span.tech-name", dname("TechType", x.tech)),
-        h("span.tech-sub", sub),
+        h("span.tech-sub", x.path_bonus && !x.has ? `${sub} · path` : sub),
         x.progress && !x.has ? h("span.tech-bar", h("span", { style: { width: `${Math.min(100, Math.round((100 * x.progress) / Math.max(1, x.cost)))}%` } })) : null,
       );
     });
@@ -198,6 +199,9 @@ export async function openTechTree() {
       h(
         "div.research-head",
         cur ? h("div", "Researching ", h("b", cur)) : h("div.warn", "Nothing is being researched."),
+        t.path !== null && t.path !== undefined
+          ? h("div", "Research path: ", h("b", dname("ResearchPathType", t.path)), ` (+${t.path_percent}% research on its techs, outlined `, h("span.path-mark"), ")")
+          : h("div.warn", "No research path (choose one in the research screen)."),
         cardsLine(t),
         t.queue.length > 1 ? h("div.dim", `Queue: ${t.queue.map((q) => dname("TechType", q)).join(" → ")}`) : null,
         h("div.dim", `${t.rate} research per turn. Click a technology to research it (with what it needs); Shift-click to queue it. Point at one to see the path to it.`),

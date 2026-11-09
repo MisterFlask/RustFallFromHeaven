@@ -446,7 +446,6 @@ persist_struct!(Player {
     ai_num_ai_units, ai_peacetime_trade_value, ai_peacetime_grant_value, ai_gold_traded_to,
     ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, tributes, armies, army_count,
     governors, governor_count, once_spells, card_traits, alignment_attitude, research_path,
-    research_paths_done,
 });
 
 persist_struct!(Team {

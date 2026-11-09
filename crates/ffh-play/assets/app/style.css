@@ -317,6 +317,16 @@ button.option { display: flex; flex-direction: column; align-items: flex-start; 
 button.option small { color: var(--dim); }
 button.option.current { border-color: var(--c-olive); background: var(--c-moss-dk); }
 .research-path { margin: 2px 0; }
+/* Research paths (docs/PORTING.md, "Research paths"): the committed path's card, the others for
+   reference, the tech tree's mark and the top bar's tag. */
+.path-card { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px; margin: 4px 0; border: 1px solid #3a4560; border-radius: 3px; }
+.path-card small { color: var(--dim); }
+.path-card.current { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); }
+.path-card.other { opacity: 0.7; }
+.path-list { max-height: 55vh; overflow-y: auto; }
+button.tech.on-path { outline: 2px solid var(--accent); outline-offset: -2px; }
+.path-mark { display: inline-block; width: 0.9em; height: 0.9em; margin: 0 2px; vertical-align: -0.1em; outline: 2px solid var(--accent); outline-offset: -2px; }
+.path-tag { color: var(--accent); }
 .build-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px; }
 button.build { display: flex; justify-content: space-between; gap: 8px; text-align: left; padding: 4px 8px; }
 button.build.current { border-color: var(--c-bone); color: var(--c-vellum); }

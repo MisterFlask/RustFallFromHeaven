@@ -620,15 +620,6 @@ impl Game {
                 }
             }
 
-            // Not in FFH2: a member whose research path is now known has completed it.
-            if value {
-                for m in self.player_ids() {
-                    if self.players[m].team == t && self.players[m].research_path.is_some() {
-                        self.player_update_research_path(m);
-                    }
-                }
-            }
-
             if value && announce && self.final_initialized && self.player_is_research(player) && self.player_get_current_research(player).is_none() {
                 // TXT_KEY_MISC_WHAT_TO_RESEARCH_NEXT tech chooser (CvPlayer::chooseTech): a
                 // popup, which CvPlayer::addPopup drops for non-human players (AI players
