@@ -1891,5 +1891,10 @@ mod tests {
         g.plot_set_owner(q, Some(P1), false, false);
         assert_eq!(g.player_calculate_research_modifier(P0, Some(theology)), base);
         assert_eq!(g.player_calculate_research_modifier(P1, Some(theology)), 2 * base);
+
+        // With a research path on the tech the two doublings multiply (Theology is Faith's).
+        g.players[P1].research_path = Some(d.t::<ResearchPathType>("RESEARCHPATH_FAITH"));
+        assert_eq!(g.player_calculate_research_modifier(P1, Some(theology)), 4 * base);
+        assert_eq!(g.player_calculate_research_modifier(P1, Some(other)), other_base);
     }
 }

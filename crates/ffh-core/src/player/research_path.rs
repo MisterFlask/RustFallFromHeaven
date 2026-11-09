@@ -52,10 +52,13 @@ impl Game {
         }
     }
 
-    /// The research-rate bonus (percent) player `p` has on `tech`: the larger of a unique feature's
-    /// (`team_tech_research_bonus_percent`) and its research path's; they do not add up.
+    /// The research-rate bonus (percent) player `p` has on `tech`: a unique feature's
+    /// (`team_tech_research_bonus_percent`) and its research path's, each multiplying the rate (a
+    /// path tech whose feature the team holds: both doublings, x4, +300%).
     pub fn player_tech_research_bonus_percent(&self, p: PlayerId, tech: TechType) -> i32 {
-        self.team_tech_research_bonus_percent(self.players[p].team, tech).max(self.player_research_path_percent(p, tech))
+        let feature = self.team_tech_research_bonus_percent(self.players[p].team, tech);
+        let path = self.player_research_path_percent(p, tech);
+        (100 + feature) * (100 + path) / 100 - 100
     }
 
     /// The late techs of `path` for alignment `alignment`: its `capstones` and the tech the

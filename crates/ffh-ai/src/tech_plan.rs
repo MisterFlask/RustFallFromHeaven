@@ -333,7 +333,7 @@ fn religion_preferences(g: &Game, p: PlayerId, n: &Names) -> Vec<TechType> {
 
 /// The research left on `t` for player `p`'s team, scaled to the rate `p` gets: a tech whose
 /// research a held unique feature or `p`'s research path doubles
-/// (`player_tech_research_bonus_percent`) counts half. What the plan and the research scorer
+/// (`player_tech_research_bonus_percent`) counts half, a quarter with both. What the plan and the research scorer
 /// compare techs by.
 pub fn effective_left(g: &Game, p: PlayerId, t: TechType) -> i64 {
     let left = g.team_get_research_left(g.players[p].team, t).max(1) as i64;

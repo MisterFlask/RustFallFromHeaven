@@ -1,7 +1,7 @@
 // Research paths (this game's own rules, not FFH2's; docs/PORTING.md, "Changes from FFH2").
 //     A player commits to one path at a time. While committed, its research on the path's techs
-//     runs RESEARCH_PATH_PERCENT percent faster (rules_defines.jsonc; a unique feature's bonus on
-//     the same tech does not add to it: the larger counts). Once the player knows every tech of
+//     runs RESEARCH_PATH_PERCENT percent faster (rules_defines.jsonc; with a unique feature's
+//     doubling on the same tech, both apply: x4). Once the player knows every tech of
 //     the path it is complete, and the player may commit to another path. A completed path
 //     cannot be taken again. Paths grant nothing but the research rate, and no path holds a
 //     religion's tech (one that founds a religion or needs a state religion; a data test checks

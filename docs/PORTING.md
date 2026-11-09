@@ -781,9 +781,9 @@ flag.
   the medieval techs (in AI games the tier-4 units came after turn 400): the era is three quarters
   of the tree's cost, each of its techs 5,400-10,000 beakers against 300-3,000 for a classical
   one. A player now commits to one of seven paths -- Arcane, Faith, Steel, Cavalry, Artifice,
-  Wild, Mercantile -- and researches that path's techs 100% faster (a unique feature's doubling
-  on the same tech does not add to it: the larger counts). That is all a path gives: no resource,
-  no unit, no building (the owner's decision, 2026-11-09). One path at a time: once the team knows
+  Wild, Mercantile -- and researches that path's techs 100% faster; with a unique feature's
+  doubling on the same tech both apply, multiplied (x4). That is all a path gives: no resource,
+  no unit, no building (both the owner's decisions, 2026-11-09). One path at a time: once the team knows
   every tech of the path that the player can research, the path is complete and the player may
   commit to another; a completed path is not taken again. A tech may be on several paths (Iron
   Working is on Steel, Cavalry and Artifice). No path holds a religion's tech -- one that founds a
