@@ -1723,6 +1723,16 @@ TXT_KEY_ANGER_TOTAL_UNHAPPY	Total Unhappiness: %d1_Num[ICON_UNHAPPY]
 TXT_KEY_ANGER_WAR_WEAR	+%d1_Change[ICON_UNHAPPY]: "War... What is it good for? Absolutely nothing... Unh!"
 TXT_KEY_APOSTOLIC_PALACE_RESIDENT	Apostolic Palace Resident
 TXT_KEY_ARCHERY_FIELD	Archery Field
+TXT_KEY_ARRAY_LINE	Line
+TXT_KEY_ARRAY_LINE_HELP	[ICON_BULLET]One unit of each kind takes a slot first, then the rest by kind: anti-flanking strikers, strikers, shooters, chargers, casters, healers, bombards, stabbers.[NEWLINE][ICON_BULLET]Each unit stands in its preferred row with room, the centre lanes first.
+TXT_KEY_ARRAY_CHARGE	Charge
+TXT_KEY_ARRAY_CHARGE_HELP	[ICON_BULLET]Chargers take the slots first, then anti-flanking strikers, strikers, shooters, stabbers, casters, healers, bombards.[NEWLINE][ICON_BULLET]Chargers take the front row first, the centre lanes first.[NEWLINE][ICON_BULLET]Other units stand as in Line.
+TXT_KEY_ARRAY_VOLLEY	Volley
+TXT_KEY_ARRAY_VOLLEY_HELP	[ICON_BULLET]One guard per lane takes a slot first: the strongest healthy strikers and chargers.[NEWLINE][ICON_BULLET]Then support units take the slots: shooters, casters, bombards, stabbers, healers; then the other guards.[NEWLINE][ICON_BULLET]Each unit stands as in Line.
+TXT_KEY_ARRAY_SQUARE	Square
+TXT_KEY_ARRAY_SQUARE_HELP	[ICON_BULLET]Units take the slots as in Line.[NEWLINE][ICON_BULLET]Each lane from the centre out: a guard in the front row, a support unit in the middle row, a guard in the rear row.[NEWLINE][ICON_BULLET]Anti-flanking strikers take the rear cells first.[NEWLINE][ICON_BULLET]Without guards, support units take the rear, then the front cells. Without support, guards take the middle cells.
+TXT_KEY_ARRAY_VANGUARD	Vanguard
+TXT_KEY_ARRAY_VANGUARD_HELP	[ICON_BULLET]Units take the slots as in Line.[NEWLINE][ICON_BULLET]Each veteran guard stands in the middle row behind a guard that is not a veteran: veterans have the Hero promotion or level %d1 or above.[NEWLINE][ICON_BULLET]Other units stand as in Line.
 TXT_KEY_AS_UNREMOVABLE	[NEWLINE][COLOR_WARNING_TEXT]Not removable[COLOR_REVERT]
 TXT_KEY_ATG_BUILDING_TEMPLE_STRATEGY	[COLOR_BUILDING_TEXT]Temples[COLOR_REVERT] increase a city's happiness and culture. They are especially useful for expanding your civilization's borders during the early game.
 TXT_KEY_ATG_CIVIC_TITLE_PEDIA	[TAB]The "Title" civic is a game mechanic that is used to track Alexander's legendary status. As the unit Alexander is attached to gains levels, Alexander will gain better "Titles." The better Alexander's "Title", the easier it will be to rule a large nation. [PARAGRAPH:1]If the unit Alexander is attached to should ever die, Alexander's "Title" will revert back the worst title until Alexander has healed from his wounds and is reattached to a unit.

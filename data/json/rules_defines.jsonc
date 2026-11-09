@@ -127,6 +127,9 @@
   // AUTO_MIN_HP_PCT: the auto-pick skips units below this percent of their HP while healthier
   //      ones of the same kind (the action of the row a unit prefers) are left
   "ENGAGEMENT_AUTO_MIN_HP_PERCENT": 50,
+  // ARRAY_VETERAN_LEVEL: a unit of this level or above is a veteran for the Vanguard array
+  //      (docs/ARRAYS.md), as is a unit with the Hero promotion
+  "ARRAY_VETERAN_LEVEL": 4,
   // RECON_REVEAL_RANGE: plots within which a recon unit reveals an army's formation (phase 7)
   "ENGAGEMENT_RECON_REVEAL_RANGE": 2,
   // battle reports the game keeps: those of the current and the previous turn's battles, and

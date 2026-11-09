@@ -15,6 +15,7 @@ pub mod engagement;
 pub mod battle_cards;
 pub mod battle_magic;
 pub mod battle_kit;
+pub mod battle_array;
 
 pub use basic::*;
 pub use terrain::*;
@@ -31,6 +32,7 @@ pub use engagement::*;
 pub use battle_cards::*;
 pub use battle_magic::*;
 pub use battle_kit::*;
+pub use battle_array::*;
 
 use crate::registry::Rd;
 

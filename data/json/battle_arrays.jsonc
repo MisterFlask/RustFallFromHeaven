@@ -1,0 +1,59 @@
+// Battle arrays (this game's own rules, not FFH2's; docs/ARRAYS.md).
+//     An army has one standing array, and a city one for its garrison; every battle of the army,
+//     attacking or defending, is arranged by it. An array is a variant of the auto formation's two
+//     choices: which units fight when the pool holds more than the side has slots (selection), and
+//     the row and lane of each (placement). Line is the auto formation as it was; every army and
+//     garrison starts with it. The first entry is that default.
+//
+//     A unit's kind is the action of the row it prefers: ANTI_FLANK (a striker with Formation),
+//     STRIKE, CHARGE, SHOOT, SPELL, BOMBARD, STAB, HEAL, NONE. A guard is an ANTI_FLANK, STRIKE or
+//     CHARGE unit; every other kind is support.
+//
+//     pick_order:      selection: the kinds in the order they take the slots (kinds left out come
+//                      after, in Line's order). Absent: Line's (ANTI_FLANK, STRIKE, SHOOT, CHARGE,
+//                      SPELL, HEAL, BOMBARD, STAB)
+//     one_of_each:     one unit of each kind before the rest (Line's rule). Absent: true
+//     screen_per_lane: guards taken before anything else, per lane of the side with a free front
+//                      cell (the strongest healthy ones; a large guard screens two). Absent: 0
+//     placement:       LINE (each unit in the first row of its rank order with room, the lanes
+//                      nearest the centre first), SQUARE (lane by lane from the centre out: a
+//                      guard in front, a support unit in the middle, a guard in the rear) or
+//                      VANGUARD (LINE, each veteran guard in the middle row behind a guard that
+//                      is no veteran; a veteran: the Hero promotion or level ARRAY_VETERAN_LEVEL).
+//                      Absent: LINE
+//     place_first:     LINE placement only: kinds placed before the others. Absent: none
+[
+  {
+    "type": "ARRAY_LINE",
+    "description": "TXT_KEY_ARRAY_LINE",
+    "help": "TXT_KEY_ARRAY_LINE_HELP"
+  },
+  {
+    "type": "ARRAY_CHARGE",
+    "description": "TXT_KEY_ARRAY_CHARGE",
+    "help": "TXT_KEY_ARRAY_CHARGE_HELP",
+    "pick_order": ["CHARGE", "ANTI_FLANK", "STRIKE", "SHOOT", "STAB", "SPELL", "HEAL", "BOMBARD"],
+    "one_of_each": false,
+    "place_first": ["CHARGE"]
+  },
+  {
+    "type": "ARRAY_VOLLEY",
+    "description": "TXT_KEY_ARRAY_VOLLEY",
+    "help": "TXT_KEY_ARRAY_VOLLEY_HELP",
+    "pick_order": ["SHOOT", "SPELL", "BOMBARD", "STAB", "HEAL", "ANTI_FLANK", "STRIKE", "CHARGE"],
+    "one_of_each": false,
+    "screen_per_lane": 1
+  },
+  {
+    "type": "ARRAY_SQUARE",
+    "description": "TXT_KEY_ARRAY_SQUARE",
+    "help": "TXT_KEY_ARRAY_SQUARE_HELP",
+    "placement": "SQUARE"
+  },
+  {
+    "type": "ARRAY_VANGUARD",
+    "description": "TXT_KEY_ARRAY_VANGUARD",
+    "help": "TXT_KEY_ARRAY_VANGUARD_HELP",
+    "placement": "VANGUARD"
+  }
+]
