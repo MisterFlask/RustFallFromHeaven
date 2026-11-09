@@ -126,7 +126,7 @@ export async function openResearchPaths() {
     ),
   );
   m.setBody(
-    h("p.dim", `Commit to one path at a time: its techs are researched ${t.path_percent}% faster, and its resource is granted at the capital for good. Once every tech of the path is known, another path can be chosen.`),
+    h("p.dim", `Commit to one path at a time: its techs are researched ${t.path_percent}% faster, and its resource, if it has one, is granted at the capital for good once the techs that reveal and enable it are known. Once every tech of the path is known, another path can be chosen.`),
     h("div.options", rows),
   );
   const v = await m.done;

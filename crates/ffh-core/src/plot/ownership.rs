@@ -1053,10 +1053,10 @@ impl Game {
                     let import_change = self.players[owner].bonus_import[b] * sign;
                     self.plot_group_change_num_bonuses(plot_group, b, import_change);
                 }
-                // Not in FFH2: the research paths' resources (docs/PORTING.md, "Research paths").
-                let pl = &self.players[owner];
-                let granted: Vec<BonusType> = pl.research_path.iter().chain(&pl.research_paths_done).filter_map(|&path| d.research_paths[path].bonus).collect();
-                for b in granted {
+                // Not in FFH2: the research paths' resources (docs/PORTING.md, "Research paths"),
+                // once the team knows their techs (`update_tech_bonus_plot_groups` recounts the
+                // capital around such a tech).
+                for b in self.player_research_path_bonuses(owner) {
                     self.plot_group_change_num_bonuses(plot_group, b, sign);
                 }
             }

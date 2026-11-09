@@ -791,15 +791,19 @@ flag.
   Malevolent Designs (Eidolons) for the evil. A civilization may commit to a path only if one of
   its late techs (`capstones`) unlocks a unit it can train -- no hero, none needing a religion,
   none of another alignment -- unless the path's late techs bring no unit to anyone: the Khazad
-  have no Arcane path (no Archmage), the Sheaim no Steel, the Clan of Embers no Cavalry. Most
-  paths grant their key resource at the capital for good, like a resource import (not for trade):
-  Arcane Reagents (Archmages), Faith Iron (Paladins, Eidolons), Steel Mithril, Cavalry Horse,
-  Artifice Gunpowder (Cannons). Two prerequisites changed so that paths do not run through each
+  have no Arcane path (no Archmage), the Sheaim no Steel, the Clan of Embers no Cavalry. Four
+  paths grant their key resource at the capital for good, like a resource import (not for trade),
+  once the team knows the techs that reveal it and let it be traded, as for a mined one: Arcane
+  Reagents (Archmages; Knowledge of the Ether), Faith Iron (Paladins, Eidolons; Smelting and Iron
+  Working), Cavalry Horse (Animal Husbandry), Artifice Gunpowder (Cannons; Blasting Powder). A
+  weapon resource in a city arms every melee unit trained there (Iron and Mithril Weapons), so a
+  grant never comes before its tech, and Steel grants none: Mithril stays Mithril Working's to
+  reveal and enable (the owner's decision, 2026-11-09). Two prerequisites changed so that paths do not run through each
   other: Divine Essence needs Theology and Fanaticism (was Theology and Mithril Working, which put
   16,000 beakers of Steel before Faith's last tech) and Animal Mastery needs Feral Bond alone (was
   also Iron Working). The AI commits at its first city to the path its civilization is built for
   (docs/AI.md, "Research paths"); humans choose in the research screen (`research_path` command,
-  docs/HUMAN.md). Saves: format 23.
+  docs/HUMAN.md). Saves: format 24.
 - **A withdrawing unit never enters another team's city** (2026-11-09,
   `unit_withdrawl_to_nearest_valid_plot`). In FFH2 a unit pushed off its plot (an enemy unit
   arriving there) could step into an adjacent empty enemy city and take it. A city being founded

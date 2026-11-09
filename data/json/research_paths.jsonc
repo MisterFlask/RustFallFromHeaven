@@ -12,7 +12,11 @@
 //                      of them (or the path's tech for its alignment) unlocks a unit it can train
 //                      (no hero, no unit that needs a religion), unless none of them unlocks a
 //                      unit for any civilization
-//     bonus:           the resource the commitment grants at the capital, kept for good
+//     bonus:           the resource the commitment grants at the capital, kept for good. It counts
+//                      only once the team knows the techs that reveal it and let it be traded
+//                      (Iron: Smelting and Iron Working), as a mined one would. Steel grants none:
+//                      Mithril stays Mithril Working's to reveal and enable (Mithril Weapons for
+//                      every melee unit of the city that has it)
 [
   {
     "type": "RESEARCHPATH_ARCANE",
@@ -33,8 +37,7 @@
     "type": "RESEARCHPATH_STEEL",
     "description": "TXT_KEY_RESEARCHPATH_STEEL",
     "techs": ["TECH_BRONZE_WORKING", "TECH_SMELTING", "TECH_IRON_WORKING", "TECH_MITHRIL_WORKING", "TECH_MITHRIL_WEAPONS", "TECH_RAGE"],
-    "capstones": ["TECH_MITHRIL_WEAPONS", "TECH_RAGE"],
-    "bonus": "BONUS_MITHRIL"
+    "capstones": ["TECH_MITHRIL_WEAPONS", "TECH_RAGE"]
   },
   {
     "type": "RESEARCHPATH_CAVALRY",

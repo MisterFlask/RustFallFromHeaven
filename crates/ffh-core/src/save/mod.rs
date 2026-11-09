@@ -106,7 +106,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 22: `Unit::battle_summon` (a caster's summons fight in its battles), the battle log's
 ///   `LogFighter::summoner` and `on_kill`; Extension I and II gone.
 /// - 23: research paths: `Player::research_path`, `Player::research_paths_done`.
-pub const FORMAT_VERSION: u32 = 23;
+/// - 24: a research path's resource counts only once its techs are known, and Steel grants none:
+///   the plot groups of a format-23 save may hold a grant the rules would never take back.
+pub const FORMAT_VERSION: u32 = 24;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

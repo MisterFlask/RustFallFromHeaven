@@ -158,11 +158,32 @@ impl Game {
         }
     }
 
-    /// How many of resource `bonus` the research paths of `p` grant at its capital: one for its
-    /// current path and one for each completed path whose resource it is.
-    pub fn player_research_path_bonus_count(&self, p: PlayerId, bonus: BonusType) -> i32 {
+    /// Whether team `t` can use a resource a research path grants: it knows the techs that reveal
+    /// it and let it be traded (`tech_reveal`, `tech_city_trade`), as for a mined one. The grant
+    /// never hands out a resource before its tech (Mithril before Mithril Working, Iron and its
+    /// weapons before Iron Working).
+    pub fn team_can_use_research_path_bonus(&self, t: TeamId, bonus: BonusType) -> bool {
+        let info = &self.d.bonuses[bonus];
+        self.team_is_has_tech(t, info.tech_reveal) && self.team_is_has_tech(t, info.tech_city_trade)
+    }
+
+    /// The resources the research paths of `p` grant at its capital now: one for its current
+    /// path and one for each completed path that has one, those its team can use
+    /// (`team_can_use_research_path_bonus`).
+    pub fn player_research_path_bonuses(&self, p: PlayerId) -> Vec<BonusType> {
         let pl = &self.players[p];
-        pl.research_path.iter().chain(&pl.research_paths_done).filter(|&&path| self.d.research_paths[path].bonus == Some(bonus)).count() as i32
+        pl.research_path
+            .iter()
+            .chain(&pl.research_paths_done)
+            .filter_map(|&path| self.d.research_paths[path].bonus)
+            .filter(|&b| self.team_can_use_research_path_bonus(pl.team, b))
+            .collect()
+    }
+
+    /// How many of resource `bonus` the research paths of `p` grant at its capital now
+    /// (`player_research_path_bonuses`).
+    pub fn player_research_path_bonus_count(&self, p: PlayerId, bonus: BonusType) -> i32 {
+        self.player_research_path_bonuses(p).iter().filter(|&&b| b == bonus).count() as i32
     }
 }
 
@@ -238,8 +259,9 @@ mod tests {
         assert!(g.player_research_path_known(p, cavalry));
         assert_eq!(g.player_research_path_refusal(p, cavalry), Some(ResearchPathRefusal::Done));
         assert_eq!(g.player_research_path_refusal(p, path(&g, "RESEARCHPATH_ARCANE")), None);
-        // The resource stays.
+        // The resource stays (once Animal Husbandry, Horseback Riding's prerequisite, is known).
         let horse = g.d.t::<BonusType>("BONUS_HORSE");
+        g.team_set_has_tech(team, tech(&g, "TECH_ANIMAL_HUSBANDRY"), true, Some(p), false, false);
         assert_eq!(g.player_research_path_bonus_count(p, horse), 1);
     }
 
@@ -263,17 +285,35 @@ mod tests {
     }
 
     #[test]
-    fn the_capital_holds_the_paths_resource() {
+    fn the_capital_holds_the_paths_resource_once_its_tech_is_known() {
         let mut g = small_world_game();
         let p = PlayerId(0);
+        let team = g.players[p].team;
         let capital = g.player_get_capital_city(p).expect("a capital");
-        let reagents = g.d.t::<BonusType>("BONUS_REAGENTS");
-        let count = g.city_num_bonuses(capital, reagents);
-        assert!(g.player_commit_research_path(p, path(&g, "RESEARCHPATH_ARCANE")));
-        assert!(g.city_has_bonus(capital, reagents));
-        assert_eq!(g.city_num_bonuses(capital, reagents), count + 1);
+        let horse = g.d.t::<BonusType>("BONUS_HORSE");
+        let husbandry = tech(&g, "TECH_ANIMAL_HUSBANDRY");
+        assert!(!g.team_is_has_tech(team, Some(husbandry)));
+        let count = g.city_num_bonuses(capital, horse);
+        assert!(g.player_commit_research_path(p, path(&g, "RESEARCHPATH_CAVALRY")));
+        // Not before Animal Husbandry, which reveals horses and lets them be traded.
+        assert_eq!(g.city_num_bonuses(capital, horse), count);
+        g.team_set_has_tech(team, husbandry, true, Some(p), false, false);
+        assert_eq!(g.city_num_bonuses(capital, horse), count + 1);
+        assert!(g.city_has_bonus(capital, horse));
         // It is not for trade.
-        assert_eq!(g.player_get_num_tradeable_bonuses(p, reagents), 0);
+        assert_eq!(g.player_get_num_tradeable_bonuses(p, horse), g.player_get_num_available_bonuses(p, horse) - 1);
+        // Losing the tech takes it away again (the plot groups stay consistent).
+        g.team_set_has_tech(team, husbandry, false, Some(p), false, false);
+        assert_eq!(g.city_num_bonuses(capital, horse), count);
+    }
+
+    #[test]
+    fn the_steel_path_grants_no_mithril() {
+        let g = small_world_game();
+        // Mithril stays Mithril Working's to reveal and enable.
+        assert_eq!(g.d.research_paths[path(&g, "RESEARCHPATH_STEEL")].bonus, None);
+        let mithril = g.d.t::<BonusType>("BONUS_MITHRIL");
+        assert!(g.d.research_paths.iter().all(|p| p.bonus != Some(mithril)));
     }
 
     #[test]

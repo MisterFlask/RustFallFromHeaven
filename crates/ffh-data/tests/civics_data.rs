@@ -388,6 +388,8 @@ fn research_paths() {
     assert_eq!(faith.alignment_techs[alignment("ALIGNMENT_EVIL")], Some(tech("TECH_MALEVOLENT_DESIGNS")));
     assert_eq!(faith.bonus, d.ty::<BonusType>("BONUS_IRON"));
     assert_eq!(path("RESEARCHPATH_WILD").bonus, None);
+    // Mithril stays Mithril Working's to reveal and enable.
+    assert_eq!(path("RESEARCHPATH_STEEL").bonus, None);
     assert!(path("RESEARCHPATH_CAVALRY").techs.contains(&tech("TECH_IRON_WORKING")));
     // The research paths' prerequisite changes.
     assert_eq!(d.techs[tech("TECH_DIVINE_ESSENCE")].prereq_or_techs, vec![tech("TECH_FANATICISM")]);
