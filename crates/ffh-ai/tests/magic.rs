@@ -209,10 +209,9 @@ fn a_summon_with_two_moves_reaches_an_enemy_two_plots_away() {
     let spectre = g.player_init_unit(us, d.t::<UnitType>("UNIT_SPECTRE"), 7, 5, Some(UnitAIType::UNITAI_ATTACK), None);
     g.units[spectre].ai_suicide_summon = true;
     let v = View::new(&g, us);
-    let target = g.unit_plot(warrior);
+    let at = g.unit_plot(warrior);
     ffh_ai::casting::summons_attack(&mut g, &v, newest);
     // A battle at the Warrior's plot, whatever its outcome (the dice change with the data).
-    let at = g.map.plot_xy(9, 5).expect("the Warrior's plot");
     assert!(g.battle_reports.iter().any(|r| r.plot == at), "the Spectre walked up to the Warrior and attacked");
 
     // The barbarians' summons attack only next to them (with this reach they took more cities).

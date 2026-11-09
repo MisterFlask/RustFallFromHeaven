@@ -262,11 +262,6 @@ impl Game {
         Ok(id)
     }
 
-    /// Does the general `id` defend its borrower (a Defend loan serves under it)?
-    pub fn loan_is_defense(&self, id: CrusadeId) -> bool {
-        self.crusade(id).is_some_and(|c| c.defend)
-    }
-
     /// Does deal `d` carry a loan's payment ([`Lender::deals`])? It runs as long as the loan.
     pub fn deal_is_loan(&self, d: DealId) -> bool {
         self.crusades.iter().any(|c| c.lenders.iter().any(|l| l.deals.contains(&d)))

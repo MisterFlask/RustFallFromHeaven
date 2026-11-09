@@ -229,9 +229,7 @@ pub fn assign(input: &GovernorInput) -> Assignment {
             items.push(Item { food: t.yields[0], prod: t.yields[1], rest: non_food_value(w, &t.yields, &t.commerce, 0) - t.yields[1] * w.production, index: i, is_tile: true });
         }
     }
-    let mut spec_items_start = items.len();
     if input.allow_specialists {
-        spec_items_start = items.len();
         let n = input.citizens.max(0);
         for (i, s) in input.specialists.iter().enumerate() {
             // One item per slot this assignment could use.
@@ -241,7 +239,6 @@ pub fn assign(input: &GovernorInput) -> Assignment {
             }
         }
     }
-    let _ = spec_items_start;
 
     let mut used = vec![false; items.len()];
     let mut surplus = input.base_surplus;

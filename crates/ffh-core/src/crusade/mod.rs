@@ -392,11 +392,6 @@ impl Game {
             .collect()
     }
 
-    /// The crusades `p` serves in: it has units in their Host, or answered their call.
-    pub fn crusades_of_lender(&self, p: PlayerId) -> Vec<CrusadeId> {
-        self.crusades.iter().filter(|c| c.lenders.iter().any(|l| l.player == p)).map(|c| c.id).collect()
-    }
-
     /// Does `p` have units serving a Host at war with team `t` (no separate peace with `t`)?
     pub fn crusade_serving_against(&self, p: PlayerId, t: TeamId) -> bool {
         (0..self.crusades.len()).any(|i| {

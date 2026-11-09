@@ -460,10 +460,10 @@ FractalWorld on top of `Fractal`).
 | `addUniqueBonusType` | 722-836 | 115 | `mapgen_add_unique_bonus_type` | ported |
 | `addNonUniqueBonusType` | 838-895 | 58 | `mapgen_add_non_unique_bonus_type` | ported |
 | `addGoodies` | 898-946 | 49 | `mapgen_add_goodies` | ported |
-| `eraseRivers` | 949-965 | 17 | `mapgen_erase_rivers` | ported |
-| `eraseFeatures` | 967-976 | 10 | `mapgen_erase_features` | ported |
-| `eraseBonuses` | 978-987 | 10 | `mapgen_erase_bonuses` | ported |
-| `eraseGoodies` | 989-1001 | 13 | `mapgen_erase_goodies` | ported |
+| `eraseRivers` | 949-965 | 17 | — | removed (map-script API, never called) |
+| `eraseFeatures` | 967-976 | 10 | — | removed (map-script API, never called) |
+| `eraseBonuses` | 978-987 | 10 | — | removed (map-script API, never called) |
+| `eraseGoodies` | 989-1001 | 13 | — | removed (map-script API, never called) |
 | `generateRandomMap` | 1009-1030 | 22 | `mapgen_generate_random_map` | ported |
 | `generatePlotTypes` | 1032-1059 | 28 | `mapgen_generate_plot_types` | ported |
 | `generateTerrain` | 1061-1078 | 18 | `mapgen_generate_terrain` | ported |

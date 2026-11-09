@@ -841,8 +841,8 @@ impl Game {
         let report = self.engage_report(&e, &fought, &post, sink.map(|s| s.finish(&fought)));
         let id = self.battle_report_add(report);
         if self.telemetry.on() {
-            let r = self.battle_report(id).expect("the report just added").clone();
-            self.tel_engagement(&r, &e, &fought);
+            let r = self.battle_report(id).expect("the report just added");
+            self.tel_engagement(r, &e, &fought);
         }
         self.engage_messages(id);
         Ok(EngageOutcome { report: id, result: post.result, plot_taken: post.plot_taken })

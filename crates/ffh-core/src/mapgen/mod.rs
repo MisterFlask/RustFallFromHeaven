@@ -765,41 +765,6 @@ impl Game {
         }
     }
 
-    /// C++ `CvMapGenerator::eraseRivers`.
-    pub fn mapgen_erase_rivers(&mut self) {
-        for plot in self.map.plot_ids() {
-            if self.map.plots[plot].n_of_river {
-                self.plot_set_n_of_river(plot, false, None);
-            }
-            if self.map.plots[plot].w_of_river {
-                self.plot_set_w_of_river(plot, false, None);
-            }
-        }
-    }
-
-    /// C++ `CvMapGenerator::eraseFeatures`.
-    pub fn mapgen_erase_features(&mut self) {
-        for plot in self.map.plot_ids() {
-            self.plot_set_feature_type(plot, None);
-        }
-    }
-
-    /// C++ `CvMapGenerator::eraseBonuses`.
-    pub fn mapgen_erase_bonuses(&mut self) {
-        for plot in self.map.plot_ids() {
-            self.plot_set_bonus_type(plot, None);
-        }
-    }
-
-    /// C++ `CvMapGenerator::eraseGoodies`.
-    pub fn mapgen_erase_goodies(&mut self) {
-        for plot in self.map.plot_ids() {
-            if self.plot_is_goody(plot, None) {
-                self.plot_remove_goody(plot);
-            }
-        }
-    }
-
     /// C++ `CvMapGenerator::generateRandomMap`.
     pub fn mapgen_generate_random_map(&mut self) {
         let ms = self.map_script.clone();

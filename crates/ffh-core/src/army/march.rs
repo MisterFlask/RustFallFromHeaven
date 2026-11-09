@@ -144,9 +144,13 @@ impl Game {
         let turn = self.game_turn();
         self.units[u].army = None;
         self.units[u].march = Some(March { dest, stalled: 0, left_turn: turn, from_city: c, diverted: false });
-        let unit_type = self.units[u].unit_type;
-        let eta = self.recruit_dest_plot(p, dest).and_then(|to| self.march_turns(p, unit_type, here, to)).unwrap_or(-1);
-        self.tel_march(p, "sent", matches!(dest, RecruitDest::Army(_)), eta);
+        // The march's length is only reported (a path search: skipped without telemetry; both
+        // calls are reads).
+        if self.telemetry.on() {
+            let unit_type = self.units[u].unit_type;
+            let eta = self.recruit_dest_plot(p, dest).and_then(|to| self.march_turns(p, unit_type, here, to)).unwrap_or(-1);
+            self.tel_march(p, "sent", matches!(dest, RecruitDest::Army(_)), eta);
+        }
         let name = self.recruit_name(u, Some(c));
         let to = self.recruit_dest_name(dest);
         self.log.msg_at(turn, Some(p), self.map.xy(here), || format!("{name} marches to {to}."));

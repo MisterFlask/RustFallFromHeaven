@@ -127,13 +127,9 @@ fn ai_ships_an_army_overseas_and_takes_an_enemy_city() {
 
     // Run the AI: it should board the army, sail it over, land it and take the city.
     let start = g.game_turn();
-    let mut struck = false;
     let mut captured = false;
     for _ in 0..20 {
         play_turn(&mut g);
-        if g.cities.contains(target) && g.cities[target].defense_damage > 0 {
-            struck = true;
-        }
         // Capture: the enemy city is now ours (same city, new owner).
         if g.cities.contains(target) && g.cities[target].owner == attacker {
             captured = true;
@@ -148,7 +144,6 @@ fn ai_ships_an_army_overseas_and_takes_an_enemy_city() {
             break;
         }
     }
-    let _ = struck;
     assert!(
         captured,
         "the attacker took the overseas enemy city by turn {} (started {start}); enemy city owner {:?}, alive {}",
