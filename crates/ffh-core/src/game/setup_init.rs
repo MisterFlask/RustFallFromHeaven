@@ -1666,6 +1666,10 @@ impl Game {
         let new_team = match new_team {
             Some(t) => {
                 self.player_set_team(new_player, t);
+                // `player_init` below counts the member again (C++ counted it twice: the
+                // Mercurians made a 2-player team read 3 members, which divides the vassal
+                // city maintenance share).
+                self.teams[t].num_members -= 1;
                 // gDLL->getInterfaceIFace()->setDirty(Fog_DIRTY_BIT, true) (UI)
                 t
             }

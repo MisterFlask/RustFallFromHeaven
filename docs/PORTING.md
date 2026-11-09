@@ -1043,6 +1043,8 @@ that no player chooses):
   GAMEOPTION_NO_WAR_WEARINESS) hid it is cleared, instead of coming back when Stoicism ends.
 - **Crusade Hosts are not counted as civilizations** in the domination land threshold, the
   domination population runner-up and the barbarians' free-tech rate (docs/CRUSADE.md said so).
+- **A player added to an existing team counts once** in its member count (Mercurians,
+  `formEmpire` with a team): C++ counted it twice, which shrank the vassal city maintenance share.
 - **Governors' military need** counts a war with a rival whose city is near, not any war (every
   civ is at war with the barbarians, so every nearby rival read as a war).
 - **An army disbanding into a city that is lost** becomes an army again (it stayed "disbanding"
