@@ -15,6 +15,24 @@ use crate::game::Game;
 use crate::ids::*;
 use ffh_data::*;
 
+/// The tech-specific parts of a player's research modifier on a tech
+/// (`Game::player_research_modifier_parts`), in percent.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct ResearchModifierParts {
+    /// Added to 100: the civilizations met that know the tech (up to
+    /// `TECH_COST_TOTAL_KNOWN_TEAM_MODIFIER`, by their share of all civilizations).
+    pub known_by_others: i32,
+    /// Added to 100: `TECH_COST_KNOWN_PREREQ_MODIFIER` for each alternative prerequisite known.
+    pub known_prereqs: i32,
+    /// A held unique feature's bonus on the tech (multiplies).
+    pub feature: i32,
+    /// The research path's bonus on the tech (multiplies).
+    pub path: i32,
+    /// The modifier: `(100 + known_by_others + known_prereqs)`, times `(100 + feature)` and
+    /// `(100 + path)` percent.
+    pub total: i32,
+}
+
 /// Out-parameters of C++ `CvPlayer::calculateUnitCost(int& iFreeUnits, ...)`.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct UnitCostBreakdown {
@@ -747,14 +765,21 @@ impl Game {
         }
     }
 
-    /// C++ `CvPlayer::calculateResearchModifier(eTech)` (100 for NO_TECH).
+    /// C++ `CvPlayer::calculateResearchModifier(eTech)` (100 for NO_TECH): the percent the
+    /// player's research rate counts on `tech` (`player_research_modifier_parts`).
     pub fn player_calculate_research_modifier(&self, p: PlayerId, tech: Option<TechType>) -> i32 {
-        let mut modifier = 100;
+        match tech {
+            Some(tech) => self.player_research_modifier_parts(p, tech).total,
+            None => 100,
+        }
+    }
 
-        let Some(tech) = tech else {
-            return modifier;
-        };
-
+    /// The tech-specific parts of the research modifier of `p` on `tech`, and their total (C++
+    /// `calculateResearchModifier`, which they are): the share of the civilizations it met that
+    /// know the tech (`TECH_COST_TOTAL_KNOWN_TEAM_MODIFIER`), the alternative prerequisites it
+    /// knows (`TECH_COST_KNOWN_PREREQ_MODIFIER` each), both added to 100; then, not in FFH2, a held
+    /// unique feature's and the research path's bonuses, each multiplying the whole.
+    pub fn player_research_modifier_parts(&self, p: PlayerId, tech: TechType) -> ResearchModifierParts {
         let d = self.d;
         let team = self.players[p].team;
 
@@ -771,9 +796,7 @@ impl Game {
             }
         }
 
-        if possible_known_count > 0 {
-            modifier += (d.defines.tech_cost_total_known_team_modifier * known_count) / possible_known_count;
-        }
+        let known_by_others = if possible_known_count > 0 { (d.defines.tech_cost_total_known_team_modifier * known_count) / possible_known_count } else { 0 };
 
         let mut possible_paths = 0;
         let mut unknown_paths = 0;
@@ -788,16 +811,20 @@ impl Game {
 
         debug_assert!(possible_paths >= unknown_paths, "The number of possible paths is expected to match or exceed the number of unknown ones");
 
-        modifier += (possible_paths - unknown_paths) * d.defines.tech_cost_known_prereq_modifier;
+        let known_prereqs = (possible_paths - unknown_paths) * d.defines.tech_cost_known_prereq_modifier;
+
+        let mut total = 100 + known_by_others + known_prereqs;
 
         // Not in FFH2: a unique feature inside the team's borders and the research path each
         // multiply research on their techs (both on one tech: x4).
+        let feature = self.team_tech_research_bonus_percent(team, tech);
+        let path = self.player_research_path_percent(p, tech);
         let bonus = self.player_tech_research_bonus_percent(p, tech);
         if bonus > 0 {
-            modifier = modifier * (100 + bonus) / 100;
+            total = total * (100 + bonus) / 100;
         }
 
-        modifier
+        ResearchModifierParts { known_by_others, known_prereqs, feature, path, total }
     }
 
     /// C++ `CvPlayer::calculateBaseNetResearch(eTech = NO_TECH)` (NO_TECH = current research).
@@ -2005,6 +2032,19 @@ mod tests {
             g.player_calculate_research_modifier(p, Some(mining)),
             100 + d.defines.tech_cost_total_known_team_modifier / 2 + known_prereq
         );
+
+        // The parts the screens show, and a research path's multiplying the sum (Mining is on no
+        // path: Bronze Working, Steel's, is).
+        let parts = g.player_research_modifier_parts(p, mining);
+        assert_eq!((parts.known_by_others, parts.known_prereqs, parts.feature, parts.path), (d.defines.tech_cost_total_known_team_modifier / 2, known_prereq, 0, 0));
+        assert_eq!(parts.total, g.player_calculate_research_modifier(p, Some(mining)));
+        let bronze = tech(&g, "TECH_BRONZE_WORKING");
+        g.teams[t0].has_tech[mining] = true;
+        let before = g.player_research_modifier_parts(p, bronze);
+        g.players[p].research_path = Some(d.t::<ResearchPathType>("RESEARCHPATH_STEEL"));
+        let parts = g.player_research_modifier_parts(p, bronze);
+        assert_eq!(parts.path, d.defines.research_path_percent);
+        assert_eq!(parts.total, before.total * (100 + parts.path) / 100);
     }
 
     #[test]

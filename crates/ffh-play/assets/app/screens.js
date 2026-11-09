@@ -12,7 +12,7 @@ import { run } from "./commands.js";
 import { render as markup, plain } from "./markup.js";
 import { illuminate, bannerEl } from "./look.js";
 import { leaderPortrait, teamPortrait, PORTRAIT } from "./portraits.js";
-import { techTip, unlockRow } from "./empire.js";
+import { techTip, unlockRow, researchModsRow } from "./empire.js";
 
 // ---------------------------------------------------------------------------------------------
 // Research (the CHOOSETECH popup and the research button).
@@ -64,7 +64,8 @@ export async function openResearch({ popup = false } = {}) {
             },
           },
           h("span", dname("TechType", x.tech)),
-          h("span.dim", `${turns(x.turns)} · ${x.cost}${x.progress ? ` (${x.progress})` : ""}${bonusLabel(x)}`),
+          h("span.dim", `${turns(x.turns)} · ${x.cost}${x.progress ? ` (${x.progress})` : ""}`),
+          researchModsRow(x),
           unlockRow(x),
         );
       }),
@@ -74,15 +75,6 @@ export async function openResearch({ popup = false } = {}) {
   load();
   const v = await m.done;
   return result ?? v;
-}
-
-/** The research bonuses on tech `x` of the `techs` query, for its card: " · path +100%",
- *  " · feature +100%", both multiplying (" · path +100% · feature +100% (x4)"); "" without. */
-export function bonusLabel(x) {
-  const parts = [x.path_bonus ? `path +${x.path_bonus}%` : null, x.feature_bonus ? `feature +${x.feature_bonus}%` : null].filter(Boolean);
-  if (!parts.length) return "";
-  const times = ((100 + (x.path_bonus ?? 0)) * (100 + (x.feature_bonus ?? 0))) / 10000;
-  return ` · ${parts.join(" · ")}${parts.length > 1 ? ` (x${times})` : ""}`;
 }
 
 /** The research screen's line for the research path (docs/PORTING.md, "Research paths"): the

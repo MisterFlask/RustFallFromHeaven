@@ -327,6 +327,16 @@ button.option.current { border-color: var(--c-olive); background: var(--c-moss-d
 button.tech.on-path { outline: 2px solid var(--accent); outline-offset: -2px; }
 .path-mark { display: inline-block; width: 0.9em; height: 0.9em; margin: 0 2px; vertical-align: -0.1em; outline: 2px solid var(--accent); outline-offset: -2px; }
 .path-tag { color: var(--accent); }
+/* A tech's research multipliers (empire.js researchModsRow; tooltip: .tip-mods). */
+.mods { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 12px; }
+.mod-chip { padding: 0 5px; border: 1px solid #3a4560; border-radius: 3px; color: var(--dim); white-space: nowrap; }
+.mod-chip.mod-path { border-color: var(--accent); color: var(--accent); }
+.mod-chip.mod-feature { border-color: var(--good); color: var(--good); }
+.mod-total { color: var(--c-vellum, inherit); font-weight: 600; white-space: nowrap; }
+.tip-mods { margin: 4px 0; }
+button.tech .tech-mult { position: absolute; top: 2px; right: 5px; font-size: 11px; color: var(--c-vellum); }
+button.tech.on-path .tech-mult { color: var(--accent); }
+button.tech.has-mult .tech-name { max-width: calc(100% - 38px); }
 .build-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px; }
 button.build { display: flex; justify-content: space-between; gap: 8px; text-align: left; padding: 4px 8px; }
 button.build.current { border-color: var(--c-bone); color: var(--c-vellum); }

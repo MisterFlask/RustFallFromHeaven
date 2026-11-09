@@ -12,13 +12,50 @@ import { render as markup } from "./markup.js";
 import { isoSkin, unlockIcon } from "./isoui.js";
 import { infoTip } from "./infotips.js";
 
+/** A multiplier in percent (200) as the screens write it: "x2", "x2.7", "x1.35". */
+export function times(pct) {
+  return `x${Number((pct / 100).toFixed(2))}`;
+}
+
+/** The tech-specific research multipliers of entry `x` of the `techs` query (`research_mods`):
+ *  the ones that apply, each `{ key, short, long }` (known by civilizations met, known
+ *  alternative prerequisites, a held unique feature, the research path), in that order. */
+export function researchMods(x) {
+  const m = x.research_mods;
+  if (!m) return [];
+  return [
+    m.others ? { key: "others", short: `others +${m.others}%`, long: `Known by civilizations met: +${m.others}%` } : null,
+    m.prereqs ? { key: "prereqs", short: `prereqs +${m.prereqs}%`, long: `Alternative prerequisites known: +${m.prereqs}%` } : null,
+    m.feature ? { key: "feature", short: `feature ${times(100 + m.feature)}`, long: `Unique feature held: ${times(100 + m.feature)}` } : null,
+    m.path ? { key: "path", short: `path ${times(100 + m.path)}`, long: `Research path: ${times(100 + m.path)}` } : null,
+  ].filter(Boolean);
+}
+
+/** A tech card's line of research multipliers (`researchMods`) and their total ("= x2.7"); null
+ *  for a known tech or one without any. */
+export function researchModsRow(x) {
+  const mods = researchMods(x);
+  if (x.has || !mods.length) return null;
+  return h("span.mods", mods.map((md) => h(`span.mod-chip.mod-${md.key}`, md.short)), h("span.mod-total", `= ${times(x.research_mods.total)}`));
+}
+
 /** The rich tooltip of entry `x` of the `techs` query: its name and era, what it brings the
- *  player (`help`, the server's C++ `setTechHelp`), its strategy text, and what a click does. */
+ *  player (`help`, the server's C++ `setTechHelp`), the research multipliers on it, its strategy
+ *  text, and what a click does. */
 export function techTip(x, hint) {
   const e = info("TechType", x.tech);
+  const mods = x.has ? [] : researchMods(x);
   return () => [
     h("div.tip-title", dname("TechType", x.tech), x.era !== null && x.era !== undefined ? h("span.dim", ` (${dname("EraType", x.era)})`) : null),
     x.help ? h("div.tip-effects", markup(x.help)) : h("div.dim", "Nothing new by itself."),
+    mods.length
+      ? h(
+          "div.tip-mods",
+          h("div", `Research on this tech: ${times(x.research_mods.total)}`),
+          mods.map((md) => h("div.dim", `• ${md.long}`)),
+          h("div.dim", "Others and prerequisites add up; the feature and the path each multiply."),
+        )
+      : null,
     e?.strategy ? h("div.tip-strategy", markup(e.strategy)) : null,
     hint ? h("div.tip-hint", hint) : null,
   ];
@@ -152,12 +189,13 @@ export async function openTechTree() {
     const boxes = techs.map((x) => {
       const p = pos(x);
       const state = x.has ? "has" : x.researching ? "researching" : x.queued !== null ? "queued" : x.can_research ? "can" : "later";
+      const mult = !x.has && x.research_mods && x.research_mods.total !== 100 ? times(x.research_mods.total) : null;
       const sub = x.has ? "known" : x.researching ? `researching · ${turns(x.turns)}` : x.queued !== null ? `queued ${x.queued + 1}${x.turns !== null ? ` · ${turns(x.turns)}` : ""}` : x.can_research ? `${turns(x.turns)} · ${x.cost}` : `${x.cost}`;
       return h(
         "button.tech",
         {
           // A tech of the research path committed to (docs/PORTING.md, "Research paths").
-          class: x.path_bonus ? `${state} on-path` : state,
+          class: [state, x.research_mods?.path ? "on-path" : "", mult ? "has-mult" : ""].filter(Boolean).join(" "),
           "data-tech": x.tech,
           "data-era": x.era ?? "",
           onmouseenter: () => focus(x.tech),
@@ -172,7 +210,9 @@ export async function openTechTree() {
           },
         },
         h("span.tech-name", dname("TechType", x.tech)),
-        h("span.tech-sub", x.path_bonus && !x.has ? `${sub} · path` : sub),
+        h("span.tech-sub", sub),
+        // Its research multiplier (the tooltip has the parts).
+        mult ? h("span.tech-mult", mult) : null,
         x.progress && !x.has ? h("span.tech-bar", h("span", { style: { width: `${Math.min(100, Math.round((100 * x.progress) / Math.max(1, x.cost)))}%` } })) : null,
       );
     });

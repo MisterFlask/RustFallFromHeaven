@@ -65,13 +65,13 @@ pub fn techs(v: &Viewer) -> Json {
             "and" => Json::Arr(info.prereq_and_techs.iter().map(|&p| Json::idx(p)).collect()),
             "or" => Json::Arr(info.prereq_or_techs.iter().map(|&p| Json::idx(p)).collect()),
             "depth" => depths[t.idx()],
-            // The research rate bonus (percent) of the human's research path on it (0 off the
-            // path; docs/PORTING.md, "Research paths").
-            "path_bonus" => g.player_research_path_percent(h, t),
-            // The research rate bonus (percent) of a unique feature the human's team holds on it
-            // (docs/PORTING.md, "Unique features double research on a tech"); with the path's, both
-            // multiply.
-            "feature_bonus" => g.team_tech_research_bonus_percent(v.team, t),
+            // The tech-specific research multipliers (`player_research_modifier_parts`, percent):
+            // known by civilizations met and known alternative prerequisites (added to 100), a
+            // held unique feature and the research path (each multiplying), and the total.
+            "research_mods" => {
+                let m = g.player_research_modifier_parts(h, t);
+                crate::jobj! { "others" => m.known_by_others, "prereqs" => m.known_prereqs, "feature" => m.feature, "path" => m.path, "total" => m.total }
+            },
             "disabled" => info.disable,
             // What it brings the human (C++ `setTechHelp`), for the research screens' tooltips.
             "help" => crate::view::help::tech::tech_help_with(g, h, t, &un),
