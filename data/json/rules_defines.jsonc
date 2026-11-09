@@ -150,5 +150,8 @@
   // ==== National units (docs/PORTING.md, "Changes from FFH2"). A national class's limit
   //      (max_player_instances) is the number its owner trains at the normal cost; past it, each
   //      one costs this percent of the normal cost. A class with hard_limit keeps FFH2's limit. ====
-  "NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT": 500
+  "NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT": 500,
+  // ==== Research paths (research_paths.jsonc; docs/PORTING.md, "Changes from FFH2"). A player
+  //      committed to a path researches its techs this percent faster. ====
+  "RESEARCH_PATH_PERCENT": 100
 }

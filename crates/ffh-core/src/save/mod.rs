@@ -105,7 +105,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   per-player and per-team arrays hold one entry per slot the game has now.
 /// - 22: `Unit::battle_summon` (a caster's summons fight in its battles), the battle log's
 ///   `LogFighter::summoner` and `on_kill`; Extension I and II gone.
-pub const FORMAT_VERSION: u32 = 22;
+/// - 23: research paths: `Player::research_path`, `Player::research_paths_done`.
+pub const FORMAT_VERSION: u32 = 23;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

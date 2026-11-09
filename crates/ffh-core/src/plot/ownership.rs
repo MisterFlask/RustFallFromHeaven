@@ -1053,6 +1053,12 @@ impl Game {
                     let import_change = self.players[owner].bonus_import[b] * sign;
                     self.plot_group_change_num_bonuses(plot_group, b, import_change);
                 }
+                // Not in FFH2: the research paths' resources (docs/PORTING.md, "Research paths").
+                let pl = &self.players[owner];
+                let granted: Vec<BonusType> = pl.research_path.iter().chain(&pl.research_paths_done).filter_map(|&path| d.research_paths[path].bonus).collect();
+                for b in granted {
+                    self.plot_group_change_num_bonuses(plot_group, b, sign);
+                }
             }
         }
 

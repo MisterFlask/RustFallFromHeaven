@@ -83,6 +83,8 @@ pub enum Command {
     /// Governor `governor` governs city `city` (from the bench or another city).
     GovernAssign { city: CityId, governor: GovernorId },
     Research { tech: Option<TechType>, shift: bool },
+    /// Commit to research path `path` (docs/PORTING.md, "Research paths").
+    ResearchPath { path: ResearchPathType },
     /// Merged over the current civics.
     UpdateCivics { civics: Vec<CivicType> },
     PercentChange { commerce: CommerceType, change: i32 },
@@ -434,6 +436,7 @@ pub const COMMAND_NAMES: &[&str] = &[
     "govern_hand",
     "govern_assign",
     "research",
+    "research_path",
     "update_civics",
     "percent_change",
     "convert",
@@ -482,6 +485,7 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("govern_hand", &["city"]),
     ("govern_assign", &["city", "governor"]),
     ("research", &["tech", "shift"]),
+    ("research_path", &["path"]),
     ("update_civics", &["civics"]),
     ("percent_change", &["commerce", "change"]),
     ("convert", &["religion"]),
@@ -624,6 +628,7 @@ impl Command {
             Command::GovernHand { .. } => "govern_hand",
             Command::GovernAssign { .. } => "govern_assign",
             Command::Research { .. } => "research",
+            Command::ResearchPath { .. } => "research_path",
             Command::UpdateCivics { .. } => "update_civics",
             Command::PercentChange { .. } => "percent_change",
             Command::Convert { .. } => "convert",
@@ -730,6 +735,7 @@ impl Command {
             "govern_hand" => Command::GovernHand { city: j.req("city")? },
             "govern_assign" => Command::GovernAssign { city: j.req("city")?, governor: j.req("governor")? },
             "research" => Command::Research { tech: names::opt_field(d, j, "tech")?, shift: flag("shift")? },
+            "research_path" => Command::ResearchPath { path: names::field(d, j, "path")? },
             "update_civics" => Command::UpdateCivics { civics: names::list_field(d, j, "civics")? },
             "percent_change" => Command::PercentChange { commerce: names::field(d, j, "commerce")?, change: j.req("change")? },
             "convert" => Command::Convert { religion: names::opt_field(d, j, "religion")? },
@@ -838,6 +844,7 @@ impl Command {
             Command::GovernHand { city } => j.with("city", *city),
             Command::GovernAssign { city, governor } => j.with("city", *city).with("governor", *governor),
             Command::Research { tech, shift } => j.with("tech", Json::opt_idx(*tech)).with("shift", *shift),
+            Command::ResearchPath { path } => j.with("path", Json::idx(*path)),
             Command::UpdateCivics { civics } => j.with("civics", Json::Arr(civics.iter().map(|&c| Json::idx(c)).collect())),
             Command::PercentChange { commerce, change } => j.with("commerce", Json::idx(*commerce)).with("change", *change),
             Command::Convert { religion } => j.with("religion", Json::opt_idx(*religion)),
@@ -903,6 +910,7 @@ impl Command {
             Command::Research { tech, shift } => {
                 format!("research {}{}", tech.map_or("none".to_string(), |t| names::name(d, t).to_string()), if *shift { " (queue)" } else { "" })
             }
+            Command::ResearchPath { path } => format!("research path {}", names::name(d, *path)),
             Command::UpdateCivics { civics } => format!("civics {}", civics.iter().map(|&c| names::name(d, c)).collect::<Vec<_>>().join(", ")),
             Command::Event { triggered, event } => format!("event {} for triggered {}", names::name(d, *event), triggered.0),
             Command::Vote { vote, choice } => format!("vote {} on {}", names::player_vote_name(*choice).map_or_else(|| format!("team {}", choice.0), str::to_string), vote.0),
@@ -1003,6 +1011,7 @@ pub enum Action {
     /// (`group_attack_force`, launched by `by`'s group).
     Engage { by: EngageBy, from: PlotIdx, to: PlotIdx, formation: Option<Vec<Place>>, war: Option<TeamId> },
     Research { tech: Option<TechType>, shift: bool },
+    ResearchPath { path: ResearchPathType },
     Revolution { civics: IdxVec<CivicOptionType, Option<CivicType>> },
     PercentChange { commerce: CommerceType, change: i32 },
     Convert { religion: Option<ReligionType> },
@@ -1657,6 +1666,14 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::Research { tech: *tech, shift: *shift })
         }
 
+        Command::ResearchPath { path } => {
+            in_range("research path", path.idx() as i32, d.research_paths.len())?;
+            if let Some(r) = g.player_research_path_refusal(h, *path) {
+                return Err(cannot(crate::view::player::research_path_refusal_text(g, r)));
+            }
+            Plan::Apply(Action::ResearchPath { path: *path })
+        }
+
         Command::UpdateCivics { civics } => {
             let mut v = g.players[h].civics.clone();
             let mut seen: Vec<CivicOptionType> = Vec::new();
@@ -2169,6 +2186,9 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
                 }
             }
         }
+        Action::ResearchPath { path } => {
+            g.player_commit_research_path(h, *path);
+        }
         Action::Revolution { civics } => g.player_revolution(h, civics, false),
         Action::PercentChange { commerce, change } => g.player_change_commerce_percent(h, *commerce, *change),
         Action::Convert { religion } => g.player_convert(h, *religion),
@@ -2266,6 +2286,7 @@ mod tests {
             Command::GovernAssign { city: CityId(3), governor: GovernorId(2) },
             Command::Research { tech: None, shift: false },
             Command::Research { tech: Some(TechType(3)), shift: true },
+            Command::ResearchPath { path: ResearchPathType(2) },
             Command::UpdateCivics { civics: vec![CivicType(1), CivicType(5)] },
             Command::PercentChange { commerce: CommerceType::COMMERCE_GOLD, change: -10 },
             Command::Convert { religion: Some(ReligionType(2)) },

@@ -315,6 +315,8 @@ body.bottom-closed #bottom-toggle { transform: rotate(180deg); }
 .options { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
 button.option { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; text-align: left; padding: 6px 10px; gap: 2px; }
 button.option small { color: var(--dim); }
+button.option.current { border-color: var(--c-olive); background: var(--c-moss-dk); }
+.research-path { margin: 2px 0; }
 .build-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px; }
 button.build { display: flex; justify-content: space-between; gap: 8px; text-align: left; padding: 4px 8px; }
 button.build.current { border-color: var(--c-bone); color: var(--c-vellum); }

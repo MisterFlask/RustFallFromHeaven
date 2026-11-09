@@ -5738,6 +5738,14 @@ TXT_KEY_CULTURALACTION_FOMENT_REVOLT	Foment Revolt
 TXT_KEY_CULTURALACTION_FOMENT_REVOLT_HELP	Channels half the city's culture into revolt among a civilization's people: each of its cities within reach gains revolt pressure, the nearer the more (the effect falls with the square of the distance beyond 5 plots; nothing beyond 20). A city resists with half its own culture and its garrison, and the pressure fades when the channel stops. Pressure brings unhappiness, then disorder; a city under enough of your pressure joins you (never a capital). Not an act of war, but their leader remembers it.
 TXT_KEY_CULTURALACTION_SPREAD_RELIGION	Spread Religion
 TXT_KEY_CULTURALACTION_SPREAD_RELIGION_HELP	Channels half the city's culture into spreading one of its religions among a civilization's cities that lack it (your own included). Each turn there is a chance that it spreads to one of them: more culture, nearer cities and fewer religions already there make it likelier. Their leader minds it only when it has another state religion.
+TXT_KEY_RESEARCHPATH_ARCANE	Arcane
+TXT_KEY_RESEARCHPATH_FAITH	Faith
+TXT_KEY_RESEARCHPATH_STEEL	Steel
+TXT_KEY_RESEARCHPATH_CAVALRY	Cavalry
+TXT_KEY_RESEARCHPATH_ARTIFICE	Artifice
+TXT_KEY_RESEARCHPATH_WILD	Wild
+TXT_KEY_RESEARCHPATH_MERCANTILE	Mercantile
+TXT_KEY_RESEARCHPATH_SHADOW	Shadow
 TXT_KEY_CULTURELEVEL_DEVELOPING	Developing
 TXT_KEY_CULTURELEVEL_FLEDGLING	Fledgling
 TXT_KEY_CULTURELEVEL_INFLUENTIAL	Influential

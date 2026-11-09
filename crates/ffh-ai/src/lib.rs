@@ -57,6 +57,7 @@ pub mod pacts;
 pub mod production;
 pub mod reach;
 pub mod research;
+pub mod research_path;
 pub mod sites;
 pub mod switches;
 pub mod tech_plan;
@@ -161,6 +162,7 @@ impl Controller for Ai {
             if g.telemetry.on() {
                 telemetry_intents(g, p);
             }
+            research_path::turn(g, p); // research paths (docs/AI.md, "Research paths")
             empire::manage(g, p);
             production::emergency(self, g, p);
             production::trouble_rebuild(self, g, p);

@@ -701,6 +701,36 @@ beeline for the rare dominant attacker who can. The ungated version is kept out;
 kept in as the holistically-correct (if seldom-triggered) policy, strictly better than a baseline
 that never deliberately chose siege at all.
 
+### Research paths (`research_path.rs`)
+
+The rule: docs/PORTING.md, "Research paths". An expert commits at once: the commitment costs
+nothing but the freedom to switch before the path is complete, and each turn uncommitted gives
+research away. So the AI commits on the first turn it has a city, and again as soon as a path is
+complete. It takes the path its civilization is built for (`CIV_PATHS`: the paths its unique units,
+heroes and mechanics sit on, first choice x4, second x2 -- the Amurites Arcane, the Bannor Faith,
+the Hippus Cavalry, the Khazad Steel then Artifice, the Luchuirp Artifice, ...), weighting each
+open path by the research the commitment saves on its techs left, times the leader's interest in
+them (its flavors against the techs'). Committed, the path's late techs (`capstones` and the
+alignment's tech) join the research plan after the civilization's own beelines (`tech_plan`,
+step `ResearchPath`), and the research score counts the halved research time on path techs
+(`tech_plan::effective_left`, now per player). Switch: `FFH_AI_RESEARCH_PATH_OFF` (the player
+never commits). Telemetry: `research_path` decisions.
+
+Measured on seeds 1-24 (5 AIs, small map, 500 turns), the switch off against on, same binary
+(paired by seed):
+
+| | off | on |
+|---|---|---|
+| late (medieval) techs per civ, turns 300 / 400 / 500 | 0.60 / 3.57 / 8.32 | 1.19 / 5.78 / 11.01 |
+| civs with a tier-4 tech (Warhorses, Strength of Will, Mithril Weapons, ...) at 300 / 400 | 18% / 61% | 32% / 79% |
+| share of its first path's late techs a civ knows at 300 / 400 / 500 | 2% / 11% / 32% | 15% / 61% / 77% |
+
+The research known is worth more (sum of the known techs' costs +41% at turn 300, t 4.1; +42% at
+400) and the civs are stronger mid-game (power +30% at 300, t 3.2; +14% at 400), with no change in
+population (+0.3% at 400) or cities (+1.4%). More cities were razed (92 against 44) and captured
+(764 against 685). Paths taken by the end (current or complete): Steel 79, Faith 62, Artifice 57,
+Arcane 42, Wild 28, Cavalry 27, Mercantile 27, Shadow 20; about two paths completed per civ.
+
 ## Settlers and escorts (`expansion.rs`)
 
 `settler_choice` (when a city builds settlers, item 5 above) and the settler role live here.

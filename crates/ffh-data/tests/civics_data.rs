@@ -370,3 +370,26 @@ fn espionage_mission() {
     assert_eq!(m.tech_prereq, None);
     assert_eq!((m.buy_tech_cost_factor, m.counterespionage_mod, m.difficulty_mod), (0, 0, 0));
 }
+
+#[test]
+fn research_paths() {
+    let d = d();
+    let path = |name: &str| &d.research_paths[d.t::<ResearchPathType>(name)];
+    assert_eq!(d.research_paths.len(), 8);
+    for p in d.research_paths.iter() {
+        assert!(!p.techs.is_empty() && !p.capstones.is_empty(), "{}", p.base.type_);
+        // A capstone is one of the path's techs or one of its alignment techs.
+        for c in &p.capstones {
+            assert!(p.techs.contains(c) || p.alignment_techs.iter().any(|&a| a == Some(*c)), "{}", p.base.type_);
+        }
+    }
+    let faith = path("RESEARCHPATH_FAITH");
+    assert_eq!(faith.alignment_techs[alignment("ALIGNMENT_GOOD")], Some(tech("TECH_RIGHTEOUSNESS")));
+    assert_eq!(faith.alignment_techs[alignment("ALIGNMENT_EVIL")], Some(tech("TECH_MALEVOLENT_DESIGNS")));
+    assert_eq!(faith.bonus, d.ty::<BonusType>("BONUS_IRON"));
+    assert_eq!(path("RESEARCHPATH_WILD").bonus, None);
+    assert!(path("RESEARCHPATH_CAVALRY").techs.contains(&tech("TECH_IRON_WORKING")));
+    // The research paths' prerequisite changes.
+    assert_eq!(d.techs[tech("TECH_DIVINE_ESSENCE")].prereq_or_techs, vec![tech("TECH_FANATICISM")]);
+    assert!(d.techs[tech("TECH_ANIMAL_MASTERY")].prereq_and_techs.is_empty());
+}

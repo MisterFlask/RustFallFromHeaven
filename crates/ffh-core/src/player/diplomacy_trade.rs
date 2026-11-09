@@ -750,9 +750,14 @@ impl Game {
         0
     }
 
-    /// C++ `CvPlayer::getNumTradeableBonuses(eBonus)`.
+    /// C++ `CvPlayer::getNumTradeableBonuses(eBonus)`. Not in FFH2: the research paths'
+    /// resources (`player_research_path_bonus_count`) are not for trade either.
     pub fn player_get_num_tradeable_bonuses(&self, p: PlayerId, bonus: BonusType) -> i32 {
-        self.player_get_num_available_bonuses(p, bonus) - self.players[p].bonus_import[bonus]
+        let tradeable = self.player_get_num_available_bonuses(p, bonus) - self.players[p].bonus_import[bonus];
+        match self.player_research_path_bonus_count(p, bonus) {
+            0 => tradeable,
+            granted => (tradeable - granted).max(0),
+        }
     }
 
     /// C++ `CvPlayer::hasBonus(eBonus)` (any city has it).

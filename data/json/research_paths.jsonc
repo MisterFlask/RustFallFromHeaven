@@ -1,0 +1,71 @@
+// Research paths (this game's own rules, not FFH2's; docs/PORTING.md, "Changes from FFH2").
+//     A player commits to one path at a time. While committed, its research on the path's techs
+//     runs RESEARCH_PATH_PERCENT percent faster (rules_defines.jsonc; a unique feature's bonus on
+//     the same tech does not add to it: the larger counts). Once the player knows every tech of
+//     the path it is complete, and the player may commit to another path. A completed path
+//     cannot be taken again.
+//
+//     techs:           the techs the commitment speeds up; a tech may be on several paths
+//     alignment_techs: the tech each alignment adds to the path, following the player's
+//                      alignment of the moment
+//     capstones:       the path's late techs. A civilization may commit to the path only if one
+//                      of them (or the path's tech for its alignment) unlocks a unit it can train
+//                      (no hero, no unit that needs a religion), unless none of them unlocks a
+//                      unit for any civilization
+//     bonus:           the resource the commitment grants at the capital, kept for good
+[
+  {
+    "type": "RESEARCHPATH_ARCANE",
+    "description": "TXT_KEY_RESEARCHPATH_ARCANE",
+    "techs": ["TECH_KNOWLEDGE_OF_THE_ETHER", "TECH_ALTERATION", "TECH_DIVINATION", "TECH_ELEMENTALISM", "TECH_NECROMANCY", "TECH_SORCERY", "TECH_ARCANE_LORE", "TECH_STRENGTH_OF_WILL", "TECH_PASS_THROUGH_THE_ETHER"],
+    "capstones": ["TECH_STRENGTH_OF_WILL", "TECH_PASS_THROUGH_THE_ETHER"],
+    "bonus": "BONUS_REAGENTS"
+  },
+  {
+    "type": "RESEARCHPATH_FAITH",
+    "description": "TXT_KEY_RESEARCHPATH_FAITH",
+    "techs": ["TECH_PRIESTHOOD", "TECH_RELIGIOUS_LAW", "TECH_THEOLOGY", "TECH_FANATICISM", "TECH_DIVINE_ESSENCE"],
+    "alignment_techs": {"ALIGNMENT_GOOD": "TECH_RIGHTEOUSNESS", "ALIGNMENT_NEUTRAL": "TECH_COMMUNE_WITH_NATURE", "ALIGNMENT_EVIL": "TECH_MALEVOLENT_DESIGNS"},
+    "capstones": ["TECH_THEOLOGY", "TECH_DIVINE_ESSENCE"],
+    "bonus": "BONUS_IRON"
+  },
+  {
+    "type": "RESEARCHPATH_STEEL",
+    "description": "TXT_KEY_RESEARCHPATH_STEEL",
+    "techs": ["TECH_BRONZE_WORKING", "TECH_SMELTING", "TECH_IRON_WORKING", "TECH_MITHRIL_WORKING", "TECH_MITHRIL_WEAPONS", "TECH_RAGE"],
+    "capstones": ["TECH_MITHRIL_WEAPONS", "TECH_RAGE"],
+    "bonus": "BONUS_MITHRIL"
+  },
+  {
+    "type": "RESEARCHPATH_CAVALRY",
+    "description": "TXT_KEY_RESEARCHPATH_CAVALRY",
+    "techs": ["TECH_HORSEBACK_RIDING", "TECH_STIRRUPS", "TECH_SMELTING", "TECH_IRON_WORKING", "TECH_WARHORSES"],
+    "capstones": ["TECH_WARHORSES"],
+    "bonus": "BONUS_HORSE"
+  },
+  {
+    "type": "RESEARCHPATH_ARTIFICE",
+    "description": "TXT_KEY_RESEARCHPATH_ARTIFICE",
+    "techs": ["TECH_ARCHERY", "TECH_BOWYERS", "TECH_MILITARY_STRATEGY", "TECH_CONSTRUCTION", "TECH_MATHEMATICS", "TECH_ENGINEERING", "TECH_SMELTING", "TECH_IRON_WORKING", "TECH_MACHINERY", "TECH_PRECISION", "TECH_BLASTING_POWDER"],
+    "capstones": ["TECH_MACHINERY", "TECH_PRECISION", "TECH_BLASTING_POWDER"],
+    "bonus": "BONUS_GUNPOWDER"
+  },
+  {
+    "type": "RESEARCHPATH_WILD",
+    "description": "TXT_KEY_RESEARCHPATH_WILD",
+    "techs": ["TECH_HUNTING", "TECH_ANIMAL_HUSBANDRY", "TECH_ANIMAL_HANDLING", "TECH_FERAL_BOND", "TECH_PRIESTHOOD", "TECH_ANIMAL_MASTERY", "TECH_COMMUNE_WITH_NATURE"],
+    "capstones": ["TECH_ANIMAL_MASTERY", "TECH_COMMUNE_WITH_NATURE"]
+  },
+  {
+    "type": "RESEARCHPATH_MERCANTILE",
+    "description": "TXT_KEY_RESEARCHPATH_MERCANTILE",
+    "techs": ["TECH_CODE_OF_LAWS", "TECH_CURRENCY", "TECH_TRADE", "TECH_MATHEMATICS", "TECH_TAXATION", "TECH_FEUDALISM", "TECH_GUILDS", "TECH_MERCANTILISM", "TECH_SAILING", "TECH_OPTICS", "TECH_ASTRONOMY"],
+    "capstones": ["TECH_GUILDS", "TECH_MERCANTILISM", "TECH_ASTRONOMY"]
+  },
+  {
+    "type": "RESEARCHPATH_SHADOW",
+    "description": "TXT_KEY_RESEARCHPATH_SHADOW",
+    "techs": ["TECH_DECEPTION", "TECH_POISONS", "TECH_MIND_STAPLING", "TECH_WAY_OF_THE_WICKED", "TECH_CORRUPTION_OF_SPIRIT", "TECH_INFERNAL_PACT", "TECH_GUILDS"],
+    "capstones": ["TECH_POISONS", "TECH_GUILDS", "TECH_INFERNAL_PACT"]
+  }
+]

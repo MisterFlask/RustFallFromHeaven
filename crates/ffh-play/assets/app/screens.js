@@ -40,6 +40,7 @@ export async function openResearch({ popup = false } = {}) {
       "div.research-head",
       cur ? h("div", "Researching ", h("b", dname("TechType", t.current)), ` (${cur.progress}/${cur.cost}, ${turns(cur.turns)})`) : h("div.warn", "Nothing is being researched."),
       t.queue.length > 1 ? h("div.dim", `Queue: ${t.queue.map((q) => dname("TechType", q)).join(" → ")}`) : null,
+      researchPathLine(t, load),
       h("div.dim", `${t.rate} research per turn. Click: research now. Shift-click: add to the queue.`),
       tapModes(tapMode, [["now", "Research now", "A tap researches it now"], ["queue", "Add to queue", "A tap adds it to the research queue (Shift-click)"]], (v) => ((tapMode = v), load())),
     );
@@ -63,7 +64,7 @@ export async function openResearch({ popup = false } = {}) {
             },
           },
           h("span", dname("TechType", x.tech)),
-          h("span.dim", `${turns(x.turns)} · ${x.cost}${x.progress ? ` (${x.progress})` : ""}`),
+          h("span.dim", `${turns(x.turns)} · ${x.cost}${x.progress ? ` (${x.progress})` : ""}${x.path_bonus ? ` · path +${x.path_bonus}%` : ""}`),
           unlockRow(x),
         );
       }),
@@ -71,6 +72,63 @@ export async function openResearch({ popup = false } = {}) {
     m.setBody(head, can.length ? list : h("p.dim", "No technology can be researched now."));
   };
   load();
+  const v = await m.done;
+  return result ?? v;
+}
+
+/** The research screen's line for the research path (docs/PORTING.md, "Research paths"): the
+ *  path committed to, or none, and a button that opens the path chooser; `reload` refreshes the
+ *  research screen after a commitment. */
+function researchPathLine(t, reload) {
+  const committed = t.path !== null && t.path !== undefined;
+  return h(
+    "div.research-path",
+    committed
+      ? h("span", "Research path: ", h("b", dname("ResearchPathType", t.path)), ` (+${t.path_percent}% research on its techs) `)
+      : h("span.warn", "No research path. "),
+    h("button.link", { "data-paths": "", onclick: async () => ((await openResearchPaths()) === "chosen" ? reload() : null) }, committed ? "Paths" : "Choose a path"),
+  );
+}
+
+/** The research path chooser: every path with its techs, the research left on them, the resource
+ *  it grants at the capital and whether the human may commit to it now. A click commits.
+ *  Resolves "chosen" or null. */
+export async function openResearchPaths() {
+  let result = null;
+  const m = openModal({ title: "Research paths", body: [h("p.dim", "…")], tag: "research-paths", wide: true, buttons: [{ label: "Close", value: null }] });
+  let t;
+  try {
+    t = await api.query("techs");
+  } catch (e) {
+    m.setBody(h("p.warn", e.detail ?? e.message));
+    return m.done;
+  }
+  const known = (p, tech) => p.known.includes(tech);
+  const rows = t.paths.map((p) =>
+    h(
+      "button.option",
+      {
+        "data-path": p.path,
+        disabled: !p.can_commit,
+        class: t.path === p.path ? "current" : t.paths_done.includes(p.path) ? "done" : "",
+        onclick: async () => {
+          const reply = await run({ c: "research_path", path: p.path });
+          if (reply) {
+            result = "chosen";
+            m.close("chosen");
+          }
+        },
+      },
+      h("span", h("b", dname("ResearchPathType", p.path)), t.path === p.path ? " (committed)" : t.paths_done.includes(p.path) ? " (complete)" : ""),
+      h("small", p.techs.map((x) => (known(p, x) ? `${dname("TechType", x)} ✓` : p.closed.includes(x) ? `${dname("TechType", x)} (closed)` : dname("TechType", x))).join(" · ")),
+      h("small", `Research left: ${p.left}${p.bonus !== null ? ` · Resource at the capital: ${dname("BonusType", p.bonus)}` : ""}`),
+      p.refusal ? h("small.dim", p.refusal) : null,
+    ),
+  );
+  m.setBody(
+    h("p.dim", `Commit to one path at a time: its techs are researched ${t.path_percent}% faster, and its resource is granted at the capital for good. Once every tech of the path is known, another path can be chosen.`),
+    h("div.options", rows),
+  );
   const v = await m.done;
   return result ?? v;
 }

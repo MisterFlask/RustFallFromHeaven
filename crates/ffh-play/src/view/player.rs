@@ -65,6 +65,9 @@ pub fn techs(v: &Viewer) -> Json {
             "and" => Json::Arr(info.prereq_and_techs.iter().map(|&p| Json::idx(p)).collect()),
             "or" => Json::Arr(info.prereq_or_techs.iter().map(|&p| Json::idx(p)).collect()),
             "depth" => depths[t.idx()],
+            // The research rate bonus (percent) of the human's research path on it (0 off the
+            // path; docs/PORTING.md, "Research paths").
+            "path_bonus" => g.player_research_path_percent(h, t),
             "disabled" => info.disable,
             // What it brings the human (C++ `setTechHelp`), for the research screens' tooltips.
             "help" => crate::view::help::tech::tech_help_with(g, h, t, &un),
@@ -87,6 +90,57 @@ pub fn techs(v: &Viewer) -> Json {
         "queue" => Json::Arr(g.players[h].research_queue.iter().map(|&t| Json::idx(t)).collect()),
         "rate" => g.player_calculate_research_rate(h, None),
         "techs" => Json::Arr(out.collect()),
+        "path" => Json::opt_idx(g.players[h].research_path),
+        "path_percent" => g.d.defines.research_path_percent,
+        "paths_done" => ids(&g.players[h].research_paths_done),
+        "paths" => research_paths(v),
+    }
+}
+
+/// The research paths for the human (docs/PORTING.md, "Research paths"): each path's techs (for
+/// the human's alignment), which of them its team knows, the research left on the others, its
+/// resource, and whether the human may commit to it now (`refusal`: the reason it may not).
+pub fn research_paths(v: &Viewer) -> Json {
+    let g = v.g;
+    let d = g.d;
+    let h = v.h;
+    let team = v.team;
+    Json::Arr(
+        d.research_paths
+            .keys()
+            .map(|path| {
+                let techs = g.player_research_path_techs(h, path);
+                let open = |t: TechType| !g.team_is_has_tech(team, Some(t)) && g.player_can_ever_research(h, t);
+                let left: i64 = techs.iter().filter(|&&t| open(t)).map(|&t| g.team_get_research_left(team, t).max(0) as i64).sum();
+                let refusal = g.player_research_path_refusal(h, path);
+                crate::jobj! {
+                    "path" => Json::idx(path),
+                    "techs" => ids(&techs),
+                    "known" => ids(&techs.iter().copied().filter(|&t| g.team_is_has_tech(team, Some(t))).collect::<Vec<_>>()),
+                    // Techs of the path closed to the human (another state religion's, ...).
+                    "closed" => ids(&techs.iter().copied().filter(|&t| !g.player_can_ever_research(h, t)).collect::<Vec<_>>()),
+                    "capstones" => ids(&d.research_paths[path].capstones),
+                    "left" => left,
+                    "bonus" => Json::opt_idx(d.research_paths[path].bonus),
+                    "can_commit" => refusal.is_none(),
+                    "refusal" => refusal.map_or(Json::Null, |r| Json::from(research_path_refusal_text(g, r))),
+                }
+            })
+            .collect(),
+    )
+}
+
+/// Why the human may not commit to a research path, as the screens and the command's refusal say
+/// it.
+pub fn research_path_refusal_text(g: &ffh_core::game::Game, r: ffh_core::player::research_path::ResearchPathRefusal) -> String {
+    use ffh_core::player::research_path::ResearchPathRefusal as R;
+    let d = g.d;
+    match r {
+        R::NotACiv => "Reason: no civilization.".to_string(),
+        R::Committed(path) => format!("Reason: committed to the {} path until it is complete.", d.text.name(&d.research_paths[path].base.description)),
+        R::Done => "Reason: path already completed.".to_string(),
+        R::Known => "Reason: every tech of the path that this civilization can research is known.".to_string(),
+        R::Closed => "Reason: the path's late techs bring this civilization no unit.".to_string(),
     }
 }
 

@@ -93,8 +93,8 @@
     "trade": true,
     "goody_tech": true,
     "flavors": {"FLAVOR_GROWTH": 80, "FLAVOR_MILITARY": 20},
+    // Not FFH2's: FFH2 also needs Iron Working (docs/PORTING.md, "Research paths").
     "or_pre_reqs": ["TECH_FERAL_BOND"],
-    "and_pre_reqs": ["TECH_IRON_WORKING"],
     "button": "Art/Interface/Buttons/TechTree/Animalmastery.dds"
   },
   {
@@ -397,7 +397,9 @@
     "trade": true,
     "goody_tech": true,
     "flavors": {"FLAVOR_CULTURE": 10, "FLAVOR_MILITARY": 70, "FLAVOR_RELIGION": 20},
-    "or_pre_reqs": ["TECH_MITHRIL_WORKING"],
+    // Not FFH2's: FFH2 needs Mithril Working instead of Fanaticism (docs/PORTING.md, "Research
+    // paths").
+    "or_pre_reqs": ["TECH_FANATICISM"],
     "and_pre_reqs": ["TECH_THEOLOGY"],
     "button": "Art/Interface/Buttons/TechTree/Divineessence.dds"
   },

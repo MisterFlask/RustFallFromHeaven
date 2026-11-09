@@ -169,6 +169,8 @@ impl Game {
         self.ev_begin_player_turn(turn, p);
 
         self.player_do_update_cache_on_turn(p);
+        // Not in FFH2: a research path completed by an alignment change (its alignment tech known).
+        self.player_update_research_path(p);
 
         // BETTER AI (new Player::DoTurn Functions) Sephi -- for non-human players only:
         // AI: per city AI_calculateNeededPermDefense / AI_calculateNeededPatrol /

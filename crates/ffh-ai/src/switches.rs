@@ -68,6 +68,9 @@ pub static PRECIOUS: Switch = Switch::new("PRECIOUS");
 /// Assault transports wait in port for the landing force and sail together, escorted
 /// (`naval::transport`).
 pub static FLEET: Switch = Switch::new("FLEET");
+/// Research paths (`research_path.rs`): off, a player never commits to one (the rule stays: it
+/// only gives up the bonus).
+pub static RESEARCH_PATH: Switch = Switch::new("RESEARCH_PATH");
 /// Mana nodes as an economy: casters convert our raw mana into the node type worth most, a
 /// caster is trained for it, research values the node techs (`mana.rs`).
 pub static MANA_NODES: Switch = Switch::new("MANA_NODES");

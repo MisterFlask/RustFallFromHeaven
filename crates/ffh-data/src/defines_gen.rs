@@ -584,6 +584,7 @@ pub struct Defines {
     pub sentinel_repair_percent: i32,
     pub siege_bombard_floor_percent: i32,
     pub national_unit_over_limit_cost_percent: i32,
+    pub research_path_percent: i32,
     pub bbai_skip_bombard_base_stack_ratio: i32,  // not in the data: C++ reads 0
     pub bbai_skip_bombard_best_attack_odds: i32,  // not in the data: C++ reads 0
     pub bbai_skip_bombard_min_stack_ratio: i32,  // not in the data: C++ reads 0
@@ -1173,6 +1174,7 @@ impl Defines {
             sentinel_repair_percent: m.int("SENTINEL_REPAIR_PERCENT"),
             siege_bombard_floor_percent: m.int("SIEGE_BOMBARD_FLOOR_PERCENT"),
             national_unit_over_limit_cost_percent: m.int("NATIONAL_UNIT_OVER_LIMIT_COST_PERCENT"),
+            research_path_percent: m.int("RESEARCH_PATH_PERCENT"),
             bbai_skip_bombard_base_stack_ratio: m.int("BBAI_SKIP_BOMBARD_BASE_STACK_RATIO"),
             bbai_skip_bombard_best_attack_odds: m.int("BBAI_SKIP_BOMBARD_BEST_ATTACK_ODDS"),
             bbai_skip_bombard_min_stack_ratio: m.int("BBAI_SKIP_BOMBARD_MIN_STACK_RATIO"),

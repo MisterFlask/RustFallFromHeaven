@@ -104,6 +104,8 @@ enum Step {
     /// A magic leader's Mages: Sorcery with a sphere tech on the way, after the economy's tier 2
     /// (`ARCANE_PATH`).
     ArcaneSorcery,
+    /// The late techs of the research path we are committed to (`research_path.rs`).
+    ResearchPath,
 }
 
 /// The plan, most urgent first.
@@ -124,6 +126,7 @@ const ORDER: &[Step] = &[
     Step::Economy2,
     Step::ArcaneSorcery,
     Step::Civ,
+    Step::ResearchPath,
     Step::Economy2Rest,
     Step::Magic,
 ];
@@ -213,6 +216,15 @@ pub fn goals(g: &Game, p: PlayerId) -> Vec<Goal> {
             Step::Civ => {
                 for &t in &civ.beelines {
                     push(t, "civ");
+                }
+            }
+            Step::ResearchPath => {
+                if let Some(path) = pl.research_path {
+                    let info = &d.research_paths[path];
+                    let aligned = pl.alignment.and_then(|a| info.alignment_techs[a]);
+                    for &t in info.capstones.iter().chain(aligned.as_ref()) {
+                        push(&d.techs[t].base.type_, "research-path");
+                    }
                 }
             }
             Step::ArcaneSorcery => {
@@ -319,12 +331,13 @@ fn religion_preferences(g: &Game, p: PlayerId, n: &Names) -> Vec<TechType> {
     prefs
 }
 
-/// The research left on `t` for team `team`, scaled to the rate it gets: a tech whose research a
-/// held unique feature doubles (`team_tech_research_bonus_percent`) counts half. What the plan and
-/// the research scorer compare techs by.
-pub fn effective_left(g: &Game, team: TeamId, t: TechType) -> i64 {
-    let left = g.team_get_research_left(team, t).max(1) as i64;
-    left * 100 / (100 + g.team_tech_research_bonus_percent(team, t) as i64)
+/// The research left on `t` for player `p`'s team, scaled to the rate `p` gets: a tech whose
+/// research a held unique feature or `p`'s research path doubles
+/// (`player_tech_research_bonus_percent`) counts half. What the plan and the research scorer
+/// compare techs by.
+pub fn effective_left(g: &Game, p: PlayerId, t: TechType) -> i64 {
+    let left = g.team_get_research_left(g.players[p].team, t).max(1) as i64;
+    left * 100 / (100 + g.player_tech_research_bonus_percent(p, t) as i64)
 }
 
 /// The unknown techs `p` needs for `goal` and their research left, or `None` if some needed
@@ -346,7 +359,7 @@ pub fn path(g: &Game, p: PlayerId, goal: TechType) -> Option<Path> {
             return i64::MAX;
         }
         let info = &g.d.techs[t];
-        let mut total = effective_left(g, team, t);
+        let mut total = effective_left(g, p, t);
         for &a in &info.prereq_and_techs {
             let c = cost(g, p, team, a, memo, depth + 1);
             if c == i64::MAX {
@@ -393,7 +406,7 @@ pub fn path(g: &Game, p: PlayerId, goal: TechType) -> Option<Path> {
             }
         }
     }
-    let left = techs.iter().map(|&t| effective_left(g, team, t)).sum();
+    let left = techs.iter().map(|&t| effective_left(g, p, t)).sum();
     Some(Path { techs, left })
 }
 

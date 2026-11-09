@@ -165,6 +165,7 @@ Missions, promotions, improvements and builds are only counted.
 | Intents | `goal`: the victory planner's goal. `finance`: `ok`, `losing_gold`, `support_heavy` or `structural_deficit`. `war_prep`: the team being prepared against. `campaign`: the city its operation targets. | `strategy`: the `AI_STRATEGY_*` flags this turn's decisions used. |
 | `production` | The step of `production::decide` that chose it as why (`garrison`, `settler`, `unit_enabler`, `building_interleave`, `caster`, ... or `fallback`). | Why is the unit AI role, `building`, `project` or `process`. |
 | `research` | Why is `value`, `victory_goal` or `escape_costs` (finance's cost-cutting tech); the top four scores are recorded as alternatives. | The choice only (`AI_doResearch` and the rules' requests). |
+| `research_path` | The research path committed to (docs/AI.md, "Research paths"), why `value`; its score and the top four paths' scores as alternatives. | – |
 | `settle_target` | The site: `here`, `walk` or `first_city`, with the top four sites and their scores. | – |
 | `settler` | A settler that `hold`s, `wait`s for an escort or `fall_back`s, with why (`no_site`, `no_safe_site`). | – |
 | `vassal_offer` / `vassal_asked` / `vassal_taken` | Offers to become a vassal (`vassal`, `capitulate` or `refused`; why `hopeless` or `crushed`), answers when asked (`agreed`, `refused`), and answers as the master (`accepted`, `refused`; why `take`, `their_wars`, `conquer_instead`). The value is the other team. | – |

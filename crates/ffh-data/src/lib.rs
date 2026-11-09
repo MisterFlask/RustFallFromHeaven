@@ -213,6 +213,7 @@ game_data! {
     governor_traits: GovernorTraitType => GovernorTraitInfo, governor::read_governor_trait;
     governor_names: GovernorNameType => GovernorNameInfo, governor::read_governor_names;
     building_tiers: BuildingTierType => BuildingTierInfo, building::read_building_tier;
+    research_paths: ResearchPathType => ResearchPathInfo, research_path::read_research_path;
 }
 
 /// Type lists of `global_types.jsonc` (key, registry class): types the data names that are

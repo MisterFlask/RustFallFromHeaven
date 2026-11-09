@@ -237,6 +237,11 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
         let techs = known.len();
         let tech_cost: i64 = known.iter().map(|&t| g.team_get_research_cost(team, t) as i64).sum();
         let tech_progress: i64 = d.techs.keys().filter(|&t| !g.teams[team].has_tech[t]).map(|t| g.teams[team].research_progress[t] as i64).sum();
+        // The late techs known: those of the medieval era (the tree's last), by short name.
+        let medieval = d.ty::<EraType>("ERA_MEDIEVAL");
+        let late: Vec<&str> = known.iter().filter(|&&t| d.techs[t].era == medieval && !d.techs[t].repeat).map(|&t| short(&d.techs[t].base.type_, "TECH_")).collect();
+        let path_name = |path: ResearchPathType| short(&d.research_paths[path].base.type_, "RESEARCHPATH_").to_string();
+        let paths_done: Vec<String> = pl.research_paths_done.iter().map(|&q| path_name(q)).collect();
 
         // Units.
         let mut mil = 0;
@@ -460,6 +465,10 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
             // Technology.
             .int("tech_cost", tech_cost)
             .int("tech_progress", tech_progress)
+            .int("late_techs", late.len() as i64)
+            .str("late", &late.join("+"))
+            .str("path", &pl.research_path.map_or("-".to_string(), path_name))
+            .str("paths_done", &paths_done.join("+"))
             .int("research_commerce", research_commerce)
             // Economy.
             .int("food", food)

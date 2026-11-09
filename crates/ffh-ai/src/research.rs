@@ -278,7 +278,7 @@ pub fn choose(g: &Game, p: PlayerId) -> Option<TechType> {
                 }
             }
         }
-        let left = crate::tech_plan::effective_left(g, team, t);
+        let left = crate::tech_plan::effective_left(g, p, t);
         let mut turns = left / ctx.rate as i64;
         if goal_techs.contains(&t) {
             // A beeline: worth more, and a long research no longer counts against it.
@@ -403,7 +403,7 @@ fn transport_step_tech(g: &Game, p: PlayerId, ctx: &Ctx) -> Option<TechType> {
         if !reachable {
             continue;
         }
-        let left: i64 = techs.iter().map(|&t| crate::tech_plan::effective_left(g, ctx.team, t)).sum();
+        let left: i64 = techs.iter().map(|&t| crate::tech_plan::effective_left(g, p, t)).sum();
         let Some(step) = techs.iter().copied().find(|&t| g.player_can_research(p, t, false)) else { continue };
         if best.map_or(true, |(l, _)| left < l) {
             best = Some((left, step));
@@ -437,11 +437,10 @@ fn siege_step_tech(g: &Game, p: PlayerId) -> Option<TechType> {
 /// situational terms of `tech_value` (military pressure, transports, processes) are not scaled
 /// down: they still win when they are large. A [`defense_goal`] comes first.
 fn goal_bonus(g: &Game, p: PlayerId, ctx: &Ctx, trace: bool) -> Vec<(TechType, i64)> {
-    let team = ctx.team;
     let rate = ctx.rate as i64;
     let mut out: Vec<(TechType, i64)> = Vec::new();
     if let Some(t) = defense_goal(g, p, ctx) {
-        let turns = crate::tech_plan::effective_left(g, team, t) / rate;
+        let turns = crate::tech_plan::effective_left(g, p, t) / rate;
         out.push((t, DEFENSE_SCORE * (turns + 4) / 1000));
         if trace {
             crate::trace!(g, p, "  defense goal {} (pressure {}, best defender {})", g.d.techs[t].base.type_, ctx.pressure, ctx.best_defense);
@@ -453,7 +452,7 @@ fn goal_bonus(g: &Game, p: PlayerId, ctx: &Ctx, trace: bool) -> Vec<(TechType, i
     // (siege_want=false) is untouched and keeps its research on economy and defence.
     if ctx.siege_want {
         if let Some(t) = siege_step_tech(g, p) {
-            let turns = crate::tech_plan::effective_left(g, team, t) / rate;
+            let turns = crate::tech_plan::effective_left(g, p, t) / rate;
             out.push((t, SIEGE_SCORE * (turns + 4) / 1000));
             if trace {
                 crate::trace!(g, p, "  siege goal {} (want offense)", g.d.techs[t].base.type_);
@@ -463,7 +462,7 @@ fn goal_bonus(g: &Game, p: PlayerId, ctx: &Ctx, trace: bool) -> Vec<(TechType, i
     // A settler waiting in port for a ship nobody can build: the nearest step toward a transport.
     if !ctx.has_transport && crate::naval::num_transports(g, p) == 0 && crate::naval::settler_waits_for_ship(g, p) {
         if let Some(t) = transport_step_tech(g, p, ctx) {
-            let turns = crate::tech_plan::effective_left(g, team, t) / rate;
+            let turns = crate::tech_plan::effective_left(g, p, t) / rate;
             out.push((t, TRANSPORT_SCORE * (turns + 4) / 1000));
             if trace {
                 crate::trace!(g, p, "  transport goal {} (a settler waits in port)", g.d.techs[t].base.type_);
@@ -474,7 +473,7 @@ fn goal_bonus(g: &Game, p: PlayerId, ctx: &Ctx, trace: bool) -> Vec<(TechType, i
     // person, so its needs pull research, one researchable step at a time.
     for t in crate::cards::needed_techs(g, p) {
         if g.player_can_research(p, t, false) {
-            let turns = crate::tech_plan::effective_left(g, team, t) / rate;
+            let turns = crate::tech_plan::effective_left(g, p, t) / rate;
             out.push((t, CARD_SCORE * (turns + 4) / 1000));
             if trace {
                 crate::trace!(g, p, "  card goal {} (a great person holds its card)", g.d.techs[t].base.type_);
@@ -489,7 +488,7 @@ fn goal_bonus(g: &Game, p: PlayerId, ctx: &Ctx, trace: bool) -> Vec<(TechType, i
         let Some(path) = crate::tech_plan::path(g, p, goal.tech) else { continue };
         let weight = if n == 0 { 100 } else { SECOND_GOAL_PCT };
         let own = tech_value(g, p, goal.tech, ctx) as i64;
-        let turns: Vec<i64> = path.techs.iter().map(|&t| crate::tech_plan::effective_left(g, team, t) / rate).collect();
+        let turns: Vec<i64> = path.techs.iter().map(|&t| crate::tech_plan::effective_left(g, p, t) / rate).collect();
         let path_turns: i64 = turns.iter().sum();
         for (i, &t) in path.techs.iter().enumerate() {
             if !g.player_can_research(p, t, false) {

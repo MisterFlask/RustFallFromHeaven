@@ -46,7 +46,7 @@ persist_newtype!(
     TerrainType, TradeableItem, TraitType, UnitAIType, UnitArtStyleType, UnitClassType,
     UnitCombatType, UnitType, UpkeepType, VictoryType, VoteSourceType, VoteType, WarPlanType,
     WorldSizeType, YieldType, CulturalActionType, GovernorProfileType, GovernorTraitType,
-    BuildingTierType,
+    BuildingTierType, ResearchPathType,
 );
 
 persist_enum!(ActionKind { 0 => None, 1 => Strike, 2 => Charge, 3 => Stab, 4 => Shoot, 5 => Spell, 6 => Bombard, 7 => Heal });
@@ -445,7 +445,8 @@ persist_struct!(Player {
     culture_history, espionage_history, ai_civic_timer, ai_religion_timer, ai_num_train_ai_units,
     ai_num_ai_units, ai_peacetime_trade_value, ai_peacetime_grant_value, ai_gold_traded_to,
     ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, tributes, armies, army_count,
-    governors, governor_count, once_spells, card_traits, alignment_attitude,
+    governors, governor_count, once_spells, card_traits, alignment_attitude, research_path,
+    research_paths_done,
 });
 
 persist_struct!(Team {
