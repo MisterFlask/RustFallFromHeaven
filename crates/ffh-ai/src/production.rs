@@ -669,6 +669,12 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
             return Some((choice, "assault_fleet"));
         }
     }
+    // warships (warships.rs): warships for a reason (escorts, guards, blockaders), never by count.
+    if safe && crate::naval::is_coastal_city(g, c) && ctx.afford {
+        if let Some(choice) = crate::warships::production(g, c) {
+            return Some((choice, "warship"));
+        }
+    }
     // A ship for a settler waiting in port; a sea explorer while our land is full and
     // nothing is known across the water.
     if safe && crate::naval::is_coastal_city(g, c) {
@@ -1158,7 +1164,7 @@ impl Role {
 /// attacker's default AI, and as attackers (one unit for 360 and 240 hammers) they never won on
 /// cost: 1 Wilboman in 47 Illian games, where he could be trained in 74% (docs/AI.md, "Unique
 /// units").
-fn is_hero(d: &GameData, info: &UnitInfo) -> bool {
+pub(crate) fn is_hero(d: &GameData, info: &UnitInfo) -> bool {
     static HERO: OnceLock<Option<PromotionType>> = OnceLock::new();
     let hero = *HERO.get_or_init(|| d.ty::<PromotionType>("PROMOTION_HERO"));
     info.default_unit_ai_type == Some(UnitAIType::UNITAI_HERO) || hero.is_some_and(|h| info.free_promotions[h])

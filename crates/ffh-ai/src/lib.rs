@@ -76,6 +76,7 @@ pub mod units;
 pub mod values;
 pub mod vassals;
 pub mod victory;
+pub mod warships;
 pub mod view;
 pub mod workers;
 pub mod world_spells;

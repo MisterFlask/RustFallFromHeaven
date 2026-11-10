@@ -77,6 +77,7 @@ estimate of the turn they strike. Kinds that should be scored at the moment of t
 | Kind | Where | Outcome, horizon | pct | acted |
 |---|---|---|---|---|
 | `attack` | the unit the AI sends: `campaign::strike` (each attacker), `military::assault` (the attacker the rules pick), `units::attack_adjacent` | `AttackWon`, this turn | the odds it weighed (`get_combat_odds`; the field simulation's first-attack odds) | always |
+| `sea_attack` | the warship the AI sends against ships on a water plot: `warships.rs` (`src` kill, gang, barbarian; ctx `prize`) | `AttackWon`, this turn | the rules' duel odds (`get_combat_odds`) | always |
 | `field` | `military::assault` (go or not), declined targets in `best_adjacent` and the opportune capture | `StackClears`, this turn | `Sim::p_fall`; score `gain` | go |
 | `assault` | `campaign::build_op` when a stack is next to a city we are at war with | `CityCapturedBy`, 3 turns | `p_fall` of the adjacent ring (no reserve); score: defender hit points left | the phase is `Strike` |
 | `strike` | `campaign::strike`, before the first attack | `CityCapturedBy`, this turn | `p_fall` of the units able to attack | the strike starts |

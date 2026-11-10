@@ -68,6 +68,9 @@ pub static PRECIOUS: Switch = Switch::new("PRECIOUS");
 /// Assault transports wait in port for the landing force and sail together, escorted
 /// (`naval::transport`).
 pub static FLEET: Switch = Switch::new("FLEET");
+/// Warships fight, escort, guard the coast and blockade; barbarian ships and sea animals hunt and
+/// roam (`warships.rs`); warships are trained for a reason. Off: every such ship holds, as before.
+pub static WARSHIPS: Switch = Switch::new("WARSHIPS");
 /// Research paths (`research_path.rs`): off, a player never commits to one (the rule stays: it
 /// only gives up the bonus).
 pub static RESEARCH_PATH: Switch = Switch::new("RESEARCH_PATH");

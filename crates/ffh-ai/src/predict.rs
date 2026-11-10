@@ -333,6 +333,20 @@ pub(crate) fn attack(g: &Game, p: PlayerId, u: UnitId, q: PlotIdx, odds: i32, sr
     });
 }
 
+/// `sea_attack`: warship `u` wins the duel it is about to fight on water plot `q` (pct: the rules'
+/// odds, per mille, the decision weighed: `warships.rs`). `src`: the rule that sent it (`kill`,
+/// `gang`, `barbarian`); ctx `prize`: a loaded transport (2) or a ship blockading us or on our sea
+/// resource (1).
+pub(crate) fn sea_attack(g: &Game, p: PlayerId, u: UnitId, q: PlotIdx, odds: i32, prize: i32, src: &'static str) {
+    if !g.telemetry.on() {
+        return;
+    }
+    let barb = g.map.plots[q].units.iter().any(|&e| g.player_is_barbarian(g.units[e].owner));
+    g.tel_prediction(p, Prediction::new("sea_attack", Outcome::AttackWon { attacker: u }, HORIZON_THIS_TURN, odds / 10).score(odds as i64).acted(true), || {
+        Obj::new().s("src", src).i("prize", prize as i64).b("barbarian", barb).s("unit", g.d.units[g.units[u].unit_type].base.type_.as_str()).end()
+    });
+}
+
 /// `FFH_AI_SHADOW_THREAT=1`: record the incoming-attack estimator's shadow predictions (read once;
 /// recording changes no decision, so play is the same either way).
 fn shadow_threat() -> bool {

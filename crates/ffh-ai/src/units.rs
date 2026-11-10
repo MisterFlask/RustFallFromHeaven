@@ -207,6 +207,11 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
         let cut = (!g.groups[grp].mission_queue.is_empty() || g.groups[grp].activity_type != ActivityType::ACTIVITY_AWAKE)
             && crate::supply::cut(g, grp)
             && g.groups[grp].units.iter().all(|&o| !g.unit_has_moved(o));
+        // A blockade holds without new orders while nothing changes (`warships::keeps_station`).
+        if matches!(role, Role::Naval | Role::Transport) && crate::warships::keeps_station(g, v, grp) {
+            g.groups[grp].force_update = false;
+            continue;
+        }
         if g.groups[grp].force_update || replan || sleeping_settler || cut {
             // Settlers re-plan every turn (danger and sites change).
             g.groups[grp].force_update = false;
@@ -247,8 +252,29 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             Role::Missionary => missionary(g, v, grp, head),
             Role::Caster => caster(g, v, grp, head),
             Role::Animal => barbarian(g, v, grp, head),
-            Role::Transport if !v.barbarian => crate::naval::transport(ai, g, v, grp, head),
-            Role::SeaExplore if !v.barbarian => crate::naval::sea_explore(ai, g, v, grp, head),
+            // Warships (`warships.rs`): an idle transport fights when there is something to fight,
+            // a sea explorer with nothing to reveal and every warship play as warships; the
+            // barbarians' ships and sea animals hunt and roam.
+            Role::Transport if !v.barbarian => {
+                if !(crate::warships::free_transport(g, v, grp, head) && crate::warships::play(ai, g, v, grp, head, true)) {
+                    crate::naval::transport(ai, g, v, grp, head)
+                }
+            }
+            Role::SeaExplore if !v.barbarian => {
+                if crate::warships::explorer_done(g, v, head) {
+                    crate::warships::play(ai, g, v, grp, head, false);
+                } else {
+                    crate::naval::sea_explore(ai, g, v, grp, head)
+                }
+            }
+            Role::Naval if !v.barbarian && crate::switches::WARSHIPS.on(g, v.p) => {
+                crate::warships::play(ai, g, v, grp, head, false);
+            }
+            Role::Transport | Role::SeaExplore | Role::Naval if v.barbarian => {
+                if !crate::warships::barbarian(g, v, grp, head) {
+                    hold(g, grp)
+                }
+            }
             Role::Transport | Role::SeaExplore => hold(g, grp),
             Role::Naval | Role::Other => hold(g, grp),
         }
