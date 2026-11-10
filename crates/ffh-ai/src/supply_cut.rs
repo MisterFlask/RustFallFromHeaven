@@ -354,23 +354,25 @@ fn spares(g: &Game, v: &View, toward: PlotIdx) -> Vec<UnitId> {
 }
 
 /// The nearest of `plots` unit `u` reaches within two turns and may hold: (turns, its index in
-/// `plots`, the plot).
-fn reach(g: &Game, v: &mut View, u: UnitId, plots: &[PlotIdx]) -> Option<(i32, usize, PlotIdx)> {
+/// `plots`, the plot); and how many of `plots` it reaches but may not hold (telemetry).
+fn reach(g: &Game, v: &mut View, u: UnitId, plots: &[PlotIdx]) -> (Option<(i32, usize, PlotIdx)>, usize) {
     let reached = v.flood.run(g, u, REACH_TURNS, false);
     let mut best: Option<(i32, usize, PlotIdx)> = None;
+    let mut unsafe_plots = 0;
     for r in reached {
         if r.turns > REACH_TURNS {
             continue;
         }
         let Some(i) = plots.iter().position(|&q| q == r.plot) else { continue };
         if !safe(g, v, u, r.plot) {
+            unsafe_plots += 1;
             continue;
         }
         if best.is_none_or(|b| (r.turns, i) < (b.0, b.1)) {
             best = Some((r.turns, i, r.plot));
         }
     }
-    best
+    (best, unsafe_plots)
 }
 
 /// One turn of line cutting for `v.p` (module doc), before its units take their orders.
@@ -456,7 +458,7 @@ fn keep(g: &mut Game, v: &mut View, a: ArmyId, job: Job) {
         Some(line) if !job.retry => {
             // Not a cut: once to a plot of the line that bends around this one.
             let cands = candidates(g, them, v.team, &line, Some(here));
-            if let Some((_, _, q)) = (!cands.is_empty()).then(|| reach(g, v, job.unit, &cands)).flatten() {
+            if let Some((_, _, q)) = (!cands.is_empty()).then(|| reach(g, v, job.unit, &cands).0).flatten() {
                 crate::trace!(g, p, "supply cut: {:?} moves on from {:?} to {:?}", job.unit, g.map.xy(here), g.map.xy(q));
                 g.tel_decision(p, "supply_cut", "fired", "retry", 1, String::new);
                 let next = Job { plot: q, retry: true, ..job };
@@ -480,31 +482,36 @@ fn send(g: &mut Game, v: &mut View, a: ArmyId, ap: PlotIdx) {
     let Some(line) = g.plot_supply_line_known(owner, ap, v.team) else { return };
     let cands = candidates(g, them, v.team, &line, None);
     if cands.is_empty() {
-        g.tel_decision(p, "supply_cut", "no_plot", "", 1, String::new);
+        let budget = g.d.defines.supply_line_budget;
+        g.tel_decision(p, "supply_cut", "no_plot", "", 1, || format!("{{\"cost\":{},\"len\":{},\"slack\":{}}}", line.cost, line.path.len(), budget - line.cost));
         return;
     }
     let mut best: Option<(bool, i32, usize, UnitId, PlotIdx)> = None;
     let fast = [g.d.ty::<UnitCombatType>("UNITCOMBAT_RECON"), g.d.ty::<UnitCombatType>("UNITCOMBAT_MOUNTED")];
-    for u in spares(g, v, cands[0]) {
+    let sent = spares(g, v, cands[0]);
+    let mut unsafe_plots = 0;
+    for &u in &sent {
         let combat = g.d.units[g.units[u].unit_type].unit_combat_type;
         let slow = !(combat.is_some() && fast.contains(&combat));
         if best.is_some_and(|b| !b.0 && slow) {
             break;
         }
-        if let Some((turns, i, q)) = reach(g, v, u, &cands) {
+        let (found, risky) = reach(g, v, u, &cands);
+        unsafe_plots += risky;
+        if let Some((turns, i, q)) = found {
             if best.is_none_or(|b| (slow, turns, i, u) < (b.0, b.1, b.2, b.3)) {
                 best = Some((slow, turns, i, u, q));
             }
         }
     }
     let Some((_, _, _, u, q)) = best else {
-        g.tel_decision(p, "supply_cut", "no_unit", "", 1, String::new);
+        g.tel_decision(p, "supply_cut", "no_unit", "", 1, || format!("{{\"plots\":{},\"spares\":{},\"unsafe\":{unsafe_plots}}}", cands.len(), sent.len()));
         return;
     };
     let Some(grp) = g.units[u].group else { return };
     let watched = g.armies[a].group.and_then(|ag| g.group_get_head_unit(ag));
     crate::trace!(g, p, "supply cut: {:?} from {:?} to {:?} on the line of {:?} at {:?}", u, g.map.xy(g.unit_plot(u)), g.map.xy(q), a, g.map.xy(ap));
-    g.tel_decision(p, "supply_cut", "fired", "first", 1, String::new);
+    g.tel_decision(p, "supply_cut", "fired", "first", 1, || format!("{{\"u\":{},\"army\":{},\"slack\":{}}}", u.0, a.0, g.d.defines.supply_line_budget - line.cost));
     let job = Job { grp, unit: u, plot: q, watched, retry: false };
     if !go(g, &job) {
         g.group_ai_set_mission_ai(grp, None, None, None);
@@ -518,7 +525,7 @@ mod tests {
     /// Player 0's city on (10, 3) and player 1's on (16, 5), at war; a road on y = 5 from x = 5
     /// to their city; column x = 12 is water but for (12, 5) (with `isthmus`; else all land).
     /// Player 1's army of two Warriors on (7, 6); our city holds four Warriors and a Horseman,
-    /// and a Warrior of ours on (7, 4) sees the army. Nothing owns the plots between.
+    /// and a Warrior of ours on (6, 6) sees the army. Nothing owns the plots between.
     fn staged(isthmus: bool) -> (Game, ArmyId, UnitId) {
         let mut g = crate::testkit::one_landmass_game(4);
         let (p0, p1) = (PlayerId(0), PlayerId(1));
@@ -555,7 +562,7 @@ mod tests {
             g.player_init_unit(p0, w, 10, 3, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
         }
         let horse = g.player_init_unit(p0, g.d.t::<UnitType>("UNIT_HORSEMAN"), 10, 3, Some(UnitAIType::UNITAI_ATTACK), None);
-        g.player_init_unit(p0, w, 7, 4, Some(UnitAIType::UNITAI_ATTACK), None);
+        g.player_init_unit(p0, w, 6, 6, Some(UnitAIType::UNITAI_ATTACK), None);
         g.players[p0].turn_active = true;
         (g, a, horse)
     }
