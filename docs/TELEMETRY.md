@@ -154,7 +154,8 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
   city, its owner; the event's player is the caster);
 - `march` (a marching recruit: `how` sent / arrived / diverted / stopped / killed, `to_army`,
   `turns`; docs/ARMIES.md) and `requisition` (`how` placed / withdrawn);
-- `intent` and `decision`.
+- `intent` and `decision`;
+- `prediction`: an AI estimate resolved by the rules (the prediction ledger, docs/CALIBRATION.md).
 
 Missions, promotions, improvements and builds are only counted.
 

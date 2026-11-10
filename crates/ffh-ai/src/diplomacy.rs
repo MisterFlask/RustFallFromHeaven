@@ -18,6 +18,7 @@ use ffh_core::controller::OfferVerdict;
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::structs::TradeData;
+use ffh_core::telemetry::{Obj, Outcome, Prediction};
 use ffh_data::*;
 
 use crate::view::View;
@@ -273,6 +274,10 @@ pub fn manage(g: &mut Game, v: &View) {
                 if at_gates > 0 && worth < at_gates {
                     crate::trace!(g, p, "fights on against team {:?}: the next city is close (tribute {} < {})", enemy, worth, at_gates);
                     g.tel_decision(p, "peace", &format!("team {}", enemy.0), "fight_on", at_gates as i64, String::new);
+                    if g.telemetry.on() {
+                        let pr = Prediction::new("fight_on", Outcome::AnyCityCapturedFrom { team, victim: enemy }, crate::predict::FIGHT_ON_HORIZON, 100);
+                        g.tel_prediction(p, pr.score(at_gates as i64).acted(true), || Obj::new().i("tribute", worth as i64).i("at_gates", at_gates as i64).end());
+                    }
                     continue;
                 }
             }
@@ -358,10 +363,12 @@ pub fn manage(g: &mut Game, v: &View) {
             if let Err(why) = if crate::switches::WAR_RECHECK.on(g, p) { still_a_target(g, p, target, &plan) } else { Ok(()) } {
                 crate::trace!(g, p, "drops its war plan on team {:?}: it no longer passes the gate ({}, prepared {} turns)", target, why, waited);
                 g.tel_decision(p, "war_drop", why, "recheck_dropped", waited as i64, String::new);
+                predict_war(g, p, target, false, waited);
                 g.team_ai_set_war_plan(team, target, None, true);
                 return;
             }
             crate::trace!(g, p, "declares war on team {:?} (army {}, prepared {} turns)", target, army_size(g, p), waited);
+            predict_war(g, p, target, true, waited);
             g.tel_war_reason(team, target, || format!("{} after {} turns: army {} of {}", if ready && staged && waited >= 5 { "army ready" } else { "waited long" }, waited, army_size(g, p), army_needed_for_war(g, p, target)));
             let plan = if g.teams[team].ai_war_plan[target] == Some(WarPlanType::WARPLAN_PREPARING_LIMITED) { WarPlanType::WARPLAN_LIMITED } else { WarPlanType::WARPLAN_TOTAL };
             g.team_declare_war(team, target, true, Some(plan));
@@ -1030,7 +1037,14 @@ fn can_take_cities(g: &Game, p: PlayerId, other: PlayerId) -> bool {
 
 /// [`can_take_cities`] with `margin`% instead of the fortification's 120% (without siege engines).
 pub(crate) fn can_take_cities_at(g: &Game, p: PlayerId, other: PlayerId, margin: i32) -> bool {
-    let Some((best_attack, siege)) = best_trainable_attack(g, p) else { return false };
+    take_cities_edge(g, p, other, margin).is_some_and(|(attack, needed)| attack >= needed)
+}
+
+/// What [`can_take_cities_at`] compares: our best trainable attacker's strength and what their
+/// weakest city's best defender needs (after siege engines and our casters' softening). None when
+/// we cannot train an attacker or see none of their cities.
+fn take_cities_edge(g: &Game, p: PlayerId, other: PlayerId, margin: i32) -> Option<(i32, i32)> {
+    let (best_attack, siege) = best_trainable_attack(g, p)?;
     // Their weakest city (the one we would attack first): its best defender.
     let mut weakest: Option<i32> = None;
     let mut fog = None;
@@ -1039,7 +1053,7 @@ pub(crate) fn can_take_cities_at(g: &Game, p: PlayerId, other: PlayerId, margin:
             weakest = Some(weakest.map_or(best, |w: i32| w.min(best)));
         }
     }
-    let Some(best_defense) = weakest else { return false };
+    let best_defense = weakest?;
     // Fortified in a city: roughly +50%; siege engines take most of that away.
     let needed = best_defense * if siege { 85 } else { margin } / 100;
     // Our Mages' Fireballs soften the defenders first (`MAGIC_WAR`): a defender left at 80% of its
@@ -1048,7 +1062,36 @@ pub(crate) fn can_take_cities_at(g: &Game, p: PlayerId, other: PlayerId, margin:
     if soften > 0 && best_attack < needed && best_attack >= needed * (100 - soften) / 100 {
         crate::trace!(g, p, "  magic war: our casters make {:?}'s cities takeable (attack {} against {} less {}%)", other, best_attack, needed, soften);
     }
-    best_attack >= needed * (100 - soften) / 100
+    Some((best_attack, needed * (100 - soften) / 100))
+}
+
+/// Prediction ledger (docs/CALIBRATION.md): the war on `target` that `p` declares (`acted`) or
+/// drops at the re-check takes a city of theirs. The estimator is `can_take_cities_at` at the
+/// re-check's margin (yes/no), the score its edge in percent.
+fn predict_war(g: &Game, p: PlayerId, target: TeamId, acted: bool, waited: i32) {
+    if !g.telemetry.on() {
+        return;
+    }
+    let Some(other) = team_leader(g, target) else { return };
+    let team = g.players[p].team;
+    let edge = take_cities_edge(g, p, other, 100);
+    let takes = edge.is_some_and(|(a, n)| a >= n);
+    let score = edge.map_or(0, |(a, n)| a as i64 * 100 / n.max(1) as i64);
+    let takes_120 = can_take_cities_at(g, p, other, 120);
+    let ratio = g.team_get_power(team, true) as i64 * 100 / g.team_get_defensive_power(target).max(1) as i64;
+    let amphibious = reach_distance(g, team, target).is_none();
+    let pr = Prediction::new("war_takes_city", Outcome::AnyCityCapturedFrom { team, victim: target }, crate::predict::WAR_HORIZON, if takes { 100 } else { 0 });
+    g.tel_prediction(p, pr.score(score).acted(acted), || {
+        Obj::new()
+            .b("takes_120", takes_120)
+            .i("power_ratio", ratio)
+            .i("army", army_size(g, p) as i64)
+            .i("needed", army_needed_for_war(g, p, target) as i64)
+            .i("waited", waited as i64)
+            .b("amphibious", amphibious)
+            .i("their_cities", g.teams[target].num_cities as i64)
+            .end()
+    });
 }
 
 /// How much of a city defender's health our casters' damage takes before our attackers go in, in

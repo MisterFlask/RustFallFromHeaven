@@ -583,6 +583,7 @@ impl Game {
                     // Telemetry: the spells left uncast as the turn ends.
                     if self.telemetry.on() && self.players[p].alive {
                         self.tel_spell_scan(p, true);
+                        self.tel_predict_player_turn_end(p);
                     }
                     if self.players[p].alive {
                         self.player_do_turn(p);
