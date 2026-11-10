@@ -19,8 +19,6 @@
 //   lanterns   a head unit on water whose sprite carries a FIRE, RITE or ARC `: light` casts a
 //              broken reflection on the water under the source (docs/ART.md 5.4): dashes of the
 //              light's ring colour, then its dark partner, 2 px apart, narrowing downwards.
-//   standard   the 7x12 gonfalon (ui/stack_banner) of the night look is opt-in: state.standard
-//              'left' or 'right' draws it, in the owner's division with the civilization's sigil.
 //
 // Units without a ring (animals, equipment on the ground, hidden nationality) show your own unit's
 // moves as a 2x2 pip at the bottom right instead.
@@ -31,11 +29,7 @@
 // Or call `drawStackOverlay(art, ctx, x, y, unitType, owner, state)` directly after
 // drawUnit(..., { layer: 'sprite' }). Position: the canvas point of the tile's top-left corner.
 // state: { moves (true/false for your own units, absent for foreign ones), selected, own, hero,
-// count, hp, mark, inCity, standard ('left'|'right'), facing, noPennant, lit }.
-
-const BANNER = 'ui/stack_banner';
-const SIGIL = 5; // sigils on the standard are the 5x5 charges
-const TRANSPARENT = 255, NUM_COLORS = 56; // as in spritefmt.js
+// count, hp, mark, inCity, facing, noPennant, lit }.
 
 /** Paint art pixels [x, y, key] relative to the tile corner (x, y). */
 function px(art, ctx, x, y, list) {
@@ -105,40 +99,6 @@ export function quietOwner(art, owner) {
     art._stackQuiet.set(owner, q);
   }
   return q;
-}
-
-/** Is the field point (u, v) in [0,1)^2 on the second tincture of a division? (as art._slotFill) */
-function onSecond(division, u, v) {
-  if (division === 'pale') return u >= 0.5;
-  if (division === 'fess') return v >= 0.5;
-  if (division === 'bend') return v > u;
-  if (division === 'quarterly') return (u >= 0.5) !== (v >= 0.5);
-  return false;
-}
-
-/**
- * The sigil on the standard, centred on the field, upright even when the standard is mirrored.
- * On a divided field the charge is counterchanged: over the second tincture it takes that
- * tincture's charge (bone on Sable, soot on Argent), so it never sinks into the field.
- */
-function drawSigil(art, ctx, x, y, sg, look, [fx, fy, fw, fh], table, right, at) {
-  const s = art.scale;
-  const T = table ? art.tables[table] : null;
-  const sx = fx + Math.floor((fw - sg.w) / 2), sy = fy + Math.max(0, Math.floor((fh - SIGIL) / 2));
-  const left = right ? at(sx + sg.w - 1) : at(sx);
-  const divided = look.division && look.division !== 'plain' && look.second;
-  for (let j = 0; j < sg.h; j++) for (let i = 0; i < sg.w; i++) {
-    let c = sg.data[j * sg.w + i];
-    if (c === TRANSPARENT) continue;
-    if (c >= NUM_COLORS) {
-      const col = right ? sx + sg.w - 1 - i : sx + i; // the standard's own column under this pixel
-      const second = divided && onSecond(look.division, (col - fx + 0.5) / fw, (sy + j - fy + 0.5) / fh);
-      c = second ? look.second.charge : look.tincture.charge;
-    }
-    if (T) c = T[c];
-    ctx.fillStyle = art.palette.colors[c].hex;
-    ctx.fillRect(x + (left + i) * s, y + (1 + sy + j) * s, s, s);
-  }
 }
 
 /** Which look a stack's standard takes: 'active' (full tincture), 'quiet' or 'spent' (quiet, then FOG). */
@@ -220,31 +180,19 @@ export function drawStackOverlay(art, ctx, x, y, unitType, owner, state = {}) {
   const mode = standardMode(state);
   const spent = mode === 'spent';
   const ringed = owner && !animal && !item && !owner.hidden;
-  const banner = ringed && !state.noPennant && (state.standard === 'left' || state.standard === 'right') && art.hasSprite(BANNER);
 
   drawReflections(art, ctx, x, y, unitType, state);
 
-  // in a city the city's own banner holds the top-left: the chip (and a standard) go top-right
-  const right = !!(state.inCity || state.standard === 'right');
+  // in a city the city's own banner holds the top-left: the chip goes top-right
+  const right = !!state.inCity;
   let chipEnd = 1; // first free tile column after the top-left chip
-  if (banner) {
-    const spr = art.pick(BANNER);
-    const look = mode === 'active' ? owner : quietOwner(art, owner);
-    const table = spent ? 'FOG' : undefined;
-    const at = (i) => (right ? 31 - 1 - i : 1 + i); // tile column of sprite column i
-    const v = { owner: look, flag: true, rim: 1, table };
-    if (right) art.drawSprite(ctx, x + 30 * s, y + 1 * s, spr.name, { ...v, mirror: true });
-    else art.drawSprite(ctx, x + 1 * s, y + 1 * s, spr.name, v);
-    const [fx, fy, fw, fh] = spr.meta.flag || [1, 2, spr.w - 2, spr.h - 4];
-    if (owner.sigil && art.hasSprite(owner.sigil)) drawSigil(art, ctx, x, y, art.pick(owner.sigil), look, [fx, fy, fw, fh], table, right, at);
-  }
   // the chip: 2 or more units, or any garrison (its figure is hidden in the city, 10.1)
   const chip = count > 1 || (!!state.inCity && count >= 1 && ringed);
   if (chip) {
     const text = count > 99 ? '99' : String(count);
     const w = art.measureText(text, 'tally') + 2;
     const i = right ? 31 - w : 1;
-    countChip(art, ctx, x, y, i, banner ? 14 : 1, text, mode === 'active' ? '8' : spent ? '6' : '7');
+    countChip(art, ctx, x, y, i, 1, text, mode === 'active' ? '8' : spent ? '6' : '7');
     if (!right) chipEnd = 1 + w + 1;
   }
   if (state.hero && ringed) {
