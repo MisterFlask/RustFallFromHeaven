@@ -3537,11 +3537,21 @@ itself; `autopsy.py`, `calibration.py`):
 
 1. *The battle estimator on the rules' forecast* (`Game::engage_preview`'s code), in the ledger
    beside `combat_sim`, for attacks, assaults and "does this city hold, as it stands and with
-   what can reach it". Everything below reads it. (In progress.)
+   what can reach it". Everything below reads it. **Done** (`forecast.rs`; docs/CALIBRATION.md,
+   "The battle forecast"): skill on the same events, old / new: field +0.20 / +0.57, strike
+   -0.14 / +0.47, assault -0.15 / -0.07.
 2. *Defending against a stack*: the 41%. With the estimate of 1, a threatened city that holds
    with the units that can reach it gets them; one that falls anyway is not fed; garrisons of
    cities nothing can reach are the reserve. This is the estimate the reverted `MAGE_FRONT` and
-   the one-quota attempt lacked (docs/AI_LOG.md).
+   the one-quota attempt lacked (docs/AI_LOG.md). **Not built; the estimate is half there.** A
+   city on which a battle is fought falls 89-97% of the time and one nobody attacks about 1%, so
+   the question is whether the attack comes, which `threat.rs` now estimates (docs/CALIBRATION.md,
+   "Incoming attacks": skill +0.25, about 50% precision at 55-65% recall, against the alarm's 30%
+   at 66%). Before a defence is built on it: check its levels on seeds they were not read from
+   (they were fitted on seeds 1-16), make it about ten times cheaper (it costs 2.8 times the
+   game's time; recorded only with `FFH_AI_SHADOW_THREAT=1`), and use it as "an army is coming
+   at this group of cities": which city comes first is where it is wrong (the predicted target
+   in 25% of seen attacks, another of our cities in 42%).
 3. *The attack decisions on the new estimate*: strike order, the field go/no-go, then the war
    gate as a forecast of the first city's assault with the army as it will arrive. **Done for the
    field and the strike** (switch `FORECAST`, "On the forecast" under Field armies; the war gate
