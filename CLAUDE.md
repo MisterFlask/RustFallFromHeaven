@@ -335,9 +335,14 @@ An AI-specific change goes through this loop, in this order; stop at the first s
    (step 5); a flat result is a pass.
 7. **Play it against something that is not itself.** Where the change concerns war, defense or
    force building, the opponents that matter are the probes (below), not six copies of the same
-   build. Until a probe exists, give the change to one player against opponents without it
-   (`civ_ab.py --civ all --new-env FFH_AI_<NAME>_ONLY={civ}`) and read what happened to that
+   build. For a general behaviour, also give the change to one player against opponents without
+   it (`civ_ab.py --civ all --new-env FFH_AI_<NAME>_ONLY={civ}`) and read what happened to that
    player's cities and armies, not its win rate.
+
+The instruments for these steps, the current baseline and the work list it gives are in
+docs/AI.md, "The improvement scheme": the autopsy (step 1, docs/AUTOPSY.md), the prediction
+ledger (step 3, docs/CALIBRATION.md), fork rollouts (step 4, `tools/ai-branch.sh --rolls`), the
+probes (step 7, docs/PROBES.md).
 
 `docs/AI_LOG.md` records attempts worth remembering and what their games showed: read the entries
 for an area before working in it.
@@ -347,7 +352,8 @@ for an area before working in it.
 A probe is a variant of the AI that pushes one strategic direction as hard as it can and neglects
 the rest (the owner's decision, 2026-11-10): an early rush, one unit line massed, settling without
 pause, a turtle that only researches, casters and summons above all, pillaging and cutting supply,
-culture, a religion spread everywhere. None is built yet; build one when a question needs it.
+culture, a religion spread everywhere. Built: Rush, Horde, Turtle, Expand (docs/PROBES.md);
+build another when a question needs it.
 
 - **What they are for.** (a) Balance: a strategy that wins far more or far less than the
   standard AI when pushed to the limit is a candidate overpowered or underpowered strategy, in the

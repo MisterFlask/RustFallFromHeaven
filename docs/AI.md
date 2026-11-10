@@ -17,7 +17,7 @@ are safe only among copies of itself.
 
 **Probes** (the owner's decision, 2026-11-10; CLAUDE.md, "AI changes", "Probes"): variants that
 go all in on one strategy, to find overpowered and underpowered strategies and to give the
-standard AI opponents unlike itself. None is built yet.
+standard AI opponents unlike itself. Rush, Horde, Turtle and Expand are built (docs/PROBES.md).
 
 The C++ AI (CvPlayerAI/CvCityAI/CvUnitAI/CvTeamAI, ~60k lines, plus the Python AI hooks
 in CvGameUtils.py such as `AI_chooseTech`/`AI_chooseProduction`) is not ported. It is the
