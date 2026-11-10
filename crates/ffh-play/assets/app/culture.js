@@ -12,7 +12,7 @@
 
 import * as api from "./api.js";
 import { S, dname, turns, playerName, me, emit, isBarbarian } from "./state.js";
-import { h, fill } from "./dom.js";
+import { h, fill, errorText } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
 import { infoTip } from "./infotips.js";
@@ -672,7 +672,7 @@ export async function openCulture() {
     try {
       r = await api.query("culture");
     } catch (e) {
-      m.setBody(h("p.warn", e.detail ?? e.message));
+      m.setBody(h("p.warn", errorText(e)));
       return;
     }
     if (m.closed) return;

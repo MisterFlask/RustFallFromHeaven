@@ -15,7 +15,7 @@
 import * as api from "./api.js";
 import { run } from "./commands.js";
 import { emit } from "./state.js";
-import { h, toast } from "./dom.js";
+import { h, toast, errorText } from "./dom.js";
 import { installFrames } from "./isoui.js";
 import { installIsoFont } from "./isofont.js";
 import { battleToast, prefs } from "./engagements.js";
@@ -224,7 +224,7 @@ export async function openBattleReport(id, { report = false } = {}) {
   try {
     log = await api.query("battle_log", { report: id });
   } catch (e) {
-    toast(e?.code === "gone" ? `The record of battle #${id} is no longer kept (only the summary of older battles is).` : `Battle #${id}: ${e.detail ?? e.message ?? e}`, "info", 6000);
+    toast(e?.code === "gone" ? `The record of battle #${id} is no longer kept (only the summary of older battles is).` : `Battle #${id}: ${errorText(e)}`, "info", 6000);
     return;
   }
   await openBattleLog(log, { report });

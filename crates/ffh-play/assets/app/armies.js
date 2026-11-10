@@ -18,10 +18,10 @@
 // supply (docs/SUPPLY.md) is stated in the view's bare words (`supply.text`).
 
 import * as api from "./api.js";
-import { S, dname, turns, info } from "./state.js";
+import { S, dname, turns, info, cityAt, me } from "./state.js";
 import { plain } from "./markup.js";
-import { h } from "./dom.js";
-import { openModal } from "./modals.js";
+import { h, errorText } from "./dom.js";
+import { openModal, ask } from "./modals.js";
 import { run } from "./commands.js";
 import { addHelp } from "./help.js";
 
@@ -200,7 +200,7 @@ export async function openArmies({ select, centerOn } = {}) {
     try {
       r = await api.query("armies");
     } catch (e) {
-      m.setBody(h("p.warn", e.detail ?? e.message));
+      m.setBody(h("p.warn", errorText(e)));
       return;
     }
     if (m.closed) return;
@@ -213,6 +213,18 @@ export async function openArmies({ select, centerOn } = {}) {
       await run(cmd);
       // Re-read either way: a refused command leaves the controls showing the army's state.
       load();
+    };
+    // Disbanding is not undone: ask first (Cancel has the focus). Its units join the garrison of
+    // the city they stand in, else march to the nearest of your cities (army_disband).
+    const disband = async (a) => {
+      const n = a.units.length;
+      const city = a.x !== null ? cityAt(a.x, a.y) : null;
+      const where = city && city.owner === me()?.player ? `join the garrison of ${city.name}` : "march to the nearest of your cities and join its garrison";
+      const v = await ask("Disband the army?", `Disband the ${a.name}? Its ${n === 1 ? "unit" : `${n} units`} ${where}; its requisition ends.`, [
+        { label: "Disband", value: true, primary: true, danger: true },
+        { label: "Cancel", value: null },
+      ]);
+      if (v) act({ c: "army_disband", army: a.id });
     };
     const goUnit = (t) => {
       m.close(null);
@@ -275,7 +287,7 @@ export async function openArmies({ select, centerOn } = {}) {
             { disabled: !a.upgrades, onclick: () => act({ c: "army_upgrade", army: a.id }), title: a.upgrades ? "Upgrade every unit that can, the most experienced first, while the gold lasts" : "No unit of the army has an upgrade" },
             a.upgrades ? `Upgrade all: ${a.upgrades} (${a.upgrade_price} gold)` : "Upgrade all",
           ),
-          a.disband_to ? null : h("button.small.danger", { onclick: () => act({ c: "army_disband", army: a.id }), title: "Its units march to the nearest of your cities and join the garrison there; its requisition ends" }, "Disband"),
+          a.disband_to ? null : h("button.small.danger", { onclick: () => disband(a), title: "Its units march to the nearest of your cities and join the garrison there; its requisition ends" }, "Disband"),
         ),
         req,
         a.recruits.length ? h("div", h("b", `Marching to it (${a.recruits.length})`), h("ul.army-transit", a.recruits.map((t) => recruitLine(t, { go: goUnit })))) : null,

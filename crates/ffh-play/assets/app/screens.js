@@ -30,7 +30,7 @@ export async function openResearch({ popup = false } = {}) {
     try {
       t = await api.query("techs");
     } catch (e) {
-      return m.setBody(h("p.warn", e.detail ?? e.message));
+      return m.setBody(h("p.warn", errorText(e)));
     }
     if (m.closed) return;
     const can = t.techs.filter((x) => x.can_research && !x.has && !x.disabled);
@@ -150,7 +150,7 @@ export async function openResearchPaths() {
   try {
     t = await api.query("techs");
   } catch (e) {
-    m.setBody(h("p.warn", e.detail ?? e.message));
+    m.setBody(h("p.warn", errorText(e)));
     return m.done;
   }
   const name = (p) => dname("ResearchPathType", p.path);
@@ -521,7 +521,7 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
       m.close("started");
       emit("game-started", { spectate: spectate.checked });
     } catch (e) {
-      err.textContent = e.detail ?? e.message;
+      err.textContent = errorText(e);
     }
   };
   // The war start plays an AI-only game for a few hundred turns: seconds, up to a minute on a big
@@ -544,7 +544,7 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
       m.close("started");
       emit("game-started", { war: reply.r.war });
     } catch (e) {
-      err.textContent = e.detail ?? e.message;
+      err.textContent = errorText(e);
     } finally {
       clearInterval(timer);
       note.textContent = "";
@@ -772,7 +772,7 @@ export function crashScreen(st) {
           m.close("loaded");
           emit("game-started");
         } catch (e) {
-          toast(e.detail ?? e.message, "error");
+          toast(errorText(e), "error");
         }
       } } : null,
       { label: "Load…", onClick: () => loadScreen() },

@@ -1039,7 +1039,10 @@ async function empireScreens() {
     await shot("civics");
     if (await b.eval(`!document.querySelector(${q(`${TOP} .modal-buttons button.primary`)}).disabled`)) {
       await click(`${TOP} .modal-buttons button.primary`);
-      await until(async () => !(await modalTitles()).includes("Civics"), "the revolution");
+      // With anarchy, a question first (Cancel has the focus): answer it.
+      await until(async () => { const t = await modalTitles(); return !t.includes("Civics") || t.includes("Start the revolution?"); }, "the revolution or its question");
+      if ((await modalTitles()).includes("Start the revolution?")) await click(`${TOP} .modal-buttons button.primary`);
+      await until(async () => { const t = await modalTitles(); return !t.includes("Civics") && !t.includes("Start the revolution?"); }, "the revolution");
       const now = await b.eval(`window.ffh.api.query("civics").then((c) => c.options.some((o) => o.civics.some((x) => x.civic === ${civic} && x.current)) || c.anarchy > 0)`);
       if (!now) throw new Error(`the revolution to civic ${civic} did not happen`);
       steps.push(`civics (F3): revolution to civic ${civic}`);

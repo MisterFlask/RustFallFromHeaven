@@ -645,7 +645,6 @@ function wire() {
   click("btn-load", () => screens.loadScreen());
   click("btn-new", () => screens.newGame());
   click("btn-keys", () => screens.keysHelp());
-  click("btn-raw", () => screens.rawRequest());
   click("btn-title", () => title.showTitle({ game: gameRunning() }));
   click("zoom-in", () => mapView.zoom(1));
   click("zoom-out", () => mapView.zoom(-1));

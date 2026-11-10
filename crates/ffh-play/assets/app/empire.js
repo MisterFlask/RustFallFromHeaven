@@ -5,8 +5,8 @@
 
 import * as api from "./api.js";
 import { S, dname, info, turns, me, goldBreakdown } from "./state.js";
-import { h, toast, typeIconOf, tapModes, coarse } from "./dom.js";
-import { openModal } from "./modals.js";
+import { h, toast, typeIconOf, tapModes, coarse, errorText } from "./dom.js";
+import { openModal, ask } from "./modals.js";
 import { run } from "./commands.js";
 import { render as markup } from "./markup.js";
 import { isoSkin, isoIcon, unlockIcon } from "./isoui.js";
@@ -178,7 +178,7 @@ export async function openTechTree() {
     try {
       t = await api.query("techs");
     } catch (e) {
-      return m.setBody(h("p.warn", e.detail ?? e.message));
+      return m.setBody(h("p.warn", errorText(e)));
     }
     if (m.closed) return;
     // A reload (after a click) keeps the view where it was; the first one scrolls to the research.
@@ -369,7 +369,7 @@ export async function openCivics() {
     try {
       c = await api.query("civics", picked.length ? { with: picked } : {});
     } catch (e) {
-      return m.setBody(h("p.warn", e.detail ?? e.message));
+      return m.setBody(h("p.warn", errorText(e)));
     }
     if (m.closed) return;
     const p = c.proposed;
@@ -414,6 +414,11 @@ export async function openCivics() {
         primary: true,
         disabled: !p?.valid,
         onClick: async () => {
+          // Anarchy is the price: ask first (Cancel has the focus); none, no question.
+          if (p?.anarchy && !(await ask("Start the revolution?", `Start the revolution? ${turns(p.anarchy)} of anarchy.`, [
+            { label: "Revolution", value: true, primary: true, danger: true },
+            { label: "Cancel", value: null },
+          ]))) return;
           if (await run({ c: "update_civics", civics: picked })) {
             toast("Revolution.");
             picked = [];
@@ -467,7 +472,7 @@ export async function openReligion() {
     try {
       r = await api.query("religions");
     } catch (e) {
-      return m.setBody(h("p.warn", e.detail ?? e.message));
+      return m.setBody(h("p.warn", errorText(e)));
     }
     if (m.closed) return;
     const convert = async (religion) => {

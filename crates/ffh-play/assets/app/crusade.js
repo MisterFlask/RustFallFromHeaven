@@ -15,7 +15,7 @@
 
 import * as api from "./api.js";
 import { S, dname, teamName } from "./state.js";
-import { h, toast } from "./dom.js";
+import { h, toast, errorText } from "./dom.js";
 import { openModal, ask } from "./modals.js";
 import { addHelp } from "./help.js";
 import { run } from "./commands.js";
@@ -208,7 +208,7 @@ export async function openLend(id) {
   try {
     q = await api.query("crusades");
   } catch (e) {
-    m.setBody(h("p.warn", e.detail ?? e.message));
+    m.setBody(h("p.warn", errorText(e)));
     return m.done;
   }
   const c = q.crusades.find((x) => x.id === id);
@@ -281,7 +281,7 @@ export async function openCrusades() {
     try {
       q = await api.query("crusades");
     } catch (e) {
-      return m.setBody(h("p.warn", e.detail ?? e.message));
+      return m.setBody(h("p.warn", errorText(e)));
     }
     if (m.closed) return;
     const rows = q.crusades.map((c) => {

@@ -8,7 +8,7 @@
 import * as api from "./api.js";
 import { S, emit, dname, tidx, me, observing, unitsAt, playerName } from "./state.js";
 import { prefs, defendedMode } from "./engagements.js";
-import { h, fill, toast } from "./dom.js";
+import { h, fill, toast, errorText } from "./dom.js";
 import { openModal, closeTag } from "./modals.js";
 import { run, sending } from "./commands.js";
 import { rawRequest, loadScreen } from "./screens.js";
@@ -46,7 +46,7 @@ export async function setReveal(on) {
     await api.session("debug", { reveal: on });
     toast(on ? "Debug reveal: the whole map is shown." : "Debug reveal off.");
   } catch (e) {
-    toast(e.detail ?? e.message, "error");
+    toast(errorText(e), "error");
   }
   emit("kick");
 }
@@ -294,7 +294,7 @@ export async function follow(p) {
   try {
     await api.session("follow", { player: p });
   } catch (e) {
-    toast(e.detail ?? e.message, "error");
+    toast(errorText(e), "error");
   }
   emit("kick");
 }
@@ -360,7 +360,7 @@ export async function openFlag(x, y) {
             emit("flags");
             showFlag(rec, { fresh: true });
           } catch (e) {
-            err.textContent = e.detail ?? e.message;
+            err.textContent = errorText(e);
           }
         },
       },
@@ -455,7 +455,7 @@ export async function openTakeOver() {
             m.close("taken");
             emit("game-started");
           } catch (e) {
-            err.textContent = e.detail ?? e.message;
+            err.textContent = errorText(e);
           }
         },
       },
@@ -645,7 +645,7 @@ function autoplayBar() {
             autoplayStop = (await api.cmd("autoplay", { turns: 0 })).r;
             toast("The AI autoplay stops.");
           } catch (e) {
-            toast(e.detail ?? e.message ?? String(e), "error");
+            toast(errorText(e), "error");
           }
         },
       },

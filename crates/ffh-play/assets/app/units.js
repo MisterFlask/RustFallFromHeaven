@@ -5,7 +5,7 @@
 import * as api from "./api.js";
 import { S, emit, on, dname, tname, tidx, me, unitsAt, ownUnitsAt, cityAt, playerName, readyGroups, selectableGroups, nextSelectableGroup, cycleGroups, selectableGroupsOnPlot, option, moves, turns, info, observing, eventKind } from "./state.js";
 import * as K from "./hotkeys.js";
-import { h, fill, toast, coarse } from "./dom.js";
+import { h, fill, toast, coarse, errorText } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run, actionCommand, sending } from "./commands.js";
 import { plotDistance, plotIndex, humanize } from "./tiles.js";
@@ -969,7 +969,7 @@ export async function refreshGroup() {
     try {
       r = await api.query("group", { units });
     } catch (e) {
-      r = { error: e.detail ?? e.message };
+      r = { error: errorText(e) };
     }
     if (key !== groupKey) return;
     group = r;
@@ -1734,7 +1734,7 @@ async function renderPlotInfo(x, y, selUnits = S.sel?.units ?? null) {
   try {
     p = await api.query("plot", selUnits?.length ? { x, y, units: selUnits } : { x, y });
   } catch (e) {
-    return fill(panel, h("p.warn", e.detail ?? e.message));
+    return fill(panel, h("p.warn", errorText(e)));
   }
   if (panel.dataset.plot !== `${x},${y}`) return;
   if (p.vis === 0) return fill(panel, h("div.panel-head", h("h3", `Plot (${x}, ${y})`)), h("p.dim", "Unexplored."));

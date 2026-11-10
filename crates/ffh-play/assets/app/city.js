@@ -13,7 +13,7 @@
 
 import * as api from "./api.js";
 import { S, dname, orderName, info, turns, me, emit, tidx, ORDER_KINDS } from "./state.js";
-import { h, signed, setText, tapModes, compactScreen } from "./dom.js";
+import { h, signed, setText, tapModes, compactScreen, errorText } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
 import { YIELD_COLORS } from "./tiles.js";
@@ -120,7 +120,7 @@ export async function openCity(id, { popup = false } = {}) {
     try {
       c = await api.query("city", { city: cityId });
     } catch (e) {
-      m.setBody(h("p.warn", e.detail ?? e.message));
+      m.setBody(h("p.warn", errorText(e)));
       return;
     }
     if (m.closed || n !== loading) return;
@@ -804,7 +804,7 @@ function productionView(c, choose, remove, tap, reload) {
       ),
       queueView(c, remove, reload),
       locked ? [h("p.dim.governed-note", "The governor chooses what this city builds: see Governance below."), requisitionNote(c)] : null,
-      locked ? null : chooseModes(tap),
+      locked ? null : chooseModes(tap, true),
     ),
     ...(locked ? [] : buildLists(c, choose)),
   ];
