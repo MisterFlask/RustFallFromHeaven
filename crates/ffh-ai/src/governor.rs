@@ -1,27 +1,21 @@
 //! Governed cities (this game's own rules; docs/GOVERNORS.md; docs/AI.md
-//! "Governors"): what a governor builds, and how the AI runs its own governed cities.
+//! "Governors"): what a governor builds.
 //!
 //! **Production.** A governed city's production is the governor's, for the human's cities as
-//! for the AI's: the same choice ([`decide`]), reading its governor's profile. In order: a
-//! garrison the city's danger asks for (the city AI's garrison quota, plus the profile's
-//! defenders); the best building
-//! by the city AI's value per turn of production, weighted by the profile's flavors against the
-//! building's; a missionary for a zealot whose religion misses our cities; then the process the
-//! profile prefers. World wonders, rituals, palaces and settlers are not for governed cities (the
-//! rules forbid them). An army's requisition (docs/ARMIES.md) goes ahead of the governor's choice:
-//! the requisition order interrupts what the governor builds, which resumes after it (which cities
-//! the AI's main army draws on, and the unit: `armies.rs`).
+//! for the AI's: the same choice ([`decide`]), reading the city's role. In order: a garrison the
+//! city's danger asks for (the city AI's garrison quota, plus the role's defenders); the best
+//! building by the city AI's value per turn of production, weighted by the role's flavors against
+//! the building's; a missionary for a role that weighs religion while its religion misses our
+//! cities; then the process the role prefers. Wonders, palaces, rituals and settlers are the
+//! player's empire orders, not the governor's choice. An army's requisition and the player's
+//! empire orders (docs/ARMIES.md, docs/GOVERNORS.md) go ahead of the governor's choice, which
+//! resumes after them (the rules do not ask the governor while they lead the queue).
 //!
-//! **The AI's governed cities.** Its direct slots go to its most productive cities (a swap when a
-//! governed city makes half again as much as the weakest direct one, both past their cooldown); a
-//! vacant post takes the best-matching candidate (the rules do it). Cultural channels are the
-//! civilization's, not its governors' (culture.rs plans them in governed cities too).
+//! (Interim after governors v2, 2026-11-10: the AI places no empire orders yet, and the
+//! traits are not read.)
 //!
-//! (The feed mode, in which the governed cities nearest the enemy fed the main army, is gone with
-//! the rules' requisition, 2026-10-31: the main army requisitions from the governed cities near
-//! the front first, `armies::requisition_cities`.)
-//!
-//! Switch `GOVERNORS` (`FFH_AI_GOVERNORS_OFF`): off, the AI keeps its first cities direct.
+//! Cultural channels are the civilization's, not its governors' (culture.rs plans them in
+//! governed cities too).
 
 use ffh_core::army::RecruitDest;
 use ffh_core::game::Game;
@@ -36,7 +30,7 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
     let city = &g.cities[c];
     let p = city.owner;
     let plot = g.city_plot(c);
-    let profile = g.city_governor_profile(c).map(|k| &d.governor_profiles[k]);
+    let profile = g.city_role(c).map(|k| &d.city_roles[k]);
     let weight = |name: &str| match (profile, d.ty::<FlavorType>(name)) {
         (Some(pr), Some(f)) => pr.flavor_value[f],
         _ => 0,
@@ -74,6 +68,11 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
     let mut best: Option<(BuildingType, i64)> = None;
     for b in d.buildings.keys() {
         if !prod::building_allowed(g, c, b) || !g.city_can_construct(c, b, false, false, false) {
+            continue;
+        }
+        // Wonders and palaces are the player's empire orders (docs/GOVERNORS.md), not the
+        // governor's choice.
+        if g.order_may_be_empire(OrderType::ORDER_CONSTRUCT, b.i()) {
             continue;
         }
         let value = prod::building_value(g, c, b, threat);
@@ -135,30 +134,9 @@ pub(crate) fn culture_grave(g: &Game, c: CityId) -> bool {
     g.culture_garrison_count(c) < crate::culture::defenders_needed(g, c)
 }
 
-/// The AI's governed cities, once a turn: the direct slots on its most productive cities.
-pub fn turn(g: &mut Game, p: PlayerId) {
-    if !crate::switches::GOVERNORS.on(g, p) || g.player_is_barbarian(p) {
-        return;
-    }
-    swap_direct(g, p);
-}
-
-/// A governed city making half again as much as the weakest directly ruled city other than the
-/// capital takes its slot (both past their cooldown); a free slot goes to the most productive.
-fn swap_direct(g: &mut Game, p: PlayerId) {
-    let production = |g: &Game, c: CityId| g.city_yield_rate(c, YieldType::YIELD_PRODUCTION);
-    let governed: Vec<CityId> = g.players[p].cities.iter().copied().filter(|&c| g.city_is_governed(c) && g.city_rule_change_ready(c)).collect();
-    let Some(best) = governed.iter().copied().max_by_key(|&c| (production(g, c), std::cmp::Reverse(c))) else { return };
-    if g.player_direct_cities(p).len() < g.governor_direct_slots() {
-        let _ = g.player_set_direct_rule(p, best, None);
-        return;
-    }
-    let weakest = g.player_direct_cities(p).into_iter().filter(|&c| !g.city_is_capital(c) && g.city_rule_change_ready(c)).min_by_key(|&c| (production(g, c), c));
-    if let Some(w) = weakest {
-        if production(g, best) * 2 > production(g, w) * 3 && production(g, best) >= 6 {
-            if g.player_set_direct_rule(p, best, Some(w)).is_ok() {
-                crate::trace!(g, p, "governors: {} ruled directly instead of {}", g.d.text.name(&g.cities[best].name), g.d.text.name(&g.cities[w].name));
-            }
-        }
-    }
+/// The next `n` buildings city `c`'s governor means to build, in order (the client shows them as
+/// the governor's plan; docs/GOVERNORS.md).
+pub fn plan(g: &Game, c: CityId, n: usize) -> Vec<BuildingType> {
+    let _ = (g, c, n);
+    Vec::new()
 }

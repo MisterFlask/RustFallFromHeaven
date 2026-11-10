@@ -39,6 +39,22 @@ pub struct OrderData {
     /// A requisition order of the army `dest` names (docs/ARMIES.md): at the front of the queue,
     /// not taken off by hand.
     pub requisition: bool,
+    /// An empire order (docs/GOVERNORS.md): the player's order in a governed city (a unit, a
+    /// wonder, a palace, a project), behind the requisition orders and ahead of the governor's
+    /// choice. Never repeats.
+    pub empire: bool,
+}
+
+/// Not in C++: what kind of order `Game::city_push_order_kind` places (this game's armies and
+/// governors).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum OrderKind {
+    /// The city's own order (the player's in a directly ruled city, the governor's in a governed one).
+    Own,
+    /// An army's requisition order (`OrderData::requisition`).
+    Requisition,
+    /// The player's empire order in a governed city (`OrderData::empire`).
+    Empire,
 }
 
 /// C++ `MissionData`: an entry of a selection group's mission queue.

@@ -209,7 +209,7 @@ game_data! {
     event_triggers: EventTriggerType => EventTriggerInfo, event::read_event_trigger;
     // ---- This game's own rules (not FFH2's) ----
     cultural_actions: CulturalActionType => CulturalActionInfo, culture::read_cultural_action;
-    governor_profiles: GovernorProfileType => GovernorProfileInfo, governor::read_governor_profile;
+    city_roles: CityRoleType => CityRoleInfo, governor::read_city_role;
     governor_traits: GovernorTraitType => GovernorTraitInfo, governor::read_governor_trait;
     governor_names: GovernorNameType => GovernorNameInfo, governor::read_governor_names;
     building_tiers: BuildingTierType => BuildingTierInfo, building::read_building_tier;

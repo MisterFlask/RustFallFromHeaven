@@ -206,8 +206,8 @@ impl Game {
         );
 
         self.city_init(city, p, x, y, bump_units, update_plot_groups, acquired);
-        // This game's governors (docs/GOVERNORS.md): a direct slot or a governor. A city that
-        // changed hands takes its governor when its owner's turn ends (`player_governance_turn`).
+        // This game's governors (docs/GOVERNORS.md): its owner's mode. A city that changed hands
+        // goes to its governor once its state is restored (`city_governance_acquired`).
         self.city_governance_init(city, !is_acquired);
 
         city
@@ -599,8 +599,8 @@ impl Game {
             }
         }
 
-        // This game's governors: a governed city has production at once, and its owner a word on
-        // who runs it (a city razed at once is gone: it took no governor).
+        // This game's governors: a governed city goes to its governor (a city razed at once is
+        // gone: it took no governor).
         self.city_governance_acquired(new_city);
 
         // Forcing events that deal with the old city not to expire just because we conquered that city
@@ -1129,8 +1129,6 @@ impl Game {
                 "(pBestCity->getNumRealBuilding(eCapitalBuilding)) did not return false as expected"
             );
             self.city_set_num_real_building(best_city, capital_building, 1);
-            // This game's governors: the new capital is ruled directly.
-            self.player_governance_settle(p);
         }
     }
 

@@ -637,16 +637,34 @@ impl Game {
     /// building / project / process type, `data2` = UnitAI for `ORDER_TRAIN`, -1 = the unit's
     /// default). Python events `cityBuildingUnit` / `cityBuildingBuilding`.
     ///
-    /// This game's armies (docs/ARMIES.md): requisition orders stay at the front of the queue. An
-    /// order pushed to the front (`!append`) goes behind them, and `pop` takes off the first order
-    /// behind them (what the city builds next), never a requisition order.
+    /// This game's armies and governors (docs/ARMIES.md, docs/GOVERNORS.md): requisition orders,
+    /// then a governed city's empire orders, stay at the front of the queue (its lead orders,
+    /// [`Game::city_lead_orders`]). An order pushed to the front (`!append`) goes behind them, and
+    /// `pop` takes off the first order behind them (what the city builds next), never a lead order.
     #[allow(clippy::too_many_arguments)]
     pub fn city_push_order(&mut self, c: CityId, order: OrderType, data1: i32, data2: i32, save: bool, pop: bool, append: bool, force: bool) {
+        self.city_push_order_kind(c, order, data1, data2, save, pop, append, force, OrderKind::Own);
+    }
+
+    /// The number of orders leading city `c`'s queue: its requisition orders, then its empire
+    /// orders (docs/ARMIES.md, docs/GOVERNORS.md).
+    pub fn city_lead_orders(&self, c: CityId) -> usize {
+        let q = &self.cities[c].order_queue;
+        let req = q.iter().take_while(|o| o.requisition).count();
+        req + q[req..].iter().take_while(|o| o.empire).count()
+    }
+
+    /// [`Game::city_push_order`] for an order of `kind`: an own order as there; a requisition
+    /// order behind the other requisition orders; an empire order behind the requisition orders
+    /// and the earlier empire orders (`append` is for own orders only; lead orders never repeat).
+    /// Returns where the order went in the queue (`None`: it was not valid).
+    #[allow(clippy::too_many_arguments)]
+    pub fn city_push_order_kind(&mut self, c: CityId, order: OrderType, data1: i32, data2: i32, save: bool, pop: bool, append: bool, force: bool, kind: OrderKind) -> Option<usize> {
         let d = self.d;
         let mut data2 = data2;
 
-        let lead = self.cities[c].order_queue.iter().take_while(|o| o.requisition).count();
         if pop {
+            let lead = self.city_lead_orders(c);
             self.city_pop_order(c, lead as i32, false, false);
         }
 
@@ -701,28 +719,32 @@ impl Game {
         }
 
         if !valid {
-            return;
+            return None;
         }
 
-        let order_data = OrderData { order_type: order, data1, data2, save, dest: None, requisition: false };
+        let own = kind == OrderKind::Own;
+        let order_data = OrderData { order_type: order, data1, data2, save: save && own, dest: None, requisition: kind == OrderKind::Requisition, empire: kind == OrderKind::Empire };
 
-        // (The Python event above may have changed the queue: count the requisition orders again.)
-        let lead = self.cities[c].order_queue.iter().take_while(|o| o.requisition).count();
-        let front = !append && lead == 0;
-        if append {
-            self.cities[c].order_queue.push(order_data);
-        } else {
-            if front {
-                self.city_stop_head_order(c);
-            }
-            self.cities[c].order_queue.insert(lead, order_data);
+        // (The Python event above may have changed the queue: count the lead orders again.)
+        let q = &self.cities[c].order_queue;
+        let requisitions = q.iter().take_while(|o| o.requisition).count();
+        let lead = self.city_lead_orders(c);
+        let (index, front) = match kind {
+            OrderKind::Own if append => (q.len(), false),
+            OrderKind::Own | OrderKind::Empire => (lead, lead == 0),
+            OrderKind::Requisition => (requisitions, requisitions == 0),
+        };
+        if front {
+            self.city_stop_head_order(c);
         }
+        self.cities[c].order_queue.insert(index, order_data);
 
         if front || self.cities[c].order_queue.len() == 1 {
             self.city_start_head_order(c);
         }
 
         // Interface dirty bits.
+        Some(index)
     }
 
     /// C++ `CvCity::popOrder` (CvCity.cpp:11258-11639): removes queue entry `num` (-1 = the

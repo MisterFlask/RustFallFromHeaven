@@ -38,11 +38,14 @@ pub struct BuildingTierInfo {
     pub weight: i32,
     /// A wonder's cost in a city of this tier for its class, in percent.
     pub wonder_cost_percent: i32,
+    /// The size of a building's core effect at this tier, in percent of the Standard one
+    /// (docs/SUITABILITY.md section 1; read by the governors' city roles).
+    pub core_effect_percent: i32,
 }
 
 /// Reads a `building_tiers.jsonc` entry.
 pub fn read_building_tier(rd: &Rd) -> BuildingTierInfo {
-    BuildingTierInfo { base: InfoBase::read(rd), weight: rd.int("weight"), wonder_cost_percent: rd.int_or("wonder_cost_percent", 100) }
+    BuildingTierInfo { base: InfoBase::read(rd), weight: rd.int("weight"), wonder_cost_percent: rd.int_or("wonder_cost_percent", 100), core_effect_percent: rd.int_or("core_effect_percent", 100) }
 }
 
 /// C++ `GC.getNUM_BUILDING_AND_TECH_PREREQS()` (global_defines.jsonc). `Rd` cannot see the

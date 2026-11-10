@@ -152,10 +152,6 @@ impl Game {
         if self.cities[c].settlement {
             return false;
         }
-        // This game's governors: settlers only in directly ruled cities (docs/GOVERNORS.md).
-        if self.d.units[unit].found && self.city_is_governed(c) {
-            return false;
-        }
         // Card: the Gilded Legion (docs/CARDS.md): its city trains the chosen civilization's units
         // for each class as that civilization's city would (`ffh::cards::battle_more`).
         if let Some(civ) = self.city_legion_unit_civ(c, unit) {
@@ -288,12 +284,6 @@ impl Game {
 
         // This game's building suitability (docs/SUITABILITY.md): only the city's own tier.
         if !self.city_is_own_tier(c, building) {
-            return false;
-        }
-
-        // This game's governors: world wonders and palaces only in directly ruled cities
-        // (docs/GOVERNORS.md).
-        if (info.capital || is_world_wonder_class(d, building_class_of(d, building))) && self.city_is_governed(c) {
             return false;
         }
 
@@ -476,10 +466,6 @@ impl Game {
         if self.cities[c].settlement {
             return false;
         }
-        // This game's governors: rituals only in directly ruled cities (docs/GOVERNORS.md).
-        if self.city_is_governed(c) {
-            return false;
-        }
         if let Some(prereq_civ) = info.prereq_civilization {
             if prereq_civ != self.city_civilization_type(c) {
                 return false;
@@ -584,8 +570,6 @@ impl Game {
 
         let mut experience = city.free_experience;
         experience += player.free_experience;
-        // This game's governors: the traits (docs/GOVERNORS.md).
-        experience += self.city_governor_mods(c).experience;
 
         if let Some(unit) = unit {
             if let Some(unit_combat) = d.units[unit].unit_combat_type {
@@ -925,8 +909,6 @@ impl Game {
             }
         }
 
-        // This game's governors: the traits (docs/GOVERNORS.md).
-        multiplier += self.city_governor_mods(c).unit_production;
 
         // This game's building suitability (docs/SUITABILITY.md): the units the city's buildings
         // unlock, and the units a Lesser Warrens copies.
@@ -955,9 +937,6 @@ impl Game {
                 multiplier += self.players[city.owner].state_religion_building_production_modifier;
             }
         }
-
-        // This game's governors: the traits (docs/GOVERNORS.md).
-        multiplier += self.city_governor_mods(c).building_production;
 
         multiplier.max(0)
     }
@@ -1682,7 +1661,7 @@ mod tests {
         assert_eq!(g.city_hurry_cost_modifier(c, false), 100);
 
         let process = ProcessType(0);
-        g.cities[c].order_queue.push(OrderData { order_type: OrderType::ORDER_MAINTAIN, data1: process.i(), data2: -1, save: false, dest: None, requisition: false });
+        g.cities[c].order_queue.push(OrderData { order_type: OrderType::ORDER_MAINTAIN, data1: process.i(), data2: -1, save: false, dest: None, requisition: false, empire: false });
         assert!(g.city_is_production(c) && g.city_is_production_process(c));
         assert!(!g.city_is_production_unit(c) && !g.city_is_production_building(c) && !g.city_is_production_project(c));
         assert!(!g.city_is_production_limited(c));

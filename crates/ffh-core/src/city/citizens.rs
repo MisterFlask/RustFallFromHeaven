@@ -446,8 +446,6 @@ impl Game {
             unhappiness += city.espionage_happiness_counter.max(0);
             // This game's Incite Unrest (docs/CULTURE.md).
             unhappiness += self.city_culture_unhappiness(c);
-            // This game's governors: a trait's lost faces (docs/GOVERNORS.md).
-            unhappiness -= self.city_governor_mods(c).happy.min(0);
         }
 
         unhappiness.max(0)
@@ -478,9 +476,6 @@ impl Game {
         if city.happiness_timer > 0 {
             happiness += self.d.defines.temp_happy;
         }
-
-        // This game's governors: a trait's faces (docs/GOVERNORS.md).
-        happiness += self.city_governor_mods(c).happy.max(0);
 
         happiness.max(0)
     }
@@ -604,9 +599,6 @@ impl Game {
             total_health += health;
         }
 
-        // This game's governors: a trait's health (docs/GOVERNORS.md).
-        total_health += self.city_governor_mods(c).health.max(0);
-
         total_health
     }
 
@@ -663,9 +655,6 @@ impl Game {
         if health < 0 {
             total_health += health;
         }
-
-        // This game's governors: a trait's lost health (docs/GOVERNORS.md).
-        total_health += self.city_governor_mods(c).health.min(0);
 
         self.city_unhealthy_population(c, no_angry, extra) - total_health
     }

@@ -184,7 +184,6 @@ impl Controller for Ai {
             traits::turn(g, &v); // trait-play
             armies::turn(g, p); // armies' reinforcements (docs/ARMIES.md)
             supply::turn(g, p); // telemetry only: the armies' supply counters (docs/SUPPLY.md)
-            governor::turn(g, p); // governed cities (docs/GOVERNORS.md)
             culture::turn(g, p); // cultural channels (docs/CULTURE.md), after the governors' production
             cards::turn(g, &v); // the great-person cards' content: world spells, rituals (docs/CARDS.md)
         }

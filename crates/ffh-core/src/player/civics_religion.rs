@@ -225,6 +225,10 @@ impl Game {
 
             game_ai_make_assign_work_dirty(self);
 
+            // This game's governors (docs/GOVERNORS.md): the government decides who runs the
+            // cities.
+            self.player_governance_sync(p);
+
             if self.final_initialized {
                 // gDLL->isDiplomacy() / updateDiplomacyAttitude: diplomacy screen (UI).
 

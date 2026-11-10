@@ -409,7 +409,7 @@ mod tests {
     }
 
     /// Seven cities of player 0 west of player 1's one (the first four ruled directly, the other
-    /// three governed), a defender in each, and a main army of two warriors between them; the
+    /// three governed: set by hand, as no government mixes the two), a defender in each, and a main army of two warriors between them; the
     /// cities' queues empty, and whatever they would train for the army one turn from done (so
     /// every city is near enough to the front).
     fn requisition_game() -> (Game, Vec<CityId>, ArmyId) {
@@ -420,6 +420,10 @@ mod tests {
         let (t0, t1) = (g.players[p0].team, g.players[p1].team);
         g.team_meet(t0, t1, false);
         let w = g.d.t::<UnitType>("UNIT_WARRIOR");
+        for &c in &cities[4..] {
+            g.cities[c].direct_rule = false;
+            g.cities[c].production_automated = true;
+        }
         for &c in &cities {
             g.player_init_unit(p0, w, g.cities[c].x, g.cities[c].y, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
             g.city_clear_order_queue(c);

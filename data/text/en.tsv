@@ -8074,44 +8074,22 @@ TXT_KEY_GOODY_SETTLER	The villagers have provided you with a Settler!
 TXT_KEY_GOODY_TECH	The villagers have given you the secrets of a new Technology!
 TXT_KEY_GOODY_WARRIOR	The villagers have provided you with a Warrior!
 TXT_KEY_GOODY_WORKER	The villagers have provided you with a Worker!
-TXT_KEY_GOVERNORPROFILE_BUILDER	Builder
-TXT_KEY_GOVERNORPROFILE_BUILDER_HELP	Leans toward production and buildings; its citizens favour [ICON_PRODUCTION].
-TXT_KEY_GOVERNORPROFILE_INTERIM	Interim governor
-TXT_KEY_GOVERNORPROFILE_INTERIM_HELP	A caretaker while no governor holds the city: no leanings, no traits.
-TXT_KEY_GOVERNORPROFILE_MARSHAL	Marshal
-TXT_KEY_GOVERNORPROFILE_MARSHAL_HELP	Leans toward military and defense: one more defender in its city; its citizens favour [ICON_PRODUCTION].
-TXT_KEY_GOVERNORPROFILE_MERCHANT	Merchant
-TXT_KEY_GOVERNORPROFILE_MERCHANT_HELP	Leans toward gold and trade; its citizens favour [ICON_COMMERCE].
-TXT_KEY_GOVERNORPROFILE_SCHOLAR	Scholar
-TXT_KEY_GOVERNORPROFILE_SCHOLAR_HELP	Leans toward science; its citizens favour [ICON_RESEARCH].
-TXT_KEY_GOVERNORPROFILE_STEWARD	Steward
-TXT_KEY_GOVERNORPROFILE_STEWARD_HELP	Leans toward growth and production; its citizens favour [ICON_FOOD].
-TXT_KEY_GOVERNORPROFILE_ZEALOT	Zealot
-TXT_KEY_GOVERNORPROFILE_ZEALOT_HELP	Leans toward religion and culture.
-TXT_KEY_GOVERNORTRAIT_BELOVED	Beloved
-TXT_KEY_GOVERNORTRAIT_BELOVED_HELP	+1 [ICON_HAPPY]
-TXT_KEY_GOVERNORTRAIT_CORRUPT	Corrupt
-TXT_KEY_GOVERNORTRAIT_CORRUPT_HELP	-10% [ICON_GOLD]
-TXT_KEY_GOVERNORTRAIT_DRILLMASTER	Drillmaster
-TXT_KEY_GOVERNORTRAIT_DRILLMASTER_HELP	Units trained here start with 2 more experience
-TXT_KEY_GOVERNORTRAIT_FARMER	Farmer
-TXT_KEY_GOVERNORTRAIT_FARMER_HELP	+10% [ICON_FOOD]
-TXT_KEY_GOVERNORTRAIT_FRUGAL	Frugal
-TXT_KEY_GOVERNORTRAIT_FRUGAL_HELP	+10% [ICON_GOLD]
-TXT_KEY_GOVERNORTRAIT_HARSH	Harsh
-TXT_KEY_GOVERNORTRAIT_HARSH_HELP	-1 [ICON_HAPPY], +10% [ICON_PRODUCTION]
-TXT_KEY_GOVERNORTRAIT_HYGIENIC	Hygienic
-TXT_KEY_GOVERNORTRAIT_HYGIENIC_HELP	+1 [ICON_HEALTHY]
-TXT_KEY_GOVERNORTRAIT_INDUSTRIOUS	Industrious
-TXT_KEY_GOVERNORTRAIT_INDUSTRIOUS_HELP	+10% [ICON_PRODUCTION] toward buildings
-TXT_KEY_GOVERNORTRAIT_LAZY	Lazy
-TXT_KEY_GOVERNORTRAIT_LAZY_HELP	-10% [ICON_PRODUCTION]
-TXT_KEY_GOVERNORTRAIT_LEARNED	Learned
-TXT_KEY_GOVERNORTRAIT_LEARNED_HELP	+10% [ICON_RESEARCH]
-TXT_KEY_GOVERNORTRAIT_MARTIAL	Martial
-TXT_KEY_GOVERNORTRAIT_MARTIAL_HELP	+10% [ICON_PRODUCTION] toward units
-TXT_KEY_GOVERNORTRAIT_PATRON	Patron of the Arts
-TXT_KEY_GOVERNORTRAIT_PATRON_HELP	+10% [ICON_CULTURE]
+TXT_KEY_GOVERNORTRAIT_AMBITIOUS	Ambitious
+TXT_KEY_GOVERNORTRAIT_AMBITIOUS_HELP	Prefers the costliest building it may build.
+TXT_KEY_GOVERNORTRAIT_CAUTIOUS	Cautious
+TXT_KEY_GOVERNORTRAIT_CAUTIOUS_HELP	+1 defender in its city's garrison.
+TXT_KEY_ROLE_COMMERCE	Commerce
+TXT_KEY_ROLE_COMMERCE_HELP	Builds toward gold and trade. Citizens: [ICON_COMMERCE] emphasis. Key buildings: Market, Moneychanger, Gambling House, Tax Office.
+TXT_KEY_ROLE_CULTURE	Culture
+TXT_KEY_ROLE_CULTURE_HELP	Builds toward religion and culture. Key buildings: Monument, Pagan Temple, Theatre, Carnival.
+TXT_KEY_ROLE_GARRISON	Garrison
+TXT_KEY_ROLE_GARRISON_HELP	Builds toward defense. +1 defender in the garrison. Citizens: [ICON_PRODUCTION] emphasis. Key buildings: Palisade, Walls, Training Yard, Archery Range.
+TXT_KEY_ROLE_GROWTH	Growth
+TXT_KEY_ROLE_GROWTH_HELP	Builds toward growth. Citizens: [ICON_FOOD] emphasis. Key buildings: Granary, Smokehouse, Harbor, Aqueduct.
+TXT_KEY_ROLE_PRODUCTION	Production
+TXT_KEY_ROLE_PRODUCTION_HELP	Builds toward production. Citizens: [ICON_PRODUCTION] emphasis. Key buildings: Forge, Shipyard, Command Post, Siege Workshop.
+TXT_KEY_ROLE_RESEARCH	Research
+TXT_KEY_ROLE_RESEARCH_HELP	Builds toward research. Citizens: [ICON_RESEARCH] emphasis. Key buildings: Library, Elder Council, Alchemy Lab, Mage Guild.
 TXT_KEY_GRAPHICOPTION_CITY_RADIUS	Show City Radius
 TXT_KEY_GRAPHICOPTION_CITY_RADIUS_HELP	Shows City Radius when a Settler is Selected
 TXT_KEY_GRAPHICOPTION_EFFECTS_DISABLED	Effects Disabled

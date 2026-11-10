@@ -1,21 +1,23 @@
 //! This game's governors as the human sees them (docs/GOVERNORS.md): the city screen's
-//! `governance` and the Governors screen (`governors` query): direct rule, each city's governor,
-//! the bench. (An army's requisition interrupts a governed city as any city: the Armies screen,
-//! `view::armies`.)
+//! `governance` and the Governors screen (`governors` query): who runs each city, its role and
+//! governor, the empire priorities and diagnoses. (An army's requisition interrupts a governed
+//! city as any city: the Armies screen, `view::armies`.)
+//!
+//! (Interim after governors v2, 2026-11-10: the data the rules give, without commands yet.)
 
+use ffh_core::governors::GovDiagnosis;
 use ffh_core::ids::*;
 
 use crate::json::Json;
 use crate::view::{city_name, Viewer};
 
-/// A governor: name, profile, traits, the city it holds.
+/// A governor: name, trait, the city it holds.
 fn governor_json(v: &Viewer, g: GovernorId) -> Json {
     let gv = &v.g.governors[g];
     crate::jobj! {
         "id" => g,
         "name" => gv.name.as_str(),
-        "profile" => Json::idx(gv.profile),
-        "traits" => Json::Arr(gv.traits.iter().map(|&t| Json::idx(t)).collect()),
+        "trait" => gv.trait_.map(Json::idx),
         "city" => gv.city,
         "since" => gv.since_turn,
         "born" => gv.born_turn,
@@ -27,16 +29,17 @@ fn city_json(v: &Viewer, c: CityId) -> Json {
     let g = v.g;
     let city = &g.cities[c];
     let governed = g.city_is_governed(c);
-    let cooldown = if city.rule_changed_turn < 0 { 0 } else { (city.rule_changed_turn + g.d.defines.governor_direct_rule_swap_cooldown - g.game_turn()).max(0) };
+    let suitability: Vec<Json> = g.d.city_roles.keys().map(|r| Json::from(g.city_role_suitability(c, r))).collect();
     crate::jobj! {
         "city" => c,
         "name" => city_name(g, c),
         "capital" => g.city_is_capital(c),
         "governed" => governed,
-        "cooldown" => cooldown,
         "governor" => city.governor.filter(|&x| g.governors.contains(x)).map(|x| governor_json(v, x)),
-        "profile" => g.city_governor_profile(c).map(Json::idx),
-        "penalty_turns" => city.governor_penalty_turns,
+        "role" => g.city_role(c).map(Json::idx),
+        "role_overridden" => city.role_overridden,
+        "proposal" => Json::idx(g.city_role_proposal(c)),
+        "suitability" => Json::Arr(suitability),
         "production" => g.city_yield_rate(c, ffh_data::YieldType::YIELD_PRODUCTION),
         "population" => city.population,
         // This game's armies: the armies that requisition from the city (their names).
@@ -44,52 +47,36 @@ fn city_json(v: &Viewer, c: CityId) -> Json {
     }
 }
 
-/// The city screen's `governance` (null without governors): the city's rule and governor, the
-/// direct slots, the bench with how well each candidate suits the city, the directly ruled
-/// cities it may take the slot of.
+/// The city screen's `governance`: the city's rule, role and governor.
 pub fn city(v: &Viewer, c: CityId) -> Json {
-    let g = v.g;
-    if g.cities[c].owner != v.h {
+    if v.g.cities[c].owner != v.h {
         return Json::Null;
     }
-    let h = v.h;
-    let direct = g.player_direct_cities(h);
-    let swappable: Vec<Json> = direct
-        .iter()
-        .filter(|&&o| o != c && !g.city_is_capital(o) && g.city_rule_change_ready(o))
-        .map(|&o| crate::jobj! { "city" => o, "name" => city_name(g, o) })
-        .collect();
-    let bench: Vec<Json> = g
-        .player_bench(h)
-        .into_iter()
-        .map(|b| {
-            let mut j = governor_json(v, b);
-            j.set("match", g.governor_match(b, c));
-            j
-        })
-        .collect();
-    let mut j = city_json(v, c);
-    j.set("slots", g.governor_direct_slots());
-    j.set("direct_count", direct.len());
-    j.set("ready", g.city_rule_change_ready(c));
-    j.set("swappable", Json::Arr(swappable));
-    j.set("bench", Json::Arr(bench));
-    j
+    city_json(v, c)
 }
 
-/// `governors`: the Governors screen. Every city of the human's (direct ones first), the bench,
-/// the direct slots.
+/// A diagnosis.
+fn diagnosis_json(d: &GovDiagnosis) -> Json {
+    match *d {
+        GovDiagnosis::RoleUnfilled(r) => crate::jobj! { "kind" => "role_unfilled", "role" => Json::idx(r) },
+        GovDiagnosis::PoorFit { city, role, suitability } => crate::jobj! { "kind" => "poor_fit", "city" => city, "role" => Json::idx(role), "suitability" => suitability },
+        GovDiagnosis::SlowOrder { city, turns } => crate::jobj! { "kind" => "slow_order", "city" => city, "turns" => turns },
+    }
+}
+
+/// `governors`: the Governors screen. Every city of the human's, whether its civics rule them
+/// directly, the priorities and the diagnoses.
 pub fn screen(v: &Viewer) -> Json {
     let g = v.g;
     let h = v.h;
     let mut cities: Vec<CityId> = g.players[h].cities.clone();
-    cities.sort_by_key(|&c| (g.city_is_governed(c), !g.city_is_capital(c), c));
+    cities.sort_by_key(|&c| (!g.city_is_capital(c), c));
     crate::jobj! {
-        "slots" => g.governor_direct_slots(),
-        "cooldown" => g.d.defines.governor_direct_rule_swap_cooldown,
-        "penalty" => g.d.defines.governor_swap_penalty,
-        "penalty_turns" => g.d.defines.governor_swap_turns,
+        "direct_rule" => g.player_rules_directly(h),
+        "min_suitability" => g.d.defines.governor_role_min_suitability,
+        "max_priorities" => g.d.defines.governor_max_priorities,
+        "priorities" => Json::Arr(g.players[h].governor_priorities.iter().map(|&r| Json::idx(r)).collect()),
+        "diagnoses" => Json::Arr(g.player_governor_diagnoses(h).iter().map(diagnosis_json).collect()),
         "cities" => Json::Arr(cities.iter().map(|&c| city_json(v, c)).collect()),
-        "bench" => Json::Arr(g.player_bench(h).into_iter().map(|b| governor_json(v, b)).collect()),
     }
 }

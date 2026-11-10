@@ -321,7 +321,7 @@ kinds! {
         EventTriggerType => event_triggers,
         // ---- This game's own rules ----
         CulturalActionType => cultural_actions,
-        GovernorProfileType => governor_profiles,
+        CityRoleType => city_roles,
         GovernorTraitType => governor_traits,
         GovernorNameType => governor_names,
         BuildingTierType => building_tiers,

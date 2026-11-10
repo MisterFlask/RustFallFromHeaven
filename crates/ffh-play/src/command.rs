@@ -81,13 +81,6 @@ pub enum Command {
     /// city's default (`index` -1); `dest` `None` = the city's default (for an order) or its own
     /// garrison (for the city). A unit bound elsewhere marches there.
     RecruitDest { city: CityId, index: i32, dest: Option<ffh_core::army::RecruitDest> },
-    /// This game's governors (docs/GOVERNORS.md): rule governed city `city` directly, handing
-    /// `instead_of` (directly ruled) to a governor when no slot is free.
-    GovernDirect { city: CityId, instead_of: Option<CityId> },
-    /// Hand directly ruled city `city` to a governor.
-    GovernHand { city: CityId },
-    /// Governor `governor` governs city `city` (from the bench or another city).
-    GovernAssign { city: CityId, governor: GovernorId },
     Research { tech: Option<TechType>, shift: bool },
     /// Commit to research path `path` (docs/PORTING.md, "Research paths").
     ResearchPath { path: ResearchPathType },
@@ -440,9 +433,6 @@ pub const COMMAND_NAMES: &[&str] = &[
     "garrison_tactic",
     "engage",
     "recruit_dest",
-    "govern_direct",
-    "govern_hand",
-    "govern_assign",
     "research",
     "research_path",
     "update_civics",
@@ -491,9 +481,6 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("garrison_tactic", &["city", "tactic"]),
     ("engage", &["army", "units", "from", "to", "formation", "declare_war"]),
     ("recruit_dest", &["city", "index", "dest"]),
-    ("govern_direct", &["city", "instead_of"]),
-    ("govern_hand", &["city"]),
-    ("govern_assign", &["city", "governor"]),
     ("research", &["tech", "shift"]),
     ("research_path", &["path"]),
     ("update_civics", &["civics"]),
@@ -636,9 +623,6 @@ impl Command {
             Command::GarrisonTactic { .. } => "garrison_tactic",
             Command::Engage { .. } => "engage",
             Command::RecruitDest { .. } => "recruit_dest",
-            Command::GovernDirect { .. } => "govern_direct",
-            Command::GovernHand { .. } => "govern_hand",
-            Command::GovernAssign { .. } => "govern_assign",
             Command::Research { .. } => "research",
             Command::ResearchPath { .. } => "research_path",
             Command::UpdateCivics { .. } => "update_civics",
@@ -745,9 +729,6 @@ impl Command {
                 declare_war: j.opt("declare_war")?,
             },
             "recruit_dest" => Command::RecruitDest { city: j.req("city")?, index: j.get_or("index", -1)?, dest: recruit_dest_field(j)? },
-            "govern_direct" => Command::GovernDirect { city: j.req("city")?, instead_of: j.opt("instead_of")? },
-            "govern_hand" => Command::GovernHand { city: j.req("city")? },
-            "govern_assign" => Command::GovernAssign { city: j.req("city")?, governor: j.req("governor")? },
             "research" => Command::Research { tech: names::opt_field(d, j, "tech")?, shift: flag("shift")? },
             "research_path" => Command::ResearchPath { path: names::field(d, j, "path")? },
             "update_civics" => Command::UpdateCivics { civics: names::list_field(d, j, "civics")? },
@@ -856,9 +837,6 @@ impl Command {
                 .with("formation", formation.as_deref().map(formation_json))
                 .with("declare_war", *declare_war),
             Command::RecruitDest { city, index, dest } => j.with("city", *city).with("index", *index).with("dest", recruit_dest_json(*dest)),
-            Command::GovernDirect { city, instead_of } => j.with("city", *city).with("instead_of", *instead_of),
-            Command::GovernHand { city } => j.with("city", *city),
-            Command::GovernAssign { city, governor } => j.with("city", *city).with("governor", *governor),
             Command::Research { tech, shift } => j.with("tech", Json::opt_idx(*tech)).with("shift", *shift),
             Command::ResearchPath { path } => j.with("path", Json::idx(*path)),
             Command::UpdateCivics { civics } => j.with("civics", Json::Arr(civics.iter().map(|&c| Json::idx(c)).collect())),
@@ -1118,9 +1096,6 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::ArmyRequisitionSet { army, cities } => g.army_set_requisition(h, *army, cities),
         Command::ArmyTactic { army, tactic } => g.army_set_tactic(h, *army, *tactic),
         Command::GarrisonTactic { city, tactic } => g.city_set_garrison_tactic(h, *city, *tactic),
-        Command::GovernDirect { city, instead_of } => g.player_set_direct_rule(h, *city, *instead_of),
-        Command::GovernHand { city } => g.city_hand_to_governor(h, *city),
-        Command::GovernAssign { city, governor } => g.city_assign_governor(h, *city, *governor),
         Command::RecruitDest { city, index, dest } => {
             if *index < 0 {
                 g.cities[*city].recruit_default = *dest;
@@ -1578,35 +1553,6 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                     return Err(cannot("no such army or city of yours"));
                 }
             }
-            Plan::Apply(Action::Army(cmd.clone()))
-        }
-
-        Command::GovernDirect { city, instead_of } => {
-            city_of(g, h, *city)?;
-            if let Some(o) = instead_of {
-                city_of(g, h, *o)?;
-            }
-            g.player_check_direct_rule(h, *city, *instead_of).map_err(cannot)?;
-            Plan::Apply(Action::Army(cmd.clone()))
-        }
-
-        Command::GovernHand { city } => {
-            city_of(g, h, *city)?;
-            g.city_check_hand_to_governor(h, *city).map_err(cannot)?;
-            Plan::Apply(Action::Army(cmd.clone()))
-        }
-
-        Command::GovernAssign { city, governor } => {
-            city_of(g, h, *city)?;
-            match g.governors.get(*governor) {
-                None => return Err(CmdErr::Gone),
-                Some(gov) if gov.owner != h => return Err(CmdErr::NotOwner),
-                Some(_) => {}
-            }
-            if !g.city_is_governed(*city) {
-                return Err(cannot("the city is ruled directly"));
-            }
-            g.city_check_assign_governor(h, *city, *governor).map_err(cannot)?;
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
@@ -2306,10 +2252,6 @@ mod tests {
             Command::RecruitDest { city: CityId(1), index: 0, dest: Some(ffh_core::army::RecruitDest::Army(ArmyId(2))) },
             Command::RecruitDest { city: CityId(1), index: -1, dest: Some(ffh_core::army::RecruitDest::Garrison(CityId(3))) },
             Command::RecruitDest { city: CityId(1), index: -1, dest: None },
-            Command::GovernDirect { city: CityId(1), instead_of: Some(CityId(2)) },
-            Command::GovernDirect { city: CityId(1), instead_of: None },
-            Command::GovernHand { city: CityId(3) },
-            Command::GovernAssign { city: CityId(3), governor: GovernorId(2) },
             Command::Research { tech: None, shift: false },
             Command::Research { tech: Some(TechType(3)), shift: true },
             Command::ResearchPath { path: ResearchPathType(2) },

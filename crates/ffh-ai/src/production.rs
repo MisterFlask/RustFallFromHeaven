@@ -96,10 +96,10 @@ pub fn choice_name(g: &Game, choice: Choice) -> String {
     }
 }
 
-/// City `c`'s first order that is not an army's requisition: what it builds for itself next (an
-/// army's requisition orders lead the queue, docs/ARMIES.md).
+/// City `c`'s first order that is not an army's requisition or the player's empire order: what
+/// it builds for itself next (they lead the queue, docs/ARMIES.md, docs/GOVERNORS.md).
 pub(crate) fn own_order(g: &Game, c: CityId) -> Option<&ffh_core::structs::OrderData> {
-    g.cities[c].order_queue.iter().find(|o| !o.requisition)
+    g.cities[c].order_queue.iter().find(|o| !o.requisition && !o.empire)
 }
 
 /// The unit city `c` trains for itself next ([`own_order`]), if that is a unit.
@@ -108,10 +108,10 @@ fn own_production_unit(g: &Game, c: CityId) -> Option<UnitType> {
 }
 
 /// City `c`'s own orders are taken off its queue (what was put into them stays with each item, as
-/// the rules keep it): the armies' requisition orders at its front stay, they are the army's to
-/// release (docs/ARMIES.md).
+/// the rules keep it): the armies' requisition orders and the player's empire orders at its front
+/// stay, they are the army's and the player's (docs/ARMIES.md, docs/GOVERNORS.md).
 pub(crate) fn clear_own_orders(g: &mut Game, c: CityId) {
-    let lead = g.cities[c].order_queue.iter().take_while(|o| o.requisition).count();
+    let lead = g.city_lead_orders(c);
     while g.cities.contains(c) && g.cities[c].order_queue.len() > lead {
         g.city_pop_order(c, lead as i32, false, false);
     }
@@ -206,6 +206,10 @@ fn fallback(g: &Game, c: CityId) -> Option<Choice> {
     let mut best: Option<(BuildingType, i32)> = None;
     for b in d.buildings.keys() {
         if !building_allowed(g, c, b) || !g.city_can_construct(c, b, false, false, false) {
+            continue;
+        }
+        // A governed city's wonders and palaces are the player's empire orders (docs/GOVERNORS.md).
+        if g.city_is_governed(c) && g.order_may_be_empire(OrderType::ORDER_CONSTRUCT, b.i()) {
             continue;
         }
         let turns = g.city_production_turns_left_building(c, b, 0);
@@ -1011,7 +1015,7 @@ pub fn trouble_rebuild(ai: &Ai, g: &mut Game, p: PlayerId) {
             continue;
         }
         // An army's requisition order stays (docs/ARMIES.md: it is the army's, not the city's).
-        if g.cities[c].order_queue.first().is_some_and(|o| o.requisition) {
+        if g.cities[c].order_queue.first().is_some_and(|o| o.requisition || o.empire) {
             continue;
         }
         let plot = g.city_plot(c);
