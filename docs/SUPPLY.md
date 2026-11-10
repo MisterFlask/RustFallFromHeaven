@@ -107,6 +107,10 @@ army's counter is 0.
 - Messages: `The 1st Army has no supply line: Hunger, turn 1 of 2. No healing, no recruits.`, `The
   1st Army is starving: units lose HP each turn, deal less damage.`, `The 1st Army is supplied
   again.` (at the army's plot); a waiting recruit's reason is `the army has no supply line`.
+- The known line ("Second pass", A) is `Game::plot_supply_line_known(p, plot, viewer)`, the same
+  search with the viewer's knowledge (`Plot::revealed`, `plot_is_visible`, `unit_is_invisible`,
+  `city_is_revealed`; a ship's coastal city counts only if revealed); who is an enemy, owners,
+  routes, improvements and a city's occupation are the truth. Not yet used by the client or the AI.
 
 ## 5. What the player sees
 

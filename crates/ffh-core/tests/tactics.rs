@@ -167,10 +167,11 @@ fn barbarians_fight_in_line() {
 fn the_tactic_arranges_the_battle() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
-    // A pool where Vanguard and Line differ: 4 axemen (2 of them veterans) and 4 archers.
-    let axes = w.units(p0, "UNIT_AXEMAN", from, 4);
+    // A pool where Vanguard and Line differ: 6 axemen (2 of them veterans: 4 to cover the lanes)
+    // and 2 archers.
+    let axes = w.units(p0, "UNIT_AXEMAN", from, 6);
     let mut pool = axes.clone();
-    pool.extend(w.units(p0, "UNIT_ARCHER", from, 4));
+    pool.extend(w.units(p0, "UNIT_ARCHER", from, 2));
     let vets = [axes[0], axes[1]];
     let veteran_level = w.g.d.defines.tactic_veteran_level;
     for &u in &vets {
@@ -207,6 +208,29 @@ fn the_tactic_arranges_the_battle() {
     for p in &vanguard_f {
         assert!(placed.contains(&(p.unit, (p.lane, p.row))), "the battle stood as the tactic put it");
     }
+}
+
+#[test]
+fn vanguard_without_a_full_front_of_cover_fights_as_line() {
+    let mut w = world();
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    // 4 axemen (2 of them veterans) and 4 archers: 2 guards that are no veterans, fewer than the
+    // lanes.
+    let axes = w.units(p0, "UNIT_AXEMAN", from, 4);
+    let mut pool = axes.clone();
+    pool.extend(w.units(p0, "UNIT_ARCHER", from, 4));
+    let veteran_level = w.g.d.defines.tactic_veteran_level;
+    for &u in &axes[..2] {
+        w.g.units[u].level = veteran_level;
+    }
+    w.army(p0, &pool);
+    w.units(p1, "UNIT_WARRIOR", to, 2);
+    w.g.player_army_sync(p1);
+    let ctx = w.ctx();
+    let slots = w.g.engage_slots(&ctx);
+    assert!(w.g.engage_lanes(&slots)[0] > 2);
+    let line = w.g.engage_tactic_formation(&pool, Side::Attacker, &slots, &ctx, w.tactic("TACTIC_LINE"));
+    assert_eq!(w.g.engage_tactic_formation(&pool, Side::Attacker, &slots, &ctx, w.tactic("TACTIC_VANGUARD")), line);
 }
 
 #[test]

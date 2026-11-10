@@ -209,14 +209,36 @@ def report(files):
     rl = vl[2] / vl[1] if vl[1] else 0
     rv = vv[2] / vv[1] if vv[1] else 0
     print(f"Vanguard / Line veteran deaths per veteran: {rv / rl if rl else float('nan'):.2f}")
-    print("per condition (Line %, Vanguard %):")
+    # Where Vanguard gives Line's formation the two tactics' battles are the same (the score is
+    # exactly 0 and every cell equal): (c) is asked only where they differ.
+    def same(c):
+        return all(cell(c, 'VANGUARD', o)['net_hp'] == cell(c, 'LINE', o)['net_hp'] and cell(c, o, 'VANGUARD')['net_hp'] == cell(c, o, 'LINE')['net_hp'] for o in TACTICS)
+    print("per condition (Line %, Vanguard %, Vanguard / Line; the score against Line):")
     for c in conds:
         if c[2] != 'hero':
             continue
         l, v = agg_c[(c, 'LINE')], agg_c[(c, 'VANGUARD')]
         pl = 100 * l[2] / l[1] if l[1] else 0
         pv = 100 * v[2] / v[1] if v[1] else 0
-        print(f"  {c[0]} {c[1]} {c[3]}: {pl:.1f} {pv:.1f}")
+        m, se = h2h(c, 'VANGUARD', 'LINE')
+        tag = 'as Line' if same(c) else f"{pv / pl if pl else float('nan'):.2f}"
+        print(f"  {c[0]} {c[1]} {c[3]}: {pl:.1f} {pv:.1f} {tag}; {m:+.1f} (SE {se:.1f})")
+    print("per army size and ground, over the levels where Vanguard differs from Line (Line %, Vanguard %, ratio, (c)):")
+    c_every = True
+    for n, g in itertools.product(SIZES, GROUNDS):
+        cs = [c for c in conds if c[2] == 'hero' and c[1] == n and c[3] == g and not same(c)]
+        if not cs:
+            print(f"  {n} {g}: as Line at every level")
+            continue
+        l = [sum(agg_c[(c, 'LINE')][k] for c in cs) for k in range(3)]
+        v = [sum(agg_c[(c, 'VANGUARD')][k] for c in cs) for k in range(3)]
+        pl = l[2] / l[1] if l[1] else 0
+        pv = v[2] / v[1] if v[1] else 0
+        ok = pl > 0 and pv <= pl / 2
+        c_every = c_every and ok
+        sc = sum(h2h(c, 'VANGUARD', 'LINE')[0] for c in cs) / len(cs)
+        print(f"  {n} {g} ({len(cs)} levels): {100 * pl:.1f} {100 * pv:.1f} {pv / pl if pl else float('nan'):.2f} {'holds' if ok else 'FAILS'}; score against Line {sc:+.1f}")
+    print(f"(c) in every army size and ground where Vanguard differs from Line: {c_every}")
     verdict['VANGUARD']['c'] = rl > 0 and rv <= rl / 2
 
     print("\n## Verdict (section 7)")

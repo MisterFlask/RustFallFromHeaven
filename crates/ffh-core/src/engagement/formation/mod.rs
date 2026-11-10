@@ -1779,6 +1779,9 @@ impl Grid {
     }
 }
 
+// LAB (temporary): 1 = the weakest cover first, -1 = the strongest first.
+const VANGUARD_COVER_SIGN: i64 = -1;
+
 /// [`auto_arrange`] with the cells in `blocked` already taken (a city's Sentinels), arranged by
 /// the tactic whose knobs are `knobs` (docs/TACTICS.md, section 3). With Line's knobs
 /// ([`TacticKnobs::line`]) it is the auto formation as it was.
@@ -1812,21 +1815,32 @@ pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary:
             let mut vets: Vec<usize> = chosen.iter().copied().filter(|&i| small_guard(i) && cands[i].veteran).collect();
             vets.sort_by_key(|&i| (std::cmp::Reverse(cands[i].weight()), i));
             let mut fronts: Vec<usize> = chosen.iter().copied().filter(|&i| small_guard(i) && !cands[i].veteran).collect();
-            fronts.sort_by_key(|&i| (cands[i].weight(), i));
-            let (mut vi, mut fi) = (0, 0);
-            for l in grid.lanes_out() {
-                if vi >= vets.len() || fi >= fronts.len() {
-                    break;
+            fronts.sort_by_key(|&i| (VANGUARD_COVER_SIGN * cands[i].weight(), i));
+            // The cover: a guard that is no veteran for each lane whose front cell is free once
+            // the large units stand (a full front row of cover). Without it, Line.
+            let free_front = (0..grid.lanes).filter(|&l| grid.free(l, 0)).count();
+            if vets.is_empty() || fronts.len() < free_front {
+                grid = Grid::new(lanes, blocked);
+                out.clear();
+                let mut seq = chosen.clone();
+                seq.sort_by_key(|&i| (!cands[i].large, !place_first(&cands[i])));
+                grid.place_in_rows(&mut out, cands, &seq, |c| c.row_order);
+            } else {
+                let (mut vi, mut fi) = (0, 0);
+                for l in grid.lanes_out() {
+                    if vi >= vets.len() || fi >= fronts.len() {
+                        break;
+                    }
+                    if grid.free(l, 0) && grid.free(l, 1) {
+                        grid.put(&mut out, cands, fronts[fi], l, 0);
+                        grid.put(&mut out, cands, vets[vi], l, 1);
+                        fi += 1;
+                        vi += 1;
+                    }
                 }
-                if grid.free(l, 0) && grid.free(l, 1) {
-                    grid.put(&mut out, cands, fronts[fi], l, 0);
-                    grid.put(&mut out, cands, vets[vi], l, 1);
-                    fi += 1;
-                    vi += 1;
-                }
+                let rest: Vec<usize> = chosen.iter().copied().filter(|&i| !cands[i].large && !out.iter().any(|p| p.unit == i)).collect();
+                grid.place_in_rows(&mut out, cands, &rest, |c| c.row_order);
             }
-            let rest: Vec<usize> = chosen.iter().copied().filter(|&i| !cands[i].large && !out.iter().any(|p| p.unit == i)).collect();
-            grid.place_in_rows(&mut out, cands, &rest, |c| c.row_order);
         }
     }
     out.sort_by_key(|p| p.unit);

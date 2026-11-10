@@ -17,8 +17,9 @@
 //                      cell (the strongest healthy ones; a large guard screens two). Absent: 0
 //     placement:       LINE (each unit in the first row of its rank order with room, the lanes
 //                      nearest the centre first) or VANGUARD (LINE, each veteran guard in the
-//                      middle row behind a guard that is no veteran; a veteran: the Hero
-//                      promotion or level TACTIC_VETERAN_LEVEL).
+//                      middle row behind a guard that is no veteran, when the guards that are
+//                      no veterans are at least the lanes with a free front cell; else LINE; a
+//                      veteran: the Hero promotion or level TACTIC_VETERAN_LEVEL).
 //                      Absent: LINE
 //     place_first:     LINE placement only: kinds placed before the others. Absent: none
 [

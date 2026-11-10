@@ -72,6 +72,14 @@ impl SupplyState {
     }
 }
 
+/// What a supply-line search knows: the truth (the rules' line, [`Game::plot_supply_line`]), or
+/// what a team knows ([`Game::plot_supply_line_known`]).
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum SupplyView {
+    Truth,
+    Known(TeamId),
+}
+
 /// A plot's best label in the search: its cost, its number of plots, the plot it is entered from.
 #[derive(Clone, Copy)]
 struct Label {
@@ -104,9 +112,28 @@ impl Game {
         other == team || self.crusade_host_heals_in(team, Some(other))
     }
 
-    /// Whether a unit at war with `team` stands on `plot` (any, seen or not).
-    fn supply_enemy_on(&self, team: TeamId, plot: PlotIdx) -> bool {
-        self.map.plots[plot].units.iter().any(|&u| self.units.contains(u) && self.unit_is_enemy(u, Some(team), Some(plot)))
+    /// Whether `view` sees unit `u` on `plot`: always for the truth; for a team, its plot is
+    /// visible to the team ([`Game::plot_is_visible`]) and the unit not invisible to it
+    /// ([`Game::unit_is_invisible`]).
+    fn supply_sees_unit(&self, view: SupplyView, u: UnitId, plot: PlotIdx) -> bool {
+        match view {
+            SupplyView::Truth => true,
+            SupplyView::Known(t) => self.plot_is_visible(plot, t) && !self.unit_is_invisible(u, t, true),
+        }
+    }
+
+    /// Whether `view` knows of city `c`: always for the truth; for a team, it has revealed it
+    /// ([`Game::city_is_revealed`]).
+    fn supply_knows_city(&self, view: SupplyView, c: CityId) -> bool {
+        match view {
+            SupplyView::Truth => true,
+            SupplyView::Known(t) => self.city_is_revealed(c, t, false),
+        }
+    }
+
+    /// Whether a unit at war with `team` that `view` sees stands on `plot` (the truth: any).
+    fn supply_enemy_on(&self, team: TeamId, plot: PlotIdx, view: SupplyView) -> bool {
+        self.map.plots[plot].units.iter().any(|&u| self.units.contains(u) && self.unit_is_enemy(u, Some(team), Some(plot)) && self.supply_sees_unit(view, u, plot))
     }
 
     /// Whether `team` may enter the territory of `other` for a supply line: its own or a friend's,
@@ -124,18 +151,25 @@ impl Game {
     /// fort an enemy unit holds, territory `p`'s team may not enter.
     pub fn plot_supply_cost(&self, p: PlayerId, plot: PlotIdx) -> Option<i32> {
         let team = self.players[p].team;
-        self.supply_cost(team, plot, &self.supply_fort_types())
+        self.supply_cost(team, plot, &self.supply_fort_types(), SupplyView::Truth)
     }
 
-    fn supply_cost(&self, team: TeamId, plot: PlotIdx, forts: &[ImprovementType]) -> Option<i32> {
+    /// [`Game::plot_supply_cost`] as `view` knows it: for a team, a plot it has not revealed
+    /// cannot be entered, and units, cities and manned forts count only when it sees them.
+    fn supply_cost(&self, team: TeamId, plot: PlotIdx, forts: &[ImprovementType], view: SupplyView) -> Option<i32> {
+        if let SupplyView::Known(t) = view {
+            if !self.map.plots[plot].revealed[t] {
+                return None;
+            }
+        }
         if self.plot_is_water(plot) || self.plot_is_impassable(plot) {
             return None;
         }
-        if self.supply_enemy_on(team, plot) {
+        if self.supply_enemy_on(team, plot, view) {
             return None;
         }
         let plot_team = self.plot_get_team(plot);
-        if let Some(c) = self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c)) {
+        if let Some(c) = self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c) && self.supply_knows_city(view, c)) {
             let city_team = self.players[self.cities[c].owner].team;
             if self.teams[team].at_war[city_team] {
                 return None;
@@ -154,7 +188,7 @@ impl Game {
                         continue;
                     }
                     let Some(q) = self.plot_xy(x, y, dx, dy) else { continue };
-                    if self.map.plots[q].improvement_type.is_some_and(|i| forts.contains(&i)) && self.supply_enemy_on(team, q) {
+                    if self.map.plots[q].improvement_type.is_some_and(|i| forts.contains(&i)) && self.supply_enemy_on(team, q, view) {
                         return None;
                     }
                 }
@@ -172,8 +206,9 @@ impl Game {
 
     /// `p`'s ships that are supply sources, by plot: a sea unit with room for land units
     /// (`cargo_capacity > 0`, land cargo, no special cargo) on a water plot of an area on which a
-    /// city of `p`'s team stands. The lowest unit id per plot.
-    fn supply_ships(&self, p: PlayerId) -> BTreeMap<PlotIdx, UnitId> {
+    /// city of `p`'s team stands. The lowest unit id per plot. For a team's `view`: only ships it
+    /// sees, and coastal cities it has revealed.
+    fn supply_ships(&self, p: PlayerId, view: SupplyView) -> BTreeMap<PlotIdx, UnitId> {
         let team = self.players[p].team;
         let mut ships: BTreeMap<PlotIdx, UnitId> = BTreeMap::new();
         let candidates: Vec<UnitId> = self.players[p]
@@ -192,7 +227,7 @@ impl Game {
         // The water areas the team's cities touch.
         let mut coastal: BTreeSet<Option<AreaId>> = BTreeSet::new();
         for q in self.player_ids().filter(|&q| self.players[q].alive && self.supply_home(team, self.players[q].team)) {
-            for &c in &self.players[q].cities {
+            for &c in self.players[q].cities.iter().filter(|&&c| self.supply_knows_city(view, c)) {
                 let (x, y) = (self.cities[c].x, self.cities[c].y);
                 for dy in -1..=1 {
                     for dx in -1..=1 {
@@ -205,6 +240,9 @@ impl Game {
         }
         for u in candidates {
             let Some(plot) = self.unit_plot_opt(u) else { continue };
+            if !self.supply_sees_unit(view, u, plot) {
+                continue;
+            }
             if self.plot_is_water(plot) && self.map.plots[plot].area.is_some() && coastal.contains(&self.map.plots[plot].area) {
                 let e = ships.entry(plot).or_insert(u);
                 if u < *e {
@@ -217,9 +255,9 @@ impl Game {
 
     /// The source a supply line of `p`'s ends at on `plot` (`team`'s, `ships` from
     /// [`Game::supply_ships`]): a city of the team not in occupation, else a land plot next to a
-    /// ship (the lowest unit id).
-    fn supply_source_at(&self, team: TeamId, plot: PlotIdx, ships: &BTreeMap<PlotIdx, UnitId>) -> Option<SupplySource> {
-        if let Some(c) = self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c)) {
+    /// ship (the lowest unit id). For a team's `view`: only a city it has revealed.
+    fn supply_source_at(&self, team: TeamId, plot: PlotIdx, ships: &BTreeMap<PlotIdx, UnitId>, view: SupplyView) -> Option<SupplySource> {
+        if let Some(c) = self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c) && self.supply_knows_city(view, c)) {
             if self.supply_home(team, self.players[self.cities[c].owner].team) && self.cities[c].occupation_timer == 0 {
                 return Some(SupplySource::City(c));
             }
@@ -246,21 +284,39 @@ impl Game {
 
     /// The supply line of an army of `p` on `plot` (docs/SUPPLY.md, section 2): the cheapest path
     /// over land to a source within `SUPPLY_LINE_BUDGET`, or `None` when it is cut. Pure and
-    /// deterministic; nothing is cached.
+    /// deterministic; nothing is cached. It bends around every enemy unit, seen or not.
     pub fn plot_supply_line(&self, p: PlayerId, start: PlotIdx) -> Option<SupplyLine> {
+        self.supply_line_search(p, start, SupplyView::Truth)
+    }
+
+    /// The supply line of an army of `p` on `plot` as team `viewer` can work it out
+    /// (docs/SUPPLY.md, "Second pass", A): [`Game::plot_supply_line`]'s search, costs, budget and
+    /// tie rule with the viewer's knowledge in place of the truth. It enters only plots the viewer
+    /// has revealed (`Plot::revealed`); a unit blocks only if the viewer sees it now (its plot
+    /// visible to the viewer, [`Game::plot_is_visible`], and the unit not invisible to it,
+    /// [`Game::unit_is_invisible`]); a fort denies its neighbours only if the viewer sees a unit
+    /// in it; a source is a city the viewer has revealed ([`Game::city_is_revealed`]) or a ship
+    /// it sees. Who is an enemy, the plots' owners, routes and improvements, and a city's
+    /// occupation are the truth. `viewer` may be `p`'s own team. Pure and deterministic.
+    pub fn plot_supply_line_known(&self, p: PlayerId, start: PlotIdx, viewer: TeamId) -> Option<SupplyLine> {
+        self.supply_line_search(p, start, SupplyView::Known(viewer))
+    }
+
+    /// The search of [`Game::plot_supply_line`] and [`Game::plot_supply_line_known`].
+    fn supply_line_search(&self, p: PlayerId, start: PlotIdx, view: SupplyView) -> Option<SupplyLine> {
         let team = self.players[p].team;
         // In a city of its owner's team, whatever its state.
-        if let Some(c) = self.map.plots[start].plot_city.filter(|&c| self.cities.contains(c)) {
+        if let Some(c) = self.map.plots[start].plot_city.filter(|&c| self.cities.contains(c) && self.supply_knows_city(view, c)) {
             if self.supply_home(team, self.players[self.cities[c].owner].team) {
                 return Some(SupplyLine { path: vec![start], cost: 0, source: SupplySource::City(c) });
             }
         }
-        let ships = self.supply_ships(p);
+        let ships = self.supply_ships(p, view);
         // Aboard (on the plot of) one of its source ships.
         if let Some(&s) = ships.get(&start) {
             return Some(SupplyLine { path: vec![start], cost: 0, source: SupplySource::Ship(s) });
         }
-        if let Some(source) = self.supply_source_at(team, start, &ships) {
+        if let Some(source) = self.supply_source_at(team, start, &ships, view) {
             return Some(SupplyLine { path: vec![start], cost: 0, source });
         }
         let budget = self.d.defines.supply_line_budget;
@@ -293,7 +349,7 @@ impl Game {
             }
             labels.get_mut(&q).expect("labelled").done = true;
             if q != start {
-                if let Some(source) = self.supply_source_at(team, q, &ships) {
+                if let Some(source) = self.supply_source_at(team, q, &ships, view) {
                     // Of the sources reached at this cost and length: the lowest path.
                     let better = match found {
                         None => true,
@@ -315,7 +371,7 @@ impl Game {
                     if n == start {
                         continue;
                     }
-                    let step = *costs.entry(n).or_insert_with(|| self.supply_cost(team, n, &forts));
+                    let step = *costs.entry(n).or_insert_with(|| self.supply_cost(team, n, &forts, view));
                     let Some(step) = step else { continue };
                     let (c, l) = (cost + step, len + 1);
                     if c > budget {

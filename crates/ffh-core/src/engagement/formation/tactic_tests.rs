@@ -202,32 +202,47 @@ fn volley_screens_then_takes_the_support() {
 
 #[test]
 fn vanguard_shields_the_veterans() {
-    // 4 strikers (one strong veteran, one weak veteran), 2 archers: 6 slots, 3 lanes.
-    let mut pool: Vec<Candidate> = vec![c(AK::Strike, 50), c(AK::Strike, 40), c(AK::Strike, 90), c(AK::Strike, 60), c(AK::Shoot, 30), c(AK::Shoot, 20)];
+    // 5 strikers (veterans 2 and 3), 1 archer: 6 slots, 3 lanes, 3 guards that are no veterans.
+    let mut pool: Vec<Candidate> = vec![c(AK::Strike, 50), c(AK::Strike, 40), c(AK::Strike, 90), c(AK::Strike, 60), c(AK::Strike, 70), c(AK::Shoot, 30)];
     pool[2].veteran = true;
     pool[3].veteran = true;
     let p = auto_arrange_around(&pool, 3, 6, 6, &[], &placement(TacticPlacement::Vanguard));
     let cell = |u: usize| p.iter().find(|x| x.unit == u).map(|x| (x.lane, x.row)).unwrap();
     // The centre lane: the weakest striker that is no veteran (1) before the most valuable veteran
-    // (2); lane 0: striker 0 before veteran 3. The archers in their row, where there is room.
+    // (2); lane 0: the next weakest (0) before veteran 3. The rest as Line places them.
     assert_eq!(cell(1), (1, 0));
     assert_eq!(cell(2), (1, 1));
     assert_eq!(cell(0), (0, 0));
     assert_eq!(cell(3), (0, 1));
-    assert_eq!(cell(4), (2, 1));
-    assert_eq!(cell(5), (1, 2), "the middle is full: the next row of its order");
+    assert_eq!(cell(4), (2, 0));
+    assert_eq!(cell(5), (2, 1));
     // Line puts the veterans in front.
     let line = auto_arrange_around(&pool, 3, 6, 6, &[], &TacticKnobs::line());
     assert!(line.iter().filter(|x| x.unit == 2 || x.unit == 3).all(|x| x.row == 0));
-    // A veteran with nobody to stand behind is placed as in Line.
-    let mut pool2 = vec![c(AK::Strike, 50), c(AK::Strike, 90), c(AK::Strike, 60)];
-    pool2[1].veteran = true;
-    pool2[2].veteran = true;
-    let p = auto_arrange_around(&pool2, 3, 6, 6, &[], &placement(TacticPlacement::Vanguard));
-    let cell = |u: usize| p.iter().find(|x| x.unit == u).map(|x| (x.lane, x.row)).unwrap();
-    assert_eq!(cell(0), (1, 0));
-    assert_eq!(cell(1), (1, 1));
-    assert_eq!(cell(2).1, 0, "no guard to stand behind: the front, as in Line");
+    // A Sentinel on a front cell leaves 2 lanes to cover: 2 guards that are no veterans do.
+    let pool3: Vec<Candidate> = [0, 1, 2, 3, 5].iter().map(|&i| pool[i]).collect();
+    let p = auto_arrange_around(&pool3, 3, 6, 6, &[(1, 0)], &placement(TacticPlacement::Vanguard));
+    assert_ne!(p, auto_arrange_around(&pool3, 3, 6, 6, &[(1, 0)], &TacticKnobs::line()));
+    assert!(p.iter().filter(|x| x.unit == 2 || x.unit == 3).all(|x| x.row == 1));
+}
+
+#[test]
+fn vanguard_without_a_full_front_of_cover_is_line() {
+    // 2 guards that are no veterans for 3 lanes: arranged exactly as Line.
+    let mut pool: Vec<Candidate> = vec![c(AK::Strike, 50), c(AK::Strike, 40), c(AK::Strike, 90), c(AK::Strike, 60), c(AK::Shoot, 30), c(AK::Shoot, 20)];
+    pool[2].veteran = true;
+    pool[3].veteran = true;
+    let line = auto_arrange_around(&pool, 3, 6, 6, &[], &TacticKnobs::line());
+    assert_eq!(auto_arrange_around(&pool, 3, 6, 6, &[], &placement(TacticPlacement::Vanguard)), line);
+    // With a large guard in front, 2 lanes are left: the 2 cover them.
+    let mut big = pool.clone();
+    big.push(Candidate { large: true, ..c(AK::Strike, 30) });
+    let p = auto_arrange_around(&big, 4, 9, 9, &[], &placement(TacticPlacement::Vanguard));
+    assert_ne!(p, auto_arrange_around(&big, 4, 9, 9, &[], &TacticKnobs::line()));
+    assert!(p.iter().filter(|x| x.unit == 2 || x.unit == 3).all(|x| x.row == 1));
+    // Veterans only: Line.
+    let vets: Vec<Candidate> = [2, 3, 4].iter().map(|&i| pool[i]).collect();
+    assert_eq!(auto_arrange_around(&vets, 3, 6, 6, &[], &placement(TacticPlacement::Vanguard)), auto_arrange_around(&vets, 3, 6, 6, &[], &TacticKnobs::line()));
 }
 
 #[test]
