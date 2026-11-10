@@ -820,8 +820,9 @@ async function armiesUi() {
   steps.push(`armies: the panel's army actions, F5 lists ${armies} arm${armies === 1 ? "y" : "ies"}${renamed}; the city's recruitment`);
 }
 
-/** This game's governors (docs/GOVERNORS.md; the new-game screen starts with them on): the city
- *  screen's Governance section and F9's Governors screen. */
+/** This game's governors (docs/GOVERNORS.md): the game starts in Despotism, which rules every
+ *  city directly: the city screen's Governance section says so, and F9's Governors screen is the
+ *  mode line and the city list. */
 async function governorsUi() {
   const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player)");
   await b.eval(`window.ffh.emit("open-city", ${city.id})`);
@@ -834,10 +835,80 @@ async function governorsUi() {
   await until(async () => (await modalTitles()).includes("Governors"), "the Governors screen");
   const n = await S("S.view.cities.filter((c) => c.owner === S.view.me.player).length");
   await until2(`document.querySelectorAll("#modals table.governors tbody tr").length === ${n}`, "every city listed");
+  const mode = await b.eval(`document.querySelector("#modals .governors-mode")?.textContent ?? ""`);
+  if (!/^Government: .+\. Every city is ruled directly\.$/.test(mode)) throw new Error(`the Governors screen's mode line: ${mode}`);
   await shot("governors-screen");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the Governors screen closed");
-  steps.push(`governors: the capital ruled directly; F9 lists ${n} cit${n === 1 ? "y" : "ies"}`);
+  steps.push(`governors: the capital ruled directly; F9 says "${mode}" and lists ${n} cit${n === 1 ? "y" : "ies"}`);
+}
+
+/** Governors v2 under a governed government (`stage governors`: Aristocracy, two governed cities,
+ *  an army by the capital): F9 has the mode line, a priority toggled, a role card per city; the
+ *  Armies screen's Order unit picks a unit, then the city (the suggestion pre-selected: one click),
+ *  and the army shows it on order; a second one is ordered with a click on an outlined city on the
+ *  map; the capital's city screen offers empire orders only and says so; the civics screen's
+ *  preview of Despotism says every city will be ruled directly. */
+async function stagedGovernors(bin, saves) {
+  const st = await loadStaged(bin, saves, "governors");
+  await b.key("F9");
+  await until(async () => (await modalTitles()).includes("Governors"), "the Governors screen");
+  await until2(`document.querySelectorAll("#modals .role-card").length === 2`, "a role card per governed city");
+  const mode = await b.eval(`document.querySelector("#modals .governors-mode")?.textContent ?? ""`);
+  if (!/Every city is governed\.$/.test(mode)) throw new Error(`the Governors screen's mode line: ${mode}`);
+  const card = await b.eval(`document.querySelector("#modals .role-card").textContent`);
+  if (!/Role: /.test(card) || !/Plan: /.test(card) || !/Other roles: /.test(card)) throw new Error(`a role card: ${card}`);
+  await click(`#modals label.priority[data-role="1"] input`);
+  await until2(`(async () => (await window.ffh.api.query("governors")).priorities.includes(1))()`, "a priority set");
+  await until2(`!!document.querySelector('#modals label.priority[data-role="1"] input:checked')`, "the priority ticked");
+  await shot("governors-governed");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the Governors screen closed");
+  // The Armies screen: Order unit -> the unit -> the city (suggested) -> one click.
+  const onOrder = `(async () => (await window.ffh.api.query("armies")).armies.find((a) => a.id === ${st.army}).on_order.length)()`;
+  const orderUnit = async () => {
+    await b.key("F5");
+    await until(async () => (await modalTitles()).includes("Armies"), "the Armies screen");
+    await clickSteady(`#modals .army-card[data-army="${st.army}"] button.army-order-unit`);
+    await dialog(/^Order a unit for the /);
+    await clickSteady(`${TOP} button.empire-item:not([disabled])`);
+    await dialog(/: which city\?$/);
+    await until2(`document.querySelectorAll(${q(`${TOP} tr.empire-city.picked`)}).length === 1 && /suggested/.test(document.querySelector(${q(`${TOP} tr.empire-city.picked`)}).textContent)`, "the suggested city pre-selected");
+  };
+  await orderUnit();
+  await shot("empire-order-city");
+  await click(`${TOP} .modal-buttons button.primary`);
+  await until2(`(async () => (await ${onOrder}) === 1)()`, "the unit on order for the army");
+  await until2(`!!document.querySelector(${q(`#modals .army-card[data-army="${st.army}"] ul.army-on-order li`)})`, "the unit on order on the army's card");
+  await shot("army-on-order");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the Armies screen closed");
+  // A second one through the map: the capable cities outlined, a click on one orders it there.
+  await orderUnit();
+  await clickSteady(`${TOP} .modal-buttons button:nth-child(2)`);
+  await until(async () => !(await modalTitles()).length, "the screens closed for the map");
+  await until2(`document.body.classList.contains("picking")`, "the city pick on the map");
+  await new Promise((r) => setTimeout(r, 500));
+  await shot("empire-order-map");
+  const at = await S(`[S.cities.get(${st.city}).x, S.cities.get(${st.city}).y]`);
+  const p = await plotPos(at[0], at[1]);
+  await b.mouse(p.x, p.y);
+  await until2(`(async () => (await ${onOrder}) === 2)()`, "the second unit on order, from the map");
+  // The capital's city screen: empire orders only, and the line that says so.
+  await b.eval(`window.ffh.emit("open-city", ${st.capital})`);
+  await until2(`/The governor builds the rest/.test(document.querySelector(${q(`${TOP} .governed-note`)})?.textContent ?? "")`, "the governed city's production note");
+  await until2(`/Governed by /.test(document.querySelector(${q(`${TOP} .section.governance`)})?.textContent ?? "")`, "the city's governor and role");
+  await shot("city-governed");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the city dialog closed");
+  // Civics: Despotism's preview says every city will be ruled directly.
+  const despotism = await S(`S.data.tables.CivicType.findIndex((t) => t.type === "CIVIC_DESPOTISM")`);
+  await b.key("F3");
+  await dialog("Civics");
+  await clickSteady(`${TOP} button.civic[data-civic="${despotism}"]`);
+  await until2(`/Every city will be ruled directly\\./.test(document.querySelector(${q(`${TOP} .civic-rule-change`)})?.textContent ?? "")`, "the civics preview of who runs the cities");
+  await closeDialog("Civics");
+  steps.push(`governors (stage governors): "${mode}"; a priority set, a role card per city; a unit ordered for the army from the Armies screen in one click on the suggestion, a second by a click on an outlined city on the map; the governed city screen; the civics preview`);
 }
 
 async function moveUnit() {
@@ -2105,6 +2176,7 @@ async function main() {
     await stagedDiplomacy(bin, saves);
     await stagedAutomate(bin, saves);
     await stagedArmies(bin, saves);
+    await stagedGovernors(bin, saves);
     await stagedEngagement(bin, saves);
     await stagedElection(bin, saves);
     await stagedSettlement(bin, saves);

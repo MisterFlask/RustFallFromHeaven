@@ -350,11 +350,13 @@ requisition order leads the queue as "Requisitioned by the 2nd Army", without �
 the Armies screen); under the queue, the city's default destination, its garrison and the armies
 that requisition from it, with the garrison's battle tactic (a selector of the four tactics,
 each with its rules as its tooltip; "from next turn (now Line)" while a change is pending;
-docs/TACTICS.md). With governors on (docs/GOVERNORS.md) a **Governance** section heads
-the right column: a directly ruled city says so (with "Hand to a governor"); a governed city shows
-its governor (or the interim one), "Replace with…" (the bench, with each candidate's fit) and
-"Rule directly" (or "Rule directly instead of…" a direct city); its production is shown but not
-chosen (a requisition order shows there too).
+docs/TACTICS.md). A **Governance** section (docs/GOVERNORS.md) heads the right column: "Ruled
+directly. Government: Despotism." under a direct-rule government; otherwise the city's governor
+(its trait's rule as the tooltip) and role ("Research (proposed)" or "(overruled)", with its
+suitability). A governed city's build lists offer only what may be an empire order (units,
+wonders, palaces, rituals; "Empire orders: units, wonders, palaces and rituals. The governor
+builds the rest."): a click places it ahead of the governor's choice, an empire order in the
+queue has a ✕, the governor's orders and requisition orders have none.
 With the isometric map the screen is Civ4's city view: the map glides to the city at the largest
 zoom that shows its radius, veils what lies outside it and draws the radius in gilt, each plot
 with its yields and the worked ones with a citizen; click a plot there to work it or stop. The
@@ -368,7 +370,9 @@ content and effect; cards stay out of the tree); click a tech to research
 it (with what it needs first), Shift-click to queue it. **Civics** (`F3`): each civic option with its
 civics (the current ones marked, the ones you cannot adopt greyed, their tooltip saying why: the
 tech, a war, an alignment, a state religion); pick civics and the screen shows the
-revolution's anarchy and upkeep (computed by the rules), then "Revolution!". **Religion** (`F7`):
+revolution's anarchy and upkeep (computed by the rules) and, when the government changes who runs
+the cities, "Every city will be handed to governors." or "Every city will be ruled directly.";
+then "Revolution!". **Religion** (`F7`):
 the religions (founded or not; a religion's tooltip says what it does and, before it is founded,
 the tech whose first discoverer founds it), their holy cities as far as you know them, your cities
 with each, and "Convert" (with the anarchy). **Cultural pressure** (`F8`, the
@@ -396,10 +400,22 @@ production with their turns, and "Requisition from…": every city of yours with
 unit it would train for the army, its production turns and its march to the army; "Release all"),
 and the recruits marching to it (where from, where they are (click: select it on the map), how
 many turns away, or how long they have waited); then each city's garrison with the recruits
-marching to it. **Governors** (`F9`, the menu's Governors; with governors on): every city with
-the armies that requisition from it, its rule (direct or governed, and when it may change), its
-governor (name, profile, traits; the replacement penalty) and a selector to replace its governor
-from the bench; then the bench. **Finances** (`F2`, or click the
+marching to it. Each army also lists its units on order (unit, city, turns) and has **Order
+unit**: a unit that serves in armies (one no governed city can train is shown unavailable), then
+the city step: a panel of every governed city able to build it, with its turns (behind the orders
+ahead of it), what it would delay and its distance to the army; the nearest is pre-selected
+(Enter or "Order in <city>" is one click), and "On the map" outlines the cities on the map, where a
+click on one orders it there (Esc cancels). **Governors** (`F9`, the menu's Governors): the mode
+line ("Government: Aristocracy. Every city is governed."; under Despotism or God King "... ruled
+directly." and the city list alone); then the six roles as priority toggles (at most two; "Priority:
++30% weight in role proposals."), the diagnoses ("No city has role Research.", "<City>: role Culture
+at suitability 60%.", "<City>: <order> takes 34 turns.", each city a link to it), **Empire order**
+(any unit, wonder, palace or ritual, through the same city step) and a role card per city: its
+governor and trait, its role marked proposed or overruled, the role's key buildings with the city's
+tier of each (in the tier's colour), the other roles with their suitability as buttons (disabled,
+with the reason, under 75%), the governor's plan ("Plan: Forge, Granary, Market"), its empire and
+requisition orders with their turns (an empire order with a ✕) and what the governor builds.
+**Finances** (`F2`, or click the
 commerce split in the top bar): each commerce's share with `−`/`+` by Civ4's step (only the ones
 you may change; gold takes the rest), and the gold per turn by its parts, as in the gold's tooltip.
 **Diplomacy** (`F4`): every player you met, by their leader's portrait (war or peace, open
@@ -829,9 +845,12 @@ docs/ARMIES.md. A marching recruit takes no orders: `move`, `mission`, `do_comma
 is marching to the 2nd Army: it takes no orders until it arrives". A requisition order cannot be
 taken off by hand: `pop_order` refuses it, and `do_task TASK_CLEAR_ORDERS` while one is queued,
 "requisitioned by the 2nd Army: release the city from the army's requisition on the Armies
-screen"), `govern_direct {city, instead_of}`, `govern_hand {city}`, `govern_assign {city,
-governor}` (this game's governors, docs/GOVERNORS.md; a governed city refuses `push_order`,
-`pop_order`, `recruit_dest` and the production tasks), `engage {army | units | from, to,
+screen"), `govern_role {city, role}`, `govern_priorities {roles}`, `empire_order {city, order,
+data, dest?}` (`dest` as `recruit_dest`'s, a unit only), `empire_order_remove {city, index}`
+(this game's governors, docs/GOVERNORS.md: the rules' own checks and reasons, "Role requires
+suitability 75%.", "Empire orders: units, wonders, palaces and projects only."; in a governed
+city `push_order` places an empire order and `pop_order` takes one off, the governor's and the
+requisition orders refused, and `recruit_dest` and the production tasks are refused), `engage {army | units | from, to,
 declare_war?}` (engagement combat, docs/ENGAGEMENTS.md: one formation battle on plot `to`, `{x,
 y}`, next to the attackers; `army`, the selected `units` or a plot `from` say who attacks (every
 unit of yours on the attacking plot that can attack the plot now is in the pool), and the
@@ -983,10 +1002,12 @@ source); and each unit's `army`, `garrison`, `army_unit` and `march` (null, or a
 | `battle_log {report}` | engagement combat: a battle's report with its full log as the battle screens replay it (`report` is the report's id: `id` is the envelope's): `battle_log.js`'s header lists every member (among them `tactics`, each side's battle tactic, and a starving side's `Starvation` event before the battle). Only for a battle you fought on a side (or under debug reveal), while its log is kept (the current and previous turn's battles and the last `ENGAGEMENT_REPORT_LOGS_KEPT`): else `gone`. Your side shows its real owners, the other side the owners you saw (hidden nationality). `events` are what the battle shows (the opening at round 0: units that sat out afraid, defensive strikes; then every action, one unit at a time, with its hits, heals, knock-backs and escapes), `after` what it did after (XP, heals, kill effects, flight, the move in), `outcome` whether the plot fell and each side's line by fate |
 | `battle_reports` | engagement combat: `{reports}`, your kept battle reports as summaries, newest first (`battle_log.js`'s header lists a summary: where, when, the sides with what each committed and lost, the outcome, `has_log`) |
 | `city {city}` | the city screen of one of your cities: plots (with `can_work`), specialists (with `plus` and `minus`: what `do_task TASK_CHANGE_SPECIALIST` accepts now), yields, `commerces` (each with its `rate`, the empire's `percent` and its parts: `rates`, `specialists`, `buildings`, `religions`, `empire`, `process`, `modifier`), `next_worker` (who a click on a plot the city does not work takes: `{idle}`, `{specialist}` or `{plot}`; null for nobody), happiness, health, buildings, hurry, emphasis, queue, the buildable list with cost and turns; `cultural` (null without cultural actions; pressures and amounts in hundredths of culture, chances in hundredths of a percent): `rate`, `amount` (what a channel takes a turn), `diverted` (what it took this turn), `channel` (null, or `{city, caster, action, target, religion, since_turn, hostile, amount, reach, unseen, chance}`), `options` (every channel it could set, one per action, civilization with a city in reach and religion of the city: `ok` or `why`, `hostile`, `reach`, `unseen` (cities in reach you have not seen), a spread's `chance`), each `reach` entry `{city, name, owner, distance, effect}` (the distance effect, percent) and `amount` (pressure or chance a turn), for Foment Revolt with `resist` (the city's resistance a turn now), `resist_revolt` (its defenders' part: all it resists in revolt, making no culture), `rest` (the other casters' pressure there), `in_revolt` (in revolt now: its full resistance cannot be read, so `resist_revolt` holds both ways), `settles` (where the caster's pressure settles from now under this city's channel alone, with the city's resistance falling to `resist_revolt` from the turn after the total reaches the revolt: docs/CULTURE.md, "Predictions"), `now` (the caster's pressure there), `others` (what the caster's other cities add a turn), `capital`, for Spread Religion with `has` and `religions`; `pressure` (on this city: `total`, `casters` `[{caster, pressure, inflow, settles, rest}]` (`rest`: the others' pressure), `unknown`, `resist`, `resist_revolt`, `in_revolt`, `defenders`, `level`, `unhappiness`, `capital`); `thresholds` (`unhappy_step`, `unhappy_max`, `disorder`, `near_flip`, `flip`, `fade_percent`, `resist_percent`, `garrison`, `channel_percent`, `full_range`, `range`, `spread_per_culture`, `spread_max`, `flipping`); `recruit` (null without armies): the city's default destination, the destinations it may choose, its garrison, `garrison_tactic` and `garrison_tactic_next` (its garrison's battle tactic and the one from your next turn, docs/TACTICS.md), the armies that requisition from it (`requisitioned_by`: `{army, name, target_size, shortfall}`); with armies, each queue entry of a land combat unit has `dest`, `dest_name` and `requisition` (an army's requisition order: first in the queue, not removable by hand) |
-| `governors` | the Governors screen: `slots`, `cooldown`, `penalty`, `penalty_turns`, each city (`governed`, `cooldown`, `governor` with name, profile, traits, `penalty_turns`, `requisitioned_by`: the names of the armies that requisition from it), the `bench`; the city query's `governance` adds the city's `bench` with each candidate's `match`, `swappable` direct cities, `slots`, `direct_count`, `ready` |
-| `armies` | the Armies screen: the `armies` (as the view's, with `recruits`: the recruits marching to it in full, each its `march` with `id`, `unit`, `x`, `y`; and the requisition's `candidates`: every city of yours with `picked`, `governed`, the `unit` it would train for the army, its `production_turns` and `march_turns` (null: no way by land), its `order` in progress; `open`: whether the requisition may change), each city's garrison (`units`, `governed`) with the recruits marching to it (`recruits`), `supply_budget` (`SUPPLY_LINE_BUDGET`), `stall_turns` |
+| `governors` | the Governors screen: `government` (the government civic), `direct_rule`, `min_suitability`, `max_priorities`, `priority_weight`, `priorities`, `diagnoses` (`{kind: role_unfilled, role}`, `{kind: poor_fit, city, name, role, suitability}`, `{kind: slow_order, city, name, turns, order, type}`), each city (capital first: `governed`, `governor` `{id, name, trait, city, since, born}`, `role`, `role_overridden`, `proposal`, `suitability`, `production`, `population`, `requisitioned_by`; a governed one its `card`: `roles` (each `{role, suitability, allowed, why}`), `key_buildings` (the role's, each `{class, building, tier, effect, none}`), `plan` (the governor's next buildings, `ffh_ai::governor::plan`), `orders` (its requisition and empire orders, each `{index, order, type, turns, empire, requisition, dest_name}`), `governor_order`); the city query's `governance` is the city's entry without the card, with `government` |
+| `empire_items {army?}` | an empire order's first step: `governed` (your governed cities), `items` (every unit, wonder, palace and project one of your cities lists: `{order, type, cities}`, `cities` the governed cities that can build it now, 0 unavailable; a unit's `army_unit`); with `army`, the units that serve in armies only |
+| `empire_cities {order, data, army?}` | the second step: each governed city able to build it, `{city, name, x, y, turns, own_turns, ahead, ahead_turns, displaces, distance, cost_percent?, tier?, suggested}` (`turns` behind the `ahead` orders; `displaces` the governor's order it goes ahead of, delayed `own_turns`; `distance` in plots to the army; one `suggested`: with an army the nearest, ties to the fewest turns, without the fewest turns), and `dest` (the army, as `empire_order` takes it) |
+| `armies` | the Armies screen: the `armies` (as the view's, with `recruits`: the recruits marching to it in full, each its `march` with `id`, `unit`, `x`, `y`; and the requisition's `candidates`: every city of yours with `picked`, `governed`, the `unit` it would train for the army, its `production_turns` and `march_turns` (null: no way by land), its `order` in progress; `open`: whether the requisition may change; `on_order`: its empire orders in your cities, each `{city, name, unit, index, turns}`), each city's garrison (`units`, `governed`) with the recruits marching to it (`recruits`), `supply_budget` (`SUPPLY_LINE_BUDGET`), `stall_turns` |
 | `culture` | the Cultural Pressure panel: the channels you see (each `{city, city_name, x, y, caster, action, religion, target, since_turn, hostile}`): `ours` and `aimed` (at your team) also with `amount`, `reach`, `unseen` and a spread's `chance` as in the city query (for `aimed` the reach is your cities), `others`; `pressure`: your cities under revolt pressure (the city query's `pressure` with `city` and `name`); `memories`: what met leaders remember of your cultural actions (`{player, hostility, friendship}`, at most `memory_max`); `thresholds` as in the city query |
-| `techs`, `civics`, `religions`, `players` | the tech tree (prerequisites, depth, turns; each tech's `help`, `research_mods` (its tech-specific research multipliers in percent: `others`, known by civilizations met, and `prereqs`, alternative prerequisites known, added to 100; `feature`, a held unique feature, and `path`, the research path, each multiplying; `total`; the research chooser and the tech tree show them) and, unless you have it, `unlocks`: the units, buildings, builds, civics and religions of its help as type indices, which the research chooser shows as icons; `path`, `path_percent` and `paths`: each research path's techs, those known and closed, the research left, `complete`, and `can_commit` or the `refusal`), civics (availability, upkeep, anarchy; `civics {with: [civic, ..]}` adds `proposed`: the set a revolution to those civics makes, whether `update_civics` would be applied, its anarchy and upkeep), religions, the players you met with your deals |
+| `techs`, `civics`, `religions`, `players` | the tech tree (prerequisites, depth, turns; each tech's `help`, `research_mods` (its tech-specific research multipliers in percent: `others`, known by civilizations met, and `prereqs`, alternative prerequisites known, added to 100; `feature`, a held unique feature, and `path`, the research path, each multiplying; `total`; the research chooser and the tech tree show them) and, unless you have it, `unlocks`: the units, buildings, builds, civics and religions of its help as type indices, which the research chooser shows as icons; `path`, `path_percent` and `paths`: each research path's techs, those known and closed, the research left, `complete`, and `can_commit` or the `refusal`), civics (availability, upkeep, anarchy; `civics {with: [civic, ..]}` adds `proposed`: the set a revolution to those civics makes, whether `update_civics` would be applied, its anarchy and upkeep, and `rule_change`: `governed`, `direct` or null, whether the change hands every city to governors or takes every city back), religions, the players you met with your deals |
 | `trade {with}` | the trade tables both ways, with the AI's values (see Deals) |
 | `trade_answer {with, give, get}` | what `propose_deal` with these items would get now (see Deals) |
 | `speech {with,comment?,salt?}` | what the AI leader of `with` says to you: `{with, comment, text}`; `comment` an `AI_DIPLOCOMMENT_*` (`DiploCommentType`), or none for what it says when you contact it (its greeting, Civ4's `AI_getGreeting`, or `AI_DIPLOCOMMENT_REFUSE_TO_TALK`); `salt` picks among its lines (Civ4 uses the interface's random numbers); `text` null when it has no line |
@@ -1241,7 +1262,10 @@ node tools/web-pad-smoke.mjs             # an emulated phone with an emulated co
   flash from the battle's report, the watch screen and the report of the engine's log, the map's
   battle marker and the message's link opening it again), this game's armies (`stage armies`:
   the Armies screen's tactic selector, a change shown as "from next turn", the city screen's
-  garrison tactic), supply lines on the HD-2D map (`stage supply`: the supplied army's line drawn,
+  garrison tactic), governors v2 (`stage governors`: Aristocracy; the Governors screen's mode line,
+  a priority, the role cards; an army's Order unit placed in one click on the suggested city, a
+  second by a click on a city outlined on the map; the governed city screen; the civics preview),
+  supply lines on the HD-2D map (`stage supply`: the supplied army's line drawn,
   the hungry army's marker, "Supplied (cost N of 24)" in the tooltip with the army selected, the
   unit panel's and the Armies screen's words), a game started by another client
   while the page shows the title screen's New game dialog (both go), and the crash screen of a server started with

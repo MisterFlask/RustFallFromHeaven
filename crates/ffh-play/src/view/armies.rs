@@ -238,6 +238,9 @@ fn army_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
     };
     if screen {
         j.set("recruits", Json::Arr(marching.into_iter().map(|u| recruit_json(v, u)).collect()));
+        // This game's governors (docs/GOVERNORS.md): the empire orders for the army in the human's
+        // governed cities (`city`, `name`, `unit`, `index`, `turns`).
+        j.set("on_order", crate::view::governors::army_empire_orders(v, a));
     }
     j
 }

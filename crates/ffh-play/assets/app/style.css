@@ -446,12 +446,15 @@ select.recruit-dest { max-width: 15em; }
 table.governors { width: 100%; border-collapse: collapse; }
 table.governors th, table.governors td { text-align: left; padding: 2px 6px; border-bottom: 1px solid var(--c-iron); vertical-align: top; }
 table.governors td.num { text-align: right; }
-select.governor-assign, select.governor-swap { max-width: 18em; }
-div.governor-controls { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
-/* The city screen's column is narrow: its governance selectors shrink to it. */
-.section.governance select { max-width: 100%; min-width: 0; }
-div.governor-controls select { max-width: 20em; }
-ul.bench { margin: 2px 0; padding-left: 20px; }
+.governors-mode { font-weight: bold; }
+.priorities { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+ul.diagnoses, ul.role-keys, ul.role-orders, ul.army-on-order { margin: 2px 0; padding-left: 20px; }
+.role-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 8px; }
+.role-card { border: 1px solid var(--c-iron); padding: 4px 8px; }
+.role-others { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; margin: 2px 0; }
+table.empire-cities tr.empire-city { cursor: pointer; }
+table.empire-cities tr.empire-city.picked { background: rgba(246, 198, 80, 0.15); }
+.civic-rule-change { margin-top: 2px; }
 .governed-note { margin: 4px 0; }
 .newgame .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 14px; }
 label.field { display: flex; flex-direction: column; gap: 2px; }

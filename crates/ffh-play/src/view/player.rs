@@ -176,6 +176,13 @@ pub fn civics(v: &Viewer, with: &[CivicType]) -> Json {
         }
         let changed = set != g.players[h].civics;
         valid = valid && changed && g.player_can_revolution(h, Some(&set));
+        // This game's governors (docs/GOVERNORS.md): the government decides who runs the cities.
+        let direct_after = set.iter().flatten().any(|&c| d.civics[c].direct_rule);
+        let rule_change = match (g.player_rules_directly(h), direct_after) {
+            (true, false) => Json::from("governed"),
+            (false, true) => Json::from("direct"),
+            _ => Json::Null,
+        };
         j.set(
             "proposed",
             crate::jobj! {
@@ -184,6 +191,9 @@ pub fn civics(v: &Viewer, with: &[CivicType]) -> Json {
                 "valid" => valid,
                 "anarchy" => if changed { g.player_get_civic_anarchy_length(h, &set) } else { 0 },
                 "upkeep" => g.player_get_civic_upkeep(h, Some(&set), false),
+                // `governed`: every city will be handed to governors; `direct`: every city will be
+                // ruled directly; null: no change of who runs them.
+                "rule_change" => rule_change,
             },
         );
     }

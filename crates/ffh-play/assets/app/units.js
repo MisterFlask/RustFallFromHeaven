@@ -89,6 +89,9 @@ export function initUnits(view, panelEl) {
   on("refused", () => {
     pendingCombat = null;
   });
+  // Another screen asks for a plot on the map (governors.js: the city of an empire order):
+  // `plots` are outlined, a click calls `pick(x, y)`, Esc cancels.
+  on("map-pick", ({ plots, pick, label }) => setMode({ kind: "target", action: { kind: "army", label }, plots, pick }));
   on("sending", (c) => {
     // Combat carries no result, so snapshot an attack before it is sent (S.units is pre-combat)
     // and infer the outcome from the diff in viewChanged. The new view can arrive before the
@@ -513,6 +516,11 @@ export function isGoTo(a) {
  *  stays on meanwhile so that more can be added (P6 review). */
 async function pickPlot(x, y, ev) {
   const m = mode;
+  // A pick for another screen (governors.js: the city of an empire order).
+  if (m.pick) {
+    setMode(null);
+    return m.pick(x, y);
+  }
   if (m.cast) return pickCast(m, x, y);
   if (!S.sel) {
     setMode(null);

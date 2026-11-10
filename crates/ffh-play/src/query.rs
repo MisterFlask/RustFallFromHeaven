@@ -54,9 +54,15 @@ pub enum Query {
     /// The Armies screen (docs/ARMIES.md): the human's armies and garrisons, with the units on
     /// their way to each.
     Armies,
-    /// The Governors screen (docs/GOVERNORS.md): direct rule, each city's governor and mode,
-    /// the bench.
+    /// The Governors screen (docs/GOVERNORS.md): who runs the cities, the priorities, the
+    /// diagnoses, each governed city's role card.
     Governors,
+    /// An empire order's first step (docs/GOVERNORS.md): what the human may order from its
+    /// governed cities (with `army`: the units that serve in armies).
+    EmpireItems { army: Option<ArmyId> },
+    /// An empire order's second step: the governed cities able to build `order` `data`, with a
+    /// suggestion (with `army`: the nearest).
+    EmpireCities { order: ffh_data::OrderType, data: i32, army: Option<ArmyId> },
     /// Engagement combat (docs/ENGAGEMENTS.md): the plan of an attack on `to` by `by` in
     /// `formation` (else the rules' auto formation): the pool, both formations, the slots and
     /// lanes, the ground, the defenders seen and their formation, and the forecast
@@ -128,7 +134,7 @@ impl Layer {
 
 /// Every query name (`q`).
 pub const QUERY_NAMES: &[&str] = &[
-    "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "culture", "armies", "governors", "engage_preview",
+    "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "culture", "armies", "governors", "empire_items", "empire_cities", "engage_preview",
     "battle_log", "battle_reports", "trade", "trade_answer", "log",
     "speech", "moments", "report", "inspect", "text", "ascii", "data", "setup", "saves", "crusades",
 ];
@@ -203,6 +209,8 @@ impl Query {
             Query::Culture => "culture",
             Query::Armies => "armies",
             Query::Governors => "governors",
+            Query::EmpireItems { .. } => "empire_items",
+            Query::EmpireCities { .. } => "empire_cities",
             Query::EngagePreview { .. } => "engage_preview",
             Query::BattleLog { .. } => "battle_log",
             Query::BattleReports => "battle_reports",
@@ -244,6 +252,12 @@ impl Query {
             "culture" => Query::Culture,
             "armies" => Query::Armies,
             "governors" => Query::Governors,
+            "empire_items" => Query::EmpireItems { army: j.opt("army")? },
+            "empire_cities" => {
+                let d = ffh_data::global();
+                let order = crate::names::field::<ffh_data::OrderType>(d, j, "order")?;
+                Query::EmpireCities { order, data: crate::command::order_data(d, j, order)?, army: j.opt("army")? }
+            }
             "engage_preview" => Query::EngagePreview {
                 by: crate::command::EngageBy::from_json(j)?,
                 to: crate::command::plot_field(j, "to")?.ok_or_else(|| FieldError::missing("to"))?,
@@ -297,6 +311,8 @@ impl Query {
             Query::Path { units, x, y, flags } => j.with("units", ids(units)).with("x", *x).with("y", *y).with("flags", *flags),
             Query::Combat { units, x, y } => j.with("units", ids(units)).with("x", *x).with("y", *y),
             Query::City { city } => j.with("city", *city),
+            Query::EmpireItems { army } => j.with("army", *army),
+            Query::EmpireCities { order, data, army } => j.with("order", Json::idx(*order)).with("data", *data).with("army", *army),
             Query::EngagePreview { by, to, formation } => {
                 by.put(j).with("to", crate::command::plot_json(to.0, to.1)).with("formation", formation.as_deref().map(crate::command::formation_json))
             }
@@ -401,6 +417,8 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
         Query::Culture => view::culture::culture(&v),
         Query::Armies => view::armies::screen(&v),
         Query::Governors => view::governors::screen(&v),
+        Query::EmpireItems { army } => view::governors::empire_items(&v, *army)?,
+        Query::EmpireCities { order, data, army } => view::governors::empire_cities(&v, *order, *data, *army)?,
         Query::EngagePreview { by, to, formation } => view::battles::engage_preview(&v, by, *to, formation.as_deref())?,
         Query::BattleLog { report } => view::battles::battle_log(&v, *report)?,
         Query::BattleReports => view::battles::battle_reports(&v),
@@ -464,6 +482,10 @@ mod tests {
             Query::Culture,
             Query::Armies,
             Query::Governors,
+            Query::EmpireItems { army: None },
+            Query::EmpireItems { army: Some(ArmyId(2)) },
+            Query::EmpireCities { order: ffh_data::OrderType::ORDER_TRAIN, data: 4, army: Some(ArmyId(1)) },
+            Query::EmpireCities { order: ffh_data::OrderType::ORDER_CONSTRUCT, data: 7, army: None },
             Query::EngagePreview { by: crate::command::EngageBy::Army(ArmyId(2)), to: (3, 4), formation: None },
             Query::EngagePreview {
                 by: crate::command::EngageBy::Units(vec![UnitId(1)]),
