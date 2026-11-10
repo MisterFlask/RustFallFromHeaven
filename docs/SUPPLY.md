@@ -2,7 +2,7 @@
 
 **Status: rules built (2026-11-10: sections 2 to 4, `crates/ffh-core/src/army/supply.rs`, tests in
 `crates/ffh-core/tests/supply.rs`); the AI (section 6, `crates/ffh-ai/src/supply.rs`) built, its
-measures in "Measures"; the client (section 5) next.** This file
+measures in "Measures"; the client (section 5; docs/HUMAN.md) built.** This file
 is the spec for the implementation. It replaces the supply rule of docs/ARMIES.md ("Supply": within
 `ARMY_SUPPLY_RANGE` plots of the trade network, which only paused an army's recruits).
 

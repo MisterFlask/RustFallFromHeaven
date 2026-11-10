@@ -1,7 +1,8 @@
 # Battle tactics
 
-**Status: rules, data and lab built (2026-11-10); the AI's rule built (section 6, "AI as built");
-the human client's selectors next.** This file was the spec for the implementation. Sections 1 to 6 are decided;
+**Status: built (2026-11-10): the rules, data and lab; the AI's rule (section 6, "AI as built");
+the human client (docs/HUMAN.md: the Armies and city screens' selectors, the read-only battle
+plan).** This file was the spec for the implementation. Sections 1 to 6 are decided;
 section 7 is what the lab has to show before a tactic ships, section 8 what it showed, section 9
 lists what is left open, and section 10 the tactic that was tried and not shipped.
 
