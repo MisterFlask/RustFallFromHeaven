@@ -3454,6 +3454,70 @@ casts before attacks per strike 1.37 -> 1.81, Channeling II+ summons and damage 
 7501-7530 (the first version) 44% -> 53%. For context only: players with arcane casters won
 22.2% -> 22.2% (9 / 9 seeds won by one side only), share@end -12 (t -0.34), on the fresh seeds.
 
+## The improvement scheme (2026-11-10)
+
+How the AI is improved from here (CLAUDE.md, "AI changes", is the rule; this is the plan and what
+it has found). The rules and the numbers of this game will keep changing, so the effort goes into
+what survives that: instruments that read facts from the rules, and estimators that run the
+rules' own code. Behaviours come second, chosen from what the instruments count, and are the
+part expected to be rewritten.
+
+**The instruments** (none names a unit, a tech or a turn):
+
+| instrument | what it answers | where |
+|---|---|---|
+| autopsy | what goes wrong, how often, from what cause | docs/AUTOPSY.md, `autopsy.py` |
+| prediction ledger | is an estimate the AI acts on right | docs/CALIBRATION.md, `calibration.py` |
+| fork rollouts | what a decision changed, as a distribution | "Tools", Forks (`--rolls`) |
+| probes | how the AI stands against a strategy it would not play; is a strategy too strong | docs/PROBES.md |
+
+**The cycle.** (1) Autopsy and calibration over a few dozen games give the ranked list of
+failures and the estimates that are wrong. (2) The top failure gets an estimator on the rules'
+code, recorded in the ledger beside the old one, no decision changed, until it predicts.
+(3) The behaviour is built on it and judged at forks of its firings with rollouts. (4) The
+package is played against the probes and through the guardrail run. (5) Autopsy again: the list
+is re-ranked, the next item taken.
+
+**The first baseline** (seeds 1-32, 6 civs, standard map, 300 turns, the standard AI against
+itself; `autopsy.py`, `calibration.py`):
+
+- 473 cities fell: 458 to civilizations (14.3 a game), 15 to barbarians. 78% of them fell in the
+  last third of the 300 turns. Barbarians are no longer where cities are lost.
+- **The defender's force existed and was elsewhere in 41% of the falls** (`army_away`, 186): the
+  owner had more military strength beyond 5 plots of the city than the attacker had within 2,
+  and in 133 of those it stood in the owner's other cities. In 52% (`outclassed`) the owner's
+  whole power was under 60% of the captor's; 5% `thin`, 3% `empty`.
+- Attackers lose 4.3% of the units they commit, defenders 58.6%: the AI attacks almost only with
+  a large edge (85% of attacks at 0.6 or more of the summed strength), and what it attacks is a
+  garrison of one to four. A stack walks from city to city and each garrison dies alone.
+- At war, 61% of army unit-turns are spent in cities and 25% outside any city and outside enemy
+  land; 67% of units spend no movement in a turn.
+- **The combat estimator is stale.** Battles are engagements of whole stacks; `combat_sim`
+  still simulates duels. The single-unit odds have no skill (predicted under 50%: 94% won). The
+  field estimate is overconfident in the middle (predicted 60-80%: 47% cleared the plot). The
+  city estimates (assault, strike) are usable and pessimistic in the middle.
+- The alarm that moves defenders (`View::peril`) flagged 906 cities, 32% of which fell within 10
+  turns, and missed 43% of the cities that did (the ledger then kept only a city's first answer,
+  which overstates the misses).
+- The war gate (`can_take_cities_at`) called every declared war takeable; 30% of them took no
+  city within 40 turns. "Fight on, our army is at their next city" was followed by a capture
+  within 10 turns in 11 of 27 cases.
+
+**The work list this gives**, in order:
+
+1. *The battle estimator on the rules' forecast* (`Game::engage_preview`'s code), in the ledger
+   beside `combat_sim`, for attacks, assaults and "does this city hold, as it stands and with
+   what can reach it". Everything below reads it. (In progress.)
+2. *Defending against a stack*: the 41%. With the estimate of 1, a threatened city that holds
+   with the units that can reach it gets them; one that falls anyway is not fed; garrisons of
+   cities nothing can reach are the reserve. This is the estimate the reverted `MAGE_FRONT` and
+   the one-quota attempt lacked (docs/AI_LOG.md).
+3. *The attack decisions on the new estimate*: strike order, the field go/no-go, then the war
+   gate as a forecast of the first city's assault with the army as it will arrive.
+4. *Outclassed*: the 52% is where a war already lost ends; what precedes it (power falling
+   behind from which turn, peace not made, vassalage not taken) is the next autopsy's question,
+   not yet counted.
+
 ## Tools
 
 For A/B tests compare `legacy_score`, techs, cities, research and the like, not `score`: the
@@ -3717,9 +3781,6 @@ its loan general is fighting. None of this runs in the default game, so it moves
 
 ## Known gaps (future work)
 
-- **Tools the loop wants and does not have** (CLAUDE.md, "AI changes"): the probes; a counted
-  taxonomy of failures over many games (`review_game.py` gives one game's narrative). (Forks
-  resumed under several random seeds per branch now exist: `tools/ai-branch.sh --rolls`.)
 - Leader traits (`traits.rs`): Charismatic, Creative, Defender, Organized and Magic Resistant have
   no play of their own (their effects reach every decision that reads the game). Candidates if
   they should: Defender stacks counterattacking inside our borders (Homeland), Creative leaders
