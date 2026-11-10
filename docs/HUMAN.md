@@ -25,14 +25,17 @@ cargo build --release
 The page opens on the title screen: a small isometric island drawn from the map's own sprites (a
 kingdom on one shore, the hells creeping in on the other) under drifting clouds, and the main menu:
 **Continue** (the newest save or autosave, by its time), **New game**, **Load game**, **Options**
-and **Keys and controls**. With a game running the title screen goes; the menu's Main menu button
+and **How to play** (the help at its first topic). With a game running the title screen goes; the menu's Main menu button
 (the map icon) brings it back with Resume (or `Esc`). The new-game screen lists the civilizations
-with their banners; picking one shows the chosen leader's portrait and its leaders as portrait
-cards (or random), the first paragraph of its pedia (its trait and how it plays) and, beside it,
+with their banners; picking one shows the chosen leader's portrait with its leaders as portrait
+cards (or random) beside it, the first paragraph of its pedia (its trait and how it plays) and, beside it,
 what the leader and the civilization bring: alignment, hero, world spell, each trait's effects,
-starting techs, unique and blocked units and buildings, special abilities; then the world
+starting techs, unique and blocked units and buildings, special abilities (the dialog takes the
+window's height: the list of civilizations is as tall as the column beside it, whose description
+keeps at least 8 lines and scrolls beyond; Start stays in view); then the world
 (opponents, world size, speed, difficulty, era, climate, sea level, seed, the game's name), game
-options and victory conditions, each choice's description as its tooltip, and "Vanilla experience"
+options, victory conditions and a closed "Debug" fold (Start at war, below), each choice's
+description as its tooltip, and "Vanilla experience"
 (leaders speak only FFH2's own lines; unticked, each civilization also has its own lines for
 every other civilization, `data/text/barks.md`). The load screen has a
 card per game (the current one first, then the most recently saved) and a row per save with its
@@ -46,7 +49,8 @@ observed game, or once the game is over. Saving under the name of one of the gam
 `--load saves/game-3/auto/T0040.ffhsave` resumes one). Use a current Chrome, Firefox or Safari;
 nothing is fetched from the internet.
 
-**Start at war (debug).** The new-game screen's "Start at war (debug)" button starts a game in the
+**Start at war (debug).** The new-game screen's "Start at war (debug)" button (in its "Debug" fold,
+after the victory conditions) starts a game in the
 middle of a war, for trying combat and the war screens without playing there: an AI-only game of the screen's
 settings is played until two civilizations at war fight a battle with 3 or more fighting units
 on each side (the units each side commits to the formation battle), and you take over the attacked
@@ -75,11 +79,18 @@ cannot load.
 
 **The screen.** The top bar: the turn crescent (amber on your turn), turn and year, what is
 happening (your turn; "Moving: …" with the players and the seconds while the AIs play); gold and
-rate, research (click it to choose) with its progress bar and turns, the commerce split by its
+rate, research (click it to choose: the chooser gives each tech its turns and its research cost
+behind the flask icon, and its research multipliers as chips, "prereqs +20%", "others +5%",
+"= x1.2", each with its rule as tooltip; the total multiplies the research put into the tech each
+turn, not its cost) with its progress bar and turns ("11 turns"), the doctrine
+(the adopted one, or "no doctrine", in the warning colour while one can be adopted; its tooltip
+says what a doctrine does, a click opens the doctrine chooser), the commerce split by its
 icons (click it for the sliders), the Armageddon eclipse (its corona reddens at 50, 75 and 100)
 with the counter (its tooltip lists the Armageddon deck's slots, 10 to 100: a slot's card once it
 is revealed, or seen ahead, with its effect; fired slots marked; the others hidden), mana by sphere, anarchy, golden age, Stasis, idle AI-controlled groups, score
-(your share of the world, docs/SCORE.md, with the fair share in its tooltip); the gold's tooltip
+(your share of the world, docs/SCORE.md, with the fair share in its tooltip); each number has a
+tooltip naming it and an accessible name ("Research rate 100%", "Armageddon counter 0", "Mana 3",
+"Score: 66.7% of the world"); the gold's tooltip
 gives where the gold rate comes from (the cities' commerce, deals; units with the free ones, units
 outside the borders, city maintenance, civic upkeep, inflation); beside them the empire's own
 actions, a row of buttons that belong to no unit: your world spell while you can cast it (its
@@ -90,7 +101,7 @@ cast). A spell cast at a distance asks for its target first: a plot, a city or a
 the map, the valid plots outlined (a plot with several targets lists them), a player or one of the
 spell's options from a list (a trait with its effects);
 below them the menu (Research, Techs, Cities, Civics, Religion, Diplomacy, Options, Save, Load,
-New, keys `?`, a raw request box `⌘` for testing) and End turn. The map fills the middle (minimap
+New, the help `?`) and End turn (the raw request box is under Tools). The map fills the middle (minimap
 bottom right, zoom and the map layers bottom left), the selection panel is on the right, and the
 bottom panel has the turn report, the messages by turn and the game's files (directory, journal,
 last autosave).
@@ -153,7 +164,8 @@ map of docs/ART.md, and the 3D renderer's fully modelled map, were retired on 20
 All of this is off under the system's "reduce motion" setting (`prefers-reduced-motion`): the view
 and units jump, no flash or breathe plays, the numbers snap, and the dialogs appear at once.
 
-**Mouse and keys** (also under `?`). The keys are Civ4's: the orders' keys come from the game's
+**Mouse and keys** (also in the help, `?`: How to play first, then Keys; the list there says
+what each key does, without the "ffh-play's own" notes below). The keys are Civ4's: the orders' keys come from the game's
 XML (each button shows its key), and the global keys are Civ4's controls
 (`CIV4ControlInfos.xml`, what `CvGame::doControl` does with them), except the few marked
 "ffh-play's own" below.
@@ -185,7 +197,7 @@ XML (each button shows its key), and the global keys are Civ4's controls
 | `F9` | governors (this game's governors: docs/GOVERNORS.md) |
 | `F8` | cultural pressure (this game's cultural actions: docs/CULTURE.md) |
 | `Ctrl+S` / `Ctrl+L` | save / load |
-| `Ctrl+1` `Ctrl+2` `Ctrl+3`, `?` | ffh-play's own: the terrain, political and yield layers; the keys list |
+| `Ctrl+1` `Ctrl+2` `Ctrl+3`, `?` | ffh-play's own: the terrain, political and yield layers; the help (How to play, then the keys) |
 | `Esc` | leave a plot pick, close a dialog, clear the selection |
 
 **Phones and touch screens.** The page fits a phone, upright or on its side (the layout follows
@@ -347,7 +359,9 @@ advisor's pick marked, and "AI default".
 
 A confirmation of something that cannot be undone (declare war, also by moving, casting or lending;
 delete a unit; a world or card spell; adopt a doctrine; leave the game; replace a save) opens with
-Cancel focused, so `Enter` does not confirm it. A refused order shows a toast with the reason in
+Cancel focused, so `Enter` does not confirm it. Toasts stand at the top of the map (in the HD-2D and
+isometric looks on a screen 1100 px wide or more, between the turn report's panel and the city
+panel's column, so they do not cover the report's tabs). A refused order shows a toast with the reason in
 plain words (the game's names, never type names, ids or request details; those go to the browser
 console); an error toast stays 10 seconds, a click dismisses any toast, and each error is also
 listed under Messages at its turn, marked "Refused" (kept by the page only, until the game changes
@@ -1021,7 +1035,8 @@ a healthy warrior is 200), as the `crusades` query counts them.
   strength you ask for), the rest of the deal its price; the leader answers the proposal as for
   any deal. Units are lent only from these screens, never as an order of the unit itself. The
   rules are in the help display (help.js, the top bar's ?: topics at the left, the article at the
-  right; Keys, the crusade topics, then the game options' armies, governors and cultural
+  right; How to play (the turn's loop in a dozen lines, opened by ? and the title screen), Keys,
+  the crusade topics, then the game options' armies, governors and cultural
   actions), not in the dialogs: each dialog's (i), in its title bar,
   opens the help at its topic over the dialog, so the body holds only the decision.
 
