@@ -432,6 +432,13 @@ impl Game {
             self.team_process_tech(t, tech, if value { 1 } else { -1 });
 
             if self.team_is_has_tech(t, Some(tech)) {
+                if let Some(era) = d.techs[tech].era {
+                    let mut prev = -1i32; let mut n = 0;
+                    for t2 in d.techs.keys() {
+                        if self.teams[t].has_tech[t2] && d.techs[t2].card.is_none() { n += 1; if t2 != tech { if let Some(e2) = d.techs[t2].era { prev = prev.max(e2.i() as i32); } } }
+                    }
+                    if (era.i() as i32) > prev && era.i() >= 1 { eprintln!("ERAUP team={} era={} n={} turn={}", t.i(), era.i(), n, self.game_turn()); }
+                }
                 for p in self.player_ids() {
                     if self.players[p].team == t {
                         // C++ compares with getEra() (-1 for NO_ERA, never greater).
