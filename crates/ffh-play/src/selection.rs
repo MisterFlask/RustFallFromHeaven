@@ -67,6 +67,11 @@ pub fn can_start_mission(g: &Game, units: &[UnitId], mission: MissionType, data1
     }
     let typed = |n: usize| (data1 >= 0 && (data1 as usize) < n).then_some(data1 as usize);
     for &u in units {
+        // This game's (docs/NAVAL.md, 3.2; as `group_can_start_mission`): in boats a unit moves,
+        // waits or sleeps; nothing else.
+        if g.unit_in_boats_at(u, plot) && !matches!(mission, MissionType::MISSION_MOVE_TO | MissionType::MISSION_MOVE_TO_UNIT | MissionType::MISSION_SKIP | MissionType::MISSION_SLEEP | MissionType::MISSION_SENTRY) {
+            continue;
+        }
         let ok = match mission {
             MissionType::MISSION_MOVE_TO => !g.plot_at(plot, data1, data2),
             MissionType::MISSION_ROUTE_TO => !g.plot_at(plot, data1, data2) || best_build_route(g, units, plot).is_some(),
@@ -223,6 +228,10 @@ pub fn can_do_interface_mode(g: &Game, units: &[UnitId], mode: InterfaceMode) ->
     let domain = g.unit_get_domain_type(head);
     for &u in units {
         let plot = g.unit_plot(u);
+        // In boats (docs/NAVAL.md, 3.2): only go-to.
+        if mode != InterfaceMode::GoTo && g.unit_in_boats_at(u, plot) {
+            continue;
+        }
         let ok = match mode {
             InterfaceMode::GoTo => domain != DomainType::DOMAIN_AIR && domain != DomainType::DOMAIN_IMMOBILE,
             InterfaceMode::RouteTo => g.unit_can_build_route(u),

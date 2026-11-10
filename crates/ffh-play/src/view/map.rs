@@ -52,11 +52,16 @@ fn opt<I: Idx>(v: Option<I>) -> i32 {
     v.map_or(-1, |i| i.idx() as i32)
 }
 
-/// The arrays of the `map` reply, in this order (one value per plot each).
-pub const LAYERS: [&str; 11] = ["vis", "plot_type", "terrain", "feature", "bonus", "improvement", "route", "owner", "river", "city", "yield"];
+/// The arrays of the `map` reply, in this order (one value per plot each). `sea` (docs/NAVAL.md,
+/// section 10: the Sea layer) is [`crate::view::sea::SeaCtx::value`]: -1 on land or without a
+/// range rule, 0 on water out of the human team's range, else the steps from its nearest port.
+pub const LAYERS: [&str; 12] = ["vis", "plot_type", "terrain", "feature", "bonus", "improvement", "route", "owner", "river", "city", "yield", "sea"];
+
+/// The number of [`LAYERS`].
+pub const NUM_LAYERS: usize = LAYERS.len();
 
 /// One plot's values of the [`LAYERS`].
-pub type Row = [i32; 11];
+pub type Row = [i32; NUM_LAYERS];
 
 /// The map as the human sees it, one [`Row`] per plot (index `y * w + x`).
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -89,7 +94,7 @@ impl MapRows {
         let int = |k: &str| j.get(k).and_then(Json::as_i64);
         let (w, h) = (int("w")? as i32, int("h")? as i32);
         let n = (w.max(0) as usize) * (h.max(0) as usize);
-        let mut rows = vec![[0; 11]; n];
+        let mut rows = vec![[0; NUM_LAYERS]; n];
         for (l, name) in LAYERS.iter().enumerate() {
             let a = j.get(name)?.as_arr()?;
             if a.len() != n {
@@ -108,11 +113,12 @@ impl MapRows {
 /// there), 1 = fogged, 2 = visible.
 pub fn rows(v: &Viewer) -> MapRows {
     let g = v.g;
+    let sea = crate::view::sea::SeaCtx::new(v);
     let mut rows = Vec::with_capacity(g.map.num_plots());
     for p in g.map.plot_ids() {
         let pl = &g.map.plots[p];
         rows.push(if !v.plot_revealed(p) {
-            let mut r = [-1; 11];
+            let mut r = [-1; NUM_LAYERS];
             r[0] = UNREVEALED;
             r
         } else {
@@ -128,6 +134,7 @@ pub fn rows(v: &Viewer) -> MapRows {
                 river_bits(v, p),
                 pl.plot_city.filter(|&c| v.city_revealed(c)).map_or(-1, |c| c.0 as i32),
                 packed_yield(v, p),
+                sea.value(v, p),
             ]
         });
     }

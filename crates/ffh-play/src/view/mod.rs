@@ -29,6 +29,7 @@ pub mod hotkeys;
 pub mod improvement_help;
 pub mod map;
 pub mod player;
+pub mod sea;
 pub mod speech;
 pub mod text;
 pub mod units;
@@ -191,6 +192,9 @@ pub fn me(v: &Viewer) -> Json {
             "research" => pl.disable_research, "production" => pl.disable_production, "spells" => pl.disable_spellcasting,
         },
         "alive" => pl.alive,
+        // The sea (docs/NAVAL.md, 3.1): the team's range, null while the range rule does not
+        // apply to it (no city).
+        "sea_range" => crate::view::sea::team_range(g, v.team),
         // The empire's own actions (the top bar's buttons): its world spell.
         "world_actions" => crate::view::units::world_actions(v),
         // Player options by PlayerOptionType index (`set_option` changes a few of them).
@@ -323,6 +327,9 @@ pub fn cities(v: &Viewer) -> Json {
             // Sieges (docs/SIEGES.md): besieged, and each Sentinel's HP left in percent.
             "besieged" => visible.then(|| g.city_is_besieged(c)),
             "sentinels" => visible.then(|| crate::view::city::sentinels_json(g, c)),
+            // The sea (docs/NAVAL.md, section 10): a port of the human's team (its tooltip on
+            // the Sea layer names the range it gives).
+            "sea_port" => crate::view::sea::is_own_port(v, c),
         };
         if own {
             j.set("production", production(g, c));
@@ -388,6 +395,8 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
         j.set("garrison", g.unit_garrison_city(u));
         j.set("army_unit", g.unit_is_army_unit(u));
         j.set("march", if unit.march.is_some() { armies::march_json(v, u) } else { Json::Null });
+        // The sea (docs/NAVAL.md): in boats, and a warship's wear (the Sea layer's pip).
+        sea::unit_fields(g, u, &mut j);
     }
     // Engagement combat: its role, A, Dv and max HP (`hp` / `max_hp` stay the duel's percent).
     battles::unit_fields(g, u, &mut j);
