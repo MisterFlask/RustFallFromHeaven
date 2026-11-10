@@ -1,6 +1,10 @@
 # The sea: range, boats, control, fleets, far shores
 
-**Status: spec (2026-11-10). Built in four phases; each phase's status is in its heading.** This
+**Status: spec (2026-11-10). Built in four phases; each phase's status is in its heading. Phase 1
+(section 3) built in the rules (`crates/ffh-core/src/naval.rs`, the boats rules in the unit code,
+supply at sea in `crates/ffh-core/src/army/supply.rs`, tests in `crates/ffh-core/tests/naval.rs`)
+with the AI minimum of section 8's first two bullets (`crates/ffh-ai/src/naval.rs`); the client
+(section 10) not yet.** This
 game's own rules, not FFH2's (the owner's direction, 2026-11-10: the naval game inherited from
 Civ4 is irrelevant and there are no colonial adventures). This file is the spec for the
 implementation, as docs/SUPPLY.md is for supply lines. Marked **(default)**: a value or rule chosen
@@ -40,7 +44,7 @@ the sea three things:
 - **Lane**: a fixed line over water from a plot to a home port (section 5). It does not bend
   around enemies: it is **cut** while any of its plots is in an enemy zone.
 
-## 3. Phase 1: range, boats, wear -- status: not built
+## 3. Phase 1: range, boats, wear -- status: built in the rules (the client: not yet)
 
 ### 3.1 Operating range
 
@@ -100,6 +104,73 @@ outside a city: `Unit::sea_turns`. A turn start in a city of a team whose ports 
 ports (section 2) sets it to 0. Above `SEA_WEAR_FREE_TURNS` (10) the ship's strength is lowered by
 `SEA_WEAR_PERCENT` (5) per turn above, to at most `SEA_WEAR_MAX_PERCENT` (50), as one more modifier
 in attack and defence. Message when wear starts.
+
+### 3.5 As built (2026-11-10)
+
+Where the code is:
+
+- `crates/ffh-core/src/naval.rs`: the range field and its cache (`Game::plot_sea_range`,
+  `plot_sea_port`, `plot_in_sea_range`, `team_sea_range`, `team_sea_exempt`, `team_is_port_team`,
+  `city_is_port`), boats (`unit_can_use_boats`, `unit_needs_boats`, `unit_in_boats_at`,
+  `unit_is_in_boats`, `unit_embarked_moves`, `unit_embarked_step_cost`), attrition and wear
+  (`unit_sea_range_applies`, `unit_is_out_of_sea_range`, `unit_sea_no_heal_at`, `unit_is_warship`,
+  `unit_sea_wear_percent`, `plot_is_home_port`, `player_update_sea`, called next to
+  `player_update_supply` at the owner's turn start, before healing).
+- The boats rules where the unit code decides: `unit_can_move_into` (entering water, no attack,
+  no enemy plot or city), `plot_movement_cost` (the embarked step), `unit_can_defend` and the
+  duel's strength terms (`duel_combat_terms`: strength 1, no modifier; the wear term
+  `TermSource::SeaWear`), first strikes, defensive withdrawal and defensive strikes (none in
+  boats), `unit_heal_rate` and `unit_do_turn` (no healing, no fortify turns), `unit_can_fortify`,
+  `unit_can_cast`, `unit_can_found`, `unit_can_bombard`, `unit_can_range_strike`,
+  `group_can_start_mission` and `unit_can_do_command` (the actions left), `unit_visibility_range`
+  (sight 1), the captures in `unit_update_combat` and `unit_set_xy` (none in boats),
+  `plot_verify_unit_valid_plot` (a unit in boats is not bumped off the water).
+- Supply at sea: `SupplySource::Sea(city)`, the army's own plot as the line.
+- The AI: `Game::path_ai_sea_blocked` (path.rs; the AI-side restriction of the path finder, with
+  the flag `MOVE_BOATS`), `ffh-ai` `naval::sea_blocked`, `ship_to_port`, `in_boats`,
+  `walk_home_in_boats` (called from `supply::stranded_overseas`).
+- Save format 32: `Unit::sea_turns`, `Unit::sea_out_of_range` (the first-turn message).
+
+Choices made where this spec was silent (each open to change):
+
+- **Passable water** for the field: a water plot that is not impassable (terrain or feature). The
+  field steps diagonally between two land plots (ships cannot; the field ignores it).
+- **The cache.** The field is cached per team, checked on every read against the teams whose
+  cities were its ports and the players' teams, and dropped when a city is added or deleted or a
+  plot's type, terrain or feature changes. A read equals a fresh computation.
+- **"A team with no city"**: no player of the team has a city (a vassal's or an ally's do not
+  count).
+- **The embarked step** costs the unit's full moves split `EMBARKED_MOVES` + the civilization's
+  change ways, rounded up: one plot a turn ends its moves; the Lanun's first water plot from land
+  costs half of them, not all (so they do cross two a turn). Landing ends the moves (Civ4's rule
+  for a landing from a ship, which this keeps).
+- **Loading**: stepping onto water where a ship of its *team* with room stands loads it (Civ4's
+  loading), at one move, not the whole turn. A unit carried by a ship cannot unload onto open
+  water (as in Civ4); it steps off onto a neighbouring water plot instead, into boats.
+- **Sight 1** applies to every land unit standing on water that neither flies nor walks on water:
+  in boats, carried, or on a Causeway (a unit's sight may not change while it stands still, or the
+  plots' sight counts would not be undone; gaining or losing flight or water walking re-applies
+  it).
+- **What a unit in boats may do**: the missions move, move to a unit, skip, sleep and sentry; the
+  commands wake, cancel, stop automation, delete, load, promote. No first strikes, no withdrawal,
+  no defensive strike.
+- **Capture**: a unit in boats is never captured; a non-combatant in boats (a settler) dies when an
+  enemy takes its plot.
+- **Wear**: a warship is a sea unit that can fight (`unit_can_fight`), not an animal; its count
+  goes up at each of its owner's turn starts outside a port city of its team (a city of a team
+  whose ports are its team's) and goes to 0 at one inside. Wear is a term of the duel's strength;
+  engagements never include ships.
+- **Supply at sea, the known line** (`plot_supply_line_known`): at sea it reads the range field as
+  it is (the ports are cities of the army's own side).
+- **The AI** (section 8): the rules' path finder keeps an AI-controlled ship in range from leaving
+  its range (one already out of range may cross any water to come back) and an AI land group off
+  water it would be at sea on, unless the search carries `MOVE_BOATS` (then only water in range);
+  `ffh-ai`'s reach flood does the same. A ship out of range, or a warship carrying nothing whose
+  wear is above half its maximum, makes for the nearest port by the field. A stranded army walks
+  home in boats when a path in boats over water in range reaches a city of ours and no enemy
+  warship it sees is within 3 plots; a group of ours in boats goes on to the nearest city of ours
+  it reaches in boats. An AI army also steps aboard a transport of ours at sea beside it (the rules
+  now allow it). The war-target and settler crossings are not built.
 
 ## 4. Phase 2: who holds the water -- status: not built
 

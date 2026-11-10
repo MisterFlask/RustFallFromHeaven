@@ -380,7 +380,10 @@ The fixes, decided:
   remains there.
   *Built (2026-11-10), in a port, not on a coast plot:* the rules let only a human's land unit step
   onto a ship at sea (`unit_can_move_into`, an AI-only branch of the C++), so an AI army boards
-  only on a ship's own plot, a city. `supply::fall_back`, on a landmass without a city or settler of
+  only on a ship's own plot, a city. (Since docs/NAVAL.md, phase 1, any player's land unit may step
+  onto water, in boats or aboard a ship there: an AI army boards a transport beside it at sea, and
+  before asking for a ship it walks home in boats when the way is in range and no enemy warship it
+  sees is within 3 plots.) `supply::fall_back`, on a landmass without a city or settler of
   ours, walks the army to the coastal city it may enter (another team's, open borders, a vassal or
   its master; on a sea one of our ports is on) nearest our nearest city, and there asks for a ship
   (the group's mission AI `MISSIONAI_PICKUP` on its plot); `naval::pickup` sends the empty transport

@@ -170,6 +170,21 @@ flag.
   through the plots the bump may use), and to its owner's nearest city there when there is none.
   FFH2 took the nearest valid plot, which could be a pocket closed by other players' borders, where
   an army traced no supply line and starved. Other units are bumped as in FFH2.
+- **The sea, phase 1: range, boats, wear** (docs/NAVAL.md, section 3; 2026-11-10, the owner's
+  direction). *Range*: a team's ports are the cities next to water of its players, its vassals and
+  master and the teams it has open borders with (none at war); a water plot is in range within 8
+  water steps of one (Optics and Astronomy +4 each). A ship or a unit in boats out of range at its
+  owner's turn start loses 15% of its full HP (this kills) and does not heal; the barbarians,
+  animals, cargo and a team with no city are exempt. The Galley and the Trireme lose their ocean
+  ban. *Boats*: a player's land unit (not a barbarian, not an animal) may step onto water; not
+  carried by a ship there, it is in boats: one water plot a turn (the Lanun two), landing ends its
+  moves, it defends with strength 1 and no modifier (no first strikes, withdrawal or defensive
+  strike), cannot attack or enter a plot with an enemy unit or city, cannot attack onto water from
+  land, does not heal, fortify, cast, build, pillage or found, sees 1 plot (a land unit at sea,
+  carried or not), and is never captured. FFH2 let only a human's land unit step onto its ship at
+  sea. An army in boats in range is supplied from the nearest port. *Wear*: a player's warship
+  outside a port city of its team for more than 10 of its owner's turn starts loses 5% strength a
+  turn (at most 50%) until a turn start in port. Save format 32.
 - **Engagement combat** (docs/ENGAGEMENTS.md; not an option since 2026-11-03, the owner's
   decision: `GAMEOPTION_ENGAGEMENTS` was removed, every game fights it, the AI-only ones too, with or
   without armies; older saves do not load): a land attack is a **formation battle** (revision 4,

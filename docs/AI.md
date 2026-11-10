@@ -1625,7 +1625,9 @@ Raiders' raids (`traits.rs`), escorts and moves to defend our cities. **Stranded
 (docs/SUPPLY.md, "Second pass", B): an army cut on a landmass without a city or settler of ours
 walks to the coastal city it may enter (another team's: open borders, a vassal or its master)
 nearest our nearest city and waits there for a ship (`MISSIONAI_PICKUP` on its plot; not on a coast
-plot, because the rules let only a human's land unit step onto a ship at sea); `naval::pickup`
+plot, because until docs/NAVAL.md the rules let only a human's land unit step onto a ship at sea;
+since then, before asking, it walks home in boats when the way is in range and no enemy warship it
+sees is within 3 plots: `naval::walk_home_in_boats`); `naval::pickup`
 sends the empty transport that reaches it soonest (one per army, before the assault's staging port
 and settlers), which waits there while the army boards and carries it home; a port builds a
 transport when we have none (`army_ship`). With nothing left to fight on that landmass, an army
