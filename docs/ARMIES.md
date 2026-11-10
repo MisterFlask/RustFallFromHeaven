@@ -84,6 +84,7 @@ without armies. Otherwise it is created in the city as any unit and marches ther
 standing in the producing city takes the unit at once. Governed cities' units stay in their
 garrison (docs/GOVERNORS.md); their orders bound elsewhere are requisitions and the unit orders
 the player places for an army (empire orders, docs/GOVERNORS.md: a unit type, at a chosen city).
+
 **Requisition** (`army/requisition.rs`). An army requisitions soldiers from the cities its owner
 picks for it (`Army::requisition`, in the order they were added): any of the owner's cities,
 directly ruled or governed, the capital included. A city lost, traded, razed or flipped leaves
