@@ -176,7 +176,7 @@ a help of bare rules, one bullet a rule (CLAUDE.md, "Rules text and tooltips"), 
 - docs/PORTING.md, "Changes from FFH2": one entry.
 
 **Human play (ffh-play).**
-- Commands `army_array {army, tactic}` and `garrison_tactic {city, tactic}`; views: each army's
+- Commands `army_tactic {army, tactic}` and `garrison_tactic {city, tactic}`; views: each army's
   `tactic` and `tactic_next` on the Armies screen's data, the city's on the city query's
   `governance`/garrison part; the static data lists the tactics (name, help).
 - Client: the Armies screen shows each army's tactic as a selector (five options, the help as the
