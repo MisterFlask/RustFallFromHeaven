@@ -836,6 +836,15 @@ body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * 
 @media (max-height: 520px) and (min-width: 761px) {
   html.iso #side { left: auto; right: 4px; top: calc(var(--iso-top) + 4px); bottom: calc(var(--iso-bar-h) + 8px); width: 340px; max-height: none; }
   html.iso #iso-corner canvas.minimap { top: auto; bottom: calc(var(--iso-bar-h) + 8px); left: 4px; right: auto; width: 128px; height: 84px; }
+  /* The menu's sheet on a phone on its side: five buttons a row, and it stops above the bottom bar,
+     so a strip of the map shows (a tap there folds it) and End turn stays in view. */
+  html.iso body.menu-open #menu {
+    grid-template-columns: repeat(auto-fill, minmax(144px, 1fr));
+    max-height: calc(100vh - var(--iso-top) - var(--iso-bar-h) - 28px); max-height: calc(100dvh - var(--iso-top) - var(--iso-bar-h) - 28px);
+  }
+  html.iso body.menu-open #menu button { min-height: 42px; font-size: 17px; gap: 6px; }
+  html.iso body.menu-open #menu button .iso-icon { width: 28px; height: 28px; }
+  html.iso body.menu-open #menu :is(#btn-keys, #btn-raw)::after { font-size: 17px; }
 }
 
 /* Fingers pinch to zoom: the zoom buttons give their room to End turn. */

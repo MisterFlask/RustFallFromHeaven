@@ -27,6 +27,7 @@ import * as tools from "./tools.js";
 import { applyMapDelta, plotDistance } from "./tiles.js";
 import * as K from "./hotkeys.js";
 import { initGamepad } from "./gamepad.js";
+import { initOrientation, orientState } from "./orient.js";
 import * as screens from "./screens.js";
 import * as title from "./title.js";
 import { showDecision, modalOpen, closeTag, closeAll, onEscape, openTags, openModal } from "./modals.js";
@@ -741,6 +742,8 @@ function gameRunning() {
 }
 
 async function boot() {
+  // The phone's orientation, and the lock chosen in Options (orient.js): before anything lays out.
+  initOrientation();
   wire();
   // Battles open the battle screens as they come, except while the AI plays the player's slot.
   muteBattlesWhen(() => tools.spectating() || observing());
@@ -946,5 +949,5 @@ window.addEventListener("ffh:r3d-slow", (ev) => {
   toast(`The HD-2D map draws slowly on this GPU${gpu}, so it is drawn at half resolution. If this computer has a faster graphics card, set your browser to use it (Windows: Settings → System → Display → Graphics → your browser → High performance), or pick the isometric map in Tools → Options.`, "info", 20000);
 });
 
-window.ffh = { S, get mapView() { return mapView; }, units, screens, empire, tools, api, emit, ready: false, tab: currentTab, setLayer, openScreen, look, setRenderer, battlesPending };
+window.ffh = { S, get mapView() { return mapView; }, orient: orientState, units, screens, empire, tools, api, emit, ready: false, tab: currentTab, setLayer, openScreen, look, setRenderer, battlesPending };
 boot();
