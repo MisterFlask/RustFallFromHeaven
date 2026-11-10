@@ -1,8 +1,9 @@
 # Battle tactics
 
-**Status: design (the owner's direction, 2026-11-09: "doctrines before grids"); not built.** This
-file is the spec for the implementation. Sections 1 to 6 are decided; section 7 is what the lab
-has to show before a tactic ships, and section 9 lists what is left open.
+**Status: built (2026-11-10): the rules, the data, the lab and the measures (section 8); the
+human client's selectors and the AI's rule (section 6) follow.** This file was the spec for the
+implementation. Sections 1 to 6 are decided; section 7 is what the lab has to show before a
+tactic ships, section 8 what it showed, and section 9 lists what is left open.
 
 The term is **tactic** (an army's battle tactic). "Doctrine" is taken: it is what players see a
 research path as. "Stance" was the removed combat model's word, "formation" is the grid of one
@@ -215,7 +216,95 @@ its own knobs (section 5) may be tuned. The matrices go into this file (section 
 
 ## 8. Measures
 
-(Filled by the implementation.)
+(Measured 2026-11-10, `battles_tactics.py`: 1,800 matchups of 400 battles, 4 armies x 3 levels
+x 8 and 12 units x 3 grounds = 72 conditions, every tactic against every tactic attacking and
+defending; the knobs as in `battle_tactics.jsonc`, none tuned. Armies as section 7: early Axemen,
+Horsemen, Archers, Fire I Adepts; mid Champions, Horse Archers, Longbowmen, Fire II Mages; late
+Phalanxes, Knights, Marksmen, Fire II Archmages; the hero army's hero is its core unit with the
+Hero promotion, its veterans level 5 with Combat I-IV; walls are fortified 5 turns.)
+
+A score is the head-to-head mean of attacking and defending, `(net(X>Y) - net(Y>X)) / 2`, of the
+net share of HP (percent). Where two tactics give the same formation (Vanguard without veterans,
+Volley or Charge where the selection is Line's) the score is exactly 0.
+
+**Mean score per ground, row against column** (over the 24 conditions of each ground):
+
+| open | Line | Charge | Volley | Square | Vanguard |
+|---|---|---|---|---|---|
+| Line | . | +1.4 | -5.5 | +13.5 | +4.6 |
+| Charge | -1.4 | . | -5.4 | +12.3 | +2.9 |
+| Volley | +5.5 | +5.4 | . | +16.8 | +9.4 |
+| Square | -13.5 | -12.3 | -16.8 | . | -9.5 |
+| Vanguard | -4.6 | -2.9 | -9.4 | +9.5 | . |
+
+| forest | Line | Charge | Volley | Square | Vanguard |
+|---|---|---|---|---|---|
+| Line | . | +5.5 | +4.8 | +16.3 | +3.7 |
+| Charge | -5.5 | . | +2.9 | +9.4 | -2.0 |
+| Volley | -4.8 | -2.9 | . | +4.0 | -2.9 |
+| Square | -16.3 | -9.4 | -4.0 | . | -10.6 |
+| Vanguard | -3.7 | +2.0 | +2.9 | +10.6 | . |
+
+| walls | Line | Charge | Volley | Square | Vanguard |
+|---|---|---|---|---|---|
+| Line | . | +0.7 | -1.0 | +8.2 | +1.2 |
+| Charge | -0.7 | . | -1.3 | +8.3 | +0.8 |
+| Volley | +1.0 | +1.3 | . | +9.4 | +2.1 |
+| Square | -8.2 | -8.3 | -9.4 | . | -6.6 |
+| Vanguard | -1.2 | -0.8 | -2.1 | +6.6 | . |
+
+**Against Line per army and ground**: the mean score over levels and sizes (conditions won / lost
+beyond 2 standard errors, of 6):
+
+| | melee | | | mounted | | | ranged | | | hero | | |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| | open | forest | walls | open | forest | walls | open | forest | walls | open | forest | walls |
+| Charge | -4.5 (0/3) | -14.0 (1/5) | -3.0 (1/3) | -0.4 (2/2) | +15.3 (4/0) | -1.2 (3/3) | +2.2 (2/1) | -28.1 (0/6) | -0.7 (2/2) | -2.9 (0/5) | +4.6 (6/0) | +2.2 (4/1) |
+| Volley | +13.2 (3/0) | +8.1 (6/0) | +4.7 (3/1) | 0 | 0 | 0 | +2.2 (2/1) | -28.1 (0/6) | -0.4 (2/3) | +6.5 (5/0) | +0.8 (2/2) | -0.2 (2/3) |
+| Square | -13.3 (1/5) | -21.4 (0/6) | -15.6 (0/6) | -6.6 (1/4) | -11.9 (0/6) | -5.6 (0/6) | -30.5 (0/6) | -17.1 (0/6) | -8.6 (0/6) | -3.7 (1/5) | -14.8 (0/6) | -3.0 (1/5) |
+| Vanguard | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | -18.5 (0/6) | -15.0 (0/6) | -5.0 (0/6) |
+
+The largest wins over Line: Charge, the early mounted army in a forest, +26.9 (SE 0.7: 6 slots,
+Charge fills them with Horsemen where Line takes the archers); Volley, the late and mid 12-unit
+melee armies in the open, +32.7 (SE 0.5) and +30.4 (SE 0.4: Line leaves a mage out, Volley takes
+both and both archers behind a screen).
+
+**Dominance (a)**: of the 504 cells a tactic can be compared in (each condition, against each of
+the other three tactics attacking and defending, and the head-to-head), the cells where the column
+tactic is at least as good as the row tactic:
+
+| | Line | Charge | Volley | Square | Vanguard |
+|---|---|---|---|---|---|
+| Line | . | 271 | 327 | 60 | 379 |
+| Charge | 293 | . | 320 | 139 | 259 |
+| Volley | 363 | 316 | . | 95 | 290 |
+| Square | 444 | 365 | 409 | . | 379 |
+| Vanguard | 503 | 305 | 400 | 125 | . |
+
+**Vanguard (c)**: in the battles the hero army's side won, its veterans (the hero and the two
+level-5 units) fell 9.8% of the time in Vanguard and 20.2% in Line (8,260 of 84,000 and 16,955 of
+84,000): 0.49 of Line's. Per condition it is far lower in a forest (2.8% against 40.5% early, 0.7%
+against 32.0% mid at 12 units) and on open land at 12 units, and higher on open land at 8 units
+(mid 27.4% against 22.8%, late 33.3% against 25.5%: with 4 lanes and a short front the veterans'
+cover falls first).
+
+**Verdict** (section 7):
+
+- **Charge ships**: dominated by none; beats Line beyond 2 SE in 25 of 72 conditions (mounted in a
+  forest, the hero army in a forest), loses in 31 (the ranged army in a forest: -28.1, its archers
+  left out).
+- **Volley ships**: dominated by none; beats Line in 25 of 72 (melee with archers and mages, the
+  open and the forest), loses in 16 (the ranged army in a forest, where its 3 guards cannot screen
+  and the selection is the ranged army's own).
+- **Square ships by the letter, barely**: dominated by none (Line is at least as good as it in 444
+  of 504 cells, not all), beats Line beyond 2 SE in 4 of 72 conditions (best: the mid mounted army
+  of 8 in the open, +6.0, SE 1.0; the mid hero army of 8 at walls, +2.6, SE 0.3), loses in 67. It is
+  the weakest tactic on every ground; its Expert line (support that must live) does not show in
+  net HP. Not tuned: its knobs are its placement.
+- **Vanguard ships by the letter, barely**: (c) holds at 0.49 against the 0.5 required; (a) holds
+  by one cell (Line is at least as good as it in 503 of 504 cells: where the army has no veterans
+  the two are the same formation, and with veterans it costs HP: -18.5 in the open). As its Expert
+  line says, it is never the tactic that wins a close battle.
 
 ## 9. Open
 

@@ -122,6 +122,28 @@ def report(files):
             print(f"{lvl} {kind} {n} {g}: " + ' '.join(f'{short[y]:>6}' for y in TACTICS))
             print('\n'.join(rows))
 
+    # Compact summaries: the mean head-to-head score over the conditions of each ground, and each
+    # tactic against Line per army and ground (the mean over levels and sizes; in brackets the
+    # conditions beyond 2 SE either way).
+    print("\n## Mean head-to-head score per ground (row against column)")
+    for g in GROUNDS:
+        cs = [c for c in conds if c[3] == g]
+        print(f"{g:8} " + ' '.join(f'{short[y]:>6}' for y in TACTICS))
+        for x in TACTICS:
+            vals = ['     .' if x == y else f"{sum(h2h(c, x, y)[0] for c in cs) / len(cs):+6.1f}" for y in TACTICS]
+            print(f"  {short[x]:6} " + ' '.join(vals))
+    print("\n## Against Line per army and ground: mean score (conditions won / lost beyond 2 SE, of 6)")
+    print("         " + ' '.join(f'{a + " " + g:>16}' for a in ARMIES for g in GROUNDS))
+    for x in TACTICS[1:]:
+        vals = []
+        for a, g in itertools.product(ARMIES, GROUNDS):
+            cs = [c for c in conds if c[2] == a and c[3] == g]
+            hs = [h2h(c, x, 'LINE') for c in cs]
+            w = sum(1 for m, s in hs if m > 2 * s)
+            l = sum(1 for m, s in hs if m < -2 * s)
+            vals.append(f"{sum(m for m, _ in hs) / len(hs):+6.1f} ({w}/{l})".rjust(16))
+        print(f"  {short[x]:6} " + ' '.join(vals))
+
     # (b) beats Line clearly somewhere.
     print("\n## (b) Against Line: conditions where the tactic beats Line beyond 2 SE (best three)")
     verdict = {}
