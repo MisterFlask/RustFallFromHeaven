@@ -8,6 +8,7 @@ use std::sync::OnceLock;
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
+use ffh_core::telemetry::{Obj, Outcome, Prediction};
 use ffh_data::*;
 
 use crate::expansion::SettlerPlan;
@@ -379,11 +380,30 @@ pub fn barbarian_lair_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> 
 /// the barbarians of a civilization at peace with them (the Clan of Embers' garrison term,
 /// docs/AI_LOG.md, "Allied barbarians no longer counted as a threat").
 pub(crate) fn garrison_holds(g: &Game, p: PlayerId, plot: PlotIdx, threat: i32, defense: i32) -> bool {
-    g.at_war(g.players[p].team, g.barbarian_team())
+    let held = g.at_war(g.players[p].team, g.barbarian_team())
         && threat <= defense
         && crate::economy::marginal_unit_cost_x100(g, p, true) > 0
         && !civ_enemy_near(g, p, plot, 3)
-        && !rival_city_near(g, p, plot, 8)
+        && !rival_city_near(g, p, plot, 8);
+    // Prediction ledger (docs/CALIBRATION.md): with a threat in sight, "holds" says the city is
+    // not lost.
+    if threat > 0 && g.telemetry.on() {
+        if let Some(c) = g.map.plots[plot].plot_city.filter(|&c| g.cities[c].owner == p) {
+            let pr = Prediction::new("garrison_holds", Outcome::CityLost { city: c }, crate::predict::CITY_LOST_HORIZON, if held { 0 } else { 100 });
+            g.tel_prediction(p, pr.score((defense - threat) as i64).acted(held), || {
+                Obj::new()
+                    .i("threat", threat as i64)
+                    .i("defense", defense as i64)
+                    .b("barb_war", g.at_war(g.players[p].team, g.barbarian_team()))
+                    .b("unit_costs", crate::economy::marginal_unit_cost_x100(g, p, true) > 0)
+                    .b("civ_enemy_near", civ_enemy_near(g, p, plot, 3))
+                    .b("rival_city_near", rival_city_near(g, p, plot, 8))
+                    .b("capital", g.city_is_capital(c))
+                    .end()
+            });
+        }
+    }
+    held
 }
 
 /// A unit of a civilization we are at war with within `range` plots, fog included

@@ -77,6 +77,8 @@ impl Game {
     pub fn do_turn(&mut self) {
         // END OF TURN
         let turn = self.game_turn();
+        // Telemetry: the predictions this turn settles (docs/CALIBRATION.md).
+        self.tel_predict_turn_end();
         self.ev_begin_game_turn(turn);
 
         self.do_update_cache_on_turn();

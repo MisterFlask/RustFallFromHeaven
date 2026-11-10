@@ -42,10 +42,12 @@
 use ffh_core::defs::*;
 use ffh_core::game::Game;
 use ffh_core::ids::*;
+use ffh_core::telemetry::{Obj, Outcome, Prediction, HORIZON_THIS_TURN};
 use ffh_data::*;
 
 use crate::combat_sim::{covers, covers_sim, covers_with, fight, simulate, visible_defenders, wall_cut, Order};
 use crate::military::is_army_unit;
+use crate::predict::ASSAULT_HORIZON;
 use crate::production::{best_unit, Choice, Role};
 use crate::units::{alive, skip};
 use crate::view::{attack_power, View};
@@ -662,6 +664,33 @@ fn build_op(g: &Game, v: &mut View, cand: Cand, need: i32, groups: Vec<(i32, Gro
     } else {
         Phase::March
     };
+    // Prediction ledger (docs/CALIBRATION.md): the adjacent ring's simulation against the city
+    // when a strike this turn is in question (at war, defenders seen, a stack next to it).
+    if g.telemetry.on() && cand.visible && at_war && !adj.is_empty() {
+        let s = covers_sim(g, cand.city, tp, &defs, &adj, false, false);
+        let (n_def, n_adj, n_all) = (defs.len(), adj.len(), all.len());
+        g.tel_prediction(
+            p,
+            Prediction::new("assault", Outcome::CityCapturedBy { city: cand.city, team }, ASSAULT_HORIZON, s.p_fall / 10).score(s.hp_left as i64).acted(strike_now),
+            || {
+                Obj::new()
+                    .b("vs_civ", cand.civ)
+                    .s("phase", &format!("{phase:?}"))
+                    .b("ok_all", ok_all)
+                    .b("ok_near", ok_near)
+                    .b("ok_adj", ok_adj)
+                    .b("decisive", adj_decisive)
+                    .b("concentrate", concentrate)
+                    .b("covers", s.used.is_some())
+                    .i("n_def", n_def as i64)
+                    .i("n_adj", n_adj as i64)
+                    .i("n_all", n_all as i64)
+                    .i("best", s.best as i64)
+                    .i("casters", c_adj.len() as i64)
+                    .end()
+            },
+        );
+    }
     let rally = g.players[p].cities.iter().copied().filter(|&c| g.map.plots[g.city_plot(c)].area == area).min_by_key(|&c| (g.plot_distance(tx, ty, g.cities[c].x, g.cities[c].y), c)).map(|c| g.city_plot(c));
     let reference = committed.iter().find_map(|&grp| g.group_get_head_unit(grp));
     let assembly = reference.and_then(|r| assembly_plot(g, v, r, tp, rally));
@@ -1113,6 +1142,17 @@ pub(crate) fn strike(g: &mut Game, v: &mut View, op: &Op) {
             let max: i32 = defs.iter().map(|&d| g.unit_max_hit_points(d)).sum();
             hp * 2 <= max && line.len() >= defs.len()
         };
+        // Prediction ledger (docs/CALIBRATION.md): the strike's opening estimate, that the units
+        // next to the city take it this turn.
+        if fights == 0 && g.telemetry.on() && !able.is_empty() {
+            let s = covers_sim(g, op.city, tp, &defs, &able, op.probe, false);
+            let (n_def, n_att) = (defs.len(), able.len());
+            g.tel_prediction(
+                p,
+                Prediction::new("strike", Outcome::CityCapturedBy { city: op.city, team }, HORIZON_THIS_TURN, s.p_fall / 10).score(s.hp_left as i64).acted(go),
+                || Obj::new().b("vs_civ", op.civ).b("covers", takes).b("probe", op.probe).i("n_def", n_def as i64).i("n_att", n_att as i64).i("best", s.best as i64).end(),
+            );
+        }
         let units = if takes && line.is_empty() { able.clone() } else { line };
         if units.len() < able.len() {
             held_steps += 1;
@@ -1163,6 +1203,10 @@ pub(crate) fn strike(g: &mut Game, v: &mut View, op: &Op) {
             g.unit_join_group(u, None, true);
         }
         let Some(grp) = g.units[u].group else { break };
+        if g.telemetry.on() {
+            let o = with_odds.iter().find(|&&(x, _)| x == u).map_or(0, |&(_, o)| o);
+            crate::predict::attack(g, p, u, tp, o, "strike");
+        }
         let moves = g.unit_moves_left(u);
         g.groups[grp].ai_group_attack = false;
         crate::tactics::note_attack(g, p, g.unit_plot(u), tp);

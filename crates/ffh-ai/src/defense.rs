@@ -302,6 +302,13 @@ pub fn sortie_ok(g: &Game, p: PlayerId, plot: PlotIdx, u: UnitId) -> bool {
         }
     }
     let ok = ours * 100 >= theirs * SORTIE_EDGE;
+    // Prediction ledger (docs/CALIBRATION.md): "may sortie" says the city is not lost.
+    if g.telemetry.on() {
+        if let Some(c) = g.map.plots[plot].plot_city.filter(|&c| g.cities[c].owner == p) {
+            let pr = ffh_core::telemetry::Prediction::new("sortie", ffh_core::telemetry::Outcome::CityLost { city: c }, crate::predict::SORTIE_HORIZON, if ok { 0 } else { 100 });
+            g.tel_prediction(p, pr.score(ours * 100 - theirs * SORTIE_EDGE).acted(ok), || ffh_core::telemetry::Obj::new().i("ours", ours).i("theirs", theirs).end());
+        }
+    }
     if !ok {
         crate::trace!(g, p, "sortie held at {:?}: ours {} against {}", g.map.xy(plot), ours, theirs);
         g.tel_decision(p, "military", "sortie_held", "rival_defense", 1, String::new);

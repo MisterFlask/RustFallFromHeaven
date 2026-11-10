@@ -34,6 +34,9 @@ use crate::structs::{TradeData, VoteSelectionSubData};
 
 #[path = "telemetry_autopsy.rs"]
 mod autopsy;
+#[path = "telemetry_predict.rs"]
+mod predict;
+pub use predict::{Outcome, Prediction, HORIZON_THIS_TURN};
 
 /// The telemetry sink of a game (`Game::telemetry`); [`Telemetry::off`] by default.
 #[derive(Default)]
@@ -161,6 +164,8 @@ struct Tel {
     cand: Vec<Vec<(SpellType, bool)>>,
     /// The autopsy's state (docs/AUTOPSY.md).
     autopsy: autopsy::Autopsy,
+    /// The prediction ledger (docs/CALIBRATION.md).
+    ledger: predict::Ledger,
 }
 
 impl Tel {
@@ -603,6 +608,7 @@ impl Game {
             }
             t.event(|| ev(turn, "acquire", p).i("from", old.0 as i64).s("how", how).i("pop", pop as i64).i("x", x as i64).i("y", y as i64).end());
         });
+        self.tel_predict_city_changed(p, c, conquest);
     }
 
     pub(crate) fn tel_raze(&self, p: PlayerId, c: CityId) {
@@ -724,6 +730,9 @@ impl Game {
                     .end()
             });
         });
+        if !undefended || def_dead {
+            self.tel_predict_duel(att, att_dead, def_dead);
+        }
     }
 
     /// An engagement (docs/TELEMETRY.md, "Engagements"), after its post-battle steps: today's
@@ -806,6 +815,9 @@ impl Game {
                     .end()
             });
         });
+        let fought: Vec<(UnitId, bool)> =
+            (0..e.units.len()).filter(|&i| in_battle(i) && e.side(i) == Side::Attacker).map(|i| (e.units[i], matches!(f.fate[i], LogFate::Fell { .. }))).collect();
+        self.tel_predict_engagement(&fought, matches!(result, "taken" | "cleared"), result == "repulsed");
     }
 
     /// A kill in an engagement or a missile strike (G2): who killed with what, the war's kill
@@ -1411,7 +1423,12 @@ impl Game {
                     .end()
                 })
                 .collect();
-            Obj::new().i("version", 1).raw("players", &format!("{{{}}}", pl.join(","))).raw("wars", &format!("[{}]", wars.join(","))).end()
+            Obj::new()
+                .i("version", 1)
+                .raw("players", &format!("{{{}}}", pl.join(",")))
+                .raw("wars", &format!("[{}]", wars.join(",")))
+                .raw("predictions", &t.ledger.json())
+                .end()
         })
     }
 }

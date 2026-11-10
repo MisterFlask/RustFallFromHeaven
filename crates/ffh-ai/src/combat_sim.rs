@@ -252,6 +252,10 @@ pub struct Sim {
     pub gain: i64,
     /// The odds of the first attack (per mille; 0 when there is none).
     pub first: i32,
+    /// The chance every defender falls, per mille: the product of each defender's chance of
+    /// having fallen at the end of the simulation (treated as independent). Read only by the
+    /// prediction ledger (docs/CALIBRATION.md); no decision uses it.
+    pub p_fall: i32,
 }
 
 /// The order in which [`simulate`] sends the attackers: the order the attack itself
@@ -306,7 +310,7 @@ pub fn simulate_softened(g: &Game, tp: PlotIdx, defs: &[UnitId], soften: &[i32],
     let atts: Vec<UnitId> = atts.iter().copied().filter(|&u| fights(g, u)).collect();
     let n_att = atts.len();
     if defs.is_empty() {
-        return Sim { used: Some(0), n_def, hp_left: 0, best: 1000, n_att, ..Sim::default() };
+        return Sim { used: Some(0), n_def, hp_left: 0, best: 1000, n_att, p_fall: 1000, ..Sim::default() };
     }
     let Some(&first) = atts.first() else {
         return Sim { used: None, n_def, hp_left: defs.iter().enumerate().map(|(i, &d)| health(i, d)).sum(), best: 0, n_att, ..Sim::default() };
@@ -329,10 +333,11 @@ pub fn simulate_softened(g: &Game, tp: PlotIdx, defs: &[UnitId], soften: &[i32],
     let mut left: Vec<usize> = (0..n_att).collect();
     let (mut best, mut kills, mut losses, mut gain, mut best_gain, mut first_odds) = (0, 0i64, 0i64, 0i64, 0i64, 0);
     let mut used = 0;
+    let p_fall = |ds: &[(UnitId, i32, i64, i64)]| ds.iter().fold(1000i64, |acc, d| acc * (1000 - d.2).clamp(0, 1000) / 1000) as i32;
     loop {
         let alive: Vec<usize> = (0..ds.len()).filter(|&j| standing(&ds[j])).collect();
         if alive.is_empty() {
-            return Sim { used: Some(used), n_def, hp_left: 0, best, n_att, kills: kills as i32, losses: losses as i32, gain: best_gain, first: first_odds };
+            return Sim { used: Some(used), n_def, hp_left: 0, best, n_att, kills: kills as i32, losses: losses as i32, gain: best_gain, first: first_odds, p_fall: p_fall(&ds) };
         }
         // Every attacker left: the defender it would meet, the odds and the damage of a loss.
         let cands: Vec<(usize, usize, i32, i32)> = left
@@ -452,7 +457,7 @@ pub fn simulate_softened(g: &Game, tp: PlotIdx, defs: &[UnitId], soften: &[i32],
     }
     let alive: Vec<usize> = (0..ds.len()).filter(|&j| standing(&ds[j])).collect();
     let hp_left = alive.iter().map(|&j| ds[j].1).sum();
-    Sim { used: if alive.is_empty() { Some(used) } else { None }, n_def, hp_left, best, n_att, kills: kills as i32, losses: losses as i32, gain: best_gain, first: first_odds }
+    Sim { used: if alive.is_empty() { Some(used) } else { None }, n_def, hp_left, best, n_att, kills: kills as i32, losses: losses as i32, gain: best_gain, first: first_odds, p_fall: p_fall(&ds) }
 }
 
 /// City defense our siege engines in `units` can bombard away within three turns (0 without

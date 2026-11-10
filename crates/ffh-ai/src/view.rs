@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
+use ffh_core::telemetry::{Obj, Outcome, Prediction};
 use ffh_data::*;
 
 use crate::reach::Flood;
@@ -168,6 +169,15 @@ impl View {
                 let defense = crate::production::garrison(g, p, cp).1 * 3 / 2;
                 if threat > defense {
                     v.peril.push((cp, threat - defense));
+                }
+                // Prediction ledger (docs/CALIBRATION.md): with a threat in sight, "in peril" says
+                // the city is lost.
+                if threat > 0 && g.telemetry.on() {
+                    let pr = Prediction::new("peril", Outcome::CityLost { city: c }, crate::predict::CITY_LOST_HORIZON, if threat > defense { 100 } else { 0 });
+                    let civ = !v.civ_enemies.is_empty();
+                    g.tel_prediction(p, pr.score((threat - defense) as i64), || {
+                        Obj::new().i("threat", threat as i64).i("defense", defense as i64).b("civ_war", civ).b("capital", g.city_is_capital(c)).end()
+                    });
                 }
             }
         }

@@ -182,7 +182,11 @@ pub fn assault(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
     let mut fought = false;
     let city = g.map.plots[q].plot_city.is_some();
     // Casters of ours around the target cast first when the assault goes ahead (magic.rs).
-    let goes = field_sim(g, grp, q).is_some_and(|s| field_go(&s, city, false, false, false));
+    let sim = field_sim(g, grp, q);
+    let goes = sim.is_some_and(|s| field_go(&s, city, false, false, false));
+    if let Some(s) = sim.filter(|_| g.telemetry.on()) {
+        crate::predict::field(g, v.p, q, &s, city, goes, "assault");
+    }
     if goes {
         let atts = attackers(g, grp);
         crate::magic::before_attack(g, v, q, &atts);
@@ -212,6 +216,11 @@ pub fn assault(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
             crate::trace!(g, v.p, "stack {:?} holds: its next attacker {} has odds {} (wants {})", grp, g.d.units[g.units[b].unit_type].base.type_, odds, bar);
             g.tel_decision(v.p, "military", "precious_held", "assault", 1, String::new);
             break;
+        }
+        if g.telemetry.on() {
+            if let (Some(b), Some(s)) = (g.group_ai_get_best_group_attacker(grp, q, false, false, false).0, s) {
+                crate::predict::attack(g, v.p, b, q, s.first, "field");
+            }
         }
         g.groups[grp].ai_group_attack = false;
         let before = g.groups[grp].units.len();
@@ -725,8 +734,12 @@ fn opportune(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
         // `capture`; before round 7g, the siege estimate with a reserve and odds the assault goes
         // on with).
         let units = g.groups[grp].units.clone();
-        let takes = field_sim(g, grp, q).is_some_and(|s| field_go(&s, true, true, false, false));
+        let sim = field_sim(g, grp, q);
+        let takes = sim.is_some_and(|s| field_go(&s, true, true, false, false));
         if !takes {
+            if let Some(s) = sim.filter(|_| g.telemetry.on()) {
+                crate::predict::field(g, p, q, &s, true, false, "capture");
+            }
             continue;
         }
         crate::trace!(g, p, "stack {:?} ({} units) takes its chance on {} ({} defenders)", grp, units.len(), name, defs.len());
@@ -758,6 +771,9 @@ fn best_adjacent(g: &Game, grp: GroupId, here: PlotIdx, hurt: bool, skip: Option
         let Some(s) = field_sim(g, grp, q) else { continue };
         let (ok, score) = (field_go(&s, city.is_some(), false, false, hurt), if city.is_some() { 1_000_000 + s.best as i64 } else { s.gain });
         if !ok || precious_holds(g, grp, q).is_some() {
+            if g.telemetry.on() {
+                crate::predict::field(g, g.groups[grp].owner, q, &s, city.is_some(), false, "adjacent");
+            }
             continue;
         }
         if best.map_or(true, |(_, s)| score > s) {
