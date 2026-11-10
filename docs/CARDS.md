@@ -603,7 +603,9 @@ too) use it, and later cards can.
   ordinary revolt rule would free it (`team_can_vassal_revolt`; `diplomacy::reconsider_deals`),
   where a vassal that is not hopeless would otherwise leave after 20 turns. **Where vassals cannot be** (No Vassal
   States, or a founder that is a vassal itself) it signs open borders and a defensive pact with the
-  founder instead, a deal like any other. No other war or peace is forced (docs/DECKS.md, principle
+  founder instead, each held in a standing deal like any other, so that a war or a cancellation
+  ends it (a pact no deal recorded outlived every war, and once had the civilization declare war
+  on itself). No other war or peace is forced (docs/DECKS.md, principle
   27): its leanings are attitude modifiers, toward the founder (`ai_attitude_extra`), toward its
   parent when that is another (`parent_attitude`: the Usurper's -6), and toward every civilization
   of an alignment (`Player::alignment_attitude`).

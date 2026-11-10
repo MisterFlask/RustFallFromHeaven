@@ -175,6 +175,11 @@ impl Game {
     /// C++ `CvTeam::declareWar`. `war_plan = None` is C++ `NO_WARPLAN`.
     pub fn team_declare_war(&mut self, t: TeamId, other: TeamId, new_diplo: bool, war_plan: Option<WarPlanType>) {
         debug_assert!(other != t, "eTeam is not expected to be equal with getID()");
+        // A team is never at war with itself: its units would take its own cities (a unit trained
+        // in one took it from under `city_pop_order`).
+        if other == t {
+            return;
+        }
 
         // Not in C++: no declaration (nor cascade) reaches a crusade Host (docs/CRUSADE.md).
         if self.team_is_crusade_host(t) || self.team_is_crusade_host(other) {
@@ -382,7 +387,9 @@ impl Game {
             self.team_cancel_defensive_pacts(t);
 
             for o in self.team_ids() {
-                if self.team_is_alive(o) && self.teams[o].defensive_pact[other] {
+                // (`o != t`: `t`'s pacts were cancelled above; a pact flag no deal records would
+                // survive that and have `t` declare war on itself)
+                if o != t && self.team_is_alive(o) && self.teams[o].defensive_pact[other] {
                     self.team_declare_war(o, t, new_diplo, Some(WarPlanType::WARPLAN_DOGPILE));
                 }
             }
@@ -1512,6 +1519,19 @@ mod tests {
 
         g.teams[b].alive_count = 0;
         assert!(!g.team_can_declare_war(a, b), "dead target");
+    }
+
+    #[test]
+    fn a_pact_no_deal_records_does_not_turn_a_declaration_on_the_declarer() {
+        let mut g = game(&[0, 1]);
+        let (a, b) = (TeamId(0), TeamId(1));
+        meet(&mut g, a, b);
+        // Pact flags with no deal behind them: cancelling the declarer's pacts leaves them.
+        g.team_set_defensive_pact(a, b, true);
+        g.team_set_defensive_pact(b, a, true);
+        g.team_declare_war(a, b, false, None);
+        assert!(g.at_war(a, b));
+        assert!(!g.teams[a].at_war[a] && !g.teams[b].at_war[b], "no team is at war with itself");
     }
 
     #[test]

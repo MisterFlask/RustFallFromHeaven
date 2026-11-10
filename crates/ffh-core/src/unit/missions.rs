@@ -853,8 +853,11 @@ impl Game {
             let num = self.city_num_real_family(city, building);
             self.city_set_num_real_building(city, building, num + 1);
 
-            let building = self.city_building_variant(city, building);
-            self.ev_building_built(city, building);
+            // (a building's effects, such as its free units, can remove the city)
+            if self.cities.contains(city) {
+                let building = self.city_building_variant(city, building);
+                self.ev_building_built(city, building);
+            }
         }
 
         // Graphics: NotifyEntity(MISSION_CONSTRUCT).

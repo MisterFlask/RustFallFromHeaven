@@ -410,6 +410,103 @@ fn the_oath_of_fealty_makes_a_weak_enemy_a_vassal() {
     assert!(!w.g.unit_can_cast_at(u, spell, target), "once");
 }
 
+/// The chain behind a crash (seed 2, turn 468): the Hill Clans, born without vassal states, with a
+/// defensive pact with their founder; a war on the founder that brings the clans in by the pact;
+/// the Oath of Fealty making the clans the vassal of the founder's enemy, so that they join its war
+/// on their old pact partner; then a Hill Giant trained in a clan city. The pact was recorded in no
+/// deal, so it outlived the clans' first war, had them declare war on themselves when they joined
+/// the second, and the new giant took its own city from under `city_pop_order`.
+#[test]
+fn a_born_civilizations_pact_ends_with_its_wars_and_never_turns_it_on_itself() {
+    let mut w = world();
+    let d = w.g.d;
+    let c0 = w.city(w.p0, &[]);
+    let taken = [w.g.city_plot(c0)];
+    w.city(w.p1, &taken);
+    let (t0, t1) = (w.g.players[w.p0].team, w.g.players[w.p1].team);
+    w.g.team_meet(t0, t1, false);
+    for q in w.g.map.plot_ids() {
+        if w.g.plot_is_hills(q) {
+            w.g.plot_set_plot_type(q, PlotType::PLOT_LAND, true);
+        }
+    }
+    let avoid = w.margin(&w.g.players[w.p1].cities.iter().map(|&c| w.g.city_plot(c)).collect::<Vec<_>>());
+    for q in w.block(5, 5, &avoid) {
+        w.g.plot_set_plot_type(q, PlotType::PLOT_HILLS, true);
+    }
+    w.card(w.p0, "WAKE_THE_HILL_CLANS");
+    w.g.setup.options[GameOptionType::GAMEOPTION_NO_VASSAL_STATES] = true;
+    let np = w.cast(w.p0, "SPELL_WAKE_THE_HILL_CLANS");
+    w.g.setup.options[GameOptionType::GAMEOPTION_NO_VASSAL_STATES] = false;
+    let nt = w.g.players[np].team;
+    assert!(!w.vassal(np, w.p0), "no vassal states: a pact instead");
+    assert!(w.g.teams[nt].defensive_pact[t0] && w.g.teams[t0].defensive_pact[nt]);
+    assert!(w.g.teams[nt].open_borders[t0] && w.g.teams[t0].open_borders[nt]);
+    let pact_deal = |g: &Game| {
+        g.deals.ids().into_iter().any(|x| {
+            let (a, b) = (g.players[g.deals[x].first_player].team, g.players[g.deals[x].second_player].team);
+            [a, b].contains(&nt) && [a, b].contains(&t0) && g.deals[x].first_trades.iter().any(|t| t.item_type == TradeableItem::TRADE_DEFENSIVE_PACT)
+        })
+    };
+    assert!(pact_deal(&w.g), "a deal records the pact");
+    w.g.team_meet(nt, t1, false);
+
+    // Player 1 declares war on the founder: the pact brings the clans in, and their war ends it.
+    w.g.team_declare_war(t1, t0, false, None);
+    assert!(w.g.at_war(nt, t1), "the pact brings the clans in");
+    assert!(!w.g.teams[nt].defensive_pact[t0] && !w.g.teams[t0].defensive_pact[nt], "the war ends the pact");
+    assert!(!pact_deal(&w.g));
+
+    // The Oath of Fealty: the clans become player 1's vassal and join its war on their founder.
+    w.card(w.p1, "OATH_OF_FEALTY");
+    w.g.players[w.p1].power = 1000;
+    w.g.players[np].power = 1;
+    let (u, spell, target) = (w.caster(w.p1), w.spell("SPELL_OATH_OF_FEALTY"), SpellTarget::Player(np));
+    assert!(w.g.unit_can_cast_at(u, spell, target));
+    w.g.unit_cast_at(u, spell, target);
+    assert!(w.vassal(np, w.p1));
+    assert!(w.g.at_war(nt, t0), "the vassal joins its master's war");
+    for t in w.g.team_ids() {
+        assert!(!w.g.teams[t].at_war[t], "no team is at war with itself");
+    }
+    // A clan city completes a Hill Giant: the giant stands in it, and the city is the clans'.
+    let c = w.g.players[np].cities[0];
+    let giant = d.t::<UnitType>("UNIT_CLAN_GIANT");
+    w.g.city_push_order(c, OrderType::ORDER_TRAIN, giant.i(), -1, false, false, true, true);
+    w.g.cities[c].unit_production[giant] = w.g.city_production_needed_unit(c, giant);
+    let before = w.units_of(np, "UNIT_CLAN_GIANT").len();
+    w.g.city_pop_order(c, 0, true, false);
+    assert!(w.g.cities.contains(c) && w.g.cities[c].owner == np, "the city stands");
+    let giants = w.units_of(np, "UNIT_CLAN_GIANT");
+    assert_eq!(giants.len(), before + 1);
+    assert!(giants.iter().any(|&g| w.g.unit_plot(g) == w.g.city_plot(c)));
+}
+
+/// `city_pop_order` when completing the order removes the city: a team at war with itself (the
+/// state the chain above left; `at_war` asserts against it in debug builds, so this runs in release
+/// only, as the gate's tests do) has its new unit take the city it was trained in. The unit stays
+/// built, the order ends with the city, and the city on the plot is its owner's.
+#[cfg(not(debug_assertions))]
+#[test]
+fn completing_an_order_that_removes_its_city_ends_cleanly() {
+    let mut w = world();
+    let c = w.city(w.p0, &[]);
+    w.g.city_set_population(c, 3); // (not razed when taken)
+    let plot = w.g.city_plot(c);
+    let t0 = w.g.players[w.p0].team;
+    let warrior = w.g.d.t::<UnitType>("UNIT_WARRIOR");
+    w.g.city_push_order(c, OrderType::ORDER_TRAIN, warrior.i(), -1, false, false, true, true);
+    w.g.cities[c].unit_production[warrior] = w.g.city_production_needed_unit(c, warrior);
+    let before = w.units_of(w.p0, "UNIT_WARRIOR").len();
+    w.g.teams[t0].at_war[t0] = true;
+    w.g.city_pop_order(c, 0, true, false);
+    w.g.teams[t0].at_war[t0] = false;
+    assert!(!w.g.cities.contains(c), "the new unit took the city");
+    assert_eq!(w.units_of(w.p0, "UNIT_WARRIOR").len(), before + 1, "the unit stays built");
+    let now = w.g.map.plots[plot].plot_city.expect("a city on the plot");
+    assert_eq!(w.g.cities[now].owner, w.p0);
+}
+
 // ---------------------------------------------------------------------------------------------
 // Call the Aifon.
 
