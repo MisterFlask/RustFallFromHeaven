@@ -610,6 +610,8 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
             needed += 1;
         }
     }
+    // A probe's garrison (probes.rs): one defender for the Rush and the Expand, a multiple for the Turtle.
+    needed = crate::probes::garrison_need(g, p, needed, true);
 
     // 1. Missing or overwhelmed garrison.
     // Fortified defenders in a city fight at about 1.5x their strength.
@@ -626,7 +628,7 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
     let safe = ctx.threat * 2 <= ctx.defense;
 
     // A second defender before more settlers once the barbarians are about.
-    if second_defender_wanted(g, p, c, plot, ctx.defenders, ctx.threat, ctx.defense) {
+    if second_defender_wanted(g, p, c, plot, ctx.defenders, ctx.threat, ctx.defense) && !crate::probes::skips_second_defender(g, p) {
         if let Some(u) = best_unit(g, c, Role::Defense) {
             return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), "second_defender"));
         }
@@ -654,7 +656,7 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
     }
 
     // 3. Settlers while good sites remain in reach.
-    let settler = crate::expansion::settler_choice(ai, g, c, ctx.p, ctx.threat, ctx.defense); // early-expansion
+    let settler = if crate::probes::settlers_allowed(g, p) { crate::expansion::settler_choice(ai, g, c, ctx.p, ctx.threat, ctx.defense) } else { SettlerPlan::No }; // early-expansion
     if let SettlerPlan::Now(choice) = settler {
         return Some((choice, "settler"));
     }
@@ -707,10 +709,11 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
     }
 
     // 4. Extra defenders up to the quota (a broke empire keeps one per city unless threatened).
-    if ctx.broke && ctx.threat == 0 {
+    let keeps_garrison = crate::probes::keeps_garrison(g, p);
+    if ctx.broke && ctx.threat == 0 && !keeps_garrison {
         needed = needed.min(1 + i32::from(ctx.capital));
     }
-    if !ctx.afford && ctx.threat == 0 {
+    if !ctx.afford && ctx.threat == 0 && !keeps_garrison {
         needed = needed.min(1 + i32::from(ctx.capital));
     }
     needed += crate::victory::guard(g, c); // victory-pursuit
@@ -719,6 +722,10 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
             let why = if ctx.defenders >= needed - rival { "rival_defender" } else { "defender_quota" };
             return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), why));
         }
+    }
+    // A probe's army and buildings (probes.rs).
+    if let Some(choice) = crate::probes::production(g, c, ctx.threat) {
+        return Some(choice);
     }
 
     // 5. A small mobile force to clear barbarians and animals near our lands.
@@ -773,7 +780,10 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
 
     // 8. Army target (larger at war).
     let mut army_target = army_target_for(ctx.n_cities, mil_flavor);
-    if ctx.at_war {
+    let small_army = crate::probes::small_army(g, p);
+    if small_army {
+        army_target = min_army;
+    } else if ctx.at_war {
         army_target = army_target * 2 + 2;
     } else if ctx.broke {
         army_target = min_army;
@@ -785,7 +795,7 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
     // At war (or preparing): a third of the army in siege engines. A stack camped next to a
     // city it cannot take (a barbarian town, say) asks for a couple as well.
     let siege = count_ai(g, p, UnitAIType::UNITAI_ATTACK_CITY) + count_ai(g, p, UnitAIType::UNITAI_COLLATERAL);
-    if let Some(choice) = crate::campaign::army_choice(g, c, attackers - siege, siege, ctx.afford) { return Some((choice, "campaign_army")); } // siege-campaigns
+    if let Some(choice) = crate::campaign::army_choice(g, c, attackers - siege, siege, ctx.afford && !small_army) { return Some((choice, "campaign_army")); } // siege-campaigns
     // The great-person cards' units (docs/CARDS.md).
     if ctx.afford {
         if let Some(choice) = crate::cards_map_rules::production(g, c, ctx.threat) {

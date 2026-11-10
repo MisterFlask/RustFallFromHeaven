@@ -57,11 +57,14 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
     if prod::barbarian_lair_near(g, p, plot, 3) || !held && prod::barbarians_near(g, p, plot, 3) {
         needed += 1;
     }
-    if !crate::economy::can_afford_unit(g, p, true, prod::civ_enemies_at_war(g, p)) && threat == 0 {
+    if !crate::economy::can_afford_unit(g, p, true, prod::civ_enemies_at_war(g, p)) && threat == 0 && !crate::probes::keeps_garrison(g, p) {
         needed = needed.min(1);
     }
+    // A probe's garrison (probes.rs).
+    let needed = crate::probes::garrison_need(g, p, needed, true);
     let overwhelmed = threat > 0 && defense * 3 / 2 < threat && defenders < needed + 2;
-    if defenders == 0 || overwhelmed || defenders < needed || prod::second_defender_wanted(g, p, c, plot, defenders, threat, defense) {
+    let second = prod::second_defender_wanted(g, p, c, plot, defenders, threat, defense) && !crate::probes::skips_second_defender(g, p);
+    if defenders == 0 || overwhelmed || defenders < needed || second {
         if let Some(u) = prod::best_unit(g, c, Role::Defense) {
             return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), "governor_garrison", None));
         }
@@ -73,6 +76,11 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
         if let Some(u) = prod::best_unit(g, c, Role::Defense) {
             return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), "governor_culture_defense", None));
         }
+    }
+
+    // A probe's army and buildings (probes.rs).
+    if let Some((choice, why)) = crate::probes::production(g, c, threat) {
+        return Some((choice, why, None));
     }
 
     // 3. The best building for the role (an ambitious governor: the costliest it may build).
@@ -205,7 +213,7 @@ pub(crate) fn empire_cities(g: &Game, p: PlayerId) -> Vec<CityId> {
     let capital = g.players[p].capital_city.filter(|&c| ok(c));
     let mut rest: Vec<CityId> = g.players[p].cities.iter().copied().filter(|&c| ok(c) && Some(c) != capital).collect();
     rest.sort_by_key(|&c| (std::cmp::Reverse(g.city_yield_rate(c, YieldType::YIELD_PRODUCTION)), c));
-    capital.into_iter().chain(rest).take(EMPIRE_CITIES).collect()
+    capital.into_iter().chain(rest).take(crate::probes::empire_cities(g, p, EMPIRE_CITIES)).collect()
 }
 
 /// In each of [`empire_cities`] with no empire order queued, the AI's own production choice (the

@@ -289,7 +289,7 @@ pub fn funded_percent(g: &Game, p: PlayerId) -> i32 {
 /// nothing here reads the threats in sight: what was trained is kept and research pays for it;
 /// the build side keeps the army from growing past the need (docs/AI.md, "Finance").
 pub fn disband_military(g: &mut Game, p: PlayerId) {
-    if g.player_is_barbarian(p) || at_war(g, p) {
+    if g.player_is_barbarian(p) || at_war(g, p) || crate::probes::keeps_army(g, p) {
         return;
     }
     for _ in 0..g.players[p].units.len() {

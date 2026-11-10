@@ -55,6 +55,7 @@ pub mod naval;
 pub mod offers;
 pub mod pacts;
 pub mod predict;
+pub mod probes;
 pub mod production;
 pub mod reach;
 pub mod research;
@@ -314,4 +315,7 @@ fn telemetry_intents(g: &Game, p: PlayerId) {
     g.tel_intent(p, "finance", || finance.to_string());
     let team = g.players[p].team;
     g.tel_intent(p, "war_prep", || diplomacy::preparing_target(g, team).map_or_else(|| "none".to_string(), |t| format!("team {}", t.0)));
+    if let Some(pr) = probes::probe(g, p) {
+        g.tel_intent(p, "probe", || probes::name(pr).to_string());
+    }
 }

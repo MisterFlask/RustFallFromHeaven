@@ -261,6 +261,10 @@ pub fn choose(g: &Game, p: PlayerId) -> Option<TechType> {
             }
         }
     }
+    // A Rush probe researches toward a stronger attacker (probes.rs).
+    if let Some(t) = crate::probes::research(g, p) {
+        return Some(t);
+    }
     let ctx = make_ctx(g, p);
     let trace_tech = crate::trace_on(p) && std::env::var("FFH_AI_TRACE_TECH").is_ok();
     let bonus = goal_bonus(g, p, &ctx, trace_tech);

@@ -114,13 +114,15 @@ pub fn settler_choice(ai: &Ai, g: &Game, c: CityId, p: PlayerId, threat: i32, de
     if ctx.at_war {
         max_settlers = (max_settlers + 1) / 2;
     }
-    if settlers >= max_settlers {
-        return No;
-    }
     // Size: grow first while growth is cheap and happy (a settler eats the food surplus as
     // production, so a size-2 city takes 30+ turns for one, a size-4 city half that); a city at
     // its happy cap gains nothing from growing, so it builds settlers at once.
     let min_pop = if ctx.happy_room <= 0 { 1 } else if ctx.food_surplus >= 3 { 4 } else { 3 };
+    // An Expand probe: more settlers at a time, from smaller cities (probes.rs).
+    let (max_settlers, min_pop) = crate::probes::settler_limits(g, p, max_settlers, min_pop, area_sites);
+    if settlers >= max_settlers {
+        return No;
+    }
     if pop < min_pop {
         return if settlers == 0 && ctx.n_cities <= 3 { SettlerPlan::Soon } else { No };
     }

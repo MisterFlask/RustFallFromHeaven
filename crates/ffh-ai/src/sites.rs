@@ -113,7 +113,7 @@ fn compute(g: &Game, p: PlayerId) -> Vec<(PlotIdx, i32)> {
             }
         }
     }
-    let min_value = if pl.cities.is_empty() { 1 } else { g.player_ai_min_found_value(p) };
+    let min_value = if pl.cities.is_empty() { 1 } else { crate::probes::site_min_value(g, p, g.player_ai_min_found_value(p)) };
     // No site left on our landmasses: look across the water (coastal plots of other
     // landmasses within OVERSEAS_RANGE of our coastal cities), for settlers carried by ship.
     let home_areas: Vec<Option<AreaId>> = pl.cities.iter().map(|&c| g.map.plots[g.city_plot(c)].area).collect();
