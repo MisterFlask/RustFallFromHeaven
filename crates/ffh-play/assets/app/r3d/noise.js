@@ -263,27 +263,25 @@ const noiseCell = (c) => (c < 192 ? c : c - 256 + 4096);
 /** The hash texture of the shaders' value noise (shaders.js NOISE_TEX pnoise): hash12 of the
  *  cells -64..191 in x and y (noiseCell), repeating, in NOISE_L layers: in layer k the columns
  *  c = k (mod NOISE_L) repeat column 0, so that a lattice wrapping after P cells (P = k mod
- *  NOISE_L) meets column 0 at its seam (texel P mod NOISE_N). Linear; `format` "r8" (4 MB) or
- *  "r16f" (8 MB). */
-export function noiseHashTexture(gl, format = "r8") {
+ *  NOISE_L) meets column 0 at its seam (texel P mod NOISE_N). Linear, R8 (4 MB). */
+export function noiseHashTexture(gl) {
   const N = NOISE_N, L = NOISE_L;
-  const half = format === "r16f";
-  const base = half ? new Float32Array(N * N) : new Uint8Array(N * N);
+  const base = new Uint8Array(N * N);
   for (let y = 0; y < N; y++) {
     for (let x = 0; x < N; x++) {
       const h = hash12(noiseCell(x), noiseCell(y));
-      base[y * N + x] = half ? h : Math.round(h * 255);
+      base[y * N + x] = Math.round(h * 255);
     }
   }
   const t = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_3D, t);
-  gl.texStorage3D(gl.TEXTURE_3D, 1, half ? gl.R16F : gl.R8, N, N, L);
+  gl.texStorage3D(gl.TEXTURE_3D, 1, gl.R8, N, N, L);
   gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
   const layer = base.slice();
   for (let k = 0; k < L; k++) {
     layer.set(base);
     for (let c = k || L; c < N; c += L) for (let y = 0; y < N; y++) layer[y * N + c] = base[y * N];
-    gl.texSubImage3D(gl.TEXTURE_3D, 0, 0, 0, k, N, N, 1, gl.RED, half ? gl.FLOAT : gl.UNSIGNED_BYTE, layer);
+    gl.texSubImage3D(gl.TEXTURE_3D, 0, 0, 0, k, N, N, 1, gl.RED, gl.UNSIGNED_BYTE, layer);
   }
   for (const [p, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.REPEAT], [gl.TEXTURE_WRAP_T, gl.REPEAT], [gl.TEXTURE_WRAP_R, gl.REPEAT]]) gl.texParameteri(gl.TEXTURE_3D, p, v);
   gl.bindTexture(gl.TEXTURE_3D, null);

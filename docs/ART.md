@@ -728,9 +728,9 @@ colour of a city's lit windows (amber by default); by day there is no ground poo
 - **The stack marks** keep to the corners and the top edge, so the figure and its ring stay clear:
   a count chip in the top-left corner (top-right in a city), a gold pip beside it for a hero, the
   health bar on the top edge, the state mark top-right. Your own spent stack stands on a quiet ring
-  (the tincture's shade as the field): a bright ring under your unit says it can still move. The
-  night look's 7x12 gonfalon is opt-in (`state.standard`), like the references, which mark a unit by
-  its colours and its land alone.
+  (the tincture's shade as the field): a bright ring under your unit says it can still move. No
+  gonfalon over the stack (the night look's opt-in one was removed 2026-11-10), like the references,
+  which mark a unit by its colours and its land alone.
 - **City banner and plaque** (9.4): the size chip in the owner's field.
 - **Unit cloth**: an atlas unit's main cloth accent (its red, blue, purple or olive) is converted
   to the owner slots `#` (field, the lighter half of the ramp) and `%` (shade); figures whose colour
@@ -761,8 +761,7 @@ fog edge follows the terrain's warp in a 4 px Bayer band.
 ### 8.3 Unrevealed tiles
 
 Unrevealed land is the interface's **navy** (`1`, `GROUND.unseenKey`), not black, with a ragged
-3 px edge. There is **no vignette** by day (`GROUND.vignette`; the ground pass sets
-`art.vignetteOn`, which the live client's own vignette honours too). The map viewport sits in the
+3 px edge. There is **no vignette** by day (`GROUND.vignette`). The map viewport sits in the
 panels' gold frame.
 
 ### 8.4 Minimap

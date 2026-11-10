@@ -224,8 +224,9 @@ test("worked land keeps to a river's banks: no field, fence or crop in the water
 test("every panel switch has a default; plain turns the painting off but keeps the water's realism", async () => {
   const { PRESETS, DEFAULTS, PANEL } = await import("../app/r3d/config.js");
   for (const [key] of PANEL) assert.notEqual(DEFAULTS[key], undefined, `panel switch ${key} has no default`);
-  // The brushwork on objects and the painted ink are stylisation: off in the plain comparison.
-  for (const key of ["brush", "inkLost", "inkColour"]) {
+  // The brushwork on objects, coloured shadows and rim light are stylisation: off in the plain
+  // comparison.
+  for (const key of ["brush", "stylize", "rim"]) {
     assert.ok(PRESETS.painterly[key] > 0, `${key} is on in the painterly look`);
     assert.equal(PRESETS.plain[key], 0, `${key} is off in the plain render`);
   }
@@ -238,12 +239,12 @@ test("every panel switch has a default; plain turns the painting off but keeps t
 test("a look saved before a switch existed takes that switch from its own preset, not the defaults", async () => {
   const { loadConfig, PRESETS } = await import("../app/r3d/config.js");
   const saved = { ...PRESETS.plain, preset: "plain" };
-  for (const key of ["brush", "inkLost", "inkColour"]) delete saved[key];
+  for (const key of ["brush", "stylize", "rim"]) delete saved[key];
   const prev = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
   Object.defineProperty(globalThis, "localStorage", { configurable: true, value: { getItem: () => JSON.stringify(saved), setItem() {} } });
   try {
     const cfg = loadConfig();
-    for (const key of ["brush", "inkLost", "inkColour"]) assert.equal(cfg[key], 0, `${key} stays off in a saved plain look`);
+    for (const key of ["brush", "stylize", "rim"]) assert.equal(cfg[key], 0, `${key} stays off in a saved plain look`);
   } finally {
     if (prev) Object.defineProperty(globalThis, "localStorage", prev);
     else delete globalThis.localStorage;

@@ -32,7 +32,7 @@ node tools/r3d-lab.mjs --serve             # open /lab/lab.html?scene=showcase
   the light (afternoon or day: the map is always in daylight) and a switch or slider for every stage
   of the pipeline (§12), with
   the frame time and per-pass GPU times.
-* `?r3d=plain`, `?r3d=painterly` or `?r3d={"kuwahara":0,"outline":0}` override the look for one page.
+* `?r3d=plain`, `?r3d=painterly` or `?r3d={"animate":false,"grain":0}` override the look for one page.
 * It needs WebGL2 **with GPU acceleration**. Without a WebGL2 context, or when the context is a
   software rasteriser (SwiftShader, llvmpipe, Microsoft Basic Render, a software ANGLE adapter —
   where the painterly pipeline would run at seconds per frame and look like a frozen tab, §14), the
@@ -88,7 +88,7 @@ assets/app/
     decals.js     CPU-painted world layers: roads, fields, wet banks, settlement ground, light pools
     scene.js      GPU scene: terrain chunks, sea, rivers, instanced props by asset and chunk,
                   rings and path, particles; the draw callbacks of the pipeline
-    pipeline.js   the passes (shadow, scene, SSAO, glow, compose, Kuwahara, finish, overlays)
+    pipeline.js   the passes (shadow, scene, SSAO, glow, compose, finish, overlays)
     shaders.js    all GLSL
     dress.js      what stands where: trees, rocks, structures, settlements, unit figures
     hud.js        city plates, stack badges, far-zoom counters, yields, flashes (2D canvas)
@@ -236,13 +236,12 @@ props. The channels: r roads, g crops, b wet banks, a settlement ground and farm
 | ssao | half-resolution scalable ambient obscurance, depth-aware blur | `ssao` |
 | glow | emission blurred at half resolution | `glow` |
 | compose | occlusion, glow, exposure, ACES-fitted filmic curve → display colour | — |
-| paint | (off by default since §16) structure tensor → smoothed → anisotropic Kuwahara (Kyprianidis et al., polynomial sector weights); radius grows with the zoom (the brush belongs to the world) and so does the strength (0.35 at the gameplay zooms, full close up: the filter erases what is narrower than its radius, and at 96 px a plot that is roads and pool rims); units (keep-sharp mask) mostly spared, foliage partly (its own marks, anchored to the world, are the paint there) | `kuwahara`, `kuwaharaRadius` |
-| finish | ink outlines from depth (far side of a jump only), creases and object-id boundaries on props, faded with distance; no line where one crown's lobes overlap and a light one between crowns (a prop's crown writes its object id negated), so a wood reads as a mass; lost and found (the weight wanders along a line, anchored to the world, and lightens in the light; firmer on buildings and rock than on foliage) and coloured (a deep version of the paint below, not one sepia), units keeping their whole line; split-tone grade, saturation/contrast, paper grain anchored to the world (reconstructed from depth), vignette | `outline`, `inkLost`, `inkColour`, `grade`, `grain`, `vignette` |
-| aa | FXAA (Timothy Lottes' console variant) on the finished colour before the overlays: takes the stair-step off silhouettes and the ink outlines and stops them crawling when panning (the HUD is a separate 2D canvas, so it stays crisp) | `fxaa` |
+| finish | split-tone grade, saturation/contrast, paper grain anchored to the world (reconstructed from depth), vignette. (The Kuwahara paint filter and the ink outlines that were here, off in every preset since §16, were removed with their switches 2026-11-10.) | `grade`, `grain`, `vignette` |
+| aa | FXAA (Timothy Lottes' console variant) on the finished colour before the overlays: takes the stair-step off silhouettes and stops them crawling when panning (the HUD is a separate 2D canvas, so it stays crisp) | `fxaa` |
 | overlay | borders (crisp ink line + soft owner band), political wash, grid, target/path/hover/selection frames on the ground mesh (depth-equal), team rings and the path ribbon draped on the ground; each also drawn ghosted where something stands in front; units hidden behind scenery as hatched team-coloured x-ray silhouettes (depth test GREATER); particles (additive) | `borders`, `grid`, `particles` |
 
-The light model (scene pass): a wrapped, softly stepped sun term (broad light masses) whose boundary
-the brush marks break (§5.1), coloured
+The light model (scene pass): a wrapped sun term (broad light masses; the stepped light bands, off
+since §16, were removed 2026-11-10) whose boundary the brush marks break (§5.1), coloured
 shadows (a cool sky ambient and a shadow tint; a cast shadow's floor is lit by a cooler sky fill
 rather than a dimmed sun, so shade stays saturated), broad cloud shadows drifting slowly, anchored to the world (two octaves: no plot-sized blots), local
 light pools, rim light on silhouettes (stronger on units), soft metal highlights, light through
@@ -767,9 +766,9 @@ comparison alternated old and new):
   one multiply (7108 instructions to 5907, the compile 23% faster), but the programs are built before
   the map is known and would have to be built again for each map size; fewer noises would change
   the look.
-* **The value noise from a texture** (`NOISE_TEX`, `Map3D.sceneDefines`: on in the HD-2D mode's
-  terrain, water and props, `?r3d={"noiseTex":0}` off; the 3D renderer keeps the arithmetic noise
-  unless `?r3d={"noiseTex":1}`). Of `pnoise`'s ~26 instructions only ~11 are the hash: a hash
+* **The value noise from a texture** (`NOISE_TEX`, `Map3D.sceneDefines`: always on in the HD-2D
+  mode's terrain, water and props; the 3D renderer keeps the arithmetic noise. The `noiseTex`
+  switch, which also offered an R16F texture, was removed 2026-11-10). Of `pnoise`'s ~26 instructions only ~11 are the hash: a hash
   texture read at the four corners (`texelFetch`) saves 3% of the terrain's. One hardware-bilinear
   fetch with the smoothstep on the coordinate (iq's trick) does the floor, the mod, the four hashes
   and the mixes; the map's wrap is what one fetch cannot do on its own (a lattice of P cells over the
@@ -792,9 +791,9 @@ comparison alternated old and new):
   arithmetic, and the 8-bit precision of the hardware's bilinear weights on the broadest noises
   (a TEXTURE_2D_ARRAY, its layer an explicit mod, is the fallback: +113 instructions).
 * **Five together** (2026-10-31): the noise texture above, the HD-2D mode's
-  lean terrain and smaller props and water programs (docs/HD2D.md §8: `terrainLean`, `lite`), the
-  scene packed into one target so its programs compile at link (`packScene`, `SCENE_PACKED`) and
-  the start-up's CPU work done while they compile (`fastStart`). The shader savings compound (the
+  lean terrain and smaller props and water programs (docs/HD2D.md §8), the scene packed into one
+  target so its programs compile at link (`packScene`, `SCENE_PACKED`) and the start-up's CPU work
+  done while they compile. The shader savings compound (the
   lean terrain's 44 noises are each cheaper from the texture; the props' one-plane brush marks read
   the dab texture), and under the texture the sea's gradient normals take pnoise's slope from it
   too (`pnoiseDT`: inside a cell the bilinear filter is linear in the smoothstepped coordinate, so a
@@ -815,8 +814,8 @@ comparison alternated old and new):
   4.3-4.9 s unpacked (lab, alternating runs), its pipelines built in the first full-size frame
   instead of the warm-up's 4 × 4 draws. With the scene packed there are no warm-up draws, so the start-up's sync overlaps the wait for
   the links (`Map3D.ready`); otherwise it overlaps the warm-up's first draw. With the five switches
-  off (`?r3d={"noiseTex":0,"terrainLean":0,"lite":0,"packScene":0,"fastStart":0}`) the lab's stills
-  match origin/master's bit for bit.
+  off the lab's stills matched origin/master's bit for bit then. (All but `packScene` were removed
+  2026-11-10, their defaults kept: they can no longer be turned off.)
 * **One noise a `mfbm`, one copy of the frontier's drifts** (2026-10-31, measured with FXC itself:
   `tools/fxc`, below). FXC unrolls a loop whose length it knows, so every `mfbm` was four noises;
   its octaves now sum in a loop whose bound it cannot know (`4 + int(min(uMapSize.x, 0.0))`, always
@@ -849,7 +848,7 @@ shows after 45 s and the isometric map draws. On Direct3D the links are quick no
 compiles come in the warm-up draws, which the timeout does not cover: a compile in progress cannot
 be stopped.
 
-**Two stages** (2026-10-31; the HD-2D mode with its scene packed, `MapHd2d.standinTerrain`). With
+**Two stages** (2026-10-31 to 2026-11-10, removed: the HD-2D mode with its scene packed). With
 the scene packed every program compiles at link, together, and `Program.done` says without waiting
 whether one has. Most of that wait is the terrain's (2742 instructions, Direct3D's compile about
 1.9 s, estimated as above); the sea and the rivers take about 0.4 s each, every other program
@@ -913,11 +912,9 @@ has compiled:
   terrain is in at the first frame there) and 0, and the 3D renderer's.
 
 Since 2026-11-03 the HD-2D map's ground *is* the stand-in (the owner's call; docs/HD2D.md §5b, "The
-stand-in as the ground", hd2d/config.js `terrainStandin`): the full painting did not show in play,
-and the terrain compiles at the stand-in's size. The two stages run with `?r3d={"terrainStandin":0}`.
-`?r3d={"standin":0}` builds no stand-in (the start waits for the full terrain, as before);
-`{"standinHold":S}` (debug) keeps the full terrain out until the render's time reaches S seconds
-(docs/HD2D.md §11).
+stand-in as the ground"): the full painting did not show in play, and the terrain compiles at the
+stand-in's size. The two stages above are history: their switches (`terrainStandin`, `standin`,
+`standinHold`) and code (the swap, `terrainDissolve`, `TERRAIN_DISSOLVE`) were removed 2026-11-10.
 
 **Measuring.** `r3d-lab/compile.html` (`tools/r3d-lab.mjs --serve`, then `/lab/compile.html`) builds
 the programs a configuration compiles -- the pipeline's and the HD-2D mode's (`pipelinePrograms`,
@@ -931,14 +928,13 @@ it, and logs both times, their totals and the slowest program (`?only=terrain` f
 them in the warm-up's order (the scene's first), and logs when each linked, each first draw and the
 wall time: the realistic number for a packed scene, whose programs compile at link, together. The
 log opens with the WebGL renderer, the configuration (packed or not) and each program's defines, so
-a pasted log says what it measured. To compare the five switches (above) on Direct3D, open in Chrome
-with `--use-angle=d3d11`
+a pasted log says what it measured. To compare the packing on Direct3D (the other four switches
+above were removed 2026-11-10), open in Chrome with `--use-angle=d3d11`
 
     compile.html?renderer=hd2d
-    compile.html?renderer=hd2d&r3d={"noiseTex":0,"terrainLean":0,"lite":0,"packScene":0,"fastStart":0}
+    compile.html?renderer=hd2d&r3d={"packScene":0}
 
-and each with `&parallel=1` (`fastStart` changes no program; `r3d={"packScene":0}` alone takes out
-the packing only), first in a fresh profile (`--user-data-dir` a new folder: the program cache
+and each with `&parallel=1`, first in a fresh profile (`--user-data-dir` a new folder: the program cache
 empty), then again after a reload in the same profile. The reload also settles whether Chrome keeps
 what a draw compiled: ANGLE's `Context11::triggerDrawCallProgramRecompilation` (ANGLE main)
 refreshes the program's cache entry after a draw-time compile, while the measurement above found a
@@ -966,19 +962,17 @@ ordinary real-time render of the same geometry, for comparison; it keeps the wat
 transparency and caustics, which are ordinary rendering, not stylisation), `LIGHTING` (one `daylight` look:
 always daylight by design, a warm high sun at about 48 degrees, shadows ~0.9x an object's height; a saved light that is no longer
 offered -- a "dusk", "afternoon" or "day" -- falls back to it), and the switches of the panel
-(`PANEL`): shadows, ssao, glow, kuwahara (+ radius), outline (+ width, inkLost: lost-and-found
-line weight, inkColour: coloured ink), paint (pigment variation), dabs (now only the ground's colour drift and flowers: its marks are the baked materials'; the HD-2D mode compiles them out, docs/HD2D.md §8),
-brush (brush marks and gouache values on objects, §5.1), bands (stepped light), stylize (coloured
+(`PANEL`): shadows, ssao, glow, paint (pigment variation), dabs (now only the ground's colour drift and flowers: its marks are the baked materials'; the HD-2D mode compiles them out, docs/HD2D.md §8),
+brush (brush marks and gouache values on objects, §5.1), stylize (coloured
 shadows), rim, clouds, reflections, refraction and caustics (the water, §5.2), haze, mist, grade,
 grain, vignette, borders, grid, fogWar, particles, animate, renderScale, fxaa (anti-aliasing),
-autoQuality (the measured-frame-time quality ladder: paint filter and the water's reflection march
-off -- it keeps mirroring the sky -- then render scale 0.75, then 0.5; the frame time is the GPU's,
+autoQuality (the measured-frame-time quality ladder: the water's reflection march off -- it keeps mirroring the sky -- then render scale 0.75, then 0.5; the frame time is the GPU's,
 from one timer query a frame where the browser has them, else the loop's call-back gap, since a
-frame's CPU time never sees a slow GPU; docs/HD2D.md §8, "An integrated GPU"). The paint filter (`kuwahara`) is off in
-the painterly preset since the first look-target batch (owner decision, §16), and the ink outlines
-(`outline`) and stepped light (`bands`) since the second, once crowns, rocks and the ground carried
-their own form; the brush marks on objects (`brush`) stay for buildings and rocks. Every switch stays
-in the panel.
+frame's CPU time never sees a slow GPU; docs/HD2D.md §8, "An integrated GPU"). The paint filter
+(`kuwahara`) was off in every preset since the first look-target batch (owner decision, §16), and
+the ink outlines (`outline`, with `inkLost` and `inkColour`) and stepped light (`bands`) since the
+second, once crowns, rocks and the ground carried their own form; all four were removed with their
+code 2026-11-10. The brush marks on objects (`brush`) stay for buildings and rocks.
 
 ## 13. Removing it
 
