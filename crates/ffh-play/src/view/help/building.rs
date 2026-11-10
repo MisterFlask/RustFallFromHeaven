@@ -7,7 +7,7 @@
 //! resources that speed it up on lines of their own (the Civilopedia's form; the tooltip appends
 //! them to the cost). The Civilopedia's own lines (`bCivilopediaText`) that need no player are
 //! added where C++ writes them: the traits that build it faster, the great person it makes likelier,
-//! the free start era, and the victory, start era and teams it requires. Not its "Replaced by"
+//! and the victory and teams it requires. Not its "Replaced by"
 //! list: each unique building says what it replaces, and the Palace's would name every
 //! civilization's.
 //!
@@ -107,8 +107,6 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         reveals_sites,
         building_class_type,
         victory_prereq,
-        free_start_era,
-        max_start_era,
         obsolete_tech,
         prereq_and_tech,
         no_bonus,
@@ -912,7 +910,7 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     }
 
     // The Civilopedia's: the traits that build it faster or make it happier, the great person it
-    // makes likelier (when the first line did not name it), the start era that gives it free.
+    // makes likelier (when the first line did not name it).
     for t in d.traits.keys() {
         let n = production_traits[t];
         if n == 100 {
@@ -929,9 +927,6 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     }
     if let Some(u) = great_person.filter(|_| *great_people_rate_change == 0) {
         add(&mut h, "TXT_KEY_BUILDING_LIKELY_TO_GENERATE", &[Arg::S(&display(d, u))]);
-    }
-    if let Some(e) = *free_start_era {
-        add(&mut h, "TXT_KEY_BUILDING_FREE_START_ERA", &[Arg::S(&display(d, e))]);
     }
 
     let help = names::text(d, &base.help);
@@ -1027,9 +1022,6 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     // The Civilopedia's.
     if let Some(v) = *victory_prereq {
         add(&mut h, "TXT_KEY_BUILDING_REQUIRES_VICTORY", &[Arg::S(&display(d, v))]);
-    }
-    if let Some(e) = *max_start_era {
-        add(&mut h, "TXT_KEY_BUILDING_MAX_START_ERA", &[Arg::S(&display(d, e))]);
     }
     if *num_teams_prereq > 0 {
         add(&mut h, "TXT_KEY_BUILDING_REQUIRES_NUM_TEAMS", &[Arg::N(*num_teams_prereq)]);
@@ -1220,7 +1212,6 @@ mod tests {
         let (iron, copper) = (d.t::<BonusType>("BONUS_IRON"), d.t::<BonusType>("BONUS_COPPER"));
         let industrious = d.t::<TraitType>("TRAIT_INDUSTRIOUS");
         let order = d.t::<ReligionType>("RELIGION_THE_ORDER");
-        let (ancient, classical) = (d.t::<EraType>("ERA_ANCIENT"), d.t::<EraType>("ERA_CLASSICAL"));
         let government = d.t::<CivicOptionType>("CIVICOPTION_GOVERNMENT");
         let sage = d.t::<UnitClassType>("UNITCLASS_SCIENTIST");
         let b = d.t::<BuildingType>("BUILDING_MONUMENT");
@@ -1232,8 +1223,6 @@ mod tests {
         info.no_bonus = Some(iron);
         info.free_bonus = Some(copper);
         info.num_free_bonuses = -1;
-        info.free_start_era = Some(classical);
-        info.max_start_era = Some(ancient);
         info.num_teams_prereq = 2;
         info.anarchy_modifier = -100;
         info.free_techs = 2;
@@ -1277,13 +1266,11 @@ mod tests {
             "+50% production speed for Industrious leaders",
             "+1[ICON_HAPPY] for Industrious leaders",
             "City more likely to generate Great Sage",
-            "Available for free on Classical and later starts",
             "Can only be Constructed in the Order Holy City.",
             "Requires a city without a religion",
             "Can build at a minimum latitude of 30 degrees",
             "Can build at a maximum latitude of 60 degrees",
             "Requires a coastal city (water of at least 20 tiles) or a river",
-            "Can only be Built on Ancient and Earlier Starts",
             "Requires at least 2 Teams",
             "Requires Writing and Mathematics",
             // C++ order: the trait, then the resources it built aside.

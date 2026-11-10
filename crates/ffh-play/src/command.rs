@@ -1283,7 +1283,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 }
             }
             if !selection::can_start_mission(g, units, *mission, *data1, *data2, plot, false) {
-                return Err(cannot(format!("{} is not possible", names::name(d, *mission))));
+                return Err(cannot(format!("{} is not possible", names::display(d, *mission))));
             }
             Plan::Apply(Action::Mission { units: units.clone(), mission: *mission, data1: *data1, data2: *data2, flags: *flags, append: *append })
         }
@@ -1340,7 +1340,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 });
             }
             if !selection::can_do_command(g, units, *command, *data1, *data2, false) {
-                return Err(cannot(format!("{} is not possible", names::name(d, *command))));
+                return Err(cannot(format!("{} is not possible", names::display(d, *command))));
             }
             if !confirmed {
                 if d.commands[*command].confirm_command {
@@ -1686,8 +1686,8 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                     let s = SpecialistType::from_usize(in_range("specialist", *data1, d.specialists.len())?);
                     let (plus, minus) = specialist_buttons(g, c, s);
                     match *data2 {
-                        1 if !plus => return Err(cannot(format!("no more {} possible", names::name(d, s)))),
-                        -1 if !minus => return Err(cannot(format!("no {} to remove", names::name(d, s)))),
+                        1 if !plus => return Err(cannot(format!("no more {} possible", names::display(d, s)))),
+                        -1 if !minus => return Err(cannot(format!("no {} to remove", names::display(d, s)))),
                         1 | -1 => {}
                         other => return Err(invalid(format!("field `data2`: the change is 1 or -1 (the +/- buttons), got {other}"))),
                     }
@@ -1730,7 +1730,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         Command::Research { tech, shift } => {
             if let Some(t) = tech {
                 if !g.player_can_ever_research(h, *t) {
-                    return Err(cannot(format!("{} cannot be researched", names::name(d, *t))));
+                    return Err(cannot(format!("{} cannot be researched", names::display(d, *t))));
                 }
             }
             Plan::Apply(Action::Research { tech: *tech, shift: *shift })
@@ -1754,7 +1754,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 }
                 seen.push(o);
                 if v[o] != Some(c) && !g.player_can_do_civics(h, Some(c)) {
-                    return Err(cannot(format!("{} is not available", names::name(d, c))));
+                    return Err(cannot(format!("{} is not available", names::display(d, c))));
                 }
                 v[o] = Some(c);
             }
@@ -1771,7 +1771,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 return Err(invalid(format!("field `change`: must be {step} or -{step} (COMMERCE_PERCENT_CHANGE_INCREMENTS), got {change}")));
             }
             if !g.player_is_commerce_flexible(h, *commerce) {
-                return Err(cannot(format!("{} is not adjustable", names::name(d, *commerce))));
+                return Err(cannot(format!("{} is not adjustable", names::display(d, *commerce))));
             }
             Plan::Apply(Action::PercentChange { commerce: *commerce, change: *change })
         }
@@ -1786,7 +1786,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         Command::DeclareWar { team: t } => {
             in_range("team", t.0 as i32, g.num_teams())?;
             if !g.team_can_declare_war(team, *t) {
-                return Err(cannot(format!("cannot declare war on team {}", t.0)));
+                return Err(cannot(format!("cannot declare war on {}", team_name(g, *t))));
             }
             Plan::Apply(Action::DeclareWar { team: *t })
         }
@@ -1826,7 +1826,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 return Err(invalid(format!("{} is not an option of this event", names::name(d, *event))));
             }
             if !g.player_can_do_event(h, *event, data) {
-                return Err(cannot(format!("{} is not available", names::name(d, *event))));
+                return Err(cannot(format!("{} is not available", names::display(d, *event))));
             }
             Plan::Apply(Action::Event { triggered: *triggered, event: *event })
         }
@@ -1836,7 +1836,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 return Err(if g.vote_triggered(*vote).is_some() { cannot("this vote is not waiting for you") } else { CmdErr::Gone });
             };
             if !pending.choices.contains(choice) {
-                return Err(cannot(format!("choice {} is not offered for this vote", choice.0)));
+                return Err(cannot("this choice is not offered for this vote"));
             }
             Plan::Apply(Action::Vote { vote: *vote, choice: *choice })
         }
@@ -1863,7 +1863,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 PlayerOptionType::PLAYEROPTION_WAIT_END_TURN,
             ];
             if !ALLOWED.contains(option) {
-                return Err(cannot(format!("{} cannot be changed here", names::name(d, *option))));
+                return Err(cannot(format!("{} cannot be changed here", names::display(d, *option))));
             }
             Plan::Apply(Action::SetOption { option: *option, value: *value })
         }
@@ -1931,10 +1931,10 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 return Err(invalid(format!("field `target`: {} is cast at a {}", names::name(d, *spell), crate::view::cards::target_kind_name(kind))));
             }
             if selection::is_busy(g, &[*unit]) || !g.unit_can_cast_untargeted(*unit, *spell, false) {
-                return Err(cannot(format!("{} cannot be cast by this unit now", names::name(d, *spell))));
+                return Err(cannot(format!("{} cannot be cast by this unit now", names::display(d, *spell))));
             }
             if !g.unit_spell_targets(*unit, *spell).contains(&t) {
-                return Err(cannot(format!("{} is not a valid target of {}", target.describe(), names::name(d, *spell))));
+                return Err(cannot(format!("that is not a valid target of {}", names::display(d, *spell))));
             }
             if !confirmed {
                 if info.global || info.once {
@@ -1959,7 +1959,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 return Err(invalid("field `to`: yourself"));
             }
             if !g.player_can_contact(h, *to) {
-                return Err(cannot(format!("no contact with player {}", to.0)));
+                return Err(cannot(format!("no contact with {}", crate::view::player_name(g, *to))));
             }
             let (lender, borrower) = if *lend { (h, *to) } else { (*to, h) };
             let mission = if *defend { LoanMission::Defend } else { LoanMission::Attack };
@@ -2017,7 +2017,7 @@ fn lendable_units(g: &Game, h: PlayerId, units: &[UnitId]) -> Result<(), CmdErr>
             return Err(invalid(format!("field `units`: unit {} twice", u.0)));
         }
         if !g.crusade_unit_lendable(u) {
-            return Err(cannot(format!("unit {} cannot be lent (only combat land units, not summoned, not aboard a ship or carrying units)", u.0)));
+            return Err(cannot(format!("the {} cannot be lent (only combat land units, not summoned, not aboard a ship or carrying units)", names::display(g.d, g.units[u].unit_type))));
         }
     }
     Ok(())
@@ -2031,9 +2031,15 @@ fn lend_error(e: LendError) -> String {
         LendError::NotAllowed => "you cannot lend to this crusade (you are its target, its target's vassal or master, or a Host)".into(),
         LendError::CannotDeclareWar => "you could not declare war on its target (a peace treaty, or no contact)".into(),
         LendError::NotALoanLender => "a loan's general takes units only through an agreed loan".into(),
-        LendError::NotLendable(u) => format!("unit {} cannot be lent", u.0),
+        LendError::NotLendable(_) => "a unit cannot be lent".into(),
         LendError::NoUnits => "no unit".into(),
     }
+}
+
+/// A team for people: the names of its players ("A & B"), as the client's `teamName`.
+fn team_name(g: &Game, t: TeamId) -> String {
+    let names: Vec<String> = g.player_ids().filter(|&p| g.players[p].team == t).map(|p| crate::view::player_name(g, p)).collect();
+    if names.is_empty() { "that team".to_string() } else { names.join(" & ") }
 }
 
 /// Why a loan cannot be made, for people.

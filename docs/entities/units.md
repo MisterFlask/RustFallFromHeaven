@@ -520,7 +520,7 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 
 **Playing it well.** The clean-up unit: after an Archmage or catapults have wounded a stack, one Flurry with Blitz kills two or three of the survivors in a turn, and its 2 moves let it strike from a forest two plots away and stay safe. Keep it with the stack, promote Mobility and Combat, and do not waste it as a city garrison.
 
-**AI: Partial.** Production sees its strength: it passes Defense and Attack/CityAttack (`role_ok`), with an Attack power of 1650 (strength, the second move, the first strike), among the highest of its era, and it fights as an army unit (`military::army`, `campaign.rs`). Blitz is not used: `campaign::strike` takes each attacker once (`made_attack` filters it out), and letting Blitz units attack again in a strike measured flat (civs/hippus.rs, docs/AI_LOG.md "Hippus Blitz units"). Research never values Machinery for it (a national unit, outside `research::unit_available`); the unique-unit bonus does (`civs::unique_unit_tech_value`).
+**AI: Partial.** Production sees its strength: it passes Defense and Attack/CityAttack (`role_ok`), with an Attack power of 1650 (strength, the second move, the first strike), among the highest of its time, and it fights as an army unit (`military::army`, `campaign.rs`). Blitz is not used: `campaign::strike` takes each attacker once (`made_attack` filters it out), and letting Blitz units attack again in a strike measured flat (civs/hippus.rs, docs/AI_LOG.md "Hippus Blitz units"). Research never values Machinery for it (a national unit, outside `research::unit_available`); the unique-unit bonus does (`civs::unique_unit_tech_value`).
 
 ### Javelin Thrower (`UNIT_JAVELIN_THROWER`)
 *Archery, tier 2 · 90 hammers · 4/4, 1 move, 1 first strike, +25% city and hills defense · Archery, no building · Doviello and Illians (replaces the Archer)*
@@ -561,7 +561,7 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 ### Skirmisher (`UNIT_SKIRMISHER`)
 *Archery, tier 1 · 50 hammers · 4/4, 2 moves, 1 first strike, +25% city and hills defense · Exploration, no building · national unit (2 at the normal cost, then 500%) · this game's, not FFH2's · every civilization but the Mercurians*
 
-**What it does.** An archer for the opening, above its era's curve: it shoots from the middle and rear rows (2 shots a round from either) with ATK 40, ACC 100, EVA 10, CRIT 15 and speed 5 (7 with its first strike), on 90 HP; the Archer, a tier later and behind an Archery Range, has ATK 30, ACC 95 and 80 HP. It has the Archer's defensive strike (20% for +10%). Two per civilization at 50 hammers, then 250 each (the national price); it upgrades to nothing and never goes obsolete.
+**What it does.** An archer for the opening, above the opening's curve: it shoots from the middle and rear rows (2 shots a round from either) with ATK 40, ACC 100, EVA 10, CRIT 15 and speed 5 (7 with its first strike), on 90 HP; the Archer, a tier later and behind an Archery Range, has ATK 30, ACC 95 and 80 HP. It has the Archer's defensive strike (20% for +10%). Two per civilization at 50 hammers, then 250 each (the national price); it upgrades to nothing and never goes obsolete.
 
 **Playing it well.** It is the first unit that is not Frontline, so put Warriors in the front row and the Skirmishers behind them: melee reaches only the front of a lane, so early enemies (warriors, animals, barbarians) cannot touch it while that front stands. It is better on defence than on attack (a city halves an attacker's arrows), so keep one in the capital and one in the city the barbarians or a neighbour threaten; take one along when an early stack must fight in the open. Promote it along City Garrison or Drill; a veteran Skirmisher stays useful long after Archers come.
 
@@ -592,9 +592,9 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 
 **What it does.** The Malakim horse archer is a Horse Archer that needs no horses: 6 strength, 3 moves, a first strike, immunity to first strikes, 35% withdrawal and a defensive strike (20% for +10%). No defensive bonuses; it upgrades to the Knight.
 
-**Playing it well.** As the Horse Archer: the fastest useful attacker of the classical era, for picking off units in the open, raiding, and wearing down defenders thanks to its withdrawal. In the desert, where horses are rare, it is the Malakim's mobile army; keep a few as a reaction force between cities.
+**Playing it well.** As the Horse Archer: the fastest useful attacker of the middle game, for picking off units in the open, raiding, and wearing down defenders thanks to its withdrawal. In the desert, where horses are rare, it is the Malakim's mobile army; keep a few as a reaction force between cities.
 
-**AI: Valued.** As the Horse Archer: Defense and Attack/CityAttack (`role_ok`), Attack power 1163 for 120 hammers (strength, two extra moves, the first strike, the withdrawal), the best per hammer of its era, so peacetime army steps and the war's CityAttack steps (660 there) pick it wherever a Stable stands (`production::enabler_building`). Without the horse requirement the Malakim can train it in every such city. Research values Stirrups by it (`research::military_value`) and as a unique unit (`civs::unique_unit_tech_value`). It fights as an army unit (`military::army`, `campaign.rs`).
+**AI: Valued.** As the Horse Archer: Defense and Attack/CityAttack (`role_ok`), Attack power 1163 for 120 hammers (strength, two extra moves, the first strike, the withdrawal), the best per hammer of its time, so peacetime army steps and the war's CityAttack steps (660 there) pick it wherever a Stable stands (`production::enabler_building`). Without the horse requirement the Malakim can train it in every such city. Research values Stirrups by it (`research::military_value`) and as a unique unit (`civs::unique_unit_tech_value`). It fights as an army unit (`military::army`, `campaign.rs`).
 
 ### Centaur (`UNIT_CENTAUR`)
 *Mounted, tier 2 · 60 hammers · 4/4, 3 moves, 25% withdrawal, +40% against archery units · Horseback Riding, no building or resource · Kuriotates (replaces the Horseman)*
@@ -628,7 +628,7 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 
 **What it does.** The Kuriotate knight: the Knight's 11/7, 3 moves and 35% withdrawal, without Stable or horses, with Sprint and the Centaur race (which keeps defensive bonuses).
 
-**Playing it well.** As the Knight: the best general-purpose unit of the late medieval era. Four of them with Sprint reach and hit any target within four plots, and they defend themselves better than knights since they keep terrain bonuses.
+**Playing it well.** As the Knight: the best general-purpose unit of the late game. Four of them with Sprint reach and hit any target within four plots, and they defend themselves better than knights since they keep terrain bonuses.
 
 **AI: Partial.** Its strength is valued: Attack power 1938 for 240 hammers (`best_unit`), among the best of the Kuriotates, trained in any city since nothing gates it, and research gets to Warhorses for it as a unique unit (`civs::unique_unit_tech_value`), not as a military unit (national units are outside `research::unit_available`). It fights as an army unit. Sprint is `bAllowAI` 0.
 
@@ -671,11 +671,11 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 ### Horse Archer (`UNIT_HORSE_ARCHER`)
 *Mounted, tier 3 · 120 hammers · 6/6, 3 moves, 1 first strike, immune to first strikes, 35% withdrawal · Stirrups, Archery, a Stable and Horse or Nightmare · 14 civilizations (the Malakim, Kuriotates, Ljosalfar, Svartalfar have their own; not the Luchuirp, Khazad, Clan of Embers)*
 
-**What it does.** The classical-era mobile attacker: 6 strength, 3 moves, a first strike, immunity to first strikes, 35% withdrawal and a defensive strike (20% for +10%). No defensive bonuses. Horsemen and Archers upgrade into it, and it upgrades to the Knight.
+**What it does.** The middle game's mobile attacker: 6 strength, 3 moves, a first strike, immunity to first strikes, 35% withdrawal and a defensive strike (20% for +10%). No defensive bonuses. Horsemen and Archers upgrade into it, and it upgrades to the Knight.
 
 **Playing it well.** The flexible core of a classical army: picks off units in the open, raids improvements, catches invaders anywhere in your land in a turn, and wears down a city's defenders with its withdrawal and first strike. Pair it with Axemen or Champions to hold the plot it ends on, since it defends without terrain bonuses.
 
-**AI: Valued.** The best Attack-role pick per hammer of its era: power 1163 for 120 hammers (`best_unit` counts its two extra moves, the first strike and the withdrawal), and even in war's CityAttack role (660) it edges out the Champion (600 for the same price) by its first strike. The Stable comes through `production::enabler_building`. It fights as an army unit (`military::army`, `campaign.rs`); `campaign::strike` prefers a withdrawing unit as the one to risk when no attacker has good odds. Where a city has a Stable but no Archery Range, the Defense role can make it a garrison (660), and `production::type_city_defense` does not know it gets no defensive bonuses there.
+**AI: Valued.** The best Attack-role pick per hammer of its time: power 1163 for 120 hammers (`best_unit` counts its two extra moves, the first strike and the withdrawal), and even in war's CityAttack role (660) it edges out the Champion (600 for the same price) by its first strike. The Stable comes through `production::enabler_building`. It fights as an army unit (`military::army`, `campaign.rs`); `campaign::strike` prefers a withdrawing unit as the one to risk when no attacker has good odds. Where a city has a Stable but no Archery Range, the Defense role can make it a garrison (660), and `production::type_city_defense` does not know it gets no defensive bonuses there.
 
 ### Horseman (`UNIT_HORSEMAN`)
 *Mounted, tier 2 · 60 hammers · 4/4, 3 moves, 1 first strike, 25% withdrawal, +40% against archery units · Horseback Riding, a Stable and Horse or Nightmare · every civilization but the Luchuirp, Khazad (Boar Rider), Kuriotates (Centaur) and Clan of Embers (Wolf Rider)*
@@ -736,7 +736,7 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 
 **What it does.** A tamed war beast: 7 strength, 2 moves, 25% withdrawal, +50% against mounted units, no defensive bonuses. It cannot be built: an Elephant (a wild animal) captured by a recon unit's Subdue Animal or a Satyr's Mesmerize Animal upgrades into it.
 
-**Playing it well.** When your hunters capture an Elephant, upgrade it: 7 strength in the early classical era beats anything but fortified Archers, and +50% against mounted units makes it the counter to Horsemen and Horse Archers. Use it as the hammer of an early stack.
+**Playing it well.** When your hunters capture an Elephant, upgrade it: 7 strength early in the middle game beats anything but fortified Archers, and +50% against mounted units makes it the counter to Horsemen and Horse Archers. Use it as the hammer of an early stack.
 
 **AI: Incidental.** The AI cannot train it (minimum level 1; `city_can_train`). It appears only when an AI recon unit with Subdue Animal (taken eagerly: its AI weight 300, `units::promotion_value`) captures an Elephant and `units::upkeep` upgrades the Elephant when gold allows. The captured animal keeps its `UNITAI_ANIMAL` type (captures are created with the default AI, upgrades keep the AI type), so the War Elephant moves as an animal (`units::barbarian`: attacks what it beats at 50%, else hunts or wanders), never in the army.
 
@@ -783,7 +783,7 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 
 **What it does.** The top of the recon line: 14 strength, 2 moves, +50% against animals, better results from tribal villages, sees hidden animals, and room for a Hawk. With the recon promotions Subdue Animal (after Combat I, Animal Husbandry) and Subdue Beasts (after Combat III, Animal Mastery) it captures the animals and beasts it defeats. Rangers and Harlequins upgrade into it.
 
-**Playing it well.** A field monster for its era: clear the strongest animals and barbarian beasts, take Subdue Animal and Subdue Beasts, and turn the captures (bears, tigers, griffons, elephants) into an army. It fights well in the open but poorly against cities, so let it guard and hunt while melee units take cities. The Grove costs 300 hammers for nothing else; build one, in a productive city.
+**Playing it well.** A field monster for its time: clear the strongest animals and barbarian beasts, take Subdue Animal and Subdue Beasts, and turn the captures (bears, tigers, griffons, elephants) into an army. It fights well in the open but poorly against cities, so let it guard and hunt while melee units take cities. The Grove costs 300 hammers for nothing else; build one, in a productive city.
 
 **AI: Partial.** Its strength is valued: Attack steps only (`role_ok`, default AI `UNITAI_EXPLORE`), with a power of 1750 (only the knight class and a few other unique units score more), and the Grove, which has no other effect the generic value reads, comes only through `production::enabler_building` (a 300-hammer build: only a city that finishes it within 20 turns). It is an army unit hunting near our lands (`military::hunt`). Subdue Animal and Subdue Beasts are taken at once (their AI weight 300 in `units::promotion_value`), but what it captures keeps the animal AI (captures are created with the default AI), so the animals roam and attack as animals (`units::barbarian`) instead of joining the army. The AI never trains Hawks (no production role), so the cargo slot stays empty.
 
@@ -1731,7 +1731,7 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 
 **What it does.** The Hippus warlord: 11 strength, 4 moves, a 50% withdrawal chance, Commando (uses enemy roads, a chance of a first strike), Courage, no defensive bonuses, bronze to mithril weapons. Hire Units (in our cities: an event to hire units, `bAllowAI` 0).
 
-**Playing it well.** The best raider of his era: strike deep, withdraw from bad odds, and finish wounded stacks. Hire mercenaries at the front when the war needs numbers fast.
+**Playing it well.** The best raider of his time: strike deep, withdraw from bad odds, and finish wounded stacks. Hire mercenaries at the front when the war needs numbers fast.
 
 **AI: Valued.** The hero step trains him, scored with his moves and withdrawal, and research gets 1500 for Warhorses (`civs::unique_unit_tech_value`); he fights as an army unit. Hire Units is refused to AIs; Commando's road use is incidental.
 
@@ -1749,7 +1749,7 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 
 **What it does.** The Khazad's stone wall: 12 defense with +50% in cities, 6 attack, the dwarves' hill movement, bronze to mithril weapons.
 
-**Playing it well.** Fortify him in the capital or the most threatened border city; promoted with city defense he holds almost anything of his era.
+**Playing it well.** Fortify him in the capital or the most threatened border city; promoted with city defense he holds almost anything of his time.
 
 **AI: Partial.** The hero step trains him, but it scores heroes by attack strength (6), and trained as `UNITAI_HERO` he is a field army unit (`military::army`), not a garrison: the AI uses its best city defender as a slow attacker. He defends a city only when he happens to stand in an undefended city of ours (he then becomes its garrison) or the stack defends a city in peril.
 
@@ -1857,7 +1857,7 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 
 **What it does.** The Doviello's siege beast: 19 strength, 3 moves, withdrawal, +50% against mounted units, no defensive bonuses. It has the Hero promotion but an attacker's default AI.
 
-**Playing it well.** A mid-game battering ram that outclasses everything of its era: build a Siege Workshop for it as soon as Machinery comes and lead every Doviello offensive with it.
+**Playing it well.** A mid-game battering ram that outclasses everything of its time: build a Siege Workshop for it as soon as Machinery comes and lead every Doviello offensive with it.
 
 **AI: Valued.** The Hero promotion makes it a hero for production (`production::is_hero`; as an ordinary attacker it never won on cost), so the hero step trains it, but only in a city that already has a Siege Workshop: `production::enabler_building` does not build buildings for heroes, so the workshop comes from `campaign::siege_building` (for siege engines, in the most productive city, when an operation wants them). Research gets 1500 for the tech that completes it (Machinery with the workshop's techs, `civs::unique_unit_tech_value`). It fights as an army unit (`UNITAI_HERO`).
 
@@ -2457,7 +2457,7 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 ### Hill Giant (`UNIT_HILL_GIANT`)
 *Beast (animal) · not trainable · 7/7, 1 move, bombards city defenses 15% a turn, Sentry · native to desert · from the Pig Giant event and the Pact of the Nilhorn*
 
-**What it does.** A beast that counts as an animal (it spawns with the animals in deserts and, as a barbarian, cannot enter owned land), strong for its era and able to bombard city walls. It is captured only with Subdue Beasts (Combat III, Animal Mastery), not Subdue Animal. The Pig Giant event either gives one to the player (option 1, for a pig resource) or sends a barbarian giant with Commando to raid the city (option 3); the Pact of the Nilhorn project (Cartography, 500 hammers) gives its builder three, Larry, Curly and Moe, with hidden nationality.
+**What it does.** A beast that counts as an animal (it spawns with the animals in deserts and, as a barbarian, cannot enter owned land), strong for its time and able to bombard city walls. It is captured only with Subdue Beasts (Combat III, Animal Mastery), not Subdue Animal. The Pig Giant event either gives one to the player (option 1, for a pig resource) or sends a barbarian giant with Commando to raid the city (option 3); the Pact of the Nilhorn project (Cartography, 500 hammers) gives its builder three, Larry, Curly and Moe, with hidden nationality.
 
 **Playing it well.** Three hidden-nationality giants are raiders that can hit anyone without a war declaration; a captured or gifted giant is a solid early attacker that also bombards.
 
@@ -2729,7 +2729,7 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 ### Leviathan (`UNIT_LEVIATHAN`)
 *Sea beast, tier 4 · not trainable, world unit · 22/22, 4 moves · great beast (barbarian)*
 
-**What it does.** The great beast of the sea: in a fifth of games, once a player knows Optics, it appears for the barbarians on an empty water plot of a large sea (`random_events_a.rs::do_great_beast_leviathan`). It outfights any ship of its era.
+**What it does.** The great beast of the sea: in a fifth of games, once a player knows Optics, it appears for the barbarians on an empty water plot of a large sea (`random_events_a.rs::do_great_beast_leviathan`). It outfights any ship of its time.
 
 **Playing it well.** Keep transports away from it; it is only dangerous where it is, so route around it.
 

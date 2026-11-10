@@ -156,7 +156,7 @@ that needs code.
 | Axeman | Line | the baseline; Formation (below) turns it into a Guard | P1 needs a Guard reachable without XP |
 | Warrior, Scout | leftovers | none (obsolete once Archery and Bronze Working are in) | |
 | Archer | Missile | L1 +50% against melee; L12 a round-1 volley (+50%, engine) | today it only trades with the enemy's archers |
-| Skirmisher | Missile (national, 2 a player) | none (above its era's curve by design) | |
+| Skirmisher | Missile (national, 2 a player) | none (above the opening's curve by design) | |
 | Horseman | Raider | L1 +50% against archers, adepts, disciples and siege (today +40% against archers); nothing more | stays the answer to back lines; the Guard answers it |
 | Hunter | Anti-cavalry skirmisher | L1 +75% against mounted, beasts and animals; L3 two shots from the middle | the early answer to P1 without a promotion; distinct from the Axeman |
 | Chariot | Shock cavalry | L4 trample (engine); L2 +100% against archers (armour); L3 three charges from the front | P5: a Horseman at twice the cost today; this makes it the front-breaker the Horseman is not |

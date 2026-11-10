@@ -1,7 +1,7 @@
 // Modal dialogs (design §5.1 "Popups and decisions"): a stack in which only the top dialog
 // takes input, confirmations as promises, and the blocking decision modal.
 
-import { h, $ } from "./dom.js";
+import { h, $, errorText } from "./dom.js";
 import { openHelp, helpTitle } from "./help.js";
 import { render as markup } from "./markup.js";
 import { emit } from "./state.js";
@@ -26,12 +26,17 @@ export function openTags() {
   return stack.map((m) => m.tag);
 }
 
-/** Opens a dialog. `body`: nodes; `buttons`: `[{label, primary?, disabled?, title?, value?,
- *  onClick?}]` (a button without `onClick` closes the dialog with its `value`); `dismissible`:
+/** Opens a dialog. `body`: nodes; `buttons`: `[{label, primary?, danger?, disabled?, title?,
+ *  value?, onClick?}]` (a button without `onClick` closes the dialog with its `value`; `danger`:
+ *  an irreversible action, see below); `dismissible`:
  *  Escape and the close button close it with `null`; `tag`: a name (one dialog per tag: a
  *  second opening replaces the first); `wide`: a large panel; `help`: the help topic explaining
  *  the dialog's rules (help.js), kept out of its body: an (i) in the title bar opens the help
- *  display there, over the dialog. Returns `{el, close(value), setBody(nodes), done}`; `done`
+ *  display there, over the dialog. The first enabled primary button has the focus, so Enter
+ *  presses it; but when a button is `danger` (declare war, delete, a once-a-game spell) the
+ *  focus goes to the button that cancels (a button without `onClick` whose value is null or
+ *  undefined; the last such one), else to the dialog itself, so Enter (also the unit-cycle key)
+ *  cannot confirm it. Returns `{el, close(value), setBody(nodes), done}`; `done`
  *  resolves with the value it closed with. */
 export function openModal({ title, body = [], buttons = [], dismissible = true, tag = null, wide = false, className = "", help = null }) {
   if (tag) closeTag(tag);
@@ -69,7 +74,7 @@ export function openModal({ title, body = [], buttons = [], dismissible = true, 
         ...list.map((b) =>
           h(
             `button${b.primary ? ".primary" : ""}`,
-            { disabled: b.disabled, title: b.title, "data-value": b.value === undefined ? undefined : String(b.value), onclick: () => (b.onClick ? m.run(b.onClick) : m.close(b.value)) },
+            { disabled: b.disabled, title: b.title, "data-value": b.value === undefined ? undefined : String(b.value), "data-danger": b.danger ? true : undefined, onclick: () => (b.onClick ? m.run(b.onClick) : m.close(b.value)) },
             b.label,
           ),
         ),
@@ -100,7 +105,16 @@ export function openModal({ title, body = [], buttons = [], dismissible = true, 
   $("#modals").appendChild(backdrop);
   updateLayer();
   emit("modal-opened", tag);
-  const first = box.querySelector("button.primary:not([disabled])") ?? box.querySelector("input, select, button:not(.close):not(.info)");
+  const danger = buttons.some((b) => b?.danger);
+  let first;
+  if (danger) {
+    const cancels = [...btnRow.children].filter((el, i) => !buttons[i].onClick && !buttons[i].danger && (buttons[i].value === null || buttons[i].value === undefined));
+    first = cancels[cancels.length - 1];
+    if (!first) {
+      box.tabIndex = -1;
+      first = box;
+    }
+  } else first = box.querySelector("button.primary:not([disabled])") ?? box.querySelector("input, select, button:not(.close):not(.info)");
   first?.focus({ preventScroll: true });
   return m;
 }
@@ -171,7 +185,7 @@ export function showDecision(d, answer) {
       await answer(option);
       m?.close(option);
     } catch (e) {
-      errorLine.textContent = e.detail ?? e.message;
+      errorLine.textContent = errorText(e);
     }
   };
   const errorLine = h("p.error");

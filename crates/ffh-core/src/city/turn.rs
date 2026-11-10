@@ -125,8 +125,7 @@ impl Game {
         self.city_set_game_turn_founded(c, game_turn);
         self.cities[c].game_turn_acquired = game_turn;
 
-        let start_era = self.start_era();
-        self.city_change_population(c, defines.initial_city_population + d.eras[start_era].free_population);
+        self.city_change_population(c, defines.initial_city_population);
 
         self.cities[c].air_unit_capacity += defines.city_air_unit_capacity;
 

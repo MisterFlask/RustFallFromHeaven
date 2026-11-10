@@ -81,7 +81,6 @@ fn tech_prereq_lists_fit_cpp_arrays() {
 fn tech_sorcery() {
     let t = &d().techs[tech("TECH_SORCERY")];
     assert_eq!(t.research_cost, 2000);
-    assert_eq!(t.era, Some(d().t::<EraType>("ERA_CLASSICAL")));
     assert_eq!(
         t.prereq_or_techs,
         vec![tech("TECH_ALTERATION"), tech("TECH_DIVINATION"), tech("TECH_ELEMENTALISM"), tech("TECH_NECROMANCY")]
@@ -113,7 +112,6 @@ fn tech_sailing_and_seafaring() {
     assert_eq!(s.domain_extra_moves[DomainType::DOMAIN_SEA], 1);
     assert_eq!(s.domain_extra_moves[DomainType::DOMAIN_LAND], 0);
     assert_eq!(s.research_cost, -1);
-    assert_eq!(s.era, Some(d().t::<EraType>("ERA_ANCIENT")));
 }
 
 #[test]

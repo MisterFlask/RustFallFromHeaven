@@ -1,7 +1,7 @@
 // The isometric map (docs/ISO.md): Fall from Heaven as a bright "HD pixel art" diorama, in the M7
 // art of tools/m7 (sprites drawn by an image model and brought to one contract by code).
 //
-// It is one of MapView's renderers (map.js), chosen in Tools → Options or with `?renderer=iso`.
+// It is one of MapView's renderers (map.js), chosen in Options or with `?renderer=iso`.
 // MapView keeps its camera, input, overlays and state, and delegates draw(), screenToMap(),
 // screenOf(), panDelta() and zooms() to this class; the data is the same `/api/map` + `/api/view`
 // the other renderers read.

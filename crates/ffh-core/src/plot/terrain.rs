@@ -1458,9 +1458,6 @@ impl Game {
         time *= d.game_speeds[self.game_speed_type()].build_percent;
         time /= 100;
 
-        time *= d.eras[self.start_era()].build_percent;
-        time /= 100;
-
         time
     }
 
@@ -1749,8 +1746,7 @@ mod tests {
         let farm = d.t::<BuildType>("BUILD_FARM");
         let forest = d.t::<FeatureType>("FEATURE_FOREST");
         let speed = &d.game_speeds[g.game_speed_type()];
-        let era = &d.eras[g.start_era()];
-        let scale = |t: i32, terrain_modifier: i32| ((t * (terrain_modifier + 100) / 100) * speed.build_percent / 100) * era.build_percent / 100;
+        let scale = |t: i32, terrain_modifier: i32| (t * (terrain_modifier + 100) / 100) * speed.build_percent / 100;
 
         assert_eq!(d.builds[farm].time, 500);
         assert_eq!(d.terrains[d.t::<TerrainType>("TERRAIN_GRASS")].build_modifier, 0);

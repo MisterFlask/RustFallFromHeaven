@@ -132,7 +132,6 @@ impl SoakGame {
                 "--turns" => g.turns = num::<i32>(flag, v)?,
                 "--speed" => g.ng.speed = lenient(d, "GAMESPEED_", v)?,
                 "--handicap" => g.ng.handicap = lenient(d, "HANDICAP_", v)?,
-                "--era" => g.ng.era = lenient(d, "ERA_", v)?,
                 "--spawn-turn" => g.spawn_turn = num::<i32>(flag, v)?,
                 a => return Err(format!("unknown soak setting {a}")),
             }
@@ -172,9 +171,6 @@ impl SoakGame {
         if self.ng.handicap != base.ng.handicap {
             push("--handicap", d.type_name(self.ng.handicap).to_string());
         }
-        if self.ng.era != base.ng.era {
-            push("--era", d.type_name(self.ng.era).to_string());
-        }
         if self.spawn.is_some() && self.spawn_turn != base.spawn_turn {
             push("--spawn-turn", self.spawn_turn.to_string());
         }
@@ -182,7 +178,7 @@ impl SoakGame {
     }
 
     /// One line for people (prefixes dropped): `s1 TINYx3 KURIOTATES [RAGING_BARBARIANS] 300`,
-    /// plus the speed, handicap, era and spawn turn where they are not the defaults
+    /// plus the speed, handicap and spawn turn where they are not the defaults
     /// (`s1 TINYx3 BANNOR QUICK DEITY 400`).
     pub fn describe(&self, d: &GameData) -> String {
         let short = |s: &str| s.split_once('_').map_or(s.to_string(), |(_, r)| r.to_string());
@@ -203,9 +199,6 @@ impl SoakGame {
         if self.ng.handicap != base.ng.handicap {
             out += &format!(" {}", short(d.type_name(self.ng.handicap)));
         }
-        if self.ng.era != base.ng.era {
-            out += &format!(" {}", short(d.type_name(self.ng.era)));
-        }
         if self.spawn.is_some() && self.spawn_turn != base.spawn_turn {
             out += &format!(" spawn@{}", self.spawn_turn);
         }
@@ -215,7 +208,7 @@ impl SoakGame {
     /// A file-name form of [`SoakGame::describe`], cut to 55 characters, then 8 hex digits of
     /// the FNV-1a hash of [`SoakGame::to_args`] (`s1-tinyx3-kuriotates-raging_barbarians-300-…`):
     /// different settings get different names, also where the description is cut or does not
-    /// show a setting (speed, handicap, era, spawn turn).
+    /// show a setting (speed, handicap, spawn turn).
     pub fn file_name(&self, d: &GameData) -> String {
         let mut s: String = self.describe(d).chars().map(|c| if c.is_ascii_alphanumeric() || c == '_' { c.to_ascii_lowercase() } else { '-' }).collect();
         while s.contains("--") {
@@ -687,7 +680,6 @@ pub fn spawn_civ(game: &SoakGame, civ: CivilizationType) -> Result<(Vec<u8>, Pla
     o.world_size = ng.world;
     o.game_speed = ng.speed;
     o.handicap = ng.handicap;
-    o.era = ng.era;
     o.climate = ng.climate;
     o.sea_level = ng.sea_level;
     o.options = ng.options.clone();

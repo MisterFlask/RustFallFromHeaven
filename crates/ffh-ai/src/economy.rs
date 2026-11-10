@@ -25,7 +25,7 @@ pub fn marginal_unit_cost_x100(g: &Game, p: PlayerId, military: bool) -> i32 {
     if raw <= 0 {
         return 0;
     }
-    // The handicap / AI / era percentages, as they apply now.
+    // The handicap and AI percentages, as they apply now.
     let base = b.base_unit_cost + b.military_cost + b.extra_cost;
     let scaled = if base > 0 { raw * 100 * b.cost / base } else { raw * 100 };
     scaled * (100 + g.player_calculate_inflation_rate(p).max(0)) / 100

@@ -63,7 +63,7 @@ impl ProtoErr {
     }
 
     fn no_game() -> ProtoErr {
-        ProtoErr::new("no_game", "no game is loaded: start one with {\"k\":\"session\",\"op\":\"new\"} or load a save")
+        ProtoErr::new("no_game", "no game is loaded: start a new game or load a save")
     }
 }
 

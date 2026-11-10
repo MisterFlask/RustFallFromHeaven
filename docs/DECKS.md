@@ -34,8 +34,9 @@ Proposed and not yet decided:
   `team_set_has_tech`. Its content gates on it through `prereq_tech`.
 - Every card *needs* an ordinary tech for its content (the "needs" line). Knowing the card at
   birth then pulls research toward that tech.
-- A card is drawn from its suit, filtered by era band (the player's era: I Ancient, II
-  Classical, III Medieval), alignment and state religion where the card says so.
+- A card is drawn from its suit, filtered by alignment and state religion where the card says
+  so, from the lowest band (I, II, III) that still holds such cards. (As designed it was the
+  player's era band; eras went on 2026-11-10: docs/CARDS.md.)
 
 ---
 

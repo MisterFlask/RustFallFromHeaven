@@ -96,12 +96,9 @@ pub fn suit_name(d: &GameData, suit: UnitClassType) -> String {
     name.strip_prefix("Great ").unwrap_or(&name).to_string()
 }
 
-/// A card's band for people: "II (Classical)" (Medieval and later are III).
-pub fn band_name(d: &GameData, era: Option<EraType>) -> String {
-    match era {
-        Some(e) => format!("{} ({})", ["I", "II", "III"][e.idx().min(2)], names::display(d, e)),
-        None => "I".to_string(),
-    }
+/// A card's band for people: "I", "II" or "III".
+pub fn band_name(band: i32) -> &'static str {
+    ["I", "II", "III"][(band.clamp(1, 3) - 1) as usize]
 }
 
 /// The lines that say what card `t` is: its suit and band, its needs (with `known`, whether the
@@ -117,7 +114,7 @@ fn card_lines(d: &GameData, t: TechType, b: &mut String, known: Option<&dyn Fn(T
         }
     };
     b.push_str(NEWLINE);
-    b.push_str(&format!("[ICON_BULLET]Card: {}, band {}", suit_name(d, card.suit), band_name(d, info.era)));
+    b.push_str(&format!("[ICON_BULLET]Card: {}, band {}", suit_name(d, card.suit), band_name(card.band)));
     if !info.prereq_and_techs.is_empty() {
         b.push_str(NEWLINE);
         b.push_str(&format!("[ICON_BULLET]Needs: {}", info.prereq_and_techs.iter().map(|&x| tech(x)).collect::<Vec<_>>().join(", ")));
@@ -503,10 +500,6 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
                 b.push_str(NEWLINE);
                 b.push_str(&txt(d, "TXT_KEY_TECH_GREAT_PERSON_DISCOVER", &[Arg::S(&names::display(d, u))]));
             }
-        }
-        if let Some(era) = info.era.filter(|&e| pl.current_era < e) {
-            b.push_str(NEWLINE);
-            b.push_str(&txt(d, "TXT_KEY_TECH_ERA_ADVANCE", &[Arg::S(&names::display(d, era))]));
         }
     }
     // FfH: a tech of a state religion.

@@ -494,13 +494,11 @@ impl Cai {
     pub fn player_ai_get_total_floating_defenders_needed(&self, g: &Game, p: PlayerId, area: AreaId) -> i32 {
         //this doesn't include the minimal one or two garrison units in each city.
         let team = g.players[p].team;
-        let mut current_era = g.players[p].current_era.i();
+        let stage = tech_stage(g, p);
         let area_cities = g.map.areas[area].cities_per_player[p];
         let area_ai = g.map.areas[area].area_ai_type[team];
 
-        current_era = 0.max(current_era - g.start_era().i() / 2);
-
-        let mut defenders = 1 + ((current_era + if g.max_city_elimination() > 0 { 3 } else { 2 }) * area_cities);
+        let mut defenders = 1 + ((stage + if g.max_city_elimination() > 0 { 3 } else { 2 }) * area_cities);
         defenders /= 3;
         defenders += g.map.areas[area].population_per_player[p] / 7;
 
@@ -880,7 +878,7 @@ impl Cai {
             }
         }
 
-        let target_population = g.city_happy_level(c) + (g.players[p].current_era.i() / 2);
+        let target_population = g.city_happy_level(c) + (tech_stage(g, p) / 2);
 
         while plots_improved < target_population {
             let mut best_plot = None;
@@ -1221,7 +1219,7 @@ impl Cai {
         let mut tech_rand = 90 + self.rand(20, "AI AS Buy Tech 1");
         let mut total_tech_spending = 0;
 
-        if g.players[p].current_era.i() == 0 {
+        if tech_stage(g, p) == 0 {
             let tech = self.player_ai_best_tech(g, p, 1, false, false, None, None);
             if let Some(tech) = tech.filter(|&t| !d.techs[t].repeat) {
                 let tech_cost = g.player_get_advanced_start_tech_cost(p, Some(tech), true);
@@ -1322,7 +1320,7 @@ impl Cai {
         {
             //Land
             self.player_ai_advanced_start_place_explore_units(g, p, true);
-            if g.players[p].current_era.i() > 2 {
+            if tech_stage(g, p) > 2 {
                 //Sea
                 self.player_ai_advanced_start_place_explore_units(g, p, false);
                 if g.circumnavigation_available() {
@@ -1669,20 +1667,19 @@ impl Cai {
             *w = 0.max(*w);
         }
 
-        let current_era = g.players[p].current_era.i();
         for unit in d.units.keys() {
             if unit_counts[unit] > 0 {
                 let info = &d.units[unit];
                 let tech = info.prereq_and_tech;
 
-                let mut era_diff = match tech {
+                let mut age_diff = match tech {
                     None => 4,
-                    Some(t) => 4.min(current_era - opt_to_i32(d.techs[t].era)),
+                    Some(_) => 0,
                 };
 
-                if era_diff > 1 {
-                    era_diff -= 1;
-                    unit_counts[unit] *= 3 - era_diff;
+                if age_diff > 1 {
+                    age_diff -= 1;
+                    unit_counts[unit] *= 3 - age_diff;
                     unit_counts[unit] /= 3;
                 }
                 let domain_sum = info.domain_type.map_or(0, |dm| domain_sums[dm.idx()]);

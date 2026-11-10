@@ -61,7 +61,6 @@ pub fn techs(v: &Viewer) -> Json {
             "progress" => g.teams[v.team].research_progress[t],
             "cost" => g.team_get_research_cost(v.team, t),
             "turns" => if can && !has { Json::from(g.player_get_research_turns_left(h, t, true)) } else { Json::Null },
-            "era" => Json::opt_idx(info.era),
             "and" => Json::Arr(info.prereq_and_techs.iter().map(|&p| Json::idx(p)).collect()),
             "or" => Json::Arr(info.prereq_or_techs.iter().map(|&p| Json::idx(p)).collect()),
             "depth" => depths[t.idx()],

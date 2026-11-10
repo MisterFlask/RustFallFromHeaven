@@ -3,14 +3,14 @@
 // the event and vote popups, the keys, and a raw request box for testers.
 
 import * as api from "./api.js";
-import { S, emit, dname, tname, turns, voteChoiceLabel, teamName, me, saveNameOfPath, scoreText } from "./state.js";
-import { h, fill, toast, tapModes, coarse } from "./dom.js";
+import { S, emit, dname, tname, turns, voteChoiceLabel, teamName, me, saveNameOfPath, scoreText, observing } from "./state.js";
+import { h, fill, toast, tapModes, coarse, errorText } from "./dom.js";
 import { tip } from "./tips.js";
 import { openModal, ask } from "./modals.js";
 import { addHelp, openHelp } from "./help.js";
 import { run } from "./commands.js";
 import { render as markup, plain } from "./markup.js";
-import { illuminate, bannerEl } from "./look.js";
+import { illuminate, bannerEl, iconEl } from "./look.js";
 import { leaderPortrait, teamPortrait, PORTRAIT } from "./portraits.js";
 import { techTip, unlockRow, researchModsRow } from "./empire.js";
 
@@ -30,7 +30,7 @@ export async function openResearch({ popup = false } = {}) {
     try {
       t = await api.query("techs");
     } catch (e) {
-      return m.setBody(h("p.warn", e.detail ?? e.message));
+      return m.setBody(h("p.warn", errorText(e)));
     }
     if (m.closed) return;
     const can = t.techs.filter((x) => x.can_research && !x.has && !x.disabled);
@@ -64,8 +64,8 @@ export async function openResearch({ popup = false } = {}) {
             },
           },
           h("span", dname("TechType", x.tech)),
-          h("span.dim", `${turns(x.turns)} · ${x.cost}${x.progress ? ` (${x.progress})` : ""}`),
-          researchModsRow(x),
+          h("span.dim", `${turns(x.turns)} · `, researchCost(x.cost), x.progress ? ` (${x.progress})` : null),
+          modRules(researchModsRow(x), x),
           unlockRow(x),
         );
       }),
@@ -77,6 +77,39 @@ export async function openResearch({ popup = false } = {}) {
   return result ?? v;
 }
 
+/** A tech's cost in research: the research icon (a flask before the art) and the number. */
+export function researchCost(cost) {
+  const title = "Research cost";
+  return h(
+    "span.research-cost",
+    { title, "aria-label": `${title} ${cost}` },
+    iconEl("icon8/research", { title }) ?? h("span.icon", { "aria-hidden": "true" }, "⚗"),
+    String(cost),
+  );
+}
+
+/** The rule behind each chip of a tech's research multipliers (empire.js `researchModsRow`), as
+ *  the chip's tooltip. They multiply the research put into the tech each turn, not its cost. */
+const MOD_RULES = {
+  others: (n) => `Research on a tech rises with the share of the civilizations you have met that know it: +${n}% here.`,
+  prereqs: (n) => `Research on a tech rises for each of its alternative prerequisites you know: +${n}% here.`,
+  feature: () => "A unique feature inside your borders multiplies research on the techs it favours.",
+  path: () => "Your doctrine multiplies research on its techs.",
+};
+
+/** `row` (a `researchModsRow`, or null) with each chip's rule and the total's meaning as tooltips. */
+function modRules(row, x) {
+  if (!row) return row;
+  const m = x.research_mods ?? {};
+  for (const [key, rule] of Object.entries(MOD_RULES)) {
+    const chip = row.querySelector(`.mod-chip.mod-${key}`);
+    if (chip) tip(chip, rule(m[key]));
+  }
+  const total = row.querySelector(".mod-total");
+  if (total) tip(total, `Research per turn on this tech: your research rate ${total.textContent.replace(/^=\s*/, "")}. Its cost does not change.`);
+  return row;
+}
+
 /** The research screen's line for the research path (docs/PORTING.md, "Research paths"): the
  *  path committed to for the rest of the game with its progress, or none, and a button that
  *  opens the path chooser; `reload` refreshes the research screen after a commitment. */
@@ -86,7 +119,7 @@ function researchPathLine(t, reload) {
     "div.research-path",
     p
       ? h("span", "Doctrine: ", h("b", dname("ResearchPathType", p.path)), ` (+${t.path_percent}% research on its techs) · ${pathProgress(p)} `)
-      : h("span.warn", "No doctrine. "),
+      : h(t.paths.some((x) => x.can_commit) ? "span.warn" : "span.dim", { title: `A doctrine makes its techs research ${t.path_percent}% faster for the rest of the game.` }, "No doctrine. "),
     h("button.link", { "data-paths": "", onclick: async () => ((await openResearchPaths()) === "chosen" ? reload() : null) }, p ? "Doctrines" : "Adopt a doctrine"),
   );
 }
@@ -117,7 +150,7 @@ export async function openResearchPaths() {
   try {
     t = await api.query("techs");
   } catch (e) {
-    m.setBody(h("p.warn", e.detail ?? e.message));
+    m.setBody(h("p.warn", errorText(e)));
     return m.done;
   }
   const name = (p) => dname("ResearchPathType", p.path);
@@ -146,7 +179,7 @@ export async function openResearchPaths() {
   }
   const commit = async (p) => {
     const answer = await ask(`Adopt the ${name(p)} doctrine?`, [`Its techs are researched ${t.path_percent}% faster for the rest of the game.`, "No other doctrine can be adopted afterwards."], [
-      { label: "Adopt", value: "commit", primary: true },
+      { label: "Adopt", value: "commit", primary: true, danger: true },
       { label: "Cancel", value: null },
     ]);
     if (answer !== "commit") return;
@@ -299,7 +332,7 @@ function civSummary(pedia) {
 
 /** The new-game screen (design §5.1): the civilization (a list with its banners; the chosen one's
  *  summary and what it brings) and its leader (cards with their portraits; the chosen one's
- *  portrait and traits), or random; then the world: opponents, size, speed, difficulty, era,
+ *  portrait and traits), or random; then the world: opponents, size, speed, difficulty,
  *  climate, sea level, seed and the game's name; the game options and victories. And the debug
  *  start at war (`session war_start`: these settings, an AI-only game played until a battle, the
  *  attacked civilization yours just before it). */
@@ -369,9 +402,14 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
       h(
         "div.civ-head",
         face,
-        h("div.civ-head-text", h("div.civ-title", bannerEl(type || "CIVILIZATION_RANDOM", { u: 3 }), h("h3", c ? c.name : "Random")), who),
+        h(
+          "div.civ-head-text",
+          h("div.civ-title", bannerEl(type || "CIVILIZATION_RANDOM", { u: 3 }), h("h3", c ? c.name : "Random")),
+          // The leaders beside the portrait, so the description below keeps its height.
+          c ? h("div.leader-cards", leaderCard(null), c.leaders.map((l) => leaderCard(st.leaders[l]))) : null,
+          who,
+        ),
       ),
-      c ? h("div.leader-cards", leaderCard(null), c.leaders.map((l) => leaderCard(st.leaders[l]))) : null,
       about,
     );
     pickLeader("");
@@ -387,10 +425,9 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
   const world = select("world", st.worlds, d.world);
   const speed = select("speed", st.speeds, d.speed);
   const handicap = select("handicap", st.handicaps, d.handicap);
-  const era = select("era", st.eras, d.era);
   const climate = select("climate", st.climates, d.climate);
   const sea = select("sea_level", st.sea_levels, d.sea_level);
-  for (const [el, list] of [[world, st.worlds], [speed, st.speeds], [handicap, st.handicaps], [era, st.eras], [climate, st.climates], [sea, st.sea_levels]]) tip(el, helpTip(list, el));
+  for (const [el, list] of [[world, st.worlds], [speed, st.speeds], [handicap, st.handicaps], [climate, st.climates], [sea, st.sea_levels]]) tip(el, helpTip(list, el));
   const name = h("input", { type: "text", id: "ng-name", placeholder: "game-<seed>", pattern: "[A-Za-z0-9_.\\-]{1,64}", title: "The game's directory under the saves directory" });
   const options = h(
     "div.checks",
@@ -415,7 +452,6 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
       field("World size", world),
       field("Speed", speed),
       field("Difficulty", handicap),
-      field("Era", era),
       field("Climate", climate),
       field("Sea level", sea),
       field("Seed", h("div.inline", seed, dice)),
@@ -425,6 +461,19 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
       "div.ng-more",
       h("details", h("summary", "Game options"), options),
       h("details", h("summary", "Victory conditions"), victories),
+      h(
+        "details#ng-debug",
+        h("summary", "Debug"),
+        h(
+          "button#ng-war",
+          {
+            type: "button",
+            title: "An AI game of these settings is played until two civilizations at war fight a battle with 3 or more units a side; you take over the attacked one just before the attack (the civilization: yours if chosen, else whichever is attacked)",
+            onclick: () => modal?.run(warStart),
+          },
+          "Start at war (debug)",
+        ),
+      ),
       h(
         "label.check",
         { title: "An AI-only game watched with the whole map shown (the AI plays every civilization; the one chosen above is followed first): play, pause, step, follow a civilization, and flag bad play for a bug report from the top bar. It is the `ffh autoplay` game of these settings." },
@@ -449,7 +498,6 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
       world: world.value,
       speed: speed.value,
       handicap: handicap.value,
-      era: era.value,
       climate: climate.value,
       sea_level: sea.value,
       options: [...options.querySelectorAll("input:checked")].map((i) => i.value),
@@ -461,6 +509,7 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
     return setup;
   };
   const start = async (m) => {
+    if (!(await confirmLeave())) return;
     const setup = setupOf();
     err.textContent = "";
     try {
@@ -469,14 +518,17 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
       m.close("started");
       emit("game-started", { spectate: spectate.checked });
     } catch (e) {
-      err.textContent = e.detail ?? e.message;
+      err.textContent = errorText(e);
     }
   };
   // The war start plays an AI-only game for a few hundred turns: seconds, up to a minute on a big
   // map; its turn comes in the status (`war_search`) meanwhile. It is always played, never
   // spectated.
   const warStart = async (m) => {
+    if (!(await confirmLeave())) return;
     const setup = setupOf();
+    const warBtn = form.querySelector("#ng-war");
+    if (warBtn) warBtn.disabled = true;
     const what = "Playing an AI game until two civilizations at war fight with 3 or more units a side";
     err.textContent = "";
     note.textContent = `${what}…`;
@@ -489,13 +541,14 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
       m.close("started");
       emit("game-started", { war: reply.r.war });
     } catch (e) {
-      err.textContent = e.detail ?? e.message;
+      err.textContent = errorText(e);
     } finally {
       clearInterval(timer);
       note.textContent = "";
+      if (warBtn) warBtn.disabled = false;
     }
   };
-  return openModal({
+  const modal = openModal({
     title: "New game",
     body: [form],
     tag: noGame || !dismissible ? NEWGAME_REQUIRED : "newgame",
@@ -504,15 +557,10 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
     dismissible,
     buttons: [
       { label: "Load a game…", onClick: () => loadScreen() },
-      {
-        label: "Start at war (debug)",
-        value: "war",
-        title: "An AI game of these settings is played until two civilizations at war fight a battle with 3 or more units a side; you take over the attacked one just before the attack (the civilization: yours if chosen, else whichever is attacked)",
-        onClick: warStart,
-      },
       { label: "Start", primary: true, onClick: start },
     ],
   });
+  return modal;
 }
 
 /** A save's turn, when its name tells it: an autosave `auto/T0061`, `auto/start` (turn 0), or a
@@ -534,6 +582,21 @@ export function whenText(secs, now = Date.now()) {
   return new Date(secs * 1000).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
+/** Before a game replaces the one being played (Load, New game): asks "Leave the current
+ *  game?" (Cancel focused); true to go ahead. Not asked without a game, in an observed (AI-only)
+ *  game, or once the game is over, crashed or stuck. */
+export async function confirmLeave() {
+  const st = S.status;
+  if (!S.view || !st || observing(st) || ["no_game", "over", "crashed", "stuck"].includes(st.phase)) return true;
+  const auto = saveTurn(saveNameOfPath(st.game?.autosave) ?? "");
+  const text = auto !== null ? `Moves since the last autosave (turn ${auto}) are lost.` : "Moves since the last autosave are lost.";
+  const v = await ask("Leave the current game?", text, [
+    { label: "Leave", value: "leave", primary: true, danger: true },
+    { label: "Cancel", value: null },
+  ], { tag: "leave" });
+  return v === "leave";
+}
+
 /** The load screen: every game (the current one first, then the most recently saved) with its
  *  saves, newest first; the autosaves folded under the newest one. */
 export async function loadScreen() {
@@ -542,7 +605,7 @@ export async function loadScreen() {
   try {
     r = (await api.session("saves")).r;
   } catch (e) {
-    m.setBody(h("p.warn", e.detail ?? e.message));
+    m.setBody(h("p.warn", errorText(e)));
     return m.done;
   }
   const err = h("p.error");
@@ -555,11 +618,12 @@ export async function loadScreen() {
     buttons.forEach((b) => (b.disabled = true));
     err.textContent = "";
     try {
+      if (!(await confirmLeave())) return;
       await api.session("load", { name });
       m.close("loaded");
       emit("game-started");
     } catch (e) {
-      err.textContent = e.detail ?? e.message;
+      err.textContent = errorText(e);
     } finally {
       loading = false;
       if (!m.closed) buttons.forEach((b) => (b.disabled = false));
@@ -606,12 +670,29 @@ export function saveDialog() {
   const name = h("input", { type: "text", id: "save-name", value: `turn-${S.status?.turn ?? 0}`, pattern: "[A-Za-z0-9_.\\-]{1,64}" });
   const err = h("p.error");
   const save = async (m) => {
+    const wanted = name.value;
+    err.textContent = "";
     try {
-      const r = (await api.session("save", { name: name.value })).r;
-      toast(`Saved: ${r.save}`);
+      // A save of this game by that name is replaced: asked first (the load screen's listing).
+      let exists = false;
+      try {
+        const r = (await api.session("saves")).r;
+        exists = !!r.games.find((g) => g.game === r.current)?.saves.some((s) => !s.auto && s.name === wanted);
+      } catch (e) {
+        console.warn("saves:", e);
+      }
+      if (exists) {
+        const v = await ask("Replace the save?", `Replace the save ${wanted}?`, [
+          { label: "Replace", value: "replace", primary: true, danger: true },
+          { label: "Cancel", value: null },
+        ], { tag: "replace-save" });
+        if (v !== "replace") return;
+      }
+      await api.session("save", { name: wanted });
+      toast(`Saved: ${wanted}`);
       m.close("saved");
     } catch (e) {
-      err.textContent = e.detail ?? e.message;
+      err.textContent = errorText(e);
     }
   };
   const m = openModal({
@@ -688,7 +769,7 @@ export function crashScreen(st) {
           m.close("loaded");
           emit("game-started");
         } catch (e) {
-          toast(e.detail ?? e.message, "error");
+          toast(errorText(e), "error");
         }
       } } : null,
       { label: "Load…", onClick: () => loadScreen() },
@@ -715,7 +796,11 @@ export function stuckScreen(st) {
 // ---------------------------------------------------------------------------------------------
 // Help and testing tools.
 
-/** The keys: Civ4's (the action hotkeys come from the game's XML, as each button's tooltip shows). */
+/** The keys. Most are Civ4's (the action hotkeys come from the game's XML, as each button's
+ *  tooltip shows); ffh-play adds W A S D held to scroll (Civ4's W, A, S and D orders are on their
+ *  buttons), Q / E to zoom (Civ4's Q quarry and E explore are on their buttons), Tab / Shift+Tab to
+ *  cycle the units (Civ4's W; in Civ4 Tab is chat), F to flag a plot while watching the AI, F5,
+ *  F8, F9, Ctrl+1/2/3 and ?. The on-screen list says what each key does, not where it came from. */
 function keysTable() {
   const touch = [
     ["Touch", ""],
@@ -747,23 +832,20 @@ function keysTable() {
     ["Left click", "select units (again: the next group there), open your city, show a plot"],
     ["Right click", "move or attack with the selection; with Shift held, add waypoints (sent when Shift is released)"],
     ["Drag, wheel, arrows, + −", "pan and zoom the map; the minimap centres"],
-    ["W A S D (held)", "scroll the map smoothly (ffh-play's: Civ4's W, A, S and D orders are on their buttons)"],
-    ["Q / E", "zoom out / in (ffh-play's: Civ4's Q quarry and E explore are on their buttons)"],
-    ["Turn and selection (Civ4's controls)", ""],
+    ["W A S D (held)", "scroll the map"],
+    ["Q / E", "zoom out / in"],
+    ["Turn and selection", ""],
     ["Enter", "the next unit waiting for orders; when none waits (the End turn button glows), end the turn"],
     ["Shift+Enter", "end the turn whatever waits, without the checks"],
     ["Space", "with no unit selected, end the turn when none waits"],
+    ["Tab / Shift+Tab", "the next / previous unit waiting: a stack whose units cannot all move is skipped; when it wraps, the automated units move"],
     ["C", "centre on the selection"],
     ["Home / End", "the next / previous city (in the city screen: its next / previous city)"],
     ["F10", "the capital's city screen"],
     ["Esc", "cancel a plot pick, close a dialog, deselect"],
-    ["ffh-play's own", ""],
-    ["Tab / Shift+Tab", "the next / previous unit waiting (Civ4's W; in Civ4, Tab is chat): a stack whose units cannot all move is skipped; when it wraps, the automated units move"],
-    ["F (watching the AI)", "flag the plot under the mouse: record it for a bug report (the turn, the units, the replay commands)"],
-    ["Enter (an observed game)", "play the next turn"],
-    ["Orders (Civ4's hotkeys)", ""],
+    ["Orders", ""],
     ["Space", "skip the turn"],
-    ["F / H", "fortify (sleep for units that cannot) / heal; sentry is on its button (S scrolls)"],
+    ["F / H", "fortify (sleep for units that cannot) / heal; sentry is on its button"],
     ["B", "found a city (bombard for siege units)"],
     ["G then click, Alt+R", "go to a plot (Shift-click: add waypoints, sent when Shift is released) / build a route to it"],
     ["R, I, M, …", "the worker's builds: road, farm, mine, … (each button shows its key)"],
@@ -772,21 +854,46 @@ function keysTable() {
     ["Del / Backspace", "delete the units (asks first) / cancel the orders"],
     ["Screens", ""],
     ["F1 / F2 / F3 / F4", "cities / finances (the sliders) / civics / diplomacy and trade"],
-    ["F5", "armies: your armies, their supply and the units on their way (this game's)"],
-    ["F9", "governors: who runs your cities, their roles, priorities and empire orders (this game's)"],
-    ["F6 / F7 / F8", "the tech tree / religion / cultural pressure (ffh-play's)"],
+    ["F5", "armies: your armies, their supply and the units on their way"],
+    ["F6 / F7 / F8", "the tech tree / religion / cultural pressure"],
+    ["F9", "governors: who runs your cities, their roles, priorities and empire orders"],
     ["Ctrl+S / Ctrl+L", "save / load"],
-    ["Ctrl+1 / 2 / 3", "map layer: terrain / political / yields (ffh-play's)"],
-    ["?", "this list (ffh-play's)"],
+    ["Ctrl+1 / 2 / 3", "map layer: terrain / political / yields"],
+    ["?", "this help"],
+    ["Watching the AI", ""],
+    ["F", "flag the plot under the mouse: record it for a bug report (the turn, the units, the replay commands)"],
+    ["Enter (an observed game)", "play the next turn"],
   ];
   return h("table.kv", keys.map(([k, v]) => (v ? h("tr", h("th", k), h("td", v)) : h("tr", h("th.group", { colspan: 2 }, k)))));
 }
 
+/** The first help topic: the turn's loop in a few bare lines (the keys checked against main.js
+ *  `onKey` and the XML hotkeys: B found, Enter the next unit or the end of the turn). */
+function howToPlay() {
+  const touch = coarse();
+  const lines = [
+    touch ? "Tap a unit to select it." : "Click a unit to select it.",
+    touch ? "Tap a plot to see the way there; tap it again to move or attack." : "Right-click a plot to move or attack there.",
+    "The selected unit's orders are buttons on its panel; each button's tooltip shows its key.",
+    "A settler founds a city with its Build City order (B).",
+    "Choose research when asked; the research button in the top bar changes it.",
+    "Choose what each city builds when asked; click a city to open its screen.",
+    touch ? "End turn ends the turn. A unit waiting for orders is selected first." : "End turn (Enter) ends the turn. While a unit waits for orders, Enter selects it instead.",
+    "The advisors are on the rail at the left of the map (on a phone: in the ☰ menu): research, techs, cities, civics, religion, culture, armies, governors, diplomacy.",
+    "The top bar: the turn and the year; gold and its change a turn; research, its progress and the turns left; the doctrine; the commerce rates; the Armageddon counter; mana; the score, your share of the world.",
+    touch ? "Every number and button has a tooltip." : "Point at a number, a button or a plot for its tooltip.",
+    "A dialog's (i) button opens the help at its topic.",
+    touch ? "Controls lists every gesture and button." : "Keys lists every key.",
+  ];
+  return h("ul.how-to-play", lines.map((l) => h("li", l)));
+}
+
+addHelp({ id: "play", group: "Playing", title: "How to play", order: -1, body: () => howToPlay() });
 addHelp({ id: "keys", group: "Playing", title: coarse() ? "Controls" : "Keys", order: 0, body: () => keysTable() });
 
-/** The help display at the keys (the ? button and key). */
+/** The help display at its first topic, How to play (the ? button and key); Keys is next. */
 export function keysHelp() {
-  return openHelp("keys");
+  return openHelp("play");
 }
 
 /** A box for raw protocol requests (design §5.1 "Rules-testing tools"). */

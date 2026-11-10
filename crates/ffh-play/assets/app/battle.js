@@ -15,52 +15,26 @@
 import * as api from "./api.js";
 import { run } from "./commands.js";
 import { emit } from "./state.js";
-import { h, toast } from "./dom.js";
+import { h, toast, errorText } from "./dom.js";
 import { installFrames } from "./isoui.js";
 import { installIsoFont } from "./isofont.js";
-import { battleToast } from "./engagements.js";
-import { Stage } from "./battle_stage.js";
+import { battleToast, prefs } from "./engagements.js";
+import { Stage, btn } from "./battle_stage.js";
 import * as planScreen from "./battle_plan.js";
 import * as watchScreen from "./battle_watch.js";
 import * as reportScreen from "./battle_report.js";
 
-const B = { root: null, frame: null, ov: null, ui: null, stage: null, screen: null, raf: 0, last: 0, source: null, onClose: null };
+const B = { root: null, frame: null, ov: null, ui: null, stage: null, screen: null, raf: 0, last: 0, source: null, onClose: null, queue: null };
 
 /** Whether the battle overlay is open. */
 export function battleOpen() {
   return !!B.root;
 }
 
-// ---------------------------------------------------------------------------------------------
-// The viewer's preferences (whether an attack is watched, the replay's speed): per browser, a
-// convenience (losing them brings the defaults back).
+// The viewer's preferences (whether an attack is watched, how the battles fought against the
+// player open, the replay's speed): engagements.js keeps them (Options shows them too).
 
-const PREFS_KEY = "ffh-battle-prefs-v2";
-
-export const prefs = {
-  data: null,
-  load() {
-    if (this.data) return this.data;
-    this.data = {};
-    try {
-      this.data = JSON.parse(globalThis.localStorage?.getItem(PREFS_KEY) ?? "{}") ?? {};
-    } catch {
-      /* blocked or broken: the defaults */
-    }
-    return this.data;
-  },
-  get(k, def) {
-    return this.load()[k] ?? def;
-  },
-  set(k, v) {
-    this.load()[k] = v;
-    try {
-      globalThis.localStorage?.setItem(PREFS_KEY, JSON.stringify(this.data));
-    } catch {
-      /* blocked: kept for this page */
-    }
-  },
-};
+export { prefs };
 
 /** What the screens share: the stage and its layers, the preferences, the source, and the way
  *  between the screens. */
@@ -77,12 +51,34 @@ const ctx = {
   get source() {
     return B.source;
   },
+  get queue() {
+    return B.queue;
+  },
   prefs,
   reduced: () => globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
   toPlan: () => show(planScreen),
   toWatch: (log) => show(watchScreen, log),
   toReport: (log) => show(reportScreen, log),
   close: () => closeBattle(),
+  /** The battles queued at turn start, when more than one: "Battle 2 of 5" and "Skip the rest"
+   *  (this one closes, the rest count as shown and stay in the turn report), or null. */
+  queueRow() {
+    const q = B.queue;
+    if (!q) return null;
+    return h(
+      "div.bt-row.bt-queue",
+      h("span#bt-queue-at", `Battle ${q.at} of ${q.of}`),
+      btn("Skip the rest", {
+        cls: "sm",
+        key: "skip-rest",
+        title: "Close this battle and the rest queued; they stay in the turn report",
+        onclick: () => {
+          q.skip?.();
+          closeBattle();
+        },
+      }),
+    );
+  },
 };
 
 function show(screen, ...args) {
@@ -120,6 +116,7 @@ export function closeBattle() {
   document.removeEventListener("keydown", onKey, true);
   B.root.remove();
   B.root = null;
+  B.queue = null;
   document.body.classList.remove("battle-open");
   const done = B.onClose;
   B.onClose = null;
@@ -140,11 +137,22 @@ function loop(now) {
   B.raf = requestAnimationFrame(loop);
 }
 
-/** The keys while the overlay is open: the screen's, and none reach the map; a dialog over it
- *  (a confirmation the attack asks) takes its own. */
+/** Whether `ev` is one of the game's own global hotkeys (main.js `onKey`: the F-keys of the
+ *  screens and the capital, Ctrl+S, Ctrl+L, Ctrl+1/2/3, Tab, Backspace): stopped while the overlay
+ *  is open, and the browser's default too (F5 would reload the page, Ctrl+S save it). */
+function gameHotkey(ev) {
+  const ctrl = ev.ctrlKey || ev.metaKey;
+  if (/^F([1-9]|10)$/.test(ev.key) && !ctrl && !ev.altKey) return true;
+  if (ctrl && !ev.altKey && ["s", "l", "1", "2", "3"].includes(ev.key.toLowerCase())) return true;
+  return (ev.key === "Tab" || ev.key === "Backspace") && !ctrl && !ev.altKey;
+}
+
+/** The keys while the overlay is open: the screen's, and none reach the map; the game's own
+ *  hotkeys do nothing (nor their browser defaults), the browser's other keys keep theirs; a dialog
+ *  over it (a confirmation the attack asks) takes its own. */
 function onKey(ev) {
   if (!B.root || document.querySelector("#modals .backdrop:not(.under)")) return;
-  if (B.screen?.key?.(ctx, ev)) ev.preventDefault();
+  if (B.screen?.key?.(ctx, ev) || gameHotkey(ev)) ev.preventDefault();
   ev.stopPropagation();
 }
 
@@ -162,9 +170,11 @@ export async function openBattlePlan(source, { onClose } = {}) {
   }
 }
 
-/** Opens a battle's log: watched, or straight to its report (`report`, or the viewer's choice). */
-export function openBattleLog(log, { report = false, onClose } = {}) {
+/** Opens a battle's log: watched, or straight to its report (`report`, or the viewer's choice).
+ *  `queue`: its place among the battles queued at turn start (`{at, of, skip}`), or null. */
+export function openBattleLog(log, { report = false, onClose, queue = null } = {}) {
   B.onClose = onClose ?? null;
+  B.queue = queue;
   mount();
   return report ? show(reportScreen, log) : show(watchScreen, log);
 }
@@ -214,7 +224,7 @@ export async function openBattleReport(id, { report = false } = {}) {
   try {
     log = await api.query("battle_log", { report: id });
   } catch (e) {
-    toast(e?.code === "gone" ? `The record of battle #${id} is no longer kept (only the summary of older battles is).` : `Battle #${id}: ${e.detail ?? e.message ?? e}`, "info", 6000);
+    toast(e?.code === "gone" ? `The record of battle #${id} is no longer kept (only the summary of older battles is).` : `Battle #${id}: ${errorText(e)}`, "info", 6000);
     return;
   }
   await openBattleLog(log, { report });

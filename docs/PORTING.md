@@ -12,7 +12,7 @@ re-read against the original in the audit wave (see "Audit and stress testing" b
 
 | Module | Classes | Status |
 |---|---|---|
-| infos/game.rs | Commerce, GameSpeed, World, Climate, SeaLevel, Era, Handicap, GameOption, Goody, Hurry, Upkeep, CultureLevel, Victory, Process, Emphasize | done, audited |
+| infos/game.rs | Commerce, GameSpeed, World, Climate, SeaLevel, Handicap, GameOption, Goody, Hurry, Upkeep, CultureLevel, Victory, Process, Emphasize | done, audited |
 | infos/game.rs | Diplomacy (+ DiplomacyResponse): the leaders' lines, presentation only (ffh-play `view/speech.rs`) | done |
 | infos/civics.rs | Specialist, Religion, Corporation, CivicOption, Civic, Vote, VoteSource, EspionageMission, Project, Tech | done, audited |
 | infos/unit.rs | Unit, UnitClass, Promotion, Spell, Build, SpecialUnit, Automate, Command, Mission | done, audited |
@@ -250,9 +250,9 @@ flag.
   deal proposed from the diplomacy screen in which the proposer only gives is a gift, one in which
   it only takes is a demand. The receiver of a gift and the payer of a demand record it with its
   value in their trade points for 30 turns (`Player::tributes`, save format 13). Gifts raise the
-  receiver's relations with the giver by one per tier of value (150 points per era of the game,
-  at most +3); each paid demand lowers the payer's by one, and the payer pays no other demand of
-  the same player for 10 turns. An AI pays a demand when it asks no more than a tier per half of
+  receiver's relations with the giver by one per tier of value (150 points; 150 per era of the
+  game until eras went, 2026-11-10; at most +3); each paid demand lowers the payer's by one, and
+  the payer pays no other demand of the same player for 10 turns. An AI pays a demand when it asks no more than a tier per half of
   its own power that the demander has beyond it (the demander at 1.5 times its power or more,
   with a city within 16 plots of one of its own by land), less what it paid that player in the
   last 30 turns (ffh-ai `diplomacy::max_extorted`). Before, the AI accepted every gift with no
@@ -313,8 +313,8 @@ flag.
   Gathering's vassals are ordinary ones):
   - **Great-person cards.** A Sage (Great Scientist), Prophet, Engineer, Merchant or Bard (Great
     Artist) is born holding a secret tech, a card drawn from one world deck: its suit's cards of
-    the player's era band. Once its owner knows the card's needs, the great person can discover
-    it (`SPELL_DISCOVER_CARD`, using it up), and the card's content opens. A card whose great
+    the lowest band left in the deck (the player's era band until 2026-11-10). Once its owner
+    knows the card's needs, the great person can discover it (`SPELL_DISCOVER_CARD`, using it up), and the card's content opens. A card whose great
     person dies or is used another way goes back into the deck. Card techs are never researched
     or traded. A card's world spell is cast once a game by the team that knows the card, with
     its own flag, never the civilization's world spell. Some spells are cast at a distance (a plot, city, unit, player or
@@ -819,11 +819,50 @@ flag.
   Mastery; Remnants of Patria: Taxation; Pool of Tears: Medicine. The AI compares techs by research
   left at the rate it gets (`tech_plan::effective_left`) and values city sites with an unclaimed
   feature in reach a quarter higher per feature (`sites::research_feature_bonus`).
+- **No eras** (the owner's decision, 2026-11-10: "era" is purged from the game, and later-era
+  starts with it; save format 31). FFH2 had three progress eras (Ancient, Classical, Medieval)
+  whose growth, train, construct, create, research, build, improvement and great-people
+  percents were all 100 and whose barbarian, animal and goody gates were never set, plus seven
+  religion eras (ERA_RUNE ... ERA_COUN) that Civ4 used for city art: adopting a state religion
+  overwrote the player's era with one of them (`onBeginPlayerTurn`), so every rule that read the
+  era as progress jumped when a civilization took a religion (the gift tier, revolt strength,
+  the card band, the AI handicap's per-era factors). Gone: `EraInfo` and `eras.jsonc`,
+  `EraType`, `Player::current_era`, `Game::current_era`, `GameSetup::era` / `start_era` and
+  every era key of the data (techs' `era`, buildings' `free_start_era` / `max_start_era`,
+  `STANDARD_ERA`, the handicaps' `ai_per_era_modifier`, the trigger texts' era column, the era
+  text keys); the 100% multiplications; everything a later start granted (free techs below the
+  start era, starting gold, defense units, free population and buildings, the start turn, the
+  "starting" religion and corporation techs, the later eras' advanced-start points); the
+  new-game screen's Era, `ffh --era`, `ffh-stress`'s era matrix, `ffh-play soak --era`. A
+  new-game request that still sends `era` is accepted and the key ignored. What replaced each use:
+  - **Gift tier:** a flat 150 trade points per tier (`tribute::GIFT_TIER`).
+  - **Revolt strength:** +1 per adjacent plot the culture's owner holds (was era + 1).
+  - **The handicap's per-era AI factor:** deleted (0 at every difficulty).
+  - **Anarchy:** the first era's 50% is `ANARCHY_LENGTH_PERCENT` (rules_defines.jsonc);
+    **advanced start:** the first era's 600 points are `ADVANCED_START_POINTS`.
+  - **Cards:** each card's band (1-3, its old era) is `band` in its card file; the deck deals
+    from the lowest band that still holds cards of the suit (after the alignment filters), with
+    the same single draw: the deck is dealt in band order, whatever the player's progress.
+  - **Tech score** (the score's knowledge share): a tech's base research cost / 100, at least 1
+    (was era + 1).
+  - **Bonus value** (`AI_baseBonusVal`, used by found values): the era-distance scaling of the
+    units, buildings and projects a resource enables is deleted.
+  - **`canBuild`'s `bTestEra`** (always false in the rules) is gone; with `test_visible` a build
+    whose tech is unknown passes (it used to fail two eras ahead).
+  - **The AI** (ffh-ai): the leader's early tech hints and animal training buildings stop at
+    `research::LATE_GAME_TECHS` (36) known techs, cards not counted, where the Medieval techs
+    began in AI games (6 seeds, standard settings, before the change: median 37); advanced
+    start's improvement target and the Plagiarist's Lens pick use no era (the Lens takes the
+    highest card band). The C++ AI benchmark (ffh-cppai) reads `defs::tech_stage` (0, 1, 2 at
+    5 and 36 known techs) where it read the player's era; its terms that were constant in the
+    first three eras are dropped.
+  - Start normalization's "city trade tech no later than the start era" filter is dropped: no
+    bonus it affected is a normalize bonus or yields food.
 - **Doctrines (research paths)** (2026-11-09; `research_paths.jsonc`, `RESEARCH_PATH_PERCENT` in
   `rules_defines.jsonc`, `player/research_path.rs`). Players see them as doctrines (the owner's
   naming): "Doctrine: Steel", "Adopt the Steel doctrine?"; the code, the data and the protocol call
   them research paths. Games were decided before most civs reached
-  the medieval techs (in AI games the tier-4 units came after turn 400): the era is three quarters
+  the medieval techs (in AI games the tier-4 units came after turn 400): those techs are three quarters
   of the tree's cost, each of its techs 5,400-10,000 beakers against 300-3,000 for a classical
   one. A player now commits to one of seven paths -- Arcane, Faith, Steel, Cavalry, Artifice,
   Wild, Mercantile -- and researches that path's techs 100% faster; with a unique feature's
@@ -1007,8 +1046,9 @@ could never run them.
 
 - **The score is a share of the world, not FFH2's `calculateScore`** (details, rationale and the
   held-out evidence: `docs/SCORE.md`). A civ's score is the average of its shares of the world's
-  people (city sizes), land (owned land plots) and knowledge (its team's tech score, era + 1 per
-  tech, counted once per team and split among the members by population), in basis points:
+  people (city sizes), land (owned land plots) and knowledge (its team's tech score, research cost / 100 per
+  tech (era + 1 until 2026-11-10), counted once per team and split among the members by
+  population), in basis points:
   alive civs always sum to 10000 and score at least 1 (largest-remainder rounding); dead players
   and barbarians score 0. A vassal keeps half of its people and land and its master's leader gets
   the rest (a total-conserving version of `getPopScore`/`getLandScore`'s half credit). Integer

@@ -1,5 +1,5 @@
 // The title screen: the game's front page. It shows at boot while the client connects, stays when
-// there is no game (Continue, New game, Load game, Keys, Options), fades out when a game is
+// there is no game (Continue, New game, Load game, How to play, Options), fades out when a game is
 // running, and comes back from the game menu's "Main menu" (then with Resume). Behind it, a small
 // isometric island drawn from the isometric renderer's sprites (docs/ISO.md): a kingdom with its
 // farms and castle on one shore, the hells creeping in on the other, as the game itself goes. The
@@ -572,7 +572,7 @@ function renderMenu() {
   items.push(menuButton("New game", { id: "title-new", primary: mode === "menu" && !latest, title: "Choose a civilization and a world" }, () => actions?.newGame()));
   items.push(menuButton("Load game", { id: "title-load", title: "Your saved games and autosaves" }, () => actions?.load()));
   items.push(menuButton("Options", { id: "title-options", title: "The map renderer and the player options" }, () => actions?.options()));
-  items.push(menuButton("Keys and controls", { id: "title-keys", title: "Civ4's controls, the hotkeys" }, () => actions?.keys()));
+  items.push(menuButton("How to play", { id: "title-keys", title: "How to play, the keys, the rules" }, () => actions?.keys()));
   const had = nav.contains(document.activeElement);
   nav.replaceChildren(...items);
   // The first item takes the keys (Enter), unless a dialog over the screen has them.

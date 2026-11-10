@@ -274,9 +274,6 @@ impl Game {
         cost *= d.game_speeds[self.game_speed_type()].research_percent;
         cost /= 100;
 
-        cost *= d.eras[self.start_era()].research_percent;
-        cost /= 100;
-
         cost *= 0.max((d.defines.tech_cost_extra_team_member_modifier * (self.teams[t].num_members - 1)) + 100);
         cost /= 100;
 
@@ -432,18 +429,6 @@ impl Game {
             self.team_process_tech(t, tech, if value { 1 } else { -1 });
 
             if self.team_is_has_tech(t, Some(tech)) {
-                for p in self.player_ids() {
-                    if self.players[p].team == t {
-                        // C++ compares with getEra() (-1 for NO_ERA, never greater).
-                        if let Some(era) = d.techs[tech].era {
-                            if self.players[p].current_era < era {
-                                // setCurrentEra: the C++ side effects are graphics only.
-                                self.players[p].current_era = era;
-                            }
-                        }
-                    }
-                }
-
                 if d.techs[tech].map_visible {
                     self.map_set_revealed_plots(t, true, true);
                 }

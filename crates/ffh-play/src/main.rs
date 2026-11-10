@@ -27,7 +27,7 @@
 //!                                      the AI plays the human slot for one game (design P2):
 //!                                      --seed N --size tiny|WORLDSIZE_X --civ kuriotates|CIVILIZATION_X
 //!                                      --opponents N --options raging,aggressive|GAMEOPTION_X,..
-//!                                      --turns N --speed --handicap --era --spawn-turn N; a
+//!                                      --turns N --speed --handicap --spawn-turn N; a
 //!                                      panic is caught and reported with its repro command
 //!                                      (exit 101; stuck 4; other failure 5); --panic-at T
 //!                                      panics at turn T (a self-test of the report)

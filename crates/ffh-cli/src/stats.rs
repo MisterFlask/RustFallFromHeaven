@@ -237,9 +237,9 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
         let techs = known.len();
         let tech_cost: i64 = known.iter().map(|&t| g.team_get_research_cost(team, t) as i64).sum();
         let tech_progress: i64 = d.techs.keys().filter(|&t| !g.teams[team].has_tech[t]).map(|t| g.teams[team].research_progress[t] as i64).sum();
-        // The late techs known: those of the medieval era (the tree's last), by short name.
-        let medieval = d.ty::<EraType>("ERA_MEDIEVAL");
-        let late: Vec<&str> = known.iter().filter(|&&t| d.techs[t].era == medieval && !d.techs[t].repeat).map(|&t| short(&d.techs[t].base.type_, "TECH_")).collect();
+        // The late techs known: those whose base research cost is over 3000 (the tree's last
+        // tier), by short name.
+        let late: Vec<&str> = known.iter().filter(|&&t| d.techs[t].research_cost > 3000 && !d.techs[t].repeat).map(|&t| short(&d.techs[t].base.type_, "TECH_")).collect();
         let path_name = |path: ResearchPathType| short(&d.research_paths[path].base.type_, "RESEARCHPATH_").to_string();
 
         // Units.
@@ -443,7 +443,6 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
             .int("team", team.0)
             .str("leader", &leader)
             .str("alignment", &pl.alignment.map_or("-".to_string(), |a| short(&d.alignments[a].base.type_, "ALIGNMENT_").to_string()))
-            .int("era", pl.current_era.i())
             .str("religion", &g.player_get_state_religion(p).map_or("-".to_string(), |r| short(&d.religions[r].base.type_, "RELIGION_").to_string()))
             .opt_int("elim_turn", ev.elim_turn)
             // Land and people.
@@ -636,7 +635,6 @@ pub fn cmd_stats(cfg: &RunConfig, at: &[i32]) {
     let mut snaps: Vec<(i32, String, String)> = Vec::new();
     let barb = g.barbarian_player();
     let t = Instant::now();
-    // A later start era starts the game past turn 0 (`CvGame::init`).
     let start_turn = g.start_turn;
     let played = run::play(&mut g, cfg, |g, stat| {
         // `stat.turn` is the turn just completed; snapshots are labelled with the number of

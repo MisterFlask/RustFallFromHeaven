@@ -629,10 +629,6 @@ impl Game {
         }
 
         let d = self.d;
-        if d.eras[self.start_era()].no_goodies {
-            return;
-        }
-
         let num_plots = self.map.num_plots() as i32;
         let shuffled = shuffle(num_plots, &mut self.map_rand);
 

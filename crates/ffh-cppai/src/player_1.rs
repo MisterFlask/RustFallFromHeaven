@@ -1020,9 +1020,9 @@ impl Cai {
     /// C++ `int CvPlayerAI::AI_yieldWeight(YieldTypes eYield) const` (CvPlayerAI.cpp:1698-1706)
     pub fn player_ai_yield_weight(&self, g: &Game, p: PlayerId, yield_: YieldType) -> i32 {
         if yield_ == YieldType::YIELD_PRODUCTION {
-            let era = g.current_era().map_or(-1, |e| e.i());
-            let production_modifier = 100 + (30 * 0.max(era - 1) / 1.max(g.d.eras.len() as i32 - 2));
-            return (g.d.yields[yield_].ai_weight_percent * production_modifier) / 100;
+            // (C++ raised it with the game's progress stage, by at most 4% in FFH2's first
+            // three stages: dropped.)
+            return g.d.yields[yield_].ai_weight_percent;
         }
         g.d.yields[yield_].ai_weight_percent
     }

@@ -724,8 +724,8 @@ impl Game {
         true
     }
 
-    /// C++ `CvPlayer::found(iX, iY)`: founds a city (barbarian defenders, free start-era
-    /// buildings, advanced-start Creative culture, Python `cityBuilt`).
+    /// C++ `CvPlayer::found(iX, iY)`: founds a city (barbarian defenders,
+    /// advanced-start Creative culture, Python `cityBuilt`).
     pub fn player_found(&mut self, p: PlayerId, x: i32, y: i32) {
         let d = self.d;
 
@@ -750,19 +750,6 @@ impl Game {
             if let Some(defender_unit) = defender_unit {
                 for _ in 0..d.handicaps[self.handicap].barbarian_initial_defenders {
                     self.player_init_unit(p, defender_unit, x, y, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
-                }
-            }
-        }
-
-        let civ = civ_of(self, p);
-        for building_class in d.building_classes.keys() {
-            let Some(building) = d.civ_building(civ, building_class) else {
-                continue;
-            };
-
-            if let Some(free_start_era) = d.buildings[building].free_start_era {
-                if self.start_era() >= free_start_era && self.city_can_construct(city, building, false, false, false) {
-                    self.city_set_num_real_building(city, building, 1);
                 }
             }
         }

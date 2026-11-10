@@ -1030,7 +1030,7 @@ impl Cai {
     /// C++ `int CvUnitAI::AI_stackOfDoomExtra()` (CvUnitAI.cpp:18206-18209)
     pub fn unit_ai_stack_of_doom_extra(&self, g: &Game, u: UnitId) -> i32 {
         let owner = g.units[u].owner;
-        (g.units[u].ai_birthmark % (1 + g.players[owner].current_era.i())) + 4
+        (g.units[u].ai_birthmark % (1 + tech_stage(g, owner))) + 4
     }
 
     /// C++ `bool CvUnitAI::AI_stackAttackCity(int iRange, int iPowerThreshold, bool bFollow = true)` (CvUnitAI.cpp:18211-18279)

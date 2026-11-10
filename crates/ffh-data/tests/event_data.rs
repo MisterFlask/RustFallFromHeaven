@@ -56,7 +56,6 @@ fn trigger_unit_trigger_prereqs() {
     assert_eq!(t.max_our_landmass, -1);
     assert_eq!(t.plot_type, None); // <iPlotType>-1
     assert_eq!(t.texts, vec!["TXT_KEY_EVENT_AMURITE_TRIAL"]);
-    assert_eq!(t.text_eras, vec![None]);
     assert_eq!(t.world_news, vec!["TXT_KEY_EVENTTRIGGER_AMURITE_TRIAL"]);
 }
 
@@ -146,7 +145,6 @@ fn trigger_list_totals() {
     // world-news entry per trigger, 146 of them empty.
     assert_eq!(d.event_triggers.iter().map(|t| t.events.len()).sum::<usize>(), 606);
     assert_eq!(d.event_triggers.iter().map(|t| t.texts.len()).sum::<usize>(), 294);
-    assert!(d.event_triggers.iter().all(|t| t.text_eras.len() == t.texts.len()));
     assert!(d.event_triggers.iter().all(|t| t.world_news.len() == 1));
     assert_eq!(d.event_triggers.iter().filter(|t| t.world_news[0].is_empty()).count(), 146);
 }

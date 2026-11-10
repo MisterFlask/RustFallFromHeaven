@@ -65,13 +65,6 @@ impl Game {
         &d.handicaps[handicap]
     }
 
-    /// C++ `std::max(0, (GC.getHandicapInfo(GC.getGameINLINE().getHandicapType()).getAIPerEraModifier()
-    /// * getCurrentEra()) + 100)`: the per-era AI factor (percent) of the game difficulty.
-    fn player_ai_per_era_percent(&self, p: PlayerId) -> i32 {
-        let ai_per_era_modifier = self.d.handicaps[self.handicap].ai_per_era_modifier;
-        0.max(ai_per_era_modifier * self.players[p].current_era.i() + 100)
-    }
-
     // ------------------------------------------------------------------ "update every city" helpers
 
     /// C++ `CvPlayer::updateYield`.
@@ -251,8 +244,6 @@ impl Game {
             support *= d.handicaps[self.handicap].ai_unit_cost_percent;
             support /= 100;
 
-            support *= self.player_ai_per_era_percent(p);
-            support /= 100;
         }
 
         debug_assert!(support >= 0);
@@ -316,8 +307,6 @@ impl Game {
             supply *= d.handicaps[self.handicap].ai_unit_supply_percent;
             supply /= 100;
 
-            supply *= self.player_ai_per_era_percent(p);
-            supply /= 100;
         }
 
         debug_assert!(supply >= 0);
@@ -372,10 +361,7 @@ impl Game {
 
         let mut modifier = self.players[p].inflation_modifier;
         if !self.players[p].human && !self.player_is_barbarian(p) {
-            let mut ai_modifier = d.handicaps[self.handicap].ai_inflation_percent;
-            ai_modifier *= self.player_ai_per_era_percent(p);
-            ai_modifier /= 100;
-
+            let ai_modifier = d.handicaps[self.handicap].ai_inflation_percent;
             modifier += ai_modifier - 100;
         }
 
@@ -1595,8 +1581,6 @@ impl Game {
             anger *= d.handicaps[self.handicap].ai_war_weariness_percent;
             anger /= 100;
 
-            anger *= self.player_ai_per_era_percent(p);
-            anger /= 100;
         }
 
         anger
@@ -1664,15 +1648,10 @@ impl Game {
         threshold *= d.game_speeds[self.game_speed_type()].growth_percent;
         threshold /= 100;
 
-        threshold *= d.eras[self.start_era()].growth_percent;
-        threshold /= 100;
-
         if !self.players[p].human && !self.player_is_barbarian(p) {
             threshold *= d.handicaps[self.handicap].ai_growth_percent;
             threshold /= 100;
 
-            threshold *= self.player_ai_per_era_percent(p);
-            threshold /= 100;
         }
 
         1.max(threshold)
@@ -1719,22 +1698,20 @@ mod tests {
     }
 
     #[test]
-    fn growth_threshold_scales_with_speed_era_and_ai_difficulty() {
+    fn growth_threshold_scales_with_speed_and_ai_difficulty() {
         let mut g = bannor();
         let d = g.d;
         let p = PlayerId(0);
         g.handicap = d.t::<HandicapType>("HANDICAP_DEITY");
         let speed = d.game_speeds[g.game_speed_type()].growth_percent;
-        let era = d.eras[g.start_era()].growth_percent;
-        let base = |pop: i32| ((d.defines.base_city_growth_threshold + pop * d.defines.city_growth_multiplier) * speed / 100) * era / 100;
+        let base = |pop: i32| (d.defines.base_city_growth_threshold + pop * d.defines.city_growth_multiplier) * speed / 100;
 
         g.players[p].human = true;
         assert_eq!(g.player_get_growth_threshold(p, 3), base(3).max(1));
 
         g.players[p].human = false;
-        g.players[p].current_era = EraType(2);
         let h = &d.handicaps[g.handicap];
-        let ai = (base(3) * h.ai_growth_percent / 100) * (h.ai_per_era_modifier * 2 + 100).max(0) / 100;
+        let ai = base(3) * h.ai_growth_percent / 100;
         assert_eq!(g.player_get_growth_threshold(p, 3), ai.max(1));
         assert_ne!(ai, base(3), "Deity AIs grow faster");
     }
@@ -1799,7 +1776,7 @@ mod tests {
 
         g.players[p].human = false;
         let h = &d.handicaps[g.handicap];
-        assert_eq!(g.player_calculate_unit_supply(p), (base * h.ai_unit_supply_percent / 100) * (h.ai_per_era_modifier * 0 + 100) / 100);
+        assert_eq!(g.player_calculate_unit_supply(p), base * h.ai_unit_supply_percent / 100);
 
         g.players[p].anarchy_turns = 1;
         assert_eq!(g.player_calculate_unit_supply(p), 0);
@@ -2067,7 +2044,7 @@ mod tests {
         let h = &d.handicaps[g.handicap];
         assert_eq!(
             g.player_get_modified_war_weariness_percent_anger(p, 7),
-            ((base * world / 100) * h.ai_war_weariness_percent / 100) * (h.ai_per_era_modifier * 0 + 100) / 100
+            (base * world / 100) * h.ai_war_weariness_percent / 100
         );
 
         g.players[p].war_weariness_percent_anger = 30;

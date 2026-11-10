@@ -1,4 +1,4 @@
-//! Info classes: CommerceInfo, GameSpeedInfo, WorldInfo, ClimateInfo, SeaLevelInfo, EraInfo,
+//! Info classes: CommerceInfo, GameSpeedInfo, WorldInfo, ClimateInfo, SeaLevelInfo,
 //! HandicapInfo, GameOptionInfo, GoodyInfo, HurryInfo, UpkeepInfo, CultureLevelInfo,
 //! VictoryInfo, ProcessInfo, EmphasizeInfo, DiplomacyInfo.
 //! Port of the corresponding `Cv*Info::read(CvXMLLoadUtility*)` functions in CvInfos.cpp.
@@ -7,12 +7,11 @@
 //! Not ported (no gameplay or AI effect):
 //! - members read() never sets: `CvCommerceInfo::m_iChar` (font glyph, set at runtime),
 //!   `CvGameSpeedInfo::m_szGameSpeedName`, `CvHandicapInfo::m_szHandicapName`;
-//! - audio/visual members: `CvGoodyInfo::m_szSound`, `CvVictoryInfo::m_szMovie`, and the
-//!   `CvEraInfo` soundtrack/soundscape members (`iSoundtrackSpace`, `bFirstSoundtrackFirst`,
-//!   `EraInfoSoundtracks`, `CitySoundscapes`, `AudioUnitVictoryScript`, `AudioUnitDefeatScript`).
+//! - audio/visual members: `CvGoodyInfo::m_szSound`, `CvVictoryInfo::m_szMovie`.
 //!
-//! The XML also carries `iCulturePercent` in GameSpeed and Era infos; the FFH2 0.41 DLL never
+//! The XML also carries `iCulturePercent` in GameSpeed infos; the FFH2 0.41 DLL never
 //! reads it, so it is ignored here as well.
+
 
 use crate::enums::*;
 use crate::idx::IdxVec;
@@ -258,69 +257,6 @@ pub fn read_sea_level(rd: &Rd) -> SeaLevelInfo {
 }
 
 // ---------------------------------------------------------------------------------------------
-// EraInfo
-// ---------------------------------------------------------------------------------------------
-
-/// C++ `CvEraInfo` (eras.jsonc). Soundtrack/soundscape/audio members not ported.
-#[derive(Debug, Clone, Default)]
-pub struct EraInfo {
-    pub base: InfoBase,
-    pub starting_unit_multiplier: i32,
-    pub starting_defense_units: i32,
-    pub starting_explore_units: i32,
-    pub advanced_start_points: i32,
-    pub starting_gold: i32,
-    pub free_population: i32,
-    pub start_percent: i32,
-    pub growth_percent: i32,
-    pub train_percent: i32,
-    pub construct_percent: i32,
-    pub create_percent: i32,
-    pub research_percent: i32,
-    pub build_percent: i32,
-    pub improvement_percent: i32,
-    pub great_people_percent: i32,
-    pub anarchy_percent: i32,
-    pub event_chance_per_turn: i32,
-    /// C++ `isNoGoodies()`
-    pub no_goodies: bool,
-    /// C++ `isNoAnimals()`
-    pub no_animals: bool,
-    /// C++ `isNoBarbUnits()`
-    pub no_barb_units: bool,
-    /// C++ `isNoBarbCities()`
-    pub no_barb_cities: bool,
-}
-
-/// C++ `CvEraInfo::read` (minus the audio tags).
-pub fn read_era(rd: &Rd) -> EraInfo {
-    EraInfo {
-        base: InfoBase::read(rd),
-        no_goodies: rd.bool("no_goodies"),
-        no_animals: rd.bool("no_animals"),
-        no_barb_units: rd.bool("no_barb_units"),
-        no_barb_cities: rd.bool("no_barb_cities"),
-        starting_unit_multiplier: rd.int("starting_unit_multiplier"),
-        starting_defense_units: rd.int("starting_defense_units"),
-        starting_explore_units: rd.int("starting_explore_units"),
-        advanced_start_points: rd.int("advanced_start_points"),
-        starting_gold: rd.int("starting_gold"),
-        free_population: rd.int("free_population"),
-        start_percent: rd.int("start_percent"),
-        growth_percent: rd.int("growth_percent"),
-        train_percent: rd.int("train_percent"),
-        construct_percent: rd.int("construct_percent"),
-        create_percent: rd.int("create_percent"),
-        research_percent: rd.int("research_percent"),
-        build_percent: rd.int("build_percent"),
-        improvement_percent: rd.int("improvement_percent"),
-        great_people_percent: rd.int("great_people_percent"),
-        anarchy_percent: rd.int("anarchy_percent"),
-        event_chance_per_turn: rd.int("event_chance_per_turn"),
-    }
-}
-
-// ---------------------------------------------------------------------------------------------
 // HandicapInfo
 // ---------------------------------------------------------------------------------------------
 
@@ -407,8 +343,6 @@ pub struct HandicapInfo {
     pub ai_inflation_percent: i32,
     /// C++ `getAIWarWearinessPercent()`
     pub ai_war_weariness_percent: i32,
-    /// C++ `getAIPerEraModifier()`
-    pub ai_per_era_modifier: i32,
     /// C++ `getAIAdvancedStartPercent()`
     pub ai_advanced_start_percent: i32,
     /// FfH: C++ `getAIFreeXP()`
@@ -488,7 +422,6 @@ pub fn read_handicap(rd: &Rd) -> HandicapInfo {
         ai_unit_upgrade_percent: rd.int("ai_unit_upgrade_percent"),
         ai_inflation_percent: rd.int("ai_inflation_percent"),
         ai_war_weariness_percent: rd.int("ai_war_weariness_percent"),
-        ai_per_era_modifier: rd.int("ai_per_era_modifier"),
         ai_advanced_start_percent: rd.int("ai_advanced_start_percent"),
         // C++: SetStringList over <Goodies>, then FindInInfoClass on every name. All names are
         // known GoodyInfo types (an unknown one is reported as a load warning and skipped).

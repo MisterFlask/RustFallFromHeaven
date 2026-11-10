@@ -1202,16 +1202,14 @@ impl Cai {
         if self.unit_ai_construct(g, u, MAX_INT, 1, 15) {
             return;
         }
-        if g.players[p].current_era.i() < 3 {
+        if tech_stage(g, p) < 3 {
             if self.unit_ai_join(g, u, 2) {
                 return;
             }
         }
 
-        if g.players[p].current_era.i() <= g.d.eras.len() as i32 / 2 {
-            if self.unit_ai_construct(g, u, MAX_INT, MAX_INT, 15) {
-                return;
-            }
+        if self.unit_ai_construct(g, u, MAX_INT, MAX_INT, 15) {
+            return;
         }
 
         great_person_tail(self, g, u);

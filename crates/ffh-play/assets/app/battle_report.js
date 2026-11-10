@@ -85,6 +85,7 @@ function render(ctx) {
       { right: "6px", top: "4px", width: "470px" },
       h("div.bt-row", { style: { justifyContent: "flex-end", gap: "8px" } }, btn("Replay", { key: "replay", title: "Watch it again", onclick: () => ctx.toWatch(L) }), btn("Continue", { cls: "primary", key: "continue", title: "Back to the map [Enter]", onclick: () => ctx.close() })),
       groundLine(L.ground, L.plot),
+      ctx.queueRow?.(),
     ),
   );
   // ---- bottom left: the log

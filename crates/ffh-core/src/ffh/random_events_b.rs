@@ -3,7 +3,7 @@
 //! Each Python function becomes a private Rust `fn` (its doc comment names the Python function)
 //! registered by its Python name in the `find_*` lookup of the XML slot it fills (see dispatch.rs).
 //!
-//! Most of that Python range is stock BTS content (modern-era events) that no FFH2 XML
+//! Most of that Python range is stock BTS content (modern-day events) that no FFH2 XML
 //! references; it was ported and then removed (2026-10-28), since the rules could never run it.
 //! The callbacks kept are `canTriggerDustbowlCont`, `canTriggerChampion(Unit)`/`applyChampion`,
 //! `canTriggerAntelope`/`doAntelope2`, `canTriggerWhaleOfAThing`, `doAncientOlympics2`,

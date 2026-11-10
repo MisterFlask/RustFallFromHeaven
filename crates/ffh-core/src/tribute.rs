@@ -15,20 +15,20 @@
 use crate::game::Game;
 use crate::ids::*;
 use crate::structs::{TradeData, Tribute};
-use ffh_data::Idx;
 
 /// The turns a gift or a paid demand is remembered.
 pub const TRIBUTE_TURNS: i32 = 30;
 /// The turns after a paid demand in which the payer pays no other demand of the same player.
 pub const DEMAND_PAUSE_TURNS: i32 = 10;
+/// The trade points of one gift tier.
+pub const GIFT_TIER: i32 = 150;
 /// The most relations gifts can add.
 pub const GIFT_MAX_RELATIONS: i32 = 3;
 
 impl Game {
-    /// The value of one gift tier: 150 trade points in the first era, 150 more per later era of
-    /// the game (`current_era`).
+    /// The value of one gift tier ([`GIFT_TIER`] trade points).
     pub fn gift_tier(&self) -> i32 {
-        150 * (self.current_era().map_or(0, |e| e.idx() as i32) + 1)
+        GIFT_TIER
     }
 
     /// The relations a total value of gifts gives: a step per [`Game::gift_tier`], at most
@@ -143,7 +143,7 @@ mod tests {
         g.teams[ta].gold_trading_count += 1;
         g.teams[tb].gold_trading_count += 1;
         let tier = g.gift_tier();
-        assert_eq!(tier, 150, "a tier is 150 points in the first era");
+        assert_eq!(tier, GIFT_TIER);
         g.implement_proposal(a, b, &[gold(10), gold(5)], &[]);
         assert_eq!(g.gifts_value(b, a), 200, "the receiver's value of each item");
         assert_eq!(g.tribute_relations(b, a), (1, 0));

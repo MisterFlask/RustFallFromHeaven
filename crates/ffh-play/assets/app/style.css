@@ -160,8 +160,8 @@ body[data-phase="running"] #phase { animation: breathe 2.8s ease-in-out infinite
 .stat { white-space: nowrap; display: inline-flex; align-items: center; gap: calc(var(--u) * 2); }
 .stat > span:not(.num) + .num { margin-left: 3px; }
 .stat .icon.gold { color: var(--c-ochre); }
-.stat.research { background: none; border: 1px solid transparent; padding: 1px 6px; }
-.stat.research:hover { border-color: var(--line); }
+.stat.research, .stat.doctrine { background: none; border: 1px solid transparent; padding: 1px 6px; }
+.stat.research:hover, .stat.doctrine:hover { border-color: var(--line); }
 .bar { display: inline-block; width: 52px; height: 6px; background: var(--c-iron); overflow: hidden; margin-left: 4px; box-shadow: 0 0 0 1px var(--c-void); }
 .bar .fill { display: block; height: 100%; background: var(--c-frost); }
 .armageddon .icon { color: var(--c-crimson); }
@@ -334,9 +334,8 @@ button.tech.on-path { outline: 2px solid var(--accent); outline-offset: -2px; }
 .mod-chip.mod-feature { border-color: var(--good); color: var(--good); }
 .mod-total { color: var(--c-vellum, inherit); font-weight: 600; white-space: nowrap; }
 .tip-mods { margin: 4px 0; }
-button.tech .tech-mult { position: absolute; top: 2px; right: 5px; font-size: 11px; color: var(--c-vellum); }
+button.tech .tech-mult { color: var(--c-vellum); }
 button.tech.on-path .tech-mult { color: var(--accent); }
-button.tech.has-mult .tech-name { max-width: calc(100% - 38px); }
 .build-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px; }
 button.build { display: flex; justify-content: space-between; gap: 8px; text-align: left; padding: 4px 8px; }
 button.build.current { border-color: var(--c-bone); color: var(--c-vellum); }
@@ -348,6 +347,15 @@ button.build > .unlocks { flex: 1 1 100%; min-width: 0; overflow: hidden; text-o
 ol.queue { margin: 2px 0; padding-left: 22px; }
 ol.queue li { margin: 2px 0; }
 ol.queue button { margin-left: 8px; }
+/* The build prompt (city.js `promptView`): the city's numbers in a row, the queue, the builds in a
+   grid as wide as the dialog; its click modes for a mouse too (`.tap-mode.always`). */
+.modal.city-screen.build-prompt { width: min(880px, 100%); }
+.build-prompt .prompt-summary .cs-row { flex-wrap: wrap; row-gap: 4px; }
+.build-prompt .build-grid { grid-template-columns: repeat(auto-fill, minmax(min(170px, calc(50% - 2px)), 1fr)); }
+.build-prompt .section.builds h4 { margin: 6px 0 2px; }
+.build-prompt ol.queue:has(> li.dim:only-child) { list-style: none; padding-left: 0; }
+.tap-mode.always { display: flex; }
+button.build .cost { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
 /* Cultural channels (culture.js, docs/CULTURE.md): the city screen's Culture section and the
    Cultural pressure panel. Stages (where revolt pressure is or settles): 0 nothing yet, 1 unrest,
    2 revolt, 3 close to changing hands, 4 the city changes hands. */
@@ -456,7 +464,7 @@ table.empire-cities tr.empire-city { cursor: pointer; }
 table.empire-cities tr.empire-city.picked { background: rgba(246, 198, 80, 0.15); }
 .civic-rule-change { margin-top: 2px; }
 .governed-note { margin: 4px 0; }
-.newgame .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 14px; }
+.newgame .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px 14px; }
 label.field { display: flex; flex-direction: column; gap: 2px; }
 label.field > span { color: var(--dim); font-size: 13px; }
 label.field input[type="number"] { width: 100%; }
@@ -481,6 +489,9 @@ textarea.raw { width: 100%; font: 12px var(--mono); }
 .toast.error { border-color: var(--c-scarlet); color: var(--c-vellum); }
 .toast.log { border-color: var(--c-glint); }
 .toast.leaving { opacity: 0; transform: translateX(10px); }
+/* The box lets clicks through to the map; a toast itself takes them (a click dismisses it). */
+#toasts .toast { pointer-events: auto; cursor: pointer; }
+#toasts .toast.leaving { pointer-events: none; }
 
 /* Motion. The interface is a scriptorium: a page is laid down, not snapped into place, and the
    map glides across (map.js `glideTo`). Entrances only, short and quiet; prefers-reduced-motion
@@ -651,35 +662,66 @@ h4.sub { margin: 8px 0 2px; font-size: 0.9em; }
 .modal { min-width: 0; }
 .modal.techtree { width: min(1400px, 100%); height: calc(100vh - 32px); height: calc(100dvh - 32px); }
 .techtree .modal-body { display: flex; flex-direction: column; gap: 6px; min-height: 0; flex: 1; }
-.tree-scroll { overflow: auto; flex: 1; min-height: 240px; border: 1px solid var(--line); background: var(--c-void); }
-.tree { position: relative; }
+/* The tree's view: a visible scrollbar, and edge fades where more of it lies beyond (empire.js
+   sets .more-right/.more-down on scroll). */
+.tree-wrap { position: relative; display: flex; flex: 1; min-height: 240px; }
+.tree-wrap::before, .tree-wrap::after { content: ""; position: absolute; pointer-events: none; opacity: 0; transition: opacity 150ms ease; z-index: 1; }
+.tree-wrap::after { top: 1px; bottom: 13px; right: 13px; width: 56px; background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.85)); }
+.tree-wrap::before { left: 1px; right: 13px; bottom: 13px; height: 44px; background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.85)); }
+.tree-wrap.more-right::after, .tree-wrap.more-down::before { opacity: 1; }
+.tree-scroll { overflow: scroll; flex: 1; min-height: 0; isolation: isolate; border: 1px solid var(--line); background: var(--c-void); scrollbar-width: auto; scrollbar-color: var(--c-slate) rgba(0, 0, 0, 0.4); }
+.tree-scroll::-webkit-scrollbar { width: 12px; height: 12px; }
+.tree-scroll::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.4); }
+.tree-scroll::-webkit-scrollbar-thumb { background: var(--c-slate); border: 2px solid rgba(0, 0, 0, 0.4); border-radius: 6px; }
+.tree-scroll::-webkit-scrollbar-corner { background: rgba(0, 0, 0, 0.4); }
+.tree { position: relative; margin: 8px; }
+/* Prerequisite lines: faint until a tech is pointed at; then its path (gold) and the lines to
+   the techs it leads to (frost) stand out and the rest nearly goes. */
 .tree-lines { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
-.tree-lines path { fill: none; stroke: #33405e; stroke-width: 1.2; transition: stroke 120ms ease, opacity 120ms ease; }
-.tree-lines path.have { stroke: #4f6e2b; }
-.tree.focus .tree-lines path { opacity: 0.25; }
-.tree.focus .tree-lines path.lit { opacity: 1; stroke: var(--c-gold); stroke-width: 2; }
-/* A tech: opaque (the lines pass behind it), its era as a stripe at the left. */
-button.tech { position: absolute; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; padding: 2px 6px 2px 9px; text-align: left; font-size: 12px; line-height: 1.15; overflow: hidden; background: #1c2944; border-color: #3a4560; transition: opacity 120ms ease, box-shadow 120ms ease; }
-button.tech::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--era, var(--c-slate)); }
-button.tech[data-era="0"] { --era: var(--c-ochre); }
-button.tech[data-era="1"] { --era: var(--c-glint); }
-button.tech[data-era="2"] { --era: var(--c-lilac); }
-button.tech[data-era="3"] { --era: var(--c-scarlet); }
-button.tech[data-era="4"] { --era: var(--c-ritual); }
-button.tech[data-era="5"] { --era: var(--c-glow); }
-button.tech .tech-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--c-vellum); }
-button.tech .tech-sub { color: var(--dim); font-size: 11px; white-space: nowrap; }
-button.tech .tech-bar { position: absolute; left: 3px; right: 0; bottom: 0; height: 3px; background: var(--c-iron); }
+.tree-lines path { fill: none; stroke: #7f93c4; stroke-width: 2; opacity: 0.9; transition: stroke 120ms ease, opacity 120ms ease; }
+.tree-lines path.have { stroke: #8fbf5a; }
+/* A line between two bands (research paths): fainter until lit. */
+.tree-lines path.cross { opacity: 0.5; }
+/* The bands, one per research path: alternating stripes across the tree (over its margin), each
+   with the path's name in the gap above it, held at the scroll area's left edge; the adopted
+   doctrine's band is marked in gold. */
+.tree-lane { position: absolute; left: -8px; right: -8px; pointer-events: none; border-top: 1px solid rgba(160, 175, 210, 0.1); }
+.tree-lane.odd { background: rgba(160, 175, 210, 0.05); }
+.tree-lane.doctrine { background: rgba(240, 180, 67, 0.08); border-top-color: rgba(240, 180, 67, 0.4); }
+.tree-lane-name { position: sticky; left: 0; z-index: 1; display: inline-flex; align-items: baseline; gap: 6px; margin-top: 5px; padding: 1px 10px 1px 8px; font-size: 12px; line-height: 16px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); background: rgba(0, 0, 0, 0.6); border-radius: 0 3px 3px 0; white-space: nowrap; }
+.tree-lane.doctrine .tree-lane-name { color: var(--c-gold); box-shadow: inset 2px 0 0 var(--c-gold); }
+.tree-lane-doctrine { font-size: 10px; padding: 0 4px; border: 1px solid currentColor; border-radius: 2px; }
+.tree.focus .tree-lines path { opacity: 0.12; }
+.tree.focus .tree-lines path.lit { opacity: 1; stroke: var(--c-gold); stroke-width: 3; }
+.tree.focus .tree-lines path.lit.next { stroke: var(--c-frost); }
+.tap-mode.tree-modes { display: flex; }
+/* A tech: opaque (the lines pass behind it); name, what it unlocks, then turns and cost. */
+button.tech { position: absolute; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 2px; padding: 3px 6px 5px 6px; text-align: left; font-size: 12px; line-height: 1.15; overflow: hidden; background: #1c2944; border-color: #3a4560; transition: opacity 120ms ease, box-shadow 120ms ease; }
+/* (Over the looks' general button padding and gap.) */
+.tree button.tech { gap: 2px; padding: 3px 6px 5px 6px; }
+.tree button.tech > * { flex: none; }
+button.tech .tech-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 18px); color: var(--c-vellum); }
+button.tech > .unlocks { display: flex; gap: 2px; height: 24px; min-height: 24px; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; align-items: center; }
+button.tech .tech-sub { display: flex; align-items: center; gap: 4px; color: var(--dim); font-size: 12px; white-space: nowrap; margin-top: auto; }
+button.tech .tech-cost { display: inline-flex; align-items: center; gap: 2px; }
+button.tech .tech-sub .sep { opacity: 0.7; }
+/* Progress: a bar across the bottom and its percentage at the bottom right. */
+button.tech .tech-bar { position: absolute; left: 5px; right: 0; bottom: 0; height: 4px; background: var(--c-iron); }
 button.tech .tech-bar span { display: block; height: 100%; background: var(--c-frost); }
+button.tech .tech-pct { position: absolute; right: 5px; bottom: 6px; font-size: 12px; color: var(--c-frost); }
+/* Known: a check mark at the top right; queued: the queue position there. */
+button.tech .tech-check { position: absolute; top: 4px; right: 7px; width: 6px; height: 11px; border: solid var(--c-lichen); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+button.tech .tech-queue { position: absolute; top: 2px; right: 2px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 8px; background: var(--c-frost); color: var(--c-void); font: 700 11px/16px sans-serif; text-align: center; }
 button.tech.has, button.tech.has[disabled] { background: #1f3a26; border-color: #4f6e2b; color: var(--c-stone); }
 button.tech.has .tech-name { color: var(--c-lichen); }
 button.tech.researching { border-color: var(--c-frost); background: var(--c-navy); box-shadow: 0 0 0 1px var(--c-void), 0 0 10px rgba(128, 183, 227, 0.45); }
 button.tech.queued { border-color: var(--c-frost); border-style: dashed; background: #1d3050; }
-button.tech.can { border-color: var(--c-bone); background: var(--c-coal); }
-button.tech.later { background: #18223a; }
+button.tech.can { border-color: var(--c-gold); background: var(--c-coal); }
+button.tech.later { background: #18223a; opacity: 0.62; }
 button.tech.later .tech-name { color: var(--c-stone); }
-.tree.focus button.tech { opacity: 0.45; }
+.tree.focus button.tech { opacity: 0.3; }
 .tree.focus button.tech.lit { opacity: 1; box-shadow: 0 0 0 1px var(--c-gold); }
+.tree.focus button.tech.lit.next { box-shadow: 0 0 0 1px var(--c-frost); }
 .tree.focus button.tech:hover { box-shadow: 0 0 0 2px var(--c-gold); }
 
 /* Civics, religion, finances. */
@@ -761,6 +803,12 @@ table.crusades .crusade-name { white-space: normal; }
 .tools { display: flex; flex-direction: column; gap: 4px; }
 button.tool { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; text-align: left; gap: 1px; padding: 5px 10px; }
 pre.report.inspect { max-height: 60vh; overflow: auto; font-size: 11px; }
+/* Options: its sections, the way to the debug tools at its end. */
+.options-sec + .options-sec { margin-top: 6px; }
+.options-sec > h4 { margin: 6px 0 2px; }
+.options-sec > .small.dim { margin-top: 4px; }
+.checks.single.options-inline { flex-direction: row; flex-wrap: wrap; gap: 2px 18px; padding: 2px 0 4px; }
+.options-debug { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(128, 128, 128, 0.35); }
 
 /* The unit panel: cargo under its transport, the promote button. */
 .unit-row.cargo { margin-left: 14px; }
@@ -898,9 +946,8 @@ html.art .tap-mode button.on:not(.link):not(.close):not(.cplot):not(.tech):not(.
     box-shadow: 0 8px 18px rgba(5, 8, 11, 0.65); max-height: 70vh; overflow: auto;
   }
   body.menu-open #btn-menu { color: var(--c-vellum); }
-  /* In the sheet, the two glyph buttons say what they are. */
-  body.menu-open #btn-keys::after { content: "Controls"; }
-  body.menu-open #btn-raw::after { content: "Raw request"; }
+  /* In the sheet, the glyph button says what it is. */
+  body.menu-open #btn-keys::after { content: "Help"; }
   /* The map takes what the bars and panels leave (a floor would push it over the bottom panel). */
   #mapwrap { min-height: 0; }
   #mapwrap canvas.minimap { top: 8px; right: 8px; bottom: auto; width: 128px; height: 80px; }
@@ -991,11 +1038,19 @@ details.save-more .save-rows { margin-left: 12px; }
 table.scores th.num { text-align: right; }
 
 /* The new-game screen: the civilizations at the left; the chosen one's leader portrait, its
-   summary and its leaders' cards at the right; the world below. */
-.modal.newgame-screen { width: min(1000px, 100%); }
-.ng-civ { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 16px; margin-bottom: 6px; }
-.ng-civ-col h4 { margin-top: 0; }
-.civ-list { display: flex; flex-direction: column; gap: 2px; height: 360px; overflow: auto; padding: 4px; background: var(--c-void); border: 1px solid var(--c-iron); }
+   leaders' cards and its description at the right; the world below. The dialog takes the window's
+   height and the civilization block takes what the world's fields leave (the description at least
+   8 lines, scrolling beyond); a short window scrolls the body, the buttons stay in view. */
+.modal.wide.newgame-screen { width: min(1240px, 100%); height: calc(100vh - 32px); height: min(calc(100dvh - 32px), 1000px); }
+.newgame-screen .modal-body { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.newgame { display: flex; flex-direction: column; flex: 1 0 auto; }
+.newgame > * { flex: none; }
+.newgame > p:empty { margin: 0; }
+.newgame > .ng-civ { flex: 1 1 0; min-height: calc(var(--ng-line, 18px) * 8 + 216px); }
+.ng-civ { display: grid; grid-template-columns: 230px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 16px; margin-bottom: 6px; }
+.ng-civ-col { display: flex; flex-direction: column; min-height: 0; }
+.ng-civ-col h4 { margin-top: 0; flex: none; }
+.civ-list { display: flex; flex-direction: column; gap: 2px; flex: 1 1 0; min-height: 0; overflow: auto; padding: 4px; background: var(--c-void); border: 1px solid var(--c-iron); }
 #modals button.civ-item {
   justify-content: flex-start; gap: 10px; padding: 2px 8px; min-height: 34px; border: none; border-image: none; background: none; text-align: left; flex: none;
 }
@@ -1004,10 +1059,13 @@ table.scores th.num { text-align: right; }
 #modals button.civ-item.chosen { border-image: none; background: var(--c-coal); box-shadow: inset 2px 0 0 var(--c-gold); color: var(--c-vellum); }
 button.civ-item .banner { flex: none; }
 .civ-swatch { width: 18px; height: 28px; background: var(--c-slate); flex: none; }
-.civ-info { display: flex; flex-direction: column; gap: 10px; min-width: 0; height: 384px; overflow: auto; padding-right: 4px; }
-.civ-head { display: flex; align-items: flex-start; gap: 14px; }
-.civ-head .ng-portrait { flex: none; }
-.civ-head-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.civ-info { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; overflow: auto; padding-right: 4px; }
+.civ-info > * { flex: none; }
+.civ-head { display: flex; align-items: stretch; gap: 14px; }
+.civ-head .ng-portrait { flex: none; align-self: flex-start; }
+/* As tall as the portrait (its own size left out), a long leader's traits scrolling inside. */
+.civ-head-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1 1 0; contain: size; overflow-y: auto; }
+.civ-head-text > * { flex: none; }
 .civ-title { display: flex; align-items: center; gap: 10px; }
 .civ-title h3 { font-size: 20px; }
 .civ-title .banner { filter: drop-shadow(0 3px 0 var(--c-void)); }
@@ -1015,6 +1073,8 @@ button.civ-item .banner { flex: none; }
 .ng-who .ng-leader { font-size: 13px; line-height: 1.4; }
 .civ-summary { color: var(--c-bone); font-size: 14px; line-height: 1.45; padding: 7px 10px; background: rgba(20, 13, 12, 0.35); border-left: 2px solid var(--c-khaki); }
 .ng-about { display: flex; flex-direction: column; gap: 8px; font-size: 13px; line-height: 1.4; }
+.civ-info > .ng-about { flex: 1 1 0; min-height: calc(var(--ng-line, 18px) * 8); max-height: none; }
+.ng-about > * { flex: none; }
 .ng-about .ng-civ { display: block; margin: 0; padding: 0; border: 0; }
 .leader-cards { display: flex; flex-wrap: wrap; gap: 6px; }
 #modals button.leader-card { flex-direction: column; align-items: center; justify-content: flex-start; gap: 3px; padding: 4px 6px; min-width: 78px; text-align: center; }
@@ -1025,9 +1085,15 @@ button.civ-item .banner { flex: none; }
 .ng-more details > summary, .ng-more label.check { white-space: nowrap; }
 .ng-more label.check { margin: 0; flex: 0 0 auto; }
 @media (max-width: 760px) {
-  .ng-civ { grid-template-columns: minmax(0, 1fr); }
-  .civ-list { height: 160px; }
+  .modal.wide.newgame-screen { height: auto; }
+  .newgame > .ng-civ { flex: none; min-height: 0; }
+  .ng-civ { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .civ-list { flex: none; height: 160px; }
   .civ-info { height: auto; }
+  .civ-info > .ng-about { flex: none; min-height: 0; }
+  /* The leader's name, traits and cards beside the portrait, or under it when narrower. */
+  .civ-head { flex-wrap: wrap; }
+  .civ-head-text { contain: none; overflow: visible; flex: 1 1 160px; }
 }
 
 /* Checkboxes and radios in the interface's gold; the 2D look's drop-downs with a pixel chevron and
@@ -1084,9 +1150,8 @@ body.title-up #top, body.title-up #main, body.title-up #bottom { visibility: hid
   #title-screen { transition: none; }
   .title-status:not(:empty)::after { animation: none; content: "…"; }
 }
-/* The isometric skin's larger lettering: a shorter civilization list, so the world's fields fit. */
-html.iso .civ-list { height: 300px; }
-html.iso .civ-info { height: 324px; }
+/* The isometric skin's larger lettering: the description's line (its 8-line floor). */
+html.iso .newgame { --ng-line: 24px; }
 html.iso .civ-summary { font-size: inherit; }
 
 /* Building tiers (docs/SUITABILITY.md): a building's name in its tier's colour, the loot-rarity

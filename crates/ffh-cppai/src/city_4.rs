@@ -203,7 +203,7 @@ impl Cai {
                 } else {
                     for build in d.builds.keys() {
                         if d.builds[build].improvement == Some(improvement) {
-                            if g.player_can_build(owner, plot, build, false, false) {
+                            if g.player_can_build(owner, plot, build, false) {
                                 let mut value = 10000;
                                 value /= d.builds[build].time + 1;
 
@@ -343,7 +343,7 @@ impl Cai {
                         }
                     } else if final_yields[FOOD] < fcpp {
                         if diff_yields[PROD] > 0 && final_yields[FOOD] + final_yields[PROD] > 3 {
-                            if food_priority < 100 || g.players[owner].current_era.i() < 2 {
+                            if food_priority < 100 || tech_stage(g, owner) < 2 {
                                 //value booster for mines on hills
                                 value *= 100 + 25 * diff_yields[PROD];
                                 value /= 100;
@@ -503,7 +503,7 @@ impl Cai {
                         if d.builds[build].improvement.is_none() {
                             //FfH: Added by Kael 04/24/2008 (maintain features)
                             if d.builds[build].feature_remove[feat] && !maintains(feat) {
-                                if g.player_can_build(owner, plot, build, false, false) {
+                                if g.player_can_build(owner, plot, build, false) {
                                     let mut value = clear_feature_value;
                                     value += g.plot_get_feature_production(plot, build, team).0 * 10;
 
@@ -530,7 +530,7 @@ impl Cai {
                 if d.builds[build].improvement.is_none() {
                     //FfH: Added by Kael 04/24/2008 (maintain features)
                     if d.builds[build].feature_remove[feat] && !maintains(feat) {
-                        if g.player_can_build(owner, plot, build, false, false) {
+                        if g.player_can_build(owner, plot, build, false) {
                             let mut value = g.plot_get_feature_production(plot, build, team).0 * 10;
 
                             if value > 0 {
@@ -582,7 +582,7 @@ impl Cai {
             if temp_value > 0 {
                 for build in d.builds.keys() {
                     if d.builds[build].route == Some(route) {
-                        if g.player_can_build(owner, plot, build, false, false) {
+                        if g.player_can_build(owner, plot, build, false) {
                             //the value multiplier is based on the default time...
                             let mut value = temp_value * 5 * 300;
                             // PORT ADAPT: guard (C++ divides by the build time unguarded).
@@ -1410,11 +1410,6 @@ impl Cai {
             }
         }
 
-        if g.city_is_coastal(c, g.d.defines.min_water_size_for_ocean) {
-            let current_era = g.players[owner].current_era.i();
-            value += 0.max(((10 * current_era) / 3) - 6); //there are better ways to do this
-        }
-
         value += g.cities[c].num_world_wonders * 5;
 
         if self.player_ai_is_do_strategy(g, owner, AI_STRATEGY_CULTURE3) {
@@ -1581,7 +1576,7 @@ impl Cai {
                 workers_needed += 2;
             }
         }
-        workers_needed += (0.max(unimproved_worked_plot_count - 1) * g.players[owner].current_era.i()) / 3;
+        workers_needed += (0.max(unimproved_worked_plot_count - 1) * tech_stage(g, owner)) / 3;
 
         if self.player_ai_is_financial_trouble(g, owner) {
             workers_needed *= 3;

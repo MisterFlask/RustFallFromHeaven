@@ -22,13 +22,14 @@ Joined Mercurians, split-off empires and Infernals are in S. Dead players and ba
 |---|---|---|
 | `pop_p` | sum of the player's city sizes | `players[p].total_population` |
 | `land_p` | land plots the player owns (not the lagged `total_land_scored`) | `players[p].total_land` |
-| `know_T` | team T's FFH2 tech score: sum over T's known techs of (era + 1) (`utils::get_tech_score`) | the largest `players[m].tech_score` among T's alive members m |
+| `know_T` | team T's tech score: the research cost of the team's known techs (cost / 100, at least 1, per tech; `utils::get_tech_score`) | the largest `players[m].tech_score` among T's alive members m |
 
 Members of a team normally have the same `tech_score` (0 mismatches in 1243 multi-member team
-snapshots of the dataset). The exception is a repeatable tech (Future Tech): it adds its score
-to the members on the team each time the team learns it, but is never `isHasTech`, so a member
+snapshots of the dataset). The exception is a repeatable tech (Future Tech, 100 a time at its
+cost of 10000): it adds its score to the members on the team each time the team learns it, but is never `isHasTech`, so a member
 that joins later (`addPlayerAdvanced` credits only `isHasTech` techs, as in C++) lacks those
-repeats. The stress matrix found this in two DEITY late-era games (178 vs 172). Taking the
+repeats. The stress matrix found this in two DEITY late games (178 vs 172, under the old era + 1
+score). Taking the
 largest member value counts the team's full knowledge whichever member comes first (the design
 spec said "the first alive member", identical whenever members agree). A `debug_assert` checks
 that every member holds at least the team's non-repeatable known techs.

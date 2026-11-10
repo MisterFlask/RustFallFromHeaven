@@ -671,8 +671,7 @@ use the field. `change*` = `+=` (C++ asserts on the sign are debug-only).
 | `setStrike` | `strike (C++ also shows a message)` |
 | `getID` | `id` |
 | `getPersonalityType`, `setPersonalityType` | `personality_type` |
-| `getCurrentEra` | `current_era` |
-| `setCurrentEra` | `current_era (C++ side effects are graphics only)` |
+| `getCurrentEra`, `setCurrentEra` | removed (no eras, docs/PORTING.md) |
 | `getLastStateReligion` | `last_state_religion` |
 | `getParent`, `setParent` | `parent` |
 | `getTeam` | `team` |

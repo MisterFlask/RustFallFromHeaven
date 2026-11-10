@@ -7,7 +7,7 @@
   {
     "type": "EVENTTRIGGER_AERONS_CHOSEN",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_AERONS_CHOSEN"],
-    "trigger_texts": [["TXT_KEY_EVENT_AERONS_CHOSEN", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_AERONS_CHOSEN"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -37,7 +37,7 @@
   {
     "type": "EVENTTRIGGER_AFFLUENT_DUKE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_AFFLUENT_DUKE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_AFFLUENT_DUKE"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -64,7 +64,7 @@
   {
     "type": "EVENTTRIGGER_ALCHEMIST",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_ALCHEMIST", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_ALCHEMIST"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -93,7 +93,7 @@
   {
     "type": "EVENTTRIGGER_AMURITE_TRIAL",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_AMURITE_TRIAL"],
-    "trigger_texts": [["TXT_KEY_EVENT_AMURITE_TRIAL", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_AMURITE_TRIAL"],
     "percent_games_active": 20,
     "weight": 200,
     "max_our_landmass": -1,
@@ -122,7 +122,7 @@
   {
     "type": "EVENTTRIGGER_ANCIENT_TEXTS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_ANCIENT_TEXTS_1"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_ANCIENT_TEXTS_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_ANCIENT_TEXTS_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -148,7 +148,7 @@
   {
     "type": "EVENTTRIGGER_ANCIENTOLYMPICS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_ANCIENTOLYMPICS"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_ANCIENTOLYMPICS_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_ANCIENTOLYMPICS_1"],
     "single_player": true,
     "percent_games_active": 100,
     "weight": 400,
@@ -177,7 +177,7 @@
   {
     "type": "EVENTTRIGGER_ANGEL_OF_MERCY",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_ANGEL_OF_MERCY"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_ANGEL_OF_MERCY_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_ANGEL_OF_MERCY_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -205,7 +205,7 @@
   {
     "type": "EVENTTRIGGER_ANGELIC_PROCESSION",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_ANGELIC_PROCESSION"],
-    "trigger_texts": [["TXT_KEY_EVENT_ANGELIC_PROCESSION", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_ANGELIC_PROCESSION"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -233,7 +233,7 @@
   {
     "type": "EVENTTRIGGER_ANTELOPE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_ANTELOPE"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_ANTELOPE_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_ANTELOPE_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -260,7 +260,7 @@
   {
     "type": "EVENTTRIGGER_ARMAGEDDON",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENTTRIGGER_ARMAGEDDON", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENTTRIGGER_ARMAGEDDON"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -284,7 +284,7 @@
   {
     "type": "EVENTTRIGGER_ARMAGEDDON_APOCALYPSE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_APOCALYPSE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_APOCALYPSE"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -310,7 +310,7 @@
   {
     "type": "EVENTTRIGGER_ARMAGEDDON_ARS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_ARS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_ARS"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -335,7 +335,7 @@
   {
     "type": "EVENTTRIGGER_ARMAGEDDON_BLIGHT",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_BLIGHT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_BLIGHT"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -360,7 +360,7 @@
   {
     "type": "EVENTTRIGGER_ARMAGEDDON_BUBOES",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_BUBOES", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_BUBOES"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -385,7 +385,7 @@
   {
     "type": "EVENTTRIGGER_ARMAGEDDON_HELLFIRE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_HELLFIRE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_HELLFIRE"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -411,7 +411,7 @@
   {
     "type": "EVENTTRIGGER_ARMAGEDDON_PESTILENCE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_PESTILENCE"],
-    "trigger_texts": [["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_PESTILENCE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_PESTILENCE"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -437,7 +437,7 @@
   {
     "type": "EVENTTRIGGER_ARMAGEDDON_STEPHANOS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_STEPHANOS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_STEPHANOS"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -462,7 +462,7 @@
   {
     "type": "EVENTTRIGGER_ARMAGEDDON_WRATH",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_WRATH", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_WRATH"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -488,7 +488,7 @@
   {
     "type": "EVENTTRIGGER_ARMAGEDDON_YERSINIA",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_YERSINIA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENTTRIGGER_ARMAGEDDON_YERSINIA"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -513,7 +513,7 @@
   {
     "type": "EVENTTRIGGER_ASHEN_VEIL_DEAL_SALLOS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_ASHEN_VEIL_DEAL"],
-    "trigger_texts": [["TXT_KEY_EVENT_ASHEN_VEIL_DEAL_SALLOS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_ASHEN_VEIL_DEAL_SALLOS"],
     "percent_games_active": 20,
     "weight": 200,
     "max_our_landmass": -1,
@@ -540,7 +540,7 @@
   {
     "type": "EVENTTRIGGER_AT_THE_SWORD",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_AT_THE_SWORD"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_AT_THE_SWORD_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_AT_THE_SWORD_1"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -566,7 +566,7 @@
   {
     "type": "EVENTTRIGGER_AZER",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_AZER"],
-    "trigger_texts": [["TXT_KEY_EVENT_AZER", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_AZER"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -595,7 +595,7 @@
   {
     "type": "EVENTTRIGGER_BABY_BOOM",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_BABY_BOOM_1"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_BABY_BOOM_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_BABY_BOOM_1"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -621,7 +621,7 @@
   {
     "type": "EVENTTRIGGER_BALSERAPH_PERFORMERS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_BALSERAPH_PERFORMERS"],
-    "trigger_texts": [["TXT_KEY_EVENT_BALSERAPH_PERFORMERS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_BALSERAPH_PERFORMERS"],
     "percent_games_active": 100,
     "weight": 200,
     "min_population": 3,
@@ -650,7 +650,7 @@
   {
     "type": "EVENTTRIGGER_BANDIT_NIETZ",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_BANDIT_NIETZ"],
-    "trigger_texts": [["TXT_KEY_EVENT_BANDIT_NIETZ", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_BANDIT_NIETZ"],
     "percent_games_active": 20,
     "weight": 200,
     "min_population": 3,
@@ -676,7 +676,7 @@
   {
     "type": "EVENTTRIGGER_BARDS_TALE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_BARDS_TALE_1"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_BARDS_TALE_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_BARDS_TALE_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -702,7 +702,7 @@
   {
     "type": "EVENTTRIGGER_BOWYER",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_BOWYER"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_BOWYER_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_BOWYER_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -726,7 +726,7 @@
   {
     "type": "EVENTTRIGGER_BREAKTHROUGH",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_BREAKTHROUGH_1"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_BREAKTHROUGH_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_BREAKTHROUGH_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -750,7 +750,7 @@
   {
     "type": "EVENTTRIGGER_BROTHERS_IN_NEED",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_BROTHERS_IN_NEED"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_BROTHERS_IN_NEED_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_BROTHERS_IN_NEED_1"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -786,7 +786,7 @@
   {
     "type": "EVENTTRIGGER_CALABIM_SANCTUARY",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_CALABIM_SANCTUARY"],
-    "trigger_texts": [["TXT_KEY_EVENT_CALABIM_SANCTUARY", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_CALABIM_SANCTUARY"],
     "percent_games_active": 100,
     "weight": 200,
     "min_population": 3,
@@ -815,9 +815,9 @@
     "type": "EVENTTRIGGER_CARELESS_APPRENTICE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_CARELESS_APPRENTICE"],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_CARELESS_APPRENTICE_1", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_CARELESS_APPRENTICE_2", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_CARELESS_APPRENTICE_3", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_CARELESS_APPRENTICE_1",
+      "TXT_KEY_EVENT_TRIGGER_CARELESS_APPRENTICE_2",
+      "TXT_KEY_EVENT_TRIGGER_CARELESS_APPRENTICE_3"
     ],
     "percent_games_active": 100,
     "weight": 200,
@@ -845,7 +845,7 @@
   {
     "type": "EVENTTRIGGER_CARNIVAL_STAR",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_CARNIVAL_STAR"],
-    "trigger_texts": [["TXT_KEY_EVENT_CARNIVAL_STAR", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_CARNIVAL_STAR"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -877,7 +877,7 @@
   {
     "type": "EVENTTRIGGER_CHAMPION",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_CHAMPION"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_CHAMPION_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_CHAMPION_1"],
     "percent_games_active": 10,
     "weight": 200,
     "max_our_landmass": -1,
@@ -906,7 +906,7 @@
   {
     "type": "EVENTTRIGGER_CIRCLE_OF_GAELAN_1",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_CIRCLE_OF_GAELAN_1"],
-    "trigger_texts": [["TXT_KEY_EVENT_CIRCLE_OF_GAELAN_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_CIRCLE_OF_GAELAN_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -934,7 +934,7 @@
   {
     "type": "EVENTTRIGGER_CIRCLE_OF_GAELAN_2",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_CIRCLE_OF_GAELAN_2"],
-    "trigger_texts": [["TXT_KEY_EVENT_CIRCLE_OF_GAELAN_2", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_CIRCLE_OF_GAELAN_2"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -962,7 +962,7 @@
   {
     "type": "EVENTTRIGGER_CIRCLE_OF_GAELAN_3",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_CIRCLE_OF_GAELAN_3"],
-    "trigger_texts": [["TXT_KEY_EVENT_CIRCLE_OF_GAELAN_3", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_CIRCLE_OF_GAELAN_3"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -990,7 +990,7 @@
   {
     "type": "EVENTTRIGGER_CITY_FEUD_ARSON",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_CITY_FEUD_ARSON", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_CITY_FEUD_ARSON"],
     "percent_games_active": 100,
     "weight": -1,
     "min_population": 5,
@@ -1021,7 +1021,7 @@
   {
     "type": "EVENTTRIGGER_CITY_FEUD_MERC",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_CITY_FEUD_MERC", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_CITY_FEUD_MERC"],
     "percent_games_active": 100,
     "weight": -1,
     "min_population": 5,
@@ -1051,7 +1051,7 @@
   {
     "type": "EVENTTRIGGER_CITY_FEUD_START",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_CITY_FEUD_START", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_CITY_FEUD_START"],
     "percent_games_active": 20,
     "weight": 200,
     "min_population": 5,
@@ -1080,7 +1080,7 @@
   {
     "type": "EVENTTRIGGER_CITY_RUINS_ANCIENT",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_CITY_RUINS"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_CITY_RUINS_ANCIENT_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_CITY_RUINS_ANCIENT_1"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -1106,7 +1106,7 @@
   {
     "type": "EVENTTRIGGER_CITY_SPLIT",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_CITY_SPLIT"],
-    "trigger_texts": [["TXT_KEY_EVENT_CITY_SPLIT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_CITY_SPLIT"],
     "single_player": true,
     "percent_games_active": 10,
     "weight": 400,
@@ -1134,7 +1134,7 @@
   {
     "type": "EVENTTRIGGER_CONTROVERSIAL_PHILOSOPHER",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_CONTROVERSIAL_PHILOSOPHER"],
-    "trigger_texts": [["TXT_KEY_EVENT_CONTROVERSIAL_PHILOSOPHER", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_CONTROVERSIAL_PHILOSOPHER"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -1165,7 +1165,7 @@
   {
     "type": "EVENTTRIGGER_CORRUPT_MERCHANT",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_CORRUPT_MERCHANT"],
-    "trigger_texts": [["TXT_KEY_EVENT_CORRUPT_MERCHANT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_CORRUPT_MERCHANT"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -1193,7 +1193,7 @@
   {
     "type": "EVENTTRIGGER_CRAB_CAKES",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_CRAB_CAKES"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_CRAB_CAKES_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_CRAB_CAKES_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -1221,7 +1221,7 @@
   {
     "type": "EVENTTRIGGER_CRIME_DECREASE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_CRIME_DECREASE"],
-    "trigger_texts": [["TXT_KEY_EVENT_CRIME_DECREASE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_CRIME_DECREASE"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -1248,7 +1248,7 @@
   {
     "type": "EVENTTRIGGER_CRIME_INCREASE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_CRIME_INCREASE"],
-    "trigger_texts": [["TXT_KEY_EVENT_CRIME_INCREASE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_CRIME_INCREASE"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -1275,7 +1275,7 @@
   {
     "type": "EVENTTRIGGER_CYCLONE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_CYCLONE"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_CYCLONE_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_CYCLONE_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -1303,7 +1303,7 @@
   {
     "type": "EVENTTRIGGER_DEDICATE_MONUMENT",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_DEDICATE_MONUMENT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_DEDICATE_MONUMENT"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -1337,7 +1337,7 @@
   {
     "type": "EVENTTRIGGER_DEMONIC_TOME",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_DEMONIC_TOME"],
-    "trigger_texts": [["TXT_KEY_EVENT_DEMONIC_TOME", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_DEMONIC_TOME"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -1361,7 +1361,7 @@
   {
     "type": "EVENTTRIGGER_DISSENT",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_DISSENT"],
-    "trigger_texts": [["TXT_KEY_EVENT_DISSENT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_DISSENT"],
     "percent_games_active": 100,
     "weight": 200,
     "min_population": 3,
@@ -1390,7 +1390,7 @@
   {
     "type": "EVENTTRIGGER_DREAMS_OF_DEATH",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_DREAMS_OF_DEATH", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_DREAMS_OF_DEATH"],
     "percent_games_active": 100,
     "weight": 200,
     "min_treasury": 25,
@@ -1422,7 +1422,7 @@
   {
     "type": "EVENTTRIGGER_DUSTBOWL",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_DUSTBOWL"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_DUSTBOWL_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_DUSTBOWL_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -1450,7 +1450,7 @@
   {
     "type": "EVENTTRIGGER_DUSTBOWL_CONT",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_DUSTBOWL_CONT"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_DUSTBOWL_CONT_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_DUSTBOWL_CONT_1"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -1480,7 +1480,7 @@
   {
     "type": "EVENTTRIGGER_ELDER_CONFLICT",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_ELDER_CONFLICT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_ELDER_CONFLICT"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -1507,7 +1507,7 @@
   {
     "type": "EVENTTRIGGER_ELOHIM_HALLOWING",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_ELOHIM_HALLOWING"],
-    "trigger_texts": [["TXT_KEY_EVENT_ELOHIM_HALLOWING", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_ELOHIM_HALLOWING"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -1533,7 +1533,7 @@
   {
     "type": "EVENTTRIGGER_ENCHANTER",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_ENCHANTER", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_ENCHANTER"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -1562,7 +1562,7 @@
   {
     "type": "EVENTTRIGGER_ESTEEMED_PLAYWRIGHT",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_ESTEEMED_PLAYWRIGHT"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_ESTEEMED_PLAYWRIGHT_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_ESTEEMED_PLAYWRIGHT_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -1590,7 +1590,7 @@
   {
     "type": "EVENTTRIGGER_EXPERIENCED_CAPTAIN",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_EXPERIENCED_CAPTAIN"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_EXPERIENCED_CAPTAIN_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_EXPERIENCED_CAPTAIN_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -1621,9 +1621,9 @@
     "type": "EVENTTRIGGER_FAMINE",
     "world_news_texts": [""],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_FAMINE_1", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_FAMINE_2", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_FAMINE_3", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_FAMINE_1",
+      "TXT_KEY_EVENT_TRIGGER_FAMINE_2",
+      "TXT_KEY_EVENT_TRIGGER_FAMINE_3"
     ],
     "single_player": true,
     "percent_games_active": 100,
@@ -1658,9 +1658,9 @@
     "type": "EVENTTRIGGER_FARM_BANDITS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_FARM_BANDITS"],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_1", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_2", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_3", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_1",
+      "TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_2",
+      "TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_3"
     ],
     "percent_games_active": 100,
     "weight": 200,
@@ -1692,8 +1692,8 @@
     "type": "EVENTTRIGGER_FARM_BANDITS_AGAIN",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_FARM_BANDITS_AGAIN"],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_AGAIN_1", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_AGAIN_2", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_AGAIN_1",
+      "TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_AGAIN_2"
     ],
     "percent_games_active": 100,
     "weight": -1,
@@ -1725,7 +1725,7 @@
   {
     "type": "EVENTTRIGGER_FARM_PLOWS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_FARM_PLOWS"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_FARM_PLOWS_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_FARM_PLOWS_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -1754,7 +1754,7 @@
   {
     "type": "EVENTTRIGGER_FAUX_PAS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_FAUX_PAS"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_FAUX_PAS_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_FAUX_PAS_1"],
     "single_player": true,
     "percent_games_active": 100,
     "weight": 100,
@@ -1781,7 +1781,7 @@
   {
     "type": "EVENTTRIGGER_FAVORITE_SON",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_FAVORITE_SON"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_FAVORITE_SON_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_FAVORITE_SON_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -1808,7 +1808,7 @@
   {
     "type": "EVENTTRIGGER_FLARE_ENTROPY_NODE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_FLARE_ENTROPY_NODE"],
-    "trigger_texts": [["TXT_KEY_EVENT_FLARE_ENTROPY_NODE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_FLARE_ENTROPY_NODE"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -1836,7 +1836,7 @@
   {
     "type": "EVENTTRIGGER_FLARE_FIRE_NODE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_FLARE_FIRE_NODE"],
-    "trigger_texts": [["TXT_KEY_EVENT_FLARE_FIRE_NODE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_FLARE_FIRE_NODE"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -1864,7 +1864,7 @@
   {
     "type": "EVENTTRIGGER_FLARE_LIFE_NODE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_FLARE_LIFE_NODE"],
-    "trigger_texts": [["TXT_KEY_EVENT_FLARE_LIFE_NODE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_FLARE_LIFE_NODE"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -1892,7 +1892,7 @@
   {
     "type": "EVENTTRIGGER_FLARE_NATURE_NODE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_FLARE_NATURE_NODE"],
-    "trigger_texts": [["TXT_KEY_EVENT_FLARE_NATURE_NODE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_FLARE_NATURE_NODE"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -1920,7 +1920,7 @@
   {
     "type": "EVENTTRIGGER_FLARE_WATER_NODE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_FLARE_WATER_NODE"],
-    "trigger_texts": [["TXT_KEY_EVENT_FLARE_WATER_NODE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_FLARE_WATER_NODE"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -1948,7 +1948,7 @@
   {
     "type": "EVENTTRIGGER_FORTY_THIEVES",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_FORTY_THIEVES_1"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_FORTY_THIEVES_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_FORTY_THIEVES_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -1975,7 +1975,7 @@
   {
     "type": "EVENTTRIGGER_FRIENDLY_LOCALS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_FRIENDLY_LOCALS_1"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_FRIENDLY_LOCALS_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_FRIENDLY_LOCALS_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -2003,7 +2003,7 @@
   {
     "type": "EVENTTRIGGER_FROSTLING",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_FROSTLING", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_FROSTLING"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -2032,7 +2032,7 @@
   {
     "type": "EVENTTRIGGER_FUGITIVE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_FUGITIVE"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_FUGITIVE_1", "NONE"], ["TXT_KEY_EVENT_TRIGGER_FUGITIVE_2", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_FUGITIVE_1", "TXT_KEY_EVENT_TRIGGER_FUGITIVE_2"],
     "single_player": true,
     "percent_games_active": 100,
     "weight": 200,
@@ -2059,7 +2059,7 @@
   {
     "type": "EVENTTRIGGER_GIRLS_BEST_FRIEND",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_GIRLS_BEST_FRIEND"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_GIRLS_BEST_FRIEND_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_GIRLS_BEST_FRIEND_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -2089,7 +2089,7 @@
   {
     "type": "EVENTTRIGGER_GOBLIN_WASTE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_GOBLIN_WASTE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_GOBLIN_WASTE"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -2116,7 +2116,7 @@
   {
     "type": "EVENTTRIGGER_GOVERNOR_ASSASSINATION",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_GOVERNOR_ASSASSINATION"],
-    "trigger_texts": [["TXT_KEY_EVENT_GOVERNOR_ASSASSINATION", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_GOVERNOR_ASSASSINATION"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -2147,7 +2147,7 @@
   {
     "type": "EVENTTRIGGER_GRAVEYARD",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_GRAVEYARD", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_GRAVEYARD"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -2176,7 +2176,7 @@
   {
     "type": "EVENTTRIGGER_GREAT_BEAST",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_GREAT_BEAST"],
-    "trigger_texts": [["TXT_KEY_EVENT_GREAT_BEAST", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_GREAT_BEAST"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -2204,7 +2204,7 @@
   {
     "type": "EVENTTRIGGER_GREAT_BEAST_GURID",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_GREAT_BEAST"],
-    "trigger_texts": [["TXT_KEY_EVENTTRIGGER_GREAT_BEAST", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENTTRIGGER_GREAT_BEAST"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -2229,7 +2229,7 @@
   {
     "type": "EVENTTRIGGER_GREAT_BEAST_LEVIATHAN",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_GREAT_BEAST"],
-    "trigger_texts": [["TXT_KEY_EVENTTRIGGER_GREAT_BEAST", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENTTRIGGER_GREAT_BEAST"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -2254,7 +2254,7 @@
   {
     "type": "EVENTTRIGGER_GREAT_BEAST_MARGALARD",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_GREAT_BEAST"],
-    "trigger_texts": [["TXT_KEY_EVENTTRIGGER_GREAT_BEAST", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENTTRIGGER_GREAT_BEAST"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -2279,7 +2279,7 @@
   {
     "type": "EVENTTRIGGER_GREAT_MEDIATOR",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_GREAT_MEDIATOR_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_GREAT_MEDIATOR_1"],
     "single_player": true,
     "percent_games_active": 100,
     "weight": 200,
@@ -2306,7 +2306,7 @@
   {
     "type": "EVENTTRIGGER_GUILD_OF_THE_NINE_MERC_1",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC"],
     "percent_games_active": 100,
     "weight": 800,
     "min_population": 3,
@@ -2336,7 +2336,7 @@
   {
     "type": "EVENTTRIGGER_GUILD_OF_THE_NINE_MERC_2",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC"],
     "percent_games_active": 100,
     "weight": 800,
     "min_population": 3,
@@ -2366,7 +2366,7 @@
   {
     "type": "EVENTTRIGGER_GUILD_OF_THE_NINE_MERC_3",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC"],
     "percent_games_active": 100,
     "weight": 800,
     "min_population": 3,
@@ -2396,7 +2396,7 @@
   {
     "type": "EVENTTRIGGER_GUILD_OF_THE_NINE_MERC_4",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC_4", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC_4"],
     "percent_games_active": 100,
     "weight": 800,
     "min_population": 3,
@@ -2425,7 +2425,7 @@
   {
     "type": "EVENTTRIGGER_GUILD_OF_THE_NINE_MERC_5",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC_5", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC_5"],
     "percent_games_active": 100,
     "weight": 800,
     "min_population": 3,
@@ -2455,7 +2455,7 @@
   {
     "type": "EVENTTRIGGER_GUILD_OF_THE_NINE_MERC_6",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC_6", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC_6"],
     "percent_games_active": 100,
     "weight": 800,
     "min_population": 3,
@@ -2484,7 +2484,7 @@
   {
     "type": "EVENTTRIGGER_GUILD_OF_THE_NINE_MERC_7",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC_7", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC_7"],
     "percent_games_active": 100,
     "weight": 800,
     "min_population": 3,
@@ -2513,7 +2513,7 @@
   {
     "type": "EVENTTRIGGER_GUILD_OF_THE_NINE_MERC_8",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC_8", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC_8"],
     "percent_games_active": 100,
     "weight": 800,
     "min_population": 3,
@@ -2542,7 +2542,7 @@
   {
     "type": "EVENTTRIGGER_GUILD_OF_THE_NINE_MERC_9",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_GUILD_OF_THE_NINE_MERC"],
     "percent_games_active": 100,
     "weight": 200,
     "min_population": 3,
@@ -2572,9 +2572,9 @@
     "type": "EVENTTRIGGER_HAPPY_HUNTING",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_HAPPY_HUNTING"],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_HAPPY_HUNTING_1", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_HAPPY_HUNTING_2", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_HAPPY_HUNTING_3", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_HAPPY_HUNTING_1",
+      "TXT_KEY_EVENT_TRIGGER_HAPPY_HUNTING_2",
+      "TXT_KEY_EVENT_TRIGGER_HAPPY_HUNTING_3"
     ],
     "percent_games_active": 100,
     "weight": 500,
@@ -2604,7 +2604,7 @@
   {
     "type": "EVENTTRIGGER_HEALING_PLANT",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_HEALING_PLANT"],
-    "trigger_texts": [["TXT_KEY_EVENT_HEALING_PLANT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_HEALING_PLANT"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -2627,7 +2627,7 @@
   {
     "type": "EVENTTRIGGER_HERESY",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_HERESY"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_HERESY_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_HERESY_1"],
     "percent_games_active": 100,
     "weight": 200,
     "civic": "CIVIC_THEOCRACY",
@@ -2656,7 +2656,7 @@
   {
     "type": "EVENTTRIGGER_HEROIC_GESTURE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_HEROIC_GESTURE_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_HEROIC_GESTURE_1"],
     "single_player": true,
     "percent_games_active": 100,
     "weight": 350,
@@ -2683,7 +2683,7 @@
   {
     "type": "EVENTTRIGGER_HOLY_CHILD",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_HOLY_CHILD"],
-    "trigger_texts": [["TXT_KEY_EVENT_HOLY_CHILD", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_HOLY_CHILD"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -2710,7 +2710,7 @@
   {
     "type": "EVENTTRIGGER_HORSESHOE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_HORSESHOE"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_HORSESHOE_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_HORSESHOE_1"],
     "percent_games_active": 20,
     "weight": 50,
     "max_our_landmass": -1,
@@ -2737,9 +2737,9 @@
     "type": "EVENTTRIGGER_HORTICULTURE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_HORTICULTURE"],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_HORTICULTURE_1", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_HORTICULTURE_2", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_HORTICULTURE_3", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_HORTICULTURE_1",
+      "TXT_KEY_EVENT_TRIGGER_HORTICULTURE_2",
+      "TXT_KEY_EVENT_TRIGGER_HORTICULTURE_3"
     ],
     "percent_games_active": 100,
     "weight": 200,
@@ -2768,7 +2768,7 @@
   {
     "type": "EVENTTRIGGER_HUNTER",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_HUNTER"],
-    "trigger_texts": [["TXT_KEY_EVENT_HUNTER", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_HUNTER"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -2802,7 +2802,7 @@
   {
     "type": "EVENTTRIGGER_HURRICANE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_HURRICANE"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_HURRICANE_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_HURRICANE_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -2830,7 +2830,7 @@
   {
     "type": "EVENTTRIGGER_HYBOREMS_WHISPER",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_HYBOREMS_WHISPER", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_HYBOREMS_WHISPER"],
     "single_player": true,
     "percent_games_active": 100,
     "max_our_landmass": -1,
@@ -2854,7 +2854,7 @@
   {
     "type": "EVENTTRIGGER_ICE_SCULPTURE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_ICE_SCULPTURE"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_ICE_SCULPTURE_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_ICE_SCULPTURE_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -2881,7 +2881,7 @@
   {
     "type": "EVENTTRIGGER_IMMIGRANTS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_IMMIGRANTS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_IMMIGRANTS"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -2915,7 +2915,7 @@
   {
     "type": "EVENTTRIGGER_INN_TO_HOUSING",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_INN_TO_HOUSING", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_INN_TO_HOUSING"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -2944,7 +2944,7 @@
   {
     "type": "EVENTTRIGGER_INSPIRED_MISSION",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_INSPIRED_MISSION"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_INSPIRED_MISSION_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_INSPIRED_MISSION_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -2975,7 +2975,7 @@
   {
     "type": "EVENTTRIGGER_JACKPOT",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_JACKPOT"],
-    "trigger_texts": [["TXT_KEY_EVENT_JACKPOT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_JACKPOT"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -3002,7 +3002,7 @@
   {
     "type": "EVENTTRIGGER_JADE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_JADE"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_JADE_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_JADE_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -3029,7 +3029,7 @@
   {
     "type": "EVENTTRIGGER_JOYOUS_WEDDING",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_JOYOUS_WEDDING"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_JOYOUS_WEDDING_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_JOYOUS_WEDDING_1"],
     "single_player": true,
     "percent_games_active": 100,
     "weight": 200,
@@ -3059,7 +3059,7 @@
   {
     "type": "EVENTTRIGGER_KHAZAD_FORGE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_KHAZAD_FORGE"],
-    "trigger_texts": [["TXT_KEY_EVENT_KHAZAD_FORGE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_KHAZAD_FORGE"],
     "percent_games_active": 20,
     "weight": 400,
     "min_population": 3,
@@ -3087,7 +3087,7 @@
   {
     "type": "EVENTTRIGGER_LEFT_AT_ALTAR",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_LEFT_AT_ALTAR"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_LEFT_AT_ALTAR_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_LEFT_AT_ALTAR_1"],
     "single_player": true,
     "percent_games_active": 100,
     "weight": 100,
@@ -3114,7 +3114,7 @@
   {
     "type": "EVENTTRIGGER_LETUM_FRIGUS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_LETUM_FRIGUS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_LETUM_FRIGUS"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -3138,7 +3138,7 @@
   {
     "type": "EVENTTRIGGER_LIBRARY_FIRE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_LIBRARY_FIRE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_LIBRARY_FIRE"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -3166,7 +3166,7 @@
   {
     "type": "EVENTTRIGGER_LITERACY",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_LITERACY"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_LITERACY_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_LITERACY_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -3193,7 +3193,7 @@
   {
     "type": "EVENTTRIGGER_LOOTERS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_LOOTERS"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_LOOTERS_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_LOOTERS_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -3223,7 +3223,7 @@
   {
     "type": "EVENTTRIGGER_MACHINE_PARTS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_MACHINE_PARTS"],
-    "trigger_texts": [["TXT_KEY_EVENT_MACHINE_PARTS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_MACHINE_PARTS"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -3254,7 +3254,7 @@
   {
     "type": "EVENTTRIGGER_MALAKIM_PILGRIMAGE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_MALAKIM_PILGRIMAGE"],
-    "trigger_texts": [["TXT_KEY_EVENT_MALAKIM_PILGRIMAGE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_MALAKIM_PILGRIMAGE"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -3290,7 +3290,7 @@
   {
     "type": "EVENTTRIGGER_MARATHON",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_MARATHON"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_MARATHON_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_MARATHON_1"],
     "percent_games_active": 100,
     "weight": 800,
     "max_our_landmass": -1,
@@ -3318,7 +3318,7 @@
   {
     "type": "EVENTTRIGGER_MARBLE_STATUES",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_MARBLE_STATUES"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_MARBLE_STATUES_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_MARBLE_STATUES_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -3346,7 +3346,7 @@
   {
     "type": "EVENTTRIGGER_MARKET_THEFT",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_MARKET_THEFT"],
-    "trigger_texts": [["TXT_KEY_EVENT_MARKET_THEFT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_MARKET_THEFT"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -3373,7 +3373,7 @@
   {
     "type": "EVENTTRIGGER_MARY",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_MARY"],
-    "trigger_texts": [["TXT_KEY_EVENT_MARY", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_MARY"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -3402,7 +3402,7 @@
   {
     "type": "EVENTTRIGGER_MASTER_SMITH",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_MASTER_SMITH"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_MASTER_SMITH_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_MASTER_SMITH_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -3430,7 +3430,7 @@
   {
     "type": "EVENTTRIGGER_MERC_PAYMENT",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_MERC_PAYMENT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_MERC_PAYMENT"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -3457,7 +3457,7 @@
   {
     "type": "EVENTTRIGGER_MERCENARY",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_MERCENARY", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_MERCENARY"],
     "percent_games_active": 100,
     "weight": 200,
     "min_population": 3,
@@ -3486,7 +3486,7 @@
   {
     "type": "EVENTTRIGGER_MERCHANT_KEEP",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_MERCHANT_KEEP", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_MERCHANT_KEEP"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -3513,7 +3513,7 @@
   {
     "type": "EVENTTRIGGER_METEOR",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_METEOR"],
-    "trigger_texts": [["TXT_KEY_EVENT_METEOR", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_METEOR"],
     "percent_games_active": 100,
     "weight": 400,
     "min_treasury": 50,
@@ -3540,7 +3540,7 @@
   {
     "type": "EVENTTRIGGER_MIRACLE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_MIRACLE"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_MIRACLE_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_MIRACLE_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -3568,7 +3568,7 @@
   {
     "type": "EVENTTRIGGER_MISTFORMS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_MISTFORMS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_MISTFORMS"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -3597,7 +3597,7 @@
   {
     "type": "EVENTTRIGGER_MONEY_CHANGERS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_MONEY_CHANGERS_1"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_MONEY_CHANGERS_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_MONEY_CHANGERS_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -3625,7 +3625,7 @@
   {
     "type": "EVENTTRIGGER_MONSOON",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_MONSOON"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_MONSOON_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_MONSOON_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -3653,7 +3653,7 @@
   {
     "type": "EVENTTRIGGER_MOTHER_LODE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_MOTHER_LODE"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_MOTHER_LODE_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_MOTHER_LODE_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -3679,7 +3679,7 @@
   {
     "type": "EVENTTRIGGER_MURDERED_WIFE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_MURDERED_WIFE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_MURDERED_WIFE"],
     "percent_games_active": 20,
     "weight": 400,
     "min_population": 3,
@@ -3711,7 +3711,7 @@
   {
     "type": "EVENTTRIGGER_MUSHROOMS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_MUSHROOMS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_MUSHROOMS"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -3739,7 +3739,7 @@
   {
     "type": "EVENTTRIGGER_MUTATE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_MUTATE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_MUTATE"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -3769,7 +3769,7 @@
   {
     "type": "EVENTTRIGGER_MYSTIC_TREE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_MYSTIC_TREE"],
-    "trigger_texts": [["TXT_KEY_EVENT_MYSTIC_TREE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_MYSTIC_TREE"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -3797,7 +3797,7 @@
   {
     "type": "EVENTTRIGGER_ORDER_VS_VEIL",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_ORDER_VS_VEIL"],
-    "trigger_texts": [["TXT_KEY_EVENT_ORDER_VS_VEIL", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_ORDER_VS_VEIL"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -3833,7 +3833,7 @@
   {
     "type": "EVENTTRIGGER_ORDER_VS_VEIL_TEMPLE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_ORDER_VS_VEIL_TEMPLE"],
-    "trigger_texts": [["TXT_KEY_EVENT_ORDER_VS_VEIL_TEMPLE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_ORDER_VS_VEIL_TEMPLE"],
     "percent_games_active": 100,
     "weight": 200,
     "min_population": 3,
@@ -3865,7 +3865,7 @@
   {
     "type": "EVENTTRIGGER_ORPHANAGE_FIRE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_ORPHANAGE_FIRE"],
-    "trigger_texts": [["TXT_KEY_EVENT_ORPHANAGE_FIRE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_ORPHANAGE_FIRE"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -3893,7 +3893,7 @@
   {
     "type": "EVENTTRIGGER_OVERCOUNCIL_GIFT",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_OVERCOUNCIL_GIFT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_OVERCOUNCIL_GIFT"],
     "percent_games_active": 100,
     "weight": 400,
     "civic": "CIVIC_OVERCOUNCIL",
@@ -3918,7 +3918,7 @@
   {
     "type": "EVENTTRIGGER_PARROTS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_PARROTS"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_PARROTS_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_PARROTS_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -3945,7 +3945,7 @@
   {
     "type": "EVENTTRIGGER_PASTURE_BUILT",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_PASTURE_BUILT"],
-    "trigger_texts": [["TXT_KEY_EVENT_PASTURE_BUILT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PASTURE_BUILT"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -3973,8 +3973,8 @@
     "type": "EVENTTRIGGER_PATRON_OF_KNOWLEDGE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_PATRON_OF_KNOWLEDGE_1"],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_PATRON_OF_KNOWLEDGE_1", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_PATRON_OF_KNOWLEDGE_2", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_PATRON_OF_KNOWLEDGE_1",
+      "TXT_KEY_EVENT_TRIGGER_PATRON_OF_KNOWLEDGE_2"
     ],
     "percent_games_active": 100,
     "weight": 200,
@@ -4003,7 +4003,7 @@
   {
     "type": "EVENTTRIGGER_PENGUINS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PENGUINS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PENGUINS"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4033,9 +4033,9 @@
     "type": "EVENTTRIGGER_PESTILENCE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_PESTILENCE"],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_PESTILENCE_1", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_PESTILENCE_2", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_PESTILENCE_3", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_PESTILENCE_1",
+      "TXT_KEY_EVENT_TRIGGER_PESTILENCE_2",
+      "TXT_KEY_EVENT_TRIGGER_PESTILENCE_3"
     ],
     "percent_games_active": 100,
     "weight": 100,
@@ -4065,9 +4065,9 @@
     "type": "EVENTTRIGGER_PESTILENCE_2",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_PESTILENCE"],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_PESTILENCE_4", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_PESTILENCE_5", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_PESTILENCE_3", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_PESTILENCE_4",
+      "TXT_KEY_EVENT_TRIGGER_PESTILENCE_5",
+      "TXT_KEY_EVENT_TRIGGER_PESTILENCE_3"
     ],
     "percent_games_active": 100,
     "weight": 100,
@@ -4096,7 +4096,7 @@
   {
     "type": "EVENTTRIGGER_PICK_ALIGNMENT",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PICK_ALIGNMENT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PICK_ALIGNMENT"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -4121,7 +4121,7 @@
   {
     "type": "EVENTTRIGGER_PRAIRIE_DOGS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_PRAIRIE_DOGS"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_PRAIRIE_DOGS_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_PRAIRIE_DOGS_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -4148,7 +4148,7 @@
   {
     "type": "EVENTTRIGGER_PRON_ALEXIS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PRON_ALEXIS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PRON_ALEXIS"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4174,7 +4174,7 @@
   {
     "type": "EVENTTRIGGER_PRON_ARENDEL",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PRON_ARENDEL", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PRON_ARENDEL"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4200,7 +4200,7 @@
   {
     "type": "EVENTTRIGGER_PRON_CAPRIA",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PRON_CAPRIA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PRON_CAPRIA"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4226,7 +4226,7 @@
   {
     "type": "EVENTTRIGGER_PRON_ETHNE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PRON_ETHNE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PRON_ETHNE"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4252,7 +4252,7 @@
   {
     "type": "EVENTTRIGGER_PRON_FAERYL",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PRON_FAERYL", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PRON_FAERYL"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4278,7 +4278,7 @@
   {
     "type": "EVENTTRIGGER_PRON_HANNAH",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PRON_HANNAH", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PRON_HANNAH"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4304,7 +4304,7 @@
   {
     "type": "EVENTTRIGGER_PRON_KEELYN",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PRON_KEELYN", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PRON_KEELYN"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4330,7 +4330,7 @@
   {
     "type": "EVENTTRIGGER_PRON_MAHALA",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PRON_MAHALA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PRON_MAHALA"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4356,7 +4356,7 @@
   {
     "type": "EVENTTRIGGER_PRON_RHOANNA",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PRON_RHOANNA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PRON_RHOANNA"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4382,7 +4382,7 @@
   {
     "type": "EVENTTRIGGER_PRON_SHEELBA",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PRON_SHEELBA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PRON_SHEELBA"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4408,7 +4408,7 @@
   {
     "type": "EVENTTRIGGER_PRON_THESSA",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PRON_THESSA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PRON_THESSA"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4434,7 +4434,7 @@
   {
     "type": "EVENTTRIGGER_PRON_VALLEDIA",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PRON_VALLEDIA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PRON_VALLEDIA"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4460,7 +4460,7 @@
   {
     "type": "EVENTTRIGGER_UNIQUE_FEATURE_AIFON_ISLE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_UNIQUE_FEATURE_AIFON_ISLE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_UNIQUE_FEATURE_AIFON_ISLE"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4485,7 +4485,7 @@
   {
     "type": "EVENTTRIGGER_UNIQUE_FEATURE_BRADELINES_WELL",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_UNIQUE_FEATURE_BRADELINES_WELL", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_UNIQUE_FEATURE_BRADELINES_WELL"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4510,7 +4510,7 @@
   {
     "type": "EVENTTRIGGER_UNIQUE_FEATURE_BROKEN_SEPULCHER",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_UNIQUE_FEATURE_BROKEN_SEPULCHER", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_UNIQUE_FEATURE_BROKEN_SEPULCHER"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4535,7 +4535,7 @@
   {
     "type": "EVENTTRIGGER_UNIQUE_FEATURE_GUARDIAN",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_UNIQUE_FEATURE_GUARDIAN", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_UNIQUE_FEATURE_GUARDIAN"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4560,7 +4560,7 @@
   {
     "type": "EVENTTRIGGER_UNIQUE_FEATURE_LETUM_FRIGUS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_UNIQUE_FEATURE_LETUM_FRIGUS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_UNIQUE_FEATURE_LETUM_FRIGUS"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4585,7 +4585,7 @@
   {
     "type": "EVENTTRIGGER_UNIQUE_FEATURE_LETUM_FRIGUS_ILLIANS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_UNIQUE_FEATURE_LETUM_FRIGUS_ILLIANS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_UNIQUE_FEATURE_LETUM_FRIGUS_ILLIANS"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4611,7 +4611,7 @@
   {
     "type": "EVENTTRIGGER_UNIQUE_FEATURE_PYRE_OF_THE_SERAPHIC",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_UNIQUE_FEATURE_PYRE_OF_THE_SERAPHIC", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_UNIQUE_FEATURE_PYRE_OF_THE_SERAPHIC"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4636,7 +4636,7 @@
   {
     "type": "EVENTTRIGGER_RABBIT",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_RABBIT"],
-    "trigger_texts": [["TXT_KEY_EVENT_RABBIT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_RABBIT"],
     "percent_games_active": 10,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4661,7 +4661,7 @@
   {
     "type": "EVENTTRIGGER_RANSOM",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_RANSOM"],
-    "trigger_texts": [["TXT_KEY_EVENT_RANSOM", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_RANSOM"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -4688,7 +4688,7 @@
   {
     "type": "EVENTTRIGGER_RUNNING_BULLS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_RUNNING_BULLS"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_RUNNING_BULLS_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_RUNNING_BULLS_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -4715,7 +4715,7 @@
   {
     "type": "EVENTTRIGGER_RURAL_FARMERS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_RURAL_FARMERS_1"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_RURAL_FARMERS_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_RURAL_FARMERS_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -4743,7 +4743,7 @@
   {
     "type": "EVENTTRIGGER_SAGE_KEEP",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SAGE_KEEP", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SAGE_KEEP"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -4770,7 +4770,7 @@
   {
     "type": "EVENTTRIGGER_SAILORS_DIRGE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_SAILORS_DIRGE"],
-    "trigger_texts": [["TXT_KEY_EVENTTRIGGER_SAILORS_DIRGE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENTTRIGGER_SAILORS_DIRGE"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4795,7 +4795,7 @@
   {
     "type": "EVENTTRIGGER_SAUNDRA",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_SAUNDRA"],
-    "trigger_texts": [["TXT_KEY_EVENT_SAUNDRA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SAUNDRA"],
     "percent_games_active": 20,
     "weight": 400,
     "min_population": 3,
@@ -4824,7 +4824,7 @@
   {
     "type": "EVENTTRIGGER_SEA_TURTLES",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_SEA_TURTLES"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_SEA_TURTLES_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_SEA_TURTLES_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -4851,7 +4851,7 @@
   {
     "type": "EVENTTRIGGER_SETBACK",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_SETBACK_1"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_SETBACK_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_SETBACK_1"],
     "percent_games_active": 100,
     "weight": 30,
     "max_our_landmass": -1,
@@ -4875,7 +4875,7 @@
   {
     "type": "EVENTTRIGGER_SHEAIM_ELEGY",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_SHEAIM_ELEGY"],
-    "trigger_texts": [["TXT_KEY_EVENT_SHEAIM_ELEGY", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SHEAIM_ELEGY"],
     "percent_games_active": 20,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4901,7 +4901,7 @@
   {
     "type": "EVENTTRIGGER_SICKNESS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SICKNESS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SICKNESS"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -4929,7 +4929,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_AERON",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_AERON", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_AERON"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4954,7 +4954,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_AGARES",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_AGARES", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_AGARES"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -4978,7 +4978,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_AMATHAON",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_AMATHAON", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_AMATHAON"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5002,7 +5002,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_ARAWN",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_ARAWN", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_ARAWN"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5026,7 +5026,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_BHALL",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_BHALL", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_BHALL"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5051,7 +5051,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_CAMULOS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_CAMULOS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_CAMULOS"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5076,7 +5076,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_CERIDWEN",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_CERIDWEN", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_CERIDWEN"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5100,7 +5100,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_CERNUNNOS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_CERNUNNOS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_CERNUNNOS"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5124,7 +5124,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_DAGDA",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_DAGDA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_DAGDA"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5149,7 +5149,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_DANALIN",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_DANALIN", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_DANALIN"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5173,7 +5173,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_ESUS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_ESUS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_ESUS"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5198,7 +5198,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_JUNIL",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_JUNIL", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_JUNIL"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5222,7 +5222,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_KILMORPH",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_KILMORPH", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_KILMORPH"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5246,7 +5246,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_LUGUS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_LUGUS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_LUGUS"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5271,7 +5271,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_MAMMON",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_MAMMON", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_MAMMON"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5295,7 +5295,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_MULCARN",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_MULCARN", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_MULCARN"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5320,7 +5320,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_NANTOSUELTA",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_NANTOSUELTA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_NANTOSUELTA"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5344,7 +5344,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_OGHMA",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_OGHMA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_OGHMA"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5368,7 +5368,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_SIRONA",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_SIRONA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_SIRONA"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5393,7 +5393,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_SUCELLUS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_SUCELLUS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_SUCELLUS"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5418,7 +5418,7 @@
   {
     "type": "EVENTTRIGGER_SIGN_TALI",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SIGN_TALI", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SIGN_TALI"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5443,7 +5443,7 @@
   {
     "type": "EVENTTRIGGER_SLAVE_ESCAPE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SLAVE_ESCAPE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SLAVE_ESCAPE"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -5472,7 +5472,7 @@
   {
     "type": "EVENTTRIGGER_SLAVE_REVOLT",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SLAVE_REVOLT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SLAVE_REVOLT"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -5502,7 +5502,7 @@
   {
     "type": "EVENTTRIGGER_SLAVE_RING_END",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SLAVE_RING_END", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SLAVE_RING_END"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -5527,7 +5527,7 @@
   {
     "type": "EVENTTRIGGER_SLAVE_RING_START",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_SLAVE_RING_START"],
-    "trigger_texts": [["TXT_KEY_EVENT_SLAVE_RING_START", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SLAVE_RING_START"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5552,7 +5552,7 @@
   {
     "type": "EVENTTRIGGER_SMUGGLERS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_SMUGGLERS"],
-    "trigger_texts": [["TXT_KEY_EVENT_SMUGGLERS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SMUGGLERS"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -5580,7 +5580,7 @@
   {
     "type": "EVENTTRIGGER_SOBS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SOBS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SOBS"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -5609,7 +5609,7 @@
   {
     "type": "EVENTTRIGGER_SOVERIGN_CITY",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_SOVERIGN_CITY"],
-    "trigger_texts": [["TXT_KEY_EVENT_SOVERIGN_CITY", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SOVERIGN_CITY"],
     "single_player": true,
     "percent_games_active": 10,
     "weight": 400,
@@ -5637,7 +5637,7 @@
   {
     "type": "EVENTTRIGGER_SPIDER_MINE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_SPIDER_MINE"],
-    "trigger_texts": [["TXT_KEY_EVENT_SPIDER_MINE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SPIDER_MINE"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5663,7 +5663,7 @@
   {
     "type": "EVENTTRIGGER_SPOILED_GRAIN",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_SPOILED_GRAIN"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_SPOILED_GRAIN_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_SPOILED_GRAIN_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -5689,7 +5689,7 @@
   {
     "type": "EVENTTRIGGER_STRANGE_ADVISOR",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_STRANGE_ADVISOR", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_STRANGE_ADVISOR"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -5715,7 +5715,7 @@
   {
     "type": "EVENTTRIGGER_SWITCH_CIVS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SWITCH_CIVS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SWITCH_CIVS"],
     "single_player": true,
     "percent_games_active": 20,
     "weight": 800,
@@ -5743,7 +5743,7 @@
   {
     "type": "EVENTTRIGGER_THOROUGHBRED",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_THOROUGHBRED"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_THOROUGHBRED_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_THOROUGHBRED_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -5773,7 +5773,7 @@
   {
     "type": "EVENTTRIGGER_TIN",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_TIN"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_TIN_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_TIN_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -5800,7 +5800,7 @@
   {
     "type": "EVENTTRIGGER_TOO_CLOSE_TO_CALL",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_TOO_CLOSE_TO_CALL"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_TOO_CLOSE_TO_CALL_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_TOO_CLOSE_TO_CALL_1"],
     "percent_games_active": 100,
     "weight": 100,
     "civic": "CIVIC_LIBERTY",
@@ -5826,7 +5826,7 @@
   {
     "type": "EVENTTRIGGER_TORNADO",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_TORNADO_1"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_TORNADO_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_TORNADO_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -5854,7 +5854,7 @@
   {
     "type": "EVENTTRIGGER_TOWER_SHIELD",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_TOWER_SHIELD_1"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_TOWER_SHIELD_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_TOWER_SHIELD_1"],
     "percent_games_active": 20,
     "weight": 200,
     "max_our_landmass": -1,
@@ -5879,7 +5879,7 @@
   {
     "type": "EVENTTRIGGER_TRAIT_ADAPTIVE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENTTRIGGER_TRAIT_ADAPTIVE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENTTRIGGER_TRAIT_ADAPTIVE"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -5915,7 +5915,7 @@
   {
     "type": "EVENTTRIGGER_TRAIT_INSANE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENTTRIGGER_TRAIT_INSANE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENTTRIGGER_TRAIT_INSANE"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -5939,7 +5939,7 @@
   {
     "type": "EVENTTRIGGER_TRAITOR",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_TRAITOR"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRAITOR", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRAITOR"],
     "percent_games_active": 100,
     "weight": 200,
     "min_population": 3,
@@ -5969,7 +5969,7 @@
   {
     "type": "EVENTTRIGGER_TRANSMUTATION_TO_COPPER",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_TRANSMUTATION_TO_COPPER", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRANSMUTATION_TO_COPPER"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -5996,7 +5996,7 @@
   {
     "type": "EVENTTRIGGER_TRANSMUTATION_TO_GOLD",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_TRANSMUTATION_TO_GOLD", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRANSMUTATION_TO_GOLD"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -6023,7 +6023,7 @@
   {
     "type": "EVENTTRIGGER_TRUFFLES",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_TRUFFLES"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_TRUFFLES_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_TRUFFLES_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -6050,7 +6050,7 @@
   {
     "type": "EVENTTRIGGER_TWO_HEADED_COW",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_TWO_HEADED_COW"],
-    "trigger_texts": [["TXT_KEY_EVENT_TWO_HEADED_COW", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TWO_HEADED_COW"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -6078,7 +6078,7 @@
   {
     "type": "EVENTTRIGGER_UNDERCOUNCIL_GIFT",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_UNDERCOUNCIL_GIFT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_UNDERCOUNCIL_GIFT"],
     "percent_games_active": 100,
     "weight": 400,
     "civic": "CIVIC_UNDERCOUNCIL",
@@ -6103,7 +6103,7 @@
   {
     "type": "EVENTTRIGGER_VEIL_VS_ORDER_TEMPLE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_VEIL_VS_ORDER_TEMPLE"],
-    "trigger_texts": [["TXT_KEY_EVENT_VEIL_VS_ORDER_TEMPLE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_VEIL_VS_ORDER_TEMPLE"],
     "percent_games_active": 100,
     "weight": 200,
     "min_population": 3,
@@ -6135,7 +6135,7 @@
   {
     "type": "EVENTTRIGGER_VOLCANO",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_VOLCANO_1"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_VOLCANO_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_VOLCANO_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -6162,7 +6162,7 @@
   {
     "type": "EVENTTRIGGER_VOLCANO_CREATION",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_VOLCANO_1"],
-    "trigger_texts": [["TXT_KEY_EVENT_VOLCANO_CREATION", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_VOLCANO_CREATION"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -6189,7 +6189,7 @@
   {
     "type": "EVENTTRIGGER_WAR_GAMES",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_WAR_GAMES"],
-    "trigger_texts": [["TXT_KEY_EVENT_WAR_GAMES", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WAR_GAMES"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -6220,7 +6220,7 @@
   {
     "type": "EVENTTRIGGER_WASHED_OUT",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_WASHED_OUT"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_WASHED_OUT_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_WASHED_OUT_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -6248,7 +6248,7 @@
   {
     "type": "EVENTTRIGGER_WATERS_OF_LIFE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_WATERS_OF_LIFE_1"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_WATERS_OF_LIFE_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_WATERS_OF_LIFE_1"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -6275,7 +6275,7 @@
   {
     "type": "EVENTTRIGGER_WEDDING_FEUD",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_WEDDING_FEUD"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_WEDDING_FEUD_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_WEDDING_FEUD_1"],
     "single_player": true,
     "percent_games_active": 100,
     "weight": 200,
@@ -6305,7 +6305,7 @@
   {
     "type": "EVENTTRIGGER_WEREWOLF",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_WEREWOLF"],
-    "trigger_texts": [["TXT_KEY_EVENT_WEREWOLF", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WEREWOLF"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -6330,7 +6330,7 @@
   {
     "type": "EVENTTRIGGER_WHALEOFATHING",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_WHALEOFATHING"],
-    "trigger_texts": [["TXT_KEY_EVENT_TRIGGER_WHALEOFATHING_1", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TRIGGER_WHALEOFATHING_1"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -6358,7 +6358,7 @@
   {
     "type": "EVENTTRIGGER_WITCH",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_WITCH"],
-    "trigger_texts": [["TXT_KEY_EVENT_WITCH", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WITCH"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -6385,7 +6385,7 @@
   {
     "type": "EVENTTRIGGER_LUNATIC",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_LUNATIC"],
-    "trigger_texts": [["TXT_KEY_EVENT_LUNATIC", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_LUNATIC"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -6419,7 +6419,7 @@
   {
     "type": "EVENTTRIGGER_WILDERNES_MAN",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WILDERNESS_MAN", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WILDERNESS_MAN"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -6446,7 +6446,7 @@
   {
     "type": "EVENTTRIGGER_FARMER",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_FARMER", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_FARMER"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -6473,7 +6473,7 @@
   {
     "type": "EVENTTRIGGER_PIG_GIANT",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PIG_GIANT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PIG_GIANT"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -6500,7 +6500,7 @@
   {
     "type": "EVENTTRIGGER_PSYCHOPATH",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PSYCHOPATH", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PSYCHOPATH"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 3,
@@ -6526,7 +6526,7 @@
   {
     "type": "EVENTTRIGGER_PSYCHOPATH_LOST",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PSYCHOPATH_LOST", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PSYCHOPATH_LOST"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -6551,7 +6551,7 @@
   {
     "type": "EVENTTRIGGER_PSYCHOPATH_CAUGHT",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PSYCHOPATH_CAUGHT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PSYCHOPATH_CAUGHT"],
     "percent_games_active": 100,
     "weight": -1,
     "max_our_landmass": -1,
@@ -6581,7 +6581,7 @@
   {
     "type": "EVENTTRIGGER_EXPLORE_LAIR_PORTAL",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_EXPLORE_LAIR_PORTAL", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_EXPLORE_LAIR_PORTAL"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -6605,7 +6605,7 @@
   {
     "type": "EVENTTRIGGER_EXPLORE_LAIR_DEPTHS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_EXPLORE_LAIR_DEPTHS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_EXPLORE_LAIR_DEPTHS"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -6628,7 +6628,7 @@
   {
     "type": "EVENTTRIGGER_EXPLORE_LAIR_DWARF_VS_LIZARDMEN",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_EXPLORE_LAIR_DWARF_VS_LIZARDMEN", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_EXPLORE_LAIR_DWARF_VS_LIZARDMEN"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -6655,7 +6655,7 @@
   {
     "type": "EVENTTRIGGER_DUNGEON",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_DUNGEON", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_DUNGEON"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -6682,7 +6682,7 @@
   {
     "type": "EVENTTRIGGER_TREASURE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_TREASURE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_TREASURE"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -6706,7 +6706,7 @@
   {
     "type": "EVENTTRIGGER_GODSLAYER",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_GODSLAYER", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_GODSLAYER"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -6730,7 +6730,7 @@
   {
     "type": "EVENTTRIGGER_SAILORS_DIRGE_DEFEATED",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SAILORS_DIRGE_DEFEATED", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SAILORS_DIRGE_DEFEATED"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -6754,7 +6754,7 @@
   {
     "type": "EVENTTRIGGER_ENEMY_CITY_CRIME",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_ENEMY_CITY_CRIME", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_ENEMY_CITY_CRIME"],
     "percent_games_active": 100,
     "weight": 200,
     "max_our_landmass": -1,
@@ -6782,7 +6782,7 @@
   {
     "type": "EVENTTRIGGER_WB_SPLINTERED_COURT_DEFEATED_AMELANCHIER",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_SPLINTERED_COURT_DEFEATED_AMELANCHIER", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_SPLINTERED_COURT_DEFEATED_AMELANCHIER"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -6808,7 +6808,7 @@
   {
     "type": "EVENTTRIGGER_WB_SPLINTERED_COURT_DEFEATED_THESSA",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_SPLINTERED_COURT_DEFEATED_THESSA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_SPLINTERED_COURT_DEFEATED_THESSA"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -6834,7 +6834,7 @@
   {
     "type": "EVENTTRIGGER_WB_SPLINTERED_COURT_DEFEATED_RIVANNA",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_SPLINTERED_COURT_DEFEATED_RIVANNA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_SPLINTERED_COURT_DEFEATED_RIVANNA"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -6860,7 +6860,7 @@
   {
     "type": "EVENTTRIGGER_WB_SPLINTERED_COURT_DEFEATED_VOLANNA",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_SPLINTERED_COURT_DEFEATED_VOLANNA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_SPLINTERED_COURT_DEFEATED_VOLANNA"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -6886,7 +6886,7 @@
   {
     "type": "EVENTTRIGGER_WB_SPLINTERED_COURT_PARITH",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_SPLINTERED_COURT_PARITH", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_SPLINTERED_COURT_PARITH"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -6908,7 +6908,7 @@
   {
     "type": "EVENTTRIGGER_MAGNADINE_HIRE_UNITS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_MAGNADINE_HIRE_UNITS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_MAGNADINE_HIRE_UNITS"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -6941,7 +6941,7 @@
   {
     "type": "EVENTTRIGGER_WB_THE_BLACK_TOWER_PICK_CIV",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_THE_BLACK_TOWER_PICK_CIV", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_THE_BLACK_TOWER_PICK_CIV"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -6971,7 +6971,7 @@
   {
     "type": "EVENTTRIGGER_WB_THE_MOMUS_BEERIS_OFFER",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_THE_MOMUS_BEERIS_OFFER", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_THE_MOMUS_BEERIS_OFFER"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -6994,7 +6994,7 @@
   {
     "type": "EVENTTRIGGER_WB_GIFT_OF_KYLORIN_SECRET_DOOR",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_GIFT_OF_KYLORIN_SECRET_DOOR", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_GIFT_OF_KYLORIN_SECRET_DOOR"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -7016,7 +7016,7 @@
   {
     "type": "EVENTTRIGGER_WB_GIFT_OF_KYLORIN_MESHABBER",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_GIFT_OF_KYLORIN_MESHABBER", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_GIFT_OF_KYLORIN_MESHABBER"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -7044,7 +7044,7 @@
   {
     "type": "EVENTTRIGGER_WB_THE_RADIANT_GUARD_CHOOSE_SIDES",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_THE_RADIANT_GUARD_CHOOSE_SIDES", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_THE_RADIANT_GUARD_CHOOSE_SIDES"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -7069,7 +7069,7 @@
   {
     "type": "EVENTTRIGGER_WB_LORD_OF_THE_BALORS_TEMPT_JUDECCA",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_LORD_OF_THE_BALORS_TEMPT_JUDECCA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_LORD_OF_THE_BALORS_TEMPT_JUDECCA"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -7093,7 +7093,7 @@
   {
     "type": "EVENTTRIGGER_WB_LORD_OF_THE_BALORS_TEMPT_SALLOS_MALE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_LORD_OF_THE_BALORS_TEMPT_SALLOS_MALE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_LORD_OF_THE_BALORS_TEMPT_SALLOS_MALE"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -7116,7 +7116,7 @@
   {
     "type": "EVENTTRIGGER_WB_LORD_OF_THE_BALORS_TEMPT_SALLOS_FEMALE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_LORD_OF_THE_BALORS_TEMPT_SALLOS_FEMALE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_LORD_OF_THE_BALORS_TEMPT_SALLOS_FEMALE"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -7139,7 +7139,7 @@
   {
     "type": "EVENTTRIGGER_WB_LORD_OF_THE_BALORS_TEMPT_OUZZA",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_LORD_OF_THE_BALORS_TEMPT_OUZZA", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_LORD_OF_THE_BALORS_TEMPT_OUZZA"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -7162,7 +7162,7 @@
   {
     "type": "EVENTTRIGGER_WB_LORD_OF_THE_BALORS_TEMPT_MERESIN",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_LORD_OF_THE_BALORS_TEMPT_MERESIN", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_LORD_OF_THE_BALORS_TEMPT_MERESIN"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -7185,7 +7185,7 @@
   {
     "type": "EVENTTRIGGER_WB_LORD_OF_THE_BALORS_TEMPT_STATIUS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_LORD_OF_THE_BALORS_TEMPT_STATIUS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_LORD_OF_THE_BALORS_TEMPT_STATIUS"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -7210,7 +7210,7 @@
   {
     "type": "EVENTTRIGGER_WB_LORD_OF_THE_BALORS_TEMPT_LETHE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_LORD_OF_THE_BALORS_TEMPT_LETHE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_LORD_OF_THE_BALORS_TEMPT_LETHE"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -7235,7 +7235,7 @@
   {
     "type": "EVENTTRIGGER_WB_FALL_OF_CUANTINE_ROSIER",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_FALL_OF_CUANTINE_ROSIER", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_FALL_OF_CUANTINE_ROSIER"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -7257,7 +7257,7 @@
   {
     "type": "EVENTTRIGGER_WB_FALL_OF_CUANTINE_FLEE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WB_FALL_OF_CUANTINE_FLEE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WB_FALL_OF_CUANTINE_FLEE"],
     "percent_games_active": 100,
     "max_our_landmass": -1,
     "units_required": "",
@@ -7279,7 +7279,7 @@
   {
     "type": "EVENTTRIGGER_SHRINE_CAMULOS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_SHRINE_CAMULOS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_SHRINE_CAMULOS"],
     "percent_games_active": 10,
     "weight": 400,
     "min_population": 3,
@@ -7305,7 +7305,7 @@
   {
     "type": "EVENTTRIGGER_COUNTERFEIT",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_COUNTERFEIT", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_COUNTERFEIT"],
     "percent_games_active": 100,
     "weight": 400,
     "min_treasury": 500,
@@ -7330,7 +7330,7 @@
   {
     "type": "EVENTTRIGGER_FOOD_SICKNESS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_FOOD_SICKNESS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_FOOD_SICKNESS"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -7360,7 +7360,7 @@
   {
     "type": "EVENTTRIGGER_WEREWOLF_MORALITY_GOOD",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WEREWOLF_MORALITY_GOOD", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WEREWOLF_MORALITY_GOOD"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -7384,7 +7384,7 @@
   {
     "type": "EVENTTRIGGER_WEREWOLF_MORALITY_BAD",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_WEREWOLF_MORALITY_BAD", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_WEREWOLF_MORALITY_BAD"],
     "percent_games_active": 100,
     "weight": 100,
     "max_our_landmass": -1,
@@ -7408,7 +7408,7 @@
   {
     "type": "EVENTTRIGGER_IRON_ORB",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_IRON_ORB", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_IRON_ORB"],
     "percent_games_active": 100,
     "weight": 400,
     "min_treasury": 75,
@@ -7435,7 +7435,7 @@
   {
     "type": "EVENTTRIGGER_ANCIENT_CITY",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_ANCIENT_CITY", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_ANCIENT_CITY"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 5,
@@ -7461,7 +7461,7 @@
   {
     "type": "EVENTTRIGGER_BAREKE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_BAREKE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_BAREKE"],
     "percent_games_active": 100,
     "weight": 400,
     "min_population": 5,
@@ -7487,7 +7487,7 @@
   {
     "type": "EVENTTRIGGER_CLAIRONE",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_CLAIRONE", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_CLAIRONE"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -7512,7 +7512,7 @@
   {
     "type": "EVENTTRIGGER_CENTAUR_PANTS",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_CENTAUR_PANTS", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_CENTAUR_PANTS"],
     "percent_games_active": 100,
     "weight": 400,
     "max_our_landmass": -1,
@@ -7537,7 +7537,7 @@
   {
     "type": "EVENTTRIGGER_PARITH",
     "world_news_texts": [""],
-    "trigger_texts": [["TXT_KEY_EVENT_PARITH", "NONE"]],
+    "trigger_texts": ["TXT_KEY_EVENT_PARITH"],
     "single_player": true,
     "percent_games_active": 100,
     "weight": 200,

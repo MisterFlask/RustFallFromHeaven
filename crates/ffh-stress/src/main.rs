@@ -1,5 +1,5 @@
 //! `ffh-stress`: plays batches of AI-only games over a matrix of game settings (speed,
-//! handicap, era, world size, number of civs, climate, sea level, game options, teams, victory
+//! handicap, world size, number of civs, climate, sea level, game options, teams, victory
 //! settings) and reports every crash.
 //!
 //! Commands:
@@ -18,12 +18,12 @@
 //!
 //! Settings (`run`): --seed N --civs N --size WORLDSIZE_X --speed GAMESPEED_X
 //!   --handicap HANDICAP_X (game handicap) --player-handicap HANDICAP_X (AI slots)
-//!   --era ERA_X --climate CLIMATE_X --sea SEALEVEL_X (or --sea-level) --options GAMEOPTION_A,GAMEOPTION_B (or repeated --option)
+//!   --climate CLIMATE_X --sea SEALEVEL_X (or --sea-level) --options GAMEOPTION_A,GAMEOPTION_B (or repeated --option)
 //!   --teams N (consecutive civs in teams of N) --turns N --max-turns N
 //!   --target-score N (score victory at N basis points of the world: 5000 = half; 0 = off)
 //!   --max-city-elimination N --no-victory VICTORY_A,VICTORY_B
 //!
-//! Batch options: --matrix NAME[,NAME..] (speed handicap era world civs climate sea options
+//! Batch options: --matrix NAME[,NAME..] (speed handicap world civs climate sea options
 //!   teams victory random all; default all) --seeds 1,2 --turns N --jobs N --timeout SECS
 //!   --random N (games in the random matrix) --out FILE (TSV of all results)
 //!   --filter TEXT (only games whose settings contain TEXT)

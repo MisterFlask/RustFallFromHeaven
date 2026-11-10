@@ -4,7 +4,7 @@
 //! `AI_goldPerTurnTradeVal`, `AI_maxGoldTrade`, `AI_maxGoldPerTurnTrade`).
 //!
 //! The heavy part -- the value of *holding* a resource (`AI_bonusVal`/`AI_baseBonusVal`, the
-//! unit/building/era enablement scan, the FfH mana and evil-resource terms) -- is already ported
+//! unit/building enablement scan, the FfH mana and evil-resource terms) -- is already ported
 //! faithfully in `ffh-core` (`Game::player_ai_bonus_val`); this module is the thin trade layer on
 //! top. Integer math mirrors the DLL exactly (each `/ 100` truncates at that step).
 //!

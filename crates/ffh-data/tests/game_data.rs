@@ -21,7 +21,6 @@ fn table_sizes() {
     assert_eq!(d.worlds.len(), WorldSizeType::NUM);
     assert_eq!(d.climates.len(), 5);
     assert_eq!(d.sea_levels.len(), 3);
-    assert_eq!(d.eras.len() - ffh_data::card_entry_count("eras"), 10);
     assert_eq!(d.handicaps.len(), 9);
     assert_eq!(d.game_options.len(), GameOptionType::NUM);
     assert_eq!(d.goodies.len() - ffh_data::card_entry_count("goodies"), 53);
@@ -111,22 +110,6 @@ fn climates_and_sea_levels() {
 
     let sea: Vec<i32> = d.sea_levels.iter().map(|s| s.sea_level_change).collect();
     assert_eq!(sea, vec![-8, 0, 6]);
-}
-
-#[test]
-fn eras() {
-    let d = d();
-    let ancient = &d.eras[d.t::<EraType>("ERA_ANCIENT")];
-    assert_eq!((ancient.start_percent, ancient.starting_unit_multiplier), (0, 1));
-    assert_eq!((ancient.event_chance_per_turn, ancient.anarchy_percent, ancient.train_percent), (4, 50, 100));
-    let classical = &d.eras[d.t::<EraType>("ERA_CLASSICAL")];
-    assert_eq!((classical.start_percent, classical.starting_gold, classical.advanced_start_points), (10, 10, 1200));
-    assert_eq!(classical.starting_defense_units, 1);
-    assert!(!classical.no_goodies);
-    let medieval = &d.eras[d.t::<EraType>("ERA_MEDIEVAL")];
-    assert!(medieval.no_goodies && !medieval.no_animals && !medieval.no_barb_units && !medieval.no_barb_cities);
-    assert_eq!((medieval.start_percent, medieval.starting_gold), (20, 25));
-    assert_eq!(d.eras[d.t::<EraType>("ERA_RUNE")].advanced_start_points, -1);
 }
 
 #[test]

@@ -360,7 +360,7 @@ fn decree_improvement_with(g: &Game, p: PlayerId, t: PlotIdx, builds: &[BuildTyp
     let mut best: Option<((bool, i32, i32), ImprovementType)> = None;
     for &b in builds {
         let Some(imp) = d.builds[b].improvement else { continue };
-        if plot.feature_type.is_some_and(|f| d.builds[b].feature_remove[f]) || !g.player_can_build(p, t, b, false, false) {
+        if plot.feature_type.is_some_and(|f| d.builds[b].feature_remove[f]) || !g.player_can_build(p, t, b, false) {
             continue;
         }
         let connects = bonus.is_some_and(|bn| d.improvements[imp].improvement_bonus[bn].bonus_trade);

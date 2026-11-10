@@ -236,6 +236,18 @@ fn make_ctx(g: &Game, p: PlayerId) -> Ctx {
 }
 
 /// Value added to a tech our victory goal needs, and the research turns it is charged at most.
+/// Known techs (cards not counted) from which the AI's "early game" is over: the leader's early
+/// tech hints stop, and animal training buildings lose their worth. In AI games the tree's late
+/// techs began at about this count.
+pub(crate) const LATE_GAME_TECHS: usize = 36;
+
+/// Has `p`'s team left the early game ([`LATE_GAME_TECHS`] known techs, cards not counted)?
+pub(crate) fn late_game(g: &Game, p: PlayerId) -> bool {
+    let d = g.d;
+    let t = g.players[p].team;
+    d.techs.keys().filter(|&x| g.teams[t].has_tech[x] && d.techs[x].card.is_none()).count() >= LATE_GAME_TECHS
+}
+
 const GOAL_TECH_BONUS: i64 = 4000;
 const GOAL_TECH_TURNS: i64 = 15;
 
@@ -748,7 +760,7 @@ fn tech_value(g: &Game, p: PlayerId, t: TechType, ctx: &Ctx) -> i32 {
 
     // FfH leader hints for the early game.
     if let Some(l) = leader {
-        if pl.current_era.idx() <= 1 {
+        if !late_game(g, p) {
             for fav in [l.favorite_early_tech1, l.favorite_early_tech2, l.favorite_early_tech3] {
                 if fav == Some(t) {
                     value += 300;

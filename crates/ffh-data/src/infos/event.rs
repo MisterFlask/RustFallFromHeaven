@@ -15,8 +15,7 @@
 //!
 //! Not ported (UI only): `CvEventInfo::m_szOtherPlayerPopup`, `m_szQuestFailText` and
 //! `m_szLocalInfoText` (popup/message text keys). Trigger texts and world-news keys are kept:
-//! C++ picks one of them with `getSorenRandNum`, so their counts (and the trigger texts' eras)
-//! advance the synchronized RNG.
+//! C++ picks one of them with `getSorenRandNum`, so their counts advance the synchronized RNG.
 
 use crate::enums::*;
 use crate::idx::{opt_from_i32, IdxVec};
@@ -375,11 +374,9 @@ pub struct EventTriggerInfo {
     /// C++ `getCorporationRequired(i)` / `getNumCorporationsRequired()`.
     pub corporations_required: Vec<CorporationType>,
 
-    /// C++ `getText(i)` / `getNumTexts()`: popup text keys. `CvPlayer::initTriggeredData` picks
-    /// one of those valid for the current era with the game RNG.
+    /// C++ `getText(i)` / `getNumTexts()`: popup text keys (`trigger_texts`).
+    /// `CvPlayer::initTriggeredData` picks one with the game RNG.
     pub texts: Vec<String>,
-    /// C++ `getTextEra(i)`, parallel to `texts`; `None` = any era.
-    pub text_eras: Vec<Option<EraType>>,
     /// C++ `getWorldNews(i)` / `getNumWorldNews()`. Empty `<Text></Text>` entries are kept (as C++
     /// does): they still count for the RNG pick in `CvPlayer::initTriggeredData`.
     pub world_news: Vec<String>,
@@ -426,7 +423,7 @@ pub struct EventTriggerInfo {
 
 /// C++ `CvEventTriggerInfo::read`. The struct literal is in C++ read order.
 pub fn read_event_trigger(rd: &Rd) -> EventTriggerInfo {
-    let (texts, text_eras) = read_trigger_texts(rd);
+    let texts: Vec<String> = rd.string_list("trigger_texts").into_iter().filter(|t| !t.is_empty()).collect();
     EventTriggerInfo {
         base: InfoBase::read(rd),
         percent_games_active: rd.int("percent_games_active"),
@@ -479,7 +476,6 @@ pub fn read_event_trigger(rd: &Rd) -> EventTriggerInfo {
         corporations_required: ref_list_req(rd, "corporations_required"),
 
         texts,
-        text_eras,
         world_news: rd.string_list("world_news_texts"),
 
         single_player: rd.bool("single_player"),
@@ -632,18 +628,6 @@ fn read_building_changes(rd: &Rd, tag: &str) -> Vec<(BuildingClassType, i32)> {
     out
 }
 
-/// C++ `TriggerTexts` loop: per `<TriggerText>`, the text key (`GetChildXmlVal`) and the era
-/// (`GetNextXmlVal` + `FindInInfoClass`; missing or `NONE` -> -1 = any era).
-fn read_trigger_texts(rd: &Rd) -> (Vec<String>, Vec<Option<EraType>>) {
-    let mut texts = Vec::new();
-    let mut eras = Vec::new();
-    for values in tuple_entries(rd, "trigger_texts") {
-        texts.push(text_at(&values, 0).to_string());
-        eras.push(rd.resolve::<EraType>(&text_at(&values, 1)));
-    }
-    (texts, eras)
-}
-
 /// `<iPlotType>`: a raw C++ `PlotTypes` value (-1 = `NO_PLOT`).
 fn read_plot_type(rd: &Rd) -> Option<PlotType> {
     let v = rd.int("plot_type");
@@ -665,7 +649,6 @@ mod tests {
         reg.register_class("ImprovementInfo", names(&["IMPROVEMENT_FARM"]));
         reg.register_class("BuildingClassInfo", names(&["BUILDINGCLASS_X"]));
         reg.register_class("YieldInfo", names(YieldType::NAMES));
-        reg.register_class("EraInfo", names(&["ERA_ANCIENT"]));
         reg
     }
 
@@ -679,7 +662,7 @@ mod tests {
                 "type": "EVENTTRIGGER_T",
                 "improvements_required": ["NONE", "IMPROVEMENT_FARM"],
                 "events": ["EVENT_B", "NONE"],
-                "trigger_texts": [["TXT_A", "ERA_ANCIENT"], [], ["TXT_B"]],
+                "trigger_texts": ["TXT_A", "", "TXT_B"],
                 "world_news_texts": [""]
             }"#,
         )
@@ -692,9 +675,8 @@ mod tests {
         let warnings = cx.warnings.borrow();
         assert_eq!(warnings.len(), 1, "{warnings:?}");
         assert!(warnings[0].contains("EVENTTRIGGER_T") && warnings[0].contains("events"));
-        // An empty trigger text entry is skipped; a missing era is -1 (any era).
+        // An empty trigger text entry is skipped.
         assert_eq!(t.texts, vec!["TXT_A", "TXT_B"]);
-        assert_eq!(t.text_eras, vec![Some(EraType(0)), None]);
         // An empty world-news text still counts.
         assert_eq!(t.world_news, vec![String::new()]);
         // Absent keys: GetChildXmlValByName's own defaults win over the C++ constructor's.

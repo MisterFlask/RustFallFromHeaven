@@ -365,10 +365,10 @@ Several mutators `expect` on valid input.
 ```rust
 // setup.rs
 pub struct NewGame { pub seed: u32, pub opponents: usize, pub world: WorldSizeType, pub speed: GameSpeedType,
-    pub handicap: HandicapType, pub era: EraType, pub climate: ClimateType, pub sea_level: SeaLevelType,
+    pub handicap: HandicapType, pub climate: ClimateType, pub sea_level: SeaLevelType,
     pub options: Vec<GameOptionType>, pub disabled_victories: Vec<VictoryType>, pub max_turns: i32,
     pub civ: Option<CivilizationType>, pub leader: Option<LeaderHeadType> }
-pub fn setup_lists(d: &GameData) -> Json;   // AI-playable civs/leaders, sizes, speeds, handicaps, eras, climates, sea levels, options
+pub fn setup_lists(d: &GameData) -> Json;   // AI-playable civs/leaders, sizes, speeds, handicaps, climates, sea levels, options
 
 // session.rs
 pub enum Phase { Human(PlayerId), Running, Over }
@@ -606,7 +606,7 @@ Arrays per info table. Each entry is `{type, name, help?, strategy?, pedia?, ...
 * empire: techs, buildings, projects, processes, specialists, civic options, civics, religions;
 * civilizations: civilizations, leaders;
 * events and votes: events, triggers, votes;
-* setup: handicaps, speeds, world sizes, eras, player options, trade items.
+* setup: handicaps, speeds, world sizes, player options, trade items.
 
 Size is about 1–1.5 MB, cached by ETag.
 
@@ -619,7 +619,7 @@ Size is about 1–1.5 MB, cached by ETag.
 **Setup and files**
 * **New game screen:**
   * civilization and leader, or random;
-  * number of AI opponents, world size, speed, difficulty, era (first era by default), climate, sea level, seed;
+  * number of AI opponents, world size, speed, difficulty, climate, sea level, seed;
   * a few game options; victory conditions.
 * Load, save and the autosave list.
 * Game-over screen: winner, victory type, scores.

@@ -13,7 +13,7 @@
 
 import * as api from "./api.js";
 import { S, dname, info, turns, orderName, emit } from "./state.js";
-import { h, toast } from "./dom.js";
+import { h, toast, errorText } from "./dom.js";
 import { plain } from "./markup.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
@@ -170,7 +170,7 @@ export async function openGovernors({ openCity } = {}) {
     try {
       r = await api.query("governors");
     } catch (e) {
-      m.setBody(h("p.warn", e.detail ?? e.message));
+      m.setBody(h("p.warn", errorText(e)));
       return;
     }
     if (m.closed) return;
@@ -256,7 +256,7 @@ export async function pickEmpireItem({ army = null, title = null } = {}) {
   try {
     r = await api.query("empire_items", army !== null ? { army } : {});
   } catch (e) {
-    toast(e.detail ?? e.message, "error");
+    toast(errorText(e), "error");
     return null;
   }
   if (!r.governed) {
@@ -309,7 +309,7 @@ export async function orderEmpire({ order, data, army = null, beforeMap = null }
   try {
     r = await api.query("empire_cities", { order, data, ...(army !== null ? { army } : {}) });
   } catch (e) {
-    toast(e.detail ?? e.message, "error");
+    toast(errorText(e), "error");
     return false;
   }
   if (!r.cities.length) {

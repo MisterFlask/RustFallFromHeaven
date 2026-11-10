@@ -125,7 +125,7 @@ weigh the battle effects (to check: how `ffh-ai` values sphere promotions today)
 
 Creatures are trained like units, from two sources: mana nodes and wild habitats. They are national
 units, so they follow the owner's rule for those (2026-11-06, with the Skirmisher): above their
-era's curve, with no upgrade; the defaults below are set that way (a tier-2 unit is strength 4 for
+tier's curve, with no upgrade; the defaults below are set that way (a tier-2 unit is strength 4 for
 60 hammers; a creature is 5 for 70, a large one 8 for 120). They reuse
 existing art (each is a new unit type whose sprites and key poses come from an existing unit
 through the client's aliases, `UNIT_ALIASES` in `iso.js`). Several are large: this is the early

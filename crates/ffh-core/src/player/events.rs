@@ -889,14 +889,7 @@ impl Game {
             // only as arguments of the texts below, which are stored unformatted.)
         }
 
-        let current_era = self.players[p].current_era;
-        let texts: Vec<&str> = k_trigger
-            .texts
-            .iter()
-            .zip(&k_trigger.text_eras)
-            .filter(|&(_, &era)| era.is_none() || era == Some(current_era))
-            .map(|(text, _)| text.as_str())
-            .collect();
+        let texts: Vec<&str> = k_trigger.texts.iter().map(|text| text.as_str()).collect();
 
         let text = if !texts.is_empty() {
             let chosen = self.soren_rand_num(texts.len() as i32, "Event Text choice");

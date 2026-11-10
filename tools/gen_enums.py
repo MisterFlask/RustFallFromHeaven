@@ -42,7 +42,6 @@ WANT = {
     "BuildTypes": "BuildType",
     "HandicapTypes": "HandicapType",
     "GameSpeedTypes": "GameSpeedType",
-    "EraTypes": "EraType",
     "CivilizationTypes": "CivilizationType",
     "LeaderHeadTypes": "LeaderHeadType",
     "ArtStyleTypes": "ArtStyleType",

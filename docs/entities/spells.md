@@ -954,7 +954,7 @@ wounded target (5% at least); terrain and affinity bonuses are not counted. `spe
 stealth (the Hide ability). The caster must stand next to water; the rules allow as many Krakens as
 the player has units able to cast it.
 
-**Playing it well.** A free capital ship that out-fights anything afloat in its era: use it to sink
+**Playing it well.** A free capital ship that out-fights anything afloat in its time: use it to sink
 fleets and transports, hold sea lanes and escort invasions. Losing it costs a high priest's whole
 investment, so do not throw it at cities.
 

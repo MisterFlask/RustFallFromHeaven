@@ -1,5 +1,5 @@
 //! Settings matrices: each group varies one dimension around the standard game (small map,
-//! 5 civs, normal speed, Noble, first era, temperate, medium sea level); `random` draws every
+//! 5 civs, normal speed, Noble, temperate, medium sea level); `random` draws every
 //! dimension at once.
 
 use ffh_data::*;
@@ -17,7 +17,7 @@ fn names<T: InfoId>(d: &GameData, n: usize) -> Vec<String> {
     (0..n).map(|i| d.type_name(T::from_usize(i)).to_string()).collect()
 }
 
-pub const GROUPS: &[&str] = &["speed", "handicap", "era", "world", "civs", "climate", "sea", "options", "teams", "victory", "random"];
+pub const GROUPS: &[&str] = &["speed", "handicap", "world", "civs", "climate", "sea", "options", "teams", "victory", "random"];
 
 pub fn build(d: &GameData, group: &str, seeds: &[u32], turns: i32, n_random: usize) -> Result<Vec<Settings>, String> {
     if group == "all" {
@@ -29,7 +29,6 @@ pub fn build(d: &GameData, group: &str, seeds: &[u32], turns: i32, n_random: usi
     }
     let speeds = names::<GameSpeedType>(d, d.game_speeds.len());
     let handicaps = names::<HandicapType>(d, d.handicaps.len());
-    let eras = names::<EraType>(d, d.eras.len());
     let worlds = names::<WorldSizeType>(d, d.worlds.len());
     let climates = names::<ClimateType>(d, d.climates.len());
     let seas = names::<SeaLevelType>(d, d.sea_levels.len());
@@ -52,13 +51,6 @@ pub fn build(d: &GameData, group: &str, seeds: &[u32], turns: i32, n_random: usi
                 }
                 // AI slots at that handicap too (as for a human player's slot).
                 v.push(Settings { handicap: h.clone(), player_handicap: h.clone(), ..base(seeds[0]) });
-            }
-        }
-        "era" => {
-            for e in &eras {
-                for &seed in seeds {
-                    v.push(Settings { era: e.clone(), ..base(seed) });
-                }
             }
         }
         "world" => {
@@ -136,9 +128,8 @@ pub fn build(d: &GameData, group: &str, seeds: &[u32], turns: i32, n_random: usi
                     options: vec!["GAMEOPTION_ALWAYS_WAR".into(), "GAMEOPTION_AGGRESSIVE_AI".into()],
                     ..base(seed)
                 });
-                // Only the FfH altar/tower victories (and time), late start era.
+                // Only the FfH altar/tower victories (and time).
                 v.push(Settings {
-                    era: eras.get(2).cloned().unwrap_or_else(|| eras[0].clone()),
                     no_victory: victories.iter().filter(|x| !x.contains("ALTAR") && !x.contains("TOWER") && !x.contains("TIME")).cloned().collect(),
                     ..base(seed)
                 });
@@ -178,7 +169,6 @@ pub fn build(d: &GameData, group: &str, seeds: &[u32], turns: i32, n_random: usi
                     speed: speeds[rng.below(speeds.len())].clone(),
                     handicap: h.clone(),
                     player_handicap: if rng.below(4) == 0 { h } else { "HANDICAP_NOBLE".into() },
-                    era: eras[if rng.below(2) == 0 { 0 } else { rng.below(eras.len()) }].clone(),
                     climate: climates[rng.below(climates.len())].clone(),
                     sea: seas[rng.below(seas.len())].clone(),
                     options: opts,

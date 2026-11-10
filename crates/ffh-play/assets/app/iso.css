@@ -186,7 +186,7 @@ html.iso #empire { flex: 0 1 auto; flex-wrap: nowrap; gap: 14px; padding: 0 12px
 html.iso #empire .stat { gap: 8px; }
 html.iso #empire .stat > span:not(.num) + .num { margin-left: 0; }
 html.iso #empire .stat .dim { color: #fff8e4; }
-html.iso #empire .stat.research { padding: 4px 6px; border: 0; }
+html.iso #empire :is(.stat.research, .stat.doctrine) { padding: 4px 6px; border: 0; }
 html.iso #empire .slider-item + .slider-item { margin-left: 8px; }
 html.iso #empire .stat.sliders { gap: 0; }
 html.iso #empire .slider-item { gap: 4px; }
@@ -440,6 +440,11 @@ html.iso .tip-combat .mods { font-size: 20px; color: var(--iso-dim); }
 html.iso .tip-yields { gap: 12px; }
 
 html.iso #toasts { top: calc(var(--iso-top) + 12px); bottom: auto; right: 50%; transform: translateX(50%); align-items: center; }
+/* On a wide screen, centred between the turn report's panel (its widest, opened) and the city
+   panel's column, so a toast does not cover the report's tabs. */
+@media (min-width: 1100px) {
+  html.iso #toasts { left: calc(var(--iso-gap) + 62px + min(480px, 40vw) + 12px); right: calc(var(--iso-gap) + 324px); transform: none; }
+}
 html.iso .toast {
   border: var(--iso-inset-w, 6px) solid transparent; border-image: var(--iso-inset);
   background: linear-gradient(180deg, var(--iso-navy-top), var(--iso-navy-bot)); background-clip: padding-box; box-shadow: none; padding: 4px 10px;
@@ -451,6 +456,7 @@ html.iso #modals .backdrop { background: rgba(2, 10, 34, 0.6); }
 html.iso #modals .backdrop { animation-name: iso-backdrop-in; }
 html.iso .modal { width: min(620px, 100%); color: var(--iso-ink); }
 html.iso .modal.wide { width: min(980px, 100%); }
+html.iso .modal.wide.newgame-screen { width: min(1240px, 100%); }
 html.iso .modal.city-screen { width: min(1240px, 100%); }
 html.iso .modal-head {
   position: relative; justify-content: center; padding: 4px 44px 10px; margin: 0;
@@ -479,12 +485,18 @@ html.iso .chip { border: 2px solid #8a6420; background: var(--iso-deep); font-si
 html.iso .mode-hint { background: rgba(60, 40, 130, 0.5); border: 2px solid #a276da; color: #fff; }
 html.iso label.field > span { font-size: 20px; color: var(--iso-dim); }
 html.iso .tree-scroll { background: #020a20; border: 2px solid #8a6420; }
+html.iso .tree-lane-name { font: 400 10px/14px var(--iso-font); color: var(--iso-dim); }
+html.iso .tree-lane.doctrine .tree-lane-name { color: var(--iso-gold); box-shadow: inset 2px 0 0 var(--iso-gold); }
 /* The techs keep their measured boxes: Herald at 1x, the grid's smallest size. */
 html.iso button.tech { border-width: 2px; border-style: solid; border-image: none; border-color: #8a6420; background: #0c2058; font: 400 10px/12px var(--iso-font); }
 html.iso button.tech .tech-sub { font-size: 10px; }
 html.iso button.tech.has { background: #24461c; border-color: var(--iso-good); }
 html.iso button.tech.researching { background: #1f4ea6; border-color: var(--iso-gold-lt); }
 html.iso button.tech.can { border-color: var(--iso-gold); }
+/* What a tech unlocks, in its box: the chooser's icons at 3/4 (24 px). */
+html.iso button.tech > .unlocks .unlock { width: 24px; height: 24px; }
+html.iso button.tech > .unlocks .unlock > * { zoom: 0.75; }
+html.iso button.tech > .unlocks .unlock.more { width: auto; min-width: 24px; padding: 0 3px; }
 html.iso .cplot { border: 2px solid #3a4a74; background: #0c1c48; border-image: none; font-size: 20px; }
 html.iso .cplot.worked { background: #2c5a1c; border-color: var(--iso-good); }
 html.iso .cplot.centre { background: #5a3a14; border-color: var(--iso-gold); }
@@ -621,6 +633,15 @@ html.iso button.slot.open, html.iso button.slot.open[disabled] { background: tra
 html.iso button.slot.open:hover:not([disabled]) { background: transparent; border: 1.5px dashed #f0cc66; color: #f0cc66; }
 html.iso .modal.city-overlay .gives, html.iso .modal.city-overlay .ccounts, html.iso .modal.city-overlay .locked-line { font-size: 16px; }
 html.iso body:has(.modal.city-overlay) :is(#side, #iso-city, #iso-rail, #bottom, #iso-corner) { display: none; }
+/* The build prompt (city.js `promptView`) at the right, below the top bar, the map dimmed less:
+   city.js centres the map on the city, which stays in view at the left. A phone gets the dialog. */
+html.iso .modal.city-screen.build-prompt { width: min(880px, 100%); }
+html.iso .build-prompt button.build { column-gap: 6px; padding-left: 6px; padding-right: 6px; }
+html.iso .build-prompt button.build > .dim { font-size: 16px; }
+@media (min-width: 761px) and (min-height: 521px) {
+  html.iso #modals .backdrop:has(> .modal.build-prompt) { place-items: start end; padding: calc(var(--iso-top) + 8px) var(--iso-gap) var(--iso-gap); background: rgba(2, 10, 34, 0.2); }
+  html.iso .modal.city-screen.build-prompt { width: min(760px, calc(50vw - 40px)); max-height: calc(100vh - var(--iso-top) - 8px - var(--iso-gap)); max-height: calc(100dvh - var(--iso-top) - 8px - var(--iso-gap)); }
+}
 
 /* Titles in the bold, rows and values in the regular weight (the reference's). */
 html.iso .iso-title, html.iso .iso-name, html.iso .iso-desc-title, html.iso .modal-head h2, html.iso #iso-corner #end-turn { font-weight: 700; }
@@ -668,6 +689,7 @@ body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * 
 #battle .bt-h4 { font: 400 20px/24px Herald, Georgia, serif; color: var(--b-gold); }
 #battle .bt-h4.you { color: var(--b-you); } #battle .bt-h4.them { color: var(--b-them); }
 #battle .bt-row { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+#battle .bt-queue { margin-top: 6px; color: var(--b-gold-lt); }
 #battle .bt-rule { height: 4px; margin: 4px 0; background: linear-gradient(#f0b443 0 2px, #6a4410 2px 4px); }
 #battle .bt-ell { overflow: hidden; text-overflow: ellipsis; min-width: 0; white-space: nowrap; }
 #battle .bt-spaced { letter-spacing: 2px; }
@@ -772,13 +794,12 @@ body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * 
   /* In the sheet the buttons say what they are (a finger cannot hover for the tooltip). */
   html.iso body.menu-open #menu button { width: auto; height: 48px; padding: 0 10px; font-size: 20px; line-height: 24px; justify-content: flex-start; gap: 8px; }
   html.iso body.menu-open #menu button .iso-icon { width: 32px; height: 32px; }
-  html.iso body.menu-open #btn-keys::after { content: "Controls"; }
-  html.iso body.menu-open #btn-raw::after { content: "Raw request"; }
-  /* Their glyphs ("?", "⌘") give way to those names beside the icons; a long name wraps under itself
+  html.iso body.menu-open #btn-keys::after { content: "Help"; }
+  /* Its glyph ("?") gives way to that name beside the icons; a long name wraps under itself
      inside a taller button. */
   html.iso body.menu-open #menu button { height: auto; min-height: 48px; padding: 2px 6px; line-height: 20px; text-align: left; }
-  html.iso body.menu-open #menu :is(#btn-keys, #btn-raw) { font-size: 0; }
-  html.iso body.menu-open #menu :is(#btn-keys, #btn-raw)::after { font-size: 20px; margin-left: -8px; }
+  html.iso body.menu-open #menu #btn-keys { font-size: 0; }
+  html.iso body.menu-open #menu #btn-keys::after { font-size: 20px; margin-left: -8px; }
   html.iso #iso-rail, html.iso #iso-city { display: none; }
 
   html.iso #bottom { left: 4px; top: calc(var(--iso-top) + 4px); width: auto; max-width: calc(100vw - 8px); }
@@ -844,7 +865,7 @@ body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * 
   }
   html.iso body.menu-open #menu button { min-height: 42px; font-size: 17px; gap: 6px; }
   html.iso body.menu-open #menu button .iso-icon { width: 28px; height: 28px; }
-  html.iso body.menu-open #menu :is(#btn-keys, #btn-raw)::after { font-size: 17px; }
+  html.iso body.menu-open #menu #btn-keys::after { font-size: 17px; }
 }
 
 /* Fingers pinch to zoom: the zoom buttons give their room to End turn. */

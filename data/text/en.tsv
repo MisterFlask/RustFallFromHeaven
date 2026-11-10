@@ -1684,7 +1684,6 @@ TXT_KEY_ALIGNMENT_NEUTRAL	Neutral
 TXT_KEY_ALIGNMENT_TAG	Alignment: 
 TXT_KEY_ALL_CLIMATES	All Climates
 TXT_KEY_ALL_DIFFICULTIES	All Difficulties
-TXT_KEY_ALL_ERAS	All Starting Eras
 TXT_KEY_ALL_GAME_SPEEDS	All Game Speeds
 TXT_KEY_ALL_LEADERS	All Leaders
 TXT_KEY_ALL_SEA_LEVELS	All Sea Levels
@@ -2180,7 +2179,6 @@ TXT_KEY_BUILDING_FREE_SPECIALIST	[ICON_BULLET]%D1_Change Free [COLOR_HIGHLIGHT_T
 TXT_KEY_BUILDING_FREE_SPECIALISTS	[ICON_BULLET]%D1_Change Free Specialists
 TXT_KEY_BUILDING_FREE_SPECIALISTS_ALL_CITIES	[ICON_BULLET]%D1_Change Free Specialists in All Cities
 TXT_KEY_BUILDING_FREE_SPECIALISTS_CONT	[ICON_BULLET]%D1_Change Free Specialists in All Cities on this Continent
-TXT_KEY_BUILDING_FREE_START_ERA	[ICON_BULLET]Available for free on %s1_EraName and later starts
 TXT_KEY_BUILDING_FREE_TECH	[ICON_BULLET]1 Free Technology
 TXT_KEY_BUILDING_FREE_TECHS	[ICON_BULLET]%d1_Num Free Technologies
 TXT_KEY_BUILDING_FREE_XP	[ICON_BULLET]New %s1_UnitName Receive %D2_Change Experience Points
@@ -2369,7 +2367,6 @@ TXT_KEY_BUILDING_MARKET_STRATEGY	[COLOR_BUILDING_TEXT]Markets[COLOR_REVERT] incr
 TXT_KEY_BUILDING_MARTIAL_LAW	Martial Law
 TXT_KEY_BUILDING_MAUSOLEUM_OF_MAUSSOLLOS	Mausoleum of Maussollos
 TXT_KEY_BUILDING_MAUSOLEUM_OF_MAUSSOLLOS_STRATEGY	The [COLOR_BUILDING_TEXT]Mausoleum of Maussollos[COLOR_REVERT] increases its builder's Golden Ages by fifty percent. It also increases the chances of a [COLOR_UNIT_TEXT]Great Artist[COLOR_REVERT] appearing.
-TXT_KEY_BUILDING_MAX_START_ERA	[ICON_BULLET]Can only be Built on %s1_Name and Earlier Starts
 TXT_KEY_BUILDING_MAYA_BALL_COURT	Ball Court
 TXT_KEY_BUILDING_MAYA_BALL_COURT_STRATEGY	Build the [COLOR_BUILDING_TEXT]Ball Court[COLOR_REVERT], the Mayan replacement for the [COLOR_BUILDING_TEXT]Colosseum[COLOR_REVERT], to provide cities with three happiness instead of one.
 TXT_KEY_BUILDING_MERCURIAN_GATE	Mercurian Gate
@@ -6016,21 +6013,6 @@ TXT_KEY_EQUIPMENT_SYLIVENS_PERFECT_LYRE_PEDIA	[TAB]The music. It might have last
 TXT_KEY_EQUIPMENT_TIMOR_MASK	Timor Mask
 TXT_KEY_EQUIPMENT_TREASURE	Treasure Chest
 TXT_KEY_EQUIPMENT_WAR	War
-TXT_KEY_ERA_ANCIENT	Ancient
-TXT_KEY_ERA_CLASSICAL	Classical
-TXT_KEY_ERA_COUN	System use
-TXT_KEY_ERA_EMPY	System use
-TXT_KEY_ERA_FUTURE	Future
-TXT_KEY_ERA_INDUSTRIAL	Industrial
-TXT_KEY_ERA_LEAF	System use
-TXT_KEY_ERA_MEDIEVAL	Medieval
-TXT_KEY_ERA_MODERN	Modern
-TXT_KEY_ERA_OCTO	System use
-TXT_KEY_ERA_ORDE	System use
-TXT_KEY_ERA_RENAISSANCE	Renaissance
-TXT_KEY_ERA_RUNE	System use
-TXT_KEY_ERA_SPLASH_SCREEN	You have entered the %s1_era era!
-TXT_KEY_ERA_VEIL	System use
 TXT_KEY_ERROR	Error
 TXT_KEY_ESPIONAGE_1X_ADVANTAGE	100%% Cost
 TXT_KEY_ESPIONAGE_1_2X_ADVANTAGE	200%% Cost
@@ -8569,7 +8551,6 @@ TXT_KEY_HINT_INTERFACE_8	Hold down CTRL and click on a stack to select all units
 TXT_KEY_HINT_INTERFACE_9	With multiple units selected, you can give the group orders that they will conduct together.
 TXT_KEY_HOF_SCREEN_GAME_SPEED	Speed
 TXT_KEY_HOF_SCREEN_SIZE	Size
-TXT_KEY_HOF_SCREEN_STARTING_ERA	Start
 TXT_KEY_HOST_CONNECT_FAILURE_DESC	Could not reach the game host.
 TXT_KEY_HOST_CONNECT_FAILURE_TITLE	Host unreachable
 TXT_KEY_HOST_GAME	Host Game
@@ -9464,7 +9445,6 @@ TXT_KEY_MENU_CIV_SHORT_DESC	Short Description:
 TXT_KEY_MENU_CIV_SMTP	SMTP Server:
 TXT_KEY_MENU_CIV_TYPE	Civ Type:
 TXT_KEY_MENU_CLIMATE	Climate:
-TXT_KEY_MENU_ERA	Era:
 TXT_KEY_MENU_FINAL_SETUP	GAME SNAPSHOT
 TXT_KEY_MENU_LEADER_NAME	Leader Name:
 TXT_KEY_MENU_LEADER_TYPE	Leader Type:
@@ -10506,7 +10486,6 @@ TXT_KEY_PITBOSS_EMAIL_BODY	You are now welcome to take your turn in the Civ4 Pit
 TXT_KEY_PITBOSS_EMAIL_FROM	Civ4 Pitboss
 TXT_KEY_PITBOSS_EMAIL_SUBJECT	It's your turn! (%s1_Name - %s2_Year)
 TXT_KEY_PITBOSS_EMAIL_TIMER	Your turn will expire in %d1_timer hours.
-TXT_KEY_PITBOSS_ERA	Era:
 TXT_KEY_PITBOSS_ERROR_HOSTING	Internal error when hosting game
 TXT_KEY_PITBOSS_ERROR_LOADING	Internal error when loading game
 TXT_KEY_PITBOSS_ERROR_SAVING	Internal error when saving game
@@ -11466,7 +11445,6 @@ TXT_KEY_SETTINGS_DIFFICULTY	%s1 Difficulty
 TXT_KEY_SETTINGS_GAME_SPEED	%s1 Game Speed
 TXT_KEY_SETTINGS_MAP_SIZE	%s1 World Size
 TXT_KEY_SETTINGS_SEA_LEVEL	%s1 Sea Level
-TXT_KEY_SETTINGS_STARTING_ERA	%s1 Starting Era
 TXT_KEY_SETTLE_NEW_CITY	You have just settled a new city.
 TXT_KEY_SETTLE_NEW_CITY_NAME	City Name:
 TXT_KEY_SHIFT	Shift+
@@ -12187,7 +12165,6 @@ TXT_KEY_TECH_ELEMENTALISM_PEDIA	Make a fire for a man, you warm him for a day. M
 TXT_KEY_TECH_ENGINEERING	Engineering
 TXT_KEY_TECH_ENGINEERING_QUOTE	"A designer knows he has achieved perfection not when there is nothing left to add, but when there is nothing left to take away." - Antoine de Saint-Exupry
 TXT_KEY_TECH_ENGINEERING_STRATEGY	[COLOR_TECH_TEXT]Engineering[COLOR_REVERT] allows production of the [COLOR_UNIT_TEXT]Pikeman[COLOR_REVERT], excellent against mounted units and the city-smashing [COLOR_UNIT_TEXT]Trebuchet[COLOR_REVERT] siege unit. It increases road movement and allows construction of [COLOR_BUILDING_TEXT]Castles[COLOR_REVERT] and the [COLOR_BUILDING_TEXT]Notre Dame[COLOR_REVERT] wonder.
-TXT_KEY_TECH_ERA_ADVANCE	[ICON_BULLET]Advances to the [COLOR_HIGHLIGHT_TEXT]%s1_era[COLOR_REVERT] Era
 TXT_KEY_TECH_EXPLORATION	Exploration
 TXT_KEY_TECH_EXPLORATION_PEDIA	Paradoxically, one of Mankind's first achievements was among its grandest. No other structure outlines the fundamental difference between Nature and Civilization so strongly than that of the wheel. Nature has yet to duplicate the simple, but sublime, circular object, which allows for so much conservation of energy.-Kleox Yarl, Royal Engineer
 TXT_KEY_TECH_FANATICISM	Fanaticism
@@ -14177,8 +14154,6 @@ TXT_KEY_WB_1_BY_1	1x1
 TXT_KEY_WB_3_BY_3	3x3
 TXT_KEY_WB_5_BY_5	5x5
 TXT_KEY_WB_ADD_BUILDINGS	Add Buildings
-TXT_KEY_WB_ADD_ERA_TECH	Add all  %s1_EraName Techs
-TXT_KEY_WB_ADD_ERA_TECH_DESC	Add Techs by Era
 TXT_KEY_WB_ADD_GRASS	Add Grass
 TXT_KEY_WB_ADD_HILL	Add Hill
 TXT_KEY_WB_ADD_MOUNTAIN	Add Mountain

@@ -565,9 +565,6 @@ impl Game {
         production_needed *= d.game_speeds[self.game_speed_type()].train_percent;
         production_needed /= 100;
 
-        production_needed *= d.eras[self.start_era()].train_percent;
-        production_needed /= 100;
-
         if !pl.human && !self.player_is_barbarian(p) {
             let handicap = &d.handicaps[self.handicap];
             if is_world_unit_class(d, unit_class) {
@@ -577,9 +574,6 @@ impl Game {
                 production_needed *= handicap.ai_train_percent;
                 production_needed /= 100;
             }
-
-            production_needed *= max(0, (handicap.ai_per_era_modifier * pl.current_era.i()) + 100);
-            production_needed /= 100;
         }
 
         production_needed += self.player_get_unit_extra_cost(p, unit_class);
@@ -819,9 +813,6 @@ impl Game {
             threshold /= 100;
         }
 
-        threshold *= d.eras[self.start_era()].great_people_percent;
-        threshold /= 100;
-
         max(1, threshold)
     }
 
@@ -1008,12 +999,6 @@ impl Game {
             }
 
             if self.teams[team].victory_countdown[victory_prereq] >= 0 {
-                return false;
-            }
-        }
-
-        if let Some(max_start_era) = info.max_start_era {
-            if self.start_era() > max_start_era {
                 return false;
             }
         }
@@ -1229,9 +1214,6 @@ impl Game {
         production_needed *= d.game_speeds[self.game_speed_type()].construct_percent;
         production_needed /= 100;
 
-        production_needed *= d.eras[self.start_era()].construct_percent;
-        production_needed /= 100;
-
         if !pl.human && !self.player_is_barbarian(p) {
             let handicap = &d.handicaps[self.handicap];
             if is_world_wonder_class(d, building_class_of(d, building)) {
@@ -1241,9 +1223,6 @@ impl Game {
                 production_needed *= handicap.ai_construct_percent;
                 production_needed /= 100;
             }
-
-            production_needed *= max(0, (handicap.ai_per_era_modifier * pl.current_era.i()) + 100);
-            production_needed /= 100;
         }
 
         max(1, production_needed)
@@ -1266,9 +1245,6 @@ impl Game {
         production_needed *= d.game_speeds[self.game_speed_type()].create_percent;
         production_needed /= 100;
 
-        production_needed *= d.eras[self.start_era()].create_percent;
-        production_needed /= 100;
-
         if !pl.human && !self.player_is_barbarian(p) {
             let handicap = &d.handicaps[self.handicap];
             if is_world_project(d, project) {
@@ -1278,9 +1254,6 @@ impl Game {
                 production_needed *= handicap.ai_create_percent;
                 production_needed /= 100;
             }
-
-            production_needed *= max(0, (handicap.ai_per_era_modifier * pl.current_era.i()) + 100);
-            production_needed /= 100;
         }
 
         max(1, production_needed)
@@ -1615,8 +1588,10 @@ impl Game {
 
     // ------------------------------------------------------------------ worker builds and routes
 
-    /// C++ `CvPlayer::canBuild(pPlot, eBuild, bTestEra = false, bTestVisible = false)`.
-    pub fn player_can_build(&self, p: PlayerId, plot: PlotIdx, build: BuildType, test_era: bool, test_visible: bool) -> bool {
+    /// C++ `CvPlayer::canBuild(pPlot, eBuild, bTestEra = false, bTestVisible = false)`, without
+    /// `bTestEra` (always false in the rules): with `test_visible`, a build whose tech is not
+    /// known yet passes.
+    pub fn player_can_build(&self, p: PlayerId, plot: PlotIdx, build: BuildType, test_visible: bool) -> bool {
         let d = self.d;
         let info = &d.builds[build];
         let team = self.players[p].team;
@@ -1631,9 +1606,7 @@ impl Game {
         }
 
         if let Some(tech_prereq) = info.tech_prereq {
-            if !self.team_is_has_tech(team, Some(tech_prereq))
-                && ((!test_era && !test_visible) || ((self.players[p].current_era.i() + 1) < opt_to_i32(d.techs[tech_prereq].era)))
-            {
+            if !self.team_is_has_tech(team, Some(tech_prereq)) && !test_visible {
                 return false;
             }
         }
@@ -1673,7 +1646,7 @@ impl Game {
         for build in d.builds.keys() {
             if let Some(route) = d.builds[build].route {
                 let valid = match plot {
-                    Some(plot) => self.map.plots[plot].route_type == Some(route) || self.player_can_build(p, plot, build, false, false),
+                    Some(plot) => self.map.plots[plot].route_type == Some(route) || self.player_can_build(p, plot, build, false),
                     None => self.team_is_has_tech(self.players[p].team, d.builds[build].tech_prereq),
                 };
                 if valid {
@@ -1805,7 +1778,7 @@ mod tests {
         let d = g.d;
         let p = PlayerId(0);
 
-        // Normal speed, first era: GREAT_PEOPLE_THRESHOLD 100, GREAT_GENERALS_THRESHOLD 30.
+        // Normal speed: GREAT_PEOPLE_THRESHOLD 100, GREAT_GENERALS_THRESHOLD 30.
         assert_eq!(g.player_great_people_threshold(p, false), 100);
         assert_eq!(g.player_great_people_threshold(p, true), 30);
 

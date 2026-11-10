@@ -464,9 +464,10 @@ pub fn get_land_plots_score(land_plots: i32) -> i32 {
     land_plots
 }
 
-/// C++ `getTechScore`: `era + 1` (C++ `getEra()` is -1 = `NO_ERA` for a tech without one).
+/// A tech's score (C++ `getTechScore`): its base research cost / 100, at least 1 (a card's cost
+/// is -1: it scores 1).
 pub fn get_tech_score(d: &GameData, tech: TechType) -> i32 {
-    opt_to_i32(d.techs[tech].era) + 1
+    (d.techs[tech].research_cost / 100).max(1)
 }
 
 /// C++ `getWonderScore`.
@@ -1687,10 +1688,13 @@ mod tests {
         let tech = |s: &str| d.t::<TechType>(s);
         let unit = |s: &str| d.t::<UnitType>(s);
 
-        // era + 1: ancient, classical, medieval
+        // research cost / 100, at least 1 (a card's cost is -1)
+        for t in [tech("TECH_AGRICULTURE"), tech("TECH_WRITING"), tech("TECH_GUILDS")] {
+            assert_eq!(get_tech_score(d, t), (d.techs[t].research_cost / 100).max(1));
+        }
         assert_eq!(get_tech_score(d, tech("TECH_AGRICULTURE")), 1);
-        assert_eq!(get_tech_score(d, tech("TECH_WRITING")), 2);
-        assert_eq!(get_tech_score(d, tech("TECH_GUILDS")), 3);
+        let card = d.techs.keys().find(|&t| d.techs[t].card.is_some()).unwrap();
+        assert_eq!(get_tech_score(d, card), 1);
 
         // the seven religions' founding techs
         assert!(is_religion_tech(d, tech("TECH_ORDERS_FROM_HEAVEN")));

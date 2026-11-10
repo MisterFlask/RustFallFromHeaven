@@ -51,8 +51,6 @@ pub struct Player {
     pub id: PlayerId,
     /// C++ `m_ePersonalityType`: leader whose AI personality this player uses.
     pub personality_type: Option<LeaderHeadType>,
-    /// C++ `m_eCurrentEra`.
-    pub current_era: EraType,
     /// C++ `m_eLastStateReligion`. The state religion is this only while
     /// `state_religion_count > 0` (see `player_get_state_religion`).
     pub last_state_religion: Option<ReligionType>,
@@ -413,7 +411,6 @@ impl Player {
         Player {
             id,
             personality_type: setup.leader,
-            current_era: EraType(0),
             last_state_religion: None,
             parent: None,
             team: setup.team,
@@ -970,7 +967,6 @@ mod tests {
         assert_eq!(pl.max_cities, -1);
         assert_eq!(pl.alignment, None);
         assert_eq!(pl.capital_city, None);
-        assert_eq!(pl.current_era, EraType(0));
         assert!(pl.loyal_member.iter().all(|&b| b));
         assert!(pl.civics.iter().all(|c| c.is_none()));
         assert_eq!(pl.gold_per_turn_by_player.len(), n_players);

@@ -714,7 +714,6 @@ pub struct TechInfo {
     pub research_cost: i32,
     pub advanced_start_cost: i32,
     pub advanced_start_cost_increase: i32,
-    pub era: Option<EraType>,
     pub trade_routes: i32,
     pub feature_production_modifier: i32,
     pub worker_speed_modifier: i32,
@@ -798,6 +797,9 @@ pub struct CardInfo {
     /// The card's faith (`card_religion`): drawn whatever the drawer's religion; discovering it
     /// also spreads this religion to three of the discoverer's cities.
     pub religion: Option<ReligionType>,
+    /// The card's band (`band`, 1 to 3): the deck deals the lowest band that still holds cards
+    /// of the suit first (docs/CARDS.md).
+    pub band: i32,
 }
 
 /// C++ `CvTechInfo::read` + `readPass2` (`OrPreReqs`, `AndPreReqs`) + `readPass3`
@@ -811,7 +813,6 @@ pub fn read_tech(rd: &Rd) -> TechInfo {
         research_cost: rd.int("cost"),
         advanced_start_cost: rd.int("advanced_start_cost"),
         advanced_start_cost_increase: rd.int("advanced_start_cost_increase"),
-        era: rd.rf("era"),
         first_free_unit_class: rd.rf("first_free_unit_class"),
         feature_production_modifier: rd.int("feature_production_modifier"),
         worker_speed_modifier: rd.int("worker_speed_modifier"),
@@ -857,7 +858,11 @@ pub fn read_tech(rd: &Rd) -> TechInfo {
         card: None,
     };
     if let Some(suit) = rd.rf::<UnitClassType>("card_suit") {
-        tech.card = Some(CardInfo { suit, alignment: rd.rf("card_alignment"), block_alignment: rd.rf("card_block_alignment"), religion: rd.rf("card_religion") });
+        let band = rd.int("band");
+        if !(1..=3).contains(&band) {
+            rd.cx.warn(format!("{}: card band {} is not 1, 2 or 3", tech.base.type_, band));
+        }
+        tech.card = Some(CardInfo { suit, alignment: rd.rf("card_alignment"), block_alignment: rd.rf("card_block_alignment"), religion: rd.rf("card_religion"), band: band.clamp(1, 3) });
         tech.disable = true;
         tech.trade = false;
     }
@@ -898,7 +903,7 @@ mod tests {
         let (t, w) = read_with(r#"{"type": "TECH_C"}"#, read_tech);
         assert!(w.is_empty(), "{w:?}");
         assert_eq!(t.base.type_, "TECH_C");
-        assert_eq!((t.research_cost, t.ai_weight, t.era, t.prereq_religion), (0, 0, None, None));
+        assert_eq!((t.research_cost, t.ai_weight, t.prereq_religion), (0, 0, None));
         assert!(t.prereq_or_techs.is_empty() && t.prereq_and_techs.is_empty());
         assert_eq!(t.commerce_flexible, [false; CommerceType::NUM]);
         assert_eq!(t.flavor_value.raw, vec![0, 0]);

@@ -9,7 +9,7 @@
       "advisor": "ADVISOR_SCIENCE",
       "cost": -1,
       "advanced_start_cost": -1,
-      "era": "ERA_MEDIEVAL",
+      "band": 3,
       "and_pre_reqs": ["TECH_RIGHTEOUSNESS"],
       "card_suit": "UNITCLASS_PROPHET",
       "card_alignment": "ALIGNMENT_GOOD",
