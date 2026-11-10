@@ -264,16 +264,45 @@ readout probed plot by plot, tells where unseen units stand.
 
 ### B. An army with no way home
 
-An army can stand where no plot it can reach has a line (a pocket of its owner's land cut off by
-water or peaks, a landing that lost its ship). The rules are right to starve it; the AI kept it
-for 50 turns. An expert disbands units he cannot feed or fetch.
+Diagnosed (2026-11-10; seeds 1 to 8 of "Measures", every cut army watched every turn; notes in
+the session's scratchpad, `stranded_notes.txt`). Three causes, none of them "a pocket of its own
+land":
 
-- First find out why the two armies of the measured game (seed 6, the Kuriotates, the last 50
-  turns; docs/SUPPLY.md "Measures") could reach no plot. If it is a rules bug (units put where
-  they cannot stand or leave), report it and fix that instead.
-- AI: an army that has starved for `STRANDED_TURNS` (10, an ffh-ai constant) of its owner's turns
-  in a row and has no path to any city of its owner is disbanded unit by unit (`unit_scrap`),
-  heroes and units that cannot be scrapped excepted. Counted in telemetry.
+1. **The peace bump** (seed 6: three Kuriotates armies, 57 to 58 turns each, 70% of all the
+   starving army-turns of the 8 games). When peace is made, `map_verify_unit_valid_plot` moves
+   every unit standing where it may no longer be with `unit_jump_to_nearest_valid_plot`, which
+   scores plots by distance only. It put the armies on unowned plots closed in by two neighbours'
+   borders (peace, no open borders) and the coast. In Civ4 that costs nothing; here the army can
+   reach no plot, traces no line, and starves for the rest of the game.
+2. **An army left overseas** (seed 3: a Balseraphs army, 24 turns). Landed by an assault
+   transport next to an enemy city; after the peace it stands on a landmass without a city of its
+   owner. It can move, but the AI's `fall_back` gives up when no city of ours is on its landmass,
+   and nothing sends a ship.
+3. **A civilization's animal counted as an army** (seed 8: a Doviello Wolf Pack, 21 turns). The
+   army sync makes every group of army units outside a city an army; the AI plays the unit as an
+   animal (it wanders and attacks) and never runs the supply code for it.
+
+The fixes, decided:
+
+- **Rules: a bump keeps a land unit connected to home.** When a unit of a player that has a city
+  on the unit's landmass is moved by `unit_jump_to_nearest_valid_plot`, only plots that connect
+  over land to a city of its owner are taken: plots the unit may enter, flooded from the owner's
+  cities on that landmass once per bump. With no such plot, it goes to its owner's nearest city.
+  A player without a city there is bumped as before. (docs/PORTING.md, "Changes from FFH2".)
+- **Rules: animals are not army units.** A unit whose type is an animal (`UnitInfo::animal`) is
+  in no army and no garrison, so it needs no supply line: it fights beside an army as heroes and
+  mages do. (docs/ARMIES.md; docs/PORTING.md.)
+- **AI: stranded overseas.** An army cut on a landmass without a city of its owner goes to the
+  coast plot nearest its owner's nearest city and asks for a transport there, as a settler waiting
+  in port does; the transport that carries an army ashore does not leave it while no war target
+  remains there.
+- **AI: the last resort.** An army that has starved for `STRANDED_TURNS` (10, an ffh-ai constant)
+  of its owner's turns in a row, has no path over land to a city of its owner, and (overseas) has
+  had no transport come, is disbanded unit by unit (`unit_scrap`; heroes and units that cannot be
+  scrapped excepted): an expert stops paying for units he can neither feed nor fetch. Counted in
+  telemetry. Asking the neighbour for open borders, or counting a trapped army as a reason for
+  war, is not in this change.
+- **Telemetry:** the `supply_state` counter is not capped at 30.
 
 ### C. The AI cuts a line
 
