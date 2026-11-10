@@ -1089,6 +1089,9 @@ button.civ-item .banner { flex: none; }
   .civ-list { flex: none; height: 160px; }
   .civ-info { height: auto; }
   .civ-info > .ng-about { flex: none; min-height: 0; }
+  /* The leader's name, traits and cards beside the portrait, or under it when narrower. */
+  .civ-head { flex-wrap: wrap; }
+  .civ-head-text { contain: none; overflow: visible; flex: 1 1 160px; }
 }
 
 /* Checkboxes and radios in the interface's gold; the 2D look's drop-downs with a pixel chevron and
