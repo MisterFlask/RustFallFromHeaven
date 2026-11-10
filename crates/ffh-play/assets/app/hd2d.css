@@ -296,8 +296,8 @@ html.iso.hd2d button.tech.can { border-color: var(--iso-gold); }
 html.iso.hd2d button.tech.queued { border: 1px dashed var(--iso-gold-lt); }
 html.iso.hd2d .tap-mode.tree-modes button.on { background: var(--hd-band), var(--hd-fill); box-shadow: inset 2px 0 0 var(--hd-ink); color: #fff; }
 html.iso.hd2d button.tech.later { background: rgba(18, 17, 20, 0.95); }
-html.iso.hd2d .tree-lines path { stroke: rgba(236, 230, 214, 0.3); }
-html.iso.hd2d .tree-lines path.have { stroke: rgba(143, 191, 120, 0.45); }
+html.iso.hd2d .tree-lines path { stroke: rgba(236, 230, 214, 0.7); }
+html.iso.hd2d .tree-lines path.have { stroke: rgba(143, 191, 120, 0.9); }
 html.iso.hd2d .tree.focus .tree-lines path.lit { stroke: var(--iso-gold-lt); }
 html.iso.hd2d .tree.focus .tree-lines path.lit.next { stroke: #9fc6e4; }
 html.iso.hd2d .tree-lane { border-top-color: rgba(236, 230, 214, 0.07); }

@@ -382,7 +382,7 @@ export async function openTechTree() {
     };
     for (const x of techs) {
       const to = pos(x);
-      for (const [list, dash] of [[x.and, ""], [x.or, "4 3"]]) {
+      for (const [list, dash] of [[x.and, ""], [x.or, "7 5"]]) {
         for (const p of list) {
           const from = byId.get(p);
           if (!from) continue;

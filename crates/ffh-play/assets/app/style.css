@@ -678,10 +678,10 @@ h4.sub { margin: 8px 0 2px; font-size: 0.9em; }
 /* Prerequisite lines: faint until a tech is pointed at; then its path (gold) and the lines to
    the techs it leads to (frost) stand out and the rest nearly goes. */
 .tree-lines { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
-.tree-lines path { fill: none; stroke: #33405e; stroke-width: 1.2; opacity: 0.55; transition: stroke 120ms ease, opacity 120ms ease; }
-.tree-lines path.have { stroke: #4f6e2b; }
+.tree-lines path { fill: none; stroke: #7f93c4; stroke-width: 2; opacity: 0.9; transition: stroke 120ms ease, opacity 120ms ease; }
+.tree-lines path.have { stroke: #8fbf5a; }
 /* A line between two bands (research paths): fainter until lit. */
-.tree-lines path.cross { opacity: 0.22; }
+.tree-lines path.cross { opacity: 0.5; }
 /* The bands, one per research path: alternating stripes across the tree (over its margin), each
    with the path's name in the gap above it, held at the scroll area's left edge; the adopted
    doctrine's band is marked in gold. */
@@ -692,7 +692,7 @@ h4.sub { margin: 8px 0 2px; font-size: 0.9em; }
 .tree-lane.doctrine .tree-lane-name { color: var(--c-gold); box-shadow: inset 2px 0 0 var(--c-gold); }
 .tree-lane-doctrine { font-size: 10px; padding: 0 4px; border: 1px solid currentColor; border-radius: 2px; }
 .tree.focus .tree-lines path { opacity: 0.12; }
-.tree.focus .tree-lines path.lit { opacity: 1; stroke: var(--c-gold); stroke-width: 2; }
+.tree.focus .tree-lines path.lit { opacity: 1; stroke: var(--c-gold); stroke-width: 3; }
 .tree.focus .tree-lines path.lit.next { stroke: var(--c-frost); }
 /* The era legend above the tree: each era's colour as on the boxes' left edges. */
 .era-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 12px; }
