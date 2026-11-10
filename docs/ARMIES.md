@@ -139,8 +139,8 @@ the city it came from, whether it was diverted): the rules move it, not its owne
   army that came to it during the turn takes it as its march begins; a last pass before the army
   sync takes any recruit left on its destination's plot). It is an ordinary unit from then on. A
   message each.
-- *Supply gates progress*: a recruit bound for an army advances only while the army is in supply;
-  otherwise it waits where it is.
+- *Supply gates progress*: a recruit bound for an army advances only while the army is in supply
+  (its supply line not cut, docs/SUPPLY.md); otherwise it waits where it is.
 - *No way there*: a turn without progress (the army out of supply, no path, the way blocked, it
   cannot move) counts; after `ARMY_TRANSIT_STALL_TURNS` (5) such turns in a row it marches to the
   nearest city of its owner it can reach by the rules' path (not the garrison it stalled on) and
@@ -161,12 +161,10 @@ the city it came from, whether it was diverted): the rules move it, not its owne
   `arrived` with the turns, `diverted`, `stopped`, `killed`) and `requisition` (`placed`,
   `withdrawn`), docs/TELEMETRY.md.
 
-**Supply.** An army is in supply within `ARMY_SUPPLY_RANGE` (3) plots of a plot of its owner's
-plot groups that holds one of its cities: Civ4's trade network (roads, rivers, coasts once known;
-inside one's borders a plot needs a road or a river, as for resources). So supply follows the road
-network: building roads behind an advance extends it, pillaging them or taking a city cuts it, and
-enemy territory is never part of one's network (war cuts trade there). Out of supply only
-reinforcement pauses: no attrition in v1 (the spec).
+**Supply** (docs/SUPPLY.md, which replaces the rule of `ARMY_SUPPLY_RANGE` plots of the trade
+network). Every army needs a supply line, the cheapest path over land back to a city or a ship of
+its owner within a budget; cut, it is hungry for two turns (no healing, its recruits wait), then
+starving (HP lost each turn, less damage dealt).
 
 ## Edge cases decided (beyond the spec's text)
 
@@ -211,10 +209,7 @@ reinforcement pauses: no attrition in v1 (the spec).
 
 ## Open points for the owner
 
-- **Supply follows roads.** Civ4's plot groups need a road or a river even inside one's borders,
-  so an army three plots beyond the last road is out of supply in its own territory. That is what
-  the spec's "connected to one of its owner's cities" means in Civ4 terms, and it makes roads
-  matter; widening it to "any plot inside one's borders" is one line if the owner prefers.
+- **Supply** is decided in docs/SUPPLY.md.
 - **A recruit marches alone.** Recruits bound for one army march each on its own path; marching
   together (a convoy that defends itself better) would be a next step if lone recruits are
   picked off too often. They are, in places: about one in twelve dies on the way, and in one

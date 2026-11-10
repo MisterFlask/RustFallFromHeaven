@@ -25,7 +25,7 @@ head-to-head score of X against Y is the mean of X attacking Y and of X defendin
 """
 import collections, itertools, json, math, os, sys
 
-TACTICS = ['LINE', 'CHARGE', 'VOLLEY', 'SQUARE', 'VANGUARD']
+TACTICS = ['LINE', 'CHARGE', 'VOLLEY', 'VANGUARD']
 LEVELS = ['early', 'mid', 'late']
 SIZES = [8, 12]
 GROUNDS = {'open': 'open', 'forest': 'forest', 'walls': 'walls fort:5'}

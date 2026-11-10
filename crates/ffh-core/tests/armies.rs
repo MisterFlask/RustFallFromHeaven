@@ -246,7 +246,7 @@ fn a_recruit_is_a_real_unit_that_marches_to_its_army_and_joins_it() {
 fn a_faster_recruit_catches_up_with_an_army_on_the_move() {
     let mut g = flat_game();
     let p0 = PlayerId(0);
-    // Cities along the way keep the army in supply (3 plots of a city).
+    // Cities along the way keep the army in supply (its supply line short, docs/SUPPLY.md).
     let home = g.player_init_city(p0, 3, 4, true, true);
     for x in [8, 13] {
         g.player_init_city(p0, x, 4, true, true);
@@ -472,19 +472,40 @@ fn a_requisition_unit_marches_and_counts_toward_the_target() {
 fn supply_gates_the_march_and_a_long_stall_goes_to_a_garrison() {
     let (mut g, a, b) = game();
     let p0 = PlayerId(0);
-    // An army out of supply: on our landmass, far from both cities.
+    // An army out of supply (docs/SUPPLY.md): on our landmass, two plots or more from both
+    // cities, encircled by barbarian warriors (its supply line cut).
     let area = g.map.plots[g.city_plot(a)].area;
     let far = g
         .map
         .plot_ids()
-        .filter(|&q| !g.plot_is_water(q) && !g.plot_is_impassable(q) && g.map.plots[q].area == area && !g.plot_in_supply(p0, q))
+        .filter(|&q| {
+            let (qx, qy) = g.map.xy(q);
+            !g.plot_is_water(q)
+                && !g.plot_is_impassable(q)
+                && g.map.plots[q].area == area
+                && g.map.plots[q].plot_city.is_none()
+                && [a, b].iter().all(|&c| g.plot_distance(qx, qy, g.cities[c].x, g.cities[c].y) >= 2)
+                && (-1..=1).all(|dy| (-1..=1).all(|dx| g.map.plot_xy(qx + dx, qy + dy).is_some_and(|n| g.map.plots[n].plot_city.is_none())))
+        })
         .min_by_key(|&q| {
             let (qx, qy) = g.map.xy(q);
             (g.plot_distance(qx, qy, g.cities[a].x, g.cities[a].y), q)
         });
-    let (fx, fy) = g.map.xy(far.expect("land out of supply on our landmass"));
+    let (fx, fy) = g.map.xy(far.expect("land on our landmass"));
+    let barb = g.barbarian_player();
+    let w = warrior(&g);
+    for dy in -1..=1 {
+        for dx in -1..=1 {
+            let n = g.map.plot_xy(fx + dx, fy + dy).unwrap();
+            if (dx, dy) != (0, 0) && !g.plot_is_water(n) && !g.plot_is_impassable(n) {
+                g.player_init_unit(barb, w, fx + dx, fy + dy, None, None);
+            }
+        }
+    }
     let army_units: Vec<UnitId> = (0..2).map(|_| unit_at(&mut g, fx, fy)).collect();
     let army = g.army_form(p0, &army_units).unwrap();
+    assert!(g.army_supply_line(army).is_none(), "encircled");
+    g.player_update_supply(p0);
     assert!(!g.army_in_supply(army));
     let u = train_for(&mut g, a, Some(RecruitDest::Army(army)));
     let at = g.unit_plot(u);
@@ -494,12 +515,12 @@ fn supply_gates_the_march_and_a_long_stall_goes_to_a_garrison() {
         assert_eq!(g.unit_plot(u), at, "it waits where it is");
         assert_eq!(g.unit_march(u).map(|m| m.stalled), Some(turn));
     }
-    assert!(g.log.entries.iter().any(|m| m.text.contains("waits: the army is out of supply")), "told");
+    assert!(g.log.entries.iter().any(|m| m.text.contains("waits: the army has no supply line")), "told");
     // The last turn of the stall: to the nearest garrison it can reach (the city it stands in).
     march_turn(&mut g);
     assert!(g.unit_march(u).is_none(), "arrived");
     assert_eq!(g.unit_garrison_city(u), Some(a));
-    assert!(g.log.entries.iter().any(|m| m.text.contains("instead: the army is out of supply")), "told");
+    assert!(g.log.entries.iter().any(|m| m.text.contains("instead: the army has no supply line")), "told");
     let _ = b;
 }
 
@@ -587,26 +608,6 @@ fn a_recruit_can_be_killed_on_the_way() {
     assert!(!g.units.contains(u));
     assert!(g.log.entries.iter().any(|m| m.text.contains("was killed on its way to the 1st Army")), "told");
     assert!(g.army_marching(army).is_empty());
-}
-
-#[test]
-fn supply_follows_the_network() {
-    let (g, a, _) = game();
-    let p0 = PlayerId(0);
-    let (x, y) = (g.cities[a].x, g.cities[a].y);
-    let here = g.city_plot(a);
-    assert!(g.plot_in_supply(p0, here));
-    // Far away (beyond the range of anything connected): out of supply.
-    let far = g.map.plot_ids().filter(|&q| !g.plot_is_water(q)).max_by_key(|&q| {
-        let (qx, qy) = g.map.xy(q);
-        g.plot_distance(x, y, qx, qy)
-    });
-    if let Some(q) = far {
-        let (qx, qy) = g.map.xy(q);
-        if g.plot_distance(x, y, qx, qy) > 12 {
-            assert!(!g.plot_in_supply(p0, q));
-        }
-    }
 }
 
 #[test]

@@ -125,7 +125,7 @@ flag.
   the city as any unit and marches there, moved by the rules once a turn at the end of its
   owner's turn, after its owner moved (it takes no orders, never attacks, can be attacked and
   killed), advancing toward an army only
-  while the army is in supply (within 3 plots of the owner's trade network); 5 turns without
+  while the army is in supply (its supply line not cut: docs/SUPPLY.md, below); 5 turns without
   progress or a destination gone send it to the nearest garrison it can reach. Form, split, join
   and merge, garrison, rename, disband (march to the nearest garrison), upgrade all, target size,
   requisition cities. Save format 9 (2026-10-31, the owner's design: requisition and marching recruits
@@ -143,13 +143,21 @@ flag.
   governed city's cultural channel is its owner's, never its governor's (2026-10-30). Save format 7.
 - **Battle tactics** (docs/TACTICS.md; 2026-11-09, the owner's direction "doctrines before grids"):
   every army has a standing battle tactic, and every city one for its garrison (`battle_tactics.jsonc`:
-  Line, Charge, Volley, Square, Vanguard). A side's auto formation in every battle, attacking or
+  Line, Charge, Volley, Vanguard; four tactics). A side's auto formation in every battle, attacking or
   defending, is arranged by the tactic of the army (or garrison) most of its units belong to: which
   units take the slots and where the kinds of units stand. Line is the auto formation as it was
   (every army, garrison and the barbarians start and stay in it unless changed), so battles of
   armies in Line play as before. A change takes effect at the start of the owner's next turn; a new
   army takes the tactic of the body most of its units came from, a city that changes hands goes back
   to Line. Save format 28.
+- **Supply lines** (docs/SUPPLY.md; 2026-11-10, the owner's design): every army needs a supply line,
+  the cheapest path over land from its plot to a city of its owner's team not in occupation or a
+  ship of its owner in a home water area, costing at most 24 (1 a plot with a road or in its own
+  territory, 3 elsewhere; enemy units, enemy cities, manned forts' neighbours, water and closed
+  borders cannot be crossed). Cut, the army is hungry for 2 of its owner's turns (its units do not
+  heal, its recruits wait), then starving (each unit loses 10% of its full HP a turn, down to 25%,
+  never killed; it deals 25% less damage in battles). It replaces the old supply rule (within
+  `ARMY_SUPPLY_RANGE` of the trade network, which only paused recruits). Save format 29.
 - **Engagement combat** (docs/ENGAGEMENTS.md; not an option since 2026-11-03, the owner's
   decision: `GAMEOPTION_ENGAGEMENTS` was removed, every game fights it, the AI-only ones too, with or
   without armies; older saves do not load): a land attack is a **formation battle** (revision 4,

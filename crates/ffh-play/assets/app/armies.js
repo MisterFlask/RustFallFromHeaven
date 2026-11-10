@@ -208,7 +208,7 @@ export async function openArmies({ select, centerOn } = {}) {
           }),
           h("span", ` ${n} unit${n === 1 ? "" : "s"}`),
           a.x !== null ? h("button.link.small", { onclick: go, title: "Select the army on the map" }, `at (${a.x}, ${a.y})`) : null,
-          a.in_supply ? h("span.badge", { title: `Within ${r.supply_range} plots of your network of cities` }, "in supply") : h("span.badge.warn", { title: `More than ${r.supply_range} plots from your network of cities: its recruits wait, and after ${turns(r.stall_turns)} go to the nearest garrison` }, "out of supply"),
+          a.in_supply ? h("span.badge", { title: `Supply line within ${r.supply_budget}` }, "in supply") : h("span.badge.warn", { title: `No supply line: no healing; its recruits wait, and after ${turns(r.stall_turns)} go to the nearest garrison` }, "out of supply"),
           a.disband_to ? h("span.dim", ` · disbanded: marching to ${a.disband_to}`) : null,
         ),
         h("div.dim", composition(a.units) || "—"),

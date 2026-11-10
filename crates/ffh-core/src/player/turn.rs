@@ -326,6 +326,10 @@ impl Game {
     /// C++ `CvPlayer::doTurnUnits`: kills FFH spell units (SPECIALUNIT_SPELL) of all players,
     /// delayed deaths, then group `doTurn` by domain pass (immobile, air, sea, land).
     pub fn player_do_turn_units(&mut self, p: PlayerId) {
+        // This game's supply lines (docs/SUPPLY.md): each army's line is traced before its units
+        // heal; a cut line brings Hunger, then Starvation.
+        self.player_update_supply(p);
+
         // AI: AI_doTurnUnitsPre() (found values, area targets; draws "AI Update Area Targets")
         // -- left to the controller.
         self.ai_hook(p, AiHook::PlayerTurnUnitsPre(p));

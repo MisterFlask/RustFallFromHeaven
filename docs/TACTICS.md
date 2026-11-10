@@ -1,9 +1,9 @@
 # Battle tactics
 
-**Status: built (2026-11-10): the rules, the data, the lab and the measures (section 8); the
-human client's selectors and the AI's rule (section 6) follow.** This file was the spec for the
-implementation. Sections 1 to 6 are decided; section 7 is what the lab has to show before a
-tactic ships, section 8 what it showed, and section 9 lists what is left open.
+**Status: rules, data and lab built (2026-11-10); the human client's selectors and the AI's rule
+(section 6) next.** This file was the spec for the implementation. Sections 1 to 6 are decided;
+section 7 is what the lab has to show before a tactic ships, section 8 what it showed, section 9
+lists what is left open, and section 10 the tactic that was tried and not shipped.
 
 The term is **tactic** (an army's battle tactic). "Doctrine" is taken: it is what players see a
 research path as. "Stance" was the removed combat model's word, "formation" is the grid of one
@@ -50,7 +50,7 @@ battery showed"), and so what the tactics trade:
 
 ## 3. The tactics
 
-Five. Each has an **Expert** line (when a strong player picks it, in the manner of docs/DECKS.md):
+Four. Each has an **Expert** line (when a strong player picks it, in the manner of docs/DECKS.md):
 a tactic without one that differs from the others' does not belong in the game.
 
 ### Line (`TACTIC_LINE`), the default
@@ -68,7 +68,7 @@ the same units. Every army, garrison and player starts with it.
   row from the centre out. The other guards fill what is left of the front, then the middle.
 
 *Expert:* a mounted army in the open against an army without Formation units. Not into a city, a
-forest or a jungle (a charge is a strike there), and not into a Square.
+forest or a jungle (a charge is a strike there).
 
 ### Volley (`TACTIC_VOLLEY`)
 
@@ -80,24 +80,6 @@ forest or a jungle (a charge is a strike there), and not into a Square.
 
 *Expert:* more good archers, mages or siege than Line would let fight, against melee that has to
 come through a screen; a garrison behind walls. Dies to a Charge, which reaches the support.
-
-### Square (`TACTIC_SQUARE`)
-
-- Selection: as Line.
-- Placement: lane by lane from the centre out, each lane filled to its three rows before the
-  next: the front cell the next guard, the middle cell the next support unit, the rear cell the
-  next guard. When the guards run out, the rear cell and then the front cell take support units;
-  when the support runs out, the middle cell takes a guard. Large units go first and take a front
-  or a rear pair of cells. Within guards and within support, the strongest first; anti-flanking
-  strikers take the rear cells before other guards (a charger's reach takes them first wherever
-  they stand).
-
-So the support stands in the middle with a guard before and behind it: out of reach of strikes,
-shots, spells and bombards. The price is the rear guards, who act once instead of twice, and a
-narrower front.
-
-*Expert:* an army whose mages, healers or siege must live, against archers, casters or cavalry.
-Loses to a plain melee Line, which out-strikes its narrow front.
 
 ### Vanguard (`TACTIC_VANGUARD`)
 
@@ -133,7 +115,7 @@ with expendable units to spend. Never the tactic that wins a close battle.
 
 ## 5. Data
 
-`data/json/battle_tactics.jsonc` (`BattleTacticType`, `BattleTacticInfo` in ffh-data; five entries;
+`data/json/battle_tactics.jsonc` (`BattleTacticType`, `BattleTacticInfo` in ffh-data; four entries;
 the Rust consts by name through `d.t`), so a tactic's knobs are tuned without code:
 
 ```jsonc
@@ -148,7 +130,7 @@ the Rust consts by name through `d.t`), so a tactic's knobs are tuned without co
   "one_of_each": false,
   // Guards taken before anything else, in lanes of the side (Volley: 1 a lane). Absent: 0.
   "screen_per_lane": 1,
-  // Placement: LINE, SQUARE or VANGUARD. Absent: LINE.
+  // Placement: LINE or VANGUARD. Absent: LINE.
   "placement": "LINE",
   // LINE placement only: kinds placed before the others (Charge: its chargers). Absent: none.
   "place_first": []
@@ -180,7 +162,7 @@ a help of bare rules, one bullet a rule (CLAUDE.md, "Rules text and tooltips"), 
 - Commands `army_tactic {army, tactic}` and `garrison_tactic {city, tactic}`; views: each army's
   `tactic` and `tactic_next` on the Armies screen's data, the city's on the city query's
   `governance`/garrison part; the static data lists the tactics (name, help).
-- Client: the Armies screen shows each army's tactic as a selector (five options, the help as the
+- Client: the Armies screen shows each army's tactic as a selector (four options, the help as the
   tooltip, "from next turn" while a change is pending); the city screen the garrison's, next to
   where units trained there go. The battle plan's board stops taking drags and clicks that move
   units, and loses Auto-arrange: it shows the formation the tactic gives, and names both sides'
@@ -190,7 +172,7 @@ a help of bare rules, one bullet a rule (CLAUDE.md, "Rules text and tooltips"), 
 **AI (ffh-ai).** Each army's tactic is set by a rule when the army's make-up changes (and for each
 city's garrison), from the lab's matrix (section 7); the starting rule, to be corrected by it:
 Charge with chargers at least 40% of the army's fighting units; else Volley with support at least
-50%; else Square with support at least 25%; else Line. Garrisons: Volley with support at least
+50%; else Line. Garrisons: Volley with support at least
 50%, else Line. The AI does not use Vanguard. docs/AI.md: a short section.
 
 **Lab (ffh-cli).** `ffh battles`: ground words `tactic:NAME` (the attackers') and `dtactic:NAME`
@@ -216,7 +198,8 @@ its own knobs (section 5) may be tuned. The matrices go into this file (section 
 
 ## 8. Measures
 
-(Measured 2026-11-10, `battles_tactics.py`: 1,800 matchups of 400 battles, 4 armies x 3 levels
+(Measured history: these matrices were measured with five tactics, Square among them (section
+10), before it was dropped; they are kept as measured. Measured 2026-11-10, `battles_tactics.py`: 1,800 matchups of 400 battles, 4 armies x 3 levels
 x 8 and 12 units x 3 grounds = 72 conditions, every tactic against every tactic attacking and
 defending; the knobs as in `battle_tactics.jsonc`, none tuned. Armies as section 7: early Axemen,
 Horsemen, Archers, Fire I Adepts; mid Champions, Horse Archers, Longbowmen, Fire II Mages; late
@@ -296,11 +279,9 @@ cover falls first).
 - **Volley ships**: dominated by none; beats Line in 25 of 72 (melee with archers and mages, the
   open and the forest), loses in 16 (the ranged army in a forest, where its 3 guards cannot screen
   and the selection is the ranged army's own).
-- **Square ships by the letter, barely**: dominated by none (Line is at least as good as it in 444
-  of 504 cells, not all), beats Line beyond 2 SE in 4 of 72 conditions (best: the mid mounted army
-  of 8 in the open, +6.0, SE 1.0; the mid hero army of 8 at walls, +2.6, SE 0.3), loses in 67. It is
-  the weakest tactic on every ground; its Expert line (support that must live) does not show in
-  net HP. Not tuned: its knobs are its placement.
+- **Square does not ship** (the designer's decision, 2026-11-10; section 10): it loses to every
+  other tactic on every ground (the mean scores above), beats Line beyond 2 SE in only 4 of 72
+  conditions and loses in 67. Its Expert line (support that must live) does not show in net HP.
 - **Vanguard ships by the letter, barely**: (c) holds at 0.49 against the 0.5 required; (a) holds
   by one cell (Line is at least as good as it in 503 of 504 cells: where the army has no veterans
   the two are the same formation, and with veterans it costs HP: -18.5 in the open). As its Expert
@@ -316,3 +297,12 @@ cover falls first).
   formation today. Whether it should be hidden without a scout is undecided.
 - **Requisition by tactic**: an army's requisition filling the mix its tactic wants (a Volley army
   asks for archers) is undecided.
+
+## 10. Tried and not shipped
+
+- **Square** (`TACTIC_SQUARE`, removed 2026-11-10). Selection as Line; placement lane by lane from
+  the centre out, each lane filled to its three rows: a guard in front, a support unit in the
+  middle, a guard in the rear (anti-flanking strikers first), so the support stood out of reach of
+  strikes, shots, spells and bombards. Measured (section 8): the weakest tactic on every ground,
+  losing to each of the others (-13.5 against Line in the open, -16.3 in a forest, -8.2 at walls);
+  the rear guards act once instead of twice and the front is narrower. The designer dropped it.

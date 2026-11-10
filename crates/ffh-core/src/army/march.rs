@@ -21,7 +21,8 @@
 //!   nothing back; with the army moving every turn, a recruit faster than it catches up). An army
 //!   that came to it during the turn takes it as its march begins. [`Game::player_march_join`]
 //!   then takes any recruit left on its destination's plot, before the army sync.
-//! - **Supply gates progress**: toward an army out of supply it waits where it is.
+//! - **Supply gates progress**: toward a hungry or starving army (its supply line cut,
+//!   docs/SUPPLY.md) it waits where it is.
 //! - **Stalls.** A turn without progress (the army out of supply, no path, the way blocked, it
 //!   cannot move) counts; after `ARMY_TRANSIT_STALL_TURNS` such turns in a row it marches to the
 //!   nearest city of its owner that it can reach (another than the garrison it stalled on) and
@@ -264,8 +265,9 @@ impl Game {
         let dest = self.units[u].march.as_ref().expect("marching").dest;
         let mut why: Option<&'static str> = None;
         if let RecruitDest::Army(a) = dest {
+            // Supply (docs/SUPPLY.md): it waits while the army is hungry or starving.
             if !self.army_in_supply(a) {
-                why = Some("the army is out of supply");
+                why = Some("the army has no supply line");
             }
         }
         if why.is_none() && !self.unit_can_move(u) {

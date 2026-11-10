@@ -163,7 +163,7 @@ pub fn screen(v: &Viewer) -> Json {
     crate::jobj! {
         "armies" => Json::Arr(g.players[h].armies.iter().filter(|&&a| g.armies.contains(a)).map(|&a| army_json(v, a, true)).collect()),
         "garrisons" => Json::Arr(garrisons.collect()),
-        "supply_range" => g.d.defines.army_supply_range,
+        "supply_budget" => g.d.defines.supply_line_budget,
         "stall_turns" => g.d.defines.army_transit_stall_turns,
     }
 }

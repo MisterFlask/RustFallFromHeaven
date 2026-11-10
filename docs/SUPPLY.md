@@ -1,7 +1,8 @@
 # Supply lines
 
-**Status: design (the owner's decisions, 2026-11-10); not built.** This file is the spec for the
-implementation. It replaces the supply rule of docs/ARMIES.md ("Supply": within
+**Status: rules built (2026-11-10: sections 2 to 4, `crates/ffh-core/src/army/supply.rs`, tests in
+`crates/ffh-core/tests/supply.rs`); the client (section 5) and the AI (section 6) next.** This file
+is the spec for the implementation. It replaces the supply rule of docs/ARMIES.md ("Supply": within
 `ARMY_SUPPLY_RANGE` plots of the trade network, which only paused an army's recruits).
 
 ## 1. Why
@@ -89,6 +90,20 @@ army's counter is 0.
 `SUPPLY_LINE_BUDGET` 24, `SUPPLY_COST_ROAD` 1, `SUPPLY_COST_OWN` 1, `SUPPLY_COST_LAND` 3,
 `SUPPLY_HUNGER_TURNS` 2, `STARVATION_DAMAGE_PERCENT` 10, `STARVATION_FLOOR_PERCENT` 25,
 `STARVATION_DAMAGE_DEALT_PERCENT` -25. `ARMY_SUPPLY_RANGE` is removed.
+
+**As built** (choices where the text above is silent):
+- An army aboard a source ship (on its water plot) is supplied by it (cost 0); an army standing next
+  to one is too.
+- A crusade Host (docs/CRUSADE.md), which owns no city at first, counts its lenders' and the
+  victim's cities and land as its own team's (as it heals there).
+- "Do not heal" covers every heal of the unit's own turn (Civ4's `doHeal`, the Pillar of Dawn), not
+  spells cast on it.
+- The battle effect is `BattleEffect::Dealt` (every hit of the fighter, its pairs' damage
+  percentage), returned by `engage_pre_battle`; the preview lists the units (`EngagePreview::
+  starving`), the battle log has a `LogEvent::Starvation` line before the morale check.
+- Messages: `The 1st Army has no supply line: Hunger, turn 1 of 2. No healing, no recruits.`, `The
+  1st Army is starving: units lose HP each turn, deal less damage.`, `The 1st Army is supplied
+  again.` (at the army's plot); a waiting recruit's reason is `the army has no supply line`.
 
 ## 5. What the player sees
 

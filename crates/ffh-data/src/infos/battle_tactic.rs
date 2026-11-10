@@ -102,9 +102,6 @@ pub enum TacticPlacement {
     /// lanes nearest the centre first (`place_first` kinds before the others).
     #[default]
     Line,
-    /// Lane by lane from the centre out: a guard in front, a support unit in the middle, a guard
-    /// in the rear.
-    Square,
     /// Line's, with each veteran guard in the middle row behind a guard that is no veteran.
     Vanguard,
 }
@@ -113,13 +110,12 @@ impl TacticPlacement {
     pub fn token(self) -> &'static str {
         match self {
             TacticPlacement::Line => "LINE",
-            TacticPlacement::Square => "SQUARE",
             TacticPlacement::Vanguard => "VANGUARD",
         }
     }
 
     pub fn parse(s: &str) -> Option<TacticPlacement> {
-        [TacticPlacement::Line, TacticPlacement::Square, TacticPlacement::Vanguard].into_iter().find(|p| p.token() == s.trim())
+        [TacticPlacement::Line, TacticPlacement::Vanguard].into_iter().find(|p| p.token() == s.trim())
     }
 }
 

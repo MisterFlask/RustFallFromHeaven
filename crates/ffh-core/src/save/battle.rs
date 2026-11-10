@@ -102,6 +102,7 @@ persist_enum!(LogEvent {
     10 => Flee { unit, to },
     11 => MoveIn { units, city },
     30 => BuildingStrike { building, hits },
+    31 => Starvation { units, dealt_pct },
 });
 persist_struct!(Event { round, pass, actor, kind, spell, target, hits, heal, knocked, note, entered });
 persist_struct!(Entry { unit, lane, row, hp });
@@ -260,6 +261,7 @@ mod tests {
             LogEvent::Cast { caster: 0, spell: SpellType(4), targets: vec![1, 2], effect: CastEffect::Mod { a_pct: 10, dv_pct: -5 } },
             LogEvent::Cast { caster: 0, spell: SpellType(4), targets: vec![1], effect: CastEffect::Damage(vec![(1, 1200), (2, 600)]) },
             LogEvent::Cast { caster: 0, spell: SpellType(5), targets: vec![], effect: CastEffect::Summon(3) },
+            LogEvent::Starvation { units: vec![0, 2], dealt_pct: -25 },
             LogEvent::Morale { unit: 1, source: 0, chance: 12, roll: 30, passed: true },
             LogEvent::SatOut { unit: 2, why: SatOutWhy::Afraid },
             LogEvent::DefStrike { striker: 1, target: 0, rolled: 2, chance: 20, roll: 7, pct: 10, dmg: 1000 },

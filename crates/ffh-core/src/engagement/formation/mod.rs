@@ -1790,12 +1790,7 @@ impl Grid {
 /// river rule).
 ///
 /// **Placement.** `Line`: large units first, then `place_first` kinds, each in the first row of
-/// its rank preference with room, the lanes nearest the centre first. `Square`: large units
-/// first (a guard in a front pair of cells, else a rear one; a support unit the other way round),
-/// then lane by lane from the centre out, a guard in front (the strongest that is not
-/// anti-flanking first), a support unit in the middle, a guard in the rear (anti-flanking first),
-/// a support unit where guards ran out (the rear and then the front cell), a guard where support
-/// ran out. `Vanguard`: Line's, but first, lanes from the centre out, a guard that is no veteran
+/// its rank preference with room, the lanes nearest the centre first. `Vanguard`: Line's, but first, lanes from the centre out, a guard that is no veteran
 /// (the weakest first) in front of a veteran guard (the most valuable first) in the middle, while
 /// there are both.
 pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32, blocked: &[(u8, u8)], knobs: &TacticKnobs) -> Vec<Placement> {
@@ -1832,42 +1827,6 @@ pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary:
             }
             let rest: Vec<usize> = chosen.iter().copied().filter(|&i| !cands[i].large && !out.iter().any(|p| p.unit == i)).collect();
             grid.place_in_rows(&mut out, cands, &rest, |c| c.row_order);
-        }
-        TacticPlacement::Square => {
-            // Large units: a guard in front (else the rear, else the middle), a support unit in
-            // the rear (else the front, else the middle).
-            let larges: Vec<usize> = chosen.iter().copied().filter(|&i| cands[i].large).collect();
-            grid.place_in_rows(&mut out, cands, &larges, |c| if c.guard() { [0, 2, 1] } else { [2, 0, 1] });
-            let strongest = |v: &mut Vec<usize>| v.sort_by_key(|&i| (std::cmp::Reverse(cands[i].weight()), i));
-            let mut guards: Vec<usize> = chosen.iter().copied().filter(|&i| !cands[i].large && cands[i].guard()).collect();
-            let mut support: Vec<usize> = chosen.iter().copied().filter(|&i| !cands[i].large && !cands[i].guard()).collect();
-            strongest(&mut guards);
-            strongest(&mut support);
-            let anti = |i: usize| cands[i].kind() == TacticKind::AntiFlank;
-            // The next guard for a front cell (not anti-flanking first) or a rear one
-            // (anti-flanking first).
-            let take_guard = |guards: &mut Vec<usize>, rear: bool| -> Option<usize> {
-                let k = guards.iter().position(|&i| anti(i) == rear).or(if guards.is_empty() { None } else { Some(0) })?;
-                Some(guards.remove(k))
-            };
-            let take = |v: &mut Vec<usize>| if v.is_empty() { None } else { Some(v.remove(0)) };
-            'lanes: for l in grid.lanes_out() {
-                for r in 0..ROWS {
-                    if guards.is_empty() && support.is_empty() {
-                        break 'lanes;
-                    }
-                    if !grid.free(l, r) {
-                        continue;
-                    }
-                    let i = match r {
-                        1 => take(&mut support).or_else(|| take_guard(&mut guards, false)),
-                        _ => take_guard(&mut guards, r == 2).or_else(|| take(&mut support)),
-                    };
-                    if let Some(i) = i {
-                        grid.put(&mut out, cands, i, l, r);
-                    }
-                }
-            }
         }
     }
     out.sort_by_key(|p| p.unit);

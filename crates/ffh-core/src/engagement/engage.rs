@@ -123,6 +123,9 @@ pub enum BattleEffect {
     /// Damage before the battle, in percent of the fighter's max HP (an opening damage spell);
     /// it never kills.
     Damage { fighter: usize, pct: i32 },
+    /// A percent change of the damage the fighter deals (every hit of it: its pairs' `pct`); a
+    /// starving army's units (docs/SUPPLY.md).
+    Dealt { fighter: usize, pct: i32 },
     /// A spell cast in the battle (its `SpellType`), for the deferred writes and the report.
     Cast { caster: usize, spell: SpellType },
 }
@@ -270,6 +273,12 @@ impl Setup {
                 BattleEffect::Damage { fighter, pct } => {
                     let max = self.fighters[fighter].max_hp;
                     hp[fighter] = (hp[fighter] - pct.max(0) * max).max(100);
+                }
+                BattleEffect::Dealt { fighter, pct } => {
+                    for o in 0..n {
+                        let hp = &mut self.pairs[fighter * n + o].pct;
+                        *hp = (*hp as i64 * (100 + pct).max(0) as i64 / 100) as i32;
+                    }
                 }
                 BattleEffect::Cast { .. } => {}
             }
@@ -659,10 +668,29 @@ impl Game {
         Ok((slots, walls, def))
     }
 
-    /// Phase 7 hook (plan 6.2, 14): the pre-battle spells' effects on the battle of `setup` (its
-    /// units committed, before the morale check and the opening). None in phase 6.
-    pub(crate) fn engage_pre_battle(&self, _setup: &Setup) -> Vec<BattleEffect> {
-        Vec::new()
+    /// Phase 7 hook (plan 6.2, 14): the effects on the battle of `setup` before it (its units
+    /// committed, before the morale check and the opening). Supply (docs/SUPPLY.md): each
+    /// committed unit of a starving army deals `STARVATION_DAMAGE_DEALT_PERCENT` damage. No
+    /// pre-battle spells yet.
+    pub(crate) fn engage_pre_battle(&self, setup: &Setup) -> Vec<BattleEffect> {
+        let pct = self.d.defines.starvation_damage_dealt_percent;
+        if pct == 0 {
+            return Vec::new();
+        }
+        (0..setup.units.len()).filter(|&i| self.unit_is_starving(setup.units[i])).map(|fighter| BattleEffect::Dealt { fighter, pct }).collect()
+    }
+
+    /// The committed units of `setup` the pre-battle hook makes deal less (or more) damage, each
+    /// with its percent change (a starving army's units: docs/SUPPLY.md); the preview's
+    /// `starving`.
+    pub(crate) fn engage_dealt_mods(&self, setup: &Setup) -> Vec<(UnitId, i32)> {
+        self.engage_pre_battle(setup)
+            .into_iter()
+            .filter_map(|e| match e {
+                BattleEffect::Dealt { fighter, pct } => Some((setup.units[fighter], pct)),
+                _ => None,
+            })
+            .collect()
     }
 
     /// Phase 7 hook (plan 6.4 step 3, 14): the opening spells' effects on the battle of `setup`
@@ -806,8 +834,21 @@ impl Game {
             None
         };
 
-        // Phase 7's pre-battle effects.
+        // Phase 7's pre-battle effects: a starving army's units deal less damage (docs/SUPPLY.md),
+        // a line of the log.
         let mut effects = self.engage_pre_battle(&e.setup);
+        if let Some(s) = sink.as_mut() {
+            let starving: Vec<(formation::FighterIdx, i32)> = effects
+                .iter()
+                .filter_map(|e| match *e {
+                    BattleEffect::Dealt { fighter, pct } => Some((fighter as formation::FighterIdx, pct)),
+                    _ => None,
+                })
+                .collect();
+            if let Some(&(_, dealt_pct)) = starving.first() {
+                s.event(super::report::LogEvent::Starvation { units: starving.iter().map(|x| x.0).collect(), dealt_pct });
+            }
+        }
 
         // 2. Morale.
         self.engage_morale(&mut e, &mut sink);

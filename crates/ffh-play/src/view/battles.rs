@@ -559,6 +559,8 @@ fn log_events(g: &Game, log: &[LogEvent]) -> (Vec<Json>, Vec<Json>) {
                 let hits: Vec<Json> = hits.iter().map(|&(b, dmg)| crate::jobj! { "target" => b, "dmg" => dmg }).collect();
                 events.push(opening_json("Building").with("building", Json::idx(*building)).with("hits", Json::Arr(hits)));
             }
+            // Supply (docs/SUPPLY.md): the screens do not show it yet.
+            LogEvent::Starvation { .. } => {}
         }
     }
     (events, after)

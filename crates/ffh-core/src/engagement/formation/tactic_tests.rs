@@ -201,36 +201,6 @@ fn volley_screens_then_takes_the_support() {
 }
 
 #[test]
-fn square_puts_the_support_between_guards() {
-    // 4 strikers, 1 anti-flanking striker, 4 archers, 1 mage: 10 slots, 4 lanes.
-    let mut pool: Vec<Candidate> = (0..4).map(|i| c(AK::Strike, 50 + i)).collect(); // 0-3
-    pool.push(c(AK::AntiFlank, 45)); // 4
-    pool.extend((0..4).map(|i| c(AK::Shoot, 30 + i))); // 5-8
-    pool.push(c(AK::Spell, 60)); // 9
-    let p = auto_arrange_around(&pool, 4, 10, 10, &[], &placement(TacticPlacement::Square));
-    let mut got = cells(&p);
-    got.sort_by_key(|&(_, l, r)| (l, r));
-    // Lanes from the centre out: 1, 2, 0, 3. Lane 1: the strongest striker (3) in front, the
-    // strongest support (the mage 9) in the middle, the anti-flanking striker (4) in the rear.
-    // Lane 2: striker 2, archer 8, striker 1. Lane 0: striker 0, archer 7, then no guard: archer 6
-    // in the rear. Lane 3: no guard left: archer 5 in front.
-    assert_eq!(got, [(0, 0, 0), (7, 0, 1), (6, 0, 2), (3, 1, 0), (9, 1, 1), (4, 1, 2), (2, 2, 0), (8, 2, 1), (1, 2, 2), (5, 3, 0)]);
-    // Without support, the middle takes a guard.
-    let guards: Vec<Candidate> = (0..4).map(|i| c(AK::Strike, 50 + i)).collect();
-    let p = auto_arrange_around(&guards, 2, 4, 4, &[], &placement(TacticPlacement::Square));
-    let mut got = cells(&p);
-    got.sort_by_key(|&(_, l, r)| (l, r));
-    assert_eq!(got, [(3, 0, 0), (2, 0, 1), (1, 0, 2), (0, 1, 0)]);
-    // A large guard takes a front pair; the lanes it holds take a support unit in the middle.
-    let mut pool3 = vec![c(AK::Strike, 50), c(AK::Shoot, 30), c(AK::Shoot, 20), c(AK::Strike, 40)];
-    pool3[0].large = true;
-    let p = auto_arrange_around(&pool3, 2, 6, 6, &[], &placement(TacticPlacement::Square));
-    let mut got = cells(&p);
-    got.sort_by_key(|&(_, l, r)| (l, r));
-    assert_eq!(got, [(0, 0, 0), (1, 0, 1), (3, 0, 2), (2, 1, 1)]);
-}
-
-#[test]
 fn vanguard_shields_the_veterans() {
     // 4 strikers (one strong veteran, one weak veteran), 2 archers: 6 slots, 3 lanes.
     let mut pool: Vec<Candidate> = vec![c(AK::Strike, 50), c(AK::Strike, 40), c(AK::Strike, 90), c(AK::Strike, 60), c(AK::Shoot, 30), c(AK::Shoot, 20)];
@@ -264,7 +234,7 @@ fn vanguard_shields_the_veterans() {
 fn every_tactic_places_each_unit_once_inside_the_grid() {
     let mut rng = Rng::new(7);
     let mut r = |n: i32| rng.get_i(n, "test");
-    let tactics = [TacticKnobs::line(), charge(), volley(), placement(TacticPlacement::Square), placement(TacticPlacement::Vanguard)];
+    let tactics = [TacticKnobs::line(), charge(), volley(), placement(TacticPlacement::Vanguard)];
     for _ in 0..2000 {
         let n = r(15) as usize;
         let cands: Vec<Candidate> = (0..n)

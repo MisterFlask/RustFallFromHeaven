@@ -34,9 +34,9 @@
 //! *marches* there (`Unit::march`): the rules move it once a turn, at the end of its owner's turn
 //! (after its owner moved, before the cities produce), and it takes no orders until it arrives.
 //!
-//! **Supply.** An army is in supply within `ARMY_SUPPLY_RANGE` plots of a plot connected to one of
-//! its owner's cities (the owner's plot groups, which decide trade and resource connections). Out
-//! of supply, only reinforcement pauses: its recruits wait where they are.
+//! **Supply** (`supply.rs`, docs/SUPPLY.md). Every army needs a supply line back to a city or a
+//! ship of its owner; cut, it is hungry (no healing, its recruits wait), then starving (HP lost
+//! each turn, less damage dealt).
 
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
 use std::cmp::Reverse;
@@ -49,8 +49,10 @@ use crate::ids::*;
 
 mod march;
 mod requisition;
+mod supply;
 
 pub use march::March;
+pub use supply::{SupplyLine, SupplySource, SupplyState};
 
 /// A persistent army (`Game::armies`).
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -76,6 +78,9 @@ pub struct Army {
     /// The tactic it takes at the start of its owner's next turn processing (the same as `tactic`
     /// when no change is pending): [`Game::army_set_tactic`].
     pub tactic_next: BattleTacticType,
+    /// Its owner's turn starts in a row its supply line was cut at (docs/SUPPLY.md): 0 supplied,
+    /// 1 to `SUPPLY_HUNGER_TURNS` hungry, above starving ([`Game::army_supply_state`]).
+    pub unsupplied_turns: i32,
 }
 
 /// Where a recruited unit goes.
@@ -181,7 +186,7 @@ impl Game {
         let name = (1..).map(|n| format!("{} Army", ordinal(n))).find(|n| !taken.contains(n)).expect("a free name");
         let turn = self.game_turn();
         let line = self.tactic_line();
-        let a = self.armies.insert_with(|id| Army { id, owner: p, name, group: None, target_size: 0, commander: None, disband_to: None, formed_turn: turn, requisition: Vec::new(), tactic: line, tactic_next: line });
+        let a = self.armies.insert_with(|id| Army { id, owner: p, name, group: None, target_size: 0, commander: None, disband_to: None, formed_turn: turn, requisition: Vec::new(), tactic: line, tactic_next: line, unsupplied_turns: 0 });
         self.players[p].armies.push(a);
         a
     }
@@ -298,6 +303,12 @@ impl Game {
                 }
             };
             claimed.insert(a);
+            // Supply (docs/SUPPLY.md): a part split off takes its army's counter, armies grouped
+            // together the higher one.
+            let unsupplied = self.units_unsupplied_turns(&members);
+            if unsupplied > self.armies[a].unsupplied_turns {
+                self.armies[a].unsupplied_turns = unsupplied;
+            }
             for &u in &members {
                 if let Some(b) = self.units[u].army.filter(|&b| b != a) {
                     absorbed.entry(b).or_insert(a);
@@ -356,11 +367,14 @@ impl Game {
         let plot = self.army_units_plot(p, units)?;
         // Its tactic: that of the army or garrison most of its units came from (docs/TACTICS.md).
         let from = self.units_source_tactics(units, Some(plot));
+        // Its supply counter: the highest of the armies its units came from (0 from a garrison).
+        let unsupplied = self.units_unsupplied_turns(units);
         let a = self.army_create(p);
         if let Some((tactic, next)) = from {
             self.armies[a].tactic = tactic;
             self.armies[a].tactic_next = next;
         }
+        self.armies[a].unsupplied_turns = unsupplied;
         let first = units[0];
         self.unit_join_group(first, None, true);
         let grp = self.units[first].group.expect("joined a new group");
@@ -392,6 +406,9 @@ impl Game {
             return Err("the army is not on their plot");
         }
         let grp = self.armies[into].group.ok_or("the army has no group")?;
+        // Supply: the army takes the higher counter of its own and the joining units' armies'.
+        let unsupplied = self.units_unsupplied_turns(units).max(self.armies[into].unsupplied_turns);
+        self.armies[into].unsupplied_turns = unsupplied;
         let mut left: Vec<ArmyId> = Vec::new();
         for &u in units {
             if let Some(a) = self.units[u].army.filter(|&a| a != into) {
@@ -533,6 +550,12 @@ impl Game {
         }
     }
 
+    /// The highest supply counter (`Army::unsupplied_turns`) of the armies `units` are in (0: none
+    /// is in an army).
+    fn units_unsupplied_turns(&self, units: &[UnitId]) -> i32 {
+        units.iter().filter_map(|&u| self.units[u].army).filter(|&a| self.armies.contains(a)).map(|a| self.armies[a].unsupplied_turns).max().unwrap_or(0)
+    }
+
     /// Disbands army `a`: its units join the garrison of their city, or march to the nearest city
     /// of `p` and join its garrison there. Its recruits on the way go to that garrison; its
     /// requisition ends (its orders are withdrawn).
@@ -605,38 +628,6 @@ impl Game {
     pub fn army_nearest_city(&self, p: PlayerId, plot: PlotIdx) -> Option<CityId> {
         let (x, y) = self.map.xy(plot);
         self.players[p].cities.iter().copied().min_by_key(|&c| (self.plot_distance(x, y, self.cities[c].x, self.cities[c].y), c))
-    }
-
-    // ---------------------------------------------------------------------------------------
-    // Supply
-    // ---------------------------------------------------------------------------------------
-
-    /// Whether `plot` is in `p`'s supply: within `ARMY_SUPPLY_RANGE` plots of a plot in the same
-    /// plot group (trade network) as one of `p`'s cities.
-    pub fn plot_in_supply(&self, p: PlayerId, plot: PlotIdx) -> bool {
-        let groups: BTreeSet<PlotGroupId> = self.players[p].cities.iter().filter_map(|&c| self.plot_get_plot_group(self.city_plot(c), p)).collect();
-        if groups.is_empty() {
-            return false;
-        }
-        let range = self.d.defines.army_supply_range.max(0);
-        let (x, y) = self.map.xy(plot);
-        for dy in -range..=range {
-            for dx in -range..=range {
-                let Some(q) = self.plot_xy(x, y, dx, dy) else { continue };
-                if self.plot_distance(x, y, x + dx, y + dy) > range {
-                    continue;
-                }
-                if self.plot_get_plot_group(q, p).is_some_and(|g| groups.contains(&g)) {
-                    return true;
-                }
-            }
-        }
-        false
-    }
-
-    /// Whether army `a` is in supply.
-    pub fn army_in_supply(&self, a: ArmyId) -> bool {
-        self.army_plot(a).is_some_and(|q| self.plot_in_supply(self.armies[a].owner, q))
     }
 
     // ---------------------------------------------------------------------------------------

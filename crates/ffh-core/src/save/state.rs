@@ -61,7 +61,7 @@ persist_newtype!(
 
 use crate::culture::CultureChannel;
 use crate::army::{Army, March, RecruitDest};
-persist_struct!(Army { id, owner, name, group, target_size, commander, disband_to, formed_turn, requisition, tactic, tactic_next });
+persist_struct!(Army { id, owner, name, group, target_size, commander, disband_to, formed_turn, requisition, tactic, tactic_next, unsupplied_turns });
 persist_struct!(March { dest, stalled, left_turn, from_city, diverted });
 use crate::governors::Governor;
 persist_struct!(Governor { id, owner, name, profile, traits, origin, born_turn, city, since_turn });

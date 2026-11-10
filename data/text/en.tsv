@@ -1729,8 +1729,6 @@ TXT_KEY_TACTIC_CHARGE	Charge
 TXT_KEY_TACTIC_CHARGE_HELP	[ICON_BULLET]Chargers take the slots first, then anti-flanking strikers, strikers, shooters, stabbers, casters, healers, bombards.[NEWLINE][ICON_BULLET]Chargers take the front row first, the centre lanes first.[NEWLINE][ICON_BULLET]Other units stand as in Line.
 TXT_KEY_TACTIC_VOLLEY	Volley
 TXT_KEY_TACTIC_VOLLEY_HELP	[ICON_BULLET]One guard per lane takes a slot first: the strongest healthy strikers and chargers.[NEWLINE][ICON_BULLET]Then support units take the slots: shooters, casters, bombards, stabbers, healers; then the other guards.[NEWLINE][ICON_BULLET]Each unit stands as in Line.
-TXT_KEY_TACTIC_SQUARE	Square
-TXT_KEY_TACTIC_SQUARE_HELP	[ICON_BULLET]Units take the slots as in Line.[NEWLINE][ICON_BULLET]Each lane from the centre out: a guard in the front row, a support unit in the middle row, a guard in the rear row.[NEWLINE][ICON_BULLET]Anti-flanking strikers take the rear cells first.[NEWLINE][ICON_BULLET]Without guards, support units take the rear, then the front cells. Without support, guards take the middle cells.
 TXT_KEY_TACTIC_VANGUARD	Vanguard
 TXT_KEY_TACTIC_VANGUARD_HELP	[ICON_BULLET]Units take the slots as in Line.[NEWLINE][ICON_BULLET]Each veteran guard stands in the middle row behind a guard that is not a veteran: veterans have the Hero promotion or level %d1 or above.[NEWLINE][ICON_BULLET]Other units stand as in Line.
 TXT_KEY_AS_UNREMOVABLE	[NEWLINE][COLOR_WARNING_TEXT]Not removable[COLOR_REVERT]

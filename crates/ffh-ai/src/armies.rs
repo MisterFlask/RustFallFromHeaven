@@ -513,6 +513,8 @@ mod tests {
         for u in g.army_units(a) {
             g.unit_set_xy(u, 17, 8, true);
         }
+        // (Its line cut, docs/SUPPLY.md: the counter the rules set at its owner's turn start.)
+        g.armies[a].unsupplied_turns = 1;
         assert!(!g.army_in_supply(a));
         assert_eq!(main_army(&g, p0, t1), None);
         // An enemy stack next to one of the cities with an order.

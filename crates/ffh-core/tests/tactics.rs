@@ -81,9 +81,9 @@ impl World {
 }
 
 #[test]
-fn the_five_tactics() {
+fn the_four_tactics() {
     let d = ffh_data::global();
-    assert_eq!(d.battle_tactics.len(), 5);
+    assert_eq!(d.battle_tactics.len(), 4);
     let k = |name: &str| &d.battle_tactics[d.t::<BattleTacticType>(name)].knobs;
     assert_eq!(d.t::<BattleTacticType>("TACTIC_LINE"), BattleTacticType(0), "Line is the first entry");
     assert_eq!(*k("TACTIC_LINE"), TacticKnobs::line());
@@ -93,7 +93,6 @@ fn the_five_tactics() {
     assert_eq!(k("TACTIC_VOLLEY").screen_per_lane, 1);
     assert!(!k("TACTIC_VOLLEY").one_of_each);
     assert!(k("TACTIC_VOLLEY").pick_order[..5].iter().all(|k| !k.guard()), "support before the other guards");
-    assert_eq!(k("TACTIC_SQUARE").placement, TacticPlacement::Square);
     assert_eq!(k("TACTIC_VANGUARD").placement, TacticPlacement::Vanguard);
     for a in d.battle_tactics.iter() {
         assert_ne!(d.text.get(&a.base.description), a.base.description.as_str(), "{}: a name", a.base.type_);
@@ -107,18 +106,18 @@ fn whose_tactic_a_side_fights_in() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     let line = w.tactic("TACTIC_LINE");
-    let square = w.tactic("TACTIC_SQUARE");
+    let charge = w.tactic("TACTIC_CHARGE");
     let volley = w.tactic("TACTIC_VOLLEY");
     let axes = w.units(p0, "UNIT_AXEMAN", from, 3);
     let bows = w.units(p0, "UNIT_ARCHER", from, 2);
     let a = w.army(p0, &axes);
     let b = w.army(p0, &bows);
     assert_eq!(w.g.armies[a].tactic, line, "a new army starts in Line");
-    w.g.armies[a].tactic = square;
+    w.g.armies[a].tactic = charge;
     w.g.armies[b].tactic = volley;
     let mut pool = axes.clone();
     pool.extend(&bows);
-    assert_eq!(w.g.engage_side_tactic(&pool, from), square, "the army most of the units belong to");
+    assert_eq!(w.g.engage_side_tactic(&pool, from), charge, "the army most of the units belong to");
     assert_eq!(w.g.engage_side_tactic(&bows, from), volley);
     // A tie between armies: the lower id.
     let two: Vec<UnitId> = vec![axes[0], axes[1], bows[0], bows[1]];
@@ -141,10 +140,10 @@ fn whose_tactic_a_side_fights_in() {
     assert_eq!(w.g.engage_side_tactic(&garrison, to), volley);
     let guests = w.units(p1, "UNIT_WARRIOR", to, 2);
     let army = w.army(p1, &guests);
-    w.g.armies[army].tactic = square;
+    w.g.armies[army].tactic = charge;
     let mut all = garrison.clone();
     all.extend(&guests);
-    assert_eq!(w.g.engage_side_tactic(&all, to), square, "a tie: the army");
+    assert_eq!(w.g.engage_side_tactic(&all, to), charge, "a tie: the army");
     let more = w.units(p1, "UNIT_AXEMAN", to, 1);
     w.g.player_army_sync(p1);
     all.extend(&more);
@@ -168,26 +167,33 @@ fn barbarians_fight_in_line() {
 fn the_tactic_arranges_the_battle() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
-    // A pool where Square and Line differ: 4 axemen and 4 archers.
-    let mut pool = w.units(p0, "UNIT_AXEMAN", from, 4);
+    // A pool where Vanguard and Line differ: 4 axemen (2 of them veterans) and 4 archers.
+    let axes = w.units(p0, "UNIT_AXEMAN", from, 4);
+    let mut pool = axes.clone();
     pool.extend(w.units(p0, "UNIT_ARCHER", from, 4));
+    let vets = [axes[0], axes[1]];
+    let veteran_level = w.g.d.defines.tactic_veteran_level;
+    for &u in &vets {
+        w.g.units[u].level = veteran_level;
+    }
     let a = w.army(p0, &pool);
     w.units(p1, "UNIT_WARRIOR", to, 2);
     w.g.player_army_sync(p1);
     let ctx = w.ctx();
     let slots = w.g.engage_slots(&ctx);
-    let square = w.tactic("TACTIC_SQUARE");
+    let vanguard = w.tactic("TACTIC_VANGUARD");
     let line_f = w.g.engage_auto_formation(&pool, Side::Attacker, &slots, &ctx);
-    w.g.armies[a].tactic = square;
-    let square_f = w.g.engage_auto_formation(&pool, Side::Attacker, &slots, &ctx);
-    assert_ne!(line_f, square_f);
-    assert_eq!(square_f, w.g.engage_tactic_formation(&pool, Side::Attacker, &slots, &ctx, square));
-    // Square: an archer stands behind an axeman in a centre lane, with an axeman behind it.
+    w.g.armies[a].tactic = vanguard;
+    let vanguard_f = w.g.engage_auto_formation(&pool, Side::Attacker, &slots, &ctx);
+    assert_ne!(line_f, vanguard_f);
+    assert_eq!(vanguard_f, w.g.engage_tactic_formation(&pool, Side::Attacker, &slots, &ctx, vanguard));
+    // Vanguard: in the centre lane a veteran axeman stands behind one that is no veteran.
     let lanes = w.g.engage_lanes(&slots)[0];
     let centre = (lanes - 1) / 2;
-    let at = |l: u8, r: u8| square_f.iter().find(|p| p.lane == l && p.row == r).map(|p| w.g.units[p.unit].unit_type);
-    let (axe, bow) = (w.g.d.t::<UnitType>("UNIT_AXEMAN"), w.g.d.t::<UnitType>("UNIT_ARCHER"));
-    assert_eq!([at(centre, 0), at(centre, 1), at(centre, 2)], [Some(axe), Some(bow), Some(axe)]);
+    let at = |l: u8, r: u8| vanguard_f.iter().find(|p| p.lane == l && p.row == r).map(|p| p.unit);
+    let (front, middle) = (at(centre, 0).expect("a front unit"), at(centre, 1).expect("a middle unit"));
+    assert!(axes.contains(&front) && !vets.contains(&front));
+    assert!(vets.contains(&middle));
     // The battle uses it, and its log names both sides' tactics.
     w.g.players[p1].human = true;
     let grp = w.g.units[pool[0]].group.expect("a group");
@@ -196,9 +202,9 @@ fn the_tactic_arranges_the_battle() {
     w.g.group_attack_force(grp, tx, ty, MOVE_DIRECT_ATTACK, None).expect("the attack");
     let r = w.g.battle_reports.iter().find(|r| r.id >= before).expect("a battle");
     let log = r.log.as_ref().expect("a log");
-    assert_eq!(log.tactics, [square, w.tactic("TACTIC_LINE")]);
+    assert_eq!(log.tactics, [vanguard, w.tactic("TACTIC_LINE")]);
     let placed: Vec<(UnitId, (u8, u8))> = log.fighters.iter().filter(|f| f.side == Side::Attacker).filter_map(|f| f.place.map(|p| (f.unit, p))).collect();
-    for p in &square_f {
+    for p in &vanguard_f {
         assert!(placed.contains(&(p.unit, (p.lane, p.row))), "the battle stood as the tactic put it");
     }
 }
@@ -236,14 +242,14 @@ fn new_split_and_captured_bodies() {
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     let line = w.tactic("TACTIC_LINE");
     let volley = w.tactic("TACTIC_VOLLEY");
-    let square = w.tactic("TACTIC_SQUARE");
+    let charge = w.tactic("TACTIC_CHARGE");
     let axes = w.units(p0, "UNIT_AXEMAN", from, 4);
     let a = w.army(p0, &axes);
     w.g.armies[a].tactic = volley;
-    w.g.armies[a].tactic_next = square;
+    w.g.armies[a].tactic_next = charge;
     // A new army formed from its units takes its tactics (a pending change too).
     let b = w.g.army_split(p0, &axes[..3]).unwrap();
-    assert_eq!((w.g.armies[b].tactic, w.g.armies[b].tactic_next), (volley, square));
+    assert_eq!((w.g.armies[b].tactic, w.g.armies[b].tactic_next), (volley, charge));
     // A merged army keeps the receiving army's.
     let lone = w.units(p0, "UNIT_WARRIOR", from, 1);
     let c = w.army(p0, &lone);
@@ -252,12 +258,12 @@ fn new_split_and_captured_bodies() {
     // An army formed from a garrison takes the garrison's tactic.
     let (x, y) = w.g.map.xy(to);
     let city = w.g.player_init_city(p1, x, y, true, true);
-    w.g.cities[city].garrison_tactic = square;
-    w.g.cities[city].garrison_tactic_next = square;
+    w.g.cities[city].garrison_tactic = charge;
+    w.g.cities[city].garrison_tactic_next = charge;
     let garrison = w.units(p1, "UNIT_AXEMAN", to, 2);
     w.g.player_army_sync(p1);
     let g2 = w.army(p1, &garrison);
-    assert_eq!(w.g.armies[g2].tactic, square);
+    assert_eq!(w.g.armies[g2].tactic, charge);
     // A city that changes hands (here by trade) goes back to Line.
     for u in w.g.map.plots[to].units.clone() {
         w.g.unit_kill(u, false, None);

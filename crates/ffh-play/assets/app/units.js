@@ -1228,7 +1228,7 @@ export function armyById(id) {
 function armyBadge(u) {
   if (u.march) return h("span.badge.march", { title: `${marchLine(u.march)}: it takes no orders until it arrives` }, "marching");
   const a = armyById(u.army);
-  if (a) return h(`span.badge.army${a.in_supply ? "" : ".warn"}`, { title: `${a.name}${a.in_supply ? "" : ": out of supply (its recruits wait)"}` }, a.name);
+  if (a) return h(`span.badge.army${a.in_supply ? "" : ".warn"}`, { title: `${a.name}${a.in_supply ? "" : ": no supply line (no healing, its recruits wait)"}` }, a.name);
   if (u.garrison !== null && u.garrison !== undefined) return h("span.badge.garrison", { title: `In the garrison of ${S.cities.get(u.garrison)?.name ?? "the city"}` }, "garrison");
   return null;
 }
@@ -1270,7 +1270,7 @@ function armyLine() {
     h("span.dim", ` · ${n} unit${n === 1 ? "" : "s"}${a.target_size ? ` of ${a.target_size}` : ""}`),
     a.marching.length ? h("span.dim", { title: "Recruits marching to it" }, ` · ${a.marching.length} marching to it`) : null,
     training ? h("span.dim", { title: "Units cities train for it: its requisition's, and those they build next for it" }, ` · ${training} in training`) : null,
-    a.in_supply ? null : h("span.warn", { title: "More than the supply range from your network of cities: its recruits wait" }, " · out of supply"),
+    a.in_supply ? null : h("span.warn", { title: "No supply line: no healing, its recruits wait" }, " · out of supply"),
     a.disband_to ? h("span.dim", ` · disbanding to ${a.disband_to}`) : null,
     " ",
     h("button.link.small", { onclick: () => emit("open-screen", "armies"), title: "The Armies screen [F5]" }, "armies"),

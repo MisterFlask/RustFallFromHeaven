@@ -563,8 +563,11 @@ impl Game {
         let unit_type = self.units[u].unit_type;
         let info = &d.units[unit_type];
 
+        // Supply (docs/SUPPLY.md): a unit of a hungry or starving army does not heal.
+        let unsupplied = self.unit_is_unsupplied(u);
+
         // Card: Pillar of Dawn (docs/CARDS.md): under its owner's Pillar a unit heals fully.
-        if self.units[u].damage > 0 && self.unit_in_pillar_of_dawn(u) {
+        if !unsupplied && self.units[u].damage > 0 && self.unit_in_pillar_of_dawn(u) {
             let damage = self.units[u].damage;
             self.unit_change_damage(u, -damage, None);
         }
@@ -572,11 +575,11 @@ impl Game {
         // FfH Spell System: Added by Kael 07/23/2007
         let plot = self.unit_plot(u);
         if self.unit_has_moved(u) {
-            if self.unit_is_always_heal(u) || self.unit_is_barbarian(u) {
+            if !unsupplied && (self.unit_is_always_heal(u) || self.unit_is_barbarian(u)) {
                 self.unit_do_heal(u);
             }
         } else {
-            if self.unit_is_hurt(u) {
+            if !unsupplied && self.unit_is_hurt(u) {
                 self.unit_do_heal(u);
             }
 

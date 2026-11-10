@@ -426,6 +426,9 @@ pub enum LogEvent {
     /// The defended city's building struck before the battle (`pre_battle_damage`, a card's: the
     /// Thunderhead Tower): the damage each fighter took, centi-HP.
     BuildingStrike { building: BuildingType, hits: Vec<(FighterIdx, i32)> },
+    /// Supply (docs/SUPPLY.md): the fighters of starving armies, before the battle, and the
+    /// percent change of the damage they deal (`STARVATION_DAMAGE_DEALT_PERCENT`).
+    Starvation { units: Vec<FighterIdx>, dealt_pct: i32 },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

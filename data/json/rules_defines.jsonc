@@ -38,8 +38,25 @@
   // most points of cultural hostility or friendship a leader remembers
   "CULTURE_MEMORY_MAX": 8,
   // ==== Armies (GAMEOPTION_ARMIES, docs/ARMIES.md) ====
-  "ARMY_SUPPLY_RANGE": 3,
   "ARMY_TRANSIT_STALL_TURNS": 5,
+  // ==== Supply lines (docs/SUPPLY.md) ====
+  // the most a supply line may cost: an army is supplied when the cheapest path from it to a
+  //      source (a city of its owner's team not in occupation, a ship of its owner) costs at most this
+  "SUPPLY_LINE_BUDGET": 24,
+  // the cost of entering a plot with a route (anyone's)
+  "SUPPLY_COST_ROAD": 1,
+  // the cost of entering a plot of the owner's team without a route
+  "SUPPLY_COST_OWN": 1,
+  // the cost of entering any other land plot
+  "SUPPLY_COST_LAND": 3,
+  // turns of Hunger (no healing, no recruits) after the line is cut, before Starvation
+  "SUPPLY_HUNGER_TURNS": 2,
+  // Starvation: percent of its full HP each unit loses at the start of each of its owner's turns
+  "STARVATION_DAMAGE_PERCENT": 10,
+  // Starvation: the loss stops at this percent of the unit's full HP
+  "STARVATION_FLOOR_PERCENT": 25,
+  // Starvation: percent change of the damage the army's units deal in a battle
+  "STARVATION_DAMAGE_DEALT_PERCENT": -25,
   // ==== Governors (GAMEOPTION_GOVERNORS, docs/GOVERNORS.md) ====
   "GOVERNOR_DIRECT_RULE_CITIES": 4,
   "GOVERNOR_DIRECT_RULE_SWAP_COOLDOWN": 10,

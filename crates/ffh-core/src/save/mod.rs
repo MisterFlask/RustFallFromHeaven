@@ -115,7 +115,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   unit types are gone.
 /// - 28: battle tactics (docs/TACTICS.md): `Army::tactic`, `tactic_next`, `City::garrison_tactic`,
 ///   `garrison_tactic_next`, the battle log's `tactics`.
-pub const FORMAT_VERSION: u32 = 28;
+/// - 29: supply lines (docs/SUPPLY.md): `Army::unsupplied_turns`; the battle log's
+///   `LogEvent::Starvation`.
+pub const FORMAT_VERSION: u32 = 29;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

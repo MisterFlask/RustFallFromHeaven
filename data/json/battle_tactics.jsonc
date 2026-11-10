@@ -16,10 +16,9 @@
 //     screen_per_lane: guards taken before anything else, per lane of the side with a free front
 //                      cell (the strongest healthy ones; a large guard screens two). Absent: 0
 //     placement:       LINE (each unit in the first row of its rank order with room, the lanes
-//                      nearest the centre first), SQUARE (lane by lane from the centre out: a
-//                      guard in front, a support unit in the middle, a guard in the rear) or
-//                      VANGUARD (LINE, each veteran guard in the middle row behind a guard that
-//                      is no veteran; a veteran: the Hero promotion or level TACTIC_VETERAN_LEVEL).
+//                      nearest the centre first) or VANGUARD (LINE, each veteran guard in the
+//                      middle row behind a guard that is no veteran; a veteran: the Hero
+//                      promotion or level TACTIC_VETERAN_LEVEL).
 //                      Absent: LINE
 //     place_first:     LINE placement only: kinds placed before the others. Absent: none
 [
@@ -43,12 +42,6 @@
     "pick_order": ["SHOOT", "SPELL", "BOMBARD", "STAB", "HEAL", "ANTI_FLANK", "STRIKE", "CHARGE"],
     "one_of_each": false,
     "screen_per_lane": 1
-  },
-  {
-    "type": "TACTIC_SQUARE",
-    "description": "TXT_KEY_TACTIC_SQUARE",
-    "help": "TXT_KEY_TACTIC_SQUARE_HELP",
-    "placement": "SQUARE"
   },
   {
     "type": "TACTIC_VANGUARD",
