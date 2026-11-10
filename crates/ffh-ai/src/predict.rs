@@ -173,9 +173,12 @@ pub(crate) fn holds2(g: &Game, cache: Option<&Cache>, flood: &mut Flood, p: Play
 /// the forecast of the expected force against the garrison as it stands / with the units of ours
 /// that arrive before it. All by answer. With events written, one `decision` event `threat` per
 /// call with every city's estimate and every stack (the misses' analysis reads it).
+///
+/// Recorded only with `FFH_AI_SHADOW_THREAT=1`: the estimator costs about 2.8 times the game's own
+/// time as built (docs/CALIBRATION.md), which every telemetry run would otherwise pay.
 pub(crate) fn incoming(g: &Game, cache: &Cache, flood: &mut Flood, p: PlayerId, civ_war: bool) {
     use crate::threat::{incoming, Incoming, Threats, HORIZONS};
-    if !g.telemetry.on() || g.players[p].cities.is_empty() {
+    if !g.telemetry.on() || !shadow_threat() || g.players[p].cities.is_empty() {
         return;
     }
     let t = Threats::of(g, Some(cache), flood, p);
@@ -328,4 +331,11 @@ pub(crate) fn attack(g: &Game, p: PlayerId, u: UnitId, q: PlotIdx, odds: i32, sr
     g.tel_prediction(p, Prediction::new("attack", Outcome::AttackWon { attacker: u }, HORIZON_THIS_TURN, odds / 10).score(odds as i64).acted(true), || {
         Obj::new().s("src", src).b("city", city).b("barbarian", barb).s("unit", g.d.units[g.units[u].unit_type].base.type_.as_str()).end()
     });
+}
+
+/// `FFH_AI_SHADOW_THREAT=1`: record the incoming-attack estimator's shadow predictions (read once;
+/// recording changes no decision, so play is the same either way).
+fn shadow_threat() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var("FFH_AI_SHADOW_THREAT").map_or(false, |v| !v.is_empty() && v != "0"))
 }

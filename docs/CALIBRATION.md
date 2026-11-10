@@ -327,6 +327,9 @@ Recorded in the ledger only; **no decision uses it**, and with telemetry off non
 - No memory: only what is in sight this turn. With `FOG_SIGHT` on (the default) the AI sees enemy
   units through fog, so the cost of no memory is in stealth and units not yet built (below).
 
+The shadow predictions of this section are recorded only with `FFH_AI_SHADOW_THREAT=1`
+(set it in the environment of `calibration.py`; the games inherit it): as built the estimator costs about 2.8 times the game's own time.
+
 The recording (`predict::incoming`) also writes, with events on, one `decision` event `threat`
 per player-turn whose `alts` holds every city's estimate (and the land military of civilizations
 not at war with us within 4 plots), every stack and every force: the misses below come from it.
