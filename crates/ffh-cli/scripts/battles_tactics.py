@@ -234,7 +234,7 @@ def report(files):
         v = [sum(agg_c[(c, 'VANGUARD')][k] for c in cs) for k in range(3)]
         pl = l[2] / l[1] if l[1] else 0
         pv = v[2] / v[1] if v[1] else 0
-        ok = pl > 0 and pv <= pl / 2
+        ok = pv <= pl / 2  # at most half of Line's (0 against 0 holds)
         c_every = c_every and ok
         sc = sum(h2h(c, 'VANGUARD', 'LINE')[0] for c in cs) / len(cs)
         print(f"  {n} {g} ({len(cs)} levels): {100 * pl:.1f} {100 * pv:.1f} {pv / pl if pl else float('nan'):.2f} {'holds' if ok else 'FAILS'}; score against Line {sc:+.1f}")

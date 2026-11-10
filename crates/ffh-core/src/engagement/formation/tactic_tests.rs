@@ -208,13 +208,13 @@ fn vanguard_shields_the_veterans() {
     pool[3].veteran = true;
     let p = auto_arrange_around(&pool, 3, 6, 6, &[], &placement(TacticPlacement::Vanguard));
     let cell = |u: usize| p.iter().find(|x| x.unit == u).map(|x| (x.lane, x.row)).unwrap();
-    // The centre lane: the weakest striker that is no veteran (1) before the most valuable veteran
-    // (2); lane 0: the next weakest (0) before veteran 3. The rest as Line places them.
-    assert_eq!(cell(1), (1, 0));
+    // The centre lane: the strongest striker that is no veteran (4) before the most valuable
+    // veteran (2); lane 0: the next strongest (0) before veteran 3. The rest as Line places them.
+    assert_eq!(cell(4), (1, 0));
     assert_eq!(cell(2), (1, 1));
     assert_eq!(cell(0), (0, 0));
     assert_eq!(cell(3), (0, 1));
-    assert_eq!(cell(4), (2, 0));
+    assert_eq!(cell(1), (2, 0));
     assert_eq!(cell(5), (2, 1));
     // Line puts the veterans in front.
     let line = auto_arrange_around(&pool, 3, 6, 6, &[], &TacticKnobs::line());

@@ -1779,9 +1779,6 @@ impl Grid {
     }
 }
 
-// LAB (temporary): 1 = the weakest cover first, -1 = the strongest first.
-const VANGUARD_COVER_SIGN: i64 = -1;
-
 /// [`auto_arrange`] with the cells in `blocked` already taken (a city's Sentinels), arranged by
 /// the tactic whose knobs are `knobs` (docs/TACTICS.md, section 3). With Line's knobs
 /// ([`TacticKnobs::line`]) it is the auto formation as it was.
@@ -1793,9 +1790,11 @@ const VANGUARD_COVER_SIGN: i64 = -1;
 /// river rule).
 ///
 /// **Placement.** `Line`: large units first, then `place_first` kinds, each in the first row of
-/// its rank preference with room, the lanes nearest the centre first. `Vanguard`: Line's, but first, lanes from the centre out, a guard that is no veteran
-/// (the weakest first) in front of a veteran guard (the most valuable first) in the middle, while
-/// there are both.
+/// its rank preference with room, the lanes nearest the centre first. `Vanguard`: when the side has
+/// veteran guards and its guards that are no veterans are at least as many as its lanes whose front
+/// cell is free once the large units stand, first, lanes from the centre out, a guard that is no
+/// veteran (the strongest first) in front of a veteran guard (the most valuable first) in the
+/// middle, while there are both; then Line's placement of the rest. Otherwise exactly Line's.
 pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32, blocked: &[(u8, u8)], knobs: &TacticKnobs) -> Vec<Placement> {
     let chosen = arrange_select(cands, lanes, slots, ordinary, blocked, knobs);
     let mut grid = Grid::new(lanes, blocked);
@@ -1815,7 +1814,7 @@ pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary:
             let mut vets: Vec<usize> = chosen.iter().copied().filter(|&i| small_guard(i) && cands[i].veteran).collect();
             vets.sort_by_key(|&i| (std::cmp::Reverse(cands[i].weight()), i));
             let mut fronts: Vec<usize> = chosen.iter().copied().filter(|&i| small_guard(i) && !cands[i].veteran).collect();
-            fronts.sort_by_key(|&i| (VANGUARD_COVER_SIGN * cands[i].weight(), i));
+            fronts.sort_by_key(|&i| (std::cmp::Reverse(cands[i].weight()), i));
             // The cover: a guard that is no veteran for each lane whose front cell is free once
             // the large units stand (a full front row of cover). Without it, Line.
             let free_front = (0..grid.lanes).filter(|&l| grid.free(l, 0)).count();

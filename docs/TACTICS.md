@@ -85,11 +85,13 @@ come through a screen; a garrison behind walls. Dies to a Charge, which reaches 
 ### Vanguard (`TACTIC_VANGUARD`)
 
 - Selection: as Line.
-- Placement: as Line, but a **veteran** guard stands in the middle row behind a guard that is not
-  one, while there are such guards to stand in front (lanes from the centre out: the front cell a
-  guard that is no veteran, the weakest first; the middle cell behind it a veteran, the most
-  valuable first). Veterans with nobody to stand behind are placed as in Line. A veteran is a unit
-  with the Hero promotion, or of level `TACTIC_VETERAN_LEVEL` (4) or above.
+- Placement: when the side's guards that are no veterans are at least as many as its lanes whose
+  front cell is free once its large units stand, a **veteran** guard stands in the middle row behind
+  a guard that is not one (lanes from the centre out: the front cell a guard that is no veteran,
+  the strongest first; the middle cell behind it a veteran, the most valuable first), while there
+  are both; the rest are placed as in Line. With fewer such guards the side is arranged exactly as
+  in Line. A veteran is a unit with the Hero promotion, or of level `TACTIC_VETERAN_LEVEL` (4) or
+  above.
 
 The veterans act once instead of twice and are hit by strikes only when the unit before them
 falls.
@@ -234,35 +236,43 @@ Horsemen, Archers, Fire I Adepts; mid Champions, Horse Archers, Longbowmen, Fire
 Phalanxes, Knights, Marksmen, Fire II Archmages; the hero army's hero is its core unit with the
 Hero promotion, its veterans level 5 with Combat I-IV; walls are fortified 5 turns.)
 
+**Vanguard's rows are the second pass's** (section 11, measured 2026-11-10): the round robin rerun
+with the four shipped tactics (1,152 matchups of 400 battles, the same 72 conditions), Vanguard
+with its cover rule. Line's, Charge's and Volley's cells against each other came out as before to
+the decimal. Square against Vanguard was not remeasured (`n/m`). The dominance counts for Vanguard
+are of 360 cells (each condition, against each of the other two tactics attacking and defending,
+and the head-to-head).
+
 A score is the head-to-head mean of attacking and defending, `(net(X>Y) - net(Y>X)) / 2`, of the
-net share of HP (percent). Where two tactics give the same formation (Vanguard without veterans,
-Volley or Charge where the selection is Line's) the score is exactly 0.
+net share of HP (percent). Where two tactics give the same formation (Vanguard without veterans
+or without a full front of cover, Volley or Charge where the selection is Line's) the score is
+exactly 0.
 
 **Mean score per ground, row against column** (over the 24 conditions of each ground):
 
 | open | Line | Charge | Volley | Square | Vanguard |
 |---|---|---|---|---|---|
-| Line | . | +1.4 | -5.5 | +13.5 | +4.6 |
-| Charge | -1.4 | . | -5.4 | +12.3 | +2.9 |
-| Volley | +5.5 | +5.4 | . | +16.8 | +9.4 |
-| Square | -13.5 | -12.3 | -16.8 | . | -9.5 |
-| Vanguard | -4.6 | -2.9 | -9.4 | +9.5 | . |
+| Line | . | +1.4 | -5.5 | +13.5 | +1.6 |
+| Charge | -1.4 | . | -5.4 | +12.3 | -0.1 |
+| Volley | +5.5 | +5.4 | . | +16.8 | +6.7 |
+| Square | -13.5 | -12.3 | -16.8 | . | n/m |
+| Vanguard | -1.6 | +0.1 | -6.7 | n/m | . |
 
 | forest | Line | Charge | Volley | Square | Vanguard |
 |---|---|---|---|---|---|
 | Line | . | +5.5 | +4.8 | +16.3 | +3.7 |
 | Charge | -5.5 | . | +2.9 | +9.4 | -2.0 |
 | Volley | -4.8 | -2.9 | . | +4.0 | -2.9 |
-| Square | -16.3 | -9.4 | -4.0 | . | -10.6 |
-| Vanguard | -3.7 | +2.0 | +2.9 | +10.6 | . |
+| Square | -16.3 | -9.4 | -4.0 | . | n/m |
+| Vanguard | -3.7 | +2.0 | +2.9 | n/m | . |
 
 | walls | Line | Charge | Volley | Square | Vanguard |
 |---|---|---|---|---|---|
-| Line | . | +0.7 | -1.0 | +8.2 | +1.2 |
-| Charge | -0.7 | . | -1.3 | +8.3 | +0.8 |
-| Volley | +1.0 | +1.3 | . | +9.4 | +2.1 |
-| Square | -8.2 | -8.3 | -9.4 | . | -6.6 |
-| Vanguard | -1.2 | -0.8 | -2.1 | +6.6 | . |
+| Line | . | +0.7 | -1.0 | +8.2 | +0.8 |
+| Charge | -0.7 | . | -1.3 | +8.3 | +0.3 |
+| Volley | +1.0 | +1.3 | . | +9.4 | +1.7 |
+| Square | -8.2 | -8.3 | -9.4 | . | n/m |
+| Vanguard | -0.8 | -0.3 | -1.7 | n/m | . |
 
 **Against Line per army and ground**: the mean score over levels and sizes (conditions won / lost
 beyond 2 standard errors, of 6):
@@ -273,7 +283,7 @@ beyond 2 standard errors, of 6):
 | Charge | -4.5 (0/3) | -14.0 (1/5) | -3.0 (1/3) | -0.4 (2/2) | +15.3 (4/0) | -1.2 (3/3) | +2.2 (2/1) | -28.1 (0/6) | -0.7 (2/2) | -2.9 (0/5) | +4.6 (6/0) | +2.2 (4/1) |
 | Volley | +13.2 (3/0) | +8.1 (6/0) | +4.7 (3/1) | 0 | 0 | 0 | +2.2 (2/1) | -28.1 (0/6) | -0.4 (2/3) | +6.5 (5/0) | +0.8 (2/2) | -0.2 (2/3) |
 | Square | -13.3 (1/5) | -21.4 (0/6) | -15.6 (0/6) | -6.6 (1/4) | -11.9 (0/6) | -5.6 (0/6) | -30.5 (0/6) | -17.1 (0/6) | -8.6 (0/6) | -3.7 (1/5) | -14.8 (0/6) | -3.0 (1/5) |
-| Vanguard | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | -18.5 (0/6) | -15.0 (0/6) | -5.0 (0/6) |
+| Vanguard | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | -6.3 (0/3) | -15.0 (0/6) | -3.3 (0/6) |
 
 The largest wins over Line: Charge, the early mounted army in a forest, +26.9 (SE 0.7: 6 slots,
 Charge fills them with Horsemen where Line takes the archers); Volley, the late and mid 12-unit
@@ -286,18 +296,39 @@ tactic is at least as good as the row tactic:
 
 | | Line | Charge | Volley | Square | Vanguard |
 |---|---|---|---|---|---|
-| Line | . | 271 | 327 | 60 | 379 |
-| Charge | 293 | . | 320 | 139 | 259 |
-| Volley | 363 | 316 | . | 95 | 290 |
-| Square | 444 | 365 | 409 | . | 379 |
-| Vanguard | 503 | 305 | 400 | 125 | . |
+| Line | . | 271 | 327 | 60 | 292/360 |
+| Charge | 293 | . | 320 | 139 | 189/360 |
+| Volley | 363 | 316 | . | 95 | 209/360 |
+| Square | 444 | 365 | 409 | . | n/m |
+| Vanguard | 359/360 | 213/360 | 283/360 | n/m | . |
 
-**Vanguard (c)**: in the battles the hero army's side won, its veterans (the hero and the two
-level-5 units) fell 9.8% of the time in Vanguard and 20.2% in Line (8,260 of 84,000 and 16,955 of
-84,000): 0.49 of Line's. Per condition it is far lower in a forest (2.8% against 40.5% early, 0.7%
-against 32.0% mid at 12 units) and on open land at 12 units, and higher on open land at 8 units
-(mid 27.4% against 22.8%, late 33.3% against 25.5%: with 4 lanes and a short front the veterans'
-cover falls first).
+**Vanguard (c)** (second pass): in the battles the hero army's side won, its veterans (the hero
+and the two level-5 units) fell 7.6% of the time in Vanguard and 19.0% in Line (5,119 and 12,753
+of 67,200 committed): 0.40 of Line's. Where Vanguard differs from Line, per army size and ground
+(the three levels together; Line %, Vanguard %, the ratio; the mean score against Line):
+
+| hero army | Line | Vanguard | ratio | (c) | score |
+|---|---|---|---|---|---|
+| 8 open | as Line | as Line | | (not asked: 3 guards that are no veterans, 4 lanes) | 0 |
+| 8 forest | 35.0 | 2.1 | 0.06 | holds | -15.0 |
+| 8 walls | 16.3 | 9.5 | 0.58 | **fails** (early 0.56, mid 1.03, late 0.41) | -2.1 |
+| 12 open | 4.5 | 1.1 | 0.24 | holds | -12.6 |
+| 12 forest | 35.0 | 2.1 | 0.06 | holds | -15.0 |
+| 12 walls | 0.0 | 0.0 | | holds (no veteran fell in either) | -4.5 |
+
+The first pass's failure (8 units in the open, the veterans' deaths above Line's) is gone: there
+the army has 3 guards to cover 4 lanes and fights as Line. It remains at 8 units behind walls,
+where the defender's front is short enough to be covered and the mid army's veterans fall as
+often as in Line (10.6% against 10.3%).
+
+**Which guard covers** (section 11). The round robin cannot tell the two orders apart: the hero
+army's cover is all one unit type, and both orders gave the same battles to the decimal. Measured
+on a mixed hero army instead (its core split between the core unit and a weaker guard: early
+Axemen and Warriors, mid Champions and Axemen, late Phalanxes and Champions; Vanguard and Line
+against each other, the 18 conditions of 3 levels, 2 sizes and 3 grounds, 400 battles a matchup):
+the veterans fell in the battles won 10.8% of the time with the weakest cover first and 10.2%
+with the strongest first (Line 17.8% and 18.0% against each), the score against Line -6.05 and
+-6.09. The strongest first is kept (fewer veteran deaths).
 
 **Verdict** (section 7):
 
@@ -310,10 +341,13 @@ cover falls first).
 - **Square does not ship** (the designer's decision, 2026-11-10; section 10): it loses to every
   other tactic on every ground (the mean scores above), beats Line beyond 2 SE in only 4 of 72
   conditions and loses in 67. Its Expert line (support that must live) does not show in net HP.
-- **Vanguard ships by the letter, barely**: (c) holds at 0.49 against the 0.5 required; (a) holds
-  by one cell (Line is at least as good as it in 503 of 504 cells: where the army has no veterans
-  the two are the same formation, and with veterans it costs HP: -18.5 in the open). As its Expert
-  line says, it is never the tactic that wins a close battle.
+- **Vanguard** (second pass): (a) holds (Line is at least as good as it in 359 of 360 cells: where
+  it has no veterans or no full front of cover the two are the same formation, and with veterans
+  it costs HP: -6.3 in the open, -15.0 in a forest, -3.3 at walls for the hero army; it beats Line
+  in none of the 72 conditions and loses in 15). (c) holds overall (0.40) and in every army size
+  and ground where it differs from Line but one: **8 units behind walls, 0.58** (mid 1.03). By the
+  letter of section 11 Vanguard fails (c) there; reported, not tuned. As its Expert line says, it
+  is never the tactic that wins a close battle.
 
 ## 9. Open
 
@@ -335,7 +369,7 @@ cover falls first).
   losing to each of the others (-13.5 against Line in the open, -16.3 in a forest, -8.2 at walls);
   the rear guards act once instead of twice and the front is narrower. The designer dropped it.
 
-## 11. Second pass: Vanguard (design, 2026-11-10; not built)
+## 11. Second pass: Vanguard (design, 2026-11-10; built 2026-11-10)
 
 Section 8 measured Vanguard's flaw: with 8 units on open land (4 lanes, a short front) its
 veterans fell more often than in Line (mid 27.4% against 22.8%, late 33.3% against 25.5%), because
@@ -351,3 +385,15 @@ given up half its actions.
 - Rerun the Vanguard cells of section 7's round robin and replace Vanguard's rows in section 8;
   criterion (c) must hold in every army size and ground where Vanguard differs from Line, not only
   on average. Report it if it does not.
+
+**As built**: the cover rule in `auto_arrange_around` (`TacticPlacement::Vanguard`; "lanes whose
+front cell is free" are counted after the large units are placed, and the guards that are no
+veterans are the small ones chosen to fight); the strongest cover first (section 8, "Which guard
+covers"). Measured in section 8: (c) holds in every army size and ground where Vanguard differs
+from Line except 8 units behind walls (0.58).
+
+**Decision on the walls result (the designer's, 2026-11-10): Vanguard ships as built.** At 8 units
+behind walls its veterans fall 9.5% of the time against Line's 16.3% (0.58, not the half asked
+for; the mid army no better than Line). It still loses fewer veterans there than Line, it more
+than halves their deaths over all (0.40), and it never loses more. The criterion "in every size
+and ground" was stricter than the tactic needs; it stays recorded here as not met at walls.
