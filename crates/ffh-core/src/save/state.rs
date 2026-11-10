@@ -46,7 +46,7 @@ persist_newtype!(
     TerrainType, TradeableItem, TraitType, UnitAIType, UnitArtStyleType, UnitClassType,
     UnitCombatType, UnitType, UpkeepType, VictoryType, VoteSourceType, VoteType, WarPlanType,
     WorldSizeType, YieldType, CulturalActionType, GovernorProfileType, GovernorTraitType,
-    BuildingTierType, ResearchPathType, BattleArrayType,
+    BuildingTierType, ResearchPathType, BattleTacticType,
 );
 
 persist_enum!(ActionKind { 0 => None, 1 => Strike, 2 => Charge, 3 => Stab, 4 => Shoot, 5 => Spell, 6 => Bombard, 7 => Heal });
@@ -61,7 +61,7 @@ persist_newtype!(
 
 use crate::culture::CultureChannel;
 use crate::army::{Army, March, RecruitDest};
-persist_struct!(Army { id, owner, name, group, target_size, commander, disband_to, formed_turn, requisition, array, array_next });
+persist_struct!(Army { id, owner, name, group, target_size, commander, disband_to, formed_turn, requisition, tactic, tactic_next });
 persist_struct!(March { dest, stalled, left_turn, from_city, diverted });
 use crate::governors::Governor;
 persist_struct!(Governor { id, owner, name, profile, traits, origin, born_turn, city, since_turn });
@@ -390,7 +390,7 @@ persist_struct!(City {
     ai_emphasize_avoid_unhealthy_citizens_count, culture_channel, culture_diverted, culture_pressure,
     culture_revolt_level, recruit_default, direct_rule, rule_changed_turn, governor,
     governor_penalty_turns, building_tiers, free_bonus_choices, muster_production, ritual_charges, crew_build,
-    garrison_array, garrison_array_next,
+    garrison_tactic, garrison_tactic_next,
 });
 
 persist_struct!(Player {

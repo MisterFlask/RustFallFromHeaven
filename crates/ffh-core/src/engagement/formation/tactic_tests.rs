@@ -1,10 +1,10 @@
-//! The battle arrays' selection and placement on hand-built pools (docs/ARRAYS.md, section 3),
-//! and Line against the auto formation as it was before the arrays.
+//! The battle tactics' selection and placement on hand-built pools (docs/TACTICS.md, section 3),
+//! and Line against the auto formation as it was before the tactics.
 
 use super::*;
-use ffh_data::{ArrayKind as AK, ArrayKnobs, ArrayPlacement};
+use ffh_data::{TacticKind as AK, TacticKnobs, TacticPlacement};
 
-/// The auto formation as it was before the arrays (`auto_arrange_around` of 2026-11-08), kept as
+/// The auto formation as it was before the tactics (`auto_arrange_around` of 2026-11-08), kept as
 /// the reference Line must reproduce.
 fn reference(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32, blocked: &[(u8, u8)]) -> Vec<Placement> {
     let value = |c: &Candidate| c.value * if c.large { 2 } else { 1 };
@@ -101,7 +101,7 @@ fn line_is_the_auto_formation_as_it_was() {
         let ordinary = slots - r(3);
         let blocked = if r(3) == 0 { sentinel_cells(lanes, r(4) as usize) } else { Vec::new() };
         assert_eq!(
-            auto_arrange_around(&cands, lanes, slots, ordinary, &blocked, &ArrayKnobs::line()),
+            auto_arrange_around(&cands, lanes, slots, ordinary, &blocked, &TacticKnobs::line()),
             reference(&cands, lanes, slots, ordinary, &blocked),
             "{cands:?} lanes {lanes} slots {slots} ordinary {ordinary} blocked {blocked:?}"
         );
@@ -118,26 +118,26 @@ fn c(k: AK, value: i64) -> Candidate {
     Candidate { pick_order: k.pick_order(), row_order, large: false, value, healthy: true, river: true, veteran: false }
 }
 
-fn charge() -> ArrayKnobs {
-    ArrayKnobs {
+fn charge() -> TacticKnobs {
+    TacticKnobs {
         pick_order: vec![AK::Charge, AK::AntiFlank, AK::Strike, AK::Shoot, AK::Stab, AK::Spell, AK::Heal, AK::Bombard],
         one_of_each: false,
         place_first: vec![AK::Charge],
-        ..ArrayKnobs::line()
+        ..TacticKnobs::line()
     }
 }
 
-fn volley() -> ArrayKnobs {
-    ArrayKnobs {
+fn volley() -> TacticKnobs {
+    TacticKnobs {
         pick_order: vec![AK::Shoot, AK::Spell, AK::Bombard, AK::Stab, AK::Heal, AK::AntiFlank, AK::Strike, AK::Charge],
         one_of_each: false,
         screen_per_lane: 1,
-        ..ArrayKnobs::line()
+        ..TacticKnobs::line()
     }
 }
 
-fn placement(p: ArrayPlacement) -> ArrayKnobs {
-    ArrayKnobs { placement: p, ..ArrayKnobs::line() }
+fn placement(p: TacticPlacement) -> TacticKnobs {
+    TacticKnobs { placement: p, ..TacticKnobs::line() }
 }
 
 fn cells(p: &[Placement]) -> Vec<(usize, u8, u8)> {
@@ -155,7 +155,7 @@ fn charge_takes_chargers_first_into_the_front() {
     pool.extend((0..4).map(|i| c(AK::Charge, 40 + i)));
     pool.extend((0..2).map(|i| c(AK::Shoot, 30 + i)));
     // Line: one of each first (the strongest striker 3, charger 7, archer 9), then the strikers.
-    let line = auto_arrange_around(&pool, 3, 6, 6, &[], &ArrayKnobs::line());
+    let line = auto_arrange_around(&pool, 3, 6, 6, &[], &TacticKnobs::line());
     assert_eq!(units(&line), [0, 1, 2, 3, 7, 9]);
     // Charge: the four chargers, then the strikers.
     let p = auto_arrange_around(&pool, 3, 6, 6, &[], &charge());
@@ -169,8 +169,8 @@ fn charge_takes_chargers_first_into_the_front() {
     assert_eq!(cell(4).1, 1);
     assert_eq!(cell(3).1, 1);
     // With the chargers already in, place_first still puts them before the guards taken earlier:
-    // a Charge array that kept Line's selection.
-    let knobs = ArrayKnobs { place_first: vec![AK::Charge], ..ArrayKnobs::line() };
+    // a Charge tactic that kept Line's selection.
+    let knobs = TacticKnobs { place_first: vec![AK::Charge], ..TacticKnobs::line() };
     let p = auto_arrange_around(&pool, 3, 6, 6, &[], &knobs);
     assert_eq!(p.iter().find(|x| x.unit == 7).map(|x| (x.lane, x.row)), Some((1, 0)), "the charger takes the centre of the front");
 }
@@ -207,7 +207,7 @@ fn square_puts_the_support_between_guards() {
     pool.push(c(AK::AntiFlank, 45)); // 4
     pool.extend((0..4).map(|i| c(AK::Shoot, 30 + i))); // 5-8
     pool.push(c(AK::Spell, 60)); // 9
-    let p = auto_arrange_around(&pool, 4, 10, 10, &[], &placement(ArrayPlacement::Square));
+    let p = auto_arrange_around(&pool, 4, 10, 10, &[], &placement(TacticPlacement::Square));
     let mut got = cells(&p);
     got.sort_by_key(|&(_, l, r)| (l, r));
     // Lanes from the centre out: 1, 2, 0, 3. Lane 1: the strongest striker (3) in front, the
@@ -217,14 +217,14 @@ fn square_puts_the_support_between_guards() {
     assert_eq!(got, [(0, 0, 0), (7, 0, 1), (6, 0, 2), (3, 1, 0), (9, 1, 1), (4, 1, 2), (2, 2, 0), (8, 2, 1), (1, 2, 2), (5, 3, 0)]);
     // Without support, the middle takes a guard.
     let guards: Vec<Candidate> = (0..4).map(|i| c(AK::Strike, 50 + i)).collect();
-    let p = auto_arrange_around(&guards, 2, 4, 4, &[], &placement(ArrayPlacement::Square));
+    let p = auto_arrange_around(&guards, 2, 4, 4, &[], &placement(TacticPlacement::Square));
     let mut got = cells(&p);
     got.sort_by_key(|&(_, l, r)| (l, r));
     assert_eq!(got, [(3, 0, 0), (2, 0, 1), (1, 0, 2), (0, 1, 0)]);
     // A large guard takes a front pair; the lanes it holds take a support unit in the middle.
     let mut pool3 = vec![c(AK::Strike, 50), c(AK::Shoot, 30), c(AK::Shoot, 20), c(AK::Strike, 40)];
     pool3[0].large = true;
-    let p = auto_arrange_around(&pool3, 2, 6, 6, &[], &placement(ArrayPlacement::Square));
+    let p = auto_arrange_around(&pool3, 2, 6, 6, &[], &placement(TacticPlacement::Square));
     let mut got = cells(&p);
     got.sort_by_key(|&(_, l, r)| (l, r));
     assert_eq!(got, [(0, 0, 0), (1, 0, 1), (3, 0, 2), (2, 1, 1)]);
@@ -236,7 +236,7 @@ fn vanguard_shields_the_veterans() {
     let mut pool: Vec<Candidate> = vec![c(AK::Strike, 50), c(AK::Strike, 40), c(AK::Strike, 90), c(AK::Strike, 60), c(AK::Shoot, 30), c(AK::Shoot, 20)];
     pool[2].veteran = true;
     pool[3].veteran = true;
-    let p = auto_arrange_around(&pool, 3, 6, 6, &[], &placement(ArrayPlacement::Vanguard));
+    let p = auto_arrange_around(&pool, 3, 6, 6, &[], &placement(TacticPlacement::Vanguard));
     let cell = |u: usize| p.iter().find(|x| x.unit == u).map(|x| (x.lane, x.row)).unwrap();
     // The centre lane: the weakest striker that is no veteran (1) before the most valuable veteran
     // (2); lane 0: striker 0 before veteran 3. The archers in their row, where there is room.
@@ -247,13 +247,13 @@ fn vanguard_shields_the_veterans() {
     assert_eq!(cell(4), (2, 1));
     assert_eq!(cell(5), (1, 2), "the middle is full: the next row of its order");
     // Line puts the veterans in front.
-    let line = auto_arrange_around(&pool, 3, 6, 6, &[], &ArrayKnobs::line());
+    let line = auto_arrange_around(&pool, 3, 6, 6, &[], &TacticKnobs::line());
     assert!(line.iter().filter(|x| x.unit == 2 || x.unit == 3).all(|x| x.row == 0));
     // A veteran with nobody to stand behind is placed as in Line.
     let mut pool2 = vec![c(AK::Strike, 50), c(AK::Strike, 90), c(AK::Strike, 60)];
     pool2[1].veteran = true;
     pool2[2].veteran = true;
-    let p = auto_arrange_around(&pool2, 3, 6, 6, &[], &placement(ArrayPlacement::Vanguard));
+    let p = auto_arrange_around(&pool2, 3, 6, 6, &[], &placement(TacticPlacement::Vanguard));
     let cell = |u: usize| p.iter().find(|x| x.unit == u).map(|x| (x.lane, x.row)).unwrap();
     assert_eq!(cell(0), (1, 0));
     assert_eq!(cell(1), (1, 1));
@@ -261,10 +261,10 @@ fn vanguard_shields_the_veterans() {
 }
 
 #[test]
-fn every_array_places_each_unit_once_inside_the_grid() {
+fn every_tactic_places_each_unit_once_inside_the_grid() {
     let mut rng = Rng::new(7);
     let mut r = |n: i32| rng.get_i(n, "test");
-    let arrays = [ArrayKnobs::line(), charge(), volley(), placement(ArrayPlacement::Square), placement(ArrayPlacement::Vanguard)];
+    let tactics = [TacticKnobs::line(), charge(), volley(), placement(TacticPlacement::Square), placement(TacticPlacement::Vanguard)];
     for _ in 0..2000 {
         let n = r(15) as usize;
         let cands: Vec<Candidate> = (0..n)
@@ -279,7 +279,7 @@ fn every_array_places_each_unit_once_inside_the_grid() {
         let slots = 3 + r(12);
         let ordinary = slots - r(3);
         let blocked = if r(3) == 0 { sentinel_cells(lanes, r(4) as usize) } else { Vec::new() };
-        for k in &arrays {
+        for k in &tactics {
             let p = auto_arrange_around(&cands, lanes, slots, ordinary, &blocked, k);
             let mut taken: Vec<(u8, u8)> = blocked.clone();
             let (mut used, mut non_river) = (0, 0);
@@ -298,7 +298,7 @@ fn every_array_places_each_unit_once_inside_the_grid() {
             }
             assert!(used <= slots && non_river <= ordinary);
             assert!(p.windows(2).all(|w| w[0].unit < w[1].unit));
-            // Small units always find a cell: an array leaves out only what the slots leave out.
+            // Small units always find a cell: a tactic leaves out only what the slots leave out.
             if cands.iter().all(|c| !c.large) {
                 let river = cands.iter().filter(|c| c.river).count();
                 let fit = (slots as usize).min(river + (cands.len() - river).min(ordinary as usize)).min(3 * lanes as usize - blocked.len());

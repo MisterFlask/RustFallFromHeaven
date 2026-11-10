@@ -71,11 +71,11 @@ pub struct Army {
     /// The cities it requisitions units from, in the order its owner picked them (only its
     /// owner's cities: a city lost, traded, razed or flipped leaves every list).
     pub requisition: Vec<CityId>,
-    /// Its battle array (docs/ARRAYS.md): how its units are arranged in every battle it fights.
-    pub array: BattleArrayType,
-    /// The array it takes at the start of its owner's next turn processing (the same as `array`
-    /// when no change is pending): [`Game::army_set_array`].
-    pub array_next: BattleArrayType,
+    /// Its battle tactic (docs/TACTICS.md): how its units are arranged in every battle it fights.
+    pub tactic: BattleTacticType,
+    /// The tactic it takes at the start of its owner's next turn processing (the same as `tactic`
+    /// when no change is pending): [`Game::army_set_tactic`].
+    pub tactic_next: BattleTacticType,
 }
 
 /// Where a recruited unit goes.
@@ -180,8 +180,8 @@ impl Game {
         let taken: BTreeSet<String> = self.players[p].armies.iter().map(|&a| self.armies[a].name.clone()).collect();
         let name = (1..).map(|n| format!("{} Army", ordinal(n))).find(|n| !taken.contains(n)).expect("a free name");
         let turn = self.game_turn();
-        let line = self.array_line();
-        let a = self.armies.insert_with(|id| Army { id, owner: p, name, group: None, target_size: 0, commander: None, disband_to: None, formed_turn: turn, requisition: Vec::new(), array: line, array_next: line });
+        let line = self.tactic_line();
+        let a = self.armies.insert_with(|id| Army { id, owner: p, name, group: None, target_size: 0, commander: None, disband_to: None, formed_turn: turn, requisition: Vec::new(), tactic: line, tactic_next: line });
         self.players[p].armies.push(a);
         a
     }
@@ -287,12 +287,12 @@ impl Game {
             let a = match members.iter().filter_map(|&u| self.units[u].army).find(|a| self.armies.contains(*a) && !claimed.contains(a)) {
                 Some(a) => a,
                 None => {
-                    // A split-off part: the array of the army most of its units came from.
-                    let from = self.units_source_arrays(&members, None);
+                    // A split-off part: the tactic of the army most of its units came from.
+                    let from = self.units_source_tactics(&members, None);
                     let a = self.army_create(p);
-                    if let Some((array, next)) = from {
-                        self.armies[a].array = array;
-                        self.armies[a].array_next = next;
+                    if let Some((tactic, next)) = from {
+                        self.armies[a].tactic = tactic;
+                        self.armies[a].tactic_next = next;
                     }
                     a
                 }
@@ -354,12 +354,12 @@ impl Game {
     /// Forms a new army of `units` (army units of `p` on one plot), in one group of their own.
     pub fn army_form(&mut self, p: PlayerId, units: &[UnitId]) -> Result<ArmyId, &'static str> {
         let plot = self.army_units_plot(p, units)?;
-        // Its array: that of the army or garrison most of its units came from (docs/ARRAYS.md).
-        let from = self.units_source_arrays(units, Some(plot));
+        // Its tactic: that of the army or garrison most of its units came from (docs/TACTICS.md).
+        let from = self.units_source_tactics(units, Some(plot));
         let a = self.army_create(p);
-        if let Some((array, next)) = from {
-            self.armies[a].array = array;
-            self.armies[a].array_next = next;
+        if let Some((tactic, next)) = from {
+            self.armies[a].tactic = tactic;
+            self.armies[a].tactic_next = next;
         }
         let first = units[0];
         self.unit_join_group(first, None, true);
@@ -464,54 +464,54 @@ impl Game {
         Ok(())
     }
 
-    /// Sets army `a`'s battle array (docs/ARRAYS.md): it takes effect at the start of `p`'s next
-    /// turn processing (`Army::array_next`); setting the array it has cancels a pending change.
-    pub fn army_set_array(&mut self, p: PlayerId, a: ArmyId, array: BattleArrayType) -> ArmyResult {
+    /// Sets army `a`'s battle tactic (docs/TACTICS.md): it takes effect at the start of `p`'s next
+    /// turn processing (`Army::tactic_next`); setting the tactic it has cancels a pending change.
+    pub fn army_set_tactic(&mut self, p: PlayerId, a: ArmyId, tactic: BattleTacticType) -> ArmyResult {
         if !self.armies.contains(a) || self.armies[a].owner != p {
             return Err("no such army");
         }
-        if array.idx() >= self.d.battle_arrays.len() {
-            return Err("no such array");
+        if tactic.idx() >= self.d.battle_tactics.len() {
+            return Err("no such tactic");
         }
-        self.armies[a].array_next = array;
+        self.armies[a].tactic_next = tactic;
         Ok(())
     }
 
-    /// Sets the battle array of city `c`'s garrison (docs/ARRAYS.md): it takes effect at the start
-    /// of `p`'s next turn processing (`City::garrison_array_next`).
-    pub fn city_set_garrison_array(&mut self, p: PlayerId, c: CityId, array: BattleArrayType) -> ArmyResult {
+    /// Sets the battle tactic of city `c`'s garrison (docs/TACTICS.md): it takes effect at the start
+    /// of `p`'s next turn processing (`City::garrison_tactic_next`).
+    pub fn city_set_garrison_tactic(&mut self, p: PlayerId, c: CityId, tactic: BattleTacticType) -> ArmyResult {
         if !self.cities.contains(c) || self.cities[c].owner != p {
             return Err("not your city");
         }
-        if array.idx() >= self.d.battle_arrays.len() {
-            return Err("no such array");
+        if tactic.idx() >= self.d.battle_tactics.len() {
+            return Err("no such tactic");
         }
-        self.cities[c].garrison_array_next = array;
+        self.cities[c].garrison_tactic_next = tactic;
         Ok(())
     }
 
-    /// The arrays changed for `p`'s armies and garrisons take effect (docs/ARRAYS.md; the start of
+    /// The tactics changed for `p`'s armies and garrisons take effect (docs/TACTICS.md; the start of
     /// its turn processing, `player_do_turn`).
-    pub fn player_apply_arrays(&mut self, p: PlayerId) {
+    pub fn player_apply_tactics(&mut self, p: PlayerId) {
         for a in self.players[p].armies.clone() {
             if self.armies.contains(a) {
                 let army = &mut self.armies[a];
-                army.array = army.array_next;
+                army.tactic = army.tactic_next;
             }
         }
         for c in self.players[p].cities.clone() {
             if self.cities.contains(c) {
                 let city = &mut self.cities[c];
-                city.garrison_array = city.garrison_array_next;
+                city.garrison_tactic = city.garrison_tactic_next;
             }
         }
     }
 
-    /// The arrays (`array`, `array_next`) of the body most of `units` come from: by army, and with
-    /// `plot`, the garrison of its city counting for the city (as [`Game::engage_side_array`]
+    /// The tactics (`tactic`, `tactic_next`) of the body most of `units` come from: by army, and with
+    /// `plot`, the garrison of its city counting for the city (as [`Game::engage_side_tactic`]
     /// counts them; an army first on a tie, then the lower army id). `None`: none of them is in an
     /// army or that garrison.
-    fn units_source_arrays(&self, units: &[UnitId], plot: Option<PlotIdx>) -> Option<(BattleArrayType, BattleArrayType)> {
+    fn units_source_tactics(&self, units: &[UnitId], plot: Option<PlotIdx>) -> Option<(BattleTacticType, BattleTacticType)> {
         let city = plot.and_then(|q| self.map.plots[q].plot_city).filter(|&c| self.cities.contains(c));
         let mut armies: Vec<(ArmyId, i32)> = Vec::new();
         let mut garrison = 0;
@@ -527,8 +527,8 @@ impl Game {
         }
         armies.sort_by_key(|&(a, n)| (Reverse(n), a));
         match (armies.first(), city) {
-            (Some(&(a, n)), _) if n >= garrison => Some((self.armies[a].array, self.armies[a].array_next)),
-            (_, Some(c)) if garrison > 0 => Some((self.cities[c].garrison_array, self.cities[c].garrison_array_next)),
+            (Some(&(a, n)), _) if n >= garrison => Some((self.armies[a].tactic, self.armies[a].tactic_next)),
+            (_, Some(c)) if garrison > 0 => Some((self.cities[c].garrison_tactic, self.cities[c].garrison_tactic_next)),
             _ => None,
         }
     }

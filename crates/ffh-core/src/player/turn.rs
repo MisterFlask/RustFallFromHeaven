@@ -165,8 +165,8 @@ impl Game {
         // C++: FAssertMsg(!hasBusyUnit() || simultaneous turns) -- debug-only check (and
         // hasBusyUnit can kill an empty group), not ported.
 
-        // Battle arrays changed since the last turn take effect (docs/ARRAYS.md).
-        self.player_apply_arrays(p);
+        // Battle tactics changed since the last turn take effect (docs/TACTICS.md).
+        self.player_apply_tactics(p);
 
         let turn = self.game_turn();
         self.ev_begin_player_turn(turn, p);

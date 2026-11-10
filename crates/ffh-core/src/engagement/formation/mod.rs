@@ -48,7 +48,7 @@
 //! Integers throughout: HP in centi-HP, A and Dv x100, percentages multiplied in `i128` and
 //! divided once. No map iteration, every sort a total order (ties by fighter index last).
 
-use ffh_data::{ActionKind, ArrayKind, ArrayKnobs, ArrayPlacement, AttackPattern, BattleCharm, Defines, RowActions, ROWS};
+use ffh_data::{ActionKind, TacticKind, TacticKnobs, TacticPlacement, AttackPattern, BattleCharm, Defines, RowActions, ROWS};
 
 use crate::rng::Rng;
 
@@ -61,7 +61,7 @@ mod magic_tests;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
-mod array_tests;
+mod tactic_tests;
 
 pub use magic::{add_illusions, Applied, Bare, FighterMagic, IllusionSpell, MagicState};
 
@@ -1631,15 +1631,15 @@ impl<'a> Run<'a> {
 
 /// The auto formation's order of a unit's kind (the action of the row it prefers), lowest first:
 /// anti-flanking strikers, strikers, shooters, chargers, casters, healers, bombards, stabbers
-/// (docs/ENGAGEMENTS.md, "The auto formation"): Line's pick order, [`ArrayKind`]'s.
+/// (docs/ENGAGEMENTS.md, "The auto formation"): Line's pick order, [`TacticKind`]'s.
 pub fn kind_pick_order(kind: ActionKind, anti_flank: bool) -> i32 {
-    ArrayKind::of(kind, anti_flank).pick_order()
+    TacticKind::of(kind, anti_flank).pick_order()
 }
 
 /// A unit the auto formation may place ([`auto_arrange`]).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Candidate {
-    /// Its kind's place in Line's order ([`kind_pick_order`], lowest first; [`ArrayKind`]'s
+    /// Its kind's place in Line's order ([`kind_pick_order`], lowest first; [`TacticKind`]'s
     /// discriminant).
     pub pick_order: i32,
     /// Its rank preference: the rows in the order it is placed in them (`engage_row_order`).
@@ -1652,18 +1652,18 @@ pub struct Candidate {
     /// It may fill the river slots (`bRiver`: it crosses rivers freely): only such units fill the
     /// slots above `ordinary` ([`auto_arrange`]).
     pub river: bool,
-    /// A veteran for the Vanguard array: the Hero promotion, or level `ARRAY_VETERAN_LEVEL` or
-    /// above (docs/ARRAYS.md).
+    /// A veteran for the Vanguard tactic: the Hero promotion, or level `TACTIC_VETERAN_LEVEL` or
+    /// above (docs/TACTICS.md).
     pub veteran: bool,
 }
 
 impl Candidate {
-    /// Its kind ([`ArrayKind`]; a pick order that is none of Line's reads as `None`).
-    pub fn kind(&self) -> ArrayKind {
-        ArrayKind::from_pick_order(self.pick_order).unwrap_or(ArrayKind::None)
+    /// Its kind ([`TacticKind`]; a pick order that is none of Line's reads as `None`).
+    pub fn kind(&self) -> TacticKind {
+        TacticKind::from_pick_order(self.pick_order).unwrap_or(TacticKind::None)
     }
 
-    /// A guard: a strike or a charge (docs/ARRAYS.md, section 2).
+    /// A guard: a strike or a charge (docs/TACTICS.md, section 2).
     pub fn guard(&self) -> bool {
         self.kind().guard()
     }
@@ -1687,7 +1687,7 @@ pub struct Placement {
     pub row: u8,
 }
 
-/// The rules' auto formation in Line, the default array (the prototype's `autoArrange`): one
+/// The rules' auto formation in Line, the default tactic (the prototype's `autoArrange`): one
 /// unit of each kind first, in the kinds' pick order, then the rest in that order, each kind's
 /// healthy units first and the strongest first (a large unit's value counts double), while the
 /// slots last (a large unit needs 2; units that cannot fill river slots at most `ordinary` of
@@ -1695,7 +1695,7 @@ pub struct Placement {
 /// rank preference with room, the lanes nearest the centre first (then the lower). A unit with no
 /// room is left out. In candidate order.
 pub fn auto_arrange(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32) -> Vec<Placement> {
-    auto_arrange_around(cands, lanes, slots, ordinary, &[], &ArrayKnobs::line())
+    auto_arrange_around(cands, lanes, slots, ordinary, &[], &TacticKnobs::line())
 }
 
 /// The cells of `n` Sentinels on a side of `lanes` lanes (docs/SIEGES.md): the front row, the
@@ -1780,12 +1780,12 @@ impl Grid {
 }
 
 /// [`auto_arrange`] with the cells in `blocked` already taken (a city's Sentinels), arranged by
-/// the array whose knobs are `knobs` (docs/ARRAYS.md, section 3). With Line's knobs
-/// ([`ArrayKnobs::line`]) it is the auto formation as it was.
+/// the tactic whose knobs are `knobs` (docs/TACTICS.md, section 3). With Line's knobs
+/// ([`TacticKnobs::line`]) it is the auto formation as it was.
 ///
 /// **Selection.** A screen first (`screen_per_lane` guards per lane with a free front cell, the
 /// healthy and then the strongest first, a large one screening two lanes); then the candidates in
-/// the array's pick order, the healthy and then the strongest first within a kind, one of each
+/// the tactic's pick order, the healthy and then the strongest first within a kind, one of each
 /// kind before the rest when `one_of_each`; each while the slots last (a large unit needs 2; the
 /// river rule).
 ///
@@ -1798,19 +1798,19 @@ impl Grid {
 /// ran out. `Vanguard`: Line's, but first, lanes from the centre out, a guard that is no veteran
 /// (the weakest first) in front of a veteran guard (the most valuable first) in the middle, while
 /// there are both.
-pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32, blocked: &[(u8, u8)], knobs: &ArrayKnobs) -> Vec<Placement> {
+pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32, blocked: &[(u8, u8)], knobs: &TacticKnobs) -> Vec<Placement> {
     let chosen = arrange_select(cands, lanes, slots, ordinary, blocked, knobs);
     let mut grid = Grid::new(lanes, blocked);
     let mut out: Vec<Placement> = Vec::new();
     let place_first = |c: &Candidate| knobs.place_first.contains(&c.kind());
     match knobs.placement {
-        ArrayPlacement::Line => {
+        TacticPlacement::Line => {
             let mut seq = chosen.clone();
             // Stable: large units first, then the kinds placed first, each in the order taken.
             seq.sort_by_key(|&i| (!cands[i].large, !place_first(&cands[i])));
             grid.place_in_rows(&mut out, cands, &seq, |c| c.row_order);
         }
-        ArrayPlacement::Vanguard => {
+        TacticPlacement::Vanguard => {
             let larges: Vec<usize> = chosen.iter().copied().filter(|&i| cands[i].large).collect();
             grid.place_in_rows(&mut out, cands, &larges, |c| c.row_order);
             let small_guard = |i: usize| !cands[i].large && cands[i].guard();
@@ -1833,7 +1833,7 @@ pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary:
             let rest: Vec<usize> = chosen.iter().copied().filter(|&i| !cands[i].large && !out.iter().any(|p| p.unit == i)).collect();
             grid.place_in_rows(&mut out, cands, &rest, |c| c.row_order);
         }
-        ArrayPlacement::Square => {
+        TacticPlacement::Square => {
             // Large units: a guard in front (else the rear, else the middle), a support unit in
             // the rear (else the front, else the middle).
             let larges: Vec<usize> = chosen.iter().copied().filter(|&i| cands[i].large).collect();
@@ -1843,7 +1843,7 @@ pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary:
             let mut support: Vec<usize> = chosen.iter().copied().filter(|&i| !cands[i].large && !cands[i].guard()).collect();
             strongest(&mut guards);
             strongest(&mut support);
-            let anti = |i: usize| cands[i].kind() == ArrayKind::AntiFlank;
+            let anti = |i: usize| cands[i].kind() == TacticKind::AntiFlank;
             // The next guard for a front cell (not anti-flanking first) or a rear one
             // (anti-flanking first).
             let take_guard = |guards: &mut Vec<usize>, rear: bool| -> Option<usize> {
@@ -1876,9 +1876,9 @@ pub fn auto_arrange_around(cands: &[Candidate], lanes: u8, slots: i32, ordinary:
 
 /// The auto formation's selection (see [`auto_arrange_around`]): the candidates that fight, in
 /// the order they were taken.
-fn arrange_select(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32, blocked: &[(u8, u8)], knobs: &ArrayKnobs) -> Vec<usize> {
-    // A kind's rank in the array's pick order: Line's order when the array gives none; kinds the
-    // array leaves out after the others, in Line's order.
+fn arrange_select(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32, blocked: &[(u8, u8)], knobs: &TacticKnobs) -> Vec<usize> {
+    // A kind's rank in the tactic's pick order: Line's order when the tactic gives none; kinds the
+    // tactic leaves out after the others, in Line's order.
     let rank = |c: &Candidate| -> (u8, i32) {
         if knobs.pick_order.is_empty() {
             return (0, c.pick_order);

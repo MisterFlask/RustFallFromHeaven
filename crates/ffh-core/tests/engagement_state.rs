@@ -193,7 +193,7 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
         ground: Ground { city: false, forest: false, hills: true },
         rules: vec![GroundRule::HillsAttacker { pct: 75 }, GroundRule::HillsDefenderRanged { pct: 125 }, GroundRule::Charge { pct: 200 }],
         ordered: [false, false],
-        arrays: [ffh_data::BattleArrayType(0); 2],
+        tactics: [ffh_data::BattleTacticType(0); 2],
         fighters: vec![fighter(Side::Attacker, UnitId(1000), LogFate::Standing), fighter(Side::Defender, UnitId(1001), LogFate::Fell { by: 0, round: 2 })],
         pairs: vec![LogPair { h: 0, t: 1, a_x100: 300, dv_x100: 375, mean: 1777, ma_x100: 300, md_x100: 375, spell_pct: 100, magic_mean: 1777, a_extra: vec![], dv_extra: vec![] }],
         events: vec![

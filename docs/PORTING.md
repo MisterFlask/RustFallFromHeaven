@@ -141,6 +141,15 @@ flag.
   replacing one costs the city 25% of its production and commerce for 5 turns; a lost city's
   governor leaves the game. Swapping a city in or out of direct rule locks it for 10 turns. A
   governed city's cultural channel is its owner's, never its governor's (2026-10-30). Save format 7.
+- **Battle tactics** (docs/TACTICS.md; 2026-11-09, the owner's direction "doctrines before grids"):
+  every army has a standing battle tactic, and every city one for its garrison (`battle_tactics.jsonc`:
+  Line, Charge, Volley, Square, Vanguard). A side's auto formation in every battle, attacking or
+  defending, is arranged by the tactic of the army (or garrison) most of its units belong to: which
+  units take the slots and where the kinds of units stand. Line is the auto formation as it was
+  (every army, garrison and the barbarians start and stay in it unless changed), so battles of
+  armies in Line play as before. A change takes effect at the start of the owner's next turn; a new
+  army takes the tactic of the body most of its units came from, a city that changes hands goes back
+  to Line. Save format 28.
 - **Engagement combat** (docs/ENGAGEMENTS.md; not an option since 2026-11-03, the owner's
   decision: `GAMEOPTION_ENGAGEMENTS` was removed, every game fights it, the AI-only ones too, with or
   without armies; older saves do not load): a land attack is a **formation battle** (revision 4,

@@ -19,7 +19,7 @@ persist_struct!(PlotSnap { x, y, terrain, feature, hills, river_crossing, city }
 persist_struct!(CitySnap { id, name, owner, size, defense_pct });
 persist_struct!(Outcome { result, rounds, plot_taken, city_captured, moved_in, defenders_left, sentinels, sentinels_breached });
 
-persist_struct!(BattleLog { slots, lanes, ground, rules, ordered, arrays, fighters, pairs, events, forecast });
+persist_struct!(BattleLog { slots, lanes, ground, rules, ordered, tactics, fighters, pairs, events, forecast });
 persist_struct!(Ground { city, forest, hills });
 persist_enum!(GroundRule {
     0 => CityShots { pct },
@@ -328,7 +328,7 @@ mod tests {
                 GroundRule::NoFlanking,
             ],
             ordered: [true, false],
-            arrays: [BattleArrayType(1), BattleArrayType(3)],
+            tactics: [BattleTacticType(1), BattleTacticType(3)],
             fighters: vec![
                 fighter(Side::Attacker, Some((0, 0)), Some(LogFate::Withdrew { round: 2 })),
                 fighter(Side::Defender, Some((1, 0)), Some(LogFate::Fell { by: 0, round: 1 })),

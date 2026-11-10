@@ -6,7 +6,7 @@
 //! A line: `name | ATTACKERS | DEFENDERS | GROUND`, `#` starts a comment. ATTACKERS and DEFENDERS
 //! are comma-separated `[N*]UNIT[+PROMOTION]..[:LEVEL][@ROW]` (the `UNIT_` and `PROMOTION_`
 //! prefixes may be left out; `:LEVEL` sets the units' level, as for a veteran of the Vanguard
-//! array, without the promotions it would have earned: name those); an attacker's `@front`,
+//! tactic, without the promotions it would have earned: name those); an attacker's `@front`,
 //! `@middle` or `@rear` suffix moves it to that row of the auto formation (to a free cell, else
 //! swapping with a unit there; not for large units). GROUND is
 //! space-separated words: `open` (the default: flat grassland, no feature), `forest`, `hills`,
@@ -15,8 +15,8 @@
 //! the turn, each committing the attackers that have not attacked yet, until the plot falls),
 //! `bombard:N` (N turns of siege first: each attacker that can bombard does, then the attackers'
 //! attacks and moves are reset; the defenders do not heal, as in a besieged city), `imp:NAME` (the
-//! defended plot's improvement, `IMPROVEMENT_` prefix optional: a card's Cairn), `array:NAME` and
-//! `darray:NAME` (the attackers' and the defenders' battle array, docs/ARRAYS.md, `ARRAY_` prefix
+//! defended plot's improvement, `IMPROVEMENT_` prefix optional: a card's Cairn), `tactic:NAME` and
+//! `dtactic:NAME` (the attackers' and the defenders' battle tactic, docs/TACTICS.md, `TACTIC_` prefix
 //! optional; default LINE: set on every army of the side and on the defended city's garrison, so
 //! the rules' own resolution picks it).
 //!
@@ -58,8 +58,8 @@ struct Spec {
     waves: usize,
     bombard: usize,
     improvement: Option<ImprovementType>,
-    /// The attackers' and the defenders' battle arrays.
-    arrays: [Option<BattleArrayType>; 2],
+    /// The attackers' and the defenders' battle tactics.
+    tactics: [Option<BattleTacticType>; 2],
 }
 
 fn parse_stacks(d: &GameData, s: &str) -> Result<Vec<Stack>, String> {
@@ -136,7 +136,7 @@ fn parse_line(d: &GameData, line: &str) -> Result<Option<Spec>, String> {
         waves: 1,
         bombard: 0,
         improvement: None,
-        arrays: [None, None],
+        tactics: [None, None],
     };
     for w in f.get(3).copied().unwrap_or("").split_whitespace() {
         match w {
@@ -157,9 +157,9 @@ fn parse_line(d: &GameData, line: &str) -> Result<Option<Spec>, String> {
                     s.waves = n.parse().map_err(|_| format!("bad {w}"))?;
                 } else if let Some(n) = w.strip_prefix("dmg:") {
                     s.dmg = n.parse().map_err(|_| format!("bad {w}"))?;
-                } else if let Some((k, n)) = w.strip_prefix("array:").map(|n| (0, n)).or_else(|| w.strip_prefix("darray:").map(|n| (1, n))) {
-                    let name = if n.starts_with("ARRAY_") { n.to_string() } else { format!("ARRAY_{n}") };
-                    s.arrays[k] = Some(d.ty::<BattleArrayType>(&name).ok_or_else(|| format!("unknown array {name}"))?);
+                } else if let Some((k, n)) = w.strip_prefix("tactic:").map(|n| (0, n)).or_else(|| w.strip_prefix("dtactic:").map(|n| (1, n))) {
+                    let name = if n.starts_with("TACTIC_") { n.to_string() } else { format!("TACTIC_{n}") };
+                    s.tactics[k] = Some(d.ty::<BattleTacticType>(&name).ok_or_else(|| format!("unknown tactic {name}"))?);
                 } else if let Some(n) = w.strip_prefix("imp:") {
                     let name = if n.starts_with("IMPROVEMENT_") { n.to_string() } else { format!("IMPROVEMENT_{n}") };
                     s.improvement = Some(d.ty::<ImprovementType>(&name).ok_or_else(|| format!("unknown improvement {name}"))?);
@@ -261,16 +261,16 @@ fn stage(s: &Spec) -> (Game, PlotIdx, PlotIdx, UnitId, Vec<(UnitId, u8)>) {
         }
         g.player_army_sync(owner);
     }
-    // The sides' arrays: every army of the side, and the defended city's garrison.
+    // The sides' tactics: every army of the side, and the defended city's garrison.
     for (k, owner) in [(0, p0), (1, p1)] {
-        let Some(array) = s.arrays[k] else { continue };
+        let Some(tactic) = s.tactics[k] else { continue };
         for a in g.players[owner].armies.clone() {
-            g.armies[a].array = array;
-            g.armies[a].array_next = array;
+            g.armies[a].tactic = tactic;
+            g.armies[a].tactic_next = tactic;
         }
         if let Some(c) = g.map.plots[to].plot_city.filter(|&c| g.cities[c].owner == owner) {
-            g.cities[c].garrison_array = array;
-            g.cities[c].garrison_array_next = array;
+            g.cities[c].garrison_tactic = tactic;
+            g.cities[c].garrison_tactic_next = tactic;
         }
     }
     (g, from, to, first.expect("an attacker"), rows)
@@ -367,10 +367,10 @@ struct Agg {
     reserve: [i64; 2],
     slots: [i64; 2],
     lanes: [i64; 2],
-    /// Each side's battle array (the first battle log's).
-    arrays: [Option<BattleArrayType>; 2],
+    /// Each side's battle tactic (the first battle log's).
+    tactics: [Option<BattleTacticType>; 2],
     /// Per side, over the runs it won: those runs, its veterans committed (the Hero promotion or
-    /// level `ARRAY_VETERAN_LEVEL`) and those that fell.
+    /// level `TACTIC_VETERAN_LEVEL`) and those that fell.
     won: [i64; 2],
     vet_won: [i64; 2],
     vet_fell_won: [i64; 2],
@@ -457,7 +457,7 @@ fn fight(spec: &Spec, runs: i64, seed: u32) -> Agg {
             R::Repulsed | R::Held => 1,
         };
         a.won[winner] += 1;
-        let vet_level = d.defines.array_veteran_level;
+        let vet_level = d.defines.tactic_veteran_level;
         for log in reports.iter().filter_map(|r| r.log.as_ref()) {
             for f in log.fighters.iter().filter(|f| f.place.is_some() && !f.sentinel && f.side.index() == winner && (f.hero || f.level >= vet_level)) {
                 a.vet_won[winner] += 1;
@@ -527,8 +527,8 @@ fn add_report(a: &mut Agg, r: &BattleReport, name: &str) {
     for s in 0..2 {
         a.slots[s] += r.sides[s].slots as i64;
         a.lanes[s] += r.sides[s].lanes as i64;
-        if a.arrays[s].is_none() {
-            a.arrays[s] = Some(log.arrays[s]);
+        if a.tactics[s].is_none() {
+            a.tactics[s] = Some(log.tactics[s]);
         }
     }
     for f in &log.fighters {
@@ -622,11 +622,11 @@ fn json(spec: &Spec, a: &Agg) -> String {
         ",\"slots\":{:?},\"lanes\":{:?},\"reserve\":{:?}",
         a.slots, a.lanes, a.reserve
     );
-    let array = |k: usize| a.arrays[k].map_or("".to_string(), |t| d.type_name(t).to_string());
+    let tactic = |k: usize| a.tactics[k].map_or("".to_string(), |t| d.type_name(t).to_string());
     let _ = write!(
         s,
-        ",\"arrays\":[{:?},{:?}],\"won\":{:?},\"vet_won\":{:?},\"vet_fell_won\":{:?}",
-        array(0), array(1), a.won, a.vet_won, a.vet_fell_won
+        ",\"tactics\":[{:?},{:?}],\"won\":{:?},\"vet_won\":{:?},\"vet_fell_won\":{:?}",
+        tactic(0), tactic(1), a.won, a.vet_won, a.vet_fell_won
     );
     s.push_str(",\"sides\":[");
     for k in 0..2 {

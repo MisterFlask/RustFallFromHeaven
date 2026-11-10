@@ -113,8 +113,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 26: a research path is for the rest of the game: no `Player::research_paths_done`.
 /// - 27: city works (docs/WORKS.md): `City::crew_build`; the Worker, Mud Golem, Work Boat and Pioneer
 ///   unit types are gone.
-/// - 28: battle arrays (docs/ARRAYS.md): `Army::array`, `array_next`, `City::garrison_array`,
-///   `garrison_array_next`, the battle log's `arrays`.
+/// - 28: battle tactics (docs/TACTICS.md): `Army::tactic`, `tactic_next`, `City::garrison_tactic`,
+///   `garrison_tactic_next`, the battle log's `tactics`.
 pub const FORMAT_VERSION: u32 = 28;
 
 /// Why [`Game::load`] rejected a save.

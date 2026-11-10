@@ -1,7 +1,7 @@
-//! This game's own info class for battle arrays (not FFH2's; docs/ARRAYS.md):
-//! `battle_arrays.jsonc`. An army's (or a city garrison's) standing array decides which of its
+//! This game's own info class for battle tactics (not FFH2's; docs/TACTICS.md):
+//! `battle_tactics.jsonc`. An army's (or a city garrison's) standing tactic decides which of its
 //! units fight when the slots are few and where the kinds of units stand, in every battle it
-//! fights. The knobs ([`ArrayKnobs`]) are what the rules' auto formation reads
+//! fights. The knobs ([`TacticKnobs`]) are what the rules' auto formation reads
 //! (`formation::auto_arrange_around` in ffh-core).
 
 use super::InfoBase;
@@ -9,15 +9,15 @@ use crate::define_idx;
 use crate::registry::Rd;
 use super::engagement::ActionKind;
 
-define_idx!(/// A battle array (`ARRAY_*`, battle_arrays.jsonc).
-BattleArrayType);
+define_idx!(/// A battle tactic (`TACTIC_*`, battle_tactics.jsonc).
+BattleTacticType);
 
 /// A unit's kind as the auto formation sorts it: the action of the row it prefers, a striker with
 /// an `anti_flank` promotion (Formation) apart. The discriminants are Line's pick order
 /// (docs/ENGAGEMENTS.md, "The auto formation"): anti-flanking strikers, strikers, shooters,
 /// chargers, casters, healers, bombards, stabbers, then units that do nothing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum ArrayKind {
+pub enum TacticKind {
     AntiFlank = 1,
     Strike = 2,
     Shoot = 3,
@@ -29,33 +29,33 @@ pub enum ArrayKind {
     None = 9,
 }
 
-impl ArrayKind {
+impl TacticKind {
     /// Every kind, in Line's pick order.
-    pub const ALL: [ArrayKind; 9] = [
-        ArrayKind::AntiFlank,
-        ArrayKind::Strike,
-        ArrayKind::Shoot,
-        ArrayKind::Charge,
-        ArrayKind::Spell,
-        ArrayKind::Heal,
-        ArrayKind::Bombard,
-        ArrayKind::Stab,
-        ArrayKind::None,
+    pub const ALL: [TacticKind; 9] = [
+        TacticKind::AntiFlank,
+        TacticKind::Strike,
+        TacticKind::Shoot,
+        TacticKind::Charge,
+        TacticKind::Spell,
+        TacticKind::Heal,
+        TacticKind::Bombard,
+        TacticKind::Stab,
+        TacticKind::None,
     ];
 
     /// The kind of a unit whose preferred row's action is `kind` (`anti_flank`: it holds an
     /// `anti_flank` promotion; only a striker's kind changes with it).
-    pub fn of(kind: ActionKind, anti_flank: bool) -> ArrayKind {
+    pub fn of(kind: ActionKind, anti_flank: bool) -> TacticKind {
         match kind {
-            ActionKind::Strike if anti_flank => ArrayKind::AntiFlank,
-            ActionKind::Strike => ArrayKind::Strike,
-            ActionKind::Shoot => ArrayKind::Shoot,
-            ActionKind::Charge => ArrayKind::Charge,
-            ActionKind::Spell => ArrayKind::Spell,
-            ActionKind::Heal => ArrayKind::Heal,
-            ActionKind::Bombard => ArrayKind::Bombard,
-            ActionKind::Stab => ArrayKind::Stab,
-            ActionKind::None => ArrayKind::None,
+            ActionKind::Strike if anti_flank => TacticKind::AntiFlank,
+            ActionKind::Strike => TacticKind::Strike,
+            ActionKind::Shoot => TacticKind::Shoot,
+            ActionKind::Charge => TacticKind::Charge,
+            ActionKind::Spell => TacticKind::Spell,
+            ActionKind::Heal => TacticKind::Heal,
+            ActionKind::Bombard => TacticKind::Bombard,
+            ActionKind::Stab => TacticKind::Stab,
+            ActionKind::None => TacticKind::None,
         }
     }
 
@@ -65,39 +65,39 @@ impl ArrayKind {
     }
 
     /// The kind of Line's pick order `n`, if it is one.
-    pub fn from_pick_order(n: i32) -> Option<ArrayKind> {
-        ArrayKind::ALL.into_iter().find(|k| k.pick_order() == n)
+    pub fn from_pick_order(n: i32) -> Option<TacticKind> {
+        TacticKind::ALL.into_iter().find(|k| k.pick_order() == n)
     }
 
     /// A guard: a strike or a charge (anti-flanking strikers, strikers, chargers). Every other
     /// kind is support.
     pub fn guard(self) -> bool {
-        matches!(self, ArrayKind::AntiFlank | ArrayKind::Strike | ArrayKind::Charge)
+        matches!(self, TacticKind::AntiFlank | TacticKind::Strike | TacticKind::Charge)
     }
 
     /// The data's token.
     pub fn token(self) -> &'static str {
         match self {
-            ArrayKind::AntiFlank => "ANTI_FLANK",
-            ArrayKind::Strike => "STRIKE",
-            ArrayKind::Shoot => "SHOOT",
-            ArrayKind::Charge => "CHARGE",
-            ArrayKind::Spell => "SPELL",
-            ArrayKind::Heal => "HEAL",
-            ArrayKind::Bombard => "BOMBARD",
-            ArrayKind::Stab => "STAB",
-            ArrayKind::None => "NONE",
+            TacticKind::AntiFlank => "ANTI_FLANK",
+            TacticKind::Strike => "STRIKE",
+            TacticKind::Shoot => "SHOOT",
+            TacticKind::Charge => "CHARGE",
+            TacticKind::Spell => "SPELL",
+            TacticKind::Heal => "HEAL",
+            TacticKind::Bombard => "BOMBARD",
+            TacticKind::Stab => "STAB",
+            TacticKind::None => "NONE",
         }
     }
 
-    pub fn parse(s: &str) -> Option<ArrayKind> {
-        ArrayKind::ALL.into_iter().find(|k| k.token() == s.trim())
+    pub fn parse(s: &str) -> Option<TacticKind> {
+        TacticKind::ALL.into_iter().find(|k| k.token() == s.trim())
     }
 }
 
-/// How an array places the units it chose (docs/ARRAYS.md, section 3).
+/// How a tactic places the units it chose (docs/TACTICS.md, section 3).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum ArrayPlacement {
+pub enum TacticPlacement {
     /// Line's: large units first, each unit in the first row of its rank order with room, the
     /// lanes nearest the centre first (`place_first` kinds before the others).
     #[default]
@@ -109,61 +109,61 @@ pub enum ArrayPlacement {
     Vanguard,
 }
 
-impl ArrayPlacement {
+impl TacticPlacement {
     pub fn token(self) -> &'static str {
         match self {
-            ArrayPlacement::Line => "LINE",
-            ArrayPlacement::Square => "SQUARE",
-            ArrayPlacement::Vanguard => "VANGUARD",
+            TacticPlacement::Line => "LINE",
+            TacticPlacement::Square => "SQUARE",
+            TacticPlacement::Vanguard => "VANGUARD",
         }
     }
 
-    pub fn parse(s: &str) -> Option<ArrayPlacement> {
-        [ArrayPlacement::Line, ArrayPlacement::Square, ArrayPlacement::Vanguard].into_iter().find(|p| p.token() == s.trim())
+    pub fn parse(s: &str) -> Option<TacticPlacement> {
+        [TacticPlacement::Line, TacticPlacement::Square, TacticPlacement::Vanguard].into_iter().find(|p| p.token() == s.trim())
     }
 }
 
-/// What an array changes in the auto formation (docs/ARRAYS.md, section 5). The default is
+/// What a tactic changes in the auto formation (docs/TACTICS.md, section 5). The default is
 /// Line's: today's auto formation.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ArrayKnobs {
+pub struct TacticKnobs {
     /// Selection: the kinds in the order they take the slots; kinds left out come after, in
     /// Line's order. Empty: Line's order.
-    pub pick_order: Vec<ArrayKind>,
+    pub pick_order: Vec<TacticKind>,
     /// One unit of each kind before the rest (Line's rule).
     pub one_of_each: bool,
     /// Guards taken before anything else, per lane of the side with a free front cell (a large
     /// guard screens two).
     pub screen_per_lane: i32,
-    pub placement: ArrayPlacement,
+    pub placement: TacticPlacement,
     /// Line placement only: kinds placed before the others.
-    pub place_first: Vec<ArrayKind>,
+    pub place_first: Vec<TacticKind>,
 }
 
-impl ArrayKnobs {
+impl TacticKnobs {
     /// Line's knobs: today's auto formation.
-    pub fn line() -> ArrayKnobs {
-        ArrayKnobs { pick_order: Vec::new(), one_of_each: true, screen_per_lane: 0, placement: ArrayPlacement::Line, place_first: Vec::new() }
+    pub fn line() -> TacticKnobs {
+        TacticKnobs { pick_order: Vec::new(), one_of_each: true, screen_per_lane: 0, placement: TacticPlacement::Line, place_first: Vec::new() }
     }
 }
 
-impl Default for ArrayKnobs {
-    fn default() -> ArrayKnobs {
-        ArrayKnobs::line()
+impl Default for TacticKnobs {
+    fn default() -> TacticKnobs {
+        TacticKnobs::line()
     }
 }
 
-/// One battle array (this game's `BattleArrayInfo`).
+/// One battle tactic (this game's `BattleTacticInfo`).
 #[derive(Debug, Clone, Default)]
-pub struct BattleArrayInfo {
+pub struct BattleTacticInfo {
     pub base: InfoBase,
-    pub knobs: ArrayKnobs,
+    pub knobs: TacticKnobs,
 }
 
-fn read_kinds(rd: &Rd, key: &str) -> Vec<ArrayKind> {
-    let mut out: Vec<ArrayKind> = Vec::new();
+fn read_kinds(rd: &Rd, key: &str) -> Vec<TacticKind> {
+    let mut out: Vec<TacticKind> = Vec::new();
     for t in rd.string_list(key) {
-        match ArrayKind::parse(&t) {
+        match TacticKind::parse(&t) {
             Some(k) if !out.contains(&k) => out.push(k),
             Some(_) => rd.cx.warn(format!("{key}: {t} twice")),
             None => rd.cx.warn(format!("{key}: unknown kind {t:?}")),
@@ -172,23 +172,23 @@ fn read_kinds(rd: &Rd, key: &str) -> Vec<ArrayKind> {
     out
 }
 
-pub fn read_battle_array(rd: &Rd) -> BattleArrayInfo {
+pub fn read_battle_tactic(rd: &Rd) -> BattleTacticInfo {
     let base = InfoBase::read(rd);
     let placement = if rd.has("placement") {
         let t = rd.string("placement");
-        ArrayPlacement::parse(&t).unwrap_or_else(|| {
+        TacticPlacement::parse(&t).unwrap_or_else(|| {
             rd.cx.warn(format!("{}: unknown placement {t:?}", base.type_));
-            ArrayPlacement::Line
+            TacticPlacement::Line
         })
     } else {
-        ArrayPlacement::Line
+        TacticPlacement::Line
     };
-    let knobs = ArrayKnobs {
+    let knobs = TacticKnobs {
         pick_order: read_kinds(rd, "pick_order"),
         one_of_each: rd.bool_or("one_of_each", true),
         screen_per_lane: rd.int_or("screen_per_lane", 0).max(0),
         placement,
         place_first: read_kinds(rd, "place_first"),
     };
-    BattleArrayInfo { base, knobs }
+    BattleTacticInfo { base, knobs }
 }

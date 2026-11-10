@@ -326,7 +326,7 @@ kinds! {
         GovernorNameType => governor_names,
         BuildingTierType => building_tiers,
         ResearchPathType => research_paths,
-        BattleArrayType => battle_arrays,
+        BattleTacticType => battle_tactics,
     }
     globals {
         FlavorType,

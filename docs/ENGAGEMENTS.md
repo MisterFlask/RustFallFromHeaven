@@ -435,8 +435,9 @@ of its rank order (`engage_row_order`) with room, the lanes nearest the centre f
 lower); while another large unit is still to place, a large unit does not split a pair of free
 cells (it starts after an even run of free cells on its left), so a row of 4 lanes holds two. Deterministic, no RNG, the same for humans and the AI. Heroes and
 veterans are not held back. The attacker fights it when its order gives no formation; the defender
-always does (`Game::engage_defense_formation`: the hook for standing formations per army, a later
-step).
+always does (`Game::engage_defense_formation`). Each side's auto formation is arranged by its battle
+tactic (docs/TACTICS.md: the standing tactic of the army or garrison most of its units belong to;
+Line, the auto formation described here, by default).
 
 **An ordered formation** (`Game::engage_validate_formation`, the `engage` command's): every unit in
 the attacker's pool once, inside its side's lanes and rows, no two units in one cell (a large unit
@@ -802,8 +803,8 @@ The spec (the owner's, revision 4) holds; these were left open and are decided s
 ## Open
 
 - The AI decides its attacks on the duel's odds and attacks in the auto formation (the AI is paused,
-  the owner's call). The defender always fights in the auto formation: standing formations per army
-  are a later step (`Game::engage_defense_formation` is the hook).
+  the owner's call). Standing formations per army are the battle tactics (docs/TACTICS.md): both
+  sides' auto formations are arranged by their tactics.
 - A city whose only defenders are ships in port is attacked with today's duel (ships never defend
   land in an engagement, but nothing else defends there).
 - **Mages and summons** (the owner's decisions, 2026-11-05): mages fight in person, in the line,

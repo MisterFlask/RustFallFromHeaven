@@ -1,6 +1,6 @@
-// Battle arrays (this game's own rules, not FFH2's; docs/ARRAYS.md).
-//     An army has one standing array, and a city one for its garrison; every battle of the army,
-//     attacking or defending, is arranged by it. An array is a variant of the auto formation's two
+// Battle tactics (this game's own rules, not FFH2's; docs/TACTICS.md).
+//     An army has one standing tactic, and a city one for its garrison; every battle of the army,
+//     attacking or defending, is arranged by it. A tactic is a variant of the auto formation's two
 //     choices: which units fight when the pool holds more than the side has slots (selection), and
 //     the row and lane of each (placement). Line is the auto formation as it was; every army and
 //     garrison starts with it. The first entry is that default.
@@ -19,41 +19,41 @@
 //                      nearest the centre first), SQUARE (lane by lane from the centre out: a
 //                      guard in front, a support unit in the middle, a guard in the rear) or
 //                      VANGUARD (LINE, each veteran guard in the middle row behind a guard that
-//                      is no veteran; a veteran: the Hero promotion or level ARRAY_VETERAN_LEVEL).
+//                      is no veteran; a veteran: the Hero promotion or level TACTIC_VETERAN_LEVEL).
 //                      Absent: LINE
 //     place_first:     LINE placement only: kinds placed before the others. Absent: none
 [
   {
-    "type": "ARRAY_LINE",
-    "description": "TXT_KEY_ARRAY_LINE",
-    "help": "TXT_KEY_ARRAY_LINE_HELP"
+    "type": "TACTIC_LINE",
+    "description": "TXT_KEY_TACTIC_LINE",
+    "help": "TXT_KEY_TACTIC_LINE_HELP"
   },
   {
-    "type": "ARRAY_CHARGE",
-    "description": "TXT_KEY_ARRAY_CHARGE",
-    "help": "TXT_KEY_ARRAY_CHARGE_HELP",
+    "type": "TACTIC_CHARGE",
+    "description": "TXT_KEY_TACTIC_CHARGE",
+    "help": "TXT_KEY_TACTIC_CHARGE_HELP",
     "pick_order": ["CHARGE", "ANTI_FLANK", "STRIKE", "SHOOT", "STAB", "SPELL", "HEAL", "BOMBARD"],
     "one_of_each": false,
     "place_first": ["CHARGE"]
   },
   {
-    "type": "ARRAY_VOLLEY",
-    "description": "TXT_KEY_ARRAY_VOLLEY",
-    "help": "TXT_KEY_ARRAY_VOLLEY_HELP",
+    "type": "TACTIC_VOLLEY",
+    "description": "TXT_KEY_TACTIC_VOLLEY",
+    "help": "TXT_KEY_TACTIC_VOLLEY_HELP",
     "pick_order": ["SHOOT", "SPELL", "BOMBARD", "STAB", "HEAL", "ANTI_FLANK", "STRIKE", "CHARGE"],
     "one_of_each": false,
     "screen_per_lane": 1
   },
   {
-    "type": "ARRAY_SQUARE",
-    "description": "TXT_KEY_ARRAY_SQUARE",
-    "help": "TXT_KEY_ARRAY_SQUARE_HELP",
+    "type": "TACTIC_SQUARE",
+    "description": "TXT_KEY_TACTIC_SQUARE",
+    "help": "TXT_KEY_TACTIC_SQUARE_HELP",
     "placement": "SQUARE"
   },
   {
-    "type": "ARRAY_VANGUARD",
-    "description": "TXT_KEY_ARRAY_VANGUARD",
-    "help": "TXT_KEY_ARRAY_VANGUARD_HELP",
+    "type": "TACTIC_VANGUARD",
+    "description": "TXT_KEY_TACTIC_VANGUARD",
+    "help": "TXT_KEY_TACTIC_VANGUARD_HELP",
     "placement": "VANGUARD"
   }
 ]

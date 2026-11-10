@@ -148,9 +148,9 @@ pub struct BattleLog {
     /// The side's formation was its order's (the player's or the AI's own), not the rules' auto
     /// formation.
     pub ordered: [bool; 2],
-    /// Each side's battle array (docs/ARRAYS.md; `Game::engage_side_array`): what arranged its
+    /// Each side's battle tactic (docs/TACTICS.md; `Game::engage_side_tactic`): what arranged its
     /// auto formation (an ordered side's is its body's, unused).
-    pub arrays: [BattleArrayType; 2],
+    pub tactics: [BattleTacticType; 2],
     /// Committed units in the engagement's order, then the reserves (module comment).
     pub fighters: Vec<LogFighter>,
     /// A and Dv of every (hitter, target) pair that hit.

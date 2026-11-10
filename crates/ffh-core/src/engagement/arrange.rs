@@ -20,11 +20,11 @@
 //! back. The attacker fights it when its order gives no formation; the defender always does
 //! ([`Game::engage_defense_formation`]).
 //!
-//! **Arrays** (docs/ARRAYS.md): each side's auto formation is arranged by the side's battle array
-//! ([`Game::engage_side_array`]: the array of the army, or of the city's garrison, most of the
+//! **Tactics** (docs/TACTICS.md): each side's auto formation is arranged by the side's battle tactic
+//! ([`Game::engage_side_tactic`]: the tactic of the army, or of the city's garrison, most of the
 //! side's units belong to; Line, the auto formation above, for units of no army or garrison and
-//! for the barbarians). An array changes the selection and the placement
-//! (`formation::auto_arrange_around`'s knobs, `battle_arrays.jsonc`).
+//! for the barbarians). A tactic changes the selection and the placement
+//! (`formation::auto_arrange_around`'s knobs, `battle_tactics.jsonc`).
 //!
 //! **An ordered formation** ([`Game::engage_validate_formation`]): every unit in the attacker's
 //! pool once, inside its side's lanes and rows, no two units in one cell (a large unit on two free
@@ -32,7 +32,7 @@
 //! ordinary slots.
 
 use super::formation::{auto_arrange_around, kind_pick_order, lanes_for, sentinel_cells, Candidate, Side};
-use ffh_data::BattleArrayType;
+use ffh_data::BattleTacticType;
 use super::slots::Slots;
 use super::stats::HitCtx;
 use crate::game::Game;
@@ -77,18 +77,18 @@ impl Game {
         self.engage_a_alone(u, side, ctx)
     }
 
-    /// The battle array Line (`ARRAY_LINE`, docs/ARRAYS.md): every army and garrison starts with
+    /// The battle tactic Line (`TACTIC_LINE`, docs/TACTICS.md): every army and garrison starts with
     /// it.
-    pub fn array_line(&self) -> BattleArrayType {
-        self.d.t::<BattleArrayType>("ARRAY_LINE")
+    pub fn tactic_line(&self) -> BattleTacticType {
+        self.d.t::<BattleTacticType>("TACTIC_LINE")
     }
 
-    /// The array a side made of `units` fights in on `plot` (docs/ARRAYS.md, section 4): the array
+    /// The tactic a side made of `units` fights in on `plot` (docs/TACTICS.md, section 4): the tactic
     /// of the body most of them belong to, counting by army, the garrison units of `plot`'s city
     /// counting for the city; the largest count wins, an army before the garrison on a tie, the
     /// lower army id on a tie between armies. Units in no army and no garrison count for nobody.
     /// Line when none of them belongs to an army or the garrison, and for the barbarians.
-    pub fn engage_side_array(&self, units: &[UnitId], plot: PlotIdx) -> BattleArrayType {
+    pub fn engage_side_tactic(&self, units: &[UnitId], plot: PlotIdx) -> BattleTacticType {
         let city = self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c));
         let mut armies: Vec<(ArmyId, i32)> = Vec::new();
         let mut garrison = 0;
@@ -108,9 +108,9 @@ impl Game {
         // The largest army count, the lower id on a tie.
         armies.sort_by_key(|&(a, n)| (std::cmp::Reverse(n), a));
         match (armies.first(), city) {
-            (Some(&(a, n)), _) if n >= garrison => self.armies[a].array,
-            (_, Some(c)) if garrison > 0 => self.cities[c].garrison_array,
-            _ => self.array_line(),
+            (Some(&(a, n)), _) if n >= garrison => self.armies[a].tactic,
+            (_, Some(c)) if garrison > 0 => self.cities[c].garrison_tactic,
+            _ => self.tactic_line(),
         }
     }
 
@@ -123,28 +123,28 @@ impl Game {
         }
     }
 
-    /// The array side `side` of `ctx` made of `pool` fights in ([`Game::engage_side_array`] on its
+    /// The tactic side `side` of `ctx` made of `pool` fights in ([`Game::engage_side_tactic`] on its
     /// plot).
-    pub fn engage_pool_array(&self, pool: &[UnitId], side: Side, ctx: &HitCtx) -> BattleArrayType {
+    pub fn engage_pool_tactic(&self, pool: &[UnitId], side: Side, ctx: &HitCtx) -> BattleTacticType {
         match self.engage_side_plot(pool, side, ctx) {
-            Some(plot) => self.engage_side_array(pool, plot),
-            None => self.array_line(),
+            Some(plot) => self.engage_side_tactic(pool, plot),
+            None => self.tactic_line(),
         }
     }
 
     /// The rules' auto formation of side `side` from `pool` (module comment), in the pool's order,
-    /// arranged by the side's array ([`Game::engage_pool_array`]). Units that never fight land
+    /// arranged by the side's tactic ([`Game::engage_pool_tactic`]). Units that never fight land
     /// battles (sea and air units) are left out.
     pub fn engage_auto_formation(&self, pool: &[UnitId], side: Side, slots: &Slots, ctx: &HitCtx) -> Vec<Place> {
-        let array = self.engage_pool_array(pool, side, ctx);
-        self.engage_array_formation(pool, side, slots, ctx, array)
+        let tactic = self.engage_pool_tactic(pool, side, ctx);
+        self.engage_tactic_formation(pool, side, slots, ctx, tactic)
     }
 
-    /// [`Game::engage_auto_formation`] in array `array`.
-    pub fn engage_array_formation(&self, pool: &[UnitId], side: Side, slots: &Slots, ctx: &HitCtx, array: BattleArrayType) -> Vec<Place> {
+    /// [`Game::engage_auto_formation`] in tactic `tactic`.
+    pub fn engage_tactic_formation(&self, pool: &[UnitId], side: Side, slots: &Slots, ctx: &HitCtx, tactic: BattleTacticType) -> Vec<Place> {
         let d = self.d;
         let min_hp = d.defines.engagement_auto_min_hp_percent;
-        let veteran_level = d.defines.array_veteran_level;
+        let veteran_level = d.defines.tactic_veteran_level;
         let mut units: Vec<UnitId> = Vec::with_capacity(pool.len());
         let mut cands: Vec<Candidate> = Vec::with_capacity(pool.len());
         for &u in pool {
@@ -170,7 +170,7 @@ impl Game {
         let sorted: Vec<Candidate> = order.iter().map(|&i| cands[i]).collect();
         let lanes = self.engage_lanes(slots)[side.index()];
         let blocked = if side == Side::Defender { self.engage_sentinel_cells(slots) } else { Vec::new() };
-        let placed = auto_arrange_around(&sorted, lanes, slots.max(side), slots.ordinary(side), &blocked, &d.battle_arrays[array].knobs);
+        let placed = auto_arrange_around(&sorted, lanes, slots.max(side), slots.ordinary(side), &blocked, &d.battle_tactics[tactic].knobs);
         let mut out: Vec<Place> = placed.into_iter().map(|p| Place { unit: units[order[p.unit]], lane: p.lane, row: p.row }).collect();
         // Card: a familiar stands in its caster's lane (battle_magic.rs).
         self.engage_familiar_places(&mut out, lanes, &blocked);
@@ -180,7 +180,7 @@ impl Game {
     }
 
     /// The defender's formation on `ctx.to` from its `candidates` (spec 1.8): the rules' auto
-    /// formation in the defenders' array (docs/ARRAYS.md).
+    /// formation in the defenders' tactic (docs/TACTICS.md).
     pub fn engage_defense_formation(&self, candidates: &[UnitId], slots: &Slots, ctx: &HitCtx) -> Vec<Place> {
         self.engage_auto_formation(candidates, Side::Defender, slots, ctx)
     }
