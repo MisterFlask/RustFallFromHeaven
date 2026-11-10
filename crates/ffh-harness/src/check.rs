@@ -34,6 +34,12 @@ pub fn check(g: &Game) {
         }
     }
 
+    // The range fields at sea (docs/NAVAL.md): a cached field equals a fresh one.
+    let stale = g.sea_range_cache_stale();
+    if !stale.is_empty() {
+        fail(format!("the cached range field at sea of teams {stale:?} is stale"));
+    }
+
     // Cities: owner lists, plots, population, team and area counters.
     let mut team_cities = vec![0i32; g.num_teams()];
     let mut team_pop = vec![0i32; g.num_teams()];

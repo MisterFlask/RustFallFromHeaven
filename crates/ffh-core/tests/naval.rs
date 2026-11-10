@@ -176,6 +176,7 @@ fn a_lake_no_port_touches_is_out_of_reach() {
     // A city beside it makes it a port's water, as any.
     w.g.player_init_city(w.p0, 31, 6, true, true);
     assert_eq!(w.range(30, 6), Some(1));
+    assert!(w.g.sea_range_cache_stale().is_empty(), "the cache equals a fresh field");
 }
 
 #[test]
@@ -421,4 +422,39 @@ fn the_new_fields_survive_a_save() {
     assert!(h.units[galley].sea_out_of_range);
     assert_eq!(h.plot_sea_range(h.players[w.p0].team, w.at(13, 1)), Some(8), "the field is computed again");
     assert_eq!(h.save(), bytes);
+}
+
+// ---- Paths (docs/NAVAL.md, sections 3.2 and 8) ----
+
+#[test]
+fn a_human_path_crosses_water_an_ai_path_only_with_boats() {
+    use ffh_core::defs::MOVE_BOATS;
+    let mut w = world();
+    let u = w.unit(w.p0, "UNIT_WARRIOR", 10, 2);
+    let grp = w.g.units[u].group.unwrap();
+    let (from, sea, far) = (w.at(10, 2), w.at(11, 1), w.at(14, 1));
+    // The AI's path finder keeps an AI land group off water, unless the search allows boats (in
+    // range only).
+    assert!(w.g.group_find_path(grp, from, sea, 0).is_none());
+    let path = w.g.group_find_path(grp, from, sea, MOVE_BOATS).expect("in boats");
+    assert_eq!(path.turns, 1);
+    assert!(w.g.group_find_path(grp, from, far, MOVE_BOATS).is_none(), "out of range");
+    // A human's path crosses water with no flag, one water plot a turn: the preview's turns.
+    w.g.players[w.p0].human = true;
+    let path = w.g.group_find_path(grp, from, w.at(13, 1), 0).expect("a human's path");
+    assert_eq!(path.turns, 3, "(11|12|13, 1): one a turn");
+    let path = w.g.group_find_path(grp, from, w.at(14, 2), 0).expect("and lands");
+    assert_eq!(path.turns, 4);
+}
+
+#[test]
+fn an_ai_ship_stays_in_range_unless_already_out() {
+    let mut w = world();
+    let galley = w.unit(w.p0, "UNIT_GALLEY", 8, 1);
+    let grp = w.g.units[galley].group.unwrap();
+    assert!(w.g.group_find_path(grp, w.at(8, 1), w.at(13, 1), 0).is_some());
+    assert!(w.g.group_find_path(grp, w.at(8, 1), w.at(16, 1), 0).is_none(), "out of range");
+    let lost = w.unit(w.p0, "UNIT_GALLEY", 20, 1);
+    let lg = w.g.units[lost].group.unwrap();
+    assert!(w.g.group_find_path(lg, w.at(20, 1), w.at(6, 1), 0).is_some(), "back into range");
 }

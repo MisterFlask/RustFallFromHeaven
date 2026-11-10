@@ -203,6 +203,25 @@ impl Game {
         f(cache.fields[team.idx()].as_ref().expect("just stored"))
     }
 
+    /// The teams whose cached range field differs from a fresh computation (a check for tools:
+    /// the cache must never change a game's course; empty when it holds).
+    pub fn sea_range_cache_stale(&self) -> Vec<TeamId> {
+        let cache = self.sea_range.borrow();
+        let mut out = Vec::new();
+        for (i, f) in cache.fields.iter().enumerate() {
+            let Some(f) = f else { continue };
+            let team = TeamId(i as u8);
+            if i >= self.teams.len() || !self.sea_field_fresh(team, f) {
+                continue;
+            }
+            let fresh = self.sea_field_compute(team);
+            if fresh.dist != f.dist || fresh.port != f.port {
+                out.push(team);
+            }
+        }
+        out
+    }
+
     /// The range field of `team` at `plot` (docs/NAVAL.md, 3.1): the fewest water steps from a
     /// water plot next to one of its ports (1 next to a port), `None` on land or where no port's
     /// water reaches. The truth, whoever asks.
@@ -248,8 +267,8 @@ impl Game {
     /// Whether unit `u` on `plot` would be at sea as a land unit: a land unit, `plot` water it
     /// does not walk or fly over (Causeway, Ferries, flying, water walking). Carried or in boats.
     pub fn unit_needs_boats(&self, u: UnitId, plot: PlotIdx) -> bool {
-        self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
-            && self.plot_is_water(plot)
+        self.plot_is_water(plot)
+            && self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
             && !self.unit_can_move_all_terrain(u)
             && !self.unit_walks_on_water(u, plot)
     }
@@ -258,7 +277,7 @@ impl Game {
     /// ([`Game::unit_can_use_boats`]), at sea as a land unit there ([`Game::unit_needs_boats`]) and
     /// not carried by a ship (its current state).
     pub fn unit_in_boats_at(&self, u: UnitId, plot: PlotIdx) -> bool {
-        !self.unit_is_cargo(u) && self.unit_needs_boats(u, plot) && self.unit_can_use_boats(u)
+        self.plot_is_water(plot) && !self.unit_is_cargo(u) && self.unit_needs_boats(u, plot) && self.unit_can_use_boats(u)
     }
 
     /// Whether unit `u` is in boats now (docs/NAVAL.md, 3.2): a land unit on a water plot, not
