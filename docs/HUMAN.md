@@ -216,6 +216,26 @@ A long press and a double tap do nothing on the map. What touch does not have: S
 (use Go to for one destination), Ctrl-click on a unit row (Split, then a row), and the keys
 (the panel's buttons, the menu and the Cities list cover them; `?` in the menu lists the controls).
 
+**Upright, on its side, locked.** The page follows the phone: held upright it has the upright
+layout, turned on its side the one on its side, back and forth without a reload. Options (on a
+device whose main pointer is a finger; remembered by this browser) has **Screen**: "Turns with
+the phone" (the default), "Landscape" or "Portrait" (`assets/app/orient.js`). A lock is the
+browser's where it has one: Android's browsers lock the screen in fullscreen, so choosing a lock
+enters fullscreen and locks it (and on a later visit the first tap does; leaving fullscreen with
+the back gesture ends the browser's lock). Where the browser has no lock (an iPhone's Safari, which
+has no fullscreen either), or once fullscreen ended, the page turns itself: while the phone's
+orientation is not the locked one, the page's body is turned 90 degrees so that its content stays
+put on the phone (the direction the one the browser last showed), and the page lays out the locked
+orientation. For that the page is shown a turned viewport: the stylesheets' media queries and
+viewport units have width and height swapped (through the CSSOM, and back when the turn ends), and
+`innerWidth`, `innerHeight`, `matchMedia`, pointer and touch coordinates, `getBoundingClientRect`
+and `elementFromPoint` answer in the turned axes, so the layout code, the map's pointer and
+pinch, the tooltips and the controller's focus work unchanged; taps reach their element in any
+case (the browser hit-tests through the turn). On an iPhone with the system's rotation lock on,
+the screen stays upright: a landscape lock then shows the game on its side, read by turning the
+phone. "Turns with the phone" again ends the turn and the fullscreen the lock entered. On a
+computer the choice is not offered, and nothing of this runs.
+
 **A controller on a phone.** A game controller paired with the phone (a Bluetooth pad, or a phone
 grip such as a Backbone or a Kishi) plays the game through the browser's Gamepad API
 (`assets/app/gamepad.js`; its pure parts, the button reading, the repeat and the direction picks,
@@ -1186,6 +1206,7 @@ node tools/web-api-smoke.mjs             # 20 turns through the client's api.js 
 node tools/web-smoke.mjs                 # headless Chromium plays through the page; screenshots in target/web-smoke
 node tools/web-touch-smoke.mjs           # the same on an emulated phone, with touch only; target/web-touch-smoke
 node tools/web-pad-smoke.mjs             # an emulated phone with an emulated controller; target/web-pad-smoke
+node tools/web-orient-smoke.mjs          # an emulated phone turned and locked; target/web-orient-smoke
 ```
 
 * `web-check.sh` needs node (it is skipped without it); the pure modules (map maths and map
@@ -1226,6 +1247,16 @@ node tools/web-pad-smoke.mjs             # an emulated phone with an emulated co
   focus on its buttons, the D-pad moves it and B closes the menu, Start ends the turn (the end-turn
   check's dialog takes the focus; the D-pad reaches "End turn anyway" and A answers it), and a tap
   ends the mode. Any console error, page error, failed request or HTTP error fails it.
+* `web-orient-smoke.mjs [--seed 3] [--out DIR] [--assets DIR] [--headed]`, against one
+  `ffh-play serve --new`: on a computer a stored lock changes nothing and Options does not offer
+  it; on an emulated phone the layout follows it upright, on its side and upright again (the card
+  across the screen, then a column at its right; the map's shape; End turn on screen), then Options
+  locks it to landscape while it is upright (headless Chromium does not turn its emulated screen
+  for a lock, so the page turns itself, as on an iPhone): the side layout in the turned page, a tap
+  where a unit is drawn selects it, taps on Close and End turn reach them, and on its side the turn
+  ends; locked to portrait while on its side, the upright layout turned; the lock outlasts a
+  reload; "Turns with the phone" ends the turn and its styles. Any console error, page error,
+  failed request or HTTP error fails it.
 * `web-smoke.mjs [--turns 4] [--seed 5] [--out DIR] [--assets DIR] [--cdp] [--headed]` drives the
   page with the mouse and keyboard in headless Chromium (the `playwright` package if it resolves,
   else Chromium over the DevTools protocol; skipped without a browser): new game (Start
