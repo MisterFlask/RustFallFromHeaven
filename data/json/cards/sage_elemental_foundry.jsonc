@@ -11,7 +11,7 @@
       "advisor": "ADVISOR_SCIENCE",
       "cost": -1,
       "advanced_start_cost": -1,
-      "era": "ERA_CLASSICAL",
+      "band": 2,
       "and_pre_reqs": ["TECH_ELEMENTALISM"],
       "card_suit": "UNITCLASS_SCIENTIST",
       "flavors": {"FLAVOR_MILITARY": 1, "FLAVOR_SCIENCE": 1}

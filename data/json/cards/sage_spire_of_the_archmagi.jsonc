@@ -11,7 +11,7 @@
       "advisor": "ADVISOR_SCIENCE",
       "cost": -1,
       "advanced_start_cost": -1,
-      "era": "ERA_CLASSICAL",
+      "band": 2,
       "and_pre_reqs": ["TECH_SORCERY"],
       "card_suit": "UNITCLASS_SCIENTIST",
       "flavors": {"FLAVOR_SCIENCE": 1}

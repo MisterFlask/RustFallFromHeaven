@@ -13,7 +13,7 @@
       "advisor": "ADVISOR_GROWTH",
       "cost": -1,
       "advanced_start_cost": -1,
-      "era": "ERA_MEDIEVAL",
+      "band": 3,
       "and_pre_reqs": ["TECH_MACHINERY"],
       "card_suit": "UNITCLASS_ENGINEER",
       "flavors": {"FLAVOR_GROWTH": 1, "FLAVOR_PRODUCTION": 1}
