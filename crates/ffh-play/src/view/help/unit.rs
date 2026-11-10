@@ -1021,7 +1021,8 @@ mod tests {
         has(&donal, &[&format!("[LINK=literal]{}[\\LINK] ability", display(d, d.t::<SpellType>("SPELL_HOPE")))]);
         let galley = help("UNIT_GALLEY");
         assert!(galley.starts_with("5[ICON_STRENGTH], 3[ICON_MOVES] (Naval Units)"), "{galley}");
-        has(&galley, &["[ICON_BULLET]Cannot Enter Ocean"]);
+        // Range at sea replaces the Galley's ocean ban (docs/NAVAL.md, 3.1).
+        assert!(!galley.contains("Cannot Enter Ocean"), "{galley}");
         let barge = help("UNIT_ARCANE_BARGE");
         // Its own Fireball (the missile; Fire II's battle Fireball is not a ship's), once.
         let fireball = format!("[LINK=literal]{}[\\LINK] ability", display(d, d.t::<SpellType>("SPELL_FIREBALL_BARGE")));

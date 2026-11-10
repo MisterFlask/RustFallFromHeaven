@@ -730,6 +730,9 @@ pub struct TechInfo {
     pub disable: bool,
     pub goody_tech: bool,
     pub extra_water_see_from: bool,
+    /// This game's (docs/NAVAL.md, 3.1): steps added to its team's range at sea
+    /// (`sea_range_change`; Optics and Astronomy +4).
+    pub sea_range_change: i32,
     pub map_centering: bool,
     pub map_visible: bool,
     pub map_trading: bool,
@@ -827,6 +830,7 @@ pub fn read_tech(rd: &Rd) -> TechInfo {
         disable: rd.bool("disable"),
         goody_tech: rd.bool("goody_tech"),
         extra_water_see_from: rd.bool("extra_water_see_from"),
+        sea_range_change: rd.int("sea_range_change"),
         map_centering: rd.bool("map_centering"),
         map_visible: rd.bool("map_visible"),
         map_trading: rd.bool("map_trading"),

@@ -860,6 +860,7 @@
     "civilopedia": "TXT_KEY_CIV_LANUN_PEDIA",
     "playable": true,
     "ai_playable": true,
+    "embarked_moves_change": 1,
     "cities": [
       "TXT_KEY_CITY_LANUN_1",
       "TXT_KEY_CITY_LANUN_2",

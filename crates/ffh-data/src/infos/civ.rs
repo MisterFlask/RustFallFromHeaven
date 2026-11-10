@@ -167,6 +167,9 @@ pub struct CivilizationInfo {
     /// This game's (docs/WORKS.md): percent added to the work rate of the cities' crews
     /// (`work_rate_modifier`; the Luchuirp, whose Mud Golems worked faster than Workers).
     pub work_rate_modifier: i32,
+    /// This game's (docs/NAVAL.md, 3.2): water plots a turn its units in boats enter beyond
+    /// `EMBARKED_MOVES` (`embarked_moves_change`; the Lanun +1).
+    pub embarked_moves_change: i32,
     // ---- Better AI ----
     /// C++ `getBestDefender1()`; `UNITCLASS_ARCHER` when the tag is absent.
     pub best_defender1: Option<UnitClassType>,
@@ -230,6 +233,7 @@ pub fn read_civilization(rd: &Rd) -> CivilizationInfo {
         hills_yield_change: rd.yields("hills_yield_change"),
         maintain_features: rd.pairs_bool("maintain_features"),
         work_rate_modifier: rd.int("work_rate_modifier"),
+        embarked_moves_change: rd.int("embarked_moves_change"),
         best_defender1: rf_or(rd, "e_best_defender1", "UNITCLASS_ARCHER"),
         best_defender2: rf_or(rd, "e_best_defender2", "UNITCLASS_LONGBOWMAN"),
         best_defender3: rf_or(rd, "e_best_defender3", "UNITCLASS_ARQUEBUS"),

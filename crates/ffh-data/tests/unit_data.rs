@@ -199,7 +199,8 @@ fn galley_and_settler() {
     assert_eq!(g.domain_type, Some(DomainType::DOMAIN_SEA));
     assert_eq!(g.prereq_and_tech, Some(d.t::<TechType>("TECH_SAILING")));
     assert!(g.mech_unit);
-    assert!(g.terrain_impassable[d.t::<TerrainType>("TERRAIN_OCEAN")]);
+    // Range at sea replaces its ocean ban (docs/NAVAL.md, 3.1).
+    assert!(!g.terrain_impassable[d.t::<TerrainType>("TERRAIN_OCEAN")]);
     assert!(!g.terrain_impassable[d.t::<TerrainType>("TERRAIN_COAST")]);
     assert_eq!(g.domain_cargo, Some(DomainType::DOMAIN_LAND));
     assert_eq!(g.special_cargo, None);

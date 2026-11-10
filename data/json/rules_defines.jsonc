@@ -57,6 +57,22 @@
   "STARVATION_FLOOR_PERCENT": 25,
   // Starvation: percent change of the damage the army's units deal in a battle
   "STARVATION_DAMAGE_DEALT_PERCENT": -25,
+  // ==== The sea, phase 1: range, boats, wear (docs/NAVAL.md, section 3) ====
+  // a team's range at sea: the water steps from its ports within which its ships and boats are
+  //      in range (plus each known tech's sea_range_change)
+  "SEA_RANGE": 8,
+  // out of range: percent of its full HP a sea unit or a unit in boats loses at its owner's turn start
+  "SEA_ATTRITION_PERCENT": 15,
+  // water plots a unit in boats enters a turn (plus its civilization's embarked_moves_change)
+  "EMBARKED_MOVES": 1,
+  // the strength a unit in boats defends with, without any modifier
+  "EMBARKED_STRENGTH": 1,
+  // wear: turn starts a warship spends outside a city before its strength is lowered
+  "SEA_WEAR_FREE_TURNS": 10,
+  // wear: percent of strength lost per turn start beyond the free ones
+  "SEA_WEAR_PERCENT": 5,
+  // wear: the most strength wear takes, in percent
+  "SEA_WEAR_MAX_PERCENT": 50,
   // ==== Governors (docs/GOVERNORS.md) ====
   // percent chance a new governor has a trait (governor_traits.jsonc, drawn uniformly)
   "GOVERNOR_TRAIT_CHANCE": 50,
