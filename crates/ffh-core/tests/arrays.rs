@@ -258,11 +258,11 @@ fn new_split_and_captured_bodies() {
     w.g.player_army_sync(p1);
     let g2 = w.army(p1, &garrison);
     assert_eq!(w.g.armies[g2].array, square);
-    // A city that changes hands goes back to Line.
+    // A city that changes hands (here by trade) goes back to Line.
     for u in w.g.map.plots[to].units.clone() {
         w.g.unit_kill(u, false, None);
     }
-    w.g.player_acquire_city(p0, city, true, false, true);
+    w.g.player_acquire_city(p0, city, false, true, true);
     let taken = w.g.map.plots[to].plot_city.expect("the city");
     assert_eq!(w.g.cities[taken].owner, p0);
     assert_eq!((w.g.cities[taken].garrison_array, w.g.cities[taken].garrison_array_next), (line, line));
