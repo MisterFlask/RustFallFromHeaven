@@ -131,16 +131,21 @@ flag.
   requisition cities. Save format 9 (2026-10-31, the owner's design: requisition and marching recruits
   replace the invisible transit, "Reinforce to N" and the governed cities' feed mode of formats
   6-8).
-- **Governors** (docs/GOVERNORS.md; not an option since 2026-11-05, the owner's decision: every game has it, the AI-only ones too; older saves do not load): a player rules four cities directly
-  (the capital always); every other city is governed: its production is its governor's (it cannot
-  be set by hand), developing the city; an army's requisition goes ahead of it (the feed mode,
-  formats 7-8, is gone since format 9, 2026-10-31). World wonders, palaces, rituals and settlers
-  only in directly ruled cities. Governors come from a
-  bench drawn toward the leader's flavors, with a profile (the flavors their city's production
-  leans toward, its citizens' emphasis) and up to two traits (small modifiers of their city);
-  replacing one costs the city 25% of its production and commerce for 5 turns; a lost city's
-  governor leaves the game. Swapping a city in or out of direct rule locks it for 10 turns. A
-  governed city's cultural channel is its owner's, never its governor's (2026-10-30). Save format 7.
+- **Governors** (docs/GOVERNORS.md; every game has them, the AI-only ones too; the rules of
+  2026-11-10, the owner's design "Governors and army requisition", which replaced the first rules
+  of 2026-10-29: four directly ruled cities, a bench, profiles, numeric traits, a swap penalty and
+  cooldown): the government civic decides who runs cities. Under Despotism and God King
+  (`direct_rule`) the player runs every city; under every other government every city is governed,
+  the capital included, and a change of civics hands all cities over or takes them back at once.
+  A governed city has a role (Growth, Research, Commerce, Culture, Garrison, Production), proposed
+  from its building tiers of the role's four key buildings and the owner's up to two empire
+  priorities; the player may overrule it with any role the city has 75% suitability for. Its
+  governor (a name, at most one judgment trait: Cautious, Ambitious; no modifiers) builds it; the
+  player places only empire orders there (any unit, wonders, palaces, rituals), ahead of the
+  governor's choice. Settlers, wonders, palaces and rituals are no longer forbidden in governed
+  cities. Hand-run civics cost more with size: Despotism city-count maintenance +25% -> +40%; God
+  King distance maintenance +10% -> +25% and city-count maintenance +30% (new). A governed city's
+  cultural channel is its owner's (2026-10-30). Save format 30.
 - **Battle tactics** (docs/TACTICS.md; 2026-11-09, the owner's direction "doctrines before grids"):
   every army has a standing battle tactic, and every city one for its garrison (`battle_tactics.jsonc`:
   Line, Charge, Volley, Vanguard; four tactics). A side's auto formation in every battle, attacking or
