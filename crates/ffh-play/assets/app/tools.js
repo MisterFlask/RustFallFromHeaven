@@ -12,6 +12,7 @@ import { run, sending } from "./commands.js";
 import { rawRequest, loadScreen } from "./screens.js";
 import { plotIndex } from "./tiles.js";
 import { setRendererChoice } from "./look.js";
+import { orientChoice, setOrientChoice, orientOffered } from "./orient.js";
 
 /** The tools menu. */
 export function openTools() {
@@ -519,12 +520,41 @@ export function openOptions() {
       ` ${label}`,
     ),
   );
+  // The screen's orientation on a phone (orient.js; remembered by this browser): follow the phone,
+  // or keep one, the browser's lock where it has one, else the page turned.
+  const orient = orientOffered()
+    ? [
+        h("h4", "Screen"),
+        h(
+          "div.checks.single",
+          [
+            ["auto", "Turns with the phone", "Upright or on its side, as the phone is held"],
+            ["landscape", "Landscape", "Always on its side: in fullscreen where the browser locks the screen, else the page turns itself while the phone is upright"],
+            ["portrait", "Portrait", "Always upright: in fullscreen where the browser locks the screen, else the page turns itself while the phone is on its side"],
+          ].map(([val, label, title]) =>
+            h(
+              "label.toggle",
+              { title },
+              h("input", {
+                type: "radio",
+                id: `option-${val}-orientation`,
+                name: "option-orientation",
+                value: val,
+                checked: orientChoice() === val,
+                onchange: (ev) => ev.target.checked && setOrientChoice(val),
+              }),
+              ` ${label}`,
+            ),
+          ),
+        ),
+      ]
+    : [];
   // Without a game (the title screen) there is no player to set them on.
   const game = my ? h("div.checks.single", rows) : h("p.dim", "The player options (quick moves, stack attack, unit cycling, …) are set during a game.");
   return openModal({
     title: "Options",
     tag: "options",
-    body: [game, h("h4", "This browser"), h("div.checks.single", renderer)],
+    body: [game, h("h4", "This browser"), h("div.checks.single", renderer), ...orient],
     buttons: [{ label: "Close", value: null }],
   });
 }
