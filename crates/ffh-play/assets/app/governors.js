@@ -10,7 +10,7 @@
 
 import * as api from "./api.js";
 import { dname, info, turns } from "./state.js";
-import { h } from "./dom.js";
+import { h, errorText } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
 import { addHelp } from "./help.js";
@@ -139,7 +139,7 @@ export async function openGovernors({ openCity } = {}) {
     try {
       r = await api.query("governors");
     } catch (e) {
-      m.setBody(h("p.warn", e.detail ?? e.message));
+      m.setBody(h("p.warn", errorText(e)));
       return;
     }
     if (m.closed) return;

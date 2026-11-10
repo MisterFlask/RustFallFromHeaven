@@ -113,10 +113,71 @@ export function fill(el, ...children) {
 /** The most toasts shown at once (the oldest goes first). */
 const TOASTS_SHOWN = 4;
 
+/** Called with the text of every error toast (main.js: the Messages tab keeps it). */
+let errorHook = null;
+
+export function setErrorHook(f) {
+  errorHook = f;
+}
+
 /** A transient message at the top right of the map: `kind` is "info", "error" or "log". A
- *  click dismisses it. */
+ *  click dismisses it. An error stays 10 s (at least) and is also kept under Messages. */
 export function toast(text, kind = "info", ms = 4500) {
+  if (kind === "error") {
+    ms = Math.max(ms, 10000);
+    try {
+      errorHook?.(String(text));
+    } catch (e) {
+      console.warn("error hook:", e);
+    }
+  }
   return toastNode(h(`div.toast.${kind}`, { role: kind === "error" ? "alert" : "status", title: "Click to dismiss" }, text), ms);
+}
+
+/** The plain sentence of each error code the server can answer (src/command.rs `CmdErr`,
+ *  src/query.rs `QueryErr`, src/transport: the protocol's and the HTTP host's codes). */
+const ERROR_SENTENCES = {
+  not_your_turn: "It is not your turn.",
+  decision_pending: "Answer the open decision first.",
+  invalid: "The game did not accept this order.",
+  not_owner: "That is not yours.",
+  gone: "That no longer exists.",
+  cannot: "Not possible now.",
+  busy: "The game is busy. Try again in a moment.",
+  crashed: "The game crashed.",
+  no_game: "No game is loaded.",
+  starting: "The game is starting. Try again in a moment.",
+  stopped: "The server has stopped.",
+  not_found: "Not found.",
+  forbidden: "Not allowed.",
+  method: "The request failed.",
+  http: "The request failed.",
+  art: "An image failed to load.",
+};
+
+/** Whether a refusal's detail can be shown to the player: no JSON, code, HTTP request, engine
+ *  type name (`SPELL_X`) or decision id. */
+function plainDetail(t) {
+  return !!t && !/[{}`"<>]|\/api|\b(GET|POST|HTTP)\b|\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b|\bdecision \d|\bfield\b/.test(t);
+}
+
+/** A sentence: capital first letter, a full stop. */
+function sentence(t) {
+  const s = t.trim();
+  return `${s[0].toUpperCase()}${s.slice(1)}${/[.!?]$/.test(s) ? "" : "."}`;
+}
+
+/** An error for the player: a refusal (`{code, detail}`: api.js `ApiError`) as a plain sentence,
+ *  its reason when the rules gave one (`cannot`, a plain `invalid`); a transport failure as a
+ *  connection problem. The technical detail goes to the console. */
+export function errorText(e) {
+  if (e && typeof e.code === "string") {
+    if (e.detail) console.warn(`refused (${e.code}): ${e.detail}`);
+    if ((e.code === "cannot" || e.code === "invalid") && plainDetail(e.detail)) return sentence(e.detail);
+    return ERROR_SENTENCES[e.code] ?? "The request failed.";
+  }
+  console.warn("request failed:", e?.message ?? e);
+  return "Connection problem: the server does not answer.";
 }
 
 /** Shows a built toast element (`div.toast`) for `ms`; returns it. */

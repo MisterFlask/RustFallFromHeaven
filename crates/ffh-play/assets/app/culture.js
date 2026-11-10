@@ -12,7 +12,7 @@
 
 import * as api from "./api.js";
 import { S, dname, turns, playerName, me, emit, isBarbarian } from "./state.js";
-import { h, fill } from "./dom.js";
+import { h, fill, errorText } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
 import { infoTip } from "./infotips.js";
@@ -452,8 +452,10 @@ const picks = new Map();
 
 /** The city screen's Culture section: the rate and what the channel takes; the current channel
  *  and what it does now (Stop); the chooser (the action, the religion, the civilization) with the
- *  preview of what it would do before it is set; the revolt pressure on the city. `reload` re-reads
- *  the screen. Null when the game has no cultural actions. */
+ *  preview of what it would do before it is set; the revolt pressure on the city. A city with no
+ *  channel, no city of another civilization in reach and no pressure gets one line with the
+ *  chooser folded under it (`.folded`). `reload` re-reads the screen. Null when the game has no
+ *  cultural actions. */
 export function cultureView(c, reload) {
   const k = c.cultural;
   if (!k) return null;
@@ -508,12 +510,24 @@ function sectionParts(c, k, reload, draw, el) {
         effectView(ch, th),
       )
     : null;
-  return [h("h4", "Culture"), rateLine, current, chooser(c, k, set, draw), h("h5", "Revolt pressure on this city"), pressureView(k.pressure, th, { rate: k.rate })];
+  const p = k.pressure;
+  const calm = !p.total && !p.level && !p.casters.length;
+  // Nothing to do and nothing happening (no channel, no city of another civilization in reach, no
+  // pressure): one line, the chooser folded under it.
+  if (!ch && !k.options.length && calm) {
+    el.classList.add("folded");
+    return [h("p.culture-rate", { title: "Without a channel, all of it grows the city's culture and borders." }, `Culture: ${k.rate} a turn. No city of another civilization in reach.`), chooser(c, k, set, draw, false)];
+  }
+  el.classList.remove("folded");
+  // Without pressure the pressure part is one muted line at the end.
+  const pressure = calm ? pressureView(p, th, { rate: k.rate }) : [h("h5", "Revolt pressure on this city"), pressureView(p, th, { rate: k.rate })];
+  return [h("h4", "Culture"), rateLine, current, chooser(c, k, set, draw), pressure];
 }
 
 /** The channel chooser: the action, the religion (a spread), the civilization; the preview of
- *  the picked option and the button that sets it (or why it cannot). */
-function chooser(c, k, set, draw) {
+ *  the picked option and the button that sets it (or why it cannot). `open` is whether it starts
+ *  open while the city has no channel (a click on its title is remembered either way). */
+function chooser(c, k, set, draw, open = true) {
   const th = k.thresholds;
   const actions = (S.data?.tables?.CulturalActionType ?? []).map((_, i) => i);
   const byAction = (a) => k.options.filter((o) => o.action === a);
@@ -611,7 +625,7 @@ function chooser(c, k, set, draw) {
   // remembered (the screen redraws on every choice).
   return h(
     "details.culture-choose",
-    { open: pick.open ?? !ch },
+    { open: pick.open ?? (!ch && open) },
     h(
       "summary",
       {
@@ -658,7 +672,7 @@ export async function openCulture() {
     try {
       r = await api.query("culture");
     } catch (e) {
-      m.setBody(h("p.warn", e.detail ?? e.message));
+      m.setBody(h("p.warn", errorText(e)));
       return;
     }
     if (m.closed) return;

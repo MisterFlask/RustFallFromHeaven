@@ -5,11 +5,11 @@
 
 import * as api from "./api.js";
 import { S, dname, info, turns, me, goldBreakdown } from "./state.js";
-import { h, toast, typeIconOf, tapModes } from "./dom.js";
-import { openModal } from "./modals.js";
+import { h, toast, typeIconOf, tapModes, coarse, errorText } from "./dom.js";
+import { openModal, ask } from "./modals.js";
 import { run } from "./commands.js";
 import { render as markup } from "./markup.js";
-import { isoSkin, unlockIcon } from "./isoui.js";
+import { isoSkin, isoIcon, unlockIcon } from "./isoui.js";
 import { infoTip } from "./infotips.js";
 
 /** A multiplier in percent (200) as the screens write it: "x2", "x2.7", "x1.35". */
@@ -111,60 +111,275 @@ export function cardsLine(t) {
 // ---------------------------------------------------------------------------------------------
 // The tech tree (Civ4's technology advisor, F6).
 
-/** Rows of the tech tree: each column (prerequisite depth) ordered by the mean row of the
- *  techs' prerequisites (fewer crossing lines), then by era and index. Pure (tested). */
-export function treeLayout(techs) {
-  const byDepth = new Map();
-  for (const t of techs) {
-    if (!byDepth.has(t.depth)) byDepth.set(t.depth, []);
-    byDepth.get(t.depth).push(t);
+/** The lane a tech goes to for the research paths `paths` (the `techs` query's `paths`, in their
+ *  order): a Map tech -> index into `paths`, or `paths.length` for "General". A tech of one path is
+ *  in its lane; of several, in the one it is a capstone of, else the first listed. A tech of none
+ *  takes the lane held by most of its direct prerequisites and successors that have one (repeated
+ *  until nothing changes; a tie goes to the prerequisites' side, then to the lower lane); the rest
+ *  go to General. */
+function treeLanes(techs, paths, pre, succ) {
+  const lane = new Map();
+  const has = (t) => pre.has(t);
+  paths.forEach((p, i) => (p.capstones ?? []).forEach((t) => has(t) && !lane.has(t) && lane.set(t, i)));
+  paths.forEach((p, i) => (p.techs ?? []).forEach((t) => has(t) && !lane.has(t) && lane.set(t, i)));
+  for (;;) {
+    const add = [];
+    for (const t of techs) {
+      if (lane.has(t.tech)) continue;
+      const n = new Map();
+      const count = (ids, side) => ids.forEach((x) => lane.has(x) && (n.has(lane.get(x)) || n.set(lane.get(x), [0, 0]), n.get(lane.get(x))[side]++));
+      count(pre.get(t.tech), 0);
+      count(succ.get(t.tech), 1);
+      let best = null;
+      for (const [l, [a, b]] of n) {
+        const k = [a + b, a, -l];
+        if (!best || k[0] > best.k[0] || (k[0] === best.k[0] && (k[1] > best.k[1] || (k[1] === best.k[1] && k[2] > best.k[2])))) best = { l, k };
+      }
+      if (best) add.push([t.tech, best.l]);
+    }
+    if (!add.length) break;
+    for (const [t, l] of add) lane.set(t, l);
   }
-  const row = new Map();
-  const depths = [...byDepth.keys()].sort((a, b) => a - b);
-  let rows = 0;
-  for (const d of depths) {
-    const col = byDepth.get(d);
-    const key = (t) => {
-      const pre = [...t.and, ...t.or].map((p) => row.get(p)).filter((r) => r !== undefined);
-      return pre.length ? pre.reduce((a, b) => a + b, 0) / pre.length : (t.era ?? 0) * 100 + t.tech / 1000;
-    };
-    col.sort((a, b) => key(a) - key(b) || (a.era ?? 0) - (b.era ?? 0) || a.tech - b.tech);
-    col.forEach((t, i) => row.set(t.tech, i));
-    rows = Math.max(rows, col.length);
-  }
-  return { row, columns: depths.length ? depths[depths.length - 1] + 1 : 0, rows };
+  for (const t of techs) if (!lane.has(t.tech)) lane.set(t.tech, paths.length);
+  return lane;
 }
 
-/** The tech tree: every tech by prerequisite depth with its state. Click: research it (a tech
- *  whose prerequisites are missing queues them first, C++ `pushResearch`); Shift-click: add it to
- *  the queue. */
+/** The order of the lanes `ids` (top to bottom) with `heights[id]` rows each and `w(a, b)`
+ *  prerequisite lines between two lanes: General (`general`) in the middle, the others in the
+ *  order that makes the sum of the cross-lane lines' vertical spans (between band centres) the
+ *  smallest (every order is tried, up to 8 lanes; the first best in lexicographic order wins);
+ *  more lanes keep their order. */
+function treeLaneOrder(ids, heights, w, general) {
+  const others = ids.filter((l) => l !== general);
+  const hasGeneral = ids.includes(general);
+  const mid = Math.floor(ids.length / 2);
+  const build = (perm) => (hasGeneral ? [...perm.slice(0, mid), general, ...perm.slice(mid)] : perm);
+  if (others.length > 8) return build(others);
+  const cost = (order) => {
+    const c = new Map();
+    let y = 0;
+    for (const l of order) (c.set(l, y + heights[l] / 2), (y += heights[l] + 0.5));
+    let s = 0;
+    for (let i = 0; i < order.length; i++) for (let j = i + 1; j < order.length; j++) s += w(order[i], order[j]) * Math.abs(c.get(order[i]) - c.get(order[j]));
+    return s;
+  };
+  let best = null;
+  const perm = [];
+  const used = new Set();
+  const walk = () => {
+    if (perm.length === others.length) {
+      const order = build(perm);
+      const s = cost(order);
+      if (!best || s < best.s - 1e-9) best = { s, order: [...order] };
+      return;
+    }
+    for (const l of others) if (!used.has(l)) (used.add(l), perm.push(l), walk(), perm.pop(), used.delete(l));
+  };
+  walk();
+  return best ? best.order : build(others);
+}
+
+/** Puts the techs `items` (sorted by `want`, the slot each would like) into distinct slots
+ *  0..`h`-1 in their order, as close to what they want as possible (least squares); returns the
+ *  slots. */
+function treeSlots(want, h) {
+  const k = want.length;
+  // cost[i][s]: the best for items 0..i with item i in slot s.
+  const cost = want.map(() => new Array(h).fill(Infinity));
+  const from = want.map(() => new Array(h).fill(-1));
+  for (let i = 0; i < k; i++) {
+    let bestPrev = Infinity;
+    let bestAt = -1;
+    for (let s = i; s <= h - k + i; s++) {
+      if (i > 0 && cost[i - 1][s - 1] < bestPrev) ((bestPrev = cost[i - 1][s - 1]), (bestAt = s - 1));
+      const d = (s - want[i]) ** 2;
+      cost[i][s] = (i ? bestPrev : 0) + d;
+      from[i][s] = bestAt;
+    }
+  }
+  const out = new Array(k);
+  let s = -1;
+  let best = Infinity;
+  for (let t = 0; t < h; t++) if (cost[k - 1][t] < best) ((best = cost[k - 1][t]), (s = t));
+  for (let i = k - 1; i >= 0; i--) ((out[i] = s), (s = from[i][s]));
+  return out;
+}
+
+/** The tech tree's layout for the techs `techs` (entries of the `techs` query: `tech`, `depth`,
+ *  `and`, `or`, `era`) and the research paths `paths` (the query's `paths`). Columns are the
+ *  prerequisite depth (a prerequisite is always left of what it leads to). Rows are grouped in
+ *  lanes, one per research path and "General" (`treeLanes`), ordered to keep the lines between
+ *  lanes short (`treeLaneOrder`); a lane is a band as tall as its fullest column, and in it each
+ *  column's techs sit by the mean row of their prerequisites (then of their successors, a few
+ *  sweeps) so that a line of development runs straight. Returns `row` (tech -> row, counted
+ *  across the lanes, which follow each other without gaps), `lane` (tech -> index into `lanes`),
+ *  `lanes` (top to bottom: `{ path, top, rows }`, `path` null for General), `columns` and `rows`.
+ *  Pure (tested). */
+export function treeLayout(techs, paths = []) {
+  const pre = new Map();
+  const succ = new Map(techs.map((t) => [t.tech, []]));
+  for (const t of techs) pre.set(t.tech, [...new Set([...t.and, ...t.or])].filter((p) => succ.has(p)));
+  for (const t of techs) for (const p of pre.get(t.tech)) succ.get(p).push(t.tech);
+  const laneOf = treeLanes(techs, paths, pre, succ);
+  const general = paths.length;
+  // Each lane's height: its fullest column.
+  const counts = new Map();
+  for (const t of techs) {
+    const k = `${laneOf.get(t.tech)}:${t.depth}`;
+    counts.set(k, (counts.get(k) ?? 0) + 1);
+  }
+  const heights = {};
+  for (const [k, n] of counts) {
+    const l = Number(k.split(":")[0]);
+    heights[l] = Math.max(heights[l] ?? 1, n);
+  }
+  const ids = Object.keys(heights).map(Number).sort((a, b) => a - b);
+  const between = new Map();
+  for (const t of techs) {
+    for (const p of pre.get(t.tech)) {
+      const [a, b] = [laneOf.get(t.tech), laneOf.get(p)].sort((x, y) => x - y);
+      if (a !== b) between.set(`${a}:${b}`, (between.get(`${a}:${b}`) ?? 0) + 1);
+    }
+  }
+  const w = (a, b) => between.get(a < b ? `${a}:${b}` : `${b}:${a}`) ?? 0;
+  const order = treeLaneOrder(ids, heights, w, general);
+  const lanes = [];
+  const index = new Map();
+  let top = 0;
+  for (const l of order) {
+    index.set(l, lanes.length);
+    lanes.push({ path: l === general ? null : paths[l].path, top, rows: heights[l] });
+    top += heights[l];
+  }
+  // The groups to place: each lane's techs of each column.
+  const depths = [...new Set(techs.map((t) => t.depth))].sort((a, b) => a - b);
+  const groups = depths.map((d) =>
+    lanes.map((_, i) => techs.filter((t) => t.depth === d && index.get(laneOf.get(t.tech)) === i)).filter((g) => g.length),
+  );
+  const row = new Map();
+  const tiebreak = (a, b) => (a.era ?? 0) - (b.era ?? 0) || a.tech - b.tech;
+  const place = (g, near) => {
+    const ln = lanes[index.get(laneOf.get(g[0].tech))];
+    const mean = (t) => {
+      const r = near(t).map((x) => row.get(x)).filter((v) => v !== undefined);
+      if (r.length) return r.reduce((a, b) => a + b, 0) / r.length - ln.top;
+      return row.has(t.tech) ? row.get(t.tech) - ln.top : null;
+    };
+    let want = g.map((t) => ({ t, m: mean(t) }));
+    // Without any guide, the group is centred in its band in era and index order.
+    want.sort((a, b) => (a.m ?? Infinity) - (b.m ?? Infinity) || tiebreak(a.t, b.t));
+    const free = (ln.rows - g.length) / 2;
+    want = want.map((x, i) => ({ t: x.t, m: Math.max(0, Math.min(ln.rows - 1, x.m ?? i + free)) }));
+    const slots = treeSlots(want.map((x) => x.m), ln.rows);
+    want.forEach((x, i) => row.set(x.t.tech, ln.top + slots[i]));
+  };
+  const down = () => groups.forEach((col) => col.forEach((g) => place(g, (t) => pre.get(t.tech))));
+  const up = () => [...groups].reverse().forEach((col) => col.forEach((g) => place(g, (t) => (succ.get(t.tech).length ? succ.get(t.tech) : pre.get(t.tech)))));
+  // A last sweep on both sides evens out a tech between where it comes from and where it leads.
+  const both = () => groups.forEach((col) => col.forEach((g) => place(g, (t) => [...pre.get(t.tech), ...succ.get(t.tech)])));
+  down();
+  for (let i = 0; i < 3; i++) (up(), down());
+  both();
+  const lane = new Map(techs.map((t) => [t.tech, index.get(laneOf.get(t.tech))]));
+  return { row, lane, lanes, columns: depths.length ? depths[depths.length - 1] + 1 : 0, rows: top };
+}
+
+/** The techs related to tech `id` in the tree, from `byId` (tech -> entry with `and`/`or`): `path`,
+ *  `id` and every tech it needs (its and/or prerequisites, all the way back); `next`, the techs
+ *  that list `id` as a prerequisite. Pure (tested). */
+export function treeRelated(byId, id) {
+  const path = new Set([id]);
+  const stack = [id];
+  while (stack.length) {
+    const x = byId.get(stack.pop());
+    for (const p of [...(x?.and ?? []), ...(x?.or ?? [])]) if (byId.has(p) && !path.has(p)) (path.add(p), stack.push(p));
+  }
+  const next = new Set();
+  for (const x of byId.values()) if (x.tech !== id && (x.and.includes(id) || x.or.includes(id))) next.add(x.tech);
+  return { path, next };
+}
+
+/** A tech's research cost for its box: the research icon and the number (the word in the flat look). */
+function costLabel(cost) {
+  const icon = isoSkin() ? isoIcon("research", { px: 16, cls: "tech-cost-icon" }) : null;
+  return icon ? h("span.tech-cost", icon, String(cost)) : h("span.tech-cost", `${cost} research`);
+}
+
+/** The tech tree: every tech by prerequisite depth with its state, what it unlocks and its era
+ *  (the box's left edge; columns are depths, which eras cut across, so a legend names the
+ *  colours), in a band per research path (`treeLayout`), each labelled at the left; lines between
+ *  bands are fainter until lit. Click: research it (a tech whose prerequisites are missing queues them first, C++
+ *  `pushResearch`); Shift-click, or the "Add to queue" mode: add it to the queue. Pointing at a
+ *  tech (on touch, the first tap) lights its path and the techs it leads to. */
 export async function openTechTree() {
   const m = openModal({ title: "Technology", body: [h("p.dim", "…")], tag: "techtree", wide: true, className: "techtree", buttons: [{ label: "Close", value: null }] });
-  const W = 168;
-  const H = 38;
-  const GX = 36;
-  const GY = 8;
-  /** What a tap does on a touch screen (for want of Shift): "now" or "queue". */
+  const W = 176;
+  const H = 66;
+  /** The gaps between columns, between rows and between bands (a band's label sits in the gap
+   *  above it). */
+  const GX = 56;
+  const GY = 14;
+  const BG = 28;
+  /** What a click or tap does (Shift-click queues in either mode): "now" or "queue". */
   let tapMode = "now";
+  /** On touch: the tech whose path the first tap lit; a second tap on it researches it. */
+  let armed = null;
+  /** The pointer of the press that leads to a click ("touch", "mouse", "pen"; "key" without one). */
+  let pointer = "key";
   const load = async () => {
     let t;
     try {
       t = await api.query("techs");
     } catch (e) {
-      return m.setBody(h("p.warn", e.detail ?? e.message));
+      return m.setBody(h("p.warn", errorText(e)));
     }
     if (m.closed) return;
+    // A reload (after a click) keeps the view where it was; the first one scrolls to the research.
+    const was = m.el.querySelector(".tree-scroll");
+    const keep = was ? { left: was.scrollLeft, top: was.scrollTop } : null;
+    armed = null;
     const techs = t.techs.filter((x) => !x.disabled);
-    const { row, columns, rows } = treeLayout(techs);
-    const pos = (x) => ({ x: x.depth * (W + GX), y: row.get(x.tech) * (H + GY) });
-    const width = columns * (W + GX);
-    const height = rows * (H + GY);
+    const paths = t.paths ?? [];
+    const { row, lane, lanes, columns, rows } = treeLayout(techs, paths);
+    // Row r of band i: the bands follow each other with a gap of BG above each.
+    const rowY = (r, i) => (i + 1) * BG + r * (H + GY);
+    const pos = (x) => ({ x: x.depth * (W + GX), y: rowY(row.get(x.tech), lane.get(x.tech)) });
+    const width = Math.max(0, columns * (W + GX) - GX);
+    const height = Math.max(0, rowY(rows, lanes.length - 1) - GY);
+    // The cells holding a tech ("column:row"), for routing the lines that pass columns by.
+    const cells = new Set(techs.map((x) => `${x.depth}:${row.get(x.tech)}`));
     const ns = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(ns, "svg");
     svg.setAttribute("width", String(width));
     svg.setAttribute("height", String(height));
     svg.setAttribute("class", "tree-lines");
     const byId = new Map(techs.map((x) => [x.tech, x]));
+    const lines = [];
+    /** The line from prerequisite `from` (box at `a`) to tech `x` (box at `to`): out of the right
+     *  edge of one, into the left edge of the other, turning in the column gaps. One that passes
+     *  columns by keeps to the row of either end where those columns have no box, else runs along
+     *  the row gap next to the tech's row on the prerequisite's side. */
+    const treeLine = (from, x, a, to) => {
+      const x1 = a.x + W;
+      const y1 = a.y + H / 2;
+      const x2 = to.x;
+      const y2 = to.y + H / 2;
+      const turn = (xa, ya, xb, yb) => `C${(xa + xb) / 2},${ya} ${(xa + xb) / 2},${yb} ${xb},${yb}`;
+      if (x.depth - from.depth <= 1) return `M${x1},${y1} ${turn(x1, y1, x2, y2)}`;
+      const clear = (r) => {
+        for (let d = from.depth + 1; d < x.depth; d++) if (cells.has(`${d}:${r}`)) return false;
+        return true;
+      };
+      const ra = row.get(from.tech);
+      const rb = row.get(x.tech);
+      // The first and last column gap the line passes.
+      const xa = x1 + GX;
+      const xb = x2 - GX;
+      if (clear(ra)) return `M${x1},${y1} L${xb},${y1} ${turn(xb, y1, x2, y2)}`;
+      if (clear(rb)) return `M${x1},${y1} ${turn(x1, y1, xa, y2)} L${x2},${y2}`;
+      const yg = y1 < y2 ? to.y - GY / 2 : y1 > y2 ? to.y + H + GY / 2 : to.y - GY / 2;
+      return `M${x1},${y1} ${turn(x1, y1, xa, yg)} L${xb},${yg} ${turn(xb, yg, x2, y2)}`;
+    };
     for (const x of techs) {
       const to = pos(x);
       for (const [list, dash] of [[x.and, ""], [x.or, "4 3"]]) {
@@ -173,84 +388,160 @@ export async function openTechTree() {
           if (!from) continue;
           const a = pos(from);
           const path = document.createElementNS(ns, "path");
-          const x1 = a.x + W;
-          const y1 = a.y + H / 2;
-          const x2 = to.x;
-          const y2 = to.y + H / 2;
-          path.setAttribute("d", `M${x1},${y1} C${x1 + GX / 2},${y1} ${x2 - GX / 2},${y2} ${x2},${y2}`);
-          path.setAttribute("class", from.has ? "have" : "");
+          path.setAttribute("d", treeLine(from, x, a, to));
+          // A line between two bands stays faint until lit.
+          path.setAttribute("class", [from.has ? "have" : "", lane.get(p) !== lane.get(x.tech) ? "cross" : ""].filter(Boolean).join(" "));
           path.dataset.from = String(p);
           path.dataset.to = String(x.tech);
           if (dash) path.setAttribute("stroke-dasharray", dash);
           svg.appendChild(path);
+          lines.push(path);
         }
       }
     }
+    const hint = coarse() ? "Tap: show its path. Tap again: research it (with what it needs)." : "Click: research it (with what it needs). Shift-click: add it to the queue.";
     const boxes = techs.map((x) => {
       const p = pos(x);
       const state = x.has ? "has" : x.researching ? "researching" : x.queued !== null ? "queued" : x.can_research ? "can" : "later";
       const mult = !x.has && x.research_mods && x.research_mods.total !== 100 ? times(x.research_mods.total) : null;
-      const sub = x.has ? "known" : x.researching ? `researching · ${turns(x.turns)}` : x.queued !== null ? `queued ${x.queued + 1}${x.turns !== null ? ` · ${turns(x.turns)}` : ""}` : x.can_research ? `${turns(x.turns)} · ${x.cost}` : `${x.cost}`;
+      const pct = !x.has && x.progress ? Math.min(100, Math.round((100 * x.progress) / Math.max(1, x.cost))) : 0;
+      // A bar for the tech being researched (from 0%) and for any with research put into it.
+      const bar = !x.has && (x.researching || x.progress > 0);
+      const sub = x.has
+        ? [h("span", "known")]
+        : [
+            x.can_research && x.turns !== null ? h("span", turns(x.turns)) : null,
+            costLabel(x.cost),
+            // Its research multiplier (the tooltip has the parts).
+            mult ? h("span.tech-mult", mult) : null,
+          ].filter(Boolean).flatMap((e, i) => (i ? [h("span.sep", "·"), e] : [e]));
       return h(
         "button.tech",
         {
           // A tech of the research path committed to (docs/PORTING.md, "Research paths").
-          class: [state, x.research_mods?.path ? "on-path" : "", mult ? "has-mult" : ""].filter(Boolean).join(" "),
+          class: [state, x.can_research && !x.has ? "can-now" : "", x.research_mods?.path ? "on-path" : ""].filter(Boolean).join(" "),
           "data-tech": x.tech,
           "data-era": x.era ?? "",
+          "aria-label": `${dname("TechType", x.tech)}: ${x.has ? "known" : x.researching ? `researching, ${pct}%` : x.queued !== null ? `queued ${x.queued + 1}` : x.can_research ? "can be researched" : "prerequisites missing"}`,
           onmouseenter: () => focus(x.tech),
           onmouseleave: () => focus(null),
           onfocus: () => focus(x.tech),
           onblur: () => focus(null),
+          onpointerdown: (ev) => (pointer = ev.pointerType || "key"),
           style: { left: `${p.x}px`, top: `${p.y}px`, width: `${W}px`, height: `${H}px` },
-          tip: techTip(x, x.has ? null : "Click: research it (with its missing prerequisites). Shift-click: add it to the queue."),
+          tip: techTip(x, x.has ? null : hint),
           disabled: x.has,
           onclick: async (ev) => {
+            // On touch the first tap only shows the path (a finger has no hover); a key press
+            // (no pointer before it) researches at once.
+            const by = pointer;
+            pointer = "key";
+            if (by === "touch" && armed !== x.tech) {
+              armed = x.tech;
+              focus(x.tech);
+              return;
+            }
             if (await run({ c: "research", tech: x.tech, shift: !!ev.shiftKey || tapMode === "queue" })) load();
           },
         },
         h("span.tech-name", dname("TechType", x.tech)),
+        x.has ? h("span.tech-check", { "aria-hidden": "true" }) : null,
+        x.queued !== null && !x.has && !x.researching ? h("span.tech-queue", { title: `Queue position ${x.queued + 1}` }, String(x.queued + 1)) : null,
+        unlockRow(x, 5) ?? h("span.unlocks.none"),
         h("span.tech-sub", sub),
-        // Its research multiplier (the tooltip has the parts).
-        mult ? h("span.tech-mult", mult) : null,
-        x.progress && !x.has ? h("span.tech-bar", h("span", { style: { width: `${Math.min(100, Math.round((100 * x.progress) / Math.max(1, x.cost)))}%` } })) : null,
+        bar ? h("span.tech-bar", h("span", { style: { width: `${pct}%` } })) : null,
+        bar ? h("span.tech-pct", `${pct}%`) : null,
       );
     });
-    // Hovering a tech lights it, every tech it needs (its and/or prerequisites, all the way
-    // back) and the lines between them; the rest of the tree dims.
-    const tree = h("div.tree", { style: { width: `${width}px`, height: `${height}px` } }, svg, boxes);
-    const ancestors = (id) => {
-      const seen = new Set([id]);
-      const stack = [id];
-      while (stack.length) {
-        const x = byId.get(stack.pop());
-        for (const p of [...(x?.and ?? []), ...(x?.or ?? [])]) if (byId.has(p) && !seen.has(p)) (seen.add(p), stack.push(p));
-      }
-      return seen;
-    };
+    // Pointing at a tech lights it, every tech it needs (its and/or prerequisites, all the way
+    // back) and the techs it leads to, with the lines between them; the rest of the tree dims.
+    // The bands: a stripe across the tree and the research path's name, held at the left edge
+    // while the tree scrolls; the adopted doctrine's band is marked.
+    const bands = lanes.map((ln, i) => {
+      const top = rowY(ln.top, i) - BG;
+      const doctrine = ln.path !== null && ln.path === t.path;
+      const name = ln.path === null ? "General" : dname("ResearchPathType", ln.path);
+      return h(
+        `div.tree-lane${i % 2 ? ".odd" : ""}${doctrine ? ".doctrine" : ""}`,
+        { "data-path": ln.path ?? "", style: { top: `${top}px`, height: `${ln.rows * (H + GY) - GY + BG + GY / 2}px` } },
+        h("span.tree-lane-name", { title: doctrine ? `${name}: your doctrine` : name }, h("span.tree-lane-text", name), doctrine ? h("span.tree-lane-doctrine", "Doctrine") : null),
+      );
+    });
+    const tree = h("div.tree", { style: { width: `${width}px`, height: `${height}px` } }, bands, svg, boxes);
     function focus(id) {
+      if (id === null && armed !== null) id = armed;
       tree.classList.toggle("focus", id !== null);
-      const lit = id === null ? new Set() : ancestors(id);
-      for (const b of boxes) b.classList.toggle("lit", lit.has(Number(b.dataset.tech)));
-      for (const p of svg.children) p.classList.toggle("lit", lit.has(Number(p.dataset.to)) && lit.has(Number(p.dataset.from)));
+      const { path, next } = id === null ? { path: new Set(), next: new Set() } : treeRelated(byId, id);
+      for (const b of boxes) {
+        const k = Number(b.dataset.tech);
+        b.classList.toggle("lit", path.has(k) || next.has(k));
+        b.classList.toggle("next", next.has(k));
+      }
+      for (const l of lines) {
+        const from = Number(l.dataset.from);
+        const to = Number(l.dataset.to);
+        const onPath = path.has(to) && path.has(from);
+        const toNext = from === id && next.has(to);
+        l.classList.toggle("lit", onPath || toNext);
+        l.classList.toggle("next", toNext);
+      }
     }
-    const cur = t.current !== null ? dname("TechType", t.current) : null;
+    // The era of each box's left edge: the eras present, in order.
+    const eras = [...new Set(techs.map((x) => x.era).filter((e) => e !== null && e !== undefined))].sort((a, b) => a - b);
+    const legend = eras.length
+      ? h("div.era-legend", h("span.dim", "Era (left edge):"), eras.map((e) => h("span.era-key", { "data-era": e }, dname("EraType", e))))
+      : null;
+    const cur = t.current !== null ? byId.get(t.current) ?? t.techs[t.current] : null;
+    const modes = tapModes(
+      tapMode,
+      coarse()
+        ? [["now", "Research now", "A tap researches it now"], ["queue", "Add to queue", "A tap adds it to the research queue (Shift-click)"]]
+        : [["now", "Research now", "A click researches it now"], ["queue", "Add to queue", "A click adds it to the research queue (as Shift-click)"]],
+      (v) => ((tapMode = v), load()),
+    );
+    // The mouse has the selector too: "A click:".
+    modes.classList.add("tree-modes");
+    if (!coarse()) modes.querySelector(".dim").textContent = "A click:";
+    const scroll = h("div.tree-scroll", tree);
+    const wrap = h("div.tree-wrap", scroll);
+    // Edge fades where more of the tree lies beyond the view (updated on scroll only).
+    const edges = () => {
+      wrap.classList.toggle("more-right", scroll.scrollLeft + scroll.clientWidth < scroll.scrollWidth - 2);
+      wrap.classList.toggle("more-down", scroll.scrollTop + scroll.clientHeight < scroll.scrollHeight - 2);    };
+    scroll.addEventListener("scroll", edges, { passive: true });
     m.setBody(
       h(
         "div.research-head",
-        cur ? h("div", "Researching ", h("b", cur)) : h("div.warn", "Nothing is being researched."),
+        h(
+          "div.research-state",
+          cur ? h("span", "Researching ", h("b", dname("TechType", t.current)), `: ${turns(cur.turns)}.`) : h("span.warn", "Nothing is being researched."),
+          h("span.dim", ` ${t.rate} research per turn.`),
+        ),
         t.path !== null && t.path !== undefined
           ? h("div", "Doctrine: ", h("b", dname("ResearchPathType", t.path)), ` (+${t.path_percent}% research on its techs, outlined `, h("span.path-mark"), ")")
           : h("div.warn", "No doctrine (adopt one in the research screen)."),
         cardsLine(t),
         t.queue.length > 1 ? h("div.dim", `Queue: ${t.queue.map((q) => dname("TechType", q)).join(" → ")}`) : null,
-        h("div.dim", `${t.rate} research per turn. Click a technology to research it (with what it needs); Shift-click to queue it. Point at one to see the path to it.`),
-        tapModes(tapMode, [["now", "Research now", "A tap researches it now"], ["queue", "Add to queue", "A tap adds it to the research queue (Shift-click)"]], (v) => ((tapMode = v), load())),
+        h("div.dim", coarse() ? "Tap: show its path. Tap again: research (with what it needs)." : "Click: research (with what it needs). Shift-click: queue."),
+        modes,
+        legend,
       ),
-      h("div.tree-scroll", tree),
+      wrap,
     );
-    const now = m.el.querySelector(".tech.researching") ?? m.el.querySelector(".tech.can");
-    now?.scrollIntoView({ block: "center", inline: "center" });
+    if (keep) {
+      scroll.scrollLeft = keep.left;
+      scroll.scrollTop = keep.top;
+    } else {
+      // The tech being researched, else the leftmost one that can be researched now, in view.
+      const can = techs.filter((x) => x.can_research && !x.has).sort((a, b) => a.depth - b.depth || row.get(a.tech) - row.get(b.tech));
+      const goal = cur && byId.has(t.current) ? byId.get(t.current) : can[0];
+      if (goal) {
+        const p = pos(goal);
+        scroll.scrollLeft = Math.max(0, p.x + W / 2 - scroll.clientWidth / 2);
+        scroll.scrollTop = Math.max(0, p.y + H / 2 - scroll.clientHeight / 2);
+      }
+    }
+    edges();
   };
   load();
   return m.done;
@@ -270,7 +561,7 @@ export async function openCivics() {
     try {
       c = await api.query("civics", picked.length ? { with: picked } : {});
     } catch (e) {
-      return m.setBody(h("p.warn", e.detail ?? e.message));
+      return m.setBody(h("p.warn", errorText(e)));
     }
     if (m.closed) return;
     const p = c.proposed;
@@ -315,6 +606,11 @@ export async function openCivics() {
         primary: true,
         disabled: !p?.valid,
         onClick: async () => {
+          // Anarchy is the price: ask first (Cancel has the focus); none, no question.
+          if (p?.anarchy && !(await ask("Start the revolution?", `Start the revolution? ${turns(p.anarchy)} of anarchy.`, [
+            { label: "Revolution", value: true, primary: true, danger: true },
+            { label: "Cancel", value: null },
+          ]))) return;
           if (await run({ c: "update_civics", civics: picked })) {
             toast("Revolution.");
             picked = [];
@@ -368,7 +664,7 @@ export async function openReligion() {
     try {
       r = await api.query("religions");
     } catch (e) {
-      return m.setBody(h("p.warn", e.detail ?? e.message));
+      return m.setBody(h("p.warn", errorText(e)));
     }
     if (m.closed) return;
     const convert = async (religion) => {

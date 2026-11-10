@@ -140,6 +140,9 @@ html.iso.hd2d .tip-combat { background: linear-gradient(90deg, var(--hd-line), r
 html.iso.hd2d #modals .backdrop { background: rgba(4, 4, 6, 0.5); }
 @keyframes hd2d-backdrop-in { from { background-color: rgba(4, 4, 6, 0); } }
 html.iso.hd2d #modals .backdrop { animation-name: hd2d-backdrop-in; }
+@media (min-width: 761px) and (min-height: 521px) {
+  html.iso.hd2d #modals .backdrop:has(> .modal.build-prompt) { background: rgba(4, 4, 6, 0.16); }
+}
 html.iso.hd2d .modal-head {
   justify-content: flex-start; padding: 8px 64px 8px 18px; margin: 0 0 4px;
   background: linear-gradient(90deg, var(--hd-strip), rgba(0, 0, 0, 0.32)) no-repeat, linear-gradient(90deg, var(--hd-line), rgba(236, 230, 214, 0.06)) no-repeat bottom / 100% 1px;
@@ -186,7 +189,7 @@ html.iso.hd2d button.stat:hover:not([disabled]) { background: var(--hd-band); }
 /* What is chosen: the band, a brighter hairline and a mark at the left. */
 html.iso.hd2d button.option.chosen, html.iso.hd2d button.build.current, html.iso.hd2d button.civic.chosen, html.iso.hd2d .trade-item.on,
 html.iso.hd2d .culture-actions button.on, html.iso.hd2d .culture-religions button.on, html.iso.hd2d button.culture-target.on,
-html.iso.hd2d #iso-corner .layers button.active {
+html.iso.hd2d .tap-mode button.on, html.iso.hd2d #iso-corner .layers button.active {
   border-image: var(--iso-tile-hover); background: var(--hd-band), var(--hd-fill); background-clip: padding-box; color: #fff;
   box-shadow: inset 3px 0 0 var(--hd-ink);
 }
@@ -259,7 +262,7 @@ html.iso.hd2d #bottom { left: calc(var(--iso-gap) + 92px); }
 /* --- the top bar, the report, the card, the corner --------------------------------------- */
 
 html.iso.hd2d #bottom-tabs button.active { box-shadow: inset 0 -1px 0 var(--hd-ink); }
-html.iso.hd2d #empire .stat.research { border: 0; }
+html.iso.hd2d #empire :is(.stat.research, .stat.doctrine) { border: 0; }
 html.iso.hd2d .iso-bar { height: 14px; background: rgba(0, 0, 0, 0.6); background-clip: padding-box; }
 html.iso.hd2d .iso-bar .fill { background: linear-gradient(180deg, #a9dcff, #4f9ae0); }
 html.iso.hd2d .iso-bar.food .fill { background: linear-gradient(180deg, #cdeba0, #74b04a); }
@@ -286,10 +289,22 @@ html.iso.hd2d #iso-corner #end-turn.end-turn-message:not([disabled]) {
 
 /* The techs keep their measured boxes, lettered small. */
 html.iso.hd2d button.tech { border: 1px solid var(--hd-faint); background: rgba(24, 23, 27, 0.95); font: 400 12px/12px var(--iso-font); text-shadow: none; }
-html.iso.hd2d button.tech .tech-sub { font-size: 11px; }
+html.iso.hd2d button.tech .tech-sub, html.iso.hd2d button.tech .tech-pct, html.iso.hd2d .era-legend { font-size: 12px; line-height: 14px; }
 html.iso.hd2d button.tech.has { background: rgba(38, 52, 32, 0.95); border-color: #8fbf78; }
 html.iso.hd2d button.tech.researching { background: rgba(78, 70, 50, 0.95); border-color: var(--iso-gold-lt); }
-html.iso.hd2d button.tech.can { border-color: var(--hd-line); }
+html.iso.hd2d button.tech.can { border-color: var(--iso-gold); }
+html.iso.hd2d button.tech.queued { border: 1px dashed var(--iso-gold-lt); }
+html.iso.hd2d .tap-mode.tree-modes button.on { background: var(--hd-band), var(--hd-fill); box-shadow: inset 2px 0 0 var(--hd-ink); color: #fff; }
+html.iso.hd2d button.tech.later { background: rgba(18, 17, 20, 0.95); }
+html.iso.hd2d .tree-lines path { stroke: rgba(236, 230, 214, 0.3); }
+html.iso.hd2d .tree-lines path.have { stroke: rgba(143, 191, 120, 0.45); }
+html.iso.hd2d .tree.focus .tree-lines path.lit { stroke: var(--iso-gold-lt); }
+html.iso.hd2d .tree.focus .tree-lines path.lit.next { stroke: #9fc6e4; }
+html.iso.hd2d .tree-lane { border-top-color: rgba(236, 230, 214, 0.07); }
+html.iso.hd2d .tree-lane.odd { background: rgba(236, 230, 214, 0.035); }
+html.iso.hd2d .tree-lane.doctrine { background: rgba(220, 203, 158, 0.08); border-top-color: rgba(220, 203, 158, 0.35); }
+html.iso.hd2d .tree-lane-name { font: 400 12px/16px var(--iso-font); color: var(--hd-dim); background: rgba(6, 6, 8, 0.75); }
+html.iso.hd2d .tree-lane.doctrine .tree-lane-name { color: var(--iso-gold); box-shadow: inset 2px 0 0 var(--iso-gold); }
 html.iso.hd2d button.tech:hover:not([disabled]) { background: var(--hd-band), rgba(24, 23, 27, 0.95); }
 html.iso.hd2d .cplot { border: 1px solid var(--hd-faint); background: rgba(20, 20, 23, 0.9); }
 html.iso.hd2d .cplot.worked { background: rgba(38, 56, 30, 0.92); border-color: #8fbf78; }
@@ -313,6 +328,10 @@ html.iso.hd2d .unlock { background: rgba(0, 0, 0, 0.36); }
   /* At 0.8 the card's width runs up to the minimap's column (its lengths are scaled too). */
   html.iso.hd2d #side { max-width: calc(125vw - 2.5 * var(--iso-gap) - 352px); }
   html.iso.hd2d .iso-strip { max-width: calc(125vw - 2.5 * var(--iso-gap) - 352px); }
+}
+/* The toasts between the report's panel and the city panel's column, both at 0.8 (iso.css). */
+@media (min-width: 1100px) and (min-height: 521px) {
+  html.iso.hd2d #toasts { left: calc((var(--iso-gap) + 92px + min(480px, 40vw)) * 0.8 + 12px); right: calc((var(--iso-gap) + 324px) * 0.8); }
 }
 @media (max-width: 760px), (max-height: 520px) {
   /* A radius-3 city's 7x7 plots across a phone. */

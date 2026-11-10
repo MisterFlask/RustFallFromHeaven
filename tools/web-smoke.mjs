@@ -14,8 +14,8 @@
 // (?), the go-to mode (G, Esc), the map layers, the inspector, debug reveal, AI autoplay and the
 // spectator mode (play, pause, step, stop), and the trade screen (`stage trade`: gold offered and
 // accepted). The default map (the HD-2D one, or its isometric fallback); the classic interface on
-// the flat map (the bitmap type, a frame's time, the zoom steps), which the steps above drive, Tools
-// → Options and `?renderer=flat`; `?renderer=iso`, the isometric renderer (its sprites,
+// the flat map (the bitmap type, a frame's time, the zoom steps), which the steps above drive,
+// Options and `?renderer=flat`; `?renderer=iso`, the isometric renderer (its sprites,
 // picking a unit by its figure, zoom, layers); `?renderer=hd2d`, the HD-2D map, the default (its
 // frame, the cards, picking, selection, zoom, pan, layers, a lost context's fallback). Phase 7: the automate buttons (`stage automate`: a
 // scout exploring with a click), this game's armies (`stage
@@ -377,7 +377,7 @@ async function newGame(url, saves) {
 /** The classic interface (docs/ART.md, look.js) on the flat map, the sprite-less debug renderer
  *  that wears it (the HD-2D and isometric maps wear the isometric one): the art loaded, the
  *  interface uses the bitmap type and frames, the map is not blank, a frame takes little time, the
- *  zoom goes through the flat map's steps, and Tools → Options switches to the isometric map and
+ *  zoom goes through the flat map's steps, and Options switches to the isometric map and
  *  back (the flat map stays remembered for the steps that follow, which drive this interface). */
 async function classicClient() {
   await until2("!!(window.ffh.look.art || window.ffh.look.error)", "the art to load");
@@ -416,10 +416,8 @@ async function classicClient() {
   }
   if (JSON.stringify(zooms) !== JSON.stringify(want)) throw new Error(`the flat map's zoom steps: ${zooms}, not ${want}`);
   steps.push(`zoom steps ${zooms.join(" ")}`);
-  // Tools → Options: the isometric map and back.
+  // Options (the gear): the isometric map and back.
   await click("#btn-tools");
-  await dialog("Tools");
-  await click("#tool-options");
   await dialog("Options");
   await click("#option-iso-renderer");
   await until2(`window.ffh.mapView.renderer() === "iso"`, "the isometric map (Options)");
@@ -427,7 +425,7 @@ async function classicClient() {
   await click("#option-flat-renderer");
   await until2(`window.ffh.mapView.renderer() === "flat" && document.documentElement.classList.contains("art")`, "the flat map and its interface again (Options)");
   await closeDialog("Options");
-  steps.push("Tools → Options: the isometric map and back to the flat one");
+  steps.push("Options: the isometric map and back to the flat one");
 }
 
 /** `?renderer=flat`: the P5 renderer, kept for debugging, on the same game. */
@@ -746,8 +744,15 @@ async function cultureUi() {
   await b.eval(`window.ffh.emit("open-city", ${city.id})`);
   const sec = `#modals .backdrop:not(.under) .section.culture`;
   const has = (sel) => b.eval(`!!document.querySelector(${q(`${sec} ${sel}`)})`);
-  await until2(`!!document.querySelector(${q(`${sec} .culture-under`)})`, "the city's Culture section with its revolt pressure");
-  if (!(await has("details.culture-choose[open]"))) throw new Error("the channel chooser is not open on a city without a channel");
+  await until2(`!!document.querySelector(${q(`${sec} details.culture-choose`)})`, "the city's Culture section");
+  // Nothing in reach and no pressure: one line, the chooser folded under it (opened here);
+  // otherwise the revolt pressure and the chooser open.
+  if (await has("details.culture-choose:not([open])")) {
+    if (!(await b.eval(`document.querySelector(${q(sec)}).classList.contains("folded")`))) throw new Error("the channel chooser is folded on a city without a channel, with something in reach");
+    if (await has(".culture-under")) throw new Error("the folded Culture section shows the revolt pressure");
+    await click(`${sec} details.culture-choose > summary`);
+    await until2(`!!document.querySelector(${q(`${sec} details.culture-choose[open]`)})`, "the folded chooser opened");
+  } else if (!(await has(".culture-under"))) throw new Error("the Culture section has no revolt pressure line");
   if (await has(".culture-channel")) throw new Error("a new city has a channel");
   const n = await b.eval(`window.ffh.S.data.tables.CulturalActionType.length`);
   const shown = await b.eval(`document.querySelectorAll(${q(`${sec} .culture-actions button`)}).length`);
@@ -1012,7 +1017,7 @@ async function empireScreens() {
     await click(`${TOP} button[data-value="commit"]`);
     await until(async () => !(await modalTitles()).includes("Doctrines"), "the research path chooser closed");
     await until2(`!!document.querySelector(${q(`${TOP} .research-path b`)})`, "the research path committed");
-    await until2(`!!document.querySelector("#research-button .path-tag")`, "the top bar showing the path");
+    await until2(`!!document.querySelector("#doctrine-button .path-tag")`, "the top bar showing the path");
     // Reopened, the chooser shows the committed path on top and nothing to choose.
     await click(`${TOP} button[data-paths]`);
     await until2(`!!document.querySelector(${q(`${TOP} .path-card.current[data-path="${path}"]`)})`, "the committed path's card");
@@ -1034,7 +1039,10 @@ async function empireScreens() {
     await shot("civics");
     if (await b.eval(`!document.querySelector(${q(`${TOP} .modal-buttons button.primary`)}).disabled`)) {
       await click(`${TOP} .modal-buttons button.primary`);
-      await until(async () => !(await modalTitles()).includes("Civics"), "the revolution");
+      // With anarchy, a question first (Cancel has the focus): answer it.
+      await until(async () => { const t = await modalTitles(); return !t.includes("Civics") || t.includes("Start the revolution?"); }, "the revolution or its question");
+      if ((await modalTitles()).includes("Start the revolution?")) await click(`${TOP} .modal-buttons button.primary`);
+      await until(async () => { const t = await modalTitles(); return !t.includes("Civics") && !t.includes("Start the revolution?"); }, "the revolution");
       const now = await b.eval(`window.ffh.api.query("civics").then((c) => c.options.some((o) => o.civics.some((x) => x.civic === ${civic} && x.current)) || c.anarchy > 0)`);
       if (!now) throw new Error(`the revolution to civic ${civic} did not happen`);
       steps.push(`civics (F3): revolution to civic ${civic}`);
@@ -1085,10 +1093,12 @@ async function empireScreens() {
   steps.push("empire screens: F6 tech tree, F3 civics, F7 religion, F2 sliders, F4 diplomacy, F1 cities");
 }
 
-/** The help display at the keys (?), the go-to mode (G, then Esc), the map layers. */
+/** The help display (?) at How to play, then its keys; the go-to mode (G, then Esc), the map layers. */
 async function keysAndLayers() {
   await b.key("?");
   await dialog("Help");
+  await until2(`!!document.querySelector('#modals .help-article[data-topic="play"]') && !!document.querySelector('#modals .help-topic.on[data-topic="play"]')`, "the help at How to play");
+  await click(`#modals .help-topic[data-topic="keys"]`);
   await until2(`!!document.querySelector('#modals .help-article[data-topic="keys"]') && !!document.querySelector('#modals .help-topic.on[data-topic="keys"]')`, "the help at the keys");
   await closeDialog("Help");
   if (!(await S("!!S.sel"))) await b.key("Tab");
@@ -1128,6 +1138,8 @@ async function keysAndLayers() {
 async function toolsAndSpectate() {
   const tool = async (id, title) => {
     await click("#btn-tools");
+    await dialog("Options");
+    await click("#options-debug");
     await dialog("Tools");
     await click(`#${id}`);
     if (title) await dialog(title);
@@ -1210,9 +1222,21 @@ async function saveAndLoad() {
   await until2(`!!document.querySelector('#modals button.save[data-save$="/smoke"]')`, "the save in the load screen");
   await shot("load-screen");
   await click('#modals button.save[data-save$="/smoke"]');
+  await leaveGame();
   await waitHuman("the loaded game");
   if ((await S("S.status.turn")) !== turn) throw new Error("the loaded game is at another turn");
   steps.push("loaded smoke");
+}
+
+/** A save clicked in the load screen while a game is played asks "Leave the current game?"
+ *  (Cancel focused): Leave. Returns once the question is answered or the load went ahead without
+ *  one (the load screen closed). */
+async function leaveGame() {
+  const leave = '#modals .modal-buttons button[data-value="leave"]';
+  await until2(`!!document.querySelector(${JSON.stringify(leave)}) || !document.querySelector('#modals [data-tag="load"]')`, "the leave question or the load");
+  if (!(await b.eval(`!!document.querySelector(${JSON.stringify(leave)})`))) return;
+  if (await b.eval(`document.activeElement?.dataset?.value === "leave"`)) throw new Error("the leave question has Leave focused (Enter would leave)");
+  await click(leave);
 }
 
 /** Loads a staged save (`ffh-play stage KIND`) through the load screen. */
@@ -1231,6 +1255,7 @@ async function loadSave(name, turn) {
   const sel = `#modals button.save[data-save="${name}"]`;
   await until2(`!!document.querySelector(${JSON.stringify(sel)})`, `the save ${name} in the load screen`);
   await click(sel);
+  await leaveGame();
   await until2(`(() => { const S = window.ffh.S; return S.status && S.status.phase === "human" && S.status.game && S.status.game.journal !== ${JSON.stringify(journal)} && S.status.turn === ${turn} && S.view && S.view.turn === ${turn}; })()`, `the game ${name}`);
   await new Promise((r) => setTimeout(r, 300));
 }
@@ -2000,7 +2025,9 @@ async function warStart(bin) {
       const set = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event("change")); };
       set("ng-world", "WORLDSIZE_TINY"); set("ng-seed", "5");
     })()`);
-    await click('#modals .modal-buttons button[data-value="war"]');
+    // The war start sits in the closed "Debug" fold after the victory conditions.
+    await b.eval(`document.getElementById("ng-debug").open = true`);
+    await click("#ng-war");
     await until2(`/turn \\d+/.test(document.getElementById("ng-war-note")?.textContent ?? "")`, "the search's progress", 60000);
     await waitHuman("the war start", 120000);
     await until2(`document.getElementById("title-screen").hidden`, "the title screen to go");

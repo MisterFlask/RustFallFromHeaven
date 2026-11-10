@@ -428,7 +428,7 @@ const RAIL = [
   ["btn-religion", "religion"],
   ["btn-culture", "culture"],
   ["btn-armies", "units"],
-  ["btn-governors", "cities"],
+  ["btn-governors", "promo_command"],
   ["btn-diplo", "diplomacy"],
   ["btn-crusades", "attack"],
 ];
@@ -438,7 +438,6 @@ const SYSTEM = [
   ["btn-load", "load"],
   ["btn-new", "newgame"],
   ["btn-keys", "help"],
-  ["btn-raw", "pedia"],
   ["btn-title", "map"],
 ];
 const LAYERS = { terrain: "terrain", political: "political", yield: "yields" };

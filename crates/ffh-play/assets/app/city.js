@@ -13,7 +13,7 @@
 
 import * as api from "./api.js";
 import { S, dname, orderName, info, turns, me, emit, tidx, ORDER_KINDS } from "./state.js";
-import { h, signed, setText, tapModes, compactScreen } from "./dom.js";
+import { h, signed, setText, tapModes, compactScreen, errorText } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
 import { YIELD_COLORS } from "./tiles.js";
@@ -56,8 +56,9 @@ export function stepCityScreen(step, topTag) {
 }
 
 /** Opens city `id`'s screen. With `popup` (an idle city's chooser at a control point, design
- *  §2.3) the dialog offers "Later" and closes once production is chosen. Resolves with "chosen",
- *  "later" or null (closed). */
+ *  §2.3) it is the build prompt instead: a compact dialog with the city's numbers, its queue and
+ *  what it can build (`promptView`), "Open city" (the full screen; the prompt is set aside) and
+ *  "Later"; it closes once production is chosen. Resolves with "chosen", "later" or null (closed). */
 export async function openCity(id, { popup = false } = {}) {
   focusOn(id);
   let cityId = id;
@@ -68,10 +69,15 @@ export async function openCity(id, { popup = false } = {}) {
   };
   // With the isometric map's interface the screen is Civ4's: the map frames the city and its plots
   // are worked by clicking them there (MapView.cityOverlay), the screen's parts in panels at the
-  // sides. A production popup stays a dialog.
+  // sides. The build prompt is a dialog of its own (`promptView`).
   // A phone has no room for the screen's panels around the city: it gets the whole-screen dialog.
   const overlay = isoSkin() && !popup && !compactScreen();
-  const m = openModal({ title: title(), body: [h("p.dim", "…")], tag: "city", wide: true, className: overlay ? "city-screen city-overlay" : "city-screen", buttons: [] });
+  const m = openModal({ title: title(), body: [h("p.dim", "…")], tag: "city", wide: true, className: overlay ? "city-screen city-overlay" : popup ? "city-screen build-prompt" : "city-screen", buttons: [] });
+  // The prompt sits at the right of the isometric map (iso.css): the city, centred, stays in view.
+  if (popup && isoSkin() && !compactScreen()) {
+    const at = S.cities.get(id);
+    if (at) emit("center", at.x, at.y);
+  }
   // A refused task changes nothing: the screen is read again either way (a toggle shows the
   // city's state, not the click).
   const task = async (t, data1 = -1, data2 = -1, option = false) => {
@@ -114,12 +120,12 @@ export async function openCity(id, { popup = false } = {}) {
     try {
       c = await api.query("city", { city: cityId });
     } catch (e) {
-      m.setBody(h("p.warn", e.detail ?? e.message));
+      m.setBody(h("p.warn", errorText(e)));
       return;
     }
     if (m.closed || n !== loading) return;
     m.el.dataset.city = String(cityId);
-    m.setBody(screen(c, { task, choose, remove, go, popup, overlay, tap: [tapMode, setTapMode], reload: load }));
+    m.setBody(popup ? promptView(c, { choose, remove, tap: [tapMode, setTapMode] }) : screen(c, { task, choose, remove, go, overlay, tap: [tapMode, setTapMode], reload: load }));
     if (overlay) {
       const mine = me()?.player;
       // A click works the plot of the city these plots are of (Previous / Next may have moved on).
@@ -128,7 +134,19 @@ export async function openCity(id, { popup = false } = {}) {
   };
   m.setButtons(
     popup
-      ? [{ label: "Later", value: "later", title: "Leave the city idle for now (the end of turn reminds you)" }]
+      ? [
+          {
+            label: "Open city",
+            title: "Open the city screen. The prompt is set aside for this turn.",
+            onClick: () => {
+              // Closed first: the city screen's dialog shares the tag and would close it as null.
+              result = "later";
+              m.close("later");
+              openCity(cityId);
+            },
+          },
+          { label: "Later", value: "later", title: "Leave the city idle for now. End turn lists idle cities." },
+        ]
       : [
           { label: "Previous city", onClick: () => go(-1), title: "The previous city [End]" },
           { label: "Next city", onClick: () => go(1), title: "The next city [Home]" },
@@ -462,38 +480,40 @@ function growthView(c) {
 /** The city's yields at a glance: size, food (grown less eaten, the growth bar, when it grows),
  *  production (the current build's bar and turns), then where the commerce goes. */
 function summaryView(c) {
+  return h("div.city-summary", summaryRow(c), commerceView(c));
+}
+
+/** The summary's first row: the size, food (surplus, growth) and production. With `prompt` (the
+ *  build prompt, which lists the queue under it) an idle city's production reads "a turn". */
+function summaryRow(c, { prompt = false } = {}) {
   const f = c.food;
   const y = (i) => c.yields.find((v) => v.yield === i) ?? { rate: 0 };
   const prod = c.production;
   const foodCls = f.difference > 0 ? "good" : f.difference < 0 ? "bad" : "";
   const grows = f.difference > 0 ? h("span.when", { tip: `Grows to size ${c.size + 1} in ${turns(f.turns)}` }, "→ ", ic("population"), String(c.size + 1), ` in ${turns(f.turns)}`) : f.difference < 0 ? h("span.when.bad", "starving") : h("span.when.dim", "not growing");
   return h(
-    "div.city-summary",
+    "div.cs-row",
     h(
-      "div.cs-row",
-      h(
-        "span.cs-size",
-        { tip: `Size ${c.size}${c.capital ? ", the capital" : ""}` },
-        ic("population", true),
-        h("b", String(c.size)),
-        c.capital ? h("span.capital", { title: "Capital" }, "★") : null,
-        c.disorder ? h("span.bad", " in disorder") : null,
-        c.occupation ? h("span.bad", ` occupied ${c.occupation}`) : null,
-      ),
-      h(
-        "div.cs-gauge",
-        { tip: `Food: ${y(0).rate} grown, ${f.consumption} eaten by the citizens; ${f.stored}/${f.threshold} stored` },
-        h("div.cs-top", ic("food", true), h(`b.cs-big.${foodCls || "even"}`, signed(f.difference)), h("span.cs-sub", String(y(0).rate), ic("food"), " − ", String(f.consumption), ic("population"))),
-        h("div.cs-top", f.threshold > 0 ? barEl(f.stored / f.threshold, "food", { w: 60, next: (f.stored + f.difference) / f.threshold }) : null, grows),
-      ),
-      h(
-        "div.cs-gauge",
-        { tip: prod.current ? `Production: ${prod.rate} a turn; ${prod.stored}/${prod.needed ?? "-"}` : "Nothing is being built" },
-        h("div.cs-top", ic("production", true), h("b.cs-big.prod", String(prod.rate)), h("span.cs-sub", prod.current ? productionName(c) : h("span.bad", "nothing to build"))),
-        prod.current && prod.needed ? h("div.cs-top", barEl(prod.stored / prod.needed, "production", { w: 60, next: (prod.stored + prod.rate) / prod.needed }), h("span.when", c.queue[0]?.turns !== null && c.queue[0]?.turns !== undefined ? `in ${turns(c.queue[0].turns)}` : "")) : null,
-      ),
+      "span.cs-size",
+      { tip: `Size ${c.size}${c.capital ? ", the capital" : ""}` },
+      ic("population", true),
+      h("b", String(c.size)),
+      c.capital ? h("span.capital", { title: "Capital" }, "★") : null,
+      c.disorder ? h("span.bad", " in disorder") : null,
+      c.occupation ? h("span.bad", ` occupied ${c.occupation}`) : null,
     ),
-    commerceView(c),
+    h(
+      "div.cs-gauge",
+      { tip: `Food: ${y(0).rate} grown, ${f.consumption} eaten by the citizens; ${f.stored}/${f.threshold} stored` },
+      h("div.cs-top", ic("food", true), h(`b.cs-big.${foodCls || "even"}`, signed(f.difference)), h("span.cs-sub", String(y(0).rate), ic("food"), " − ", String(f.consumption), ic("population"))),
+      h("div.cs-top", f.threshold > 0 ? barEl(f.stored / f.threshold, "food", { w: 60, next: (f.stored + f.difference) / f.threshold }) : null, grows),
+    ),
+    h(
+      "div.cs-gauge",
+      { tip: prod.current ? `Production: ${prod.rate} a turn; ${prod.stored}/${prod.needed ?? "-"}` : "Nothing is being built" },
+      h("div.cs-top", ic("production", true), h("b.cs-big.prod", String(prod.rate)), h("span.cs-sub", prod.current ? productionName(c) : prompt ? "a turn" : h("span.bad", "nothing to build"))),
+      prod.current && prod.needed ? h("div.cs-top", barEl(prod.stored / prod.needed, "production", { w: 60, next: (prod.stored + prod.rate) / prod.needed }), h("span.when", c.queue[0]?.turns !== null && c.queue[0]?.turns !== undefined ? `in ${turns(c.queue[0].turns)}` : "")) : null,
+    ),
   );
 }
 
@@ -685,12 +705,13 @@ function crewsLine(c) {
   return h("div.row.dim", { id: "city-crews", title: `Work rate: ${crews.rate}` }, `Work crews: ${what}`);
 }
 
-function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
-  const prod = c.production;
+/** The production queue (`ol.queue`). `compact` (the build prompt): the orders' names, turns and
+ *  ✕ only, without the garrison destinations; an empty queue is the one line. */
+function queueView(c, remove, reload, { compact = false } = {}) {
   // This game's governors: a governed city's production is its governor's (shown, not chosen).
   const locked = !!c.governance?.governed;
-  const queue = h(
-    "ol.queue",
+  return h(
+    `ol.queue${compact ? ".compact" : ""}`,
     c.queue.length
       ? c.queue.map((o, i) =>
           h(
@@ -699,20 +720,48 @@ function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
             h("span.dim", o.turns !== null ? ` ${turns(o.turns)}` : ""),
             // This game's armies: where a land combat unit goes when trained; a requisition order
             // is its army's.
-            o.requisition ? requisitionTag(o) : locked ? (o.dest_name ? h("span.dim", ` → ${o.dest_name}`) : null) : recruitControls(c, i, o, reload),
+            o.requisition ? requisitionTag(o) : locked || compact ? (o.dest_name ? h("span.dim", ` → ${o.dest_name}`) : null) : recruitControls(c, i, o, reload),
             // The exe pops an order only while the queue holds more than one (CvGameInterface
             // `getOrderQueueLength() > 1`); the only order is replaced by choosing another. A
             // requisition order is released on the Armies screen, not here.
             c.queue.length > 1 && !locked && !o.requisition ? h("button.small", { title: "Remove from the queue", "aria-label": "Remove", "data-index": i, onclick: () => remove(i) }, "✕") : null,
           ),
         )
-      : h("li.dim", locked ? "Nothing yet: the governor chooses when your turn ends." : "Nothing: choose below."),
+      : h("li.dim", locked ? "Nothing yet: the governor chooses when your turn ends." : compact ? "Nothing is being built." : "Nothing: choose below."),
   );
-  const lists = locked ? [] : GROUPS.map(([order, label]) => {
+}
+
+/** What a click on a build does besides building it now: add it to the queue (Shift) or put it
+ *  first (Ctrl). Touch screens always have the row (style.css); `always` shows it to a mouse too
+ *  (the build prompt), as "A click:". */
+function chooseModes([tapMode, setTapMode], always = false) {
+  const touch = !always || (globalThis.matchMedia?.("(pointer: coarse)").matches ?? false);
+  const a = touch ? "A tap" : "A click";
+  const el = tapModes(
+    tapMode,
+    [
+      ["now", "Build now", `${a} replaces what is being built`],
+      ["queue", "Add to queue", `${a} adds to the end of the queue (Shift-click)`],
+      ["first", "Put first", `${a} puts it first in the queue (Ctrl-click)`],
+    ],
+    setTapMode,
+  );
+  if (always) {
+    el.classList.add("always");
+    const label = el.querySelector("span.dim");
+    if (label) label.textContent = `${a}:`;
+  }
+  return el;
+}
+
+/** What the city can build, by group (units, buildings, projects and rituals, processes): a
+ *  button each with its tooltip, turns and cost; `choose(order, type, ev)` on a click. */
+function buildLists(c, choose) {
+  return GROUPS.map(([order, label]) => {
     const items = c.buildable.filter((b) => b.order === order);
     if (!items.length) return null;
     return h(
-      "div.section",
+      "div.section.builds",
       h("h4", label),
       h(
         "div.build-grid",
@@ -729,12 +778,20 @@ function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
             },
             isoSkin() ? buildIcon(order, b.type) : null,
             h(`span${tierSel(b.tier)}`, dname(kind, b.type)),
-            h("span.dim", b.turns !== null ? `${turns(b.turns)} · ${b.cost}` : ""),
+            h("span.dim", b.turns !== null ? [`${turns(b.turns)} · `, h("span.cost", { tip: "Production cost" }, ic("production"), String(b.cost))] : ""),
           );
         }),
       ),
     );
   });
+}
+
+/** The full screen's production: the current build's progress, the queue, what a tap does, then
+ *  the build lists (none in a governed city). */
+function productionView(c, choose, remove, tap, reload) {
+  const prod = c.production;
+  // This game's governors: a governed city's production is its governor's (shown, not chosen).
+  const locked = !!c.governance?.governed;
   return [
     h(
       "div.section",
@@ -745,21 +802,35 @@ function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
         prod.current ? `${prod.stored}/${prod.needed ?? "-"} (+${prod.rate} per turn)` : h("span.warn", "Nothing is being built."),
         prod.current && prod.needed ? barEl(prod.stored / prod.needed, "production", { w: 50, next: (prod.stored + prod.rate) / prod.needed }) : null,
       ),
-      queue,
-      locked ? [h("p.dim.governed-note", "The governor chooses what this city builds: choose its governor above."), requisitionNote(c)] : recruitView(c, reload),
-      locked ? null : tapModes(tapMode, [["now", "Build now", "A tap replaces what is being built"], ["queue", "Add to queue", "A tap adds to the end of the queue (Shift-click)"], ["first", "Put first", "A tap puts it first in the queue (Ctrl-click)"]], setTapMode),
+      queueView(c, remove, reload),
+      locked ? [h("p.dim.governed-note", "The governor chooses what this city builds: see Governance below."), requisitionNote(c)] : null,
+      locked ? null : chooseModes(tap, true),
     ),
-    ...lists,
+    ...(locked ? [] : buildLists(c, choose)),
   ];
 }
 
-function screen(c, { task, choose, remove, popup, overlay, tap, reload }) {
+/** The build prompt (`openCity` with `popup`): the city's size, food and production in one row,
+ *  the queue, what a click does, and the build lists. */
+function promptView(c, { choose, remove, tap }) {
+  const locked = !!c.governance?.governed;
+  return [
+    h("div.city-summary.prompt-summary", summaryRow(c, { prompt: true })),
+    queueView(c, remove, null, { compact: true }),
+    locked ? h("p.dim.governed-note", "The governor chooses what this city builds.") : chooseModes(tap, true),
+    locked ? null : h("div.prompt-builds", buildLists(c, choose)),
+  ];
+}
+
+function screen(c, { task, choose, remove, overlay, tap, reload }) {
   // On the map (the isometric interface) the plots are worked there: citywork.js draws the
   // citizens on them; the dialog shows them as a grid.
   const plots = overlay ? null : plotGrid(c, task);
   // This game's cultural channel after the city's numbers (its culture among them), above the
-  // buildings: the right column's build lists are long.
-  const left = h("div.city-col", plots, citizensView(c, task), moodView(c), growthView(c), popup ? null : cultureView(c, reload), buildingsView(c, reload));
-  const right = h("div.city-col", governanceView(c, reload), manageView(c, task), productionView(c, choose, remove, tap, reload));
-  return [summaryView(c), popup ? h("div.city-cols.popup", right, left) : h("div.city-cols", left, right)];
+  // buildings.
+  const left = h("div.city-col", plots, citizensView(c, task), moodView(c), growthView(c), cultureView(c, reload), buildingsView(c, reload));
+  // What to build first; then the orders, where trained units go (armies.js) and the governance.
+  const garrison = c.governance?.governed ? null : recruitView(c, reload);
+  const right = h("div.city-col", productionView(c, choose, remove, tap, reload), manageView(c, task), garrison ? h("div.section.recruit", garrison) : null, governanceView(c, reload));
+  return [summaryView(c), h("div.city-cols", left, right)];
 }

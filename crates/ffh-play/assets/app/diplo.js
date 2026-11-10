@@ -18,7 +18,7 @@
 
 import * as api from "./api.js";
 import { S, dname, tname, teamName, tradeItemLabel, tradeRefusal, DUAL_ITEMS, me, scoreText, fairShareText } from "./state.js";
-import { h } from "./dom.js";
+import { h, errorText } from "./dom.js";
 import { openModal, ask } from "./modals.js";
 import { infoTip, partsList } from "./infotips.js";
 import { render as markup } from "./markup.js";
@@ -34,7 +34,7 @@ export async function openDiplomacy() {
     try {
       r = await api.query("players");
     } catch (e) {
-      return m.setBody(h("p.warn", e.detail ?? e.message));
+      return m.setBody(h("p.warn", errorText(e)));
     }
     if (m.closed) return;
     const rows = r.players
@@ -247,7 +247,7 @@ function itemTip(it, techHelp) {
 
 async function declareWar(p) {
   const v = await ask("Declare war?", `Declare war on ${teamName(p.team)}? Their allies may join them.`, [
-    { label: "Declare war", value: true, primary: true },
+    { label: "Declare war", value: true, primary: true, danger: true },
     { label: "Cancel", value: null },
   ]);
   if (v) await run({ c: "declare_war", team: p.team });
@@ -271,7 +271,7 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
   try {
     t = await api.query("trade", { with: withPlayer });
   } catch (e) {
-    m.setBody(h("p.warn", e.detail ?? e.message));
+    m.setBody(h("p.warn", errorText(e)));
     return m.done;
   }
   // The leader greets you, or refuses to talk (Civ4 opens the screen on its line).
