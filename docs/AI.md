@@ -1622,43 +1622,81 @@ Raiders' raids (`traits.rs`), escorts and moves to defend our cities. Switch `SU
 
 ## Governors (`governor.rs`)
 
-This game's own system (docs/GOVERNORS.md). Two things: what a governor
-builds in a governed city (the human's as well as the AI's), and how the AI runs its own governed
-cities.
+This game's own system (docs/GOVERNORS.md). Since governors v2 (2026-11-10) the government civic
+decides who runs the cities: under Despotism or God King every city is directly ruled and runs on
+the AI's production ladder (`production::decide`); under any other government every city is
+governed. Three things live here: what a governor builds (the human's governed cities as well as
+the AI's), the AI's empire priorities, and the AI's empire orders.
 
 - **The governor's production** (`decide`, called by `production::choose` for a governed city): the
-  garrison the city's danger asks for (the AI's own quota, plus a Marshal's defender); workers and
-  work boats while the land needs them; the best building by `building_value` per turn of
-  production, up to half again for the profile's flavors; a Zealot's missionary; the profile's
-  process. It never builds settlers, wonders or rituals (the rules forbid them in governed
-  cities). Against revolt pressure aimed at the city, the defenders that hold it off come first
-  (`culture::defenders_needed`; the cultural defence, `culture::defend`, has a threatened governed
-  city's governor choose again). An army's requisition goes ahead of all of it: the requisition
-  order interrupts what the governor builds, which resumes after it (`armies.rs` decides which
-  cities the AI's main army draws on: governed ones first). The AI's emergency switch to a
-  defender and its rebuild in financial trouble judge a governed city by this choice, not the
-  direct-rule ladder's, and keep the requisition orders; the wonder emphasis and the
-  Philosophical great-people emphasis keep to directly ruled cities (a governed city's emphasis is
-  its profile's).
-- **Direct rule.** The AI's first four cities are direct; later a governed city making half again
-  as much production as the weakest direct one (and at least 6) takes its slot when both are past
-  their cooldown, so its settlers and wonders come from its best cities.
-- **No modes** (2026-10-31). The governed cities' feed mode is gone with the rules' requisition:
-  every governed city develops, and at war the main army requisitions soldiers from those near the
-  front (docs/AI.md, "Armies"); the feeding step of `decide`, `set_modes`, `army_short` and
-  `short_on_the_way` went with it, and the feeding unit became the AI's requisition unit
-  (`armies::requisition_unit`).
-- **Governors.** The rules give a vacant post the best-matching candidate; the AI replaces nobody
-  (a replacement costs the city). Cultural channels are the civilization's, not the governors'
-  (docs/CULTURE.md): its cultural play sets them in governed cities too.
-- **A human's governors** (`culture::govern`, through `Controller::govern_cities`): defenders
-  against revolt pressure; never a cultural channel.
+  garrison the city's danger asks for (the AI's own quota, plus the role's defenders and a
+  Cautious governor's trait defenders); against revolt pressure aimed at the city, the defenders
+  that hold it off (`culture::defenders_needed`); the best building by `building_value` per turn
+  of production, up to half again for the role's flavors (`ranked_buildings`; an Ambitious
+  governor's score is multiplied by the building's production cost, so it prefers the costliest
+  building it may build); a missionary for a role that weighs religion; the role's process. Never
+  a wonder or a palace (those are empire orders). `plan(g, c, n)` is the next `n` buildings in the
+  order `decide` picks them (one ranking by the same score, no simulation of what each one changes;
+  the client shows it as the governor's plan). An army's requisition and the empire orders go
+  ahead of the governor's choice, which resumes after them. The AI's emergency switch to a
+  defender and its rebuild in financial trouble judge a governed city by this choice and keep the
+  requisition and empire orders; the wonder emphasis and the Philosophical great-people emphasis
+  keep to directly ruled cities (a governed city's emphasis is its role's).
+- **Empire orders** (`turn`, once a turn before `armies::turn`, for an AI player whose cities are
+  governed). In its capital and its three most productive other governed cities (`empire_cities`:
+  the directly ruled set before v2), each with no empire order queued, the AI's own ladder
+  (`production::decide`, the directly ruled city's choice) is asked; what it picks becomes an
+  empire order (`place`, `Game::city_push_empire_order`, the unit's AI type kept) unless the
+  governor does it itself (`empire_order`: a city defender, an ordinary building, a process). So
+  settlers, wonders, rituals and world projects, heroes, casters, missionaries, explorers, ships,
+  siege and field attackers come from those cities as they did from the directly ruled ones; a
+  field unit without a destination goes to the main army (`armies::turn` gives it one the same
+  turn). A governed city without a defender, or whose garrison the threat around it overwhelms,
+  drops its empire orders (their progress kept with each item) and its governor chooses again
+  (`yield_to_defense`), which puts the defender first. Traced (`governors: empire order in ...`)
+  and in telemetry (decision `empire_order` with the ladder's reason).
+- **Priorities** (`set_priorities`, once a turn, set only when they change): at war with a
+  civilization whose combat units we know of stand within 3 plots of one of our cities, the
+  garrison and production roles, kept until there is no war with a civilization left; otherwise
+  the two roles whose flavors best match the leader's (the sum over flavors of the role's weight
+  times the leader's). The AI never overrides a city's proposed role. It does not weigh who
+  governs when it chooses civics.
+- **Governors.** Cultural channels are the civilization's, not the governors' (docs/CULTURE.md):
+  its cultural play sets them in governed cities too. A human's governors (`culture::govern`,
+  through `Controller::govern_cities`): defenders against revolt pressure; never a cultural
+  channel.
 
-Switch `GOVERNORS` (`FFH_AI_GOVERNORS_OFF`): off, the AI keeps its first cities direct. The
-production audit the spec asks for (governors on against off, AI autoplay, 24 seeds; measured with
-the feed mode, before the requisition) is in docs/GOVERNORS.md: the governed empires grow, produce
-and research more (+8% population, +13% production and research) and a quarter fewer cities change
-hands, mostly because the profiles' production emphasis builds better cities.
+Switch `GOVERNORS` (`FFH_AI_GOVERNORS_OFF`): off, the AI places no empire orders (its governed
+cities build only their governors' choices and the armies' requisitions).
+
+Two corrections the measurements asked for (`empire orders` placed by asking the ladder every
+turn): the ladder's fillers (`army_interleave`, `army`, `attacker`, `elite`) become empire orders
+only at the governor's choice point (`at_choice_point`: its own order not started, a process, or
+none), as a directly ruled city takes them only when it chooses its next build (asked every turn,
+62% of the empire orders were `army_interleave`); and where the ladder names an ordinary building
+at that choice point, the wonder it ranks nearest goes ahead when it scores at least three
+quarters as much (`wonder_beside`: the governor builds the ordinary buildings in its own order, so
+the ladder kept naming the same one and the wonders it would turn to next never came).
+
+Measured (2026-11-10; 8 civilizations, standard map, 300 turns, seeds 1-8; per game; base: the
+commit before governors v2, four directly ruled cities per AI; rules only: governors v2 without
+the AI's empire orders; about 85% of the AIs adopted a governing government in each side):
+
+| | base | rules only | empire orders |
+|---|---|---|---|
+| cities founded | 57.0 | 51.4 | 57.1 |
+| cities founded after turn 150 | 10.5 | 5.9 | 10.1 |
+| settlers built | 49.0 | 38.1 | 50.0 |
+| world wonders standing at turn 300 | 10.4 | 2.0 | 16.5 |
+| projects (rituals) at turn 300 | 0.9 | 0.6 | 1.1 |
+| cities captured from civilizations | 23.4 | 19.8 | 22.9 |
+| military units of all civilizations at turn 300 | 395 | 280 | 373 |
+
+Without empire orders expansion after turn 150 halved, world wonders fell to a fifth and armies
+by 30%; with them each count is back at the base or above it (world wonders above: the wonder
+step fires on a near second as well as on the ladder's first choice). Average population at turn
+300: 52.4 base, 53.1 rules only, 52.6 with empire orders; research 203 / 233 / 183 (wide spread
+between seeds).
 
 ## Random events (`events.rs`)
 
