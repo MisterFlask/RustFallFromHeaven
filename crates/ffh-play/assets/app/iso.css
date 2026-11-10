@@ -440,6 +440,11 @@ html.iso .tip-combat .mods { font-size: 20px; color: var(--iso-dim); }
 html.iso .tip-yields { gap: 12px; }
 
 html.iso #toasts { top: calc(var(--iso-top) + 12px); bottom: auto; right: 50%; transform: translateX(50%); align-items: center; }
+/* On a wide screen, centred between the turn report's panel (its widest, opened) and the city
+   panel's column, so a toast does not cover the report's tabs. */
+@media (min-width: 1100px) {
+  html.iso #toasts { left: calc(var(--iso-gap) + 62px + min(480px, 40vw) + 12px); right: calc(var(--iso-gap) + 324px); transform: none; }
+}
 html.iso .toast {
   border: var(--iso-inset-w, 6px) solid transparent; border-image: var(--iso-inset);
   background: linear-gradient(180deg, var(--iso-navy-top), var(--iso-navy-bot)); background-clip: padding-box; box-shadow: none; padding: 4px 10px;
@@ -787,7 +792,7 @@ body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * 
   /* In the sheet the buttons say what they are (a finger cannot hover for the tooltip). */
   html.iso body.menu-open #menu button { width: auto; height: 48px; padding: 0 10px; font-size: 20px; line-height: 24px; justify-content: flex-start; gap: 8px; }
   html.iso body.menu-open #menu button .iso-icon { width: 32px; height: 32px; }
-  html.iso body.menu-open #btn-keys::after { content: "Controls"; }
+  html.iso body.menu-open #btn-keys::after { content: "Help"; }
   /* Its glyph ("?") gives way to that name beside the icons; a long name wraps under itself
      inside a taller button. */
   html.iso body.menu-open #menu button { height: auto; min-height: 48px; padding: 2px 6px; line-height: 20px; text-align: left; }

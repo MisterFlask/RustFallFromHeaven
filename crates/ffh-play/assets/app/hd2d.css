@@ -324,6 +324,10 @@ html.iso.hd2d .unlock { background: rgba(0, 0, 0, 0.36); }
   html.iso.hd2d #side { max-width: calc(125vw - 2.5 * var(--iso-gap) - 352px); }
   html.iso.hd2d .iso-strip { max-width: calc(125vw - 2.5 * var(--iso-gap) - 352px); }
 }
+/* The toasts between the report's panel and the city panel's column, both at 0.8 (iso.css). */
+@media (min-width: 1100px) and (min-height: 521px) {
+  html.iso.hd2d #toasts { left: calc((var(--iso-gap) + 92px + min(480px, 40vw)) * 0.8 + 12px); right: calc((var(--iso-gap) + 324px) * 0.8); }
+}
 @media (max-width: 760px), (max-height: 520px) {
   /* A radius-3 city's 7x7 plots across a phone. */
   html.iso.hd2d .cplot { font: 400 12px/13px var(--iso-font); }

@@ -572,7 +572,7 @@ function renderMenu() {
   items.push(menuButton("New game", { id: "title-new", primary: mode === "menu" && !latest, title: "Choose a civilization and a world" }, () => actions?.newGame()));
   items.push(menuButton("Load game", { id: "title-load", title: "Your saved games and autosaves" }, () => actions?.load()));
   items.push(menuButton("Options", { id: "title-options", title: "The map renderer and the player options" }, () => actions?.options()));
-  items.push(menuButton("How to play", { id: "title-keys", title: "How to play, the keys and the rules' help" }, () => actions?.keys()));
+  items.push(menuButton("How to play", { id: "title-keys", title: "How to play, the keys, the rules" }, () => actions?.keys()));
   const had = nav.contains(document.activeElement);
   nav.replaceChildren(...items);
   // The first item takes the keys (Enter), unless a dialog over the screen has them.

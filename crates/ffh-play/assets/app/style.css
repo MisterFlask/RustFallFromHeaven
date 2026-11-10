@@ -945,7 +945,7 @@ html.art .tap-mode button.on:not(.link):not(.close):not(.cplot):not(.tech):not(.
   }
   body.menu-open #btn-menu { color: var(--c-vellum); }
   /* In the sheet, the glyph button says what it is. */
-  body.menu-open #btn-keys::after { content: "Controls"; }
+  body.menu-open #btn-keys::after { content: "Help"; }
   /* The map takes what the bars and panels leave (a floor would push it over the bottom panel). */
   #mapwrap { min-height: 0; }
   #mapwrap canvas.minimap { top: 8px; right: 8px; bottom: auto; width: 128px; height: 80px; }
