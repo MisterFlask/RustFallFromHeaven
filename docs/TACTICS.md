@@ -334,3 +334,20 @@ cover falls first).
   strikes, shots, spells and bombards. Measured (section 8): the weakest tactic on every ground,
   losing to each of the others (-13.5 against Line in the open, -16.3 in a forest, -8.2 at walls);
   the rear guards act once instead of twice and the front is narrower. The designer dropped it.
+
+## 11. Second pass: Vanguard (design, 2026-11-10; not built)
+
+Section 8 measured Vanguard's flaw: with 8 units on open land (4 lanes, a short front) its
+veterans fell more often than in Line (mid 27.4% against 22.8%, late 33.3% against 25.5%), because
+the single weak unit covering each veteran falls first and the veteran then stands in front having
+given up half its actions.
+
+- **Vanguard pairs veterans only when it has the cover**: when the side's guards that are no
+  veterans are at least as many as its lanes whose front cell is free (a full front row of cover).
+  Otherwise the army is arranged exactly as in Line.
+- **Which guard covers**: section 3 says the weakest first. Measure both that and the strongest
+  first in the lab (the veterans' deaths in won battles, and the net share of HP against Line) and
+  keep the one with fewer veteran deaths; a tie goes to the better net HP. No knob stays for it.
+- Rerun the Vanguard cells of section 7's round robin and replace Vanguard's rows in section 8;
+  criterion (c) must hold in every army size and ground where Vanguard differs from Line, not only
+  on average. Report it if it does not.

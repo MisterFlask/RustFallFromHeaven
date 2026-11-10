@@ -232,3 +232,59 @@ Starvation: 0 (it never kills).
 - **Starving a besieged garrison.** A city supplies whoever stands in it.
 - **Sea lanes.** A ship is a source while its water area touches a home port; the sea route
   itself is not traced or cut.
+
+## Second pass (design, 2026-11-10; not built)
+
+Four fixes to what the first build left rough. Each is decided; the implementation reports what
+it measured.
+
+### A. What a player knows of a line
+
+The rules' line (`Game::plot_supply_line`) is the truth: it bends around every enemy unit, seen or
+not. Shown to a player it leaks: the shape of another army's line, or the "supplied here?"
+readout probed plot by plot, tells where unseen units stand.
+
+- A second, pure search, `Game::plot_supply_line_known(p, plot, viewer: TeamId)`: the same search
+  with the viewer's knowledge in place of the truth. It may enter only plots the viewer has
+  revealed; a unit blocks only if the viewer sees it now (its plot visible to the viewer's team
+  and the unit not invisible to it); a fort denies its neighbours only if the viewer sees a unit
+  in it; a source is a city the viewer has revealed, or a ship the viewer sees. The costs, the
+  budget and the tie rule are the rules' own. `viewer` may be `p`'s own team.
+- **An army's own state stays the truth** for its owner: its counter, its Hunger and Starvation,
+  and the line drawn for it are the rules' (a quartermaster knows the wagons stopped; that
+  something unseen cut the line is information the owner is owed).
+- **The "supplied here?" readout** before a move uses the known search with the player's own team
+  as viewer, so it answers from what the player sees. It can be wrong; the text does not change.
+- **Other players' lines** are drawn from the known search with the human's team as viewer: what
+  the human can work out, not what is. An army whose known line does not exist shows none.
+
+### B. An army with no way home
+
+An army can stand where no plot it can reach has a line (a pocket of its owner's land cut off by
+water or peaks, a landing that lost its ship). The rules are right to starve it; the AI kept it
+for 50 turns. An expert disbands units he cannot feed or fetch.
+
+- First find out why the two armies of the measured game (seed 6, the Kuriotates, the last 50
+  turns; docs/SUPPLY.md "Measures") could reach no plot. If it is a rules bug (units put where
+  they cannot stand or leave), report it and fix that instead.
+- AI: an army that has starved for `STRANDED_TURNS` (10, an ffh-ai constant) of its owner's turns
+  in a row and has no path to any city of its owner is disbanded unit by unit (`unit_scrap`),
+  heroes and units that cannot be scrapped excepted. Counted in telemetry.
+
+### C. The AI cuts a line
+
+An expert facing an invading army puts a unit on its road. Ad hoc, bounded:
+
+- Each turn, at most two enemy armies at war with us that we see within 6 plots of one of our
+  cities, the nearest first. For each, its known line (A: our team as viewer). No known line: it
+  is cut already, nothing to do.
+- A **cut plot** is a plot of that line, not next to the enemy army and not a city, such that
+  with a unit of ours standing on it the known search finds no line for that army. Test the
+  line's plots from the source end toward the army, at most six of them.
+- Send one unit to the nearest cut plot it reaches within two turns and have it hold there
+  (fortify): a spare of a garrison that keeps three fighters without it, a recon or mounted unit
+  first. One unit per enemy army; it stays while that army is within the 6 plots, then goes home.
+  It does not go where our danger map says it would be attacked by more than it can hold against
+  this turn.
+- Checked for its local effect (CLAUDE.md, "How AI changes are checked"): over 8 games, how often
+  it fired, and of those how often the enemy army became hungry within 3 turns.
