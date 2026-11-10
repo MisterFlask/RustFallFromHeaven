@@ -12,8 +12,7 @@ for a point the owner left open, open to change when it plays badly.
 
 Not built, on purpose: boarding and capture, and a formation battle at sea (the owner, 2026-11-10:
 "ignore boarding for now"; without boarding and a roster with roles a sea formation battle is a
-strength comparison). Naval combat stays the duel. Also not built: beachheads, native states,
-named seas.
+strength comparison). Naval combat stays the duel. Also not built: beachheads and native states.
 
 ## 1. Why
 
@@ -35,14 +34,10 @@ the sea three things:
 - **Port** of a team: a city next to a water plot. A port serves the water areas it touches. A
   team's ports are the ports of its own players, of its vassals and its master, and of teams it
   has open borders with (not while at war with them). A starved outpost (section 9) is no port.
-- **Sea zone** of a warship: the water plots within `SEA_ZONE_RANGE` (1) of it, in its own water
-  area; `SEA_STATION_RANGE` (2) while its fleet holds a Patrol or Blockade station (section 7).
-  A plot is in an **enemy zone** for a team when it is in the zone of a warship that is an enemy
-  of that team (`unit_is_enemy`: at war, or always hostile / hidden nationality of another
-  owner). The rules use the truth, as supply lines do; what a player is shown uses what the player
-  sees.
+- **Sea**: a named stretch of water, cut out when the map is made (4.1). Every rule about who
+  holds the water is counted per sea (4.3).
 - **Lane**: a fixed line over water from a plot to a home port (section 5). It does not bend
-  around enemies: it is **cut** while any of its plots is in an enemy zone.
+  around enemies: it is **cut** while it passes through a sea closed to its owner.
 
 ## 3. Phase 1: range, boats, wear -- status: built in the rules (the client: not yet)
 
@@ -172,32 +167,92 @@ Choices made where this spec was silent (each open to change):
   it reaches in boats. An AI army also steps aboard a transport of ours at sea beside it (the rules
   now allow it). The war-target and settler crossings are not built.
 
-## 4. Phase 2: who holds the water -- status: not built
+## 4. Phase 2: named seas and who holds them -- status: not built
 
-### 4.1 The harbour of a city
+The owner's decision (2026-11-10): named seas. They replace this spec's first draft of zones
+around each warship and of Civ4's blockade by range: the player reads one state per sea.
 
-A coastal city (`city_is_coastal` with the ocean's minimum water size) has a harbour. It is
-**blockaded** while a warship at war with its owner holds the Blockade order (Civ4's plunder
-mission, which the rules already have: the water plots it covers cannot be worked and carry no
-trade) within `SHIP_BLOCKADE_RANGE` of the city, in a water area the city touches. Otherwise it is
-**open**. `Game::city_harbour(c)` answers Open / Blockaded (with the blockading ships) / None; a
-pure test of the map, nothing saved.
+### 4.1 Seas (map generation)
 
-### 4.2 A port under siege
+After the map's water is final and before the starting plots: every water area of at least
+`SEA_MIN_PLOTS` (6) plots is divided into seas; smaller water has no sea (`Plot::sea` is none
+and no rule of this section applies there).
+
+- An area gets `max(1, plots / SEA_TARGET_PLOTS (40))` seas (rounded to the nearest). Their seeds:
+  the first a water plot of the area drawn by the map RNG, each next the plot farthest (steps
+  over water, 8 directions) from every seed so far, ties to the lower plot index. Each plot
+  belongs to the seed nearest over water, ties to the lower sea index.
+- Each sea has a name drawn without repeats by the map RNG from `data/json/sea_names.jsonc` (at
+  least 80 invented names: "Bay of ...", "The ... Narrows", "... Sea", "The ... Deep"; an area
+  that is one sea and touches no map edge uses the names marked `lake`); when the list is
+  exhausted, "Sea 81", ...
+- Saved: `Plot::sea: Option<SeaId>`, `Map::seas` (name, plots). A plot that becomes water later
+  takes the sea of a neighbouring water plot (the lowest sea index) or none; one that becomes
+  land has none.
+
+### 4.2 The Patrol order
+
+A warship of a player standing on a water plot of a sea, outside a city, can take the **Patrol**
+order (Civ4's plunder mission and blockading state, reused and renamed; its range rule,
+`SHIP_BLOCKADE_RANGE` and `unit_update_plunder`'s plots in range, is removed). Taking it ends the
+ship's moves; it ends when the ship moves, is given another order or leaves the sea. The
+barbarians' ships do not patrol.
+
+### 4.3 Who holds a sea
+
+- A team's **strength** in a sea: the sum, over its warships on Patrol there, of each ship's
+  strength as the duel counts it in defence without terrain (its damage and wear included),
+  rounded down. Ships passing through count for nothing.
+- A sea is **closed to** team A while some team E at war with A has strength above 0 there and at
+  least `SEA_HOLD_PERCENT` (200) percent of A's strength there. E then **holds** it against A.
+  Ships of hidden nationality on Patrol count as at war with every other team.
+- What a player is shown (section 10), for its own team: *Held by you* (it holds the sea against
+  every enemy that patrols there, and has strength), *Held by X* (closed to it), *Contested* (it
+  and an enemy both have strength, neither holds), *Open* (no enemy patrols and it does not), and
+  *Patrolled by X* for teams it is not at war with.
+- Control is a pure function of the map; whatever is stored for speed (the plots' blockade
+  counts, the trade network) is refreshed when a ship starts or ends Patrol, is damaged, dies or
+  changes owner, and when war or peace is made.
+
+### 4.4 What a closed sea does
+
+In a sea closed to team A:
+
+1. **Blockade.** A's players cannot work its water plots and no trade of A's passes over them
+   (the existing blockade of plots, now set over the sea). A coastal city of A is **blockaded**
+   when every sea it touches is closed to A (`Game::city_harbour(c)`: Open / Blockaded, with the
+   holders / None for a city on no sea).
+2. **Lanes** of A through it are cut (section 5).
+3. **Supply ships** of A standing in it are no source (4.6).
+
+And in any sea, held or not:
+
+4. **Interception.** When a group moves onto a plot of a sea where an enemy of it has ships on
+   Patrol, that enemy intercepts: its strongest ship on Patrol there that has not intercepted
+   this turn (`Unit::intercepted`, cleared at its owner's turn start) and whose odds against the
+   plot's best defender are at least `INTERCEPT_MIN_ODDS` (50%) attacks that plot once, as a
+   normal attack from where it stands, without moving. Then the mover goes on if it lives. One
+   interception per ship per turn. A sea is an abstraction: the patrol finds what enters it.
+5. **Raiding.** At the start of A's turn, for each lane of an outpost of A (9.3) that passes
+   through a sea where an enemy patrols without holding it, the enemy with the most strength
+   there (ties: the lower team) gains `LANE_RAID_GOLD_CONTESTED` (4) gold; the lane stays
+   open **(default)**.
+
+### 4.5 A port under siege
 
 A besieged city (docs/SIEGES.md) whose harbour is open is relieved by sea: its units heal at
 `PORT_SIEGE_HEAL_PERCENT` (50) of what they would heal unbesieged, and its Sentinels repair at that
-percent of their repair **(default)**. Besieged and blockaded, or not coastal: as docs/SIEGES.md
+percent of their repair **(default)**. Besieged and blockaded, or on no sea: as docs/SIEGES.md
 (no healing from the city, no repair).
 
-### 4.3 Supply ships need a lane
+### 4.6 Supply ships need open water
 
-A ship is a supply source (docs/SUPPLY.md, section 2) only while it has an open lane (section 5)
-to a port of its owner's team. The ship's own plot is part of the lane, so an enemy warship next
-to the ship cuts it. The known-line search (`plot_supply_line_known`) counts only enemy warships
-the viewer sees.
+A ship is a supply source (docs/SUPPLY.md, section 2) only while the sea it stands in is not
+closed to its owner's team and it has an open lane (section 5) to a port of its team. The known
+line (`plot_supply_line_known`) uses the control the viewer can work out: only ships it sees
+count for strength.
 
-### 4.4 Ships fire into battles on the coast
+### 4.7 Ships fire into battles on the coast
 
 When an engagement (docs/ENGAGEMENTS.md) is fought on a land plot, each side's warships with a
 bombard rate (`bombard_rate > 0`) that stand on a water plot next to the battle's plot, belong to
@@ -213,20 +268,21 @@ are not fighters. The preview, the forecast and the battle report show the shots
 directions, passable water, one water area) from `from` (a water plot, or the water plots next to
 a land plot) to a water plot next to a home port, where every plot is in the team's range. Ties:
 fewer plots, then the lower plot index at the first difference (as supply lines). `SeaLane` has
-the path, the port, and `cut_by: Option<UnitId>`: the enemy warship (lowest unit id) whose zone
-holds the first plot of the path, counted from `from`, that is in an enemy zone. A lane with
-`cut_by` is cut; no path is no lane. Which ports are home ports is said where a lane is used:
-4.3 (any port of the team), 9.3 (the owner's cities that are not outposts).
+the path, the port, and `cut_in: Option<(SeaId, TeamId)>`: the first sea along the path, counted
+from `from`, that is closed to the team, and who holds it. A lane with `cut_in` is cut; no path
+is no lane. Which ports are home ports is said where a lane is used: 4.6 (any port of the team),
+9.3 (the owner's cities that are not outposts).
 
 ## 6. Summary of what a navy now does to the land war
 
-| | Without ships | With the water held |
+| | Without ships | With the sea held |
 |---|---|---|
-| Take a walled port | the city heals and repairs at half rate through the siege | blockade: no healing, no repair |
-| Feed an army overseas | a city must be taken | a transport with an open lane is a source |
+| Take a walled port | the city heals and repairs at half rate through the siege | blockaded: no healing, no repair |
+| Feed an army overseas | a city must be taken | a transport in a sea not closed to you, with an open lane, is a source |
 | Cross water | boats: 1 plot a turn, strength 1 | escorted, or carried at the ships' speed |
 | Fight on the coast | | up to 3 ships fire before round 1 |
-| Enemy crossing | lands where it likes | a patrol intercepts it (7.3) |
+| Enemy crossing | lands where it likes | a patrol in the sea intercepts it |
+| Enemy's coast | | its sea plots unworked, its sea trade cut |
 
 ## 7. Phase 3: fleets -- status: not built
 
@@ -242,41 +298,33 @@ built there and sails to the fleet as a recruit marches), upgrade all. It has no
 fights the duel. A lone warship outside a city is a one-ship fleet, as a lone army unit is a
 one-unit army. Barbarian ships are in no fleet.
 
-### 7.2 Stations
+### 7.2 Standing orders
 
 A fleet holds one standing order, `Army::station`:
 
 - **None**: under way, or waiting.
-- **Patrol**: stays on its plot; its ships' zones have `SEA_STATION_RANGE`; it intercepts (7.3).
-- **Blockade**: Patrol, and its ships hold the Blockade order (the plunder mission), so the cities
-  in `SHIP_BLOCKADE_RANGE` are blockaded (4.1).
+- **Patrol** of a named sea: the fleet sails to the nearest plot of that sea it can reach (in
+  range) and its warships take the Patrol order there (4.2); it stays until ordered otherwise.
 - **Escort** of one of its owner's armies or ships: whenever that group ends a move on a water
-  plot the fleet moves to the same plot if it can reach it this turn; it has no zone bonus.
+  plot the fleet moves to the same plot if it can reach it this turn.
 
-A station ends when the fleet is given a move order. Taking a station ends the fleet's moves for
-the turn.
-
-### 7.3 Interception
-
-When a group moves onto a water plot in the zone of a fleet on Patrol or Blockade that is its
-enemy, the fleet intercepts: its strongest ship that has not intercepted this turn
-(`Unit::intercepted`, cleared at its owner's turn start) and whose odds against the plot's best
-defender are at least `INTERCEPT_MIN_ODDS` (50%) attacks that plot once, as a normal attack that
-does not move the ship. Then the mover goes on if it lives. One interception per ship per turn; a
-group is intercepted at most once per plot it enters, by each enemy fleet.
+A move order ends the standing order.
 
 ## 8. What the AI does
 
 A rules change is not gated on the AI (CLAUDE.md): it does something reasonable with each rule.
 
-- Ships path only through water in range, and go to port when wear is above half its maximum.
+- Ships path only through water in range, and go to port when wear is above half its maximum
+  (built, phase 1).
 - A land army does not use boats on its own initiative, except: to come home when stranded
-  overseas (in place of asking for a ship, when the way is in range and no enemy warship it sees
-  is within 3 plots of it); to reach a war target it has no land path to, under the same test; a
-  settler or colonist bound for a site across water.
-- Warships not otherwise used form a fleet that patrols off the port of the AI's nearest to an
-  enemy that has ships; when an army of its besieges a coastal city, a fleet takes the Blockade
-  station off that city if it is in range.
+  overseas (built, phase 1); to reach a war target it has no land path to, when the way is in
+  range and crosses no sea closed to it or patrolled by an enemy it sees; a settler or colonist
+  bound for a site across water, under the same test.
+- Patrol: warships not carrying an invasion patrol, in this order of need: the sea of a coastal
+  city one of its armies besieges, when its strength there would hold it; a sea one of its own
+  ports stands on where an enemy patrols or has ships; a sea its outposts' lanes pass through;
+  else the sea of its most populous port. It leaves a sea where it is outmatched two to one.
+- Transports are sent only at targets whose way is in range.
 - A Colonist (section 9) is built for an overseas site in range that has a resource, when no
   settler is bound there.
 
@@ -318,28 +366,41 @@ that is not an outpost. At the start of its owner's turn:
 
 - **Open**: `City::lane_cut_turns` = 0.
 - **Cut** or **no lane**: `lane_cut_turns` + 1; the outpost is off the trade network (its
-  resources reach nobody, it has no trade routes). If cut, the owner of the cutting ship gains
-  `LANE_RAID_GOLD` (8) gold.
+  resources reach nobody, it has no trade routes). If cut, each player of the team that holds the
+  sea it is cut in who has a ship on Patrol there shares `LANE_RAID_GOLD` (8) gold (the remainder
+  to the lower player id).
 - Above `LANE_STARVE_TURNS` (5) it is **starved**: it loses 1 population a turn, to 1 at least,
   and it is no port.
 
-Messages: cut (with the plot of the cutting ship), starved, open again; to the raider, the gold.
+Messages: cut (with the sea and its holder), starved, open again; to the raider, the gold.
 
 ## 10. What the player sees
 
 Text is bare (CLAUDE.md, "Rules text and tooltips"). Every effect is shown where it bites, naming
-the ship or fleet that causes it.
+the sea and who holds it. The mock-up the owner saw (2026-11-10) is the reference for the Sea
+layer, the sea's panel and the Seas screen.
 
 **The Sea layer** (a map layer, on by itself while a ship, a fleet or a unit in boats is
 selected; a toggle with the other map layers):
 
-- water out of the player's range is tinted and the range's edge drawn; hovering a port or an
+- water out of the player's range is darkened and the range's edge drawn; hovering a port or an
   outpost shows the range it gives;
+- each sea the player has revealed a plot of: its border as a dotted line, its name on the
+  water, and a badge with its state and the two strengths (`HELD: YOU 24 to 0`,
+  `CONTESTED 14 to 17`, `HELD: LANUN 0 to 31`, `OPEN`, `OUT OF RANGE`); its water tinted by state
+  (the states differ by pattern and lightness, not hue alone). Enemy strength counts only ships
+  the player sees;
 - lanes (phase 4; a supply ship's, phase 2), drawn as supply lines are, flowing to the home port,
-  in their owner's colour; a cut lane breaks at the cutting ship with the turns left before the
-  outpost starves; lanes of others the player has revealed are drawn too;
-- the zone of each fleet on station the player sees, as a ring;
+  in their owner's colour; a cut lane breaks, with a mark, where it enters the closed sea, with
+  the turns left before the outpost starves; lanes of others the player has revealed are drawn too;
 - a wear pip on a ship that has wear.
+
+**Clicking a sea's name or badge** opens its panel: plots; control and what holding takes
+(`Held at twice the enemy's strength on patrol. You need 34.`); each side's strength with its
+ships on Patrol (`Ships you do not see are not counted.`); `Effect now` (lanes, ports,
+interception); `If X holds it` (each lane of yours that would be cut, each port of yours that
+would be blockaded, supply ships); `If you hold it`; and, with a fleet or ship able to go there,
+`Send ... to patrol here (3 turns)` with the result it would give (`38 to 17. Held by you.`).
 
 **Always on**: a harbour mark on a coastal city's banner when it is blockaded (and a second state
 when besieged and blockaded).
@@ -349,41 +410,48 @@ pointer:
 
 - `In boats from plot 3: strength 1, 1 plot a turn. 9 turns.`
 - `Out of range from plot 6: -15% HP a turn.`
-- `In the zone of the 2nd Fleet (Lanun): will be intercepted.` (phase 3)
-- for an attack on a coastal city: `Harbour open: the city heals and repairs at 50% during the
-  siege.` / `Harbour blockaded.`
-- for a ship: `Cuts the lane of Vallus (Bannor).` (phase 4)
+- `Enters The Grey Narrows (contested) at plot 4: will be intercepted by Lanun's patrol.`
+- for a Patrol order: the sea's strengths and state after it, and the sea the ship leaves
+  (`Bay of Lorda: 0 to 0. Open.`);
+- for an attack on a coastal city: `Harbour open: Lanun holds Sirens' Water. The city heals and
+  repairs at 50% during the siege.` / `Harbour blockaded.`
 
 **Panels**:
 
 - unit panel, a ship: `Range: in range (5 of 12).` / `Out of range: -15% HP a turn.`;
-  `Wear: none (turn 4 of 10).` / `Wear: -15% strength. Enter a port to clear.`; a unit in boats:
-  `In boats: strength 1, cannot attack, does not heal.`;
-- city panel: `Harbour: open.` / `Harbour: blockaded by 2 ships (Lanun). Sea plots not worked,
-  no sea trade.`; an outpost: `Lane: open, to Ithralia (14 plots).` / `Lane: cut by a Privateer at
-  (41, 17), turn 2 of 5.` / `Starved: -1 population a turn, not a port.`;
+  `Wear: none (turn 4 of 10).` / `Wear: -15% strength. Enter a port to clear.`; `On Patrol: The
+  Grey Narrows.`; a Patrol action; a unit in boats: `In boats: strength 1, cannot attack, does not
+  heal.`;
+- city panel: `Harbour: open. Bay of Lorda is held by you.` / `Harbour: blockaded. Sirens' Water
+  is held by Lanun. Sea plots not worked, no sea trade.`; an outpost: `Lane: open, to Ithralia
+  (14 plots).` / `Lane: cut in Sirens' Water, turn 2 of 5.` / `Starved: -1 population a turn, not
+  a port.`;
 - the army's supply line: `Supplied: at sea, in range of Ithralia.` / `No supply line: the
-  transport's lane is cut by a Frigate (Sheaim).`;
+  transport is in Sirens' Water, held by Lanun.`;
 - the battle preview and report: each side's ships that fire, with their shots;
-- the Armies screen gains a **Fleets** section (phase 3): ships, station (a selector: none,
-  Patrol, Blockade, Escort with its target), wear, what it blockades;
+- a **Seas** screen: one row per sea the player has seen: name, control, your strength, the
+  enemy's, your ports on it, your lanes through it; a click shows the sea on the map;
+- the Armies screen gains a **Fleets** section (phase 3): ships, standing order (a selector:
+  none, Patrol with a sea, Escort with its target), wear;
 - the Cities list shows outposts as rows marked `outpost`, with the lane's state, and a `Raise to
   city (150 gold)` action in the outpost's panel (phase 4);
 - a resource's plot tooltip, when no land area the player has a city on holds that resource:
   `Not on your landmasses.` (phase 4).
 
 **Messages**, on the turn of the change, with the plot: out of range; a unit lost at sea; wear
-starts; a city blockaded / the blockade ends; a supply ship's lane cut; intercepted (both sides);
-an outpost's lane cut, starved, open again; gold from a lane.
+starts; a sea of yours (one a port or lane of yours is on) changes state (`Lanun holds Sirens'
+Water (31 to 0). Vallus is blockaded.`); intercepted (both sides); an outpost's lane cut,
+starved, open again; gold from a lane.
 
 ## 11. Defines
 
 `rules_defines.jsonc`: `SEA_RANGE` 8, `SEA_ATTRITION_PERCENT` 15, `EMBARKED_MOVES` 1,
 `EMBARKED_STRENGTH` 1, `SEA_WEAR_FREE_TURNS` 10, `SEA_WEAR_PERCENT` 5, `SEA_WEAR_MAX_PERCENT` 50,
-`SEA_ZONE_RANGE` 1, `SEA_STATION_RANGE` 2, `PORT_SIEGE_HEAL_PERCENT` 50, `SHORE_FIRE_SHIPS` 3,
-`INTERCEPT_MIN_ODDS` 50, `FAR_SHORE_MIN_PLOTS` 8, `FAR_SHORE_MANA_PLOTS` 40, `OUTPOST_MAX_POP` 2,
-`OUTPOST_RAISE_COST` 150, `LANE_RAID_GOLD` 8, `LANE_STARVE_TURNS` 5. Data keys: a tech's
-`sea_range_change`, a civilization's `embarked_moves_change`, a bonus's `far_shore`.
+`SEA_MIN_PLOTS` 6, `SEA_TARGET_PLOTS` 40, `SEA_HOLD_PERCENT` 200, `PORT_SIEGE_HEAL_PERCENT` 50,
+`SHORE_FIRE_SHIPS` 3, `INTERCEPT_MIN_ODDS` 50, `LANE_RAID_GOLD_CONTESTED` 4, `FAR_SHORE_MIN_PLOTS`
+8, `FAR_SHORE_MANA_PLOTS` 40, `OUTPOST_MAX_POP` 2, `OUTPOST_RAISE_COST` 150, `LANE_RAID_GOLD` 8,
+`LANE_STARVE_TURNS` 5. Data: a tech's `sea_range_change`, a civilization's
+`embarked_moves_change`, a bonus's `far_shore`, `sea_names.jsonc`.
 
 ## 12. Measures
 
