@@ -904,6 +904,9 @@ impl Game {
         if let Some(np) = new_plot {
             if let Some(transport) = self.unit_transport(u) {
                 if !self.unit_at_plot(transport, np) {
+                    if self.telemetry.on() {
+                        self.tel_naval_unload_to(u, np);
+                    }
                     self.unit_set_transport_unit(u, None);
                 }
             }

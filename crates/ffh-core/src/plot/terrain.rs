@@ -952,6 +952,12 @@ impl Game {
             return;
         }
 
+        if self.telemetry.on() && old_improvement.is_some() && improvement.is_none() && self.plot_is_water(p) {
+            if let Some(owner) = self.map.plots[p].owner {
+                self.tel_naval_imp_lost(p, owner);
+            }
+        }
+
         if let Some(old) = old_improvement {
             if let Some(area) = live_area(self, p) {
                 self.map.areas[area].num_improvements[old] -= 1;

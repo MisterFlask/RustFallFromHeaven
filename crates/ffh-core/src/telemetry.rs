@@ -477,6 +477,7 @@ impl Game {
         let plan = plan.map_or("NONE", |w| enum_name(WarPlanType::NAMES, w.idx()));
         let leader = self.team_get_leader_id(t);
         let players = (self.tel_team_players(t), self.tel_team_players(other));
+        let share_land = self.tel_nv_share_land(t, other);
         self.telemetry.with(|tl| {
             let key = (t.min(other), t.max(other));
             if tl.open_wars.contains_key(&key) {
@@ -493,6 +494,7 @@ impl Game {
                     .i("vs", other.0 as i64)
                     .raw("players", &players.0)
                     .raw("vs_players", &players.1)
+                    .b("share_land", share_land)
                     .s("plan", plan);
                 match &reason {
                     Some(r) => o.s("reason", r),
@@ -577,9 +579,23 @@ impl Game {
         let turn = self.game_turn();
         let (x, y) = self.map.xy(self.city_plot(c));
         let n = self.players[p].cities.len();
+        // Founded on a landmass where the founder had no other city, while it had cities elsewhere.
+        let area = self.city_area(c);
+        let here = self.players[p].cities.iter().filter(|&&o| o != c && self.cities.contains(o) && self.city_area(o) == area).count();
+        let overseas = n > 1 && here == 0;
+        let coastal = self.city_is_coastal(c, self.d.defines.min_water_size_for_ocean);
         self.telemetry.with(|t| {
             t.count(p, "city", "founded", 0);
-            t.event(|| ev(turn, "found", p).i("x", x as i64).i("y", y as i64).i("cities", n as i64).end());
+            t.event(|| {
+                ev(turn, "found", p)
+                    .i("x", x as i64)
+                    .i("y", y as i64)
+                    .i("cities", n as i64)
+                    .i("area", area.0 as i64)
+                    .b("overseas", overseas)
+                    .b("coastal", coastal)
+                    .end()
+            });
         });
     }
 
@@ -644,6 +660,7 @@ impl Game {
             }
             t.summons.remove(&u);
         });
+        self.tel_naval_unit_died(u);
     }
 
     /// An immortal unit was reborn instead of dying.
@@ -658,6 +675,7 @@ impl Game {
     /// A combat, before its losers are removed: `odds` (per mille) of the attacker as the
     /// battle began; `undefended` when the defender could not defend (it just dies).
     pub(crate) fn tel_combat(&self, att: UnitId, def: UnitId, odds: i32, undefended: bool, plot: PlotIdx) {
+        self.tel_naval_combat(att, def, odds, undefended, plot);
         let d = self.d;
         let turn = self.game_turn();
         let (pa, pd) = (self.units[att].owner, self.units[def].owner);
@@ -859,12 +877,14 @@ impl Game {
         let p = self.units[u].owner;
         let name = self.tel_name_unit(self.units[u].unit_type);
         self.telemetry.with(|t| t.count(p, "built_unit", name, 0));
+        self.tel_naval_built_unit(u);
     }
 
     pub(crate) fn tel_built_building(&self, c: CityId, b: BuildingType) {
         let p = self.cities[c].owner;
         let name = self.d.buildings[b].base.type_.as_str();
         self.telemetry.with(|t| t.count(p, "built_building", name, 0));
+        self.tel_naval_built_building(c, b);
     }
 
     pub(crate) fn tel_built_project(&self, c: CityId, pr: ProjectType) {
