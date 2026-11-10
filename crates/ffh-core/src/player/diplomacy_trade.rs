@@ -796,7 +796,7 @@ impl Game {
     /// C++ `CvPlayer::countOwnedBonuses(eBonus)`.
     pub fn player_count_owned_bonuses(&self, p: PlayerId, bonus: BonusType) -> i32 {
         let team = self.players[p].team;
-        let advanced_start = self.players[p].advanced_start_points >= 0 && self.players[p].current_era.i() < 3;
+        let advanced_start = self.players[p].advanced_start_points >= 0;
 
         let mut count = 0;
 
@@ -857,7 +857,7 @@ impl Game {
                                 if let Some(build_improvement) = d.builds[build].improvement {
                                     if d.improvements[build_improvement].improvement_bonus[non_obsolete_bonus].bonus_trade {
                                         // C++ defaults `bTestEra = false`, `bTestVisible = false`.
-                                        if self.player_can_build(p, pl, build, false, false) {
+                                        if self.player_can_build(p, pl, build, false) {
                                             count += 1;
                                         }
                                     }

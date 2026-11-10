@@ -694,24 +694,12 @@ h4.sub { margin: 8px 0 2px; font-size: 0.9em; }
 .tree.focus .tree-lines path { opacity: 0.12; }
 .tree.focus .tree-lines path.lit { opacity: 1; stroke: var(--c-gold); stroke-width: 3; }
 .tree.focus .tree-lines path.lit.next { stroke: var(--c-frost); }
-/* The era legend above the tree: each era's colour as on the boxes' left edges. */
-.era-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 12px; }
-.era-key { display: inline-flex; align-items: center; gap: 5px; }
-.era-key::before { content: ""; width: 5px; height: 14px; background: var(--era, var(--c-slate)); }
 .tap-mode.tree-modes { display: flex; }
-/* A tech: opaque (the lines pass behind it), its era as a stripe at the left; name, what it
-   unlocks, then turns and cost. */
-button.tech { position: absolute; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 2px; padding: 3px 6px 5px 10px; text-align: left; font-size: 12px; line-height: 1.15; overflow: hidden; background: #1c2944; border-color: #3a4560; transition: opacity 120ms ease, box-shadow 120ms ease; }
+/* A tech: opaque (the lines pass behind it); name, what it unlocks, then turns and cost. */
+button.tech { position: absolute; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 2px; padding: 3px 6px 5px 6px; text-align: left; font-size: 12px; line-height: 1.15; overflow: hidden; background: #1c2944; border-color: #3a4560; transition: opacity 120ms ease, box-shadow 120ms ease; }
 /* (Over the looks' general button padding and gap.) */
-.tree button.tech { gap: 2px; padding: 3px 6px 5px 10px; }
+.tree button.tech { gap: 2px; padding: 3px 6px 5px 6px; }
 .tree button.tech > * { flex: none; }
-button.tech::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--era, var(--c-slate)); }
-button.tech[data-era="0"], .era-key[data-era="0"] { --era: var(--c-ochre); }
-button.tech[data-era="1"], .era-key[data-era="1"] { --era: var(--c-glint); }
-button.tech[data-era="2"], .era-key[data-era="2"] { --era: var(--c-lilac); }
-button.tech[data-era="3"], .era-key[data-era="3"] { --era: var(--c-scarlet); }
-button.tech[data-era="4"], .era-key[data-era="4"] { --era: var(--c-ritual); }
-button.tech[data-era="5"], .era-key[data-era="5"] { --era: var(--c-glow); }
 button.tech .tech-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 18px); color: var(--c-vellum); }
 button.tech > .unlocks { display: flex; gap: 2px; height: 24px; min-height: 24px; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11px; align-items: center; }
 button.tech .tech-sub { display: flex; align-items: center; gap: 4px; color: var(--dim); font-size: 12px; white-space: nowrap; margin-top: auto; }

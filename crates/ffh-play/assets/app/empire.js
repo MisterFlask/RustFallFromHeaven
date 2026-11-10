@@ -39,14 +39,14 @@ export function researchModsRow(x) {
   return h("span.mods", mods.map((md) => h(`span.mod-chip.mod-${md.key}`, md.short)), h("span.mod-total", `= ${times(x.research_mods.total)}`));
 }
 
-/** The rich tooltip of entry `x` of the `techs` query: its name and era, what it brings the
+/** The rich tooltip of entry `x` of the `techs` query: its name, what it brings the
  *  player (`help`, the server's C++ `setTechHelp`), the research multipliers on it, its strategy
  *  text, and what a click does. */
 export function techTip(x, hint) {
   const e = info("TechType", x.tech);
   const mods = x.has ? [] : researchMods(x);
   return () => [
-    h("div.tip-title", dname("TechType", x.tech), x.era !== null && x.era !== undefined ? h("span.dim", ` (${dname("EraType", x.era)})`) : null),
+    h("div.tip-title", dname("TechType", x.tech)),
     x.help ? h("div.tip-effects", markup(x.help)) : h("div.dim", "Nothing new by itself."),
     mods.length
       ? h(
@@ -206,7 +206,7 @@ function treeSlots(want, h) {
 }
 
 /** The tech tree's layout for the techs `techs` (entries of the `techs` query: `tech`, `depth`,
- *  `and`, `or`, `era`) and the research paths `paths` (the query's `paths`). Columns are the
+ *  `and`, `or`) and the research paths `paths` (the query's `paths`). Columns are the
  *  prerequisite depth (a prerequisite is always left of what it leads to). Rows are grouped in
  *  lanes, one per research path and "General" (`treeLanes`), ordered to keep the lines between
  *  lanes short (`treeLaneOrder`); a lane is a band as tall as its fullest column, and in it each
@@ -257,7 +257,7 @@ export function treeLayout(techs, paths = []) {
     lanes.map((_, i) => techs.filter((t) => t.depth === d && index.get(laneOf.get(t.tech)) === i)).filter((g) => g.length),
   );
   const row = new Map();
-  const tiebreak = (a, b) => (a.era ?? 0) - (b.era ?? 0) || a.tech - b.tech;
+  const tiebreak = (a, b) => a.tech - b.tech;
   const place = (g, near) => {
     const ln = lanes[index.get(laneOf.get(g[0].tech))];
     const mean = (t) => {
@@ -266,7 +266,7 @@ export function treeLayout(techs, paths = []) {
       return row.has(t.tech) ? row.get(t.tech) - ln.top : null;
     };
     let want = g.map((t) => ({ t, m: mean(t) }));
-    // Without any guide, the group is centred in its band in era and index order.
+    // Without any guide, the group is centred in its band in index order.
     want.sort((a, b) => (a.m ?? Infinity) - (b.m ?? Infinity) || tiebreak(a.t, b.t));
     const free = (ln.rows - g.length) / 2;
     want = want.map((x, i) => ({ t: x.t, m: Math.max(0, Math.min(ln.rows - 1, x.m ?? i + free)) }));
@@ -305,9 +305,8 @@ function costLabel(cost) {
   return icon ? h("span.tech-cost", icon, String(cost)) : h("span.tech-cost", `${cost} research`);
 }
 
-/** The tech tree: every tech by prerequisite depth with its state, what it unlocks and its era
- *  (the box's left edge; columns are depths, which eras cut across, so a legend names the
- *  colours), in a band per research path (`treeLayout`), each labelled at the left; lines between
+/** The tech tree: every tech by prerequisite depth with its state and what it unlocks, in a band
+ *  per research path (`treeLayout`), each labelled at the left; lines between
  *  bands are fainter until lit. Click: research it (a tech whose prerequisites are missing queues them first, C++
  *  `pushResearch`); Shift-click, or the "Add to queue" mode: add it to the queue. Pointing at a
  *  tech (on touch, the first tap) lights its path and the techs it leads to. */
@@ -421,7 +420,6 @@ export async function openTechTree() {
           // A tech of the research path committed to (docs/PORTING.md, "Research paths").
           class: [state, x.can_research && !x.has ? "can-now" : "", x.research_mods?.path ? "on-path" : ""].filter(Boolean).join(" "),
           "data-tech": x.tech,
-          "data-era": x.era ?? "",
           "aria-label": `${dname("TechType", x.tech)}: ${x.has ? "known" : x.researching ? `researching, ${pct}%` : x.queued !== null ? `queued ${x.queued + 1}` : x.can_research ? "can be researched" : "prerequisites missing"}`,
           onmouseenter: () => focus(x.tech),
           onmouseleave: () => focus(null),
@@ -486,11 +484,6 @@ export async function openTechTree() {
         l.classList.toggle("next", toNext);
       }
     }
-    // The era of each box's left edge: the eras present, in order.
-    const eras = [...new Set(techs.map((x) => x.era).filter((e) => e !== null && e !== undefined))].sort((a, b) => a - b);
-    const legend = eras.length
-      ? h("div.era-legend", h("span.dim", "Era (left edge):"), eras.map((e) => h("span.era-key", { "data-era": e }, dname("EraType", e))))
-      : null;
     const cur = t.current !== null ? byId.get(t.current) ?? t.techs[t.current] : null;
     const modes = tapModes(
       tapMode,
@@ -524,7 +517,6 @@ export async function openTechTree() {
         t.queue.length > 1 ? h("div.dim", `Queue: ${t.queue.map((q) => dname("TechType", q)).join(" → ")}`) : null,
         h("div.dim", coarse() ? "Tap: show its path. Tap again: research (with what it needs)." : "Click: research (with what it needs). Shift-click: queue."),
         modes,
-        legend,
       ),
       wrap,
     );

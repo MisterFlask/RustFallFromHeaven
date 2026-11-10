@@ -254,31 +254,11 @@ impl Game {
     /// `endGameTurn` -> `onEndGameTurn`: does nothing.
     pub fn ev_end_game_turn(&mut self, _game_turn: i32) {}
 
-    /// `beginPlayerTurn` -> `onBeginPlayerTurn`: religion eras, Crusade, Khazad/Luchuirp turns,
+    /// `beginPlayerTurn` -> `onBeginPlayerTurn`: Crusade, Khazad/Luchuirp turns,
     /// Insane and Adaptive trait events, barbarians declare war on leading human barbarian-trait
     /// players.
     pub fn ev_begin_player_turn(&mut self, game_turn: i32, p: PlayerId) {
         let d = self.d;
-        // The state religion picks the era (FfH religion art eras); `setCurrentEra` has only
-        // graphics side effects (docs/porting/player.md).
-        const RELIGION_ERAS: [(&str, &str); 7] = [
-            ("RELIGION_THE_ASHEN_VEIL", "ERA_VEIL"),
-            ("RELIGION_THE_ORDER", "ERA_ORDE"),
-            ("RELIGION_FELLOWSHIP_OF_LEAVES", "ERA_LEAF"),
-            ("RELIGION_RUNES_OF_KILMORPH", "ERA_RUNE"),
-            ("RELIGION_OCTOPUS_OVERLORDS", "ERA_OCTO"),
-            ("RELIGION_THE_EMPYREAN", "ERA_EMPY"),
-            ("RELIGION_COUNCIL_OF_ESUS", "ERA_COUN"),
-        ];
-        for (religion, era) in RELIGION_ERAS {
-            if self.player_get_state_religion(p) == Some(d.t::<ReligionType>(religion)) {
-                let era = d.t::<EraType>(era);
-                if self.players[p].current_era != era {
-                    self.players[p].current_era = era;
-                }
-            }
-        }
-
         // AI: `if not pPlayer.isHuman(): cf.warScript(iPlayer)` (not in scenarios) -- AI war
         // policy, replaced by the new AI (docs/PORTING.md).
         if !self.players[p].human {
@@ -422,14 +402,13 @@ impl Game {
         if self.player_get_civilization_type(p) == Some(d.t::<CivilizationType>("CIVILIZATION_BARBARIAN")) {
             let barbarian_team = self.players[self.barbarian_player()].team;
             let tech = |name: &str| Some(d.t::<TechType>(name));
-            let start_era = self.start_era().i();
             let (x, y) = (self.cities[c].x, self.cities[c].y);
 
             let mut unit = d.t::<UnitType>("UNIT_WARRIOR");
-            if self.team_is_has_tech(barbarian_team, tech("TECH_BRONZE_WORKING")) || start_era > d.t::<EraType>("ERA_ANCIENT").i() {
+            if self.team_is_has_tech(barbarian_team, tech("TECH_BRONZE_WORKING")) {
                 unit = d.t::<UnitType>("UNIT_AXEMAN");
             }
-            if self.team_is_has_tech(barbarian_team, tech("TECH_IRON_WORKING")) || start_era > d.t::<EraType>("ERA_CLASSICAL").i() {
+            if self.team_is_has_tech(barbarian_team, tech("TECH_IRON_WORKING")) {
                 unit = d.t::<UnitType>("UNIT_OGRE");
             }
             let orc = d.t::<PromotionType>("PROMOTION_ORC");
@@ -2352,27 +2331,6 @@ mod tests {
         assert_eq!(g.players[ai].ai_memory_count[human][negative], 0);
         assert_eq!(g.players[ai].ai_memory_count[other_ai][positive], 4);
         assert_eq!(g.players[human].ai_memory_count[ai][positive], 5);
-    }
-
-    #[test]
-    fn state_religion_sets_the_religion_era() {
-        let mut g = game(2);
-        let d = g.d;
-        let p = PlayerId(0);
-        let start_era = g.players[p].current_era;
-        g.ev_begin_player_turn(1, p);
-        assert_eq!(g.players[p].current_era, start_era, "no state religion, no era change");
-
-        g.players[p].state_religion_count = 1;
-        g.players[p].last_state_religion = Some(d.t::<ReligionType>("RELIGION_THE_ASHEN_VEIL"));
-        let seed = g.soren_rand.seed();
-        g.ev_begin_player_turn(1, p);
-        assert_eq!(g.players[p].current_era, d.t::<EraType>("ERA_VEIL"));
-        g.players[p].last_state_religion = Some(d.t::<ReligionType>("RELIGION_COUNCIL_OF_ESUS"));
-        g.ev_begin_player_turn(1, p);
-        assert_eq!(g.players[p].current_era, d.t::<EraType>("ERA_COUN"));
-        // Without the Insane trait no random number is drawn.
-        assert_eq!(g.soren_rand.seed(), seed);
     }
 
     #[test]

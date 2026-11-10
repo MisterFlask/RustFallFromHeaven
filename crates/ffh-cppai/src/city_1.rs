@@ -348,9 +348,6 @@ impl Cai {
                 }
             }
 
-            let current_era = g.players[owner].current_era.i();
-            let total_eras = g.d.eras.len() as i32;
-
             if self.player_ai_is_do_strategy(g, owner, AI_STRATEGY_CULTURE2) {
                 let unit_class = g.d.specialists[specialist].great_people_unit_class;
                 if let Some(unit_class) = unit_class {
@@ -365,13 +362,13 @@ impl Cai {
                 }
             }
 
-            if !human && current_era <= (total_eras * 2) / 3 {
+            if !human {
                 // try to spawn a prophet for any shrines we have yet to build
                 let mut need_prophet = false;
                 let mut best_spread_value = 0;
 
                 for religion in g.d.religions.keys() {
-                    if g.city_is_holy_city(c, religion) && !g.city_has_shrine(c, religion) && (current_era < total_eras / 2 || g.count_religion_levels(religion) >= 10) {
+                    if g.city_is_holy_city(c, religion) && !g.city_has_shrine(c, religion) {
                         let civ = g.city_civilization_type(c);
                         let unit_class = g.d.specialists[specialist].great_people_unit_class;
                         let great_people_unit = unit_class.and_then(|uc| g.d.civilizations[civ].civilization_units(uc, g.d.unit_classes[uc].default_unit_index));
@@ -827,7 +824,7 @@ impl Cai {
         }
 
         if g.cities[c].domain_free_experience[DomainType::DOMAIN_LAND.idx()] == 0 && g.city_yield_rate(c, YieldType::YIELD_PRODUCTION) > 4 {
-            let max_turns = if g.players[p].current_era.i() > 1 { 0 } else { 7 };
+            let max_turns = if tech_stage(g, p) > 1 { 0 } else { 7 };
             if self.city_ai_choose_building(g, c, BUILDINGFOCUS_EXPERIENCE, max_turns, 33) {
                 return;
             }
@@ -848,9 +845,7 @@ impl Cai {
             }
         }
 
-        let current_era = g.players[p].current_era.i();
-        // C++ quirk: `!bDanger && (A) || (B)` parses as `(!bDanger && A) || B`.
-        if (!danger && current_era > g.start_era().i() + production_rank / 2) || current_era > g.d.eras.len() as i32 / 2 {
+        if !danger && tech_stage(g, p) > production_rank / 2 {
             if self.city_ai_choose_building(g, c, BUILDINGFOCUS_PRODUCTION, 20, 15) {
                 return;
             }

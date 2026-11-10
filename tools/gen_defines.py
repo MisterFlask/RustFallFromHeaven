@@ -30,6 +30,9 @@ PY = os.path.join(REF, "ffh2", "Assets", "python")
 FILES = ["global_defines.jsonc", "global_defines_alt.jsonc", "python_callback_defines.jsonc", "rules_defines.jsonc"]
 ABSENT_NOTE = "  // not in the data: C++ reads 0"
 
+# Defines the C++ reads that this game dropped with the rule that read them (no field is made).
+DROPPED = {"STANDARD_ERA"}
+
 RUST_KW = {"type", "move", "loop", "match", "fn", "impl", "mod", "use", "ref", "self", "super", "static", "const"}
 
 
@@ -55,7 +58,7 @@ def absent_from_sources(kinds):
         s = open(p, encoding="latin-1").read()
         used_int.update(re.findall(r'getDefineINT\(\s*"(\w+)"', s))
         used_float.update(re.findall(r'getDefineFLOAT\(\s*"(\w+)"', s))
-    return {name: ("f32" if name in used_float else "i32") for name in sorted((used_int | used_float) - set(kinds))}
+    return {name: ("f32" if name in used_float else "i32") for name in sorted((used_int | used_float) - set(kinds) - DROPPED)}
 
 
 def absent_from_current():
@@ -71,7 +74,7 @@ def main():
     absent = absent_from_sources(kinds)
     if absent is None:
         print(f"no reference sources at {DLL}: keeping the absent defines defines_gen.rs lists")
-        absent = {n: k for n, k in absent_from_current().items() if n not in kinds}
+        absent = {n: k for n, k in absent_from_current().items() if n not in kinds and n not in DROPPED}
     for name in sorted(absent):
         order.append(name)
         kinds[name] = absent[name]

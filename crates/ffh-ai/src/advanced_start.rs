@@ -87,7 +87,7 @@ pub fn run(g: &mut Game, p: PlayerId) {
     let mark = g.players[p].advanced_start_points;
     city_points = city_points.min(mark);
     let mut tech_spending = 0;
-    // One tech up front in the first era (C++), more while cities are placed (up to a quarter
+    // One tech up front (C++), more while cities are placed (up to a quarter
     // of the city points).
     if buy_tech(g, p, i32::MAX).is_some_and(|c| {
         tech_spending += c;
@@ -243,7 +243,7 @@ fn place_city(g: &mut Game, p: PlayerId, q: PlotIdx) {
         .filter_map(|i| g.city_index_plot(c, i))
         .filter(|&pq| g.map.plots[pq].working_city == Some(c) && g.map.plots[pq].improvement_type.is_some())
         .count() as i32;
-    let target = g.city_happy_level(c) + g.players[p].current_era.i() / 2;
+    let target = g.city_happy_level(c);
     while improved < target {
         let Some((pq, imp)) = best_improvement(g, p, c) else { break };
         let before = g.map.plots[pq].improvement_type;

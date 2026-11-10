@@ -815,9 +815,9 @@
     "type": "EVENTTRIGGER_CARELESS_APPRENTICE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_CARELESS_APPRENTICE"],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_CARELESS_APPRENTICE_1", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_CARELESS_APPRENTICE_2", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_CARELESS_APPRENTICE_3", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_CARELESS_APPRENTICE_1",
+      "TXT_KEY_EVENT_TRIGGER_CARELESS_APPRENTICE_2",
+      "TXT_KEY_EVENT_TRIGGER_CARELESS_APPRENTICE_3"
     ],
     "percent_games_active": 100,
     "weight": 200,
@@ -1621,9 +1621,9 @@
     "type": "EVENTTRIGGER_FAMINE",
     "world_news_texts": [""],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_FAMINE_1", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_FAMINE_2", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_FAMINE_3", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_FAMINE_1",
+      "TXT_KEY_EVENT_TRIGGER_FAMINE_2",
+      "TXT_KEY_EVENT_TRIGGER_FAMINE_3"
     ],
     "single_player": true,
     "percent_games_active": 100,
@@ -1658,9 +1658,9 @@
     "type": "EVENTTRIGGER_FARM_BANDITS",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_FARM_BANDITS"],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_1", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_2", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_3", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_1",
+      "TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_2",
+      "TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_3"
     ],
     "percent_games_active": 100,
     "weight": 200,
@@ -1692,8 +1692,8 @@
     "type": "EVENTTRIGGER_FARM_BANDITS_AGAIN",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_FARM_BANDITS_AGAIN"],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_AGAIN_1", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_AGAIN_2", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_AGAIN_1",
+      "TXT_KEY_EVENT_TRIGGER_FARM_BANDITS_AGAIN_2"
     ],
     "percent_games_active": 100,
     "weight": -1,
@@ -2572,9 +2572,9 @@
     "type": "EVENTTRIGGER_HAPPY_HUNTING",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_HAPPY_HUNTING"],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_HAPPY_HUNTING_1", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_HAPPY_HUNTING_2", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_HAPPY_HUNTING_3", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_HAPPY_HUNTING_1",
+      "TXT_KEY_EVENT_TRIGGER_HAPPY_HUNTING_2",
+      "TXT_KEY_EVENT_TRIGGER_HAPPY_HUNTING_3"
     ],
     "percent_games_active": 100,
     "weight": 500,
@@ -2737,9 +2737,9 @@
     "type": "EVENTTRIGGER_HORTICULTURE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_HORTICULTURE"],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_HORTICULTURE_1", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_HORTICULTURE_2", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_HORTICULTURE_3", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_HORTICULTURE_1",
+      "TXT_KEY_EVENT_TRIGGER_HORTICULTURE_2",
+      "TXT_KEY_EVENT_TRIGGER_HORTICULTURE_3"
     ],
     "percent_games_active": 100,
     "weight": 200,
@@ -3973,8 +3973,8 @@
     "type": "EVENTTRIGGER_PATRON_OF_KNOWLEDGE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_PATRON_OF_KNOWLEDGE_1"],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_PATRON_OF_KNOWLEDGE_1", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_PATRON_OF_KNOWLEDGE_2", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_PATRON_OF_KNOWLEDGE_1",
+      "TXT_KEY_EVENT_TRIGGER_PATRON_OF_KNOWLEDGE_2"
     ],
     "percent_games_active": 100,
     "weight": 200,
@@ -4033,9 +4033,9 @@
     "type": "EVENTTRIGGER_PESTILENCE",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_PESTILENCE"],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_PESTILENCE_1", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_PESTILENCE_2", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_PESTILENCE_3", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_PESTILENCE_1",
+      "TXT_KEY_EVENT_TRIGGER_PESTILENCE_2",
+      "TXT_KEY_EVENT_TRIGGER_PESTILENCE_3"
     ],
     "percent_games_active": 100,
     "weight": 100,
@@ -4065,9 +4065,9 @@
     "type": "EVENTTRIGGER_PESTILENCE_2",
     "world_news_texts": ["TXT_KEY_EVENTTRIGGER_PESTILENCE"],
     "trigger_texts": [
-      ["TXT_KEY_EVENT_TRIGGER_PESTILENCE_4", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_PESTILENCE_5", "NONE"],
-      ["TXT_KEY_EVENT_TRIGGER_PESTILENCE_3", "NONE"]
+      "TXT_KEY_EVENT_TRIGGER_PESTILENCE_4",
+      "TXT_KEY_EVENT_TRIGGER_PESTILENCE_5",
+      "TXT_KEY_EVENT_TRIGGER_PESTILENCE_3"
     ],
     "percent_games_active": 100,
     "weight": 100,

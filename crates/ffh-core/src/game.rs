@@ -616,12 +616,6 @@ impl Game {
         self.setup.target_score
     }
 
-    /// C++ `getStartEra()`.
-    #[inline]
-    pub fn start_era(&self) -> EraType {
-        self.setup.era
-    }
-
     /// C++ `getGameSpeedType()`.
     #[inline]
     pub fn game_speed_type(&self) -> GameSpeedType {

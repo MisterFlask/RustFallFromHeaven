@@ -332,7 +332,7 @@ function civSummary(pedia) {
 
 /** The new-game screen (design §5.1): the civilization (a list with its banners; the chosen one's
  *  summary and what it brings) and its leader (cards with their portraits; the chosen one's
- *  portrait and traits), or random; then the world: opponents, size, speed, difficulty, era,
+ *  portrait and traits), or random; then the world: opponents, size, speed, difficulty,
  *  climate, sea level, seed and the game's name; the game options and victories. And the debug
  *  start at war (`session war_start`: these settings, an AI-only game played until a battle, the
  *  attacked civilization yours just before it). */
@@ -425,10 +425,9 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
   const world = select("world", st.worlds, d.world);
   const speed = select("speed", st.speeds, d.speed);
   const handicap = select("handicap", st.handicaps, d.handicap);
-  const era = select("era", st.eras, d.era);
   const climate = select("climate", st.climates, d.climate);
   const sea = select("sea_level", st.sea_levels, d.sea_level);
-  for (const [el, list] of [[world, st.worlds], [speed, st.speeds], [handicap, st.handicaps], [era, st.eras], [climate, st.climates], [sea, st.sea_levels]]) tip(el, helpTip(list, el));
+  for (const [el, list] of [[world, st.worlds], [speed, st.speeds], [handicap, st.handicaps], [climate, st.climates], [sea, st.sea_levels]]) tip(el, helpTip(list, el));
   const name = h("input", { type: "text", id: "ng-name", placeholder: "game-<seed>", pattern: "[A-Za-z0-9_.\\-]{1,64}", title: "The game's directory under the saves directory" });
   const options = h(
     "div.checks",
@@ -453,7 +452,6 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
       field("World size", world),
       field("Speed", speed),
       field("Difficulty", handicap),
-      field("Era", era),
       field("Climate", climate),
       field("Sea level", sea),
       field("Seed", h("div.inline", seed, dice)),
@@ -500,7 +498,6 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
       world: world.value,
       speed: speed.value,
       handicap: handicap.value,
-      era: era.value,
       climate: climate.value,
       sea_level: sea.value,
       options: [...options.querySelectorAll("input:checked")].map((i) => i.value),

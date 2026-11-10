@@ -199,8 +199,6 @@ pub struct BuildingInfo {
     /// C++ `getBuildingClassType()`, XML `<BuildingClass>`.
     pub building_class_type: Option<BuildingClassType>,
     pub victory_prereq: Option<VictoryType>,
-    pub free_start_era: Option<EraType>,
-    pub max_start_era: Option<EraType>,
     pub obsolete_tech: Option<TechType>,
     /// C++ `getPrereqAndTech()`, XML `<PrereqTech>`.
     pub prereq_and_tech: Option<TechType>,
@@ -488,8 +486,6 @@ pub fn read_building(rd: &Rd) -> BuildingInfo {
         global_religion_commerce: rd.rf("global_religion_commerce"),
         global_corporation_commerce: rd.rf("global_corporation_commerce"),
         victory_prereq: rd.rf("victory_prereq"),
-        free_start_era: rd.rf("free_start_era"),
-        max_start_era: rd.rf("max_start_era"),
         obsolete_tech: rd.rf("obsolete_tech"),
         prereq_and_tech: rd.rf("prereq_tech"),
         prereq_and_techs: rd.ref_list_fixed("tech_types", NUM_BUILDING_AND_TECH_PREREQS),

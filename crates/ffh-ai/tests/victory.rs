@@ -220,7 +220,7 @@ fn mana_nodes_are_planned_for_towers_without_mana() {
         let improvement = d.builds[*b].improvement.unwrap();
         assert_eq!(d.improvements[improvement].bonus_convert, Some(*mana));
         assert_eq!(g.map.plots[*q].bonus_type, Some(raw));
-        assert!(g.player_can_build(p, *q, *b, false, false));
+        assert!(g.player_can_build(p, *q, *b, false));
     }
 }
 

@@ -6,8 +6,8 @@ writes one `ffh battles` spec file per section into OUTDIR (default: the current
     for f in OUT/*.txt; do tools/agents/slot.sh $B/ffh battles $f --runs 200 > ${f%.txt}.jsonl; done
     python3 crates/ffh-cli/scripts/battles_report.py matrix OUT/army_mid.jsonl
 
-Sections: marg_* (a core line plus 2 of X, round robin per era), army_* (plausible armies of
-about equal cost, round robin per era), ground (an era's army against typical defences by
+Sections: marg_* (a core line plus 2 of X, round robin per stage), army_* (plausible armies of
+about equal cost, round robin per stage), ground (a stage's army against typical defences by
 ground), tiers and cost (numbers against quality), promos (promotion sets), probes (row
 overrides, mounted, one-turn city captures in waves, large units).
 """
@@ -58,7 +58,7 @@ write("marg_early.txt", marg("me", early_core, early_x))
 write("marg_mid.txt", marg("mm", mid_core, mid_x))
 write("marg_late.txt", marg("ml", late_core, late_x))
 
-# --- Plausible armies per era, round robin on open ground (about equal cost).
+# --- Plausible armies per stage, round robin on open ground (about equal cost).
 early = {
     "axe8": "8*AXEMAN",
     "axe5arch3": "5*AXEMAN, 3*ARCHER",
@@ -103,10 +103,10 @@ write("army_early.txt", armies_rr("ae", early))
 write("army_mid.txt", armies_rr("am", mid))
 write("army_late.txt", armies_rr("al", late))
 
-# --- Ground: an era's combined army against a typical defence, by ground.
+# --- Ground: a stage's combined army against a typical defence, by ground.
 grounds = ["open", "forest", "hills", "fort:5", "city", "city fort:5", "walls", "walls fort:5", "hills city fort:5"]
 g = []
-for era, att, defs in [
+for stage, att, defs in [
     ("early", "4*AXEMAN, 2*ARCHER, 2*HORSEMAN", ["2*AXEMAN, 3*ARCHER", "4*AXEMAN, 4*ARCHER", "3*ARCHER", "2*WARRIOR, 2*ARCHER"]),
     ("early8axe", "8*AXEMAN", ["2*AXEMAN, 3*ARCHER", "4*AXEMAN, 4*ARCHER"]),
     ("early_siege", "4*AXEMAN, 2*ARCHER, 2*CATAPULT", ["2*AXEMAN, 3*ARCHER", "4*AXEMAN, 4*ARCHER"]),
@@ -116,7 +116,7 @@ for era, att, defs in [
 ]:
     for di, d in enumerate(defs):
         for gr in grounds:
-            g.append(f"gr:{era}>def{di}@{gr.replace(' ', '+')} | {att} | {d} | {gr}")
+            g.append(f"gr:{stage}>def{di}@{gr.replace(' ', '+')} | {att} | {d} | {gr}")
 write("ground.txt", g)
 
 # --- Tier gaps and numbers.

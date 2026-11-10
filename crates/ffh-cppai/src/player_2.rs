@@ -543,7 +543,7 @@ impl Cai {
                                     temp_value /= 4;
                                 }
 
-                                if advanced_start && g.players[p].current_era.0 < 2 {
+                                if advanced_start && tech_stage(g, p) < 2 {
                                     // C++ quirk: multiplies the tech's whole value, not iTempValue.
                                     value = value.wrapping_mul(if l == food { 3 } else { 2 });
                                 }

@@ -572,15 +572,12 @@ impl Game {
         }
     }
 
-    /// C++ `CvGame::getImprovementUpgradeTime(eImprovement)` (scaled by speed and start era).
+    /// C++ `CvGame::getImprovementUpgradeTime(eImprovement)` (scaled by the game speed).
     pub fn improvement_upgrade_time(&self, improvement: ImprovementType) -> i32 {
         let d = self.d;
         let mut time = d.improvements[improvement].upgrade_time;
 
         time *= d.game_speeds[self.game_speed_type()].improvement_percent;
-        time /= 100;
-
-        time *= d.eras[self.start_era()].improvement_percent;
         time /= 100;
 
         time
@@ -907,11 +904,6 @@ impl Game {
         // runs.
 
         let d = self.d;
-        let current_era = self.current_era().expect("CvGame::getCurrentEra() is NO_ERA");
-        if d.eras[current_era].no_barb_cities {
-            return;
-        }
-
         let handicap = &d.handicaps[self.handicap];
         if handicap.unowned_tiles_per_barbarian_city <= 0 {
             return;
@@ -922,7 +914,7 @@ impl Game {
         }
 
         let barb_percent = d.game_speeds[self.game_speed_type()].barb_percent;
-        if self.elapsed_game_turns < (((handicap.barbarian_city_creation_turns_elapsed * barb_percent) / 100) / std::cmp::max(self.start_era().i() + 1, 1)) {
+        if self.elapsed_game_turns < ((handicap.barbarian_city_creation_turns_elapsed * barb_percent) / 100) {
             return;
         }
 
@@ -1003,11 +995,6 @@ impl Game {
 
         let d = self.d;
         let mut animals = false;
-
-        let current_era = self.current_era().expect("CvGame::getCurrentEra() is NO_ERA");
-        if d.eras[current_era].no_barb_units {
-            animals = true;
-        }
 
         if self.num_civ_cities() < ((self.count_civ_players_alive() * 3) / 2) && !self.is_option(GameOptionType::GAMEOPTION_ONE_CITY_CHALLENGE) {
             animals = true;
@@ -1152,11 +1139,6 @@ impl Game {
     /// get `HIDDEN_NATIONALITY_PROMOTION`).
     pub fn create_animals(&mut self) {
         let d = self.d;
-
-        let current_era = self.current_era().expect("CvGame::getCurrentEra() is NO_ERA");
-        if d.eras[current_era].no_animals {
-            return;
-        }
 
         let handicap = &d.handicaps[self.handicap];
         if handicap.unowned_tiles_per_game_animal <= 0 {
@@ -1565,11 +1547,9 @@ mod tests {
         let other = d.civic_options.keys().find(|&o| o != option).unwrap();
         assert!(!g.is_force_civic_option(other));
 
-        // getImprovementUpgradeTime: scaled by the speed, then by the start era
+        // getImprovementUpgradeTime: scaled by the speed
         let cottage = d.t::<ImprovementType>("IMPROVEMENT_COTTAGE");
-        let expected = d.improvements[cottage].upgrade_time * d.game_speeds[g.game_speed_type()].improvement_percent / 100
-            * d.eras[g.start_era()].improvement_percent
-            / 100;
+        let expected = d.improvements[cottage].upgrade_time * d.game_speeds[g.game_speed_type()].improvement_percent / 100;
         assert_eq!(d.improvements[cottage].upgrade_time, 10);
         assert_eq!(g.improvement_upgrade_time(cottage), expected);
 

@@ -3,7 +3,7 @@
 //! [`GameSetup::standard`] is the default game the CLI plays; [`SetupOptions`] +
 //! [`GameSetup::from_options`] / [`Game::new_with_options`] cover the custom-game screen:
 //! world size, number of civs (up to `MAX_CIV_PLAYERS`), team grouping, game speed, handicap,
-//! start era, climate, sea level, game options, victory conditions and turn limit.
+//! climate, sea level, game options, victory conditions and turn limit.
 
 use crate::crusade::CrusadeRules;
 use crate::defs::MAX_CIV_PLAYERS;
@@ -44,7 +44,6 @@ pub struct GameSetup {
     pub world_size: WorldSizeType,
     pub climate: ClimateType,
     pub sea_level: SeaLevelType,
-    pub era: EraType,
     pub game_speed: GameSpeedType,
     pub calendar: Option<CalendarType>,
     pub options: IdxVec<GameOptionType, bool>,
@@ -96,7 +95,6 @@ pub struct SetupOptions {
     /// Handicap of each AI slot (`CvInitCore::getHandicap(ePlayer)`); the exe gives AI slots
     /// `STANDARD_HANDICAP` (Noble) whatever the game difficulty.
     pub player_handicap: HandicapType,
-    pub era: EraType,
     pub climate: ClimateType,
     pub sea_level: SeaLevelType,
     /// Game options turned on.
@@ -118,7 +116,7 @@ pub struct SetupOptions {
 
 impl SetupOptions {
     /// The standard game: `civs` AI civs, world `world` (e.g. `"WORLDSIZE_SMALL"`), normal
-    /// speed, Noble, first era, temperate climate, medium sea level, no options.
+    /// speed, Noble, temperate climate, medium sea level, no options.
     pub fn new(d: &GameData, civs: usize, world: &str, seed: u32) -> SetupOptions {
         let noble = d.ty::<HandicapType>("HANDICAP_NOBLE").unwrap_or(HandicapType(0));
         SetupOptions {
@@ -127,7 +125,6 @@ impl SetupOptions {
             game_speed: d.t::<GameSpeedType>("GAMESPEED_NORMAL"),
             handicap: opt_from_i32(d.defines.standard_handicap).unwrap_or(noble),
             player_handicap: noble,
-            era: EraType(0),
             climate: d.t::<ClimateType>("CLIMATE_TEMPERATE"),
             sea_level: d.t::<SeaLevelType>("SEALEVEL_MEDIUM"),
             options: Vec::new(),
@@ -163,7 +160,7 @@ impl GameSetup {
     /// A standard game: `n` AI civs (random civs/leaders are chosen by `game_init`, port of the
     /// FfH RANDOM_CIVILIZATION block in `CvGame::init`), then the barbarian slot (barbarian
     /// civilization and leader, AI-controlled); given world size,
-    /// normal speed/climate/sea level, first era, Noble difficulty.
+    /// normal speed/climate/sea level, Noble difficulty.
     pub fn standard(d: &GameData, n_civs: usize, world: &str, seed: u32) -> GameSetup {
         GameSetup::from_options(d, &SetupOptions::new(d, n_civs, world, seed))
     }
@@ -205,7 +202,6 @@ impl GameSetup {
             world_size: o.world_size,
             climate: o.climate,
             sea_level: o.sea_level,
-            era: o.era,
             game_speed: o.game_speed,
             calendar: None,
             options,
@@ -214,7 +210,7 @@ impl GameSetup {
             max_turns: o.max_turns,
             target_score: o.target_score,
             max_city_elimination: o.max_city_elimination,
-            num_advanced_start_points: Self::advanced_start_points(d, o.era, o.world_size, o.game_speed),
+            num_advanced_start_points: Self::advanced_start_points(d, o.world_size, o.game_speed),
             sync_rand_seed: o.seed,
             map_rand_seed: o.seed.wrapping_mul(2654435761).wrapping_add(1),
             map_script: "Fractal".into(),
@@ -224,10 +220,11 @@ impl GameSetup {
         }
     }
 
-    /// C++ `CvInitCore::resetAdvancedStartPoints` (run by the era, world size and game speed
-    /// setters): era points, scaled by the world size and the game speed growth percent.
-    pub fn advanced_start_points(d: &GameData, era: EraType, world: WorldSizeType, speed: GameSpeedType) -> i32 {
-        let mut points = d.eras[era].advanced_start_points;
+    /// C++ `CvInitCore::resetAdvancedStartPoints` (run by the world size and game speed
+    /// setters): `ADVANCED_START_POINTS`, scaled by the world size and the game speed growth
+    /// percent.
+    pub fn advanced_start_points(d: &GameData, world: WorldSizeType, speed: GameSpeedType) -> i32 {
+        let mut points = d.defines.advanced_start_points;
         points *= d.worlds[world].advanced_start_points_mod;
         points /= 100;
         points *= d.game_speeds[speed].growth_percent;
@@ -282,12 +279,11 @@ mod tests {
     #[test]
     fn advanced_start_points_scale_with_world_and_speed() {
         let d = ffh_data::global();
-        let era = EraType(0);
         let world = d.t::<WorldSizeType>("WORLDSIZE_STANDARD");
         let speed = d.t::<GameSpeedType>("GAMESPEED_NORMAL");
-        let expected = d.eras[era].advanced_start_points * d.worlds[world].advanced_start_points_mod / 100
+        let expected = d.defines.advanced_start_points * d.worlds[world].advanced_start_points_mod / 100
             * d.game_speeds[speed].growth_percent
             / 100;
-        assert_eq!(GameSetup::advanced_start_points(d, era, world, speed), expected);
+        assert_eq!(GameSetup::advanced_start_points(d, world, speed), expected);
     }
 }

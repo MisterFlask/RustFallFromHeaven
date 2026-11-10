@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { treeLayout, treeRelated } from "../app/empire.js";
 
-const tech = (id, depth, and = [], or = [], era = 0) => ({ tech: id, depth, and, or, era });
+const tech = (id, depth, and = [], or = []) => ({ tech: id, depth, and, or });
 const path = (id, techs, capstones = []) => ({ path: id, techs, capstones });
 
 // Two paths: path 10 (techs 2, 4, 6), path 11 (techs 3, 5, 6; 6 is its capstone); 0, 1, 7 in none.
@@ -17,7 +17,7 @@ const TECHS = [
   tech(5, 2, [3]),
   tech(6, 3, [4], [5]),
   tech(7, 3, [4]),
-  tech(8, 0, [], [], 1),
+  tech(8, 0),
   tech(9, 4, [6, 7]),
   tech(12, 2, [0]),
   tech(13, 2, [2, 3]),

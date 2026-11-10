@@ -446,7 +446,7 @@ pub fn civ_players(g: &Game) -> Vec<PlayerId> {
     g.player_ids().filter(|&p| g.players[p].alive && !g.player_is_barbarian(p) && !g.player_is_minor_civ(p) && !g.player_is_crusade_host(p)).collect()
 }
 
-/// The world's techs, which a civilization without a parent starts with (it is of its era): every
+/// The world's techs, which a civilization without a parent starts with: every
 /// tech (not a card) that at least half of the living civilizations' teams know.
 pub fn world_techs(g: &Game) -> Vec<TechType> {
     let d = g.d;

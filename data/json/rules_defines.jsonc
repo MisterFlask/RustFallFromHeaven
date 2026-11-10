@@ -186,5 +186,12 @@
   "CITY_WORK_ROAD_RANGE": 8,
   // FIELD_WORK_RATE: the build progress an army unit adds each turn to a road, a fort or a card's
   //      field work
-  "FIELD_WORK_RATE": 50
+  "FIELD_WORK_RATE": 50,
+  // ==== Anarchy and advanced start: values FFH2 read from a table of game settings that is gone
+  //      (docs/PORTING.md, "Changes from FFH2") ====
+  // ANARCHY_LENGTH_PERCENT: percent applied to every anarchy length, after the game speed's
+  "ANARCHY_LENGTH_PERCENT": 50,
+  // ADVANCED_START_POINTS: an advanced start's points, before the world size and game speed
+  //      percents
+  "ADVANCED_START_POINTS": 600
 }

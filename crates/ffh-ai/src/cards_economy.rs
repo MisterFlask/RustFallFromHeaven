@@ -223,7 +223,7 @@ fn trading_posts(g: &mut Game, v: &View) {
     for &u in &workers {
         for r in flood.run(g, u, 15, false) {
             let q = r.plot;
-            if v.danger_at(q) > 0 || !g.player_can_build(p, q, build, false, false) {
+            if v.danger_at(q) > 0 || !g.player_can_build(p, q, build, false) {
                 continue;
             }
             let value = post_site_value(g, p, q);
@@ -403,8 +403,8 @@ pub fn building_value(g: &Game, c: CityId, b: BuildingType, v: i32) -> i32 {
         if (national && !top()) || have >= 2 {
             gain /= 4;
         }
-        // Animals are an early army ("before bronze"): none from the Medieval era on.
-        if info.train_units.iter().all(|t| d.units[t.unit].animal) && g.players[p].current_era.i() >= 2 {
+        // Animals are an early army ("before bronze"): none once the early game is over.
+        if info.train_units.iter().all(|t| d.units[t.unit].animal) && crate::research::late_game(g, p) {
             gain = 0;
         }
         v += if at_war(g, p) { gain } else { gain / 2 };

@@ -27,7 +27,6 @@ pub struct Defines {
     pub standard_turntimer: i32,
     pub standard_climate: i32,
     pub standard_sealevel: i32,
-    pub standard_era: i32,
     pub standard_calendar: i32,
     pub ai_handicap: i32,
     pub barbarian_handicap: i32,
@@ -593,6 +592,8 @@ pub struct Defines {
     pub city_work_rate: i32,
     pub city_work_road_range: i32,
     pub field_work_rate: i32,
+    pub anarchy_length_percent: i32,
+    pub advanced_start_points: i32,
     pub bbai_skip_bombard_base_stack_ratio: i32,  // not in the data: C++ reads 0
     pub bbai_skip_bombard_best_attack_odds: i32,  // not in the data: C++ reads 0
     pub bbai_skip_bombard_min_stack_ratio: i32,  // not in the data: C++ reads 0
@@ -625,7 +626,6 @@ impl Defines {
             standard_turntimer: m.int("STANDARD_TURNTIMER"),
             standard_climate: m.int("STANDARD_CLIMATE"),
             standard_sealevel: m.int("STANDARD_SEALEVEL"),
-            standard_era: m.int("STANDARD_ERA"),
             standard_calendar: m.int("STANDARD_CALENDAR"),
             ai_handicap: m.int("AI_HANDICAP"),
             barbarian_handicap: m.int("BARBARIAN_HANDICAP"),
@@ -1191,6 +1191,8 @@ impl Defines {
             city_work_rate: m.int("CITY_WORK_RATE"),
             city_work_road_range: m.int("CITY_WORK_ROAD_RANGE"),
             field_work_rate: m.int("FIELD_WORK_RATE"),
+            anarchy_length_percent: m.int("ANARCHY_LENGTH_PERCENT"),
+            advanced_start_points: m.int("ADVANCED_START_POINTS"),
             bbai_skip_bombard_base_stack_ratio: m.int("BBAI_SKIP_BOMBARD_BASE_STACK_RATIO"),
             bbai_skip_bombard_best_attack_odds: m.int("BBAI_SKIP_BOMBARD_BEST_ATTACK_ODDS"),
             bbai_skip_bombard_min_stack_ratio: m.int("BBAI_SKIP_BOMBARD_MIN_STACK_RATIO"),

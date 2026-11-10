@@ -37,7 +37,7 @@ persist_newtype!(
     CardinalDirectionType, CitySizeType, CivicOptionType, CivicType, CivilizationType, ClimateType,
     CommandType, CommerceType, ContactType, ControlType, CorporationType, CultureLevelType,
     DamageType, DenialType, DiploCommentType, DiplomacyPowerType, DirectionType, DomainType,
-    EmphasizeType, EraType, EspionageMissionType, EventTriggerType, EventType, FeatType,
+    EmphasizeType, EspionageMissionType, EventTriggerType, EventType, FeatType,
     FeatureType, FlavorType, GameOptionType, GameSpeedType, GameStateType, GoodyType, HandicapType,
     HurryType, ImprovementType, InterfaceMessageType, InvisibleType, LeaderHeadType, MemoryType,
     MissionAIType, MissionType, MonthType, OrderType, PlayerOptionType, PlotType, ProbabilityType,
@@ -142,7 +142,7 @@ impl Persist for SlotStatus {
 
 persist_struct!(PlayerSetup { civ, leader, team, handicap, art_style, slot_status, human, leader_name, civ_description, host });
 persist_struct!(GameSetup {
-    world_size, climate, sea_level, era, game_speed, calendar, options, victories, game_turn, max_turns,
+    world_size, climate, sea_level, game_speed, calendar, options, victories, game_turn, max_turns,
     target_score, max_city_elimination, num_advanced_start_points, sync_rand_seed, map_rand_seed,
     map_script, players, barbarian, crusade,
 });
@@ -394,7 +394,7 @@ persist_struct!(City {
 });
 
 persist_struct!(Player {
-    id, personality_type, current_era, last_state_religion, parent, team, starting_x, starting_y,
+    id, personality_type, last_state_religion, parent, team, starting_x, starting_y,
     total_population, total_land, total_land_scored, gold, gold_per_turn, advanced_start_points,
     golden_age_turns, num_unit_golden_ages, strike_turns, anarchy_turns, max_anarchy_turns,
     anarchy_modifier, golden_age_modifier, global_hurry_modifier, great_people_created,

@@ -468,7 +468,7 @@ impl Game {
         anarchy_length *= d.game_speeds[self.game_speed_type()].anarchy_percent;
         anarchy_length /= 100;
 
-        anarchy_length *= d.eras[self.start_era()].anarchy_percent;
+        anarchy_length *= d.defines.anarchy_length_percent;
         anarchy_length /= 100;
 
         range(anarchy_length, 1, pl.max_anarchy_turns)
@@ -535,9 +535,6 @@ impl Game {
             let game_handicap = &d.handicaps[self.handicap];
 
             upkeep_value *= game_handicap.ai_civic_upkeep_percent;
-            upkeep_value /= 100;
-
-            upkeep_value *= std::cmp::max(0, (game_handicap.ai_per_era_modifier * pl.current_era.i()) + 100);
             upkeep_value /= 100;
         }
 
@@ -674,7 +671,7 @@ impl Game {
         anarchy_length *= d.game_speeds[self.game_speed_type()].anarchy_percent;
         anarchy_length /= 100;
 
-        anarchy_length *= d.eras[self.start_era()].anarchy_percent;
+        anarchy_length *= d.defines.anarchy_length_percent;
         anarchy_length /= 100;
 
         range(anarchy_length, 1, pl.max_anarchy_turns)
@@ -1069,10 +1066,7 @@ impl Game {
         // setReligionSlotTaken
         self.religion_slot_taken[slot_religion] = true;
 
-        let starting = match d.religions[slot_religion].tech_prereq {
-            None => true,
-            Some(tech) => d.techs[tech].era < Some(self.start_era()),
-        };
+        let starting = d.religions[slot_religion].tech_prereq.is_none();
 
         let mut best_value = 0;
         let mut best_city: Option<CityId> = None;
@@ -1201,10 +1195,7 @@ impl Game {
 
         let info = &d.corporations[corporation];
 
-        let starting = match info.tech_prereq {
-            None => true,
-            Some(tech) => d.techs[tech].era < Some(self.start_era()),
-        };
+        let starting = info.tech_prereq.is_none();
 
         let mut best_value = 0;
         let mut best_city: Option<CityId> = None;
@@ -1785,8 +1776,8 @@ mod tests {
         let p = PlayerId(0);
         g.player_update_max_anarchy_turns(p);
         let speed = d.game_speeds[g.game_speed_type()].anarchy_percent;
-        let era = d.eras[g.start_era()].anarchy_percent;
-        let scaled = |len: i32| range(len * speed / 100 * era / 100, 1, d.defines.max_anarchy_turns);
+        let fixed = d.defines.anarchy_length_percent;
+        let scaled = |len: i32| range(len * speed / 100 * fixed / 100, 1, d.defines.max_anarchy_turns);
 
         // religion: BASE_RELIGION_ANARCHY_LENGTH (no cities, no anarchy modifier)
         assert_eq!(g.player_get_religion_anarchy_length(p), scaled(d.defines.base_religion_anarchy_length));

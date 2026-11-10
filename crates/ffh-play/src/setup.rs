@@ -23,7 +23,6 @@ pub struct NewGame {
     pub speed: GameSpeedType,
     /// The human's difficulty, which is the game handicap (`CvGame::init(eHandicap)`).
     pub handicap: HandicapType,
-    pub era: EraType,
     pub climate: ClimateType,
     pub sea_level: SeaLevelType,
     pub options: Vec<GameOptionType>,
@@ -43,7 +42,7 @@ pub struct NewGame {
 }
 
 impl NewGame {
-    /// The defaults: 3 opponents on a small map, normal speed, Noble, first era, temperate,
+    /// The defaults: 3 opponents on a small map, normal speed, Noble, temperate,
     /// medium sea level, no options, every victory, random civilization and leader.
     pub fn new(d: &GameData, seed: u32) -> NewGame {
         let o = SetupOptions::new(d, 4, "WORLDSIZE_SMALL", seed);
@@ -53,7 +52,6 @@ impl NewGame {
             world: o.world_size,
             speed: o.game_speed,
             handicap: o.handicap,
-            era: o.era,
             climate: o.climate,
             sea_level: o.sea_level,
             options: Vec::new(),
@@ -68,12 +66,17 @@ impl NewGame {
 
     /// The members of a `setup` object.
     pub const FIELDS: &'static [&'static str] =
-        &["seed", "opponents", "world", "speed", "handicap", "era", "climate", "sea_level", "options", "disabled_victories", "max_turns", "civ", "leader", "observe", "vanilla"];
+        &["seed", "opponents", "world", "speed", "handicap", "climate", "sea_level", "options", "disabled_victories", "max_turns", "civ", "leader", "observe", "vanilla"];
+
+    /// Members accepted and ignored: settings the game no longer has, which older clients and
+    /// journals still send (`era`).
+    pub const IGNORED: &'static [&'static str] = &["era"];
 
     /// Decodes a `setup` object (every member optional; types by name or index; an unknown
     /// member is an error, so a typo cannot start a game with a default instead).
     pub fn from_json(d: &GameData, j: &Json) -> Result<NewGame, FieldError> {
-        j.only(NewGame::FIELDS)?;
+        let known: Vec<&str> = NewGame::FIELDS.iter().chain(NewGame::IGNORED).copied().collect();
+        j.only(&known)?;
         let mut ng = NewGame::new(d, j.get_or("seed", 1u32)?);
         ng.opponents = j.get_or("opponents", ng.opponents)?;
         if let Some(v) = names::opt_field(d, j, "world")? {
@@ -84,9 +87,6 @@ impl NewGame {
         }
         if let Some(v) = names::opt_field(d, j, "handicap")? {
             ng.handicap = v;
-        }
-        if let Some(v) = names::opt_field(d, j, "era")? {
-            ng.era = v;
         }
         if let Some(v) = names::opt_field(d, j, "climate")? {
             ng.climate = v;
@@ -116,7 +116,6 @@ impl NewGame {
             "world" => Json::idx(self.world),
             "speed" => Json::idx(self.speed),
             "handicap" => Json::idx(self.handicap),
-            "era" => Json::idx(self.era),
             "climate" => Json::idx(self.climate),
             "sea_level" => Json::idx(self.sea_level),
             "options" => Json::Arr(self.options.iter().map(|&o| Json::idx(o)).collect()),
@@ -138,7 +137,6 @@ impl NewGame {
             "world" => d.type_name(self.world),
             "speed" => d.type_name(self.speed),
             "handicap" => d.type_name(self.handicap),
-            "era" => d.type_name(self.era),
             "climate" => d.type_name(self.climate),
             "sea_level" => d.type_name(self.sea_level),
             "options" => Json::Arr(self.options.iter().map(|&o| Json::from(d.type_name(o))).collect()),
@@ -221,7 +219,6 @@ fn setup_options(d: &'static GameData, ng: &NewGame) -> SetupOptions {
     o.world_size = ng.world;
     o.game_speed = ng.speed;
     o.handicap = ng.handicap;
-    o.era = ng.era;
     o.climate = ng.climate;
     o.sea_level = ng.sea_level;
     o.options = ng.options.clone();
@@ -298,7 +295,7 @@ pub fn screen_defaults(d: &GameData) -> NewGame {
 }
 
 /// Lists for the new-game screen: AI-playable civilizations with their leaders, world sizes,
-/// speeds, handicaps, eras, climates, sea levels, visible game options, victories, and the
+/// speeds, handicaps, climates, sea levels, visible game options, victories, and the
 /// defaults (`NewGame::new`).
 pub fn setup_lists(d: &GameData) -> Json {
     /// The entries kept, each with its `help` (Civ4 markup; omitted when empty).
@@ -350,7 +347,6 @@ pub fn setup_lists(d: &GameData) -> Json {
         "worlds" => list_help::<WorldSizeType>(d, |_| true, |w| xml(&d.worlds[w].base.help)),
         "speeds" => list_help::<GameSpeedType>(d, |_| true, |s| xml(&d.game_speeds[s].base.help)),
         "handicaps" => list_help::<HandicapType>(d, |_| true, |h| xml(&d.handicaps[h].base.help)),
-        "eras" => list_help::<EraType>(d, |_| true, |e| xml(&d.eras[e].base.help)),
         "climates" => list_help::<ClimateType>(d, |_| true, |c| xml(&d.climates[c].base.help)),
         "sea_levels" => list_help::<SeaLevelType>(d, |_| true, |s| xml(&d.sea_levels[s].base.help)),
         "options" => list_help::<GameOptionType>(d, |o| d.game_options[o].visible && o != GameOptionType::GAMEOPTION_ADVANCED_START, |o| xml(&d.game_options[o].base.help)),
@@ -383,6 +379,9 @@ mod tests {
         let err = NewGame::from_json(d, &Json::parse(r#"{"seed":4,"world_size":"WORLDSIZE_DUEL","oponents":1}"#).unwrap()).unwrap_err();
         assert_eq!(err.key, "world_size");
         assert!(err.to_string().contains("unknown field"), "{err}");
+        // An older client's `era` is ignored, whatever it holds.
+        let old = NewGame::from_json(d, &Json::parse(r#"{"seed":9,"era":"ERA_CLASSICAL"}"#).unwrap()).unwrap();
+        assert_eq!(old, NewGame::new(d, 9));
     }
 
     #[test]

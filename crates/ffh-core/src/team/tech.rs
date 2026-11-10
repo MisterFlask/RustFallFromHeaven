@@ -274,9 +274,6 @@ impl Game {
         cost *= d.game_speeds[self.game_speed_type()].research_percent;
         cost /= 100;
 
-        cost *= d.eras[self.start_era()].research_percent;
-        cost /= 100;
-
         cost *= 0.max((d.defines.tech_cost_extra_team_member_modifier * (self.teams[t].num_members - 1)) + 100);
         cost /= 100;
 
@@ -432,25 +429,6 @@ impl Game {
             self.team_process_tech(t, tech, if value { 1 } else { -1 });
 
             if self.team_is_has_tech(t, Some(tech)) {
-                if let Some(era) = d.techs[tech].era {
-                    let mut prev = -1i32; let mut n = 0;
-                    for t2 in d.techs.keys() {
-                        if self.teams[t].has_tech[t2] && d.techs[t2].card.is_none() { n += 1; if t2 != tech { if let Some(e2) = d.techs[t2].era { prev = prev.max(e2.i() as i32); } } }
-                    }
-                    if (era.i() as i32) > prev && era.i() >= 1 { eprintln!("ERAUP team={} era={} n={} turn={}", t.i(), era.i(), n, self.game_turn()); }
-                }
-                for p in self.player_ids() {
-                    if self.players[p].team == t {
-                        // C++ compares with getEra() (-1 for NO_ERA, never greater).
-                        if let Some(era) = d.techs[tech].era {
-                            if self.players[p].current_era < era {
-                                // setCurrentEra: the C++ side effects are graphics only.
-                                self.players[p].current_era = era;
-                            }
-                        }
-                    }
-                }
-
                 if d.techs[tech].map_visible {
                     self.map_set_revealed_plots(t, true, true);
                 }

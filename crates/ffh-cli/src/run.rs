@@ -160,10 +160,9 @@ pub struct RunConfig {
     pub detail: bool,
     /// The other custom-game settings (type names; `None`: the standard game's), so that every
     /// game `ffh-play` builds for an observer can be played here (a spectator's flag quotes the
-    /// command): game speed, the game handicap (the AIs' bonuses), era, climate, sea level.
+    /// command): game speed, the game handicap (the AIs' bonuses), climate, sea level.
     pub speed: Option<String>,
     pub handicap: Option<String>,
-    pub era: Option<String>,
     pub climate: Option<String>,
     pub sea_level: Option<String>,
     /// `CvInitCore::m_iMaxTurns` (0 = from the game speed).
@@ -196,7 +195,6 @@ impl Default for RunConfig {
             detail: false,
             speed: None,
             handicap: None,
-            era: None,
             climate: None,
             sea_level: None,
             max_turns: 0,
@@ -342,9 +340,6 @@ pub fn new_game(cfg: &RunConfig) -> (Game, Arc<Timed>) {
     }
     if let Some(n) = &cfg.handicap {
         o.handicap = d.t(n);
-    }
-    if let Some(n) = &cfg.era {
-        o.era = d.t(n);
     }
     if let Some(n) = &cfg.climate {
         o.climate = d.t(n);
@@ -851,7 +846,7 @@ mod tests {
             r#"{"seed": 5, "opponents": 2, "world": "WORLDSIZE_DUEL", "civ": "CIVILIZATION_SHEAIM", "speed": "GAMESPEED_QUICK",
                 "handicap": "HANDICAP_MONARCH", "climate": "CLIMATE_ARID", "sea_level": "SEALEVEL_HIGH",
                 "options": ["GAMEOPTION_RAGING_BARBARIANS"], "disabled_victories": ["VICTORY_CULTURAL"], "max_turns": 300}"#,
-            r#"{"seed": 7, "opponents": 2, "world": "WORLDSIZE_DUEL", "leader": "LEADER_SABATHIEL", "era": "ERA_CLASSICAL"}"#,
+            r#"{"seed": 7, "opponents": 2, "world": "WORLDSIZE_DUEL", "leader": "LEADER_SABATHIEL"}"#,
         ];
         for setup in setups {
             let mut ng = ffh_play::NewGame::from_json(d, &ffh_play::Json::parse(setup).unwrap()).unwrap();

@@ -289,7 +289,7 @@ html.iso.hd2d #iso-corner #end-turn.end-turn-message:not([disabled]) {
 
 /* The techs keep their measured boxes, lettered small. */
 html.iso.hd2d button.tech { border: 1px solid var(--hd-faint); background: rgba(24, 23, 27, 0.95); font: 400 12px/12px var(--iso-font); text-shadow: none; }
-html.iso.hd2d button.tech .tech-sub, html.iso.hd2d button.tech .tech-pct, html.iso.hd2d .era-legend { font-size: 12px; line-height: 14px; }
+html.iso.hd2d button.tech .tech-sub, html.iso.hd2d button.tech .tech-pct { font-size: 12px; line-height: 14px; }
 html.iso.hd2d button.tech.has { background: rgba(38, 52, 32, 0.95); border-color: #8fbf78; }
 html.iso.hd2d button.tech.researching { background: rgba(78, 70, 50, 0.95); border-color: var(--iso-gold-lt); }
 html.iso.hd2d button.tech.can { border-color: var(--iso-gold); }

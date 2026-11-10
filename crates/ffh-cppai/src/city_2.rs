@@ -1553,11 +1553,7 @@ impl Cai {
     pub fn city_ai_min_defenders(&self, g: &Game, c: CityId) -> i32 {
         let p = g.cities[c].owner;
         let mut defenders = 1;
-        let era = g.players[p].current_era.i();
-        if era > 0 {
-            defenders += 1;
-        }
-        if ((era - g.start_era().i() / 2) >= g.d.eras.len() as i32 / 2) && g.city_is_coastal(c, g.d.defines.min_water_size_for_ocean) {
+        if tech_stage(g, p) > 0 {
             defenders += 1;
         }
 

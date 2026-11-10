@@ -70,16 +70,14 @@ fn area_of(g: &Game, plot: PlotIdx) -> AreaId {
 impl Game {
     // ------------------------------------------------------------------ initial state and units
 
-    /// C++ `CvPlayer::initFreeState`: starting gold (handicap + start era + FFH trait
-    /// starting gold) and an empty research queue.
+    /// C++ `CvPlayer::initFreeState`: starting gold (handicap + FFH trait starting gold) and an
+    /// empty research queue.
     pub fn player_init_free_state(&mut self, p: PlayerId) {
         let d = self.d;
         let handicap = handicap_of(self, p);
-        let start_era = self.start_era();
         // setGold/changeGold only have UI side effects.
         self.players[p].gold = 0;
         self.players[p].gold += d.handicaps[handicap].starting_gold;
-        self.players[p].gold += d.eras[start_era].starting_gold;
 
         // FfH Traits: Added by Kael 08/02/2007
         let starting_gold = self.players[p].starting_gold;
@@ -90,7 +88,7 @@ impl Game {
     }
 
     /// C++ `CvPlayer::initFreeUnits`: advanced-start points and starting visibility, or the
-    /// civilization's free units plus era/handicap defense and explore units.
+    /// civilization's free units plus the handicap's defense and explore units.
     pub fn player_init_free_units(&mut self, p: PlayerId) {
         let d = self.d;
 
@@ -122,7 +120,6 @@ impl Game {
             }
         } else {
             let civ = civ_of(self, p);
-            let start_era = self.start_era();
             let game_handicap = self.handicap;
             let handicap = handicap_of(self, p);
 
@@ -131,7 +128,7 @@ impl Game {
                     let mut free_count = d.civilizations[civ].civilization_free_units_class[class];
 
                     let ai_multiplier = if !self.players[p].human { d.handicaps[game_handicap].ai_starting_unit_multiplier } else { 0 };
-                    free_count *= d.eras[start_era].starting_unit_multiplier + ai_multiplier;
+                    free_count *= 1 + ai_multiplier;
 
                     for _ in 0..free_count {
                         self.player_add_free_unit(p, unit, None);
@@ -139,8 +136,7 @@ impl Game {
                 }
             }
 
-            let mut free_count = d.eras[start_era].starting_defense_units;
-            free_count += d.handicaps[handicap].starting_defense_units;
+            let mut free_count = d.handicaps[handicap].starting_defense_units;
 
             if !self.players[p].human {
                 free_count += d.handicaps[game_handicap].ai_starting_defense_units;
@@ -152,8 +148,7 @@ impl Game {
 
             // (No free workers, C++ `getStartingWorkerUnits`: there are none, docs/WORKS.md.)
 
-            let mut free_count = d.eras[start_era].starting_explore_units;
-            free_count += d.handicaps[handicap].starting_explore_units;
+            let mut free_count = d.handicaps[handicap].starting_explore_units;
 
             if !self.players[p].human {
                 free_count += d.handicaps[game_handicap].ai_starting_explore_units;
@@ -515,31 +510,16 @@ impl Game {
         }
     }
 
-    /// C++ `CvPlayer::getNewCityProductionValue`: production value of a new city's free
-    /// start-era buildings and population (advanced start, settler extra cost).
+    /// C++ `CvPlayer::getNewCityProductionValue`: production value of a new city's population
+    /// (advanced start, settler extra cost). (C++ also counted the free buildings of a later
+    /// start; this game has none.)
     pub fn player_get_new_city_production_value(&self, p: PlayerId) -> i32 {
         let d = self.d;
-        let civ = civ_of(self, p);
-        let start_era = self.start_era();
-
         let mut value = 0;
-        for class in d.building_classes.keys() {
-            if let Some(building) = d.civ_building(civ, class) {
-                if let Some(free_start_era) = d.buildings[building].free_start_era {
-                    if start_era >= free_start_era {
-                        value += (100 * self.player_get_production_needed_building(p, building))
-                            / max(1, 100 + self.player_get_production_modifier_building(p, building));
-                    }
-                }
-            }
-        }
-
-        value *= 100 + d.defines.new_city_building_value_modifier;
-        value /= 100;
 
         value += (d.defines.advanced_start_city_cost * d.game_speeds[self.game_speed_type()].growth_percent) / 100;
 
-        let population = d.defines.initial_city_population + d.eras[start_era].free_population;
+        let population = d.defines.initial_city_population;
         for i in 1..=population {
             value += (self.player_get_growth_threshold(p, i) * d.defines.advanced_start_population_cost) / 100;
         }
@@ -878,7 +858,7 @@ impl Game {
 
                                 if improvement == loop_improvement {
                                     if build_info.feature_remove[feature]
-                                        && self.player_can_build(p, plot, build, false, false)
+                                        && self.player_can_build(p, plot, build, false)
                                         // FfH: Added by Kael 11/11/2007
                                         && (!d.civilizations[civ].maintain_features[feature] || build_info.improvement.is_none())
                                     {
@@ -1187,7 +1167,7 @@ impl Game {
             if !add {
                 population -= 1;
 
-                if population < d.defines.initial_city_population + d.eras[self.start_era()].free_population {
+                if population < d.defines.initial_city_population {
                     return -1;
                 }
             }
@@ -1262,13 +1242,6 @@ impl Game {
 
         if cost < 0 {
             return -1;
-        }
-
-        if let Some(free_start_era) = info.free_start_era {
-            if self.start_era() >= free_start_era {
-                // you get this building for free
-                return -1;
-            }
         }
 
         if city.is_none() && add {
@@ -1377,7 +1350,7 @@ impl Game {
                     let build_info = &d.builds[build];
                     let loop_improvement = build_info.improvement;
 
-                    if Some(improvement) == loop_improvement && self.player_can_build(p, plot, build, false, false) {
+                    if Some(improvement) == loop_improvement && self.player_can_build(p, plot, build, false) {
                         valid = true;
 
                         if let Some(feature) = self.map.plots[plot].feature_type {
@@ -2018,7 +1991,7 @@ mod tests {
         g.player_init_free_state(p);
 
         let handicap = g.player_get_handicap_type(p).unwrap();
-        let expected = d.handicaps[handicap].starting_gold + d.eras[g.start_era()].starting_gold + 25;
+        let expected = d.handicaps[handicap].starting_gold + 25;
         assert_eq!(g.players[p].gold, expected);
         assert!(g.players[p].research_queue.is_empty());
         assert!(!g.players[p].researching_tech[tech]);

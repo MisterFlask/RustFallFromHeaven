@@ -223,14 +223,8 @@ impl Cai {
         let mut target_size = good_tile_count.min(population + (g.city_happy_level(c) - g.city_unhappy_level(c, 0)));
         target_size = target_size.min(1 + population + health);
 
-        let current_era = g.players[owner].current_era.i();
         if g.players[owner].advanced_start_points >= 0 {
-            target_size += 2 + current_era / 2;
-        }
-
-        // C++ quirk: the advanced start bonus is applied twice.
-        if g.players[owner].advanced_start_points >= 0 {
-            target_size += current_era / 2;
+            target_size += 2;
         }
 
         if bonus_food_diff < 2 {

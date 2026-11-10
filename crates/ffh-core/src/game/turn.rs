@@ -751,25 +751,6 @@ impl Game {
         })
     }
 
-    /// C++ `CvGame::getCurrentEra`: average era of the alive players (`None` if none alive).
-    pub fn current_era(&self) -> Option<EraType> {
-        let mut era = 0;
-        let mut count = 0;
-
-        for p in self.player_ids() {
-            if self.players[p].alive {
-                era += self.players[p].current_era.i();
-                count += 1;
-            }
-        }
-
-        if count > 0 {
-            return Some(EraType::from_usize((era / count) as usize));
-        }
-
-        None
-    }
-
     /// C++ `CvGame::getProductionPerPopulation(eHurry)`.
     pub fn production_per_population(&self, hurry: Option<HurryType>) -> i32 {
         let Some(hurry) = hurry else {
@@ -1668,17 +1649,8 @@ mod tests {
     }
 
     #[test]
-    fn current_era_and_known_techs() {
+    fn known_techs() {
         let mut g = game(3);
-        g.players[PlayerId(0)].current_era = EraType(1);
-        g.players[PlayerId(1)].current_era = EraType(2);
-        g.players[PlayerId(2)].current_era = EraType(4);
-        assert_eq!(g.current_era(), Some(EraType(2)));
-        for p in g.player_ids() {
-            g.players[p].alive = false;
-        }
-        assert_eq!(g.current_era(), None);
-
         let tech = TechType(3);
         assert_eq!(g.count_known_tech_num_teams(tech), 0);
         g.teams[TeamId(0)].has_tech[tech] = true;

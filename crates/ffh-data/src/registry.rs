@@ -52,7 +52,6 @@ info_ids! {
     CorporationType => "CorporationInfo",
     CultureLevelType => "CultureLevelInfo",
     EmphasizeType => "EmphasizeInfo",
-    EraType => "EraInfo",
     EspionageMissionType => "EspionageMissionInfo",
     GameOptionType => "GameOptionInfo",
     GameSpeedType => "GameSpeedInfo",

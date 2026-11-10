@@ -67,13 +67,12 @@ fn unit(g: &mut Game, p: PlayerId, name: &str, x: i32, y: i32) -> UnitId {
     g.player_init_unit(p, t, x, y, None, None)
 }
 
-/// The base production cost of `unit` for `p`, before the game speed and era (the scaling
+/// The base production cost of `unit` for `p`, before the game speed (the scaling
 /// `player_get_production_needed_unit` applies to every unit alike).
 fn scaled(g: &Game, base: i32) -> i32 {
     let d = g.d;
-    let mut n = base * d.defines.unit_production_percent / 100;
-    n = n * d.game_speeds[g.game_speed_type()].train_percent / 100;
-    n * d.eras[g.start_era()].train_percent / 100
+    let n = base * d.defines.unit_production_percent / 100;
+    n * d.game_speeds[g.game_speed_type()].train_percent / 100
 }
 
 /// Gives city `c` one of resource `bonus` (a free bonus, as a building gives it).
@@ -308,7 +307,7 @@ fn a_trading_post_claims_its_plots_until_it_is_pillaged() {
     let (cx, cy) = (g.cities[c].x, g.cities[c].y);
     // Not in the city's borders, not within 2 plots of a city.
     let near = g.map.plot_xy(cx + 2, cy).unwrap();
-    assert!(!g.player_can_build(p, near, post_build, false, false));
+    assert!(!g.player_can_build(p, near, post_build, false));
     // An unowned flat land plot 4 to 8 plots out, with land around it, where a post can go.
     let site = g
         .map
@@ -319,7 +318,7 @@ fn a_trading_post_claims_its_plots_until_it_is_pillaged() {
             (4..=8).contains(&dist)
                 && !g.plot_is_peak(q)
                 && (-1..=1).all(|dx| (-1..=1).all(|dy| g.map.plot_xy(x + dx, y + dy).is_some_and(|r| !g.plot_is_water(r) && g.map.plots[r].owner.is_none())))
-                && g.player_can_build(p, q, post_build, false, false)
+                && g.player_can_build(p, q, post_build, false)
         })
         .expect("a site for the post");
     let (sx, sy) = g.map.xy(site);

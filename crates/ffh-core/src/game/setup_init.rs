@@ -72,8 +72,7 @@ impl Game {
 
     /// C++ `CvGame::init(eHandicap)`: `reset`, RNG seeds (`mapRandSeed % 73637381`,
     /// `syncRandSeed % 52319761`), FfH RANDOM_CIVILIZATION leader picks (soren rand),
-    /// GAMEOPTION_LOCK_MODS password (7 soren draws), start turn from the game speed turn
-    /// increments and era start percent, estimate end turn / max turns, `START_YEAR`,
+    /// GAMEOPTION_LOCK_MODS password (7 soren draws), estimate end turn / max turns, `START_YEAR`,
     /// always-valid special units/buildings, `AI_init`, `doUpdateCacheOnTurn`.
     pub fn init(&mut self, handicap: HandicapType) {
         let d = self.d;
@@ -105,19 +104,6 @@ impl Game {
                     self.soren_rand_num(128, "");
                 }
             }
-        }
-
-        if self.game_turn() == 0 {
-            let speed = &d.game_speeds[self.game_speed_type()];
-            let mut start_turn = 0;
-            for i in 0..speed.num_turn_increments() {
-                start_turn += speed.game_turn_info[i as usize].num_game_turns_per_increment;
-            }
-
-            start_turn *= d.eras[self.start_era()].start_percent;
-            start_turn /= 100;
-
-            self.set_game_turn(start_turn);
         }
 
         self.start_turn = self.game_turn();
@@ -487,21 +473,17 @@ impl Game {
         }
     }
 
-    /// C++ `CvGame::initFreeState`: handicap/era/civilization free techs per team (FfH: era
-    /// techs only with a research cost != -1), map reveal techs, `CvPlayer::initFreeState`.
+    /// C++ `CvGame::initFreeState`: handicap/civilization free techs per team, map reveal techs,
+    /// `CvPlayer::initFreeState`.
     pub fn init_free_state(&mut self) {
         let d = self.d;
         let handicap = self.handicap;
-        let start_era = self.start_era();
 
         for tech in d.techs.keys() {
             for t in self.team_ids() {
                 if self.team_is_alive(t) {
                     let mut valid = d.handicaps[handicap].free_techs[tech]
-                        || (!self.team_is_human(t) && d.handicaps[handicap].ai_free_techs[tech])
-                        || (d.techs[tech].era < Some(start_era)
-                            // FfH: Added by Kael 09/13/2007
-                            && d.techs[tech].research_cost != -1);
+                        || (!self.team_is_human(t) && d.handicaps[handicap].ai_free_techs[tech]);
 
                     if !valid {
                         for p in self.player_ids() {
@@ -1029,11 +1011,6 @@ impl Game {
     pub fn normalize_add_food_bonuses(&mut self) {
         let d = self.d;
         let ignore_latitude = self.python_is_bonus_ignore_latitudes();
-        let start_era = self.start_era();
-        let city_trade_in_start_era = |b: BonusType| match d.bonuses[b].tech_city_trade {
-            None => true,
-            Some(t) => d.techs[t].era <= Some(start_era),
-        };
 
         for p in self.civ_player_ids() {
             if !self.players[p].alive {
@@ -1053,12 +1030,10 @@ impl Game {
                     match self.plot_get_bonus_type(loop_plot, Some(team)) {
                         Some(bonus) => {
                             if d.bonuses[bonus].yield_change[FOOD] > 0 {
-                                if city_trade_in_start_era(bonus) {
-                                    if self.plot_is_water(loop_plot) {
-                                        food_bonus += 2;
-                                    } else {
-                                        food_bonus += 3;
-                                    }
+                                if self.plot_is_water(loop_plot) {
+                                    food_bonus += 2;
+                                } else {
+                                    food_bonus += 3;
                                 }
                             } else if self.plot_calculate_best_nature_yield(loop_plot, YieldType::YIELD_FOOD, Some(team)) >= 2 {
                                 good_nature_tile_count += 1;
@@ -1091,7 +1066,6 @@ impl Game {
                     let kb = &d.bonuses[k];
                     if kb.normalize
                         && kb.yield_change[FOOD] > 0
-                        && city_trade_in_start_era(k)
                         && self.team_is_has_tech(team, kb.tech_reveal)
                         && self.plot_can_have_bonus(loop_plot, Some(k), ignore_latitude)
                     {
@@ -1190,16 +1164,11 @@ impl Game {
     pub fn normalize_add_extras(&mut self) {
         let d = self.d;
         let ignore_latitude = self.python_is_bonus_ignore_latitudes();
-        let start_era = self.start_era();
-        let city_trade_in_start_era = |b: BonusType| match d.bonuses[b].tech_city_trade {
-            None => true,
-            Some(t) => d.techs[t].era <= Some(start_era),
-        };
         // C++ `isNormalize()` with no negative food/production yield ("no bonuses with negative
-        // yields?") and a city trade tech no later than the start era.
+        // yields?").
         let normalize_bonus = |b: BonusType| {
             let kb = &d.bonuses[b];
-            kb.normalize && kb.yield_change[FOOD] >= 0 && kb.yield_change[PRODUCTION] >= 0 && city_trade_in_start_era(b)
+            kb.normalize && kb.yield_change[FOOD] >= 0 && kb.yield_change[PRODUCTION] >= 0
         };
 
         // C++ also sums iTotalValue / iPlayerCount / iWorstValue, which are never used.
@@ -1523,10 +1492,9 @@ impl Game {
             self.max_wonders += get_wonder_score(d, bc);
         }
 
-        // C++ `if (NO_ERA != getStartEra())`: the start era is always set here.
-        let era = &d.eras[self.start_era()];
-        let num_settlers = era.starting_unit_multiplier;
-        self.init_population = get_population_score(num_settlers * (era.free_population + 1));
+        // One settler, founding a size-1 city.
+        let num_settlers = 1;
+        self.init_population = get_population_score(num_settlers);
 
         // FfH: Modified by Kael 11/18/2007 (21 = the radius-2 city plots, not NUM_CITY_PLOTS)
         self.init_land = get_land_plots_score(num_settlers * NUM_CITY_PLOTS_RADIUS_2);

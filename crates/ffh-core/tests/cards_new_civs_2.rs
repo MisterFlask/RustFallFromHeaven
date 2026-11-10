@@ -201,7 +201,13 @@ fn the_necropolis_rises_on_the_ruins_nearest_the_capital() {
     assert_eq!(d.techs[card].card.as_ref().unwrap().block_alignment, Some(AlignmentType::ALIGNMENT_GOOD));
     let prophet = d.t::<UnitClassType>("UNITCLASS_PROPHET");
     w.g.team_set_has_tech(w.g.players[w.p0].team, card, false, Some(w.p0), false, false);
-    w.g.players[w.p1].current_era = d.t::<EraType>("ERA_MEDIEVAL");
+    // The deck deals its lowest band first: take the Prophet cards of lower bands out of it.
+    let band = d.techs[card].card.as_ref().unwrap().band;
+    let lower: Vec<TechType> =
+        d.techs.keys().filter(|&t| d.techs[t].card.as_ref().is_some_and(|c| c.suit == prophet && c.band < band)).collect();
+    for t in lower {
+        w.g.team_set_has_tech(w.g.players[w.p0].team, t, true, Some(w.p0), false, false);
+    }
     for (alignment, drawn) in [(AlignmentType::ALIGNMENT_GOOD, false), (AlignmentType::ALIGNMENT_NEUTRAL, true), (AlignmentType::ALIGNMENT_EVIL, true)] {
         w.g.players[w.p1].alignment = Some(alignment);
         assert_eq!(w.g.deck_candidates(w.p1, prophet).contains(&card), drawn, "{alignment:?}");

@@ -276,7 +276,6 @@ kinds! {
         WorldSizeType => worlds,
         ClimateType => climates,
         SeaLevelType => sea_levels,
-        EraType => eras,
         HandicapType => handicaps,
         GameOptionType => game_options,
         GoodyType => goodies,

@@ -22,7 +22,7 @@
 //! for 30 turns, counted from turn 200; `--turns` stays the cap)  --civ CIVILIZATION_X
 //! (repeatable: force the first civ slots to these civilizations, leader picked by the seed)
 //! --detail (`stats`: per-player counts of unit, building and project types)
-//! --speed GAMESPEED_X --handicap HANDICAP_X (the game handicap: the AIs' bonuses) --era ERA_X
+//! --speed GAMESPEED_X --handicap HANDICAP_X (the game handicap: the AIs' bonuses)
 //! --climate CLIMATE_X --sea-level SEALEVEL_X (or --sea) --max-turns N --no-victory VICTORY_X (repeatable)
 //! --leader LEADER_X (the first slot's leader; alone, it forces its civilization): the rest of
 //! a custom game, so that a game `ffh-play` builds for an observer plays here too
@@ -38,7 +38,7 @@ use std::time::Instant;
 
 fn usage() -> ! {
     eprintln!("usage: ffh <data|lookup TYPE|autoplay|bench|stats|save FILE --to-turn T|resume FILE --turns N --watch SPEC> [--seed N] [--civs N] [--size WORLDSIZE_X] [--turns N] [--report N] [--option GAMEOPTION_X] [--until-supremacy] [--civ CIVILIZATION_X] [--detail] [--crusade-call T1,T2,..] [--free-rider P] [--at T1,T2,..] [--every N]");
-    eprintln!("       [--speed GAMESPEED_X] [--handicap HANDICAP_X] [--era ERA_X] [--climate CLIMATE_X] [--sea-level SEALEVEL_X] [--max-turns N] [--no-victory VICTORY_X] [--leader LEADER_X]");
+    eprintln!("       [--speed GAMESPEED_X] [--handicap HANDICAP_X] [--climate CLIMATE_X] [--sea-level SEALEVEL_X] [--max-turns N] [--no-victory VICTORY_X] [--leader LEADER_X]");
     std::process::exit(2)
 }
 
@@ -65,7 +65,6 @@ fn parse_run_config_at(args: &[String]) -> (run::RunConfig, Vec<i32>) {
             "--civ" => cfg.force_civs.push(val(i)),
             "--speed" => cfg.speed = Some(val(i)),
             "--handicap" => cfg.handicap = Some(val(i)),
-            "--era" => cfg.era = Some(val(i)),
             "--climate" => cfg.climate = Some(val(i)),
             "--sea-level" | "--sea" => cfg.sea_level = Some(val(i)),
             "--max-turns" => cfg.max_turns = val(i).parse().unwrap_or_else(|_| usage()),

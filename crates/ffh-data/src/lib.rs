@@ -164,7 +164,6 @@ game_data! {
     worlds: WorldSizeType => WorldInfo, game::read_world;
     climates: ClimateType => ClimateInfo, game::read_climate;
     sea_levels: SeaLevelType => SeaLevelInfo, game::read_sea_level;
-    eras: EraType => EraInfo, game::read_era;
     handicaps: HandicapType => HandicapInfo, game::read_handicap;
     game_options: GameOptionType => GameOptionInfo, game::read_game_option;
     goodies: GoodyType => GoodyInfo, game::read_goody;

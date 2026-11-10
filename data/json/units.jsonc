@@ -1131,7 +1131,7 @@
   },
   {
     // A national unit of the opening (not FFH2's; docs/PORTING.md, "Changes from FFH2"): an
-    // archer above its era's curve, two a civilization, with no upgrade.
+    // archer above the opening's curve, two a civilization, with no upgrade.
     "type": "UNIT_SKIRMISHER",
     "stats": {"hp": 90, "attack": 40, "defense": 30, "magic": 0, "magic_defense": 30, "accuracy": 100, "evasion": 10, "crit": 15, "speed": 5},
     "engage_rows": [{"action": "SHOOT", "count": 1}, {"action": "SHOOT", "count": 2}, {"action": "SHOOT", "count": 2}],

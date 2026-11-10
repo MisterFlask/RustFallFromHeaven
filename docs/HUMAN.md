@@ -33,7 +33,7 @@ what the leader and the civilization bring: alignment, hero, world spell, each t
 starting techs, unique and blocked units and buildings, special abilities (the dialog takes the
 window's height: the list of civilizations is as tall as the column beside it, whose description
 keeps at least 8 lines and scrolls beyond; Start stays in view); then the world
-(opponents, world size, speed, difficulty, era, climate, sea level, seed, the game's name), game
+(opponents, world size, speed, difficulty, climate, sea level, seed, the game's name), game
 options, victory conditions and a closed "Debug" fold (Start at war, below), each choice's
 description as its tooltip, and "Vanilla experience"
 (leaders speak only FFH2's own lines; unticked, each civilization also has its own lines for
@@ -433,8 +433,7 @@ what it unlocks (the research chooser's icons, at most five with "+n"), and its 
 one you can research now, its cost otherwise, "known" for one you have; the states read without
 colour too: known (a check mark, muted), researching (a progress bar with its percentage), queued
 (its place in the queue in a corner), can research now (full contrast, gold border), not yet
-(dimmed). Each box's left edge is its era's colour, named by a legend above the tree (eras cut
-across the depth columns, so there are no era bands). The bands (`treeLayout` in empire.js) are
+(dimmed). The bands (`treeLayout` in empire.js) are
 the seven doctrines' lines of development: a tech of one doctrine is in its band (of several, the
 one it is a capstone of), a tech of none in the band of most of its neighbours ("General" for one
 with none), the bands ordered to keep the lines between them short; in a band each column's techs
@@ -517,7 +516,7 @@ a resource or gold per turn, a lease, over 10 turns). Under the tables: "Total o
 requested", and whether the proposal will be accepted or refused, with the reason when a rule
 rather than the totals decides. With only your side filled the deal is a gift: the summary gives
 the current value of your gifts, this gift's value, the relations it brings (+1 per tier of 150
-points in the first era, more in later ones, at most +3, for 30 turns) and the tiers. With only
+points, at most +3, for 30 turns) and the tiers. With only
 their side filled it is a demand: the most they would hand over (nothing unless your power is at
 least 1.5 times theirs and one of your cities is within 16 plots of theirs by land), what you ask,
 and the effect if they pay (-1 relations for 30 turns, no further demands for 10 turns).

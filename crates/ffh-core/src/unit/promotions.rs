@@ -329,9 +329,6 @@ impl Game {
             let handicap = &self.d.handicaps[self.handicap];
             price *= handicap.ai_unit_upgrade_percent;
             price /= 100;
-
-            price *= std::cmp::max(0, (handicap.ai_per_era_modifier * self.players[owner].current_era.i()) + 100);
-            price /= 100;
         }
 
         price -= (price * self.units[u].upgrade_discount) / 100;

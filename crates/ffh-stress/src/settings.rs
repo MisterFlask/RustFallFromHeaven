@@ -13,7 +13,6 @@ pub struct Settings {
     pub speed: String,
     pub handicap: String,
     pub player_handicap: String,
-    pub era: String,
     pub climate: String,
     pub sea: String,
     pub options: Vec<String>,
@@ -41,7 +40,6 @@ impl Settings {
             speed: "GAMESPEED_NORMAL".into(),
             handicap: "HANDICAP_NOBLE".into(),
             player_handicap: "HANDICAP_NOBLE".into(),
-            era: "ERA_ANCIENT".into(),
             climate: "CLIMATE_TEMPERATE".into(),
             sea: "SEALEVEL_MEDIUM".into(),
             options: Vec::new(),
@@ -70,7 +68,6 @@ impl Settings {
                 "--speed" => s.speed = v,
                 "--handicap" => s.handicap = v,
                 "--player-handicap" => s.player_handicap = v,
-                "--era" => s.era = v,
                 "--climate" => s.climate = v,
                 // `--sea-level` and repeated `--option`: ffh's spellings.
                 "--sea" | "--sea-level" => s.sea = v,
@@ -107,7 +104,6 @@ impl Settings {
             ("--speed", &self.speed, &b.speed),
             ("--handicap", &self.handicap, &b.handicap),
             ("--player-handicap", &self.player_handicap, &b.player_handicap),
-            ("--era", &self.era, &b.era),
             ("--climate", &self.climate, &b.climate),
             ("--sea", &self.sea, &b.sea),
         ] {
@@ -139,13 +135,12 @@ impl Settings {
     pub fn describe(&self) -> String {
         let short = |s: &str| s.split_once('_').map_or(s.to_string(), |(_, r)| r.to_string());
         let mut out = format!(
-            "s{} {}x{} {} {} {} {} {} {}",
+            "s{} {}x{} {} {} {} {} {}",
             self.seed,
             short(&self.world),
             self.civs,
             short(&self.speed),
             short(&self.handicap),
-            short(&self.era),
             short(&self.climate),
             short(&self.sea),
             self.turns
@@ -187,7 +182,6 @@ impl Settings {
         o.game_speed = ty(d, &self.speed)?;
         o.handicap = ty(d, &self.handicap)?;
         o.player_handicap = ty(d, &self.player_handicap)?;
-        o.era = ty(d, &self.era)?;
         o.climate = ty(d, &self.climate)?;
         o.sea_level = ty(d, &self.sea)?;
         o.options = self.options.iter().map(|n| ty::<GameOptionType>(d, n)).collect::<Result<_, _>>()?;

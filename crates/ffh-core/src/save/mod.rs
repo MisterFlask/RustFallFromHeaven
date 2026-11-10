@@ -121,7 +121,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `City::role`, `role_overridden`, `Player::governor_priorities`, `OrderData::empire`; a
 ///   `Governor` has one trait at most (`trait_`) and always a city; gone: `City::rule_changed_turn`,
 ///   `governor_penalty_turns`, `Governor::profile`, `traits`, `origin`, the bench.
-pub const FORMAT_VERSION: u32 = 30;
+/// - 31: no eras: gone are `Player::current_era` and `GameSetup::era`.
+pub const FORMAT_VERSION: u32 = 31;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

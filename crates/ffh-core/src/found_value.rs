@@ -872,23 +872,6 @@ impl Game {
         let d = self.d;
         let pl = &self.players[p];
         let team = pl.team;
-        let current_era = pl.current_era.i();
-
-        // `iDiff = abs(GC.getTechInfo(eTech).getEra() - getCurrentEra())` scaling, shared by
-        // units, buildings and projects.
-        let era_scale = |temp_value: &mut i32, tech: Option<TechType>| {
-            if let Some(tech) = tech {
-                let diff = (opt_to_i32(d.techs[tech].era) - current_era).abs();
-
-                if diff == 0 {
-                    *temp_value *= 3;
-                    *temp_value /= 2;
-                } else {
-                    *temp_value /= diff;
-                }
-            }
-        };
-
         let mut value = 0;
 
         if !self.team_is_bonus_obsolete(team, bonus) {
@@ -966,7 +949,6 @@ impl Game {
                         }
                     }
 
-                    era_scale(&mut temp_value, unit_info.prereq_and_tech);
 
                     value += temp_value;
                 }
@@ -1048,7 +1030,6 @@ impl Game {
                         temp_value /= max(1, city_count / 2);
                     }
 
-                    era_scale(&mut temp_value, building_info.prereq_and_tech);
 
                     value += temp_value;
                 }
@@ -1070,7 +1051,6 @@ impl Game {
                         temp_value *= 2;
                     }
 
-                    era_scale(&mut temp_value, project_info.tech_prereq);
 
                     value += temp_value;
                 }

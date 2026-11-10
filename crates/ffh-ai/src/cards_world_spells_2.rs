@@ -205,7 +205,7 @@ fn earthshapers_decree(g: &mut Game, p: PlayerId) {
 pub fn lens_choice(g: &Game, p: PlayerId) -> Option<TechType> {
     let d = g.d;
     let holders = |t: TechType| g.team_ids().filter(|&o| g.team_is_alive(o) && g.team_is_has_tech(o, Some(t))).count();
-    ws::lens_cards(g, p).into_iter().max_by_key(|&t| (d.techs[t].era, holders(t), std::cmp::Reverse(t)))
+    ws::lens_cards(g, p).into_iter().max_by_key(|&t| (d.techs[t].card.as_ref().map(|c| c.band), holders(t), std::cmp::Reverse(t)))
 }
 
 fn plagiarists_lens(g: &mut Game, p: PlayerId) {

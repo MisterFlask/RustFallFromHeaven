@@ -1462,7 +1462,7 @@ impl Game {
             return false;
         }
 
-        if !self.player_can_build(self.units[u].owner, plot, build, false, test_visible) {
+        if !self.player_can_build(self.units[u].owner, plot, build, test_visible) {
             return false;
         }
 

@@ -109,7 +109,7 @@ pub fn card_why_not(v: &Viewer, card: TechType) -> Option<String> {
 }
 
 /// The card `card` a great person of the human's holds, as the unit panel shows it: its suit
-/// (the great person's class), band (its era), alignment and faith, its needs with whether the
+/// (the great person's class), band (1 to 3), alignment and faith, its needs with whether the
 /// team knows each (`needs`: all of them; `needs_one_of`: one of them), whether the team knows the
 /// card, whether it can be discovered now and, when not, why (`why`).
 pub fn card_json(v: &Viewer, card: TechType) -> Json {
@@ -122,7 +122,7 @@ pub fn card_json(v: &Viewer, card: TechType) -> Json {
     crate::jobj! {
         "tech" => Json::idx(card),
         "suit" => Json::opt_idx(c.map(|c| c.suit)),
-        "band" => Json::opt_idx(info.era),
+        "band" => c.map_or(Json::Null, |c| Json::from(c.band)),
         "alignment" => Json::opt_idx(c.and_then(|c| c.alignment)),
         "religion" => Json::opt_idx(c.and_then(|c| c.religion)),
         "needs" => Json::Arr(info.prereq_and_techs.iter().map(need).collect()),

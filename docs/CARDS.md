@@ -19,7 +19,8 @@ A card tech is never researched or traded: the reader forces `disable` and `!tra
   | Merchant | `UNITCLASS_MERCHANT` |
   | Bard | `UNITCLASS_ARTIST` |
 
-- **Band:** the tech's `era` (I `ERA_ANCIENT`, II `ERA_CLASSICAL`, III `ERA_MEDIEVAL`).
+- **Band:** the card's `band`, 1, 2 or 3 (shown I, II, III): the order in which the deck deals
+  its cards.
 - **Needs:** the tech's `and_pre_reqs` / `or_pre_reqs`, the ordinary techs its content needs. A
   card is discovered only once its owner knows them.
 - **Alignment:** `card_alignment` (`ALIGNMENT_GOOD`, `ALIGNMENT_EVIL`) limits who draws it;
@@ -39,10 +40,9 @@ cannot be discovered before its needs, nothing else needs to require them.
   `deck_deal_to_unit`). It is held in `Unit::card`.
 - The deck has no state of its own. A card is in it while no team knows the card and no living
   unit holds it. A card whose great person dies, or is used another way, is back in the deck.
-- **Draw:** from the cards of the suit still in the deck, of the player's alignment, in the
-  band of the player's era (Medieval and later count as III). If that band is empty, the nearest
-  band below is used, else the nearest above. One `soren_rand_num` over the candidates in id
-  order.
+- **Draw:** from the cards of the suit still in the deck that the player's alignment may draw,
+  those of the lowest band among them: the deck is dealt in band order, whoever draws. One
+  `soren_rand_num` over the candidates in id order.
 
 **Discover:** `SPELL_DISCOVER_CARD` (`data/json/cards/000_deck.jsonc`). Its requirement is
 `unit_can_discover_card`; its result is `unit_discover_card` (the team learns the card, the
@@ -85,7 +85,7 @@ bare rules text (CLAUDE.md, "Rules text and tooltips").
       "advisor": "ADVISOR_SCIENCE",
       "cost": -1,
       "advanced_start_cost": -1,
-      "era": "ERA_CLASSICAL",
+      "band": 2,
       "and_pre_reqs": ["TECH_ALTERATION"],
       "card_suit": "UNITCLASS_SCIENTIST",
       "flavors": {"FLAVOR_SCIENCE": 1}

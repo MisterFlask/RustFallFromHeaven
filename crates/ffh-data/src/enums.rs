@@ -393,9 +393,6 @@ impl DomainType {
 define_idx!(/// C++ `EmphasizeTypes`
 EmphasizeType);
 
-define_idx!(/// C++ `EraTypes`
-EraType);
-
 define_idx!(/// C++ `EspionageMissionTypes`
 EspionageMissionType);
 

@@ -130,7 +130,6 @@ pub fn ffh_args(d: &GameData, ng: &NewGame) -> String {
     };
     opt("--speed", d.type_name(ng.speed), d.type_name(defaults.speed));
     opt("--handicap", d.type_name(ng.handicap), d.type_name(defaults.handicap));
-    opt("--era", d.type_name(ng.era), d.type_name(defaults.era));
     opt("--climate", d.type_name(ng.climate), d.type_name(defaults.climate));
     opt("--sea-level", d.type_name(ng.sea_level), d.type_name(defaults.sea_level));
     if ng.max_turns != 0 {

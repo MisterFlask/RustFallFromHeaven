@@ -92,3 +92,19 @@ pub const BUILDINGFOCUS_WORLDWONDER: i32 = 1 << 14;
 pub const BUILDINGFOCUS_DOMAINSEA: i32 = 1 << 15;
 pub const BUILDINGFOCUS_WONDEROK: i32 = 1 << 16;
 pub const BUILDINGFOCUS_CAPITAL: i32 = 1 << 17;
+
+/// Stands in for the C++ player's progress stage, which this game no longer has: 0, 1 or 2 by the
+/// techs `p`'s team knows (cards not counted): 1 from 5, 2 from 36 (where, in AI games, FFH2's
+/// second and third tech groups began).
+pub fn tech_stage(g: &ffh_core::game::Game, p: ffh_core::ids::PlayerId) -> i32 {
+    let d = g.d;
+    let t = g.players[p].team;
+    let known = d.techs.keys().filter(|&x| g.teams[t].has_tech[x] && d.techs[x].card.is_none()).count();
+    if known >= 36 {
+        2
+    } else if known >= 5 {
+        1
+    } else {
+        0
+    }
+}

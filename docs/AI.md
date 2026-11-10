@@ -398,7 +398,7 @@ population) cost gold every turn. Every optional unit (extra defenders beyond on
 and two in the capital, the mobile force beyond its first unit, the army target, siege
 engines for a camped stack, cheap units while growing, casters) is built only while one more
 unit is affordable with research at 60% (30% at war or while preparing one): the estimate
-takes the marginal unit cost (handicap/AI/era percentages and inflation as they apply now)
+takes the marginal unit cost (handicap and AI percentages and inflation as they apply now)
 against the gold the empire would make at that slider. Without it, AIs that had run out of
 buildings trained units until research was at zero and nothing but units was left to
 build.
@@ -723,7 +723,7 @@ counts the halved research time on path techs (`tech_plan::effective_left`, now 
 Switches: `FFH_AI_RESEARCH_PATH_OFF` (the player never commits), `FFH_AI_PATH_RESOURCES_OFF` (the
 choice ignores resources). Telemetry: `research_path` decisions; `ffh stats` reports each civ's
 `path`, `path_known` (every tech of it known), `path_res` (its `resource_pct` for the path),
-`late_techs`.
+`late_techs` (known techs of base cost over 3000).
 
 Measured on seeds 1-24 (5 AIs, small map, 500 turns), `FFH_AI_RESEARCH_PATH_OFF=ALL` against
 the default, paired by seed (one path for the rest of the game, no resource grants, no Shadow
@@ -3491,14 +3491,14 @@ only, against opponents without it, and reports that player's wins and share.
   checksum is the same with or without them). Fields of a snapshot row (one per ever-alive
   player, barbarians included; all computed from game state at the end of that turn):
   - identity: `p` player id, `ctrl` (controller name: `ffh-ai`, `cppai`), `team`, `civ`, `leader`, `alignment`, `barb`, `alive`, `elim_turn`
-    (turns played when found dead), `era`, `religion` (state religion), `vassal`;
+    (turns played when found dead), `religion` (state religion), `vassal`;
   - size: `cities`, `pop`, `land` (plots owned), `land_scored`, `area_tiles`, `area_civs`
     (other civs on the capital's landmass), `overseas` cities;
   - score (top-level `score_version: 2`; docs/SCORE.md): `score` (share of the world in basis
     points, 10000 = all of it) and its shares `score_pop_share`, `score_land_share`,
     `score_know_share` (parts per million); `legacy_score` (FFH2 `calculateScore`, which was
     `score` in output without `score_version`) and its raw inputs `score_pop_raw`,
-    `score_land_raw`, `score_tech_raw` (sum of era+1 over known techs), `score_wonders_raw` (5
+    `score_land_raw`, `score_tech_raw` (sum over known techs of research cost / 100, at least 1), `score_wonders_raw` (5
     per limited wonder); Civ4 `power` and `assets`;
   - technology: `techs` known, `tech_cost` (beakers of known techs at this game's settings),
     `tech_progress` (beakers into unfinished techs), `research` (beakers/turn), `pct` (research
@@ -3622,7 +3622,7 @@ only, against opponents without it, and reports that player's wins and share.
   `[tT pP]`; `observe` prints the checksum of each turn (the flag's is the last) and the units at
   the plot, so a fix can be checked on the same situation from the pinned save.
 - `--speed GAMESPEED_X`, `--handicap HANDICAP_X` (the game handicap: the AIs' bonuses),
-  `--era ERA_X`, `--climate CLIMATE_X`, `--sea-level SEALEVEL_X`, `--max-turns N`,
+  `--climate CLIMATE_X`, `--sea-level SEALEVEL_X`, `--max-turns N`,
   `--no-victory VICTORY_X` (repeatable) and `--leader LEADER_X` (the first slot's leader) give
   `ffh autoplay` / `stats` / `bench` the rest of a custom game's settings, so every game a
   spectator watches plays here too.

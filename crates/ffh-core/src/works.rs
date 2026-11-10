@@ -101,7 +101,7 @@ impl Game {
                 }
             }
         }
-        self.player_can_build(owner, plot, build, false, false)
+        self.player_can_build(owner, plot, build, false)
     }
 
     /// Sets what city `c`'s crews work on (`None`: they choose again in the city's turn); false,

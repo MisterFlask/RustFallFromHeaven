@@ -187,7 +187,7 @@ impl Game {
         for i in 0..DirectionType::NUM {
             if let Some(loop_plot) = self.plot_direction(city.x, city.y, DirectionType::from_usize(i)) {
                 if self.map.plots[loop_plot].owner == Some(player) {
-                    strength += opt_to_i32(self.current_era()) + 1;
+                    strength += 1;
                 }
             }
         }

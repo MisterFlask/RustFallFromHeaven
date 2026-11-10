@@ -1940,10 +1940,6 @@ impl Cai {
             return 0;
         }
 
-        if g.start_era().0 as i32 > 1 {
-            return 0;
-        }
-
         let mut value = 0;
 
         if g.is_option(GameOptionType::GAMEOPTION_ALWAYS_PEACE) {
@@ -2007,10 +2003,11 @@ impl Cai {
             return 0;
         }
 
-        let current_era = g.players[p].current_era.0 as i32;
-        let num_eras = d.eras.len() as i32;
+        let stage = tech_stage(g, p);
+        // C++ `GC.getNumEraInfos()`: 10 in FFH2.
+        let num = 10;
 
-        if current_era >= (num_eras - (2 + nonsense % 2)) {
+        if stage >= (num - (2 + nonsense % 2)) {
             if g.player_count_total_has_religion(p) >= num_cities * 3 {
                 return 3;
             }
@@ -2035,7 +2032,7 @@ impl Cai {
             }
         }
 
-        if current_era >= ((num_eras / 3) + nonsense % 2) {
+        if stage >= ((num / 3) + nonsense % 2) {
             2
         } else {
             1

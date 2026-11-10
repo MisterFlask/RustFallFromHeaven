@@ -44,7 +44,7 @@ complete bodies.
   `plot_city_xy_radius` / `Game::plot_city_xy_for`; `estimateDirection(dx, dy)` / `(plot, plot)`
   -> `estimate_direction` / `estimate_direction_plots`; `directionXY` likewise.
 - Values stored in CvInitCore are read through `game.rs` accessors (`game_turn()`,
-  `max_turns()`, `start_era()`, `game_speed_type()`, `calendar()`, `is_victory_valid(v)`,
+  `max_turns()`, `game_speed_type()`, `calendar()`, `is_victory_valid(v)`,
   `is_option(o)` (FfH locked options!), `target_score()`, ...) and written directly
   (`self.setup.max_turns = v`), except `set_game_turn` which has side effects.
 - Python event reporter calls (`CvEventReporter::*`) call the `ev_*` hooks of `ffh/events.rs`
@@ -74,7 +74,7 @@ used in the C++. `m_bScoreDirty` is kept (rank update timing feeds the FfH chall
 | `getNumAdvancedStartPoints` | CvGame.cpp:3571-3574 | 4 | `num_advanced_start_points` | ported |
 | `getTargetScore` | CvGame.cpp:3742-3745 | 4 | `target_score` | ported |
 | `getGameSpeedType` | CvGame.cpp:4937-4940 | 4 | `game_speed_type` | ported |
-| `getStartEra` | CvGame.cpp:4943-4946 | 4 | `start_era` | ported |
+| `getStartEra` | CvGame.cpp:4943-4946 | 4 | -- | removed (no eras, docs/PORTING.md) |
 | `getCalendar` | CvGame.cpp:4949-4952 | 4 | `calendar` | ported |
 | `isVictoryValid` | CvGame.cpp:5417-5422 | 6 | `is_victory_valid` | ported |
 | `isOption` | CvGame.cpp:5073-5092 | 20 | `is_option` | ported |
@@ -145,7 +145,7 @@ used in the C++. `m_bScoreDirty` is kept (rank update timing feeds the FfH chall
 | `countKnownTechNumTeams` | 3168-3184 | 17 | `count_known_tech_num_teams` | ported |
 | `goldenAgeLength` | 3295-3305 | 11 | `golden_age_length` | ported |
 | `victoryDelay` | 3307-3317 | 11 | `victory_delay` | ported |
-| `getCurrentEra` | 3366-3390 | 25 | `current_era` | ported |
+| `getCurrentEra` | 3366-3390 | 25 | -- | removed (no eras, docs/PORTING.md) |
 | `isTeamGame` | 3431-3435 | 5 | `is_team_game` | ported |
 | `setGameTurn` | 3492-3506 | 15 | `set_game_turn` | ported |
 | `incrementGameTurn` | 3509-3512 | 4 | `increment_game_turn` | ported |

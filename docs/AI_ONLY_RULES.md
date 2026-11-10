@@ -8,7 +8,7 @@ legitimate rule. Moving a group into the AI is a decision per group (CLAUDE.md, 
 done so far: the world spells (A1). Line numbers are as of commit `3023b92`.
 
 Counts: the rules read the human flag 229 times outside tests (`.human`, `*_is_human`), plus 7
-`group_ai_is_controlled` sites, 22 reads of handicap AI fields (and 8 inert per-era reads), 1
+`group_ai_is_controlled` sites, 22 reads of handicap AI fields (the 8 inert per-era reads went with eras, 2026-11-10), 1
 `bAllowAI` read and 3 autorun sites; every read is in one of the groups below.
 
 ## A. AI behaviour policy in the rules (hacks)
@@ -89,7 +89,7 @@ standard handicap (Noble, which AI-only games use) the AI already gets construct
 games these apply to every player alike. Hard-coded, not scaled by difficulty: an AI city's
 initial production of 10 (`city/turn.rs:170`) and free units for an AI that has met a human
 (`player/economy.rs:332`). The AI-assist options `AI_NO_MINIMUM_LEVEL` and `AI_NO_BUILDING_PREREQS`
-are off by default. The per-era AI modifier is 0 at every difficulty (inert).
+are off by default. The per-era AI modifier, 0 at every difficulty, went with eras (2026-11-10).
 
 ## C. Decisions a human makes in a popup and the AI by code (no rules difference)
 

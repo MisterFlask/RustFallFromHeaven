@@ -20,11 +20,6 @@ use crate::game::Game;
 use crate::ids::*;
 use ffh_data::*;
 
-/// The band a card belongs to, or a player is in: its era, Medieval and later as one.
-fn band(e: EraType) -> usize {
-    e.idx().min(2)
-}
-
 impl Game {
     /// Is `class` a suit of the deck (some card is drawn by its great people)?
     pub fn deck_is_suit(&self, class: UnitClassType) -> bool {
@@ -40,13 +35,12 @@ impl Game {
 
     /// The cards a great person of class `suit` born to `p` may be dealt now, in id order:
     /// the cards of the suit still in the deck whose alignment (if any) is the player's and whose
-    /// blocked alignment (if any) is not, from
-    /// the band of the player's era (I Ancient, II Classical, III Medieval and later); if that
-    /// band is empty, from the nearest band below it, else the nearest above.
+    /// blocked alignment (if any) is not, from the lowest band (`CardInfo::band`, 1 to 3) that
+    /// still holds such a card: the deck is dealt in band order.
     pub fn deck_candidates(&self, p: PlayerId, suit: UnitClassType) -> Vec<TechType> {
         let d = self.d;
         let alignment = self.players[p].alignment;
-        let open: Vec<(TechType, usize)> = d
+        let open: Vec<(TechType, i32)> = d
             .techs
             .keys()
             .filter_map(|t| {
@@ -54,19 +48,14 @@ impl Game {
                 if c.suit != suit || c.alignment.is_some_and(|a| Some(a) != alignment) || c.block_alignment.is_some_and(|a| Some(a) == alignment) {
                     return None;
                 }
-                Some((t, d.techs[t].era.map_or(0, band)))
+                Some((t, c.band))
             })
             .filter(|&(t, _)| self.deck_has_card(t))
             .collect();
-        let mine = band(self.players[p].current_era);
-        let order = (0..=mine).rev().chain(mine + 1..3);
-        for b in order {
-            let cards: Vec<TechType> = open.iter().filter(|&&(_, cb)| cb == b).map(|&(t, _)| t).collect();
-            if !cards.is_empty() {
-                return cards;
-            }
-        }
-        Vec::new()
+        let Some(lowest) = open.iter().map(|&(_, b)| b).min() else {
+            return Vec::new();
+        };
+        open.iter().filter(|&&(_, b)| b == lowest).map(|&(t, _)| t).collect()
     }
 
     /// Deals a card to a great person of class `suit` born to `p` (`None`: not a suit, or the
@@ -161,7 +150,7 @@ mod tests {
             let Some(card) = &info.card else { continue };
             assert!(info.disable && !info.trade, "{}: a card is neither researched nor traded", info.base.type_);
             assert!(!info.prereq_and_techs.is_empty() || !info.prereq_or_techs.is_empty(), "{}: a card needs a tech", info.base.type_);
-            assert!(info.era.is_some(), "{}: a card has a band (its era)", info.base.type_);
+            assert!((1..=3).contains(&card.band), "{}: a card's band is 1, 2 or 3", info.base.type_);
             let _ = (t, card);
         }
     }

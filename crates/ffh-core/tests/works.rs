@@ -248,7 +248,7 @@ fn the_pirate_cove_is_the_lanuns_crews() {
     assert!(d.builds[cove].city && d.builds[cove].prereq_civ == Some(lanun));
     assert!(d.ty::<SpellType>("SPELL_PIRATE_COVE").is_none());
     if g.player_get_civilization_type(w.p0) != Some(lanun) {
-        assert!(g.map.plot_ids().all(|q| !g.player_can_build(w.p0, q, cove, false, false)), "nobody else builds one");
+        assert!(g.map.plot_ids().all(|q| !g.player_can_build(w.p0, q, cove, false)), "nobody else builds one");
     }
 }
 
