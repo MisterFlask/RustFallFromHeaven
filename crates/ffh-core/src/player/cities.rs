@@ -228,6 +228,9 @@ impl Game {
         let original_owner = self.cities[old_city].original_owner;
         if self.telemetry.on() {
             self.tel_acquire(p, old_city, conquest, trade);
+            if conquest {
+                self.tel_autopsy_city_fell(p, old_city);
+            }
         }
 
         // C++ copies the plot's unit list first (`oldUnits`).
@@ -597,6 +600,10 @@ impl Game {
                     self.ev_city_acquired_and_kept(p, new_city);
                 }
             }
+        }
+
+        if conquest {
+            self.tel_autopsy_city_fell_end(new_city);
         }
 
         // This game's governors: a governed city goes to its governor (a city razed at once is

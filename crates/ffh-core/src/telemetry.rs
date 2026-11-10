@@ -32,6 +32,9 @@ use crate::game::Game;
 use crate::ids::*;
 use crate::structs::{TradeData, VoteSelectionSubData};
 
+#[path = "telemetry_autopsy.rs"]
+mod autopsy;
+
 /// The telemetry sink of a game (`Game::telemetry`); [`Telemetry::off`] by default.
 #[derive(Default)]
 pub struct Telemetry {
@@ -156,6 +159,8 @@ struct Tel {
     /// Spells with unit-side prerequisites a unit type may meet (by unit type), built on the
     /// first scan; true for those whose only prerequisite is the civilization.
     cand: Vec<Vec<(SpellType, bool)>>,
+    /// The autopsy's state (docs/AUTOPSY.md).
+    autopsy: autopsy::Autopsy,
 }
 
 impl Tel {

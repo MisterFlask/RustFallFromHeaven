@@ -482,6 +482,7 @@ impl Game {
 
                 // gDLL->openSlot(getID()): network.
             } else {
+                self.tel_autopsy_civ_died(p);
                 self.player_clear_research_queue(p);
 
                 self.player_kill_units(p);
@@ -583,6 +584,7 @@ impl Game {
                     // Telemetry: the spells left uncast as the turn ends.
                     if self.telemetry.on() && self.players[p].alive {
                         self.tel_spell_scan(p, true);
+                        self.tel_autopsy_census(p);
                     }
                     if self.players[p].alive {
                         self.player_do_turn(p);

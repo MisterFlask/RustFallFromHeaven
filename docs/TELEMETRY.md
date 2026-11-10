@@ -34,6 +34,9 @@ A 300-turn mixed game writes about 0.5 MB of events.
 
 ## What is recorded
 
+The autopsy's facts (`battle`, `city_fell`, `civ_died` events and the `army` census counts) are
+described in docs/AUTOPSY.md.
+
 **Counts** (`players.<p>.counts.<category>.<key> = [count, sum]`):
 
 | Category | Key | Sum |

@@ -766,6 +766,7 @@ impl Game {
         if candidates.is_empty() && slots.sentinels == 0 {
             return Err("there is nobody to fight there");
         }
+        self.tel_autopsy_battle(p, from, to, &force);
         // The plan as a human attacker saw it (preview.rs), before the summons are made: a
         // preview makes the same summons, with the same ids, in a copy of the game.
         let wants_log = log.unwrap_or_else(|| self.engage_seen_by_human(&force, p, to));
