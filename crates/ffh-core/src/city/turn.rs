@@ -815,11 +815,23 @@ impl Game {
                     let (x, y) = (self.cities[c].x, self.cities[c].y);
                     let new_unit = self.player_init_unit(owner, unit, x, y, opt_from_i32(train_unit_ai), None);
 
-                    // FfH: Modified by Kael 07/05/2008 (finishMoves, production experience, the
-                    // rally plot mission and automation moved into applyBuildEffects)
-                    self.city_apply_build_effects(c, new_unit);
-
-                    self.ev_unit_built(c, new_unit);
+                    // Creating the unit can remove the city (entering its plot, a unit takes a city
+                    // of a team it is at war with) or the unit: the unit stays built, and what
+                    // follows needs both.
+                    if !self.cities.contains(c) {
+                        return;
+                    }
+                    if self.units.contains(new_unit) {
+                        // FfH: Modified by Kael 07/05/2008 (finishMoves, production experience, the
+                        // rally plot mission and automation moved into applyBuildEffects)
+                        self.city_apply_build_effects(c, new_unit);
+                    }
+                    if self.units.contains(new_unit) && self.cities.contains(c) {
+                        self.ev_unit_built(c, new_unit);
+                    }
+                    if !self.cities.contains(c) {
+                        return;
+                    }
 
                     if d.units[unit].domain_type == Some(DomainType::DOMAIN_AIR) && self.units.contains(new_unit) {
                         let team = self.city_team(c);
@@ -855,6 +867,10 @@ impl Game {
 
                     let num_real_building = self.cities[c].num_real_building[building];
                     self.city_set_num_real_building(c, building, num_real_building + 1);
+                    // (a building's effects, such as its free units, can remove the city)
+                    if !self.cities.contains(c) {
+                        return;
+                    }
 
                     let production_needed = self.city_production_needed_building(c, building);
                     // max overflow is the value of the item produced (to eliminate prebuild exploits)
@@ -895,6 +911,11 @@ impl Game {
 
                     self.team_change_project_count(team, project, 1);
 
+                    // (the project's Python and its effects can remove the city)
+                    if !self.cities.contains(c) {
+                        return;
+                    }
+
                     if d.projects[project].spaceship {
                         // C++: when the team can launch the project's victory, the launch popup
                         // for a human owner, `AI_launch(eVictory)` for an AI owner (AI: launch
@@ -927,7 +948,8 @@ impl Game {
             _ => debug_assert!(false, "pOrderNode->m_data.eOrderType is not a valid option"),
         }
 
-        // The Python events above must not delete the city (C++ would use a dangling `this`).
+        // The order's completion can remove the city (C++ would use a dangling `this`): the item
+        // stays completed and the queue went with the city.
         if !self.cities.contains(c) {
             return;
         }
