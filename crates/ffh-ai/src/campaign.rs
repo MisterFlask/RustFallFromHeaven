@@ -767,11 +767,18 @@ fn order(g: &mut Game, grp: GroupId, mission: MissionType, x: i32, y: i32, flags
     g.group_push_mission(grp, mission, x, y, flags, false, false, Some(MissionAIType::MISSIONAI_ASSAULT), Some(tp), None);
 }
 
-/// [`order`] a move to `dest`, one turn of it: the rest of the path is dropped, so the stack
-/// decides again next turn (an AI group on a multi-turn mission gets no orders until it ends,
+/// [`order`] a move to `dest`, one turn of it (when the plot it reaches has a supply line or the
+/// target is near: [`crate::supply::may_move`]; else it holds): the rest of the path is dropped,
+/// so the stack decides again next turn (an AI group on a multi-turn mission gets no orders until it ends,
 /// C++ `CvSelectionGroup::doTurn`: stacks walked on to plots chosen for an earlier phase while
 /// the force they were part of dwindled, or past cities of ours in peril while gathering).
 fn march(g: &mut Game, grp: GroupId, dest: PlotIdx, tp: PlotIdx) {
+    // Not to a plot without a supply line, unless the target is within two turns of it
+    // (docs/SUPPLY.md, supply.rs): the stack holds where it is.
+    if !crate::supply::may_move(g, grp, dest, Some(tp)) {
+        hold_for(g, grp, tp);
+        return;
+    }
     let (x, y) = g.map.xy(dest);
     order(g, grp, MissionType::MISSION_MOVE_TO, x, y, 0, tp);
     if alive(g, grp) && !g.groups[grp].mission_queue.is_empty() && !g.group_ready_to_move(grp, false) {
@@ -1158,6 +1165,7 @@ pub(crate) fn strike(g: &mut Game, v: &mut View, op: &Op) {
         let Some(grp) = g.units[u].group else { break };
         let moves = g.unit_moves_left(u);
         g.groups[grp].ai_group_attack = false;
+        crate::tactics::note_attack(g, p, g.unit_plot(u), tp);
         order(g, grp, MissionType::MISSION_MOVE_TO, tx, ty, MOVE_DIRECT_ATTACK, tp);
         fights += 1;
         if alive(g, grp) {

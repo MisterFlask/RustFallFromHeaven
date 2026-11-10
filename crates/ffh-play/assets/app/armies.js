@@ -10,11 +10,16 @@
 // few turns without progress it goes to the nearest garrison instead. The `armies` query lists
 // the armies (with the cities each may requisition from) and the garrisons with the recruits
 // marching to them; the buttons send `army_rename`, `army_target`, `army_requisition`,
-// `army_requisition_set`, `army_upgrade`, `army_disband` and `recruit_dest`, which the server
-// checks.
+// `army_requisition_set`, `army_upgrade`, `army_disband`, `army_tactic`, `garrison_tactic` and
+// `recruit_dest`, which the server checks.
+//
+// Each army and each garrison has a battle tactic (docs/TACTICS.md): how its units are arranged
+// in every battle it fights. A change takes effect at the start of your next turn. Each army's
+// supply (docs/SUPPLY.md) is stated in the view's bare words (`supply.text`).
 
 import * as api from "./api.js";
-import { S, dname, turns } from "./state.js";
+import { S, dname, turns, info } from "./state.js";
+import { plain } from "./markup.js";
 import { h } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
@@ -50,7 +55,20 @@ addHelp({
       "ul",
       h("li", "A city sends the land combat units it trains to its default destination (its own garrison unless you choose another city's or an army), or to the destination of each order in its queue."),
       h("li", "A unit trained for an army or another city's garrison marches there on its own: it shows on the map, but takes no orders until it arrives."),
-      h("li", `Toward an army it advances only while the army is in supply; after ${stallTurns ? turns(stallTurns) : "a few turns"} without progress it goes to the nearest garrison instead.`),
+      h("li", `Toward an army it advances only while the army is supplied; after ${stallTurns ? turns(stallTurns) : "a few turns"} without progress it goes to the nearest garrison instead.`),
+    ),
+    h("h4", "Supply lines"),
+    h(
+      "ul",
+      h("li", "Each army needs a supply line: the cheapest path over land to one of your cities, or to one of your ships that can carry land units, within its budget. A road plot costs least, then your own territory; other land costs more. Enemy units, enemy cities, land next to a manned enemy fort and closed borders block it."),
+      h("li", "The map draws your armies' lines, and the lines of other armies you see over the plots you have revealed. With an army selected, the plot under the pointer says whether it would be supplied there."),
+      h("li", "Cut at the start of your turn: Hunger (no healing, no recruits), after a few turns Starvation (units lose HP each turn down to a floor, and deal less damage in battles). A restored line ends both at your next turn."),
+    ),
+    h("h4", "Battle tactics"),
+    h(
+      "ul",
+      h("li", "Each army and each city's garrison has a battle tactic (the Armies screen, the city screen): which of its units fight when the slots are few and where they stand. Every battle it fights, attacking or defending, is arranged by it; the battle plan shows the result."),
+      h("li", "A change takes effect at the start of your next turn. A side's tactic in a battle is that of the army (or garrison) most of its units belong to."),
     ),
   ],
 });
@@ -84,6 +102,29 @@ function recruitLine(t, { to = false, go } = {}) {
     go ? h("button.link.small", { onclick: () => go(t), title: "Select it on the map (it takes no orders until it arrives)" }, `at (${t.x}, ${t.y})`) : h("span.dim", `at (${t.x}, ${t.y})`),
     h(st.warn ? "span.warn" : "span.dim", { title: st.title }, ` · ${st.text}`),
     t.diverted ? h("span.dim", { title: "Sent to the nearest garrison instead of its first destination" }, " · diverted") : null,
+  );
+}
+
+/** The battle tactics of the data (docs/TACTICS.md): `[{i, name, help}]` (help without markup). */
+function tactics() {
+  return (S.data?.tables?.BattleTacticType ?? []).map((t, i) => ({ i, name: t.name, help: t.help ? plain(t.help) : "" }));
+}
+
+/** A tactic selector (four options, each with its help as its tooltip) for `now` (the tactic in
+ *  force) and `next` (the one from the next turn; a pending change says "from next turn"); `set`
+ *  sends the choice. `cls`: the select's class. */
+export function tacticControl(now, next, set, cls, label = "Tactic") {
+  const list = tactics();
+  const help = list[next]?.help ?? "";
+  return h(
+    "span.tactic",
+    h("span", `${label} `),
+    h(
+      `select.${cls}`,
+      { "aria-label": label, title: help, onchange: (ev) => set(Number(ev.target.value)) },
+      list.map((t) => h("option", { value: String(t.i), selected: t.i === next, title: t.help }, t.name)),
+    ),
+    next !== now ? h("span.dim.tactic-pending", { title: "A change of tactic takes effect at the start of your next turn" }, ` from next turn (now ${info("BattleTacticType", now)?.name ?? "-"})`) : null,
   );
 }
 
@@ -208,10 +249,12 @@ export async function openArmies({ select, centerOn } = {}) {
           }),
           h("span", ` ${n} unit${n === 1 ? "" : "s"}`),
           a.x !== null ? h("button.link.small", { onclick: go, title: "Select the army on the map" }, `at (${a.x}, ${a.y})`) : null,
-          a.in_supply ? h("span.badge", { title: `Supply line within ${r.supply_budget}` }, "in supply") : h("span.badge.warn", { title: `No supply line: no healing; its recruits wait, and after ${turns(r.stall_turns)} go to the nearest garrison` }, "out of supply"),
           a.disband_to ? h("span.dim", ` · disbanded: marching to ${a.disband_to}`) : null,
         ),
         h("div.dim", composition(a.units) || "—"),
+        // Supply (docs/SUPPLY.md, section 5): the state in bare words.
+        h(`div.army-supply${a.supply?.state === "supplied" && a.supply?.line ? "" : ".warn"}`, { title: `Supply line: the cheapest path over land to one of your cities or ships, of cost ${r.supply_budget} at most. Cut: Hunger, then Starvation.` }, a.supply?.text ?? ""),
+        h("div.row", tacticControl(a.tactic, a.tactic_next, (t) => act({ c: "army_tactic", army: a.id, tactic: t }), "army-tactic")),
         h(
           "div.row",
           h(
@@ -324,6 +367,10 @@ export function recruitView(c, reload) {
       rc.options.map((opt) => h("option", { value: key(opt.dest), selected: key(opt.dest) === key(rc.default ?? rc.options[0].dest) }, opt.name)),
     ),
     h("span.dim", ` · garrison: ${rc.garrison.length ? composition(rc.garrison) : "none"}`),
+    // The garrison's battle tactic (docs/TACTICS.md).
+    h("div.garrison-tactic-row", tacticControl(rc.garrison_tactic, rc.garrison_tactic_next, async (t) => {
+      if (await run({ c: "garrison_tactic", city: c.id, tactic: t })) reload();
+    }, "garrison-tactic", "Garrison tactic")),
     requisitionNote(c),
   );
 }

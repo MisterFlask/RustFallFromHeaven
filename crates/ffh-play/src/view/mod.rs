@@ -455,6 +455,9 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         // to garrisons (unit ids: each unit's `march` says where and how long).
         "armies" => armies::armies(v),
         "garrison_marching" => armies::garrison_marching(v),
+        // Supply lines (docs/SUPPLY.md): the lines of the other players' armies the human sees,
+        // clipped to the plots it has revealed (its own armies' are each army's `supply.line`).
+        "supply_lines" => armies::foreign_supply_lines(v),
         // Engagement combat (docs/ENGAGEMENTS.md): the human's battles of this turn and the last.
         "battles" => battles::recent(v),
         // C++ `CvPlayer::m_groupCycle`: the order W cycles the waiting groups in

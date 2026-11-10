@@ -1,40 +1,34 @@
 // The battle plan (the formation-battle prototype's set-up, phase 6 revision 4): before an attack,
-// both lines on the battlefield (yours as the rules' auto formation proposes it, theirs as you know
-// it), the ground's scenery and its rules in words, a tooltip of what each unit is, the pool's
-// other units, the forecast, and Attack. Click one of your units, then a cell of your grid to move
-// it there or another unit to swap (a large unit takes two cells of a row); Auto-arrange asks the
-// rules again. Every formation is sent to the source for its forecast: every number here is the
-// engine's, none is worked out by the client.
+// both lines on the battlefield as each side's battle tactic arranges them (docs/TACTICS.md: an
+// army's tactic, or a garrison's; the grid of one battle is never edited by hand), both tactics
+// named, the ground's scenery and its rules in words, a tooltip of what each unit is, the pool's
+// other units, the forecast, and Attack. Every number here is the engine's (its preview), none is
+// worked out by the client; a tactic is changed on the Armies screen and the city screen.
 
 import { h, toast } from "./dom.js";
-import {
-  uname, rowsLine, ROWS, actionAt, actionText, reachText, specials, slotSum, slotCap,
-  placeOf, placeFromList, formationOf, previewForecast, gridOf, slotsUsed, placeUnit, benchUnit, inLine, x100, stat, hpOf, tyLabel,
-} from "./battle_log.js";
-import { loadArt, unitXY, cellXY, cellAt, figBox, pic, faceFlip, headChip, uiIcon, btn, add, groundLine, FRAME_W, FRAME_H, COLORS } from "./battle_stage.js";
+import { uname, ROWS, actionAt, actionText, reachText, specials, slotSum, rowsLine, placeOf, slotsUsed, stat, hpOf, tyLabel, tyIdx } from "./battle_log.js";
+import { info } from "./state.js";
+import { plain } from "./markup.js";
+import { loadArt, unitXY, figBox, pic, faceFlip, headChip, uiIcon, btn, add, groundLine, FRAME_W, FRAME_H } from "./battle_stage.js";
 
 export const NAME = "plan";
 
-// `fc`: the forecast of the formation shown (null: none); `pending`: a preview asked and not yet
-// answered; `refused`: the last answer was for another formation than the one asked (the engine
-// refused it and answered in its auto formation); `busy`: the attack is on its way (the plan stays
+// `fc`: the forecast of the plan (null: none); `busy`: the attack is on its way (the plan stays
 // open until its battle's screens take over); `visit`: counts the plan's openings and leavings (an
 // answer that comes after the plan was left is dropped).
-const P = { ctx: null, pv: null, F: null, place: null, def: null, sel: null, hover: null, hoverCell: null, fc: null, pending: false, refused: false, errors: [], declare: null, seq: 0, timer: 0, busy: false, visit: 0, figs: [], flash: null, tip: null };
+const P = { ctx: null, pv: null, F: null, place: null, def: null, hover: null, fc: null, errors: [], declare: null, busy: false, visit: 0, figs: [], tip: null, summons: [], clicks: 0 };
 
 const me = 0;
 
 export async function enter(ctx) {
   const visit = ++P.visit;
   P.ctx = ctx;
-  P.sel = null;
   P.hover = null;
-  P.hoverCell = null;
-  P.flash = null;
   P.busy = false;
   P.pv = null;
+  P.clicks = 0;
   render(ctx);
-  const pv = await ctx.source.preview({});
+  const pv = await ctx.source.preview();
   if (visit !== P.visit) return;
   // No plan (the engine answers a plot the player does not see, or one not next to the attackers,
   // with its errors alone): say why and close.
@@ -51,103 +45,30 @@ export async function enter(ctx) {
   P.F = pv.fighters;
   P.place = placeOf(P.F, me);
   P.def = placeOf(P.F, 1 - me);
-  takePreview(pv);
+  P.fc = pv.forecast ?? null;
+  P.errors = pv.errors ?? [];
+  P.declare = pv.declare_war ?? null;
+  // The units the battle calls (docs/ENGAGEMENTS.md, "Summons"): made for it, no fighter here.
+  P.summons = P.fc ? (pv.summons ?? []).filter((x) => !x.on_kill) : [];
   render(ctx);
 }
 
 export function leave() {
   P.visit++;
-  P.seq++;
-  clearTimeout(P.timer);
   P.tip?.remove();
   P.tip = null;
 }
 
-// ---------------------------------------------------------------------------------------------
-// The formation and its forecast
-
-/** The formation as the protocol sends it. */
-const formation = () => formationOf(P.place, P.F);
-
-/** Takes a preview's forecast, errors and war (its fighters' `b` mapped to ours by unit). `sent`:
- *  the formation asked for (none: the first preview, in the rules' own). A reply for another
- *  formation (the engine refused the one sent and answered in its auto formation) brings no
- *  forecast of this one: its numbers are dropped, its errors say why. */
-function takePreview(pv, sent = null) {
-  const byUnit = new Map(P.F.map((f) => [f.unit, f.b]));
-  const { forecast, refused } = previewForecast(pv, sent);
-  P.fc = forecast ? { ...forecast, per: (forecast.per ?? []).map((p) => ({ ...p, b: byUnit.get(pv.fighters?.[p.b]?.unit) ?? p.b })) } : null;
-  P.pending = false;
-  P.refused = refused;
-  P.errors = pv.errors ?? [];
-  P.declare = pv.declare_war ?? null;
-  // The units the battle calls (docs/ENGAGEMENTS.md, "Summons"): made for it, no fighter here.
-  P.summons = forecast ? (pv.summons ?? []).filter((x) => !x.on_kill) : [];
+/** Side `side`'s tactic: `{name, help}` (the data's; a fixture without tactics fights in Line). */
+function tacticOf(side) {
+  const v = P.pv?.tactics?.[side] ?? "TACTIC_LINE";
+  const t = info("BattleTacticType", tyIdx("BattleTacticType", v));
+  return { name: t?.name ?? tyLabel("BattleTacticType", v), help: t?.help ? plain(t.help) : "" };
 }
 
-/** The formation changed: the board now, the forecast when the source answers. */
-function changed(ctx) {
-  P.fc = null;
-  P.pending = true;
-  P.refused = false;
-  render(ctx);
-  clearTimeout(P.timer);
-  const seq = ++P.seq;
-  P.timer = setTimeout(async () => {
-    const sent = formation();
-    let pv;
-    try {
-      pv = await ctx.source.preview({ formation: sent });
-    } catch (e) {
-      if (seq !== P.seq) return;
-      P.pending = false;
-      P.errors = [`The forecast failed: ${e.message ?? e}`];
-      render(ctx);
-      return;
-    }
-    if (seq !== P.seq) return;
-    takePreview(pv, sent);
-    render(ctx);
-  }, 120);
-}
-
-function flash(ctx, text) {
-  P.flash = { text, until: performance.now() + 4000 };
-  render(ctx);
-}
-
-/** Puts your unit `b` at (`lane`, `row`) (a swap when someone stands there). */
-function moveTo(ctx, b, lane, row) {
-  const r = placeUnit(P.place, P.F, { lanes: P.pv.lanes[me], cap: slotCap(P.pv.slots[me]) }, b, lane, row);
-  if (r.error) return flash(ctx, r.error);
-  P.place = r.place;
-  P.sel = null;
-  if (r.out.length) P.flash = { text: `${r.out.map((o) => uname(P.pv, o)).join(" and ")} ${r.out.length > 1 ? "leave" : "leaves"} the line: no room where ${uname(P.pv, b)} stood.`, until: performance.now() + 4000 };
-  changed(ctx);
-}
-
-function takeOut(ctx, b) {
-  P.place = benchUnit(P.place, b);
-  P.sel = null;
-  changed(ctx);
-}
-
-async function autoArrange(ctx) {
-  if (P.busy) return;
-  let list;
-  try {
-    list = await ctx.source.autoArrange();
-  } catch (e) {
-    return flash(ctx, `Auto-arrange failed: ${e.message ?? e}`);
-  }
-  P.place = placeFromList(P.F, list);
-  P.sel = null;
-  changed(ctx);
-}
-
-/** Attacks with the formation shown. While the attack is on its way (the `engage` command, a
- *  declaration of war asked, the battle's log) the plan cannot be closed (Escape and Cancel wait):
- *  the battle's screens take over from it, and its message is theirs to show. */
+/** Attacks. While the attack is on its way (the `engage` command, a declaration of war asked, the
+ *  battle's log) the plan cannot be closed (Escape and Cancel wait): the battle's screens take
+ *  over from it, and its message is theirs to show. */
 async function attack(ctx) {
   if (P.busy || !P.pv || P.errors.length || !P.place.size) return;
   const visit = P.visit;
@@ -155,7 +76,7 @@ async function attack(ctx) {
   render(ctx);
   let r = null;
   try {
-    r = await ctx.source.attack({ formation: formation(), declare_war: P.declare !== null });
+    r = await ctx.source.attack({ declare_war: P.declare !== null });
   } catch (e) {
     console.warn("battle plan: the attack:", e);
   } finally {
@@ -170,9 +91,9 @@ async function attack(ctx) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// The board
+// The board: it shows the lines; the pointer only tells what a unit is
 
-/** Where fighter `b` stands now (yours as edited, theirs as known), or null. */
+/** Where fighter `b` stands (in its side's line), or null. */
 const posOf = (b) => (P.F[b].side === me ? P.place.get(b) : P.def.get(b)) ?? null;
 
 function scene(now) {
@@ -183,7 +104,6 @@ function scene(now) {
     const pos = posOf(f.b);
     if (!pos) continue;
     const [x, y] = unitXY(G, f, pos);
-    const sel = P.sel === f.b;
     const per = P.fc?.per?.find((p) => p.b === f.b);
     figs.push({
       b: f.b,
@@ -193,20 +113,15 @@ function scene(now) {
       large: f.large,
       pic: pic(f, sides, "idle", now + f.b * 137, true),
       flip: faceFlip(f, sides),
-      sel: sel ? COLORS.gold : null,
-      glow: sel ? COLORS.gold : P.hover === f.b ? "#ffffff" : null,
+      sel: null,
+      glow: P.hover === f.b ? "#ffffff" : null,
       bar: { hp: f.hp_start, max: f.max_hp * 100 },
       odds: per ? `${per.fall_pct}%` : null,
       oddsHot: per && per.fall_pct > 50,
       box: figBox(f, x, y),
     });
   }
-  const cells = [];
-  if (P.sel !== null) {
-    for (let r = 0; r < 3; r++) for (let l = 0; l < P.pv.lanes[me]; l++) cells.push({ side: me, lane: l, row: r });
-    if (P.hoverCell && P.hoverCell.side === me) cells.push({ ...P.hoverCell, fill: "rgba(246, 198, 80, 0.32)", color: COLORS.goldLt });
-  }
-  return { figs, cells };
+  return { figs, cells: [] };
 }
 
 export function frame(ctx, _dt, now) {
@@ -214,10 +129,6 @@ export function frame(ctx, _dt, now) {
   const sc = scene(now);
   P.figs = sc.figs;
   ctx.stage.draw(sc);
-  if (P.flash && now > P.flash.until) {
-    P.flash = null;
-    document.getElementById("bt-flash")?.remove();
-  }
 }
 
 /** Frame coordinates of a pointer event. */
@@ -232,48 +143,21 @@ function figUnder(x, y) {
   return best;
 }
 
-/** What a click at frame point (x, y) is on: `{b, cell}`, the fighter under it (the frontmost hit
- *  box) and its cell (of a large unit, the one of its two the point is over), else the cell there
- *  (`b` null; `cell` null off the grids). */
-function hitAt(x, y) {
-  const G = P.ctx.stage.G;
-  const f = figUnder(x, y);
-  if (!f) return { b: null, cell: cellAt(G, x, y) };
-  const pos = posOf(f.b);
-  const c = cellAt(G, x, y);
-  const lane = f.large && c && c.side === f.side && c.row === pos.row && c.lane === pos.lane + 1 ? pos.lane + 1 : pos.lane;
-  return { b: f.b, cell: { side: f.side, lane, row: pos.row } };
-}
-
 function onMove(ev) {
   if (!P.pv) return;
   const [x, y] = framePoint(ev);
   const f = figUnder(x, y);
   const hover = f ? f.b : null;
-  const cell = cellAt(P.ctx.stage.G, x, y);
-  P.hoverCell = cell;
-  ev.currentTarget.style.cursor = (f && P.F[f.b].side === me) || (P.sel !== null && cell?.side === me) ? "pointer" : f ? "help" : "default";
+  ev.currentTarget.style.cursor = f ? "help" : "default";
   if (hover !== P.hover) P.hover = hover;
   if (hover !== null) showTip(P.F[hover], ev.clientX, ev.clientY);
   else hideTip();
 }
 
-function onClick(ev) {
-  if (!P.pv || P.busy) return;
-  const [x, y] = framePoint(ev);
-  const { b, cell } = hitAt(x, y);
-  clickAt(P.ctx, b, cell);
-}
-
-/** A click on fighter `b` (or null) in `cell` (or null). */
-function clickAt(ctx, b, cell) {
-  if (b !== null && P.sel === b) {
-    P.sel = null;
-    return render(ctx);
-  }
-  if (P.sel !== null && cell && cell.side === me) return moveTo(ctx, P.sel, cell.lane, cell.row);
-  P.sel = b !== null && P.F[b].side === me ? b : null;
-  render(ctx);
+/** A click on the board moves nobody (the tactics arrange the lines); it is counted for the smoke
+ *  test, which checks that. */
+function onClick() {
+  P.clicks++;
 }
 
 export function key(ctx, ev) {
@@ -284,10 +168,7 @@ export function key(ctx, ev) {
   if (ev.key === "Escape") {
     // The attack on its way: the plan stays until the battle's screens take over.
     if (P.busy) return true;
-    if (P.sel !== null) {
-      P.sel = null;
-      render(ctx);
-    } else ctx.close();
+    ctx.close();
     return true;
   }
   return false;
@@ -314,7 +195,8 @@ export function unitInfo(pv, f, { pos, fc } = {}) {
       specials(f, pv.ground, pv.params).map((n) => h("li", n)),
     ),
     per ? h("div.small", "In the forecast it falls in ", h("b", `${per.fall_pct}%`), " of battles", per.escape_pct ? ` and escapes a killing blow in ${per.escape_pct}%` : "", ".") : null,
-    pos ? null : h("div.small.dim", f.side === me ? "Not in the line: click it, then a cell, to place it." : "Not in their line: it waits on the plot."),
+    pos ? null : h("div.small.dim", f.side === me ? "Not in the line: its tactic left it out." : "Not in their line: it waits on the plot."),
+    (pv.starving ?? []).some((x) => x.b === f.b) ? h("div.small.warn", `Starving: ${pv.starving.find((x) => x.b === f.b).pct}% damage dealt.`) : null,
   ];
 }
 
@@ -363,8 +245,8 @@ function render(ctx) {
     return;
   }
   const F = P.F;
-  // the pointer's layer over the board (under the panels)
-  add(ov, h("div.bt-board", { onmousemove: onMove, onmouseleave: () => ((P.hover = null), (P.hoverCell = null), hideTip()), onclick: onClick }));
+  // the pointer's layer over the board (under the panels): tooltips only
+  add(ov, h("div.bt-board", { onmousemove: onMove, onmouseleave: () => ((P.hover = null), hideTip()), onclick: onClick }));
   const where = pv.plot?.city?.name ?? (pv.sides?.[1 - me]?.label ? `the ${pv.sides[1 - me].label}` : "the plot");
   const used = slotsUsed(P.place, F);
   const mineIn = F.filter((f) => f.side === me && P.place.has(f.b));
@@ -372,6 +254,8 @@ function render(ctx) {
   const theirsIn = F.filter((f) => f.side !== me && P.def.has(f.b));
   const theirsOut = F.filter((f) => f.side !== me && !P.def.has(f.b));
   const watch = ctx.prefs.get("watch", "watch");
+  const tac = [tacticOf(me), tacticOf(1 - me)];
+  const tacticLine = (side) => h("div.bt-row.small.bt-tactic", { "data-side": side, title: tac[side].help }, h("span.dim", "Tactic: "), h("b", tac[side].name));
   // ---- top left: the attack, your side
   add(
     ui,
@@ -380,10 +264,10 @@ function render(ctx) {
       h("div.bt-row", uiIcon("attack", 16), h("span.bt-h3", `Attack ${where}`)),
       h("div.bt-row", h("span.bt-h3.you", pv.sides?.[me]?.label ?? "Your army"), h("span.dim", `${used} of ${pv.slots[me].total}${pv.slots[me].river_only ? ` (+${pv.slots[me].river_only} river)` : ""} slots · ${pv.lanes[me]} lanes`)),
       h("div.small.dim", { title: "Why this many slots" }, slotSum(pv.slots[me])),
+      tacticLine(me),
       h(
         "div.bt-row",
         { style: { marginTop: "2px" } },
-        btn("Auto-arrange", { cls: "sm", title: "The rules' formation: one of each kind first, the strongest, each in the row it prefers", onclick: () => autoArrange(ctx) }),
         h("span.dim", "Then"),
         btn("Watch", { cls: "sm", on: watch === "watch", title: "Attack, then watch the battle", onclick: () => (ctx.prefs.set("watch", "watch"), render(ctx)) }),
         btn("Report", { cls: "sm", on: watch === "report", title: "Attack, then straight to the report", onclick: () => (ctx.prefs.set("watch", "report"), render(ctx)) }),
@@ -396,25 +280,25 @@ function render(ctx) {
     pnl(
       { right: "6px", top: "4px", width: "470px" },
       h("div.bt-row", h("span.bt-h3.them", pv.sides?.[1 - me]?.label ?? where), h("span.dim", `${slotsUsed(P.def, F)} of ${pv.slots[1 - me].total} slots · ${pv.lanes[1 - me]} lanes`)),
+      tacticLine(1 - me),
       theirsOut.length
         ? h("div.bt-row.small", { title: "Defenders stay in place until annihilated: the plot falls only when none is left" }, h("span.dim", `${theirsOut.length} more wait${theirsOut.length > 1 ? "" : "s"} on the plot`), theirsOut.slice(0, 8).map((f) => tipped(f, headChip(f, pv.sides, { w: 22, h: 22, flip: true }))))
         : null,
       groundLine(pv.ground, pv.plot),
     ),
   );
-  // ---- bottom left: the pool's other units, the selection
+  // ---- bottom left: the pool's other units (what its tactic left out), the rule
   const benchRows = mineOut.map((f) =>
     tipped(
       f,
       h(
-        `div.bt-bench${P.sel === f.b ? ".sel" : ""}`,
-        { role: "button", tabIndex: 0, "data-b": f.b, title: "", onclick: () => ((P.sel = P.sel === f.b ? null : f.b), render(ctx)) },
+        "div.bt-bench",
+        { "data-b": f.b, title: "" },
         headChip(f, pv.sides, { w: 28, h: 26 }),
         h("span.bt-ell", h("b", uname(pv, f.b)), h("br"), h("span.small.dim", `${rowsLine(f)}${f.large ? " · large" : ""} · ATK ${stat(f.a_x100)} · DEF ${stat(f.dv_x100)}`)),
       ),
     ),
   );
-  const sel = P.sel !== null ? F[P.sel] : null;
   add(
     ui,
     pnl(
@@ -422,18 +306,11 @@ function render(ctx) {
       h("div.bt-row", h("span.bt-h4", "Not in the line"), h("span.dim.small", `${mineIn.length} of ${mineIn.length + mineOut.length} in the line`)),
       benchRows.length ? h("div.bt-benchlist", benchRows) : h("div.dim.small", "Every unit is in the line."),
       h("div.bt-rule"),
-      sel
-        ? h(
-            "div",
-            h("div.small", h("b.goldlt", uname(pv, sel.b)), P.place.has(sel.b) ? ": click a cell of yours to move it there, or another unit to swap." : ": click a cell of yours to place it (a unit there leaves the line)."),
-            P.place.has(sel.b) ? btn("Take out of the line", { cls: "sm", onclick: () => takeOut(ctx, sel.b) }) : null,
-          )
-        : h("div.small.dim", "Hover a unit to see what it is. Click one of yours, then a cell of your grid to move it there or another unit to swap."),
+      h("div.small.dim", "Each side stands as its tactic arranges it. An army's tactic is set on the Armies screen [F5], a garrison's on its city's screen; a change applies from your next turn."),
     ),
   );
   // ---- bottom right: the forecast, Attack
   add(ui, forecastPanel(ctx, { mineIn, theirsIn, theirsOut }));
-  if (P.flash) add(ui, h("div.bt-tag.bt-flash#bt-flash", { role: "status" }, P.flash.text));
 }
 
 /** `el` with fighter `f`'s tooltip on hover. */
@@ -465,11 +342,17 @@ function forecastPanel(ctx, { mineIn, theirsIn, theirsOut }) {
       ),
       fc.attackers_wiped_permille ? h("div.bt-kv", h("span.dim", "Your line wiped out"), h("b.bad", pct(fc.attackers_wiped_permille))) : null,
     );
-  } else if (P.pending) body.push(h("div.bt-row", h("span.bt-h4", "Forecast"), h("span.dim", "estimating…")), h("div.small.dim", "The engine plays this formation many times over."));
-  else body.push(h("div.bt-row", h("span.bt-h4", "Forecast")), h("div.small.dim", !P.place.size ? "Put at least one unit in the line." : P.refused ? "No forecast: the engine refuses this formation." : "No forecast for this formation."));
+  } else body.push(h("div.bt-row", h("span.bt-h4", "Forecast")), h("div.small.dim", "No forecast."));
   if (fc && P.summons?.length) {
     const each = P.summons.map((x) => `${tyLabel("UnitType", x.unit_type)} (${x.side === me ? "yours" : "theirs"}, falls ${x.fall_pct}%)`);
     body.push(h("div.small", { title: "Called into this battle by a caster in the line; not in the counts above." }, h("span.dim", "Summons: "), each.join(", ")));
+  }
+  // Supply (docs/SUPPLY.md): the units of starving armies on either side.
+  const starving = pv.starving ?? [];
+  if (starving.length) {
+    const n = [me, 1 - me].map((side) => starving.filter((x) => P.F[x.b]?.side === side).length);
+    const pctText = `${starving[0].pct > 0 ? "+" : ""}${starving[0].pct}%`;
+    body.push(h("div.small.warn.bt-starving", `Starving: ${n[me]} of yours, ${n[1 - me]} of theirs: ${pctText} damage dealt.`));
   }
   if (war) body.push(h("div.warn.small", "Attacking declares war."));
   for (const e of P.errors) body.push(h("div.bad.small", e));
@@ -483,7 +366,7 @@ function forecastPanel(ctx, { mineIn, theirsIn, theirsOut }) {
       btn([uiIcon("attack", 16), war ? " Declare war and attack" : " Attack"], {
         cls: "primary",
         key: "attack",
-        title: war ? "Declare war and attack with this formation [Enter]" : "Attack with this formation [Enter]",
+        title: war ? "Declare war and attack [Enter]" : "Attack [Enter]",
         disabled: P.busy || !!P.errors.length || !P.place.size,
         onclick: () => attack(ctx),
       }),
@@ -500,85 +383,54 @@ function clientOf(x, y) {
   return { x: r.left + (x * r.width) / FRAME_W, y: r.top + (y * r.height) / FRAME_H };
 }
 
-/** The client point of the first frame point of `pts` that a real click would take as `want(hit)`
- *  says: the plan's own pointer test (`hitAt`) over the figures as they stand now, at a point of the
- *  board no panel covers. Throws when there is none (`what` says what was aimed at). */
-function aim(pts, want, what) {
-  P.figs = scene(performance.now()).figs;
-  for (const [x, y] of pts) {
-    if (x < 0 || y < 0 || x >= FRAME_W || y >= FRAME_H || !want(hitAt(x, y))) continue;
-    const c = clientOf(x, y);
-    if (document.elementFromPoint(c.x, c.y)?.closest?.(".bt-board")) return c;
-  }
-  throw new Error(`battle plan: no point of the board a click takes as ${what}`);
-}
-
 /** Offsets in [-1, 1], from the middle out. */
 const SPREAD = [0, -0.2, 0.2, -0.4, 0.4, -0.6, 0.6, -0.8, 0.8];
 
 export const dev = {
-  /** A click on fighter `b` (selects yours, or moves the selection there). */
-  click(b) {
-    if (!P.pv) return;
-    const pos = posOf(b);
-    clickAt(P.ctx, b, pos ? { side: P.F[b].side, lane: pos.lane, row: pos.row } : null);
-  },
-  /** A click on cell (`lane`, `row`) of your grid. */
-  clickCell(lane, row) {
-    if (!P.pv) return;
-    const g = gridOf(P.place, P.F, P.pv.lanes[me]);
-    clickAt(P.ctx, g[row]?.[lane] ?? null, { side: me, lane, row });
-  },
-  auto() {
-    return P.ctx && autoArrange(P.ctx);
-  },
   attack() {
     return P.ctx && attack(P.ctx);
   },
-  /** A point in client coordinates where a real mouse clicks fighter `b` (inside its hit box, not
-   *  under a unit in front of it nor a panel), or null when it is not on the board; throws when
-   *  no point of its box is its own. */
+  /** A point in client coordinates over fighter `b`'s figure (inside its hit box, the frontmost
+   *  figure there, not under a panel), or null when it is not on the board. */
   point(b) {
     const pos = P.pv && posOf(b);
     if (!pos) return null;
+    P.figs = scene(performance.now()).figs;
     const [fx, fy] = unitXY(P.ctx.stage.G, P.F[b], pos);
     const box = figBox(P.F[b], fx, fy);
     const cx = (box.x0 + box.x1) / 2;
     const cy = fy - 40;
-    const pts = [];
-    for (const v of SPREAD) for (const u of SPREAD) pts.push([cx + (u * (box.x1 - box.x0)) / 2, cy + (v * (box.y1 - box.y0)) / 2]);
-    return aim(pts, (hit) => hit.b === b, `fighter ${b}`);
+    for (const v of SPREAD) {
+      for (const u of SPREAD) {
+        const x = cx + (u * (box.x1 - box.x0)) / 2;
+        const y = cy + (v * (box.y1 - box.y0)) / 2;
+        if (figUnder(x, y)?.b !== b) continue;
+        const c = clientOf(x, y);
+        if (document.elementFromPoint(c.x, c.y)?.closest?.(".bt-board")) return c;
+      }
+    }
+    return null;
   },
-  /** A point in client coordinates where a real mouse clicks cell (`lane`, `row`) of side `side`:
-   *  inside the cell's diamond, on the cell itself or on the unit standing there (of a large unit,
-   *  its half over this cell), not on a unit in front of it nor under a panel. Throws when there
-   *  is none. */
-  cellPoint(side, lane, row) {
-    if (!P.pv) return null;
-    const [fx, fy] = cellXY(P.ctx.stage.G, side, lane, row);
-    // the diamond's centre is 2 px above the feet; it is 96 px wide each way and 48 tall
-    const pts = [];
-    for (const v of SPREAD) for (const u of SPREAD) if (Math.abs(u) + Math.abs(v) <= 0.8) pts.push([fx + u * 96, fy - 2 + v * 48]);
-    return aim(pts, (hit) => !!hit.cell && hit.cell.side === side && hit.cell.lane === lane && hit.cell.row === row, `cell (${lane}, ${row}) of side ${side}`);
-  },
+  /** The formation shown: your side's `[{unit, lane, row}]`. */
   get formation() {
-    return P.pv ? formation() : null;
+    return P.pv ? [...P.place.entries()].sort((a, b) => a[0] - b[0]).map(([b, p]) => ({ unit: P.F[b].unit, lane: p.lane, row: p.row })) : null;
+  },
+  /** Both sides' tactics as named on the board. */
+  get tactics() {
+    return P.pv ? [tacticOf(me).name, tacticOf(1 - me).name] : null;
   },
   get preview() {
     return P.pv;
   },
-  get sel() {
-    return P.sel;
+  /** The clicks the board took (it moves nobody). */
+  get clicks() {
+    return P.clicks;
   },
-  /** The last preview's errors (the engine's reasons it refuses the formation or the attack). */
+  /** The preview's errors (the engine's reasons it refuses the attack). */
   get errors() {
     return P.errors;
   },
-  /** Whether the engine answered the last formation sent in another (it refused that one). */
-  get refused() {
-    return P.refused;
-  },
-  /** The forecast of the formation shown (null: none, or not yet). */
+  /** The forecast (null: none). */
   get forecast() {
     return P.fc;
   },
@@ -586,7 +438,6 @@ export const dev = {
     return P.busy;
   },
   get ready() {
-    return !!P.pv && !P.busy && !P.pending;
+    return !!P.pv && !P.busy;
   },
-  inLine,
 };

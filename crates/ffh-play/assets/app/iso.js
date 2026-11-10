@@ -25,6 +25,7 @@ import * as T from "./tiles.js";
 import { unitMoves } from "./stacks.js";
 import { SPRITES } from "./iso/sprites.js";
 import { drawCityWork } from "./citywork.js";
+import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark } from "./supply.js";
 
 /** A tile's width in art pixels: the M7 contract (tiles 192 x 128, the diamond in rows 0-95). */
 const NATIVE = 192;
@@ -830,7 +831,10 @@ export class IsoMap {
     this.drawCityLabels(g, f, city ? cities.filter((x) => x.city.id !== city.id) : cities);
     this.drawUnitBadges(g, f, items.filter((it) => it.stack));
     if (city) this.drawCityWork(g, f, cells, city);
-    else this.drawPath(g, f);
+    else {
+      this.drawSupply(g, f);
+      this.drawPath(g, f);
+    }
     this.drawFlashes(g, f);
     if (this.slides.size) {
       const now = performance.now();
@@ -1349,6 +1353,32 @@ export class IsoMap {
     g.textAlign = "center";
     g.textBaseline = "middle";
     g.fillText(text, Math.round(x), Math.round(y));
+  }
+
+  /** The supply lines and the cut-off armies' markers (supply.js; docs/SUPPLY.md). This map is
+   *  drawn on demand, so its lines stand still (no flow). */
+  drawSupply(g, f) {
+    const v = this.view;
+    const drawn = { lines: 0, marks: 0 };
+    this.supplyDrawn = drawn;
+    const width = Math.max(2, 4 * f.s);
+    for (const L of supplyLines()) {
+      for (const seg of L.segments) {
+        const c0 = this.center(seg[0][0], seg[0][1]);
+        const pts = unwrapSegment(seg, seg[0][0], v.map).map(([ux, y]) => {
+          const st = this.step(ux - seg[0][0], y - seg[0][1]);
+          const x = T.wrapCoord(ux, v.map.w, v.map.wrap_x) ?? ux;
+          return { x: c0.sx + st.x, y: c0.sy + st.y + this.dropAt(x, y) };
+        });
+        drawLine(g, pts, L.color, width, 0);
+        drawn.lines++;
+      }
+    }
+    for (const m of supplyMarks()) {
+      const c = this.center(m.x, m.y);
+      drawMark(g, m, c.sx, c.sy + this.dropAt(m.x, m.y) + 14 * f.s, Math.max(9, 12 * f.s), HERALD);
+      drawn.marks++;
+    }
   }
 
   /** The planned path of the selection (overlay.path): a line from plot to plot, unwrapped from

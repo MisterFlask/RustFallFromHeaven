@@ -7,15 +7,15 @@
 //
 //   node crates/ffh-play/assets/test/make_battle_fixtures.mjs
 //
-// Each fixture: `preview` (the plan's first preview: the rules' auto formation for both sides and
-// its forecast), `forecasts` (by formationKey: the auto formation's, and for `field` every
-// formation one click of the plan makes from it), `logs` ([{formation, log}]: the auto
-// formation's battle, and for `field` one of a moved unit's, for the screenshots).
+// Each fixture: `preview` (the plan's preview: the rules' auto formation for both sides and its
+// forecast), `forecasts` (by formationKey: the auto formation's), `logs` ([{formation, log}]: the
+// auto formation's battle). The board is no longer edited by hand (docs/TACTICS.md): the variants
+// one click made and the moved unit's battle are gone.
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { placeUnit, benchUnit, formationOf, formationKey, slotCap } from "../app/battle_log.js";
+import { formationOf, formationKey } from "../app/battle_log.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -61,7 +61,6 @@ const SCENARIOS = {
     sc: Sc.SCENARIOS.open,
     text: "The 1st Army (Grigori) meets a Calabim host on open grassland: 12 units for 10 slots against 11.",
     def: { player: 1, shown_player: 1, civ: "CIVILIZATION_CALABIM", label: "Calabim host", army: 9, garrison_of: null },
-    variants: true,
   },
   forest: {
     sc: Sc.SCENARIOS.forest,
@@ -357,26 +356,6 @@ function logOf(key, def, F, sc, g, seed, { id, defStrike }) {
 // ---------------------------------------------------------------------------------------------
 // The fixtures
 
-/** Every formation one click of the plan makes from `place` (a unit to a cell, a unit out). */
-function oneClick(F, place, g) {
-  const out = new Map();
-  const lim = { lanes: g.lanes[0], cap: slotCap(g.slots[0]) };
-  for (const f of F.filter((x) => x.side === 0)) {
-    for (let row = 0; row < 3; row++) {
-      for (let lane = 0; lane < g.lanes[0]; lane++) {
-        const p = placeUnit(place, F, lim, f.b, lane, row);
-        if (p.error) continue;
-        out.set(formationKey(formationOf(p.place, F)), p.place);
-      }
-    }
-    if (place.has(f.b)) {
-      const p = benchUnit(place, f.b);
-      out.set(formationKey(formationOf(p, F)), p);
-    }
-  }
-  return out;
-}
-
 function make(name, s, n) {
   const sc = s.sc;
   const g = groundOf(sc.ground, s.city);
@@ -393,27 +372,7 @@ function make(name, s, n) {
   const forecasts = {};
   const autoKey = formationKey(autoList);
   forecasts[autoKey] = forecastOf(autoF, sc, g, damageOf(autoF));
-  if (s.variants) {
-    for (const [key, place] of oneClick(F, auto, g)) {
-      if (forecasts[key]) continue;
-      const Fx = withPlace(F, 0, place);
-      // Without each unit's chance to fall (the totals only), to keep the file small.
-      forecasts[key] = { ...forecastOf(Fx, sc, g, damageOf(Fx)), per: [] };
-    }
-  }
   const logs = [{ formation: autoList, log: logOf(autoKey, s.def, autoF, sc, g, 104729 * (n + 1) + 1, { id: 12 + 2 * n, defStrike: s.defStrike }) }];
-  // A moved unit's battle: the first attacker in the middle row goes to the rear row of its lane.
-  const mover = s.variants ? autoF.find((f) => f.side === 0 && f.row === 1 && !f.large) : null;
-  if (mover) {
-    const p = placeUnit(auto, F, { lanes: g.lanes[0], cap: slotCap(g.slots[0]) }, mover.b, mover.lane, 2);
-    if (!p.error) {
-      const list = formationOf(p.place, F);
-      const key = formationKey(list);
-      const Fx = withPlace(F, 0, p.place);
-      forecasts[key] = forecastOf(Fx, sc, g, damageOf(Fx));
-      logs.push({ formation: list, moved: { unit: mover.unit, lane: mover.lane, row: 2 }, log: logOf(key, s.def, Fx, sc, g, 104729 * (n + 1) + 7, { id: 13 + 2 * n, defStrike: s.defStrike }) });
-    }
-  }
   for (const l of logs) delete l.log._key;
   return {
     scenario: s.text,

@@ -3,7 +3,7 @@
 // escaped gone), whether the plot fell, each side's fallen, escaped and standing, and the whole log.
 
 import { h } from "./dom.js";
-import { finalState, fates, resultWords, logLines, viewerSide, uname, hpOf, xpBy } from "./battle_log.js";
+import { finalState, fates, resultWords, logLines, viewerSide, uname, hpOf, xpBy, tacticName } from "./battle_log.js";
 import { loadArt, unitXY, pic, deadPic, faceFlip, animated, headChip, uiIcon, btn, add, partsEl, hpBar, groundLine } from "./battle_stage.js";
 
 export const NAME = "report";
@@ -115,7 +115,8 @@ function fatesPanel(L, me) {
         kind === "standing" ? hpBar(hpOf(R.st.hp[b]), f.max_hp, { w: 26 }) : h("span.small", kind === "fallen" ? "fell" : kind === "escaped" ? "↩" : "afraid"),
       );
     };
-    const counts = [`${s.fallen.length} fallen`, s.escaped.length ? `${s.escaped.length} escaped` : null, `${s.standing.length} standing`, s.afraid.length ? `${s.afraid.length} sat out` : null].filter(Boolean).join(" · ");
+    const tactic = tacticName(L, side);
+    const counts = [tactic ? `${tactic} tactic` : null, `${s.fallen.length} fallen`, s.escaped.length ? `${s.escaped.length} escaped` : null, `${s.standing.length} standing`, s.afraid.length ? `${s.afraid.length} sat out` : null].filter(Boolean).join(" · ");
     return h(
       "div.bt-side",
       h("div.bt-row", h(`span.bt-h4.${side === me ? "you" : "them"}`, label), h("span.dim.small", counts)),

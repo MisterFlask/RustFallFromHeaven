@@ -2,7 +2,8 @@
 //! armies, their supply, requisition and the recruits marching to them), each marching unit's
 //! `march`, the Armies screen (`armies` query) and the recruitment choices of the city screen.
 
-use ffh_core::army::RecruitDest;
+use ffh_core::army::{RecruitDest, SupplyLine, SupplySource, SupplyState};
+use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_data::{Idx, OrderType, UnitType};
 
@@ -99,6 +100,111 @@ fn requisition_json(v: &Viewer, a: ArmyId, candidates: bool) -> Json {
     j
 }
 
+/// The name of a supply line's source: the city's, or "a Trireme" for a ship.
+fn source_name(g: &Game, s: SupplySource) -> String {
+    match s {
+        SupplySource::City(c) => city_name(g, c),
+        SupplySource::Ship(u) => format!("a {}", crate::names::display(g.d, g.units[u].unit_type)),
+    }
+}
+
+/// A supply line (docs/SUPPLY.md) as the human's view has it: `path` (`[x, y]` from the army's
+/// plot to the source's), `cost`, `budget` (`SUPPLY_LINE_BUDGET`), `source` (its name) and
+/// `source_kind` (`city` or `ship`).
+pub fn supply_line_json(g: &Game, line: &SupplyLine) -> Json {
+    crate::jobj! {
+        "path" => Json::Arr(line.path.iter().map(|&q| { let (x, y) = g.map.xy(q); crate::jarr![x, y] }).collect()),
+        "cost" => line.cost,
+        "budget" => g.d.defines.supply_line_budget,
+        "source" => source_name(g, line.source),
+        "source_kind" => match line.source { SupplySource::City(_) => "city", SupplySource::Ship(_) => "ship" },
+    }
+}
+
+/// Army `a`'s supply (docs/SUPPLY.md, section 5), the human's own: `state` (`supplied`, `hunger`
+/// or `starvation`, from its counter), `turn` and `of` (Hunger's turn of `SUPPLY_HUNGER_TURNS`),
+/// `turns_to_starvation` (Hunger: the turn starts with the line cut before Starvation; else
+/// null), `line` (the line as it is traced now, [`supply_line_json`]; null: cut) and `text`, the
+/// state in the bare words of the Armies screen and the unit panel.
+pub fn supply_json(v: &Viewer, a: ArmyId) -> Json {
+    let g = v.g;
+    let d = g.d;
+    let state = g.army_supply_state(a);
+    let line = g.army_supply_line(a);
+    let budget = d.defines.supply_line_budget;
+    let supplied = |l: &SupplyLine| format!("{} of {budget}, from {}.", l.cost, source_name(g, l.source));
+    let mut text = match state {
+        SupplyState::Supplied => match &line {
+            Some(l) => format!("Supplied: {}", supplied(l)),
+            None => "No supply line: Hunger from your next turn.".to_string(),
+        },
+        SupplyState::Hunger { turn, of } => format!("Hunger: turn {turn} of {of}. No healing, no recruits."),
+        SupplyState::Starvation => format!(
+            "Starvation: -{}% HP a turn (to {}%), {:+}% damage dealt.",
+            d.defines.starvation_damage_percent, d.defines.starvation_floor_percent, d.defines.starvation_damage_dealt_percent
+        ),
+    };
+    if let (Some(l), true) = (&line, state != SupplyState::Supplied) {
+        text.push_str(&format!(" Supply line again: {} Supplied from your next turn.", supplied(l)));
+    }
+    let (name, turn, of) = match state {
+        SupplyState::Supplied => ("supplied", Json::Null, Json::Null),
+        SupplyState::Hunger { turn, of } => ("hunger", Json::from(turn), Json::from(of)),
+        SupplyState::Starvation => ("starvation", Json::Null, Json::Null),
+    };
+    crate::jobj! {
+        "state" => name,
+        "turn" => turn,
+        "of" => of,
+        "turns_to_starvation" => state.turns_to_starvation(),
+        "line" => line.as_ref().map(|l| supply_line_json(g, l)),
+        "text" => text,
+    }
+}
+
+/// The supply lines of the other players' armies the human sees (docs/SUPPLY.md, section 5), each
+/// `{owner, x, y, segments}`: the army's plot and its line clipped to the plots the human has
+/// revealed (`segments`: the runs of consecutive revealed plots of the path, each `[[x, y], ...]`,
+/// from the army toward its source). An army counts as seen when its plot is visible to the human
+/// and one of its units is visible and shows its true owner (hidden nationality hides the
+/// army); an army with no line now has no entry. Nothing else of the army's supply is told (its
+/// counter, the cost, the source).
+pub fn foreign_supply_lines(v: &Viewer) -> Json {
+    let g = v.g;
+    let mut out = Vec::new();
+    for p in g.player_ids() {
+        if p == v.h || !g.players[p].alive || g.player_is_barbarian(p) {
+            continue;
+        }
+        for &a in &g.players[p].armies {
+            if !g.armies.contains(a) {
+                continue;
+            }
+            let Some(plot) = g.army_plot(a) else { continue };
+            if !v.plot_visible(plot) || !g.army_units(a).iter().any(|&u| v.unit_visible(u) && v.unit_owner(u) == p) {
+                continue;
+            }
+            let Some(line) = g.army_supply_line(a) else { continue };
+            let mut segments: Vec<Json> = Vec::new();
+            let mut run: Vec<Json> = Vec::new();
+            for &q in &line.path {
+                if v.plot_revealed(q) {
+                    let (x, y) = g.map.xy(q);
+                    run.push(crate::jarr![x, y]);
+                } else if !run.is_empty() {
+                    segments.push(Json::Arr(std::mem::take(&mut run)));
+                }
+            }
+            if !run.is_empty() {
+                segments.push(Json::Arr(run));
+            }
+            let (x, y) = g.map.xy(plot);
+            out.push(crate::jobj! { "owner" => p, "x" => x, "y" => y, "segments" => Json::Arr(segments) });
+        }
+    }
+    Json::Arr(out)
+}
+
 /// One army of the human's: name, units, where, in supply, target size, the recruits marching to
 /// it (`marching`: unit ids; each unit's `march` says where and how long), its requisition,
 /// whether it marches to a garrison (disbanded), Upgrade all. The Armies screen's
@@ -119,6 +225,10 @@ fn army_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
         "x" => plot.map(|p| g.map.xy(p).0),
         "y" => plot.map(|p| g.map.xy(p).1),
         "in_supply" => g.army_in_supply(a),
+        "supply" => supply_json(v, a),
+        // Its battle tactic (docs/TACTICS.md) and the one it takes at the start of the next turn.
+        "tactic" => Json::idx(army.tactic),
+        "tactic_next" => Json::idx(army.tactic_next),
         "target_size" => army.target_size,
         "marching" => marching.clone(),
         "requisition" => requisition_json(v, a, screen),
@@ -201,6 +311,9 @@ pub fn recruit(v: &Viewer, c: CityId) -> Json {
         "default" => recruit_dest_json(g.cities[c].recruit_default),
         "options" => Json::Arr(options),
         "garrison" => garrison,
+        // The garrison's battle tactic (docs/TACTICS.md) and the one it takes next turn.
+        "garrison_tactic" => Json::idx(g.cities[c].garrison_tactic),
+        "garrison_tactic_next" => Json::idx(g.cities[c].garrison_tactic_next),
         "requisitioned_by" => Json::Arr(requisitioned_by),
     }
 }

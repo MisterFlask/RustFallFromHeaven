@@ -105,7 +105,17 @@ resource and spells it offers, what happens to units that enter or come near), a
 the path: dots from plot to plot that march, a roundel with the
 turn of arrival at each turn's end, the part beyond this turn's moves dimmer, ochre for a route
 to build; an attack ends in crimson brackets with the odds of winning on a chip, and the tooltip
-gives the odds of winning and retreating with both strengths and their modifiers. The layers
+gives the odds of winning and retreating with both strengths and their modifiers; with an army
+selected it also says whether the army would be supplied there, "Supplied (cost 14 of 24)" or
+"No supply line" (docs/SUPPLY.md). **Supply lines** (`app/supply.js`): each of your armies' line
+runs from the army to its source (a city, or a ship that can carry land units) as dashes in
+vellum over a dark casing, and the lines of other players' armies you see in their owner's
+colour, over the plots you have revealed only; a cut-off army carries a marker under its plot,
+"Hunger: 2" (the turns before Starvation) in amber or "Starvation" in red. On the HD-2D map the
+lines are drawn on the interface layer over the ground (under the stack badges) and the dashes
+flow slowly toward the army while the map animates (Tools → the map's panel, "Animate"; still
+under reduced motion); the isometric and flat maps draw them still (those maps redraw only on a
+change). Not on the city screen. The layers
 (buttons bottom left, `Ctrl+1/2/3`): **Terrain**; **Political** (each owner's land washed with
 its colour); **Yields** (the ground dimmed, and the food, production and commerce of the plots in
 sight with their icons; fogged plots show none). The minimap is a pixel a plot in the same
@@ -243,8 +253,8 @@ text field takes the focus, which brings the keyboard up), and B is Esc (around 
 the map's cursor; in a text field: leave it). A layer opening takes the focus (a dialog on its
 primary button), and a re-render keeps it at the same place. An order or a unit pressed on the
 selection's card gives the focus back to the map, for the next unit or the plot pick. What the
-controller does not reach: the battle plan's board (the formation by dragging: its buttons,
-"Auto" among them, are reached), Shift waypoints, and Ctrl-click on a unit row.
+controller does not reach: the battle plan's board (it only shows the lines; its buttons are
+reached), Shift waypoints, and Ctrl-click on a unit row.
 
 **Units.** The selection panel lists your units on the plot (click a row: its group;
 Ctrl-click: add or remove that unit; on the isometric and HD-2D maps they are a strip of icons
@@ -338,7 +348,9 @@ has a destination selector (the city's default, its garrison, another city's gar
 with its size and whether it is in supply: a unit bound elsewhere marches there); an army's
 requisition order leads the queue as "Requisitioned by the 2nd Army", without ✕ (it is released on
 the Armies screen); under the queue, the city's default destination, its garrison and the armies
-that requisition from it. With governors on (docs/GOVERNORS.md) a **Governance** section heads
+that requisition from it, with the garrison's battle tactic (a selector of the four tactics,
+each with its rules as its tooltip; "from next turn (now Line)" while a change is pending;
+docs/TACTICS.md). With governors on (docs/GOVERNORS.md) a **Governance** section heads
 the right column: a directly ruled city says so (with "Hand to a governor"); a governed city shows
 its governor (or the interim one), "Replace with…" (the bench, with each candidate's fit) and
 "Rule directly" (or "Rule directly instead of…" a direct city); its production is shown but not
@@ -369,7 +381,14 @@ other leaders remember of your cultural actions. On the map a city you see under
 has a mark at its banner's end: a small ochre dot while the pressure has no effect yet, an amber
 "!" for unrest, a red "!" in revolt, a red "!!" in a gold ring when close to changing hands.
 **Armies** (`F5`, the menu's Armies; with armies on): every army with its name
-(type to rename), units, place (click: select it on the map), supply, target size (with its units,
+(type to rename), units, place (click: select it on the map), its supply in bare words
+(`Supplied: 14 of 24, from Ithralia.`, `Hunger: turn 1 of 2. No healing, no recruits.`,
+`Starvation: -10% HP a turn (to 25%), -25% damage dealt.`, or `No supply line: Hunger from your
+next turn.` for an army supplied this turn that stands where it has no line now; a hungry or
+starving army whose line is back adds `Supply line again: ... Supplied from your next turn.`;
+docs/SUPPLY.md), its battle tactic (a selector of the four tactics, each with its rules as its
+tooltip; "from next turn (now Line)" while a change is pending: a change takes effect at the
+start of your next turn; docs/TACTICS.md), target size (with its units,
 recruits marching and units in training against it: its requisition orders and the units its
 cities build next for it, as "more wanted" counts them), "Upgrade all", "Disband", its
 **requisition** (the cities it requisitions from, how many more it wants, its orders in
@@ -529,7 +548,9 @@ moves on, Civ4's AutoMoves); `load`, a warrior and two triremes in a coastal cit
 which trireme); `trade`, a civilization met at peace with gold trading and 100 gold on each side
 (Diplomacy, Trade…: a gift of gold is accepted); `diplomacy`, an AI leader that has just met you
 and then declared war on you (loading it shows both leader moments; it then refuses to talk). It writes only `DIR/KIND.ffhsave` and its sidecar (no journal, no autosaves), so
-`DIR` may be a game's directory. See "Testing the browser client" below for the checklist.
+`DIR` may be a game's directory. `ffh-play stage supply DIR` writes two armies of yours: one
+supplied, its line three plots or more to a city, and one in Hunger (turn 1) where no line
+reaches (docs/SUPPLY.md). See "Testing the browser client" below for the checklist.
 
 **Engagement combat** (docs/ENGAGEMENTS.md; always on: the game's land combat, not an option). An
 attack by land on a land plot is one formation battle: each side's line on a grid of three rows by its
@@ -537,15 +558,16 @@ lanes. In the browser:
 - **Attacking.** The tooltip over an enemy plot next to the selection says it is a battle ("Battle:
   5 of yours can fight, against 3 defenders"; the odds beside it are the duel's of the strongest
   pair, a rough guide). A right-click there (a second tap on a phone) with an army or a stack of
-  units that can attack opens **the battle plan** with the rules' auto formation; Attack (or
-  `Enter`) sends `engage` with the formation arranged there (an attack that declares war says so
-  on the button), Cancel (`Esc`) leaves the map as it was (not once the attack is on its way:
+  units that can attack opens **the battle plan**, each side in the formation its battle tactic
+  gives (docs/TACTICS.md: the tactic of the army or garrison most of the side's units belong to;
+  Line for a side with none); Attack (or `Enter`) sends `engage` (an attack that declares war says
+  so on the button), Cancel (`Esc`) leaves the map as it was (not once the attack is on its way:
   the battle's screens take over from the plan). Shift+right-click on such a plot
-  attacks at once in the rules' formation (a `move`); on any other plot it lays a waypoint as
+  attacks at once (a `move`); on any other plot it lays a waypoint as
   before. Over a plot further away, or next to units that have used their moves or their attack,
   the tooltip says "Battle on arrival" ("once they can attack") with the selected units that could
   fight there, and the path's odds chip stays; a right-click sends the move, and the battle on
-  arrival takes the rules' formation of whoever stands next to the plot then. A lone unit's
+  arrival takes the tactics of whoever stands next to the plot then. A lone unit's
   attack, and every attack at sea or by air, goes as before.
 - **Every battle you fight opens the battle screens** (the owner's request, 2026-11-03), watched
   or straight to its report as you chose on the plan (its Watch / Report switch): an attack made
@@ -577,16 +599,17 @@ from a battle's links and marker), through the engine's `engage_preview`, `engag
 `hills`, `city`, `raid`: a city that falls). In an overlay over the dimmed map, on one isometric
 battlefield of M7 tiles (six ranks deep, the attacker's rear to the defender's rear, by the lanes;
 the ground's scenery round it: trees round a forest or jungle, the city behind its defenders, hills
-on a hill): **the plan** (both lines, yours in the rules' auto formation, theirs as you know it;
-each unit's HP bar and its chance to fall; a tooltip over a unit says what it is: A, Dv, HP,
-speed, its actions in each row and whom they reach, its spell, its specials, its chance to fall;
-click one of your units, then a cell of your grid to move it there or another unit to swap (a
-large unit takes two cells of a row; a unit with nowhere to go leaves the line), "Take out of the
-line"; the pool's other units listed (click one, then a cell); Auto-arrange; the slots and lanes
-of each side and why; the ground (Hills, Forest, City, Open ground: its rules as each name's
-tooltip); the forecast of the formation, asked of the
-engine at each change: each side's expected losses, their line wiped out, the plot falls, yours
-wiped out; Watch or Report after the attack; Attack or `Enter`), **the battle** (the log played
+on a hill): **the plan** (both lines as each side's battle tactic arranges them, theirs as you
+know it, and both tactics named ("Tactic: Charge", its rules as the tooltip; docs/TACTICS.md);
+the board is never edited by hand: it takes no drags, a click on it moves nobody, and there is
+no Auto-arrange; each unit's HP bar and its chance to fall; a tooltip over a unit says what it
+is: A, Dv, HP, speed, its actions in each row and whom they reach, its spell, its specials, its
+chance to fall, that it starves; the pool's units its tactic left out of the line listed, with
+where the tactics are set (the Armies screen, the city screen); the slots and lanes of each side
+and why; the ground (Hills, Forest, City, Open ground: its rules as each name's tooltip); the
+forecast: each side's expected losses, their line wiped out, the plot falls, yours wiped out,
+and the units of starving armies on either side ("Starving: 2 of yours, 0 of theirs: -25% damage
+dealt."); Watch or Report after the attack; Attack or `Enter`), **the battle** (the log played
 one action at a time as a snap, the owner's pick of the battle-feel spike, 2026-10-31: every
 unit breathes; on an action's contact frame the pair cuts to its impact poses (the strike strip's
 contact frame and the target's flinch frame where the unit has anim-sprint frames, else its key
@@ -603,16 +626,19 @@ fades, larger over a splash's group; anim-sprint/ANIMATING_UNITS.md, "Impact car
 ranger stays on his cell and his hawk strikes for him (his card), splash targets snap together, a knock-back eases
 back a row on the return, an escape leaves after it; no shake under reduced motion; each side's
 standing units; the log beside it under round and pass headers, a unit's speed before its line,
-an action's line on its contact frame; play/pause `Space` (the action freezes where it is), step
+an action's line on its contact frame (a starving side's line before the battle, "Starving: Axeman,
+Archer: -25% damage dealt.", with "starving" over each of them; each side's tactic under its
+name); play/pause `Space` (the action freezes where it is), step
 `→`, skip to the report `Esc`, speeds 1x (the default) to 8x `1`-`4`; played through, the report
 follows) and **the report** (the battlefield where the battle ended, whether the plot fell, each
-side's fallen, escaped and standing with their heads, the whole log; Replay, Continue). The
+side's tactic and its fallen, escaped and standing with their heads, the whole log; Replay,
+Continue). The
 modules: `battle.js` (the overlay, the keys, the viewer's preferences, the sources),
 `battle_plan.js`, `battle_watch.js` (the replay's clock and timeline), `battle_snap.js` (the
 snap: each action's timing plan, roles, poses and drawing over the stage), `battle_report.js`,
 `battle_stage.js` (the battlefield, the figures and the effects; the anim-sprint strips in
-`app/anim/`), and the pure `battle_log.js` (the protocol's shapes in its header, the formation's
-editing, the log folded into states and lines, the words of the rules by their codes); `battle_fixture.js` is the fixture, made by `assets/test/make_battle_fixtures.mjs`
+`app/anim/`), and the pure `battle_log.js` (the protocol's shapes in its header, a formation's
+cells, the log folded into states and lines, the words of the rules by their codes); `battle_fixture.js` is the fixture, made by `assets/test/make_battle_fixtures.mjs`
 from the owner's prototype (`assets/test/fixtures/proto/`: its engine and sample armies, not the
 engine's numbers).
 
@@ -789,7 +815,12 @@ replacing its channel; no `action` (or null): it channels nothing; checked by th
 `army_garrison {units}`, `army_rename {army, name}`, `army_disband {army}`, `army_upgrade {army}`,
 `army_target {army, size}`, `army_requisition {army, city, on}` (the army requisitions from the
 city, last in its list, or no longer does: its order there is withdrawn), `army_requisition_set
-{army, cities}` (the army requisitions from these cities, in this order, and no other), `recruit_dest
+{army, cities}` (the army requisitions from these cities, in this order, and no other),
+`army_tactic {army, tactic}` and `garrison_tactic {city, tactic}` (battle tactics, docs/TACTICS.md:
+`tactic` a `BattleTacticType`, by name (`"TACTIC_CHARGE"`) or index; the army, or the city's
+garrison, fights in it from the start of your next turn (`tactic_next` until then; setting the
+tactic it has cancels a pending change); refused for another player's army or city, `invalid` for
+an unknown tactic), `recruit_dest
 {city, index, dest}` (this game's armies: `dest` is `{"garrison": city}`, `{"army": id}` or null
 for the city's default; `index` -1 sets the city's default; a requisition order's is its army's;
 docs/ARMIES.md. A marching recruit takes no orders: `move`, `mission`, `do_command`
@@ -801,19 +832,18 @@ taken off by hand: `pop_order` refuses it, and `do_task TASK_CLEAR_ORDERS` while
 screen"), `govern_direct {city, instead_of}`, `govern_hand {city}`, `govern_assign {city,
 governor}` (this game's governors, docs/GOVERNORS.md; a governed city refuses `push_order`,
 `pop_order`, `recruit_dest` and the production tasks), `engage {army | units | from, to,
-formation?, declare_war?}` (engagement combat, docs/ENGAGEMENTS.md: one formation battle on plot
-`to`, `{x, y}`, next to the attackers; `army`, the selected `units` or a plot `from` say who
-attacks, and the launcher's group moves in when no defender is left on the plot; `formation`
-`[{unit, lane, row}]` the attacker's line (rows 0 front, 1 middle, 2 rear; a large unit at its
-first lane fills that lane and the next), checked against the pool on the attacking plot (every
-unit of yours there that can attack the plot now), its side's lanes and rows, one unit a cell, the
-slots and the river's slots; without it the rules' auto formation; an attack that would declare
+declare_war?}` (engagement combat, docs/ENGAGEMENTS.md: one formation battle on plot `to`, `{x,
+y}`, next to the attackers; `army`, the selected `units` or a plot `from` say who attacks (every
+unit of yours on the attacking plot that can attack the plot now is in the pool), and the
+launcher's group moves in when no defender is left on the plot; each side fights in the formation
+its battle tactic gives (docs/TACTICS.md); a `formation` is refused, "An army fights in its
+tactic." (the rules' own entry still takes one: the lab, tests); an attack that would declare
 war answers `{"confirm": {"kind": "declare_war", ..}}` as `move` does until it is resent with
 `declare_war: true` (`false` cancels it); refused, with the reason, for a plot you do not see,
-not next to the attackers, at sea, with nobody to fight, no unit that can attack or a formation
-the rules refuse; the reply carries `report`, the battle's report id, and `battle`, its summary;
-through `group_attack_force`, as every attack; a `move` onto an enemy land plot is one battle
-too, in the rules' auto formation, and its reply carries the same `report` and `battle`;
+not next to the attackers, at sea, with nobody to fight or no unit that can attack; the reply
+carries `report`, the battle's report id, and `battle`, its summary; through
+`group_attack_force`, as every attack; a `move` onto an enemy land plot is one battle too, and
+its reply carries the same `report` and `battle`;
 `PLAYEROPTION_STACK_ATTACK` is ignored), `research`, `research_path {path}` (adopt a doctrine, the
 players' name for a research path, for the rest of the game, docs/PORTING.md "Research paths"; refused with the reason once
 committed, for a path whose techs are all known, or one closed to the civilization; the browser
@@ -932,18 +962,29 @@ Errors: `invalid`, `not_owner`, `gone`, `busy`.
 |---|---|
 | `status` | phase (`human`, `running`, `decision`, `over`; over the transports also `stuck`, `no_game`, `crashed` with the report), turn, year, you, the active players, the open decision, the winner, `view_version` (changes whenever the view does: a command, a decision opening or closing, debug reveal), `ai_auto_play` (the AI autoplay's turns left, 0 when off; observed, the turns left to play), `observe` (an observed game: `human` is the player the view follows, phase `human` means stopped at a turn boundary), `build` (the commit the binary was built from), and over the transports `game {dir, journal, autosave}` |
 | `pending` | open events (with each option's effects), votes, research needed, idle cities, promotions, ready groups, idle AI-controlled groups, crusade calls |
-| `view` | `me` (gold and rate, research, sliders, civics, score, Armageddon counter, the Armageddon deck as you know it (`doom`: null before the deal; else `counter` and `slots`, each `{threshold, state}`, `state` `fired`, `revealed`, `seen` (ahead) or `hidden`, and for a known slot `card` (its key, null for an empty slot), `name`, `help`, `stage`, `stages`), mana, Stasis, the player options, AI autoplay, `world_actions` (the world spell and the cards' world spells: `once`, `cast`, `why`, and for a spell cast at a distance `target_kind` and `targets`)), the players you met, the cities you revealed, the units you see, your groups (`ready`: some unit can move, as `pending.ready_groups`; `selectable`: every unit can, what Civ4's cycle selects; neither for a marching recruit's group), `group_cycle` (your groups in Civ4's cycle order) and `has_auto_unit`, `pending`, `log_next`; with armies (null without), `armies` (each: `id`, `name`, `group`, `units`, `x`, `y`, `in_supply`, `target_size`, `marching` (the recruits marching to it: unit ids), `requisition` (`cities`: the cities it requisitions from, in order; `orders`: its requisition orders in production, each `{city, name, unit, index, turns}`; `head_orders`: how many other orders bound for it its cities build next (the first order behind any requisition orders, whose destination or the city's default names the army); `shortfall`: how many it lacks of its target size counting its units, recruits marching, `orders` and `head_orders`, 0 or less: none), `disband_to`, and `upgrades` with their `upgrade_price`) and `garrison_marching` (the recruits marching to garrisons: unit ids), and each unit's `army`, `garrison`, `army_unit` and `march` (null, or a marching recruit's `{dest, to, from, turns_left, stalled, diverted, since}`: where it goes and its name, the city that trained it, the turns it needs along the rules' path (null: no way there now), the turns without progress, whether it was sent to the nearest garrison instead, the turn it set out); `battles` (your battles of this game turn and the last, as `battle_reports`' summaries: the map's markers); each land unit its `engage_row_order` (its rank preference: the rows, front 0, middle 1, rear 2, in the order the auto formation tries them), `engage_attack` (its A before the bonuses of a plot it attacks, x100), `engage_defense` (its Dv where it stands, x100), `engage_max_hp` (its HP in a battle; `hp` and `max_hp` stay the health percent), `engage_speed` (before first strikes), `engage_actions` (`[{kind, n}]` in its front, middle and rear rows, `kind` an action kind: `Strike`, `Charge`, `Stab`, `Shoot`, `Spell`, `Bombard`, `Heal` or `None`), `engage_dodge`, `engage_crit_bonus` and `engage_large` (it fills two cells of a row and counts two slots); with cultural actions, each of your cities' `channel` (`{action, target, religion}`, absent when it channels nothing), and `revolt` (the level: 0 pressure without effect yet, 1 unrest, 2 revolt, 3 close to changing hands) and `unrest` (its unhappiness) for the cities you see under revolt pressure |
+| `view` | `me` (gold and rate, research, sliders, civics, score, Armageddon counter, the Armageddon deck as you know it (`doom`: null before the deal; else `counter` and `slots`, each `{threshold, state}`, `state` `fired`, `revealed`, `seen` (ahead) or `hidden`, and for a known slot `card` (its key, null for an empty slot), `name`, `help`, `stage`, `stages`), mana, Stasis, the player options, AI autoplay, `world_actions` (the world spell and the cards' world spells: `once`, `cast`, `why`, and for a spell cast at a distance `target_kind` and `targets`)), the players you met, the cities you revealed, the units you see, your groups (`ready`: some unit can move, as `pending.ready_groups`; `selectable`: every unit can, what Civ4's cycle selects; neither for a marching recruit's group), `group_cycle` (your groups in Civ4's cycle order) and `has_auto_unit`, `pending`, `log_next`; with armies (null without), `armies` (each: `id`, `name`, `group`, `units`, `x`, `y`, `in_supply` (its counter is 0), `supply`
+(docs/SUPPLY.md: `state` `supplied`, `hunger` or `starvation` from its counter, `turn` and `of`
+(Hunger's turn of `SUPPLY_HUNGER_TURNS`), `turns_to_starvation` (Hunger only), `line` (as traced
+now, null when cut: `path`, `[x, y]` from the army's plot to the source's, `cost`, `budget`,
+`source` (the city's name, or "a Trireme"), `source_kind` `city` or `ship`), `text` (the state in
+the Armies screen's words)), `tactic` and `tactic_next` (its battle tactic and the one from your
+next turn, `BattleTacticType`), `target_size`, `marching` (the recruits marching to it: unit ids), `requisition` (`cities`: the cities it requisitions from, in order; `orders`: its requisition orders in production, each `{city, name, unit, index, turns}`; `head_orders`: how many other orders bound for it its cities build next (the first order behind any requisition orders, whose destination or the city's default names the army); `shortfall`: how many it lacks of its target size counting its units, recruits marching, `orders` and `head_orders`, 0 or less: none), `disband_to`, and `upgrades` with their `upgrade_price`) and `garrison_marching` (the recruits marching to garrisons: unit ids); `supply_lines` (the lines
+of other players' armies you see: an army on a plot you see with a unit you see under its true
+owner (hidden nationality hides it), and a line now: `{owner, x, y, segments}`, the army's plot and
+its path clipped to the plots you have revealed, `segments` the runs of revealed plots `[[x, y],
+...]` from the army toward its source; nothing else of its supply: not its counter, cost or
+source); and each unit's `army`, `garrison`, `army_unit` and `march` (null, or a marching recruit's `{dest, to, from, turns_left, stalled, diverted, since}`: where it goes and its name, the city that trained it, the turns it needs along the rules' path (null: no way there now), the turns without progress, whether it was sent to the nearest garrison instead, the turn it set out); `battles` (your battles of this game turn and the last, as `battle_reports`' summaries: the map's markers); each land unit its `engage_row_order` (its rank preference: the rows, front 0, middle 1, rear 2, in the order the auto formation tries them), `engage_attack` (its A before the bonuses of a plot it attacks, x100), `engage_defense` (its Dv where it stands, x100), `engage_max_hp` (its HP in a battle; `hp` and `max_hp` stay the health percent), `engage_speed` (before first strikes), `engage_actions` (`[{kind, n}]` in its front, middle and rear rows, `kind` an action kind: `Strike`, `Charge`, `Stab`, `Shoot`, `Spell`, `Bombard`, `Heal` or `None`), `engage_dodge`, `engage_crit_bonus` and `engage_large` (it fills two cells of a row and counts two slots); with cultural actions, each of your cities' `channel` (`{action, target, religion}`, absent when it channels nothing), and `revolt` (the level: 0 pressure without effect yet, 1 unrest, 2 revolt, 3 close to changing hands) and `unrest` (its unhappiness) for the cities you see under revolt pressure |
 | `map` | flat arrays `y * w + x`: `vis` (0 unrevealed, 1 fogged, 2 visible), `plot_type`, `terrain`, `feature`, `bonus`, `improvement`, `route`, `owner`, `river` (bit 0 river on the south edge, bit 1 on the east edge, bits 2-4 north/south flow + 1, bits 5-7 west/east flow + 1), `city`, `yield` (`food \| production << 8 \| commerce << 16`, visible plots only), `map_rev`, and `epoch` and `rev`. `map {since: R, epoch: E}` answers only the tiles changed since revision `R` (`full: false`, `tiles` = their indices, each array the values of those tiles), or the full map (`full: true`) when `E` is not the current epoch, `R` is unknown or much of the map changed |
 | `plot {x,y,units?}` | a plot as you know it (`min_level` when units below a level cannot enter); while visible also yields, defence, culture and the units (under debug reveal each with `ai_type`, the AI's role, and `missions`, its group's orders). On a lair or goody hut, `explore`: the odds for the first of `units` (the selection) that is yours (`view/explore.rs`, below "Lair and goody hut odds") |
 | `group {units}` | the units in detail and the actions: `mission`, `target` (an interface mode, `mode`: go-to, route-to for army units, range attack, the air modes; needs a plot), `command`, `load`, `spell` (a spell cast at a distance: `target_kind`, `targets` `[{target, at, label, info?}]` and a `cast_at` command; the Discover action of a great person holding a card: `label` "Discover: <card>", `card`, and `why` while it cannot be cast), `promotion`, `upgrade`, `army` (this game's armies: `army` the action, `label`, `help`), each `enabled` or not, each with its `cmd`; a great person's unit carries `card_detail` (its card's `tech`, `suit`, `band`, `alignment`, `religion`, `needs` and `needs_one_of` (`{tech, known}`), `known`, `discoverable`, `why`), and every unit of yours in the view its `card`; a selection with a marching recruit has none and says why in `marching` ("marching to the 2nd Army") |
-| `path {units,x,y}` | the path preview: nodes with the turn of arrival and moves left, total turns, a war it would declare, whether it ends in an attack |
+| `path {units,x,y}` | the path preview: nodes with the turn of arrival and moves left, total turns, a war it would declare, whether it ends in an attack; `supply` (docs/SUPPLY.md): with the units of one army of yours selected and a plot you have revealed, whether the army would be supplied there, `{ok, cost, budget}` (`cost` null without a line; the rules' `plot_supply_line`), else null |
 | `combat {units,x,y}` | the attack preview: attacker, defender, odds of winning and of retreating (per mille), strengths, the modifiers of both sides. Under engagement combat, for land units attacking a land plot that holds a defender: `engagement: true`, `defenders` (their number), `declare_war_team` and `on_arrival`. An attack the selection can launch now (the plot is next to it and some unit on its plot can attack the plot now): `on_arrival: false`, `valid: true`, `pool` the units on its plot that can (other armies and the garrison there included). Otherwise (a go-to that ends in an attack, units that have used their moves or their attack): `on_arrival: true`, the duel's `valid` and odds kept, `pool` the selected units that could fight there once they can attack it. The duel's odds and strengths of the strongest pair stay beside them (the forecast of a battle is `engage_preview`'s). Ships, air units and the option off: the duel's preview |
-| `engage_preview {army \| units \| from, to, formation?}` | engagement combat: the plan of an attack (the battle screens' plan), in the battle log's shapes (`assets/app/battle_log.js`'s header lists what the screens read): `plot` and `from`, the `ground` and its rules, `params` (the rule values the screens word), both sides' `slots` and why and their `lanes`, `sides`, `fighters` (the pool, then the defenders you see, each in its cell or `lane` null: its A and Dv, HP, speed, actions per row, spell, dodge, crit bonus, size and specials), `formation` (the one asked for; else the rules' auto formation), `auto_formation`, `reserve` (the pool's units not in it), `def_formation` and `def_reserve` (the defenders' line in the rules' auto formation, as the real fight forms it, and the rest on the plot), `forecast` (`runs` battles of the real resolver on a private RNG seeded from the plan, never the game's: `lost_x100` and `escaped_x100` per side, `line_wiped_permille`, `plot_falls_permille`, `attackers_wiped_permille`, and `per` fighter its `fall_pct` and `escape_pct`), `declare_war` (the team the attack declares war on), `errors`. A formation the rules refuse gets the plan in the auto formation, `forecast` null and why in `errors`; a plot you do not see, one not next to the attackers, or an attack the rules refuse has no plan: the reply is `errors` and `declare_war` alone. Refused without the option |
-| `battle_log {report}` | engagement combat: a battle's report with its full log as the battle screens replay it (`report` is the report's id: `id` is the envelope's): `battle_log.js`'s header lists every member. Only for a battle you fought on a side (or under debug reveal), while its log is kept (the current and previous turn's battles and the last `ENGAGEMENT_REPORT_LOGS_KEPT`): else `gone`. Your side shows its real owners, the other side the owners you saw (hidden nationality). `events` are what the battle shows (the opening at round 0: units that sat out afraid, defensive strikes; then every action, one unit at a time, with its hits, heals, knock-backs and escapes), `after` what it did after (XP, heals, kill effects, flight, the move in), `outcome` whether the plot fell and each side's line by fate |
+| `engage_preview {army \| units \| from, to, formation?}` | engagement combat: the plan of an attack (the battle screens' plan), in the battle log's shapes (`assets/app/battle_log.js`'s header lists what the screens read): `plot` and `from`, the `ground` and its rules, `params` (the rule values the screens word), both sides' `slots` and why and their `lanes`, `sides`, `fighters` (the pool, then the defenders you see, each in its cell or `lane` null: its A and Dv, HP, speed, actions per row, spell, dodge, crit bonus, size and specials), `formation` (the attacker's line: its tactic's formation; the query still takes a `formation` to forecast, which the client no longer sends and `engage` refuses), `auto_formation`, `reserve` (the pool's units not in it), `def_formation` and `def_reserve` (the defenders' line in their tactic's formation, as the real fight forms it, and the rest on the plot), `tactics` (each side's battle tactic, attacker and defender, `BattleTacticType`), `starving` (`[{b, pct}]`: the fighters you see of starving armies and the percent change of the damage they deal), `forecast` (`runs` battles of the real resolver on a private RNG seeded from the plan, never the game's: `lost_x100` and `escaped_x100` per side, `line_wiped_permille`, `plot_falls_permille`, `attackers_wiped_permille`, and `per` fighter its `fall_pct` and `escape_pct`), `declare_war` (the team the attack declares war on), `errors`. A formation the rules refuse gets the plan in the auto formation, `forecast` null and why in `errors`; a plot you do not see, one not next to the attackers, or an attack the rules refuse has no plan: the reply is `errors` and `declare_war` alone. Refused without the option |
+| `battle_log {report}` | engagement combat: a battle's report with its full log as the battle screens replay it (`report` is the report's id: `id` is the envelope's): `battle_log.js`'s header lists every member (among them `tactics`, each side's battle tactic, and a starving side's `Starvation` event before the battle). Only for a battle you fought on a side (or under debug reveal), while its log is kept (the current and previous turn's battles and the last `ENGAGEMENT_REPORT_LOGS_KEPT`): else `gone`. Your side shows its real owners, the other side the owners you saw (hidden nationality). `events` are what the battle shows (the opening at round 0: units that sat out afraid, defensive strikes; then every action, one unit at a time, with its hits, heals, knock-backs and escapes), `after` what it did after (XP, heals, kill effects, flight, the move in), `outcome` whether the plot fell and each side's line by fate |
 | `battle_reports` | engagement combat: `{reports}`, your kept battle reports as summaries, newest first (`battle_log.js`'s header lists a summary: where, when, the sides with what each committed and lost, the outcome, `has_log`) |
-| `city {city}` | the city screen of one of your cities: plots (with `can_work`), specialists (with `plus` and `minus`: what `do_task TASK_CHANGE_SPECIALIST` accepts now), yields, `commerces` (each with its `rate`, the empire's `percent` and its parts: `rates`, `specialists`, `buildings`, `religions`, `empire`, `process`, `modifier`), `next_worker` (who a click on a plot the city does not work takes: `{idle}`, `{specialist}` or `{plot}`; null for nobody), happiness, health, buildings, hurry, emphasis, queue, the buildable list with cost and turns; `cultural` (null without cultural actions; pressures and amounts in hundredths of culture, chances in hundredths of a percent): `rate`, `amount` (what a channel takes a turn), `diverted` (what it took this turn), `channel` (null, or `{city, caster, action, target, religion, since_turn, hostile, amount, reach, unseen, chance}`), `options` (every channel it could set, one per action, civilization with a city in reach and religion of the city: `ok` or `why`, `hostile`, `reach`, `unseen` (cities in reach you have not seen), a spread's `chance`), each `reach` entry `{city, name, owner, distance, effect}` (the distance effect, percent) and `amount` (pressure or chance a turn), for Foment Revolt with `resist` (the city's resistance a turn now), `resist_revolt` (its defenders' part: all it resists in revolt, making no culture), `rest` (the other casters' pressure there), `in_revolt` (in revolt now: its full resistance cannot be read, so `resist_revolt` holds both ways), `settles` (where the caster's pressure settles from now under this city's channel alone, with the city's resistance falling to `resist_revolt` from the turn after the total reaches the revolt: docs/CULTURE.md, "Predictions"), `now` (the caster's pressure there), `others` (what the caster's other cities add a turn), `capital`, for Spread Religion with `has` and `religions`; `pressure` (on this city: `total`, `casters` `[{caster, pressure, inflow, settles, rest}]` (`rest`: the others' pressure), `unknown`, `resist`, `resist_revolt`, `in_revolt`, `defenders`, `level`, `unhappiness`, `capital`); `thresholds` (`unhappy_step`, `unhappy_max`, `disorder`, `near_flip`, `flip`, `fade_percent`, `resist_percent`, `garrison`, `channel_percent`, `full_range`, `range`, `spread_per_culture`, `spread_max`, `flipping`); `recruit` (null without armies): the city's default destination, the destinations it may choose, its garrison, the armies that requisition from it (`requisitioned_by`: `{army, name, target_size, shortfall}`); with armies, each queue entry of a land combat unit has `dest`, `dest_name` and `requisition` (an army's requisition order: first in the queue, not removable by hand) |
+| `city {city}` | the city screen of one of your cities: plots (with `can_work`), specialists (with `plus` and `minus`: what `do_task TASK_CHANGE_SPECIALIST` accepts now), yields, `commerces` (each with its `rate`, the empire's `percent` and its parts: `rates`, `specialists`, `buildings`, `religions`, `empire`, `process`, `modifier`), `next_worker` (who a click on a plot the city does not work takes: `{idle}`, `{specialist}` or `{plot}`; null for nobody), happiness, health, buildings, hurry, emphasis, queue, the buildable list with cost and turns; `cultural` (null without cultural actions; pressures and amounts in hundredths of culture, chances in hundredths of a percent): `rate`, `amount` (what a channel takes a turn), `diverted` (what it took this turn), `channel` (null, or `{city, caster, action, target, religion, since_turn, hostile, amount, reach, unseen, chance}`), `options` (every channel it could set, one per action, civilization with a city in reach and religion of the city: `ok` or `why`, `hostile`, `reach`, `unseen` (cities in reach you have not seen), a spread's `chance`), each `reach` entry `{city, name, owner, distance, effect}` (the distance effect, percent) and `amount` (pressure or chance a turn), for Foment Revolt with `resist` (the city's resistance a turn now), `resist_revolt` (its defenders' part: all it resists in revolt, making no culture), `rest` (the other casters' pressure there), `in_revolt` (in revolt now: its full resistance cannot be read, so `resist_revolt` holds both ways), `settles` (where the caster's pressure settles from now under this city's channel alone, with the city's resistance falling to `resist_revolt` from the turn after the total reaches the revolt: docs/CULTURE.md, "Predictions"), `now` (the caster's pressure there), `others` (what the caster's other cities add a turn), `capital`, for Spread Religion with `has` and `religions`; `pressure` (on this city: `total`, `casters` `[{caster, pressure, inflow, settles, rest}]` (`rest`: the others' pressure), `unknown`, `resist`, `resist_revolt`, `in_revolt`, `defenders`, `level`, `unhappiness`, `capital`); `thresholds` (`unhappy_step`, `unhappy_max`, `disorder`, `near_flip`, `flip`, `fade_percent`, `resist_percent`, `garrison`, `channel_percent`, `full_range`, `range`, `spread_per_culture`, `spread_max`, `flipping`); `recruit` (null without armies): the city's default destination, the destinations it may choose, its garrison, `garrison_tactic` and `garrison_tactic_next` (its garrison's battle tactic and the one from your next turn, docs/TACTICS.md), the armies that requisition from it (`requisitioned_by`: `{army, name, target_size, shortfall}`); with armies, each queue entry of a land combat unit has `dest`, `dest_name` and `requisition` (an army's requisition order: first in the queue, not removable by hand) |
 | `governors` | the Governors screen: `slots`, `cooldown`, `penalty`, `penalty_turns`, each city (`governed`, `cooldown`, `governor` with name, profile, traits, `penalty_turns`, `requisitioned_by`: the names of the armies that requisition from it), the `bench`; the city query's `governance` adds the city's `bench` with each candidate's `match`, `swappable` direct cities, `slots`, `direct_count`, `ready` |
-| `armies` | the Armies screen: the `armies` (as the view's, with `recruits`: the recruits marching to it in full, each its `march` with `id`, `unit`, `x`, `y`; and the requisition's `candidates`: every city of yours with `picked`, `governed`, the `unit` it would train for the army, its `production_turns` and `march_turns` (null: no way by land), its `order` in progress; `open`: whether the requisition may change), each city's garrison (`units`, `governed`) with the recruits marching to it (`recruits`), `supply_range`, `stall_turns` |
+| `armies` | the Armies screen: the `armies` (as the view's, with `recruits`: the recruits marching to it in full, each its `march` with `id`, `unit`, `x`, `y`; and the requisition's `candidates`: every city of yours with `picked`, `governed`, the `unit` it would train for the army, its `production_turns` and `march_turns` (null: no way by land), its `order` in progress; `open`: whether the requisition may change), each city's garrison (`units`, `governed`) with the recruits marching to it (`recruits`), `supply_budget` (`SUPPLY_LINE_BUDGET`), `stall_turns` |
 | `culture` | the Cultural Pressure panel: the channels you see (each `{city, city_name, x, y, caster, action, religion, target, since_turn, hostile}`): `ours` and `aimed` (at your team) also with `amount`, `reach`, `unseen` and a spread's `chance` as in the city query (for `aimed` the reach is your cities), `others`; `pressure`: your cities under revolt pressure (the city query's `pressure` with `city` and `name`); `memories`: what met leaders remember of your cultural actions (`{player, hostility, friendship}`, at most `memory_max`); `thresholds` as in the city query |
 | `techs`, `civics`, `religions`, `players` | the tech tree (prerequisites, depth, turns; each tech's `help`, `research_mods` (its tech-specific research multipliers in percent: `others`, known by civilizations met, and `prereqs`, alternative prerequisites known, added to 100; `feature`, a held unique feature, and `path`, the research path, each multiplying; `total`; the research chooser and the tech tree show them) and, unless you have it, `unlocks`: the units, buildings, builds, civics and religions of its help as type indices, which the research chooser shows as icons; `path`, `path_percent` and `paths`: each research path's techs, those known and closed, the research left, `complete`, and `can_commit` or the `refusal`), civics (availability, upkeep, anarchy; `civics {with: [civic, ..]}` adds `proposed`: the set a revolution to those civics makes, whether `update_civics` would be applied, its anarchy and upkeep), religions, the players you met with your deals |
 | `trade {with}` | the trade tables both ways, with the AI's values (see Deals) |
@@ -1146,8 +1187,8 @@ node tools/web-pad-smoke.mjs             # an emulated phone with an emulated co
 
 * `web-check.sh` needs node (it is skipped without it); the pure modules (map maths and map
   deltas, markup, state and Civ4's group cycle, the hotkeys, the tech tree's layout, the API layer
-  against a fake `fetch`, the battle screens' log folding, log lines, formation editing and the
-  ground's words over the battle fixture, the watch screen's snap: each action's timing plan,
+  against a fake `fetch`, the battle screens' log folding, log lines, a formation's cells, the
+  tactics' names, a starving side's line and the ground's words over the battle fixture, the watch screen's snap: each action's timing plan,
   the shade, the roles and their poses) are tested in `crates/ffh-play/assets/test/*.test.mjs`.
 * `web-api-smoke.mjs [--turns 20] [--seed 5] [--world WORLDSIZE_TINY] [--opponents 2] [--url URL]
   [--keep] [--verbose]` starts `target/release/ffh-play serve --port 0` (or `--bin`), checks the
@@ -1194,11 +1235,15 @@ node tools/web-pad-smoke.mjs             # an emulated phone with an emulated co
   again after loading the same turn, the transport picker (`stage load`), Shift-right-click
   waypoints and go-to (`G`) Shift-click waypoints held until Shift is released (`stage
   automoves`), engagement combat (`stage engagement`: the army's role, A, Dv and HP in the unit
-  panel, the battle in the tooltip, a right-click opening the battle plan in the rules' auto
-  formation with its forecast, a unit moved to another cell by mouse (the forecast asked again),
-  `Enter` attacking with that formation and the keep/raze decision over the overlay, the combat
+  panel, the battle in the tooltip, a right-click opening the battle plan with both sides'
+  tactics named (Line) and its forecast, no Auto-arrange, a click on a unit of the line moving
+  nobody, `Enter` attacking and the keep/raze decision over the overlay, the combat
   flash from the battle's report, the watch screen and the report of the engine's log, the map's
-  battle marker and the message's link opening it again), a game started by another client
+  battle marker and the message's link opening it again), this game's armies (`stage armies`:
+  the Armies screen's tactic selector, a change shown as "from next turn", the city screen's
+  garrison tactic), supply lines on the HD-2D map (`stage supply`: the supplied army's line drawn,
+  the hungry army's marker, "Supplied (cost N of 24)" in the tooltip with the army selected, the
+  unit panel's and the Armies screen's words), a game started by another client
   while the page shows the title screen's New game dialog (both go), and the crash screen of a server started with
   `--panic-at`; and (P6) the city screen (a worked plot clicked off and on, the automation), the
   tech tree (`F6`, a click researches), civics (`F3`, a pick and the revolution), religion

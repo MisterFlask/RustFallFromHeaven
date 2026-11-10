@@ -201,7 +201,13 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             g.groups[grp].force_update = false;
             continue;
         }
-        if g.groups[grp].force_update || replan || sleeping_settler {
+        // An army whose supply line is cut decides again at the start of every turn (docs/SUPPLY.md:
+        // it may have to fall back), whatever it was ordered or set to do before (not again in a
+        // later call of the same turn, once it has moved).
+        let cut = (!g.groups[grp].mission_queue.is_empty() || g.groups[grp].activity_type != ActivityType::ACTIVITY_AWAKE)
+            && crate::supply::cut(g, grp)
+            && g.groups[grp].units.iter().all(|&o| !g.unit_has_moved(o));
+        if g.groups[grp].force_update || replan || sleeping_settler || cut {
             // Settlers re-plan every turn (danger and sites change).
             g.groups[grp].force_update = false;
             g.group_clear_mission_queue(grp);

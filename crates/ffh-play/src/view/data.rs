@@ -86,6 +86,14 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
                 CultureEffect::FomentRevolt => "foment_revolt",
             });
         }
+        "BattleTacticType" => {
+            // Battle tactics (docs/TACTICS.md): Vanguard's help names the veteran level (`%d1`).
+            let t = &d.battle_tactics[BattleTacticType::from_usize(i)];
+            let help = names::text(d, &t.base.help);
+            if help != t.base.help {
+                j.set("help", crate::view::help::fill(help, &[crate::view::help::Arg::N(d.defines.tactic_veteran_level)]));
+            }
+        }
         "FeatureType" => {
             let f = &d.features[FeatureType::from_usize(i)];
             j.set("yields", yields(&f.yield_change));

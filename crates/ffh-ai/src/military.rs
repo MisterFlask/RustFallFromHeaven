@@ -215,6 +215,7 @@ pub fn assault(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
         }
         g.groups[grp].ai_group_attack = false;
         let before = g.groups[grp].units.len();
+        crate::tactics::note_attack(g, v.p, g.unit_plot(head), q);
         move_to(g, grp, q, MOVE_DIRECT_ATTACK);
         fought = true;
         if !alive(g, grp) {
@@ -400,6 +401,11 @@ pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
     if !alive(g, grp) {
         return;
     }
+    // Its supply line cut (docs/SUPPLY.md): back toward home, unless hungry with the city it
+    // attacks within two plots (supply.rs).
+    if crate::supply::fall_back(g, v, grp, u) {
+        return;
+    }
 
     // Heal before anything but a sure kill.
     let max_hp = g.d.defines.max_hit_points.max(1);
@@ -511,7 +517,8 @@ pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
                 best = Some((r.plot, score));
             }
         }
-        if let Some((q, _)) = best {
+        // (Not beyond our supply line: supply.rs.)
+        if let Some((q, _)) = best.filter(|&(q, _)| crate::supply::may_move(g, grp, q, None)) {
             move_to(g, grp, q, 0);
             finish(g, grp);
             return;
@@ -603,7 +610,10 @@ fn heal(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> Healed {
         }
         return Healed::Done;
     }
-    // In the field.
+    // In the field. An army whose line is cut does not heal (docs/SUPPLY.md): no stop for it.
+    if crate::supply::cut(g, grp) {
+        return Healed::Continue(grp, u);
+    }
     let n = units.len();
     let badly = units.iter().any(|&o| pct(g, o) > ALONE_PCT);
     let most = units.iter().filter(|&&o| pct(g, o) >= HURT_PCT).count() * 2 > n;
@@ -804,32 +814,41 @@ fn hunt(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
                 continue;
             }
         }
-        v.target_claims.push((t.plot, grp));
-        crate::trace!(g, v.p, "stack {:?} ({} units) hunts {:?} (value {}, units {}, lair {}, city {})", grp, g.groups[grp].units.len(), g.map.xy(t.plot), t.value, t.units, t.lair, t.city);
+        // Where it goes: the target (an empty one), or next to it on the best defensive ground
+        // we reach first; not beyond our supply line unless the city it marches on is near
+        // (supply.rs).
         let (tx, ty) = g.map.xy(t.plot);
         let (x, y) = g.map.xy(here);
-        if g.plot_distance(x, y, tx, ty) <= 1 && t.units > 0 {
-            assault(g, v, grp, t.plot);
-        } else if t.units == 0 {
-            if t.city {
-                g.tel_decision(v.p, "military", "capture_empty_hunt", "capture", 1, String::new);
-            }
-            move_to(g, grp, t.plot, 0);
+        let adjacent = g.plot_distance(x, y, tx, ty) <= 1 && t.units > 0;
+        let staging = if adjacent || t.units == 0 {
+            None
         } else {
-            // Next to it, on the best defensive ground we reach first.
             let reach = v.flood.run(g, u, 6, false);
-            let staging = reach
+            reach
                 .iter()
                 .filter(|r| {
                     let (rx, ry) = g.map.xy(r.plot);
                     g.plot_distance(rx, ry, tx, ty) == 1 && g.map.plots[r.plot].plot_city.map_or(true, |c| g.cities[c].owner == v.p)
                 })
                 .min_by_key(|r| (r.turns, std::cmp::Reverse(g.plot_defense_modifier(r.plot, Some(v.team), true)), r.plot))
-                .copied();
-            match staging {
-                Some(r) if r.plot != here => move_to(g, grp, r.plot, 0),
-                _ => {}
+                .copied()
+        };
+        let dest = if adjacent { None } else if t.units == 0 { Some(t.plot) } else { staging.map(|r| r.plot).filter(|&q| q != here) };
+        let city = t.city.then_some(t.plot);
+        if dest.is_some_and(|q| !crate::supply::may_move(g, grp, q, city)) {
+            continue;
+        }
+        v.target_claims.push((t.plot, grp));
+        crate::trace!(g, v.p, "stack {:?} ({} units) hunts {:?} (value {}, units {}, lair {}, city {})", grp, g.groups[grp].units.len(), g.map.xy(t.plot), t.value, t.units, t.lair, t.city);
+        if adjacent {
+            assault(g, v, grp, t.plot);
+        } else if t.units == 0 {
+            if t.city {
+                g.tel_decision(v.p, "military", "capture_empty_hunt", "capture", 1, String::new);
             }
+            move_to(g, grp, t.plot, 0);
+        } else if let Some(q) = dest {
+            move_to(g, grp, q, 0);
         }
         finish(g, grp);
         return true;

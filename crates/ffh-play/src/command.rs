@@ -14,7 +14,7 @@ use std::fmt::Write as _;
 use ffh_core::crusade::lend::LendError;
 use ffh_core::crusade::loan::{LoanAnswer, LoanError, LoanMission, LoanProposal, LoanTerms};
 use ffh_core::crusade::{CrusadeId, Pledge};
-use ffh_core::engagement::{HitCtx, Place, WarTest};
+use ffh_core::engagement::{Place, WarTest};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::log::LogEntry;
@@ -65,11 +65,17 @@ pub enum Command {
     ArmyRequisition { army: ArmyId, city: CityId, on: bool },
     /// Army `army` requisitions from `cities` (in that order) and from no other.
     ArmyRequisitionSet { army: ArmyId, cities: Vec<CityId> },
-    /// Engagement combat (docs/ENGAGEMENTS.md): attack plot `to` (next to the attackers) in
-    /// `formation` (`[{unit, lane, row}]`, checked against the pool on the attacking plot and the
-    /// slots), else in the rules' auto formation. `by`: an army, the selected units (either one's
-    /// group launches the attack and moves in when the plot falls) or a plot. `declare_war` as
-    /// `move`'s (`None` asks, `Some(false)` is the popup's "no").
+    /// Battle tactics (docs/TACTICS.md): army `army` fights in `tactic` from the start of the
+    /// human's next turn (setting the tactic it has cancels a pending change).
+    ArmyTactic { army: ArmyId, tactic: BattleTacticType },
+    /// City `city`'s garrison fights in `tactic` from the start of the human's next turn.
+    GarrisonTactic { city: CityId, tactic: BattleTacticType },
+    /// Engagement combat (docs/ENGAGEMENTS.md): attack plot `to` (next to the attackers); each side
+    /// fights in the formation its tactic gives (docs/TACTICS.md). `formation` is refused for the
+    /// human ("An army fights in its tactic."; the rules' own entry still takes one: the lab, tests).
+    /// `by`: an army, the selected units (either one's group launches the attack and moves in when
+    /// the plot falls) or a plot. `declare_war` as `move`'s (`None` asks, `Some(false)` is the
+    /// popup's "no").
     Engage { by: EngageBy, to: (i32, i32), formation: Option<Vec<Place>>, declare_war: Option<bool> },
     /// Where city `city`'s trained land combat units go: production order `index`'s, or the
     /// city's default (`index` -1); `dest` `None` = the city's default (for an order) or its own
@@ -430,6 +436,8 @@ pub const COMMAND_NAMES: &[&str] = &[
     "army_target",
     "army_requisition",
     "army_requisition_set",
+    "army_tactic",
+    "garrison_tactic",
     "engage",
     "recruit_dest",
     "govern_direct",
@@ -479,6 +487,8 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("army_target", &["army", "size"]),
     ("army_requisition", &["army", "city", "on"]),
     ("army_requisition_set", &["army", "cities"]),
+    ("army_tactic", &["army", "tactic"]),
+    ("garrison_tactic", &["city", "tactic"]),
     ("engage", &["army", "units", "from", "to", "formation", "declare_war"]),
     ("recruit_dest", &["city", "index", "dest"]),
     ("govern_direct", &["city", "instead_of"]),
@@ -622,6 +632,8 @@ impl Command {
             Command::ArmyTarget { .. } => "army_target",
             Command::ArmyRequisition { .. } => "army_requisition",
             Command::ArmyRequisitionSet { .. } => "army_requisition_set",
+            Command::ArmyTactic { .. } => "army_tactic",
+            Command::GarrisonTactic { .. } => "garrison_tactic",
             Command::Engage { .. } => "engage",
             Command::RecruitDest { .. } => "recruit_dest",
             Command::GovernDirect { .. } => "govern_direct",
@@ -724,6 +736,8 @@ impl Command {
             "army_target" => Command::ArmyTarget { army: j.req("army")?, size: j.req("size")? },
             "army_requisition" => Command::ArmyRequisition { army: j.req("army")?, city: j.req("city")?, on: j.req("on")? },
             "army_requisition_set" => Command::ArmyRequisitionSet { army: j.req("army")?, cities: j.req("cities")? },
+            "army_tactic" => Command::ArmyTactic { army: j.req("army")?, tactic: names::field(d, j, "tactic")? },
+            "garrison_tactic" => Command::GarrisonTactic { city: j.req("city")?, tactic: names::field(d, j, "tactic")? },
             "engage" => Command::Engage {
                 by: EngageBy::from_json(j)?,
                 to: plot_field(j, "to")?.ok_or_else(|| FieldError::missing("to"))?,
@@ -834,6 +848,8 @@ impl Command {
             Command::ArmyTarget { army, size } => j.with("army", *army).with("size", *size),
             Command::ArmyRequisition { army, city, on } => j.with("army", *army).with("city", *city).with("on", *on),
             Command::ArmyRequisitionSet { army, cities } => j.with("army", *army).with("cities", Json::Arr(cities.iter().map(|&c| Json::from(c)).collect())),
+            Command::ArmyTactic { army, tactic } => j.with("army", *army).with("tactic", Json::idx(*tactic)),
+            Command::GarrisonTactic { city, tactic } => j.with("city", *city).with("tactic", Json::idx(*tactic)),
             Command::Engage { by, to, formation, declare_war } => by
                 .put(j)
                 .with("to", plot_json(to.0, to.1))
@@ -1100,6 +1116,8 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::ArmyRequisition { army, city, on: true } => g.army_add_requisition(h, *army, *city),
         Command::ArmyRequisition { army, city, on: false } => g.army_remove_requisition(h, *army, *city),
         Command::ArmyRequisitionSet { army, cities } => g.army_set_requisition(h, *army, cities),
+        Command::ArmyTactic { army, tactic } => g.army_set_tactic(h, *army, *tactic),
+        Command::GarrisonTactic { city, tactic } => g.city_set_garrison_tactic(h, *city, *tactic),
         Command::GovernDirect { city, instead_of } => g.player_set_direct_rule(h, *city, *instead_of),
         Command::GovernHand { city } => g.city_hand_to_governor(h, *city),
         Command::GovernAssign { city, governor } => g.city_assign_governor(h, *city, *governor),
@@ -1474,7 +1492,23 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
+        Command::ArmyTactic { army, tactic } => {
+            army_of(g, h, *army)?;
+            in_range("tactic", tactic.idx() as i32, d.battle_tactics.len())?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::GarrisonTactic { city, tactic } => {
+            city_of(g, h, *city)?;
+            in_range("tactic", tactic.idx() as i32, d.battle_tactics.len())?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
         Command::Engage { by, to, formation, declare_war } => {
+            // Battle tactics (docs/TACTICS.md): the grid of one battle is never edited by hand.
+            if formation.is_some() {
+                return Err(cannot("An army fights in its tactic."));
+            }
             let dest = on_map(g, to.0, to.1)?;
             let from = match by {
                 EngageBy::Army(a) => {
@@ -1517,20 +1551,10 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             if pool.is_empty() {
                 return Err(cannot("no unit there can attack that plot now"));
             }
-            let force: Vec<UnitId> = match formation {
-                Some(f) => {
-                    for p in f {
-                        unit_of(g, h, p.unit)?;
-                    }
-                    g.engage_validate_formation(&pool, f, &g.engage_slots(&HitCtx::new(from, dest))).map_err(cannot)?;
-                    f.iter().map(|p| p.unit).collect()
-                }
-                None => pool.clone(),
-            };
-            if g.engage_defenders(dest, h, &force, test).is_empty() {
+            if g.engage_defenders(dest, h, &pool, test).is_empty() {
                 return Err(cannot("there is nobody to fight there"));
             }
-            Plan::Apply(Action::Engage { by: by.clone(), from, to: dest, formation: formation.clone(), war })
+            Plan::Apply(Action::Engage { by: by.clone(), from, to: dest, formation: None, war })
         }
 
         Command::RecruitDest { city, index, dest } => {
@@ -2269,6 +2293,8 @@ mod tests {
             Command::ArmyRequisition { army: ArmyId(1), city: CityId(4), on: false },
             Command::ArmyRequisitionSet { army: ArmyId(1), cities: vec![CityId(4), CityId(2)] },
             Command::ArmyRequisitionSet { army: ArmyId(1), cities: vec![] },
+            Command::ArmyTactic { army: ArmyId(1), tactic: BattleTacticType(2) },
+            Command::GarrisonTactic { city: CityId(3), tactic: BattleTacticType(0) },
             Command::Engage { by: EngageBy::Army(ArmyId(1)), to: (4, 5), formation: None, declare_war: None },
             Command::Engage {
                 by: EngageBy::Units(vec![UnitId(3), UnitId(4)]),

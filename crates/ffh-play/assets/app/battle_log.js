@@ -1,7 +1,6 @@
 // Formation battles as the battle screens read them (docs/HUMAN.md, "The battle screens";
 // docs/ENGAGEMENTS.md; the formation-battle prototype, phase 6 revision 4): the protocol's shapes,
-// the names and the words of the rules, the editing of a formation, and the pure reading of a
-// battle log: the state after any number of its events, the lines of the log, each side's fates.
+// the names and the words of the rules, a formation's cells, and the pure reading of a battle log: the state after any number of its events, the lines of the log, each side's fates.
 // No DOM here: assets/test/battle.test.mjs tests it in node.
 //
 // The screens never re-derive a rule: who stands where, every action, target, roll, hit, heal,
@@ -35,8 +34,9 @@
 //                 city's Sentinels, docs/SIEGES.md) | "Minimum" | "Summons" (n) | "Improvement" (improvement: the
 //                 attacker, on a plot whose improvement narrows it: a card's Trench), delta}
 //   lanes: [attacker's lanes, defender's lanes]
-//   sides: [SideSnap, SideSnap]: {player, shown_player, civ, label, lanes, ordered (its formation was its order's,
-//     not the rules' auto formation)} (`player`: the real one on the viewer's side, the one the viewer saw on the
+//   tactics: [attacker's, defender's] (BattleTacticType: what arranged each side's line; docs/TACTICS.md)
+//   sides: [SideSnap, SideSnap]: {player, shown_player, civ, label, lanes, ordered (its formation was given by
+//     the rules' caller (the lab, tests), not its tactic's)} (`player`: the real one on the viewer's side, the one the viewer saw on the
 //     other: hidden nationality)
 //   fighters: [Fighter]: both lines, and the units of both sides on the two plots that stayed out of them (the
 //     attacker's pool, the defenders' reserve the viewer sees: `lane` null):
@@ -65,6 +65,8 @@
 //        (none yet)
 //       {round: 0, pass: 0, kind: "Building", building (BuildingType), hits: [{target, dmg}]}: the defended city's
 //        building strikes before the battle (a card's Thunderhead Tower); no actor
+//       {round: 0, pass: 0, kind: "Starvation", units: [b], dealt_pct}: the units of starving armies deal dealt_pct
+//        damage (docs/SUPPLY.md); no actor
 //     then the actions, one unit at a time (round 1.., pass 1..):
 //       {round, pass, actor, kind (ActionKind), spell? (SpellType; null: the magic bolt), target (null: none),
 //        hits: [{target, dmg, crit?, miss?, killed?, withdrew?}] (the first on `target`, the rest its splash; `dmg`
@@ -88,10 +90,11 @@
 //   committed, lost (fell), lost_types: [[unit_type, n]], escaped, sat_out, standing}]}. A game-log message about a
 //   battle carries `kind: "engagement"` and `report` (its id).
 //
-// EngagePreview (`engage_preview {army | units | from, to, formation?: [{unit, lane, row}]}`): plot, from, ground,
-//   params, slots, lanes, sides, fighters (the attacker's pool in the formation asked for, checked, else in the
-//   rules' auto formation; the defenders it sees in their formation as it knows it), formation and auto_formation
-//   ([{unit, lane, row}]: the attacker's in `fighters`, the one the forecast is for, and the rules' own),
+// EngagePreview (`engage_preview {army | units | from, to}`): plot, from, ground, params, slots, lanes, sides,
+//   fighters (the attacker's pool in the formation its tactic gives; the defenders it sees in their formation as it
+//   knows it), formation and auto_formation ([{unit, lane, row}]: the attacker's in `fighters`, the one the
+//   forecast is for), tactics: [attacker's, defender's] (BattleTacticType), starving: [{b, pct}] (fighters of
+//   starving armies and the percent change of the damage they deal; docs/SUPPLY.md),
 //   summons: [{caster (b), unit_type, spell (null: on_kill), on_kill (a unit a kill may create), side, lane, row, hp,
 //   max_hp, a_x100, fall_pct}] (the units the battle calls, made for it: no fighter of the plan, not in `per`;
 //   docs/ENGAGEMENTS.md, "Summons"),
@@ -103,7 +106,8 @@
 //   expected to fall, x100),
 //   line_wiped_permille (the defenders' line wiped out), plot_falls_permille, attackers_wiped_permille?,
 //   per: [{b, fall_pct, escape_pct}]}.
-// The `engage` command: {army | units | from, to, formation?, declare_war?}; its reply's `r.report` is the battle's.
+// The `engage` command: {army | units | from, to, declare_war?} (a `formation` is refused: an army fights in its
+//   tactic); its reply's `r.report` is the battle's.
 // Static data (`/api/data`): the names of UnitType, PromotionType, TerrainType, FeatureType,
 //   SpellType, CivilizationType.
 // ---------------------------------------------------------------------------------------------
@@ -439,6 +443,13 @@ export function slotChangeText(c) {
   }
 }
 
+/** The name of side `side`'s battle tactic in a log or a preview (`tactics`; docs/TACTICS.md), or
+ *  null when it has none (a fixture). */
+export function tacticName(L, side) {
+  const v = L?.tactics?.[side];
+  return v === null || v === undefined ? null : tyLabel("BattleTacticType", v);
+}
+
 /** "8 slots − 2 for the hill = 6" (the changes that moved the count). */
 export function slotSum(s) {
   const parts = [`${s.base} slots`];
@@ -454,23 +465,13 @@ export function slotSum(s) {
 export const slotCap = (s) => (s?.total ?? 0) + (s?.river_only ?? 0);
 
 // ---------------------------------------------------------------------------------------------
-// A formation: where each unit of a side stands (`Map b -> {lane, row}`), and its editing (the
-// prototype's: click a unit, then a cell). The engine checks the formation it is sent.
+// A formation: where each unit of a side stands (`Map b -> {lane, row}`). The engine arranges it
+// (each side's tactic, docs/TACTICS.md): the board shows it, nobody edits it.
 
 /** The formation of side `side` in `fighters` (their `lane` and `row`). */
 export function placeOf(fighters, side) {
   const m = new Map();
   for (const f of fighters) if (f.side === side && inLine(f)) m.set(f.b, { lane: f.lane, row: f.row });
-  return m;
-}
-
-/** A formation from a protocol list `[{unit, lane, row}]` (unknown units left out). */
-export function placeFromList(fighters, list) {
-  const m = new Map();
-  for (const p of list ?? []) {
-    const f = fighters.find((x) => x.unit === p.unit);
-    if (f) m.set(f.b, { lane: p.lane, row: p.row });
-  }
   return m;
 }
 
@@ -485,15 +486,6 @@ export function formationKey(list) {
     .map((p) => `${p.unit}:${p.lane}:${p.row}`)
     .sort()
     .join(",");
-}
-
-/** The forecast preview `pv` brings for formation `sent` (the one asked for; null: the first
- *  preview, in the rules' own): `{forecast, refused}`. A reply for another formation (the engine
- *  refused the one sent and answered in its auto formation) brings none of this one: `forecast`
- *  null, `refused` true. */
-export function previewForecast(pv, sent = null) {
-  const forThis = !sent || (Array.isArray(pv?.formation) && formationKey(pv.formation) === formationKey(sent));
-  return { forecast: forThis ? (pv?.forecast ?? null) : null, refused: !forThis };
 }
 
 /** `grid[row][lane]`: the `b` standing there (a large unit fills two lanes), or null. */
@@ -511,48 +503,6 @@ export function slotsUsed(place, fighters) {
   let n = 0;
   for (const b of place.keys()) n += sizeOf(fighters[b]);
   return n;
-}
-
-/** The lanes of `row` where `f` fits in `grid`, nearest `nearLane` first. */
-function freeLanes(f, row, nearLane, grid, lanes) {
-  const fits = (l) => (f.large ? l + 1 < lanes && grid[row][l] === null && grid[row][l + 1] === null : grid[row][l] === null);
-  return [...Array(lanes).keys()].filter(fits).sort((a, b) => Math.abs(a - nearLane) - Math.abs(b - nearLane) || a - b);
-}
-
-/**
- * Puts fighter `b` at (`lane`, `row`) of formation `place` (its side's; `lanes` and `cap`: the
- * side's lanes and the slots it may fill): whoever stood in the cells it needs moves to where it
- * stood if they fit there, else out of the line. Returns `{place, out: [b]}` (a new formation and
- * who left the line), or `{error}` (nothing changed).
- */
-export function placeUnit(place, fighters, { lanes, cap }, b, lane, row) {
-  const f = fighters[b];
-  if (!f || row < 0 || row > 2 || lane < 0 || lane >= lanes) return { error: "That is not a cell of its side." };
-  if (f.large && lanes < 2) return { error: "There is no room for a large unit here." };
-  const anchor = f.large ? Math.min(lane, lanes - 2) : lane;
-  const from = place.get(b);
-  const next = new Map(place);
-  next.delete(b);
-  const g0 = gridOf(next, fighters, lanes);
-  const cells = f.large ? [anchor, anchor + 1] : [anchor];
-  const displaced = [...new Set(cells.map((l) => g0[row][l]).filter((x) => x !== null))];
-  for (const o of displaced) next.delete(o);
-  next.set(b, { lane: anchor, row });
-  const out = [];
-  for (const o of displaced) {
-    const spot = from ? freeLanes(fighters[o], from.row, from.lane, gridOf(next, fighters, lanes), lanes)[0] : undefined;
-    if (spot !== undefined) next.set(o, { lane: spot, row: from.row });
-    else out.push(o);
-  }
-  if (slotsUsed(next, fighters) > cap) return { error: `The line is full: ${cap} slots here, and a large unit takes two. Click a unit in the line to swap them.` };
-  return { place: next, out };
-}
-
-/** Formation `place` without fighter `b`. */
-export function benchUnit(place, b) {
-  const next = new Map(place);
-  next.delete(b);
-  return next;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -702,6 +652,13 @@ export function logLines(log) {
       parts.push(t(`The ${tyLabel("BuildingType", e.building)} strikes`));
       (e.hits ?? []).forEach((h, k) => parts.push(t(k ? ", " : " "), who(h.target), t(" "), t(dmgText(h.dmg), "bt-n")));
       parts.push(t("."));
+      out.push({ i, parts, speed: null });
+      return;
+    }
+    if (e.kind === "Starvation") {
+      parts.push(t("Starving: "));
+      (e.units ?? []).forEach((b, k) => parts.push(...(k ? [t(", ")] : []), who(b)));
+      parts.push(t(`: ${e.dealt_pct > 0 ? "+" : ""}${e.dealt_pct}% damage dealt.`));
       out.push({ i, parts, speed: null });
       return;
     }

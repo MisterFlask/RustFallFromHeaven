@@ -8,6 +8,7 @@ import * as T from "../tiles.js";
 import { CATALOG } from "./assets/catalog.js";
 import { SEA } from "./world.js";
 import { drawCityWork } from "../citywork.js";
+import { supplyLines, supplyMarks, unwrapSegment, flowOffset, drawLine, drawMark } from "../supply.js";
 
 const FONT = "system-ui, 'DejaVu Sans', 'Segoe UI', sans-serif";
 
@@ -268,6 +269,9 @@ function drawHudParts(r3d, cam) {
     }, { hover: v.overlay.hover, redraw: () => v.request() });
   }
 
+  // Supply lines (docs/SUPPLY.md): under the stack badges, over the ground; not on the city screen.
+  if (!screenCity) drawSupply(r3d, cam, g, inView);
+
   // Stack badges: over the figure's head.
   for (const s of r3d.stacks ?? []) {
     const a = s.anchor;
@@ -399,5 +403,41 @@ function drawHudParts(r3d, cam) {
     g.beginPath();
     g.arc(p.x, p.y, rr, 0, Math.PI * 2);
     g.fill();
+  }
+}
+
+/** The supply lines and the cut-off armies' markers (supply.js), each plot's centre on the ground;
+ *  `r3d.supplyDrawn` counts what the frame drew (the smoke test reads it). The flow moves when the
+ *  map animates (the frame is redrawn then); under reduced motion it stands still. */
+function drawSupply(r3d, cam, g, inView) {
+  const v = r3d.view;
+  const world = r3d.world;
+  const ts = r3d.ts;
+  const lines = supplyLines();
+  const marks = supplyMarks();
+  const drawn = { lines: 0, marks: 0 };
+  r3d.supplyDrawn = drawn;
+  if (!lines.length && !marks.length) return;
+  const still = v.reduceMotion?.() ?? false;
+  const offset = flowOffset(performance.now(), Math.max(6, ts * 0.12), still);
+  const width = Math.max(2, Math.min(4, ts * 0.035));
+  for (const L of lines) {
+    for (const seg of L.segments) {
+      const pts = [];
+      for (const [ux, y] of unwrapSegment(seg, r3d.nearX(seg[0][0]), v.map)) {
+        const x = T.wrapCoord(ux, v.map.w, v.map.wrap_x) ?? ux;
+        const p = r3d.project(cam, [ux + 0.5, world.plotHeight(x, y) + 0.03, -(y + 0.5)]);
+        if (p) pts.push(p);
+      }
+      if (pts.length < 2 || !pts.some((p) => inView(p))) continue;
+      drawLine(g, pts, L.color, width, offset);
+      drawn.lines++;
+    }
+  }
+  for (const m of marks) {
+    const p = r3d.project(cam, [r3d.nearX(m.x) + 0.5, world.plotHeight(m.x, m.y) + 0.02, -(m.y + 0.5)]);
+    if (!inView(p)) continue;
+    drawMark(g, m, p.x, p.y + Math.max(10, ts * 0.18), Math.max(9, Math.min(13, ts * 0.12)), FONT);
+    drawn.marks++;
   }
 }

@@ -20,7 +20,9 @@
 // frame, the cards, picking, selection, zoom, pan, layers, a lost context's fallback). Phase 7: the automate buttons (`stage automate`: a
 // scout exploring with a click), this game's armies (`stage
 // armies`: a marching recruit that takes no orders, a city added to an army's requisition on the
-// Armies screen, a requisition order in a city's queue), the secretary general's election
+// Armies screen, an army's and a garrison's battle tactic, a requisition order in a city's queue),
+// supply lines (`stage supply` on the HD-2D map: a line drawn, a Hunger marker, the readout under
+// the pointer, the words on the Armies screen), the secretary general's election
 // popup (`stage election`) and the Kuriotates city-or-settlement decision (`stage settlement`);
 // crusades (`stage crusade`: the call popup, lending with the war confirmation, the Crusades
 // screen, a loan proposed); the decks (`stage cards`: the Armageddon deck's slots in the counter's
@@ -1484,6 +1486,13 @@ async function stagedArmies(bin, saves) {
   await click(box);
   await until2(`!!window.ffh.S.view.armies.find((a) => a.id === ${st.army})?.requisition.cities.includes(${st.city})`, "the city added to the army's requisition");
   await until2(`!!document.querySelector(${q(`${box}:checked`)})`, "the city ticked on the screen");
+  // The army's battle tactic (docs/TACTICS.md): four options with their help; a change waits for
+  // the next turn ("from next turn").
+  const tsel = `${card} select.army-tactic`;
+  await until2(`document.querySelectorAll(${q(`${tsel} option`)}).length === 4 && [...document.querySelectorAll(${q(`${tsel} option`)})].every((o) => !!o.title)`, "the army's tactic selector with its four tactics");
+  await b.eval(`(() => { const s = document.querySelector(${q(tsel)}); s.value = "1"; s.dispatchEvent(new Event("change")); })()`);
+  await until2(`window.ffh.S.view.armies.find((a) => a.id === ${st.army})?.tactic_next === 1`, "the army's next tactic set");
+  await until2(`/from next turn/.test(document.querySelector(${q(`${card} .tactic-pending`)})?.textContent ?? "")`, "the pending tactic shown as from next turn");
   await shot("armies-requisition");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the Armies screen closed");
@@ -1494,10 +1503,12 @@ async function stagedArmies(bin, saves) {
   if (await b.eval(`!!document.querySelector(${q(`${first} button[data-index]`)})`)) throw new Error("the requisition order has a remove button");
   const pop = await b.eval(`window.ffh.api.send({ k: "cmd", c: "pop_order", city: ${st.capital}, index: 0 }).then((r) => (r.ok ? "applied" : r.detail))`);
   if (!named("requisitioned by").test(pop ?? "")) throw new Error(`taking the requisition order off by hand: ${pop}`);
+  // The garrison's tactic, next to where the city's units go.
+  await until2(`document.querySelectorAll(${q(`${TOP} .recruit-default select.garrison-tactic option`)}).length === 4`, "the garrison's tactic selector");
   await shot("city-requisition");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the city dialog closed");
-  steps.push("armies (stage armies): a marching recruit shows its march, offers no orders and refuses a move; the Armies screen adds a city to the requisition; the capital's requisition order is tagged and cannot be removed");
+  steps.push("armies (stage armies): a marching recruit shows its march, offers no orders and refuses a move; the Armies screen adds a city to the requisition and sets the army's tactic (from next turn); the capital's requisition order is tagged and cannot be removed; the garrison's tactic selector");
 }
 
 /** Waits until the battle overlay shows screen `name` and it is ready. */
@@ -1518,9 +1529,9 @@ async function closeBattle() {
 
 /** Engagement combat, `stage engagement` (docs/ENGAGEMENTS.md, formation battles): the army next
  *  to the enemy city shows its role, A, Dv and HP in the unit panel; the tooltip over the city says
- *  it is a battle; a right-click opens the battle plan in the rules' auto formation; a unit of the
- *  line is moved by mouse to another row of its lane (the forecast asked again, the engine accepts
- *  the formation: no errors, not refused, a forecast); Enter attacks with it (Escape and Cancel do
+ *  it is a battle; a right-click opens the battle plan in the formation the tactics give (both
+ *  named, Line; no Auto-arrange; a click on a unit of the line moves nobody; a forecast); Enter
+ *  attacks (Escape and Cancel do
  *  not close the plan while the attack is on its way; a keep/raze decision over the overlay
  *  answered if the city falls), the combat flash comes from the battle's report, the attack's messages wait for the
  *  screens to close, the watch screen plays the engine's log and the report shows it; the map's
@@ -1547,25 +1558,22 @@ async function stagedEngagement(bin, saves) {
   await battleScreen("plan");
   const placed = await b.eval(`window.ffh.battle.plan.formation.length`);
   if (!placed) throw new Error("the plan's auto formation puts nobody in the line");
-  // A unit of the line (not a large one) to the next row of its lane, by mouse: a move, or a swap.
+  // The board shows the formation the tactics give (docs/TACTICS.md): both sides' tactics named,
+  // no Auto-arrange, and a click on a unit of the line moves nobody.
+  const tactics = await b.eval(`JSON.stringify(window.ffh.battle.plan.tactics)`);
+  if (tactics !== JSON.stringify(["Line", "Line"])) throw new Error(`the plan names the tactics ${tactics}`);
+  await until2(`document.querySelectorAll("#battle .bt-tactic").length === 2`, "both sides' tactics on the board");
+  if (await b.eval(`[...document.querySelectorAll("#battle button")].some((x) => /Auto/.test(x.textContent))`)) throw new Error("the plan still offers Auto-arrange");
   const before = await b.eval(`JSON.stringify(window.ffh.battle.plan.formation)`);
-  const mv = await b.eval(`(() => {
-    const p = window.ffh.battle.plan;
-    const pv = p.preview;
-    const x = p.formation.find((q) => !pv.fighters.find((f) => f.unit === q.unit).large);
-    const f = pv.fighters.find((g) => g.unit === x.unit);
-    return { b: f.b, unit: f.unit, lane: x.lane, row: (x.row + 1) % 3, at: p.point(f.b) };
-  })()`);
-  await b.mouse(mv.at.x, mv.at.y);
-  await until2(`window.ffh.battle.plan.sel === ${mv.b}`, "a unit of the line selected");
-  const cell = await b.eval(`window.ffh.battle.plan.cellPoint(0, ${mv.lane}, ${mv.row})`);
-  await b.mouse(cell.x, cell.y);
-  await battleScreen("plan", "the plan after the move, its forecast asked again");
-  await until2(`window.ffh.battle.plan.formation.some((q) => q.unit === ${mv.unit} && q.row === ${mv.row})`, "the unit in its new row");
-  if ((await b.eval(`JSON.stringify(window.ffh.battle.plan.formation)`)) === before) throw new Error("moving a unit left the formation as it was");
-  const plan = await b.eval(`(() => { const p = window.ffh.battle.plan; return { errors: p.errors, refused: p.refused, forecast: !!p.forecast }; })()`);
-  if (plan.errors.length || plan.refused) throw new Error(`the engine refused the moved formation: ${plan.errors.join("; ") || "it answered in its auto formation"}`);
-  if (!plan.forecast) throw new Error("the moved formation has no forecast");
+  const at = await b.eval(`(() => { const p = window.ffh.battle.plan; const f = p.preview.fighters.find((g) => g.side === 0 && g.lane !== null && !!p.point(g.b)); return f ? p.point(f.b) : null; })()`);
+  if (!at) throw new Error("no unit of the line to click on the board");
+  const clicks = await b.eval(`window.ffh.battle.plan.clicks`);
+  await b.mouse(at.x, at.y);
+  await until2(`window.ffh.battle.plan.clicks > ${clicks}`, "the board took the click");
+  if ((await b.eval(`JSON.stringify(window.ffh.battle.plan.formation)`)) !== before) throw new Error("a click on the board moved a unit");
+  const plan = await b.eval(`(() => { const p = window.ffh.battle.plan; return { errors: p.errors, forecast: !!p.forecast }; })()`);
+  if (plan.errors.length) throw new Error(`the plan has errors: ${plan.errors.join("; ")}`);
+  if (!plan.forecast) throw new Error("the plan has no forecast");
   await new Promise((r) => setTimeout(r, 600));
   await shot("engagement-plan");
   // Attack: while it is on its way (held here before the engage command goes) the plan cannot be
@@ -1634,7 +1642,7 @@ async function stagedEngagement(bin, saves) {
   await click(link);
   await battleScreen("report", "the battle's report from its message");
   await closeBattle();
-  steps.push(`engagement (stage engagement): the plan (${placed} in the auto formation), a unit moved by mouse with the forecast asked again (accepted, with its forecast), the attack with that formation (the plan held open, by Escape and Cancel, while it is on its way), the flash from the report, its messages held until the screens close, the watch and report screens of the engine's log (${n} events); the map's marker and the message's link open it again`);
+  steps.push(`engagement (stage engagement): the plan (${placed} in the line, both sides' tactics named, no Auto-arrange, a click on the board moving nobody, its forecast), the attack (the plan held open, by Escape and Cancel, while it is on its way), the flash from the report, its messages held until the screens close, the watch and report screens of the engine's log (${n} events); the map's marker and the message's link open it again`);
 }
 
 /** P7, `stage election`: the human secretary general's election popup (deferred, like events
@@ -1741,6 +1749,53 @@ async function proposeLoan(st, name) {
  *  map, the units lent from the call's lend dialog (after the war confirmation), the Crusades
  *  advisor with its Show button bringing the camera to the Host, troops lent to the ally from
  *  the trade screen; then back to the flat map. */
+/** Supply lines (docs/SUPPLY.md), `stage supply` on the HD-2D map (the default renderer): the
+ *  supplied army's line drawn to its city, the hungry army's marker; with the army selected, the
+ *  plot under the pointer says whether it would be supplied there; the Armies screen states each
+ *  army's supply in words. */
+async function supplyHd2d(url, bin, saves) {
+  const cfg = encodeURIComponent(JSON.stringify({ animate: false, renderScale: 0.5 }));
+  await b.goto(`${url}/?renderer=hd2d&r3d=${cfg}&force3d=1`);
+  await until2("window.ffh && window.ffh.ready", "the client to boot (hd2d)");
+  await waitHuman("the game in the HD-2D map");
+  await answerPopups(false);
+  const st = await stage(bin, "supply", path.join(saves, "staged-supply"));
+  await loadSave("staged-supply/supply", st.turn);
+  await answerPopups(false);
+  await until2(`window.ffh.mapView.renderer() === "hd2d" && !!window.ffh.mapView.r3d.cam`, "the HD-2D map", 180000);
+  const army = (id) => `window.ffh.S.view.armies.find((a) => a.id === ${id})`;
+  await until2(`${army(st.supplied)}?.supply?.state === "supplied" && ${army(st.supplied)}.supply.line.path.length >= 3 && ${army(st.hungry)}?.supply?.state === "hunger"`, "both armies' supply in the view");
+  // The supplied army's line on the map.
+  await plotPos(st.x, st.y);
+  await b.eval("window.ffh.mapView.r3d.render(1)");
+  await until2(`(window.ffh.mapView.r3d.supplyDrawn?.lines ?? 0) >= 1`, "the supply line drawn on the HD-2D map");
+  await shot("hd2d-supply-line");
+  // With the army selected, the plot under the pointer: supplied there or not.
+  const units = await S(`${army(st.supplied).replace("window.ffh.S", "S")}.units`);
+  await b.eval(`window.ffh.units.select(${JSON.stringify(units)})`);
+  await until2(`window.ffh.S.sel && window.ffh.S.sel.units.length === ${units.length}`, "the army selected");
+  await until2(`/Supplied: \\d+ of \\d+, from /.test(document.querySelector("#unit-panel .army-supply")?.textContent ?? "")`, "the army's supply in the unit panel");
+  const near = await S(`(() => { const p = ${army(st.supplied).replace("window.ffh.S", "S")}.supply.line.path[1]; return { x: p[0], y: p[1] }; })()`);
+  const e = await plotPos(near.x, near.y);
+  await b.move(e.x - 3, e.y - 3);
+  await b.move(e.x, e.y);
+  await until2(`/^Supplied \\(cost \\d+ of \\d+\\)$/.test(document.querySelector("#mapwrap .tooltip .tip-supply")?.textContent ?? "")`, "the supply readout in the path's tooltip");
+  const readout = await b.eval(`document.querySelector("#mapwrap .tooltip .tip-supply").textContent`);
+  await b.eval(`window.ffh.units.clearSelection()`);
+  // The hungry army's marker.
+  await plotPos(st.hx, st.hy);
+  await b.eval("window.ffh.mapView.r3d.render(1)");
+  await until2(`(window.ffh.mapView.r3d.supplyDrawn?.marks ?? 0) >= 1`, "the Hunger marker on the HD-2D map");
+  await shot("hd2d-supply-hunger");
+  // The Armies screen: each army's supply in words.
+  await b.key("F5");
+  await until(async () => (await modalTitles()).includes("Armies"), "the Armies screen");
+  const words = (id) => `document.querySelector('#modals .army-card[data-army="${id}"] .army-supply')?.textContent ?? ""`;
+  await until2(`/^Supplied: \\d+ of \\d+, from .+\\.$/.test(${words(st.supplied)}) && /^Hunger: turn 1 of \\d+\\. No healing, no recruits\\.$/.test(${words(st.hungry)})`, "the armies' supply in words on the Armies screen");
+  await closeDialog("Armies");
+  steps.push(`supply lines (stage supply, HD-2D): the line drawn, the Hunger marker, "${readout}" under the pointer, the Armies screen's words`);
+}
+
 async function crusadeHd2d(url, bin, saves) {
   const cfg = encodeURIComponent(JSON.stringify({ animate: false, renderScale: 0.5 }));
   await b.goto(`${url}/?renderer=hd2d&r3d=${cfg}&force3d=1`);
@@ -2062,6 +2117,7 @@ async function main() {
     await rendererIso(server.url);
     await rendererHd2d(server.url);
     await crusadeHd2d(server.url, bin, saves);
+    await supplyHd2d(server.url, bin, saves);
     await warStart(bin);
     await newGameElsewhere(bin);
     await crashScreen(bin);

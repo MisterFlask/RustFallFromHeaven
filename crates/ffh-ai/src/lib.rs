@@ -59,7 +59,9 @@ pub mod reach;
 pub mod research;
 pub mod research_path;
 pub mod sites;
+pub mod supply;
 pub mod switches;
+pub mod tactics;
 pub mod tech_plan;
 #[cfg(test)]
 pub(crate) mod testkit;
@@ -127,6 +129,8 @@ impl Controller for Ai {
         // A crusade Host (docs/CRUSADE.md) plays only its war.
         if g.player_is_crusade_host(p) {
             crusade::host_turn(g, p);
+            supply::turn(g, p);
+            tactics::turn(g, p);
             return;
         }
         // C++ setTurnActive -> AI_doAdvancedStart while the player still has start points.
@@ -179,6 +183,7 @@ impl Controller for Ai {
             civs::turn(self, g, &mut v); // civ-mechanics
             traits::turn(g, &v); // trait-play
             armies::turn(g, p); // armies' reinforcements (docs/ARMIES.md)
+            supply::turn(g, p); // telemetry only: the armies' supply counters (docs/SUPPLY.md)
             governor::turn(g, p); // governed cities (docs/GOVERNORS.md)
             culture::turn(g, p); // cultural channels (docs/CULTURE.md), after the governors' production
             cards::turn(g, &v); // the great-person cards' content: world spells, rituals (docs/CARDS.md)
@@ -189,6 +194,7 @@ impl Controller for Ai {
         }
         units::play(self, g, &mut v);
         if !v.barbarian {
+            tactics::turn(g, p); // battle tactics, once the stacks of the turn are made (docs/TACTICS.md)
             cards::end_turn(g, p); // the cards' content that acts once the units have moved
         }
         casting::end_turn(g, &v);

@@ -559,8 +559,9 @@ fn log_events(g: &Game, log: &[LogEvent]) -> (Vec<Json>, Vec<Json>) {
                 let hits: Vec<Json> = hits.iter().map(|&(b, dmg)| crate::jobj! { "target" => b, "dmg" => dmg }).collect();
                 events.push(opening_json("Building").with("building", Json::idx(*building)).with("hits", Json::Arr(hits)));
             }
-            // Supply (docs/SUPPLY.md): the screens do not show it yet.
-            LogEvent::Starvation { .. } => {}
+            // Supply (docs/SUPPLY.md): the side's units of starving armies deal `dealt_pct` damage,
+            // before the battle (round 0).
+            LogEvent::Starvation { units, dealt_pct } => events.push(opening_json("Starvation").with("units", idxs(units)).with("dealt_pct", *dealt_pct)),
         }
     }
     (events, after)
@@ -770,6 +771,8 @@ pub fn battle_log(v: &Viewer, id: u32) -> Result<Json, QueryErr> {
         "params" => params_json(g.d),
         "slots" => Json::Arr(log.slots.iter().map(side_slots_json).collect()),
         "lanes" => crate::jarr![log.lanes[0], log.lanes[1]],
+        // Each side's battle tactic (attacker, defender; docs/TACTICS.md).
+        "tactics" => crate::jarr![Json::idx(log.tactics[0]), Json::idx(log.tactics[1])],
         "sides" => Json::Arr(sides.into_iter().collect()),
         "fighters" => Json::Arr(fighters),
         "pairs" => Json::Arr(log.pairs.iter().map(pair_json).collect()),
@@ -935,6 +938,15 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Opti
         "def_formation" => formation_json(&pv.def_formation),
         "def_reserve" => bs(&pv.def_reserve, Side::Defender),
         "summons" => summons,
+        // Each side's battle tactic (attacker, defender; docs/TACTICS.md): what arranges
+        // `formation` and `def_formation`.
+        "tactics" => crate::jarr![Json::idx(pv.tactics[0]), Json::idx(pv.tactics[1])],
+        // Supply (docs/SUPPLY.md): the fighters (`b`) of starving armies and the percent change
+        // of the damage they deal (the forecast counts it).
+        "starving" => Json::Arr(pv.starving.iter().filter_map(|&(u, pct)| {
+            let b = b_of(u, Side::Attacker).or_else(|| b_of(u, Side::Defender))?;
+            Some(crate::jobj! { "b" => b, "pct" => pct })
+        }).collect()),
         "forecast" => forecast,
         "declare_war" => rival,
         "errors" => Json::Arr(refused.into_iter().map(Json::from).collect()),
@@ -1159,6 +1171,22 @@ mod tests {
         assert_eq!(after[0].get("effect").and_then(|e| str_(e, "kind")).as_deref(), Some("Mod"));
         assert_eq!((int(&after[1], "unit"), int(&after[1], "amount")), (Some(0), Some(3)));
         assert_eq!(after[1].get("from").and_then(Json::as_arr).map(<[Json]>::len), Some(2));
+    }
+
+    /// Supply (docs/SUPPLY.md): a starving side's line is an event of the opening, at round 0,
+    /// with its fighters and the damage they deal.
+    #[test]
+    fn a_starvation_line_is_an_event_of_the_opening() {
+        let d = ffh_data::global();
+        let g = Game::new(d, ffh_core::setup::GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5));
+        let (events, after) = log_events(&g, &[LogEvent::Stage { stage: Stage::PreBattle }, LogEvent::Starvation { units: vec![0, 2], dealt_pct: -25 }]);
+        assert!(after.is_empty());
+        assert_eq!(events.len(), 1, "{events:?}");
+        let e = &events[0];
+        assert_eq!(e.get("kind").and_then(Json::as_str), Some("Starvation"));
+        assert_eq!((e.get("round").and_then(Json::as_i64), e.get("pass").and_then(Json::as_i64)), (Some(0), Some(0)));
+        assert_eq!(e.get("units").and_then(Json::as_arr).map(|u| u.iter().filter_map(Json::as_i64).collect::<Vec<_>>()), Some(vec![0, 2]));
+        assert_eq!(e.get("dealt_pct").and_then(Json::as_i64), Some(-25));
     }
 
     /// The help's engagement wording goes to the units and promotions with the abilities it

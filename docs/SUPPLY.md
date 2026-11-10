@@ -1,7 +1,8 @@
 # Supply lines
 
 **Status: rules built (2026-11-10: sections 2 to 4, `crates/ffh-core/src/army/supply.rs`, tests in
-`crates/ffh-core/tests/supply.rs`); the client (section 5) and the AI (section 6) next.** This file
+`crates/ffh-core/tests/supply.rs`); the AI (section 6, `crates/ffh-ai/src/supply.rs`) built, its
+measures in "Measures"; the client (section 5) next.** This file
 is the spec for the implementation. It replaces the supply rule of docs/ARMIES.md ("Supply": within
 `ARMY_SUPPLY_RANGE` plots of the trade network, which only paused an army's recruits).
 
@@ -134,6 +135,33 @@ A rules change: the AI does something reasonable with it, ad hoc (CLAUDE.md, "AI
 - Nothing about cutting an enemy's line on purpose (a known gap: units that stand on a road cut it
   by being there).
 
+**As built** (`crates/ffh-ai/src/supply.rs`; docs/AI.md, "Supply lines"):
+- The gate (`supply::may_move`) reads the plot the move reaches *this turn* (the rules' path,
+  `group_find_path`'s end-turn plot), not the final destination: an army walks no turn into a plot
+  without a line. "Within two turns" is twice the slowest unit's base moves, in plots, from that
+  plot to the city. A move into a city of ours and staying put are always allowed, and a plot of our
+  own territory counts as supplied without a search (own land costs 1 a plot from a city: it is cut
+  there only when enemy units close every way home, or in a pocket cut off from our cities).
+  Gated: the
+  hunt (the target or the plot next to it; a refused candidate gives way to the next of the four
+  it looks at), joining a bigger stack, and every move of a siege operation (`campaign::march`:
+  refused, the stack holds where it is). Not gated: crusade Hosts, amphibious landings, the
+  Raiders' raids, escorts, marches to defend our cities.
+- Falling back (`supply::fall_back`) runs once a stack has merged, before its captures and
+  attacks. "The city it attacks" is its siege operation's target, else any enemy city at war
+  within two plots. "Its last line toward its source" is not remembered (the AI keeps nothing
+  outside `Game`): it goes toward the nearest of the three nearest cities of ours on its landmass
+  that it has a path to (else to the plot of our territory, or nearest that city, it reaches within
+  three turns), and stops falling back as soon as the plot it stands on has a line (its counter goes
+  to 0 at the next turn start).
+- A cut army does not stop to heal in the field (it cannot), and it is re-planned at the start of
+  every turn: its multi-turn order is cleared (`units::play`).
+- Cost: at most one path search and one line search per gated move; for a cut army, one line search
+  and up to three path searches a turn.
+- Switch `SUPPLY` (`FFH_AI_SUPPLY_OFF`): off, the AI ignores supply. Telemetry: `supply_state`
+  (each army-turn: `supplied`, or `cut_NN` for its counter), `supply` (`move_refused`,
+  `fall_back`, `hungry_goes_on`).
+
 ## 7. Measures the implementation reports
 
 With the AI rule in, against the commit before (the tools of docs/AI.md; 8 games of 6 civs, 250
@@ -141,6 +169,59 @@ turns): the share of army-turns hungry and starving, units lost to nothing (Star
 kills: 0), cities captured from civs and wars declared (the AI's conquests should not collapse:
 report the change, do not tune the rules to hide it), time a turn. And a staged test of each rule
 of sections 2 and 3.
+
+## Measures
+
+Measured 2026-11-10: 8 games (seeds 1-8, 6 civs, standard map, 250 turns; `tools/agents/ab.sh
+--base a46576a --seeds 1-8 --turns 250 --at 100,200,250 --jobs 3` and `ai_metrics.py` with the same
+arguments). Three sides: the commit before supply lines (a46576a); this tree (the rules of supply
+lines, the AI's supply rule of section 6 and its battle-tactic rule, docs/TACTICS.md); and this tree
+with the AI's supply rule off (`FFH_AI_SUPPLY_OFF=ALL`: the rules of supply lines and the tactic
+rule, the AI ignoring supply). Totals over the 8 games; population and military units are the
+per-civ means at turn 250. Time a turn: `ffh bench` (standard map, 250 turns, the machine to
+itself), seeds 1, 3 and 5, two rounds each, the mean of the six runs; the games differ between the
+sides, so it says "about this much", no more.
+
+| | a46576a | this tree, AI rule off | this tree |
+|---|---|---|---|
+| cities captured, civ from civ | 70 | 88 | 79 |
+| per game | 3 14 3 18 15 3 5 9 | 6 5 20 25 6 10 5 11 | 7 5 5 25 16 11 5 5 |
+| cities captured, civ from barbarians / barbarians from civ | 19 / 4 | 14 / 2 | 12 / 2 |
+| wars declared / peace | 48 / 37 | 44 / 33 | 46 / 37 |
+| eliminations | 3 | 3 | 2 |
+| population a civ, turn 250 | 56.3 | 54.6 | 54.2 |
+| military units a civ, turn 250 | 43.2 | 41.2 | 41.9 |
+| time a turn (`ffh bench`) | 16.3 ms | 17.3 ms | 18.1 ms |
+
+The conquests did not collapse: 79 cities taken from civs against 70 before supply lines, with as
+many wars. The AI's rule costs some of them against the same rules without it (79 against 88; seed
+3: 5 against 20), which is what a rule that stops marches beyond the line does; the spread between
+games (3 to 25) is larger than either difference, so 8 games do not say more than that. Population
+and military are within a few percent. The time: about +6% for the rules (the line traced for every
+army each turn, and the tactics' pass) and about +5% more for the AI's rule (its path and line
+searches).
+
+**Hunger and Starvation** (telemetry `supply_state`, one count per army per turn of its owner, the
+army's counter that turn; the same 8 games, this tree with the AI's rule off and on):
+
+| | AI rule off | AI rule on |
+|---|---|---|
+| army-turns | 30,528 | 30,529 |
+| hungry (counter 1-2) | 67 (0.22%) | 51 (0.17%) |
+| starving (counter 3+) | 346 (1.13%) | 228 (0.75%) |
+| episodes (army-turns at counter 1), per game | 1 2 6 2 4 2 0 15 (32) | 1 2 17 2 2 2 0 4 (30) |
+| army-turns at counter 3, 10, 20, 30+ | 32, 11, 4, 140 | 15, 5, 5, 86 |
+| longest episode per game (turns; 30 = 30 or more) | 12 1 4 9 30 30 0 14 | 7 1 24 2 4 30 0 21 |
+
+(A split army takes its counter and a merged one the higher, so an episode can start above 1:
+counts at a counter are army-turns, not episodes.) With the rule, fewer armies reach Starvation (15
+army-turns at counter 3 against 32) and fewer stay cut for 10 turns (5 against 11). What is left of
+the long episodes are armies that cannot move home at all: the 30+ cut army-turns of seed 6 are two
+of the Kuriotates' armies (a lone archer, and 7 centaurs with an archer) on a plot of theirs from
+which they reach no other plot (`approach ... reach 1` in the trace) and that has no line, for the
+last 50 turns of the game. The AI's rule fired 46 times to fall back, 9 times to go on hungry next to the
+city it attacked, and refused 42 moves beyond the line (telemetry `supply`). Units lost to
+Starvation: 0 (it never kills).
 
 ## 8. Not in this change
 

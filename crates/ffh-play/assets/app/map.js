@@ -14,6 +14,7 @@
 import { S, tname, dname, info, me, isBarbarian, ORDER_KINDS, observing } from "./state.js";
 import * as T from "./tiles.js";
 import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark, drawMarchMark, marchMark } from "./iso.js";
+import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark } from "./supply.js";
 
 /** The start-up prototype's switch (docs/HD2D.md): on unless the page says `?r3d={"fastStart":0}`.
  *  The 3D renderer's modules read it from their config. */
@@ -1421,6 +1422,19 @@ export class MapView {
           g.fillText(String(i + 1), sx + ts / 2, sy + ts / 2 + 0.5);
         });
       });
+    }
+    // Supply lines (docs/SUPPLY.md; supply.js): one copy each, from the army's copy nearest the
+    // centre. This map is drawn on demand: the lines stand still.
+    for (const L of supplyLines()) {
+      for (const seg of L.segments) {
+        const s0 = T.mapToScreen(this.cam, this.map, this.vw, this.vh, seg[0][0], seg[0][1]);
+        const pts = unwrapSegment(seg, 0, this.map).map(([dx, y]) => ({ x: s0.sx + dx * ts + ts / 2, y: T.columnToScreen(this.cam, this.vw, this.vh, 0, y).sy + ts / 2 }));
+        drawLine(g, pts, L.color, 2.5, 0);
+      }
+    }
+    for (const m of supplyMarks()) {
+      const p = T.mapToScreen(this.cam, this.map, this.vw, this.vh, m.x, m.y);
+      drawMark(g, m, p.sx + ts / 2, p.sy + ts * 0.85, Math.max(9, Math.min(12, ts * 0.2)), FONT);
     }
     const path = o.path;
     if (path?.ok && path.nodes?.length > 1) {

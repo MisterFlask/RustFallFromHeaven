@@ -115,6 +115,9 @@ pub static ARMIES: Switch = Switch::new("ARMIES");
 /// armies requisition from no city (the directly ruled cities' attackers still go to the main
 /// army).
 pub static REQUISITION: Switch = Switch::new("REQUISITION");
+/// Supply lines (`supply.rs`, docs/SUPPLY.md): off, the AI's armies ignore their supply line (no
+/// move gate, no falling back).
+pub static SUPPLY: Switch = Switch::new("SUPPLY");
 /// Governed cities (`governor.rs`, docs/GOVERNORS.md): off, the AI keeps its first cities direct
 /// and every governed city develops.
 pub static GOVERNORS: Switch = Switch::new("GOVERNORS");

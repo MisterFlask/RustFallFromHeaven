@@ -1581,6 +1581,45 @@ Firings (seed 3, `FFH_AI_TRACE`), each forked there (`tools/ai-branch.sh --switc
   at peace the larger army's upkeep puts them in financial trouble: 14 units disbanded at turn
   157 (3 in the whole branch without). A war the requisition fed but did not win.
 
+## Battle tactics (`tactics.rs`)
+
+Each army's and each garrison's standing tactic (docs/TACTICS.md) is set once a turn, after the
+units have moved (so the turn's merges and splits are seen), by a pure rule of the body's units
+(`tactics::choose`: their kinds, `Game::unit_engage_kind`, as guards and support; the lanes of
+the 8 base slots, 4): **Charge** for a field army whose chargers are at least 60% of its fighting
+units and whose support is at most 25%; **Volley** with at least 2 support units, at least 25% of
+the army, and a guard for every lane (the screen); else **Line**. Garrisons: Volley by the same
+test, else Line (a charge is a strike in a city). Never Vanguard. A tactic is set only when the
+answer differs from the pending one; the rules apply it at the next turn start. The thresholds
+come from the lab's matrices (docs/TACTICS.md, section 8): Charge won with the mounted army (+15.3
+in a forest) and lost with every army that has more support (the ranged army in a forest: -28.1,
+its archers left out); Volley won with the melee core with archers and mages (+13.2 open, +8.1
+forest, +4.7 walls) and lost with the ranged army, whose 3 guards cannot screen. Telemetry:
+`tactic_army`, `tactic_garrison` (army- and city-turns by tactic in use) and `tactic_battle` (each
+side of an attack our stacks make, by the tactic it fights in: `tactics::note_attack`). Measured
+counts: docs/TACTICS.md, section 6.
+
+## Supply lines (`supply.rs`)
+
+The AI's side of docs/SUPPLY.md (section 6). **The move gate** (`supply::may_move`): an army does
+not take a move whose plot at the end of this turn (the rules' path) has no supply line, unless
+the enemy city it marches on is within two turns of that plot (twice its slowest unit's moves, in
+plots); a move into a city of ours, or staying, is always allowed. It gates the hunt's target or
+staging plot (a refused candidate gives way to the next), joining a bigger stack, and every
+operation move (`campaign::march`: refused, the stack holds where it is). **Falling back**
+(`supply::fall_back`, once a stack has merged, before captures and attacks): a hungry army
+goes on only while the city it attacks (its operation's target, else an enemy city at war) is
+within two plots; otherwise, and always when starving, it goes toward the nearest city of ours on
+its landmass it has a path to (of the three nearest; else a plot of ours, or nearest that city,
+within three turns; the AI keeps no memory of its last line, so not along it) until it stands
+where it has a line. A plot of our own territory counts as supplied without a search. A cut army does not stop to heal in the field (it cannot), and it is re-planned at
+the start of each turn (`units::play` clears its multi-turn order). Cost: at most one path search
+and one line search per gated move, one line search and up to three path searches per cut army a
+turn; the line is never searched per candidate plot. Not gated: crusade Hosts (`crusade.rs`), amphibious landings (`naval.rs`), the
+Raiders' raids (`traits.rs`), escorts and moves to defend our cities. Switch `SUPPLY`
+(`FFH_AI_SUPPLY_OFF`). Telemetry: `supply_state` (army-turns `supplied` or `cut_NN`, the counter),
+`supply` (`move_refused`, `fall_back`, `hungry_goes_on`). Measures: docs/SUPPLY.md, "Measures".
+
 ## Governors (`governor.rs`)
 
 This game's own system (docs/GOVERNORS.md). Two things: what a governor

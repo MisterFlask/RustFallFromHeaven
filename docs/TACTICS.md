@@ -1,7 +1,7 @@
 # Battle tactics
 
-**Status: rules, data and lab built (2026-11-10); the human client's selectors and the AI's rule
-(section 6) next.** This file was the spec for the implementation. Sections 1 to 6 are decided;
+**Status: rules, data and lab built (2026-11-10); the AI's rule built (section 6, "AI as built");
+the human client's selectors next.** This file was the spec for the implementation. Sections 1 to 6 are decided;
 section 7 is what the lab has to show before a tactic ships, section 8 what it showed, section 9
 lists what is left open, and section 10 the tactic that was tried and not shipped.
 
@@ -174,6 +174,33 @@ city's garrison), from the lab's matrix (section 7); the starting rule, to be co
 Charge with chargers at least 40% of the army's fighting units; else Volley with support at least
 50%; else Line. Garrisons: Volley with support at least
 50%, else Line. The AI does not use Vanguard. docs/AI.md: a short section.
+
+*AI as built* (`crates/ffh-ai/src/tactics.rs`; docs/AI.md, "Battle tactics"). The starting rule,
+corrected by section 8's matrices:
+- **Charge** (field armies only): chargers at least 60% of the fighting units (units whose kind
+  does nothing are left out) **and support at most 25%**. The mounted army of section 8 (6 or 10
+  horse and 2 archers: 75-83% chargers, 17-25% support) gained with it (+15.3 in a forest, -0.4
+  open, -1.2 at walls); every army with more support lost with it, worst the ranged army whose
+  archers it left out (-28.1 in a forest). 40% was too low a bar for an army whose other units
+  Charge drops.
+- **Volley**: at least 2 support units, at least 25% of the army, **and a guard for every lane**
+  of the base slots (8 slots, 4 lanes: the screen). The melee core with 2 archers and 2 mages
+  (33-50% support, 4 or 8 guards) won with it on every ground (+13.2 open, +8.1 forest, +4.7
+  walls); the ranged army (62-75% support, 3 guards) lost (-28.1 in a forest, about even
+  elsewhere): "support at least 50%" picked exactly the army Volley loses with.
+- **Line** otherwise; garrisons: Volley by the same test, else Line. Never Vanguard.
+- Applied once a turn per player after its units have moved; set only when the answer differs
+  from the pending tactic (`army_set_tactic`, `city_set_garrison_tactic`), so the rules apply it
+  at the next turn start. Cost: one pass over each army's and garrison's units a turn.
+
+*Measured* (2026-11-10; the 8 games of docs/SUPPLY.md, "Measures": seeds 1-8, 6 civs, standard
+map, 250 turns; telemetry `tactic_army`, `tactic_garrison`, `tactic_battle`). Army-turns (one per
+army per turn of its owner, the tactic in force): Line 29,351 (94.4%), Charge 1,078 (3.5%), Volley
+642 (2.1%). Garrison-turns (cities with a garrison): Line 49,733 (99.6%), Volley 223 (0.4%).
+Battles, counted per side when an ffh-ai player attacks (its stack's tactic and the defender's,
+`tactics::note_attack`; battles others start are not counted): 1,892 sides, Line 1,819 (96.1%),
+Charge 46 (2.4%), Volley 27 (1.4%). Few AI stacks meet either test: at most 8 units
+(`military::MAX_STACK`), seldom 60% chargers, seldom 2 support units behind 4 guards.
 
 **Lab (ffh-cli).** `ffh battles`: ground words `tactic:NAME` (the attackers') and `dtactic:NAME`
 (the defenders'), default LINE; `crates/ffh-cli/scripts/battles_tactics.py` writes the round robin

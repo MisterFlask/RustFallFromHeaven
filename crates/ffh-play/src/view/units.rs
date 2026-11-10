@@ -582,6 +582,17 @@ pub fn path(v: &Viewer, finder: &mut PathFinder, units: &[UnitId], x: i32, y: i3
     // Card: False Colours (docs/CARDS.md): a move onto units the group's false colours let it
     // attack is an attack (its war is declared at the battle, without a question).
     let attack = v.plot_visible(to) && (units.iter().any(|&u| g.plot_is_visible_enemy_defender(to, u)) || g.group_false_colours_team(grp, to).is_some());
+    // Supply lines (docs/SUPPLY.md, section 5): with the units of one army of the human's
+    // selected, whether the army would be supplied on the plot (a revealed one): `ok`, the line's
+    // `cost` and the `budget`; null otherwise.
+    let army = g.units[units[0]].army.filter(|&a| g.armies.contains(a) && g.armies[a].owner == v.h && units.iter().all(|&u| g.units[u].army == Some(a)));
+    let supply = match army {
+        Some(_) if v.plot_revealed(to) => {
+            let line = g.plot_supply_line(v.h, to);
+            crate::jobj! { "ok" => line.is_some(), "cost" => line.as_ref().map(|l| l.cost), "budget" => g.d.defines.supply_line_budget }
+        }
+        _ => Json::Null,
+    };
     Ok(crate::jobj! {
         "ok" => ok,
         "turns" => if ok { finder.path_turns().map(Json::from).unwrap_or(Json::Null) } else { Json::Null },
@@ -589,6 +600,7 @@ pub fn path(v: &Viewer, finder: &mut PathFinder, units: &[UnitId], x: i32, y: i3
         "declare_war_team" => war,
         "attack" => attack,
         "approximate" => mirrored.is_none(),
+        "supply" => supply,
     })
 }
 

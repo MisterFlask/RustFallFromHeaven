@@ -1,5 +1,5 @@
 //! Staged situations for testing the clients (`ffh-play stage
-//! capture|attack|automoves|load|trade|diplomacy|automate|armies|engagement|election|settlement|corrupt|crusade|cards DIR`,
+//! capture|attack|automoves|load|trade|diplomacy|automate|armies|engagement|supply|election|settlement|corrupt|crusade|cards DIR`,
 //! and the transports' tests): a saved game at a human control point arranged with rules calls,
 //! so that a client can be tried on a situation a fresh game reaches only by chance (a captured
 //! city's keep/raze decision, an attack, the AutoMoves rule between commands, the transport
@@ -690,6 +690,86 @@ pub fn engagement(dir: &Path) -> Result<StagedEngagement, String> {
         }
     }
     Err("no plot to attack the city from".into())
+}
+
+/// A saved game at a human control point (turn 4 of a duel, seed 11) with supply lines in play
+/// (docs/SUPPLY.md): the human's army `supplied` of two warriors at (`x`, `y`), 3 to 5 plots from
+/// its `capital` on its land, whose supply line runs 3 plots or more to a city; and its army
+/// `hungry` of two warriors at (`hx`, `hy`), the nearest land plot with no supply line (on the
+/// capital's land when it has one, else elsewhere), in Hunger
+/// (turn 1 of `SUPPLY_HUNGER_TURNS`: its counter set as a turn start with the line cut would).
+pub struct StagedSupply {
+    pub save: PathBuf,
+    pub supplied: ffh_core::ids::ArmyId,
+    pub hungry: ffh_core::ids::ArmyId,
+    pub capital: ffh_core::ids::CityId,
+    pub x: i32,
+    pub y: i32,
+    pub hx: i32,
+    pub hy: i32,
+    pub turn: i32,
+}
+
+impl StagedSupply {
+    pub fn to_json(&self) -> Json {
+        crate::jobj! {
+            "stage" => "supply", "save" => self.save.display().to_string(), "supplied" => self.supplied, "hungry" => self.hungry,
+            "capital" => self.capital, "x" => self.x, "y" => self.y, "hx" => self.hx, "hy" => self.hy, "turn" => self.turn,
+        }
+    }
+}
+
+/// Writes a [`StagedSupply`] into `dir` (a game directory).
+pub fn supply(dir: &Path) -> Result<StagedSupply, String> {
+    let d = ffh_data::global();
+    let mut s = duel_with(dir, 11, 4, None, &[])?;
+    let h = s.human;
+    let g = &mut s.g;
+    let capital = *g.players[h].cities.first().ok_or("no city of the human's")?;
+    let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
+    let area = g.map.plots[g.city_plot(capital)].area;
+    let free = |g: &ffh_core::game::Game, q: ffh_core::ids::PlotIdx| !g.plot_is_water(q) && !g.plot_is_impassable(q) && g.map.plots[q].units.is_empty() && g.map.plots[q].plot_city.is_none();
+    // (off the capital's land, distance, plot index): the nearest on the capital's land first.
+    let mut supplied = None;
+    let mut hungry = None;
+    for q in g.map.plot_ids() {
+        if !free(g, q) {
+            continue;
+        }
+        let (x, y) = g.map.xy(q);
+        let key = (g.map.plots[q].area != area, g.plot_distance(x, y, cx, cy));
+        match g.plot_supply_line(h, q) {
+            Some(l) if !key.0 && (3..=5).contains(&key.1) && l.path.len() >= 3 => {
+                if supplied.is_none_or(|(b, _)| key < b) {
+                    supplied = Some((key, q));
+                }
+            }
+            None => {
+                if hungry.is_none_or(|(b, _)| key < b) {
+                    hungry = Some((key, q));
+                }
+            }
+            _ => {}
+        }
+    }
+    let (_, sp) = supplied.ok_or("no supplied plot 3 to 5 plots from the capital")?;
+    let (_, hp) = hungry.ok_or("no land plot without a supply line")?;
+    let w = d.t::<UnitType>("UNIT_WARRIOR");
+    let form = |g: &mut ffh_core::game::Game, q: ffh_core::ids::PlotIdx| {
+        let (x, y) = g.map.xy(q);
+        let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(h, w, x, y, None, None)).collect();
+        g.army_form(h, &units)
+    };
+    let a = form(g, sp)?;
+    let b = form(g, hp)?;
+    g.armies[b].unsupplied_turns = 1;
+    g.player_army_sync(h);
+    if g.army_supply_line(a).is_none() || g.army_supply_line(b).is_some() {
+        return Err("the staged armies' lines are not as staged".into());
+    }
+    let ((x, y), (hx, hy)) = (g.map.xy(sp), g.map.xy(hp));
+    let paths = s.save("supply").map_err(|e| format!("save: {e:?}"))?;
+    Ok(StagedSupply { save: paths.save, supplied: a, hungry: b, capital, x, y, hx, hy, turn: s.g.game_turn() })
 }
 
 /// A saved game at a human control point (turn 3 of a duel, seed 15) where both players run a

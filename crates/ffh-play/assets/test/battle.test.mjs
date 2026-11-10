@@ -2,7 +2,7 @@
 // revision 4) over the dev fixture (app/battle_fixture.js, made by make_battle_fixtures.mjs from
 // the owner's prototype): the log folded into states (the fold's fates are the outcome's counts,
 // nobody acts or is hit off the field, no two units share a cell after a knock-back), the log's
-// lines, the opening's events, the editing of a formation (moves, swaps, large units, the slots),
+// lines, the opening's events, a formation's cells (large units, the slots), the tactics' names,
 // the ground's rules in words, and damage in words (the replay's pace is battle_snap.test.mjs's).
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -275,60 +275,30 @@ test("damage and HP in words: centi-HP rounded, never a hit of 0 shown for one t
   assert.equal(L.hpOf(30), 1);
 });
 
-test("a formation: moves, swaps, a large unit's two cells, the slots", () => {
+test("a formation's cells: a large unit's two, the slots", () => {
   const pv = FIXTURES.field.preview;
   const F = pv.fighters;
-  const lim = { lanes: pv.lanes[0], cap: L.slotCap(pv.slots[0]) };
   const place = L.placeOf(F, 0);
   assert.equal(L.slotsUsed(place, F), 10, "the auto formation fills the slots");
-  assert.deepEqual(L.placeFromList(F, L.formationOf(place, F)), place);
   assert.equal(L.formationKey(L.formationOf(place, F)), L.formationKey(L.formationOf(place, F).reverse()));
-  const grid = L.gridOf(place, F, lim.lanes);
+  const grid = L.gridOf(place, F, pv.lanes[0]);
   // every cell of the grid holds at most one unit, a large one two side by side
   const elephant = F.find((f) => f.name === "War Elephant");
   const ep = place.get(elephant.b);
   assert.equal(grid[ep.row][ep.lane], elephant.b);
   assert.equal(grid[ep.row][ep.lane + 1], elephant.b);
-  // a free cell: the unit moves there
-  const free = [];
-  for (let r = 0; r < 3; r++) for (let l = 0; l < lim.lanes; l++) if (grid[r][l] === null) free.push({ lane: l, row: r });
-  assert.ok(free.length, "the field fixture's grid has a free cell");
-  const mover = F.find((f) => f.side === 0 && place.has(f.b) && !f.large);
-  const m = L.placeUnit(place, F, lim, mover.b, free[0].lane, free[0].row);
-  assert.deepEqual(m.out, []);
-  assert.deepEqual(m.place.get(mover.b), free[0]);
-  assert.equal(m.place.size, place.size);
-  // another unit's cell: they swap
-  const other = F.find((f) => f.side === 0 && place.has(f.b) && !f.large && f.b !== mover.b && place.get(f.b).row !== place.get(mover.b).row);
-  const s = L.placeUnit(place, F, lim, mover.b, place.get(other.b).lane, place.get(other.b).row);
-  assert.deepEqual(s.place.get(mover.b), place.get(other.b));
-  assert.equal(s.place.get(other.b).row, place.get(mover.b).row, "the displaced unit goes to the mover's row");
-  // a large unit at the last lane takes the last two
-  const big = L.placeUnit(place, F, lim, elephant.b, lim.lanes - 1, 2);
-  assert.equal(big.place.get(elephant.b).lane, lim.lanes - 2);
-  const g2 = L.gridOf(big.place, F, lim.lanes);
-  assert.equal(g2[2][lim.lanes - 1], elephant.b);
-  // a unit out of the line onto a full line's cell: the one there leaves the line
-  const benched = F.find((f) => f.side === 0 && !place.has(f.b) && !f.large);
-  const into = L.placeUnit(place, F, lim, benched.b, place.get(mover.b).lane, place.get(mover.b).row);
-  assert.deepEqual(into.out, [mover.b]);
-  assert.equal(L.slotsUsed(into.place, F), L.slotsUsed(place, F));
-  // the slots: a large unit from out of the line on a free cell and an occupied one would take
-  // one slot more than the full line has
-  const giantOut = { ...elephant, b: F.length, lane: null, row: null };
-  const F2 = [...F, giantOut];
-  const cell = free.find((c) => [c.lane + 1, c.lane - 1].some((l) => l >= 0 && l < lim.lanes && grid[c.row][l] !== null));
-  const anchor = cell.lane + 1 < lim.lanes && grid[cell.row][cell.lane + 1] !== null ? cell.lane : cell.lane - 1;
-  const err = L.placeUnit(place, F2, lim, giantOut.b, anchor, cell.row);
-  assert.match(err.error ?? "", /The line is full/);
-  // a large unit on two small units' cells takes their two slots: they leave the line
-  const pair = [0, 1, 2].flatMap((r) => [...Array(lim.lanes - 1).keys()].map((l) => ({ lane: l, row: r }))).find((c) => grid[c.row][c.lane] !== null && grid[c.row][c.lane + 1] !== null && grid[c.row][c.lane] !== grid[c.row][c.lane + 1] && ![grid[c.row][c.lane], grid[c.row][c.lane + 1]].some((b) => F[b].large));
-  const two = L.placeUnit(place, F2, lim, giantOut.b, pair.lane, pair.row);
-  assert.equal(two.out.length, 2);
-  assert.equal(L.slotsUsed(two.place, F2), 10);
-  assert.match(L.placeUnit(place, F, lim, mover.b, lim.lanes, 0).error ?? "", /not a cell/);
-  // taking a unit out
-  assert.equal(L.benchUnit(place, mover.b).has(mover.b), false);
+});
+
+test("the tactics: each side's named from the log, none in a log without them; a starving side's line", () => {
+  assert.equal(L.tacticName(field, 0), null, "the fixture has no tactics");
+  const withTactics = { ...field, tactics: ["TACTIC_CHARGE", "TACTIC_LINE"] };
+  assert.equal(L.tacticName(withTactics, 0), "Charge");
+  assert.equal(L.tacticName(withTactics, 1), "Line");
+  const att = field.fighters.find((f) => f.side === 0);
+  const starving = { ...field, events: [{ round: 0, pass: 0, kind: "Starvation", units: [att.b], dealt_pct: -25 }] };
+  const line = L.logLines(starving).find((l) => !l.head);
+  assert.equal(line.parts.map((p) => p.text).join(""), `Starving: ${L.uname(starving, att.b)}: -25% damage dealt.`);
+  assert.deepEqual(L.stateAfter(starving, 1).hp, L.initialState(starving).hp, "starving deals no damage of its own");
 });
 
 test("the fixtures hold together: formations fit their grids, forecasts and logs match them", () => {
@@ -366,20 +336,6 @@ test("the result and the names are the viewer's: a battle seen by its defender",
   assert.equal(L.uname(held, giant.b, { side: true }), "your Hill Giant");
   const line = L.logLines(held).find((l) => !l.head && l.parts.some((p) => p.b === giant.b));
   assert.equal(line.parts.find((p) => p.b === giant.b).cls, "you");
-});
-
-test("a preview's forecast is the formation's asked for, not the auto formation the engine answers a refusal in", () => {
-  const pv = FIXTURES.field.preview;
-  const auto = pv.auto_formation;
-  // the first preview (nothing sent) and a reply for the formation sent bring their forecast
-  assert.deepEqual(L.previewForecast(pv), { forecast: pv.forecast, refused: false });
-  assert.equal(L.previewForecast(pv, [...auto].reverse()).forecast, pv.forecast, "the same formation in another order");
-  // a refused formation, answered in the auto formation: no forecast of it
-  const moved = auto.map((p, i) => (i === 0 ? { ...p, row: (p.row + 1) % 3 } : p));
-  assert.deepEqual(L.previewForecast({ ...pv, errors: ["Not across the river."] }, moved), { forecast: null, refused: true });
-  assert.deepEqual(L.previewForecast({ ...pv, formation: undefined }, moved), { forecast: null, refused: true });
-  // a reply with no forecast is answered: nothing is pending
-  assert.deepEqual(L.previewForecast({ ...pv, formation: moved, forecast: null }, moved), { forecast: null, refused: false });
 });
 
 test("the result when no attacker is left: worded from the fates (fallen, escaped, afraid)", () => {
