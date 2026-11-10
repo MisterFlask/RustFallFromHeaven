@@ -8,7 +8,7 @@
 //
 // The map renderer is chosen here too: the HD-2D map (`r3d/hd2d/`, docs/HD2D.md) by default, the
 // isometric 2.5D one (`iso.js`, docs/ISO.md) where it cannot run (main.js useHd2d), unless the page
-// was opened with `?renderer=iso` / `?renderer=flat` or the Tools → Options choice says otherwise
+// was opened with `?renderer=iso` / `?renderer=flat` or the Options choice says otherwise
 // ("flat" is the sprite-less debug renderer, which wears this art's interface).
 
 import { loadArt } from "../art/art.js";
@@ -38,7 +38,7 @@ function chosen(r) {
 }
 
 /** The map renderer asked for: an explicit `?renderer=hd2d` / `iso` / `flat`, else the
- *  remembered Tools → Options choice, else "hd2d" (the HD-2D map, docs/HD2D.md; main.js falls back
+ *  remembered Options choice, else "hd2d" (the HD-2D map, docs/HD2D.md; main.js falls back
  *  to the isometric 2.5D map where it cannot run). */
 export function rendererChoice() {
   let q = null;
@@ -57,7 +57,7 @@ export function rendererChoice() {
   return "hd2d";
 }
 
-/** Remembers the renderer (Tools → Options). */
+/** Remembers the renderer (Options). */
 export function setRendererChoice(r) {
   try {
     globalThis.localStorage?.setItem(RENDERER_KEY, r);

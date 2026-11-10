@@ -1,11 +1,13 @@
-// The rules-testing tools (design §5.1 "Rules-testing tools", §7 P6): the raw inspector
-// (`inspect`), debug reveal (`session debug`), AI autoplay (`autoplay`), taking over a slot of an
-// AI save (`session take_over`), the player options (`set_option`), the raw request box, and the
-// optional spectator mode: the AI plays every civilization (the human slot too, through FfH's
+// Options (the gear: the player options `set_option` changes, how battles open, the map's renderer,
+// the phone's orientation) and, behind it, the rules-testing tools (design §5.1 "Rules-testing
+// tools", §7 P6): the raw inspector (`inspect`), debug reveal (`session debug`), AI autoplay
+// (`autoplay`), taking over a slot of an AI save (`session take_over`), the raw request box, and
+// the optional spectator mode: the AI plays every civilization (the human slot too, through FfH's
 // AIAutoPlay one turn at a time) with the whole map shown, paused or stepped at will.
 
 import * as api from "./api.js";
 import { S, emit, dname, tidx, me, observing, unitsAt, playerName } from "./state.js";
+import { prefs, defendedMode } from "./engagements.js";
 import { h, fill, toast } from "./dom.js";
 import { openModal, closeTag } from "./modals.js";
 import { run, sending } from "./commands.js";
@@ -14,9 +16,11 @@ import { plotIndex } from "./tiles.js";
 import { setRendererChoice } from "./look.js";
 import { orientChoice, setOrientChoice, orientOffered } from "./orient.js";
 
-/** The tools menu. */
+/** The debug tools (Options → Debug tools…; the only way to the raw request). Without a game
+ *  (the title screen) only those that need none: taking over a slot of a save, the raw request. */
 export function openTools() {
   const st = S.status ?? {};
+  const game = !!me();
   const item = (label, help, f, extra = {}) => h("button.tool", { onclick: () => (closeTag("tools"), f()), title: help, ...extra }, h("b", label), h("span.dim", help));
   return openModal({
     title: "Tools",
@@ -24,12 +28,11 @@ export function openTools() {
     body: [
       h(
         "div.tools",
-        item(st.reveal ? "Debug reveal: on" : "Debug reveal: off", "Show the whole map and every unit and city (marked DEBUG REVEAL)", () => setReveal(!st.reveal), { id: "tool-reveal" }),
-        item("Inspector…", "The rules engine's own data of a unit, group, city, plot, player, team, deal or info entry", () => openInspector(), { id: "tool-inspect" }),
-        item("AI autoplay…", "The AI plays your civilization for a number of turns", () => openAutoplay(), { id: "tool-autoplay" }),
-        item(spectating() ? "Stop spectating" : "Spectate", "The AI plays every civilization, one turn at a time, with the whole map shown", () => (spectating() ? stopSpectating() : startSpectating()), { id: "tool-spectate" }),
+        game ? item(st.reveal ? "Debug reveal: on" : "Debug reveal: off", "Show the whole map and every unit and city (marked DEBUG REVEAL)", () => setReveal(!st.reveal), { id: "tool-reveal" }) : null,
+        game ? item("Inspector…", "The rules engine's own data of a unit, group, city, plot, player, team, deal or info entry", () => openInspector(), { id: "tool-inspect" }) : null,
+        game ? item("AI autoplay…", "The AI plays your civilization for a number of turns", () => openAutoplay(), { id: "tool-autoplay" }) : null,
+        game ? item(spectating() ? "Stop spectating" : "Spectate", "The AI plays every civilization, one turn at a time, with the whole map shown", () => (spectating() ? stopSpectating() : startSpectating()), { id: "tool-spectate" }) : null,
         item("Take over…", "Play another slot of an AI-only save", () => openTakeOver(), { id: "tool-takeover" }),
-        item("Options…", "Player options: quick moves, stack attack, no unit cycling, …", () => openOptions(), { id: "tool-options" }),
         item("Raw request…", "Send any protocol request", () => rawRequest(), { id: "tool-raw" }),
       ),
     ],
@@ -425,7 +428,7 @@ export function flagsView() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Take over, options.
+// Take over, Options.
 
 /** Take over a slot of an AI-only save (a debugging aid: `session take_over`). */
 export async function openTakeOver() {
@@ -461,100 +464,152 @@ export async function openTakeOver() {
   });
 }
 
-/** The player options `set_option` may change. */
+/** The player options `set_option` may change and Options shows (stack attack is left out: with
+ *  engagement combat every attack is one battle, whatever it says). */
 export const OPTIONS = [
   ["PLAYEROPTION_QUICK_MOVES", "Quick moves (units jump to their destination)"],
-  ["PLAYEROPTION_STACK_ATTACK", "Stack attack (the whole stack attacks)"],
   ["PLAYEROPTION_NO_UNIT_CYCLING", "No unit cycling (no automatic selection of the next unit)"],
   ["PLAYEROPTION_SAFE_AUTOMATION", "Safe automation (automated workers keep improvements)"],
   ["PLAYEROPTION_WAIT_END_TURN", "Wait at the end of the turn"],
 ];
 
+/** A group of radio buttons (`name`): `choices` `[value, label, title]`, `current` checked,
+ *  `set(value)` on a change; each input's id is `option-<value>-<idPart>`. */
+function radios(name, idPart, choices, current, set) {
+  return choices.map(([val, label, title]) =>
+    h(
+      "label.toggle",
+      title ? { title } : {},
+      h("input", {
+        type: "radio",
+        id: `option-${val}-${idPart}`,
+        name,
+        value: val,
+        checked: current === val,
+        onchange: (ev) => ev.target.checked && set(val),
+      }),
+      ` ${label}`,
+    ),
+  );
+}
+
+/** One section of Options: its heading and its rows. */
+const section = (title, ...rows) => h("section.options-sec", h("h4", title), ...rows);
+
+/** Options: the player's options in this game, how battles open, the map's renderer and (phones)
+ *  the screen's orientation; the gear opens it. It ends with the way to the debug tools. */
 export function openOptions() {
   const my = me();
+  // Game: the player options (`set_option`); a refusal puts the box back and says why (run's toast).
   const rows = OPTIONS.map(([type, label]) => {
     const i = tidx("PlayerOptionType", type);
-    // Engagement combat (docs/ENGAGEMENTS.md): an attack is one battle, fought in the rules' auto
-    // formation or the one arranged in the battle plan, whatever this option says.
-    const ignored = type === "PLAYEROPTION_STACK_ATTACK";
     return h(
       "label.toggle",
-      ignored ? { title: "Ignored in this game: with engagement combat every attack is one battle, fought in the rules' auto formation or the formation you arrange in the battle plan" } : {},
       h("input", {
         type: "checkbox",
         "data-option": type,
         checked: !!my?.options?.[i],
         onchange: async (ev) => {
-          await run({ c: "set_option", option: i, value: ev.target.checked });
+          const box = ev.target;
+          const reply = await run({ c: "set_option", option: i, value: box.checked });
+          if (!reply) box.checked = !!me()?.options?.[i];
           emit("kick");
         },
       }),
       ` ${label}`,
-      ignored ? h("span.dim.small", " (ignored in this game)") : null,
     );
   });
-  // The map's renderer (not a game option: remembered by this browser): the HD-2D map, the
+  // Without a game (the title screen) there is no player to set them on.
+  const game = section("Game", my ? h("div.checks.single", rows) : h("p.dim", "The player options (quick moves, unit cycling, safe automation, waiting at the end of the turn) are set during a game."));
+  // Battles (remembered by this browser, engagements.js `prefs`): how the battles fought against
+  // the player during the other players' turns open, and the plan's Watch / Report switch.
+  const battles = section(
+    "Battles",
+    h("div.small.dim", "Battles fought against you"),
+    h(
+      "div.checks.single.options-inline",
+      radios(
+        "option-defended",
+        "defended",
+        [
+          ["watch", "Watch", "The battle screens open at the start of your turn and play each battle"],
+          ["report", "Report", "The battle screens open at the start of your turn on each battle's report"],
+          ["list", "Turn report only", "No screen opens: the battles are listed in the turn report and under Messages, with Watch and Report"],
+        ],
+        defendedMode(),
+        (v) => prefs.set("defended", v),
+      ),
+    ),
+    h("div.small.dim", "Your attacks"),
+    h(
+      "div.checks.single.options-inline",
+      radios(
+        "option-attack",
+        "attack",
+        [
+          ["watch", "Watch", "After an attack the battle plays (the battle plan's Watch / Report switch)"],
+          ["report", "Report", "After an attack the battle's report opens (the battle plan's Watch / Report switch)"],
+        ],
+        prefs.get("watch", "watch") === "report" ? "report" : "watch",
+        (v) => prefs.set("watch", v),
+      ),
+    ),
+  );
+  // Map: the renderer (not a game option: remembered by this browser): the HD-2D map, the
   // isometric one (its fallback), and the flat P5 renderer, sprite-less, kept for debugging;
   // `?renderer=flat` in the address does the same for one page.
   const current = globalThis.ffh?.mapView?.renderer?.() ?? "flat";
-  const renderer = [
-    ["hd2d", "HD-2D", "Pixel-art sprites standing in a lit 3D world (docs/HD2D.md); needs WebGL2 on a GPU"],
-    ["iso", "Isometric 2.5D", "The isometric map in HD pixel art (docs/ISO.md), where the HD-2D map cannot run"],
-    ["flat", "Flat (debug)", "The flat debugging renderer, no sprites (colours, glyphs, labels)"],
-  ].map(([val, label, title]) =>
+  const map = section(
+    "Map",
     h(
-      "label.toggle",
-      { title },
-      h("input", {
-        type: "radio",
-        id: `option-${val}-renderer`,
-        name: "option-renderer",
-        value: val,
-        checked: current === val,
-        onchange: (ev) => {
-          if (!ev.target.checked) return;
+      "div.checks.single.options-inline",
+      radios(
+        "option-renderer",
+        "renderer",
+        [
+          ["hd2d", "HD-2D (default)", "Pixel-art sprites in a lit 3D world. Needs WebGL2 on a GPU."],
+          ["iso", "Isometric 2.5D", "The isometric map in pixel art. Used where the HD-2D map cannot run."],
+          ["flat", "Flat (debug)", "The debugging renderer: no sprites, only colours, glyphs and labels."],
+        ],
+        current,
+        (val) => {
           setRendererChoice(val);
           emit("renderer", val);
         },
-      }),
-      ` ${label}`,
+      ),
     ),
   );
-  // The screen's orientation on a phone (orient.js; remembered by this browser): follow the phone,
-  // or keep one, the browser's lock where it has one, else the page turned.
-  const orient = orientOffered()
-    ? [
-        h("h4", "Screen"),
+  // Screen: the screen's orientation on a phone (orient.js; remembered by this browser): follow the
+  // phone, or keep one, the browser's lock where it has one, else the page turned.
+  const screen = orientOffered()
+    ? section(
+        "Screen",
         h(
           "div.checks.single",
-          [
-            ["auto", "Turns with the phone", "Upright or on its side, as the phone is held"],
-            ["landscape", "Landscape", "Always on its side: in fullscreen where the browser locks the screen, else the page turns itself while the phone is upright"],
-            ["portrait", "Portrait", "Always upright: in fullscreen where the browser locks the screen, else the page turns itself while the phone is on its side"],
-          ].map(([val, label, title]) =>
-            h(
-              "label.toggle",
-              { title },
-              h("input", {
-                type: "radio",
-                id: `option-${val}-orientation`,
-                name: "option-orientation",
-                value: val,
-                checked: orientChoice() === val,
-                onchange: (ev) => ev.target.checked && setOrientChoice(val),
-              }),
-              ` ${label}`,
-            ),
+          radios(
+            "option-orientation",
+            "orientation",
+            [
+              ["auto", "Turns with the phone", "Upright or on its side, as the phone is held"],
+              ["landscape", "Landscape", "Always on its side: in fullscreen where the browser locks the screen, else the page turns itself while the phone is upright"],
+              ["portrait", "Portrait", "Always upright: in fullscreen where the browser locks the screen, else the page turns itself while the phone is on its side"],
+            ],
+            orientChoice(),
+            (val) => setOrientChoice(val),
           ),
         ),
-      ]
-    : [];
-  // Without a game (the title screen) there is no player to set them on.
-  const game = my ? h("div.checks.single", rows) : h("p.dim", "The player options (quick moves, stack attack, unit cycling, …) are set during a game.");
+      )
+    : null;
+  // The debug tools: behind Options (the inspector, debug reveal, autoplay, spectate, take over,
+  // the raw request).
+  const debug = h(
+    "div.options-debug",
+    h("button#options-debug", { type: "button", title: "Debug reveal, inspector, AI autoplay, spectate, take over, raw request", onclick: () => (closeTag("options"), openTools()) }, "Debug tools…"),
+  );
   return openModal({
     title: "Options",
     tag: "options",
-    body: [game, h("h4", "This browser"), h("div.checks.single", renderer), ...orient],
+    body: [game, battles, map, screen, debug],
     buttons: [{ label: "Close", value: null }],
   });
 }

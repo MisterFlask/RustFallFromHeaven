@@ -3,14 +3,14 @@
 // the event and vote popups, the keys, and a raw request box for testers.
 
 import * as api from "./api.js";
-import { S, emit, dname, tname, turns, voteChoiceLabel, teamName, me, saveNameOfPath, scoreText } from "./state.js";
-import { h, fill, toast, tapModes, coarse } from "./dom.js";
+import { S, emit, dname, tname, turns, voteChoiceLabel, teamName, me, saveNameOfPath, scoreText, observing } from "./state.js";
+import { h, fill, toast, tapModes, coarse, errorText } from "./dom.js";
 import { tip } from "./tips.js";
 import { openModal, ask } from "./modals.js";
 import { addHelp, openHelp } from "./help.js";
 import { run } from "./commands.js";
 import { render as markup, plain } from "./markup.js";
-import { illuminate, bannerEl } from "./look.js";
+import { illuminate, bannerEl, iconEl } from "./look.js";
 import { leaderPortrait, teamPortrait, PORTRAIT } from "./portraits.js";
 import { techTip, unlockRow, researchModsRow } from "./empire.js";
 
@@ -64,8 +64,8 @@ export async function openResearch({ popup = false } = {}) {
             },
           },
           h("span", dname("TechType", x.tech)),
-          h("span.dim", `${turns(x.turns)} · ${x.cost}${x.progress ? ` (${x.progress})` : ""}`),
-          researchModsRow(x),
+          h("span.dim", `${turns(x.turns)} · `, researchCost(x.cost), x.progress ? ` (${x.progress})` : null),
+          modRules(researchModsRow(x), x),
           unlockRow(x),
         );
       }),
@@ -75,6 +75,39 @@ export async function openResearch({ popup = false } = {}) {
   load();
   const v = await m.done;
   return result ?? v;
+}
+
+/** A tech's cost in research: the research icon (a flask before the art) and the number. */
+export function researchCost(cost) {
+  const title = "Research cost";
+  return h(
+    "span.research-cost",
+    { title, "aria-label": `${title} ${cost}` },
+    iconEl("icon8/research", { title }) ?? h("span.icon", { "aria-hidden": "true" }, "⚗"),
+    String(cost),
+  );
+}
+
+/** The rule behind each chip of a tech's research multipliers (empire.js `researchModsRow`), as
+ *  the chip's tooltip. They multiply the research put into the tech each turn, not its cost. */
+const MOD_RULES = {
+  others: (n) => `Research on a tech rises with the share of the civilizations you have met that know it: +${n}% here.`,
+  prereqs: (n) => `Research on a tech rises for each of its alternative prerequisites you know: +${n}% here.`,
+  feature: () => "A unique feature inside your borders multiplies research on the techs it favours.",
+  path: () => "Your doctrine multiplies research on its techs.",
+};
+
+/** `row` (a `researchModsRow`, or null) with each chip's rule and the total's meaning as tooltips. */
+function modRules(row, x) {
+  if (!row) return row;
+  const m = x.research_mods ?? {};
+  for (const [key, rule] of Object.entries(MOD_RULES)) {
+    const chip = row.querySelector(`.mod-chip.mod-${key}`);
+    if (chip) tip(chip, rule(m[key]));
+  }
+  const total = row.querySelector(".mod-total");
+  if (total) tip(total, `Research per turn on this tech: your research rate ${total.textContent.replace(/^=\s*/, "")}. Its cost does not change.`);
+  return row;
 }
 
 /** The research screen's line for the research path (docs/PORTING.md, "Research paths"): the
@@ -146,7 +179,7 @@ export async function openResearchPaths() {
   }
   const commit = async (p) => {
     const answer = await ask(`Adopt the ${name(p)} doctrine?`, [`Its techs are researched ${t.path_percent}% faster for the rest of the game.`, "No other doctrine can be adopted afterwards."], [
-      { label: "Adopt", value: "commit", primary: true },
+      { label: "Adopt", value: "commit", primary: true, danger: true },
       { label: "Cancel", value: null },
     ]);
     if (answer !== "commit") return;
@@ -369,9 +402,14 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
       h(
         "div.civ-head",
         face,
-        h("div.civ-head-text", h("div.civ-title", bannerEl(type || "CIVILIZATION_RANDOM", { u: 3 }), h("h3", c ? c.name : "Random")), who),
+        h(
+          "div.civ-head-text",
+          h("div.civ-title", bannerEl(type || "CIVILIZATION_RANDOM", { u: 3 }), h("h3", c ? c.name : "Random")),
+          // The leaders beside the portrait, so the description below keeps its height.
+          c ? h("div.leader-cards", leaderCard(null), c.leaders.map((l) => leaderCard(st.leaders[l]))) : null,
+          who,
+        ),
       ),
-      c ? h("div.leader-cards", leaderCard(null), c.leaders.map((l) => leaderCard(st.leaders[l]))) : null,
       about,
     );
     pickLeader("");
@@ -426,6 +464,19 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
       h("details", h("summary", "Game options"), options),
       h("details", h("summary", "Victory conditions"), victories),
       h(
+        "details#ng-debug",
+        h("summary", "Debug"),
+        h(
+          "button#ng-war",
+          {
+            type: "button",
+            title: "An AI game of these settings is played until two civilizations at war fight a battle with 3 or more units a side; you take over the attacked one just before the attack (the civilization: yours if chosen, else whichever is attacked)",
+            onclick: () => modal?.run(warStart),
+          },
+          "Start at war (debug)",
+        ),
+      ),
+      h(
         "label.check",
         { title: "An AI-only game watched with the whole map shown (the AI plays every civilization; the one chosen above is followed first): play, pause, step, follow a civilization, and flag bad play for a bug report from the top bar. It is the `ffh autoplay` game of these settings." },
         spectate,
@@ -461,6 +512,7 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
     return setup;
   };
   const start = async (m) => {
+    if (!(await confirmLeave())) return;
     const setup = setupOf();
     err.textContent = "";
     try {
@@ -476,7 +528,10 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
   // map; its turn comes in the status (`war_search`) meanwhile. It is always played, never
   // spectated.
   const warStart = async (m) => {
+    if (!(await confirmLeave())) return;
     const setup = setupOf();
+    const warBtn = form.querySelector("#ng-war");
+    if (warBtn) warBtn.disabled = true;
     const what = "Playing an AI game until two civilizations at war fight with 3 or more units a side";
     err.textContent = "";
     note.textContent = `${what}…`;
@@ -493,9 +548,10 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
     } finally {
       clearInterval(timer);
       note.textContent = "";
+      if (warBtn) warBtn.disabled = false;
     }
   };
-  return openModal({
+  const modal = openModal({
     title: "New game",
     body: [form],
     tag: noGame || !dismissible ? NEWGAME_REQUIRED : "newgame",
@@ -504,15 +560,10 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
     dismissible,
     buttons: [
       { label: "Load a game…", onClick: () => loadScreen() },
-      {
-        label: "Start at war (debug)",
-        value: "war",
-        title: "An AI game of these settings is played until two civilizations at war fight a battle with 3 or more units a side; you take over the attacked one just before the attack (the civilization: yours if chosen, else whichever is attacked)",
-        onClick: warStart,
-      },
       { label: "Start", primary: true, onClick: start },
     ],
   });
+  return modal;
 }
 
 /** A save's turn, when its name tells it: an autosave `auto/T0061`, `auto/start` (turn 0), or a
@@ -534,6 +585,21 @@ export function whenText(secs, now = Date.now()) {
   return new Date(secs * 1000).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
+/** Before a game replaces the one being played (Load, New game): asks "Leave the current
+ *  game?" (Cancel focused); true to go ahead. Not asked without a game, in an observed (AI-only)
+ *  game, or once the game is over, crashed or stuck. */
+export async function confirmLeave() {
+  const st = S.status;
+  if (!S.view || !st || observing(st) || ["no_game", "over", "crashed", "stuck"].includes(st.phase)) return true;
+  const auto = saveTurn(saveNameOfPath(st.game?.autosave) ?? "");
+  const text = auto !== null ? `Moves since the last autosave (turn ${auto}) are lost.` : "Moves since the last autosave are lost.";
+  const v = await ask("Leave the current game?", text, [
+    { label: "Leave", value: "leave", primary: true, danger: true },
+    { label: "Cancel", value: null },
+  ], { tag: "leave" });
+  return v === "leave";
+}
+
 /** The load screen: every game (the current one first, then the most recently saved) with its
  *  saves, newest first; the autosaves folded under the newest one. */
 export async function loadScreen() {
@@ -542,7 +608,7 @@ export async function loadScreen() {
   try {
     r = (await api.session("saves")).r;
   } catch (e) {
-    m.setBody(h("p.warn", e.detail ?? e.message));
+    m.setBody(h("p.warn", errorText(e)));
     return m.done;
   }
   const err = h("p.error");
@@ -555,11 +621,12 @@ export async function loadScreen() {
     buttons.forEach((b) => (b.disabled = true));
     err.textContent = "";
     try {
+      if (!(await confirmLeave())) return;
       await api.session("load", { name });
       m.close("loaded");
       emit("game-started");
     } catch (e) {
-      err.textContent = e.detail ?? e.message;
+      err.textContent = errorText(e);
     } finally {
       loading = false;
       if (!m.closed) buttons.forEach((b) => (b.disabled = false));
@@ -606,12 +673,29 @@ export function saveDialog() {
   const name = h("input", { type: "text", id: "save-name", value: `turn-${S.status?.turn ?? 0}`, pattern: "[A-Za-z0-9_.\\-]{1,64}" });
   const err = h("p.error");
   const save = async (m) => {
+    const wanted = name.value;
+    err.textContent = "";
     try {
-      const r = (await api.session("save", { name: name.value })).r;
-      toast(`Saved: ${r.save}`);
+      // A save of this game by that name is replaced: asked first (the load screen's listing).
+      let exists = false;
+      try {
+        const r = (await api.session("saves")).r;
+        exists = !!r.games.find((g) => g.game === r.current)?.saves.some((s) => !s.auto && s.name === wanted);
+      } catch (e) {
+        console.warn("saves:", e);
+      }
+      if (exists) {
+        const v = await ask("Replace the save?", `Replace the save ${wanted}?`, [
+          { label: "Replace", value: "replace", primary: true, danger: true },
+          { label: "Cancel", value: null },
+        ], { tag: "replace-save" });
+        if (v !== "replace") return;
+      }
+      await api.session("save", { name: wanted });
+      toast(`Saved: ${wanted}`);
       m.close("saved");
     } catch (e) {
-      err.textContent = e.detail ?? e.message;
+      err.textContent = errorText(e);
     }
   };
   const m = openModal({

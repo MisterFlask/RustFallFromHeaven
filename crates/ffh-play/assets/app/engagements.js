@@ -11,7 +11,7 @@
 
 import * as api from "./api.js";
 import { S, dname, info, tname, emit } from "./state.js";
-import { h, toastNode } from "./dom.js";
+import { h, toast, toastNode } from "./dom.js";
 import { render as markup } from "./markup.js";
 import { plotIndex } from "./tiles.js";
 
@@ -48,6 +48,46 @@ export async function openPlan(by, to) {
   });
 }
 
+// ---------------------------------------------------------------------------------------------
+// The viewer's battle preferences: per browser, a convenience (losing them brings the defaults
+// back). `watch`: the player's own attacks are watched ("watch") or open on their report
+// ("report"; the plan's Watch / Report switch); `defended`: the battles fought against the player
+// during the other players' turns are watched ("watch"), open on their report ("report"), or only
+// listed in the turn report ("list"); `speed`: the replay's speed. Options shows the first two.
+
+const PREFS_KEY = "ffh-battle-prefs-v2";
+
+export const prefs = {
+  data: null,
+  load() {
+    if (this.data) return this.data;
+    this.data = {};
+    try {
+      this.data = JSON.parse(globalThis.localStorage?.getItem(PREFS_KEY) ?? "{}") ?? {};
+    } catch {
+      /* blocked or broken: the defaults */
+    }
+    return this.data;
+  },
+  get(k, def) {
+    return this.load()[k] ?? def;
+  },
+  set(k, v) {
+    this.load()[k] = v;
+    try {
+      globalThis.localStorage?.setItem(PREFS_KEY, JSON.stringify(this.data));
+    } catch {
+      /* blocked: kept for this page */
+    }
+  },
+};
+
+/** How the battles fought against the player open: "watch", "report" or "list" (not opened). */
+export function defendedMode() {
+  const v = prefs.get("defended", "watch");
+  return ["watch", "report", "list"].includes(v) ? v : "watch";
+}
+
 /** Opens battle report `id`: watched in the viewer's watch mode, or (`report`) its report. */
 export async function openReport(id, { report = false } = {}) {
   const m = await battle();
@@ -56,15 +96,19 @@ export async function openReport(id, { report = false } = {}) {
 
 // ---------------------------------------------------------------------------------------------
 // Battles shown as they come (the owner's request, 2026-11-03): every battle the player fights
-// opens the battle screens, watched or straight to its report as the player chose on the plan
-// (its Watch / Report switch): an attack made without the plan (a move, Shift+right-click) when
-// its reply comes, and the battles fought against the player during the other players' turns when
-// the player's turn comes, oldest first, one after the other. The deferred popups wait for them.
+// opens the battle screens: an attack made without the plan (a move, Shift+right-click) when its
+// reply comes, watched or straight to its report as the player chose on the plan (its Watch /
+// Report switch), and the battles fought against the player during the other players' turns when
+// the player's turn comes, oldest first, one after the other, as Options → Battles says (watched,
+// on their report, or not opened: only listed in the turn report). The deferred popups wait for
+// them.
 
 /** Battle reports this page has shown (or queued), by id: none shows twice. */
 let shownBattles = new Set();
 let battleQueue = [];
 let pumping = false;
+/** The battles taken from the queue since it was last empty (the screens' "Battle 2 of 5"). */
+let batch = 0;
 /** Whether battles are not shown as they come (main.js: while the AI plays the player's slot,
  *  spectating or observing, which would stop at every battle). */
 let muted = () => false;
@@ -82,6 +126,23 @@ export function battlesMuted() {
 /** Another game (new or loaded): its battles are all new to this page. */
 export function resetShownBattles() {
   shownBattles = new Set();
+  battleQueue = [];
+  batch = 0;
+}
+
+/** The summary of battle `id` (the turn report's or the view's), or null. */
+function summaryOf(id) {
+  return (S.report?.engagements ?? []).find((b) => b?.id === id) ?? battleById(id);
+}
+
+/** Whether battle `id` was fought against the player (its summary says the player defended). */
+function defended(id) {
+  return (summaryOf(id)?.viewer_side ?? 0) === 1;
+}
+
+/** "Skip the rest": the battles waiting count as shown (they stay in the turn report). */
+export function skipQueuedBattles() {
+  for (const id of battleQueue) shownBattles.add(id);
   battleQueue = [];
 }
 
@@ -104,7 +165,8 @@ export function battlesToShow(list, shown = shownBattles) {
 export function showBattles(ids) {
   for (const id of ids ?? []) {
     if (id === null || id === undefined || shownBattles.has(id) || battleQueue.includes(id)) continue;
-    if (battlesMuted()) shownBattles.add(id);
+    // Muted, or a battle fought against the player that Options keeps to the turn report.
+    if (battlesMuted() || (defended(id) && defendedMode() === "list")) shownBattles.add(id);
     else battleQueue.push(id);
   }
   pumpBattles();
@@ -128,16 +190,27 @@ export async function pumpBattles() {
       if (shownBattles.has(id)) continue;
       shownBattles.add(id);
       handled = true;
+      batch++;
+      const at = batch;
       let log;
       try {
         log = await api.query("battle_log", { report: id });
       } catch (e) {
         console.warn(`battle #${id}: its log:`, e?.detail ?? e?.message ?? e);
+        const b = summaryOf(id);
+        const place = b ? (b.place ?? `(${b.x}, ${b.y})`) : `#${id}`;
+        toast(`Battle at ${place} could not be loaded. It is listed in the turn report.`, "error");
         continue;
       }
+      // The player defended: Options → Battles (the summary may have been missing when it was queued).
+      const against = (log?.viewer_side ?? 0) === 1;
+      const mode = against ? defendedMode() : prefs.get("watch", "watch");
+      if (mode === "list") continue;
+      const of = at + battleQueue.length;
+      const queue = of > 1 ? { at, of, skip: skipQueuedBattles } : null;
       const m = await battle();
       await new Promise((resolve) => {
-        Promise.resolve(m.openBattleLog(log, { report: m.prefs.get("watch", "watch") === "report", onClose: resolve })).catch((e) => {
+        Promise.resolve(m.openBattleLog(log, { report: mode === "report", queue, onClose: resolve })).catch((e) => {
           console.warn(`battle #${id}: the screens:`, e);
           m.closeBattle();
           resolve();
@@ -146,6 +219,7 @@ export async function pumpBattles() {
     }
   } finally {
     pumping = false;
+    if (!battleQueue.length) batch = 0;
   }
   // The popups and the messages held back for the battles may show now (also when a battle's log
   // could not be read and its screens never opened).

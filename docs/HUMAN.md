@@ -37,6 +37,10 @@ options and victory conditions, each choice's description as its tooltip, and "V
 every other civilization, `data/text/barks.md`). The load screen has a
 card per game (the current one first, then the most recently saved) and a row per save with its
 turn and when it was written, the older autosaves folded away. Each game gets a directory in `./saves` (`--saves DIR` to change it).
+Loading a save or starting a new game while you play a game asks first ("Leave the current game?
+Moves since the last autosave (turn N) are lost.", Cancel focused); not on the title screen, in an
+observed game, or once the game is over. Saving under the name of one of the game's saves asks
+"Replace the save NAME?" first.
 
 `serve` takes the GAME flags too (`--seed 3 --world WORLDSIZE_SMALL --new` starts a game at once,
 `--load saves/game-3/auto/T0040.ffhsave` resumes one). Use a current Chrome, Firefox or Safari;
@@ -85,7 +89,7 @@ cards' world spells (docs/CARDS.md: "Card spell: cast once a game"; still shown,
 cast). A spell cast at a distance asks for its target first: a plot, a city or a unit is picked on
 the map, the valid plots outlined (a plot with several targets lists them), a player or one of the
 spell's options from a list (a trait with its effects);
-below them the menu (Research, Techs, Cities, Civics, Religion, Diplomacy, Tools, Save, Load,
+below them the menu (Research, Techs, Cities, Civics, Religion, Diplomacy, Options, Save, Load,
 New, keys `?`, a raw request box `⌘` for testing) and End turn. The map fills the middle (minimap
 bottom right, zoom and the map layers bottom left), the selection panel is on the right, and the
 bottom panel has the turn report, the messages by turn and the game's files (directory, journal,
@@ -123,9 +127,9 @@ colours, owned land in its owner's colour, cities as light dots.
 
 **The flat renderer** of P5 (colours, glyphs and labels: lettered dots for resources, boxes for
 improvements, units and cities; no sprites) is kept for debugging, in the classic interface of
-docs/ART.md: open the page as `http://127.0.0.1:8642/?renderer=flat`, or choose it under Tools →
-Options → "This browser" (which also offers the HD-2D map, the default, and the isometric 2.5D
-map, its fallback). The choice is remembered by this browser. The 2D pixel-art map that drew the
+docs/ART.md: open the page as `http://127.0.0.1:8642/?renderer=flat`, or choose it under Options →
+**Map** (which also offers the HD-2D map, the default, and the isometric 2.5D map, its
+fallback). The choice is remembered by this browser. The 2D pixel-art map that drew the
 map of docs/ART.md, and the 3D renderer's fully modelled map, were retired on 2026-10-31.
 
 **Motion.** The interface moves quietly, in keeping with the manuscript look (docs/ART.md 4.5):
@@ -208,7 +212,8 @@ replaces the mouse:
 | tap a plot, tap it again | with units selected, on a plot without units of yours: the first tap shows the way there (the path, its turns, the attack odds: the right click's preview, which a finger cannot hover), a second tap on the same plot moves or attacks. Panning, or a tap anywhere else, drops the preview and the move it offered. To move onto your own units (a stack, a garrisoned city), use Go to |
 | drag, pinch | pan; zoom through the renderer's steps about the fingers (two fingers also pan) |
 | ×, Cancel | deselect (the panel's head); leave a plot pick (its hint) |
-| "A tap:" | in the city screen, the research chooser and the tech tree: what a tap on a build or a tech does (build now, add to the queue, put first; research now, add to the queue): Shift- and Ctrl-click with a mouse |
+| "A tap:" | in the city screen, the research chooser and the tech tree: what a tap on a build or a tech does (build now, add to the queue, put first; research now, add to the queue): Shift- and Ctrl-click with a mouse (the tech tree offers it to a mouse too, as "A click:") |
+| tap a tech, tap it again | in the tech tree: the first tap lights the tech's path and the techs it leads to, a second tap on it researches it (or queues it, by the "A tap:" row) |
 
 A long press and a double tap do nothing on the map. What touch does not have: Shift waypoints
 (use Go to for one destination), Ctrl-click on a unit row (Split, then a row), and the keys
@@ -311,7 +316,7 @@ chevron in place of the moves pip (the isometric map), and the plot's tooltip
 says where it marches.
 When a group is done, the next one waiting for orders on the plot it left, then on its plot,
 then the next in Civ4's group cycle is selected, as in Civ4 (not with the player option "No
-unit cycling", Tools → Options). As in Civ4, the cycle (`Tab`, `Enter`, the next group after an
+unit cycling", Options → Game). As in Civ4, the cycle (`Tab`, `Enter`, the next group after an
 order) selects only groups whose units can all still move: a stack in which one unit has used its
 moves still counts as waiting (the end-turn check counts it) but is not selected for you. Moving into a rival's land asks whether to declare war;
 deleting, world spells and spells that start a war ask first; loading with more than one
@@ -325,13 +330,23 @@ events (each choice with its effects; greyed when not possible now), votes, rese
 tech's tooltip says what it brings you; click: research it; Shift-click: add it to the queue),
 then each city with nothing to build (click:
 build it now; Shift-click: add to the queue; Ctrl-click: put it first). "Later" sets one aside
-for this turn. End turn (the button, or `Enter` once no group waits) asks first when an event, a vote or the research is
-open or units wait for orders: answer them, select a unit, or end the turn anyway (Civ4's
+for this turn; End turn reminds you of it. End turn (the button, or `Enter` once no group waits) asks first when an event, a vote or the research is
+open, a city has nothing to build (the client's check: the server's gate does not count them) or
+units wait for orders: answer them, choose production (the first such city's build list), select
+a unit, or end the turn anyway (Civ4's
 consequences: open events are dropped, votes get one more turn and then abstain, empty research
 takes the automatic pick). A question the rules must have answered at once (keep or raze a
 captured city, with its buildings and holy cities; a free tech, each with its worth in research
 and what it brings; an election) appears as a dialog that cannot be closed, with the choices, the
 advisor's pick marked, and "AI default".
+
+A confirmation of something that cannot be undone (declare war, also by moving, casting or lending;
+delete a unit; a world or card spell; adopt a doctrine; leave the game; replace a save) opens with
+Cancel focused, so `Enter` does not confirm it. A refused order shows a toast with the reason in
+plain words (the game's names, never type names, ids or request details; those go to the browser
+console); an error toast stays 10 seconds, a click dismisses any toast, and each error is also
+listed under Messages at its turn, marked "Refused" (kept by the page only, until the game changes
+or the page reloads).
 
 **Cities.** Double-click your city, use the button in the selection panel when your units
 stand in it, or the Cities list (`F1`). The city screen: the plots of the city's radius with
@@ -381,11 +396,21 @@ with its yields and the worked ones with a citizen; click a plot there to work i
 rest of the screen stands in panels at the sides, the interface steps aside, and the camera goes
 back when the screen closes (docs/ISO.md, "The city screen").
 
-**Empire.** **Techs** (`F6`): the tech tree by prerequisite depth, what you know, research and
-can research now, with costs, turns and progress, and each tech's tooltip (over it, the cards you
+**Empire.** **Techs** (`F6`): the tech tree by prerequisite depth, each tech a box with its name,
+what it unlocks (the research chooser's icons, at most five with "+n"), and its turns and cost for
+one you can research now, its cost otherwise, "known" for one you have; the states read without
+colour too: known (a check mark, muted), researching (a progress bar with its percentage), queued
+(its place in the queue in a corner), can research now (full contrast, gold border), not yet
+(dimmed). Each box's left edge is its era's colour, named by a legend above the tree (eras cut
+across the depth columns, so there are no era bands). The prerequisite lines are faint; pointing
+at a tech (on touch, the first tap) lights its whole path and the techs it leads to and dims the
+rest. The head says what is being researched and in how many turns; the tree opens scrolled to
+that tech (else the first one you can research), with a scrollbar and edge fades where more lies
+beyond. Each tech has its tooltip (over the tree, the cards you
 know and those your great people hold, each with what it is and unlocks: its suit, band, needs,
 content and effect; cards stay out of the tree); click a tech to research
-it (with what it needs first), Shift-click to queue it. **Civics** (`F3`): each civic option with its
+it (with what it needs first), Shift-click to queue it; the "A click:" row (on touch "A tap:", where
+a second tap researches) switches a plain click to queueing. **Civics** (`F3`): each civic option with its
 civics (the current ones marked, the ones you cannot adopt greyed, their tooltip saying why: the
 tech, a war, an alignment, a state religion); pick civics and the screen shows the
 revolution's anarchy and upkeep (computed by the rules), then "Revolution!". **Religion** (`F7`):
@@ -456,13 +481,21 @@ leader screen: when you first meet (answer "Let's make a deal…" for the trade 
 at the start of your turn when they happened in the AI turns; loading a game shows the moments
 of its turn and the one before again.
 
-**Tools** (the Tools menu): **Debug reveal** (the whole map and every unit and city; the top
+**Options** (the gear; the title screen's Options too), in sections: **Game** (the player options
+`set_option` changes: quick moves, no unit cycling, safe automation, wait at the end of the turn;
+a refused change puts the box back and says why; without a game, a note), **Battles** (remembered
+by this browser: "Battles fought against you": Watch, the default, Report, or Turn report only, see
+"Engagement combat"; "Your attacks": Watch or Report, the battle plan's switch), **Map** (the
+renderer: HD-2D, the default, isometric 2.5D or flat) and, on a phone, **Screen** (below). It
+ends with **Debug tools…**, the only way to the Tools dialog.
+
+**Tools** (Options → Debug tools…): **Debug reveal** (the whole map and every unit and city; the top
 bar says DEBUG REVEAL); the **Inspector** (the rules engine's own data of your unit, group, city,
 player or team, and of anything under debug reveal, plots too; an info entry by kind and index);
 **AI autoplay** (the AI plays your civilization for N turns, then you have control again; while
 it runs the top bar counts the turns left and "Stop" ends it: you have control at your next turn);
-**Spectate** (below); **Take over…** (play another slot of an AI-only save); **Options** (Civ4's
-player options); the raw request box.
+**Spectate** (below); **Take over…** (play another slot of an AI-only save); **Raw request…** (the
+raw request box). From the title screen (no game) it lists only Take over… and Raw request….
 
 **Help.** What a choice does is in its tooltip, as Civ4 shows it: one box that follows the pointer
 (or the keyboard focus), stays inside the window, and keeps the help's icons, colours and lines.
@@ -589,12 +622,18 @@ lanes. In the browser:
   fight there, and the path's odds chip stays; a right-click sends the move, and the battle on
   arrival takes the tactics of whoever stands next to the plot then. A lone unit's
   attack, and every attack at sea or by air, goes as before.
-- **Every battle you fight opens the battle screens** (the owner's request, 2026-11-03), watched
-  or straight to its report as you chose on the plan (its Watch / Report switch): an attack made
-  from the plan goes on to them, an attack without the plan (Shift, a move, a move order that
-  attacks) opens them when it is made, and the battles fought against you during the other
-  players' turns open when your turn comes, oldest first, one after the other (the deferred popups
-  wait for them). The other messages of an attack (a defensive strike, the city captured) wait
+- **Every battle you fight opens the battle screens** (the owner's request, 2026-11-03). Your
+  attacks are watched or go straight to their report as you chose on the plan (its Watch / Report
+  switch, also in Options → Battles as "Your attacks"): an attack made from the plan goes on to
+  them, an attack without the plan (Shift, a move, a move order that attacks) opens them when it is
+  made. The battles fought against you during the other players' turns open when your turn comes,
+  oldest first, one after the other (the deferred popups wait for them), as Options → Battles,
+  "Battles fought against you", says: Watch (the default), Report (straight to each report), or
+  Turn report only (no screen opens; they stay in the turn report's Battles list and under
+  Messages with their links, and the map markers stay). With more than one queued, the battle and
+  report screens say "Battle 2 of 5" and offer **Skip the rest** (this one closes, the rest count
+  as shown and stay in the turn report). A battle whose log cannot be loaded says so in a toast
+  ("Battle at X could not be loaded. It is listed in the turn report."). The other messages of an attack (a defensive strike, the city captured) wait
   until the screens close, so they do not tell the end before the replay does; a city's
   keep-or-raze question still comes at once, as the engine asks it while the attack is made.
   After a load or a reload, the battles of the turn so far are not shown again by themselves; nor
@@ -609,8 +648,8 @@ lanes. In the browser:
 - **Units.** The unit panel shows the row the lead unit prefers in a battle and what it does there ("Front: 2 strikes"), its A, Dv and HP in a battle, its speed,
   whether it is large and its actions in the front, middle and rear rows (the view's `engage_*`);
   a unit row's battle badge has the same in its tooltip. The help of first strikes, withdrawal, collateral damage, Blitz and combat
-  limits (units and promotions) adds what they mean in a battle. The Stack attack option is
-  ignored (its line says so).
+  limits (units and promotions) adds what they mean in a battle. The Stack attack player option is
+  ignored (Options does not list it).
 
 **The battle screens** (formation battles, phase 6 revision 4; the owner's prototype's
 battlefield). They open from the game as above (the plan from an attack, the battle and the report
@@ -652,8 +691,11 @@ name); play/pause `Space` (the action freezes where it is), step
 `→`, skip to the report `Esc`, speeds 1x (the default) to 8x `1`-`4`; played through, the report
 follows) and **the report** (the battlefield where the battle ended, whether the plot fell, each
 side's tactic and its fallen, escaped and standing with their heads, the whole log; Replay,
-Continue). The
-modules: `battle.js` (the overlay, the keys, the viewer's preferences, the sources),
+Continue). While the overlay is open no key reaches the map: the game's own hotkeys (the F-keys,
+`Ctrl+S`, `Ctrl+L`, `Ctrl+1`-`3`, `Tab`, `Backspace`) do nothing, the browser's other keys keep
+theirs. The
+modules: `battle.js` (the overlay, the keys, the sources; the viewer's preferences are kept by
+`engagements.js`),
 `battle_plan.js`, `battle_watch.js` (the replay's clock and timeline), `battle_snap.js` (the
 snap: each action's timing plan, roles, poses and drawing over the stage), `battle_report.js`,
 `battle_stage.js` (the battlefield, the figures and the effects; the anim-sprint strips in
@@ -1287,7 +1329,7 @@ node tools/web-orient-smoke.mjs          # an emulated phone turned and locked; 
   Starmetal Meteor at a plot picked on the map, each confirmed); and the classic interface on
   the flat map, which those steps drive: the art loads, the interface has its bitmap type and
   icons, the map is not blank, a frame takes under 60 ms (median of 15), the zoom goes through
-  the flat map's steps with `+` and `-`, Tools → Options switches to the isometric map and back,
+  the flat map's steps with `+` and `-`, Options (the gear) switches to the isometric map and back,
   and `?renderer=flat` keeps the flat one; then the isometric and HD-2D maps (their steps), and
   the plain URL's default (the HD-2D map, or its isometric fallback). Any console error, page
   error, failed request or HTTP error fails it. The screenshots (`target/web-smoke/*.png`: the
@@ -1308,7 +1350,7 @@ window, and a phone: `ffh-play serve --bind 0.0.0.0` on the same network, or the
    rivers on edges, roads, lairs and goody huts, resource seals, borders, fog (darkened and
    hatched) and unexplored (black, ragged) plots, a city's light, plaque and banner, the stack
    standards (bright on your units that can move), and the political and yield layers. Reload
-   with `?renderer=flat`: the flat map of P5 comes back (and Tools → Options toggles it).
+   with `?renderer=flat`: the flat map of P5 comes back (and Options → Map toggles it).
 3. Select the settler (click), found a city (`B` or the Found button): the research popup comes
    first, then the production chooser; choose with a click, try Shift-click (queue) and "Later".
 4. Select a warrior: the path preview follows the mouse with turn numbers; right-click moves;
@@ -1350,7 +1392,7 @@ window, and a phone: `ffh-play serve --bind 0.0.0.0` on the same network, or the
     with the turn, the autosave and the journal shown under "Game files".
 11. Crash: `ffh-play serve --new --panic-at 3`, end turns until it crashes: the crash screen shows
     the replay command and loads the autosave.
-12. Tools: debug reveal on and off, the inspector on your unit, city and player, AI autoplay for
+12. Options → Debug tools…: debug reveal on and off, the inspector on your unit, city and player, AI autoplay for
     3 turns, Spectate (pause, step, stop).
 13. Watching the AI: a new game with "Spectate" ticked (and "Raging barbarians" for early
     fights): it opens paused, Observing in the top bar; play at the Fast pace, pause, step; a

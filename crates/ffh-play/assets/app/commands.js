@@ -6,7 +6,7 @@
 import * as api from "./api.js";
 import { S, emit, on, dname, info, teamName, gateLines, loadUnitCommand, tradeItemLabel, observing, OBSERVER_COMMANDS } from "./state.js";
 import { ask } from "./modals.js";
-import { toast, busy } from "./dom.js";
+import { toast, busy, errorText } from "./dom.js";
 import { showBattles, battleShown, battlesMuted, battlesPending } from "./engagements.js";
 
 /** The messages of a command that fought a battle (the plan's attack, or a move that attacked:
@@ -95,20 +95,18 @@ function strip(c) {
   return rest;
 }
 
-/** A refusal for people. */
+/** A refusal for people (dom.js `errorText`: a plain sentence; the technical detail goes to
+ *  the console). */
 export function refusal(e) {
-  if (e instanceof api.ApiError) {
-    const what = { not_your_turn: "Not your turn", decision_pending: "Answer the open decision first", invalid: "Invalid", not_owner: "Not yours", gone: "Gone", cannot: "Cannot" }[e.code] ?? e.code;
-    return e.detail ? `${what}: ${e.detail}` : what;
-  }
-  return `Connection problem: ${e.message ?? e}`;
+  return errorText(e);
 }
 
 /** The command to send after the player answered `confirm` (null: cancelled). */
 async function answerConfirm(c, confirm) {
   switch (confirm.kind) {
     case "declare_war": {
-      const choices = [{ label: "Declare war", value: "war", primary: true }];
+      // Irreversible: Cancel has the focus (Enter, also the unit-cycle key, does not declare).
+      const choices = [{ label: "Declare war", value: "war", primary: true, danger: true }];
       if (confirm.move_anyway) choices.push({ label: "Move without declaring", value: "move" });
       choices.push({ label: "Cancel", value: null });
       const v = await ask("Declare war?", `This move means war with ${teamName(confirm.team)}.`, choices);
@@ -122,7 +120,7 @@ async function answerConfirm(c, confirm) {
     case "command": {
       const name = dname("CommandType", confirm.command);
       const v = await ask(`${name}?`, `Are you sure? (${name})`, [
-        { label: name, value: true, primary: true },
+        { label: name, value: true, primary: true, danger: true },
         { label: "Cancel", value: null },
       ]);
       return v ? { ...c, confirmed: true } : null;
@@ -132,7 +130,7 @@ async function answerConfirm(c, confirm) {
       // A card's world spell (docs/CARDS.md) has its own once-a-game flag.
       const once = info("SpellType", confirm.spell)?.once;
       const v = await ask(`Cast ${name}?`, once ? "This is a card spell: it can be cast once a game." : "This is a world spell: it can be cast once per game.", [
-        { label: `Cast ${name}`, value: true, primary: true },
+        { label: `Cast ${name}`, value: true, primary: true, danger: true },
         { label: "Cancel", value: null },
       ]);
       return v ? { ...c, confirmed: true } : null;
@@ -140,7 +138,7 @@ async function answerConfirm(c, confirm) {
     case "cast_war": {
       const name = dname("SpellType", confirm.spell);
       const v = await ask(`Cast ${name}?`, `Casting ${name} here declares war on ${teamName(confirm.team)}.`, [
-        { label: "Cast and declare war", value: true, primary: true },
+        { label: "Cast and declare war", value: true, primary: true, danger: true },
         { label: "Cancel", value: null },
       ]);
       return v ? { ...c, confirmed: true } : null;
@@ -155,21 +153,11 @@ async function answerConfirm(c, confirm) {
       if (t === null || t === undefined) return null;
       return loadUnitCommand(c.units, t);
     }
-    case "end_turn": {
-      const lines = gateLines(confirm);
-      const choices = [];
-      if (confirm.events || confirm.votes || confirm.elections || confirm.research || confirm.crusade_calls) choices.push({ label: "Answer them", value: "popups", primary: true });
-      if (confirm.ready_units) choices.push({ label: "Select a unit", value: "units", primary: !choices.length });
-      choices.push({ label: "End turn anyway", value: "force" });
-      const v = await ask("End the turn?", lines.map((l) => `• ${l[0].toUpperCase()}${l.slice(1)}.`), choices, { tag: "gate" });
-      if (v === "force") return { ...c, force: true };
-      if (v === "popups") emit("reopen-popups");
-      if (v === "units") emit("select-ready");
-      return null;
-    }
+    case "end_turn":
+      return (await askGate(confirm)) ? { ...c, force: true } : null;
     case "lend_war": {
       const v = await ask("Declare war?", `Lending to this crusade means war with ${teamName(confirm.team)}.`, [
-        { label: "Lend and declare war", value: true, primary: true },
+        { label: "Lend and declare war", value: true, primary: true, danger: true },
         { label: "Cancel", value: null },
       ]);
       return v ? { ...c, declare_war: true } : null;
@@ -203,14 +191,59 @@ export function actionCommand(action, x, y) {
   return { ...c, data1: x, data2: y };
 }
 
-/** End turn (`force` skips the gate). */
-export function endTurn(force = false) {
-  return run(force ? { c: "end_turn", force: true } : { c: "end_turn" });
+/** The cities with nothing to build (`pending.idle_cities`), unless observing. */
+function idleCities() {
+  return observing() ? [] : (S.view?.pending?.idle_cities ?? []);
 }
 
-/** For the end-turn button's label: what is still open this turn. */
+/** The end-turn gate (`confirm end_turn`, with `idle_cities` added by the client: the server's
+ *  gate does not count them). Resolves true when the player ends the turn anyway; the other
+ *  buttons open what is still open. */
+async function askGate(confirm) {
+  const idle = confirm.idle_cities ?? idleCities();
+  const lines = gateLines(confirm).map((l) => `${l[0].toUpperCase()}${l.slice(1)}.`);
+  if (idle.length) lines.push(idle.length === 1 ? "1 city has nothing to build." : `${idle.length} cities have nothing to build.`);
+  const choices = [];
+  if (confirm.events || confirm.votes || confirm.elections || confirm.research || confirm.crusade_calls) choices.push({ label: "Answer them", value: "popups", primary: true });
+  if (idle.length) {
+    const city = S.cities.get(idle[0]);
+    choices.push({ label: "Choose production", value: "city", primary: !choices.length, title: city ? `Open ${city.name}'s build list` : "Open the city's build list" });
+  }
+  if (confirm.ready_units) choices.push({ label: "Select a unit", value: "units", primary: !choices.length });
+  choices.push({ label: "End turn anyway", value: "force" });
+  const v = await ask("End the turn?", lines.map((l) => `• ${l}`), choices, { tag: "gate" });
+  if (v === "popups") emit("reopen-popups");
+  if (v === "city") emit("open-idle-city", idle[0]);
+  if (v === "units") emit("select-ready");
+  return v === "force";
+}
+
+/** End turn (`force` skips the gate). The server's gate does not count the cities with nothing
+ *  to build (the build popup's "Later" sets one aside): when there are some, the client asks the
+ *  whole gate itself, from the view's pending lists (the same ones the server counts), and
+ *  "End turn anyway" sends the forced end. */
+export async function endTurn(force = false) {
+  if (force) return run({ c: "end_turn", force: true });
+  const idle = idleCities();
+  const p = S.view?.pending;
+  if (!idle.length || !p || inFlight) return run({ c: "end_turn" });
+  const confirm = {
+    kind: "end_turn",
+    events: p.events?.length ?? 0,
+    votes: p.votes?.length ?? 0,
+    elections: p.elections?.length ?? 0,
+    research: !!p.research_needed,
+    ready_units: p.ready_groups?.length ?? 0,
+    crusade_calls: p.crusade_calls?.length ?? 0,
+    idle_cities: idle,
+  };
+  return (await askGate(confirm)) ? run({ c: "end_turn", force: true }) : null;
+}
+
+/** For the end-turn button's label: what is still open this turn (the cities with nothing to
+ *  build included). */
 export function openCount() {
   const p = S.view?.pending;
   if (!p) return 0;
-  return (p.events?.length ?? 0) + (p.votes?.length ?? 0) + (p.crusade_calls?.length ?? 0) + (p.research_needed ? 1 : 0);
+  return (p.events?.length ?? 0) + (p.votes?.length ?? 0) + (p.crusade_calls?.length ?? 0) + (p.research_needed ? 1 : 0) + idleCities().length;
 }

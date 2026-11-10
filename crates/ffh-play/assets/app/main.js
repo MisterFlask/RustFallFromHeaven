@@ -33,7 +33,7 @@ import * as title from "./title.js";
 import { showDecision, modalOpen, closeTag, closeAll, onEscape, openTags, openModal } from "./modals.js";
 import { renderTop, renderBottom, setTab, currentTab } from "./hud.js";
 import { endTurn, sending } from "./commands.js";
-import { h, $, toast, compactScreen } from "./dom.js";
+import { h, $, toast, compactScreen, setErrorHook, errorText } from "./dom.js";
 import { dname, turns, me } from "./state.js";
 import { look, loadLook, setLookData, rendererChoice, decorate, undecorate } from "./look.js";
 import { setIsoSkin, isoSkin, renderCityPanel } from "./isoui.js";
@@ -69,7 +69,8 @@ function onStatus(st) {
 function onDisconnect(e) {
   if (connected) {
     connected = false;
-    toast(`Lost the server (${e.message ?? e}); retrying…`, "error");
+    console.warn("lost the server:", e?.message ?? e);
+    toast("Lost the connection to the server; retrying…", "error");
   }
   const t = document.getElementById("phase-text");
   if (t) t.textContent = "disconnected; retrying…";
@@ -149,6 +150,16 @@ async function syncOnce() {
   }
   if (phase === "human") await onControl(st);
 }
+
+/** Every error toast (a refusal, a failed request) is also kept under Messages, at the current
+ *  turn: a client-side entry (`local`, kind "refusal"), never sent to the server. A new game or
+ *  a reloaded log drops them with the server's messages. */
+setErrorHook((text) => {
+  const t = S.status?.turn;
+  if (!S.view || t === null || t === undefined) return;
+  S.messages.push({ i: null, t, text: `[COLOR_NEGATIVE_TEXT]Refused:[COLOR_REVERT] ${text}`, player: me()?.player ?? null, kind: "refusal", local: true });
+  if (currentTab() === "messages") renderBottom();
+});
 
 function clearGame() {
   if (!S.view && !S.map) return;
@@ -629,7 +640,7 @@ function wire() {
   click("btn-diplo", () => openScreen("diplomacy"));
   click("btn-crusades", () => openScreen("crusades"));
   crusade.init({ centerOn: (x, y) => mapView.centerOn(x, y) });
-  click("btn-tools", () => tools.openTools());
+  click("btn-tools", () => tools.openOptions());
   click("btn-save", () => S.view && screens.saveDialog());
   click("btn-load", () => screens.loadScreen());
   click("btn-new", () => screens.newGame());
@@ -707,6 +718,14 @@ function wire() {
     runPopups();
   });
   on("select-ready", () => units.selectNext());
+  // The end-turn gate's "Choose production": the first city with nothing to build, its build
+  // list open (the popup "Later" set aside).
+  on("open-idle-city", (id) => {
+    const c = S.cities.get(id);
+    if (!c) return;
+    mapView.reveal(c.x, c.y);
+    openCity(id, { popup: true });
+  });
   on("modals-closed", () => S.status?.phase === "human" && runPopups());
   // A battle closed: the next waiting battle (one held back by the plan's), then the popups.
   on("battle-closed", () => {
@@ -758,7 +777,7 @@ async function boot() {
         await api.session("load", { name });
         emit("game-started");
       } catch (e) {
-        toast(e.detail ?? e.message, "error");
+        toast(errorText(e), "error");
       }
     },
   });
@@ -779,7 +798,7 @@ async function boot() {
   renderTop();
   renderBottom();
   // The isometric renderer (docs/ISO.md), the M7 "HD pixel" sprites on a 2:1 board: the HD-2D
-  // map's fallback, or chosen with `?renderer=iso` or the remembered Tools → Options choice.
+  // map's fallback, or chosen with `?renderer=iso` or the remembered Options choice.
   // It owns its own projection, so the art/flat switches leave it be.
   if (rendererChoice() === "iso") mapView.useIso(true);
   // (Start-up prototype, fastStart: a page whose renderer is the HD-2D map boots in that map's
@@ -845,7 +864,7 @@ function lookLoaded() {
   units.renderPanel();
 }
 
-/** Switches the map's renderer ("hd2d", "iso" or "flat"; Tools → Options). The isometric
+/** Switches the map's renderer ("hd2d", "iso" or "flat"; Options). The isometric
  *  renderer owns the map on its own; leaving it turns it off and falls back to the flat one. */
 function setRenderer(r) {
   // (A 3D map still starting gives way to it, MapView.useR3d.)
@@ -946,7 +965,7 @@ window.addEventListener("ffh:r3d-slow", (ev) => {
   const name = ev.detail?.gpu ?? "";
   const device = /^ANGLE \([^,]*,\s*([^,]*?)(?:\s*\(0x[0-9A-Fa-f]+\).*)?,[^,]*\)$/.exec(name)?.[1] ?? name;
   const gpu = device ? ` (${device})` : "";
-  toast(`The HD-2D map draws slowly on this GPU${gpu}, so it is drawn at half resolution. If this computer has a faster graphics card, set your browser to use it (Windows: Settings → System → Display → Graphics → your browser → High performance), or pick the isometric map in Tools → Options.`, "info", 20000);
+  toast(`The HD-2D map draws slowly on this GPU${gpu}, so it is drawn at half resolution. If this computer has a faster graphics card, set your browser to use it (Windows: Settings → System → Display → Graphics → your browser → High performance), or pick the isometric map in Options.`, "info", 20000);
 });
 
 window.ffh = { S, get mapView() { return mapView; }, orient: orientState, units, screens, empire, tools, api, emit, ready: false, tab: currentTab, setLayer, openScreen, look, setRenderer, battlesPending };

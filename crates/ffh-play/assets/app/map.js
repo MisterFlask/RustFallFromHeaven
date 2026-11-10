@@ -3,7 +3,7 @@
 // The HD-2D map (`r3d/hd2d/`, docs/HD2D.md), the default, and the isometric one (`iso.js`,
 // docs/ISO.md), its fallback, draw it when they are on (`useR3d`, `useIso`); else the flat renderer
 // below (the P5 one: flat colours, glyphs and labels, no sprites), for debugging (`?renderer=flat`
-// or Tools → Options) and while another starts.
+// or Options) and while another starts.
 //
 // Flat: the terrain (everything the `map` arrays hold: terrain, hills, peaks, features, rivers,
 // roads, improvements, bonuses, borders, fog) is drawn into offscreen chunks of CHUNK x CHUNK

@@ -140,6 +140,9 @@ html.iso.hd2d .tip-combat { background: linear-gradient(90deg, var(--hd-line), r
 html.iso.hd2d #modals .backdrop { background: rgba(4, 4, 6, 0.5); }
 @keyframes hd2d-backdrop-in { from { background-color: rgba(4, 4, 6, 0); } }
 html.iso.hd2d #modals .backdrop { animation-name: hd2d-backdrop-in; }
+@media (min-width: 761px) and (min-height: 521px) {
+  html.iso.hd2d #modals .backdrop:has(> .modal.build-prompt) { background: rgba(4, 4, 6, 0.16); }
+}
 html.iso.hd2d .modal-head {
   justify-content: flex-start; padding: 8px 64px 8px 18px; margin: 0 0 4px;
   background: linear-gradient(90deg, var(--hd-strip), rgba(0, 0, 0, 0.32)) no-repeat, linear-gradient(90deg, var(--hd-line), rgba(236, 230, 214, 0.06)) no-repeat bottom / 100% 1px;
@@ -186,7 +189,7 @@ html.iso.hd2d button.stat:hover:not([disabled]) { background: var(--hd-band); }
 /* What is chosen: the band, a brighter hairline and a mark at the left. */
 html.iso.hd2d button.option.chosen, html.iso.hd2d button.build.current, html.iso.hd2d button.civic.chosen, html.iso.hd2d .trade-item.on,
 html.iso.hd2d .culture-actions button.on, html.iso.hd2d .culture-religions button.on, html.iso.hd2d button.culture-target.on,
-html.iso.hd2d #iso-corner .layers button.active {
+html.iso.hd2d .tap-mode button.on, html.iso.hd2d #iso-corner .layers button.active {
   border-image: var(--iso-tile-hover); background: var(--hd-band), var(--hd-fill); background-clip: padding-box; color: #fff;
   box-shadow: inset 3px 0 0 var(--hd-ink);
 }
@@ -286,10 +289,16 @@ html.iso.hd2d #iso-corner #end-turn.end-turn-message:not([disabled]) {
 
 /* The techs keep their measured boxes, lettered small. */
 html.iso.hd2d button.tech { border: 1px solid var(--hd-faint); background: rgba(24, 23, 27, 0.95); font: 400 12px/12px var(--iso-font); text-shadow: none; }
-html.iso.hd2d button.tech .tech-sub { font-size: 11px; }
+html.iso.hd2d button.tech .tech-sub, html.iso.hd2d button.tech .tech-pct, html.iso.hd2d .era-legend { font-size: 12px; line-height: 14px; }
 html.iso.hd2d button.tech.has { background: rgba(38, 52, 32, 0.95); border-color: #8fbf78; }
 html.iso.hd2d button.tech.researching { background: rgba(78, 70, 50, 0.95); border-color: var(--iso-gold-lt); }
-html.iso.hd2d button.tech.can { border-color: var(--hd-line); }
+html.iso.hd2d button.tech.can { border-color: var(--iso-gold); }
+html.iso.hd2d button.tech.queued { border: 1px dashed var(--iso-gold-lt); }
+html.iso.hd2d button.tech.later { background: rgba(18, 17, 20, 0.95); }
+html.iso.hd2d .tree-lines path { stroke: rgba(236, 230, 214, 0.3); }
+html.iso.hd2d .tree-lines path.have { stroke: rgba(143, 191, 120, 0.45); }
+html.iso.hd2d .tree.focus .tree-lines path.lit { stroke: var(--iso-gold-lt); }
+html.iso.hd2d .tree.focus .tree-lines path.lit.next { stroke: #9fc6e4; }
 html.iso.hd2d button.tech:hover:not([disabled]) { background: var(--hd-band), rgba(24, 23, 27, 0.95); }
 html.iso.hd2d .cplot { border: 1px solid var(--hd-faint); background: rgba(20, 20, 23, 0.9); }
 html.iso.hd2d .cplot.worked { background: rgba(38, 56, 30, 0.92); border-color: #8fbf78; }

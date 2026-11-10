@@ -341,7 +341,9 @@ function renderControls() {
       h("span.dim", "Speed"),
       SPEEDS.map((s, k) => btn(`${s}×`, { cls: "sm", on: W.speed === s, key: `speed${s}`, title: `[${k + 1}]`, onclick: () => setSpeed(s) })),
     ),
-    W.done ? h("div.small.dim", { style: { marginTop: "4px" } }, "The battle is over.") : null,
+    // With the queue's row the panel has no room for this line (the banner says it).
+    W.done && !W.ctx?.queueRow?.() ? h("div.small.dim", { style: { marginTop: "4px" } }, "The battle is over.") : null,
+    W.ctx?.queueRow?.(),
   );
 }
 
