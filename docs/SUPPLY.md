@@ -237,7 +237,7 @@ Starvation: 0 (it never kills).
 - **Sea lanes.** A ship is a source while its water area touches a home port; the sea route
   itself is not traced or cut.
 
-## Second pass (design, 2026-11-10; not built)
+## Second pass (design, 2026-11-10; B's two rules fixes built)
 
 Four fixes to what the first build left rough. Each is decided; the implementation reports what
 it measured.
@@ -289,9 +289,14 @@ The fixes, decided:
   over land to a city of its owner are taken: plots the unit may enter, flooded from the owner's
   cities on that landmass once per bump. With no such plot, it goes to its owner's nearest city.
   A player without a city there is bumped as before. (docs/PORTING.md, "Changes from FFH2".)
+  *Built (2026-11-10):* `Game::unit_jump_to_nearest_valid_plot` floods, per bumped unit, from its
+  owner's cities on its area through the plots the bump calls valid, and takes the nearest of
+  those (else the nearest city); tests in `crates/ffh-core/tests/bump.rs`.
 - **Rules: animals are not army units.** A unit whose type is an animal (`UnitInfo::animal`) is
   in no army and no garrison, so it needs no supply line: it fights beside an army as heroes and
   mages do. (docs/ARMIES.md; docs/PORTING.md.)
+  *Built (2026-11-10):* `Game::unit_type_is_army_unit` refuses an animal type; the army sync takes
+  an animal out of its army; test `a_wolf_pack_is_in_no_army` (`crates/ffh-core/tests/armies.rs`).
 - **AI: stranded overseas.** An army cut on a landmass without a city of its owner goes to the
   coast plot nearest its owner's nearest city and asks for a transport there, as a settler waiting
   in port does; the transport that carries an army ashore does not leave it while no war target

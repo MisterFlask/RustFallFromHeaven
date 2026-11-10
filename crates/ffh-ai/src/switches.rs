@@ -118,6 +118,10 @@ pub static REQUISITION: Switch = Switch::new("REQUISITION");
 /// Supply lines (`supply.rs`, docs/SUPPLY.md): off, the AI's armies ignore their supply line (no
 /// move gate, no falling back).
 pub static SUPPLY: Switch = Switch::new("SUPPLY");
+/// The AI cuts an invader's supply line: a spare of a garrison holds a plot of the line of an
+/// enemy army near our cities whose closing leaves it none (`supply_cut.rs`, docs/SUPPLY.md,
+/// "Second pass", C).
+pub static SUPPLY_CUT: Switch = Switch::new("SUPPLY_CUT");
 /// Governed cities (`governor.rs`, docs/GOVERNORS.md): off, the AI keeps its first cities direct
 /// and every governed city develops.
 pub static GOVERNORS: Switch = Switch::new("GOVERNORS");

@@ -201,6 +201,12 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             g.groups[grp].force_update = false;
             continue;
         }
+        // A unit on an invader's supply line has its orders from `supply_cut::turn` (docs/SUPPLY.md,
+        // "Second pass", C): it holds there.
+        if crate::supply_cut::is_cutter(g, grp) {
+            crate::supply_cut::wait(g, grp);
+            continue;
+        }
         // An army whose supply line is cut decides again at the start of every turn (docs/SUPPLY.md:
         // it may have to fall back), whatever it was ordered or set to do before (not again in a
         // later call of the same turn, once it has moved).
