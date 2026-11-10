@@ -118,8 +118,9 @@ pub static REQUISITION: Switch = Switch::new("REQUISITION");
 /// Supply lines (`supply.rs`, docs/SUPPLY.md): off, the AI's armies ignore their supply line (no
 /// move gate, no falling back).
 pub static SUPPLY: Switch = Switch::new("SUPPLY");
-/// Governed cities (`governor.rs`, docs/GOVERNORS.md): off, the AI keeps its first cities direct
-/// and every governed city develops.
+/// The AI's empire orders in its governed cities (`governor::turn`, docs/GOVERNORS.md): off, it
+/// places none (its governed cities build only what their governors choose and the armies'
+/// requisition).
 pub static GOVERNORS: Switch = Switch::new("GOVERNORS");
 /// Heroes only in the top third of our cities by production, world wonders outside it only when
 /// quick (`production::top_production_city`).

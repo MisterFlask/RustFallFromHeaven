@@ -77,7 +77,7 @@ pub fn choose(ai: &Ai, g: &mut Game, c: CityId) {
 }
 
 /// The type name of what a choice makes (telemetry).
-fn type_name(g: &Game, choice: Choice) -> &'static str {
+pub(crate) fn type_name(g: &Game, choice: Choice) -> &'static str {
     let d = g.d;
     match choice {
         Choice::Train(u, _) => d.units[u].base.type_.as_str(),
@@ -519,7 +519,10 @@ struct Ctx {
     afford: bool,
 }
 
-fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
+/// The AI's own production choice for city `c` (the ladder of a directly ruled city), and why. It
+/// does not ask whether the city is governed: in a governed city it is what the AI would want
+/// there, and `governor::turn` places what of it is an empire order.
+pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     let d = g.d;
     let city = &g.cities[c];
     let p = city.owner;
@@ -973,7 +976,7 @@ pub fn wonder_emphasis(g: &mut Game, p: PlayerId) {
     }
     let peace = !civ_enemies_at_war(g, p) && crate::diplomacy::preparing_target(g, g.players[p].team).is_none();
     for c in g.players[p].cities.clone() {
-        // A governed city's emphasis is its governor's (and it builds no wonders).
+        // A governed city's emphasis is its role's, also while it builds an empire order's wonder.
         if g.city_is_governed(c) {
             continue;
         }
