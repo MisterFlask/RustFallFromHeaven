@@ -161,7 +161,7 @@ pub fn army_size(g: &Game, p: PlayerId) -> i32 {
 
 /// Army units within 3 plots of our city nearest to `target`'s cities (on a shared landmass):
 /// the force staged for a war against it.
-fn staged_army(g: &Game, p: PlayerId, target: TeamId) -> i32 {
+pub(crate) fn staged_army(g: &Game, p: PlayerId, target: TeamId) -> i32 {
     let mut best: Option<(i32, CityId)> = None;
     for &c in &g.players[p].cities {
         let area = g.map.plots[g.city_plot(c)].area;
@@ -249,7 +249,13 @@ pub fn manage(g: &mut Game, v: &View) {
         let victory_war = crate::victory::wants_conquest(&plan) || crate::victory::rival_team(g, &plan) == Some(enemy);
         // Don't sell a conquest war we are winning: press on to take cities instead (see press_conquest).
         let winner_initiated = their_want > our_want && g.teams[team].ai_at_war_counter[enemy] > 10 && !victory_war && !press_conquest(g, team, enemy);
-        let wanted = want_peace(g, team, enemy, &plan);
+        // A probe's peace (probes.rs): the Turtle and the Expand seek it, the Rush fights on while
+        // it can take a city.
+        let stance = crate::probes::peace_stance(g, p, enemy);
+        if stance == Some(false) {
+            continue;
+        }
+        let wanted = stance.unwrap_or_else(|| want_peace(g, team, enemy, &plan));
         // A war where nothing happens ends (MNAI): neither side has an army at the other's cities.
         let quiet = !wanted && crate::switches::QUIET_PEACE.on(g, p) && quiet_war(g, team, enemy);
         if !wanted && !winner_initiated && !quiet {
@@ -333,6 +339,10 @@ pub fn manage(g: &mut Game, v: &View) {
 
     // One war at a time.
     if !v.civ_enemies.is_empty() {
+        return;
+    }
+    // A probe's wars (probes.rs): its own targets and declarations, or none.
+    if crate::probes::manage_war(g, p) {
         return;
     }
 
@@ -1501,6 +1511,10 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
     // worth at least what we give.
     let has_peace = |items: &[TradeData]| items.iter().any(|t| t.item_type == TradeableItem::TRADE_PEACE_TREATY);
     if has_peace(they_give) && has_peace(we_give) {
+        // A probe's peace (probes.rs).
+        if let Some(yes) = crate::probes::accept_peace(g, p, their_team) {
+            return because(yes, if yes { "peace accepted" } else { "war continues while a city of yours can be taken" });
+        }
         let counter = g.teams[team].ai_at_war_counter[their_team];
         if counter < 10 {
             return no("peace requires 10 turns of war");
@@ -1564,6 +1578,10 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
     // `declare_war_trade_val`) and accept when the payment is worth at least our price (C++ 7057).
     if let Some(war_item) = we_give.iter().find(|t| t.item_type == TradeableItem::TRADE_WAR) {
         let target = TeamId(war_item.data as u8);
+        // A probe that declares no wars (probes.rs).
+        if !crate::probes::declares_wars(g, p) {
+            return no("declares no wars");
+        }
         // One war at a time (DENIAL_TOO_MANY_WARS).
         if g.team_get_at_war_count(team, true) > 0 {
             return no("already at war");

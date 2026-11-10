@@ -438,7 +438,13 @@ pub(crate) fn garrison_quota(g: &Game, v: &View, c: CityId) -> i32 {
     }
     // The rival civilizations near the city (defense.rs): spare defenders walk to the border.
     q += v.rival_def.get(&c).copied().unwrap_or(0);
-    q.min(5)
+    // A probe's garrison (probes.rs): the Turtle keeps a multiple of it in every city (above the
+    // cap), the Rush and the Expand one.
+    let probe_q = crate::probes::garrison_need(g, v.p, q, false);
+    if probe_q > q {
+        return probe_q;
+    }
+    probe_q.min(5)
 }
 
 fn garrison_unit(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
