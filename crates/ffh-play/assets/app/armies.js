@@ -219,8 +219,9 @@ export async function openArmies({ select, centerOn } = {}) {
     const disband = async (a) => {
       const n = a.units.length;
       const city = a.x !== null ? cityAt(a.x, a.y) : null;
-      const where = city && city.owner === me()?.player ? `join the garrison of ${city.name}` : "march to the nearest of your cities and join its garrison";
-      const v = await ask("Disband the army?", `Disband the ${a.name}? Its ${n === 1 ? "unit" : `${n} units`} ${where}; its requisition ends.`, [
+      const one = n === 1;
+      const where = city && city.owner === me()?.player ? `${one ? "joins" : "join"} the garrison of ${city.name}` : `${one ? "marches" : "march"} to the nearest of your cities and ${one ? "joins" : "join"} its garrison`;
+      const v = await ask("Disband the army?", `Disband the ${a.name}? Its ${one ? "unit" : `${n} units`} ${where}; its requisition ends.`, [
         { label: "Disband", value: true, primary: true, danger: true },
         { label: "Cancel", value: null },
       ]);

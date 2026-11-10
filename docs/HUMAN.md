@@ -224,7 +224,7 @@ replaces the mouse:
 | tap a plot, tap it again | with units selected, on a plot without units of yours: the first tap shows the way there (the path, its turns, the attack odds: the right click's preview, which a finger cannot hover), a second tap on the same plot moves or attacks. Panning, or a tap anywhere else, drops the preview and the move it offered. To move onto your own units (a stack, a garrisoned city), use Go to |
 | drag, pinch | pan; zoom through the renderer's steps about the fingers (two fingers also pan) |
 | ×, Cancel | deselect (the panel's head); leave a plot pick (its hint) |
-| "A tap:" | in the build prompt, the city screen, the research chooser and the tech tree: what a tap on a build or a tech does (build now, add to the queue, put first; research now, add to the queue): Shift- and Ctrl-click with a mouse (the tech tree and the build prompt offer it to a mouse too, as "A click:") |
+| "A tap:" | in the build prompt, the city screen, the research chooser and the tech tree: what a tap on a build or a tech does (build now, add to the queue, put first; research now, add to the queue): Shift- and Ctrl-click with a mouse (the tech tree, the build prompt and the city screen offer it to a mouse too, as "A click:") |
 | tap a tech, tap it again | in the tech tree: the first tap lights the tech's path and the techs it leads to, a second tap on it researches it (or queues it, by the "A tap:" row) |
 
 A long press and a double tap do nothing on the map. What touch does not have: Shift waypoints
@@ -358,7 +358,8 @@ and what it brings; an election) appears as a dialog that cannot be closed, with
 advisor's pick marked, and "AI default".
 
 A confirmation of something that cannot be undone (declare war, also by moving, casting or lending;
-delete a unit; a world or card spell; adopt a doctrine; leave the game; replace a save) opens with
+delete a unit; a world or card spell; adopt a doctrine; a revolution with anarchy; disband an army;
+leave the game; replace a save) opens with
 Cancel focused, so `Enter` does not confirm it. Toasts stand at the top of the map (in the HD-2D and
 isometric looks on a screen 1100 px wide or more, between the turn report's panel and the city
 panel's column, so they do not cover the report's tabs). A refused order shows a toast with the reason in
@@ -383,7 +384,7 @@ hurry (gold or population, with the price), draft, the emphasis flags and "Autom
 production"; the queue (✕ removes an entry while there are several; the only one is replaced by
 choosing another) and everything it can build with turns and production cost, each with its tooltip (a
 unit's strength, moves and class, what it does; click: build it; Shift: append; Ctrl: put it
-first). The right column has the production first (its progress, the queue, the build lists),
+first; the "A click:" row above the lists makes a plain click append or put first). The right column has the production first (its progress, the queue, the build lists),
 then the orders, where trained units go (with armies on) and the governance (with governors on).
 "‹ Previous city" and "Next city ›" go through your cities. With cultural actions on
 (this game's own system, docs/CULTURE.md) the screen also has a **Culture** section, under the
@@ -437,7 +438,8 @@ it (with what it needs first), Shift-click to queue it; the "A click:" row (on t
 a second tap researches) switches a plain click to queueing. **Civics** (`F3`): each civic option with its
 civics (the current ones marked, the ones you cannot adopt greyed, their tooltip saying why: the
 tech, a war, an alignment, a state religion); pick civics and the screen shows the
-revolution's anarchy and upkeep (computed by the rules), then "Revolution!". **Religion** (`F7`):
+revolution's anarchy and upkeep (computed by the rules), then "Revolution!" (with anarchy, it asks
+first: `Start the revolution? 2 turns of anarchy.`). **Religion** (`F7`):
 the religions (founded or not; a religion's tooltip says what it does and, before it is founded,
 the tech whose first discoverer founds it), their holy cities as far as you know them, your cities
 with each, and "Convert" (with the anarchy). **Cultural pressure** (`F8`, the
@@ -459,7 +461,9 @@ docs/SUPPLY.md), its battle tactic (a selector of the four tactics, each with it
 tooltip; "from next turn (now Line)" while a change is pending: a change takes effect at the
 start of your next turn; docs/TACTICS.md), target size (with its units,
 recruits marching and units in training against it: its requisition orders and the units its
-cities build next for it, as "more wanted" counts them), "Upgrade all", "Disband", its
+cities build next for it, as "more wanted" counts them), "Upgrade all", "Disband" (it asks first:
+its units join the garrison of the city they stand in, or march to your nearest city and join its
+garrison; its requisition ends), its
 **requisition** (the cities it requisitions from, how many more it wants, its orders in
 production with their turns, and "Requisition from…": every city of yours with a checkbox, the
 unit it would train for the army, its production turns and its march to the army; "Release all"),
