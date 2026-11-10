@@ -3480,14 +3480,31 @@ only, against opponents without it, and reports that player's wins and share.
   `area:X,Y,R` (each player's units within R plots: count, health, types), `unit:ID`.
 - Pick T a turn or two before the firing (the trace line's turn), the watches on what the
   behaviour should change (the stack's area, the city it besieges, the hero's id), N the
-  behaviour's horizon. Combat is random and the dice part ways at the fork, so one fork can be
-  luck: look at a few firings, and read the traces for why each branch went as it did.
+  behaviour's horizon. Combat is random and the dice part ways at the fork, so one continuation
+  can be luck: roll each fork (`--rolls`, below), look at a few firings, and read the traces for
+  why each branch went as it did.
 - After a fix, `--save DIR/fork.ffhsave` (an earlier fork's save) replays the same position with
   the new binary, instead of playing to turn T again (the game before the fork changes with the
   fix when the behaviour fired earlier in it).
+- `--rolls R`: one fork as a distribution, not an anecdote. Each branch is resumed R times with
+  the game RNG reseeded (`--reseed 1..R`, the same K on both sides, so the rolls pair), in
+  parallel under the CPU slots, and for every watched value the script prints mean [min..max] per
+  branch, the difference of the means and a paired t (counts of each value for owners and
+  `alive`); the per-roll JSON lines stay in the output directory (`on.rolls.jsonl`,
+  `off.rolls.jsonl`). In a 20-turn fork at peace most rolls end apart (8 distinct end states of
+  8) though a player's totals move by a unit or two; a battle or a siege spreads them far more.
+- `--bin2 DIR2` instead of `--switch`: the same fork resumed with two builds (`bin` / `bin2`),
+  with `--rolls` too; both must load the save (same `save::FORMAT_VERSION`).
+- `--keep NAME` files the fork in the position bank, `target/ai-positions/NAME.ffhsave` of the
+  main checkout, with `NAME.txt` (seed, turn, run options, switch, watches, build and git
+  revision, save format). A local working set: never committed, and dead once
+  `save::FORMAT_VERSION` moves (replay it with `--seed S --turn T` then).
 - Underneath: `ffh save FILE --to-turn T [run options]` and `ffh resume FILE --turns N
-  [--watch SPEC]..` (`crates/ffh-cli/src/branch.rs`); a resumed save plays on exactly as the
-  game it was saved from (same checksums).
+  [--watch SPEC].. [--reseed K] [--summary]` (`crates/ffh-cli/src/branch.rs`); a resumed save
+  plays on exactly as the game it was saved from (same checksums). `--reseed K` replaces the game
+  RNG's state (`soren_rand`) by a hash of it and K: a reproducible other continuation of the same
+  position. `--summary` prints one JSON line at the end instead of the per-turn lines: each
+  watch's final values, and for `player:` the change since the fork (`d_cities`, ...).
 
 - `ffh stats --seed N --at T1,T2,.. [--every N]` plays one game and prints one JSON line:
   per-civ snapshots after the given numbers of turns played (and always at the end), game-wide
@@ -3701,9 +3718,8 @@ its loan general is fighting. None of this runs in the default game, so it moves
 ## Known gaps (future work)
 
 - **Tools the loop wants and does not have** (CLAUDE.md, "AI changes"): the probes; a counted
-  taxonomy of failures over many games (`review_game.py` gives one game's narrative); forks
-  resumed with several random seeds per branch, so that one firing gives a distribution and not
-  one continuation (`tools/ai-branch.sh` plays each branch once).
+  taxonomy of failures over many games (`review_game.py` gives one game's narrative). (Forks
+  resumed under several random seeds per branch now exist: `tools/ai-branch.sh --rolls`.)
 - Leader traits (`traits.rs`): Charismatic, Creative, Defender, Organized and Magic Resistant have
   no play of their own (their effects reach every decision that reads the game). Candidates if
   they should: Defender stacks counterattacking inside our borders (Homeland), Creative leaders

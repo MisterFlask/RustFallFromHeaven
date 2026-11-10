@@ -12,9 +12,11 @@
 //!   ffh battles FILE [--runs N]      staged engagements, one JSON line of totals per matchup
 //!                                    (battles.rs)
 //!   ffh save FILE --to-turn T [opts]  play to the start of turn T and save the game (branch.rs)
-//!   ffh resume FILE --turns N [--watch city:X,Y|player:P|area:X,Y,R|unit:ID]..
+//!   ffh resume FILE --turns N [--watch city:X,Y|player:P|area:X,Y,R|unit:ID].. [--reseed K] [--summary]
 //!                                    resume a save with the AI and print the watched facts each
-//!                                    turn: one branch of `tools/ai-branch.sh` (branch.rs)
+//!                                    turn: one branch of `tools/ai-branch.sh` (branch.rs);
+//!                                    --reseed K: a reproducible other continuation (the game RNG
+//!                                    rehashed with K); --summary: one JSON line of final values
 //!
 //! Options: --seed N  --civs N  --size WORLDSIZE_X  --turns N  --report N (per-player report
 //! every N turns)  --option GAMEOPTION_X (repeatable; or --options A,B as ffh-stress)  --until-supremacy (stop at a victory, the
