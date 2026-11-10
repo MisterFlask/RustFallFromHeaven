@@ -15,14 +15,34 @@
 //!   A hungry army does not stop to heal in the field (it cannot), and an army whose line is cut
 //!   is re-planned each turn (`units::play`), so no multi-turn order walks it on.
 //!
+//! - **Stranded overseas** ([`fall_back`] on a landmass without a city or settler of ours): the
+//!   army walks to the port nearest our nearest city that it may enter (a coastal city of another
+//!   team on a sea one of our ports is on: open borders, a vassal or its master) and waits there for
+//!   a ship (the group's mission AI `MISSIONAI_PICKUP` on its plot: the request, as a settler waiting
+//!   in port asks for one); a transport of ours on its plot is boarded, and with nothing left to
+//!   fight on that landmass it is boarded even while the ship supplies the army. Not a coast plot:
+//!   the rules let only a human's land units step onto a ship at sea (`unit_can_move_into`), so an
+//!   AI army boards only in a city. The transport's side is `naval::pickup`; a port of ours with no
+//!   transport builds one (`production::decide`, `army_ship`).
+//! - **The last resort**: an army that has starved for [`STRANDED_TURNS`] of its owner's turns in a
+//!   row with no path over land to a city of ours, or overseas with no transport of ours on its way
+//!   to it, is disbanded unit by unit (`unit_scrap`; heroes and units the rules will not scrap
+//!   stay).
+//!
 //! Switch `SUPPLY` (`FFH_AI_SUPPLY_OFF`): off, the AI ignores supply lines (as before them).
 
 use ffh_core::army::SupplyState;
+use ffh_core::defs::*;
 use ffh_core::game::Game;
 use ffh_core::ids::*;
+use ffh_data::*;
 
 use crate::units::{alive, move_to, skip};
 use crate::view::View;
+
+/// Turns of Starvation in a row after which an army that cannot get home is disbanded (the last
+/// resort: docs/SUPPLY.md, "Second pass", B).
+pub(crate) const STRANDED_TURNS: i32 = 10;
 
 /// The army the group's head belongs to (an AI army of a player that is no barbarian, and not a
 /// marching recruit).
@@ -120,8 +140,15 @@ pub(crate) fn fall_back(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> 
     if !on(g, p) {
         return false;
     }
-    let state = g.army_supply_state(a);
     let here = g.unit_plot(u);
+    let area = g.map.plots[here].area;
+    let overseas = !has_city_on(g, p, area);
+    // Overseas with nothing left to fight there: a ship of ours next to it takes it home (while the
+    // ship stands there the army has a line to it, so this comes before the supplied test).
+    if overseas && !war_target_on(g, v, area) && board(g, grp, u, here, "idle") {
+        return true;
+    }
+    let state = g.army_supply_state(a);
     match state {
         SupplyState::Supplied => return false,
         SupplyState::Hunger { .. } => {
@@ -137,14 +164,21 @@ pub(crate) fn fall_back(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> 
     if g.plot_supply_line(p, here).is_some() {
         return false;
     }
+    if overseas {
+        return stranded_overseas(g, v, grp, u, a, here, state);
+    }
     // Toward the nearest of our cities on its landmass it has a path to (of the three nearest);
     // else to the plot it reaches within three turns that is ours (else the nearest to that city).
-    let area = g.map.plots[here].area;
     let (x, y) = g.map.xy(here);
     let mut cities: Vec<(i32, CityId)> = g.players[p].cities.iter().copied().filter(|&c| g.map.plots[g.city_plot(c)].area == area).map(|c| (g.plot_distance(x, y, g.cities[c].x, g.cities[c].y), c)).collect();
     cities.sort();
+    // (A settler of ours here and no city yet: nothing to go back to.)
     let Some(&(_, nearest)) = cities.first() else { return false };
     let mut dest = cities.iter().take(3).map(|&(_, c)| g.city_plot(c)).find(|&q| g.group_find_path(grp, here, q, 0).is_some());
+    // The last resort: starved long, and no path over land to any city of ours.
+    if dest.is_none() && starved_long(g, a) && !cities.iter().skip(3).any(|&(_, c)| g.group_find_path(grp, here, g.city_plot(c), 0).is_some()) && disband(g, grp, a, "land") {
+        return true;
+    }
     if dest.is_none() {
         let home = g.city_plot(nearest);
         let reach = v.flood.run(g, u, 3, false);
@@ -166,8 +200,179 @@ pub(crate) fn fall_back(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> 
     true
 }
 
+/// Has the army starved for [`STRANDED_TURNS`] of its owner's turns in a row?
+fn starved_long(g: &Game, a: ArmyId) -> bool {
+    g.armies[a].unsupplied_turns - g.d.defines.supply_hunger_turns >= STRANDED_TURNS
+}
+
+/// Does `p` have a city on `area`, or a settler there (which will found one)?
+pub(crate) fn has_city_on(g: &Game, p: PlayerId, area: Option<AreaId>) -> bool {
+    g.players[p].cities.iter().any(|&c| g.map.plots[g.city_plot(c)].area == area)
+        || g.players[p].units.iter().any(|&o| g.d.units[g.units[o].unit_type].found && !g.unit_is_cargo(o) && g.map.plots[g.unit_plot(o)].area == area)
+}
+
+/// Is there something for us to fight on `area`: a city of a team at war with us (barbarians
+/// included), or our amphibious assault's target?
+pub(crate) fn war_target_on(g: &Game, v: &View, area: Option<AreaId>) -> bool {
+    if v.amphibious.as_ref().is_some_and(|amph| g.map.plots[amph.plot].area == area) {
+        return true;
+    }
+    g.cities.iter().any(|(c, city)| {
+        let t = g.players[city.owner].team;
+        t != v.team && g.at_war(v.team, t) && g.map.plots[g.city_plot(c)].area == area
+    })
+}
+
+/// An army of `v.p` stands on land plot `q` (no city), on a landmass without a city or settler of
+/// ours, with nothing to fight there: a ship next to it should take it home.
+pub(crate) fn stranded_at(g: &Game, v: &View, q: PlotIdx) -> bool {
+    if g.plot_is_water(q) || g.map.plots[q].plot_city.is_some() {
+        return false;
+    }
+    let p = v.p;
+    let army = g.map.plots[q].units.iter().any(|&o| g.units[o].owner == p && !g.unit_is_cargo(o) && g.units[o].army.is_some() && g.units[o].march.is_none());
+    if !army {
+        return false;
+    }
+    let area = g.map.plots[q].area;
+    !has_city_on(g, p, area) && !war_target_on(g, v, area)
+}
+
+/// Is `t` a transport of ours (`p`'s) not on a settler's errand?
+fn our_transport(g: &Game, p: PlayerId, t: UnitId) -> bool {
+    g.units[t].owner == p && crate::naval::is_transport_type(&g.d.units[g.units[t].unit_type]) && !g.unit_get_cargo_units(t).iter().any(|&c| g.d.units[g.units[c].unit_type].found)
+}
+
+/// Board a transport of ours: one on the group's own plot (a city) takes every unit it has room
+/// for (as an army boards in port, `naval::board`); else the stack steps onto one on a water plot
+/// next to it, where the rules allow that (they do not for an AI's land units: `unit_can_move_into`
+/// lets only a human's land unit step aboard at sea). True if it did.
+fn board(g: &mut Game, grp: GroupId, u: UnitId, here: PlotIdx, why: &'static str) -> bool {
+    let p = g.units[u].owner;
+    if let Some(t) = g.map.plots[here].units.iter().copied().find(|&t| our_transport(g, p, t) && g.unit_can_load_unit(u, t, here)) {
+        crate::trace!(g, p, "army {:?} ({} units) boards a ship at {:?} ({})", grp, g.groups[grp].units.len(), g.map.xy(here), why);
+        g.tel_decision(p, "supply", "pickup_board", why, 1, String::new);
+        for o in g.groups[grp].units.clone() {
+            if g.units.contains(o) && g.unit_can_load_unit(o, t, here) {
+                g.unit_load_unit(o, t);
+            }
+        }
+        if alive(g, grp) && g.group_ready_to_move(grp, false) {
+            skip(g, grp);
+        }
+        return true;
+    }
+    let (x, y) = g.map.xy(here);
+    let next = (0..DirectionType::NUM)
+        .filter_map(|d| g.plot_direction(x, y, DirectionType::from_usize(d)))
+        .find(|&q| g.plot_is_water(q) && g.map.plots[q].units.iter().any(|&t| our_transport(g, p, t)) && g.unit_can_move_into(u, q, false, false, false));
+    let Some(q) = next else { return false };
+    crate::trace!(g, p, "army {:?} ({} units) boards a ship at {:?} from {:?} ({})", grp, g.groups[grp].units.len(), g.map.xy(q), g.map.xy(here), why);
+    g.tel_decision(p, "supply", "pickup_board", why, 1, String::new);
+    move_to(g, grp, q, MOVE_IGNORE_DANGER);
+    if alive(g, grp) && g.group_ready_to_move(grp, true) {
+        skip(g, grp);
+    }
+    true
+}
+
+/// Where an army of ours on that landmass can board a ship: a coastal city of another team, on one
+/// of the seas our ports are on (`seas`), that the army may enter (open borders, a vassal or its
+/// master) and so may our ships (the rules' `plot_is_friendly_city` for a sea unit asks the same).
+/// (Not a coast plot: an AI's land unit cannot step onto a ship at sea, `board`.)
+fn pickup_point(g: &Game, u: UnitId, q: PlotIdx, seas: &[AreaId]) -> bool {
+    let Some(c) = g.map.plots[q].plot_city.filter(|&c| g.cities.contains(c)) else { return false };
+    let (cx, cy) = (g.cities[c].x, g.cities[c].y);
+    g.players[g.cities[c].owner].team != g.unit_get_team(u)
+        && (0..DirectionType::NUM).any(|d| g.plot_direction(cx, cy, DirectionType::from_usize(d)).is_some_and(|w| g.plot_is_water(w) && g.map.plots[w].area.is_some_and(|ar| seas.contains(&ar))))
+        && (q == g.unit_plot(u) || g.unit_can_move_into(u, q, false, false, false))
+}
+
+/// An army cut on a landmass without a city or settler of ours: board a ship of ours where it
+/// stands or beside it; else the last resort; else to the pickup point (`pickup_point`) nearest our
+/// nearest city, and wait there for a ship (module doc). True if its turn is over.
+fn stranded_overseas(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, a: ArmyId, here: PlotIdx, state: SupplyState) -> bool {
+    let p = v.p;
+    if board(g, grp, u, here, "cut") {
+        return true;
+    }
+    if starved_long(g, a) && !crate::naval::transport_coming(g, p, here) && disband(g, grp, a, "overseas") {
+        return true;
+    }
+    let (x, y) = g.map.xy(here);
+    let Some(home) = g.players[p].cities.iter().copied().min_by_key(|&c| (g.plot_distance(x, y, g.cities[c].x, g.cities[c].y), c)).map(|c| g.city_plot(c)) else { return false };
+    // The seas our ports are on.
+    let mut seas: Vec<AreaId> = Vec::new();
+    for &c in &g.players[p].cities {
+        if !crate::naval::is_coastal_city(g, c) {
+            continue;
+        }
+        let (cx, cy) = (g.cities[c].x, g.cities[c].y);
+        for d in 0..DirectionType::NUM {
+            if let Some(w) = g.plot_direction(cx, cy, DirectionType::from_usize(d)).filter(|&w| g.plot_is_water(w)) {
+                if let Some(ar) = g.map.plots[w].area.filter(|ar| !seas.contains(ar)) {
+                    seas.push(ar);
+                }
+            }
+        }
+    }
+    let reach = v.flood.run(g, u, 10, false);
+    let Some(dest) = reach.iter().filter(|r| pickup_point(g, u, r.plot, &seas)).min_by_key(|r| (dist(g, r.plot, home), r.turns, r.plot)).map(|r| r.plot) else {
+        crate::trace!(g, p, "army {:?} cut overseas at {:?}: no port it may enter in reach", grp, g.map.xy(here));
+        g.tel_decision(p, "supply", "stranded", "no_port", 1, String::new);
+        return false;
+    };
+    if dest == here {
+        let asked = g.groups[grp].ai_mission_ai_type == Some(MissionAIType::MISSIONAI_PICKUP) && g.group_ai_get_mission_ai_plot(grp) == Some(here);
+        if !asked {
+            crate::trace!(g, p, "army {:?} ({} units) waits for a ship at {:?}", grp, g.groups[grp].units.len(), g.map.xy(here));
+            g.tel_decision(p, "supply", "pickup_request", "overseas", 1, String::new);
+        }
+        // The request: the turn skipped as an army waiting for a ship on this plot.
+        g.group_push_mission(grp, MissionType::MISSION_SKIP, -1, -1, 0, false, false, Some(MissionAIType::MISSIONAI_PICKUP), Some(here), None);
+        return true;
+    }
+    let why = if state == SupplyState::Starvation { "starving" } else { "hungry" };
+    crate::trace!(g, p, "army {:?} ({} units, {}) cut overseas at {:?}: to the port at {:?}", grp, g.groups[grp].units.len(), why, g.map.xy(here), g.map.xy(dest));
+    g.tel_decision(p, "supply", "fall_back", "overseas", 1, String::new);
+    move_to(g, grp, dest, 0);
+    if alive(g, grp) && g.group_ready_to_move(grp, true) {
+        skip(g, grp);
+    }
+    true
+}
+
+/// The last resort: scrap the army's units in the group, but heroes (and units of a limited
+/// class) and those the rules will not scrap. True if any was scrapped.
+fn disband(g: &mut Game, grp: GroupId, a: ArmyId, why: &'static str) -> bool {
+    let p = g.armies[a].owner;
+    let here = g.group_plot(grp);
+    let mut n = 0;
+    for o in g.groups[grp].units.clone() {
+        if !g.units.contains(o) || g.units[o].army != Some(a) {
+            continue;
+        }
+        let info = &g.d.units[g.units[o].unit_type];
+        let hero = g.unit_is_hero(o)
+            || info.default_unit_ai_type == Some(UnitAIType::UNITAI_HERO)
+            || info.unit_class_type.is_some_and(|c| g.d.unit_classes[c].max_global_instances > 0 || g.d.unit_classes[c].max_player_instances > 0);
+        if hero || !g.unit_can_scrap(o) {
+            continue;
+        }
+        g.tel_decision(p, "supply", "disband_unit", why, 1, String::new);
+        g.unit_scrap(o);
+        n += 1;
+    }
+    if n > 0 {
+        crate::trace!(g, p, "army {:?} stranded ({}) at {:?}, starving {} turns: {} units disbanded", grp, why, here.map(|q| g.map.xy(q)), g.armies.get(a).map_or(0, |ar| ar.unsupplied_turns), n);
+        g.tel_decision(p, "supply", "disband_army", why, n, String::new);
+    }
+    n > 0
+}
+
 /// Telemetry only (reads, changes nothing): each of `p`'s armies' supply counter this turn
-/// (`supply_state`: `supplied`, or `cut_NN`, the counter, capped at 30), for the measures of
+/// (`supply_state`: `supplied`, or `cut_NN`, the counter, not capped: at most a label per turn of
+/// the game), for the measures of
 /// docs/SUPPLY.md ("Measures"): the episodes that reach `NN` turns are the count of `cut_NN`.
 pub fn turn(g: &Game, p: PlayerId) {
     if !g.telemetry.on() || g.player_is_barbarian(p) {
@@ -178,15 +383,21 @@ pub fn turn(g: &Game, p: PlayerId) {
             continue;
         }
         let n = g.armies[a].unsupplied_turns;
-        let choice = if n <= 0 { "supplied".to_string() } else { format!("cut_{:02}", n.min(30)) };
-        g.tel_decision(p, "supply_state", &choice, "", 1, String::new);
+        if n <= 0 {
+            g.tel_decision(p, "supply_state", "supplied", "", 1, String::new);
+        } else {
+            // (The army and its plot, for the events file: how many distinct armies were cut, and where.)
+            g.tel_decision(p, "supply_state", &format!("cut_{n:02}"), "", 1, || {
+                let (x, y) = g.army_plot(a).map_or((-1, -1), |q| g.map.xy(q));
+                format!("{{\"army\":{},\"x\":{x},\"y\":{y}}}", a.0)
+            });
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ffh_data::*;
 
     /// Player 0's city on (3, 5) and player 1's on (16, 5) of the testkit's landmass (x 2..=17),
     /// at war; nothing owns the plots between them and there is no road.
@@ -286,5 +497,192 @@ mod tests {
         // Hungry but standing where it has a line again: nothing (the counter resets next turn).
         g.armies[c].unsupplied_turns = 1;
         assert!(!fall_back(&mut g, &mut v, home, uh));
+    }
+
+    /// Player 0's coastal city on (2, 5) of the west landmass; its army of `n` Warriors on the east
+    /// landmass (no city of ours there), its line cut for `turns` turns.
+    fn overseas_game(turns: i32, n: usize) -> (Game, ArmyId, GroupId) {
+        let mut g = crate::testkit::two_landmass_game(4);
+        let p0 = PlayerId(0);
+        let c = g.player_init_city(p0, 2, 5, true, true);
+        assert!(crate::naval::is_coastal_city(&g, c));
+        g.players[p0].turn_active = true;
+        let (a, grp) = army(&mut g, 15, 5, n);
+        assert!(g.plot_supply_line(p0, g.map.plot_xy(15, 5).unwrap()).is_none());
+        g.armies[a].unsupplied_turns = turns;
+        (g, a, grp)
+    }
+
+    fn analyzed(g: &Game) -> View {
+        let mut v = View::new(g, PlayerId(0));
+        v.analyze(g);
+        v
+    }
+
+    /// A Galleon of player 0 (room for land units) on water plot (x, y).
+    fn ship(g: &mut Game, x: i32, y: i32) -> (UnitId, GroupId) {
+        let t = g.d.t::<UnitType>("UNIT_GALLEON");
+        assert!(g.d.units[t].cargo_space >= 2);
+        let s = g.player_init_unit(PlayerId(0), t, x, y, Some(UnitAIType::UNITAI_SETTLER_SEA), None);
+        (s, g.units[s].group.unwrap())
+    }
+
+    /// Player 1's coastal city on (11, 5) of the east landmass, open borders both ways.
+    fn friendly_port(g: &mut Game) -> PlotIdx {
+        let (p0, p1) = (PlayerId(0), PlayerId(1));
+        let c = g.player_init_city(p1, 11, 5, true, true);
+        let (t0, t1) = (g.players[p0].team, g.players[p1].team);
+        g.team_meet(t0, t1, false);
+        g.team_set_open_borders(t0, t1, true);
+        g.team_set_open_borders(t1, t0, true);
+        g.city_plot(c)
+    }
+
+    fn set_army_xy(g: &mut Game, grp: GroupId, x: i32, y: i32) -> GroupId {
+        let u = g.groups[grp].units[0];
+        for o in g.groups[grp].units.clone() {
+            g.unit_set_xy(o, x, y, true);
+        }
+        g.units[u].group.unwrap()
+    }
+
+    /// Stranded overseas: a cut army walks to the port it may enter nearest our city and asks for
+    /// a ship there; an empty transport sails for it and waits in the port; the army boards it.
+    #[test]
+    fn an_army_cut_overseas_waits_in_a_port_and_boards_a_ship() {
+        let (mut g, _a, grp) = overseas_game(3, 2);
+        let p0 = PlayerId(0);
+        let port = friendly_port(&mut g);
+        let u = g.groups[grp].units[0];
+        let mut v = analyzed(&g);
+        assert!(fall_back(&mut g, &mut v, grp, u), "it heads for the port");
+        assert!(g.map.xy(g.unit_plot(u)).0 < 15, "west, toward the port: now at {:?}", g.map.xy(g.unit_plot(u)));
+        assert!(crate::naval::armies_waiting(&g, p0).is_empty(), "not there yet");
+        // In the port, it waits for a ship.
+        let grp = set_army_xy(&mut g, grp, 11, 5);
+        let mut v = analyzed(&g);
+        assert!(fall_back(&mut g, &mut v, grp, u));
+        assert_eq!(g.unit_plot(u), port, "it stays in the port");
+        assert_eq!(crate::naval::armies_waiting(&g, p0), vec![port], "the request");
+        // An empty transport at (1, 5), off our city, sails for it.
+        let (t, tg) = ship(&mut g, 1, 5);
+        assert!(!crate::naval::transport_coming(&g, p0, port));
+        let mut v = analyzed(&g);
+        let here = g.unit_plot(t);
+        assert!(crate::naval::pickup(&mut g, &mut v, tg, t, here));
+        assert!(crate::naval::transport_coming(&g, p0, port), "on its way");
+        // In the port: it waits there, and the army boards it.
+        let tg = set_army_xy(&mut g, tg, 11, 5);
+        let mut v = analyzed(&g);
+        assert!(crate::naval::pickup(&mut g, &mut v, tg, t, port), "it waits in the port");
+        assert!(fall_back(&mut g, &mut v, grp, u), "it boards");
+        assert!(g.groups[grp].units.iter().all(|&o| g.unit_is_cargo(o)), "all aboard");
+    }
+
+    /// No port it may enter on that landmass (an AI's land unit cannot step aboard at sea): the
+    /// army asks for nothing, and an empty transport is not sent.
+    #[test]
+    fn an_army_overseas_with_no_port_asks_for_no_ship() {
+        let (mut g, _a, grp) = overseas_game(3, 2);
+        let u = g.groups[grp].units[0];
+        let mut v = analyzed(&g);
+        assert!(!fall_back(&mut g, &mut v, grp, u));
+        assert!(crate::naval::armies_waiting(&g, PlayerId(0)).is_empty());
+        // A ship beside it: the rules do not let an AI's land unit step aboard at sea.
+        let grp = set_army_xy(&mut g, grp, 11, 4);
+        ship(&mut g, 10, 4);
+        assert!(!g.unit_can_move_into(u, g.map.plot_xy(10, 4).unwrap(), false, false, false));
+        let mut v = analyzed(&g);
+        assert!(!fall_back(&mut g, &mut v, grp, u));
+        assert!(!g.unit_is_cargo(u));
+    }
+
+    /// A supplied army overseas with nothing to fight there boards the ship in the port it stands
+    /// in; with an enemy city at war on that landmass it does not.
+    #[test]
+    fn an_idle_army_overseas_boards_the_ship_in_its_port() {
+        let (mut g, a, grp) = overseas_game(0, 2);
+        friendly_port(&mut g);
+        let u = g.groups[grp].units[0];
+        let grp = set_army_xy(&mut g, grp, 11, 5);
+        ship(&mut g, 11, 5);
+        assert_eq!(g.armies[a].unsupplied_turns, 0);
+        // At war with a city on that landmass: it stays.
+        let barbarian = g.barbarian_player();
+        let theirs = g.player_init_city(barbarian, 16, 5, true, true);
+        let mut v = analyzed(&g);
+        assert!(!fall_back(&mut g, &mut v, grp, u), "a war target there");
+        assert!(!g.unit_is_cargo(u));
+        g.city_kill(theirs, true);
+        let mut v = analyzed(&g);
+        assert!(fall_back(&mut g, &mut v, grp, u), "nothing left there: it boards");
+        assert!(g.unit_is_cargo(u));
+    }
+
+    fn gone(g: &Game, o: UnitId) -> bool {
+        !g.units.contains(o) || g.units[o].death_delay
+    }
+
+    /// The last resort: starving for `STRANDED_TURNS` turns, overseas with no transport coming, the
+    /// army is disbanded; one turn less, or with a transport on its way, it is not.
+    #[test]
+    fn an_army_stranded_overseas_is_disbanded_as_the_last_resort() {
+        let hunger = ffh_data::global().defines.supply_hunger_turns;
+        let (mut g, a, grp) = overseas_game(hunger + STRANDED_TURNS - 1, 2);
+        let units = g.groups[grp].units.clone();
+        let u = units[0];
+        let port = friendly_port(&mut g);
+        let mut v = analyzed(&g);
+        assert!(fall_back(&mut g, &mut v, grp, u));
+        assert!(units.iter().all(|&o| !gone(&g, o)), "one turn short: kept");
+        // A transport on its way to the port it waits in: kept.
+        let grp = set_army_xy(&mut g, grp, 11, 5);
+        let shore = port;
+        g.group_push_mission(grp, MissionType::MISSION_SKIP, -1, -1, 0, false, false, Some(MissionAIType::MISSIONAI_PICKUP), Some(shore), None);
+        let (_, tg) = ship(&mut g, 1, 5);
+        g.group_push_mission(tg, MissionType::MISSION_SKIP, -1, -1, 0, false, false, Some(MissionAIType::MISSIONAI_PICKUP), Some(shore), None);
+        g.armies[a].unsupplied_turns = hunger + STRANDED_TURNS;
+        let mut v = analyzed(&g);
+        assert!(fall_back(&mut g, &mut v, grp, u));
+        assert!(units.iter().all(|&o| !gone(&g, o)), "a ship is coming: kept");
+        // No ship coming: disbanded.
+        g.group_push_mission(tg, MissionType::MISSION_SKIP, -1, -1, 0, false, false, None, None, None);
+        let mut v = analyzed(&g);
+        assert!(fall_back(&mut g, &mut v, grp, u));
+        assert!(units.iter().all(|&o| gone(&g, o)), "disbanded");
+        // With no port at all, the same.
+        let (mut g, _, grp) = overseas_game(hunger + STRANDED_TURNS, 2);
+        let units = g.groups[grp].units.clone();
+        let mut v = analyzed(&g);
+        assert!(fall_back(&mut g, &mut v, grp, units[0]));
+        assert!(units.iter().all(|&o| gone(&g, o)), "disbanded, no port");
+    }
+
+    /// The last resort on its own landmass: starving long with no path over land to a city of ours
+    /// (a wall of peaks between), the army is disbanded.
+    #[test]
+    fn an_army_with_no_way_home_over_land_is_disbanded() {
+        let (mut g, _ours, _theirs) = war_game();
+        let peak = PlotType::PLOT_PEAK;
+        for y in 3..=8 {
+            let q = g.map.plot_xy(9, y).unwrap();
+            g.plot_set_plot_type(q, peak, false);
+        }
+        g.map_recalculate_areas();
+        g.update_plot_groups();
+        g.players[PlayerId(0)].turn_active = true;
+        let (a, grp) = army(&mut g, 12, 5, 2);
+        let units = g.groups[grp].units.clone();
+        assert!(g.plot_supply_line(PlayerId(0), g.unit_plot(units[0])).is_none());
+        let hunger = g.d.defines.supply_hunger_turns;
+        g.armies[a].unsupplied_turns = hunger + STRANDED_TURNS - 1;
+        let mut v = analyzed(&g);
+        fall_back(&mut g, &mut v, grp, units[0]);
+        assert!(units.iter().all(|&o| !gone(&g, o)), "one turn short: kept");
+        let grp = g.units[units[0]].group.unwrap();
+        g.armies[a].unsupplied_turns = hunger + STRANDED_TURNS;
+        let mut v = analyzed(&g);
+        assert!(fall_back(&mut g, &mut v, grp, units[0]));
+        assert!(units.iter().all(|&o| gone(&g, o)), "disbanded");
     }
 }

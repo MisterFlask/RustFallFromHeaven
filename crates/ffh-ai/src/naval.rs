@@ -294,6 +294,94 @@ pub fn settler_overseas(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: Un
 }
 
 // ----------------------------------------------------------------------------
+// Armies stranded overseas (docs/SUPPLY.md, "Second pass", B; the army's side: `supply.rs`)
+// ----------------------------------------------------------------------------
+
+/// The plots where armies of ours wait in a port for a ship (their group's mission AI
+/// `MISSIONAI_PICKUP` on the plot they stand on, while their line is cut).
+pub(crate) fn armies_waiting(g: &Game, p: PlayerId) -> Vec<PlotIdx> {
+    let mut out: Vec<PlotIdx> = Vec::new();
+    for &grp in &g.players[p].groups {
+        if !g.groups.contains(grp) || g.groups[grp].ai_mission_ai_type != Some(MissionAIType::MISSIONAI_PICKUP) {
+            continue;
+        }
+        let Some(head) = g.group_get_head_unit(grp) else { continue };
+        if g.unit_get_domain_type(head) != DomainType::DOMAIN_LAND || g.unit_is_cargo(head) {
+            continue;
+        }
+        let here = g.unit_plot(head);
+        if g.group_ai_get_mission_ai_plot(grp) != Some(here) || !crate::supply::cut(g, grp) || out.contains(&here) {
+            continue;
+        }
+        out.push(here);
+    }
+    out
+}
+
+/// A transport of ours on its way to (or waiting beside) an army on `q`, other than `except`.
+fn pickup_by(g: &Game, p: PlayerId, q: PlotIdx, except: Option<GroupId>) -> bool {
+    g.players[p].groups.iter().any(|&grp| {
+        Some(grp) != except
+            && g.groups.contains(grp)
+            && g.groups[grp].ai_mission_ai_type == Some(MissionAIType::MISSIONAI_PICKUP)
+            && g.group_ai_get_mission_ai_plot(grp) == Some(q)
+            && g.group_get_head_unit(grp).is_some_and(|h| g.unit_get_domain_type(h) == DomainType::DOMAIN_SEA)
+    })
+}
+
+/// Is a transport of ours on its way to the army waiting on `q`?
+pub(crate) fn transport_coming(g: &Game, p: PlayerId, q: PlotIdx) -> bool {
+    pickup_by(g, p, q, None)
+}
+
+fn push_pickup(g: &mut Game, grp: GroupId, mission: MissionType, to: PlotIdx, army: PlotIdx) {
+    let (x, y) = if mission == MissionType::MISSION_MOVE_TO { g.map.xy(to) } else { (-1, -1) };
+    g.group_push_mission(grp, mission, x, y, 0, false, false, Some(MissionAIType::MISSIONAI_PICKUP), Some(army), None);
+}
+
+/// An empty transport and our stranded armies (`supply.rs`): it waits where an army of ours waits
+/// for a ship (in a port of another team that both may enter), or beside an army of ours that has
+/// nothing left to fight on its landmass and may step aboard (`supply::stranded_at`; the rules let
+/// only a human's land units step onto a ship at sea, so for the AI this is the transport that
+/// carried it ashore waiting beside it only where the rules allow); else it sails to the waiting army
+/// it reaches soonest that no other transport of ours is on its way to. True if it took one of
+/// these orders.
+pub(crate) fn pickup(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, here: PlotIdx) -> bool {
+    let p = v.p;
+    if !crate::switches::SUPPLY.on(g, p) {
+        return false;
+    }
+    let waiting = armies_waiting(g, p);
+    let (x, y) = g.map.xy(here);
+    let beside = (waiting.contains(&here) && !pickup_by(g, p, here, Some(grp))).then_some(here).or_else(|| {
+        if !g.plot_is_water(here) {
+            return None;
+        }
+        (0..DirectionType::NUM).filter_map(|d| g.plot_direction(x, y, DirectionType::from_usize(d))).find(|&q| {
+            crate::supply::stranded_at(g, v, q) && g.map.plots[q].units.iter().any(|&o| g.units[o].owner == p && g.units[o].army.is_some() && g.unit_can_move_into(o, here, false, false, false))
+        })
+    });
+    if let Some(q) = beside {
+        crate::trace!(g, p, "transport {:?} at {:?} waits for the army on {:?}", u, g.map.xy(here), g.map.xy(q));
+        push_pickup(g, grp, MissionType::MISSION_SKIP, here, q);
+        return true;
+    }
+    let open: Vec<PlotIdx> = waiting.into_iter().filter(|&q| !pickup_by(g, p, q, Some(grp))).collect();
+    if open.is_empty() {
+        return false;
+    }
+    let reach = v.flood.run(g, u, 25, false);
+    let Some(r) = reach.iter().filter(|r| open.contains(&r.plot)).min_by_key(|r| (r.turns, r.plot)).copied() else { return false };
+    crate::trace!(g, p, "transport {:?} sails from {:?} for the army waiting at {:?}", u, g.map.xy(here), g.map.xy(r.plot));
+    g.tel_decision(p, "supply", "pickup_sail", "overseas", 1, String::new);
+    push_pickup(g, grp, MissionType::MISSION_MOVE_TO, r.plot, r.plot);
+    if alive(g, grp) && g.group_ready_to_move(grp, false) {
+        push_pickup(g, grp, MissionType::MISSION_SKIP, r.plot, r.plot);
+    }
+    true
+}
+
+// ----------------------------------------------------------------------------
 // Amphibious invasion: army side (one decision, from `military::army`)
 // ----------------------------------------------------------------------------
 
@@ -700,6 +788,10 @@ pub fn transport(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
         }
     }
     if cargo.is_empty() {
+        // An army of ours stranded overseas (docs/SUPPLY.md, "Second pass", B): first.
+        if pickup(g, v, grp, u, here) {
+            return;
+        }
         // An assault is on: wait in the staging port for the army to board (it boards the ship
         // itself, like a settler and its escort).
         if let Some(amph) = v.amphibious.clone() {

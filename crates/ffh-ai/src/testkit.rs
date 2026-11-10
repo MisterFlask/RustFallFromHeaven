@@ -57,3 +57,18 @@ pub(crate) fn one_landmass_game_with(seed: u32, civs: &[&str]) -> Game {
     g.update_plot_groups();
     g
 }
+
+/// [`one_landmass_game`] with the column x = 10 turned to coast: two landmasses, x 2..=9 and
+/// x 11..=17 (y 3..=8), in one sea.
+pub(crate) fn two_landmass_game(seed: u32) -> Game {
+    let mut g = one_landmass_game(seed);
+    let coast = g.d.t::<TerrainType>("TERRAIN_COAST");
+    for y in 3..=8 {
+        let p = g.map.plot_xy(10, y).unwrap();
+        g.plot_set_plot_type(p, PlotType::PLOT_OCEAN, false);
+        g.plot_set_terrain_type(p, coast, false);
+    }
+    g.map_recalculate_areas();
+    g.update_plot_groups();
+    g
+}

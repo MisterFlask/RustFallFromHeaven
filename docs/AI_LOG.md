@@ -32,6 +32,25 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Supply lines (2026-11-10)
+
+### The AI cuts an invader's line (`SUPPLY_CUT`, removed; the last commit with the code: `f5558d91`)
+
+1. An expert facing an invading army puts a unit on its road (docs/SUPPLY.md, "Second pass", C):
+   each turn, for at most two enemy armies we see within 6 plots of our cities, a plot of their
+   known line whose closing leaves them none (a local search over the 7x7 plots around it); a
+   spare of a garrison that reaches it within two turns goes there and fortifies.
+2. It never fired on seeds 1-8 (each game identical with the switch off and on). Over seeds 1-32
+   it sent 12 units in 7 games (all after turn 190), cut the line 3 times, lost 2 units, and changed
+   nothing measurable (hungry 130 / 132 army-turns, starving 389 / 389, captures from civs 298 /
+   296). The local bypass test mispredicted 9 of its 12 cuts (the rules' search found a way round,
+   or another source). The lines of enemy armies near our cities are short and cheap: median 4
+   plots, 94% with a slack of 10 or more of the budget of 24, so any plot of them has a way around.
+3. One unit cannot cut such lines; a line is cut by one plot only at a choke point or near the
+   budget. Not kept (2026-11-10, the designer's decision). A later attempt needs both a tighter
+   budget (or lines that run long) and an exact test (the known search taking hypothetical
+   blockers), not a better local test.
+
 ## Magic civilizations (2026-10-28)
 
 The kept versions are in docs/AI.md, "Spellcasting", "Magic civilizations". Numbers are full games

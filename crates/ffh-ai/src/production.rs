@@ -648,6 +648,12 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
                 return Some((Choice::Train(u, UnitAIType::UNITAI_SETTLER_SEA), "settler_ship"));
             }
         }
+        // And for an army of ours waiting on a coast overseas (docs/SUPPLY.md, "Second pass", B).
+        if crate::naval::num_transports(g, p) == 0 && !crate::naval::armies_waiting(g, p).is_empty() {
+            if let Some(u) = best_unit(g, c, Role::Transport) {
+                return Some((Choice::Train(u, UnitAIType::UNITAI_SETTLER_SEA), "army_ship"));
+            }
+        }
         if count_ai(g, p, UnitAIType::UNITAI_EXPLORE_SEA) == 0
             && crate::naval::home_is_full(g, p)
             && sites::overseas_sites(ai, g, p).is_empty()

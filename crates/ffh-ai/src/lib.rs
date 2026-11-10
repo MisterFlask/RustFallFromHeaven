@@ -60,7 +60,6 @@ pub mod research;
 pub mod research_path;
 pub mod sites;
 pub mod supply;
-pub mod supply_cut;
 pub mod switches;
 pub mod tactics;
 pub mod tech_plan;
@@ -192,7 +191,6 @@ impl Controller for Ai {
         if !v.barbarian {
             campaign::plan(g, &mut v);
             casting::barrage(g, &v);
-            supply_cut::turn(g, &mut v); // a unit on an invader's supply line (docs/SUPPLY.md, "Second pass", C)
         }
         units::play(self, g, &mut v);
         if !v.barbarian {

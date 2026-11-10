@@ -1616,28 +1616,25 @@ where it has a line. A plot of our own territory counts as supplied without a se
 the start of each turn (`units::play` clears its multi-turn order). Cost: at most one path search
 and one line search per gated move, one line search and up to three path searches per cut army a
 turn; the line is never searched per candidate plot. Not gated: crusade Hosts (`crusade.rs`), amphibious landings (`naval.rs`), the
-Raiders' raids (`traits.rs`), escorts and moves to defend our cities. Switch `SUPPLY`
-(`FFH_AI_SUPPLY_OFF`). Telemetry: `supply_state` (army-turns `supplied` or `cut_NN`, the counter),
-`supply` (`move_refused`, `fall_back`, `hungry_goes_on`). Measures: docs/SUPPLY.md, "Measures".
+Raiders' raids (`traits.rs`), escorts and moves to defend our cities. **Stranded overseas**
+(docs/SUPPLY.md, "Second pass", B): an army cut on a landmass without a city or settler of ours
+walks to the coastal city it may enter (another team's: open borders, a vassal or its master)
+nearest our nearest city and waits there for a ship (`MISSIONAI_PICKUP` on its plot; not on a coast
+plot, because the rules let only a human's land unit step onto a ship at sea); `naval::pickup`
+sends the empty transport that reaches it soonest (one per army, before the assault's staging port
+and settlers), which waits there while the army boards and carries it home; a port builds a
+transport when we have none (`army_ship`). With nothing left to fight on that landmass, an army
+boards a ship of ours on its plot even while the ship supplies it. **The last resort**: an army
+starving for `STRANDED_TURNS` (10) turns in a row with no path over land to a city of ours, or
+overseas with no transport on its way, is scrapped unit by unit (heroes, limited classes and units
+that cannot be scrapped stay). Switch `SUPPLY` (`FFH_AI_SUPPLY_OFF`). Telemetry: `supply_state`
+(army-turns `supplied` or `cut_NN`, the counter, not capped), `supply` (`move_refused`,
+`fall_back` (why `hungry`, `starving`, `overseas`), `hungry_goes_on`, `pickup_request`,
+`pickup_sail`, `pickup_board` (`cut`, `idle`), `stranded` (`no_port`), `disband_unit`,
+`disband_army` (`land`, `overseas`)). Measures: docs/SUPPLY.md, "Measures".
 
-**Cutting an invader's line** (`supply_cut.rs`, docs/SUPPLY.md "Second pass", C): each turn, for
-at most two enemy armies at war with us that we see within 6 plots of our cities (those already
-watched first, then the nearest), their known line (`plot_supply_line_known`, our team as viewer);
-a candidate cut plot is one of its plots (from the source end, at most six tested; not next to the
-army, not a city) that a local search over the 7x7 plots around it finds no way around within the
-budget, over the plots as we know them. A spare of a garrison (the city keeps three fighters
-without it; recon and mounted first) that reaches a candidate within two turns, where the danger
-map is within its defence, goes there and fortifies; once there, the known search itself says
-whether the line is gone, and a unit whose plot is no cut moves on once to a candidate of the bent
-line. The job is the group's mission AI (`MISSIONAI_GUARD_TRADE_NET`, then `_GUARD_BONUS`; saved),
-which `units::play` leaves alone; it ends, and the unit goes home, when the army leaves the 6
-plots, our sight or the war. Cost: at most two known-line searches a turn, six local searches and
-six two-turn floods per army. Switch `SUPPLY_CUT` (`FFH_AI_SUPPLY_CUT_OFF`); telemetry
-`supply_cut` (`fired`, `arrived`, `not_cut`, `hungry`, `holding`, `home`, `no_plot`, `no_unit`).
-Measured: it rarely fires (never in seeds 1-8; 12 units in 7 of 32 games) and rarely works (the
-line gone on arrival 3 times in 12; the army hungry within 3 turns once): the lines near our cities
-are short with a large slack. An exact test would need hypothetical blockers in the rules' known
-search (docs/SUPPLY.md).
+Cutting an invader's line was built and measured, and not kept (2026-11-10; docs/SUPPLY.md,
+"Second pass", C; docs/AI_LOG.md; the last commit with the code: `f5558d91`).
 
 ## Governors (`governor.rs`)
 
