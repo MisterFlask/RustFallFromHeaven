@@ -146,7 +146,6 @@ Once a turn (`ffh-ai/src/culture.rs`), after the diplomacy and the governors:
   - A new one must be worth a quarter more than its cost.
   - A religion channel moves only for one better by half its cost.
 - **Governed cities** channel as the civilization decides, like directly ruled ones. A human's governors set no channel; they only train defenders against revolt pressure.
-- **Switch `FFH_AI_CULTURE_OFF`:** nothing is channelled.
 
 Measured on 8 civs, a standard map and 350 turns, with `GAMEOPTION_CULTURE_ACTIONS`, `GAMEOPTION_ARMIES` and `GAMEOPTION_GOVERNORS`, seeds 1–4:
 

@@ -133,29 +133,19 @@ pub(crate) fn fighters_off_worker_ai(g: &mut Game, p: PlayerId) {
 pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
     let p = v.p;
     fighters_off_worker_ai(g, p);
-    // Summons on their last turn attack before anything else moves (SUMMON_SPEND).
+    // Summons on their last turn attack before anything else moves.
     crate::casting::spend_expiring(g, v);
-    // Promotions and upgrades: every unit (switch `PROMOTE_ALL`; C++ `AI_doTurnUnitsPost`
-    // promotes every unit), else the units that will not get orders this turn (fortified
-    // garrisons, sentries) and the casters marching in stacks; a group's head gets its own again
-    // before it acts.
-    let all = crate::switches::PROMOTE_ALL.on(g, p);
-    if all || !v.barbarian {
-        for u in g.players[p].units.clone() {
-            // (A marching recruit takes no orders, promotions and upgrades included, until it
-            // arrives: docs/ARMIES.md.)
-            if !g.units.contains(u) || g.unit_march(u).is_some() {
-                continue;
-            }
-            let Some(grp) = g.units[u].group else { continue };
-            // A caster marching in a stack never heads it, and never splits off to attack: its
-            // promotions (the next spheres) come here (CASTER_STACKS).
-            let stack_caster = !v.barbarian && g.group_get_head_unit(grp) != Some(u) && crate::magic::spared_caster(g, u);
-            if !all && g.group_ready_to_move(grp, false) && !stack_caster {
-                continue;
-            }
-            upkeep(g, u);
+    // Promotions and upgrades: every unit (C++ `AI_doTurnUnitsPost` promotes every unit), not
+    // only a group's head before it acts and units that do not move (a unit inside a marching
+    // stack, a caster marching with one, would wait for its promotions); a group's head gets its
+    // own again before it acts.
+    for u in g.players[p].units.clone() {
+        // (A marching recruit takes no orders, promotions and upgrades included, until it
+        // arrives: docs/ARMIES.md.)
+        if !g.units.contains(u) || g.unit_march(u).is_some() || g.units[u].group.is_none() {
+            continue;
         }
+        upkeep(g, u);
     }
     if !v.barbarian {
         crate::magic::split_caster_heads(g, p);
@@ -222,7 +212,7 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             continue;
         }
         // A stack whose fighters a strike took out is no army: its casters take their own
-        // orders (CASTER_STACKS).
+        // orders.
         if role == Role::Army && !v.barbarian && crate::magic::spared_caster(g, head) {
             for (c, ng) in crate::magic::leave_stack(g, v, grp) {
                 if alive(g, ng) && g.units.contains(c) && g.group_ready_to_move(ng, false) {
@@ -233,7 +223,7 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
         }
         if !v.barbarian && crate::civs::unit(ai, g, v, grp, head) { continue; } // civ-mechanics
         if !v.barbarian && crate::cards_economy::unit(g, v, grp, head) { continue; } // the cards (docs/CARDS.md)
-        // Govannon teaches (TEACH_SPELLS).
+        // Govannon teaches (`casters::govannon`).
         if !v.barbarian && crate::casters::govannon(g, v, grp, head) {
             continue;
         }
@@ -866,13 +856,10 @@ fn great_person_build(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bo
     true
 }
 
-/// The religion player `p` spreads abroad (`MISSIONARY_ABROAD`): its state religion, once the
+/// The religion player `p` spreads abroad: its state religion, once the
 /// religion's holy city is ours and has its shrine (a gold a turn for every city in the world with
 /// the religion; MNAI's missionary strategy also wants the holy city).
 pub(crate) fn abroad_religion(g: &Game, p: PlayerId) -> Option<ReligionType> {
-    if !crate::switches::MISSIONARY_ABROAD.on(g, p) {
-        return None;
-    }
     let r = g.player_get_state_religion(p)?;
     g.team_has_shrine(g.players[p].team, Some(r)).then_some(r)
 }
@@ -960,18 +947,17 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let p = v.p;
     let here = g.unit_plot(u);
     if crate::victory::mana_node(g, v, grp, u) { return; } // victory-pursuit
-    // Caster roles (casters.rs) and mana nodes (MANA_NODES).
+    // Caster roles (casters.rs) and mana nodes (mana.rs).
     if crate::casters::play(g, v, grp, u) {
         return;
     }
     if crate::magic::enabled(g, p) {
         crate::campaign::plan(g, v);
-        let school = crate::magic::school(g, p);
         let target = crate::magic::caster_target(g, v, u);
         if let Some((q, why)) = target {
             crate::trace!(g, p, "caster {} at {:?} -> {:?} ({})", g.d.units[g.units[u].unit_type].base.type_, g.map.xy(here), g.map.xy(q), why);
             // A caster on its way to an operation joins a stack of it where it stands, before or
-            // after its step, and marches with it from then on (CASTER_STACKS).
+            // after its step, and marches with it from then on.
             let to_stack = matches!(why, "strike" | "rally");
             let join = |g: &mut Game, v: &View, grp: GroupId| {
                 let Some(stack) = crate::magic::stack_to_join(g, v, u) else { return false };
@@ -983,8 +969,7 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
             }
             // A school caster crosses dangerous ground only beside our units (magic.rs, "The
             // caster school"); with nowhere safe to step, it goes to study.
-            let step = if school { crate::magic::safe_step(g, v, u, q) } else { Some(q) };
-            if let Some(s) = step {
+            if let Some(s) = crate::magic::safe_step(g, v, u, q) {
                 if s != here {
                     move_to(g, grp, s, 0);
                 }
@@ -997,7 +982,7 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
                 return;
             }
         }
-        if school && (target.is_some() || crate::magic::apprentice(g, u)) {
+        if target.is_some() || crate::magic::apprentice(g, u) {
             if let Some(c) = crate::magic::study_city(g, v, u) {
                 crate::trace!(g, p, "caster {} at {:?} -> {:?} (study)", g.d.units[g.units[u].unit_type].base.type_, g.map.xy(here), g.map.xy(c));
                 match crate::magic::safe_step(g, v, u, c) {
@@ -1036,7 +1021,7 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
             crate::trace!(g, p, "caster {} at {:?} -> {:?} (most threatened city)", g.d.units[g.units[u].unit_type].base.type_, g.map.xy(here), g.map.xy(g.city_plot(c)));
             // A school caster gets there from one sheltered plot to the next (a Mage an operation
             // left at the front walked home across open ground).
-            let step = if crate::magic::school(g, p) { crate::magic::safe_step(g, v, u, g.city_plot(c)) } else { None };
+            let step = if crate::magic::enabled(g, p) { crate::magic::safe_step(g, v, u, g.city_plot(c)) } else { None };
             match step {
                 Some(s) if s != here => move_to(g, grp, s, 0),
                 Some(_) => {}

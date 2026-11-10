@@ -72,9 +72,9 @@ const RESOURCE_UNSEEN_PCT: i64 = 80;
 const RESOURCE_NONE_PCT: i64 = 60;
 const RESOURCE_REACH: i32 = 3;
 
-/// Commits `p` to a research path when it has none (`switches::RESEARCH_PATH`).
+/// Commits `p` to a research path when it has none.
 pub fn turn(g: &mut Game, p: PlayerId) {
-    if g.players[p].research_path.is_some() || g.players[p].cities.is_empty() || !crate::switches::RESEARCH_PATH.on(g, p) {
+    if g.players[p].research_path.is_some() || g.players[p].cities.is_empty() {
         return;
     }
     let scored = scores(g, p);
@@ -134,7 +134,7 @@ pub fn scores(g: &Game, p: PlayerId) -> Vec<(ResearchPathType, i64)> {
             Some(_) => SECOND_PATH_PCT,
             None => 100,
         };
-        let resource = if crate::switches::PATH_RESOURCES.on(g, p) { resource_pct(g, p, path) } else { 100 };
+        let resource = resource_pct(g, p, path);
         let score = saved * (100 + interest_pct) / 100 * own_pct / 100 * resource / 100;
         out.push((path, score));
     }

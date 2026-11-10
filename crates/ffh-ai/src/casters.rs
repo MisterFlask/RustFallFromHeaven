@@ -1,6 +1,6 @@
 //! The caster corps (round 7a; More Naval AI's adept roles, `CvUnitAI::AI_update` and
-//! `CvCityAI::AI_chooseProduction`), its mana-node builder (`MANA_NODES`, `mana.rs`), and
-//! Govannon's Teach Spellcasting (`TEACH_SPELLS`).
+//! `CvCityAI::AI_chooseProduction`), its mana-node builder (`mana.rs`), and
+//! Govannon's Teach Spellcasting.
 //!
 //! **Roles.** Each caster of ours (an adept or better, not a hero: `mana::is_caster`) has a role,
 //! kept in its unit AI type, so it survives saves and needs no state of its own:
@@ -83,9 +83,9 @@ fn count_role(g: &Game, p: PlayerId, role: UnitAIType, except: UnitId) -> i32 {
     g.players[p].units.iter().filter(|&&o| o != except && g.units[o].ai_type == Some(role) && crate::mana::is_caster(g, o)).count() as i32
 }
 
-/// Is there node work for a builder (`MANA_NODES` on, a node worth a trip)?
+/// Is there node work for a builder (a node worth a trip)?
 fn node_work(g: &Game, p: PlayerId) -> bool {
-    crate::switches::MANA_NODES.on(g, p) && crate::mana::jobs(g, p).iter().any(|&(_, _, v)| v >= crate::mana::MIN_NODE_VALUE)
+    crate::mana::jobs(g, p).iter().any(|&(_, _, v)| v >= crate::mana::MIN_NODE_VALUE)
 }
 
 /// The role caster `u` takes this turn (see the module doc).
@@ -236,7 +236,7 @@ pub fn production(g: &Game, c: CityId, at_war: bool, attackers: i32) -> Option<c
 /// scale: Combat I is about 40).
 const MIN_TEACH: i32 = 40;
 
-/// Govannon (`TEACH_SPELLS`; More Naval AI's `AI_Govannonmove`): Teach Spellcasting gives every
+/// Govannon (More Naval AI's `AI_Govannonmove`): Teach Spellcasting gives every
 /// unit of ours on his plot his first-level spheres and Channeling I, so he casts it where it
 /// teaches most -- here if that is worth it, else at the stack or city of ours worth most for the
 /// turns it takes him (within 10, on our land, no enemy in sight there). FfH's own value for the
@@ -249,7 +249,7 @@ pub fn govannon(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
     let Some((teach, class)) = *TEACH.get_or_init(|| d.ty::<SpellType>("SPELL_TEACH_SPELLCASTING").and_then(|s| d.spells[s].unit_class_prereq.map(|cl| (s, cl)))) else {
         return false;
     };
-    if class != g.unit_get_unit_class_type(u) || !crate::switches::TEACH_SPELLS.on(g, p) {
+    if class != g.unit_get_unit_class_type(u) {
         return false;
     }
     let here = g.unit_plot(u);

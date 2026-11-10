@@ -8,9 +8,7 @@
 //! [`building_value`] values it on the generic scale (one hammer a turn is worth 150).
 //!
 //! An entry describes the rules' code, not a judgement of the building: when the code changes,
-//! change its entry. The switch `CODE_EFFECTS` (`FFH_AI_CODE_EFFECTS_OFF` / `_ONLY`, per
-//! civilization) leaves the table out but for the Warrens, which the Clan of Embers' module valued
-//! before the table took them. Not covered:
+//! change its entry. Not covered:
 //! the Asylum (10% Crazed: an Enraged unit, +20% attack and -20% defense, fights on its own; a
 //! wash), buildings that only open a spell (Arena, Demon's Altar sacrifice, Drown: the spell's
 //! logic decides when they are worth it), the Dwarven Vaults (set by the rules, never built: the
@@ -115,12 +113,11 @@ const UNIT_LIFE: i32 = 50;
 /// experience: Combat I is +10% strength, Defensive or Fire II more for the unit it suits).
 const PROMOTION_WORTH: i32 = 15;
 
-/// The table by building type (most have no effects), and the two buildings named in the hot
+/// The table by building type (most have no effects), and the Planar Gate, named in the hot
 /// path. Built once from the game data.
 struct ByType {
     effects: IdxVec<BuildingType, Vec<Effect>>,
     gate: Option<BuildingType>,
-    warrens: Option<BuildingType>,
 }
 
 fn by_type(d: &GameData) -> &'static ByType {
@@ -136,7 +133,7 @@ fn by_type(d: &GameData) -> &'static ByType {
                 }
             }
         }
-        ByType { effects, gate: d.ty::<BuildingType>("BUILDING_PLANAR_GATE"), warrens: d.ty::<BuildingType>("BUILDING_WARRENS") }
+        ByType { effects, gate: d.ty::<BuildingType>("BUILDING_PLANAR_GATE") }
     })
 }
 
@@ -147,11 +144,6 @@ pub fn building_value(g: &Game, c: CityId, b: BuildingType, threat: i32) -> i32 
     let t = by_type(g.d);
     let gate_here = t.gate.filter(|&gate| !g.d.same_building(gate, b) && g.city_num_real_family(c, gate) > 0);
     if t.effects[b].is_empty() && gate_here.is_none() {
-        return 0;
-    }
-    // The Warrens were valued before the table (the Clan of Embers' module), so the switch leaves
-    // them as they were.
-    if !t.warrens.is_some_and(|w| g.d.same_building(w, b)) && !crate::switches::CODE_EFFECTS.on(g, g.cities[c].owner) {
         return 0;
     }
     let mut v: i32 = t.effects[b].iter().map(|&e| effect_value(g, c, b, e, threat)).sum();

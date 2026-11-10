@@ -14,13 +14,10 @@ use ffh_core::ids::*;
 use ffh_data::*;
 
 /// A unit we are disbanding (finance, bankruptcy) is sacrificed on a Demon's Altar instead when
-/// it stands in such a city of ours and can (switch `SACRIFICE`): it goes either way, the
+/// it stands in such a city of ours and can: it goes either way, the
 /// sacrifice adds research. True if sacrificed (its death is delayed, as a scrap's is).
 pub fn sacrifice(g: &mut Game, u: UnitId) -> bool {
     let p = g.units[u].owner;
-    if !crate::switches::SACRIFICE.on(g, p) {
-        return false;
-    }
     let Some(spell) = g.d.ty::<SpellType>("SPELL_SACRIFICE_ALTAR") else { return false };
     if !g.unit_can_cast(u, spell, false) {
         return false;

@@ -153,23 +153,19 @@ pub(crate) fn field_go(s: &crate::combat_sim::Sim, city: bool, capture: bool, fo
 }
 
 /// The attacker the rules would send from `grp` into `q` (`AI_getBestGroupAttacker`, which already
-/// puts heroes, veterans and war wizards last) is a hero or a veteran below its odds (switch
-/// `PRECIOUS`, `campaign::precious_bar`), or a caster marching with the stack below war wizard
-/// odds (switch `CASTER_STACKS`, `magic::spared_caster`): `(unit, odds, bar)`. The others are worse still, so the stack does
+/// puts heroes, veterans and war wizards last) is a hero or a veteran below its odds
+/// (`campaign::precious_bar`), or a caster marching with the stack below war wizard odds
+/// (`magic::spared_caster`): `(unit, odds, bar)`. The others are worse still, so the stack does
 /// not attack there -- and does not pick the target either: a Balseraph stack whose best attacker
 /// was a level-5 Warrior at 35% stood next to the same raider for 12 turns (docs/AI.md, "Forks of
 /// the hero gate").
 fn precious_holds(g: &Game, grp: GroupId, q: PlotIdx) -> Option<(UnitId, i32, i32)> {
     let p = g.units[g.group_get_head_unit(grp)?].owner;
-    let precious = crate::switches::PRECIOUS.on(g, p);
-    if !precious && !crate::switches::CASTER_STACKS.on(g, p) {
-        return None;
-    }
     let b = g.group_ai_get_best_group_attacker(grp, q, false, false, false).0?;
     // A caster that marches with the stack (`magic::spared_caster`): the rules send it below war
     // wizard odds only when no other unit of the stack can attack; then the stack stops too.
     let caster_bar = if crate::magic::spared_caster(g, b) { crate::magic::SPARED_CASTER_ODDS } else { 0 };
-    let bar = if precious { crate::campaign::precious_bar(g, b) } else { 0 }.max(caster_bar);
+    let bar = crate::campaign::precious_bar(g, b).max(caster_bar);
     if bar == 0 {
         return None;
     }
@@ -428,7 +424,7 @@ pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
     crate::campaign::plan(g, v);
     // An enemy city next to us that is empty, or that this stack clearly takes: take it, plan or
     // not (C++ `AI_stackAttackCity(1, 160)`).
-    if crate::switches::CAPTURE.on(g, p) && opportune(g, v, grp, u) {
+    if opportune(g, v, grp, u) {
         finish(g, grp);
         return;
     }
@@ -680,7 +676,7 @@ fn finish(g: &mut Game, grp: GroupId) {
     }
 }
 
-/// Opportunistic captures (switch `CAPTURE`): an enemy city at war (a civ's or the barbarians')
+/// Opportunistic captures: an enemy city at war (a civ's or the barbarians')
 /// that the stack can walk into this turn because it is empty, or one next to it whose defenders
 /// it takes when the simulation of the group attack says the city falls ([`field_go`]) -- even
 /// when no operation targets it (the targets of our operations are left to their strikes). An
@@ -926,23 +922,21 @@ pub fn find_targets(g: &Game, v: &View) -> Vec<Target> {
             out.push(Target { plot: q, value, units: n, city: city.is_some(), lair });
         }
     }
-    // Empty enemy cities near our lands (switch `CAPTURE`): a stack walks in (`hunt`).
-    if crate::switches::CAPTURE.on(g, p) {
-        for opl in g.players.iter() {
-            if !opl.alive || !v.enemies.contains(&opl.team) {
+    // Empty enemy cities near our lands: a stack walks in (`hunt`).
+    for opl in g.players.iter() {
+        if !opl.alive || !v.enemies.contains(&opl.team) {
+            continue;
+        }
+        for &c in &opl.cities {
+            let q = g.city_plot(c);
+            let (x, y) = (g.cities[c].x, g.cities[c].y);
+            if !crate::view::sees_units(g, v.team, q) || out.iter().any(|t| t.plot == q) || !near(x, y, 10) {
                 continue;
             }
-            for &c in &opl.cities {
-                let q = g.city_plot(c);
-                let (x, y) = (g.cities[c].x, g.cities[c].y);
-                if !crate::view::sees_units(g, v.team, q) || out.iter().any(|t| t.plot == q) || !near(x, y, 10) {
-                    continue;
-                }
-                if !crate::combat_sim::visible_defenders(g, v.team, q).is_empty() {
-                    continue;
-                }
-                out.push(Target { plot: q, value: 900 + 100 * g.cities[c].population, units: 0, city: true, lair: false });
+            if !crate::combat_sim::visible_defenders(g, v.team, q).is_empty() {
+                continue;
             }
+            out.push(Target { plot: q, value: 900 + 100 * g.cities[c].population, units: 0, city: true, lair: false });
         }
     }
     // Empty lairs near our lands.

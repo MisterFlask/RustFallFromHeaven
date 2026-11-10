@@ -348,9 +348,6 @@ fn push_pickup(g: &mut Game, grp: GroupId, mission: MissionType, to: PlotIdx, ar
 /// these orders.
 pub(crate) fn pickup(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, here: PlotIdx) -> bool {
     let p = v.p;
-    if !crate::switches::SUPPLY.on(g, p) {
-        return false;
-    }
     let waiting = armies_waiting(g, p);
     let (x, y) = g.map.xy(here);
     let beside = (waiting.contains(&here) && !pickup_by(g, p, here, Some(grp))).then_some(here).or_else(|| {
@@ -441,7 +438,7 @@ fn army_aboard(g: &Game, t: UnitId) -> i32 {
         .count() as i32
 }
 
-/// The assault fleet in port (switch `FLEET`; C++ `AI_assaultSeaMove`: a loaded transport waits
+/// The assault fleet in port (C++ `AI_assaultSeaMove`: a loaded transport waits
 /// in port until its cargo reaches the invasion size, and sails with the force, escorted). A
 /// transport with an army aboard, in one of our cities, waits while what the transports in port
 /// carry, with what has already landed next to the target, falls short of the force the target
@@ -683,8 +680,7 @@ pub fn assault_production(g: &Game, c: CityId) -> Option<Choice> {
 pub fn transport(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let p = v.p;
     let here = g.unit_plot(u);
-    let fleet = crate::switches::FLEET.on(g, p);
-    if fleet && g.groups[grp].units.len() > 1 && g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p) && g.groups[grp].units.iter().all(|&t| g.unit_get_cargo_units(t).is_empty()) {
+    if g.groups[grp].units.len() > 1 && g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p) && g.groups[grp].units.iter().all(|&t| g.unit_get_cargo_units(t).is_empty()) {
         // An assault fleet back in port, empty: each ship on its own again.
         for o in g.groups[grp].units.clone() {
             if o != u {
@@ -693,7 +689,7 @@ pub fn transport(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
         }
     }
     // (A fleet's cargo is what all its transports carry.)
-    let cargo = if fleet { g.groups[grp].units.iter().flat_map(|&t| g.unit_get_cargo_units(t)).collect() } else { g.unit_get_cargo_units(u) };
+    let cargo: Vec<UnitId> = g.groups[grp].units.iter().flat_map(|&t| g.unit_get_cargo_units(t)).collect();
     let carries_settler = cargo.iter().any(|&c| g.d.units[g.units[c].unit_type].found);
     // A land fighter aboard (not a settler): an assault to land on an enemy coast.
     let carries_army = !carries_settler
@@ -704,11 +700,11 @@ pub fn transport(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     crate::trace!(g, p, "transport {:?} at {:?}: cargo {} (settler {}, army {}), moves {}", u, g.map.xy(here), cargo.len(), carries_settler, carries_army, g.unit_moves_left(u));
     if carries_army {
         if let Some(amph) = v.amphibious.clone() {
-            if fleet && fleet_waits(g, v, grp, u, &amph) {
+            if fleet_waits(g, v, grp, u, &amph) {
                 return;
             }
             // (A fleet that sails now has gathered more ships: their cargo lands too.)
-            let cargo = if fleet { g.groups[grp].units.iter().flat_map(|&t| g.unit_get_cargo_units(t)).collect() } else { cargo };
+            let cargo: Vec<UnitId> = g.groups[grp].units.iter().flat_map(|&t| g.unit_get_cargo_units(t)).collect();
             transport_assault(g, v, grp, u, &amph, &cargo);
             return;
         }
@@ -774,14 +770,10 @@ pub fn transport(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     if !cargo.is_empty() && !carries_settler {
         // Cargo we have no plan for: back to port, unload there.
         if g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p) {
-            if fleet {
-                for t in g.groups[grp].units.clone() {
-                    if g.units.contains(t) && !g.unit_get_cargo_units(t).is_empty() {
-                        g.unit_unload_all(t);
-                    }
+            for t in g.groups[grp].units.clone() {
+                if g.units.contains(t) && !g.unit_get_cargo_units(t).is_empty() {
+                    g.unit_unload_all(t);
                 }
-            } else {
-                g.unit_unload_all(u);
             }
             hold(g, grp);
             return;
