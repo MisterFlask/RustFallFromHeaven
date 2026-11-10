@@ -1017,7 +1017,7 @@ async function empireScreens() {
     await click(`${TOP} button[data-value="commit"]`);
     await until(async () => !(await modalTitles()).includes("Doctrines"), "the research path chooser closed");
     await until2(`!!document.querySelector(${q(`${TOP} .research-path b`)})`, "the research path committed");
-    await until2(`!!document.querySelector("#research-button .path-tag")`, "the top bar showing the path");
+    await until2(`!!document.querySelector("#doctrine-button .path-tag")`, "the top bar showing the path");
     // Reopened, the chooser shows the committed path on top and nothing to choose.
     await click(`${TOP} button[data-paths]`);
     await until2(`!!document.querySelector(${q(`${TOP} .path-card.current[data-path="${path}"]`)})`, "the committed path's card");
@@ -1090,10 +1090,12 @@ async function empireScreens() {
   steps.push("empire screens: F6 tech tree, F3 civics, F7 religion, F2 sliders, F4 diplomacy, F1 cities");
 }
 
-/** The help display at the keys (?), the go-to mode (G, then Esc), the map layers. */
+/** The help display (?) at How to play, then its keys; the go-to mode (G, then Esc), the map layers. */
 async function keysAndLayers() {
   await b.key("?");
   await dialog("Help");
+  await until2(`!!document.querySelector('#modals .help-article[data-topic="play"]') && !!document.querySelector('#modals .help-topic.on[data-topic="play"]')`, "the help at How to play");
+  await click(`#modals .help-topic[data-topic="keys"]`);
   await until2(`!!document.querySelector('#modals .help-article[data-topic="keys"]') && !!document.querySelector('#modals .help-topic.on[data-topic="keys"]')`, "the help at the keys");
   await closeDialog("Help");
   if (!(await S("!!S.sel"))) await b.key("Tab");

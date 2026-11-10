@@ -186,7 +186,7 @@ html.iso #empire { flex: 0 1 auto; flex-wrap: nowrap; gap: 14px; padding: 0 12px
 html.iso #empire .stat { gap: 8px; }
 html.iso #empire .stat > span:not(.num) + .num { margin-left: 0; }
 html.iso #empire .stat .dim { color: #fff8e4; }
-html.iso #empire .stat.research { padding: 4px 6px; border: 0; }
+html.iso #empire :is(.stat.research, .stat.doctrine) { padding: 4px 6px; border: 0; }
 html.iso #empire .slider-item + .slider-item { margin-left: 8px; }
 html.iso #empire .stat.sliders { gap: 0; }
 html.iso #empire .slider-item { gap: 4px; }

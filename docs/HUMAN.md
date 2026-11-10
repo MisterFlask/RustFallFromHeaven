@@ -212,7 +212,7 @@ replaces the mouse:
 | tap a plot, tap it again | with units selected, on a plot without units of yours: the first tap shows the way there (the path, its turns, the attack odds: the right click's preview, which a finger cannot hover), a second tap on the same plot moves or attacks. Panning, or a tap anywhere else, drops the preview and the move it offered. To move onto your own units (a stack, a garrisoned city), use Go to |
 | drag, pinch | pan; zoom through the renderer's steps about the fingers (two fingers also pan) |
 | ×, Cancel | deselect (the panel's head); leave a plot pick (its hint) |
-| "A tap:" | in the city screen, the research chooser and the tech tree: what a tap on a build or a tech does (build now, add to the queue, put first; research now, add to the queue): Shift- and Ctrl-click with a mouse (the tech tree offers it to a mouse too, as "A click:") |
+| "A tap:" | in the build prompt, the city screen, the research chooser and the tech tree: what a tap on a build or a tech does (build now, add to the queue, put first; research now, add to the queue): Shift- and Ctrl-click with a mouse (the tech tree and the build prompt offer it to a mouse too, as "A click:") |
 | tap a tech, tap it again | in the tech tree: the first tap lights the tech's path and the techs it leads to, a second tap on it researches it (or queues it, by the "A tap:" row) |
 
 A long press and a double tap do nothing on the map. What touch does not have: Shift waypoints
@@ -328,9 +328,14 @@ enemies near your cities, the Armageddon counter, borders, and the messages), th
 waiting for orders is selected, and the open questions come up one at a time in Civ4's order:
 events (each choice with its effects; greyed when not possible now), votes, research (each
 tech's tooltip says what it brings you; click: research it; Shift-click: add it to the queue),
-then each city with nothing to build (click:
-build it now; Shift-click: add to the queue; Ctrl-click: put it first). "Later" sets one aside
-for this turn; End turn reminds you of it. End turn (the button, or `Enter` once no group waits) asks first when an event, a vote or the research is
+then each city with nothing to build, in the build prompt: the city's size, food (surplus and
+turns to grow) and production a turn in one row, its queue, and what it can build by group
+(units, buildings, projects and rituals, processes) in a grid, each with its tooltip, turns and
+production cost (click: build it now; Shift-click: add to the queue; Ctrl-click: put it first; the
+"A click:" row does the same with a plain click). With the isometric and HD-2D maps on a desktop
+the prompt stands at the right and the map centres on the city. "Open city" opens the city screen
+(the prompt is set aside for this turn); "Later" sets it aside for this turn; End turn reminds you
+of it. End turn (the button, or `Enter` once no group waits) asks first when an event, a vote or the research is
 open, a city has nothing to build (the client's check: the server's gate does not count them) or
 units wait for orders: answer them, choose production (the first such city's build list), select
 a unit, or end the turn anyway (Civ4's
@@ -362,9 +367,11 @@ resources, ... against the population and the rest; a city short of health loses
 culture, great people, maintenance, buildings, religions and the garrison;
 hurry (gold or population, with the price), draft, the emphasis flags and "Automate
 production"; the queue (✕ removes an entry while there are several; the only one is replaced by
-choosing another) and everything it can build with turns and cost, each with its tooltip (a
+choosing another) and everything it can build with turns and production cost, each with its tooltip (a
 unit's strength, moves and class, what it does; click: build it; Shift: append; Ctrl: put it
-first). "‹ Previous city" and "Next city ›" go through your cities. With cultural actions on
+first). The right column has the production first (its progress, the queue, the build lists),
+then the orders, where trained units go (with armies on) and the governance (with governors on).
+"‹ Previous city" and "Next city ›" go through your cities. With cultural actions on
 (this game's own system, docs/CULTURE.md) the screen also has a **Culture** section, under the
 city's numbers: the culture rate and the half the channel takes; the city's channel (the action,
 the civilization, the religion) with what it does now and "Stop": for Foment Revolt each of their
@@ -374,7 +381,10 @@ revolt, the city joins you; a capital never) and when; for Spread Religion the c
 each city's part of it (or that it has the religion); then "Channel culture" (folded as "Change
 the channel" under a channel): the action, the religion, the civilizations in reach with a
 summary or the reason it is not possible, the preview of the picked one, and the button that
-sets it. Last, the revolt pressure on the city: a scale by civilization against the thresholds
+sets it. A city with no channel, no city of another civilization in reach and no revolt pressure
+has the section as one line ("Culture: 2 a turn. No city of another civilization in reach.") with
+"Channel culture" folded under it. Last, the revolt pressure on the city (one muted line when
+there is none): a scale by civilization against the thresholds
 (each point of unrest, revolt, the line where one civilization's pressure takes the city), its
 level and unhappiness, what each civilization's channels add a turn and where that settles, and
 its resistance (half its culture, 2 per defender; in revolt only its defenders, which the
@@ -382,10 +392,10 @@ predictions count). With armies on, each queued land combat unit
 has a destination selector (the city's default, its garrison, another city's garrison, an army
 with its size and whether it is in supply: a unit bound elsewhere marches there); an army's
 requisition order leads the queue as "Requisitioned by the 2nd Army", without ✕ (it is released on
-the Armies screen); under the queue, the city's default destination, its garrison and the armies
+the Armies screen); after the orders, the city's default destination, its garrison and the armies
 that requisition from it, with the garrison's battle tactic (a selector of the four tactics,
 each with its rules as its tooltip; "from next turn (now Line)" while a change is pending;
-docs/TACTICS.md). With governors on (docs/GOVERNORS.md) a **Governance** section heads
+docs/TACTICS.md). With governors on (docs/GOVERNORS.md) a **Governance** section ends
 the right column: a directly ruled city says so (with "Hand to a governor"); a governed city shows
 its governor (or the interim one), "Replace with…" (the bench, with each candidate's fit) and
 "Rule directly" (or "Rule directly instead of…" a direct city); its production is shown but not

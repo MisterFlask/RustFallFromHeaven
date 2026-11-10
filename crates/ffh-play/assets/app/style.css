@@ -160,8 +160,8 @@ body[data-phase="running"] #phase { animation: breathe 2.8s ease-in-out infinite
 .stat { white-space: nowrap; display: inline-flex; align-items: center; gap: calc(var(--u) * 2); }
 .stat > span:not(.num) + .num { margin-left: 3px; }
 .stat .icon.gold { color: var(--c-ochre); }
-.stat.research { background: none; border: 1px solid transparent; padding: 1px 6px; }
-.stat.research:hover { border-color: var(--line); }
+.stat.research, .stat.doctrine { background: none; border: 1px solid transparent; padding: 1px 6px; }
+.stat.research:hover, .stat.doctrine:hover { border-color: var(--line); }
 .bar { display: inline-block; width: 52px; height: 6px; background: var(--c-iron); overflow: hidden; margin-left: 4px; box-shadow: 0 0 0 1px var(--c-void); }
 .bar .fill { display: block; height: 100%; background: var(--c-frost); }
 .armageddon .icon { color: var(--c-crimson); }
@@ -351,7 +351,7 @@ ol.queue button { margin-left: 8px; }
    grid as wide as the dialog; its click modes for a mouse too (`.tap-mode.always`). */
 .modal.city-screen.build-prompt { width: min(880px, 100%); }
 .build-prompt .prompt-summary .cs-row { flex-wrap: wrap; row-gap: 4px; }
-.build-prompt .build-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.build-prompt .build-grid { grid-template-columns: repeat(auto-fill, minmax(min(170px, calc(50% - 2px)), 1fr)); }
 .build-prompt .section.builds h4 { margin: 6px 0 2px; }
 .build-prompt ol.queue:has(> li.dim:only-child) { list-style: none; padding-left: 0; }
 .tap-mode.always { display: flex; }
@@ -660,11 +660,11 @@ h4.sub { margin: 8px 0 2px; font-size: 0.9em; }
 .modal.techtree { width: min(1400px, 100%); height: calc(100vh - 32px); height: calc(100dvh - 32px); }
 .techtree .modal-body { display: flex; flex-direction: column; gap: 6px; min-height: 0; flex: 1; }
 /* The tree's view: a visible scrollbar, and edge fades where more of it lies beyond (empire.js
-   sets .more-right/.more-down/.more-left on scroll). */
+   sets .more-right/.more-down on scroll). */
 .tree-wrap { position: relative; display: flex; flex: 1; min-height: 240px; }
 .tree-wrap::before, .tree-wrap::after { content: ""; position: absolute; pointer-events: none; opacity: 0; transition: opacity 150ms ease; z-index: 1; }
-.tree-wrap::after { top: 1px; bottom: 13px; right: 13px; width: 36px; background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.6)); }
-.tree-wrap::before { left: 1px; right: 13px; bottom: 13px; height: 32px; background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.6)); }
+.tree-wrap::after { top: 1px; bottom: 13px; right: 13px; width: 56px; background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.85)); }
+.tree-wrap::before { left: 1px; right: 13px; bottom: 13px; height: 44px; background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.85)); }
 .tree-wrap.more-right::after, .tree-wrap.more-down::before { opacity: 1; }
 .tree-scroll { overflow: scroll; flex: 1; min-height: 0; border: 1px solid var(--line); background: var(--c-void); scrollbar-width: auto; scrollbar-color: var(--c-slate) rgba(0, 0, 0, 0.4); }
 .tree-scroll::-webkit-scrollbar { width: 12px; height: 12px; }

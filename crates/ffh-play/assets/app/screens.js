@@ -119,7 +119,7 @@ function researchPathLine(t, reload) {
     "div.research-path",
     p
       ? h("span", "Doctrine: ", h("b", dname("ResearchPathType", p.path)), ` (+${t.path_percent}% research on its techs) · ${pathProgress(p)} `)
-      : h("span.warn", "No doctrine. "),
+      : h(t.paths.some((x) => x.can_commit) ? "span.warn" : "span.dim", { title: `A doctrine makes its techs research ${t.path_percent}% faster for the rest of the game.` }, "No doctrine. "),
     h("button.link", { "data-paths": "", onclick: async () => ((await openResearchPaths()) === "chosen" ? reload() : null) }, p ? "Doctrines" : "Adopt a doctrine"),
   );
 }
@@ -799,7 +799,11 @@ export function stuckScreen(st) {
 // ---------------------------------------------------------------------------------------------
 // Help and testing tools.
 
-/** The keys: Civ4's (the action hotkeys come from the game's XML, as each button's tooltip shows). */
+/** The keys. Most are Civ4's (the action hotkeys come from the game's XML, as each button's
+ *  tooltip shows); ffh-play adds W A S D held to scroll (Civ4's W, A, S and D orders are on their
+ *  buttons), Q / E to zoom (Civ4's Q quarry and E explore are on their buttons), Tab / Shift+Tab to
+ *  cycle the units (Civ4's W; in Civ4 Tab is chat), F to flag a plot while watching the AI, F5,
+ *  F8, F9, Ctrl+1/2/3 and ?. The on-screen list says what each key does, not where it came from. */
 function keysTable() {
   const touch = [
     ["Touch", ""],
@@ -831,23 +835,20 @@ function keysTable() {
     ["Left click", "select units (again: the next group there), open your city, show a plot"],
     ["Right click", "move or attack with the selection; with Shift held, add waypoints (sent when Shift is released)"],
     ["Drag, wheel, arrows, + −", "pan and zoom the map; the minimap centres"],
-    ["W A S D (held)", "scroll the map smoothly (ffh-play's: Civ4's W, A, S and D orders are on their buttons)"],
-    ["Q / E", "zoom out / in (ffh-play's: Civ4's Q quarry and E explore are on their buttons)"],
-    ["Turn and selection (Civ4's controls)", ""],
+    ["W A S D (held)", "scroll the map"],
+    ["Q / E", "zoom out / in"],
+    ["Turn and selection", ""],
     ["Enter", "the next unit waiting for orders; when none waits (the End turn button glows), end the turn"],
     ["Shift+Enter", "end the turn whatever waits, without the checks"],
     ["Space", "with no unit selected, end the turn when none waits"],
+    ["Tab / Shift+Tab", "the next / previous unit waiting: a stack whose units cannot all move is skipped; when it wraps, the automated units move"],
     ["C", "centre on the selection"],
     ["Home / End", "the next / previous city (in the city screen: its next / previous city)"],
     ["F10", "the capital's city screen"],
     ["Esc", "cancel a plot pick, close a dialog, deselect"],
-    ["ffh-play's own", ""],
-    ["Tab / Shift+Tab", "the next / previous unit waiting (Civ4's W; in Civ4, Tab is chat): a stack whose units cannot all move is skipped; when it wraps, the automated units move"],
-    ["F (watching the AI)", "flag the plot under the mouse: record it for a bug report (the turn, the units, the replay commands)"],
-    ["Enter (an observed game)", "play the next turn"],
-    ["Orders (Civ4's hotkeys)", ""],
+    ["Orders", ""],
     ["Space", "skip the turn"],
-    ["F / H", "fortify (sleep for units that cannot) / heal; sentry is on its button (S scrolls)"],
+    ["F / H", "fortify (sleep for units that cannot) / heal; sentry is on its button"],
     ["B", "found a city (bombard for siege units)"],
     ["G then click, Alt+R", "go to a plot (Shift-click: add waypoints, sent when Shift is released) / build a route to it"],
     ["R, I, M, …", "the worker's builds: road, farm, mine, … (each button shows its key)"],
@@ -856,21 +857,46 @@ function keysTable() {
     ["Del / Backspace", "delete the units (asks first) / cancel the orders"],
     ["Screens", ""],
     ["F1 / F2 / F3 / F4", "cities / finances (the sliders) / civics / diplomacy and trade"],
-    ["F5", "armies: your armies, their supply and the units on their way (this game's)"],
-    ["F9", "governors: who runs your cities, their modes, the bench (this game's)"],
-    ["F6 / F7 / F8", "the tech tree / religion / cultural pressure (ffh-play's)"],
+    ["F5", "armies: your armies, their supply and the units on their way"],
+    ["F6 / F7 / F8", "the tech tree / religion / cultural pressure"],
+    ["F9", "governors: who runs your cities, their modes, the bench"],
     ["Ctrl+S / Ctrl+L", "save / load"],
-    ["Ctrl+1 / 2 / 3", "map layer: terrain / political / yields (ffh-play's)"],
-    ["?", "this list (ffh-play's)"],
+    ["Ctrl+1 / 2 / 3", "map layer: terrain / political / yields"],
+    ["?", "this help"],
+    ["Watching the AI", ""],
+    ["F", "flag the plot under the mouse: record it for a bug report (the turn, the units, the replay commands)"],
+    ["Enter (an observed game)", "play the next turn"],
   ];
   return h("table.kv", keys.map(([k, v]) => (v ? h("tr", h("th", k), h("td", v)) : h("tr", h("th.group", { colspan: 2 }, k)))));
 }
 
+/** The first help topic: the turn's loop in a few bare lines (the keys checked against main.js
+ *  `onKey` and the XML hotkeys: B found, Enter the next unit or the end of the turn). */
+function howToPlay() {
+  const touch = coarse();
+  const lines = [
+    touch ? "Tap a unit to select it." : "Click a unit to select it.",
+    touch ? "Tap a plot to see the way there; tap it again to move or attack." : "Right-click a plot to move or attack there.",
+    "The selected unit's orders are buttons on its panel; each button's tooltip shows its key.",
+    "A settler founds a city with its Build City order (B).",
+    "Choose research when asked; the research button in the top bar changes it.",
+    "Choose what each city builds when asked; click a city to open its screen.",
+    touch ? "End turn ends the turn. A unit waiting for orders is selected first." : "End turn (Enter) ends the turn. While a unit waits for orders, Enter selects it instead.",
+    "The advisors are on the rail at the left of the map (on a phone: in the ☰ menu): research, techs, cities, civics, religion, culture, armies, governors, diplomacy.",
+    "The top bar: the turn and the year; gold and its change a turn; research, its progress and the turns left; the doctrine; the commerce rates; the Armageddon counter; mana; the score, your share of the world.",
+    touch ? "Every number and button has a tooltip." : "Point at a number, a button or a plot for its tooltip.",
+    "A dialog's (i) button opens the help at its topic.",
+    touch ? "Controls lists every gesture and button." : "Keys lists every key.",
+  ];
+  return h("ul.how-to-play", lines.map((l) => h("li", l)));
+}
+
+addHelp({ id: "play", group: "Playing", title: "How to play", order: -1, body: () => howToPlay() });
 addHelp({ id: "keys", group: "Playing", title: coarse() ? "Controls" : "Keys", order: 0, body: () => keysTable() });
 
-/** The help display at the keys (the ? button and key). */
+/** The help display at its first topic, How to play (the ? button and key); Keys is next. */
 export function keysHelp() {
-  return openHelp("keys");
+  return openHelp("play");
 }
 
 /** A box for raw protocol requests (design §5.1 "Rules-testing tools"). */

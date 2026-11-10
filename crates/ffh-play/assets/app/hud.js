@@ -13,6 +13,8 @@ import { isoSkin, isoIcon } from "./isoui.js";
 import { effectsOf, partsList } from "./infotips.js";
 import { battleLine, battleLinks } from "./engagements.js";
 import { castTargeted } from "./units.js";
+import * as api from "./api.js";
+import { openResearchPaths } from "./screens.js";
 
 /** The parts of `#phase`: the phase line (redrawn each render), the spectator bar and the
  *  autoplay bar (each its own slot; `display: contents`, so #phase lays out their children). */
@@ -116,7 +118,7 @@ function paintTween(key, s) {
     s.lastPaint = disp;
     node.replaceChildren(pix(disp, { font: "vigil" }));
   } else {
-    const nb = barEl(Math.min(1, s.shown / Math.max(1, s.cost)), "research", { w: 30, next: s.next, title: `${Math.round(s.shown)}/${s.cost}` });
+    const nb = barEl(Math.min(1, s.shown / Math.max(1, s.cost)), "research", { w: 30, next: s.next, title: `Research ${Math.round(s.shown)}/${s.cost}` });
     nb.dataset.tween = key;
     node.replaceWith(nb);
   }
@@ -145,7 +147,7 @@ function tweenBar(key, progress, cost, next, tech) {
   const s = tweens.get(key);
   const techChanged = s && s.tech !== tech;
   const make = (p) => {
-    const b = barEl(Math.min(1, p / Math.max(1, cost)), "research", { w: 30, next, title: `${Math.round(p)}/${cost}` });
+    const b = barEl(Math.min(1, p / Math.max(1, cost)), "research", { w: 30, next, title: `Research ${Math.round(p)}/${cost}` });
     b.dataset.tween = key;
     return b;
   };
@@ -254,21 +256,33 @@ export function renderTop() {
   // The isometric interface writes rates as the reference's top bar does: "245 (+18)".
   const iso = isoSkin();
   const rate = (n) => (iso ? `(${n >= 0 ? "+" : ""}${n})` : `${n >= 0 ? "+" : ""}${n}`);
+  const signed = (n) => `${n >= 0 ? "+" : ""}${n}`;
+  const adopted = m.research_path !== null && m.research_path !== undefined;
   const items = [
-    h("span.stat.gold", { tip: () => goldTip(m) }, ic("icon16/gold", "¤", "Gold", ".gold"), tweenNum("gold", m.gold), small(rate(m.gold_rate), m.gold_rate < 0 ? ".warn" : ".dim")),
+    h(
+      "span.stat.gold",
+      { tip: () => goldTip(m), role: "group", "aria-label": `Gold ${m.gold}, ${signed(m.gold_rate)} a turn` },
+      ic("icon16/gold", "¤", "Gold", ".gold"),
+      tweenNum("gold", m.gold),
+      small(rate(m.gold_rate), m.gold_rate < 0 ? ".warn" : ".dim"),
+    ),
     sep(),
     h(
       "button.stat.research",
-      { id: "research-button", title: "Research (the tech tree: F6)", onclick: () => document.dispatchEvent(new CustomEvent("ffh-research")) },
+      {
+        id: "research-button",
+        title: "Research: choose what to research",
+        "aria-label": r ? `Research: ${dname("TechType", r.tech)}, ${r.progress}/${r.cost}, ${turns(r.turns)}` : "Research: none chosen",
+        onclick: () => document.dispatchEvent(new CustomEvent("ffh-research")),
+      },
       ic(r ? "icon16/research" : "icon16/research_needed", "⚗", "Research"),
       r ? small(dname("TechType", r.tech)) : h("span.warn", pix("choose research")),
       r ? tweenBar("research", r.progress, r.cost, next, r.tech) : null,
-      r ? small(iso ? `(${r.turns ?? "–"})` : turns(r.turns), ".dim") : null,
-      // The research path (docs/PORTING.md, "Research paths"), or a reminder that none is chosen.
-      m.research_path !== null && m.research_path !== undefined
-        ? small(`· ${dname("ResearchPathType", m.research_path)}`, ".path-tag")
-        : small("· no doctrine", ".warn"),
+      r ? h("span.dim", { title: "Turns to finish this tech" }, small(turns(r.turns))) : null,
     ),
+    // The doctrine (a research path, docs/PORTING.md "Doctrines"): the adopted one, or a reminder
+    // in the warning colour while one can be adopted; a click opens the doctrine chooser.
+    doctrineButton(m, adopted),
     sep(),
     h(
       "button.stat.sliders",
@@ -276,10 +290,18 @@ export function renderTop() {
       m.commerce_percent
         .map((p, i) => [p, i])
         .filter(([p, i]) => p > 0 || m.flexible[i])
-        .map(([p, i]) => h("span.slider-item", look.art || iso ? uiIcon("commerce", i, 8, { title: dname("CommerceType", i) }) : `${dname("CommerceType", i).slice(0, 3)} `, small(`${p}%`))),
+        .map(([p, i]) => {
+          const label = `${dname("CommerceType", i)} rate ${p}%`;
+          return h("span.slider-item", { title: label, "aria-label": label }, look.art || iso ? uiIcon("commerce", i, 8, { title: label }) : `${dname("CommerceType", i).slice(0, 3)} `, small(`${p}%`));
+        }),
     ),
     sep(),
-    h("span.stat.armageddon", { tip: () => doomTip(m) }, look.art || iso ? uiIcon("armageddon", m.armageddon, 16) : h("span.icon", "☄"), big(m.armageddon)),
+    h(
+      "span.stat.armageddon",
+      { tip: () => doomTip(m), role: "group", "aria-label": `Armageddon counter ${m.armageddon}` },
+      look.art || iso ? uiIcon("armageddon", m.armageddon, 16) : h("span.icon", "☄"),
+      big(m.armageddon),
+    ),
   ];
   const mana = m.mana.filter((x) => x.count > 0);
   if (mana.length) {
@@ -291,17 +313,59 @@ export function renderTop() {
       : look.art
         ? mana.map((x) => h("span.sphere", uiIcon("mana", tname("BonusType", x.bonus) ?? "", 8, { title: dname("BonusType", x.bonus) }) ?? null, small(String(x.count))))
         : [` ${total} mana`];
-    items.push(h("span.stat.mana", { tip: manaTip }, ic("icon16/mana", "✦", "Mana"), ...spheres));
+    items.push(h("span.stat.mana", { tip: manaTip, role: "group", "aria-label": `Mana ${total}` }, ic("icon16/mana", "✦", "Mana"), ...spheres));
   }
-  if (m.anarchy > 0) items.push(sep(), h("span.stat.warn", { title: `Anarchy: ${m.anarchy} turns` }, ic("icon16/anarchy", "", "Anarchy"), small(`Anarchy ${m.anarchy}`)));
-  if (m.golden_age > 0) items.push(sep(), h("span.stat.good", { title: `Golden age: ${m.golden_age} turns` }, ic("icon16/golden_age", "", "Golden age"), small(`Golden age ${m.golden_age}`)));
+  if (m.anarchy > 0) items.push(sep(), h("span.stat.warn", { title: `Anarchy: ${turns(m.anarchy)}`, "aria-label": `Anarchy: ${turns(m.anarchy)}`, role: "group" }, ic("icon16/anarchy", "", "Anarchy"), small(`Anarchy ${m.anarchy}`)));
+  if (m.golden_age > 0) items.push(sep(), h("span.stat.good", { title: `Golden age: ${turns(m.golden_age)}`, "aria-label": `Golden age: ${turns(m.golden_age)}`, role: "group" }, ic("icon16/golden_age", "", "Golden age"), small(`Golden age ${m.golden_age}`)));
   const stasis = Object.entries(m.stasis ?? {}).filter(([, n]) => n > 0);
   if (stasis.length) items.push(sep(), h("span.stat.warn", ic("icon16/stasis", "", "Stasis"), small(`Stasis: ${stasis.map(([k, n]) => `${k} ${n}`).join(", ")}`)));
   const idle = v.pending?.ai_groups_idle?.length ?? 0;
   if (idle) items.push(sep(), h("span.stat.dim", { title: "Automated and FfH AI-controlled units: the AI moves them during your turn" }, ic("icon16/ai_idle", "", "Automated groups to move"), small(`${idle} automated group${idle > 1 ? "s" : ""} to move`)));
   const scoreTip = [h("div.tip-title", `Score ${scoreText(m.score)}`), h("div", "Your share of the world: the average of your shares of all people, all land and all knowledge."), m.civs_alive ? h("div.tip-hint", `With ${m.civs_alive} civilizations alive, a fair share is ${fairShareText(m.civs_alive)}.`) : null];
-  items.push(sep(), h("span.stat.dim.score", { tip: scoreTip }, iso ? iconEl("icon16/score") ?? small("Score") : small("Score"), tweenNum("score", m.score, "", scoreText)));
+  items.push(sep(), h("span.stat.dim.score", { tip: scoreTip, role: "group", "aria-label": `Score: ${scoreText(m.score)} of the world` }, iso ? iconEl("icon16/score") ?? small("Score") : small("Score"), tweenNum("score", m.score, "", scoreText)));
   fill(info, items);
+}
+
+/** Whether a doctrine can be adopted (some research path's `can_commit`, the `techs` query), asked
+ *  once a turn while none is adopted; true until the answer comes. */
+const doctrineState = { key: null, open: true, percent: null };
+
+function doctrineOpen() {
+  const key = `${hudGame}|${S.status?.turn ?? ""}`;
+  if (doctrineState.key !== key && !observing()) {
+    doctrineState.key = key;
+    api
+      .query("techs")
+      .then((t) => {
+        const open = (t.paths ?? []).some((p) => p.can_commit);
+        const percent = t.path_percent ?? null;
+        if (open !== doctrineState.open || percent !== doctrineState.percent) {
+          Object.assign(doctrineState, { open, percent });
+          renderTop();
+        }
+      })
+      .catch(() => {});
+  }
+  return doctrineState.open;
+}
+
+/** The top bar's doctrine: the adopted one's name, or "no doctrine" (the warning colour while one
+ *  can be adopted); its tooltip says what a doctrine does; a click opens the doctrine chooser. */
+function doctrineButton(m, adopted) {
+  const faster = doctrineState.percent ? `${doctrineState.percent}% faster` : "faster";
+  const what = `A doctrine makes its techs research ${faster} for the rest of the game; it is adopted in the research screen (Doctrines).`;
+  const open = adopted ? false : doctrineOpen();
+  const name = adopted ? dname("ResearchPathType", m.research_path) : null;
+  return h(
+    "button.stat.doctrine",
+    {
+      id: "doctrine-button",
+      title: adopted ? `Doctrine: ${name}. ${what}` : what,
+      "aria-label": adopted ? `Doctrine: ${name}` : "No doctrine",
+      onclick: () => openResearchPaths(),
+    },
+    adopted ? small(name, ".path-tag") : small("no doctrine", open && !observing() ? ".warn" : ".dim"),
+  );
 }
 
 /** What a spell's target is, in words (`target_kind`). */

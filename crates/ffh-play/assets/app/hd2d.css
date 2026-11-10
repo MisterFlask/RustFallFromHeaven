@@ -262,7 +262,7 @@ html.iso.hd2d #bottom { left: calc(var(--iso-gap) + 92px); }
 /* --- the top bar, the report, the card, the corner --------------------------------------- */
 
 html.iso.hd2d #bottom-tabs button.active { box-shadow: inset 0 -1px 0 var(--hd-ink); }
-html.iso.hd2d #empire .stat.research { border: 0; }
+html.iso.hd2d #empire :is(.stat.research, .stat.doctrine) { border: 0; }
 html.iso.hd2d .iso-bar { height: 14px; background: rgba(0, 0, 0, 0.6); background-clip: padding-box; }
 html.iso.hd2d .iso-bar .fill { background: linear-gradient(180deg, #a9dcff, #4f9ae0); }
 html.iso.hd2d .iso-bar.food .fill { background: linear-gradient(180deg, #cdeba0, #74b04a); }
@@ -294,6 +294,7 @@ html.iso.hd2d button.tech.has { background: rgba(38, 52, 32, 0.95); border-color
 html.iso.hd2d button.tech.researching { background: rgba(78, 70, 50, 0.95); border-color: var(--iso-gold-lt); }
 html.iso.hd2d button.tech.can { border-color: var(--iso-gold); }
 html.iso.hd2d button.tech.queued { border: 1px dashed var(--iso-gold-lt); }
+html.iso.hd2d .tap-mode.tree-modes button.on { background: var(--hd-band), var(--hd-fill); box-shadow: inset 2px 0 0 var(--hd-ink); color: #fff; }
 html.iso.hd2d button.tech.later { background: rgba(18, 17, 20, 0.95); }
 html.iso.hd2d .tree-lines path { stroke: rgba(236, 230, 214, 0.3); }
 html.iso.hd2d .tree-lines path.have { stroke: rgba(143, 191, 120, 0.45); }

@@ -315,9 +315,7 @@ export async function openTechTree() {
     // Edge fades where more of the tree lies beyond the view (updated on scroll only).
     const edges = () => {
       wrap.classList.toggle("more-right", scroll.scrollLeft + scroll.clientWidth < scroll.scrollWidth - 2);
-      wrap.classList.toggle("more-down", scroll.scrollTop + scroll.clientHeight < scroll.scrollHeight - 2);
-      wrap.classList.toggle("more-left", scroll.scrollLeft > 2);
-    };
+      wrap.classList.toggle("more-down", scroll.scrollTop + scroll.clientHeight < scroll.scrollHeight - 2);    };
     scroll.addEventListener("scroll", edges, { passive: true });
     m.setBody(
       h(
