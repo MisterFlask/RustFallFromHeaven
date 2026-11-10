@@ -158,7 +158,8 @@ fn civics_government() {
     assert!(despotism.upkeep.is_some());
     assert_eq!(despotism.tech_prereq, None);
     assert_eq!(despotism.ai_weight, -1000);
-    assert_eq!(despotism.num_cities_maintenance_modifier, 25);
+    assert_eq!(despotism.num_cities_maintenance_modifier, 40);
+    assert!(despotism.direct_rule);
     assert_eq!(despotism.war_weariness_modifier, -50);
     assert_eq!(despotism.we_love_the_king, "TXT_KEY_CIVIC_WE_LOVE_DESPOT");
 

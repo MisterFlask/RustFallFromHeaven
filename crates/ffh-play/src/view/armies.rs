@@ -162,13 +162,15 @@ pub fn supply_json(v: &Viewer, a: ArmyId) -> Json {
     }
 }
 
-/// The supply lines of the other players' armies the human sees (docs/SUPPLY.md, section 5), each
-/// `{owner, x, y, segments}`: the army's plot and its line clipped to the plots the human has
-/// revealed (`segments`: the runs of consecutive revealed plots of the path, each `[[x, y], ...]`,
-/// from the army toward its source). An army counts as seen when its plot is visible to the human
-/// and one of its units is visible and shows its true owner (hidden nationality hides the
-/// army); an army with no line now has no entry. Nothing else of the army's supply is told (its
-/// counter, the cost, the source).
+/// The supply lines of the other players' armies the human sees (docs/SUPPLY.md, section 5 and
+/// "Second pass", A), each `{owner, x, y, segments}`: the army's plot and its line as the human can
+/// work it out (`Game::plot_supply_line_known` from the army's plot, the human's team as viewer):
+/// it runs over plots the human has revealed only and bends around the enemy units the human sees,
+/// not the hidden ones, so it can differ from the army's true line. `segments` holds that one path
+/// (`[[[x, y], ...]]`, from the army toward its source; the client draws runs). An army counts as
+/// seen when its plot is visible to the human and one of its units is visible and shows its true
+/// owner (hidden nationality hides the army); an army with no known line has no entry. Nothing
+/// else of the army's supply is told (its counter, the cost, the source).
 pub fn foreign_supply_lines(v: &Viewer) -> Json {
     let g = v.g;
     let mut out = Vec::new();
@@ -184,22 +186,10 @@ pub fn foreign_supply_lines(v: &Viewer) -> Json {
             if !v.plot_visible(plot) || !g.army_units(a).iter().any(|&u| v.unit_visible(u) && v.unit_owner(u) == p) {
                 continue;
             }
-            let Some(line) = g.army_supply_line(a) else { continue };
-            let mut segments: Vec<Json> = Vec::new();
-            let mut run: Vec<Json> = Vec::new();
-            for &q in &line.path {
-                if v.plot_revealed(q) {
-                    let (x, y) = g.map.xy(q);
-                    run.push(crate::jarr![x, y]);
-                } else if !run.is_empty() {
-                    segments.push(Json::Arr(std::mem::take(&mut run)));
-                }
-            }
-            if !run.is_empty() {
-                segments.push(Json::Arr(run));
-            }
+            let Some(line) = g.plot_supply_line_known(p, plot, v.team) else { continue };
+            let path: Vec<Json> = line.path.iter().map(|&q| { let (x, y) = g.map.xy(q); crate::jarr![x, y] }).collect();
             let (x, y) = g.map.xy(plot);
-            out.push(crate::jobj! { "owner" => p, "x" => x, "y" => y, "segments" => Json::Arr(segments) });
+            out.push(crate::jobj! { "owner" => p, "x" => x, "y" => y, "segments" => crate::jarr![Json::Arr(path)] });
         }
     }
     Json::Arr(out)
@@ -238,6 +228,9 @@ fn army_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
     };
     if screen {
         j.set("recruits", Json::Arr(marching.into_iter().map(|u| recruit_json(v, u)).collect()));
+        // This game's governors (docs/GOVERNORS.md): the empire orders for the army in the human's
+        // governed cities (`city`, `name`, `unit`, `index`, `turns`).
+        j.set("on_order", crate::view::governors::army_empire_orders(v, a));
     }
     j
 }

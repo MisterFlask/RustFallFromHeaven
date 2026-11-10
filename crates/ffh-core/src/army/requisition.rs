@@ -40,6 +40,7 @@ use super::march::with_article;
 use super::{ArmyResult, RecruitDest};
 use crate::game::Game;
 use crate::ids::*;
+use crate::structs::OrderKind;
 
 /// The march turns an army out of reach by land counts for, in the requisition's order.
 const NO_WAY: i32 = 1000;
@@ -336,15 +337,11 @@ impl Game {
     /// City `c` trains a unit of `unit` for army `a` first: a requisition order at the front of its
     /// queue (behind any other requisition orders). Returns whether it was placed.
     fn city_place_requisition(&mut self, c: CityId, a: ArmyId, unit: UnitType, ai: UnitAIType) -> bool {
-        let lead = self.cities[c].order_queue.iter().take_while(|o| o.requisition).count();
-        let len = self.cities[c].order_queue.len();
-        self.city_push_order(c, OrderType::ORDER_TRAIN, unit.i(), ai.i(), false, false, false, false);
-        if !self.cities.contains(c) || self.cities[c].order_queue.len() <= len {
+        let Some(index) = self.city_push_order_kind(c, OrderType::ORDER_TRAIN, unit.i(), ai.i(), false, false, false, false, OrderKind::Requisition) else { return false };
+        if !self.cities.contains(c) {
             return false;
         }
-        let o = &mut self.cities[c].order_queue[lead];
-        o.dest = Some(RecruitDest::Army(a));
-        o.requisition = true;
+        self.cities[c].order_queue[index].dest = Some(RecruitDest::Army(a));
         let p = self.cities[c].owner;
         self.tel_requisition(p, "placed");
         let turn = self.game_turn();

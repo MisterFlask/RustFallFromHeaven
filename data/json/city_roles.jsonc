@@ -1,0 +1,57 @@
+// City roles (this game's governors, docs/GOVERNORS.md; not in FFH2). A governed city has a role,
+//     which its governor runs it by. flavors weigh the city AI's flavors (FLAVOR_*) the way a
+//     leader's do, on the 0-10 scale of these files; emphasizes are the citizen emphases the role
+//     sets in its city; defenders adds to the city's garrison quota. key_buildings are the 4
+//     generic building classes that carry the role: a city's suitability for the role is the
+//     mean core effect (building_tiers.jsonc core_effect_percent) of its tiers for those classes
+//     its civilization can build (100 when it can build none). No class is in two roles.
+[
+  {
+    "type": "ROLE_GROWTH",
+    "description": "TXT_KEY_ROLE_GROWTH",
+    "help": "TXT_KEY_ROLE_GROWTH_HELP",
+    "flavors": {"FLAVOR_GROWTH": 5, "FLAVOR_PRODUCTION": 3},
+    "emphasizes": ["EMPHASIZE_FOOD"],
+    "key_buildings": ["BUILDINGCLASS_GRANARY", "BUILDINGCLASS_SMOKEHOUSE", "BUILDINGCLASS_HARBOR", "BUILDINGCLASS_AQUEDUCT"]
+  },
+  {
+    "type": "ROLE_RESEARCH",
+    "description": "TXT_KEY_ROLE_RESEARCH",
+    "help": "TXT_KEY_ROLE_RESEARCH_HELP",
+    "flavors": {"FLAVOR_SCIENCE": 5, "FLAVOR_GROWTH": 1},
+    "emphasizes": ["EMPHASIZE_RESEARCH"],
+    "key_buildings": ["BUILDINGCLASS_LIBRARY", "BUILDINGCLASS_ELDER_COUNCIL", "BUILDINGCLASS_ALCHEMY_LAB", "BUILDINGCLASS_MAGE_GUILD"]
+  },
+  {
+    "type": "ROLE_COMMERCE",
+    "description": "TXT_KEY_ROLE_COMMERCE",
+    "help": "TXT_KEY_ROLE_COMMERCE_HELP",
+    "flavors": {"FLAVOR_GOLD": 5, "FLAVOR_GROWTH": 1},
+    "emphasizes": ["EMPHASIZE_COMMERCE"],
+    "key_buildings": ["BUILDINGCLASS_MARKET", "BUILDINGCLASS_MONEYCHANGER", "BUILDINGCLASS_GAMBLING_HOUSE", "BUILDINGCLASS_TAX_OFFICE"]
+  },
+  {
+    "type": "ROLE_CULTURE",
+    "description": "TXT_KEY_ROLE_CULTURE",
+    "help": "TXT_KEY_ROLE_CULTURE_HELP",
+    "flavors": {"FLAVOR_RELIGION": 5, "FLAVOR_CULTURE": 3},
+    "key_buildings": ["BUILDINGCLASS_MONUMENT", "BUILDINGCLASS_PAGAN_TEMPLE", "BUILDINGCLASS_THEATRE", "BUILDINGCLASS_CARNIVAL"]
+  },
+  {
+    "type": "ROLE_GARRISON",
+    "description": "TXT_KEY_ROLE_GARRISON",
+    "help": "TXT_KEY_ROLE_GARRISON_HELP",
+    "flavors": {"FLAVOR_MILITARY": 5, "FLAVOR_PRODUCTION": 2},
+    "emphasizes": ["EMPHASIZE_PRODUCTION"],
+    "defenders": 1,
+    "key_buildings": ["BUILDINGCLASS_PALISADE", "BUILDINGCLASS_WALLS", "BUILDINGCLASS_TRAINING_YARD", "BUILDINGCLASS_ARCHERY_RANGE"]
+  },
+  {
+    "type": "ROLE_PRODUCTION",
+    "description": "TXT_KEY_ROLE_PRODUCTION",
+    "help": "TXT_KEY_ROLE_PRODUCTION_HELP",
+    "flavors": {"FLAVOR_PRODUCTION": 5, "FLAVOR_GROWTH": 1},
+    "emphasizes": ["EMPHASIZE_PRODUCTION"],
+    "key_buildings": ["BUILDINGCLASS_FORGE", "BUILDINGCLASS_SHIPYARD", "BUILDINGCLASS_COMMAND_POST", "BUILDINGCLASS_SIEGE_WORKSHOP"]
+  }
+]

@@ -543,53 +543,57 @@ impl Game {
         //FfH: End Modify
     }
 
-    /// C++ `CvUnit::jumpToNearestValidPlot` (CvUnit.cpp:3648-3727).
+    /// C++ `CvUnit::jumpToNearestValidPlot` (CvUnit.cpp:3648-3727), with one rule of this game
+    /// (docs/SUPPLY.md, "Second pass" B; docs/PORTING.md, "Changes from FFH2"): a land unit whose
+    /// owner has a city on the unit's landmass is moved only to a plot connected over land to a
+    /// city of its owner (see [`Game::unit_bump_connected_plots`]); when there is none, to its
+    /// owner's nearest city on that landmass. Other units are bumped as in FFH2.
     /// Returns false if the unit was killed (no valid plot).
     pub fn unit_jump_to_nearest_valid_plot(&mut self, u: UnitId) -> bool {
         // (C++ FAssertMsg: neither attacking nor fighting)
         let (x, y) = (self.units[u].x, self.units[u].y);
         let owner = self.units[u].owner;
-        let team = self.unit_get_team(u);
         let domain = self.unit_get_domain_type(u);
 
         let nearest_city = self.map_find_city(x, y, Some(owner), None, true, false, None, None, None);
+
+        let valid: Vec<bool> = self.map.plot_ids().map(|q| self.unit_bump_plot_is_valid(u, q)).collect();
+        // A land unit with a city of its owner on its landmass: `nearest_city` is that city.
+        let connected = if domain == DomainType::DOMAIN_LAND { nearest_city.map(|_| self.unit_bump_connected_plots(u, &valid)) } else { None };
 
         let mut best_value = MAX_INT;
         let mut best_plot: Option<PlotIdx> = None;
 
         for loop_plot in self.map.plot_ids() {
-            if self.plot_is_valid_domain_for_location(loop_plot, u) && self.unit_can_move_into(u, loop_plot, false, false, false) {
-                let loop_team = self.plot_get_team(loop_plot);
-                if self.unit_can_enter_area(u, loop_team, self.map.plots[loop_plot].area, false)
-                    && !self.unit_is_enemy(u, loop_team, Some(loop_plot))
-                {
-                    // (C++ FAssertMsg(!atPlot(pLoopPlot)))
-                    if (domain != DomainType::DOMAIN_AIR || self.plot_is_friendly_city(loop_plot, u, true)) && self.map.plots[loop_plot].revealed[team] {
-                        let (loop_x, loop_y) = self.map.xy(loop_plot);
-                        let mut value = self.plot_distance(x, y, loop_x, loop_y) * 2;
-
-                        if let Some(city) = nearest_city {
-                            let (city_x, city_y) = (self.cities[city].x, self.cities[city].y);
-                            value += self.plot_distance(loop_x, loop_y, city_x, city_y);
-                        }
-
-                        if domain == DomainType::DOMAIN_SEA && !self.plot_is_water(self.unit_plot(u)) {
-                            if !self.plot_is_water(loop_plot)
-                                || !self.plot_is_adjacent_to_area(loop_plot, self.unit_area(u))
-                            {
-                                value *= 3;
-                            }
-                        } else if self.map.plots[loop_plot].area != Some(self.unit_area(u)) {
-                            value *= 3;
-                        }
-
-                        if value < best_value {
-                            best_value = value;
-                            best_plot = Some(loop_plot);
-                        }
-                    }
-                }
+            if !valid[loop_plot.idx()] || connected.as_ref().is_some_and(|c| !c[loop_plot.idx()]) {
+                continue;
             }
+            // (C++ FAssertMsg(!atPlot(pLoopPlot)))
+            let (loop_x, loop_y) = self.map.xy(loop_plot);
+            let mut value = self.plot_distance(x, y, loop_x, loop_y) * 2;
+
+            if let Some(city) = nearest_city {
+                let (city_x, city_y) = (self.cities[city].x, self.cities[city].y);
+                value += self.plot_distance(loop_x, loop_y, city_x, city_y);
+            }
+
+            if domain == DomainType::DOMAIN_SEA && !self.plot_is_water(self.unit_plot(u)) {
+                if !self.plot_is_water(loop_plot) || !self.plot_is_adjacent_to_area(loop_plot, self.unit_area(u)) {
+                    value *= 3;
+                }
+            } else if self.map.plots[loop_plot].area != Some(self.unit_area(u)) {
+                value *= 3;
+            }
+
+            if value < best_value {
+                best_value = value;
+                best_plot = Some(loop_plot);
+            }
+        }
+
+        // No connected plot: the owner's nearest city on the landmass.
+        if best_plot.is_none() && connected.is_some() {
+            best_plot = nearest_city.map(|c| self.city_plot(c));
         }
 
         let mut valid = true;
@@ -602,6 +606,60 @@ impl Game {
         }
 
         valid
+    }
+
+    /// Whether `jumpToNearestValidPlot` may put unit `u` on plot `q`: a plot of its domain it can
+    /// move into (no attack), whose owner's borders it may enter, not held by an enemy, revealed
+    /// to its team, and for an air unit a friendly city.
+    fn unit_bump_plot_is_valid(&self, u: UnitId, q: PlotIdx) -> bool {
+        if !self.plot_is_valid_domain_for_location(q, u) || !self.unit_can_move_into(u, q, false, false, false) {
+            return false;
+        }
+        let loop_team = self.plot_get_team(q);
+        if !self.unit_can_enter_area(u, loop_team, self.map.plots[q].area, false) || self.unit_is_enemy(u, loop_team, Some(q)) {
+            return false;
+        }
+        let team = self.unit_get_team(u);
+        (self.unit_get_domain_type(u) != DomainType::DOMAIN_AIR || self.plot_is_friendly_city(q, u, true)) && self.map.plots[q].revealed[team]
+    }
+
+    /// The plots of unit `u`'s landmass connected over land to a city of its owner, by plot index:
+    /// flooded from the owner's cities on the unit's area through adjacent plots of that area
+    /// that are `valid` (by [`Game::unit_bump_plot_is_valid`]). The city plots themselves are in
+    /// the set when valid; a city plot that is not valid starts the flood all the same.
+    fn unit_bump_connected_plots(&self, u: UnitId, valid: &[bool]) -> Vec<bool> {
+        let owner = self.units[u].owner;
+        let area = self.unit_area(u);
+        let mut seen = vec![false; valid.len()];
+        let mut connected = vec![false; valid.len()];
+        let mut queue: Vec<PlotIdx> = Vec::new();
+        for &c in &self.players[owner].cities {
+            if self.cities.contains(c) && self.city_area(c) == area {
+                let q = self.city_plot(c);
+                if !seen[q.idx()] {
+                    seen[q.idx()] = true;
+                    connected[q.idx()] = valid[q.idx()];
+                    queue.push(q);
+                }
+            }
+        }
+        let mut i = 0;
+        while i < queue.len() {
+            let (x, y) = self.map.xy(queue[i]);
+            i += 1;
+            for dy in -1..=1 {
+                for dx in -1..=1 {
+                    let Some(n) = self.plot_xy(x, y, dx, dy) else { continue };
+                    if seen[n.idx()] || !valid[n.idx()] || self.map.plots[n].area != Some(area) {
+                        continue;
+                    }
+                    seen[n.idx()] = true;
+                    connected[n.idx()] = true;
+                    queue.push(n);
+                }
+            }
+        }
+        connected
     }
 
     /// Card: Gryphon Riders (docs/CARDS.md): whether unit `u` cannot end its owner's turn where it

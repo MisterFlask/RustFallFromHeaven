@@ -315,12 +315,12 @@ fn the_ordered_formation_is_the_one_fought() {
     w.units(p1, "UNIT_WARRIOR", to, 2);
     let axemen = w.units(p0, "UNIT_AXEMAN", from, 3);
     let archers = w.units(p0, "UNIT_ARCHER", from, 2);
-    let giant = w.unit(p0, "UNIT_HILL_GIANT", from);
+    let giant = w.unit(p0, "UNIT_WAR_ELEPHANT", from);
     let all: Vec<UnitId> = axemen.iter().chain(&archers).copied().chain([giant]).collect();
     let army = w.g.army_form(p0, &all).expect("an army");
     let grp = w.g.armies[army].group.expect("the army's group");
     let (x, y) = w.g.map.xy(to);
-    // The archers in front, the axemen behind, the giant in the rear across lanes 2 and 3.
+    // The archers in front, the axemen behind, the war elephant (an animal is no army unit) in the rear across lanes 2 and 3.
     let order = vec![
         Place { unit: archers[0], lane: 0, row: 0 },
         Place { unit: archers[1], lane: 3, row: 0 },
@@ -339,7 +339,7 @@ fn the_ordered_formation_is_the_one_fought() {
         assert_eq!(lf.place, Some((p.lane, p.row)), "{:?}", p.unit);
     }
     let g = log.fighters.iter().find(|lf| lf.unit == giant).unwrap();
-    assert!(g.large && g.max_hp == 180, "a large unit: two cells and 150% of its role's HP ({})", g.max_hp);
+    assert!(g.large && g.max_hp == 150, "a large unit: two cells and 150% of its role's HP ({})", g.max_hp);
     assert_eq!((r.sides[0].committed, r.sides[0].used), (6, 7));
     check_reach(log);
 
@@ -352,7 +352,7 @@ fn the_ordered_formation_is_the_one_fought() {
     assert!(f.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, Some(bad)).is_err());
     assert!(f.g.save() == before, "a refused order changes nothing");
 
-    // No order: the auto formation (the giant first, in the centre of the front row).
+    // No order: the auto formation (the large unit first, in the centre of the front row).
     let mut f = w.fork(3);
     f.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, None).expect("the attack");
     let r = f.g.battle_reports.last().unwrap().clone();

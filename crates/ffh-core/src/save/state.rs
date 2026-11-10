@@ -45,7 +45,7 @@ persist_newtype!(
     SpecialBuildingType, SpecialUnitType, SpecialistType, SpellType, TaskType, TechType,
     TerrainType, TradeableItem, TraitType, UnitAIType, UnitArtStyleType, UnitClassType,
     UnitCombatType, UnitType, UpkeepType, VictoryType, VoteSourceType, VoteType, WarPlanType,
-    WorldSizeType, YieldType, CulturalActionType, GovernorProfileType, GovernorTraitType,
+    WorldSizeType, YieldType, CulturalActionType, CityRoleType, GovernorTraitType,
     BuildingTierType, ResearchPathType, BattleTacticType,
 );
 
@@ -64,7 +64,7 @@ use crate::army::{Army, March, RecruitDest};
 persist_struct!(Army { id, owner, name, group, target_size, commander, disband_to, formed_turn, requisition, tactic, tactic_next, unsupplied_turns });
 persist_struct!(March { dest, stalled, left_turn, from_city, diverted });
 use crate::governors::Governor;
-persist_struct!(Governor { id, owner, name, profile, traits, origin, born_turn, city, since_turn });
+persist_struct!(Governor { id, owner, name, trait_, born_turn, city, since_turn });
 
 impl Persist for RecruitDest {
     fn write(&self, w: &mut Writer) {
@@ -92,7 +92,7 @@ persist_struct!(CultureChannel { action, target, religion, since_turn });
 // ---- CvStructs.h ----
 
 persist_struct!(XYCoords { x, y });
-persist_struct!(OrderData { order_type, data1, data2, save, dest, requisition });
+persist_struct!(OrderData { order_type, data1, data2, save, dest, requisition, empire });
 persist_struct!(MissionData { mission_type, data1, data2, flags, push_turn });
 persist_struct!(TradeData { item_type, data, offering, hidden });
 persist_struct!(Tribute { other, turn, value, demand });
@@ -388,8 +388,8 @@ persist_struct!(City {
     ai_emphasize_avoid_growth_count, ai_emphasize_great_people_count, ai_emphasize_yield_count,
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
     ai_emphasize_avoid_unhealthy_citizens_count, culture_channel, culture_diverted, culture_pressure,
-    culture_revolt_level, recruit_default, direct_rule, rule_changed_turn, governor,
-    governor_penalty_turns, building_tiers, free_bonus_choices, muster_production, ritual_charges, crew_build,
+    culture_revolt_level, recruit_default, direct_rule, governor, role, role_overridden,
+    building_tiers, free_bonus_choices, muster_production, ritual_charges, crew_build,
     garrison_tactic, garrison_tactic_next,
 });
 
@@ -446,7 +446,7 @@ persist_struct!(Player {
     culture_history, espionage_history, ai_civic_timer, ai_religion_timer, ai_num_train_ai_units,
     ai_num_ai_units, ai_peacetime_trade_value, ai_peacetime_grant_value, ai_gold_traded_to,
     ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, tributes, armies, army_count,
-    governors, governor_count, once_spells, card_traits, alignment_attitude, research_path,
+    governors, governor_count, governor_priorities, once_spells, card_traits, alignment_attitude, research_path,
 });
 
 persist_struct!(Team {

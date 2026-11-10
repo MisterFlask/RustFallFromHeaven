@@ -372,11 +372,14 @@ pub struct Player {
     pub armies: Vec<ArmyId>,
     /// Armies formed so far (names them "Nth Army").
     pub army_count: i32,
-    /// This player's governors (docs/GOVERNORS.md), in the order they joined; those without a
-    /// city are its bench.
+    /// This player's governors (docs/GOVERNORS.md), one for each of its cities that has been
+    /// governed, in the order they took office.
     pub governors: Vec<GovernorId>,
-    /// Governors drawn so far.
+    /// Governors given so far (names the generic ones).
     pub governor_count: i32,
+    /// Its empire priorities for its governed cities' roles (at most `GOVERNOR_MAX_PRIORITIES`,
+    /// distinct): a priority role weighs more in each city's proposal.
+    pub governor_priorities: Vec<CityRoleType>,
     /// Not in C++: the once-a-game spells (`SpellInfo::once`, the great-person cards' world
     /// spells; docs/DECKS.md) this player has cast, in the order cast.
     pub once_spells: Vec<SpellType>,
@@ -647,6 +650,7 @@ impl Player {
             army_count: 0,
             governors: Vec::new(),
             governor_count: 0,
+            governor_priorities: Vec::new(),
             once_spells: Vec::new(),
             card_traits: Vec::new(),
             alignment_attitude: IdxVec::from_elem(0, d.alignments.len()),

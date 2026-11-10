@@ -17,10 +17,14 @@ fn all<I: Idx>(n: usize) -> impl Iterator<Item = I> {
 
 /// The buildable list: units, buildings, projects and processes the city screen shows
 /// (`canTrain/canConstruct/canCreate(.., bTestVisible = true)`), `enabled` when they can be
-/// started now, with cost (production needed) and turns.
+/// started now, with cost (production needed) and turns. A governed city (docs/GOVERNORS.md)
+/// lists only what may be an empire order, `enabled` when the city can take it as one now (the
+/// governor builds the rest).
 pub fn buildable(v: &Viewer, c: CityId) -> Json {
     let g = v.g;
     let d = g.d;
+    let governed = g.city_is_governed(c);
+    let empire = |order: OrderType, data: usize| !governed || g.order_may_be_empire(order, data as i32);
     let mut out = Vec::new();
     for u in d.units.keys() {
         if g.city_offers_unit(c, u) && g.city_can_train(c, u, false, true, false, false) {
@@ -34,7 +38,7 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
         }
     }
     for b in d.buildings.keys() {
-        if g.city_can_construct(c, b, false, true, false) {
+        if empire(OrderType::ORDER_CONSTRUCT, b.idx()) && g.city_can_construct(c, b, false, true, false) {
             let mut j = crate::jobj! {
                 "order" => Json::idx(OrderType::ORDER_CONSTRUCT), "type" => Json::idx(b),
                 "enabled" => g.city_can_construct(c, b, false, false, false),
@@ -54,7 +58,7 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
         }
     }
     for p in d.processes.keys() {
-        if g.city_can_maintain(c, p, false) {
+        if !governed && g.city_can_maintain(c, p, false) {
             out.push(crate::jobj! { "order" => Json::idx(OrderType::ORDER_MAINTAIN), "type" => Json::idx(p), "enabled" => true, "cost" => Json::Null, "turns" => Json::Null });
         }
     }
@@ -128,7 +132,7 @@ fn queue(v: &Viewer, c: CityId) -> Json {
             OrderType::ORDER_CREATE if ok(d.projects.len()) => Json::from(g.city_production_turns_left_project(c, ProjectType::from_usize(k as usize), i as i32)),
             _ => Json::Null,
         };
-        let mut j = crate::jobj! { "order" => Json::idx(o.order_type), "type" => k, "save" => o.save, "turns" => turns };
+        let mut j = crate::jobj! { "order" => Json::idx(o.order_type), "type" => k, "save" => o.save, "turns" => turns, "empire" => o.empire };
         // This game's armies: where a trained land combat unit goes.
         if o.order_type == OrderType::ORDER_TRAIN && ok(d.units.len()) && g.unit_type_is_army_unit(UnitType::from_usize(k as usize)) {
             j.set("dest", crate::command::recruit_dest_json(o.dest));
@@ -203,13 +207,7 @@ pub fn happy_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
     if city.happiness_timer > 0 {
         add_part(&mut out, &format!("past events ({} turns)", city.happiness_timer), g.d.defines.temp_happy);
     }
-    add_part(&mut out, "governor", governor(g, c).happy.max(0));
     out
-}
-
-/// City `c`'s governor's modifiers.
-fn governor(g: &ffh_core::game::Game, c: CityId) -> ffh_core::governors::GovMods {
-    g.city_governor_mods(c)
 }
 
 /// What makes city `c` unhappy: the terms of C++ `CvCity::unhappyLevel`, which they sum to
@@ -250,7 +248,6 @@ pub fn unhappy_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
     step(&mut out, "being a vassal", None, g.city_vassal_unhappiness(c).max(0));
     step(&mut out, "espionage", None, city.espionage_happiness_counter.max(0));
     step(&mut out, "revolt pressure", None, g.city_culture_unhappiness(c));
-    step(&mut out, "governor", None, -governor(g, c).happy.min(0));
     for civic in d.civics.keys() {
         let label = format!("wants {}", crate::names::display(d, civic));
         step(&mut out, &label, Some(g.player_get_civic_percent_anger(owner, civic, false)), 0);
@@ -283,7 +280,6 @@ pub fn good_health_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
     add_part(&mut out, "buildings", g.city_total_good_building_health(c));
     add_part(&mut out, "other", g.players[city.owner].extra_health + city.extra_health);
     add_part(&mut out, "difficulty", g.d.handicaps[g.city_handicap_type(c)].health_bonus);
-    add_part(&mut out, "governor", governor(g, c).health.max(0));
     out
 }
 
@@ -304,7 +300,6 @@ pub fn bad_health_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
     add_part(&mut out, "buildings", -g.city_total_bad_building_health(c).min(0) - city.extra_building_bad_health.min(0));
     add_part(&mut out, "other", -(g.players[city.owner].extra_health + city.extra_health));
     add_part(&mut out, "difficulty", -g.d.handicaps[g.city_handicap_type(c)].health_bonus);
-    add_part(&mut out, "governor", -governor(g, c).health.min(0));
     out
 }
 

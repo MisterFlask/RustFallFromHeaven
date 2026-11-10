@@ -57,14 +57,15 @@
   "STARVATION_FLOOR_PERCENT": 25,
   // Starvation: percent change of the damage the army's units deal in a battle
   "STARVATION_DAMAGE_DEALT_PERCENT": -25,
-  // ==== Governors (GAMEOPTION_GOVERNORS, docs/GOVERNORS.md) ====
-  "GOVERNOR_DIRECT_RULE_CITIES": 4,
-  "GOVERNOR_DIRECT_RULE_SWAP_COOLDOWN": 10,
-  "GOVERNOR_BENCH_SURPLUS": 2,
-  "GOVERNOR_BENCH_GEN_CHANCE": 15,
-  "GOVERNOR_SWAP_PENALTY": 25,
-  "GOVERNOR_SWAP_TURNS": 5,
-  "GOVERNOR_MAX_TRAITS": 2,
+  // ==== Governors (docs/GOVERNORS.md) ====
+  // percent chance a new governor has a trait (governor_traits.jsonc, drawn uniformly)
+  "GOVERNOR_TRAIT_CHANCE": 50,
+  // the suitability (percent) a city needs for a role the player chooses for it
+  "GOVERNOR_ROLE_MIN_SUITABILITY": 75,
+  // percent added to a role's weight in a city's proposal when the role is one of the owner's priorities
+  "GOVERNOR_PRIORITY_WEIGHT": 30,
+  // the empire priorities a player may set
+  "GOVERNOR_MAX_PRIORITIES": 2,
   // ==== Engagement combat (GAMEOPTION_ENGAGEMENTS; phase 6 of the owner's spec, whose
   //      parameter names follow each comment; a unit's rows and rank preference: engage_rows and
   //      engage_row_order in units.jsonc; plot

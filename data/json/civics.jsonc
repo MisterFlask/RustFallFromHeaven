@@ -14,8 +14,10 @@
     "anarchy_length": 1,
     "upkeep": "UPKEEP_LOW",
     "ai_weight": -1000,
-    "num_cities_maintenance_modifier": 25,
+    "num_cities_maintenance_modifier": 40,
     "war_weariness_modifier": -50,
+    // This game's governors (docs/GOVERNORS.md): every city is ruled directly.
+    "direct_rule": true,
     "improvement_yield_changes": "",
     "we_love_the_king": "TXT_KEY_CIVIC_WE_LOVE_DESPOT"
   },
@@ -48,7 +50,10 @@
     "anarchy_length": 1,
     "upkeep": "UPKEEP_HIGH",
     "ai_weight": -300,
-    "distance_maintenance_modifier": 10,
+    "distance_maintenance_modifier": 25,
+    "num_cities_maintenance_modifier": 30,
+    // This game's governors (docs/GOVERNORS.md): every city is ruled directly.
+    "direct_rule": true,
     "capital_yield_modifiers": [0, 50, 0],
     "capital_commerce_modifiers": [50, 0, 0],
     "improvement_yield_changes": "",

@@ -208,7 +208,7 @@ impl Game {
         self.player_do_march(p);
         self.player_march_join(p);
         self.player_army_sync(p);
-        // This game's governors (docs/GOVERNORS.md): direct rule, penalties, the bench.
+        // This game's governors (docs/GOVERNORS.md): the cities in the mode the civics give.
         self.player_governance_turn(p);
         // This game's armies: the requisition, before the cities produce (a new requisition order
         // takes this turn's production).
@@ -248,7 +248,6 @@ impl Game {
                 self.city_do_turn(c);
             }
         }
-        self.player_governance_turn_end(p);
 
         // Xienwolf Tweak 12/27/08 (Stasis Pauses Golden Ages)
         let pl = &self.players[p];

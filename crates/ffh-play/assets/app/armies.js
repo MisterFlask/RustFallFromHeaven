@@ -24,6 +24,7 @@ import { h, errorText } from "./dom.js";
 import { openModal, ask } from "./modals.js";
 import { run } from "./commands.js";
 import { addHelp } from "./help.js";
+import { pickEmpireItem, orderEmpire } from "./governors.js";
 
 // ---- the rules, in the help display (help.js; the Armies screen's (i) opens it) ---------------
 
@@ -49,6 +50,7 @@ addHelp({
       h("li", "An army requisitions soldiers from the cities you pick for it (the Armies screen [F5]) while it is short of its target size; without a target size it requisitions nothing."),
       h("li", "Each picked city trains one unit for it at a time, first in its queue (placed as your turn ends), in a governed city too: what the city was building waits, with its progress kept."),
       h("li", "Releasing a city withdraws its order for the army."),
+      h("li", "Order unit: an empire order for one unit in a governed city you pick (the nearest is suggested), ahead of its governor's choice. The unit marches to the army."),
     ),
     h("h4", "Recruits on the march"),
     h(
@@ -232,6 +234,8 @@ export async function openArmies({ select, centerOn } = {}) {
       centerOn?.(t.x, t.y);
       select?.([t.id]);
     };
+    // Empire orders (governors.js) go to governed cities only.
+    const anyGoverned = r.garrisons.some((gr) => gr.governed);
     const armies = r.armies.map((a) => {
       const n = a.units.length;
       const go = () => {
@@ -265,6 +269,10 @@ export async function openArmies({ select, centerOn } = {}) {
           a.disband_to ? h("span.dim", ` · disbanded: marching to ${a.disband_to}`) : null,
         ),
         h("div.dim", composition(a.units) || "—"),
+        // This game's governors: the units on order for the army in governed cities.
+        a.on_order?.length
+          ? h("ul.army-on-order", a.on_order.map((o) => h("li", { "data-city": o.city }, h("span", `${dname("UnitType", o.unit)} in ${o.name}`), h("span.dim", ` · ${turns(o.turns)} · on order`))))
+          : null,
         // Supply (docs/SUPPLY.md, section 5): the state in bare words.
         h(`div.army-supply${a.supply?.state === "supplied" && a.supply?.line ? "" : ".warn"}`, { title: `Supply line: the cheapest path over land to one of your cities or ships, of cost ${r.supply_budget} at most. Cut: Hunger, then Starvation.` }, a.supply?.text ?? ""),
         h("div.row", tacticControl(a.tactic, a.tactic_next, (t) => act({ c: "army_tactic", army: a.id, tactic: t }), "army-tactic")),
@@ -288,6 +296,21 @@ export async function openArmies({ select, centerOn } = {}) {
             { disabled: !a.upgrades, onclick: () => act({ c: "army_upgrade", army: a.id }), title: a.upgrades ? "Upgrade every unit that can, the most experienced first, while the gold lasts" : "No unit of the army has an upgrade" },
             a.upgrades ? `Upgrade all: ${a.upgrades} (${a.upgrade_price} gold)` : "Upgrade all",
           ),
+          a.disband_to || !anyGoverned
+            ? null
+            : h(
+                "button.small.army-order-unit",
+                {
+                  title: "Order a unit for the army in a governed city, ahead of its governor's choice",
+                  onclick: async () => {
+                    const item = await pickEmpireItem({ army: a.id, title: `Order a unit for the ${a.name}` });
+                    if (!item) return;
+                    await orderEmpire({ order: item.order, data: item.type, army: a.id, beforeMap: () => m.close(null) });
+                    if (!m.closed) load();
+                  },
+                },
+                "Order unit",
+              ),
           a.disband_to ? null : h("button.small.danger", { onclick: () => disband(a), title: "Its units march to the nearest of your cities and join the garrison there; its requisition ends" }, "Disband"),
         ),
         req,

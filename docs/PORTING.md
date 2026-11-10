@@ -116,7 +116,7 @@ flag.
   queue of timed actions of formats 4-5: Festival, Trade Fair, Incite Unrest, Siphon Knowledge,
   Foment Revolt, Flip City, Spread Religion, removed on the owner's direction of 2026-10-30).
 - **Armies** (docs/ARMIES.md; not an option since 2026-11-05, the owner's decision: every game has it, the AI-only ones too; older saves do not load): land combat units (not mages, recon units,
-  heroes or summons) serve in named armies, kept one selection group each, or in a city's
+  heroes, summons or animals: animals since 2026-11-10, docs/SUPPLY.md "Second pass" B) serve in named armies, kept one selection group each, or in a city's
   garrison. An army requisitions soldiers from the cities its owner picks for it (any city,
   directly ruled or governed) while it is short of its target size: an order at the front of the
   city's queue that interrupts its production (which keeps its progress) and cannot be taken off
@@ -131,16 +131,21 @@ flag.
   requisition cities. Save format 9 (2026-10-31, the owner's design: requisition and marching recruits
   replace the invisible transit, "Reinforce to N" and the governed cities' feed mode of formats
   6-8).
-- **Governors** (docs/GOVERNORS.md; not an option since 2026-11-05, the owner's decision: every game has it, the AI-only ones too; older saves do not load): a player rules four cities directly
-  (the capital always); every other city is governed: its production is its governor's (it cannot
-  be set by hand), developing the city; an army's requisition goes ahead of it (the feed mode,
-  formats 7-8, is gone since format 9, 2026-10-31). World wonders, palaces, rituals and settlers
-  only in directly ruled cities. Governors come from a
-  bench drawn toward the leader's flavors, with a profile (the flavors their city's production
-  leans toward, its citizens' emphasis) and up to two traits (small modifiers of their city);
-  replacing one costs the city 25% of its production and commerce for 5 turns; a lost city's
-  governor leaves the game. Swapping a city in or out of direct rule locks it for 10 turns. A
-  governed city's cultural channel is its owner's, never its governor's (2026-10-30). Save format 7.
+- **Governors** (docs/GOVERNORS.md; every game has them, the AI-only ones too; the rules of
+  2026-11-10, the owner's design "Governors and army requisition", which replaced the first rules
+  of 2026-10-29: four directly ruled cities, a bench, profiles, numeric traits, a swap penalty and
+  cooldown): the government civic decides who runs cities. Under Despotism and God King
+  (`direct_rule`) the player runs every city; under every other government every city is governed,
+  the capital included, and a change of civics hands all cities over or takes them back at once.
+  A governed city has a role (Growth, Research, Commerce, Culture, Garrison, Production), proposed
+  from its building tiers of the role's four key buildings and the owner's up to two empire
+  priorities; the player may overrule it with any role the city has 75% suitability for. Its
+  governor (a name, at most one judgment trait: Cautious, Ambitious; no modifiers) builds it; the
+  player places only empire orders there (any unit, wonders, palaces, rituals), ahead of the
+  governor's choice. Settlers, wonders, palaces and rituals are no longer forbidden in governed
+  cities. Hand-run civics cost more with size: Despotism city-count maintenance +25% -> +40%; God
+  King distance maintenance +10% -> +25% and city-count maintenance +30% (new). A governed city's
+  cultural channel is its owner's (2026-10-30). Save format 30.
 - **Battle tactics** (docs/TACTICS.md; 2026-11-09, the owner's direction "doctrines before grids"):
   every army has a standing battle tactic, and every city one for its garrison (`battle_tactics.jsonc`:
   Line, Charge, Volley, Vanguard; four tactics). A side's auto formation in every battle, attacking or
@@ -158,6 +163,13 @@ flag.
   heal, its recruits wait), then starving (each unit loses 10% of its full HP a turn, down to 25%,
   never killed; it deals 25% less damage in battles). It replaces the old supply rule (within
   `ARMY_SUPPLY_RANGE` of the trade network, which only paused recruits). Save format 29.
+- **A bump keeps a land unit connected to home** (docs/SUPPLY.md, "Second pass" B; 2026-11-10):
+  `jumpToNearestValidPlot` (the bump of a unit standing where it may no longer be: a peace, a
+  border change, a stack it may not share) moves a land unit whose owner has a city on its
+  landmass only to a plot connected over land to a city of its owner (flooded from those cities
+  through the plots the bump may use), and to its owner's nearest city there when there is none.
+  FFH2 took the nearest valid plot, which could be a pocket closed by other players' borders, where
+  an army traced no supply line and starved. Other units are bumped as in FFH2.
 - **Engagement combat** (docs/ENGAGEMENTS.md; not an option since 2026-11-03, the owner's
   decision: `GAMEOPTION_ENGAGEMENTS` was removed, every game fights it, the AI-only ones too, with or
   without armies; older saves do not load): a land attack is a **formation battle** (revision 4,

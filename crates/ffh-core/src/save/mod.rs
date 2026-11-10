@@ -117,7 +117,11 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `garrison_tactic_next`, the battle log's `tactics`.
 /// - 29: supply lines (docs/SUPPLY.md): `Army::unsupplied_turns`; the battle log's
 ///   `LogEvent::Starvation`.
-pub const FORMAT_VERSION: u32 = 29;
+/// - 30: governors v2 (docs/GOVERNORS.md): the government civic decides who runs the cities;
+///   `City::role`, `role_overridden`, `Player::governor_priorities`, `OrderData::empire`; a
+///   `Governor` has one trait at most (`trait_`) and always a city; gone: `City::rule_changed_turn`,
+///   `governor_penalty_turns`, `Governor::profile`, `traits`, `origin`, the bench.
+pub const FORMAT_VERSION: u32 = 30;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

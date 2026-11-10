@@ -597,6 +597,8 @@ export async function openCivics() {
       ? h(
           "div.civic-summary",
           p.valid ? h("span", `Revolution: ${p.anarchy ? `${turns(p.anarchy)} of anarchy` : "no anarchy"}, upkeep ${p.upkeep} gold per turn.`) : (p.changed ? h("span.warn", { title: "The revolution timer, a civic you cannot leave, or anarchy" }, "This change is not possible now.") : h("span.warn", "No change.")),
+          // This game's governors: the government decides who runs the cities.
+          p.rule_change ? h("div.civic-rule-change", p.rule_change === "governed" ? "Every city will be handed to governors." : "Every city will be ruled directly.") : null,
         )
       : h("div.civic-summary.dim", `Upkeep ${c.upkeep} gold per turn.${c.anarchy ? ` Anarchy: ${turns(c.anarchy)}.` : ""}${c.revolution_timer ? ` Next revolution in ${turns(c.revolution_timer)}.` : ""} Pick civics to see the change.`);
     m.setBody(h("div.civics", columns), summary);

@@ -1,31 +1,26 @@
 //! Governors (this game's own rules, not FFH2's; docs/GOVERNORS.md).
 //!
-//! **Direct rule.** A player rules up to `GOVERNOR_DIRECT_RULE_CITIES` cities directly, the
-//! capital always among them; they work as cities always have. Every other city is governed. A
-//! new city takes a free direct slot if there is one, else it is governed: gaining a city never
-//! takes direct rule away from another. The player may swap a governed city with a directly
-//! ruled one (or promote one into a free slot); a city whose status changed keeps it for
-//! `GOVERNOR_DIRECT_RULE_SWAP_COOLDOWN` turns. World wonders, rituals (projects) and settlers
-//! are built only in directly ruled cities.
+//! **Who runs the cities.** The government civic decides: under a civic with `direct_rule`
+//! (Despotism, God King) every city of its player is ruled directly; under any other every city
+//! is governed, the capital included ([`Game::player_rules_directly`]). A city gained takes its
+//! owner's mode; a change of civics hands every city over, or takes every city back, at once
+//! ([`Game::player_governance_sync`]). Barbarian cities are always ruled directly.
 //!
-//! **Governed cities.** Their production is automated (the controller's production choice, which
-//! reads the governor's profile; ffh-ai `governor.rs`) and cannot be set by hand: the governor
-//! develops the city (buildings, workers, local defenders), and its units stay in its garrison.
-//! An army may requisition soldiers from it as from any city (docs/ARMIES.md): a requisition order
-//! goes to the front of its queue, ahead of the governor's choice. The governor's profile weighs
-//! the city AI's flavors and sets the citizens' emphasis; its traits are small modifiers of the
-//! city ([`Game::city_governor_mods`]).
+//! **Roles.** A governed city has a role (`city_roles.jsonc`), which its governor runs it by: the
+//! role's flavors weigh what it builds and its emphasis is the citizens'. The role is the city's
+//! proposal ([`Game::city_role_proposal`]: the role its building tiers suit best, the owner's
+//! empire priorities weighing more) unless the player chose another one for it, which needs a
+//! suitability of `GOVERNOR_ROLE_MIN_SUITABILITY` ([`Game::player_set_city_role`]).
 //!
-//! **Governors and the bench.** A governor is a persistent record (`Governor`): name, profile,
-//! traits, origin, tenure. A player's governors without a city are its bench. Below the bench's
-//! target (the vacant posts plus `GOVERNOR_BENCH_SURPLUS`), each turn adds a candidate with
-//! `GOVERNOR_BENCH_GEN_CHANCE`% (the game's RNG), its profile and traits drawn toward the leader's
-//! flavors. A governed city without a governor runs under the interim profile until one is
-//! assigned: a newly governed city takes the best-matching candidate, and an interim city takes
-//! the next candidate that appears. Replacing a governor costs the city
-//! `GOVERNOR_SWAP_PENALTY`% of its production and commerce for `GOVERNOR_SWAP_TURNS` turns (both
-//! cities when a governor moves from one to another); the replaced governor returns to the
-//! bench. A city captured, flipped, traded or razed loses its governor to the game.
+//! **Governors** are characters: a name and at most one trait (`governor_traits.jsonc`: how it
+//! judges, never a modifier of the city). A city gets one the first time it is governed; it stays
+//! with the city, dormant while the city is ruled directly, and leaves the game with a city lost.
+//!
+//! **Production.** A governed city's production is the governor's (the controller's production
+//! choice). The player places empire orders there ([`Game::city_push_empire_order`]: a unit, a
+//! wonder, a palace, a project), which go behind an army's requisition orders (docs/ARMIES.md) and
+//! ahead of the governor's choice, which keeps its progress and resumes after them. The governor
+//! is not asked while a requisition or empire order leads the queue.
 
 use std::collections::BTreeSet;
 
@@ -33,6 +28,8 @@ use ffh_data::*;
 
 use crate::game::Game;
 use crate::ids::*;
+use crate::structs::OrderKind;
+use crate::utils::{is_national_wonder_class, is_team_wonder_class, is_world_wonder_class};
 
 /// A governor (`Game::governors`; owner list `Player::governors`).
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -40,33 +37,35 @@ pub struct Governor {
     pub id: GovernorId,
     pub owner: PlayerId,
     pub name: String,
-    pub profile: GovernorProfileType,
-    pub traits: Vec<GovernorTraitType>,
-    /// Where it came from (0: the bench's own draw). Recorded for a later layer; no effect yet.
-    pub origin: i32,
-    /// The turn it joined its player.
+    /// Its trait, if any (`GOVERNOR_TRAIT_CHANCE`%).
+    pub trait_: Option<GovernorTraitType>,
+    /// The turn it was given to its player.
     pub born_turn: i32,
-    /// The city it governs; `None`: on the bench.
-    pub city: Option<CityId>,
-    /// The turn it took its city (its tenure; no effect yet).
+    /// The city it governs (dormant while the city is ruled directly).
+    pub city: CityId,
+    /// The turn it took its city.
     pub since_turn: i32,
 }
 
-/// What a governed city's governor (its traits) and a recent replacement change in it.
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub struct GovMods {
-    /// Yield rate modifiers (food, production, commerce), %.
-    pub yield_modifier: [i32; YieldType::NUM],
-    /// Commerce rate modifiers (gold, research, culture, espionage), %.
-    pub commerce_modifier: [i32; CommerceType::NUM],
-    pub happy: i32,
-    pub health: i32,
-    pub building_production: i32,
-    pub unit_production: i32,
-    pub experience: i32,
+/// Something about a player's governed cities worth its attention ([`Game::player_governor_diagnoses`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GovDiagnosis {
+    /// No governed city has this role: one of the player's priorities, or any role once the
+    /// player governs 6 cities or more.
+    RoleUnfilled(CityRoleType),
+    /// A city whose role the player chose suits it less than a Standard city would (`suitability`
+    /// under 100).
+    PoorFit { city: CityId, role: CityRoleType, suitability: i32 },
+    /// A governed city whose first empire order has more than 30 turns left.
+    SlowOrder { city: CityId, turns: i32 },
 }
 
 pub type GovResult = Result<(), &'static str>;
+
+/// The number of governed cities from which every role is expected to be filled.
+const ALL_ROLES_FROM_CITIES: usize = 6;
+/// An empire order with more turns left than this is slow.
+const SLOW_ORDER_TURNS: i32 = 30;
 
 impl Game {
     /// Whether city `c` is governed (not directly ruled). Barbarian cities are never governed.
@@ -74,139 +73,255 @@ impl Game {
         !self.cities[c].direct_rule && !self.player_is_barbarian(self.cities[c].owner)
     }
 
-    /// The profile an interim governor runs a city with (the XML's `bInterim` one).
-    pub fn governor_interim_profile(&self) -> Option<GovernorProfileType> {
-        self.d.governor_profiles.keys().find(|&k| self.d.governor_profiles[k].interim)
+    /// Whether player `p` rules its cities directly: one of its civics has `direct_rule`, or it is
+    /// the barbarian player. Otherwise every city of it is governed.
+    pub fn player_rules_directly(&self, p: PlayerId) -> bool {
+        self.player_is_barbarian(p) || self.players[p].civics.iter().flatten().any(|&civic| self.d.civics[civic].direct_rule)
     }
 
-    /// The profile city `c` is governed with: its governor's, else the interim one. `None` for a
-    /// directly ruled city.
-    pub fn city_governor_profile(&self, c: CityId) -> Option<GovernorProfileType> {
+    /// The role city `c` is governed by; `None` for a directly ruled city.
+    pub fn city_role(&self, c: CityId) -> Option<CityRoleType> {
         if !self.city_is_governed(c) {
             return None;
         }
-        match self.cities[c].governor.and_then(|g| self.governors.get(g)) {
-            Some(gov) => Some(gov.profile),
-            None => self.governor_interim_profile(),
+        self.cities[c].role
+    }
+
+    /// City `c`'s governor's trait (`None` without a trait, and for a directly ruled city).
+    pub fn city_governor_trait(&self, c: CityId) -> Option<GovernorTraitType> {
+        if !self.city_is_governed(c) {
+            return None;
+        }
+        self.cities[c].governor.and_then(|g| self.governors.get(g)).and_then(|g| g.trait_)
+    }
+
+    /// Player `p`'s governed cities.
+    pub fn player_governed_cities(&self, p: PlayerId) -> Vec<CityId> {
+        self.players[p].cities.iter().copied().filter(|&c| self.city_is_governed(c)).collect()
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Roles
+    // ---------------------------------------------------------------------------------------
+
+    /// How well city `c`'s building tiers suit `role`, in percent: the mean, over the role's key
+    /// building classes its civilization can build at all, of its tier's core effect for the
+    /// class (`BuildingTierInfo::core_effect_percent`); 100 when it can build none of them.
+    pub fn city_role_suitability(&self, c: CityId, role: CityRoleType) -> i32 {
+        let d = self.d;
+        let civ = self.city_civilization_type(c);
+        let (mut sum, mut n) = (0, 0);
+        for &class in &d.city_roles[role].key_buildings {
+            if d.civ_building(civ, class).is_none() {
+                continue;
+            }
+            sum += d.building_tiers[self.city_tier(c, class)].core_effect_percent;
+            n += 1;
+        }
+        if n == 0 {
+            100
+        } else {
+            sum / n
         }
     }
 
-    /// The modifiers of city `c` from its governor's traits and a recent replacement (all zero
-    /// for a directly ruled city).
-    pub fn city_governor_mods(&self, c: CityId) -> GovMods {
-        let mut m = GovMods::default();
-        if !self.city_is_governed(c) {
-            return m;
+    /// The role city `c` would be given: the one with the highest suitability, weighed
+    /// `100 + GOVERNOR_PRIORITY_WEIGHT` percent for one of its owner's priorities (ties: the
+    /// first role).
+    pub fn city_role_proposal(&self, c: CityId) -> CityRoleType {
+        let p = self.cities[c].owner;
+        let priorities = &self.players[p].governor_priorities;
+        let weight = self.d.defines.governor_priority_weight;
+        self.d
+            .city_roles
+            .keys()
+            .max_by_key(|&r| {
+                let bonus = if priorities.contains(&r) { weight } else { 0 };
+                (self.city_role_suitability(c, r) * (100 + bonus), std::cmp::Reverse(r))
+            })
+            .expect("a city role")
+    }
+
+    /// Whether player `p` may choose `role` for city `c` (else why not): its governed city, with a
+    /// suitability of `GOVERNOR_ROLE_MIN_SUITABILITY` for the role (the proposal is always allowed).
+    pub fn player_check_city_role(&self, p: PlayerId, c: CityId, role: CityRoleType) -> GovResult {
+        if !self.cities.contains(c) || self.cities[c].owner != p || !self.city_is_governed(c) {
+            return Err("Not a governed city of yours.");
         }
-        let city = &self.cities[c];
-        if let Some(gov) = city.governor.and_then(|g| self.governors.get(g)) {
-            for &t in &gov.traits {
-                let info = &self.d.governor_traits[t];
-                for y in 0..YieldType::NUM {
-                    m.yield_modifier[y] += info.yield_modifier[y];
-                }
-                for i in 0..CommerceType::NUM {
-                    m.commerce_modifier[i] += info.commerce_modifier[i];
-                }
-                m.happy += info.happy;
-                m.health += info.health;
-                m.building_production += info.building_production_percent;
-                m.unit_production += info.unit_production_percent;
-                m.experience += info.experience;
+        if role.idx() >= self.d.city_roles.len() {
+            return Err("No such role.");
+        }
+        if role != self.city_role_proposal(c) && self.city_role_suitability(c, role) < self.d.defines.governor_role_min_suitability {
+            return Err("Role requires suitability 75%.");
+        }
+        Ok(())
+    }
+
+    /// Player `p` chooses `role` for city `c`: the role is set and kept (`role_overridden`) until
+    /// the player chooses again; choosing the proposal lets the role follow the proposal again.
+    pub fn player_set_city_role(&mut self, p: PlayerId, c: CityId, role: CityRoleType) -> GovResult {
+        self.player_check_city_role(p, c, role)?;
+        let proposal = self.city_role_proposal(c);
+        self.cities[c].role_overridden = role != proposal;
+        if self.cities[c].role != Some(role) {
+            self.cities[c].role = Some(role);
+            self.city_apply_role_emphasis(c);
+            self.city_governor_changed(c);
+        }
+        let turn = self.game_turn();
+        let city = self.d.text.name(&self.cities[c].name).to_string();
+        let name = self.d.text.name(&self.d.city_roles[role].base.description).to_string();
+        let suitability = self.city_role_suitability(c, role);
+        self.log.msg_at(turn, Some(p), (self.cities[c].x, self.cities[c].y), || format!("{city}: role {name} (suitability {suitability}%)."));
+        Ok(())
+    }
+
+    /// Player `p`'s empire priorities are `roles` (at most `GOVERNOR_MAX_PRIORITIES`, distinct);
+    /// its governed cities whose role follows the proposal take their new proposal.
+    pub fn player_set_governor_priorities(&mut self, p: PlayerId, roles: Vec<CityRoleType>) -> GovResult {
+        if roles.len() > self.d.defines.governor_max_priorities.max(0) as usize {
+            return Err("Too many priorities.");
+        }
+        if roles.iter().any(|r| r.idx() >= self.d.city_roles.len()) {
+            return Err("No such role.");
+        }
+        if roles.iter().collect::<BTreeSet<_>>().len() != roles.len() {
+            return Err("A role is listed twice.");
+        }
+        self.players[p].governor_priorities = roles;
+        self.player_repropose_roles(p);
+        Ok(())
+    }
+
+    /// Player `p`'s governed cities whose role follows the proposal take it again.
+    pub fn player_repropose_roles(&mut self, p: PlayerId) {
+        for c in self.players[p].cities.clone() {
+            if self.city_is_governed(c) && !self.cities[c].role_overridden {
+                self.city_repropose_role(c);
             }
         }
-        if city.governor_penalty_turns > 0 {
-            let penalty = self.d.defines.governor_swap_penalty;
-            m.yield_modifier[YieldType::YIELD_PRODUCTION.idx()] -= penalty;
-            m.yield_modifier[YieldType::YIELD_COMMERCE.idx()] -= penalty;
+    }
+
+    /// City `c` (governed, its role not chosen by the player) takes its proposal.
+    fn city_repropose_role(&mut self, c: CityId) {
+        let proposal = self.city_role_proposal(c);
+        if self.cities[c].role != Some(proposal) {
+            self.cities[c].role = Some(proposal);
+            self.city_apply_role_emphasis(c);
+            self.city_governor_changed(c);
         }
-        m
     }
 
-    /// Player `p`'s directly ruled cities.
-    pub fn player_direct_cities(&self, p: PlayerId) -> Vec<CityId> {
-        self.players[p].cities.iter().copied().filter(|&c| self.cities[c].direct_rule).collect()
+    /// The citizens' emphasis of governed city `c`: its role's, and no other.
+    fn city_apply_role_emphasis(&mut self, c: CityId) {
+        let Some(role) = self.city_role(c) else { return };
+        let wanted: Vec<EmphasizeType> = self.d.city_roles[role].emphasizes.clone();
+        for e in self.d.emphasizes.keys() {
+            let on = wanted.contains(&e);
+            if self.cities[c].ai_emphasize[e] != on {
+                self.city_ai_set_emphasize(c, e, on);
+            }
+        }
     }
 
-    /// The number of cities a player may rule directly.
-    pub fn governor_direct_slots(&self) -> usize {
-        self.d.defines.governor_direct_rule_cities.max(1) as usize
-    }
-
-    /// Player `p`'s bench: its governors without a city, in the order they joined.
-    pub fn player_bench(&self, p: PlayerId) -> Vec<GovernorId> {
-        self.players[p].governors.iter().copied().filter(|&g| self.governors.get(g).is_some_and(|gov| gov.city.is_none())).collect()
-    }
-
-    /// Player `p`'s governed cities without a governor (vacant posts).
-    pub fn player_vacant_posts(&self, p: PlayerId) -> Vec<CityId> {
-        self.players[p].cities.iter().copied().filter(|&c| self.city_is_governed(c) && self.cities[c].governor.is_none()).collect()
-    }
-
-    /// Whether city `c`'s rule may change now (its cooldown after the last change is over).
-    pub fn city_rule_change_ready(&self, c: CityId) -> bool {
-        let t = self.cities[c].rule_changed_turn;
-        t < 0 || self.game_turn() >= t + self.d.defines.governor_direct_rule_swap_cooldown
+    /// The citizens of city `c` are to be assigned again (its role changed).
+    fn city_governor_changed(&mut self, c: CityId) {
+        self.cities[c].ai_assign_work_dirty = true;
     }
 
     // ---------------------------------------------------------------------------------------
-    // A city's arrival and departure
+    // Diagnoses
     // ---------------------------------------------------------------------------------------
 
-    /// City `c` is new to its owner (founded, captured, traded, flipped): it takes a free direct
-    /// slot (always, as the capital), else it is governed. A founded city (`assign`) takes the
-    /// best-matching candidate of the bench at once; a city that changed hands is interim until
-    /// its owner's turn ends (`player_governance_turn` fills it then), so that the candidate is
-    /// matched against the city as it is restored, not the blank one `player_acquire_city`
-    /// creates, and a city razed or given away at once costs no governor.
+    /// What player `p`'s governed cities need its attention for: roles of its priorities no
+    /// governed city has (every role with `ALL_ROLES_FROM_CITIES` governed cities or more), cities
+    /// whose chosen role suits them under 100%, cities whose first empire order has more than 30
+    /// turns left. Roles in their order, then cities by id.
+    pub fn player_governor_diagnoses(&self, p: PlayerId) -> Vec<GovDiagnosis> {
+        let d = self.d;
+        let mut governed = self.player_governed_cities(p);
+        governed.sort();
+        let filled: BTreeSet<CityRoleType> = governed.iter().filter_map(|&c| self.city_role(c)).collect();
+        let all = governed.len() >= ALL_ROLES_FROM_CITIES;
+        let mut out = Vec::new();
+        for r in d.city_roles.keys() {
+            if !filled.contains(&r) && (all || self.players[p].governor_priorities.contains(&r)) {
+                out.push(GovDiagnosis::RoleUnfilled(r));
+            }
+        }
+        for &c in &governed {
+            if !self.cities[c].role_overridden {
+                continue;
+            }
+            if let Some(role) = self.city_role(c) {
+                let suitability = self.city_role_suitability(c, role);
+                if suitability < 100 {
+                    out.push(GovDiagnosis::PoorFit { city: c, role, suitability });
+                }
+            }
+        }
+        for &c in &governed {
+            let q = &self.cities[c].order_queue;
+            if let Some(i) = q.iter().position(|o| o.empire) {
+                let turns = self.city_order_turns_left(c, i);
+                if turns > SLOW_ORDER_TURNS {
+                    out.push(GovDiagnosis::SlowOrder { city: c, turns });
+                }
+            }
+        }
+        out
+    }
+
+    /// The turns left to finish the order at `index` of city `c`'s queue (0 for a process).
+    pub fn city_order_turns_left(&self, c: CityId, index: usize) -> i32 {
+        let Some(o) = self.cities[c].order_queue.get(index) else { return 0 };
+        let num = index as i32;
+        match o.order_type {
+            OrderType::ORDER_TRAIN => self.city_production_turns_left_unit(c, UnitType::from_usize(o.data1 as usize), num),
+            OrderType::ORDER_CONSTRUCT => self.city_production_turns_left_building(c, BuildingType::from_usize(o.data1 as usize), num),
+            OrderType::ORDER_CREATE => self.city_production_turns_left_project(c, ProjectType::from_usize(o.data1 as usize), num),
+            _ => 0,
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // A city's arrival and departure, and the change of civics
+    // ---------------------------------------------------------------------------------------
+
+    /// City `c` is new to its owner (founded, captured, traded, flipped): it takes its owner's
+    /// mode. A founded city (`assign`) is handed to its governor at once; a city that changed
+    /// hands once its state is restored (`city_governance_acquired`), so that its role is
+    /// proposed for the city as it is (its civilization).
     pub fn city_governance_init(&mut self, c: CityId, assign: bool) {
         let p = self.cities[c].owner;
         self.cities[c].governor = None;
-        self.cities[c].governor_penalty_turns = 0;
-        self.cities[c].rule_changed_turn = -1;
-        if self.player_is_barbarian(p) {
-            self.cities[c].direct_rule = true;
-            return;
-        }
-        let direct = self.player_direct_cities(p).into_iter().filter(|&o| o != c).count();
-        self.cities[c].direct_rule = direct < self.governor_direct_slots() || self.city_is_capital(c);
+        self.cities[c].role = None;
+        self.cities[c].role_overridden = false;
+        self.cities[c].direct_rule = self.player_rules_directly(p);
         if !self.city_is_governed(c) {
             return;
         }
+        self.cities[c].production_automated = true;
+        self.cities[c].recruit_default = None;
         if assign {
-            self.city_become_governed(c);
-        } else {
-            self.cities[c].production_automated = true;
-            self.cities[c].recruit_default = None;
-            self.city_apply_governor_emphasis(c);
+            self.city_become_governed(c, true);
         }
     }
 
     /// City `c` was just acquired (`player_acquire_city`, after its state was restored and the
-    /// raze decision taken): its owner learns who will run it. Outside its owner's turn (a culture
-    /// flip, a city traded in another player's turn) a governed city chooses its production at once,
-    /// so that it never reaches a turn's end without; in its owner's turn the city's turn chooses it
-    /// at the turn's end, with the units that took it standing in it (they move in after the
-    /// transfer) and its new governor in place.
+    /// raze decision taken): a governed one goes to its governor. Outside its owner's turn (a
+    /// culture flip, a city traded in another player's turn) a governed city chooses its
+    /// production at once, so that it never reaches a turn's end without; in its owner's turn the
+    /// city's turn chooses it at the turn's end, with the units that took it standing in it.
     pub fn city_governance_acquired(&mut self, c: CityId) {
         if !self.cities.contains(c) || !self.city_is_governed(c) {
             return;
         }
+        self.city_become_governed(c, true);
         let p = self.cities[c].owner;
         if !self.players[p].turn_active && self.cities[c].order_queue.is_empty() {
             self.city_choose_production(c, None, None, None, false, false);
         }
-        let turn = self.game_turn();
-        let name = self.d.text.name(&self.cities[c].name).to_string();
-        // The candidates go to the vacant posts in the order of the city list, this city last.
-        let covered = self.player_bench(p).len() >= self.player_vacant_posts(p).len();
-        self.log.msg_at(turn, Some(p), (self.cities[c].x, self.cities[c].y), || {
-            if covered {
-                format!("{name} is governed: a governor from your bench takes it when your turn ends.")
-            } else {
-                format!("{name} is run by an interim governor until a candidate is free on your bench.")
-            }
-        });
     }
 
     /// City `c` leaves its owner (captured, traded, flipped, razed): its governor leaves the game.
@@ -220,192 +335,200 @@ impl Game {
         }
     }
 
-    /// City `c`, ruled directly until now, goes to a governor, who takes over its production: the
-    /// orders the player queued (a settler or a wonder among them, which a governed city may not
-    /// build) give way to the governor's choice.
-    fn city_hand_over(&mut self, c: CityId) {
-        self.cities[c].direct_rule = false;
-        self.cities[c].rule_changed_turn = self.game_turn();
-        self.city_become_governed(c);
-        self.city_clear_order_queue(c);
-        self.city_choose_production(c, None, None, None, false, false);
+    /// Player `p`'s cities take the mode its civics give (`player_rules_directly`): all handed
+    /// over, or all taken back, at once, with one message. Called when its civics change and in
+    /// its turn.
+    pub fn player_governance_sync(&mut self, p: PlayerId) {
+        if self.player_is_barbarian(p) {
+            return;
+        }
+        let direct = self.player_rules_directly(p);
+        let mut changed = 0;
+        for c in self.players[p].cities.clone() {
+            if !self.cities.contains(c) {
+                continue;
+            }
+            let governed = self.city_is_governed(c);
+            if direct && governed {
+                self.city_become_direct(c);
+                changed += 1;
+            } else if !direct && !governed {
+                self.city_become_governed(c, false);
+                changed += 1;
+                if self.cities.contains(c) && self.cities[c].order_queue.is_empty() && !self.cities[c].settlement {
+                    self.city_choose_production(c, None, None, None, false, false);
+                }
+            }
+        }
+        if changed > 0 {
+            let turn = self.game_turn();
+            self.log.msg(turn, Some(p), || {
+                if direct {
+                    format!("Government: every city is ruled directly ({changed} taken back from governors).")
+                } else {
+                    format!("Government: every city is governed ({changed} handed to governors).")
+                }
+            });
+        }
     }
 
-    /// City `c` just became governed: production automated, its units for its own garrison (the
-    /// default destination the player gave it under direct rule cannot be changed while governed),
-    /// the best candidate of the bench.
-    fn city_become_governed(&mut self, c: CityId) {
+    /// City `c` goes to its governor (a new one the first time; `announce`: its owner is told):
+    /// production automated, its units for its own garrison, its role proposed (unless the player
+    /// chose one) and its emphasis applied. Its queue keeps the requisition orders and the orders
+    /// that may be empire orders (they become empire orders); the others are dropped, and the
+    /// governor chooses.
+    fn city_become_governed(&mut self, c: CityId, announce: bool) {
         let p = self.cities[c].owner;
+        self.cities[c].direct_rule = false;
         self.cities[c].production_automated = true;
         self.cities[c].recruit_default = None;
-        let best = self.player_bench(p).into_iter().max_by_key(|&g| (self.governor_match(g, c), std::cmp::Reverse(g)));
-        match best {
-            Some(g) => self.governor_take_post(g, c),
-            None => {
-                let turn = self.game_turn();
-                let name = self.d.text.name(&self.cities[c].name).to_string();
-                self.log.msg_at(turn, Some(p), (self.cities[c].x, self.cities[c].y), || format!("{name} is run by an interim governor: no candidate is on your bench."));
-                self.city_apply_governor_emphasis(c);
+        let new_governor = self.cities[c].governor.is_none();
+        if new_governor {
+            self.governor_generate(p, c);
+        }
+        if self.cities[c].role.is_none() || !self.cities[c].role_overridden {
+            self.cities[c].role_overridden = false;
+            self.cities[c].role = Some(self.city_role_proposal(c));
+        }
+        self.city_apply_role_emphasis(c);
+        // The queue: requisition orders stay, empire orders qualify, the rest gives way.
+        let mut i = 0;
+        while self.cities.contains(c) && i < self.cities[c].order_queue.len() {
+            let o = self.cities[c].order_queue[i].clone();
+            if o.requisition {
+                i += 1;
+            } else if self.order_may_be_empire(o.order_type, o.data1) {
+                let o = &mut self.cities[c].order_queue[i];
+                o.empire = true;
+                o.save = false;
+                i += 1;
+            } else {
+                self.city_pop_order(c, i as i32, false, false);
             }
         }
-    }
-
-    /// Governor `g` (on the bench) takes city `c` (vacant).
-    fn governor_take_post(&mut self, g: GovernorId, c: CityId) {
-        let turn = self.game_turn();
-        self.governors[g].city = Some(c);
-        self.governors[g].since_turn = turn;
-        self.cities[c].governor = Some(g);
-        self.city_apply_governor_emphasis(c);
         self.city_governor_changed(c);
-    }
-
-    /// The governor of city `c` changed (or its penalty ended): the cached rates follow.
-    fn city_governor_changed(&mut self, c: CityId) {
-        for i in 0..CommerceType::NUM {
-            self.city_update_commerce(c, CommerceType::from_usize(i));
-        }
-        self.cities[c].ai_assign_work_dirty = true;
-    }
-
-    /// The citizens' emphasis of city `c`: its governor's profile's (none when directly ruled:
-    /// the player's own choice is kept from then on).
-    fn city_apply_governor_emphasis(&mut self, c: CityId) {
-        let Some(profile) = self.city_governor_profile(c) else { return };
-        let wanted: Vec<EmphasizeType> = self.d.governor_profiles[profile].emphasizes.clone();
-        for e in self.d.emphasizes.keys() {
-            let on = wanted.contains(&e);
-            if self.cities[c].ai_emphasize[e] != on {
-                self.city_ai_set_emphasize(c, e, on);
-            }
+        if new_governor && announce {
+            let turn = self.game_turn();
+            let city = self.d.text.name(&self.cities[c].name).to_string();
+            let msg = self.governor_intro(c);
+            self.log.msg_at(turn, Some(p), (self.cities[c].x, self.cities[c].y), || format!("{msg} governs {city}."));
         }
     }
 
-    // ---------------------------------------------------------------------------------------
-    // Commands (the human's buttons; the AI uses them too)
-    // ---------------------------------------------------------------------------------------
-
-    /// Makes `to_rule` (governed) directly ruled and, if no direct slot is free, `to_govern`
-    /// (directly ruled, not the capital) governed. Both must be past their cooldown.
-    pub fn player_set_direct_rule(&mut self, p: PlayerId, to_rule: CityId, to_govern: Option<CityId>) -> GovResult {
-        self.player_check_direct_rule(p, to_rule, to_govern)?;
-        let turn = self.game_turn();
-        // Its governor returns to the bench first: the city handed over may take it.
-        self.city_become_direct(to_rule);
-        self.cities[to_rule].rule_changed_turn = turn;
-        if let Some(o) = to_govern {
-            self.city_hand_over(o);
+    /// "Name" or "Name (Trait)" of city `c`'s governor, for messages.
+    fn governor_intro(&self, c: CityId) -> String {
+        let Some(gov) = self.cities[c].governor.and_then(|g| self.governors.get(g)) else { return "A governor".to_string() };
+        match gov.trait_ {
+            Some(t) => format!("{} ({})", gov.name, self.d.text.name(&self.d.governor_traits[t].base.description)),
+            None => gov.name.clone(),
         }
-        Ok(())
     }
 
-    /// Whether `player_set_direct_rule(p, to_rule, to_govern)` would be done (else why not).
-    pub fn player_check_direct_rule(&self, p: PlayerId, to_rule: CityId, to_govern: Option<CityId>) -> GovResult {
-        if !self.cities.contains(to_rule) || self.cities[to_rule].owner != p || !self.city_is_governed(to_rule) {
-            return Err("not a governed city of yours");
-        }
-        if !self.city_rule_change_ready(to_rule) {
-            return Err("its rule changed too recently");
-        }
-        let full = self.player_direct_cities(p).len() >= self.governor_direct_slots();
-        match to_govern {
-            Some(o) => {
-                if !self.cities.contains(o) || self.cities[o].owner != p || self.city_is_governed(o) {
-                    return Err("not a directly ruled city of yours");
-                }
-                if self.city_is_capital(o) {
-                    return Err("the capital is always ruled directly");
-                }
-                if !self.city_rule_change_ready(o) {
-                    return Err("its rule changed too recently");
-                }
-            }
-            None if full => return Err("no direct slot is free: hand a city to a governor"),
-            None => {}
-        }
-        Ok(())
-    }
-
-    /// Hands directly ruled city `c` (not the capital) to a governor, freeing its slot.
-    pub fn city_hand_to_governor(&mut self, p: PlayerId, c: CityId) -> GovResult {
-        self.city_check_hand_to_governor(p, c)?;
-        self.city_hand_over(c);
-        Ok(())
-    }
-
-    /// Whether `city_hand_to_governor(p, c)` would be done (else why not).
-    pub fn city_check_hand_to_governor(&self, p: PlayerId, c: CityId) -> GovResult {
-        if !self.cities.contains(c) || self.cities[c].owner != p || self.city_is_governed(c) {
-            return Err("not a directly ruled city of yours");
-        }
-        if self.city_is_capital(c) {
-            return Err("the capital is always ruled directly");
-        }
-        if !self.city_rule_change_ready(c) {
-            return Err("its rule changed too recently");
-        }
-        Ok(())
-    }
-
-    /// City `c` becomes directly ruled: its governor returns to the bench, its production is the
-    /// player's again.
+    /// City `c` becomes directly ruled: its governor stays, dormant; its production is the
+    /// player's again (the queue kept, empire orders as ordinary orders) and its role's emphasis
+    /// is dropped (the player sets the emphasis).
     fn city_become_direct(&mut self, c: CityId) {
-        // The emphasis was the governor's: the player chooses it again.
-        if let Some(profile) = self.city_governor_profile(c) {
-            for e in self.d.governor_profiles[profile].emphasizes.clone() {
+        if let Some(role) = self.city_role(c) {
+            for e in self.d.city_roles[role].emphasizes.clone() {
                 if self.cities[c].ai_emphasize[e] {
                     self.city_ai_set_emphasize(c, e, false);
                 }
             }
         }
         self.cities[c].direct_rule = true;
-        if let Some(g) = self.cities[c].governor.take() {
-            if let Some(gov) = self.governors.get_mut(g) {
-                gov.city = None;
-            }
-        }
-        self.cities[c].governor_penalty_turns = 0;
         self.cities[c].production_automated = false;
+        for o in self.cities[c].order_queue.iter_mut() {
+            o.empire = false;
+        }
         self.city_governor_changed(c);
     }
 
-    /// Governor `g` of player `p` (on the bench or in another city) governs city `c`. The governor
-    /// it replaces returns to the bench. A replacement costs the city the penalty; a move from
-    /// another city costs both cities; filling a vacant post from the bench costs nothing.
-    pub fn city_assign_governor(&mut self, p: PlayerId, c: CityId, g: GovernorId) -> GovResult {
-        self.city_check_assign_governor(p, c, g)?;
-        if self.cities[c].governor == Some(g) {
-            return Ok(());
-        }
-        let turns = self.d.defines.governor_swap_turns.max(0);
-        // A move between two cities costs both; the city it leaves is interim.
-        if let Some(from) = self.governors[g].city {
-            self.cities[from].governor = None;
-            self.cities[from].governor_penalty_turns = turns;
-            self.cities[c].governor_penalty_turns = turns;
-            self.city_apply_governor_emphasis(from);
-            self.city_governor_changed(from);
-        }
-        self.governors[g].city = None;
-        // The governor it replaces goes back to the bench; the city pays.
-        if let Some(old) = self.cities[c].governor.take() {
-            if let Some(gov) = self.governors.get_mut(old) {
-                gov.city = None;
+    // ---------------------------------------------------------------------------------------
+    // Empire orders
+    // ---------------------------------------------------------------------------------------
+
+    /// Whether an order may be an empire order: a unit; a world, team or national wonder or a
+    /// palace; a project. Not any other building, nor a process.
+    pub fn order_may_be_empire(&self, order_type: OrderType, data1: i32) -> bool {
+        let d = self.d;
+        match order_type {
+            OrderType::ORDER_TRAIN => data1 >= 0 && (data1 as usize) < d.units.len(),
+            OrderType::ORDER_CREATE => data1 >= 0 && (data1 as usize) < d.projects.len(),
+            OrderType::ORDER_CONSTRUCT => {
+                if data1 < 0 || data1 as usize >= d.buildings.len() {
+                    return false;
+                }
+                let info = &d.buildings[BuildingType::from_usize(data1 as usize)];
+                info.capital || info.building_class_type.is_some_and(|k| is_world_wonder_class(d, k) || is_team_wonder_class(d, k) || is_national_wonder_class(d, k))
             }
-            self.cities[c].governor_penalty_turns = turns;
+            _ => false,
         }
-        self.governor_take_post(g, c);
+    }
+
+    /// Whether player `p` may place an empire order (`order_type`, `data1`) in city `c` (else why
+    /// not): its governed city, an order that may be an empire order, which the city can build.
+    pub fn city_check_empire_order(&self, p: PlayerId, c: CityId, order_type: OrderType, data1: i32) -> GovResult {
+        if !self.cities.contains(c) || self.cities[c].owner != p || !self.city_is_governed(c) {
+            return Err("Not a governed city of yours.");
+        }
+        if !self.order_may_be_empire(order_type, data1) {
+            return Err("Empire orders: units, wonders, palaces and projects only.");
+        }
+        let can = match order_type {
+            OrderType::ORDER_TRAIN => self.city_can_train(c, UnitType::from_usize(data1 as usize), false, false, false, false),
+            OrderType::ORDER_CONSTRUCT => self.city_can_construct(c, BuildingType::from_usize(data1 as usize), false, false, false),
+            OrderType::ORDER_CREATE => self.city_can_create(c, ProjectType::from_usize(data1 as usize), false, false),
+            _ => false,
+        };
+        if !can {
+            return Err("The city cannot build this.");
+        }
         Ok(())
     }
 
-    /// Whether `city_assign_governor(p, c, g)` would be done (else why not).
-    pub fn city_check_assign_governor(&self, p: PlayerId, c: CityId, g: GovernorId) -> GovResult {
+    /// Player `p` places an empire order in governed city `c`: behind its requisition orders and
+    /// earlier empire orders, ahead of the governor's choice (which keeps its progress). `data2` is
+    /// the unit AI of a unit (-1: its default), `dest` where it goes (a unit only; `None`: the
+    /// city's own garrison).
+    pub fn city_push_empire_order(&mut self, p: PlayerId, c: CityId, order_type: OrderType, data1: i32, data2: i32, dest: Option<crate::army::RecruitDest>) -> GovResult {
+        self.city_check_empire_order(p, c, order_type, data1)?;
+        if let Some(dest) = dest {
+            if order_type != OrderType::ORDER_TRAIN {
+                return Err("Only a unit has a destination.");
+            }
+            if !self.recruit_dest_valid(p, dest) {
+                return Err("Not a destination of yours.");
+            }
+        }
+        let data2 = if order_type == OrderType::ORDER_TRAIN { data2 } else { -1 };
+        let Some(index) = self.city_push_order_kind(c, order_type, data1, data2, false, false, false, false, OrderKind::Empire) else {
+            return Err("The city cannot build this.");
+        };
+        if self.cities.contains(c) && dest.is_some() {
+            self.cities[c].order_queue[index].dest = dest;
+        }
+        Ok(())
+    }
+
+    /// Whether player `p` may take the order at `index` of governed city `c`'s queue off (else why
+    /// not): only its own empire orders (requisition orders: `city_check_remove_order`).
+    pub fn city_check_remove_empire_order(&self, p: PlayerId, c: CityId, index: usize) -> GovResult {
         if !self.cities.contains(c) || self.cities[c].owner != p || !self.city_is_governed(c) {
-            return Err("not a governed city of yours");
+            return Err("Not a governed city of yours.");
         }
-        if !self.governors.contains(g) || self.governors[g].owner != p {
-            return Err("not a governor of yours");
+        match self.cities[c].order_queue.get(index) {
+            Some(o) if o.empire => Ok(()),
+            Some(o) if o.requisition => Err("A requisition order: release the city from the army's requisition."),
+            Some(_) => Err("The governor's order: only empire orders can be removed."),
+            None => Err("No such order."),
         }
+    }
+
+    /// Player `p` takes the empire order at `index` of governed city `c`'s queue off (what was put
+    /// into it stays with the item); an emptied queue goes to the governor.
+    pub fn city_remove_empire_order(&mut self, p: PlayerId, c: CityId, index: usize) -> GovResult {
+        self.city_check_remove_empire_order(p, c, index)?;
+        self.city_pop_order(c, index as i32, false, true);
         Ok(())
     }
 
@@ -413,139 +536,43 @@ impl Game {
     // The turn
     // ---------------------------------------------------------------------------------------
 
-    /// Player `p`'s governance in its turn processing: the capital ruled directly, no more direct
-    /// cities than slots, the bench drawing candidates, interim cities taking them.
+    /// Player `p`'s governance in its turn processing: its cities in the mode its civics give,
+    /// governed cities automated, the governors' own initiative (a human's governed cities).
     pub fn player_governance_turn(&mut self, p: PlayerId) {
         if self.player_is_barbarian(p) || !self.players[p].alive {
             return;
         }
-        self.player_governance_settle(p);
-        let turn = self.game_turn();
+        self.player_governance_sync(p);
         for c in self.players[p].cities.clone() {
             if self.city_is_governed(c) && !self.cities[c].production_automated {
                 self.cities[c].production_automated = true;
             }
         }
-        // The bench.
-        let vacant = self.player_vacant_posts(p);
-        let target = vacant.len() as i32 + self.d.defines.governor_bench_surplus.max(0);
-        if (self.player_bench(p).len() as i32) < target && self.soren_rand_num(100, "Governor candidate") < self.d.defines.governor_bench_gen_chance {
-            let g = self.governor_generate(p);
-            let name = self.governors[g].name.clone();
-            let profile = self.d.text.name(&self.d.governor_profiles[self.governors[g].profile].base.description).to_string();
-            self.log.msg(turn, Some(p), || format!("{name}, a {profile}, joins your bench of governors."));
-        }
-        // The governors' own initiative (a human's governed cities: their cultural actions).
         let controller = self.controller(p);
         controller.govern_cities(self, p);
-        // Interim cities take the candidates, the best match first.
-        for c in self.player_vacant_posts(p) {
-            let Some(g) = self.player_bench(p).into_iter().max_by_key(|&g| (self.governor_match(g, c), std::cmp::Reverse(g))) else { break };
-            self.governor_take_post(g, c);
-            let name = self.governors[g].name.clone();
-            let city = self.d.text.name(&self.cities[c].name).to_string();
-            self.log.msg(turn, Some(p), || format!("{name} now governs {city}."));
-        }
-    }
-
-    /// The end of player `p`'s turn processing (after its cities' production and commerce): the
-    /// replacement penalties wear off, so a penalty of N turns costs N turns' output.
-    pub fn player_governance_turn_end(&mut self, p: PlayerId) {
-        for c in self.players[p].cities.clone() {
-            if self.cities.contains(c) && self.cities[c].governor_penalty_turns > 0 {
-                self.cities[c].governor_penalty_turns -= 1;
-                if self.cities[c].governor_penalty_turns == 0 {
-                    self.city_governor_changed(c);
-                }
-            }
-        }
-    }
-
-    /// Player `p`'s direct rule settled: the capital directly ruled, at most the slots' number of
-    /// directly ruled cities (the cities made direct last go back to governors).
-    pub fn player_governance_settle(&mut self, p: PlayerId) {
-        if self.player_is_barbarian(p) {
-            return;
-        }
-        if let Some(cap) = self.player_get_capital_city(p) {
-            if self.city_is_governed(cap) {
-                self.city_become_direct(cap);
-            }
-        }
-        let mut direct = self.player_direct_cities(p);
-        let slots = self.governor_direct_slots();
-        if direct.len() <= slots {
-            return;
-        }
-        direct.retain(|&c| !self.city_is_capital(c));
-        direct.sort_by_key(|&c| (std::cmp::Reverse(self.cities[c].rule_changed_turn), std::cmp::Reverse(c)));
-        let turn = self.game_turn();
-        let over = self.player_direct_cities(p).len() - slots;
-        for &c in direct.iter().take(over) {
-            self.city_hand_over(c);
-            let name = self.d.text.name(&self.cities[c].name).to_string();
-            self.log.msg(turn, Some(p), || format!("{name} goes to a governor: your new capital takes its direct slot."));
-        }
     }
 
     // ---------------------------------------------------------------------------------------
-    // Candidates
+    // Governors
     // ---------------------------------------------------------------------------------------
 
-    /// A new candidate on player `p`'s bench: a profile and up to `GOVERNOR_MAX_TRAITS` traits
-    /// drawn toward the leader's flavors (the game's RNG), a name of its civilization's list.
-    pub fn governor_generate(&mut self, p: PlayerId) -> GovernorId {
+    /// A new governor of player `p` for city `c`: a name of its civilization's list, a trait with
+    /// `GOVERNOR_TRAIT_CHANCE`% (drawn uniformly; the game's RNG).
+    fn governor_generate(&mut self, p: PlayerId, c: CityId) -> GovernorId {
         let d = self.d;
-        let leader = self.players[p].personality_type.or(self.player_get_leader_type(p));
-        let flavors: Vec<FlavorType> = (0..d.reg.count::<FlavorType>()).map(FlavorType::from_usize).collect();
-        let lf = |f: FlavorType| leader.map_or(0, |l| d.leader_heads[l].flavor_value[f]);
-        // The profile: weight 10 + the leader's flavors times the profile's.
-        let profiles: Vec<(GovernorProfileType, i32)> = d
-            .governor_profiles
-            .keys()
-            .filter(|&k| !d.governor_profiles[k].interim)
-            .map(|k| (k, 10 + flavors.iter().map(|&f| lf(f) * d.governor_profiles[k].flavor_value[f]).sum::<i32>().max(0)))
-            .collect();
-        let profile = self.weighted_pick(&profiles, "Governor profile").expect("a governor profile");
-        // Traits: 0..=max, each weight 1 + its flavors times the leader's / 5; no two of one kind.
-        let max_traits = d.defines.governor_max_traits.max(0);
-        let n = self.soren_rand_num(max_traits + 1, "Governor traits");
-        let mut traits: Vec<GovernorTraitType> = Vec::new();
-        for _ in 0..n {
-            let pool: Vec<(GovernorTraitType, i32)> = d
-                .governor_traits
-                .keys()
-                .filter(|&t| traits.iter().all(|&o| !traits_clash(&d.governor_traits[o], &d.governor_traits[t])))
-                .map(|t| (t, 1 + flavors.iter().map(|&f| lf(f) * d.governor_traits[t].flavor_value[f]).sum::<i32>().max(0) / 5))
-                .collect();
-            match self.weighted_pick(&pool, "Governor trait") {
-                Some(t) => traits.push(t),
-                None => break,
-            }
-        }
+        let n = d.governor_traits.len() as i32;
+        let trait_ = if n > 0 && self.soren_rand_num(100, "Governor trait chance") < d.defines.governor_trait_chance {
+            Some(GovernorTraitType::from_usize(self.soren_rand_num(n, "Governor trait") as usize))
+        } else {
+            None
+        };
         let name = self.governor_new_name(p);
         let turn = self.game_turn();
-        let g = self.governors.insert_with(|id| Governor { id, owner: p, name, profile, traits, origin: 0, born_turn: turn, city: None, since_turn: -1 });
+        let g = self.governors.insert_with(|id| Governor { id, owner: p, name, trait_, born_turn: turn, city: c, since_turn: turn });
         self.players[p].governors.push(g);
         self.players[p].governor_count += 1;
+        self.cities[c].governor = Some(g);
         g
-    }
-
-    /// One of `items` drawn by weight (the game's RNG); `None` when empty.
-    fn weighted_pick<T: Copy>(&mut self, items: &[(T, i32)], log: &str) -> Option<T> {
-        let total: i32 = items.iter().map(|&(_, w)| w.max(0)).sum();
-        if total <= 0 {
-            return None;
-        }
-        let mut r = self.soren_rand_num(total, log);
-        for &(t, w) in items {
-            let w = w.max(0);
-            if r < w {
-                return Some(t);
-            }
-            r -= w;
-        }
-        None
     }
 
     /// A name for a new governor of `p`: the first of its civilization's list none of its governors
@@ -562,72 +589,4 @@ impl Game {
         }
         format!("Governor {}", self.players[p].governor_count + 1)
     }
-
-    /// How well governor `g` suits city `c`: its profile's flavors weighed by what the city needs.
-    pub fn governor_match(&self, g: GovernorId, c: CityId) -> i32 {
-        let d = self.d;
-        let profile = &d.governor_profiles[self.governors[g].profile];
-        let need = self.city_governor_needs(c);
-        (0..d.reg.count::<FlavorType>()).map(FlavorType::from_usize).map(|f| profile.flavor_value[f] * need[f]).sum()
-    }
-
-    /// What city `c` needs, by flavor (0-10): growth while small or starving, production while it
-    /// makes little, military near a threat or a rival, science and gold with much commerce,
-    /// culture while its plot's culture is contested, religion with a religion of its own.
-    pub fn city_governor_needs(&self, c: CityId) -> IdxVec<FlavorType, i32> {
-        let d = self.d;
-        let mut need = IdxVec::from_elem(1, d.reg.count::<FlavorType>());
-        let city = &self.cities[c];
-        let p = city.owner;
-        let food = self.city_yield_rate(c, YieldType::YIELD_FOOD) - self.city_food_consumption(c, false, 0);
-        let production = self.city_yield_rate(c, YieldType::YIELD_PRODUCTION);
-        let commerce = self.city_yield_rate(c, YieldType::YIELD_COMMERCE);
-        let set = |need: &mut IdxVec<FlavorType, i32>, name: &str, v: i32| {
-            if let Some(f) = d.ty::<FlavorType>(name) {
-                need[f] = v.clamp(0, 10);
-            }
-        };
-        set(&mut need, "FLAVOR_GROWTH", if food <= 1 { 7 } else if city.population < 5 { 5 } else { 2 });
-        set(&mut need, "FLAVOR_PRODUCTION", if production < city.population { 6 } else { 3 });
-        let plot = self.city_plot(c);
-        let (x, y) = (city.x, city.y);
-        let team = self.players[p].team;
-        // Rivals with a city within 7 plots; at war: with one of those (every civ is at war with
-        // the barbarians, so a war with anyone would make every rival a threat).
-        let near: Vec<TeamId> = self
-            .player_ids()
-            .filter(|&q| {
-                let pl = &self.players[q];
-                q != p && pl.alive && pl.team != team && pl.cities.iter().any(|&o| self.plot_distance(x, y, self.cities[o].x, self.cities[o].y) <= 7)
-            })
-            .map(|q| self.players[q].team)
-            .collect();
-        let rival_near = !near.is_empty();
-        let at_war_near = near.iter().any(|&t| self.at_war(team, t));
-        set(&mut need, "FLAVOR_MILITARY", if at_war_near { 8 } else if rival_near { 5 } else { 1 });
-        set(&mut need, "FLAVOR_SCIENCE", 2 + commerce / 4);
-        set(&mut need, "FLAVOR_GOLD", 1 + commerce / 4);
-        let ours = self.plot_calculate_culture_percent(plot, p);
-        set(&mut need, "FLAVOR_CULTURE", if ours < 70 { 6 } else { 2 });
-        let religious = d.religions.keys().any(|r| city.has_religion[r]);
-        set(&mut need, "FLAVOR_RELIGION", if religious { 4 } else { 1 });
-        need
-    }
-}
-
-/// Whether two traits change the same thing (a governor never has both).
-fn traits_clash(a: &GovernorTraitInfo, b: &GovernorTraitInfo) -> bool {
-    let touch = |t: &GovernorTraitInfo| -> [bool; 7] {
-        [
-            t.building_production_percent != 0,
-            t.unit_production_percent != 0,
-            t.happy != 0,
-            t.health != 0,
-            t.experience != 0,
-            t.yield_modifier.iter().any(|&v| v != 0),
-            t.commerce_modifier.iter().any(|&v| v != 0),
-        ]
-    };
-    let (x, y) = (touch(a), touch(b));
-    std::ptr::eq(a, b) || x.iter().zip(y.iter()).any(|(&p, &q)| p && q)
 }

@@ -668,12 +668,12 @@ function manageView(c, task) {
       `${dname("HurryType", x.hurry)}${x.gold ? ` (${x.gold} gold)` : ""}${x.population ? ` (${x.population} pop.)` : ""}`,
     ),
   );
-  // A governed city's emphasis is its governor's profile's (shown, not chosen).
+  // A governed city's emphasis is its role's (shown, not chosen).
   const governed = !!c.governance?.governed;
   const emphasize = c.emphasize.map((on, e) =>
     h(
       "label.toggle",
-      { title: governed ? "Set by the governor's profile" : `${on ? "Turn off" : "Turn on"} ${dname("EmphasizeType", e)}` },
+      { title: governed ? "Set by the city's role" : `${on ? "Turn off" : "Turn on"} ${dname("EmphasizeType", e)}` },
       h("input", { type: "checkbox", checked: on, disabled: governed, "data-emphasize": e, onchange: (ev) => task("TASK_SET_EMPHASIZE", e, -1, ev.target.checked) }),
       ` ${dname("EmphasizeType", e)}`,
     ),
@@ -708,7 +708,8 @@ function crewsLine(c) {
 /** The production queue (`ol.queue`). `compact` (the build prompt): the orders' names, turns and
  *  ✕ only, without the garrison destinations; an empty queue is the one line. */
 function queueView(c, remove, reload, { compact = false } = {}) {
-  // This game's governors: a governed city's production is its governor's (shown, not chosen).
+  // This game's governors: a governed city's production is its governor's; the player places
+  // empire orders there (units, wonders, palaces, rituals), which can be taken off.
   const locked = !!c.governance?.governed;
   return h(
     `ol.queue${compact ? ".compact" : ""}`,
@@ -720,11 +721,12 @@ function queueView(c, remove, reload, { compact = false } = {}) {
             h("span.dim", o.turns !== null ? ` ${turns(o.turns)}` : ""),
             // This game's armies: where a land combat unit goes when trained; a requisition order
             // is its army's.
-            o.requisition ? requisitionTag(o) : locked || compact ? (o.dest_name ? h("span.dim", ` → ${o.dest_name}`) : null) : recruitControls(c, i, o, reload),
+            o.requisition ? requisitionTag(o) : locked || compact ? [o.empire ? h("span.dim.empire-tag", " · empire order") : null, o.dest_name ? h("span.dim", ` → ${o.dest_name}`) : null] : recruitControls(c, i, o, reload),
             // The exe pops an order only while the queue holds more than one (CvGameInterface
             // `getOrderQueueLength() > 1`); the only order is replaced by choosing another. A
             // requisition order is released on the Armies screen, not here.
-            c.queue.length > 1 && !locked && !o.requisition ? h("button.small", { title: "Remove from the queue", "aria-label": "Remove", "data-index": i, onclick: () => remove(i) }, "✕") : null,
+            // In a governed city only an empire order comes off (the governor resumes after it).
+            (locked ? o.empire : c.queue.length > 1 && !o.requisition) ? h("button.small", { title: locked ? "Take the empire order off" : "Remove from the queue", "aria-label": "Remove", "data-index": i, onclick: () => remove(i) }, "✕") : null,
           ),
         )
       : h("li.dim", locked ? "Nothing yet: the governor chooses when your turn ends." : compact ? "Nothing is being built." : "Nothing: choose below."),
@@ -757,6 +759,8 @@ function chooseModes([tapMode, setTapMode], always = false) {
 /** What the city can build, by group (units, buildings, projects and rituals, processes): a
  *  button each with its tooltip, turns and cost; `choose(order, type, ev)` on a click. */
 function buildLists(c, choose) {
+  // A governed city lists what may be an empire order (the server's list); a click places one.
+  const locked = !!c.governance?.governed;
   return GROUPS.map(([order, label]) => {
     const items = c.buildable.filter((b) => b.order === order);
     if (!items.length) return null;
@@ -773,7 +777,7 @@ function buildLists(c, choose) {
               disabled: !b.enabled,
               "data-order": order,
               "data-type": b.type,
-              tip: infoTip(kind, b.type, { hint: [tierHint(b), nationalHint(b), b.enabled ? "Click: build now. Shift: add to the queue. Ctrl: put first." : "Not possible now."].filter(Boolean).join(" ") }),
+              tip: infoTip(kind, b.type, { hint: [tierHint(b), nationalHint(b), !b.enabled ? "Not possible now." : locked ? "Click: empire order, ahead of the governor's choice." : "Click: build now. Shift: add to the queue. Ctrl: put first."].filter(Boolean).join(" ") }),
               onclick: (ev) => choose(order, b.type, ev),
             },
             isoSkin() ? buildIcon(order, b.type) : null,
@@ -787,10 +791,11 @@ function buildLists(c, choose) {
 }
 
 /** The full screen's production: the current build's progress, the queue, what a tap does, then
- *  the build lists (none in a governed city). */
+ *  the build lists (in a governed city, what may be an empire order). */
 function productionView(c, choose, remove, tap, reload) {
   const prod = c.production;
-  // This game's governors: a governed city's production is its governor's (shown, not chosen).
+  // This game's governors: a governed city's production is its governor's; the player places
+  // empire orders there.
   const locked = !!c.governance?.governed;
   return [
     h(
@@ -803,10 +808,10 @@ function productionView(c, choose, remove, tap, reload) {
         prod.current && prod.needed ? barEl(prod.stored / prod.needed, "production", { w: 50, next: (prod.stored + prod.rate) / prod.needed }) : null,
       ),
       queueView(c, remove, reload),
-      locked ? [h("p.dim.governed-note", "The governor chooses what this city builds: see Governance below."), requisitionNote(c)] : null,
+      locked ? [h("p.dim.governed-note", "Empire orders: units, wonders, palaces and rituals. The governor builds the rest: see Governance below."), requisitionNote(c)] : null,
       locked ? null : chooseModes(tap, true),
     ),
-    ...(locked ? [] : buildLists(c, choose)),
+    ...buildLists(c, choose),
   ];
 }
 
@@ -817,8 +822,8 @@ function promptView(c, { choose, remove, tap }) {
   return [
     h("div.city-summary.prompt-summary", summaryRow(c, { prompt: true })),
     queueView(c, remove, null, { compact: true }),
-    locked ? h("p.dim.governed-note", "The governor chooses what this city builds.") : chooseModes(tap, true),
-    locked ? null : h("div.prompt-builds", buildLists(c, choose)),
+    locked ? h("p.dim.governed-note", "Empire orders: units, wonders, palaces and rituals. The governor builds the rest.") : chooseModes(tap, true),
+    h("div.prompt-builds", buildLists(c, choose)),
   ];
 }
 

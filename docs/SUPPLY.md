@@ -107,6 +107,10 @@ army's counter is 0.
 - Messages: `The 1st Army has no supply line: Hunger, turn 1 of 2. No healing, no recruits.`, `The
   1st Army is starving: units lose HP each turn, deal less damage.`, `The 1st Army is supplied
   again.` (at the army's plot); a waiting recruit's reason is `the army has no supply line`.
+- The known line ("Second pass", A) is `Game::plot_supply_line_known(p, plot, viewer)`, the same
+  search with the viewer's knowledge (`Plot::revealed`, `plot_is_visible`, `unit_is_invisible`,
+  `city_is_revealed`; a ship's coastal city counts only if revealed); who is an enemy, owners,
+  routes, improvements and a city's occupation are the truth. Not yet used by the client or the AI.
 
 ## 5. What the player sees
 
@@ -223,6 +227,83 @@ last 50 turns of the game. The AI's rule fired 46 times to fall back, 9 times to
 city it attacked, and refused 42 moves beyond the line (telemetry `supply`). Units lost to
 Starvation: 0 (it never kills).
 
+### Measured 2026-11-10: the second pass (B built, C removed)
+
+The 8 games of the block above (seeds 1-8, 6 civs, standard map, 250 turns; `ffh stats` with
+`FFH_TELEMETRY=1` and an events file) on the tree with B's four fixes (the bump keeps a land unit
+connected to home, animals are not army units, the overseas pickup, the last resort; the
+`supply_state` counter uncapped) and without C's line-cutting. The games give the same numbers as
+C's measurement (whose code never fired on seeds 1-8; `ffh bench` of seeds 1, 3 and 5 gives the
+same checksums for both), so the change from the block above is B's two rules fixes. Time a turn: `ffh bench` (the machine to itself), seeds 1, 3
+and 5, two rounds each, the mean of the six runs, against `f5558d91` (the last commit with C's
+code; the same games).
+
+| | first build (block above, AI rule on) | this tree |
+|---|---|---|
+| army-turns | 30,529 | 26,444 |
+| hungry (counter 1-2) | 51 (0.17%) | 27 (0.10%) |
+| starving (counter 3+) | 228 (0.75%) | 14 (0.05%) |
+| distinct armies ever cut | - | 16 (2 2 4 3 4 0 0 1) |
+| longest episode per game (turns) | 7 1 24 2 4 30+ 0 21 | 3 1 3 1 4 0 0 8 |
+| cities captured, civ from civ | 79 (7 5 5 25 16 11 5 5) | 55 (2 7 6 11 3 16 5 5) |
+| wars declared / peace | 46 / 37 | 48 / 42 |
+| eliminations | 2 | 1 |
+| time a turn (`ffh bench`) | 18.1 ms | 16.9 ms (`f5558d91`: 17.0 ms) |
+
+How often B's fixes fired in these games (telemetry `supply`): overseas pickups requested 0,
+transports sent 0, armies boarded 0; armies disbanded as the last resort 0; armies cut overseas with
+no port they may enter 0. The bumps the connected rule redirected are not counted (the rules have
+no telemetry for them, and ffh-core was left as it is). The AI's supply rule fired 31 times to fall
+back (17 hungry, 14 starving), 8 times to go on hungry next to the city it attacked, and refused 7
+moves. With the long episodes of the first build gone (the peace bump of seed 6, the Wolf Pack of
+seed 8: B's rules fixes; seed 3's army left overseas does not arise in this tree's seed 3), nothing
+was left for the AI's two fixes to do on these seeds.
+
+**Seed 3's case, replayed.** The save of the diagnosis (seed 3 at turn 200, made by the first build)
+resumed for 50 turns with this tree's binary (`ffh resume`, trace on): the Balseraphs assault
+transport lands its army next to the Clan of Embers city at (43, 35) as before, the two at peace
+with open borders. Cut, the army walks into that city (turn 206) and waits there for a ship; while
+the transport stands beside it the army is supplied (the ship is a source) and the request lapses,
+and while the Balseraphs keep their amphibious target there (a prepared war) the transport goes on
+ferrying troops; at turn 223 the empty transport sails for it, the army (an Archer and a Warrior)
+boards at turn 225 and is landed at home at turn 227, and the transport goes back for the Warrior
+left over (aboard at turn 230). Before: cut from turn 216 to 244, starving.
+
+### The budget: measured variants (not adopted)
+
+For the owner's decision; the committed defines are unchanged. The same 8 games (seeds 1-8, 6
+civs, standard map, 250 turns, this tree's binary), with `SUPPLY_LINE_BUDGET` 24 (as committed), 16
+and 12, and 24 with `SUPPLY_COST_LAND` 4 (the defines changed in a copy of the data, read through
+`FFH_DATA_DIR`). "Distinct armies ever cut": armies with at least one army-turn cut (events file).
+
+| | budget 24 (committed) | budget 16 | budget 12 | budget 24, open land 4 |
+|---|---|---|---|---|
+| army-turns | 26,444 | 27,645 | 25,842 | 26,863 |
+| hungry (counter 1-2) | 27 (0.10%) | 155 (0.56%) | 126 (0.49%) | 62 (0.23%) |
+| starving (counter 3+) | 14 (0.05%) | 572 (2.07%) | 54 (0.21%) | 31 (0.12%) |
+| distinct armies ever cut | 16 | 87 | 79 | 43 |
+| per game | 2 2 4 3 4 0 0 1 | 10 22 26 7 9 2 0 11 | 14 14 10 9 15 5 5 7 | 0 6 13 7 3 5 0 9 |
+| longest episode per game (turns) | 3 1 3 1 4 0 0 8 | 9 6 93 5 7 1 0 40 | 17 3 3 3 7 2 4 12 | 0 5 1 4 6 4 0 10 |
+| moves refused beyond the line | 7 | 148 | 192 | 34 |
+| falls back (hungry / starving / overseas) | 17 / 14 / 0 | 77 / 45 / 14 | 64 / 34 / 0 | 33 / 30 / 0 |
+| pickups requested / armies disbanded (last resort) | 0 / 0 | 3 / 3 | 0 / 0 | 0 / 0 |
+| cities captured, civ from civ | 55 | 65 | 67 | 72 |
+| per game | 2 7 6 11 3 16 5 5 | 8 15 6 13 8 6 5 4 | 13 14 5 12 6 8 6 3 | 2 19 5 8 10 19 5 4 |
+| wars declared / peace | 48 / 42 | 44 / 33 | 44 / 29 | 41 / 29 |
+| eliminations | 1 | 1 | 2 | 2 |
+
+What the numbers plainly show: a tighter line cuts many more armies (16 at 24; 87 at 16, 79 at 12,
+43 with open land at 4) and refuses many more moves, but armies stay cut briefly: hungry and
+starving together stay under 3% of army-turns in every variant. Conquest did not fall with a
+tighter line: captures from civs rose in every variant (55 to 65, 67, 72), with a spread between
+games larger than the differences. Most of the 16 budget's starving army-turns (400 of 572) are 4
+one-unit Clan of Embers armies (Archers, the units' default AI a city defender, so played as
+garrisons and never by the fall-back rule) that stood in foreign cities, a Balseraphs city and a
+barbarian one (the Clan's barbarian peace), cut from turn 158 to the end of seed 3; and one Malakim
+army of seed 8 (40 turns, not looked at). The three overseas armies of that game (one unit each) walked to
+foreign ports they may enter, asked for a ship, got none (the Clan had no transport and built none in time) and were
+disbanded at turn 169.
+
 ## 8. Not in this change
 
 - **Raiding** (the owner's discussion, 2026-11-09: recon and light mounted parties that refuse
@@ -232,3 +313,117 @@ Starvation: 0 (it never kills).
 - **Starving a besieged garrison.** A city supplies whoever stands in it.
 - **Sea lanes.** A ship is a source while its water area touches a home port; the sea route
   itself is not traced or cut.
+
+## Second pass (design, 2026-11-10; B built; C built, measured and not kept)
+
+Four fixes to what the first build left rough. Each is decided; the implementation reports what
+it measured.
+
+### A. What a player knows of a line
+
+The rules' line (`Game::plot_supply_line`) is the truth: it bends around every enemy unit, seen or
+not. Shown to a player it leaks: the shape of another army's line, or the "supplied here?"
+readout probed plot by plot, tells where unseen units stand.
+
+- A second, pure search, `Game::plot_supply_line_known(p, plot, viewer: TeamId)`: the same search
+  with the viewer's knowledge in place of the truth. It may enter only plots the viewer has
+  revealed; a unit blocks only if the viewer sees it now (its plot visible to the viewer's team
+  and the unit not invisible to it); a fort denies its neighbours only if the viewer sees a unit
+  in it; a source is a city the viewer has revealed, or a ship the viewer sees. The costs, the
+  budget and the tie rule are the rules' own. `viewer` may be `p`'s own team.
+- **An army's own state stays the truth** for its owner: its counter, its Hunger and Starvation,
+  and the line drawn for it are the rules' (a quartermaster knows the wagons stopped; that
+  something unseen cut the line is information the owner is owed).
+- **The "supplied here?" readout** before a move uses the known search with the player's own team
+  as viewer, so it answers from what the player sees. It can be wrong; the text does not change.
+- **Other players' lines** are drawn from the known search with the human's team as viewer: what
+  the human can work out, not what is. An army whose known line does not exist shows none.
+
+### B. An army with no way home
+
+Diagnosed (2026-11-10; seeds 1 to 8 of "Measures", every cut army watched every turn; notes in
+the session's scratchpad, `stranded_notes.txt`). Three causes, none of them "a pocket of its own
+land":
+
+1. **The peace bump** (seed 6: three Kuriotates armies, 57 to 58 turns each, 70% of all the
+   starving army-turns of the 8 games). When peace is made, `map_verify_unit_valid_plot` moves
+   every unit standing where it may no longer be with `unit_jump_to_nearest_valid_plot`, which
+   scores plots by distance only. It put the armies on unowned plots closed in by two neighbours'
+   borders (peace, no open borders) and the coast. In Civ4 that costs nothing; here the army can
+   reach no plot, traces no line, and starves for the rest of the game.
+2. **An army left overseas** (seed 3: a Balseraphs army, 24 turns). Landed by an assault
+   transport next to an enemy city; after the peace it stands on a landmass without a city of its
+   owner. It can move, but the AI's `fall_back` gives up when no city of ours is on its landmass,
+   and nothing sends a ship.
+3. **A civilization's animal counted as an army** (seed 8: a Doviello Wolf Pack, 21 turns). The
+   army sync makes every group of army units outside a city an army; the AI plays the unit as an
+   animal (it wanders and attacks) and never runs the supply code for it.
+
+The fixes, decided:
+
+- **Rules: a bump keeps a land unit connected to home.** When a unit of a player that has a city
+  on the unit's landmass is moved by `unit_jump_to_nearest_valid_plot`, only plots that connect
+  over land to a city of its owner are taken: plots the unit may enter, flooded from the owner's
+  cities on that landmass once per bump. With no such plot, it goes to its owner's nearest city.
+  A player without a city there is bumped as before. (docs/PORTING.md, "Changes from FFH2".)
+  *Built (2026-11-10):* `Game::unit_jump_to_nearest_valid_plot` floods, per bumped unit, from its
+  owner's cities on its area through the plots the bump calls valid, and takes the nearest of
+  those (else the nearest city); tests in `crates/ffh-core/tests/bump.rs`.
+- **Rules: animals are not army units.** A unit whose type is an animal (`UnitInfo::animal`) is
+  in no army and no garrison, so it needs no supply line: it fights beside an army as heroes and
+  mages do. (docs/ARMIES.md; docs/PORTING.md.)
+  *Built (2026-11-10):* `Game::unit_type_is_army_unit` refuses an animal type; the army sync takes
+  an animal out of its army; test `a_wolf_pack_is_in_no_army` (`crates/ffh-core/tests/armies.rs`).
+- **AI: stranded overseas.** An army cut on a landmass without a city of its owner goes to the
+  coast plot nearest its owner's nearest city and asks for a transport there, as a settler waiting
+  in port does; the transport that carries an army ashore does not leave it while no war target
+  remains there.
+  *Built (2026-11-10), in a port, not on a coast plot:* the rules let only a human's land unit step
+  onto a ship at sea (`unit_can_move_into`, an AI-only branch of the C++), so an AI army boards
+  only on a ship's own plot, a city. `supply::fall_back`, on a landmass without a city or settler of
+  ours, walks the army to the coastal city it may enter (another team's, open borders, a vassal or
+  its master; on a sea one of our ports is on) nearest our nearest city, and there asks for a ship
+  (the group's mission AI `MISSIONAI_PICKUP` on its plot); `naval::pickup` sends the empty transport
+  that reaches it soonest (one per army; before the assault's staging port and a waiting settler),
+  which waits in that port while the army boards, then carries it home (the transport's "cargo
+  with no plan" path); a port of ours builds a transport when we have none (`production::decide`,
+  `army_ship`). An army overseas with nothing left to fight there boards a ship of ours on its plot
+  even while that ship supplies it. With no such port in reach it asks for nothing. Tests in
+  `crates/ffh-ai/src/supply.rs`.
+- **AI: the last resort.** An army that has starved for `STRANDED_TURNS` (10, an ffh-ai constant)
+  of its owner's turns in a row, has no path over land to a city of its owner, and (overseas) has
+  had no transport come, is disbanded unit by unit (`unit_scrap`; heroes and units that cannot be
+  scrapped excepted): an expert stops paying for units he can neither feed nor fetch. Counted in
+  telemetry. Asking the neighbour for open borders, or counting a trapped army as a reason for
+  war, is not in this change.
+  *Built (2026-11-10):* in `supply::fall_back`, at a counter of `SUPPLY_HUNGER_TURNS` +
+  `STRANDED_TURNS` or more: on its own landmass when no city of ours there has a path for it (all
+  of them searched), overseas when it cannot board and no transport of ours is on its way to it
+  (`MISSIONAI_PICKUP` on its plot); the army's units in the group are scrapped (`unit_scrap`), but
+  heroes, units of a limited class and units the rules will not scrap. Telemetry `supply`
+  `disband_unit` / `disband_army` (`land`, `overseas`). Tests in `crates/ffh-ai/src/supply.rs`.
+- **Telemetry:** the `supply_state` counter is not capped at 30.
+  *Built (2026-11-10):* `cut_NN` is the counter itself (at most one label per turn of a game).
+
+### C. The AI cuts a line (built, measured, not kept)
+
+The design: each turn, for at most two enemy armies at war with us that we see within 6 plots of
+our cities, their known line (A, our team as viewer); a cut plot is a plot of it (not next to the
+army, not a city; at most six tested from the source end) that a local search over the 7x7 plots
+around it finds no way around within the budget; a spare of a garrison that keeps three fighters
+(recon and mounted first) and reaches it within two turns, where the danger map is within its
+defence, goes there and fortifies, and goes home when the army leaves the 6 plots, our sight or
+the war. Built in `crates/ffh-ai/src/supply_cut.rs` (switch `SUPPLY_CUT`, telemetry `supply_cut`).
+
+**Measured** (2026-11-10; the settings of "Measures", the switch off against on, the same binary;
+B's two rules fixes in): on seeds 1-8 it never fired (each game identical on both sides). Over
+seeds 1-32 it sent 12 units in 7 games (all after turn 190); the line was gone on arrival 3 times;
+2 units were killed on their plot; the watched army became hungry within 3 turns once. Off / on:
+hungry 130 / 132 army-turns (0.13%), starving 389 / 389 (0.38%), cities captured from civs 298 /
+296: nothing measurable.
+
+**Not kept (2026-11-10)**, the designer's decision: the lines of enemy armies near our cities are
+short and far inside the budget (median 4 plots; 94% with a slack of 10 or more of the budget of
+24), so one unit cannot cut them; a line is cut by one plot only at a choke point or near the
+budget. The local bypass test also mispredicted 9 of its 12 cuts. The code was removed; the last
+commit that contains it is `f5558d91` (docs/AI_LOG.md).

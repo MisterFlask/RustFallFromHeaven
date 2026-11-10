@@ -1,135 +1,171 @@
 # Governors
 
-This game's own rules, not FFH2's: the third system of the owner's design spec "FfH Culture
-Actions & Army Combat" (2026-10-29), "City automation and governors". Beyond a few directly ruled
-cities, every city is run by a governor from a bench; for each governed city the player decides
-only who governs it. Armies requisition soldiers from governed cities as from any city (the
-owner's redesign of 2026-10-31: "governors do their thing and instead of them selecting armies to
-feed, armies (as directed by the player) requisition soldiers from cities, which interrupts normal
-production"; docs/ARMIES.md). This file says what was built, how the spec's open points and edge
-cases were decided, and what is left.
+This game's own rules, not FFH2's. The government civic decides who runs a civilization's cities:
+the player by hand, or governors. Under governors the player sets empire priorities, may overrule a
+city's role, and places empire orders (armies' units, settlers, wonders, rituals) at the cities it
+picks; it never picks an ordinary building. This file is the rules as they play, what was decided
+beyond the design, and what is left.
 
-| Phase (spec) | What | Status |
+History: the first rules (the owner's design spec "FfH Culture Actions & Army Combat", 2026-10-29:
+four directly ruled cities, every other city under a governor from a bench, governors with a
+profile and numeric traits) were replaced on 2026-11-10 by the owner's design "Governors and army
+requisition" (2026-11-09) with the revisions agreed on it. The reason: a fixed count of hand-run
+cities is most of a small empire and a rounding error in a thirty-city one, so where delegation
+matters most the hand-run cities were still a chore; and matching governors with yield traits to
+cities was the same micromanagement in another form.
+
+| Part | What | Status |
 |---|---|---|
-| 5 Governors | production audit; direct-rule slots, army target sizes, governors, the bench, the Governors screen | done |
-| Requisition (2026-10-31) | the feed mode gone; armies requisition from any city (docs/ARMIES.md) | done |
-| 6 Engagement combat | formation battles (revision 4: no stances, so no stance quotas for requisition) | in progress (docs/ENGAGEMENTS.md) |
+| 1 | the civic decides who runs cities; no cap, no bench | done |
+| 2 | city roles from building tiers, empire priorities, diagnoses, overrule | done |
+| 3 | governors as characters: a name and one judgment trait | done (death and defection events: not built) |
+| 4 | empire orders: units, wonders, palaces and rituals at a chosen city | done |
+| 5 | governors that differ by civic (Republic, Theocracy, City States, Aristocracy) | not built (below) |
 
-Code: rules `crates/ffh-core/src/governors.rs` (hooks: `player_init_city`, `city_kill`, the player
-turn, `player_find_new_capital`, the city's yield, commerce, happiness, health, production and
-experience modifiers, `city_can_train` / `construct` / `create`); data
-`data/json/governor_profiles.jsonc`, `governor_traits.jsonc`,
-`governor_names.jsonc` (`ffh-data` `infos/governor.rs`), tuning `data/json/rules_defines.jsonc`
-(`GOVERNOR_*`); AI `crates/ffh-ai/src/governor.rs` (the governor's production choice, the AI's
-slots), `armies.rs` (which cities the AI's armies requisition from, the unit a requisition takes), `culture.rs` (`govern`: a human's governors' defenders against revolt pressure); UI
-`crates/ffh-play/src/view/governors.rs`, the city query's `governance`, `assets/app/governors.js`.
-Tests: `crates/ffh-core/tests/governors.rs`, `crates/ffh-ai/src/governor.rs`; the harness checks
-that a governed city always has production (`ffh_harness::check`).
+Code: rules `crates/ffh-core/src/governors.rs` (hooks: `player_set_civics`, `player_init_city`,
+`city_kill`, the player turn, the production queue in `city/turn.rs`); data
+`data/json/city_roles.jsonc`, `governor_traits.jsonc`, `governor_names.jsonc`, the civics'
+`direct_rule`, the tiers' `core_effect_percent` (`ffh-data` `infos/governor.rs`), tuning
+`data/json/rules_defines.jsonc` (`GOVERNOR_*`); AI `crates/ffh-ai/src/governor.rs` (what a governor
+builds, its plan, the AI's priorities and empire orders); UI `crates/ffh-play/src/view/governors.rs`,
+`assets/app/governors.js`. Tests: `crates/ffh-core/tests/governors.rs`; the harness checks that every
+city is in its owner's mode, that a governed city has production, a role and a governor, and that
+requisition orders, then empire orders, lead its queue (`ffh_harness::check`).
 
-Every game has governors, the AI-only ones (`ffh autoplay`, `ffh stats`, the AI batches, soaks)
-too. Until 2026-11-05 they were a game option (`GAMEOPTION_GOVERNORS`, on by default only in the
-browser's new-game screen); the owner removed it, with those of the cultural actions and the
-armies.
+Every game has governors (no game option).
 
 ## Rules
 
-**Direct rule.** A player rules up to `GOVERNOR_DIRECT_RULE_CITIES` (4) cities directly, the capital
-always among them; they play as cities always have. Every other city is governed. A new city
-(founded, captured, traded, flipped) takes a free direct slot if there is one, else it is
-governed: gaining a city never takes direct rule away from another. The player may rule a governed
-city directly in place of a directly ruled one (or in a free slot), or hand a directly ruled city
-to a governor; a city whose rule changed by choice keeps it for
-`GOVERNOR_DIRECT_RULE_SWAP_COOLDOWN` (10) turns. World wonders, palaces, rituals (projects) and
-settlers are built only in directly ruled cities (`city_can_*`).
+**Who runs cities.** A civic may carry `direct_rule`; Despotism and God King do. A player with such
+a civic rules every city directly: they play as cities always have. A player without one has every
+city governed, the capital included. There is no hand-run core and no cap. A city gained (founded,
+captured, traded, flipped) takes its owner's mode. A change of civics hands every city over, or
+takes every city back, at once. Barbarian cities are never governed.
 
-**Governed cities.** Their production is automated and cannot be set by hand (the commands that
-push, pop or clear orders, set the automation or a recruitment destination are refused); the
-governor chooses it (below): every governed city develops. An army's requisition
-(docs/ARMIES.md) interrupts it as it interrupts a directly ruled city's production: the player
-picks the governed city on the Armies screen, and while the army is short of its target size the
-city trains a unit for it first, the requisition order at the front of its queue ahead of the
-governor's choice (which keeps its progress and resumes after it); the unit marches to the army. A
-governed city's own units go to its own garrison: the default destination it had under direct
-rule is dropped when a governor takes over (it cannot be set while governed). The governor's profile sets the citizens' emphasis (its
-`Emphasizes`), which the player cannot change while the city is governed; a city back under direct
-rule drops it.
+- *Handed over*: the city's queue keeps its requisition orders and the orders that may be empire
+  orders (they become empire orders); its other orders are dropped. Its default recruitment
+  destination is dropped and its role's citizen emphasis is set.
+- *Taken back*: the queue is kept, the emphasis is dropped.
+
+The two hand-run civics cost more with size (2026-11-10): Despotism +40% city-count maintenance
+(was +25%); God King +25% distance maintenance (was +10%) and +30% city-count maintenance (new).
+
+**Roles.** A governed city has one role: Growth, Research, Commerce, Culture, Garrison or
+Production (`city_roles.jsonc`). A role has the city AI's flavors it weighs, the citizen emphasis
+it sets, the defenders it adds to the garrison, and four key building classes:
+
+| Role | Key buildings |
+|---|---|
+| Growth | Granary, Smokehouse, Harbor, Aqueduct |
+| Research | Library, Elder Council, Alchemy Lab, Mage Guild |
+| Commerce | Market, Moneychanger, Gambling House, Tax Office |
+| Culture | Monument, Pagan Temple, Theatre, Carnival |
+| Garrison | Palisade, Walls, Training Yard, Archery Range |
+| Production | Forge, Shipyard, Command Post, Siege Workshop |
+
+- *Suitability* of a city for a role: the mean of its tiers' core effect (Lesser 50, Standard 100,
+  Fine 150, Grand 200, Legendary 200; docs/SUITABILITY.md) over the role's key buildings that its
+  civilization can build. So 100% is a city of Standard buildings.
+- *The proposal*: the role with the highest suitability, a priority role's counted at +30%
+  (`GOVERNOR_PRIORITY_WEIGHT`). A city takes the proposal when it becomes governed, when it changes
+  hands and when its owner's priorities change.
+- *Overruling*: the player may give a governed city any role it has at least 75% suitability for
+  (`GOVERNOR_ROLE_MIN_SUITABILITY`). The city keeps that role until the player changes it; choosing
+  the proposal ends the overrule. Overruling has no cost of its own: its price is the difference
+  in suitability, which is what the city's buildings of that role will be worth.
+
+A role has no modifier of its own. It decides what the governor builds first and what the citizens
+work; the tiers decide what that is worth.
+
+**Empire priorities.** A player names up to two roles (`GOVERNOR_MAX_PRIORITIES`) as priorities.
+They weigh in every proposal (above). The game reports diagnoses: a priority role no city has (every
+role, in an empire of six or more governed cities); an overruled city under 100% suitability for
+its role; an empire order more than 30 turns from done.
+
+**Governors.** A city gets a governor the first time it is governed: a name from its
+civilization's list and, with 50% (`GOVERNOR_TRAIT_CHANCE`, the game's RNG), one trait. Traits are
+about judgment, not yield: *Cautious* keeps one more defender; *Ambitious* builds the costliest
+building it may first. The governor stays with the city (without effect while it is ruled
+directly) and leaves the game when the city is lost. Governors have no yield, happiness, health,
+production or experience modifiers, there is no bench, and nothing is assigned.
 
 **What a governor builds** (ffh-ai `governor.rs`, for the human's cities and the AI's alike):
-1. the garrison the city's danger asks for (the city AI's quota, the profile's `iDefenders`);
-   Against a Foment Revolt or Flip City aimed at the city, defenders up to three.
-2. (workers and work boats, until 2026-11-09: the city's crews improve its land, docs/WORKS.md);
-3. the best building by the city AI's value per turn of production, weighted by the profile:
-   up to +50% for a building whose flavors are all ones the profile weighs 5;
-4. a missionary, for a profile that weighs religion, while its religion misses our cities;
-5. the process the profile prefers (research, gold or culture).
+1. the garrison the city's danger asks for (the city AI's quota, the role's and the trait's
+   defenders; against a Foment Revolt or Flip City aimed at the city, defenders up to three);
+2. the best building by the city AI's value per turn of production, weighted by the role (up to
+   +50% for a building whose flavors are all ones the role weighs 5); an Ambitious governor takes
+   the costliest instead;
+3. a missionary, for a role that weighs religion, while the state religion misses our cities;
+4. the process the role prefers (research, gold or culture).
 
-An army's requisition goes ahead of all of it (the rules place it at the front of the queue).
+It never builds a wonder, a palace, a ritual, a settler or a unit for the field: those are empire
+orders. Its next buildings are shown as its plan.
 
-**Governors.** A governor (`Governor`) has a name, a profile, 0 to `GOVERNOR_MAX_TRAITS` (2)
-traits, an origin and a tenure (recorded, no effect yet). Profiles: Steward (growth, production),
-Scholar (science), Merchant (gold), Zealot (religion, culture), Marshal (military; one more
-defender), Builder (production), and the neutral Interim profile of a city without a governor.
-Traits (12): +10% production toward buildings or units, +2 experience for units trained, +1
-happiness, +1 health, ±10% food, production, gold, research or culture, -1 happiness with +10%
-production; no two of one kind. Names come from the civilization's list, else a generic one.
+**Empire orders.** In a governed city the player cannot queue buildings or processes, and may
+place:
+- a unit, any the city can train, bound for an army, a garrison or nowhere (settlers, heroes,
+  missionaries, ships);
+- a world, national or team wonder, or a palace;
+- a ritual (project).
 
-**The bench.** A player's governors without a city. While the bench is shorter than the vacant
-posts plus `GOVERNOR_BENCH_SURPLUS` (2), each turn adds a candidate with
-`GOVERNOR_BENCH_GEN_CHANCE` (15)% (the game's RNG), its profile and traits drawn toward the
-leader's flavors. A newly governed city takes the candidate that suits it best (its profile's
-flavors against what the city needs: growth while small or starving, production while it makes
-little, military near a rival, science and gold with much commerce, culture on contested ground,
-religion with a religion); an interim city takes the next candidate that appears. Replacing a
-governor costs the city `GOVERNOR_SWAP_PENALTY` (25)% of its production and commerce for
-`GOVERNOR_SWAP_TURNS` (5) turns (the turns' output: the countdown runs after the city's production
-and commerce), and the replaced governor returns to the bench; moving a governor from one city to
-another costs both (the one it leaves is interim). A city lost (captured, flipped,
-traded, razed) takes its governor out of the game.
+The order goes ahead of the governor's choice, which keeps its progress and resumes after: an
+order's cost is delay. The queue's order is requisition orders (docs/ARMIES.md), then empire orders
+as placed, then the governor's choice. The player may take an empire order off. Empire orders do not
+repeat. This is how an army's composition is the player's: ask for a unit type for an army, see the
+cities that can train it with what each would delay, pick one (the client pre-selects the nearest
+capable city). The standing requisition (an army's target size and the cities it draws on) is
+unchanged and fills by its role mix.
 
 **Cultural channels are the player's** (the owner's decision, 2026-10-30): a governor never sets,
-changes or ends a city's channel (docs/CULTURE.md); the player channels a governed city's culture
-as a directly ruled one's. The governor's part is its production: it trains defenders against the
-revolt pressure aimed at its city.
+changes or ends a city's channel (docs/CULTURE.md).
 
-## Edge cases decided (beyond the spec's text)
+## Decided beyond the design's text
 
-- **Barbarian cities are never governed** (and settlements, the Kuriotates' cities that build
-  nothing, are governed but have nothing to build).
-- **A city that changes hands takes its governor when its owner's turn ends.** Captured, traded,
-  flipped or given: it is governed (if no direct slot is free) and interim until its new owner's
-  turn processing gives it the candidate that suits it best. So the candidate is matched against
-  the city as it comes (its size, buildings and religions), not the blank city the transfer creates
-  first, and a city razed, given away or disbanded at once costs no governor from the bench. Its
-  production is chosen then too, with the units that took it inside; a city that changes hands
-  outside its owner's turn (a culture flip, a trade in another player's turn) chooses at once, so
-  no governed city reaches a turn's end without production. The message promises a governor only
-  when the bench has one for every vacant post.
-- **The capital moves.** A new capital (the old one lost) is ruled directly at once; if that makes
-  one direct city too many, the city made direct most recently goes to a governor, with a message.
-  A palace cannot be built in a governed city, so the capital never moves into one by choice.
-- **Filling a vacant post from the bench costs nothing**: the penalty is for replacing a governor,
-  not for giving an interim city one (a governor moved in from another city costs both, the spec's
-  rule).
-- **An interim city takes the next candidate** without the player's click (the spec has newly
-  governed cities auto-assign; an interim city is one that could not, and leaving it interim
-  until the player notices would only cost the city).
-- **Directly ruled cities keep their emphasis**; a governed city's emphasis is its profile's
-  (the player sets it again after taking a city back).
-- **The feed mode is gone** (2026-10-31): a governor no longer picks an army to feed; armies
-  requisition from the cities the player picks, governed or not, and only while they have a
-  target size (docs/ARMIES.md). Saves of format 8 and earlier do not load (format 9).
+- **No hand-run core under governors, the capital included.** What a hand-run capital was for
+  (settlers, wonders, rituals) is done by empire orders at any city, so a wonder's tier still makes
+  "which city builds it" a choice (docs/SUITABILITY.md, section 5).
+- **Roles are the old profiles.** The six profiles became the six roles; the role belongs to the
+  city, not to the governor.
+- **One number prices an overrule**: the suitability, shown for every role on the city's card.
+- **A change of government gives one message**, not one per city; a founded or gained city
+  announces its governor.
+- **Choosing the proposal is always allowed**, under 75% too, so an overrule can always be ended.
+- **A city that changes hands** takes its new owner's mode, a new governor and a fresh proposal.
+- **Tall play has two governments** (accepted for now): both hand-run civics come by Mysticism, so
+  a player who wants to run cities by hand takes no later government.
+- **The AI plays through the same layer**: its governed cities are built by the same governor, and
+  it places empire orders (docs/AI.md, "Governors").
 
 ## Open points for the owner
 
-- (Settled, 2026-11-09: there are no workers. Every city's crews improve its land by themselves,
-  governed or not: docs/WORKS.md.)
-- **Role mix.** A requisition fills by a simple role mix (a third siege); formation battles have no
-  stances (revision 4) to fill by.
-- **Conquest.** With governors on, a quarter fewer cities change hands (below), mostly because
-  governed cities are better built; the warlike civilizations declare about as many wars. Whether
-  their conquest drive should requisition harder with governors is for the tuning phase.
+- **The acceptance test.** Governed play must be at least as strong as hand play in a wide empire,
+  or the careful player is back to running fifteen cities by hand because it wins. The audit below
+  compares governors with the AI's own choices, not with a careful human, and the size costs above
+  are a first step, not a measured answer. To be judged in play.
+- **Governors that differ by civic** (the design's section 3: Republic's elected governors whose
+  overrule costs, Theocracy's priests, City States' strong independent ones, Aristocracy's houses,
+  and each civic's terms for army orders): not built. Every governing civic has the same governor
+  until the uniform one is judged sound.
+- **A late hand-run government**, if tall play should have a government to grow into.
+- **Suitability ignores the site**: a landlocked city's Production suitability counts its Shipyard
+  and its Growth suitability its Harbor. Key buildings the city can never build should probably be
+  left out.
+- **A great-people role**, and whether every role should have an empire-level output shown.
+- **The standing requisition** fills by a role mix the player does not choose; with unit orders it
+  may no longer be needed for the human.
+- **Death and defection** of governors as events; a line a governor says when it takes a city or
+  is overruled (the messages are bare today).
+- **The AI's wonders.** With empire orders the AIs build about 60% more world wonders by turn 300
+  than before the change (8 seeds; docs/AI.md, "Governors"); founding, captures and army sizes are
+  level. The bar of the AI's wonder step can be raised if that is too many.
+- **An empire order's destination** is set when it is placed and cannot be changed after.
+- **Supply** (docs/SUPPLY.md) is not shown when a city is picked for an army's unit.
 
-## The production audit
+## The production audit (history: the rules before 2026-11-10)
+
+Measured under the first rules (four directly ruled cities, a bench of governors with profiles and
+numeric traits). Kept because the result it gives, that a governed city is built at least as well as
+the AI builds its own, is what the present rules rest on.
 
 The spec asks to audit the production AI before governors: forced automation is tolerable only if a
 neutral governor is competent. The AI's own production choice (`production.rs`) was the starting

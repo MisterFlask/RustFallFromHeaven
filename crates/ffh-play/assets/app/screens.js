@@ -859,7 +859,7 @@ function keysTable() {
     ["F1 / F2 / F3 / F4", "cities / finances (the sliders) / civics / diplomacy and trade"],
     ["F5", "armies: your armies, their supply and the units on their way"],
     ["F6 / F7 / F8", "the tech tree / religion / cultural pressure"],
-    ["F9", "governors: who runs your cities, their modes, the bench"],
+    ["F9", "governors: who runs your cities, their roles, priorities and empire orders"],
     ["Ctrl+S / Ctrl+L", "save / load"],
     ["Ctrl+1 / 2 / 3", "map layer: terrain / political / yields"],
     ["?", "this help"],

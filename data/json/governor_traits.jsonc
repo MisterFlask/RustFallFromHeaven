@@ -1,91 +1,18 @@
-// Governor traits (GAMEOPTION_GOVERNORS; this game's own rules, docs/GOVERNORS.md): small
-//     modifiers of the city a governor holds. A governor has 0 to GOVERNOR_MAX_TRAITS of them, drawn
-//     with weight 1 + the leader's flavors named in Flavors (so a leader's candidates lean its way).
-//     iBuildingProductionPercent / iUnitProductionPercent: production toward buildings / units;
-//     iHappy, iHealth: faces; YieldModifiers: food, production, commerce %; CommerceModifiers: gold,
-//     research, culture, espionage %; iExperience: experience of the units trained there.
+// Governor traits (this game's governors, docs/GOVERNORS.md; not in FFH2): how a governor judges,
+//     never a modifier of its city. A governor has one with GOVERNOR_TRAIT_CHANCE %, drawn
+//     uniformly. defenders: added to its city's garrison quota; ambitious: it prefers the costliest
+//     building it may build.
 [
   {
-    "type": "GOVERNORTRAIT_INDUSTRIOUS",
-    "description": "TXT_KEY_GOVERNORTRAIT_INDUSTRIOUS",
-    "help": "TXT_KEY_GOVERNORTRAIT_INDUSTRIOUS_HELP",
-    "building_production_percent": 10,
-    "flavors": {"FLAVOR_PRODUCTION": 3}
+    "type": "GOVERNORTRAIT_CAUTIOUS",
+    "description": "TXT_KEY_GOVERNORTRAIT_CAUTIOUS",
+    "help": "TXT_KEY_GOVERNORTRAIT_CAUTIOUS_HELP",
+    "defenders": 1
   },
   {
-    "type": "GOVERNORTRAIT_MARTIAL",
-    "description": "TXT_KEY_GOVERNORTRAIT_MARTIAL",
-    "help": "TXT_KEY_GOVERNORTRAIT_MARTIAL_HELP",
-    "unit_production_percent": 10,
-    "flavors": {"FLAVOR_MILITARY": 3}
-  },
-  {
-    "type": "GOVERNORTRAIT_DRILLMASTER",
-    "description": "TXT_KEY_GOVERNORTRAIT_DRILLMASTER",
-    "help": "TXT_KEY_GOVERNORTRAIT_DRILLMASTER_HELP",
-    "experience": 2,
-    "flavors": {"FLAVOR_MILITARY": 3}
-  },
-  {
-    "type": "GOVERNORTRAIT_BELOVED",
-    "description": "TXT_KEY_GOVERNORTRAIT_BELOVED",
-    "help": "TXT_KEY_GOVERNORTRAIT_BELOVED_HELP",
-    "happy": 1,
-    "flavors": {"FLAVOR_GROWTH": 2, "FLAVOR_CULTURE": 1}
-  },
-  {
-    "type": "GOVERNORTRAIT_HARSH",
-    "description": "TXT_KEY_GOVERNORTRAIT_HARSH",
-    "help": "TXT_KEY_GOVERNORTRAIT_HARSH_HELP",
-    "happy": -1,
-    "yield_modifiers": [0, 10, 0],
-    "flavors": {"FLAVOR_PRODUCTION": 2, "FLAVOR_MILITARY": 1}
-  },
-  {
-    "type": "GOVERNORTRAIT_HYGIENIC",
-    "description": "TXT_KEY_GOVERNORTRAIT_HYGIENIC",
-    "help": "TXT_KEY_GOVERNORTRAIT_HYGIENIC_HELP",
-    "health": 1,
-    "flavors": {"FLAVOR_GROWTH": 3}
-  },
-  {
-    "type": "GOVERNORTRAIT_FARMER",
-    "description": "TXT_KEY_GOVERNORTRAIT_FARMER",
-    "help": "TXT_KEY_GOVERNORTRAIT_FARMER_HELP",
-    "yield_modifiers": [10, 0, 0],
-    "flavors": {"FLAVOR_GROWTH": 3}
-  },
-  {
-    "type": "GOVERNORTRAIT_LAZY",
-    "description": "TXT_KEY_GOVERNORTRAIT_LAZY",
-    "help": "TXT_KEY_GOVERNORTRAIT_LAZY_HELP",
-    "yield_modifiers": [0, -10, 0]
-  },
-  {
-    "type": "GOVERNORTRAIT_FRUGAL",
-    "description": "TXT_KEY_GOVERNORTRAIT_FRUGAL",
-    "help": "TXT_KEY_GOVERNORTRAIT_FRUGAL_HELP",
-    "commerce_modifiers": [10, 0, 0, 0],
-    "flavors": {"FLAVOR_GOLD": 3}
-  },
-  {
-    "type": "GOVERNORTRAIT_CORRUPT",
-    "description": "TXT_KEY_GOVERNORTRAIT_CORRUPT",
-    "help": "TXT_KEY_GOVERNORTRAIT_CORRUPT_HELP",
-    "commerce_modifiers": [-10, 0, 0, 0]
-  },
-  {
-    "type": "GOVERNORTRAIT_LEARNED",
-    "description": "TXT_KEY_GOVERNORTRAIT_LEARNED",
-    "help": "TXT_KEY_GOVERNORTRAIT_LEARNED_HELP",
-    "commerce_modifiers": [0, 10, 0, 0],
-    "flavors": {"FLAVOR_SCIENCE": 3}
-  },
-  {
-    "type": "GOVERNORTRAIT_PATRON",
-    "description": "TXT_KEY_GOVERNORTRAIT_PATRON",
-    "help": "TXT_KEY_GOVERNORTRAIT_PATRON_HELP",
-    "commerce_modifiers": [0, 0, 10, 0],
-    "flavors": {"FLAVOR_CULTURE": 3, "FLAVOR_RELIGION": 1}
+    "type": "GOVERNORTRAIT_AMBITIOUS",
+    "description": "TXT_KEY_GOVERNORTRAIT_AMBITIOUS",
+    "help": "TXT_KEY_GOVERNORTRAIT_AMBITIOUS_HELP",
+    "ambitious": true
   }
 ]

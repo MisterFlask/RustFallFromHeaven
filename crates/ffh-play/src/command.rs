@@ -81,13 +81,16 @@ pub enum Command {
     /// city's default (`index` -1); `dest` `None` = the city's default (for an order) or its own
     /// garrison (for the city). A unit bound elsewhere marches there.
     RecruitDest { city: CityId, index: i32, dest: Option<ffh_core::army::RecruitDest> },
-    /// This game's governors (docs/GOVERNORS.md): rule governed city `city` directly, handing
-    /// `instead_of` (directly ruled) to a governor when no slot is free.
-    GovernDirect { city: CityId, instead_of: Option<CityId> },
-    /// Hand directly ruled city `city` to a governor.
-    GovernHand { city: CityId },
-    /// Governor `governor` governs city `city` (from the bench or another city).
-    GovernAssign { city: CityId, governor: GovernorId },
+    /// This game's governors (docs/GOVERNORS.md): governed city `city` is run for `role` (the
+    /// proposal, or a role of suitability `GOVERNOR_ROLE_MIN_SUITABILITY` and more).
+    GovernRole { city: CityId, role: CityRoleType },
+    /// The empire priorities (at most `GOVERNOR_MAX_PRIORITIES` roles, distinct).
+    GovernPriorities { roles: Vec<CityRoleType> },
+    /// An empire order in governed city `city` (a unit, a wonder, a palace, a project): ahead of
+    /// the governor's choice. `dest`: where a unit goes (`None`: the city's garrison).
+    EmpireOrder { city: CityId, order: OrderType, data: i32, dest: Option<ffh_core::army::RecruitDest> },
+    /// Take the empire order at `index` of governed city `city`'s queue off.
+    EmpireOrderRemove { city: CityId, index: i32 },
     Research { tech: Option<TechType>, shift: bool },
     /// Commit to research path `path` (docs/PORTING.md, "Research paths").
     ResearchPath { path: ResearchPathType },
@@ -440,9 +443,10 @@ pub const COMMAND_NAMES: &[&str] = &[
     "garrison_tactic",
     "engage",
     "recruit_dest",
-    "govern_direct",
-    "govern_hand",
-    "govern_assign",
+    "govern_role",
+    "govern_priorities",
+    "empire_order",
+    "empire_order_remove",
     "research",
     "research_path",
     "update_civics",
@@ -491,9 +495,10 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("garrison_tactic", &["city", "tactic"]),
     ("engage", &["army", "units", "from", "to", "formation", "declare_war"]),
     ("recruit_dest", &["city", "index", "dest"]),
-    ("govern_direct", &["city", "instead_of"]),
-    ("govern_hand", &["city"]),
-    ("govern_assign", &["city", "governor"]),
+    ("govern_role", &["city", "role"]),
+    ("govern_priorities", &["roles"]),
+    ("empire_order", &["city", "order", "data", "dest"]),
+    ("empire_order_remove", &["city", "index"]),
     ("research", &["tech", "shift"]),
     ("research_path", &["path"]),
     ("update_civics", &["civics"]),
@@ -561,7 +566,7 @@ fn command_data1(d: &GameData, j: &Json, c: CommandType) -> Result<i32, FieldErr
     }
 }
 
-fn order_data(d: &GameData, j: &Json, o: OrderType) -> Result<i32, FieldError> {
+pub(crate) fn order_data(d: &GameData, j: &Json, o: OrderType) -> Result<i32, FieldError> {
     match o {
         OrderType::ORDER_TRAIN => typed_data::<UnitType>(d, j, "data"),
         OrderType::ORDER_CONSTRUCT => typed_data::<BuildingType>(d, j, "data"),
@@ -636,9 +641,10 @@ impl Command {
             Command::GarrisonTactic { .. } => "garrison_tactic",
             Command::Engage { .. } => "engage",
             Command::RecruitDest { .. } => "recruit_dest",
-            Command::GovernDirect { .. } => "govern_direct",
-            Command::GovernHand { .. } => "govern_hand",
-            Command::GovernAssign { .. } => "govern_assign",
+            Command::GovernRole { .. } => "govern_role",
+            Command::GovernPriorities { .. } => "govern_priorities",
+            Command::EmpireOrder { .. } => "empire_order",
+            Command::EmpireOrderRemove { .. } => "empire_order_remove",
             Command::Research { .. } => "research",
             Command::ResearchPath { .. } => "research_path",
             Command::UpdateCivics { .. } => "update_civics",
@@ -745,9 +751,13 @@ impl Command {
                 declare_war: j.opt("declare_war")?,
             },
             "recruit_dest" => Command::RecruitDest { city: j.req("city")?, index: j.get_or("index", -1)?, dest: recruit_dest_field(j)? },
-            "govern_direct" => Command::GovernDirect { city: j.req("city")?, instead_of: j.opt("instead_of")? },
-            "govern_hand" => Command::GovernHand { city: j.req("city")? },
-            "govern_assign" => Command::GovernAssign { city: j.req("city")?, governor: j.req("governor")? },
+            "govern_role" => Command::GovernRole { city: j.req("city")?, role: names::field(d, j, "role")? },
+            "govern_priorities" => Command::GovernPriorities { roles: names::list_field(d, j, "roles")? },
+            "empire_order" => {
+                let order = names::field::<OrderType>(d, j, "order")?;
+                Command::EmpireOrder { city: j.req("city")?, order, data: order_data(d, j, order)?, dest: recruit_dest_field(j)? }
+            }
+            "empire_order_remove" => Command::EmpireOrderRemove { city: j.req("city")?, index: j.req("index")? },
             "research" => Command::Research { tech: names::opt_field(d, j, "tech")?, shift: flag("shift")? },
             "research_path" => Command::ResearchPath { path: names::field(d, j, "path")? },
             "update_civics" => Command::UpdateCivics { civics: names::list_field(d, j, "civics")? },
@@ -856,9 +866,12 @@ impl Command {
                 .with("formation", formation.as_deref().map(formation_json))
                 .with("declare_war", *declare_war),
             Command::RecruitDest { city, index, dest } => j.with("city", *city).with("index", *index).with("dest", recruit_dest_json(*dest)),
-            Command::GovernDirect { city, instead_of } => j.with("city", *city).with("instead_of", *instead_of),
-            Command::GovernHand { city } => j.with("city", *city),
-            Command::GovernAssign { city, governor } => j.with("city", *city).with("governor", *governor),
+            Command::GovernRole { city, role } => j.with("city", *city).with("role", Json::idx(*role)),
+            Command::GovernPriorities { roles } => j.with("roles", Json::Arr(roles.iter().map(|&r| Json::idx(r)).collect())),
+            Command::EmpireOrder { city, order, data, dest } => {
+                j.with("city", *city).with("order", Json::idx(*order)).with("data", *data).with("dest", recruit_dest_json(*dest))
+            }
+            Command::EmpireOrderRemove { city, index } => j.with("city", *city).with("index", *index),
             Command::Research { tech, shift } => j.with("tech", Json::opt_idx(*tech)).with("shift", *shift),
             Command::ResearchPath { path } => j.with("path", Json::idx(*path)),
             Command::UpdateCivics { civics } => j.with("civics", Json::Arr(civics.iter().map(|&c| Json::idx(c)).collect())),
@@ -961,6 +974,11 @@ impl Command {
                 )
             }
             Command::CastAt { unit, spell, target, .. } => format!("cast {} by unit {} at {}", names::name(d, *spell), unit.0, target.describe()),
+            Command::GovernRole { city, role } => format!("city {} role {}", city.0, names::name(d, *role)),
+            Command::GovernPriorities { roles } => format!("priorities {}", roles.iter().map(|&r| names::name(d, r)).collect::<Vec<_>>().join(", ")),
+            Command::EmpireOrder { city, order, data, dest } => {
+                format!("city {} empire order {} {}{}", city.0, names::name(d, *order), data, dest.map_or(String::new(), |x| format!(" to {x:?}")))
+            }
             other => other.to_json().to_string(),
         }
     }
@@ -1118,9 +1136,10 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::ArmyRequisitionSet { army, cities } => g.army_set_requisition(h, *army, cities),
         Command::ArmyTactic { army, tactic } => g.army_set_tactic(h, *army, *tactic),
         Command::GarrisonTactic { city, tactic } => g.city_set_garrison_tactic(h, *city, *tactic),
-        Command::GovernDirect { city, instead_of } => g.player_set_direct_rule(h, *city, *instead_of),
-        Command::GovernHand { city } => g.city_hand_to_governor(h, *city),
-        Command::GovernAssign { city, governor } => g.city_assign_governor(h, *city, *governor),
+        Command::GovernRole { city, role } => g.player_set_city_role(h, *city, *role),
+        Command::GovernPriorities { roles } => g.player_set_governor_priorities(h, roles.clone()),
+        Command::EmpireOrder { city, order, data, dest } => g.city_push_empire_order(h, *city, *order, *data, -1, *dest),
+        Command::EmpireOrderRemove { city, index } => g.city_remove_empire_order(h, *city, *index as usize),
         Command::RecruitDest { city, index, dest } => {
             if *index < 0 {
                 g.cities[*city].recruit_default = *dest;
@@ -1358,8 +1377,12 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
 
         Command::PushOrder { city, order, data, alt, shift, ctrl } => {
             city_of(g, h, *city)?;
-            not_governed(g, *city)?;
             let c = *city;
+            if g.city_is_governed(c) {
+                // A governed city takes empire orders only (docs/GOVERNORS.md): the governor builds
+                // the rest.
+                return validate(g, h, &Command::EmpireOrder { city: c, order: *order, data: *data, dest: None }, ctx);
+            }
             let ok = match *order {
                 OrderType::ORDER_TRAIN => {
                     let u = UnitType::from_usize(in_range("unit type", *data, d.units.len())?);
@@ -1387,9 +1410,12 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
 
         Command::PopOrder { city, index } => {
             city_of(g, h, *city)?;
-            not_governed(g, *city)?;
             let len = g.cities[*city].order_queue.len();
             in_range("queue index", *index, len)?;
+            if g.city_is_governed(*city) {
+                // Only an empire order comes off (the governor resumes after it).
+                return validate(g, h, &Command::EmpireOrderRemove { city: *city, index: *index }, ctx);
+            }
             // This game's armies: a requisition order is the army's, released on the Armies screen
             // (the reason to give first: pushing a replacement would not remove it either).
             g.city_check_remove_order(*city, *index as usize).map_err(cannot)?;
@@ -1504,6 +1530,55 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
+        Command::GovernRole { city, role } => {
+            city_of(g, h, *city)?;
+            in_range("role", role.idx() as i32, d.city_roles.len())?;
+            g.player_check_city_role(h, *city, *role).map_err(cannot)?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::GovernPriorities { roles } => {
+            let max = d.defines.governor_max_priorities.max(0) as usize;
+            if roles.len() > max {
+                return Err(cannot(format!("At most {max} priorities.")));
+            }
+            for (i, r) in roles.iter().enumerate() {
+                in_range("role", r.idx() as i32, d.city_roles.len())?;
+                if roles[..i].contains(r) {
+                    return Err(invalid(format!("field `roles`: {} twice", names::name(d, *r))));
+                }
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::EmpireOrder { city, order, data, dest } => {
+            city_of(g, h, *city)?;
+            match *order {
+                OrderType::ORDER_TRAIN => in_range("unit type", *data, d.units.len())?,
+                OrderType::ORDER_CONSTRUCT => in_range("building", *data, d.buildings.len())?,
+                OrderType::ORDER_CREATE => in_range("project", *data, d.projects.len())?,
+                OrderType::ORDER_MAINTAIN => return Err(cannot("A governed city's processes are its governor's.")),
+                _ => return Err(invalid("field `order`: not a production order")),
+            };
+            g.city_check_empire_order(h, *city, *order, *data).map_err(cannot)?;
+            if let Some(dst) = dest {
+                if *order != OrderType::ORDER_TRAIN {
+                    return Err(cannot("Only a unit has a destination."));
+                }
+                if !g.recruit_dest_valid(h, *dst) {
+                    return Err(cannot("no such army or city of yours"));
+                }
+            }
+            Plan::Apply(Action::Army(Command::EmpireOrder { city: *city, order: *order, data: *data, dest: *dest }))
+        }
+
+        Command::EmpireOrderRemove { city, index } => {
+            city_of(g, h, *city)?;
+            in_range("queue index", *index, g.cities[*city].order_queue.len())?;
+            g.city_check_remove_empire_order(h, *city, *index as usize).map_err(cannot)?;
+            Plan::Apply(Action::Army(Command::EmpireOrderRemove { city: *city, index: *index }))
+        }
+
         Command::Engage { by, to, formation, declare_war } => {
             // Battle tactics (docs/TACTICS.md): the grid of one battle is never edited by hand.
             if formation.is_some() {
@@ -1578,35 +1653,6 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                     return Err(cannot("no such army or city of yours"));
                 }
             }
-            Plan::Apply(Action::Army(cmd.clone()))
-        }
-
-        Command::GovernDirect { city, instead_of } => {
-            city_of(g, h, *city)?;
-            if let Some(o) = instead_of {
-                city_of(g, h, *o)?;
-            }
-            g.player_check_direct_rule(h, *city, *instead_of).map_err(cannot)?;
-            Plan::Apply(Action::Army(cmd.clone()))
-        }
-
-        Command::GovernHand { city } => {
-            city_of(g, h, *city)?;
-            g.city_check_hand_to_governor(h, *city).map_err(cannot)?;
-            Plan::Apply(Action::Army(cmd.clone()))
-        }
-
-        Command::GovernAssign { city, governor } => {
-            city_of(g, h, *city)?;
-            match g.governors.get(*governor) {
-                None => return Err(CmdErr::Gone),
-                Some(gov) if gov.owner != h => return Err(CmdErr::NotOwner),
-                Some(_) => {}
-            }
-            if !g.city_is_governed(*city) {
-                return Err(cannot("the city is ruled directly"));
-            }
-            g.city_check_assign_governor(h, *city, *governor).map_err(cannot)?;
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
@@ -2312,10 +2358,12 @@ mod tests {
             Command::RecruitDest { city: CityId(1), index: 0, dest: Some(ffh_core::army::RecruitDest::Army(ArmyId(2))) },
             Command::RecruitDest { city: CityId(1), index: -1, dest: Some(ffh_core::army::RecruitDest::Garrison(CityId(3))) },
             Command::RecruitDest { city: CityId(1), index: -1, dest: None },
-            Command::GovernDirect { city: CityId(1), instead_of: Some(CityId(2)) },
-            Command::GovernDirect { city: CityId(1), instead_of: None },
-            Command::GovernHand { city: CityId(3) },
-            Command::GovernAssign { city: CityId(3), governor: GovernorId(2) },
+            Command::GovernRole { city: CityId(2), role: CityRoleType::from_usize(1) },
+            Command::GovernPriorities { roles: vec![] },
+            Command::GovernPriorities { roles: vec![CityRoleType::from_usize(0), CityRoleType::from_usize(3)] },
+            Command::EmpireOrder { city: CityId(2), order: OrderType::ORDER_TRAIN, data: 5, dest: Some(ffh_core::army::RecruitDest::Army(ArmyId(1))) },
+            Command::EmpireOrder { city: CityId(2), order: OrderType::ORDER_CONSTRUCT, data: 9, dest: None },
+            Command::EmpireOrderRemove { city: CityId(2), index: 1 },
             Command::Research { tech: None, shift: false },
             Command::Research { tech: Some(TechType(3)), shift: true },
             Command::ResearchPath { path: ResearchPathType(2) },

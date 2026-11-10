@@ -500,9 +500,6 @@ impl Game {
             modifier += self.players[owner].capital_yield_rate_modifier[y];
         }
 
-        // This game's governors: the traits and a replacement's penalty (docs/GOVERNORS.md).
-        modifier += self.city_governor_mods(c).yield_modifier[y];
-
         modifier += extra;
 
         // note: player->invalidateYieldRankCache() must be called for anything that is checked here
@@ -777,9 +774,7 @@ impl Game {
         let city = &self.cities[c];
         let player = &self.players[city.owner];
         let capital_modifier = if self.city_is_capital(c) { player.capital_commerce_rate_modifier[i] } else { 0 };
-        // This game's governors: the traits (docs/GOVERNORS.md).
-        let governor = self.city_governor_mods(c).commerce_modifier[i];
-        max(0, city.commerce_rate_modifier[i] + player.commerce_rate_modifier[i] + capital_modifier + governor + 100)
+        max(0, city.commerce_rate_modifier[i] + player.commerce_rate_modifier[i] + capital_modifier + 100)
     }
 
     /// C++ `CvCity::updateCommerce(CommerceTypes)` (CvCity.cpp:8489-8524).

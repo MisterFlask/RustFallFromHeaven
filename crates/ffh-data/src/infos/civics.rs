@@ -321,6 +321,9 @@ pub struct CivicInfo {
     /// Gold Standard: its player buys the production of units at this many gold per hammer left,
     /// whatever its Labor civic (`unit_rush_gold`, as a trait's; 0: no).
     pub unit_rush_gold: i32,
+    /// This game's governors (docs/GOVERNORS.md): under this civic every city of its player is
+    /// ruled directly (else every city is governed).
+    pub direct_rule: bool,
 }
 
 impl CivicInfo {
@@ -408,6 +411,7 @@ pub fn read_civic(rd: &Rd) -> CivicInfo {
         unit_combat_cost_modifiers: rd.pair_list_int("unit_combat_cost_modifiers"),
         no_war_weariness: rd.bool("no_war_weariness"),
         unit_rush_gold: rd.int("unit_rush_gold"),
+        direct_rule: rd.bool("direct_rule"),
     }
 }
 

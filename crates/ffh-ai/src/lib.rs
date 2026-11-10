@@ -182,9 +182,9 @@ impl Controller for Ai {
             v = view::View::new(g, p);
             civs::turn(self, g, &mut v); // civ-mechanics
             traits::turn(g, &v); // trait-play
+            governor::turn(self, g, p); // governed cities: priorities, empire orders (docs/GOVERNORS.md)
             armies::turn(g, p); // armies' reinforcements (docs/ARMIES.md)
             supply::turn(g, p); // telemetry only: the armies' supply counters (docs/SUPPLY.md)
-            governor::turn(g, p); // governed cities (docs/GOVERNORS.md)
             culture::turn(g, p); // cultural channels (docs/CULTURE.md), after the governors' production
             cards::turn(g, &v); // the great-person cards' content: world spells, rituals (docs/CARDS.md)
         }

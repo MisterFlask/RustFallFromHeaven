@@ -283,14 +283,17 @@ pub struct City {
     /// Where the city's trained land combat units go when their order names no destination
     /// (docs/ARMIES.md); `None`: its own garrison.
     pub recruit_default: Option<crate::army::RecruitDest>,
-    /// This game's governors (docs/GOVERNORS.md): ruled directly (else governed).
+    /// This game's governors (docs/GOVERNORS.md): ruled directly (else governed); its owner's
+    /// government civic decides (`Game::player_rules_directly`).
     pub direct_rule: bool,
-    /// The turn its rule last changed by choice (-1: never); a cooldown runs from it.
-    pub rule_changed_turn: i32,
-    /// Its governor (governed cities; `None`: an interim governor).
+    /// Its governor: given the first time the city is governed, kept (dormant) while it is ruled
+    /// directly.
     pub governor: Option<GovernorId>,
-    /// Turns left of the penalty for replacing its governor.
-    pub governor_penalty_turns: i32,
+    /// Its role (`None` until it is first governed): the proposal (`Game::city_role_proposal`)
+    /// unless the player chose another (`role_overridden`).
+    pub role: Option<CityRoleType>,
+    /// The player chose its role (else it follows the proposal).
+    pub role_overridden: bool,
     /// This game's building suitability (docs/SUITABILITY.md): the city's tier for each building
     /// class, rolled at founding (`Game::city_roll_building_tiers`) and kept for the city's life
     /// (a city changing hands keeps it). Standard for a class no city rolls.
@@ -525,9 +528,9 @@ impl City {
             culture_revolt_level: 0,
             recruit_default: None,
             direct_rule: true,
-            rule_changed_turn: -1,
             governor: None,
-            governor_penalty_turns: 0,
+            role: None,
+            role_overridden: false,
             building_tiers: IdxVec::from_elem(BuildingTierType::STANDARD, d.building_classes.len()),
             free_bonus_choices: Vec::new(),
             muster_production: 0,
@@ -592,8 +595,14 @@ fn unit_domain_of(d: &GameData, unit: UnitType) -> DomainType {
 /// ("only clear the dirty bit if we actually do a check"). The controller replaces that
 /// function, so the flag is cleared here before asking it; a controller that keeps the
 /// current production and wants to be asked again next turn sets the flag again.
+///
+/// This game's governors (docs/GOVERNORS.md): a governed city's governor is not asked while a
+/// requisition or empire order leads its queue; it is asked once they are done (an emptied queue).
 fn ai_choose_production(g: &mut Game, c: CityId) {
     g.cities[c].ai_choose_production_dirty = false;
+    if g.city_lead_orders(c) > 0 && g.city_is_governed(c) {
+        return;
+    }
     let owner = g.cities[c].owner;
     g.controller(owner).choose_production(g, c);
 }

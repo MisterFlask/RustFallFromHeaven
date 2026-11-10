@@ -705,3 +705,24 @@ fn garrison_units_join_an_army_and_a_whole_army_merges_with_its_recruits() {
     assert!(g.army_join(p0, &[away], army).is_err());
     assert_eq!(g.army_units(army).len(), 5);
 }
+
+/// An animal type is no army unit type (docs/SUPPLY.md, "Second pass" B): a civilization's Wolf
+/// Pack outside a city is in no army, alone or grouped with a warrior that is.
+#[test]
+fn a_wolf_pack_is_in_no_army() {
+    let (mut g, a, _) = game();
+    let p0 = PlayerId(0);
+    let wolves = g.d.t::<UnitType>("UNIT_WOLF_PACK");
+    assert!(g.d.units[wolves].animal && !g.unit_type_is_army_unit(wolves));
+    let (x, y) = next_to(&g, a);
+    let pack = g.player_init_unit(p0, wolves, x, y, None, None);
+    g.player_army_sync(p0);
+    assert_eq!(g.units[pack].army, None, "alone");
+    assert!(!g.unit_is_army_unit(pack));
+    let w = unit_at(&mut g, x, y);
+    let grp = g.units[w].group;
+    g.unit_join_group(pack, grp, true);
+    g.player_army_sync(p0);
+    assert!(g.units[w].army.is_some(), "the warrior is an army");
+    assert_eq!(g.units[pack].army, None, "beside the warrior");
+}

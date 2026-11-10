@@ -1730,7 +1730,7 @@ TXT_KEY_TACTIC_CHARGE_HELP	[ICON_BULLET]Chargers take the slots first, then anti
 TXT_KEY_TACTIC_VOLLEY	Volley
 TXT_KEY_TACTIC_VOLLEY_HELP	[ICON_BULLET]One guard per lane takes a slot first: the strongest healthy strikers and chargers.[NEWLINE][ICON_BULLET]Then support units take the slots: shooters, casters, bombards, stabbers, healers; then the other guards.[NEWLINE][ICON_BULLET]Each unit stands as in Line.
 TXT_KEY_TACTIC_VANGUARD	Vanguard
-TXT_KEY_TACTIC_VANGUARD_HELP	[ICON_BULLET]Units take the slots as in Line.[NEWLINE][ICON_BULLET]Each veteran guard stands in the middle row behind a guard that is not a veteran: veterans have the Hero promotion or level %d1 or above.[NEWLINE][ICON_BULLET]Other units stand as in Line.
+TXT_KEY_TACTIC_VANGUARD_HELP	[ICON_BULLET]Units take the slots as in Line.[NEWLINE][ICON_BULLET]If the guards that are not veterans are at least as many as the lanes with a free front cell: each veteran guard stands in the middle row behind a guard that is not a veteran, the strongest first. Otherwise every unit stands as in Line.[NEWLINE][ICON_BULLET]Veterans: the Hero promotion or level %d1 or above.[NEWLINE][ICON_BULLET]Other units stand as in Line.
 TXT_KEY_AS_UNREMOVABLE	[NEWLINE][COLOR_WARNING_TEXT]Not removable[COLOR_REVERT]
 TXT_KEY_ATG_BUILDING_TEMPLE_STRATEGY	[COLOR_BUILDING_TEXT]Temples[COLOR_REVERT] increase a city's happiness and culture. They are especially useful for expanding your civilization's borders during the early game.
 TXT_KEY_ATG_CIVIC_TITLE_PEDIA	[TAB]The "Title" civic is a game mechanic that is used to track Alexander's legendary status. As the unit Alexander is attached to gains levels, Alexander will gain better "Titles." The better Alexander's "Title", the easier it will be to rule a large nation. [PARAGRAPH:1]If the unit Alexander is attached to should ever die, Alexander's "Title" will revert back the worst title until Alexander has healed from his wounds and is reattached to a unit.
@@ -8074,44 +8074,22 @@ TXT_KEY_GOODY_SETTLER	The villagers have provided you with a Settler!
 TXT_KEY_GOODY_TECH	The villagers have given you the secrets of a new Technology!
 TXT_KEY_GOODY_WARRIOR	The villagers have provided you with a Warrior!
 TXT_KEY_GOODY_WORKER	The villagers have provided you with a Worker!
-TXT_KEY_GOVERNORPROFILE_BUILDER	Builder
-TXT_KEY_GOVERNORPROFILE_BUILDER_HELP	Leans toward production and buildings; its citizens favour [ICON_PRODUCTION].
-TXT_KEY_GOVERNORPROFILE_INTERIM	Interim governor
-TXT_KEY_GOVERNORPROFILE_INTERIM_HELP	A caretaker while no governor holds the city: no leanings, no traits.
-TXT_KEY_GOVERNORPROFILE_MARSHAL	Marshal
-TXT_KEY_GOVERNORPROFILE_MARSHAL_HELP	Leans toward military and defense: one more defender in its city; its citizens favour [ICON_PRODUCTION].
-TXT_KEY_GOVERNORPROFILE_MERCHANT	Merchant
-TXT_KEY_GOVERNORPROFILE_MERCHANT_HELP	Leans toward gold and trade; its citizens favour [ICON_COMMERCE].
-TXT_KEY_GOVERNORPROFILE_SCHOLAR	Scholar
-TXT_KEY_GOVERNORPROFILE_SCHOLAR_HELP	Leans toward science; its citizens favour [ICON_RESEARCH].
-TXT_KEY_GOVERNORPROFILE_STEWARD	Steward
-TXT_KEY_GOVERNORPROFILE_STEWARD_HELP	Leans toward growth and production; its citizens favour [ICON_FOOD].
-TXT_KEY_GOVERNORPROFILE_ZEALOT	Zealot
-TXT_KEY_GOVERNORPROFILE_ZEALOT_HELP	Leans toward religion and culture.
-TXT_KEY_GOVERNORTRAIT_BELOVED	Beloved
-TXT_KEY_GOVERNORTRAIT_BELOVED_HELP	+1 [ICON_HAPPY]
-TXT_KEY_GOVERNORTRAIT_CORRUPT	Corrupt
-TXT_KEY_GOVERNORTRAIT_CORRUPT_HELP	-10% [ICON_GOLD]
-TXT_KEY_GOVERNORTRAIT_DRILLMASTER	Drillmaster
-TXT_KEY_GOVERNORTRAIT_DRILLMASTER_HELP	Units trained here start with 2 more experience
-TXT_KEY_GOVERNORTRAIT_FARMER	Farmer
-TXT_KEY_GOVERNORTRAIT_FARMER_HELP	+10% [ICON_FOOD]
-TXT_KEY_GOVERNORTRAIT_FRUGAL	Frugal
-TXT_KEY_GOVERNORTRAIT_FRUGAL_HELP	+10% [ICON_GOLD]
-TXT_KEY_GOVERNORTRAIT_HARSH	Harsh
-TXT_KEY_GOVERNORTRAIT_HARSH_HELP	-1 [ICON_HAPPY], +10% [ICON_PRODUCTION]
-TXT_KEY_GOVERNORTRAIT_HYGIENIC	Hygienic
-TXT_KEY_GOVERNORTRAIT_HYGIENIC_HELP	+1 [ICON_HEALTHY]
-TXT_KEY_GOVERNORTRAIT_INDUSTRIOUS	Industrious
-TXT_KEY_GOVERNORTRAIT_INDUSTRIOUS_HELP	+10% [ICON_PRODUCTION] toward buildings
-TXT_KEY_GOVERNORTRAIT_LAZY	Lazy
-TXT_KEY_GOVERNORTRAIT_LAZY_HELP	-10% [ICON_PRODUCTION]
-TXT_KEY_GOVERNORTRAIT_LEARNED	Learned
-TXT_KEY_GOVERNORTRAIT_LEARNED_HELP	+10% [ICON_RESEARCH]
-TXT_KEY_GOVERNORTRAIT_MARTIAL	Martial
-TXT_KEY_GOVERNORTRAIT_MARTIAL_HELP	+10% [ICON_PRODUCTION] toward units
-TXT_KEY_GOVERNORTRAIT_PATRON	Patron of the Arts
-TXT_KEY_GOVERNORTRAIT_PATRON_HELP	+10% [ICON_CULTURE]
+TXT_KEY_GOVERNORTRAIT_AMBITIOUS	Ambitious
+TXT_KEY_GOVERNORTRAIT_AMBITIOUS_HELP	Prefers the costliest building it may build.
+TXT_KEY_GOVERNORTRAIT_CAUTIOUS	Cautious
+TXT_KEY_GOVERNORTRAIT_CAUTIOUS_HELP	+1 defender in its city's garrison.
+TXT_KEY_ROLE_COMMERCE	Commerce
+TXT_KEY_ROLE_COMMERCE_HELP	Builds toward gold and trade. Citizens: [ICON_COMMERCE] emphasis. Key buildings: Market, Moneychanger, Gambling House, Tax Office.
+TXT_KEY_ROLE_CULTURE	Culture
+TXT_KEY_ROLE_CULTURE_HELP	Builds toward religion and culture. Key buildings: Monument, Pagan Temple, Theatre, Carnival.
+TXT_KEY_ROLE_GARRISON	Garrison
+TXT_KEY_ROLE_GARRISON_HELP	Builds toward defense. +1 defender in the garrison. Citizens: [ICON_PRODUCTION] emphasis. Key buildings: Palisade, Walls, Training Yard, Archery Range.
+TXT_KEY_ROLE_GROWTH	Growth
+TXT_KEY_ROLE_GROWTH_HELP	Builds toward growth. Citizens: [ICON_FOOD] emphasis. Key buildings: Granary, Smokehouse, Harbor, Aqueduct.
+TXT_KEY_ROLE_PRODUCTION	Production
+TXT_KEY_ROLE_PRODUCTION_HELP	Builds toward production. Citizens: [ICON_PRODUCTION] emphasis. Key buildings: Forge, Shipyard, Command Post, Siege Workshop.
+TXT_KEY_ROLE_RESEARCH	Research
+TXT_KEY_ROLE_RESEARCH_HELP	Builds toward research. Citizens: [ICON_RESEARCH] emphasis. Key buildings: Library, Elder Council, Alchemy Lab, Mage Guild.
 TXT_KEY_GRAPHICOPTION_CITY_RADIUS	Show City Radius
 TXT_KEY_GRAPHICOPTION_CITY_RADIUS_HELP	Shows City Radius when a Settler is Selected
 TXT_KEY_GRAPHICOPTION_EFFECTS_DISABLED	Effects Disabled

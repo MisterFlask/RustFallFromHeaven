@@ -77,7 +77,7 @@ pub fn choose(ai: &Ai, g: &mut Game, c: CityId) {
 }
 
 /// The type name of what a choice makes (telemetry).
-fn type_name(g: &Game, choice: Choice) -> &'static str {
+pub(crate) fn type_name(g: &Game, choice: Choice) -> &'static str {
     let d = g.d;
     match choice {
         Choice::Train(u, _) => d.units[u].base.type_.as_str(),
@@ -96,10 +96,10 @@ pub fn choice_name(g: &Game, choice: Choice) -> String {
     }
 }
 
-/// City `c`'s first order that is not an army's requisition: what it builds for itself next (an
-/// army's requisition orders lead the queue, docs/ARMIES.md).
+/// City `c`'s first order that is not an army's requisition or the player's empire order: what
+/// it builds for itself next (they lead the queue, docs/ARMIES.md, docs/GOVERNORS.md).
 pub(crate) fn own_order(g: &Game, c: CityId) -> Option<&ffh_core::structs::OrderData> {
-    g.cities[c].order_queue.iter().find(|o| !o.requisition)
+    g.cities[c].order_queue.iter().find(|o| !o.requisition && !o.empire)
 }
 
 /// The unit city `c` trains for itself next ([`own_order`]), if that is a unit.
@@ -108,10 +108,10 @@ fn own_production_unit(g: &Game, c: CityId) -> Option<UnitType> {
 }
 
 /// City `c`'s own orders are taken off its queue (what was put into them stays with each item, as
-/// the rules keep it): the armies' requisition orders at its front stay, they are the army's to
-/// release (docs/ARMIES.md).
+/// the rules keep it): the armies' requisition orders and the player's empire orders at its front
+/// stay, they are the army's and the player's (docs/ARMIES.md, docs/GOVERNORS.md).
 pub(crate) fn clear_own_orders(g: &mut Game, c: CityId) {
-    let lead = g.cities[c].order_queue.iter().take_while(|o| o.requisition).count();
+    let lead = g.city_lead_orders(c);
     while g.cities.contains(c) && g.cities[c].order_queue.len() > lead {
         g.city_pop_order(c, lead as i32, false, false);
     }
@@ -206,6 +206,10 @@ fn fallback(g: &Game, c: CityId) -> Option<Choice> {
     let mut best: Option<(BuildingType, i32)> = None;
     for b in d.buildings.keys() {
         if !building_allowed(g, c, b) || !g.city_can_construct(c, b, false, false, false) {
+            continue;
+        }
+        // A governed city's wonders and palaces are the player's empire orders (docs/GOVERNORS.md).
+        if g.city_is_governed(c) && g.order_may_be_empire(OrderType::ORDER_CONSTRUCT, b.i()) {
             continue;
         }
         let turns = g.city_production_turns_left_building(c, b, 0);
@@ -515,7 +519,10 @@ struct Ctx {
     afford: bool,
 }
 
-fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
+/// The AI's own production choice for city `c` (the ladder of a directly ruled city), and why. It
+/// does not ask whether the city is governed: in a governed city it is what the AI would want
+/// there, and `governor::turn` places what of it is an empire order.
+pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     let d = g.d;
     let city = &g.cities[c];
     let p = city.owner;
@@ -646,6 +653,12 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
         if crate::naval::settler_waiting(g, p).is_some() && crate::naval::num_transports(g, p) == 0 {
             if let Some(u) = best_unit(g, c, Role::Transport) {
                 return Some((Choice::Train(u, UnitAIType::UNITAI_SETTLER_SEA), "settler_ship"));
+            }
+        }
+        // And for an army of ours waiting on a coast overseas (docs/SUPPLY.md, "Second pass", B).
+        if crate::naval::num_transports(g, p) == 0 && !crate::naval::armies_waiting(g, p).is_empty() {
+            if let Some(u) = best_unit(g, c, Role::Transport) {
+                return Some((Choice::Train(u, UnitAIType::UNITAI_SETTLER_SEA), "army_ship"));
             }
         }
         if count_ai(g, p, UnitAIType::UNITAI_EXPLORE_SEA) == 0
@@ -969,7 +982,7 @@ pub fn wonder_emphasis(g: &mut Game, p: PlayerId) {
     }
     let peace = !civ_enemies_at_war(g, p) && crate::diplomacy::preparing_target(g, g.players[p].team).is_none();
     for c in g.players[p].cities.clone() {
-        // A governed city's emphasis is its governor's (and it builds no wonders).
+        // A governed city's emphasis is its role's, also while it builds an empire order's wonder.
         if g.city_is_governed(c) {
             continue;
         }
@@ -1011,7 +1024,7 @@ pub fn trouble_rebuild(ai: &Ai, g: &mut Game, p: PlayerId) {
             continue;
         }
         // An army's requisition order stays (docs/ARMIES.md: it is the army's, not the city's).
-        if g.cities[c].order_queue.first().is_some_and(|o| o.requisition) {
+        if g.cities[c].order_queue.first().is_some_and(|o| o.requisition || o.empire) {
             continue;
         }
         let plot = g.city_plot(c);
