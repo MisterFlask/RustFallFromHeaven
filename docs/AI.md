@@ -113,7 +113,6 @@ barbarians -26% (-1.4), military +5% (1.4); legacy -2.8% (-1.4), research -5.3% 
 | `CvPlayerAI::AI_conquerCity` | `raze_conquered_city` | `diplomacy.rs` |
 | `CvPlayerAI::AI_considerOffer` | `consider_offer` (`judge_offer`: the same answer with its margin or rule, for the trade screen; `trade::item_value` per item; a demand is paid up to `max_extorted`) | `diplomacy.rs` |
 | `CvPlayerAI::AI_doDiplo` (review of deals) | `reconsider_deals`, `keep_deal`: from 20 turns, a deal with a human it would no longer make is cancelled (with an AI, on a trade denial) | `diplomacy.rs` |
-| `CvPlayerAI::AI_doAdvancedStart` (from `CvPlayer::setTurnActive`) | `play_turn` while start points remain | `advanced_start.rs` |
 | `CvPlayerAI::AI_chooseEvent` | `choose_event` | `events.rs` |
 | `CvTeamAI::AI_chooseElection` / `CvPlayerAI::AI_diploVote` | `choose_election` / `diplo_vote` | `council.rs` |
 | captured/gifted units | defaults in `controller.rs` | -- |
@@ -126,14 +125,6 @@ counters, war success, war plans) that the diplomacy below reads.
 
 ## A turn (`play_turn`)
 
-0. **Advanced start** (`advanced_start.rs`, `GAMEOPTION_ADVANCED_START`): while the player has
-   start points, C++ `AI_doAdvancedStart`'s plan with fixed choices instead of its random
-   draws: the capital on the starting plot, ~10% of the points on revealing the land around
-   it, the leader's unit share (10% + `iBuildUnitProb`/3) on defenders, workers and field
-   units, the rest on cities (best found value within 8 plots, 500 + 250 x cities minimum)
-   with culture, improvements for the citizens they can keep happy and population to work
-   them, technologies (research's pick; a quarter of the city points while placing cities),
-   an explorer and buildings by value per point; then `ADVANCEDSTARTACTION_EXIT`.
 1. **Empire** (`empire.rs`): research when the queue is empty (a broke empire first
    researches its way out, see Finance; the victory goal's techs beeline, see Victory pursuit);
    civics every 10 turns when the summed gain in civic value exceeds a flat 100 (the anarchy's
@@ -3712,8 +3703,7 @@ only, against opponents without it, and reports that player's wins and share.
   `--no-victory VICTORY_X` (repeatable) and `--leader LEADER_X` (the first slot's leader) give
   `ffh autoplay` / `stats` / `bench` the rest of a custom game's settings, so every game a
   spectator watches plays here too.
-- `--option GAMEOPTION_X` (repeatable) turns game options on for any of these commands (for
-  example `GAMEOPTION_ADVANCED_START`).
+- `--option GAMEOPTION_X` (repeatable) turns game options on for any of these commands.
 
 ## More Naval AI compared (2026-10-22)
 

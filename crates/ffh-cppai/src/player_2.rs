@@ -203,7 +203,6 @@ impl Cai {
         let war_plan = g.team_get_any_war_plan_count(t, true) > 0;
         let capital_alone = if g.elapsed_game_turns > 0 { self.player_ai_is_capital_area_alone(g, p) } else { false };
         let financial_trouble = self.player_ai_is_financial_trouble(g, p);
-        let advanced_start = g.players[p].advanced_start_points >= 0;
 
         let has_met_count = g.team_get_has_met_civ_count(t, true);
         let coastal_cities = g.player_count_num_coastal_cities(p);
@@ -543,11 +542,6 @@ impl Cai {
                                     temp_value /= 4;
                                 }
 
-                                if advanced_start && tech_stage(g, p) < 2 {
-                                    // C++ quirk: multiplies the tech's whole value, not iTempValue.
-                                    value = value.wrapping_mul(if l == food { 3 } else { 2 });
-                                }
-
                                 temp_value *= yield_weight[l];
                                 temp_value /= 100;
 
@@ -576,7 +570,7 @@ impl Cai {
 
                 if let Some(route) = bi.route {
                     build_value += (if g.player_get_best_route(p, None).is_none() { 700 } else { 200 })
-                        * (num_cities + if advanced_start { 4 } else { 0 });
+                        * num_cities;
 
                     for k in 0..YieldType::NUM {
                         let mut temp_value = 0;
@@ -1122,7 +1116,7 @@ impl Cai {
             if enables_wonder {
                 let wonder_random =
                     if async_ { self.rand(800, "AI Research Wonder Building ASYNC") } else { self.rand(800, "AI Research Wonder Building") };
-                value += (500 + wonder_random) / (if advanced_start { 5 } else { 1 });
+                value += 500 + wonder_random;
             }
 
             let mut enables_project_wonder = false;

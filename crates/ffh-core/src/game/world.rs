@@ -44,7 +44,7 @@ impl Game {
     pub fn do_holy_city(&mut self) {
         // Python doHolyCity(): FFH2's CvGameUtils returns False, so the C++ default runs.
 
-        if self.elapsed_game_turns < 5 && !self.is_option(GameOptionType::GAMEOPTION_ADVANCED_START) {
+        if self.elapsed_game_turns < 5 {
             return;
         }
 
@@ -728,13 +728,12 @@ impl Game {
         }
     }
 
-    /// C++ `CvGame::getCultureThreshold(eLevel)` (speed threshold; FfH NO_ESPIONAGE modifier).
+    /// C++ `CvGame::getCultureThreshold(eLevel)`: the speed threshold with the no-espionage
+    /// modifier (there is no espionage, so it always applies).
     pub fn culture_threshold(&self, level: CultureLevelType) -> i32 {
         let mut threshold = self.d.culture_levels[level].speed_threshold[self.game_speed_type()];
-        if self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
-            threshold *= 100 + self.d.defines.no_espionage_culture_level_modifier;
-            threshold /= 100;
-        }
+        threshold *= 100 + self.d.defines.no_espionage_culture_level_modifier;
+        threshold /= 100;
         threshold
     }
 
@@ -1553,7 +1552,7 @@ mod tests {
         assert_eq!(d.improvements[cottage].upgrade_time, 10);
         assert_eq!(g.improvement_upgrade_time(cottage), expected);
 
-        // getCultureThreshold: FfH always has NO_ESPIONAGE
+        // getCultureThreshold: the no-espionage modifier always applies
         let level = CultureLevelType(2);
         let threshold = d.culture_levels[level].speed_threshold[g.game_speed_type()];
         assert_eq!(g.culture_threshold(level), threshold * (100 + d.defines.no_espionage_culture_level_modifier) / 100);
@@ -1756,7 +1755,7 @@ mod ffh_tests {
 
     #[test]
     fn holy_city_draws() {
-        // before the 5th turn (no advanced start): nothing
+        // before the 5th turn: nothing
         let mut g = barbarian_game(&[]);
         let rng = g.soren_rand.clone();
         g.do_holy_city();

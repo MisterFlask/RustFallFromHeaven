@@ -303,62 +303,6 @@ impl Cai {
         false
     }
 
-    /// C++ `bool CvUnitAI::AI_infiltrate()` (CvUnitAI.cpp:17269-17341)
-    pub fn unit_ai_infiltrate(&self, g: &mut Game, u: UnitId) -> bool {
-        let team = g.unit_get_team(u);
-        let mut best_value = 0;
-        let mut best_plot: Option<PlotIdx> = None;
-
-        let plot = g.unit_plot(u);
-        if g.unit_can_infiltrate(u, plot, false) {
-            push_mission(g, u, MissionType::MISSION_INFILTRATE, -1, -1, 0, false);
-            return true;
-        }
-
-        for i in g.player_ids() {
-            if g.players[i].alive && g.players[i].team != team {
-                for c in g.players[i].cities.clone() {
-                    let cplot = g.city_plot(c);
-                    if g.unit_can_infiltrate(u, cplot, false) {
-                        let mut value = g.unit_get_espionage_points(u, Some(cplot));
-
-                        if value > 0 {
-                            let mut path_turns = 0;
-                            if g.unit_generate_path(u, cplot, 0, true, Some(&mut path_turns)) {
-                                if path_last_node_data(g).map_or(false, |(d1, _)| d1 == 0) {
-                                    path_turns += 1;
-                                }
-
-                                value /= 1 + path_turns;
-
-                                if value > best_value {
-                                    best_value = value;
-                                    best_plot = Some(cplot);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if let Some(bp) = best_plot {
-            if g.unit_at_plot(u, bp) {
-                push_mission(g, u, MissionType::MISSION_INFILTRATE, -1, -1, 0, false);
-            } else {
-                push_move_to(g, u, bp, 0);
-                if unit_alive(g, u) {
-                    let grp = grp_of(g, u);
-                    let append = !g.groups[grp].mission_queue.is_empty();
-                    push_mission(g, u, MissionType::MISSION_INFILTRATE, -1, -1, 0, append);
-                }
-            }
-            return true;
-        }
-
-        false
-    }
-
     /// C++ `bool CvUnitAI::AI_reconSpy(int iRange)` (CvUnitAI.cpp:17343-17443)
     pub fn unit_ai_recon_spy(&self, g: &mut Game, u: UnitId, range: i32) -> bool {
         let team = g.unit_get_team(u);
@@ -557,30 +501,8 @@ impl Cai {
 
     /// C++ `bool CvUnitAI::AI_espionageSpy()` (CvUnitAI.cpp:17586-17615)
     pub fn unit_ai_espionage_spy(&self, g: &mut Game, u: UnitId) -> bool {
-        let plot = g.unit_plot(u);
-        if !g.unit_can_espionage(u, plot, false) {
-            return false;
-        }
-
-        let owner = g.units[u].owner;
-        let mut target_plot: Option<PlotIdx> = None;
-        let mut target_player: Option<PlayerId> = None;
-        let mut extra_data = -1;
-
-        let best_mission = self.player_ai_best_plot_espionage(g, owner, plot, &mut target_player, &mut target_plot, &mut extra_data);
-        let Some(best_mission) = best_mission else {
-            return false;
-        };
-
-        if !g.player_can_do_espionage_mission(owner, best_mission, target_player, target_plot, extra_data, Some(u)) {
-            return false;
-        }
-
-        if !g.unit_espionage(u, Some(best_mission), extra_data) {
-            return false;
-        }
-
-        true
+        // There is no espionage: `canEspionage` is always false.
+        false
     }
 
     /// C++ `bool CvUnitAI::AI_moveToStagingCity()` (CvUnitAI.cpp:17617-17691)

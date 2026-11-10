@@ -328,7 +328,7 @@ The take-over itself is journaled. With no sidecar, pending events start empty; 
 7. Player options: QUICK_MOVES on, SHOW_FRIENDLY_MOVES and SHOW_ENEMY_MOVES off.
 8. Log enabled; then `game_init()`.
 
-`GAMEOPTION_ADVANCED_START` is refused, because there is no advanced-start UI.
+There is no advanced start (the option and its subsystem are gone: docs/PORTING.md, "No advanced start, no espionage").
 
 ### 2.7 Keeping AI turns fast
 
@@ -723,7 +723,7 @@ Size is about 1–1.5 MB, cached by ETag.
   * colony split;
   * cancelling deals (`deal_kill`; nice to have).
 * **Help texts in a city's or a unit's context.** The static help of every table is ported (`src/view/help/`, docs/HUMAN.md "Help."), and the tech help reads the player; a building's or project's numbers in a given city (`setBuildingHelp` with `pCity`) and a given unit's help (`setUnitHelp` with a unit) are not ported (the unit panel shows a unit's own numbers).
-* **Advanced start; less common interface modes:** range attack, air strike, recon, paradrop, airlift, nuke. Also espionage (locked off), scenarios, worldbuilder, hot seat, network play.
+* **Less common interface modes:** range attack, air strike, recon, paradrop, airlift, nuke. Also scenarios, worldbuilder, hot seat, network play (advanced start and espionage are not in the game).
 * **Presentation:** watching AI moves (never through SHOW_*), sounds, art, graphs, replays, the victory progress screen beyond scores, and localization.
 * **Spectator mode** (an AI-only game with a god view and pause/step) is phase 6 optional.
 

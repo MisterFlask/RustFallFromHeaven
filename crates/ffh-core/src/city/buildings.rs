@@ -271,10 +271,9 @@ impl Game {
 
             {
                 let city = &mut self.cities[c];
-                // changeEspionageDefenseModifier, changeGreatPeopleRateModifier,
+                // changeGreatPeopleRateModifier,
                 // changeFreeExperience, changeMaxFoodKeptPercent, changeMaxAirlift,
                 // changeAirModifier, changeAirUnitCapacity, changeNukeModifier
-                city.espionage_defense_modifier += info.espionage_defense_modifier * change;
                 city.great_people_rate_modifier += info.great_people_rate_modifier * change;
                 city.free_experience += info.free_experience * change;
                 city.max_food_kept_percent += info.food_kept * change;

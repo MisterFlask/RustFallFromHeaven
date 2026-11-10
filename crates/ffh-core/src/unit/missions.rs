@@ -1,4 +1,4 @@
-//! CvUnit missions: spy actions (sabotage, destroy, steal plans, infiltrate, espionage), found
+//! CvUnit missions: spy actions (sabotage, destroy, steal plans), found
 //! a city, spread religion/corporation, great people (join, construct, discover, hurry, trade,
 //! great work, golden age) and worker builds.
 //!
@@ -1158,261 +1158,6 @@ impl Game {
         true
     }
 
-    /// C++ `CvUnit::getEspionagePoints` (CvUnit.cpp:7295-7305).
-    /// `plot` is unused by the C++ (callers pass NULL).
-    pub fn unit_get_espionage_points(&self, u: UnitId, _plot: Option<PlotIdx>) -> i32 {
-        let mut espionage_points = self.d.units[self.units[u].unit_type].espionage_points;
-
-        // (C++ scales by the game speed's great work percent.)
-        espionage_points *= game_speed_info(self).unit_great_work_percent;
-        espionage_points /= 100;
-
-        std::cmp::max(0, espionage_points)
-    }
-
-    /// C++ `CvUnit::canInfiltrate` (CvUnit.cpp:7307-7339).
-    pub fn unit_can_infiltrate(&self, u: UnitId, plot: PlotIdx, test_visible: bool) -> bool {
-        if self.units[u].death_delay {
-            return false;
-        }
-
-        if self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
-            return false;
-        }
-
-        if self.unit_get_espionage_points(u, None) == 0 {
-            return false;
-        }
-
-        let city = match live_plot_city(self, plot) {
-            Some(city) if !self.city_is_barbarian(city) => city,
-            _ => return false,
-        };
-
-        if !test_visible && self.city_team(city) == self.unit_get_team(u) {
-            return false;
-        }
-
-        true
-    }
-
-    /// C++ `CvUnit::infiltrate` (CvUnit.cpp:7342-7361).
-    pub fn unit_infiltrate(&mut self, u: UnitId) -> bool {
-        let plot = self.unit_plot(u);
-
-        if !self.unit_can_infiltrate(u, plot, false) {
-            return false;
-        }
-
-        let points = self.unit_get_espionage_points(u, None);
-        let team = self.unit_get_team(u);
-        // C++ `GET_PLAYER(plot()->getOwnerINLINE())`: `canInfiltrate` found a city here.
-        let plot_owner = self.map.plots[plot].owner.expect("CvUnit::infiltrate: city plot without an owner");
-        let target_team = self.players[plot_owner].team;
-        self.team_change_espionage_points_against_team(team, target_team, points);
-        self.teams[team].espionage_points_ever += points;
-
-        // Graphics: NotifyEntity(MISSION_INFILTRATE).
-
-        if self.units.contains(u) {
-            self.unit_kill(u, true, None);
-        }
-
-        true
-    }
-
-    /// C++ `CvUnit::canEspionage` (CvUnit.cpp:7364-7423).
-    pub fn unit_can_espionage(&self, u: UnitId, plot: PlotIdx, test_visible: bool) -> bool {
-        if self.units[u].death_delay {
-            return false;
-        }
-
-        if !self.unit_is_spy(u) {
-            return false;
-        }
-
-        if self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
-            return false;
-        }
-
-        let Some(plot_owner) = self.map.plots[plot].owner else {
-            return false;
-        };
-
-        if self.player_is_barbarian(plot_owner) {
-            return false;
-        }
-
-        let target_team = self.players[plot_owner].team;
-        let team = self.unit_get_team(u);
-
-        if target_team == team {
-            return false;
-        }
-
-        if self.teams[team].vassal[target_team] {
-            return false;
-        }
-
-        if !test_visible {
-            if self.units[u].made_attack {
-                return false;
-            }
-
-            if self.unit_has_moved(u) {
-                return false;
-            }
-
-            if target_team != team && !self.unit_is_invisible(u, target_team, true) {
-                return false;
-            }
-        }
-
-        true
-    }
-
-    /// C++ `CvUnit::espionage` (CvUnit.cpp:7425-7488).
-    /// `mission` `None` (or a two-phase mission with `data == -1`) opens a popup for humans in C++
-    /// and returns false; the chosen mission arrives as a new MISSION_ESPIONAGE.
-    pub fn unit_espionage(&mut self, u: UnitId, mission: Option<EspionageMissionType>, data: i32) -> bool {
-        let d = self.d;
-        let plot = self.unit_plot(u);
-
-        if !self.unit_can_espionage(u, plot, false) {
-            return false;
-        }
-
-        // `canEspionage` requires an owned plot.
-        let target_player = self.map.plots[plot].owner.expect("CvUnit::espionage: unowned plot");
-
-        let Some(mission) = mission else {
-            // UI: BUTTONPOPUP_DOESPIONAGE for the (human) owner; the chosen mission comes back as a
-            // new MISSION_ESPIONAGE.
-            return false;
-        };
-
-        if d.espionage_missions[mission].two_phases && data == -1 {
-            // UI: BUTTONPOPUP_DOESPIONAGE_TARGET for the (human) owner.
-            return false;
-        }
-
-        if self.unit_test_spy_intercepted(u, target_player, d.espionage_missions[mission].difficulty_mod) {
-            return false;
-        }
-
-        let owner = self.units[u].owner;
-        if self.player_do_espionage_mission(owner, mission, Some(target_player), Some(plot), data, Some(u)) {
-            // Graphics: NotifyEntity(MISSION_ESPIONAGE).
-
-            // C++ keeps using `this` (no espionage mission destroys the spy).
-            if !self.units.contains(u) {
-                return true;
-            }
-
-            if !self.unit_test_spy_intercepted(u, target_player, d.defines.espionage_spy_mission_escape_mod) {
-                self.unit_set_fortify_turns(u, 0);
-                self.units[u].made_attack = true;
-                self.unit_finish_moves(u);
-
-                if let Some(capital) = self.player_get_capital_city(owner) {
-                    let (x, y) = (self.cities[capital].x, self.cities[capital].y);
-                    self.unit_set_xy(u, x, y, false);
-
-                    // TXT_KEY_ESPIONAGE_SPY_SUCCESS
-                    log_message(self, Some(owner), |g| {
-                        format!("{} has returned to {}", g.unit_get_name(u), city_display_name(g, capital))
-                    });
-                }
-            }
-
-            return true;
-        }
-
-        false
-    }
-
-    /// C++ `CvUnit::testSpyIntercepted` (CvUnit.cpp:7490-7556).
-    /// Returns true if the spy was caught (and killed).
-    pub fn unit_test_spy_intercepted(&mut self, u: UnitId, target_player: PlayerId, modifier: i32) -> bool {
-        if self.player_is_barbarian(target_player) {
-            return false;
-        }
-
-        let target_team = self.players[target_player].team;
-
-        if self.soren_rand_num(10000, "Spy Interception") >= self.unit_get_spy_intercept_percent(u, target_team) * (100 + modifier) {
-            return false;
-        }
-
-        // UI: TXT_KEY_SPY_INTERCEPTED[_MISSION|_SPY][_REVEAL] messages naming the target's
-        // closest city (`findCity(.., eTargetPlayer, team, true, false)`) or the target civ.
-        let owner = self.units[u].owner;
-        log_message(self, Some(owner), |g| format!("Your {} has been intercepted!", g.unit_get_name(u)));
-
-        if self.soren_rand_num(100, "Spy Reveal identity") < self.d.defines.espionage_spy_reveal_identity_percent {
-            if !self.unit_is_enemy(u, Some(target_team), None) {
-                self.players[target_player].ai_memory_count[owner][MemoryType::MEMORY_SPY_CAUGHT] += 1;
-            }
-
-            log_message(self, Some(target_player), |g| {
-                format!("A {} {} has been intercepted", g.player_get_civilization_adjective(owner), g.unit_get_name(u))
-            });
-        } else {
-            log_message(self, Some(target_player), |g| format!("A {} has been intercepted", g.unit_get_name(u)));
-        }
-
-        // Graphics: NotifyEntity(MISSION_SURRENDER).
-
-        self.unit_kill(u, true, None);
-
-        true
-    }
-
-    /// C++ `CvUnit::getSpyInterceptPercent` (CvUnit.cpp:7558-7585).
-    pub fn unit_get_spy_intercept_percent(&self, u: UnitId, target_team: TeamId) -> i32 {
-        let defines = &self.d.defines;
-        let team = self.unit_get_team(u);
-        let plot = self.unit_plot(u);
-
-        let mut success = 0;
-
-        let target_points = self.teams[target_team].espionage_points_ever;
-        let our_points = self.teams[team].espionage_points_ever;
-        success += (defines.espionage_intercept_spending_max * target_points) / std::cmp::max(1, target_points + our_points);
-
-        if self.plot_is_espionage_counter_spy(plot, target_team) {
-            success += defines.espionage_intercept_counterspy;
-        }
-
-        if self.teams[target_team].counterespionage_mod_against_team[team] > 0 {
-            success += defines.espionage_intercept_counterespionage_mission;
-        }
-
-        if 0 == self.units[u].fortify_turns
-            || self.plot_count_units(plot, |x| self.unit_get_team(x) == team && self.unit_is_spy(x)) > 1
-        {
-            success += defines.espionage_intercept_recent_mission;
-        }
-
-        std::cmp::min(100, std::cmp::max(0, success))
-    }
-
-    /// C++ `CvUnit::isIntruding` (CvUnit.cpp:7587-7602).
-    pub fn unit_is_intruding(&self, u: UnitId) -> bool {
-        let team = self.unit_get_team(u);
-
-        let local_team = match self.plot_get_team(self.unit_plot(u)) {
-            Some(local_team) if local_team != team => local_team,
-            _ => return false,
-        };
-
-        if self.teams[local_team].vassal[team] {
-            return false;
-        }
-
-        true
-    }
-
     /// C++ `CvUnit::canGoldenAge` (CvUnit.cpp:7604-7620).
     pub fn unit_can_golden_age(&self, u: UnitId, _plot: PlotIdx, test_visible: bool) -> bool {
         if !self.unit_is_golden_age(u) {
@@ -1664,7 +1409,7 @@ mod tests {
     }
 
     #[test]
-    fn great_work_and_espionage_scale_with_game_speed() {
+    fn great_work_scales_with_game_speed() {
         let mut g = test_game();
         let d = g.d;
         let u = add_unit(&mut g, PlayerId(0), "UNIT_ARTIST", 1, 1);
@@ -1676,7 +1421,6 @@ mod tests {
         let percent = d.game_speeds[g.setup.game_speed].unit_great_work_percent;
         assert_eq!(percent, 67);
         assert_eq!(g.unit_get_great_work_culture(u, plot), info.great_work_culture * percent / 100);
-        assert_eq!(g.unit_get_espionage_points(u, None), std::cmp::max(0, info.espionage_points * percent / 100));
 
         // FfH: a unit that has cast this turn has no great work.
         g.units[u].has_casted = true;
@@ -1691,9 +1435,6 @@ mod tests {
         assert!(!g.unit_can_trade(u, plot, false));
         assert!(!g.unit_can_join(u, plot, None));
         assert!(!g.unit_can_construct(u, plot, None, false));
-
-        // FfH always plays without espionage.
-        assert!(!g.unit_can_infiltrate(u, plot, true));
     }
 
     #[test]
@@ -1712,46 +1453,6 @@ mod tests {
 
         g.units[u].has_casted = true;
         assert_eq!(g.unit_get_discover_research(u, None), 0);
-    }
-
-    #[test]
-    fn intruding_needs_foreign_non_vassal_territory() {
-        let mut g = test_game();
-        let (p0, p1) = (PlayerId(0), PlayerId(1));
-        let u = add_unit(&mut g, p0, "UNIT_WARRIOR", 2, 2);
-        let plot = g.unit_plot(u);
-        let (t0, t1) = (g.players[p0].team, g.players[p1].team);
-
-        assert!(!g.unit_is_intruding(u));
-        g.map.plots[plot].owner = Some(p0);
-        assert!(!g.unit_is_intruding(u));
-        g.map.plots[plot].owner = Some(p1);
-        assert!(g.unit_is_intruding(u));
-        g.teams[t1].vassal[t0] = true;
-        assert!(!g.unit_is_intruding(u));
-    }
-
-    #[test]
-    fn spy_intercept_percent() {
-        let mut g = test_game();
-        let d = g.d;
-        let (p0, p1) = (PlayerId(0), PlayerId(1));
-        let u = add_unit(&mut g, p0, "UNIT_WARRIOR", 2, 2);
-        let (t0, t1) = (g.players[p0].team, g.players[p1].team);
-        let defines = &d.defines;
-
-        // No espionage spent, recent mission (not fortified).
-        assert_eq!(g.unit_get_spy_intercept_percent(u, t1), defines.espionage_intercept_recent_mission);
-
-        g.teams[t1].espionage_points_ever = 300;
-        g.teams[t0].espionage_points_ever = 100;
-        let spending = defines.espionage_intercept_spending_max * 300 / 400;
-        assert_eq!(g.unit_get_spy_intercept_percent(u, t1), spending + defines.espionage_intercept_recent_mission);
-
-        // Fortified and alone: no recent mission bonus; counterespionage adds its own.
-        g.units[u].fortify_turns = 1;
-        g.teams[t1].counterespionage_mod_against_team[t0] = 10;
-        assert_eq!(g.unit_get_spy_intercept_percent(u, t1), spending + defines.espionage_intercept_counterespionage_mission);
     }
 
     #[test]

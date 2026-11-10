@@ -561,19 +561,16 @@ impl Game {
         self.player_set_commerce_percent(p, commerce, new_value);
     }
 
-    /// C++ `CvPlayer::getCommerceRate(eIndex)`: the x100 member divided by 100; with
-    /// GAMEOPTION_NO_ESPIONAGE (always on in FFH, see `CvGame::isOption`) espionage counts
-    /// as culture; 0 while FFH research is disabled.
+    /// C++ `CvPlayer::getCommerceRate(eIndex)`: the x100 member divided by 100; the espionage
+    /// slot counts as culture (there is no espionage); 0 while FFH research is disabled.
     pub fn player_get_commerce_rate(&self, p: PlayerId, commerce: CommerceType) -> i32 {
         let pl = &self.players[p];
 
         let mut rate = pl.commerce_rate[commerce.idx()];
-        if self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
-            if commerce == CommerceType::COMMERCE_CULTURE {
-                rate += pl.commerce_rate[CommerceType::COMMERCE_ESPIONAGE.idx()];
-            } else if commerce == CommerceType::COMMERCE_ESPIONAGE {
-                rate = 0;
-            }
+        if commerce == CommerceType::COMMERCE_CULTURE {
+            rate += pl.commerce_rate[CommerceType::COMMERCE_ESPIONAGE.idx()];
+        } else if commerce == CommerceType::COMMERCE_ESPIONAGE {
+            rate = 0;
         }
 
         //FfH: Added by Kael 08/28/2008 (every commerce type, not only research, reads 0)
@@ -656,9 +653,8 @@ impl Game {
             return false;
         }
 
-        if commerce == CommerceType::COMMERCE_ESPIONAGE
-            && (0 == self.team_get_has_met_civ_count(pl.team, true) || self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE))
-        {
+        // There is no espionage.
+        if commerce == CommerceType::COMMERCE_ESPIONAGE {
             return false;
         }
 
@@ -880,7 +876,7 @@ impl Game {
 
         let d = self.d;
 
-        if !self.player_is_research(p) && self.players[p].advanced_start_points < 0 {
+        if !self.player_is_research(p) {
             return false;
         }
 
@@ -1204,7 +1200,7 @@ impl Game {
         let civ = self.player_get_civilization_type(p).expect("player without a civilization");
         let unit = d.civ_unit(civ, unit_class)?;
 
-        if d.units[unit].espionage_points > 0 && self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
+        if d.units[unit].espionage_points > 0 {
             return None;
         }
 
@@ -1845,7 +1841,7 @@ mod tests {
         g.players[p].commerce_rate = [199, 450, 250, 120];
         assert_eq!(g.player_get_commerce_rate(p, CommerceType::COMMERCE_GOLD), 1);
         assert_eq!(g.player_get_commerce_rate(p, CommerceType::COMMERCE_RESEARCH), 4);
-        // GAMEOPTION_NO_ESPIONAGE is always on in FfH
+        // there is no espionage: its slot counts as culture
         assert_eq!(g.player_get_commerce_rate(p, CommerceType::COMMERCE_CULTURE), 3);
         assert_eq!(g.player_get_commerce_rate(p, CommerceType::COMMERCE_ESPIONAGE), 0);
 
@@ -1874,7 +1870,7 @@ mod tests {
         g.teams[t].commerce_flexible_count[CommerceType::COMMERCE_GOLD.idx()] = 1;
         assert!(g.player_is_commerce_flexible(p, CommerceType::COMMERCE_GOLD));
 
-        // espionage: no civ met, and GAMEOPTION_NO_ESPIONAGE
+        // espionage: there is none
         g.players[p].commerce_flexible_count[CommerceType::COMMERCE_ESPIONAGE.idx()] = 1;
         assert!(!g.player_is_commerce_flexible(p, CommerceType::COMMERCE_ESPIONAGE));
     }
@@ -1888,11 +1884,8 @@ mod tests {
         let crafting = tech(&g, "TECH_CRAFTING");
         let mining = tech(&g, "TECH_MINING");
 
-        // no city and not in advanced start
+        // no city
         assert!(!g.player_can_research(p, crafting, false));
-        g.players[p].advanced_start_points = 0;
-        assert!(g.player_can_research(p, crafting, false));
-        g.players[p].advanced_start_points = -1;
 
         g.players[p].founded_first_city = true;
         assert!(g.player_can_research(p, crafting, false));

@@ -1663,9 +1663,6 @@ TXT_KEY_ADD_BUDDY_NAME_TITLE	Add a Buddy
 TXT_KEY_ADD_BUDDY_REQ_TITLE	BUDDY REQUEST
 TXT_KEY_ADD_BUDDY_TAG	Add Buddy
 TXT_KEY_ADD_MEMBER_AS_BUDDYHELP	To directly chat with a member, they must first be added to your buddy list.  Do you want to add %s1_Name as a buddy now?
-TXT_KEY_ADVANCED_START_BEGIN_GAME	Begin!
-TXT_KEY_ADVANCED_START_POINTS	Advanced Start Base Points:
-TXT_KEY_ADVANCED_START_POINTS_HELP	Gold you receive at the start to purchase cities, units, and improvements.
 TXT_KEY_ADVISOR_CULTURE	Culture
 TXT_KEY_ADVISOR_ECONOMY	Economy
 TXT_KEY_ADVISOR_GROWTH	Growth
@@ -7779,7 +7776,6 @@ TXT_KEY_FLYOUT_MENU_MOVE_TO	Move To (%d1_NumTurns)
 TXT_KEY_FLYOUT_MENU_SELECT_ALL	Select All
 TXT_KEY_FLYOUT_MENU_SLEEP_ALL	Sleep All
 TXT_KEY_FLYOUT_MENU_WAKE_ALL	Wake All
-TXT_KEY_FORCE_ADVANCED_START	Force Advanced Start
 TXT_KEY_FORCE_CONTROL_HANDICAP	Force Handicap
 TXT_KEY_FORCE_CONTROL_HANDICAP_DESC	Disable the control for changing player handicap
 TXT_KEY_FORCE_CONTROL_MAX_CITY_ELIMINATION	Force Max City Elimination
@@ -7860,8 +7856,6 @@ TXT_KEY_GAMESPY_NEW_ACCOUNT_TITLE	Create a New Account
 TXT_KEY_GAME_END_SCREEN_TITLE	Your place in History
 TXT_KEY_GAME_LIST_FIREWALL_PING	[Firewalled]
 TXT_KEY_GAME_LIST_UNKNOWN_PING	[Unknown]
-TXT_KEY_GAME_OPTION_ADVANCED_START	Advanced Start
-TXT_KEY_GAME_OPTION_ADVANCED_START_HELP	Allows players to 'purchase' their choice of starting cities, units, technologies, etc. when game begins.
 TXT_KEY_GAME_OPTION_AGGRESSIVE_AI	Challenge- Aggressive AI
 TXT_KEY_GAME_OPTION_AGGRESSIVE_AI_HELP	AI leaders favor war over diplomacy
 TXT_KEY_GAME_OPTION_AI_NO_BUILDING_PREREQS	Challenge- AI No Building Requirements
@@ -7914,8 +7908,6 @@ TXT_KEY_GAME_OPTION_NO_CITY_RAZING	No City Razing
 TXT_KEY_GAME_OPTION_NO_CITY_RAZING_HELP	Cities cannot be razed after capture
 TXT_KEY_GAME_OPTION_NO_DUIN	No Duin
 TXT_KEY_GAME_OPTION_NO_DUIN_HELP	No players will be able to build Duin Halfmorn
-TXT_KEY_GAME_OPTION_NO_ESPIONAGE	No Espionage
-TXT_KEY_GAME_OPTION_NO_ESPIONAGE_HELP	Spies are not available, and Espionage Points are converted into Culture
 TXT_KEY_GAME_OPTION_NO_EVENTS	DEBUG- Disable Events
 TXT_KEY_GAME_OPTION_NO_EVENTS_HELP	Note- Only use this to debug OOS issues, many functions in FfH use events and this will break them
 TXT_KEY_GAME_OPTION_NO_GLOBAL_COUNTER	Hallowed Ground
@@ -9641,7 +9633,6 @@ TXT_KEY_MINIMIZED_CHOOSE_TECH	Choose a new technology to research...
 TXT_KEY_MINIMIZED_CHOOSE_TECH_FREE	Choose a free technology...
 TXT_KEY_MIN_LATITUDE	[COLOR_WARNING_TEXT]Can build at a minimum latitude of %d1 degrees[COLOR_REVERT]
 TXT_KEY_MISC_ADJUST_COMMERCE_RATE	[ICON_BULLET]Can Adjust %F1_CmrcIcon Rate
-TXT_KEY_MISC_ADVANCED_START_PEACE_REMAINING	%d1 [NUM1:turn:turns] of Universal Peace Remaining
 TXT_KEY_MISC_AI	[SPACE][AI]
 TXT_KEY_MISC_ALARM_GOES_OFF	RIIIIIIIIING! Time is now %s1_TimeStr.
 TXT_KEY_MISC_ALARM_NOT_SET	Alarm is not set!

@@ -858,6 +858,37 @@ flag.
     first three eras are dropped.
   - Start normalization's "city trade tech no later than the start era" filter is dropped: no
     bonus it affected is a normalize bonus or yields food.
+- **No advanced start, no espionage** (the owner's request, 2026-11-10: no switch without a
+  reason to exist; save format 32). A default game plays as before.
+  - **`GAMEOPTION_ADVANCED_START` is gone**, and the advanced-start subsystem with it: no game
+    could use it (`ffh-play` refused it: there is no advanced-start interface). Gone: the
+    point economy (`CvPlayer::doAdvancedStartAction` and the unit, city, population, culture,
+    building, improvement, route, tech and visibility costs), `AdvancedStartAction`,
+    `Player::advanced_start_points`, `GameSetup::num_advanced_start_points`,
+    `CvGame::isInAdvancedStart`, the forced peace of `initDiplomacy`, the advanced-start branches
+    of `initFreeUnits`, `doHolyCity`, city founding (Creative's free border pop), `canResearch`,
+    `countOwnedBonuses`, `verifyAlive` and `AI_foundValue`, and the AI's `advanced_start.rs`.
+    Left in the data, unread by the rules: the `ADVANCED_START_*` defines (but
+    `ADVANCED_START_CITY_COST` and `ADVANCED_START_POPULATION_COST`, which still price a
+    settler's extra cost), the handicaps' and world sizes' point modifiers, and the units',
+    buildings', improvements', routes', techs' and features' advanced-start costs.
+  - **`GAMEOPTION_NO_ESPIONAGE` is gone**, its "on" behaviour unconditional, and the espionage
+    code with it: FFH2 locked the option on (`CvGame::isOption`), so no game ever had
+    espionage. What stays is what the option did: the espionage commerce slot exists (arrays
+    keep four commerces) but its slider is held at 0 and its rate counts as culture
+    (`getCommerceRate`); culture levels cost `NO_ESPIONAGE_CULTURE_LEVEL_MODIFIER` more; spies
+    and units with espionage points cannot be trained, given as a tech's free unit or set as a
+    great-people rate; an event that gives espionage points (or takes them from another player)
+    cannot happen. Gone: espionage points (spending weights, accumulation, the points against
+    each team and ever earned, the history), the missions (`canDoEspionageMission`, their
+    costs and effects, `canSpiesEnterBorders`, the spy destroy/bribe checks), infiltrate and
+    espionage unit missions, spy interception, counterespionage, the cities' espionage
+    visibility, espionage unhappiness and espionage defense. The spy-flagged units' BtS
+    actions (sabotage, destroy, steal plans) are not this option's and stay (no unit in the
+    data is a spy). Left in the data, unread by the rules: `espionage_missions.jsonc` (one
+    mission), the `ESPIONAGE_*` defines and `USE_SPIES_NO_ENTER_BORDERS`, the buildings'
+    espionage defense, the leaders' espionage weight; the events' and units' espionage points
+    are still read (to refuse them).
 - **Doctrines (research paths)** (2026-11-09; `research_paths.jsonc`, `RESEARCH_PATH_PERCENT` in
   `rules_defines.jsonc`, `player/research_path.rs`). Players see them as doctrines (the owner's
   naming): "Doctrine: Steel", "Adopt the Steel doctrine?"; the code, the data and the protocol call

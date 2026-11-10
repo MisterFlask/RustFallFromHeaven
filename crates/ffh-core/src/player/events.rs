@@ -1195,14 +1195,10 @@ impl Game {
             }
         }
 
-        if k_event.espionage_points > 0 && self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
+        // There is no espionage: no event gives espionage points, nor takes them from those held
+        // against another player (none).
+        if k_event.espionage_points > 0 || (k_event.espionage_points < 0 && data.other_player.is_some()) {
             return false;
-        }
-
-        if let Some(other) = data.other_player {
-            if k_event.espionage_points + self.teams[team].espionage_points_against_team[self.players[other].team] < 0 {
-                return false;
-            }
         }
 
         if (0 != k_event.tech_percent || 0 != k_event.tech_cost_percent) && self.player_get_best_event_tech(p, event, data.other_player).is_none() {
@@ -1468,13 +1464,6 @@ impl Game {
                 if k_event.gold_to_player {
                     self.players[other].gold -= gold;
                 }
-            }
-        }
-
-        if let Some(other) = data.other_player {
-            if k_event.espionage_points != 0 {
-                let (team, other_team) = (self.players[p].team, self.players[other].team);
-                self.team_change_espionage_points_against_team(team, other_team, k_event.espionage_points);
             }
         }
 

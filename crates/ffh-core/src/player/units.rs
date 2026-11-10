@@ -439,7 +439,7 @@ impl Game {
             return false;
         }
 
-        if self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) && (info.spy || info.espionage_points > 0) {
+        if info.spy || info.espionage_points > 0 {
             return false;
         }
 

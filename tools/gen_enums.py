@@ -109,6 +109,15 @@ WANT = {
 # "Changes from FFH2"). They follow the C++ members in this order, so the XML lists them last.
 EXTRA_MEMBERS = {}
 
+# C++ members this game removes (docs/PORTING.md "Changes from FFH2"). The members after one
+# move down to keep the values dense, so the XML/JSON rows must be removed with them.
+DROPPED_MEMBERS = {
+    "GameOptionTypes": [
+        "GAMEOPTION_ADVANCED_START",
+        "GAMEOPTION_NO_ESPIONAGE",
+    ],
+}
+
 
 def strip_comments(s):
     s = re.sub(r"/\*.*?\*/", "", s, flags=re.S)
@@ -186,6 +195,15 @@ def main():
             if v < 0:
                 continue
             consts.append((n, v))
+        dropped = DROPPED_MEMBERS.get(cname, [])
+        if dropped:
+            names_before = [n for n, _ in consts]
+            assert [v for _, v in consts] == list(range(len(consts))), cname
+            for n in dropped:
+                assert n in names_before, (cname, n)
+            consts = [(n, i) for i, n in enumerate(n for n in names_before if n not in dropped)]
+            if num:
+                num = (num[0], num[1] - len(dropped))
         for n in EXTRA_MEMBERS.get(cname, []):
             consts.append((n, consts[-1][1] + 1 if consts else 0))
         if num and cname in EXTRA_MEMBERS:

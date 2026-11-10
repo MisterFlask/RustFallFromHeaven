@@ -169,16 +169,15 @@ fn handicap_settler_and_deity() {
 #[test]
 fn game_options() {
     let d = d();
-    let no_espionage = &d.game_options[GameOptionType::GAMEOPTION_NO_ESPIONAGE];
-    assert_eq!(no_espionage.base.type_, "GAMEOPTION_NO_ESPIONAGE");
-    assert!(no_espionage.default && !no_espionage.visible);
-    let advanced_start = &d.game_options[GameOptionType::GAMEOPTION_ADVANCED_START];
-    assert!(!advanced_start.default && advanced_start.visible);
+    // The rows follow the generated enum (FFH2's options less those this game removed).
+    for o in d.game_options.keys() {
+        assert_eq!(d.game_options[o].base.type_, GameOptionType::NAMES[o.idx()]);
+    }
     // FFH2's options only: this game's own systems are always on, not options (docs/PORTING.md
     // "Changes from FFH2").
     assert_eq!(d.game_options.len(), GameOptionType::GAMEOPTION_ALWAYS_RAZE.idx() + 1);
-    assert_eq!(d.game_options.iter().filter(|o| o.default).count(), 1);
-    assert_eq!(d.game_options.iter().filter(|o| o.visible).count(), 52);
+    assert_eq!(d.game_options.iter().filter(|o| o.default).count(), 0);
+    assert_eq!(d.game_options.iter().filter(|o| o.visible).count(), 51);
 }
 
 #[test]

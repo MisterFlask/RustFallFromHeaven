@@ -105,16 +105,6 @@ impl Game {
                 if self.teams[t].stolen_visibility_timer[o] > 0 {
                     self.team_change_stolen_visibility_timer(t, o, -1);
                 }
-
-                // changeCounterespionageTurnsLeftAgainstTeam(-1) / setCounterespionageModAgainstTeam(0):
-                // the C++ side effects are UI only.
-                if self.teams[t].counterespionage_turns_left_against_team[o] > 0 {
-                    self.teams[t].counterespionage_turns_left_against_team[o] -= 1;
-                }
-
-                if self.teams[t].counterespionage_turns_left_against_team[o] == 0 {
-                    self.teams[t].counterespionage_mod_against_team[o] = 0;
-                }
             }
         }
 
@@ -799,11 +789,6 @@ impl Game {
             if self.team_is_force_revealed_bonus(other, bonus) {
                 self.team_set_force_revealed_bonus(t, bonus, true);
             }
-        }
-
-        for o in self.team_ids() {
-            let points = self.teams[other].espionage_points_against_team[o].max(self.teams[t].espionage_points_against_team[o]);
-            self.team_set_espionage_points_against_team(t, o, points);
         }
 
         for p in self.player_ids() {

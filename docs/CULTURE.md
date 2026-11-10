@@ -100,8 +100,8 @@ starts and when it stops.
 - **The flip happens in the target city's turn**, as a culture revolt would; a flipped city starts
   with no pressure (it is a new city).
 - **Barbarian cities** may be targeted (and flipped); barbarians channel nothing.
-- **Espionage overlap.** FfH locks `GAMEOPTION_NO_ESPIONAGE` on (`Game::is_option`), so BtS's
-  influence missions cannot run in this game: there is nothing to disable.
+- **Espionage overlap.** There is no espionage (FfH locked `GAMEOPTION_NO_ESPIONAGE` on; the option
+  and the espionage code are gone), so BtS's influence missions cannot run: nothing to disable.
 - **Saves before format 8** (the cultural queue) do not load.
 
 ## Open points for the owner

@@ -2487,26 +2487,6 @@ impl Cai {
             }
         }
 
-        // Espionage
-        if !g.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
-            let mut temp_value = 0;
-            if g.players[p].commerce_percent[CommerceType::COMMERCE_ESPIONAGE.idx()] == 0 {
-                temp_value += 4;
-            }
-
-            if g.team_get_any_war_plan_count(team, true) == 0 {
-                temp_value += 3;
-            }
-
-            temp_value += (100 - self.player_ai_get_espionage_weight(g, p)) / 10;
-
-            temp_value += nonsense % 12;
-
-            if temp_value > 10 {
-                hash |= AI_STRATEGY_BIG_ESPIONAGE;
-                store(hash);
-            }
-        }
         // Turn off inappropriate strategies.
         if g.is_option(GameOptionType::GAMEOPTION_ALWAYS_PEACE) {
             hash &= !AI_STRATEGY_DAGGER;

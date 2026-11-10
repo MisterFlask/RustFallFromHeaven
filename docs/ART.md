@@ -1033,7 +1033,7 @@ shapes.
 | GOLD | stacked coins and one standing | ochre `y`, gold `K` |
 | RESEARCH | an open codex | vellum pages |
 | CULTURE | a gilt letter on a lilac plaque | gold on `p`/`P` |
-| ESPIONAGE | a lilac mask (drawn for completeness; espionage is locked off) | dusk `p` |
+| ESPIONAGE | a lilac mask (drawn for completeness; there is no espionage) | dusk `p` |
 | HAPPY | a lit candle | amber `l` flame |
 | UNHAPPY | a snuffed candle with smoke | ash smoke, `C` wick |
 | HEALTHY | a green sprig | olive `o` / lichen `O` |
