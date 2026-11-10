@@ -260,27 +260,22 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
 
 ## AI changes
 
+Rewritten 2026-11-10 (the owner's decision), from what the earlier rounds showed (docs/AI_LOG.md):
+ideas were built before anyone counted how often their situation arises, single switches were
+judged by a win rate that could not see them, rules were written where an estimate was missing,
+and the AI was only ever measured against itself.
+
+### What the AI is
+
 - **The AI plays the way an expert human would** (the owner's decision, 2026-10-21). In broad
   strokes its strategy and tactics are the ones a strong player would conceptualize and could
   explain: settle good land while it is free, defend what it holds, fight when it has the edge and
   make peace when it does not, use every tool its civilization has, give up independence when
-  hopelessly behind. Flavor and fun override this where a rule below says so. Design a behaviour
-  from that picture (what the expert sees, wants and does), not by searching for whatever scores
-  best.
-- **How AI changes are checked** (the owner's decision, 2026-11-03; it replaces the earlier
-  process: forks before any win-rate measurement, development and fresh seeds, keeping a change
-  only if neither the win rate nor the share fell, a `docs/AI_LOG.md` entry before every revert):
-  * **A rules change** (a new system, a changed rule) is not gated on the AI at all: make the AI
-    do something with it that seems reasonably likely to be effective, ad hoc and unprincipled
-    if need be, and move on.
-  * **An AI-specific change** is checked for its local effect: simulate many games and find out
-    whether the behaviour did what it was meant to where it fired (the border city held, the
-    stack took its city with fewer losses, the caster lived), with traced firings, forks of the
-    game just before a firing (`tools/ai-branch.sh`), telemetry and counts over many games
-    (docs/AI.md, "Tools"). Do not generally try to measure the win rate directly: for many kinds
-    of change it cannot show the effect.
-
-  `docs/AI_LOG.md` records earlier attempts and what their games showed.
+  hopelessly behind. Flavor and fun override this where a rule below says so.
+- **It is an opponent for a human.** What matters is how it stands against a player who does
+  what it does not: masses an army, rushes, turtles. A result that holds only among copies of
+  itself (a defender is cheaper to rebuild than to keep, when no neighbour has an army) is a fact
+  about those opponents, not about the game.
 - **Civilizations use their unique mechanics** (the owner's decision, 2026-10-20): a
   civilization's own units, spells and abilities are part of how it plays, so its AI uses them
   whether or not they directly benefit it.
@@ -291,17 +286,88 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
   cities -- and take it, again and again, whether or not it raises their win rate (docs/AI.md,
   "Victory pursuit").
 - **Hopeless civilizations become vassals** (the owner's decision, 2026-10-21). A civilization
-  that has fallen hopelessly behind offers to become the vassal of a much stronger neighbour it is
-  at least decently aligned with, and agrees when asked. "Hopelessly behind" means in technology,
-  power and its share of the world. "Decently aligned" means no good/evil opposition, and an
-  attitude its leader's pride accepts. One being crushed in a war capitulates to the conqueror,
-  whatever it thinks of it (docs/AI.md, "Vassal states").
+  that has fallen hopelessly behind (in technology, power and its share of the world) offers to
+  become the vassal of a much stronger neighbour it is at least decently aligned with (no
+  good/evil opposition, an attitude its leader's pride accepts), and agrees when asked. One being
+  crushed in a war capitulates to the conqueror, whatever it thinks of it (docs/AI.md, "Vassal
+  states").
 - **The AI does not pursue the Tower of Mastery or the Altar of the Luonnotar** (the owner's
-  decision, 2026-10-21: boring solitaire victories, and the Tower needs a huge territory anyway).
-  It still stops a rival about to win one (docs/AI.md, "Victory pursuit").
-- AI timing and AI-only restrictions belong in `ffh-ai`, not in the rules. The world spells'
-  AI-only Python gates were moved there (docs/PORTING.md, "Changes from FFH2"); the rules' other
-  AI-only branches are listed in docs/AI_ONLY_RULES.md, each group moved by its own decision.
+  decision, 2026-10-21: boring solitaire victories). It still stops a rival about to win one.
+- AI timing and AI-only restrictions belong in `ffh-ai`, not in the rules (docs/AI_ONLY_RULES.md
+  lists the rules' remaining AI-only branches, each group moved by its own decision).
+
+### How AI changes are checked
+
+- **A rules change** (a new system, a changed rule) is not gated on the AI at all: make the AI do
+  something with it that seems reasonably likely to be effective, ad hoc and unprincipled if need
+  be, and move on.
+- **An AI change is never kept or dropped on the standard AI's win rate or share against copies
+  of itself.** That number is zero-sum, noisy at any affordable sample, and falls when every
+  civilization conquers better. Do not measure it to decide.
+
+An AI-specific change goes through this loop, in this order; stop at the first step that fails.
+
+1. **Start from games, not from an idea.** The work list is what goes wrong in played games,
+   counted: every city lost, civilization eliminated, army that stood idle, caster that never
+   cast, attributed to a cause (telemetry, `review_game.py`, traces) and ranked by how often it
+   happens times what it costs. "An expert would do X" picks the fix for a counted failure; it is
+   not a reason to build X.
+2. **Count the firings before building.** A throwaway trace line for the situation (not the
+   behaviour) over a few dozen games: how often, on which turn, for whom. A situation that arises
+   in a few games, or after the game is decided, is dropped here.
+3. **Estimate first, and check the estimate against what happened.** A behaviour that depends on
+   a prediction (the city falls, the line can be cut, the stack wins, raiders will come) gets the
+   estimator built and measured as a predictor first: predicted against observed over many games.
+   Build the decision only on an estimator that is right. Prefer an estimator that runs the
+   rules' own code (`combat_sim`) to thresholds and weights: it stays right when the rules change.
+4. **Judge the behaviour where it fired.** Did it do what it was meant to there: the city held,
+   the stack took its city with fewer losses, the caster lived. Use forks of the game just before
+   a firing (`tools/ai-branch.sh`), traces and counts over many games. One fork is an anecdote:
+   judge on many firings, and on what the units and cities did, not on the score.
+5. **Follow the chain before judging the first link.** The AI's heuristics cover for each other:
+   fixing one often exposes the deficiency it was hiding (the reckless attacks were keeping
+   raiders off the cities). When a sound fix costs something elsewhere, find what it exposed, fix
+   that too, and judge the package. Revert only when the idea itself was wrong or the chain is not
+   worth following; say which in docs/AI_LOG.md.
+6. **Guardrail, not verdict.** Before keeping a package, one wide run against the base
+   (`tools/agents/ab.sh`) to see that nothing broad broke: military at turn 100, cities lost to
+   barbarians and to civilizations, eliminations, research. A clear break is a link in the chain
+   (step 5); a flat result is a pass.
+7. **Play it against something that is not itself.** Where the change concerns war, defense or
+   force building, the opponents that matter are the probes (below), not six copies of the same
+   build. Until a probe exists, give the change to one player against opponents without it
+   (`civ_ab.py --civ all --new-env FFH_AI_<NAME>_ONLY={civ}`) and read what happened to that
+   player's cities and armies, not its win rate.
+
+`docs/AI_LOG.md` records attempts worth remembering and what their games showed: read the entries
+for an area before working in it.
+
+### Probes: AIs that go all in on one strategy
+
+A probe is a variant of the AI that pushes one strategic direction as hard as it can and neglects
+the rest (the owner's decision, 2026-11-10): an early rush, one unit line massed, settling without
+pause, a turtle that only researches, casters and summons above all, pillaging and cutting supply,
+culture, a religion spread everywhere. None is built yet; build one when a question needs it.
+
+- **What they are for.** (a) Balance: a strategy that wins far more or far less than the
+  standard AI when pushed to the limit is a candidate overpowered or underpowered strategy, in the
+  rules or the data. (b) Opponents: the standard AI is measured against them (step 7), which is
+  how it meets an army it would never build. (c) Flavor: a probe that plays well and reads as a
+  civilization's or a leader's character may become how that one plays (the owner's call).
+- **Reading a result.** A probe that crushes the standard AI shows either a strategy too strong
+  or an AI that does not answer it. Tell them apart: if an expert has an answer within the rules
+  (and the AI can be given it), it is an AI gap and goes on the work list; if not, it is a balance
+  finding for the owner, reported with the numbers, not fixed in the AI. A probe that loses badly
+  shows a weak strategy only if it was played competently: look at its games first.
+- **How they are built.** In `ffh-ai`, legal play and deterministic like the rest, chosen per
+  player from the environment as the switches are (`switches.rs`), so the standard tools run
+  them. A probe is exempt from "plays the way an expert human would" and from the flavor rules
+  above; it must still execute its one strategy competently, or its result says nothing. Keep each
+  small: overrides of the standard AI's priorities (what to build, research, and when to declare
+  war), not a second AI. Probes are measuring tools: they do not play in the released game unless
+  (c) above makes one a civilization's play, and no test asserts how their games go.
+- A probe's win rate against the standard AI is a legitimate measurement, unlike the standard
+  AI's against itself: the two sides differ in strategy, so the number says something about it.
 
 ## Rules text and tooltips
 

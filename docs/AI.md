@@ -1,18 +1,23 @@
 # AI design (ffh-ai)
 
-`docs/AI_LOG.md` records earlier AI changes that did not move the win rate, why, and what that
-implied. AI-specific changes are now checked for their local effect over many simulated games, not
-by the win rate, and rules changes give the AI something reasonable without a gate (CLAUDE.md, "AI
-changes"; the owner's decision, 2026-11-03): the measurements recorded here were made under the
-rules of their time. `docs/ENTITIES.md` inventories, entity by entity,
-how far this AI uses every unit, building and spell, and the gaps that recur.
+`docs/AI_LOG.md` records earlier AI changes that did not hold, why, and what that implied. How an
+AI change is made and checked is in CLAUDE.md, "AI changes" (rewritten 2026-11-10): the work
+starts from failures counted in played games, an estimate is checked as a predictor before a
+behaviour is built on it, a behaviour is judged where it fired, and the standard AI's win rate
+against copies of itself decides nothing. Rules changes give the AI something reasonable without
+a gate. The measurements recorded in this file were made under the rules and the process of
+their time. `docs/ENTITIES.md` inventories, entity by entity, how far this AI uses every unit,
+building and spell, and the gaps that recur.
 
 **It plays the way an expert human would** (the owner's decision, 2026-10-21; CLAUDE.md, "AI
-changes"). Each behaviour starts from what a strong player would see, want and do in that
-position, and should read as sound strategy or tactics to one, unless flavor or fun dictates
-otherwise. Win-rate A/Bs tune the thresholds, weights and timing of such behaviours and catch
-implementations that misfire. They do not decide whether a sound behaviour exists: when one
-costs win rate, the games say why.
+changes"), and it is an opponent for a human: what counts is how it stands against a player who
+does what it does not. Against the C++ AI port it won on culture and runaways while fielding
+less than half the military and losing 12 cities a game to 7 (docs/CPPAI.md): its thin armies
+are safe only among copies of itself.
+
+**Probes** (the owner's decision, 2026-11-10; CLAUDE.md, "AI changes", "Probes"): variants that
+go all in on one strategy, to find overpowered and underpowered strategies and to give the
+standard AI opponents unlike itself. None is built yet.
 
 The C++ AI (CvPlayerAI/CvCityAI/CvUnitAI/CvTeamAI, ~60k lines, plus the Python AI hooks
 in CvGameUtils.py such as `AI_chooseTech`/`AI_chooseProduction`) is not ported. It is the
@@ -3695,6 +3700,10 @@ its loan general is fighting. None of this runs in the default game, so it moves
 
 ## Known gaps (future work)
 
+- **Tools the loop wants and does not have** (CLAUDE.md, "AI changes"): the probes; a counted
+  taxonomy of failures over many games (`review_game.py` gives one game's narrative); forks
+  resumed with several random seeds per branch, so that one firing gives a distribution and not
+  one continuation (`tools/ai-branch.sh` plays each branch once).
 - Leader traits (`traits.rs`): Charismatic, Creative, Defender, Organized and Magic Resistant have
   no play of their own (their effects reach every decision that reads the game). Candidates if
   they should: Defender stacks counterattacking inside our borders (Homeland), Creative leaders

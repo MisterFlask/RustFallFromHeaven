@@ -131,7 +131,7 @@ of any given kill"), in every engagement, not only sieges; it replaces the split
 
 ## AI
 
-A rules change is not gated on the AI (CLAUDE.md, "How AI changes are checked"); what it does:
+A rules change is not gated on the AI (CLAUDE.md, "AI changes"); what it does:
 - a walled enemy city with no units is an attack, not a free capture: its moves into one fight the
   Sentinels (the move rules), like a human's;
 - its siege units bombard a city with Sentinels standing before its stack attacks: the pre-attack
