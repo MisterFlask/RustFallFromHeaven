@@ -46,6 +46,8 @@ pub struct View {
     pub rival_def: BTreeMap<CityId, i32>,
     /// Reusable flood buffers.
     pub flood: Flood,
+    /// This turn's battle forecasts (`forecast::Cache`, lent by the controller).
+    pub forecasts: crate::forecast::Cache,
 }
 
 /// Does enemy unit `u` count when player `p` weighs the threats to itself (the danger map, a
@@ -149,6 +151,7 @@ impl View {
             garrison_incoming: BTreeMap::new(),
             rival_def: BTreeMap::new(),
             flood: Flood::default(),
+            forecasts: Default::default(),
         }
     }
 
@@ -175,9 +178,11 @@ impl View {
                 if threat > 0 && g.telemetry.on() {
                     let pr = Prediction::new("peril", Outcome::CityLost { city: c }, crate::predict::CITY_LOST_HORIZON, if threat > defense { 100 } else { 0 });
                     let civ = !v.civ_enemies.is_empty();
-                    g.tel_prediction(p, pr.score((threat - defense) as i64), || {
+                    g.tel_prediction(p, pr.score((threat - defense) as i64).per_answer(), || {
                         Obj::new().i("threat", threat as i64).i("defense", defense as i64).b("civ_war", civ).b("capital", g.city_is_capital(c)).end()
                     });
+                    // The rules' forecast of the same question (`forecast::holds`), recorded beside it.
+                    crate::predict::holds2(g, Some(&v.forecasts), &mut v.flood, p, c, threat > defense, threat, defense);
                 }
             }
         }

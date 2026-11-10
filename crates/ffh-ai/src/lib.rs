@@ -48,6 +48,7 @@ pub mod empire;
 pub mod events;
 pub mod expansion;
 pub mod finance;
+pub mod forecast;
 pub mod magic;
 pub mod mana;
 pub mod military;
@@ -107,11 +108,32 @@ pub struct Ai {
     /// `update` until the turn ends; empire-level decisions are made once per turn). Only a
     /// shortcut: `play_turn` also derives "already played" from the game state.
     played: Mutex<std::collections::BTreeMap<PlayerId, i32>>,
+    /// Each player's battle forecasts of its turn (`forecast::Cache`), lent to its view while it
+    /// plays.
+    forecasts: Mutex<std::collections::BTreeMap<PlayerId, forecast::Cache>>,
 }
 
 impl Ai {
     pub fn new() -> Ai {
         Ai::default()
+    }
+
+    /// Player `p`'s forecast cache for this game turn (`forecast::Cache`), to lend to its view.
+    fn lend_forecasts(&self, g: &Game, p: PlayerId) -> forecast::Cache {
+        self.forecasts.lock().unwrap().remove(&p).unwrap_or_default().for_turn(g.game_turn())
+    }
+
+    /// The cache back from the view `v`; with telemetry on, the forecasts asked for and played
+    /// on this call reported (`decisions.forecast`).
+    fn return_forecasts(&self, g: &Game, v: &mut view::View) {
+        let c = std::mem::take(&mut v.forecasts);
+        if g.telemetry.on() && c.calls.get() > 0 {
+            g.tel_decision(v.p, "forecast", "calls", "", c.calls.get(), String::new);
+            g.tel_decision(v.p, "forecast", "played", "", c.played.get(), String::new);
+        }
+        c.calls.set(0);
+        c.played.set(0);
+        self.forecasts.lock().unwrap().insert(v.p, c);
     }
 }
 
@@ -150,6 +172,7 @@ impl Controller for Ai {
         // exposure diagnostic), and the view is rebuilt after them: analyse it now only when the
         // units play on it (a later call, or the barbarians).
         let mut v = view::View::header(g, p);
+        v.forecasts = self.lend_forecasts(g, p);
         if !first_call || v.barbarian {
             v.analyze(g);
         }
@@ -159,6 +182,7 @@ impl Controller for Ai {
         if !first_call {
             // Called again in the same turn: only groups that still need orders.
             units::play(self, g, &mut v);
+            self.return_forecasts(g, &mut v);
             return;
         }
         if !v.barbarian {
@@ -181,7 +205,11 @@ impl Controller for Ai {
             crusade::deliver(g, p);
             crusade::ask_for_loans(g, p);
             // War declarations change the picture.
-            v = view::View::new(g, p);
+            // (`View::new`, the forecast cache carried over.)
+            let forecasts = std::mem::take(&mut v.forecasts);
+            v = view::View::header(g, p);
+            v.forecasts = forecasts;
+            v.analyze(g);
             civs::turn(self, g, &mut v); // civ-mechanics
             traits::turn(g, &v); // trait-play
             governor::turn(self, g, p); // governed cities: priorities, empire orders (docs/GOVERNORS.md)
@@ -202,6 +230,7 @@ impl Controller for Ai {
         casting::end_turn(g, &v);
         // Spells may have summoned units or used moves: make sure nothing is left ready.
         units::finalize(g, p);
+        self.return_forecasts(g, &mut v);
     }
 
     fn choose_production(&self, g: &mut Game, c: CityId) {

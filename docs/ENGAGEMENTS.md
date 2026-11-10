@@ -619,6 +619,12 @@ declare; and the forecast.
 - **Time** (release, this 4-core shared machine; `preview_timing`, `--ignored`, 2026-10-31): a plan
   of 200 battles takes 5.4 ms for 6 v 6, 6.9 ms for 8 v 8 and 8.6 ms for 10 v 10; the auto formation
   a few microseconds.
+- **Hypothetical forecasts** (the AI's estimator, docs/CALIBRATION.md, "The battle forecast"):
+  `Game::engage_forecast_if` is the same forecast for units that stand elsewhere, as if on a plot next
+  to the target, against the defenders there plus others as if on it (for a real attack it equals the
+  preview's forecast); `Game::engage_forecast_waves` the battles a turn's attacks fight one after
+  another (each plot's pool, then its reserve), the defenders' losses and damage carried from one to
+  the next. Both pure, on the preview's set-up code and the same per-battle sampling.
 
 ## Telemetry
 

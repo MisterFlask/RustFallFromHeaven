@@ -306,7 +306,7 @@ pub fn sortie_ok(g: &Game, p: PlayerId, plot: PlotIdx, u: UnitId) -> bool {
     if g.telemetry.on() {
         if let Some(c) = g.map.plots[plot].plot_city.filter(|&c| g.cities[c].owner == p) {
             let pr = ffh_core::telemetry::Prediction::new("sortie", ffh_core::telemetry::Outcome::CityLost { city: c }, crate::predict::SORTIE_HORIZON, if ok { 0 } else { 100 });
-            g.tel_prediction(p, pr.score(ours * 100 - theirs * SORTIE_EDGE).acted(ok), || ffh_core::telemetry::Obj::new().i("ours", ours).i("theirs", theirs).end());
+            g.tel_prediction(p, pr.score(ours * 100 - theirs * SORTIE_EDGE).acted(ok).per_answer(), || ffh_core::telemetry::Obj::new().i("ours", ours).i("theirs", theirs).end());
         }
     }
     if !ok {

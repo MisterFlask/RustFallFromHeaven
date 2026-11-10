@@ -114,6 +114,29 @@ impl Game {
         !defenders && (!others || other_below)
     }
 
+    /// Whether unit `u`, wherever it stands now, could attack `to` from `from` in an engagement
+    /// were it there with moves left (the hypothetical forecast's pool, `Game::engage_forecast_if`):
+    /// [`Game::unit_can_engage`]'s tests that do not depend on where it is or on what it did this
+    /// turn -- a land unit able to attack, not marching, not a missile, not a battle summon, within
+    /// its combat limit -- and it could stand on `from` (land, or water it walks on; a peak only
+    /// if it can climb it).
+    pub(crate) fn engage_could_attack_from(&self, u: UnitId, from: PlotIdx, to: PlotIdx) -> bool {
+        if !self.engage_applies(u, to) || self.units[u].battle_summon || self.unit_is_dead(u) {
+            return false;
+        }
+        let unit = &self.units[u];
+        if unit.march.is_some() || self.unit_is_suicide(u) || !self.unit_can_attack(u) {
+            return false;
+        }
+        if self.plot_is_water(from) && !self.unit_can_move_all_terrain(u) && !self.unit_walks_on_water(u, from) {
+            return false;
+        }
+        if self.plot_is_impassable(from) && !self.unit_can_move_impassable(u) && !self.unit_can_climb(u, from) {
+            return false;
+        }
+        self.unit_engage_limit_ok(u, to, WarTest::AtWar)
+    }
+
     /// The attacker's pool (plan 5.2): every unit of `p` on `from` that can attack `to` in an
     /// engagement, in the plot's order.
     pub fn engage_attackers(&self, p: PlayerId, from: PlotIdx, to: PlotIdx, war: WarTest) -> Vec<UnitId> {
@@ -154,7 +177,7 @@ impl Game {
     /// Whether `team`'s attack with `force` on `to` meets unit `d` there, combatant or not: not
     /// its own, alive, not invisible to it (G5), and an enemy as `plot_get_best_defender` tests
     /// it (both ways: hidden nationality), or of a team in `declared` ([`Game::engage_declared`]).
-    fn engage_meets(&self, d: UnitId, to: PlotIdx, team: TeamId, force: &[UnitId], declared: Option<&IdxVec<TeamId, bool>>) -> bool {
+    pub(crate) fn engage_meets(&self, d: UnitId, to: PlotIdx, team: TeamId, force: &[UnitId], declared: Option<&IdxVec<TeamId, bool>>) -> bool {
         let d_team = self.unit_get_team(d);
         if d_team == team || self.unit_is_dead(d) || self.unit_is_invisible(d, team, true) {
             return false;
