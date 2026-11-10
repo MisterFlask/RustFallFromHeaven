@@ -2,8 +2,9 @@
 //! (docs/HUMAN.md): the `army_tactic` and `garrison_tactic` commands with the views that show them
 //! (the Armies data, the city's garrison, the static data's tactics), and each army's supply in
 //! the view (its state, its line, its words), the path query's supply readout and the lines of
-//! other players' armies the human sees, clipped to what it has revealed. Built on `ffh-play stage
-//! supply`.
+//! other players' armies the human sees, both as the human knows them (docs/SUPPLY.md, "Second
+//! pass", A: over revealed plots, around the units it sees), while its own armies' lines stay the
+//! truth. Built on `ffh-play stage supply`.
 
 mod common;
 
@@ -177,7 +178,7 @@ fn each_army_s_supply_is_in_the_view_with_its_line_and_words() {
 /// line, every point of it a plot the human has revealed; an AI army the human does not see has
 /// none; the view never names their counters or sources.
 #[test]
-fn the_lines_of_other_players_armies_the_human_sees_are_clipped_to_its_map() {
+fn the_lines_of_other_players_armies_the_human_sees_are_on_its_map() {
     let dir = common::TempDir::new("supply-foreign");
     let st = ffh_play::stage::supply(&dir.0).expect("staged");
     let mut s = load(&st.save);
@@ -214,4 +215,141 @@ fn the_lines_of_other_players_armies_the_human_sees_are_clipped_to_its_map() {
         let q = s.g.map.plot_xy(int(l, "x") as i32, int(l, "y") as i32).unwrap();
         assert!(s.g.plot_is_visible(q, team), "{l:?}");
     }
+}
+
+/// Barbarian warriors (at war with everyone) on every free land plot next to `plot`: the plots.
+fn ring_of_barbarians(g: &mut ffh_core::game::Game, plot: PlotIdx) -> Vec<PlotIdx> {
+    let w = g.d.t::<UnitType>("UNIT_WARRIOR");
+    let barb = g.barbarian_player();
+    let (x, y) = g.map.xy(plot);
+    let ring: Vec<PlotIdx> = DIRS.iter().filter_map(|&(dx, dy)| free(g, x + dx, y + dy)).collect();
+    for &q in &ring {
+        let (qx, qy) = g.map.xy(q);
+        g.player_init_unit(barb, w, qx, qy, None, None);
+    }
+    ring
+}
+
+/// Whether team `t` sees plot `q` now: forced to `on` (the test builds what the human sees).
+fn set_seen(g: &mut ffh_core::game::Game, q: PlotIdx, t: TeamId, on: bool) {
+    g.map.plots[q].visibility_count[t] = on as i32;
+    g.map.plots[q].stolen_visibility_count[t] = 0;
+}
+
+/// The readout before a move and the human's own army: hidden enemy units that close every way
+/// out of the army's plot do not change the readout (it answers from what the human sees), while
+/// the army's own line, the truth, is gone; once the human sees them, the readout says no line.
+#[test]
+fn the_readout_answers_from_what_the_human_sees_and_the_own_line_is_the_truth() {
+    let dir = common::TempDir::new("supply-known-readout");
+    let st = ffh_play::stage::supply(&dir.0).expect("staged");
+    let mut s = load(&st.save);
+    let h = s.human;
+    let team = s.g.players[h].team;
+    let plot = s.g.map.plot_xy(st.x, st.y).unwrap();
+    let before = s.g.plot_supply_line_known(h, plot, team).expect("a known line before");
+    let ring = ring_of_barbarians(&mut s.g, plot);
+    assert!(!ring.is_empty());
+    for &q in &ring {
+        set_seen(&mut s.g, q, team, false);
+    }
+    assert!(s.g.army_supply_line(st.supplied).is_none(), "the enemy units close every way out");
+
+    let units: Vec<String> = s.g.army_units(st.supplied).iter().map(|u| u.0.to_string()).collect();
+    let readout = |s: &Session| {
+        let j = q(s, &format!(r#"{{"q":"path","units":[{}],"x":{},"y":{}}}"#, units.join(","), st.x, st.y));
+        j.get("supply").expect("supply").clone()
+    };
+    // Hidden: the readout is the line the human can work out, as before the units came.
+    let sup = readout(&s);
+    assert_eq!(sup.get("ok").and_then(Json::as_bool), Some(true), "{sup:?}");
+    assert_eq!(int(&sup, "cost"), before.cost as i64);
+    // The army's own state and line are the truth: no line.
+    let army = view_army(&s, st.supplied);
+    let own = army.get("supply").expect("supply");
+    assert!(own.get("line").is_some_and(Json::is_null), "{own:?}");
+    assert_eq!(text(own, "text"), "No supply line: Hunger from your next turn.");
+
+    // Seen: the readout has no line either.
+    for &q in &ring {
+        set_seen(&mut s.g, q, team, true);
+    }
+    let sup = readout(&s);
+    assert_eq!(sup.get("ok").and_then(Json::as_bool), Some(false), "{sup:?}");
+    assert!(sup.get("cost").is_some_and(Json::is_null));
+}
+
+/// Another player's army: its drawn line is the one the human can work out. Hidden enemy units
+/// around it do not bend it (it is drawn though the army's true line is cut); one the human sees
+/// on the line bends it; all of them seen, the army has no entry.
+#[test]
+fn other_players_lines_bend_only_around_the_units_the_human_sees() {
+    let dir = common::TempDir::new("supply-known-foreign");
+    let st = ffh_play::stage::supply(&dir.0).expect("staged");
+    let mut s = load(&st.save);
+    let h = s.human;
+    let team = s.g.players[h].team;
+    let g = &mut s.g;
+    let ai = g.player_ids().find(|&p| p != h && !g.player_is_barbarian(p) && !g.players[p].cities.is_empty()).expect("an AI with a city");
+    let city = g.players[ai].cities[0];
+    let (cx, cy) = (g.cities[city].x, g.cities[city].y);
+    // The human has revealed the AI city's surroundings (its map, not its sight).
+    for q in g.map.plot_ids().collect::<Vec<_>>() {
+        let (x, y) = g.map.xy(q);
+        if g.plot_distance(x, y, cx, cy) <= 4 {
+            g.plot_set_revealed(q, team, true, false, None, false);
+        }
+    }
+    assert!(g.city_is_revealed(city, team, false));
+    // An AI army two plots from its city, its neighbours free land or nothing to stand on.
+    let calm = |g: &ffh_core::game::Game, q: PlotIdx| {
+        let (x, y) = g.map.xy(q);
+        DIRS.iter().all(|&(dx, dy)| g.map.plot_xy(x + dx, y + dy).is_none_or(|n| g.plot_is_water(n) || g.plot_is_impassable(n) || free(g, x + dx, y + dy).is_some()))
+    };
+    let plot = g
+        .map
+        .plot_ids()
+        .find(|&q| {
+            let (x, y) = g.map.xy(q);
+            g.plot_distance(x, y, cx, cy) == 2 && free(g, x, y).is_some() && calm(g, q) && g.plot_supply_line_known(ai, q, team).is_some_and(|l| l.path.len() >= 3)
+        })
+        .expect("a plot two from the AI city with a line");
+    let (ax, ay) = g.map.xy(plot);
+    let w = g.d.t::<UnitType>("UNIT_WARRIOR");
+    let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(ai, w, ax, ay, None, None)).collect();
+    let army = g.army_form(ai, &units).expect("an AI army");
+    let ring = ring_of_barbarians(g, plot);
+    for &q in &ring {
+        set_seen(g, q, team, false);
+    }
+    set_seen(g, plot, team, true);
+    assert!(g.army_supply_line(army).is_none(), "the enemy units close every way out");
+    let known = g.plot_supply_line_known(ai, plot, team).expect("the known line ignores the hidden units");
+
+    let entry = |s: &Session| {
+        let view = q(s, r#"{"q":"view"}"#);
+        arr(&view, "supply_lines").into_iter().find(|l| (int(l, "x"), int(l, "y")) == (ax as i64, ay as i64))
+    };
+    let path_of = |l: &Json| -> Vec<(i32, i32)> {
+        let segs = arr(l, "segments");
+        assert_eq!(segs.len(), 1, "one run: the known line is on the human's map");
+        segs[0].as_arr().unwrap().iter().map(|p| (p.as_arr().unwrap()[0].as_i64().unwrap() as i32, p.as_arr().unwrap()[1].as_i64().unwrap() as i32)).collect()
+    };
+    // Hidden: drawn, the known line, through a plot a hidden enemy holds.
+    let l = entry(&s).expect("the AI army's line is drawn");
+    let drawn = path_of(&l);
+    assert_eq!(drawn, known.path.iter().map(|&q| s.g.map.xy(q)).collect::<Vec<_>>());
+    let step = s.g.map.plot_xy(drawn[1].0, drawn[1].1).unwrap();
+    assert!(ring.contains(&step), "the line leaves through a hidden enemy's plot");
+
+    // The one on the line seen: the drawn line (if any) goes around it.
+    set_seen(&mut s.g, step, team, true);
+    if let Some(l) = entry(&s) {
+        assert!(!path_of(&l).contains(&drawn[1]), "the line bends around the seen unit");
+    }
+    // All seen: no known line, no entry.
+    for &q in &ring {
+        set_seen(&mut s.g, q, team, true);
+    }
+    assert!(entry(&s).is_none(), "an army with no known line has no entry");
 }

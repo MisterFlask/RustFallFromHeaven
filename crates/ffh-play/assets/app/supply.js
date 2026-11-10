@@ -1,7 +1,7 @@
 // Supply lines on the map (this game's own rules, docs/SUPPLY.md section 5): what the renderers
 // draw over the ground, read from the view. Your armies' lines (each army's `supply.line`, from the
 // army's plot to its source) and the lines of other players' armies you see (the view's
-// `supply_lines`, clipped by the server to the plots you have revealed), in their owner's colour;
+// `supply_lines`, as the server works them out from what you know: over revealed plots only), in their owner's colour;
 // a slow flow of dashes along each line toward its army; and a marker on each of your armies whose
 // line was cut (Hunger with the turns left before Starvation, or Starvation).
 //

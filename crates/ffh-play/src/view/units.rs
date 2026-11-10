@@ -584,11 +584,13 @@ pub fn path(v: &Viewer, finder: &mut PathFinder, units: &[UnitId], x: i32, y: i3
     let attack = v.plot_visible(to) && (units.iter().any(|&u| g.plot_is_visible_enemy_defender(to, u)) || g.group_false_colours_team(grp, to).is_some());
     // Supply lines (docs/SUPPLY.md, section 5): with the units of one army of the human's
     // selected, whether the army would be supplied on the plot (a revealed one): `ok`, the line's
-    // `cost` and the `budget`; null otherwise.
+    // `cost` and the `budget`; null otherwise. It answers from what the human knows (the known
+    // search, the human's team as viewer; "Second pass", A): an enemy unit the human does not see
+    // does not cut it, so it can be wrong.
     let army = g.units[units[0]].army.filter(|&a| g.armies.contains(a) && g.armies[a].owner == v.h && units.iter().all(|&u| g.units[u].army == Some(a)));
     let supply = match army {
         Some(_) if v.plot_revealed(to) => {
-            let line = g.plot_supply_line(v.h, to);
+            let line = g.plot_supply_line_known(v.h, to, v.team);
             crate::jobj! { "ok" => line.is_some(), "cost" => line.as_ref().map(|l| l.cost), "budget" => g.d.defines.supply_line_budget }
         }
         _ => Json::Null,

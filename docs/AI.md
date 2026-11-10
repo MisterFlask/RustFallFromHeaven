@@ -1616,9 +1616,25 @@ where it has a line. A plot of our own territory counts as supplied without a se
 the start of each turn (`units::play` clears its multi-turn order). Cost: at most one path search
 and one line search per gated move, one line search and up to three path searches per cut army a
 turn; the line is never searched per candidate plot. Not gated: crusade Hosts (`crusade.rs`), amphibious landings (`naval.rs`), the
-Raiders' raids (`traits.rs`), escorts and moves to defend our cities. Switch `SUPPLY`
-(`FFH_AI_SUPPLY_OFF`). Telemetry: `supply_state` (army-turns `supplied` or `cut_NN`, the counter),
-`supply` (`move_refused`, `fall_back`, `hungry_goes_on`). Measures: docs/SUPPLY.md, "Measures".
+Raiders' raids (`traits.rs`), escorts and moves to defend our cities. **Stranded overseas**
+(docs/SUPPLY.md, "Second pass", B): an army cut on a landmass without a city or settler of ours
+walks to the coastal city it may enter (another team's: open borders, a vassal or its master)
+nearest our nearest city and waits there for a ship (`MISSIONAI_PICKUP` on its plot; not on a coast
+plot, because the rules let only a human's land unit step onto a ship at sea); `naval::pickup`
+sends the empty transport that reaches it soonest (one per army, before the assault's staging port
+and settlers), which waits there while the army boards and carries it home; a port builds a
+transport when we have none (`army_ship`). With nothing left to fight on that landmass, an army
+boards a ship of ours on its plot even while the ship supplies it. **The last resort**: an army
+starving for `STRANDED_TURNS` (10) turns in a row with no path over land to a city of ours, or
+overseas with no transport on its way, is scrapped unit by unit (heroes, limited classes and units
+that cannot be scrapped stay). Switch `SUPPLY` (`FFH_AI_SUPPLY_OFF`). Telemetry: `supply_state`
+(army-turns `supplied` or `cut_NN`, the counter, not capped), `supply` (`move_refused`,
+`fall_back` (why `hungry`, `starving`, `overseas`), `hungry_goes_on`, `pickup_request`,
+`pickup_sail`, `pickup_board` (`cut`, `idle`), `stranded` (`no_port`), `disband_unit`,
+`disband_army` (`land`, `overseas`)). Measures: docs/SUPPLY.md, "Measures".
+
+Cutting an invader's line was built and measured, and not kept (2026-11-10; docs/SUPPLY.md,
+"Second pass", C; docs/AI_LOG.md; the last commit with the code: `f5558d91`).
 
 ## Governors (`governor.rs`)
 

@@ -456,3 +456,91 @@ fn the_counter_survives_a_save() {
     assert_eq!(h.armies[a].unsupplied_turns, 3);
     assert_eq!(h.save(), bytes);
 }
+
+// ---- The known line (docs/SUPPLY.md, "Second pass", A) ----
+
+#[test]
+fn an_unseen_blocker_bends_the_true_line_not_the_known_one() {
+    let mut w = world();
+    let (p0, t0) = (w.p0, w.g.players[w.p0].team);
+    w.war();
+    w.road(6..=27, 5);
+    let enemy = w.unit(w.p1, "UNIT_WARRIOR", 12, 5);
+    let (blocked, from) = (w.at(12, 5), w.at(20, 5));
+    assert!(!w.g.plot_is_visible(blocked, t0), "player 0 does not see (12, 5)");
+    let truth = w.g.plot_supply_line(p0, from).expect("supplied");
+    assert_eq!(truth.cost, 17, "the true line goes around the enemy");
+    let known = w.g.plot_supply_line_known(p0, from, t0).expect("supplied as known");
+    assert_eq!(known.cost, 15, "the known line keeps to the road");
+    assert!(known.path.contains(&blocked));
+    // From the end of the road: cut in truth, supplied as far as player 0 knows.
+    assert_eq!(w.g.plot_supply_line(p0, w.at(28, 5)), None);
+    assert!(w.g.plot_supply_line_known(p0, w.at(28, 5), t0).is_some());
+    // Seen now: it bends both.
+    w.g.map.plots[blocked].visibility_count[t0] += 1;
+    assert!(w.g.plot_is_visible(blocked, t0) && !w.g.unit_is_invisible(enemy, t0, true));
+    assert_eq!(w.g.plot_supply_line_known(p0, from, t0), Some(truth));
+    assert_eq!(w.g.plot_supply_line_known(p0, w.at(28, 5), t0), None);
+}
+
+#[test]
+fn a_fort_denies_its_neighbours_only_when_its_unit_is_seen() {
+    let mut w = world();
+    let (p0, t0) = (w.p0, w.g.players[w.p0].team);
+    w.war();
+    w.road(6..=27, 5);
+    let fort = w.g.d.t::<ImprovementType>("IMPROVEMENT_FORT");
+    let f = w.at(12, 6);
+    w.g.plot_set_improvement_type(f, Some(fort));
+    w.unit(w.p1, "UNIT_WARRIOR", 12, 6);
+    let from = w.at(20, 5);
+    // The road beside the fort is denied in truth (around it to the north: 21), not to a viewer
+    // that does not see the fort's unit (straight down the road: 15).
+    assert_eq!(w.g.plot_supply_line(p0, from).map(|l| l.cost), Some(21));
+    assert_eq!(w.g.plot_supply_line_known(p0, from, t0).map(|l| l.cost), Some(15));
+    // Seen: the same as the truth.
+    w.g.map.plots[f].visibility_count[t0] += 1;
+    assert_eq!(w.g.plot_supply_line_known(p0, from, t0), w.g.plot_supply_line(p0, from));
+}
+
+#[test]
+fn the_known_line_enters_only_revealed_plots() {
+    let mut w = world();
+    let (p0, t0) = (w.p0, w.g.players[w.p0].team);
+    w.road(6..=27, 5);
+    let from = w.at(20, 5);
+    let truth = w.g.plot_supply_line(p0, from).expect("supplied");
+    assert_eq!(truth.cost, 15);
+    // A column of unrevealed plots across the land at x = 12: the known line is cut, the true one
+    // is not.
+    for y in 2..=9 {
+        let q = w.at(12, y);
+        w.g.plot_set_revealed(q, t0, false, false, None, false);
+    }
+    assert_eq!(w.g.plot_supply_line_known(p0, from, t0), None);
+    assert_eq!(w.g.plot_supply_line(p0, from), Some(truth));
+    // One revealed plot off the road: the known line goes through it.
+    let q = w.at(12, 6);
+    w.g.plot_set_revealed(q, t0, true, false, None, false);
+    let known = w.g.plot_supply_line_known(p0, from, t0).expect("through (12, 6)");
+    assert!(known.path.contains(&q));
+    assert_eq!(known.cost, 17);
+}
+
+#[test]
+fn an_unrevealed_city_is_no_source_and_the_own_team_knows_the_truth() {
+    let mut w = world();
+    let (p0, t0, t1) = (w.p0, w.g.players[w.p0].team, w.g.players[w.p1].team);
+    let from = w.at(10, 5);
+    let truth = w.g.plot_supply_line(p0, from).expect("supplied");
+    // Its own team: every plot revealed, no enemy anywhere: the same line.
+    assert_eq!(w.g.plot_supply_line_known(p0, from, t0), Some(truth.clone()));
+    // Another team that has revealed player 0's city works out the same line; one that has not
+    // finds no source.
+    w.g.cities[w.city].revealed[t1] = true;
+    assert_eq!(w.g.plot_supply_line_known(p0, from, t1), Some(truth.clone()));
+    w.g.cities[w.city].revealed[t1] = false;
+    assert_eq!(w.g.plot_supply_line_known(p0, from, t1), None);
+    assert_eq!(w.g.plot_supply_line_known(p0, w.at(5, 5), t1), None, "not even standing in it");
+    assert_eq!(w.g.plot_supply_line(p0, from), Some(truth));
+}

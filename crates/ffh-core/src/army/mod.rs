@@ -115,11 +115,12 @@ fn ordinal(n: i32) -> String {
 
 impl Game {
     /// Whether a unit of type `unit_type` is an army unit: a land combat unit that is not a mage
-    /// (arcane unit), a recon unit or a hero (a type with `PROMOTION_HERO` for free, which no unit
-    /// of it could lose: [`Game::unit_is_army_unit`] refuses every hero).
+    /// (arcane unit), a recon unit, an animal (`UnitInfo::animal`, docs/SUPPLY.md "Second pass" B)
+    /// or a hero (a type with `PROMOTION_HERO` for free, which no unit of it could lose:
+    /// [`Game::unit_is_army_unit`] refuses every hero).
     pub fn unit_type_is_army_unit(&self, unit_type: UnitType) -> bool {
         let info = &self.d.units[unit_type];
-        if info.domain_type != Some(DomainType::DOMAIN_LAND) || info.combat <= 0 {
+        if info.domain_type != Some(DomainType::DOMAIN_LAND) || info.combat <= 0 || info.animal {
             return false;
         }
         if hero_promotion(self.d).is_some_and(|h| info.free_promotions[h]) {

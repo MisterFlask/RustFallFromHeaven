@@ -116,7 +116,7 @@ flag.
   queue of timed actions of formats 4-5: Festival, Trade Fair, Incite Unrest, Siphon Knowledge,
   Foment Revolt, Flip City, Spread Religion, removed on the owner's direction of 2026-10-30).
 - **Armies** (docs/ARMIES.md; not an option since 2026-11-05, the owner's decision: every game has it, the AI-only ones too; older saves do not load): land combat units (not mages, recon units,
-  heroes or summons) serve in named armies, kept one selection group each, or in a city's
+  heroes, summons or animals: animals since 2026-11-10, docs/SUPPLY.md "Second pass" B) serve in named armies, kept one selection group each, or in a city's
   garrison. An army requisitions soldiers from the cities its owner picks for it (any city,
   directly ruled or governed) while it is short of its target size: an order at the front of the
   city's queue that interrupts its production (which keeps its progress) and cannot be taken off
@@ -163,6 +163,13 @@ flag.
   heal, its recruits wait), then starving (each unit loses 10% of its full HP a turn, down to 25%,
   never killed; it deals 25% less damage in battles). It replaces the old supply rule (within
   `ARMY_SUPPLY_RANGE` of the trade network, which only paused recruits). Save format 29.
+- **A bump keeps a land unit connected to home** (docs/SUPPLY.md, "Second pass" B; 2026-11-10):
+  `jumpToNearestValidPlot` (the bump of a unit standing where it may no longer be: a peace, a
+  border change, a stack it may not share) moves a land unit whose owner has a city on its
+  landmass only to a plot connected over land to a city of its owner (flooded from those cities
+  through the plots the bump may use), and to its owner's nearest city there when there is none.
+  FFH2 took the nearest valid plot, which could be a pocket closed by other players' borders, where
+  an army traced no supply line and starved. Other units are bumped as in FFH2.
 - **Engagement combat** (docs/ENGAGEMENTS.md; not an option since 2026-11-03, the owner's
   decision: `GAMEOPTION_ENGAGEMENTS` was removed, every game fights it, the AI-only ones too, with or
   without armies; older saves do not load): a land attack is a **formation battle** (revision 4,
