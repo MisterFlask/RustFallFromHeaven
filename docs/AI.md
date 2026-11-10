@@ -1620,6 +1620,25 @@ Raiders' raids (`traits.rs`), escorts and moves to defend our cities. Switch `SU
 (`FFH_AI_SUPPLY_OFF`). Telemetry: `supply_state` (army-turns `supplied` or `cut_NN`, the counter),
 `supply` (`move_refused`, `fall_back`, `hungry_goes_on`). Measures: docs/SUPPLY.md, "Measures".
 
+**Cutting an invader's line** (`supply_cut.rs`, docs/SUPPLY.md "Second pass", C): each turn, for
+at most two enemy armies at war with us that we see within 6 plots of our cities (those already
+watched first, then the nearest), their known line (`plot_supply_line_known`, our team as viewer);
+a candidate cut plot is one of its plots (from the source end, at most six tested; not next to the
+army, not a city) that a local search over the 7x7 plots around it finds no way around within the
+budget, over the plots as we know them. A spare of a garrison (the city keeps three fighters
+without it; recon and mounted first) that reaches a candidate within two turns, where the danger
+map is within its defence, goes there and fortifies; once there, the known search itself says
+whether the line is gone, and a unit whose plot is no cut moves on once to a candidate of the bent
+line. The job is the group's mission AI (`MISSIONAI_GUARD_TRADE_NET`, then `_GUARD_BONUS`; saved),
+which `units::play` leaves alone; it ends, and the unit goes home, when the army leaves the 6
+plots, our sight or the war. Cost: at most two known-line searches a turn, six local searches and
+six two-turn floods per army. Switch `SUPPLY_CUT` (`FFH_AI_SUPPLY_CUT_OFF`); telemetry
+`supply_cut` (`fired`, `arrived`, `not_cut`, `hungry`, `holding`, `home`, `no_plot`, `no_unit`).
+Measured: it rarely fires (never in seeds 1-8; 12 units in 7 of 32 games) and rarely works (the
+line gone on arrival 3 times in 12; the army hungry within 3 turns once): the lines near our cities
+are short with a large slack. An exact test would need hypothetical blockers in the rules' known
+search (docs/SUPPLY.md).
+
 ## Governors (`governor.rs`)
 
 This game's own system (docs/GOVERNORS.md). Two things: what a governor

@@ -32,8 +32,8 @@
 //! why `first` or `retry`), `arrived` (on its plot, the known line gone), `not_cut` (on its plot,
 //! the known line still there), `hungry` (the army watched has its first turn of Hunger while
 //! the unit holds; why `within_3` when that is within 3 of our turns of its arrival, else
-//! `later`), `holding` (each turn on its plot; its unit and plot as the alternatives, for the
-//! events file), `home` (the job ended; why `army_gone`, `away`, `no_path`), and `no_plot` /
+//! `later`), `holding` (each later turn on its plot, why `cut` or `line`: the known line gone or
+//! not; its unit, plot and army as the alternatives, for the events file), `home` (the job ended; why `army_gone`, `away`, `no_path`), and `no_plot` /
 //! `no_unit` (an army with a known line and no candidate plot / no unit to send).
 
 use std::cmp::Reverse;
@@ -114,8 +114,15 @@ fn order(g: &mut Game, job: &Job, mission: MissionType, d1: i32, d2: i32) {
     g.group_push_mission(job.grp, mission, d1, d2, 0, false, false, Some(ai), Some(job.plot), job.watched);
 }
 
-/// Fortify (else sleep, else skip) on its plot, keeping the job.
+/// Fortify (else sleep, else skip) on its plot, keeping the job; a unit already fortified or
+/// asleep stays so (a new order would wake it), with its job.
 fn hold(g: &mut Game, job: &Job) {
+    if g.groups[job.grp].activity_type == ActivityType::ACTIVITY_SLEEP {
+        let ai = if job.retry { JOB_RETRY } else { JOB };
+        g.group_ai_set_mission_ai(job.grp, Some(ai), Some(job.plot), job.watched);
+        g.groups[job.grp].force_update = false;
+        return;
+    }
     for m in [MissionType::MISSION_FORTIFY, MissionType::MISSION_SLEEP, MissionType::MISSION_SKIP] {
         if g.group_can_start_mission(job.grp, m, -1, -1, None, false) || m == MissionType::MISSION_SKIP {
             order(g, job, m, -1, -1);
@@ -127,31 +134,68 @@ fn hold(g: &mut Game, job: &Job) {
     }
 }
 
-/// Toward its plot, keeping the job; holds when it stands there. False when the rules found no
-/// way (it did not move).
-fn go(g: &mut Game, job: &Job) -> bool {
+/// Where a move toward the job's plot left the unit.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Went {
+    /// On its way (or gone).
+    Moving,
+    /// On the plot, holding.
+    Arrived,
+    /// The rules found no way: it did not move.
+    NoWay,
+}
+
+/// Toward its plot, keeping the job; holds when it stands there.
+fn go(g: &mut Game, job: &Job) -> Went {
     let start = g.unit_plot(job.unit);
     if start == job.plot {
         hold(g, job);
-        return true;
+        return Went::Arrived;
     }
     let (x, y) = g.map.xy(job.plot);
     order(g, job, MissionType::MISSION_MOVE_TO, x, y);
     if !alive(g, job.grp) || !g.units.contains(job.unit) {
-        return true;
+        return Went::Moving;
     }
     g.groups[job.grp].force_update = false;
     if g.unit_plot(job.unit) == job.plot {
         hold(g, job);
-        return true;
+        return Went::Arrived;
     }
-    !(g.groups[job.grp].mission_queue.is_empty() && g.unit_plot(job.unit) == start)
+    if g.groups[job.grp].mission_queue.is_empty() && g.unit_plot(job.unit) == start {
+        Went::NoWay
+    } else {
+        Went::Moving
+    }
+}
+
+/// The unit has just reached its plot: telemetry (`arrived` when the army's known line is gone,
+/// else `not_cut`).
+fn arrival(g: &Game, p: PlayerId, us: TeamId, a: ArmyId, job: &Job) {
+    if !g.telemetry.on() {
+        return;
+    }
+    let line = g.army_plot(a).and_then(|ap| g.plot_supply_line_known(g.armies[a].owner, ap, us));
+    let alts = || match &line {
+        Some(l) => format!("{{\"u\":{},\"army\":{},\"cost\":{},\"len\":{}}}", job.unit.0, a.0, l.cost, l.path.len()),
+        None => format!("{{\"u\":{},\"army\":{}}}", job.unit.0, a.0),
+    };
+    g.tel_decision(p, "supply_cut", if line.is_none() { "arrived" } else { "not_cut" }, if job.retry { "retry" } else { "first" }, 1, alts);
+}
+
+/// [`go`], then the arrival's telemetry, or the end of the job when there is no way.
+fn go_on(g: &mut Game, p: PlayerId, us: TeamId, a: ArmyId, job: &Job) {
+    match go(g, job) {
+        Went::Moving => {}
+        Went::Arrived => arrival(g, p, us, a, job),
+        Went::NoWay => end(g, p, job, "no_path"),
+    }
 }
 
 /// The job ends: the unit goes back to the nearest city of ours (from a city, it stays and takes
 /// its usual orders this turn).
 fn end(g: &mut Game, p: PlayerId, job: &Job, why: &'static str) {
-    g.tel_decision(p, "supply_cut", "home", why, 1, String::new);
+    g.tel_decision(p, "supply_cut", "home", why, 1, || format!("{{\"u\":{}}}", job.unit.0));
     crate::trace!(g, p, "supply cut: {:?} at {:?} goes home ({why})", job.unit, g.map.xy(g.unit_plot(job.unit)));
     g.group_ai_set_mission_ai(job.grp, None, None, None);
     g.group_clear_mission_queue(job.grp);
@@ -437,22 +481,17 @@ fn keep(g: &mut Game, v: &mut View, a: ArmyId, job: Job) {
     let Some(ap) = g.army_plot(a) else { return };
     let here = g.unit_plot(job.unit);
     if here != job.plot {
-        if !go(g, &job) {
-            end(g, p, &job, "no_path");
-        }
+        go_on(g, p, v.team, a, &job);
         return;
     }
-    let arrived = g.groups[job.grp].activity_type != ActivityType::ACTIVITY_SLEEP; // (fortified units sleep)
+    // A turn on its plot (it arrived on an earlier turn).
     let line = g.plot_supply_line_known(owner, ap, v.team);
-    if arrived {
-        g.tel_decision(p, "supply_cut", if line.is_none() { "arrived" } else { "not_cut" }, if job.retry { "retry" } else { "first" }, 1, String::new);
-    } else {
-        let (x, y) = g.map.xy(here);
-        g.tel_decision(p, "supply_cut", "holding", "", 1, || format!("{{\"u\":{},\"x\":{x},\"y\":{y},\"army\":{}}}", job.unit.0, a.0));
-        if g.armies[a].unsupplied_turns == 1 {
-            let why = if g.units[job.unit].fortify_turns <= 2 { "within_3" } else { "later" };
-            g.tel_decision(p, "supply_cut", "hungry", why, 1, String::new);
-        }
+    let (x, y) = g.map.xy(here);
+    g.tel_decision(p, "supply_cut", "holding", if line.is_none() { "cut" } else { "line" }, 1, || format!("{{\"u\":{},\"x\":{x},\"y\":{y},\"army\":{}}}", job.unit.0, a.0));
+    if g.armies[a].unsupplied_turns == 1 {
+        // Our turns since the arrival: the unit's fortify turns + 1 (it moved on the arrival turn).
+        let why = if g.units[job.unit].fortify_turns <= 2 { "within_3" } else { "later" };
+        g.tel_decision(p, "supply_cut", "hungry", why, 1, || format!("{{\"u\":{},\"army\":{}}}", job.unit.0, a.0));
     }
     match line {
         Some(line) if !job.retry => {
@@ -460,11 +499,9 @@ fn keep(g: &mut Game, v: &mut View, a: ArmyId, job: Job) {
             let cands = candidates(g, them, v.team, &line, Some(here));
             if let Some((_, _, q)) = (!cands.is_empty()).then(|| reach(g, v, job.unit, &cands).0).flatten() {
                 crate::trace!(g, p, "supply cut: {:?} moves on from {:?} to {:?}", job.unit, g.map.xy(here), g.map.xy(q));
-                g.tel_decision(p, "supply_cut", "fired", "retry", 1, String::new);
+                g.tel_decision(p, "supply_cut", "fired", "retry", 1, || format!("{{\"u\":{},\"army\":{}}}", job.unit.0, a.0));
                 let next = Job { plot: q, retry: true, ..job };
-                if !go(g, &next) {
-                    end(g, p, &next, "no_path");
-                }
+                go_on(g, p, v.team, a, &next);
                 return;
             }
             let held = Job { retry: true, ..job };
@@ -513,8 +550,10 @@ fn send(g: &mut Game, v: &mut View, a: ArmyId, ap: PlotIdx) {
     crate::trace!(g, p, "supply cut: {:?} from {:?} to {:?} on the line of {:?} at {:?}", u, g.map.xy(g.unit_plot(u)), g.map.xy(q), a, g.map.xy(ap));
     g.tel_decision(p, "supply_cut", "fired", "first", 1, || format!("{{\"u\":{},\"army\":{},\"slack\":{}}}", u.0, a.0, g.d.defines.supply_line_budget - line.cost));
     let job = Job { grp, unit: u, plot: q, watched, retry: false };
-    if !go(g, &job) {
-        g.group_ai_set_mission_ai(grp, None, None, None);
+    match go(g, &job) {
+        Went::Moving => {}
+        Went::Arrived => arrival(g, p, v.team, a, &job),
+        Went::NoWay => g.group_ai_set_mission_ai(grp, None, None, None),
     }
 }
 

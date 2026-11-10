@@ -237,7 +237,7 @@ Starvation: 0 (it never kills).
 - **Sea lanes.** A ship is a source while its water area touches a home port; the sea route
   itself is not traced or cut.
 
-## Second pass (design, 2026-11-10; B's two rules fixes built)
+## Second pass (design, 2026-11-10; B's two rules fixes and C built)
 
 Four fixes to what the first build left rough. Each is decided; the implementation reports what
 it measured.
@@ -326,3 +326,85 @@ An expert facing an invading army puts a unit on its road. Ad hoc, bounded:
   this turn.
 - Checked for its local effect (CLAUDE.md, "How AI changes are checked"): over 8 games, how often
   it fired, and of those how often the enemy army became hungry within 3 turns.
+
+**As built** (`crates/ffh-ai/src/supply_cut.rs`, called once a turn before the units' orders;
+docs/AI.md, "Supply lines"; choices where the text above is silent):
+- **The test of a cut plot.** The rules' known search takes no hypothetical blocker (and ffh-core
+  was left as it is), so a plot is found in two steps. Before sending: the line's plots are tested
+  from the source end, at most six (plots next to the army, cities and the source's own plot are
+  skipped without counting), by a local search: with the plot closed, a cheapest way around it
+  over the plots within 3 of it (a 7x7 square), from the line's plots before it (at their cost
+  along the line) to its plots after it (then along the line to the source), with the rules' costs
+  as our team knows the plots (revealed plots only; units we see at war with them block; their
+  enemies' cities we know of; borders), within the budget. A plot with no such way is a candidate.
+  Forts and ships are left out of the local search. After: once our unit stands on the plot, the
+  known search itself says whether the line is gone (the unit is ours, so we see it). If it is
+  not, the unit moves once to a candidate of the line that now bends around it (its own plot
+  counted open, as it would be once it leaves), reachable within two turns; after that it holds
+  wherever it is (one move on, never an oscillation between two plots).
+- **The armies**: of civilizations at war with us (barbarians have no supply), on a plot we see,
+  the army's head unit not invisible to us; those our units already watch first (at most two),
+  then the nearest by distance to our nearest city.
+- **The unit**: a fighter of a garrison (no army, no march, not automated, alone in its group,
+  no orders, moves left, some defence), in a city of ours within 8 plots of the first candidate
+  that has more than three land fighters (`unit_is_army_unit`) on its plot; recon and mounted
+  units first, then by that city's distance; at most six are flooded. "Within two turns": the
+  flood's turns 0 and 1. "Attacked by more than it can hold": the danger map's power on the plot
+  is more than the unit's `defense_power` raised by the plot's defence modifier. The nearest
+  candidate it reaches (fewest turns, then the source end first); recon and mounted first, then
+  turns, then unit id.
+- **The job** is the group's mission AI, saved with the game: `MISSIONAI_GUARD_TRADE_NET` on its
+  first plot, `MISSIONAI_GUARD_BONUS` once it has moved on (neither is read elsewhere), the cut
+  plot, and the army's head unit at the time it was sent (the army it watches is that unit's).
+  `units::play` gives such a group no orders (`supply_cut::wait`: left ready to move, it holds).
+  Leaving the city makes it an army of one (docs/ARMIES.md), supplied from our city nearby.
+- **The job ends** (the unit goes to our nearest city; from a city it takes its usual orders at
+  once) when the watched unit is gone or no longer in an army (`army_gone`), when the army is out
+  of sight, beyond the 6 plots or no longer at war, or a second unit watches it (`away`), or when
+  the rules find no way to the plot (`no_path`).
+- **Cost a turn**: at most two known-line searches (one per army; a holding unit's check is that
+  same search), at most six local searches per army (7x7 plots each), at most six two-turn floods
+  for an army no unit watches yet and one for a unit that moves on, and the rules' path search of
+  each move.
+- Switch `SUPPLY_CUT` (`FFH_AI_SUPPLY_CUT_OFF`). Telemetry `supply_cut` (docs/AI.md): `fired`
+  (`first`, `retry`), `arrived`, `not_cut`, `hungry` (`within_3`: the watched army's first turn
+  of Hunger seen on our turns 1 to 3 after the arrival, by the unit's fortify turns; else `later`),
+  `holding` (a turn on the plot; the unit, plot and army as the event's alternatives, for the
+  events file: a unit that is gone while holding was killed), `home` (why), and `no_plot` (an
+  army with a known line and no candidate; its line's cost, length and slack) and `no_unit` (a
+  candidate, no unit to send; how many plots, spares, and plots reached that were unsafe).
+
+**Measured** (2026-11-10; `ffh stats --civs 6 --size WORLDSIZE_STANDARD --turns 250`, the
+settings of "Measures", with `FFH_TELEMETRY=1` and an events file; the same binary with
+`FFH_AI_SUPPLY_CUT_OFF=ALL` as the off side; the tree included B's two rules fixes):
+- **Seeds 1-8: it never fired.** Each game is identical with the switch off and on (the same
+  checksums), so the off/on comparison is nil by construction: army-turns 26,444, hungry 27
+  (0.10%), starving 14 (0.05%), cities captured from civs 55 (2 7 6 11 3 16 5 5), on both sides.
+  It looked at an army with a known line 1,123 times (army-turns): no candidate plot 1,092 times,
+  a candidate but no unit to send 31 times.
+- **Why so rarely.** The lines of the enemy armies near our cities are short and cheap: of the
+  `no_plot` lines (seeds 1-32), the median is 4 plots (23% have fewer than 3: nothing to test),
+  and 94% have a slack (24 less their cost) of 10 or more, so any plot of them has a way around it within the budget. A line can be cut by one plot
+  only at a choke point or near the budget (the ones sent had slacks 0 to 3, and two of 18 and 20).
+  Of the 127 `no_unit` cases over seeds 1-32: no city near it with a spare (more than three
+  fighters) 55, no spare reaching a candidate within two turns 39, the danger map too high on every
+  candidate reached 33.
+- **Seeds 1-32, its local effect** (to see it fire at all): it sent 12 units in 7 of the 32
+  games (seeds 9, 13, 17, 19, 20, 25, 32; all after turn 190). The unit reached its plot 12 times
+  (the same turn, 11 of them); the known line was gone on arrival 3 times (all three in seed 19)
+  and still there 9 times (8 of them on the turn it was sent, before the army moved: the local
+  test's way around missed a way the rules' search found, of equal or slightly higher cost, or to
+  another source). The army it watched became hungry within 3 of our turns of the arrival once
+  (and later, while the unit held, twice more). Two units were killed on their plot (seed 19, by
+  an engagement of four attackers against the one unit); 7 went home (3 `army_gone`, 4 `away`),
+  3 were still holding at the end. No unit ever moved on to a second plot (no candidate on the
+  bent line within its reach).
+- **Off against on, seeds 1-32**: army-turns 103,691 / 103,587, hungry 130 (0.13%) / 132
+  (0.13%), starving 389 (0.38%) / 389 (0.38%), cities captured from civs 298 / 296. In the 7
+  games where it fired: hungry 31 / 33, starving 7 / 7, captures 68 / 66 (per game 17 6 2 7 9 13
+  14 / 19 6 2 8 9 12 10); the differences are a game or two's worth of noise around a dozen firings.
+
+So: it rarely fires and rarely works. The local test predicts a cut 3 times in 12; an exact test
+needs the known search to take hypothetical blockers (a pure parameter, e.g. a list of plots to
+treat as held by a unit at war with the army that the viewer sees), at most six more known
+searches per army a turn. Not added: the rules' search was left as it is.
