@@ -152,6 +152,222 @@ pub(crate) fn field_go(s: &crate::combat_sim::Sim, city: bool, capture: bool, fo
     good || falls && s.gain > 0
 }
 
+// ----------------------------------------------------------------------------
+// The field rule on the rules' battle forecast (switch `FORECAST`)
+// ----------------------------------------------------------------------------
+
+/// Attack when the plot falls this turn with this chance (per mille; the forecast's `p_take`,
+/// calibrated: docs/CALIBRATION.md) ...
+pub const TAKE_BAR: i32 = 650;
+/// ... with this chance for a hurt stack (a unit over 35% damage; round 7g's 75%) ...
+pub const TAKE_BAR_HURT: i32 = 750;
+/// ... or with this chance when the trade is favourable: more enemy units are expected to fall
+/// than ours, the enemy's counted at [`RAIDER_KILL_PCT`] when they are raiders near our cities
+/// (round 7g's `gain > 0`, in units: what kills and losses are worth on each side).
+pub const TRADE_BAR: i32 = 500;
+/// A city to capture (an opportune capture, a landing) is attacked when it falls with this chance.
+pub const CAPTURE_BAR: i32 = 650;
+/// Raiders (any enemy but animals) on our land or within three plots of one of our cities count
+/// this percent in the trade: left alone they take the city (round 7g).
+pub const RAIDER_KILL_PCT: i32 = 400;
+/// The forecast is skipped, and the attack declined, when the attack power of our units that
+/// would fight is under this percent of the defence power of the defenders we see (the rules'
+/// strengths without the ground, the city or fortification, which only help the defender).
+pub const HOPELESS_PCT: i32 = 25;
+
+/// Does player `p` decide its attacks on the forecast (switch `FORECAST`; never the barbarians)?
+pub(crate) fn forecast_on(g: &Game, p: PlayerId) -> bool {
+    !g.player_is_barbarian(p) && crate::switches::FORECAST.on(g, p)
+}
+
+/// The percent the enemy units on `q` count in a trade for `p` ([`RAIDER_KILL_PCT`] for raiders
+/// near our cities, else 100): `field_sim`'s weight of round 7g.
+fn kill_pct(g: &Game, p: PlayerId, defs: &[UnitId], q: PlotIdx) -> i32 {
+    let team = g.players[p].team;
+    let animals = !defs.is_empty() && defs.iter().all(|&d| g.d.units[g.units[d].unit_type].animal);
+    let ours = g.map.plots[q].owner.is_some_and(|o| g.players[o].team == team);
+    let (x, y) = g.map.xy(q);
+    let near_city = ours || g.players[p].cities.iter().any(|&c| g.plot_distance(x, y, g.cities[c].x, g.cities[c].y) <= 3);
+    if !animals && near_city {
+        RAIDER_KILL_PCT
+    } else {
+        100
+    }
+}
+
+/// What a field attack is decided against.
+#[derive(Copy, Clone, Debug)]
+pub(crate) enum Rule {
+    /// The field rule ([`field_rule`]).
+    Field { city: bool, capture: bool, fought: bool, hurt: bool },
+    /// A single unit's attack at a bar of its own (`units::attack_adjacent`: an explorer, a
+    /// sortie), per mille of the chance the plot falls.
+    Bar(i32),
+}
+
+impl Rule {
+    /// The bars the decision reads (where a first look is checked again).
+    fn bars(self) -> Vec<i32> {
+        match self {
+            Rule::Field { city: true, capture: true, fought: false, .. } => vec![CAPTURE_BAR],
+            Rule::Field { hurt, .. } => vec![if hurt { TAKE_BAR_HURT } else { TAKE_BAR }, TRADE_BAR],
+            Rule::Bar(b) => vec![b],
+        }
+    }
+}
+
+/// The field rule on the forecast `e` (round 7g's shape, the bars meaning what they say): a city
+/// to capture when it falls ([`CAPTURE_BAR`]); else when the plot falls likely ([`TAKE_BAR`],
+/// [`TAKE_BAR_HURT`]), or at worse odds ([`TRADE_BAR`]) when the trade is favourable (the enemy's
+/// expected losses, at `kill_pct` percent, above ours). A capture once the fighting has started
+/// goes on as any attack.
+pub(crate) fn field_rule(e: &crate::forecast::Est, kill_pct: i32, rule: Rule) -> bool {
+    let trade = e.enemy_lost_x100 as i64 * kill_pct as i64 > e.own_lost_x100 as i64 * 100;
+    match rule {
+        Rule::Field { city: true, capture: true, fought: false, .. } => e.p_take >= CAPTURE_BAR,
+        Rule::Field { hurt, .. } => e.p_take >= if hurt { TAKE_BAR_HURT } else { TAKE_BAR } || e.p_take >= TRADE_BAR && trade,
+        Rule::Bar(b) => e.p_take >= b,
+    }
+}
+
+/// A hero or a veteran of ours (switch `PRECIOUS`, `campaign::precious_bar`) whose chance to fall
+/// in the forecast `f` is above what its bar allows (a hero at 85% falls at most 15% of the
+/// time): `(unit, fall percent, bar)`. Under engagements every unit of the plot fights, heroes
+/// included, so the gate reads each one's fall instead of the first attacker's odds.
+fn precious_falls(g: &Game, p: PlayerId, f: &ffh_core::engagement::Forecast) -> Option<(UnitId, i32, i32)> {
+    if !crate::switches::PRECIOUS.on(g, p) {
+        return None;
+    }
+    f.per.iter().filter(|x| x.side == ffh_core::engagement::Side::Attacker && g.units.contains(x.unit) && g.units[x.unit].owner == p).find_map(|x| {
+        let bar = crate::campaign::precious_bar(g, x.unit);
+        (bar > 0 && x.fall_pct * 10 > 1000 - bar).then_some((x.unit, x.fall_pct, bar))
+    })
+}
+
+/// A field attack's answer on the forecast ([`field_call`]).
+#[derive(Clone, Debug)]
+pub(crate) struct Call {
+    pub go: bool,
+    /// Why: `no_defenders`, `no_attacker`, `hopeless` (the pre-filter), `refused` (the rules'
+    /// forecast refused the battle), `precious`, `forecast`.
+    pub why: &'static str,
+    pub est: Option<crate::forecast::Est>,
+    pub kill_pct: i32,
+    pub precious: Option<(UnitId, i32, i32)>,
+}
+
+/// The real pool of `p`'s units on `from` that would fight an attack on `q` now, as one attack.
+pub(crate) fn pool_attack(g: &Game, p: PlayerId, from: PlotIdx, q: PlotIdx) -> crate::forecast::Attacks {
+    let pool = g.engage_attackers(p, from, q, ffh_core::engagement::WarTest::AtWar);
+    if pool.is_empty() {
+        Vec::new()
+    } else {
+        vec![(pool, from)]
+    }
+}
+
+/// The attack of `attacks` (player `p`'s units, each group from its plot next to `q`) on plot
+/// `q`, decided on the forecast ([`field_rule`] or a bar, `rule`): nothing to fight there is a go;
+/// a hopeless attack ([`HOPELESS_PCT`]) is declined without a forecast; the forecast
+/// ([`crate::forecast::decide_turn`]) decides, and a precious unit that would fall too likely
+/// holds the attack. With telemetry on, the decision is recorded beside what round 7g's rule
+/// says (`old`, computed by the caller) as decision `attack_rule` `<site>:<agree_go | agree_hold
+/// | new_attack | new_decline>` (`site` `None`: not recorded).
+pub(crate) fn field_call(g: &Game, v: &View, p: PlayerId, attacks: &crate::forecast::Attacks, q: PlotIdx, rule: Rule, site: Option<&'static str>, old: impl FnOnce() -> Option<(bool, crate::combat_sim::Sim)>) -> Call {
+    let team = g.players[p].team;
+    // The defenders the attack meets as the rules pick them (hidden nationality included, never
+    // an invisible unit), where the AI knows the units (`view::sees_units`; else none, and the
+    // stack walks in as before).
+    let force: Vec<UnitId> = attacks.iter().flat_map(|a| a.0.iter().copied()).collect();
+    let defs = if crate::view::sees_units(g, team, q) { g.engage_defenders(q, p, &force, ffh_core::engagement::WarTest::AtWar) } else { Vec::new() };
+    let kp = kill_pct(g, p, &defs, q);
+    let mut call = Call { go: false, why: "forecast", est: None, kill_pct: kp, precious: None };
+    let checked = std::cell::Cell::new(-1);
+    let tel = g.telemetry.on();
+    if defs.is_empty() {
+        call.go = true;
+        call.why = "no_defenders";
+    } else if attacks.iter().all(|a| a.0.is_empty()) {
+        call.why = "no_attacker";
+    } else {
+        let ours: i64 = attacks.iter().flat_map(|a| a.0.iter()).map(|&u| attack_power(g, u) as i64).sum();
+        let theirs: i64 = defs.iter().map(|&d| defense_power(g, d) as i64).sum();
+        let hopeless = ours * 100 < theirs * HOPELESS_PCT as i64;
+        if !hopeless || tel {
+            match crate::forecast::decide_turn(g, Some(&v.forecasts), attacks, q, &rule.bars(), tel.then_some(&checked)) {
+                None => call.why = "refused",
+                Some(f) => {
+                    let e = crate::forecast::Est::of(&f);
+                    call.est = Some(e);
+                    call.go = field_rule(&e, kp, rule);
+                    if call.go {
+                        call.precious = precious_falls(g, p, &f);
+                        if call.precious.is_some() {
+                            call.go = false;
+                            call.why = "precious";
+                        }
+                    }
+                }
+            }
+        }
+        if hopeless {
+            // (The ledger of the pre-filter: how often the forecast would have attacked.)
+            if call.go {
+                g.tel_decision(p, "attack_rule", "hopeless_contradicted", "", 1, String::new);
+            }
+            g.tel_decision(p, "attack_rule", "hopeless", "", 1, String::new);
+            call.go = false;
+            call.why = "hopeless";
+        }
+    }
+    if tel {
+        if let Some(site) = site {
+            let o = old();
+            let old_go = o.as_ref().is_some_and(|x| x.0);
+            let class = match (old_go, call.go) {
+                (true, true) => "agree_go",
+                (false, false) => "agree_hold",
+                (false, true) => "new_attack",
+                (true, false) => "new_decline",
+            };
+            let (x, y) = g.map.xy(q);
+            g.tel_decision(p, "attack_rule", &format!("{site}:{class}"), call.why, 1, || {
+                let e = call.est.unwrap_or_default();
+                let s = o.map(|x| x.1).unwrap_or_default();
+                format!(
+                    "{{\"site\":\"{site}\",\"class\":\"{class}\",\"x\":{x},\"y\":{y},\"go\":{},\"old\":{old_go},\"why\":\"{}\",\"p_take\":{},\"p_wipe\":{},\"p_repulsed\":{},\"own_lost_x100\":{},\"enemy_lost_x100\":{},\"n_att\":{},\"n_def\":{},\"kill_pct\":{kp},\"full\":{},\"old_first\":{},\"old_falls\":{},\"old_gain\":{},\"old_p_fall\":{},\"n_defs\":{},\"city\":{},\"from\":[{}]}}",
+                    call.go,
+                    call.why,
+                    e.p_take,
+                    e.p_wipe,
+                    e.p_repulsed,
+                    e.own_lost_x100,
+                    e.enemy_lost_x100,
+                    e.n_att,
+                    e.n_def,
+                    checked.get(),
+                    s.first,
+                    s.used.is_some(),
+                    s.gain,
+                    s.p_fall,
+                    defs.len(),
+                    g.map.plots[q].plot_city.is_some(),
+                    attacks.iter().map(|a| { let (ax, ay) = g.map.xy(a.1); format!("[{ax},{ay},{}]", a.0.len()) }).collect::<Vec<_>>().join(",")
+                )
+            });
+        }
+        if let Some(e) = call.est.filter(|_| checked.get() >= 0) {
+            // A first look the full forecast would have decided the other way.
+            let full = crate::forecast::Est { p_take: checked.get(), ..e };
+            if field_rule(&full, kp, rule) != field_rule(&e, kp, rule) {
+                g.tel_decision(p, "attack_rule", "fast_overturned", "", 1, String::new);
+            }
+            g.tel_decision(p, "attack_rule", "fast_checked", "", 1, String::new);
+        }
+    }
+    call
+}
+
 /// The attacker the rules would send from `grp` into `q` (`AI_getBestGroupAttacker`, which already
 /// puts heroes, veterans and war wizards last) is a hero or a veteran below its odds (switch
 /// `PRECIOUS`, `campaign::precious_bar`), or a caster marching with the stack below war wizard
@@ -177,8 +393,106 @@ fn precious_holds(g: &Game, grp: GroupId, q: PlotIdx) -> Option<(UnitId, i32, i3
     (odds < bar).then_some((b, odds, bar))
 }
 
+/// Round 7g's answer for the record beside the forecast's ([`field_call`]): `field_go` on
+/// [`field_sim`], and with `precious` the hero gate ([`precious_holds`]).
+fn old_field(g: &Game, grp: GroupId, q: PlotIdx, city: bool, capture: bool, fought: bool, hurt: bool, precious: bool) -> Option<(bool, crate::combat_sim::Sim)> {
+    let s = field_sim(g, grp, q)?;
+    Some((field_go(&s, city, capture, fought, hurt) && (!precious || precious_holds(g, grp, q).is_none()), s))
+}
+
+/// [`assault`] on the forecast (switch `FORECAST`): each attack is one engagement of the pool on
+/// the group's plot (the formation, then its reserve on the next order), decided before each on
+/// the forecast of the battles the units left there fight this turn ([`field_call`]).
+fn assault_forecast(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
+    let p = v.p;
+    let mut fought = false;
+    let city = g.map.plots[q].plot_city.is_some();
+    let Some(head) = g.group_get_head_unit(grp) else { return false };
+    let from = g.unit_plot(head);
+    let rule = |fought: bool| Rule::Field { city, capture: false, fought, hurt: false };
+    let first = field_call(g, v, p, &pool_attack(g, p, from, q), q, rule(false), Some("assault"), || old_field(g, grp, q, city, false, false, false, true));
+    if g.telemetry.on() {
+        if let Some(s) = field_sim(g, grp, q) {
+            crate::predict::field(g, p, q, &s, city, first.go, "assault");
+        }
+        crate::predict::field2(g, Some(&v.forecasts), p, from, q, city, first.go, "assault");
+    }
+    if first.go {
+        let atts = attackers(g, grp);
+        crate::magic::before_attack(g, v, q, &atts);
+    }
+    for _ in 0..12 {
+        if !alive(g, grp) {
+            break;
+        }
+        let Some(head) = g.group_get_head_unit(grp) else { break };
+        if !g.plot_is_visible_enemy_unit_for_unit(q, head) {
+            break;
+        }
+        let from = g.unit_plot(head);
+        let c = field_call(g, v, p, &pool_attack(g, p, from, q), q, rule(fought), fought.then_some("assault_more"), || old_field(g, grp, q, city, false, fought, false, true));
+        crate::trace!(g, p, "  assault {:?} on {:?} forecast: {:?}", grp, g.map.xy(q), c);
+        if !c.go {
+            if let Some((b, fall, bar)) = c.precious {
+                crate::trace!(g, p, "stack {:?} holds: {} would fall {}% (wants {})", grp, g.d.units[g.units[b].unit_type].base.type_, fall, bar);
+                g.tel_decision(p, "military", "precious_held", "assault", 1, String::new);
+            }
+            break;
+        }
+        let pool = g.engage_attackers(p, from, q, ffh_core::engagement::WarTest::AtWar);
+        // The first battle is the group's order; the next ones (the reserve the formation left)
+        // are ordered by a unit of the pool that can still attack, out of its group: a group
+        // whose other units have attacked cannot start a move (before, the forecast counted the
+        // reserve and the group's order then did nothing).
+        let launcher = if !fought {
+            Some(grp)
+        } else {
+            pool.iter().copied().max_by_key(|&o| (g.units[o].group == Some(grp), g.units[o].combat_limit, attack_power(g, o), std::cmp::Reverse(o))).and_then(|o| {
+                if g.units[o].group.is_some_and(|og| g.groups[og].units.len() > 1) {
+                    g.unit_join_group(o, None, true);
+                }
+                g.units[o].group
+            })
+        };
+        let Some(lg) = launcher else { break };
+        if g.telemetry.on() {
+            if let Some(b) = g.group_ai_get_best_group_attacker(lg, q, false, false, false).0 {
+                let odds = g.plot_get_best_defender(q, None, Some(p), Some(b), false, false, false).map_or(1000, |d| g.get_combat_odds(b, d));
+                crate::predict::attack(g, p, b, q, odds, "field");
+                crate::predict::attack2(g, Some(&v.forecasts), p, b, q, "field");
+            }
+        }
+        g.groups[lg].ai_group_attack = false;
+        crate::tactics::note_attack(g, p, from, q);
+        move_to(g, lg, q, MOVE_DIRECT_ATTACK);
+        fought = true;
+        if alive(g, lg) {
+            g.groups[lg].ai_group_attack = false;
+        }
+        if !alive(g, grp) {
+            break;
+        }
+        // Nothing happened (no attack possible): stop.
+        if g.engage_attackers(p, from, q, ffh_core::engagement::WarTest::AtWar) == pool {
+            break;
+        }
+    }
+    if alive(g, grp) {
+        g.groups[grp].ai_group_attack = false;
+        if let Some(head) = g.group_get_head_unit(grp) {
+            if g.unit_plot(head) != q && !g.plot_is_visible_enemy_unit_for_unit(q, head) && g.unit_moves_left(head) > 0 && g.group_can_move_into(grp, q, false) {
+                move_to(g, grp, q, 0);
+            }
+        }
+    }
+    fought
+}
+
 /// Attack plot `q` with the group until it falls or the odds turn bad. True if we fought.
 pub fn assault(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
+    if forecast_on(g, v.p) {
+        return assault_forecast(g, v, grp, q);
+    }
     let mut fought = false;
     let city = g.map.plots[q].plot_city.is_some();
     // Casters of ours around the target cast first when the assault goes ahead (magic.rs).
@@ -738,6 +1052,27 @@ fn opportune(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
         // `capture`; before round 7g, the siege estimate with a reserve and odds the assault goes
         // on with).
         let units = g.groups[grp].units.clone();
+        if forecast_on(g, p) {
+            // On the forecast: the battles the pool on our plot fights take the city.
+            let rule = Rule::Field { city: true, capture: true, fought: false, hurt: false };
+            let call = field_call(g, v, p, &pool_attack(g, p, here, q), q, rule, Some("capture"), || old_field(g, grp, q, true, true, false, false, false));
+            if !call.go {
+                if g.telemetry.on() {
+                    if let Some(s) = field_sim(g, grp, q) {
+                        crate::predict::field(g, p, q, &s, true, false, "capture");
+                    }
+                    crate::predict::field2(g, Some(&v.forecasts), p, here, q, true, false, "capture");
+                }
+                continue;
+            }
+            crate::trace!(g, p, "stack {:?} ({} units) takes its chance on {} ({} defenders): {:?}", grp, units.len(), name, defs.len(), call.est);
+            g.tel_decision(p, "military", "capture_attack", "capture", defs.len() as i64, String::new);
+            assault(g, v, grp, q);
+            if !g.cities.contains(c) || g.cities[c].owner == p {
+                g.tel_decision(p, "military", "capture_taken", "capture", 1, String::new);
+            }
+            return true;
+        }
         let sim = field_sim(g, grp, q);
         let takes = sim.is_some_and(|s| field_go(&s, true, true, false, false));
         if !takes {
@@ -771,6 +1106,32 @@ fn best_adjacent(g: &Game, v: &View, grp: GroupId, here: PlotIdx, hurt: bool, sk
         // Do not attack into civ cities unless that is the plan (campaign.rs does).
         let city = g.map.plots[q].plot_city;
         if city.is_some_and(|c| !g.player_is_barbarian(g.cities[c].owner)) {
+            continue;
+        }
+        if forecast_on(g, g.groups[grp].owner) {
+            // On the forecast: the battles the pool on our plot fights there this turn; the best
+            // target a city, else the most favourable trade.
+            let p = g.groups[grp].owner;
+            let rule = Rule::Field { city: city.is_some(), capture: false, fought: false, hurt };
+            let attacks = pool_attack(g, p, here, q);
+            if attacks.is_empty() {
+                continue;
+            }
+            let c = field_call(g, v, p, &attacks, q, rule, Some("adjacent"), || old_field(g, grp, q, city.is_some(), false, false, hurt, true));
+            if !c.go {
+                if g.telemetry.on() {
+                    if let Some(s) = field_sim(g, grp, q) {
+                        crate::predict::field(g, p, q, &s, city.is_some(), false, "adjacent");
+                    }
+                    crate::predict::field2(g, Some(&v.forecasts), p, here, q, city.is_some(), false, "adjacent");
+                }
+                continue;
+            }
+            let e = c.est.unwrap_or_default();
+            let score = if city.is_some() { 1_000_000 + e.p_take as i64 } else { e.enemy_lost_x100 as i64 * c.kill_pct as i64 / 100 - e.own_lost_x100 as i64 };
+            if best.map_or(true, |(_, s)| score > s) {
+                best = Some((q, score));
+            }
             continue;
         }
         let Some(s) = field_sim(g, grp, q) else { continue };
@@ -828,7 +1189,36 @@ fn hunt(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
     for &(_, i, _) in cands.iter().take(4) {
         let t = v.targets[i];
         // Exact check where it matters: the best odds against what stands there.
-        if t.units > 0 {
+        if t.units > 0 && forecast_on(g, v.p) {
+            // On the forecast: the stack's battles from where it will attack (here, or the
+            // staging plot next to the target below).
+            let (tx, ty) = g.map.xy(t.plot);
+            let (x, y) = g.map.xy(here);
+            let from = if g.plot_distance(x, y, tx, ty) <= 1 {
+                Some(here)
+            } else {
+                v.flood
+                    .run(g, u, 6, false)
+                    .iter()
+                    .filter(|r| {
+                        let (rx, ry) = g.map.xy(r.plot);
+                        g.plot_distance(rx, ry, tx, ty) == 1 && g.map.plots[r.plot].plot_city.map_or(true, |c| g.cities[c].owner == v.p)
+                    })
+                    .min_by_key(|r| (r.turns, std::cmp::Reverse(g.plot_defense_modifier(r.plot, Some(v.team), true)), r.plot))
+                    .map(|r| r.plot)
+            };
+            let Some(from) = from else { continue };
+            // (The units that can attack there, as round 7g's estimate takes them.)
+            let atts: Vec<UnitId> = attackers(g, grp).into_iter().filter(|&o| g.unit_can_move_or_attack_into(o, t.plot, false)).collect();
+            if atts.is_empty() {
+                continue;
+            }
+            let attacks: crate::forecast::Attacks = if from == here { pool_attack(g, v.p, here, t.plot) } else { vec![(atts, from)] };
+            let rule = Rule::Field { city: t.city, capture: false, fought: false, hurt: false };
+            if !field_call(g, v, v.p, &attacks, t.plot, rule, Some("hunt"), || old_field(g, grp, t.plot, t.city, false, false, false, true)).go {
+                continue;
+            }
+        } else if t.units > 0 {
             if !field_sim(g, grp, t.plot).is_some_and(|s| field_go(&s, t.city, false, false, false)) {
                 continue;
             }
@@ -966,4 +1356,36 @@ pub fn find_targets(g: &Game, v: &View) -> Vec<Target> {
         }
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::forecast::Est;
+
+    fn est(p_take: i32, own: i32, enemy: i32) -> Est {
+        Est { p_take, own_lost_x100: own, enemy_lost_x100: enemy, n_att: 4, n_def: 2, ..Est::default() }
+    }
+
+    #[test]
+    fn the_field_rule_reads_the_bars() {
+        let field = |hurt| Rule::Field { city: false, capture: false, fought: false, hurt };
+        // Likely to take the plot: go, whatever the trade.
+        assert!(field_rule(&est(TAKE_BAR, 300, 0), 100, field(false)));
+        assert!(!field_rule(&est(TAKE_BAR, 300, 0), 100, field(true)));
+        assert!(field_rule(&est(TAKE_BAR_HURT, 300, 0), 100, field(true)));
+        // At worse odds only on a favourable trade; raiders count four times.
+        assert!(field_rule(&est(TRADE_BAR, 100, 150), 100, field(false)));
+        assert!(!field_rule(&est(TRADE_BAR, 100, 90), 100, field(false)));
+        assert!(field_rule(&est(TRADE_BAR, 100, 90), RAIDER_KILL_PCT, field(false)));
+        assert!(!field_rule(&est(TRADE_BAR - 1, 0, 200), RAIDER_KILL_PCT, field(false)));
+        // A city to capture: when it falls; once fought, as any attack.
+        let capture = |fought| Rule::Field { city: true, capture: true, fought, hurt: false };
+        assert!(!field_rule(&est(CAPTURE_BAR - 1, 0, 200), 100, capture(false)));
+        assert!(field_rule(&est(CAPTURE_BAR, 0, 0), 100, capture(false)));
+        assert!(field_rule(&est(TRADE_BAR, 0, 200), 100, capture(true)));
+        // A bar of its own.
+        assert!(field_rule(&est(800, 0, 0), 100, Rule::Bar(800)));
+        assert!(!field_rule(&est(799, 0, 500), 100, Rule::Bar(800)));
+    }
 }

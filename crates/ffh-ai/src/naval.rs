@@ -575,7 +575,13 @@ fn assault_landed(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, amph: &Am
     if dist <= 1 {
         // Beside the city: strike if this (merged) stack can take it, else gather on the rally
         // plot for the next landings (a lone unit beside a strong city must not be thrown away).
-        let can_strike = crate::military::field_sim(g, grp, tp).is_some_and(|s| crate::military::field_go(&s, true, true, false, false));
+        let can_strike = if crate::military::forecast_on(g, v.p) {
+            let rule = crate::military::Rule::Field { city: true, capture: true, fought: false, hurt: false };
+            let attacks = crate::military::pool_attack(g, v.p, here, tp);
+            !attacks.is_empty() && crate::military::field_call(g, v, v.p, &attacks, tp, rule, Some("landing"), || crate::military::field_sim(g, grp, tp).map(|s| (crate::military::field_go(&s, true, true, false, false), s))).go
+        } else {
+            crate::military::field_sim(g, grp, tp).is_some_and(|s| crate::military::field_go(&s, true, true, false, false))
+        };
         if can_strike {
             let name = g.cities[amph.city].name.clone();
             crate::trace!(g, v.p, "landed stack {:?} ({} units) assaults {} at {:?}", grp, g.groups[grp].units.len(), name, g.map.xy(tp));
