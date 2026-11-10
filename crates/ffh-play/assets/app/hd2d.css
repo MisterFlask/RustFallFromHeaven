@@ -300,6 +300,11 @@ html.iso.hd2d .tree-lines path { stroke: rgba(236, 230, 214, 0.3); }
 html.iso.hd2d .tree-lines path.have { stroke: rgba(143, 191, 120, 0.45); }
 html.iso.hd2d .tree.focus .tree-lines path.lit { stroke: var(--iso-gold-lt); }
 html.iso.hd2d .tree.focus .tree-lines path.lit.next { stroke: #9fc6e4; }
+html.iso.hd2d .tree-lane { border-top-color: rgba(236, 230, 214, 0.07); }
+html.iso.hd2d .tree-lane.odd { background: rgba(236, 230, 214, 0.035); }
+html.iso.hd2d .tree-lane.doctrine { background: rgba(220, 203, 158, 0.08); border-top-color: rgba(220, 203, 158, 0.35); }
+html.iso.hd2d .tree-lane-name { font: 400 12px/16px var(--iso-font); color: var(--hd-dim); background: rgba(6, 6, 8, 0.75); }
+html.iso.hd2d .tree-lane.doctrine .tree-lane-name { color: var(--iso-gold); box-shadow: inset 2px 0 0 var(--iso-gold); }
 html.iso.hd2d button.tech:hover:not([disabled]) { background: var(--hd-band), rgba(24, 23, 27, 0.95); }
 html.iso.hd2d .cplot { border: 1px solid var(--hd-faint); background: rgba(20, 20, 23, 0.9); }
 html.iso.hd2d .cplot.worked { background: rgba(38, 56, 30, 0.92); border-color: #8fbf78; }

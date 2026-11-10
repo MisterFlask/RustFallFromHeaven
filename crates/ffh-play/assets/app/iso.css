@@ -485,6 +485,8 @@ html.iso .chip { border: 2px solid #8a6420; background: var(--iso-deep); font-si
 html.iso .mode-hint { background: rgba(60, 40, 130, 0.5); border: 2px solid #a276da; color: #fff; }
 html.iso label.field > span { font-size: 20px; color: var(--iso-dim); }
 html.iso .tree-scroll { background: #020a20; border: 2px solid #8a6420; }
+html.iso .tree-lane-name { font: 400 10px/14px var(--iso-font); color: var(--iso-dim); }
+html.iso .tree-lane.doctrine .tree-lane-name { color: var(--iso-gold); box-shadow: inset 2px 0 0 var(--iso-gold); }
 /* The techs keep their measured boxes: Herald at 1x, the grid's smallest size. */
 html.iso button.tech { border-width: 2px; border-style: solid; border-image: none; border-color: #8a6420; background: #0c2058; font: 400 10px/12px var(--iso-font); }
 html.iso button.tech .tech-sub { font-size: 10px; }

@@ -111,28 +111,177 @@ export function cardsLine(t) {
 // ---------------------------------------------------------------------------------------------
 // The tech tree (Civ4's technology advisor, F6).
 
-/** Rows of the tech tree: each column (prerequisite depth) ordered by the mean row of the
- *  techs' prerequisites (fewer crossing lines), then by era and index. Pure (tested). */
-export function treeLayout(techs) {
-  const byDepth = new Map();
+/** The lane a tech goes to for the research paths `paths` (the `techs` query's `paths`, in their
+ *  order): a Map tech -> index into `paths`, or `paths.length` for "General". A tech of one path is
+ *  in its lane; of several, in the one it is a capstone of, else the first listed. A tech of none
+ *  takes the lane held by most of its direct prerequisites and successors that have one (repeated
+ *  until nothing changes; a tie goes to the prerequisites' side, then to the lower lane); the rest
+ *  go to General. */
+function treeLanes(techs, paths, pre, succ) {
+  const lane = new Map();
+  const has = (t) => pre.has(t);
+  paths.forEach((p, i) => (p.capstones ?? []).forEach((t) => has(t) && !lane.has(t) && lane.set(t, i)));
+  paths.forEach((p, i) => (p.techs ?? []).forEach((t) => has(t) && !lane.has(t) && lane.set(t, i)));
+  for (;;) {
+    const add = [];
+    for (const t of techs) {
+      if (lane.has(t.tech)) continue;
+      const n = new Map();
+      const count = (ids, side) => ids.forEach((x) => lane.has(x) && (n.has(lane.get(x)) || n.set(lane.get(x), [0, 0]), n.get(lane.get(x))[side]++));
+      count(pre.get(t.tech), 0);
+      count(succ.get(t.tech), 1);
+      let best = null;
+      for (const [l, [a, b]] of n) {
+        const k = [a + b, a, -l];
+        if (!best || k[0] > best.k[0] || (k[0] === best.k[0] && (k[1] > best.k[1] || (k[1] === best.k[1] && k[2] > best.k[2])))) best = { l, k };
+      }
+      if (best) add.push([t.tech, best.l]);
+    }
+    if (!add.length) break;
+    for (const [t, l] of add) lane.set(t, l);
+  }
+  for (const t of techs) if (!lane.has(t.tech)) lane.set(t.tech, paths.length);
+  return lane;
+}
+
+/** The order of the lanes `ids` (top to bottom) with `heights[id]` rows each and `w(a, b)`
+ *  prerequisite lines between two lanes: General (`general`) in the middle, the others in the
+ *  order that makes the sum of the cross-lane lines' vertical spans (between band centres) the
+ *  smallest (every order is tried, up to 8 lanes; the first best in lexicographic order wins);
+ *  more lanes keep their order. */
+function treeLaneOrder(ids, heights, w, general) {
+  const others = ids.filter((l) => l !== general);
+  const hasGeneral = ids.includes(general);
+  const mid = Math.floor(ids.length / 2);
+  const build = (perm) => (hasGeneral ? [...perm.slice(0, mid), general, ...perm.slice(mid)] : perm);
+  if (others.length > 8) return build(others);
+  const cost = (order) => {
+    const c = new Map();
+    let y = 0;
+    for (const l of order) (c.set(l, y + heights[l] / 2), (y += heights[l] + 0.5));
+    let s = 0;
+    for (let i = 0; i < order.length; i++) for (let j = i + 1; j < order.length; j++) s += w(order[i], order[j]) * Math.abs(c.get(order[i]) - c.get(order[j]));
+    return s;
+  };
+  let best = null;
+  const perm = [];
+  const used = new Set();
+  const walk = () => {
+    if (perm.length === others.length) {
+      const order = build(perm);
+      const s = cost(order);
+      if (!best || s < best.s - 1e-9) best = { s, order: [...order] };
+      return;
+    }
+    for (const l of others) if (!used.has(l)) (used.add(l), perm.push(l), walk(), perm.pop(), used.delete(l));
+  };
+  walk();
+  return best ? best.order : build(others);
+}
+
+/** Puts the techs `items` (sorted by `want`, the slot each would like) into distinct slots
+ *  0..`h`-1 in their order, as close to what they want as possible (least squares); returns the
+ *  slots. */
+function treeSlots(want, h) {
+  const k = want.length;
+  // cost[i][s]: the best for items 0..i with item i in slot s.
+  const cost = want.map(() => new Array(h).fill(Infinity));
+  const from = want.map(() => new Array(h).fill(-1));
+  for (let i = 0; i < k; i++) {
+    let bestPrev = Infinity;
+    let bestAt = -1;
+    for (let s = i; s <= h - k + i; s++) {
+      if (i > 0 && cost[i - 1][s - 1] < bestPrev) ((bestPrev = cost[i - 1][s - 1]), (bestAt = s - 1));
+      const d = (s - want[i]) ** 2;
+      cost[i][s] = (i ? bestPrev : 0) + d;
+      from[i][s] = bestAt;
+    }
+  }
+  const out = new Array(k);
+  let s = -1;
+  let best = Infinity;
+  for (let t = 0; t < h; t++) if (cost[k - 1][t] < best) ((best = cost[k - 1][t]), (s = t));
+  for (let i = k - 1; i >= 0; i--) ((out[i] = s), (s = from[i][s]));
+  return out;
+}
+
+/** The tech tree's layout for the techs `techs` (entries of the `techs` query: `tech`, `depth`,
+ *  `and`, `or`, `era`) and the research paths `paths` (the query's `paths`). Columns are the
+ *  prerequisite depth (a prerequisite is always left of what it leads to). Rows are grouped in
+ *  lanes, one per research path and "General" (`treeLanes`), ordered to keep the lines between
+ *  lanes short (`treeLaneOrder`); a lane is a band as tall as its fullest column, and in it each
+ *  column's techs sit by the mean row of their prerequisites (then of their successors, a few
+ *  sweeps) so that a line of development runs straight. Returns `row` (tech -> row, counted
+ *  across the lanes, which follow each other without gaps), `lane` (tech -> index into `lanes`),
+ *  `lanes` (top to bottom: `{ path, top, rows }`, `path` null for General), `columns` and `rows`.
+ *  Pure (tested). */
+export function treeLayout(techs, paths = []) {
+  const pre = new Map();
+  const succ = new Map(techs.map((t) => [t.tech, []]));
+  for (const t of techs) pre.set(t.tech, [...new Set([...t.and, ...t.or])].filter((p) => succ.has(p)));
+  for (const t of techs) for (const p of pre.get(t.tech)) succ.get(p).push(t.tech);
+  const laneOf = treeLanes(techs, paths, pre, succ);
+  const general = paths.length;
+  // Each lane's height: its fullest column.
+  const counts = new Map();
   for (const t of techs) {
-    if (!byDepth.has(t.depth)) byDepth.set(t.depth, []);
-    byDepth.get(t.depth).push(t);
+    const k = `${laneOf.get(t.tech)}:${t.depth}`;
+    counts.set(k, (counts.get(k) ?? 0) + 1);
   }
+  const heights = {};
+  for (const [k, n] of counts) {
+    const l = Number(k.split(":")[0]);
+    heights[l] = Math.max(heights[l] ?? 1, n);
+  }
+  const ids = Object.keys(heights).map(Number).sort((a, b) => a - b);
+  const between = new Map();
+  for (const t of techs) {
+    for (const p of pre.get(t.tech)) {
+      const [a, b] = [laneOf.get(t.tech), laneOf.get(p)].sort((x, y) => x - y);
+      if (a !== b) between.set(`${a}:${b}`, (between.get(`${a}:${b}`) ?? 0) + 1);
+    }
+  }
+  const w = (a, b) => between.get(a < b ? `${a}:${b}` : `${b}:${a}`) ?? 0;
+  const order = treeLaneOrder(ids, heights, w, general);
+  const lanes = [];
+  const index = new Map();
+  let top = 0;
+  for (const l of order) {
+    index.set(l, lanes.length);
+    lanes.push({ path: l === general ? null : paths[l].path, top, rows: heights[l] });
+    top += heights[l];
+  }
+  // The groups to place: each lane's techs of each column.
+  const depths = [...new Set(techs.map((t) => t.depth))].sort((a, b) => a - b);
+  const groups = depths.map((d) =>
+    lanes.map((_, i) => techs.filter((t) => t.depth === d && index.get(laneOf.get(t.tech)) === i)).filter((g) => g.length),
+  );
   const row = new Map();
-  const depths = [...byDepth.keys()].sort((a, b) => a - b);
-  let rows = 0;
-  for (const d of depths) {
-    const col = byDepth.get(d);
-    const key = (t) => {
-      const pre = [...t.and, ...t.or].map((p) => row.get(p)).filter((r) => r !== undefined);
-      return pre.length ? pre.reduce((a, b) => a + b, 0) / pre.length : (t.era ?? 0) * 100 + t.tech / 1000;
+  const tiebreak = (a, b) => (a.era ?? 0) - (b.era ?? 0) || a.tech - b.tech;
+  const place = (g, near) => {
+    const ln = lanes[index.get(laneOf.get(g[0].tech))];
+    const mean = (t) => {
+      const r = near(t).map((x) => row.get(x)).filter((v) => v !== undefined);
+      if (r.length) return r.reduce((a, b) => a + b, 0) / r.length - ln.top;
+      return row.has(t.tech) ? row.get(t.tech) - ln.top : null;
     };
-    col.sort((a, b) => key(a) - key(b) || (a.era ?? 0) - (b.era ?? 0) || a.tech - b.tech);
-    col.forEach((t, i) => row.set(t.tech, i));
-    rows = Math.max(rows, col.length);
-  }
-  return { row, columns: depths.length ? depths[depths.length - 1] + 1 : 0, rows };
+    let want = g.map((t) => ({ t, m: mean(t) }));
+    // Without any guide, the group is centred in its band in era and index order.
+    want.sort((a, b) => (a.m ?? Infinity) - (b.m ?? Infinity) || tiebreak(a.t, b.t));
+    const free = (ln.rows - g.length) / 2;
+    want = want.map((x, i) => ({ t: x.t, m: Math.max(0, Math.min(ln.rows - 1, x.m ?? i + free)) }));
+    const slots = treeSlots(want.map((x) => x.m), ln.rows);
+    want.forEach((x, i) => row.set(x.t.tech, ln.top + slots[i]));
+  };
+  const down = () => groups.forEach((col) => col.forEach((g) => place(g, (t) => pre.get(t.tech))));
+  const up = () => [...groups].reverse().forEach((col) => col.forEach((g) => place(g, (t) => (succ.get(t.tech).length ? succ.get(t.tech) : pre.get(t.tech)))));
+  // A last sweep on both sides evens out a tech between where it comes from and where it leads.
+  const both = () => groups.forEach((col) => col.forEach((g) => place(g, (t) => [...pre.get(t.tech), ...succ.get(t.tech)])));
+  down();
+  for (let i = 0; i < 3; i++) (up(), down());
+  both();
+  const lane = new Map(techs.map((t) => [t.tech, index.get(laneOf.get(t.tech))]));
+  return { row, lane, lanes, columns: depths.length ? depths[depths.length - 1] + 1 : 0, rows: top };
 }
 
 /** The techs related to tech `id` in the tree, from `byId` (tech -> entry with `and`/`or`): `path`,
@@ -158,15 +307,19 @@ function costLabel(cost) {
 
 /** The tech tree: every tech by prerequisite depth with its state, what it unlocks and its era
  *  (the box's left edge; columns are depths, which eras cut across, so a legend names the
- *  colours). Click: research it (a tech whose prerequisites are missing queues them first, C++
+ *  colours), in a band per research path (`treeLayout`), each labelled at the left; lines between
+ *  bands are fainter until lit. Click: research it (a tech whose prerequisites are missing queues them first, C++
  *  `pushResearch`); Shift-click, or the "Add to queue" mode: add it to the queue. Pointing at a
  *  tech (on touch, the first tap) lights its path and the techs it leads to. */
 export async function openTechTree() {
   const m = openModal({ title: "Technology", body: [h("p.dim", "…")], tag: "techtree", wide: true, className: "techtree", buttons: [{ label: "Close", value: null }] });
   const W = 176;
   const H = 66;
-  const GX = 40;
-  const GY = 10;
+  /** The gaps between columns, between rows and between bands (a band's label sits in the gap
+   *  above it). */
+  const GX = 56;
+  const GY = 14;
+  const BG = 28;
   /** What a click or tap does (Shift-click queues in either mode): "now" or "queue". */
   let tapMode = "now";
   /** On touch: the tech whose path the first tap lit; a second tap on it researches it. */
@@ -186,10 +339,15 @@ export async function openTechTree() {
     const keep = was ? { left: was.scrollLeft, top: was.scrollTop } : null;
     armed = null;
     const techs = t.techs.filter((x) => !x.disabled);
-    const { row, columns, rows } = treeLayout(techs);
-    const pos = (x) => ({ x: x.depth * (W + GX), y: row.get(x.tech) * (H + GY) });
+    const paths = t.paths ?? [];
+    const { row, lane, lanes, columns, rows } = treeLayout(techs, paths);
+    // Row r of band i: the bands follow each other with a gap of BG above each.
+    const rowY = (r, i) => (i + 1) * BG + r * (H + GY);
+    const pos = (x) => ({ x: x.depth * (W + GX), y: rowY(row.get(x.tech), lane.get(x.tech)) });
     const width = Math.max(0, columns * (W + GX) - GX);
-    const height = Math.max(0, rows * (H + GY) - GY);
+    const height = Math.max(0, rowY(rows, lanes.length - 1) - GY);
+    // The cells holding a tech ("column:row"), for routing the lines that pass columns by.
+    const cells = new Set(techs.map((x) => `${x.depth}:${row.get(x.tech)}`));
     const ns = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(ns, "svg");
     svg.setAttribute("width", String(width));
@@ -197,6 +355,31 @@ export async function openTechTree() {
     svg.setAttribute("class", "tree-lines");
     const byId = new Map(techs.map((x) => [x.tech, x]));
     const lines = [];
+    /** The line from prerequisite `from` (box at `a`) to tech `x` (box at `to`): out of the right
+     *  edge of one, into the left edge of the other, turning in the column gaps. One that passes
+     *  columns by keeps to the row of either end where those columns have no box, else runs along
+     *  the row gap next to the tech's row on the prerequisite's side. */
+    const treeLine = (from, x, a, to) => {
+      const x1 = a.x + W;
+      const y1 = a.y + H / 2;
+      const x2 = to.x;
+      const y2 = to.y + H / 2;
+      const turn = (xa, ya, xb, yb) => `C${(xa + xb) / 2},${ya} ${(xa + xb) / 2},${yb} ${xb},${yb}`;
+      if (x.depth - from.depth <= 1) return `M${x1},${y1} ${turn(x1, y1, x2, y2)}`;
+      const clear = (r) => {
+        for (let d = from.depth + 1; d < x.depth; d++) if (cells.has(`${d}:${r}`)) return false;
+        return true;
+      };
+      const ra = row.get(from.tech);
+      const rb = row.get(x.tech);
+      // The first and last column gap the line passes.
+      const xa = x1 + GX;
+      const xb = x2 - GX;
+      if (clear(ra)) return `M${x1},${y1} L${xb},${y1} ${turn(xb, y1, x2, y2)}`;
+      if (clear(rb)) return `M${x1},${y1} ${turn(x1, y1, xa, y2)} L${x2},${y2}`;
+      const yg = y1 < y2 ? to.y - GY / 2 : y1 > y2 ? to.y + H + GY / 2 : to.y - GY / 2;
+      return `M${x1},${y1} ${turn(x1, y1, xa, yg)} L${xb},${yg} ${turn(xb, yg, x2, y2)}`;
+    };
     for (const x of techs) {
       const to = pos(x);
       for (const [list, dash] of [[x.and, ""], [x.or, "4 3"]]) {
@@ -205,12 +388,9 @@ export async function openTechTree() {
           if (!from) continue;
           const a = pos(from);
           const path = document.createElementNS(ns, "path");
-          const x1 = a.x + W;
-          const y1 = a.y + H / 2;
-          const x2 = to.x;
-          const y2 = to.y + H / 2;
-          path.setAttribute("d", `M${x1},${y1} C${x1 + GX / 2},${y1} ${x2 - GX / 2},${y2} ${x2},${y2}`);
-          if (from.has) path.setAttribute("class", "have");
+          path.setAttribute("d", treeLine(from, x, a, to));
+          // A line between two bands stays faint until lit.
+          path.setAttribute("class", [from.has ? "have" : "", lane.get(p) !== lane.get(x.tech) ? "cross" : ""].filter(Boolean).join(" "));
           path.dataset.from = String(p);
           path.dataset.to = String(x.tech);
           if (dash) path.setAttribute("stroke-dasharray", dash);
@@ -275,7 +455,19 @@ export async function openTechTree() {
     });
     // Pointing at a tech lights it, every tech it needs (its and/or prerequisites, all the way
     // back) and the techs it leads to, with the lines between them; the rest of the tree dims.
-    const tree = h("div.tree", { style: { width: `${width}px`, height: `${height}px` } }, svg, boxes);
+    // The bands: a stripe across the tree and the research path's name, held at the left edge
+    // while the tree scrolls; the adopted doctrine's band is marked.
+    const bands = lanes.map((ln, i) => {
+      const top = rowY(ln.top, i) - BG;
+      const doctrine = ln.path !== null && ln.path === t.path;
+      const name = ln.path === null ? "General" : dname("ResearchPathType", ln.path);
+      return h(
+        `div.tree-lane${i % 2 ? ".odd" : ""}${doctrine ? ".doctrine" : ""}`,
+        { "data-path": ln.path ?? "", style: { top: `${top}px`, height: `${ln.rows * (H + GY) - GY + BG + GY / 2}px` } },
+        h("span.tree-lane-name", { title: doctrine ? `${name}: your doctrine` : name }, h("span.tree-lane-text", name), doctrine ? h("span.tree-lane-doctrine", "Doctrine") : null),
+      );
+    });
+    const tree = h("div.tree", { style: { width: `${width}px`, height: `${height}px` } }, bands, svg, boxes);
     function focus(id) {
       if (id === null && armed !== null) id = armed;
       tree.classList.toggle("focus", id !== null);
