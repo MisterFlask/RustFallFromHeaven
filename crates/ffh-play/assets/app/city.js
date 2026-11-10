@@ -648,12 +648,12 @@ function manageView(c, task) {
       `${dname("HurryType", x.hurry)}${x.gold ? ` (${x.gold} gold)` : ""}${x.population ? ` (${x.population} pop.)` : ""}`,
     ),
   );
-  // A governed city's emphasis is its governor's profile's (shown, not chosen).
+  // A governed city's emphasis is its role's (shown, not chosen).
   const governed = !!c.governance?.governed;
   const emphasize = c.emphasize.map((on, e) =>
     h(
       "label.toggle",
-      { title: governed ? "Set by the governor's profile" : `${on ? "Turn off" : "Turn on"} ${dname("EmphasizeType", e)}` },
+      { title: governed ? "Set by the city's role" : `${on ? "Turn off" : "Turn on"} ${dname("EmphasizeType", e)}` },
       h("input", { type: "checkbox", checked: on, disabled: governed, "data-emphasize": e, onchange: (ev) => task("TASK_SET_EMPHASIZE", e, -1, ev.target.checked) }),
       ` ${dname("EmphasizeType", e)}`,
     ),
@@ -687,7 +687,8 @@ function crewsLine(c) {
 
 function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
   const prod = c.production;
-  // This game's governors: a governed city's production is its governor's (shown, not chosen).
+  // This game's governors: a governed city's production is its governor's; the player places
+  // empire orders there (units, wonders, palaces, rituals), which can be taken off.
   const locked = !!c.governance?.governed;
   const queue = h(
     "ol.queue",
@@ -699,16 +700,17 @@ function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
             h("span.dim", o.turns !== null ? ` ${turns(o.turns)}` : ""),
             // This game's armies: where a land combat unit goes when trained; a requisition order
             // is its army's.
-            o.requisition ? requisitionTag(o) : locked ? (o.dest_name ? h("span.dim", ` → ${o.dest_name}`) : null) : recruitControls(c, i, o, reload),
+            o.requisition ? requisitionTag(o) : locked ? [o.empire ? h("span.dim.empire-tag", " · empire order") : null, o.dest_name ? h("span.dim", ` → ${o.dest_name}`) : null] : recruitControls(c, i, o, reload),
             // The exe pops an order only while the queue holds more than one (CvGameInterface
             // `getOrderQueueLength() > 1`); the only order is replaced by choosing another. A
             // requisition order is released on the Armies screen, not here.
-            c.queue.length > 1 && !locked && !o.requisition ? h("button.small", { title: "Remove from the queue", "aria-label": "Remove", "data-index": i, onclick: () => remove(i) }, "✕") : null,
+            // In a governed city only an empire order comes off (the governor resumes after it).
+            (locked ? o.empire : c.queue.length > 1 && !o.requisition) ? h("button.small", { title: locked ? "Take the empire order off" : "Remove from the queue", "aria-label": "Remove", "data-index": i, onclick: () => remove(i) }, "✕") : null,
           ),
         )
       : h("li.dim", locked ? "Nothing yet: the governor chooses when your turn ends." : "Nothing: choose below."),
   );
-  const lists = locked ? [] : GROUPS.map(([order, label]) => {
+  const lists = GROUPS.map(([order, label]) => {
     const items = c.buildable.filter((b) => b.order === order);
     if (!items.length) return null;
     return h(
@@ -724,7 +726,7 @@ function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
               disabled: !b.enabled,
               "data-order": order,
               "data-type": b.type,
-              tip: infoTip(kind, b.type, { hint: [tierHint(b), nationalHint(b), b.enabled ? "Click: build now. Shift: add to the queue. Ctrl: put first." : "Not possible now."].filter(Boolean).join(" ") }),
+              tip: infoTip(kind, b.type, { hint: [tierHint(b), nationalHint(b), !b.enabled ? "Not possible now." : locked ? "Click: empire order, ahead of the governor's choice." : "Click: build now. Shift: add to the queue. Ctrl: put first."].filter(Boolean).join(" ") }),
               onclick: (ev) => choose(order, b.type, ev),
             },
             isoSkin() ? buildIcon(order, b.type) : null,
@@ -746,7 +748,7 @@ function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
         prod.current && prod.needed ? barEl(prod.stored / prod.needed, "production", { w: 50, next: (prod.stored + prod.rate) / prod.needed }) : null,
       ),
       queue,
-      locked ? [h("p.dim.governed-note", "The governor chooses what this city builds: choose its governor above."), requisitionNote(c)] : recruitView(c, reload),
+      locked ? [h("p.dim.governed-note", "Empire orders: units, wonders, palaces and rituals. The governor builds the rest."), requisitionNote(c)] : recruitView(c, reload),
       locked ? null : tapModes(tapMode, [["now", "Build now", "A tap replaces what is being built"], ["queue", "Add to queue", "A tap adds to the end of the queue (Shift-click)"], ["first", "Put first", "A tap puts it first in the queue (Ctrl-click)"]], setTapMode),
     ),
     ...lists,

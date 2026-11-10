@@ -17,10 +17,14 @@ fn all<I: Idx>(n: usize) -> impl Iterator<Item = I> {
 
 /// The buildable list: units, buildings, projects and processes the city screen shows
 /// (`canTrain/canConstruct/canCreate(.., bTestVisible = true)`), `enabled` when they can be
-/// started now, with cost (production needed) and turns.
+/// started now, with cost (production needed) and turns. A governed city (docs/GOVERNORS.md)
+/// lists only what may be an empire order, `enabled` when the city can take it as one now (the
+/// governor builds the rest).
 pub fn buildable(v: &Viewer, c: CityId) -> Json {
     let g = v.g;
     let d = g.d;
+    let governed = g.city_is_governed(c);
+    let empire = |order: OrderType, data: usize| !governed || g.order_may_be_empire(order, data as i32);
     let mut out = Vec::new();
     for u in d.units.keys() {
         if g.city_offers_unit(c, u) && g.city_can_train(c, u, false, true, false, false) {
@@ -34,7 +38,7 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
         }
     }
     for b in d.buildings.keys() {
-        if g.city_can_construct(c, b, false, true, false) {
+        if empire(OrderType::ORDER_CONSTRUCT, b.idx()) && g.city_can_construct(c, b, false, true, false) {
             let mut j = crate::jobj! {
                 "order" => Json::idx(OrderType::ORDER_CONSTRUCT), "type" => Json::idx(b),
                 "enabled" => g.city_can_construct(c, b, false, false, false),
@@ -54,7 +58,7 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
         }
     }
     for p in d.processes.keys() {
-        if g.city_can_maintain(c, p, false) {
+        if !governed && g.city_can_maintain(c, p, false) {
             out.push(crate::jobj! { "order" => Json::idx(OrderType::ORDER_MAINTAIN), "type" => Json::idx(p), "enabled" => true, "cost" => Json::Null, "turns" => Json::Null });
         }
     }
@@ -128,7 +132,7 @@ fn queue(v: &Viewer, c: CityId) -> Json {
             OrderType::ORDER_CREATE if ok(d.projects.len()) => Json::from(g.city_production_turns_left_project(c, ProjectType::from_usize(k as usize), i as i32)),
             _ => Json::Null,
         };
-        let mut j = crate::jobj! { "order" => Json::idx(o.order_type), "type" => k, "save" => o.save, "turns" => turns };
+        let mut j = crate::jobj! { "order" => Json::idx(o.order_type), "type" => k, "save" => o.save, "turns" => turns, "empire" => o.empire };
         // This game's armies: where a trained land combat unit goes.
         if o.order_type == OrderType::ORDER_TRAIN && ok(d.units.len()) && g.unit_type_is_army_unit(UnitType::from_usize(k as usize)) {
             j.set("dest", crate::command::recruit_dest_json(o.dest));
