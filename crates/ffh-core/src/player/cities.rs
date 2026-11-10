@@ -116,6 +116,8 @@ impl Game {
     pub fn player_add_city(&mut self, p: PlayerId, city: City) -> CityId {
         let id = self.cities.insert(city);
         self.players[p].cities.push(id);
+        // A new port, maybe (docs/NAVAL.md): the range fields at sea are computed again.
+        self.sea_range_invalidate();
         id
     }
 
@@ -133,6 +135,7 @@ impl Game {
         }
         self.cities.remove(c);
         self.players[p].cities.retain(|&x| x != c);
+        self.sea_range_invalidate();
     }
 
     /// C++ `CvPlayer::addPlotGroup`.

@@ -169,6 +169,7 @@ pub fn term_json(t: &Term) -> Json {
         TermSource::UnitHillsAttack => j("UnitHillsAttack"),
         TermSource::Improvement(x) => j("Improvement").with("improvement", Json::idx(*x)),
         TermSource::RangeDefense => j("RangeDefense"),
+        TermSource::SeaWear => j("SeaWear"),
     }
 }
 

@@ -281,7 +281,7 @@ fn a_causeway_carries_land_units_and_stops_ships() {
     let water = w.strait();
     let next = w.water_below(water);
     let warrior = w.unit(p0, "UNIT_WARRIOR", w.row[1]);
-    assert!(!w.g.unit_can_move_into(warrior, water, false, false, false), "a land unit cannot walk on water");
+    assert!(w.g.unit_needs_boats(warrior, water), "a land unit does not walk on water (it would be in boats)");
     w.card(p0, "TECH_CARD_CAUSEWAY");
     let build = w.g.d.t::<BuildType>("BUILD_CAUSEWAY");
     // The Fishing Boats' builders (docs/WORKS.md): a city's crews, on its owner's water.
@@ -357,9 +357,10 @@ fn ferries_let_land_units_cross_a_one_plot_strait() {
     assert!(w.g.plot_is_strait(water));
     assert!(!w.g.plot_is_strait(w.row[1]), "land is no strait");
     let u = w.unit(p0, "UNIT_WARRIOR", w.row[1]);
-    assert!(!w.g.unit_can_move_into(u, water, false, false, false));
+    assert!(w.g.unit_needs_boats(u, water), "without the card it would be in boats");
     w.card(p0, "TECH_CARD_FERRIES");
     assert!(w.g.unit_can_move_into(u, water, false, false, false), "it walks onto the strait");
+    assert!(!w.g.unit_needs_boats(u, water));
     assert_eq!(w.g.plot_movement_cost(water, u, w.row[1]), w.g.d.defines.move_denominator, "as on flat land");
     let (x, y) = w.g.map.xy(water);
     w.g.unit_set_xy(u, x, y, false);

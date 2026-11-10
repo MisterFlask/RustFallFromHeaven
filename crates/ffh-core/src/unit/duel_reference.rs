@@ -402,6 +402,11 @@ fn the_duel_mode_returns_what_max_combat_str_returned() {
     let mut checked = 0;
     let mut with_terms = 0;
     let mut same = |u: UnitId, plot: Option<PlotIdx>, opponent: Option<UnitId>| {
+        // Not compared: a land unit in boats on water (strength 1, docs/NAVAL.md: a rules change
+        // after this reference).
+        if plot.or(g.unit_plot_opt(u)).is_some_and(|p| g.unit_in_boats_at(u, p)) {
+            return;
+        }
         let old = old_max_combat_str(&g, u, plot, opponent, Some(&mut old_det));
         let new = g.unit_max_combat_str(u, plot, opponent, Some(&mut new_det));
         assert_eq!((old, &old_det), (new, &new_det), "unit {u:?} plot {plot:?} opponent {opponent:?}");

@@ -33,6 +33,8 @@ impl Game {
         if self.map.plots[p].plot_type == plot_type {
             return;
         }
+        // Water changes the range fields at sea (docs/NAVAL.md).
+        self.sea_range_invalidate();
 
         if self.map.plots[p].plot_type == PlotType::PLOT_OCEAN || plot_type == PlotType::PLOT_OCEAN {
             self.plot_erase(p);

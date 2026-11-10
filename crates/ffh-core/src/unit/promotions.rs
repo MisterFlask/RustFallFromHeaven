@@ -955,11 +955,19 @@ impl Game {
     pub fn unit_first_strikes(&self, u: UnitId) -> i32 {
         // Card: The Fey Court Awakens (docs/CARDS.md): the Glamour's first strikes in forest.
         let fey = crate::ffh::cards::new_civs::glamour_first_strikes(self, u);
+        // This game's (docs/NAVAL.md, 3.2): none in boats.
+        if self.unit_is_in_boats(u) {
+            return 0;
+        }
         std::cmp::max(0, self.d.units[self.units[u].unit_type].first_strikes + self.units[u].extra_first_strikes + fey)
     }
 
     /// C++ `CvUnit::chanceFirstStrikes` (CvUnit.cpp:10138-10141).
     pub fn unit_chance_first_strikes(&self, u: UnitId) -> i32 {
+        // This game's (docs/NAVAL.md, 3.2): none in boats.
+        if self.unit_is_in_boats(u) {
+            return 0;
+        }
         std::cmp::max(
             0,
             self.d.units[self.units[u].unit_type].chance_first_strikes + self.units[u].extra_chance_first_strikes,

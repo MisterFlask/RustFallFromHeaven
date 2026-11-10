@@ -75,6 +75,25 @@ impl Game {
             return false;
         }
 
+        // This game's (docs/NAVAL.md, 3.2): in boats a unit moves, waits, is deleted, loads onto
+        // a ship or is promoted; nothing else.
+        if self.unit_is_in_boats(u)
+            && !matches!(
+                command,
+                CommandType::COMMAND_PROMOTION
+                    | CommandType::COMMAND_WAKE
+                    | CommandType::COMMAND_CANCEL
+                    | CommandType::COMMAND_CANCEL_ALL
+                    | CommandType::COMMAND_STOP_AUTOMATION
+                    | CommandType::COMMAND_DELETE
+                    | CommandType::COMMAND_LOAD
+                    | CommandType::COMMAND_LOAD_UNIT
+                    | CommandType::COMMAND_HOTKEY
+            )
+        {
+            return false;
+        }
+
         match command {
             CommandType::COMMAND_PROMOTION => self.unit_can_promote(u, opt_from_i32(data1), command_leader(data2)),
 
@@ -483,8 +502,13 @@ impl Game {
     }
 
     /// C++ `CvUnit::canFortify` (CvUnit.cpp:4409-4422).
-    pub fn unit_can_fortify(&self, u: UnitId, _plot: PlotIdx) -> bool {
+    pub fn unit_can_fortify(&self, u: UnitId, plot: PlotIdx) -> bool {
         if !self.unit_is_fortifyable(u) {
+            return false;
+        }
+
+        // This game's (docs/NAVAL.md, 3.2): no fortifying in boats.
+        if self.unit_in_boats_at(u, plot) {
             return false;
         }
 
@@ -566,6 +590,11 @@ impl Game {
     /// C++ `CvUnit::healRate` (CvUnit.cpp:4538-4673).
     pub fn unit_heal_rate(&self, u: UnitId, plot: PlotIdx) -> i32 {
         let d = self.d;
+
+        // This game's (docs/NAVAL.md, 3.1 and 3.2): no healing in boats, nor at sea out of range.
+        if self.unit_sea_no_heal_at(u, plot) {
+            return 0;
+        }
 
         // FfH: Added by Kael 11/05/2008
         if self.is_option(GameOptionType::GAMEOPTION_NO_HEALING_FOR_HUMANS) && self.unit_is_human(u) && self.unit_is_alive(u) {
@@ -1272,6 +1301,11 @@ impl Game {
             return false;
         }
 
+        // This game's (docs/NAVAL.md, 3.2): no bombard from boats.
+        if self.unit_in_boats_at(u, plot) {
+            return false;
+        }
+
         if self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND {
             // Engagement combat (plan 5.2): a bombard is one of the turn's attacks (one a turn,
             // Blitz one more). Ships keep the duel's rule.
@@ -1683,6 +1717,8 @@ mod tests {
         let area = g.map_add_area(false);
         for p in g.map.plot_ids() {
             g.map.plots[p].area = Some(area);
+            // Land (a land unit on water is in boats: docs/NAVAL.md).
+            g.map.plots[p].plot_type = PlotType::PLOT_LAND;
         }
         for p in g.player_ids() {
             g.players[p] = Player::new(d, p, &g.setup.players[p.idx()], num_players, num_teams);

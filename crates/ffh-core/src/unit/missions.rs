@@ -392,6 +392,11 @@ impl Game {
             return false;
         }
 
+        // This game's (docs/NAVAL.md, 3.2): not from boats.
+        if self.unit_in_boats_at(u, plot) {
+            return false;
+        }
+
         let (x, y) = self.map.xy(plot);
         if !self.player_can_found(self.units[u].owner, x, y, test_visible) {
             return false;

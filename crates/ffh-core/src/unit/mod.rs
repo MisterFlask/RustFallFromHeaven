@@ -585,6 +585,13 @@ pub struct Unit {
     /// Not in C++: a caster's summon called into a battle (docs/ENGAGEMENTS.md, "Summons"): it
     /// exists only during that battle's engagement, and no pool or defence picks it.
     pub battle_summon: bool,
+    // ---- This game's own: the sea (docs/NAVAL.md, section 3) ----
+    /// Wear: the starts of its owner's turns a warship has spent outside a port city of its team
+    /// in a row (0 in port; `Game::player_update_sea`).
+    pub sea_turns: i32,
+    /// Its plot was out of its team's range at sea at the last start of its owner's turn (a sea
+    /// unit or a unit in boats): the attrition message is given on the first such turn only.
+    pub sea_out_of_range: bool,
 }
 
 impl Unit {
@@ -766,6 +773,8 @@ impl Unit {
             card: None,
             packed_city: None,
             battle_summon: false,
+            sea_turns: 0,
+            sea_out_of_range: false,
         }
     }
 }

@@ -314,6 +314,9 @@ pub struct Game {
     pub step_finder: RefCell<PathFinder>,
     /// C++ `GC.getBorderFinder()`: scratch, as `path_finder`.
     pub border_finder: RefCell<PathFinder>,
+    /// Not in C++: the cached range fields at sea (docs/NAVAL.md, 3.1; `naval.rs`): derived from
+    /// the map, checked on every read, not game state, not saved.
+    pub sea_range: RefCell<crate::naval::SeaRangeCache>,
 }
 
 impl Game {
@@ -461,6 +464,7 @@ impl Game {
             path_finder: RefCell::new(PathFinder::new(FinderKind::Path)),
             step_finder: RefCell::new(PathFinder::new(FinderKind::Step)),
             border_finder: RefCell::new(PathFinder::new(FinderKind::Border)),
+            sea_range: crate::naval::new_cache(),
         };
         g.reset(handicap);
         g

@@ -982,3 +982,133 @@ pub(crate) fn sea_explore_target(g: &Game, v: &mut View, u: UnitId) -> Option<Pl
     }
     best.map(|(q, _)| q)
 }
+
+// ----------------------------------------------------------------------------
+// Range, boats, wear (docs/NAVAL.md, sections 3 and 8)
+// ----------------------------------------------------------------------------
+
+/// Whether the AI keeps unit `u` off plot `q` at sea (docs/NAVAL.md, section 8; the rules' path
+/// finder does the same for AI groups, `Game::path_ai_sea_blocked`): a land unit does not step
+/// into boats (or aboard at sea) on its own; a ship in range does not leave its team's range.
+pub(crate) fn sea_blocked(g: &Game, u: UnitId, q: PlotIdx) -> bool {
+    if !g.plot_is_water(q) {
+        return false;
+    }
+    match g.unit_get_domain_type(u) {
+        DomainType::DOMAIN_LAND => g.unit_needs_boats(u, q),
+        DomainType::DOMAIN_SEA => {
+            let team = g.unit_get_team(u);
+            !g.plot_in_sea_range(team, q) && g.unit_plot_opt(u).is_some_and(|at| g.plot_in_sea_range(team, at))
+        }
+        _ => false,
+    }
+}
+
+/// A ship's group that must make for port first (section 8): one out of its team's range, or a
+/// warship whose wear is above half its maximum that carries nothing. It sails to the port nearest
+/// it by the range field (a city of a team whose ports are ours: its wear clears there), else to
+/// one of our coastal cities (`port`). True if its turn is over.
+pub(crate) fn ship_to_port(g: &mut Game, v: &View, grp: GroupId, u: UnitId) -> bool {
+    if v.barbarian || g.unit_get_domain_type(u) != DomainType::DOMAIN_SEA {
+        return false;
+    }
+    let here = g.unit_plot(u);
+    if !g.plot_is_water(here) {
+        return false;
+    }
+    let team = g.unit_get_team(u);
+    let out = g.groups[grp].units.iter().any(|&o| g.unit_is_out_of_sea_range(o));
+    let half = g.d.defines.sea_wear_max_percent / 2;
+    let worn = g.groups[grp].units.iter().any(|&o| g.unit_sea_wear_percent(o) > half) && !g.groups[grp].units.iter().any(|&o| g.unit_has_cargo(o));
+    if !out && !worn {
+        return false;
+    }
+    crate::trace!(g, v.p, "ship group {:?} at {:?} to port ({})", grp, g.map.xy(here), if out { "out of range" } else { "wear" });
+    g.tel_decision(v.p, "naval", "to_port", if out { "out_of_range" } else { "wear" }, 1, String::new);
+    if let Some(c) = g.plot_sea_port(team, here).filter(|&c| g.cities.contains(c)) {
+        let cp = g.city_plot(c);
+        if g.group_find_path(grp, here, cp, 0).is_some() {
+            move_to(g, grp, cp, 0);
+            if alive(g, grp) && g.group_ready_to_move(grp, false) {
+                skip(g, grp);
+            }
+            return true;
+        }
+    }
+    port(g, v.p, grp, here);
+    true
+}
+
+/// The cities of ours a land group reaches in boats (`MOVE_BOATS`: over water in our range),
+/// nearest first: the best of the 4 nearest by plot distance, by path turns. `None` if none.
+fn boats_home(g: &Game, p: PlayerId, grp: GroupId, here: PlotIdx) -> Option<PlotIdx> {
+    let (x, y) = g.map.xy(here);
+    let mut cities: Vec<(i32, CityId)> = g.players[p].cities.iter().map(|&c| (g.plot_distance(x, y, g.cities[c].x, g.cities[c].y), c)).collect();
+    cities.sort();
+    cities
+        .iter()
+        .take(4)
+        .filter_map(|&(_, c)| {
+            let cp = g.city_plot(c);
+            g.group_find_path(grp, here, cp, MOVE_BOATS | MOVE_IGNORE_DANGER).map(|path| (path.turns, c, cp))
+        })
+        .min()
+        .map(|(_, _, cp)| cp)
+}
+
+/// Whether team `team` sees an enemy warship within `range` plots of `here`.
+fn enemy_warship_near(g: &Game, team: TeamId, here: PlotIdx, range: i32) -> bool {
+    let (x, y) = g.map.xy(here);
+    for dx in -range..=range {
+        for dy in -range..=range {
+            let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
+            if !g.plot_is_visible(q, team) {
+                continue;
+            }
+            if g.map.plots[q].units.iter().any(|&o| g.unit_is_warship(o) && g.unit_is_enemy(o, Some(team), Some(q)) && !g.unit_is_invisible(o, team, false)) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+/// The stranded army's way home in boats (section 8): where it would ask for a ship, it walks
+/// home over water instead when a path in boats over water in our range reaches a city of ours and
+/// no enemy warship we see is within 3 plots of it. True if it set out.
+pub(crate) fn walk_home_in_boats(g: &mut Game, grp: GroupId, here: PlotIdx) -> bool {
+    let Some(head) = g.group_get_head_unit(grp) else { return false };
+    let p = g.units[head].owner;
+    let team = g.unit_get_team(head);
+    if enemy_warship_near(g, team, here, 3) {
+        return false;
+    }
+    let Some(home) = boats_home(g, p, grp, here) else { return false };
+    crate::trace!(g, p, "army {:?} ({} units) at {:?} goes home in boats to {:?}", grp, g.groups[grp].units.len(), g.map.xy(here), g.map.xy(home));
+    g.tel_decision(p, "supply", "boats_home", "overseas", 1, String::new);
+    move_to(g, grp, home, MOVE_BOATS | MOVE_IGNORE_DANGER);
+    if alive(g, grp) && g.group_ready_to_move(grp, true) {
+        skip(g, grp);
+    }
+    true
+}
+
+/// A land group of ours in boats (section 8): it goes on to the nearest city of ours it reaches in
+/// boats (`MOVE_BOATS`), else waits. True: its turn is over.
+pub(crate) fn in_boats(g: &mut Game, v: &View, grp: GroupId, u: UnitId) -> bool {
+    if v.barbarian || !g.unit_is_in_boats(u) {
+        return false;
+    }
+    let here = g.unit_plot(u);
+    crate::trace!(g, v.p, "group {:?} ({} units) in boats at {:?}", grp, g.groups[grp].units.len(), g.map.xy(here));
+    match boats_home(g, v.p, grp, here) {
+        Some(home) => {
+            move_to(g, grp, home, MOVE_BOATS | MOVE_IGNORE_DANGER);
+            if alive(g, grp) && g.group_ready_to_move(grp, true) {
+                skip(g, grp);
+            }
+        }
+        None => skip(g, grp),
+    }
+    true
+}

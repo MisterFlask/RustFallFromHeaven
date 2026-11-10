@@ -459,6 +459,8 @@ impl Game {
         if old_terrain == Some(terrain) {
             return;
         }
+        // Passability changes the range fields at sea (docs/NAVAL.md).
+        self.sea_range_invalidate();
 
         let update_sight = match old_terrain {
             Some(old) => {
@@ -627,6 +629,8 @@ impl Game {
         if old_feature == feature {
             return;
         }
+        // Passability changes the range fields at sea (docs/NAVAL.md).
+        self.sea_range_invalidate();
 
         let update_sight = match (old_feature, feature) {
             (Some(old), Some(new)) => d.features[old].see_through_change != d.features[new].see_through_change,

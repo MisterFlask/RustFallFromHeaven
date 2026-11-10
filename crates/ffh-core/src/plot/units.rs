@@ -62,7 +62,8 @@ impl Game {
             let mut erased = false;
 
             if self.units.contains(loop_unit) && self.unit_at_plot(loop_unit, p) && !self.unit_is_cargo(loop_unit) && !self.unit_is_combat(loop_unit) {
-                if !self.plot_is_valid_domain_for_location(p, loop_unit)
+                // This game's (docs/NAVAL.md, 3.2): a unit in boats may stay on water.
+                if (!self.plot_is_valid_domain_for_location(p, loop_unit) && !self.unit_in_boats_at(loop_unit, p))
                     || !self.unit_can_enter_area(loop_unit, self.plot_get_team(p), self.map.plots[p].area, false)
                 {
                     if !self.unit_jump_to_nearest_valid_plot(loop_unit) {
@@ -403,6 +404,13 @@ impl Game {
 
         if self.unit_is_human(unit) && !self.map.plots[p].revealed[self.unit_get_team(unit)] {
             return self.unit_max_moves(unit);
+        }
+
+        // This game's (docs/NAVAL.md, 3.2): a water plot entered in boats (no ship of its team with
+        // room there) costs the unit's turn split `EMBARKED_MOVES` ways (from land or water;
+        // landing ends its moves below, as from a ship).
+        if self.unit_needs_boats(unit, p) && !self.unit_can_load(unit, p) {
+            return self.unit_embarked_step_cost(unit);
         }
 
         if !self.plot_is_valid_domain_for_location(from_plot, unit) {

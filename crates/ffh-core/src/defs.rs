@@ -8,6 +8,10 @@ pub const MOVE_DECLARE_WAR: i32 = 0x0000_0008;
 pub const MOVE_DIRECT_ATTACK: i32 = 0x0000_0010;
 pub const MOVE_THROUGH_ENEMY: i32 = 0x0000_0020;
 pub const MOVE_MAX_MOVES: i32 = 0x0000_0040;
+/// This game's (docs/NAVAL.md, section 8): an AI-controlled land group's path may cross water in
+/// boats (water in its team's range only). Without it, the path finder keeps AI land groups off
+/// water they would be at sea on; human groups' paths cross water either way.
+pub const MOVE_BOATS: i32 = 0x0000_0080;
 
 /// C++ RANDPLOT_* flags (`CvMap::syncRandPlot`).
 pub const RANDPLOT_LAND: i32 = 0x0000_0001;

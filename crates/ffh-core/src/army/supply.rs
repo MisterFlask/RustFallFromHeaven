@@ -36,6 +36,9 @@ pub enum SupplySource {
     /// A ship of the army's owner; the line ends on a land plot next to it (or on the ship's
     /// plot itself for an army aboard it).
     Ship(UnitId),
+    /// An army in boats on water in its team's range (docs/NAVAL.md, 3.3): the line is its own
+    /// plot; the city is the nearest port by the range field (`Game::plot_sea_port`).
+    Sea(CityId),
 }
 
 /// A supply line ([`Game::plot_supply_line`]).
@@ -316,6 +319,19 @@ impl Game {
         if let Some(&s) = ships.get(&start) {
             return Some(SupplyLine { path: vec![start], cost: 0, source: SupplySource::Ship(s) });
         }
+        // At sea, in boats (docs/NAVAL.md, 3.3): supplied while its plot is in range, from the
+        // nearest port; cut out of range. (Both views read the range field as it is: the ports
+        // are cities of the army's own side.)
+        if self.supply_at_sea(team, start) {
+            if self.team_sea_exempt(team) {
+                return None;
+            }
+            let in_range = self.plot_sea_range(team, start).is_some_and(|d| d <= self.team_sea_range(team));
+            return match self.plot_sea_port(team, start) {
+                Some(c) if in_range => Some(SupplyLine { path: vec![start], cost: 0, source: SupplySource::Sea(c) }),
+                _ => None,
+            };
+        }
         if let Some(source) = self.supply_source_at(team, start, &ships, view) {
             return Some(SupplyLine { path: vec![start], cost: 0, source });
         }
@@ -400,6 +416,12 @@ impl Game {
         }
         let (cost, _, q, source) = found?;
         Some(SupplyLine { path: path_of(&labels, q), cost, source })
+    }
+
+    /// Whether a supply line of `team`'s from `start` is at sea (docs/NAVAL.md, 3.3): a water
+    /// plot that is not walked on as land (a Causeway, a strait for a Ferries holder).
+    fn supply_at_sea(&self, team: TeamId, start: PlotIdx) -> bool {
+        self.plot_is_water(start) && !self.plot_is_land_bridge(start) && !(self.team_strait_crossing(team) && self.plot_is_strait(start))
     }
 
     /// Army `a`'s supply line as it stands now (`None`: cut, or the army is not on the map).

@@ -563,8 +563,9 @@ impl Game {
         let unit_type = self.units[u].unit_type;
         let info = &d.units[unit_type];
 
-        // Supply (docs/SUPPLY.md): a unit of a hungry or starving army does not heal.
-        let unsupplied = self.unit_is_unsupplied(u);
+        // Supply (docs/SUPPLY.md): a unit of a hungry or starving army does not heal; nor does a
+        // unit in boats or at sea out of range (docs/NAVAL.md, 3.1 and 3.2).
+        let unsupplied = self.unit_is_unsupplied(u) || self.unit_plot_opt(u).is_some_and(|p| self.unit_sea_no_heal_at(u, p));
 
         // Card: Pillar of Dawn (docs/CARDS.md): under its owner's Pillar a unit heals fully.
         if !unsupplied && self.units[u].damage > 0 && self.unit_in_pillar_of_dawn(u) {
@@ -583,7 +584,7 @@ impl Game {
                 self.unit_do_heal(u);
             }
 
-            if !self.unit_is_cargo(u) {
+            if !self.unit_is_cargo(u) && !self.unit_is_in_boats(u) {
                 self.unit_change_fortify_turns(u, 1);
             }
         }
@@ -936,7 +937,8 @@ impl Game {
                             }
 
                             // FfH: Modified by Kael 12/30/2207 (equipment is always captured)
-                            if (!self.unit_is_no_capture(u) || loop_info.equipment_promotion.is_some()) && !self.unit_is_hidden_nationality(loop_unit) {
+                            // This game's (docs/NAVAL.md, 3.2): a unit in boats is not captured.
+                            if (!self.unit_is_no_capture(u) || loop_info.equipment_promotion.is_some()) && !self.unit_is_hidden_nationality(loop_unit) && !self.unit_is_in_boats(loop_unit) {
                                 self.unit_set_capturing_player(loop_unit, Some(owner));
                             }
 

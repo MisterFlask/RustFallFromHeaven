@@ -105,19 +105,21 @@ fn source_name(g: &Game, s: SupplySource) -> String {
     match s {
         SupplySource::City(c) => city_name(g, c),
         SupplySource::Ship(u) => format!("a {}", crate::names::display(g.d, g.units[u].unit_type)),
+        // At sea, in range of a port (docs/NAVAL.md, 3.3).
+        SupplySource::Sea(c) => city_name(g, c),
     }
 }
 
 /// A supply line (docs/SUPPLY.md) as the human's view has it: `path` (`[x, y]` from the army's
 /// plot to the source's), `cost`, `budget` (`SUPPLY_LINE_BUDGET`), `source` (its name) and
-/// `source_kind` (`city` or `ship`).
+/// `source_kind` (`city`, `ship`, or `sea`: an army in boats in range of the port `source`).
 pub fn supply_line_json(g: &Game, line: &SupplyLine) -> Json {
     crate::jobj! {
         "path" => Json::Arr(line.path.iter().map(|&q| { let (x, y) = g.map.xy(q); crate::jarr![x, y] }).collect()),
         "cost" => line.cost,
         "budget" => g.d.defines.supply_line_budget,
         "source" => source_name(g, line.source),
-        "source_kind" => match line.source { SupplySource::City(_) => "city", SupplySource::Ship(_) => "ship" },
+        "source_kind" => match line.source { SupplySource::City(_) => "city", SupplySource::Ship(_) => "ship", SupplySource::Sea(_) => "sea" },
     }
 }
 

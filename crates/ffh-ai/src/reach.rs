@@ -87,14 +87,15 @@ impl Flood {
         enemy
     }
 
-    /// `g.unit_can_move_into(u, q, false, false, false)`, computed once per plot and run.
+    /// `g.unit_can_move_into(u, q, false, false, false)` and not `naval::sea_blocked` (no boats
+    /// for a land unit, no water out of range for a ship), computed once per plot and run.
     #[inline]
     fn can_enter(&mut self, g: &Game, u: UnitId, q: PlotIdx) -> bool {
         let m = self.memo_get(q);
         if m & ENTER_KNOWN != 0 {
             return m & ENTER != 0;
         }
-        let enter = g.unit_can_move_into(u, q, false, false, false);
+        let enter = g.unit_can_move_into(u, q, false, false, false) && !crate::naval::sea_blocked(g, u, q);
         self.memo_set(q, m | ENTER_KNOWN | if enter { ENTER } else { 0 });
         enter
     }

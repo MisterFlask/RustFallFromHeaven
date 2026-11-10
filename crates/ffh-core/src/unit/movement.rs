@@ -323,11 +323,12 @@ impl Game {
                     && !self.unit_walks_on_water(u, plot)
                 {
                     if !self.plot_is_city(plot, false, None) || 0 == d.defines.land_units_can_attack_water_cities {
-                        if ignore_load
-                            || !self.unit_is_human(u)
-                            || self.plot_is_water(self.unit_plot(u))
-                            || !self.unit_can_load(u, plot)
-                        {
+                        let aboard = !ignore_load && self.unit_is_human(u) && !self.plot_is_water(self.unit_plot(u)) && self.unit_can_load(u, plot);
+                        // This game's (docs/NAVAL.md, 3.2): a player's land unit steps onto water
+                        // in boats (or aboard a ship of its team with room there); it never
+                        // attacks onto water.
+                        let boats = !attack && self.unit_can_use_boats(u);
+                        if !aboard && !boats {
                             return false;
                         }
                     }
@@ -340,6 +341,14 @@ impl Game {
 
             // (C++ FAssert(false))
             _ => {}
+        }
+
+        // This game's (docs/NAVAL.md, 3.2): a unit in boats does not attack, and enters no plot
+        // holding an enemy unit it sees or an enemy city, on water or on land.
+        if domain == DomainType::DOMAIN_LAND && self.unit_is_in_boats(u) {
+            if attack || self.plot_is_enemy_city(plot, u) || self.plot_is_visible_enemy_unit_for_unit(plot, u) {
+                return false;
+            }
         }
 
         //FfH: Modified by Kael 08/04/2007 (So owned animals dont have limited movement)
@@ -956,6 +965,14 @@ impl Game {
         // Card: Mountaineering (docs/CARDS.md): sight 3 on a peak.
         if self.unit_on_climbed_peak(u, plot) {
             range = range.max(crate::ffh::cards::map_rules::PEAK_SIGHT);
+        }
+        // This game's (docs/NAVAL.md, 3.2): a land unit on water (in boats, carried, or on a
+        // Causeway; not one that flies or walks on water) sees 1 plot. (Not by the cargo state or
+        // the plot's improvement: a unit's sight must not change while it stands still, or its
+        // plot's sight counts would not be undone; `unit_change_flying` and
+        // `unit_change_water_walking` re-apply its sight.)
+        if self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND && self.plot_is_water(plot) && !self.unit_can_move_all_terrain(u) {
+            range = range.min(self.d.defines.unit_visibility_range.max(1));
         }
         range
         //FfH: End Modify

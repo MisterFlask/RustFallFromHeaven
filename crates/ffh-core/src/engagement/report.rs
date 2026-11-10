@@ -365,6 +365,8 @@ pub enum TermSource {
     Improvement(ImprovementType),
     /// FfH's range defense of friendly improvements near a plot without a city.
     RangeDefense,
+    /// This game's: a warship's wear at sea (docs/NAVAL.md, 3.4).
+    SeaWear,
 }
 
 /// A pair that hit (DESIGN `Pair`).

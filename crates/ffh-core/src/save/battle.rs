@@ -84,6 +84,7 @@ persist_enum!(TermSource {
     28 => UnitHillsAttack,
     29 => Improvement(i),
     30 => RangeDefense,
+    31 => SeaWear,
 });
 persist_struct!(LogPair { h, t, a_x100, dv_x100, mean, ma_x100, md_x100, spell_pct, magic_mean, a_extra, dv_extra });
 
@@ -235,6 +236,7 @@ mod tests {
             TermSource::UnitHillsAttack,
             TermSource::Improvement(ImprovementType(2)),
             TermSource::RangeDefense,
+            TermSource::SeaWear,
         ]
         .into_iter()
         .enumerate()

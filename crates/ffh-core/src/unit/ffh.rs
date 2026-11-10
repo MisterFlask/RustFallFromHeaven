@@ -197,6 +197,10 @@ impl Game {
         if self.unit_get_immobile_timer(u) > 0 {
             return false;
         }
+        // This game's (docs/NAVAL.md, 3.2): no casting in boats.
+        if self.unit_is_in_boats(u) {
+            return false;
+        }
         // This game's: a battle-only spell (Fireball) is its caster's spell in a formation battle,
         // never cast on the map (docs/ENGAGEMENTS.md).
         if info.battle_only {
@@ -1501,7 +1505,8 @@ impl Game {
     /// C++ `CvUnit::changeFlying` (CvUnit.cpp:15378-15384).
     pub fn unit_change_flying(&mut self, u: UnitId, change: i32) {
         if change != 0 {
-            self.units[u].flying += change;
+            // Its sight on water depends on it (docs/NAVAL.md, 3.2).
+            self.unit_resight(u, |g| g.units[u].flying += change);
         }
     }
 
@@ -1718,7 +1723,8 @@ impl Game {
     /// C++ `CvUnit::changeWaterWalking` (CvUnit.cpp:15595-15601).
     pub fn unit_change_water_walking(&mut self, u: UnitId, change: i32) {
         if change != 0 {
-            self.units[u].water_walking += change;
+            // Its sight on water depends on it (docs/NAVAL.md, 3.2).
+            self.unit_resight(u, |g| g.units[u].water_walking += change);
         }
     }
 
@@ -1794,7 +1800,8 @@ impl Game {
 
     /// C++ `CvUnit::getWithdrawlProbDefensive` (CvUnit.cpp:15724-15732).
     pub fn unit_get_withdrawl_prob_defensive(&self, u: UnitId) -> i32 {
-        if self.unit_get_immobile_timer(u) > 0 {
+        // This game's (docs/NAVAL.md, 3.2): no withdrawal in boats.
+        if self.unit_get_immobile_timer(u) > 0 || self.unit_is_in_boats(u) {
             return 0;
         }
         let unit = &self.units[u];
@@ -2252,6 +2259,8 @@ mod tests {
         let area = g.map_add_area(false);
         for p in g.map.plot_ids() {
             g.map.plots[p].area = Some(area);
+            // Land (a land unit on water is in boats: docs/NAVAL.md).
+            g.map.plots[p].plot_type = PlotType::PLOT_LAND;
         }
         for p in g.player_ids() {
             g.players[p] = Player::new(d, p, &g.setup.players[p.idx()], num_players, num_teams);

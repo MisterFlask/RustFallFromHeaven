@@ -933,6 +933,9 @@ impl Game {
         let ai_control = self.group_ai_is_controlled(group);
 
         if ai_control {
+            if self.path_ai_sea_blocked(group, to_plot, finder.info) {
+                return false;
+            }
             if finder.info & MOVE_IGNORE_DANGER == 0 && !self.group_can_fight(group) && !self.group_always_invisible(group) {
                 let head_owner = self.group_get_head_owner(group).expect("pathDestValid: group without a head unit");
                 if ai_get_plot_danger(self, head_owner, to_plot, -1, true) > 0 {
@@ -945,7 +948,10 @@ impl Game {
                 if self.map.plots[to_plot].area != group_area {
                     // Card: Causeway, Ferries (docs/CARDS.md): land groups may walk to another
                     // land area over the water they walk on.
-                    let over_water = self.map_has_land_bridges() || self.group_get_head_team(group).is_some_and(|t| self.team_strait_crossing(t));
+                    // Boats (docs/NAVAL.md, section 8): with `MOVE_BOATS`, any land area.
+                    let over_water = finder.info & MOVE_BOATS != 0
+                        || self.map_has_land_bridges()
+                        || self.group_get_head_team(group).is_some_and(|t| self.team_strait_crossing(t));
                     if !over_water && !group_area.is_some_and(|a| self.plot_is_adjacent_to_area(to_plot, a)) {
                         return false;
                     }
@@ -986,6 +992,30 @@ impl Game {
         }
 
         true
+    }
+
+    /// This game's, an AI-side restriction (docs/NAVAL.md, section 8): whether an AI-controlled
+    /// group's path may not use `plot`. A sea group in range: water out of its team's range (a
+    /// group already out of range may cross any water, to come back). A land group:
+    /// water any of its units would be at sea on (`unit_needs_boats`), unless the search allows
+    /// boats (`MOVE_BOATS`), and then only water in its team's range or a plot where every such
+    /// unit would board a ship of its team with room (boarding, not boats).
+    pub fn path_ai_sea_blocked(&self, group: GroupId, plot: PlotIdx, flags: i32) -> bool {
+        if !self.plot_is_water(plot) {
+            return false;
+        }
+        let Some(team) = self.group_get_head_team(group) else { return false };
+        match self.group_get_domain_type(group) {
+            Some(DomainType::DOMAIN_SEA) => !self.plot_in_sea_range(team, plot) && self.group_plot(group).is_some_and(|at| self.plot_in_sea_range(team, at)),
+            Some(DomainType::DOMAIN_LAND) => {
+                let units = &self.groups[group].units;
+                let at_sea = units.iter().any(|&u| self.unit_needs_boats(u, plot));
+                at_sea
+                    && (flags & MOVE_BOATS == 0
+                        || (!self.plot_in_sea_range(team, plot) && !units.iter().all(|&u| !self.unit_needs_boats(u, plot) || self.unit_can_load(u, plot))))
+            }
+            _ => false,
+        }
     }
 
     /// C++ `pathHeuristic`.
@@ -1181,6 +1211,9 @@ impl Game {
         let ai_control = self.group_ai_is_controlled(group);
 
         if ai_control {
+            if self.path_ai_sea_blocked(group, from_plot, finder.info) {
+                return false;
+            }
             if (parent.data2 > 1 || parent.data1 == 0)
                 && finder.info & MOVE_IGNORE_DANGER == 0 && !self.group_can_fight(group) && !self.group_always_invisible(group)
             {

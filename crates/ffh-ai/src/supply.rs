@@ -20,10 +20,12 @@
 //!   team on a sea one of our ports is on: open borders, a vassal or its master) and waits there for
 //!   a ship (the group's mission AI `MISSIONAI_PICKUP` on its plot: the request, as a settler waiting
 //!   in port asks for one); a transport of ours on its plot is boarded, and with nothing left to
-//!   fight on that landmass it is boarded even while the ship supplies the army. Not a coast plot:
-//!   the rules let only a human's land units step onto a ship at sea (`unit_can_move_into`), so an
-//!   AI army boards only in a city. The transport's side is `naval::pickup`; a port of ours with no
-//!   transport builds one (`production::decide`, `army_ship`).
+//!   fight on that landmass it is boarded even while the ship supplies the army, or beside it at
+//!   sea (a land unit steps onto water, docs/NAVAL.md, 3.2). Before asking for a ship, an army goes
+//!   home in boats when the way over water is in our range and no enemy warship we see is within 3
+//!   plots (`naval::walk_home_in_boats`, docs/NAVAL.md, section 8). The transport's side is
+//!   `naval::pickup`; a port of ours with no transport builds one (`production::decide`,
+//!   `army_ship`).
 //! - **The last resort**: an army that has starved for [`STRANDED_TURNS`] of its owner's turns in a
 //!   row with no path over land to a city of ours, or overseas with no transport of ours on its way
 //!   to it, is disbanded unit by unit (`unit_scrap`; heroes and units the rules will not scrap
@@ -245,8 +247,8 @@ fn our_transport(g: &Game, p: PlayerId, t: UnitId) -> bool {
 
 /// Board a transport of ours: one on the group's own plot (a city) takes every unit it has room
 /// for (as an army boards in port, `naval::board`); else the stack steps onto one on a water plot
-/// next to it, where the rules allow that (they do not for an AI's land units: `unit_can_move_into`
-/// lets only a human's land unit step aboard at sea). True if it did.
+/// next to it (in our range: units the ship has no room for are left in boats there, and go home
+/// in boats, `naval::in_boats`). True if it did.
 fn board(g: &mut Game, grp: GroupId, u: UnitId, here: PlotIdx, why: &'static str) -> bool {
     let p = g.units[u].owner;
     if let Some(t) = g.map.plots[here].units.iter().copied().find(|&t| our_transport(g, p, t) && g.unit_can_load_unit(u, t, here)) {
@@ -269,7 +271,8 @@ fn board(g: &mut Game, grp: GroupId, u: UnitId, here: PlotIdx, why: &'static str
     let Some(q) = next else { return false };
     crate::trace!(g, p, "army {:?} ({} units) boards a ship at {:?} from {:?} ({})", grp, g.groups[grp].units.len(), g.map.xy(q), g.map.xy(here), why);
     g.tel_decision(p, "supply", "pickup_board", why, 1, String::new);
-    move_to(g, grp, q, MOVE_IGNORE_DANGER);
+    // (Onto the ship's plot at sea: `MOVE_BOATS` lets the AI's path finder take it there.)
+    move_to(g, grp, q, MOVE_IGNORE_DANGER | MOVE_BOATS);
     if alive(g, grp) && g.group_ready_to_move(grp, true) {
         skip(g, grp);
     }
@@ -294,6 +297,11 @@ fn pickup_point(g: &Game, u: UnitId, q: PlotIdx, seas: &[AreaId]) -> bool {
 fn stranded_overseas(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, a: ArmyId, here: PlotIdx, state: SupplyState) -> bool {
     let p = v.p;
     if board(g, grp, u, here, "cut") {
+        return true;
+    }
+    // In place of asking for a ship (docs/NAVAL.md, section 8): home in boats, over water in our
+    // range, when no enemy warship we see is within 3 plots.
+    if crate::naval::walk_home_in_boats(g, grp, here) {
         return true;
     }
     if starved_long(g, a) && !crate::naval::transport_coming(g, p, here) && disband(g, grp, a, "overseas") {
@@ -546,8 +554,20 @@ mod tests {
         g.units[u].group.unwrap()
     }
 
+    /// A barbarian Galley (an enemy warship) on (12, 2), seen by player 0.
+    fn enemy_warship(g: &mut Game) -> UnitId {
+        let barbarian = g.barbarian_player();
+        let t = g.d.t::<UnitType>("UNIT_GALLEY");
+        let s = g.player_init_unit(barbarian, t, 12, 2, None, None);
+        let (q, t0) = (g.map.plot_xy(12, 2).unwrap(), g.players[PlayerId(0)].team);
+        g.plot_change_visibility_count(q, t0, 1, None, false);
+        assert!(g.plot_is_visible(q, t0));
+        s
+    }
+
     /// Stranded overseas: a cut army walks to the port it may enter nearest our city and asks for
-    /// a ship there; an empty transport sails for it and waits in the port; the army boards it.
+    /// a ship there (an enemy warship near: no way home in boats); an empty transport sails for it
+    /// and waits in the port; the army boards it.
     #[test]
     fn an_army_cut_overseas_waits_in_a_port_and_boards_a_ship() {
         let (mut g, _a, grp) = overseas_game(3, 2);
@@ -558,12 +578,14 @@ mod tests {
         assert!(fall_back(&mut g, &mut v, grp, u), "it heads for the port");
         assert!(g.map.xy(g.unit_plot(u)).0 < 15, "west, toward the port: now at {:?}", g.map.xy(g.unit_plot(u)));
         assert!(crate::naval::armies_waiting(&g, p0).is_empty(), "not there yet");
-        // In the port, it waits for a ship.
+        // In the port, with an enemy warship near, it waits for a ship.
         let grp = set_army_xy(&mut g, grp, 11, 5);
+        let raider = enemy_warship(&mut g);
         let mut v = analyzed(&g);
         assert!(fall_back(&mut g, &mut v, grp, u));
         assert_eq!(g.unit_plot(u), port, "it stays in the port");
         assert_eq!(crate::naval::armies_waiting(&g, p0), vec![port], "the request");
+        g.unit_kill(raider, false, None);
         // An empty transport at (1, 5), off our city, sails for it.
         let (t, tg) = ship(&mut g, 1, 5);
         assert!(!crate::naval::transport_coming(&g, p0, port));
@@ -579,8 +601,9 @@ mod tests {
         assert!(g.groups[grp].units.iter().all(|&o| g.unit_is_cargo(o)), "all aboard");
     }
 
-    /// No port it may enter on that landmass (an AI's land unit cannot step aboard at sea): the
-    /// army asks for nothing, and an empty transport is not sent.
+    /// No port it may enter on that landmass, and the water home out of our range (no way home in
+    /// boats): the army asks for nothing, and an empty transport is not sent. A ship of ours beside
+    /// it at sea: it steps aboard (docs/NAVAL.md, 3.2).
     #[test]
     fn an_army_overseas_with_no_port_asks_for_no_ship() {
         let (mut g, _a, grp) = overseas_game(3, 2);
@@ -588,13 +611,30 @@ mod tests {
         let mut v = analyzed(&g);
         assert!(!fall_back(&mut g, &mut v, grp, u));
         assert!(crate::naval::armies_waiting(&g, PlayerId(0)).is_empty());
-        // A ship beside it: the rules do not let an AI's land unit step aboard at sea.
+        // A ship beside it, out of range: it boards it at sea.
         let grp = set_army_xy(&mut g, grp, 11, 4);
         ship(&mut g, 10, 4);
-        assert!(!g.unit_can_move_into(u, g.map.plot_xy(10, 4).unwrap(), false, false, false));
+        let sea = g.map.plot_xy(10, 4).unwrap();
+        assert!(!g.plot_in_sea_range(g.unit_get_team(u), sea));
+        assert!(g.unit_can_move_into(u, sea, false, false, false));
         let mut v = analyzed(&g);
-        assert!(!fall_back(&mut g, &mut v, grp, u));
-        assert!(!g.unit_is_cargo(u));
+        assert!(fall_back(&mut g, &mut v, grp, u));
+        assert!(g.unit_is_cargo(u), "aboard");
+    }
+
+    /// Stranded overseas with the way home in our range (a port of a team with open borders) and
+    /// no enemy warship near: the army walks home in boats instead of asking for a ship
+    /// (docs/NAVAL.md, section 8).
+    #[test]
+    fn an_army_cut_overseas_walks_home_in_boats() {
+        let (mut g, _a, grp) = overseas_game(3, 2);
+        friendly_port(&mut g);
+        let u = g.groups[grp].units[0];
+        let grp = set_army_xy(&mut g, grp, 11, 5);
+        let mut v = analyzed(&g);
+        assert!(fall_back(&mut g, &mut v, grp, u));
+        assert!(g.unit_is_in_boats(u), "on its way in boats: at {:?}", g.map.xy(g.unit_plot(u)));
+        assert!(crate::naval::armies_waiting(&g, PlayerId(0)).is_empty(), "no ship asked for");
     }
 
     /// A supplied army overseas with nothing to fight there boards the ship in the port it stands
@@ -632,6 +672,8 @@ mod tests {
         let units = g.groups[grp].units.clone();
         let u = units[0];
         let port = friendly_port(&mut g);
+        // An enemy warship near: no way home in boats.
+        enemy_warship(&mut g);
         let mut v = analyzed(&g);
         assert!(fall_back(&mut g, &mut v, grp, u));
         assert!(units.iter().all(|&o| !gone(&g, o)), "one turn short: kept");

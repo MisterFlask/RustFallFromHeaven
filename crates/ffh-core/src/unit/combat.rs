@@ -813,7 +813,8 @@ impl Game {
 
                     if advance {
                         // FfH: Added by Kael 11/14/2007 (equipment is always captured)
-                        if !self.unit_is_no_capture(u) || d.units[defender_type].equipment_promotion.is_some() {
+                        // This game's (docs/NAVAL.md, 3.2): a unit in boats is not captured.
+                        if (!self.unit_is_no_capture(u) || d.units[defender_type].equipment_promotion.is_some()) && !self.unit_is_in_boats(defender) {
                             self.unit_set_capturing_player(defender, Some(owner));
                         }
                     }
@@ -1245,10 +1246,19 @@ impl Game {
         }
         // FfH: End Modify
 
+        // This game's (docs/NAVAL.md, 3.2): in boats (on its own plot, or the plot it defends),
+        // strength `EMBARKED_STRENGTH` with no modifier of any kind.
+        if plot.or(self.unit_plot_opt(u)).is_some_and(|p| self.unit_in_boats_at(u, p)) {
+            log.set(|det| det.base_combat_str = d.defines.embarked_strength);
+            return Some(CombatTerms { base: d.defines.embarked_strength.max(1) * 100, modifier: 0 });
+        }
+
         let team = self.unit_get_team(u);
         let mut modifier = 0;
 
         modifier += term!(log, extra_combat_percent, self.unit_get_extra_combat_percent(u), TermSource::Own);
+        // This game's (docs/NAVAL.md, 3.4): a warship's wear.
+        modifier += log.push(-self.unit_sea_wear_percent(u), || TermSource::SeaWear);
 
         // do modifiers for animals and barbarians (leaving these out for bAttackingUnknownDefender case)
         if let Some(a) = attacker {
@@ -1632,7 +1642,8 @@ impl Game {
 
         // (C++ dereferences `plot()` for a NULL `pPlot`)
         let plot = plot.unwrap_or_else(|| self.unit_plot(u));
-        if !self.plot_is_valid_domain_for_action(plot, u) && self.d.defines.land_units_can_attack_water_cities == 0 {
+        // This game's (docs/NAVAL.md, 3.2): a unit in boats defends (with strength 1).
+        if !self.plot_is_valid_domain_for_action(plot, u) && self.d.defines.land_units_can_attack_water_cities == 0 && !self.unit_in_boats_at(u, plot) {
             return false;
         }
 
@@ -1965,6 +1976,7 @@ impl Game {
 
         for &loop_unit in on_plot {
             if self.units[loop_unit].defensive_strike_chance > 0
+                && !self.unit_is_in_boats(loop_unit)
                 && ov.at_war(self, self.unit_get_team(loop_unit), attacker_team) && (self.unit_is_blitz(loop_unit) || !ov.made_attack(self, loop_unit))
             {
                 let chance = self.units[loop_unit].defensive_strike_chance;
@@ -2691,6 +2703,11 @@ impl Game {
             return false;
         }
 
+        // This game's (docs/NAVAL.md, 3.2): no strike from boats.
+        if self.unit_is_in_boats(u) {
+            return false;
+        }
+
         if self.unit_air_range(u) <= 0 {
             return false;
         }
@@ -2898,6 +2915,8 @@ mod tests {
         let area = g.map_add_area(false);
         for p in g.map.plot_ids() {
             g.map.plots[p].area = Some(area);
+            // Land (a land unit on water is in boats: docs/NAVAL.md).
+            g.map.plots[p].plot_type = PlotType::PLOT_LAND;
         }
         for p in g.player_ids() {
             g.players[p] = Player::new(d, p, &g.setup.players[p.idx()], num_players, num_teams);

@@ -328,6 +328,8 @@ impl Game {
         // This game's supply lines (docs/SUPPLY.md): each army's line is traced before its units
         // heal; a cut line brings Hunger, then Starvation.
         self.player_update_supply(p);
+        // The sea (docs/NAVAL.md, 3.1 and 3.4): wear, and attrition out of range, before healing.
+        self.player_update_sea(p);
 
         // AI: AI_doTurnUnitsPre() (found values, area targets; draws "AI Update Area Targets")
         // -- left to the controller.

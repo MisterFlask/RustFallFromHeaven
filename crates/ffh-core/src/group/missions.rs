@@ -360,6 +360,20 @@ impl Game {
         };
 
         for &loop_unit in &self.groups[g].units {
+            // This game's (docs/NAVAL.md, 3.2): in boats a unit moves, waits or sleeps; nothing
+            // else.
+            if self.unit_in_boats_at(loop_unit, plot)
+                && !matches!(
+                    mission,
+                    MissionType::MISSION_MOVE_TO
+                        | MissionType::MISSION_MOVE_TO_UNIT
+                        | MissionType::MISSION_SKIP
+                        | MissionType::MISSION_SLEEP
+                        | MissionType::MISSION_SENTRY
+                )
+            {
+                continue;
+            }
             match mission {
                 MissionType::MISSION_MOVE_TO => {
                     if !self.plot_at(plot, data1, data2) {

@@ -122,7 +122,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `Governor` has one trait at most (`trait_`) and always a city; gone: `City::rule_changed_turn`,
 ///   `governor_penalty_turns`, `Governor::profile`, `traits`, `origin`, the bench.
 /// - 31: no eras: gone are `Player::current_era` and `GameSetup::era`.
-pub const FORMAT_VERSION: u32 = 31;
+/// - 32: the sea, phase 1 (docs/NAVAL.md): `Unit::sea_turns`, `sea_out_of_range`.
+pub const FORMAT_VERSION: u32 = 32;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -369,7 +370,10 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
         path_finder: _,
         step_finder: _,
         border_finder: _,
+        sea_range,
     } = g;
+    // The range fields at sea are per team and player (naval.rs): computed again.
+    *sea_range.get_mut() = crate::naval::SeaRangeCache::new();
     debug_assert_eq!((players.len(), teams.len(), setup.players.len()), (slots.players, slots.teams, slots.players));
     setup.grow(slots);
     map.grow(slots);
@@ -609,6 +613,8 @@ fn write_game(g: &Game, w: &mut Writer) {
         path_finder: _,
         step_finder: _,
         border_finder: _,
+        // Derived from the map, checked on every read (naval.rs): not saved.
+        sea_range: _,
     } = g;
     setup.write(w);
     map.write(w);
@@ -840,6 +846,7 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         path_finder: RefCell::new(PathFinder::new(FinderKind::Path)),
         step_finder: RefCell::new(PathFinder::new(FinderKind::Step)),
         border_finder: RefCell::new(PathFinder::new(FinderKind::Border)),
+        sea_range: crate::naval::new_cache(),
     };
     if g.players.is_empty() || g.teams.len() != g.players.len() {
         return Err(LoadError::Corrupt(format!("{} players and {} teams", g.players.len(), g.teams.len())));
