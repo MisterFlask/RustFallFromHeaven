@@ -548,11 +548,11 @@ pub(crate) fn attack_adjacent(g: &mut Game, v: &View, grp: GroupId, u: UnitId, m
             best = Some((q, score));
         }
     }
-    let _ = v;
     if let Some((q, score)) = best {
         if g.telemetry.on() {
             let odds = score - if g.map.plots[q].plot_city.is_some() { 100 } else { 0 };
             crate::predict::attack(g, g.units[u].owner, u, q, odds, "adjacent");
+            crate::predict::attack2(g, Some(&v.forecasts), g.units[u].owner, u, q, "adjacent");
         }
         move_to(g, grp, q, MOVE_DIRECT_ATTACK);
         true

@@ -39,7 +39,7 @@ pub use more_cards::SentinelSource;
 pub use engage::{damage_from_hp, hp_from_damage, BattleEffect, EngageOutcome};
 pub use formation::{BattleRng, FighterIdx, Ground, GroundRule, Pair, Side};
 pub use pick::WarTest;
-pub use preview::{EngagePreview, Forecast, PreviewFighter, PreviewInput, PreviewSentinel, PreviewSummon};
+pub use preview::{EngagePreview, Forecast, ForecastSight, ForecastTurn, PreviewFighter, PreviewInput, PreviewSentinel, PreviewSummon};
 pub use report::EngageResult;
 pub use slots::Slots;
 pub use stats::HitCtx;

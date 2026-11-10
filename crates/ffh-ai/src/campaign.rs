@@ -690,6 +690,8 @@ fn build_op(g: &Game, v: &mut View, cand: Cand, need: i32, groups: Vec<(i32, Gro
                     .end()
             },
         );
+        // The rules' forecast of the same ring (`forecast.rs`), recorded beside it.
+        crate::predict::city2(g, Some(&v.forecasts), "assault2", p, cand.city, &adj, ASSAULT_HORIZON, strike_now);
     }
     let rally = g.players[p].cities.iter().copied().filter(|&c| g.map.plots[g.city_plot(c)].area == area).min_by_key(|&c| (g.plot_distance(tx, ty, g.cities[c].x, g.cities[c].y), c)).map(|c| g.city_plot(c));
     let reference = committed.iter().find_map(|&grp| g.group_get_head_unit(grp));
@@ -1152,6 +1154,7 @@ pub(crate) fn strike(g: &mut Game, v: &mut View, op: &Op) {
                 Prediction::new("strike", Outcome::CityCapturedBy { city: op.city, team }, HORIZON_THIS_TURN, s.p_fall / 10).score(s.hp_left as i64).acted(go),
                 || Obj::new().b("vs_civ", op.civ).b("covers", takes).b("probe", op.probe).i("n_def", n_def as i64).i("n_att", n_att as i64).i("best", s.best as i64).end(),
             );
+            crate::predict::city2(g, Some(&v.forecasts), "strike2", p, op.city, &able, HORIZON_THIS_TURN, go);
         }
         let units = if takes && line.is_empty() { able.clone() } else { line };
         if units.len() < able.len() {
@@ -1206,6 +1209,7 @@ pub(crate) fn strike(g: &mut Game, v: &mut View, op: &Op) {
         if g.telemetry.on() {
             let o = with_odds.iter().find(|&&(x, _)| x == u).map_or(0, |&(_, o)| o);
             crate::predict::attack(g, p, u, tp, o, "strike");
+            crate::predict::attack2(g, Some(&v.forecasts), p, u, tp, "strike");
         }
         let moves = g.unit_moves_left(u);
         g.groups[grp].ai_group_attack = false;

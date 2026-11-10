@@ -390,7 +390,7 @@ pub(crate) fn garrison_holds(g: &Game, p: PlayerId, plot: PlotIdx, threat: i32, 
     if threat > 0 && g.telemetry.on() {
         if let Some(c) = g.map.plots[plot].plot_city.filter(|&c| g.cities[c].owner == p) {
             let pr = Prediction::new("garrison_holds", Outcome::CityLost { city: c }, crate::predict::CITY_LOST_HORIZON, if held { 0 } else { 100 });
-            g.tel_prediction(p, pr.score((defense - threat) as i64).acted(held), || {
+            g.tel_prediction(p, pr.score((defense - threat) as i64).acted(held).per_answer(), || {
                 Obj::new()
                     .i("threat", threat as i64)
                     .i("defense", defense as i64)

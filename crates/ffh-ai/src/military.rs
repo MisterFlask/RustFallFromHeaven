@@ -186,6 +186,9 @@ pub fn assault(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
     let goes = sim.is_some_and(|s| field_go(&s, city, false, false, false));
     if let Some(s) = sim.filter(|_| g.telemetry.on()) {
         crate::predict::field(g, v.p, q, &s, city, goes, "assault");
+        if let Some(h) = g.group_get_head_unit(grp) {
+            crate::predict::field2(g, Some(&v.forecasts), v.p, g.unit_plot(h), q, city, goes, "assault");
+        }
     }
     if goes {
         let atts = attackers(g, grp);
@@ -220,6 +223,7 @@ pub fn assault(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
         if g.telemetry.on() {
             if let (Some(b), Some(s)) = (g.group_ai_get_best_group_attacker(grp, q, false, false, false).0, s) {
                 crate::predict::attack(g, v.p, b, q, s.first, "field");
+                crate::predict::attack2(g, Some(&v.forecasts), v.p, b, q, "field");
             }
         }
         g.groups[grp].ai_group_attack = false;
@@ -429,7 +433,7 @@ pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
         return;
     }
     let op_target = v.campaign.ops.first().map(|o| o.plot);
-    if let Some(q) = best_adjacent(g, grp, here, hurt, op_target) {
+    if let Some(q) = best_adjacent(g, v, grp, here, hurt, op_target) {
         assault(g, v, grp, q);
         finish(g, grp);
         return;
@@ -739,6 +743,7 @@ fn opportune(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
         if !takes {
             if let Some(s) = sim.filter(|_| g.telemetry.on()) {
                 crate::predict::field(g, p, q, &s, true, false, "capture");
+                crate::predict::field2(g, Some(&v.forecasts), p, g.unit_plot(u), q, true, false, "capture");
             }
             continue;
         }
@@ -754,7 +759,7 @@ fn opportune(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
 }
 
 /// Best adjacent enemy plot worth attacking now.
-fn best_adjacent(g: &Game, grp: GroupId, here: PlotIdx, hurt: bool, skip: Option<PlotIdx>) -> Option<PlotIdx> {
+fn best_adjacent(g: &Game, v: &View, grp: GroupId, here: PlotIdx, hurt: bool, skip: Option<PlotIdx>) -> Option<PlotIdx> {
     let head = g.group_get_head_unit(grp)?;
     let (x, y) = g.map.xy(here);
     let mut best: Option<(PlotIdx, i64)> = None;
@@ -773,6 +778,7 @@ fn best_adjacent(g: &Game, grp: GroupId, here: PlotIdx, hurt: bool, skip: Option
         if !ok || precious_holds(g, grp, q).is_some() {
             if g.telemetry.on() {
                 crate::predict::field(g, g.groups[grp].owner, q, &s, city.is_some(), false, "adjacent");
+                crate::predict::field2(g, Some(&v.forecasts), g.groups[grp].owner, here, q, city.is_some(), false, "adjacent");
             }
             continue;
         }

@@ -11,7 +11,8 @@
 //!   unit, plot or teams): the first one made stays until it resolves, so an estimate the AI makes
 //!   again every turn is one sample, not ten. One exception: on the turn it was made, a
 //!   prediction the AI declined to act on gives way to the same one acted on (the decision of that
-//!   turn is the one scored).
+//!   turn is the one scored). A prediction marked [`Prediction::per_answer`] adds its answer's
+//!   tenth of pct to the key: each distinct answer about a subject is its own sample.
 //! - **Resolution:** at the events themselves (a city changes hands, a combat or an engagement is
 //!   fought), at the end of the predicting player's turn (this turn's predictions: a plot cleared,
 //!   an attack that was not fought) and at the end of each game turn (horizons run out, cities
@@ -65,11 +66,13 @@ pub struct Prediction {
     pub score: Option<i64>,
     /// Whether the AI acted on the estimate (attacked, declared war, held a defender back).
     pub acted: Option<bool>,
+    /// De-duplicate by answer too ([`Prediction::per_answer`]).
+    pub per_answer: bool,
 }
 
 impl Prediction {
     pub fn new(kind: &'static str, outcome: Outcome, horizon: i32, pct: i32) -> Prediction {
-        Prediction { kind, outcome, horizon, pct, score: None, acted: None }
+        Prediction { kind, outcome, horizon, pct, score: None, acted: None, per_answer: false }
     }
 
     pub fn score(self, score: i64) -> Prediction {
@@ -78,6 +81,15 @@ impl Prediction {
 
     pub fn acted(self, acted: bool) -> Prediction {
         Prediction { acted: Some(acted), ..self }
+    }
+
+    /// The answer is part of the de-duplication key: one pending prediction per player, kind,
+    /// subject and tenth of `pct` (0-9, 10-19, .., 90-100), so a state estimator that changes its
+    /// answer about the same subject (a city judged safe at turn t, in peril at t+3) has each
+    /// distinct answer scored on its own horizon, from the turn it was first given. For yes/no
+    /// state estimators (`peril`, `garrison_holds`, `sortie`) and the defensive forecast.
+    pub fn per_answer(self) -> Prediction {
+        Prediction { per_answer: true, ..self }
     }
 }
 
@@ -114,7 +126,8 @@ struct Stat {
     bins: [[i64; 2]; 10],
 }
 
-type Key = (PlayerId, &'static str, Subject);
+/// Player, kind, subject and (a [`Prediction::per_answer`] prediction) the answer's bin, else -1.
+type Key = (PlayerId, &'static str, Subject, i8);
 
 #[derive(Default)]
 pub(super) struct Ledger {
@@ -130,7 +143,7 @@ impl Ledger {
     /// bins, open}}}`.
     pub(super) fn json(&self) -> String {
         let mut open: BTreeMap<(PlayerId, &'static str), i64> = BTreeMap::new();
-        for &(p, kind, _) in self.pending.keys() {
+        for &(p, kind, _, _) in self.pending.keys() {
             *open.entry((p, kind)).or_insert(0) += 1;
         }
         let mut keys: Vec<(PlayerId, &'static str)> = self.stats.keys().copied().collect();
@@ -163,7 +176,7 @@ impl Tel {
     /// Resolves the pending prediction `key` (if still pending): its event and its aggregates.
     fn resolve(&mut self, key: &Key, verdict: Verdict, turn: i32, civ: &str) {
         let Some(pd) = self.ledger.pending.remove(key) else { return };
-        let (p, kind, _) = *key;
+        let (p, kind, _, _) = *key;
         let st = self.ledger.stats.entry((p, kind)).or_default();
         match verdict {
             None => st.void += 1,
@@ -231,7 +244,8 @@ impl Game {
             Outcome::AnyCityCapturedFrom { team, victim } => Subject::AnyCityCapturedFrom { team, victim },
         };
         let turn = self.game_turn();
-        let key: Key = (p, pr.kind, subject);
+        let bin = if pr.per_answer { (pr.pct.clamp(0, 100) / 10).min(9) as i8 } else { -1 };
+        let key: Key = (p, pr.kind, subject, bin);
         let keep = self.telemetry.with(|t| match t.ledger.pending.get(&key) {
             None => true,
             // A same-turn prediction declined gives way to the same one acted on.
