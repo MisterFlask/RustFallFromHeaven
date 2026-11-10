@@ -594,7 +594,7 @@ impl Game {
         let mut temp_maintenance = std::cmp::min(worst_city_maintenance, best_capital_maintenance);
 
         // FfH: Added by Kael 11/18/2008
-        if city.settlement || self.is_option(GameOptionType::GAMEOPTION_NO_MAINTENANCE) {
+        if city.settlement {
             temp_maintenance = 0;
         }
         // FfH: End Add
@@ -639,7 +639,7 @@ impl Game {
         num_cities_maintenance /= 100;
 
         // FfH: Added by Kael 11/18/2008
-        if self.cities[c].settlement || self.is_option(GameOptionType::GAMEOPTION_NO_MAINTENANCE) {
+        if self.cities[c].settlement {
             num_cities_maintenance = 0;
         }
         // FfH: End Add

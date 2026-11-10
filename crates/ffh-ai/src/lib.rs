@@ -297,10 +297,6 @@ impl Controller for Ai {
         council::diplo_vote(g, p, vote, source)
     }
 
-    fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {
-        g.players[p].personality_type.and_then(|l| g.d.leader_heads[l].favorite_religion)
-    }
-
     fn crusade_pledge(&self, g: &Game, p: PlayerId, c: ffh_core::crusade::CrusadeId) -> Option<ffh_core::crusade::Pledge> {
         crusade::pledge(g, p, c)
     }

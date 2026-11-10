@@ -636,18 +636,11 @@ impl Game {
         self.setup.victories[victory]
     }
 
-    /// C++ `isOption(eIndex)`. FfH locks three options: NO_ESPIONAGE is always on,
-    /// RANDOM_PERSONALITIES and PICK_RELIGION always off. (`setOption` = `self.setup.options[o] = b`.)
+    /// C++ `isOption(eIndex)`. FfH locks NO_ESPIONAGE on. (`setOption` = `self.setup.options[o] = b`.)
     pub fn is_option(&self, option: GameOptionType) -> bool {
         // FfH: Added by Kael 07/12/2008 (locked options)
         if option == GameOptionType::GAMEOPTION_NO_ESPIONAGE {
             return true;
-        }
-        if option == GameOptionType::GAMEOPTION_RANDOM_PERSONALITIES {
-            return false;
-        }
-        if option == GameOptionType::GAMEOPTION_PICK_RELIGION {
-            return false;
         }
         self.setup.option(option)
     }
@@ -719,12 +712,9 @@ mod tests {
     fn locked_options() {
         let d = ffh_data::global();
         let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 1);
-        setup.options[GameOptionType::GAMEOPTION_PICK_RELIGION] = true;
         setup.options[GameOptionType::GAMEOPTION_RAGING_BARBARIANS] = true;
         let g = Game::new(d, setup);
         assert!(g.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE));
-        assert!(!g.is_option(GameOptionType::GAMEOPTION_PICK_RELIGION));
-        assert!(!g.is_option(GameOptionType::GAMEOPTION_RANDOM_PERSONALITIES));
         assert!(g.is_option(GameOptionType::GAMEOPTION_RAGING_BARBARIANS));
         assert!(!g.is_option(GameOptionType::GAMEOPTION_NO_BARBARIANS));
     }

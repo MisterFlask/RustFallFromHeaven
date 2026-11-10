@@ -109,6 +109,29 @@ WANT = {
 # "Changes from FFH2"). They follow the C++ members in this order, so the XML lists them last.
 EXTRA_MEMBERS = {}
 
+# C++ members this game removed (docs/PORTING.md "Changes from FFH2"). The members after one move
+# down to keep the indices dense, and `NUM` shrinks; the XML no longer lists them.
+REMOVED_MEMBERS = {
+    # No switch without a reason to exist (the owner's request, 2026-11-10).
+    "GameOptionTypes": [
+        "GAMEOPTION_AGGRESSIVE_AI", "GAMEOPTION_AI_NO_BUILDING_PREREQS",
+        "GAMEOPTION_AI_NO_MINIMUM_LEVEL", "GAMEOPTION_RANDOM_PERSONALITIES",
+        "GAMEOPTION_PICK_RELIGION", "GAMEOPTION_NEW_RANDOM_SEED", "GAMEOPTION_LOCK_MODS",
+        "GAMEOPTION_DOUBLE_EVENTS", "GAMEOPTION_WB_AGAINST_THE_GREY",
+        "GAMEOPTION_WB_AGAINST_THE_WALL", "GAMEOPTION_WB_BARBARIAN_ASSAULT",
+        "GAMEOPTION_WB_BENEATH_THE_HEEL", "GAMEOPTION_WB_BLOOD_OF_ANGELS",
+        "GAMEOPTION_WB_FALL_OF_CUANTINE", "GAMEOPTION_WB_GIFT_OF_KYLORIN",
+        "GAMEOPTION_WB_GRAND_MENAGERIE", "GAMEOPTION_WB_INTO_THE_DESERT",
+        "GAMEOPTION_WB_LORD_OF_THE_BALORS", "GAMEOPTION_WB_MULCARN_REBORN",
+        "GAMEOPTION_WB_RETURN_OF_WINTER", "GAMEOPTION_WB_THE_BLACK_TOWER", "GAMEOPTION_WB_THE_CULT",
+        "GAMEOPTION_WB_THE_MOMUS", "GAMEOPTION_WB_THE_RADIANT_GUARD",
+        "GAMEOPTION_WB_THE_SPLINTERED_COURT", "GAMEOPTION_WB_WAGES_OF_SIN", "GAMEOPTION_WB_EXTRA",
+        "GAMEOPTION_WB_LOAD_SCREEN", "GAMEOPTION_ADVENTURE_MODE", "GAMEOPTION_NO_PROJECTS",
+        "GAMEOPTION_NO_HEALING_FOR_HUMANS", "GAMEOPTION_NO_INFLATION", "GAMEOPTION_NO_MAINTENANCE",
+        "GAMEOPTION_NO_WAR_WEARINESS", "GAMEOPTION_ALWAYS_OPEN_BORDERS", "GAMEOPTION_ALWAYS_RAZE",
+    ],
+}
+
 
 def strip_comments(s):
     s = re.sub(r"/\*.*?\*/", "", s, flags=re.S)
@@ -186,6 +209,14 @@ def main():
             if v < 0:
                 continue
             consts.append((n, v))
+        removed = REMOVED_MEMBERS.get(cname, [])
+        if removed:
+            names_before = [n for n, _ in consts]
+            assert all(r in names_before for r in removed), (cname, removed)
+            assert [v for _, v in consts] == list(range(len(consts))), cname
+            consts = [(n, i) for i, n in enumerate(n for n in names_before if n not in removed)]
+            if num:
+                num = (num[0], num[1] - len(removed))
         for n in EXTRA_MEMBERS.get(cname, []):
             consts.append((n, consts[-1][1] + 1 if consts else 0))
         if num and cname in EXTRA_MEMBERS:

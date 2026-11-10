@@ -75,9 +75,6 @@ impl Controller for Timed {
     fn consider_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> bool {
         self.time(|| self.inner.consider_offer(g, p, from, they_give, we_give))
     }
-    fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {
-        self.time(|| self.inner.choose_religion(g, p))
-    }
     fn attitude(&self, g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {
         self.time(|| self.inner.attitude(g, p, towards))
     }
@@ -250,9 +247,6 @@ impl Controller for CppCitizens {
     }
     fn consider_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> bool {
         self.inner.consider_offer(g, p, from, they_give, we_give)
-    }
-    fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {
-        self.inner.choose_religion(g, p)
     }
     fn attitude(&self, g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {
         self.inner.attitude(g, p, towards)
@@ -1116,9 +1110,6 @@ impl Controller for FreeRider {
     }
     fn consider_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> bool {
         self.inner.consider_offer(g, p, from, they_give, we_give)
-    }
-    fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {
-        self.inner.choose_religion(g, p)
     }
     fn attitude(&self, g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {
         self.inner.attitude(g, p, towards)

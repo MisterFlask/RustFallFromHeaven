@@ -392,7 +392,7 @@ impl Game {
         let info = &self.d.units[unit_type];
 
         // FfH Units: Added by Kael 05/24/2008
-        if self.units[u].level < info.min_level && (self.unit_is_human(u) || !self.is_option(GameOptionType::GAMEOPTION_AI_NO_MINIMUM_LEVEL)) {
+        if self.units[u].level < info.min_level {
             return false;
         }
         if info.disable_upgrade_to {

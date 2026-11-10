@@ -131,7 +131,7 @@ fn soak_run_report_and_batch() {
     let (code, out) = run(&["soak", "--list"]);
     assert_eq!(code, 0);
     assert_eq!(out.lines().count(), 144, "design §7 P2: 2 seeds x 3 sizes x 6 civs x 4 option sets");
-    let (code, out) = run(&["soak", "--list", "--seeds", "1..3", "--sizes", "duel", "--civs", "bannor,infernal", "--options", "default,raging+aggressive", "--filter", "INFERNAL"]);
+    let (code, out) = run(&["soak", "--list", "--seeds", "1..3", "--sizes", "duel", "--civs", "bannor,infernal", "--options", "default,raging+double_animals", "--filter", "INFERNAL"]);
     assert_eq!(code, 0);
     assert_eq!(out.lines().count(), 6, "{out}");
     assert!(out.lines().all(|l| l.starts_with("ffh-play soak run --seed ") && l.contains("--civ CIVILIZATION_INFERNAL")), "{out}");

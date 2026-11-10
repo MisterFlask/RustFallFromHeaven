@@ -1556,7 +1556,7 @@ impl Cai {
                 diplo_value += (gift_bonus_value * d.defines.peace_treaty_length) / 60;
             }
 
-            if g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI) {
+            if crate::defs::AGGRESSIVE_AI {
                 // What is this "relationships" thing?
                 diplo_value /= 2;
             }
@@ -1972,7 +1972,7 @@ impl Cai {
             }
         }
 
-        value += if g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI) { -3 } else { 0 };
+        value += if crate::defs::AGGRESSIVE_AI { -3 } else { 0 };
 
         let favorite_civic = leader_of(g, p).and_then(|l| l.favorite_civic);
         if let Some(civic) = favorite_civic {
@@ -2282,7 +2282,7 @@ impl Cai {
             for &u in &g.players[p].units {
                 dagger += (g.units[u].level - 1) * 5;
             }
-            if !g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI) {
+            if !crate::defs::AGGRESSIVE_AI {
                 dagger += (100 - d.handicaps[g.handicap].ai_train_percent).clamp(0, 15);
             }
             let area_ai = g.map.areas[g.city_area(capital)].area_ai_type[team];
@@ -2331,7 +2331,7 @@ impl Cai {
             if (hash & AI_STRATEGY_DAGGER) != 0 {
                 crush_value += 3;
             }
-            if g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI) {
+            if crate::defs::AGGRESSIVE_AI {
                 crush_value += 3;
             }
             for t in g.civ_team_ids() {

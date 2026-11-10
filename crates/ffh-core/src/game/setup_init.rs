@@ -72,7 +72,7 @@ impl Game {
 
     /// C++ `CvGame::init(eHandicap)`: `reset`, RNG seeds (`mapRandSeed % 73637381`,
     /// `syncRandSeed % 52319761`), FfH RANDOM_CIVILIZATION leader picks (soren rand),
-    /// GAMEOPTION_LOCK_MODS password (7 soren draws), estimate end turn / max turns, `START_YEAR`,
+    /// estimate end turn / max turns, `START_YEAR`,
     /// always-valid special units/buildings, `AI_init`, `doUpdateCacheOnTurn`.
     pub fn init(&mut self, handicap: HandicapType) {
         let d = self.d;
@@ -93,18 +93,6 @@ impl Game {
         // FfH: Added by Kael 05/28/2008
         self.init_random_civilizations();
         // FfH: End Add
-
-        if self.is_option(GameOptionType::GAMEOPTION_LOCK_MODS) {
-            if self.is_game_multi_player() {
-                self.setup.options[GameOptionType::GAMEOPTION_LOCK_MODS] = false;
-            } else {
-                // Random admin password (`setAdminPassword`; not stored): 7 soren draws.
-                const PASSWORD_SIZE: i32 = 8;
-                for _ in 0..PASSWORD_SIZE - 1 {
-                    self.soren_rand_num(128, "");
-                }
-            }
-        }
 
         self.start_turn = self.game_turn();
 

@@ -1426,7 +1426,7 @@ impl Game {
                 if !self.players[owner].human {
                     // Xienwolf Tweak 02/01/09: barbarian cities do not devote themselves to
                     // building Empires.
-                    if self.is_option(GameOptionType::GAMEOPTION_AI_NO_BUILDING_PREREQS) || self.player_is_barbarian(owner) {
+                    if self.player_is_barbarian(owner) {
                         valid = false;
                     }
                 }

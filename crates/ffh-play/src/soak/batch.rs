@@ -26,10 +26,9 @@ pub struct Matrix {
 impl Matrix {
     /// 2 seeds × {tiny, small, standard} × {Kuriotates, Infernal, Sheaim, Mercurians, Bannor,
     /// Calabim} × {default, raging barbarians, `occ`, `challenges`}, 300 turns. The design's
-    /// first matrix had "aggressive AI" for the last two: no rules or AI code of the port reads
-    /// that option (C++ uses it only in the AI and in the Python war scripts the new AI replaces),
-    /// so its games were the default ones (same checksums); the human-only [`OPTION_SETS`] take
-    /// its place.
+    /// first matrix had "aggressive AI" (an option since removed) for the last two: no rules or AI
+    /// code of the port read it, so its games were the default ones (same checksums); the
+    /// human-only [`OPTION_SETS`] take its place.
     pub fn design(d: &GameData) -> Matrix {
         fn t<T: InfoId + names::Named>(d: &GameData, p: &str, s: &str) -> T {
             lenient(d, p, s).expect("matrix type")
@@ -360,7 +359,7 @@ mod tests {
         m.seeds = vec![1, 1];
         m.sizes = vec![lenient(d, "WORLDSIZE_", "standard").unwrap()];
         m.civs = vec![lenient(d, "CIVILIZATION_", "kuriotates").unwrap()];
-        m.options = ["raging+aggressive+no_tech_trading", "raging+aggressive+no_tech_brokering"].iter().map(|o| parse_options(d, o).unwrap()).collect();
+        m.options = ["raging+double_animals+no_tech_trading", "raging+double_animals+no_tech_brokering"].iter().map(|o| parse_options(d, o).unwrap()).collect();
         m.speeds = ["normal", "quick"].iter().map(|s| lenient(d, "GAMESPEED_", s).unwrap()).collect();
         m.turns = 1;
         let games = m.games(d);

@@ -16,7 +16,7 @@
 //! `changeNumCities(n)` -> `self.teams[t].num_cities += n`,
 //! `AI_getWarSuccess(o)` -> `self.teams[t].ai_war_success[o]`.
 //! Accessors with logic are methods even when they look trivial; in particular
-//! `team_is_open_borders` (FFH: GAMEOPTION_ALWAYS_OPEN_BORDERS), `team_is_has_tech` and
+//! `team_is_has_tech` and
 //! `team_get_research_progress` (accept NO_TECH), `team_is_alive`, `team_set_war_weariness`
 //! (clamps), `team_ai_set_war_plan`.
 
@@ -114,9 +114,7 @@ pub struct Team {
     pub has_met: IdxVec<TeamId, bool>,
     /// C++ `m_abPermanentWarPeace`.
     pub permanent_war_peace: IdxVec<TeamId, bool>,
-    /// C++ `m_abOpenBorders`: the raw flag. Read through `team_is_open_borders`
-    /// (FFH: always true under GAMEOPTION_ALWAYS_OPEN_BORDERS); write through
-    /// `team_set_open_borders`.
+    /// C++ `m_abOpenBorders`. Write through `team_set_open_borders`.
     pub open_borders: IdxVec<TeamId, bool>,
     /// C++ `m_abDefensivePact`. Write through `team_set_defensive_pact`.
     pub defensive_pact: IdxVec<TeamId, bool>,
@@ -286,17 +284,11 @@ impl Team {
 }
 
 /// C++ `GC.getGameINLINE().isOption(o)` for the options CvTeam reads. FFH's `CvGame::isOption`
-/// locks GAMEOPTION_NO_ESPIONAGE (on), GAMEOPTION_RANDOM_PERSONALITIES and
-/// GAMEOPTION_PICK_RELIGION (off); none of those is queried through this helper.
+/// locks GAMEOPTION_NO_ESPIONAGE (on), which is not queried through this helper.
 /// Replace with the CvGame port's accessor once it exists.
 #[inline]
 fn is_option(g: &Game, o: GameOptionType) -> bool {
-    debug_assert!(
-        o != GameOptionType::GAMEOPTION_NO_ESPIONAGE
-            && o != GameOptionType::GAMEOPTION_RANDOM_PERSONALITIES
-            && o != GameOptionType::GAMEOPTION_PICK_RELIGION,
-        "FFH-locked game option: use CvGame::isOption"
-    );
+    debug_assert!(o != GameOptionType::GAMEOPTION_NO_ESPIONAGE, "FFH-locked game option: use CvGame::isOption");
     g.setup.option(o)
 }
 

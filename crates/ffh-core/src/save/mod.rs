@@ -122,7 +122,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `Governor` has one trait at most (`trait_`) and always a city; gone: `City::rule_changed_turn`,
 ///   `governor_penalty_turns`, `Governor::profile`, `traits`, `origin`, the bench.
 /// - 31: no eras: gone are `Player::current_era` and `GameSetup::era`.
-pub const FORMAT_VERSION: u32 = 31;
+/// - 32: 36 game options removed (docs/PORTING.md "Changes from FFH2"): `GameSetup::options`
+///   is shorter.
+pub const FORMAT_VERSION: u32 = 32;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

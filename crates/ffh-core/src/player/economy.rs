@@ -260,15 +260,14 @@ impl Game {
         }
     }
 
-    /// C++ `CvPlayer::calculateUnitCost()` (0 in anarchy, with FFH disabled production or
-    /// GAMEOPTION_NO_MAINTENANCE).
+    /// C++ `CvPlayer::calculateUnitCost()` (0 in anarchy or with FFH disabled production).
     pub fn player_calculate_unit_cost(&self, p: PlayerId) -> i32 {
         if self.player_is_anarchy(p) {
             return 0;
         }
 
         //FfH: Added by Kael 10/03/2008
-        if self.players[p].disable_production > 0 || self.is_option(GameOptionType::GAMEOPTION_NO_MAINTENANCE) {
+        if self.players[p].disable_production > 0 {
             return 0;
         }
         //FfH: End Add
@@ -276,15 +275,14 @@ impl Game {
         self.player_calculate_unit_cost_breakdown(p).cost
     }
 
-    /// C++ `CvPlayer::calculateUnitSupply()` (0 in anarchy, with FFH disabled production or
-    /// GAMEOPTION_NO_MAINTENANCE).
+    /// C++ `CvPlayer::calculateUnitSupply()` (0 in anarchy or with FFH disabled production).
     pub fn player_calculate_unit_supply(&self, p: PlayerId) -> i32 {
         if self.player_is_anarchy(p) {
             return 0;
         }
 
         //FfH: Added by Kael 10/03/2008
-        if self.players[p].disable_production > 0 || self.is_option(GameOptionType::GAMEOPTION_NO_MAINTENANCE) {
+        if self.players[p].disable_production > 0 {
             return 0;
         }
         //FfH: End Add
@@ -334,12 +332,6 @@ impl Game {
 
     /// C++ `CvPlayer::calculateInflationRate`.
     pub fn player_calculate_inflation_rate(&self, p: PlayerId) -> i32 {
-        //FfH: Added by Kael 11/18/2008
-        if self.is_option(GameOptionType::GAMEOPTION_NO_INFLATION) {
-            return 0;
-        }
-        //FfH: End Add
-
         let d = self.d;
         let speed = &d.game_speeds[self.game_speed_type()];
 
@@ -1514,14 +1506,8 @@ impl Game {
         }
     }
 
-    /// C++ `CvPlayer::getWarWearinessPercentAnger` (0 with GAMEOPTION_NO_WAR_WEARINESS).
+    /// C++ `CvPlayer::getWarWearinessPercentAnger`.
     pub fn player_get_war_weariness_percent_anger(&self, p: PlayerId) -> i32 {
-        //FfH: Added by Kael 11/17/2008
-        if self.is_option(GameOptionType::GAMEOPTION_NO_WAR_WEARINESS) {
-            return 0;
-        }
-        //FfH: End Add
-
         // Card: Stoicism (docs/CARDS.md): war weariness causes no unhappiness.
         if self.player_no_war_weariness(p) {
             return 0;
@@ -1547,9 +1533,8 @@ impl Game {
 
         new_war_weariness_percent_anger = self.player_get_modified_war_weariness_percent_anger(p, new_war_weariness_percent_anger);
 
-        // (C++ compares against the getter, which reads 0 under GAMEOPTION_NO_WAR_WEARINESS and,
-        // here, Stoicism: a new value of 0 then never reset a stale member, which came back as
-        // anger when Stoicism ended.)
+        // (C++ compares against the getter, which here reads 0 under Stoicism: a new value of 0
+        // then never reset a stale member, which came back as anger when Stoicism ended.)
         if self.players[p].war_weariness_percent_anger != new_war_weariness_percent_anger {
             self.players[p].war_weariness_percent_anger = new_war_weariness_percent_anger;
 
@@ -1755,9 +1740,6 @@ mod tests {
         g.setup.game_turn = 20000;
         g.elapsed_game_turns = 20000;
         let _ = g.player_calculate_inflation_rate(p);
-
-        g.setup.options[GameOptionType::GAMEOPTION_NO_INFLATION] = true;
-        assert_eq!(g.player_calculate_inflation_rate(p), 0);
     }
 
     #[test]
@@ -1782,9 +1764,6 @@ mod tests {
         assert_eq!(g.player_calculate_unit_supply(p), 0);
         g.players[p].anarchy_turns = 0;
         g.players[p].disable_production = 1;
-        assert_eq!(g.player_calculate_unit_supply(p), 0);
-        g.players[p].disable_production = 0;
-        g.setup.options[GameOptionType::GAMEOPTION_NO_MAINTENANCE] = true;
         assert_eq!(g.player_calculate_unit_supply(p), 0);
     }
 
@@ -2049,8 +2028,6 @@ mod tests {
 
         g.players[p].war_weariness_percent_anger = 30;
         assert_eq!(g.player_get_war_weariness_percent_anger(p), 30);
-        g.setup.options[GameOptionType::GAMEOPTION_NO_WAR_WEARINESS] = true;
-        assert_eq!(g.player_get_war_weariness_percent_anger(p), 0);
     }
 
     /// Picks the same tech for every research and free-tech choice.

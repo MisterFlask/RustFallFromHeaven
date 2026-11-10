@@ -1744,12 +1744,6 @@ impl Game {
             return true;
         }
 
-        // FfH: Added by Kael 11/03/2008
-        if self.is_option(GameOptionType::GAMEOPTION_ALWAYS_RAZE) {
-            return true;
-        }
-        // FfH: End Add
-
         false
     }
 
@@ -1921,9 +1915,6 @@ mod tests {
         assert!(g.city_is_auto_raze(c));
         g.setup.options[GameOptionType::GAMEOPTION_NO_CITY_RAZING] = true;
         assert!(!g.city_is_auto_raze(c));
-        g.setup.options[GameOptionType::GAMEOPTION_ALWAYS_RAZE] = true;
-        assert!(g.city_is_auto_raze(c));
-        g.setup.options[GameOptionType::GAMEOPTION_ALWAYS_RAZE] = false;
         g.setup.options[GameOptionType::GAMEOPTION_NO_CITY_RAZING] = false;
         g.cities[c].highest_population = 4;
         g.setup.max_city_elimination = 2;

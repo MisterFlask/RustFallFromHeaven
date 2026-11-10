@@ -106,17 +106,7 @@ impl Game {
                     }
 
                     if let Some(best_player) = best_player {
-                        let mut found_religion = Some(religion);
-
-                        if self.is_option(GameOptionType::GAMEOPTION_PICK_RELIGION) {
-                            // C++ AI_chooseReligion() -> the controller (FfH locks the option
-                            // off, see `is_option`).
-                            found_religion = self.controller(best_player).choose_religion(self, best_player);
-                        }
-
-                        if let Some(found_religion) = found_religion {
-                            self.player_found_religion(best_player, Some(found_religion), religion, false);
-                        }
+                        self.player_found_religion(best_player, Some(religion), religion, false);
                     }
                 }
             }

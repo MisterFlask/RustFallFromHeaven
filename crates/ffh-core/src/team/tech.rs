@@ -483,18 +483,7 @@ impl Game {
                                     // CvGame::setReligionSlotTaken
                                     self.religion_slot_taken[religion] = true;
 
-                                    if self.is_option(GameOptionType::GAMEOPTION_PICK_RELIGION) {
-                                        // Never true in FFH (CvGame::isOption locks PICK_RELIGION off).
-                                        // C++: humans get BUTTONPOPUP_FOUND_RELIGION (their pick is founded in
-                                        // this religion's slot), AIs pick with AI_chooseReligion(); both are
-                                        // the controller's decision here.
-                                        let chosen = self.controller(best_player).choose_religion(self, best_player);
-                                        if let Some(chosen) = chosen {
-                                            self.player_found_religion(best_player, Some(chosen), religion, true);
-                                        }
-                                    } else {
-                                        self.player_found_religion(best_player, Some(religion), religion, true);
-                                    }
+                                    self.player_found_religion(best_player, Some(religion), religion, true);
 
                                     _religion_founded = true;
                                     first_bonus = true;

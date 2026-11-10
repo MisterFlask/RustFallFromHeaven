@@ -343,10 +343,6 @@ impl Controller for Cai {
         self.player_ai_consider_offer(g, p, from, they_give, we_give, 1)
     }
 
-    fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {
-        self.player_ai_choose_religion(g, p)
-    }
-
     fn attitude(&self, g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {
         self.player_ai_get_attitude(g, p, towards, false)
     }

@@ -692,7 +692,7 @@ impl Cai {
 
                 // FfH: Modified by Kael 10/30/2007 (units this building allows);
                 // Xienwolf Tweak (BETTER AI, merged Sephi): barbarians do not value it.
-                if !(g.is_option(GameOptionType::GAMEOPTION_AI_NO_BUILDING_PREREQS) || g.city_is_barbarian(c)) {
+                if !g.city_is_barbarian(c) {
                     for unit_class in d.unit_classes.keys() {
                         let Some(loop_unit) = d.civ_unit(civ, unit_class) else {
                             continue;
