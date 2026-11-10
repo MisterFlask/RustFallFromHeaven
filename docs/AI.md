@@ -899,6 +899,36 @@ six units at an Elephant at 0.2%. A pure trade rule (attack whenever the kills a
 lost units early, and the same rule with raiders at face value lost cities to the barbarians;
 both were replaced (docs/AI_LOG.md, round 7g).
 
+**On the forecast** (switch `FORECAST`, on; `FFH_AI_FORECAST_OFF=ALL` plays round 7g's rule
+above; barbarians always do). Every field attack (steps 1, 4, 5, 10, a landing, and
+`units::attack_adjacent`'s explorers, sorties and aggressive units) and the strike are decided on
+the rules' battle forecast (`forecast.rs`, docs/CALIBRATION.md): the battles the units that would
+fight (every unit of ours on the plot that can attack: an order commits them all, the formation
+and then the reserve) fight this turn, `p_take` the chance the plot falls. The same shape as round
+7g, the bars meaning what they say (`military::field_rule`): attack at `p_take` 65%
+(`TAKE_BAR`; 75% for a hurt stack), or 50% (`TRADE_BAR`) when more of their units are expected to
+fall than ours, raiders near our cities counted four times (`RAIDER_KILL_PCT`); a city to capture
+at 65% (`CAPTURE_BAR`); `attack_adjacent`'s own bars (75% explorer, 80% sortie, 50% aggressive)
+read as `p_take`. Nothing to fight (the rules' defenders, where we see the plot): go. A hero or
+veteran of the pool whose chance to fall is above its `precious_bar` allowance holds the attack
+(every unit of the plot fights, so the gate reads each one's fall, not the first attacker's odds).
+Strike (`campaign::strike_forecast`): the phase strikes when the adjacent ring takes the city at
+65% (`STRIKE_BAR`; 55% for the conquerors, `BOLD_STRIKE_BAR`), decisively at 90%
+(`DECISIVE_BAR`: a probe opened by our casters; a ring that does not wait for the stacks one plot
+out); once started it goes on at 65%, or 50% with the better trade. Under engagements an order
+from a plot is one battle of the whole plot, so the old order of single attackers (collateral
+first, raised dead, best odds, cheapest sacrifice, heroes last) chose nothing but the plot: the
+strike orders each battle from the plot with the most units (the forecast's order), by the unit
+best able to take the city; the old code is kept for the switch's off side. A group assault's
+second battle (the reserve the formation left) is ordered by a unit that can still attack, out of
+its group: the group's own order did nothing once half of it had fought, while the forecast
+counted the reserve. Cost: a first look at 20 runs (`FAST_RUNS`), the full 60 only within 20
+points of a bar (`RECHECK_MARGIN`), the turn's cache, and no forecast when our attack power is
+under 25% of the defenders' (`HOPELESS_PCT`). Left on `combat_sim`: the march and gather
+decisions (`ok_all`, `ok_near`), the one-turn concentration test, the casters' share of a
+decisive strike, the hunt's target pre-filter in `hunt` before the stack is next to it (judged as
+if from its staging plot), and the war gate. Measured: "The improvement scheme", item 3.
+
 **Siege operations** (`campaign.rs`): one per player, rebuilt from the game state on the first
 army decision of each `play_turn` call (nothing outside `Game` is remembered).
 
@@ -3513,7 +3543,30 @@ itself; `autopsy.py`, `calibration.py`):
    cities nothing can reach are the reserve. This is the estimate the reverted `MAGE_FRONT` and
    the one-quota attempt lacked (docs/AI_LOG.md).
 3. *The attack decisions on the new estimate*: strike order, the field go/no-go, then the war
-   gate as a forecast of the first city's assault with the army as it will arrive.
+   gate as a forecast of the first city's assault with the army as it will arrive. **Done for the
+   field and the strike** (switch `FORECAST`, "On the forecast" under Field armies; the war gate
+   not yet). Seeds 1-16, 6 civs, standard, 300 turns, telemetry decision `attack_rule` at every
+   site (the old rule's answer computed beside): 7,294 agreed go, 4,946 agreed hold, 1,235 new
+   attacks, 1,639 new declines. By site (new attacks / new declines): adjacent 351 / 225,
+   assault 376 / 0, hunt 163 / 1,232 (981 distinct plots; one or two units against one, where
+   a three-round engagement rarely clears the plot in a turn while the duel odds read 65-95%),
+   sortie 205 / 2, capture 44 / 15, phase 28 / 74 (23 cities), strike 25 / 3, explore 10 / 67.
+   The new attacks acted on did what the forecast said: adjacent 95% predicted / 93% taken,
+   units lost 0.21 / 0.24 per attack; assault 95% / 94%, 0.35 / 0.36; capture 95% / 93%, 1.39 /
+   1.23; sortie 100% / 98%; strike 91% / 76% (25). Forks of 6 hunt declines (8 rolls, 10 turns,
+   the old rule's attack against holding): 3 no difference, 1 better holding (seed 3 t124: +1.1
+   units), 1 better attacking (seed 14 t196: the old attack cleared 9 enemy units next to the
+   stack, +1.75 units, +21 power), 1 mixed (seed 7 t149: holding kept the stack's 6 units in the
+   area against 3.3, research -3). The 20-run first look was overturned by the full forecast in
+   11 of 15,999 checked decisions; the pre-filter declined 588 attacks, none of which the forecast
+   would have made. Guardrail (seeds 1-16, `FFH_AI_FORECAST_OFF=ALL` as the base): military at
+   turn 100 12.0 -> 11.9, techs at 300 40.6 -> 40.2, research flat; civ cities captured by civs
+   285 -> 315, by barbarians 4 -> 6, eliminations 21 -> 23, barbarian towns taken 67 -> 40 (fewer
+   barbarian cities stood at turn 100: 3.1 -> 1.4 a game); in engagements (`autopsy.py`) attackers
+   lost 4.5% -> 3.2% of the units committed and defenders 59% -> 68%, attacks at 0.4-0.6 of the
+   summed strength took the plot 37% -> 64% of the time. Cost (`ffh bench`, seeds 1, 3, 5, three
+   rounds): 21.8 -> 24.4 ms a turn. Not followed further (the combat work closed out): the hunt's
+   wear-down attacks a duel would have made, which the 65% bar declines.
 4. *Outclassed*: the 52% is where a war already lost ends; what precedes it (power falling
    behind from which turn, peace not made, vassalage not taken) is the next autopsy's question,
    not yet counted.

@@ -138,7 +138,7 @@ fn summon_attacks(g: &mut Game, v: &View, n: UnitId, strike: bool) {
         }
         let Some(grp) = g.units[n].group else { break };
         if barbarian {
-            if !crate::units::attack_adjacent(g, v, grp, n, 50) {
+            if !crate::units::attack_adjacent(g, v, grp, n, 50, "summon") {
                 break;
             }
             continue;

@@ -190,6 +190,11 @@ pub static MAGIC_WAR: Switch = Switch::new("MAGIC_WAR");
 /// A caster in a marching stack of our operations hastes it when that raises the stack's pace
 /// (`magic::haste_march`).
 pub static HASTE_MARCH: Switch = Switch::new("HASTE_MARCH");
+/// Attacks decided on the rules' battle forecast (`forecast.rs`): the field rule
+/// (`military::field_decide`: assaults, adjacent targets, hunts, captures, landings,
+/// `units::attack_adjacent`) and the strike (`campaign::strike`, the strike phase); off, on
+/// `combat_sim`'s duels as in round 7g. Barbarians always play the old way.
+pub static FORECAST: Switch = Switch::new("FORECAST");
 
 /// The names environment variable `var` lists, comma-separated: trimmed, upper-cased, `prefix`
 /// (`CIVILIZATION_`, `TRAIT_`) taken off. `None` when it is unset or lists nothing.

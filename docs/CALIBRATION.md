@@ -151,8 +151,10 @@ calibration on the acted slice and its missed chances on the declined one.
 An estimator built on the rules' own battle code (CLAUDE.md, step 3: "prefer an estimator that runs
 the rules' own code"): the engagement preview's forecast (`Game::engage_preview`, docs/ENGAGEMENTS.md,
 "The attack preview") made for battles that are not on the board yet. Measured here against the
-old estimators; **no decision uses it yet** (the AI acts on `combat_sim`), and with telemetry off
-none of it runs (`ffh stats` gives the same game with and without it; with telemetry on, too).
+old estimators. The AI's attack decisions read it since switch `FORECAST` (docs/AI.md, "On the
+forecast" under Field armies; `crates/ffh-ai/src/military.rs`, `campaign.rs`); the ledger's kinds
+below were measured before, when no decision used it. Recording stays pure: `ffh stats` gives the
+same game with telemetry on and off.
 
 ### In the rules (`crates/ffh-core/src/engagement/preview.rs`)
 
@@ -284,9 +286,9 @@ is forecast well and the attack not at all: a decision on `holds2` needs a secon
 assumes the units come: of the 18 cities lost at once with `holds2_reinforced` below 30%, 12 had
 reinforcements counted (whether they came is not recorded).
 
-Not done: any decision on these (next: the strike and field go/no-go on `strike2` and `field2`,
-judged where they fire); the formation of the survivors reordered by their damage within a run of
-waves. The attack-likelihood estimate is below.
+Done since: the strike and field go/no-go on `strike2` and `field2` (switch `FORECAST`). Not done:
+the formation of the survivors reordered by their damage within a run of waves. The
+attack-likelihood estimate is below; no defence is built on it yet.
 
 ## Incoming attacks (`threat.rs`)
 
