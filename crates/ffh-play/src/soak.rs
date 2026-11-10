@@ -815,7 +815,7 @@ mod tests {
         assert_eq!(SoakGame::parse(d, &g.to_args(d)).unwrap(), g);
         // Errors.
         let bad_numbers = [&["--seed", "-1"][..], &["--seed", "4294967296"], &["--turns", "4294967297"], &["--opponents", "-2"], &["--spawn-turn", "x"]];
-        for bad in [&["--size", "enormous"][..], &["--civ", "a"], &["--turns", "0"], &["--seed"], &["--color", "red"], &["--options", "GAMEOPTION_ADVANCED_START"]].into_iter().chain(bad_numbers) {
+        for bad in [&["--size", "enormous"][..], &["--civ", "a"], &["--turns", "0"], &["--seed"], &["--color", "red"], &["--options", "no_such_option"]].into_iter().chain(bad_numbers) {
             let args: Vec<String> = bad.iter().map(|s| s.to_string()).collect();
             assert!(SoakGame::parse(d, &args).is_err(), "{bad:?}");
         }

@@ -5,12 +5,6 @@
 // Game Option
 [
   {
-    "type": "GAMEOPTION_ADVANCED_START",
-    "description": "TXT_KEY_GAME_OPTION_ADVANCED_START",
-    "help": "TXT_KEY_GAME_OPTION_ADVANCED_START_HELP",
-    "visible": true
-  },
-  {
     "type": "GAMEOPTION_RAGING_BARBARIANS",
     "description": "TXT_KEY_GAME_OPTION_RAGING_BARBARIANS",
     "help": "TXT_KEY_GAME_OPTION_RAGING_BARBARIANS_HELP",
@@ -153,12 +147,6 @@
     "description": "TXT_KEY_GAME_OPTION_NO_EVENTS",
     "help": "TXT_KEY_GAME_OPTION_NO_EVENTS_HELP",
     "visible": true
-  },
-  {
-    "type": "GAMEOPTION_NO_ESPIONAGE",
-    "description": "TXT_KEY_GAME_OPTION_NO_ESPIONAGE",
-    "help": "TXT_KEY_GAME_OPTION_NO_ESPIONAGE_HELP",
-    "default": true
   },
   {
     "type": "GAMEOPTION_DOUBLE_ANIMALS",

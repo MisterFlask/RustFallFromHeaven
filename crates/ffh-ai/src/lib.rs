@@ -17,7 +17,6 @@ use ffh_core::ids::*;
 use ffh_core::structs::*;
 use ffh_data::*;
 
-pub mod advanced_start;
 pub mod armies;
 pub mod governor;
 pub mod automation;
@@ -156,10 +155,6 @@ impl Controller for Ai {
             supply::turn(g, p);
             tactics::turn(g, p);
             return;
-        }
-        // C++ setTurnActive -> AI_doAdvancedStart while the player still has start points.
-        if g.players[p].advanced_start_points >= 0 && !g.players[p].human && !g.player_is_barbarian(p) {
-            advanced_start::run(g, p);
         }
         let turn = g.game_turn();
         // The empire decisions are made on the first call of the player's turn. A controller

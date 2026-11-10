@@ -973,21 +973,6 @@ mod tests {
         let sb = autoplay(&mut b, &cfg2);
         assert_ne!(sa.last().map(|s| s.checksum), sb.last().map(|s| s.checksum));
     }
-
-    /// With GAMEOPTION_ADVANCED_START the AI spends its points (cities, units) and leaves
-    /// advanced start on its first turn.
-    #[test]
-    fn ai_spends_advanced_start_points() {
-        let cfg = RunConfig { seed: 3, civs: 3, world: "WORLDSIZE_TINY".into(), turns: 2, verbose: false, report_every: 0, options: vec!["GAMEOPTION_ADVANCED_START".into()], until_supremacy: false, ..RunConfig::default() };
-        let (mut g, _) = new_game(&cfg);
-        autoplay(&mut g, &cfg);
-        for p in g.player_ids() {
-            if g.players[p].alive && !g.player_is_barbarian(p) {
-                assert!(!g.players[p].cities.is_empty(), "player {p:?} has no city");
-                assert_eq!(g.players[p].advanced_start_points, -1);
-            }
-        }
-    }
 }
 
 /// Detailed city view for one player: every plot of every city (worked or not) with terrain,

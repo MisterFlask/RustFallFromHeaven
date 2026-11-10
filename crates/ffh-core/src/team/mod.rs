@@ -8,7 +8,7 @@
 //! - [`tech`]: research, techs, tech sharing, bonuses, terrain/route/irrigation effects,
 //!   building effects, per-turn processing.
 //! - [`misc`]: membership and aggregates over member players, projects, unit/building
-//!   class limits, victory, espionage, team merging (permanent alliances).
+//!   class limits, victory, team merging (permanent alliances).
 //!
 //! Trivial C++ accessors (`getX`/`isX`/`setX`/`changeX` that only read or write one member,
 //! possibly with an `FAssert`) are not methods: use the fields, e.g.
@@ -82,8 +82,6 @@ pub struct Team {
     pub enemy_war_weariness_modifier: i32,
     /// C++ `m_iRiverTradeCount`. Change through `team_change_river_trade_count`.
     pub river_trade_count: i32,
-    /// C++ `m_iEspionagePointsEver`.
-    pub espionage_points_ever: i32,
     /// C++ `m_bMapCentering` (`setMapCentering` only adds a minimap refresh).
     pub map_centering: bool,
     /// C++ `m_bCapitulated` (`isCapitulated`; meaningful only while a vassal).
@@ -146,13 +144,6 @@ pub struct Team {
     pub terrain_trade_count: IdxVec<TerrainType, i32>,
     /// C++ `m_aiVictoryCountdown` (-1 = not counting down).
     pub victory_countdown: IdxVec<VictoryType, i32>,
-
-    /// C++ `m_aiEspionagePointsAgainstTeam`. Write through `team_set_espionage_points_against_team`.
-    pub espionage_points_against_team: IdxVec<TeamId, i32>,
-    /// C++ `m_aiCounterespionageTurnsLeftAgainstTeam`.
-    pub counterespionage_turns_left_against_team: IdxVec<TeamId, i32>,
-    /// C++ `m_aiCounterespionageModAgainstTeam`.
-    pub counterespionage_mod_against_team: IdxVec<TeamId, i32>,
 
     /// C++ `m_pabHasTech`. Read through `team_is_has_tech` when the tech may be NO_TECH;
     /// write only through `team_set_has_tech`.
@@ -224,7 +215,6 @@ impl Team {
             master_power: 0,
             enemy_war_weariness_modifier: 0,
             river_trade_count: 0,
-            espionage_points_ever: 0,
             map_centering: false,
             capitulated: false,
             barbarian_ally: false,
@@ -257,10 +247,6 @@ impl Team {
             terrain_trade_count: IdxVec::from_elem(0, d.terrains.len()),
             victory_countdown: IdxVec::from_elem(-1, d.victories.len()),
 
-            espionage_points_against_team: IdxVec::from_elem(0, num_teams),
-            counterespionage_turns_left_against_team: IdxVec::from_elem(0, num_teams),
-            counterespionage_mod_against_team: IdxVec::from_elem(0, num_teams),
-
             has_tech: IdxVec::from_elem(false, d.techs.len()),
             no_trade_tech: IdxVec::from_elem(false, d.techs.len()),
             improvement_yield_change: IdxVec::from_elem([0; YieldType::NUM], d.improvements.len()),
@@ -283,12 +269,9 @@ impl Team {
     }
 }
 
-/// C++ `GC.getGameINLINE().isOption(o)` for the options CvTeam reads. FFH's `CvGame::isOption`
-/// locks GAMEOPTION_NO_ESPIONAGE (on), which is not queried through this helper.
-/// Replace with the CvGame port's accessor once it exists.
+/// C++ `GC.getGameINLINE().isOption(o)` for the options CvTeam reads.
 #[inline]
 fn is_option(g: &Game, o: GameOptionType) -> bool {
-    debug_assert!(o != GameOptionType::GAMEOPTION_NO_ESPIONAGE, "FFH-locked game option: use CvGame::isOption");
     g.setup.option(o)
 }
 
@@ -314,9 +297,6 @@ impl Game {
             // C++ quirk: m_aiTechShareCount is indexed by a team *count*, not a team id, but
             // reset clears kLoopTeam.m_aiTechShareCount[getID()] anyway.
             k.tech_share_count[t.idx()] = 0;
-            k.espionage_points_against_team[t] = 0;
-            k.counterespionage_turns_left_against_team[t] = 0;
-            k.counterespionage_mod_against_team[t] = 0;
             k.has_met[t] = false;
             k.at_war[t] = false;
             k.permanent_war_peace[t] = false;
@@ -366,7 +346,7 @@ mod tests {
         assert!(t.victory_countdown.iter().all(|&v| v == -1));
         assert!(t.ai_war_plan.iter().all(|p| p.is_none()));
         assert_eq!(t.ai_worst_enemy, None);
-        assert_eq!((t.alive_count, t.num_members, t.espionage_points_ever), (0, 0, 0));
+        assert_eq!((t.alive_count, t.num_members), (0, 0));
         assert!(t.revealed_bonuses.is_empty());
     }
 }

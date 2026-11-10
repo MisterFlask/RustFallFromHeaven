@@ -603,12 +603,6 @@ impl Game {
         self.setup.max_city_elimination
     }
 
-    /// C++ `getNumAdvancedStartPoints()`.
-    #[inline]
-    pub fn num_advanced_start_points(&self) -> i32 {
-        self.setup.num_advanced_start_points
-    }
-
     /// C++ `getTargetScore()`: in basis points of the world (score v2, docs/SCORE.md; 5000 = half
     /// the world, 0 = no score victory).
     #[inline]
@@ -636,12 +630,9 @@ impl Game {
         self.setup.victories[victory]
     }
 
-    /// C++ `isOption(eIndex)`. FfH locks NO_ESPIONAGE on. (`setOption` = `self.setup.options[o] = b`.)
+    /// C++ `isOption(eIndex)` (`setOption` = `self.setup.options[o] = b`). FfH's locked options
+    /// (NO_ESPIONAGE on, RANDOM_PERSONALITIES and PICK_RELIGION off) are gone with the options.
     pub fn is_option(&self, option: GameOptionType) -> bool {
-        // FfH: Added by Kael 07/12/2008 (locked options)
-        if option == GameOptionType::GAMEOPTION_NO_ESPIONAGE {
-            return true;
-        }
         self.setup.option(option)
     }
 
@@ -714,7 +705,6 @@ mod tests {
         let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 1);
         setup.options[GameOptionType::GAMEOPTION_RAGING_BARBARIANS] = true;
         let g = Game::new(d, setup);
-        assert!(g.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE));
         assert!(g.is_option(GameOptionType::GAMEOPTION_RAGING_BARBARIANS));
         assert!(!g.is_option(GameOptionType::GAMEOPTION_NO_BARBARIANS));
     }

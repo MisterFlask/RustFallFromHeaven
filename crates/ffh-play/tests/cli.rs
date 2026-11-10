@@ -172,7 +172,7 @@ fn soak_repro_keeps_the_checks_and_arguments_are_checked_first() {
     }
     // The batch: usage errors before any game runs.
     let one = ["soak", "--seeds", "1", "--sizes", "duel", "--civs", "calabim", "--options", "default", "--turns", "2", "--jobs", "1"];
-    for bad in [&["--out", "/nonexistent/dir/x.tsv"][..], &["--turns", "0"], &["--check-every", "x"], &["--options", "GAMEOPTION_ADVANCED_START"]] {
+    for bad in [&["--out", "/nonexistent/dir/x.tsv"][..], &["--turns", "0"], &["--check-every", "x"], &["--options", "no_such_option"]] {
         let (code, out) = run(&[&one[..], bad].concat());
         assert_eq!(code, 2, "{bad:?}: {out}");
         assert!(!out.contains("soak summary"), "{bad:?}: a game ran: {out}");

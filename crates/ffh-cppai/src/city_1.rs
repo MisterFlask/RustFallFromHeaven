@@ -586,9 +586,6 @@ impl Cai {
         if g.city_ai_is_emphasize_great_people(c) {
             economy_flags |= BUILDINGFOCUS_SPECIALIST;
         }
-        if !g.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
-            economy_flags |= BUILDINGFOCUS_ESPIONAGE;
-        }
 
         if num_cities_in_area > 2 {
             if self.player_ai_is_do_strategy(g, p, AI_STRATEGY_CULTURE2) {

@@ -82,7 +82,7 @@ is the only thing that stops a wasteful cast: moving them needs the same conditi
 The handicap tables give AI players their own percentages: train, construct and create costs
 (`player/units.rs:598/1263/1296`), growth, unit cost and supply, inflation, war weariness
 (`player/economy.rs`), civic upkeep, upgrade price, work rate, free XP, the animal and barbarian
-combat bonuses (`unit/combat.rs:1033-1069`), advanced-start points and starting units
+combat bonuses (`unit/combat.rs:1033-1069`), starting units
 (`player/start.rs`), free techs (`game/setup_init.rs:491`) and the starting-plot pick order. At the
 standard handicap (Noble, which AI-only games use) the AI already gets construct 85%, unit supply
 50%, upgrade cost 25%, inflation 50%, war weariness 70% and +25% against barbarians; in all-AI
