@@ -297,6 +297,29 @@ fn the_counter_hunger_starvation_and_supplied_again() {
 }
 
 #[test]
+fn a_player_without_a_city_has_no_supply_rule() {
+    let mut w = world();
+    let p1 = w.p1;
+    assert!(w.g.players[p1].cities.is_empty());
+    // The starting units of a player who has not founded its capital yet, far from any city.
+    let a = w.army(p1, 30, 5, 2);
+    assert!(w.g.army_supply_line(a).is_none(), "no line: there is no source");
+    w.g.player_update_supply(p1);
+    w.g.player_update_supply(p1);
+    w.g.player_update_supply(p1);
+    assert_eq!(w.g.armies[a].unsupplied_turns, 0, "no Hunger before the first city");
+    assert_eq!(w.g.army_supply_state(a), SupplyState::Supplied);
+    assert!(!w.logged("has no supply line"));
+    // Its first city brings the rule: the army out of reach of it is cut from then on.
+    w.g.player_init_city(p1, 36, 8, true, true);
+    w.g.player_update_supply(p1);
+    assert_eq!(w.g.armies[a].unsupplied_turns, 0, "within reach of the new city");
+    let b = w.army(p1, 15, 5, 2);
+    w.g.player_update_supply(p1);
+    assert_eq!(w.g.armies[b].unsupplied_turns, 1, "out of reach of it");
+}
+
+#[test]
 fn a_hungry_army_does_not_heal() {
     let mut w = world();
     let p0 = w.p0;

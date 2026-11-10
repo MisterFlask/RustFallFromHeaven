@@ -96,6 +96,8 @@ army's counter is 0.
   to one is too.
 - A crusade Host (docs/CRUSADE.md), which owns no city at first, counts its lenders' and the
   victim's cities and land as its own team's (as it heals there).
+- A player with no city (its starting units before the capital is founded) has no supply rule at
+  all: its armies' counters stay 0 (a Host with its lenders' cities has cities).
 - "Do not heal" covers every heal of the unit's own turn (Civ4's `doHeal`, the Pillar of Dawn), not
   spells cast on it.
 - The battle effect is `BattleEffect::Dealt` (every hit of the fighter, its pairs' damage

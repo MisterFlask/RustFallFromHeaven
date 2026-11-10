@@ -389,6 +389,18 @@ impl Game {
         if self.player_is_barbarian(p) {
             return;
         }
+        // A player with no city (the starting units before the capital, a crusade Host without
+        // lenders' cities) has no supply rule at all: its armies' counters stay 0.
+        let team = self.players[p].team;
+        let has_city = self.player_ids().any(|q| self.players[q].alive && !self.players[q].cities.is_empty() && self.supply_home(team, self.players[q].team));
+        if !has_city {
+            for a in self.players[p].armies.clone() {
+                if self.armies.contains(a) {
+                    self.armies[a].unsupplied_turns = 0;
+                }
+            }
+            return;
+        }
         let hunger = self.d.defines.supply_hunger_turns;
         let turn = self.game_turn();
         for a in self.players[p].armies.clone() {
