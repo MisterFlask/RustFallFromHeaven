@@ -95,6 +95,9 @@ pub struct Cache {
     /// Forecasts asked for, and played (not found in the cache).
     pub calls: Cell<i64>,
     pub played: Cell<i64>,
+    /// The game turn the incoming-attack estimate was last recorded (`predict::incoming`: once
+    /// per player-turn).
+    pub incoming_turn: Cell<Option<i32>>,
 }
 
 impl Cache {
@@ -298,7 +301,7 @@ struct Stack {
 /// Can enemy unit `u` take part in an attack on our city (as `p` sees it)? A unit we see, of a
 /// team at war with us, a land unit able to attack, not an animal (animals do not enter owned
 /// land), not a garrison staying in its own city.
-fn raider(g: &Game, p: PlayerId, u: UnitId) -> bool {
+pub(crate) fn raider(g: &Game, p: PlayerId, u: UnitId) -> bool {
     let team = g.players[p].team;
     let unit = &g.units[u];
     let their = g.players[unit.owner].team;

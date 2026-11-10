@@ -166,6 +166,157 @@ pub(crate) fn holds2(g: &Game, cache: Option<&Cache>, flood: &mut Flood, p: Play
     }
 }
 
+/// `incoming3`, `incoming6`, `incoming10`: the incoming-attack estimate ([`crate::threat`]) of
+/// each city of `p` with a hostile stack in reach (and, at war with a civilization, of every other
+/// city, pct 0): the city is attacked within 3 / 6 / 10 turns. `lost2_as_is`, `lost2_reinforced`:
+/// it is lost within [`CITY_LOST_HORIZON`] turns, pct the chance it is attacked within them times
+/// the forecast of the expected force against the garrison as it stands / with the units of ours
+/// that arrive before it. All by answer. With events written, one `decision` event `threat` per
+/// call with every city's estimate and every stack (the misses' analysis reads it).
+pub(crate) fn incoming(g: &Game, cache: &Cache, flood: &mut Flood, p: PlayerId, civ_war: bool) {
+    use crate::threat::{incoming, Incoming, Threats, HORIZONS};
+    if !g.telemetry.on() || g.players[p].cities.is_empty() {
+        return;
+    }
+    let t = Threats::of(g, Some(cache), flood, p);
+    let (mut floods, mut forecasts) = (t.floods as i64, t.forecasts as i64);
+    let mut rows: Vec<(CityId, Incoming)> = Vec::new();
+    let mut threatened = 0;
+    for c in g.players[p].cities.clone() {
+        if !g.cities.contains(c) {
+            continue;
+        }
+        let inc = incoming(g, Some(cache), flood, &t, c);
+        floods += inc.floods as i64;
+        forecasts += inc.forecasts as i64;
+        let seen = inc.owners > 0;
+        threatened += seen as i64;
+        if seen || civ_war {
+            let (x, y) = (g.cities[c].x, g.cities[c].y);
+            let barbarian = t.about(c).any(|(f, _)| f.barbarian);
+            let at_sea = t.stacks.iter().any(|s| s.at_sea && s.cands.iter().any(|x| x.city == c));
+            let enemy_units: i64 = inc.force.iter().map(|x| x.0.len() as i64).sum();
+            let best_take = t.about(c).map(|(f, i)| f.cities[i].p_take as i64).max().unwrap_or(-1);
+            let garrison = crate::production::garrison(g, p, g.city_plot(c)).0 as i64;
+            let ctx = |inc: &Incoming| {
+                Obj::new()
+                    .b("stack", seen)
+                    .s("kind", inc.kind)
+                    .i("owners", inc.owners as i64)
+                    .i("stacks", inc.stacks as i64)
+                    .i("takers", inc.takers as i64)
+                    .i("turns", inc.turns_until.map_or(-1, |x| x as i64))
+                    .i("p1", inc.p_attacked_within[0] as i64)
+                    .i("p3", inc.p_attacked_within[1] as i64)
+                    .i("p6", inc.p_attacked_within[2] as i64)
+                    .i("p10", inc.p_attacked_within[3] as i64)
+                    .i("as_is", inc.p_lost_as_is as i64)
+                    .i("reinforced", inc.p_lost_reinforced as i64)
+                    .i("reinforcements", inc.reinforcements.len() as i64)
+                    .i("best_take", best_take)
+                    .i("enemy_units", enemy_units)
+                    .i("garrison", garrison)
+                    .b("barbarian", barbarian)
+                    .b("at_sea", at_sea)
+                    .b("civ_war", civ_war)
+                    .i("x", x as i64)
+                    .i("y", y as i64)
+                    .end()
+            };
+            for (k, kind) in [(1, "incoming3"), (2, "incoming6"), (3, "incoming10")] {
+                let pr = Prediction::new(kind, Outcome::CityAttackedBy { city: c, team: None }, HORIZONS[k], inc.p_attacked_within[k]).per_answer();
+                g.tel_prediction(p, pr, || ctx(&inc));
+            }
+            let p10 = inc.p_attacked_within[3];
+            for (kind, permille) in [("lost2_as_is", inc.p_lost_as_is), ("lost2_reinforced", inc.p_lost_reinforced)] {
+                let pr = Prediction::new(kind, Outcome::CityLost { city: c }, CITY_LOST_HORIZON, p10 * permille / 1000).score(permille as i64).per_answer();
+                g.tel_prediction(p, pr, || ctx(&inc));
+            }
+        }
+        rows.push((c, inc));
+    }
+    // The trace of the call: every city's estimate (with the military of the civilizations we are
+    // not at war with near it) and every stack.
+    g.tel_decision(p, "threat", "turn", "", threatened, || threat_trace(g, p, &t, &rows, floods, forecasts));
+    g.tel_decision(p, "threat", "floods", "", floods, String::new);
+    g.tel_decision(p, "threat", "forecasts", "", forecasts, String::new);
+}
+
+/// The trace's radius for the military of civilizations we are not at war with near a city.
+const NEUTRAL_RADIUS: i32 = 4;
+
+/// The JSON of [`incoming`]'s trace: `cities` as `[id, x, y, p1, p3, p6, p10, as_is, reinforced,
+/// turns, [[owner, units]..]]` (the last: land military of civilizations not at war with us within
+/// [`NEUTRAL_RADIUS`]), `stacks` as `{o, n, x, y, sea, c: [[city, turns]..]}`, `forces` as `{o,
+/// barb, t (the target city, -1: none), c: [[city, turns, when it takes it (-1: never), p_take]..]}`,
+/// `far` as `[[owner, units]..]` (hostile units that reach none of our cities).
+fn threat_trace(g: &Game, p: PlayerId, t: &crate::threat::Threats, rows: &[(CityId, crate::threat::Incoming)], floods: i64, forecasts: i64) -> String {
+    let team = g.players[p].team;
+    let cities: Vec<String> = rows
+        .iter()
+        .map(|(c, inc)| {
+            let (x, y) = (g.cities[*c].x, g.cities[*c].y);
+            let mut nbr: std::collections::BTreeMap<i64, i64> = std::collections::BTreeMap::new();
+            for dx in -NEUTRAL_RADIUS..=NEUTRAL_RADIUS {
+                for dy in -NEUTRAL_RADIUS..=NEUTRAL_RADIUS {
+                    let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
+                    for &u in &g.map.plots[q].units {
+                        let o = g.units[u].owner;
+                        let ot = g.players[o].team;
+                        if ot == team || g.at_war(team, ot) || g.player_is_barbarian(o) || g.unit_is_invisible(u, team, false) {
+                            continue;
+                        }
+                        if g.d.units[g.units[u].unit_type].animal || !g.unit_can_attack(u) || g.unit_get_domain_type(u) != ffh_data::DomainType::DOMAIN_LAND {
+                            continue;
+                        }
+                        *nbr.entry(o.0 as i64).or_insert(0) += 1;
+                    }
+                }
+            }
+            let nbr: Vec<String> = nbr.iter().map(|(o, n)| format!("[{o},{n}]")).collect();
+            let a = &inc.p_attacked_within;
+            format!("[{},{},{},{},{},{},{},{},{},{},[{}]]", c.0, x, y, a[0], a[1], a[2], a[3], inc.p_lost_as_is, inc.p_lost_reinforced, inc.turns_until.unwrap_or(-1), nbr.join(","))
+        })
+        .collect();
+    let stacks: Vec<String> = t
+        .stacks
+        .iter()
+        .map(|s| {
+            let (x, y) = g.map.xy(s.at);
+            let cands: Vec<String> = s.cands.iter().map(|c| format!("[{},{}]", c.city.0, c.turns)).collect();
+            Obj::new()
+                .i("o", s.owner.0 as i64)
+                .i("n", s.units.len() as i64)
+                .i("x", x as i64)
+                .i("y", y as i64)
+                .b("sea", s.at_sea)
+                .raw("c", &format!("[{}]", cands.join(",")))
+                .end()
+        })
+        .collect();
+    let forces: Vec<String> = t
+        .forces
+        .iter()
+        .map(|f| {
+            let cs: Vec<String> = f.cities.iter().enumerate().map(|(i, c)| format!("[{},{},{},{}]", c.city.0, c.turns, f.when(i).unwrap_or(-1), c.p_take)).collect();
+            Obj::new()
+                .i("o", f.owner.0 as i64)
+                .b("barb", f.barbarian)
+                .i("t", f.target.map_or(-1, |i| f.cities[i].city.0 as i64))
+                .raw("c", &format!("[{}]", cs.join(",")))
+                .end()
+        })
+        .collect();
+    Obj::new()
+        .i("floods", floods)
+        .i("forecasts", forecasts)
+        .raw("cities", &format!("[{}]", cities.join(",")))
+        .raw("stacks", &format!("[{}]", stacks.join(",")))
+        .raw("forces", &format!("[{}]", forces.join(",")))
+        .raw("far", &format!("[{}]", t.far.iter().map(|(o, n)| format!("[{},{n}]", o.0)).collect::<Vec<_>>().join(",")))
+        .end()
+}
+
 /// `attack`: unit `u` wins the attack it is about to make on plot `q` (pct: the odds, per
 /// mille, the AI weighed it by).
 pub(crate) fn attack(g: &Game, p: PlayerId, u: UnitId, q: PlotIdx, odds: i32, src: &'static str) {

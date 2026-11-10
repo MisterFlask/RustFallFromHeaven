@@ -185,6 +185,12 @@ impl View {
                     crate::predict::holds2(g, Some(&v.forecasts), &mut v.flood, p, c, threat > defense, threat, defense);
                 }
             }
+            // The incoming attacks (`threat.rs`), recorded beside `peril` once per player-turn.
+            if g.telemetry.on() && v.forecasts.incoming_turn.get() != Some(g.game_turn()) {
+                v.forecasts.incoming_turn.set(Some(g.game_turn()));
+                let civ_war = !v.civ_enemies.is_empty();
+                crate::predict::incoming(g, &v.forecasts, &mut v.flood, p, civ_war);
+            }
         }
     }
 

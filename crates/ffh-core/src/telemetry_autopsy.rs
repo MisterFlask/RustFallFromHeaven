@@ -100,6 +100,7 @@ impl Game {
         if !self.telemetry.on() {
             return;
         }
+        self.tel_predict_attacked(p, to);
         let turn = self.game_turn();
         let team = self.players[p].team;
         let (mut def_n, mut def_str, mut def_full, mut vs) = (0i64, 0i64, 0i64, None);
