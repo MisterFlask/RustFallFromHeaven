@@ -41,8 +41,10 @@ g.tel_prediction(p, Prediction::new("war_takes_city", outcome, 40, if takes { 10
 | `AttackWon { attacker }` | its next attack wins: a duel in which the defender dies, or an engagement on its side that takes or clears the plot (the unit standing) | it falls, or its side is repulsed | it withdraws, the engagement is held, or it makes no attack this turn |
 | `StackClears { team, plot }` | no unit of a team at war with `team` that can defend stands on the plot when the horizon ends | one does | – |
 | `AnyCityCapturedFrom { team, victim }` | `team` conquers a city of `victim` within the horizon | the horizon ends, or `team` dies | `victim` is destroyed first |
+| `CityAttackedBy { city, team }` | an engagement is launched at the city's plot, or a duel fought on it, by `team` (`None`: any team other than the owner's), or the city is conquered by it without one | the horizon ends with the owner holding it | the city changes hands otherwise (traded, flipped, conquered by another team, razed) |
 
-Resolution happens at the events (`player_acquire_city`, a duel, an engagement), at the end of
+Resolution happens at the events (`player_acquire_city`, a duel, an engagement; `CityAttackedBy` at
+the engagement's launch, `tel_autopsy_battle`, before its battle), at the end of
 each player's turn (this turn's `StackClears` and `AttackWon`) and at the end of each game turn
 (cities by their plots, horizons that ran out). Predictions still pending when the game ends are
 not scored (`open` in the aggregates).
@@ -83,6 +85,8 @@ estimate of the turn they strike. Kinds that should be scored at the moment of t
 | `sortie` | `defense::sortie_ok` with an enemy next to the city | `CityLost`, 3 turns | 0 when a sortie is allowed, else 100; score our margin | allowed |
 | `war_takes_city` | `diplomacy::manage` at a prepared war's declaration (acted) or drop at the re-check | `AnyCityCapturedFrom`, 40 turns | `can_take_cities_at` at the re-check's 100% margin, yes/no; score attack / needed in percent | declared |
 | `fight_on` | `diplomacy::manage`, a cash-out refused because our army is at their next city | `AnyCityCapturedFrom`, 10 turns | 100 | always |
+| `incoming3`, `incoming6`, `incoming10` | `View::analyze` (`predict::incoming`), once per player-turn: every city with a hostile stack in reach, and at war with a civilization every other city too (pct 0); by answer | `CityAttackedBy { team: None }`, 3 / 6 / 10 turns | `threat::incoming`'s chance of an attack within the horizon | – |
+| `lost2_as_is`, `lost2_reinforced` | the same cities | `CityLost`, 10 turns | the chance of an attack within 10 turns x the forecast of the expected force against the garrison as it stands / reinforced; score the forecast (per mille); by answer | – |
 
 Beside each of these, the rules' battle forecast (`forecast.rs`, below) answers the same question
 as its own kind, with the same outcome and horizon and the old decision's `acted` (the AI still
@@ -147,8 +151,10 @@ calibration on the acted slice and its missed chances on the declined one.
 An estimator built on the rules' own battle code (CLAUDE.md, step 3: "prefer an estimator that runs
 the rules' own code"): the engagement preview's forecast (`Game::engage_preview`, docs/ENGAGEMENTS.md,
 "The attack preview") made for battles that are not on the board yet. Measured here against the
-old estimators; **no decision uses it yet** (the AI acts on `combat_sim`), and with telemetry off
-none of it runs (`ffh stats` gives the same game with and without it; with telemetry on, too).
+old estimators. The AI's attack decisions read it since switch `FORECAST` (docs/AI.md, "On the
+forecast" under Field armies; `crates/ffh-ai/src/military.rs`, `campaign.rs`); the ledger's kinds
+below were measured before, when no decision used it. Recording stays pure: `ffh stats` gives the
+same game with telemetry on and off.
 
 ### In the rules (`crates/ffh-core/src/engagement/preview.rs`)
 
@@ -280,6 +286,128 @@ is forecast well and the attack not at all: a decision on `holds2` needs a secon
 assumes the units come: of the 18 cities lost at once with `holds2_reinforced` below 30%, 12 had
 reinforcements counted (whether they came is not recorded).
 
-Not done: any decision on these (next: the strike and field go/no-go on `strike2` and `field2`,
-judged where they fire); the attack-likelihood estimate for the defense; the formation of the
-survivors reordered by their damage within a run of waves.
+Done since: the strike and field go/no-go on `strike2` and `field2` (switch `FORECAST`). Not done:
+the formation of the survivors reordered by their damage within a run of waves. The
+attack-likelihood estimate is below; no defence is built on it yet.
+
+## Incoming attacks (`threat.rs`)
+
+The second half of the defensive question: will a stack attack this city, when, and with what.
+Recorded in the ledger only; **no decision uses it**, and with telemetry off none of it runs
+(`ffh stats` gives the same checksum before and after, with telemetry on or off: checked on seeds
+1-4, 300 turns).
+
+### The estimator (`crates/ffh-ai/src/threat.rs`)
+
+- **Stacks** (`Threats::of(g, cache, flood, p)`): land units of teams at war with `p` (barbarians
+  included) that `known_threat` lets it see (through fog, not through stealth), able to attack, no
+  animals, no garrisons in their own cities; grouped by owner, units on the same or adjacent plots
+  merged. Each stack floods as its slowest unit moves (`reach::Flood`, full moves, the rules'
+  costs) for `THREAT_TURNS` = 6 turns; its candidates are our cities it reaches: the soonest plot
+  next to each and the turns to stand there (0: it can attack on its next turn).
+- **Forces**: each owner's stacks are one army. For the soonest `MAX_CANDIDATES` = 4 cities it
+  reaches, the rules' forecast (`forecast_turn`, `ForecastTurn::Next`, `TARGET_RUNS` = 20) of the
+  army gathered there by each arrival turn (at most `MAX_STEPS` = 3 steps; all the units that have
+  arrived, from the approach of the biggest stack) against the garrison as it stands, until it takes
+  the city with at least `TAKE_BAR` = 50%: `take_turns`. No forecast for barbarians.
+- **The rule**, percent chance that an owner attacks a city within `h` turns: the city it can take
+  soonest is its target (ties: the better chance, the nearer city). Target taken at turn `w < h`:
+  `P_TARGET` (40) x (2/3)^w; another city it takes (the army walks on to the next): `P_NEXT` (25) x
+  (2/3)^w; a city beyond the forecast ones of an owner with a target counts as one it takes, from
+  the later of the turn it reaches it and the target's turn. Taken only at `w >= h`: `P_LATE` (1).
+  Reached within `h` and not taken: `P_REACH` (1). Any city a barbarian stack reaches within `h`:
+  `P_BARBARIAN` (1). A city's chance: at least one owner attacks (owners independent). The levels
+  were read off the attacks per category in seeds 1-16 (the table below) and not checked on other
+  seeds.
+- **`threat::incoming(g, cache, flood, threats, city) -> Incoming`**: `p_attacked_within` for
+  `HORIZONS` = [1, 3, 6, 10] turns; `turns_until` (the soonest an owner takes it, else the soonest
+  stack next to it); `force` (each expected stack with its approach and turns: the owners that take
+  it, their stacks there by then; else every stack in reach); `p_lost_as_is` (the worst single
+  owner's army against the garrison, `CITY_RUNS` = 40) and `p_lost_reinforced` (the same with our
+  units that reach the city by `turns_until`: the nearest `REINFORCE_K` = 8 within the best-case
+  distance, each flooded to the city); counts of owners, stacks, takers; the rule's category.
+- No memory: only what is in sight this turn. With `FOG_SIGHT` on (the default) the AI sees enemy
+  units through fog, so the cost of no memory is in stealth and units not yet built (below).
+
+The shadow predictions of this section are recorded only with `FFH_AI_SHADOW_THREAT=1`
+(set it in the environment of `calibration.py`; the games inherit it): as built the estimator costs about 2.8 times the game's own time.
+
+The recording (`predict::incoming`) also writes, with events on, one `decision` event `threat`
+per player-turn whose `alts` holds every city's estimate (and the land military of civilizations
+not at war with us within 4 plots), every stack and every force: the misses below come from it.
+
+### Calibration (seeds 1-16, 6 civs, standard map, 300 turns)
+
+The ledger (by answer: one sample per city and distinct tenth of pct):
+
+| Kind | N | predicted | observed | Brier | skill | best F1 |
+|---|---|---|---|---|---|---|
+| `incoming3` | 21616 | 2.7% | 2.8% | 0.020 | +0.26 | 0.48 at >=20%: 38% / 66% |
+| `incoming6` | 13503 | 4.1% | 5.4% | 0.038 | +0.27 | 0.52 at >=20%: 46% / 59% |
+| `incoming10` | 9304 | 5.2% | 8.9% | 0.062 | +0.24 | 0.53 at >=20%: 52% / 54% |
+| `lost2_as_is` | 9199 | 4.4% | 8.7% | 0.060 | +0.25 | 0.53 at >=10%: 41% / 78% |
+| `lost2_reinforced` | 8607 | 2.9% | 7.8% | 0.055 | +0.24 | 0.58 at >=10%: 52% / 66% |
+| `peril` (same games) | 4279 | 20.2% | 9.0% | 0.172 | -1.10 | 0.41 (yes/no): 30% / 66% |
+| `holds2_reinforced` | 4221 | 16.8% | 11.4% | 0.127 | -0.26 | 0.48 at >=70%: 43% / 55% |
+
+(The pcts are low, so precision / recall at 50% say nothing: under 1% of the answers reach it.)
+Reliability (n / observed): `incoming6` 0-9 11570/1%, 10-19 994/16%, 20-29 463/36%, 30-39 52/37%,
+40-49 394/57%, 50-59 19/68%; `lost2_reinforced` 0-9 7759/3%, 10-19 271/36%, 20-29 212/52%, 40-49
+265/68%. Ordered and useful, but under-confident by a factor of about 1.5 in the ledger's sampling
+(each answer at its first appearance); the per-turn rates by category the levels came from are
+those of every turn. `peril` and `holds2` are recorded only for cities with a threat in sight, so
+the sets differ: compare F1 and the reliability, not N.
+
+The first version (a per-stack target, every stack independent, levels guessed) had skill -1.5 to
+-2.2: barbarian stacks attack a city 0.5% of the time whatever they could take, and a civilization
+attacks with its stacks gathered, so a stack that could take nothing alone was the attack 8.7% of
+the time. Per category, per (owner, city) and turn of trace (seeds 1-16, attacked by that owner
+within 6 turns): target taken at turn 0: 43%, 1: 29%, 2: 15%, 3: 9%, 4: 6%, 5: 4%, 6+: 1%; another
+city it takes, at turn 0: 27%, 1: 14%, 2: 10%, 3: 7%, 4: 3%, 5+: 1-2%; reached, not taken: 1.0%;
+barbarian: 0.4%; no stack in reach: 0.2%.
+
+### The misses
+
+Onsets of an attack (the first on a city in 10 turns), seeds 1-16: 212 by civilizations, 23 by
+barbarians (all 23 with a barbarian stack in reach, rated 1%). Where the 212 civilization onsets
+stood in the defender's trace before them:
+
+| | 0 turns before | 2 before | 5 before | 9 before |
+|---|---|---|---|---|
+| the attacker's army in reach and rated as taking the city (its target or a next city) | 206 (97%) | 183 (86%) | 142 (67%) | 96 (45%) |
+| ... of which its target | 184 | 109 | 52 | 24 |
+| ... of which another city was its target | 22 | 74 | 90 | 72 |
+| in reach, could not take it as it stood | 2 | 6 | 13 | 12 |
+| units seen, none within 6 turns of this city | 0 | 0 | 2 | 5 |
+| no unit of the attacker seen (not yet built, stealth, in ships) | 2 | 12 | 29 | 56 |
+| a stack at sea | 0 | 1 | 0 | 0 |
+| not at war yet | 2 | 7 | 20 | 35 |
+| ... with its land military within 4 plots of the city | 2 | 6 | 13 | 21 |
+| the city not ours then | 0 | 3 | 6 | 8 |
+
+- **Assigned to another city** is the largest seen miss: 90 of the onsets 5 turns ahead were rated
+  as a next city of an army whose target was elsewhere (low pct: `P_NEXT` decayed by the turn). The
+  armies are large and walk from one city to the next; which one comes first within a few turns is
+  the part the rule gets wrong, not that the army is coming.
+- **Unseen**: 14% of the onsets 5 turns ahead, 26% 9 turns ahead, had no unit of the attacker in
+  sight at all, and 1-2% had units beyond 6 turns of every city. Memory would not catch these (the
+  AI already sees through fog): they are armies built or arriving later, or hidden by stealth.
+  Extending the flood beyond 6 turns would catch at most the 1-2%.
+- **Declarations**: 24 of the 212 onsets (11%) came within 3 turns of the declaration of the war (0:
+  2, 1: 5, 2: 9, 3: 8); 9% (5 turns ahead) to 17% (9 turns ahead) of the onsets were by a
+  civilization not at war with the city's owner when the estimate was made, two thirds of them with
+  their military already within 4 plots. Catching these needs reading neutral stacks at the border;
+  out of scope here.
+- **Sea landings**: under 1%.
+- **False alarms**: of the (owner, target) pairs rated at turn 0, 57% are not followed by an attack
+  within 6 turns. Not broken down further.
+
+### Cost
+
+Per game (300 turns, 6 civs, standard map): 1,825 calls (once per player-turn), 40,000 floods (most
+of them the reinforcement search, up to 8 per threatened city) and 9,500 forecasts. With telemetry
+on, seeds 1-4: 32.8 s a game against 13.9 s for the same games without the estimate, and 6.7 s
+with telemetry off: about 10 ms per player-turn, **about 2.8 times the game's own time, far above
+the 10% a per-turn decision could afford**. Before a decision reads it: the forecasts of the target
+choice at fewer runs or only when an owner's army changes, one reverse flood from each city for the
+reinforcements instead of one flood per unit, and the per-player stacks shared within a game turn.

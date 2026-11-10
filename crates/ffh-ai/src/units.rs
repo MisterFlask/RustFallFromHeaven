@@ -442,7 +442,7 @@ fn garrison_unit(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let here = g.unit_plot(u);
     if let Some(c) = g.map.plots[here].plot_city.filter(|&c| g.cities[c].owner == p) {
         let have = v.garrison.get(&c).copied().unwrap_or(0);
-        if have < garrison_quota(g, v, c) || crate::defense::sortie_ok(g, p, here, u) && attack_adjacent(g, v, grp, u, 800) {
+        if have < garrison_quota(g, v, c) || crate::defense::sortie_ok(g, p, here, u) && attack_adjacent(g, v, grp, u, 800, "sortie") {
             *v.garrison.entry(c).or_insert(0) += 1;
             if alive(g, grp) && g.group_ready_to_move(grp, false) {
                 hold(g, grp);
@@ -521,12 +521,18 @@ fn garrison_unit(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
 
 /// Attack an adjacent (one move) enemy if the odds are at least `min_odds` (of 1000).
 /// Returns true if an attack was made.
-pub(crate) fn attack_adjacent(g: &mut Game, v: &View, grp: GroupId, u: UnitId, min_odds: i32) -> bool {
+/// `site` names the caller in the record of the forecast rule (`military::field_call`). On the
+/// forecast (switch `FORECAST`, never the barbarians), `min_odds` is the chance the plot falls in
+/// the battle the pool on our plot fights (every unit of ours there that can attack it), not the
+/// unit's duel odds.
+pub(crate) fn attack_adjacent(g: &mut Game, v: &View, grp: GroupId, u: UnitId, min_odds: i32, site: &'static str) -> bool {
     if attack_power(g, u) == 0 || !g.unit_can_attack(u) || g.unit_moves_left(u) <= 0 {
         return false;
     }
     let here = g.unit_plot(u);
     let (x, y) = g.map.xy(here);
+    let p = g.units[u].owner;
+    let forecast = crate::military::forecast_on(g, p);
     let mut best: Option<(PlotIdx, i32)> = None;
     for dir in 0..DirectionType::NUM {
         let Some(q) = g.plot_direction(x, y, DirectionType::from_usize(dir)) else { continue };
@@ -539,6 +545,18 @@ pub(crate) fn attack_adjacent(g: &mut Game, v: &View, grp: GroupId, u: UnitId, m
         let Some(def) = g.plot_get_best_defender(q, None, Some(g.units[u].owner), Some(u), false, false, false) else { continue };
         let odds = g.get_combat_odds(u, def);
         let city_bonus = if g.map.plots[q].plot_city.is_some() { 100 } else { 0 };
+        if forecast && g.engage_applies(u, q) {
+            let attacks = crate::military::pool_attack(g, p, here, q);
+            if attacks.is_empty() {
+                continue;
+            }
+            let c = crate::military::field_call(g, v, p, &attacks, q, crate::military::Rule::Bar(min_odds), Some(site), || Some((odds >= min_odds, crate::combat_sim::Sim { first: odds, ..Default::default() })));
+            let score = c.est.map_or(1000, |e| e.p_take) + city_bonus;
+            if c.go && best.map_or(true, |(_, s)| score > s) {
+                best = Some((q, score));
+            }
+            continue;
+        }
         let score = odds + city_bonus;
         if odds >= min_odds && best.map_or(true, |(_, s)| score > s) {
             best = Some((q, score));
@@ -546,7 +564,11 @@ pub(crate) fn attack_adjacent(g: &mut Game, v: &View, grp: GroupId, u: UnitId, m
     }
     if let Some((q, score)) = best {
         if g.telemetry.on() {
-            let odds = score - if g.map.plots[q].plot_city.is_some() { 100 } else { 0 };
+            let odds = if forecast {
+                g.plot_get_best_defender(q, None, Some(p), Some(u), false, false, false).map_or(1000, |d| g.get_combat_odds(u, d))
+            } else {
+                score - if g.map.plots[q].plot_city.is_some() { 100 } else { 0 }
+            };
             crate::predict::attack(g, g.units[u].owner, u, q, odds, "adjacent");
             crate::predict::attack2(g, Some(&v.forecasts), g.units[u].owner, u, q, "adjacent");
         }
@@ -585,7 +607,7 @@ fn best_hunt_target(g: &Game, v: &View, u: UnitId, reach: &[Reached]) -> Option<
 }
 
 fn explore(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
-    if attack_adjacent(g, v, grp, u, 750) {
+    if attack_adjacent(g, v, grp, u, 750, "explore") {
         return;
     }
     if !alive(g, grp) || !g.units.contains(u) {
@@ -716,7 +738,7 @@ pub(crate) fn barbarian(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
         return;
     }
     // Barbarians and animals are aggressive: attack anything they can beat.
-    if attack_adjacent(g, v, grp, u, 500) {
+    if attack_adjacent(g, v, grp, u, 500, "aggressive") {
         return;
     }
     if !alive(g, grp) || !g.units.contains(u) {

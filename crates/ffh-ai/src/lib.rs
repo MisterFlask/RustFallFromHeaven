@@ -65,6 +65,7 @@ pub mod supply;
 pub mod switches;
 pub mod tactics;
 pub mod tech_plan;
+pub mod threat;
 #[cfg(test)]
 pub(crate) mod testkit;
 pub mod trade;

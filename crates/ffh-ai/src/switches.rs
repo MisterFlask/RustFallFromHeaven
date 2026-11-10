@@ -46,6 +46,14 @@ pub static CIV: Switch = Switch::new("CIV");
 /// `FFH_AI_TRAIT_OFF` ([`env_list`], trait names).
 pub static TRAIT_CIVS: Switch = Switch::with_vars("TRAIT_CIVS", None, Some("FFH_AI_TRAIT_CIVS"));
 
+// Behaviours under measurement (removed from here once kept or dropped).
+
+/// Attacks decided on the rules' battle forecast (`forecast.rs`): the field rule
+/// (`military::field_decide`: assaults, adjacent targets, hunts, captures, landings,
+/// `units::attack_adjacent`) and the strike (`campaign::strike`, the strike phase); off, on
+/// `combat_sim`'s duels as in round 7g. Barbarians always play the old way.
+pub static FORECAST: Switch = Switch::new("FORECAST");
+
 /// The names environment variable `var` lists, comma-separated: trimmed, upper-cased, `prefix`
 /// (`CIVILIZATION_`, `TRAIT_`) taken off. `None` when it is unset or lists nothing.
 pub fn env_list(var: &str, prefix: &str) -> Option<Vec<String>> {

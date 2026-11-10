@@ -733,6 +733,7 @@ impl Game {
         if !undefended || def_dead {
             self.tel_predict_duel(att, att_dead, def_dead);
         }
+        self.tel_predict_attacked(pa, plot);
     }
 
     /// An engagement (docs/TELEMETRY.md, "Engagements"), after its post-battle steps: today's
