@@ -17,12 +17,6 @@
     "visible": true
   },
   {
-    "type": "GAMEOPTION_AGGRESSIVE_AI",
-    "description": "TXT_KEY_GAME_OPTION_AGGRESSIVE_AI",
-    "help": "TXT_KEY_GAME_OPTION_AGGRESSIVE_AI_HELP",
-    "visible": true
-  },
-  {
     "type": "GAMEOPTION_ONE_CITY_CHALLENGE",
     "description": "TXT_KEY_GAME_OPTION_ONE_CITY_CHALLENGE",
     "help": "TXT_KEY_GAME_OPTION_ONE_CITY_CHALLENGE_HELP",
@@ -77,18 +71,6 @@
     "visible": true
   },
   {
-    "type": "GAMEOPTION_AI_NO_BUILDING_PREREQS",
-    "description": "TXT_KEY_GAME_OPTION_AI_NO_BUILDING_PREREQS",
-    "help": "TXT_KEY_GAME_OPTION_AI_NO_BUILDING_PREREQS_HELP",
-    "visible": true
-  },
-  {
-    "type": "GAMEOPTION_AI_NO_MINIMUM_LEVEL",
-    "description": "TXT_KEY_GAME_OPTION_AI_NO_MINIMUM_LEVEL",
-    "help": "TXT_KEY_GAME_OPTION_AI_NO_MINIMUM_LEVEL_HELP",
-    "visible": true
-  },
-  {
     "type": "GAMEOPTION_NO_CITY_RAZING",
     "description": "TXT_KEY_GAME_OPTION_NO_CITY_RAZING",
     "help": "TXT_KEY_GAME_OPTION_NO_CITY_RAZING_HELP",
@@ -111,16 +93,6 @@
     "description": "TXT_KEY_GAME_OPTION_NO_BARBARIANS",
     "help": "TXT_KEY_GAME_OPTION_NO_BARBARIANS_HELP",
     "visible": true
-  },
-  {
-    "type": "GAMEOPTION_RANDOM_PERSONALITIES",
-    "description": "TXT_KEY_GAME_OPTION_RANDOM_PERSONALITIES",
-    "help": "TXT_KEY_GAME_OPTION_RANDOM_PERSONALITIES_HELP"
-  },
-  {
-    "type": "GAMEOPTION_PICK_RELIGION",
-    "description": "TXT_KEY_GAME_OPTION_PICK_RELIGION",
-    "help": "TXT_KEY_GAME_OPTION_PICK_RELIGION_HELP"
   },
   {
     "type": "GAMEOPTION_NO_TECH_TRADING",
@@ -156,18 +128,6 @@
     "type": "GAMEOPTION_NO_CHANGING_WAR_PEACE",
     "description": "TXT_KEY_GAME_OPTION_NO_CHANGING_WAR_PEACE",
     "help": "TXT_KEY_GAME_OPTION_NO_CHANGING_WAR_PEACE_HELP",
-    "visible": true
-  },
-  {
-    "type": "GAMEOPTION_NEW_RANDOM_SEED",
-    "description": "TXT_KEY_GAME_OPTION_NEW_RANDOM_SEED",
-    "help": "TXT_KEY_GAME_OPTION_NEW_RANDOM_SEED_HELP",
-    "visible": true
-  },
-  {
-    "type": "GAMEOPTION_LOCK_MODS",
-    "description": "TXT_KEY_GAME_OPTION_LOCK_MODS",
-    "help": "TXT_KEY_GAME_OPTION_LOCK_MODS_HELP",
     "visible": true
   },
   {
@@ -210,12 +170,6 @@
     "type": "GAMEOPTION_DOUBLE_BONUSES",
     "description": "TXT_KEY_GAME_OPTION_DOUBLE_BONUSES",
     "help": "TXT_KEY_GAME_OPTION_DOUBLE_BONUSES_HELP",
-    "visible": true
-  },
-  {
-    "type": "GAMEOPTION_DOUBLE_EVENTS",
-    "description": "TXT_KEY_GAME_OPTION_DOUBLE_EVENTS",
-    "help": "TXT_KEY_GAME_OPTION_DOUBLE_EVENTS_HELP",
     "visible": true
   },
   {
@@ -331,145 +285,5 @@
     "description": "TXT_KEY_GAME_OPTION_NO_ORTHUS",
     "help": "TXT_KEY_GAME_OPTION_NO_ORTHUS_HELP",
     "visible": true
-  },
-  {
-    "type": "GAMEOPTION_WB_AGAINST_THE_GREY",
-    "description": "TXT_KEY_GAME_OPTION_WB_AGAINST_THE_GREY",
-    "help": "TXT_KEY_GAME_OPTION_WB_AGAINST_THE_GREY_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_AGAINST_THE_WALL",
-    "description": "TXT_KEY_GAME_OPTION_WB_AGAINST_THE_WALL",
-    "help": "TXT_KEY_GAME_OPTION_WB_AGAINST_THE_WALL_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_BARBARIAN_ASSAULT",
-    "description": "TXT_KEY_GAME_OPTION_WB_BARBARIAN_ASSAULT",
-    "help": "TXT_KEY_GAME_OPTION_WB_BARBARIAN_ASSAULT_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_BENEATH_THE_HEEL",
-    "description": "TXT_KEY_GAME_OPTION_WB_BENEATH_THE_HEEL",
-    "help": "TXT_KEY_GAME_OPTION_WB_BENEATH_THE_HEEL_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_BLOOD_OF_ANGELS",
-    "description": "TXT_KEY_GAME_OPTION_WB_BLOOD_OF_ANGELS",
-    "help": "TXT_KEY_GAME_OPTION_WB_BLOOD_OF_ANGELS_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_FALL_OF_CUANTINE",
-    "description": "TXT_KEY_GAME_OPTION_WB_FALL_OF_CUANTINE",
-    "help": "TXT_KEY_GAME_OPTION_WB_FALL_OF_CUANTINE_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_GIFT_OF_KYLORIN",
-    "description": "TXT_KEY_GAME_OPTION_WB_GIFT_OF_KYLORIN",
-    "help": "TXT_KEY_GAME_OPTION_WB_GIFT_OF_KYLORIN_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_GRAND_MENAGERIE",
-    "description": "TXT_KEY_GAME_OPTION_WB_GRAND_MENAGERIE",
-    "help": "TXT_KEY_GAME_OPTION_WB_GRAND_MENAGERIE_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_INTO_THE_DESERT",
-    "description": "TXT_KEY_GAME_OPTION_WB_INTO_THE_DESERT",
-    "help": "TXT_KEY_GAME_OPTION_WB_INTO_THE_DESERT_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_LORD_OF_THE_BALORS",
-    "description": "TXT_KEY_GAME_OPTION_WB_LORD_OF_THE_BALORS",
-    "help": "TXT_KEY_GAME_OPTION_WB_LORD_OF_THE_BALORS_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_MULCARN_REBORN",
-    "description": "TXT_KEY_GAME_OPTION_WB_MULCARN_REBORN",
-    "help": "TXT_KEY_GAME_OPTION_WB_MULCARN_REBORN_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_RETURN_OF_WINTER",
-    "description": "TXT_KEY_GAME_OPTION_WB_RETURN_OF_WINTER",
-    "help": "TXT_KEY_GAME_OPTION_WB_RETURN_OF_WINTER_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_THE_BLACK_TOWER",
-    "description": "TXT_KEY_GAME_OPTION_WB_THE_BLACK_TOWER",
-    "help": "TXT_KEY_GAME_OPTION_WB_THE_BLACK_TOWER_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_THE_CULT",
-    "description": "TXT_KEY_GAME_OPTION_WB_THE_CULT",
-    "help": "TXT_KEY_GAME_OPTION_WB_THE_CULT_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_THE_MOMUS",
-    "description": "TXT_KEY_GAME_OPTION_WB_THE_MOMUS",
-    "help": "TXT_KEY_GAME_OPTION_WB_THE_MOMUS_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_THE_RADIANT_GUARD",
-    "description": "TXT_KEY_GAME_OPTION_WB_THE_RADIANT_GUARD",
-    "help": "TXT_KEY_GAME_OPTION_WB_THE_RADIANT_GUARD_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_THE_SPLINTERED_COURT",
-    "description": "TXT_KEY_GAME_OPTION_WB_THE_SPLINTERED_COURT",
-    "help": "TXT_KEY_GAME_OPTION_WB_THE_SPLINTERED_COURT_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_WAGES_OF_SIN",
-    "description": "TXT_KEY_GAME_OPTION_WB_WAGES_OF_SIN",
-    "help": "TXT_KEY_GAME_OPTION_WB_WAGES_OF_SIN_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_EXTRA",
-    "description": "TXT_KEY_GAME_OPTION_WB_EXTRA",
-    "help": "TXT_KEY_GAME_OPTION_WB_EXTRA_HELP"
-  },
-  {
-    "type": "GAMEOPTION_WB_LOAD_SCREEN",
-    "description": "TXT_KEY_GAME_OPTION_WB_LOAD_SCREEN",
-    "help": "TXT_KEY_GAME_OPTION_WB_LOAD_SCREEN_HELP"
-  },
-  {
-    "type": "GAMEOPTION_ADVENTURE_MODE",
-    "description": "TXT_KEY_GAME_OPTION_ADVENTURE_MODE",
-    "help": "TXT_KEY_GAME_OPTION_ADVENTURE_MODE_HELP"
-  },
-  {
-    "type": "GAMEOPTION_NO_PROJECTS",
-    "description": "TXT_KEY_GAME_OPTION_NO_PROJECTS",
-    "help": "TXT_KEY_GAME_OPTION_NO_PROJECTS_HELP"
-  },
-  {
-    "type": "GAMEOPTION_NO_HEALING_FOR_HUMANS",
-    "description": "TXT_KEY_GAME_OPTION_NO_HEALING_FOR_HUMANS",
-    "help": "TXT_KEY_GAME_OPTION_NO_HEALING_FOR_HUMANS_HELP"
-  },
-  {
-    "type": "GAMEOPTION_NO_INFLATION",
-    "description": "TXT_KEY_GAME_OPTION_NO_INFLATION",
-    "help": "TXT_KEY_GAME_OPTION_NO_INFLATION_HELP"
-  },
-  {
-    "type": "GAMEOPTION_NO_MAINTENANCE",
-    "description": "TXT_KEY_GAME_OPTION_NO_MAINTENANCE",
-    "help": "TXT_KEY_GAME_OPTION_NO_MAINTENANCE_HELP"
-  },
-  {
-    "type": "GAMEOPTION_NO_WAR_WEARINESS",
-    "description": "TXT_KEY_GAME_OPTION_NO_WAR_WEARINESS",
-    "help": "TXT_KEY_GAME_OPTION_NO_WAR_WEARINESS_HELP"
-  },
-  {
-    "type": "GAMEOPTION_ALWAYS_OPEN_BORDERS",
-    "description": "TXT_KEY_GAME_OPTION_ALWAYS_OPEN_BORDERS",
-    "help": "TXT_KEY_GAME_OPTION_ALWAYS_OPEN_BORDERS_HELP"
-  },
-  {
-    "type": "GAMEOPTION_ALWAYS_RAZE",
-    "description": "TXT_KEY_GAME_OPTION_ALWAYS_RAZE",
-    "help": "TXT_KEY_GAME_OPTION_ALWAYS_RAZE_HELP"
   }
 ]

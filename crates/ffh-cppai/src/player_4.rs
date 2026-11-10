@@ -974,7 +974,7 @@ impl Cai {
         let mut best_value = 0;
 
         let team = g.players[p].team;
-        let attitude_threshold = if g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI) { 50 } else { 1 };
+        let attitude_threshold = if crate::defs::AGGRESSIVE_AI { 50 } else { 1 };
 
         if g.plot_is_owned(spy_plot) {
             let (Some(spy_owner), Some(spy_team)) = (g.map.plots[spy_plot].owner, g.plot_get_team(spy_plot)) else {

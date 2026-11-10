@@ -2254,7 +2254,7 @@ mod tests {
 
     #[test]
     fn event_cost_applies_inflation_to_gold_and_random_gold() {
-        let mut g = two_civs();
+        let g = two_civs();
         let d = g.d;
         let p = PlayerId(0);
         let e = d.t::<EventType>("EVENT_GIRLS_BEST_FRIEND_1");
@@ -2264,9 +2264,6 @@ mod tests {
         let factor = max(0, g.player_calculate_inflation_rate(p) + 100);
         assert_eq!(g.player_get_event_cost(p, e, None, false), k_event.gold * factor / 100);
         assert_eq!(g.player_get_event_cost(p, e, None, true), (k_event.gold + k_event.random_gold) * factor / 100);
-
-        g.setup.options[GameOptionType::GAMEOPTION_NO_INFLATION] = true;
-        assert_eq!(g.player_get_event_cost(p, e, None, false), k_event.gold);
         assert_eq!(g.player_get_best_event_tech(p, e, None), None);
     }
 

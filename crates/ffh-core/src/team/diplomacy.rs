@@ -823,23 +823,13 @@ impl Game {
         self.team_is_open_borders(t, other) || self.is_free_trade()
     }
 
-    /// C++ `CvTeam::isOpenBorders`. FFH: always true under GAMEOPTION_ALWAYS_OPEN_BORDERS,
-    /// so never read `Team::open_borders` directly for rules.
+    /// C++ `CvTeam::isOpenBorders`.
     pub fn team_is_open_borders(&self, t: TeamId, other: TeamId) -> bool {
-        //FfH: Added by Kael 11/17/2008
-        if is_option(self, GameOptionType::GAMEOPTION_ALWAYS_OPEN_BORDERS) {
-            return true;
-        }
-        //FfH: End Add
-
         self.teams[t].open_borders[other]
     }
 
     /// C++ `CvTeam::setOpenBorders`.
     pub fn team_set_open_borders(&mut self, t: TeamId, other: TeamId, value: bool) {
-        // C++ quirk: the test reads isOpenBorders, which FFH answers true for every pair under
-        // GAMEOPTION_ALWAYS_OPEN_BORDERS; then only closing borders (`value = false`) gets past
-        // it and clears the raw flag (with the side effects below).
         if self.team_is_open_borders(t, other) != value {
             let old_free_trade = self.team_is_free_trade(t, other);
 
@@ -1549,16 +1539,6 @@ mod tests {
         g.teams[a].ai_open_borders_counter[b] = 3;
         g.team_set_open_borders(a, b, true);
         assert_eq!(g.teams[a].ai_open_borders_counter[b], 3, "no change, no reset");
-
-        // FFH GAMEOPTION_ALWAYS_OPEN_BORDERS: isOpenBorders is always true, so only closing
-        // gets through and it clears the raw flag.
-        g.setup.options[GameOptionType::GAMEOPTION_ALWAYS_OPEN_BORDERS] = true;
-        g.team_set_open_borders(a, b, false);
-        assert!(!g.teams[a].open_borders[b]);
-        assert!(g.team_is_open_borders(a, b));
-        assert_eq!(g.teams[a].ai_open_borders_counter[b], 0);
-        g.team_set_open_borders(a, b, true);
-        assert!(!g.teams[a].open_borders[b]);
     }
 
     #[test]

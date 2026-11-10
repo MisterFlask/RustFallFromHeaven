@@ -531,7 +531,7 @@ impl Cai {
         let cultural_victory_num_culture_cities = g.num_culture_victory_cities;
 
         let get_better_units = self.player_ai_is_do_strategy(g, p, AI_STRATEGY_GET_BETTER_UNITS);
-        let aggressive_ai = g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI);
+        let aggressive_ai = crate::defs::AGGRESSIVE_AI;
         let always_peace = g.is_option(GameOptionType::GAMEOPTION_ALWAYS_PEACE);
 
         let unit_cost_percentage = (g.player_calculate_unit_cost(p) * 100) / g.player_calculate_pre_inflated_costs(p).max(1);

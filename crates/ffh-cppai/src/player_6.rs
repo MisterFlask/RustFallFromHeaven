@@ -513,7 +513,7 @@ impl Cai {
             defenders /= 2;
         }
 
-        if !g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI) {
+        if !crate::defs::AGGRESSIVE_AI {
             defenders *= 2;
             defenders /= 3;
         }

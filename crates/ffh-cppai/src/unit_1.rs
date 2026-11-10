@@ -1257,7 +1257,7 @@ impl Cai {
         }
 
         if !g.is_option(GameOptionType::GAMEOPTION_ALWAYS_PEACE)
-            && !g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI)
+            && !crate::defs::AGGRESSIVE_AI
             && !g.group_can_defend(grp(g, u))
         {
             if self.unit_ai_retreat_to_city(g, u, false, false, MAX_INT) {

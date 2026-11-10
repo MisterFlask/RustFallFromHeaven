@@ -567,12 +567,6 @@ impl Game {
     pub fn unit_heal_rate(&self, u: UnitId, plot: PlotIdx) -> i32 {
         let d = self.d;
 
-        // FfH: Added by Kael 11/05/2008
-        if self.is_option(GameOptionType::GAMEOPTION_NO_HEALING_FOR_HUMANS) && self.unit_is_human(u) && self.unit_is_alive(u) {
-            return 0;
-        }
-        // FfH: End Add
-
         let city = self.map.plots[plot].plot_city;
 
         // Card: Automatons (docs/CARDS.md): a unit type that heals only in a city of its team with
@@ -1776,7 +1770,6 @@ mod tests {
         let plot = g.unit_plot(u);
         g.map.plots[plot].units.push(u);
         g.map.plots[plot].owner = Some(owner);
-        assert!(!g.is_option(GameOptionType::GAMEOPTION_NO_HEALING_FOR_HUMANS));
 
         g.units[u].extra_friendly_heal = 5;
         g.units[u].extra_neutral_heal = 100; // not used in friendly territory

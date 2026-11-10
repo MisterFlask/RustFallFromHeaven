@@ -135,7 +135,7 @@ pub struct Player {
     pub extra_happiness: i32,
     pub building_happiness: i32,
     pub largest_city_happiness: i32,
-    /// C++ `m_iWarWearinessPercentAnger` (raw; getter honours GAMEOPTION_NO_WAR_WEARINESS,
+    /// C++ `m_iWarWearinessPercentAnger` (raw; the getter honours the Stoicism card,
     /// see `player_get_war_weariness_percent_anger`).
     pub war_weariness_percent_anger: i32,
     pub war_weariness_modifier: i32,
@@ -716,34 +716,6 @@ impl Game {
         let slot_status = self.setup.players[p.idx()].slot_status;
         if slot_status == SlotStatus::Taken || slot_status == SlotStatus::Computer {
             self.player_set_alive(p, true);
-
-            // Dead code in FfH (CvGame::isOption locks RANDOM_PERSONALITIES off); kept as in C++.
-            if self.is_option(GameOptionType::GAMEOPTION_RANDOM_PERSONALITIES) && !self.player_is_barbarian(p) && !self.player_is_minor_civ(p) {
-                let mut best_value = 0;
-                let mut best_personality: Option<LeaderHeadType> = None;
-
-                for leader in d.leader_heads.keys() {
-                    if leader.i() != d.defines.barbarian_leader {
-                        // XXX minor civ???
-                        let mut value = 1 + self.soren_rand_num(10000, "Choosing Personality");
-
-                        for other in self.civ_player_ids() {
-                            if self.players[other].alive && self.players[other].personality_type == Some(leader) {
-                                value /= 2;
-                            }
-                        }
-
-                        if value > best_value {
-                            best_value = value;
-                            best_personality = Some(leader);
-                        }
-                    }
-                }
-
-                if best_personality.is_some() {
-                    self.players[p].personality_type = best_personality;
-                }
-            }
 
             // changeBaseFreeUnits & co: plain changes (their only side effects are UI dirty bits).
             let df = &d.defines;

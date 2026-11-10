@@ -176,9 +176,9 @@ fn game_options() {
     assert!(!advanced_start.default && advanced_start.visible);
     // FFH2's options only: this game's own systems are always on, not options (docs/PORTING.md
     // "Changes from FFH2").
-    assert_eq!(d.game_options.len(), GameOptionType::GAMEOPTION_ALWAYS_RAZE.idx() + 1);
+    assert_eq!(d.game_options.len(), GameOptionType::GAMEOPTION_NO_ORTHUS.idx() + 1);
     assert_eq!(d.game_options.iter().filter(|o| o.default).count(), 1);
-    assert_eq!(d.game_options.iter().filter(|o| o.visible).count(), 52);
+    assert_eq!(d.game_options.iter().filter(|o| o.visible).count(), 46);
 }
 
 #[test]

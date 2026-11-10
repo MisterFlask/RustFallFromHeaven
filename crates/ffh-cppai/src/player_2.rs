@@ -1979,7 +1979,7 @@ impl Cai {
             }
         }
 
-        let aggressive_ai = g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI);
+        let aggressive_ai = crate::defs::AGGRESSIVE_AI;
 
         let mut defy = false;
 
@@ -2330,7 +2330,7 @@ fn diplo_vote_force_peace(
     let mut win_delta_threshold = 3 * g.d.defines.war_success_attacking;
     let mut loss_abs_threshold = 3.max(g.players[p].num_military_units / 40) * g.d.defines.war_success_attacking;
 
-    let aggressive_ai = g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI);
+    let aggressive_ai = crate::defs::AGGRESSIVE_AI;
     if aggressive_ai {
         win_delta_threshold *= 2;
         win_delta_threshold /= 3;

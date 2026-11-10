@@ -1325,7 +1325,7 @@ pub(crate) fn end_war_val(g: &Game, team: TeamId, enemy: TeamId) -> i32 {
     } else if dogpile {
         v = v * 3 / 2;
     }
-    // (AGGRESSIVE_AI endangered-cities block omitted: the option is off in our games.)
+    // (C++ AGGRESSIVE_AI endangered-cities block not ported: the option is gone.)
     let remainder = g.d.defines.diplomacy_value_remainder.max(1) as i64;
     v -= v.rem_euclid(remainder);
     if g.team_is_human(team) {

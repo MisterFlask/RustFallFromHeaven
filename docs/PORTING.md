@@ -858,6 +858,24 @@ flag.
     first three eras are dropped.
   - Start normalization's "city trade tech no later than the start era" filter is dropped: no
     bonus it affected is a normalize bonus or yields food.
+- **36 game options removed** (the owner's request, 2026-11-10: no switch without a reason to
+  exist; save format 32). Each was off in every game; its option-off behaviour is now the rule and
+  its option-on branch is deleted, with its entry in `game_options.jsonc`, its text keys and its
+  `GameOptionType` member (`tools/gen_enums.py` `REMOVED_MEMBERS`).
+  - **Read by nothing in the rules or this game's AI:** Aggressive AI, Living World
+    (DOUBLE_EVENTS), New Random Seed on Reload, Adventure Mode and the twenty world-builder
+    scenario flags (WB_AGAINST_THE_GREY ... WB_LOAD_SCREEN; scenarios are out of scope). The one
+    read, WB_THE_SPLINTERED_COURT in the Parith event's trigger, is taken as off.
+  - **Scenario-only, never offered on the new-game screen:** No Projects, No Healing for Humans,
+    No Inflation, No Maintenance, No War Weariness, Always Open Borders, Always Raze.
+  - **Locked or meaningless here:** Lock Modified Assets (its admin-password draws in
+    `CvGame::init`), Choose Religions (PICK_RELIGION, locked off by FFH's `CvGame::isOption`; with
+    it went the controller's `choose_religion`, ffh-play's religion decision and the tech help's
+    "a Religion"), Random Personalities (locked off likewise; its personality draw in
+    `CvPlayer::init` is gone).
+  - **AI rule exemptions:** AI No Building Requirements and AI No Minimum Levels: the AI plays by
+    the rules a human does (a unit with a minimum level is never trained; barbarians still skip
+    the prerequisite building of a unit).
 - **Doctrines (research paths)** (2026-11-09; `research_paths.jsonc`, `RESEARCH_PATH_PERCENT` in
   `rules_defines.jsonc`, `player/research_path.rs`). Players see them as doctrines (the owner's
   naming): "Doctrine: Steel", "Adopt the Steel doctrine?"; the code, the data and the protocol call
@@ -1156,8 +1174,7 @@ that no player chooses):
 - **A unit sent to a capital that does not exist stays where it is** (Escape, Wonder's teleport,
   Kidnap, the Amurite and Malakim pilgrimage events): the Python sent it to (-1, -1), off the map,
   and its next turn failed.
-- **Stoicism and war weariness**: a war weariness ended while Stoicism (or
-  GAMEOPTION_NO_WAR_WEARINESS) hid it is cleared, instead of coming back when Stoicism ends.
+- **Stoicism and war weariness**: a war weariness ended while Stoicism hid it is cleared, instead of coming back when Stoicism ends.
 - **Crusade Hosts are not counted as civilizations** in the domination land threshold, the
   domination population runner-up and the barbarians' free-tech rate (docs/CRUSADE.md said so).
 - **A player added to an existing team counts once** in its member count (Mercurians,

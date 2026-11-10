@@ -256,8 +256,8 @@ The unit's `iAIWeight` is added to the power. Military roles score power squared
 production (`power^2 / (turns + 4)`), so a stronger unit wins unless it is much dearer; free
 promotions, spells and abilities do not count in the power (only strength, damage types,
 moves, first strikes, withdrawal, collateral, bombard and city bonuses do). Units with
-`iMinLevel` above 0 cannot be trained by the AI (the rules: `city_can_train` refuses them unless
-`GAMEOPTION_AI_NO_MINIMUM_LEVEL`, and never at min level 1); they come by upgrade. Optional units
+`iMinLevel` above 0 cannot be trained (the rules: `city_can_train` refuses them to every player);
+they come by upgrade. Optional units
 are trained only while one more is affordable (`economy::can_afford_unit`). A unit that passes no
 role is never trained by the generic steps; only a civilization step that names it
 (`civs/*.rs`) can train it.

@@ -1237,7 +1237,7 @@ impl Cai {
         let mut best_poach_plot: Option<PlotIdx> = None;
         let mut best_poach_team: Option<TeamId> = None;
 
-        if !g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI) {
+        if !crate::defs::AGGRESSIVE_AI {
             return false;
         }
 
