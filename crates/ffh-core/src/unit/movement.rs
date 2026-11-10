@@ -1401,6 +1401,10 @@ impl Game {
             }
 
             // (_DEBUG builds only: getCargoUnits of both transports)
+
+            if self.telemetry.on() {
+                self.tel_naval_cargo(u, old_transport, transport);
+            }
         }
     }
 

@@ -1473,7 +1473,11 @@ impl Game {
                 }
             }
 
+            let owner = self.map.plots[plot].owner;
             self.plot_set_improvement_type(plot, d.improvements[improvement].improvement_pillage);
+            if self.telemetry.on() && self.plot_is_water(plot) {
+                self.tel_naval_pillage(u, plot, owner);
+            }
         } else if self.plot_is_route(plot) {
             temp_route = self.map.plots[plot].route_type;
             self.plot_set_route_type(plot, None, true); // XXX downgrade rail???
