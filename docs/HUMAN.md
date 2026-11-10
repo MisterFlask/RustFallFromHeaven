@@ -421,13 +421,21 @@ with its yields and the worked ones with a citizen; click a plot there to work i
 rest of the screen stands in panels at the sides, the interface steps aside, and the camera goes
 back when the screen closes (docs/ISO.md, "The city screen").
 
-**Empire.** **Techs** (`F6`): the tech tree by prerequisite depth, each tech a box with its name,
+**Empire.** **Techs** (`F6`): the tech tree, columns by prerequisite depth and rows in a band
+per research path (doctrine), each tech a box with its name,
 what it unlocks (the research chooser's icons, at most five with "+n"), and its turns and cost for
 one you can research now, its cost otherwise, "known" for one you have; the states read without
 colour too: known (a check mark, muted), researching (a progress bar with its percentage), queued
 (its place in the queue in a corner), can research now (full contrast, gold border), not yet
 (dimmed). Each box's left edge is its era's colour, named by a legend above the tree (eras cut
-across the depth columns, so there are no era bands). The prerequisite lines are faint; pointing
+across the depth columns, so there are no era bands). The bands (`treeLayout` in empire.js) are
+the seven doctrines' lines of development: a tech of one doctrine is in its band (of several, the
+one it is a capstone of), a tech of none in the band of most of its neighbours ("General" for one
+with none), the bands ordered to keep the lines between them short; in a band each column's techs
+sit level with their prerequisites, so a line runs straight. Alternating stripes mark the bands,
+each named in the gap above it at the left edge (held there while the tree scrolls), the adopted
+doctrine's band in gold. The prerequisite lines are faint, those between two bands fainter, and a
+line that passes columns by runs along a row gap, not through boxes; pointing
 at a tech (on touch, the first tap) lights its whole path and the techs it leads to and dims the
 rest. The head says what is being researched and in how many turns; the tree opens scrolled to
 that tech (else the first one you can research), with a scrollbar and edge fades where more lies
