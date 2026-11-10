@@ -155,6 +155,10 @@ changes or ends a city's channel (docs/CULTURE.md).
   may no longer be needed for the human.
 - **Death and defection** of governors as events; a line a governor says when it takes a city or
   is overruled (the messages are bare today).
+- **The AI's wonders.** With empire orders the AIs build about 60% more world wonders by turn 300
+  than before the change (8 seeds; docs/AI.md, "Governors"); founding, captures and army sizes are
+  level. The bar of the AI's wonder step can be raised if that is too many.
+- **An empire order's destination** is set when it is placed and cannot be changed after.
 - **Supply** (docs/SUPPLY.md) is not shown when a city is picked for an army's unit.
 
 ## The production audit (history: the rules before 2026-11-10)
