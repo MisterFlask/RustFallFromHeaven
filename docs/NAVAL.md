@@ -581,3 +581,24 @@ starved, open again; gold from a lane.
 ## 12. Measures
 
 (Each phase adds what its games showed.)
+
+**Phase 2 with the merged warship AI** (2026-11-11, `warships.rs`; seeds 1-4, 300 turns, 6 civs,
+standard map, normal and high sea level; a throwaway per-turn trace, not kept). Per game:
+
+| | normal: seeds 1 / 2 / 3 / 4 | high sea level: 1 / 2 / 3 / 4 |
+|---|---|---|
+| warships (armed sea units of civilizations) built | 16 / 25 / 15 / 22 | 18 / 28 / 18 / 25 |
+| first warship, turn | 205 / 165 / 185 / 188 | 211 / 156 / 156 / 162 |
+| ship-turns on Patrol | 80 / 296 / 175 / 241 | 126 / 277 / 245 / 180 |
+| sea-turns held by a team | 74 / 277 / 175 / 237 | 126 / 264 / 242 / 164 |
+| city-turns blockaded | 14 / 92 / 20 / 22 | 8 / 22 / 26 / 25 |
+| interceptions | 1 / 1 / 0 / 2 | 0 / 3 / 1 / 1 |
+| ships lost to attrition | 0 / 1 / 0 / 1 | 0 / 0 / 1 / 0 |
+| ship-turns at maximum wear | 2 / 19 / 1 / 7 | 1 / 10 / 9 / 18 |
+
+Against the two designs before the merge: the sea branch's patrol code had 16-284 patrol
+ship-turns a game, 10-19 blockaded city-turns in three games of four and 3 interceptions in all;
+master's range blockade had 701 blockading ship-turns in 16 games (44 a game). Escorts: none (no
+invasion fleet loaded in these games). The ships lost to attrition were on a long move when their
+range shrank under them (a port lost or open borders ended): they turned home at once
+(`units::play` re-plans a ship found out of range) but were too far to get back.
