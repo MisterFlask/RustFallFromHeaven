@@ -50,11 +50,15 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
     }
     for p in d.projects.keys() {
         if g.city_can_create(c, p, false, true) {
-            out.push(crate::jobj! {
+            let enabled = g.city_can_create(c, p, false, false);
+            let mut j = crate::jobj! {
                 "order" => Json::idx(OrderType::ORDER_CREATE), "type" => Json::idx(p),
-                "enabled" => g.city_can_create(c, p, false, false),
+                "enabled" => enabled,
                 "cost" => g.city_production_needed_project(c, p), "turns" => g.city_production_turns_left_project(c, p, 0),
-            });
+            };
+            // World rituals (docs/CARDS.md): the rules line and why it cannot be chosen now.
+            crate::view::rituals::buildable_fields(g, c, p, enabled, &mut j);
+            out.push(j);
         }
     }
     for p in d.processes.keys() {
@@ -474,7 +478,7 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
             "gold" => g.city_hurry_gold(c, hu), "population" => g.city_hurry_population(c, hu),
         })
         .collect();
-    Ok(crate::jobj! {
+    let mut out = crate::jobj! {
         "id" => c,
         "name" => city_name(g, c),
         "owner" => city.owner,
@@ -547,7 +551,11 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "governance" => crate::view::governors::city(v, c),
         // This game's outposts (docs/NAVAL.md, 9 and 10): the lane, starving, raising; null for a city.
         "outpost" => crate::view::outposts::city(v, c),
-    })
+    };
+    // World rituals (docs/CARDS.md): the ritual in progress at the head of the queue (asked before
+    // it is taken off) and the hurry buttons' note.
+    crate::view::rituals::city_fields(g, c, &mut out);
+    Ok(out)
 }
 
 /// The city's cultural channel and what it could channel (docs/CULTURE.md): `null` when the

@@ -328,8 +328,17 @@ pub fn civ_help(d: &GameData, c: CivilizationType) -> String {
         }
     }
     head(&mut b, "TXT_KEY_GLOBAL_SPELL_PEDIA");
+    // This game's world rituals (docs/CARDS.md): the ritual whose charge the spell spends, with its
+    // base cost (before the game speed and each completion's doubling); a ritual no spell spends.
+    let rituals: Vec<ProjectType> = d.projects.keys().filter(|&p| d.projects[p].world_ritual && d.projects[p].prereq_civilization == Some(c)).collect();
     for s in d.spells.keys().filter(|&s| d.spells[s].global && d.spells[s].civilization_prereq == Some(c)) {
-        item(&mut b, &display(d, s));
+        match d.spells[s].ritual_charge.filter(|r| rituals.contains(r)) {
+            Some(r) => item(&mut b, &format!("{} (charge: {}, base cost {})", display(d, s), display(d, r), d.projects[r].production_cost)),
+            None => item(&mut b, &display(d, s)),
+        }
+    }
+    for &r in rituals.iter().filter(|&&r| !d.spells.keys().any(|s| d.spells[s].ritual_charge == Some(r))) {
+        item(&mut b, &format!("{} (acts at completion, base cost {})", display(d, r), d.projects[r].production_cost));
     }
     let mut first = true;
     for terrain in d.terrains.keys().filter(|&t| d.terrains[t].civilization_yield_type == Some(c)) {
@@ -430,6 +439,14 @@ mod tests {
         let fin = trait_help(d, d.t::<TraitType>("TRAIT_FINANCIAL"), None);
         assert!(fin.contains("[ICON_BULLET]"), "{fin}");
         assert!(!civ.contains("%s") && !civ.contains("%d") && !fin.contains("%D"), "{civ}{fin}");
+    }
+
+    /// The World Spell part names the ritual whose charge the spell spends, with its base cost.
+    #[test]
+    fn the_world_spell_names_its_ritual() {
+        let d = ffh_data::global();
+        let civ = civ_help(d, d.t::<CivilizationType>("CIVILIZATION_HIPPUS"));
+        assert!(civ.contains("[ICON_BULLET]Warcry (charge: Ritual: Warcry, base cost 100)"), "{civ}");
     }
 
     /// The Infernal Gate's Court of Mammon (docs/CARDS.md): its help shows its rules.

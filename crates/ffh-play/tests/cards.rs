@@ -287,7 +287,8 @@ fn the_world_spell_waits_for_a_charge_of_its_ritual() {
     let spell = d.t::<SpellType>("SPELL_WARCRY");
     let a = world_action(&s, spell).expect("the civilization's world spell is listed");
     assert!(!flag(&a, "enabled"));
-    assert_eq!(a.get("why").and_then(Json::as_str), Some("No charge. Complete Ritual: Warcry in a city."));
+    let cost = s.g.player_get_production_needed_project(h, d.t::<ProjectType>("PROJECT_RITUAL_WARCRY"));
+    assert_eq!(a.get("why").and_then(Json::as_str), Some(format!("No charge. Build Ritual: Warcry in a city (cost {cost}).").as_str()));
     assert_eq!(s.g.player_grant_world_ritual_charge(h).map(|c| s.g.cities[c].owner), Some(h));
     let a = world_action(&s, spell).expect("listed");
     assert!(flag(&a, "enabled"), "{a:?}");

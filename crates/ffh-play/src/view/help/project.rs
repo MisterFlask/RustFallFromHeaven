@@ -101,10 +101,12 @@ pub fn effects(d: &GameData, p: ProjectType) -> String {
     } else if !charged.is_empty() {
         line(&mut b, format!("[ICON_BULLET]Each completion: one cast of {} by a unit in its city", charged.join(" or ")));
     }
+    // The world rituals' limits (docs/CARDS.md, "World rituals"), one rule a line.
     if *world_ritual {
-        line(&mut b, "[ICON_BULLET]One city at a time; at most one charge held; cannot be hurried; abandoning it loses its production".to_string());
-    }
-    if *repeat_cost_percent > 0 {
+        for rule in world_ritual_rules(!charged.is_empty(), *repeat_cost_percent) {
+            line(&mut b, format!("[ICON_BULLET]{rule}"));
+        }
+    } else if *repeat_cost_percent > 0 {
         line(&mut b, format!("[ICON_BULLET]Each completion: the next costs {repeat_cost_percent}% of the last"));
     }
     // FfH.
@@ -160,9 +162,52 @@ pub fn effects(d: &GameData, p: ProjectType) -> String {
     finish(b)
 }
 
+/// The rules of a world ritual as short lines (the help of each ritual): `charges` when a world
+/// spell spends its completions, `repeat` its `repeat_cost_percent`.
+pub fn world_ritual_rules(charges: bool, repeat: i32) -> Vec<String> {
+    let mut out = vec![
+        "World ritual: one in progress per player, in one city".to_string(),
+        "Taken off the head of the queue, its production is lost".to_string(),
+        "Cannot be hurried".to_string(),
+    ];
+    match repeat {
+        200 => out.push("Each completion doubles the next cost".to_string()),
+        n if n > 0 => out.push(format!("Each completion: the next costs {n}% of the last")),
+        _ => {}
+    }
+    if charges {
+        out.push("At most one charge held; not started again while one is held".to_string());
+        out.push("A captured city loses its ritual progress and its charge".to_string());
+    } else {
+        out.push("Acts at its completion; leaves no charge".to_string());
+        out.push("A captured city loses its ritual progress".to_string());
+    }
+    out.push("Every player is told when it begins, is abandoned or completes".to_string());
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_world_ritual_lists_its_rules() {
+        let warcry = project("PROJECT_RITUAL_WARCRY");
+        for part in [
+            "[ICON_BULLET]Each completion: one cast of Warcry by any unit of yours",
+            "[ICON_BULLET]World ritual: one in progress per player, in one city",
+            "[ICON_BULLET]Taken off the head of the queue, its production is lost",
+            "[ICON_BULLET]Cannot be hurried",
+            "[ICON_BULLET]Each completion doubles the next cost",
+            "[ICON_BULLET]At most one charge held; not started again while one is held",
+            "[ICON_BULLET]A captured city loses its ritual progress and its charge",
+            "[ICON_BULLET]Every player is told when it begins, is abandoned or completes",
+        ] {
+            assert!(warcry.contains(part), "{part}: {warcry}");
+        }
+        assert!(!warcry.contains("% of the last"), "{warcry}");
+        assert!(world_ritual_rules(false, 200).iter().any(|l| l == "Acts at its completion; leaves no charge"));
+    }
 
     /// Whether a value's `Debug` text sets anything: a number other than 0, `true` or `Some`
     /// (field names, which may end in a digit, are words with letters).

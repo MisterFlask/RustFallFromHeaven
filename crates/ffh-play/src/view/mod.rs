@@ -10,6 +10,8 @@
 //!   `religions`, `players`), [`diplo`] (`trade` and the deal checks of `propose_deal`),
 //!   [`crusade`] (`crusades`: calls, lending, loans; docs/CRUSADE.md), [`sea`] and [`seas`] (the
 //!   sea: range, named seas, `sea`, `seas`; docs/NAVAL.md),
+//!   [`rituals`] (the world rituals: the view's `rituals`, the world-spell button's words, the
+//!   production list's ritual line; docs/CARDS.md),
 //!   [`speech`] (what a leader says: `speech`, the leader moments),
 //!   [`data`] (the static tables, with [`improvement_help`]), [`text`] (`text`, `ascii`,
 //!   `inspect`); [`help`] writes the help texts (what a tech, a building, ... does).
@@ -31,6 +33,7 @@ pub mod improvement_help;
 pub mod map;
 pub mod player;
 pub mod outposts;
+pub mod rituals;
 pub mod sea;
 pub mod seas;
 pub mod speech;
@@ -483,6 +486,9 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         "outpost_lanes" => outposts::lanes(v),
         // Engagement combat (docs/ENGAGEMENTS.md): the human's battles of this turn and the last.
         "battles" => battles::recent(v),
+        // World rituals (docs/CARDS.md, "World rituals"): every civilization's ritual as the human
+        // may know it (the HUD's rituals element and its full list).
+        "rituals" => rituals::rituals(v),
         // C++ `CvPlayer::m_groupCycle`: the order W cycles the waiting groups in
         // (`cycleSelectionGroups`), and whether some group has orders to continue
         // (`hasAutoUnit`: the cycle's wrap then sends AutoMoves).

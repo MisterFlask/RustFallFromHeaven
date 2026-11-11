@@ -445,16 +445,27 @@ pub fn world_actions(v: &Viewer) -> Json {
         // The civilization's world spell (docs/CARDS.md, "World rituals"): listed while it has
         // one, disabled while no city holds a charge of its ritual.
         let ritual = info.ritual_charge.filter(|&r| info.global && g.player_world_ritual(v.h) == Some(r) && !g.is_option(GameOptionType::GAMEOPTION_NO_WORLD_SPELLS));
+        // Its ritual (the page writes no "once a game" line for it).
+        j.set("ritual", Json::opt_idx(ritual));
         if let Some(r) = ritual.filter(|&r| g.player_world_ritual_charge_city(v.h, r).is_none()) {
             j.set("enabled", false);
             j.set("cast", false);
-            j.set("why", format!("No charge. Complete {} in a city.", crate::names::display(d, r)));
+            j.set("why", crate::view::rituals::no_charge_why(v, r));
             j.set("caster", Json::Null);
             j.set("cmd", Json::Null);
             out.push(j);
             continue;
         }
         if visible.is_empty() {
+            // A charge held that no unit of the human can spend: the button stays, disabled.
+            if ritual.is_some() {
+                j.set("enabled", false);
+                j.set("cast", false);
+                j.set("why", "No unit of yours can cast it now.");
+                j.set("caster", Json::Null);
+                j.set("cmd", Json::Null);
+                out.push(j);
+            }
             continue;
         }
         let loses = |u: UnitId| d.promotions.keys().filter(|&p| g.units[u].has_promotion[p] && d.promotions[p].removed_by_casting).count();
@@ -473,6 +484,10 @@ pub fn world_actions(v: &Viewer) -> Json {
                 j.set("why", "No unit of yours can cast it now.");
             }
             j.set("cmd", command_cmd(&[caster.unwrap_or(visible[0])], cast, k, -1));
+        }
+        // A charge held and castable: where it is, and the ritual's cost after it is spent.
+        if let Some(line) = ritual.filter(|_| j.get("enabled").and_then(Json::as_bool) == Some(true)).and_then(|r| crate::view::rituals::charge_line(v, r)) {
+            j.set("charge", line);
         }
         out.push(j);
     }

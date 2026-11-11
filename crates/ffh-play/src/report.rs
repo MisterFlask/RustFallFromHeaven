@@ -147,7 +147,8 @@ impl MessageStore {
                 Some((x, y)) => j.with("at", crate::jarr![x, y]),
                 None => j,
             };
-            tag_battle(j, &e.text)
+            // World rituals (docs/CARDS.md): their news is marked for the page's alerts.
+            crate::view::rituals::tag_news(tag_battle(j, &e.text), &e.text)
         });
         crate::jobj! { "from" => from, "next" => self.total, "entries" => Json::Arr(entries.collect()) }
     }
