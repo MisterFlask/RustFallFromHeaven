@@ -1175,3 +1175,22 @@ body.pad-mode .pad-focus { outline: 3px solid var(--c-amber, #ffb63b) !important
 body:not(.pad-mode) .pad-cursor { display: none; }
 @keyframes pad-cursor { 50% { opacity: 0.55; } }
 @media (prefers-reduced-motion: reduce) { .pad-cursor { animation: none; } }
+
+/* Named seas (docs/NAVAL.md 10; seas.js): the sea's panel and the Seas screen. */
+.sea-chip { display: inline-block; padding: 1px 9px; border: 1px solid; border-radius: 10px; font: 700 12px system-ui, "DejaVu Sans", sans-serif; letter-spacing: 0.02em; white-space: nowrap; }
+.sea-panel .sea-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.sea-panel .sea-section { border-top: 1px solid var(--line); padding-top: 6px; margin-top: 6px; }
+.sea-panel .sea-head { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); margin-bottom: 2px; }
+.sea-panel .sea-control { font-size: 17px; color: var(--em); }
+.sea-panel .sea-sides { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.sea-panel .sea-side-head { display: flex; justify-content: space-between; }
+.sea-panel .sea-bar { height: 10px; background: var(--c-void); box-shadow: 0 0 0 1px var(--line); margin: 2px 0; }
+.sea-panel .sea-bar span { display: block; height: 100%; background: var(--c-bone); }
+.sea-panel .sea-bar span.them { background: repeating-linear-gradient(45deg, #e08a3c 0 6px, #a85f22 6px 10px); }
+.sea-panel .sea-send { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.sea-panel .sea-send button { min-height: 36px; }
+table.scores.seas td.sea-name { font-style: italic; font-size: 16px; color: var(--em); }
+table.scores.seas tr.clickable { cursor: pointer; }
+table.scores.seas td { vertical-align: middle; }
+table.scores.seas td.num { text-align: right; }
+.chip.harbour { white-space: normal; }

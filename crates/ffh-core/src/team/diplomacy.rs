@@ -175,6 +175,11 @@ impl Game {
     /// C++ `CvTeam::declareWar`. `war_plan = None` is C++ `NO_WARPLAN`.
     pub fn team_declare_war(&mut self, t: TeamId, other: TeamId, new_diplo: bool, war_plan: Option<WarPlanType>) {
         debug_assert!(other != t, "eTeam is not expected to be equal with getID()");
+        // A team is never at war with itself: its units would take its own cities (a unit trained
+        // in one took it from under `city_pop_order`).
+        if other == t {
+            return;
+        }
 
         // Not in C++: no declaration (nor cascade) reaches a crusade Host (docs/CRUSADE.md).
         if self.team_is_crusade_host(t) || self.team_is_crusade_host(other) {
@@ -382,7 +387,9 @@ impl Game {
             self.team_cancel_defensive_pacts(t);
 
             for o in self.team_ids() {
-                if self.team_is_alive(o) && self.teams[o].defensive_pact[other] {
+                // (`o != t`: `t`'s pacts were cancelled above; a pact flag no deal records would
+                // survive that and have `t` declare war on itself)
+                if o != t && self.team_is_alive(o) && self.teams[o].defensive_pact[other] {
                     self.team_declare_war(o, t, new_diplo, Some(WarPlanType::WARPLAN_DOGPILE));
                 }
             }
@@ -823,23 +830,13 @@ impl Game {
         self.team_is_open_borders(t, other) || self.is_free_trade()
     }
 
-    /// C++ `CvTeam::isOpenBorders`. FFH: always true under GAMEOPTION_ALWAYS_OPEN_BORDERS,
-    /// so never read `Team::open_borders` directly for rules.
+    /// C++ `CvTeam::isOpenBorders`.
     pub fn team_is_open_borders(&self, t: TeamId, other: TeamId) -> bool {
-        //FfH: Added by Kael 11/17/2008
-        if is_option(self, GameOptionType::GAMEOPTION_ALWAYS_OPEN_BORDERS) {
-            return true;
-        }
-        //FfH: End Add
-
         self.teams[t].open_borders[other]
     }
 
     /// C++ `CvTeam::setOpenBorders`.
     pub fn team_set_open_borders(&mut self, t: TeamId, other: TeamId, value: bool) {
-        // C++ quirk: the test reads isOpenBorders, which FFH answers true for every pair under
-        // GAMEOPTION_ALWAYS_OPEN_BORDERS; then only closing borders (`value = false`) gets past
-        // it and clears the raw flag (with the side effects below).
         if self.team_is_open_borders(t, other) != value {
             let old_free_trade = self.team_is_free_trade(t, other);
 
@@ -1515,6 +1512,19 @@ mod tests {
     }
 
     #[test]
+    fn a_pact_no_deal_records_does_not_turn_a_declaration_on_the_declarer() {
+        let mut g = game(&[0, 1]);
+        let (a, b) = (TeamId(0), TeamId(1));
+        meet(&mut g, a, b);
+        // Pact flags with no deal behind them: cancelling the declarer's pacts leaves them.
+        g.team_set_defensive_pact(a, b, true);
+        g.team_set_defensive_pact(b, a, true);
+        g.team_declare_war(a, b, false, None);
+        assert!(g.at_war(a, b));
+        assert!(!g.teams[a].at_war[a] && !g.teams[b].at_war[b], "no team is at war with itself");
+    }
+
+    #[test]
     fn free_trade_needs_contact_peace_and_open_borders() {
         let mut g = game(&[0, 1]);
         let (a, b) = (TeamId(0), TeamId(1));
@@ -1549,16 +1559,6 @@ mod tests {
         g.teams[a].ai_open_borders_counter[b] = 3;
         g.team_set_open_borders(a, b, true);
         assert_eq!(g.teams[a].ai_open_borders_counter[b], 3, "no change, no reset");
-
-        // FFH GAMEOPTION_ALWAYS_OPEN_BORDERS: isOpenBorders is always true, so only closing
-        // gets through and it clears the raw flag.
-        g.setup.options[GameOptionType::GAMEOPTION_ALWAYS_OPEN_BORDERS] = true;
-        g.team_set_open_borders(a, b, false);
-        assert!(!g.teams[a].open_borders[b]);
-        assert!(g.team_is_open_borders(a, b));
-        assert_eq!(g.teams[a].ai_open_borders_counter[b], 0);
-        g.team_set_open_borders(a, b, true);
-        assert!(!g.teams[a].open_borders[b]);
     }
 
     #[test]

@@ -82,8 +82,8 @@ fn peace_with(g: &Game, s: &Seen, enemy: TeamId) -> i32 {
     if crate::victory::wants_conquest(&s.plan) || s.rival == Some(enemy) || crate::diplomacy::press_conquest(g, s.team, enemy) {
         return -150;
     }
-    let ours = crate::diplomacy::end_war_val_seen(g, s.p, s.team, enemy);
-    let theirs = crate::diplomacy::end_war_val_seen(g, s.p, enemy, s.team);
+    let ours = crate::diplomacy::end_war_val_seen(g, s.team, enemy);
+    let theirs = crate::diplomacy::end_war_val_seen(g, enemy, s.team);
     if theirs > ours {
         -60
     } else {
@@ -394,9 +394,6 @@ fn vote_name(g: &Game, vote: VoteType) -> &str {
 
 /// `Controller::diplo_vote` (C++ `CvPlayerAI::AI_diploVote`).
 pub fn diplo_vote(g: &Game, p: PlayerId, data: &VoteSelectionSubData, vs: VoteSourceType) -> PlayerVote {
-    if !crate::switches::COUNCIL.on(g, p) {
-        return PlayerVote::PLAYER_VOTE_ABSTAIN;
-    }
     if g.is_team_vote(data.vote) {
         let v = team_vote(g, p, vs);
         g.tel_decision(p, "vote", "secretary", if v.team() == Some(g.players[p].team) { "self" } else if v.team().is_some() { "other" } else { "abstain" }, 0, String::new);
@@ -435,14 +432,11 @@ fn would_pass(g: &Game, seen_by: &[(PlayerId, Seen)], data: &VoteSelectionSubDat
 /// proposes the resolution that gains it most -- one it wants that is not in force and will pass,
 /// or one in force it wants gone that will fail (and so be repealed); nothing when none does.
 pub fn choose_election(g: &Game, p: PlayerId, sel: &VoteSelectionData) -> Option<usize> {
-    if !crate::switches::COUNCIL.on(g, p) {
-        return None;
-    }
     let vs = sel.vote_source;
     let ours = seen(g, p);
     let voters: Vec<(PlayerId, Seen)> = g
         .civ_player_ids()
-        .filter(|&q| g.players[q].alive && g.player_is_voting_member(q, vs) && !g.players[q].human && g.controller(q).name() == "ffh-ai" && crate::switches::COUNCIL.on(g, q))
+        .filter(|&q| g.players[q].alive && g.player_is_voting_member(q, vs) && !g.players[q].human && g.controller(q).name() == "ffh-ai")
         .map(|q| (q, seen(g, q)))
         .collect();
     let mut best: Option<(i32, usize)> = None;

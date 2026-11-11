@@ -84,12 +84,21 @@ impl Game {
     /// one of the units it would meet must be below its limit: a defender when the plot has any,
     /// else a non-combatant (as today). Units without a limit pass at once.
     pub(crate) fn unit_engage_limit_ok(&self, u: UnitId, to: PlotIdx, war: WarTest) -> bool {
-        let limit = self.units[u].combat_limit;
-        if limit >= 100 {
+        if self.units[u].combat_limit >= 100 {
             return true;
         }
         // (Card: Causeway, Ferries (docs/CARDS.md): water walked on as land is not water here.)
         let from_water = self.unit_plot_opt(u).is_some_and(|at| self.plot_is_water(at) && !self.unit_walks_on_water(u, at));
+        self.unit_engage_limit_ok_from(u, from_water, to, war)
+    }
+
+    /// [`Game::unit_engage_limit_ok`] for an attack made from water (`from_water`) or not, wherever
+    /// the unit stands now (a hypothetical attack: `engage_could_attack_from_war`).
+    pub(crate) fn unit_engage_limit_ok_from(&self, u: UnitId, from_water: bool, to: PlotIdx, war: WarTest) -> bool {
+        let limit = self.units[u].combat_limit;
+        if limit >= 100 {
+            return true;
+        }
         let team = self.players[self.units[u].owner].team;
         let declared = self.engage_declared(team, war);
         let (mut defenders, mut others, mut other_below) = (false, false, false);
@@ -119,8 +128,9 @@ impl Game {
     /// [`Game::unit_can_engage`]'s tests that do not depend on where it is or on what it did this
     /// turn -- a land unit able to attack, not marching, not a missile, not a battle summon, within
     /// its combat limit -- and it could stand on `from` (land, or water it walks on; a peak only
-    /// if it can climb it).
-    pub(crate) fn engage_could_attack_from(&self, u: UnitId, from: PlotIdx, to: PlotIdx) -> bool {
+    /// if it can climb it). `war`: the war its combat limit is tested under (the defenders it
+    /// meets).
+    pub(crate) fn engage_could_attack_from_war(&self, u: UnitId, from: PlotIdx, to: PlotIdx, war: WarTest) -> bool {
         if !self.engage_applies(u, to) || self.units[u].battle_summon || self.unit_is_dead(u) {
             return false;
         }
@@ -134,7 +144,9 @@ impl Game {
         if self.plot_is_impassable(from) && !self.unit_can_move_impassable(u) && !self.unit_can_climb(u, from) {
             return false;
         }
-        self.unit_engage_limit_ok(u, to, WarTest::AtWar)
+        // (The attack comes from `from`: not from where it stands now, aboard a ship say.)
+        let from_water = self.plot_is_water(from) && !self.unit_walks_on_water(u, from);
+        self.unit_engage_limit_ok_from(u, from_water, to, war)
     }
 
     /// The attacker's pool (plan 5.2): every unit of `p` on `from` that can attack `to` in an
@@ -160,7 +172,7 @@ impl Game {
 
     /// The teams a `war` test counts as enemies of `team` beyond its wars now: none for the real
     /// fight; for a declare-war preview every team the declaration brings in.
-    fn engage_declared(&self, team: TeamId, war: WarTest) -> Option<IdxVec<TeamId, bool>> {
+    pub(crate) fn engage_declared(&self, team: TeamId, war: WarTest) -> Option<IdxVec<TeamId, bool>> {
         match war {
             WarTest::AtWar => None,
             WarTest::DeclareWar(t) => Some(self.team_wars_after_declaring(team, t)),

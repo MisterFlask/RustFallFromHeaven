@@ -8,7 +8,8 @@
 //! * [`view`] and [`status`] here; [`map`] (map arrays, `plot`), [`units`] (`group` with its
 //!   actions, `path`, `combat`), [`city`] (the city screen), [`player`] (`techs`, `civics`,
 //!   `religions`, `players`), [`diplo`] (`trade` and the deal checks of `propose_deal`),
-//!   [`crusade`] (`crusades`: calls, lending, loans; docs/CRUSADE.md),
+//!   [`crusade`] (`crusades`: calls, lending, loans; docs/CRUSADE.md), [`sea`] and [`seas`] (the
+//!   sea: range, named seas, `sea`, `seas`; docs/NAVAL.md),
 //!   [`speech`] (what a leader says: `speech`, the leader moments),
 //!   [`data`] (the static tables, with [`improvement_help`]), [`text`] (`text`, `ascii`,
 //!   `inspect`); [`help`] writes the help texts (what a tech, a building, ... does).
@@ -30,6 +31,7 @@ pub mod improvement_help;
 pub mod map;
 pub mod player;
 pub mod sea;
+pub mod seas;
 pub mod speech;
 pub mod text;
 pub mod units;
@@ -330,6 +332,9 @@ pub fn cities(v: &Viewer) -> Json {
             // The sea (docs/NAVAL.md, section 10): a port of the human's team (its tooltip on
             // the Sea layer names the range it gives).
             "sea_port" => crate::view::sea::is_own_port(v, c),
+            // Named seas (docs/NAVAL.md, 4.4 and 10): the harbour, open or blockaded (null on no
+            // sea): the banner's mark and the city panel's line.
+            "harbour" => crate::view::seas::harbour_json(v, c),
         };
         if own {
             j.set("production", production(g, c));
@@ -467,6 +472,10 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         // Supply lines (docs/SUPPLY.md): the lines of the other players' armies the human sees,
         // clipped to the plots it has revealed (its own armies' are each army's `supply.line`).
         "supply_lines" => armies::foreign_supply_lines(v),
+        // Named seas (docs/NAVAL.md, 10): the seas the human has revealed a plot of, with their
+        // state as it can work it out, and its supply ships' lanes (the Sea layer).
+        "seas" => seas::seas_json(v),
+        "sea_lanes" => seas::lanes_json(v),
         // Engagement combat (docs/ENGAGEMENTS.md): the human's battles of this turn and the last.
         "battles" => battles::recent(v),
         // C++ `CvPlayer::m_groupCycle`: the order W cycles the waiting groups in

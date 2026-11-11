@@ -531,7 +531,7 @@ impl Cai {
         let cultural_victory_num_culture_cities = g.num_culture_victory_cities;
 
         let get_better_units = self.player_ai_is_do_strategy(g, p, AI_STRATEGY_GET_BETTER_UNITS);
-        let aggressive_ai = g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI);
+        let aggressive_ai = crate::defs::AGGRESSIVE_AI;
         let always_peace = g.is_option(GameOptionType::GAMEOPTION_ALWAYS_PEACE);
 
         let unit_cost_percentage = (g.player_calculate_unit_cost(p) * 100) / g.player_calculate_pre_inflated_costs(p).max(1);
@@ -585,9 +585,6 @@ impl Cai {
         economy_flags |= BUILDINGFOCUS_HEALTHY;
         if g.city_ai_is_emphasize_great_people(c) {
             economy_flags |= BUILDINGFOCUS_SPECIALIST;
-        }
-        if !g.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
-            economy_flags |= BUILDINGFOCUS_ESPIONAGE;
         }
 
         if num_cities_in_area > 2 {

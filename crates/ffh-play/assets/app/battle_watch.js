@@ -149,7 +149,7 @@ function applyImpact(now) {
   if (e.knocked && knockFrom) W.vis[e.knocked.unit].knock = { from: knockFrom, at: now };
   // Supply (docs/SUPPLY.md): the starving units say so.
   if (e.kind === "Starvation") for (const b of e.units ?? []) float(b, "starving", "miss", now);
-  else if (e.kind !== "Afraid" && e.kind !== "Cast" && !e.hits?.length && !e.heal) float(e.actor, e.note === "Held" ? "held back" : e.note === "NoOneHurt" || e.kind === "Heal" ? "no one to heal" : "no target", "miss", now);
+  else if (e.kind !== "Afraid" && e.kind !== "Cast" && e.kind !== "ShoreFire" && !e.hits?.length && !e.heal) float(e.actor, e.note === "Held" ? "held back" : e.note === "NoOneHurt" || e.kind === "Heal" ? "no one to heal" : "no target", "miss", now);
   settle(now);
   syncLog();
   syncTop();

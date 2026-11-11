@@ -1656,13 +1656,7 @@ fn can_trigger_parith(g: &mut Game, data: &mut EventTriggeredData) -> bool {
     if !g.players[data.player].human {
         return false;
     }
-    if g.trophy_value("TROPHY_WB_SPLINTERED_COURT_PARITH") != 1 {
-        return false;
-    }
-    if g.is_option(GameOptionType::GAMEOPTION_WB_THE_SPLINTERED_COURT) {
-        return false;
-    }
-    true
+    g.trophy_value("TROPHY_WB_SPLINTERED_COURT_PARITH") == 1
 }
 
 /// `applyParithYes(argsList)`: remember the event unit's type.

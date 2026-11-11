@@ -24,22 +24,15 @@ import { staticEnv } from "../dress.js";
 import { MAT, bakeLayer } from "../materials.js";
 import { GROUNDS } from "./art/index.js";
 
-/** The mode's compile-time savings (MapHd2d.liteDefines; shaders.js). `on`: compiled in by default;
- *  `opt`: only with `cfg.liteOn`.
+/** The mode's compile-time savings in the props' and the water's programs (shaders.js).
  *  Props: NO_LEAVES -- no crown of leaf clusters stands in the mode (its trees, bushes and saplings
  *  are cards); DABS_1 -- a brush mark from the one plane that carries the face, not a blend of three;
  *  NO_FINE_PIGMENT -- the fine pigment noise (under the brush marks, a few percent) left out.
- *  (NO_STROKES, the brush strokes on matte props, is optional: the fields and sheaves lose their
- *  texture close up without them.)
  *  Water: CALM_FADE -- the frontier's drifts fade toward their means instead of being mixed twice;
  *  BODY_LITE -- the body's mottle in two octaves; GRAD_NORMALS -- the sea's normals from noise
- *  gradients (GRAD_NORMALS_RIVER the rivers' too: optional, it moves what they mirror). RIVER_SPLIT:
- *  the rivers a program of their own. */
-const LITE = {
-  prop: { on: ["NO_LEAVES", "DABS_1", "NO_FINE_PIGMENT"], opt: ["NO_STROKES"] },
-  water: { on: ["CALM_FADE", "BODY_LITE", "GRAD_NORMALS"], opt: ["NO_GLITTER", "NO_CAUSTICS", "GRAD_NORMALS_RIVER"] },
-  split: { on: ["RIVER_SPLIT"], opt: [] },
-};
+ *  gradients. (And the rivers are a program of their own: riverSplit.) */
+const LITE_PROP = { NO_LEAVES: 1, DABS_1: 1, NO_FINE_PIGMENT: 1 };
+const LITE_WATER = { CALM_FADE: 1, BODY_LITE: 1, GRAD_NORMALS: 1 };
 
 /** The 3D renderer's gameplay zoom: on the full-bleed map (the isometric screen's floating
  *  panels) it shows about fifteen plots across, as the look target does, and its figures are about
@@ -65,10 +58,9 @@ export class MapHd2d extends Map3D {
     // The 3D renderer is up (its canvas, loop and panel button): if the mode's own setup fails (a
     // program that does not compile), it goes again, so the caller's fallback finds a clean map.
     try {
-      // (`fastStart` 0, a page-only override `?r3d={"fastStart":0}`: the original start-up.)
       this.sprites = new SpriteLayer(this.gl, () => {
         this.dirty = true;
-      }, this.cfg.fastStart !== 0);
+      });
       this.pipeline.ext = new Hd2dPasses(this.gl, this.pipeline, this.sprites);
     } catch (e) {
       this.dispose();
@@ -120,9 +112,9 @@ export class MapHd2d extends Map3D {
         }
       }),
     );
-    // (fastStart: the scene left the replaced layers clear, replacedMaterials; one whose art did
-    // not load is painted now, as the 3D renderer paints it.)
-    if (this.running && this.cfg.fastStart !== 0) {
+    // (The scene left the replaced layers clear, replacedMaterials; one whose art did not load is
+    // painted now, as the 3D renderer paints it.)
+    if (this.running) {
       for (const layer of this.replacedMaterials()) {
         if (done.has(layer)) continue;
         const b = bakeLayer(layer);
@@ -141,30 +133,27 @@ export class MapHd2d extends Map3D {
     }
   }
 
-  /** The pixel-art ground's layers: the scene does not paint them (fastStart). */
+  /** The pixel-art ground's layers: the scene does not paint them. */
   replacedMaterials() {
     return new Set(Object.values(GROUND_LAYER));
   }
 
-  /** Resolves once the ground's layers have loaded (left clear by the scene, fastStart): the first
+  /** Resolves once the ground's layers have loaded (left clear by the scene): the first
    *  frame never shows them empty -- and the sprites the first frame asks for, or SPRITE_WAIT_MS
    *  have passed: it shows its figures, towns and props, rather than each popping in as it loads.
    *  (They load while the programs compile, the dressing having asked for them -- `prepare`, asked
    *  again in case the game's map came after; Map3D.ready waits for them before the loop draws, so
    *  what MapView draws meanwhile stays until then.) */
   modeReady() {
-    if (this.cfg.fastStart === 0) return Promise.resolve();
     this.prepare();
     const sprites = Promise.race([this.sprites.atlas.whenLoaded(), new Promise((r) => setTimeout(r, SPRITE_WAIT_MS))]);
     return Promise.all([this.groundReady, sprites]);
   }
 
-  /** Resolves once the sprites asked for, the ground and the full terrain have loaded (a capture
-   *  waits for it: `terrainReady`). */
+  /** Resolves once the sprites asked for and the ground have loaded (a capture waits for it). */
   async whenReady() {
     await this.groundReady;
     await this.sprites.atlas.whenLoaded();
-    await this.terrainReady();
   }
 
   dispose() {
@@ -188,21 +177,13 @@ export class MapHd2d extends Map3D {
 
   /** The ground's brush dabs compiled out (shaders.js NO_DABS): the pixel-art ground carries its
    *  own marks, and they showed only as a few flower flecks at the closest zoom, for 0.5 ms a 1080p
-   *  frame and about a second of the start on Direct3D (docs/HD2D.md §8). */
+   *  frame and about a second of the start on Direct3D (docs/HD2D.md §8). The lean terrain
+   *  (config.js TERRAIN_LEAN): the parts of the ground's painting this mode shows little of,
+   *  computed more cheaply (shaders.js LEAN_*). And the ground is the stand-in's painting (config.js
+   *  TERRAIN_STANDIN; docs/HD2D.md §5b): in play it reads as the full one, and it is half the
+   *  program. */
   terrainDefines() {
-    const d = { NO_DABS: 1 };
-    // The lean terrain (config.js terrainLean; read once, when the programs are built): the parts of
-    // the ground's painting this mode shows little of, computed more cheaply (shaders.js LEAN_*).
-    if ((this.cfg.terrainLean ?? 0) > 0) Object.assign(d, TERRAIN_LEAN);
-    // The ground is the stand-in's painting (config.js terrainStandin, TERRAIN_STANDIN; docs/HD2D.md
-    // §5b): in play it reads as the full one, and it is half the program.
-    if (this.groundIsStandin()) Object.assign(d, TERRAIN_STANDIN);
-    // A development switch, one page's: `?r3d={"terrainDefs":"LEAN_FBM=3,LEAN_POOL"}` adds defines.
-    for (const kv of String(this.cfg.terrainDefs ?? "").split(",").filter(Boolean)) {
-      const [k, v = "1"] = kv.split("=");
-      d[k.trim()] = v.trim();
-    }
-    return d;
+    return { NO_DABS: 1, ...TERRAIN_LEAN, ...TERRAIN_STANDIN };
   }
 
   /** The scene packed into one target (pipeline.js `packed`): on Direct3D 11 the scene's programs
@@ -217,54 +198,26 @@ export class MapHd2d extends Map3D {
     return on === undefined ? /direct3d|d3d1/i.test(this.glName) : on > 0;
   }
 
-  /** Whether the ground is the stand-in's painting (config.js terrainStandin; read once, when the
-   *  programs are built). */
-  groundIsStandin() {
-    return (this.cfg.terrainStandin ?? 1) > 0;
-  }
-
-  /** The stand-in ground (config.js TERRAIN_STANDIN, over terrainDefines' own) where the scene is
-   *  packed and the ground is the full painting (`?r3d={"terrainStandin":0}`): its programs compile
-   *  at link, and the map draws once all but the full terrain have -- on Direct3D about half a
-   *  second in, the terrain's own compile (about 1.9 s) going on behind the stand-in (docs/R3D.md
-   *  §11.1 "Two stages"). `?r3d={"standin":0}` waits for the full terrain. With the stand-in's
-   *  painting as the ground itself (the default) there is nothing to stand in for. */
-  standinTerrain() {
-    if (this.groundIsStandin()) return null;
-    return this.packedScene() && (this.cfg.standin ?? 1) > 0 ? TERRAIN_STANDIN : null;
-  }
-
   /** The value noise from a hash texture (shaders.js NOISE_TEX): the terrain's, water's and props'
    *  noise patterns move, their look stays, and Direct3D compiles them in about half the time
-   *  (docs/R3D.md §11.1). `?r3d={"noiseTex":0}` compiles the arithmetic noise. */
+   *  (docs/R3D.md §11.1). */
   sceneDefines() {
-    return this.cfg.noiseTex === 0 ? {} : { NOISE_TEX: 1 };
+    return { NOISE_TEX: 1 };
   }
 
-  /** What the mode compiles out of the props' and the water's programs, to shorten Direct3D's
-   *  compile of them at the first frame (docs/R3D.md §11.1, docs/HD2D.md §8). `cfg.lite` 0 compiles
-   *  the 3D renderer's programs; `cfg.liteOff` (a comma list of names) leaves those out, `cfg.liteOn`
-   *  adds the optional ones (LITE.opt). */
-  liteDefines(kind) {
-    const L = LITE[kind];
-    if (!(this.cfg.lite ?? 1)) return {};
-    const list = (k) => String(this.cfg[k] ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-    const off = new Set(list("liteOff"));
-    const out = {};
-    for (const n of [...L.on, ...list("liteOn").filter((n) => L.opt.includes(n))]) if (!off.has(n)) out[n] = 1;
-    return out;
-  }
-
+  /** What the mode compiles out of the props' and the water's programs (LITE_PROP, LITE_WATER), to
+   *  shorten Direct3D's compile of them at the first frame (docs/R3D.md §11.1, docs/HD2D.md §8). */
   propDefines() {
-    return this.liteDefines("prop");
+    return { ...LITE_PROP };
   }
 
   waterDefines() {
-    return this.liteDefines("water");
+    return { ...LITE_WATER };
   }
 
+  /** The rivers a program of their own (the sea's then compiled without them). */
   riverSplit() {
-    return !!this.liteDefines("split").RIVER_SPLIT;
+    return true;
   }
 
   saveCfg(cfg) {
@@ -285,7 +238,7 @@ export class MapHd2d extends Map3D {
 
   panelRows() {
     // (Brush dabs: compiled out, terrainDefines.)
-    return [...PANEL.filter(([k]) => !["kuwahara", "kuwaharaRadius", "outline", "outlineWidth", "inkLost", "inkColour", "grid", "dabs"].includes(k)), ...PANEL_HD2D];
+    return [...PANEL.filter(([k]) => !["grid", "dabs"].includes(k)), ...PANEL_HD2D];
   }
 
   panelLabel() {

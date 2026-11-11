@@ -555,8 +555,6 @@ impl Game {
         let old_team = self.players[old_owner].team;
         self.plot_set_revealed(city_plot, old_team, true, false, None, false);
 
-        self.city_update_espionage_visibility(new_city, false);
-
         if update_plot_groups {
             self.update_plot_groups();
         }
@@ -764,28 +762,7 @@ impl Game {
             }
         }
 
-        if self.players[p].advanced_start_points >= 0 {
-            // Free border expansion for Creative
-            let mut creative = false;
-            for t in d.traits.keys() {
-                if self.players[p].traits[t] && d.traits[t].commerce_change[CommerceType::COMMERCE_CULTURE.idx()] > 0 {
-                    creative = true;
-                    break;
-                }
-            }
-
-            if creative {
-                for level in d.culture_levels.keys() {
-                    let culture = self.culture_threshold(level);
-                    if culture > 0 {
-                        self.city_set_culture(city, p, culture, true, true);
-                        break;
-                    }
-                }
-            }
-        }
-
-        if self.players[p].human && self.players[p].advanced_start_points < 0 {
+        if self.players[p].human {
             self.city_choose_production(city, None, None, None, false, false);
         } else {
             self.city_do_found_message(city);

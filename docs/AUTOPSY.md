@@ -111,3 +111,113 @@ of its defining ratio) with seed, turn, city and plot, to fork with `tools/ai-br
   war spent outside any city and outside enemy territory.
 - Losses in engagements: committed and lost attacking and defending, by whose territory the battle
   was on, and attacks by strength share with their losses and how often the plot was taken.
+
+## Naval
+
+The sea game's facts, so the naval work starts from counts (CLAUDE.md, step 1). Recorded in the
+second half of `telemetry_autopsy.rs`, reported by `autopsy.py`'s `== Naval` section (`--sections
+naval` alone; `--json` has it under `naval`). Nothing names a ship: a sea unit's class is what the
+rules say of its type -- `transport` (room for land units), `warship` (some strength, no room),
+`other` -- whether it can enter every water terrain (no water terrain impassable to it), and the
+unit AI type the AI gave it. Most of the game's ships carry land units, so most are `transport`;
+the unit AI type tells what the AI uses them for.
+
+**What the rules record**, only when telemetry is on:
+
+- `sea` (counts, at the end of each player's turn, as the army census): sea units by
+  `{war|peace}_{class}_{port|own|sea}` (in a city of its team, in its team's waters, elsewhere),
+  `_still` for those that spent no movement; `sea_cargo` (`{war|peace}_{military|settler|other|empty}`:
+  what each transport carries); `sea_role` / `sea_role_moved` (by unit AI type; the sum of
+  `sea_role` is the unit-turns in port); `sea_reach` (`coast` / `ocean`); at war, `sea_raid`
+  (`near_enemy_city`: armed ships next to a city of a team at war with it; `on_enemy_resource`: on a
+  water resource of such a team; `blockading`: on the rules' blockade, MISSION_PLUNDER).
+- `naval_first` (event): the first end of a turn a player had a sea unit (`ship`), a `warship`, an
+  `ocean_ship`, an `ocean_transport`.
+- `sea_fight` (event): every duel with a sea unit on either side or on a water plot (duels are
+  `tel_combat`; land attacks are engagements and never involve ships): classes (`land` for a land
+  unit), unit AI types, the rules' odds as the fight began, `res`, `undefended`, `drowned_att` /
+  `drowned_def` (cargo that went down with a sunk ship), `barb_att` / `barb_def`, `animal_def`,
+  `water`, `waters` (whose territory: `att`, `def`, `other`, `none`).
+- `sea_load` / `sea_unload` (counts): units put aboard by kind (`military`, `settler`, `other`), and
+  taken off by kind and where (`port`: a city of its team; `home`: land of a landmass where the owner
+  has a city; `landing`: one where it has none; `other`: water), `died_aboard`.
+- `unload` (event): each unload onto land outside a port, with the cities of others within 2 plots
+  (`[x, y, owner, distance, at war]`).
+- `trip` (event): a transport's trip, from the first unit put aboard until it is empty again:
+  `start`, `left_port` (the first end of a turn it was seen outside a port with cargo), `kind`,
+  `max_cargo`, `outcome` (`landing`, `home`, `port`, `other`; `lost_at_sea` when cargo died aboard;
+  `ship_lost` when the ship died with the trip open), `ashore` by where, `died`. `sea_trip.start`
+  counts the trips begun (those still open at the end have no `trip` event).
+- `sea_pillage` (event, count): a water improvement pillaged (by whom, whose, on a resource);
+  `sea_imp_lost` (count, for the owner): an owned water plot's improvement removed, keyed by what the
+  rules were doing (the sum: on a resource).
+- `ship_built` / `ship_built_reach` (counts by class / reach; the sum is the hammers) and `hammers`
+  (`ship`, `unit`, `building`: the production cost of what was finished).
+- `geo` (event, once): plots, water plots, land areas, landmasses holding a start, and each
+  civilization's start landmass with its size and how many other civilizations started on it.
+- `coast` (event, every 10 turns per civilization): cities, coastal cities, cities off its start
+  landmass, landmasses it holds cities on.
+- Added to existing events: `city_fell` has `coastal`, `captor_near_by_sea` (the captor's units
+  within 2 plots that came ashore from a ship outside a port within the last 10 turns) and
+  `captor_land_city` (the captor had another city on that landmass); `found` has `area`, `overseas`
+  (founded on a landmass where the founder had no city while it had cities elsewhere) and
+  `coastal`; `war` has `share_land` (both teams held a city on one landmass).
+
+**The report**: per game (water share, landmasses with a start, isolated civilizations, ships built,
+naval fights, military landings, assaults and captures that followed, cities fallen and by sea,
+overseas cities founded and kept, wars between civilizations sharing no landmass and how many saw a
+fight), then by group -- `isolated` (no other civilization started on its landmass), `shared`, `late`
+(entered without a start: a civilization an event brings) -- the final standing, coastal cities at the
+thirds of the game, ships built and their share of hammers, the first-ship turns, the sea census,
+cargo, trips and their outcomes, landings, cities lost and taken by sea, blockade-like turns; then
+the fights themselves, the barbarians' sea units, the civilizations' sea units by unit AI type, and
+the wars by shared land. A military landing is the units put ashore on a landmass without a city of
+their owner, grouped by player, turn and plot; it is followed by an assault when its player launches
+an engagement on a city of a civilization (or the barbarians) it was at war with within
+`LANDING_CITY_DIST` (1) plots within `LANDING_ASSAULT_TURNS` (3) turns, by a capture when it takes
+that city within `LANDING_CAPTURE_TURNS` (10).
+
+**Limits**: a landing is counted where the cargo steps off; units that walked ashore and on are not
+followed further than the `captor_near_by_sea` window. `left_port` is sampled at the end of the
+owner's turn, so a transport that loads, sails and lands within one turn shows 0 turns in port. The
+hammers are the cost when the item is finished (`hammers.unit` is computed after the new unit counts
+toward its class's instance cost). Ships lost in a city that falls are not a `sea_fight`.
+
+### First baseline (2026-11-10; standard AI, 6 civs, standard map)
+
+Seeds 1-16 at 300 turns, the same 16 seeds with `--sea-level SEALEVEL_HIGH`
+(`--arg='--sea-level SEALEVEL_HIGH'`), and seeds 1-8 to the end (`--turns 700 --arg=--until-supremacy`;
+seed 2 panics at turn 468 in the rules, `city_production_experience` on a city gone, with or without
+telemetry, so 7 games). The map script is always Fractal (continent grain 2, 78% water
++ the sea level's change): there is no archipelago or islands script and no option that makes one,
+and high sea level only moves water from 80% to 85.5% (landmasses with a start: 2.6 -> 2.9 a game).
+
+The counts that matter:
+
+- **No naval combat.** 0 duels at sea in 16 standard games, 3 at high sea level (land units
+  killing ships in port); no transport ever sunk, no unit drowned. The AI's warships (`Role::Naval`
+  in `units.rs`: a sea unit with no cargo room and not a sea explorer) `hold` (fortify or sleep) every
+  turn; transports and sea explorers never attack. Barbarian ships and sea animals also `hold`: 25,000
+  barbarian sea unit-turns, 100% still, in each run. To the end of the game: 6 duels in 7 games (5
+  land units attacking ships in port, one transport attacking a transport).
+- **Ships are rare and late.** ~1 ship per civilization a game (45 of 130 civs had none at turn 300),
+  0.8% of unit and building hammers; the first ship's median turn is 226, the first ship able to
+  enter every water terrain 259 (37% of civs).
+- **Invasions are a trickle.** Every military trip in the standard run carried one unit (31 of 31;
+  41 of 49 at high sea level). 17 military landings in 16 games (25 at high sea level), 14 of them one
+  unit; 2 were followed by an assault on the city beside them and 1 by its capture (3 and 3 at high
+  sea level). Cities taken with units that came by sea: 1 of 241 (1 of 213). To the end of the game
+  (7 games): 45 military landings (126 units), 6 assaults, 4 captures, 34 of the landings by
+  civilizations alone on their landmass; 19 of 104 military trips ended with the army unloaded back in port.
+- **No blockade, no raiding.** 0 armed-ship-turns blockading, 0 sea improvements pillaged or lost.
+  The rules have a blockade (MISSION_PLUNDER: a ship able to pillage blockades the water plots within
+  `SHIP_BLOCKADE_RANGE` (3) of its water area for the teams at war with it -- they cannot work them
+  and their trade network does not pass them); no AI code issues the mission. (Since replaced by
+  the Patrol of named seas: docs/NAVAL.md, 4.2.)
+- **Wars across water are phony.** 6 civilization wars between teams sharing no landmass (7 at high
+  sea level); 2 had any fight or landing. To the end of the game: 28, of which 9 had a fight or a
+  landing.
+- **Isolation pays.** Civilizations alone on their start landmass (14 of 130) ended with more
+  cities (9.6 vs 8.0), techs (40.3 vs 37.0) and legacy score (1262 vs 997), all alive, at war 98
+  player-turns against 4,483 for the others. To the end of the game (9 of 70): techs 60.9 vs 41.8,
+  power 1574 vs 777, legacy score 2195 vs 1187, all alive.

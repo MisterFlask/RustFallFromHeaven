@@ -53,24 +53,22 @@ refresh it); the C++ AI never had one either -- `CvPlayerAI::AI_getPlotDanger`,
 `CvPlot::getNumVisibleEnemyDefenders` and `AI_findTargetCity` read through fog and skip only
 units whose invisibility type hides them (`CvUnit::isInvisible`).
 
-- **Threats to us: fog included** (`view::known_threat`, switch `FOG_SIGHT`): the danger map
+- **Threats to us: fog included** (`view::known_threat`, once switch `FOG_SIGHT`): the danger map
   (`View::danger`: settler and escort risk, workers fleeing, healing, explorers, casters,
   assembly plots), a city's local threat (`production::local_threat`: cities in peril,
   emergency defenders, the garrison quota, settlers held at home, units kept from disbanding),
   barbarians and civ enemies near a city (`production::barbarians_near`, `civ_enemy_near`),
-  sorties (`defense::sortie_ok`), the peril that times defensive world spells
-  (`world_spells::city_in_peril`) and the enemy's forces near our cities when weighing peace
+  sorties (`defense::sortie_ok`) and the enemy's forces near our cities when weighing peace
   (`diplomacy::front_forces`). FfH's hidden units (the Hidden and Invisible promotions,
   assassins, shadows, hidden nationality) stay hidden: stealth is how those units and
   civilizations play.
-- **What we attack: fog included** (`view::sees_units`, switch `FOG_ATTACK`): a city's garrison
+- **What we attack: fog included** (`view::sees_units`, once switch `FOG_ATTACK`): a city's garrison
   on any revealed plot (`combat_sim::visible_defenders`, the siege and amphibious planners, the
   war gate's `diplomacy::city_best_defense`), hunting targets (`military::find_targets`),
   opportune and empty-city captures (`military::opportune`, `CAPTURE`); stealthed units left
-  out. With the switch off, only what is visible: in the fog the siege and amphibious planners
-  assume a defender count (2 + population/5 for a civ city, 1 + age/25 for a barbarian town)
-  and the war gate assumes the best defender the owner can train (`best_trainable_defense`).
-  The pathing checks (`plot_is_visible_enemy_unit_for_unit`) are the rules' and unchanged.
+  out. (With the switch off, as measured below, only what was visible counted, and the war gate
+  assumed in the fog the best defender the owner could train; that path was removed with the
+  switch, 2026-11-10.) The pathing checks (`plot_is_visible_enemy_unit_for_unit`) are the rules' and unchanged.
 
 Map knowledge is unchanged: city sites, paths and exploration use revealed plots only.
 
@@ -113,7 +111,6 @@ barbarians -26% (-1.4), military +5% (1.4); legacy -2.8% (-1.4), research -5.3% 
 | `CvPlayerAI::AI_conquerCity` | `raze_conquered_city` | `diplomacy.rs` |
 | `CvPlayerAI::AI_considerOffer` | `consider_offer` (`judge_offer`: the same answer with its margin or rule, for the trade screen; `trade::item_value` per item; a demand is paid up to `max_extorted`) | `diplomacy.rs` |
 | `CvPlayerAI::AI_doDiplo` (review of deals) | `reconsider_deals`, `keep_deal`: from 20 turns, a deal with a human it would no longer make is cancelled (with an AI, on a trade denial) | `diplomacy.rs` |
-| `CvPlayerAI::AI_doAdvancedStart` (from `CvPlayer::setTurnActive`) | `play_turn` while start points remain | `advanced_start.rs` |
 | `CvPlayerAI::AI_chooseEvent` | `choose_event` | `events.rs` |
 | `CvTeamAI::AI_chooseElection` / `CvPlayerAI::AI_diploVote` | `choose_election` / `diplo_vote` | `council.rs` |
 | captured/gifted units | defaults in `controller.rs` | -- |
@@ -126,14 +123,6 @@ counters, war success, war plans) that the diplomacy below reads.
 
 ## A turn (`play_turn`)
 
-0. **Advanced start** (`advanced_start.rs`, `GAMEOPTION_ADVANCED_START`): while the player has
-   start points, C++ `AI_doAdvancedStart`'s plan with fixed choices instead of its random
-   draws: the capital on the starting plot, ~10% of the points on revealing the land around
-   it, the leader's unit share (10% + `iBuildUnitProb`/3) on defenders, workers and field
-   units, the rest on cities (best found value within 8 plots, 500 + 250 x cities minimum)
-   with culture, improvements for the citizens they can keep happy and population to work
-   them, technologies (research's pick; a quarter of the city points while placing cities),
-   an explorer and buildings by value per point; then `ADVANCEDSTARTACTION_EXIT`.
 1. **Empire** (`empire.rs`): research when the queue is empty (a broke empire first
    researches its way out, see Finance; the victory goal's techs beeline, see Victory pursuit);
    civics every 10 turns when the summed gain in civic value exceeds a flat 100 (the anarchy's
@@ -148,7 +137,7 @@ counters, war success, war plans) that the diplomacy below reads.
 2. **Emergency production** (`production::emergency`): a city whose visible threat exceeds
    its garrison switches to a defender (the rules keep the hammers); a capital or a city near
    barbarians that has only one defender after turn 30 puts a second one first. Either switch
-   happens only when `decide` would then put a fighter first (switch `EMERGENCY_DECIDE`): the two
+   happens only when `decide` would then put a fighter first (once switch `EMERGENCY_DECIDE`): the two
    rules disagreed for a city whose garrison `decide` finds full (`needed + 2` defenders), which was
    switched every turn and re-chose a building, often another one -- an Illian city under a threat
    three times its defense alternated a Courthouse and an Elder Council 21 times in 30 turns, now it
@@ -244,11 +233,11 @@ counters, war success, war plans) that the diplomacy below reads.
    plots need improving; the victory goal's items (`victory::production`: towers, culture in
    the cities nearest legendary; before expansion, item 4, when the goal is 30 turns away);
    at peace, a **wonder slot** in the top third of our cities by production (More Naval AI's
-   quick wonder, `production::wonder_slot`, switch `WONDER_SLOT`): the world wonder of most
+   quick wonder, `production::wonder_slot`, once switch `WONDER_SLOT`): the world wonder of most
    value per turn that the city finishes within 2 x cities + 1 turns (four times that in a
    city of size 6+ making more than three hammers a citizen), not while growing toward a
    settler; heroes (not at the cost of the first expansion), only in the top third of the
-   cities by production that can train them (switch `TOP_CITIES`: the rules let one city at
+   cities by production that can train them (once switch `TOP_CITIES`: the rules let one city at
    a time build a hero, so the first empty queue used to lock it in);
 9. the siege operation's force (`campaign::army_choice`, from `needed_force`: about two
    attackers per defender of its target, siege engines -- or the Siege Workshop that trains
@@ -281,7 +270,7 @@ its limit is weighed at the over-limit price (`production::national_turns`): the
 by the units alive only, so before this several cities each started one at the normal cost and
 paid 500% when the others finished (early Skirmishers by fives, at 250 hammers each).
 
-**Effects in the rules' code** (`code_effects.rs`, switch `CODE_EFFECTS`). FfH 0.41 gives a
+**Effects in the rules' code** (`code_effects.rs`, once switch `CODE_EFFECTS`). FfH 0.41 gives a
 building's plain effects in the XML, which the value above reads, and its special ones in Python,
 ported to Rust in `ffh_core::ffh` (`events.rs`). Those were invisible to the AI: a building whose
 worth lies there was valued by its XML alone, often 0, so it was never or rarely built. FfH's own
@@ -312,9 +301,8 @@ scale (one hammer a turn = 150):
 Not covered: the Asylum (10% Crazed, which makes a unit Enraged: +20% attack, -20% defense, and it
 fights on its own: a wash), buildings that only open a spell (Arena, Demon's Altar: the spells'
 own logic, "Spells FfH kept from its AI" below), the Dwarven Vaults (set by the rules; the Khazad's
-finance keeps their gold, "Civilization-specific"). `FFH_AI_CODE_EFFECTS_OFF` leaves the table out
-but for the Warrens. Buildings that need a mana resource are also worth that much to the mana node
-that opens them (`mana::node_value`, switch `MANA_BUILDINGS`): the Luchuirp's Blasting Workshop
+finance keeps their gold, "Civilization-specific"). Buildings that need a mana resource are also worth that much to the mana node
+that opens them (`mana::node_value`, once switch `MANA_BUILDINGS`): the Luchuirp's Blasting Workshop
 (Fire), Pallens Engine (Sun) and Adularia Chamber (Shadow), never built before, come once a caster
 makes the node.
 
@@ -323,7 +311,7 @@ refused them to every AI player: the old AI could not value them. The rules no l
 (docs/PORTING.md, "Changes from FFH2"); the generic casting keeps them out
 (`casting::castable_spells`), and four are cast by logic of their own:
 - Sacrifice Altar: a unit we disband anyway (finance, bankruptcy) standing in a Demon's Altar
-  city is sacrificed first, for 10 + level squared research (switch `SACRIFICE`);
+  city is sacrificed first, for 10 + level squared research (once switch `SACRIFICE`);
 - Arena Battle (Balseraphs): an Arena city with an unhappy citizen and no games running sends a
   slave, else a spare tier-1 melee or recon unit: +1 happiness for 3 turns, and the unit dies or
   gains 1-6 experience (a slave becomes a Warrior);
@@ -420,7 +408,7 @@ less than 60% for research (3 points of weight per point of shortfall in percent
 commerce; merchants and scientists gain with it over poor tiles); a culture-starved new city
 values culture. While a city in the top third of ours by production pushes a world wonder home at
 peace (done within the wonder slot's horizon, Production item 8), the AI sets the player's
-`EMPHASIZE_PRODUCTION` on it (`production::wonder_emphasis`, switch `WONDER_SLOT`; the governor
+`EMPHASIZE_PRODUCTION` on it (`production::wonder_emphasis`, once switch `WONDER_SLOT`; the governor
 weighs hammers 1.5x under it, as More Naval AI's special yield multiplier does while building a
 wonder) and clears it when the wonder is done, switched or at war; no change to the governor. On
 every wonder for the whole build, as More Naval AI does, it cost growth and commerce for few
@@ -485,7 +473,7 @@ single hook tagged `bankruptcy-guard`:
   defenders the treasury scrapped a few turns later; holding defenders by a quota instead lost
   (docs/AI_LOG.md, "Young units never scrapped", "Garrison quota from lasting threats only",
   "Garrison quota from a record of threats seen").
-- **Production re-decided** (`production::trouble_rebuild`, switch `TROUBLE_REBUILD`): More
+- **Production re-decided** (`production::trouble_rebuild`, once switch `TROUBLE_REBUILD`): More
   Naval AI clears every city's production when the empire runs into financial trouble
   (`CvPlayerAI::AI_doCheckFinancialTrouble`), keeping items within 3 turns of done, wonders,
   world projects and heroes (`CvCityAI::AI_chooseProduction`). Here, while the empire cannot
@@ -725,8 +713,7 @@ own (the Mercurians, the Patrians, ...) and the later paths, chosen knowing more
 Committed, the path's late techs (`capstones` and the alignment's tech) join the research plan
 after the civilization's own beelines (`tech_plan`, step `ResearchPath`), and the research score
 counts the halved research time on path techs (`tech_plan::effective_left`, now per player).
-Switches: `FFH_AI_RESEARCH_PATH_OFF` (the player never commits), `FFH_AI_PATH_RESOURCES_OFF` (the
-choice ignores resources). Telemetry: `research_path` decisions; `ffh stats` reports each civ's
+Telemetry: `research_path` decisions; `ffh stats` reports each civ's
 `path`, `path_known` (every tech of it known), `path_res` (its `resource_pct` for the path),
 `late_techs` (known techs of base cost over 3000).
 
@@ -860,7 +847,7 @@ Each army group is a stack; per decision, in order:
 3. merge the army units on its plot (up to 8; only units with full moves);
 4. take an enemy city at war, plan or not, that it reaches this turn and finds empty, or that is
    next to it and that it clearly takes: the siege estimate with the march reserve and odds the
-   assault goes on with (`opportune`, switch `CAPTURE`; More Naval AI's `AI_stackAttackCity(1,
+   assault goes on with (`opportune`, once switch `CAPTURE`; More Naval AI's `AI_stackAttackCity(1,
    160)`; the targets of our operations are left to their strikes);
 5. attack an adjacent target worth it (never a civ city outside a war plan, nor the target of
    our siege operation, which is left to its strike);
@@ -898,6 +885,36 @@ whatever the defender's strength or first strikes -- it sent four Warriors at a 
 six units at an Elephant at 0.2%. A pure trade rule (attack whenever the kills are worth more)
 lost units early, and the same rule with raiders at face value lost cities to the barbarians;
 both were replaced (docs/AI_LOG.md, round 7g).
+
+**On the forecast** (switch `FORECAST`, on; `FFH_AI_FORECAST_OFF=ALL` plays round 7g's rule
+above; barbarians always do). Every field attack (steps 1, 4, 5, 10, a landing, and
+`units::attack_adjacent`'s explorers, sorties and aggressive units) and the strike are decided on
+the rules' battle forecast (`forecast.rs`, docs/CALIBRATION.md): the battles the units that would
+fight (every unit of ours on the plot that can attack: an order commits them all, the formation
+and then the reserve) fight this turn, `p_take` the chance the plot falls. The same shape as round
+7g, the bars meaning what they say (`military::field_rule`): attack at `p_take` 65%
+(`TAKE_BAR`; 75% for a hurt stack), or 50% (`TRADE_BAR`) when more of their units are expected to
+fall than ours, raiders near our cities counted four times (`RAIDER_KILL_PCT`); a city to capture
+at 65% (`CAPTURE_BAR`); `attack_adjacent`'s own bars (75% explorer, 80% sortie, 50% aggressive)
+read as `p_take`. Nothing to fight (the rules' defenders, where we see the plot): go. A hero or
+veteran of the pool whose chance to fall is above its `precious_bar` allowance holds the attack
+(every unit of the plot fights, so the gate reads each one's fall, not the first attacker's odds).
+Strike (`campaign::strike_forecast`): the phase strikes when the adjacent ring takes the city at
+65% (`STRIKE_BAR`; 55% for the conquerors, `BOLD_STRIKE_BAR`), decisively at 90%
+(`DECISIVE_BAR`: a probe opened by our casters; a ring that does not wait for the stacks one plot
+out); once started it goes on at 65%, or 50% with the better trade. Under engagements an order
+from a plot is one battle of the whole plot, so the old order of single attackers (collateral
+first, raised dead, best odds, cheapest sacrifice, heroes last) chose nothing but the plot: the
+strike orders each battle from the plot with the most units (the forecast's order), by the unit
+best able to take the city; the old code is kept for the switch's off side. A group assault's
+second battle (the reserve the formation left) is ordered by a unit that can still attack, out of
+its group: the group's own order did nothing once half of it had fought, while the forecast
+counted the reserve. Cost: a first look at 20 runs (`FAST_RUNS`), the full 60 only within 20
+points of a bar (`RECHECK_MARGIN`), the turn's cache, and no forecast when our attack power is
+under 25% of the defenders' (`HOPELESS_PCT`). Left on `combat_sim`: the march and gather
+decisions (`ok_all`, `ok_near`), the one-turn concentration test, the casters' share of a
+decisive strike, the hunt's target pre-filter in `hunt` before the stack is next to it (judged as
+if from its staging plot), and the war gate. Measured: "The improvement scheme", item 3.
 
 **Siege operations** (`campaign.rs`): one per player, rebuilt from the game state on the first
 army decision of each `play_turn` call (nothing outside `Game` is remembered).
@@ -949,7 +966,7 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   defenders left (or the defenders are down to half their health and outnumbered). Up to three
   units follow the victor into the city. The expected damage of a lost fight, in the strike's
   simulation and its sacrifices, counts first strikes (`fight`, round 7f): in the rounds a
-  side has first strikes left it cannot be hurt. Heroes and veterans (switch `PRECIOUS`; More
+  side has first strikes left it cannot be hurt. Heroes and veterans (once switch `PRECIOUS`; More
   Naval AI's `AI_getBestGroupAttacker`) below their odds -- a hero's 85% plus 1%
   a level, a unit above level 4 at 70% plus 3% a level (at most 95%) -- attack last in a strike:
   while another unit can attack, and only in a strike expected to take the city, never to wear
@@ -957,7 +974,7 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   they turned captures into stalls: "Forks of the hero gate" below.) A group assault
   (`military::assault`) stops when the rules would send one below its odds, and a stack does not
   pick such a target, adjacent or hunted.
-- *A second operation* (switch `SECOND_OP`; More Naval AI's `AI_pickTargetCity` passes over a
+- *A second operation* (once switch `SECOND_OP`; More Naval AI's `AI_pickTargetCity` passes over a
   city already targeted by more than max(6, 3 x its defenders) units): when the stacks committed
   at war hold more than twice what the first target (seen) needs, it keeps the stacks already
   ordered against it and the nearest others up to twice its need (six units at least), and the
@@ -997,21 +1014,18 @@ plot falls or the odds turn bad, and moves in.
 
 ## Naval (`naval.rs`)
 
-- **Seas and Patrol** (docs/NAVAL.md, phase 2, 4.8): a warship with no cargo and nothing else to do
-  (a `Naval` ship, a sea explorer done exploring, an idle transport that can fight) takes the
-  Patrol order: in the sea of an enemy port our army besieges where it would hold it, else a sea of
-  our ports where an enemy patrols or a warship of an enemy is seen, else the sea of our most
-  populous port (`naval::patrol`); it is woken when worn, out of range, outmatched two to one, when
-  a transport has cargo to carry, and every 8 turns (`naval::patrol_wake`). A port builds a warship
-  while we have fewer than two per sea of ours an enemy holds or contests plus one per sea shared
-  with a known enemy port, three at most (`naval::patrol_production`). Invasions go only at a coast
-  whose lane is open (`naval::way_in_range`). Not measured beyond a first count of firings (the
-  AI builds few ships before turn 150; docs/NAVAL.md, section 12).
+- **Seas and Patrol** (docs/NAVAL.md, phase 2, 4.8): what warships do under the sea rules is
+  `warships.rs` (below, "Warships"): blockades, guards and posts are the Patrol of named seas. A
+  ship out of range, or a warship carrying nothing worn above half the maximum, makes for port
+  first (`warships::to_port`). Invasions go only at a coast whose lane is open
+  (`naval::way_in_range`).
 
 - **Fleets** (docs/NAVAL.md, phase 3, 7.3): the AI's ship groups become fleets through the rules'
-  sync (a ship at sea is a fleet of its own), with no change to its decisions; its armies'
-  logistics (`armies.rs`), tactics and supply telemetry leave fleets out. It gives no standing
-  order and requisitions no ship yet.
+  sync (a ship at sea is a fleet of its own). `warships.rs` gives a fleet the Patrol standing order
+  of the sea it decides to patrol, and an Escort order of a loaded assault transport at sea that
+  has none (ended when the cargo is gone or the escort worn, out of range or hurt); a fleet that
+  decides again leaves its order first. Its armies' logistics (`armies.rs`), tactics and supply
+  telemetry leave fleets out. It requisitions no ship.
 
 - **Overseas sites**: when no site is left on a landmass where we have cities, `sites.rs` also
   scores the coastal plots of other landmasses within 14 plots of our coastal cities.
@@ -1038,37 +1052,262 @@ plot falls or the odds turn bad, and moves in.
   transport.
 - **Work boats** improve sea resources in our borders (one per unimproved resource, at most
   one per city at a time).
-- **Amphibious invasion** (`amphibious_target`, `UNITAI_ASSAULT_SEA`): a civ can ship an army
-  across water to take an enemy city on a landmass where it has no city (the siege campaigns
-  only target landmasses we already hold a city on). The target is the best overseas enemy (or
-  barbarian) city -- revealed, coastal, on a landmass with no city of ours, within 24 plots of
-  one of our coastal cities, whose weakest defender our best trainable attacker can beat
-  (`can_take_city`) -- by value (population, wonders) for its cost (force needed, distance);
-  deterministic ordering, recomputed each turn. *Production* (the coastal city nearest the
-  target, the staging port): a fleet of assault transports big enough to carry the whole force in
-  one wave (`ceil(need / cargo per ship)` of them -- one transport only trickles a few units per
-  trip, which rarely masses enough to take a defended city), then attackers up to what one assault
-  needs (`need` = defenders x2 + 1, capped). *Execution* reuses the overseas-settling
-  machinery: the nearest army stacks (up to `need`) walk to the staging port and board the
-  transport there (as a settler and its escort board); the transport, carrying an army rather
-  than a settler, sails to a water plot beside the target city and lands the army on a land plot
-  next to it; the landed stack then takes the city with `military::assault` (which holds rather
-  than throwing the stack away if the revealed defenders are too strong). Every trip lands on the
-  *same* plot -- the reachable land plot beside the city already holding the most of our army (then
-  the soonest-reachable, then the strongest ground) -- so a trickle of small landings piles onto
-  one plot and merges (`military::army` merges army units sharing a plot) into a stack that can
-  strike, instead of scattering across the city's approaches and never massing. One transport trip
-  still carries only the ship's cargo capacity, so with early, small transports the force builds up
-  over several trips; bigger invasions wait for better ships.
-- **The assault fleet** (`naval::fleet_waits`, switch `FLEET`; More Naval AI's
+- **Amphibious invasion** (`amphibious_target`, `UNITAI_ASSAULT_SEA`; switch `INVASION`,
+  `invasion.rs`, 2026-11-11, **off by default**: `FFH_AI_INVASION_ONLY=ALL`; the rule in play is
+  the one under "Switch off" below, and why is in docs/AI_LOG.md): a civ ships an army across water to take an enemy city on a
+  landmass where it has no city (the siege campaigns only target landmasses we already hold a
+  city on). The candidates are the overseas enemy (or barbarian) cities -- revealed, coastal, on
+  a landmass with no city of ours, within 24 plots of one of our coastal cities, whose weakest
+  defender our best trainable attacker can beat (`can_take_city`) -- ranked by value (population,
+  wonders) for cost (force, distance), the city we are landing near or a fleet of ours sails for
+  first. An invasion sails only when it can take the city, lands together and takes it, or is not
+  launched:
+  - *The force* is what the rules' battle forecast says takes the city (`invasion::plan`): the
+    smallest prefix of our army in commitment order -- the units already aboard in the staging port
+    (the coastal city nearest the target), then the army on the staging landmass strongest first,
+    then units elsewhere standing in for attackers the port will train -- whose battles from the
+    landing plot on their next turn (`ForecastTurn::Next`: they land, then attack) take the city
+    with a chance of at least `BAR` (70%), against the garrison we see plus the enemy units that
+    can join it in the turn ashore (`enemy_support`: a civilization's land units within
+    `ENEMY_REACH` (6) plots and their moves times `SUPPORT_TURNS` (1); none for a barbarian city,
+    whose units roam), and half as many again (`FORCE_MARGIN_PCT` 50%, at least one more: what the
+    port cannot see, the garrison growing while the fleet sails). Before the war the battles are
+    forecast as fought once it is declared
+    (`WarTest::DeclareWar`, threaded through `Game::engage_forecast_waves_war`). Beyond the army we
+    have, the force is our candidates scaled by the defenders over the forecast's kills
+    (`EXTRAP_PCT` 125%). The garrison is read where the AI may read it (`view::sees_units`: with
+    `FOG_ATTACK`, the default, every revealed plot); unseen, there is no plan. The landing plot is
+    a land plot beside the city, free of other teams' units we see, beside water of a sea the port
+    is on that the most restricted transport in port reaches, the best ground for us.
+  - *The fleet* carries that force in one wave: the room missing in our assault transports (alive
+    and in training), in the best transport the port trains now. The invasion is affordable only
+    when the port builds them within `FLEET_TURNS` (20), their hammers stay within
+    `FLEET_SHARE_PCT` (25%) of the empire's production over those turns, and the force is at most
+    `MAX_FORCE` (16). Not affordable, it is not prepared: no transports, no attackers, no units
+    gathered, and it is no target for the war gate (`territory_check` reads `amphibious_city`).
+    A war bribe on a team we share no landmass with and cannot afford to invade is refused, and a
+    war between teams that share no landmass where neither side can afford an invasion is quiet
+    (`diplomacy::phony_overseas`; `quiet_war` ends it past 15 turns whatever was won in it).
+  - *Production* (the staging port, `assault_production`): the transports, then attackers up to the
+    force on the staging side.
+  - *Boarding* (`invasion_boards`): the plan's units wait in the staging port until the whole force
+    is there and the transports in port have room for it, then all of them (not the rest of their
+    stacks) board in one turn, the ocean-going ships first.
+  - *Sailing* (`invasion_fleet_waits`): the fleet sails when the force with its margin is aboard and
+    the forecast of the army aboard (from the plan's landing plot, against the garrison and its
+    support) reaches `BAR`, with the escorts
+    present in port and only the ships that go where the lead ship goes (a Trireme beside ocean
+    ships held a fleet on the coast, going to and fro). In a war still being prepared it waits,
+    loaded, for the declaration, and a loaded invasion is the army at the border that declares an
+    overseas war (`naval::invasion_ready`, read by `diplomacy::manage` beside `staged_army`). It
+    waits while units of the plan are still coming aboard; it unloads and stands down when a city of
+    ours on the staging landmass is in peril, when the invasion is no longer prepared, or when
+    nothing more can come: it never sails a remnant. At sea the fleet keeps its target (its group's
+    mission, `MISSIONAI_ASSAULT` on the city's plot), looks again every turn and sails home when the
+    force would take the city with less than `ABORT_BAR` (35%) or no coast beside it is in reach.
+  - *Landing and the assault*: every ship of the fleet unloads on the plan's landing plot in the same
+    turn. A stack landed next to the target decides on the city first (`naval::landed_beside`, before
+    the field targets around it in `military::army`): it assaults on the field rule's capture bar
+    (`CAPTURE_BAR` on the forecast, switch `FORECAST`); under it, it holds on the best ground beside
+    the city while a second wave is under way (an army aboard a transport, or units of a prepared
+    plan still on the staging side), else digs in (re-embarking at sea is not legal for the AI's
+    land units). After a capture the survivors are the city's garrison and the ships go back to
+    ordinary duty.
+  - *The prediction ledger*: kind `invasion` at each sailing, `CityCapturedBy` the invader within 10
+    turns, pct the forecast's chance at sailing (docs/CALIBRATION.md).
+
+  Switch off (the default; the game as before, checksums equal on seeds 1-3): the force
+  is `need` = defenders x2 + 1, the staging port builds `ceil(need / cargo)` transports and the
+  attackers, the nearest stacks walk to the port and board as they come, and every trip lands on the
+  plot beside the city already holding the most of our army, so a trickle of landings piles up there
+  and strikes when the field rule allows.
+
+  *Measured* (`autopsy.py --sections naval`, 6 civs, standard map; switch off -> on; one binary):
+
+  | | 16 games, 300 turns | 16, high sea level | 7 full games (seeds 1, 3-8) |
+  |---|---|---|---|
+  | military trips by units aboard (1/2/3) | 60/3/0 -> 0/0/0 | 41/1/0 -> 0/0/0 | 254/50/20 -> 26/14/2 |
+  | military trips ended back in port | 12 -> 0 | 10 -> 0 | 50 -> 11 |
+  | military landings by units (1/2/3/4+) | 10/0/0/5 -> none | 9/4/0/1 -> none | 64/28/19/23 -> 0/3/2/3 |
+  | landings followed by an assault / a capture | 4/4 -> - | 2/2 -> - | 11/15 -> 8/8 |
+  | cities taken by units that came by sea | 3 -> 0 | 1 -> 0 | 18 -> 7 |
+  | transports built (hammers) | 104 (10,025) -> 59 (5,850) | 73 (7,050) -> 50 (5,000) | 134 (13,625) -> 68 (7,200) |
+  | transport-turns empty / in port | 81% / 54% -> 92% / 52% | 82% / 60% -> 93% / 63% | 69% / 43% -> 88% / 52% |
+  | wars between teams sharing no landmass (with a fight) | 6 (2) -> 5 (0) | 9 (2) -> 4 (0) | 24 (12) -> 17 (2) |
+
+  In the full games 20 fleets sailed (all of them with the force aboard), 9 turned home at sea
+  (the enemy gathered at the city while they sailed), 1 found no coast in reach, 8 landed (every
+  landing two units or more) and all 8 took the city. The ledger (`invasion`, 14 sailings resolved):
+  predicted 100%, observed 43% -- the misses are the fleets that turned home; the forecast at the
+  port cannot see the garrison grow and the defender gather during the voyage. A first version
+  sailed on the smallest force (no `FORCE_MARGIN_PCT`): 40 sailings, 26% taken; one that counted
+  the enemy units able to reach the city over the whole voyage (not one turn) launched no invasion
+  in 32 games of 300 turns. Forks of 7 sailings (8 rolls, 20 turns, the old rule from the same
+  position): the target taken in 14 of 56 rolls against 20 of 56 (7/8 vs 3/8 and 6/8 vs 4/8 for the
+  new rule at two of them; 0/8 vs 8/8 and 0/8 vs 5/8 at two others, where the trickle took a city
+  whose garrison then grew, or the declared war brought 30 defenders into it); the invader lost
+  fewer units in four. With one-unit ships an invasion is almost never affordable before turn 300 on
+  this map (0 sailings in 32 games): the AI now launches few invasions and those that land work.
+  Guardrail (seeds 1-16, 300 turns, against the switch off, paired by seed): turn 100 identical;
+  at 300 techs 35.3 -> 35.2, cities 6.4 -> 6.5, legacy 842 -> 843, research -6% (t -0.7), military
+  -4% (t -1.0); cities captured 315 -> 339, eliminations 23 -> 14. Cost (`ffh bench`, seeds 4 and 12,
+  300 turns): +14% a turn (31.3 -> 35.7 and 24.9 -> 28.5 ms), the plans' forecasts (Known gaps).
+- **The assault fleet** (`naval::fleet_waits`, once switch `FLEET`; More Naval AI's
   `AI_assaultSeaMove`, which waits in port until the cargo reaches the invasion size and sails
   escorted): a transport with an army aboard waits in port while what the transports there carry,
   with what has already landed next to the target, falls short of the force the target needs;
   then the loaded transports in port and our idle warships there sail as one stack and land
-  together (the escorts sail with them; back in port, empty, the ships part again). Before, each
-  transport sailed as soon as one fighter was aboard -- a Trireme or a Caravel carries one -- and
-  the army landed a unit at a time next to a defended city, where the landed units assaulted it
-  piecemeal.
+  together (the escorts sail with them; back in port, empty, the ships part again). With switch
+  `INVASION` the sailing is the forecast's (above). Before, each transport sailed as soon as one
+  fighter was aboard -- a Trireme or a Caravel carries one -- and the army landed a unit at a time
+  next to a defended city, where the landed units assaulted it piecemeal.
+
+### Warships (`warships.rs`, switch `WARSHIPS`)
+
+Before, every sea unit without cargo room held in place every turn (`units::role_of` gave it
+`Role::Naval` -> `hold`), and so did the barbarians' ships and sea animals: in 16 games, no duel
+between ships, no blockade, no sea improvement pillaged, 25,000 barbarian sea unit-turns 100% still
+(docs/AUTOPSY.md, "Naval"). `FFH_AI_WARSHIPS_OFF=ALL` plays exactly as before (checksums equal on
+seeds 3 and 7, 200 turns).
+
+**Who plays here.** A civilization's armed sea unit with no cargo room (`Role::Naval`); a sea
+explorer with no transport room and nothing left to reveal (`naval::sea_explore_target` empty);
+an idle transport (`free_transport`: armed, alone, carrying nothing, and none of `naval.rs`'s jobs
+open: no assault target, no settler waiting for a ship or in port, no army waiting, no pickup under
+way, no army of ours beside it), which plays every rule but the escort. A transport on Patrol that
+`naval.rs` comes to want leaves its station.
+Every barbarian sea unit (`Role::Naval`, `Transport`, `SeaExplore`) plays [`barbarian`].
+
+**A warship's turn**, the first rule that applies (constants in `warships.rs`):
+
+1. *Heal*: damaged `HEAL_PCT` (50%) or more outside a city of ours: to the nearest port it reaches
+   (20 turns); in port it stays while damaged above `HEALED_PCT` (10%).
+2. *Kill*: an enemy ship (a team at war with ours; barbarians always) it can attack this turn (next
+   to a plot it reaches with moves left) at the rules' odds (`get_combat_odds`) of `ODDS_BAR`
+   (65%), or `ODDS_BAR_PRIZE` (50%) against a transport seen carrying units, a ship on Patrol or a
+   ship on a sea resource of ours. Order: loaded transports, other prizes, best odds. Each attack is
+   recorded in the prediction ledger, kind `sea_attack` (`AttackWon`, this turn; ctx `src`
+   kill/gang/barbarian, `prize`).
+3. *Escort*: while an invasion is on (`naval::amphibious_target`, switch `FLEET`), the warships
+   without cargo room nearest the staging port, one per `ESCORT_PER_TRANSPORTS` (2) assault
+   transports and at most `ESCORT_SHARE_PCT` (50%) of them, wait there awake;
+   `naval::fleet_waits` takes the idle warships in port along when the fleet sails.
+4. *Attack together*: an enemy ship within `COAST_RADIUS` (2) of a water plot of ours that no
+   ship beats alone. The free warships that can attack it this turn, strongest first, attack
+   together when the duels in that order kill it with the bar's chance (the first at
+   `GANG_FIRST_BAR` 35% or more, at most `GANG_MAX` 3; each loser's expected damage carried into the
+   next duel with `combat_sim::fight`).
+5. *Siege blockade*: the Patrol of a sea of an enemy coastal city our army besieges (rule 8 limited
+   to those seas): closing every sea of a besieged port stops its healing and repair.
+6. *Guard*: the Patrol of a sea one of our ports stands on (largest ports first) where an enemy
+   patrols or an enemy warship is seen, when this ship with our ships there or bound there is not
+   outmatched two to one, unless our ships there already hold it.
+7. *Gather*: an enemy ship near our waters and no sea to guard: the warships within `GATHER_TURNS`
+   (3) wait in our coastal city nearest it (ships in a city cannot be attacked by ships).
+8. *Blockade* (at war with a civilization): the Patrol of a sea of its revealed coast within
+   `BLOCKADE_TURNS` (8), scored by what closing it denies (`sea_value`: each of the enemy's water
+   plots there 1, 2 more worked, 2 more with a resource; each of its ports on the sea 4, 10 more if
+   the closing blockades it, 20 more if besieged by us; at least `BLOCKADE_MIN` 4) per turn of
+   travel, doubled where this ship's Patrol closes the sea to an enemy with a port there, the sea it
+   patrols weighted a fifth more; not a sea where we would be outmatched two to one (counting the
+   ships bound there), one our other ships already close, or a plot an enemy ship that beats it at
+   `DANGER_ODDS` (50%) reaches next turn. An enemy sea improvement it stands on is pillaged first.
+9. *Guard post*: a coastal city of ours within `POST_RIVAL_DIST` (10) of a rival civilization's
+   coastal city or `POST_BARB_DIST` (6) of a barbarian ship seen (those first) is a post; one
+   warship each (a ship keeps the post it holds), the rest for the port with the most worked sea
+   plots and sea resources; each patrols the port's sea where we are weakest (fortified in the
+   port if it has none).
+
+A ship on Patrol keeps its station without new orders (`keeps_station`, checked in `units::play`
+before the group is re-planned) until it is worn, out of range, damaged `HEAL_PCT`, outmatched two
+to one in its sea, wanted by `naval.rs` as a transport, an enemy ship comes within its moves + 1,
+or every `RELOOK_TURNS` (8) turns. Before any rule, a ship out of range or worn above half the
+maximum and empty makes for port (`to_port`). Ships attack only onto plots in our range.
+
+**Barbarian ships and sea animals**: attack at `BARB_ODDS` (50%, the land animals' bar), pillage a
+sea improvement of a team at war they stand on, hunt a ship they beat within `BARB_HUNT_TURNS` (2),
+else move to a water plot within their moves picked by a hash of unit id and turn (the land
+animals' wander; no RNG draw). They do not blockade. The rules keep animals out of owned plots.
+
+**Production** (`warships::production`, called from `production::decide` after the assault fleet,
+coastal cities that are safe and can afford a unit): wanted = escorts (one per 2 assault
+transports while an invasion is on) + guards (the larger of: the non-animal enemy ships seen within
+`SEEN_RADIUS` 3 of our ports that our best warship can fight, strength at most 1.5x ours; two per
+sea of our ports an enemy holds or contests by what we see) + blockaders (at war with a
+civilization whose ships seen are not stronger than ours: one per sea of its revealed coast that
+reaches into our range, at most `BLOCKADERS_MAX` 3) + 1 for a seafaring civilization (coastal
+capital and a sea unit class of its own in the data) when any reason holds. Trained only while
+warships (alive and in training) are fewer than wanted and our armed sea units hold under
+`HAMMER_SHARE_PCT` (20%) of the military's hammers; the best sea unit with strength and the attack
+or escort sea AI the city can train, by strength squared per turn (Trireme, Frigate, Man-o-War...
+may be transport types: trained as `UNITAI_ATTACK_SEA`, they serve `naval.rs` when it needs a ship).
+
+**Merged with the sea rules (2026-11-11).** The rules below this point were measured under Civ4's
+blockade by range, which the sea rules (docs/NAVAL.md, phase 2) replaced: blockades, guards and
+posts are now the Patrol of named seas, and the sea branch's own patrol code (`naval::patrol`,
+`patrol_wake`, `patrol_production`) was folded in here. What the merged AI does in games: docs/NAVAL.md,
+section 12.
+
+**Measured** (seeds 1-16, 300 turns, 6 civs, standard map; the base is the switch off, which plays
+as before; `autopsy.py --sections naval,falls`, `calibration.py --kind sea_attack`):
+
+| | standard: off | on | high sea level: off | on |
+|---|---|---|---|---|
+| duels with a sea unit (civ-civ / civ-barb / animal) | 1 (0/1/0) | 66 (35/24/7) | 1 (0/1/0) | 48 (21/22/5) |
+| civilizations' ships attacking / defending / lost | 0/1/1 | 61/40/38 | 0/1/0 | 38/26/25 |
+| transports sunk with cargo, units drowned | 0, 0 | 0, 0 | 0, 0 | 0, 0 |
+| armed-ship-turns blockading | 0 | 701 | 0 | 404 |
+| armed-ship-turns next to an enemy city | 190 | 405 | 160 | 287 |
+| sea improvements pillaged: by civs / by barbarians | 0 / 0 | 3 / 11 | 0 / 0 | 4 / 6 |
+| ships built (transport class / warship class) | 104 / 87 | 166 / 160 | 73 / 81 | 158 / 139 |
+| ships' share of unit+building hammers | 1.1% | 1.8% | 1.0% | 1.8% |
+| warship-class unit-turns, port/own waters/elsewhere %, still % | 4435: 9/37/53, 18 | 7247: 25/29/45, 42 | 5575: 11/32/55, 23 | 7159: 28/31/40, 37 |
+| `UNITAI_ATTACK_SEA` unit-turns (in port / moved) | 184 (184/0) | 8606 (5771/2169) | 23 (23/0) | 6165 (4669/1375) |
+| barbarian sea unit-turns still | 100% | 0.1% | 100% | 0.2% |
+| barbarian ship kills / sea pillages, by third (early/mid/late) | 0/0/0, 0/0/0 | 0/0/3, 0/0/11 | 0/0/0, 0/0/0 | 0/0/3, 0/0/6 |
+| military landings (units); assault / capture | 15 (44); 4/4 | 5 (23); 1/1 | 14 (22); 2/2 | 17 (34); 1/2 |
+| assault fleets sailed / with an escort | 33 / 0 | 69 / 0 | - | 39 / 2 |
+
+Decisions in the standard run (`decision` kind `warship`): post 1921, gather 521, blockade_sail 317,
+port 250, blockade 140, heal_stay 63, escort 62, kill 61, pillage 14, heal_sail 9, barbarian
+attacks 5, barbarian hunts 6. The `sea_attack` ledger: standard 59 resolved, predicted 79.7%,
+observed 78.0%, Brier 0.145 (reference 0.172, skill +0.16); high sea level 37, 78.7% / 81.1%,
+skill +0.16. The duel odds are the right estimate for these fights.
+
+Every fight, pillage and kill falls in the last third: ships come late (the first ship's median
+turn is still about 225). Barbarian ships did not wreck the early game (no kill or pillage before
+turn 200, sea animals cannot enter owned water), so their radius and aggression were left as built.
+
+Guardrail (`ai_metrics.py`, seeds 1-16, 300 turns, against the switch off): military at turn 100
+11.9 -> 12.1, cities at 300 7.4 -> 8.1, techs at 300 40.2 -> 40.5, research at 300 286 -> 270
+(range 0-1231), civ cities captured by civs 315 -> 325, by barbarians 40 -> 51, eliminations 23 ->
+17. Cost (`ffh bench`, seeds 1, 3, 5, small map, exclusive slot): 13.9 / 15.0 / 14.4 ms a turn off,
+13.6 / 15.1 / 14.1 on.
+
+**Trace review** (seeds 4 and 12, `FFH_AI_TRACE`), fixed in one pass: blockaders hopped between
+posts because another ship's claim within 2 plots excluded the post a ship already held (the held
+post is now exempt); two warships traded a guard post every turn by unit id (a ship now keeps the
+post it stands on); sea animals of one move never moved (the flood counts a step that spends the
+last move as next turn's; the wander now takes plots within the unit's moves); escorts went to the
+staging port only once a transport there was loaded, after the fleet had usually sailed (they now
+go while the invasion is on).
+
+**What does not work**:
+- Escorts almost never sail with a fleet (0 of 69 and 2 of 39): `naval::fleet_waits` takes only
+  warships without cargo room, and the civilizations' warships after the Galley (Trireme,
+  Frigate, Man-o-War) all have room; with an invasion on, `naval.rs` claims those as carriers.
+  Loaded settler transports sail alone (no escort rule follows a ship at sea).
+- Fewer military landings in the standard run (15 -> 5, also 7 in an earlier build) but more at
+  high sea level (14 -> 17); fleets sailed twice as often. Games diverge by turn 225 and the
+  amphibious wars are few (6 between teams sharing no landmass in 16 games), so this is not
+  attributed; worth a look with more seeds before the warships are blamed.
+- The guard rule waits in port as long as an enemy ship it cannot beat stays within 2 plots of our
+  waters (521 gather decisions): a parked monster keeps a civilization's ships home and off its
+  blockade.
+- "Seen in our waters" is the present sight only (no memory in `Game`), so guard production
+  follows what is visible on the turn a city chooses.
+- No ship attacks a land target; ships do not bombard cities; transports never take part in a
+  joint attack while `naval.rs` holds them.
 
 ## Diplomacy (`diplomacy.rs`)
 
@@ -1163,11 +1402,9 @@ ported; the judgement is here. Only what a human could see is read.
   fewer and we can press the conquest; then we take the cities instead.
 - **Humans:** asked on the leader's contact cadence. A human can't be an AI's vassal (rules).
 
-Measured with `FFH_AI_VASSAL_OFF` (the switch), full games of ffh-ai only. The switch is a
-civilization switch like the others (`switches::VASSAL`): `FFH_AI_VASSAL_OFF=ALL` (or `1`, as
-before) turns vassal play off for everyone, `FFH_AI_VASSAL_OFF=X,..` / `FFH_AI_VASSAL_ONLY=X,..`
-for the players of those civilizations, each deciding for itself (it neither seeks nor agrees to
-vassalage, and as the master takes a vassal only when the deal costs it nothing).
+Measured with `FFH_AI_VASSAL_OFF` (the switch, removed 2026-11-10), full games of ffh-ai only:
+off, a player neither sought nor agreed to vassalage, and as the master took a vassal only when
+the deal cost it nothing.
 
 | | Development seeds 1-12 | | Fresh seeds 201-224 | |
 |---|---|---|---|---|
@@ -1303,7 +1540,7 @@ when the payment is worth over three quarters of the price) -- in practice the b
 cities to 2 and the briber-side winner closes out by domination 64 turns early). No new saved state;
 no RNG.
 
-**Peace by the forces at the front (`end_war_val_seen`, `front_forces`; switch `PEACE_FORCES`).**
+**Peace by the forces at the front (`end_war_val_seen`, `front_forces`; once switch `PEACE_FORCES`).**
 More Naval AI divides the value of peace by our attackers en route against theirs in our land
 (`CvTeamAI::AI_endWarVal`, x200 / range(ratio, 200, 600)). Here the same scale applies to
 `end_war_val` wherever this AI weighs peace (its own offers, `consider_offer`, the offers to
@@ -1316,20 +1553,20 @@ bare peace offer is refused while our army stands there with three times theirs.
 expert's test the 30-turn rule lacked (docs/AI_LOG.md, "Wars"): sell the war when the next city
 is out of reach, fight on when it is close.
 
-**Quiet wars end (`quiet_war`; switch `QUIET_PEACE`).** More Naval AI makes peace in a war of
+**Quiet wars end (`quiet_war`; once switch `QUIET_PEACE`).** More Naval AI makes peace in a war of
 10+ turns where nothing happens and no stack is moving (`AI_doWar`). Here: past 15 turns, less
 than two attacks' worth of war success on both sides, no army of ours near their cities nor of
 theirs (that we see) near ours, and no stack of ours marching on them (the campaign's
 `MISSIONAI_ASSAULT` tag) -- we offer peace, with tribute either way as the war values say.
 
-**Dogpiles (`dogpile_power`; switch `DOGPILE`).** In the war-of-expansion gate the power of a
+**Dogpiles (`dogpile_power`; once switch `DOGPILE`).** In the war-of-expansion gate the power of a
 target's current enemies counts with ours (More Naval AI's `AI_doWar` dogpile power; an enemy that
 shares no landmass with it counts half): a civ busy on another front is a weaker target than its
 defensive power says, and the runaway leader, at war with a neighbour, becomes reachable for the
 civs around it. The rest of the gate (reachable, takeable, the leader's bar) is unchanged, and the
 declaration's re-check (below) drops the war if the other front has closed since.
 
-**Re-check before declaring (`still_a_target`; switch `WAR_RECHECK`).** More Naval AI's "last
+**Re-check before declaring (`still_a_target`; once switch `WAR_RECHECK`).** More Naval AI's "last
 chance to change our mind" (`AI_doWar`): when a prepared war is about to be declared (the army
 staged, or the 40-turn fallback), the target must still pass a gate that would choose it now --
 the victory plan's, or the war of expansion's with 10% slack on the power bar and per-unit parity
@@ -1338,7 +1575,7 @@ re-judge them). A target with new pacts behind it, a friend since, or cities our
 longer matches is dropped, the army kept for the next choice (`war_drop` decisions: power,
 not_takeable, unreachable).
 
-**Tech-trade discipline (`tech_denial`, `TechCtx`; switch `TECH_DISCIPLINE`).** More Naval AI's
+**Tech-trade discipline (`tech_denial`, `TechCtx`; once switch `TECH_DISCIPLINE`).** More Naval AI's
 `CvTeamAI::AI_techTrade`, in the form an expert would keep: no technology to our victory rival; a
 swap with the world's clear leader (a share 1.5x the runner-up's) only when we get at least 125% of
 what we give (by research cost; 80% for anyone else, as before); no military technology (one
@@ -1356,7 +1593,7 @@ civilization with it against the rest won 18.4% of its games against 21.1% (seed
 a civ that refuses a swap forgoes the technology it would have received while the others trade
 on.
 
-**Councils (`council.rs`; switch `COUNCIL`).** The Overcouncil (the Overcouncil civic, good and
+**Councils (`council.rs`; once switch `COUNCIL`).** The Overcouncil (the Overcouncil civic, good and
 neutral civs) and Undercouncil (evil and neutral) meet every 10 and 15 turns once two civs run
 their civic; members elect a head councilor, who proposes one resolution a session, and half the
 population-weighted votes pass it. Before, every AI abstained and never proposed, so both were
@@ -1377,7 +1614,7 @@ one in force that hurts it, will fail and so be repealed; nothing when none does
 none of the C++ AI's defiance or proposal dice. Telemetry counts the results (`vote_passed`,
 `vote_failed`) and the AI's `vote` and `election` decisions.
 
-**Missionaries abroad (`units::missionary`, `production.rs`; switch `MISSIONARY_ABROAD`).** More
+**Missionaries abroad (`units::missionary`, `production.rs`; once switch `MISSIONARY_ABROAD`).** More
 Naval AI's missionary strategy: once the holy city of our state religion is ours and has its
 shrine (a gold a turn for every city in the world with the religion), a missionary with no city of
 ours to convert goes to a foreign city it may enter -- a civ at peace whose borders are open to us,
@@ -1453,8 +1690,7 @@ governors' production, what an expert does with the channels:
   hostility" −1 per 2 points (to −3), "cultural friendship" +1 per 2 points (to +2), fading a
   point every 10 turns.
 
-Switch `CULTURE` (`FFH_AI_CULTURE_OFF`): off, a civilization channels nothing and its cultural
-defence is only its governors'. Telemetry: the decisions of kind `culture` (the action, or `stop`
+Telemetry: the decisions of kind `culture` (the action, or `stop`
 or `garrison`; why: `revolt_flip`, `revolt_disorder`, `revolt_unrest`, `religion_home`,
 `religion_abroad`, `religion_hostile`; `worthless`, `friend`, `stronger`, `keep_culture`...;
 `defend`), with the rules' counts `culture_channel`, `culture_channel_end`,
@@ -1558,10 +1794,10 @@ enemy fed the main army and every reinforcement travelled off the map.
   turn-180 game had 10 armies of one unit, most of them defenders in cities). Units on their way to
   such an army go to that garrison.
 
-Switch `ARMIES` (`FFH_AI_ARMIES_OFF`): off, every unit stays in its city's garrison when trained
-and no army requisitions (the armies still form from the groups). Switch `REQUISITION`
-(`FFH_AI_REQUISITION_OFF`): off, no army requisitions; the directly ruled cities' attackers still
-march to the main army. The `ffh` runner's controller wrappers (`Timed`, `CppCitizens` in
+The measurements below name the switches `ARMIES` (off: every unit stayed in its city's garrison
+when trained and no army requisitioned) and `REQUISITION` (off: no army requisitioned; the
+directly ruled cities' attackers still marched to the main army), removed 2026-11-10. The `ffh`
+runner's controller wrappers (`Timed`, `CppCitizens` in
 `ffh-cli/src/run.rs`) now forward `requisition_unit` (and `govern_cities`): without it every
 `ffh stats` / `ffh autoplay` game took the rules' default unit, not the AI's.
 
@@ -1650,7 +1886,7 @@ transport when we have none (`army_ship`). With nothing left to fight on that la
 boards a ship of ours on its plot even while the ship supplies it. **The last resort**: an army
 starving for `STRANDED_TURNS` (10) turns in a row with no path over land to a city of ours, or
 overseas with no transport on its way, is scrapped unit by unit (heroes, limited classes and units
-that cannot be scrapped stay). Switch `SUPPLY` (`FFH_AI_SUPPLY_OFF`). Telemetry: `supply_state`
+that cannot be scrapped stay). Telemetry: `supply_state`
 (army-turns `supplied` or `cut_NN`, the counter, not capped), `supply` (`move_refused`,
 `fall_back` (why `hungry`, `starving`, `overseas`), `hungry_goes_on`, `pickup_request`,
 `pickup_sail`, `pickup_board` (`cut`, `idle`), `stranded` (`no_port`), `disband_unit`,
@@ -1704,9 +1940,6 @@ the AI's), the AI's empire priorities, and the AI's empire orders.
   its cultural play sets them in governed cities too. A human's governors (`culture::govern`,
   through `Controller::govern_cities`): defenders against revolt pressure; never a cultural
   channel.
-
-Switch `GOVERNORS` (`FFH_AI_GOVERNORS_OFF`): off, the AI places no empire orders (its governed
-cities build only their governors' choices and the armies' requisitions).
 
 Two corrections the measurements asked for (`empire orders` placed by asking the ladder every
 turn): the ladder's fillers (`army_interleave`, `army`, `attacker`, `elite`) become empire orders
@@ -1939,10 +2172,9 @@ turn, to move casters and to promote them:
   wins (docs/AI_LOG.md, "Spellcasting", "Casters through a Mage Guild").
 
 `FFH_AI_MAGIC_OFF=CIVILIZATION_X,..|X|all` makes those civilizations cast by FfH's terms
-(`casting.rs`; their summons attack as everyone's do: the measurement switch);
-the switches `CASTER_SCHOOL` and `CASTER_STACKS` (`switches.rs`: `FFH_AI_CASTER_SCHOOL_OFF`,
-`FFH_AI_CASTER_STACKS_OFF`, `.._ONLY`) turn the caster school and the casters in the stacks off
-(the stacks need the school; with each off the same games result as before it);
+(`casting.rs`; their summons attack as everyone's do: the measurement switch; the caster school
+and the casters in the stacks come with this AI's spellcasting, their own switches
+`CASTER_SCHOOL` and `CASTER_STACKS` removed 2026-11-10);
 `FFH_AI_TRACE_CAST=1` prints every AI cast (turn, player, civilization, unit, spell, where,
 value), every strike (our arcane casters within two plots of the city, Mages anywhere) and every
 caster joining or leaving a stack. Tests:
@@ -2469,9 +2701,8 @@ full games: development seeds 1-24, casts Amurites 0 -> 14 games, Sheaim 0 -> 6,
 0.3), wins 1 / 1, 0 / 2, 0 / 1 pairs. Earlier For the Horde (a dozen orcs) and Ardor (the
 third great person) cost and were dropped (docs/AI_LOG.md).
 
-**A losing war** (`world_spells::losing_war`, `city_in_peril`; off by default, the switch
-`WS_LOSING_WAR` with `FFH_AI_WS_LOSING_WAR_ONLY=ALL` turns it on, 2026-10-22): Sanctuary
-(Elohim) and March of the Trees (Ljosalfar) would wait, instead of FfH's two wars at once, for
+**A losing war** (removed 2026-11-10 with its switch `WS_LOSING_WAR`, which was off by default;
+measured 2026-10-22): Sanctuary (Elohim) and March of the Trees (Ljosalfar) would wait, instead of FfH's two wars at once, for
 More Naval AI's gate -- the civilizations at war with us have 1.5 times our power -- and an
 invasion at the gates: the capital or two cities, each with four or more units of a civilization
 at war with us within three plots whose attack exceeds the city's garrison at 1.5 times its
@@ -2480,7 +2711,7 @@ threatened, with four units there, with two cities or the capital) cost the Eloh
 end on development seeds (-127 to -162, t -1.1 to -1.7; the Ljosalfar -34, t -0.3): the one-shot
 spell went on the first raid of a stronger neighbour, which the city held anyway (seed 21, turn
 141; the invasion that took nine cities came seventy turns later, where FfH's condition had cast
-it), or after cities had already fallen (seed 7). FfH's condition stays the default
+it), or after cities had already fallen (seed 7). FfH's condition stays
 (docs/AI_LOG.md, "Sanctuary and March of the Trees at a losing war").
 
 **Moments of their own** (an experiment, not merged: `world_spells::turn`, once a turn before units
@@ -2578,7 +2809,7 @@ earlier cast is the first thing to measure.
   rivals and wins (docs/AI_LOG.md, "Allied barbarians no longer counted as a threat"): the term
   stands in for a missing rival-civilization term in the garrison quota.
 - **AI-to-AI deals ignored `player_can_contact`** (fixed 2026-10-28, `diplomacy::can_talk`,
-  switch `CONTACT`): a Crusading Bannor (`bNoDiplomacyWithEnemies`) still made peace with its
+  once switch `CONTACT`): a Crusading Bannor (`bNoDiplomacyWithEnemies`) still made peace with its
   enemies, and deals went to players FfH had just created (the temporary-player timer), vassals
   making their own peace and teams in a permanent war or peace. Peace, gifts, war bribes, trades,
   open borders and pacts now need both sides' `canContact`, and so do the offers to humans (C++
@@ -2607,7 +2838,7 @@ whatever the win rate does, and a drop is investigated as a flaw to fix). The ho
 | Raiders (pillaged gold +100%, Commando) | Decius, Basium, Amelanchier, Hannah, Tasunke, Mahala, Weevil, Faeryl, Sallos | an army stack at war pillages the improved enemy plot it stands on with one unit (taken out of the stack and back), before its orders when that costs no march (no operation needs the stack and no city of ours is in peril, or every unit has a move to spare) and after them while it holds; a stack no operation needs raids the best enemy improvement within two turns whose danger is under two thirds of its defense and that is not next to an enemy city; the land within two plots of the city our war operation is taking is spared (it is ours once the city falls). The generic AI never pillages. |
 | Spiritual (no anarchy) | Capria, Varn, Arendel, Jonas, Hyborem, Lethe | civics every 2 turns at a summed gain of 40 (others every 10 at 100); keeping the state religion weighs 5 instead of 15 |
 | Arcane (adepts +20% experience) | Thessa, Valledia, Dain, Tya, Perpentach, Faeryl, Tebryn | a caster corps of (cities + 2) / 3, or with Sorcery one for every four field units if more (`MAGE_ARMY`), trained in the most productive city whose garrison holds, its Mage Guild first (`civs::casters_up_to`, the civilizations' unique casters' helper); research toward Sorcery once the economy's tier 2 is in (`ARCANE_PATH`; "Spellcasting", "Magic civilizations") |
-| Summoner (summons +1 turn, Combat I; since 2026-11-05 Summoner's Bond: +50% HP, attack, defence, magic and magic defence) | Keelyn, Tebryn, Os-Gabella, Malchavic, Hyborem | a bigger caster corps, (cities + 2) / 2, or with Sorcery one for every four field units if more, and the Arcane leaders' research path ("Magic civilizations"); research toward its Adepts (the techs the Adept and its Mage Guild need, Knowledge of the Ether: +1500 once researchable, +500 on the way); its casters value a summoning sphere (a mana sphere opening a summon any civilization may cast: Death I-III, Fire II-III, Air/Earth/Water III, ...) at 1.5x + 60, a temporary summon at 1.5x (it lasted a turn longer; since 2026-11-05 for its Bond), and raise lasting summons (Raise Skeleton) at peace too while the army is short of its peacetime target and a unit is affordable (others only at war); without a mana whose Mage-level spell summons a creature (Death: Spectre, Entropy: Pit Beast, Law: Einherjar, Ice: Ice Elemental; Keelyn's Balseraphs start with Mind, Chaos and Air), it goes for one first (switch `SUMMON_MANA`, 2026-10-28): its node on our raw mana is worth 3000 more (`mana::node_value`; nodes run 1000-3000), so research takes the node's tech first and the first node goes to it; it is worth 20 more in a trade (two happy resources on `AI_bonusVal`'s scale: the AI pays its own valuation in gold); and its casters value the sphere's first promotion (Entropy I before Entropy II) like a summoning one |
+| Summoner (summons +1 turn, Combat I; since 2026-11-05 Summoner's Bond: +50% HP, attack, defence, magic and magic defence) | Keelyn, Tebryn, Os-Gabella, Malchavic, Hyborem | a bigger caster corps, (cities + 2) / 2, or with Sorcery one for every four field units if more, and the Arcane leaders' research path ("Magic civilizations"); research toward its Adepts (the techs the Adept and its Mage Guild need, Knowledge of the Ether: +1500 once researchable, +500 on the way); its casters value a summoning sphere (a mana sphere opening a summon any civilization may cast: Death I-III, Fire II-III, Air/Earth/Water III, ...) at 1.5x + 60, a temporary summon at 1.5x (it lasted a turn longer; since 2026-11-05 for its Bond), and raise lasting summons (Raise Skeleton) at peace too while the army is short of its peacetime target and a unit is affordable (others only at war); without a mana whose Mage-level spell summons a creature (Death: Spectre, Entropy: Pit Beast, Law: Einherjar, Ice: Ice Elemental; Keelyn's Balseraphs start with Mind, Chaos and Air), it goes for one first (once switch `SUMMON_MANA`, 2026-10-28): its node on our raw mana is worth 3000 more (`mana::node_value`; nodes run 1000-3000), so research takes the node's tech first and the first node goes to it; it is worth 20 more in a trade (two happy resources on `AI_bonusVal`'s scale: the AI pays its own valuation in gold); and its casters value the sphere's first promotion (Entropy I before Entropy II) like a summoning one |
 | Philosophical (great people +100%) | Einion, Cardith, Cassiel, Koun, Dain, Alexis, Judecca, Gosea | the great-people emphasis (`EMPHASIZE_GREAT_PEOPLE`) on its best great-people cities, 1 + cities / 8, size 4+, only cities that can employ a specialist making great people; a city is replaced only by one half as good again |
 | Financial (+1 commerce on plots with 2+) | Garrim, Beeri, Kandros, Hannah, Rhoanna, Flauros, Dumannios | workers count the extra commerce an improvement brings at the threshold (`plot_calculate_improvement_yield_change` leaves it out), on an unimproved plot a city of ours works, weighted as the yields are (the improvement 1, its grown form 2) |
 | Industrious (limited wonders +50% production) | Capria, Tethira, Beeri, Arturus, Sandalphon, Cassiel, Os-Gabella, Statius | limited wonders (world, team and national) are worth 1.5x |
@@ -2676,7 +2907,7 @@ one at war, or at peace while the army is short), so they bunch in the wars. Win
 turns, 10-66 gold each); Industrious leaders build more wonders; Aggressive ones take more
 cities once their land is full.
 
-**A summon mana first (2026-10-28, the owner's proposal; switch `SUMMON_MANA`).** Keelyn's
+**A summon mana first (2026-10-28, the owner's proposal; once switch `SUMMON_MANA`).** Keelyn's
 Balseraphs had no mana whose Mage-level spell summons a creature, so their casters never summoned
 above Raise Skeleton. With the switch, seed 7502: Necromancy at turn 291 instead of 321, Entropy
 nodes planned on all four raw mana plots, the first node Entropy (it was Enchantment). Measured
@@ -3525,13 +3756,46 @@ itself; `autopsy.py`, `calibration.py`):
 
 1. *The battle estimator on the rules' forecast* (`Game::engage_preview`'s code), in the ledger
    beside `combat_sim`, for attacks, assaults and "does this city hold, as it stands and with
-   what can reach it". Everything below reads it. (In progress.)
+   what can reach it". Everything below reads it. **Done** (`forecast.rs`; docs/CALIBRATION.md,
+   "The battle forecast"): skill on the same events, old / new: field +0.20 / +0.57, strike
+   -0.14 / +0.47, assault -0.15 / -0.07.
 2. *Defending against a stack*: the 41%. With the estimate of 1, a threatened city that holds
    with the units that can reach it gets them; one that falls anyway is not fed; garrisons of
    cities nothing can reach are the reserve. This is the estimate the reverted `MAGE_FRONT` and
-   the one-quota attempt lacked (docs/AI_LOG.md).
+   the one-quota attempt lacked (docs/AI_LOG.md). **Not built; the estimate is half there.** A
+   city on which a battle is fought falls 89-97% of the time and one nobody attacks about 1%, so
+   the question is whether the attack comes, which `threat.rs` now estimates (docs/CALIBRATION.md,
+   "Incoming attacks": skill +0.25, about 50% precision at 55-65% recall, against the alarm's 30%
+   at 66%). Before a defence is built on it: check its levels on seeds they were not read from
+   (they were fitted on seeds 1-16), make it about ten times cheaper (it costs 2.8 times the
+   game's time; recorded only with `FFH_AI_SHADOW_THREAT=1`), and use it as "an army is coming
+   at this group of cities": which city comes first is where it is wrong (the predicted target
+   in 25% of seen attacks, another of our cities in 42%).
 3. *The attack decisions on the new estimate*: strike order, the field go/no-go, then the war
-   gate as a forecast of the first city's assault with the army as it will arrive.
+   gate as a forecast of the first city's assault with the army as it will arrive. **Done for the
+   field and the strike** (switch `FORECAST`, "On the forecast" under Field armies; the war gate
+   not yet). Seeds 1-16, 6 civs, standard, 300 turns, telemetry decision `attack_rule` at every
+   site (the old rule's answer computed beside): 7,294 agreed go, 4,946 agreed hold, 1,235 new
+   attacks, 1,639 new declines. By site (new attacks / new declines): adjacent 351 / 225,
+   assault 376 / 0, hunt 163 / 1,232 (981 distinct plots; one or two units against one, where
+   a three-round engagement rarely clears the plot in a turn while the duel odds read 65-95%),
+   sortie 205 / 2, capture 44 / 15, phase 28 / 74 (23 cities), strike 25 / 3, explore 10 / 67.
+   The new attacks acted on did what the forecast said: adjacent 95% predicted / 93% taken,
+   units lost 0.21 / 0.24 per attack; assault 95% / 94%, 0.35 / 0.36; capture 95% / 93%, 1.39 /
+   1.23; sortie 100% / 98%; strike 91% / 76% (25). Forks of 6 hunt declines (8 rolls, 10 turns,
+   the old rule's attack against holding): 3 no difference, 1 better holding (seed 3 t124: +1.1
+   units), 1 better attacking (seed 14 t196: the old attack cleared 9 enemy units next to the
+   stack, +1.75 units, +21 power), 1 mixed (seed 7 t149: holding kept the stack's 6 units in the
+   area against 3.3, research -3). The 20-run first look was overturned by the full forecast in
+   11 of 15,999 checked decisions; the pre-filter declined 588 attacks, none of which the forecast
+   would have made. Guardrail (seeds 1-16, `FFH_AI_FORECAST_OFF=ALL` as the base): military at
+   turn 100 12.0 -> 11.9, techs at 300 40.6 -> 40.2, research flat; civ cities captured by civs
+   285 -> 315, by barbarians 4 -> 6, eliminations 21 -> 23, barbarian towns taken 67 -> 40 (fewer
+   barbarian cities stood at turn 100: 3.1 -> 1.4 a game); in engagements (`autopsy.py`) attackers
+   lost 4.5% -> 3.2% of the units committed and defenders 59% -> 68%, attacks at 0.4-0.6 of the
+   summed strength took the plot 37% -> 64% of the time. Cost (`ffh bench`, seeds 1, 3, 5, three
+   rounds): 21.8 -> 24.4 ms a turn. Not followed further (the combat work closed out): the hunt's
+   wear-down attacks a duel would have made, which the 65% bar declines.
 4. *Outclassed*: the 52% is where a war already lost ends; what precedes it (power falling
    behind from which turn, peace not made, vassalage not taken) is the next autopsy's question,
    not yet counted.
@@ -3669,18 +3933,24 @@ only, against opponents without it, and reports that player's wins and share.
   base side the same binary with `FFH_AI_CIV_OFF` for that civilization (identical opponents).
 - `crates/ffh-cli/scripts/caster_ab.py --bin DIR --seeds S --out-dir D [--base-bin DIR]
   [--base-env K=V ..] [--new-env K=V ..] [--common] [--civ] [--load]` plays the seeds on two sides
-  (by default the same binary with `FFH_AI_CASTER_SCHOOL_OFF=all` on the base side) with the cast
+  (by default the same binary with `FFH_AI_MAGIC_OFF=all` on the base side) with the cast
   trace and reports how every civilization used its arcane casters: the `arcane_*` counters above,
   their casts by Channeling tier, context (before a strike, end of turn) and kind, and the rates
   per 1000 caster-turns; `--common` compares each seed's games up to the last 50-turn checkpoint
   both reached (a longer game has more caster-turns, and more casters lost with an eliminated
   owner).
-  Generic behaviours have switches of their own (`switches.rs`): `FFH_AI_<NAME>_OFF=X,..|ALL`
-  plays without it, `FFH_AI_<NAME>_ONLY=X,..` only for those civilizations (`ALL` or `1`: every
-  one; names with or without `CIVILIZATION_`, any case). The module switches `FFH_AI_MAGIC_OFF`,
-  `FFH_AI_CIV_OFF`, `FFH_AI_VASSAL_OFF` and `FFH_AI_TRAIT_CIVS` are read the same way
-  (`switches::env_list`; `_ONLY` works for the first three too), and `FFH_AI_TRAIT_OFF` lists
-  traits in the same form.
+  A behaviour under measurement gets a switch of its own (`switches.rs`):
+  `FFH_AI_<NAME>_OFF=X,..|ALL` plays without it, `FFH_AI_<NAME>_ONLY=X,..` only for those
+  civilizations (`ALL` or `1`: every one; names with or without `CIVILIZATION_`, any case). The
+  module switches `FFH_AI_MAGIC_OFF` and `FFH_AI_CIV_OFF` (`_ONLY` works for them too) and
+  `FFH_AI_TRAIT_CIVS` are read the same way (`switches::env_list`), and `FFH_AI_TRAIT_OFF` lists
+  traits in the same form; the probes are off-by-default switches (docs/PROBES.md).
+  **Settled behaviours have no switch** (the owner's call, 2026-11-10): every generic switch of
+  the rounds below (`FOG_SIGHT`, `FOG_ATTACK`, `CAPTURE`, `PRECIOUS`, `VASSAL`, `COUNCIL`,
+  `CULTURE`, `ARMIES`, `SUPPLY`, `GOVERNORS`, the magic package's `CASTER_SCHOOL` ... `HASTE_MARCH`
+  and the rest) was removed, its behaviour now unconditional; `WS_LOSING_WAR`, off by default,
+  was removed with its behaviour. The sections name them as they were measured; to compare
+  against a behaviour's absence, play an older revision (`tools/agents/ab.sh --base <rev>`).
   **Implementation forks do not stay.** A switch whose off side is the algorithm a change
   replaced (not merely the behaviour absent) is removed, with the old algorithm, the round after
   the change is kept: later comparisons with the old version run against an older revision
@@ -3730,8 +4000,7 @@ only, against opponents without it, and reports that player's wins and share.
   `--no-victory VICTORY_X` (repeatable) and `--leader LEADER_X` (the first slot's leader) give
   `ffh autoplay` / `stats` / `bench` the rest of a custom game's settings, so every game a
   spectator watches plays here too.
-- `--option GAMEOPTION_X` (repeatable) turns game options on for any of these commands (for
-  example `GAMEOPTION_ADVANCED_START`).
+- `--option GAMEOPTION_X` (repeatable) turns game options on for any of these commands.
 
 ## More Naval AI compared (2026-10-22)
 
@@ -3829,16 +4098,31 @@ its loan general is fighting. None of this runs in the default game, so it moves
   when `AI_vassalTrade` would now refuse it. Masters do nothing for their vassals beyond the war
   joining the rules impose (Diplomacy, "Vassal states").
 
-- Naval: amphibious invasions now ship an army across water to take an overseas enemy city
-  (see Naval), but there is no naval combat and no blockade, escorts are only the idle warships
-  that happen to be in the port (none are built for the fleet), and early transports carry one
-  unit each, so the fleet waits in port until enough of them are built and invasions are slow
-  until good transports arrive late in the tech tree. Overseas settling still sends one settler at a time.
-  The trickle no longer scatters and no longer under-ships: each trip lands on the reachable plot
-  already holding the most of our army (they pile onto one plot and strike), and the staging port
-  builds a fleet big enough to carry the force in one wave. Traced water-isolated civs that used to
-  land repeatedly without ever assaulting now take overseas cities; 4 of 5 such civs convert and
-  held overseas cities rose ~20% at a fixed turn (8-game A/B), economy flat.
+- Naval: warships fight, blockade and guard (Naval, "Warships"), but escorts almost never sail with
+  a fleet (`naval::fleet_waits` takes only ships without cargo room, and every warship after the
+  Galley has room). Overseas settling still sends one settler at a time. The amphibious invasion on
+  the forecast (switch `INVASION`, see Naval) is built but off by default: with it a fleet sails
+  only with the force the forecast says takes the city, and what lands takes it, but it takes fewer
+  cities than the old rule (docs/AI_LOG.md). With it on, what is left:
+  - *Ships with room come late.* Early transports carry one unit (a rules and data fact): a force
+    of four is four ships, which a young port does not build in `FLEET_TURNS`, so before turn 300
+    almost no invasion is affordable (0 sailings in 32 games of 300 turns). For the owner: cargo sizes
+    and when ocean transports come decide whether overseas war exists in the first half of a game.
+  - *The forecast at the port is optimistic.* It sees the garrison and the units one turn away; the
+    defender gathers while the fleet sails (barbarian garrisons grow, a civilization at war masses
+    its army in the threatened city: 30 defenders in one fork). Half the fleets that sail turn home
+    at sea (`ABORT_BAR`), and a fleet that turns home sails again when the city looks weak from the
+    port: an invisible defender seen only from the coast sends it back every time (seed 2), with no
+    memory of it. `FORCE_MARGIN_PCT` is a named factor, not an estimate; counting the enemy's moves
+    over the whole voyage launched nothing. The next step is an estimate of the garrison on arrival
+    from what the defender can bring (`threat.rs` from the enemy's side), checked in the ledger.
+  - *The war that brings the fleet*: an overseas war is declared when the fleet is loaded
+    (`invasion_ready`); the declaration itself makes the defender mass. Sailing first and declaring
+    on arrival is not built.
+  - *Cost*: each plan plays a binary search of forecasts and is asked for by the view, production,
+    the war gate and quiet-war peace without a shared cache outside the view: +14% a turn.
+  - Wars between teams sharing no landmass still come from defensive pacts and vassalage (the
+    `WARPLAN_DOGPILE` wars of the autopsy); the gates here only stop those we choose or are paid for.
   The remaining hard case is a civ whose *main army is on a different landmass from the staging
   port* -- an isolated civ (e.g. Doviello, seed 5) whose only target sits beyond its home coast's
   sea-range, reachable only from a small forward colony that cannot build transports and holds

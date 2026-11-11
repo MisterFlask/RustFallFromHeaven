@@ -56,12 +56,6 @@ pub fn enabled(g: &Game, p: PlayerId) -> bool {
     !g.player_is_barbarian(p) && g.player_get_civilization_type(p).is_some_and(|c| crate::switches::MAGIC.civ_on(g.d, c))
 }
 
-/// Does player `p` raise its arcane casters as the rules intend ([`apprentice`], [`safe_step`]):
-/// its spellcasting is this AI's ([`enabled`]) and the switch `CASTER_SCHOOL` is on for it.
-pub fn school(g: &Game, p: PlayerId) -> bool {
-    enabled(g, p) && crate::switches::CASTER_SCHOOL.on(g, p)
-}
-
 /// Every AI cast goes through here: `FFH_AI_TRACE_CAST=1` prints one line per cast (turn,
 /// player, civilization, unit, spell, where, value) to stderr, and telemetry records `ctx` and
 /// `value` as the cast's reason. Neither changes play.
@@ -742,8 +736,8 @@ fn summon_fight_at(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx, health: &dy
     let strength = |e: UnitId| g.unit_max_combat_str(e, Some(tp), None, None);
     let best = *defs.iter().max_by_key(|&&e| (strength(e) as i64 * hp(g, e) as i64, std::cmp::Reverse(e))).unwrap();
     // The summon's damage types count as far as the defender does not resist them (C++
-    // `maxCombatStr`; switch `BARRAGE`): a Fireball, all fire, does nothing to a Fire Elemental.
-    let resist = |dt: DamageType| if crate::switches::BARRAGE.on(g, p) { g.unit_get_damage_type_resist(best, dt) } else { 0 };
+    // `maxCombatStr`): a Fireball, all fire, does nothing to a Fire Elemental.
+    let resist = |dt: DamageType| g.unit_get_damage_type_resist(best, dt);
     let a = info.combat * 100 + d.damages.keys().map(|dt| info.damage_type_combat[dt] * (100 - resist(dt))).sum::<i32>();
     if a <= 0 {
         return None;
@@ -802,7 +796,7 @@ fn summon_fight_at(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx, health: &dy
 }
 
 /// What the casts of our `casters` before a strike on `tp` should take from its defenders `defs`
-/// (switch `CASTER_FORCE`; hit points, in `defs`' order), for the force estimates that decide when
+/// (hit points, in `defs`' order), for the force estimates that decide when
 /// our stacks gather, close and strike (`campaign::covers`): an expert counts his Mages' Fireballs
 /// in the force he needs. Each caster that is no apprentice casts once, the spell taking most hit
 /// points of those it knows (damage on every defender, a temporary summon's fight with the
@@ -896,11 +890,10 @@ fn summon_value(g: &Game, caster: UnitId, spell: SpellType, ctx: Ctx) -> i32 {
             // plot it reaches with moves left (its own moves, the caster's way of moving), the one
             // where its odds are best, at 5% or better; nothing when none is. A summon gone before
             // it could act again that is not the stack's cover takes worse odds too, but not on a
-            // city, whose defenders heal before we strike (`SUMMON_SPEND`, `casting::summon_target`).
+            // city, whose defenders heal before we strike (`casting::summon_target`).
             let moves = (uinfo.moves + g.unit_get_extra_spell_move(caster)) * d.defines.move_denominator;
             let last_turn = uinfo.special_unit_type.map_or(-1, |s| s.i()) == d.defines.specialunit_spell || g.players[p].summon_duration <= 0;
-            let spend = crate::switches::SUMMON_SPEND.on(g, p)
-                && last_turn
+            let spend = last_turn
                 && !crate::casting::is_cover(g, v, here, crate::view::type_defense_power(d, ut), None);
             let reach = crate::reach::Flood::default().run_moves(g, caster, moves, 0, 0, false);
             let mut seen: Vec<PlotIdx> = Vec::new();
@@ -946,17 +939,12 @@ pub fn attack_value(g: &Game, caster: UnitId, spell: SpellType, tp: PlotIdx, att
     a + b + summon_value(g, caster, spell, ctx)
 }
 
-/// The threat a city spell's building is valued against in city `c` (switch `CITY_SPELL_THREAT`):
-/// the enemies in sight within three plots (`production::local_threat`), so a Wall of Stone (+25%
-/// defense, valued three times over under threat) goes up in a besieged city; 0 without the switch
-/// (it was worth 3 and never cast).
+/// The threat a city spell's building is valued against in city `c`: the enemies in sight within
+/// three plots (`production::local_threat`), so a Wall of Stone (+25% defense, valued three times
+/// over under threat) goes up in a besieged city.
 fn city_spell_threat(g: &Game, c: CityId) -> i32 {
     let p = g.cities[c].owner;
-    if crate::switches::CITY_SPELL_THREAT.on(g, p) {
-        crate::production::local_threat(g, p, g.city_plot(c), 3)
-    } else {
-        0
-    }
+    crate::production::local_threat(g, p, g.city_plot(c), 3)
 }
 
 /// What `spell` cast by `u` at the end of the turn is worth (see the module doc), `None` for a
@@ -1128,7 +1116,7 @@ fn cast_phases(g: &mut Game, v: &View, tp: PlotIdx, attackers: &[UnitId], phases
 /// A cast worth less than this at the end of the turn gives way to Haste for a marching stack.
 const HASTE_RESERVE: i32 = 30;
 
-/// Haste for a stack of our operations about to march on (switch `HASTE_MARCH`): a caster in
+/// Haste for a stack of our operations about to march on: a caster in
 /// group `grp` that knows a spell giving our units on its plot an extra move (Haste) casts it
 /// when that raises the stack's pace -- every unit with the fewest moves left gains one (a siege
 /// engine, which Haste does not reach, holds the stack back) -- and its best cast at the end of
@@ -1138,7 +1126,7 @@ const HASTE_RESERVE: i32 = 30;
 /// it was cast.
 pub fn haste_march(g: &mut Game, v: &View, grp: GroupId) -> bool {
     let p = v.p;
-    if !enabled(g, p) || !crate::switches::HASTE_MARCH.on(g, p) || !crate::units::alive(g, grp) {
+    if !enabled(g, p) || !crate::units::alive(g, grp) {
         return false;
     }
     let d = g.d;
@@ -1402,7 +1390,7 @@ fn claimed_city_spell(g: &Game, u: UnitId, c: CityId, s: SpellType) -> bool {
 // the tech that makes it a Mage ([`school_tech_value`]) and pays for the upgrade before a soldier's
 // (`units::upgrade`).
 
-/// Is `u` an apprentice of the caster school ([`school`]): an arcane caster of ours (unit combat
+/// Is `u` an apprentice of the caster school: an arcane caster of ours (unit combat
 /// Adept, not a hero or a summon) without Channeling II that can still become a Mage -- at any
 /// level: an Adept of level 4 casts an Adept's spells until the upgrade.
 pub fn apprentice(g: &Game, u: UnitId) -> bool {
@@ -1417,7 +1405,7 @@ fn apprentice_need(g: &Game, u: UnitId) -> Option<(i32, UnitType)> {
     let channeling2 = *CHANNELING2.get_or_init(|| d.ty::<PromotionType>("PROMOTION_CHANNELING2"));
     let unit = &g.units[u];
     let info = &d.units[unit.unit_type];
-    if !arcane(g, u) || !school(g, unit.owner) || channeling2.is_some_and(|pr| unit.has_promotion[pr]) {
+    if !arcane(g, u) || !enabled(g, unit.owner) || channeling2.is_some_and(|pr| unit.has_promotion[pr]) {
         return None;
     }
     let civ = g.player_get_civilization_type(unit.owner)?;
@@ -1445,14 +1433,14 @@ fn arcane(g: &Game, u: UnitId) -> bool {
 /// group attack keeps).
 pub const SPARED_CASTER_ODDS: i32 = 950;
 
-/// Does caster `u` go to war in a stack without fighting for it (`CASTER_STACKS`): an arcane
-/// caster of a school player. Its worth is its spells and the levels it took to learn them; an
+/// Does caster `u` go to war in a stack without fighting for it: an arcane caster of a player
+/// whose spellcasting is this AI's ([`enabled`]). Its worth is its spells and the levels it took to learn them; an
 /// attack at strength 4 or 5 risks them for little. Below [`SPARED_CASTER_ODDS`] the strike leaves
 /// it out, a stack's assault holds rather than send it, and the campaign's estimates of the force
 /// do not count it.
 pub fn spared_caster(g: &Game, u: UnitId) -> bool {
     let p = g.units[u].owner;
-    arcane(g, u) && school(g, p) && crate::switches::CASTER_STACKS.on(g, p)
+    arcane(g, u) && enabled(g, p)
 }
 
 /// Fighters a stack needs for a caster to join it ([`stack_to_join`]); below [`STACK_KEEP`] the
@@ -1467,7 +1455,7 @@ fn stack_fighters(g: &Game, grp: GroupId) -> usize {
     g.groups[grp].units.iter().filter(|&&o| crate::campaign::fights(g, o)).count()
 }
 
-/// The stack caster `u` joins where it stands (`CASTER_STACKS`; `units::caster`, for a caster
+/// The stack caster `u` joins where it stands (`units::caster`, for a caster
 /// [`strike_target`] sends to an operation): a committed group of ours there with
 /// [`STACK_JOIN`] fighters or more, headed by one, the largest. It then moves with that stack,
 /// which guards it on the way and carries it to the city at the stack's pace -- marching on its
@@ -1512,7 +1500,7 @@ pub fn join_stack(g: &mut Game, from: GroupId, grp: GroupId) -> bool {
 
 /// Spared casters leave stack `grp` (each into a group of its own) once it is out of our
 /// operations, or fewer than [`STACK_KEEP`] units of ours that fight are left in it -- a strike
-/// takes its attackers out of their stacks, a battle kills them (`CASTER_STACKS`; after the stack's orders, `units::play`, which
+/// takes its attackers out of their stacks, a battle kills them (after the stack's orders, `units::play`, which
 /// gives the casters their own orders at once: left where the strike left them, with no one
 /// beside them, they were lost alone). Left in, a caster would follow a stack home to heal or to
 /// guard, or head a group of casters by the army's orders. The casters released, with their
@@ -1543,7 +1531,7 @@ pub fn leave_stack(g: &mut Game, v: &View, grp: GroupId) -> Vec<(UnitId, GroupId
 
 /// At the start of player `p`'s turn: a group a spared caster heads (its fighters fell or left
 /// it) splits, each caster into a group of its own, so that no caster leads others by its own
-/// orders (`CASTER_STACKS`).
+/// orders.
 pub fn split_caster_heads(g: &mut Game, p: PlayerId) {
     for grp in g.players[p].groups.clone() {
         if !crate::units::alive(g, grp) || g.groups[grp].units.len() < 2 || !g.group_get_head_unit(grp).is_some_and(|h| spared_caster(g, h)) {
@@ -1584,7 +1572,7 @@ pub fn sheltered(g: &Game, v: &View, u: UnitId, q: PlotIdx) -> bool {
     })
 }
 
-/// Where caster `u` heading for `q` goes this turn when it is a school caster ([`school`]): the
+/// Where caster `u` heading for `q` goes this turn when it is a caster of the school (its player's spellcasting is this AI's): the
 /// [`sheltered`] plot it can reach this turn that is nearest `q` (here when none is nearer);
 /// `None` when it can reach none (it falls back to [`study_city`]).
 pub fn safe_step(g: &Game, v: &mut View, u: UnitId, q: PlotIdx) -> Option<PlotIdx> {
@@ -1629,7 +1617,7 @@ pub fn study_city(g: &Game, v: &mut View, u: UnitId) -> Option<PlotIdx> {
 /// way to it.
 pub fn school_tech_value(g: &Game, p: PlayerId, t: TechType, value: i32) -> i32 {
     let team = g.players[p].team;
-    if !school(g, p) || g.team_is_has_tech(team, Some(t)) {
+    if !enabled(g, p) || g.team_is_has_tech(team, Some(t)) {
         return value;
     }
     let mut needed: Vec<(TechType, i32)> = Vec::new();
@@ -1812,7 +1800,7 @@ fn channeling_below(d: &GameData, and: PromotionType) -> Option<PromotionType> {
 // Casters to train
 // ----------------------------------------------------------------------------
 //
-// The corps by role is `casters.rs`, the node builder `mana.rs` (`MANA_NODES`).
+// The corps by role is `casters.rs`, the node builder `mana.rs`.
 // Tried before, not kept (docs/AI_LOG.md, "Spellcasting"): training casters by what their spells
 // are worth in a fight alone -- one per five field units when an adept could cast such a spell
 // with our mana (Enchanted Blade, Rust), and the Mage Guild that opens them in our most productive

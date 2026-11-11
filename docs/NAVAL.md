@@ -7,9 +7,11 @@ with the AI minimum of section 8's first two bullets (`crates/ffh-ai/src/naval.r
 phase 1 parts of section 10 in `crates/ffh-play` (`view/sea.rs`, `app/sea.js`; docs/HUMAN.md);
 phase 2 (sections 4 and 5) built in the rules (`crates/ffh-core/src/seas.rs`, lanes in `naval.rs`,
 shore fire in `crates/ffh-core/src/engagement/shore.rs`, tests in `crates/ffh-core/tests/seas.rs`)
-with section 8's Patrol bullet and the transports' range test; its client not yet; phase 3 (section
-7, fleets) built in the rules (`crates/ffh-core/src/army/fleet.rs`), the AI (`crates/ffh-ai/src/naval.rs`)
-and the client (the Armies screen's Fleets section), tests in `crates/ffh-core/tests/fleets.rs`.** This
+with section 8's Patrol bullet and the transports' range test; its client in `crates/ffh-play`
+(`view/seas.rs`, `app/seas.js`, `app/sea.js`; docs/HUMAN.md); phase 3 (section 7, fleets) built in
+the rules (`crates/ffh-core/src/army/fleet.rs`), the AI (`crates/ffh-ai/src/warships.rs` gives the
+standing orders) and the client (the Armies screen's Fleets section), tests in
+`crates/ffh-core/tests/fleets.rs`.** This
 game's own rules, not FFH2's (the owner's direction, 2026-11-10: the naval game inherited from
 Civ4 is irrelevant and there are no colonial adventures). This file is the spec for the
 implementation, as docs/SUPPLY.md is for supply lines. Marked **(default)**: a value or rule chosen
@@ -127,9 +129,9 @@ Where the code is:
   `plot_verify_unit_valid_plot` (a unit in boats is not bumped off the water).
 - Supply at sea: `SupplySource::Sea(city)`, the army's own plot as the line.
 - The AI: `Game::path_ai_sea_blocked` (path.rs; the AI-side restriction of the path finder, with
-  the flag `MOVE_BOATS`), `ffh-ai` `naval::sea_blocked`, `ship_to_port`, `in_boats`,
+  the flag `MOVE_BOATS`), `ffh-ai` `naval::sea_blocked`, `warships::to_port`, `naval::in_boats`,
   `walk_home_in_boats` (called from `supply::stranded_overseas`).
-- Save format 32: `Unit::sea_turns`, `Unit::sea_out_of_range` (the first-turn message).
+- Save format 33: `Unit::sea_turns`, `Unit::sea_out_of_range` (the first-turn message).
 
 Choices made where this spec was silent (each open to change):
 
@@ -172,7 +174,7 @@ Choices made where this spec was silent (each open to change):
   it reaches in boats. An AI army also steps aboard a transport of ours at sea beside it (the rules
   now allow it). The war-target and settler crossings are not built.
 
-## 4. Phase 2: named seas and who holds them -- status: built in the rules (the client: not yet; 4.4 point 5 is phase 4's)
+## 4. Phase 2: named seas and who holds them -- status: built in the rules and the client (docs/HUMAN.md; 4.4 point 5 is phase 4's)
 
 The owner's decision (2026-11-10): named seas. They replace this spec's first draft of zones
 around each warship and of Civ4's blockade by range: the player reads one state per sea.
@@ -297,9 +299,9 @@ Where the code is:
 - Shore fire: `engagement/shore.rs` (`ShoreShip`, `ShoreShot`, `engage_shore_ships`,
   `engage_shore_fire`), `formation::shore_shot` (the resolver's side, pure), `Setup::shore`,
   `EngagePreview::shore`, `ReportSide::shore`, `LogEvent::ShoreFire`.
-- The AI (section 8): `crates/ffh-ai/src/naval.rs` (`patrol`, `patrol_target`, `patrol_wake`,
-  `patrol_production`, `way_in_range`).
-- The stress harness checks `sea_control_stale` (`ffh_harness::check`). Save format 33: `Plot::sea`,
+- The AI (section 8): `crates/ffh-ai/src/warships.rs` (`play`, `blockade`, `guard`, `post`,
+  `go_patrol`, `keeps_station`, `to_port`, `production`) and `naval::way_in_range`.
+- The stress harness checks `sea_control_stale` (`ffh_harness::check`). Save format 34: `Plot::sea`,
   `Map::seas`, `Unit::intercepted`, `Unit::shore_fired`, `ReportSide::shore`,
   `LogEvent::ShoreFire`. Data: `sea_names.jsonc` (`SeaNameInfo`: `names`, `lake`), the defines of
   section 11's phase 2.
@@ -371,17 +373,21 @@ Choices made where this spec was silent (each open to change):
   defender's, after the Thunderhead Tower's strike and before the battle; each shot draws r from the
   battle's RNG (the game's in the fight, the forecast's in the preview). A ship that fired is marked
   even if its shot found no target. None for a missile's strike or a battle on water.
-- **The AI** (section 8): a warship (Role `Naval`, a sea explorer with nothing left to reveal, an
-  idle transport that can fight) with no cargo and not worn patrols, by the order of need of
-  section 8 (the besieged city's sea where it would hold it, then a sea of our ports where an enemy
-  patrols or a warship of an enemy is seen, then the sea of our most populous port), going to the
-  nearest plot of the sea outside a city it reaches; a group on Patrol is woken when worn, out of
-  range, outmatched two to one by what it sees, when a transport has something to carry, and every 8
-  turns. A coastal city builds a warship (`UNITAI_ATTACK_SEA`) while we have fewer warships than two
-  per sea of ours an enemy holds or contests plus one per sea we share with a known enemy port (at
-  most three). An invasion goes only at a city with a water plot whose lane (as we see it) is not cut
-  (`way_in_range`), which fixes phase 1's targets beyond range. Not built: the war-target and
-  settler crossings in boats.
+- **The AI** (section 8; `warships.rs`, docs/AI.md "Warships"): a warship (Role `Naval`, a sea
+  explorer with nothing left to reveal, an idle transport that can fight) with no cargo takes, in
+  this order: heal in port, attack an enemy ship at good odds (only onto plots in our range),
+  escort an assault fleet, attack together a threat near our coast, the Patrol of the sea of an
+  enemy port our army besieges, the Patrol of a sea of our ports where an enemy patrols or sails
+  (when not outmatched two to one; else it waits in port), the Patrol of the enemy sea whose
+  closing denies the most per turn of travel (twice where its Patrol closes the sea, never where we
+  would be outmatched or the sea is closed already), else the Patrol of a sea of its guard post or
+  main port. A ship on Patrol keeps its station until worn, out of range, hurt, outmatched, wanted as
+  a transport, an enemy ship in reach, or every 8 turns. A coastal city builds warships for a
+  reason: escorts, guards (the more of the enemy ships seen near our ports and two per sea of ours an
+  enemy holds or contests), blockaders (one per enemy sea reaching into our range, three at most),
+  within a fifth of the military's hammers. An invasion goes only at a city with a water plot whose
+  lane (as we see it) is not cut (`way_in_range`), which fixes phase 1's targets beyond range. Not
+  built: the war-target and settler crossings in boats.
 
 ## 5. Lanes -- status: built (`Game::sea_lane`; used by 4.6 with any port of the team; 9.3 is phase 4's)
 
@@ -450,15 +456,21 @@ Where the code is:
   `march_turns` over water for a ship); the landing (`player_army_regroup_landed`).
 - The march of a ship (`army/march.rs`): `MOVE_SEA_RANGE` (`defs.rs`, honoured in `path.rs` for
   any ship group whose search carries it); no supply for fleets (`player_update_supply`).
-- The AI: its ships' groups become fleets through the sync; its patrol and escort decisions are
-  unchanged (per group, `naval.rs`) and give no standing orders yet; `armies.rs`, `tactics.rs` and
-  `supply.rs` leave fleets out.
+- The AI (`crates/ffh-ai/src/warships.rs`): its ships' groups become fleets through the sync; a
+  Patrol it decides (guard, siege blockade, blockade, guard post: `go_patrol`) is also the fleet's
+  Patrol standing order (a ship in port forms a fleet for it: `fleet_for`); a warship with an
+  assault transport group of ours at sea within two turns that has no warship and no escort takes
+  the Escort standing order of it (`escort_at_sea`, rule 3); an escort's order ends, and its fleet
+  wakes, when the target carries no army or is gone, or the fleet is worn, out of range or hurt
+  (`escort_ends`); a ship group of ours that decides again leaves its standing order first
+  (`clear_station`, from `units::play`). `armies.rs`, `tactics.rs` and `supply.rs` leave fleets out.
+  The AI requisitions no ship.
 - The client: `crates/ffh-play/src/view/armies.rs` (`fleet_json`, `station_view`, the screen's
   `fleets`, `seas`, `escort_targets`), the unit panel's fleet actions (`view/units.rs`,
   `army_actions`), the command `army_station` (`command.rs`), `assets/app/armies.js` (the Fleets
   section, `stationControl`), `units.js` (the fleet's line). Tests: `crates/ffh-core/tests/fleets.rs`,
   `crates/ffh-play/tests/fleets.rs`; the harness checks that no unit is in an army of another
-  domain. Save format 34.
+  domain. Save format 35.
 
 Choices made where this spec was silent (each open to change):
 
@@ -521,10 +533,12 @@ A rules change is not gated on the AI (CLAUDE.md): it does something reasonable 
   overseas (built, phase 1); to reach a war target it has no land path to, when the way is in
   range and crosses no sea closed to it or patrolled by an enemy it sees; a settler or colonist
   bound for a site across water, under the same test.
-- Patrol: warships not carrying an invasion patrol, in this order of need: the sea of a coastal
-  city one of its armies besieges, when its strength there would hold it; a sea one of its own
-  ports stands on where an enemy patrols or has ships; a sea its outposts' lanes pass through;
-  else the sea of its most populous port. It leaves a sea where it is outmatched two to one.
+- Patrol (built, phase 2, in `warships.rs`): warships not carrying an invasion patrol, in this
+  order of need: the sea of a coastal city one of its armies besieges; a sea one of its own ports
+  stands on where an enemy patrols or has ships; a sea its outposts' lanes pass through (phase 4);
+  a sea of an enemy's coast, by what closing it denies; else the sea of its guard post or main
+  port. Before those it fights enemy ships it beats and escorts invasions. It leaves a sea where it
+  is outmatched two to one.
 - Transports are sent only at targets whose way is in range.
 - A Colonist (section 9) is built for an overseas site in range that has a resource, when no
   settler is bound there.
@@ -657,6 +671,27 @@ starved, open again; gold from a lane.
 ## 12. Measures
 
 (Each phase adds what its games showed.)
+
+**Phase 2 with the merged warship AI** (2026-11-11, `warships.rs`; seeds 1-4, 300 turns, 6 civs,
+standard map, normal and high sea level; a throwaway per-turn trace, not kept). Per game:
+
+| | normal: seeds 1 / 2 / 3 / 4 | high sea level: 1 / 2 / 3 / 4 |
+|---|---|---|
+| warships (armed sea units of civilizations) built | 16 / 25 / 15 / 22 | 18 / 28 / 18 / 25 |
+| first warship, turn | 205 / 165 / 185 / 188 | 211 / 156 / 156 / 162 |
+| ship-turns on Patrol | 80 / 296 / 175 / 241 | 126 / 277 / 245 / 180 |
+| sea-turns held by a team | 74 / 277 / 175 / 237 | 126 / 264 / 242 / 164 |
+| city-turns blockaded | 14 / 92 / 20 / 22 | 8 / 22 / 26 / 25 |
+| interceptions | 1 / 1 / 0 / 2 | 0 / 3 / 1 / 1 |
+| ships lost to attrition | 0 / 1 / 0 / 1 | 0 / 0 / 1 / 0 |
+| ship-turns at maximum wear | 2 / 19 / 1 / 7 | 1 / 10 / 9 / 18 |
+
+Against the two designs before the merge: the sea branch's patrol code had 16-284 patrol
+ship-turns a game, 10-19 blockaded city-turns in three games of four and 3 interceptions in all;
+master's range blockade had 701 blockading ship-turns in 16 games (44 a game). Escorts: none (no
+invasion fleet loaded in these games). The ships lost to attrition were on a long move when their
+range shrank under them (a port lost or open borders ended): they turned home at once
+(`units::play` re-plans a ship found out of range) but were too far to get back.
 
 **Phase 3 (fleets), 2026-11-11.** Four 300-turn games (seeds 1-4, 6 civs, standard map,
 `SEALEVEL_HIGH`), counted by a throwaway trace at each AI player's turn: fleets per game at turns

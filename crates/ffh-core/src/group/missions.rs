@@ -364,16 +364,7 @@ impl Game {
         for &loop_unit in &self.groups[g].units {
             // This game's (docs/NAVAL.md, 3.2): in boats a unit moves, waits or sleeps; nothing
             // else.
-            if self.unit_in_boats_at(loop_unit, plot)
-                && !matches!(
-                    mission,
-                    MissionType::MISSION_MOVE_TO
-                        | MissionType::MISSION_MOVE_TO_UNIT
-                        | MissionType::MISSION_SKIP
-                        | MissionType::MISSION_SLEEP
-                        | MissionType::MISSION_SENTRY
-                )
-            {
+            if self.unit_in_boats_at(loop_unit, plot) && !crate::naval::mission_allowed_in_boats(mission) {
                 continue;
             }
             match mission {
@@ -566,12 +557,6 @@ impl Game {
                     }
                 }
 
-                MissionType::MISSION_INFILTRATE => {
-                    if self.unit_can_infiltrate(loop_unit, plot, test_visible) {
-                        return true;
-                    }
-                }
-
                 MissionType::MISSION_GOLDEN_AGE => {
                     //this means to play the animation only
                     if data1 != -1 {
@@ -598,12 +583,6 @@ impl Game {
                     }
                 }
 
-                MissionType::MISSION_ESPIONAGE => {
-                    if self.unit_can_espionage(loop_unit, plot, test_visible) {
-                        return true;
-                    }
-                }
-
                 MissionType::MISSION_DIE_ANIMATION => {
                     return false;
                 }
@@ -616,7 +595,10 @@ impl Game {
                 | MissionType::MISSION_DIE
                 | MissionType::MISSION_DAMAGE
                 | MissionType::MISSION_MULTI_SELECT
-                | MissionType::MISSION_MULTI_DESELECT => {}
+                | MissionType::MISSION_MULTI_DESELECT
+                // There is no espionage.
+                | MissionType::MISSION_INFILTRATE
+                | MissionType::MISSION_ESPIONAGE => {}
 
                 _ => debug_assert!(false, "canStartMission: unexpected mission {mission:?}"),
             }
@@ -771,10 +753,6 @@ impl Game {
                         break;
                     };
                     let (data1, data2) = (mission.data1, mission.data2);
-
-                    // MISSION_ESPIONAGE: `pUnitNode = NULL`, one unit at a time.
-                    let mut last_unit = false;
-
                     match mission.mission_type {
                         MissionType::MISSION_MOVE_TO
                         | MissionType::MISSION_ROUTE_TO
@@ -917,12 +895,6 @@ impl Game {
                             }
                         }
 
-                        MissionType::MISSION_INFILTRATE => {
-                            if self.unit_infiltrate(u) {
-                                action = true;
-                            }
-                        }
-
                         MissionType::MISSION_GOLDEN_AGE => {
                             //just play animation, not golden age - JW
                             if data1 != -1 {
@@ -942,13 +914,6 @@ impl Game {
                             }
                         }
 
-                        MissionType::MISSION_ESPIONAGE => {
-                            if self.unit_espionage(u, opt_from_i32(data1), data2) {
-                                action = true;
-                            }
-                            last_unit = true; // allow one unit at a time to do espionage
-                        }
-
                         MissionType::MISSION_DIE_ANIMATION => {
                             action = true;
                         }
@@ -961,10 +926,6 @@ impl Game {
                     }
 
                     if head_mission(self, g).is_none() {
-                        break;
-                    }
-
-                    if last_unit {
                         break;
                     }
                 }

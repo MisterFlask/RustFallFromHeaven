@@ -2,8 +2,8 @@
 """How the AIs use their arcane casters, on two sides of the same seeds (docs/AI.md, "Spellcasting").
 
 Plays every seed on both sides with `ffh stats --every 50` and `FFH_AI_TRACE_CAST=1` (6 civs,
-standard map, to a decision or turn 690), by default the same binary with the caster school off
-on the base side (`FFH_AI_CASTER_SCHOOL_OFF=all`), and reports the arcane casters (unit combat
+standard map, to a decision or turn 690), by default the same binary with this AI's spellcasting
+off on the base side (`FFH_AI_MAGIC_OFF=all`: FfH's casting), and reports the arcane casters (unit combat
 Adept, summons left out) of every civilization, summed over the games: made, lost (alone: outside
 our cities with no unit of ours that fights; with their owner: eliminated), upgraded, caster-turns
 (ready: Adepts of a Mage's level waiting for the upgrade; Mages: Channeling II, Archmages:
@@ -86,7 +86,7 @@ def main():
     ap.add_argument('--base-bin', help='build dir for the base side (default: --bin)')
     ap.add_argument('--seeds', required=True)
     ap.add_argument('--out-dir', required=True)
-    ap.add_argument('--base-env', action='append', default=None, help='K=V for the base side (default FFH_AI_CASTER_SCHOOL_OFF=all)')
+    ap.add_argument('--base-env', action='append', default=None, help='K=V for the base side (default FFH_AI_MAGIC_OFF=all)')
     ap.add_argument('--new-env', action='append', default=[], help='K=V for the new side')
     ap.add_argument('--jobs', type=int, default=4)
     ap.add_argument('--load', action='store_true', help='report on games already in --out-dir')
@@ -96,7 +96,7 @@ def main():
     seeds = parse_seeds(a.seeds)
     os.makedirs(a.out_dir, exist_ok=True)
     if not a.load:
-        base_env = env_list(a.base_env if a.base_env is not None else ['FFH_AI_CASTER_SCHOOL_OFF=all'])
+        base_env = env_list(a.base_env if a.base_env is not None else ['FFH_AI_MAGIC_OFF=all'])
         new_env = env_list(a.new_env)
         jobs = [(a.base_bin or a.bin, base_env, s, 'base') for s in seeds] + [(a.bin, new_env, s, 'new') for s in seeds]
         with ThreadPoolExecutor(a.jobs) as ex:
@@ -161,7 +161,7 @@ def main():
                         c['casts_' + k] += 1
                         if t >= 2 and k in ('summon', 'damage'):
                             c['casts_t2+_fight'] += 1
-    print('%d seeds%s (base %s, new %s)' % (len(games), ', equal game time' if a.common else '', a.base_env or 'FFH_AI_CASTER_SCHOOL_OFF=all', a.new_env or '-'))
+    print('%d seeds%s (base %s, new %s)' % (len(games), ', equal game time' if a.common else '', a.base_env or 'FFH_AI_MAGIC_OFF=all', a.new_env or '-'))
     keys = ['games', 'turns'] + FIELDS + ['casts', 'casts_t0', 'casts_t1', 'casts_t2', 'casts_t3', 'casts_attack', 'casts_turn',
                                           'casts_summon', 'casts_damage', 'casts_promo', 'casts_city', 'casts_python', 'casts_t2+_fight',
                                           'strikes_with_mages', 'strikes_mage_near', 'strikes_caster_near', 'taken_by_caster_civs',

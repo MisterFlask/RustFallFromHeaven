@@ -930,6 +930,10 @@ impl Game {
             return false;
         }
 
+        if self.path_march_sea_blocked(group, to_plot) {
+            return false;
+        }
+
         let ai_control = self.group_ai_is_controlled(group);
 
         // A ship's path kept in range by request (docs/NAVAL.md, 7.1).
@@ -997,6 +1001,13 @@ impl Game {
         }
 
         true
+    }
+
+    /// This game's (docs/ARMIES.md, "Recruitment"; docs/NAVAL.md, 3.2): whether a marching
+    /// recruit's path may not use `plot`: the rules march a recruit by land (as `march_turns`
+    /// counts), never onto water it would be at sea on, whoever its owner is.
+    pub fn path_march_sea_blocked(&self, group: GroupId, plot: PlotIdx) -> bool {
+        self.plot_is_water(plot) && self.groups[group].units.iter().any(|&u| self.units[u].march.is_some() && self.unit_needs_boats(u, plot))
     }
 
     /// This game's, an AI-side restriction (docs/NAVAL.md, section 8): whether an AI-controlled
@@ -1210,6 +1221,10 @@ impl Game {
         }
 
         if finder.info & MOVE_NO_ENEMY_TERRITORY != 0 && self.plot_is_owned(from_plot) && self.at_war_opt(self.plot_get_team(from_plot), head_team) {
+            return false;
+        }
+
+        if self.path_march_sea_blocked(group, from_plot) {
             return false;
         }
 

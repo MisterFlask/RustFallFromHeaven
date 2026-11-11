@@ -147,7 +147,7 @@ export function renderMap(art, ctx, map, opts = {}) {
   }
 
   function unitLayers() {
-    // 11. units row by row, then overlays. A stack on a city tile flies its standard at the
+    // 11. units row by row, then overlays. A stack on a city tile puts its count chip at the
     // top-right (state.inCity, units/stack.js): the city banner holds the top-left.
     const stacks = (opts.stacks || []).slice().sort((a, b) => a.y - b.y || a.x - b.x);
     const stateOf = (st, layer) => ({ inCity: cityAt.has(`${st.x},${st.y}`), ...st.state, count: st.count, layer });

@@ -122,9 +122,18 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `Governor` has one trait at most (`trait_`) and always a city; gone: `City::rule_changed_turn`,
 ///   `governor_penalty_turns`, `Governor::profile`, `traits`, `origin`, the bench.
 /// - 31: no eras: gone are `Player::current_era` and `GameSetup::era`.
-/// - 32: the sea, phase 1 (docs/NAVAL.md): `Unit::sea_turns`, `sea_out_of_range`.
-/// - 34: fleets (docs/NAVAL.md, section 7): `Army::domain`, `station`, `carried`.
-pub const FORMAT_VERSION: u32 = 34;
+/// - 32: 38 game options removed (docs/PORTING.md "Changes from FFH2"): `GameSetup::options` is
+///   shorter and renumbered. No advanced start, no espionage: gone are
+///   `GameSetup::num_advanced_start_points`, `Player::advanced_start_points`,
+///   `espionage_spending_weight_against_team`, `espionage_history`, `Team::espionage_points_ever`,
+///   `espionage_points_against_team`, `counterespionage_turns_left_against_team`,
+///   `counterespionage_mod_against_team`, `City::espionage_happiness_counter`,
+///   `espionage_defense_modifier`, `espionage_visibility`.
+/// - 33: the sea, phase 1 (docs/NAVAL.md): `Unit::sea_turns`, `sea_out_of_range`.
+/// - 34: the sea, phase 2 (docs/NAVAL.md): `Plot::sea`, `Map::seas`, `Unit::intercepted`,
+///   `Unit::shore_fired`, the battle log's `ReportSide::shore` and `LogEvent::ShoreFire`.
+/// - 35: fleets (docs/NAVAL.md, section 7): `Army::domain`, `station`, `carried`.
+pub const FORMAT_VERSION: u32 = 35;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

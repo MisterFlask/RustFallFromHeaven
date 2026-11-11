@@ -638,7 +638,7 @@ impl Cai {
         high_unit_spending_percent /= num_members.max(1);
         low_unit_spending_percent /= num_members.max(1);
 
-        let aggressive_option = g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI);
+        let aggressive_option = crate::defs::AGGRESSIVE_AI;
 
         // if at war, check for making peace
         if g.team_get_at_war_count(t, true) > 0 {
@@ -1382,7 +1382,7 @@ impl Cai {
         }
 
         // War weariness
-        let mut weariness_threshold = if g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI) { 300 } else { 240 };
+        let mut weariness_threshold = if crate::defs::AGGRESSIVE_AI { 300 } else { 240 };
         weariness_threshold += 10 * valuable_cities + 20 * cities_threatened_by_us;
 
         for i in g.civ_player_ids() {

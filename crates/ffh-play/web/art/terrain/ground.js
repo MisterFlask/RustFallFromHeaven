@@ -683,8 +683,6 @@ export function installTerrain(art, opts = {}) {
     });
   };
 
-  // the live client's viewport vignette (its 2D art map, since retired) read this too: none by day
-  art.vignetteOn = !!G.vignette;
   art._terrainPass = true;
   art._ground.clear();
   return art;

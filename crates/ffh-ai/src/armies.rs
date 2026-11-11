@@ -29,9 +29,6 @@
 //! Marching recruits are the rules' to move, not the AI's (docs/ARMIES.md): `units::play` gives
 //! them no orders, and the AI's stacks, escorts, transports, garrison counts and casts leave them
 //! out (`military::is_army_unit`, `production::garrison`).
-//!
-//! Switch `ARMIES` (`FFH_AI_ARMIES_OFF`): off, every unit stays in its city's garrison when
-//! trained and no army requisitions (the armies still form from the groups).
 
 use ffh_core::army::RecruitDest;
 use ffh_core::game::Game;
@@ -44,7 +41,7 @@ use crate::production::{self as prod, Role};
 const FIELD_ROLES: [UnitAIType; 4] = [UnitAIType::UNITAI_ATTACK, UnitAIType::UNITAI_ATTACK_CITY, UnitAIType::UNITAI_COLLATERAL, UnitAIType::UNITAI_COUNTER];
 
 pub fn turn(g: &mut Game, p: PlayerId) {
-    if !crate::switches::ARMIES.on(g, p) || g.player_is_barbarian(p) {
+    if g.player_is_barbarian(p) {
         return;
     }
     // A defender that walked into one of our cities to hold it serves in the city's garrison, not
@@ -112,9 +109,7 @@ pub fn turn(g: &mut Game, p: PlayerId) {
             }
         }
     }
-    if crate::switches::REQUISITION.on(g, p) {
-        requisition(g, p, main, target.is_some());
-    }
+    requisition(g, p, main, target.is_some());
 }
 
 /// Turns within which the unit a city trains for the main army should join it (its production

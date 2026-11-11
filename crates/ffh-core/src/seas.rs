@@ -851,3 +851,73 @@ impl Game {
         }
     }
 }
+
+// -------------------------------------------------------------------------------------------
+// What a viewer can work out (the client's, docs/NAVAL.md section 10): pure, read-only.
+
+impl Game {
+    /// City `c`'s harbour as team `viewer` can work it out ([`Game::sea_closed_known`]: only the
+    /// ships it sees count): for another team's city, so that nothing the viewer does not see
+    /// shows. A holder the viewer cannot name (hidden nationality) is the barbarian team.
+    pub fn city_harbour_known(&self, c: CityId, viewer: TeamId) -> Harbour {
+        let team = self.city_team(c);
+        let seas = self.city_seas(c);
+        if seas.is_empty() {
+            return Harbour::None;
+        }
+        let mut held = Vec::new();
+        for s in seas {
+            match self.sea_closed_known(s, team, viewer) {
+                None => return Harbour::Open,
+                Some(p) => held.push((s, p.unwrap_or_else(|| self.barbarian_team()))),
+            }
+        }
+        Harbour::Blockaded(held)
+    }
+
+    /// The state of sea `s` for `viewer`'s team as it can work it out ([`Game::sea_state_known`])
+    /// with `ships` (its own) no longer on Patrol there: the sea a patrol order takes them out
+    /// of (docs/NAVAL.md, 10: `Bay of Lorda: 0 to 0. Open.`).
+    pub fn sea_state_known_without(&self, s: SeaId, viewer: TeamId, ships: &[UnitId]) -> SeaState {
+        let mut ours = 0;
+        let mut parties: Vec<(SeaParty, bool, i32)> = Vec::new();
+        for u in self.sea_patrollers(s) {
+            if ships.contains(&u) || !self.sea_sees(viewer, u) {
+                continue;
+            }
+            let t = self.unit_get_team(u);
+            let x = self.unit_sea_strength_x100(u);
+            if t == viewer {
+                ours += x;
+                continue;
+            }
+            let hidden = self.unit_is_hidden_nationality(u);
+            let (party, hostile) = if hidden { (None, true) } else { (Some(t), self.at_war(t, viewer)) };
+            match parties.iter_mut().find(|e| e.0 == party && e.1 == hostile) {
+                Some(e) => e.2 += x,
+                None => parties.push((party, hostile, x)),
+            }
+        }
+        let hostile: Vec<(SeaParty, i32)> = parties.iter().filter(|e| e.1).map(|e| (e.0, e.2 / 100)).collect();
+        let friendly: Vec<(SeaParty, i32)> = parties.iter().filter(|e| !e.1).map(|e| (e.0, e.2 / 100)).collect();
+        self.sea_state_from(ours / 100, &hostile, &friendly)
+    }
+
+    /// Why a supply ship of `team` on water plot `plot` is no source by the sea, as team `viewer`
+    /// can work it out ([`Game::supply_ship_refused`] from [`Game::sea_closed_known`] and
+    /// [`Game::sea_lane_known`]): the client's "No supply line: the transport is in X, held by Y".
+    /// A holder the viewer cannot name is the barbarian team.
+    pub fn supply_ship_refused_known(&self, team: TeamId, plot: PlotIdx, viewer: TeamId) -> Option<crate::army::SupplyShipRefusal> {
+        use crate::army::SupplyShipRefusal;
+        if let Some(s) = self.map.plots[plot].sea {
+            if let Some(p) = self.sea_closed_known(s, team, viewer) {
+                return Some(SupplyShipRefusal::SeaClosed(s, p.unwrap_or_else(|| self.barbarian_team())));
+            }
+        }
+        match self.sea_lane_known(team, plot, viewer) {
+            None => Some(SupplyShipRefusal::NoLane),
+            Some(crate::naval::SeaLane { cut_in: Some((s, t)), .. }) => Some(SupplyShipRefusal::LaneCut(s, t)),
+            Some(_) => None,
+        }
+    }
+}

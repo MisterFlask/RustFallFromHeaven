@@ -7,9 +7,7 @@
 // separates from dark land at 1x), the right side is in shade. Walls are lighter than roofs, so a
 // roof reads at 1x as a dark cap with a lit edge. Windows are amber `l` (the renderer recolours
 // them to the style's light, 7.3), mostly 1x2, with one glow `L` core on the main hall, and a lit
-// house's door is a 1x2 amber doorway; the stone
-// beside and under a window is pre-lit through the style's halo table (ember `e`/rust `x` for
-// firelight), so a window reads as a small hearth, not a single pixel.
+// house's door is a 1x2 amber doorway.
 
 // ------------------------------------------------------------------------------------- grid
 
@@ -280,35 +278,6 @@ function compose(items, W = 40, H = 48) {
   return c;
 }
 
-// Halo tables: what the stone beside and under a lit window becomes (the window's 1 px ring, 4.4).
-// FIRE warms toward the ember ramp (dark stone to ember e, mid stone to rust x, lit stone to flame
-// E), so a lit window reads as a small hearth in the wall; BLOOD and ARC do the same in crimson and
-// lilac; COLD (Illians) frosts the stone instead.
-const TABLES = {
-  FIRE: { 1: 'e', 2: 'e', 3: 'e', 4: 'x', 5: 'x', 6: 'E', u: 'e', Q: 'x', y: 'E', Y: 'E', k: 'e', t: 'x', T: 'x', v: 'e', p: 'x', x: 'E', '#': '#', '%': '%' },
-  BLOOD: { 1: 'c', 2: 'c', 3: 'c', 4: 'c', 5: 'C', 6: 'C', u: 'c' },
-  ARC: { 1: 'v', 2: 'v', 3: 'p', 4: 'p', 5: 'p', 6: 'P', k: 'v', t: 'p', T: 'P', v: 'p', p: 'P', u: 'v', Q: 'p' },
-  COLD: { 2: 'g', 3: 'g', 4: 'f', 5: 'f' },
-  // the barbarians' rough camp: every dark material to ember, the bone and stone tops to flame
-  EMBER: { 2: 'e', 3: 'e', 4: 'e', 5: 'e', u: 'e', Q: 'e', 6: 'E', 7: 'E' },
-};
-
-/** Pre-light the stone beside and under a window through `table` (its 1 px ring). */
-function halo(g, table, keys = 'lL') {
-  if (!table) return g;
-  const out = g.clone();
-  const T = (c) => (table[c] && !'0.'.includes(c) ? table[c] : c);
-  for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) {
-    if (!keys.includes(g.d[y][x])) continue;
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1]]) {
-      const c = g.get(x + dx, y + dy);
-      if (c === '.' || c === '0' || keys.includes(c)) continue;
-      out.set(x + dx, y + dy, T(c));
-    }
-  }
-  return out;
-}
-
 /** Count the lit windows of a grid: 4-connected groups of l and L pixels. */
 function windows(g) {
   const seen = new Set();
@@ -345,4 +314,4 @@ function finialOf(g) {
 }
 
 
-export { G, P, M, wall, taper, peak, hip, dome, blobs, mound, crag, stack, mark, side, house, compose, TABLES, halo, windows, trim, finialOf };
+export { G, P, M, wall, taper, peak, hip, dome, blobs, mound, crag, stack, mark, side, house, compose, windows, trim, finialOf };

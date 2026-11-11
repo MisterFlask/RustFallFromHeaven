@@ -227,10 +227,8 @@ impl Game {
 
         self.player_ai_assign_working_plots(p);
 
-        let team = self.players[p].team;
-        if 0 == self.team_get_has_met_civ_count(team, true) || self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
-            self.player_set_commerce_percent(p, CommerceType::COMMERCE_ESPIONAGE, 0);
-        }
+        // There is no espionage: its commerce slider stays at 0.
+        self.player_set_commerce_percent(p, CommerceType::COMMERCE_ESPIONAGE, 0);
 
         self.player_verify_gold_commerce_percent(p);
 
@@ -240,8 +238,6 @@ impl Game {
         if !self.player_is_crusade_host(p) {
             self.player_do_research(p);
         }
-
-        self.player_do_espionage_points(p);
 
         for c in self.players[p].cities.clone() {
             if self.cities.contains(c) {
@@ -305,14 +301,6 @@ impl Game {
         set_turn_history(&mut self.players[p].power_history, turn, power);
         let culture = self.player_count_total_culture(p);
         set_turn_history(&mut self.players[p].culture_history, turn, culture);
-
-        // FfH: Modified by Kael 09/28/2008
-        if !self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
-            let team = self.players[p].team;
-            let espionage = self.teams[team].espionage_points_ever;
-            set_turn_history(&mut self.players[p].espionage_history, turn, espionage);
-        }
-        // FfH: End Modify
 
         // expireMessages(), CityInfo dirty bit: UI.
         // AI: AI_doTurnPost() (AI diplomacy, AI_launch) -- left to the controller.
@@ -526,7 +514,7 @@ impl Game {
 
             if !kill && !self.player_is_barbarian(p) {
                 let pl = &self.players[p];
-                if pl.num_cities() == 0 && pl.advanced_start_points < 0
+                if pl.num_cities() == 0
                     && (pl.num_units() == 0 || (!self.is_option(GameOptionType::GAMEOPTION_COMPLETE_KILLS) && pl.founded_first_city))
                 {
                     kill = true;
@@ -546,7 +534,7 @@ impl Game {
     }
 
     /// C++ `CvPlayer::setTurnActive(bNewValue, bDoTurn = true)`: starts/ends the player's
-    /// turn (advanced-start AI, `doTurn` in simultaneous mode, `doTurnUnits`, activates the
+    /// turn (`doTurn` in simultaneous mode, `doTurnUnits`, activates the
     /// next player/team when the turn ends).
     ///
     /// Only sequential turns exist here (no MPOPTION_SIMULTANEOUS_TURNS, no PBEM/hot seat/
@@ -567,10 +555,6 @@ impl Game {
                 self.num_game_turn_active += 1;
 
                 if do_turn {
-                    // AI: AI_doAdvancedStart() for an alive non-human, non-barbarian player with
-                    // advanced start points >= 0 -- spending the points is an AI decision; the
-                    // controller does it while the turn is active.
-
                     if self.elapsed_game_turns > 0 && self.players[p].alive {
                         // MPOPTION_SIMULTANEOUS_TURNS (doTurn here) is never set.
                         self.player_do_turn_units(p);
@@ -1118,16 +1102,6 @@ impl Game {
                     }
                 }
             }
-
-            for t in self.team_ids() {
-                if self.team_is_alive(t) {
-                    let points = self.teams[team].espionage_points_against_team[t];
-                    self.team_set_espionage_points_against_team(new_team, t, points);
-                    let points = self.teams[t].espionage_points_against_team[team];
-                    self.team_set_espionage_points_against_team(t, new_team, points);
-                }
-            }
-            self.teams[new_team].espionage_points_ever = self.teams[team].espionage_points_ever;
 
             self.team_assign_vassal(team, new_team, false);
             new_player

@@ -1195,14 +1195,10 @@ impl Game {
             }
         }
 
-        if k_event.espionage_points > 0 && self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
+        // There is no espionage: no event gives espionage points, nor takes them from those held
+        // against another player (none).
+        if k_event.espionage_points > 0 || (k_event.espionage_points < 0 && data.other_player.is_some()) {
             return false;
-        }
-
-        if let Some(other) = data.other_player {
-            if k_event.espionage_points + self.teams[team].espionage_points_against_team[self.players[other].team] < 0 {
-                return false;
-            }
         }
 
         if (0 != k_event.tech_percent || 0 != k_event.tech_cost_percent) && self.player_get_best_event_tech(p, event, data.other_player).is_none() {
@@ -1468,13 +1464,6 @@ impl Game {
                 if k_event.gold_to_player {
                     self.players[other].gold -= gold;
                 }
-            }
-        }
-
-        if let Some(other) = data.other_player {
-            if k_event.espionage_points != 0 {
-                let (team, other_team) = (self.players[p].team, self.players[other].team);
-                self.team_change_espionage_points_against_team(team, other_team, k_event.espionage_points);
             }
         }
 
@@ -2254,7 +2243,7 @@ mod tests {
 
     #[test]
     fn event_cost_applies_inflation_to_gold_and_random_gold() {
-        let mut g = two_civs();
+        let g = two_civs();
         let d = g.d;
         let p = PlayerId(0);
         let e = d.t::<EventType>("EVENT_GIRLS_BEST_FRIEND_1");
@@ -2264,9 +2253,6 @@ mod tests {
         let factor = max(0, g.player_calculate_inflation_rate(p) + 100);
         assert_eq!(g.player_get_event_cost(p, e, None, false), k_event.gold * factor / 100);
         assert_eq!(g.player_get_event_cost(p, e, None, true), (k_event.gold + k_event.random_gold) * factor / 100);
-
-        g.setup.options[GameOptionType::GAMEOPTION_NO_INFLATION] = true;
-        assert_eq!(g.player_get_event_cost(p, e, None, false), k_event.gold);
         assert_eq!(g.player_get_best_event_tech(p, e, None), None);
     }
 

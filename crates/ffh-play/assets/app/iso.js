@@ -25,8 +25,8 @@ import * as T from "./tiles.js";
 import { unitMoves } from "./stacks.js";
 import { SPRITES } from "./iso/sprites.js";
 import { drawCityWork } from "./citywork.js";
-import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark } from "./supply.js";
-import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip } from "./sea.js";
+import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
+import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, laneParts, drawLaneCut, drawHarbourMark } from "./sea.js";
 
 /** A tile's width in art pixels: the M7 contract (tiles 192 x 128, the diamond in rows 0-95). */
 const NATIVE = 192;
@@ -834,6 +834,9 @@ export class IsoMap {
     // The screen's own city is named by its title; its plaque would cover its plots' yields.
     this.drawCityLabels(g, f, city ? cities.filter((x) => x.city.id !== city.id) : cities);
     this.drawUnitBadges(g, f, items.filter((it) => it.stack));
+    // The seas' names and badges on the Sea layer, over what stands up (sea.js).
+    this.seaHits = [];
+    if (sea && !city) this.drawSeaLabels(g, f);
     if (city) this.drawCityWork(g, f, cells, city);
     else {
       this.drawSupply(g, f);
@@ -1367,21 +1370,66 @@ export class IsoMap {
     const hw = f.TW / 2;
     const hh = f.TW / 4;
     const segs = [];
+    const borders = [];
+    const seas = seasById(S.view);
     let n = 0;
     for (const c of cells) {
       const s = seaPlot(map, c.x, c.y);
-      if (!s) continue;
+      // Named seas (phase 2): the tint by state and the borders between seas.
+      const named = seaPlotNamed(map, seas, c.x, c.y);
+      if (!s && !named) continue;
       const sy = c.sy + c.drop;
       const corners = [{ x: c.sx, y: sy - hh }, { x: c.sx + hw, y: sy }, { x: c.sx, y: sy + hh }, { x: c.sx - hw, y: sy }];
-      if (s.dark) drawDark(g, corners);
-      for (const [dx, dy] of s.edges) {
+      if (s?.dark) drawDark(g, corners);
+      if (named?.state) drawSeaTint(g, corners, named.state);
+      for (const [dx, dy] of s?.edges ?? []) {
         const st = this.step(dx, dy);
         segs.push(sideToward(corners, { x: c.sx + st.x, y: sy + st.y }));
       }
+      for (const [dx, dy] of named?.borders ?? []) {
+        const st = this.step(dx, dy);
+        borders.push(sideToward(corners, { x: c.sx + st.x, y: sy + st.y }));
+      }
       n++;
     }
+    drawSeaBorders(g, borders, Math.max(1.5, 2.5 * f.s));
     drawEdges(g, segs, Math.max(1.5, 3 * f.s));
     this.seaDrawn = n;
+    this.drawSeaLanes(g, f);
+  }
+
+  /** Your supply ships' lanes on the Sea layer (sea.js `laneParts`), as supply lines are drawn;
+   *  a cut lane breaks with a mark where it enters the closed sea, dotted beyond. */
+  drawSeaLanes(g, f) {
+    const v = this.view;
+    const width = Math.max(2, 4 * f.s);
+    for (const lane of S.view?.sea_lanes ?? []) {
+      const parts = laneParts(lane);
+      const path = lane.path ?? [];
+      if (path.length < 1) continue;
+      const c0 = this.center(path[0][0], path[0][1]);
+      const pts = unwrapSegment(path, path[0][0], v.map).map(([ux, y]) => {
+        const st = this.step(ux - path[0][0], y - path[0][1]);
+        const x = T.wrapCoord(ux, v.map.w, v.map.wrap_x) ?? ux;
+        return { x: c0.sx + st.x, y: c0.sy + st.y + this.dropAt(x, y) };
+      });
+      const k = parts.open.length;
+      if (k > 1) drawLine(g, pts.slice(0, k), OWN_COLOR, width, 0);
+      if (parts.cut) drawLaneCut(g, pts.slice(k - 1), Math.max(6, 11 * f.s * 2));
+    }
+  }
+
+  /** The seas' names and badges (sea.js `drawSeaLabel`), each at its label plot; the boxes are
+   *  kept for a click (`seaHits`). */
+  drawSeaLabels(g, f) {
+    const v = this.view;
+    const sizes = seaLabelSizes(f.TW / 2);
+    for (const sea of S.view?.seas ?? []) {
+      const c = this.center(sea.x, sea.y);
+      const y = c.sy + this.dropAt(sea.x, sea.y);
+      if (c.sx < -200 || c.sx > v.vw + 200 || y < -40 || y > v.vh + 40) continue;
+      this.seaHits.push(drawSeaLabel(g, sea, c.sx, y, sizes));
+    }
   }
 
   /** The supply lines and the cut-off armies' markers (supply.js; docs/SUPPLY.md). This map is
@@ -1531,6 +1579,8 @@ export class IsoMap {
       }
       // Revolt pressure (docs/CULTURE.md): a mark at the plaque's right end by its level.
       drawRevoltMark(g, city, x0 + w + Math.max(4, 5 * u) - u, y0 + h / 2, Math.max(4, 5 * u), u, base);
+      // A blockaded harbour (docs/NAVAL.md 10): an anchor mark at the plaque's left end.
+      drawHarbourMark(g, city, x0 - Math.max(5, 6 * u) + u, y0 + h / 2, Math.max(5, 6 * u), u);
     }
   }
 

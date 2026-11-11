@@ -5,7 +5,7 @@
 //!   workers too). Its effect is in the rules' code, not the data, so the data's estimate is 0 and
 //!   it was never built; `code_effects` values it (the copies are worth the share of the city's
 //!   production that goes into units). It was this module's until the table took it, so
-//!   `FFH_AI_CIV_OFF` no longer turns it off (`FFH_AI_CODE_EFFECTS_OFF=WARRENS` does).
+//!   `FFH_AI_CIV_OFF` does not turn it off.
 //! - **Rantine** (hero) can cast Convert City in a barbarian city whose barbarian units are no
 //!   stronger than him (base strength): the city becomes ours, without war. The Clan is at peace
 //!   with the barbarians (`TRAIT_BARBARIAN`), so its armies never go there; [`ClanOfEmbers::unit`]

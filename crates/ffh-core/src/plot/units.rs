@@ -398,19 +398,24 @@ impl Game {
             return self.unit_max_moves(unit).max(move_denominator);
         }
 
+        // This game's (docs/NAVAL.md, 3.2): a water plot entered in boats (no ship of its team with
+        // room there) costs the unit's turn split `EMBARKED_MOVES` ways (from land or water;
+        // landing ends its moves below, as from a ship). Before the flat cost: a unit that moves
+        // at a flat cost (the Tar Demon) is in boats as slow as any, and its landing from boats
+        // ends its moves too.
+        if self.unit_needs_boats(unit, p) && !self.unit_can_load(unit, p) {
+            return self.unit_embarked_step_cost(unit);
+        }
+        if self.unit_flat_movement_cost(unit) && self.unit_in_boats_at(unit, from_plot) {
+            return self.unit_max_moves(unit);
+        }
+
         if self.unit_flat_movement_cost(unit) || self.unit_get_domain_type(unit) == DomainType::DOMAIN_AIR {
             return move_denominator;
         }
 
         if self.unit_is_human(unit) && !self.map.plots[p].revealed[self.unit_get_team(unit)] {
             return self.unit_max_moves(unit);
-        }
-
-        // This game's (docs/NAVAL.md, 3.2): a water plot entered in boats (no ship of its team with
-        // room there) costs the unit's turn split `EMBARKED_MOVES` ways (from land or water;
-        // landing ends its moves below, as from a ship).
-        if self.unit_needs_boats(unit, p) && !self.unit_can_load(unit, p) {
-            return self.unit_embarked_step_cost(unit);
         }
 
         if !self.plot_is_valid_domain_for_location(from_plot, unit) {
@@ -732,21 +737,6 @@ impl Game {
         max_units - self.plot_count_num_air_units(p, team)
     }
 
-    /// C++ `CvPlot::isEspionageCounterSpy`.
-    pub fn plot_is_espionage_counter_spy(&self, p: PlotIdx, team: TeamId) -> bool {
-        if let Some(city) = self.map.plots[p].plot_city {
-            if self.city_team(city) == team && self.cities[city].espionage_defense_modifier > 0 {
-                return true;
-            }
-        }
-
-        if self.plot_any_unit(p, |u| self.unit_get_team(u) == team && self.unit_is_counter_spy(u)) {
-            return true;
-        }
-
-        false
-    }
-
     /// C++ `CvPlot::nukeExplosion` (C++ default `pNukeUnit = NULL`).
     pub fn plot_nuke_explosion(&mut self, p: PlotIdx, range: i32, nuke_unit: Option<UnitId>) {
         let d = self.d;
@@ -1063,7 +1053,7 @@ impl Game {
     }
 
     /// C++ `CvPlot::updateSight`: applies/removes all sight sources on this plot (FFH holy
-    /// city religions, vassals, espionage, ownership, units, recon).
+    /// city religions, vassals, ownership, units, recon).
     pub fn plot_update_sight(&mut self, p: PlotIdx, increment: bool, update_plot_groups: bool) {
         let d = self.d;
         let plot_visibility_range = d.defines.plot_visibility_range;
@@ -1091,14 +1081,6 @@ impl Game {
                     if self.teams[plot_team].vassal[t] {
                         self.plot_change_adjacent_sight(p, t, plot_visibility_range, increment, None, update_plot_groups);
                     }
-                }
-            }
-
-            // EspionageEffect
-            for t in self.civ_team_ids() {
-                if self.cities[city].espionage_visibility[t] {
-                    // Passive Effect: enough EPs gives you visibility into someone's cities
-                    self.plot_change_adjacent_sight(p, t, plot_visibility_range, increment, None, update_plot_groups);
                 }
             }
         }
@@ -1434,7 +1416,7 @@ impl Game {
                 if !self.players[owner].human {
                     // Xienwolf Tweak 02/01/09: barbarian cities do not devote themselves to
                     // building Empires.
-                    if self.is_option(GameOptionType::GAMEOPTION_AI_NO_BUILDING_PREREQS) || self.player_is_barbarian(owner) {
+                    if self.player_is_barbarian(owner) {
                         valid = false;
                     }
                 }

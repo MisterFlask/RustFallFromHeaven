@@ -26,7 +26,7 @@
 //!   ffh-play soak run [SETTINGS] [--saves DIR] [--resume SAVE] [--check-every N] [--save-check-every N]
 //!                                      the AI plays the human slot for one game (design P2):
 //!                                      --seed N --size tiny|WORLDSIZE_X --civ kuriotates|CIVILIZATION_X
-//!                                      --opponents N --options raging,aggressive|GAMEOPTION_X,..
+//!                                      --opponents N --options raging,double_animals|GAMEOPTION_X,..
 //!                                      --turns N --speed --handicap --spawn-turn N; a
 //!                                      panic is caught and reported with its repro command
 //!                                      (exit 101; stuck 4; other failure 5); --panic-at T

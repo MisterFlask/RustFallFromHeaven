@@ -30,8 +30,6 @@
 //!   row with no path over land to a city of ours, or overseas with no transport of ours on its way
 //!   to it, is disbanded unit by unit (`unit_scrap`; heroes and units the rules will not scrap
 //!   stay).
-//!
-//! Switch `SUPPLY` (`FFH_AI_SUPPLY_OFF`): off, the AI ignores supply lines (as before them).
 
 use ffh_core::army::SupplyState;
 use ffh_core::defs::*;
@@ -57,13 +55,9 @@ fn army_of(g: &Game, grp: GroupId) -> Option<ArmyId> {
     Some(a)
 }
 
-fn on(g: &Game, p: PlayerId) -> bool {
-    crate::switches::SUPPLY.on(g, p)
-}
-
-/// Whether the group is an army whose line is cut (hungry or starving), with the rule on.
+/// Whether the group is an army whose line is cut (hungry or starving).
 pub(crate) fn cut(g: &Game, grp: GroupId) -> bool {
-    army_of(g, grp).is_some_and(|a| g.armies[a].unsupplied_turns > 0 && on(g, g.armies[a].owner))
+    army_of(g, grp).is_some_and(|a| g.armies[a].unsupplied_turns > 0)
 }
 
 /// Plots the group covers in two turns: twice its slowest unit's moves (at least 2).
@@ -78,15 +72,12 @@ fn dist(g: &Game, a: PlotIdx, b: PlotIdx) -> i32 {
 }
 
 /// May the group take a move toward `dest` this turn, marching on the enemy city on `city` (if
-/// any)? Not an army, the rule off: yes. Else: yes into a city of ours, when it stays where it is,
+/// any)? Not an army: yes. Else: yes into a city of ours, when it stays where it is,
 /// when `city` is within two turns of the plot it reaches this turn, when that plot is in our
 /// territory, or when it has a supply line. At most one path search and one line search.
 pub(crate) fn may_move(g: &Game, grp: GroupId, dest: PlotIdx, city: Option<PlotIdx>) -> bool {
     let Some(a) = army_of(g, grp) else { return true };
     let p = g.armies[a].owner;
-    if !on(g, p) {
-        return true;
-    }
     let team = g.players[p].team;
     if g.map.plots[dest].plot_city.is_some_and(|c| g.cities.contains(c) && g.players[g.cities[c].owner].team == team) {
         return true;
@@ -139,9 +130,6 @@ fn attacking_near(g: &Game, v: &View, grp: GroupId, here: PlotIdx) -> bool {
 pub(crate) fn fall_back(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
     let Some(a) = army_of(g, grp) else { return false };
     let p = v.p;
-    if !on(g, p) {
-        return false;
-    }
     let here = g.unit_plot(u);
     let area = g.map.plots[here].area;
     let overseas = !has_city_on(g, p, area);

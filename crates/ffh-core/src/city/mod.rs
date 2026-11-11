@@ -12,8 +12,8 @@
 //! - [`citizens`]: population and growth, happiness, health, specialists, worked plots,
 //!   great people, emphasize / growth control (CvCityAI).
 //! - [`buildings`]: buildings, bonuses, corporations, power, defense, maintenance.
-//! - [`yields_culture`]: yields, commerce, trade routes, culture, religion, espionage
-//!   visibility, rank caches, owner/location helpers (`city_team`, `city_plot`, ...).
+//! - [`yields_culture`]: yields, commerce, trade routes, culture, religion, rank caches,
+//!   owner/location helpers (`city_team`, `city_plot`, ...).
 //!
 //! Method naming (C++ -> Rust): `getFoo` -> `city_foo`, `isFoo` -> `city_is_foo`,
 //! `setFoo`/`changeFoo`/`canFoo`/`doFoo` keep their verb; overloads get a suffix naming the
@@ -72,7 +72,6 @@ pub struct City {
     pub hurry_anger_modifier: i32,
     pub heal_rate: i32,
     pub espionage_health_counter: i32,
-    pub espionage_happiness_counter: i32,
     pub fresh_water_good_health: i32,
     pub fresh_water_bad_health: i32,
     pub feature_good_health: i32,
@@ -136,7 +135,6 @@ pub struct City {
     pub occupation_timer: i32,
     pub culture_update_timer: i32,
     pub specialist_free_experience: i32,
-    pub espionage_defense_modifier: i32,
 
     pub never_lost: bool,
     pub bombarded: bool,
@@ -183,7 +181,7 @@ pub struct City {
     pub corporation_yield: [i32; YieldType::NUM],
     pub extra_specialist_yield: [i32; YieldType::NUM],
     /// C++ `m_aiCommerceRate`, stored times 100 (read through `city_commerce_rate_times100`,
-    /// which applies the no-espionage option).
+    /// which folds the espionage slot into culture).
     pub commerce_rate: [i32; CommerceType::NUM],
     pub production_to_commerce_modifier: [i32; CommerceType::NUM],
     pub building_commerce: [i32; CommerceType::NUM],
@@ -202,7 +200,6 @@ pub struct City {
     pub ever_owned: IdxVec<PlayerId, bool>,
     pub trade_route: IdxVec<PlayerId, bool>,
     pub revealed: IdxVec<TeamId, bool>,
-    pub espionage_visibility: IdxVec<TeamId, bool>,
 
     /// C++ `m_szName` (`getNameKey`).
     pub name: String,
@@ -360,7 +357,6 @@ impl City {
             hurry_anger_modifier: 0,
             heal_rate: 0,
             espionage_health_counter: 0,
-            espionage_happiness_counter: 0,
             fresh_water_good_health: 0,
             fresh_water_bad_health: 0,
             feature_good_health: 0,
@@ -420,7 +416,6 @@ impl City {
             occupation_timer: 0,
             culture_update_timer: 0,
             specialist_free_experience: 0,
-            espionage_defense_modifier: 0,
 
             never_lost: true,
             bombarded: false,
@@ -470,7 +465,6 @@ impl City {
             ever_owned: IdxVec::from_elem(false, num_players),
             trade_route: IdxVec::from_elem(false, num_players),
             revealed: IdxVec::from_elem(false, num_teams),
-            espionage_visibility: IdxVec::from_elem(false, num_teams),
 
             name: String::new(),
             script_data: String::new(),

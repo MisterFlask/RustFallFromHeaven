@@ -142,10 +142,14 @@ pub fn supply_json(v: &Viewer, a: ArmyId) -> Json {
         SupplySource::Sea(c) => format!("at sea, in range of {}.", crate::view::sea::port_name(v, c)),
         _ => format!("{} of {budget}, from {}.", l.cost, source_name(g, l.source)),
     };
+    // No line: why a supply ship of the human's on or by the army's plot is no source
+    // (docs/NAVAL.md, 4.6 and 10: `the transport is in Sirens' Water, held by Lanun.`).
+    let sea_why = if line.is_none() { g.army_plot(a).and_then(|q| crate::view::seas::transport_refusal(v, q)) } else { None };
     let mut text = match state {
-        SupplyState::Supplied => match &line {
-            Some(l) => format!("Supplied: {}", supplied(l)),
-            None => "No supply line: Hunger from your next turn.".to_string(),
+        SupplyState::Supplied => match (&line, &sea_why) {
+            (Some(l), _) => format!("Supplied: {}", supplied(l)),
+            (None, Some(why)) => format!("No supply line: {why} Hunger from your next turn."),
+            (None, None) => "No supply line: Hunger from your next turn.".to_string(),
         },
         SupplyState::Hunger { turn, of } => format!("Hunger: turn {turn} of {of}. No healing, no recruits."),
         SupplyState::Starvation => format!(
@@ -155,6 +159,9 @@ pub fn supply_json(v: &Viewer, a: ArmyId) -> Json {
     };
     if let (Some(l), true) = (&line, state != SupplyState::Supplied) {
         text.push_str(&format!(" Supply line again: {} Supplied from your next turn.", supplied(l)));
+    }
+    if let (Some(why), true) = (&sea_why, state != SupplyState::Supplied) {
+        text.push_str(&format!(" No supply line: {why}"));
     }
     let (name, turn, of) = match state {
         SupplyState::Supplied => ("supplied", Json::Null, Json::Null),

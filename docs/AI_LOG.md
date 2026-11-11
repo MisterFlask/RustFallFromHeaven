@@ -32,6 +32,34 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Amphibious invasion on the forecast (2026-11-11, switch `INVASION`)
+
+**Built, off by default** (`FFH_AI_INVASION_ONLY=ALL` turns it on). It fails steps 3 and 4 of the
+loop (CLAUDE.md, "AI changes"): the estimate at sailing is overconfident (14 sailings, ~100%
+predicted, 43% taken, skill -1.33: the defender gathers at the city during the voyage), and in 7
+forks at a sailing (8 rolls each) it took the target in 14 of 56 rolls against the old rule's 20.
+Over 7 full games the cities taken by sea fell from 18 to 7 and the overseas wars with a fight
+from 12 to 2; what it does achieve is that a landing takes its city (8 of 8, against 15 of 134)
+at half the transports. The idea is not wrong; the missing piece is an estimate of the garrison
+on arrival, checked in the ledger, before the decision is turned on. Costs +14% per turn when on.
+Variants tried on the way, each over the
+naval autopsy (16 + 16 games of 300 turns, 7 full games):
+- *The smallest force at 70%, support within 2 plots, a check at sea at the same bar*: 57 sailings
+  in the full games, 38 turned home at sea, 5 landings; the ledger 92% predicted, 10% observed. A
+  barbarian roamer or a hidden unit seen only from the coast flipped the forecast from 78% to 2%,
+  every voyage.
+- *Support counted over the whole voyage* (the enemy's moves times the turns to strike): no
+  invasion launched in 32 games of 300 turns. Too pessimistic: field units counted as standing in
+  the city.
+- *Support for one turn, none for barbarian cities, home at sea only under 35%*: 40 sailings, 26%
+  taken (16 landings, 9 captures). The fleets turned home were the misses.
+- *The same with the force 50% above the smallest* (kept): 20 sailings, 43% taken, 8 of 8
+  landings took the city.
+Bugs the traces found and fixed on the way: a fleet of a Trireme and ocean ships going to and fro
+on the coast (the group moves only where all can); the fleet sailing before the war it was prepared
+for was declared and landing at peace; a fleet switching targets at sea (now the group's
+`MISSIONAI_ASSAULT` on the city's plot); whole stacks boarding where the plan counted units.
+
 ## Supply lines (2026-11-10)
 
 ### The AI cuts an invader's line (`SUPPLY_CUT`, removed; the last commit with the code: `f5558d91`)

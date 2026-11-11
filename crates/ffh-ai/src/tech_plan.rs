@@ -102,7 +102,7 @@ enum Step {
     /// The magic techs, once tier 3 military and economy tier 2 are reached.
     Magic,
     /// A magic leader's Mages: Sorcery with a sphere tech on the way, after the economy's tier 2
-    /// (`ARCANE_PATH`).
+    /// (`traits::arcane_path`).
     ArcaneSorcery,
     /// The late techs of the research path we are committed to (`research_path.rs`).
     ResearchPath,

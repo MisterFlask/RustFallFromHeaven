@@ -245,10 +245,10 @@ of the army, then the best city attacker (`armies::requisition_unit`, the AI's
 too; the rules count them in its shortfall, so nothing counts twice. Defenders stay in their
 garrison. Marching recruits are the rules' to move: the AI gives them no orders, takes none into
 its stacks, escorts or transports, does not count them as defenders, and keeps requisition orders
-when it clears a queue. Switches: `ARMIES` and `REQUISITION` (`FFH_AI_*_OFF`).
+when it clears a queue.
 
 Measured (8 civs, standard map, 400 turns, seeds 1-6, the three options; totals; the march at the
-turn's end, against the same binary with `FFH_AI_REQUISITION_OFF=ALL`): recruits sent 1339
+turn's end, against the same binary with `FFH_AI_REQUISITION_OFF=ALL`, a switch since removed): recruits sent 1339
 (requisition off 877; the transit before marching 1013), joined 1188 in 4.4 turns on average,
 diverted 123, killed on the way 111 (8%; 6% with the requisition off). Requisition orders placed
 1045, withdrawn 510. In seed 1, 25 of its 41 withdrawals came from the main army changing (its

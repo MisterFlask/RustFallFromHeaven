@@ -184,7 +184,7 @@ flag.
   carried or not), and is never captured. FFH2 let only a human's land unit step onto its ship at
   sea. An army in boats in range is supplied from the nearest port. *Wear*: a player's warship
   outside a port city of its team for more than 10 of its owner's turn starts loses 5% strength a
-  turn (at most 50%) until a turn start in port. Save format 32.
+  turn (at most 50%) until a turn start in port. Save format 33.
 - **The sea, phase 2: named seas, Patrol, who holds a sea** (docs/NAVAL.md, sections 4 and 5;
   2026-11-11, the owner's direction). *Seas*: when the map is made, every water area of at least 6
   plots is cut into named seas of about 40 plots (map RNG; names from `sea_names.jsonc`). *Patrol*
@@ -203,7 +203,7 @@ flag.
   (docs/SUPPLY.md) are sources only in a sea not closed to their team and with an open lane (a path
   over water in range) to a port of the team. *Shore fire*: before round 1 of a battle on land, up
   to 3 warships with a bombard rate per side on the water next to it fire once each (once a turn),
-  a SHOOT hit each that never takes a unit below 1 HP. Save format 33.
+  a SHOOT hit each that never takes a unit below 1 HP. Save format 34.
 - **The sea, phase 3: fleets** (docs/NAVAL.md, section 7; 2026-11-11, the owner's direction). A
   player's warships and ships with cargo room serve in named fleets ("1st Fleet"), the armies'
   container at sea (`Army::domain`): kept in one group, formed, split, joined, merged, renamed,
@@ -214,7 +214,7 @@ flag.
   there and patrols) or Escort of an army or group (it moves onto its target's water plot after each
   of the target's steps when it can reach it that turn); a move order ends it. An army carried by
   ships stays one army and lands as one group (Civ4 put each boarded unit in a group of its own).
-  Save format 34.
+  Save format 35.
 - **Engagement combat** (docs/ENGAGEMENTS.md; not an option since 2026-11-03, the owner's
   decision: `GAMEOPTION_ENGAGEMENTS` was removed, every game fights it, the AI-only ones too, with or
   without armies; older saves do not load): a land attack is a **formation battle** (revision 4,
@@ -903,6 +903,55 @@ flag.
     first three eras are dropped.
   - Start normalization's "city trade tech no later than the start era" filter is dropped: no
     bonus it affected is a normalize bonus or yields food.
+- **36 game options removed** (the owner's request, 2026-11-10: no switch without a reason to
+  exist; save format 32). Each was off in every game; its option-off behaviour is now the rule and
+  its option-on branch is deleted, with its entry in `game_options.jsonc`, its text keys and its
+  `GameOptionType` member (`tools/gen_enums.py` `REMOVED_MEMBERS`).
+  - **Read by nothing in the rules or this game's AI:** Aggressive AI, Living World
+    (DOUBLE_EVENTS), New Random Seed on Reload, Adventure Mode and the twenty world-builder
+    scenario flags (WB_AGAINST_THE_GREY ... WB_LOAD_SCREEN; scenarios are out of scope). The one
+    read, WB_THE_SPLINTERED_COURT in the Parith event's trigger, is taken as off.
+  - **Scenario-only, never offered on the new-game screen:** No Projects, No Healing for Humans,
+    No Inflation, No Maintenance, No War Weariness, Always Open Borders, Always Raze.
+  - **Locked or meaningless here:** Lock Modified Assets (its admin-password draws in
+    `CvGame::init`), Choose Religions (PICK_RELIGION, locked off by FFH's `CvGame::isOption`; with
+    it went the controller's `choose_religion`, ffh-play's religion decision and the tech help's
+    "a Religion"), Random Personalities (locked off likewise; its personality draw in
+    `CvPlayer::init` is gone).
+  - **AI rule exemptions:** AI No Building Requirements and AI No Minimum Levels: the AI plays by
+    the rules a human does (a unit with a minimum level is never trained; barbarians still skip
+    the prerequisite building of a unit).
+- **No advanced start, no espionage** (the owner's request, 2026-11-10: no switch without a
+  reason to exist; save format 32). A default game plays as before.
+  - **`GAMEOPTION_ADVANCED_START` is gone**, and the advanced-start subsystem with it: no game
+    could use it (`ffh-play` refused it: there is no advanced-start interface). Gone: the
+    point economy (`CvPlayer::doAdvancedStartAction` and the unit, city, population, culture,
+    building, improvement, route, tech and visibility costs), `AdvancedStartAction`,
+    `Player::advanced_start_points`, `GameSetup::num_advanced_start_points`,
+    `CvGame::isInAdvancedStart`, the forced peace of `initDiplomacy`, the advanced-start branches
+    of `initFreeUnits`, `doHolyCity`, city founding (Creative's free border pop), `canResearch`,
+    `countOwnedBonuses`, `verifyAlive` and `AI_foundValue`, and the AI's `advanced_start.rs`.
+    Left in the data, unread by the rules: the `ADVANCED_START_*` defines (but
+    `ADVANCED_START_CITY_COST` and `ADVANCED_START_POPULATION_COST`, which still price a
+    settler's extra cost), the handicaps' and world sizes' point modifiers, and the units',
+    buildings', improvements', routes', techs' and features' advanced-start costs.
+  - **`GAMEOPTION_NO_ESPIONAGE` is gone**, its "on" behaviour unconditional, and the espionage
+    code with it: FFH2 locked the option on (`CvGame::isOption`), so no game ever had
+    espionage. What stays is what the option did: the espionage commerce slot exists (arrays
+    keep four commerces) but its slider is held at 0 and its rate counts as culture
+    (`getCommerceRate`); culture levels cost `NO_ESPIONAGE_CULTURE_LEVEL_MODIFIER` more; spies
+    and units with espionage points cannot be trained, given as a tech's free unit or set as a
+    great-people rate; an event that gives espionage points (or takes them from another player)
+    cannot happen. Gone: espionage points (spending weights, accumulation, the points against
+    each team and ever earned, the history), the missions (`canDoEspionageMission`, their
+    costs and effects, `canSpiesEnterBorders`, the spy destroy/bribe checks), infiltrate and
+    espionage unit missions, spy interception, counterespionage, the cities' espionage
+    visibility, espionage unhappiness and espionage defense. The spy-flagged units' BtS
+    actions (sabotage, destroy, steal plans) are not this option's and stay (no unit in the
+    data is a spy). Left in the data, unread by the rules: `espionage_missions.jsonc` (one
+    mission), the `ESPIONAGE_*` defines and `USE_SPIES_NO_ENTER_BORDERS`, the buildings'
+    espionage defense, the leaders' espionage weight; the events' and units' espionage points
+    are still read (to refuse them).
 - **Doctrines (research paths)** (2026-11-09; `research_paths.jsonc`, `RESEARCH_PATH_PERCENT` in
   `rules_defines.jsonc`, `player/research_path.rs`). Players see them as doctrines (the owner's
   naming): "Doctrine: Steel", "Adopt the Steel doctrine?"; the code, the data and the protocol call
@@ -1201,8 +1250,7 @@ that no player chooses):
 - **A unit sent to a capital that does not exist stays where it is** (Escape, Wonder's teleport,
   Kidnap, the Amurite and Malakim pilgrimage events): the Python sent it to (-1, -1), off the map,
   and its next turn failed.
-- **Stoicism and war weariness**: a war weariness ended while Stoicism (or
-  GAMEOPTION_NO_WAR_WEARINESS) hid it is cleared, instead of coming back when Stoicism ends.
+- **Stoicism and war weariness**: a war weariness ended while Stoicism hid it is cleared, instead of coming back when Stoicism ends.
 - **Crusade Hosts are not counted as civilizations** in the domination land threshold, the
   domination population runner-up and the barbarians' free-tech rate (docs/CRUSADE.md said so).
 - **A player added to an existing team counts once** in its member count (Mercurians,

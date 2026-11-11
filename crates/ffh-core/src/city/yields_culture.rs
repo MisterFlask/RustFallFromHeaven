@@ -1,5 +1,5 @@
-//! CvCity: yields, commerce, trade routes, culture and culture level, religion, espionage
-//! visibility, the rank caches, and owner/location helpers (`getTeam`, `plot`, `area`,
+//! CvCity: yields, commerce, trade routes, culture and culture level, religion, the rank
+//! caches, and owner/location helpers (`getTeam`, `plot`, `area`,
 //! `isHuman`, `isCapital`, `isDisorder`, ...).
 
 use std::cmp::{max, min};
@@ -711,16 +711,14 @@ impl Game {
     }
 
     /// C++ `CvCity::getCommerceRateTimes100` (CvCity.cpp:8421-8440): the `commerce_rate`
-    /// field, with espionage folded into culture under the no-espionage option.
+    /// field, with the espionage slot folded into culture (there is no espionage).
     pub fn city_commerce_rate_times100(&self, c: CityId, commerce: CommerceType) -> i32 {
         let city = &self.cities[c];
         let mut rate = city.commerce_rate[commerce.idx()];
-        if self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
-            if commerce == CommerceType::COMMERCE_CULTURE {
-                rate += city.commerce_rate[CommerceType::COMMERCE_ESPIONAGE.idx()];
-            } else if commerce == CommerceType::COMMERCE_ESPIONAGE {
-                rate = 0;
-            }
+        if commerce == CommerceType::COMMERCE_CULTURE {
+            rate += city.commerce_rate[CommerceType::COMMERCE_ESPIONAGE.idx()];
+        } else if commerce == CommerceType::COMMERCE_ESPIONAGE {
+            rate = 0;
         }
 
         rate
@@ -1056,62 +1054,13 @@ impl Game {
         (self.d.defines.revolt_test_prob * (100 - best_modifier)) / 100
     }
 
-    // ---- revealed / espionage visibility ----
+    // ---- revealed ----
 
     /// C++ `CvCity::isRevealed` (CvCity.cpp:9290-9303): the `revealed` field, or true for
     /// `debug` queries in debug mode (`CvGame::isDebugMode`). Rules code passes
     /// `debug = false`; debug mode is UI and never on in this port.
     pub fn city_is_revealed(&self, c: CityId, team: TeamId, _debug: bool) -> bool {
         self.cities[c].revealed[team]
-    }
-
-    /// C++ `CvCity::setEspionageVisibility` (CvCity.cpp:9345-9358): updates the city plot's
-    /// sight around the change.
-    pub fn city_set_espionage_visibility(&mut self, c: CityId, team: TeamId, new_value: bool, update_plot_groups: bool) {
-        if self.cities[c].espionage_visibility[team] != new_value {
-            let plot = self.city_plot(c);
-            self.plot_update_sight(plot, false, update_plot_groups);
-
-            self.cities[c].espionage_visibility[team] = new_value;
-
-            self.plot_update_sight(plot, true, update_plot_groups);
-        }
-    }
-
-    /// C++ `CvCity::updateEspionageVisibility` (CvCity.cpp:9360-9404).
-    pub fn city_update_espionage_visibility(&mut self, c: CityId, update_plot_groups: bool) {
-        let d = self.d;
-        let missions: Vec<EspionageMissionType> = d
-            .espionage_missions
-            .keys()
-            .filter(|&m| d.espionage_missions[m].passive && d.espionage_missions[m].visibility_level > 0)
-            .collect();
-
-        for team in self.civ_team_ids() {
-            let mut visibility = false;
-
-            if team != self.city_team(c) && self.city_is_revealed(c, team, false) {
-                let owner = self.cities[c].owner;
-                let plot = self.city_plot(c);
-                for p in self.civ_player_ids() {
-                    let player = &self.players[p];
-                    if player.alive && player.team == team {
-                        for &mission in &missions {
-                            if self.player_can_do_espionage_mission(p, mission, Some(owner), Some(plot), -1, None) {
-                                visibility = true;
-                                break;
-                            }
-                        }
-
-                        if visibility {
-                            break;
-                        }
-                    }
-                }
-            }
-
-            self.city_set_espionage_visibility(c, team, visibility, update_plot_groups);
-        }
     }
 
     // ---- religion ----
@@ -1571,7 +1520,6 @@ mod tests {
         let mut g = test_game();
         let a = add_city(&mut g, PlayerId(0), 1, 1, 1);
         g.cities[a].commerce_rate = [250, 300, 120, 80];
-        // FfH locks GAMEOPTION_NO_ESPIONAGE on
         assert_eq!(g.city_commerce_rate_times100(a, CommerceType::COMMERCE_GOLD), 250);
         assert_eq!(g.city_commerce_rate_times100(a, CommerceType::COMMERCE_RESEARCH), 300);
         assert_eq!(g.city_commerce_rate_times100(a, CommerceType::COMMERCE_CULTURE), 200);
