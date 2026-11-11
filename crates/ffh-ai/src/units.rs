@@ -203,7 +203,14 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             g.groups[grp].force_update = false;
             continue;
         }
-        if g.groups[grp].force_update || replan || sleeping_settler || cut {
+        // A ship of ours found out of range at the start of its turn (its range shrank under it: a
+        // port lost, open borders ended) decides again whatever its orders (`warships::to_port`).
+        let adrift = !v.barbarian
+            && matches!(role, Role::Naval | Role::Transport | Role::SeaExplore)
+            && (!g.groups[grp].mission_queue.is_empty() || g.groups[grp].activity_type != ActivityType::ACTIVITY_AWAKE)
+            && g.groups[grp].units.iter().all(|&o| !g.unit_has_moved(o))
+            && g.groups[grp].units.iter().any(|&o| g.unit_is_out_of_sea_range(o));
+        if g.groups[grp].force_update || replan || sleeping_settler || cut || adrift {
             // Settlers re-plan every turn (danger and sites change).
             g.groups[grp].force_update = false;
             g.group_clear_mission_queue(grp);
