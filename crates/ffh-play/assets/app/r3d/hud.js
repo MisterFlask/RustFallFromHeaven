@@ -9,6 +9,7 @@ import { CATALOG } from "./assets/catalog.js";
 import { SEA } from "./world.js";
 import { drawCityWork } from "../citywork.js";
 import { supplyLines, supplyMarks, unwrapSegment, flowOffset, drawLine, drawMark } from "../supply.js";
+import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip } from "../sea.js";
 
 const FONT = "system-ui, 'DejaVu Sans', 'Segoe UI', sans-serif";
 
@@ -57,6 +58,9 @@ function drawHudParts(r3d, cam) {
   const ts = r3d.ts;
   const mine = me()?.player;
   const inView = (p, m = 40) => p && p.x > -m && p.y > -m && p.x < v.vw + m && p.y < v.vh + m;
+
+  // The Sea layer (sea.js; docs/NAVAL.md section 10): on the ground, under every mark.
+  if (v.layer === "sea") drawSea(r3d, cam, g, inView);
 
   // Zoomed far out the figures are too small to tell apart: each stack also gets a counter, a
   // small shield in its owner's colour on a stem over the figure (the strategy map's pieces).
@@ -345,6 +349,9 @@ function drawHudParts(r3d, cam) {
       g.strokeStyle = "rgba(10,8,6,0.8)";
       g.lineWidth = 1;
       g.stroke();
+      // The Sea layer: a wear pip for a worn warship of yours (sea.js).
+      const wear = v.layer === "sea" ? stackWear(s.units, mine) : 0;
+      if (wear > 0) drawWearPip(g, dotX, dotY + dotR * 2 + Math.max(3, ts * 0.04), Math.max(3, ts * 0.04), wear, S.data?.defines?.sea_wear_max_percent ?? 50);
       const glyph = { fortify: "F", sleep: "Z", sentry: "S", heal: "H", auto: "A", promote: "↑" }[s.mark];
       if (glyph && ts >= 54) {
         g.font = `700 ${Math.max(9, Math.round(ts * 0.11))}px ${FONT}`;
@@ -404,6 +411,38 @@ function drawHudParts(r3d, cam) {
     g.arc(p.x, p.y, rr, 0, Math.PI * 2);
     g.fill();
   }
+}
+
+/** The Sea layer (sea.js): each plot in view out of your range darkened and the range's edge,
+ *  as quads projected on the ground (plot (x, y) spans world x x..x+1, z -y..-(y+1)). Drawn on the
+ *  interface canvas over the WebGL frame, so it also dims what stands on that water.
+ *  `r3d.seaDrawn` counts the plots drawn. */
+function drawSea(r3d, cam, g, inView) {
+  const v = r3d.view;
+  const map = v.map;
+  const world = r3d.world;
+  r3d.seaDrawn = 0;
+  if (!map?.sea) return;
+  const r = r3d.visibleRect(cam);
+  const segs = [];
+  for (let y = Math.max(0, Math.floor(r.y0) - 1); y <= Math.min(map.h - 1, Math.ceil(r.y1)); y++) {
+    for (let xx = Math.floor(r.x0) - 1; xx <= Math.ceil(r.x1); xx++) {
+      const x = T.wrapCoord(xx, map.w, map.wrap_x);
+      if (x === null) continue;
+      const s = seaPlot(map, x, y);
+      if (!s) continue;
+      const h = world.plotHeight(x, y) + 0.01;
+      const corners = [[xx, -y], [xx + 1, -y], [xx + 1, -(y + 1)], [xx, -(y + 1)]].map(([wx, wz]) => r3d.project(cam, [wx, h, wz]));
+      if (corners.some((p) => !p) || !corners.some((p) => inView(p, 8))) continue;
+      if (s.dark) drawDark(g, corners);
+      for (const [dx, dy] of s.edges) {
+        const n = r3d.project(cam, [xx + 0.5 + dx, h, -(y + 0.5 + dy)]);
+        if (n) segs.push(sideToward(corners, n));
+      }
+      r3d.seaDrawn++;
+    }
+  }
+  drawEdges(g, segs, Math.max(1.5, Math.min(3, r3d.ts * 0.025)));
 }
 
 /** The supply lines and the cut-off armies' markers (supply.js), each plot's centre on the ground;

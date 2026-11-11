@@ -440,7 +440,7 @@ const SYSTEM = [
   ["btn-keys", "help"],
   ["btn-title", "map"],
 ];
-const LAYERS = { terrain: "terrain", political: "political", yield: "yields" };
+const LAYERS = { terrain: "terrain", political: "political", yield: "yields", sea: "promo_navigation" };
 
 /** Where each moved element came from, to put it back when the skin goes. */
 const homes = new Map();

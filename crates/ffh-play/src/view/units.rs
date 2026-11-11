@@ -530,6 +530,8 @@ pub fn unit_details(v: &Viewer, u: UnitId) -> Json {
     j.set("has_casted", unit.has_casted);
     // A great person's card (docs/CARDS.md): what it is, its needs, whether it can be discovered.
     j.set("card_detail", unit.card.map(|c| crate::view::cards::card_json(v, c)));
+    // The sea (docs/NAVAL.md, section 10): range, wear, in boats (null for a land unit on land).
+    j.set("sea", crate::view::sea::unit_panel(v, u));
     j
 }
 
@@ -570,14 +572,19 @@ pub fn path(v: &Viewer, finder: &mut PathFinder, units: &[UnitId], x: i32, y: i3
     finder.set_group(Some(grp));
     let ok = finder.generate_path(g, fx, fy, x, y, false, flags);
     let mut nodes = Vec::new();
+    let mut steps: Vec<(i32, i32, i32)> = Vec::new();
     if ok {
         let mut node = finder.last_node().cloned();
         while let Some(n) = node {
             nodes.push(crate::jobj! { "x" => n.x, "y" => n.y, "turn" => n.data2, "moves" => n.data1 });
+            steps.push((n.x, n.y, n.data2));
             node = finder.parent_of(&n).cloned();
         }
         nodes.reverse();
+        steps.reverse();
     }
+    // The sea (docs/NAVAL.md, section 10): where the path goes in boats or out of range.
+    let sea = crate::view::sea::path_json(v, units, &steps);
     let war = units.iter().find_map(|&u| g.unit_get_declare_war_move(u, to));
     // Card: False Colours (docs/CARDS.md): a move onto units the group's false colours let it
     // attack is an attack (its war is declared at the battle, without a question).
@@ -591,7 +598,12 @@ pub fn path(v: &Viewer, finder: &mut PathFinder, units: &[UnitId], x: i32, y: i3
     let supply = match army {
         Some(_) if v.plot_revealed(to) => {
             let line = g.plot_supply_line_known(v.h, to, v.team);
-            crate::jobj! { "ok" => line.is_some(), "cost" => line.as_ref().map(|l| l.cost), "budget" => g.d.defines.supply_line_budget }
+            // At sea (docs/NAVAL.md, 3.3): the port it would be in range of.
+            let port = line.as_ref().and_then(|l| match l.source {
+                ffh_core::army::SupplySource::Sea(c) => Some(crate::view::sea::port_name(v, c)),
+                _ => None,
+            });
+            crate::jobj! { "ok" => line.is_some(), "cost" => line.as_ref().map(|l| l.cost), "budget" => g.d.defines.supply_line_budget, "sea_port" => port }
         }
         _ => Json::Null,
     };
@@ -603,6 +615,7 @@ pub fn path(v: &Viewer, finder: &mut PathFinder, units: &[UnitId], x: i32, y: i3
         "attack" => attack,
         "approximate" => mirrored.is_none(),
         "supply" => supply,
+        "sea" => sea,
     })
 }
 
@@ -749,8 +762,12 @@ fn duel_combat(v: &Viewer, units: &[UnitId], x: i32, y: i32) -> Result<Json, Que
         "attacker_first_strikes" => crate::jarr![g.unit_first_strikes(att), g.unit_chance_first_strikes(att)],
         "defender_first_strikes" => crate::jarr![g.unit_first_strikes(def), g.unit_chance_first_strikes(def)],
         "collateral" => g.unit_collateral_damage(att),
-        "attacker_details" => details_json(&ad),
-        "defender_details" => details_json(&dd),
+        // The sea (docs/NAVAL.md, 3.2 and 3.4): a warship's wear as one more term of its
+        // strength (`sea_wear`, negative), and a defender in boats (strength 1, no modifier).
+        "attacker_details" => details_json(&ad).with("sea_wear", -g.unit_sea_wear_percent(att)),
+        "defender_details" => details_json(&dd).with("sea_wear", -g.unit_sea_wear_percent(def)),
+        "defender_in_boats" => g.unit_in_boats_at(def, plot),
+        "embarked_strength" => g.d.defines.embarked_strength,
         "declare_war_team" => g.unit_get_declare_war_move(att, plot),
     })
 }

@@ -356,6 +356,20 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         b.push_str(NEWLINE);
         b.push_str(&format!("[ICON_BULLET]In battle: its physical attack deals {} damage (the target's resistance to it cuts the attack)", display(d, *dt).to_lowercase()));
     }
+    // ---- This game's sea (docs/NAVAL.md, 3.1 and 3.4): range and wear ----
+    let animal_unit = d.units[u].animal;
+    if *domain_type == Some(DomainType::DOMAIN_SEA) && !animal_unit {
+        let df = &d.defines;
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]At sea out of range of a port: -{}% HP a turn, no healing", df.sea_attrition_percent));
+        if *combat > 0 || *combat_defense > 0 {
+            b.push_str(NEWLINE);
+            b.push_str(&format!(
+                "[ICON_BULLET]Wear after {} turns outside a port: -{}% strength a turn (at most -{}%)",
+                df.sea_wear_free_turns, df.sea_wear_percent, df.sea_wear_max_percent
+            ));
+        }
+    }
     if *no_rest_on_water {
         b.push_str(NEWLINE);
         b.push_str("[ICON_BULLET]Cannot end a turn over water: at the end of the turn it lands on the nearest land plot");

@@ -3,10 +3,11 @@
 **Status: spec (2026-11-10). Built in four phases; each phase's status is in its heading. Phase 1
 (section 3) built in the rules (`crates/ffh-core/src/naval.rs`, the boats rules in the unit code,
 supply at sea in `crates/ffh-core/src/army/supply.rs`, tests in `crates/ffh-core/tests/naval.rs`)
-with the AI minimum of section 8's first two bullets (`crates/ffh-ai/src/naval.rs`); phase 2
-(sections 4 and 5) built in the rules (`crates/ffh-core/src/seas.rs`, lanes in `naval.rs`, shore
-fire in `crates/ffh-core/src/engagement/shore.rs`, tests in `crates/ffh-core/tests/seas.rs`) with
-section 8's Patrol bullet and the transports' range test; the client (section 10) not yet.** This
+with the AI minimum of section 8's first two bullets (`crates/ffh-ai/src/naval.rs`); the client's
+phase 1 parts of section 10 in `crates/ffh-play` (`view/sea.rs`, `app/sea.js`; docs/HUMAN.md);
+phase 2 (sections 4 and 5) built in the rules (`crates/ffh-core/src/seas.rs`, lanes in `naval.rs`,
+shore fire in `crates/ffh-core/src/engagement/shore.rs`, tests in `crates/ffh-core/tests/seas.rs`)
+with section 8's Patrol bullet and the transports' range test; its client not yet.** This
 game's own rules, not FFH2's (the owner's direction, 2026-11-10: the naval game inherited from
 Civ4 is irrelevant and there are no colonial adventures). This file is the spec for the
 implementation, as docs/SUPPLY.md is for supply lines. Marked **(default)**: a value or rule chosen
@@ -41,7 +42,7 @@ the sea three things:
 - **Lane**: a fixed line over water from a plot to a home port (section 5). It does not bend
   around enemies: it is **cut** while it passes through a sea closed to its owner.
 
-## 3. Phase 1: range, boats, wear -- status: built in the rules (the client: not yet)
+## 3. Phase 1: range, boats, wear -- status: built (the client: docs/HUMAN.md, the Sea layer)
 
 ### 3.1 Operating range
 
