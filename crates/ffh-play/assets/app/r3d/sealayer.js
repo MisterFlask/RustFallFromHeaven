@@ -245,22 +245,23 @@ export class SeaLayer {
       x += L.boxW;
     }
     const H = y + rowH;
-    const [, gA] = canvas2d(ATLAS_W, H);
+    const [cA, gA] = canvas2d(ATLAS_W, H);
     const [, gB] = canvas2d(ATLAS_W, H);
-    for (const [g, blur] of [[gA, 0], [gB, Math.round(NAME_PX * 0.12)]]) {
-      g.font = font;
-      g.textBaseline = "middle";
-      g.fillStyle = "#ffffff";
-      if (blur) g.filter = `blur(${blur}px)`;
-      for (const L of laid) {
-        let tx = L.ax + pad;
-        const ty = L.ay + rowH / 2;
-        L.chars.forEach((ch, k) => {
-          g.fillText(ch, tx, ty);
-          tx += L.widths[k] + spacing;
-        });
-      }
+    gA.font = font;
+    gA.textBaseline = "middle";
+    gA.fillStyle = "#ffffff";
+    for (const L of laid) {
+      let tx = L.ax + pad;
+      const ty = L.ay + rowH / 2;
+      L.chars.forEach((ch, k) => {
+        gA.fillText(ch, tx, ty);
+        tx += L.widths[k] + spacing;
+      });
     }
+    // The halo: the lettering blurred in one pass. (A filter on the context blurs the whole
+    // canvas at every fillText: minutes for the names of a large map revealed.)
+    gB.filter = `blur(${Math.round(NAME_PX * 0.12)}px)`;
+    gB.drawImage(cA, 0, 0);
     const a = gA.getImageData(0, 0, ATLAS_W, H).data;
     const b = gB.getImageData(0, 0, ATLAS_W, H).data;
     const px = new Uint8Array(ATLAS_W * H * 4);

@@ -423,6 +423,17 @@ Batching:
   shader cost or anything world-anchored), as one A/B against the previous milestone: same save,
   same binary, the old tree via `git archive`. Update docs/R3D.md section 11 then.
 
+**Shader changes draw a Huge map fully revealed before they are done** (the owner's rule,
+2026-11-11; this holds at every tier). A change to a shader, or to what the renderer builds for
+the map each sync (meshes, textures, atlases, instance buffers), is tested end to end on the
+largest case: `ffh-play serve --world WORLDSIZE_HUGE --opponents 8 --assets crates/ffh-play/assets`,
+debug reveal on (`{"k":"session","op":"debug","reveal":true}`), the HD-2D map, zoomed out. The
+frame after the reveal must complete and the page must answer again (`page.evaluate(() => 1)`)
+within 30 s under SwiftShader, a few seconds on a GPU; no console error, no crashed tab. A change
+that fails this is not finished: say so, don't merge it. (Why: the sea names' halo was blurred
+once per letter, unnoticed with five seas known and a frozen tab with the 200 of a Huge map
+revealed.)
+
 Every commit still needs the hard-rule gate (`tools/agents/build-tree.sh --test`, `ffh data` with 0
 warnings) plus `bash tools/web-check.sh`. Run `node tools/web-smoke.mjs --bin <built>/ffh-play`
 before pushing to master. Regressions the owner reports get fixed in the next batch; don't try to
