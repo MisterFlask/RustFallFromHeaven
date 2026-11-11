@@ -426,11 +426,11 @@ Batching:
 **Shader changes draw a Huge map fully revealed before they are done** (the owner's rule,
 2026-11-11; this holds at every tier). A change to a shader, or to what the renderer builds for
 the map each sync (meshes, textures, atlases, instance buffers), is tested end to end on the
-largest case: `ffh-play serve --world WORLDSIZE_HUGE --opponents 8 --assets crates/ffh-play/assets`,
-debug reveal on (`{"k":"session","op":"debug","reveal":true}`), the HD-2D map, zoomed out. The
-frame after the reveal must complete and the page must answer again (`page.evaluate(() => 1)`)
-within 30 s under SwiftShader, a few seconds on a GPU; no console error, no crashed tab. A change
-that fails this is not finished: say so, don't merge it. (Why: the sea names' halo was blurred
+largest case with `node tools/r3d-huge.mjs --bin <built>/ffh-play` (add `--layer sea` when the
+change touches a map layer): a new Huge game, the HD-2D map zoomed out, debug reveal switched on.
+The revealed map must arrive and one complete frame of it be drawn within 30 s under SwiftShader
+(10 s with `--gpu`), with no console error and no crashed tab. A change that fails this is not
+finished: say so, don't merge it. (Why: the sea names' halo was blurred
 once per letter, unnoticed with five seas known and a frozen tab with the 200 of a Huge map
 revealed.)
 
