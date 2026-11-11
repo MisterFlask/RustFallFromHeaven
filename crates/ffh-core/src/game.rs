@@ -290,6 +290,9 @@ pub struct Game {
     /// Engine's weathers, the Pillar of Dawn), in the order made; an effect is dropped at the end
     /// of the game turn it ends (`AreaEffect::until`).
     pub area_effects: Vec<crate::structs::AreaEffect>,
+    /// Not in C++: the Khazad's tunnels (The Delve), each joining two plots for good, in the order
+    /// dug (`ffh::world_ritual_spells::lanun_khazad`).
+    pub delves: Vec<(PlotIdx, PlotIdx)>,
     /// Not in C++: the target of the targeted spell being cast (`unit_cast_at`), read by its
     /// result; `None` outside such a cast. Not saved (a cast is over within one call).
     pub spell_target: Option<crate::structs::SpellTarget>,
@@ -458,6 +461,7 @@ impl Game {
             crusade_reports: Vec::new(),
             doom: Default::default(),
             area_effects: Vec::new(),
+            delves: Vec::new(),
             spell_target: None,
             trophies: BTreeMap::new(),
             map_script: default_map_script(),

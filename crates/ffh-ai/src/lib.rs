@@ -49,6 +49,7 @@ pub mod expansion;
 pub mod finance;
 pub mod forecast;
 pub mod invasion;
+pub mod lanun_khazad;
 pub mod magic;
 pub mod mana;
 pub mod military;
@@ -168,6 +169,9 @@ impl Controller for Ai {
         // some unit is still moving, i.e. has spent moves this turn.
         let seen = self.played.lock().unwrap().insert(p, turn) == Some(turn);
         let first_call = !seen && !g.players[p].units.iter().any(|&u| g.units.contains(u) && g.unit_has_moved(u));
+        if first_call {
+            lanun_khazad::delve_travel(g, p); // units take the Khazad's tunnels before they play
+        }
         // The first call's empire decisions read only the view's header (diplomacy, offers, the
         // exposure diagnostic), and the view is rebuilt after them: analyse it now only when the
         // units play on it (a later call, or the barbarians).
@@ -218,6 +222,7 @@ impl Controller for Ai {
             culture::turn(g, p); // cultural channels (docs/CULTURE.md), after the governors' production
             cards::turn(g, &v); // the great-person cards' content: world spells, rituals (docs/CARDS.md)
             world_rituals::turn(g, &v); // the civilization's world ritual (docs/CARDS.md)
+            lanun_khazad::turn(g, &v); // the Lanun's storm, the Khazad's tunnels (docs/CARDS.md)
             outposts::turn(g, p); // outposts raised to cities (docs/NAVAL.md, 9.2)
         }
         if !v.barbarian {

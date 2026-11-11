@@ -352,7 +352,7 @@ fn a_blizzard_stops_healing_and_takes_a_move() {
     let (rate, moves) = (g.unit_heal_rate(them, at), g.unit_turn_moves_at(them, at));
     assert!(rate > 0);
     let until = g.game_turn() + 3;
-    g.area_effects.push(AreaEffect { kind: AreaEffectKind::Blizzard, owner: US, plot: plot(&g, 13, 6), radius: WEATHER_RADIUS, until });
+    g.area_effects.push(AreaEffect { kind: AreaEffectKind::Blizzard, owner: US, plot: plot(&g, 13, 6), radius: WEATHER_RADIUS, until, moved: -1 });
     assert_eq!(g.unit_heal_rate(them, at), 0);
     assert_eq!(g.unit_turn_moves_at(them, at), moves - g.d.defines.move_denominator);
     g.unit_do_turn(them);
@@ -370,7 +370,7 @@ fn fog_hides_units_from_a_team_with_none_near() {
     unit(&mut g, US, "UNIT_SCOUT", 10, 5);
     assert!(!g.unit_is_invisible(theirs, t0, false));
     let until = g.game_turn() + 3;
-    g.area_effects.push(AreaEffect { kind: AreaEffectKind::Fog, owner: THEM, plot: plot(&g, 12, 5), radius: WEATHER_RADIUS, until });
+    g.area_effects.push(AreaEffect { kind: AreaEffectKind::Fog, owner: THEM, plot: plot(&g, 12, 5), radius: WEATHER_RADIUS, until, moved: -1 });
     assert!(g.unit_is_invisible(theirs, t0, false), "two plots away in fog");
     unit(&mut g, US, "UNIT_SCOUT", 11, 5);
     assert!(!g.unit_is_invisible(theirs, t0, false), "a unit next to it sees it");
@@ -401,7 +401,7 @@ fn storm_halves_shots_and_fog_holds_them_in_round_one() {
     let s = battle_setup(&g, US, from, to);
     assert!(s.fighters.iter().all(|f| f.arms.ranged_resist == 0 && f.arms.hold_shot_rounds == 0), "clear weather");
     let until = g.game_turn() + 3;
-    g.area_effects.push(AreaEffect { kind: AreaEffectKind::Storm, owner: US, plot: to, radius: WEATHER_RADIUS, until });
+    g.area_effects.push(AreaEffect { kind: AreaEffectKind::Storm, owner: US, plot: to, radius: WEATHER_RADIUS, until, moved: -1 });
     let s = battle_setup(&g, US, from, to);
     assert!(s.fighters.iter().all(|f| f.arms.ranged_resist == STORM_RANGED_PERCENT));
     g.area_effects[0].kind = AreaEffectKind::Fog;

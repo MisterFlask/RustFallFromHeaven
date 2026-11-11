@@ -483,7 +483,7 @@ pub fn project_built(g: &mut Game, c: CityId, project: ProjectType) {
     }
     if d.ty::<ProjectType>("PROJECT_PILLAR_OF_DAWN") == Some(project) {
         let plot = g.city_plot(c);
-        g.area_effects.push(AreaEffect { kind: AreaEffectKind::PillarOfDawn, owner: p, plot, radius: PILLAR_RADIUS, until: turn + PILLAR_TURNS + 1 });
+        g.area_effects.push(AreaEffect { kind: AreaEffectKind::PillarOfDawn, owner: p, plot, radius: PILLAR_RADIUS, until: turn + PILLAR_TURNS + 1, moved: -1 });
         let (x, y) = g.map.xy(plot);
         g.log.msg_at(turn, Some(p), (x, y), || format!("{name}: your units within {PILLAR_RADIUS} plots heal fully for {PILLAR_TURNS} turns"));
     }
@@ -575,7 +575,7 @@ fn spell_weather(g: &mut Game, caster: UnitId, call: &PyCall) {
     }
     let p = g.units[caster].owner;
     let turn = g.game_turn();
-    g.area_effects.push(AreaEffect { kind, owner: p, plot: t, radius: WEATHER_RADIUS, until: turn + WEATHER_TURNS + 1 });
+    g.area_effects.push(AreaEffect { kind, owner: p, plot: t, radius: WEATHER_RADIUS, until: turn + WEATHER_TURNS + 1, moved: -1 });
     let (x, y) = g.map.xy(t);
     let what = match kind {
         AreaEffectKind::Blizzard => "Blizzard",
