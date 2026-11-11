@@ -659,6 +659,16 @@ impl Game {
             self.city_pop_order(c, lead as i32, false, false);
         }
 
+        // This game's world rituals (docs/CARDS.md): an army's requisition or an empire order
+        // does not go in front of a world ritual in progress (it would be abandoned).
+        if kind != OrderKind::Own && self.city_world_ritual_in_progress(c).is_some() {
+            let q = &self.cities[c].order_queue;
+            let index = if kind == OrderKind::Requisition { q.iter().take_while(|o| o.requisition).count() } else { self.city_lead_orders(c) };
+            if index == 0 {
+                return None;
+            }
+        }
+
         let mut valid = false;
 
         match order {
@@ -732,6 +742,11 @@ impl Game {
 
         if front || self.cities[c].order_queue.len() == 1 {
             self.city_start_head_order(c);
+        }
+
+        // This game's world rituals (docs/CARDS.md): one put behind the new order is abandoned.
+        if front {
+            self.city_check_world_rituals(c);
         }
 
         // Interface dirty bits.
@@ -960,6 +975,10 @@ impl Game {
             self.city_start_head_order(c);
         }
 
+        // This game's world rituals (docs/CARDS.md): one taken off the queue with production put
+        // into it is abandoned.
+        self.city_check_world_rituals(c);
+
         // Interface dirty bits.
 
         let mut message = false;
@@ -1149,7 +1168,7 @@ impl Game {
 
         if self.city_is_production(c) {
             let difference = self.city_current_production_difference(c, false, true);
-            self.city_change_production(c, difference);
+            self.city_add_turn_production(c, difference);
             self.cities[c].overflow_production = 0;
             self.cities[c].feature_production = 0;
 

@@ -1230,14 +1230,28 @@ impl Game {
 
     /// C++ `CvPlayer::getProductionNeeded(ProjectTypes)`.
     pub fn player_get_production_needed_project(&self, p: PlayerId, project: ProjectType) -> i32 {
+        self.player_project_production_needed_at(p, project, 0)
+    }
+
+    /// [`Game::player_get_production_needed_project`] after `extra` more completions of a world
+    /// ritual (docs/CARDS.md, "World rituals"; 0 for its cost now).
+    pub fn player_project_production_needed_at(&self, p: PlayerId, project: ProjectType, extra: i32) -> i32 {
         let d = self.d;
         let pl = &self.players[p];
 
         let mut production_needed = d.projects[project].production_cost;
 
-        // Card: Pillar of Dawn (docs/CARDS.md, `repeat_cost_percent`): each completion by the team
-        // makes the next cost more.
-        production_needed = self.team_repeat_project_cost(pl.team, project, production_needed);
+        if d.projects[project].world_ritual {
+            // This game's world rituals: each completion by the player doubles the next cost
+            // (`repeat_cost_percent`), less the doublings Birthright Regained undid; no cap on
+            // their number.
+            let times = self.player_world_ritual_net_completions(p) + extra;
+            production_needed = crate::ffh::world_rituals::grow_cost(production_needed, d.projects[project].repeat_cost_percent, times);
+        } else {
+            // Card: Pillar of Dawn (docs/CARDS.md, `repeat_cost_percent`): each completion by the
+            // team makes the next cost more.
+            production_needed = self.team_repeat_project_cost(pl.team, project, production_needed);
+        }
 
         production_needed *= d.defines.project_production_percent;
         production_needed /= 100;

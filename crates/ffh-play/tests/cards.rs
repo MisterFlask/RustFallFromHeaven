@@ -270,3 +270,27 @@ fn the_staged_cards_save_has_card_spells_a_held_card_and_a_revealed_slot() {
     assert_eq!(s.g.units[st.bard].card, Some(s.g.d.t::<TechType>("TECH_CARD_ANOINTED_CHAMPION")));
     assert!(s.g.doom.slots.iter().any(|x| x.threshold == 30 && x.revealed));
 }
+
+/// The civilization's world spell (docs/CARDS.md, "World rituals"): listed while the civilization
+/// has one, disabled with the reason while no city holds a charge of its ritual, enabled with one.
+#[test]
+fn the_world_spell_waits_for_a_charge_of_its_ritual() {
+    let d = ffh_data::global();
+    let mut ng = common::steady_duel(33);
+    ng.civ = Some(d.t::<CivilizationType>("CIVILIZATION_HIPPUS"));
+    let mut s = Session::new_game(&ng, Arc::new(AdvisorAnswerer), SessionOptions::default()).unwrap();
+    assert_eq!(s.advance(&mut |_| {}), Stop::Human);
+    let h = s.human;
+    let settler = s.g.players[h].units.iter().copied().find(|&u| s.g.d.units[s.g.units[u].unit_type].found).unwrap();
+    let r = s.execute(&Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false });
+    assert!(matches!(r, Ok(CmdOk::Applied { .. })), "{r:?}");
+    let spell = d.t::<SpellType>("SPELL_WARCRY");
+    let a = world_action(&s, spell).expect("the civilization's world spell is listed");
+    assert!(!flag(&a, "enabled"));
+    assert_eq!(a.get("why").and_then(Json::as_str), Some("No charge. Complete Ritual: Warcry in a city."));
+    assert_eq!(s.g.player_grant_world_ritual_charge(h).map(|c| s.g.cities[c].owner), Some(h));
+    let a = world_action(&s, spell).expect("listed");
+    assert!(flag(&a, "enabled"), "{a:?}");
+    let other = d.t::<SpellType>("SPELL_RALLY");
+    assert!(world_action(&s, other).is_none(), "another civilization's is not listed");
+}

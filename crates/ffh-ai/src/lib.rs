@@ -80,6 +80,7 @@ pub mod victory;
 pub mod warships;
 pub mod view;
 pub mod workers;
+pub mod world_rituals;
 pub mod world_spells;
 
 /// Debug tracing: `FFH_AI_TRACE=all` or `FFH_AI_TRACE=<player id>` prints AI decisions to
@@ -216,6 +217,7 @@ impl Controller for Ai {
             supply::turn(g, p); // telemetry only: the armies' supply counters (docs/SUPPLY.md)
             culture::turn(g, p); // cultural channels (docs/CULTURE.md), after the governors' production
             cards::turn(g, &v); // the great-person cards' content: world spells, rituals (docs/CARDS.md)
+            world_rituals::turn(g, &v); // the civilization's world ritual (docs/CARDS.md)
             outposts::turn(g, p); // outposts raised to cities (docs/NAVAL.md, 9.2)
         }
         if !v.barbarian {

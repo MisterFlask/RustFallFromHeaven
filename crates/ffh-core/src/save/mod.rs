@@ -134,7 +134,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `Unit::shore_fired`, the battle log's `ReportSide::shore` and `LogEvent::ShoreFire`.
 /// - 35: fleets (docs/NAVAL.md, section 7): `Army::domain`, `station`, `carried`.
 /// - 36: the sea, phase 4 (docs/NAVAL.md, section 9): `City::outpost`, `lane_cut_turns`, `lane`.
-pub const FORMAT_VERSION: u32 = 36;
+/// - 37: world rituals (docs/CARDS.md): `Player::world_ritual_completions`,
+///   `world_ritual_refunds`, `world_spell_casts`.
+pub const FORMAT_VERSION: u32 = 37;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

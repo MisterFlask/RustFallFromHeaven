@@ -11,7 +11,8 @@ use ffh_data::*;
 /// the army keeps its turn); true if cast.
 pub fn cast(g: &mut Game, p: PlayerId, name: &str) -> bool {
     let Some(spell) = g.d.ty::<SpellType>(name) else { return false };
-    if g.players[p].feat_accomplished[FeatType::FEAT_GLOBAL_SPELL] || !crate::world_spells::ready(g, p, spell) {
+    // (Without a charge of its ritual no unit can cast it: `unit_can_cast` below.)
+    if !crate::world_spells::ready(g, p, spell) {
         return false;
     }
     let units: Vec<UnitId> = g.players[p].units.clone();

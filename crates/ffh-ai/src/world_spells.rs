@@ -1,4 +1,5 @@
-//! When the AI casts a world spell (`bGlobal`: once a game, by any unit of the civilization).
+//! When the AI casts a world spell (`bGlobal`: by any unit of the civilization, once per charge of
+//! its world ritual, docs/CARDS.md; when it builds the ritual: `world_rituals.rs`).
 //! FfH 0.41 wrote this timing into the rules, as AI-only branches of the spells' Python
 //! requirements (`if pPlayer.isHuman() == False:` in `CvSpellInterface.py` `req*`); the port
 //! dropped them from the rules (docs/PORTING.md, "Changes from FFH2"), so a world spell has the

@@ -547,8 +547,11 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
             .int("arcane_mage_turns", ev.arcane_mage_turns)
             .int("arcane_archmage_turns", ev.arcane_archmage_turns)
             .int("players_killed", pl.players_killed)
-            // FfH world spell (once per game; FEAT_GLOBAL_SPELL is set when it is cast).
-            .boolean("world_spell", pl.feat_accomplished[FeatType::FEAT_GLOBAL_SPELL]);
+            // The world spell (cast at least once; once per charge of the world ritual,
+            // docs/CARDS.md), its casts and the ritual's completions.
+            .boolean("world_spell", pl.world_spell_casts > 0)
+            .int("world_spell_casts", pl.world_spell_casts)
+            .int("world_rituals", pl.world_ritual_completions);
         if detail {
             // Per type: units owned, cities with the building, the team's projects.
             let mut units: BTreeMap<&str, i32> = BTreeMap::new();

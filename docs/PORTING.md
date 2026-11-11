@@ -105,6 +105,26 @@ Army Combat", 2026-10-29). They were game options until 2026-11-05 (engagement c
 no longer playable side by side. Save format 16 removed the last three options and the crusade
 flag.
 
+- **World rituals** (docs/CARDS.md, "World rituals"; the owner's decision, 2026-11-11; save format
+  37): a civilization's world spell is no longer cast once a game, free. Each of the 21 has a
+  ritual, a repeatable project of the spell's civilization (`PROJECT_RITUAL_<NAME>`, `world_ritual`;
+  Divine Retribution the Mercurians', Hyborem's Whisper the Infernal's) needing the spell's tech;
+  cost 100, or 150 for Sanctuary, Revelry, Hyborem's Whisper, Worldbreak, Divine Retribution,
+  Stasis, Raging Seas and River of Blood; each completion by the player doubles the next cost
+  (no cap on the count). A completion leaves a charge in its city; the charge is the empire's: any
+  unit meeting the spell's other requirements casts the spell while a city of the owner holds a
+  charge, and the cast spends it. A captured or destroyed city loses its charges. A player holds at
+  most one charge and builds the ritual in one city at a time. Once a city has put production into
+  it, it stays that city's current production: taken off the queue or put behind another order, its
+  production is lost (an army's requisition and an empire order do not go in front of it). It
+  cannot be hurried (gold, population) or given production in one step (a Great Engineer, the Soul
+  Forge): only the turn's production and its overflow. Every player is told when one begins, is
+  abandoned or completes. The Sanctuary's is not built while the Elohim's Sanctuary holds.
+  `GAMEOPTION_NO_WORLD_SPELLS` forbids the rituals too. Birthright Regained, which in FFH2 let the
+  world spell be cast again, undoes one doubling of the ritual's cost and needs a completion
+  (`Player::world_ritual_refunds`); `FEAT_GLOBAL_SPELL` is no longer read or written. Why: a world
+  spell becomes a recurring decision with a price, which every player sees coming.
+
 - **Cultural channels** (docs/CULTURE.md; not an option since 2026-11-05, the owner's decision: every game has it, the AI-only ones too; older saves do not load): a city may channel half its
   culture (that culture reaches neither the city's culture, its plots nor the culture victory) into
   one standing order aimed at a civilization, until its owner changes it: Foment Revolt (revolt

@@ -47,9 +47,7 @@ impl CivPlay for Sidar {
     fn turn(&self, _ai: &Ai, g: &mut Game, v: &mut View) {
         wane(g, v);
         let p = v.p;
-        if g.players[p].feat_accomplished[FeatType::FEAT_GLOBAL_SPELL] {
-            return;
-        }
+        // (No charge of its ritual: no unit can cast it, `world_spell::cast` finds no caster.)
         if world_spell::war_or_preparing(g, p) || g.players[p].num_units() >= 60 {
             world_spell::cast(g, p, SPELL);
         }

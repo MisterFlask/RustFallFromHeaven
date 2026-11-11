@@ -387,6 +387,14 @@ pub struct Player {
     /// (research_paths.jsonc; docs/PORTING.md, "Research paths"); set only through
     /// `player_commit_research_path`.
     pub research_path: Option<ResearchPathType>,
+    /// Not in C++: the times this player completed its civilization's world ritual (a project
+    /// with `world_ritual`; docs/CARDS.md, "World rituals").
+    pub world_ritual_completions: i32,
+    /// Not in C++: the doublings of its world ritual's cost undone (Birthright Regained): its cost
+    /// doubles `max(0, world_ritual_completions - world_ritual_refunds)` times.
+    pub world_ritual_refunds: i32,
+    /// Not in C++: the times this player cast its world spell (a `global` spell).
+    pub world_spell_casts: i32,
 }
 
 impl Player {
@@ -644,6 +652,9 @@ impl Player {
             card_traits: Vec::new(),
             alignment_attitude: IdxVec::from_elem(0, d.alignments.len()),
             research_path: None,
+            world_ritual_completions: 0,
+            world_ritual_refunds: 0,
+            world_spell_casts: 0,
         }
     }
 

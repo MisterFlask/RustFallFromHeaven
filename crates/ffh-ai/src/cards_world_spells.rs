@@ -437,8 +437,9 @@ fn bazaar_of_wonders(g: &mut Game, v: &View, spell: SpellType) {
     let d = g.d;
     let mut best: Option<(i32, CityId, BuildingType)> = None;
     for &c in &g.players[p].cities {
-        // (An army's requisition stays at the head of the queue: the wonder would not be.)
-        if g.cities[c].order_queue.first().is_some_and(|o| o.requisition) {
+        // (An army's requisition stays at the head of the queue: the wonder would not be; a
+        // world ritual under way is not set aside.)
+        if g.cities[c].order_queue.first().is_some_and(|o| o.requisition) || crate::world_rituals::locked(g, c) {
             continue;
         }
         for b in d.buildings.keys() {

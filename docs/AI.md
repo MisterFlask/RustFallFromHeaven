@@ -2678,6 +2678,13 @@ them).
 
 ### World spells: AI timing (`world_spells.rs`)
 
+Since the world rituals (2026-11-11, docs/CARDS.md), a cast spends a charge, and `world_rituals.rs`
+builds the charge: with no charge and no ritual under way, at least two cities (one if it may hold
+no more), no city in peril, it starts the ritual in its city with the most production when that
+city completes it within 20 turns. Nothing the AI queues goes in front of a ritual under way
+(`world_rituals::locked`), so only losing the city ends one. The timing below decides when the
+charge is spent.
+
 FfH 0.41 timed the AI's world spells in the rules, as AI-only branches of the spells' Python
 requirements (`if pPlayer.isHuman() == False:` in `CvSpellInterface.py` `req*`). Those are AI
 policy, so the port took them out of the rules (docs/PORTING.md, "Changes from FFH2"; a human's

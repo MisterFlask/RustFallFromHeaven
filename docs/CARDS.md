@@ -305,6 +305,35 @@ attacks.
 - **A ritual whose cost grows** names `repeat_cost_percent` (`team_repeat_project_cost`, from the
   team's `project_count`).
 
+**World rituals** (the civilizations' world spells; `crates/ffh-core/src/ffh/world_rituals.rs`,
+the owner's decision of 2026-11-11): the world spell of each civilization (`global`) names its
+ritual as `ritual_charge`, a project with `world_ritual` (`PROJECT_RITUAL_<NAME>`, repeatable,
+`prereq_civilization` the spell's, `repeat_cost_percent` 200). The variant of the charge:
+- The charge is the empire's, held in the city that built it: any unit of the owner that meets the
+  spell's other requirements casts it while any of the owner's cities holds one, and the cast spends
+  that city's (`ritual_charge_city`, `unit_has_ritual_charge`). A captured city loses its charges.
+- One charge at most per player, one city building it at a time (`world_rituals::cannot_create`,
+  player-wide, outside a visibility test).
+- Not parked: with production in it, it stays the head of its city's queue; taken off or put behind
+  another order, its production is lost (`city_check_world_rituals`, after every insertion and
+  removal in `city_push_order_kind` / `city_pop_order`). Requisitions and empire orders are refused
+  in front of it (`city_push_order_kind` returns `None`).
+- Not hurried: `city_can_hurry`, `unit_can_hurry` refuse it, and `city_change_production` (every
+  one-step addition) adds nothing to it; the turn's production goes through
+  `city_add_turn_production`.
+- The cost doubles per completion by the player, `max(0, world_ritual_completions -
+  world_ritual_refunds)` times, with no cap on the count (`grow_cost`, at most
+  `WORLD_RITUAL_MAX_COST`); `player_project_production_needed_at(p, project, extra)` gives the
+  cost after `extra` more. The Pillar of Dawn keeps the team count and its 16-step cap.
+- News to every living player (`GameLog::msg_at` per player, at the city): `<Civilization> began
+  <ritual> in <city>.` when production first goes into it, `abandoned` and `completed` likewise.
+- The Sanctuary's waits while `sanctuary_timer` is above 0; `GAMEOPTION_NO_WORLD_SPELLS` forbids
+  every world ritual. A `world_ritual` project no spell names simply completes and counts.
+- Queries: `Game::world_rituals() -> Vec<WorldRitual>` (each living player's: `project`, `spell`,
+  `city`, `progress`, `cost`, `turns_left`, `charged`, `completed`, `next_cost`),
+  `player_world_ritual(p)`, `project_is_world_ritual(project)`, `city_world_ritual_in_progress(c)`.
+  Tests give a player a charge with `player_grant_world_ritual_charge(p)`.
+
 **Area effects:** `Game::area_effects` (saved) holds the timed effects over the plots within a
 radius of a plot (`AreaEffect`: its kind, owner, plot, radius and the first turn it no longer
 holds): the Weather Engine's Blizzard, Storm and Fog, the Pillar of Dawn. An effect ended is

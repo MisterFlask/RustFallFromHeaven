@@ -137,7 +137,8 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         (None, None) => {}
     }
 
-    if *global {
+    // (A world spell spends a charge of its world ritual, docs/CARDS.md: no longer once a game.)
+    if *global && ritual_charge.is_none() {
         line(b, d, "TXT_KEY_SPELL_GLOBAL", &[]);
     }
     // This game's (docs/DECKS.md): a card's world spell, and a spell cast at a distance.
@@ -160,7 +161,10 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         b.push_str(&format!("[ICON_BULLET]Cast at {what} you choose"));
     }
     // This game's (docs/CARDS.md): a spell that spends a ritual's completion.
-    if let Some(ritual) = ritual_charge {
+    if let Some(ritual) = ritual_charge.filter(|&r| d.projects[r].world_ritual) {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]Cast by any of your units while a city of yours holds a charge of {}; it spends that charge", display(d, ritual)));
+    } else if let Some(ritual) = ritual_charge {
         b.push_str(NEWLINE);
         b.push_str(&format!("[ICON_BULLET]Cast by a unit in a city of yours that has completed the {} ritual; it spends that completion", display(d, *ritual)));
     }
@@ -458,10 +462,11 @@ mod tests {
         assert!(balor.contains("Requires the Channeling III and Divine promotions"), "{balor}");
         assert!(balor.contains("Caster must have the [LINK=literal]"), "{balor}");
 
-        // A world spell: once, one civilization, a tech, then its XML help.
+        // A world spell: a charge of its ritual, one civilization, a tech, then its XML help.
         let seas = of("SPELL_RAGING_SEAS");
+        assert!(!seas.contains("once per game"), "{seas}");
         for part in [
-            "[ICON_BULLET]Can only be used once per game",
+            "[ICON_BULLET]Cast by any of your units while a city of yours holds a charge of",
             "[ICON_BULLET]Can only be used by the [LINK=literal]Lanun[\\LINK] civilization",
             "[ICON_BULLET]Requires the [LINK=literal]Optics[\\LINK] technology",
         ] {

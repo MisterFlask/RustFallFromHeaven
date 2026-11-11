@@ -174,7 +174,7 @@ fn defend(g: &mut Game, p: PlayerId, only_governed: bool) {
             crate::trace!(g, p, "culture: the governor of {name} trains defenders against revolt pressure ({have} of {need})");
             crate::production::clear_own_orders(g, c);
             g.city_choose_production(c, None, None, None, false, false);
-        } else {
+        } else if !crate::world_rituals::locked(g, c) {
             crate::trace!(g, p, "culture: a defender first in {name} against revolt pressure ({have} of {need})");
             g.city_push_order(c, OrderType::ORDER_TRAIN, u.i(), UnitAIType::UNITAI_CITY_DEFENSE.i(), false, false, false, false);
         }

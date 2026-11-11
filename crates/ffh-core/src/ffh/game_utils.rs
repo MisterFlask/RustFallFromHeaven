@@ -245,14 +245,11 @@ impl Game {
 
     /// `cannotCreate(pCity, eProject, bContinue, bTestVisible)` (always called by `CvCity::canCreate`).
     /// AI-only branches (Purge the Unfaithful, Samhain, early-game production limits) are omitted.
-    pub fn py_cannot_create(&self, c: CityId, project: ProjectType, _continue: bool, _test_visible: bool) -> bool {
+    pub fn py_cannot_create(&self, c: CityId, project: ProjectType, _continue: bool, test_visible: bool) -> bool {
         let d = self.d;
         let owner = self.cities[c].owner;
         let is = |name: &str| d.ty::<ProjectType>(name) == Some(project);
         if is("PROJECT_PURGE_THE_UNFAITHFUL") && self.player_get_state_religion(owner).is_none() {
-            return true;
-        }
-        if is("PROJECT_BIRTHRIGHT_REGAINED") && !self.players[owner].feat_accomplished[FeatType::FEAT_GLOBAL_SPELL] {
             return true;
         }
         if is("PROJECT_STIR_FROM_SLUMBER") && self.players[owner].players_killed == 0 {
@@ -264,6 +261,12 @@ impl Game {
         // Cards: the Weather Engine, the Tidecall of Danalin (docs/CARDS.md): not while the city
         // holds the ritual's charge; the Tidecall in coastal cities only.
         if crate::ffh::cards::world_spells_2::cannot_create(self, c, project) {
+            return true;
+        }
+        // This game's world rituals (docs/CARDS.md): one city at a time, one charge held, not
+        // under the option without world spells; Birthright Regained (which undoes one doubling
+        // of the ritual's cost) once the ritual has been completed.
+        if crate::ffh::world_rituals::cannot_create(self, c, project, test_visible) {
             return true;
         }
         false

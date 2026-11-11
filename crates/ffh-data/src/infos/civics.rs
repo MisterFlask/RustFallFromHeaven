@@ -655,6 +655,10 @@ pub struct ProjectInfo {
     /// completion by a team makes its next cost this percent of the last (the Pillar of Dawn:
     /// 200); 0 for none.
     pub repeat_cost_percent: i32,
+    /// This game's (`world_ritual`, docs/CARDS.md, "World rituals"): a civilization's world
+    /// ritual. A player builds it in one city at a time, holds at most one charge of it, cannot
+    /// hurry it or set it aside, and its cost doubles per completion by the player (no cap).
+    pub world_ritual: bool,
 }
 
 /// C++ `CvProjectInfo::read` + `readPass2` (`PrereqProjects`, `AnyonePrereqProject`)
@@ -691,6 +695,7 @@ pub fn read_project(rd: &Rd) -> ProjectInfo {
         projects_needed: rd.pairs_int("prereq_projects", 0),
         anyone_project_prereq: rd.rf("anyone_prereq_project"),
         repeat_cost_percent: rd.int("repeat_cost_percent"),
+        world_ritual: rd.bool("world_ritual"),
     }
 }
 

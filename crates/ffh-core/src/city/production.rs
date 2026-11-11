@@ -856,14 +856,39 @@ impl Game {
         }
     }
 
-    /// C++ `CvCity::changeProduction` (CvCity.cpp:3253-3267).
+    /// C++ `CvCity::changeProduction` (CvCity.cpp:3253-3267): production added in one step (a
+    /// hurry, a Great Engineer, the Soul Forge, ...). This game's world rituals (docs/CARDS.md)
+    /// take none: only the turn's production ([`Game::city_add_turn_production`]).
     pub fn city_change_production(&mut self, c: CityId, change: i32) {
+        if change > 0 && self.city_head_world_ritual(c).is_some() {
+            return;
+        }
+        self.city_add_turn_production(c, change);
+    }
+
+    /// C++ `CvCity::changeProduction` as the turn's production (`doProduction`) calls it: also
+    /// into a world ritual, unless it is paused (the Sanctuary's while the Sanctuary holds). The
+    /// first production into a world ritual is news to every player (docs/CARDS.md).
+    pub fn city_add_turn_production(&mut self, c: CityId, change: i32) {
+        let ritual = self.city_head_world_ritual(c);
+        if let Some(project) = ritual {
+            if change > 0 && self.player_world_ritual_paused(self.cities[c].owner, project) {
+                return;
+            }
+        }
         let city = &mut self.cities[c];
         let Some((order_type, data1)) = city.head_order().map(|o| (o.order_type, o.data1)) else { return };
         match order_type {
             OrderType::ORDER_TRAIN => city.unit_production[UnitType::from_usize(data1 as usize)] += change,
             OrderType::ORDER_CONSTRUCT => city.building_production[BuildingType::from_usize(data1 as usize)] += change,
-            OrderType::ORDER_CREATE => city.project_production[ProjectType::from_usize(data1 as usize)] += change,
+            OrderType::ORDER_CREATE => {
+                let project = ProjectType::from_usize(data1 as usize);
+                let before = city.project_production[project];
+                city.project_production[project] += change;
+                if ritual.is_some() && before <= 0 && city.project_production[project] > 0 {
+                    self.world_ritual_began(c, project);
+                }
+            }
             _ => {}
         }
     }
@@ -1014,6 +1039,11 @@ impl Game {
         }
 
         if self.city_production(c) >= self.city_production_needed(c) {
+            return false;
+        }
+
+        // This game's world rituals (docs/CARDS.md): never hurried.
+        if self.city_head_world_ritual(c).is_some() {
             return false;
         }
 

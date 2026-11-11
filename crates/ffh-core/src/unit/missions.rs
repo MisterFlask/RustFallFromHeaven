@@ -993,6 +993,11 @@ impl Game {
             return false;
         }
 
+        // This game's world rituals (docs/CARDS.md): no Great Engineer finishes one.
+        if self.city_head_world_ritual(city).is_some() {
+            return false;
+        }
+
         if !test_visible && !self.city_is_production_building(city) {
             return false;
         }

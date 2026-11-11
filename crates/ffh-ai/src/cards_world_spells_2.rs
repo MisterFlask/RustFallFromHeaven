@@ -239,8 +239,8 @@ fn start_ritual(g: &mut Game, c: CityId, pr: ProjectType, why: &str) -> bool {
     if !g.city_can_create(c, pr, false, false) || g.city_production_turns_left_project(c, pr, 0) > RITUAL_MAX_TURNS {
         return false;
     }
-    // (An army's requisition stays at the head of the queue.)
-    if g.cities[c].order_queue.first().is_some_and(|o| o.requisition) {
+    // (An army's requisition stays at the head of the queue; a world ritual under way too.)
+    if g.cities[c].order_queue.first().is_some_and(|o| o.requisition) || crate::world_rituals::locked(g, c) {
         return false;
     }
     let p = g.cities[c].owner;

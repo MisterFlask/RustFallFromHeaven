@@ -453,8 +453,13 @@ fn spell_plagiarists_lens(g: &mut Game, caster: UnitId, _call: &PyCall) {
 // spell names leaves its city a charge; a unit in the city casts the spell, which spends it. A city
 // holding a ritual's charge does not build it again.
 
-/// The city of its owner unit `u` stands in, if it holds a charge of `ritual`.
+/// The city of its owner unit `u` stands in, if it holds a charge of `ritual`. A world ritual's
+/// charge is the empire's (docs/CARDS.md, "World rituals"): the owner's first city holding one,
+/// wherever `u` stands.
 pub fn ritual_charge_city(g: &Game, u: UnitId, ritual: ProjectType) -> Option<CityId> {
+    if g.d.projects[ritual].world_ritual {
+        return g.player_world_ritual_charge_city(g.units[u].owner, ritual);
+    }
     own_city_at(g, u).filter(|&c| g.cities[c].ritual_charges.contains(&ritual))
 }
 
@@ -470,7 +475,8 @@ pub fn project_built(g: &mut Game, c: CityId, project: ProjectType) {
     let p = g.cities[c].owner;
     let turn = g.game_turn();
     let name = d.text.name(&d.projects[project].base.description).to_string();
-    if charges(d, project) {
+    // (A world ritual's charge: `world_rituals::project_built`.)
+    if charges(d, project) && !d.projects[project].world_ritual {
         g.cities[c].ritual_charges.push(project);
         let city = d.text.name(&g.cities[c].name).to_string();
         g.log.msg(turn, Some(p), || format!("{name}: ready in {city}"));

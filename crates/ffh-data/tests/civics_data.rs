@@ -41,7 +41,8 @@ fn table_sizes_and_types() {
     assert_eq!(d.votes.len() - ffh_data::card_entry_count("votes"), 21);
     assert_eq!(d.vote_sources.len(), 2);
     assert_eq!(d.espionage_missions.len(), 1);
-    assert_eq!(d.projects.len() - ffh_data::card_entry_count("projects"), 17);
+    // FFH2's 17 and the 21 world rituals (docs/CARDS.md).
+    assert_eq!(d.projects.len() - ffh_data::card_entry_count("projects"), 17 + 21);
     assert_eq!(d.techs.len() - ffh_data::card_entry_count("techs"), 86);
     // every entry's <Type> is the registered name at its index
     for (t, info) in d.techs.iter_enumerated() {

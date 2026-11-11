@@ -43,6 +43,7 @@ pub fn effects(d: &GameData, p: ProjectType) -> String {
         victory_min_threshold,
         projects_needed,
         repeat_cost_percent,
+        world_ritual,
     } = &d.projects[p];
     let mut b = String::new();
     let line = |b: &mut String, s: String| {
@@ -95,8 +96,13 @@ pub fn effects(d: &GameData, p: ProjectType) -> String {
     // This game's (docs/CARDS.md): a ritual whose completions charge spells, a ritual whose cost
     // grows with each completion.
     let charged: Vec<String> = d.spells.keys().filter(|&s| d.spells[s].ritual_charge == Some(p)).map(|s| display(d, s).into_owned()).collect();
-    if !charged.is_empty() {
+    if !charged.is_empty() && *world_ritual {
+        line(&mut b, format!("[ICON_BULLET]Each completion: one cast of {} by any unit of yours", charged.join(" or ")));
+    } else if !charged.is_empty() {
         line(&mut b, format!("[ICON_BULLET]Each completion: one cast of {} by a unit in its city", charged.join(" or ")));
+    }
+    if *world_ritual {
+        line(&mut b, "[ICON_BULLET]One city at a time; at most one charge held; cannot be hurried; abandoning it loses its production".to_string());
     }
     if *repeat_cost_percent > 0 {
         line(&mut b, format!("[ICON_BULLET]Each completion: the next costs {repeat_cost_percent}% of the last"));

@@ -395,7 +395,8 @@ fn targeted_action(v: &Viewer, caster: UnitId, s: SpellType, can: bool, targets:
 }
 
 /// The actions of the whole empire, offered in the top bar rather than on a selection: its world
-/// spell (once per game) and its cards' world spells (`once`, docs/CARDS.md). The rules cast a
+/// spell (once per charge of its world ritual: listed while the civilization has one, disabled
+/// with no charge) and its cards' world spells (`once`, docs/CARDS.md). The rules cast a
 /// spell through a unit, so each action names the unit it is cast through (`caster`): one that can
 /// cast it now, preferring one that loses no promotion by casting (Hidden, Invisible), then the
 /// oldest. The world spells' effects reach the whole empire, whoever casts them (the Basium's and
@@ -441,6 +442,18 @@ pub fn world_actions(v: &Viewer) -> Json {
         // The targets are listed once, for the caster: not for every unit tried.
         let can = |u: UnitId, visible: bool| if info.target.is_some() { !busy(u) && g.unit_can_cast_untargeted(u, s, visible) } else { selection::can_do_command(g, &[u], cast, k, -1, visible) };
         let visible: Vec<UnitId> = g.players[v.h].units.iter().copied().filter(|&u| can(u, true)).collect();
+        // The civilization's world spell (docs/CARDS.md, "World rituals"): listed while it has
+        // one, disabled while no city holds a charge of its ritual.
+        let ritual = info.ritual_charge.filter(|&r| info.global && g.player_world_ritual(v.h) == Some(r) && !g.is_option(GameOptionType::GAMEOPTION_NO_WORLD_SPELLS));
+        if let Some(r) = ritual.filter(|&r| g.player_world_ritual_charge_city(v.h, r).is_none()) {
+            j.set("enabled", false);
+            j.set("cast", false);
+            j.set("why", format!("No charge. Complete {} in a city.", crate::names::display(d, r)));
+            j.set("caster", Json::Null);
+            j.set("cmd", Json::Null);
+            out.push(j);
+            continue;
+        }
         if visible.is_empty() {
             continue;
         }

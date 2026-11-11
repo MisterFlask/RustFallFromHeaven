@@ -1116,6 +1116,8 @@ impl Game {
         // Cards: the Weather Engine, the Tidecall of Danalin, the Pillar of Dawn (docs/CARDS.md):
         // a ritual's charge, the Pillar's healing.
         crate::ffh::cards::world_spells_2::project_built(self, c, project);
+        // World rituals (docs/CARDS.md): the count, the charge, the news.
+        crate::ffh::world_rituals::project_built(self, c, project);
 
         if is("PROJECT_BANE_DIVINE") {
             let disciple = d.t::<UnitCombatType>("UNITCOMBAT_DISCIPLE");
@@ -1188,8 +1190,10 @@ impl Game {
             self.ev_purge_the_unfaithful(p);
         }
 
+        // This game's (docs/CARDS.md, "World rituals"): FFH2 let the world spell be cast again;
+        // here the world ritual's cost loses one doubling.
         if is("PROJECT_BIRTHRIGHT_REGAINED") {
-            self.players[p].feat_accomplished[FeatType::FEAT_GLOBAL_SPELL] = false;
+            self.players[p].world_ritual_refunds += 1;
         }
 
         if is("PROJECT_SAMHAIN") {

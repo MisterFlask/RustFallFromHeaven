@@ -294,13 +294,10 @@ impl Game {
                 return false;
             }
         }
-        if info.global {
-            if self.is_option(GameOptionType::GAMEOPTION_NO_WORLD_SPELLS) {
-                return false;
-            }
-            if self.players[owner].feat_accomplished[FeatType::FEAT_GLOBAL_SPELL] {
-                return false;
-            }
+        // This game's (docs/CARDS.md, "World rituals"): a world spell is no longer once a game;
+        // it spends a charge of its ritual (`ritual_charge`, below).
+        if info.global && self.is_option(GameOptionType::GAMEOPTION_NO_WORLD_SPELLS) {
+            return false;
         }
         // This game's: a card's world spell is cast once a game by the team that knows the card,
         // with its own flag (docs/CARDS.md), never the civilization's world spell.
@@ -308,7 +305,7 @@ impl Game {
             return false;
         }
         // This game's (docs/CARDS.md, `ritual_charge`): a ritual's spell is cast from a city of its
-        // owner holding a charge of the ritual.
+        // owner holding a charge of the ritual; a world spell by any unit of an owner holding one.
         if let Some(ritual) = info.ritual_charge {
             if !self.unit_has_ritual_charge(u, ritual) {
                 return false;
@@ -866,7 +863,7 @@ impl Game {
         }
         if info.global {
             let owner = self.units[u].owner;
-            self.players[owner].feat_accomplished[FeatType::FEAT_GLOBAL_SPELL] = true;
+            self.players[owner].world_spell_casts += 1;
             // UI: TXT_KEY_MESSAGE_GLOBAL_SPELL to every alive civ player.
             let turn = self.game_turn();
             self.log.msg(turn, Some(owner), || format!("World spell: {}", d.text.name(&info.base.description)));

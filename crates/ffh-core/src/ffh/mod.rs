@@ -18,3 +18,4 @@ pub mod random_events_b;
 pub mod spells;
 pub mod spells_a;
 pub mod spells_b;
+pub mod world_rituals;

@@ -181,8 +181,10 @@ pub fn prepare_escorts(g: &mut Game, p: PlayerId) {
             continue;
         }
         let Some(u) = escort_unit(g, c) else { continue };
+        // (Nothing goes in front of a world ritual under way.)
+        let append = building_settler || crate::world_rituals::locked(g, c);
         crate::trace!(g, p, "{}: escort {} for the settler", g.cities[c].name, g.d.units[u].base.type_);
-        g.city_push_order(c, OrderType::ORDER_TRAIN, u.i(), UnitAIType::UNITAI_ATTACK.i(), false, false, building_settler, false);
+        g.city_push_order(c, OrderType::ORDER_TRAIN, u.i(), UnitAIType::UNITAI_ATTACK.i(), false, false, append, false);
     }
 }
 

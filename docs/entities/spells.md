@@ -1239,6 +1239,13 @@ stands, near our own units or a neutral border alike. That 300 is also its end-o
 
 ## World spells
 
+Since 2026-11-11 (the owner's decision; docs/CARDS.md, "World rituals"), a world spell is not
+cast once a game: each spends a charge of its civilization's ritual (`PROJECT_RITUAL_<NAME>`), a
+repeatable project built in one city at a time, never hurried, whose cost (100, or 150 for the
+eight strongest) doubles with each completion. Any unit meeting the spell's other requirements
+casts it while a city of the owner holds a charge. The "once a game" in the entries below is the
+FFH2 rule they were written for.
+
 ### Arcane Lacuna (`SPELL_ARCANE_LACUNA`)
 *World spell, Amurites · once a game · cast by an arcane unit (Adept line) · needs one typed mana node on the map · AI weight 300*
 

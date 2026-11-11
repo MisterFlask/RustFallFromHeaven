@@ -112,6 +112,10 @@ fn own_production_unit(g: &Game, c: CityId) -> Option<UnitType> {
 /// the rules keep it): the armies' requisition orders and the player's empire orders at its front
 /// stay, they are the army's and the player's (docs/ARMIES.md, docs/GOVERNORS.md).
 pub(crate) fn clear_own_orders(g: &mut Game, c: CityId) {
+    // (A world ritual under way stays: taken off, it would be abandoned.)
+    if crate::world_rituals::locked(g, c) {
+        return;
+    }
     let lead = g.city_lead_orders(c);
     while g.cities.contains(c) && g.cities[c].order_queue.len() > lead {
         g.city_pop_order(c, lead as i32, false, false);
@@ -119,6 +123,10 @@ pub(crate) fn clear_own_orders(g: &mut Game, c: CityId) {
 }
 
 pub fn push(g: &mut Game, c: CityId, choice: Choice) {
+    // (Nothing goes in front of a world ritual under way: it would be abandoned.)
+    if crate::world_rituals::locked(g, c) {
+        return;
+    }
     match choice {
         Choice::Train(u, unit_ai) => g.city_push_order(c, OrderType::ORDER_TRAIN, u.i(), unit_ai.i(), false, false, false, false),
         Choice::Construct(b) => g.city_push_order(c, OrderType::ORDER_CONSTRUCT, b.i(), -1, false, false, false, false),
@@ -138,7 +146,7 @@ pub fn emergency(ai: &Ai, g: &mut Game, p: PlayerId) {
     if let Some(q) = crate::naval::settler_waiting(g, p) {
         if let Some(c) = g.map.plots[q].plot_city.filter(|&c| g.cities[c].owner == p) {
             let building_ship = g.city_production_unit(c).is_some_and(|u| crate::naval::is_transport_type(&g.d.units[u]));
-            if !building_ship && crate::naval::num_transports(g, p) == 0 && local_threat(g, p, q, 2) == 0 {
+            if !building_ship && !crate::world_rituals::locked(g, c) && crate::naval::num_transports(g, p) == 0 && local_threat(g, p, q, 2) == 0 {
                 if let Some(u) = best_unit(g, c, Role::Transport) {
                     crate::trace!(g, p, "{}: a ship for the waiting settler", g.cities[c].name);
                     g.city_push_order(c, OrderType::ORDER_TRAIN, u.i(), UnitAIType::UNITAI_SETTLER_SEA.i(), false, false, false, false);
