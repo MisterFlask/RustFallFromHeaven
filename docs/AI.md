@@ -1022,7 +1022,7 @@ plot falls or the odds turn bad, and moves in.
 - **Outposts** (docs/NAVAL.md, phase 4, 9.4; `outposts.rs`, a rules change's AI): a safe port
   trains a Colonist when an outpost site exists (off the capital's landmass, its water in range, a
   resource we lack, a far-shore resource or a mana node within its 8 plots), no colonist of ours is
-  alive or in training and we hold fewer than 3 outposts; the colonist sails there in boats when the
+  alive or in training, we hold fewer than 3 outposts and at least 3 cities; the colonist sails there in boats when the
   lane from the site is open and no enemy patrol or warship is seen on the way, and founds it; an
   outpost at full size with an open lane is raised while at peace with three times the cost in
   gold. Warships guard the seas our outposts' lanes pass through (`warships.rs`). Not built: carrying a colonist by

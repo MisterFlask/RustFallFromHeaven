@@ -6,8 +6,8 @@
 //!   then the nearest to our ports, then the lower plot index. Never one another colonist of ours
 //!   is bound for (sites within 3 plots of it are skipped).
 //! - **Production** ([`production`]): a coastal city that is safe trains a Colonist when a site
-//!   exists, no colonist of ours is alive or in training, and we hold fewer than
-//!   [`MAX_OUTPOSTS`] outposts.
+//!   exists, no colonist of ours is alive or in training, we hold fewer than [`MAX_OUTPOSTS`]
+//!   outposts and at least [`MIN_CITIES`] cities.
 //! - **The colonist** ([`colonist`]): on its site it founds the outpost; else it goes there in
 //!   boats (`MOVE_BOATS`, over water in our range) when the way is open: the lane from the site to
 //!   our ports, as we see it, is not cut and passes no sea where an enemy patrols that we see, and
@@ -31,6 +31,8 @@ use crate::view::View;
 
 /// The most outposts the AI holds.
 pub const MAX_OUTPOSTS: i32 = 3;
+/// The cities (not outposts) we hold before we train a colonist: the home land first.
+pub const MIN_CITIES: i32 = 3;
 
 /// Whether unit type `t` is a colonist (founds outposts, not cities).
 fn is_colonist_type(d: &GameData, t: UnitType) -> bool {
@@ -126,7 +128,7 @@ pub fn site(g: &Game, p: PlayerId, except: Option<UnitId>) -> Option<PlotIdx> {
 /// What coastal city `c` trains for an outpost (module comment), if anything.
 pub fn production(g: &Game, c: CityId) -> Option<Choice> {
     let p = g.cities[c].owner;
-    if g.player_is_barbarian(p) || !g.city_is_port(c) || g.player_get_num_outposts(p) >= MAX_OUTPOSTS {
+    if g.player_is_barbarian(p) || !g.city_is_port(c) || g.player_get_num_outposts(p) >= MAX_OUTPOSTS || g.player_num_real_cities(p) < MIN_CITIES {
         return None;
     }
     let (alive, training) = colonists(g, p);
@@ -134,7 +136,9 @@ pub fn production(g: &Game, c: CityId) -> Option<Choice> {
         return None;
     }
     let t = colonist_type(g, c)?;
-    site(g, p, None)?;
+    let at = site(g, p, None);
+    crate::trace!(g, p, "outposts: {} asks for a site: {:?}", g.cities[c].name, at.map(|q| g.map.xy(q)));
+    at?;
     Some(Choice::Train(t, UnitAIType::UNITAI_UNKNOWN))
 }
 

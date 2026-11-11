@@ -275,6 +275,8 @@ impl Game {
         }
         self.city_trace_lane(city);
         self.city_do_found_message(city);
+        let (turn, name) = (self.game_turn(), self.cities[city].name.clone());
+        self.log.msg_at(turn, Some(p), (x, y), || format!("{name} is an outpost."));
         self.ev_city_built(city);
         Some(city)
     }
