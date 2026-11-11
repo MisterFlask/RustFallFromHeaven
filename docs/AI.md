@@ -1014,16 +1014,11 @@ plot falls or the odds turn bad, and moves in.
 
 ## Naval (`naval.rs`)
 
-- **Seas and Patrol** (docs/NAVAL.md, phase 2, 4.8): a warship with no cargo and nothing else to do
-  (a `Naval` ship, a sea explorer done exploring, an idle transport that can fight) takes the
-  Patrol order: in the sea of an enemy port our army besieges where it would hold it, else a sea of
-  our ports where an enemy patrols or a warship of an enemy is seen, else the sea of our most
-  populous port (`naval::patrol`); it is woken when worn, out of range, outmatched two to one, when
-  a transport has cargo to carry, and every 8 turns (`naval::patrol_wake`). A port builds a warship
-  while we have fewer than two per sea of ours an enemy holds or contests plus one per sea shared
-  with a known enemy port, three at most (`naval::patrol_production`). Invasions go only at a coast
-  whose lane is open (`naval::way_in_range`). Not measured beyond a first count of firings (the
-  AI builds few ships before turn 150; docs/NAVAL.md, section 12).
+- **Seas and Patrol** (docs/NAVAL.md, phase 2, 4.8): what warships do under the sea rules is
+  `warships.rs` (below, "Warships"): blockades, guards and posts are the Patrol of named seas. A
+  ship out of range, or a warship carrying nothing worn above half the maximum, makes for port
+  first (`warships::to_port`). Invasions go only at a coast whose lane is open
+  (`naval::way_in_range`).
 
 - **Overseas sites**: when no site is left on a landmass where we have cities, `sites.rs` also
   scores the coastal plots of other landmasses within 14 plots of our coastal cities.
@@ -1172,8 +1167,8 @@ seeds 3 and 7, 200 turns).
 explorer with no transport room and nothing left to reveal (`naval::sea_explore_target` empty);
 an idle transport (`free_transport`: armed, alone, carrying nothing, and none of `naval.rs`'s jobs
 open: no assault target, no settler waiting for a ship or in port, no army waiting, no pickup under
-way, no army of ours beside it), which plays rules 1, 2, 4 and 5 and otherwise goes back to
-`naval::transport`. A blockading transport that `naval.rs` comes to want leaves the blockade.
+way, no army of ours beside it), which plays every rule but the escort. A transport on Patrol that
+`naval.rs` comes to want leaves its station.
 Every barbarian sea unit (`Role::Naval`, `Transport`, `SeaExplore`) plays [`barbarian`].
 
 **A warship's turn**, the first rule that applies (constants in `warships.rs`):
@@ -1182,7 +1177,7 @@ Every barbarian sea unit (`Role::Naval`, `Transport`, `SeaExplore`) plays [`barb
    (20 turns); in port it stays while damaged above `HEALED_PCT` (10%).
 2. *Kill*: an enemy ship (a team at war with ours; barbarians always) it can attack this turn (next
    to a plot it reaches with moves left) at the rules' odds (`get_combat_odds`) of `ODDS_BAR`
-   (65%), or `ODDS_BAR_PRIZE` (50%) against a transport seen carrying units, a ship blockading or a
+   (65%), or `ODDS_BAR_PRIZE` (50%) against a transport seen carrying units, a ship on Patrol or a
    ship on a sea resource of ours. Order: loaded transports, other prizes, best odds. Each attack is
    recorded in the prediction ledger, kind `sea_attack` (`AttackWon`, this turn; ctx `src`
    kill/gang/barbarian, `prize`).
@@ -1190,25 +1185,37 @@ Every barbarian sea unit (`Role::Naval`, `Transport`, `SeaExplore`) plays [`barb
    without cargo room nearest the staging port, one per `ESCORT_PER_TRANSPORTS` (2) assault
    transports and at most `ESCORT_SHARE_PCT` (50%) of them, wait there awake;
    `naval::fleet_waits` takes the idle warships in port along when the fleet sails.
-4. *Guard the coast*: an enemy ship within `COAST_RADIUS` (2) of a water plot of ours that no
+4. *Attack together*: an enemy ship within `COAST_RADIUS` (2) of a water plot of ours that no
    ship beats alone. The free warships that can attack it this turn, strongest first, attack
    together when the duels in that order kill it with the bar's chance (the first at
    `GANG_FIRST_BAR` 35% or more, at most `GANG_MAX` 3; each loser's expected damage carried into the
-   next duel with `combat_sim::fight`). Otherwise the warships within `GATHER_TURNS` (3) wait in
-   our coastal city nearest it (ships in a city cannot be attacked by ships).
-5. *Blockade* (at war with a civilization): the water plot within `BLOCKADE_TURNS` (8) where
-   `MISSION_PLUNDER` is allowed that denies the most -- the enemies' water plots within
-   `SHIP_BLOCKADE_RANGE` in its water area that no blockade covers yet: 1 each, 2 more worked, 2
-   more with a resource; at least `BLOCKADE_MIN` (4) -- per turn of travel, the post it holds
-   weighted a fifth more, skipping plots another ship of ours sails for (within 2) and plots an
-   enemy ship that beats it at `DANGER_ODDS` (50%) can reach next turn. An enemy sea improvement
-   it stands on is pillaged first. A blockade then holds without new orders (`keeps_station`,
-   checked in `units::play` before the group is re-planned) until the war ends, it is hurt, it is
-   endangered, the post denies under the minimum, or an enemy ship comes within its moves + 1.
-6. *Guard post*: a coastal city of ours within `POST_RIVAL_DIST` (10) of a rival civilization's
+   next duel with `combat_sim::fight`).
+5. *Siege blockade*: the Patrol of a sea of an enemy coastal city our army besieges (rule 8 limited
+   to those seas): closing every sea of a besieged port stops its healing and repair.
+6. *Guard*: the Patrol of a sea one of our ports stands on (largest ports first) where an enemy
+   patrols or an enemy warship is seen, when this ship with our ships there or bound there is not
+   outmatched two to one, unless our ships there already hold it.
+7. *Gather*: an enemy ship near our waters and no sea to guard: the warships within `GATHER_TURNS`
+   (3) wait in our coastal city nearest it (ships in a city cannot be attacked by ships).
+8. *Blockade* (at war with a civilization): the Patrol of a sea of its revealed coast within
+   `BLOCKADE_TURNS` (8), scored by what closing it denies (`sea_value`: each of the enemy's water
+   plots there 1, 2 more worked, 2 more with a resource; each of its ports on the sea 4, 10 more if
+   the closing blockades it, 20 more if besieged by us; at least `BLOCKADE_MIN` 4) per turn of
+   travel, doubled where this ship's Patrol closes the sea to an enemy with a port there, the sea it
+   patrols weighted a fifth more; not a sea where we would be outmatched two to one (counting the
+   ships bound there), one our other ships already close, or a plot an enemy ship that beats it at
+   `DANGER_ODDS` (50%) reaches next turn. An enemy sea improvement it stands on is pillaged first.
+9. *Guard post*: a coastal city of ours within `POST_RIVAL_DIST` (10) of a rival civilization's
    coastal city or `POST_BARB_DIST` (6) of a barbarian ship seen (those first) is a post; one
-   warship each (a ship keeps the post it stands on), the rest fortified in the port with the most
-   worked sea plots and sea resources.
+   warship each (a ship keeps the post it holds), the rest for the port with the most worked sea
+   plots and sea resources; each patrols the port's sea where we are weakest (fortified in the
+   port if it has none).
+
+A ship on Patrol keeps its station without new orders (`keeps_station`, checked in `units::play`
+before the group is re-planned) until it is worn, out of range, damaged `HEAL_PCT`, outmatched two
+to one in its sea, wanted by `naval.rs` as a transport, an enemy ship comes within its moves + 1,
+or every `RELOOK_TURNS` (8) turns. Before any rule, a ship out of range or worn above half the
+maximum and empty makes for port (`to_port`). Ships attack only onto plots in our range.
 
 **Barbarian ships and sea animals**: attack at `BARB_ODDS` (50%, the land animals' bar), pillage a
 sea improvement of a team at war they stand on, hunt a ship they beat within `BARB_HUNT_TURNS` (2),
@@ -1217,16 +1224,22 @@ animals' wander; no RNG draw). They do not blockade. The rules keep animals out 
 
 **Production** (`warships::production`, called from `production::decide` after the assault fleet,
 coastal cities that are safe and can afford a unit): wanted = escorts (one per 2 assault
-transports while an invasion is on) + guards (the non-animal enemy ships seen within
-`SEEN_RADIUS` 3 of our ports that our best warship can fight: strength at most 1.5x ours) +
-blockaders (at war with a civilization with a revealed coastal city within `SEA_REACH` 20 of a port
-of ours on a water area our ports touch, whose ships seen are not stronger than ours: one per such
-city, at most `BLOCKADERS_MAX` 3) + 1 for a seafaring civilization (coastal capital and a sea unit
-class of its own in the data) when any reason holds. Trained only while warships (alive and in
-training) are fewer than wanted and our armed sea units hold under `HAMMER_SHARE_PCT` (20%) of the
-military's hammers; the best sea unit with strength and the attack or escort sea AI the city can
-train, by strength squared per turn (Trireme, Frigate, Man-o-War... may be transport types: trained
-as `UNITAI_ATTACK_SEA`, they serve `naval.rs` when it needs a ship).
+transports while an invasion is on) + guards (the larger of: the non-animal enemy ships seen within
+`SEEN_RADIUS` 3 of our ports that our best warship can fight, strength at most 1.5x ours; two per
+sea of our ports an enemy holds or contests by what we see) + blockaders (at war with a
+civilization whose ships seen are not stronger than ours: one per sea of its revealed coast that
+reaches into our range, at most `BLOCKADERS_MAX` 3) + 1 for a seafaring civilization (coastal
+capital and a sea unit class of its own in the data) when any reason holds. Trained only while
+warships (alive and in training) are fewer than wanted and our armed sea units hold under
+`HAMMER_SHARE_PCT` (20%) of the military's hammers; the best sea unit with strength and the attack
+or escort sea AI the city can train, by strength squared per turn (Trireme, Frigate, Man-o-War...
+may be transport types: trained as `UNITAI_ATTACK_SEA`, they serve `naval.rs` when it needs a ship).
+
+**Merged with the sea rules (2026-11-11).** The rules below this point were measured under Civ4's
+blockade by range, which the sea rules (docs/NAVAL.md, phase 2) replaced: blockades, guards and
+posts are now the Patrol of named seas, and the sea branch's own patrol code (`naval::patrol`,
+`patrol_wake`, `patrol_production`) was folded in here. What the merged AI does in games: docs/NAVAL.md,
+section 12.
 
 **Measured** (seeds 1-16, 300 turns, 6 civs, standard map; the base is the switch off, which plays
 as before; `autopsy.py --sections naval,falls`, `calibration.py --kind sea_attack`):
