@@ -103,7 +103,8 @@ pub fn turn(g: &mut Game, p: PlayerId) {
     let lanes = lanes_for(d.defines.engagement_slots_base);
     let tel = g.telemetry.on();
     for a in g.players[p].armies.clone() {
-        if !g.armies.contains(a) {
+        // (A fleet has no battle tactic: docs/NAVAL.md, 7.1.)
+        if !g.armies.contains(a) || g.army_is_fleet(a) {
             continue;
         }
         let kinds: Vec<TacticKind> = g.army_units(a).iter().map(|&u| kind(g, u)).collect();

@@ -47,10 +47,12 @@ use ffh_data::*;
 use crate::game::Game;
 use crate::ids::*;
 
+mod fleet;
 mod march;
 mod requisition;
 mod supply;
 
+pub use fleet::{ArmyDomain, EscortTarget, Station};
 pub use march::March;
 pub use supply::{SupplyLine, SupplyShipRefusal, SupplySource, SupplyState};
 
@@ -81,6 +83,14 @@ pub struct Army {
     /// Its owner's turn starts in a row its supply line was cut at (docs/SUPPLY.md): 0 supplied,
     /// 1 to `SUPPLY_HUNGER_TURNS` hungry, above starving ([`Game::army_supply_state`]).
     pub unsupplied_turns: i32,
+    /// Land (an army) or sea (a fleet: an army of ships, docs/NAVAL.md section 7).
+    pub domain: ArmyDomain,
+    /// A fleet's standing order (docs/NAVAL.md, 7.2; always `None` for an army).
+    pub station: Station,
+    /// Some of its units were carried by ships at the last army sync: when they land, the units
+    /// that stand on one plot are put back into one group (each carried unit has a group of its
+    /// own while aboard).
+    pub carried: bool,
 }
 
 /// Where a recruited unit goes.
@@ -180,14 +190,19 @@ impl Game {
         self.group_plot(g)
     }
 
-    /// A new army of `p`, named "Nth Army" with the lowest N none of its armies has.
-    fn army_create(&mut self, p: PlayerId) -> ArmyId {
+    /// A new army of `p`, named "Nth Army" with the lowest N none of its armies has (a fleet:
+    /// "Nth Fleet", numbered apart from the armies).
+    fn army_create(&mut self, p: PlayerId, domain: ArmyDomain) -> ArmyId {
         self.players[p].army_count += 1;
         let taken: BTreeSet<String> = self.players[p].armies.iter().map(|&a| self.armies[a].name.clone()).collect();
-        let name = (1..).map(|n| format!("{} Army", ordinal(n))).find(|n| !taken.contains(n)).expect("a free name");
+        let kind = match domain {
+            ArmyDomain::Land => "Army",
+            ArmyDomain::Sea => "Fleet",
+        };
+        let name = (1..).map(|n| format!("{} {kind}", ordinal(n))).find(|n| !taken.contains(n)).expect("a free name");
         let turn = self.game_turn();
         let line = self.tactic_line();
-        let a = self.armies.insert_with(|id| Army { id, owner: p, name, group: None, target_size: 0, commander: None, disband_to: None, formed_turn: turn, requisition: Vec::new(), tactic: line, tactic_next: line, unsupplied_turns: 0 });
+        let a = self.armies.insert_with(|id| Army { id, owner: p, name, group: None, target_size: 0, commander: None, disband_to: None, formed_turn: turn, requisition: Vec::new(), tactic: line, tactic_next: line, unsupplied_turns: 0, domain, station: Station::None, carried: false });
         self.players[p].armies.push(a);
         a
     }
@@ -205,6 +220,8 @@ impl Game {
         }
         self.armies.remove(a);
         self.players[owner].armies.retain(|&x| x != a);
+        // Fleets escorting it wait where they are (docs/NAVAL.md, 7.2).
+        self.fleet_target_gone(owner, a, None);
         for &u in &self.players[owner].units.clone() {
             if self.units[u].army == Some(a) {
                 self.units[u].army = None;
@@ -230,6 +247,8 @@ impl Game {
     /// it): the recruits on the way, the requisition (its cities join `to`'s list) and production
     /// orders, the cities' defaults.
     fn army_redirect(&mut self, p: PlayerId, from: ArmyId, to: ArmyId) {
+        // Fleets escorting it escort the army it joined.
+        self.fleet_target_gone(p, from, Some(to));
         for u in self.army_marching(from) {
             if let Some(m) = self.units[u].march.as_mut() {
                 m.dest = RecruitDest::Army(to);
@@ -263,14 +282,17 @@ impl Game {
             return;
         }
         // Units that are no army units (a hero now, a summon) belong to no army; nor does a unit
-        // to an army that is gone or not its owner's, nor a marching recruit.
+        // to an army that is gone or not its owner's or of another domain (a ship in an army, a
+        // land unit in a fleet), nor a marching recruit.
         for u in self.players[p].units.clone() {
             if let Some(a) = self.units[u].army {
-                if !self.unit_is_army_unit(u) || !self.armies.contains(a) || self.armies[a].owner != p || self.units[u].march.is_some() {
+                if !self.armies.contains(a) || self.armies[a].owner != p || self.unit_army_domain(u) != Some(self.armies[a].domain) || self.units[u].march.is_some() {
                     self.units[u].army = None;
                 }
             }
         }
+        // An army that was carried and has landed: its units on one plot back into one group.
+        self.player_army_regroup_landed(p);
         let mut claimed: BTreeSet<ArmyId> = BTreeSet::new();
         // Armies whose units another army's group took (Civ4's grouping joined them): the first
         // army that took any.
@@ -279,23 +301,25 @@ impl Game {
             if !self.groups.contains(grp) {
                 continue;
             }
-            let members: Vec<UnitId> = self.groups[grp].units.iter().copied().filter(|&u| self.units.contains(u) && self.unit_is_army_unit(u) && self.units[u].march.is_none()).collect();
+            // (Units carried by a ship are settled below: each has a group of its own aboard.)
+            let members: Vec<UnitId> = self.groups[grp].units.iter().copied().filter(|&u| self.units.contains(u) && self.unit_army_domain(u).is_some() && self.units[u].march.is_none() && !self.unit_is_cargo(u)).collect();
             let Some(plot) = self.group_plot(grp) else { continue };
             if members.is_empty() {
                 continue;
             }
+            let domain = self.unit_army_domain(members[0]).expect("an army unit");
             let own_city = self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c) && self.cities[c].owner == p);
             // A group of garrison units stays the garrison.
             if own_city.is_some() && members.iter().all(|&u| self.units[u].army.is_none()) {
                 continue;
             }
             // Its army: the first not yet claimed among its units', else a new one.
-            let a = match members.iter().filter_map(|&u| self.units[u].army).find(|a| self.armies.contains(*a) && !claimed.contains(a)) {
+            let a = match members.iter().filter_map(|&u| self.units[u].army).find(|a| self.armies.contains(*a) && !claimed.contains(a) && self.armies[*a].domain == domain) {
                 Some(a) => a,
                 None => {
                     // A split-off part: the tactic of the army most of its units came from.
                     let from = self.units_source_tactics(&members, None);
-                    let a = self.army_create(p);
+                    let a = self.army_create(p, domain);
                     if let Some((tactic, next)) = from {
                         self.armies[a].tactic = tactic;
                         self.armies[a].tactic_next = next;
@@ -327,12 +351,65 @@ impl Game {
                 }
             }
         }
+        // Units carried by a ship keep their army while aboard (docs/NAVAL.md, 7.1: the cargo is
+        // in its own army, never in the transport's fleet); an army all of whose units are aboard
+        // has the group of its first carried unit.
+        let mut carried: BTreeSet<ArmyId> = BTreeSet::new();
+        for u in self.players[p].units.clone() {
+            if !self.unit_is_cargo(u) || self.units[u].march.is_some() {
+                continue;
+            }
+            let Some(a) = self.units[u].army.filter(|&a| self.armies.contains(a)) else { continue };
+            carried.insert(a);
+            if claimed.insert(a) {
+                self.armies[a].group = self.units[u].group;
+            }
+        }
         for a in self.players[p].armies.clone() {
             if !claimed.contains(&a) {
                 if let Some(&to) = absorbed.get(&a).filter(|to| claimed.contains(to)) {
                     self.army_redirect(p, a, to);
                 }
                 self.army_delete(a);
+            } else {
+                self.armies[a].carried = carried.contains(&a);
+            }
+        }
+    }
+
+    /// Land units of `p` that landed from ships (their army was carried at the last sync, and each
+    /// carried unit had a group of its own): the units of such an army that stand on one plot, in
+    /// groups holding only units of that army, go back into one group, so that the landing does
+    /// not split the army.
+    fn player_army_regroup_landed(&mut self, p: PlayerId) {
+        for a in self.players[p].armies.clone() {
+            if !self.armies.contains(a) || !self.armies[a].carried || self.armies[a].domain != ArmyDomain::Land {
+                continue;
+            }
+            // (plot, group) of its units ashore, in its owner's unit order.
+            let mut by_plot: BTreeMap<PlotIdx, Vec<GroupId>> = BTreeMap::new();
+            for u in self.army_units(a) {
+                if self.unit_is_cargo(u) || self.units[u].march.is_some() {
+                    continue;
+                }
+                let (Some(plot), Some(grp)) = (self.unit_plot_opt(u), self.units[u].group.filter(|&gr| self.groups.contains(gr))) else { continue };
+                let list = by_plot.entry(plot).or_default();
+                if !list.contains(&grp) {
+                    list.push(grp);
+                }
+            }
+            for (plot, groups) in by_plot {
+                if groups.len() < 2 || !groups.iter().all(|&gr| self.groups[gr].units.iter().all(|&o| self.units[o].army == Some(a))) {
+                    continue;
+                }
+                let first = groups[0];
+                for &gr in &groups[1..] {
+                    for o in self.groups[gr].units.clone() {
+                        if self.unit_can_join_group(o, plot, first) {
+                            self.unit_join_group(o, Some(first), false);
+                        }
+                    }
+                }
             }
         }
     }
@@ -348,8 +425,11 @@ impl Game {
             if !self.units.contains(u) || self.units[u].owner != p {
                 return Err("not your unit");
             }
-            if !self.unit_is_army_unit(u) {
-                return Err("heroes, mages, recon units and summons are not in armies");
+            let Some(domain) = self.unit_army_domain(u) else {
+                return Err("heroes, mages, recon units, summons and ships without a strength or cargo room are not in armies or fleets");
+            };
+            if units.first().is_some_and(|&f| self.unit_army_domain(f) != Some(domain)) {
+                return Err("ships serve in fleets, land units in armies: not both at once");
             }
             if self.units[u].march.is_some() {
                 return Err("a marching recruit takes no orders until it arrives");
@@ -370,18 +450,30 @@ impl Game {
         let from = self.units_source_tactics(units, Some(plot));
         // Its supply counter: the highest of the armies its units came from (0 from a garrison).
         let unsupplied = self.units_unsupplied_turns(units);
-        let a = self.army_create(p);
+        let domain = self.unit_army_domain(units[0]).expect("army units");
+        let a = self.army_create(p, domain);
         if let Some((tactic, next)) = from {
             self.armies[a].tactic = tactic;
             self.armies[a].tactic_next = next;
         }
         self.armies[a].unsupplied_turns = unsupplied;
         let first = units[0];
-        self.unit_join_group(first, None, true);
-        let grp = self.units[first].group.expect("joined a new group");
-        for &u in &units[1..] {
-            self.unit_join_group(u, Some(grp), false);
-        }
+        // Units that are exactly one group already keep it (a ship or an army leaving port).
+        let whole = self.units[first].group.filter(|&gr| self.groups.contains(gr)).filter(|&gr| {
+            let members = &self.groups[gr].units;
+            members.len() == units.len() && units.iter().all(|u| members.contains(u))
+        });
+        let grp = match whole {
+            Some(gr) => gr,
+            None => {
+                self.unit_join_group(first, None, true);
+                let grp = self.units[first].group.expect("joined a new group");
+                for &u in &units[1..] {
+                    self.unit_join_group(u, Some(grp), false);
+                }
+                grp
+            }
+        };
         for &u in units {
             self.units[u].army = Some(a);
         }
@@ -405,6 +497,9 @@ impl Game {
         let plot = self.army_units_plot(p, units)?;
         if self.army_plot(into) != Some(plot) {
             return Err("the army is not on their plot");
+        }
+        if self.unit_army_domain(units[0]) != Some(self.armies[into].domain) {
+            return Err("ships serve in fleets, land units in armies");
         }
         let grp = self.armies[into].group.ok_or("the army has no group")?;
         // Supply: the army takes the higher counter of its own and the joining units' armies'.
@@ -441,6 +536,9 @@ impl Game {
     /// Moves `units` (army units of `p` in one of its cities) into that city's garrison.
     pub fn army_to_garrison(&mut self, p: PlayerId, units: &[UnitId]) -> ArmyResult {
         let plot = self.army_units_plot(p, units)?;
+        if units.iter().any(|&u| self.unit_army_domain(u) == Some(ArmyDomain::Sea)) {
+            return Err("ships have no garrison: disband the fleet in port");
+        }
         let c = self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c) && self.cities[c].owner == p).ok_or("not in one of your cities")?;
         // The garrison's own group (any group of garrison units there), else a new one.
         let garrison_group = self.city_garrison_units(c).into_iter().find(|u| !units.contains(u)).and_then(|u| self.units[u].group);
@@ -490,6 +588,9 @@ impl Game {
         }
         if tactic.idx() >= self.d.battle_tactics.len() {
             return Err("no such tactic");
+        }
+        if self.armies[a].domain == ArmyDomain::Sea {
+            return Err("a fleet has no battle tactic");
         }
         self.armies[a].tactic_next = tactic;
         Ok(())
@@ -566,10 +667,16 @@ impl Game {
         }
         let plot = self.army_plot(a).ok_or("the army is not on the map")?;
         let here = self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c) && self.cities[c].owner == p);
+        let fleet = self.armies[a].domain == ArmyDomain::Sea;
         let target = match here {
             Some(c) => Some(c),
+            None if fleet => self.fleet_nearest_port(p, plot),
             None => self.army_nearest_city(p, plot),
         };
+        if fleet && target.is_none() {
+            return Err("you have no port to sail to");
+        }
+        self.armies[a].station = Station::None;
         let Some(c) = target else { return Err("you have no city to go to") };
         for u in self.army_marching(a) {
             if let Some(m) = self.units[u].march.as_mut() {
@@ -582,6 +689,14 @@ impl Game {
         }
         if here.is_some() {
             let units = self.army_units(a);
+            if fleet {
+                // In port its ships are simply ships.
+                for u in units {
+                    self.units[u].army = None;
+                }
+                self.player_army_sync(p);
+                return Ok(());
+            }
             return self.army_to_garrison(p, &units);
         }
         self.armies[a].disband_to = Some(c);
@@ -685,6 +800,8 @@ impl Game {
         let team = self.players[p].team;
         let base_moves = self.d.units[unit_type].moves.max(1);
         let per_turn = base_moves * self.d.defines.move_denominator;
+        // A ship (docs/NAVAL.md, 7.1): over water in its team's range, a move a plot.
+        let sea = self.d.units[unit_type].domain_type == Some(DomainType::DOMAIN_SEA);
         // Dijkstra over land plots; ties by plot index (deterministic).
         let mut best: BTreeMap<PlotIdx, i32> = BTreeMap::new();
         let mut heap = BinaryHeap::new();
@@ -705,10 +822,17 @@ impl Game {
                         continue;
                     }
                     let Some(n) = self.plot_xy(x, y, dx, dy) else { continue };
-                    if self.plot_is_water(n) || self.plot_is_impassable(n) {
+                    if sea {
+                        let water = self.plot_is_water(n) && !self.plot_is_impassable(n) && self.plot_in_sea_range(team, n);
+                        let port = self.map.plots[n].plot_city.is_some_and(|c| self.cities.contains(c) && self.players[self.cities[c].owner].team == team);
+                        if !(water || port && n == to) {
+                            continue;
+                        }
+                    } else if self.plot_is_water(n) || self.plot_is_impassable(n) {
                         continue;
                     }
-                    let c = cost + self.march_step_cost(team, base_moves, q, n);
+                    let step = if sea { self.d.defines.move_denominator } else { self.march_step_cost(team, base_moves, q, n) };
+                    let c = cost + step;
                     if best.get(&n).map_or(true, |&b| c < b) {
                         best.insert(n, c);
                         heap.push(Reverse((c, n)));
@@ -722,15 +846,18 @@ impl Game {
     /// Where a unit of city `c`'s order goes (`order_dest`, else the city's default, else its own
     /// garrison); `None` = it stays here (the city's own garrison, a destination gone, no armies).
     pub fn city_recruit_dest(&self, c: CityId, order_dest: Option<RecruitDest>, unit_type: UnitType) -> Option<RecruitDest> {
-        if !self.unit_type_is_army_unit(unit_type) {
-            return None;
-        }
+        let domain = self.unit_type_army_domain(unit_type)?;
         let owner = self.cities[c].owner;
         let dest = order_dest.or(self.cities[c].recruit_default)?;
         if !self.recruit_dest_valid(owner, dest) || dest == RecruitDest::Garrison(c) {
             return None;
         }
-        Some(dest)
+        // A ship goes only to a fleet, a land unit only to an army or a garrison.
+        match dest {
+            RecruitDest::Army(a) if self.armies[a].domain != domain => None,
+            RecruitDest::Garrison(_) if domain == ArmyDomain::Sea => None,
+            _ => Some(dest),
+        }
     }
 
     /// A destination's name for messages ("the 2nd Army", "the garrison of Ithralia").

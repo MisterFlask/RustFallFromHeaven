@@ -383,6 +383,8 @@ impl Game {
         // just woke, hold through the turn (they march at its end, `player_do_turn`): their owner
         // does not move them, and they wait for no orders.
         self.player_march_hold(p);
+        // This game's fleets (docs/NAVAL.md, 7.2): their standing orders, with their moves.
+        self.player_fleet_stations(p);
 
         // AI: AI_doTurnUnitsPost() (AI promotions, FfH auto-spellcasting of human units with an
         // auto-cast spell, BETTER AI regrouping and mage casting) -- left to the controller.

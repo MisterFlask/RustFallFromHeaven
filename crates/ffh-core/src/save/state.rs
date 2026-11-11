@@ -60,8 +60,51 @@ persist_newtype!(
 // ---- this game's own rules (docs/CULTURE.md) ----
 
 use crate::culture::CultureChannel;
-use crate::army::{Army, March, RecruitDest};
-persist_struct!(Army { id, owner, name, group, target_size, commander, disband_to, formed_turn, requisition, tactic, tactic_next, unsupplied_turns });
+use crate::army::{Army, ArmyDomain, EscortTarget, March, RecruitDest, Station};
+persist_struct!(Army { id, owner, name, group, target_size, commander, disband_to, formed_turn, requisition, tactic, tactic_next, unsupplied_turns, domain, station, carried });
+impl Persist for ArmyDomain {
+    fn write(&self, w: &mut Writer) {
+        match self {
+            ArmyDomain::Land => 0u8.write(w),
+            ArmyDomain::Sea => 1u8.write(w),
+        }
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        match u8::read(r)? {
+            0 => Ok(ArmyDomain::Land),
+            1 => Ok(ArmyDomain::Sea),
+            t => Err(LoadError::Corrupt(format!("army domain tag {t}"))),
+        }
+    }
+}
+impl Persist for Station {
+    fn write(&self, w: &mut Writer) {
+        match self {
+            Station::None => 0u8.write(w),
+            Station::Patrol(s) => {
+                1u8.write(w);
+                s.write(w);
+            }
+            Station::Escort(EscortTarget::Army(a)) => {
+                2u8.write(w);
+                a.write(w);
+            }
+            Station::Escort(EscortTarget::Group(g)) => {
+                3u8.write(w);
+                g.write(w);
+            }
+        }
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        match u8::read(r)? {
+            0 => Ok(Station::None),
+            1 => Ok(Station::Patrol(SeaId::read(r)?)),
+            2 => Ok(Station::Escort(EscortTarget::Army(ArmyId::read(r)?))),
+            3 => Ok(Station::Escort(EscortTarget::Group(GroupId::read(r)?))),
+            t => Err(LoadError::Corrupt(format!("fleet station tag {t}"))),
+        }
+    }
+}
 persist_struct!(March { dest, stalled, left_turn, from_city, diverted });
 use crate::governors::Governor;
 persist_struct!(Governor { id, owner, name, trait_, born_turn, city, since_turn });

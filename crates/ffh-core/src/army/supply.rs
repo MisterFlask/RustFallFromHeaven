@@ -513,6 +513,11 @@ impl Game {
             if !self.armies.contains(a) {
                 continue;
             }
+            // A fleet has no supply line (docs/NAVAL.md, 7.1: range and wear instead).
+            if self.armies[a].domain == super::ArmyDomain::Sea {
+                self.armies[a].unsupplied_turns = 0;
+                continue;
+            }
             let Some(plot) = self.army_plot(a) else { continue };
             let before = self.armies[a].unsupplied_turns;
             let after = if self.plot_supply_line(p, plot).is_some() { 0 } else { before + 1 };

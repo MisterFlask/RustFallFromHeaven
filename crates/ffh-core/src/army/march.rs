@@ -39,6 +39,7 @@
 use ffh_data::*;
 
 use super::RecruitDest;
+use crate::defs::MOVE_SEA_RANGE;
 use crate::game::Game;
 use crate::ids::*;
 
@@ -106,7 +107,23 @@ impl Game {
             return Some(0);
         }
         let grp = self.units[u].group.filter(|&g| self.groups.contains(g))?;
-        self.group_find_path(grp, here, to, 0).map(|path| path.turns)
+        self.group_find_path(grp, here, to, self.unit_march_flags(u)).map(|path| path.turns)
+    }
+
+    /// The path flags of unit `u`'s march: a ship sails through water in its team's range
+    /// (docs/NAVAL.md, 7.1).
+    fn unit_march_flags(&self, u: UnitId) -> i32 {
+        if self.unit_is_ship_recruit(u) {
+            MOVE_SEA_RANGE
+        } else {
+            0
+        }
+    }
+
+    /// Whether marching unit `u` is a ship (bound for a fleet): it sails, has no garrison to go
+    /// to, and stops where it stands when its way or its fleet is lost.
+    fn unit_is_ship_recruit(&self, u: UnitId) -> bool {
+        self.unit_get_domain_type(u) == DomainType::DOMAIN_SEA
     }
 
     /// A recruit's name in messages: "Ithralia's Axeman" (the city that trained it), else "The
@@ -154,7 +171,8 @@ impl Game {
         }
         let name = self.recruit_name(u, Some(c));
         let to = self.recruit_dest_name(dest);
-        self.log.msg_at(turn, Some(p), self.map.xy(here), || format!("{name} marches to {to}."));
+        let verb = if self.unit_is_ship_recruit(u) { "sails" } else { "marches" };
+        self.log.msg_at(turn, Some(p), self.map.xy(here), || format!("{name} {verb} to {to}."));
     }
 
     /// Player `p`'s marching recruits as its turn begins (its units' turn, after their groups'
@@ -280,8 +298,8 @@ impl Game {
                     break;
                 }
                 let Some(grp) = self.units[u].group.filter(|&g| self.groups.contains(g)) else { break };
-                let Some(step) = self.group_find_path(grp, here, to, 0).and_then(|path| path.first_plot) else {
-                    why = Some("no way there by land");
+                let Some(step) = self.group_find_path(grp, here, to, self.unit_march_flags(u)).and_then(|path| path.first_plot) else {
+                    why = Some(if self.unit_is_ship_recruit(u) { "no way there over water in range" } else { "no way there by land" });
                     break;
                 };
                 // Never an attack (nor a war declared): a step it cannot simply move into waits.
@@ -318,7 +336,7 @@ impl Game {
                 self.log.msg_at(turn, Some(p), self.map.xy(here), || format!("{name} on its way to {to} waits: {why}."));
             }
             if stalled >= self.d.defines.army_transit_stall_turns.max(1) {
-                if m.diverted {
+                if m.diverted || self.unit_is_ship_recruit(u) {
                     self.unit_march_stop(u, why);
                     return;
                 }
@@ -362,6 +380,11 @@ impl Game {
         let p = self.units[u].owner;
         let Some(m) = self.units[u].march.clone() else { return false };
         let Some(here) = self.unit_plot_opt(u) else { return false };
+        // A ship has no garrison to go to: it stops where it stands (docs/NAVAL.md, 7.1).
+        if self.unit_is_ship_recruit(u) {
+            self.unit_march_stop(u, why);
+            return false;
+        }
         let (x, y) = self.map.xy(here);
         let mut cities: Vec<CityId> = self.players[p].cities.iter().copied().filter(|&c| Some(c) != exclude).collect();
         cities.sort_by_key(|&c| (self.plot_distance(x, y, self.cities[c].x, self.cities[c].y), c));

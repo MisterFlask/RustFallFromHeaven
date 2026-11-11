@@ -67,7 +67,8 @@ impl Game {
         if !self.cities.contains(c) || self.cities[c].owner != p {
             return Err("not a city of yours");
         }
-        Ok(())
+        // A fleet's ships come from coastal cities (docs/NAVAL.md, 7.1).
+        self.fleet_check_requisition_city(a, c)
     }
 
     /// Army `a` requisitions from city `c` too (last in its list).
@@ -222,6 +223,9 @@ impl Game {
     /// ([`Game::unit_type_is_requisition_default`]). Strength against cities: strength times its
     /// city attack bonus; ties: the cheaper, then the first.
     pub fn requisition_unit_default(&self, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
+        if self.army_is_fleet(a) {
+            return self.fleet_requisition_unit_default(c);
+        }
         let d = self.d;
         let mut total = 0;
         let mut siege = 0;
@@ -317,7 +321,7 @@ impl Game {
                         continue;
                     }
                     let Some((unit, ai)) = controller.requisition_unit(self, c, a) else { continue };
-                    if !self.unit_type_is_army_unit(unit) || !self.city_can_train(c, unit, false, false, false, false) {
+                    if !self.unit_type_fits_army(unit, a) || !self.city_can_train(c, unit, false, false, false, false) {
                         continue;
                     }
                     let key = (self.requisition_eta(c, unit, 0, a), pos);

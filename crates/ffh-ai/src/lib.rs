@@ -221,6 +221,7 @@ impl Controller for Ai {
         if !v.barbarian {
             campaign::plan(g, &mut v);
             casting::barrage(g, &v);
+            naval::fleets(g, &v); // fleets' standing orders: escorts (docs/NAVAL.md, 7.2)
         }
         units::play(self, g, &mut v);
         if !v.barbarian {

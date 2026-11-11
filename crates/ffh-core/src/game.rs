@@ -301,6 +301,9 @@ pub struct Game {
     /// Not in C++: the units whose `unit_kill` is running their `unitKilled` event; a kill of one
     /// of them meanwhile does nothing (see `unit_kill`). Empty between rules calls; not saved.
     pub dying: Vec<UnitId>,
+    /// Not in C++: a fleet is moving to its escort target (docs/NAVAL.md, 7.2); its steps start
+    /// no further escort. False between rules calls; not saved.
+    pub escorting: bool,
     /// Not in C++: what the players did and why, for analysis (`telemetry.rs`); off unless the
     /// runner turns it on, never read by the rules, not saved.
     pub telemetry: crate::telemetry::Telemetry,
@@ -459,6 +462,7 @@ impl Game {
             trophies: BTreeMap::new(),
             map_script: default_map_script(),
             dying: Vec::new(),
+            escorting: false,
             telemetry: crate::telemetry::Telemetry::off(),
             combat_notes: None,
             path_finder: RefCell::new(PathFinder::new(FinderKind::Path)),

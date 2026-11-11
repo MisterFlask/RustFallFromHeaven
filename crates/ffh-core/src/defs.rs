@@ -12,6 +12,10 @@ pub const MOVE_MAX_MOVES: i32 = 0x0000_0040;
 /// boats (water in its team's range only). Without it, the path finder keeps AI land groups off
 /// water they would be at sea on; human groups' paths cross water either way.
 pub const MOVE_BOATS: i32 = 0x0000_0080;
+/// This game's (docs/NAVAL.md, 7.1 and 7.2): a ship's path stays in its team's range (the rules'
+/// own moves of ships: a recruit sailing to its fleet, a fleet's standing order), as the path
+/// finder keeps AI-controlled ships' paths; a ship already out of range may cross any water.
+pub const MOVE_SEA_RANGE: i32 = 0x0000_0100;
 
 /// C++ RANDPLOT_* flags (`CvMap::syncRandPlot`).
 pub const RANDPLOT_LAND: i32 = 0x0000_0001;

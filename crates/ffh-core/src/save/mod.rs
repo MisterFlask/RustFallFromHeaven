@@ -123,7 +123,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `governor_penalty_turns`, `Governor::profile`, `traits`, `origin`, the bench.
 /// - 31: no eras: gone are `Player::current_era` and `GameSetup::era`.
 /// - 32: the sea, phase 1 (docs/NAVAL.md): `Unit::sea_turns`, `sea_out_of_range`.
-pub const FORMAT_VERSION: u32 = 33;
+/// - 34: fleets (docs/NAVAL.md, section 7): `Army::domain`, `station`, `carried`.
+pub const FORMAT_VERSION: u32 = 34;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -365,6 +366,7 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
         trophies,
         map_script: _,
         dying: _,
+        escorting: _,
         telemetry: _,
         combat_notes: _,
         path_finder: _,
@@ -607,6 +609,7 @@ fn write_game(g: &Game, w: &mut Writer) {
         trophies,
         map_script: _,
         dying: _,
+        escorting: _,
         telemetry: _,
         combat_notes: _,
         // Scratch storage for searches (path.rs, "No reuse"): not saved.
@@ -841,6 +844,7 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         trophies: Persist::read(r)?,
         map_script: default_map_script(),
         dying: Vec::new(),
+        escorting: false,
         telemetry: crate::telemetry::Telemetry::off(),
         combat_notes: None,
         path_finder: RefCell::new(PathFinder::new(FinderKind::Path)),

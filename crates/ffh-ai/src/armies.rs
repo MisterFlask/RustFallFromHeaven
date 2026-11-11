@@ -51,6 +51,10 @@ pub fn turn(g: &mut Game, p: PlayerId) {
     // as an army of its own (an expert's garrison: what holds the city, in one place).
     let mut garrisoned = false;
     for a in g.players[p].armies.clone() {
+        // (Fleets are not armies here: the AI's navy is `naval.rs`'s, docs/NAVAL.md section 8.)
+        if g.army_is_fleet(a) {
+            continue;
+        }
         let units = g.army_units(a);
         let in_city = g.army_plot(a).and_then(|plot| g.map.plots[plot].plot_city).is_some_and(|c| g.cities.contains(c) && g.cities[c].owner == p);
         let city = g.army_plot(a).and_then(|plot| g.map.plots[plot].plot_city);
@@ -86,7 +90,7 @@ pub fn turn(g: &mut Game, p: PlayerId) {
     // its target: it is the main one again when it is back in supply.
     if main.is_some() || target.is_none() {
         for a in g.players[p].armies.clone() {
-            if Some(a) != main && g.armies[a].target_size != 0 && g.armies[a].disband_to.is_none() {
+            if Some(a) != main && g.armies[a].target_size != 0 && g.armies[a].disband_to.is_none() && !g.army_is_fleet(a) {
                 let _ = g.army_set_target_size(p, a, 0);
             }
         }
@@ -127,7 +131,8 @@ const REQUISITION_HORIZON: i32 = 20;
 /// (`player_do_requisition`), before the cities produce.
 fn requisition(g: &mut Game, p: PlayerId, main: Option<ArmyId>, war: bool) {
     for a in g.players[p].armies.clone() {
-        if !g.armies.contains(a) || g.armies[a].disband_to.is_some() {
+        // (The AI's fleets requisition nothing: it trains its ships by `naval.rs`'s choices.)
+        if !g.armies.contains(a) || g.armies[a].disband_to.is_some() || g.army_is_fleet(a) {
             continue;
         }
         let list: Vec<CityId> = if Some(a) == main {
@@ -280,6 +285,10 @@ pub fn requisition_cities(g: &Game, p: PlayerId, a: ArmyId) -> Vec<CityId> {
 /// attacker; only units that serve in armies (a Ranger or an Assassin would stay in the city, and
 /// the army would never fill).
 pub fn requisition_unit(g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
+    // A fleet's ship: the rules' choice (docs/NAVAL.md, 7.1).
+    if g.army_is_fleet(a) {
+        return g.requisition_unit_default(c, a);
+    }
     unit_for(g, c, wants_siege(g, a))
 }
 
@@ -325,7 +334,7 @@ pub(crate) fn main_army(g: &Game, p: PlayerId, target: TeamId) -> Option<ArmyId>
     let mut best: Option<(i32, i32, ArmyId)> = None;
     let mut current: Option<(i32, bool, ArmyId)> = None;
     for &a in &g.players[p].armies {
-        if !g.armies.contains(a) || g.armies[a].disband_to.is_some() {
+        if !g.armies.contains(a) || g.armies[a].disband_to.is_some() || g.army_is_fleet(a) {
             continue;
         }
         let size = g.army_units(a).len() as i32;
