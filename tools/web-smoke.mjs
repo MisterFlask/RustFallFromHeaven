@@ -1220,12 +1220,12 @@ async function keysAndLayers() {
     if (v1.sel !== v0.sel) throw new Error(`${k.toUpperCase()} changed the selection: ${v0.sel} -> ${v1.sel}`);
   }
   steps.push("W A S D: the map scrolls while D and A are held, the selection stays");
-  for (const layer of ["political", "yield", "terrain"]) {
+  for (const layer of ["political", "yield", "sea", "terrain"]) {
     await click(`#mapwrap .layers button[data-layer="${layer}"]`);
     await until2(`window.ffh.mapView.layer === "${layer}" && document.querySelector('#mapwrap .layers button[data-layer="${layer}"]').classList.contains("active")`, `the ${layer} layer`);
     if (layer !== "terrain") await shot(`layer-${layer}`);
   }
-  steps.push("map layers: political, yields, terrain");
+  steps.push("map layers: political, yields, sea, terrain");
 }
 
 /** The tools (P6): the inspector, debug reveal, AI autoplay, the spectator mode. */

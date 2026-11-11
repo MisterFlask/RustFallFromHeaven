@@ -247,6 +247,14 @@ fn build(d: &GameData) -> Json {
         "defines" => crate::jobj! {
             "commerce_percent_change_increments" => d.defines.commerce_percent_change_increments,
             "default_specialist" => d.defines.default_specialist,
+            // The sea (docs/NAVAL.md, section 11): the help's numbers.
+            "sea_range" => d.defines.sea_range,
+            "sea_attrition_percent" => d.defines.sea_attrition_percent,
+            "embarked_moves" => d.defines.embarked_moves,
+            "embarked_strength" => d.defines.embarked_strength,
+            "sea_wear_free_turns" => d.defines.sea_wear_free_turns,
+            "sea_wear_percent" => d.defines.sea_wear_percent,
+            "sea_wear_max_percent" => d.defines.sea_wear_max_percent,
         },
     }
 }

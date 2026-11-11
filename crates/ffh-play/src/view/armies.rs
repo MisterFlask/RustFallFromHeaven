@@ -134,7 +134,11 @@ pub fn supply_json(v: &Viewer, a: ArmyId) -> Json {
     let state = g.army_supply_state(a);
     let line = g.army_supply_line(a);
     let budget = d.defines.supply_line_budget;
-    let supplied = |l: &SupplyLine| format!("{} of {budget}, from {}.", l.cost, source_name(g, l.source));
+    let supplied = |l: &SupplyLine| match l.source {
+        // At sea, in range of a port (docs/NAVAL.md, 3.3 and 10).
+        SupplySource::Sea(c) => format!("at sea, in range of {}.", crate::view::sea::port_name(v, c)),
+        _ => format!("{} of {budget}, from {}.", l.cost, source_name(g, l.source)),
+    };
     let mut text = match state {
         SupplyState::Supplied => match &line {
             Some(l) => format!("Supplied: {}", supplied(l)),

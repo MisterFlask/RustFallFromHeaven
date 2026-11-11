@@ -228,6 +228,10 @@ pub fn can_do_interface_mode(g: &Game, units: &[UnitId], mode: InterfaceMode) ->
     let domain = g.unit_get_domain_type(head);
     for &u in units {
         let plot = g.unit_plot(u);
+        // In boats (docs/NAVAL.md, 3.2): only go-to.
+        if mode != InterfaceMode::GoTo && g.unit_in_boats_at(u, plot) {
+            continue;
+        }
         let ok = match mode {
             InterfaceMode::GoTo => domain != DomainType::DOMAIN_AIR && domain != DomainType::DOMAIN_IMMOBILE,
             InterfaceMode::RouteTo => g.unit_can_build_route(u),

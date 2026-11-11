@@ -218,7 +218,7 @@ mod tests {
         // An older version answers at once.
         assert_eq!(s.wait(0, Duration::from_secs(20)).req::<i64>("version"), Ok(1));
         // Caches: a failed view (None) keeps the previous one.
-        let mut rows = MapRows { w: 2, h: 2, wrap_x: false, wrap_y: false, reveal: false, rows: vec![[1; 11]; 4] };
+        let mut rows = MapRows { w: 2, h: 2, wrap_x: false, wrap_y: false, reveal: false, rows: vec![[1; crate::view::map::NUM_LAYERS]; 4] };
         let rev = rows.map_rev();
         s.set_caches(Some(crate::jobj! { "turn" => 3 }), Some(rows.to_json()));
         s.set_caches(None, None);

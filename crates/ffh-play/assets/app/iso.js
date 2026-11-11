@@ -26,6 +26,7 @@ import { unitMoves } from "./stacks.js";
 import { SPRITES } from "./iso/sprites.js";
 import { drawCityWork } from "./citywork.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark } from "./supply.js";
+import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip } from "./sea.js";
 
 /** A tile's width in art pixels: the M7 contract (tiles 192 x 128, the diamond in rows 0-95). */
 const NATIVE = 192;
@@ -791,7 +792,9 @@ export class IsoMap {
     cells.sort((a, b) => a.sy - b.sy || a.sx - b.sx);
     for (const c of cells) this.drawTile(g, f, c, PLOT);
 
-    const layer = v.layer ?? "terrain";
+    // The Sea layer is the terrain with the range over the water (drawSea).
+    const sea = v.layer === "sea";
+    const layer = sea ? "terrain" : (v.layer ?? "terrain");
     if (layer === "political") this.drawPolitical(g, f, cells, PLOT);
     else if (layer === "yield") this.drawYields(g, f, cells);
     else {
@@ -800,6 +803,7 @@ export class IsoMap {
       this.drawRoutes(g, f, cells);
       this.drawBorders(g, f, cells, false);
     }
+    if (sea) this.drawSea(g, f, cells);
     // The city screen shows its work area instead of the selection's marks (drawCityWork).
     const city = v.overlay.city;
     if (!city) this.drawGroundMarks(g, f);
@@ -1355,6 +1359,31 @@ export class IsoMap {
     g.fillText(text, Math.round(x), Math.round(y));
   }
 
+  /** The Sea layer (sea.js; docs/NAVAL.md section 10) over the ground: each water tile out of your
+   *  range darkened, and the range's edge along the tiles' sides. */
+  drawSea(g, f, cells) {
+    const map = this.view.map;
+    if (!map?.sea) return;
+    const hw = f.TW / 2;
+    const hh = f.TW / 4;
+    const segs = [];
+    let n = 0;
+    for (const c of cells) {
+      const s = seaPlot(map, c.x, c.y);
+      if (!s) continue;
+      const sy = c.sy + c.drop;
+      const corners = [{ x: c.sx, y: sy - hh }, { x: c.sx + hw, y: sy }, { x: c.sx, y: sy + hh }, { x: c.sx - hw, y: sy }];
+      if (s.dark) drawDark(g, corners);
+      for (const [dx, dy] of s.edges) {
+        const st = this.step(dx, dy);
+        segs.push(sideToward(corners, { x: c.sx + st.x, y: sy + st.y }));
+      }
+      n++;
+    }
+    drawEdges(g, segs, Math.max(1.5, 3 * f.s));
+    this.seaDrawn = n;
+  }
+
   /** The supply lines and the cut-off armies' markers (supply.js; docs/SUPPLY.md). This map is
    *  drawn on demand, so its lines stand still (no flow). */
   drawSupply(g, f) {
@@ -1562,6 +1591,9 @@ export class IsoMap {
         g.lineWidth = 1;
         g.stroke();
       }
+      // The Sea layer: a wear pip under the finial for a worn warship of yours (sea.js).
+      const wear = this.view.layer === "sea" ? stackWear(units, mine) : 0;
+      if (wear > 0) drawWearPip(g, fx - 6 * f.s, fy + 20 * f.s, Math.max(4.5, 9 * f.s), wear, S.data?.defines?.sea_wear_max_percent ?? 50);
       if (figure && top.max_hp > 0 && top.hp < top.max_hp) {
         const w = Math.max(16, 40 * f.s);
         const h = Math.max(3, 5 * f.s);

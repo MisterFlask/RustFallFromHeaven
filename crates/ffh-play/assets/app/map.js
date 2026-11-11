@@ -15,6 +15,7 @@ import { S, tname, dname, info, me, isBarbarian, ORDER_KINDS, observing } from "
 import * as T from "./tiles.js";
 import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark, drawMarchMark, marchMark } from "./iso.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark } from "./supply.js";
+import { seaPlot, stackWear, drawDark, drawEdges, drawWearPip } from "./sea.js";
 
 /** The start-up prototype's switch (docs/HD2D.md): on unless the page says `?r3d={"fastStart":0}`.
  *  The 3D renderer's modules read it from their config. */
@@ -1005,6 +1006,7 @@ export class MapView {
       return;
     }
     this.drawTerrain(g);
+    if (this.layer === "sea") this.drawSea(g);
     this.drawCities(g);
     this.drawUnits(g);
     this.drawOverlays(g);
@@ -1039,9 +1041,37 @@ export class MapView {
     }
   }
 
+  /** The Sea layer (sea.js; docs/NAVAL.md section 10) over the terrain: water out of your range
+   *  darkened, the range's edge drawn. Drawn each frame from the map's `sea` array (the terrain's
+   *  chunks stay those of the terrain layer). */
+  drawSea(g) {
+    const map = this.map;
+    if (!map?.sea) return;
+    const ts = this.cam.ts;
+    const segs = [];
+    for (let y = 0; y < map.h; y++) {
+      for (let x = 0; x < map.w; x++) {
+        const s = seaPlot(map, x, y);
+        if (!s) continue;
+        this.eachCopy(x, y, (sx, sy) => {
+          if (sx > this.vw || sx + ts < 0) return;
+          if (s.dark) drawDark(g, [{ x: sx, y: sy }, { x: sx + ts, y: sy }, { x: sx + ts, y: sy + ts }, { x: sx, y: sy + ts }]);
+          for (const [dx, dy] of s.edges) {
+            if (dy === 1) segs.push([{ x: sx, y: sy }, { x: sx + ts, y: sy }]);
+            else if (dy === -1) segs.push([{ x: sx, y: sy + ts }, { x: sx + ts, y: sy + ts }]);
+            else if (dx === 1) segs.push([{ x: sx + ts, y: sy }, { x: sx + ts, y: sy + ts }]);
+            else segs.push([{ x: sx, y: sy }, { x: sx, y: sy + ts }]);
+          }
+        });
+      }
+    }
+    drawEdges(g, segs, Math.max(1.5, ts / 16));
+  }
+
   chunk(cx, cy, cw, ch) {
     const ts = this.cam.ts;
-    const key = `${this.layer}|${ts}@${this.dpr}:${cx},${cy}`;
+    // The Sea layer draws over the terrain's chunks (drawSea).
+    const key = `${this.layer === "sea" ? "terrain" : this.layer}|${ts}@${this.dpr}:${cx},${cy}`;
     let c = this.chunks.get(key);
     if (!c) {
       const canvas = document.createElement("canvas");
@@ -1376,6 +1406,9 @@ export class MapView {
           g.arc(bx + r + 1.5, by + r + 1.5, r, 0, Math.PI * 2);
           g.fill();
         }
+        // The Sea layer: a wear pip on a stack with a worn warship of yours (sea.js).
+        const wear = this.layer === "sea" ? stackWear(units, mine) : 0;
+        if (wear > 0 && s >= 10) drawWearPip(g, bx + s - Math.max(3, s / 7), by + s - Math.max(3, s / 7), Math.max(3, s / 7), wear, S.data?.defines?.sea_wear_max_percent ?? 50);
         // Count badge.
         if (units.length > 1 && s >= 10) {
           const t = String(units.length);
