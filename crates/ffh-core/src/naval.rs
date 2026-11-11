@@ -441,6 +441,16 @@ impl Game {
     }
 }
 
+/// Whether a unit in boats may take `mission` (docs/NAVAL.md, 3.2: it moves, waits or sleeps):
+/// move, move to a unit, skip, sleep, sentry. The rules' group check
+/// (`Game::group_can_start_mission`) and a client's selection check both ask this.
+pub fn mission_allowed_in_boats(mission: MissionType) -> bool {
+    matches!(
+        mission,
+        MissionType::MISSION_MOVE_TO | MissionType::MISSION_MOVE_TO_UNIT | MissionType::MISSION_SKIP | MissionType::MISSION_SLEEP | MissionType::MISSION_SENTRY
+    )
+}
+
 /// The empty cache a new or loaded game starts with.
 pub(crate) fn new_cache() -> RefCell<SeaRangeCache> {
     RefCell::new(SeaRangeCache::new())

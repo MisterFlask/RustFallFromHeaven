@@ -67,6 +67,11 @@ pub fn can_start_mission(g: &Game, units: &[UnitId], mission: MissionType, data1
     }
     let typed = |n: usize| (data1 >= 0 && (data1 as usize) < n).then_some(data1 as usize);
     for &u in units {
+        // This game's (docs/NAVAL.md, 3.2): in boats a unit moves, waits or sleeps, as the rules'
+        // group check says.
+        if g.unit_in_boats_at(u, plot) && !ffh_core::naval::mission_allowed_in_boats(mission) {
+            continue;
+        }
         let ok = match mission {
             MissionType::MISSION_MOVE_TO => !g.plot_at(plot, data1, data2),
             MissionType::MISSION_ROUTE_TO => !g.plot_at(plot, data1, data2) || best_build_route(g, units, plot).is_some(),
