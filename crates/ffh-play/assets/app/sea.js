@@ -494,11 +494,11 @@ export function drawHarbourMark(g, city, cx, cy, r, u = 1) {
 export const SEA_LOOK = {
   name: {
     color: "#efe4c6",
-    on: { far: 0.62, close: 0.2, farTs: 40, closeTs: 168 },
-    off: { far: 0.3, farTs: 28, untilTs: 50 },
+    on: { far: 0.5, close: 0.16, farTs: 40, closeTs: 168 },
+    off: { far: 0.26, farTs: 28, untilTs: 50 },
   },
-  band: { width: 0.5, alpha: 0.62, patrolled: 0.45, unknown: "#8a8478" },
-  fog: { color: "#cfd8df", alpha: 0.8, lift: 0.16 },
+  band: { width: 0.5, alpha: 0.78, patrolled: 0.45, unknown: "#8a8478" },
+  fog: { color: "#a9b5bf", alpha: 0.56, lift: 0.13 },
   outline: "#fff6d8",
 };
 
@@ -547,7 +547,7 @@ export function seaPlots(map, id, nearX = 0) {
  * The centre is the plot nearest the plots' centroid among the deepest (at least the deepest but
  * one): inside the water, in the middle of its widest part.
  */
-export function seaLabelLayout(map, sea, { maxTilt = Math.PI / 4, minH = 0.34, maxH = 1.3 } = {}) {
+export function seaLabelLayout(map, sea, { maxTilt = Math.PI / 4, minH = 0.3, maxH = 0.8 } = {}) {
   const pts = seaPlots(map, sea.id, sea.x);
   const n = pts.length;
   if (!n) return null;
@@ -623,7 +623,7 @@ export function seaLabelLayout(map, sea, { maxTilt = Math.PI / 4, minH = 0.34, m
     b0 = Math.min(b0, b);
     b1 = Math.max(b1, b);
   }
-  const h = Math.max(minH, Math.min(maxH, 0.26 * Math.sqrt(n)));
+  const h = Math.max(minH, Math.min(maxH, 0.11 * Math.sqrt(n)));
   return { x: ox, y: oy, angle, len: a1 - a0 + 1, across: b1 - b0 + 1, n, depth: best.d, h, plot: [best.x, best.y] };
 }
 

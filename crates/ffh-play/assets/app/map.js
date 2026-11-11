@@ -15,7 +15,7 @@ import { S, tname, dname, info, me, isBarbarian, ORDER_KINDS, observing } from "
 import * as T from "./tiles.js";
 import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark, drawMarchMark, marchMark } from "./iso.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
-import { seaPlot, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, seaHitAt, laneParts, drawLaneCut, drawHarbourMark } from "./sea.js";
+import { seaPlot, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, seaHitAt, laneParts, drawLaneCut, drawHarbourMark, seaTipLines } from "./sea.js";
 import { drawLanesFlat, outpostTag } from "./lanes.js";
 
 const ZOOMS = [12, 16, 24, 32, 48, 64];
@@ -330,6 +330,7 @@ export class MapView {
    *  preview. */
   clearHover() {
     this.overlay.hover = null;
+    this.seaHover = null;
     this.hideTip();
     this.h.hover?.(null, null, null);
     this.request();
@@ -353,6 +354,8 @@ export class MapView {
       else this.hideTip();
       return;
     }
+    // A sea's name or buoy on the HD-2D map's Sea layer: its tooltip and its outline.
+    if (this.seaHoverAt(this.r3d ? this.seaAt(ev) : null)) return;
     const old = this.overlay.hover;
     if (p?.x === old?.x && p?.y === old?.y) {
       this.placeTip();
@@ -371,6 +374,8 @@ export class MapView {
     const c = this.canvas.getBoundingClientRect();
     const r = this.wrap.getBoundingClientRect();
     this.tipAt = { x: s.x + c.left - r.left, y: s.y + c.top - r.top };
+    // The cursor on a sea's buoy (the HD-2D map's Sea layer): the sea's tooltip and outline.
+    if (this.seaHoverAt(this.seaAtPlot(x, y))) return;
     const old = this.overlay.hover;
     if (x === old?.x && y === old?.y) {
       this.placeTip();
@@ -1097,6 +1102,35 @@ export class MapView {
         this.seaHits.push(drawSeaLabel(g, sea, x, y, sizes));
       });
     }
+  }
+
+  /** Sea `id` (or null) is pointed at (the HD-2D map: its name or buoy, sealayer.js): its tooltip --
+   *  the badge's text and the rules (sea.js seaTipLines) -- and its boundary outlined
+   *  (`seaHover`, read by the renderer). Returns whether a sea took the hover. Leaving a sea's mark
+   *  gives the plot under the pointer its own hover back. */
+  seaHoverAt(id) {
+    if (id !== (this.seaHover ?? null)) {
+      this.seaHover = id;
+      if (id === null) this.overlay.hover = null;
+      this.request();
+    }
+    if (id === null) return false;
+    const sea = S.view?.seas?.find((s) => s.id === id);
+    if (!sea) return false;
+    const lines = seaTipLines(sea, S.data?.defines?.sea_hold_percent ?? 200);
+    const div = (cls, text) => Object.assign(document.createElement("div"), { className: cls, textContent: text });
+    this.showTip([div("tip-title", lines[0]), div("tip-sea-badge", lines[1]), ...lines.slice(2).map((t) => div("dim", t))]);
+    return true;
+  }
+
+  /** The sea whose buoy stands on plot (x, y) on the HD-2D map's Sea layer (sealayer.js
+   *  `banners`), or null: what the controller's cursor reaches a sea by. */
+  seaAtPlot(x, y) {
+    if (this.layer !== "sea" || this.overlay.city || !this.r3d?.sea || !this.map) return null;
+    for (const b of this.r3d.sea.banners ?? []) {
+      if (T.wrapCoord(Math.floor(b.x), this.map.w, this.map.wrap_x) === x && Math.floor(b.y) === y) return b.id;
+    }
+    return null;
   }
 
   /** The sea whose name or badge is under pointer event `ev` on the Sea layer (any renderer), or

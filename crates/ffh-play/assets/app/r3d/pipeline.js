@@ -5,6 +5,7 @@
 //            emission (+ object id; negated on leaves)
 //   water    the scene grabbed, then the sea and rivers over it: seen through to the floor,
 //            mirroring the sky and what stands round them, writing depth
+//   sea      the Sea layer on the water (sealayer.js): bands, names, lanes, the fog bank
 //   ssao     half resolution, depth-aware blur
 //   glow     emission, blurred at half resolution
 //   compose  occlusion, glow, exposure, filmic curve -> display colour
@@ -58,6 +59,10 @@ export function pipelinePrograms(terrainDefines = {}, { scene: sceneDefines = {}
     marker: ["marker", C + SH.MARKER_VS, C + SH.MARKER_FS],
     ghost: ["ghost", C + SH.PROP_VS, C + SH.GHOST_FS],
     particle: ["particle", C + SH.PARTICLE_VS, SH.PARTICLE_FS],
+    // The Sea layer in the world (sealayer.js): the plane (bands, outline, fog bank) and the marks
+    // on the water (names, lanes).
+    sea: ["sea", C + SH.SEA_VS, C + SH.SEA_FS],
+    seaMark: ["sea-mark", C + SH.SEA_MARK_VS, C + SH.SEA_MARK_FS],
     blit: ["blit", FULLSCREEN_VS, SH.BLIT_FS],
     // The packed scene into the three targets, and the water's grab of it.
     ...(packed ? { unpack: ["unpack", FULLSCREEN_VS, SH.UNPACK_FS], unpackCopy: ["unpack-copy", FULLSCREEN_VS, SH.UNPACK_FS, { UNPACK_COPY: 1 }] } : {}),
@@ -142,6 +147,8 @@ export class Pipeline {
       final: framebuffer(gl, [t.final], this.depth),
       sceneCopy: framebuffer(gl, [t.sceneCopy]),
       ndCopy: framebuffer(gl, [t.ndCopy]),
+      // The Sea layer's pass (sealayer.js): over the lit colour, tested against the scene's depth.
+      sea: framebuffer(gl, [t.color], this.depth),
     };
     if (this.packed) {
       // The packed scene, and the same with no colour drawn (the depth prepass: its programs' float
@@ -397,6 +404,9 @@ export class Pipeline {
         gl.enable(gl.DEPTH_TEST);
       }
     });
+    // --- the Sea layer in the world (sealayer.js): after the water, before the post passes, so it is
+    // lit, graded and blurred as the world is; hidden by what stands in front of it.
+    if (scene.sea?.active()) this.timed("sea", () => scene.sea.draw(this, U, fr));
     gl.disable(gl.DEPTH_TEST);
     gl.depthMask(false);
     const hw = Math.max(1, W >> 1), hh = Math.max(1, H >> 1);
@@ -477,6 +487,9 @@ export class Pipeline {
       // stands over it (a border under a forest still shows, faintly).
       const OU = { ...U, uBorderGlow: cfg.borderGlow ?? 0 };
       this.ext?.underlay(U, scene);
+      // The Sea layer's surface on the water (sealayer.js): the holders' bands, the lines between
+      // seas, the outlined sea.
+      if (scene.sea?.activeOverlay()) scene.sea.drawOverlay(this, U, fr);
       for (const ghost of [0, 1]) {
         gl.depthFunc(ghost ? gl.GREATER : gl.LEQUAL);
         scene.drawOverlay(this.p.overlay, { ...OU, uGhost: ghost });

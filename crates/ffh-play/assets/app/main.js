@@ -671,7 +671,7 @@ function wire() {
   click("btn-crusades", () => openScreen("crusades"));
   crusade.init({ centerOn: (x, y) => mapView.centerOn(x, y) });
   click("btn-seas", () => openScreen("seas"));
-  seas.init({ centerOn: (x, y) => mapView.centerOn(x, y), seaLayer: () => setLayer("sea") });
+  seas.init({ centerOn: (x, y) => mapView.centerOn(x, y), seaLayer: () => setLayer("sea"), focus: (id) => ((mapView.seaPanel = id), mapView.request()) });
   click("btn-tools", () => tools.openOptions());
   click("btn-save", () => S.view && screens.saveDialog());
   click("btn-load", () => screens.loadScreen());

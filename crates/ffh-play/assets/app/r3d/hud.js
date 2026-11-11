@@ -2,15 +2,17 @@
 // WebGL frame, outside every painterly filter: city name plates (size, capital star), unit stack
 // badges (count, moves, health), the Yields layer's numbers and the combat flashes. Each is
 // anchored to a world point and projected with the frame's camera, so it tracks the 3D scene.
+// The Sea layer itself is in the world (sealayer.js); here only its cut lanes' labels, the wear
+// pips, the harbour marks on the plates, and the boxes a hover or a click finds a sea by.
 
 import { S, me, dname, tname } from "../state.js";
 import * as T from "../tiles.js";
 import { CATALOG } from "./assets/catalog.js";
 import { SEA } from "./world.js";
 import { drawCityWork } from "../citywork.js";
-import { supplyLines, supplyMarks, unwrapSegment, flowOffset, drawLine, drawMark, OWN_COLOR } from "../supply.js";
-import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, laneParts, drawLaneCut, drawHarbourMark } from "../sea.js";
-import { drawLanesR3d, outpostTag } from "../lanes.js";
+import { supplyLines, supplyMarks, unwrapSegment, flowOffset, drawLine, drawMark } from "../supply.js";
+import { stackWear, drawWearPip, drawHarbourMark } from "../sea.js";
+import { outpostTag } from "../lanes.js";
 
 const FONT = "system-ui, 'DejaVu Sans', 'Segoe UI', sans-serif";
 
@@ -60,8 +62,10 @@ function drawHudParts(r3d, cam) {
   const mine = me()?.player;
   const inView = (p, m = 40) => p && p.x > -m && p.y > -m && p.x < v.vw + m && p.y < v.vh + m;
 
-  // The Sea layer (sea.js; docs/NAVAL.md section 10): on the ground, under every mark.
-  if (v.layer === "sea") drawSea(r3d, cam, g, inView);
+  // The Sea layer (docs/NAVAL.md section 10) is drawn in the world (sealayer.js); its cut lanes'
+  // labels here, under every mark.
+  const seaOn = v.layer === "sea" && !v.overlay.city;
+  if (seaOn) drawCutLabels(r3d, cam, g, inView);
 
   // Zoomed far out the figures are too small to tell apart: each stack also gets a counter, a
   // small shield in its owner's colour on a stem over the figure (the strategy map's pieces).
@@ -398,9 +402,8 @@ function drawHudParts(r3d, cam) {
     }
   }
 
-  // The seas' names and badges on the Sea layer (sea.js), over the marks; their boxes for a click.
-  r3d.seaHits = [];
-  if (v.layer === "sea" && !screenCity) drawSeaLabels(r3d, cam, g, inView);
+  // The boxes of the seas' names and buoys on the Sea layer, for a hover or a click (MapView.seaAt).
+  r3d.seaHits = seaOn ? seaHitBoxes(r3d, cam) : [];
 
   // Combat flashes.
   const now = performance.now();
@@ -420,82 +423,49 @@ function drawHudParts(r3d, cam) {
   }
 }
 
-/** The Sea layer (sea.js): each plot in view out of your range darkened and the range's edge,
- *  as quads projected on the ground (plot (x, y) spans world x x..x+1, z -y..-(y+1)). Drawn on the
- *  interface canvas over the WebGL frame, so it also dims what stands on that water.
- *  `r3d.seaDrawn` counts the plots drawn. Named seas (phase 2): each sea's water tinted by its
- *  state, the borders between seas dotted, and your supply ships' lanes. */
-function drawSea(r3d, cam, g, inView) {
-  const v = r3d.view;
-  const map = v.map;
-  const world = r3d.world;
-  r3d.seaDrawn = 0;
-  if (!map?.sea) return;
-  const r = r3d.visibleRect(cam);
-  const segs = [];
-  const borders = [];
-  const seas = seasById(S.view);
-  for (let y = Math.max(0, Math.floor(r.y0) - 1); y <= Math.min(map.h - 1, Math.ceil(r.y1)); y++) {
-    for (let xx = Math.floor(r.x0) - 1; xx <= Math.ceil(r.x1); xx++) {
-      const x = T.wrapCoord(xx, map.w, map.wrap_x);
-      if (x === null) continue;
-      const s = seaPlot(map, x, y);
-      const named = seaPlotNamed(map, seas, x, y);
-      if (!s && !named) continue;
-      const h = world.plotHeight(x, y) + 0.01;
-      const corners = [[xx, -y], [xx + 1, -y], [xx + 1, -(y + 1)], [xx, -(y + 1)]].map(([wx, wz]) => r3d.project(cam, [wx, h, wz]));
-      if (corners.some((p) => !p) || !corners.some((p) => inView(p, 8))) continue;
-      if (s?.dark) drawDark(g, corners);
-      if (named?.state) drawSeaTint(g, corners, named.state);
-      for (const [dx, dy] of s?.edges ?? []) {
-        const n = r3d.project(cam, [xx + 0.5 + dx, h, -(y + 0.5 + dy)]);
-        if (n) segs.push(sideToward(corners, n));
-      }
-      for (const [dx, dy] of named?.borders ?? []) {
-        const n = r3d.project(cam, [xx + 0.5 + dx, h, -(y + 0.5 + dy)]);
-        if (n) borders.push(sideToward(corners, n));
-      }
-      r3d.seaDrawn++;
-    }
-  }
-  drawSeaBorders(g, borders, Math.max(1.5, Math.min(3, r3d.ts * 0.025)));
-  drawEdges(g, segs, Math.max(1.5, Math.min(3, r3d.ts * 0.025)));
-  drawLanesR3d(r3d, cam, g, inView, FONT); // outposts' lanes (lanes.js)
-  drawSeaLanes(r3d, cam, g, inView);
-}
-
-/** Your supply ships' lanes on the Sea layer (sea.js `laneParts`), each plot's centre on the
- *  water, as the supply lines; a cut lane breaks with a mark where it enters the closed sea. */
-function drawSeaLanes(r3d, cam, g, inView) {
-  const v = r3d.view;
-  const world = r3d.world;
-  const width = Math.max(2, Math.min(4, r3d.ts * 0.035));
-  for (const lane of S.view?.sea_lanes ?? []) {
-    const path = lane.path ?? [];
-    if (!path.length) continue;
-    const parts = laneParts(lane);
-    const pts = [];
-    for (const [ux, y] of unwrapSegment(path, r3d.nearX(path[0][0]), v.map)) {
-      const x = T.wrapCoord(ux, v.map.w, v.map.wrap_x) ?? ux;
-      pts.push(r3d.project(cam, [ux + 0.5, world.plotHeight(x, y) + 0.03, -(y + 0.5)]));
-    }
-    if (pts.some((p) => !p) || !pts.some((p) => inView(p))) continue;
-    const k = parts.open.length;
-    if (k > 1) drawLine(g, pts.slice(0, k), OWN_COLOR, width, 0);
-    if (parts.cut) drawLaneCut(g, pts.slice(k - 1), Math.max(6, Math.min(11, r3d.ts * 0.09)));
+/** The labels of the outposts' cut lanes on the Sea layer (sealayer.js `cuts`: "Cut: 3", the turns
+ *  before your outpost starves), under the cut's mark on the water. `r3d.lanesDrawn` counts the
+ *  lanes and labels the frame has (the smoke test reads it). */
+function drawCutLabels(r3d, cam, g, inView) {
+  const sl = r3d.sea;
+  const ts = r3d.ts;
+  const drawn = { lines: sl?.laneCount ? 1 : 0, marks: 0 };
+  r3d.lanesDrawn = drawn;
+  for (const c of sl?.cuts ?? []) {
+    const p = r3d.project(cam, [r3d.nearX(c.x) + 0.5, r3d.world.plotHeight(c.x, c.y) + 0.03, -(c.y + 0.5)]);
+    if (!inView(p)) continue;
+    drawMark(g, c.mark, p.x, p.y + Math.max(16, ts * 0.24), Math.max(9, Math.min(12, ts * 0.11)), FONT);
+    drawn.marks++;
   }
 }
 
-/** The seas' names and badges (sea.js `drawSeaLabel`) at their label plots, projected on the
- *  water; `r3d.seaHits` keeps their boxes for a click. */
-function drawSeaLabels(r3d, cam, g, inView) {
-  const world = r3d.world;
-  const sizes = seaLabelSizes(Math.max(24, r3d.ts * 0.5));
-  for (const sea of S.view?.seas ?? []) {
-    const p = r3d.project(cam, [r3d.nearX(sea.x) + 0.5, world.plotHeight(sea.x, sea.y) + 0.02, -(sea.y + 0.5)]);
-    if (!inView(p, 120)) continue;
-    r3d.seaHits.push(drawSeaLabel(g, sea, p.x, p.y, sizes));
+/** The seas' boxes on the screen (sealayer.js: each name's letters and each buoy), for
+ *  `MapView.seaAt`: `[{id, x0, y0, x1, y1}]`, the buoys last (they win where the two overlap). */
+function seaHitBoxes(r3d, cam) {
+  const sl = r3d.sea;
+  const out = [];
+  if (!sl) return out;
+  const vw = r3d.view.vw, vh = r3d.view.vh;
+  const box = (id, pts) => {
+    // (A mark off the screen, or behind the eye, finds nothing.)
+    if (pts.some((p) => !p || p.x < -vw || p.x > 2 * vw || p.y < -vh || p.y > 2 * vh)) return;
+    const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+    out.push({ id, x0: Math.min(...xs) - 3, y0: Math.min(...ys) - 3, x1: Math.max(...xs) + 3, y1: Math.max(...ys) + 3 });
+  };
+  for (const L of sl.labels) {
+    const cx = (L.corners[0][0] + L.corners[2][0]) / 2;
+    const dx = r3d.nearX(cx) - cx;
+    box(L.id, L.corners.map(([mx, my]) => r3d.project(cam, [mx + dx, 0, -my])));
   }
+  for (const b of sl.banners) {
+    const x = r3d.nearX(b.x);
+    const foot = r3d.project(cam, [x, 0, -b.y]);
+    const top = r3d.project(cam, [x, 0.62, -b.y]);
+    if (!foot || !top) continue;
+    const hw = Math.max(8, (foot.y - top.y) * 0.3);
+    box(b.id, [{ x: foot.x - hw, y: top.y }, { x: foot.x + hw, y: foot.y + 4 }]);
+  }
+  return out;
 }
 
 /** The supply lines and the cut-off armies' markers (supply.js), each plot's centre on the ground;

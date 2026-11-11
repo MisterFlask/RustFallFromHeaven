@@ -20,13 +20,14 @@ import { openModal, closeTag } from "./modals.js";
 import { run } from "./commands.js";
 import { SEA_STATES } from "./sea.js";
 
-/** The map hooks (main.js): `centerOn(x, y)`, `seaLayer()` (turns the Sea layer on), `select(ids)`
- *  (the selection after an order). */
-const hooks = { centerOn: null, seaLayer: null };
+/** The map hooks (main.js): `centerOn(x, y)`, `seaLayer()` (turns the Sea layer on), `focus(id)`
+ *  (the sea whose panel is open, null when it closes: the HD-2D map outlines it). */
+const hooks = { centerOn: null, seaLayer: null, focus: null };
 
-export function init({ centerOn, seaLayer } = {}) {
+export function init({ centerOn, seaLayer, focus } = {}) {
   hooks.centerOn = centerOn ?? null;
   hooks.seaLayer = seaLayer ?? null;
+  hooks.focus = focus ?? null;
 }
 
 /** A state chip (the badge's look) with `text`. */
@@ -96,7 +97,7 @@ export async function openSeaPanel(id) {
         send.why ? h("div.small.warn", send.why) : null,
       )
     : null;
-  openModal({
+  const m = openModal({
     title: p.name,
     tag: "sea",
     className: "sea-panel",
@@ -115,6 +116,9 @@ export async function openSeaPanel(id) {
       { label: "Close", value: null },
     ],
   });
+  // The map outlines the sea while its panel is open.
+  hooks.focus?.(id);
+  m.done.then(() => hooks.focus?.(null));
 }
 
 /** The Seas screen (the `seas` query). */

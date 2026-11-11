@@ -198,7 +198,7 @@ test("a name's layout: along a long sea's axis, inside its water, never upside d
   assert.equal(r.depth, 1);
   // Sized to the sea, clamped.
   assert.ok(r.h > a.h - 1e-9 || r.n <= a.n);
-  assert.equal(Sea.seaLabelLayout(seaMap([[1]]), { id: 1, x: 0, y: 0 }).h, 0.34, "the smallest clamp");
+  assert.equal(Sea.seaLabelLayout(seaMap([[1]]), { id: 1, x: 0, y: 0 }).h, 0.3, "the smallest clamp");
   assert.equal(Sea.seaLabelLayout(round, { id: 9, x: 0, y: 0 }), null, "no revealed plot: no name");
   // A name too long for its sea is made smaller, never below the floor.
   assert.equal(Sea.fitNameHeight({ h: 1, len: 4 }, 6), 0.6);
