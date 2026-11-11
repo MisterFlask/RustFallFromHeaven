@@ -407,9 +407,9 @@ async function classicClient() {
   const err = await b.eval("window.ffh.look.error ? String(window.ffh.look.error.message || window.ffh.look.error) : null");
   if (err) throw new Error(`the art did not load: ${err}`);
   if ((await b.eval("window.ffh.mapView.renderer()")) !== "flat") throw new Error("the map is not the flat one");
-  if (!(await b.eval(`document.documentElement.classList.contains("art") && !!document.querySelector("#btn-techs .ui-ptext") && !!document.querySelector("#empire canvas.ui-px")`))) {
-    throw new Error("the interface has no bitmap type or icons");
-  }
+  // (Waited for, not read once: the type and icons can come a moment after the art, as the page
+  // settles on the flat map and the first view draws the top bar; a single read failed 1 run in 6.)
+  await until2(`document.documentElement.classList.contains("art") && !!document.querySelector("#btn-techs .ui-ptext") && !!document.querySelector("#empire canvas.ui-px")`, "the interface's bitmap type and icons", 10000);
   const look = await b.eval(`(() => {
     const mv = window.ffh.mapView;
     const times = [];
