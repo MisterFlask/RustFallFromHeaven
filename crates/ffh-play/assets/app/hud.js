@@ -14,7 +14,7 @@ import { effectsOf, partsList } from "./infotips.js";
 import { battleLine, battleLinks } from "./engagements.js";
 import { castTargeted } from "./units.js";
 import * as api from "./api.js";
-import { openResearchPaths } from "./screens.js";
+import { openResearchPaths } from "./empire.js";
 
 /** The parts of `#phase`: the phase line (redrawn each render), the spectator bar and the
  *  autoplay bar (each its own slot; `display: contents`, so #phase lays out their children). */
@@ -356,7 +356,7 @@ function doctrineOpen() {
  *  can be adopted); its tooltip says what a doctrine does; a click opens the doctrine chooser. */
 function doctrineButton(m, adopted) {
   const faster = doctrineState.percent ? `${doctrineState.percent}% faster` : "faster";
-  const what = `A doctrine makes its techs research ${faster} for the rest of the game; it is adopted in the research screen (Doctrines).`;
+  const what = `A doctrine makes its techs research ${faster} for the rest of the game; it is adopted in the tech tree (Doctrines).`;
   const open = adopted ? false : doctrineOpen();
   const name = adopted ? dname("ResearchPathType", m.research_path) : null;
   return h(

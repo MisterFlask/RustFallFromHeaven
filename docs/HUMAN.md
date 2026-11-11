@@ -79,10 +79,8 @@ cannot load.
 
 **The screen.** The top bar: the turn crescent (amber on your turn), turn and year, what is
 happening (your turn; "Moving: …" with the players and the seconds while the AIs play); gold and
-rate, research (click it to choose: the chooser gives each tech its turns and its research cost
-behind the flask icon, and its research multipliers as chips, "prereqs +20%", "others +5%",
-"= x1.2", each with its rule as tooltip; the total multiplies the research put into the tech each
-turn, not its cost) with its progress bar and turns ("11 turns"), the doctrine
+rate, research (click it for the tech tree, where research is chosen; the "Choose research" popup is
+the same tree, with "Later", and closes on a pick) with its progress bar and turns ("11 turns"), the doctrine
 (the adopted one, or "no doctrine", in the warning colour while one can be adopted; its tooltip
 says what a doctrine does, a click opens the doctrine chooser), the commerce split by its
 icons (click it for the sliders), the Armageddon eclipse (its corona reddens at 50, 75 and 100)
@@ -303,7 +301,7 @@ replaces the mouse:
 | tap a plot, tap it again | with units selected, on a plot without units of yours: the first tap shows the way there (the path, its turns, the attack odds: the right click's preview, which a finger cannot hover), a second tap on the same plot moves or attacks. Panning, or a tap anywhere else, drops the preview and the move it offered. To move onto your own units (a stack, a garrisoned city), use Go to |
 | drag, pinch | pan; zoom through the renderer's steps about the fingers (two fingers also pan) |
 | ×, Cancel | deselect (the panel's head); leave a plot pick (its hint) |
-| "A tap:" | in the build prompt, the city screen, the research chooser and the tech tree: what a tap on a build or a tech does (build now, add to the queue, put first; research now, add to the queue): Shift- and Ctrl-click with a mouse (the tech tree, the build prompt and the city screen offer it to a mouse too, as "A click:") |
+| "A tap:" | in the build prompt, the city screen and the tech tree: what a tap on a build or a tech does (build now, add to the queue, put first; research now, add to the queue): Shift- and Ctrl-click with a mouse (the tech tree, the build prompt and the city screen offer it to a mouse too, as "A click:") |
 | tap a tech, tap it again | in the tech tree: the first tap lights the tech's path and the techs it leads to, a second tap on it researches it (or queues it, by the "A tap:" row) |
 
 A long press and a double tap do nothing on the map. What touch does not have: Shift waypoints
@@ -506,7 +504,7 @@ back when the screen closes (docs/ISO.md, "The city screen").
 
 **Empire.** **Techs** (`F6`): the tech tree, columns by prerequisite depth and rows in a band
 per research path (doctrine), each tech a box with its name,
-what it unlocks (the research chooser's icons, at most five with "+n"), and its turns and cost for
+what it unlocks (icons, at most five with "+n"), and its turns and cost for
 one you can research now, its cost otherwise, "known" for one you have; the states read without
 colour too: known (a check mark, muted), researching (a progress bar with its percentage), queued
 (its place in the queue in a corner), can research now (full contrast, gold border), not yet

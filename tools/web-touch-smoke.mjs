@@ -205,10 +205,12 @@ async function run(pw, bin, phone) {
     await ev((id) => window.ffh.units.select([id], { center: true }), settler);
     await wait(() => !!document.querySelector('#unit-panel button.action[data-type="MISSION_FOUND"]:not([disabled])'), null, "the Found button");
     await page.tap('#unit-panel button.action[data-type="MISSION_FOUND"]');
-    await wait(() => !!document.querySelector(".modal button.build[data-tech]"), null, "the research popup");
+    await wait(() => !!document.querySelector(".modal button.tech.can-now[data-tech]"), null, "the research popup");
     check(await ev(() => getComputedStyle(document.querySelector(".modal .tap-mode")).display !== "none"), "the research popup has no tap modes");
     await shot("04-research");
-    await page.tap(".modal button.build[data-tech]");
+    // The first tap shows the tech's path, the second researches it.
+    await page.tap(".modal button.tech.can-now[data-tech]");
+    await page.tap(".modal button.tech.can-now[data-tech]");
     await wait(() => !!document.querySelector(".modal.city-screen button.build:not([disabled])"), null, "the production popup");
     await page.tap('.modal.city-screen .tap-mode button[data-tap="queue"]');
     await wait(() => document.querySelector('.modal.city-screen .tap-mode button[data-tap="queue"]')?.classList.contains("on"), null, "Add to queue on");

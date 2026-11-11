@@ -309,9 +309,12 @@ function costLabel(cost) {
  *  per research path (`treeLayout`), each labelled at the left; lines between
  *  bands are fainter until lit. Click: research it (a tech whose prerequisites are missing queues them first, C++
  *  `pushResearch`); Shift-click, or the "Add to queue" mode: add it to the queue. Pointing at a
- *  tech (on touch, the first tap) lights its path and the techs it leads to. */
-export async function openTechTree() {
-  const m = openModal({ title: "Technology", body: [h("p.dim", "…")], tag: "techtree", wide: true, className: "techtree", buttons: [{ label: "Close", value: null }] });
+ *  tech (on touch, the first tap) lights its path and the techs it leads to. With `popup`
+ *  (research needed at a control point) it offers "Later" and closes once a tech is chosen.
+ *  Resolves with "chosen", "later" or null. */
+export async function openTechTree({ popup = false } = {}) {
+  const m = openModal({ title: popup ? "Choose research" : "Technology", body: [h("p.dim", "…")], tag: "techtree", wide: true, className: "techtree", buttons: popup ? [{ label: "Later", value: "later" }] : [{ label: "Close", value: null }] });
+  let result = null;
   const W = 176;
   const H = 66;
   /** The gaps between columns, between rows and between bands (a band's label sits in the gap
@@ -439,7 +442,12 @@ export async function openTechTree() {
               focus(x.tech);
               return;
             }
-            if (await run({ c: "research", tech: x.tech, shift: !!ev.shiftKey || tapMode === "queue" })) load();
+            const shift = !!ev.shiftKey || tapMode === "queue";
+            if (!(await run({ c: "research", tech: x.tech, shift }))) return;
+            if (popup && !shift) {
+              result = "chosen";
+              m.close("chosen");
+            } else load();
           },
         },
         h("span.tech-name", dname("TechType", x.tech)),
@@ -510,9 +518,7 @@ export async function openTechTree() {
           cur ? h("span", "Researching ", h("b", dname("TechType", t.current)), `: ${turns(cur.turns)}.`) : h("span.warn", "Nothing is being researched."),
           h("span.dim", ` ${t.rate} research per turn.`),
         ),
-        t.path !== null && t.path !== undefined
-          ? h("div", "Doctrine: ", h("b", dname("ResearchPathType", t.path)), ` (+${t.path_percent}% research on its techs, outlined `, h("span.path-mark"), ")")
-          : h("div.warn", "No doctrine (adopt one in the research screen)."),
+        researchPathLine(t, load, [", outlined ", h("span.path-mark")]),
         cardsLine(t),
         t.queue.length > 1 ? h("div.dim", `Queue: ${t.queue.map((q) => dname("TechType", q)).join(" → ")}`) : null,
         h("div.dim", coarse() ? "Tap: show its path. Tap again: research (with what it needs)." : "Click: research (with what it needs). Shift-click: queue."),
@@ -536,7 +542,108 @@ export async function openTechTree() {
     edges();
   };
   load();
-  return m.done;
+  const v = await m.done;
+  return result ?? v;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Doctrines (research paths). Adopted from the tech tree's doctrine line and the top bar.
+
+/** The tech tree's line for the research path (docs/PORTING.md, "Research paths"): the
+ *  path committed to for the rest of the game with its progress, or none, and a button that
+ *  opens the path chooser; `reload` refreshes the tree after a commitment; `legend` follows the adopted path's text. */
+export function researchPathLine(t, reload, legend = null) {
+  const p = pathOf(t, t.path);
+  return h(
+    "div.research-path",
+    p
+      ? h("span", "Doctrine: ", h("b", dname("ResearchPathType", p.path)), ` (+${t.path_percent}% research on its techs`, legend, `) · ${pathProgress(p)} `)
+      : h(t.paths.some((x) => x.can_commit) ? "span.warn" : "span.dim", { title: `A doctrine makes its techs research ${t.path_percent}% faster for the rest of the game.` }, "No doctrine. "),
+    h("button.link", { "data-paths": "", onclick: async () => ((await openResearchPaths()) === "chosen" ? reload() : null) }, p ? "Doctrines" : "Adopt a doctrine"),
+  );
+}
+
+/** Entry `path` of the `techs` query's `paths`, or null. */
+function pathOf(t, path) {
+  return path === null || path === undefined ? null : t.paths.find((p) => p.path === path) ?? null;
+}
+
+/** A path's progress: "3 of 9 techs known" or "complete". */
+function pathProgress(p) {
+  return p.complete ? "complete" : `${p.known.length} of ${p.techs.length - p.closed.length} techs known`;
+}
+
+/** A path's techs on one line: known ones ticked, those the human can never research marked. */
+function pathTechs(p) {
+  return p.techs.map((x) => (p.known.includes(x) ? `${dname("TechType", x)} ✓` : p.closed.includes(x) ? `${dname("TechType", x)} (closed)` : dname("TechType", x))).join(" · ");
+}
+
+/** The research path chooser. Before the commitment: every path with its techs and the research
+ *  left on them, a refused one greyed with its reason; a click asks for confirmation, then
+ *  commits for the rest of the game. After: the committed path on top with its progress, the
+ *  others below for reference. Resolves "chosen" or null. */
+export async function openResearchPaths() {
+  let result = null;
+  const m = openModal({ title: "Doctrines", body: [h("p.dim", "…")], tag: "research-paths", wide: true, buttons: [{ label: "Close", value: null }] });
+  let t;
+  try {
+    t = await api.query("techs");
+  } catch (e) {
+    m.setBody(h("p.warn", errorText(e)));
+    return m.done;
+  }
+  const name = (p) => dname("ResearchPathType", p.path);
+  const mine = pathOf(t, t.path);
+  if (mine) {
+    // Committed: no choice left; the path, then the others as reference.
+    m.setBody(
+      h("p.dim", `One doctrine for the rest of the game: its techs are researched ${t.path_percent}% faster.`),
+      h(
+        "div.path-card.current",
+        { "data-path": mine.path },
+        h("span", h("b", name(mine)), " (adopted)"),
+        h("small", pathTechs(mine)),
+        h("small", mine.complete ? "Complete: every tech known." : `${pathProgress(mine)} · Research left: ${mine.left}`),
+      ),
+      h("h4", "Other doctrines"),
+      h(
+        "div.path-list",
+        t.paths
+          .filter((p) => p.path !== mine.path)
+          .map((p) => h("div.path-card.other", { "data-path": p.path }, h("span", h("b", name(p))), h("small", pathTechs(p)), h("small", `Research left: ${p.left}`))),
+      ),
+    );
+    const v = await m.done;
+    return result ?? v;
+  }
+  const commit = async (p) => {
+    const answer = await ask(`Adopt the ${name(p)} doctrine?`, [`Its techs are researched ${t.path_percent}% faster for the rest of the game.`, "No other doctrine can be adopted afterwards."], [
+      { label: "Adopt", value: "commit", primary: true, danger: true },
+      { label: "Cancel", value: null },
+    ]);
+    if (answer !== "commit") return;
+    const reply = await run({ c: "research_path", path: p.path });
+    if (reply) {
+      result = "chosen";
+      m.close("chosen");
+    }
+  };
+  const rows = t.paths.map((p) =>
+    h(
+      "button.option",
+      { "data-path": p.path, disabled: !p.can_commit, onclick: () => commit(p) },
+      h("span", h("b", name(p))),
+      h("small", pathTechs(p)),
+      h("small", `Research left: ${p.left}`),
+      p.refusal ? h("small.dim", p.refusal) : null,
+    ),
+  );
+  m.setBody(
+    h("p.dim", `Adopt one doctrine for the rest of the game: its techs are researched ${t.path_percent}% faster. The choice cannot be changed.`),
+    h("div.options", rows),
+  );
+  const v = await m.done;
+  return result ?? v;
 }
 
 // ---------------------------------------------------------------------------------------------

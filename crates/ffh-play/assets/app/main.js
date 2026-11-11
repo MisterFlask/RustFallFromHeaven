@@ -188,7 +188,7 @@ function clearGame() {
 
 /** The dialogs that belong to one game (closed when another game arrives); the load, options,
  *  tools and crash dialogs stay. */
-const GAME_DIALOGS = ["city", "decision", "election", "event", "research", "vote", "promotions", "spells", "trade", "leader", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save", "culture", "armies", "governors", "crusade", "crusade-lend", "crusades", "troops", "sea", "seas"];
+const GAME_DIALOGS = ["city", "decision", "election", "event", "vote", "promotions", "spells", "trade", "leader", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save", "culture", "armies", "governors", "crusade", "crusade-lend", "crusades", "troops", "sea", "seas"];
 
 /** Fetches the view (and the map when its revision changed) when the status says it changed. */
 async function refreshView(st) {
@@ -356,7 +356,7 @@ async function runPopups() {
       else if (p.kind === "vote") await screens.openVote(p.vote);
       else if (p.kind === "election") await screens.openElection(p.election);
       else if (p.kind === "crusade") await crusade.openCall(p.call);
-      else if (p.kind === "research") await screens.openResearch({ popup: true });
+      else if (p.kind === "research") await empire.openTechTree({ popup: true });
       else {
         mapView.reveal(S.cities.get(p.city)?.x ?? 0, S.cities.get(p.city)?.y ?? 0);
         await openCity(p.city, { popup: true });
@@ -428,7 +428,7 @@ function openScreen(name) {
     case "armies":
       return openArmies({ select: (ids) => units.select(ids), centerOn: (x, y) => mapView.centerOn(x, y) });
     case "research":
-      return screens.openResearch();
+      return empire.openTechTree();
     case "crusades":
       return crusade.openCrusades();
     case "seas":
@@ -708,7 +708,7 @@ function wire() {
     b.setAttribute("aria-label", folded ? "Unfold the panel" : "Fold the panel");
   });
   if (compactScreen()) setBottomOpen(false);
-  document.addEventListener("ffh-research", () => S.view && screens.openResearch());
+  document.addEventListener("ffh-research", () => S.view && empire.openTechTree());
   document.addEventListener("keydown", onKey);
   // Shift-right-click waypoints are sent when Shift is released (or the page loses the keys).
   document.addEventListener("keyup", (ev) => {
