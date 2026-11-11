@@ -1793,7 +1793,9 @@ async function stagedCrusade(bin, saves) {
   const pledge = `${TOP} .modal button.option[data-pledge="yes"]`;
   // The popups before it in order (events, votes, elections) are answered first.
   for (let k = 0; k < 20 && !(await b.eval(`!!document.querySelector(${q(pledge)})`)); k++) {
-    const other = `${TOP} .modal button.option:not([disabled])`;
+    // (Never the call's own buttons: the call can come between the test above and this click,
+    // and its first option is Pledge, which then went unseen: 1 full run in 6.)
+    const other = `${TOP} .modal button.option:not([disabled]):not([data-pledge])`;
     if (await b.eval(`!!document.querySelector(${q(other)})`)) await click(other);
     await new Promise((r) => setTimeout(r, 400));
   }
@@ -1925,7 +1927,9 @@ async function crusadeHd2d(url, bin, saves) {
   await until2(`(() => { const e = document.querySelector("#iso-rail #btn-crusades"); return !!e && !e.hidden && e.classList.contains("attention"); })()`, "the rail's Crusades advisor, marked");
   const pledge = `${TOP} .modal button.option[data-pledge="yes"]`;
   for (let k = 0; k < 20 && !(await b.eval(`!!document.querySelector(${q(pledge)})`)); k++) {
-    const other = `${TOP} .modal button.option:not([disabled])`;
+    // (Never the call's own buttons: the call can come between the test above and this click,
+    // and its first option is Pledge, which then went unseen: 1 full run in 6.)
+    const other = `${TOP} .modal button.option:not([disabled]):not([data-pledge])`;
     if (await b.eval(`!!document.querySelector(${q(other)})`)) await click(other);
     await new Promise((r) => setTimeout(r, 400));
   }
