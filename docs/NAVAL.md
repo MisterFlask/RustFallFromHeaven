@@ -447,7 +447,7 @@ Where the code is:
   `unit_type_fits_army`, `army_is_fleet`); `fleet_nearest_port`; the fleet's requisition
   (`fleet_check_requisition_city`, `fleet_requisition_unit_default`); the standing orders
   (`army_set_station`, `fleet_patrol_seas`, `escort_target_plot`, `escort_target_name`,
-  `player_fleet_stations` at the owner's turn start after its units get their moves,
+  `player_fleet_stations` at the end of the owner's turn (its turn processing, after the army sync),
   `army_station_step`, `group_escort_step` called at the end of `group_move`,
   `group_order_ends_station` called at the start of `group_push_mission`).
 - `Army::domain`, `Army::station`, `Army::carried` (`army/mod.rs`); the sync, the names and the
@@ -502,15 +502,18 @@ Choices made where this spec was silent (each open to change):
 - **Patrol**: the seas offered are those with a plot the team has revealed in its range. The fleet
   sails to the nearest of the four plots of the sea (outside a city, in range) nearest it by plot
   distance that it reaches, the fewest turns first, with a move order whose path stays in range,
-  then the Patrol order (queued); on arrival with no moves left it takes the order at its next turn
-  start. A fleet needs a warship to patrol. Each of its owner's turn starts the order is checked
-  again: in the sea it patrols where it is; elsewhere, with no order under way, it sails again.
+  then the Patrol order (queued); on arrival with no moves left it takes the order with the next
+  turn's moves. A fleet needs a warship to patrol. At the end of each of its owner's turns the order
+  is checked again, with the moves the owner's own orders left: in the sea it patrols where it is;
+  elsewhere, with no order under way, it sails again. (At the end, not the start, of the turn: at
+  the start the rules would retake the Patrol, and spend the moves, of a ship its owner then wants
+  elsewhere, as a worn ship sent to port.)
 - **Escort**: the target is an army or fleet of the owner (the client offers these), or a group
   (`EscortTarget::Group`, which the AI uses for a transport in no fleet). The follow is checked
   after every completed step of any group of the owner onto water: a fleet whose target now stands
   on that plot moves there along the rules' path when the path takes one turn. Steps made by an
   escort start no other escort (a guard, `Game::escorting`, not saved), so chains and two fleets
-  escorting each other end after one step. At its owner's turn start an escort away from its
+  escorting each other end after one step. At the end of its owner's turn an escort away from its
   target at sea follows it if it can this turn, else sails toward it (an addition to the spec: an
   escort set far from its target would otherwise never join it). An escort waits asleep (no orders
   asked); a target on land: it waits where it is; a target gone (an army deleted, a group gone):

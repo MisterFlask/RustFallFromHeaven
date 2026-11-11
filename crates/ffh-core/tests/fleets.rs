@@ -111,8 +111,8 @@ impl World {
         self.g.group_move(grp, to, false, None, false);
     }
 
-    /// The start of player 0's turn (its units' moves back, the fleets' standing orders), its
-    /// groups' missions carried on, then the end of its turn (the recruits march, the sync).
+    /// The start of player 0's turn (its units' moves back), its groups' missions carried on, then
+    /// the end of its turn (the recruits march, the sync, the fleets' standing orders).
     fn turn(&mut self) {
         let p0 = self.p0;
         self.g.player_do_turn_units(p0);
@@ -124,6 +124,7 @@ impl World {
         self.g.player_do_march(p0);
         self.g.player_march_join(p0);
         self.g.player_army_sync(p0);
+        self.g.player_fleet_stations(p0);
     }
 }
 

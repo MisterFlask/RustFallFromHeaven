@@ -10,14 +10,15 @@
 //!
 //! **Standing orders** (`Army::station`, 7.2), carried out by the rules:
 //!
-//! - **Patrol** of a sea: at the start of its owner's turn ([`Game::player_fleet_stations`]) a
+//! - **Patrol** of a sea: at the end of its owner's turn ([`Game::player_fleet_stations`], with the
+//!   moves its owner left it, so that an order the owner gave in the turn is not undone) a
 //!   fleet not in that sea sails (a move order over water in range, several turns if need be) to
 //!   the nearest plot of it outside a city that it can reach, and takes the Patrol order there
 //!   (`MISSION_PLUNDER`, docs/NAVAL.md 4.2); in the sea outside a city it takes it where it is.
 //! - **Escort** of an army or a group of its owner: whenever a group of the owner ends a step on a
 //!   water plot where the target now stands, the fleet moves there if it can reach it this turn
 //!   ([`Game::group_escort_step`], called by `group_move`; moves made by it start no further
-//!   escort, so two fleets escorting each other cannot loop). At the start of its owner's turn a
+//!   escort, so two fleets escorting each other cannot loop). At the end of its owner's turn a
 //!   fleet away from its target at sea sails toward it. A target on land (landed) or gone: the
 //!   fleet waits where it is (a target gone ends the order).
 //! - A move order (`MISSION_MOVE_TO`, `MISSION_MOVE_TO_UNIT`, `MISSION_ROUTE_TO`) given to the
@@ -263,8 +264,9 @@ impl Game {
         }
     }
 
-    /// Player `p`'s fleets carry out their standing orders as its turn begins (its units have
-    /// their moves): a target gone ends an Escort; see [`Game::army_station_step`].
+    /// Player `p`'s fleets carry out their standing orders at the end of its turn (its turn
+    /// processing, with the moves its own orders left them): a target gone ends an Escort; see
+    /// [`Game::army_station_step`].
     pub fn player_fleet_stations(&mut self, p: PlayerId) {
         if self.player_is_barbarian(p) {
             return;
