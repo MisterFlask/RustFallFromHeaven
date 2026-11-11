@@ -245,6 +245,9 @@ export function renderTop() {
     crusades.classList.toggle("attention", calls > 0);
     crusades.title = calls ? `Crusades: ${calls === 1 ? "a call to arms waits" : `${calls} calls to arms wait`} for your answer` : "Crusades: the calls to arms, the units you lent, past crusades";
   }
+  // Named seas (docs/NAVAL.md 10): the Seas screen, once a sea has been seen.
+  const seasBtn = document.getElementById("btn-seas");
+  if (seasBtn) seasBtn.hidden = !v?.seas?.length;
   renderWorldActions(m, st);
   if (!m) {
     fill(info);

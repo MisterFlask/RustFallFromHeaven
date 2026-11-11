@@ -443,7 +443,6 @@ impl Game {
             unhappiness -= (city.extra_happiness + player.extra_happiness).min(0);
             unhappiness -= self.d.handicaps[self.city_handicap_type(c)].happy_bonus.min(0);
             unhappiness += self.city_vassal_unhappiness(c).max(0);
-            unhappiness += city.espionage_happiness_counter.max(0);
             // This game's Incite Unrest (docs/CULTURE.md).
             unhappiness += self.city_culture_unhappiness(c);
         }
@@ -1444,9 +1443,9 @@ impl Game {
     }
 
     /// C++ `CvCity::setGreatPeopleUnitRate` (CvCity.cpp:9848-9859): ignored for espionage
-    /// great people under the no-espionage option.
+    /// great people (there is no espionage).
     pub fn city_set_great_people_unit_rate(&mut self, c: CityId, unit: UnitType, new_value: i32) {
-        if self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) && self.d.units[unit].espionage_points > 0 {
+        if self.d.units[unit].espionage_points > 0 {
             return;
         }
 

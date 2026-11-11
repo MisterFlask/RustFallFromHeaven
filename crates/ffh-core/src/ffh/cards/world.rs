@@ -548,9 +548,20 @@ pub fn birth(g: &mut Game, b: &Birth) -> PlayerId {
         if !g.is_option(GameOptionType::GAMEOPTION_NO_VASSAL_STATES) && !g.team_is_a_vassal(ft) {
             g.team_assign_vassal(ft, nt, false);
         } else {
-            let item = |item_type| crate::structs::TradeData { item_type, data: 0, offering: false, hidden: false };
-            let items = [item(TradeableItem::TRADE_OPEN_BORDERS), item(TradeableItem::TRADE_DEFENSIVE_PACT)];
-            g.implement_deal(founder, p, &items, &items, true);
+            // Open borders and a defensive pact, each held by its own standing deal (`data` 1, as
+            // `CvDeal::startTeamTrade` records an agreement), so that the ordinary rules end them:
+            // a deal that starts them (`data` 0) records them in a checked deal of its own, which
+            // the checks can refuse here (the pact needs its tech and both teams at peace), and
+            // a pact no deal records is never cancelled (the new civilization, made a vassal of
+            // its founder's enemy, then declared war on itself).
+            for item_type in [TradeableItem::TRADE_OPEN_BORDERS, TradeableItem::TRADE_DEFENSIVE_PACT] {
+                let items = [crate::structs::TradeData { item_type, data: 1, offering: false, hidden: false }];
+                g.implement_deal(founder, p, &items, &items, true);
+            }
+            for (a, b) in [(ft, nt), (nt, ft)] {
+                g.team_set_open_borders(a, b, true);
+                g.team_set_defensive_pact(a, b, true);
+            }
         }
     }
     if let Some(founder) = b.founder {

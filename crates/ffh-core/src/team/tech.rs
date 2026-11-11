@@ -105,16 +105,6 @@ impl Game {
                 if self.teams[t].stolen_visibility_timer[o] > 0 {
                     self.team_change_stolen_visibility_timer(t, o, -1);
                 }
-
-                // changeCounterespionageTurnsLeftAgainstTeam(-1) / setCounterespionageModAgainstTeam(0):
-                // the C++ side effects are UI only.
-                if self.teams[t].counterespionage_turns_left_against_team[o] > 0 {
-                    self.teams[t].counterespionage_turns_left_against_team[o] -= 1;
-                }
-
-                if self.teams[t].counterespionage_turns_left_against_team[o] == 0 {
-                    self.teams[t].counterespionage_mod_against_team[o] = 0;
-                }
             }
         }
 
@@ -483,18 +473,7 @@ impl Game {
                                     // CvGame::setReligionSlotTaken
                                     self.religion_slot_taken[religion] = true;
 
-                                    if self.is_option(GameOptionType::GAMEOPTION_PICK_RELIGION) {
-                                        // Never true in FFH (CvGame::isOption locks PICK_RELIGION off).
-                                        // C++: humans get BUTTONPOPUP_FOUND_RELIGION (their pick is founded in
-                                        // this religion's slot), AIs pick with AI_chooseReligion(); both are
-                                        // the controller's decision here.
-                                        let chosen = self.controller(best_player).choose_religion(self, best_player);
-                                        if let Some(chosen) = chosen {
-                                            self.player_found_religion(best_player, Some(chosen), religion, true);
-                                        }
-                                    } else {
-                                        self.player_found_religion(best_player, Some(religion), religion, true);
-                                    }
+                                    self.player_found_religion(best_player, Some(religion), religion, true);
 
                                     _religion_founded = true;
                                     first_bonus = true;
@@ -799,11 +778,6 @@ impl Game {
             if self.team_is_force_revealed_bonus(other, bonus) {
                 self.team_set_force_revealed_bonus(t, bonus, true);
             }
-        }
-
-        for o in self.team_ids() {
-            let points = self.teams[other].espionage_points_against_team[o].max(self.teams[t].espionage_points_against_team[o]);
-            self.team_set_espionage_points_against_team(t, o, points);
         }
 
         for p in self.player_ids() {

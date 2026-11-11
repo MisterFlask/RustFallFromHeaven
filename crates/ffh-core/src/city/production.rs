@@ -146,7 +146,7 @@ impl Game {
     /// an `Option` check it first.)
     pub fn city_can_train(&self, c: CityId, unit: UnitType, cont: bool, test_visible: bool, ignore_cost: bool, ignore_upgrades: bool) -> bool {
         let min_level = self.d.units[unit].min_level;
-        if min_level > 0 && (self.city_is_human(c) || !self.is_option(GameOptionType::GAMEOPTION_AI_NO_MINIMUM_LEVEL) || min_level == 1) {
+        if min_level > 0 {
             return false;
         }
         if self.cities[c].settlement || self.cities[c].outpost {
@@ -460,9 +460,6 @@ impl Game {
         let info = &self.d.projects[project];
 
         // FfH: Added by Kael 04/11/2008
-        if self.is_option(GameOptionType::GAMEOPTION_NO_PROJECTS) {
-            return false;
-        }
         if self.cities[c].settlement || self.cities[c].outpost {
             return false;
         }

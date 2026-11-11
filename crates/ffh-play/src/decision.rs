@@ -37,8 +37,6 @@ pub enum DecisionKind {
     TakeControl { player: PlayerId },
     /// A deal offered to the human (C++ diplomacy screen): option 0 accepts, 1 refuses.
     Offer { from: PlayerId },
-    /// C++ BUTTONPOPUP_FOUND_RELIGION: the options are religions.
-    Religion,
     /// Not in C++ (docs/CRUSADE.md): the human's pick in a crusade's spoils draft; the options
     /// are the offered cities, then "stop" (take the rest of the budget as wealth).
     Draft { crusade: u32 },
@@ -62,7 +60,6 @@ impl DecisionKind {
             DecisionKind::Settlement { .. } => "settlement",
             DecisionKind::TakeControl { .. } => "take_control",
             DecisionKind::Offer { .. } => "offer",
-            DecisionKind::Religion => "religion",
             DecisionKind::Draft { .. } => "draft",
             DecisionKind::Loan { .. } => "loan",
             DecisionKind::FreePromotion { .. } => "free_promotion",
@@ -485,33 +482,6 @@ fn trade_item_text(g: &Game, t: &TradeData) -> String {
             let name = TradeableItem::NAMES.get(t.item_type.0 as usize).copied().unwrap_or("TRADE_?");
             format!("{} {}", name.trim_start_matches("TRADE_").to_lowercase().replace('_', " "), t.data)
         }
-    }
-}
-
-/// Religion choice (BUTTONPOPUP_FOUND_RELIGION): religions not founded yet.
-pub fn religion_options(g: &Game) -> Vec<ReligionType> {
-    g.d.religions.keys().filter(|&r| !g.is_religion_founded(r)).collect()
-}
-
-pub fn religion(g: &Game, p: PlayerId, religions: &[ReligionType], advisor: Option<ReligionType>) -> Decision {
-    let d = g.d;
-    Decision {
-        id: 0,
-        player: p,
-        kind: DecisionKind::Religion,
-        title: "Found a religion".into(),
-        text: "Choose the religion to found.".into(),
-        options: religions
-            .iter()
-            .map(|&r| {
-                let mut o = DecisionOption::new(names::name(d, r), names::display(d, r));
-                // What it brings (its help: alignment, what it unlocks, its holy city's commerce).
-                o.help = crate::view::help::religion::effects(d, r);
-                o
-            })
-            .collect(),
-        advisor: advisor.and_then(|a| religions.iter().position(|&r| r == a)),
-        context: DecisionContext::default(),
     }
 }
 

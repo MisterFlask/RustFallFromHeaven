@@ -16,7 +16,7 @@ import { effectsOf, infoTip, partsList } from "./infotips.js";
 import { marchLine } from "./armies.js";
 import { exploreShort, exploreFull } from "./explore.js";
 import { battleTerrain, openPlan, preferredRow, flashBattle, engageNumbers, engageBrief } from "./engagements.js";
-import { portLine } from "./sea.js";
+import { portLine, seaLineWarns } from "./sea.js";
 import { addHelp } from "./help.js";
 
 // ---- The sea's rules, in the help display (docs/NAVAL.md, sections 3 and 10) ------------------
@@ -25,7 +25,7 @@ addHelp({
   id: "sea",
   group: "Playing",
   order: 5,
-  title: "The sea: range, boats, wear",
+  title: "The sea",
   body: () => {
     const d = S.data?.defines ?? {};
     const n = (k, def) => d[k] ?? def;
@@ -50,6 +50,41 @@ addHelp({
       h(
         "ul",
         h("li", `A warship counts its turns outside a port of yours. After ${n("sea_wear_free_turns", 10)}: -${n("sea_wear_percent", 5)}% strength a turn, at most -${n("sea_wear_max_percent", 50)}%. A turn started in a port clears it.`),
+      ),
+      h("h4", "Seas"),
+      h(
+        "ul",
+        h("li", "Water is divided into named seas. The Sea layer draws their borders dotted, their names, and a badge with each sea's state and the two strengths (yours to the enemy's): Held by you, Held by an enemy, Contested, Open, Patrolled by a team at peace with you, Out of range. Click a name or badge for the sea's panel; the Seas screen (menu) lists every sea you have seen."),
+        h("li", "Only ships you see are counted."),
+      ),
+      h("h4", "Patrol and control"),
+      h(
+        "ul",
+        h("li", "Patrol: a warship on a sea plot outside a city takes the order; it ends the ship's moves, and ends when the ship moves or takes another order. Barbarian ships do not patrol."),
+        h("li", "A side's strength in a sea: the sum of its warships' strength on Patrol there (damage and wear included). Ships passing through count for nothing."),
+        h("li", `A sea is held by an enemy (closed to you) while it has strength above 0 there and at least ${n("sea_hold_percent", 200)}% of yours. You hold it at ${n("sea_hold_percent", 200)}% of every enemy's strength there, or as soon as you patrol where no enemy does. Ships of hidden nationality count as at war with everyone.`),
+      ),
+      h("h4", "Blockade"),
+      h(
+        "ul",
+        h("li", "In a sea held by an enemy: your cities cannot work its plots and no trade of yours passes over it; your supply ships' lanes through it are cut; your supply ships in it are no source of supply."),
+        h("li", "A coastal city is blockaded when every sea it touches is held by an enemy: an anchor mark on its banner (red when it is also besieged), and the city panel says who holds the water."),
+        h("li", "A supply ship is a source of supply only while its sea is not held by an enemy and its lane (the shortest way over water in range to a port of yours) is open."),
+      ),
+      h("h4", "Interception"),
+      h(
+        "ul",
+        h("li", `A group that enters a plot of a sea where an enemy has ships on Patrol is attacked there, once, by that enemy's strongest ship on Patrol in the sea whose odds are at least ${n("intercept_min_odds", 50)}%; then it moves on if it lives. Each ship intercepts once a turn. The path preview says where you would be intercepted.`),
+      ),
+      h("h4", "Ports under siege"),
+      h(
+        "ul",
+        h("li", `A besieged city whose harbour is open is relieved by sea: its units heal at ${n("port_siege_heal_percent", 50)}% of the city's part of healing, and its Sentinels repair at ${n("port_siege_heal_percent", 50)}%. Besieged and blockaded: no healing from the city, no repair.`),
+      ),
+      h("h4", "Shore fire"),
+      h(
+        "ul",
+        h("li", `In a battle on a land plot, each side's warships that can bombard and stand on water next to it fire once before round 1: at most ${n("shore_fire_ships", 3)} a side, the strongest first, once a turn each. A shot never takes a unit below 1 HP. The battle preview and report list them.`),
       ),
     ];
   },
@@ -855,6 +890,8 @@ function showTip() {
     // The Sea layer (docs/NAVAL.md section 10): a port of yours names the range it gives.
     const port = mapView?.layer === "sea" ? portLine(city, me()?.sea_range) : null;
     if (port) lines.push(h("div.tip-sea", port));
+    // Named seas (docs/NAVAL.md 10): a blockaded harbour, always; an open one on the Sea layer.
+    if (city.harbour && (city.harbour.state === "blockaded" || mapView?.layer === "sea")) lines.push(h(`div.tip-sea${city.harbour.state === "blockaded" ? ".warn" : ""}`, city.harbour.text));
   }
   const units = unitsAt(x, y);
   if (units.length) {
@@ -898,10 +935,10 @@ function showTip() {
     if (path.supply) {
       const s = path.supply;
       // At sea (docs/NAVAL.md 3.3): in range of a port.
-      lines.push(h(`div.tip-supply${s.ok ? "" : ".warn"}`, !s.ok ? "No supply line" : s.sea_port ? `Supplied: at sea, in range of ${s.sea_port}` : `Supplied (cost ${s.cost} of ${s.budget})`));
+      lines.push(h(`div.tip-supply${s.ok ? "" : ".warn"}`, !s.ok ? (s.sea_why ? `No supply line: ${s.sea_why}` : "No supply line") : s.sea_port ? `Supplied: at sea, in range of ${s.sea_port}` : `Supplied (cost ${s.cost} of ${s.budget})`));
     }
     // The sea (docs/NAVAL.md section 10): where the path goes in boats, and out of range.
-    for (const t of path.sea?.lines ?? []) lines.push(h(`div.tip-sea${t.startsWith("Out of range") ? ".warn" : ""}`, t));
+    for (const t of path.sea?.lines ?? []) lines.push(h(`div.tip-sea${seaLineWarns(t) ? ".warn" : ""}`, t));
   }
   mapView.showTip(lines);
 }
@@ -1140,8 +1177,7 @@ function helpOf(a) {
   if (a.kind === "upgrade") return effectsOf("UnitType", a.unit);
   if (a.kind === "army") return a.help ?? "";
   if (a.kind === "mission" && tname("MissionType", a.mission) === "MISSION_BUILD") return info("BuildType", a.data1)?.help ?? "";
-  if (a.kind === "mission" && a.outpost) return a.help ?? "";
-  if (a.kind === "mission") return info("MissionType", a.mission)?.help ?? "";
+  if (a.kind === "mission") return a.help ?? info("MissionType", a.mission)?.help ?? "";
   if (a.kind === "command") return info("CommandType", a.command)?.help ?? "";
   return "";
 }

@@ -271,10 +271,9 @@ impl Game {
 
             {
                 let city = &mut self.cities[c];
-                // changeEspionageDefenseModifier, changeGreatPeopleRateModifier,
+                // changeGreatPeopleRateModifier,
                 // changeFreeExperience, changeMaxFoodKeptPercent, changeMaxAirlift,
                 // changeAirModifier, changeAirUnitCapacity, changeNukeModifier
-                city.espionage_defense_modifier += info.espionage_defense_modifier * change;
                 city.great_people_rate_modifier += info.great_people_rate_modifier * change;
                 city.free_experience += info.free_experience * change;
                 city.max_food_kept_percent += info.food_kept * change;
@@ -595,7 +594,7 @@ impl Game {
         let mut temp_maintenance = std::cmp::min(worst_city_maintenance, best_capital_maintenance);
 
         // FfH: Added by Kael 11/18/2008
-        if city.settlement || city.outpost || self.is_option(GameOptionType::GAMEOPTION_NO_MAINTENANCE) {
+        if city.settlement || city.outpost {
             temp_maintenance = 0;
         }
         // FfH: End Add
@@ -640,7 +639,7 @@ impl Game {
         num_cities_maintenance /= 100;
 
         // FfH: Added by Kael 11/18/2008
-        if self.cities[c].settlement || self.cities[c].outpost || self.is_option(GameOptionType::GAMEOPTION_NO_MAINTENANCE) {
+        if self.cities[c].settlement || self.cities[c].outpost {
             num_cities_maintenance = 0;
         }
         // FfH: End Add

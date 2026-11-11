@@ -11,7 +11,7 @@
 
 import { S, me, tname } from "../state.js";
 import * as T from "../tiles.js";
-import { mul, perspective, lookAt, invert, xform4, ortho, vnorm, clamp, lerp, smoothstep } from "./math.js";
+import { mul, perspective, lookAt, invert, xform4, ortho, vnorm, clamp, lerp } from "./math.js";
 import { World, SEA } from "./world.js";
 import { Pipeline } from "./pipeline.js";
 import { whenCompiled, COMPILE_TIMEOUT_MS } from "./gl.js";
@@ -27,8 +27,6 @@ export const DEFAULT_ZOOM = 96;
  *  timeline reads them: two or three syncs of up to six stages), not a whole session's -- the
  *  frames' stop too (render). */
 const SYNC_MEASURES = 60;
-/** How long the full terrain takes to dissolve in over the stand-in (s; `terrainDissolve`). */
-const SWAP_S = 0.4;
 
 /** The WebGL2 renderer string and whether it is a software rasteriser (no usable GPU). Browsers
  *  expose the real adapter through WEBGL_debug_renderer_info; software fallbacks (SwiftShader,
@@ -54,18 +52,6 @@ function force3d() {
     return new URLSearchParams(globalThis.location?.search ?? "").get("force3d") === "1";
   } catch {
     return false;
-  }
-}
-
-/** `?r3d={"standinHold":S}` (debug; read from the page, never from the saved look: the hold must
- *  not outlive the page) -- `terrainDissolve`. Null when not given. */
-function standinHold() {
-  try {
-    const q = new URLSearchParams(globalThis.location?.search ?? "").get("r3d");
-    const s = q && q.startsWith("{") ? Number(JSON.parse(q).standinHold) : NaN;
-    return Number.isFinite(s) ? s : null;
-  } catch {
-    return null;
   }
 }
 
@@ -130,15 +116,10 @@ export class Map3D {
     performance.mark("r3d:pipeline");
     /** Whether the programs have compiled (`ready`): the loop draws nothing before. */
     this.compiled = false;
-    /** The full terrain's way in over the stand-in (`ready`, `terrainDissolve`), or null: none, or
-     *  over. `since`: when the wait began (ms); `timeout`: how long it may take; `shown`: a frame
-     *  drew the stand-in; `at`: when the dissolve began (its clock, s); `off`: given up on. */
-    this.swap = null;
-    this.standinHold = standinHold();
     this.scene = new Scene(gl, {
-      // (fastStart: the material layers the mode replaces are not painted, replacedMaterials.)
-      skipMaterials: this.cfg.fastStart !== 0 ? this.replacedMaterials() : null,
-      noiseTex: this.sceneDefines().NOISE_TEX ? this.noiseTexFormat() : null,
+      // (The material layers the mode replaces are not painted, replacedMaterials.)
+      skipMaterials: this.replacedMaterials(),
+      noiseTex: !!this.sceneDefines().NOISE_TEX,
     });
     performance.mark("r3d:scene");
     this.world = null;
@@ -153,7 +134,7 @@ export class Map3D {
     this.running = true;
     this.frameMs = [];
     // Quality ladder (docs/R3D.md §11): when the measured frame time (frameCost: the GPU's, where
-    // the browser can time it) stays high, step down (0 full -> 1 paint filter off -> 2 + render
+    // the browser can time it) stays high, step down (0 full -> 1 water reflections off -> 2 + render
     // scale 0.75 -> 3 render scale 0.5) to keep the map responsive, and step back up when it is
     // fast again. Off with cfg.autoQuality = 0.
     this.autoLevel = 0;
@@ -206,31 +187,22 @@ export class Map3D {
    *  browser drawing nothing meanwhile, so the page is told first ("ffh:r3d-compiling", main.js)
    *  and given a moment to show it. (A packed scene, pipeline.js `packed`, has none: its programs
    *  compile at link, inside the first wait.) Last, what the mode loads for its first frame
-   *  (`modeReady`): the loop draws nothing until all of it is there. With a stand-in terrain
-   *  (`standinTerrain`) the full terrain is not waited for: it goes on compiling behind the first
-   *  frames, and comes in when done (`terrainDissolve`). */
+   *  (`modeReady`): the loop draws nothing until all of it is there. */
   async ready(timeoutMs) {
-    // (`fastStart`, the default: the scene is built from the game state -- the world, its textures,
-    // the dressing and its instances, the paint layers, the figures, and the HD-2D mode's sprites
-    // start loading -- while the scene's programs compile, not after them in the first frame: that
-    // work is the page's script's, the compile ANGLE's, so they overlap. Where the scene's programs
-    // compile at their first draw (Direct3D: in the GPU process, seconds, the uploads queueing behind
-    // it) that is during the warm-up's first draw, the terrain's; a packed scene (pipeline.js
-    // `packed`) has no warm-up draws, its programs compiling at link on ANGLE's worker threads, so it
-    // is during the wait for the links. `?r3d={"fastStart":0}`, or `{"earlySync":0}` for this
-    // overlap alone: the original order.)
-    const overlap = this.cfg.fastStart !== 0 && (this.cfg.earlySync ?? 1) > 0;
+    // (The scene is built from the game state -- the world, its textures, the dressing and its
+    // instances, the paint layers, the figures, and the HD-2D mode's sprites start loading -- while
+    // the scene's programs compile, not after them in the first frame: that work is the page's
+    // script's, the compile ANGLE's, so they overlap. Where the scene's programs compile at their
+    // first draw (Direct3D: in the GPU process, seconds, the uploads queueing behind it) that is
+    // during the warm-up's first draw, the terrain's; a packed scene (pipeline.js `packed`) has no
+    // warm-up draws, its programs compiling at link on ANGLE's worker threads, so it is during the
+    // wait for the links.)
     const packed = this.pipeline.packed;
     // A packed scene's programs compile whole at link, inside this wait: the page is live meanwhile,
     // so a slow machine is given longer before the renderer gives up.
     const timeout = timeoutMs ?? (packed ? 3 * COMPILE_TIMEOUT_MS : COMPILE_TIMEOUT_MS);
-    // (With a stand-in, every program but the full terrain: the stand-in draws the ground until it
-    // has compiled, which is the most of the wait on Direct3D. Given the same time, after which the
-    // stand-in stays.)
-    const full = this.pipeline.p.terrainStandin ? this.pipeline.p.terrain : null;
-    if (full) this.swap = { since: performance.now(), timeout, shown: false, at: null, off: false };
-    const linked = whenCompiled(this.programs().filter((p) => p !== full), timeout);
-    if (overlap && packed) await this.prepareWhile(linked);
+    const linked = whenCompiled(this.programs(), timeout);
+    if (packed) await this.prepareWhile(linked);
     await linked;
     performance.mark("r3d:linked");
     // (A packed scene has no warm-up draws, so no frozen browser to announce.)
@@ -241,7 +213,7 @@ export class Map3D {
     }
     // (The warm-up issues its first draw, the terrain's, before it first waits.)
     const warm = this.pipeline.warm(warmed);
-    if (overlap) await this.prepareWhile(warm);
+    await this.prepareWhile(warm);
     await warm;
     performance.mark("r3d:warmed");
     // (It loaded while the programs compiled: the start waits for the later of the two, as before.
@@ -249,83 +221,6 @@ export class Map3D {
     await this.modeReady();
     this.compiled = true;
     this.dirty = true;
-  }
-
-  /** The full terrain's share of the ground in this frame (pipeline.js `fr.dissolve`), with a
-   *  stand-in (`swap`): 0 while it compiles, the stand-in drawn; once it is in, rising to 1 over
-   *  SWAP_S on `clock` (s), the stand-in under it; then 1, the stand-in no longer drawn. In before a
-   *  frame showed the stand-in, it simply draws. `standinHold` (a debug switch, page-only) keeps it
-   *  out until the render's time `time` reaches that many seconds, and dissolves it in from there
-   *  on that time: a film or a test of the swap where the links finish at once, also when its
-   *  frames' times start again from 0 (the swap is then never over). */
-  terrainDissolve(time, clock) {
-    const s = this.swap;
-    if (!s) return 1;
-    const hold = this.standinHold;
-    if (s.at === null) {
-      if (s.off || !this.terrainIn()) {
-        s.shown = true;
-        return 0;
-      }
-      if (!s.shown && hold === null) {
-        this.swap = null;
-        return 1;
-      }
-      s.at = clock;
-      performance.mark("r3d:terrain-in");
-    }
-    const k = hold !== null ? (time - hold) / SWAP_S : (clock - s.at) / SWAP_S;
-    if (k >= 1 && hold === null) {
-      this.swap = null;
-      performance.mark("r3d:terrain-swapped");
-    }
-    return clamp(k, 0, 1);
-  }
-
-  /** Whether the full terrain has compiled (it is then finished: its link checked, its uniforms
-   *  read). One that fails, or takes longer than the start's timeout, is given up on (`swap.off`):
-   *  the stand-in stays, which is said once. */
-  terrainIn() {
-    const s = this.swap;
-    const full = this.pipeline.p.terrain;
-    if (!full.done) {
-      if (performance.now() - s.since > s.timeout) {
-        s.off = true;
-        console.warn(`r3d: the terrain shader did not compile within ${Math.round(s.timeout / 1000)} s; the map keeps its stand-in ground`);
-      }
-      return false;
-    }
-    try {
-      full.finish();
-    } catch (e) {
-      s.off = true;
-      console.error("r3d: the terrain shader did not compile; the map keeps its stand-in ground:", e);
-      return false;
-    }
-    return true;
-  }
-
-  /** Whether the ground's swap wants a frame though nothing else changed: the full terrain has
-   *  compiled, or is dissolving in (the loop polls it). Not before the game's map has come: a
-   *  frame then draws no ground, so the swap would never be over. */
-  swapDue() {
-    const s = this.swap;
-    if (!s || s.off || !this.view.map) return false;
-    return s.at === null ? this.pipeline.p.terrain.done : this.standinHold === null;
-  }
-
-  /** Resolves once the full terrain is in, or given up on, a stand-in's dissolve then skipped: the
-   *  frames after draw the full terrain at once (what a capture waits for, `whenReady`). Not with
-   *  `standinHold`: a film of the swap. */
-  async terrainReady() {
-    while (this.swap && this.standinHold === null && !this.swap.off) {
-      if (this.swap.at !== null || this.terrainIn()) {
-        this.swap = null;
-        this.dirty = true;
-        break;
-      }
-      await new Promise((r) => setTimeout(r, 20));
-    }
   }
 
   /** Resolves once what the mode's first frame needs beside the programs has loaded (`ready` waits
@@ -360,9 +255,9 @@ export class Map3D {
   dispose() {
     this.running = false;
     cancelAnimationFrame(this.raf);
-    // Programs still compiling (the full terrain behind a stand-in, or ones `ready` gave up on) are
-    // deleted, and the context let go, once they have compiled (`releaseLater`); the rest -- the
-    // targets, meshes, textures and the programs that are done -- goes now.
+    // Programs still compiling (ones `ready` gave up on) are deleted, and the context let go, once
+    // they have compiled (`releaseLater`); the rest -- the targets, meshes, textures and the
+    // programs that are done -- goes now.
     const pending = this.lost ? [] : this.programs().filter((p) => !p.done);
     try {
       this.scene.dispose();
@@ -397,7 +292,7 @@ export class Map3D {
   /** The Pipeline's arguments from the hooks below (they read only `cfg` and `glName`, so
    *  r3d-lab/compile.html calls this on a bare object of the mode's class for the same programs). */
   pipelineArgs() {
-    return [this.terrainDefines(), { scene: this.sceneDefines(), prop: this.propDefines(), water: this.waterDefines(), riverSplit: this.riverSplit(), packed: this.packedScene(), standin: this.standinTerrain() }];
+    return [this.terrainDefines(), { scene: this.sceneDefines(), prop: this.propDefines(), water: this.waterDefines(), riverSplit: this.riverSplit(), packed: this.packedScene() }];
   }
 
   /** `#define`s the terrain program is compiled with (shaders.js): none for the 3D renderer; a
@@ -413,24 +308,11 @@ export class Map3D {
     return false;
   }
 
-  /** The `#define`s of a stand-in terrain (pipeline.js `standin`, with a packed scene only): a much
-   *  shorter terrain program drawn until the full one has compiled, which then dissolves in over it
-   *  (`ready`, `terrainDissolve`); null for none. None for the 3D renderer; a mode may (on Direct3D
-   *  the terrain's compile is most of the start's). */
-  standinTerrain() {
-    return null;
-  }
-
   /** `#define`s of the terrain, water and props: NOISE_TEX reads their value noise from a hash
    *  texture (shaders.js pnoise; its pattern moves, its look stays), for Direct3D's compile time
-   *  (docs/R3D.md §11.1). Off for the 3D renderer unless `noiseTex` says (?r3d={"noiseTex":1}). */
+   *  (docs/R3D.md §11.1). None for the 3D renderer; the HD-2D mode sets it. */
   sceneDefines() {
-    return this.cfg.noiseTex ? { NOISE_TEX: 1 } : {};
-  }
-
-  /** The hash texture's format: `noiseTex` 2 is R16F (8 MB), else R8 (4 MB). */
-  noiseTexFormat() {
-    return this.cfg.noiseTex === 2 ? "r16f" : "r8";
+    return {};
   }
 
   /** `#define`s the props' and the water's programs are compiled with (shaders.js): none for the 3D
@@ -902,8 +784,6 @@ export class Map3D {
       this.setUnits(this.tweened(performance.now()));
       this.dirty = true;
     }
-    // (The full terrain coming in over the stand-in: drawn though nothing else moves.)
-    if (this.swapDue()) this.dirty = true;
     if (!this.dirty && !animate) return;
     // Animation at ~30 frames per second is enough for wind and water. A GPU slower than that (a
     // laptop's integrated one: 30-100 ms a frame) animates at most every other frame's worth of
@@ -973,7 +853,6 @@ export class Map3D {
       uHazeColor: L.haze,
       uShadowTint: L.shadowTint,
       uWrapLight: cfg.wrapLight,
-      uBands: cfg.bands,
       uRim: cfg.rim,
       uPaint: cfg.paint,
       uHaze: cfg.haze,
@@ -1028,19 +907,13 @@ export class Map3D {
       this.canvas.width = cw;
       this.canvas.height = ch;
     }
-    // The quality ladder lowers the paint filter and the render scale when frames are slow.
+    // The quality ladder lowers the water's reflections and the render scale when frames are slow.
     const qc = this.qualityCfg();
     const scale = qc.renderScale;
     this.pipeline.resize(Math.max(1, Math.round(cw * scale)), Math.max(1, Math.round(ch * scale)));
     const cam = this.camera();
     const fr = this.frameState(cam, time);
     fr.scale = v.dpr * scale;
-    // The brush grows with the zoom: the painted marks belong to the world, not to the screen.
-    fr.paintZoom = clamp(this.ts / 96, 0.6, 1.7);
-    // The filter erases what is narrower than its radius: restrained at the gameplay zooms (where
-    // a road or a pool's rim is a few pixels), fuller close up (where the same things are large
-    // enough to become painted patches).
-    fr.paintStrength = 0.35 + 0.65 * smoothstep(100, 190, this.ts);
     const rect = this.visibleRect(cam);
     const map = v.map;
     const copies = [];
@@ -1048,10 +921,6 @@ export class Map3D {
       for (let k = Math.floor((rect.x0 - 2) / map.w); k <= Math.floor((rect.x1 + 2) / map.w); k++) copies.push(k * map.w);
     } else copies.push(0);
     this.scene.setView(rect, copies, this.ts < 48, this.ts, cam.viewProj);
-    // The ground's swap from a stand-in: on the render's time where it moves (the lab's films
-    // step it), else on the wall clock.
-    const moving = this.cfg.animate && !v.reduceMotion();
-    fr.dissolve = this.terrainDissolve(time, moving ? time : performance.now() / 1000);
     this.beforeFrame(cam, fr);
     this.pipeline.measure = !!this.measuring;
     this.pipeline.render(fr, this.scene, qc, cw, ch);
@@ -1068,15 +937,13 @@ export class Map3D {
     if (this.frames <= 3 || (this.frames <= 400 && this.frames % 20 === 0)) performance.measure(`frame:${this.frames}`, { start: t0, detail: { pending: this.sprites?.atlas.pending ?? 0, layers: this.sprites?.atlas.next ?? 0, chunks: this.scene.terrain.chunks.size, budget: this.scene.budget.n } });
   }
 
-  /** The config with the quality ladder applied: at level 1 the Kuwahara paint filter (off by
-   *  default, but a player may have turned it on) and the water's screen-space reflections go (it
-   *  keeps mirroring the sky and its clouds), at level 2 the render scale drops to 0.75 as well, at
+  /** The config with the quality ladder applied: at level 1 the water's screen-space reflections
+   *  go (it keeps mirroring the sky and its clouds), at level 2 the render scale drops to 0.75 as well, at
    *  level 3 to 0.5 (a laptop's integrated GPU: the frame's cost is nearly all per pixel). */
   qualityCfg() {
     if (this.autoLevel <= 0) return this.cfg;
     return {
       ...this.cfg,
-      kuwahara: 0,
       renderScale: this.cfg.renderScale * [1, 1, 0.75, 0.5][Math.min(3, this.autoLevel)],
       reflections: 0,
     };

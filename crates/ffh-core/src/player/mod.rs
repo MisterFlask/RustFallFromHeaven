@@ -11,7 +11,7 @@
 //!
 //! Topic files (each an `impl Game` block):
 //! - `turn.rs`             turn flow, alive/turn-active state, identity, score, split empire, AI hooks
-//! - `start.rs`            starting plots, free starting units, advanced start
+//! - `start.rs`            starting plots, free starting units
 //! - `cities.rs`           found/acquire/raze/disband cities, city names, capital, plot groups, goody huts
 //! - `units.rs`            unit/building/project lifecycle and production checks, class counts,
 //!                         building effects, golden-age and great-people units
@@ -32,7 +32,6 @@ pub mod turn;
 pub mod units;
 
 pub use diplomacy_trade::DiploEvent;
-pub use start::AdvancedStartAction;
 
 use std::collections::BTreeMap;
 
@@ -71,8 +70,6 @@ pub struct Player {
     pub gold: i32,
     /// C++ `m_iGoldPerTurn`: net gold per turn from deals (sum of `gold_per_turn_by_player`).
     pub gold_per_turn: i32,
-    /// C++ `m_iAdvancedStartPoints` (-1 = not in advanced start).
-    pub advanced_start_points: i32,
     pub golden_age_turns: i32,
     pub num_unit_golden_ages: i32,
     pub strike_turns: i32,
@@ -135,7 +132,7 @@ pub struct Player {
     pub extra_happiness: i32,
     pub building_happiness: i32,
     pub largest_city_happiness: i32,
-    /// C++ `m_iWarWearinessPercentAnger` (raw; getter honours GAMEOPTION_NO_WAR_WEARINESS,
+    /// C++ `m_iWarWearinessPercentAnger` (raw; the getter honours the Stoicism card,
     /// see `player_get_war_weariness_percent_anger`).
     pub war_weariness_percent_anger: i32,
     pub war_weariness_modifier: i32,
@@ -254,7 +251,6 @@ pub struct Player {
     pub commerce_flexible_count: [i32; CommerceType::NUM],
     /// C++ `m_aiGoldPerTurnByPlayer` (changed only through `player_change_gold_per_turn_by_player`).
     pub gold_per_turn_by_player: IdxVec<PlayerId, i32>,
-    pub espionage_spending_weight_against_team: IdxVec<TeamId, i32>,
     pub feat_accomplished: IdxVec<FeatType, bool>,
     pub options: IdxVec<PlayerOptionType, bool>,
     /// C++ `m_szScriptData` (Python script data).
@@ -335,7 +331,6 @@ pub struct Player {
     pub agriculture_history: Vec<i32>,
     pub power_history: Vec<i32>,
     pub culture_history: Vec<i32>,
-    pub espionage_history: Vec<i32>,
 
     // ---------------------------------------------------------------- CvPlayerAI bookkeeping used by rules
     /// C++ `CvPlayerAI::m_iCivicTimer` (`AI_get/set/changeCivicTimer`; CvDeal reads/writes it).
@@ -401,9 +396,9 @@ impl Player {
     /// (C++ `updateTeamType`, `updateHuman`, `GC.getInitCore().getLeader(eID)`).
     ///
     /// The C++ reset also clears other players' entries about this player
-    /// (`m_aiGoldPerTurnByPlayer[eID]`, espionage weights against its team and the
-    /// CvPlayerAI per-player arrays); that cross-player part belongs to `player_init`.
-    pub fn new(d: &GameData, id: PlayerId, setup: &PlayerSetup, num_players: usize, num_teams: usize) -> Player {
+    /// (`m_aiGoldPerTurnByPlayer[eID]` and the CvPlayerAI per-player arrays); that cross-player
+    /// part belongs to `player_init`.
+    pub fn new(d: &GameData, id: PlayerId, setup: &PlayerSetup, num_players: usize, _num_teams: usize) -> Player {
         let n_spec = d.specialists.len();
         let n_impr = d.improvements.len();
         let n_bldg = d.buildings.len();
@@ -422,7 +417,6 @@ impl Player {
             total_land_scored: 0,
             gold: 0,
             gold_per_turn: 0,
-            advanced_start_points: -1,
             golden_age_turns: 0,
             num_unit_golden_ages: 0,
             strike_turns: 0,
@@ -576,7 +570,6 @@ impl Player {
             specialist_extra_commerce: [0; CommerceType::NUM],
             commerce_flexible_count: [0; CommerceType::NUM],
             gold_per_turn_by_player: IdxVec::from_elem(0, num_players),
-            espionage_spending_weight_against_team: IdxVec::from_elem(0, num_teams),
             feat_accomplished: IdxVec::from_elem(false, FeatType::NUM),
             options: IdxVec::from_elem(false, PlayerOptionType::NUM),
             script_data: String::new(),
@@ -629,7 +622,6 @@ impl Player {
             agriculture_history: Vec::new(),
             power_history: Vec::new(),
             culture_history: Vec::new(),
-            espionage_history: Vec::new(),
 
             ai_civic_timer: 0,
             ai_religion_timer: 0,
@@ -716,34 +708,6 @@ impl Game {
         let slot_status = self.setup.players[p.idx()].slot_status;
         if slot_status == SlotStatus::Taken || slot_status == SlotStatus::Computer {
             self.player_set_alive(p, true);
-
-            // Dead code in FfH (CvGame::isOption locks RANDOM_PERSONALITIES off); kept as in C++.
-            if self.is_option(GameOptionType::GAMEOPTION_RANDOM_PERSONALITIES) && !self.player_is_barbarian(p) && !self.player_is_minor_civ(p) {
-                let mut best_value = 0;
-                let mut best_personality: Option<LeaderHeadType> = None;
-
-                for leader in d.leader_heads.keys() {
-                    if leader.i() != d.defines.barbarian_leader {
-                        // XXX minor civ???
-                        let mut value = 1 + self.soren_rand_num(10000, "Choosing Personality");
-
-                        for other in self.civ_player_ids() {
-                            if self.players[other].alive && self.players[other].personality_type == Some(leader) {
-                                value /= 2;
-                            }
-                        }
-
-                        if value > best_value {
-                            best_value = value;
-                            best_personality = Some(leader);
-                        }
-                    }
-                }
-
-                if best_personality.is_some() {
-                    self.players[p].personality_type = best_personality;
-                }
-            }
 
             // changeBaseFreeUnits & co: plain changes (their only side effects are UI dirty bits).
             let df = &d.defines;
@@ -859,17 +823,10 @@ fn reset_player(g: &mut Game, p: PlayerId) {
 
     // C++ placeholders (slots not initialized yet) have no team and are skipped; here their
     // arrays are still empty, so `get_mut` skips them the same way.
-    let team = g.players[p].team;
     for other in g.player_ids() {
         // GET_PLAYER(iI).m_aiGoldPerTurnByPlayer[getID()] = 0 (raw store: m_iGoldPerTurn is
         // not adjusted)
         if let Some(v) = g.players[other].gold_per_turn_by_player.get_mut(p) {
-            *v = 0;
-        }
-        // C++ loops teams, then the players of each team: every player with a team gets
-        // setEspionageSpendingWeightAgainstTeam(getTeam(), 0) (clamp + compare + UI dirty bit,
-        // i.e. a plain store of 0).
-        if let Some(v) = g.players[other].espionage_spending_weight_against_team.get_mut(team) {
             *v = 0;
         }
     }
@@ -962,7 +919,6 @@ mod tests {
         assert_eq!(pl.id, PlayerId(1));
         assert_eq!(pl.team, TeamId(1));
         assert_eq!(pl.starting_x, INVALID_PLOT_COORD);
-        assert_eq!(pl.advanced_start_points, -1);
         assert_eq!(pl.highest_unit_level, 1);
         assert_eq!(pl.max_cities, -1);
         assert_eq!(pl.alignment, None);
@@ -970,7 +926,6 @@ mod tests {
         assert!(pl.loyal_member.iter().all(|&b| b));
         assert!(pl.civics.iter().all(|c| c.is_none()));
         assert_eq!(pl.gold_per_turn_by_player.len(), n_players);
-        assert_eq!(pl.espionage_spending_weight_against_team.len(), n_teams);
         assert_eq!(pl.ai_memory_count.len(), n_players);
         assert_eq!(pl.ai_memory_count[PlayerId(0)].len(), MemoryType::NUM);
         assert_eq!(pl.traits.len(), d.traits.len());

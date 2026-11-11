@@ -26,7 +26,7 @@
 //!   ffh-play soak run [SETTINGS] [--saves DIR] [--resume SAVE] [--check-every N] [--save-check-every N]
 //!                                      the AI plays the human slot for one game (design P2):
 //!                                      --seed N --size tiny|WORLDSIZE_X --civ kuriotates|CIVILIZATION_X
-//!                                      --opponents N --options raging,aggressive|GAMEOPTION_X,..
+//!                                      --opponents N --options raging,double_animals|GAMEOPTION_X,..
 //!                                      --turns N --speed --handicap --spawn-turn N; a
 //!                                      panic is caught and reported with its repro command
 //!                                      (exit 101; stuck 4; other failure 5); --panic-at T
@@ -45,7 +45,7 @@
 //!                                      the HTTP server (design §4.2) on 127.0.0.1:8642 with the
 //!                                      browser client (P5); no game until the client starts
 //!                                      one, or GAME says so
-//!   ffh-play stage capture|attack|automoves|load|trade|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards|sea DIR
+//!   ffh-play stage capture|attack|automoves|load|trade|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards|sea|outpost DIR
 //!                                      write a save at a staged situation into DIR (testing the
 //!                                      clients): `capture` (a warrior next to an undefended
 //!                                      enemy city: moving in raises the keep/raze decision),
@@ -91,7 +91,7 @@ fn usage() -> ! {
          \x20      | soak [--seeds A..B] [--sizes ..] [--civs ..] [--options ..] [--speeds ..] [--turns N] [--jobs N] [--timeout SECS]\n\
          \x20             [--saves DIR] [--keep-saves] [--out FILE] [--filter TEXT] [--list]\n\
          \x20      | agent [GAME] [--on-eof quit|end-turn] [--progress]\n\
-         \x20      | serve [GAME] [--port N] [--bind ADDR] [--assets DIR] | stage capture|attack|automoves|load|trade|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards|sea DIR\n\
+         \x20      | serve [GAME] [--port N] [--bind ADDR] [--assets DIR] | stage capture|attack|automoves|load|trade|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards|sea|outpost DIR\n\
          \x20      | bench [--quick] [--seed N] [--turns T] [--runs R] [--world W] [--opponents N] [--ffh PATH] [--json]\n\
          \x20      | export-site OUT [--data DIR]\n\
          \x20  GAME: [--saves DIR | --no-saves] [--autosaves N] [--setup JSON] [--seed N] [--opponents N] [--world W] [--civ C]\n\
@@ -726,7 +726,7 @@ fn cmd_lookup(args: &[String]) {
     }
 }
 
-/// `ffh-play stage capture|attack|automoves|load|trade|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards|sea DIR`: a save
+/// `ffh-play stage capture|attack|automoves|load|trade|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards|sea|outpost DIR`: a save
 /// at a staged situation (testing the clients).
 fn cmd_stage(args: &[String]) {
     let [kind, dir] = args else { usage() };
@@ -749,6 +749,7 @@ fn cmd_stage(args: &[String]) {
         "crusade" => ffh_play::stage::crusade(dir).map(|s| s.to_json()),
         "cards" => ffh_play::stage::cards(dir).map(|s| s.to_json()),
         "sea" => ffh_play::stage::sea(dir).map(|s| s.to_json()),
+        "outpost" => ffh_play::stage::outpost(dir).map(|s| s.to_json()),
         _ => usage(),
     };
     match out {

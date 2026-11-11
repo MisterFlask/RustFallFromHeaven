@@ -40,7 +40,7 @@ CONFIGS = {
     'V1': '--seed 11 --civs 18 --size WORLDSIZE_HUGE --turns 250',
     'V2': '--seed 12 --civs 7 --size WORLDSIZE_STANDARD --turns 450',
     'V3': '--seed 13 --civs 3 --size WORLDSIZE_DUEL --turns 400 --option GAMEOPTION_RAGING_BARBARIANS',
-    'V4': '--seed 14 --civs 9 --size WORLDSIZE_LARGE --turns 350 --option GAMEOPTION_AGGRESSIVE_AI',
+    'V4': '--seed 14 --civs 9 --size WORLDSIZE_LARGE --turns 350',
     'H1': '--seed 3 --civs 18 --size WORLDSIZE_HUGE --turns 300',
     'E1': '--seed 1 --civs 6 --size WORLDSIZE_STANDARD --turns 150',
 }

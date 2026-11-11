@@ -55,7 +55,9 @@ fn opt<I: Idx>(v: Option<I>) -> i32 {
 /// The arrays of the `map` reply, in this order (one value per plot each). `sea` (docs/NAVAL.md,
 /// section 10: the Sea layer) is [`crate::view::sea::SeaCtx::value`]: -1 on land or without a
 /// range rule, 0 on water out of the human team's range, else the steps from its nearest port.
-pub const LAYERS: [&str; 12] = ["vis", "plot_type", "terrain", "feature", "bonus", "improvement", "route", "owner", "river", "city", "yield", "sea"];
+/// `sea_id` (phase 2): the plot's named sea on revealed water (its index in the view's `seas`
+/// ids), else -1.
+pub const LAYERS: [&str; 13] = ["vis", "plot_type", "terrain", "feature", "bonus", "improvement", "route", "owner", "river", "city", "yield", "sea", "sea_id"];
 
 /// The number of [`LAYERS`].
 pub const NUM_LAYERS: usize = LAYERS.len();
@@ -135,6 +137,7 @@ pub fn rows(v: &Viewer) -> MapRows {
                 pl.plot_city.filter(|&c| v.city_revealed(c)).map_or(-1, |c| c.0 as i32),
                 packed_yield(v, p),
                 sea.value(v, p),
+                crate::view::seas::sea_id_value(g, p),
             ]
         });
     }

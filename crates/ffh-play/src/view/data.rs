@@ -255,6 +255,11 @@ fn build(d: &GameData) -> Json {
             "sea_wear_free_turns" => d.defines.sea_wear_free_turns,
             "sea_wear_percent" => d.defines.sea_wear_percent,
             "sea_wear_max_percent" => d.defines.sea_wear_max_percent,
+            // Named seas (docs/NAVAL.md, section 11, phase 2).
+            "sea_hold_percent" => d.defines.sea_hold_percent,
+            "port_siege_heal_percent" => d.defines.port_siege_heal_percent,
+            "shore_fire_ships" => d.defines.shore_fire_ships,
+            "intercept_min_odds" => d.defines.intercept_min_odds,
             // Outposts (docs/NAVAL.md, section 9).
             "outpost_max_pop" => d.defines.outpost_max_pop,
             "outpost_raise_cost" => d.defines.outpost_raise_cost,

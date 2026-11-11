@@ -108,7 +108,7 @@ turns) without a failure; the browser smoke test.
 
 - `workers::choose_crew_build` is the old worker valuation over `Game::city_crew_plots`, with the
   rules' road plan (`Game::player_road_plan`, the AI's old `road_plan`).
-- Production, the governors and the advanced start train no workers or work boats; idle workers
+- Production and the governors train no workers or work boats; idle workers
   are no longer disbanded.
 - Slaves go to the nearest city and stay (`units::laborer`).
 - Trading Post: a spare soldier of a garrison of four or more walks to the site and builds it,

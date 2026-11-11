@@ -596,12 +596,6 @@ impl Game {
             return 0;
         }
 
-        // FfH: Added by Kael 11/05/2008
-        if self.is_option(GameOptionType::GAMEOPTION_NO_HEALING_FOR_HUMANS) && self.unit_is_human(u) && self.unit_is_alive(u) {
-            return 0;
-        }
-        // FfH: End Add
-
         let city = self.map.plots[plot].plot_city;
 
         // Card: Automatons (docs/CARDS.md): a unit type that heals only in a city of its team with
@@ -1514,7 +1508,11 @@ impl Game {
                 }
             }
 
+            let owner = self.map.plots[plot].owner;
             self.plot_set_improvement_type(plot, d.improvements[improvement].improvement_pillage);
+            if self.telemetry.on() && self.plot_is_water(plot) {
+                self.tel_naval_pillage(u, plot, owner);
+            }
         } else if self.plot_is_route(plot) {
             temp_route = self.map.plots[plot].route_type;
             self.plot_set_route_type(plot, None, true); // XXX downgrade rail???
@@ -1727,7 +1725,6 @@ mod tests {
         let plot = g.unit_plot(u);
         g.map.plots[plot].units.push(u);
         g.map.plots[plot].owner = Some(owner);
-        assert!(!g.is_option(GameOptionType::GAMEOPTION_NO_HEALING_FOR_HUMANS));
 
         g.units[u].extra_friendly_heal = 5;
         g.units[u].extra_neutral_heal = 100; // not used in friendly territory

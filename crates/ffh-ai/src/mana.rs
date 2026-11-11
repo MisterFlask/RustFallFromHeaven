@@ -1,4 +1,4 @@
-//! Mana nodes as an economy (`MANA_NODES`; More Naval AI's `CvUnitAI::AI_upgrademanaMove` and
+//! Mana nodes as an economy (More Naval AI's `CvUnitAI::AI_upgrademanaMove` and
 //! its mana valuation in `CvPlayerAI::AI_bonusVal`). Raw mana (`BONUS_MANA`) in our lands is
 //! worth nothing until a caster builds a node on it (`BUILD_MANA_FIRE` ... : the improvement
 //! converts the bonus, for good: a node cannot be changed into another type). Before this, only the
@@ -16,8 +16,7 @@
 //! - units with an affinity for the mana grow stronger with every node;
 //! - the first node of a type opens the buildings that need the mana (the Luchuirp's Blasting
 //!   Workshop needs Fire, Pallens Engine Sun, the Adularia Chamber Shadow): each worth what
-//!   `production::building_value` gives it in our best city for it ([`buildings_value`], switch
-//!   `MANA_BUILDINGS`).
+//!   `production::building_value` gives it in our best city for it ([`buildings_value`]).
 //!
 //! A caster with nothing better to do (no strike to join, no city spell to keep) goes to build the
 //! node worth most for the turns it takes ([`build_node`]); production trains one caster for it
@@ -104,9 +103,7 @@ pub fn node_value(g: &Game, p: PlayerId, bonus: BonusType) -> i32 {
     // The first node opens the sphere to our casters, and the buildings that need the mana.
     if !have {
         v += SPELL_SCALE * spells_value(g, p, bonus);
-        if crate::switches::MANA_BUILDINGS.on(g, p) {
-            v += buildings_value(g, p, bonus);
-        }
+        v += buildings_value(g, p, bonus);
     }
     // Affinities (a unit's strength grows with the mana of its type: Fire Elementals, ...).
     let affinity: i32 = pl.units.iter().map(|&u| g.units[u].bonus_affinity[bonus].max(0)).sum();
@@ -237,7 +234,7 @@ const BUILDER_JOBS_VALUE: i32 = 300;
 /// no enemy we see can reach next turn), and builds it. True if it got orders.
 pub fn build_node(g: &mut Game, v: &mut crate::view::View, grp: GroupId, u: UnitId) -> bool {
     let p = v.p;
-    if !crate::switches::MANA_NODES.on(g, p) || !can_build_nodes(g.d, g.units[u].unit_type) {
+    if !can_build_nodes(g.d, g.units[u].unit_type) {
         return false;
     }
     let jobs: Vec<(PlotIdx, BuildType, i32)> =
@@ -284,13 +281,13 @@ pub fn builders(g: &Game, p: PlayerId) -> i32 {
     g.players[p].units.iter().filter(|&&u| is_caster(g, u)).count() as i32 + g.players[p].ai_num_train_ai_units[UnitAIType::UNITAI_MANA_UPGRADE]
 }
 
-/// Production (`MANA_NODES`): a caster to build our nodes when none of ours can and the jobs are
+/// Production: a caster to build our nodes when none of ours can and the jobs are
 /// worth it ([`BUILDER_JOBS_VALUE`]), or the building that trains one (the Mage Guild) in our most
 /// productive city when no city of ours can.
 pub fn production(g: &Game, c: CityId) -> Option<crate::production::Choice> {
     use crate::production::Choice;
     let p = g.cities[c].owner;
-    if !crate::switches::MANA_NODES.on(g, p) || builders(g, p) > 0 {
+    if builders(g, p) > 0 {
         return None;
     }
     let jobs = jobs(g, p);

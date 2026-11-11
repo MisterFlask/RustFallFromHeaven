@@ -17,7 +17,6 @@ use ffh_core::ids::*;
 use ffh_core::structs::*;
 use ffh_data::*;
 
-pub mod advanced_start;
 pub mod armies;
 pub mod governor;
 pub mod automation;
@@ -49,6 +48,7 @@ pub mod events;
 pub mod expansion;
 pub mod finance;
 pub mod forecast;
+pub mod invasion;
 pub mod magic;
 pub mod mana;
 pub mod military;
@@ -67,6 +67,7 @@ pub mod supply;
 pub mod switches;
 pub mod tactics;
 pub mod tech_plan;
+pub mod threat;
 #[cfg(test)]
 pub(crate) mod testkit;
 pub mod trade;
@@ -76,6 +77,7 @@ pub mod units;
 pub mod values;
 pub mod vassals;
 pub mod victory;
+pub mod warships;
 pub mod view;
 pub mod workers;
 pub mod world_spells;
@@ -157,10 +159,6 @@ impl Controller for Ai {
             supply::turn(g, p);
             tactics::turn(g, p);
             return;
-        }
-        // C++ setTurnActive -> AI_doAdvancedStart while the player still has start points.
-        if g.players[p].advanced_start_points >= 0 && !g.players[p].human && !g.player_is_barbarian(p) {
-            advanced_start::run(g, p);
         }
         let turn = g.game_turn();
         // The empire decisions are made on the first call of the player's turn. A controller
@@ -297,10 +295,6 @@ impl Controller for Ai {
 
     fn diplo_vote(&self, g: &Game, p: PlayerId, vote: &VoteSelectionSubData, source: VoteSourceType) -> PlayerVote {
         council::diplo_vote(g, p, vote, source)
-    }
-
-    fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {
-        g.players[p].personality_type.and_then(|l| g.d.leader_heads[l].favorite_religion)
     }
 
     fn crusade_pledge(&self, g: &Game, p: PlayerId, c: ffh_core::crusade::CrusadeId) -> Option<ffh_core::crusade::Pledge> {

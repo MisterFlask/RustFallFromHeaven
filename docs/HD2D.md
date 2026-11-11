@@ -274,7 +274,7 @@ does for the isometric sprites. No unit art changed.
   layer by its mean (`matTint`, `matShade`), so the land keeps its painted design — which ground
   lies where, the meadow's golden patches, the plot centres — and takes the pixel art's texture.
   No shader changed; the 3D renderer's own layers are untouched.
-* **The stand-in as the ground** (the owner's call, 2026-11-03; `terrainStandin`, §11). The ground is
+* **The stand-in as the ground** (the owner's call, 2026-11-03). The ground is
   the terrain shader compiled with the stand-in's defines (hd2d/config.js `TERRAIN_STANDIN`,
   docs/R3D.md §11.1 "Two stages"): the pixel-art materials blended across the plots under each
   ground's mean tones, lit, shadowed and fogged as before, without the painting's value noises,
@@ -289,7 +289,8 @@ does for the isometric sprites. No unit art changed.
   blobs. What it gains: half the program (1358 instructions against 2742), so no second stage at
   the start (the full terrain's compile, about 1.9 s on Direct3D, is gone), and a cheaper frame
   (SwiftShader, the lab's `scene=hd2d`, one run: 2856 to 2432 ms; an integrated GPU's gain is
-  still to measure). `?r3d={"terrainStandin":0}` draws the full painting, with the two stages.
+  still to measure). (The switch back to the full painting with the two stages, `terrainStandin`,
+  was removed 2026-11-10.)
 * **Prop cards** (`hd2d/art/*.png`, indexed by `hd2d/art/index.js`): single trees (broadleaf,
   pine, snowy pine, jungle, ancient elven giants, dead), bushes, wildflowers, boulders, violet
   crystals and lava rocks, drawn as single objects on white, cut out, scaled to a card a set
@@ -730,8 +731,8 @@ beside an Intel UHD integrated GPU, headless Chrome 156 (`FFH_CHROMIUM_CHANNEL=c
     the coast's masses are the meadow's, the burning sands' dunes the desert's, the fields', the
     peaks' snow, the beach, the rock, the roads and the floors' small noises): 6308 to 5736 (107
     noises; the 3D renderer's 6756 to 6184), the five lab stills bit-identical.
-  * **Lean, the mode only** (`TERRAIN_LEAN`, hd2d/config.js `terrainLean`, on by default;
-    `?r3d={"terrainLean":0}` draws the full painting): every open ground's broad masses from the
+  * **Lean, the mode only** (`TERRAIN_LEAN`, hd2d/config.js; its switch `terrainLean` was removed
+    2026-11-10): every open ground's broad masses from the
     meadow's noises, fewer octaves where only a broad shape depends on them, the perdition's pools
     from the marsh's noise, the hell marks' mask, pulse and sparks, the road edge's finest wobble,
     the rock's crags and strata, the parchment's dabs, four noises shared with neighbours of about
@@ -780,21 +781,23 @@ beside an Intel UHD integrated GPU, headless Chrome 156 (`FFH_CHROMIUM_CHANNEL=c
   brush mark from the one plane that carries the face instead of blending three (the weights, the
   normal's fourth power, give that plane nearly all of every face; a third of the marks' code);
   `NO_FINE_PIGMENT` drops the fine pigment noise under the marks (a few percent: nothing moved by 8 of
-  255). The strokes themselves stay: compiled out (`NO_STROKES`) the fields' rows and the sheaves turn
-  to smooth plastic close up (3.1% of rivertown's pixels moved by more than 8). The water's rivers
+  255). The strokes themselves stay: compiled out (`NO_STROKES`, tried and not taken) the fields'
+  rows and the sheaves turn to smooth plastic close up (3.1% of rivertown's pixels moved by more
+  than 8). The water's rivers
   are a program of their own (`RIVER_SPLIT`, exact), the sea's normals come from noise gradients
   (`GRAD_NORMALS`: three noises instead of nine; the rivers keep their finite difference, whose step
   across the channel is wide enough that gradients moved what they mirror), the body's mottle has
   two octaves (`BODY_LITE`), and across the fog of war's frontier each drift fades toward its mean
   instead of being worked out twice, moving and at rest (`CALM_FADE`, about 0.5 s of the two
   programs' compile): the only change a player could see, a strip along the frontier where the
-  water's strokes and foam calm. Glitter and caustics stay (each another 0.1 s; `NO_GLITTER`
-  loses the sea's and rivers' glints, `NO_CAUSTICS` a faint net seen close up). Against the
+  water's strokes and foam calm. Glitter and caustics stay (each another 0.1 s; compiled out, tried
+  and not taken, the sea's and rivers' glints go, and a faint net seen close up). Against the
   original programs (SwiftShader, animation frozen) the whole set moves at most 0.28% of a lab
   still's pixels by more than 8 of 255 (0.5% on a close view of the coast: the sea's ripples) and
   0.07% of the turn-200 game's HD-2D shots; the 3D renderer's programs are unchanged (identical
-  after preprocessing). `?r3d={"lite":0}` compiles the
-  original programs; `"liteOff"`/`"liteOn"` (comma lists) take names out or add the optional ones.
+  after preprocessing). (The switches that compiled the original programs or chose among these,
+  `lite`, `liteOff` and `liteOn`, and the optional `NO_STROKES`, `NO_GLITTER`, `NO_CAUSTICS` and
+  `GRAD_NORMALS_RIVER` were removed 2026-11-10.)
 
 ## 9. Cities and the camera
 
@@ -869,32 +872,19 @@ distance each closes:
 (0.5 and 0.15). The `plain` preset turns the stylisation and the mode's passes off (the cards stay).
 Its `LIGHT` is the one light. Stored apart from the 3D renderer's look (`ffh.hd2d.config.3`, renamed
 when the look changes enough that a saved panel tuning would mislead); the panel offers the 3D
-switches that apply (not the paint filter, ink, grid or brush dabs, which the mode's terrain is
-compiled without, §8) and the mode's rows. `noiseTex` (page only, read when the programs are built):
-the terrain's, water's and props' value noise from a hash texture (docs/R3D.md §11.1, `NOISE_TEX`;
-about half their compile on Direct3D); `?r3d={"noiseTex":0}` compiles the arithmetic noise, 2 an
-R16F texture instead of R8.
-`lite` (1; not a panel row, read when the programs are built) compiles parts of the props' and the
-water's programs out, `liteOff` and `liteOn` choose which (§8).
-`terrainLean` (1, read when the programs are built) is the lean terrain (§8), `packScene` (on Direct3D
-only, unless 1 or 0 says otherwise) the scene packed into one target (docs/R3D.md §11.1: the scene's
-programs compile at link there; other backends compile at link anyway), `fastStart` (1) the start-up's CPU work done while the programs compile and the sprites
-uploaded from memory (`earlySync` 0 turns off the overlap alone). With those five compile-time
-switches and `terrainStandin` off the mode draws as before them (the lab's stills match bit for
-bit): `?r3d={"noiseTex":0,"terrainLean":0,"lite":0,"packScene":0,"fastStart":0,"terrainStandin":0}`;
-`r3d-lab/compile.html` takes the same `?r3d=` to compare their compile times (§7).
-`terrainStandin` (1, read when the programs are built) draws the ground as the stand-in's painting
-(§5b, "The stand-in as the ground"); 0 draws the full painting.
-`standin` (1, read when the programs are built; only with the scene packed and `terrainStandin` 0)
-draws the ground with a stand-in until the full terrain has compiled, which then dissolves in over
-it (docs/R3D.md §11.1, "Two stages"); `?r3d={"standin":0}` waits for the full terrain and draws as
-before.
-`standinHold` (debug, page-only; unset by default; with `terrainStandin` 0) keeps the full terrain out until the time passed
-to the render reaches that many seconds -- the time since the renderer was made while it animates,
-a lab capture's frame time -- and dissolves it in from there: a film or a test of the swap on a
-machine whose links finish at once, e.g. `r3d-lab.mjs --capture swap.mp4 --query
-'scene=hd2d&renderer=hd2d&r3d={"packScene":1,"standinHold":4}' --fps 15` (the swap at frame 60).
-The render's time stands still while nothing animates (`animate` off), and the hold then never ends.
+switches that apply (not the grid or brush dabs, which the mode's terrain is compiled without, §8)
+and the mode's rows. The mode always compiles its terrain, water and props with the value noise
+from a hash texture (docs/R3D.md §11.1, `NOISE_TEX`; about half their compile on Direct3D), the
+lean terrain (§8), the stand-in's ground (§5b) and the smaller props' and water programs (§8), and
+always does the start-up's CPU work while the programs compile, uploading the sprites from memory.
+`packScene` (on Direct3D only, unless 1 or 0 says otherwise) packs the scene into one target
+(docs/R3D.md §11.1: the scene's programs compile at link there; other backends compile at link
+anyway); `r3d-lab/compile.html` takes the same `?r3d=` to compare compile times (§7).
+The page-only switches that drew the mode as before these savings -- `noiseTex`, `terrainLean`,
+`lite`/`liteOff`/`liteOn`, `terrainDefs`, `fastStart`, `earlySync`, `terrainStandin`, `standin`
+and `standinHold` (the two-stage start with the full painting dissolving in over the stand-in) --
+were removed 2026-11-10 (their defaults kept), as were the 3D renderer's retired paint filter, ink
+outlines and light banding (docs/R3D.md §5).
 
 ## 12. Removing it
 

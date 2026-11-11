@@ -3,6 +3,10 @@
 
 pub use ffh_core::defs::NUM_CITY_PLOTS;
 
+/// C++ `GC.getGameINLINE().isOption(GAMEOPTION_AGGRESSIVE_AI)`: the option is gone (docs/PORTING.md
+/// "Changes from FFH2"), so always off.
+pub const AGGRESSIVE_AI: bool = false;
+
 pub const DEFAULT_PLAYER_CLOSENESS: i32 = 6;
 pub const AI_DAGGER_THRESHOLD: i32 = 100;
 

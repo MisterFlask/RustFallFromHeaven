@@ -49,9 +49,6 @@
 //! A human's governed cities ([`govern`], through `Controller::govern_cities`): the governor
 //! trains defenders against revolt pressure (production is its job); the channels are the
 //! player's.
-//!
-//! Switch `CULTURE` (`FFH_AI_CULTURE_OFF`): off, a civilization channels nothing and its cultural
-//! defence is only the governors' (`governor::decide`).
 
 use ffh_core::culture::ChannelReach;
 use ffh_core::game::Game;
@@ -71,13 +68,7 @@ type Order = (CulturalActionType, PlayerId, Option<ReligionType>);
 
 /// The AI's cultural play, once a turn.
 pub fn turn(g: &mut Game, p: PlayerId) {
-    let on = crate::switches::CULTURE.on(g, p);
-    turn_switched(g, p, on);
-}
-
-/// [`turn`] with switch `CULTURE` read.
-fn turn_switched(g: &mut Game, p: PlayerId, on: bool) {
-    if !on || g.player_is_barbarian(p) || g.players[p].cities.is_empty() {
+    if g.player_is_barbarian(p) || g.players[p].cities.is_empty() {
         return;
     }
     defend(g, p, false);
@@ -988,7 +979,7 @@ mod tests {
             g.set_game_turn(next);
             set_rate(&mut g, ours, 60);
             set_rate(&mut g, town, 0);
-            turn_switched(&mut g, p0, true);
+            turn(&mut g, p0);
             channelled |= g.cities[ours].culture_channel.as_ref().is_some_and(|ch| ch.action == revolt(&g) && ch.target == p1);
             g.city_do_culture_channel(ours);
             if g.cities.contains(town) {
@@ -1003,21 +994,6 @@ mod tests {
         assert_eq!(g.cities[capital].owner, p1, "a capital never flips");
     }
 
-    /// With switch `CULTURE` off the civilization channels nothing, where on it would.
-    #[test]
-    fn nothing_with_the_switch_off() {
-        let (mut g, ours, _, _) = duel();
-        let (p0, p1) = (PlayerId(0), PlayerId(1));
-        g.players[p0].culture_memory[p1] = [8, 0];
-        set_rate(&mut g, ours, 60);
-        let mut on = Game::load(g.d, &g.save()).unwrap();
-        set_rate(&mut on, ours, 60);
-        turn_switched(&mut g, p0, false);
-        assert!(g.cities[ours].culture_channel.is_none());
-        turn_switched(&mut on, p0, true);
-        assert!(on.cities[ours].culture_channel.is_some(), "on, it channels");
-    }
-
     /// A neighbour we are Friendly with is spared, however weak.
     #[test]
     fn a_friendly_neighbour_is_spared() {
@@ -1025,7 +1001,7 @@ mod tests {
         let p0 = PlayerId(0);
         befriend(&mut g);
         set_rate(&mut g, ours, 60);
-        turn_switched(&mut g, p0, true);
+        turn(&mut g, p0);
         assert!(!g.cities[ours].culture_channel.as_ref().is_some_and(|ch| ch.action == revolt(&g)), "no revolt against a friend");
     }
 
@@ -1046,7 +1022,7 @@ mod tests {
         }
         assert_eq!(g.player_get_state_religion(p0), Some(r));
         set_rate(&mut g, ours, 20);
-        turn_switched(&mut g, p0, true);
+        turn(&mut g, p0);
         let ch = g.cities[ours].culture_channel.clone().expect("a channel");
         assert_eq!(ch.action, g.d.t::<CulturalActionType>("CULTURALACTION_SPREAD_RELIGION"));
         assert_eq!((ch.target, ch.religion), (p0, Some(r)), "our state religion, at home");
@@ -1067,7 +1043,7 @@ mod tests {
         assert!(g.city_is_governed(ours));
         govern(&mut g, p0);
         assert!(g.cities[ours].culture_channel.is_none(), "a human's governor sets no channel");
-        turn_switched(&mut g, p0, true);
+        turn(&mut g, p0);
         let ch = g.cities[ours].culture_channel.clone().expect("the AI's own decision, governed or not");
         assert_eq!((ch.action, ch.target), (revolt(&g), p1));
     }

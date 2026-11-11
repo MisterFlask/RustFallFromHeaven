@@ -458,3 +458,72 @@ fn an_ai_ship_stays_in_range_unless_already_out() {
     let lg = w.g.units[lost].group.unwrap();
     assert!(w.g.group_find_path(lg, w.at(20, 1), w.at(6, 1), 0).is_some(), "back into range");
 }
+
+// ---- Found in review ----
+
+/// A bay (x 12, y 2..=8) cuts the land between two cities of player 0, (10, 5) and (14, 5): by
+/// land the way goes round its end (8 steps), across it in boats it is 4.
+fn bay(w: &mut World) -> (CityId, CityId) {
+    let coast = w.g.d.t::<TerrainType>("TERRAIN_COAST");
+    for y in 2..=8 {
+        let q = w.at(12, y);
+        w.g.plot_set_plot_type(q, PlotType::PLOT_OCEAN, false);
+        w.g.plot_set_terrain_type(q, coast, false);
+    }
+    w.g.map_recalculate_areas();
+    w.g.update_plot_groups();
+    let a = w.g.player_init_city(w.p0, 10, 5, true, true);
+    let b = w.g.player_init_city(w.p0, 14, 5, true, true);
+    (a, b)
+}
+
+#[test]
+fn a_human_players_recruit_marches_by_land_not_in_boats() {
+    use ffh_core::army::RecruitDest;
+    let mut w = world();
+    let (a, b) = bay(&mut w);
+    w.g.players[w.p0].human = true;
+    let u = w.unit(w.p0, "UNIT_WARRIOR", 10, 5);
+    w.g.unit_recruit_to(u, a, RecruitDest::Garrison(b));
+    for _ in 0..12 {
+        if !w.g.units.contains(u) || w.g.units[u].march.is_none() {
+            break;
+        }
+        w.g.player_do_march(w.p0);
+        assert!(!w.g.unit_is_in_boats(u), "the rules marched the recruit into boats at {:?}", w.g.map.xy(w.g.unit_plot(u)));
+        w.rest(u);
+    }
+    assert!(w.g.units[u].march.is_none(), "it arrived");
+    assert_eq!(w.g.map.xy(w.g.unit_plot(u)), (14, 5));
+}
+
+#[test]
+fn a_flat_movement_unit_in_boats_still_crosses_one_water_plot_a_turn() {
+    let mut w = world();
+    // The Tar Demon (the Sheaim's planar gates) moves at a flat cost, on land.
+    let u = w.unit(w.p0, "UNIT_TAR_DEMON", 10, 2);
+    assert!(w.g.unit_flat_movement_cost(u) && w.g.unit_can_use_boats(u));
+    w.g.unit_change_extra_moves(u, 2);
+    w.g.unit_move(u, w.at(10, 1));
+    assert!(w.g.unit_is_in_boats(u));
+    assert_eq!(w.g.unit_moves_left(u), 0, "entering water ends its moves");
+    w.rest(u);
+    w.g.unit_move(u, w.at(11, 1));
+    assert_eq!(w.g.unit_moves_left(u), 0, "one water plot a turn");
+    w.rest(u);
+    w.g.unit_move(u, w.at(12, 2));
+    assert_eq!(w.g.unit_moves_left(u), 0, "landing ends its moves");
+}
+
+#[test]
+fn an_upgrade_at_sea_keeps_the_wear() {
+    let mut w = world();
+    let galley = w.unit(w.p0, "UNIT_GALLEY", 8, 1);
+    w.g.units[galley].sea_turns = 20;
+    assert_eq!(w.g.unit_sea_wear_percent(galley), 50);
+    // The upgrade's new unit takes the old one's place (`unit_convert`, as `unit_upgrade` does).
+    let trireme = w.unit(w.p0, "UNIT_TRIREME", 8, 1);
+    w.g.unit_convert(trireme, galley);
+    assert_eq!(w.g.units[trireme].sea_turns, 20, "only a port clears the wear");
+    assert_eq!(w.g.unit_sea_wear_percent(trireme), 50);
+}

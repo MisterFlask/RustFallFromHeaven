@@ -907,13 +907,6 @@ pub fn combat_odds(k: &CombatOddsInput, combat_die_sides: i32, combat_damage: i3
     odds
 }
 
-/// The arithmetic of C++ `getEspionageModifier` (team espionage points ever as arguments).
-pub fn espionage_modifier(espionage_spending_multiplier: i32, target_points: i32, our_points: i32) -> i32 {
-    let mut modifier = espionage_spending_multiplier * (2 * target_points + our_points);
-    modifier /= 1.max(target_points + 2 * our_points);
-    modifier
-}
-
 // ------------------------------------------------------------------------------------------
 // Misc
 // ------------------------------------------------------------------------------------------
@@ -1236,17 +1229,6 @@ impl Game {
         combat_odds(&k, self.d.defines.combat_die_sides, self.d.defines.combat_damage)
     }
 
-    /// C++ `getEspionageModifier(eOurTeam, eTargetTeam)` (see [`espionage_modifier`]).
-    pub fn get_espionage_modifier(&self, our_team: TeamId, target_team: TeamId) -> i32 {
-        debug_assert!(our_team != target_team);
-        debug_assert!(our_team != self.barbarian_team());
-        debug_assert!(target_team != self.barbarian_team());
-
-        let target_points = self.teams[target_team].espionage_points_ever;
-        let our_points = self.teams[our_team].espionage_points_ever;
-
-        espionage_modifier(self.d.defines.espionage_spending_multiplier, target_points, our_points)
-    }
 
     /// C++ `getDiscoveryTech(eUnit, ePlayer)`: the researchable tech whose flavors best match
     /// the unit type's (first one on ties; `None` if no tech scores above 0).
@@ -1549,9 +1531,6 @@ mod tests {
         assert!(!is_pickable_name("UNIT_BAR_NOPICK"));
         assert!(!is_pickable_name("unit_bar_nopick"));
         assert!(is_pickable_name("NOPIC"));
-        assert_eq!(espionage_modifier(100, 0, 0), 0);
-        assert_eq!(espionage_modifier(100, 10, 10), 100);
-        assert_eq!(espionage_modifier(100, 30, 0), 200);
         let t = set_trade_item(TradeableItem::TRADE_PEACE_TREATY, 3);
         assert_eq!((t.item_type, t.data, t.offering, t.hidden), (TradeableItem::TRADE_PEACE_TREATY, 3, false, false));
     }
@@ -1964,12 +1943,6 @@ mod tests {
         let mut g = test_game(4, 4, false);
         let d = g.d;
         let (a, b) = (TeamId(0), TeamId(1));
-
-        // espionage: ESPIONAGE_SPENDING_MULTIPLIER 100
-        assert_eq!(g.get_espionage_modifier(a, b), 0);
-        g.teams[b].espionage_points_ever = 30;
-        assert_eq!(g.get_espionage_modifier(a, b), 200);
-        assert_eq!(g.get_espionage_modifier(b, a), 50);
 
         // potential enemies (canDeclareWar is only asked once the sneak attack is ready)
         assert!(!g.is_potential_enemy(a, None));

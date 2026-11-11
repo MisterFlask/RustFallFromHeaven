@@ -11,17 +11,13 @@
 //! A sea explorer (`UNITAI_EXPLORE_SEA`) reveals coasts while our landmass is full and nothing
 //! overseas is known yet.
 //!
-//! **Patrol** (docs/NAVAL.md, section 8; [`patrol`]): a warship of ours with no cargo and nothing
-//! else to do takes the Patrol order in a sea: the sea of an enemy coastal city our army besieges
-//! where its strength would hold the sea, else a sea one of our ports is on where an enemy patrols
-//! or has ships we see, else the sea of our most populous port; it leaves a sea where what it sees
-//! of the enemy is twice its side's strength ([`patrol_wake`]). Invasions go only at a coast whose
-//! way is in our range and not cut ([`way_in_range`]).
+//! Warships, and an idle transport that can fight, are `warships.rs`'s: the Patrol of the seas
+//! (docs/NAVAL.md, section 8), escorts, guards and blockades. Invasions go only at a coast whose way
+//! is in our range and not cut ([`way_in_range`]).
 
 use ffh_core::defs::*;
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_core::seas::SeaControl;
 use ffh_data::*;
 
 use crate::production::{best_unit, Choice, Role};
@@ -77,6 +73,19 @@ pub struct Amph {
     /// Our army units already on its landmass (a landing in progress): keeps the invasion on
     /// one target instead of flipping between overseas cities each turn.
     pub landed: i32,
+    /// Switch `INVASION`: a fleet of ours at sea sails for this city (`fleet_targets`): it keeps
+    /// the invasion on it, as `landed` does.
+    pub under_way: bool,
+    /// The invasion's plan on the forecast (switch `INVASION`, `invasion.rs`; `need` is then its
+    /// force). `None` with the switch off, or for a landing in progress we can no longer plan.
+    pub plan: Option<crate::invasion::Plan>,
+}
+
+impl Amph {
+    /// Is the invasion prepared (switch `INVASION`: its plan is affordable; off: always)?
+    pub fn prepared(&self, g: &Game, p: PlayerId) -> bool {
+        !crate::invasion::on(g, p) || self.plan.as_ref().is_some_and(|pl| pl.affordable)
+    }
 }
 
 /// Our army units (able to attack, on land) within two plots of city plot `cp`: a landing in
@@ -128,6 +137,14 @@ fn amph_need(g: &Game, p: PlayerId, c: CityId) -> i32 {
 /// war to start and, once at war, to run the assault). Independent of war status so the war
 /// trigger can ask "is there a sea-reachable city of theirs we could take?".
 pub fn amphibious_city(g: &Game, p: PlayerId, other: PlayerId) -> Option<Amph> {
+    amphibious_city_in(g, None, p, other)
+}
+
+/// [`amphibious_city`] through the forecast cache `cache` (the view's). With switch `INVASION`
+/// (`invasion.rs`) the city is the best of the [`crate::invasion::MAX_TRIED`] best-scoring ones
+/// whose invasion is affordable (or one we are landing near already, whatever its plan): an
+/// invasion that cannot be afforded is no target, for the war gate either.
+pub fn amphibious_city_in(g: &Game, cache: Option<&crate::forecast::Cache>, p: PlayerId, other: PlayerId) -> Option<Amph> {
     if other == p || !g.players[other].alive || g.players[other].cities.is_empty() {
         return None;
     }
@@ -143,6 +160,8 @@ pub fn amphibious_city(g: &Game, p: PlayerId, other: PlayerId) -> Option<Amph> {
         return None;
     }
     let our_areas: Vec<Option<AreaId>> = g.players[p].cities.iter().map(|&c| g.map.plots[g.city_plot(c)].area).collect();
+    let invasion = crate::invasion::on(g, p);
+    let mut all: Vec<Amph> = Vec::new();
     let mut best: Option<Amph> = None;
     for &c in &g.players[other].cities {
         let cp = g.city_plot(c);
@@ -168,20 +187,66 @@ pub fn amphibious_city(g: &Game, p: PlayerId, other: PlayerId) -> Option<Amph> {
         let value = amph_value(g, c);
         let score = value * 1000 / (need as i64 * 100 + dist as i64 * 25 + 200);
         let landed = army_near_city(g, p, cp);
+        let amph = Amph { city: c, plot: cp, owner: other, staging, staging_plot: g.city_plot(staging), need, value, dist, score, landed, under_way: false, plan: None };
+        if invasion {
+            all.push(amph);
+            continue;
+        }
         // A city we are already landing near outranks a higher-scoring one we have not reached:
         // the invasion stays on one target instead of ferrying troops to a new coast each turn.
         let key = (landed > 0, score, std::cmp::Reverse(c));
         let better = best.as_ref().map_or(true, |b| key > (b.landed > 0, b.score, std::cmp::Reverse(b.city)));
         if better {
-            best = Some(Amph { city: c, plot: cp, owner: other, staging, staging_plot: g.city_plot(staging), need, value, dist, score, landed });
+            best = Some(amph);
         }
     }
-    best
+    if !invasion {
+        return best;
+    }
+    all.sort_by_key(|a| std::cmp::Reverse((a.landed > 0, a.score, std::cmp::Reverse(a.city))));
+    // A fleet of ours at sea with an army aboard: the invasion is under way, its target kept
+    // whatever its plan now says (the fleet lands; the landed stack decides on the city).
+    let at_sea = g.players[p].units.iter().any(|&t| {
+        g.units.contains(t)
+            && is_transport_type(&g.d.units[g.units[t].unit_type])
+            && army_aboard(g, t) > 0
+            && !g.unit_get_cargo_units(t).iter().any(|&c| g.d.units[g.units[c].unit_type].found)
+            && !g.map.plots[g.unit_plot(t)].plot_city.is_some_and(|c| g.cities[c].owner == p)
+    });
+    // A fleet at sea sailing for one of these cities keeps it, whatever its plan now says.
+    let targets = fleet_targets(g, p);
+    if let Some(i) = all.iter().position(|a| targets.contains(&a.plot)) {
+        let mut a = all.swap_remove(i);
+        a.under_way = true;
+        a.plan = crate::invasion::plan(g, cache, p, a.city, a.staging);
+        if let Some(pl) = &a.plan {
+            a.need = pl.force;
+        }
+        return Some(a);
+    }
+    for mut a in all.into_iter().take(crate::invasion::MAX_TRIED) {
+        a.plan = crate::invasion::plan(g, cache, p, a.city, a.staging);
+        if let Some(pl) = &a.plan {
+            a.need = pl.force;
+            crate::trace!(g, p, "invasion plan {} at {:?} from {:?}: force {} (staging {}, est {}), take {}, room {} +{} ships of {} ({} hammers, {} turns, empire {}/turn): {}", g.cities[a.city].name, g.map.xy(a.plot), g.map.xy(a.staging_plot), pl.force, pl.staging_units, pl.estimated, pl.p_take, pl.capacity, pl.ships_needed, pl.cargo_each, pl.hammers, pl.port_turns, pl.empire_production, pl.why);
+        } else {
+            crate::trace!(g, p, "invasion plan {} at {:?}: none (garrison unseen, no landing plot or no army)", g.cities[a.city].name, g.map.xy(a.plot));
+        }
+        if a.landed > 0 || at_sea || a.plan.as_ref().is_some_and(|pl| pl.affordable) {
+            return Some(a);
+        }
+    }
+    None
 }
 
 /// The best amphibious target for player `p` among the civs (and barbarians) we are at war with
 /// or preparing war against. Recomputed each turn from the game state.
 pub fn amphibious_target(g: &Game, p: PlayerId) -> Option<Amph> {
+    amphibious_target_in(g, None, p)
+}
+
+/// [`amphibious_target`] through the forecast cache `cache`.
+pub fn amphibious_target_in(g: &Game, cache: Option<&crate::forecast::Cache>, p: PlayerId) -> Option<Amph> {
     if g.player_is_barbarian(p) {
         return None;
     }
@@ -202,9 +267,9 @@ pub fn amphibious_target(g: &Game, p: PlayerId) -> Option<Amph> {
         if !enemy {
             continue;
         }
-        let Some(amph) = amphibious_city(g, p, other) else { continue };
-        let key = (amph.landed > 0, amph.score, std::cmp::Reverse(amph.city));
-        let better = best.as_ref().map_or(true, |b| key > (b.landed > 0, b.score, std::cmp::Reverse(b.city)));
+        let Some(amph) = amphibious_city_in(g, cache, p, other) else { continue };
+        let key = (amph.landed > 0 || amph.under_way, amph.score, std::cmp::Reverse(amph.city));
+        let better = best.as_ref().map_or(true, |b| key > (b.landed > 0 || b.under_way, b.score, std::cmp::Reverse(b.city)));
         if better {
             best = Some(amph);
         }
@@ -357,9 +422,6 @@ fn push_pickup(g: &mut Game, grp: GroupId, mission: MissionType, to: PlotIdx, ar
 /// these orders.
 pub(crate) fn pickup(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, here: PlotIdx) -> bool {
     let p = v.p;
-    if !crate::switches::SUPPLY.on(g, p) {
-        return false;
-    }
     let waiting = armies_waiting(g, p);
     let (x, y) = g.map.xy(here);
     let beside = (waiting.contains(&here) && !pickup_by(g, p, here, Some(grp))).then_some(here).or_else(|| {
@@ -410,6 +472,19 @@ fn committed(g: &Game, p: PlayerId, amph: &Amph, grp: GroupId) -> bool {
 
 /// The army groups committed to the amphibious assault (see [`committed`]).
 fn committed_groups(g: &Game, p: PlayerId, amph: &Amph) -> Vec<GroupId> {
+    if crate::invasion::on(g, p) {
+        // The plan's units on the staging side (nothing for an invasion not prepared).
+        let Some(pl) = amph.plan.as_ref().filter(|pl| pl.affordable) else { return Vec::new() };
+        let mut out: Vec<GroupId> = Vec::new();
+        for &u in &pl.committed {
+            if let Some(gr) = g.units.get(u).and_then(|x| x.group) {
+                if !out.contains(&gr) && g.group_get_head_unit(gr).is_some_and(|h| !g.unit_is_cargo(h)) {
+                    out.push(gr);
+                }
+            }
+        }
+        return out;
+    }
     let staging_area = g.map.plots[amph.staging_plot].area;
     let (sx, sy) = g.map.xy(amph.staging_plot);
     // Army groups on the staging landmass, not already aboard a ship.
@@ -450,7 +525,7 @@ fn army_aboard(g: &Game, t: UnitId) -> i32 {
         .count() as i32
 }
 
-/// The assault fleet in port (switch `FLEET`; C++ `AI_assaultSeaMove`: a loaded transport waits
+/// The assault fleet in port (C++ `AI_assaultSeaMove`: a loaded transport waits
 /// in port until its cargo reaches the invasion size, and sails with the force, escorted). A
 /// transport with an army aboard, in one of our cities, waits while what the transports in port
 /// carry, with what has already landed next to the target, falls short of the force the target
@@ -465,6 +540,9 @@ fn fleet_waits(g: &mut Game, v: &View, grp: GroupId, u: UnitId, amph: &Amph) -> 
     let here = g.unit_plot(u);
     if !g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p) {
         return false;
+    }
+    if crate::invasion::on(g, p) {
+        return invasion_fleet_waits(g, v, grp, here, amph);
     }
     let ships: Vec<UnitId> = g.map.plots[here]
         .units
@@ -498,6 +576,126 @@ fn fleet_waits(g: &mut Game, v: &View, grp: GroupId, u: UnitId, amph: &Amph) -> 
         }
     }
     // Sail as one stack: the other loaded transports here, and our idle warships as escorts.
+    let (joined, escorts) = fleet_sail(g, p, grp, here, &ships);
+    crate::trace!(g, p, "assault fleet at {:?} sails: {} aboard of {} needed, {} more transports, {} escorts", g.map.xy(here), aboard, amph.need, joined, escorts);
+    g.tel_decision(p, "military", "fleet_sail", "fleet", aboard as i64, String::new);
+    if escorts > 0 {
+        g.tel_decision(p, "military", "fleet_escorted", "fleet", escorts as i64, String::new);
+    }
+    false
+}
+
+/// Unload every transport of ours on `here` carrying an army (in port), and end the group's turn:
+/// the invasion stands down.
+fn stand_down(g: &mut Game, p: PlayerId, grp: GroupId, here: PlotIdx, why: &'static str) {
+    crate::trace!(g, p, "assault fleet at {:?} stands down: {}", g.map.xy(here), why);
+    g.tel_decision(p, "invasion", "stand_down", why, 1, String::new);
+    for t in g.map.plots[here].units.clone() {
+        if g.units.contains(t) && g.units[t].owner == p && is_transport_type(&g.d.units[g.units[t].unit_type]) && army_aboard(g, t) > 0 {
+            g.unit_unload_all(t);
+        }
+    }
+    if alive(g, grp) {
+        hold(g, grp);
+    }
+}
+
+/// The transports of ours in port on `here` that may carry the invasion (not on a settler's errand).
+fn invasion_ships(g: &Game, p: PlayerId, here: PlotIdx) -> Vec<UnitId> {
+    g.map.plots[here]
+        .units
+        .iter()
+        .copied()
+        .filter(|&t| g.units[t].owner == p && is_transport_type(&g.d.units[g.units[t].unit_type]) && !g.unit_get_cargo_units(t).iter().any(|&c| g.d.units[g.units[c].unit_type].found))
+        .collect()
+}
+
+/// The assault fleet in port under switch `INVASION` (`invasion.rs`): it sails only complete --
+/// when the forecast of the army aboard, landed on the plan's landing plot and attacking on its
+/// next turn, takes the city with [`crate::invasion::BAR`] -- with the escorts present in port.
+/// It waits while the plan's units are still coming aboard; it unloads and stands down when a city
+/// of ours on the staging landmass is in peril, when the invasion is no longer prepared, or when
+/// nothing more can come aboard (a transport lost, the force needed elsewhere): it never sails a
+/// remnant. True if it does not sail this turn.
+fn invasion_fleet_waits(g: &mut Game, v: &View, grp: GroupId, here: PlotIdx, amph: &Amph) -> bool {
+    let p = v.p;
+    if crate::invasion::home_in_peril(g, v, here) {
+        stand_down(g, p, grp, here, "peril");
+        return true;
+    }
+    let Some(plan) = amph.plan.clone().filter(|pl| pl.affordable) else {
+        stand_down(g, p, grp, here, "not_prepared");
+        return true;
+    };
+    // The ships that sail together: those that go where this one goes (the group moves only where
+    // every ship can: a Trireme beside ocean ships held the fleet on the coast, going to and fro).
+    let Some(lead) = g.group_get_head_unit(grp).map(|h| g.units[h].unit_type) else { return true };
+    let blocked = |a: UnitType, b: UnitType| g.d.units[b].terrain_impassable.iter_enumerated().any(|(t, &imp)| imp && g.d.terrains[t].water && !g.d.units[a].terrain_impassable[t]);
+    let ships: Vec<UnitId> = invasion_ships(g, p, here).into_iter().filter(|&t| !blocked(lead, g.units[t].unit_type) && !blocked(g.units[t].unit_type, lead)).collect();
+    let aboard: Vec<UnitId> = ships.iter().flat_map(|&t| g.unit_get_cargo_units(t)).filter(|&c| crate::military::is_army_unit(g, c)).collect();
+    let extras = crate::invasion::enemy_support(g, p, amph.plot);
+    let war = crate::invasion::war_test(g, p, amph.owner);
+    let est = crate::invasion::take(g, Some(&v.forecasts), &aboard, plan.landing, amph.plot, &extras, war);
+    let p_take = est.map_or(0, |e| e.p_take);
+    // A war still being prepared: the fleet, loaded, waits for the declaration (the army in port
+    // is the army at the border that declares it: `diplomacy::manage`, WAR_STAGING).
+    // (The force with its margin aboard, `invasion::FORCE_MARGIN_PCT`, and the forecast at the bar.)
+    let complete = aboard.len() as i32 >= plan.force && p_take >= crate::invasion::BAR;
+    if complete && !g.at_war(v.team, g.players[amph.owner].team) {
+        crate::trace!(g, p, "assault fleet at {:?} ready for {:?} ({} aboard, take {} per mille): waits for the war", g.map.xy(here), g.map.xy(amph.plot), aboard.len(), p_take);
+        g.tel_decision(p, "invasion", "fleet_wait", "war", aboard.len() as i64, String::new);
+        skip(g, grp);
+        return true;
+    }
+    if complete {
+        let (joined, escorts) = fleet_sail(g, p, grp, here, &ships);
+        crate::trace!(g, p, "assault fleet at {:?} sails complete for {:?}: {} aboard (plan {}), take {} per mille, {} more transports, {} escorts; ships {:?}", g.map.xy(here), g.map.xy(amph.plot), aboard.len(), plan.force, p_take, joined, escorts, g.groups[grp].units.iter().map(|&o| (o, g.d.units[g.units[o].unit_type].base.type_.clone(), g.unit_moves_left(o))).collect::<Vec<_>>());
+        g.tel_decision(p, "invasion", "sail", "complete", aboard.len() as i64, String::new);
+        if escorts > 0 {
+            g.tel_decision(p, "military", "fleet_escorted", "fleet", escorts as i64, String::new);
+        }
+        if g.telemetry.on() {
+            if let Some(e) = est {
+                let team = v.team;
+                let pr = ffh_core::telemetry::Prediction::new("invasion", ffh_core::telemetry::Outcome::CityCapturedBy { city: amph.city, team }, INVASION_HORIZON, e.p_take / 10);
+                let (force, ships_n, extras_n, barb) = (plan.force as i64, joined as i64 + 1, extras.len() as i64, g.player_is_barbarian(amph.owner));
+                let (cx, cy) = g.map.xy(amph.plot);
+                g.tel_prediction(p, pr.score(e.p_take as i64).acted(true), || {
+                    ffh_core::telemetry::Obj::new()
+                        .i("x", cx as i64)
+                        .i("y", cy as i64)
+                        .i("aboard", aboard.len() as i64)
+                        .i("force", force)
+                        .i("ships", ships_n)
+                        .i("escorts", escorts as i64)
+                        .i("support", extras_n)
+                        .i("n_def", e.n_def as i64)
+                        .i("own_lost_x100", e.own_lost_x100 as i64)
+                        .b("barbarian", barb)
+                        .end()
+                });
+            }
+        }
+        return false;
+    }
+    // Still coming aboard: the plan's units walking to the port or in it, with room for them.
+    let room: i32 = ships.iter().map(|&t| (g.d.units[g.units[t].unit_type].cargo_space - g.unit_get_cargo_units(t).len() as i32).max(0)).sum();
+    let coming: i32 = plan.committed.iter().filter(|&&o| g.units.contains(o) && !g.unit_is_cargo(o)).count() as i32;
+    let ships_coming = g.players[p].ai_num_train_ai_units[UnitAIType::UNITAI_ASSAULT_SEA]
+        + g.players[p].units.iter().filter(|&&t| is_transport_type(&g.d.units[g.units[t].unit_type]) && g.units[t].ai_type == Some(UnitAIType::UNITAI_ASSAULT_SEA) && g.unit_plot(t) != here && g.unit_get_cargo_units(t).is_empty()).count() as i32;
+    if coming > 0 && (room > 0 || ships_coming > 0) {
+        crate::trace!(g, p, "assault fleet at {:?} waits: {} aboard of {} (take {} per mille), {} coming, room {}, {} ships coming", g.map.xy(here), aboard.len(), plan.force, p_take, coming, room, ships_coming);
+        g.tel_decision(p, "invasion", "fleet_wait", "", aboard.len() as i64, String::new);
+        skip(g, grp);
+        return true;
+    }
+    stand_down(g, p, grp, here, "incomplete");
+    true
+}
+
+/// The loaded transports in port on `here` (of `ships`) and our idle warships there join the
+/// fleet `grp`: (transports joined, escorts).
+fn fleet_sail(g: &mut Game, p: PlayerId, grp: GroupId, here: PlotIdx, ships: &[UnitId]) -> (i32, i32) {
     let mut joined = 0;
     let mut escorts = 0;
     for &o in &g.map.plots[here].units.clone() {
@@ -516,12 +714,46 @@ fn fleet_waits(g: &mut Game, v: &View, grp: GroupId, u: UnitId, amph: &Amph) -> 
             escorts += i32::from(warship);
         }
     }
-    crate::trace!(g, p, "assault fleet at {:?} sails: {} aboard of {} needed, {} more transports, {} escorts", g.map.xy(here), aboard, amph.need, joined, escorts);
-    g.tel_decision(p, "military", "fleet_sail", "fleet", aboard as i64, String::new);
-    if escorts > 0 {
-        g.tel_decision(p, "military", "fleet_escorted", "fleet", escorts as i64, String::new);
+    (joined, escorts)
+}
+
+/// `invasion`: the fleet that sails takes the city within this many turns of sailing (the
+/// prediction ledger, docs/CALIBRATION.md).
+pub const INVASION_HORIZON: i32 = 10;
+
+/// Under switch `INVASION`, a committed stack in the staging port boards only once the plan's
+/// whole force is in port (on the plot or aboard) and the transports there have room for it, so
+/// the force goes aboard in one turn and the fleet sails complete; until then it waits in port.
+fn invasion_boards(g: &mut Game, p: PlayerId, grp: GroupId, u: UnitId, here: PlotIdx, amph: &Amph) {
+    let Some(plan) = amph.plan.as_ref() else { return skip(g, grp) };
+    let in_port = plan.committed.iter().filter(|&&o| g.units.contains(o) && g.unit_plot(o) == here).count() as i32;
+    let to_board = plan.committed.iter().filter(|&&o| g.units.contains(o) && g.unit_plot(o) == here && !g.unit_is_cargo(o)).count() as i32;
+    let room: i32 = invasion_ships(g, p, here).iter().map(|&t| (g.d.units[g.units[t].unit_type].cargo_space - g.unit_get_cargo_units(t).len() as i32).max(0)).sum();
+    if in_port >= plan.force && room >= to_board {
+        // The plan's units, all of them at once (not the rest of their stacks: the forecast is of
+        // these units).
+        // (The ships that go everywhere first: a fleet sails as ships of one reach.)
+        let mut ships = invasion_ships(g, p, here);
+        ships.sort_by_key(|&t| (g.d.units[g.units[t].unit_type].terrain_impassable.iter_enumerated().filter(|&(tt, &imp)| imp && g.d.terrains[tt].water).count(), t));
+        for &o in &plan.committed {
+            if !g.units.contains(o) || g.unit_plot(o) != here || g.unit_is_cargo(o) {
+                continue;
+            }
+            if let Some(&t) = ships.iter().find(|&&t| g.unit_can_load_unit(o, t, here)) {
+                crate::trace!(g, p, "assault unit {:?} boards {:?} at {:?}", o, t, g.map.xy(here));
+                g.unit_load_unit(o, t);
+            }
+        }
+        g.tel_decision(p, "invasion", "board", "", to_board as i64, String::new);
+        if alive(g, grp) && g.group_ready_to_move(grp, false) {
+            skip(g, grp);
+        }
+        let _ = u;
+        return;
     }
-    false
+    crate::trace!(g, p, "assault stack {:?} waits in port at {:?}: {} of {} in port, room {} for {}", grp, g.map.xy(here), in_port, plan.force, room, to_board);
+    g.tel_decision(p, "invasion", "port_wait", "", in_port as i64, String::new);
+    skip(g, grp);
 }
 
 /// A committed army group boards the transport waiting in the staging port (the whole stack,
@@ -550,6 +782,13 @@ fn board(g: &mut Game, p: PlayerId, grp: GroupId, u: UnitId, here: PlotIdx) {
         crate::trace!(g, p, "assault unit {:?} waits for a ship at {:?}", u, g.map.xy(here));
         skip(g, grp);
     }
+}
+
+/// Is a second wave on its way to the landed stack: an army aboard a transport of ours, or the
+/// invasion prepared with units of its force still on the staging side?
+fn second_wave(g: &Game, p: PlayerId, amph: &Amph) -> bool {
+    let at_sea = g.players[p].units.iter().any(|&t| g.units.contains(t) && is_transport_type(&g.d.units[g.units[t].unit_type]) && army_aboard(g, t) > 0);
+    at_sea || amph.prepared(g, p) && !committed_groups(g, p, amph).is_empty()
 }
 
 /// A stack landed on the target's landmass takes the city. Successive trips land only the
@@ -584,7 +823,13 @@ fn assault_landed(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, amph: &Am
     if dist <= 1 {
         // Beside the city: strike if this (merged) stack can take it, else gather on the rally
         // plot for the next landings (a lone unit beside a strong city must not be thrown away).
-        let can_strike = crate::military::field_sim(g, grp, tp).is_some_and(|s| crate::military::field_go(&s, true, true, false, false));
+        let can_strike = if crate::military::forecast_on(g, v.p) {
+            let rule = crate::military::Rule::Field { city: true, capture: true, fought: false, hurt: false };
+            let attacks = crate::military::pool_attack(g, v.p, here, tp);
+            !attacks.is_empty() && crate::military::field_call(g, v, v.p, &attacks, tp, rule, Some("landing"), || crate::military::field_sim(g, grp, tp).map(|s| (crate::military::field_go(&s, true, true, false, false), s))).go
+        } else {
+            crate::military::field_sim(g, grp, tp).is_some_and(|s| crate::military::field_go(&s, true, true, false, false))
+        };
         if can_strike {
             let name = g.cities[amph.city].name.clone();
             crate::trace!(g, v.p, "landed stack {:?} ({} units) assaults {} at {:?}", grp, g.groups[grp].units.len(), name, g.map.xy(tp));
@@ -593,7 +838,17 @@ fn assault_landed(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, amph: &Am
             crate::trace!(g, v.p, "landed assault on {}: {}", name, if taken { "taken" } else { "holds" });
         } else if rally.is_some_and(|r| r != here) {
             move_to(g, grp, rally.unwrap(), 0);
+        } else if crate::invasion::on(g, v.p) && !second_wave(g, v.p, amph) {
+            // Switch `INVASION`: the forecast fell under the bar (the garrison grew) and no second
+            // wave is being prepared: dig in on the best ground beside the city. (Re-embarking at
+            // sea is not legal for the AI's land units: only a human's may step onto a ship.)
+            crate::trace!(g, v.p, "landed stack {:?} digs in next to {:?}: no second wave", grp, g.map.xy(tp));
+            g.tel_decision(v.p, "invasion", "landed", "dig_in", 1, String::new);
+            hold(g, grp);
         } else {
+            if crate::invasion::on(g, v.p) {
+                g.tel_decision(v.p, "invasion", "landed", "wait_wave", 1, String::new);
+            }
             // Wait awake for the next landings to pile on (fortifying would stop re-evaluation).
             skip(g, grp);
         }
@@ -621,6 +876,32 @@ fn assault_landed(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, amph: &Am
     true
 }
 
+/// Switch `INVASION`: is the invasion of team `target` ready to sail -- its plan affordable and its
+/// force aboard the transports in the staging port? For a war across the water this is the army
+/// at the border (`diplomacy::manage`, WAR_STAGING): the war is declared and the fleet sails.
+pub fn invasion_ready(g: &Game, p: PlayerId, target: TeamId) -> bool {
+    if !crate::invasion::on(g, p) {
+        return false;
+    }
+    let Some(other) = crate::diplomacy::team_leader(g, target) else { return false };
+    let Some(amph) = amphibious_city(g, p, other) else { return false };
+    let Some(plan) = amph.plan.as_ref().filter(|pl| pl.affordable) else { return false };
+    let aboard: i32 = invasion_ships(g, p, amph.staging_plot).iter().map(|&t| army_aboard(g, t)).sum();
+    aboard >= plan.force
+}
+
+/// Switch `INVASION`: is unit `u` (an army stack's head) on the invasion target's landmass, next
+/// to the target city? Such a stack decides on the city first (`military::army`).
+pub fn landed_beside(g: &Game, v: &View, u: UnitId) -> bool {
+    let Some(amph) = v.amphibious.as_ref() else { return false };
+    if !crate::invasion::on(g, v.p) || !g.cities.contains(amph.city) || g.cities[amph.city].owner == v.p {
+        return false;
+    }
+    let here = g.unit_plot(u);
+    let ((x, y), (tx, ty)) = (g.map.xy(here), g.map.xy(amph.plot));
+    g.map.plots[here].area == g.map.plots[amph.plot].area && g.plot_distance(x, y, tx, ty) <= 1
+}
+
 /// One decision for an army stack when an amphibious invasion is on. True if it was handled
 /// (board for the crossing, or take the city once landed); false to leave the stack to the
 /// normal land logic (`military::army`).
@@ -640,7 +921,11 @@ pub fn amphibious(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
         return false;
     }
     if here == amph.staging_plot {
-        board(g, p, grp, u, here);
+        if crate::invasion::on(g, p) {
+            invasion_boards(g, p, grp, u, here, &amph);
+        } else {
+            board(g, p, grp, u, here);
+        }
     } else {
         move_to(g, grp, amph.staging_plot, MOVE_SAFE_TERRITORY);
         if alive(g, grp) && g.group_ready_to_move(grp, false) {
@@ -665,6 +950,22 @@ pub fn assault_production(g: &Game, c: CityId) -> Option<Choice> {
     let amph = amphibious_target(g, p)?;
     // Only the staging port (the coastal city nearest the target) builds the fleet.
     if c != amph.staging {
+        return None;
+    }
+    if crate::invasion::on(g, p) {
+        // The plan (invasion.rs): nothing for an invasion that is not affordable; else the
+        // transports for the whole force in one wave, then the attackers the staging side lacks.
+        let plan = amph.plan.as_ref().filter(|pl| pl.affordable)?;
+        if plan.ships_needed > 0 {
+            if let Some(u) = best_unit(g, c, Role::Transport) {
+                return Some(Choice::Train(u, UnitAIType::UNITAI_ASSAULT_SEA));
+            }
+        }
+        if plan.staging_units < plan.force {
+            if let Some(u) = best_unit(g, c, Role::CityAttack).or_else(|| best_unit(g, c, Role::Attack)) {
+                return Some(Choice::Train(u, UnitAIType::UNITAI_ATTACK));
+            }
+        }
         return None;
     }
     // Transports dedicated to the assault (settlers' transports are often busy ferrying settlers
@@ -692,8 +993,7 @@ pub fn assault_production(g: &Game, c: CityId) -> Option<Choice> {
 pub fn transport(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let p = v.p;
     let here = g.unit_plot(u);
-    let fleet = crate::switches::FLEET.on(g, p);
-    if fleet && g.groups[grp].units.len() > 1 && g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p) && g.groups[grp].units.iter().all(|&t| g.unit_get_cargo_units(t).is_empty()) {
+    if g.groups[grp].units.len() > 1 && g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p) && g.groups[grp].units.iter().all(|&t| g.unit_get_cargo_units(t).is_empty()) {
         // An assault fleet back in port, empty: each ship on its own again.
         for o in g.groups[grp].units.clone() {
             if o != u {
@@ -702,7 +1002,7 @@ pub fn transport(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
         }
     }
     // (A fleet's cargo is what all its transports carry.)
-    let cargo = if fleet { g.groups[grp].units.iter().flat_map(|&t| g.unit_get_cargo_units(t)).collect() } else { g.unit_get_cargo_units(u) };
+    let cargo: Vec<UnitId> = g.groups[grp].units.iter().flat_map(|&t| g.unit_get_cargo_units(t)).collect();
     let carries_settler = cargo.iter().any(|&c| g.d.units[g.units[c].unit_type].found);
     // A land fighter aboard (not a settler): an assault to land on an enemy coast.
     let carries_army = !carries_settler
@@ -713,11 +1013,11 @@ pub fn transport(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     crate::trace!(g, p, "transport {:?} at {:?}: cargo {} (settler {}, army {}), moves {}", u, g.map.xy(here), cargo.len(), carries_settler, carries_army, g.unit_moves_left(u));
     if carries_army {
         if let Some(amph) = v.amphibious.clone() {
-            if fleet && fleet_waits(g, v, grp, u, &amph) {
+            if fleet_waits(g, v, grp, u, &amph) {
                 return;
             }
             // (A fleet that sails now has gathered more ships: their cargo lands too.)
-            let cargo = if fleet { g.groups[grp].units.iter().flat_map(|&t| g.unit_get_cargo_units(t)).collect() } else { cargo };
+            let cargo: Vec<UnitId> = g.groups[grp].units.iter().flat_map(|&t| g.unit_get_cargo_units(t)).collect();
             transport_assault(g, v, grp, u, &amph, &cargo);
             return;
         }
@@ -783,14 +1083,10 @@ pub fn transport(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     if !cargo.is_empty() && !carries_settler {
         // Cargo we have no plan for: back to port, unload there.
         if g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p) {
-            if fleet {
-                for t in g.groups[grp].units.clone() {
-                    if g.units.contains(t) && !g.unit_get_cargo_units(t).is_empty() {
-                        g.unit_unload_all(t);
-                    }
+            for t in g.groups[grp].units.clone() {
+                if g.units.contains(t) && !g.unit_get_cargo_units(t).is_empty() {
+                    g.unit_unload_all(t);
                 }
-            } else {
-                g.unit_unload_all(u);
             }
             hold(g, grp);
             return;
@@ -826,14 +1122,72 @@ pub fn transport(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
             }
             return;
         }
-        // Nothing to carry: a transport that can fight patrols (docs/NAVAL.md, section 8); it is
-        // woken when there is something to carry (`patrol_wake`).
-        if patrol(g, v, grp, u) {
-            return;
-        }
     }
     // Wait in port.
     port(g, p, grp, here);
+}
+
+/// The target cities' plots of our fleets at sea (switch `INVASION`): groups led by a transport
+/// with an army aboard, outside our cities, whose mission is the assault on a plot (`sail_to`).
+fn fleet_targets(g: &Game, p: PlayerId) -> Vec<PlotIdx> {
+    let mut out = Vec::new();
+    for &grp in &g.players[p].groups {
+        if !g.groups.contains(grp) || g.groups[grp].ai_mission_ai_type != Some(MissionAIType::MISSIONAI_ASSAULT) {
+            continue;
+        }
+        let Some(h) = g.group_get_head_unit(grp) else { continue };
+        if g.unit_get_domain_type(h) != DomainType::DOMAIN_SEA || !g.groups[grp].units.iter().any(|&t| army_aboard(g, t) > 0) {
+            continue;
+        }
+        if g.map.plots[g.unit_plot(h)].plot_city.is_some_and(|c| g.cities[c].owner == p) {
+            continue;
+        }
+        if let Some(q) = g.group_ai_get_mission_ai_plot(grp) {
+            if !out.contains(&q) {
+                out.push(q);
+            }
+        }
+    }
+    out
+}
+
+/// The fleet `grp` sails toward `water` for the city on `target` (switch `INVASION`: the group's
+/// mission is the assault on that plot, which keeps its target while it sails, `fleet_targets`).
+fn sail_to(g: &mut Game, grp: GroupId, water: PlotIdx, target: PlotIdx) {
+    let (x, y) = g.map.xy(water);
+    let assault = Some(MissionAIType::MISSIONAI_ASSAULT);
+    g.group_push_mission(grp, MissionType::MISSION_MOVE_TO, x, y, 0, false, false, assault, Some(target), None);
+    if alive(g, grp) && g.group_ready_to_move(grp, false) {
+        g.group_push_mission(grp, MissionType::MISSION_SKIP, -1, -1, 0, false, false, assault, Some(target), None);
+    }
+}
+
+/// The plots the fleet `grp` (led by `u`) reaches within 25 turns: with switch `INVASION`, those
+/// every ship type in it reaches (a Trireme that cannot enter the ocean holds back a fleet of
+/// ocean ships: the group moves only where all of them can), each at the slowest's turns; else
+/// the head's.
+fn fleet_reach(g: &Game, v: &mut View, grp: GroupId, u: UnitId) -> Vec<crate::reach::Reached> {
+    let mut reach = v.flood.run(g, u, 25, false);
+    if !crate::invasion::on(g, v.p) {
+        return reach;
+    }
+    let mut seen = vec![g.units[u].unit_type];
+    for &o in &g.groups[grp].units {
+        let t = g.units[o].unit_type;
+        if seen.contains(&t) {
+            continue;
+        }
+        seen.push(t);
+        let other = v.flood.run(g, o, 25, false);
+        reach.retain_mut(|r| match other.iter().find(|x| x.plot == r.plot) {
+            Some(x) => {
+                r.turns = r.turns.max(x.turns);
+                true
+            }
+            None => false,
+        });
+    }
+    reach
 }
 
 /// A transport carrying an assault army sails to a water plot next to the target enemy city and
@@ -851,7 +1205,7 @@ fn transport_assault(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, amph: 
     // Land plots beside the city a land unit can disembark onto.
     let sample = cargo.iter().copied().find(|&c| g.unit_get_domain_type(c) == DomainType::DOMAIN_LAND);
     let army_on = |l: PlotIdx| g.map.plots[l].units.iter().filter(|&&o| g.units[o].owner == p && crate::military::is_army_unit(g, o)).count() as i32;
-    let reach = v.flood.run(g, u, 25, false);
+    let reach = fleet_reach(g, v, grp, u);
     // The landing site to disembark onto: whichever reachable land plot beside the city already
     // holds the most of our army (so successive landings pile onto one plot and merge into a stack
     // that can strike, the way `assault_landed` already rallies them), then the soonest reachable,
@@ -884,8 +1238,10 @@ fn transport_assault(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, amph: 
         };
         let a = army_on(l);
         let def = g.plot_defense_modifier(l, Some(v.team), true);
-        let key = (a, std::cmp::Reverse(turns), def, std::cmp::Reverse(l));
-        let better = best.map_or(true, |(bl, _, ba, bt)| key > (ba, std::cmp::Reverse(bt), g.plot_defense_modifier(bl, Some(v.team), true), std::cmp::Reverse(bl)));
+        // (Switch `INVASION`: the plan's landing plot first, the one its forecast attacks from.)
+        let planned = |l: PlotIdx| amph.plan.as_ref().is_some_and(|pl| pl.landing == l);
+        let key = (planned(l), a, std::cmp::Reverse(turns), def, std::cmp::Reverse(l));
+        let better = best.map_or(true, |(bl, _, ba, bt)| key > (planned(bl), ba, std::cmp::Reverse(bt), g.plot_defense_modifier(bl, Some(v.team), true), std::cmp::Reverse(bl)));
         if better {
             best = Some((l, water, a, turns));
         }
@@ -896,16 +1252,67 @@ fn transport_assault(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, amph: 
             let (rx, ry) = g.map.xy(r.plot);
             (g.plot_distance(rx, ry, tx, ty), r.turns, r.plot)
         }) {
+            let (rx, ry) = g.map.xy(r.plot);
+            if crate::invasion::on(g, p) && g.plot_distance(rx, ry, tx, ty) >= g.plot_distance(hx, hy, tx, ty) {
+                // Switch `INVASION`: no nearer water to sail to (the coast beside the city is out of
+                // these ships' reach): home, where the fleet stands down.
+                crate::trace!(g, p, "assault fleet {:?} cannot reach the coast of {}: home", grp, city_name(g));
+                g.tel_decision(p, "invasion", "abort", "no_coast", cargo.len() as i64, String::new);
+                port(g, p, grp, here);
+                if alive(g, grp) && g.group_ready_to_move(grp, false) {
+                    skip(g, grp);
+                }
+                return;
+            }
             crate::trace!(g, p, "assault transport {:?} sails toward {} at {:?}", u, city_name(g), g.map.xy(tp));
-            move_to(g, grp, r.plot, 0);
+            if crate::invasion::on(g, p) {
+                sail_to(g, grp, r.plot, tp);
+            } else {
+                move_to(g, grp, r.plot, 0);
+            }
         }
         if alive(g, grp) && g.group_ready_to_move(grp, false) {
             skip(g, grp);
         }
         return;
     };
+    if crate::invasion::on(g, p) && g.cities.contains(amph.city) {
+        // Switch `INVASION`: a look every turn at sea, the last one before landing. The army
+        // aboard, with ours already next to the city, against the garrison and its support as
+        // they are now: under `ABORT_BAR` (the enemy massed while we sailed), the fleet does not
+        // land; it sails home, where it stands down (`invasion_fleet_waits`).
+        let (tx, ty) = g.map.xy(tp);
+        let mut force: Vec<UnitId> = cargo.iter().copied().filter(|&c| g.units.contains(c) && crate::military::is_army_unit(g, c)).collect();
+        for &o in &g.players[p].units {
+            if !force.contains(&o) && !g.unit_is_cargo(o) && crate::military::is_army_unit(g, o) {
+                let q = g.unit_plot(o);
+                let (ox, oy) = g.map.xy(q);
+                if g.map.plots[q].area == g.map.plots[tp].area && g.plot_distance(ox, oy, tx, ty) <= 1 {
+                    force.push(o);
+                }
+            }
+        }
+        let extras = crate::invasion::enemy_support(g, p, tp);
+        let war = crate::invasion::war_test(g, p, amph.owner);
+        // (From the plan's landing plot, as the fleet's sailing was decided.)
+        let from = amph.plan.as_ref().map_or(site, |pl| pl.landing);
+        let est = crate::invasion::take(g, Some(&v.forecasts), &force, from, tp, &extras, war);
+        let p_take = est.map_or(0, |e| e.p_take);
+        if p_take < crate::invasion::ABORT_BAR {
+            crate::trace!(g, p, "assault fleet {:?} does not land next to {}: take {} per mille with {} units ({} support); home", grp, city_name(g), p_take, force.len(), extras.len());
+            g.tel_decision(p, "invasion", "abort", "at_sea", force.len() as i64, String::new);
+            port(g, p, grp, here);
+            if alive(g, grp) && g.group_ready_to_move(grp, false) {
+                skip(g, grp);
+            }
+            return;
+        }
+    }
     if water == here {
         crate::trace!(g, p, "assault transport {:?} lands its army on {:?} next to {}", u, g.map.xy(site), city_name(g));
+        if crate::invasion::on(g, p) {
+            g.tel_decision(p, "invasion", "land", "", cargo.len() as i64, String::new);
+        }
         for c in cargo.iter().copied() {
             if !g.units.contains(c) {
                 continue;
@@ -921,6 +1328,10 @@ fn transport_assault(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, amph: 
         return;
     }
     crate::trace!(g, p, "assault transport {:?} sails toward the coast of {} ({:?})", u, city_name(g), g.map.xy(site));
+    if crate::invasion::on(g, p) {
+        sail_to(g, grp, water, tp);
+        return;
+    }
     move_to(g, grp, water, 0);
     if alive(g, grp) && g.group_ready_to_move(grp, false) {
         skip(g, grp);
@@ -961,10 +1372,7 @@ pub fn sea_explore(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId)
         transport(ai, g, v, grp, u);
         return;
     }
-    // Nothing left to reveal: a warship patrols (docs/NAVAL.md, section 8).
-    if patrol(g, v, grp, u) {
-        return;
-    }
+    // Nothing left to reveal: `units::play` gives a warship to `warships::play` (`explorer_done`).
     let here = g.unit_plot(u);
     port(g, v.p, grp, here);
 }
@@ -1002,7 +1410,7 @@ pub(crate) fn sea_explore_target(g: &Game, v: &mut View, u: UnitId) -> Option<Pl
 }
 
 // ----------------------------------------------------------------------------
-// Range, boats, wear (docs/NAVAL.md, sections 3 and 8)
+// Range and boats (docs/NAVAL.md, sections 3 and 8; a ship out of range or worn: `warships::to_port`)
 // ----------------------------------------------------------------------------
 
 /// Whether the AI keeps unit `u` off plot `q` at sea (docs/NAVAL.md, section 8; the rules' path
@@ -1020,41 +1428,6 @@ pub(crate) fn sea_blocked(g: &Game, u: UnitId, q: PlotIdx) -> bool {
         }
         _ => false,
     }
-}
-
-/// A ship's group that must make for port first (section 8): one out of its team's range, or a
-/// warship whose wear is above half its maximum that carries nothing. It sails to the port nearest
-/// it by the range field (a city of a team whose ports are ours: its wear clears there), else to
-/// one of our coastal cities (`port`). True if its turn is over.
-pub(crate) fn ship_to_port(g: &mut Game, v: &View, grp: GroupId, u: UnitId) -> bool {
-    if v.barbarian || g.unit_get_domain_type(u) != DomainType::DOMAIN_SEA {
-        return false;
-    }
-    let here = g.unit_plot(u);
-    if !g.plot_is_water(here) {
-        return false;
-    }
-    let team = g.unit_get_team(u);
-    let out = g.groups[grp].units.iter().any(|&o| g.unit_is_out_of_sea_range(o));
-    let half = g.d.defines.sea_wear_max_percent / 2;
-    let worn = g.groups[grp].units.iter().any(|&o| g.unit_sea_wear_percent(o) > half) && !g.groups[grp].units.iter().any(|&o| g.unit_has_cargo(o));
-    if !out && !worn {
-        return false;
-    }
-    crate::trace!(g, v.p, "ship group {:?} at {:?} to port ({})", grp, g.map.xy(here), if out { "out of range" } else { "wear" });
-    g.tel_decision(v.p, "naval", "to_port", if out { "out_of_range" } else { "wear" }, 1, String::new);
-    if let Some(c) = g.plot_sea_port(team, here).filter(|&c| g.cities.contains(c)) {
-        let cp = g.city_plot(c);
-        if g.group_find_path(grp, here, cp, 0).is_some() {
-            move_to(g, grp, cp, 0);
-            if alive(g, grp) && g.group_ready_to_move(grp, false) {
-                skip(g, grp);
-            }
-            return true;
-        }
-    }
-    port(g, v.p, grp, here);
-    true
 }
 
 /// The cities of ours a land group reaches in boats (`MOVE_BOATS`: over water in our range),
@@ -1132,7 +1505,7 @@ pub(crate) fn in_boats(g: &mut Game, v: &View, grp: GroupId, u: UnitId) -> bool 
 }
 
 // ----------------------------------------------------------------------------
-// Seas and Patrol (docs/NAVAL.md, sections 4 and 8)
+// Lanes (docs/NAVAL.md, sections 5 and 8)
 // ----------------------------------------------------------------------------
 
 /// Whether the way over water to the coast of the city on `cp` is in our range and not cut, as we
@@ -1144,202 +1517,4 @@ pub(crate) fn way_in_range(g: &Game, team: TeamId, cp: PlotIdx) -> bool {
         .filter_map(|i| g.plot_direction(x, y, DirectionType::from_usize(i)))
         .filter(|&w| g.plot_is_water(w))
         .any(|w| g.sea_lane_known(team, w, team).is_some_and(|l| !l.is_cut()))
-}
-
-/// Whether a warship's wear is above half its maximum (it makes for port, `ship_to_port`).
-fn worn(g: &Game, u: UnitId) -> bool {
-    g.unit_sea_wear_percent(u) > g.d.defines.sea_wear_max_percent / 2
-}
-
-/// Whether `team` is outmatched two to one in sea `s`, by what it sees.
-fn outmatched(g: &Game, team: TeamId, s: SeaId) -> bool {
-    let st = g.sea_state_known(s, team);
-    st.theirs > 0 && st.theirs >= 2 * st.ours.max(1) && !matches!(st.control, SeaControl::PatrolledBy(_))
-}
-
-/// The sea a warship `u` of ours should patrol (module comment), and the plot of it to go to:
-/// the nearest plot of the sea (by plot distance) outside a city that it can reach.
-fn patrol_target(g: &Game, v: &View, grp: GroupId, u: UnitId) -> Option<(SeaId, PlotIdx)> {
-    let p = v.p;
-    let team = v.team;
-    let here = g.unit_plot(u);
-    let (hx, hy) = g.map.xy(here);
-    let mut wanted: Vec<SeaId> = Vec::new();
-    // 1. An enemy coastal city one of our armies besieges, where we would hold its sea.
-    for q in g.player_ids() {
-        let qt = g.players[q].team;
-        if qt == team || !g.at_war(team, qt) {
-            continue;
-        }
-        for &c in &g.players[q].cities {
-            if !g.cities.contains(c) || !g.city_besiegers(c).iter().any(|&b| g.units[b].owner == p) {
-                continue;
-            }
-            for s in g.city_seas(c) {
-                if !wanted.contains(&s) && g.sea_state_known_if(s, qt, team, &[u]).closed() {
-                    wanted.push(s);
-                }
-            }
-        }
-    }
-    // 2. A sea one of our ports is on where an enemy patrols or has ships we see; 3. a sea our
-    // outposts' lanes pass through (docs/NAVAL.md, 9.3), the one nearest the outpost first;
-    // 4. the sea of our most populous port.
-    let mut lanes: Vec<SeaId> = Vec::new();
-    for &c in &g.players[p].cities {
-        if !g.cities.contains(c) || !g.cities[c].outpost {
-            continue;
-        }
-        if let Some(lane) = g.outpost_lane(c) {
-            for &w in &lane.path {
-                if let Some(s) = g.map.plots[w].sea {
-                    if !lanes.contains(&s) && !outmatched(g, team, s) {
-                        lanes.push(s);
-                    }
-                }
-            }
-        }
-    }
-    let mut ports: Vec<(i32, CityId)> = g.players[p].cities.iter().filter(|&&c| g.cities.contains(c)).map(|&c| (-g.cities[c].population, c)).collect();
-    ports.sort();
-    let mut threatened: Vec<SeaId> = Vec::new();
-    let mut home: Vec<SeaId> = Vec::new();
-    for &(_, c) in &ports {
-        for s in g.city_seas(c) {
-            let st = g.sea_state_known(s, team);
-            let enemy_ships = g.map.seas[s.idx()].plots.iter().any(|&w| {
-                g.plot_is_visible(w, team) && g.map.plots[w].units.iter().any(|&o| g.unit_is_warship(o) && g.unit_is_enemy(o, Some(team), Some(w)) && !g.unit_is_invisible(o, team, false))
-            });
-            if (st.theirs > 0 && !matches!(st.control, SeaControl::PatrolledBy(_))) || enemy_ships {
-                if !threatened.contains(&s) {
-                    threatened.push(s);
-                }
-            } else if home.is_empty() {
-                home.push(s);
-            }
-        }
-    }
-    wanted.extend(threatened.into_iter().filter(|&s| !outmatched(g, team, s)));
-    let lanes: Vec<SeaId> = lanes.into_iter().filter(|s| !wanted.contains(s)).collect();
-    wanted.extend(lanes);
-    wanted.extend(home);
-    for s in wanted {
-        let mut plots: Vec<(i32, PlotIdx)> = g.map.seas[s.idx()]
-            .plots
-            .iter()
-            .copied()
-            .filter(|&w| g.map.plots[w].plot_city.is_none() && g.plot_in_sea_range(team, w) && !v.is_claimed(w))
-            .map(|w| {
-                let (x, y) = g.map.xy(w);
-                (g.plot_distance(hx, hy, x, y), w)
-            })
-            .collect();
-        plots.sort();
-        for &(_, w) in plots.iter().take(3) {
-            if w == here || g.group_find_path(grp, here, w, 0).is_some() {
-                return Some((s, w));
-            }
-        }
-    }
-    None
-}
-
-/// A warship of ours with nothing else to do (module comment): on Patrol in its sea, or on its
-/// way there. False if it has cargo, is not a warship, is worn, or no sea wants it.
-pub(crate) fn patrol(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
-    if !alive(g, grp) || !g.units.contains(u) || g.units[u].group != Some(grp) || g.group_get_head_unit(grp).is_none() {
-        return false;
-    }
-    if v.barbarian || !g.unit_is_warship(u) || g.groups[grp].units.iter().any(|&o| g.unit_has_cargo(o)) || worn(g, u) {
-        return false;
-    }
-    let Some((s, w)) = patrol_target(g, v, grp, u) else { return false };
-    let here = g.unit_plot(u);
-    v.claimed.push(w);
-    if g.map.plots[here].sea == Some(s) && g.map.plots[here].plot_city.is_none() && crate::units::can_start(g, grp, MissionType::MISSION_PLUNDER, -1, -1) {
-        crate::trace!(g, v.p, "ship group {:?} patrols {} at {:?}", grp, g.map.seas[s.idx()].name, g.map.xy(here));
-        g.tel_decision(v.p, "naval", "patrol", "start", 1, String::new);
-        crate::units::push(g, grp, MissionType::MISSION_PLUNDER, -1, -1, 0, false);
-        return true;
-    }
-    crate::trace!(g, v.p, "ship group {:?} sails to patrol {} at {:?}", grp, g.map.seas[s.idx()].name, g.map.xy(w));
-    move_to(g, grp, w, 0);
-    if alive(g, grp) && g.group_ready_to_move(grp, false) {
-        let there = g.groups[grp].units.first().and_then(|&o| g.unit_plot_opt(o)).and_then(|q| g.map.plots[q].sea) == Some(s);
-        if there && crate::units::can_start(g, grp, MissionType::MISSION_PLUNDER, -1, -1) {
-            g.tel_decision(v.p, "naval", "patrol", "start", 1, String::new);
-            crate::units::push(g, grp, MissionType::MISSION_PLUNDER, -1, -1, 0, false);
-        } else {
-            skip(g, grp);
-        }
-    }
-    true
-}
-
-/// Whether a group of ours on Patrol should take new orders this turn (module comment): worn,
-/// out of range, outmatched in its sea, or, every 8 turns, to look again where it is wanted.
-pub(crate) fn patrol_wake(g: &Game, v: &View, grp: GroupId) -> bool {
-    if v.barbarian || g.groups[grp].activity_type != ActivityType::ACTIVITY_PLUNDER {
-        return false;
-    }
-    let Some(head) = g.group_get_head_unit(grp) else { return false };
-    let Some(here) = g.unit_plot_opt(head) else { return false };
-    if g.groups[grp].units.iter().any(|&o| worn(g, o) || g.unit_is_out_of_sea_range(o)) {
-        return true;
-    }
-    if g.map.plots[here].sea.is_some_and(|s| outmatched(g, v.team, s)) {
-        return true;
-    }
-    // A transport on Patrol: something to carry.
-    if is_transport_type(&g.d.units[g.units[head].unit_type]) && (settler_waiting(g, v.p).is_some() || !armies_waiting(g, v.p).is_empty() || v.amphibious.is_some()) {
-        return true;
-    }
-    (g.game_turn() + grp.0 as i32) % 8 == 0
-}
-
-/// A warship for a port of ours on a sea an enemy patrols (section 8): the best warship it can
-/// train (`UNITAI_ATTACK_SEA`), while we have fewer warships (transports aside) than twice the
-/// seas of ours an enemy holds or contests by what we see.
-pub fn patrol_production(g: &Game, c: CityId) -> Option<Choice> {
-    let p = g.cities[c].owner;
-    if g.player_is_barbarian(p) || !is_coastal_city(g, c) {
-        return None;
-    }
-    let team = g.players[p].team;
-    // The seas of ours an enemy holds or contests (two warships each), and the seas we share with
-    // a port of an enemy we know of (one each, at most three in all).
-    let mut contested: Vec<SeaId> = Vec::new();
-    let mut fronts: Vec<SeaId> = Vec::new();
-    let enemy_ports: Vec<CityId> = g
-        .player_ids()
-        .filter(|&q| g.players[q].alive && !g.player_is_barbarian(q) && g.players[q].team != team && g.at_war(team, g.players[q].team))
-        .flat_map(|q| g.players[q].cities.clone())
-        .filter(|&e| g.cities.contains(e) && g.city_is_revealed(e, team, false))
-        .collect();
-    for &o in &g.players[p].cities {
-        if !g.cities.contains(o) {
-            continue;
-        }
-        for s in g.city_seas(o) {
-            let st = g.sea_state_known(s, team);
-            if matches!(st.control, SeaControl::HeldBy(_) | SeaControl::Contested(_)) && !contested.contains(&s) {
-                contested.push(s);
-            }
-            if !fronts.contains(&s) && enemy_ports.iter().any(|&e| g.city_seas(e).contains(&s)) {
-                fronts.push(s);
-            }
-        }
-    }
-    let mine = g.city_seas(c);
-    if !mine.iter().any(|s| contested.contains(s) || fronts.contains(s)) {
-        return None;
-    }
-    let warships = g.players[p].units.iter().filter(|&&u| g.unit_is_warship(u) && !is_transport_type(&g.d.units[g.units[u].unit_type])).count() as i32
-        + g.players[p].ai_num_train_ai_units[UnitAIType::UNITAI_ATTACK_SEA];
-    let want = 2 * contested.len() as i32 + (fronts.iter().filter(|s| !contested.contains(s)).count() as i32).min(3);
-    if warships >= want {
-        return None;
-    }
-    let u = best_unit(g, c, Role::SeaExplore)?;
-    Some(Choice::Train(u, UnitAIType::UNITAI_ATTACK_SEA))
 }

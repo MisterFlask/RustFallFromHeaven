@@ -67,9 +67,9 @@ pub fn can_start_mission(g: &Game, units: &[UnitId], mission: MissionType, data1
     }
     let typed = |n: usize| (data1 >= 0 && (data1 as usize) < n).then_some(data1 as usize);
     for &u in units {
-        // This game's (docs/NAVAL.md, 3.2; as `group_can_start_mission`): in boats a unit moves,
-        // waits or sleeps; nothing else.
-        if g.unit_in_boats_at(u, plot) && !matches!(mission, MissionType::MISSION_MOVE_TO | MissionType::MISSION_MOVE_TO_UNIT | MissionType::MISSION_SKIP | MissionType::MISSION_SLEEP | MissionType::MISSION_SENTRY) {
+        // This game's (docs/NAVAL.md, 3.2): in boats a unit moves, waits or sleeps, as the rules'
+        // group check says.
+        if g.unit_in_boats_at(u, plot) && !ffh_core::naval::mission_allowed_in_boats(mission) {
             continue;
         }
         let ok = match mission {
@@ -107,12 +107,10 @@ pub fn can_start_mission(g: &Game, units: &[UnitId], mission: MissionType, data1
             MissionType::MISSION_HURRY => g.unit_can_hurry(u, plot, test_visible),
             MissionType::MISSION_TRADE => g.unit_can_trade(u, plot, test_visible),
             MissionType::MISSION_GREAT_WORK => g.unit_can_great_work(u, plot),
-            MissionType::MISSION_INFILTRATE => g.unit_can_infiltrate(u, plot, test_visible),
             // "this means to play the animation only"
             MissionType::MISSION_GOLDEN_AGE => data1 != -1 || g.unit_can_golden_age(u, plot, test_visible),
             MissionType::MISSION_BUILD => typed(g.d.builds.len()).is_some_and(|b| g.unit_can_build(u, plot, BuildType::from_usize(b), test_visible)),
             MissionType::MISSION_LEAD => g.unit_can_lead(u, plot, (data1 >= 0).then_some(UnitId(data1 as u32))) != 0,
-            MissionType::MISSION_ESPIONAGE => g.unit_can_espionage(u, plot, test_visible),
             _ => false,
         };
         if ok {

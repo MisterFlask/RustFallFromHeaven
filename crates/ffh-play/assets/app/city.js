@@ -494,6 +494,8 @@ function growthView(c) {
           )
         : null,
       c.besieged ? h("span.chip.bad", { tip: `Besieged by ${c.besiegers} enemy unit${c.besiegers === 1 ? "" : "s"} next to the city: its units get no heal from the city and its Sentinels do not repair` }, "Besieged") : null,
+      // Named seas (docs/NAVAL.md 10): the harbour, open or blockaded.
+      c.harbour ? h(`span.chip${c.harbour.state === "blockaded" ? ".bad" : ""}.harbour`, { tip: c.harbour.text }, c.harbour.text) : null,
       h("span.chip", { tip: "Upkeep: gold a turn" }, ic("gold"), c.maintenance ? `−${c.maintenance}` : "0"),
       c.trade_routes ? h("span.chip", { tip: "Trade routes" }, `Trade ${c.trade_routes}`) : null,
       h("span.chip.dim", `Founded turn ${c.founded}`),
