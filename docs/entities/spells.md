@@ -5,7 +5,7 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 | Section | Entries | Directed | Valued | Partial | Incidental | Unused | Not an AI choice |
 |---|---|---|---|---|---|---|---|
 | [Sphere spells (arcane)](#sphere-spells-arcane) | 72 |  | 42 | 17 | 8 | 5 |  |
-| [World spells](#world-spells) | 21 | 19 |  | 2 |  |  |  |
+| [World spells](#world-spells) | 23 | 21 |  | 2 |  |  |  |
 | [Unit, hero, religion and civilization spells](#unit-hero-religion-and-civilization-spells) | 47 | 4 | 9 | 7 | 5 | 22 |  |
 | [Abilities](#abilities) | 127 | 7 | 10 | 31 | 24 | 55 |  |
 
@@ -1327,23 +1327,41 @@ FFH2 rule they were written for.
 
 **AI: Directed.** Cast by the end-of-turn choice at its weight of 300 once FfH's condition holds: at war with two civilization teams (`world_spells::ready`). That came late, around turn 420, and in 19 of 64 games. A moment of its own (a city in peril with 6 or more of our forests near) fired during the elves' own offensives and lost: wins 37.5% -> 28.1% fresh (docs/AI_LOG.md, "World spells at moments of their own"). The Treants are army units (default AI `UNITAI_ATTACK`, `military::army`). Research does not value Way of the Forests for the spell.
 
-### Mother Lode (`SPELL_MOTHER_LODE`)
-*World spell, Khazad · once a game · Mining · any Khazad unit · AI weight 300*
+### The Delve (`SPELL_THE_DELVE`)
+*World spell, Khazad · a charge of Ritual: The Delve · Mining · cast by a selected Khazad land unit on a hill in Khazad borders · AI weight 300*
 
-**What it does.** The Khazad gain 25 gold for every Mine they own. Each flat land plot of theirs (not water, peak or hill) also has a 10% chance to become a hill: one food less, one hammer more, and room for a mine.
+**What it does.** Target: another hill in the Khazad's borders within 10 plots, neither plot already the end of a tunnel. A tunnel joins the two hills for good (`Game::delves`); it stays when either plot changes owner. Units travel it with Enter the Delve. Replaces Mother Lode (25 gold a mine, 10% of flat plots raised to hills) since 2026-11-11.
 
-**Playing it well.** The windfall scales with mines, and Khazad cities live by their gold: the Dwarven Vault in every city follows the treasury per city (50, 100, 150, 200, 300 and 500 gold per city are the steps). Mine the hills, cast when the payout lifts the vaults a level or two, and keep the gold, or spend it on a decisive purchase. The new hills are good for mines and production cities, but hurt farmland.
+**Playing it well.** Join a hill city on the frontier to one in the heartland: a garrison moves across the empire in one turn. A tunnel is open to anyone who may stand on its far end, enemies included once they hold the near end, so dig away from an exposed border or keep the ends garrisoned.
 
-**AI: Directed.** Cast by the end-of-turn choice at its weight of 300 once FfH's condition holds: 10 mines (`world_spells::ready`). The AI does not wait for a vault step: docs/AI.md's group-C diagnosis names that as the expert moment, and saving gold for the vault itself was tried before and dropped (`civs/khazad.rs`). No civilization override.
+**AI: Directed.** With a charge, cast by a unit of ours already standing on a valid hill (a hill city's garrison), to the valid hill nearest our city farthest from that unit; of the units that can, the one with the longest tunnel (`lanun_khazad::the_delve`).
+
+### Enter the Delve (`SPELL_ENTER_THE_DELVE`)
+*Any player's land unit on a tunnel end · not an AI weight*
+
+**What it does.** The unit moves to the other end of the tunnel and its turn ends. It needs all its moves, no unit at war with it on the other end, and a plot it could enter without attacking (open borders into foreign land).
+
+**Playing it well.** Move defenders to a threatened end the turn the threat shows; an enemy stack on the far end closes the tunnel.
+
+**AI: Directed.** At the start of a player's turn, a land unit on a tunnel end whose group's move order ends at least 4 plots closer from the other end takes it (`lanun_khazad::delve_travel`, every AI player, the barbarians included).
 
 ### Raging Seas (`SPELL_RAGING_SEAS`)
-*World spell, Lanun · once a game · Optics · any Lanun unit · AI weight 300*
+*World spell, Lanun · a charge of Ritual: Raging Seas · Optics · any Lanun unit · AI weight 300*
 
-**What it does.** Every unit not of the Lanun that stands next to water takes cold damage: on coastal land and at sea alike, ships included. The damage is two draws of up to 75, less its resistance (twice its defense and level, a quarter of its city's defense, its cold resistance), up to 100%, so it can kill. Flames and smoke next to water are put out. On owned plots next to water that are not Lanun, each non-permanent improvement is destroyed with a 26% chance.
+**What it does.** Target: a water plot the Lanun have seen. A storm covers the plots within 2 plots of it for 15 turns (the turn of the cast and the next 14; `AreaEffectKind::RagingSeas`). At the start of each Lanun turn, each unit of another team in the storm, on water or on land next to water, takes 20 cold damage: two draws of up to 20, less its resistance (twice its defense and level, a quarter of its city's defense, its cold resistance). A ship can sink; another unit is not taken beyond 75% damage. One storm per player at a time; Steer the Storm moves it. Every player who sees a plot of it sees it on the map. Replaces FFH2's whole-world strike (75 damage to every non-Lanun unit next to water, improvements wrecked) since 2026-11-11.
 
-**Playing it well.** Cast it the turn before your fleet and marines strike a coastal city: its defenders take about 75 damage before the fight. Or cast it when an invasion fleet sits off your coast. It hits every other civilization and the barbarians alike, and wrecks everyone's coastal improvements but yours. That reshuffles the whole world, and allies pay too.
+**Playing it well.** Park it over an enemy fleet or the sea lanes into an enemy port, then steer it after the ships: each turn under it costs them health. On a coastal city it wears down the defenders before a landing.
 
-**AI: Directed.** Cast by the end-of-turn choice at its weight of 300 once FfH's condition holds (`world_spells::ready`, `world_spells::enemy_fleet`). The condition is war with a player, the barbarians included, whose fleet is worth more than 10: frigates and galleons 2, men-o'-war and queens of the line 3, other warships and transports 1. That held in 5 of 40 games, around turn 590. A moment of its own (a strike on a coastal city, or a coastal city in peril) lost (docs/AI_LOG.md). Research never values Optics for it.
+**AI: Directed.** With a charge and at war with a civilization (`world_spells::ready`), at the water plot whose storm covers the most enemy strength the Lanun see (ties: nearest an enemy coastal city); with no enemy in reach, next to the enemy coastal city nearest a Lanun city (`lanun_khazad::raging_seas`).
+
+### Steer the Storm (`SPELL_STEER_THE_STORM`)
+*Lanun · world action (top bar) · while the Lanun's storm holds · not an AI weight*
+
+**What it does.** Target: a water plot within 2 plots of the storm's centre. The storm's centre moves there. Once a turn. The unit it goes through keeps its moves, its cast and its Hidden.
+
+**Playing it well.** Follow the enemy's ships; keep it over water next to their coastal cities.
+
+**AI: Directed.** Each turn, to the reachable centre covering the most enemy strength, when that is more than where it stands (`lanun_khazad::steer`).
 
 ### Rally (`SPELL_RALLY`)
 *World spell, Bannor · once a game · requires the Crusade civic · any Bannor unit · AI weight 300*
