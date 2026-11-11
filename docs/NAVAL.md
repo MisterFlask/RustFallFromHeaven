@@ -7,7 +7,9 @@ with the AI minimum of section 8's first two bullets (`crates/ffh-ai/src/naval.r
 phase 1 parts of section 10 in `crates/ffh-play` (`view/sea.rs`, `app/sea.js`; docs/HUMAN.md);
 phase 2 (sections 4 and 5) built in the rules (`crates/ffh-core/src/seas.rs`, lanes in `naval.rs`,
 shore fire in `crates/ffh-core/src/engagement/shore.rs`, tests in `crates/ffh-core/tests/seas.rs`)
-with section 8's Patrol bullet and the transports' range test; its client not yet.** This
+with section 8's Patrol bullet and the transports' range test; its client not yet; phase 3 (section
+7, fleets) built in the rules (`crates/ffh-core/src/army/fleet.rs`), the AI (`crates/ffh-ai/src/naval.rs`)
+and the client (the Armies screen's Fleets section), tests in `crates/ffh-core/tests/fleets.rs`.** This
 game's own rules, not FFH2's (the owner's direction, 2026-11-10: the naval game inherited from
 Civ4 is irrelevant and there are no colonial adventures). This file is the spec for the
 implementation, as docs/SUPPLY.md is for supply lines. Marked **(default)**: a value or rule chosen
@@ -403,7 +405,7 @@ is no lane. Which ports are home ports is said where a lane is used: 4.6 (any po
 | Enemy crossing | lands where it likes | a patrol in the sea intercepts it |
 | Enemy's coast | | its sea plots unworked, its sea trade cut |
 
-## 7. Phase 3: fleets -- status: not built
+## 7. Phase 3: fleets -- status: built (rules, AI, client: 7.3)
 
 ### 7.1 A fleet is an army of ships
 
@@ -428,6 +430,85 @@ A fleet holds one standing order, `Army::station`:
   plot the fleet moves to the same plot if it can reach it this turn.
 
 A move order ends the standing order.
+
+### 7.3 As built (2026-11-11)
+
+Where the code is:
+
+- `crates/ffh-core/src/army/fleet.rs`: `ArmyDomain` (`Land`, `Sea`), `Station` (`None`,
+  `Patrol(SeaId)`, `Escort(EscortTarget)`), `EscortTarget` (`Army`, `Group`); which units serve
+  (`unit_type_is_fleet_unit`, `unit_is_fleet_unit`, `unit_army_domain`, `unit_type_army_domain`,
+  `unit_type_fits_army`, `army_is_fleet`); `fleet_nearest_port`; the fleet's requisition
+  (`fleet_check_requisition_city`, `fleet_requisition_unit_default`); the standing orders
+  (`army_set_station`, `fleet_patrol_seas`, `escort_target_plot`, `escort_target_name`,
+  `player_fleet_stations` at the owner's turn start after its units get their moves,
+  `army_station_step`, `group_escort_step` called at the end of `group_move`,
+  `group_order_ends_station` called at the start of `group_push_mission`).
+- `Army::domain`, `Army::station`, `Army::carried` (`army/mod.rs`); the sync, the names and the
+  commands take the domain (`player_army_sync`, `army_create`, `army_units_plot`, `army_form`,
+  `army_join`, `army_to_garrison`, `army_set_tactic`, `army_disband`, `city_recruit_dest`,
+  `march_turns` over water for a ship); the landing (`player_army_regroup_landed`).
+- The march of a ship (`army/march.rs`): `MOVE_SEA_RANGE` (`defs.rs`, honoured in `path.rs` for
+  any ship group whose search carries it); no supply for fleets (`player_update_supply`).
+- The AI: `crates/ffh-ai/src/naval.rs` (`fleets`, `fleet_for`; `patrol` gives a fleet the Patrol
+  order), `armies.rs`, `tactics.rs` and `supply.rs` leave fleets out.
+- The client: `crates/ffh-play/src/view/armies.rs` (`fleet_json`, `station_view`, the screen's
+  `fleets`, `seas`, `escort_targets`), the unit panel's fleet actions (`view/units.rs`,
+  `army_actions`), the command `army_station` (`command.rs`), `assets/app/armies.js` (the Fleets
+  section, `stationControl`), `units.js` (the fleet's line). Tests: `crates/ffh-core/tests/fleets.rs`,
+  `crates/ffh-play/tests/fleets.rs`; the harness checks that no unit is in an army of another
+  domain. Save format 34.
+
+Choices made where this spec was silent (each open to change):
+
+- **Which ships.** A sea unit type with a strength or cargo room, not an animal and not a hero; a
+  unit of it that is not a summon and not the barbarians'. One rule for both domains: a group of
+  such ships outside a city has a fleet, a group of them in a city with no fleet stays without one,
+  a fleet entering a city stays a fleet (as an army does).
+- **Cargo.** Civ4 puts each unit that boards a ship in a group of its own. The sync leaves the
+  carried units in their army while aboard (an army all of whose units are aboard has the group of
+  the first of them) and, when the army lands, puts its units that stand on one plot back into one
+  group (`Army::carried` remembers that it was carried), so a crossing does not split an army into
+  one-unit armies. Units that land on different plots split as any army does.
+- **Form** keeps the units' group when they are exactly one group (a ship or a group leaving port
+  becomes a fleet without a new group; the same for land armies).
+- **Disband**: a fleet in port is gone at once, its ships in no fleet; at sea it sails to the
+  nearest port of its owner (a city next to water, one on the fleet's water first; plot distance,
+  ties to the older city) and is gone there. Refused with no port.
+- **Requisition**: only coastal cities (a city next to water); the rules' ship (the human's) is
+  the strongest warship the city can train (no world or national unit; ties: the cheaper), else the
+  ship with the most cargo room. The ship sails as a recruit marches, on a path over water in its
+  team's range (`MOVE_SEA_RANGE`); with no such way it waits, and after `ARMY_TRANSIT_STALL_TURNS`
+  turns it stops sailing and is an ordinary ship where it stands (a ship has no garrison to go to;
+  the same when its fleet is gone). The march estimate for a ship is the water steps in range, one
+  move a plot. A land unit's order naming a fleet, or a ship's naming an army or a garrison, keeps
+  the unit in its city. The city screen offers no fleet as a land unit's destination.
+- **No tactic**: `army_set_tactic` refuses a fleet; its `tactic` fields stay unused. Battles never
+  include ships, so the engagement set-up and the commander auras never meet a fleet; the client's
+  `engage` refuses a fleet and the largest-army launcher skips fleets.
+- **Patrol**: the seas offered are those with a plot the team has revealed in its range. The fleet
+  sails to the nearest of the four plots of the sea (outside a city, in range) nearest it by plot
+  distance that it reaches, the fewest turns first, with a move order whose path stays in range,
+  then the Patrol order (queued); on arrival with no moves left it takes the order at its next turn
+  start. A fleet needs a warship to patrol. Each of its owner's turn starts the order is checked
+  again: in the sea it patrols where it is; elsewhere, with no order under way, it sails again.
+- **Escort**: the target is an army or fleet of the owner (the client offers these), or a group
+  (`EscortTarget::Group`, which the AI uses for a transport in no fleet). The follow is checked
+  after every completed step of any group of the owner onto water: a fleet whose target now stands
+  on that plot moves there along the rules' path when the path takes one turn. Steps made by an
+  escort start no other escort (a guard, `Game::escorting`, not saved), so chains and two fleets
+  escorting each other end after one step. At its owner's turn start an escort away from its
+  target at sea follows it if it can this turn, else sails toward it (an addition to the spec: an
+  escort set far from its target would otherwise never join it). An escort waits asleep (no orders
+  asked); a target on land: it waits where it is; a target gone (an army deleted, a group gone):
+  the order ends; a target army merged into another: the escort follows that one.
+- **A move order** is `MISSION_MOVE_TO`, `MISSION_MOVE_TO_UNIT` or `MISSION_ROUTE_TO` pushed for
+  the fleet's group, whoever pushes it (the human's move, the AI's go-to, a disband). The order's own
+  moves keep it. A split-off fleet has no standing order; a merged fleet keeps the one of the fleet
+  it joined.
+
+Not built: Escort of a ship group from the client (the rules take it); a message when a standing
+order starts or ends.
 
 ## 8. What the AI does
 

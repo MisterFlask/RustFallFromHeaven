@@ -16,6 +16,12 @@
 // Each army and each garrison has a battle tactic (docs/TACTICS.md): how its units are arranged
 // in every battle it fights. A change takes effect at the start of your next turn. Each army's
 // supply (docs/SUPPLY.md) is stated in the view's bare words (`supply.text`).
+//
+// Fleets (docs/NAVAL.md, section 7): warships and ships with cargo room serve in fleets, the
+// armies' container at sea (the query's `fleets`). A fleet has no supply line and no tactic; it has
+// a standing order (`station`: none, Patrol of a sea of `seas`, Escort of one of
+// `escort_targets`), sent by `army_station`, and its ships' wear. Its requisition takes ships from
+// coastal cities.
 
 import * as api from "./api.js";
 import { S, dname, turns, info, cityAt, me } from "./state.js";
@@ -65,6 +71,13 @@ addHelp({
       h("li", "Each army needs a supply line: the cheapest path over land to one of your cities, or to one of your ships that can carry land units, within its budget. A road plot costs least, then your own territory; other land costs more. Enemy units, enemy cities, land next to a manned enemy fort and closed borders block it."),
       h("li", "The map draws your armies' lines, and the lines of other armies you see over the plots you have revealed. With an army selected, the plot under the pointer says whether it would be supplied there."),
       h("li", "Cut at the start of your turn: Hunger (no healing, no recruits), after a few turns Starvation (units lose HP each turn down to a floor, and deal less damage in battles). A restored line ends both at your next turn."),
+    ),
+    h("h4", "Fleets"),
+    h(
+      "ul",
+      h("li", "Warships and ships with cargo room serve in fleets, which move as one. A ship at sea forms a fleet of its own; a ship in port in no fleet is simply a ship. A fleet has no supply line and no battle tactic: range and wear instead."),
+      h("li", "Standing order (the Armies screen): Patrol of a sea in your range: the fleet sails to the nearest plot of the sea and its warships take the Patrol order there. Escort of an army or a fleet: when it ends a move on water, the fleet moves to its plot if it can reach it this turn. A move order ends the standing order."),
+      h("li", "A fleet requisitions ships from the coastal cities you pick; the ship sails to the fleet on its own over water in range. A disbanded fleet sails to the nearest of your ports; there its ships are in no fleet."),
     ),
     h("h4", "Battle tactics"),
     h(
@@ -142,9 +155,12 @@ function composition(ids) {
 }
 
 /** "Axeman · 4 turns to train · 3 turns' march" for a city the army may requisition from. */
-function candidateLine(c) {
-  if (c.unit === null || c.unit === undefined) return h("span.dim", " · trains no unit for the army now");
-  const march = c.march_turns === null || c.march_turns === undefined ? h("span.warn", { title: "No path by land to the army now" }, " · no way by land") : h("span.dim", ` · ${c.march_turns ? `${turns(c.march_turns)}' march` : "at the army"}`);
+function candidateLine(c, fleet = false) {
+  if (c.unit === null || c.unit === undefined) return h("span.dim", fleet ? " · trains no ship for the fleet now" : " · trains no unit for the army now");
+  const march =
+    c.march_turns === null || c.march_turns === undefined
+      ? h("span.warn", { title: fleet ? "No way over water in range to the fleet now" : "No path by land to the army now" }, fleet ? " · no way over water" : " · no way by land")
+      : h("span.dim", ` · ${c.march_turns ? `${turns(c.march_turns)}' ${fleet ? "sailing" : "march"}` : fleet ? "at the fleet" : "at the army"}`);
   return h("span", h("span.dim", ` · ${dname("UnitType", c.unit)}, ${turns(c.production_turns)} to train`), march);
 }
 
@@ -177,7 +193,7 @@ function requisitionView(a, act) {
       h("input", { type: "checkbox", checked: c.picked, disabled: !rq.open, onchange: (ev) => toggle(c, ev.target.checked) }),
       h("span", ` ${c.name}`),
       c.governed ? h("span.dim", " (governed)") : null,
-      candidateLine(c),
+      candidateLine(c, a.domain === "sea"),
       c.order ? h("span.badge", { title: "Training for the army now" }, `${turns(c.order.turns)}`) : null,
     ),
   );
@@ -191,8 +207,37 @@ function requisitionView(a, act) {
   return h("div.requisition", head, orders, pick);
 }
 
+/** A fleet's standing order selector (docs/NAVAL.md, 7.2): none, Patrol with each sea of `seas`,
+ *  Escort with each army or other fleet of `targets`; `set` sends the chosen order (null, `{patrol}`
+ *  or `{escort}`). */
+export function stationControl(f, seas, targets, set) {
+  const st = f.station ?? { kind: "none" };
+  const cur = st.kind === "patrol" ? `patrol:${st.sea}` : st.kind === "escort" ? (st.army !== null && st.army !== undefined ? `escort:${st.army}` : `group:${st.group}`) : "none";
+  const opts = [h("option", { value: "none", selected: cur === "none" }, "No standing order")];
+  for (const s of seas) opts.push(h("option", { value: `patrol:${s.id}`, selected: cur === `patrol:${s.id}` }, `Patrol: ${s.name}`));
+  for (const t of targets) {
+    if (t.army === f.id) continue;
+    opts.push(h("option", { value: `escort:${t.army}`, selected: cur === `escort:${t.army}` }, `Escort: ${t.name}`));
+  }
+  // An order the lists do not hold (a sea now out of range, a ship group): kept as it is.
+  if (!opts.some((o) => o.value === cur)) opts.push(h("option", { value: cur, selected: true }, st.text ?? cur));
+  const pick = (v) => {
+    if (v === "none") return set(null);
+    const [k, id] = v.split(":");
+    if (k === "patrol") return set({ patrol: Number(id) });
+    if (k === "escort") return set({ escort: Number(id) });
+    return set({ escort_group: Number(id) });
+  };
+  return h(
+    "span.station",
+    h("span", "Standing order "),
+    h("select.fleet-station", { "aria-label": "Standing order", title: "Patrol: the fleet sails to the sea and patrols it. Escort: it follows the army or fleet when that ends a move on water and it can reach it this turn. A move order ends it.", onchange: (ev) => pick(ev.target.value) }, opts),
+  );
+}
+
 /** The Armies screen (F5): every army (name, units, place, supply, target size, requisition,
- *  recruits marching to it) and every garrison with the recruits marching to it. */
+ *  recruits marching to it), every fleet (its standing order and wear in place of supply and
+ *  tactic) and every garrison with the recruits marching to it. */
 export async function openArmies({ select, centerOn } = {}) {
   const m = openModal({ title: "Armies", body: [h("p.dim", "…")], tag: "armies", wide: true, buttons: [{ label: "Close", value: null }], help: "armies" });
   // The open requisition pickers (by army) stay open when the screen is re-read.
@@ -223,7 +268,8 @@ export async function openArmies({ select, centerOn } = {}) {
       const city = a.x !== null ? cityAt(a.x, a.y) : null;
       const one = n === 1;
       const where = city && city.owner === me()?.player ? `${one ? "joins" : "join"} the garrison of ${city.name}` : `${one ? "marches" : "march"} to the nearest of your cities and ${one ? "joins" : "join"} its garrison`;
-      const v = await ask("Disband the army?", `Disband the ${a.name}? Its ${one ? "unit" : `${n} units`} ${where}; its requisition ends.`, [
+      const fleet = a.domain === "sea";
+      const v = await ask(fleet ? "Disband the fleet?" : "Disband the army?", fleet ? `Disband the ${a.name}? Its ${one ? "ship" : `${n} ships`} ${city && city.owner === me()?.player ? "stay in port" : "sail to the nearest of your ports"}, in no fleet; its requisition ends.` : `Disband the ${a.name}? Its ${one ? "unit" : `${n} units`} ${where}; its requisition ends.`, [
         { label: "Disband", value: true, primary: true, danger: true },
         { label: "Cancel", value: null },
       ]);
@@ -317,6 +363,67 @@ export async function openArmies({ select, centerOn } = {}) {
         a.recruits.length ? h("div", h("b", `Marching to it (${a.recruits.length})`), h("ul.army-transit", a.recruits.map((t) => recruitLine(t, { go: goUnit })))) : null,
       );
     });
+    // Fleets (docs/NAVAL.md, section 7).
+    const fleets = (r.fleets ?? []).map((f) => {
+      const n = f.units.length;
+      const go = () => {
+        if (f.x === null) return;
+        m.close(null);
+        centerOn?.(f.x, f.y);
+        select?.(f.units);
+      };
+      const coming = f.marching.length + f.requisition.orders.length + (f.requisition.head_orders ?? 0);
+      const req = requisitionView(f, act);
+      if (req && opened.has(f.id)) req.querySelector("details.requisition-pick")?.setAttribute("open", "");
+      return h(
+        "div.army-card.fleet-card",
+        { "data-army": f.id },
+        h(
+          "div.army-title",
+          h("input.army-name", {
+            value: f.name,
+            maxlength: 40,
+            "aria-label": "Name",
+            title: "Rename the fleet (Enter)",
+            onchange: (ev) => {
+              const name = ev.target.value.trim();
+              if (name && name !== f.name) act({ c: "army_rename", army: f.id, name });
+            },
+          }),
+          h("span", ` ${n} ship${n === 1 ? "" : "s"}`),
+          f.x !== null ? h("button.link.small", { onclick: go, title: "Select the fleet on the map" }, `at (${f.x}, ${f.y})`) : null,
+          f.sea ? h("span.dim", ` · ${f.sea}`) : null,
+          f.disband_to ? h("span.dim", ` · disbanded: sailing to ${f.disband_to}`) : null,
+        ),
+        h("div.dim", composition(f.units) || "—"),
+        h(`div.fleet-wear${f.wear ? ".warn" : ".dim"}`, f.wear_text ?? ""),
+        f.disband_to ? h("div.dim", f.station?.text ?? "") : h("div.row", stationControl(f, r.seas ?? [], r.escort_targets ?? [], (station) => act({ c: "army_station", army: f.id, station }))),
+        h(
+          "div.row",
+          h(
+            "label",
+            { title: "The size the fleet is meant to have (0: none). While it is short, it requisitions ships from the coastal cities you pick." },
+            "Target size ",
+            h("input.army-target", {
+              type: "number",
+              min: 0,
+              max: 99,
+              value: f.target_size,
+              onchange: (ev) => act({ c: "army_target", army: f.id, size: Math.max(0, Math.min(99, Number(ev.target.value) || 0)) }),
+            }),
+          ),
+          f.target_size ? h("span.dim", ` ${n + coming}/${f.target_size} with ${coming ? `${coming} coming` : "none coming"}`) : null,
+          h(
+            "button.small",
+            { disabled: !f.upgrades, onclick: () => act({ c: "army_upgrade", army: f.id }), title: f.upgrades ? "Upgrade every ship that can, the most experienced first, while the gold lasts" : "No ship of the fleet has an upgrade" },
+            f.upgrades ? `Upgrade all: ${f.upgrades} (${f.upgrade_price} gold)` : "Upgrade all",
+          ),
+          f.disband_to ? null : h("button.small.danger", { onclick: () => disband(f), title: "Its ships sail to the nearest of your ports, in no fleet; its requisition ends" }, "Disband"),
+        ),
+        req,
+        f.recruits.length ? h("div", h("b", `Sailing to it (${f.recruits.length})`), h("ul.army-transit", f.recruits.map((t) => recruitLine(t, { go: goUnit })))) : null,
+      );
+    });
     const garrisons = r.garrisons.map((gr) =>
       h(
         "li",
@@ -330,6 +437,8 @@ export async function openArmies({ select, centerOn } = {}) {
     m.setBody(
       h("h4", `Armies (${r.armies.length})`),
       armies.length ? h("div.army-list", armies) : h("p.dim", "None."),
+      h("h4", `Fleets (${fleets.length})`),
+      fleets.length ? h("div.army-list.fleet-list", fleets) : h("p.dim", "None."),
       h("h4", "Garrisons"),
       garrisons.length ? h("ul.garrisons", garrisons) : h("p.dim", "No cities."),
     );

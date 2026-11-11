@@ -312,7 +312,7 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
 
     // This game's armies (docs/ARMIES.md): form, split, join or merge, garrison, disband,
     // upgrade all. Only for a selection of army units (heroes, mages, recon units and summons
-    // move on their own).
+    // move on their own), or of ships that serve in fleets (docs/NAVAL.md, section 7).
     if g.army_units_plot(v.h, units).is_ok() {
         for (enabled, cmd, extra) in army_actions(v, units, plot) {
             push("army", enabled, cmd, extra);
@@ -423,7 +423,9 @@ pub fn world_actions(v: &Viewer) -> Json {
     Json::Arr(out)
 }
 
-/// The army buttons of a selection of army units on `plot` (`army`: the action, `label`, `help`).
+/// The army buttons of a selection of army units on `plot` (`army`: the action, `label`, `help`);
+/// for ships, the fleet's (docs/NAVAL.md, section 7: form, split, join or merge, disband, upgrade
+/// all; no garrison).
 fn army_actions(v: &Viewer, units: &[UnitId], plot: PlotIdx) -> Vec<(bool, Json, Json)> {
     let g = v.g;
     let h = v.h;
@@ -431,6 +433,8 @@ fn army_actions(v: &Viewer, units: &[UnitId], plot: PlotIdx) -> Vec<(bool, Json,
     let mut add = |enabled: bool, cmd: Command, action: &str, label: String, help: &str| {
         out.push((enabled, cmd.to_json(), crate::jobj! { "army" => action, "label" => label, "help" => help }));
     };
+    let fleet = g.unit_army_domain(units[0]) == Some(ffh_core::army::ArmyDomain::Sea);
+    let noun = if fleet { "fleet" } else { "army" };
     let first = g.units[units[0]].army;
     // The army all the selected units are in, if one.
     let one = first.filter(|_| units.iter().all(|&u| g.units[u].army == first));
@@ -441,31 +445,31 @@ fn army_actions(v: &Viewer, units: &[UnitId], plot: PlotIdx) -> Vec<(bool, Json,
             true,
             Command::ArmySplit { units: units.to_vec() },
             "split",
-            "Split into a new army".into(),
-            "The selected units leave their army and form a new one here.",
+            format!("Split into a new {noun}"),
+            if fleet { "The selected ships leave their fleet and form a new one here." } else { "The selected units leave their army and form a new one here." },
         ),
         Some(_) => {}
         None => add(
             true,
             Command::ArmyForm { units: units.to_vec() },
             "form",
-            "Form a new army".into(),
-            "The selected units leave their armies or garrison and form a new army, which moves as one.",
+            format!("Form a new {noun}"),
+            if fleet { "The selected ships leave their fleets and form a new fleet, which moves as one." } else { "The selected units leave their armies or garrison and form a new army, which moves as one." },
         ),
     }
     for &b in &g.players[h].armies {
-        if !g.armies.contains(b) || Some(b) == one || g.army_plot(b) != Some(plot) {
+        if !g.armies.contains(b) || Some(b) == one || g.army_plot(b) != Some(plot) || g.army_is_fleet(b) != fleet {
             continue;
         }
         let name = &g.armies[b].name;
         let (label, help) = if whole {
-            (format!("Merge into the {name}"), "The whole army joins the other; the units on their way to it follow.")
+            (format!("Merge into the {name}"), if fleet { "The whole fleet joins the other; the ships on their way to it follow." } else { "The whole army joins the other; the units on their way to it follow." })
         } else {
-            (format!("Join the {name}"), "The selected units join that army.")
+            (format!("Join the {name}"), if fleet { "The selected ships join that fleet." } else { "The selected units join that army." })
         };
         add(true, Command::ArmyJoin { units: units.to_vec(), army: b }, "join", label, help);
     }
-    if let Some(c) = city {
+    if let (Some(c), false) = (city, fleet) {
         if units.iter().any(|&u| g.units[u].army.is_some()) {
             add(
                 true,
@@ -477,7 +481,21 @@ fn army_actions(v: &Viewer, units: &[UnitId], plot: PlotIdx) -> Vec<(bool, Json,
         }
     }
     if let (Some(a), true) = (one, whole) {
-        if city.is_none() {
+        if fleet {
+            // A fleet in port is disbanded there; at sea it sails to the nearest port first.
+            let to = if city.is_some() { city } else { g.fleet_nearest_port(h, plot) };
+            add(
+                to.is_some(),
+                Command::ArmyDisband { army: a },
+                "disband",
+                match (to, city) {
+                    (Some(_), Some(_)) => "Disband the fleet".into(),
+                    (Some(c), None) => format!("Disband: sail to {}", crate::view::city_name(g, c)),
+                    _ => "Disband (no port to sail to)".into(),
+                },
+                "The fleet's ships sail to the nearest of your ports; there they are ships in no fleet.",
+            );
+        } else if city.is_none() {
             let to = g.army_nearest_city(h, plot);
             add(
                 to.is_some(),

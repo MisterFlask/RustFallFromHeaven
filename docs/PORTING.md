@@ -204,6 +204,17 @@ flag.
   over water in range) to a port of the team. *Shore fire*: before round 1 of a battle on land, up
   to 3 warships with a bombard rate per side on the water next to it fire once each (once a turn),
   a SHOOT hit each that never takes a unit below 1 HP. Save format 33.
+- **The sea, phase 3: fleets** (docs/NAVAL.md, section 7; 2026-11-11, the owner's direction). A
+  player's warships and ships with cargo room serve in named fleets ("1st Fleet"), the armies'
+  container at sea (`Army::domain`): kept in one group, formed, split, joined, merged, renamed,
+  disbanded (the ships sail to the nearest port, then belong to no fleet), a target size, requisition
+  from coastal cities (the ship sails to the fleet over water in range), upgrade all; no supply line,
+  no battle tactic, no garrison (a ship in port in no fleet is simply a ship; a lone ship at sea is a
+  one-ship fleet). A fleet holds a standing order the rules carry out: Patrol of a sea (it sails
+  there and patrols) or Escort of an army or group (it moves onto its target's water plot after each
+  of the target's steps when it can reach it that turn); a move order ends it. An army carried by
+  ships stays one army and lands as one group (Civ4 put each boarded unit in a group of its own).
+  Save format 34.
 - **Engagement combat** (docs/ENGAGEMENTS.md; not an option since 2026-11-03, the owner's
   decision: `GAMEOPTION_ENGAGEMENTS` was removed, every game fights it, the AI-only ones too, with or
   without armies; older saves do not load): a land attack is a **formation battle** (revision 4,

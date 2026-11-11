@@ -68,6 +68,9 @@ pub enum Command {
     /// Battle tactics (docs/TACTICS.md): army `army` fights in `tactic` from the start of the
     /// human's next turn (setting the tactic it has cancels a pending change).
     ArmyTactic { army: ArmyId, tactic: BattleTacticType },
+    /// A fleet's standing order (docs/NAVAL.md, 7.2): none, Patrol of a sea, Escort of an army
+    /// or a group.
+    ArmyStation { army: ArmyId, station: ffh_core::army::Station },
     /// City `city`'s garrison fights in `tactic` from the start of the human's next turn.
     GarrisonTactic { city: CityId, tactic: BattleTacticType },
     /// Engagement combat (docs/ENGAGEMENTS.md): attack plot `to` (next to the attackers); each side
@@ -440,6 +443,7 @@ pub const COMMAND_NAMES: &[&str] = &[
     "army_requisition",
     "army_requisition_set",
     "army_tactic",
+    "army_station",
     "garrison_tactic",
     "engage",
     "recruit_dest",
@@ -492,6 +496,7 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("army_requisition", &["army", "city", "on"]),
     ("army_requisition_set", &["army", "cities"]),
     ("army_tactic", &["army", "tactic"]),
+    ("army_station", &["army", "station"]),
     ("garrison_tactic", &["city", "tactic"]),
     ("engage", &["army", "units", "from", "to", "formation", "declare_war"]),
     ("recruit_dest", &["city", "index", "dest"]),
@@ -586,6 +591,40 @@ pub fn recruit_dest_json(dest: Option<ffh_core::army::RecruitDest>) -> Json {
     }
 }
 
+/// A fleet's standing order (docs/NAVAL.md, 7.2) as `army_station` takes it: null (none),
+/// `{"patrol": sea}`, `{"escort": army}` or `{"escort_group": group}`.
+pub fn station_json(station: ffh_core::army::Station) -> Json {
+    use ffh_core::army::{EscortTarget, Station};
+    match station {
+        Station::None => Json::Null,
+        Station::Patrol(s) => crate::jobj! { "patrol" => s.idx() },
+        Station::Escort(EscortTarget::Army(a)) => crate::jobj! { "escort" => a },
+        Station::Escort(EscortTarget::Group(g)) => crate::jobj! { "escort_group" => g },
+    }
+}
+
+/// The `station` field of `army_station` ([`station_json`]'s form).
+fn station_field(j: &Json) -> Result<ffh_core::army::Station, FieldError> {
+    use ffh_core::army::{EscortTarget, Station};
+    match j.opt_value("station")? {
+        None | Some(Json::Null) => Ok(Station::None),
+        Some(v) => {
+            if let Some(s) = v.opt::<i32>("patrol")? {
+                if s < 0 {
+                    return Err(FieldError::wrong("station", "a sea index", v));
+                }
+                Ok(Station::Patrol(SeaId::from_usize(s as usize)))
+            } else if let Some(a) = v.opt::<ArmyId>("escort")? {
+                Ok(Station::Escort(EscortTarget::Army(a)))
+            } else if let Some(g) = v.opt::<GroupId>("escort_group")? {
+                Ok(Station::Escort(EscortTarget::Group(g)))
+            } else {
+                Err(FieldError::wrong("station", "{\"patrol\": sea}, {\"escort\": army}, {\"escort_group\": group} or null", v))
+            }
+        }
+    }
+}
+
 /// The `dest` field of `recruit_dest` ([`recruit_dest_json`]'s form).
 fn recruit_dest_field(j: &Json) -> Result<Option<ffh_core::army::RecruitDest>, FieldError> {
     use ffh_core::army::RecruitDest;
@@ -638,6 +677,7 @@ impl Command {
             Command::ArmyRequisition { .. } => "army_requisition",
             Command::ArmyRequisitionSet { .. } => "army_requisition_set",
             Command::ArmyTactic { .. } => "army_tactic",
+            Command::ArmyStation { .. } => "army_station",
             Command::GarrisonTactic { .. } => "garrison_tactic",
             Command::Engage { .. } => "engage",
             Command::RecruitDest { .. } => "recruit_dest",
@@ -743,6 +783,7 @@ impl Command {
             "army_requisition" => Command::ArmyRequisition { army: j.req("army")?, city: j.req("city")?, on: j.req("on")? },
             "army_requisition_set" => Command::ArmyRequisitionSet { army: j.req("army")?, cities: j.req("cities")? },
             "army_tactic" => Command::ArmyTactic { army: j.req("army")?, tactic: names::field(d, j, "tactic")? },
+            "army_station" => Command::ArmyStation { army: j.req("army")?, station: station_field(j)? },
             "garrison_tactic" => Command::GarrisonTactic { city: j.req("city")?, tactic: names::field(d, j, "tactic")? },
             "engage" => Command::Engage {
                 by: EngageBy::from_json(j)?,
@@ -859,6 +900,7 @@ impl Command {
             Command::ArmyRequisition { army, city, on } => j.with("army", *army).with("city", *city).with("on", *on),
             Command::ArmyRequisitionSet { army, cities } => j.with("army", *army).with("cities", Json::Arr(cities.iter().map(|&c| Json::from(c)).collect())),
             Command::ArmyTactic { army, tactic } => j.with("army", *army).with("tactic", Json::idx(*tactic)),
+            Command::ArmyStation { army, station } => j.with("army", *army).with("station", station_json(*station)),
             Command::GarrisonTactic { city, tactic } => j.with("city", *city).with("tactic", Json::idx(*tactic)),
             Command::Engage { by, to, formation, declare_war } => by
                 .put(j)
@@ -1135,6 +1177,7 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::ArmyRequisition { army, city, on: false } => g.army_remove_requisition(h, *army, *city),
         Command::ArmyRequisitionSet { army, cities } => g.army_set_requisition(h, *army, cities),
         Command::ArmyTactic { army, tactic } => g.army_set_tactic(h, *army, *tactic),
+        Command::ArmyStation { army, station } => g.army_set_station(h, *army, *station),
         Command::GarrisonTactic { city, tactic } => g.city_set_garrison_tactic(h, *city, *tactic),
         Command::GovernRole { city, role } => g.player_set_city_role(h, *city, *role),
         Command::GovernPriorities { roles } => g.player_set_governor_priorities(h, roles.clone()),
@@ -1521,6 +1564,36 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         Command::ArmyTactic { army, tactic } => {
             army_of(g, h, *army)?;
             in_range("tactic", tactic.idx() as i32, d.battle_tactics.len())?;
+            if g.army_is_fleet(*army) {
+                return Err(cannot("a fleet has no battle tactic"));
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::ArmyStation { army, station } => {
+            use ffh_core::army::{EscortTarget, Station};
+            army_of(g, h, *army)?;
+            if !g.army_is_fleet(*army) {
+                return Err(cannot("only a fleet takes a standing order"));
+            }
+            match *station {
+                Station::Patrol(s) => {
+                    in_range("station.patrol", s.idx() as i32, g.map.seas.len())?;
+                    if !g.fleet_patrol_seas(h).contains(&s) {
+                        return Err(cannot("that sea is out of your range"));
+                    }
+                }
+                Station::Escort(EscortTarget::Army(b)) => army_of(g, h, b)?,
+                Station::Escort(EscortTarget::Group(gr)) => {
+                    if !g.groups.contains(gr) {
+                        return Err(CmdErr::Gone);
+                    }
+                    if g.groups[gr].owner != h {
+                        return Err(CmdErr::NotOwner);
+                    }
+                }
+                Station::None => {}
+            }
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
@@ -1588,6 +1661,9 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             let from = match by {
                 EngageBy::Army(a) => {
                     army_of(g, h, *a)?;
+                    if g.army_is_fleet(*a) {
+                        return Err(cannot("a fleet fights the duel, not in battles"));
+                    }
                     g.army_plot(*a).ok_or_else(|| cannot("the army is not on the map"))?
                 }
                 EngageBy::Units(units) => {
@@ -2145,7 +2221,7 @@ fn join_selection(g: &mut Game, units: &[UnitId]) -> Option<GroupId> {
 fn largest_army_on(g: &Game, h: PlayerId, plot: PlotIdx) -> Option<ArmyId> {
     let mut counts: Vec<(ArmyId, i32)> = Vec::new();
     for &u in &g.map.plots[plot].units {
-        let Some(a) = g.units[u].army.filter(|&a| g.units[u].owner == h && g.armies.contains(a) && g.armies[a].owner == h) else { continue };
+        let Some(a) = g.units[u].army.filter(|&a| g.units[u].owner == h && g.armies.contains(a) && g.armies[a].owner == h && !g.army_is_fleet(a)) else { continue };
         match counts.iter_mut().find(|(b, _)| *b == a) {
             Some((_, n)) => *n += 1,
             None => counts.push((a, 1)),
@@ -2346,6 +2422,10 @@ mod tests {
             Command::ArmyRequisitionSet { army: ArmyId(1), cities: vec![CityId(4), CityId(2)] },
             Command::ArmyRequisitionSet { army: ArmyId(1), cities: vec![] },
             Command::ArmyTactic { army: ArmyId(1), tactic: BattleTacticType(2) },
+            Command::ArmyStation { army: ArmyId(1), station: ffh_core::army::Station::None },
+            Command::ArmyStation { army: ArmyId(1), station: ffh_core::army::Station::Patrol(SeaId(2)) },
+            Command::ArmyStation { army: ArmyId(1), station: ffh_core::army::Station::Escort(ffh_core::army::EscortTarget::Army(ArmyId(3))) },
+            Command::ArmyStation { army: ArmyId(1), station: ffh_core::army::Station::Escort(ffh_core::army::EscortTarget::Group(GroupId(7))) },
             Command::GarrisonTactic { city: CityId(3), tactic: BattleTacticType(0) },
             Command::Engage { by: EngageBy::Army(ArmyId(1)), to: (4, 5), formation: None, declare_war: None },
             Command::Engage {
