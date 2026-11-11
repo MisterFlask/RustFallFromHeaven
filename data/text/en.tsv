@@ -11752,8 +11752,10 @@ TXT_KEY_SPELL_MIRROR	Mirror
 TXT_KEY_SPELL_MIRROR_HELP	[ICON_BULLET]Creates an illusionary duplicate of the caster
 TXT_KEY_SPELL_MISCAST_CHANCE	[ICON_BULLET]%D1% to be miscast
 TXT_KEY_SPELL_MORALE	Morale
-TXT_KEY_SPELL_MOTHER_LODE	Mother Lode
-TXT_KEY_SPELL_MOTHER_LODE_HELP	[ICON_BULLET]Grants 25 Gold per Mine improvement and has a 10% chance of raising each Khazad owned flat plot into a hill
+TXT_KEY_SPELL_THE_DELVE	The Delve
+TXT_KEY_SPELL_THE_DELVE_HELP	Cast by a unit on a hill in your borders. Target: another hill in your borders within 10 plots. A tunnel joins the two plots, permanently.
+TXT_KEY_SPELL_ENTER_THE_DELVE	Enter the Delve
+TXT_KEY_SPELL_ENTER_THE_DELVE_HELP	Travel to the other end of the tunnel. Requires all the unit's moves; ends its turn. Not while an enemy unit is on the other end.
 TXT_KEY_SPELL_MUTATION	Mutation
 TXT_KEY_SPELL_MUTATION_HELP	[ICON_BULLET]Randomly mutates all living units in the casters tile
 TXT_KEY_SPELL_MUTATION_PEDIA	[TAB]"My lady... the results of your experiment. Nearly all of them... twisted beyond comprehension..."[PARAGRAPH:1]"Those who weren't cut out for this shouldn't have volunteered," the voice of the priestess was as harsh and merciless as the young man's was quivering. "The ones who perish here wouldn't have survived combat anyway."[PARAGRAPH:1]The men and the women who'd volunteered lay prone on the open field, all covered by monstrous deformities. One seemed to have had all the blood sucked out of him, another man's testicles had grown so huge they had crushed his toes under their weight. The priestess was walking among them, inspecting each before moving on. Clearly, it seemed, one of the ones who wasn't cut out for it was the aide she'd been assigned.[PARAGRAPH:1]"But my lady," he tried one more time, flinching away his gaze from the man whose bowels had exploded rather violently out of his stomach, "There wasn't anything wrong with these troops, that's why you chose them... they would have made excellent soldiers had not..."[PARAGRAPH:1]"And you would make an excellent Drown if you did not shut up," the priestess replied coldly, finally quieting the aide. She stopped in front of one of her test subjects, pausing to take a closer look. The elven woman had been pretty once, but no stretch of the imagination would let you use that word of her anymore. Any fat she might have had was muscle now, and all the muscle she had was grown large enough to stretch and tear away the skin that had once covered it. Her eyes were bulging out of her head, the expanding tissue having forced them out of their sockets-but despite everything, she eyed the priestess with an air of wary satisfaction.[PARAGRAPH:1]"I think this... is exactly what we need," for the first time today, a smile slowly appeared on the priestess's lips. Her eyes glowing, she turned to the aide, joyous laughter in her voice. "I knew the Overlords would not forsake us! They have gifted some of us inhuman strength, enough to take down all of our foes. Find the others who look like this, they're the ones we want."[PARAGRAPH:1]"And... the others?" the man slowly asked.[PARAGRAPH:1]"The others? Oh," the priestess shrugged, having entirely forgotten about the failures already, "I don't think they can be made into Drown anymore, can they? It really doesn't matter, do what you want with them." She turned away from the aide, smiling and looking at the elven woman with love and adoration in her eyes.[PARAGRAPH:1]"You are so pretty that way, my dear. I'm so glad you made it."
@@ -11777,7 +11779,9 @@ TXT_KEY_SPELL_RAGE	Rage
 TXT_KEY_SPELL_RAGE_HELP	[ICON_BULLET]Makes a unit into a barbarian unit
 TXT_KEY_SPELL_RAGE_PEDIA	[TAB]"The Confessor looked over at me condescendingly-I mean, kindly. He was always kind to me... and controlling. Him and the commander. Domineering holier-than-thou taskmaster, I'd like to... Why am I having these thoughts? Why do I long to thrust my blade between their shoulders? All of them... so much... hate..."[PARAGRAPH:2]Last entry in the journal of the third missing recruit from the 105th recon unit.
 TXT_KEY_SPELL_RAGING_SEAS	Raging Seas
-TXT_KEY_SPELL_RAGING_SEAS_HELP	[ICON_BULLET]Does damage to all non-Lanun units that are near oceans
+TXT_KEY_SPELL_RAGING_SEAS_HELP	Target: a water plot you have seen. A storm covers the plots within 2 plots of it for 15 turns. At the start of each of your turns, each unit of another team in the storm, at sea or on land next to water, takes 20 cold damage. Land units are not reduced below 25% health. Once a turn you may move the storm up to 2 plots; it stays over water.
+TXT_KEY_SPELL_STEER_THE_STORM	Steer the Storm
+TXT_KEY_SPELL_STEER_THE_STORM_HELP	Target: a water plot within 2 plots of the storm's centre. The storm moves there. Once a turn.
 TXT_KEY_SPELL_RAISE_SKELETON	Raise Skeleton
 TXT_KEY_SPELL_RAISE_SKELETON_PEDIA	[TAB]I loved my chosen: how then to face the day when she left me?[PARAGRAPH:1]So I cast upon her body a single spell-perhaps, to love her again.[PARAGRAPH:2]-Unknown Author "On the Various Applications of Necromancy"
 TXT_KEY_SPELL_RALLY	Rally
@@ -14936,8 +14940,8 @@ TXT_KEY_PROJECT_RITUAL_LEGENDS	Ritual: Legends
 TXT_KEY_PROJECT_RITUAL_LEGENDS_HELP	Leaves a charge of Legends. Each completion doubles the next cost.
 TXT_KEY_PROJECT_RITUAL_MARCH_OF_THE_TREES	Ritual: March of the Trees
 TXT_KEY_PROJECT_RITUAL_MARCH_OF_THE_TREES_HELP	Leaves a charge of March of the Trees. Each completion doubles the next cost.
-TXT_KEY_PROJECT_RITUAL_MOTHER_LODE	Ritual: Mother Lode
-TXT_KEY_PROJECT_RITUAL_MOTHER_LODE_HELP	Leaves a charge of Mother Lode. Each completion doubles the next cost.
+TXT_KEY_PROJECT_RITUAL_THE_DELVE	Ritual: The Delve
+TXT_KEY_PROJECT_RITUAL_THE_DELVE_HELP	Leaves a charge of The Delve. Each completion doubles the next cost.
 TXT_KEY_PROJECT_RITUAL_RAGING_SEAS	Ritual: Raging Seas
 TXT_KEY_PROJECT_RITUAL_RAGING_SEAS_HELP	Leaves a charge of Raging Seas. Each completion doubles the next cost.
 TXT_KEY_PROJECT_RITUAL_RALLY	Ritual: Rally

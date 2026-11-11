@@ -31,6 +31,7 @@ pub mod help;
 pub mod hotkeys;
 pub mod improvement_help;
 pub mod map;
+pub mod marks;
 pub mod player;
 pub mod outposts;
 pub mod rituals;
@@ -484,6 +485,10 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         "sea_lanes" => seas::lanes_json(v),
         // Outposts' lanes (docs/NAVAL.md, 9.3 and 10): the Sea layer's lines (lanes.js).
         "outpost_lanes" => outposts::lanes(v),
+        // Area effects (the Lanun's storm, the Weather Engine's, the Pillar of Dawn) and the
+        // Khazad's tunnels, as the human sees them (marks.js).
+        "area_effects" => marks::area_effects(v),
+        "delves" => marks::delves(v),
         // Engagement combat (docs/ENGAGEMENTS.md): the human's battles of this turn and the last.
         "battles" => battles::recent(v),
         // World rituals (docs/CARDS.md, "World rituals"): every civilization's ritual as the human

@@ -17,6 +17,7 @@ import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark, drawMarchMark, marchMark } fr
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
 import { seaPlot, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, seaHitAt, laneParts, drawLaneCut, drawHarbourMark } from "./sea.js";
 import { drawLanesFlat, outpostTag } from "./lanes.js";
+import { drawMarksFlat } from "./marks.js";
 
 const ZOOMS = [12, 16, 24, 32, 48, 64];
 /** The smallest tile (CSS px) the battle markers are drawn and clicked at (`battleMarkerAt`). */
@@ -1514,6 +1515,7 @@ export class MapView {
       const p = T.mapToScreen(this.cam, this.map, this.vw, this.vh, m.x, m.y);
       drawMark(g, m, p.sx + ts / 2, p.sy + ts * 0.85, Math.max(9, Math.min(12, ts * 0.2)), FONT);
     }
+    drawMarksFlat(this, g, FONT); // area effects and tunnels (marks.js)
     const path = o.path;
     if (path?.ok && path.nodes?.length > 1) {
       // The path is drawn in one copy: from the selection's copy nearest the centre.

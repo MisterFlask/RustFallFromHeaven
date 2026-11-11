@@ -136,7 +136,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 36: the sea, phase 4 (docs/NAVAL.md, section 9): `City::outpost`, `lane_cut_turns`, `lane`.
 /// - 37: world rituals (docs/CARDS.md): `Player::world_ritual_completions`,
 ///   `world_ritual_refunds`, `world_spell_casts`.
-pub const FORMAT_VERSION: u32 = 37;
+/// - 38: the world rituals' spells: `AreaEffect::moved`, `AreaEffectKind::RagingSeas`,
+///   `Game::delves` (and the other civilizations' world spells of that round).
+pub const FORMAT_VERSION: u32 = 38;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -374,6 +376,7 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
         crusade_reports,
         doom,
         area_effects,
+        delves,
         spell_target: _,
         trophies,
         map_script: _,
@@ -493,6 +496,7 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
     crusade_reports.grow(slots);
     doom.grow(slots);
     area_effects.grow(slots);
+    delves.grow(slots);
     trophies.grow(slots);
     // Ranks by position, one per slot (`update_score` fills those of the civ slots).
     rank_player.resize(slots.players, crate::ids::PlayerId(0));
@@ -617,6 +621,7 @@ fn write_game(g: &Game, w: &mut Writer) {
         crusade_reports,
         doom,
         area_effects,
+        delves,
         spell_target: _,
         trophies,
         map_script: _,
@@ -737,6 +742,7 @@ fn write_game(g: &Game, w: &mut Writer) {
     crusade_reports.write(w);
     doom.write(w);
     area_effects.write(w);
+    delves.write(w);
     trophies.write(w);
 }
 
@@ -852,6 +858,7 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         crusade_reports: Persist::read(r)?,
         doom: Persist::read(r)?,
         area_effects: Persist::read(r)?,
+        delves: Persist::read(r)?,
         spell_target: None,
         trophies: Persist::read(r)?,
         map_script: default_map_script(),

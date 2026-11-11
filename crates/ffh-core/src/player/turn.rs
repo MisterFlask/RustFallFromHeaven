@@ -563,6 +563,8 @@ impl Game {
                     if self.elapsed_game_turns > 0 && self.players[p].alive {
                         // MPOPTION_SIMULTANEOUS_TURNS (doTurn here) is never set.
                         self.player_do_turn_units(p);
+                        // This game's: the Lanun's storm strikes at the start of its owner's turn.
+                        self.raging_seas_strike(p);
                     }
 
                     // New-turn message/sound for the active player and doWarnings(): UI.

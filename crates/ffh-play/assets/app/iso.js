@@ -28,6 +28,7 @@ import { drawCityWork } from "./citywork.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
 import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, laneParts, drawLaneCut, drawHarbourMark } from "./sea.js";
 import { drawLanesIso, outpostTag } from "./lanes.js";
+import { drawMarksIso } from "./marks.js";
 
 /** A tile's width in art pixels: the M7 contract (tiles 192 x 128, the diamond in rows 0-95). */
 const NATIVE = 192;
@@ -841,6 +842,7 @@ export class IsoMap {
     if (city) this.drawCityWork(g, f, cells, city);
     else {
       this.drawSupply(g, f);
+      drawMarksIso(this, g, f, HERALD); // area effects and tunnels (marks.js)
       this.drawPath(g, f);
     }
     this.drawFlashes(g, f);

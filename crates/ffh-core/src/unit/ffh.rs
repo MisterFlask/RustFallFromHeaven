@@ -841,8 +841,10 @@ impl Game {
         if info.has_casted {
             self.units[u].has_casted = true;
         }
+        // This game's: an empire's action (`world_action`: Steer the Storm) is not the unit's
+        // cast, so it keeps its Hidden.
         for promotion in d.promotions.keys() {
-            if self.units[u].has_promotion[promotion] && d.promotions[promotion].removed_by_casting {
+            if !info.world_action && self.units[u].has_promotion[promotion] && d.promotions[promotion].removed_by_casting {
                 self.unit_set_has_promotion(u, promotion, false);
                 // Losing PROMOTION_HIDDEN next to an enemy withdraws the caster, or deletes it
                 // when no plot is free (C++ then reads the deleted unit).

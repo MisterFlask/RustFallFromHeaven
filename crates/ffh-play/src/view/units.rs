@@ -278,8 +278,9 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
     for s in d.spells.keys() {
         let k = s.idx() as i32;
         // A card's world spell (`once`) is the empire's too (docs/CARDS.md), unless the unit
-        // casting it matters (`cast_from_selection`: Astral Leap).
-        if d.spells[s].global || d.spells[s].world_action || (d.spells[s].once && !d.spells[s].cast_from_selection) {
+        // casting it matters (`cast_from_selection`: Astral Leap; the Khazad's The Delve, a world
+        // spell, also stays among the world actions).
+        if (d.spells[s].global && !d.spells[s].cast_from_selection) || d.spells[s].world_action || (d.spells[s].once && !d.spells[s].cast_from_selection) {
             continue;
         }
         let info = &d.spells[s];

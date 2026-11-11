@@ -1061,6 +1061,16 @@
     "button": "Art/Interface/Buttons/Improvements/Portal.dds"
   },
   {
+    "type": "SPELL_ENTER_THE_DELVE",
+    "description": "TXT_KEY_SPELL_ENTER_THE_DELVE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "help": "TXT_KEY_SPELL_ENTER_THE_DELVE_HELP",
+    "ignore_has_casted": true,
+    "py_result": "spellEnterTheDelve(pCaster)",
+    "py_requirement": "reqEnterTheDelve(pCaster)",
+    "button": "Art/Interface/Buttons/Spells/Mother Lode.dds"
+  },
+  {
     "type": "SPELL_ENTERTAIN",
     "description": "TXT_KEY_SPELL_ENTERTAIN",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
@@ -2039,23 +2049,6 @@
     "button": "Art/Interface/Buttons/Promotions/Morale.dds"
   },
   {
-    "type": "SPELL_MOTHER_LODE",
-    "description": "TXT_KEY_SPELL_MOTHER_LODE",
-    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
-    "help": "TXT_KEY_SPELL_MOTHER_LODE_HELP",
-    "civilization_prereq": "CIVILIZATION_KHAZAD",
-    "tech_prereq": "TECH_MINING",
-    "allow_ai": true,
-    "global": true,
-    "ritual_charge": "PROJECT_RITUAL_MOTHER_LODE",
-    "ai_weight": 300,
-    "display_when_disabled": true,
-    "has_casted": true,
-    "py_result": "spellMotherLode(pCaster)",
-    "py_requirement": "reqMotherLode(pCaster)",
-    "button": "Art/Interface/Buttons/Spells/Mother Lode.dds"
-  },
-  {
     "type": "SPELL_MUTATION",
     "description": "TXT_KEY_SPELL_MUTATION",
     "civilopedia": "TXT_KEY_SPELL_MUTATION_PEDIA",
@@ -2235,8 +2228,10 @@
     "allow_ai": true,
     "global": true,
     "ritual_charge": "PROJECT_RITUAL_RAGING_SEAS",
+    "target": "plot",
     "ai_weight": 300,
     "display_when_disabled": true,
+    "py_targets": "targetsRagingSeas(pCaster)",
     "py_result": "spellRagingSeas(pCaster)",
     "py_requirement": "reqRagingSeas(pCaster)",
     "button": "Art/Interface/Buttons/Spells/Raging Seas.dds"
@@ -2934,6 +2929,20 @@
     "py_result": "spellSteal(pCaster)",
     "py_requirement": "reqSteal(pCaster)",
     "button": "Art/Interface/Buttons/Spells/Steal.dds"
+  },
+  {
+    "type": "SPELL_STEER_THE_STORM",
+    "description": "TXT_KEY_SPELL_STEER_THE_STORM",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "help": "TXT_KEY_SPELL_STEER_THE_STORM_HELP",
+    "civilization_prereq": "CIVILIZATION_LANUN",
+    "world_action": true,
+    "target": "plot",
+    "ignore_has_casted": true,
+    "py_targets": "targetsSteerTheStorm(pCaster)",
+    "py_result": "spellSteerTheStorm(pCaster)",
+    "py_requirement": "reqSteerTheStorm(pCaster)",
+    "button": "Art/Interface/Buttons/Spells/Raging Seas.dds"
   },
   {
     "type": "SPELL_STONESKIN",
@@ -4024,6 +4033,26 @@
     "py_result": "spellTeachSpellcasting(pCaster)",
     "py_requirement": "reqTeachSpellcasting(pCaster)",
     "button": "Art/Interface/Buttons/Units/Govannon.dds"
+  },
+  {
+    "type": "SPELL_THE_DELVE",
+    "description": "TXT_KEY_SPELL_THE_DELVE",
+    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
+    "help": "TXT_KEY_SPELL_THE_DELVE_HELP",
+    "civilization_prereq": "CIVILIZATION_KHAZAD",
+    "tech_prereq": "TECH_MINING",
+    "allow_ai": true,
+    "global": true,
+    "cast_from_selection": true,
+    "ritual_charge": "PROJECT_RITUAL_THE_DELVE",
+    "target": "plot",
+    "ai_weight": 300,
+    "display_when_disabled": true,
+    "has_casted": true,
+    "py_targets": "targetsTheDelve(pCaster)",
+    "py_result": "spellTheDelve(pCaster)",
+    "py_requirement": "reqTheDelve(pCaster)",
+    "button": "Art/Interface/Buttons/Spells/Mother Lode.dds"
   },
   {
     "type": "SPELL_THORNLASH",

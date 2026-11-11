@@ -113,6 +113,10 @@ pub enum AreaEffectKind {
     Fog,
     /// The owner's units there heal fully at the start of each of its turns.
     PillarOfDawn,
+    /// The Lanun's Raging Seas: at the start of each of the owner's turns, the units of other
+    /// teams there, at sea or on land next to water, take cold damage
+    /// (`ffh::world_ritual_spells::lanun_khazad`).
+    RagingSeas,
 }
 
 /// This game's: a timed effect over the plots within `radius` plots of `plot`, while the game turn
@@ -126,6 +130,8 @@ pub struct AreaEffect {
     pub radius: i32,
     /// The first game turn it no longer holds.
     pub until: i32,
+    /// The game turn its owner last moved it (Steer the Storm), -1 if never.
+    pub moved: i32,
 }
 
 /// C++ `EventTriggeredData`.

@@ -339,9 +339,9 @@
     "world_ritual": true
   },
   {
-    "type": "PROJECT_RITUAL_MOTHER_LODE",
-    "description": "TXT_KEY_PROJECT_RITUAL_MOTHER_LODE",
-    "help": "TXT_KEY_PROJECT_RITUAL_MOTHER_LODE_HELP",
+    "type": "PROJECT_RITUAL_THE_DELVE",
+    "description": "TXT_KEY_PROJECT_RITUAL_THE_DELVE",
+    "help": "TXT_KEY_PROJECT_RITUAL_THE_DELVE_HELP",
     "tech_prereq": "TECH_MINING",
     "max_global_instances": -1,
     "max_team_instances": -1,

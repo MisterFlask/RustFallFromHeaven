@@ -384,8 +384,8 @@ persist_struct!(PackedBuilding { building, count, original_owner, original_time 
 persist_struct!(PackedCity { name, origin, population, buildings, tiers });
 
 persist_struct!(Doom { dealt, slots });
-persist_enum!(AreaEffectKind { 0 => Blizzard, 1 => Storm, 2 => Fog, 3 => PillarOfDawn });
-persist_struct!(AreaEffect { kind, owner, plot, radius, until });
+persist_enum!(AreaEffectKind { 0 => Blizzard, 1 => Storm, 2 => Fog, 3 => PillarOfDawn, 4 => RagingSeas });
+persist_struct!(AreaEffect { kind, owner, plot, radius, until, moved });
 persist_struct!(DoomSlot { threshold, card, revealed, fired, targets });
 
 persist_struct!(City {

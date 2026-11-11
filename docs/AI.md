@@ -2452,7 +2452,8 @@ buildings among them whose effects are in the rules' code are valued (`code_effe
   (worked plots of big cities first) and casts there. Round 3 measured it at 300 turns (score
   +23% in 23 games); the fresh full games above are its first measurement as a civilization's win
   rate, and it is the largest lever of the set. Fishing already comes at turns 30-65. Raging Seas
-  is rare (5 of 40 games, around turn 590; see "World spells" below).
+  was rare under FfH's condition (5 of 40 games, around turn 590); since 2026-11-11 it is a storm
+  the Lanun aim and steer, cast at war with a civilization (see "World spells" below).
 - **Balseraphs**: Loki (`bRivalTerritory`) casts Disrupt in another team's city: 0-2 of the
   owner's culture there is lost (`spellDisrupt`), and a city left with none becomes the
   Balseraphs' without war (its owner's attitude -4). The generic AI used him as a 2-strength
@@ -2704,6 +2705,18 @@ had none). Several almost never hold, so their spell is never cast: Arcane Lacun
 Worldbreak (about 3%, near the end), Raging Seas (5 of 40, around turn 590), March of the Trees and
 Sanctuary (16 and 15 of 40, late).
 
+**Raging Seas and The Delve** (2026-11-11, rules changes: docs/PORTING.md, "Changes from FFH2";
+`lanun_khazad.rs`, once a turn after the empire decisions). FfH's two conditions above (an enemy
+fleet worth more than 10; 10 mines for Mother Lode) are gone with the old spells. Raging Seas: with
+a charge and at war with a civilization (an expert moment), at the water plot whose storm covers
+the most enemy strength in sight (ties: nearest an enemy coastal city), else next to the enemy
+coastal city nearest a Lanun city; Steer the Storm each turn to the reachable centre covering the
+most enemy strength, when that beats where it stands. The Delve: with a charge, by a unit already
+on a valid hill, to the valid hill nearest our city farthest from it (the longest such tunnel).
+Enter the Delve (every AI, the barbarians included): a land unit on a tunnel end at the start of
+its turn, whose group's move order ends at least 4 plots closer from the other end, takes it.
+Ad hoc, unmeasured beyond the forced-civilization games that showed no panic.
+
 **Expert moments** (`world_spells::expert_moment`, 2026-10-21; the owner's rule that
 civilizations use their own mechanics): three spells FfH's condition almost never let the AI
 cast. Arcane Lacuna (Amurites) at war with a civilization, instead of 7 typed mana nodes on the
@@ -2756,8 +2769,8 @@ own winning offensives, and March of the Trees costs the elves their Ancient For
 What the group-C diagnosis would choose: Raging Seas the turn before a stack strikes a coastal city (its
 defenders on a coast plot take ~35-50% damage); March of the Trees at one war when a city is in
 peril with 8+ of our forest plots within 2 of the threat; Legends right after the third full
-city; Gifts of Nantosuelta after the last planned city; Mother Lode when the windfall lifts the
-Dwarven Vault a level. Group D's: Worldbreak the turn a campaign strikes a city, once the counter
+city; Gifts of Nantosuelta after the last planned city; Mother Lode (gone since 2026-11-11) when
+the windfall lifts the Dwarven Vault a level. Group D's: Worldbreak the turn a campaign strikes a city, once the counter
 is 20+ (half-health defenders in every enemy city); Divine Retribution only when the enemy's demons
 and undead outweigh ours and the neutrals' (it hits everyone); Into the Mist at the start of a war
 (as now held); Veil of Night early, as soon as the army is built (its peace condition is a real

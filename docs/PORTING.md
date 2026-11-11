@@ -125,6 +125,22 @@ flag.
   (`Player::world_ritual_refunds`); `FEAT_GLOBAL_SPELL` is no longer read or written. Why: a world
   spell becomes a recurring decision with a price, which every player sees coming.
 
+- **Raging Seas is a storm the Lanun steer; Mother Lode is replaced by The Delve** (the owner's
+  decision, 2026-11-11; save format 38). Raging Seas (FFH2: 75 cold damage, two draws, to every
+  non-Lanun unit next to water in the world, and a 26% chance to wreck each non-Lanun coastal
+  improvement) is cast at a water plot the Lanun have seen: a storm over the plots within 2 plots
+  of it for 15 turns, one per player at a time; at the start of each Lanun turn each unit of
+  another team in it, at sea or on land next to water, takes 20 cold damage (`unit_do_damage`; land
+  units at most to 75% damage, ships can sink). Steer the Storm (a world action of any Lanun unit)
+  moves its centre up to 2 plots, onto water, once a turn. Mother Lode (25 gold a mine, a 10% chance
+  for each flat Khazad plot to become a hill) is gone; its ritual is Ritual: The Delve (cost 100,
+  Mining), whose spell, cast by a Khazad land unit on a hill in Khazad borders, joins that hill to
+  another within 10 plots by a permanent tunnel (`Game::delves`); Enter the Delve takes any
+  player's land unit with all its moves across it, ending its turn, when no unit at war with it
+  holds the far end and it could enter that plot. Why: a whole-world, untargeted effect no one could
+  answer becomes a thing on the map the Lanun aim and everyone sees; Mother Lode's one-off payout
+  becomes a permanent change to the map.
+
 - **Cultural channels** (docs/CULTURE.md; not an option since 2026-11-05, the owner's decision: every game has it, the AI-only ones too; older saves do not load): a city may channel half its
   culture (that culture reaches neither the city's culture, its plots nor the culture victory) into
   one standing order aimed at a civilization, until its owner changes it: Foment Revolt (revolt
@@ -1142,9 +1158,9 @@ could never run them.
   conditions under `if pPlayer.isHuman() == False:` -- Stasis, Legends, Rally, River of Blood and
   Gifts of Nantosuelta at 5 cities, Warcry at war with 25 units, Veil of Night at peace with 25,
   Wild Hunt at war with 20, Into the Mist at 40 units, Sanctuary, March of the Trees and Divine
-  Retribution at war with two teams, Raging Seas at war with a fleet worth more than 10, Ardor at
+  Retribution at war with two teams, Raging Seas at war with a fleet worth more than 10 (since 2026-11-11 the AI casts the reworked spell at war with a civilization), Ardor at
   5 great people, Revelry at 25 population, Religious Fervor with 5 cities of the state religion,
-  For the Horde with 60 barbarian units, Mother Lode at 10 mines, Arcane Lacuna with 7 typed mana
+  For the Horde with 60 barbarian units, Mother Lode at 10 mines (the spell is gone since 2026-11-11), Arcane Lacuna with 7 typed mana
   bonuses on the map, Worldbreak at an Armageddon counter of 50. They are the old AI's timing for
   its once-a-game spell, not rules: the port drops them from the rules, and ffh-ai applies the
   same conditions as its default timing (`world_spells::ready`), so the move alone changes no AI

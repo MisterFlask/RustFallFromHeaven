@@ -4,7 +4,7 @@
 //! requirements (`if pPlayer.isHuman() == False:` in `CvSpellInterface.py` `req*`); the port
 //! dropped them from the rules (docs/PORTING.md, "Changes from FFH2"), so a world spell has the
 //! same requirements for every player and the AI decides when. [`ready`] is FfH's condition, the
-//! AI's default timing, except for three spells that condition almost never let the AI cast
+//! AI's default timing, except for four spells that condition almost never let the AI cast
 //! ([`expert_moment`]): `casting::choose_spell` (the
 //! end-of-turn spell choice) and the civilizations' held casts (`civs/world_spell.rs`) cast a
 //! world spell only once it holds. A civilization can wait longer through its `spell_value`
@@ -24,7 +24,6 @@ enum World {
     IntoTheMist,
     Legends,
     MarchOfTheTrees,
-    MotherLode,
     RagingSeas,
     Rally,
     ReligiousFervor,
@@ -38,7 +37,7 @@ enum World {
     Worldbreak,
 }
 
-const NAMES: [(&str, World); 20] = [
+const NAMES: [(&str, World); 19] = [
     ("SPELL_ARCANE_LACUNA", World::ArcaneLacuna),
     ("SPELL_ARDOR", World::Ardor),
     ("SPELL_DIVINE_RETRIBUTION", World::DivineRetribution),
@@ -47,7 +46,6 @@ const NAMES: [(&str, World); 20] = [
     ("SPELL_INTO_THE_MIST", World::IntoTheMist),
     ("SPELL_LEGENDS", World::Legends),
     ("SPELL_MARCH_OF_THE_TREES", World::MarchOfTheTrees),
-    ("SPELL_MOTHER_LODE", World::MotherLode),
     ("SPELL_RAGING_SEAS", World::RagingSeas),
     ("SPELL_RALLY", World::Rally),
     ("SPELL_RELIGIOUS_FERVOR", World::ReligiousFervor),
@@ -107,9 +105,9 @@ pub fn ready(g: &Game, p: PlayerId, spell: SpellType) -> bool {
         World::ForTheHorde => g.players[g.barbarian_player()].num_units() >= 60,
         World::GiftsOfNantosuelta | World::Legends | World::Rally | World::RiverOfBlood | World::Stasis => pl.num_cities() >= 5,
         World::IntoTheMist => pl.num_units() >= 40,
-        World::MotherLode => pl.improvement_count[d.t::<ImprovementType>("IMPROVEMENT_MINE")] >= 10,
-        World::RagingSeas => enemy_fleet(g, p),
         World::ReligiousFervor => g.player_get_state_religion(p).is_some_and(|r| pl.cities.iter().filter(|&&c| g.cities[c].has_religion[r]).count() >= 5),
+        // (Decided by `expert_moment`: the reworked spell has no FfH condition.)
+        World::RagingSeas => false,
         World::Revelry => pl.total_population >= 25,
         World::VeilOfNight => pl.num_units() >= 25 && wars() == 0,
         World::Warcry => pl.num_units() >= 25 && wars() > 0,
@@ -124,6 +122,8 @@ pub fn ready(g: &Game, p: PlayerId, spell: SpellType) -> bool {
 /// - Arcane Lacuna (no other player can cast for 20 turns, our adepts gain as much experience as
 ///   the map has typed mana): at war with a civilization. FfH waited for 7 typed mana nodes on
 ///   the map, which no measured game reached.
+/// - Raging Seas (a storm the Lanun steer over the sea for 15 turns): at war with a civilization
+///   (where it goes: `lanun_khazad.rs`).
 /// - Worldbreak (every unit in a foreign city takes the Armageddon counter as damage, and cities
 ///   burn): at war with a civilization once the counter is 20. FfH waited for 50, never reached.
 /// - Religious Fervor (a priest in every city of our state religion, with experience by their
@@ -135,37 +135,12 @@ fn expert_moment(g: &Game, p: PlayerId, w: World) -> Option<bool> {
     let barb = g.barbarian_team();
     let civ_war = || g.teams.keys().any(|t| t != team && t != barb && g.teams[t].alive_count > 0 && g.at_war(team, t));
     Some(match w {
-        World::ArcaneLacuna => civ_war(),
+        World::ArcaneLacuna | World::RagingSeas => civ_war(),
         World::Worldbreak => g.get_global_counter() >= 20 && civ_war(),
         World::ReligiousFervor => g.player_get_state_religion(p).is_some_and(|r| {
             let with = pl.cities.iter().filter(|&&c| g.cities[c].has_religion[r]).count();
             with >= 5 || (with >= 3 && with * 3 >= pl.cities.len() * 2)
         }),
         _ => return None,
-    })
-}
-
-/// `reqRagingSeas`'s AI condition: a player we are at war with (the barbarians included) has a
-/// fleet worth more than 10 (frigates and galleons 2, men-o'-war and queens of the line 3, other
-/// warships and transports 1).
-fn enemy_fleet(g: &Game, p: PlayerId) -> bool {
-    let d = g.d;
-    let team = g.players[p].team;
-    let weights = [
-        ("UNITCLASS_ARCANE_BARGE", 1),
-        ("UNITCLASS_CARAVEL", 1),
-        ("UNITCLASS_GALLEY", 1),
-        ("UNITCLASS_FRIGATE", 2),
-        ("UNITCLASS_GALLEON", 2),
-        ("UNITCLASS_MAN_O_WAR", 3),
-        ("UNITCLASS_PRIVATEER", 1),
-        ("UNITCLASS_QUEEN_OF_THE_LINE", 3),
-        ("UNITCLASS_TRIREME", 1),
-    ];
-    g.player_ids().any(|o| {
-        let other = &g.players[o];
-        other.alive
-            && g.teams[team].at_war[other.team]
-            && weights.iter().map(|&(class, w)| other.unit_class_count[d.t::<UnitClassType>(class)] * w).sum::<i32>() > 10
     })
 }

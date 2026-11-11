@@ -336,8 +336,13 @@ ritual as `ritual_charge`, a project with `world_ritual` (`PROJECT_RITUAL_<NAME>
 
 **Area effects:** `Game::area_effects` (saved) holds the timed effects over the plots within a
 radius of a plot (`AreaEffect`: its kind, owner, plot, radius and the first turn it no longer
-holds): the Weather Engine's Blizzard, Storm and Fog, the Pillar of Dawn. An effect ended is
-dropped at the end of a game turn (`area_effects_do_turn`). Where the rules ask
+holds; `moved`, the turn its owner last moved it): the Weather Engine's Blizzard, Storm and Fog,
+the Pillar of Dawn, and the Lanun's Raging Seas (`RagingSeas`, `ffh/world_ritual_spells/lanun_khazad.rs`:
+radius 2, 15 turns, one per player, its strike at the start of the owner's turn from
+`player_set_turn_active`, moved by Steer the Storm). An effect ended is
+dropped at the end of a game turn (`area_effects_do_turn`). The client draws each effect a player
+sees a plot of, and the Khazad's tunnel ends (`Game::delves`, The Delve), from the view's
+`area_effects` and `delves` (ffh-play `view/marks.rs`, `assets/app/marks.js`). Where the rules ask
 (`plot_has_weather`, `unit_in_pillar_of_dawn`, `plot_fog_hides`): healing (`unit_heal_rate`), the
 moves a turn starts with (`unit_turn_moves_at`), a battle's set-up (`engage_arms_weather`: a
 fighter's `ranged_resist`, its `hold_shot_rounds`), invisibility (`unit_is_invisible`,

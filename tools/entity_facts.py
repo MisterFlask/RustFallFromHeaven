@@ -793,7 +793,7 @@ WORLD_TIMING = {
     "SPELL_MARCH_OF_THE_TREES": "at war with 2+ teams", "SPELL_SANCTUARY": "at war with 2+ teams",
     "SPELL_FOR_THE_HORDE": "barbarians have 60+ units", "SPELL_GIFTS_OF_NANTOSUELTA": "5+ cities", "SPELL_LEGENDS": "5+ cities",
     "SPELL_RALLY": "5+ cities", "SPELL_RIVER_OF_BLOOD": "5+ cities", "SPELL_STASIS": "5+ cities", "SPELL_INTO_THE_MIST": "40+ units",
-    "SPELL_MOTHER_LODE": "10+ mines", "SPELL_RAGING_SEAS": "an enemy fleet worth more than 10",
+    "SPELL_RAGING_SEAS": "at war with a civilization (expert moment)",
     "SPELL_RELIGIOUS_FERVOR": "5 cities of the state religion, or 3 that are two thirds of ours (expert moment)",
     "SPELL_REVELRY": "total population 25+", "SPELL_VEIL_OF_NIGHT": "25+ units and at peace",
     "SPELL_WARCRY": "25+ units and at war", "SPELL_WILD_HUNT": "at war and 20+ units",

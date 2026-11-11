@@ -38,10 +38,8 @@ const NORTH: Option<DirectionType> = Some(DirectionType::DIRECTION_NORTH);
 pub fn find_spell(name: &str) -> Option<SpellFn> {
     let f: SpellFn = match name {
         "spellMarchOfTheTrees" => spell_march_of_the_trees,
-        "spellMotherLode" => spell_mother_lode,
         "spellOpenChest" => spell_open_chest,
         "spellPromoteSettlement" => spell_promote_settlement,
-        "spellRagingSeas" => spell_raging_seas,
         "spellRaiseSkeleton" => spell_raise_skeleton,
         "spellRally" => spell_rally,
         "spellReadTheGrimoire" => spell_read_the_grimoire,
@@ -98,9 +96,7 @@ pub fn find_spell(name: &str) -> Option<SpellFn> {
 pub fn find_req(name: &str) -> Option<ReqFn> {
     let f: ReqFn = match name {
         "reqMarchOfTheTrees" => req_march_of_the_trees,
-        "reqMotherLode" => req_mother_lode,
         "reqPromoteSettlement" => req_promote_settlement,
-        "reqRagingSeas" => req_raging_seas,
         "reqRally" => req_rally,
         "reqRebuildBarnaxus" => req_rebuild_barnaxus,
         "reqRecruitMercenary" => req_recruit_mercenary,
@@ -273,31 +269,6 @@ fn spell_march_of_the_trees(g: &mut Game, caster: UnitId, _call: &PyCall) {
     }
 }
 
-/// `reqMotherLode(caster)`. Change from FFH2: its only condition was AI-only (10 mines); it is AI
-/// timing, in ffh-ai `world_spells` (docs/PORTING.md).
-fn req_mother_lode(_g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
-    true
-}
-
-/// `spellMotherLode(caster)`.
-fn spell_mother_lode(g: &mut Game, caster: UnitId, _call: &PyCall) {
-    let p = g.units[caster].owner;
-    let gold = g.players[p].improvement_count[g.d.t::<ImprovementType>("IMPROVEMENT_MINE")] * 25;
-    g.players[p].gold += gold;
-    for plot in g.map.plot_ids() {
-        if g.plot_is_owned(plot)
-            && g.map.plots[plot].owner == Some(p)
-            && !g.plot_is_water(plot)
-            && !g.plot_is_peak(plot)
-            && !g.plot_is_hills(plot)
-        {
-            if g.soren_rand_num(100, "Mother Lode") < 10 {
-                g.plot_set_plot_type(plot, PlotType::PLOT_HILLS, true);
-            }
-        }
-    }
-}
-
 /// `spellOpenChest(caster)`.
 fn spell_open_chest(g: &mut Game, caster: UnitId, _call: &PyCall) {
     let d = g.d;
@@ -372,51 +343,6 @@ fn spell_promote_settlement(g: &mut Game, caster: UnitId, _call: &PyCall) {
     if let Some(city) = g.map.plots[plot].plot_city {
         g.cities[city].settlement = false;
         g.city_set_plot_radius(city, 3);
-    }
-}
-
-/// `reqRagingSeas(caster)`. Change from FFH2: its only condition was AI-only (at war with a player
-/// whose fleet is worth more than 10); it is AI timing, in ffh-ai `world_spells` (docs/PORTING.md).
-fn req_raging_seas(_g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
-    true
-}
-
-/// `spellRagingSeas(caster)`.
-fn spell_raging_seas(g: &mut Game, _caster: UnitId, _call: &PyCall) {
-    let d = g.d;
-    let cold = d.t::<DamageType>("DAMAGE_COLD");
-    let flames = d.t::<FeatureType>("FEATURE_FLAMES");
-    let lanun = d.t::<CivilizationType>("CIVILIZATION_LANUN");
-    let smoke = d.t::<ImprovementType>("IMPROVEMENT_SMOKE");
-    for plot in g.map.plot_ids() {
-        if g.plot_is_adjacent_to_water(plot) {
-            let n = g.map.plots[plot].units.len();
-            for i in 0..n {
-                let Some(u) = plot_unit_at(g, plot, i) else { continue };
-                if g.unit_get_civilization_type(u) != lanun {
-                    g.unit_do_damage(u, 75, 100, None, Some(cold), false);
-                }
-            }
-            if g.map.plots[plot].improvement_type.is_some() {
-                if g.map.plots[plot].feature_type == Some(flames) {
-                    g.plot_set_feature_type(plot, None);
-                }
-                if g.map.plots[plot].improvement_type == Some(smoke) {
-                    g.plot_set_improvement_type(plot, None);
-                } else if g.plot_is_owned(plot) {
-                    // Removing the flames can remove an improvement that requires a feature;
-                    // `gc.getImprovementInfo(-1)` is then None and the Python raises.
-                    let Some(improvement) = g.map.plots[plot].improvement_type else { return };
-                    if !is_permanent(g, improvement) {
-                        let owner = g.map.plots[plot].owner.expect("owned plot");
-                        if g.player_get_civilization_type(owner) != Some(lanun) && g.soren_rand_num(100, "Raging Seas") <= 25 {
-                            g.plot_set_improvement_type(plot, None);
-                        }
-                    }
-                }
-            }
-            // (EFFECT_SPRING on plots visible to a human: graphics.)
-        }
     }
 }
 
@@ -2556,7 +2482,7 @@ mod tests {
     #[test]
     fn every_function_is_registered() {
         let req = [
-            "reqMarchOfTheTrees", "reqMotherLode", "reqPromoteSettlement", "reqRagingSeas",
+            "reqMarchOfTheTrees", "reqPromoteSettlement",
             "reqRally", "reqRebuildBarnaxus", "reqRecruitMercenary", "reqReligiousFervor", "reqRepair",
             "reqRessurection", "reqReveal", "reqRevelry", "reqRevelation", "reqRiverOfBlood", "reqRoar",
             "reqRobGrave", "reqSanctify", "reqSanctuary", "reqSandLion", "reqScorch", "reqSironasTouch",
@@ -2569,8 +2495,8 @@ mod tests {
             assert!(find_req(name).is_some(), "{name}");
         }
         let spell = [
-            "spellMarchOfTheTrees", "spellMotherLode", "spellOpenChest", "spellPromoteSettlement",
-            "spellRagingSeas", "spellRaiseSkeleton", "spellRally", "spellReadTheGrimoire", "spellRebuildBarnaxus",
+            "spellMarchOfTheTrees", "spellOpenChest", "spellPromoteSettlement",
+            "spellRaiseSkeleton", "spellRally", "spellReadTheGrimoire", "spellRebuildBarnaxus",
             "spellRecruit", "spellRecruitMercenary", "spellReleaseFromCage", "spellReligiousFervor", "spellRepair",
             "spellRessurection", "spellRessurectionGraveyard", "spellReveal", "spellRevelry", "spellRevelation",
             "spellRingofFlames", "spellRiverOfBlood", "spellRoar", "spellRobGrave", "spellSacrificeAltar",
@@ -2593,6 +2519,6 @@ mod tests {
             assert!(find_plot_fn(name).is_some(), "{name}");
         }
         assert!(find_vote_fn("voteFundDissidents").is_some());
-        assert_eq!(req.len() + spell.len() + plot.len() + 1, 105);
+        assert_eq!(req.len() + spell.len() + plot.len() + 1, 101);
     }
 }
