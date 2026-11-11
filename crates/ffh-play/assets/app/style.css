@@ -1191,4 +1191,6 @@ body:not(.pad-mode) .pad-cursor { display: none; }
 .sea-panel .sea-send button { min-height: 36px; }
 table.scores.seas td.sea-name { font-style: italic; font-size: 16px; color: var(--em); }
 table.scores.seas tr.clickable { cursor: pointer; }
+table.scores.seas td { vertical-align: middle; }
+table.scores.seas td.num { text-align: right; }
 .chip.harbour { white-space: normal; }
