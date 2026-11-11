@@ -174,6 +174,41 @@ body[data-phase="running"] #phase { animation: breathe 2.8s ease-in-out infinite
 #world-actions { display: flex; gap: calc(var(--u) * 2); align-items: center; flex: none; }
 .world-action { display: inline-flex; align-items: center; gap: calc(var(--u) * 2); white-space: nowrap; }
 .world-action:not(:disabled) .icon { color: var(--c-ochre); }
+/* World rituals (rituals.js): the rituals in progress and the charges held, anywhere; a row of
+   two-line chips (the ritual; its city and progress), "All" for the full list. */
+#rituals { display: flex; align-items: center; gap: calc(var(--u) * 3); flex: none; min-width: 0; }
+#rituals.has-rows { order: 10; flex: 1 1 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+#rituals[hidden] { display: none; }
+#rituals .ritual-head { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; flex: none; }
+#rituals:not(.has-rows) .ritual-head { flex-direction: row; align-items: baseline; gap: 8px; }
+#rituals .ritual-title { font-size: 12px; color: var(--dim); }
+#rituals .ritual-all { font-size: 12px; padding: 0; }
+#rituals .ritual-rows { display: flex; flex-wrap: nowrap; gap: calc(var(--u) * 2); min-width: 0; }
+#rituals .ritual-none { font-size: 12px; white-space: nowrap; }
+.ritual-row { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0; padding: 1px 6px; font-size: 12px; line-height: 1.25; white-space: nowrap; text-align: left; flex: none; }
+.ritual-row .ritual-l1, .ritual-row .ritual-l2 { display: inline-flex; align-items: center; gap: 5px; }
+.ritual-row .ritual-name { color: var(--em); }
+.ritual-row .ritual-city { max-width: 9.5em; overflow: hidden; text-overflow: ellipsis; color: var(--dim); }
+.ritual-row .ritual-progress { display: inline-flex; align-items: center; gap: 4px; }
+.ritual-row .ritual-progress .bar { width: 28px; margin-left: 0; }
+.ritual-row .ritual-turns { color: var(--dim); }
+.ritual-row .ritual-charge { color: var(--c-ritual); }
+.ritual-row.mine { box-shadow: inset 0 -2px 0 var(--accent); }
+.ritual-swatch { margin-right: 0; flex: none; }
+.rituals-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ritual-entry { padding: 4px 8px; border-left: 3px solid var(--line); }
+.ritual-entry.mine { border-left-color: var(--accent); }
+.ritual-entry.in_progress .ritual-entry-where, .ritual-entry.queued .ritual-entry-where { color: var(--em); }
+.ritual-entry.charged .ritual-entry-where { color: var(--c-ritual); }
+.ritual-entry .swatch { margin-right: 6px; }
+/* The production list's world ritual: a whole row, with its rules line and why it cannot start. */
+button.build.ritual-build { grid-column: 1 / -1; flex-wrap: wrap; row-gap: 2px; }
+.build .ritual-rules { display: block; flex: 1 1 100%; font-size: 12px; color: var(--dim); white-space: normal; text-align: left; }
+.build .ritual-why { display: block; flex: 1 1 100%; font-size: 12px; white-space: normal; text-align: left; }
+.hurry-note { align-self: center; }
+/* A ritual's news (rituals.js ritualAlerts): a toast with the ritual mark; a click shows the city. */
+.toast.ritual-alert { border-left: 3px solid var(--c-ritual); }
+.toast.ritual-alert .ritual-alert-mark { color: var(--c-ritual); }
 #phase .turn { font-weight: normal; display: inline-flex; align-items: center; gap: 7px; color: var(--c-vellum); }
 #phase .year { display: inline-flex; align-items: center; }
 .num { color: var(--c-vellum); display: inline-flex; align-items: center; }
@@ -935,6 +970,9 @@ html.art .tap-mode button.on:not(.link):not(.close):not(.cplot):not(.tech):not(.
   #phase .year, body[data-phase="human"] #phase-text { display: none; }
   #empire { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
   #empire::-webkit-scrollbar { display: none; }
+  /* World rituals: a row of their own, the chips scrolling sideways. */
+  #rituals { order: 6; flex-basis: 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+  #rituals .ritual-rows { flex-wrap: nowrap; }
   /* The world spell keeps only its icon (its name is in the tooltip). */
   .world-action > .label { display: none; }
   #end-turn { flex: none; margin-left: auto; }

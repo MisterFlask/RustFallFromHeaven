@@ -129,7 +129,10 @@ async function answerConfirm(c, confirm) {
       const name = dname("SpellType", confirm.spell);
       // A card's world spell (docs/CARDS.md) has its own once-a-game flag.
       const once = info("SpellType", confirm.spell)?.once;
-      const v = await ask(`Cast ${name}?`, once ? "This is a card spell: it can be cast once a game." : "This is a world spell: it can be cast once per game.", [
+      // A civilization's world spell spends a charge of its ritual (docs/CARDS.md, "World rituals"):
+      // the top bar's line for it says where the charge is and the ritual's cost after.
+      const charge = S.view?.me?.world_actions?.find((a) => a.spell === confirm.spell)?.charge;
+      const v = await ask(`Cast ${name}?`, once ? "This is a card spell: it can be cast once a game." : (charge ?? "This is a world spell."), [
         { label: `Cast ${name}`, value: true, primary: true, danger: true },
         { label: "Cancel", value: null },
       ]);

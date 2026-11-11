@@ -15,6 +15,7 @@ import { battleLine, battleLinks } from "./engagements.js";
 import { castTargeted } from "./units.js";
 import * as api from "./api.js";
 import { openResearchPaths } from "./screens.js";
+import { renderRituals } from "./rituals.js";
 
 /** The parts of `#phase`: the phase line (redrawn each render), the spectator bar and the
  *  autoplay bar (each its own slot; `display: contents`, so #phase lays out their children). */
@@ -249,6 +250,8 @@ export function renderTop() {
   const seasBtn = document.getElementById("btn-seas");
   if (seasBtn) seasBtn.hidden = !v?.seas?.length;
   renderWorldActions(m, st);
+  // World rituals (docs/CARDS.md): every civilization's ritual in progress and charge held.
+  renderRituals();
   if (!m) {
     fill(info);
     return;
@@ -375,7 +378,8 @@ function doctrineButton(m, adopted) {
 const TARGET_WORDS = { plot: "a plot", city: "a city", unit: "a unit", player: "a player", choice: "one of its options" };
 
 /** The empire's own actions, a row of buttons beside its numbers (`me.world_actions`): its world
- *  spell, cast once per game, and its cards' world spells (docs/CARDS.md: once a game each, still
+ *  spell, cast with a charge of its ritual (the tooltip says where the ritual stands: `why` while
+ *  no charge is held or no unit can cast it, `charge` while it can be cast), and its cards' world spells (docs/CARDS.md: once a game each, still
  *  shown once cast), each through the unit the server picked (`caster`), after the cast's
  *  confirmation. A spell cast at a distance first picks its target (`castTargeted`: on the map, or
  *  from a list). */
@@ -394,9 +398,10 @@ function renderWorldActions(m, st) {
       const pick = a.target_kind ? `; then pick its target (${TARGET_WORDS[a.target_kind] ?? a.target_kind})` : "";
       const tip = [
         h("div.tip-title", `${what}: ${name}`),
-        h("div", a.once ? "Card spell: cast once a game." : "Cast once per game; it reaches your whole empire."),
+        a.once ? h("div", "Card spell: cast once a game.") : null,
         help ? h("div.tip-effects", markup(help)) : null,
-        a.enabled ? (caster ? h("div.tip-hint", `Cast by your ${dname("UnitType", caster.type)} at (${caster.x}, ${caster.y})${pick}.`) : null) : h("div.tip-hint", a.why ?? "No unit of yours can cast it now."),
+        a.enabled && a.charge ? h("div.tip-hint.ritual-charge-line", a.charge) : null,
+        a.enabled ? (caster ? h("div.tip-hint", `Cast by your ${dname("UnitType", caster.type)} at (${caster.x}, ${caster.y})${pick}.`) : null) : h("div.tip-hint.world-action-why", a.why ?? "No unit of yours can cast it now."),
       ];
       return h(
         `button.world-action${a.cast ? ".spent" : ""}`,

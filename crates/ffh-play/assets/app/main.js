@@ -34,6 +34,7 @@ import * as screens from "./screens.js";
 import * as title from "./title.js";
 import { showDecision, modalOpen, closeTag, closeAll, onEscape, openTags, openModal } from "./modals.js";
 import { renderTop, renderBottom, setTab, currentTab } from "./hud.js";
+import { ritualAlerts } from "./rituals.js";
 import { endTurn, sending } from "./commands.js";
 import { h, $, toast, compactScreen, setErrorHook, errorText } from "./dom.js";
 import { dname, turns, me, tname, info } from "./state.js";
@@ -269,10 +270,14 @@ async function refreshLog() {
   }
   if (next === S.logNext) return;
   try {
+    const fresh = S.logNext === 0;
     const r = await api.query("log", { since: S.logNext });
     S.messages.push(...r.entries);
     if (S.messages.length > 2000) S.messages.splice(0, S.messages.length - 2000);
     S.logNext = r.next;
+    // World rituals (docs/CARDS.md): their news as alerts (a game's log read the first time: this
+    // turn's only).
+    ritualAlerts(r.entries, { fresh });
   } catch {
     /* busy inside a decision */
   }

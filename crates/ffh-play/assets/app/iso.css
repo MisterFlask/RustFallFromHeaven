@@ -192,6 +192,34 @@ html.iso #empire .stat.sliders { gap: 0; }
 html.iso #empire .slider-item { gap: 4px; }
 html.iso #world-actions { flex: none; gap: 6px; padding: 0 8px; }
 html.iso #world-actions .world-action { padding: 2px 10px 2px 4px; gap: 6px; }
+/* World rituals (rituals.js): a group of the bar. With nothing in progress, one muted line beside
+   the world spell; with rituals in progress or charges held, a row of its own under the bar, its
+   two-line chips side by side (scrolling sideways when they do not fit). */
+html.iso #top > #rituals { flex: none; gap: 12px; padding: 0 10px; }
+html.iso #top > #rituals.has-rows { order: 10; flex: 1 1 100%; min-width: 0; height: auto; min-height: var(--iso-top-h); overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+html.iso #top > #rituals[hidden] { display: none; }
+html.iso #rituals .ritual-rows { flex-wrap: nowrap; gap: 0; padding: 0; }
+html.iso #rituals .ritual-head { flex-direction: row; align-items: baseline; gap: 10px; }
+html.iso #rituals.has-rows .ritual-head { flex-direction: column; gap: 0; }
+html.iso #rituals .ritual-title { font: 400 20px/20px var(--iso-font); color: var(--iso-gold); }
+html.iso #rituals .ritual-all { font: 400 20px/20px var(--iso-font); }
+html.iso #rituals .ritual-none { font: 400 20px/20px var(--iso-font); color: var(--iso-dim); }
+html.iso #rituals .ritual-row { border: 0; border-left: 2px solid #3a4a74; border-image: none; background: none; padding: 0 12px; font: 400 20px/20px var(--iso-font); gap: 0; }
+html.iso #rituals .ritual-row:first-child { border-left: 0; }
+html.iso #rituals .ritual-row:hover:not([disabled]) { border-image: none; background: rgba(255, 248, 228, 0.08); }
+html.iso #rituals .ritual-row:active:not([disabled]) { border-image: none; background: rgba(255, 248, 228, 0.14); }
+html.iso .ritual-row .ritual-l1, html.iso .ritual-row .ritual-l2 { gap: 8px; }
+html.iso .ritual-row .ritual-name { color: #fff8e4; }
+html.iso .ritual-row .ritual-city, html.iso .ritual-row .ritual-turns { color: var(--iso-dim); }
+html.iso .ritual-row .ritual-city { max-width: 6em; }
+html.iso .ritual-row .ritual-charge, html.iso .ritual-entry.charged .ritual-entry-where { color: #70e0b1; }
+html.iso #rituals .ritual-row.mine { box-shadow: none; }
+html.iso #rituals .ritual-row.mine .ritual-name { color: var(--iso-gold); }
+html.iso .ritual-entry { border-left-color: #3a4a74; }
+html.iso .ritual-entry.mine { border-left-color: var(--iso-gold); }
+html.iso .ritual-entry.in_progress .ritual-entry-where, html.iso .ritual-entry.queued .ritual-entry-where { color: #fff8e4; }
+html.iso .build .ritual-rules, html.iso .build .ritual-why { font: 400 20px/22px var(--iso-font); }
+html.iso .toast.ritual-alert { box-shadow: inset 4px 0 0 #70e0b1; }
 html.iso #menu { flex: none; display: flex; gap: 4px; margin-left: auto; padding-left: 4px; flex-wrap: nowrap; }
 
 /* --- the left rail ------------------------------------------------------------------------- */
@@ -778,6 +806,15 @@ body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * 
   html.iso #phase-text { max-width: 30vw; }
   html.iso #empire { flex: 1 1 auto; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; gap: 12px; padding: 0 8px; }
   html.iso #empire::-webkit-scrollbar { display: none; }
+  /* World rituals: a row of their own under the bar, the chips scrolling sideways. */
+  html.iso #top { flex-wrap: wrap; row-gap: 4px; }
+  html.iso #empire { flex-basis: 0; }
+  html.iso #top > #rituals { order: 10; flex: 1 1 100%; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; padding: 0 6px; gap: 8px; }
+  html.iso #top > #rituals::-webkit-scrollbar { display: none; }
+  html.iso #top > #rituals.has-rows::after {
+    content: ""; position: sticky; right: -6px; flex: none; align-self: stretch; width: 28px; margin-left: -28px;
+    background: linear-gradient(90deg, rgba(1, 18, 58, 0), var(--iso-navy-bot) 85%); pointer-events: none;
+  }
   /* Where the numbers run under the frame they fade out, rather than end in half an icon. */
   html.iso #empire::after {
     content: ""; position: sticky; right: -8px; flex: none; align-self: stretch; width: 28px; margin-left: -28px;

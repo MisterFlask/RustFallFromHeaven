@@ -14,7 +14,7 @@
 import * as api from "./api.js";
 import { S, dname, orderName, info, turns, me, emit, tidx, ORDER_KINDS } from "./state.js";
 import { h, signed, setText, tapModes, compactScreen, errorText } from "./dom.js";
-import { openModal } from "./modals.js";
+import { openModal, ask } from "./modals.js";
 import { run } from "./commands.js";
 import { YIELD_COLORS } from "./tiles.js";
 import { look, uiIcon, typeIcon, barEl, pix } from "./look.js";
@@ -117,9 +117,24 @@ export async function openCity(id, { popup = false } = {}) {
     tapMode = v;
     load();
   };
+  /** The city as last read (its `ritual_head`: a world ritual in progress at the head). */
+  let current = null;
+  /** A world ritual in progress at the head of the queue (docs/CARDS.md) loses its production
+   *  when an action takes it off the head: asked first, Cancel focused. */
+  const abandonOk = async () => {
+    const head = current?.id === cityId ? current.ritual_head : null;
+    if (!head) return true;
+    return !!(await ask("World ritual", head.confirm, [
+      { label: "Abandon", value: true, danger: true },
+      { label: "Cancel", value: null },
+    ], { tag: "abandon-ritual" }));
+  };
   const choose = async (order, type, ev) => {
     const shift = !!ev.shiftKey || tapMode === "queue";
     const ctrl = !!(ev.ctrlKey || ev.metaKey) || tapMode === "first";
+    const head = current?.ritual_head;
+    const same = head && order === tidx("OrderType", "ORDER_CREATE") && type === head.project;
+    if (!shift && !same && !(await abandonOk())) return;
     const reply = await run({ c: "push_order", city: cityId, order, data: type, alt: false, shift, ctrl });
     if (!reply) return;
     if (popup && !shift) {
@@ -128,6 +143,7 @@ export async function openCity(id, { popup = false } = {}) {
     } else load();
   };
   const remove = async (index) => {
+    if (index === 0 && !(await abandonOk())) return;
     if (await run({ c: "pop_order", city: cityId, index })) load();
   };
   const go = (step) => {
@@ -150,6 +166,7 @@ export async function openCity(id, { popup = false } = {}) {
       return;
     }
     if (m.closed || n !== loading) return;
+    current = c;
     m.el.dataset.city = String(cityId);
     m.setBody(popup ? promptView(c, { choose, remove, tap: [tapMode, setTapMode] }) : screen(c, { task, choose, remove, go, overlay, tap: [tapMode, setTapMode], reload: load }));
     if (overlay) {
@@ -697,6 +714,11 @@ function manageView(c, task) {
       `${dname("HurryType", x.hurry)}${x.gold ? ` (${x.gold} gold)` : ""}${x.population ? ` (${x.population} pop.)` : ""}`,
     ),
   );
+  // A world ritual at the head of the queue (docs/CARDS.md): the hurry button stays, disabled,
+  // with the rule.
+  if (c.hurry_note && !hurries.length) {
+    hurries.push(h("button.small.hurry-ritual", { disabled: true, title: c.hurry_note, "aria-label": `Hurry: ${c.hurry_note}` }, "Hurry"), h("span.dim.small.hurry-note", c.hurry_note));
+  }
   // A governed city's emphasis is its role's (shown, not chosen).
   const governed = !!c.governance?.governed;
   const emphasize = c.emphasize.map((on, e) =>
@@ -800,18 +822,23 @@ function buildLists(c, choose) {
         "div.build-grid",
         items.map((b) => {
           const kind = ORDER_KINDS[order];
+          // A world ritual (docs/CARDS.md): its rules line, and why it cannot be chosen now.
+          const ritual = b.ritual ?? null;
+          const why = !b.enabled ? (ritual?.why ?? "Not possible now.") : null;
           return h(
-            "button.build",
+            `button.build${ritual ? ".ritual-build" : ""}`,
             {
               disabled: !b.enabled,
               "data-order": order,
               "data-type": b.type,
-              tip: infoTip(kind, b.type, { hint: [tierHint(b), nationalHint(b), !b.enabled ? "Not possible now." : locked ? "Click: empire order, ahead of the governor's choice." : "Click: build now. Shift: add to the queue. Ctrl: put first."].filter(Boolean).join(" ") }),
+              tip: infoTip(kind, b.type, { hint: [tierHint(b), nationalHint(b), why ?? (locked ? "Click: empire order, ahead of the governor's choice." : "Click: build now. Shift: add to the queue. Ctrl: put first.")].filter(Boolean).join(" ") }),
               onclick: (ev) => choose(order, b.type, ev),
             },
             isoSkin() ? buildIcon(order, b.type) : null,
             h(`span${tierSel(b.tier)}`, dname(kind, b.type)),
             h("span.dim", b.turns !== null ? [`${turns(b.turns)} · `, h("span.cost", { tip: "Production cost" }, ic("production"), String(b.cost))] : ""),
+            ritual ? h("span.ritual-rules", ritual.rules) : null,
+            ritual && why ? h("span.ritual-why.warn", why) : null,
           );
         }),
       ),
