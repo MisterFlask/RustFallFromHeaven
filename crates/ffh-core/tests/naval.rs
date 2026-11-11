@@ -514,3 +514,16 @@ fn a_flat_movement_unit_in_boats_still_crosses_one_water_plot_a_turn() {
     w.g.unit_move(u, w.at(12, 2));
     assert_eq!(w.g.unit_moves_left(u), 0, "landing ends its moves");
 }
+
+#[test]
+fn an_upgrade_at_sea_keeps_the_wear() {
+    let mut w = world();
+    let galley = w.unit(w.p0, "UNIT_GALLEY", 8, 1);
+    w.g.units[galley].sea_turns = 20;
+    assert_eq!(w.g.unit_sea_wear_percent(galley), 50);
+    // The upgrade's new unit takes the old one's place (`unit_convert`, as `unit_upgrade` does).
+    let trireme = w.unit(w.p0, "UNIT_TRIREME", 8, 1);
+    w.g.unit_convert(trireme, galley);
+    assert_eq!(w.g.units[trireme].sea_turns, 20, "only a port clears the wear");
+    assert_eq!(w.g.unit_sea_wear_percent(trireme), 50);
+}
