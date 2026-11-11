@@ -696,11 +696,14 @@ invasion fleet loaded in these games). The ships lost to attrition were on a lon
 range shrank under them (a port lost or open borders ended): they turned home at once
 (`units::play` re-plans a ship found out of range) but were too far to get back.
 
-**Phase 3 (fleets), 2026-11-11.** Four 300-turn games (seeds 1-4, 6 civs, standard map,
-`SEALEVEL_HIGH`), counted by a throwaway trace at each AI player's turn: fleets per game at turns
-100 / 200 / 299 (all players): seed 1: 0 / 0 / 3; seed 2: 0 / 4 / 19; seed 3: 0 / 2 / 6; seed 4:
-0 / 1 / 10 (fleet-turns 160, 1038, 421, 531). Warship-turns on Patrol: 0, 218, 16, 96, against 0,
-104, 16, 96 for the phase 2 base (c3194552) on the same games: the AI patrols as before (its
-per-ship decisions are unchanged; the fleets come from the sync). No AI fleet holds a standing order
-and the AI requisitions no ship yet (0 in these games): the AI's patrol and escort decisions are
-moving to `warships.rs`, which is to give them (7.3).
+**Phase 3 (fleets), 2026-11-11**, on the work branch with the merged warship AI (base 0f6e63e1).
+Four 300-turn games (seeds 1-4, 6 civs, standard map, `SEALEVEL_HIGH`), counted by a throwaway
+trace at each AI player's turn. Fleets of all players at turns 100 / 200 / 299: seed 1: 0 / 0 / 11;
+seed 2: 0 / 4 / 14; seed 3: 0 / 3 / 10; seed 4: 0 / 6 / 10 (fleet-turns 497, 825, 759, 760; of them
+holding the Patrol standing order 136, 325, 297, 219). Warship-turns on Patrol: 126, 274, 243, 162
+against the base's 126, 274, 245, 179 on the same seeds (the games diverge once the first fleets
+sail, near turn 200, with turns above and below the base in both). Escort orders: none (no loaded
+assault transport at sea in these games, as in the base's measures above). Ships requisitioned: 0
+(the AI does not requisition ships). A first version carried the orders out at the start of the
+turn and lost a third of the patrol ship-turns in three games: a worn ship the AI sent to port was
+put back on Patrol, its moves spent, every turn (now at the end of the turn, 7.3).
