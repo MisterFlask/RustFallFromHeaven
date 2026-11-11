@@ -406,6 +406,10 @@ Tiers (pick by the change):
   parallel; a refute pass only for high-severity findings that would change direction. At most one
   round per batch.
 
+Screenshots for the owner are taken on the HD-2D map (the owner's rule, 2026-11-11: `?force3d=1`
+where this machine falls back without a GPU). The flat and isometric maps are for debugging and as a
+backup for older PCs: judge and show a look on HD-2D, and design for it first.
+
 Rendering (SwiftShader here: 10-30 s a frame on 4 shared cores; workflows run 2 agents at a time):
 - Iterate on small renders (`--w 512 --h 320`) or crops of the changed region. Full 1024x640 sets
   and a real-game capture (`tools/r3d-compare.mjs`) only for a batch's final check.
