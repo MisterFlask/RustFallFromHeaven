@@ -394,8 +394,8 @@ view's `seas`, `outpost_lanes` and `sea_lanes`, as the other renderers do; no fi
 | part | where | how |
 |---|---|---|
 | names | the `sea` pass: after the water (and the packed scene's unpack), before the post passes, into the lit colour (alpha untouched), depth-tested against the scene, writing no depth | each name lettered once into an atlas (2048 wide, shelf-packed: the glyphs in alpha, a blurred halo in red, mipmapped) and laid as a quad on the water (y 0.008) along its sea's axis; its colour through the compose curve inverted (as the HD-2D cards'), so the grade, the moods and the tilt-shift take it as they take the water |
-| fog bank | the `sea` pass | a plane over the view at y 0.13 drawn where the water is out of range: the per-plot density (`sea.js` `seaFogRamp`: half at the first step past the range, full from the second; held up over the land by its neighbours') filtered between plot centres, broken by two drifting value noises (`uTime`: still when the map does not animate), kept off the land by a filtered water mask, and as thick as the scene's depth behind it is beyond the plane (the scene's linear depth): full over open water, thin over a beach, a ship's hull softened, its sails clear |
-| bands, lines between seas, outline | the overlay stage (with the borders, after FXAA, before the HD-2D tilt-shift), on a plane at the water's surface | per plot its sea's id (an RGBA8 texture, NEAREST), per sea its band's code, colours and strength (an n x 2 texture); the fragment finds the nearest edge of its sea among its eight neighbours (as the borders do) and the coordinate along it. In display colour: graded into the water in the lit pass, a holder's colour washed out to a pale line |
+| fog bank | the `sea` pass | quads over the plots under or next to the bank at y 0.13: the per-plot density (`sea.js` `seaFogRamp`: half at the first step past the range, full from the second; held up over the land by its neighbours') filtered between plot centres, broken by a drifting value noise (`uTime`: still when the map does not animate), kept off the land by a filtered water mask, and as thick as the scene's depth behind it is beyond the plane (the scene's linear depth): full over open water, thin over a beach, a ship's hull softened, its sails clear |
+| bands, lines between seas, outline | the overlay stage (with the borders, after FXAA, before the HD-2D tilt-shift), on quads over the plots on a sea's edge at the water's surface | per plot its sea's id (an RGBA8 texture, NEAREST), per sea its band's code, colours and strength (an n x 2 texture); the fragment finds the nearest edge of its sea among its eight neighbours (as the borders do) and the coordinate along it. In display colour: graded into the water in the lit pass, a holder's colour washed out to a pale line |
 | lanes, cut marks | the overlay stage | ribbons on the water (`sea.js` `laneCurve`: through the plots' centres, corners rounded; subdivided to follow the ground where they come ashore at a port), dashes flowing toward the home port with `uTime`; the part past a cut dotted; the cut a ring-and-cross quad |
 | buoys | the HD-2D cards (units' instance set, while the layer is on) | `hd2d/dress.js` `seaBuoyKey`: a tarred float, a pole and the holder's banner drawn by code (crossed banners when contested), at the spot `sea.js` `seaBuoySpot` picks beside the name, on the sea's water |
 | hover and click | the HUD (`hud.js` `seaHitBoxes`) | each name's letters and each buoy projected to a screen box, for `MapView.seaAt` |
@@ -705,6 +705,29 @@ shadow 150 -> 307 ms (the leaf cut in the shadow map); water 544 -> 516 ms. Star
 ts 96, `{"animate":false}`): mean |diff| 3.90 -> 4.47, pixels off by > 24: 5.19% -> 5.03% (the
 share that moves is unchanged; the mean rises with crisper, higher-contrast detail). The paragraph
 above predates the paint filter going off and the materials; its 1.6 / 1.1% figures are older still.
+
+Milestone A/B, the Sea layer in the world (§5.3; 2026-11-11): `r3d-perf --layer sea|terrain` on
+the `stage sea` save at (7, 17), 1280 x 800, the HD-2D preset, the same binary with d435be46's
+assets (`git archive`) against the new ones, two interleaved rounds each (SwiftShader; GPU times
+of the passes by wall clock, median frame of 3):
+
+| | ts 40, base | ts 40, new | ts 96, base | ts 96, new |
+|---|---|---|---|---|
+| Sea layer on: frame | 2013, 2034 ms | 2249, 2076 ms | 2841, 2508 ms | 2849, 2567 ms |
+| on: `sea` pass (fog bank, names) | -- | 74, 72 ms | -- | 48, 42 ms |
+| on: `overlay` (+ bands, lanes) | 209, 206 ms | 283, 272 ms | 329, 274 ms | 344, 322 ms |
+| Sea layer off: frame | 2323, 1958 ms | 2296, 2072 ms | 2638, 2501 ms | 2600, 2462 ms |
+| off: `sea` pass (the names, faint) | -- | 11.5, 10.9 ms | -- | not drawn |
+
+With the layer on, the two passes add about 140 ms at the far zoom (about 7% of a frame; the fog
+bank, over half the screen there, about half of it) and about 70 ms at the gameplay zoom (about
+3%); the old drawing's cost was on the CPU (the interface canvas), outside these GPU figures. Off,
+the faint names cost 0.5% at the farthest zooms and nothing from 56 px a plot. The first version
+drew both planes as a quad over the whole view (+330 ms, about 13%); they now cover only the plots
+that draw (a sea's edge plots; those under the fog bank), and the bank takes one noise, not two.
+Reading the scene's noise from the hash texture (NOISE_TEX) changed nothing measurable: under
+SwiftShader the cost is the covered pixels, not the shading. Frame times drift by 10-15% run to
+run here; the pass times are the steadier measure.
 
 GPU numbers: from the GPU bench (§10), whose runs on real cards land in its artifact's database;
 `r3d-perf --gpu` measures the same on a machine with a GPU.

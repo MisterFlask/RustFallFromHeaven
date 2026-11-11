@@ -61,8 +61,9 @@ export function pipelinePrograms(terrainDefines = {}, { scene: sceneDefines = {}
     particle: ["particle", C + SH.PARTICLE_VS, SH.PARTICLE_FS],
     // The Sea layer in the world (sealayer.js): the plane (bands, outline, fog bank) and the marks
     // on the water (names, lanes).
-    sea: ["sea", C + SH.SEA_VS, C + SH.SEA_FS],
-    seaMark: ["sea-mark", C + SH.SEA_MARK_VS, C + SH.SEA_MARK_FS],
+    // (With the scene's defines: its value noise from the hash texture where the mode has it.)
+    sea: ["sea", C + SH.SEA_VS, C + SH.SEA_FS, { ...sceneDefines }],
+    seaMark: ["sea-mark", C + SH.SEA_MARK_VS, C + SH.SEA_MARK_FS, { ...sceneDefines }],
     blit: ["blit", FULLSCREEN_VS, SH.BLIT_FS],
     // The packed scene into the three targets, and the water's grab of it.
     ...(packed ? { unpack: ["unpack", FULLSCREEN_VS, SH.UNPACK_FS], unpackCopy: ["unpack-copy", FULLSCREEN_VS, SH.UNPACK_FS, { UNPACK_COPY: 1 }] } : {}),
