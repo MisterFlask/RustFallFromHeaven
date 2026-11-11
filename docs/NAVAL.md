@@ -450,8 +450,9 @@ Where the code is:
   `march_turns` over water for a ship); the landing (`player_army_regroup_landed`).
 - The march of a ship (`army/march.rs`): `MOVE_SEA_RANGE` (`defs.rs`, honoured in `path.rs` for
   any ship group whose search carries it); no supply for fleets (`player_update_supply`).
-- The AI: `crates/ffh-ai/src/naval.rs` (`fleets`, `fleet_for`; `patrol` gives a fleet the Patrol
-  order), `armies.rs`, `tactics.rs` and `supply.rs` leave fleets out.
+- The AI: its ships' groups become fleets through the sync; its patrol and escort decisions are
+  unchanged (per group, `naval.rs`) and give no standing orders yet; `armies.rs`, `tactics.rs` and
+  `supply.rs` leave fleets out.
 - The client: `crates/ffh-play/src/view/armies.rs` (`fleet_json`, `station_view`, the screen's
   `fleets`, `seas`, `escort_targets`), the unit panel's fleet actions (`view/units.rs`,
   `army_actions`), the command `army_station` (`command.rs`), `assets/app/armies.js` (the Fleets

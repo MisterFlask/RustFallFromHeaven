@@ -18,7 +18,6 @@
 //! of the enemy is twice its side's strength ([`patrol_wake`]). Invasions go only at a coast whose
 //! way is in our range and not cut ([`way_in_range`]).
 
-use ffh_core::army::{EscortTarget, Station};
 use ffh_core::defs::*;
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -1239,23 +1238,6 @@ pub(crate) fn patrol(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> boo
     let Some((s, w)) = patrol_target(g, v, grp, u) else { return false };
     let here = g.unit_plot(u);
     v.claimed.push(w);
-    // A fleet (docs/NAVAL.md, 7.2): the Patrol standing order, which the rules carry out over the
-    // turns (they sail it there and it takes the Patrol order); a ship in port forms one.
-    if let Some(a) = fleet_for(g, v.p, grp) {
-        if g.army_set_station(v.p, a, Station::Patrol(s)).is_ok() && alive(g, grp) {
-            let on = g.groups[grp].activity_type == ActivityType::ACTIVITY_PLUNDER;
-            if on || !g.groups[grp].mission_queue.is_empty() {
-                crate::trace!(g, v.p, "fleet {} patrols {}{}", g.armies[a].name, g.map.seas[s.idx()].name, if on { "" } else { " (sailing there)" });
-                if on {
-                    g.tel_decision(v.p, "naval", "patrol", "start", 1, String::new);
-                }
-                return true;
-            }
-        }
-        if !alive(g, grp) {
-            return true;
-        }
-    }
     if g.map.plots[here].sea == Some(s) && g.map.plots[here].plot_city.is_none() && crate::units::can_start(g, grp, MissionType::MISSION_PLUNDER, -1, -1) {
         crate::trace!(g, v.p, "ship group {:?} patrols {} at {:?}", grp, g.map.seas[s.idx()].name, g.map.xy(here));
         g.tel_decision(v.p, "naval", "patrol", "start", 1, String::new);
@@ -1274,136 +1256,6 @@ pub(crate) fn patrol(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> boo
         }
     }
     true
-}
-
-/// The fleet of group `grp` of `p` (docs/NAVAL.md, 7.1): the fleet it is, or, for ships of ours in
-/// port in no fleet (all of the group fleet units), a fleet formed of them. `None`: not a fleet.
-fn fleet_for(g: &mut Game, p: PlayerId, grp: GroupId) -> Option<ArmyId> {
-    let head = g.group_get_head_unit(grp)?;
-    if let Some(a) = g.units[head].army.filter(|&a| g.army_is_fleet(a) && g.armies[a].group == Some(grp)) {
-        return Some(a);
-    }
-    let units = g.groups[grp].units.clone();
-    if units.iter().any(|&o| g.units[o].army.is_some() || !g.unit_is_fleet_unit(o)) {
-        return None;
-    }
-    let a = g.army_form(p, &units).ok()?;
-    (g.armies.contains(a) && g.armies[a].group == Some(grp)).then_some(a)
-}
-
-/// Whether ship `t` carries land fighters of ours (an invasion's cargo).
-fn carries_army(g: &Game, t: UnitId) -> bool {
-    army_aboard(g, t) > 0
-}
-
-/// Our fleets' standing orders before our units move (docs/NAVAL.md, 7.2 and 8): an escort whose
-/// work is done (its target gone, empty in port, or landed) or that is worn or out of range is
-/// released; then a loaded transport of ours that is not in port, has no warship with it and no
-/// escort gets the nearest spare warship fleet that reaches it within two turns as its escort. A
-/// spare fleet: warships only, nothing aboard, not worn, in range, with no standing order or on
-/// Patrol in a sea where we see no enemy strength.
-pub(crate) fn fleets(g: &mut Game, v: &View) {
-    if v.barbarian {
-        return;
-    }
-    let p = v.p;
-    let team = v.team;
-    let mine: Vec<ArmyId> = g.players[p].armies.iter().copied().filter(|&a| g.army_is_fleet(a)).collect();
-    // 1. Escorts done.
-    for &a in &mine {
-        let Station::Escort(target) = g.armies[a].station else { continue };
-        let units = g.army_units(a);
-        let tired = units.iter().any(|&o| worn(g, o) || g.unit_is_out_of_sea_range(o));
-        let busy = match target {
-            EscortTarget::Army(b) => g.armies.get(b).is_some_and(|ar| ar.group.is_some_and(|gr| g.groups.contains(gr) && g.groups[gr].units.iter().any(|&o| carries_army(g, o)))),
-            EscortTarget::Group(gr) => g.groups.contains(gr) && g.groups[gr].units.iter().any(|&o| carries_army(g, o)),
-        };
-        if tired || !busy {
-            crate::trace!(g, p, "fleet {} ends its escort of {} ({})", g.armies[a].name, g.escort_target_name(target), if tired { "worn or out of range" } else { "nothing aboard" });
-            let _ = g.army_set_station(p, a, Station::None);
-            if let Some(grp) = g.armies[a].group.filter(|&gr| g.groups.contains(gr)) {
-                g.group_set_activity_type(grp, ActivityType::ACTIVITY_AWAKE);
-            }
-        }
-    }
-    // 2. New escorts.
-    let escorted: Vec<EscortTarget> = mine.iter().filter_map(|&a| match g.armies.get(a).map(|ar| ar.station) {
-        Some(Station::Escort(t)) => Some(t),
-        _ => None,
-    }).collect();
-    for grp in g.players[p].groups.clone() {
-        if !alive(g, grp) || g.group_get_domain_type(grp) != Some(DomainType::DOMAIN_SEA) {
-            continue;
-        }
-        let units = g.groups[grp].units.clone();
-        if !units.iter().any(|&o| carries_army(g, o)) || units.iter().any(|&o| g.unit_is_warship(o) && !is_transport_type(&g.d.units[g.units[o].unit_type])) {
-            continue;
-        }
-        let Some(here) = g.group_plot(grp) else { continue };
-        if g.map.plots[here].plot_city.is_some() {
-            continue;
-        }
-        let head = units[0];
-        let target = match g.units[head].army.filter(|&a| g.army_is_fleet(a) && g.armies[a].group == Some(grp)) {
-            Some(a) => EscortTarget::Army(a),
-            None => EscortTarget::Group(grp),
-        };
-        if escorted.contains(&target) {
-            continue;
-        }
-        let (hx, hy) = g.map.xy(here);
-        let mut spare: Vec<(i32, ArmyId)> = Vec::new();
-        for &a in &mine {
-            let Some(ar) = g.armies.get(a) else { continue };
-            let ok_station = match ar.station {
-                Station::None => true,
-                Station::Patrol(s) => g.sea_state_known(s, team).theirs == 0,
-                Station::Escort(_) => false,
-            };
-            let Some(fg) = ar.group.filter(|&gr| g.groups.contains(gr)) else { continue };
-            if !ok_station || ar.disband_to.is_some() {
-                continue;
-            }
-            let fu = g.army_units(a);
-            if fu.is_empty() || fu.iter().any(|&o| !g.unit_is_warship(o) || is_transport_type(&g.d.units[g.units[o].unit_type]) || g.unit_has_cargo(o) || worn(g, o) || g.unit_is_out_of_sea_range(o)) {
-                continue;
-            }
-            let Some(at) = g.group_plot(fg) else { continue };
-            let (x, y) = g.map.xy(at);
-            spare.push((g.plot_distance(hx, hy, x, y), a));
-        }
-        spare.sort();
-        for &(_, a) in spare.iter().take(3) {
-            let Some(fg) = g.armies[a].group else { continue };
-            let Some(at) = g.group_plot(fg) else { continue };
-            if !g.group_find_path(fg, at, here, 0).is_some_and(|path| path.turns <= 2) {
-                continue;
-            }
-            if g.army_set_station(p, a, Station::Escort(target)).is_ok() {
-                crate::trace!(g, p, "fleet {} escorts {} at {:?}", g.armies[a].name, g.escort_target_name(target), g.map.xy(here));
-                g.tel_decision(p, "naval", "escort", "start", 1, String::new);
-                break;
-            }
-        }
-    }
-    if crate::trace_on(p) {
-        let mut patrol = 0;
-        let mut escort = 0;
-        let mut on_patrol = 0;
-        for &a in &mine {
-            match g.armies.get(a).map(|ar| ar.station) {
-                Some(Station::Patrol(_)) => patrol += 1,
-                Some(Station::Escort(_)) => escort += 1,
-                _ => {}
-            }
-        }
-        for &u in &g.players[p].units {
-            if g.unit_is_warship(u) && g.units[u].group.is_some_and(|gr| g.groups.contains(gr) && g.groups[gr].activity_type == ActivityType::ACTIVITY_PLUNDER) {
-                on_patrol += 1;
-            }
-        }
-        crate::trace!(g, p, "fleets: {} fleets, {} on Patrol orders, {} escorting; {} warships on Patrol", mine.len(), patrol, escort, on_patrol);
-    }
 }
 
 /// Whether a group of ours on Patrol should take new orders this turn (module comment): worn,
