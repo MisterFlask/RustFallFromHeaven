@@ -143,7 +143,19 @@ by itself while a ship or a unit in boats is selected and goes back to the layer
 selection ends (a layer you pick meanwhile stays). On the flat and isometric maps it is drawn
 under the cities and units; on the HD-2D map on the interface layer over the WebGL frame (so it
 also dims a figure standing on that water). On the Sea layer a port of yours says in its tooltip
-the range it gives (`Range: 12 plots.`). **The sea** in the previews and panels: with a land
+the range it gives (`Range: 12 plots.`). **Outposts** (docs/NAVAL.md, phase 4; `app/lanes.js`,
+`view/outposts.rs`): the Sea layer draws each outpost's lane as supply lines are drawn, in its
+owner's colour (yours in vellum), the dashes flowing to the home port; a cut lane breaks over the
+sea that cuts it with a mark where it enters that sea (`Cut: 3`, the turns before your outpost
+starves); others' lanes over the plots you have revealed. The Colonist's action (and the
+Settler's second) is **Found outpost**, its tooltip the site rule and, when it cannot, the reason
+(`An outpost must be on another landmass than your capital's.`). An outpost's city screen has no
+production: `Lane: open, to Ithralia (14 plots).` / `Lane: cut in Sirens' Water, turn 2 of 5.` /
+`No lane to a home port in range, turn 2 of 5.` / `Starved: -1 population a turn, not a port.` and
+the button `Raise to city (150 gold)` (command `raise_outpost {city}`). Its banner reads `Name
+(outpost)`; the Cities list marks it `outpost` with the lane's state in place of production; a
+resource none of your landmasses holds says `Not on your landmasses.` in its tooltip (the plot
+query's `bonus_note`). **The sea** in the previews and panels: with a land
 unit selected, a path over water adds `In boats from plot 3: strength 1, 1 plot a turn. 2
 turns.` (the plot's index along the path, the civilization's real plots a turn, the turns spent
 at sea) and, over water out of range, `Out of range from plot 6: -15% HP a turn.`; an army at sea

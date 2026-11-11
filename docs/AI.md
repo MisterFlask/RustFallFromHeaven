@@ -1007,6 +1007,14 @@ plot falls or the odds turn bad, and moves in.
   with a known enemy port, three at most (`naval::patrol_production`). Invasions go only at a coast
   whose lane is open (`naval::way_in_range`). Not measured beyond a first count of firings (the
   AI builds few ships before turn 150; docs/NAVAL.md, section 12).
+- **Outposts** (docs/NAVAL.md, phase 4, 9.4; `outposts.rs`, a rules change's AI): a safe port
+  trains a Colonist when an outpost site exists (off the capital's landmass, its water in range, a
+  resource we lack, a far-shore resource or a mana node within its 8 plots), no colonist of ours is
+  alive or in training and we hold fewer than 3 outposts; the colonist sails there in boats when the
+  lane from the site is open and no enemy patrol or warship is seen on the way, and founds it; an
+  outpost at full size with an open lane is raised while at peace with three times the cost in
+  gold. Patrols take our outposts' lanes as their third need. Not built: carrying a colonist by
+  transport, a garrison sent to an outpost.
 
 - **Overseas sites**: when no site is left on a landmass where we have cities, `sites.rs` also
   scores the coastal plots of other landmasses within 14 plots of our coastal cities.

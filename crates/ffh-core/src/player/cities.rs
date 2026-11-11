@@ -358,6 +358,8 @@ impl Game {
         let num_real_building = self.cities[old_city].num_real_building.clone();
         // This game's building suitability (docs/SUITABILITY.md): the city keeps its tiers.
         let building_tiers = self.cities[old_city].building_tiers.clone();
+        // This game's outposts (docs/NAVAL.md, 9.2): a taken outpost stays an outpost.
+        let was_outpost = self.cities[old_city].outpost;
         let building_original_owner = self.cities[old_city].building_original_owner.clone();
         let building_original_time = self.cities[old_city].building_original_time.clone();
 
@@ -417,8 +419,6 @@ impl Game {
             }
         }
 
-        // This game's outposts (docs/NAVAL.md, 9.2): a taken outpost stays an outpost.
-        let was_outpost = self.cities[old_city].outpost;
         let new_city = self.player_init_city_as(p, city_x, city_y, !conquest, false, Some(building_tiers), was_outpost);
 
         self.cities[new_city].previous_owner = Some(old_owner);

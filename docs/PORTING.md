@@ -204,6 +204,22 @@ flag.
   over water in range) to a port of the team. *Shore fire*: before round 1 of a battle on land, up
   to 3 warships with a bombard rate per side on the water next to it fire once each (once a turn),
   a SHOOT hit each that never takes a unit below 1 HP. Save format 33.
+- **The sea, phase 4: far shores, outposts, lanes** (docs/NAVAL.md, section 9; 2026-11-11, the
+  owner's direction). *Far shores*: after the starts are normalized, when the map has a land area
+  with no start and at least 8 plots, every Gems, Silk and Incense on a starting landmass (outside
+  a start's city radius) moves to a far-shore plot that can hold it, and each far shore gets a raw
+  mana node per 40 plots (at least one); map RNG. *Outposts*: the new Colonist (half a Settler's
+  cost) founds one, and the Settler can (`MISSION_FOUND` with data1 1), on a coastal site off the
+  capital's landmass: population 2 at most, radius 1 (borders at culture level 1 at most), builds
+  nothing, no governor, no maintenance, not counted in the number-of-cities costs (maintenance,
+  civic upkeep, anarchy, the Kuriotates' limit), never a capital, cannot requisition; a player left
+  with outposts only is eliminated; captured, it stays an outpost; raised to a city for 150 gold
+  (times the speed's construct percent). *Lanes*: at its owner's turn start an outpost's lane to the
+  nearest non-outpost city of its owner is traced; while cut or missing the outpost and its plots
+  are off the trade network, the holders of the cutting sea share 8 gold a turn, and after 5 turns
+  it starves (-1 population a turn, to 1; no port). An open lane through a sea where an enemy
+  patrols without holding it pays that enemy 4 gold a turn. An open lane carries its owner's trade
+  over the water. Save format 34.
 - **Engagement combat** (docs/ENGAGEMENTS.md; not an option since 2026-11-03, the owner's
   decision: `GAMEOPTION_ENGAGEMENTS` was removed, every game fights it, the AI-only ones too, with or
   without armies; older saves do not load): a land attack is a **formation battle** (revision 4,

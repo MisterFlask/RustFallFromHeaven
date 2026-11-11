@@ -183,8 +183,8 @@ impl Game {
         self.city_governance_init(c, true);
         self.cities[c].ai_choose_production_dirty = true;
         self.player_update_maintenance(p);
-        self.sea_range_invalidate();
-        self.update_plot_groups();
+        let around = self.outpost_area_plots(c);
+        self.outpost_network_refresh(around);
         let turn = self.game_turn();
         let at = (self.cities[c].x, self.cities[c].y);
         let name = self.cities[c].name.clone();
@@ -307,7 +307,12 @@ impl Game {
         let n = self.map.num_plots();
         let range = self.team_sea_range(team);
         let field = self.sea_range_dists(team);
-        let ok = |q: PlotIdx| self.plot_is_water(q) && !self.plot_is_impassable(q) && field[q.idx()] != u16::MAX && (field[q.idx()] as i32) <= range;
+        // The outpost's own range counts for its lane even while it starves (a starved outpost is
+        // no port for anything else): else a lane that needs it could never open again.
+        let own = self.outpost_own_range(c, range);
+        let ok = |q: PlotIdx| {
+            self.plot_is_water(q) && !self.plot_is_impassable(q) && ((field[q.idx()] != u16::MAX && (field[q.idx()] as i32) <= range) || own[q.idx()])
+        };
         const FAR: u32 = u32::MAX;
         let mut dist = vec![FAR; n];
         let mut port = vec![FAR; n];
@@ -380,6 +385,36 @@ impl Game {
         });
         let home = by_last.min().or_else(|| (port[last.idx()] != FAR).then(|| CityId(port[last.idx()])))?;
         Some((path, home))
+    }
+
+    /// The water within `range` steps (passable water, 8 directions) of the water next to outpost
+    /// `c`, per plot.
+    fn outpost_own_range(&self, c: CityId, range: i32) -> Vec<bool> {
+        let mut seen = vec![false; self.map.num_plots()];
+        let (x, y) = (self.cities[c].x, self.cities[c].y);
+        let passable = |q: PlotIdx| self.plot_is_water(q) && !self.plot_is_impassable(q);
+        let mut layer: Vec<PlotIdx> = (0..DirectionType::NUM).filter_map(|i| self.plot_direction(x, y, DirectionType::from_usize(i))).filter(|&w| passable(w)).collect();
+        for &w in &layer {
+            seen[w.idx()] = true;
+        }
+        let mut d = 1;
+        while !layer.is_empty() && d < range {
+            let mut next = Vec::new();
+            for &q in &layer {
+                let (qx, qy) = self.map.xy(q);
+                for i in 0..DirectionType::NUM {
+                    if let Some(w) = self.plot_direction(qx, qy, DirectionType::from_usize(i)) {
+                        if !seen[w.idx()] && passable(w) {
+                            seen[w.idx()] = true;
+                            next.push(w);
+                        }
+                    }
+                }
+            }
+            layer = next;
+            d += 1;
+        }
+        seen
     }
 
     /// Outpost `c`'s lane (docs/NAVAL.md, 9.3), `None` when it has none or is no outpost: cut in
@@ -467,10 +502,38 @@ impl Game {
             _ => Vec::new(),
         };
         if path != self.cities[c].lane {
-            self.cities[c].lane = path;
-            self.sea_range_invalidate();
-            self.update_plot_groups();
+            let mut plots = std::mem::replace(&mut self.cities[c].lane, path.clone());
+            plots.extend(path);
+            plots.extend(self.outpost_area_plots(c));
+            self.outpost_network_refresh(plots);
         }
+    }
+
+    /// Outpost `c`'s plot and the 8 around it.
+    fn outpost_area_plots(&self, c: CityId) -> Vec<PlotIdx> {
+        let (x, y) = (self.cities[c].x, self.cities[c].y);
+        let mut out = Vec::new();
+        for dx in -1..=1 {
+            for dy in -1..=1 {
+                if let Some(q) = self.plot_xy(x, y, dx, dy) {
+                    out.push(q);
+                }
+            }
+        }
+        out
+    }
+
+    /// The outposts' share of the trade network changed on `plots` (a lane opened, closed or
+    /// moved; an outpost raised): the cache is dropped, each plot's groups are recomputed (a plot
+    /// alone in its group that left the network keeps it otherwise) and then every player's.
+    fn outpost_network_refresh(&mut self, mut plots: Vec<PlotIdx>) {
+        self.sea_range_invalidate();
+        plots.sort();
+        plots.dedup();
+        for q in plots {
+            self.plot_update_plot_group(q);
+        }
+        self.update_plot_groups();
     }
 
     /// The players of `team` with a ship on Patrol in sea `s`, in id order.
@@ -541,6 +604,7 @@ impl Game {
         let turn = self.game_turn();
         let mut net_changed = false;
         let mut ports_changed = false;
+        let mut changed_plots: Vec<PlotIdx> = Vec::new();
         for c in outposts {
             if !self.cities.contains(c) {
                 continue;
@@ -594,7 +658,10 @@ impl Game {
                 }
             };
             if new_path != self.cities[c].lane {
-                self.cities[c].lane = new_path;
+                let old = std::mem::replace(&mut self.cities[c].lane, new_path.clone());
+                changed_plots.extend(old);
+                changed_plots.extend(new_path);
+                changed_plots.extend(self.outpost_area_plots(c));
                 net_changed = true;
             }
             let starved = self.city_outpost_starved(c);
@@ -614,7 +681,7 @@ impl Game {
             self.sea_range_invalidate();
         }
         if net_changed {
-            self.update_plot_groups();
+            self.outpost_network_refresh(changed_plots);
         }
     }
 

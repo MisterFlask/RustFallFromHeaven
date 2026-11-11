@@ -447,7 +447,7 @@ A rules change is not gated on the AI (CLAUDE.md): it does something reasonable 
 - A Colonist (section 9) is built for an overseas site in range that has a resource, when no
   settler is bound there.
 
-## 9. Phase 4: far shores, outposts, lanes -- status: not built
+## 9. Phase 4: far shores, outposts, lanes -- status: built (rules, AI, client; 9.4)
 
 ### 9.1 Far shores (map generation)
 
@@ -492,6 +492,81 @@ that is not an outpost. At the start of its owner's turn:
   and it is no port.
 
 Messages: cut (with the sea and its holder), starved, open again; to the raider, the gold.
+
+### 9.4 As built (2026-11-11)
+
+Where the code is:
+
+- `crates/ffh-core/src/outposts.rs`: far shores (`map_far_shores`, `map_place_far_shores` ->
+  `FarShoreReport`, kept for tools as `far_shore_report`; called in `set_initial_items` after
+  `normalize_starting_plots`); founding (`FOUND_OUTPOST`, `player_outpost_site_refusal` ->
+  `OutpostSiteRefusal`, `player_can_found_outpost`, `unit_founds_outposts`,
+  `unit_can_found_outpost`, `unit_found_outpost_refusal`, `unit_found_outpost`,
+  `player_found_outpost`); what it is (`city_is_outpost`, `player_get_num_outposts`,
+  `player_num_real_cities`, `city_outpost_full`, `city_outpost_starved`); raising
+  (`outpost_raise_cost`, `player_raise_outpost_refusal`, `player_raise_outpost`); lanes
+  (`outpost_home_ports`, `outpost_lane`, `outpost_lane_known`, `outpost_lane_state` -> `LaneState`,
+  `sea_outpost_lanes_through`, `city_trace_lane`, `player_update_lanes`, called after
+  `player_update_seas`); the trade network (`plot_on_outpost_lane`, `plot_outpost_cut_off`, read by
+  `plot_is_network_terrain`, `plot_is_trade_network` and `plot_is_trade_network_connected`; the
+  per-plot bits are cached in `SeaRangeCache::outpost_net`, rebuilt from the cities, dropped with
+  the range fields); `player_bonus_on_own_landmass` (the tooltip).
+- The rules that test `City::outpost` where they stand: `city_init` (radius 1, no free buildings,
+  never a settlement, no civilization free buildings), `city_can_train`/`construct`/`create`/
+  `maintain`/hurry/conscript (as settlements), `city_do_production` (nothing), `city_do_growth` and
+  `city_set_population` (the cap), `city_update_culture_level` (level 1 at most),
+  `city_num_city_plots`/`plot_city`/`plot_update_working_city`/`city_set_plot_radius` (radius 1),
+  maintenance (none; not counted in the number-of-cities maintenance), civic upkeep and anarchy (not
+  counted), the Kuriotates' city limit, `city_is_governed`, `player_find_new_capital`,
+  `player_verify_alive`, `army_check_requisition_city`, `city_is_port` and the range field (a
+  starved outpost is no port), `player_acquire_city` (the flag kept, the lane traced),
+  `MISSION_FOUND` with data1 `FOUND_OUTPOST` (`group/missions.rs`).
+- Data: `UNIT_COLONIST`/`UNITCLASS_COLONIST` (the Settler's entry, cost 60, `found_outpost`, no
+  `found`, AI type `UNITAI_UNKNOWN`, the Settler's art by a manifest rule), a bonus's `far_shore`
+  (Gems, Silk, Incense), the defines of section 11. Save format 34: `City::outpost`,
+  `lane_cut_turns`, `lane`.
+- The AI: `crates/ffh-ai/src/outposts.rs` (`site`, `production`, `colonist`, `turn`); the third
+  patrol need in `naval::patrol_target`. The C++ AI never builds a Colonist (no `unit_ais`, no
+  `found`).
+- The client: `crates/ffh-play/src/view/outposts.rs` (the city panel's `outpost`, the cities'
+  `outpost` field, the view's `outpost_lanes`, the plot's `bonus_note`), the command
+  `raise_outpost`, the Found outpost action (`view/units.rs`), `app/lanes.js` (called from each
+  renderer's Sea layer), `app/city.js` (the panel, the help topic), `app/main.js` (the Cities list).
+- Tests: `crates/ffh-core/tests/outposts.rs`. `ffh far-shores [opts]` prints what the far-shore
+  pass did on a map.
+
+Choices made where this spec was silent (each open to change):
+
+- **Far shores.** A bonus inside a starting plot's city radius (the 5x5 around it, corners
+  included) is not moved. "Can hold it": `plot_can_have_bonus` (terrain, feature, latitude, area
+  size) and no improvement on the plot (a lair or goody hut). The target is drawn uniformly among
+  every fitting plot of every far shore; mana nodes per far shore, uniformly among its fitting
+  plots. A map where no area has a starting plot (a hand-made world) has no far shore.
+- **The site.** Next to water of at least `MIN_WATER_SIZE_FOR_OCEAN` plots; a player without a
+  capital founds none. A unit with `found` founds both; one with `found_outpost` only outposts.
+- **What it is.** The borders: the city's culture level is held at 1 (so its city defence from
+  culture too). Population above the cap (none in practice) is kept, never added to. A player
+  whose last city that is not an outpost falls is eliminated with its outposts, as a player with no
+  city. Anarchy length and civic upkeep do not count outposts; free unit support still does. Score
+  counts its population and land as any city's.
+- **Raising** costs `OUTPOST_RAISE_COST` times the game speed's `construct_percent` / 100; the city
+  takes its radius, its free buildings and its governor at once (a Kuriotates city beyond its limit
+  becomes a settlement).
+- **Lanes.** The lane is the shortest path over passable water in the team's range from a water
+  plot next to the outpost to one next to a home port (ties: fewer plots, then the lower path); the
+  port is the lowest-id home port next to its last plot. It is traced at the owner's turn start,
+  and when the outpost is founded or taken (without counting a turn). The stored path is the trade
+  network's: its plots carry the owner's trade (as network terrain, revealed or not); a closed sea's
+  blockade still stops trade over them at once. While not open, the outpost's plot and its 8 plots
+  are off its team's network. A captured outpost's count starts at 0 for its new owner. The
+  barbarians' outposts have no lane and are never counted. A cut lane pays only `LANE_RAID_GOLD`;
+  the contested gold is for open lanes, once per sea along the lane, to the players of the
+  strongest enemy team on Patrol there (shared as the cut's gold). Raid gold is new gold: the
+  outpost's owner pays nothing.
+- **Starving** from the turn start where the count passes `LANE_STARVE_TURNS`; the range fields are
+  dropped when an outpost starts or stops starving. **Divergence**: a lane's "in range" also counts
+  the outpost's own range (its water within the team's range of steps), starved or not: read
+  literally, a starved outpost whose lane needed its own range could never open its lane again.
 
 ## 10. What the player sees
 

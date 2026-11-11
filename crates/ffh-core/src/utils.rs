@@ -1805,8 +1805,9 @@ mod tests {
         // +1 pair: Formation, free on the Phalanx's class (docs/UNIT_ROLES.md), on the Nullstone
         // Golem, which has no unit combat; -37 pairs and -654 in all: Extension I and II gone,
         // docs/ENGAGEMENTS.md, "Summons"; -1 pair and -783 in all: the Worker, the Mud Golem (its
-        // free Golem promotion) and the Work Boat gone, docs/WORKS.md.)
-        assert_eq!((n, own_promotions * own_units), (26591, 84564));
+        // free Golem promotion) and the Work Boat gone, docs/WORKS.md; +261 in all and no pair:
+        // the Colonist, docs/NAVAL.md 9.2.)
+        assert_eq!((n, own_promotions * own_units), (26591, 84825));
         let archer = d.t::<UnitType>("UNIT_ARCHER");
         let skirmisher = d.t::<UnitType>("UNIT_SKIRMISHER");
         let takes = |u: UnitType| d.promotions.keys().filter(|&p| p.idx() < own_promotions && is_promotion_valid(d, p, u, false)).collect::<Vec<_>>();

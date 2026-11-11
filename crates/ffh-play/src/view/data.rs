@@ -255,6 +255,12 @@ fn build(d: &GameData) -> Json {
             "sea_wear_free_turns" => d.defines.sea_wear_free_turns,
             "sea_wear_percent" => d.defines.sea_wear_percent,
             "sea_wear_max_percent" => d.defines.sea_wear_max_percent,
+            // Outposts (docs/NAVAL.md, section 9).
+            "outpost_max_pop" => d.defines.outpost_max_pop,
+            "outpost_raise_cost" => d.defines.outpost_raise_cost,
+            "lane_raid_gold" => d.defines.lane_raid_gold,
+            "lane_raid_gold_contested" => d.defines.lane_raid_gold_contested,
+            "lane_starve_turns" => d.defines.lane_starve_turns,
         },
     }
 }

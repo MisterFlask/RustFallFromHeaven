@@ -24,6 +24,32 @@ import { infoTip, moodTip, roomText } from "./infotips.js";
 import { cultureView } from "./culture.js";
 import { recruitControls, recruitView, requisitionNote, requisitionTag } from "./armies.js";
 import { governanceView } from "./governors.js";
+import { addHelp } from "./help.js";
+
+// ---- Outposts in the help display (docs/NAVAL.md, section 9) -----------------------------------
+
+addHelp({
+  id: "outposts",
+  group: "Playing",
+  order: 6,
+  title: "Outposts and lanes",
+  body: () => {
+    const d = S.data?.defines ?? {};
+    const n = (k, def) => d[k] ?? def;
+    return [
+      h(
+        "ul",
+        h("li", "A Colonist founds an outpost (Found outpost); a Settler founds a city or, by its second action, an outpost. The site: where a city can be founded, next to the ocean, on another landmass than your capital's."),
+        h("li", `An outpost: population ${n("outpost_max_pop", 2)} at most; works and owns the 8 plots around it; builds nothing; no governor; no maintenance; not counted as a city for maintenance, civics or the city limit; never a capital. Its crews improve its land. A player with outposts only is eliminated. Taken, it stays an outpost.`),
+        h("li", `Raise to city: ${n("outpost_raise_cost", 150)} gold (more on slower speeds). From then on it is a city.`),
+        h("li", "Its lane: over water in your range to the nearest of your cities that is not an outpost. While the lane is open the outpost's resources reach you and it trades; the Sea layer draws it."),
+        h("li", `Cut (it crosses a sea an enemy holds) or no lane: the outpost is off your trade network, and the players holding that sea with ships on Patrol there share ${n("lane_raid_gold", 8)} gold a turn. After ${n("lane_starve_turns", 5)} turns it starves: -1 population a turn (to 1), and it is no port.`),
+        h("li", `A sea on an open lane where an enemy patrols without holding it: that enemy gains ${n("lane_raid_gold_contested", 4)} gold a turn; the lane stays open.`),
+        h("li", "Far shores: on a map with landmasses no civilization starts on, Gems, Silk and Incense are moved there, with extra raw mana nodes. A resource none of your landmasses holds says so in its tooltip."),
+      ),
+    ];
+  },
+});
 
 const GROUPS = [
   [0, "Units"],

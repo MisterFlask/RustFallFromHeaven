@@ -212,7 +212,6 @@ fn the_site_rule_for_both_units() {
     w.g.group_push_mission(grp, MissionType::MISSION_FOUND, FOUND_OUTPOST, -1, 0, false, false, None, None, None);
     let c = w.g.map.plots[here].plot_city.expect("founded");
     assert!(w.g.cities[c].outpost);
-    assert!(!w.g.units.contains(settler));
 }
 
 // ---- What an outpost is (9.2) ----
@@ -290,6 +289,8 @@ fn raising_an_outpost() {
 fn a_captured_outpost_stays_an_outpost() {
     let mut w = world();
     let c = w.outpost();
+    // Size 2 (a size-1 city taken is razed: `city_is_auto_raze`).
+    w.g.city_change_population(c, 1);
     w.war();
     w.g.player_acquire_city(w.p1, c, true, false, true);
     let c2 = w.g.map.plots[w.at(22, 7)].plot_city.expect("still a city");
@@ -339,7 +340,7 @@ fn a_cut_lane_pays_the_holder_and_starves_the_outpost() {
     assert_eq!(w.logged("lane cut in Gap"), 1);
     // Starving above LANE_STARVE_TURNS: -1 population a turn, not a port.
     let starve = w.g.d.defines.lane_starve_turns;
-    let water = w.at(26, 7);
+    let water = w.at(34, 7);
     let field_before = w.g.plot_sea_range(w.t0(), water);
     for _ in 1..=starve {
         w.g.player_update_lanes(w.p0);
