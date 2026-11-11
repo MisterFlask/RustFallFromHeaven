@@ -2877,15 +2877,15 @@ void over(inout vec4 acc, vec3 c, float a) {
 }
 `;
 
-/** The sea's plane: a quad over the map rect in view (uRect: x0, y0, x1, y1, map units) at height
- *  uLift (the water's surface, or the fog bank's top). */
+/** The sea's planes: a quad over each plot that may draw (sealayer.js: the plots on a sea's edge for
+ *  the surface, those under the fog bank for it) at height uLift (the water's surface, or the fog
+ *  bank's top) -- not the whole view, so the rest of the screen costs nothing. */
 export const SEA_VS = `
 in vec3 aPos;
-uniform vec4 uRect;
 uniform float uLift;
 out vec3 vWorld;
 void main() {
-  vec3 w = vec3(mix(uRect.x, uRect.z, aPos.x), uLift, -mix(uRect.y, uRect.w, aPos.z));
+  vec3 w = aPos + vec3(uCopyX, uLift, 0.0);
   vWorld = w;
   gl_Position = uViewProj * vec4(w, 1.0);
 }`;
@@ -2898,7 +2898,7 @@ void main() {
  *  softened, the land above it is not). */
 export const SEA_FS = `
 in vec3 vWorld;
-uniform highp sampler2D uSeaPlots; // per plot: r + 256 g = its sea's id + 1 (0 none)
+uniform highp sampler2D uSeaPlots; // per plot: r + 256 g = its sea's id + 1 (0 none); b on its edge
 uniform sampler2D uSeaInfo;         // per sea (x = id): row 0 colour a + band code, row 1 colour b + strength
 uniform sampler2D uSeaFog;          // per plot, filtered: r the bank's density, g water
 uniform sampler2D uSceneND;         // the scene's view normal + linear depth
@@ -2933,20 +2933,20 @@ void main() {
   vec4 acc = vec4(0.0);
   if (uMode > 0.5) {
     // The fog bank: the density over the plots (filtered: it thins over about a plot at the range's
-    // edge), broken by two drifting noises, kept off the land, and as thick as the water under it.
+    // edge), broken by a drifting noise, kept off the land, and as thick as the water under it.
     vec2 uv = m / uMapSize;
     vec2 rg = texture(uSeaFog, uv).rg;
     if (rg.r < 0.01) discard;
     float t = uTime * uFogLook.z;
-    float n1 = mnoise(m + vec2(t * 0.09, t * 0.035), 0.5);
-    float n2 = mnoise(m + vec2(7.3 - t * 0.05, 3.1 + t * 0.07), 1.5);
+    // (One noise: the bank is the Sea layer's dearest part, docs/R3D.md §11.)
+    float n1 = mnoise(m + vec2(t * 0.09, t * 0.035), 0.7);
     float dens = smoothstep(0.2, 0.75, rg.r + (n1 - 0.5) * 0.5);
-    dens *= 0.62 + 0.38 * smoothstep(0.25, 0.75, n2);
+    dens *= 0.6 + 0.4 * smoothstep(0.3, 0.7, n1);
     dens *= smoothstep(0.45, 0.9, rg.g);
     float sceneD = texelFetch(uSceneND, ivec2(gl_FragCoord.xy), 0).w;
     float myD = -(uView * vec4(vWorld, 1.0)).z;
     float thick = clamp((sceneD - myD) / uFogLook.y, 0.0, 1.0);
-    vec3 col = uFogCol * mix(0.9, 1.04, n2);
+    vec3 col = uFogCol * mix(0.9, 1.04, n1);
     over(acc, seaLit(col, 1.0), dens * thick * uFogLook.x * smoothstep(0.2, 0.5, v));
     if (acc.a < 0.003) discard;
     o = acc;
@@ -2956,6 +2956,14 @@ void main() {
   vec2 f = m - cell;
   int me = seaAt(cell);
   if (me == 0) discard;
+  // Only a plot on its sea's edge (sealayer.js marks them: b) draws anything here; the rest of the
+  // water leaves at once, before the neighbours are read.
+  {
+    int w = int(uMapSize.x);
+    ivec2 c = ivec2(cell);
+    if (uWrapX > 0.5) c.x = ((c.x % w) + w) % w;
+    if (texelFetch(uSeaPlots, c, 0).b < 0.5) discard;
+  }
   // The nearest edge of the sea (toward any plot not of it: land, another sea, the unknown), with
   // the coordinate along that edge, and the nearest edge toward another sea.
   float dmin = 1.0, dsea = 1.0, along = 0.0, alongSea = 0.0;

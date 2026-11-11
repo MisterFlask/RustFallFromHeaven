@@ -22,6 +22,7 @@ import { texture, upload, Mesh } from "./gl.js";
 import { SEA } from "./world.js";
 import { S, me, isBarbarian } from "../state.js";
 import * as T from "../tiles.js";
+import { plotIndex } from "../tiles.js";
 import { OWN_COLOR, unwrapSegment } from "../supply.js";
 import { outpostLanes, laneMark } from "../lanes.js";
 import { SEA_LOOK, seaLabelLayout, fitNameHeight, placeNames, seaBuoySpot, seaBand, teamColorOf, seaNameAlpha, seaFogRamp, laneCurve, laneParts, LANE_STYLE, BAND } from "../sea.js";
@@ -65,7 +66,10 @@ function canvas2d(w, h) {
 export class SeaLayer {
   constructor(gl) {
     this.gl = gl;
-    this.plane = new Mesh(gl, new Float32Array([0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1]), { aPos: 3 });
+    /** The planes' meshes: a quad over each plot on a sea's edge (the surface), over each plot under
+     *  or next to the fog bank (the fog). */
+    this.edgeMesh = null;
+    this.fogMesh = null;
     /** Textures: per plot its sea (NEAREST), the fog bank (filtered), per sea its band. */
     this.plotsTex = this.fogTex = this.infoTex = this.namesTex = null;
     /** Meshes: the names, the lanes. */
@@ -125,6 +129,37 @@ export class SeaLayer {
       p[i * 4] = (id + 1) & 255;
       p[i * 4 + 1] = (id + 1) >> 8;
     }
+    // A plot with a neighbour (8 ways) of another sea, of the land or of the unknown: the only
+    // plots the surface's fragments go on with (shaders.js SEA_FS).
+    if (ids) {
+      for (let i = 0; i < n; i++) {
+        const id = ids[i] ?? -1;
+        if (id < 0) continue;
+        const x = i % w, y = (i - x) / w;
+        let edge = false;
+        for (let dy = -1; dy <= 1 && !edge; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const j = plotIndex(map, x + dx, y + dy);
+            if ((dx || dy) && (j < 0 ? !map.wrap_y : (ids[j] ?? -1) !== id)) {
+              edge = true;
+              break;
+            }
+          }
+        }
+        if (edge) p[i * 4 + 2] = 255;
+      }
+    }
+    const quads = (want) => {
+      const v = [];
+      for (let i = 0; i < n; i++) {
+        if (!want(i)) continue;
+        const x = i % w, y = (i - x) / w;
+        v.push(x, 0, -y, x + 1, 0, -y, x + 1, 0, -(y + 1), x, 0, -y, x + 1, 0, -(y + 1), x, 0, -(y + 1));
+      }
+      return v.length ? new Mesh(gl, new Float32Array(v), { aPos: 3 }) : null;
+    };
+    this.edgeMesh?.dispose();
+    this.edgeMesh = quads((i) => p[i * 4 + 2] > 0);
     upload(gl, this.plotsTex, p);
     const ramp = seaFogRamp(map);
     const f = new Uint8Array(n * 4);
@@ -137,6 +172,19 @@ export class SeaLayer {
     }
     upload(gl, this.fogTex, f);
     this.hasFog = any;
+    // (The bank is filtered between the plots' centres: the plots next to it too.)
+    const near = (i) => {
+      const x = i % w, y = (i - x) / w;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const j = plotIndex(map, x + dx, y + dy);
+          if (j >= 0 && ramp[j] > 0) return true;
+        }
+      }
+      return false;
+    };
+    this.fogMesh?.dispose();
+    this.fogMesh = any ? quads(near) : null;
     // Per sea: its band's code and colours (shaders.js SEA_FS uSeaInfo).
     const maxId = Math.max(0, ...seas.map((s) => s.id));
     if (!this.infoTex || this.infoTex.w !== maxId + 1) {
@@ -365,23 +413,23 @@ export class SeaLayer {
     gl.colorMask(true, true, true, false);
     gl.enable(gl.POLYGON_OFFSET_FILL);
     gl.polygonOffset(-1, -2);
-    const r = f.rect;
-    const rect = [r.x0 - 1, r.y0 - 1, r.x1 + 1, r.y1 + 1];
     const MU = { ...U, ...scene.mapUniforms(), uExposure: fr.exposure, uCopyX: 0 };
     const p = pl.p.sea;
-    if (f.layer && this.hasFog) {
+    if (f.layer && this.fogMesh) {
       const lift = SEA_LOOK.fog.lift;
       p.use().set(MU).set({
         uMode: 1,
         uLift: SEA + lift,
-        uRect: rect,
         uSeaFog: this.fogTex,
         uSceneND: pl.t.nd,
         uFogCol: rgbOf(SEA_LOOK.fog.color),
         // The bank's depth over open water (view depth: the lift seen along the camera's pitch).
         uFogLook: [SEA_LOOK.fog.alpha, (lift / Math.max(0.2, Math.sin(f.pitch))) * 0.85, 1],
       });
-      this.plane.draw();
+      for (const copy of scene.copies ?? [0]) {
+        p.set({ uCopyX: copy });
+        this.fogMesh.draw();
+      }
     }
     const nameAlpha = this.names ? seaNameAlpha(f.ts, f.layer) : 0;
     if (nameAlpha > 0) {
@@ -412,14 +460,12 @@ export class SeaLayer {
     const f = this.frame;
     const scene = this.scene;
     if (!scene?.world) return;
-    const r = f.rect;
     const focus = f.focus === null || f.focus === undefined ? 0 : f.focus + 1;
     gl.depthFunc(gl.LEQUAL);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     pl.p.sea.use().set({ ...U, ...scene.mapUniforms(), uExposure: fr.exposure, uCopyX: 0 }).set({
       uMode: 0,
       uLift: SEA + NAME_LIFT * 0.5,
-      uRect: [r.x0 - 1, r.y0 - 1, r.x1 + 1, r.y1 + 1],
       uSeaPlots: this.plotsTex,
       uSeaInfo: this.infoTex,
       uBands: f.layer ? 1 : 0,
@@ -427,7 +473,12 @@ export class SeaLayer {
       uBandLook: [SEA_LOOK.band.width, SEA_LOOK.band.alpha],
       uOutline: rgbOf(SEA_LOOK.outline),
     });
-    this.plane.draw();
+    if (this.edgeMesh) {
+      for (const copy of scene.copies ?? [0]) {
+        pl.p.sea.set({ uCopyX: copy });
+        this.edgeMesh.draw();
+      }
+    }
     if (f.layer && this.lanes) {
       const q = pl.p.seaMark;
       q.use().set({ ...U, ...scene.mapUniforms(), uExposure: fr.exposure }).set({ uDisplay: 1, uNames: this.namesTex, uLaneMotion: 0.5 });
@@ -441,7 +492,8 @@ export class SeaLayer {
 
   dispose() {
     const gl = this.gl;
-    this.plane.dispose();
+    this.edgeMesh?.dispose();
+    this.fogMesh?.dispose();
     this.names?.dispose();
     this.lanes?.dispose();
     for (const t of [this.plotsTex, this.fogTex, this.infoTex, this.namesTex]) if (t) gl.deleteTexture(t);
