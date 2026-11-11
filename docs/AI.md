@@ -1008,6 +1008,11 @@ plot falls or the odds turn bad, and moves in.
   whose lane is open (`naval::way_in_range`). Not measured beyond a first count of firings (the
   AI builds few ships before turn 150; docs/NAVAL.md, section 12).
 
+- **Fleets** (docs/NAVAL.md, phase 3, 7.3): the AI's ship groups become fleets through the rules'
+  sync (a ship at sea is a fleet of its own), with no change to its decisions; its armies'
+  logistics (`armies.rs`), tactics and supply telemetry leave fleets out. It gives no standing
+  order and requisitions no ship yet.
+
 - **Overseas sites**: when no site is left on a landmass where we have cities, `sites.rs` also
   scores the coastal plots of other landmasses within 14 plots of our coastal cities.
 - **Settling by sea**: a settler with no site it can walk to goes to the nearest coastal city

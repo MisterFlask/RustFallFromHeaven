@@ -657,3 +657,12 @@ starved, open again; gold from a lane.
 ## 12. Measures
 
 (Each phase adds what its games showed.)
+
+**Phase 3 (fleets), 2026-11-11.** Four 300-turn games (seeds 1-4, 6 civs, standard map,
+`SEALEVEL_HIGH`), counted by a throwaway trace at each AI player's turn: fleets per game at turns
+100 / 200 / 299 (all players): seed 1: 0 / 0 / 3; seed 2: 0 / 4 / 19; seed 3: 0 / 2 / 6; seed 4:
+0 / 1 / 10 (fleet-turns 160, 1038, 421, 531). Warship-turns on Patrol: 0, 218, 16, 96, against 0,
+104, 16, 96 for the phase 2 base (c3194552) on the same games: the AI patrols as before (its
+per-ship decisions are unchanged; the fleets come from the sync). No AI fleet holds a standing order
+and the AI requisitions no ship yet (0 in these games): the AI's patrol and escort decisions are
+moving to `warships.rs`, which is to give them (7.3).
