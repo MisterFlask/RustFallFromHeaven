@@ -1190,6 +1190,10 @@ pub struct SpellInfo {
     /// Leap: the units of the caster's city leap), cast through a unit the player selects rather
     /// than from the empire's world actions (docs/CARDS.md).
     pub cast_from_selection: bool,
+    /// This game's: a spell that is the empire's own action, offered among the top bar's world
+    /// actions rather than on a selected unit, though it is neither `global` nor `once` (naming
+    /// the Tithe's rival, steering the Lanun's storm).
+    pub world_action: bool,
     pub in_borders_only: bool,
     pub in_city_only: bool,
     pub prereq_slave_trade: bool,
@@ -1338,6 +1342,7 @@ pub fn read_spell(rd: &Rd) -> SpellInfo {
         global: rd.bool("global"),
         once: rd.bool("once"),
         cast_from_selection: rd.bool("cast_from_selection"),
+        world_action: rd.bool("world_action"),
         in_borders_only: rd.bool("in_borders_only"),
         in_city_only: rd.bool("in_city_only"),
         prereq_slave_trade: rd.bool("prereq_slave_trade"),

@@ -116,6 +116,7 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         py_requirement: _,
         once,
         cast_from_selection,
+        world_action: _,
         target,
         py_targets: _,
         py_target_label: _,
