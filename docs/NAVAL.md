@@ -686,7 +686,9 @@ selected; a toggle with the other map layers):
   water, and a badge with its state and the two strengths (`HELD: YOU 24 to 0`,
   `CONTESTED 14 to 17`, `HELD: LANUN 0 to 31`, `OPEN`, `OUT OF RANGE`); its water tinted by state
   (the states differ by pattern and lightness, not hue alone). Enemy strength counts only ships
-  the player sees;
+  the player sees, except that a sea closed to the player that is cutting a lane or blockading a
+  port of its now is shown held by its holder (`HELD: LANUN 4 to ?`, the seen part as `7+`, an
+  unknown holder `UNKNOWN`; the panel: `Held by Lanun. Its ships on patrol are not all in sight.`);
 - lanes (phase 4; a supply ship's, phase 2), drawn as supply lines are, flowing to the home port,
   in their owner's colour; a cut lane breaks, with a mark, where it enters the closed sea, with
   the turns left before the outpost starves; lanes of others the player has revealed are drawn too;

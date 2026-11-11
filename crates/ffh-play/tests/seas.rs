@@ -347,3 +347,71 @@ fn a_contested_sea_cuts_no_lane_and_a_lane_cut_elsewhere_names_that_sea() {
     let p = view::seas::sea_panel(&v, &mut finder, w.bay, &[]).expect("a panel");
     assert_eq!(strs(p.get("now"))[0], "Lanes through it: cut here.");
 }
+
+#[test]
+fn an_unseen_holder_blockading_a_port_is_known_as_held() {
+    let mut w = world();
+    // Out of the port's sight: nobody of ours sees it.
+    let ship = w.patrol(w.p1, 10, 0);
+    assert!(!w.v().unit_visible(ship));
+    assert_eq!(s(&view::seas::harbour_json(&w.v(), w.port), "state"), "blockaded");
+    let v = w.v();
+    let e = sea_entry(&v, w.bay).unwrap();
+    assert_eq!(s(&e, "state"), "held");
+    assert_eq!(s(&e, "badge"), format!("HELD: {} 0 to ?", w.them().to_uppercase()));
+    assert_eq!(e.get("inferred").and_then(Json::as_bool), Some(true));
+    let mut finder = PathFinder::new(FinderKind::Path);
+    let p = view::seas::sea_panel(&v, &mut finder, w.bay, &[]).unwrap();
+    assert_eq!(s(&p, "control"), format!("Held by {}", w.them()));
+    assert_eq!(s(&p, "hold"), format!("Held by {}. Its ships on patrol are not all in sight.", w.them()));
+    let port = view::city_name(&w.g, w.port);
+    assert!(strs(p.get("now")).contains(&format!("Your ports on it: blockaded: {port}.")), "{p}");
+    let rows = view::seas::seas_screen(&v);
+    let row = rows.get("seas").and_then(Json::as_arr).unwrap().iter().find(|j| j.get("id").and_then(Json::as_i64) == Some(w.bay.0 as i64)).unwrap().clone();
+    assert_eq!(s(&row, "enemy"), format!("? {}", w.them()));
+    assert_eq!(s(&row, "control"), format!("Held by {}", w.them()));
+}
+
+#[test]
+fn an_unseen_holder_cutting_a_lane_is_known_as_held() {
+    let mut w = world();
+    // The narrows held by a patrol nobody of ours sees; our supply ship there has its lane cut.
+    w.patrol(w.p1, 24, 0);
+    w.unit(w.p0, "UNIT_GALLEON", 13, 1);
+    let v = w.v();
+    let e = sea_entry(&v, w.narrows).unwrap();
+    assert_eq!(s(&e, "badge"), format!("HELD: {} 0 to ?", w.them().to_uppercase()));
+    let mut finder = PathFinder::new(FinderKind::Path);
+    let p = view::seas::sea_panel(&v, &mut finder, w.narrows, &[]).unwrap();
+    assert_eq!(strs(p.get("now"))[0], "Lanes through it: cut here.");
+    // The bay, open, stays open.
+    assert_eq!(s(&sea_entry(&v, w.bay).unwrap(), "badge"), "OPEN");
+}
+
+#[test]
+fn a_closed_sea_that_bites_nothing_shows_only_what_is_seen() {
+    let mut w = world();
+    w.patrol(w.p1, 28, 0);
+    w.patrol(w.p1, 17, 0);
+    let v = w.v();
+    assert_eq!(s(&sea_entry(&v, w.sirens).unwrap(), "badge"), "OUT OF RANGE");
+    let e = sea_entry(&v, w.narrows).unwrap();
+    assert_eq!(s(&e, "badge"), "OPEN", "no lane or port of ours there");
+    assert_eq!(e.get("inferred").and_then(Json::as_bool), Some(false));
+}
+
+#[test]
+fn a_partly_seen_holder_shows_the_seen_part_with_a_plus() {
+    let mut w = world();
+    let ours = w.patrol(w.p0, 3, 0);
+    // One enemy ship seen next to the port, three more out of sight: the bay is closed to us.
+    w.patrol(w.p1, 4, 1);
+    for _ in 0..3 {
+        w.patrol(w.p1, 12, 0);
+    }
+    let v = w.v();
+    let x = w.g.unit_sea_strength_x100(ours) / 100;
+    assert_eq!(w.g.sea_state_known(w.bay, w.g.players[w.p0].team).control, ffh_core::seas::SeaControl::Contested(Some(w.g.players[w.p1].team)), "as seen: contested");
+    let e = sea_entry(&v, w.bay).unwrap();
+    assert_eq!(s(&e, "badge"), format!("HELD: {} {x} to {x}+", w.them().to_uppercase()));
+}

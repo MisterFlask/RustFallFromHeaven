@@ -172,7 +172,8 @@ plain, held by an enemy darker with wide amber stripes, contested with alternati
 stripes, patrolled by a team at peace with you with sparse dots, open and out of range plain --
 and, at its deepest revealed plot, its name in italic serif over a badge: `HELD: YOU 24 to 0`,
 `CONTESTED 14 to 17`, `HELD: LANUN 0 to 31`, `OPEN`, `PATROLLED: LANUN`, `OUT OF RANGE` (yours
-first). Your supply ships' lanes are drawn as supply lines are, from the ship to the port; a cut
+first); a sea closed to you that is cutting a lane or blockading a port of yours shows held even
+with no ship in sight (`HELD: LANUN 4 to ?`, the seen part `7+`; `seas_felt_by`). Your supply ships' lanes are drawn as supply lines are, from the ship to the port; a cut
 lane breaks with a ringed cross where it enters the closed sea and runs on dotted. All of this on
 the flat, isometric and 3D/HD-2D maps (on the 3D map on the interface canvas over the frame).
 Clicking a name or badge opens **the sea's panel**: plots, control and what holding takes (`Held

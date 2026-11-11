@@ -102,25 +102,58 @@ pub struct SeaSummary {
     pub st: SeaState,
     /// The party the control names (none for "you" and for Open).
     pub party: Option<SeaParty>,
+    /// The enemy's strength as shown: `st.theirs`, or for a sea known to be held only by what it
+    /// does to the human (`inferred`) "?" or the seen part with "+" ("7+").
+    pub theirs_text: String,
+    /// Held by an enemy as the human knows from its effect (a lane of its cut or a port of its
+    /// blockaded there now: [`Game::seas_felt_by`]), its ships not all in sight.
+    pub inferred: bool,
 }
 
 /// Sea `s` as the human can work it out (only ships it sees count). Out of range: open, and no
 /// plot of it the human has revealed is in its team's range.
 pub fn summary(v: &Viewer, s: SeaId) -> SeaSummary {
     let g = v.g;
-    let st = g.sea_state_known(s, v.team);
+    let mut st = g.sea_state_known(s, v.team);
+    // A sea closed to the human that cuts a lane or blockades a port of its now is known to it as
+    // held, even with no ship in sight (docs/NAVAL.md 10): the holder named, its strength the
+    // part seen ("?" for none, "7+").
+    let mut inferred = false;
+    let mut theirs_text = st.theirs.to_string();
+    if !st.closed() {
+        if let Some(&(_, holder)) = g.seas_felt_by(v.team).iter().find(|e| e.0 == s) {
+            let seen: i32 = g
+                .sea_patrollers(s)
+                .into_iter()
+                .filter(|&u| v.unit_visible(u))
+                .filter(|&u| {
+                    let t = g.unit_get_team(u);
+                    let hidden = g.unit_is_hidden_nationality(u) && t != v.team;
+                    match holder {
+                        Some(h) => t == h && !hidden,
+                        None => hidden,
+                    }
+                })
+                .map(|u| g.unit_sea_strength_x100(u))
+                .sum::<i32>()
+                / 100;
+            st = SeaState { control: SeaControl::HeldBy(holder), ours: st.ours, theirs: seen };
+            theirs_text = if seen > 0 { format!("{seen}+") } else { "?".to_string() };
+            inferred = true;
+        }
+    }
     let out_of_range = !g.team_sea_exempt(v.team) && !g.map.seas[s.idx()].plots.iter().any(|&q| v.plot_revealed(q) && g.plot_in_sea_range(v.team, q));
     let upper = |p: SeaParty| party_name(v, p).to_uppercase();
     let (state, badge, party) = match st.control {
         SeaControl::HeldByUs => ("held_you", format!("HELD: YOU {} to {}", st.ours, st.theirs), None),
-        SeaControl::HeldBy(p) => ("held", format!("HELD: {} {} to {}", upper(p), st.ours, st.theirs), Some(p)),
+        SeaControl::HeldBy(p) => ("held", format!("HELD: {} {} to {}", upper(p), st.ours, theirs_text), Some(p)),
         SeaControl::Contested(p) => ("contested", format!("CONTESTED {} to {}", st.ours, st.theirs), Some(p)),
         SeaControl::Open if out_of_range => ("out", "OUT OF RANGE".to_string(), None),
         SeaControl::Open => ("open", "OPEN".to_string(), None),
         SeaControl::PatrolledBy(p) => ("patrolled", format!("PATROLLED: {}", upper(p)), Some(p)),
     };
     let control = if state == "out" { "Out of range".to_string() } else { control_text(v, &st) };
-    SeaSummary { state, badge, control, st, party }
+    SeaSummary { state, badge, control, st, party, theirs_text, inferred }
 }
 
 /// The seas the human has revealed a plot of, in id order, each with its revealed plots.
@@ -198,6 +231,8 @@ pub fn seas_json(v: &Viewer) -> Json {
             "control" => sm.control,
             "ours" => sm.st.ours,
             "theirs" => sm.st.theirs,
+            "theirs_text" => sm.theirs_text.clone(),
+            "inferred" => sm.inferred,
             "party" => sm.party.flatten().filter(|&t| t != v.team).map(|t| t.0 as i64),
         });
     }
@@ -559,6 +594,12 @@ pub fn sea_panel(v: &Viewer, finder: &mut PathFinder, s: SeaId, units: &[UnitId]
         SeaControl::HeldBy(_) | SeaControl::Contested(_) => hold.push_str(&format!(" You need {}.", hold_need(g, st.theirs))),
         _ => hold.push_str(" Any warship of yours on Patrol holds it while no enemy patrols."),
     }
+    // Known held by its effect on the human, its ships not all in sight.
+    if sm.inferred {
+        if let SeaControl::HeldBy(p) = st.control {
+            hold = format!("Held by {}. Its ships on patrol are not all in sight.", party_name(v, p));
+        }
+    }
     let sides_json: Vec<Json> = sides
         .iter()
         .map(|(p, x, ships)| {
@@ -776,7 +817,7 @@ pub fn seas_screen(v: &Viewer) -> Json {
         let sm = summary(v, s);
         let seen = plots.iter().any(|&q| v.plot_visible(q));
         let enemy = match sm.party {
-            Some(p) if sm.st.theirs > 0 && !matches!(sm.st.control, SeaControl::PatrolledBy(_)) => format!("{} {}", sm.st.theirs, capital(&party_name(v, p))),
+            Some(p) if (sm.st.theirs > 0 || sm.inferred) && !matches!(sm.st.control, SeaControl::PatrolledBy(_)) => format!("{} {}", sm.theirs_text, capital(&party_name(v, p))),
             _ if !seen => "not seen".to_string(),
             _ => "0".to_string(),
         };

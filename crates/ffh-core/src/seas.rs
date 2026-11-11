@@ -921,3 +921,47 @@ impl Game {
         }
     }
 }
+
+impl Game {
+    /// The seas closed to `team` that are at this moment cutting one of its lanes (an outpost's,
+    /// [`Game::outpost_lane`], or a supply ship's at sea, [`Game::sea_lane`]: the sea the lane is
+    /// cut in) or blockading one of its ports ([`Game::city_harbour`]), each with its holder as
+    /// the team can name it (`None`: ships of hidden nationality), in sea order. The truth, read
+    /// for the client (docs/NAVAL.md 10: a sea that bites a player is known to it as held).
+    pub fn seas_felt_by(&self, team: TeamId) -> Vec<(SeaId, SeaParty)> {
+        let mut seas: Vec<SeaId> = Vec::new();
+        for q in self.player_ids().filter(|&q| self.players[q].team == team) {
+            for &c in &self.players[q].cities {
+                if !self.cities.contains(c) {
+                    continue;
+                }
+                if let Some((s, _)) = self.outpost_lane(c).and_then(|l| l.cut_in) {
+                    seas.push(s);
+                }
+                if let Harbour::Blockaded(held) = self.city_harbour(c) {
+                    seas.extend(held.into_iter().map(|e| e.0));
+                }
+            }
+            for &u in &self.players[q].units {
+                if !self.units.contains(u) || self.units[u].cargo_capacity <= 0 || self.unit_get_domain_type(u) != DomainType::DOMAIN_SEA || self.unit_domain_cargo(u) != Some(DomainType::DOMAIN_LAND) {
+                    continue;
+                }
+                let Some(at) = self.unit_plot_opt(u).filter(|&w| self.plot_is_water(w)) else { continue };
+                if let Some((s, _)) = self.sea_lane(team, at).and_then(|l| l.cut_in) {
+                    seas.push(s);
+                }
+            }
+        }
+        seas.sort();
+        seas.dedup();
+        seas.into_iter()
+            .filter_map(|s| {
+                let holder = self.sea_closed_to(s, team)?;
+                // Hidden nationality: the holder's ships there are all of hidden nationality.
+                let ships: Vec<UnitId> = self.sea_patrollers(s).into_iter().filter(|&u| self.unit_get_team(u) == holder).collect();
+                let hidden = holder != team && !ships.is_empty() && ships.iter().all(|&u| self.unit_is_hidden_nationality(u));
+                Some((s, if hidden { None } else { Some(holder) }))
+            })
+            .collect()
+    }
+}
