@@ -499,9 +499,9 @@ fn sea_sides(v: &Viewer, s: SeaId) -> Vec<(SeaParty, i32, Vec<UnitId>)> {
 }
 
 /// Of `lanes` (through sea `s`), those cut in another sea, counted by that sea (in sea order).
-fn cut_elsewhere(s: SeaId, lanes: &[(UnitId, ffh_core::naval::SeaLane)]) -> Vec<(SeaId, usize)> {
+fn cut_elsewhere<'a>(s: SeaId, lanes: impl IntoIterator<Item = &'a ffh_core::naval::SeaLane>) -> Vec<(SeaId, usize)> {
     let mut out: Vec<(SeaId, usize)> = Vec::new();
-    for (_, l) in lanes {
+    for l in lanes {
         if let Some((o, _)) = l.cut_in.filter(|&(o, _)| o != s) {
             match out.iter_mut().find(|e| e.0 == o) {
                 Some(e) => e.1 += 1,
@@ -585,18 +585,21 @@ pub fn sea_panel(v: &Viewer, finder: &mut PathFinder, s: SeaId, units: &[UnitId]
         .collect();
     // Effect now.
     let lanes = g.sea_lanes_through(s, v.team, v.team);
+    // Outposts' lanes (docs/NAVAL.md, 9.3) count as the supply ships' do.
+    let outpost_lanes = g.sea_outpost_lanes_through(s, v.team, v.team);
+    let all_lanes: Vec<&ffh_core::naval::SeaLane> = lanes.iter().map(|e| &e.1).chain(outpost_lanes.iter().map(|e| &e.1)).collect();
     let ports = g.sea_ports(s, v.team);
     let ships_in = supply_ships(v).into_iter().filter(|&u| g.plot_sea(g.unit_plot(u)) == Some(s)).count();
     let mut now = Vec::new();
     // This sea's own effect: a lane is cut here only while this sea is closed to the human; a
     // lane through it cut in another sea is said apart, naming that sea.
-    now.push(match (lanes.is_empty(), st.closed()) {
+    now.push(match (all_lanes.is_empty(), st.closed()) {
         (true, _) => "Lanes through it: none.".to_string(),
         (false, true) => "Lanes through it: cut here.".to_string(),
         (false, false) => "Lanes through it: open.".to_string(),
     });
     if !st.closed() {
-        for (other, n) in cut_elsewhere(s, &lanes) {
+        for (other, n) in cut_elsewhere(s, all_lanes.iter().copied()) {
             now.push(format!("{n} lane{} through it {} cut in {}.", if n == 1 { "" } else { "s" }, if n == 1 { "is" } else { "are" }, sea_name(g, other)));
         }
     }
@@ -629,6 +632,10 @@ pub fn sea_panel(v: &Viewer, finder: &mut PathFinder, s: SeaId, units: &[UnitId]
         for (u, lane) in lanes.iter().filter(|(_, l)| !l.is_cut()) {
             let here = lane.path.iter().filter(|&&q| g.plot_sea(q) == Some(s)).count();
             lines.push(format!("Lane cut: {} to {} ({here} of its {} plots are here).", unit_name(g, *u), port_name(v, lane.port), lane.path.len()));
+        }
+        for (c, lane) in outpost_lanes.iter().filter(|(_, l)| !l.is_cut()) {
+            let here = lane.path.iter().filter(|&&q| g.plot_sea(q) == Some(s)).count();
+            lines.push(format!("Lane cut: outpost {} to {} ({here} of its {} plots are here).", crate::view::city_name(g, *c), port_name(v, lane.port), lane.path.len()));
         }
         let shut = g.sea_ports_blockaded_if_held(s, v.team);
         lines.push(match (shut.is_empty(), ports.is_empty()) {
@@ -786,10 +793,12 @@ pub fn seas_screen(v: &Viewer) -> Json {
                 }
             })
             .collect();
-        let lanes = g.sea_lanes_through(s, v.team, v.team);
+        // The supply ships' lanes and the outposts' (docs/NAVAL.md, 9.3).
+        let outpost_lanes = g.sea_outpost_lanes_through(s, v.team, v.team);
+        let lanes: Vec<ffh_core::naval::SeaLane> = g.sea_lanes_through(s, v.team, v.team).into_iter().map(|e| e.1).chain(outpost_lanes.into_iter().map(|e| e.1)).collect();
         // Cut here only while this sea is closed to the human; lanes cut in another sea apart.
         let closed = sm.st.closed();
-        let elsewhere: usize = if closed { 0 } else { cut_elsewhere(s, &lanes).iter().map(|e| e.1).sum() };
+        let elsewhere: usize = if closed { 0 } else { cut_elsewhere(s, lanes.iter()).iter().map(|e| e.1).sum() };
         let cut = if closed { lanes.len() } else { 0 };
         let open = lanes.len() - cut - elsewhere;
         let mut parts = Vec::new();
