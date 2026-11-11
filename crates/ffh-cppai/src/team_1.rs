@@ -358,7 +358,7 @@ impl Cai {
 
             if targets {
                 if area_cities > (g.teams[t].num_members * 3) {
-                    if g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI)
+                    if crate::defs::AGGRESSIVE_AI
                         || g.is_option(GameOptionType::GAMEOPTION_ALWAYS_WAR)
                         || (g.team_count_power_by_area(t, area) > ((g.team_count_enemy_power_by_area(t, area) * 3) / 2))
                     {
@@ -634,7 +634,7 @@ impl Cai {
 
     /// C++ `int CvTeamAI::AI_startWarVal(TeamTypes eTeam) const` (CvTeamAI.cpp:898-988)
     pub fn team_ai_start_war_val(&self, g: &Game, t: TeamId, team: TeamId) -> i32 {
-        let aggressive = g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI);
+        let aggressive = crate::defs::AGGRESSIVE_AI;
 
         let mut value = self.team_ai_calculate_plot_war_value(g, t, team);
 
@@ -784,7 +784,7 @@ impl Cai {
             value /= 2;
         }
 
-        if g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI) {
+        if crate::defs::AGGRESSIVE_AI {
             let mut our_endangered_cities = 0;
             let mut their_endangered_cities = 0;
 

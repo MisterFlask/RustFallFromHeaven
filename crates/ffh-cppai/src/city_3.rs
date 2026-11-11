@@ -223,10 +223,6 @@ impl Cai {
         let mut target_size = good_tile_count.min(population + (g.city_happy_level(c) - g.city_unhappy_level(c, 0)));
         target_size = target_size.min(1 + population + health);
 
-        if g.players[owner].advanced_start_points >= 0 {
-            target_size += 2;
-        }
-
         if bonus_food_diff < 2 {
             food_multiplier += 10 * (2 - bonus_food_diff);
         }

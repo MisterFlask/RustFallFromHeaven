@@ -66,7 +66,7 @@ export function setRendererChoice(r) {
   }
 }
 
-/** The art kinds and the `/api/data` tables that name their indices (also the art worker's). */
+/** The art kinds and the `/api/data` tables that name their indices. */
 export const KIND_TABLES = {
   terrain: "TerrainType",
   feature: "FeatureType",

@@ -262,7 +262,7 @@ fn donal_recruits_once_in_a_big_city() {
     assert!(!g.unit_can_cast(home, recruit, false), "the Recruiter promotion is spent");
 }
 
-/// A temporary summon on its last turn (`SUMMON_SPEND`) throws itself at a fight it cannot win,
+/// A temporary summon on its last turn throws itself at a fight it cannot win,
 /// unless it is its stack's cover: an enemy can strike the plot next turn and the units it stands
 /// with defend worse than it does.
 #[test]
@@ -270,7 +270,8 @@ fn a_summon_on_its_last_turn_spends_itself_unless_it_is_cover() {
     let d = ffh_data::global();
     let mut g = one_landmass_game(16);
     let (us, them) = (PlayerId(0), PlayerId(1));
-    if !magic::enabled(&g, us) || !ffh_ai::switches::SUMMON_SPEND.on(&g, us) {
+    if !magic::enabled(&g, us) {
+        // FFH_AI_MAGIC_OFF names our civilization: nothing to test.
         return;
     }
     g.player_found(us, 3, 5);
@@ -300,16 +301,13 @@ fn a_summon_on_its_last_turn_spends_itself_unless_it_is_cover() {
     assert!(fought, "the Puppet spends itself on the Champion");
 }
 
-/// Mana nodes (`MANA_NODES`): raw mana in our city's radius is a job for a caster, which goes to
+/// Mana nodes: raw mana in our city's radius is a job for a caster, which goes to
 /// build the node type worth most.
 #[test]
 fn a_caster_builds_a_mana_node_on_our_raw_mana() {
     let d = ffh_data::global();
     let mut g = one_landmass_game(17);
     let us = PlayerId(0);
-    if !ffh_ai::switches::MANA_NODES.on(&g, us) {
-        return;
-    }
     g.player_found(us, 5, 5);
     let team = g.players[us].team;
     for name in ["TECH_MYSTICISM", "TECH_KNOWLEDGE_OF_THE_ETHER", "TECH_DIVINATION"] {
@@ -332,15 +330,12 @@ fn a_caster_builds_a_mana_node_on_our_raw_mana() {
     assert_eq!(build, Some(jobs[0].1.i()), "the node's build is queued");
 }
 
-/// Govannon (`TEACH_SPELLS`) teaches his first-level spheres to the units he stands with.
+/// Govannon teaches his first-level spheres to the units he stands with.
 #[test]
 fn govannon_teaches_his_spheres_to_the_garrison() {
     let d = ffh_data::global();
     let mut g = one_landmass_game(19);
     let us = PlayerId(0);
-    if !ffh_ai::switches::TEACH_SPELLS.on(&g, us) {
-        return;
-    }
     g.player_found(us, 5, 5);
     let warriors: Vec<UnitId> = (0..3).map(|_| g.player_init_unit(us, d.t::<UnitType>("UNIT_WARRIOR"), 5, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None)).collect();
     let gov = g.player_init_unit(us, d.t::<UnitType>("UNIT_GOVANNON"), 5, 5, Some(UnitAIType::UNITAI_HERO), None);
@@ -355,33 +350,13 @@ fn govannon_teaches_his_spheres_to_the_garrison() {
     assert_eq!(magic::teach_value(&g, gov, here), 0, "nothing left to teach here");
 }
 
-/// Sanctuary and March of the Trees wait for a war we are losing (`WS_LOSING_WAR`, off by
-/// default; the rule itself is tested here).
-#[test]
-fn defensive_world_spells_wait_for_a_losing_war() {
-    let mut g = one_landmass_game(19);
-    let (us, them) = (PlayerId(0), PlayerId(1));
-    g.player_found(us, 3, 5);
-    g.player_found(them, 16, 5);
-    g.players[us].power = 100;
-    g.players[them].power = 200;
-    assert!(!ffh_ai::world_spells::losing_war(&g, us), "at peace");
-    let (ut, tt) = (g.players[us].team, g.players[them].team);
-    g.team_declare_war(ut, tt, true, None);
-    g.players[us].power = 100;
-    g.players[them].power = 200;
-    assert!(ffh_ai::world_spells::losing_war(&g, us), "their power is twice ours");
-    g.players[them].power = 140;
-    assert!(!ffh_ai::world_spells::losing_war(&g, us), "1.4 times ours is a war we can hold");
-}
-
 #[test]
 fn an_apprentice_stays_home_and_casters_step_only_beside_our_units() {
     let d = ffh_data::global();
     let mut g = one_landmass_game(17);
     let (us, them) = (PlayerId(0), PlayerId(1));
-    if !magic::school(&g, us) {
-        // FFH_AI_CASTER_SCHOOL_OFF names our civilization: nothing to test.
+    if !magic::enabled(&g, us) {
+        // FFH_AI_MAGIC_OFF names our civilization: nothing to test.
         return;
     }
     g.player_found(us, 4, 5);
@@ -419,7 +394,8 @@ fn a_fireball_does_nothing_to_a_fire_elemental() {
     let d = ffh_data::global();
     let mut g = one_landmass_game(17);
     let (us, them) = (PlayerId(0), PlayerId(1));
-    if !magic::enabled(&g, us) || !ffh_ai::switches::BARRAGE.on(&g, us) {
+    if !magic::enabled(&g, us) {
+        // FFH_AI_MAGIC_OFF names our civilization: nothing to test.
         return;
     }
     g.player_found(us, 3, 5);
@@ -443,7 +419,8 @@ fn the_barrage_softens_the_stack_at_our_gates_before_our_units_move() {
     let d = ffh_data::global();
     let mut g = one_landmass_game(19);
     let (us, them) = (PlayerId(0), PlayerId(1));
-    if !magic::enabled(&g, us) || !ffh_ai::switches::BARRAGE.on(&g, us) {
+    if !magic::enabled(&g, us) {
+        // FFH_AI_MAGIC_OFF names our civilization: nothing to test.
         return;
     }
     g.player_found(us, 4, 5);
@@ -502,7 +479,8 @@ fn a_besieged_city_gets_its_wall_of_stone() {
     let d = ffh_data::global();
     let mut g = one_landmass_game(21);
     let (us, them) = (PlayerId(0), PlayerId(1));
-    if !magic::enabled(&g, us) || !ffh_ai::switches::CITY_SPELL_THREAT.on(&g, us) {
+    if !magic::enabled(&g, us) {
+        // FFH_AI_MAGIC_OFF names our civilization: nothing to test.
         return;
     }
     g.player_found(us, 4, 5);
@@ -528,7 +506,8 @@ fn a_mage_hastes_its_marching_stack_unless_a_catapult_holds_it_back() {
     let d = ffh_data::global();
     let mut g = one_landmass_game(22);
     let us = PlayerId(0);
-    if !magic::enabled(&g, us) || !ffh_ai::switches::HASTE_MARCH.on(&g, us) {
+    if !magic::enabled(&g, us) {
+        // FFH_AI_MAGIC_OFF names our civilization: nothing to test.
         return;
     }
     g.player_found(us, 3, 5);

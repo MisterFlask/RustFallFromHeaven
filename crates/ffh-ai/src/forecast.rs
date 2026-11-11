@@ -19,15 +19,16 @@
 //! rules let the attack meet (never an invisible unit); a defense sees the enemy units the AI's
 //! threat assessment sees ([`crate::view::known_threat`]).
 //!
-//! Pure and deterministic; nothing here changes a decision yet: the AI acts on `combat_sim`, and
-//! these estimates are recorded beside its own in the prediction ledger (`predict.rs`). The
+//! Pure and deterministic. The AI's attack decisions read it (switch `FORECAST`: the field rule
+//! in `military.rs`, the strike in `campaign.rs`, through [`decide_turn`]), and every estimate is
+//! recorded beside `combat_sim`'s in the prediction ledger (`predict.rs`). The
 //! [`Cache`] (one per player and turn, kept by the controller and lent to the [`crate::view::View`])
 //! remembers the forecasts of the turn by their inputs and a fingerprint of the state they read.
 
 use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
 
-use ffh_core::engagement::{Forecast, ForecastSight, ForecastTurn, Side};
+use ffh_core::engagement::{Forecast, ForecastSight, ForecastTurn, Side, WarTest};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_data::*;
@@ -95,6 +96,9 @@ pub struct Cache {
     /// Forecasts asked for, and played (not found in the cache).
     pub calls: Cell<i64>,
     pub played: Cell<i64>,
+    /// The game turn the incoming-attack estimate was last recorded (`predict::incoming`: once
+    /// per player-turn).
+    pub incoming_turn: Cell<Option<i32>>,
 }
 
 impl Cache {
@@ -148,17 +152,24 @@ pub type Attacks = Vec<(Vec<UnitId>, PlotIdx)>;
 /// apply the AI's own), through `cache` when given. `None`: refused (no attacker could, nobody
 /// to fight).
 pub fn forecast(g: &Game, cache: Option<&Cache>, attackers: &[UnitId], from: PlotIdx, target: PlotIdx, extras: &[UnitId], runs: i32, when: ForecastTurn) -> Option<Forecast> {
-    forecast_in(g, cache, false, &[(attackers.to_vec(), from)], target, extras, runs, when)
+    forecast_in(g, cache, false, &[(attackers.to_vec(), from)], target, extras, runs, when, WarTest::AtWar)
 }
 
 /// The rules' forecast of the battles `attacks` fight on `target` one after another in a turn
 /// (each group's pool, then its reserve: [`Game::engage_forecast_waves`]), against what stands
 /// there plus `extras`; as [`forecast`] otherwise.
 pub fn forecast_turn(g: &Game, cache: Option<&Cache>, attacks: &[(Vec<UnitId>, PlotIdx)], target: PlotIdx, extras: &[UnitId], runs: i32, when: ForecastTurn) -> Option<Forecast> {
-    forecast_in(g, cache, true, attacks, target, extras, runs, when)
+    forecast_in(g, cache, true, attacks, target, extras, runs, when, WarTest::AtWar)
 }
 
-fn forecast_in(g: &Game, cache: Option<&Cache>, waves: bool, attacks: &[(Vec<UnitId>, PlotIdx)], target: PlotIdx, extras: &[UnitId], runs: i32, when: ForecastTurn) -> Option<Forecast> {
+/// [`forecast_turn`] under `war` ([`WarTest::DeclareWar`]: the battles once that war is declared,
+/// for an attack weighed before the declaration: `invasion.rs`).
+pub fn forecast_turn_war(g: &Game, cache: Option<&Cache>, attacks: &[(Vec<UnitId>, PlotIdx)], target: PlotIdx, extras: &[UnitId], runs: i32, when: ForecastTurn, war: WarTest) -> Option<Forecast> {
+    forecast_in(g, cache, true, attacks, target, extras, runs, when, war)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn forecast_in(g: &Game, cache: Option<&Cache>, waves: bool, attacks: &[(Vec<UnitId>, PlotIdx)], target: PlotIdx, extras: &[UnitId], runs: i32, when: ForecastTurn, war: WarTest) -> Option<Forecast> {
     // Canonical inputs: the same units in any order are the same battle.
     let mut seen: Vec<UnitId> = Vec::new();
     let mut att: Vec<(Vec<UnitId>, PlotIdx)> = Vec::new();
@@ -179,7 +190,7 @@ fn forecast_in(g: &Game, cache: Option<&Cache>, waves: bool, attacks: &[(Vec<Uni
     ext.dedup();
     let play = || {
         if waves {
-            g.engage_forecast_waves(&att, target, &ext, runs, ForecastSight::Defender, when).ok()
+            g.engage_forecast_waves_war(&att, target, &ext, runs, ForecastSight::Defender, when, war).ok()
         } else {
             g.engage_forecast_if(&att[0].0, att[0].1, target, &ext, runs, ForecastSight::Defender, when).ok()
         }
@@ -188,6 +199,9 @@ fn forecast_in(g: &Game, cache: Option<&Cache>, waves: bool, attacks: &[(Vec<Uni
     cache.calls.set(cache.calls.get() + 1);
     let mut key: Vec<u32> = Vec::with_capacity(seen.len() + ext.len() + 2 * att.len() + 4);
     key.extend([waves as u32 + 2 * (when == ForecastTurn::Next) as u32, target.0, runs as u32]);
+    if let WarTest::DeclareWar(t) = war {
+        key.extend([u32::MAX - 2, t.0 as u32]);
+    }
     for (u, from) in &att {
         key.push(from.0);
         key.extend(u.iter().map(|x| x.0));
@@ -259,6 +273,38 @@ pub fn assault(g: &Game, cache: Option<&Cache>, attacks: &[(Vec<UnitId>, PlotIdx
     attack_turn(g, cache, attacks, g.city_plot(city))
 }
 
+/// Battles played in a decision's first look ([`decide_turn`]): a third of [`RUNS`]. The
+/// forecast's seed does not depend on the runs, so these are the first runs of the full one.
+pub const FAST_RUNS: i32 = 20;
+/// A first look whose `p_take` is this close to one of the decision's bars (per mille; about two
+/// standard errors of a 20-run estimate of a 50% chance) is played again with [`RUNS`].
+pub const RECHECK_MARGIN: i32 = 200;
+
+/// The forecast an attack decision reads (switch `FORECAST`): the battles `attacks` fight on
+/// `target` this turn ([`attack_turn`]'s, with the whole forecast), played with [`FAST_RUNS`]
+/// first and again with [`RUNS`] when the chance the plot falls is within [`RECHECK_MARGIN`] of
+/// one of `bars` (per mille). `None` as [`attack_turn`]. With telemetry on, `checked` gets the
+/// full forecast's `p_take` too (to count the first looks the full one would have overturned).
+pub fn decide_turn(g: &Game, cache: Option<&Cache>, attacks: &[(Vec<UnitId>, PlotIdx)], target: PlotIdx, bars: &[i32], checked: Option<&Cell<i32>>) -> Option<Forecast> {
+    let &u = attacks.iter().flat_map(|a| a.0.iter()).next()?;
+    let team = g.players[g.units[u].owner].team;
+    if !crate::view::sees_units(g, team, target) {
+        return None;
+    }
+    let fast = forecast_turn(g, cache, attacks, target, &[], FAST_RUNS, ForecastTurn::Now)?;
+    let near = bars.iter().any(|&b| (fast.falls_permille - b).abs() < RECHECK_MARGIN);
+    if near || checked.is_some() {
+        let full = forecast_turn(g, cache, attacks, target, &[], RUNS, ForecastTurn::Now);
+        if let (Some(c), Some(f)) = (checked, full.as_ref()) {
+            c.set(f.falls_permille);
+        }
+        if near {
+            return full;
+        }
+    }
+    Some(fast)
+}
+
 /// The defensive forecast of one of our cities ([`holds`]). Chances in per mille.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Hold {
@@ -298,7 +344,7 @@ struct Stack {
 /// Can enemy unit `u` take part in an attack on our city (as `p` sees it)? A unit we see, of a
 /// team at war with us, a land unit able to attack, not an animal (animals do not enter owned
 /// land), not a garrison staying in its own city.
-fn raider(g: &Game, p: PlayerId, u: UnitId) -> bool {
+pub(crate) fn raider(g: &Game, p: PlayerId, u: UnitId) -> bool {
     let team = g.players[p].team;
     let unit = &g.units[u];
     let their = g.players[unit.owner].team;

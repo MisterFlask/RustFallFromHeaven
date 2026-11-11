@@ -129,11 +129,11 @@ function packBuckets(list) {
 
 export class Scene {
   /** `skipMaterials`: material layers a mode fills itself (not painted here; Map3D replacedMaterials).
-   *  `noiseTex`: the format of the value noise's hash texture ("r8", "r16f") when the programs are
-   *  compiled with NOISE_TEX (Map3D.sceneDefines), else null. */
-  constructor(gl, { skipMaterials = null, noiseTex = null } = {}) {
+   *  `noiseTex`: whether the programs are compiled with NOISE_TEX (Map3D.sceneDefines): the value
+   *  noise's hash texture is then made. */
+  constructor(gl, { skipMaterials = null, noiseTex = false } = {}) {
     this.gl = gl;
-    this.noiseHash = noiseTex ? noiseHashTexture(gl, noiseTex) : null;
+    this.noiseHash = noiseTex ? noiseHashTexture(gl) : null;
     this.dabHash = noiseTex ? dabHashTexture(gl) : null;
     this.terrain = new TerrainMeshes(gl);
     this.tex = new MapTextures(gl);

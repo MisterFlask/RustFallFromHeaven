@@ -246,7 +246,6 @@ pub fn unhappy_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
     step(&mut out, "defied resolution", Some(g.city_defy_resolution_percent_anger(c, 0)), 0);
     step(&mut out, "war weariness", Some(g.city_war_weariness_percent_anger(c)), 0);
     step(&mut out, "being a vassal", None, g.city_vassal_unhappiness(c).max(0));
-    step(&mut out, "espionage", None, city.espionage_happiness_counter.max(0));
     step(&mut out, "revolt pressure", None, g.city_culture_unhappiness(c));
     for civic in d.civics.keys() {
         let label = format!("wants {}", crate::names::display(d, civic));
@@ -377,7 +376,7 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         // and the empire's own, the processes' share of production, all times the modifier. The
         // parts are whole points (rounded down), so they can fall short of the rate by a point.
         let mut parts = commerce_parts(g, c, k);
-        if k == CommerceType::COMMERCE_CULTURE && g.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
+        if k == CommerceType::COMMERCE_CULTURE {
             let spy = commerce_parts(g, c, CommerceType::COMMERCE_ESPIONAGE);
             for (a, b) in parts.iter_mut().zip(spy) {
                 *a += b;

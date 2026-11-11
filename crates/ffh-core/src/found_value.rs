@@ -94,17 +94,9 @@ impl Game {
         let area = area_of(self, plot);
         let num_area_cities = self.map.areas[area].cities_per_player[p];
 
-        let mut advanced_start = pl.advanced_start_points >= 0;
         // BETTER AI (Better City Placement) Sephi: adjust free first City selection
-        if !starting_loc && !advanced_start && !(pl.num_cities() == 0) && !is_coastal && num_area_cities == 0 {
+        if !starting_loc && !(pl.num_cities() == 0) && !is_coastal && num_area_cities == 0 {
             return 0;
-        }
-
-        if advanced_start {
-            debug_assert!(self.is_option(GameOptionType::GAMEOPTION_ADVANCED_START));
-            if starting_loc {
-                advanced_start = false;
-            }
         }
 
         // Explaination of city site adjustment:
@@ -207,7 +199,7 @@ impl Game {
                             // (As in BtS this `else` branch is only reached by fresh-water or
                             // hills plots.)
                             if self.plot_get_team(lp) == Some(team) && (self.plot_is_city_radius(lp) || site_radius) {
-                                bad_tile += if advanced_start { 2 } else { 1 };
+                                bad_tile += 1;
                             }
                         }
                     }
@@ -258,9 +250,7 @@ impl Game {
 
         let mut greed = 100;
 
-        if advanced_start {
-            greed = 150;
-        } else if !starting_loc {
+        if !starting_loc {
             for t in d.traits.keys() {
                 if pl.traits[t] {
                     // Greedy founding means getting the best possible sites - fitting maximum
@@ -688,11 +678,6 @@ impl Game {
             }
         }
 
-        if advanced_start && self.plot_get_bonus_type(plot, None).is_some() {
-            value = value.wrapping_mul(70);
-            value /= 100;
-        }
-
         let barbarian = self.player_is_barbarian(p);
         let nearest_city = self.map_find_city(x, y, if barbarian { None } else { Some(p) }, None, true, false, None, None, None);
 
@@ -735,7 +720,7 @@ impl Game {
                     // is computed here but never used; the boost uses the nearest city's distance.
 
                     debug_assert!(max_distance_from_capital > 0);
-                    let boost = if advanced_start { 80 } else { 50 };
+                    let boost = 50;
                     value = value.wrapping_mul(100 + (boost * max(0, max_distance_from_capital - distance)) / max_distance_from_capital);
                     value /= 100;
                 }
@@ -806,10 +791,7 @@ impl Game {
         }
 
         if !starting_loc {
-            let mut dead_lock_count = count_deadlocked_bonuses(self, p, plot);
-            if advanced_start && dead_lock_count > 0 {
-                dead_lock_count += 2;
-            }
+            let dead_lock_count = count_deadlocked_bonuses(self, p, plot);
             value /= 1 + dead_lock_count;
         }
 

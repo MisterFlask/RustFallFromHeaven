@@ -82,8 +82,7 @@ pub fn techs(v: &Viewer) -> Json {
                     "buildings" => ids(&un.buildings),
                     "builds" => ids(&un.builds),
                     "civics" => ids(&un.civics),
-                    // With "pick religion" the founder chooses which (the help says "a Religion").
-                    "religions" => if g.is_option(GameOptionType::GAMEOPTION_PICK_RELIGION) { Json::Arr(Vec::new()) } else { ids(&un.religions) },
+                    "religions" => ids(&un.religions),
                 }
             },
         }

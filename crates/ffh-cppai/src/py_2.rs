@@ -1508,7 +1508,7 @@ impl Cai {
                     chance = g.player_ai_get_attitude(p2, p, true).i() * 5;
                     if chance > 0 {
                         chance = chance - (g.player_ai_get_attitude(p2, victim, true).i() * 5) - 10;
-                        if !g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI) {
+                        if !crate::defs::AGGRESSIVE_AI {
                             chance -= 10;
                         }
                         if chance > 0 {

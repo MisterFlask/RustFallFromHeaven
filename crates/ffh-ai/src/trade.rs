@@ -178,7 +178,7 @@ pub fn deal_val(g: &Game, p: PlayerId, other: PlayerId, list: &[TradeData], igno
 pub fn item_value(g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<i32> {
     let (to, from) = if p_gets { (p, other) } else { (other, p) };
     match item.item_type {
-        TradeableItem::TRADE_PEACE_TREATY => Some(crate::diplomacy::end_war_val_seen(g, p, g.players[to].team, g.players[from].team)),
+        TradeableItem::TRADE_PEACE_TREATY => Some(crate::diplomacy::end_war_val_seen(g, g.players[to].team, g.players[from].team)),
         TradeableItem::TRADE_TECHNOLOGIES | TradeableItem::TRADE_RESOURCES | TradeableItem::TRADE_GOLD | TradeableItem::TRADE_GOLD_PER_TURN | TradeableItem::TRADE_WAR => {
             Some(deal_val(g, to, from, std::slice::from_ref(item), false, 1))
         }

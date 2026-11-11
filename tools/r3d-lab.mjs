@@ -8,7 +8,7 @@
 //   node tools/r3d-lab.mjs --shots shots.json      many shots: [{"out": "a.png", "query": "..."}]
 //   node tools/r3d-lab.mjs --serve [--port 8650]   just serve (open /lab/lab.html in a browser)
 //   node tools/r3d-lab.mjs --stability [--query "scene=showcase&ts=96"] [--shift 4]
-//        [--configs 'plain;{"animate":false};{"animate":false,"kuwahara":0}']
+//        [--configs 'plain;{"animate":false}']
 //     temporal stability under panning: renders the frame, pans the camera by `shift` pixels and
 //     renders again; a stable image is the first one shifted (up to parallax). Prints, per
 //     configuration, the mean difference (0-255) at the best shift and the share of pixels off by
@@ -186,7 +186,7 @@ async function capture(browser) {
 async function stability(browser) {
   const shift = Number(args.shift ?? 4);
   const q = args.query ?? "scene=showcase&ts=96";
-  const configs = (args.configs ?? 'plain;{"animate":false};{"animate":false,"kuwahara":0}').split(";");
+  const configs = (args.configs ?? 'plain;{"animate":false}').split(";");
   for (const cfg of configs) {
     const page = await browser.newPage({ viewport: { width: Number(args.w ?? 900), height: Number(args.h ?? 600) } });
     await page.goto(`${base}/lab/lab.html?${q}&r3d=${encodeURIComponent(cfg)}&force3d=1`);

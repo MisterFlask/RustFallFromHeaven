@@ -1,8 +1,7 @@
 // GLSL of the 3D renderer (docs/R3D.md "Shaders"). The scene passes (terrain, props, water,
 // rivers, shadows) write three targets -- lit colour (linear HDR, alpha = "keep sharp"), view
 // normal + linear depth (+ object id), emission -- and the post passes turn them into the painted
-// frame: ambient occlusion, glow, tone mapping, the anisotropic Kuwahara filter, ink outlines and
-// the grade. The strategic overlays (borders, rings, selection, paths) draw after the post passes,
+// frame: ambient occlusion, glow, tone mapping and the grade. The strategic overlays (borders, rings, selection, paths) draw after the post passes,
 // so no filter smears them.
 //
 // World-anchored detail: every procedural pattern on the ground is a function of the map point
@@ -27,7 +26,6 @@ uniform vec3 uGroundColor;
 uniform vec3 uHazeColor;
 uniform vec3 uShadowTint;
 uniform float uWrapLight;
-uniform float uBands;
 uniform float uRim;
 uniform float uPaint;
 uniform float uHaze;
@@ -289,19 +287,15 @@ float shadowAt(vec3 wp, vec3 n) {
   return s / 12.0 * mix(1.0, t / 6.0, uTerrainShadow);
 }
 
-// The painterly light model: a wrapped, softly stepped sun term (broad light masses), coloured
-// shadows from a cool sky ambient, the local light pools (cities, lava, mana) and the occlusion.
+// The painterly light model: a wrapped sun term (broad light masses), coloured shadows from a
+// cool sky ambient, the local light pools (cities, lava, mana) and the occlusion.
 // Returns the light to multiply the albedo by; 'sun' is the sun term (for highlights).
-// 'jit' is a brush mark's tone (about -0.5..0.5, 0 for none): it pushes the sun term before the
-// band, so where light turns to shade the boundary is laid in dabs and strokes, each one light or
-// dark, instead of a smooth gradient -- the place a painter's brushwork shows most.
+// 'jit' is a brush mark's tone (about -0.5..0.5, 0 for none): it pushes the sun term, so where
+// light turns to shade the boundary is laid in dabs and strokes, each one light or dark, instead
+// of a smooth gradient -- the place a painter's brushwork shows most.
 vec3 lightAtJ(vec3 n, vec3 wp, float ao, float jit, out float sun) {
   float ndl = dot(n, uSunDir);
   float d = clamp((ndl + uWrapLight) / (1.0 + uWrapLight) + jit, 0.0, 1.0);
-  // The light-mass band: a lower threshold so a slope turned from the (now higher) sun keeps a
-  // readable value instead of being crushed near-black (F1).
-  float stepped = smoothstep(0.16, 0.56, d) * 0.82 + d * 0.18;
-  d = mix(d, stepped, uBands);
   float sh = shadowAt(wp, n);
   // The same marks break a cast shadow's soft edge (flecks of sun in the shade, shade in the sun);
   // fully lit and fully shaded ground are untouched.
@@ -658,10 +652,6 @@ uniform sampler2D uOwner;
 // The ground's materials (materials.js): rgb albedo, a height; and each layer's mean albedo.
 uniform highp sampler2DArray uMat;
 uniform vec3 uMatMean[16];
-#ifdef TERRAIN_DISSOLVE
-// The swap's progress from the stand-in to this terrain (Pipeline.render): 0 to 1, 1 once over.
-uniform float uDissolve;
-#endif
 ${SCENE_OUT}
 const int M_GRASS = ${MAT.GRASS}, M_STRAW = ${MAT.STRAW}, M_DIRT = ${MAT.DIRT}, M_SOIL = ${MAT.SOIL}, M_GRAIN = ${MAT.GRAIN},
   M_VEG = ${MAT.VEG}, M_NOISE = ${MAT.NOISE}, M_SAND = ${MAT.SAND}, M_LICHEN = ${MAT.LICHEN}, M_SNOW = ${MAT.SNOW},
@@ -675,8 +665,8 @@ const int F_NONE = 0, F_FOREST = 1, F_JUNGLE = 2, F_ANCIENT = 3, F_BURNT = 4, F_
   F_BLIZZARD = 13, F_SOULS = 14, F_FALLOUT = 15;
 
 #ifdef STANDIN_FLAT
-// The stand-in ground (hd2d/config.js TERRAIN_STANDIN; the HD-2D map's ground, docs/HD2D.md §5b, and
-// the full terrain's stand-in while that compiles, docs/R3D.md §11.1 "Two stages"): every value noise
+// The stand-in ground (hd2d/config.js TERRAIN_STANDIN; the HD-2D map's ground, docs/HD2D.md §5b,
+// once the full terrain's stand-in while that compiled): every value noise
 // of the ground's painting stands at its mean, so
 // the compiler folds the painting's masses, patches and drifts, the warp of the plots' blend and the
 // road edge's wobble down to each ground's mean tones under its material's pixel art. (The light's
@@ -1188,13 +1178,6 @@ void paintFeature(int f, float wk, vec3 alb, vec2 m, inout vec3 fa, inout vec3 e
 
 void main() {
   oLink = vec4(0.0);
-#ifdef TERRAIN_DISSOLVE
-  // While the stand-in (drawn first, STANDIN_*) gives way to this terrain, the quads whose hash is
-  // past the swap's progress keep the stand-in's colour: the packed target cannot blend, and a
-  // dissolve in screen space holds while the camera moves. A whole 2 x 2 quad at a time, so the
-  // derivatives below stay defined in the quads drawn.
-  if (uDissolve < 1.0 && hash12(floor(gl_FragCoord.xy * 0.5)) >= uDissolve) discard;
-#endif
   vec3 n = normalize(vNormal);
   vec2 m = mapOf(vWorld);
   float h = vWorld.y;
@@ -1536,15 +1519,8 @@ void main() {
 #endif
 
   // Painter's pigment: a broad hue/value drift that keeps large areas from reading flat.
-#ifdef LEAN_PIGMENT
-  // The drifts from the borders' broad warp noises (0.45 a plot; their own were 0.35, 0.25): tried
-  // for the lean terrain and not taken -- a fifth of a still a shade lighter, for two noises.
-  float pig = wn.y - 0.5;
-  float warm = wn.x;
-#else
   float pig = mnoise(m, 0.35) - 0.5;
   float warm = mnoise(m + 50.0, 0.25);
-#endif
   alb *= 1.0 + uPaint * pig * 0.35;
   alb = mix(alb, alb * vec3(1.05, 0.97, 0.9), uPaint * smoothstep(0.3, 0.8, warm) * 0.6);
 
@@ -1734,11 +1710,7 @@ void main() {
     tone *= tone < 0.0 ? mix(leaves ? 0.35 : 0.25, 1.0, 1.0 - smoothstep(0.4, 0.85, d0)) : mix(leaves ? 0.5 : 0.4, 1.0, smoothstep(0.05, 0.45, d0));
     jit = tone * (leaves ? 0.95 : 0.75);
     alb *= 1.0 + tone * 0.6;
-#ifdef NO_STROKES
-  } else if (false) {
-#else
   } else if (uBrush > 0.0 && kind != 4 && kind != 6) {
-#endif
     tone = strokeMarks(po, nO, dpo) * uBrush * (1.0 - 0.6 * vTeam.a) * (1.0 + matte);
     // On a matte prop a dark mark fades where the plane already turns from the sun, and no mark
     // goes past a bound: the doubled strokes would otherwise sink a tower's shaded flank into a
@@ -1830,9 +1802,8 @@ void main() {
   oColor = vec4(col, blade ? 1.0 : max(vTeam.a, crown ? 0.45 * uBrush : 0.0));
   vec3 vn = normalize((uView * vec4(nG, 0.0)).xyz);
   oND = vec4(vn, -(uView * vec4(vWorld, 1.0)).z);
-  // Crowns write their object id negated: the ink pass (FINISH_FS) merges one crown's lobes into
-  // a single mass by it and keeps crown against crown in a wood a light line. (Units keep theirs:
-  // the x-ray ghost (GHOST_FS) knows a figure's own surface by it.)
+  // Crowns write their object id negated (it was the retired ink outlines' cue to merge a crown's
+  // lobes). Units keep theirs: the x-ray ghost (GHOST_FS) knows a figure's own surface by it.
   oEmit = vec4(emit * smoothstep(0.5, 0.9, vVis), crown ? -max(vTint.a, 0.003) : vTint.a);
 }`;
 
@@ -1921,7 +1892,7 @@ ${SCENE_OUT}
 // toward the north-north-west.
 const vec2 SWELL = vec2(-0.514, 0.857);
 
-#if defined(GRAD_NORMALS) || defined(GRAD_NORMALS_RIVER)
+#ifdef GRAD_NORMALS
 // (The HD-2D mode, Map3D.waterDefines.) pnoise with its gradient over p, from the one set of corner
 // hashes: the waves' normals from three noises with their slopes instead of nine noises (each
 // height taken three times, a finite difference): a third of the noise Direct3D's shader compiler
@@ -1988,16 +1959,6 @@ vec3 mstrokeD(vec2 m, float f, float stretch) {
 // seaH and its gradient over p.
 vec3 seaHD(vec2 p, float t) {
   return mstrokeD(p - SWELL * t * 0.08, 2.6, 4.5) * 0.9 + mnoiseD(p + vec2(t * 0.05, t * 0.035), 3.2) * 0.55 + mnoiseD(p + vec2(-t * 0.04, t * 0.06), 7.0) * 0.3;
-}
-#endif
-#ifdef GRAD_NORMALS_RIVER
-// riverH and its gradient over (u, s).
-vec3 riverHD(float u, float s, float t) {
-  float mid = 1.0 - u * u;
-  vec3 a = PNOISE_D(vec2(u * 2.2, s * 3.2 - t * 1.6), vec2(4096.0));
-  vec3 b = PNOISE_D(vec2(u * 4.5 + 7.0, s * 7.5 - t * 1.1), vec2(4096.0));
-  float wa = 0.3 + 0.5 * mid;
-  return vec3(a.x * wa + b.x * 0.35, a.y * 2.2 * wa - a.x * u + b.y * 4.5 * 0.35, a.z * 3.2 * wa + b.z * 7.5 * 0.35);
 }
 #endif
 
@@ -2202,17 +2163,9 @@ void main() {
   // The surface normal: the sea's swell and ripples, or a river's current (map y runs along -z).
   vec3 n;
   if (river) {
-#ifdef GRAD_NORMALS_RIVER
-    // (Not by default: across the channel the difference was taken over 0.16 of its half-width,
-    // smoothing the ripples more than their true slope does, and the slopes moved what the river
-    // mirrors.)
-    vec3 hd = riverHD(vExtra.x, vExtra.y, t);
-    vec2 g = flow * hd.z + side * 8.0 * hd.y;
-#else
     float u = vExtra.x, s = vExtra.y, e = 0.02;
     float h0 = riverH(u, s, t);
     vec2 g = flow * (riverH(u, s + e, t) - h0) / e + side * (riverH(u + e * 8.0, s, t) - h0) / e;
-#endif
     n = normalize(vec3(-g.x * 0.03, 1.0, g.y * 0.03));
   } else {
 #ifdef GRAD_NORMALS
@@ -2339,11 +2292,7 @@ void main() {
   float share = mix(0.35, 0.5, smoothstep(0.1, 0.25, gaa));
   // Only along the swell's crests, in broad drifting patches.
   float crest = river ? 0.6 : smoothstep(0.5, 0.78, mstroke(m - SWELL * t * 0.08, 2.6, 4.5)) * smoothstep(0.3, 0.6, mnoise(m - SWELL * t * 0.03, 0.35));
-#ifdef NO_GLITTER
-  if (false) {
-#else
   if (glod > 0.0 && sun > 0.05 && live > 0.0 && crest > 0.0) {
-#endif
     vec2 gp = m * 8.0;
     vec2 gi = floor(gp), gfr = fract(gp);
     // Periodic over a wrapping map's width, like every pattern on the map (no seam).
@@ -2471,11 +2420,7 @@ void main() {
   // the net dims once its lines would be hairlines: a close-up detail.
   float cLod = mix(0.3, 1.0, 1.0 - smoothstep(0.006, 0.011, ppx));
   float fadeC = smoothstep(0.004, 0.025, depth) * (1.0 - smoothstep(0.1, 0.25, depth));
-#ifdef NO_CAUSTICS
-  if (false) {
-#else
   if (!river && uCaustics > 0.0 && live > 0.0 && sun > 0.05 && fadeC > 0.0) {
-#endif
     vec2 fm = mapOf(vWorld - V * min(path, 0.6));
     fm += (vec2(mnoise(fm, 1.7), mnoise(fm + 4.1, 1.7)) - 0.5) * 0.3;
     vec2 ca = mcells(fm + vec2(t * 0.05, t * 0.031), 4.2);
@@ -2568,7 +2513,7 @@ void main() {
   o = vec4(s / ws, c.y, 0.0, 1.0);
 }`;
 
-/** Separable gaussian (glow, structure tensor smoothing). */
+/** Separable gaussian (glow). */
 export const BLUR_FS = `
 in vec2 vUv;
 uniform sampler2D uSrc;
@@ -2612,115 +2557,11 @@ void main() {
   o = vec4(pow(col, vec3(1.0 / 2.2)), c.a);
 }`;
 
-/** Structure tensor of the image (for the anisotropic Kuwahara filter). */
-export const TENSOR_FS = `
-in vec2 vUv;
-uniform sampler2D uSrc;
-uniform vec2 uTexel;
-out vec4 o;
-void main() {
-  vec2 d = uTexel;
-  vec3 tl = texture(uSrc, vUv + vec2(-d.x, d.y)).rgb, t = texture(uSrc, vUv + vec2(0.0, d.y)).rgb, tr = texture(uSrc, vUv + d).rgb;
-  vec3 l = texture(uSrc, vUv - vec2(d.x, 0.0)).rgb, r = texture(uSrc, vUv + vec2(d.x, 0.0)).rgb;
-  vec3 bl = texture(uSrc, vUv - d).rgb, b = texture(uSrc, vUv - vec2(0.0, d.y)).rgb, br = texture(uSrc, vUv + vec2(d.x, -d.y)).rgb;
-  vec3 gx = (tr + 2.0 * r + br - tl - 2.0 * l - bl) / 4.0;
-  vec3 gy = (tl + 2.0 * t + tr - bl - 2.0 * b - br) / 4.0;
-  o = vec4(dot(gx, gx), dot(gx, gy), dot(gy, gy), 1.0);
-}`;
-
-/** The anisotropic Kuwahara filter (Kyprianidis, Kang & Döllner 2009, with polynomial sector
- *  weights): flat, oriented strokes of colour following the image's structure. 'keep' (alpha of
- *  the source) restores the original where it must stay sharp (units). */
-export const KUWAHARA_FS = `
-in vec2 vUv;
-uniform sampler2D uSrc;
-uniform sampler2D uTensor;
-uniform float uRadius;
-uniform float uSharp;
-uniform float uAniso;
-uniform float uStrength;
-out vec4 o;
-void main() {
-  vec2 size = vec2(textureSize(uSrc, 0));
-  vec4 src = texture(uSrc, vUv);
-  vec4 tt = texture(uTensor, vUv);
-  float E = tt.x, F = tt.y, G = tt.z;
-  float D = sqrt(max(0.0, (E - G) * (E - G) + 4.0 * F * F));
-  float l1 = 0.5 * (E + G + D);
-  float l2 = 0.5 * (E + G - D);
-  vec2 v = vec2(l1 - E, -F);
-  vec2 dir = length(v) > 1e-8 ? normalize(v) : vec2(0.0, 1.0);
-  float phi = -atan(dir.y, dir.x);
-  float A = (l1 + l2 > 1e-8) ? (l1 - l2) / (l1 + l2) : 0.0;
-  float a = uRadius * clamp((uAniso + A) / uAniso, 0.1, 2.0);
-  float b = uRadius * clamp(uAniso / (uAniso + A), 0.1, 2.0);
-  float cp = cos(phi), sp = sin(phi);
-  mat2 SR = mat2(0.5 / a, 0.0, 0.0, 0.5 / b) * mat2(cp, -sp, sp, cp);
-  int mx = int(sqrt(a * a * cp * cp + b * b * sp * sp));
-  int my = int(sqrt(a * a * sp * sp + b * b * cp * cp));
-  float zeta = 2.0 / uRadius;
-  float zc = 0.39269908; // pi / 8
-  float sz = sin(zc);
-  float eta = (zeta + cos(zc)) / (sz * sz);
-  vec4 M[8];
-  vec3 Sq[8];
-  for (int k = 0; k < 8; k++) { M[k] = vec4(0.0); Sq[k] = vec3(0.0); }
-  for (int j = -8; j <= 8; j++) {
-    if (j < -my || j > my) continue;
-    for (int i = -8; i <= 8; i++) {
-      if (i < -mx || i > mx) continue;
-      vec2 q = SR * vec2(float(i), float(j));
-      if (dot(q, q) > 0.25) continue;
-      vec3 c = clamp(texture(uSrc, vUv + vec2(float(i), float(j)) / size).rgb, 0.0, 1.0);
-      float w[8];
-      float sum = 0.0;
-      float vxx = zeta - eta * q.x * q.x;
-      float vyy = zeta - eta * q.y * q.y;
-      float z;
-      z = max(0.0, q.y + vxx); w[0] = z * z; sum += w[0];
-      z = max(0.0, -q.x + vyy); w[2] = z * z; sum += w[2];
-      z = max(0.0, -q.y + vxx); w[4] = z * z; sum += w[4];
-      z = max(0.0, q.x + vyy); w[6] = z * z; sum += w[6];
-      vec2 r = 0.70710678 * vec2(q.x - q.y, q.x + q.y);
-      vxx = zeta - eta * r.x * r.x;
-      vyy = zeta - eta * r.y * r.y;
-      z = max(0.0, r.y + vxx); w[1] = z * z; sum += w[1];
-      z = max(0.0, -r.x + vyy); w[3] = z * z; sum += w[3];
-      z = max(0.0, -r.y + vxx); w[5] = z * z; sum += w[5];
-      z = max(0.0, r.x + vyy); w[7] = z * z; sum += w[7];
-      float g = exp(-3.125 * dot(q, q)) / max(sum, 1e-6);
-      for (int k = 0; k < 8; k++) {
-        float wk = w[k] * g;
-        M[k] += vec4(c * wk, wk);
-        Sq[k] += c * c * wk;
-      }
-    }
-  }
-  vec4 acc = vec4(0.0);
-  for (int k = 0; k < 8; k++) {
-    if (M[k].w <= 0.0) continue;
-    vec3 mean = M[k].rgb / M[k].w;
-    vec3 var = abs(Sq[k] / M[k].w - mean * mean);
-    float s2 = var.r + var.g + var.b;
-    float wgt = 1.0 / (1.0 + pow(255.0 * s2, 0.5 * uSharp));
-    acc += vec4(mean * wgt, wgt);
-  }
-  vec3 painted = acc.w > 0.0 ? acc.rgb / acc.w : src.rgb;
-  float keep = src.a;
-  o = vec4(mix(src.rgb, painted, uStrength * (1.0 - keep * 0.85)), src.a);
-}`;
-
-/** Ink outlines (depth, normal and object-id edges, fading with distance), then the grade:
- *  colour balance, saturation, a world-anchored paper grain and a soft vignette. */
+/** The grade: colour balance, saturation, a world-anchored paper grain and a soft vignette. */
 export const FINISH_FS = `
 in vec2 vUv;
 uniform sampler2D uSrc;
 uniform sampler2D uND;
-uniform sampler2D uEmitId;
-uniform vec2 uTexel;
-uniform float uOutline;
-uniform float uOutlineWidth;
-uniform vec3 uInk;
 uniform float uGrade;
 uniform float uSaturation;
 uniform float uContrast;
@@ -2728,64 +2569,14 @@ uniform vec3 uShadowGrade;
 uniform vec3 uLightGrade;
 uniform float uGrain;
 uniform float uVignette;
-uniform float uInkLost;
-uniform float uInkColour;
 uniform vec2 uTan;
 uniform mat4 uInvView;
 out vec4 o;
-
-float edgeAt(vec2 uv, vec4 c, float cid) {
-  vec2 t = uTexel * uOutlineWidth;
-  float e = 0.0;
-  vec2 offs[4] = vec2[](vec2(t.x, 0.0), vec2(-t.x, 0.0), vec2(0.0, t.y), vec2(0.0, -t.y));
-  for (int i = 0; i < 4; i++) {
-    vec4 s = texture(uND, uv + offs[i]);
-    float sid = texture(uEmitId, uv + offs[i]).a;
-    if (s.w <= 0.0) continue;
-    // Depth: only the far side of a jump draws (a single line on the near object's silhouette).
-    float dd = (s.w - c.w) / c.w;
-    float de = smoothstep(0.012, 0.03, dd);
-    // Leaves against leaves (PROP_FS writes leaves' ids negated): one crown's lobes merge into a
-    // single painted mass -- no line where one lobe overlaps another -- and in a wood one crown
-    // against the next is a light line, so the canopy reads as a mass, as a painter masses it.
-    if (cid < 0.0 && sid < 0.0) de *= abs(sid - cid) < 0.002 ? 0.0 : 0.3;
-    // A crown against the ground: a lighter line too -- its leafy rim reads by value, and inking
-    // every leaf cluster along its rim (cut into leaves, PROP_DEPTH_FS) would draw a dotted fringe.
-    else if (cid < 0.0) de *= 0.4;
-    // Creases and object boundaries on props (not on the ground's gentle folds).
-    float ne = (cid > 0.0) ? smoothstep(0.55, 0.85, 1.0 - dot(normalize(s.xyz), normalize(c.xyz))) * 0.6 : 0.0;
-    float ie = (cid > 0.0 && abs(sid - cid) > 0.002 && s.w >= c.w - 0.02) ? 0.8 : 0.0;
-    // A trunk or limb where it runs into its own crown: a light touch, not a hard line.
-    if (cid > 0.0 && sid < 0.0 && abs(sid + cid) < 0.002) ie *= 0.3;
-    e = max(e, max(de, max(ne, ie)));
-  }
-  return e;
-}
 
 void main() {
   vec4 src = texture(uSrc, vUv);
   vec3 col = src.rgb;
   vec4 nd = texture(uND, vUv);
-  float cid = texture(uEmitId, vUv).a;
-  if (uOutline > 0.0 && nd.w > 0.0) {
-    float e = edgeAt(vUv, nd, cid);
-    float fade = 1.0 - smoothstep(30.0, 70.0, nd.w);
-    // Lost and found: a painted contour's weight wanders along it (world-anchored, so it does not
-    // crawl as the camera moves) and lightens where the paint is light -- an edge in the sun is
-    // half lost, one in the shade found. Units keep their whole line (src.a, the keep mask), so a
-    // figure always reads; foliage (negative id) only borrows the keep mask for the paint filter.
-    float keep = cid <= 0.0 ? 0.0 : clamp(src.a, 0.0, 1.0);
-    vec3 wpI = (uInvView * vec4((vUv * 2.0 - 1.0) * uTan * nd.w, -nd.w, 1.0)).xyz;
-    // Periodic over a wrapping map's width (x enters at 7 cells a plot), so the camera's wrap across
-    // the seam (a jump of the map's width in the world) does not change it.
-    float wob = pnoise(vec2(wpI.x * 7.0 + wpI.y * 4.0, wpI.z * 7.0 - wpI.y * 3.0), vec2(uWrapX > 0.5 ? 7.0 * uMapSize.x : 4096.0, 4096.0));
-    // Foliage loses the most; buildings, rock and the land's own edges keep a firmer drawing.
-    float lost = mix(cid < 0.0 ? 0.35 : 0.62, 1.05, smoothstep(0.28, 0.72, wob)) * mix(1.0, cid < 0.0 ? 0.6 : 0.78, smoothstep(0.5, 0.85, lum(col)));
-    e *= mix(1.0, lost, uInkLost * (1.0 - keep));
-    // A coloured line: a deep version of the local colour rather than one uniform sepia.
-    vec3 ink = mix(uInk * (0.35 + 0.4 * col), col * col * 0.5 + uInk * 0.12, uInkColour * (1.0 - keep));
-    col = mix(col, ink, e * uOutline * fade);
-  }
   if (uGrade > 0.0) {
     float L = dot(col, vec3(0.299, 0.587, 0.114));
     vec3 g = col;
@@ -2799,7 +2590,7 @@ void main() {
     if (nd.w > 0.0) {
       vec3 vp = vec3((vUv * 2.0 - 1.0) * uTan * nd.w, -nd.w);
       vec3 wp = (uInvView * vec4(vp, 1.0)).xyz;
-      // Periodic over a wrapping map's width, like the ink's wobble.
+      // Periodic over a wrapping map's width.
       bool wr = uWrapX > 0.5;
       vec2 gc = floor(vec2(wp.x, wp.z) * 90.0);
       if (wr) gc.x = mod(gc.x, 90.0 * uMapSize.x);
@@ -3051,7 +2842,7 @@ out vec4 o;
 void main() { o = texture(uSrc, vUv); }`;
 
 // FXAA (Timothy Lottes' console-quality variant): cheap edge anti-aliasing on the finished colour,
-// to take the stair-step off silhouettes and the ink outlines and stop them crawling when panning
+// to take the stair-step off silhouettes and stop them crawling when panning
 // (F17). Run after the finish pass, before the overlays; the HUD is a separate 2D canvas.
 export const FXAA_FS = `
 in vec2 vUv;

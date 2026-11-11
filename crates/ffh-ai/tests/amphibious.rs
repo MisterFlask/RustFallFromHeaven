@@ -160,12 +160,13 @@ fn no_amphibious_target_without_a_coastal_city_or_an_enemy() {
     assert!(naval::amphibious_target(&g, PlayerId(0)).is_none());
 }
 
-/// A small transport (least cargo) against a garrison bigger than one load: the invasion must
-/// ferry several loads, and they must land on the *same* plot beside the city and pile into a
-/// stack that can strike (`transport_assault` lands on the reachable plot already holding the most
-/// of our army). If each trip chose a fresh plot the force would scatter and the city would never
-/// fall. Robust to content: it fixes no stats, only that one small load < the garrison < the
-/// attackers provided, and asserts the overseas city is taken.
+/// Small transports (least cargo) against a garrison bigger than one load: the force needs several
+/// of them, and they must sail and land together beside the city so that the landed stack can
+/// strike (switch `INVASION`: the fleet sails only with the whole force aboard, every ship unloads
+/// on the plan's landing plot; switch off: each trip lands on the plot already holding the most of
+/// our army). The ships are there already: an invasion whose fleet the port could not build in
+/// time is not launched at all (`invasion.rs`). Robust to content: it fixes no stats, only that one
+/// small load < the garrison < the attackers provided, and asserts the overseas city is taken.
 #[test]
 fn ai_takes_a_defended_overseas_city_with_a_small_transport() {
     let d = ffh_data::global();
@@ -198,7 +199,9 @@ fn ai_takes_a_defended_overseas_city_with_a_small_transport() {
     let defenders = cargo + 2;
     let attackers = (cargo + 2) * 3;
     g.player_init_unit(attacker, d.t::<UnitType>("UNIT_WARRIOR"), 7, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
-    g.player_init_unit(attacker, transport, 7, 5, Some(UnitAIType::UNITAI_ASSAULT_SEA), None);
+    for _ in 0..(attackers + cargo - 1) / cargo {
+        g.player_init_unit(attacker, transport, 7, 5, Some(UnitAIType::UNITAI_ASSAULT_SEA), None);
+    }
     for _ in 0..attackers {
         g.player_init_unit(attacker, attacker_unit, 7, 5, Some(UnitAIType::UNITAI_ATTACK), None);
     }

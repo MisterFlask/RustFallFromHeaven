@@ -56,20 +56,19 @@ pub struct View {
 /// fog of war for its own defense, as the C++ AI did (`CvPlayerAI::AI_getPlotDanger` skips only
 /// `isInvisible` units), but not through stealth, which is part of how FfH's hidden units and
 /// civilizations play. Attacks see through fog the same way ([`sees_units`], docs/AI.md, "Fog
-/// of war"). Switch `FOG_SIGHT` off: only units on plots we see.
+/// of war").
 pub fn known_threat(g: &Game, p: PlayerId, u: UnitId) -> bool {
     let team = g.players[p].team;
-    !g.unit_is_invisible(u, team, false) && (crate::switches::FOG_SIGHT.on(g, p) || g.plot_is_visible(g.unit_plot(u), team))
+    !g.unit_is_invisible(u, team, false)
 }
 
 /// Does `team` know which units stand on plot `q` when it plans an attack (a city's garrison,
-/// a target to hunt or to walk into)? Visible plots always; with switch `FOG_ATTACK` (the
-/// owner's call, 2026-10-24: conflict makes the game) every plot we have revealed, fog
-/// included -- the units themselves still pass [`known_threat`]'s stealth test where they are
+/// a target to hunt or to walk into)? Visible plots always, and (the owner's call, 2026-10-24:
+/// conflict makes the game) every plot we have revealed, fog included -- the units themselves still pass [`known_threat`]'s stealth test where they are
 /// read (`unit_is_invisible`). Unrevealed land stays unknown (docs/AI.md, "Fog of war").
 pub fn sees_units(g: &Game, team: TeamId, q: PlotIdx) -> bool {
     g.plot_is_visible(q, team)
-        || g.map.plots[q].revealed[team] && g.team_get_leader_id(team).is_some_and(|l| crate::switches::FOG_ATTACK.on(g, l))
+        || g.map.plots[q].revealed[team]
 }
 
 /// Rough attack power of a unit: strength x health x experience. 0 for non-combatants.
@@ -164,7 +163,7 @@ impl View {
         v.build_danger(g);
         if !v.barbarian {
             v.targets = crate::military::find_targets(g, &*v);
-            v.amphibious = crate::naval::amphibious_target(g, p);
+            v.amphibious = crate::naval::amphibious_target_in(g, Some(&v.forecasts), p);
             v.rival_def = crate::defense::all_rival_defenders(g, p);
             for &c in &g.players[p].cities {
                 let cp = g.city_plot(c);
@@ -184,6 +183,12 @@ impl View {
                     // The rules' forecast of the same question (`forecast::holds`), recorded beside it.
                     crate::predict::holds2(g, Some(&v.forecasts), &mut v.flood, p, c, threat > defense, threat, defense);
                 }
+            }
+            // The incoming attacks (`threat.rs`), recorded beside `peril` once per player-turn.
+            if g.telemetry.on() && v.forecasts.incoming_turn.get() != Some(g.game_turn()) {
+                v.forecasts.incoming_turn.set(Some(g.game_turn()));
+                let civ_war = !v.civ_enemies.is_empty();
+                crate::predict::incoming(g, &v.forecasts, &mut v.flood, p, civ_war);
             }
         }
     }

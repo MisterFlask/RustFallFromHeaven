@@ -62,6 +62,7 @@ is the only thing that stops a wasteful cast: moving them needs the same conditi
 | k | `ffh/custom.rs:1317` (`giftUnit`) | a Manes given to an AI Infernal joins a city as population, (100 - 5 x pop)% of the time; a human keeps the unit | no |
 | l | `player/diplomacy_trade.rs:404` (`canTradeItem`) | an AI keeps one copy of a resource it trades; a human may trade its last | little: `trade.rs` keeps a copy anyway |
 | m | `path.rs` (several), `group/misc.rs:1209` (path callbacks, `AI_getPlotDanger`) | AI groups that cannot fight avoid danger, AI land groups path only within their area, attack paths weigh defences, border danger counts for the AI only | heavily: decision support inside the shared path finder; low priority |
+| n | `path.rs` (`Game::path_ai_sea_blocked`, the flag `MOVE_BOATS`; this game's sea, 2026-11-10, docs/NAVAL.md section 8) | an AI-controlled ship in its team's range never paths out of it; an AI-controlled land group never paths onto water it would be at sea on, unless the search passes `MOVE_BOATS`, and then only onto water in range (or a plot where its units would board a ship of its team); a human's groups (not automated) path over any water | yes: `ffh-ai` `naval.rs` (`walk_home_in_boats`), `reach.rs`; a human's automated groups get it too. Marching recruits are kept off water for every owner by a rule (`path_march_sea_blocked`), not by this |
 
 **A4. AI shortcuts written as rules**
 - **Lairs** (`unit/lifecycle.rs:1124`, `CvUnit::setXY`): an AI unit at war with the barbarians that
@@ -82,14 +83,14 @@ is the only thing that stops a wasteful cast: moving them needs the same conditi
 The handicap tables give AI players their own percentages: train, construct and create costs
 (`player/units.rs:598/1263/1296`), growth, unit cost and supply, inflation, war weariness
 (`player/economy.rs`), civic upkeep, upgrade price, work rate, free XP, the animal and barbarian
-combat bonuses (`unit/combat.rs:1033-1069`), advanced-start points and starting units
+combat bonuses (`unit/combat.rs:1033-1069`), starting units
 (`player/start.rs`), free techs (`game/setup_init.rs:491`) and the starting-plot pick order. At the
 standard handicap (Noble, which AI-only games use) the AI already gets construct 85%, unit supply
 50%, upgrade cost 25%, inflation 50%, war weariness 70% and +25% against barbarians; in all-AI
 games these apply to every player alike. Hard-coded, not scaled by difficulty: an AI city's
 initial production of 10 (`city/turn.rs:170`) and free units for an AI that has met a human
 (`player/economy.rs:332`). The AI-assist options `AI_NO_MINIMUM_LEVEL` and `AI_NO_BUILDING_PREREQS`
-are off by default. The per-era AI modifier, 0 at every difficulty, went with eras (2026-11-10).
+are gone (2026-11-10): the AI trains and builds by the same rules as a human. The per-era AI modifier, 0 at every difficulty, went with eras (2026-11-10).
 
 ## C. Decisions a human makes in a popup and the AI by code (no rules difference)
 
@@ -128,7 +129,7 @@ Heroic Gesture 2, Great Mediator 2 (`ffh/random_events_b.rs`: `do_heroic_gesture
   `team/tech.rs:570`); only a human entering Letum Frigus gets its reward (`spells_b.rs:2470`); only
   human Elohim see the unique improvements at the start (`ffh/events.rs:159`); the barbarians
   declare war only on a human Barbarian-trait civilization that is far ahead (`events.rs:305`).
-- **Legitimate**: the challenge options (One City Challenge, No Healing for Humans, Always War,
+- **Legitimate**: the challenge options (One City Challenge, Always War,
   changing difficulty: about 20 sites), the BtS trade rules between human and AI teams (a human
   cannot become an AI's vassal, only AI teams sell war or peace with third parties or a civic
   change; `ffh-ai` hires war allies this way), the event semantics that need a human's attitude

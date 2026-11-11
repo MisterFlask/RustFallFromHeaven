@@ -84,8 +84,6 @@ Structs: `Team` 72 fields (60 `CvTeam` + 12 `CvTeamAI`, prefixed `ai_`),
   true, `getTeam` returning `NO_TEAM`, the `addUnit` entity notifications) are dead here.
 
 **Accessors with logic are methods.** Use them instead of the raw fields:
-- `team_is_open_borders` -- FFH returns true for every pair under
-  GAMEOPTION_ALWAYS_OPEN_BORDERS; `Team::open_borders` is only the raw flag.
 - `team_is_alive`, `team_is_ever_alive`, `team_is_a_vassal`, `team_is_x_trading`
   (`team_is_permanent_alliance_trading` / `team_is_vassal_state_trading` check game options).
 - `team_set_war_weariness` clamps at 0; `team_change_alive_count` frees vassals at 0;
@@ -98,9 +96,8 @@ Structs: `Team` 72 fields (60 `CvTeam` + 12 `CvTeamAI`, prefixed `ai_`),
 
 **Game state owned elsewhere.**
 - Game options are read through `team::is_option` (private helper = `self.setup.option(o)`)
-  or `Game::is_option`. FFH's `CvGame::isOption` forces GAMEOPTION_NO_ESPIONAGE on and
-  GAMEOPTION_RANDOM_PERSONALITIES / GAMEOPTION_PICK_RELIGION off; the helper debug-asserts it
-  is not used for those (`setHasTech` reads PICK_RELIGION through `Game::is_option`).
+  or `Game::is_option`. FFH's `CvGame::isOption` forces GAMEOPTION_NO_ESPIONAGE on; the helper
+  debug-asserts it is not used for that one.
 - `CvGame::getGameTurn()` is `GC.getInitCore().getGameTurn()` = `self.setup.game_turn`
   (used by `deal_init`, `deal_turns_to_cancel`).
 

@@ -180,9 +180,6 @@ impl NewGame {
         if self.opponents < 1 || self.opponents >= MAX_CIV_PLAYERS {
             return Err(format!("opponents must be in 1..={}", MAX_CIV_PLAYERS - 1));
         }
-        if self.options.contains(&GameOptionType::GAMEOPTION_ADVANCED_START) {
-            return Err("GAMEOPTION_ADVANCED_START is not supported (there is no advanced-start interface)".into());
-        }
         if self.max_turns < 0 {
             return Err("max_turns must be >= 0".into());
         }
@@ -290,7 +287,7 @@ pub fn set_human_options(g: &mut Game, human: PlayerId) {
 /// rules as they were). Agents, soaks and tests start from `NewGame::new` itself.
 pub fn screen_defaults(d: &GameData) -> NewGame {
     let mut ng = NewGame::new(d, 1);
-    ng.options = d.game_options.keys().filter(|&o| d.game_options[o].visible && d.game_options[o].default && o != GameOptionType::GAMEOPTION_ADVANCED_START).collect();
+    ng.options = d.game_options.keys().filter(|&o| d.game_options[o].visible && d.game_options[o].default).collect();
     ng
 }
 
@@ -349,7 +346,7 @@ pub fn setup_lists(d: &GameData) -> Json {
         "handicaps" => list_help::<HandicapType>(d, |_| true, |h| xml(&d.handicaps[h].base.help)),
         "climates" => list_help::<ClimateType>(d, |_| true, |c| xml(&d.climates[c].base.help)),
         "sea_levels" => list_help::<SeaLevelType>(d, |_| true, |s| xml(&d.sea_levels[s].base.help)),
-        "options" => list_help::<GameOptionType>(d, |o| d.game_options[o].visible && o != GameOptionType::GAMEOPTION_ADVANCED_START, |o| xml(&d.game_options[o].base.help)),
+        "options" => list_help::<GameOptionType>(d, |o| d.game_options[o].visible, |o| xml(&d.game_options[o].base.help)),
         "victories" => list_help::<VictoryType>(d, |_| true, |v| xml(&d.victories[v].base.help)),
         "max_opponents" => MAX_CIV_PLAYERS - 1,
         "defaults" => screen_defaults(d).to_json(),
@@ -388,9 +385,6 @@ mod tests {
     fn invalid_settings_are_refused() {
         let d = ffh_data::global();
         let mut ng = NewGame::new(d, 1);
-        ng.options.push(GameOptionType::GAMEOPTION_ADVANCED_START);
-        assert!(ng.validate(d).unwrap_err().contains("ADVANCED_START"));
-        let mut ng = NewGame::new(d, 1);
         ng.opponents = 0;
         assert!(ng.validate(d).is_err());
         let mut ng = NewGame::new(d, 1);
@@ -417,7 +411,6 @@ mod tests {
         assert_eq!(g.num_human_players(), 1);
         let lists = setup_lists(d);
         assert!(!lists.req_arr("civilizations").unwrap().is_empty());
-        assert!(lists.req_arr("options").unwrap().iter().all(|o| o.req_str("type").unwrap() != "GAMEOPTION_ADVANCED_START"));
         assert!(screen_defaults(d).validate(d).is_ok());
     }
 }

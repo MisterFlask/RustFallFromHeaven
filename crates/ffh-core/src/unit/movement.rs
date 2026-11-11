@@ -244,14 +244,6 @@ impl Game {
             return false;
         }
 
-        if d.defines.use_spies_no_enter_borders != 0 && self.unit_is_spy(u) {
-            if let Some(plot_owner) = self.map.plots[plot].owner {
-                if !self.player_can_spies_enter_borders(owner, plot_owner) {
-                    return false;
-                }
-            }
-        }
-
         let team = self.unit_get_team(u);
         let domain = self.unit_get_domain_type(u);
 
@@ -1418,6 +1410,10 @@ impl Game {
             }
 
             // (_DEBUG builds only: getCargoUnits of both transports)
+
+            if self.telemetry.on() {
+                self.tel_naval_cargo(u, old_transport, transport);
+            }
         }
     }
 

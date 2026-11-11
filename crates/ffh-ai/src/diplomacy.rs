@@ -136,12 +136,8 @@ pub(crate) fn is_team_leader(g: &Game, p: PlayerId) -> bool {
 /// end). C++ `AI_doDiplo` asks only the proposer's side, so a Crusader's enemy could still offer it
 /// peace; the civic means no diplomacy with enemies either way, so both sides are asked. It also
 /// refuses a player FfH has just created (its temporary-player timer), a vassal's own peace and a
-/// permanent war or peace, which the AI-to-AI deals ignored too. Switch `CONTACT` (off: no check,
-/// as before; the AI's offers to humans then ask only our side).
+/// permanent war or peace, which the AI-to-AI deals ignored too.
 pub(crate) fn can_talk(g: &Game, p: PlayerId, other: PlayerId) -> bool {
-    if !crate::switches::CONTACT.on(g, p) {
-        return !g.players[other].human || g.player_can_contact(p, other);
-    }
     g.player_can_contact(p, other) && g.player_can_contact(other, p)
 }
 
@@ -245,8 +241,8 @@ pub fn manage(g: &mut Game, v: &View) {
     // to take cities rather than cashing out.
     for &enemy in &v.civ_enemies {
         let Some(other) = team_leader(g, enemy).filter(|&q| !g.players[q].human) else { continue };
-        let our_want = end_war_val_seen(g, p, team, enemy); // iOurValue: how much WE want peace
-        let their_want = end_war_val_seen(g, p, enemy, team); // iTheirValue: how much THEY want peace
+        let our_want = end_war_val_seen(g, team, enemy); // iOurValue: how much WE want peace
+        let their_want = end_war_val_seen(g, enemy, team); // iTheirValue: how much THEY want peace
         let victory_war = crate::victory::wants_conquest(&plan) || crate::victory::rival_team(g, &plan) == Some(enemy);
         // Don't sell a conquest war we are winning: press on to take cities instead (see press_conquest).
         let winner_initiated = their_want > our_want && g.teams[team].ai_at_war_counter[enemy] > 10 && !victory_war && !press_conquest(g, team, enemy);
@@ -258,7 +254,7 @@ pub fn manage(g: &mut Game, v: &View) {
         }
         let wanted = stance.unwrap_or_else(|| want_peace(g, team, enemy, &plan));
         // A war where nothing happens ends (MNAI): neither side has an army at the other's cities.
-        let quiet = !wanted && crate::switches::QUIET_PEACE.on(g, p) && quiet_war(g, team, enemy);
+        let quiet = !wanted && quiet_war(g, team, enemy);
         if !wanted && !winner_initiated && !quiet {
             continue;
         }
@@ -365,12 +361,12 @@ pub fn manage(g: &mut Game, v: &View) {
         // An expert declares with the army already at the border: the war's first turns are
         // spent fighting, not marching while the enemy mobilises (and the war's first ten turns,
         // before peace can be made, are not spent on the road).
-        let staged = !crate::switches::WAR_STAGING.on(g, p) || staged_army(g, p, target) * 3 >= army_needed_for_war(g, p, target) * 2;
+        let staged = staged_army(g, p, target) * 3 >= army_needed_for_war(g, p, target) * 2 || crate::naval::invasion_ready(g, p, target);
         if ready && staged && waited >= 5 || waited >= 40 {
             // The last chance to change our mind (MNAI `AI_doWar`): a target that no longer passes
             // the gate that chose it -- new pacts behind it, its cities no longer takeable, a
             // friendship since -- is dropped, the army kept for the next choice.
-            if let Err(why) = if crate::switches::WAR_RECHECK.on(g, p) { still_a_target(g, p, target, &plan) } else { Ok(()) } {
+            if let Err(why) = still_a_target(g, p, target, &plan) {
                 crate::trace!(g, p, "drops its war plan on team {:?}: it no longer passes the gate ({}, prepared {} turns)", target, why, waited);
                 g.tel_decision(p, "war_drop", why, "recheck_dropped", waited as i64, String::new);
                 predict_war(g, p, target, false, waited);
@@ -492,7 +488,7 @@ pub(crate) fn dogpile_power(g: &Game, team: TeamId, target: TeamId) -> i64 {
 
 /// The war-of-expansion gate against `other`'s team (see `manage`): met, can be declared on, at
 /// peace for a while, not a friend a cautious leader spares, our power edge (with the power of its
-/// current enemies under `DOGPILE`) over its defensive power at the leader's bar, and a city we can
+/// current enemies) over its defensive power at the leader's bar, and a city we can
 /// reach and take. `recheck`: the same test just before the declaration, with 10% slack on the bar
 /// (a prepared army is not given up for a small swing).
 pub(crate) fn territory_target(g: &Game, p: PlayerId, bar: &WarBar, other: PlayerId, recheck: bool) -> Option<Target> {
@@ -523,7 +519,7 @@ fn territory_check(g: &Game, p: PlayerId, bar: &WarBar, other: PlayerId, recheck
         return Err("friend");
     }
     let theirs = g.team_get_defensive_power(ot).max(1) as i64;
-    let allies = if crate::switches::DOGPILE.on(g, p) { dogpile_power(g, team, ot) } else { 0 };
+    let allies = dogpile_power(g, team, ot);
     let ratio = (bar.ours + allies) * 100 / theirs;
     let need = if provoked { bar.need_ratio * 85 / 100 } else { bar.need_ratio };
     if ratio < if recheck { need * 9 / 10 } else { need } {
@@ -560,7 +556,7 @@ fn territory_check(g: &Game, p: PlayerId, bar: &WarBar, other: PlayerId, recheck
     Ok(Target { score, ratio, allies })
 }
 
-/// Does team `target` still pass a gate that would choose it now (`WAR_RECHECK`): the victory
+/// Does team `target` still pass a gate that would choose it now: the victory
 /// plan's (a rival about to win; our domination or conquest) or the war of expansion's, with slack (a first version kept takeability's 120% margin and dropped half the wars: docs/AI_LOG.md, "Round 7c").
 /// `Err` names the test the war of expansion's gate fails (for traces and telemetry).
 fn still_a_target(g: &Game, p: PlayerId, target: TeamId, plan: &crate::victory::Plan) -> Result<(), &'static str> {
@@ -719,9 +715,8 @@ pub(crate) fn clear_leader(g: &Game) -> Option<TeamId> {
     }
 }
 
-/// What player `p` reads before giving away technologies (`TECH_DISCIPLINE`), once per round.
+/// What player `p` reads before giving away technologies (tech-trade discipline), once per round.
 pub(crate) struct TechCtx {
-    on: bool,
     /// Our victory rival: it gets no technology from us.
     rival: Option<TeamId>,
     /// The world's clear leader (not us): it gets a swap only when we come out ahead.
@@ -731,28 +726,25 @@ pub(crate) struct TechCtx {
 }
 
 pub(crate) fn tech_ctx(g: &Game, p: PlayerId) -> TechCtx {
-    if !crate::switches::TECH_DISCIPLINE.on(g, p) {
-        return TechCtx { on: false, rival: None, leader: None, war: false };
-    }
     let team = g.players[p].team;
     let plan = crate::victory::plan(g, p);
     let rival = crate::victory::rival_team(g, &plan);
     let leader = clear_leader(g).filter(|&t| t != team);
     let war = preparing_target(g, team).is_some() || g.team_ids().into_iter().any(|t| t != team && g.team_is_alive(t) && !g.team_is_barbarian(t) && g.at_war(team, t));
-    TechCtx { on: true, rival, leader, war }
+    TechCtx { rival, leader, war }
 }
 
 impl TechCtx {
     /// Do we trade technologies with `to` at all (not with our victory rival)?
     pub(crate) fn partner_ok(&self, g: &Game, to: PlayerId) -> bool {
-        !self.on || self.rival != Some(g.players[to].team)
+        self.rival != Some(g.players[to].team)
     }
 
     /// The least we take in a swap with `to`, in percent of what we give (by research cost):
     /// four fifths, as `consider_offer` always did, but five fourths from the world's clear leader
     /// -- we trade with the runaway only when we gain more than it does.
     pub(crate) fn min_return_pct(&self, g: &Game, to: PlayerId) -> i64 {
-        if self.on && self.leader == Some(g.players[to].team) {
+        if self.leader == Some(g.players[to].team) {
             125
         } else {
             80
@@ -801,15 +793,12 @@ fn racing_with(g: &Game, team: TeamId, tech: TechType) -> bool {
     })
 }
 
-/// Why player `p` would not give `tech` to `to` (`TECH_DISCIPLINE`; MNAI `CvTeamAI::AI_techTrade`),
+/// Why player `p` would not give `tech` to `to` (tech-trade discipline; MNAI `CvTeamAI::AI_techTrade`),
 /// or `None`: `to` is our victory rival; a military technology while we prepare or fight a war
 /// (any recipient could pass it on); and, to anyone we are not friendly with, a monopoly worth
 /// keeping -- the technology of a world wonder, world unit or project we are building, or a
 /// military technology a land neighbour we may fight would gain while most civs we know lack it. (A first version, keeping every valuable technology and refusing the leader outright, cost the civ using it: docs/AI_LOG.md, "Round 7c".)
 pub(crate) fn tech_denial(g: &Game, p: PlayerId, to: PlayerId, tech: TechType, ctx: &TechCtx) -> Option<&'static str> {
-    if !ctx.on {
-        return None;
-    }
     let (team, ot) = (g.players[p].team, g.players[to].team);
     if ctx.rival == Some(ot) {
         return Some("rival");
@@ -866,7 +855,7 @@ fn trade(g: &mut Game, p: PlayerId) {
         }
         // A resource of theirs we want, paid for with a surplus of ours or with gold.
         resource_trade(g, p, other);
-        // No technology swaps with our victory rival or a clear world leader (TECH_DISCIPLINE).
+        // No technology swaps with our victory rival or a clear world leader.
         if !tech_rules.partner_ok(g, other) {
             g.tel_decision(p, "tech_trade", "partner_blocked", "rival", 0, String::new);
             continue;
@@ -916,7 +905,7 @@ fn trade(g: &mut Game, p: PlayerId) {
             }
         }
         let Some((give, _)) = give else { continue };
-        // With the world's clear leader only a swap that favours us (TECH_DISCIPLINE).
+        // With the world's clear leader only a swap that favours us.
         if (cost(give) as i64) * tech_rules.min_return_pct(g, other) > get_cost as i64 * 100 {
             g.tel_decision(p, "tech_trade", "withheld", "leader", 0, String::new);
             continue;
@@ -973,46 +962,16 @@ fn defender_strength(info: &UnitInfo) -> i32 {
     def * (100 + info.city_defense_modifier.max(0))
 }
 
-/// The strongest city defender (x100, [`defender_strength`]) player `owner` can train: what we
-/// assume holds a city of theirs we cannot see. Units of a limited class (heroes, world units)
-/// are left out: a city cannot count on one of those.
-fn best_trainable_defense(g: &Game, owner: PlayerId) -> i32 {
-    let d = g.d;
-    let mut best = 0;
-    for u in d.units.keys() {
-        let info = &d.units[u];
-        if info.domain_type != Some(DomainType::DOMAIN_LAND) || info.combat <= 0 {
-            continue;
-        }
-        if info.unit_class_type.is_some_and(|cl| {
-            let ci = &d.unit_classes[cl];
-            ci.max_global_instances > 0 || ci.max_team_instances > 0 || ci.max_player_instances > 0
-        }) {
-            continue;
-        }
-        if g.player_can_train(owner, u, false, false, false) {
-            best = best.max(defender_strength(info));
-        }
-    }
-    best
-}
-
 /// The strength (x100) of city `c`'s best defender as we see it (fortified city bonuses), or
 /// `None` when the city plot is not revealed to our team. The garrison (stealthed units left out)
-/// is read where [`crate::view::sees_units`]: through fog with switch `FOG_ATTACK`, the owner's
-/// call (docs/AI.md, "Fog of war"); with it off, only while the city is visible, the fog
-/// assuming the best defender its owner can train (`fog`: [`best_trainable_defense`], computed
-/// on first use by the caller's loop).
-fn city_best_defense(g: &Game, p: PlayerId, c: CityId, fog: &mut Option<i32>) -> Option<i32> {
+/// is read through fog ([`crate::view::sees_units`], the owner's call: docs/AI.md, "Fog of war").
+fn city_best_defense(g: &Game, p: PlayerId, c: CityId) -> Option<i32> {
     let team = g.players[p].team;
     let cp = g.city_plot(c);
     if !g.map.plots[cp].revealed[team] {
         return None;
     }
     let other = g.cities[c].owner;
-    if !crate::view::sees_units(g, team, cp) {
-        return Some(*fog.get_or_insert_with(|| best_trainable_defense(g, other)));
-    }
     let mut best = 0;
     for &e in &g.map.plots[cp].units {
         if g.units[e].owner != other || g.unit_is_invisible(e, team, false) {
@@ -1032,7 +991,7 @@ fn city_best_defense(g: &Game, p: PlayerId, c: CityId, fog: &mut Option<i32>) ->
 /// attacker or the city plot is not revealed.
 pub(crate) fn can_take_city(g: &Game, p: PlayerId, c: CityId) -> bool {
     let Some((best_attack, siege)) = best_trainable_attack(g, p) else { return false };
-    let Some(best_defense) = city_best_defense(g, p, c, &mut None) else { return false };
+    let Some(best_defense) = city_best_defense(g, p, c) else { return false };
     // Fortified in a city: roughly +50%; siege engines take most of that away.
     let needed = best_defense * if siege { 85 } else { 120 } / 100;
     best_attack >= needed
@@ -1057,16 +1016,15 @@ fn take_cities_edge(g: &Game, p: PlayerId, other: PlayerId, margin: i32) -> Opti
     let (best_attack, siege) = best_trainable_attack(g, p)?;
     // Their weakest city (the one we would attack first): its best defender.
     let mut weakest: Option<i32> = None;
-    let mut fog = None;
     for &oc in &g.players[other].cities {
-        if let Some(best) = city_best_defense(g, p, oc, &mut fog) {
+        if let Some(best) = city_best_defense(g, p, oc) {
             weakest = Some(weakest.map_or(best, |w: i32| w.min(best)));
         }
     }
     let best_defense = weakest?;
     // Fortified in a city: roughly +50%; siege engines take most of that away.
     let needed = best_defense * if siege { 85 } else { margin } / 100;
-    // Our Mages' Fireballs soften the defenders first (`MAGIC_WAR`): a defender left at 80% of its
+    // Our Mages' Fireballs soften the defenders first: a defender left at 80% of its
     // health fights at 80% of its strength.
     let soften = magic_soften_pct(g, p);
     if soften > 0 && best_attack < needed && best_attack >= needed * (100 - soften) / 100 {
@@ -1105,14 +1063,11 @@ fn predict_war(g: &Game, p: PlayerId, target: TeamId, acted: bool, waited: i32) 
 }
 
 /// How much of a city defender's health our casters' damage takes before our attackers go in, in
-/// percent (switch `MAGIC_WAR`): 10 for each caster of ours whose spells hurt (a Mage's Fireball:
+/// percent: 10 for each caster of ours whose spells hurt (a Mage's Fireball:
 /// 15 to 30 hit points on a fortified defender, but not every caster reaches every strike), 40 at
 /// most. An expert who fights with Mages counts their Fireballs when he judges a city takeable;
 /// without it a magic civilization judged its targets by its swords alone.
 fn magic_soften_pct(g: &Game, p: PlayerId) -> i32 {
-    if !crate::switches::MAGIC_WAR.on(g, p) {
-        return 0;
-    }
     let n = g.players[p].units.iter().filter(|&&u| crate::mana::is_caster(g, u) && crate::magic::damage_caster(g, u)).count() as i32;
     (n * 10).min(40)
 }
@@ -1325,7 +1280,7 @@ pub(crate) fn end_war_val(g: &Game, team: TeamId, enemy: TeamId) -> i32 {
     } else if dogpile {
         v = v * 3 / 2;
     }
-    // (AGGRESSIVE_AI endangered-cities block omitted: the option is off in our games.)
+    // (C++ AGGRESSIVE_AI endangered-cities block not ported: the option is gone.)
     let remainder = g.d.defines.diplomacy_value_remainder.max(1) as i64;
     v -= v.rem_euclid(remainder);
     if g.team_is_human(team) {
@@ -1398,14 +1353,10 @@ pub(crate) fn forces_pct(g: &Game, team: TeamId, enemy: TeamId) -> i64 {
     200 * 100 / ratio.clamp(200, 600)
 }
 
-/// [`end_war_val`] as player `p` judges it: with `PEACE_FORCES`, scaled by the forces at the front
+/// [`end_war_val`] as the AI judges it: scaled by the forces at the front
 /// ([`forces_pct`]) -- sell the war when the next city is out of reach, fight on when it is close.
-pub(crate) fn end_war_val_seen(g: &Game, p: PlayerId, team: TeamId, enemy: TeamId) -> i32 {
-    let v = end_war_val(g, team, enemy);
-    if !crate::switches::PEACE_FORCES.on(g, p) {
-        return v;
-    }
-    let mut v = v as i64 * forces_pct(g, team, enemy) / 100;
+pub(crate) fn end_war_val_seen(g: &Game, team: TeamId, enemy: TeamId) -> i32 {
+    let mut v = end_war_val(g, team, enemy) as i64 * forces_pct(g, team, enemy) / 100;
     let remainder = g.d.defines.diplomacy_value_remainder.max(1) as i64;
     v -= v.rem_euclid(remainder);
     if g.team_is_human(team) {
@@ -1422,11 +1373,17 @@ pub(crate) fn quiet_war(g: &Game, team: TeamId, enemy: TeamId) -> bool {
     if g.teams[team].ai_at_war_counter[enemy] < 15 {
         return false;
     }
-    let success = g.teams[team].ai_war_success[enemy] + g.teams[enemy].ai_war_success[team];
-    if success >= 2 * g.d.defines.war_success_attacking.max(1) {
+    if front_forces(g, team, enemy) != (0, 0) {
         return false;
     }
-    if front_forces(g, team, enemy) != (0, 0) {
+    // A war across the water that neither side can fight (switch `INVASION`): no landmass shared,
+    // no affordable invasion either way, no army at the other's cities. Phony, whatever it won at
+    // sea or in skirmishes so far.
+    if phony_overseas(g, team, enemy) {
+        return true;
+    }
+    let success = g.teams[team].ai_war_success[enemy] + g.teams[enemy].ai_war_success[team];
+    if success >= 2 * g.d.defines.war_success_attacking.max(1) {
         return false;
     }
     !g.player_ids().into_iter().any(|q| {
@@ -1434,6 +1391,18 @@ pub(crate) fn quiet_war(g: &Game, team: TeamId, enemy: TeamId) -> bool {
             && g.players[q].team == team
             && g.players[q].groups.iter().any(|&grp| crate::campaign::tagged(g, grp).is_some_and(|pl| g.plot_get_team(pl) == Some(enemy)))
     })
+}
+
+/// A war between `team` and `enemy` that cannot be fought (switch `INVASION`, for `team`'s
+/// leader): their cities share no landmass, and neither side has an invasion of the other it can
+/// afford (`naval::amphibious_city`, which under the switch answers only an affordable one, or a
+/// landing already ashore).
+pub(crate) fn phony_overseas(g: &Game, team: TeamId, enemy: TeamId) -> bool {
+    let (Some(us), Some(them)) = (team_leader(g, team), team_leader(g, enemy)) else { return false };
+    if !crate::invasion::on(g, us) || reach_distance(g, team, enemy).is_some() {
+        return false;
+    }
+    crate::naval::amphibious_city(g, us, them).is_none() && crate::naval::amphibious_city(g, them, us).is_none()
 }
 
 /// Should `team` seek peace with `enemy`?
@@ -1585,8 +1554,8 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
         // Reparations: value each side as the at-war `AI_endWarVal` baseline plus its tribute (C++
         // `AI_dealVal`/`AI_considerOffer`, CvPlayerAI.cpp:6815, 7057). A deal that pays us at least
         // what we give away -- a winner's reparations, or a loser sweetening the peace -- is taken.
-        let their_v = end_war_val_seen(g, p, team, their_team) + crate::trade::deal_val(g, p, from, they_give, false, 1);
-        let our_v = end_war_val_seen(g, p, their_team, team) + crate::trade::deal_val(g, from, p, we_give, false, 1);
+        let their_v = end_war_val_seen(g, team, their_team) + crate::trade::deal_val(g, p, from, they_give, false, 1);
+        let our_v = end_war_val_seen(g, their_team, team) + crate::trade::deal_val(g, from, p, we_give, false, 1);
         let margin = their_v as i64 - our_v as i64;
         // The deal leaves us behind on value. Give away tribute of our own only when it pays
         // (the test above) -- never fall through to accept a peace in which we also hand something
@@ -1598,10 +1567,10 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
         // unless we are clearly winning, and always once the war has dragged to exhaustion (keeps
         // the pre-reparations war-ending behaviour, so even/stalemated wars still resolve).
         let winning = ours > theirs * 3 / 2 && success > their_success + 20;
-        // Nor while our army stands at their next city, three times what they have near ours
-        // (PEACE_FORCES): the city is close.
+        // Nor while our army stands at their next city, three times what they have near ours:
+        // the city is close.
         let losing = their_success > success + 10 && ours * 10 < theirs * 12;
-        let at_gates = crate::switches::PEACE_FORCES.on(g, p) && !losing && forces_pct(g, team, their_team) <= 66;
+        let at_gates = !losing && forces_pct(g, team, their_team) <= 66;
         let accept = !winning && !at_gates || counter >= 60;
         let why = if counter >= 60 {
             "war longer than 60 turns"
@@ -1632,6 +1601,11 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
         if preparing_target(g, team).is_some() {
             return no("preparing another war");
         }
+        // A war we could not fight (switch `INVASION`): no landmass shared with the target and no
+        // invasion of it we can afford.
+        if crate::invasion::on(g, p) && reach_distance(g, team, target).is_none() && team_leader(g, target).map_or(true, |q| crate::naval::amphibious_city(g, p, q).is_none()) {
+            return no("cannot reach the target");
+        }
         // Too strong even with the briber's help, when the briber is already at war with the target
         // (DENIAL_NO_GAIN; AI_isAllyLandTarget unported -> no /2).
         let briber_help = if g.at_war(their_team, target) { g.team_get_power(their_team, true) as i64 } else { 0 };
@@ -1652,10 +1626,10 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
         let ours = crate::trade::deal_val(g, from, p, we_give, false, 1);
         return on_value(theirs as i64 - ours as i64);
     }
-    // Tech-trade discipline (TECH_DISCIPLINE): no technology to our victory rival, no military
+    // Tech-trade discipline: no technology to our victory rival, no military
     // technology while we prepare or fight a war, no monopoly worth keeping to a non-friend.
     let gives_tech = we_give.iter().any(|t| t.item_type == TradeableItem::TRADE_TECHNOLOGIES);
-    let rules = if gives_tech { tech_ctx(g, p) } else { TechCtx { on: false, rival: None, leader: None, war: false } };
+    let rules = if gives_tech { tech_ctx(g, p) } else { TechCtx { rival: None, leader: None, war: false } };
     if gives_tech {
         let denied = we_give
             .iter()

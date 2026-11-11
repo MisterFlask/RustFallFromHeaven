@@ -692,7 +692,7 @@ impl Cai {
 
                 // FfH: Modified by Kael 10/30/2007 (units this building allows);
                 // Xienwolf Tweak (BETTER AI, merged Sephi): barbarians do not value it.
-                if !(g.is_option(GameOptionType::GAMEOPTION_AI_NO_BUILDING_PREREQS) || g.city_is_barbarian(c)) {
+                if !g.city_is_barbarian(c) {
                     for unit_class in d.unit_classes.keys() {
                         let Some(loop_unit) = d.civ_unit(civ, unit_class) else {
                             continue;
@@ -1102,7 +1102,7 @@ impl Cai {
                     value += 100;
                 }
             } else {
-                let no_espionage = g.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE);
+                let no_espionage = true; // there is no espionage
 
                 if focus_flags & BUILDINGFOCUS_GOLD != 0 {
                     let mut temp_value = (kb.commerce_modifier[C_GOLD] * g.city_base_commerce_rate(c, CommerceType::COMMERCE_GOLD)) / 40;
@@ -1880,10 +1880,6 @@ impl Cai {
                 if d.improvements[imp].requires_feature {
                     value += 500;
                 }
-            }
-
-            if g.players[p].advanced_start_points >= 0 {
-                value += 400;
             }
         }
 

@@ -133,29 +133,19 @@ pub(crate) fn fighters_off_worker_ai(g: &mut Game, p: PlayerId) {
 pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
     let p = v.p;
     fighters_off_worker_ai(g, p);
-    // Summons on their last turn attack before anything else moves (SUMMON_SPEND).
+    // Summons on their last turn attack before anything else moves.
     crate::casting::spend_expiring(g, v);
-    // Promotions and upgrades: every unit (switch `PROMOTE_ALL`; C++ `AI_doTurnUnitsPost`
-    // promotes every unit), else the units that will not get orders this turn (fortified
-    // garrisons, sentries) and the casters marching in stacks; a group's head gets its own again
-    // before it acts.
-    let all = crate::switches::PROMOTE_ALL.on(g, p);
-    if all || !v.barbarian {
-        for u in g.players[p].units.clone() {
-            // (A marching recruit takes no orders, promotions and upgrades included, until it
-            // arrives: docs/ARMIES.md.)
-            if !g.units.contains(u) || g.unit_march(u).is_some() {
-                continue;
-            }
-            let Some(grp) = g.units[u].group else { continue };
-            // A caster marching in a stack never heads it, and never splits off to attack: its
-            // promotions (the next spheres) come here (CASTER_STACKS).
-            let stack_caster = !v.barbarian && g.group_get_head_unit(grp) != Some(u) && crate::magic::spared_caster(g, u);
-            if !all && g.group_ready_to_move(grp, false) && !stack_caster {
-                continue;
-            }
-            upkeep(g, u);
+    // Promotions and upgrades: every unit (C++ `AI_doTurnUnitsPost` promotes every unit), not
+    // only a group's head before it acts and units that do not move (a unit inside a marching
+    // stack, a caster marching with one, would wait for its promotions); a group's head gets its
+    // own again before it acts.
+    for u in g.players[p].units.clone() {
+        // (A marching recruit takes no orders, promotions and upgrades included, until it
+        // arrives: docs/ARMIES.md.)
+        if !g.units.contains(u) || g.unit_march(u).is_some() || g.units[u].group.is_none() {
+            continue;
         }
+        upkeep(g, u);
     }
     if !v.barbarian {
         crate::magic::split_caster_heads(g, p);
@@ -207,9 +197,20 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
         let cut = (!g.groups[grp].mission_queue.is_empty() || g.groups[grp].activity_type != ActivityType::ACTIVITY_AWAKE)
             && crate::supply::cut(g, grp)
             && g.groups[grp].units.iter().all(|&o| !g.unit_has_moved(o));
-        // A ship on Patrol looks again when worn, out of range or outmatched (docs/NAVAL.md, 8).
-        let patrol = matches!(role, Role::Naval | Role::SeaExplore | Role::Transport) && crate::naval::patrol_wake(g, v, grp);
-        if g.groups[grp].force_update || replan || sleeping_settler || cut || patrol {
+        // A ship on Patrol keeps its station without new orders while nothing changes
+        // (`warships::keeps_station`); otherwise it decides again, as every awake AI group does.
+        if matches!(role, Role::Naval | Role::Transport | Role::SeaExplore) && crate::warships::keeps_station(g, v, grp) {
+            g.groups[grp].force_update = false;
+            continue;
+        }
+        // A ship of ours found out of range at the start of its turn (its range shrank under it: a
+        // port lost, open borders ended) decides again whatever its orders (`warships::to_port`).
+        let adrift = !v.barbarian
+            && matches!(role, Role::Naval | Role::Transport | Role::SeaExplore)
+            && (!g.groups[grp].mission_queue.is_empty() || g.groups[grp].activity_type != ActivityType::ACTIVITY_AWAKE)
+            && g.groups[grp].units.iter().all(|&o| !g.unit_has_moved(o))
+            && g.groups[grp].units.iter().any(|&o| g.unit_is_out_of_sea_range(o));
+        if g.groups[grp].force_update || replan || sleeping_settler || cut || adrift {
             // Settlers re-plan every turn (danger and sites change).
             g.groups[grp].force_update = false;
             g.group_clear_mission_queue(grp);
@@ -224,7 +225,7 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             continue;
         }
         // A stack whose fighters a strike took out is no army: its casters take their own
-        // orders (CASTER_STACKS).
+        // orders.
         if role == Role::Army && !v.barbarian && crate::magic::spared_caster(g, head) {
             for (c, ng) in crate::magic::leave_stack(g, v, grp) {
                 if alive(g, ng) && g.units.contains(c) && g.group_ready_to_move(ng, false) {
@@ -234,13 +235,13 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             continue;
         }
         // The sea (docs/NAVAL.md, section 8): a group in boats goes on home; a ship out of range,
-        // or worn and empty, makes for port.
-        if crate::naval::in_boats(g, v, grp, head) || crate::naval::ship_to_port(g, v, grp, head) {
+        // or worn and empty, makes for port (`warships::to_port`).
+        if crate::naval::in_boats(g, v, grp, head) || crate::warships::to_port(g, v, grp, head) {
             continue;
         }
         if !v.barbarian && crate::civs::unit(ai, g, v, grp, head) { continue; } // civ-mechanics
         if !v.barbarian && crate::cards_economy::unit(g, v, grp, head) { continue; } // the cards (docs/CARDS.md)
-        // Govannon teaches (TEACH_SPELLS).
+        // Govannon teaches (`casters::govannon`).
         if !v.barbarian && crate::casters::govannon(g, v, grp, head) {
             continue;
         }
@@ -254,10 +255,30 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             Role::Missionary => missionary(g, v, grp, head),
             Role::Caster => caster(g, v, grp, head),
             Role::Animal => barbarian(g, v, grp, head),
-            Role::Transport if !v.barbarian => crate::naval::transport(ai, g, v, grp, head),
-            Role::SeaExplore if !v.barbarian => crate::naval::sea_explore(ai, g, v, grp, head),
+            // Warships (`warships.rs`): an idle transport fights when there is something to fight,
+            // a sea explorer with nothing to reveal and every warship play as warships; the
+            // barbarians' ships and sea animals hunt and roam.
+            Role::Transport if !v.barbarian => {
+                if !(crate::warships::free_transport(g, v, grp, head) && crate::warships::play(ai, g, v, grp, head, true)) {
+                    crate::naval::transport(ai, g, v, grp, head)
+                }
+            }
+            Role::SeaExplore if !v.barbarian => {
+                if crate::warships::explorer_done(g, v, head) {
+                    crate::warships::play(ai, g, v, grp, head, false);
+                } else {
+                    crate::naval::sea_explore(ai, g, v, grp, head)
+                }
+            }
+            Role::Naval if !v.barbarian && crate::switches::WARSHIPS.on(g, v.p) => {
+                crate::warships::play(ai, g, v, grp, head, false);
+            }
+            Role::Transport | Role::SeaExplore | Role::Naval if v.barbarian => {
+                if !crate::warships::barbarian(g, v, grp, head) {
+                    hold(g, grp)
+                }
+            }
             Role::Transport | Role::SeaExplore => hold(g, grp),
-            Role::Naval if !v.barbarian && crate::naval::patrol(g, v, grp, head) => {}
             Role::Naval | Role::Other => hold(g, grp),
         }
         if role == Role::Army && !v.barbarian {
@@ -460,7 +481,7 @@ fn garrison_unit(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let here = g.unit_plot(u);
     if let Some(c) = g.map.plots[here].plot_city.filter(|&c| g.cities[c].owner == p) {
         let have = v.garrison.get(&c).copied().unwrap_or(0);
-        if have < garrison_quota(g, v, c) || crate::defense::sortie_ok(g, p, here, u) && attack_adjacent(g, v, grp, u, 800) {
+        if have < garrison_quota(g, v, c) || crate::defense::sortie_ok(g, p, here, u) && attack_adjacent(g, v, grp, u, 800, "sortie") {
             *v.garrison.entry(c).or_insert(0) += 1;
             if alive(g, grp) && g.group_ready_to_move(grp, false) {
                 hold(g, grp);
@@ -539,12 +560,18 @@ fn garrison_unit(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
 
 /// Attack an adjacent (one move) enemy if the odds are at least `min_odds` (of 1000).
 /// Returns true if an attack was made.
-pub(crate) fn attack_adjacent(g: &mut Game, v: &View, grp: GroupId, u: UnitId, min_odds: i32) -> bool {
+/// `site` names the caller in the record of the forecast rule (`military::field_call`). On the
+/// forecast (switch `FORECAST`, never the barbarians), `min_odds` is the chance the plot falls in
+/// the battle the pool on our plot fights (every unit of ours there that can attack it), not the
+/// unit's duel odds.
+pub(crate) fn attack_adjacent(g: &mut Game, v: &View, grp: GroupId, u: UnitId, min_odds: i32, site: &'static str) -> bool {
     if attack_power(g, u) == 0 || !g.unit_can_attack(u) || g.unit_moves_left(u) <= 0 {
         return false;
     }
     let here = g.unit_plot(u);
     let (x, y) = g.map.xy(here);
+    let p = g.units[u].owner;
+    let forecast = crate::military::forecast_on(g, p);
     let mut best: Option<(PlotIdx, i32)> = None;
     for dir in 0..DirectionType::NUM {
         let Some(q) = g.plot_direction(x, y, DirectionType::from_usize(dir)) else { continue };
@@ -557,6 +584,18 @@ pub(crate) fn attack_adjacent(g: &mut Game, v: &View, grp: GroupId, u: UnitId, m
         let Some(def) = g.plot_get_best_defender(q, None, Some(g.units[u].owner), Some(u), false, false, false) else { continue };
         let odds = g.get_combat_odds(u, def);
         let city_bonus = if g.map.plots[q].plot_city.is_some() { 100 } else { 0 };
+        if forecast && g.engage_applies(u, q) {
+            let attacks = crate::military::pool_attack(g, p, here, q);
+            if attacks.is_empty() {
+                continue;
+            }
+            let c = crate::military::field_call(g, v, p, &attacks, q, crate::military::Rule::Bar(min_odds), Some(site), || Some((odds >= min_odds, crate::combat_sim::Sim { first: odds, ..Default::default() })));
+            let score = c.est.map_or(1000, |e| e.p_take) + city_bonus;
+            if c.go && best.map_or(true, |(_, s)| score > s) {
+                best = Some((q, score));
+            }
+            continue;
+        }
         let score = odds + city_bonus;
         if odds >= min_odds && best.map_or(true, |(_, s)| score > s) {
             best = Some((q, score));
@@ -564,7 +603,11 @@ pub(crate) fn attack_adjacent(g: &mut Game, v: &View, grp: GroupId, u: UnitId, m
     }
     if let Some((q, score)) = best {
         if g.telemetry.on() {
-            let odds = score - if g.map.plots[q].plot_city.is_some() { 100 } else { 0 };
+            let odds = if forecast {
+                g.plot_get_best_defender(q, None, Some(p), Some(u), false, false, false).map_or(1000, |d| g.get_combat_odds(u, d))
+            } else {
+                score - if g.map.plots[q].plot_city.is_some() { 100 } else { 0 }
+            };
             crate::predict::attack(g, g.units[u].owner, u, q, odds, "adjacent");
             crate::predict::attack2(g, Some(&v.forecasts), g.units[u].owner, u, q, "adjacent");
         }
@@ -603,7 +646,7 @@ fn best_hunt_target(g: &Game, v: &View, u: UnitId, reach: &[Reached]) -> Option<
 }
 
 fn explore(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
-    if attack_adjacent(g, v, grp, u, 750) {
+    if attack_adjacent(g, v, grp, u, 750, "explore") {
         return;
     }
     if !alive(g, grp) || !g.units.contains(u) {
@@ -734,7 +777,7 @@ pub(crate) fn barbarian(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
         return;
     }
     // Barbarians and animals are aggressive: attack anything they can beat.
-    if attack_adjacent(g, v, grp, u, 500) {
+    if attack_adjacent(g, v, grp, u, 500, "aggressive") {
         return;
     }
     if !alive(g, grp) || !g.units.contains(u) {
@@ -874,13 +917,10 @@ fn great_person_build(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bo
     true
 }
 
-/// The religion player `p` spreads abroad (`MISSIONARY_ABROAD`): its state religion, once the
+/// The religion player `p` spreads abroad: its state religion, once the
 /// religion's holy city is ours and has its shrine (a gold a turn for every city in the world with
 /// the religion; MNAI's missionary strategy also wants the holy city).
 pub(crate) fn abroad_religion(g: &Game, p: PlayerId) -> Option<ReligionType> {
-    if !crate::switches::MISSIONARY_ABROAD.on(g, p) {
-        return None;
-    }
     let r = g.player_get_state_religion(p)?;
     g.team_has_shrine(g.players[p].team, Some(r)).then_some(r)
 }
@@ -968,18 +1008,17 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let p = v.p;
     let here = g.unit_plot(u);
     if crate::victory::mana_node(g, v, grp, u) { return; } // victory-pursuit
-    // Caster roles (casters.rs) and mana nodes (MANA_NODES).
+    // Caster roles (casters.rs) and mana nodes (mana.rs).
     if crate::casters::play(g, v, grp, u) {
         return;
     }
     if crate::magic::enabled(g, p) {
         crate::campaign::plan(g, v);
-        let school = crate::magic::school(g, p);
         let target = crate::magic::caster_target(g, v, u);
         if let Some((q, why)) = target {
             crate::trace!(g, p, "caster {} at {:?} -> {:?} ({})", g.d.units[g.units[u].unit_type].base.type_, g.map.xy(here), g.map.xy(q), why);
             // A caster on its way to an operation joins a stack of it where it stands, before or
-            // after its step, and marches with it from then on (CASTER_STACKS).
+            // after its step, and marches with it from then on.
             let to_stack = matches!(why, "strike" | "rally");
             let join = |g: &mut Game, v: &View, grp: GroupId| {
                 let Some(stack) = crate::magic::stack_to_join(g, v, u) else { return false };
@@ -991,8 +1030,7 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
             }
             // A school caster crosses dangerous ground only beside our units (magic.rs, "The
             // caster school"); with nowhere safe to step, it goes to study.
-            let step = if school { crate::magic::safe_step(g, v, u, q) } else { Some(q) };
-            if let Some(s) = step {
+            if let Some(s) = crate::magic::safe_step(g, v, u, q) {
                 if s != here {
                     move_to(g, grp, s, 0);
                 }
@@ -1005,7 +1043,7 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
                 return;
             }
         }
-        if school && (target.is_some() || crate::magic::apprentice(g, u)) {
+        if target.is_some() || crate::magic::apprentice(g, u) {
             if let Some(c) = crate::magic::study_city(g, v, u) {
                 crate::trace!(g, p, "caster {} at {:?} -> {:?} (study)", g.d.units[g.units[u].unit_type].base.type_, g.map.xy(here), g.map.xy(c));
                 match crate::magic::safe_step(g, v, u, c) {
@@ -1044,7 +1082,7 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
             crate::trace!(g, p, "caster {} at {:?} -> {:?} (most threatened city)", g.d.units[g.units[u].unit_type].base.type_, g.map.xy(here), g.map.xy(g.city_plot(c)));
             // A school caster gets there from one sheltered plot to the next (a Mage an operation
             // left at the front walked home across open ground).
-            let step = if crate::magic::school(g, p) { crate::magic::safe_step(g, v, u, g.city_plot(c)) } else { None };
+            let step = if crate::magic::enabled(g, p) { crate::magic::safe_step(g, v, u, g.city_plot(c)) } else { None };
             match step {
                 Some(s) if s != here => move_to(g, grp, s, 0),
                 Some(_) => {}
