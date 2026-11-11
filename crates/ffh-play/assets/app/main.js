@@ -23,6 +23,7 @@ import { battleMarkers, openReport, showBattles, battleShown, battlesToShow, bat
 import { openGovernors } from "./governors.js";
 import { openDiplomacy, checkMoments, resetMoments } from "./diplo.js";
 import * as crusade from "./crusade.js";
+import * as seas from "./seas.js";
 import * as tools from "./tools.js";
 import { applyMapDelta, plotDistance } from "./tiles.js";
 import { wantsSea, autoSeaLayer } from "./sea.js";
@@ -187,7 +188,7 @@ function clearGame() {
 
 /** The dialogs that belong to one game (closed when another game arrives); the load, options,
  *  tools and crash dialogs stay. */
-const GAME_DIALOGS = ["city", "decision", "election", "event", "research", "vote", "promotions", "spells", "trade", "leader", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save", "culture", "armies", "governors", "crusade", "crusade-lend", "crusades", "troops"];
+const GAME_DIALOGS = ["city", "decision", "election", "event", "research", "vote", "promotions", "spells", "trade", "leader", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save", "culture", "armies", "governors", "crusade", "crusade-lend", "crusades", "troops", "sea", "seas"];
 
 /** Fetches the view (and the map when its revision changed) when the status says it changed. */
 async function refreshView(st) {
@@ -430,6 +431,8 @@ function openScreen(name) {
       return screens.openResearch();
     case "crusades":
       return crusade.openCrusades();
+    case "seas":
+      return seas.openSeasScreen();
   }
 }
 
@@ -667,6 +670,8 @@ function wire() {
   click("btn-diplo", () => openScreen("diplomacy"));
   click("btn-crusades", () => openScreen("crusades"));
   crusade.init({ centerOn: (x, y) => mapView.centerOn(x, y) });
+  click("btn-seas", () => openScreen("seas"));
+  seas.init({ centerOn: (x, y) => mapView.centerOn(x, y), seaLayer: () => setLayer("sea") });
   click("btn-tools", () => tools.openOptions());
   click("btn-save", () => S.view && screens.saveDialog());
   click("btn-load", () => screens.loadScreen());
@@ -813,6 +818,8 @@ async function boot() {
     rightClick: (x, y, ev) => units.rightClick(x, y, ev),
     // A battle's marker (engagement combat): its watch screen.
     battleClick: (b) => openReport(b.id, { report: !b.has_log }),
+    // A sea's name or badge on the Sea layer (docs/NAVAL.md 10): its panel.
+    seaClick: (id) => seas.openSeaPanel(id),
     hover: (x, y) => units.hoverAt(x, y),
     dblclick: (x, y) => {
       const c = [...S.cities.values()].find((q) => q.x === x && q.y === y && q.owner === me()?.player);

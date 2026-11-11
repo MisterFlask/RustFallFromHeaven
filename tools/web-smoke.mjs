@@ -1203,6 +1203,23 @@ async function keysAndLayers() {
     if (layer !== "terrain") await shot(`layer-${layer}`);
   }
   steps.push("map layers: political, yields, sea, terrain");
+  // Named seas (docs/NAVAL.md 10): the Seas screen (the menu's Seas) and a sea's panel from it.
+  if (await S("(S.view.seas || []).length > 0")) {
+    const shown = await b.eval(`(() => { const e = document.getElementById("btn-seas"); if (!e || e.hidden) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; })()`);
+    if (shown) await click("#btn-seas");
+    else await b.eval(`window.ffh.openScreen("seas")`);
+    await dialog("Seas");
+    await until2(`document.querySelectorAll("#modals .modal table.seas tr[data-sea]").length > 0`, "the Seas screen's rows");
+    await shot("seas-screen");
+    const name = await b.eval(`document.querySelector("#modals .modal table.seas tr[data-sea] td.sea-name").textContent`);
+    await click("#modals .modal table.seas tr[data-sea] td button");
+    await dialog(name);
+    await until2(`!!document.querySelector("#modals .sea-panel .sea-control")`, "the sea's panel");
+    await shot("sea-panel");
+    await closeDialog(name);
+    await closeDialog("Seas");
+    steps.push(`seas: the Seas screen and the panel of ${name}`);
+  } else steps.push("seas: none seen yet");
 }
 
 /** The tools (P6): the inspector, debug reveal, AI autoplay, the spectator mode. */

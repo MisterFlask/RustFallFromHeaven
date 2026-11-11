@@ -145,11 +145,11 @@ function chunksAround(map, x, y, out) {
 }
 
 /** The map arrays of a `map` reply (design §4.4), in the server's order. */
-export const MAP_LAYERS = ["vis", "plot_type", "terrain", "feature", "bonus", "improvement", "route", "owner", "river", "city", "yield", "sea"];
+export const MAP_LAYERS = ["vis", "plot_type", "terrain", "feature", "bonus", "improvement", "route", "owner", "river", "city", "yield", "sea", "sea_id"];
 
 /** The map arrays the terrain cache draws from (every layer but `sea`, which the Sea layer draws
  *  over the cached terrain each frame: sea.js; the yield layer draws `yield`). */
-export const STATIC_LAYERS = MAP_LAYERS.filter((k) => k !== "sea");
+export const STATIC_LAYERS = MAP_LAYERS.filter((k) => k !== "sea" && k !== "sea_id");
 
 /** The chunks to redraw between two maps (`"all"` for another map or none before), as a Set
  *  of `"cx,cy"`. */

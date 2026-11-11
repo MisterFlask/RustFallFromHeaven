@@ -431,6 +431,7 @@ const RAIL = [
   ["btn-governors", "promo_command"],
   ["btn-diplo", "diplomacy"],
   ["btn-crusades", "attack"],
+  ["btn-seas", "promo_navigation"],
 ];
 const SYSTEM = [
   ["btn-tools", "settings"],
