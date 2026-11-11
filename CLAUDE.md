@@ -389,6 +389,15 @@ narration or mood. Write `Total offered: 240`, `This proposal will be refused.`,
 "they would welcome it" or "the forest thanks you". Flavor belongs to what characters say (the
 leaders' speech) and to the names and descriptions of the game's data.
 
+## Show UI changes in a screenshot
+
+Whenever a change adds to or alters what the player sees in support of a feature (a panel, a
+button's states, a dialog, an alert, a tooltip's text), show the owner the result in a screenshot
+when it is done (the owner's rule, 2026-11-11): a PNG readable on a phone (a crop of what changed,
+at `deviceScaleFactor: 2`, not a full desktop frame), sent with the turn's report. For a feature
+with rules, the screenshots cover how its limits are told to the player, where its state is seen
+at a glance, and the exact text of each new effect.
+
 ## Verifying renderer and visual work (r3d, lab, client look)
 
 This is a game. The owner looks at the result and reports regressions, and a regression costs a
