@@ -294,6 +294,29 @@ async function plotPos(x, y) {
   return b.eval(`(() => { const m = window.ffh.mapView; const p = m.screenOf(${x}, ${y}); const r = document.querySelector("canvas.map").getBoundingClientRect(); return { x: p.x + r.left, y: p.y + r.top }; })()`);
 }
 
+/** Points the mouse at page position `e` on the map until `expr` holds (the plot's tooltip).
+ *  Something over that point takes the pointer from the map (no hover, no tooltip): a toast (the
+ *  HD-2D map's slow-GPU note comes up whenever its frame timing says so, for 20 s, over the
+ *  middle of the map), or a turn-start popup that came after `answerPopups` returned (on a busy
+ *  machine). Either made the supply step time out in about half the runs. So, while `expr` does
+ *  not hold and the point is covered, the toasts are dismissed or the popups answered, and the
+ *  mouse is pointed again. */
+async function hoverUntil(e, expr, what) {
+  const covered = `(() => { const el = document.elementFromPoint(${e.x}, ${e.y}); if (el?.closest("#toasts")) { for (const t of document.querySelectorAll("#toasts .toast")) t.remove(); return "toast"; } return el?.closest("#modals") ? "modal" : ""; })()`;
+  await b.move(e.x - 3, e.y - 3);
+  await b.move(e.x, e.y);
+  await until(async () => {
+    if (await b.eval(expr)) return true;
+    const what = await b.eval(covered);
+    if (what === "modal") await answerPopups(false);
+    if (what) {
+      await b.move(e.x - 3, e.y - 3);
+      await b.move(e.x, e.y);
+    }
+    return false;
+  }, what);
+}
+
 async function waitHuman(what = "the player's turn", ms = 60000) {
   await until2(`(() => { const S = window.ffh.S; return S.status && S.status.phase === "human" && S.view && S.view.turn === S.status.turn; })()`, what, ms);
   await new Promise((r) => setTimeout(r, 250));
@@ -384,9 +407,9 @@ async function classicClient() {
   const err = await b.eval("window.ffh.look.error ? String(window.ffh.look.error.message || window.ffh.look.error) : null");
   if (err) throw new Error(`the art did not load: ${err}`);
   if ((await b.eval("window.ffh.mapView.renderer()")) !== "flat") throw new Error("the map is not the flat one");
-  if (!(await b.eval(`document.documentElement.classList.contains("art") && !!document.querySelector("#btn-techs .ui-ptext") && !!document.querySelector("#empire canvas.ui-px")`))) {
-    throw new Error("the interface has no bitmap type or icons");
-  }
+  // (Waited for, not read once: the type and icons can come a moment after the art, as the page
+  // settles on the flat map and the first view draws the top bar; a single read failed 1 run in 6.)
+  await until2(`document.documentElement.classList.contains("art") && !!document.querySelector("#btn-techs .ui-ptext") && !!document.querySelector("#empire canvas.ui-px")`, "the interface's bitmap type and icons", 10000);
   const look = await b.eval(`(() => {
     const mv = window.ffh.mapView;
     const times = [];
@@ -1770,7 +1793,9 @@ async function stagedCrusade(bin, saves) {
   const pledge = `${TOP} .modal button.option[data-pledge="yes"]`;
   // The popups before it in order (events, votes, elections) are answered first.
   for (let k = 0; k < 20 && !(await b.eval(`!!document.querySelector(${q(pledge)})`)); k++) {
-    const other = `${TOP} .modal button.option:not([disabled])`;
+    // (Never the call's own buttons: the call can come between the test above and this click,
+    // and its first option is Pledge, which then went unseen: 1 full run in 6.)
+    const other = `${TOP} .modal button.option:not([disabled]):not([data-pledge])`;
     if (await b.eval(`!!document.querySelector(${q(other)})`)) await click(other);
     await new Promise((r) => setTimeout(r, 400));
   }
@@ -1873,9 +1898,7 @@ async function supplyHd2d(url, bin, saves) {
   await until2(`/Supplied: \\d+ of \\d+, from /.test(document.querySelector("#unit-panel .army-supply")?.textContent ?? "")`, "the army's supply in the unit panel");
   const near = await S(`(() => { const p = ${army(st.supplied).replace("window.ffh.S", "S")}.supply.line.path[1]; return { x: p[0], y: p[1] }; })()`);
   const e = await plotPos(near.x, near.y);
-  await b.move(e.x - 3, e.y - 3);
-  await b.move(e.x, e.y);
-  await until2(`/^Supplied \\(cost \\d+ of \\d+\\)$/.test(document.querySelector("#mapwrap .tooltip .tip-supply")?.textContent ?? "")`, "the supply readout in the path's tooltip");
+  await hoverUntil(e, `/^Supplied \\(cost \\d+ of \\d+\\)$/.test(document.querySelector("#mapwrap .tooltip .tip-supply")?.textContent ?? "")`, "the supply readout in the path's tooltip");
   const readout = await b.eval(`document.querySelector("#mapwrap .tooltip .tip-supply").textContent`);
   await b.eval(`window.ffh.units.clearSelection()`);
   // The hungry army's marker.
@@ -1904,7 +1927,9 @@ async function crusadeHd2d(url, bin, saves) {
   await until2(`(() => { const e = document.querySelector("#iso-rail #btn-crusades"); return !!e && !e.hidden && e.classList.contains("attention"); })()`, "the rail's Crusades advisor, marked");
   const pledge = `${TOP} .modal button.option[data-pledge="yes"]`;
   for (let k = 0; k < 20 && !(await b.eval(`!!document.querySelector(${q(pledge)})`)); k++) {
-    const other = `${TOP} .modal button.option:not([disabled])`;
+    // (Never the call's own buttons: the call can come between the test above and this click,
+    // and its first option is Pledge, which then went unseen: 1 full run in 6.)
+    const other = `${TOP} .modal button.option:not([disabled]):not([data-pledge])`;
     if (await b.eval(`!!document.querySelector(${q(other)})`)) await click(other);
     await new Promise((r) => setTimeout(r, 400));
   }

@@ -67,9 +67,9 @@ pub fn can_start_mission(g: &Game, units: &[UnitId], mission: MissionType, data1
     }
     let typed = |n: usize| (data1 >= 0 && (data1 as usize) < n).then_some(data1 as usize);
     for &u in units {
-        // This game's (docs/NAVAL.md, 3.2; as `group_can_start_mission`): in boats a unit moves,
-        // waits or sleeps; nothing else.
-        if g.unit_in_boats_at(u, plot) && !matches!(mission, MissionType::MISSION_MOVE_TO | MissionType::MISSION_MOVE_TO_UNIT | MissionType::MISSION_SKIP | MissionType::MISSION_SLEEP | MissionType::MISSION_SENTRY) {
+        // This game's (docs/NAVAL.md, 3.2): in boats a unit moves, waits or sleeps, as the rules'
+        // group check says.
+        if g.unit_in_boats_at(u, plot) && !ffh_core::naval::mission_allowed_in_boats(mission) {
             continue;
         }
         let ok = match mission {

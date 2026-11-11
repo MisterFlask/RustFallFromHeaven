@@ -203,6 +203,10 @@ impl Game {
             self.units[u].army = self.units[from].army;
             self.units[u].march = self.units[from].march.take();
         }
+        // This game's sea (docs/NAVAL.md, 3.1 and 3.4): an upgrade or conversion at sea keeps the
+        // ship's wear (only a port clears it) and the out-of-range state of its message.
+        self.units[u].sea_turns = self.units[from].sea_turns;
+        self.units[u].sea_out_of_range = self.units[from].sea_out_of_range;
         let info = &d.units[self.units[u].unit_type];
         // C++ `CvPlot* pPlot = plot();` (only dereferenced for the hidden nationality check).
         let plot = self.unit_plot_opt(u);

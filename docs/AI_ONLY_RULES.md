@@ -62,6 +62,7 @@ is the only thing that stops a wasteful cast: moving them needs the same conditi
 | k | `ffh/custom.rs:1317` (`giftUnit`) | a Manes given to an AI Infernal joins a city as population, (100 - 5 x pop)% of the time; a human keeps the unit | no |
 | l | `player/diplomacy_trade.rs:404` (`canTradeItem`) | an AI keeps one copy of a resource it trades; a human may trade its last | little: `trade.rs` keeps a copy anyway |
 | m | `path.rs` (several), `group/misc.rs:1209` (path callbacks, `AI_getPlotDanger`) | AI groups that cannot fight avoid danger, AI land groups path only within their area, attack paths weigh defences, border danger counts for the AI only | heavily: decision support inside the shared path finder; low priority |
+| n | `path.rs` (`Game::path_ai_sea_blocked`, the flag `MOVE_BOATS`; this game's sea, 2026-11-10, docs/NAVAL.md section 8) | an AI-controlled ship in its team's range never paths out of it; an AI-controlled land group never paths onto water it would be at sea on, unless the search passes `MOVE_BOATS`, and then only onto water in range (or a plot where its units would board a ship of its team); a human's groups (not automated) path over any water | yes: `ffh-ai` `naval.rs` (`walk_home_in_boats`), `reach.rs`; a human's automated groups get it too. Marching recruits are kept off water for every owner by a rule (`path_march_sea_blocked`), not by this |
 
 **A4. AI shortcuts written as rules**
 - **Lairs** (`unit/lifecycle.rs:1124`, `CvUnit::setXY`): an AI unit at war with the barbarians that
