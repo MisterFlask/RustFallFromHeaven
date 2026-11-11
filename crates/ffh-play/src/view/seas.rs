@@ -498,6 +498,21 @@ fn sea_sides(v: &Viewer, s: SeaId) -> Vec<(SeaParty, i32, Vec<UnitId>)> {
     out
 }
 
+/// Of `lanes` (through sea `s`), those cut in another sea, counted by that sea (in sea order).
+fn cut_elsewhere(s: SeaId, lanes: &[(UnitId, ffh_core::naval::SeaLane)]) -> Vec<(SeaId, usize)> {
+    let mut out: Vec<(SeaId, usize)> = Vec::new();
+    for (_, l) in lanes {
+        if let Some((o, _)) = l.cut_in.filter(|&(o, _)| o != s) {
+            match out.iter_mut().find(|e| e.0 == o) {
+                Some(e) => e.1 += 1,
+                None => out.push((o, 1)),
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
 fn x100(x: i32) -> String {
     if x % 100 == 0 {
         format!("{}", x / 100)
@@ -573,13 +588,18 @@ pub fn sea_panel(v: &Viewer, finder: &mut PathFinder, s: SeaId, units: &[UnitId]
     let ports = g.sea_ports(s, v.team);
     let ships_in = supply_ships(v).into_iter().filter(|&u| g.plot_sea(g.unit_plot(u)) == Some(s)).count();
     let mut now = Vec::new();
-    let cut = lanes.iter().filter(|(_, l)| l.is_cut()).count();
-    now.push(match (lanes.len(), cut) {
-        (0, _) => "Lanes through it: none.".to_string(),
-        (_, 0) => "Lanes through it: open.".to_string(),
-        (n, c) if c == n => "Lanes through it: cut.".to_string(),
-        (n, c) => format!("Lanes through it: {c} of {n} cut."),
+    // This sea's own effect: a lane is cut here only while this sea is closed to the human; a
+    // lane through it cut in another sea is said apart, naming that sea.
+    now.push(match (lanes.is_empty(), st.closed()) {
+        (true, _) => "Lanes through it: none.".to_string(),
+        (false, true) => "Lanes through it: cut here.".to_string(),
+        (false, false) => "Lanes through it: open.".to_string(),
     });
+    if !st.closed() {
+        for (other, n) in cut_elsewhere(s, &lanes) {
+            now.push(format!("{n} lane{} through it {} cut in {}.", if n == 1 { "" } else { "s" }, if n == 1 { "is" } else { "are" }, sea_name(g, other)));
+        }
+    }
     if ports.is_empty() {
         now.push("Your ports on it: none.".to_string());
     } else {
@@ -767,14 +787,22 @@ pub fn seas_screen(v: &Viewer) -> Json {
             })
             .collect();
         let lanes = g.sea_lanes_through(s, v.team, v.team);
-        let cut = lanes.iter().filter(|(_, l)| l.is_cut()).count();
-        let open = lanes.len() - cut;
-        let lanes_text = match (open, cut) {
-            (0, 0) => "none".to_string(),
-            (o, 0) => format!("{o} open"),
-            (0, c) => format!("{c} cut"),
-            (o, c) => format!("{o} open, {c} cut"),
-        };
+        // Cut here only while this sea is closed to the human; lanes cut in another sea apart.
+        let closed = sm.st.closed();
+        let elsewhere: usize = if closed { 0 } else { cut_elsewhere(s, &lanes).iter().map(|e| e.1).sum() };
+        let cut = if closed { lanes.len() } else { 0 };
+        let open = lanes.len() - cut - elsewhere;
+        let mut parts = Vec::new();
+        if open > 0 {
+            parts.push(format!("{open} open"));
+        }
+        if cut > 0 {
+            parts.push(format!("{cut} cut"));
+        }
+        if elsewhere > 0 {
+            parts.push(format!("{elsewhere} cut elsewhere"));
+        }
+        let lanes_text = if parts.is_empty() { "none".to_string() } else { parts.join(", ") };
         let (x, y) = g.map.xy(label_plot(g, &plots));
         rows.push(crate::jobj! {
             "id" => s.0 as i64,
