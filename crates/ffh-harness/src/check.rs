@@ -324,7 +324,8 @@ pub fn check(g: &Game) {
     for p in g.player_ids() {
         let direct = g.player_rules_directly(p);
         for &c in &g.players[p].cities {
-            if g.city_is_governed(c) == direct {
+            // An outpost has no governor in any mode (docs/NAVAL.md, 9.2).
+            if !g.cities[c].outpost && g.city_is_governed(c) == direct {
                 fail(format!("city {} of player {} is not in its owner's mode (direct rule: {direct})", g.cities[c].name, p.0));
             }
             if g.city_is_governed(c) && !g.cities[c].settlement && g.cities[c].order_queue.is_empty() {

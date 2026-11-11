@@ -385,7 +385,7 @@ fn every_land_type_has_rows() {
     let count = |want: Option<ActionKind>| d.units.keys().filter(|&u| u.idx() < own && d.units[u].engage_rows.map(|_| d.engage_kind(u)) == want).count();
     // (kind, unit types) at the time of writing; the sum is every unit type of the game's own.
     let want = [
-        (Some(ActionKind::Strike), 168), // (170 less the Worker and the Mud Golem, docs/WORKS.md)
+        (Some(ActionKind::Strike), 169), // (170 less the Worker and the Mud Golem, docs/WORKS.md; the Colonist, docs/NAVAL.md 9.2)
         (Some(ActionKind::Charge), 38),
         (Some(ActionKind::Stab), 11),
         (Some(ActionKind::Shoot), 37), // 16, this game's Skirmisher and the 20 recon units that do not stab

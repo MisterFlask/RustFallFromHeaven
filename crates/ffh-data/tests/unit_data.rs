@@ -46,9 +46,10 @@ fn table_sizes() {
     // The game's own entries: the great-person cards' files add theirs (docs/CARDS.md).
     let own = |n: usize, table: &str| n - card_entry_count(table);
     // 326 and 248, and this game's Skirmisher (docs/PORTING.md, "Changes from FFH2"), less the
-    // Worker, the Mud Golem and the Work Boat and their two classes (docs/WORKS.md).
-    assert_eq!(own(d.units.len(), "units"), 324);
-    assert_eq!(own(d.unit_classes.len(), "unit_classes"), 247);
+    // Worker, the Mud Golem and the Work Boat and their two classes (docs/WORKS.md), and this
+    // game's Colonist and its class (docs/NAVAL.md, 9.2).
+    assert_eq!(own(d.units.len(), "units"), 325);
+    assert_eq!(own(d.unit_classes.len(), "unit_classes"), 248);
     // 261 and this game's PROMOTION_SPIRIT_GUIDE2 (docs/SUITABILITY.md) and
     // PROMOTION_SUMMONERS_BOND (the Summoner trait's), less Extension I and II (docs/ENGAGEMENTS.md,
     // "Summons").

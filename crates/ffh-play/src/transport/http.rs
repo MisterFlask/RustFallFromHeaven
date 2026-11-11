@@ -104,6 +104,7 @@ pub const ASSETS: &[(&str, &str, &str)] = &[
     ("app/look.js", JS, include_str!("../../assets/app/look.js")),
     ("app/stacks.js", JS, include_str!("../../assets/app/stacks.js")),
     ("app/supply.js", JS, include_str!("../../assets/app/supply.js")),
+    ("app/lanes.js", JS, include_str!("../../assets/app/lanes.js")),
     ("app/sea.js", JS, include_str!("../../assets/app/sea.js")),
     // The experimental 3D renderer (docs/R3D.md), loaded by the client only when chosen.
     ("app/r3d/config.js", JS, include_str!("../../assets/app/r3d/config.js")),
