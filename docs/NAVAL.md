@@ -678,3 +678,31 @@ master's range blockade had 701 blockading ship-turns in 16 games (44 a game). E
 invasion fleet loaded in these games). The ships lost to attrition were on a long move when their
 range shrank under them (a port lost or open borders ended): they turned home at once
 (`units::play` re-plans a ship found out of range) but were too far to get back.
+
+**Phase 4** (2026-11-11). *Far shores* (`ffh far-shores`, Fractal maps, seeds 1-5 each, civs 2 /
+4 / 6 / 8 by size): 52 of 60 maps have a far shore, so the pass acts on most maps; the duel and
+small sizes as much as the large.
+
+| size | sea level | maps | with a far shore | far shores | flagged moved | stayed (no plot fits) | kept (in a start's radius) | mana added | flagged types a starting landmass lost entirely |
+|---|---|---|---|---|---|---|---|---|---|
+| duel | low | 5 | 4 | 7 | 11 | 2 | 1 | 7 | 9 |
+| duel | medium | 5 | 5 | 7 | 8 | 4 | 0 | 7 | 8 |
+| duel | high | 5 | 4 | 6 | 4 | 0 | 4 | 6 | 4 |
+| small | low | 5 | 3 | 5 | 15 | 6 | 2 | 5 | 4 |
+| small | medium | 5 | 5 | 10 | 19 | 3 | 6 | 10 | 8 |
+| small | high | 5 | 5 | 11 | 22 | 4 | 6 | 11 | 9 |
+| standard | low | 5 | 4 | 6 | 25 | 11 | 10 | 7 | 1 |
+| standard | medium | 5 | 4 | 9 | 29 | 10 | 8 | 9 | 5 |
+| standard | high | 5 | 4 | 10 | 23 | 10 | 7 | 10 | 6 |
+| large | low | 5 | 4 | 8 | 46 | 14 | 10 | 12 | 9 |
+| large | medium | 5 | 5 | 11 | 50 | 18 | 13 | 12 | 9 |
+| large | high | 5 | 5 | 10 | 36 | 22 | 16 | 10 | 4 |
+| all | | 60 | 52 | 100 | 288 | 104 | 83 | 106 | 76 |
+
+"Stayed" are mostly Gems (hills or jungle, which small far shores often lack). No start loses a
+resource inside its own city radius (by construction); a starting landmass loses Incense, Silk or
+Gems entirely in 76 cases of 120 starting-landmass-and-type pairs: that is the pull the spec asks
+for. *Outposts in AI games* (4 games, standard, 6 civs, 300 turns, seeds 2-5): 13 Colonists
+trained, 10 outposts founded (turns 69-289; 1, 3, 4 and 2 a game), 1 raised to a city, 1 lane cut
+(8 gold of raids paid), 1 outpost left without a lane that starved (its home port lost) and opened
+again; no contested raiding. Few patrols in these games, so lanes are rarely cut.
