@@ -88,3 +88,78 @@ test("the side of a plot toward a neighbour", () => {
   const sq = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
   assert.deepEqual(Sea.sideToward(sq, { x: 0.5, y: -0.5 }).map((p) => [p.x, p.y]).sort(), [[0, 0], [1, 0]]);
 });
+
+// ---- Phase 2: named seas (app/sea.js, app/seas.js) --------------------------------------------
+
+import { setData } from "../app/state.js";
+import { barPercent, sendCommands } from "../app/seas.js";
+
+/** A map given row by row from the south: `sea_id`. */
+function named(rows) {
+  return { w: rows[0].length, h: rows.length, wrap_x: false, wrap_y: false, sea_id: rows.flat() };
+}
+
+test("borders between seas, each once, east and north", () => {
+  const m = named([
+    [0, 0, 1, -1],
+    [0, 2, 1, 1],
+    [-1, -1, -1, -1],
+  ]);
+  assert.deepEqual(Sea.seaBorders(m, 0, 0), [], "same sea east and north");
+  assert.deepEqual(Sea.seaBorders(m, 1, 0), [[1, 0], [0, 1]], "sea 1 east, sea 2 north");
+  assert.deepEqual(Sea.seaBorders(m, 2, 0), [], "land east: no border");
+  assert.deepEqual(Sea.seaBorders(m, 3, 0), [], "land has none");
+  assert.equal(Sea.seaIdAt({ w: 1, h: 1 }, 0), -1, "a map without the array");
+});
+
+test("what a plot of a named sea draws, by its sea's state", () => {
+  const m = named([[0, 1]]);
+  const seas = Sea.seasById({ seas: [{ id: 0, state: "held" }, { id: 1, state: "open" }] });
+  assert.deepEqual(Sea.seaPlotNamed(m, seas, 0, 0), { state: "held", borders: [[1, 0]] });
+  assert.equal(Sea.seaPlotNamed(m, seas, 1, 0), null, "open, no border to draw from here");
+  // The states differ by pattern or lightness, not by hue alone.
+  const looks = Object.values(Sea.SEA_STATES).map((s) => `${s.tint}|${s.stripes?.length ?? 0}|${!!s.dots}|${s.fill}|${s.ring}`);
+  assert.equal(new Set(looks).size, looks.length);
+  assert.ok(Sea.SEA_STATES.held.stripes && Sea.SEA_STATES.contested.stripes.length === 2 && !Sea.SEA_STATES.held_you.stripes);
+});
+
+test("a label's box answers a click", () => {
+  const hits = [{ id: 3, x0: 10, y0: 10, x1: 50, y1: 30 }];
+  assert.equal(Sea.seaHitAt(hits, 20, 20), 3);
+  assert.equal(Sea.seaHitAt(hits, 60, 20), null);
+  assert.equal(Sea.seaHitAt(null, 0, 0), null);
+  const s = Sea.seaLabelSizes(8);
+  assert.ok(s.name >= 11 && s.badge >= 10, "legible zoomed out");
+});
+
+test("a lane's parts: open, then cut from the closed sea's first plot", () => {
+  const lane = { path: [[5, 1], [4, 1], [3, 1], [2, 1]], cut: { at: 2, sea: "Bay", holder: "Lanun" } };
+  assert.deepEqual(Sea.laneParts(lane), { open: [[5, 1], [4, 1], [3, 1]], cut: [[3, 1], [2, 1]], at: [3, 1] });
+  assert.deepEqual(Sea.laneParts({ path: [[1, 1], [2, 1]], cut: null }), { open: [[1, 1], [2, 1]], cut: null, at: null });
+});
+
+test("the harbour mark: none when open, two states when blockaded", () => {
+  assert.equal(Sea.harbourMark({ harbour: null }), null);
+  assert.equal(Sea.harbourMark({ harbour: { state: "open" } }), null);
+  assert.equal(Sea.harbourMark({ harbour: { state: "blockaded", besieged: false } }).level, 1);
+  assert.equal(Sea.harbourMark({ harbour: { state: "blockaded", besieged: true } }).level, 2);
+});
+
+test("sea lines that read as a loss", () => {
+  assert.ok(Sea.seaLineWarns("Enters The Grey Narrows (contested) at plot 4: will be intercepted by Lanun's patrol."));
+  assert.ok(Sea.seaLineWarns("Out of range from plot 6: -15% HP a turn."));
+  assert.ok(!Sea.seaLineWarns("Harbour open. The city heals and repairs at 50% during the siege."));
+  assert.ok(!Sea.seaLineWarns("On Patrol: Bay of Lorda."));
+});
+
+test("the panel's bars and the send's commands", () => {
+  assert.equal(barPercent(14, [14, 17]), 82);
+  assert.equal(barPercent(0, [17]), 0);
+  assert.equal(barPercent(1, [400]), 2, "a strength above 0 shows");
+  setData({ tables: { MissionType: [{ type: "MISSION_MOVE_TO" }, { type: "MISSION_PLUNDER" }] }, defines: {} });
+  assert.deepEqual(sendCommands({ here: false, units: [7], x: 4, y: 1 }), [
+    { c: "move", units: [7], x: 4, y: 1, append: false },
+    { c: "mission", units: [7], mission: 1, data1: -1, data2: -1, flags: 0, append: true },
+  ]);
+  assert.deepEqual(sendCommands({ here: true, units: [7] }), [{ c: "mission", units: [7], mission: 1, data1: -1, data2: -1, flags: 0, append: false }]);
+});

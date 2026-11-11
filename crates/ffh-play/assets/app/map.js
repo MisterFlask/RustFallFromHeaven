@@ -14,8 +14,8 @@
 import { S, tname, dname, info, me, isBarbarian, ORDER_KINDS, observing } from "./state.js";
 import * as T from "./tiles.js";
 import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark, drawMarchMark, marchMark } from "./iso.js";
-import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark } from "./supply.js";
-import { seaPlot, stackWear, drawDark, drawEdges, drawWearPip } from "./sea.js";
+import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
+import { seaPlot, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, seaHitAt, laneParts, drawLaneCut, drawHarbourMark } from "./sea.js";
 
 const ZOOMS = [12, 16, 24, 32, 48, 64];
 /** The smallest tile (CSS px) the battle markers are drawn and clicked at (`battleMarkerAt`). */
@@ -255,6 +255,9 @@ export class MapView {
       // A battle's marker (engagement combat) opens the battle, not the plot.
       const b = this.battleAt(ev);
       if (b && this.h.battleClick) return this.h.battleClick(b);
+      // A sea's name or badge on the Sea layer opens the sea's panel (docs/NAVAL.md 10).
+      const sea = this.seaAt(ev);
+      if (sea !== null && this.h.seaClick) return this.h.seaClick(sea);
       if (ev.pointerType === "touch") this.hoverAt(ev);
       this.h.click?.(p.x, p.y, ev);
     });
@@ -994,6 +997,8 @@ export class MapView {
     if (this.layer === "sea") this.drawSea(g);
     this.drawCities(g);
     this.drawUnits(g);
+    this.seaHits = [];
+    if (this.layer === "sea") this.drawSeaLabels(g);
     this.drawOverlays(g);
     this.drawFlashes(g);
     this.drawMarkers();
@@ -1034,23 +1039,72 @@ export class MapView {
     if (!map?.sea) return;
     const ts = this.cam.ts;
     const segs = [];
+    const borders = [];
+    const seas = seasById(S.view);
+    const side = (sx, sy, dx, dy) =>
+      dy === 1 ? [{ x: sx, y: sy }, { x: sx + ts, y: sy }] : dy === -1 ? [{ x: sx, y: sy + ts }, { x: sx + ts, y: sy + ts }] : dx === 1 ? [{ x: sx + ts, y: sy }, { x: sx + ts, y: sy + ts }] : [{ x: sx, y: sy }, { x: sx, y: sy + ts }];
     for (let y = 0; y < map.h; y++) {
       for (let x = 0; x < map.w; x++) {
         const s = seaPlot(map, x, y);
-        if (!s) continue;
+        // Named seas (phase 2): the tint by state and the borders between seas.
+        const n = seaPlotNamed(map, seas, x, y);
+        if (!s && !n) continue;
         this.eachCopy(x, y, (sx, sy) => {
           if (sx > this.vw || sx + ts < 0) return;
-          if (s.dark) drawDark(g, [{ x: sx, y: sy }, { x: sx + ts, y: sy }, { x: sx + ts, y: sy + ts }, { x: sx, y: sy + ts }]);
-          for (const [dx, dy] of s.edges) {
-            if (dy === 1) segs.push([{ x: sx, y: sy }, { x: sx + ts, y: sy }]);
-            else if (dy === -1) segs.push([{ x: sx, y: sy + ts }, { x: sx + ts, y: sy + ts }]);
-            else if (dx === 1) segs.push([{ x: sx + ts, y: sy }, { x: sx + ts, y: sy + ts }]);
-            else segs.push([{ x: sx, y: sy }, { x: sx, y: sy + ts }]);
-          }
+          const quad = [{ x: sx, y: sy }, { x: sx + ts, y: sy }, { x: sx + ts, y: sy + ts }, { x: sx, y: sy + ts }];
+          if (s?.dark) drawDark(g, quad);
+          if (n?.state) drawSeaTint(g, quad, n.state);
+          for (const [dx, dy] of s?.edges ?? []) segs.push(side(sx, sy, dx, dy));
+          for (const [dx, dy] of n?.borders ?? []) borders.push(side(sx, sy, dx, dy));
         });
       }
     }
+    drawSeaBorders(g, borders, Math.max(1.5, ts / 14));
     drawEdges(g, segs, Math.max(1.5, ts / 16));
+    this.drawSeaLanes(g);
+  }
+
+  /** Your supply ships' lanes on the Sea layer (sea.js `laneParts`; docs/NAVAL.md 4.6): drawn as
+   *  supply lines are, from the ship to its port; a cut lane breaks with a mark where it enters
+   *  the closed sea, dotted beyond. */
+  drawSeaLanes(g) {
+    const ts = this.cam.ts;
+    for (const lane of S.view?.sea_lanes ?? []) {
+      const path = lane.path ?? [];
+      if (!path.length) continue;
+      const parts = laneParts(lane);
+      // One copy, from the ship's copy nearest the centre (as the supply lines).
+      const s0 = T.mapToScreen(this.cam, this.map, this.vw, this.vh, path[0][0], path[0][1]);
+      const pts = unwrapSegment(path, 0, this.map).map(([dx, y]) => ({ x: s0.sx + dx * ts + ts / 2, y: T.columnToScreen(this.cam, this.vw, this.vh, 0, y).sy + ts / 2 }));
+      const k = parts.open.length;
+      if (k > 1) drawLine(g, pts.slice(0, k), OWN_COLOR, 2.5, 0);
+      if (parts.cut) drawLaneCut(g, pts.slice(k - 1), Math.max(6, Math.min(11, ts * 0.22)));
+    }
+  }
+
+  /** The seas' names and badges on the Sea layer (sea.js `drawSeaLabel`), over the units so they
+   *  stay legible; each label's box is kept for a click (`seaHits`, `seaAt`). */
+  drawSeaLabels(g) {
+    const ts = this.cam.ts;
+    const sizes = seaLabelSizes(ts);
+    for (const sea of S.view?.seas ?? []) {
+      this.eachCopy(sea.x, sea.y, (sx, sy) => {
+        const x = sx + ts / 2;
+        const y = sy + ts / 2;
+        if (x < -200 || x > this.vw + 200 || y < -40 || y > this.vh + 40) return;
+        this.seaHits.push(drawSeaLabel(g, sea, x, y, sizes));
+      });
+    }
+  }
+
+  /** The sea whose name or badge is under pointer event `ev` on the Sea layer (any renderer), or
+   *  null. */
+  seaAt(ev) {
+    if (this.layer !== "sea") return null;
+    const hits = this.r3d?.seaHits ?? this.iso?.seaHits ?? this.seaHits;
+    if (!hits?.length) return null;
+    const rc = this.canvas.getBoundingClientRect();
+    return seaHitAt(hits, ev.clientX - rc.left, ev.clientY - rc.top);
   }
 
   chunk(cx, cy, cw, ch) {
@@ -1315,6 +1369,8 @@ export class MapView {
         g.textAlign = "center";
         g.textBaseline = "middle";
         g.fillText(c.size === null || c.size === undefined ? "?" : String(c.size), sx + ts / 2, by + hh / 2 + 0.5);
+        // Zoomed out (no label): the harbour mark at the banner's left.
+        if (ts < 16) drawHarbourMark(g, c, bx, by + hh / 2, 5, 1);
         if (ts >= 16) {
           const label = `${c.capital ? "★ " : ""}${c.name}`;
           g.font = `${ts >= 32 ? 12 : 10}px ${FONT}`;
@@ -1327,6 +1383,8 @@ export class MapView {
           // Revolt pressure (docs/CULTURE.md): a mark at the label's right end by its level.
           g.font = `bold ${ts >= 32 ? 11 : 9}px ${FONT}`;
           drawRevoltMark(g, c, sx + ts / 2 + tw / 2 + 4, sy - 2, 6, 1, sy - 1.5);
+          // A blockaded harbour (docs/NAVAL.md 10): an anchor mark at the label's left end.
+          drawHarbourMark(g, c, sx + ts / 2 - tw / 2 - 5, sy - 2, 7, 1);
           if (c.owner === mine && ts >= 32) {
             const prod = c.production ? `${dname(ORDER_KINDS[c.production.order], c.production.type)}${c.production.turns !== null ? ` ${c.production.turns}` : ""}` : c.idle ? "idle!" : "";
             if (prod) {

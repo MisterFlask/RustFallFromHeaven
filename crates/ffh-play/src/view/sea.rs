@@ -96,6 +96,10 @@ pub fn unit_panel(v: &Viewer, u: UnitId) -> Json {
     }
     let warship = g.unit_is_warship(u) && !g.unit_is_barbarian(u);
     let wear = g.unit_sea_wear_percent(u);
+    // Named seas (docs/NAVAL.md, 10): on Patrol, and where.
+    if let Some(l) = crate::view::seas::patrol_line(g, u) {
+        lines.push(l);
+    }
     if warship {
         lines.push(if wear > 0 {
             format!("Wear: -{wear}% strength. Enter a port to clear.")

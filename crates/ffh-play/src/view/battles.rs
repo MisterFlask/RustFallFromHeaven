@@ -662,6 +662,9 @@ pub fn summary_json(v: &Viewer, r: &BattleReport) -> Json {
             "lost_types" => Json::Arr(side.lost.iter().map(|&(t, n)| crate::jarr![Json::idx(t), n]).collect()),
             "escaped" => side.escaped,
             "standing" => side.standing,
+            // The sea (docs/NAVAL.md, 4.7): the side's ships that fired from the coast, each
+            // `[unit_type, damage (centi-HP)]`, in firing order.
+            "shore" => Json::Arr(side.shore.iter().map(|&(t, dmg)| crate::jarr![Json::idx(t), dmg]).collect()),
         }
     });
     let (fx, fy) = g.map.xy(r.from);
@@ -955,6 +958,13 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Opti
             let b = b_of(u, Side::Attacker).or_else(|| b_of(u, Side::Defender))?;
             Some(crate::jobj! { "b" => b, "pct" => pct })
         }).collect()),
+        // The sea (docs/NAVAL.md, 4.7): the ships the human sees that would fire from the coast
+        // before round 1, each `{side (0 attacker, 1 defender), unit, unit_type, owner, a_x100}`
+        // (the forecast counts every one), and how many it does not see.
+        "shore" => Json::Arr(pv.shore.iter().filter(|s| v.unit_visible(s.unit)).map(|s| crate::jobj! {
+            "side" => side_ix(s.side), "unit" => s.unit, "unit_type" => Json::idx(g.units[s.unit].unit_type), "owner" => v.unit_owner(s.unit), "a_x100" => s.a,
+        }).collect()),
+        "shore_unseen" => pv.shore.iter().filter(|s| !v.unit_visible(s.unit)).count() as i64,
         "forecast" => forecast,
         "declare_war" => rival,
         "errors" => Json::Arr(refused.into_iter().map(Json::from).collect()),

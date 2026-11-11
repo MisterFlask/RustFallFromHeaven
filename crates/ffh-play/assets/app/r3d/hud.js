@@ -8,8 +8,8 @@ import * as T from "../tiles.js";
 import { CATALOG } from "./assets/catalog.js";
 import { SEA } from "./world.js";
 import { drawCityWork } from "../citywork.js";
-import { supplyLines, supplyMarks, unwrapSegment, flowOffset, drawLine, drawMark } from "../supply.js";
-import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip } from "../sea.js";
+import { supplyLines, supplyMarks, unwrapSegment, flowOffset, drawLine, drawMark, OWN_COLOR } from "../supply.js";
+import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, laneParts, drawLaneCut, drawHarbourMark } from "../sea.js";
 
 const FONT = "system-ui, 'DejaVu Sans', 'Segoe UI', sans-serif";
 
@@ -172,6 +172,8 @@ function drawHudParts(r3d, cam) {
     }
     // Sieges (docs/SIEGES.md): a besieged city's plate is ringed in red, and its walls' Sentinels
     // stand as small towers under it (filled by their HP left; hollow when breached).
+    // A blockaded harbour (docs/NAVAL.md 10): an anchor mark at the plate's left end.
+    drawHarbourMark(g, city, x - h * 0.45, p.y, h * 0.42, 1);
     if (city.besieged) {
       g.lineWidth = 2.5;
       g.strokeStyle = "#e0442c";
@@ -395,6 +397,10 @@ function drawHudParts(r3d, cam) {
     }
   }
 
+  // The seas' names and badges on the Sea layer (sea.js), over the marks; their boxes for a click.
+  r3d.seaHits = [];
+  if (v.layer === "sea" && !screenCity) drawSeaLabels(r3d, cam, g, inView);
+
   // Combat flashes.
   const now = performance.now();
   for (const fl of v.flashes ?? []) {
@@ -416,7 +422,8 @@ function drawHudParts(r3d, cam) {
 /** The Sea layer (sea.js): each plot in view out of your range darkened and the range's edge,
  *  as quads projected on the ground (plot (x, y) spans world x x..x+1, z -y..-(y+1)). Drawn on the
  *  interface canvas over the WebGL frame, so it also dims what stands on that water.
- *  `r3d.seaDrawn` counts the plots drawn. */
+ *  `r3d.seaDrawn` counts the plots drawn. Named seas (phase 2): each sea's water tinted by its
+ *  state, the borders between seas dotted, and your supply ships' lanes. */
 function drawSea(r3d, cam, g, inView) {
   const v = r3d.view;
   const map = v.map;
@@ -425,24 +432,68 @@ function drawSea(r3d, cam, g, inView) {
   if (!map?.sea) return;
   const r = r3d.visibleRect(cam);
   const segs = [];
+  const borders = [];
+  const seas = seasById(S.view);
   for (let y = Math.max(0, Math.floor(r.y0) - 1); y <= Math.min(map.h - 1, Math.ceil(r.y1)); y++) {
     for (let xx = Math.floor(r.x0) - 1; xx <= Math.ceil(r.x1); xx++) {
       const x = T.wrapCoord(xx, map.w, map.wrap_x);
       if (x === null) continue;
       const s = seaPlot(map, x, y);
-      if (!s) continue;
+      const named = seaPlotNamed(map, seas, x, y);
+      if (!s && !named) continue;
       const h = world.plotHeight(x, y) + 0.01;
       const corners = [[xx, -y], [xx + 1, -y], [xx + 1, -(y + 1)], [xx, -(y + 1)]].map(([wx, wz]) => r3d.project(cam, [wx, h, wz]));
       if (corners.some((p) => !p) || !corners.some((p) => inView(p, 8))) continue;
-      if (s.dark) drawDark(g, corners);
-      for (const [dx, dy] of s.edges) {
+      if (s?.dark) drawDark(g, corners);
+      if (named?.state) drawSeaTint(g, corners, named.state);
+      for (const [dx, dy] of s?.edges ?? []) {
         const n = r3d.project(cam, [xx + 0.5 + dx, h, -(y + 0.5 + dy)]);
         if (n) segs.push(sideToward(corners, n));
+      }
+      for (const [dx, dy] of named?.borders ?? []) {
+        const n = r3d.project(cam, [xx + 0.5 + dx, h, -(y + 0.5 + dy)]);
+        if (n) borders.push(sideToward(corners, n));
       }
       r3d.seaDrawn++;
     }
   }
+  drawSeaBorders(g, borders, Math.max(1.5, Math.min(3, r3d.ts * 0.025)));
   drawEdges(g, segs, Math.max(1.5, Math.min(3, r3d.ts * 0.025)));
+  drawSeaLanes(r3d, cam, g, inView);
+}
+
+/** Your supply ships' lanes on the Sea layer (sea.js `laneParts`), each plot's centre on the
+ *  water, as the supply lines; a cut lane breaks with a mark where it enters the closed sea. */
+function drawSeaLanes(r3d, cam, g, inView) {
+  const v = r3d.view;
+  const world = r3d.world;
+  const width = Math.max(2, Math.min(4, r3d.ts * 0.035));
+  for (const lane of S.view?.sea_lanes ?? []) {
+    const path = lane.path ?? [];
+    if (!path.length) continue;
+    const parts = laneParts(lane);
+    const pts = [];
+    for (const [ux, y] of unwrapSegment(path, r3d.nearX(path[0][0]), v.map)) {
+      const x = T.wrapCoord(ux, v.map.w, v.map.wrap_x) ?? ux;
+      pts.push(r3d.project(cam, [ux + 0.5, world.plotHeight(x, y) + 0.03, -(y + 0.5)]));
+    }
+    if (pts.some((p) => !p) || !pts.some((p) => inView(p))) continue;
+    const k = parts.open.length;
+    if (k > 1) drawLine(g, pts.slice(0, k), OWN_COLOR, width, 0);
+    if (parts.cut) drawLaneCut(g, pts.slice(k - 1), Math.max(6, Math.min(11, r3d.ts * 0.09)));
+  }
+}
+
+/** The seas' names and badges (sea.js `drawSeaLabel`) at their label plots, projected on the
+ *  water; `r3d.seaHits` keeps their boxes for a click. */
+function drawSeaLabels(r3d, cam, g, inView) {
+  const world = r3d.world;
+  const sizes = seaLabelSizes(Math.max(24, r3d.ts * 0.5));
+  for (const sea of S.view?.seas ?? []) {
+    const p = r3d.project(cam, [r3d.nearX(sea.x) + 0.5, world.plotHeight(sea.x, sea.y) + 0.02, -(sea.y + 0.5)]);
+    if (!inView(p, 120)) continue;
+    r3d.seaHits.push(drawSeaLabel(g, sea, p.x, p.y, sizes));
+  }
 }
 
 /** The supply lines and the cut-off armies' markers (supply.js), each plot's centre on the ground;

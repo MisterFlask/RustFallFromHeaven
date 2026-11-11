@@ -65,6 +65,9 @@
 //        (none yet)
 //       {round: 0, pass: 0, kind: "Building", building (BuildingType), hits: [{target, dmg}]}: the defended city's
 //        building strikes before the battle (a card's Thunderhead Tower); no actor
+//       {round: 0, pass: 0, kind: "ShoreFire", unit_type (UnitType), owner, side ("attacker" | "defender"),
+//        hits: [{target, dmg}]}: a warship's shot from the coast before the battle (docs/NAVAL.md 4.7); no
+//        actor (ships are not fighters)
 //       {round: 0, pass: 0, kind: "Starvation", units: [b], dealt_pct}: the units of starving armies deal dealt_pct
 //        damage (docs/SUPPLY.md); no actor
 //     then the actions, one unit at a time (round 1.., pass 1..):
@@ -611,6 +614,25 @@ export function resultWords(log) {
 // ---------------------------------------------------------------------------------------------
 // The log in lines
 
+/** Each side's shots from the coast in a log (docs/NAVAL.md 4.7; its `ShoreFire` events):
+ *  `[[{unit_type, dmg}], [...]]` by side index (0 the attacker), in firing order. */
+export function shoreShots(log) {
+  const out = [[], []];
+  for (const e of log?.events ?? []) {
+    if (e.kind !== "ShoreFire") continue;
+    const dmg = (e.hits ?? []).reduce((a, x) => a + (x.dmg ?? 0), 0);
+    out[e.side === "attacker" ? 0 : 1].push({ unit_type: e.unit_type, dmg });
+  }
+  return out;
+}
+
+/** The words of one side's shots from the coast (shoreShots): "Trireme 12, Galley 8", or null for
+ *  none. */
+export function shoreText(shots) {
+  if (!shots?.length) return null;
+  return shots.map((s) => `${tyLabel("UnitType", s.unit_type)} ${dmgText(s.dmg)}`).join(", ");
+}
+
 /** "Round 2 · pass 1" (the opening: "Before the battle"). */
 export function headOf(e) {
   if (!e.round) return "Before the battle";
@@ -652,6 +674,15 @@ export function logLines(log) {
       parts.push(t(`The ${tyLabel("BuildingType", e.building)} strikes`));
       (e.hits ?? []).forEach((h, k) => parts.push(t(k ? ", " : " "), who(h.target), t(" "), t(dmgText(h.dmg), "bt-n")));
       parts.push(t("."));
+      out.push({ i, parts, speed: null });
+      return;
+    }
+    if (e.kind === "ShoreFire") {
+      const ours = (e.side === "attacker" ? 0 : 1) === me;
+      parts.push(t(`${ours ? "Your" : "Their"} ${tyLabel("UnitType", e.unit_type)} fires from the coast`, ours ? "you" : "them"));
+      if (!e.hits?.length) parts.push(t(": no target.", "dim"));
+      else (e.hits ?? []).forEach((h, k) => parts.push(t(k ? ", " : ": "), who(h.target), t(" "), t(dmgText(h.dmg), "bt-n")));
+      parts.push(t(e.hits?.length ? "." : ""));
       out.push({ i, parts, speed: null });
       return;
     }

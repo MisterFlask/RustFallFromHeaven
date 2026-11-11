@@ -431,6 +431,7 @@ const RAIL = [
   ["btn-governors", "promo_command"],
   ["btn-diplo", "diplomacy"],
   ["btn-crusades", "attack"],
+  ["btn-seas", "promo_navigation"],
 ];
 const SYSTEM = [
   ["btn-tools", "settings"],
@@ -753,6 +754,8 @@ export async function renderCityPanel() {
           queue.map((q) => h("div.iso-qrow", queueIcon(q), h("span.label", orderName(q.order, q.type)), h("span.value", q.turns !== undefined && q.turns !== null ? String(q.turns) : ""))),
         )
       : null,
+    // Named seas (docs/NAVAL.md 10): the harbour, open or blockaded.
+    c.harbour ? h(`div.small.iso-harbour${c.harbour.state === "blockaded" ? ".warn" : ""}`, { title: c.harbour.text }, c.harbour.state === "blockaded" ? "Harbour: blockaded." : "Harbour: open.") : null,
     h("button.iso-open", { onclick: () => emit("open-city", city.id), title: "Open the city screen (or double-click the city)" }, "Open city"),
   );
 }

@@ -7,7 +7,8 @@ with the AI minimum of section 8's first two bullets (`crates/ffh-ai/src/naval.r
 phase 1 parts of section 10 in `crates/ffh-play` (`view/sea.rs`, `app/sea.js`; docs/HUMAN.md);
 phase 2 (sections 4 and 5) built in the rules (`crates/ffh-core/src/seas.rs`, lanes in `naval.rs`,
 shore fire in `crates/ffh-core/src/engagement/shore.rs`, tests in `crates/ffh-core/tests/seas.rs`)
-with section 8's Patrol bullet and the transports' range test; its client not yet.** This
+with section 8's Patrol bullet and the transports' range test; its client in `crates/ffh-play`
+(`view/seas.rs`, `app/seas.js`, `app/sea.js`; docs/HUMAN.md).** This
 game's own rules, not FFH2's (the owner's direction, 2026-11-10: the naval game inherited from
 Civ4 is irrelevant and there are no colonial adventures). This file is the spec for the
 implementation, as docs/SUPPLY.md is for supply lines. Marked **(default)**: a value or rule chosen
@@ -170,7 +171,7 @@ Choices made where this spec was silent (each open to change):
   it reaches in boats. An AI army also steps aboard a transport of ours at sea beside it (the rules
   now allow it). The war-target and settler crossings are not built.
 
-## 4. Phase 2: named seas and who holds them -- status: built in the rules (the client: not yet; 4.4 point 5 is phase 4's)
+## 4. Phase 2: named seas and who holds them -- status: built in the rules and the client (docs/HUMAN.md; 4.4 point 5 is phase 4's)
 
 The owner's decision (2026-11-10): named seas. They replace this spec's first draft of zones
 around each warship and of Civ4's blockade by range: the player reads one state per sea.

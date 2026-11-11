@@ -354,6 +354,15 @@ function forecastPanel(ctx, { mineIn, theirsIn, theirsOut }) {
     const pctText = `${starving[0].pct > 0 ? "+" : ""}${starving[0].pct}%`;
     body.push(h("div.small.warn.bt-starving", `Starving: ${n[me]} of yours, ${n[1 - me]} of theirs: ${pctText} damage dealt.`));
   }
+  // The sea (docs/NAVAL.md 4.7): the warships that fire from the coast before round 1, one shot
+  // each (the forecast counts them).
+  const shore = pv.shore ?? [];
+  if (shore.length || pv.shore_unseen) {
+    const list = (side) => shore.filter((x) => x.side === side).map((x) => `${tyLabel("UnitType", x.unit_type)} (A ${(x.a_x100 / 100).toFixed(1)})`);
+    const [mine, theirs] = [list(me), list(1 - me)];
+    const unseen = pv.shore_unseen ? `, ${pv.shore_unseen} unseen` : "";
+    body.push(h("div.small.bt-shore", { title: "Each fires one shot before round 1; a shot never takes a unit below 1 HP." }, h("span.dim", "Ships fire from the coast: "), `yours: ${mine.length ? mine.join(", ") : "none"}; theirs: ${theirs.length ? theirs.join(", ") : "none"}${unseen}.`));
+  }
   if (war) body.push(h("div.warn.small", "Attacking declares war."));
   for (const e of P.errors) body.push(h("div.bad.small", e));
   return pnl(
