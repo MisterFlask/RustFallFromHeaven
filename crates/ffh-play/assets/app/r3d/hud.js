@@ -424,8 +424,8 @@ function drawHudParts(r3d, cam) {
 }
 
 /** The labels of the outposts' cut lanes on the Sea layer (sealayer.js `cuts`: "Cut: 3", the turns
- *  before your outpost starves), under the cut's mark on the water. `r3d.lanesDrawn` counts the
- *  lanes and labels the frame has (the smoke test reads it). */
+ *  before your outpost starves), under the cut's mark on the water. `r3d.lanesDrawn`: whether the
+ *  frame has lanes, and how many labels it drew. */
 function drawCutLabels(r3d, cam, g, inView) {
   const sl = r3d.sea;
   const ts = r3d.ts;

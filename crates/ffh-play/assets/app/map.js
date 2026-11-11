@@ -1109,12 +1109,17 @@ export class MapView {
    *  (`seaHover`, read by the renderer). Returns whether a sea took the hover. Leaving a sea's mark
    *  gives the plot under the pointer its own hover back. */
   seaHoverAt(id) {
-    if (id !== (this.seaHover ?? null)) {
+    const same = id === (this.seaHover ?? null);
+    if (!same) {
       this.seaHover = id;
       if (id === null) this.overlay.hover = null;
       this.request();
     }
     if (id === null) return false;
+    if (same && !this.tip.hidden) {
+      this.placeTip();
+      return true;
+    }
     const sea = S.view?.seas?.find((s) => s.id === id);
     if (!sea) return false;
     const lines = seaTipLines(sea, S.data?.defines?.sea_hold_percent ?? 200);

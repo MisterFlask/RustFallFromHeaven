@@ -91,14 +91,19 @@ export class SeaLayer {
   sync(map, view, world) {
     if (!map || !world) return;
     const seas = view?.seas ?? [];
-    const key = JSON.stringify([map.w, map.h, seas, view?.outpost_lanes ?? [], view?.sea_lanes ?? [], view?.me?.player, view?.me?.team]);
-    // (The map's arrays change with every move: the textures are cheap and rebuilt; the names'
-    // atlas only when the seas change.)
+    // (The map's arrays change with every move: the textures are cheap and rebuilt. The names'
+    // atlas only when the seas change -- a sea's revealed plots change its entry's `plots` -- and
+    // the lanes when they or the ground change.)
     this.syncPlots(map, seas);
-    if (key !== this.key || this.worldSeen !== world) {
+    const key = JSON.stringify([map.w, map.h, seas, view?.me?.player, view?.me?.team]);
+    if (key !== this.key) {
       this.key = key;
-      this.worldSeen = world;
       this.syncNames(map, seas);
+    }
+    const laneKey = JSON.stringify([view?.outpost_lanes ?? [], view?.sea_lanes ?? [], view?.me?.player]);
+    if (laneKey !== this.laneKey || this.worldSeen !== world) {
+      this.laneKey = laneKey;
+      this.worldSeen = world;
       this.syncLanes(map, view, world);
     }
   }

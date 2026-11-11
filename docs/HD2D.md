@@ -146,7 +146,7 @@ assets/app/
       index.js    MapHd2d: the 3D renderer's Map3D with the hooks set (the module map.js imports)
       config.js   the HD-2D preset, its light, its panel rows (stored apart: ffh.hd2d.config.3)
       dress.js    which card stands where: unit groups and banners, cities, buildings, resources,
-                  light beams; the claims
+                  light beams, the Sea layer's buoys (docs/R3D.md §5.3); the claims
       mood.js     the per-plot mood channel and its particles
       sprites.js  the sprite atlas (a texture array) and the card instance buffers
       passes.js   the pipeline extension

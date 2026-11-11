@@ -678,23 +678,54 @@ the sea and who holds it. The mock-up the owner saw (2026-11-10) is the referenc
 layer, the sea's panel and the Seas screen.
 
 **The Sea layer** (a map layer, on by itself while a ship, a fleet or a unit in boats is
-selected; a toggle with the other map layers):
+selected; a toggle with the other map layers). What it shows, everywhere: hovering a port or an
+outpost shows the range it gives; each sea the player has revealed a plot of, with its state and
+the two strengths (`HELD: YOU 24 to 0`, `CONTESTED 14 to 17`, `HELD: LANUN 0 to 31`, `OPEN`,
+`OUT OF RANGE`); enemy strength counts only ships the player sees, except that a sea closed to the
+player that is cutting a lane or blockading a port of its now is shown held by its holder
+(`HELD: LANUN 4 to ?`, the seen part as `7+`, an unknown holder `UNKNOWN`; the panel: `Held by
+Lanun. Its ships on patrol are not all in sight.`); lanes (phase 4; a supply ship's, phase 2) in
+their owner's colour, flowing to the home port, a cut lane broken where it enters the closed sea,
+with the turns left before the outpost starves; lanes of others the player has revealed too; a
+wear pip on a ship that has wear. How it is drawn depends on the map.
 
-- water out of the player's range is darkened and the range's edge drawn; hovering a port or an
-  outpost shows the range it gives;
-- each sea the player has revealed a plot of: its border as a dotted line, its name on the
-  water, and a badge with its state and the two strengths (`HELD: YOU 24 to 0`,
-  `CONTESTED 14 to 17`, `HELD: LANUN 0 to 31`, `OPEN`, `OUT OF RANGE`); its water tinted by state
-  (the states differ by pattern and lightness, not hue alone). Enemy strength counts only ships
-  the player sees, except that a sea closed to the player that is cutting a lane or blockading a
-  port of its now is shown held by its holder (`HELD: LANUN 4 to ?`, the seen part as `7+`, an
-  unknown holder `UNKNOWN`; the panel: `Held by Lanun. Its ships on patrol are not all in sight.`);
-- lanes (phase 4; a supply ship's, phase 2), drawn as supply lines are, flowing to the home port,
-  in their owner's colour; a cut lane breaks, with a mark, where it enters the closed sea, with
-  the turns left before the outpost starves; lanes of others the player has revealed are drawn too;
-- a wear pip on a ship that has wear.
+*On the HD-2D map* (the game's map; the look approved 2026-11-11, `app/r3d/sealayer.js`, the
+choices in docs/R3D.md §5 "The Sea layer"), all of it in the world -- on the water, lit and hidden
+by what stands in front of it like the rest of the scene, never a sticker on the interface:
 
-**Clicking a sea's name or badge** opens its panel: plots; control and what holding takes
+- **names in the water**: each sea's name lettered on the water surface, italic serif, widely
+  spaced, a pale cream at low contrast, sized to the sea (larger seas larger, clamped), laid along
+  the long axis of its revealed plots (never upside down, at most 45 degrees from level), inside
+  its revealed water, moved or made smaller where two names would cover each other; clear zoomed
+  out, faint close in; with another layer only faintly, at the two farthest zooms (the strengths
+  in one place: `sea.js` `SEA_LOOK`);
+- **a band along the edge**: a sea with a holder has a soft band of the holder's colour hugging
+  the inside of its boundary (with the land, the unknown and the other seas), about half a plot
+  wide, strongest at the boundary, nothing beyond; yours your colour; an enemy's (known or
+  inferred) its colour, an unknown holder grey; contested the two colours in long dashes along the
+  same edge; patrolled by a team at peace with the player its colour, fainter; open no band. A
+  thin seam where two seas meet keeps two banded seas apart, and a very faint dotted line runs
+  between every two seas. The middle of every sea stays plain water;
+- **fog beyond range**: water out of range carries a fog bank, dense over water two plots or more
+  beyond the range, thinning to nothing over about a plot at its edge, drifting slowly while the
+  map animates; over the water only (it softens a ship standing in it, never the land);
+- **a banner, not a pill**: beside each held, contested or patrolled sea's name a small buoy with
+  the holder's banner (crossed banners, the player's and the other side's, when contested; none
+  for an open sea). Hovering the buoy or the name shows the badge's text and the rules
+  (`HELD: LJOSALFAR 0 to 14`, `Held at twice the enemy's strength on patrol.`, `Only ships you see
+  are counted.`) and outlines the whole sea's boundary in a thin bright line, as its panel open
+  does; clicking either opens the sea's panel; a tap does the same; the controller's cursor on the
+  buoy's plot shows the tooltip and A (with nothing selected) opens the panel;
+- **lanes on the water**: dashed ribbons in the owner's colour flowing toward the home port; a cut
+  lane ends at a ring-and-cross on the water, `Cut: 3` under it, the part beyond faint and dotted.
+
+*On the flat and isometric maps* (for debugging, and for older machines without the HD-2D map),
+drawn on their 2D canvas under the cities and units: water out of range darkened and hatched, the
+range's edge drawn; each sea's border dotted, its water tinted by state (pattern and lightness, not
+hue alone), its name in italic serif over a badge with the state and the strengths; the lanes as
+supply lines are.
+
+**Clicking a sea's name, buoy or badge** opens its panel: plots; control and what holding takes
 (`Held at twice the enemy's strength on patrol. You need 34.`); each side's strength with its
 ships on Patrol (`Ships you do not see are not counted.`); `Effect now` (lanes, ports,
 interception); `If X holds it` (each lane of yours that would be cut, each port of yours that

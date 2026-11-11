@@ -8,7 +8,7 @@
 // complete frame, and what was drawn (draw calls, instances, triangles).
 //
 //   node tools/r3d-perf.mjs --save SAVE [--x X --y Y] [--w 1280 --h 800] [--json OUT] [--runs 3]
-//        [--configs hd2d,plain] [--zooms 40,96] [--gpu]
+//        [--configs hd2d,plain] [--zooms 40,96] [--layer sea] [--gpu]
 //
 // The configurations: hd2d, its passes off one at a time, all of them off, plain. (The 3D
 // renderer's own mode, everything modelled, is retired from the client: the r3d lab draws it.)
@@ -16,14 +16,15 @@
 // By default headless Chromium renders WebGL with SwiftShader (software): absolute times are those of
 // a CPU rasteriser, far slower than any GPU; the relative costs of the passes are what carries over.
 // --gpu measures on the machine's GPU (Chromium's full headless mode); the WebGL renderer printed
-// first says which one was used.
+// first says which one was used. --layer picks the map layer measured (terrain by default; `sea`
+// draws the Sea layer in the world: docs/R3D.md §5, the sea pass).
 
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { ROOT, parseArgs, findBin, tempDir, startServer, chromiumLaunch, webglRenderer } from "./web-lib.mjs";
 
-const args = parseArgs(process.argv.slice(2), { gpu: "flag", save: "v", x: "v", y: "v", w: "v", h: "v", json: "v", bin: "v", runs: "v", configs: "v", zooms: "v" });
+const args = parseArgs(process.argv.slice(2), { gpu: "flag", save: "v", x: "v", y: "v", w: "v", h: "v", json: "v", bin: "v", runs: "v", configs: "v", zooms: "v", layer: "v" });
 if (!args.save) {
   console.error("r3d-perf: --save SAVE is required");
   process.exit(2);
@@ -76,8 +77,9 @@ for (const [name, cfg] of CONFIGS.filter(([n]) => !args.configs || args.configs.
   await page.waitForFunction(() => window.ffh?.ready && window.ffh.S.map && window.ffh.mapView.r3d?.cam, null, { timeout: 300000 });
   for (const ts of ZOOMS) {
     const r = await page.evaluate(
-      async ({ ts, x, y, runs }) => {
+      async ({ ts, x, y, runs, layer }) => {
         const mv = window.ffh.mapView;
+        if (layer) window.ffh.setLayer(layer);
         const r3d = mv.r3d;
         r3d.running = false;
         cancelAnimationFrame(r3d.raf);
@@ -129,7 +131,7 @@ for (const [name, cfg] of CONFIGS.filter(([n]) => !args.configs || args.configs.
           canvas: [r3d.canvas.width, r3d.canvas.height],
         };
       },
-      { ts, x: args.x !== undefined ? Number(args.x) : undefined, y: args.y !== undefined ? Number(args.y) : undefined, runs: Number(args.runs ?? 3) },
+      { ts, x: args.x !== undefined ? Number(args.x) : undefined, y: args.y !== undefined ? Number(args.y) : undefined, runs: Number(args.runs ?? 3), layer: args.layer ?? null },
     );
     r.config = name;
     results.push(r);
