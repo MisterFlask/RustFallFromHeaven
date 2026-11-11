@@ -355,6 +355,8 @@ impl Game {
         self.init_free_state();
         self.assign_starting_plots();
         self.normalize_starting_plots();
+        // This game's far shores (docs/NAVAL.md, 9.1): after the starts are normalized.
+        self.map_place_far_shores();
 
         // FfH: Added by Kael 09/16/2008
         if self.is_option(GameOptionType::GAMEOPTION_BARBARIAN_WORLD) {

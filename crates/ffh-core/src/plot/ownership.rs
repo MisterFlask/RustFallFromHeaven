@@ -753,7 +753,10 @@ impl Game {
 
                 // BUGFIX (modified CityRadius) Sephi 0.41k: an AI city only tries to work plots
                 // it can actually use.
-                if (self.cities[loop_city].plot_radius == 3 || (i as i32) < NUM_CITY_PLOTS_RADIUS_2) && Some(self.cities[loop_city].owner) == owner {
+                if (self.cities[loop_city].plot_radius == 3 || (i as i32) < NUM_CITY_PLOTS_RADIUS_2)
+                    && (self.cities[loop_city].plot_radius != 1 || i < 9)
+                    && Some(self.cities[loop_city].owner) == owner
+                {
                     // XXX use getGameTurnAcquired() instead???
                     let better = match best_city {
                         None => true,
@@ -1148,6 +1151,11 @@ impl Game {
             return true;
         }
 
+        // This game's outposts (docs/NAVAL.md, 9.3): an open lane carries the team's trade.
+        if self.plot_on_outpost_lane(p, team) {
+            return true;
+        }
+
         false
     }
 
@@ -1176,7 +1184,13 @@ impl Game {
             return false;
         }
 
-        if !self.plot_is_owned(p) && !self.map.plots[p].revealed[team] {
+        if !self.plot_is_owned(p) && !self.map.plots[p].revealed[team] && !self.plot_on_outpost_lane(p, team) {
+            return false;
+        }
+
+        // This game's outposts (docs/NAVAL.md, 9.3): an outpost whose lane is cut or missing is
+        // off the trade network, its plots with it.
+        if self.plot_outpost_cut_off(p, team) {
             return false;
         }
 
@@ -1193,7 +1207,10 @@ impl Game {
             return false;
         }
 
-        if !self.plot_is_owned(p) && (!self.map.plots[p].revealed[team] || !self.map.plots[other].revealed[team]) {
+        if !self.plot_is_owned(p)
+            && (!self.map.plots[p].revealed[team] || !self.map.plots[other].revealed[team])
+            && !(self.plot_on_outpost_lane(p, team) && (self.plot_on_outpost_lane(other, team) || self.map.plots[other].revealed[team]))
+        {
             return false;
         }
 

@@ -812,6 +812,9 @@ function showTip() {
   if (m.river[i] > 0 && (m.river[i] & 3)) extra.push("River");
   if (extra.length) lines.push(h("div", extra.join(" · ")));
   if (bonusHelp) lines.push(h("div.tip-effects.tip-bonus", markup(bonusHelp)));
+  // A resource none of your landmasses holds (docs/NAVAL.md, 10; the plot query's `bonus_note`).
+  const pq = preview.plot;
+  if (pq && pq.x === x && pq.y === y && pq.bonus_note) lines.push(h("div.dim", pq.bonus_note));
   // What the terrain's own rules do (the cards' terrains: the Sky Falls' Crater).
   const terrainHelp = m.terrain[i] >= 0 ? effectsOf("TerrainType", m.terrain[i]) : "";
   if (terrainHelp) lines.push(h("div.tip-effects", markup(terrainHelp)));
@@ -1045,6 +1048,7 @@ function actionLabel(a) {
     case "mission": {
       const m = tname("MissionType", a.mission);
       if (m === "MISSION_BUILD") return dname("BuildType", a.data1);
+      if (m === "MISSION_FOUND" && a.outpost) return "Found outpost";
       if (m === "MISSION_SPREAD") return `Spread ${dname("ReligionType", a.data1)}`;
       if (m === "MISSION_JOIN") return `Join as ${dname("SpecialistType", a.data1)}`;
       if (m === "MISSION_CONSTRUCT") return `Build ${dname("BuildingType", a.data1)}`;
@@ -1136,6 +1140,7 @@ function helpOf(a) {
   if (a.kind === "upgrade") return effectsOf("UnitType", a.unit);
   if (a.kind === "army") return a.help ?? "";
   if (a.kind === "mission" && tname("MissionType", a.mission) === "MISSION_BUILD") return info("BuildType", a.data1)?.help ?? "";
+  if (a.kind === "mission" && a.outpost) return a.help ?? "";
   if (a.kind === "mission") return info("MissionType", a.mission)?.help ?? "";
   if (a.kind === "command") return info("CommandType", a.command)?.help ?? "";
   return "";
@@ -1819,7 +1824,7 @@ async function renderPlotInfo(x, y, selUnits = S.sel?.units ?? null) {
   if (p.vis === 0) return fill(panel, h("div.panel-head", h("h3", `Plot (${x}, ${y})`)), h("p.dim", "Unexplored."));
   const rows = [
     ["Terrain", [dname("TerrainType", p.terrain), p.hills ? "Hills" : null, p.feature !== null ? dname("FeatureType", p.feature) : null].filter(Boolean).join(", ")],
-    ["Bonus", p.bonus !== null ? dname("BonusType", p.bonus) : null],
+    ["Bonus", p.bonus !== null ? `${dname("BonusType", p.bonus)}${p.bonus_note ? ` (${p.bonus_note})` : ""}` : null],
     ["Improvement", p.improvement !== null ? dname("ImprovementType", p.improvement) : null],
     ["Route", p.route !== null ? dname("RouteType", p.route) : null],
     ["Owner", p.owner !== null ? playerName(p.owner) : null],

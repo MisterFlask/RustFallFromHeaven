@@ -2057,6 +2057,7 @@
     ],
     "units": [
       ["UNITCLASS_SETTLER", "NONE"],
+      ["UNITCLASS_COLONIST", "NONE"],
       ["UNITCLASS_SCOUT", "UNIT_GOBLIN"],
       ["UNITCLASS_ADEPT", "NONE"],
       ["UNITCLASS_DEMAGOG", "NONE"],

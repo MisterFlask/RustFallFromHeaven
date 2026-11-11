@@ -316,6 +316,15 @@ pub struct City {
     /// Line for a new city and for a city that changed hands.
     pub garrison_tactic: BattleTacticType,
     pub garrison_tactic_next: BattleTacticType,
+    /// This game's outposts (docs/NAVAL.md, 9.2; `outposts.rs`): the city is an outpost.
+    pub outpost: bool,
+    /// An outpost's lane (docs/NAVAL.md, 9.3): the starts of its owner's turns in a row its lane
+    /// was cut or missing (0 while open).
+    pub lane_cut_turns: i32,
+    /// An outpost's open lane as traced at its owner's last turn start (or when it was founded,
+    /// taken or a lane was traced again), from the water by the outpost to the water by its home
+    /// port; empty while cut or missing. The trade network reads it.
+    pub lane: Vec<PlotIdx>,
 }
 
 impl City {
@@ -538,6 +547,9 @@ impl City {
             crew_build: None,
             garrison_tactic: d.t::<BattleTacticType>("TACTIC_LINE"),
             garrison_tactic_next: d.t::<BattleTacticType>("TACTIC_LINE"),
+            outpost: false,
+            lane_cut_turns: 0,
+            lane: Vec::new(),
         }
     }
 

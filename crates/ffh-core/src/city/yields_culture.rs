@@ -454,6 +454,11 @@ impl Game {
             }
         }
 
+        // This game's outposts (docs/NAVAL.md, 9.2): the borders stay at the 8 plots around it.
+        if self.cities[c].outpost && culture_level.idx() > 1 {
+            culture_level = CultureLevelType::from_usize(1);
+        }
+
         self.city_set_culture_level(c, Some(culture_level), update_plot_groups);
     }
 

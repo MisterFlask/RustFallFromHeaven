@@ -95,6 +95,7 @@ pub fn effects(d: &GameData, bonus: BonusType) -> String {
         maintenance_modifier,
         mutate_chance,
         research_modifier,
+        far_shore,
         yield_change,
         // Map generation: the terrains and features it is placed on.
         terrain: _,
@@ -217,6 +218,10 @@ pub fn effects(d: &GameData, bonus: BonusType) -> String {
     }
     if *modifier_per_bonus {
         line(&mut b, txt(d, "TXT_KEY_BONUS_MODIFIER_PER_BONUS", &[]));
+    }
+    // This game's far shores (docs/NAVAL.md, 9.1).
+    if *far_shore {
+        line(&mut b, "Placed on landmasses no civilization starts on, when the map has one.".to_string());
     }
 
     // ffh-play's: what it does to units. A free promotion for the units a city with it trains

@@ -29,6 +29,7 @@ pub mod hotkeys;
 pub mod improvement_help;
 pub mod map;
 pub mod player;
+pub mod outposts;
 pub mod sea;
 pub mod speech;
 pub mod text;
@@ -331,9 +332,11 @@ pub fn cities(v: &Viewer) -> Json {
             // the Sea layer names the range it gives).
             "sea_port" => crate::view::sea::is_own_port(v, c),
         };
+        // This game's outposts (docs/NAVAL.md, 9.2 and 10): the banner's mark, the list's row.
+        crate::view::outposts::city_fields(v, c, &mut j);
         if own {
             j.set("production", production(g, c));
-            j.set("idle", !g.city_is_production(c) && !city.production_automated);
+            j.set("idle", !g.city_is_production(c) && !city.production_automated && !city.outpost);
             j.set("automated_production", city.production_automated);
             j.set("food_turns", g.city_food_turns_left(c));
             j.set("disorder", g.city_is_disorder(c));
@@ -467,6 +470,8 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         // Supply lines (docs/SUPPLY.md): the lines of the other players' armies the human sees,
         // clipped to the plots it has revealed (its own armies' are each army's `supply.line`).
         "supply_lines" => armies::foreign_supply_lines(v),
+        // Outposts' lanes (docs/NAVAL.md, 9.3 and 10): the Sea layer's lines (lanes.js).
+        "outpost_lanes" => outposts::lanes(v),
         // Engagement combat (docs/ENGAGEMENTS.md): the human's battles of this turn and the last.
         "battles" => battles::recent(v),
         // C++ `CvPlayer::m_groupCycle`: the order W cycles the waiting groups in

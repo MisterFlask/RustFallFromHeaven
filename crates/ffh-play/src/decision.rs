@@ -955,7 +955,8 @@ pub fn pending(g: &Game, p: PlayerId, events: &[TriggeredId]) -> Pending {
         votes: pending_votes(g, p),
         elections: pending_elections(g, p),
         research_needed: research_needed(g, p),
-        idle_cities: pl.cities.iter().copied().filter(|&c| !g.city_is_production(c) && !g.cities[c].production_automated).collect(),
+        // An outpost builds nothing (docs/NAVAL.md, 9.2): never idle.
+        idle_cities: pl.cities.iter().copied().filter(|&c| !g.city_is_production(c) && !g.cities[c].production_automated && !g.cities[c].outpost).collect(),
         promotions_ready: pl.units.iter().copied().filter(|&u| g.units[u].promotion_ready).collect(),
         ready_groups: ready_groups(g, p),
         ai_groups_idle: ai_groups_waiting(g, p),

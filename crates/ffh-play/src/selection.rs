@@ -94,6 +94,8 @@ pub fn can_start_mission(g: &Game, units: &[UnitId], mission: MissionType, data1
             MissionType::MISSION_SABOTAGE => g.unit_can_sabotage(u, plot, test_visible),
             MissionType::MISSION_DESTROY => g.unit_can_destroy(u, plot, test_visible),
             MissionType::MISSION_STEAL_PLANS => g.unit_can_steal_plans(u, plot, test_visible),
+            // This game's outposts (docs/NAVAL.md, 9.2): data1 FOUND_OUTPOST founds one.
+            MissionType::MISSION_FOUND if data1 == ffh_core::outposts::FOUND_OUTPOST => g.unit_can_found_outpost(u, plot, test_visible),
             MissionType::MISSION_FOUND => g.unit_can_found(u, plot, test_visible),
             MissionType::MISSION_SPREAD => g.unit_can_spread(u, plot, typed(g.d.religions.len()).map(ReligionType::from_usize), test_visible),
             MissionType::MISSION_SPREAD_CORPORATION => {

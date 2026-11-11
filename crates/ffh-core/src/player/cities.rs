@@ -190,12 +190,13 @@ impl Game {
 
     /// C++ `CvPlayer::initCity(iX, iY, bBumpUnits, bUpdatePlotGroups)`: creates and inits a city.
     pub fn player_init_city(&mut self, p: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool) -> CityId {
-        self.player_init_city_as(p, x, y, bump_units, update_plot_groups, None)
+        self.player_init_city_as(p, x, y, bump_units, update_plot_groups, None, false)
     }
 
     /// `player_init_city` for a new city (`acquired` `None`) or one changing hands (`acquired`:
-    /// its building tiers, docs/SUITABILITY.md).
-    pub(crate) fn player_init_city_as(&mut self, p: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool, acquired: Option<IdxVec<BuildingClassType, BuildingTierType>>) -> CityId {
+    /// its building tiers, docs/SUITABILITY.md); `outpost`: the city is an outpost (docs/NAVAL.md,
+    /// 9.2).
+    pub(crate) fn player_init_city_as(&mut self, p: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool, acquired: Option<IdxVec<BuildingClassType, BuildingTierType>>, outpost: bool) -> CityId {
         let is_acquired = acquired.is_some();
         // addCity(): the new slot holds a default (reset) city until `init` re-runs `reset`.
         let id = self.cities.next_id();
@@ -208,7 +209,7 @@ impl Game {
             "No city is expected at this plot when initializing new city"
         );
 
-        self.city_init(city, p, x, y, bump_units, update_plot_groups, acquired);
+        self.city_init(city, p, x, y, bump_units, update_plot_groups, acquired, outpost);
         // This game's governors (docs/GOVERNORS.md): its owner's mode. A city that changed hands
         // goes to its governor once its state is restored (`city_governance_acquired`).
         self.city_governance_init(city, !is_acquired);
@@ -416,7 +417,9 @@ impl Game {
             }
         }
 
-        let new_city = self.player_init_city_as(p, city_x, city_y, !conquest, false, Some(building_tiers));
+        // This game's outposts (docs/NAVAL.md, 9.2): a taken outpost stays an outpost.
+        let was_outpost = self.cities[old_city].outpost;
+        let new_city = self.player_init_city_as(p, city_x, city_y, !conquest, false, Some(building_tiers), was_outpost);
 
         self.cities[new_city].previous_owner = Some(old_owner);
         self.cities[new_city].original_owner = original_owner;
@@ -612,6 +615,10 @@ impl Game {
         // This game's governors: a governed city goes to its governor (a city razed at once is
         // gone: it took no governor).
         self.city_governance_acquired(new_city);
+        // This game's outposts (docs/NAVAL.md, 9.3): a taken outpost's lane, to its new owner.
+        if self.cities.contains(new_city) && self.cities[new_city].outpost {
+            self.city_trace_lane(new_city);
+        }
 
         // Forcing events that deal with the old city not to expire just because we conquered that city
         for trigger_data in self.players[p].events_occured.values_mut() {
@@ -1094,7 +1101,8 @@ impl Game {
         let mut best_city = None;
 
         for &c in &self.players[p].cities {
-            if Some(c) != old_capital && self.cities[c].num_real_building[capital_building] == 0 {
+            // This game's outposts (docs/NAVAL.md, 9.2) are never a capital.
+            if Some(c) != old_capital && self.cities[c].num_real_building[capital_building] == 0 && !self.cities[c].outpost {
                 let city = &self.cities[c];
 
                 let mut value = city.population * 4;

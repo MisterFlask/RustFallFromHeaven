@@ -456,7 +456,7 @@ impl Game {
         if change {
             anarchy_length += d.defines.base_civic_anarchy_length;
 
-            anarchy_length += (pl.num_cities() * d.worlds[self.setup.world_size].num_cities_anarchy_percent) / 100;
+            anarchy_length += ((pl.num_cities() - self.player_get_num_outposts(p)) * d.worlds[self.setup.world_size].num_cities_anarchy_percent) / 100;
         }
 
         anarchy_length = (anarchy_length * std::cmp::max(0, pl.anarchy_modifier + 100)) / 100;
@@ -518,7 +518,7 @@ impl Game {
         //FfH: Modified by Kael 11/18/2007 (settlements are not counted)
         upkeep_value += (std::cmp::max(
             0,
-            (pl.num_cities() - self.player_get_num_settlements(p)) + d.defines.upkeep_city_offset + civic_option.i()
+            (pl.num_cities() - self.player_get_num_settlements(p) - self.player_get_num_outposts(p)) + d.defines.upkeep_city_offset + civic_option.i()
                 - (d.civic_options.len() as i32 / 2),
         ) * upkeep_info.city_percent)
             / 100;
@@ -660,7 +660,7 @@ impl Game {
 
         let mut anarchy_length = d.defines.base_religion_anarchy_length;
 
-        anarchy_length += (pl.num_cities() * d.worlds[self.setup.world_size].num_cities_anarchy_percent) / 100;
+        anarchy_length += ((pl.num_cities() - self.player_get_num_outposts(p)) * d.worlds[self.setup.world_size].num_cities_anarchy_percent) / 100;
 
         anarchy_length = (anarchy_length * std::cmp::max(0, pl.anarchy_modifier + 100)) / 100;
 

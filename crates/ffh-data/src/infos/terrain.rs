@@ -324,6 +324,10 @@ pub struct BonusInfo {
     pub maintenance_modifier: i32,
     pub mutate_chance: i32,
     pub research_modifier: i32,
+    // ---- this game ----
+    /// Moved off the starting landmasses onto a far shore when the map has one
+    /// (docs/NAVAL.md, 9.1; `far_shore`).
+    pub far_shore: bool,
     // ---- arrays ----
     /// `getYieldChange(i)` (`YieldChanges`)
     pub yield_change: [i32; YieldType::NUM],
@@ -381,6 +385,7 @@ pub fn read_bonus(rd: &Rd) -> BonusInfo {
         maintenance_modifier: rd.int("maintenance_modifier"),
         mutate_chance: rd.int("mutate_chance"),
         research_modifier: rd.int("research_modifier"),
+        far_shore: rd.bool("far_shore"),
         yield_change: rd.yields("yield_changes"),
         terrain: rd.pairs_bool("terrain_booleans"),
         feature: rd.pairs_bool("feature_booleans"),

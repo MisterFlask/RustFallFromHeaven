@@ -86,6 +86,22 @@
   "SHORE_FIRE_SHIPS": 3,
   // the least odds (percent) a ship on Patrol needs against a plot's defender to intercept
   "INTERCEPT_MIN_ODDS": 50,
+  // ==== The sea, phase 4: far shores, outposts, lanes (docs/NAVAL.md, section 9) ====
+  // gold a lane of an outpost brings the strongest enemy patrolling a sea it passes through
+  //      without holding it, at the start of the outpost's owner's turn
+  "LANE_RAID_GOLD_CONTESTED": 4,
+  // far shores: a land area with no starting plot and at least this many plots
+  "FAR_SHORE_MIN_PLOTS": 8,
+  // far shores: one more raw mana node per this many plots of a far shore (at least one)
+  "FAR_SHORE_MANA_PLOTS": 40,
+  // an outpost's largest population
+  "OUTPOST_MAX_POP": 2,
+  // gold to raise an outpost to a city (scaled by game speed)
+  "OUTPOST_RAISE_COST": 150,
+  // gold a cut lane of an outpost brings the players of the team holding the sea that cuts it
+  "LANE_RAID_GOLD": 8,
+  // turns an outpost's lane may be cut (or missing) before the outpost starves
+  "LANE_STARVE_TURNS": 5,
   // ==== Governors (docs/GOVERNORS.md) ====
   // percent chance a new governor has a trait (governor_traits.jsonc, drawn uniformly)
   "GOVERNOR_TRAIT_CHANCE": 50,

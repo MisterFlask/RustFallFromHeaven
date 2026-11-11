@@ -544,6 +544,8 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "cultural" => cultural(v, c),
         "recruit" => crate::view::armies::recruit(v, c),
         "governance" => crate::view::governors::city(v, c),
+        // This game's outposts (docs/NAVAL.md, 9 and 10): the lane, starving, raising; null for a city.
+        "outpost" => crate::view::outposts::city(v, c),
     })
 }
 

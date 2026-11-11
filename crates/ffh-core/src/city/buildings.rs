@@ -537,7 +537,8 @@ impl Game {
 
         let mut new_maintenance = 0;
 
-        if !self.city_is_disorder(c) && !self.cities[c].we_love_the_king_day && self.cities[c].population > 0 {
+        // This game's outposts (docs/NAVAL.md, 9.2) pay no maintenance.
+        if !self.city_is_disorder(c) && !self.cities[c].we_love_the_king_day && self.cities[c].population > 0 && !self.cities[c].outpost {
             new_maintenance = (self.city_calculate_base_maintenance_times100(c) * std::cmp::max(0, self.cities[c].maintenance_modifier + 100)) / 100;
         }
 
@@ -594,7 +595,7 @@ impl Game {
         let mut temp_maintenance = std::cmp::min(worst_city_maintenance, best_capital_maintenance);
 
         // FfH: Added by Kael 11/18/2008
-        if city.settlement || self.is_option(GameOptionType::GAMEOPTION_NO_MAINTENANCE) {
+        if city.settlement || city.outpost || self.is_option(GameOptionType::GAMEOPTION_NO_MAINTENANCE) {
             temp_maintenance = 0;
         }
         // FfH: End Add
@@ -631,7 +632,7 @@ impl Game {
 
         // FfH: Modified by Kael 03/29/2009 (settlements do not count)
         let mut num_cities_maintenance =
-            ((self.players[owner].num_cities() - self.player_get_num_settlements(owner)) + num_vassal_cities) * num_cities_percent;
+            ((self.players[owner].num_cities() - self.player_get_num_settlements(owner) - self.player_get_num_outposts(owner)) + num_vassal_cities) * num_cities_percent;
         // FfH: End Modify
 
         num_cities_maintenance = std::cmp::min(num_cities_maintenance, handicap.max_num_cities_maintenance * 100);
@@ -639,7 +640,7 @@ impl Game {
         num_cities_maintenance /= 100;
 
         // FfH: Added by Kael 11/18/2008
-        if self.cities[c].settlement || self.is_option(GameOptionType::GAMEOPTION_NO_MAINTENANCE) {
+        if self.cities[c].settlement || self.cities[c].outpost || self.is_option(GameOptionType::GAMEOPTION_NO_MAINTENANCE) {
             num_cities_maintenance = 0;
         }
         // FfH: End Add

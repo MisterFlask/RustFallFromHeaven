@@ -6,6 +6,7 @@
 //!   ffh autoplay [opts]              play an AI-only game, print per-turn stats and a summary
 //!   ffh bench [opts]                 like autoplay, print only timings
 //!   ffh stats [opts] [--at T1,T2,..] [--every N]
+//!   ffh far-shores [opts]            the map's far shores and what moved there (docs/NAVAL.md 9.1)
 //!                                    play a game, print one JSON line of AI metrics
 //!                                    (per-civ snapshots after T1, T2, .. turns, or every N
 //!                                    turns, plus the final state; events)
@@ -186,6 +187,13 @@ fn main() {
         Some("stats") => {
             let (cfg, at) = parse_run_config_at(&args[1..]);
             stats::cmd_stats(&cfg, &at);
+        }
+        Some("far-shores") => {
+            // ffh far-shores [run options]: make the map, print what the far-shore pass did
+            // (docs/NAVAL.md, 9.1) as one JSON line.
+            let cfg = parse_run_config(&args[1..]);
+            let (g, _) = run::new_game(&cfg);
+            println!("{}", run::far_shores_json(&g));
         }
         Some(_) => usage(),
     }

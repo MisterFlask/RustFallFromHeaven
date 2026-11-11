@@ -1182,8 +1182,24 @@ fn patrol_target(g: &Game, v: &View, grp: GroupId, u: UnitId) -> Option<(SeaId, 
             }
         }
     }
-    // 2. A sea one of our ports is on where an enemy patrols or has ships we see; 3. (outposts'
-    // lanes: phase 4); 4. the sea of our most populous port.
+    // 2. A sea one of our ports is on where an enemy patrols or has ships we see; 3. a sea our
+    // outposts' lanes pass through (docs/NAVAL.md, 9.3), the one nearest the outpost first;
+    // 4. the sea of our most populous port.
+    let mut lanes: Vec<SeaId> = Vec::new();
+    for &c in &g.players[p].cities {
+        if !g.cities.contains(c) || !g.cities[c].outpost {
+            continue;
+        }
+        if let Some(lane) = g.outpost_lane(c) {
+            for &w in &lane.path {
+                if let Some(s) = g.map.plots[w].sea {
+                    if !lanes.contains(&s) && !outmatched(g, team, s) {
+                        lanes.push(s);
+                    }
+                }
+            }
+        }
+    }
     let mut ports: Vec<(i32, CityId)> = g.players[p].cities.iter().filter(|&&c| g.cities.contains(c)).map(|&c| (-g.cities[c].population, c)).collect();
     ports.sort();
     let mut threatened: Vec<SeaId> = Vec::new();
@@ -1204,6 +1220,8 @@ fn patrol_target(g: &Game, v: &View, grp: GroupId, u: UnitId) -> Option<(SeaId, 
         }
     }
     wanted.extend(threatened.into_iter().filter(|&s| !outmatched(g, team, s)));
+    let lanes: Vec<SeaId> = lanes.into_iter().filter(|s| !wanted.contains(s)).collect();
+    wanted.extend(lanes);
     wanted.extend(home);
     for s in wanted {
         let mut plots: Vec<(i32, PlotIdx)> = g.map.seas[s.idx()]

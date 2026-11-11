@@ -307,6 +307,10 @@ pub fn plot(v: &Viewer, x: i32, y: i32, units: &[UnitId]) -> Result<Json, QueryE
         "city" => pl.plot_city.filter(|&c| v.city_revealed(c)).map(|c| crate::jobj! { "id" => c, "name" => city_name(g, c), "owner" => g.cities[c].owner }),
         "move_cost" => base_move_cost(v, p),
     };
+    // This game's far shores (docs/NAVAL.md, 10): a resource none of the human's landmasses holds.
+    if let Some(note) = v.plot_bonus(p).and_then(|b| crate::view::outposts::bonus_line(v, b)) {
+        j.set("bonus_note", note);
+    }
     // C++ plot help: "Must be level N to enter" (the Ring of Carcer's 15; -1 once it is gone).
     if pl.min_level > 0 {
         j.set("min_level", pl.min_level);

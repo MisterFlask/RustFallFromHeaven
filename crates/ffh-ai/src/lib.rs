@@ -54,6 +54,7 @@ pub mod mana;
 pub mod military;
 pub mod naval;
 pub mod offers;
+pub mod outposts;
 pub mod pacts;
 pub mod predict;
 pub mod probes;
@@ -217,6 +218,7 @@ impl Controller for Ai {
             supply::turn(g, p); // telemetry only: the armies' supply counters (docs/SUPPLY.md)
             culture::turn(g, p); // cultural channels (docs/CULTURE.md), after the governors' production
             cards::turn(g, &v); // the great-person cards' content: world spells, rituals (docs/CARDS.md)
+            outposts::turn(g, p); // outposts raised to cities (docs/NAVAL.md, 9.2)
         }
         if !v.barbarian {
             campaign::plan(g, &mut v);

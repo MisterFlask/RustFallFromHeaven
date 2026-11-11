@@ -70,7 +70,8 @@ const SLOW_ORDER_TURNS: i32 = 30;
 impl Game {
     /// Whether city `c` is governed (not directly ruled). Barbarian cities are never governed.
     pub fn city_is_governed(&self, c: CityId) -> bool {
-        !self.cities[c].direct_rule && !self.player_is_barbarian(self.cities[c].owner)
+        // This game's outposts (docs/NAVAL.md, 9.2) have no governor.
+        !self.cities[c].direct_rule && !self.player_is_barbarian(self.cities[c].owner) && !self.cities[c].outpost
     }
 
     /// Whether player `p` rules its cities directly: one of its civics has `direct_rule`, or it is
@@ -355,7 +356,7 @@ impl Game {
             } else if !direct && !governed {
                 self.city_become_governed(c, false);
                 changed += 1;
-                if self.cities.contains(c) && self.cities[c].order_queue.is_empty() && !self.cities[c].settlement {
+                if self.cities.contains(c) && self.cities[c].order_queue.is_empty() && !self.cities[c].settlement && !self.cities[c].outpost {
                     self.city_choose_production(c, None, None, None, false, false);
                 }
             }

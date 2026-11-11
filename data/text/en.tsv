@@ -13847,6 +13847,9 @@ TXT_KEY_UNIT_SETTLER	Settler
 TXT_KEY_UNIT_SETTLER_HIPPUS	Hippus Settler
 TXT_KEY_UNIT_SETTLER_PEDIA	When a city begins to become crowded, a handful of brave families will chose, or be chosen, to form the nucleus of a new settlement. Pioneering though they may be, settlers are extremely vulnerable, as they consist of as many women and children as they do men, and a wise leader always sends an armed escort. Many a budding city has been wiped out by the savage beasts of the wilderness.
 TXT_KEY_UNIT_SETTLER_STRATEGY	Build [COLOR_UNIT_TEXT]Settlers[COLOR_REVERT] to expand your empire with new cities.
+TXT_KEY_UNIT_COLONIST	Colonist
+TXT_KEY_UNIT_COLONIST_PEDIA	A handful of families sent across the water to hold a shore for its goods: a landing, a stockade and a jetty, supplied by the ships that brought them.
+TXT_KEY_UNIT_COLONIST_STRATEGY	Founds an [COLOR_UNIT_TEXT]Outpost[COLOR_REVERT] on a landmass other than your capital's, next to the sea: population 2 at most, works the 8 plots around it, builds nothing, pays no maintenance. Its resources reach you while its lane to a home port is open.
 TXT_KEY_UNIT_SEVERED_SOUL	Severed Soul
 TXT_KEY_UNIT_SEVERED_SOUL_STRATEGY	These are the wandering souls of the Divided Soul unit. They can only be created by that units Sever Soul ability. Since they are invisible they can explore the area near their Divided Soul in safety, and summon their body to them if they find something interesting.
 TXT_KEY_UNIT_SHADE	Shade

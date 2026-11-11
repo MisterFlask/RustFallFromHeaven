@@ -1227,3 +1227,38 @@ mod wrapper_tests {
         }
     }
 }
+
+/// What the far-shore pass did on `g`'s map (docs/NAVAL.md, 9.1), as one JSON object: the far
+/// shores and their plots, the flagged bonuses moved, stayed (no plot could hold them) and kept in
+/// a start's city radius, the mana nodes added, and per starting landmass the flagged resource
+/// types it held before and after.
+pub fn far_shores_json(g: &Game) -> String {
+    let d = g.d;
+    let r = g.far_shore_report().unwrap_or_default();
+    let name = |b: BonusType| d.type_name(b).trim_start_matches("BONUS_").to_lowercase();
+    let list = |v: Vec<String>| format!("[{}]", v.join(","));
+    let shores = list(r.far_shores.iter().map(|(a, n)| format!("{{\"area\":{},\"plots\":{n}}}", a.0)).collect());
+    let moved = list(r.moved.iter().map(|(b, _, _)| format!("\"{}\"", name(*b))).collect());
+    let stayed = list(r.stayed.iter().map(|(b, _)| format!("\"{}\"", name(*b))).collect());
+    let kept = list(r.kept_by_start.iter().map(|(b, _)| format!("\"{}\"", name(*b))).collect());
+    // Per starting landmass: the flagged types on it now, and those it lost.
+    let mut starts = Vec::new();
+    for (a, area) in g.map.areas.iter() {
+        if area.water || area.num_starting_plots == 0 {
+            continue;
+        }
+        let mut now: Vec<String> = g.map.plot_ids().filter(|&q| g.map.plots[q].area == Some(a)).filter_map(|q| g.map.plots[q].bonus_type).filter(|&b| d.bonuses[b].far_shore).map(name).collect();
+        now.sort();
+        now.dedup();
+        let mut lost: Vec<String> = r.moved.iter().filter(|(_, from, _)| g.map.plots[*from].area == Some(a)).map(|(b, _, _)| name(*b)).filter(|n| !now.contains(n)).collect();
+        lost.sort();
+        lost.dedup();
+        starts.push(format!("{{\"area\":{},\"starts\":{},\"plots\":{},\"flagged_types\":{},\"types_lost\":{}}}", a.0, area.num_starting_plots, area.num_tiles, list(now.into_iter().map(|n| format!("\"{n}\"")).collect()), list(lost.into_iter().map(|n| format!("\"{n}\"")).collect())));
+    }
+    format!(
+        "{{\"far_shores\":{shores},\"moved\":{moved},\"stayed\":{stayed},\"kept_by_start\":{kept},\"mana\":{},\"mana_wanted\":{},\"start_areas\":{}}}",
+        r.mana.len(),
+        r.mana_wanted,
+        list(starts)
+    )
+}

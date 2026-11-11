@@ -149,7 +149,7 @@ impl Game {
         if min_level > 0 && (self.city_is_human(c) || !self.is_option(GameOptionType::GAMEOPTION_AI_NO_MINIMUM_LEVEL) || min_level == 1) {
             return false;
         }
-        if self.cities[c].settlement {
+        if self.cities[c].settlement || self.cities[c].outpost {
             return false;
         }
         // Card: the Gilded Legion (docs/CARDS.md): its city trains the chosen civilization's units
@@ -278,7 +278,7 @@ impl Game {
         let info = &d.buildings[building];
 
         // FfH: Modified by Kael 08/24/2007
-        if city.settlement {
+        if city.settlement || city.outpost {
             return false;
         }
 
@@ -463,7 +463,7 @@ impl Game {
         if self.is_option(GameOptionType::GAMEOPTION_NO_PROJECTS) {
             return false;
         }
-        if self.cities[c].settlement {
+        if self.cities[c].settlement || self.cities[c].outpost {
             return false;
         }
         if let Some(prereq_civ) = info.prereq_civilization {
@@ -494,7 +494,7 @@ impl Game {
     /// C++ `CvCity::canMaintain` (CvCity.cpp:2377-2419). Python `canMaintain`/`cannotMaintain`.
     pub fn city_can_maintain(&self, c: CityId, process: ProcessType, cont: bool) -> bool {
         // FfH: Added by Kael 11/08/2007
-        if self.cities[c].settlement {
+        if self.cities[c].settlement || self.cities[c].outpost {
             return false;
         }
 
@@ -1035,7 +1035,7 @@ impl Game {
         }
 
         // FfH: Added by Kael 11/08/2007
-        if self.cities[c].settlement {
+        if self.cities[c].settlement || self.cities[c].outpost {
             return false;
         }
 
@@ -1225,7 +1225,7 @@ impl Game {
         }
 
         // FfH: Added by Kael 11/08/2007
-        if self.cities[c].settlement {
+        if self.cities[c].settlement || self.cities[c].outpost {
             return false;
         }
 

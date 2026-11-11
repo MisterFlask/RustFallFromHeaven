@@ -1114,6 +1114,10 @@ impl Game {
             if index as i32 > self.city_num_city_plots(city) {
                 return None;
             }
+            // This game's outposts (docs/NAVAL.md, 9.2): radius 1 holds the indices 0..9 only.
+            if self.cities[city].plot_radius == 1 && index >= 9 {
+                return None;
+            }
         }
         // FfH: End Add
 

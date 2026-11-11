@@ -10,6 +10,7 @@ import { SEA } from "./world.js";
 import { drawCityWork } from "../citywork.js";
 import { supplyLines, supplyMarks, unwrapSegment, flowOffset, drawLine, drawMark } from "../supply.js";
 import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip } from "../sea.js";
+import { drawLanesR3d, outpostTag } from "../lanes.js";
 
 const FONT = "system-ui, 'DejaVu Sans', 'Segoe UI', sans-serif";
 
@@ -123,7 +124,7 @@ function drawHudParts(r3d, cam) {
     const seen = city.visible !== false;
     const fs = Math.max(10, Math.min(15, Math.round(ts * 0.15)));
     g.font = `600 ${fs}px ${FONT}`;
-    const name = ts >= 40 ? city.name ?? "" : "";
+    const name = ts >= 40 ? (city.name ?? "") + outpostTag(city) : "";
     const tw = g.measureText(name).width;
     const sizeR = fs * 0.78;
     const pad = fs * 0.45;
@@ -443,6 +444,7 @@ function drawSea(r3d, cam, g, inView) {
     }
   }
   drawEdges(g, segs, Math.max(1.5, Math.min(3, r3d.ts * 0.025)));
+  drawLanesR3d(r3d, cam, g, inView, FONT); // outposts' lanes (lanes.js)
 }
 
 /** The supply lines and the cut-off armies' markers (supply.js), each plot's centre on the ground;

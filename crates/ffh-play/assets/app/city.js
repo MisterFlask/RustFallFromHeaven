@@ -499,6 +499,7 @@ function summaryRow(c, { prompt = false } = {}) {
       ic("population", true),
       h("b", String(c.size)),
       c.capital ? h("span.capital", { title: "Capital" }, "★") : null,
+      c.outpost ? h("span.dim", " outpost") : null,
       c.disorder ? h("span.bad", " in disorder") : null,
       c.occupation ? h("span.bad", ` occupied ${c.occupation}`) : null,
     ),
@@ -511,7 +512,7 @@ function summaryRow(c, { prompt = false } = {}) {
     h(
       "div.cs-gauge",
       { tip: prod.current ? `Production: ${prod.rate} a turn; ${prod.stored}/${prod.needed ?? "-"}` : "Nothing is being built" },
-      h("div.cs-top", ic("production", true), h("b.cs-big.prod", String(prod.rate)), h("span.cs-sub", prod.current ? productionName(c) : prompt ? "a turn" : h("span.bad", "nothing to build"))),
+      h("div.cs-top", ic("production", true), h("b.cs-big.prod", String(prod.rate)), h("span.cs-sub", prod.current ? productionName(c) : c.outpost ? "an outpost builds nothing" : prompt ? "a turn" : h("span.bad", "nothing to build"))),
       prod.current && prod.needed ? h("div.cs-top", barEl(prod.stored / prod.needed, "production", { w: 60, next: (prod.stored + prod.rate) / prod.needed }), h("span.when", c.queue[0]?.turns !== null && c.queue[0]?.turns !== undefined ? `in ${turns(c.queue[0].turns)}` : "")) : null,
     ),
   );
@@ -835,7 +836,33 @@ function screen(c, { task, choose, remove, overlay, tap, reload }) {
   // buildings.
   const left = h("div.city-col", plots, citizensView(c, task), moodView(c), growthView(c), cultureView(c, reload), buildingsView(c, reload));
   // What to build first; then the orders, where trained units go (armies.js) and the governance.
+  // An outpost builds nothing and has no governor: its lane and Raise to city instead.
+  if (c.outpost) return [summaryView(c), h("div.city-cols", left, h("div.city-col", outpostView(c, reload)))];
   const garrison = c.governance?.governed ? null : recruitView(c, reload);
   const right = h("div.city-col", productionView(c, choose, remove, tap, reload), manageView(c, task), garrison ? h("div.section.recruit", garrison) : null, governanceView(c, reload));
   return [summaryView(c), h("div.city-cols", left, right)];
+}
+
+/** An outpost's part of the city screen (docs/NAVAL.md, 9 and 10; the city query's `outpost`): what
+ *  it is, its lane (open, cut, none; starved) and Raise to city with its cost. */
+function outpostView(c, reload) {
+  const o = c.outpost;
+  const raise = o.raise;
+  return h(
+    "div.section.outpost",
+    h("h4", "Outpost"),
+    h("p.dim", `Population ${o.max_pop} at most. Builds nothing, no governor, no maintenance. Its resources reach you while its lane is open.`),
+    o.lines.map((line) => h("p.outpost-lane", line)),
+    h(
+      "button.raise-outpost",
+      {
+        disabled: !raise.enabled,
+        title: raise.reason ?? "From then on it is a city under every rule of cities.",
+        onclick: async () => {
+          if (await run({ c: "raise_outpost", city: c.id })) reload();
+        },
+      },
+      raise.label,
+    ),
+  );
 }

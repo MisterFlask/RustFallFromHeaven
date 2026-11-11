@@ -147,6 +147,20 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
                 }
             }
         }
+        // This game's outposts (docs/NAVAL.md, 9.2): the founder's second action (the Colonist's
+        // only one), with the site rule as its reason when it cannot.
+        if m == MissionType::MISSION_FOUND {
+            if let Some(&f) = units.iter().find(|&&u| g.unit_founds_outposts(u)) {
+                let outpost = ffh_core::outposts::FOUND_OUTPOST;
+                let enabled = can(m, outpost, -1, false);
+                let rule = format!("Founds an outpost: on another landmass than your capital's, next to the ocean. Population {} at most, works the 8 plots around it, builds nothing, pays no maintenance; its resources reach you while its lane to a home port is open.", g.d.defines.outpost_max_pop);
+                let help = match (enabled, g.unit_found_outpost_refusal(f, plot, false)) {
+                    (false, Some(why)) => format!("{rule}[NEWLINE]{why}"),
+                    _ => rule,
+                };
+                push("mission", enabled, mission_cmd(units, m, outpost, -1), crate::jobj! { "mission" => Json::idx(m), "data1" => outpost, "outpost" => true, "help" => help });
+            }
+        }
     }
 
     // Interface modes (the exe's go-to, route-to, range attack, air ... buttons): shown, and so

@@ -29,7 +29,11 @@ impl Game {
     /// This game's building suitability (docs/SUITABILITY.md): `tiers` are the building tiers of
     /// a city changing hands (it keeps them); a new city (`None`) rolls its own, before any
     /// building is given to it.
-    pub fn city_init(&mut self, c: CityId, owner: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool, tiers: Option<IdxVec<BuildingClassType, BuildingTierType>>) {
+    ///
+    /// This game's outposts (docs/NAVAL.md, 9.2): `outpost` makes the city an outpost from the
+    /// start: radius 1, no free buildings, never a settlement or a radius-3 city.
+    #[allow(clippy::too_many_arguments)]
+    pub fn city_init(&mut self, c: CityId, owner: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool, tiers: Option<IdxVec<BuildingClassType, BuildingTierType>>, outpost: bool) {
         let d = self.d;
         let defines = &d.defines;
 
@@ -40,6 +44,11 @@ impl Game {
 
         // Init saved data: reset(iID, eOwner, pPlot->getX_INLINE(), pPlot->getY_INLINE()).
         self.cities[c] = City::new(d, self.num_players(), self.num_teams(), c, owner, plot_x, plot_y);
+        if outpost {
+            self.cities[c].outpost = true;
+            self.cities[c].plot_radius = 1;
+            self.sea_range_invalidate();
+        }
         match tiers {
             Some(tiers) => self.cities[c].building_tiers = tiers,
             None => self.city_roll_building_tiers(c),
@@ -109,7 +118,7 @@ impl Game {
         }
 
         for building in d.buildings.keys() {
-            if self.player_is_building_free(owner, building) {
+            if !outpost && self.player_is_building_free(owner, building) {
                 self.city_set_num_free_building(c, building, 1);
             }
         }
@@ -136,9 +145,9 @@ impl Game {
 
         // FfH: Added by Kael 11/07/2007
         let max_cities = self.players[owner].max_cities;
-        if max_cities != -1 {
+        if max_cities != -1 && !outpost {
             let num_cities = self.players[owner].num_cities();
-            if num_cities - self.player_get_num_settlements(owner) - 1 >= max_cities {
+            if num_cities - self.player_get_num_settlements(owner) - self.player_get_num_outposts(owner) - 1 >= max_cities {
                 self.cities[c].settlement = true;
             } else if !self.players[owner].human || num_cities == 1 || self.is_game_multi_player() {
                 self.city_set_plot_radius(c, 3);
@@ -163,7 +172,7 @@ impl Game {
         game_ai_make_assign_work_dirty(self);
         self.players[owner].founded_first_city = true;
 
-        if self.final_initialized && self.players[owner].num_cities() == 1 {
+        if self.final_initialized && self.players[owner].num_cities() == 1 && !outpost {
             let civ = self.city_civilization_type(c);
             for building_class in d.building_classes.keys() {
                 if d.civilizations[civ].civilization_free_building_class[building_class] {
@@ -1105,6 +1114,11 @@ impl Game {
     /// C++ `CvCity::doProduction` (CvCity.cpp:12033-12084). Python `doProduction` callback.
     pub fn city_do_production(&mut self, c: CityId, allow_no_production: bool) {
         if py_do_production(self, c) {
+            return;
+        }
+
+        // This game's outposts (docs/NAVAL.md, 9.2) build nothing and keep no hammers.
+        if self.cities[c].outpost {
             return;
         }
 

@@ -16,6 +16,7 @@ import * as T from "./tiles.js";
 import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark, drawMarchMark, marchMark } from "./iso.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark } from "./supply.js";
 import { seaPlot, stackWear, drawDark, drawEdges, drawWearPip } from "./sea.js";
+import { drawLanesFlat, outpostTag } from "./lanes.js";
 
 /** The start-up prototype's switch (docs/HD2D.md): on unless the page says `?r3d={"fastStart":0}`.
  *  The 3D renderer's modules read it from their config. */
@@ -1066,6 +1067,7 @@ export class MapView {
       }
     }
     drawEdges(g, segs, Math.max(1.5, ts / 16));
+    drawLanesFlat(this, g, FONT); // outposts' lanes (lanes.js)
   }
 
   chunk(cx, cy, cw, ch) {
@@ -1331,7 +1333,7 @@ export class MapView {
         g.textBaseline = "middle";
         g.fillText(c.size === null || c.size === undefined ? "?" : String(c.size), sx + ts / 2, by + hh / 2 + 0.5);
         if (ts >= 16) {
-          const label = `${c.capital ? "★ " : ""}${c.name}`;
+          const label = `${c.capital ? "★ " : ""}${c.name}${outpostTag(c)}`;
           g.font = `${ts >= 32 ? 12 : 10}px ${FONT}`;
           const tw = g.measureText(label).width + 8;
           g.fillStyle = "rgba(10,10,12,0.78)";

@@ -515,7 +515,7 @@ impl Game {
         let pc = self.units[u].packed_city.take()?;
         let owner = self.units[u].owner;
         let (x, y) = (self.units[u].x, self.units[u].y);
-        let c = self.player_init_city_as(owner, x, y, true, true, Some(pc.tiers.clone()));
+        let c = self.player_init_city_as(owner, x, y, true, true, Some(pc.tiers.clone()), false);
         self.city_set_name(c, &pc.name, false);
         self.city_set_population(c, pc.population.max(1));
         for pb in &pc.buildings {

@@ -26,6 +26,7 @@ pub mod map;
 pub mod mapgen;
 pub mod mapscript;
 pub mod naval;
+pub mod outposts;
 pub mod path;
 pub mod player;
 pub mod plot;

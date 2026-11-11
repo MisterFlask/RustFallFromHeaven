@@ -386,9 +386,9 @@ function citiesList() {
               h(
                 "tr.clickable",
                 { onclick: () => (closeTag("cities"), mapView.centerOn(c.x, c.y), openCity(c.id)) },
-                h("td", `${c.capital ? "★ " : ""}${c.name}`),
+                h("td", `${c.capital ? "★ " : ""}${c.name}`, c.outpost ? h("span.dim", " outpost") : null),
                 h("td", String(c.size)),
-                h("td", c.production ? `${dname(["UnitType", "BuildingType", "ProjectType", "ProcessType"][c.production.order], c.production.type)} (${turns(c.production.turns)})` : h("span.warn", "nothing")),
+                h("td", c.production ? `${dname(["UnitType", "BuildingType", "ProjectType", "ProcessType"][c.production.order], c.production.type)} (${turns(c.production.turns)})` : c.outpost ? h("span", { class: c.outpost.lane === "open" ? "" : "warn" }, c.outpost.text ?? "") : h("span.warn", "nothing")),
                 h("td", c.food_turns > 0 ? turns(c.food_turns) : "-"),
               ),
             ),

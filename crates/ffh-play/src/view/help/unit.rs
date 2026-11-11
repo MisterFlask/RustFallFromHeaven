@@ -97,6 +97,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         investigate,
         counter_spy,
         found,
+        found_outpost,
         golden_age,
         invisible,
         first_strike_immune,
@@ -552,6 +553,11 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         if has {
             add(d, &mut b, key, &[]);
         }
+    }
+    // This game's outposts (docs/NAVAL.md, 9.2).
+    if *found_outpost || *found {
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]Can found an outpost: on another landmass than the capital's, next to the ocean.");
     }
     // The builds: all of them in a word when it has more than three quarters.
     let my_builds: Vec<String> = builds.iter_enumerated().filter(|(_, &x)| x).map(|(x, _)| display(d, x).into_owned()).collect();

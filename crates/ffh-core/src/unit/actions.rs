@@ -1606,11 +1606,9 @@ impl Game {
 
     /// C++ `CvUnit::collectBlockadeGold`: removed with Civ4's blockade by range (docs/NAVAL.md,
     /// 4.2). A ship on Patrol takes no gold from the trade routes of cities near it; the raiding
-    /// gold of the sea's lanes is phase 4's (docs/NAVAL.md, 4.4 point 5 and 9.3).
-    pub fn unit_collect_blockade_gold(&mut self, _u: UnitId) {
-        // Phase 4 (docs/NAVAL.md, 4.4 point 5): LANE_RAID_GOLD_CONTESTED for a patrol in a sea an
-        // outpost's lane passes through, at the start of the outpost owner's turn. Not built.
-    }
+    /// gold of the sea's lanes (docs/NAVAL.md, 4.4 point 5 and 9.3) is paid at the start of the
+    /// outpost owner's turn, by `Game::player_update_lanes` (outposts.rs).
+    pub fn unit_collect_blockade_gold(&mut self, _u: UnitId) {}
 }
 
 #[cfg(test)]

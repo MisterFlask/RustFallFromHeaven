@@ -27,6 +27,7 @@ import { SPRITES } from "./iso/sprites.js";
 import { drawCityWork } from "./citywork.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark } from "./supply.js";
 import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip } from "./sea.js";
+import { drawLanesIso, outpostTag } from "./lanes.js";
 
 /** A tile's width in art pixels: the M7 contract (tiles 192 x 128, the diamond in rows 0-95). */
 const NATIVE = 192;
@@ -1382,6 +1383,7 @@ export class IsoMap {
     }
     drawEdges(g, segs, Math.max(1.5, 3 * f.s));
     this.seaDrawn = n;
+    drawLanesIso(this, g, f, HERALD); // outposts' lanes (lanes.js)
   }
 
   /** The supply lines and the cut-off armies' markers (supply.js; docs/SUPPLY.md). This map is
@@ -1489,7 +1491,7 @@ export class IsoMap {
       const col = ownerColor(city.owner);
       const size = city.size === null || city.size === undefined ? "?" : String(city.size);
       const turns = city.owner === mine ? city.production?.turns : null;
-      const label = f.TW >= 64 ? `${city.name ?? ""}${turns !== null && turns !== undefined ? `  ${turns}` : ""}` : "";
+      const label = f.TW >= 64 ? `${city.name ?? ""}${outpostTag(city)}${turns !== null && turns !== undefined ? `  ${turns}` : ""}` : "";
       const tw = label ? Math.ceil(g.measureText(label).width) : 0;
       const sw = Math.ceil(g.measureText(size).width);
       const h = 15 * u;

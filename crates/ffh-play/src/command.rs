@@ -70,6 +70,8 @@ pub enum Command {
     ArmyTactic { army: ArmyId, tactic: BattleTacticType },
     /// City `city`'s garrison fights in `tactic` from the start of the human's next turn.
     GarrisonTactic { city: CityId, tactic: BattleTacticType },
+    /// Outpost `city` is raised to a city for its cost in gold (docs/NAVAL.md, 9.2).
+    RaiseOutpost { city: CityId },
     /// Engagement combat (docs/ENGAGEMENTS.md): attack plot `to` (next to the attackers); each side
     /// fights in the formation its tactic gives (docs/TACTICS.md). `formation` is refused for the
     /// human ("An army fights in its tactic."; the rules' own entry still takes one: the lab, tests).
@@ -639,6 +641,7 @@ impl Command {
             Command::ArmyRequisitionSet { .. } => "army_requisition_set",
             Command::ArmyTactic { .. } => "army_tactic",
             Command::GarrisonTactic { .. } => "garrison_tactic",
+            Command::RaiseOutpost { .. } => "raise_outpost",
             Command::Engage { .. } => "engage",
             Command::RecruitDest { .. } => "recruit_dest",
             Command::GovernRole { .. } => "govern_role",
@@ -744,6 +747,7 @@ impl Command {
             "army_requisition_set" => Command::ArmyRequisitionSet { army: j.req("army")?, cities: j.req("cities")? },
             "army_tactic" => Command::ArmyTactic { army: j.req("army")?, tactic: names::field(d, j, "tactic")? },
             "garrison_tactic" => Command::GarrisonTactic { city: j.req("city")?, tactic: names::field(d, j, "tactic")? },
+            "raise_outpost" => Command::RaiseOutpost { city: j.req("city")? },
             "engage" => Command::Engage {
                 by: EngageBy::from_json(j)?,
                 to: plot_field(j, "to")?.ok_or_else(|| FieldError::missing("to"))?,
@@ -860,6 +864,7 @@ impl Command {
             Command::ArmyRequisitionSet { army, cities } => j.with("army", *army).with("cities", Json::Arr(cities.iter().map(|&c| Json::from(c)).collect())),
             Command::ArmyTactic { army, tactic } => j.with("army", *army).with("tactic", Json::idx(*tactic)),
             Command::GarrisonTactic { city, tactic } => j.with("city", *city).with("tactic", Json::idx(*tactic)),
+            Command::RaiseOutpost { city } => j.with("city", *city),
             Command::Engage { by, to, formation, declare_war } => by
                 .put(j)
                 .with("to", plot_json(to.0, to.1))
@@ -1136,6 +1141,13 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::ArmyRequisitionSet { army, cities } => g.army_set_requisition(h, *army, cities),
         Command::ArmyTactic { army, tactic } => g.army_set_tactic(h, *army, *tactic),
         Command::GarrisonTactic { city, tactic } => g.city_set_garrison_tactic(h, *city, *tactic),
+        Command::RaiseOutpost { city } => {
+            if g.player_raise_outpost(h, *city) {
+                Ok(())
+            } else {
+                Err("cannot raise it")
+            }
+        }
         Command::GovernRole { city, role } => g.player_set_city_role(h, *city, *role),
         Command::GovernPriorities { roles } => g.player_set_governor_priorities(h, roles.clone()),
         Command::EmpireOrder { city, order, data, dest } => g.city_push_empire_order(h, *city, *order, *data, -1, *dest),
@@ -1217,6 +1229,8 @@ fn check_mission_data(g: &Game, m: MissionType, data1: i32, data2: i32) -> Resul
             no_data2()
         }
         MissionType::MISSION_ESPIONAGE => Ok(()),
+        // This game's outposts (docs/NAVAL.md, 9.2): data1 FOUND_OUTPOST founds one.
+        MissionType::MISSION_FOUND if data1 == ffh_core::outposts::FOUND_OUTPOST => no_data2(),
         _ if data1 != -1 => Err(invalid(format!("field `data1`: must be -1 for this mission, got {data1}"))),
         _ => no_data2(),
     }
@@ -1527,6 +1541,14 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         Command::GarrisonTactic { city, tactic } => {
             city_of(g, h, *city)?;
             in_range("tactic", tactic.idx() as i32, d.battle_tactics.len())?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::RaiseOutpost { city } => {
+            city_of(g, h, *city)?;
+            if let Some(why) = g.player_raise_outpost_refusal(h, *city) {
+                return Err(cannot(why));
+            }
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
@@ -2347,6 +2369,7 @@ mod tests {
             Command::ArmyRequisitionSet { army: ArmyId(1), cities: vec![] },
             Command::ArmyTactic { army: ArmyId(1), tactic: BattleTacticType(2) },
             Command::GarrisonTactic { city: CityId(3), tactic: BattleTacticType(0) },
+            Command::RaiseOutpost { city: CityId(3) },
             Command::Engage { by: EngageBy::Army(ArmyId(1)), to: (4, 5), formation: None, declare_war: None },
             Command::Engage {
                 by: EngageBy::Units(vec![UnitId(3), UnitId(4)]),

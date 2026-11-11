@@ -631,6 +631,9 @@ pub struct UnitInfo {
     pub investigate: bool,
     pub counter_spy: bool,
     pub found: bool,
+    /// This game's own (docs/NAVAL.md, 9.2): `found_outpost`, the unit founds outposts and no
+    /// city (the Colonist; a unit with `found` founds both).
+    pub found_outpost: bool,
     pub golden_age: bool,
     pub invisible: bool,
     pub first_strike_immune: bool,
@@ -952,6 +955,7 @@ pub fn read_unit(rd: &Rd) -> UnitInfo {
         investigate: rd.bool("investigate"),
         counter_spy: rd.bool("counter_spy"),
         found: rd.bool("found"),
+        found_outpost: rd.bool("found_outpost"),
         golden_age: rd.bool("golden_age"),
         invisible: rd.bool("invisible"),
         first_strike_immune: rd.bool("first_strike_immune"),

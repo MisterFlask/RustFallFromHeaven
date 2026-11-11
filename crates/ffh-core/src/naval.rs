@@ -27,8 +27,8 @@
 //! `Game::sea_range` (not saved) and checked on every read against what it was computed from
 //! (which teams' cities are the team's ports, which team each player is on); the cities and the
 //! plots' water and passability clear it when they change (`Game::sea_range_invalidate`, called
-//! by the city and plot setters). A read from the cache equals a fresh computation, so the cache
-//! cannot change a game's course.
+//! by the city and plot setters, and when an outpost starts or stops starving: outposts.rs). A
+//! read from the cache equals a fresh computation, so the cache cannot change a game's course.
 
 use std::cell::RefCell;
 
@@ -60,6 +60,11 @@ pub struct SeaRangeCache {
     fields: Vec<Option<SeaField>>,
     /// The techs with a `sea_range_change` (from the data, which never changes).
     range_techs: Option<Vec<(TechType, i32)>>,
+    /// The outposts' lanes and cut-off plots by team, for the trade network (outposts.rs):
+    /// derived from the cities, rebuilt when dropped.
+    pub(crate) outpost_net: Option<crate::outposts::OutpostNet>,
+    /// What the far-shore pass did (outposts.rs), for tools.
+    pub(crate) far_shores: Option<crate::outposts::FarShoreReport>,
 }
 
 impl SeaRangeCache {
@@ -72,7 +77,10 @@ impl Game {
     /// Drops the cached range fields (module comment): a city founded or gone, a plot's water or
     /// passability changed, players added or teams merged.
     pub fn sea_range_invalidate(&mut self) {
-        self.sea_range.get_mut().fields.clear();
+        let cache = self.sea_range.get_mut();
+        cache.fields.clear();
+        // The outposts' trade network (outposts.rs) reads the cities too.
+        cache.outpost_net = None;
     }
 
     /// Whether `other`'s cities are ports of `team` (docs/NAVAL.md, section 2): its own team, its
@@ -87,8 +95,12 @@ impl Game {
         self.teams[team].vassal[other] || self.teams[other].vassal[team] || self.team_is_open_borders(team, other)
     }
 
-    /// Whether city `c` is a port: a water plot is next to it.
+    /// Whether city `c` is a port: a water plot is next to it, and it is not a starved outpost
+    /// (docs/NAVAL.md, 9.3).
     pub fn city_is_port(&self, c: CityId) -> bool {
+        if self.city_outpost_starved(c) {
+            return false;
+        }
         let (x, y) = (self.cities[c].x, self.cities[c].y);
         (0..DirectionType::NUM).any(|i| self.plot_direction(x, y, DirectionType::from_usize(i)).is_some_and(|w| self.plot_is_water(w)))
     }
@@ -137,7 +149,8 @@ impl Game {
                 continue;
             }
             for &c in &self.players[q].cities {
-                if !self.cities.contains(c) {
+                // A starved outpost is no port (docs/NAVAL.md, 9.3).
+                if !self.cities.contains(c) || self.city_outpost_starved(c) {
                     continue;
                 }
                 let (x, y) = (self.cities[c].x, self.cities[c].y);
@@ -233,6 +246,12 @@ impl Game {
             let d = f.dist[plot.idx()];
             (d != NONE16).then_some(d as i32)
         })
+    }
+
+    /// `team`'s whole range field (a copy): per plot, the steps from the nearest port, `u16::MAX`
+    /// on land or where no port's water reaches.
+    pub(crate) fn sea_range_dists(&self, team: TeamId) -> Vec<u16> {
+        self.with_sea_field(team, |f| f.dist.clone())
     }
 
     /// The nearest port of `team` to water plot `plot` by the range field (ties: the lower city

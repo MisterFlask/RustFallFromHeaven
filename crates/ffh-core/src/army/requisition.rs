@@ -67,6 +67,10 @@ impl Game {
         if !self.cities.contains(c) || self.cities[c].owner != p {
             return Err("not a city of yours");
         }
+        // This game's outposts (docs/NAVAL.md, 9.2) build nothing.
+        if self.cities[c].outpost {
+            return Err("an outpost sends no recruits");
+        }
         Ok(())
     }
 

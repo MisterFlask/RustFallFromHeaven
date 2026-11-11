@@ -332,6 +332,8 @@ impl Game {
         self.player_update_sea(p);
         // The seas (docs/NAVAL.md, section 4): interception and shore fire ready; control after wear.
         self.player_update_seas(p);
+        // The outposts' lanes (docs/NAVAL.md, 9.3): traced after the seas' control.
+        self.player_update_lanes(p);
 
         // AI: AI_doTurnUnitsPre() (found values, area targets; draws "AI Update Area Targets")
         // -- left to the controller.
@@ -524,7 +526,9 @@ impl Game {
 
             if !kill && !self.player_is_barbarian(p) {
                 let pl = &self.players[p];
-                if pl.num_cities() == 0 && pl.advanced_start_points < 0
+                // This game's outposts (docs/NAVAL.md, 9.2): a player with outposts only has no
+                // city here.
+                if pl.num_cities() - self.player_get_num_outposts(p) == 0 && pl.advanced_start_points < 0
                     && (pl.num_units() == 0 || (!self.is_option(GameOptionType::GAMEOPTION_COMPLETE_KILLS) && pl.founded_first_city))
                 {
                     kill = true;

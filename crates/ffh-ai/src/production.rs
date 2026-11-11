@@ -660,6 +660,12 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
     if let SettlerPlan::Now(choice) = settler {
         return Some((choice, "settler"));
     }
+    // A colonist for an outpost site across the water (docs/NAVAL.md, 8 and 9.2).
+    if safe {
+        if let Some(choice) = crate::outposts::production(g, c) {
+            return Some((choice, "colonist"));
+        }
+    }
     if let Some(choice) = crate::civs::production(ai, g, c, ctx.threat) { return Some((choice, "civ_mechanics")); } // civ-mechanics
     if let Some(choice) = crate::traits::production(g, c, ctx.threat) { return Some((choice, "trait_play")); } // trait-play
     if let Some(choice) = crate::cards_economy::production(g, c, ctx.threat, ctx.at_war) { return Some((choice, "card_economy")); } // the cards (docs/CARDS.md)

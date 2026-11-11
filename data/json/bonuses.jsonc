@@ -451,6 +451,8 @@
   },
   {
     "type": "BONUS_GEMS",
+    // this game: moved to a far shore when the map has one (docs/NAVAL.md, 9.1)
+    "far_shore": true,
     "description": "TXT_KEY_BONUS_GEMS",
     "civilopedia": "TXT_KEY_BONUS_GEMS_PEDIA",
     "bonus_class_type": "BONUSCLASS_GENERAL",
@@ -497,6 +499,8 @@
   },
   {
     "type": "BONUS_INCENSE",
+    // this game: moved to a far shore when the map has one (docs/NAVAL.md, 9.1)
+    "far_shore": true,
     "description": "TXT_KEY_BONUS_INCENSE",
     "civilopedia": "TXT_KEY_BONUS_INCENSE_PEDIA",
     "bonus_class_type": "BONUSCLASS_GENERAL",
@@ -546,6 +550,8 @@
   },
   {
     "type": "BONUS_SILK",
+    // this game: moved to a far shore when the map has one (docs/NAVAL.md, 9.1)
+    "far_shore": true,
     "description": "TXT_KEY_BONUS_SILK",
     "civilopedia": "TXT_KEY_BONUS_SILK_PEDIA",
     "bonus_class_type": "BONUSCLASS_GENERAL",

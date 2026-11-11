@@ -359,7 +359,7 @@ fn req_promote_settlement(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
         return false;
     }
     let p = g.units[caster].owner;
-    if g.players[p].num_cities() - g.player_get_num_settlements(p) >= g.players[p].max_cities {
+    if g.players[p].num_cities() - g.player_get_num_settlements(p) - g.player_get_num_outposts(p) >= g.players[p].max_cities {
         return false;
     }
     true

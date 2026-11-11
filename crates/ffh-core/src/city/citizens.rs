@@ -714,6 +714,9 @@ impl Game {
     /// owner's cities' `ai_assign_work_dirty`).
     pub fn city_set_population(&mut self, c: CityId, new_value: i32) {
         let old_population = self.cities[c].population;
+        // This game's outposts (docs/NAVAL.md, 9.2): no growth beyond `OUTPOST_MAX_POP` (a larger
+        // population is kept, never added to).
+        let new_value = if self.cities[c].outpost && new_value > old_population { new_value.min(old_population.max(self.d.defines.outpost_max_pop)) } else { new_value };
 
         if old_population != new_value {
             self.cities[c].population = new_value;
@@ -1725,8 +1728,9 @@ impl Game {
 
         if self.cities[c].food >= self.city_growth_threshold(c) {
             // GrowthControl (Jean Elcard, merged by Sephi): AI_stopGrowth() replaces
-            // AI_isEmphasizeAvoidGrowth().
-            if self.city_ai_stop_growth(c) {
+            // AI_isEmphasizeAvoidGrowth(). This game's outposts (docs/NAVAL.md, 9.2) stop at
+            // `OUTPOST_MAX_POP`.
+            if self.city_ai_stop_growth(c) || self.city_outpost_full(c) {
                 let threshold = self.city_growth_threshold(c);
                 self.cities[c].food = threshold;
             } else {
@@ -1836,7 +1840,10 @@ impl Game {
 
     /// C++ `CvCity::getNumCityPlots` (CvCity.cpp:14613-14620, FFH): 37 at radius 3, else 21.
     pub fn city_num_city_plots(&self, c: CityId) -> i32 {
-        if self.cities[c].plot_radius == 3 {
+        // This game's outposts (docs/NAVAL.md, 9.2): radius 1, the city and the 8 plots around.
+        if self.cities[c].plot_radius == 1 {
+            9
+        } else if self.cities[c].plot_radius == 3 {
             37
         } else {
             21
@@ -1853,8 +1860,9 @@ impl Game {
         }
 
         if new_value < self.cities[c].plot_radius {
-            // The plots beyond the smaller radius (radius 3 is the only larger one).
-            for i in NUM_CITY_PLOTS_RADIUS_2 as usize..NUM_CITY_PLOTS {
+            // The plots beyond the smaller radius (an outpost's radius 1 is the smallest).
+            let from = if new_value <= 1 { 9 } else { NUM_CITY_PLOTS_RADIUS_2 as usize };
+            for i in from..NUM_CITY_PLOTS {
                 if self.cities[c].working_plot[i] {
                     self.city_set_working_plot(c, i, false);
                 }

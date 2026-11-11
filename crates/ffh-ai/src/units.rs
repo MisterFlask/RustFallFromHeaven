@@ -233,6 +233,10 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             }
             continue;
         }
+        // A colonist goes to its outpost site (docs/NAVAL.md, 8), in boats too.
+        if crate::outposts::colonist(g, v, grp, head) {
+            continue;
+        }
         // The sea (docs/NAVAL.md, section 8): a group in boats goes on home; a ship out of range,
         // or worn and empty, makes for port.
         if crate::naval::in_boats(g, v, grp, head) || crate::naval::ship_to_port(g, v, grp, head) {

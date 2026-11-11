@@ -33,6 +33,8 @@ source composed.spr
 map unit UNIT_LIGHTBRINGER -> unit/disciple_empyrean
 map unit UNIT_PARAMANDER -> unit/priest_of_the_empyrean
 map unit UNIT_EINHERJAR -> unit/einherjar ghost
+; the Colonist (docs/NAVAL.md, 9.2) is the Settler's figure
+map unit UNIT_COLONIST -> unit/settler
 ; ---- elementals and spells made of their element (docs/ART.md 10.4)
 map unit UNIT_AZER -> unit/fire_elemental
 map unit UNIT_AIR_ELEMENTAL|UNIT_DJINN|UNIT_MISTFORM -> unit/air_elemental ghost

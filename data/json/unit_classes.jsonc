@@ -1605,6 +1605,15 @@
     "default_unit": "UNIT_SETTLER"
   },
   {
+    // this game's own (docs/NAVAL.md, 9.2)
+    "type": "UNITCLASS_COLONIST",
+    "description": "TXT_KEY_UNIT_COLONIST",
+    "max_global_instances": -1,
+    "max_team_instances": -1,
+    "max_player_instances": -1,
+    "default_unit": "UNIT_COLONIST"
+  },
+  {
     "type": "UNITCLASS_SCOUT",
     "description": "TXT_KEY_UNIT_SCOUT",
     "max_global_instances": -1,

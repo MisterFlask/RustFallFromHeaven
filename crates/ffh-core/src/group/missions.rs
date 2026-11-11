@@ -511,7 +511,12 @@ impl Game {
                 }
 
                 MissionType::MISSION_FOUND => {
-                    if self.unit_can_found(loop_unit, plot, test_visible) {
+                    // This game's outposts (docs/NAVAL.md, 9.2): data1 FOUND_OUTPOST founds one.
+                    if data1 == crate::outposts::FOUND_OUTPOST {
+                        if self.unit_can_found_outpost(loop_unit, plot, test_visible) {
+                            return true;
+                        }
+                    } else if self.unit_can_found(loop_unit, plot, test_visible) {
                         return true;
                     }
                 }
@@ -862,7 +867,8 @@ impl Game {
                         }
 
                         MissionType::MISSION_FOUND => {
-                            if self.unit_found(u) {
+                            let founded = if data1 == crate::outposts::FOUND_OUTPOST { self.unit_found_outpost(u) } else { self.unit_found(u) };
+                            if founded {
                                 action = true;
                             }
                         }
