@@ -28,30 +28,23 @@ export const LIGHTING = {
 // The painterly preset was moved toward the owner's look target (docs/R3D.md §16: a bright,
 // saturated hand-painted strategy map): more saturation and a little more contrast (the target's
 // deep shade against high-key light), little haze or cloud shadow, and the paint imitated over the
-// image retired as the materials took over its work (docs/R3D.md §16): the Kuwahara paint filter off
+// image retired as the materials took over its work (docs/R3D.md §16): the Kuwahara paint filter
 // (owner decision: it blurred detail the target has and cost ~40% of a software frame), then the ink
-// outlines and the stepped light off once crowns, rocks and the ground carried their own form and
-// detail. The brush marks on objects stay for now (buildings and rocks still take their strokes
-// from them). Every switch stays in the panel.
+// outlines and the stepped light once crowns, rocks and the ground carried their own form and
+// detail -- off in every preset, then removed with their switches (2026-11-10). The brush marks on
+// objects stay for now (buildings and rocks still take their strokes from them).
 export const PRESETS = {
   painterly: {
     lighting: "daylight",
     shadows: true,
     ssao: 0.75,
     glow: 0.55,
-    kuwahara: 0,
-    kuwaharaRadius: 4,
-    sharp: 8,
-    aniso: 1,
-    outline: 0,
-    outlineWidth: 1,
     grade: 1,
     saturation: 1.1,
     contrast: 1.12,
     grain: 0.02,
     vignette: 0.1,
     paint: 1,
-    bands: 0,
     wrapLight: 0.45,
     rim: 0.35,
     stylize: 1,
@@ -59,8 +52,6 @@ export const PRESETS = {
     terrainShadow: 0.45,
     dabs: 1.6,
     brush: 1,
-    inkLost: 1,
-    inkColour: 0.5,
     reflections: 1,
     refraction: 1,
     caustics: 1,
@@ -72,13 +63,10 @@ export const PRESETS = {
     shadows: true,
     ssao: 0,
     glow: 0,
-    kuwahara: 0,
-    outline: 0,
     grade: 0,
     grain: 0,
     vignette: 0,
     paint: 0,
-    bands: 0,
     wrapLight: 0,
     rim: 0,
     stylize: 0,
@@ -86,8 +74,6 @@ export const PRESETS = {
     terrainShadow: 1,
     dabs: 0,
     brush: 0,
-    inkLost: 0,
-    inkColour: 0,
     // Seeing into and mirrored in water is ordinary real-time rendering, not stylization.
     reflections: 1,
     refraction: 1,
@@ -121,16 +107,9 @@ export const PANEL = [
   ["terrainShadow", "  shadows cast by the land", "range", 0, 1, 0.05],
   ["ssao", "Ambient occlusion", "range", 0, 1, 0.05],
   ["glow", "Glow (emissive)", "range", 0, 1.5, 0.05],
-  ["kuwahara", "Painterly filter (Kuwahara)", "range", 0, 1, 0.05],
-  ["kuwaharaRadius", "  filter radius (px)", "range", 2, 8, 1],
-  ["outline", "Ink outlines", "range", 0, 1, 0.05],
-  ["outlineWidth", "  outline width (px)", "range", 0.5, 2.5, 0.25],
   ["paint", "Pigment variation", "range", 0, 1.5, 0.05],
   ["dabs", "Brush dabs", "range", 0, 2.5, 0.05],
   ["brush", "Brushwork on objects (leaves, strokes)", "range", 0, 1.5, 0.05],
-  ["inkLost", "  lost-and-found ink", "range", 0, 1, 0.05],
-  ["inkColour", "  coloured ink", "range", 0, 1, 0.05],
-  ["bands", "Light banding", "range", 0, 1, 0.05],
   ["stylize", "Coloured shadows", "range", 0, 1, 0.05],
   ["rim", "Rim light", "range", 0, 1, 0.05],
   ["clouds", "Cloud shadows", "range", 0, 1, 0.05],
@@ -168,7 +147,7 @@ export function loadConfig(store = KEY, defaults = DEFAULTS, presets = PRESETS, 
   // The map is always in daylight; a light no longer offered (a saved "dusk", "afternoon" or
   // "day") falls back to the single "daylight" look.
   if (!lights[cfg.lighting]) cfg.lighting = defaults.lighting;
-  // A page-only override: ?r3d=plain|painterly or ?r3d={"kuwahara":0}.
+  // A page-only override: ?r3d=plain|painterly or ?r3d={"animate":false}.
   try {
     const q = new URLSearchParams(globalThis.location?.search ?? "").get("r3d");
     if (q) {

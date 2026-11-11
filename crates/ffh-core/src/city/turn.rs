@@ -177,8 +177,6 @@ impl Game {
             }
         }
 
-        self.city_update_espionage_visibility(c, false);
-
         if update_plot_groups {
             self.update_plot_groups();
         }
@@ -257,9 +255,6 @@ impl Game {
 
         self.city_clear_order_queue(c);
 
-        // remember the visibility before we take away the city from the plot below
-        let espionage_visibility: Vec<bool> = self.cities[c].espionage_visibility.iter().copied().collect();
-
         // UNOFFICIAL_PATCH 08/04/09 jdog5000: clear the trade routes of the dead city, else they
         // are claimed for the owner forever.
         self.city_clear_trade_routes(c);
@@ -298,12 +293,6 @@ impl Game {
         let owner_team = self.players[owner].team;
         for t in self.team_ids() {
             if self.teams[owner_team].vassal[t] {
-                self.plot_change_adjacent_sight(plot, t, defines.plot_visibility_range, false, None, false);
-            }
-        }
-
-        for t in self.team_ids() {
-            if espionage_visibility[t.idx()] {
                 self.plot_change_adjacent_sight(plot, t, defines.plot_visibility_range, false, None, false);
             }
         }
@@ -440,8 +429,6 @@ impl Game {
         self.city_do_great_people(c);
         self.city_do_meltdown(c);
 
-        self.city_update_espionage_visibility(c, true);
-
         if !self.city_is_disorder(c) {
             for i in 0..NUM_CITY_PLOTS {
                 if let Some(loop_plot) = self.city_index_plot(c, i) {
@@ -485,10 +472,6 @@ impl Game {
 
         if self.cities[c].espionage_health_counter > 0 {
             self.cities[c].espionage_health_counter -= 1;
-        }
-
-        if self.cities[c].espionage_happiness_counter > 0 {
-            self.cities[c].espionage_happiness_counter -= 1;
         }
 
         if self.city_is_occupation(c) || self.city_angry_population(c, 0) > 0 || self.city_health_rate(c, false, 0) < 0 {
@@ -1766,12 +1749,6 @@ impl Game {
             return true;
         }
 
-        // FfH: Added by Kael 11/03/2008
-        if self.is_option(GameOptionType::GAMEOPTION_ALWAYS_RAZE) {
-            return true;
-        }
-        // FfH: End Add
-
         false
     }
 
@@ -1943,9 +1920,6 @@ mod tests {
         assert!(g.city_is_auto_raze(c));
         g.setup.options[GameOptionType::GAMEOPTION_NO_CITY_RAZING] = true;
         assert!(!g.city_is_auto_raze(c));
-        g.setup.options[GameOptionType::GAMEOPTION_ALWAYS_RAZE] = true;
-        assert!(g.city_is_auto_raze(c));
-        g.setup.options[GameOptionType::GAMEOPTION_ALWAYS_RAZE] = false;
         g.setup.options[GameOptionType::GAMEOPTION_NO_CITY_RAZING] = false;
         g.cities[c].highest_population = 4;
         g.setup.max_city_elimination = 2;

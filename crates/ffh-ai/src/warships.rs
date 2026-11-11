@@ -401,9 +401,6 @@ fn escort_post(g: &Game, v: &View, u: UnitId) -> Option<PlotIdx> {
     let p = v.p;
     let amph = v.amphibious.as_ref()?;
     let port = amph.staging_plot;
-    if !crate::switches::FLEET.on(g, p) {
-        return None;
-    }
     let loaded = g.players[p]
         .units
         .iter()

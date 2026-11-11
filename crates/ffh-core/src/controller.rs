@@ -158,11 +158,6 @@ pub trait Controller: Send + Sync {
         None
     }
 
-    /// C++ `CvPlayerAI::AI_chooseReligion` (FFH: religion choice when founding/converting).
-    fn choose_religion(&self, _g: &Game, _p: PlayerId) -> Option<ReligionType> {
-        None
-    }
-
     /// C++ `CvPlayerAI::AI_getAttitude(ePlayer)`: player `p`'s attitude towards `towards`.
     /// Rules code reads it in a few places (FfH event trigger `PrereqCivilizationPleased`;
     /// AI memory bookkeeping); team attitude (`CvTeamAI::AI_getAttitude`) averages members.

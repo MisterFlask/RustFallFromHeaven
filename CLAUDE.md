@@ -104,8 +104,13 @@ When porting, read the C++/Python being ported -- never port from memory.
   of other work: say what changed and why in the commit, and list gameplay changes from FFH2 0.41
   in docs/PORTING.md ("Changes from FFH2").
 - **New game features are not behind game options** (the owner's decision, 2026-11-05): a new
-  system is part of the rules in every game, not a feature flag. The options that already exist
-  (governors, armies, cultural actions, crusades) predate this decision.
+  system is part of the rules in every game, not a feature flag. Governors, armies, cultural
+  actions, engagement combat and crusades were options once; they are in every game now.
+- **No switch without a reason to exist** (the owner's decision, 2026-11-10). A game option stays
+  only if a player can choose it on the new-game screen and it works; an AI switch
+  (`crates/ffh-ai/src/switches.rs`) only while its behaviour is being measured, and it is removed
+  when the behaviour is kept or dropped (the module comparators `MAGIC`, `CIV` and the trait
+  switches, and the probes, are instruments and stay).
 - **Mirroring the C++ is no longer a goal** (the owner's decision, 2026-10-28). Echoing the C++
   closely was the method for the initial port, which is complete; it has no value in itself now.
   Restructure ported code, its C++-shaped APIs and its quirks whenever that makes present code or

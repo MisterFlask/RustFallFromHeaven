@@ -17,7 +17,6 @@ use ffh_core::ids::*;
 use ffh_core::structs::*;
 use ffh_data::*;
 
-pub mod advanced_start;
 pub mod armies;
 pub mod governor;
 pub mod automation;
@@ -160,10 +159,6 @@ impl Controller for Ai {
             tactics::turn(g, p);
             return;
         }
-        // C++ setTurnActive -> AI_doAdvancedStart while the player still has start points.
-        if g.players[p].advanced_start_points >= 0 && !g.players[p].human && !g.player_is_barbarian(p) {
-            advanced_start::run(g, p);
-        }
         let turn = g.game_turn();
         // The empire decisions are made on the first call of the player's turn. A controller
         // that did not see the earlier calls (a game saved mid-turn, resumed with a fresh AI)
@@ -298,10 +293,6 @@ impl Controller for Ai {
 
     fn diplo_vote(&self, g: &Game, p: PlayerId, vote: &VoteSelectionSubData, source: VoteSourceType) -> PlayerVote {
         council::diplo_vote(g, p, vote, source)
-    }
-
-    fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {
-        g.players[p].personality_type.and_then(|l| g.d.leader_heads[l].favorite_religion)
     }
 
     fn crusade_pledge(&self, g: &Game, p: PlayerId, c: ffh_core::crusade::CrusadeId) -> Option<ffh_core::crusade::Pledge> {

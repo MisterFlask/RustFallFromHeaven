@@ -160,11 +160,10 @@ fn summon_attacks(g: &mut Game, v: &View, n: UnitId, strike: bool) {
 
 /// Temporary summons on their last turn (`duration` 1: gone at the start of our next turn) that
 /// outlived the turn they were cast in (an Einherjar or Pit Beast a kill kept) attack as fresh
-/// ones do, before the other units move (`SUMMON_SPEND`; without it they moved as army units and
-/// mostly expired unspent).
+/// ones do, before the other units move (as army units they mostly expired unspent).
 pub fn spend_expiring(g: &mut Game, v: &View) {
     let p = v.p;
-    if v.barbarian || !crate::switches::SUMMON_SPEND.on(g, p) {
+    if v.barbarian {
         return;
     }
     let expiring: Vec<UnitId> =
@@ -184,7 +183,7 @@ pub fn spend_expiring(g: &mut Game, v: &View) {
 /// A barrage cast must be worth this much (`magic::turn_value`, in hit points).
 const BARRAGE_MIN: i32 = 10;
 
-/// The barrage (switch `BARRAGE`), at the start of our turn before any unit moves: a caster whose
+/// The barrage, at the start of our turn before any unit moves: a caster whose
 /// best cast by the end-of-turn values ([`magic::choose_turn_spell`]) is damage or a temporary
 /// summon casts it now, its summons attacking as they would at the end of the turn but with our
 /// units still to move. The enemies it reaches are as weak when our units decide their attacks
@@ -196,7 +195,7 @@ const BARRAGE_MIN: i32 = 10;
 /// may still walk after it.
 pub fn barrage(g: &mut Game, v: &View) {
     let p = v.p;
-    if v.barbarian || !crate::switches::BARRAGE.on(g, p) || !crate::magic::enabled(g, p) {
+    if v.barbarian || !crate::magic::enabled(g, p) {
         return;
     }
     let d = g.d;
@@ -255,7 +254,7 @@ pub fn summon_score(odds: i32, city: bool, hp: impl FnOnce() -> i32) -> Option<i
     (hp >= SPEND_MIN_HP).then_some(hp as i64 + if city { 10 } else { 0 })
 }
 
-/// May temporary summon `n` attack at any odds ([`summon_target`], `SUMMON_SPEND`)? Only when it
+/// May temporary summon `n` attack at any odds ([`summon_target`])? Only when it
 /// will be gone before it could act again (`duration` 1 or less: More Naval AI's
 /// `AI_summonAttackMove`, `AI_anyAttack(.., 0)`) and it is not its stack's cover: a summon on a
 /// plot an enemy can strike next turn, stronger in defense than every lasting unit of ours there,
@@ -263,7 +262,7 @@ pub fn summon_score(odds: i32, city: bool, hp: impl FnOnce() -> i32) -> Option<i
 /// had left him alone with, docs/AI_LOG.md, "Spellcasting").
 fn may_spend(g: &Game, v: &View, n: UnitId) -> bool {
     let unit = &g.units[n];
-    if !crate::switches::SUMMON_SPEND.on(g, v.p) || unit.duration == 0 || unit.duration > 1 {
+    if unit.duration == 0 || unit.duration > 1 {
         return false;
     }
     !is_cover(g, v, g.unit_plot(n), crate::view::defense_power(g, n), Some(n))

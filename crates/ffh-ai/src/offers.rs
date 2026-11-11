@@ -76,15 +76,15 @@ fn offer_peace(g: &mut Game, p: PlayerId, human: PlayerId) {
         return;
     }
     let plan = crate::victory::plan_ours(g, p);
-    let our_want = crate::diplomacy::end_war_val_seen(g, p, team, their);
-    let their_want = crate::diplomacy::end_war_val_seen(g, p, their, team);
+    let our_want = crate::diplomacy::end_war_val_seen(g, team, their);
+    let their_want = crate::diplomacy::end_war_val_seen(g, their, team);
     // When clearly winning (they want peace more than we do), initiate a peace that extracts
     // reparations -- unless we are pursuing conquest/domination against them, in which case we press
     // on. Otherwise offer only when we want peace (losing / stalemated), as before.
     let victory_war = crate::victory::wants_conquest(&plan) || crate::victory::rival_team(g, &plan) == Some(their);
     let winner_initiated = their_want > our_want && !victory_war;
     let wanted = crate::diplomacy::want_peace(g, team, their, &plan);
-    let quiet = !wanted && crate::switches::QUIET_PEACE.on(g, p) && crate::diplomacy::quiet_war(g, team, their);
+    let quiet = !wanted && crate::diplomacy::quiet_war(g, team, their);
     if !wanted && !winner_initiated && !quiet {
         return;
     }
@@ -130,7 +130,7 @@ fn offer_tech_trade(g: &mut Game, p: PlayerId, human: PlayerId) -> bool {
         .filter(|&t| !g.team_is_has_tech(team, Some(t)) && g.player_can_research(p, t, false) && g.player_can_trade_item(human, p, &tech_item(t), true))
         .max_by_key(|&t| (cost(t), std::cmp::Reverse(t)));
     let Some(get) = get else { return false };
-    // Ours closest in cost, among those our discipline lets go (TECH_DISCIPLINE).
+    // Ours closest in cost, among those our discipline lets go (`diplomacy::tech_denial`).
     let rules = crate::diplomacy::tech_ctx(g, p);
     if !rules.partner_ok(g, human) {
         return false;

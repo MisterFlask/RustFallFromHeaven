@@ -6,12 +6,6 @@ use ffh_data::*;
 
 use crate::settings::Settings;
 
-/// Options left out of the matrices: world-builder scenario flags (scenarios are out of scope)
-/// and options with no rules effect in a single-process game.
-fn skipped_option(name: &str) -> bool {
-    name.starts_with("GAMEOPTION_WB_") || name == "GAMEOPTION_LOCK_MODS" || name == "GAMEOPTION_NEW_RANDOM_SEED"
-}
-
 /// Type names of every row of an info table.
 fn names<T: InfoId>(d: &GameData, n: usize) -> Vec<String> {
     (0..n).map(|i| d.type_name(T::from_usize(i)).to_string()).collect()
@@ -32,7 +26,7 @@ pub fn build(d: &GameData, group: &str, seeds: &[u32], turns: i32, n_random: usi
     let worlds = names::<WorldSizeType>(d, d.worlds.len());
     let climates = names::<ClimateType>(d, d.climates.len());
     let seas = names::<SeaLevelType>(d, d.sea_levels.len());
-    let options: Vec<String> = names::<GameOptionType>(d, d.game_options.len()).into_iter().filter(|o| !skipped_option(o)).collect();
+    let options: Vec<String> = names::<GameOptionType>(d, d.game_options.len());
     let victories = names::<VictoryType>(d, d.victories.len());
     let mut v = Vec::new();
     let base = |seed: u32| Settings::base(group, seed, turns);
@@ -120,12 +114,12 @@ pub fn build(d: &GameData, group: &str, seeds: &[u32], turns: i32, n_random: usi
                 // start (turn 11).
                 v.push(Settings { target_score: 150, ..base(seed) });
                 // City elimination: a player that lost N cities is out.
-                v.push(Settings { max_city_elimination: 1, civs: 6, options: vec!["GAMEOPTION_AGGRESSIVE_AI".into()], ..base(seed) });
-                // Conquest / domination on a crowded small map with warmongering options.
+                v.push(Settings { max_city_elimination: 1, civs: 6, ..base(seed) });
+                // Conquest / domination on a crowded small map, always at war.
                 v.push(Settings {
                     world: "WORLDSIZE_DUEL".into(),
                     civs: 2,
-                    options: vec!["GAMEOPTION_ALWAYS_WAR".into(), "GAMEOPTION_AGGRESSIVE_AI".into()],
+                    options: vec!["GAMEOPTION_ALWAYS_WAR".into()],
                     ..base(seed)
                 });
                 // Only the FfH altar/tower victories (and time).

@@ -439,7 +439,7 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
         if first {
             b.push_str(NEWLINE);
         }
-        let item = if g.is_option(GameOptionType::GAMEOPTION_PICK_RELIGION) { txt(d, "TXT_KEY_RELIGION_UNKNOWN", &[]) } else { color("COLOR_HIGHLIGHT_TEXT", &names::display(d, r)) };
+        let item = color("COLOR_HIGHLIGHT_TEXT", &names::display(d, r));
         list_help(&mut b, &txt(d, "TXT_KEY_MISC_FIRST_DISCOVER_FOUNDS", &[]), &item, ", ", first);
         first = false;
     }

@@ -162,7 +162,7 @@ A rules change: the AI does something reasonable with it, ad hoc (CLAUDE.md, "AI
   every turn: its multi-turn order is cleared (`units::play`).
 - Cost: at most one path search and one line search per gated move; for a cut army, one line search
   and up to three path searches a turn.
-- Switch `SUPPLY` (`FFH_AI_SUPPLY_OFF`): off, the AI ignores supply. Telemetry: `supply_state`
+- Telemetry: `supply_state`
   (each army-turn: `supplied`, or `cut_NN` for its counter), `supply` (`move_refused`,
   `fall_back`, `hungry_goes_on`).
 
@@ -180,7 +180,7 @@ Measured 2026-11-10: 8 games (seeds 1-8, 6 civs, standard map, 250 turns; `tools
 --base a46576a --seeds 1-8 --turns 250 --at 100,200,250 --jobs 3` and `ai_metrics.py` with the same
 arguments). Three sides: the commit before supply lines (a46576a); this tree (the rules of supply
 lines, the AI's supply rule of section 6 and its battle-tactic rule, docs/TACTICS.md); and this tree
-with the AI's supply rule off (`FFH_AI_SUPPLY_OFF=ALL`: the rules of supply lines and the tactic
+with the AI's supply rule off (`FFH_AI_SUPPLY_OFF=ALL`, a switch since removed: the rules of supply lines and the tactic
 rule, the AI ignoring supply). Totals over the 8 games; population and military units are the
 per-civ means at turn 250. Time a turn: `ffh bench` (standard map, 250 turns, the machine to
 itself), seeds 1, 3 and 5, two rounds each, the mean of the six runs; the games differ between the

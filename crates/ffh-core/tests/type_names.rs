@@ -114,7 +114,7 @@ fn hard_coded_type_names_exist() {
             }
             let Some(classes) = classes_of.get(prefix(&s)) else { continue };
             let before = before.trim_end();
-            // ffh-ai's switches (`Switch::new("TECH_DISCIPLINE")`, `with_vars`) are named like types.
+            // ffh-ai's switches (`Switch::new("MAGIC")`, `with_vars`) are named like types.
             if is_ty_lookup(before) || before.ends_with("Switch::new(") || before.ends_with("Switch::with_vars(") || NOT_TYPES.contains(&s.as_str()) {
                 continue;
             }

@@ -44,8 +44,8 @@ functions were skipped (2689 lines, of which `read`/`write` are 983). `Player` h
 - Civic arrays (`CivicTypes*`) -> `&IdxVec<CivicOptionType, Option<CivicType>>` (`Option<&..>` where C++ accepts NULL).
 - `AdvancedStartActionTypes` and `DiploEventTypes` are not generated; they are Rust enums `AdvancedStartAction`
   (`start.rs`) and `DiploEvent` (`diplomacy_trade.rs`), re-exported from `player`.
-- FFH `CvGame::isOption` hard-locks options (NO_ESPIONAGE always on, RANDOM_PERSONALITIES and PICK_RELIGION always
-  off): never read `setup.option(..)` directly in rules code; use `is_option(..)` (the CvGame port).
+- FFH `CvGame::isOption` hard-locks NO_ESPIONAGE on: never read `setup.option(..)` directly in rules code; use
+  `is_option(..)` (the CvGame port).
 - `Player::new` reproduces `reset()`; the cross-player part of `reset` (other players' `gold_per_turn_by_player[p]`,
   espionage weights against `p`'s team, CvPlayerAI per-player arrays) belongs to `player_init`.
 - Per-owner lists (`units`, `cities`, `groups`, `plot_groups`) are in creation order; objects live in the `Game`

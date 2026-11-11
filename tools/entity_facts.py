@@ -574,7 +574,7 @@ def unit_facts(u):
     else:
         prod = "production roles it qualifies for: " + ", ".join(r)
     if num(e, "min_level") > 0 and cost > 0:
-        prod += " (but iMinLevel > 0: the AI cannot train it unless GAMEOPTION_AI_NO_MINIMUM_LEVEL and min level > 1)"
+        prod += " (but min_level > 0: no city trains it, for the AI or a human; it comes by upgrade)"
     lines.append("- AI production: " + prod)
     if SUMMONED_BY.get(u):
         sea = txt(e, "domain") == "DOMAIN_SEA"

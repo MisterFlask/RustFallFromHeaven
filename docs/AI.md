@@ -53,24 +53,22 @@ refresh it); the C++ AI never had one either -- `CvPlayerAI::AI_getPlotDanger`,
 `CvPlot::getNumVisibleEnemyDefenders` and `AI_findTargetCity` read through fog and skip only
 units whose invisibility type hides them (`CvUnit::isInvisible`).
 
-- **Threats to us: fog included** (`view::known_threat`, switch `FOG_SIGHT`): the danger map
+- **Threats to us: fog included** (`view::known_threat`, once switch `FOG_SIGHT`): the danger map
   (`View::danger`: settler and escort risk, workers fleeing, healing, explorers, casters,
   assembly plots), a city's local threat (`production::local_threat`: cities in peril,
   emergency defenders, the garrison quota, settlers held at home, units kept from disbanding),
   barbarians and civ enemies near a city (`production::barbarians_near`, `civ_enemy_near`),
-  sorties (`defense::sortie_ok`), the peril that times defensive world spells
-  (`world_spells::city_in_peril`) and the enemy's forces near our cities when weighing peace
+  sorties (`defense::sortie_ok`) and the enemy's forces near our cities when weighing peace
   (`diplomacy::front_forces`). FfH's hidden units (the Hidden and Invisible promotions,
   assassins, shadows, hidden nationality) stay hidden: stealth is how those units and
   civilizations play.
-- **What we attack: fog included** (`view::sees_units`, switch `FOG_ATTACK`): a city's garrison
+- **What we attack: fog included** (`view::sees_units`, once switch `FOG_ATTACK`): a city's garrison
   on any revealed plot (`combat_sim::visible_defenders`, the siege and amphibious planners, the
   war gate's `diplomacy::city_best_defense`), hunting targets (`military::find_targets`),
   opportune and empty-city captures (`military::opportune`, `CAPTURE`); stealthed units left
-  out. With the switch off, only what is visible: in the fog the siege and amphibious planners
-  assume a defender count (2 + population/5 for a civ city, 1 + age/25 for a barbarian town)
-  and the war gate assumes the best defender the owner can train (`best_trainable_defense`).
-  The pathing checks (`plot_is_visible_enemy_unit_for_unit`) are the rules' and unchanged.
+  out. (With the switch off, as measured below, only what was visible counted, and the war gate
+  assumed in the fog the best defender the owner could train; that path was removed with the
+  switch, 2026-11-10.) The pathing checks (`plot_is_visible_enemy_unit_for_unit`) are the rules' and unchanged.
 
 Map knowledge is unchanged: city sites, paths and exploration use revealed plots only.
 
@@ -113,7 +111,6 @@ barbarians -26% (-1.4), military +5% (1.4); legacy -2.8% (-1.4), research -5.3% 
 | `CvPlayerAI::AI_conquerCity` | `raze_conquered_city` | `diplomacy.rs` |
 | `CvPlayerAI::AI_considerOffer` | `consider_offer` (`judge_offer`: the same answer with its margin or rule, for the trade screen; `trade::item_value` per item; a demand is paid up to `max_extorted`) | `diplomacy.rs` |
 | `CvPlayerAI::AI_doDiplo` (review of deals) | `reconsider_deals`, `keep_deal`: from 20 turns, a deal with a human it would no longer make is cancelled (with an AI, on a trade denial) | `diplomacy.rs` |
-| `CvPlayerAI::AI_doAdvancedStart` (from `CvPlayer::setTurnActive`) | `play_turn` while start points remain | `advanced_start.rs` |
 | `CvPlayerAI::AI_chooseEvent` | `choose_event` | `events.rs` |
 | `CvTeamAI::AI_chooseElection` / `CvPlayerAI::AI_diploVote` | `choose_election` / `diplo_vote` | `council.rs` |
 | captured/gifted units | defaults in `controller.rs` | -- |
@@ -126,14 +123,6 @@ counters, war success, war plans) that the diplomacy below reads.
 
 ## A turn (`play_turn`)
 
-0. **Advanced start** (`advanced_start.rs`, `GAMEOPTION_ADVANCED_START`): while the player has
-   start points, C++ `AI_doAdvancedStart`'s plan with fixed choices instead of its random
-   draws: the capital on the starting plot, ~10% of the points on revealing the land around
-   it, the leader's unit share (10% + `iBuildUnitProb`/3) on defenders, workers and field
-   units, the rest on cities (best found value within 8 plots, 500 + 250 x cities minimum)
-   with culture, improvements for the citizens they can keep happy and population to work
-   them, technologies (research's pick; a quarter of the city points while placing cities),
-   an explorer and buildings by value per point; then `ADVANCEDSTARTACTION_EXIT`.
 1. **Empire** (`empire.rs`): research when the queue is empty (a broke empire first
    researches its way out, see Finance; the victory goal's techs beeline, see Victory pursuit);
    civics every 10 turns when the summed gain in civic value exceeds a flat 100 (the anarchy's
@@ -148,7 +137,7 @@ counters, war success, war plans) that the diplomacy below reads.
 2. **Emergency production** (`production::emergency`): a city whose visible threat exceeds
    its garrison switches to a defender (the rules keep the hammers); a capital or a city near
    barbarians that has only one defender after turn 30 puts a second one first. Either switch
-   happens only when `decide` would then put a fighter first (switch `EMERGENCY_DECIDE`): the two
+   happens only when `decide` would then put a fighter first (once switch `EMERGENCY_DECIDE`): the two
    rules disagreed for a city whose garrison `decide` finds full (`needed + 2` defenders), which was
    switched every turn and re-chose a building, often another one -- an Illian city under a threat
    three times its defense alternated a Courthouse and an Elder Council 21 times in 30 turns, now it
@@ -244,11 +233,11 @@ counters, war success, war plans) that the diplomacy below reads.
    plots need improving; the victory goal's items (`victory::production`: towers, culture in
    the cities nearest legendary; before expansion, item 4, when the goal is 30 turns away);
    at peace, a **wonder slot** in the top third of our cities by production (More Naval AI's
-   quick wonder, `production::wonder_slot`, switch `WONDER_SLOT`): the world wonder of most
+   quick wonder, `production::wonder_slot`, once switch `WONDER_SLOT`): the world wonder of most
    value per turn that the city finishes within 2 x cities + 1 turns (four times that in a
    city of size 6+ making more than three hammers a citizen), not while growing toward a
    settler; heroes (not at the cost of the first expansion), only in the top third of the
-   cities by production that can train them (switch `TOP_CITIES`: the rules let one city at
+   cities by production that can train them (once switch `TOP_CITIES`: the rules let one city at
    a time build a hero, so the first empty queue used to lock it in);
 9. the siege operation's force (`campaign::army_choice`, from `needed_force`: about two
    attackers per defender of its target, siege engines -- or the Siege Workshop that trains
@@ -281,7 +270,7 @@ its limit is weighed at the over-limit price (`production::national_turns`): the
 by the units alive only, so before this several cities each started one at the normal cost and
 paid 500% when the others finished (early Skirmishers by fives, at 250 hammers each).
 
-**Effects in the rules' code** (`code_effects.rs`, switch `CODE_EFFECTS`). FfH 0.41 gives a
+**Effects in the rules' code** (`code_effects.rs`, once switch `CODE_EFFECTS`). FfH 0.41 gives a
 building's plain effects in the XML, which the value above reads, and its special ones in Python,
 ported to Rust in `ffh_core::ffh` (`events.rs`). Those were invisible to the AI: a building whose
 worth lies there was valued by its XML alone, often 0, so it was never or rarely built. FfH's own
@@ -312,9 +301,8 @@ scale (one hammer a turn = 150):
 Not covered: the Asylum (10% Crazed, which makes a unit Enraged: +20% attack, -20% defense, and it
 fights on its own: a wash), buildings that only open a spell (Arena, Demon's Altar: the spells'
 own logic, "Spells FfH kept from its AI" below), the Dwarven Vaults (set by the rules; the Khazad's
-finance keeps their gold, "Civilization-specific"). `FFH_AI_CODE_EFFECTS_OFF` leaves the table out
-but for the Warrens. Buildings that need a mana resource are also worth that much to the mana node
-that opens them (`mana::node_value`, switch `MANA_BUILDINGS`): the Luchuirp's Blasting Workshop
+finance keeps their gold, "Civilization-specific"). Buildings that need a mana resource are also worth that much to the mana node
+that opens them (`mana::node_value`, once switch `MANA_BUILDINGS`): the Luchuirp's Blasting Workshop
 (Fire), Pallens Engine (Sun) and Adularia Chamber (Shadow), never built before, come once a caster
 makes the node.
 
@@ -323,7 +311,7 @@ refused them to every AI player: the old AI could not value them. The rules no l
 (docs/PORTING.md, "Changes from FFH2"); the generic casting keeps them out
 (`casting::castable_spells`), and four are cast by logic of their own:
 - Sacrifice Altar: a unit we disband anyway (finance, bankruptcy) standing in a Demon's Altar
-  city is sacrificed first, for 10 + level squared research (switch `SACRIFICE`);
+  city is sacrificed first, for 10 + level squared research (once switch `SACRIFICE`);
 - Arena Battle (Balseraphs): an Arena city with an unhappy citizen and no games running sends a
   slave, else a spare tier-1 melee or recon unit: +1 happiness for 3 turns, and the unit dies or
   gains 1-6 experience (a slave becomes a Warrior);
@@ -420,7 +408,7 @@ less than 60% for research (3 points of weight per point of shortfall in percent
 commerce; merchants and scientists gain with it over poor tiles); a culture-starved new city
 values culture. While a city in the top third of ours by production pushes a world wonder home at
 peace (done within the wonder slot's horizon, Production item 8), the AI sets the player's
-`EMPHASIZE_PRODUCTION` on it (`production::wonder_emphasis`, switch `WONDER_SLOT`; the governor
+`EMPHASIZE_PRODUCTION` on it (`production::wonder_emphasis`, once switch `WONDER_SLOT`; the governor
 weighs hammers 1.5x under it, as More Naval AI's special yield multiplier does while building a
 wonder) and clears it when the wonder is done, switched or at war; no change to the governor. On
 every wonder for the whole build, as More Naval AI does, it cost growth and commerce for few
@@ -485,7 +473,7 @@ single hook tagged `bankruptcy-guard`:
   defenders the treasury scrapped a few turns later; holding defenders by a quota instead lost
   (docs/AI_LOG.md, "Young units never scrapped", "Garrison quota from lasting threats only",
   "Garrison quota from a record of threats seen").
-- **Production re-decided** (`production::trouble_rebuild`, switch `TROUBLE_REBUILD`): More
+- **Production re-decided** (`production::trouble_rebuild`, once switch `TROUBLE_REBUILD`): More
   Naval AI clears every city's production when the empire runs into financial trouble
   (`CvPlayerAI::AI_doCheckFinancialTrouble`), keeping items within 3 turns of done, wonders,
   world projects and heroes (`CvCityAI::AI_chooseProduction`). Here, while the empire cannot
@@ -725,8 +713,7 @@ own (the Mercurians, the Patrians, ...) and the later paths, chosen knowing more
 Committed, the path's late techs (`capstones` and the alignment's tech) join the research plan
 after the civilization's own beelines (`tech_plan`, step `ResearchPath`), and the research score
 counts the halved research time on path techs (`tech_plan::effective_left`, now per player).
-Switches: `FFH_AI_RESEARCH_PATH_OFF` (the player never commits), `FFH_AI_PATH_RESOURCES_OFF` (the
-choice ignores resources). Telemetry: `research_path` decisions; `ffh stats` reports each civ's
+Telemetry: `research_path` decisions; `ffh stats` reports each civ's
 `path`, `path_known` (every tech of it known), `path_res` (its `resource_pct` for the path),
 `late_techs` (known techs of base cost over 3000).
 
@@ -860,7 +847,7 @@ Each army group is a stack; per decision, in order:
 3. merge the army units on its plot (up to 8; only units with full moves);
 4. take an enemy city at war, plan or not, that it reaches this turn and finds empty, or that is
    next to it and that it clearly takes: the siege estimate with the march reserve and odds the
-   assault goes on with (`opportune`, switch `CAPTURE`; More Naval AI's `AI_stackAttackCity(1,
+   assault goes on with (`opportune`, once switch `CAPTURE`; More Naval AI's `AI_stackAttackCity(1,
    160)`; the targets of our operations are left to their strikes);
 5. attack an adjacent target worth it (never a civ city outside a war plan, nor the target of
    our siege operation, which is left to its strike);
@@ -979,7 +966,7 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   defenders left (or the defenders are down to half their health and outnumbered). Up to three
   units follow the victor into the city. The expected damage of a lost fight, in the strike's
   simulation and its sacrifices, counts first strikes (`fight`, round 7f): in the rounds a
-  side has first strikes left it cannot be hurt. Heroes and veterans (switch `PRECIOUS`; More
+  side has first strikes left it cannot be hurt. Heroes and veterans (once switch `PRECIOUS`; More
   Naval AI's `AI_getBestGroupAttacker`) below their odds -- a hero's 85% plus 1%
   a level, a unit above level 4 at 70% plus 3% a level (at most 95%) -- attack last in a strike:
   while another unit can attack, and only in a strike expected to take the city, never to wear
@@ -987,7 +974,7 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   they turned captures into stalls: "Forks of the hero gate" below.) A group assault
   (`military::assault`) stops when the rules would send one below its odds, and a stack does not
   pick such a target, adjacent or hunted.
-- *A second operation* (switch `SECOND_OP`; More Naval AI's `AI_pickTargetCity` passes over a
+- *A second operation* (once switch `SECOND_OP`; More Naval AI's `AI_pickTargetCity` passes over a
   city already targeted by more than max(6, 3 x its defenders) units): when the stacks committed
   at war hold more than twice what the first target (seen) needs, it keeps the stacks already
   ordered against it and the nearest others up to twice its need (six units at least), and the
@@ -1152,7 +1139,7 @@ plot falls or the odds turn bad, and moves in.
   at 300 techs 35.3 -> 35.2, cities 6.4 -> 6.5, legacy 842 -> 843, research -6% (t -0.7), military
   -4% (t -1.0); cities captured 315 -> 339, eliminations 23 -> 14. Cost (`ffh bench`, seeds 4 and 12,
   300 turns): +14% a turn (31.3 -> 35.7 and 24.9 -> 28.5 ms), the plans' forecasts (Known gaps).
-- **The assault fleet** (`naval::fleet_waits`, switch `FLEET`; More Naval AI's
+- **The assault fleet** (`naval::fleet_waits`, once switch `FLEET`; More Naval AI's
   `AI_assaultSeaMove`, which waits in port until the cargo reaches the invasion size and sails
   escorted): a transport with an army aboard waits in port while what the transports there carry,
   with what has already landed next to the target, falls short of the force the target needs;
@@ -1384,11 +1371,9 @@ ported; the judgement is here. Only what a human could see is read.
   fewer and we can press the conquest; then we take the cities instead.
 - **Humans:** asked on the leader's contact cadence. A human can't be an AI's vassal (rules).
 
-Measured with `FFH_AI_VASSAL_OFF` (the switch), full games of ffh-ai only. The switch is a
-civilization switch like the others (`switches::VASSAL`): `FFH_AI_VASSAL_OFF=ALL` (or `1`, as
-before) turns vassal play off for everyone, `FFH_AI_VASSAL_OFF=X,..` / `FFH_AI_VASSAL_ONLY=X,..`
-for the players of those civilizations, each deciding for itself (it neither seeks nor agrees to
-vassalage, and as the master takes a vassal only when the deal costs it nothing).
+Measured with `FFH_AI_VASSAL_OFF` (the switch, removed 2026-11-10), full games of ffh-ai only:
+off, a player neither sought nor agreed to vassalage, and as the master took a vassal only when
+the deal cost it nothing.
 
 | | Development seeds 1-12 | | Fresh seeds 201-224 | |
 |---|---|---|---|---|
@@ -1524,7 +1509,7 @@ when the payment is worth over three quarters of the price) -- in practice the b
 cities to 2 and the briber-side winner closes out by domination 64 turns early). No new saved state;
 no RNG.
 
-**Peace by the forces at the front (`end_war_val_seen`, `front_forces`; switch `PEACE_FORCES`).**
+**Peace by the forces at the front (`end_war_val_seen`, `front_forces`; once switch `PEACE_FORCES`).**
 More Naval AI divides the value of peace by our attackers en route against theirs in our land
 (`CvTeamAI::AI_endWarVal`, x200 / range(ratio, 200, 600)). Here the same scale applies to
 `end_war_val` wherever this AI weighs peace (its own offers, `consider_offer`, the offers to
@@ -1537,20 +1522,20 @@ bare peace offer is refused while our army stands there with three times theirs.
 expert's test the 30-turn rule lacked (docs/AI_LOG.md, "Wars"): sell the war when the next city
 is out of reach, fight on when it is close.
 
-**Quiet wars end (`quiet_war`; switch `QUIET_PEACE`).** More Naval AI makes peace in a war of
+**Quiet wars end (`quiet_war`; once switch `QUIET_PEACE`).** More Naval AI makes peace in a war of
 10+ turns where nothing happens and no stack is moving (`AI_doWar`). Here: past 15 turns, less
 than two attacks' worth of war success on both sides, no army of ours near their cities nor of
 theirs (that we see) near ours, and no stack of ours marching on them (the campaign's
 `MISSIONAI_ASSAULT` tag) -- we offer peace, with tribute either way as the war values say.
 
-**Dogpiles (`dogpile_power`; switch `DOGPILE`).** In the war-of-expansion gate the power of a
+**Dogpiles (`dogpile_power`; once switch `DOGPILE`).** In the war-of-expansion gate the power of a
 target's current enemies counts with ours (More Naval AI's `AI_doWar` dogpile power; an enemy that
 shares no landmass with it counts half): a civ busy on another front is a weaker target than its
 defensive power says, and the runaway leader, at war with a neighbour, becomes reachable for the
 civs around it. The rest of the gate (reachable, takeable, the leader's bar) is unchanged, and the
 declaration's re-check (below) drops the war if the other front has closed since.
 
-**Re-check before declaring (`still_a_target`; switch `WAR_RECHECK`).** More Naval AI's "last
+**Re-check before declaring (`still_a_target`; once switch `WAR_RECHECK`).** More Naval AI's "last
 chance to change our mind" (`AI_doWar`): when a prepared war is about to be declared (the army
 staged, or the 40-turn fallback), the target must still pass a gate that would choose it now --
 the victory plan's, or the war of expansion's with 10% slack on the power bar and per-unit parity
@@ -1559,7 +1544,7 @@ re-judge them). A target with new pacts behind it, a friend since, or cities our
 longer matches is dropped, the army kept for the next choice (`war_drop` decisions: power,
 not_takeable, unreachable).
 
-**Tech-trade discipline (`tech_denial`, `TechCtx`; switch `TECH_DISCIPLINE`).** More Naval AI's
+**Tech-trade discipline (`tech_denial`, `TechCtx`; once switch `TECH_DISCIPLINE`).** More Naval AI's
 `CvTeamAI::AI_techTrade`, in the form an expert would keep: no technology to our victory rival; a
 swap with the world's clear leader (a share 1.5x the runner-up's) only when we get at least 125% of
 what we give (by research cost; 80% for anyone else, as before); no military technology (one
@@ -1577,7 +1562,7 @@ civilization with it against the rest won 18.4% of its games against 21.1% (seed
 a civ that refuses a swap forgoes the technology it would have received while the others trade
 on.
 
-**Councils (`council.rs`; switch `COUNCIL`).** The Overcouncil (the Overcouncil civic, good and
+**Councils (`council.rs`; once switch `COUNCIL`).** The Overcouncil (the Overcouncil civic, good and
 neutral civs) and Undercouncil (evil and neutral) meet every 10 and 15 turns once two civs run
 their civic; members elect a head councilor, who proposes one resolution a session, and half the
 population-weighted votes pass it. Before, every AI abstained and never proposed, so both were
@@ -1598,7 +1583,7 @@ one in force that hurts it, will fail and so be repealed; nothing when none does
 none of the C++ AI's defiance or proposal dice. Telemetry counts the results (`vote_passed`,
 `vote_failed`) and the AI's `vote` and `election` decisions.
 
-**Missionaries abroad (`units::missionary`, `production.rs`; switch `MISSIONARY_ABROAD`).** More
+**Missionaries abroad (`units::missionary`, `production.rs`; once switch `MISSIONARY_ABROAD`).** More
 Naval AI's missionary strategy: once the holy city of our state religion is ours and has its
 shrine (a gold a turn for every city in the world with the religion), a missionary with no city of
 ours to convert goes to a foreign city it may enter -- a civ at peace whose borders are open to us,
@@ -1674,8 +1659,7 @@ governors' production, what an expert does with the channels:
   hostility" −1 per 2 points (to −3), "cultural friendship" +1 per 2 points (to +2), fading a
   point every 10 turns.
 
-Switch `CULTURE` (`FFH_AI_CULTURE_OFF`): off, a civilization channels nothing and its cultural
-defence is only its governors'. Telemetry: the decisions of kind `culture` (the action, or `stop`
+Telemetry: the decisions of kind `culture` (the action, or `stop`
 or `garrison`; why: `revolt_flip`, `revolt_disorder`, `revolt_unrest`, `religion_home`,
 `religion_abroad`, `religion_hostile`; `worthless`, `friend`, `stronger`, `keep_culture`...;
 `defend`), with the rules' counts `culture_channel`, `culture_channel_end`,
@@ -1779,10 +1763,10 @@ enemy fed the main army and every reinforcement travelled off the map.
   turn-180 game had 10 armies of one unit, most of them defenders in cities). Units on their way to
   such an army go to that garrison.
 
-Switch `ARMIES` (`FFH_AI_ARMIES_OFF`): off, every unit stays in its city's garrison when trained
-and no army requisitions (the armies still form from the groups). Switch `REQUISITION`
-(`FFH_AI_REQUISITION_OFF`): off, no army requisitions; the directly ruled cities' attackers still
-march to the main army. The `ffh` runner's controller wrappers (`Timed`, `CppCitizens` in
+The measurements below name the switches `ARMIES` (off: every unit stayed in its city's garrison
+when trained and no army requisitioned) and `REQUISITION` (off: no army requisitioned; the
+directly ruled cities' attackers still marched to the main army), removed 2026-11-10. The `ffh`
+runner's controller wrappers (`Timed`, `CppCitizens` in
 `ffh-cli/src/run.rs`) now forward `requisition_unit` (and `govern_cities`): without it every
 `ffh stats` / `ffh autoplay` game took the rules' default unit, not the AI's.
 
@@ -1869,7 +1853,7 @@ transport when we have none (`army_ship`). With nothing left to fight on that la
 boards a ship of ours on its plot even while the ship supplies it. **The last resort**: an army
 starving for `STRANDED_TURNS` (10) turns in a row with no path over land to a city of ours, or
 overseas with no transport on its way, is scrapped unit by unit (heroes, limited classes and units
-that cannot be scrapped stay). Switch `SUPPLY` (`FFH_AI_SUPPLY_OFF`). Telemetry: `supply_state`
+that cannot be scrapped stay). Telemetry: `supply_state`
 (army-turns `supplied` or `cut_NN`, the counter, not capped), `supply` (`move_refused`,
 `fall_back` (why `hungry`, `starving`, `overseas`), `hungry_goes_on`, `pickup_request`,
 `pickup_sail`, `pickup_board` (`cut`, `idle`), `stranded` (`no_port`), `disband_unit`,
@@ -1923,9 +1907,6 @@ the AI's), the AI's empire priorities, and the AI's empire orders.
   its cultural play sets them in governed cities too. A human's governors (`culture::govern`,
   through `Controller::govern_cities`): defenders against revolt pressure; never a cultural
   channel.
-
-Switch `GOVERNORS` (`FFH_AI_GOVERNORS_OFF`): off, the AI places no empire orders (its governed
-cities build only their governors' choices and the armies' requisitions).
 
 Two corrections the measurements asked for (`empire orders` placed by asking the ladder every
 turn): the ladder's fillers (`army_interleave`, `army`, `attacker`, `elite`) become empire orders
@@ -2158,10 +2139,9 @@ turn, to move casters and to promote them:
   wins (docs/AI_LOG.md, "Spellcasting", "Casters through a Mage Guild").
 
 `FFH_AI_MAGIC_OFF=CIVILIZATION_X,..|X|all` makes those civilizations cast by FfH's terms
-(`casting.rs`; their summons attack as everyone's do: the measurement switch);
-the switches `CASTER_SCHOOL` and `CASTER_STACKS` (`switches.rs`: `FFH_AI_CASTER_SCHOOL_OFF`,
-`FFH_AI_CASTER_STACKS_OFF`, `.._ONLY`) turn the caster school and the casters in the stacks off
-(the stacks need the school; with each off the same games result as before it);
+(`casting.rs`; their summons attack as everyone's do: the measurement switch; the caster school
+and the casters in the stacks come with this AI's spellcasting, their own switches
+`CASTER_SCHOOL` and `CASTER_STACKS` removed 2026-11-10);
 `FFH_AI_TRACE_CAST=1` prints every AI cast (turn, player, civilization, unit, spell, where,
 value), every strike (our arcane casters within two plots of the city, Mages anywhere) and every
 caster joining or leaving a stack. Tests:
@@ -2688,9 +2668,8 @@ full games: development seeds 1-24, casts Amurites 0 -> 14 games, Sheaim 0 -> 6,
 0.3), wins 1 / 1, 0 / 2, 0 / 1 pairs. Earlier For the Horde (a dozen orcs) and Ardor (the
 third great person) cost and were dropped (docs/AI_LOG.md).
 
-**A losing war** (`world_spells::losing_war`, `city_in_peril`; off by default, the switch
-`WS_LOSING_WAR` with `FFH_AI_WS_LOSING_WAR_ONLY=ALL` turns it on, 2026-10-22): Sanctuary
-(Elohim) and March of the Trees (Ljosalfar) would wait, instead of FfH's two wars at once, for
+**A losing war** (removed 2026-11-10 with its switch `WS_LOSING_WAR`, which was off by default;
+measured 2026-10-22): Sanctuary (Elohim) and March of the Trees (Ljosalfar) would wait, instead of FfH's two wars at once, for
 More Naval AI's gate -- the civilizations at war with us have 1.5 times our power -- and an
 invasion at the gates: the capital or two cities, each with four or more units of a civilization
 at war with us within three plots whose attack exceeds the city's garrison at 1.5 times its
@@ -2699,7 +2678,7 @@ threatened, with four units there, with two cities or the capital) cost the Eloh
 end on development seeds (-127 to -162, t -1.1 to -1.7; the Ljosalfar -34, t -0.3): the one-shot
 spell went on the first raid of a stronger neighbour, which the city held anyway (seed 21, turn
 141; the invasion that took nine cities came seventy turns later, where FfH's condition had cast
-it), or after cities had already fallen (seed 7). FfH's condition stays the default
+it), or after cities had already fallen (seed 7). FfH's condition stays
 (docs/AI_LOG.md, "Sanctuary and March of the Trees at a losing war").
 
 **Moments of their own** (an experiment, not merged: `world_spells::turn`, once a turn before units
@@ -2797,7 +2776,7 @@ earlier cast is the first thing to measure.
   rivals and wins (docs/AI_LOG.md, "Allied barbarians no longer counted as a threat"): the term
   stands in for a missing rival-civilization term in the garrison quota.
 - **AI-to-AI deals ignored `player_can_contact`** (fixed 2026-10-28, `diplomacy::can_talk`,
-  switch `CONTACT`): a Crusading Bannor (`bNoDiplomacyWithEnemies`) still made peace with its
+  once switch `CONTACT`): a Crusading Bannor (`bNoDiplomacyWithEnemies`) still made peace with its
   enemies, and deals went to players FfH had just created (the temporary-player timer), vassals
   making their own peace and teams in a permanent war or peace. Peace, gifts, war bribes, trades,
   open borders and pacts now need both sides' `canContact`, and so do the offers to humans (C++
@@ -2826,7 +2805,7 @@ whatever the win rate does, and a drop is investigated as a flaw to fix). The ho
 | Raiders (pillaged gold +100%, Commando) | Decius, Basium, Amelanchier, Hannah, Tasunke, Mahala, Weevil, Faeryl, Sallos | an army stack at war pillages the improved enemy plot it stands on with one unit (taken out of the stack and back), before its orders when that costs no march (no operation needs the stack and no city of ours is in peril, or every unit has a move to spare) and after them while it holds; a stack no operation needs raids the best enemy improvement within two turns whose danger is under two thirds of its defense and that is not next to an enemy city; the land within two plots of the city our war operation is taking is spared (it is ours once the city falls). The generic AI never pillages. |
 | Spiritual (no anarchy) | Capria, Varn, Arendel, Jonas, Hyborem, Lethe | civics every 2 turns at a summed gain of 40 (others every 10 at 100); keeping the state religion weighs 5 instead of 15 |
 | Arcane (adepts +20% experience) | Thessa, Valledia, Dain, Tya, Perpentach, Faeryl, Tebryn | a caster corps of (cities + 2) / 3, or with Sorcery one for every four field units if more (`MAGE_ARMY`), trained in the most productive city whose garrison holds, its Mage Guild first (`civs::casters_up_to`, the civilizations' unique casters' helper); research toward Sorcery once the economy's tier 2 is in (`ARCANE_PATH`; "Spellcasting", "Magic civilizations") |
-| Summoner (summons +1 turn, Combat I; since 2026-11-05 Summoner's Bond: +50% HP, attack, defence, magic and magic defence) | Keelyn, Tebryn, Os-Gabella, Malchavic, Hyborem | a bigger caster corps, (cities + 2) / 2, or with Sorcery one for every four field units if more, and the Arcane leaders' research path ("Magic civilizations"); research toward its Adepts (the techs the Adept and its Mage Guild need, Knowledge of the Ether: +1500 once researchable, +500 on the way); its casters value a summoning sphere (a mana sphere opening a summon any civilization may cast: Death I-III, Fire II-III, Air/Earth/Water III, ...) at 1.5x + 60, a temporary summon at 1.5x (it lasted a turn longer; since 2026-11-05 for its Bond), and raise lasting summons (Raise Skeleton) at peace too while the army is short of its peacetime target and a unit is affordable (others only at war); without a mana whose Mage-level spell summons a creature (Death: Spectre, Entropy: Pit Beast, Law: Einherjar, Ice: Ice Elemental; Keelyn's Balseraphs start with Mind, Chaos and Air), it goes for one first (switch `SUMMON_MANA`, 2026-10-28): its node on our raw mana is worth 3000 more (`mana::node_value`; nodes run 1000-3000), so research takes the node's tech first and the first node goes to it; it is worth 20 more in a trade (two happy resources on `AI_bonusVal`'s scale: the AI pays its own valuation in gold); and its casters value the sphere's first promotion (Entropy I before Entropy II) like a summoning one |
+| Summoner (summons +1 turn, Combat I; since 2026-11-05 Summoner's Bond: +50% HP, attack, defence, magic and magic defence) | Keelyn, Tebryn, Os-Gabella, Malchavic, Hyborem | a bigger caster corps, (cities + 2) / 2, or with Sorcery one for every four field units if more, and the Arcane leaders' research path ("Magic civilizations"); research toward its Adepts (the techs the Adept and its Mage Guild need, Knowledge of the Ether: +1500 once researchable, +500 on the way); its casters value a summoning sphere (a mana sphere opening a summon any civilization may cast: Death I-III, Fire II-III, Air/Earth/Water III, ...) at 1.5x + 60, a temporary summon at 1.5x (it lasted a turn longer; since 2026-11-05 for its Bond), and raise lasting summons (Raise Skeleton) at peace too while the army is short of its peacetime target and a unit is affordable (others only at war); without a mana whose Mage-level spell summons a creature (Death: Spectre, Entropy: Pit Beast, Law: Einherjar, Ice: Ice Elemental; Keelyn's Balseraphs start with Mind, Chaos and Air), it goes for one first (once switch `SUMMON_MANA`, 2026-10-28): its node on our raw mana is worth 3000 more (`mana::node_value`; nodes run 1000-3000), so research takes the node's tech first and the first node goes to it; it is worth 20 more in a trade (two happy resources on `AI_bonusVal`'s scale: the AI pays its own valuation in gold); and its casters value the sphere's first promotion (Entropy I before Entropy II) like a summoning one |
 | Philosophical (great people +100%) | Einion, Cardith, Cassiel, Koun, Dain, Alexis, Judecca, Gosea | the great-people emphasis (`EMPHASIZE_GREAT_PEOPLE`) on its best great-people cities, 1 + cities / 8, size 4+, only cities that can employ a specialist making great people; a city is replaced only by one half as good again |
 | Financial (+1 commerce on plots with 2+) | Garrim, Beeri, Kandros, Hannah, Rhoanna, Flauros, Dumannios | workers count the extra commerce an improvement brings at the threshold (`plot_calculate_improvement_yield_change` leaves it out), on an unimproved plot a city of ours works, weighted as the yields are (the improvement 1, its grown form 2) |
 | Industrious (limited wonders +50% production) | Capria, Tethira, Beeri, Arturus, Sandalphon, Cassiel, Os-Gabella, Statius | limited wonders (world, team and national) are worth 1.5x |
@@ -2895,7 +2874,7 @@ one at war, or at peace while the army is short), so they bunch in the wars. Win
 turns, 10-66 gold each); Industrious leaders build more wonders; Aggressive ones take more
 cities once their land is full.
 
-**A summon mana first (2026-10-28, the owner's proposal; switch `SUMMON_MANA`).** Keelyn's
+**A summon mana first (2026-10-28, the owner's proposal; once switch `SUMMON_MANA`).** Keelyn's
 Balseraphs had no mana whose Mage-level spell summons a creature, so their casters never summoned
 above Raise Skeleton. With the switch, seed 7502: Necromancy at turn 291 instead of 321, Entropy
 nodes planned on all four raw mana plots, the first node Entropy (it was Enchantment). Measured
@@ -3921,18 +3900,24 @@ only, against opponents without it, and reports that player's wins and share.
   base side the same binary with `FFH_AI_CIV_OFF` for that civilization (identical opponents).
 - `crates/ffh-cli/scripts/caster_ab.py --bin DIR --seeds S --out-dir D [--base-bin DIR]
   [--base-env K=V ..] [--new-env K=V ..] [--common] [--civ] [--load]` plays the seeds on two sides
-  (by default the same binary with `FFH_AI_CASTER_SCHOOL_OFF=all` on the base side) with the cast
+  (by default the same binary with `FFH_AI_MAGIC_OFF=all` on the base side) with the cast
   trace and reports how every civilization used its arcane casters: the `arcane_*` counters above,
   their casts by Channeling tier, context (before a strike, end of turn) and kind, and the rates
   per 1000 caster-turns; `--common` compares each seed's games up to the last 50-turn checkpoint
   both reached (a longer game has more caster-turns, and more casters lost with an eliminated
   owner).
-  Generic behaviours have switches of their own (`switches.rs`): `FFH_AI_<NAME>_OFF=X,..|ALL`
-  plays without it, `FFH_AI_<NAME>_ONLY=X,..` only for those civilizations (`ALL` or `1`: every
-  one; names with or without `CIVILIZATION_`, any case). The module switches `FFH_AI_MAGIC_OFF`,
-  `FFH_AI_CIV_OFF`, `FFH_AI_VASSAL_OFF` and `FFH_AI_TRAIT_CIVS` are read the same way
-  (`switches::env_list`; `_ONLY` works for the first three too), and `FFH_AI_TRAIT_OFF` lists
-  traits in the same form.
+  A behaviour under measurement gets a switch of its own (`switches.rs`):
+  `FFH_AI_<NAME>_OFF=X,..|ALL` plays without it, `FFH_AI_<NAME>_ONLY=X,..` only for those
+  civilizations (`ALL` or `1`: every one; names with or without `CIVILIZATION_`, any case). The
+  module switches `FFH_AI_MAGIC_OFF` and `FFH_AI_CIV_OFF` (`_ONLY` works for them too) and
+  `FFH_AI_TRAIT_CIVS` are read the same way (`switches::env_list`), and `FFH_AI_TRAIT_OFF` lists
+  traits in the same form; the probes are off-by-default switches (docs/PROBES.md).
+  **Settled behaviours have no switch** (the owner's call, 2026-11-10): every generic switch of
+  the rounds below (`FOG_SIGHT`, `FOG_ATTACK`, `CAPTURE`, `PRECIOUS`, `VASSAL`, `COUNCIL`,
+  `CULTURE`, `ARMIES`, `SUPPLY`, `GOVERNORS`, the magic package's `CASTER_SCHOOL` ... `HASTE_MARCH`
+  and the rest) was removed, its behaviour now unconditional; `WS_LOSING_WAR`, off by default,
+  was removed with its behaviour. The sections name them as they were measured; to compare
+  against a behaviour's absence, play an older revision (`tools/agents/ab.sh --base <rev>`).
   **Implementation forks do not stay.** A switch whose off side is the algorithm a change
   replaced (not merely the behaviour absent) is removed, with the old algorithm, the round after
   the change is kept: later comparisons with the old version run against an older revision
@@ -3982,8 +3967,7 @@ only, against opponents without it, and reports that player's wins and share.
   `--no-victory VICTORY_X` (repeatable) and `--leader LEADER_X` (the first slot's leader) give
   `ffh autoplay` / `stats` / `bench` the rest of a custom game's settings, so every game a
   spectator watches plays here too.
-- `--option GAMEOPTION_X` (repeatable) turns game options on for any of these commands (for
-  example `GAMEOPTION_ADVANCED_START`).
+- `--option GAMEOPTION_X` (repeatable) turns game options on for any of these commands.
 
 ## More Naval AI compared (2026-10-22)
 

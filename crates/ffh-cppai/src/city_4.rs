@@ -381,7 +381,7 @@ impl Cai {
                 }
 
                 let happiness = fi.happiness;
-                if happiness != 0 && !(g.players[owner].advanced_start_points >= 0) {
+                if happiness != 0 {
                     let mut happy_level = happy_adjust + (g.city_happy_level(c) - g.city_unhappy_level(c, 0));
                     if Some(improvement) == plot_improvement {
                         happy_level -= happiness;
@@ -851,9 +851,6 @@ impl Cai {
         economy_flags |= BUILDINGFOCUS_HAPPY;
         economy_flags |= BUILDINGFOCUS_HEALTHY;
         economy_flags |= BUILDINGFOCUS_SPECIALIST;
-        if !g.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
-            economy_flags |= BUILDINGFOCUS_ESPIONAGE;
-        }
 
         //20 means 5g or ~2 happiness...
         if self.city_ai_choose_building(g, c, economy_flags, 20, 20 / min_value_divisor) {
@@ -1609,31 +1606,6 @@ impl Cai {
         let ca = s.city(c);
         ca.workers_needed = workers_needed;
         ca.workers_have = workers_have;
-    }
-
-    /// C++ `BuildingTypes CvCityAI::AI_bestAdvancedStartBuilding(int iPass)` (CvCityAI.cpp:10031-10060)
-    pub fn city_ai_best_advanced_start_building(&self, g: &Game, c: CityId, pass: i32) -> Option<BuildingType> {
-        let mut focus_flags = 0;
-        if pass >= 0 {
-            focus_flags |= BUILDINGFOCUS_FOOD;
-        }
-        if pass >= 1 {
-            focus_flags |= BUILDINGFOCUS_PRODUCTION;
-        }
-        if pass >= 2 {
-            focus_flags |= BUILDINGFOCUS_EXPERIENCE;
-        }
-        if pass >= 3 {
-            focus_flags |= BUILDINGFOCUS_HAPPY | BUILDINGFOCUS_HEALTHY;
-        }
-        if pass >= 4 {
-            focus_flags |= BUILDINGFOCUS_GOLD | BUILDINGFOCUS_RESEARCH | BUILDINGFOCUS_MAINTENANCE;
-            if !g.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
-                focus_flags |= BUILDINGFOCUS_ESPIONAGE;
-            }
-        }
-
-        self.city_ai_best_building_threshold(g, c, focus_flags, 0, 0.max(20 - pass * 5), false, None)
     }
 
     // BETTER AI (new Functions) Sephi

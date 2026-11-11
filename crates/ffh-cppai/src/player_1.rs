@@ -1111,7 +1111,7 @@ impl Cai {
                 let mut esp_multiplier = 0;
                 for t in g.civ_team_ids() {
                     if g.team_is_alive(t) && t != team && !g.teams[t].vassal[team] && !g.teams[team].vassal[t] {
-                        let point_diff = g.teams[t].espionage_points_against_team[team] - g.teams[team].espionage_points_against_team[t];
+                        let point_diff = 0; // there is no espionage: no points on either side
                         if point_diff > 0 {
                             esp_multiplier += 1;
                             break;

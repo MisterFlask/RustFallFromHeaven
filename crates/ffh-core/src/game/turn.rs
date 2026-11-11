@@ -32,9 +32,6 @@ impl Game {
     /// governor), `testAlive`, game over when no human is alive (unless AI autoplay, autorun or
     /// extended), `turn_slice += 1`.
     pub fn update(&mut self) {
-        // C++: if (!gDLL->GetWorldBuilderMode() || isInAdvancedStart()) -- there is no world
-        // builder here, so the slice always runs.
-
         // sendPlayerOptions(): network. FfH sends the "gameUpdate" generic Python event only in
         // network games (isNetworkMultiPlayer()). AutoSave(true) on turn slice 0: not ported.
 
@@ -64,7 +61,7 @@ impl Game {
         // changeTurnSlice(1)
         self.turn_slice += 1;
 
-        // Advanced start interface / world builder for the active player: UI.
+        // World builder for the active player: UI.
     }
 
     /// C++ `CvGame::doTurn`: end of game turn. Score, deals, `CvTeam::doTurn`, `CvMap::doTurn`,
@@ -743,14 +740,6 @@ impl Game {
     pub fn is_team_game(&self) -> bool {
         debug_assert!(self.count_civ_players_alive() >= self.count_civ_teams_alive());
         self.count_civ_players_alive() > self.count_civ_teams_alive()
-    }
-
-    /// C++ `CvGame::isInAdvancedStart`: a human player still has advanced start points (>= 0).
-    pub fn is_in_advanced_start(&self) -> bool {
-        self.player_ids().any(|p| {
-            let pl = &self.players[p];
-            pl.advanced_start_points >= 0 && pl.human
-        })
     }
 
     /// C++ `CvGame::getProductionPerPopulation(eHurry)`.
@@ -1642,12 +1631,6 @@ mod tests {
 
         g.num_cities = 5;
         assert_eq!(g.num_civ_cities(), 5);
-
-        assert!(!g.is_in_advanced_start());
-        g.players[p0].advanced_start_points = 0;
-        assert!(!g.is_in_advanced_start());
-        g.players[p1].advanced_start_points = 0;
-        assert!(g.is_in_advanced_start());
     }
 
     #[test]

@@ -1663,9 +1663,6 @@ TXT_KEY_ADD_BUDDY_NAME_TITLE	Add a Buddy
 TXT_KEY_ADD_BUDDY_REQ_TITLE	BUDDY REQUEST
 TXT_KEY_ADD_BUDDY_TAG	Add Buddy
 TXT_KEY_ADD_MEMBER_AS_BUDDYHELP	To directly chat with a member, they must first be added to your buddy list.  Do you want to add %s1_Name as a buddy now?
-TXT_KEY_ADVANCED_START_BEGIN_GAME	Begin!
-TXT_KEY_ADVANCED_START_POINTS	Advanced Start Base Points:
-TXT_KEY_ADVANCED_START_POINTS_HELP	Gold you receive at the start to purchase cities, units, and improvements.
 TXT_KEY_ADVISOR_CULTURE	Culture
 TXT_KEY_ADVISOR_ECONOMY	Economy
 TXT_KEY_ADVISOR_GROWTH	Growth
@@ -7779,7 +7776,6 @@ TXT_KEY_FLYOUT_MENU_MOVE_TO	Move To (%d1_NumTurns)
 TXT_KEY_FLYOUT_MENU_SELECT_ALL	Select All
 TXT_KEY_FLYOUT_MENU_SLEEP_ALL	Sleep All
 TXT_KEY_FLYOUT_MENU_WAKE_ALL	Wake All
-TXT_KEY_FORCE_ADVANCED_START	Force Advanced Start
 TXT_KEY_FORCE_CONTROL_HANDICAP	Force Handicap
 TXT_KEY_FORCE_CONTROL_HANDICAP_DESC	Disable the control for changing player handicap
 TXT_KEY_FORCE_CONTROL_MAX_CITY_ELIMINATION	Force Max City Elimination
@@ -7860,14 +7856,6 @@ TXT_KEY_GAMESPY_NEW_ACCOUNT_TITLE	Create a New Account
 TXT_KEY_GAME_END_SCREEN_TITLE	Your place in History
 TXT_KEY_GAME_LIST_FIREWALL_PING	[Firewalled]
 TXT_KEY_GAME_LIST_UNKNOWN_PING	[Unknown]
-TXT_KEY_GAME_OPTION_ADVANCED_START	Advanced Start
-TXT_KEY_GAME_OPTION_ADVANCED_START_HELP	Allows players to 'purchase' their choice of starting cities, units, technologies, etc. when game begins.
-TXT_KEY_GAME_OPTION_AGGRESSIVE_AI	Challenge- Aggressive AI
-TXT_KEY_GAME_OPTION_AGGRESSIVE_AI_HELP	AI leaders favor war over diplomacy
-TXT_KEY_GAME_OPTION_AI_NO_BUILDING_PREREQS	Challenge- AI No Building Requirements
-TXT_KEY_GAME_OPTION_AI_NO_BUILDING_PREREQS_HELP	The AI ignores building prereqs for units (i.e.: doesn't need an archery range to build archers)
-TXT_KEY_GAME_OPTION_AI_NO_MINIMUM_LEVEL	Challenge- AI No Minimum Levels
-TXT_KEY_GAME_OPTION_AI_NO_MINIMUM_LEVEL_HELP	The AI ignores minimum levels for units (i.e.: can build archmages directly)
 TXT_KEY_GAME_OPTION_ALL_UNIQUE_IMPROVEMENTS	All Unique Features
 TXT_KEY_GAME_OPTION_ALL_UNIQUE_IMPROVEMENTS_HELP	All of the game's Unique Features will be placed on the map
 TXT_KEY_GAME_OPTION_ALWAYS_WAR	Always War
@@ -7888,8 +7876,6 @@ TXT_KEY_GAME_OPTION_DOUBLE_ANIMALS	Wildlands
 TXT_KEY_GAME_OPTION_DOUBLE_ANIMALS_HELP	Double the amount of animals that spawn
 TXT_KEY_GAME_OPTION_DOUBLE_BONUSES	Blessing of Amathaon
 TXT_KEY_GAME_OPTION_DOUBLE_BONUSES_HELP	Double the amount of bonuses
-TXT_KEY_GAME_OPTION_DOUBLE_EVENTS	Living World
-TXT_KEY_GAME_OPTION_DOUBLE_EVENTS_HELP	Doubles the frequency of Events
 TXT_KEY_GAME_OPTION_DOUBLE_GLOBAL_COUNTER	Last Days
 TXT_KEY_GAME_OPTION_DOUBLE_GLOBAL_COUNTER_HELP	Doubles any changes to the Armageddon Counter
 TXT_KEY_GAME_OPTION_FLEXIBLE_DIFFICULTY	Flexible Difficulty
@@ -7898,10 +7884,6 @@ TXT_KEY_GAME_OPTION_FLIPPING_AFTER_CONQUEST	City Flipping after Conquest
 TXT_KEY_GAME_OPTION_FLIPPING_AFTER_CONQUEST_HELP	Cities which have been captured via conquest can convert peacefully back to a previous owner
 TXT_KEY_GAME_OPTION_LEAD_ANY_CIV	Unrestricted Leaders
 TXT_KEY_GAME_OPTION_LEAD_ANY_CIV_HELP	Players may lead any Civilization with any Leader.
-TXT_KEY_GAME_OPTION_LOCK_MODS	Lock Modified Assets
-TXT_KEY_GAME_OPTION_LOCK_MODS_HELP	Sets a random admin password so that debug tools cannot be used, and the game assets cannot be modified. Only for single-player games.
-TXT_KEY_GAME_OPTION_NEW_RANDOM_SEED	New Random Seed on Reload
-TXT_KEY_GAME_OPTION_NEW_RANDOM_SEED_HELP	A new random seed is generated every time the game is reloaded - which, for example, will lead to different combat results
 TXT_KEY_GAME_OPTION_NO_ACHERON	No Acheron
 TXT_KEY_GAME_OPTION_NO_ACHERON_HELP	The Barbarians will be unable to create Acheron
 TXT_KEY_GAME_OPTION_NO_BARBARIANS	No Barbarians
@@ -7914,8 +7896,6 @@ TXT_KEY_GAME_OPTION_NO_CITY_RAZING	No City Razing
 TXT_KEY_GAME_OPTION_NO_CITY_RAZING_HELP	Cities cannot be razed after capture
 TXT_KEY_GAME_OPTION_NO_DUIN	No Duin
 TXT_KEY_GAME_OPTION_NO_DUIN_HELP	No players will be able to build Duin Halfmorn
-TXT_KEY_GAME_OPTION_NO_ESPIONAGE	No Espionage
-TXT_KEY_GAME_OPTION_NO_ESPIONAGE_HELP	Spies are not available, and Espionage Points are converted into Culture
 TXT_KEY_GAME_OPTION_NO_EVENTS	DEBUG- Disable Events
 TXT_KEY_GAME_OPTION_NO_EVENTS_HELP	Note- Only use this to debug OOS issues, many functions in FfH use events and this will break them
 TXT_KEY_GAME_OPTION_NO_GLOBAL_COUNTER	Hallowed Ground
@@ -7960,12 +7940,8 @@ TXT_KEY_GAME_OPTION_ONE_CITY_CHALLENGE	Challenge- One City
 TXT_KEY_GAME_OPTION_ONE_CITY_CHALLENGE_HELP	The human player can never control more than one city
 TXT_KEY_GAME_OPTION_PERMANENT_ALLIANCES	Permanent Alliances
 TXT_KEY_GAME_OPTION_PERMANENT_ALLIANCES_HELP	Two civilizations can form a Permanent Alliance which lasts the rest of the game
-TXT_KEY_GAME_OPTION_PICK_RELIGION	Choose Religions
-TXT_KEY_GAME_OPTION_PICK_RELIGION_HELP	Players are prompted to pick a religion when they are about to found one.
 TXT_KEY_GAME_OPTION_RAGING_BARBARIANS	Challenge- Raging Barbarians
 TXT_KEY_GAME_OPTION_RAGING_BARBARIANS_HELP	Increased Barbarian activity and aggressiveness
-TXT_KEY_GAME_OPTION_RANDOM_PERSONALITIES	Random Personalities
-TXT_KEY_GAME_OPTION_RANDOM_PERSONALITIES_HELP	Each AI leader's personality is determined randomly at game start
 TXT_KEY_GAME_OPTION_SLOWER_XP	Challenge- Slower XP
 TXT_KEY_GAME_OPTION_SLOWER_XP_HELP	Halves the rate that units gain experience through combat
 TXT_KEY_GAME_OPTION_THAW	Challenge- End of Winter
@@ -9641,7 +9617,6 @@ TXT_KEY_MINIMIZED_CHOOSE_TECH	Choose a new technology to research...
 TXT_KEY_MINIMIZED_CHOOSE_TECH_FREE	Choose a free technology...
 TXT_KEY_MIN_LATITUDE	[COLOR_WARNING_TEXT]Can build at a minimum latitude of %d1 degrees[COLOR_REVERT]
 TXT_KEY_MISC_ADJUST_COMMERCE_RATE	[ICON_BULLET]Can Adjust %F1_CmrcIcon Rate
-TXT_KEY_MISC_ADVANCED_START_PEACE_REMAINING	%d1 [NUM1:turn:turns] of Universal Peace Remaining
 TXT_KEY_MISC_AI	[SPACE][AI]
 TXT_KEY_MISC_ALARM_GOES_OFF	RIIIIIIIIING! Time is now %s1_TimeStr.
 TXT_KEY_MISC_ALARM_NOT_SET	Alarm is not set!
@@ -11373,7 +11348,6 @@ TXT_KEY_RELIGION_THE_EMPYREAN_PEDIA	[TAB]Where the Order values law, the Empyrea
 TXT_KEY_RELIGION_THE_ORDER	Order
 TXT_KEY_RELIGION_THE_ORDER_ADJECTIVE	Order
 TXT_KEY_RELIGION_UNIT_PROD_MOD	%D1%%[ICON_PRODUCTION] for Units
-TXT_KEY_RELIGION_UNKNOWN	a Religion
 TXT_KEY_RELIGIOUS_ART	Religious Art
 TXT_KEY_REMOVE_BUDDY_NAME_TITLE	Remove a Buddy
 TXT_KEY_REMOVE_BUDDY_TAG	Remove Buddy

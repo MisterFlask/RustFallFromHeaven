@@ -68,14 +68,6 @@ export const HD2D = {
   townLight: 0.5,
   townClearing: 0.5,
   townBanners: 0.6,
-  // The lean terrain (TERRAIN_LEAN below; read when the programs are built, so a page-only switch:
-  // `?r3d={"terrainLean":0}` draws the full painting).
-  terrainLean: 1,
-  // The ground is the stand-in's painting (TERRAIN_STANDIN below; the owner's call, 2026-11-03,
-  // docs/HD2D.md §5b "The stand-in as the ground"): read when the programs are built, so a page-only
-  // switch too -- `?r3d={"terrainStandin":0}` draws the full painting, the stand-in standing in
-  // for it while it compiles, as before.
-  terrainStandin: 1,
 };
 
 export const DEFAULTS_HD2D = { ...DEFAULTS, ...HD2D, preset: "hd2d" };
@@ -100,8 +92,8 @@ export const PANEL_HD2D = [
   ["fov", "Lens (field of view)", "range", 20, 36, 1],
 ];
 
-/** The lean terrain's defines (shaders.js LEAN_*, compiled into the mode's terrain when
- *  `terrainLean` is on): the parts of the ground's painting the mode shows little of, computed
+/** The lean terrain's defines (shaders.js LEAN_*, compiled into the mode's terrain,
+ *  MapHd2d.terrainDefines): the parts of the ground's painting the mode shows little of, computed
  *  from fewer noises -- the terrain shader's instructions 5736 to 3439, its Direct3D compile at the
  *  first draw about 8.6 s to 3.1 s on an RTX 4060 laptop (estimated: FXC's time grows with the
  *  square of the length, docs/R3D.md §11.1). Each alone:
@@ -136,9 +128,8 @@ export const TERRAIN_LEAN = {
 /** The stand-in ground's defines (shaders.js STANDIN_*, over the mode's own terrain defines): the
  *  terrain program compiled down to the pixel-art ground under each ground's mean tones, lit,
  *  shadowed and fogged as the full one, writing the same targets. The mode's ground since
- *  2026-11-03 (terrainStandin, MapHd2d.terrainDefines; docs/HD2D.md §5b); with the full painting
- *  (`terrainStandin` 0) it is drawn while that still compiles (MapHd2d.standinTerrain, docs/R3D.md
- *  §11.1 "Two stages"). 1358 instructions
+ *  2026-11-03 (MapHd2d.terrainDefines; docs/HD2D.md §5b); first drawn only while the full painting
+ *  compiled, hence its name (that start-up and its switches were removed 2026-11-10). 1358 instructions
  *  against the lean terrain's 2742 (glslang + spirv-opt; Direct3D's compile about 0.5 s against
  *  1.9 s, estimated). Each:
  *  STANDIN_FLAT   every value noise of the ground's painting at its mean (the masses, the meadow's

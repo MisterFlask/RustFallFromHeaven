@@ -1097,50 +1097,8 @@ impl Game {
     }
 
     // ------------------------------------------------------------------
-    // Espionage and stolen visibility
+    // Stolen visibility
     // ------------------------------------------------------------------
-
-    /// C++ `CvTeam::setEspionagePointsAgainstTeam`.
-    pub fn team_set_espionage_points_against_team(&mut self, t: TeamId, other: TeamId, value: i32) {
-        if value != self.teams[t].espionage_points_against_team[other] {
-            self.teams[t].espionage_points_against_team[other] = value;
-
-            self.team_verify_spy_units_valid_plot(t);
-            self.team_verify_spy_units_valid_plot(other);
-        }
-    }
-
-    /// C++ `CvTeam::changeEspionagePointsAgainstTeam`.
-    pub fn team_change_espionage_points_against_team(&mut self, t: TeamId, other: TeamId, change: i32) {
-        let v = self.teams[t].espionage_points_against_team[other] + change;
-        self.team_set_espionage_points_against_team(t, other, v);
-    }
-
-    /// C++ `CvTeam::verifySpyUnitsValidPlot`: spies of alive members standing in borders
-    /// they may not enter jump to the nearest valid plot.
-    pub fn team_verify_spy_units_valid_plot(&mut self, t: TeamId) {
-        let mut units: Vec<UnitId> = Vec::new();
-
-        for p in self.player_ids() {
-            if self.players[p].alive && self.players[p].team == t {
-                for &u in &self.players[p].units {
-                    let owner = self.map.plots[self.unit_plot(u)].owner;
-                    if let Some(owner) = owner {
-                        if self.unit_is_spy(u) && !self.player_can_spies_enter_borders(p, owner) {
-                            units.push(u);
-                        }
-                    }
-                }
-            }
-        }
-
-        for u in units {
-            // C++ uses the collected pointers unchecked; skip a unit an earlier jump destroyed.
-            if self.units.contains(u) {
-                self.unit_jump_to_nearest_valid_plot(u);
-            }
-        }
-    }
 
     /// C++ `CvTeam::isStolenVisibility`.
     pub fn team_is_stolen_visibility(&self, t: TeamId, other: TeamId) -> bool {

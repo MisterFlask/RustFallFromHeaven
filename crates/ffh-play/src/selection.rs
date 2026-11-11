@@ -100,12 +100,10 @@ pub fn can_start_mission(g: &Game, units: &[UnitId], mission: MissionType, data1
             MissionType::MISSION_HURRY => g.unit_can_hurry(u, plot, test_visible),
             MissionType::MISSION_TRADE => g.unit_can_trade(u, plot, test_visible),
             MissionType::MISSION_GREAT_WORK => g.unit_can_great_work(u, plot),
-            MissionType::MISSION_INFILTRATE => g.unit_can_infiltrate(u, plot, test_visible),
             // "this means to play the animation only"
             MissionType::MISSION_GOLDEN_AGE => data1 != -1 || g.unit_can_golden_age(u, plot, test_visible),
             MissionType::MISSION_BUILD => typed(g.d.builds.len()).is_some_and(|b| g.unit_can_build(u, plot, BuildType::from_usize(b), test_visible)),
             MissionType::MISSION_LEAD => g.unit_can_lead(u, plot, (data1 >= 0).then_some(UnitId(data1 as u32))) != 0,
-            MissionType::MISSION_ESPIONAGE => g.unit_can_espionage(u, plot, test_visible),
             _ => false,
         };
         if ok {

@@ -8,8 +8,7 @@
 //   ssao     half resolution, depth-aware blur
 //   glow     emission, blurred at half resolution
 //   compose  occlusion, glow, exposure, filmic curve -> display colour
-//   paint    structure tensor -> anisotropic Kuwahara (units kept sharp)
-//   finish   ink outlines, grade, world-anchored paper grain, vignette
+//   finish   grade, world-anchored paper grain, vignette
 //   overlay  borders, political wash, grid, marks, rings, particles -- over the finished frame,
 //            depth-tested against the scene and ghosted through what stands in front
 //   blit     to the canvas
@@ -35,17 +34,15 @@ export function hdrTargets(gl) {
 }
 
 /** The pipeline's programs, `[name, vs, fs, defines]` by key in the order it builds them, for the
- *  constructor's `terrainDefines` and `opts` (`packed` already checked against `hdrTargets`, and
- *  `standin` given only with it). r3d-lab/compile.html measures the same list. */
-export function pipelinePrograms(terrainDefines = {}, { scene: sceneDefines = {}, prop = {}, water = {}, riverSplit = false, packed = false, standin = null } = {}) {
+ *  constructor's `terrainDefines` and `opts` (`packed` already checked against `hdrTargets`).
+ *  r3d-lab/compile.html measures the same list. */
+export function pipelinePrograms(terrainDefines = {}, { scene: sceneDefines = {}, prop = {}, water = {}, riverSplit = false, packed = false } = {}) {
   const C = SH.COMMON;
   // A scene program: its one packed output, or the three targets.
   const S = (name, vs, fs, defs = {}) => (packed ? [name, vs, SH.packedScene(fs), { ...defs, SCENE_PACKED: 1 }] : [name, vs, fs, defs]);
   const terrain = { ...sceneDefines, ...terrainDefines };
   return {
-    // (With a stand-in the full terrain dissolves in over it: TERRAIN_DISSOLVE.)
-    terrain: S("terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, standin ? { ...terrain, TERRAIN_DISSOLVE: 1 } : terrain),
-    ...(standin ? { terrainStandin: S("terrain-standin", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, { ...terrain, ...standin }) } : {}),
+    terrain: S("terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, terrain),
     prop: S("prop", C + SH.PROP_VS, C + SH.PROP_FS, { ...sceneDefines, ...prop }),
     water: S("water", C + SH.WATER_VS, C + SH.WATER_FS, { ...sceneDefines, ...water, ...(riverSplit ? { WATER_SEA: 1 } : {}) }),
     ...(riverSplit ? { river: S("river", C + SH.WATER_VS, C + SH.WATER_FS, { ...sceneDefines, ...water, WATER_RIVER: 1 }) } : {}),
@@ -55,8 +52,6 @@ export function pipelinePrograms(terrainDefines = {}, { scene: sceneDefines = {}
     aoBlur: ["ao-blur", FULLSCREEN_VS, SH.AO_BLUR_FS],
     blur: ["blur", FULLSCREEN_VS, SH.BLUR_FS],
     composite: ["composite", FULLSCREEN_VS, SH.COMPOSITE_FS],
-    tensor: ["tensor", FULLSCREEN_VS, SH.TENSOR_FS],
-    kuwahara: ["kuwahara", FULLSCREEN_VS, SH.KUWAHARA_FS],
     finish: ["finish", FULLSCREEN_VS, C + SH.FINISH_FS],
     fxaa: ["fxaa", FULLSCREEN_VS, SH.FXAA_FS],
     overlay: ["overlay", C + SH.OVERLAY_VS, C + SH.OVERLAY_FS],
@@ -78,10 +73,7 @@ export class Pipeline {
    *    then WATER_SEA; Map3D.riverSplit);
    *  - `packed`: the scene's programs (the rivers' too) write one packed target, unpacked after
    *    (shaders.js SCENE_PACKED; Map3D.packedScene) -- one output each, so ANGLE's Direct3D 11
-   *    backend compiles them at link, in parallel and cached, not at their first draw;
-   *  - `standin`: with `packed`, the `#define`s of a second, much shorter terrain program
-   *    (`p.terrainStandin`, Map3D.standinTerrain) drawn until the full one has compiled
-   *    (`fr.dissolve`, render): the map draws sooner on Direct3D. */
+   *    backend compiles them at link, in parallel and cached, not at their first draw. */
   constructor(gl, terrainDefines = {}, opts = {}) {
     this.gl = gl;
     this.hdr = hdrTargets(gl);
@@ -89,11 +81,7 @@ export class Pipeline {
     this.timer = gl.getExtension("EXT_disjoint_timer_query_webgl2");
     this.fs = fullscreen(gl);
     this.packed = !!opts.packed && this.hdr;
-    // (Only a packed scene's programs compile at link, where a frame can be drawn before one has;
-    // where the browser does not compile in parallel, every program has linked by the first frame
-    // and the stand-in is not drawn.)
-    const standin = this.packed ? opts.standin ?? null : null;
-    this.p = Object.fromEntries(Object.entries(pipelinePrograms(terrainDefines, { ...opts, packed: this.packed, standin })).map(([k, a]) => [k, new Program(gl, ...a)]));
+    this.p = Object.fromEntries(Object.entries(pipelinePrograms(terrainDefines, { ...opts, packed: this.packed })).map(([k, a]) => [k, new Program(gl, ...a)]));
     this.shadowMap = depthTexture(gl, SHADOW_SIZE, SHADOW_SIZE);
     this.shadowFbo = framebuffer(gl, [], this.shadowMap);
     this.shadowMapT = depthTexture(gl, TERRAIN_SHADOW_SIZE, TERRAIN_SHADOW_SIZE);
@@ -131,9 +119,6 @@ export class Pipeline {
       glow: texture(gl, hw, hh, F),
       glow2: texture(gl, hw, hh, F),
       ldrA: texture(gl, w, h),
-      ldrB: texture(gl, w, h),
-      tensorA: texture(gl, w, h, F),
-      tensorB: texture(gl, w, h, F),
       aa: texture(gl, w, h),
       final: texture(gl, w, h),
       // The scene before the water (grab): what the water is seen through and what it mirrors.
@@ -153,9 +138,6 @@ export class Pipeline {
       glow: framebuffer(gl, [t.glow]),
       glow2: framebuffer(gl, [t.glow2]),
       ldrA: framebuffer(gl, [t.ldrA]),
-      ldrB: framebuffer(gl, [t.ldrB]),
-      tensorA: framebuffer(gl, [t.tensorA]),
-      tensorB: framebuffer(gl, [t.tensorB]),
       aa: framebuffer(gl, [t.aa]),
       final: framebuffer(gl, [t.final], this.depth),
       sceneCopy: framebuffer(gl, [t.sceneCopy]),
@@ -392,13 +374,8 @@ export class Pipeline {
       if (pk) gl.bindFramebuffer(gl.FRAMEBUFFER, this.f.scenePk);
       gl.depthMask(false);
       gl.depthFunc(gl.LEQUAL);
-      // The ground: the stand-in while the full terrain compiles (fr.dissolve 0), the full one
-      // over it while it dissolves in (0 to 1: the stand-in's fragments kept where its quads' hash
-      // is past the progress), the full one alone after (1, the default). Both are depth-tested
-      // against the prepass's depth, which neither writes.
-      const dissolve = this.p.terrainStandin ? fr.dissolve ?? 1 : 1;
-      if (dissolve < 1) scene.drawTerrain(this.p.terrainStandin, SU, false);
-      if (dissolve > 0) scene.drawTerrain(this.p.terrain, { ...SU, uDissolve: dissolve }, false);
+      // The ground, depth-tested against the prepass's depth, which it does not write.
+      scene.drawTerrain(this.p.terrain, SU, false);
       gl.depthFunc(gl.EQUAL);
       scene.drawProps(this.p.prop, SU, false);
       gl.depthFunc(gl.LEQUAL);
@@ -458,25 +435,8 @@ export class Pipeline {
       });
     });
 
-    // --- paint (a mode's display-colour grade first: the HD-2D region moods)
-    let painted = this.ext?.grade(fr, cfg) ?? this.t.ldrA;
-    if (cfg.kuwahara > 0) {
-      const src = painted;
-      this.timed("kuwahara", () => {
-        this.pass(this.p.tensor, this.f.tensorA, W, H, { uSrc: src, uTexel: [1 / W, 1 / H] });
-        this.pass(this.p.blur, this.f.tensorB, W, H, { uSrc: this.t.tensorA, uDir: [1 / W, 0], uSigma: 2 });
-        this.pass(this.p.blur, this.f.tensorA, W, H, { uSrc: this.t.tensorB, uDir: [0, 1 / H], uSigma: 2 });
-        this.pass(this.p.kuwahara, this.f.ldrB, W, H, {
-          uSrc: src,
-          uTensor: this.t.tensorA,
-          uRadius: Math.min(8, cfg.kuwaharaRadius * (fr.scale ?? 1) * (fr.paintZoom ?? 1)),
-          uSharp: cfg.sharp,
-          uAniso: cfg.aniso,
-          uStrength: cfg.kuwahara * (fr.paintStrength ?? 1),
-        });
-      });
-      painted = this.t.ldrB;
-    }
+    // --- a mode's display-colour grade (the HD-2D region moods)
+    const painted = this.ext?.grade(fr, cfg) ?? this.t.ldrA;
 
     // --- finish (into the AA buffer when FXAA is on, else straight to final)
     const useFxaa = (cfg.fxaa ?? 1) > 0;
@@ -485,11 +445,6 @@ export class Pipeline {
         ...U,
         uSrc: painted,
         uND: this.t.nd,
-        uEmitId: this.t.emit,
-        uTexel: [1 / W, 1 / H],
-        uOutline: cfg.outline,
-        uOutlineWidth: cfg.outlineWidth * (fr.scale ?? 1),
-        uInk: [0.13, 0.09, 0.08],
         uGrade: cfg.grade,
         uSaturation: cfg.saturation,
         uContrast: cfg.contrast,
@@ -497,8 +452,6 @@ export class Pipeline {
         uLightGrade: [1.06, 1.0, 0.9],
         uGrain: cfg.grain,
         uVignette: cfg.vignette,
-        uInkLost: cfg.inkLost ?? 1,
-        uInkColour: cfg.inkColour ?? 0.5,
         uMapSize: [scene.world.w, scene.world.h],
         uWrapX: scene.world.wrapX ? 1 : 0,
         uTan: fr.tan,

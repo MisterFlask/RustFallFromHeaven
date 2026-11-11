@@ -88,7 +88,7 @@ pub struct Op {
     /// Units the target needs (estimate) and units committed.
     pub need: i32,
     pub have: i32,
-    /// The strike phase comes from our casters alone (`CASTER_FORCE`): the adjacent ring takes the
+    /// The strike phase comes from our casters alone: the adjacent ring takes the
     /// city with a reserve once they have cast, not without them. The strike casts, then attacks
     /// only if the city is still covered with a reserve.
     pub probe: bool,
@@ -125,13 +125,13 @@ pub(crate) fn conqueror(g: &Game, p: PlayerId) -> bool {
         || g.d.ty::<TraitType>("TRAIT_AGGRESSIVE").is_some_and(|t| g.players[p].traits[t])
 }
 
-/// Does `p` strike sieges at 60% sure (switch `BOLD_STRIKE`, conquerors only)? As one player's
+/// Does `p` strike sieges at 60% sure (conquerors only)? As one player's
 /// edge the bolder bar won nothing and cost nothing measurable (seeds 40001-40016: share +0.6%,
 /// win rate 14.1% -> 12.8%, 4 seeds lost only with it); across all players it took 8% more civ
 /// cities. The conquest drive is flavor, so the conquerors take the bolder bar (docs/AI.md,
 /// round 7h).
 pub(crate) fn bold_striker(g: &Game, p: PlayerId) -> bool {
-    crate::switches::BOLD_STRIKE.on(g, p) && conqueror(g, p)
+    conqueror(g, p)
 }
 
 // ----------------------------------------------------------------------------
@@ -371,7 +371,7 @@ pub fn plan(g: &Game, v: &mut View) {
     if groups.is_empty() {
         return;
     }
-    if cand.civ && crate::switches::SECOND_OP.on(g, p) {
+    if cand.civ {
         if let Some(s) = split(g, p, &cand, need, &groups) {
             crate::trace!(g, p, "second operation: {} keeps {} units (need {}), {} takes {} (need {})", g.cities[cand.city].name, units_in(g, &s.keep), need, g.cities[s.second.city].name, units_in(g, &s.surplus), s.need);
             g.tel_decision(p, "military", "second_op", "surplus", units_in(g, &s.surplus) as i64, String::new);
@@ -436,7 +436,7 @@ struct Split {
     surplus: Vec<(i32, GroupId)>,
 }
 
-/// A second operation for a clear surplus (switch `SECOND_OP`; More Naval AI caps the units sent
+/// A second operation for a clear surplus (More Naval AI caps the units sent
 /// at one city, `AI_pickTargetCity`: a city already targeted by more than max(6, 3 x its
 /// defenders) is passed over for the next). When the stacks committed at war hold more than twice
 /// what the first target (seen: its need is real) needs, the first target keeps the stacks already
@@ -570,7 +570,7 @@ fn build_op(g: &Game, v: &mut View, cand: Cand, need: i32, groups: Vec<(i32, Gro
     let all = units_of(&|_, _| true);
     let near = units_of(&|d, _| d <= 2);
     let adj: Vec<UnitId> = units_of(&|d, _| d <= 1).into_iter().filter(|&u| g.unit_moves_left(u) > 0).collect();
-    // The casters marching with those stacks, whose casts open the strike (`CASTER_FORCE`).
+    // The casters marching with those stacks, whose casts open the strike.
     let casters_of = |pred: &dyn Fn(i32, GroupId) -> bool| -> Vec<UnitId> {
         let mut out = Vec::new();
         for &(d, grp) in &groups {
@@ -632,7 +632,7 @@ fn build_op(g: &Game, v: &mut View, cand: Cand, need: i32, groups: Vec<(i32, Gro
     // counted, so a city that only hardens is still struck now at acceptable odds, and a ring that
     // already wins with a reserve (`adj_decisive`) strikes now regardless.
     if cand.visible && !c_all.is_empty() && crate::trace_on(p) {
-        // (Trace) Where our casters change the force estimates: the firings of `CASTER_FORCE`.
+        // (Trace) Where our casters change the force estimates.
         let decisive = !adj.is_empty() && covers_with(g, cand.city, tp, &defs, &adj, &c_adj, true, false);
         let without = (covers(g, cand.city, tp, &defs, &all, true, true), covers(g, cand.city, tp, &defs, &near, false, true), ok_adj && covers(g, cand.city, tp, &defs, &adj, true, false));
         if without != (ok_all, ok_near, decisive) {
@@ -877,7 +877,7 @@ fn go(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, dest: PlotIdx, tp: Pl
         hold_for(g, grp, tp);
         return;
     }
-    // Farther than the stack walks this turn: our casters haste it (`HASTE_MARCH`).
+    // Farther than the stack walks this turn: our casters haste it (`magic::haste_march`).
     let ((hx, hy), (dx, dy)) = (g.map.xy(here), g.map.xy(dest));
     let pace = g.groups[grp].units.iter().map(|&o| g.unit_moves_left(o)).min().unwrap_or(0) / g.d.defines.move_denominator.max(1);
     if g.plot_distance(hx, hy, dx, dy) > pace {
@@ -932,7 +932,7 @@ fn approach(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, op: &Op, ring: 
     match best {
         Some(r) if r.plot == here => hold_for(g, grp, op.plot),
         Some(r) => {
-            // Not there this turn: our casters haste the stack (`HASTE_MARCH`).
+            // Not there this turn: our casters haste the stack (`magic::haste_march`).
             if r.turns >= 1 {
                 crate::magic::haste_march(g, v, grp);
             }
@@ -1301,9 +1301,8 @@ pub(crate) fn strike(g: &mut Game, v: &mut View, op: &Op) {
     crate::magic::soften(g, v, tp, &ready);
     let mut done: Vec<UnitId> = Vec::new();
     let mut fights = 0;
-    let precious = crate::switches::PRECIOUS.on(g, p);
     let mut held_steps = 0;
-    if precious && (crate::trace_on(p) || g.telemetry.on()) {
+    if crate::trace_on(p) || g.telemetry.on() {
         let n = pool.iter().filter(|&&u| next_to(g, u) && precious_bar(g, u) > 0).count();
         if n > 0 {
             crate::trace!(g, p, "  {} heroes or veterans in the strike on {} attack last below their odds", n, name);
@@ -1330,10 +1329,10 @@ pub(crate) fn strike(g: &mut Game, v: &mut View, op: &Op) {
             .copied()
             .filter(|&u| next_to(g, u) && !done.contains(&u) && g.unit_moves_left(u) > 0 && !g.units[u].made_attack && attack_power(g, u) > 0 && g.unit_can_attack(u))
             .filter(|&u| !(walls && g.unit_bombard_rate(u) > 0))
-            // A caster that marches with the stack attacks only at war wizard odds (CASTER_STACKS).
+            // A caster that marches with the stack attacks only at war wizard odds.
             .filter(|&u| !crate::magic::spared_caster(g, u) || odds(g, u) >= crate::magic::SPARED_CASTER_ODDS)
             .collect();
-        // Heroes and veterans below their odds (switch `PRECIOUS`, [`precious_bar`]) fight last:
+        // Heroes and veterans below their odds ([`precious_bar`]) fight last:
         // while another unit can attack, and never to wear the defenders down, only in a strike
         // that takes the city. (Held out of the strike altogether, they turned captures into
         // stalls: a fork of seed 26001 at turn 246 lost three units and the city where the
@@ -1342,12 +1341,12 @@ pub(crate) fn strike(g: &mut Game, v: &mut View, op: &Op) {
             .iter()
             .copied()
             .filter(|&u| {
-                let bar = if precious { precious_bar(g, u) } else { 0 };
+                let bar = precious_bar(g, u);
                 bar == 0 || odds(g, u) >= bar
             })
             .collect();
         // Start at the odds that put the stacks in the strike phase (`plan`: the adjacent ring
-        // takes the city without a reserve; before round 7h, switch `STRIKE_AT_PHASE` off, the
+        // takes the city without a reserve; before round 7h the
         // strike waited next to the city for a reserve); once started, go on while the rest still
         // takes the city, or while the defenders are worn down to half their health and we
         // outnumber them (they heal if we stop).
@@ -1658,7 +1657,7 @@ mod tests {
         assert!(!g.units.contains(skeleton) || g.units[skeleton].made_attack, "the skeleton attacked");
     }
 
-    /// A Mage that marches with a stack (CASTER_STACKS) is no attacker the AI counts or sends: the
+    /// A Mage that marches with a stack is no attacker the AI counts or sends: the
     /// strike takes the city with the Champions and the Mage comes through (land attacks are
     /// formation battles, docs/ENGAGEMENTS.md: the rules commit the whole stack, the Mage casting
     /// from its role's rear row), and a stack whose only unit left to attack is the Mage holds
@@ -1668,7 +1667,7 @@ mod tests {
         let d = ffh_data::global();
         let mut g = one_landmass_game(22);
         let (us, them) = (PlayerId(0), PlayerId(1));
-        if !crate::magic::school(&g, us) || !crate::switches::CASTER_STACKS.on(&g, us) {
+        if !crate::magic::enabled(&g, us) {
             return;
         }
         g.player_found(us, 4, 5);
