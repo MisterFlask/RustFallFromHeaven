@@ -11,6 +11,7 @@ import { drawCityWork } from "../citywork.js";
 import { supplyLines, supplyMarks, unwrapSegment, flowOffset, drawLine, drawMark, OWN_COLOR } from "../supply.js";
 import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, laneParts, drawLaneCut, drawHarbourMark } from "../sea.js";
 import { drawLanesR3d, outpostTag } from "../lanes.js";
+import { drawMarksR3d } from "../marks.js";
 
 const FONT = "system-ui, 'DejaVu Sans', 'Segoe UI', sans-serif";
 
@@ -278,6 +279,8 @@ function drawHudParts(r3d, cam) {
 
   // Supply lines (docs/SUPPLY.md): under the stack badges, over the ground; not on the city screen.
   if (!screenCity) drawSupply(r3d, cam, g, inView);
+  // Area effects and tunnels (marks.js): not on the city screen.
+  if (!screenCity) drawMarksR3d(r3d, cam, g, inView, FONT);
 
   // Stack badges: over the figure's head.
   for (const s of r3d.stacks ?? []) {

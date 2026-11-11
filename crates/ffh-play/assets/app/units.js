@@ -18,6 +18,7 @@ import { exploreShort, exploreFull } from "./explore.js";
 import { battleTerrain, openPlan, preferredRow, flashBattle, engageNumbers, engageBrief } from "./engagements.js";
 import { portLine, seaLineWarns } from "./sea.js";
 import { addHelp } from "./help.js";
+import { plotNotes } from "./marks.js";
 
 // ---- The sea's rules, in the help display (docs/NAVAL.md, sections 3 and 10) ------------------
 
@@ -854,6 +855,8 @@ function showTip() {
   const terrainHelp = m.terrain[i] >= 0 ? effectsOf("TerrainType", m.terrain[i]) : "";
   if (terrainHelp) lines.push(h("div.tip-effects", markup(terrainHelp)));
   if (m.owner[i] >= 0) lines.push(h("div.dim", `Owner: ${playerName(m.owner[i])}`));
+  // Area effects over the plot and its tunnel (marks.js).
+  for (const note of plotNotes(x, y)) lines.push(h("div", note));
   const p = preview.plot;
   // C++ plot help's line (the Ring of Carcer's).
   const minLevel = p && p.x === x && p.y === y && p.min_level > 0 ? h("div.warn", `Must be level ${p.min_level} to enter`) : null;
