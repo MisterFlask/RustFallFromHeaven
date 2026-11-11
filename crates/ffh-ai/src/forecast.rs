@@ -28,7 +28,7 @@
 use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
 
-use ffh_core::engagement::{Forecast, ForecastSight, ForecastTurn, Side};
+use ffh_core::engagement::{Forecast, ForecastSight, ForecastTurn, Side, WarTest};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_data::*;
@@ -152,17 +152,24 @@ pub type Attacks = Vec<(Vec<UnitId>, PlotIdx)>;
 /// apply the AI's own), through `cache` when given. `None`: refused (no attacker could, nobody
 /// to fight).
 pub fn forecast(g: &Game, cache: Option<&Cache>, attackers: &[UnitId], from: PlotIdx, target: PlotIdx, extras: &[UnitId], runs: i32, when: ForecastTurn) -> Option<Forecast> {
-    forecast_in(g, cache, false, &[(attackers.to_vec(), from)], target, extras, runs, when)
+    forecast_in(g, cache, false, &[(attackers.to_vec(), from)], target, extras, runs, when, WarTest::AtWar)
 }
 
 /// The rules' forecast of the battles `attacks` fight on `target` one after another in a turn
 /// (each group's pool, then its reserve: [`Game::engage_forecast_waves`]), against what stands
 /// there plus `extras`; as [`forecast`] otherwise.
 pub fn forecast_turn(g: &Game, cache: Option<&Cache>, attacks: &[(Vec<UnitId>, PlotIdx)], target: PlotIdx, extras: &[UnitId], runs: i32, when: ForecastTurn) -> Option<Forecast> {
-    forecast_in(g, cache, true, attacks, target, extras, runs, when)
+    forecast_in(g, cache, true, attacks, target, extras, runs, when, WarTest::AtWar)
 }
 
-fn forecast_in(g: &Game, cache: Option<&Cache>, waves: bool, attacks: &[(Vec<UnitId>, PlotIdx)], target: PlotIdx, extras: &[UnitId], runs: i32, when: ForecastTurn) -> Option<Forecast> {
+/// [`forecast_turn`] under `war` ([`WarTest::DeclareWar`]: the battles once that war is declared,
+/// for an attack weighed before the declaration: `invasion.rs`).
+pub fn forecast_turn_war(g: &Game, cache: Option<&Cache>, attacks: &[(Vec<UnitId>, PlotIdx)], target: PlotIdx, extras: &[UnitId], runs: i32, when: ForecastTurn, war: WarTest) -> Option<Forecast> {
+    forecast_in(g, cache, true, attacks, target, extras, runs, when, war)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn forecast_in(g: &Game, cache: Option<&Cache>, waves: bool, attacks: &[(Vec<UnitId>, PlotIdx)], target: PlotIdx, extras: &[UnitId], runs: i32, when: ForecastTurn, war: WarTest) -> Option<Forecast> {
     // Canonical inputs: the same units in any order are the same battle.
     let mut seen: Vec<UnitId> = Vec::new();
     let mut att: Vec<(Vec<UnitId>, PlotIdx)> = Vec::new();
@@ -183,7 +190,7 @@ fn forecast_in(g: &Game, cache: Option<&Cache>, waves: bool, attacks: &[(Vec<Uni
     ext.dedup();
     let play = || {
         if waves {
-            g.engage_forecast_waves(&att, target, &ext, runs, ForecastSight::Defender, when).ok()
+            g.engage_forecast_waves_war(&att, target, &ext, runs, ForecastSight::Defender, when, war).ok()
         } else {
             g.engage_forecast_if(&att[0].0, att[0].1, target, &ext, runs, ForecastSight::Defender, when).ok()
         }
@@ -192,6 +199,9 @@ fn forecast_in(g: &Game, cache: Option<&Cache>, waves: bool, attacks: &[(Vec<Uni
     cache.calls.set(cache.calls.get() + 1);
     let mut key: Vec<u32> = Vec::with_capacity(seen.len() + ext.len() + 2 * att.len() + 4);
     key.extend([waves as u32 + 2 * (when == ForecastTurn::Next) as u32, target.0, runs as u32]);
+    if let WarTest::DeclareWar(t) = war {
+        key.extend([u32::MAX - 2, t.0 as u32]);
+    }
     for (u, from) in &att {
         key.push(from.0);
         key.extend(u.iter().map(|x| x.0));

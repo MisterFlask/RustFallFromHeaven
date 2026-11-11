@@ -365,7 +365,7 @@ pub fn manage(g: &mut Game, v: &View) {
         // An expert declares with the army already at the border: the war's first turns are
         // spent fighting, not marching while the enemy mobilises (and the war's first ten turns,
         // before peace can be made, are not spent on the road).
-        let staged = !crate::switches::WAR_STAGING.on(g, p) || staged_army(g, p, target) * 3 >= army_needed_for_war(g, p, target) * 2;
+        let staged = !crate::switches::WAR_STAGING.on(g, p) || staged_army(g, p, target) * 3 >= army_needed_for_war(g, p, target) * 2 || crate::naval::invasion_ready(g, p, target);
         if ready && staged && waited >= 5 || waited >= 40 {
             // The last chance to change our mind (MNAI `AI_doWar`): a target that no longer passes
             // the gate that chose it -- new pacts behind it, its cities no longer takeable, a
@@ -1422,11 +1422,17 @@ pub(crate) fn quiet_war(g: &Game, team: TeamId, enemy: TeamId) -> bool {
     if g.teams[team].ai_at_war_counter[enemy] < 15 {
         return false;
     }
-    let success = g.teams[team].ai_war_success[enemy] + g.teams[enemy].ai_war_success[team];
-    if success >= 2 * g.d.defines.war_success_attacking.max(1) {
+    if front_forces(g, team, enemy) != (0, 0) {
         return false;
     }
-    if front_forces(g, team, enemy) != (0, 0) {
+    // A war across the water that neither side can fight (switch `INVASION`): no landmass shared,
+    // no affordable invasion either way, no army at the other's cities. Phony, whatever it won at
+    // sea or in skirmishes so far.
+    if phony_overseas(g, team, enemy) {
+        return true;
+    }
+    let success = g.teams[team].ai_war_success[enemy] + g.teams[enemy].ai_war_success[team];
+    if success >= 2 * g.d.defines.war_success_attacking.max(1) {
         return false;
     }
     !g.player_ids().into_iter().any(|q| {
@@ -1434,6 +1440,18 @@ pub(crate) fn quiet_war(g: &Game, team: TeamId, enemy: TeamId) -> bool {
             && g.players[q].team == team
             && g.players[q].groups.iter().any(|&grp| crate::campaign::tagged(g, grp).is_some_and(|pl| g.plot_get_team(pl) == Some(enemy)))
     })
+}
+
+/// A war between `team` and `enemy` that cannot be fought (switch `INVASION`, for `team`'s
+/// leader): their cities share no landmass, and neither side has an invasion of the other it can
+/// afford (`naval::amphibious_city`, which under the switch answers only an affordable one, or a
+/// landing already ashore).
+pub(crate) fn phony_overseas(g: &Game, team: TeamId, enemy: TeamId) -> bool {
+    let (Some(us), Some(them)) = (team_leader(g, team), team_leader(g, enemy)) else { return false };
+    if !crate::invasion::on(g, us) || reach_distance(g, team, enemy).is_some() {
+        return false;
+    }
+    crate::naval::amphibious_city(g, us, them).is_none() && crate::naval::amphibious_city(g, them, us).is_none()
 }
 
 /// Should `team` seek peace with `enemy`?
@@ -1631,6 +1649,11 @@ pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData
         }
         if preparing_target(g, team).is_some() {
             return no("preparing another war");
+        }
+        // A war we could not fight (switch `INVASION`): no landmass shared with the target and no
+        // invasion of it we can afford.
+        if crate::invasion::on(g, p) && reach_distance(g, team, target).is_none() && team_leader(g, target).map_or(true, |q| crate::naval::amphibious_city(g, p, q).is_none()) {
+            return no("cannot reach the target");
         }
         // Too strong even with the briber's help, when the briber is already at war with the target
         // (DENIAL_NO_GAIN; AI_isAllyLandTarget unported -> no /2).

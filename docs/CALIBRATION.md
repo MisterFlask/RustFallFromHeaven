@@ -87,6 +87,7 @@ estimate of the turn they strike. Kinds that should be scored at the moment of t
 | `war_takes_city` | `diplomacy::manage` at a prepared war's declaration (acted) or drop at the re-check | `AnyCityCapturedFrom`, 40 turns | `can_take_cities_at` at the re-check's 100% margin, yes/no; score attack / needed in percent | declared |
 | `fight_on` | `diplomacy::manage`, a cash-out refused because our army is at their next city | `AnyCityCapturedFrom`, 10 turns | 100 | always |
 | `incoming3`, `incoming6`, `incoming10` | `View::analyze` (`predict::incoming`), once per player-turn: every city with a hostile stack in reach, and at war with a civilization every other city too (pct 0); by answer | `CityAttackedBy { team: None }`, 3 / 6 / 10 turns | `threat::incoming`'s chance of an attack within the horizon | – |
+| `invasion` | `naval::invasion_fleet_waits` (switch `INVASION`), when the assault fleet sails | `CityCapturedBy` the invader, 10 turns | the forecast's chance the army aboard, landed on the plan's landing plot, takes the city on its next turn against the garrison and its support (`invasion::take`); score the same per mille; ctx the city's `x`, `y`, the force, ships, escorts, support | always |
 | `lost2_as_is`, `lost2_reinforced` | the same cities | `CityLost`, 10 turns | the chance of an attack within 10 turns x the forecast of the expected force against the garrison as it stands / reinforced; score the forecast (per mille); by answer | – |
 
 Beside each of these, the rules' battle forecast (`forecast.rs`, below) answers the same question
@@ -170,7 +171,7 @@ same game with telemetry on and off.
   `the_forecast_if_is_the_preview_of_the_battle_it_imagines`, which also moves the imagined units
   there for real and gets the same numbers).
   - The pool: units on `from` that can attack now as the real fight picks them, others if they
-    could stand on `from` and attack (`engage_could_attack_from`: a land unit able to attack, not
+    could stand on `from` and attack (`engage_could_attack_from_war`: a land unit able to attack, not
     marching, not a missile, within its combat limit; moves not counted). `when`:
     `ForecastTurn::Now`, or `ForecastTurn::Next` (moves and attacks restored: an enemy stack
     forecast during our turn; without it, enemy stacks next to a city with their moves spent had

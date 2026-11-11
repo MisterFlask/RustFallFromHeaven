@@ -738,6 +738,12 @@ pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
     let max_hp = g.d.defines.max_hit_points.max(1);
     let hurt = g.groups[grp].units.iter().any(|&o| g.units[o].damage * 100 / max_hp > 35);
 
+    // A stack landed next to the invasion's target city (switch `INVASION`): it takes the city or
+    // holds for it, and does not turn on the field units around it (naval.rs).
+    if crate::naval::landed_beside(g, v, u) && crate::naval::amphibious(g, v, grp, u) {
+        return;
+    }
+
     // Adjacent targets first (the operation's target city is left to its strike).
     crate::campaign::plan(g, v);
     // An enemy city next to us that is empty, or that this stack clearly takes: take it, plan or

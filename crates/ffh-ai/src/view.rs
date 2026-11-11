@@ -164,7 +164,7 @@ impl View {
         v.build_danger(g);
         if !v.barbarian {
             v.targets = crate::military::find_targets(g, &*v);
-            v.amphibious = crate::naval::amphibious_target(g, p);
+            v.amphibious = crate::naval::amphibious_target_in(g, Some(&v.forecasts), p);
             v.rival_def = crate::defense::all_rival_defenders(g, p);
             for &c in &g.players[p].cities {
                 let cp = g.city_plot(c);

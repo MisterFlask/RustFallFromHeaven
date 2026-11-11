@@ -503,7 +503,7 @@ impl Game {
     /// nobody to fight, or (`Attacker`) the target unseen.
     pub fn engage_forecast_if(&self, attackers: &[UnitId], from: PlotIdx, target: PlotIdx, extra_defenders: &[UnitId], runs: i32, sight: ForecastSight, when: ForecastTurn) -> Result<Forecast, &'static str> {
         let p = self.engage_forecast_check(attackers.iter().copied(), &[from], target, sight)?;
-        let pool = self.engage_forecast_pool(attackers, from, target, when);
+        let pool = self.engage_forecast_pool(attackers, from, target, when, WarTest::AtWar);
         let ctx = HitCtx::new(from, target);
         let slots = self.engage_slots(&ctx);
         let auto = self.engage_auto_formation(&pool, Side::Attacker, &slots, &ctx);
@@ -511,7 +511,7 @@ impl Game {
             return Err("no unit can attack there");
         }
         let force: Vec<UnitId> = auto.iter().map(|q| q.unit).collect();
-        let view = self.engage_forecast_view(p, target, &force, extra_defenders);
+        let view = self.engage_forecast_view(p, target, &force, extra_defenders, WarTest::AtWar);
         let plan = self.engage_plan_finish(ctx, slots, pool, auto.clone(), auto, view)?;
         let g = plan.scratch.as_deref().unwrap_or(self);
         let mut forecast = g.engage_forecast_sampled(&plan.setup, &plan.view, runs.max(1));
@@ -553,16 +553,16 @@ impl Game {
 
     /// The pool of a hypothetical attack (`engage_forecast_if`): those of `attackers` on `from` in
     /// the plot's order that can attack (now: as the real fight picks them; on their next turn:
-    /// as [`Game::engage_could_attack_from`], moves and attacks restored), then the others that
+    /// as [`Game::engage_could_attack_from_war`], moves and attacks restored), then the others that
     /// could.
-    fn engage_forecast_pool(&self, attackers: &[UnitId], from: PlotIdx, target: PlotIdx, when: ForecastTurn) -> Vec<UnitId> {
+    fn engage_forecast_pool(&self, attackers: &[UnitId], from: PlotIdx, target: PlotIdx, when: ForecastTurn, war: WarTest) -> Vec<UnitId> {
         let can = |u: UnitId| match when {
-            ForecastTurn::Now => self.unit_can_engage(u, target, WarTest::AtWar),
-            ForecastTurn::Next => self.engage_could_attack_from(u, from, target),
+            ForecastTurn::Now => self.unit_can_engage(u, target, war),
+            ForecastTurn::Next => self.engage_could_attack_from_war(u, from, target, war),
         };
         let mut pool: Vec<UnitId> = self.map.plots[from].units.iter().copied().filter(|&u| attackers.contains(&u) && can(u)).collect();
         for &u in attackers {
-            if !pool.contains(&u) && self.unit_plot_opt(u) != Some(from) && self.engage_could_attack_from(u, from, target) {
+            if !pool.contains(&u) && self.unit_plot_opt(u) != Some(from) && self.engage_could_attack_from_war(u, from, target, war) {
                 pool.push(u);
             }
         }
@@ -571,14 +571,15 @@ impl Game {
 
     /// The defense a hypothetical attack meets (`engage_forecast_if`): the real fight's view, and
     /// the extra defenders it would meet as if they stood on `target`.
-    fn engage_forecast_view(&self, p: PlayerId, target: PlotIdx, force: &[UnitId], extra_defenders: &[UnitId]) -> DefView {
+    fn engage_forecast_view(&self, p: PlayerId, target: PlotIdx, force: &[UnitId], extra_defenders: &[UnitId], war: WarTest) -> DefView {
         let team = self.players[p].team;
-        let mut view = self.engage_def_view(p, target, force, WarTest::AtWar);
+        let mut view = self.engage_def_view(p, target, force, war);
+        let declared = self.engage_declared(team, war);
         for &d in extra_defenders {
             if !self.units.contains(d) || view.candidates.contains(&d) || self.unit_plot_opt(d) == Some(target) {
                 continue;
             }
-            if self.engage_meets(d, target, team, force, None) && self.engage_can_defend(d, target) {
+            if self.engage_meets(d, target, team, force, declared.as_ref()) && self.engage_can_defend(d, target) {
                 view.candidates.push(d);
                 view.on_plot.push(d);
             }
@@ -605,6 +606,13 @@ impl Game {
     /// the battle is `engage_forecast_if`'s, sampled on a seed of its own. `Err`: as
     /// `engage_forecast_if` (for the first battle).
     pub fn engage_forecast_waves(&self, attacks: &[(Vec<UnitId>, PlotIdx)], target: PlotIdx, extra_defenders: &[UnitId], runs: i32, sight: ForecastSight, when: ForecastTurn) -> Result<Forecast, &'static str> {
+        self.engage_forecast_waves_war(attacks, target, extra_defenders, runs, sight, when, WarTest::AtWar)
+    }
+
+    /// [`Game::engage_forecast_waves`] under `war`: with [`WarTest::DeclareWar`], the battles as
+    /// they would be fought once that war is declared (the AI's estimate of an attack it has not
+    /// declared yet: an invasion it weighs before choosing the war).
+    pub fn engage_forecast_waves_war(&self, attacks: &[(Vec<UnitId>, PlotIdx)], target: PlotIdx, extra_defenders: &[UnitId], runs: i32, sight: ForecastSight, when: ForecastTurn, war: WarTest) -> Result<Forecast, &'static str> {
         let froms: Vec<PlotIdx> = attacks.iter().map(|a| a.1).collect();
         let p = self.engage_forecast_check(attacks.iter().flat_map(|a| a.0.iter().copied()), &froms, target, sight)?;
         // The battles: each attack's pool in formations, every unit once.
@@ -619,7 +627,7 @@ impl Game {
         for (units, from) in attacks {
             let ctx = HitCtx::new(*from, target);
             let slots = self.engage_slots(&ctx);
-            let mut left: Vec<UnitId> = self.engage_forecast_pool(units, *from, target, when).into_iter().filter(|u| !used.contains(u)).collect();
+            let mut left: Vec<UnitId> = self.engage_forecast_pool(units, *from, target, when, war).into_iter().filter(|u| !used.contains(u)).collect();
             while !left.is_empty() && waves.len() < FORECAST_MAX_WAVES {
                 let formation = self.engage_auto_formation(&left, Side::Attacker, &slots, &ctx);
                 if formation.is_empty() {
@@ -635,12 +643,12 @@ impl Game {
             return Err("no unit can attack there");
         }
         let force: Vec<UnitId> = waves[0].formation.iter().map(|q| q.unit).collect();
-        let view0 = self.engage_forecast_view(p, target, &force, extra_defenders);
+        let view0 = self.engage_forecast_view(p, target, &force, extra_defenders, war);
         // The plan of battle `w` against the defenders `alive` (in `view0`'s order); `None`:
         // nobody to fight.
         let plan_of = |w: usize, alive: &[UnitId], gone: &[UnitId]| -> Option<(Plan, Vec<BattleEffect>)> {
             let wave = &waves[w];
-            let view = DefView { candidates: alive.to_vec(), on_plot: view0.on_plot.iter().copied().filter(|u| !gone.contains(u)).collect(), declared: None };
+            let view = DefView { candidates: alive.to_vec(), on_plot: view0.on_plot.iter().copied().filter(|u| !gone.contains(u)).collect(), declared: view0.declared.clone() };
             let plan = self.engage_plan_finish(wave.ctx, wave.slots.clone(), wave.pool.clone(), wave.formation.clone(), wave.formation.clone(), view).ok()?;
             let pre = plan.scratch.as_deref().unwrap_or(self).engage_pre_battle(&plan.setup);
             Some((plan, pre))
@@ -655,7 +663,7 @@ impl Game {
         let mut stat: std::collections::BTreeMap<UnitId, (Side, i64, i64)> = std::collections::BTreeMap::new();
         let (mut wiped, mut falls, mut repulsed) = (0i64, 0i64, 0i64);
         for _ in 0..runs {
-            let mut ov = UnitOverlay::with_declared(None);
+            let mut ov = UnitOverlay::with_declared(view0.declared.as_ref());
             let mut alive: Vec<UnitId> = view0.candidates.clone();
             let mut gone: Vec<UnitId> = Vec::new();
             let mut walls: std::collections::BTreeMap<usize, i32> = std::collections::BTreeMap::new();
