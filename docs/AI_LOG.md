@@ -34,7 +34,15 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
 
 ## Amphibious invasion on the forecast (2026-11-11, switch `INVASION`)
 
-Kept, with its gaps (docs/AI.md, Naval and Known gaps). Variants tried on the way, each over the
+**Built, off by default** (`FFH_AI_INVASION_ONLY=ALL` turns it on). It fails steps 3 and 4 of the
+loop (CLAUDE.md, "AI changes"): the estimate at sailing is overconfident (14 sailings, ~100%
+predicted, 43% taken, skill -1.33: the defender gathers at the city during the voyage), and in 7
+forks at a sailing (8 rolls each) it took the target in 14 of 56 rolls against the old rule's 20.
+Over 7 full games the cities taken by sea fell from 18 to 7 and the overseas wars with a fight
+from 12 to 2; what it does achieve is that a landing takes its city (8 of 8, against 15 of 134)
+at half the transports. The idea is not wrong; the missing piece is an estimate of the garrison
+on arrival, checked in the ledger, before the decision is turned on. Costs +14% per turn when on.
+Variants tried on the way, each over the
 naval autopsy (16 + 16 games of 300 turns, 7 full games):
 - *The smallest force at 70%, support within 2 plots, a check at sea at the same bar*: 57 sailings
   in the full games, 38 turned home at sea, 5 landings; the ledger 92% predicted, 10% observed. A

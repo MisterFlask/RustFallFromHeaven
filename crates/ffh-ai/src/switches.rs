@@ -202,7 +202,9 @@ pub static FORECAST: Switch = Switch::new("FORECAST");
 /// the fleet that carries it in one wave or no invasion, the fleet sails complete, lands together
 /// and the landed stack takes the city; an overseas war needs an affordable invasion
 /// (`naval.rs`, `diplomacy.rs`). Off: the invasion of round 7 (`need` = defenders x2 + 1).
-pub static INVASION: Switch = Switch::new("INVASION");
+/// Off by default (2026-11-11): its estimate at sailing is not right yet (43% taken against ~100%
+/// predicted) and from the same positions it took fewer cities than the old rule (docs/AI_LOG.md).
+pub static INVASION: Switch = Switch::off_by_default("INVASION");
 
 /// The names environment variable `var` lists, comma-separated: trimmed, upper-cased, `prefix`
 /// (`CIVILIZATION_`, `TRAIT_`) taken off. `None` when it is unset or lists nothing.
