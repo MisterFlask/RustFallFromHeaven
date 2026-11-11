@@ -477,3 +477,318 @@ export function drawHarbourMark(g, city, cx, cy, r, u = 1) {
   g.stroke();
   g.restore();
 }
+
+// ---------------------------------------------------------------------------------------------
+// The HD-2D map's look (r3d/sealayer.js draws it in the world; the flat and isometric maps keep the
+// drawing above). Pure: the layout and the colours, from the map's arrays and the view's seas.
+
+/**
+ * The Sea layer's look on the HD-2D map, in one place: the names' strengths (alpha of the pale
+ * lettering) by zoom with the layer on and off, the bands' width and strength, the fog.
+ *
+ * - `name.on`: with the Sea layer on, `far` at `farTs` px a plot and below, falling to `close` at
+ *   `closeTs` and above (log-linear in between).
+ * - `name.off`: with another layer, only at the farthest zooms: `far` at `farTs` and below, nothing
+ *   from `untilTs` on.
+ */
+export const SEA_LOOK = {
+  name: {
+    color: "#efe4c6",
+    on: { far: 0.62, close: 0.2, farTs: 40, closeTs: 168 },
+    off: { far: 0.3, farTs: 28, untilTs: 50 },
+  },
+  band: { width: 0.5, alpha: 0.62, patrolled: 0.45, unknown: "#8a8478" },
+  fog: { color: "#cfd8df", alpha: 0.8, lift: 0.16 },
+  outline: "#fff6d8",
+};
+
+/** The names' alpha at plot size `ts` (px), the Sea layer on or off (SEA_LOOK.name). */
+export function seaNameAlpha(ts, layerOn, look = SEA_LOOK.name) {
+  if (!layerOn) {
+    const o = look.off;
+    if (ts >= o.untilTs) return 0;
+    if (ts <= o.farTs) return o.far;
+    return o.far * (1 - (ts - o.farTs) / (o.untilTs - o.farTs));
+  }
+  const o = look.on;
+  if (ts <= o.farTs) return o.far;
+  if (ts >= o.closeTs) return o.close;
+  const t = Math.log(ts / o.farTs) / Math.log(o.closeTs / o.farTs);
+  return o.far + (o.close - o.far) * t;
+}
+
+/** The revealed plots of sea `id` (the map's `sea_id`) as `[x, y]`, x unwrapped to the copy
+ *  nearest `nearX` on a map that wraps. */
+export function seaPlots(map, id, nearX = 0) {
+  const out = [];
+  const ids = map?.sea_id;
+  if (!ids) return out;
+  const w = map.w;
+  const half = Math.floor(w / 2);
+  for (let i = 0; i < ids.length; i++) {
+    if (ids[i] !== id) continue;
+    let x = i % w;
+    const y = (i - x) / w;
+    if (map.wrap_x) x = nearX + ((((x - nearX + half) % w) + w) % w) - half;
+    out.push([x, y]);
+  }
+  return out;
+}
+
+/**
+ * Where and how sea `sea` (a `view.seas` entry: `id`, `x`, `y`) has its name laid on the water,
+ * from its revealed plots: `{x, y}` the name's centre (map point; x unwrapped near `sea.x`),
+ * `angle` its direction (radians from map east, y north: along the plots' principal axis, never
+ * upside down and at most `maxTilt` from level; level for a sea about as wide as long), `len` and
+ * `across` its revealed extent along and across that axis (plots), `n` its revealed plots, `depth`
+ * the centre's steps (8 ways) from the sea's edge, `h` the letters' height (plots, from its size,
+ * clamped) and `plot` the centre's plot. Null for a sea with no revealed plot.
+ *
+ * The centre is the plot nearest the plots' centroid among the deepest (at least the deepest but
+ * one): inside the water, in the middle of its widest part.
+ */
+export function seaLabelLayout(map, sea, { maxTilt = Math.PI / 4, minH = 0.34, maxH = 1.3 } = {}) {
+  const pts = seaPlots(map, sea.id, sea.x);
+  const n = pts.length;
+  if (!n) return null;
+  const key = (x, y) => `${x},${y}`;
+  const inside = new Set(pts.map(([x, y]) => key(x, y)));
+  // Steps from the edge (a plot with a neighbour, 8 ways, outside the sea's revealed plots).
+  const depth = new Map();
+  let queue = [];
+  for (const [x, y] of pts) {
+    let edge = false;
+    for (let dy = -1; dy <= 1 && !edge; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && !inside.has(key(x + dx, y + dy))) edge = true;
+    if (edge) {
+      depth.set(key(x, y), 0);
+      queue.push([x, y]);
+    }
+  }
+  while (queue.length) {
+    const next = [];
+    for (const [x, y] of queue) {
+      const d = depth.get(key(x, y));
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const k = key(x + dx, y + dy);
+          if (inside.has(k) && !depth.has(k)) {
+            depth.set(k, d + 1);
+            next.push([x + dx, y + dy]);
+          }
+        }
+      }
+    }
+    queue = next;
+  }
+  let cx = 0, cy = 0;
+  for (const [x, y] of pts) {
+    cx += x + 0.5;
+    cy += y + 0.5;
+  }
+  cx /= n;
+  cy /= n;
+  let sxx = 0, syy = 0, sxy = 0;
+  for (const [x, y] of pts) {
+    const dx = x + 0.5 - cx, dy = y + 0.5 - cy;
+    sxx += dx * dx;
+    syy += dy * dy;
+    sxy += dx * dy;
+  }
+  // The principal axis of the plots' covariance; level when the two spreads are close.
+  const tr = sxx + syy;
+  const det = sxx * syy - sxy * sxy;
+  const disc = Math.sqrt(Math.max(0, (tr * tr) / 4 - det));
+  const l1 = tr / 2 + disc, l2 = tr / 2 - disc;
+  let angle = l1 > 1.5 * Math.max(l2, 1e-9) ? 0.5 * Math.atan2(2 * sxy, sxx - syy) : 0;
+  // Never upside down (reading left to right on the screen, the camera looking north).
+  if (angle > Math.PI / 2) angle -= Math.PI;
+  if (angle <= -Math.PI / 2) angle += Math.PI;
+  angle = Math.max(-maxTilt, Math.min(maxTilt, angle));
+  const maxD = Math.max(...depth.values());
+  let best = null;
+  for (const [x, y] of pts) {
+    const d = depth.get(key(x, y));
+    if (d < maxD - 1) continue;
+    const dist = (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2 - d * 0.5;
+    if (!best || dist < best.dist - 1e-9) best = { x, y, d, dist };
+  }
+  const ux = Math.cos(angle), uy = Math.sin(angle);
+  let a0 = Infinity, a1 = -Infinity, b0 = Infinity, b1 = -Infinity;
+  const ox = best.x + 0.5, oy = best.y + 0.5;
+  for (const [x, y] of pts) {
+    const dx = x + 0.5 - ox, dy = y + 0.5 - oy;
+    const a = dx * ux + dy * uy, b = -dx * uy + dy * ux;
+    a0 = Math.min(a0, a);
+    a1 = Math.max(a1, a);
+    b0 = Math.min(b0, b);
+    b1 = Math.max(b1, b);
+  }
+  const h = Math.max(minH, Math.min(maxH, 0.26 * Math.sqrt(n)));
+  return { x: ox, y: oy, angle, len: a1 - a0 + 1, across: b1 - b0 + 1, n, depth: best.d, h, plot: [best.x, best.y] };
+}
+
+/** The letters' height (plots) of a name whose lettering is `aspect` times as wide as tall, laid
+ *  per `lay` (seaLabelLayout): `lay.h`, smaller where the name would run past the sea's revealed
+ *  length (to 90% of it), never under `minH`. */
+export function fitNameHeight(lay, aspect, minH = 0.3) {
+  if (!(aspect > 0)) return lay.h;
+  return Math.max(minH, Math.min(lay.h, (0.9 * lay.len) / aspect));
+}
+
+/** Whether map point (x, y) (x unwrapped) lies on a revealed plot of sea `id`. */
+export function inSea(map, id, x, y) {
+  const i = plotIndex(map, Math.floor(x), Math.floor(y));
+  return i >= 0 && seaIdAt(map, i) === id;
+}
+
+/**
+ * Where sea `sea`'s buoy stands (its banner), from its name's layout `lay` and the name's width
+ * `width` (plots): just west of the name's first letter, else east of its last, else under its
+ * middle, else in the name's centre plot; the first of these on a revealed plot of the sea.
+ * `{x, y}` (map point).
+ */
+export function seaBuoySpot(map, sea, lay, width) {
+  const ux = Math.cos(lay.angle), uy = Math.sin(lay.angle);
+  const half = width / 2 + 0.3;
+  const below = lay.h * 0.75 + 0.2;
+  const cands = [
+    [lay.x - ux * half, lay.y - uy * half - lay.h * 0.15],
+    [lay.x + ux * half, lay.y + uy * half - lay.h * 0.15],
+    [lay.x + uy * below, lay.y - ux * below],
+  ];
+  for (const [x, y] of cands) if (inSea(map, sea.id, x, y)) return { x, y };
+  return { x: lay.plot[0] + 0.5, y: lay.plot[1] + 0.25 };
+}
+
+/** The colour of team `team` (its first player in `players`, the view's players, by
+ *  `colorOf(playerId)`), or null. */
+export function teamColorOf(players, team, colorOf) {
+  if (team === null || team === undefined) return null;
+  const p = [...(players ?? [])].find((q) => q.team === team);
+  return p ? colorOf(p.id) : null;
+}
+
+/** The band codes the HD-2D sea pass reads (r3d/sealayer.js). */
+export const BAND = { NONE: 0, HELD_YOU: 1, HELD: 2, CONTESTED: 3, PATROLLED: 4 };
+
+/**
+ * The band of sea `sea` (a `view.seas` entry) on the HD-2D map: `{code, a, b, strength}` (`a`, `b`
+ * colours: the holder's; contested, yours then the other party's, alternating in dashes). Held by
+ * you: your colour (`mine`). Held by an enemy, seen or inferred: the holder's (`partyColor`; an
+ * unknown holder SEA_LOOK.band.unknown). Patrolled by a team at peace with you: its colour,
+ * fainter. Open and out of range: none.
+ */
+export function seaBand(sea, mine, partyColor) {
+  const other = partyColor ?? SEA_LOOK.band.unknown;
+  switch (sea?.state) {
+    case "held_you":
+      return { code: BAND.HELD_YOU, a: mine, b: mine, strength: 1 };
+    case "held":
+      return { code: BAND.HELD, a: other, b: other, strength: 1 };
+    case "contested":
+      return { code: BAND.CONTESTED, a: mine, b: other, strength: 1 };
+    case "patrolled":
+      return { code: BAND.PATROLLED, a: other, b: other, strength: SEA_LOOK.band.patrolled };
+    default:
+      return { code: BAND.NONE, a: null, b: null, strength: 0 };
+  }
+}
+
+/** "twice" for a hold of 200 percent (the define SEA_HOLD_PERCENT), else "N times" or "N% of" (as
+ *  the server's panel words it). */
+export function holdTimes(pct) {
+  if (pct % 100 === 0) return pct === 200 ? "twice" : `${pct / 100} times`;
+  return `${pct}% of`;
+}
+
+/** The tooltip of sea `sea` (a `view.seas` entry) on the HD-2D map, as lines: its name, the
+ *  badge's text, then the rules (`holdPct` the define SEA_HOLD_PERCENT). */
+export function seaTipLines(sea, holdPct = 200) {
+  const lines = [sea.name, sea.badge];
+  if (sea.state === "out") lines.push("No plot of it is in your range.");
+  lines.push(`Held at ${holdTimes(holdPct)} the enemy's strength on patrol.`);
+  lines.push(sea.inferred ? "Its ships on patrol are not all in sight." : "Only ships you see are counted.");
+  return lines;
+}
+
+/**
+ * The fog bank's density by plot (Uint8Array, 0..255, one value a plot): 0 on water in your range,
+ * over water out of it rising with the steps (8 ways, through that water) from the nearest water in
+ * range -- half at the first step, full from the second -- and on land and unrevealed plots the
+ * highest of their neighbours' (so the bank does not thin toward a coast; the shader keeps it off
+ * the land and the unknown). All 0 without the map's `sea` array or water out of range; with no
+ * water in range (no city) all of it full.
+ */
+export function seaFogRamp(map) {
+  const w = map.w, h = map.h;
+  const out = new Uint8Array(w * h);
+  const sea = map.sea;
+  if (!sea) return out;
+  const dist = new Int32Array(w * h).fill(-1);
+  let queue = [];
+  let anyOut = false;
+  for (let i = 0; i < w * h; i++) {
+    const v = sea[i];
+    if (v > 0) {
+      dist[i] = 0;
+      queue.push(i);
+    } else if (v === 0) anyOut = true;
+  }
+  if (!anyOut) return out;
+  while (queue.length) {
+    const next = [];
+    for (const i of queue) {
+      const x = i % w, y = (i - x) / w;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const j = plotIndex(map, x + dx, y + dy);
+          if (j < 0 || dist[j] >= 0 || sea[j] !== 0) continue;
+          dist[j] = dist[i] + 1;
+          next.push(j);
+        }
+      }
+    }
+    queue = next;
+  }
+  for (let i = 0; i < w * h; i++) {
+    if (sea[i] !== 0) continue;
+    const d = dist[i] < 0 ? 2 : Math.min(2, dist[i]);
+    out[i] = Math.round((d / 2) * 255);
+  }
+  const dil = out.slice();
+  for (let i = 0; i < w * h; i++) {
+    if (sea[i] === 0 || sea[i] > 0) continue;
+    const x = i % w, y = (i - x) / w;
+    let m = 0;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const j = plotIndex(map, x + dx, y + dy);
+        if (j >= 0 && sea[j] === 0) m = Math.max(m, out[j]);
+      }
+    }
+    dil[i] = m;
+  }
+  return dil;
+}
+
+/**
+ * A lane on the water (the HD-2D map's sea pass): the polyline `pts` (`[[x, y], ...]` plot
+ * coordinates, unwrapped) through the plots' centres, its corners rounded (one Chaikin pass, the
+ * ends kept), with each point's distance along it from the first (`s`, plots). `[{x, y, s}]`.
+ */
+export function laneCurve(pts) {
+  const c = (pts ?? []).map(([x, y]) => [x + 0.5, y + 0.5]);
+  if (c.length < 2) return c.map(([x, y]) => ({ x, y, s: 0 }));
+  const sm = [c[0]];
+  for (let k = 0; k + 1 < c.length; k++) {
+    const [ax, ay] = c[k], [bx, by] = c[k + 1];
+    if (k > 0) sm.push([ax * 0.75 + bx * 0.25, ay * 0.75 + by * 0.25]);
+    if (k + 2 < c.length) sm.push([ax * 0.25 + bx * 0.75, ay * 0.25 + by * 0.75]);
+  }
+  sm.push(c[c.length - 1]);
+  let s = 0;
+  return sm.map(([x, y], k) => {
+    if (k) s += Math.hypot(x - sm[k - 1][0], y - sm[k - 1][1]);
+    return { x, y, s };
+  });
+}
