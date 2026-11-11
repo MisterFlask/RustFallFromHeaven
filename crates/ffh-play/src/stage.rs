@@ -1,5 +1,5 @@
 //! Staged situations for testing the clients (`ffh-play stage
-//! capture|attack|automoves|load|trade|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards DIR`,
+//! capture|attack|automoves|load|trade|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards|sea DIR`,
 //! and the transports' tests): a saved game at a human control point arranged with rules calls,
 //! so that a client can be tried on a situation a fresh game reaches only by chance (a captured
 //! city's keep/raze decision, an attack, the AutoMoves rule between commands, the transport
@@ -1000,4 +1000,89 @@ fn corrupt_seed(dir: &Path, seed: u32) -> Result<StagedCorrupt, String> {
     let turn = s.g.game_turn();
     let paths = s.save("corrupt").map_err(|e| format!("save: {e:?}"))?;
     Ok(StagedCorrupt { save: paths.save, player, x: cx, y: cy, plots, turn, seed })
+}
+
+/// A saved game at a human control point (turn 1 of a duel; the first of a few fixed seeds whose
+/// capital is on the coast) for the sea (docs/NAVAL.md, section 10), the plots within 16 of the
+/// capital revealed: a Trireme next to the capital (`near`, in range), a Trireme just out of range
+/// and worn (`far`, 14 turns at sea), a Warrior in boats near the coast (`boats`) and a Warrior on
+/// land next to the water (`walker`).
+pub struct StagedSea {
+    pub save: PathBuf,
+    pub capital: ffh_core::ids::CityId,
+    pub near: UnitId,
+    pub far: UnitId,
+    pub boats: UnitId,
+    pub walker: UnitId,
+    pub turn: i32,
+}
+
+impl StagedSea {
+    pub fn to_json(&self) -> Json {
+        crate::jobj! {
+            "stage" => "sea", "save" => self.save.display().to_string(), "capital" => self.capital,
+            "near" => self.near, "far" => self.far, "boats" => self.boats, "walker" => self.walker, "turn" => self.turn,
+        }
+    }
+}
+
+/// Writes a [`StagedSea`] into `dir` (a game directory).
+pub fn sea(dir: &Path) -> Result<StagedSea, String> {
+    use ffh_core::ids::PlotIdx;
+    let d = ffh_data::global();
+    let trireme = d.t::<UnitType>("UNIT_TRIREME");
+    let warrior = d.t::<UnitType>("UNIT_WARRIOR");
+    for seed in [4, 1, 2, 3, 5, 6, 7, 8, 9, 10] {
+        let mut s = duel_at(dir, seed, 1)?;
+        let h = s.human;
+        let g = &mut s.g;
+        let capital = *g.players[h].cities.first().ok_or("no city")?;
+        if !g.city_is_coastal(capital, d.defines.min_water_size_for_ocean) {
+            continue;
+        }
+        let team = g.players[h].team;
+        let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
+        for q in g.map.plot_ids() {
+            let (x, y) = g.map.xy(q);
+            if g.plot_distance(x, y, cx, cy) <= 16 {
+                g.plot_set_revealed(q, team, true, false, None, false);
+            }
+        }
+        let range = g.team_sea_range(team);
+        // The water next to the capital; the water just out of range nearest the capital; water
+        // at 2 from a port; land next to the water 2 or 3 plots from the capital.
+        let (mut near, mut far, mut boats, mut walker): (Option<(i32, PlotIdx)>, Option<(i32, PlotIdx)>, Option<(i32, PlotIdx)>, Option<(i32, PlotIdx)>) = (None, None, None, None);
+        for q in g.map.plot_ids() {
+            let (x, y) = g.map.xy(q);
+            let dist = g.plot_distance(x, y, cx, cy);
+            if !g.map.plots[q].units.is_empty() || g.map.plots[q].plot_city.is_some() || g.plot_is_impassable(q) {
+                continue;
+            }
+            let key = (dist, q);
+            let better = |b: Option<(i32, PlotIdx)>| b.is_none_or(|b| key < b);
+            if g.plot_is_water(q) {
+                match g.plot_sea_range(team, q) {
+                    Some(1) if better(near) => near = Some(key),
+                    Some(r) if r == range + 2 && better(far) => far = Some(key),
+                    Some(2) if better(boats) => boats = Some(key),
+                    _ => {}
+                }
+            } else if (2..=3).contains(&dist) && g.plot_is_adjacent_to_water(q) && better(walker) {
+                walker = Some(key);
+            }
+        }
+        let (Some((_, nq)), Some((_, fq)), Some((_, bq)), Some((_, wq))) = (near, far, boats, walker) else { continue };
+        let ((nx, ny), (fx, fy), (bx, by), (wx, wy)) = (g.map.xy(nq), g.map.xy(fq), g.map.xy(bq), g.map.xy(wq));
+        let near = g.player_init_unit(h, trireme, nx, ny, None, None);
+        let far = g.player_init_unit(h, trireme, fx, fy, None, None);
+        g.units[far].sea_turns = 14;
+        let boats = g.player_init_unit(h, warrior, bx, by, None, None);
+        if !g.unit_is_in_boats(boats) {
+            return Err(format!("seed {seed}: the warrior at ({bx}, {by}) is not in boats"));
+        }
+        let walker = g.player_init_unit(h, warrior, wx, wy, None, None);
+        let paths = s.save("sea").map_err(|e| format!("save: {e:?}"))?;
+        return Ok(StagedSea { save: paths.save, capital, near, far, boats, walker, turn: s.g.game_turn() });
+    }
+    Err("no seed with a coastal capital and water out of range".into())
 }

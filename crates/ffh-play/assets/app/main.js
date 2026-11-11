@@ -25,6 +25,7 @@ import { openDiplomacy, checkMoments, resetMoments } from "./diplo.js";
 import * as crusade from "./crusade.js";
 import * as tools from "./tools.js";
 import { applyMapDelta, plotDistance } from "./tiles.js";
+import { wantsSea, autoSeaLayer } from "./sea.js";
 import * as K from "./hotkeys.js";
 import { initGamepad } from "./gamepad.js";
 import { initOrientation, orientState } from "./orient.js";
@@ -34,7 +35,7 @@ import { showDecision, modalOpen, closeTag, closeAll, onEscape, openTags, openMo
 import { renderTop, renderBottom, setTab, currentTab } from "./hud.js";
 import { endTurn, sending } from "./commands.js";
 import { h, $, toast, compactScreen, setErrorHook, errorText } from "./dom.js";
-import { dname, turns, me } from "./state.js";
+import { dname, turns, me, tname, info } from "./state.js";
 import { look, loadLook, setLookData, rendererChoice, decorate, undecorate } from "./look.js";
 import { setIsoSkin, isoSkin, renderCityPanel } from "./isoui.js";
 
@@ -250,6 +251,7 @@ async function refreshView(st) {
   if (!tools.spectating() && !observing()) checkMoments();
   updateMarkers();
   units.viewChanged();
+  syncSeaLayer();
   empire.viewChanged();
   renderTop();
   renderBottom();
@@ -433,9 +435,34 @@ function openScreen(name) {
 
 const F_KEYS = { F1: "cities", F2: "finance", F3: "civics", F4: "diplomacy", F5: "armies", F6: "techs", F7: "religion", F8: "culture", F9: "governors" };
 
-function setLayer(layer) {
+/** Sets the map's layer. A layer the player picks (`manual`) ends the Sea layer's automatic
+ *  switch: it stays when the selection ends. */
+function setLayer(layer, manual = true) {
+  if (manual) seaAuto = null;
   mapView.setLayer(layer);
-  for (const b of document.querySelectorAll("#mapwrap .layers button")) b.classList.toggle("active", b.dataset.layer === layer);
+  for (const b of document.querySelectorAll("#mapwrap .layers button")) b.classList.toggle("active", b.dataset.layer === mapView.layer);
+}
+
+/** The Sea layer's automatic switch (sea.js, `autoSeaLayer`; docs/NAVAL.md section 10): its memory
+ *  (null, or the layer to go back to) and the selection it last answered (`seaKey`: its units and
+ *  whether it wanted the layer), so a layer the player picks while a ship is selected stays until
+ *  the selection changes. */
+let seaAuto = null;
+let seaKey = "";
+
+/** On by itself while a ship or a unit in boats is selected; back to the previous layer when the
+ *  selection ends. */
+function syncSeaLayer() {
+  if (!mapView) return;
+  const sel = (S.sel?.units ?? []).map((id) => S.units.get(id)).filter(Boolean);
+  const ship = (u) => tname("DomainType", info("UnitType", u.type)?.domain) === "DOMAIN_SEA";
+  const wants = !!S.sel && wantsSea(sel, ship);
+  const key = `${(S.sel?.units ?? []).join(",")}|${wants}`;
+  if (key === seaKey) return;
+  seaKey = key;
+  const r = autoSeaLayer(mapView.layer, seaAuto, wants);
+  seaAuto = r.auto;
+  if (r.layer !== mapView.layer) setLayer(r.layer, false);
 }
 
 /** The city Home / End selected last (Civ4's city selection, without the city screen), or null;
@@ -463,7 +490,7 @@ function stepCity(forward) {
  *  previous city; F10 the capital's screen; F1-F4, F6, F7 the advisors; Ctrl+S, Ctrl+L. Then
  *  ffh-play's own: W A S D held scroll the map (`K.scrollKey`; Civ4's W cycle is Tab and Enter
  *  here), Q / E zoom out / in (`K.zoomKey`; Civ4's Q quarry and E explore are on their buttons),
- *  Tab / Shift+Tab cycle forward / back (Civ4's Tab is chat), Ctrl+1/2/3 the layers, `?`,
+ *  Tab / Shift+Tab cycle forward / back (Civ4's Tab is chat), Ctrl+1/2/3/4 the layers, `?`,
  *  the arrows and `+`/`-`. Then the selection's action hotkeys from the XML (`units.hotkeyEvent`:
  *  F fortify or sleep, Space skip, B found, G go to, R road, Del delete, Backspace cancel, L load,
  *  U unload, Shift+P pillage, ...). */
@@ -508,7 +535,7 @@ function onKey(ev) {
     const lower = k.toLowerCase();
     if (lower === "s" && !ev.shiftKey) return handled(), S.view && screens.saveDialog();
     if (lower === "l" && !ev.shiftKey) return handled(), screens.loadScreen();
-    const layer = { 1: "terrain", 2: "political", 3: "yield" }[k];
+    const layer = { 1: "terrain", 2: "political", 3: "yield", 4: "sea" }[k];
     if (layer) return handled(), setLayer(layer);
   }
   if (F_KEYS[k] && !ctrl && !ev.altKey) {
@@ -738,6 +765,7 @@ function wire() {
   on("center", (x, y) => mapView.centerOn(x, y));
   on("selection", () => {
     if (S.sel) citySel = null;
+    syncSeaLayer();
     units.renderPanel();
     renderTop();
   });

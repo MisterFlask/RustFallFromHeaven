@@ -145,10 +145,11 @@ function chunksAround(map, x, y, out) {
 }
 
 /** The map arrays of a `map` reply (design §4.4), in the server's order. */
-export const MAP_LAYERS = ["vis", "plot_type", "terrain", "feature", "bonus", "improvement", "route", "owner", "river", "city", "yield"];
+export const MAP_LAYERS = ["vis", "plot_type", "terrain", "feature", "bonus", "improvement", "route", "owner", "river", "city", "yield", "sea"];
 
-/** The map arrays the terrain cache draws from (every layer: the yield layer draws `yield`). */
-export const STATIC_LAYERS = MAP_LAYERS;
+/** The map arrays the terrain cache draws from (every layer but `sea`, which the Sea layer draws
+ *  over the cached terrain each frame: sea.js; the yield layer draws `yield`). */
+export const STATIC_LAYERS = MAP_LAYERS.filter((k) => k !== "sea");
 
 /** The chunks to redraw between two maps (`"all"` for another map or none before), as a Set
  *  of `"cx,cy"`. */
@@ -203,7 +204,7 @@ export function applyMapDelta(prev, reply) {
 export const YIELD_COLORS = ["#8fe07a", "#e0a050", "#f2dc5a"];
 
 /** The map's layers (the map's own drawing modes, design §5.1 "Layers"). */
-export const LAYERS = ["terrain", "political", "yield"];
+export const LAYERS = ["terrain", "political", "yield", "sea"];
 
 /** A stable colour for any string. */
 export function hashColor(s, sat = 40, light = 45) {

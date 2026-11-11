@@ -800,7 +800,7 @@ export function stuckScreen(st) {
  *  tooltip shows); ffh-play adds W A S D held to scroll (Civ4's W, A, S and D orders are on their
  *  buttons), Q / E to zoom (Civ4's Q quarry and E explore are on their buttons), Tab / Shift+Tab to
  *  cycle the units (Civ4's W; in Civ4 Tab is chat), F to flag a plot while watching the AI, F5,
- *  F8, F9, Ctrl+1/2/3 and ?. The on-screen list says what each key does, not where it came from. */
+ *  F8, F9, Ctrl+1/2/3/4 and ?. The on-screen list says what each key does, not where it came from. */
 function keysTable() {
   const touch = [
     ["Touch", ""],
@@ -858,7 +858,7 @@ function keysTable() {
     ["F6 / F7 / F8", "the tech tree / religion / cultural pressure"],
     ["F9", "governors: who runs your cities, their roles, priorities and empire orders"],
     ["Ctrl+S / Ctrl+L", "save / load"],
-    ["Ctrl+1 / 2 / 3", "map layer: terrain / political / yields"],
+    ["Ctrl+1 / 2 / 3 / 4", "map layer: terrain / political / yields / sea"],
     ["?", "this help"],
     ["Watching the AI", ""],
     ["F", "flag the plot under the mouse: record it for a bug report (the turn, the units, the replay commands)"],

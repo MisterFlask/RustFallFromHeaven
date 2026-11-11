@@ -370,7 +370,7 @@ mod tests {
 
     fn rows(w: i32, h: i32, f: impl Fn(usize) -> i32) -> MapRows {
         let n = (w * h) as usize;
-        MapRows { w, h, wrap_x: true, wrap_y: false, reveal: false, rows: (0..n).map(|i| [f(i); 11]).collect() }
+        MapRows { w, h, wrap_x: true, wrap_y: false, reveal: false, rows: (0..n).map(|i| [f(i); NUM_LAYERS]).collect() }
     }
 
     /// Applies a reply to a client's map (the client's own logic, `tiles.js applyMapDelta`).

@@ -16,6 +16,44 @@ import { effectsOf, infoTip, partsList } from "./infotips.js";
 import { marchLine } from "./armies.js";
 import { exploreShort, exploreFull } from "./explore.js";
 import { battleTerrain, openPlan, preferredRow, flashBattle, engageNumbers, engageBrief } from "./engagements.js";
+import { portLine } from "./sea.js";
+import { addHelp } from "./help.js";
+
+// ---- The sea's rules, in the help display (docs/NAVAL.md, sections 3 and 10) ------------------
+
+addHelp({
+  id: "sea",
+  group: "Playing",
+  order: 5,
+  title: "The sea: range, boats, wear",
+  body: () => {
+    const d = S.data?.defines ?? {};
+    const n = (k, def) => d[k] ?? def;
+    const range = me()?.sea_range;
+    return [
+      h("h4", "Range"),
+      h(
+        "ul",
+        h("li", `Range: ${n("sea_range", 8)} plots of water from a port (a city next to water) of yours, of your vassals or master, or of a team with open borders with you; techs add to it.${range !== null && range !== undefined ? ` Yours: ${range}.` : ""}`),
+        h("li", `Out of range, at the start of your turn: -${n("sea_attrition_percent", 15)}% HP for a ship or a unit in boats, no healing. It can kill. Carried units take none.`),
+        h("li", "No range while you have no city. Barbarians and animals have none."),
+        h("li", "The Sea layer (Ctrl+4) darkens the water out of your range and draws its edge; it is on while a ship or a unit in boats is selected."),
+      ),
+      h("h4", "Boats"),
+      h(
+        "ul",
+        h("li", `A land unit may step onto water where no ship of yours has room for it: it is in boats. Entering water ends its moves; ${n("embarked_moves", 1)} water plot a turn (the Lanun: one more).`),
+        h("li", `In boats: strength ${n("embarked_strength", 1)} with no modifier, cannot attack or enter a plot with an enemy, does not heal, fortify, cast, build or found. It can move, wait or be deleted.`),
+        h("li", "An army in boats is supplied while in range of a port."),
+      ),
+      h("h4", "Wear"),
+      h(
+        "ul",
+        h("li", `A warship counts its turns outside a port of yours. After ${n("sea_wear_free_turns", 10)}: -${n("sea_wear_percent", 5)}% strength a turn, at most -${n("sea_wear_max_percent", 50)}%. A turn started in a port clears it.`),
+      ),
+    ];
+  },
+});
 
 /** An 8 px icon of the ui set, or the glyph before the art loaded. */
 const icon8 = (name, glyph, title) => iconEl(`icon8/${name}`, { title }) ?? glyph;
@@ -811,6 +849,9 @@ function showTip() {
   if (city) {
     const walls = city.sentinels?.length ? `, Sentinels ${city.sentinels.map((p) => (p > 0 ? `${p}%` : "breached")).join("/")}` : "";
     lines.push(h("div.tip-city", `${city.capital ? "★ " : ""}${city.name}`, h("span.dim", ` (${playerName(city.owner)}${city.size !== null && city.size !== undefined ? `, size ${city.size}` : ""}${walls})`), city.besieged ? h("span.bad", " besieged") : null));
+    // The Sea layer (docs/NAVAL.md section 10): a port of yours names the range it gives.
+    const port = mapView?.layer === "sea" ? portLine(city, me()?.sea_range) : null;
+    if (port) lines.push(h("div.tip-sea", port));
   }
   const units = unitsAt(x, y);
   if (units.length) {
@@ -851,7 +892,13 @@ function showTip() {
       lines.push(h("div.tip-path", `Move: ${bits.join(", ")} · ${mapView.pad ? "A" : mapView.touch ? "tap again" : "right-click"} to go`));
     }
     // Supply lines (docs/SUPPLY.md): an army selected, whether it would be supplied there.
-    if (path.supply) lines.push(h(`div.tip-supply${path.supply.ok ? "" : ".warn"}`, path.supply.ok ? `Supplied (cost ${path.supply.cost} of ${path.supply.budget})` : "No supply line"));
+    if (path.supply) {
+      const s = path.supply;
+      // At sea (docs/NAVAL.md 3.3): in range of a port.
+      lines.push(h(`div.tip-supply${s.ok ? "" : ".warn"}`, !s.ok ? "No supply line" : s.sea_port ? `Supplied: at sea, in range of ${s.sea_port}` : `Supplied (cost ${s.cost} of ${s.budget})`));
+    }
+    // The sea (docs/NAVAL.md section 10): where the path goes in boats, and out of range.
+    for (const t of path.sea?.lines ?? []) lines.push(h(`div.tip-sea${t.startsWith("Out of range") ? ".warn" : ""}`, t));
   }
   mapView.showTip(lines);
 }
@@ -893,6 +940,8 @@ const MODIFIERS = {
   river_attack_modifier: "across a river",
   amphib_attack_modifier: "amphibious",
   kamikaze_modifier: "kamikaze",
+  // The sea (docs/NAVAL.md 3.4): a warship's wear.
+  sea_wear: "wear at sea",
 };
 
 /** A side's combat modifiers as `[label, percent]` rows (`partsList`). */
@@ -936,6 +985,8 @@ export function combatLines(c, at = null) {
     { head: "Defender", rows: modifierList(c.defender_details), sense: -1 },
   ], { unit: "%" });
   if (mods) box.append(h("div.mods", mods));
+  // The sea (docs/NAVAL.md 3.2): a defender in boats has strength 1 and no modifier.
+  if (c.defender_in_boats) box.append(h("div.dim", `Defender in boats: strength ${c.embarked_strength ?? 1}, no modifiers.`));
   if (c.declare_war_team !== null) box.append(h("div.warn", "Attacking declares war"));
   return box;
 }
@@ -1288,6 +1339,23 @@ function armyLine() {
   );
 }
 
+/** The selection's sea lines (docs/NAVAL.md section 10; the `group` query's units' `sea.lines`):
+ *  range, wear, in boats, each once, in the selection's order; a line about a loss in amber.
+ *  Null when no selected unit has any. */
+function seaLines(units) {
+  const seen = new Set();
+  const out = [];
+  for (const u of units) {
+    for (const t of u?.sea?.lines ?? []) {
+      if (seen.has(t)) continue;
+      seen.add(t);
+      const loss = t.startsWith("Out of range") || (t.startsWith("Wear:") && !t.startsWith("Wear: none"));
+      out.push(h(`div.sea-line${loss ? ".warn" : ".dim"}`, t));
+    }
+  }
+  return out.length ? h("div.sea-lines", out) : null;
+}
+
 /** The selection's army (its id) when the selection is all of one army's units, else null: an
  *  attack of the selection is then the army's (`engage {army}`). */
 function selectionArmy(sel) {
@@ -1561,6 +1629,9 @@ export function renderPanel() {
   // A great person's card (docs/CARDS.md).
   const card = cardLine(lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null);
   if (card) status.push(card);
+  // The sea (docs/NAVAL.md section 10): range, wear, in boats.
+  const sea = seaLines(S.sel.units.map((id) => details.get(id)));
+  if (sea) status.push(sea);
   if (grp?.missions?.length) status.push(h("div.dim", `Orders: ${grp.missions.map((m) => dname("MissionType", m.m)).join(", ")}`));
   if (grp && !grp.ready && !march) status.push(h("div.dim", grp.busy ? "Busy" : "Done for this turn"));
   const actions = [];
