@@ -508,6 +508,8 @@ At EOF of stdin: answer open decisions with the advisor and either quit (default
 
 **`view`** is built from the human team's perspective, or the true state with `debug.reveal`, which the UI marks clearly. Type-valued fields are indices (§4.1); the client names them from `/api/data`. In the example, with the current data: `type` 312 = `UNIT_WARRIOR`, `order` 0 = `ORDER_TRAIN`, `attitude` 1 = `ATTITUDE_ANNOYED`, `activity` 2 = `ACTIVITY_SLEEP` (fortified units sleep: C++ has no fortify activity, `MISSION_FORTIFY` sets `ACTIVITY_SLEEP`), `m` 0 = `MISSION_MOVE_TO`, `bonus` 8 = `BONUS_MANA_FIRE`; other numbers are illustrative.
 
+`view.rituals` (this game's world rituals, docs/CARDS.md; `src/view/rituals.rs`): one row per living civilization with a world ritual, as the human may know it: `player`, `met`, `mine`, `civ` and `name` (`Unknown civilization` while not met), `ritual`, `ritual_name`, `spell`, `state` (`in_progress`, `queued` (yours only), `charged`, `idle`; another player's ritual is news only once production goes into it), `city`, `city_name`, `x`, `y` (shown met or not: the start is announced to everyone), `progress`, `cost`, `percent`, `turns_left`, `charged`, `completed`, `next_cost`; docs/HUMAN.md, "World rituals".
+
 ```json
 {"view_version":40,"turn":57,
  "me":{"player":0,"team":0,"gold":143,"gold_rate":6,"research":{"tech":21,"progress":40,"cost":120,"turns":4,"rate":9,"queue":[21,30]},
