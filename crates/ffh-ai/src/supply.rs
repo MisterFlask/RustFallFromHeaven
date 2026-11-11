@@ -375,7 +375,7 @@ pub fn turn(g: &Game, p: PlayerId) {
         return;
     }
     for &a in &g.players[p].armies {
-        if !g.armies.contains(a) || g.army_plot(a).is_none() {
+        if !g.armies.contains(a) || g.army_plot(a).is_none() || g.army_is_fleet(a) {
             continue;
         }
         let n = g.armies[a].unsupplied_turns;

@@ -936,6 +936,11 @@ impl Game {
 
         let ai_control = self.group_ai_is_controlled(group);
 
+        // A ship's path kept in range by request (docs/NAVAL.md, 7.1).
+        if !ai_control && finder.info & MOVE_SEA_RANGE != 0 && domain == Some(DomainType::DOMAIN_SEA) && self.path_ai_sea_blocked(group, to_plot, finder.info) {
+            return false;
+        }
+
         if ai_control {
             if self.path_ai_sea_blocked(group, to_plot, finder.info) {
                 return false;
@@ -1224,6 +1229,11 @@ impl Game {
         }
 
         let ai_control = self.group_ai_is_controlled(group);
+
+        // A ship's path kept in range by request (docs/NAVAL.md, 7.1).
+        if !ai_control && finder.info & MOVE_SEA_RANGE != 0 && self.group_get_domain_type(group) == Some(DomainType::DOMAIN_SEA) && self.path_ai_sea_blocked(group, from_plot, finder.info) {
+            return false;
+        }
 
         if ai_control {
             if self.path_ai_sea_blocked(group, from_plot, finder.info) {

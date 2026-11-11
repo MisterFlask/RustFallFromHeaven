@@ -603,6 +603,10 @@ impl Game {
         if self.groups.contains(g) && self.map.plots[plot].sea.is_some() {
             self.sea_intercept_step(g, plot);
         }
+        // Fleets escorting what now stands here follow it (docs/NAVAL.md, 7.2).
+        if self.groups.contains(g) && self.plot_is_water(plot) {
+            self.group_escort_step(g, plot);
+        }
 
         // UI: execute move (`ExecuteMove` of every unit when `bEndMove || !canAllMove()`).
     }

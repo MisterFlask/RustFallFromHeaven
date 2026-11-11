@@ -132,8 +132,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 33: the sea, phase 1 (docs/NAVAL.md): `Unit::sea_turns`, `sea_out_of_range`.
 /// - 34: the sea, phase 2 (docs/NAVAL.md): `Plot::sea`, `Map::seas`, `Unit::intercepted`,
 ///   `Unit::shore_fired`, the battle log's `ReportSide::shore` and `LogEvent::ShoreFire`.
-/// - 35: the sea, phase 4 (docs/NAVAL.md, section 9): `City::outpost`, `lane_cut_turns`, `lane`.
-pub const FORMAT_VERSION: u32 = 35;
+/// - 35: fleets (docs/NAVAL.md, section 7): `Army::domain`, `station`, `carried`.
+/// - 36: the sea, phase 4 (docs/NAVAL.md, section 9): `City::outpost`, `lane_cut_turns`, `lane`.
+pub const FORMAT_VERSION: u32 = 36;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -375,6 +376,7 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
         trophies,
         map_script: _,
         dying: _,
+        escorting: _,
         telemetry: _,
         combat_notes: _,
         path_finder: _,
@@ -617,6 +619,7 @@ fn write_game(g: &Game, w: &mut Writer) {
         trophies,
         map_script: _,
         dying: _,
+        escorting: _,
         telemetry: _,
         combat_notes: _,
         // Scratch storage for searches (path.rs, "No reuse"): not saved.
@@ -851,6 +854,7 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         trophies: Persist::read(r)?,
         map_script: default_map_script(),
         dying: Vec::new(),
+        escorting: false,
         telemetry: crate::telemetry::Telemetry::off(),
         combat_notes: None,
         path_finder: RefCell::new(PathFinder::new(FinderKind::Path)),

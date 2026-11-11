@@ -1365,11 +1365,14 @@ function armyLine() {
   const a = ids.length && ids.every((x) => x === ids[0]) ? armyById(ids[0]) : null;
   if (!a) return null;
   const n = a.units.length;
+  const fleet = a.domain === "sea";
   const training = (a.requisition?.orders?.length ?? 0) + (a.requisition?.head_orders ?? 0);
   return h(
     "div.army-line",
     h("b", a.name),
-    h("span.dim", ` · ${n} unit${n === 1 ? "" : "s"}${a.target_size ? ` of ${a.target_size}` : ""}`),
+    h("span.dim", ` · ${n} ${fleet ? "ship" : "unit"}${n === 1 ? "" : "s"}${a.target_size ? ` of ${a.target_size}` : ""}`),
+    // A fleet's standing order (docs/NAVAL.md, 7.2).
+    fleet && a.station?.text ? h("div.dim.fleet-station-line", a.station.text) : null,
     a.marching.length ? h("span.dim", { title: "Recruits marching to it" }, ` · ${a.marching.length} marching to it`) : null,
     training ? h("span.dim", { title: "Units cities train for it: its requisition's, and those they build next for it" }, ` · ${training} in training`) : null,
     a.disband_to ? h("span.dim", ` · disbanding to ${a.disband_to}`) : null,
@@ -1402,7 +1405,8 @@ function seaLines(units) {
 function selectionArmy(sel) {
   const ids = (sel?.units ?? []).map((id) => S.units.get(id)?.army);
   const a = ids.length && ids.every((x) => x === ids[0]) ? armyById(ids[0]) : null;
-  return a && a.units.length === sel.units.length && a.units.every((u) => sel.units.includes(u)) ? a.id : null;
+  // (A fleet fights the duel, not in battles: docs/NAVAL.md, 7.1.)
+  return a && a.domain !== "sea" && a.units.length === sel.units.length && a.units.every((u) => sel.units.includes(u)) ? a.id : null;
 }
 
 /** Engagement combat: whether (x, y) is a plot next to the selection holding units of others,

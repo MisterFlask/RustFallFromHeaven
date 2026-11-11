@@ -208,6 +208,9 @@ impl Game {
         self.player_do_march(p);
         self.player_march_join(p);
         self.player_army_sync(p);
+        // This game's fleets (docs/NAVAL.md, 7.2): their standing orders, with the moves their
+        // owner left them (after its own orders: an order it gave this turn is not undone).
+        self.player_fleet_stations(p);
         // This game's governors (docs/GOVERNORS.md): the cities in the mode the civics give.
         self.player_governance_turn(p);
         // This game's armies: the requisition, before the cities produce (a new requisition order

@@ -116,10 +116,11 @@ fn xy(g: &Game, q: PlotIdx) -> Json {
 }
 
 /// The outposts' lanes the Sea layer draws (docs/NAVAL.md, 10): `[{owner, city, mine, state,
-/// segments: [[[x, y], ...]], cut: {x, y, sea, turns} | null}]`. Each segment runs from the home
-/// port's end toward the outpost (the flow goes to the port). A cut lane breaks over the closed
-/// sea that cuts it: the outpost's side up to it, the port's side after it, and the mark where it
-/// enters that sea, with the turns left before the outpost starves (yours only). Your lanes in
+/// segments: [[[x, y], ...]], cut_segments, cut: {x, y, sea, turns} | null}]`. Each segment runs
+/// from the home port's end toward the outpost (the flow goes to the port). A cut lane breaks where
+/// it enters the closed sea that cuts it: `segments` is the outpost's side up to there,
+/// `cut_segments` the rest to the port (from the break), drawn dotted; `cut` the mark there, with
+/// the turns left before the outpost starves (yours only). Your lanes in
 /// full; others' (of outposts you have revealed) over the plots you have revealed only, as you can
 /// work them out.
 pub fn lanes(v: &Viewer) -> Json {
@@ -136,18 +137,26 @@ pub fn lanes(v: &Viewer) -> Json {
         }
         let Some(lane) = g.outpost_lane_known(c, v.team) else { continue };
         // The parts: before the closed sea and after it (from the outpost).
-        let (parts, cut) = match lane.cut_in {
-            None => (vec![lane.path.clone()], Json::Null),
+        // The open part (from the outpost to where it enters the closed sea) and the cut part
+        // (from there to the port, drawn dotted as a supply ship's cut lane is).
+        let (parts, cut_part, cut) = match lane.cut_in {
+            None => (vec![lane.path.clone()], Vec::new(), Json::Null),
             Some((s, _)) => {
                 let start = lane.path.iter().position(|&q| g.map.plots[q].sea == Some(s)).unwrap_or(0);
-                let end = lane.path[start..].iter().position(|&q| g.map.plots[q].sea != Some(s)).map_or(lane.path.len(), |k| start + k);
                 let at = lane.path[start];
                 let (x, y) = g.map.xy(at);
                 let left = (starve - city.lane_cut_turns).max(0);
                 let mark = if mine || v.plot_revealed(at) { crate::jobj! { "x" => x, "y" => y, "sea" => g.map.seas[s.idx()].name.as_str(), "turns" => if mine { Json::from(left) } else { Json::Null } } } else { Json::Null };
-                (vec![lane.path[..start.max(1).min(lane.path.len())].to_vec(), lane.path[end.min(lane.path.len())..].to_vec()], mark)
+                (vec![lane.path[..=start].to_vec()], lane.path[start..].to_vec(), mark)
             }
         };
+        // Each cut run from the closed sea's entry toward the port (its first point the break).
+        let mut cut_segments: Vec<Json> = Vec::new();
+        for run in if mine { vec![cut_part] } else { revealed_runs(v, &cut_part) } {
+            if run.len() >= 2 {
+                cut_segments.push(Json::Arr(run.iter().map(|&q| xy(g, q)).collect()));
+            }
+        }
         let mut segments: Vec<Json> = Vec::new();
         for part in parts {
             let runs = if mine { vec![part] } else { revealed_runs(v, &part) };
@@ -164,6 +173,7 @@ pub fn lanes(v: &Viewer) -> Json {
             "mine" => city.owner == v.h,
             "state" => if lane.is_cut() { "cut" } else { "open" },
             "segments" => Json::Arr(segments),
+            "cut_segments" => Json::Arr(cut_segments),
             "cut" => cut,
         });
     }

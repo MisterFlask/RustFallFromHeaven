@@ -206,6 +206,10 @@ pub fn check(g: &Game) {
                 if g.units[u].march.is_some() {
                     fail(format!("unit {u:?} of player {} marches but is in army {a:?}", p.0));
                 }
+                // Fleets (docs/NAVAL.md, 7.1): ships in fleets, land units in armies.
+                if g.armies.get(a).is_some_and(|army| g.unit_army_domain(u).is_some_and(|d| d != army.domain)) {
+                    fail(format!("unit {u:?} of player {} is in army {a:?} of another domain", p.0));
+                }
             }
         }
         // Requisition orders, then empire orders, lead their city's queue (docs/GOVERNORS.md);

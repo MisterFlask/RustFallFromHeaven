@@ -28,6 +28,15 @@ actions (`view/units.rs`), the city query's `recruit` and its queue's `dest`,
 the harness checks that a marching unit is in no army and that requisition orders lead their
 queue (`ffh_harness::check`).
 
+**Fleets** (docs/NAVAL.md, section 7, 2026-11-11): the container has a domain (`Army::domain`,
+`ArmyDomain::Land` or `Sea`). A sea army is a fleet ("1st Fleet", numbered apart from the armies)
+of a player's warships and ships with cargo room; it shares the sync, the commands, the target
+size, the requisition (coastal cities; the ship sails to it as a recruit marches) and Upgrade all,
+and has no supply line, no tactic and no garrison; it holds a standing order (`Army::station`:
+Patrol of a sea, Escort). Everything below about armies is about land armies unless it says
+otherwise; the code that only means land armies skips fleets (`Game::army_is_fleet`). An army
+carried by ships stays one army aboard and lands as one group (`Army::carried`).
+
 Every game has armies, the AI-only ones (`ffh autoplay`, `ffh stats`, the AI batches, soaks) too.
 Until 2026-11-05 they were a game option (`GAMEOPTION_ARMIES`, on by default only in the browser's
 new-game screen); the owner removed it, with those of the cultural actions and the governors.

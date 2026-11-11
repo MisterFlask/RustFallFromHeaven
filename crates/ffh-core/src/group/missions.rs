@@ -206,6 +206,8 @@ impl Game {
         mission_ai_plot: Option<PlotIdx>,
         mission_ai_unit: Option<UnitId>,
     ) {
+        // This game's fleets (docs/NAVAL.md, 7.2): a move order ends a standing order.
+        self.group_order_ends_station(g, mission);
         if !append {
             if self.group_is_busy(g) {
                 return;

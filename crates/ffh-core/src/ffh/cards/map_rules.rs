@@ -455,9 +455,24 @@ impl Game {
     // ---------------------------------------------------------------------------------------
     // Wheeled City.
 
-    /// Wheeled City: whether `c` may pack up (not the capital, not a holy city).
+    /// Wheeled City: whether `c` may pack up (not the capital, not a holy city, not an outpost).
     pub fn city_can_pack_up(&self, c: CityId) -> bool {
-        !self.city_is_capital(c) && !self.d.religions.keys().any(|r| self.city_is_holy_city(c, r)) && self.cities[c].population > 0
+        self.city_pack_up_refusal(c).is_none() && self.cities[c].population > 0
+    }
+
+    /// Wheeled City: why `c` may not pack up, `None` when it may (as far as these rules go).
+    pub fn city_pack_up_refusal(&self, c: CityId) -> Option<&'static str> {
+        if self.cities[c].outpost {
+            // This game's outposts (docs/NAVAL.md, 9.2): an outpost is no city to carry.
+            return Some("An outpost cannot be packed up.");
+        }
+        if self.city_is_capital(c) {
+            return Some("The capital cannot be packed up.");
+        }
+        if self.d.religions.keys().any(|r| self.city_is_holy_city(c, r)) {
+            return Some("A holy city cannot be packed up.");
+        }
+        None
     }
 
     /// Wheeled City, Pack Up: city `c` becomes a unit of type `caravan` on its plot carrying its

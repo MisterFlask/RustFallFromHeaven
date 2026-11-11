@@ -70,6 +70,8 @@ use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_data::*;
 
+use ffh_core::army::{EscortTarget, Station};
+
 use crate::production::Choice;
 use crate::units::{alive, can_start, hold, move_to, push, skip};
 use ffh_core::seas::SeaControl;
@@ -388,7 +390,11 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, transp
     if let Some((q, _, odds)) = best {
         return attack(g, v, grp, u, q, odds, "kill");
     }
-    // 3. Escort the assault fleet loading in its staging port.
+    // 3. Escort an assault fleet already at sea (the Escort standing order: docs/NAVAL.md, 7.2),
+    // else the one loading in its staging port.
+    if !transport && escort_at_sea(g, v, grp, u) {
+        return true;
+    }
     if !transport {
         if let Some(port) = escort_post(g, v, u) {
             crate::trace!(g, p, "warship {:?} escorts the assault fleet at {:?}", u, g.map.xy(port));
@@ -634,6 +640,136 @@ fn reachable_seas(g: &Game, v: &mut View, u: UnitId) -> Vec<(SeaId, PlotIdx, i32
 /// city, else sail to `to` (in it) and patrol on arrival. `why` names the rule for the trace and
 /// the telemetry.
 fn go_patrol(g: &mut Game, v: &View, grp: GroupId, u: UnitId, s: SeaId, to: PlotIdx, why: &'static str) {
+    go_patrol_orders(g, v, grp, u, s, to, why);
+    // The fleet holds the Patrol of the sea as its standing order (docs/NAVAL.md, 7.2): the rules
+    // keep it there over the turns (a ship in port forms a fleet of its own for it). Set after the
+    // orders above, which end any standing order it had.
+    if alive(g, grp) {
+        if let Some(a) = fleet_for(g, v.p, grp) {
+            let _ = g.army_set_station(v.p, a, Station::Patrol(s));
+        }
+    }
+}
+
+/// The fleet of our ship group `grp` (docs/NAVAL.md, 7.1): the fleet it is, or for ships of ours in
+/// no fleet (in port: every unit of the group a fleet unit) a fleet formed of them. `None`: none.
+fn fleet_for(g: &mut Game, p: PlayerId, grp: GroupId) -> Option<ArmyId> {
+    let head = g.group_get_head_unit(grp)?;
+    if let Some(a) = g.units[head].army.filter(|&a| g.army_is_fleet(a) && g.armies[a].group == Some(grp)) {
+        return Some(a);
+    }
+    let units = g.groups[grp].units.clone();
+    if units.iter().any(|&o| g.units[o].army.is_some() || !g.unit_is_fleet_unit(o)) {
+        return None;
+    }
+    let a = g.army_form(p, &units).ok()?;
+    (g.armies.contains(a) && g.armies[a].group == Some(grp)).then_some(a)
+}
+
+/// A ship group of ours decides again (`units::play`, before its role's decision): its fleet's
+/// standing order ends, and the decision sets a new one if it is a Patrol or an Escort (a ship held
+/// in port, to heal or to wait for cargo, must not be sailed out by an old order at its next turn).
+pub(crate) fn clear_station(g: &mut Game, p: PlayerId, grp: GroupId) {
+    let Some(head) = g.group_get_head_unit(grp) else { return };
+    if let Some(a) = g.units[head].army.filter(|&a| g.army_is_fleet(a) && g.armies[a].group == Some(grp) && g.armies[a].station != Station::None) {
+        let _ = g.army_set_station(p, a, Station::None);
+    }
+}
+
+/// Whether ship `t` of ours carries land fighters (an invasion's cargo).
+fn carries_army(g: &Game, t: UnitId) -> bool {
+    g.unit_get_cargo_units(t).iter().any(|&c| g.unit_get_domain_type(c) == DomainType::DOMAIN_LAND && g.unit_can_fight(c) && !g.d.units[g.units[c].unit_type].found)
+}
+
+/// Rule 3 at sea: a loaded assault transport group of ours outside a city, with no warship in it
+/// and no fleet escorting it, that this warship's group reaches within two turns gets it as its
+/// escort: the Escort standing order (docs/NAVAL.md, 7.2; the rules move the fleet onto the
+/// transports' plot after each of their steps it can follow that turn). True if it took the order.
+fn escort_at_sea(g: &mut Game, v: &View, grp: GroupId, u: UnitId) -> bool {
+    let p = v.p;
+    if v.amphibious.is_none() || g.groups[grp].units.iter().any(|&o| g.unit_has_cargo(o)) {
+        return false;
+    }
+    let here = g.unit_plot(u);
+    let escorted: Vec<EscortTarget> = g.players[p].armies.iter().filter_map(|&a| match g.armies.get(a).map(|ar| ar.station) {
+        Some(Station::Escort(t)) => Some(t),
+        _ => None,
+    }).collect();
+    let mut best: Option<(i32, GroupId, EscortTarget)> = None;
+    for tg in g.players[p].groups.clone() {
+        if tg == grp || !alive(g, tg) || g.group_get_domain_type(tg) != Some(DomainType::DOMAIN_SEA) {
+            continue;
+        }
+        let units = &g.groups[tg].units;
+        let loaded = units.iter().any(|&t| g.units[t].ai_type == Some(UnitAIType::UNITAI_ASSAULT_SEA) && carries_army(g, t));
+        if !loaded || units.iter().any(|&o| armed(g, o) && !crate::naval::is_transport_type(&g.d.units[g.units[o].unit_type])) {
+            continue;
+        }
+        let Some(at) = g.group_plot(tg) else { continue };
+        if g.map.plots[at].plot_city.is_some() {
+            continue;
+        }
+        let head = units[0];
+        let target = match g.units[head].army.filter(|&a| g.army_is_fleet(a) && g.armies[a].group == Some(tg)) {
+            Some(a) => EscortTarget::Army(a),
+            None => EscortTarget::Group(tg),
+        };
+        if escorted.contains(&target) {
+            continue;
+        }
+        let Some(path) = g.group_find_path(grp, here, at, 0) else { continue };
+        if path.turns <= 2 && best.as_ref().map_or(true, |&(t, gr, _)| (path.turns, tg) < (t, gr)) {
+            best = Some((path.turns, tg, target));
+        }
+    }
+    let Some((_, _, target)) = best else { return false };
+    let Some(a) = fleet_for(g, p, grp) else { return false };
+    if g.army_set_station(p, a, Station::Escort(target)).is_err() {
+        return false;
+    }
+    crate::trace!(g, p, "warship {:?} escorts {} at sea", u, g.escort_target_name(target));
+    g.tel_decision(p, "warship", "escort", "escort_sea", 1, String::new);
+    if alive(g, grp) && g.group_ready_to_move(grp, false) {
+        skip(g, grp);
+    }
+    true
+}
+
+/// An escort of ours whose work is done (docs/NAVAL.md, 7.2): its fleet's target gone, carrying no
+/// army any more, or the fleet worn, out of range or damaged by [`HEAL_PCT`]: the order ends and
+/// the group, asleep under it, wakes to decide again (`units::play`). False otherwise (it keeps
+/// escorting) or when the group escorts nothing.
+pub(crate) fn escort_ends(g: &mut Game, v: &View, grp: GroupId) -> bool {
+    if v.barbarian {
+        return false;
+    }
+    let Some(head) = g.group_get_head_unit(grp) else { return false };
+    let Some(a) = g.units[head].army.filter(|&a| g.army_is_fleet(a) && g.armies[a].group == Some(grp)) else { return false };
+    let target = match g.armies[a].station {
+        Station::Escort(t) => Some(t),
+        _ => None,
+    };
+    let asleep = g.groups[grp].activity_type == ActivityType::ACTIVITY_SLEEP;
+    let busy = match target {
+        Some(EscortTarget::Army(b)) => g.armies.get(b).and_then(|ar| ar.group).is_some_and(|gr| g.groups.contains(gr) && g.groups[gr].units.iter().any(|&o| carries_army(g, o))),
+        Some(EscortTarget::Group(gr)) => g.groups.contains(gr) && g.groups[gr].units.iter().any(|&o| carries_army(g, o)),
+        // The rules ended it (its target gone): an asleep former escort wakes.
+        None => return false,
+    };
+    let tired = g.groups[grp].units.iter().any(|&o| worn(g, o) || g.unit_is_out_of_sea_range(o) || damage_pct(g, o) >= HEAL_PCT);
+    if busy && !tired {
+        return false;
+    }
+    crate::trace!(g, v.p, "escort of {:?} ends ({})", head, if tired { "worn, out of range or hurt" } else { "nothing aboard" });
+    let _ = g.army_set_station(v.p, a, Station::None);
+    if asleep {
+        g.group_set_activity_type(grp, ActivityType::ACTIVITY_AWAKE);
+    }
+    true
+}
+
+/// The orders of [`go_patrol`].
+fn go_patrol_orders(g: &mut Game, v: &View, grp: GroupId, u: UnitId, s: SeaId, to: PlotIdx, why: &'static str) {
     let p = v.p;
     let here = g.unit_plot(u);
     let mai = Some(MissionAIType::MISSIONAI_BLOCKADE);

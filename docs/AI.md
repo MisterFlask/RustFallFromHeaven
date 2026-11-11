@@ -1028,6 +1028,13 @@ plot falls or the odds turn bad, and moves in.
   gold. Warships guard the seas our outposts' lanes pass through (`warships.rs`). Not built: carrying a colonist by
   transport, a garrison sent to an outpost.
 
+- **Fleets** (docs/NAVAL.md, phase 3, 7.3): the AI's ship groups become fleets through the rules'
+  sync (a ship at sea is a fleet of its own). `warships.rs` gives a fleet the Patrol standing order
+  of the sea it decides to patrol, and an Escort order of a loaded assault transport at sea that
+  has none (ended when the cargo is gone or the escort worn, out of range or hurt); a fleet that
+  decides again leaves its order first. Its armies' logistics (`armies.rs`), tactics and supply
+  telemetry leave fleets out. It requisitions no ship.
+
 - **Overseas sites**: when no site is left on a landmass where we have cities, `sites.rs` also
   scores the coastal plots of other landmasses within 14 plots of our coastal cities.
 - **Settling by sea**: a settler with no site it can walk to goes to the nearest coastal city

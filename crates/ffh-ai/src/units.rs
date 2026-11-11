@@ -199,6 +199,11 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             && g.groups[grp].units.iter().all(|&o| !g.unit_has_moved(o));
         // A ship on Patrol keeps its station without new orders while nothing changes
         // (`warships::keeps_station`); otherwise it decides again, as every awake AI group does.
+        // A fleet escorting an invasion (docs/NAVAL.md, 7.2) sleeps under its order until the order
+        // ends (`warships::escort_ends` wakes it).
+        if matches!(role, Role::Naval | Role::Transport | Role::SeaExplore) {
+            crate::warships::escort_ends(g, v, grp);
+        }
         if matches!(role, Role::Naval | Role::Transport | Role::SeaExplore) && crate::warships::keeps_station(g, v, grp) {
             g.groups[grp].force_update = false;
             continue;
@@ -220,6 +225,10 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             continue;
         }
         let Some(head) = g.group_get_head_unit(grp) else { continue };
+        // A fleet that decides again leaves its standing order (`warships::clear_station`).
+        if !v.barbarian && g.group_get_domain_type(grp) == Some(DomainType::DOMAIN_SEA) {
+            crate::warships::clear_station(g, p, grp);
+        }
         upkeep(g, head);
         if !alive(g, grp) || !g.units.contains(head) {
             continue;
