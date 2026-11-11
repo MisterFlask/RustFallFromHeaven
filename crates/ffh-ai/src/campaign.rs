@@ -88,7 +88,7 @@ pub struct Op {
     /// Units the target needs (estimate) and units committed.
     pub need: i32,
     pub have: i32,
-    /// The strike phase comes from our casters alone (`CASTER_FORCE`): the adjacent ring takes the
+    /// The strike phase comes from our casters alone: the adjacent ring takes the
     /// city with a reserve once they have cast, not without them. The strike casts, then attacks
     /// only if the city is still covered with a reserve.
     pub probe: bool,
@@ -125,13 +125,13 @@ pub(crate) fn conqueror(g: &Game, p: PlayerId) -> bool {
         || g.d.ty::<TraitType>("TRAIT_AGGRESSIVE").is_some_and(|t| g.players[p].traits[t])
 }
 
-/// Does `p` strike sieges at 60% sure (switch `BOLD_STRIKE`, conquerors only)? As one player's
+/// Does `p` strike sieges at 60% sure (conquerors only)? As one player's
 /// edge the bolder bar won nothing and cost nothing measurable (seeds 40001-40016: share +0.6%,
 /// win rate 14.1% -> 12.8%, 4 seeds lost only with it); across all players it took 8% more civ
 /// cities. The conquest drive is flavor, so the conquerors take the bolder bar (docs/AI.md,
 /// round 7h).
 pub(crate) fn bold_striker(g: &Game, p: PlayerId) -> bool {
-    crate::switches::BOLD_STRIKE.on(g, p) && conqueror(g, p)
+    conqueror(g, p)
 }
 
 // ----------------------------------------------------------------------------
@@ -371,7 +371,7 @@ pub fn plan(g: &Game, v: &mut View) {
     if groups.is_empty() {
         return;
     }
-    if cand.civ && crate::switches::SECOND_OP.on(g, p) {
+    if cand.civ {
         if let Some(s) = split(g, p, &cand, need, &groups) {
             crate::trace!(g, p, "second operation: {} keeps {} units (need {}), {} takes {} (need {})", g.cities[cand.city].name, units_in(g, &s.keep), need, g.cities[s.second.city].name, units_in(g, &s.surplus), s.need);
             g.tel_decision(p, "military", "second_op", "surplus", units_in(g, &s.surplus) as i64, String::new);
@@ -436,7 +436,7 @@ struct Split {
     surplus: Vec<(i32, GroupId)>,
 }
 
-/// A second operation for a clear surplus (switch `SECOND_OP`; More Naval AI caps the units sent
+/// A second operation for a clear surplus (More Naval AI caps the units sent
 /// at one city, `AI_pickTargetCity`: a city already targeted by more than max(6, 3 x its
 /// defenders) is passed over for the next). When the stacks committed at war hold more than twice
 /// what the first target (seen: its need is real) needs, the first target keeps the stacks already
@@ -570,7 +570,7 @@ fn build_op(g: &Game, v: &mut View, cand: Cand, need: i32, groups: Vec<(i32, Gro
     let all = units_of(&|_, _| true);
     let near = units_of(&|d, _| d <= 2);
     let adj: Vec<UnitId> = units_of(&|d, _| d <= 1).into_iter().filter(|&u| g.unit_moves_left(u) > 0).collect();
-    // The casters marching with those stacks, whose casts open the strike (`CASTER_FORCE`).
+    // The casters marching with those stacks, whose casts open the strike.
     let casters_of = |pred: &dyn Fn(i32, GroupId) -> bool| -> Vec<UnitId> {
         let mut out = Vec::new();
         for &(d, grp) in &groups {
@@ -590,13 +590,28 @@ fn build_op(g: &Game, v: &mut View, cand: Cand, need: i32, groups: Vec<(i32, Gro
     // defenders, without insisting on keeping a reserve) rather than retreating to muster an
     // overwhelming force against a target that only hardens while it waits. Taking territory at
     // acceptable risk is the point; a lone unit still never qualifies (it cannot clear a city).
+    let forecast = crate::military::forecast_on(g, p);
+    // On the forecast (switch `FORECAST`): the adjacent ring's battles this turn take the city
+    // at the strike's bar ([`strike_bar`]), or decisively ([`DECISIVE_BAR`], the reserve of the
+    // rule below).
+    let ring = if forecast && cand.visible && at_war && !adj.is_empty() && !defs.is_empty() {
+        let attacks = ring_attacks(g, p, tp, &adj);
+        let bar = strike_bar(g, p);
+        crate::forecast::decide_turn(g, Some(&v.forecasts), &attacks, tp, &[bar, DECISIVE_BAR], None).map(|f| f.falls_permille)
+    } else {
+        None
+    };
     let (ok_all, ok_near, ok_adj) = if cand.visible {
         (
             covers_with(g, cand.city, tp, &defs, &all, &c_all, true, true),
             covers_with(g, cand.city, tp, &defs, &near, &c_near, false, true),
             // (Without the casters: they make a strike decisive below, never a marginal one go a
             // turn before the reinforcements that would make it decisive.)
-            !adj.is_empty() && covers(g, cand.city, tp, &defs, &adj, false, false),
+            if forecast && at_war && !defs.is_empty() {
+                ring.is_some_and(|r| r >= strike_bar(g, p))
+            } else {
+                !adj.is_empty() && covers(g, cand.city, tp, &defs, &adj, false, false)
+            },
         )
     } else {
         // Unseen: a scouting-sized force goes to look. Capped (not the assumed defender count,
@@ -617,14 +632,34 @@ fn build_op(g: &Game, v: &mut View, cand: Cand, need: i32, groups: Vec<(i32, Gro
     // counted, so a city that only hardens is still struck now at acceptable odds, and a ring that
     // already wins with a reserve (`adj_decisive`) strikes now regardless.
     if cand.visible && !c_all.is_empty() && crate::trace_on(p) {
-        // (Trace) Where our casters change the force estimates: the firings of `CASTER_FORCE`.
+        // (Trace) Where our casters change the force estimates.
         let decisive = !adj.is_empty() && covers_with(g, cand.city, tp, &defs, &adj, &c_adj, true, false);
         let without = (covers(g, cand.city, tp, &defs, &all, true, true), covers(g, cand.city, tp, &defs, &near, false, true), ok_adj && covers(g, cand.city, tp, &defs, &adj, true, false));
         if without != (ok_all, ok_near, decisive) {
             crate::trace!(g, p, "  casters count on {}: {} casters, covers (all, near, adjacent with a reserve) {:?} without them {:?}; defenders {:?} lose {:?} to {} adjacent casters", g.cities[cand.city].name, c_all.len(), (ok_all, ok_near, decisive), without, defs.iter().map(|&d| g.unit_curr_hit_points(d)).collect::<Vec<_>>(), crate::magic::planned_soften(g, tp, &defs, &c_adj), c_adj.len());
         }
     }
-    let adj_decisive = !adj.is_empty() && (ok_adj || !c_adj.is_empty()) && covers_with(g, cand.city, tp, &defs, &adj, &c_adj, true, false);
+    // (On the forecast: decisive at [`DECISIVE_BAR`]; with casters next to the city, also when
+    // the simulation of their casts says so -- the forecast does not play the casts before the
+    // strike.)
+    let adj_decisive = if ring.is_some() {
+        ring.is_some_and(|r| r >= DECISIVE_BAR) || !c_adj.is_empty() && covers_with(g, cand.city, tp, &defs, &adj, &c_adj, true, false)
+    } else {
+        !adj.is_empty() && (ok_adj || !c_adj.is_empty()) && covers_with(g, cand.city, tp, &defs, &adj, &c_adj, true, false)
+    };
+    if g.telemetry.on() && ring.is_some() {
+        // The record beside round 7g's ring (`covers`, without a reserve).
+        let old = covers(g, cand.city, tp, &defs, &adj, false, false);
+        let class = match (old, ok_adj) {
+            (true, true) => "agree_go",
+            (false, false) => "agree_hold",
+            (false, true) => "new_attack",
+            (true, false) => "new_decline",
+        };
+        let (x, y) = (tx, ty);
+        let r = ring.unwrap_or(-1);
+        g.tel_decision(p, "attack_rule", &format!("phase:{class}"), "forecast", 1, || format!("{{\"site\":\"phase\",\"class\":\"{class}\",\"x\":{x},\"y\":{y},\"p_take\":{r},\"n_att\":{},\"n_def\":{},\"decisive\":{adj_decisive}}}", adj.len(), defs.len()));
+    }
     let concentrate = ok_adj
         && !adj_decisive
         && {
@@ -842,7 +877,7 @@ fn go(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, dest: PlotIdx, tp: Pl
         hold_for(g, grp, tp);
         return;
     }
-    // Farther than the stack walks this turn: our casters haste it (`HASTE_MARCH`).
+    // Farther than the stack walks this turn: our casters haste it (`magic::haste_march`).
     let ((hx, hy), (dx, dy)) = (g.map.xy(here), g.map.xy(dest));
     let pace = g.groups[grp].units.iter().map(|&o| g.unit_moves_left(o)).min().unwrap_or(0) / g.d.defines.move_denominator.max(1);
     if g.plot_distance(hx, hy, dx, dy) > pace {
@@ -897,7 +932,7 @@ fn approach(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, op: &Op, ring: 
     match best {
         Some(r) if r.plot == here => hold_for(g, grp, op.plot),
         Some(r) => {
-            // Not there this turn: our casters haste the stack (`HASTE_MARCH`).
+            // Not there this turn: our casters haste the stack (`magic::haste_march`).
             if r.turns >= 1 {
                 crate::magic::haste_march(g, v, grp);
             }
@@ -1056,6 +1091,182 @@ pub(crate) fn precious_bar(g: &Game, u: UnitId) -> i32 {
     }
 }
 
+/// The strike on the forecast (switch `FORECAST`) starts when the battles of the units next to the
+/// city take it this turn with this chance (per mille; round 7h's phase at "every defender 70%
+/// sure to fall") ...
+pub const STRIKE_BAR: i32 = 650;
+/// ... this chance for the conquerors (`BOLD_STRIKE`, round 7h's 60%) ...
+pub const BOLD_STRIKE_BAR: i32 = 550;
+/// ... and decisively, with the reserve the march wants (round 7g's 90%), at this chance: a strike
+/// our casters alone opened (`Op::probe`), and the ring that strikes without waiting for the
+/// stacks one plot out.
+pub const DECISIVE_BAR: i32 = 900;
+
+/// The strike's bar for player `p` ([`STRIKE_BAR`], [`BOLD_STRIKE_BAR`]).
+fn strike_bar(g: &Game, p: PlayerId) -> i32 {
+    if bold_striker(g, p) {
+        BOLD_STRIKE_BAR
+    } else {
+        STRIKE_BAR
+    }
+}
+
+/// The battles `p`'s units next to `tp` fight on it this turn, as the rules fight them: for each
+/// plot next to it that holds one of `units`, every unit of ours there that can attack it (an
+/// order from that plot commits them all: the formation, then the reserve on the next order),
+/// the plot with the most first (`forecast::by_plot`'s order, which the strike follows).
+fn ring_attacks(g: &Game, p: PlayerId, tp: PlotIdx, units: &[UnitId]) -> crate::forecast::Attacks {
+    let mut plots: Vec<PlotIdx> = units.iter().filter_map(|&u| g.unit_plot_opt(u)).collect();
+    plots.sort();
+    plots.dedup();
+    let mut out: crate::forecast::Attacks = plots
+        .into_iter()
+        .filter_map(|q| {
+            let pool = g.engage_attackers(p, q, tp, ffh_core::engagement::WarTest::AtWar);
+            (!pool.is_empty()).then_some((pool, q))
+        })
+        .collect();
+    out.sort_by_key(|(u, q)| (std::cmp::Reverse(u.len()), *q));
+    out
+}
+
+/// The strike's attacks on the forecast (switch `FORECAST`): under engagements an order from a
+/// plot is one battle of every unit of ours there that can attack (the auto formation, which
+/// holds no hero back; the rest in reserve for the next order), so the order of single attackers
+/// the strike computed from duel odds (collateral first, raised dead, the best odds, the cheapest
+/// sacrifice, heroes last) chose nothing but the plot. Here: before each battle, the forecast of
+/// the battles the units still able to attack fight this turn, the plot with the most of them
+/// first; the strike starts at [`strike_bar`] ([`DECISIVE_BAR`] for a probe) and goes on while the
+/// rest takes the city at that bar, or at `military::TRADE_BAR` with more of theirs expected to
+/// fall than ours (worn defenders heal if we stop). Each battle is ordered from the first plot,
+/// by the unit there best able to take the city (no combat limit, then the strongest). Returns
+/// the battles ordered.
+fn strike_forecast(g: &mut Game, v: &mut View, op: &Op, pool: &[UnitId]) -> i32 {
+    let p = v.p;
+    let team = v.team;
+    let tp = op.plot;
+    let (tx, ty) = g.map.xy(tp);
+    let next_to = |g: &Game, u: UnitId| {
+        g.units.contains(u) && {
+            let (x, y) = g.map.xy(g.unit_plot(u));
+            g.plot_distance(x, y, tx, ty) == 1
+        }
+    };
+    let mut done: Vec<UnitId> = Vec::new();
+    let mut fights = 0;
+    for _ in 0..48 {
+        if !g.cities.contains(op.city) || g.cities[op.city].owner == p {
+            break;
+        }
+        let defs = visible_defenders(g, team, tp);
+        if defs.is_empty() {
+            break;
+        }
+        // Who may order an attack: siege engines with walls left to batter wait (their order
+        // would only bombard), and a caster that marches with the stack orders none.
+        let walls = g.city_defense_modifier(op.city, false) > 0;
+        let launchers: Vec<UnitId> = pool
+            .iter()
+            .copied()
+            .filter(|&u| next_to(g, u) && !done.contains(&u) && g.unit_moves_left(u) > 0 && !g.units[u].made_attack && attack_power(g, u) > 0 && g.unit_can_attack(u))
+            .filter(|&u| !(walls && g.unit_bombard_rate(u) > 0) && !crate::magic::spared_caster(g, u))
+            .collect();
+        let attacks = ring_attacks(g, p, tp, &launchers);
+        if attacks.is_empty() {
+            break;
+        }
+        let bar = if fights == 0 && op.probe { DECISIVE_BAR } else { strike_bar(g, p) };
+        let tel = g.telemetry.on();
+        let checked = std::cell::Cell::new(-1);
+        let e = crate::forecast::decide_turn(g, Some(&v.forecasts), &attacks, tp, &[bar, crate::military::TRADE_BAR], tel.then_some(&checked)).map(|f| crate::forecast::Est::of(&f));
+        let go = e.is_some_and(|e| e.p_take >= bar || fights > 0 && e.p_take >= crate::military::TRADE_BAR && e.enemy_lost_x100 > e.own_lost_x100);
+        if tel {
+            // Round 7g's answer beside it: `covers` of the units able to attack (heroes below their
+            // odds and casters below war wizard odds left out), the worn-down rule once started.
+            let odds = |g: &Game, u: UnitId| g.plot_get_best_defender(tp, None, Some(p), Some(u), false, false, false).map_or(1000, |d| g.get_combat_odds(u, d));
+            let able: Vec<UnitId> = pool
+                .iter()
+                .copied()
+                .filter(|&u| next_to(g, u) && !done.contains(&u) && g.unit_moves_left(u) > 0 && !g.units[u].made_attack && attack_power(g, u) > 0 && g.unit_can_attack(u))
+                .filter(|&u| !(walls && g.unit_bombard_rate(u) > 0))
+                .filter(|&u| !crate::magic::spared_caster(g, u) || odds(g, u) >= crate::magic::SPARED_CASTER_ODDS)
+                .collect();
+            let old_takes = !able.is_empty() && covers(g, op.city, tp, &defs, &able, fights == 0 && op.probe, false);
+            let old_go = old_takes || fights > 0 && {
+                let hp: i32 = defs.iter().map(|&d| g.unit_curr_hit_points(d)).sum();
+                let max: i32 = defs.iter().map(|&d| g.unit_max_hit_points(d)).sum();
+                hp * 2 <= max && able.len() >= defs.len()
+            };
+            if fights == 0 && !able.is_empty() {
+                let s = covers_sim(g, op.city, tp, &defs, &able, op.probe, false);
+                let (n_def, n_att) = (defs.len(), able.len());
+                g.tel_prediction(
+                    p,
+                    Prediction::new("strike", Outcome::CityCapturedBy { city: op.city, team }, HORIZON_THIS_TURN, s.p_fall / 10).score(s.hp_left as i64).acted(go),
+                    || Obj::new().b("vs_civ", op.civ).b("covers", old_takes).b("probe", op.probe).i("n_def", n_def as i64).i("n_att", n_att as i64).i("best", s.best as i64).end(),
+                );
+                crate::predict::city2(g, Some(&v.forecasts), "strike2", p, op.city, &launchers, HORIZON_THIS_TURN, go);
+            }
+            let site = if fights == 0 { "strike" } else { "strike_more" };
+            let class = match (old_go, go) {
+                (true, true) => "agree_go",
+                (false, false) => "agree_hold",
+                (false, true) => "new_attack",
+                (true, false) => "new_decline",
+            };
+            let e0 = e.unwrap_or_default();
+            let n_units: usize = attacks.iter().map(|a| a.0.len()).sum();
+            g.tel_decision(p, "attack_rule", &format!("{site}:{class}"), "forecast", 1, || {
+                format!(
+                    "{{\"site\":\"{site}\",\"class\":\"{class}\",\"x\":{tx},\"y\":{ty},\"go\":{go},\"old\":{old_go},\"p_take\":{},\"own_lost_x100\":{},\"enemy_lost_x100\":{},\"n_att\":{},\"n_def\":{},\"full\":{},\"n_units\":{n_units},\"n_plots\":{},\"n_defs\":{},\"vs_civ\":{},\"city\":true}}",
+                    e0.p_take,
+                    e0.own_lost_x100,
+                    e0.enemy_lost_x100,
+                    e0.n_att,
+                    e0.n_def,
+                    checked.get(),
+                    attacks.len(),
+                    defs.len(),
+                    op.civ
+                )
+            });
+        }
+        crate::trace!(g, p, "  strike step {}: {} plots, forecast {:?}, go {}", fights, attacks.len(), e, go);
+        if !go {
+            break;
+        }
+        if fights == 0 {
+            let all: Vec<UnitId> = attacks.iter().flat_map(|a| a.0.iter().copied()).collect();
+            crate::magic::bless(g, v, tp, &all);
+        }
+        // The battle of the first plot, ordered by the unit there best able to take the city.
+        let from = attacks[0].1;
+        let Some(u) = launchers.iter().copied().filter(|&u| g.units.contains(u) && g.unit_plot(u) == from).max_by_key(|&u| (g.units[u].combat_limit, attack_power(g, u), std::cmp::Reverse(u))) else { break };
+        crate::trace!(g, p, "  battle from {:?}: {} units, ordered by {}", g.map.xy(from), attacks[0].0.len(), g.d.units[g.units[u].unit_type].base.type_);
+        if g.units[u].group.is_some_and(|grp| g.groups[grp].units.len() > 1) {
+            g.unit_join_group(u, None, true);
+        }
+        let Some(grp) = g.units[u].group else { break };
+        if g.telemetry.on() {
+            let o = g.plot_get_best_defender(tp, None, Some(p), Some(u), false, false, false).map_or(1000, |d| g.get_combat_odds(u, d));
+            crate::predict::attack(g, p, u, tp, o, "strike");
+            crate::predict::attack2(g, Some(&v.forecasts), p, u, tp, "strike");
+        }
+        let moves = g.unit_moves_left(u);
+        g.groups[grp].ai_group_attack = false;
+        crate::tactics::note_attack(g, p, from, tp);
+        order(g, grp, MissionType::MISSION_MOVE_TO, tx, ty, MOVE_DIRECT_ATTACK, tp);
+        fights += 1;
+        if alive(g, grp) {
+            g.groups[grp].ai_group_attack = false;
+        }
+        if g.units.contains(u) && g.unit_moves_left(u) == moves && !g.units[u].made_attack {
+            done.push(u);
+        }
+    }
+    fights
+}
+
 /// The strike: the units of every committed stack next to the target attack this turn, one by
 /// one, while the force left still covers the defenders left. Siege engines bombard first;
 /// then collateral attackers while several defenders stand; then units summoned for good
@@ -1090,17 +1301,20 @@ pub(crate) fn strike(g: &mut Game, v: &mut View, op: &Op) {
     crate::magic::soften(g, v, tp, &ready);
     let mut done: Vec<UnitId> = Vec::new();
     let mut fights = 0;
-    let precious = crate::switches::PRECIOUS.on(g, p);
     let mut held_steps = 0;
-    if precious && (crate::trace_on(p) || g.telemetry.on()) {
+    if crate::trace_on(p) || g.telemetry.on() {
         let n = pool.iter().filter(|&&u| next_to(g, u) && precious_bar(g, u) > 0).count();
         if n > 0 {
             crate::trace!(g, p, "  {} heroes or veterans in the strike on {} attack last below their odds", n, name);
             g.tel_decision(p, "military", "precious_in_strike", "precious", n as i64, String::new);
         }
     }
+    let forecast = crate::military::forecast_on(g, p);
+    if forecast {
+        fights = strike_forecast(g, v, op, &pool);
+    }
     for _ in 0..48 {
-        if !g.cities.contains(op.city) || g.cities[op.city].owner == p {
+        if forecast || !g.cities.contains(op.city) || g.cities[op.city].owner == p {
             break;
         }
         let defs = visible_defenders(g, team, tp);
@@ -1115,10 +1329,10 @@ pub(crate) fn strike(g: &mut Game, v: &mut View, op: &Op) {
             .copied()
             .filter(|&u| next_to(g, u) && !done.contains(&u) && g.unit_moves_left(u) > 0 && !g.units[u].made_attack && attack_power(g, u) > 0 && g.unit_can_attack(u))
             .filter(|&u| !(walls && g.unit_bombard_rate(u) > 0))
-            // A caster that marches with the stack attacks only at war wizard odds (CASTER_STACKS).
+            // A caster that marches with the stack attacks only at war wizard odds.
             .filter(|&u| !crate::magic::spared_caster(g, u) || odds(g, u) >= crate::magic::SPARED_CASTER_ODDS)
             .collect();
-        // Heroes and veterans below their odds (switch `PRECIOUS`, [`precious_bar`]) fight last:
+        // Heroes and veterans below their odds ([`precious_bar`]) fight last:
         // while another unit can attack, and never to wear the defenders down, only in a strike
         // that takes the city. (Held out of the strike altogether, they turned captures into
         // stalls: a fork of seed 26001 at turn 246 lost three units and the city where the
@@ -1127,12 +1341,12 @@ pub(crate) fn strike(g: &mut Game, v: &mut View, op: &Op) {
             .iter()
             .copied()
             .filter(|&u| {
-                let bar = if precious { precious_bar(g, u) } else { 0 };
+                let bar = precious_bar(g, u);
                 bar == 0 || odds(g, u) >= bar
             })
             .collect();
         // Start at the odds that put the stacks in the strike phase (`plan`: the adjacent ring
-        // takes the city without a reserve; before round 7h, switch `STRIKE_AT_PHASE` off, the
+        // takes the city without a reserve; before round 7h the
         // strike waited next to the city for a reserve); once started, go on while the rest still
         // takes the city, or while the defenders are worn down to half their health and we
         // outnumber them (they heal if we stop).
@@ -1443,7 +1657,7 @@ mod tests {
         assert!(!g.units.contains(skeleton) || g.units[skeleton].made_attack, "the skeleton attacked");
     }
 
-    /// A Mage that marches with a stack (CASTER_STACKS) is no attacker the AI counts or sends: the
+    /// A Mage that marches with a stack is no attacker the AI counts or sends: the
     /// strike takes the city with the Champions and the Mage comes through (land attacks are
     /// formation battles, docs/ENGAGEMENTS.md: the rules commit the whole stack, the Mage casting
     /// from its role's rear row), and a stack whose only unit left to attack is the Mage holds
@@ -1453,7 +1667,7 @@ mod tests {
         let d = ffh_data::global();
         let mut g = one_landmass_game(22);
         let (us, them) = (PlayerId(0), PlayerId(1));
-        if !crate::magic::school(&g, us) || !crate::switches::CASTER_STACKS.on(&g, us) {
+        if !crate::magic::enabled(&g, us) {
             return;
         }
         g.player_found(us, 4, 5);

@@ -15,7 +15,7 @@ use ffh_data::*;
 use crate::campaign::{bold_striker, fights, precious_bar};
 
 /// Enemy units able to defend city plot `tp` that we know of (the garrison where
-/// [`crate::view::sees_units`]: fog included with `FOG_ATTACK`, never stealthed units; the city
+/// [`crate::view::sees_units`]: fog included, never stealthed units; the city
 /// owner's units count before the war is declared too).
 pub(crate) fn visible_defenders(g: &Game, team: TeamId, tp: PlotIdx) -> Vec<UnitId> {
     if !crate::view::sees_units(g, team, tp) {
@@ -269,7 +269,7 @@ pub enum Order {
     Strike,
     /// A stack's group attack (`military::assault`): the attacker the rules pick
     /// (`AI_getBestGroupAttacker`: the best odds, heroes below 85% and units above level 4 below
-    /// 95% after the others); a hero or veteran below its odds there ends it (`PRECIOUS`).
+    /// 95% after the others); a hero or veteran below its odds there ends it (`campaign::precious_bar`).
     Group,
 }
 
@@ -312,11 +312,9 @@ pub fn simulate_softened(g: &Game, tp: PlotIdx, defs: &[UnitId], soften: &[i32],
     if defs.is_empty() {
         return Sim { used: Some(0), n_def, hp_left: 0, best: 1000, n_att, p_fall: 1000, ..Sim::default() };
     }
-    let Some(&first) = atts.first() else {
+    if atts.is_empty() {
         return Sim { used: None, n_def, hp_left: defs.iter().enumerate().map(|(i, &d)| health(i, d)).sum(), best: 0, n_att, ..Sim::default() };
-    };
-    let owner = g.units[first].owner;
-    let precious = crate::switches::PRECIOUS.on(g, owner);
+    }
     let max_hp = g.d.defines.max_hit_points.max(1);
     // Per defender: unit, expected hit points, chance alive (per mille), worth. A defender has
     // fallen when the chance it is still alive is `sure` per mille or less. (Its expected health,
@@ -350,8 +348,8 @@ pub fn simulate_softened(g: &Game, tp: PlotIdx, defs: &[UnitId], soften: &[i32],
             .collect();
         let pick = match order {
             Order::Strike => {
-                // Heroes and veterans below their odds last (`PRECIOUS`).
-                let held = |&&(i, _, o, _): &&(usize, usize, i32, i32)| precious && {
+                // Heroes and veterans below their odds last.
+                let held = |&&(i, _, o, _): &&(usize, usize, i32, i32)| {
                     let bar = precious_bar(g, atts[i]);
                     bar > 0 && o < bar
                 };
@@ -403,7 +401,7 @@ pub fn simulate_softened(g: &Game, tp: PlotIdx, defs: &[UnitId], soften: &[i32],
                 }
                 // The stack holds when the rules would send a hero or veteran below its odds.
                 pick.filter(|&(i, _, o, _)| {
-                    let bar = if precious { precious_bar(g, atts[i]) } else { 0 };
+                    let bar = precious_bar(g, atts[i]);
                     bar == 0 || o >= bar
                 })
             }
@@ -479,8 +477,7 @@ pub(crate) fn covers(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &
     covers_with(g, c, tp, defs, units, &[], spare, siege)
 }
 
-/// [`covers`] once our `casters` have cast on the defenders (`magic::planned_soften`, switch
-/// `CASTER_FORCE`).
+/// [`covers`] once our `casters` have cast on the defenders (`magic::planned_soften`).
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn covers_with(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &[UnitId], casters: &[UnitId], spare: bool, siege: bool) -> bool {
     if !units.iter().any(|&u| fights(g, u)) {
@@ -502,9 +499,9 @@ fn covers_sim_with(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &[U
     // The confidence is the simulation's own -- every defender 90% sure to fall with a reserve to
     // spare, 70% sure without -- in place of attackers held in reserve against an estimate that
     // was optimistic. (At 95% and 80%, every civilization took 23% fewer cities, at no gain:
-    // docs/AI.md, round 7g.) `BOLD_STRIKE` (conquerors): without a reserve, 60% sure.
+    // docs/AI.md, round 7g.) Conquerors ([`bold_striker`]): without a reserve, 60% sure.
     let owner = g.units[units[0]].owner;
     let bold = bold_striker(g, owner);
-    let soften = if casters.is_empty() || !crate::switches::CASTER_FORCE.on(g, owner) { Vec::new() } else { crate::magic::planned_soften(g, tp, defs, casters) };
+    let soften = if casters.is_empty() { Vec::new() } else { crate::magic::planned_soften(g, tp, defs, casters) };
     simulate_softened(g, tp, defs, &soften, units, cut, Order::Strike, 100, if spare { 100 } else if bold { 400 } else { 300 })
 }

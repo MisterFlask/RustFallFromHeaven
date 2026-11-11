@@ -130,8 +130,7 @@ pub fn push(g: &mut Game, c: CityId, choice: Choice) {
 /// Once per turn (C++ `CvCityAI::AI_doTurn` sets production dirty on danger): a city under
 /// threat that is not building a defender switches to one (the progress on the old item is
 /// kept by the rules). The switch clears the queue and asks [`decide`] again, whose garrison rule
-/// has the last word: with switch `EMERGENCY_DECIDE` (on), a city switches only when `decide` would
-/// put a fighter first. Before, a city whose garrison `decide` found full (`needed + 2` defenders)
+/// has the last word: a city switches only when `decide` would put a fighter first. Before, a city whose garrison `decide` found full (`needed + 2` defenders)
 /// was switched every turn and re-picked the same building: an Illian city with six defenders
 /// chose its Temple of the Hand seven times in ten turns, losing the rest of its queue each time.
 pub fn emergency(ai: &Ai, g: &mut Game, p: PlayerId) {
@@ -191,12 +190,8 @@ fn decide_city(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str, Op
 }
 
 /// Would clearing city `c`'s queue get a fighter: does [`decide_city`] put one first? (It does not
-/// read the queue.) Always true with switch `EMERGENCY_DECIDE` off: the switch then clears the
-/// queue whatever comes next.
+/// read the queue.)
 fn switch_gets_fighter(ai: &Ai, g: &Game, c: CityId) -> bool {
-    if !crate::switches::EMERGENCY_DECIDE.on(g, g.cities[c].owner) {
-        return true;
-    }
     matches!(decide_city(ai, g, c), Some((Choice::Train(u, _), _, _)) if g.d.units[u].combat > 0)
 }
 
@@ -669,10 +664,10 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
             return Some((choice, "assault_fleet"));
         }
     }
-    // A warship for a port on a sea an enemy patrols (docs/NAVAL.md, section 8).
-    if ctx.afford {
-        if let Some(choice) = crate::naval::patrol_production(g, c) {
-            return Some((choice, "patrol_ship"));
+    // warships (warships.rs): warships for a reason (escorts, guards, blockaders), never by count.
+    if safe && crate::naval::is_coastal_city(g, c) && ctx.afford {
+        if let Some(choice) = crate::warships::production(g, c) {
+            return Some((choice, "warship"));
         }
     }
     // A ship for a settler waiting in port; a sea explorer while our land is full and
@@ -749,7 +744,7 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
         if let Some(choice) = crate::victory::production(g, c, false) { return Some((choice, "victory")); } // victory-pursuit
     }
 
-    // Mana nodes (MANA_NODES) and the caster corps (casters.rs): a caster to convert our raw mana
+    // Mana nodes and the caster corps (casters.rs): a caster to convert our raw mana
     // when none of ours can, and the corps' casters (mana.rs, casters.rs).
     if safe && ctx.afford && !ctx.broke {
         if let Some(choice) = crate::mana::production(g, c) {
@@ -769,16 +764,15 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
 
     // 7. Heroes are unique and strong (but not at the cost of the first expansion); a coastal city
     // trains a hero ship (the Lanun's Black Wind, which serves as a transport). Only the top third
-    // of our cities by production that can train it builds one (`TOP_CITIES`).
-    let top_cities = crate::switches::TOP_CITIES.on(g, p);
+    // of our cities by production that can train it builds one.
     if let Some(u) = best_unit(g, c, Role::Hero) {
-        let best_city = !top_cities || top_production_city(g, c, |o| g.city_can_train(o, u, false, false, false, false));
+        let best_city = top_production_city(g, c, |o| g.city_can_train(o, u, false, false, false, false));
         if best_city && (g.city_production_turns_left_unit(c, u, 0) <= max_turns.min(25) || ctx.n_cities >= 3) {
             return Some((Choice::Train(u, UnitAIType::UNITAI_HERO), "hero"));
         }
     }
     if let Some(u) = best_unit(g, c, Role::SeaHero) {
-        let best_city = !top_cities || top_production_city(g, c, |o| g.city_can_train(o, u, false, false, false, false));
+        let best_city = top_production_city(g, c, |o| g.city_can_train(o, u, false, false, false, false));
         if best_city && (g.city_production_turns_left_unit(c, u, 0) <= max_turns.min(25) || ctx.n_cities >= 3) {
             return Some((Choice::Train(u, d.units[u].default_unit_ai_type.unwrap_or(UnitAIType::UNITAI_ATTACK_SEA)), "hero_ship"));
         }
@@ -822,7 +816,7 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
     // deferred -- a few turns per city, until the economy buildings are up.
     let mut best_building: Option<(BuildingType, i32)> = None;
     let mut best_economy: Option<(BuildingType, i32)> = None;
-    // With `TOP_CITIES`, a city outside the top third of ours by production takes a world wonder
+    // A city outside the top third of ours by production takes a world wonder
     // only if it finishes it as quickly as the wonder slot asks (2 x cities + 1 turns): the rules
     // let one city at a time build it, and a slow city that starts one first locks it away from
     // the cities that would finish it sooner.
@@ -840,7 +834,7 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
         if turns > max_turns {
             continue;
         }
-        if turns > quick_wonder && is_world_wonder(d, b) && top_cities && !top_wonder_city(g, c, b) {
+        if turns > quick_wonder && is_world_wonder(d, b) && !top_wonder_city(g, c, b) {
             continue;
         }
         let score = value * 100 / (turns + 3);
@@ -877,7 +871,7 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
         }
     }
     // A missionary for a foreign city while our shrine pays a gold a turn for every city with the
-    // religion (MISSIONARY_ABROAD): weighed like a building worth that gold (`building_value`'s
+    // religion: weighed like a building worth that gold (`building_value`'s
     // 80 a gold, less the odds of failing on the way), against the best building.
     if let Some(r) = crate::units::abroad_religion(g, p).filter(|&r| g.player_get_state_religion(p) == Some(r)) {
         if count_ai(g, p, UnitAIType::UNITAI_MISSIONARY) == 0 && abroad_targets(g, p, c, r) {
@@ -964,8 +958,7 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
 /// development seeds, failed on fresh ones": buildings valued for more effects), so the slot is
 /// only for the best cities and only at peace.
 fn wonder_slot(g: &Game, c: CityId, at_war: bool) -> Option<BuildingType> {
-    let p = g.cities[c].owner;
-    if at_war || !crate::switches::WONDER_SLOT.on(g, p) || !top_production_city(g, c, |_| true) {
+    if at_war || !top_production_city(g, c, |_| true) {
         return None;
     }
     let d = g.d;
@@ -1000,7 +993,7 @@ fn wonder_horizon(g: &Game, c: CityId) -> i32 {
     (2 * g.players[p].cities.len() as i32 + 1) * if super_city { 4 } else { 1 }
 }
 
-/// With `WONDER_SLOT`, once a turn: a city in the top third of ours by production pushing a
+/// Once a turn: a city in the top third of ours by production pushing a
 /// world wonder home at peace -- done within the wonder slot's horizon ([`wonder_horizon`]) --
 /// emphasizes production (More Naval AI's special yield multiplier,
 /// `CvCityAI::AI_updateSpecialYieldMultiplier`: production +50% while building a wonder; here
@@ -1013,9 +1006,6 @@ fn wonder_horizon(g: &Game, c: CityId) -> i32 {
 pub fn wonder_emphasis(g: &mut Game, p: PlayerId) {
     static EMPHASIZE: OnceLock<Option<EmphasizeType>> = OnceLock::new();
     let Some(e) = *EMPHASIZE.get_or_init(|| g.d.ty::<EmphasizeType>("EMPHASIZE_PRODUCTION")) else { return };
-    if !crate::switches::WONDER_SLOT.on(g, p) {
-        return;
-    }
     let peace = !civ_enemies_at_war(g, p) && crate::diplomacy::preparing_target(g, g.players[p].team).is_none();
     for c in g.players[p].cities.clone() {
         // A governed city's emphasis is its role's, also while it builds an empire order's wonder.
@@ -1033,7 +1023,7 @@ pub fn wonder_emphasis(g: &mut Game, p: PlayerId) {
     }
 }
 
-/// With `TROUBLE_REBUILD`, once a turn while the empire cannot research at its target share
+/// Once a turn while the empire cannot research at its target share
 /// (`finance::Finance::deficit`): More Naval AI re-decides every city's production when the
 /// empire runs into financial trouble (`CvPlayerAI::AI_doCheckFinancialTrouble`,
 /// `CvCityAI::AI_chooseProduction`), keeping items within 3 turns of done, wonders, world
@@ -1046,7 +1036,7 @@ pub fn wonder_emphasis(g: &mut Game, p: PlayerId) {
 /// threat, any fighter at war, an economy building already under way. Each city is looked at
 /// every fifth turn (the ladder is the costly part).
 pub fn trouble_rebuild(ai: &Ai, g: &mut Game, p: PlayerId) {
-    if !crate::switches::TROUBLE_REBUILD.on(g, p) || g.player_is_barbarian(p) {
+    if g.player_is_barbarian(p) {
         return;
     }
     let f = crate::finance::state(g, p);
@@ -1164,7 +1154,7 @@ impl Role {
 /// attacker's default AI, and as attackers (one unit for 360 and 240 hammers) they never won on
 /// cost: 1 Wilboman in 47 Illian games, where he could be trained in 74% (docs/AI.md, "Unique
 /// units").
-fn is_hero(d: &GameData, info: &UnitInfo) -> bool {
+pub(crate) fn is_hero(d: &GameData, info: &UnitInfo) -> bool {
     static HERO: OnceLock<Option<PromotionType>> = OnceLock::new();
     let hero = *HERO.get_or_init(|| d.ty::<PromotionType>("PROMOTION_HERO"));
     info.default_unit_ai_type == Some(UnitAIType::UNITAI_HERO) || hero.is_some_and(|h| info.free_promotions[h])

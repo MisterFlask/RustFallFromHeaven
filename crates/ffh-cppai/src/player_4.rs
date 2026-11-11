@@ -38,11 +38,6 @@ fn leader_info(g: &Game, p: PlayerId) -> &'static LeaderHeadInfo {
     &d.leader_heads[l]
 }
 
-/// `pPlot->getPlotCity()`.
-fn plot_city(g: &Game, plot: PlotIdx) -> Option<CityId> {
-    g.map.plots[plot].plot_city
-}
-
 /// C++ `CvPlayerAI::AI_plotTargetMissionAIs(pPlot, aeMissionAI, iMissionAICount,
 /// iClosestTargetRange, pSkipSelectionGroup, iRange)` with `None` = `NO_MISSIONAI` (any).
 fn plot_target_mission_ais(g: &Game, p: PlayerId, plot: PlotIdx, mission_ai: &[Option<MissionAIType>], closest_target_range: &mut i32, skip_selection_group: Option<GroupId>, range: i32) -> i32 {
@@ -962,346 +957,6 @@ impl Cai {
         //FfH: End Modify
     }
 
-    /// C++ `EspionageMissionTypes CvPlayerAI::AI_bestPlotEspionage(CvPlot* pSpyPlot, PlayerTypes& eTargetPlayer, CvPlot*& pPlot, int& iData) const` (CvPlayerAI.cpp:11025-11202)
-    pub fn player_ai_best_plot_espionage(&self, g: &Game, p: PlayerId, spy_plot: PlotIdx, target_player: &mut Option<PlayerId>, plot: &mut Option<PlotIdx>, data: &mut i32) -> Option<EspionageMissionType> {
-        //ooookay what missions are possible
-        let d = g.d;
-
-        *plot = None;
-        *data = -1;
-
-        let mut best_mission: Option<EspionageMissionType> = None;
-        let mut best_value = 0;
-
-        let team = g.players[p].team;
-        let attitude_threshold = if g.is_option(GameOptionType::GAMEOPTION_AGGRESSIVE_AI) { 50 } else { 1 };
-
-        if g.plot_is_owned(spy_plot) {
-            let (Some(spy_owner), Some(spy_team)) = (g.map.plots[spy_plot].owner, g.plot_get_team(spy_plot)) else {
-                return None;
-            };
-            if spy_team != team {
-                let big_espionage = self.player_ai_is_do_strategy(g, p, AI_STRATEGY_BIG_ESPIONAGE);
-                if !big_espionage && (g.teams[team].ai_war_plan[spy_team].is_some() || self.player_ai_get_attitude_weight(g, p, spy_owner) < attitude_threshold) {
-                    //Destroy Improvement.
-                    if g.map.plots[spy_plot].improvement_type.is_some() {
-                        for mission in d.espionage_missions.keys() {
-                            if d.espionage_missions[mission].destroy_improvement {
-                                let value = self.player_ai_espionage_val(g, p, spy_owner, mission, spy_plot, -1);
-
-                                if value > best_value {
-                                    best_value = value;
-                                    best_mission = Some(mission);
-                                    *target_player = Some(spy_owner);
-                                    *plot = Some(spy_plot);
-                                    *data = -1;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if let Some(city) = plot_city(g, spy_plot) {
-                    //Something malicious
-                    if self.player_ai_get_attitude_weight(g, p, spy_owner) < attitude_threshold {
-                        //Destroy Building.
-                        if !big_espionage {
-                            for mission in d.espionage_missions.keys() {
-                                if d.espionage_missions[mission].destroy_building_cost_factor > 0 {
-                                    for building in d.buildings.keys() {
-                                        if g.city_num_building(city, building) > 0 {
-                                            let value = self.player_ai_espionage_val(g, p, spy_owner, mission, spy_plot, building.i());
-
-                                            if value > best_value {
-                                                best_value = value;
-                                                best_mission = Some(mission);
-                                                *target_player = Some(spy_owner);
-                                                *plot = Some(spy_plot);
-                                                *data = building.i();
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        //Destroy Project
-                        for mission in d.espionage_missions.keys() {
-                            if d.espionage_missions[mission].destroy_project_cost_factor > 0 {
-                                for project in d.projects.keys() {
-                                    let value = self.player_ai_espionage_val(g, p, spy_owner, mission, spy_plot, project.i());
-
-                                    if value > best_value {
-                                        best_value = value;
-                                        best_mission = Some(mission);
-                                        *target_player = Some(spy_owner);
-                                        *plot = Some(spy_plot);
-                                        *data = project.i();
-                                    }
-                                }
-                            }
-                        }
-
-                        //General dataless city mission.
-                        if !big_espionage {
-                            for mission in d.espionage_missions.keys() {
-                                let mi = &d.espionage_missions[mission];
-                                if mi.city_poison_water_counter > 0 || mi.destroy_production_cost_factor > 0 || mi.steal_treasury_types > 0 {
-                                    let value = self.player_ai_espionage_val(g, p, spy_owner, mission, spy_plot, -1);
-
-                                    if value > best_value {
-                                        best_value = value;
-                                        best_mission = Some(mission);
-                                        *target_player = Some(spy_owner);
-                                        *plot = Some(spy_plot);
-                                        *data = -1;
-                                    }
-                                }
-                            }
-                        }
-
-                        //Disruption suitable for war.
-                        if g.teams[team].at_war[spy_team] {
-                            for mission in d.espionage_missions.keys() {
-                                let mi = &d.espionage_missions[mission];
-                                if mi.city_revolt_counter > 0 || mi.player_anarchy_counter > 0 {
-                                    let value = self.player_ai_espionage_val(g, p, spy_owner, mission, spy_plot, -1);
-
-                                    if value > best_value {
-                                        best_value = value;
-                                        best_mission = Some(mission);
-                                        *target_player = Some(spy_owner);
-                                        *plot = Some(spy_plot);
-                                        *data = -1;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    //Steal Technology
-                    for mission in d.espionage_missions.keys() {
-                        if d.espionage_missions[mission].buy_tech_cost_factor > 0 {
-                            for tech in d.techs.keys() {
-                                let value = self.player_ai_espionage_val(g, p, spy_owner, mission, spy_plot, tech.i());
-
-                                if value > best_value {
-                                    best_value = value;
-                                    best_mission = Some(mission);
-                                    *target_player = Some(spy_owner);
-                                    *plot = Some(spy_plot);
-                                    *data = tech.i();
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        best_mission
-    }
-
-    /// C++ `int CvPlayerAI::AI_espionageVal(PlayerTypes eTargetPlayer, EspionageMissionTypes eMission, CvPlot* pPlot, int iData) const` (CvPlayerAI.cpp:11204-11474)
-    pub fn player_ai_espionage_val(&self, g: &Game, p: PlayerId, target_player: PlayerId, mission: EspionageMissionType, plot: PlotIdx, data: i32) -> i32 {
-        let d = g.d;
-        let target_team = g.players[target_player].team;
-        let team = g.players[p].team;
-        let mi = &d.espionage_missions[mission];
-
-        let cost = g.player_get_espionage_mission_cost(p, mission, Some(target_player), Some(plot), data, None);
-
-        if !g.player_can_do_espionage_mission(p, mission, Some(target_player), Some(plot), data, None) {
-            return 0;
-        }
-
-        let mut value = 0;
-        if mi.destroy_improvement {
-            if g.map.plots[plot].owner == Some(target_player) {
-                if let Some(improvement) = g.map.plots[plot].improvement_type {
-                    if let Some(bonus) = g.plot_get_non_obsolete_bonus_type(plot, target_team) {
-                        // GET_PLAYER(eTargetPlayer).AI_bonusVal: a valuation of the target, our port.
-                        value += self.player_ai_bonus_val(g, target_player, bonus, -1);
-                    } else {
-                        let mut temp_value = 0;
-                        if g.map.plots[plot].working_city.is_some() {
-                            let owner = g.map.plots[plot].owner;
-                            temp_value += g.plot_calculate_improvement_yield_change(plot, improvement, YieldType::YIELD_FOOD, owner, false, false) * 2;
-                            temp_value += g.plot_calculate_improvement_yield_change(plot, improvement, YieldType::YIELD_PRODUCTION, owner, false, false) * 1;
-                            temp_value += g.plot_calculate_improvement_yield_change(plot, improvement, YieldType::YIELD_COMMERCE, owner, false, false) * 4;
-                            temp_value += d.improvements[improvement].upgrade_time / 2;
-                            value += temp_value;
-                        }
-                    }
-                }
-            }
-        }
-
-        if mi.destroy_building_cost_factor > 0 {
-            // PORT ADAPT: C++ casts iData blindly; here a non-building iData scores nothing.
-            if let Some(building) = opt_from_i32::<BuildingType>(data).filter(|b| b.idx() < d.buildings.len()) {
-                if g.player_can_spy_destroy_building(p, target_player, building) {
-                    if let Some(city) = plot_city(g, plot) {
-                        if g.cities[city].num_real_building[building] > 0 {
-                            let kb = &d.buildings[building];
-                            let world_wonder = kb.building_class_type.map_or(false, |bc| is_world_wonder_class(d, bc));
-                            if kb.production_cost > 1 && !world_wonder {
-                                value += self.city_ai_building_value(g, city, building, 0);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if mi.destroy_project_cost_factor > 0 {
-            if let Some(project) = opt_from_i32::<ProjectType>(data).filter(|pr| pr.idx() < d.projects.len()) {
-                if g.player_can_spy_destroy_project(p, target_player, project) {
-                    let kp = &d.projects[project];
-
-                    value += g.player_get_production_needed_project(p, project) * (if kp.max_team_instances == 1 { 3 } else { 2 });
-                }
-            }
-        }
-
-        if mi.destroy_production_cost_factor > 0 {
-            if let Some(city) = plot_city(g, plot) {
-                let temp_value = g.city_production(city);
-                if temp_value > 0 {
-                    if let Some(project) = g.city_production_project(city) {
-                        let kp = &d.projects[project];
-                        value += temp_value * (if kp.max_team_instances == 1 { 4 } else { 2 });
-                    } else if let Some(building) = g.city_production_building(city) {
-                        let kb = &d.buildings[building];
-                        if kb.building_class_type.map_or(false, |bc| is_world_wonder_class(d, bc)) {
-                            value += 3 * temp_value;
-                        }
-                        value += temp_value;
-                    } else {
-                        value += temp_value;
-                    }
-                }
-            }
-        }
-
-        if mi.destroy_unit_cost_factor > 0 || mi.buy_unit_cost_factor > 0 {
-            // PORT ADAPT: C++ `GET_PLAYER(eTargetPlayer).getUnit(iData)` (a per-player unit id);
-            // here iData is read as a global UnitId owned by the target.
-            let unit = if data >= 0 {
-                let u = UnitId(data as u32);
-                if g.units.contains(u) && g.units[u].owner == target_player {
-                    Some(u)
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
-
-            if let Some(u) = unit {
-                let unit_type = g.units[u].unit_type;
-                let default_ai = d.units[unit_type].default_unit_ai_type.unwrap_or(UnitAIType::UNITAI_UNKNOWN);
-                let unit_area = g.unit_area(u);
-
-                // GET_PLAYER(eTargetPlayer).AI_unitValue: a valuation of the target, our port.
-                value += self.player_ai_unit_value(g, target_player, unit_type, default_ai, unit_area);
-
-                if mi.buy_unit_cost_factor > 0 {
-                    if !g.player_can_train(p, unit_type, false, false, false) || g.player_get_production_needed_unit(p, unit_type) > cost {
-                        value += self.player_ai_unit_value(g, p, unit_type, default_ai, unit_area);
-                    }
-                }
-            }
-        }
-
-        if mi.steal_treasury_types > 0 {
-            let gold_stolen = data;
-            return 2 * (2 * gold_stolen - cost);
-        }
-
-        if mi.counterespionage_num_turns > 0 {
-            //iValue += 100 * GET_TEAM(getTeam()).AI_getAttitudeVal(GET_PLAYER(eTargetPlayer).getTeam());
-        }
-
-        if mi.buy_city_cost_factor > 0 {
-            if let Some(city) = plot_city(g, plot) {
-                value += self.player_ai_city_trade_val(g, p, city);
-            }
-        }
-
-        if mi.city_insert_culture_amount_factor > 0 {
-            if let Some(city) = plot_city(g, plot) {
-                if g.cities[city].owner != p {
-                    let mut culture_amount = mi.city_insert_culture_amount_factor * g.map.plots[plot].culture[p];
-                    culture_amount /= 100;
-                    if g.city_calculate_culture_percent(city, p) > 40 {
-                        value += culture_amount * 3;
-                    }
-                }
-            }
-        }
-
-        if mi.city_poison_water_counter > 0 {
-            if let Some(city) = plot_city(g, plot) {
-                let city_health = g.city_good_health(city) - g.city_bad_health(city, false, 0);
-                let base_unhealth = mi.city_poison_water_counter;
-
-                let mut average_unhealth = 0.max(base_unhealth - city_health);
-                average_unhealth += 0.max((base_unhealth / 2) - city_health);
-
-                average_unhealth /= 2;
-
-                value += 8 * average_unhealth * base_unhealth;
-            }
-        }
-
-        if mi.city_unhappiness_counter > 0 {
-            if let Some(city) = plot_city(g, plot) {
-                let city_unhappy = g.city_unhappy_level(city, 0);
-                if city_unhappy > 0 {
-                    let base_anger = mi.city_unhappiness_counter;
-
-                    value += 7 * base_anger * base_anger;
-                }
-            }
-        }
-
-        if mi.city_revolt_counter > 0 {
-            if let Some(city) = plot_city(g, plot) {
-                if g.at_war(team, g.city_team(city)) {
-                    value -= 10;
-                    value += 5 * self.player_ai_adjacent_potential_attackers(g, p, plot, true);
-                }
-            }
-        }
-
-        if mi.buy_tech_cost_factor > 0 {
-            if let Some(tech) = opt_from_i32::<TechType>(data).filter(|t| t.idx() < d.techs.len()) {
-                if cost < g.team_get_research_left(team, tech) * 4 / 3 {
-                    value += self.team_ai_tech_trade_val(g, team, tech, target_team);
-                }
-            }
-        }
-
-        if mi.switch_civic_cost_factor > 0 {
-            if let Some(civic) = opt_from_i32::<CivicType>(data).filter(|c| c.idx() < d.civics.len()) {
-                value += self.player_ai_civic_trade_val(g, p, civic, target_player);
-            }
-        }
-
-        if mi.switch_religion_cost_factor > 0 {
-            if let Some(religion) = opt_from_i32::<ReligionType>(data).filter(|r| r.idx() < d.religions.len()) {
-                value += self.player_ai_religion_trade_val(g, p, religion, target_player);
-            }
-        }
-
-        if mi.player_anarchy_counter > 0 {
-            // AI doesn't use Player Anarchy
-        }
-
-        value
-    }
-
     /// C++ `int CvPlayerAI::AI_getPeaceWeight() const` (CvPlayerAI.cpp:11476-11479)
     pub fn player_ai_get_peace_weight(&self, g: &Game, p: PlayerId) -> i32 {
         pai(self, g, p, |s| s.peace_weight)
@@ -1314,10 +969,8 @@ impl Cai {
 
     /// C++ `int CvPlayerAI::AI_getEspionageWeight() const` (CvPlayerAI.cpp:11487-11494)
     pub fn player_ai_get_espionage_weight(&self, g: &Game, p: PlayerId) -> i32 {
-        if g.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
-            return 0;
-        }
-        pai(self, g, p, |s| s.espionage_weight)
+        // There is no espionage (the C++ returns 0 under GAMEOPTION_NO_ESPIONAGE).
+        0
     }
 
     /// C++ `void CvPlayerAI::AI_setEspionageWeight(int iNewValue)` (CvPlayerAI.cpp:11496-11499)
@@ -1706,10 +1359,6 @@ impl Cai {
             if percent(g, espionage) > 0 {
                 g.player_set_commerce_percent(p, espionage, 0);
 
-                for t in g.civ_team_ids() {
-                    g.player_set_espionage_spending_weight_against_team(p, t, 0);
-                }
-
                 reset = true;
             }
         }
@@ -1792,13 +1441,12 @@ impl Cai {
 
             for t in g.civ_team_ids() {
                 if g.team_is_alive(t) && t != team && !g.teams[t].vassal[team] && !g.teams[team].vassal[t] {
-                    let mut target = (g.teams[t].espionage_points_against_team[team] - g.teams[team].espionage_points_against_team[t]) / 8;
+                    let mut target = 0; // there is no espionage: no points on either side
 
                     target -= self.team_ai_get_attitude_val(g, team, t, true);
 
                     if target > 0 {
                         espionage_target_rate += target;
-                        g.player_change_espionage_spending_weight_against_team(p, t, target);
                     }
                 }
             }

@@ -20,7 +20,7 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
-import { G, P, M, wall, peak, hip, dome, blobs, crag, stack, mark, side, house, compose, TABLES, halo, windows, trim, finialOf } from './citykit.mjs';
+import { G, P, M, wall, peak, hip, dome, blobs, crag, stack, mark, side, house, compose, windows, trim, finialOf } from './citykit.mjs';
 
 const LIFT = 3;
 
@@ -733,35 +733,34 @@ function frost(t) {
 
 
 // ================================================================================== the list
-// table: the halo table that pre-lights the stone around windows (null: none); light: a ground
-// light of the sprite itself ([table, radius], placed under its glow core), e.g. the tribal bonfire.
+// light: a ground light of the sprite itself ([table, radius], placed under its glow core), e.g. the
+// tribal bonfire.
 
-/** Daylight towns (the cheerful revamp): windows are not pre-lit through the halo tables, and the
- * hand-drawn stamps' dark night-look neutrals are lifted two steps (doors, gates, crags, frames) except in
- * the styles meant to be dark or faded (lift: false). */
-const DAYLIGHT = true;
+/** Daylight towns (the cheerful revamp): the hand-drawn stamps' dark night-look neutrals are lifted
+ * two steps (doors, gates, crags, frames) except in the styles meant to be dark or faded (lift:
+ * false). (The night look's firelight halo round the windows was removed 2026-11-10.) */
 const DAY_LIFT = { 1: '3', 2: '4', 3: '5', 4: '6', 5: 'H' };
 
 const STYLES = [
-  { name: 'cloister', note: 'gothic stone: steep dark roofs with a moonlit edge, a chapel spire, a nave, a cathedral front from tier IV', make: (t) => cloister(t), table: 'FIRE' },
-  { name: 'amurite', note: 'cloister with a mage tower crowned by a lilac crystal; lilac windows', make: (t) => cloister(t, { mage: true, m: { ...M.stone, t: '5' } }), table: 'ARC' },
-  { name: 'calabim', note: 'cloister in dark stone', make: (t) => cloister(t, { m: M.dark }), table: 'FIRE', lift: false },
+  { name: 'cloister', note: 'gothic stone: steep dark roofs with a moonlit edge, a chapel spire, a nave, a cathedral front from tier IV', make: (t) => cloister(t) },
+  { name: 'amurite', note: 'cloister with a mage tower crowned by a lilac crystal; lilac windows', make: (t) => cloister(t, { mage: true, m: { ...M.stone, t: '5' } }) },
+  { name: 'calabim', note: 'cloister in dark stone', make: (t) => cloister(t, { m: M.dark }), lift: false },
   {
-    name: 'sidar', note: 'faded cloister in ash; no lit windows above tier II', make: (t) => cloister(t, { m: M.faded }), table: null, lift: false,
+    name: 'sidar', note: 'faded cloister in ash; no lit windows above tier II', make: (t) => cloister(t, { m: M.faded }), lift: false,
     post: (g, t) => (t >= 3 ? g.remap({ l: '3', L: '3' }) : g),
   },
-  { name: 'sundomes', note: 'sand stone, flat roofs, low domes and a minaret', make: sundomes, table: 'FIRE' },
-  { name: 'elven', note: 'great trees with lit hollows, platforms and pods', make: (t) => elven(t), table: 'FIRE', post: (g) => g.remap({ k: 't', t: 'T', T: 'o' }) },
-  { name: 'svartalfar', note: 'elven trees in dusk and bruise, lilac hollows', make: (t) => elven(t, { dark: true }), table: 'ARC' },
-  { name: 'dwarven', note: 'a hold built out of the mountain: a stepped gatehouse, battlemented towers and ramparts in warm stone with a bronze band, ember chimneys, rock shoulders', make: (t) => dwarven(t), table: null, lift: false },
-  { name: 'luchuirp', note: 'the dwarven hold with a gear wheel and a golem forge', make: (t) => dwarven(t, { luchuirp: true }), table: null, lift: false },
-  { name: 'tribal', note: 'hide tents with lit doors, a longhouse, a palisade and a bonfire (FIRE pool, radius 8)', make: (t) => tribal(t), table: 'FIRE', light: ['FIRE', 8] },
-  { name: 'barbarian', note: 'dark pelt tents, a skull-topped palisade, a lookout, a bonfire (FIRE pool, radius 8)', make: (t) => tribal(t, { barb: true }), table: 'EMBER', light: ['FIRE', 8] },
-  { name: 'harbour', note: 'stilt houses, moored ships with square sails and stern lanterns, a pier, a lighthouse from tier IV', make: harbour, table: 'FIRE', post: (g) => g.remap({ y: 'Q', x: 'e' }) },
-  { name: 'carnival', note: 'striped pavilions in the owner colours (# %), a big top, pennants and lantern strings', make: carnival, table: 'FIRE' },
-  { name: 'infernal', note: 'black thorn spires with a moonlit edge, crimson cracks, scarlet windows', make: infernal, table: 'BLOOD', lift: false },
-  { name: 'celestial', note: 'pale slender towers, needle spires and domes, vellum light', make: celestial, table: null },
-  { name: 'frost', note: 'rime-capped stone and an ice spire, rime windows', make: frost, table: 'COLD' },
+  { name: 'sundomes', note: 'sand stone, flat roofs, low domes and a minaret', make: sundomes },
+  { name: 'elven', note: 'great trees with lit hollows, platforms and pods', make: (t) => elven(t), post: (g) => g.remap({ k: 't', t: 'T', T: 'o' }) },
+  { name: 'svartalfar', note: 'elven trees in dusk and bruise, lilac hollows', make: (t) => elven(t, { dark: true }) },
+  { name: 'dwarven', note: 'a hold built out of the mountain: a stepped gatehouse, battlemented towers and ramparts in warm stone with a bronze band, ember chimneys, rock shoulders', make: (t) => dwarven(t), lift: false },
+  { name: 'luchuirp', note: 'the dwarven hold with a gear wheel and a golem forge', make: (t) => dwarven(t, { luchuirp: true }), lift: false },
+  { name: 'tribal', note: 'hide tents with lit doors, a longhouse, a palisade and a bonfire (FIRE pool, radius 8)', make: (t) => tribal(t), light: ['FIRE', 8] },
+  { name: 'barbarian', note: 'dark pelt tents, a skull-topped palisade, a lookout, a bonfire (FIRE pool, radius 8)', make: (t) => tribal(t, { barb: true }), light: ['FIRE', 8] },
+  { name: 'harbour', note: 'stilt houses, moored ships with square sails and stern lanterns, a pier, a lighthouse from tier IV', make: harbour, post: (g) => g.remap({ y: 'Q', x: 'e' }) },
+  { name: 'carnival', note: 'striped pavilions in the owner colours (# %), a big top, pennants and lantern strings', make: carnival },
+  { name: 'infernal', note: 'black thorn spires with a moonlit edge, crimson cracks, scarlet windows', make: infernal, lift: false },
+  { name: 'celestial', note: 'pale slender towers, needle spires and domes, vellum light', make: celestial },
+  { name: 'frost', note: 'rime-capped stone and an ice spire, rime windows', make: frost },
 ];
 
 // ---------------------------------------------------------------------------------- output
@@ -769,10 +768,10 @@ const STYLES = [
 const HEADER = `; cities (docs/ART.md 9): city/<style>_<tier>, tiers I (pop 1-3) to V (20+).
 ; GENERATED by citystyles.mjs (node cities/citystyles.mjs from web/art): edit the styles there.
 ; Dark masses lit from the upper left (moonlit roof edge, shade at the right, void outline), lit
-; windows in amber l (recoloured to the style's light by the renderer), the stone around a window
-; pre-lit through the style's halo table. The anchor is ${LIFT} rows below the sprite: the city's
-; bottom row lands on tile row ${30 - LIFT}, clear of the plaque. \`: finial\` is the capital's finial
-; point; \`: light\` a ground light of the sprite itself (the tribal bonfire).
+; windows in amber l (recoloured to the style's light by the renderer). The anchor is ${LIFT} rows
+; below the sprite: the city's bottom row lands on tile row ${30 - LIFT}, clear of the plaque.
+; \`: finial\` is the capital's finial point; \`: light\` a ground light of the sprite itself (the
+; tribal bonfire).
 `;
 
 /** The glow core nearest the bottom centre (the bonfire), as the source of a sprite light. */
@@ -791,10 +790,8 @@ export function build() {
   for (const st of STYLES) {
     for (let t = 1; t <= 5; t++) {
       let g = st.make(t);
-      // daylight: no firelight halo around the windows (night only)
-      if (!DAYLIGHT) g = halo(g, TABLES[st.table]);
       if (st.post) g = st.post(g, t);
-      if (DAYLIGHT && st.lift !== false) g = g.remap(DAY_LIFT);
+      if (st.lift !== false) g = g.remap(DAY_LIFT);
       g = trim(g, 0);
       const [fx, fy] = finialOf(g);
       const meta = [`finial ${fx},${fy}`];

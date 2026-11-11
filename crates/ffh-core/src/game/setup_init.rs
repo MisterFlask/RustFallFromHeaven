@@ -72,7 +72,7 @@ impl Game {
 
     /// C++ `CvGame::init(eHandicap)`: `reset`, RNG seeds (`mapRandSeed % 73637381`,
     /// `syncRandSeed % 52319761`), FfH RANDOM_CIVILIZATION leader picks (soren rand),
-    /// GAMEOPTION_LOCK_MODS password (7 soren draws), estimate end turn / max turns, `START_YEAR`,
+    /// estimate end turn / max turns, `START_YEAR`,
     /// always-valid special units/buildings, `AI_init`, `doUpdateCacheOnTurn`.
     pub fn init(&mut self, handicap: HandicapType) {
         let d = self.d;
@@ -93,18 +93,6 @@ impl Game {
         // FfH: Added by Kael 05/28/2008
         self.init_random_civilizations();
         // FfH: End Add
-
-        if self.is_option(GameOptionType::GAMEOPTION_LOCK_MODS) {
-            if self.is_game_multi_player() {
-                self.setup.options[GameOptionType::GAMEOPTION_LOCK_MODS] = false;
-            } else {
-                // Random admin password (`setAdminPassword`; not stored): 7 soren draws.
-                const PASSWORD_SIZE: i32 = 8;
-                for _ in 0..PASSWORD_SIZE - 1 {
-                    self.soren_rand_num(128, "");
-                }
-            }
-        }
 
         self.start_turn = self.game_turn();
 
@@ -434,7 +422,7 @@ impl Game {
     }
 
     /// C++ `CvGame::initDiplomacy`: teams meet themselves; barbarians/minors declare war on all
-    /// civ teams (FfH: except barbarian allies); GAMEOPTION_ADVANCED_START forced peace deals.
+    /// civ teams (FfH: except barbarian allies).
     pub fn init_diplomacy(&mut self) {
         for t in self.team_ids() {
             self.team_meet(t, t, false);
@@ -447,29 +435,6 @@ impl Game {
                             self.team_declare_war(t, j, false, None);
                         }
                         // FfH: End Add
-                    }
-                }
-            }
-        }
-
-        // Forced peace at the beginning of Advanced starts
-        if self.is_option(GameOptionType::GAMEOPTION_ADVANCED_START) {
-            let trade = set_trade_item(TradeableItem::TRADE_PEACE_TREATY, 0);
-            let player1_list = vec![trade.clone()];
-            let player2_list = vec![trade];
-
-            let num_civ_players = self.num_civ_players();
-            for i1 in 0..num_civ_players {
-                let p1 = PlayerId(i1 as u8);
-                if self.players[p1].alive {
-                    for i2 in (i1 + 1)..num_civ_players {
-                        let p2 = PlayerId(i2 as u8);
-                        if self.players[p2].alive {
-                            let (t1, t2) = (self.players[p1].team, self.players[p2].team);
-                            if self.team_can_change_war_peace(t1, t2, false) {
-                                self.implement_deal(p1, p2, &player1_list, &player2_list, false);
-                            }
-                        }
                     }
                 }
             }

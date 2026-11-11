@@ -13,7 +13,7 @@
 
 import * as api from "./api.js";
 import { S, setData, setView, setMap, on, emit, resetDismissed, clearDismissed, popupQueue, endTurnMessage, cycleCity, observing, eventMarkers } from "./state.js";
-import { MapView, fastStart } from "./map.js";
+import { MapView } from "./map.js";
 import * as units from "./units.js";
 import { openCity, ownCities, stepCityScreen } from "./city.js";
 import * as empire from "./empire.js";
@@ -828,25 +828,21 @@ async function boot() {
   // map's fallback, or chosen with `?renderer=iso` or the remembered Options choice.
   // It owns its own projection, so the art/flat switches leave it be.
   if (rendererChoice() === "iso") mapView.useIso(true);
-  // (Start-up prototype, fastStart: a page whose renderer is the HD-2D map boots in that map's
-  // interface, the isometric skin, not in the 2D art's that it dropped when the HD-2D map was ready
-  // -- after building it for a second or two, in the middle of the HD-2D map's start.)
-  hd2dPending = rendererChoice() === "hd2d" && fastStart();
+  // (A page whose renderer is the HD-2D map boots in that map's interface, the isometric skin, not
+  // in the 2D art's, which it would drop when the HD-2D map was ready -- after building it for a
+  // second or two, in the middle of the HD-2D map's start.)
+  hd2dPending = rendererChoice() === "hd2d";
   // Nor the flat map: the HD-2D map is the first map the player sees, the map's backdrop until then
   // (MapView.holdBackdrop: the flat map after 10 s, so the player can act).
   if (hd2dPending) mapView.holdBackdrop(true);
   // The HD-2D map (docs/HD2D.md), the default, built on the 3D renderer (docs/R3D.md): loaded on
   // demand; where it cannot run (no WebGL2, a software one, shaders too slow) the isometric map.
-  // (fastStart: its import is asked for before the interface is dressed, a few hundred ms of
-  // script.)
-  const wantHd2d = rendererChoice() === "hd2d";
-  if (wantHd2d && fastStart()) useHd2d();
+  // (Its import is asked for before the interface is dressed, a few hundred ms of script.)
+  if (hd2dPending) useHd2d();
   syncSkin();
-  if (wantHd2d && !fastStart()) useHd2d();
-  // The art loads beside the data; the page works meanwhile (and without it). lookLoaded() builds
-  // the art worker, which bakes in the engine's type ordering (from /api/data) once, so it must run
-  // after setLookData(): otherwise, if the static art bundle wins the race against the server-
-  // computed data, the worker draws terrain/units with the art's own ordering for the whole session.
+  // The art loads beside the data; the page works meanwhile (and without it). Whichever comes
+  // first, the art reads the type indices by the engine's names once both are in (look.js
+  // setLookData); lookLoaded() then redraws the interface with it.
   const art = loadLook();
   try {
     const [data, setup] = await Promise.all([api.get("/api/data"), api.get("/api/setup")]);
@@ -911,7 +907,7 @@ function setRenderer(r) {
   syncSkin();
 }
 
-/** An HD-2D map is starting (main.js boot, fastStart): the interface is already its own, and the
+/** An HD-2D map is starting (main.js boot): the interface is already its own, and the
  *  flat map is not drawn meanwhile. */
 let hd2dPending = false;
 
@@ -951,9 +947,9 @@ async function useHd2d() {
   let note = null;
   const say = () => {
     clearTimeout(slow);
-    // (fastStart: the message stays until the map is ready -- on Direct3D the screen freezes
-    // through each program's compile, and a 6 s message was gone after the first.)
-    if (!said) note = toast("Preparing the HD-2D map (compiling its shaders)…", "info", fastStart() ? 120000 : 6000);
+    // (The message stays until the map is ready -- on Direct3D the screen freezes through each
+    // program's compile, and a 6 s message was gone after the first.)
+    if (!said) note = toast("Preparing the HD-2D map (compiling its shaders)…", "info", 120000);
     said = true;
   };
   const slow = setTimeout(say, 1500);

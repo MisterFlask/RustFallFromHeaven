@@ -839,7 +839,7 @@ cargo build --release
   are not the defaults, plus `--resume <autosave>` when `--saves` kept autosaves (every game is
   deterministic, and resuming an autosave ends exactly as the uninterrupted game). Sizes,
   civilizations, options, speeds and handicaps may be shortened (`tiny`, `mercurian`, `raging`,
-  `quick`); numbers out of range are refused. `occ` (one-city challenge, no healing for humans)
+  `quick`); numbers out of range are refused. `occ` (one-city challenge)
   and `challenges` (cut losers, high to low, increasing and flexible difficulty) are option sets
   that act only on human players. `--civ infernal` or `mercurians` (not playable at the start)
   plays an AI-only game whose player 0 founds them at turn 30 (`--spawn-turn`) and takes the new

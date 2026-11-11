@@ -100,8 +100,8 @@ starts and when it stops.
 - **The flip happens in the target city's turn**, as a culture revolt would; a flipped city starts
   with no pressure (it is a new city).
 - **Barbarian cities** may be targeted (and flipped); barbarians channel nothing.
-- **Espionage overlap.** FfH locks `GAMEOPTION_NO_ESPIONAGE` on (`Game::is_option`), so BtS's
-  influence missions cannot run in this game: there is nothing to disable.
+- **Espionage overlap.** There is no espionage (FfH locked `GAMEOPTION_NO_ESPIONAGE` on; the option
+  and the espionage code are gone), so BtS's influence missions cannot run: nothing to disable.
 - **Saves before format 8** (the cultural queue) do not load.
 
 ## Open points for the owner
@@ -146,7 +146,6 @@ Once a turn (`ffh-ai/src/culture.rs`), after the diplomacy and the governors:
   - A new one must be worth a quarter more than its cost.
   - A religion channel moves only for one better by half its cost.
 - **Governed cities** channel as the civilization decides, like directly ruled ones. A human's governors set no channel; they only train defenders against revolt pressure.
-- **Switch `FFH_AI_CULTURE_OFF`:** nothing is channelled.
 
 Measured on 8 civs, a standard map and 350 turns, with `GAMEOPTION_CULTURE_ACTIONS`, `GAMEOPTION_ARMIES` and `GAMEOPTION_GOVERNORS`, seeds 1–4:
 

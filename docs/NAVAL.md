@@ -127,7 +127,7 @@ Where the code is:
 - The AI: `Game::path_ai_sea_blocked` (path.rs; the AI-side restriction of the path finder, with
   the flag `MOVE_BOATS`), `ffh-ai` `naval::sea_blocked`, `ship_to_port`, `in_boats`,
   `walk_home_in_boats` (called from `supply::stranded_overseas`).
-- Save format 32: `Unit::sea_turns`, `Unit::sea_out_of_range` (the first-turn message).
+- Save format 33: `Unit::sea_turns`, `Unit::sea_out_of_range` (the first-turn message).
 
 Choices made where this spec was silent (each open to change):
 
@@ -297,7 +297,7 @@ Where the code is:
   `EngagePreview::shore`, `ReportSide::shore`, `LogEvent::ShoreFire`.
 - The AI (section 8): `crates/ffh-ai/src/naval.rs` (`patrol`, `patrol_target`, `patrol_wake`,
   `patrol_production`, `way_in_range`).
-- The stress harness checks `sea_control_stale` (`ffh_harness::check`). Save format 33: `Plot::sea`,
+- The stress harness checks `sea_control_stale` (`ffh_harness::check`). Save format 34: `Plot::sea`,
   `Map::seas`, `Unit::intercepted`, `Unit::shore_fired`, `ReportSide::shore`,
   `LogEvent::ShoreFire`. Data: `sea_names.jsonc` (`SeaNameInfo`: `names`, `lake`), the defines of
   section 11's phase 2.

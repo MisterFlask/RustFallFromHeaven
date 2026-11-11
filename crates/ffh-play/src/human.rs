@@ -69,7 +69,6 @@ pub const POLICIES: &[(&str, Policy)] = &[
     // (an AI's judgement, shown on the diplomacy screen; a human answers for itself)
     ("judge_offer", Policy::Fixed),
     ("trade_value", Policy::Fixed),
-    ("choose_religion", Policy::Blocking),
     ("attitude", Policy::Advisor),
     ("take_control", Policy::Blocking),
     ("update_automated_group", Policy::Advisor),
@@ -499,20 +498,6 @@ impl Controller for HumanController {
             return self.advisor.trade_value(g, p, other, item, p_gets);
         }
         None
-    }
-
-    /// C++ BUTTONPOPUP_FOUND_RELIGION: blocking (unreachable while FfH locks PICK_RELIGION off).
-    fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {
-        if !g.players[p].human {
-            return self.advisor.choose_religion(g, p);
-        }
-        let religions = decision::religion_options(g);
-        if religions.is_empty() {
-            return None;
-        }
-        let advice = self.suggest(g, |g| self.advisor.choose_religion(g, p));
-        let i = self.block(g, decision::religion(g, p, &religions, advice));
-        Some(religions[i])
     }
 
     /// The cards (docs/CARDS.md): the Spire of the Archmagi's free promotion, blocking.

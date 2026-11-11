@@ -260,15 +260,14 @@ impl Game {
         }
     }
 
-    /// C++ `CvPlayer::calculateUnitCost()` (0 in anarchy, with FFH disabled production or
-    /// GAMEOPTION_NO_MAINTENANCE).
+    /// C++ `CvPlayer::calculateUnitCost()` (0 in anarchy or with FFH disabled production).
     pub fn player_calculate_unit_cost(&self, p: PlayerId) -> i32 {
         if self.player_is_anarchy(p) {
             return 0;
         }
 
         //FfH: Added by Kael 10/03/2008
-        if self.players[p].disable_production > 0 || self.is_option(GameOptionType::GAMEOPTION_NO_MAINTENANCE) {
+        if self.players[p].disable_production > 0 {
             return 0;
         }
         //FfH: End Add
@@ -276,15 +275,14 @@ impl Game {
         self.player_calculate_unit_cost_breakdown(p).cost
     }
 
-    /// C++ `CvPlayer::calculateUnitSupply()` (0 in anarchy, with FFH disabled production or
-    /// GAMEOPTION_NO_MAINTENANCE).
+    /// C++ `CvPlayer::calculateUnitSupply()` (0 in anarchy or with FFH disabled production).
     pub fn player_calculate_unit_supply(&self, p: PlayerId) -> i32 {
         if self.player_is_anarchy(p) {
             return 0;
         }
 
         //FfH: Added by Kael 10/03/2008
-        if self.players[p].disable_production > 0 || self.is_option(GameOptionType::GAMEOPTION_NO_MAINTENANCE) {
+        if self.players[p].disable_production > 0 {
             return 0;
         }
         //FfH: End Add
@@ -334,12 +332,6 @@ impl Game {
 
     /// C++ `CvPlayer::calculateInflationRate`.
     pub fn player_calculate_inflation_rate(&self, p: PlayerId) -> i32 {
-        //FfH: Added by Kael 11/18/2008
-        if self.is_option(GameOptionType::GAMEOPTION_NO_INFLATION) {
-            return 0;
-        }
-        //FfH: End Add
-
         let d = self.d;
         let speed = &d.game_speeds[self.game_speed_type()];
 
@@ -561,19 +553,16 @@ impl Game {
         self.player_set_commerce_percent(p, commerce, new_value);
     }
 
-    /// C++ `CvPlayer::getCommerceRate(eIndex)`: the x100 member divided by 100; with
-    /// GAMEOPTION_NO_ESPIONAGE (always on in FFH, see `CvGame::isOption`) espionage counts
-    /// as culture; 0 while FFH research is disabled.
+    /// C++ `CvPlayer::getCommerceRate(eIndex)`: the x100 member divided by 100; the espionage
+    /// slot counts as culture (there is no espionage); 0 while FFH research is disabled.
     pub fn player_get_commerce_rate(&self, p: PlayerId, commerce: CommerceType) -> i32 {
         let pl = &self.players[p];
 
         let mut rate = pl.commerce_rate[commerce.idx()];
-        if self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
-            if commerce == CommerceType::COMMERCE_CULTURE {
-                rate += pl.commerce_rate[CommerceType::COMMERCE_ESPIONAGE.idx()];
-            } else if commerce == CommerceType::COMMERCE_ESPIONAGE {
-                rate = 0;
-            }
+        if commerce == CommerceType::COMMERCE_CULTURE {
+            rate += pl.commerce_rate[CommerceType::COMMERCE_ESPIONAGE.idx()];
+        } else if commerce == CommerceType::COMMERCE_ESPIONAGE {
+            rate = 0;
         }
 
         //FfH: Added by Kael 08/28/2008 (every commerce type, not only research, reads 0)
@@ -656,9 +645,8 @@ impl Game {
             return false;
         }
 
-        if commerce == CommerceType::COMMERCE_ESPIONAGE
-            && (0 == self.team_get_has_met_civ_count(pl.team, true) || self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE))
-        {
+        // There is no espionage.
+        if commerce == CommerceType::COMMERCE_ESPIONAGE {
             return false;
         }
 
@@ -880,7 +868,7 @@ impl Game {
 
         let d = self.d;
 
-        if !self.player_is_research(p) && self.players[p].advanced_start_points < 0 {
+        if !self.player_is_research(p) {
             return false;
         }
 
@@ -1204,7 +1192,7 @@ impl Game {
         let civ = self.player_get_civilization_type(p).expect("player without a civilization");
         let unit = d.civ_unit(civ, unit_class)?;
 
-        if d.units[unit].espionage_points > 0 && self.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
+        if d.units[unit].espionage_points > 0 {
             return None;
         }
 
@@ -1514,14 +1502,8 @@ impl Game {
         }
     }
 
-    /// C++ `CvPlayer::getWarWearinessPercentAnger` (0 with GAMEOPTION_NO_WAR_WEARINESS).
+    /// C++ `CvPlayer::getWarWearinessPercentAnger`.
     pub fn player_get_war_weariness_percent_anger(&self, p: PlayerId) -> i32 {
-        //FfH: Added by Kael 11/17/2008
-        if self.is_option(GameOptionType::GAMEOPTION_NO_WAR_WEARINESS) {
-            return 0;
-        }
-        //FfH: End Add
-
         // Card: Stoicism (docs/CARDS.md): war weariness causes no unhappiness.
         if self.player_no_war_weariness(p) {
             return 0;
@@ -1547,9 +1529,8 @@ impl Game {
 
         new_war_weariness_percent_anger = self.player_get_modified_war_weariness_percent_anger(p, new_war_weariness_percent_anger);
 
-        // (C++ compares against the getter, which reads 0 under GAMEOPTION_NO_WAR_WEARINESS and,
-        // here, Stoicism: a new value of 0 then never reset a stale member, which came back as
-        // anger when Stoicism ended.)
+        // (C++ compares against the getter, which here reads 0 under Stoicism: a new value of 0
+        // then never reset a stale member, which came back as anger when Stoicism ended.)
         if self.players[p].war_weariness_percent_anger != new_war_weariness_percent_anger {
             self.players[p].war_weariness_percent_anger = new_war_weariness_percent_anger;
 
@@ -1755,9 +1736,6 @@ mod tests {
         g.setup.game_turn = 20000;
         g.elapsed_game_turns = 20000;
         let _ = g.player_calculate_inflation_rate(p);
-
-        g.setup.options[GameOptionType::GAMEOPTION_NO_INFLATION] = true;
-        assert_eq!(g.player_calculate_inflation_rate(p), 0);
     }
 
     #[test]
@@ -1782,9 +1760,6 @@ mod tests {
         assert_eq!(g.player_calculate_unit_supply(p), 0);
         g.players[p].anarchy_turns = 0;
         g.players[p].disable_production = 1;
-        assert_eq!(g.player_calculate_unit_supply(p), 0);
-        g.players[p].disable_production = 0;
-        g.setup.options[GameOptionType::GAMEOPTION_NO_MAINTENANCE] = true;
         assert_eq!(g.player_calculate_unit_supply(p), 0);
     }
 
@@ -1845,7 +1820,7 @@ mod tests {
         g.players[p].commerce_rate = [199, 450, 250, 120];
         assert_eq!(g.player_get_commerce_rate(p, CommerceType::COMMERCE_GOLD), 1);
         assert_eq!(g.player_get_commerce_rate(p, CommerceType::COMMERCE_RESEARCH), 4);
-        // GAMEOPTION_NO_ESPIONAGE is always on in FfH
+        // there is no espionage: its slot counts as culture
         assert_eq!(g.player_get_commerce_rate(p, CommerceType::COMMERCE_CULTURE), 3);
         assert_eq!(g.player_get_commerce_rate(p, CommerceType::COMMERCE_ESPIONAGE), 0);
 
@@ -1874,7 +1849,7 @@ mod tests {
         g.teams[t].commerce_flexible_count[CommerceType::COMMERCE_GOLD.idx()] = 1;
         assert!(g.player_is_commerce_flexible(p, CommerceType::COMMERCE_GOLD));
 
-        // espionage: no civ met, and GAMEOPTION_NO_ESPIONAGE
+        // espionage: there is none
         g.players[p].commerce_flexible_count[CommerceType::COMMERCE_ESPIONAGE.idx()] = 1;
         assert!(!g.player_is_commerce_flexible(p, CommerceType::COMMERCE_ESPIONAGE));
     }
@@ -1888,11 +1863,8 @@ mod tests {
         let crafting = tech(&g, "TECH_CRAFTING");
         let mining = tech(&g, "TECH_MINING");
 
-        // no city and not in advanced start
+        // no city
         assert!(!g.player_can_research(p, crafting, false));
-        g.players[p].advanced_start_points = 0;
-        assert!(g.player_can_research(p, crafting, false));
-        g.players[p].advanced_start_points = -1;
 
         g.players[p].founded_first_city = true;
         assert!(g.player_can_research(p, crafting, false));
@@ -2049,8 +2021,6 @@ mod tests {
 
         g.players[p].war_weariness_percent_anger = 30;
         assert_eq!(g.player_get_war_weariness_percent_anger(p), 30);
-        g.setup.options[GameOptionType::GAMEOPTION_NO_WAR_WEARINESS] = true;
-        assert_eq!(g.player_get_war_weariness_percent_anger(p), 0);
     }
 
     /// Picks the same tech for every research and free-tech choice.

@@ -46,6 +46,11 @@ pub enum Outcome {
     /// `team` conquers at least one city of `victim` within the horizon. Void if `victim` is
     /// destroyed by someone else first.
     AnyCityCapturedFrom { team: TeamId, victim: TeamId },
+    /// An attack is made on `city` (its plot) within the horizon by `team`, or by any team at war
+    /// with its owner when `None`: an engagement launched at the plot or a duel fought on it, or
+    /// the city conquered (by that team) without one. False when the horizon passes; void if the
+    /// city changes hands otherwise (traded, flipped, conquered by another team, destroyed).
+    CityAttackedBy { city: CityId, team: Option<TeamId> },
 }
 
 /// The horizon of a prediction about this turn: resolved at the end of the predicting player's
@@ -102,6 +107,7 @@ enum Subject {
     AttackWon { unit: UnitId },
     StackClears { team: TeamId, plot: PlotIdx },
     AnyCityCapturedFrom { team: TeamId, victim: TeamId },
+    CityAttackedBy { plot: PlotIdx, owner: PlayerId, team: Option<TeamId> },
 }
 
 struct Pending {
@@ -242,6 +248,11 @@ impl Game {
             }
             Outcome::StackClears { team, plot } => Subject::StackClears { team, plot },
             Outcome::AnyCityCapturedFrom { team, victim } => Subject::AnyCityCapturedFrom { team, victim },
+            Outcome::CityAttackedBy { city, team } => {
+                let Some(c) = self.cities.get(city) else { return };
+                let Some(plot) = self.map.plot_xy(c.x, c.y) else { return };
+                Subject::CityAttackedBy { plot, owner: c.owner, team }
+            }
         };
         let turn = self.game_turn();
         let bin = if pr.per_answer { (pr.pct.clamp(0, 100) / 10).min(9) as i8 } else { -1 };
@@ -296,6 +307,11 @@ impl Game {
                 Subject::CityLost { plot: q, owner } if q == plot && owner == old => Some(true),
                 Subject::CityCapturedBy { plot: q, team } if q == plot && team == tn => Some(true),
                 Subject::AnyCityCapturedFrom { team, victim } if conquest && team == tn && victim == to => Some(true),
+                // Conquered without an attack seen (an empty city walked into): an attack by the
+                // captor; any other change of hands leaves the question without an answer.
+                Subject::CityAttackedBy { plot: q, owner, team } if q == plot && owner == old => {
+                    if conquest && team.map_or(tn != to, |t| t == tn) { Some(true) } else { None }
+                }
                 _ => continue,
             };
             verdicts.push((key, v));
@@ -309,6 +325,26 @@ impl Game {
         for (key, _, _) in self.tel_predict_pending() {
             if key.2 == (Subject::AttackWon { unit: att }) {
                 verdicts.push((key, if att_dead { Some(false) } else if def_dead { Some(true) } else { None }));
+            }
+        }
+        self.tel_predict_apply(verdicts);
+    }
+
+    /// An attack by player `attacker` on `plot` (an engagement launched there, or a duel fought
+    /// there): the pending `CityAttackedBy` about the city on it resolve.
+    pub(super) fn tel_predict_attacked(&self, attacker: PlayerId, plot: PlotIdx) {
+        let Some(c) = self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c)) else { return };
+        let owner = self.cities[c].owner;
+        let (ta, to) = (self.players[attacker].team, self.players[owner].team);
+        if ta == to {
+            return;
+        }
+        let mut verdicts = Vec::new();
+        for (key, _, _) in self.tel_predict_pending() {
+            if let Subject::CityAttackedBy { plot: q, owner: o, team } = key.2 {
+                if q == plot && o == owner && team.map_or(true, |t| t == ta) {
+                    verdicts.push((key, Some(true)));
+                }
             }
         }
         self.tel_predict_apply(verdicts);
@@ -390,6 +426,10 @@ impl Game {
                 }
                 Subject::StackClears { team, plot } => expired.then(|| Some(self.tel_predict_cleared(team, plot))),
                 Subject::AttackWon { unit } => (expired || !self.units.contains(unit)).then_some(None),
+                Subject::CityAttackedBy { plot, owner, .. } => match city_at(plot) {
+                    Some(c) if self.cities[c].owner == owner => expired.then_some(Some(false)),
+                    _ => Some(None),
+                },
             };
             if let Some(v) = v {
                 verdicts.push((key, v));

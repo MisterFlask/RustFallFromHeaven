@@ -21,7 +21,7 @@
 //!   start with Mind, Chaos and Air) goes for one first: its node on our raw mana is worth
 //!   [`SUMMON_NODE`] more (`mana::node_value`, which research and the builder's training follow),
 //!   it pays more for it in trade, and its casters take the sphere's first promotion toward the
-//!   summon ([`summon_mana`], switch `SUMMON_MANA`).
+//!   summon ([`summon_mana`]).
 //! - **Philosophical** (great people +100%): the great-people emphasis in its best great-people
 //!   city, one more per eight cities ([`turn`]).
 //! - **Financial** (+1 commerce on plots with 2 or more): workers count the extra commerce an
@@ -270,17 +270,17 @@ pub fn religion_stickiness(g: &Game, p: PlayerId) -> i32 {
 // Arcane and Summoner: casters
 // ----------------------------------------------------------------------------
 
-/// Does `p` take the arcane path (switch `ARCANE_PATH`): a magic leader (Arcane or Summoner)
+/// Does `p` take the arcane path: a magic leader (Arcane or Summoner)
 /// heads for Sorcery once the economy's tier 2 is in (`tech_plan`), with the sphere tech its mana
 /// makes worth most on the way; the Amurites' own plan did so, the other magic leaders reached
 /// Sorcery by the plain scores. (Earlier versions put Knowledge of the Ether right after the first
 /// essentials and Sorcery right after Writing: Adepts a century before their Mages, and an economy
 /// behind when the games are decided -- docs/AI_LOG.md, "Magic civilizations".)
 pub fn arcane_path(g: &Game, p: PlayerId) -> bool {
-    (has(g, p, Trait::Arcane) || has(g, p, Trait::Summoner)) && crate::switches::ARCANE_PATH.on(g, p)
+    has(g, p, Trait::Arcane) || has(g, p, Trait::Summoner)
 }
 
-/// Does `p` field a magic leader's army (switch `MAGE_ARMY`; Arcane or Summoner): casters in
+/// Does `p` field a magic leader's army (Arcane or Summoner): casters in
 /// proportion to its field army ([`mage_army_casters`]), on top of it. An expert who plays a magic
 /// civilization fights with his Mages: a Fireball softens what his swords then take, and a Wizard
 /// is never lost in the attack. Without it the corps stayed at (cities + 2) / 2 or less while the
@@ -288,7 +288,7 @@ pub fn arcane_path(g: &Game, p: PlayerId) -> bool {
 /// units, its war wizards counting toward the army target -- the casters replaced fighters and
 /// defenders, and the magic civilizations lost more cities: docs/AI_LOG.md, "Magic civilizations".)
 pub fn mage_army(g: &Game, p: PlayerId) -> bool {
-    (has(g, p, Trait::Arcane) || has(g, p, Trait::Summoner)) && crate::switches::MAGE_ARMY.on(g, p)
+    has(g, p, Trait::Arcane) || has(g, p, Trait::Summoner)
 }
 
 /// The casters a [`mage_army`] wants: one for every four field units (attackers, siege), once our
@@ -342,8 +342,8 @@ pub fn promotion_value(g: &Game, u: UnitId, promo: PromotionType, value: i32) ->
     }
     let d = g.d;
     // A sphere's first promotion that leads to a summon (Entropy I before Entropy II's Pit Beast)
-    // counts as one (switch `SUMMON_MANA`).
-    let toward = || crate::switches::SUMMON_MANA.on(g, unit.owner) && d.promotions.keys().any(|next| d.promotions[next].prereq_promotion == Some(promo) && summoning_spheres(d).contains(&next));
+    // counts as one.
+    let toward = || d.promotions.keys().any(|next| d.promotions[next].prereq_promotion == Some(promo) && summoning_spheres(d).contains(&next));
     if summoning_spheres(d).contains(&promo) || toward() {
         value + value / 2 + 60
     } else {
@@ -377,9 +377,9 @@ pub fn summon_mana(d: &GameData) -> &'static [BonusType] {
     })
 }
 
-/// Does Summoner `p` still go for one of the [`summon_mana`] (switch `SUMMON_MANA`): it has none.
+/// Does Summoner `p` still go for one of the [`summon_mana`]: it has none.
 pub fn wants_summon_mana(g: &Game, p: PlayerId) -> bool {
-    has(g, p, Trait::Summoner) && crate::switches::SUMMON_MANA.on(g, p) && !summon_mana(g.d).iter().any(|&b| g.player_has_bonus(p, b))
+    has(g, p, Trait::Summoner) && !summon_mana(g.d).iter().any(|&b| g.player_has_bonus(p, b))
 }
 
 /// What one more node of mana `bonus` is worth to `p` (`mana::node_value`; `value`: its generic

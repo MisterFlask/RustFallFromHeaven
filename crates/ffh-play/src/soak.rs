@@ -246,8 +246,8 @@ pub fn lenient<T: InfoId + names::Named>(d: &GameData, prefix: &str, s: &str) ->
 /// Named sets of game options that only act on human players (no-ops in AI-only games, so only
 /// a human soak runs their rules branches).
 pub const OPTION_SETS: [(&str, &[&str]); 2] = [
-    // One-city challenge (no settlers, conquered cities razed, ...) and no healing.
-    ("occ", &["GAMEOPTION_ONE_CITY_CHALLENGE", "GAMEOPTION_NO_HEALING_FOR_HUMANS"]),
+    // One-city challenge (no settlers, conquered cities razed, ...).
+    ("occ", &["GAMEOPTION_ONE_CITY_CHALLENGE"]),
     // FfH challenges: the last civ cut every 50 turns, the leading human moved to the last civ
     // (`reassignPlayerAdvanced`), the difficulty raised every 50 turns or with the human's rank.
     (
@@ -256,7 +256,7 @@ pub const OPTION_SETS: [(&str, &[&str]); 2] = [
     ),
 ];
 
-/// Short names of game options (`RAGING_BARBARIANS,AGGRESSIVE_AI`), or the [`OPTION_SETS`] name.
+/// Short names of game options (`RAGING_BARBARIANS,DOUBLE_ANIMALS`), or the [`OPTION_SETS`] name.
 pub fn options_label(d: &GameData, options: &[GameOptionType]) -> String {
     let names: Vec<&str> = options.iter().map(|&o| d.type_name(o)).collect();
     match OPTION_SETS.iter().find(|(_, set)| *set == names.as_slice()) {
@@ -266,7 +266,7 @@ pub fn options_label(d: &GameData, options: &[GameOptionType]) -> String {
 }
 
 /// Game options: `default` (none), or names or [`OPTION_SETS`] joined by `,` or `+`
-/// (`raging+aggressive`, `occ`).
+/// (`raging+double_animals`, `occ`).
 pub fn parse_options(d: &GameData, s: &str) -> Result<Vec<GameOptionType>, String> {
     let mut v = Vec::new();
     for o in s.split([',', '+']).filter(|x| !x.is_empty() && *x != "default") {
@@ -790,23 +790,23 @@ mod tests {
     fn settings_round_trip_and_names() {
         let d = ffh_data::global();
         let args: Vec<String> =
-            ["--seed", "7", "--size", "tiny", "--civ", "kuriotates", "--options", "raging+aggressive", "--turns", "40"].iter().map(|s| s.to_string()).collect();
+            ["--seed", "7", "--size", "tiny", "--civ", "kuriotates", "--options", "raging+double_animals", "--turns", "40"].iter().map(|s| s.to_string()).collect();
         let g = SoakGame::parse(d, &args).unwrap();
         assert_eq!(g.ng.seed, 7);
         assert_eq!(d.type_name(g.ng.world), "WORLDSIZE_TINY");
         assert_eq!(g.ng.opponents, 2);
         assert_eq!(g.ng.civ.map(|c| d.type_name(c)), Some("CIVILIZATION_KURIOTATES"));
-        assert_eq!(g.ng.options.iter().map(|&o| d.type_name(o)).collect::<Vec<_>>(), ["GAMEOPTION_RAGING_BARBARIANS", "GAMEOPTION_AGGRESSIVE_AI"]);
+        assert_eq!(g.ng.options.iter().map(|&o| d.type_name(o)).collect::<Vec<_>>(), ["GAMEOPTION_RAGING_BARBARIANS", "GAMEOPTION_DOUBLE_ANIMALS"]);
         assert_eq!(SoakGame::parse(d, &g.to_args(d)).unwrap(), g);
-        assert_eq!(g.describe(d), "s7 TINYx3 KURIOTATES [RAGING_BARBARIANS,AGGRESSIVE_AI] 40");
-        let occ = parse_options(d, "default,occ+GAMEOPTION_ONE_CITY_CHALLENGE").unwrap();
-        assert_eq!(occ.iter().map(|&o| d.type_name(o)).collect::<Vec<_>>(), ["GAMEOPTION_ONE_CITY_CHALLENGE", "GAMEOPTION_NO_HEALING_FOR_HUMANS"]);
+        assert_eq!(g.describe(d), "s7 TINYx3 KURIOTATES [RAGING_BARBARIANS,DOUBLE_ANIMALS] 40");
+        let occ = parse_options(d, "default,occ+GAMEOPTION_ONE_CITY_CHALLENGE+thaw").unwrap();
+        assert_eq!(occ.iter().map(|&o| d.type_name(o)).collect::<Vec<_>>(), ["GAMEOPTION_ONE_CITY_CHALLENGE", "GAMEOPTION_THAW"]);
         assert_eq!(parse_options(d, "default").unwrap(), []);
         let name = g.file_name(d);
-        assert!(name.starts_with("s7-tinyx3-kuriotates-raging_barbarians-aggressive_ai-40-") && name.len() == 55 + 1 + 8, "{name}");
+        assert!(name.starts_with("s7-tinyx3-kuriotates-raging_barbarians-double_animals-4-") && name.len() == 55 + 1 + 8, "{name}");
         let mut quick = g.clone();
         quick.ng.speed = d.t("GAMESPEED_QUICK");
-        assert_eq!(quick.describe(d), "s7 TINYx3 KURIOTATES [RAGING_BARBARIANS,AGGRESSIVE_AI] QUICK 40");
+        assert_eq!(quick.describe(d), "s7 TINYx3 KURIOTATES [RAGING_BARBARIANS,DOUBLE_ANIMALS] QUICK 40");
         assert_ne!(quick.file_name(d), name);
         // Spawned civilizations, an explicit opponent count.
         let args: Vec<String> = ["--civ", "mercurian", "--opponents", "3", "--spawn-turn", "12"].iter().map(|s| s.to_string()).collect();
@@ -815,7 +815,7 @@ mod tests {
         assert_eq!(SoakGame::parse(d, &g.to_args(d)).unwrap(), g);
         // Errors.
         let bad_numbers = [&["--seed", "-1"][..], &["--seed", "4294967296"], &["--turns", "4294967297"], &["--opponents", "-2"], &["--spawn-turn", "x"]];
-        for bad in [&["--size", "enormous"][..], &["--civ", "a"], &["--turns", "0"], &["--seed"], &["--color", "red"], &["--options", "GAMEOPTION_ADVANCED_START"]].into_iter().chain(bad_numbers) {
+        for bad in [&["--size", "enormous"][..], &["--civ", "a"], &["--turns", "0"], &["--seed"], &["--color", "red"], &["--options", "no_such_option"]].into_iter().chain(bad_numbers) {
             let args: Vec<String> = bad.iter().map(|s| s.to_string()).collect();
             assert!(SoakGame::parse(d, &args).is_err(), "{bad:?}");
         }

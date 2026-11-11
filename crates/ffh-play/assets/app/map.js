@@ -17,17 +17,6 @@ import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark, drawMarchMark, marchMark } fr
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark } from "./supply.js";
 import { seaPlot, stackWear, drawDark, drawEdges, drawWearPip } from "./sea.js";
 
-/** The start-up prototype's switch (docs/HD2D.md): on unless the page says `?r3d={"fastStart":0}`.
- *  The 3D renderer's modules read it from their config. */
-export function fastStart() {
-  try {
-    const q = new URLSearchParams(globalThis.location?.search ?? "").get("r3d");
-    return !(q && q.startsWith("{") && JSON.parse(q).fastStart === 0);
-  } catch {
-    return true;
-  }
-}
-
 const ZOOMS = [12, 16, 24, 32, 48, 64];
 /** The smallest tile (CSS px) the battle markers are drawn and clicked at (`battleMarkerAt`). */
 const BATTLE_MARKER_MIN_TS = 32;
@@ -850,29 +839,25 @@ export class MapView {
         if (mode === "hd2d") mod = await import("./r3d/hd2d/index.js");
         else mod = await import("./r3d/map3d.js");
         performance.mark("r3d:imported");
-        // (fastStart: the import, asked for early in the boot, now ends before the game's interface
-        // and map have drawn; the renderer's constructor -- its textures, its programs' links,
-        // which block where the browser compiles no programs in parallel, then its warm-up -- would
-        // hold them up by seconds there. So the map drawn first (2.5 s at most: no game, no map),
-        // and two frames for it to show.)
-        if (fastStart()) {
-          await Promise.race([this.mapDrawn, new Promise((r) => setTimeout(r, 2500))]);
-          await new Promise((r) => {
-            requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 0)));
-            setTimeout(r, 150);
-          });
-        }
-        // (fastStart: the isometric map stays drawn -- and answers -- until the 3D map is ready,
-        // below; the original dropped it here, leaving the flat map through the compile.)
-        if (this.iso && !fastStart()) this.useIso(false);
+        // (The import, asked for early in the boot, ends before the game's interface and map have
+        // drawn; the renderer's constructor -- its textures, its programs' links, which block where
+        // the browser compiles no programs in parallel, then its warm-up -- would hold them up by
+        // seconds there. So the map drawn first (2.5 s at most: no game, no map), and two frames
+        // for it to show. The isometric map stays drawn -- and answers -- until the 3D map is
+        // ready, below.)
+        await Promise.race([this.mapDrawn, new Promise((r) => setTimeout(r, 2500))]);
+        await new Promise((r) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 0)));
+          setTimeout(r, 150);
+        });
         r3d = new mod.Map3D(this);
         performance.mark("r3d:constructed");
         // Its programs compile in parallel where the browser can; the page stays live meanwhile,
         // and a compile that takes too long gives up (r3d/gl.js, whenCompiled).
         await r3d.ready();
         performance.mark("r3d:ready");
-        // The player picked another renderer meanwhile (with fastStart the isometric map is still
-        // up, so a switch to it changed nothing then): that one stays.
+        // The player picked another renderer meanwhile (the isometric map is still up, so a switch
+        // to it changed nothing then): that one stays.
         if (passed()) {
           r3d.dispose();
           this.request();

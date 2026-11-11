@@ -53,7 +53,6 @@ pub struct GameSetup {
     /// Score victory target in basis points of the world (score v2, docs/SCORE.md; 0 = none).
     pub target_score: i32,
     pub max_city_elimination: i32,
-    pub num_advanced_start_points: i32,
     pub sync_rand_seed: u32,
     pub map_rand_seed: u32,
     /// Map script name; this port ships its own generators (see `mapgen`).
@@ -210,7 +209,6 @@ impl GameSetup {
             max_turns: o.max_turns,
             target_score: o.target_score,
             max_city_elimination: o.max_city_elimination,
-            num_advanced_start_points: Self::advanced_start_points(d, o.world_size, o.game_speed),
             sync_rand_seed: o.seed,
             map_rand_seed: o.seed.wrapping_mul(2654435761).wrapping_add(1),
             map_script: "Fractal".into(),
@@ -218,18 +216,6 @@ impl GameSetup {
             barbarian: PlayerId(n_slots as u8),
             crusade: o.crusade.clone(),
         }
-    }
-
-    /// C++ `CvInitCore::resetAdvancedStartPoints` (run by the world size and game speed
-    /// setters): `ADVANCED_START_POINTS`, scaled by the world size and the game speed growth
-    /// percent.
-    pub fn advanced_start_points(d: &GameData, world: WorldSizeType, speed: GameSpeedType) -> i32 {
-        let mut points = d.defines.advanced_start_points;
-        points *= d.worlds[world].advanced_start_points_mod;
-        points /= 100;
-        points *= d.game_speeds[speed].growth_percent;
-        points /= 100;
-        points
     }
 
     pub fn option(&self, o: GameOptionType) -> bool {
@@ -274,16 +260,5 @@ mod tests {
         assert_eq!(s.players[1].team, TeamId(0));
         assert_eq!(s.players[2].team, TeamId(2));
         assert_eq!(s.players[MAX_CIV_PLAYERS].team, TeamId(MAX_CIV_PLAYERS as u8));
-    }
-
-    #[test]
-    fn advanced_start_points_scale_with_world_and_speed() {
-        let d = ffh_data::global();
-        let world = d.t::<WorldSizeType>("WORLDSIZE_STANDARD");
-        let speed = d.t::<GameSpeedType>("GAMESPEED_NORMAL");
-        let expected = d.defines.advanced_start_points * d.worlds[world].advanced_start_points_mod / 100
-            * d.game_speeds[speed].growth_percent
-            / 100;
-        assert_eq!(GameSetup::advanced_start_points(d, world, speed), expected);
     }
 }

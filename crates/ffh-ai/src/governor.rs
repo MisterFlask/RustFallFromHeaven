@@ -188,14 +188,13 @@ const EMPIRE_CITIES: usize = 4;
 /// orders go to the main army the same turn): its priorities ([`set_priorities`]); an empire
 /// order in a city whose garrison is missing or overwhelmed gives way to the governor's defender
 /// ([`yield_to_defense`]); and the empire orders of its own production choice in its capital and
-/// most productive governed cities ([`place_empire_orders`]). Switch `GOVERNORS` off: no empire
-/// orders (the priorities are still set).
+/// most productive governed cities ([`place_empire_orders`]).
 pub fn turn(ai: &Ai, g: &mut Game, p: PlayerId) {
     if g.player_is_barbarian(p) || g.players[p].human || g.player_is_crusade_host(p) {
         return;
     }
     set_priorities(g, p);
-    if g.player_rules_directly(p) || !crate::switches::GOVERNORS.on(g, p) {
+    if g.player_rules_directly(p) {
         return;
     }
     for c in g.players[p].cities.clone() {
@@ -276,7 +275,7 @@ fn wonder_beside(g: &Game, c: CityId, best: BuildingType) -> Option<BuildingType
         if turns > 50 || s <= 0 || s < bar {
             continue;
         }
-        if turns > quick && prod::is_world_wonder(d, b) && crate::switches::TOP_CITIES.on(g, p) && !prod::top_wonder_city(g, c, b) {
+        if turns > quick && prod::is_world_wonder(d, b) && !prod::top_wonder_city(g, c, b) {
             continue;
         }
         if found.map_or(true, |(_, f)| s > f) {
