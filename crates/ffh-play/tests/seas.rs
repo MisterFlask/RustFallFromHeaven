@@ -306,7 +306,7 @@ fn the_seas_screen_lists_ports_and_lanes() {
     let port = view::city_name(&w.g, w.port);
     assert_eq!(s(row(w.bay), "ports"), format!("{port}: blockaded"));
     assert_eq!(s(row(w.bay), "lanes"), "1 cut");
-    assert_eq!(s(row(w.narrows), "lanes"), "1 cut");
+    assert_eq!(s(row(w.narrows), "lanes"), "1 cut elsewhere", "cut in the bay, not here");
     assert_eq!(s(row(w.narrows), "ports"), "none");
     assert!(s(row(w.bay), "enemy").ends_with(&w.them()), "{}", row(w.bay));
     // The lane on the Sea layer: cut where it enters the bay.
@@ -325,4 +325,25 @@ fn the_seas_screen_lists_ports_and_lanes() {
     w.unit(w.p0, "UNIT_GALLEON", 10, 1);
     let v = w.v();
     assert_eq!(view::seas::transport_refusal(&v, w.at(10, 2)), Some(format!("the transport is in Bay of Lorda, held by {}.", w.them())));
+}
+
+#[test]
+fn a_contested_sea_cuts_no_lane_and_a_lane_cut_elsewhere_names_that_sea() {
+    let mut w = world();
+    // The bay held by them; the narrows contested (both patrols out of range: no lanes of their own).
+    w.patrol(w.p1, 6, 1);
+    w.patrol(w.p1, 6, 1);
+    w.patrol(w.p0, 20, 1);
+    w.patrol(w.p1, 21, 1);
+    // A supply ship in the narrows: its lane runs through the bay to the port.
+    w.unit(w.p0, "UNIT_GALLEON", 13, 1);
+    let mut finder = PathFinder::new(FinderKind::Path);
+    let v = w.v();
+    let p = view::seas::sea_panel(&v, &mut finder, w.narrows, &[]).expect("a panel");
+    assert_eq!(s(&p, "control"), "Contested");
+    let now = strs(p.get("now"));
+    assert_eq!(now[0], "Lanes through it: open.", "a contested sea cuts nothing: {now:?}");
+    assert_eq!(now[1], "1 lane through it is cut in Bay of Lorda.");
+    let p = view::seas::sea_panel(&v, &mut finder, w.bay, &[]).expect("a panel");
+    assert_eq!(strs(p.get("now"))[0], "Lanes through it: cut here.");
 }
