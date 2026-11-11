@@ -95,6 +95,10 @@ SHOOT (`sentinel_ranged_resist`).
   loses `CITY_HEAL_RATE` and the city's buildings' heal **(default)**. Its own extra heal
   (promotions, a race's regeneration) and the medics on and beside the plot still work.
 - **Sentinels do not repair.**
+- **A port relieved by sea** (docs/NAVAL.md, 4.5): a besieged city whose harbour is open (a sea it
+  touches is not closed to its team) heals its units by half the city's own heal
+  (`PORT_SIEGE_HEAL_PERCENT`) and its Sentinels repair at half their rate; besieged and blockaded,
+  or on no sea, as above.
 - **It shows** (the owner's request): the city's banner and the city screen say it is besieged and
   show its Sentinels; a unit in a besieged city says it does not heal from the city.
 

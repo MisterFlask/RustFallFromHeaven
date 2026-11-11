@@ -139,6 +139,9 @@ impl Game {
         if !self.battle_reports.is_empty() {
             self.battle_reports_trim();
         }
+        // The seas (docs/NAVAL.md, 4.3): control refreshed for the new turn (strengths that
+        // changed with the game's own counters).
+        self.seas_refresh_all();
 
         // MPOPTION_SIMULTANEOUS_TURNS (every alive player starts at once, in a soren-rand
         // shuffled order) is a network option: never set.

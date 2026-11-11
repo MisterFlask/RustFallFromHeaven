@@ -123,7 +123,7 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `governor_penalty_turns`, `Governor::profile`, `traits`, `origin`, the bench.
 /// - 31: no eras: gone are `Player::current_era` and `GameSetup::era`.
 /// - 32: the sea, phase 1 (docs/NAVAL.md): `Unit::sea_turns`, `sea_out_of_range`.
-pub const FORMAT_VERSION: u32 = 32;
+pub const FORMAT_VERSION: u32 = 33;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

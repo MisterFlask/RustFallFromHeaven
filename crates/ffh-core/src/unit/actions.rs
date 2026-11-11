@@ -632,16 +632,23 @@ impl Game {
         if self.plot_is_city(plot, true, Some(team)) {
             // Not in C++ (docs/SIEGES.md): a besieged city gives no heal of its own (its rate and
             // its buildings'); the unit's own extra heal and the medics still work.
+            // This game's port under siege (docs/NAVAL.md, 4.5): with its harbour open, the city's
+            // own heal at `PORT_SIEGE_HEAL_PERCENT`.
             let besieged = city.is_some_and(|c| self.city_is_besieged(c));
-            if !besieged {
-                total_heal += d.defines.city_heal_rate;
-            }
+            let mut city_heal = d.defines.city_heal_rate;
             total_heal += if friendly { unit.extra_friendly_heal } else { unit.extra_neutral_heal };
             if let Some(c) = city {
-                if !self.city_is_occupation(c) && !besieged {
-                    total_heal += self.cities[c].heal_rate;
+                if !self.city_is_occupation(c) {
+                    city_heal += self.cities[c].heal_rate;
                 }
             }
+            if besieged {
+                city_heal = match city {
+                    Some(c) if self.city_harbour(c) == crate::seas::Harbour::Open => city_heal * d.defines.port_siege_heal_percent.max(0) / 100,
+                    _ => 0,
+                };
+            }
+            total_heal += city_heal;
         } else if self.unit_heals_as_in_city_at(u, plot) {
             // Card: Siege Lines, Wayside Shrines (docs/CARDS.md): the holder's units heal there as
             // in a city of their own.
@@ -1537,34 +1544,17 @@ impl Game {
         true
     }
 
-    /// C++ `CvUnit::canPlunder` (CvUnit.cpp:5753-5789).
-    /// C++ default `bTestVisible = false`.
-    pub fn unit_can_plunder(&self, u: UnitId, plot: PlotIdx, test_visible: bool) -> bool {
-        if self.unit_get_domain_type(u) != DomainType::DOMAIN_SEA {
-            return false;
-        }
-
-        if !self.d.units[self.units[u].unit_type].pillage {
-            return false;
-        }
-
-        if !self.plot_is_water(plot) {
-            return false;
-        }
-
-        if self.plot_is_fresh_water(plot) {
-            return false;
-        }
-
-        if !self.plot_is_valid_domain_for_action(plot, u) {
-            return false;
-        }
-
-        if !test_visible && self.plot_get_team(plot) == Some(self.unit_get_team(u)) {
-            return false;
-        }
-
-        true
+    /// C++ `CvUnit::canPlunder`, replaced by this game's Patrol (docs/NAVAL.md, 4.2): a warship
+    /// of a player (not the barbarians') on a water plot of a sea, outside a city. (Civ4's
+    /// `bPillage` flag, its own-borders and fresh-water tests are gone; `test_visible` no longer
+    /// matters.)
+    pub fn unit_can_plunder(&self, u: UnitId, plot: PlotIdx, _test_visible: bool) -> bool {
+        self.unit_is_warship(u)
+            && !self.unit_is_barbarian(u)
+            && self.plot_is_water(plot)
+            && self.map.plots[plot].sea.is_some()
+            && self.map.plots[plot].plot_city.is_none()
+            && self.plot_is_valid_domain_for_action(plot, u)
     }
 
     /// C++ `CvUnit::plunder` (CvUnit.cpp:5792-5806).
@@ -1582,46 +1572,14 @@ impl Game {
         true
     }
 
-    /// C++ `CvUnit::updatePlunder` (CvUnit.cpp:5809-5854).
-    pub fn unit_update_plunder(&mut self, u: UnitId, change: i32, update_plot_groups: bool) {
-        let blockade_range = self.d.defines.ship_blockade_range;
-
-        // (C++ leaves `bOldTradeNet` uninitialized; it is always set before it is read.)
-        let mut old_trade_net = false;
-        let mut changed = false;
-
-        let (x, y) = (self.units[u].x, self.units[u].y);
-
-        for team in self.team_ids() {
-            if self.unit_is_enemy(u, Some(team), None) {
-                for i in -blockade_range..=blockade_range {
-                    for j in -blockade_range..=blockade_range {
-                        let Some(loop_plot) = self.plot_xy(x, y, i, j) else {
-                            continue;
-                        };
-
-                        if self.plot_is_water(loop_plot) && self.map.plots[loop_plot].area == Some(self.unit_area(u)) {
-                            if !changed {
-                                old_trade_net = self.plot_is_trade_network(loop_plot, team);
-                            }
-
-                            self.plot_change_blockaded_count(loop_plot, team, change);
-
-                            if !changed {
-                                changed = old_trade_net != self.plot_is_trade_network(loop_plot, team);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if changed {
-            // UI: `setDirty(BlockadedPlots_DIRTY_BIT)`.
-
-            if update_plot_groups {
-                self.update_plot_groups();
-            }
+    /// C++ `CvUnit::updatePlunder`, replaced by sea control (docs/NAVAL.md, 4.2 and 4.3): Civ4's
+    /// blockade of the plots within `SHIP_BLOCKADE_RANGE` is gone; the sea the unit stands in is
+    /// refreshed (`Game::sea_refresh`: its control, its plots' blockade and the trade network).
+    /// Called when the unit starts or ends Patrol, and around the changes that alter what its
+    /// Patrol does (war and peace, its nationality, its strength).
+    pub fn unit_update_plunder(&mut self, u: UnitId, _change: i32, _update_plot_groups: bool) {
+        if let Some(plot) = self.unit_plot_opt(u) {
+            self.plot_sea_refresh(plot);
         }
     }
 
@@ -1646,53 +1604,12 @@ impl Game {
         }
     }
 
-    /// C++ `CvUnit::collectBlockadeGold` (CvUnit.cpp:12687-12728).
-    pub fn unit_collect_blockade_gold(&mut self, u: UnitId) {
-        let team = self.unit_get_team(u);
-
-        if self.plot_get_team(self.unit_plot(u)) == Some(team) {
-            return;
-        }
-
-        let blockade_range = self.d.defines.ship_blockade_range;
-        let (x, y) = (self.units[u].x, self.units[u].y);
-
-        for i in -blockade_range..=blockade_range {
-            for j in -blockade_range..=blockade_range {
-                let Some(loop_plot) = self.plot_xy(x, y, i, j) else {
-                    continue;
-                };
-
-                if !self.map.plots[loop_plot].revealed[team] {
-                    continue;
-                }
-
-                let Some(city) = self.map.plots[loop_plot].plot_city else {
-                    continue;
-                };
-
-                let city_team = self.city_team(city);
-                if !self.cities[city].plundered && self.unit_is_enemy(u, Some(city_team), None) && !self.at_war(city_team, team)
-                    && (self.city_area(city) == self.unit_area(u) || self.plot_is_adjacent_to_area(self.city_plot(city), self.unit_area(u)))
-                {
-                    // (The city's trade profit with itself, times its trade routes.)
-                    let gold = self.city_calculate_trade_profit(city, city) * self.city_trade_routes(city);
-                    if gold > 0 {
-                        self.city_set_plundered(city, true);
-                        let owner = self.units[u].owner;
-                        let city_owner = self.cities[city].owner;
-                        // `changeGold`
-                        self.players[owner].gold += gold;
-                        self.players[city_owner].gold -= gold;
-
-                        // UI: TXT_KEY_MISC_TRADE_ROUTE_PLUNDERED to the unit owner and
-                        // TXT_KEY_MISC_TRADE_ROUTE_PLUNDER to the city owner.
-                        let turn = self.game_turn();
-                        self.log.msg(turn, Some(owner), || format!("Plundered {} gold from the trade routes of {}", gold, self.cities[city].name));
-                    }
-                }
-            }
-        }
+    /// C++ `CvUnit::collectBlockadeGold`: removed with Civ4's blockade by range (docs/NAVAL.md,
+    /// 4.2). A ship on Patrol takes no gold from the trade routes of cities near it; the raiding
+    /// gold of the sea's lanes is phase 4's (docs/NAVAL.md, 4.4 point 5 and 9.3).
+    pub fn unit_collect_blockade_gold(&mut self, _u: UnitId) {
+        // Phase 4 (docs/NAVAL.md, 4.4 point 5): LANE_RAID_GOLD_CONTESTED for a patrol in a sea an
+        // outpost's lane passes through, at the start of the outpost owner's turn. Not built.
     }
 }
 

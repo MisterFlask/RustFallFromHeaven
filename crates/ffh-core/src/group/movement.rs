@@ -599,6 +599,11 @@ impl Game {
             }
         }
 
+        // This game's interception (docs/NAVAL.md, 4.4 point 4): the step is complete.
+        if self.groups.contains(g) && self.map.plots[plot].sea.is_some() {
+            self.sea_intercept_step(g, plot);
+        }
+
         // UI: execute move (`ExecuteMove` of every unit when `bEndMove || !canAllMove()`).
     }
 

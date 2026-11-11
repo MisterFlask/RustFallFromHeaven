@@ -52,7 +52,7 @@ mod requisition;
 mod supply;
 
 pub use march::March;
-pub use supply::{SupplyLine, SupplySource, SupplyState};
+pub use supply::{SupplyLine, SupplyShipRefusal, SupplySource, SupplyState};
 
 /// A persistent army (`Game::armies`).
 #[derive(Clone, Debug, PartialEq, Eq)]

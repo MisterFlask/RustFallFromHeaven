@@ -26,8 +26,11 @@ units in no army (heroes, mages, recon units, settlers, summons) and the barbari
 **Sources.** A line ends at a source of the army's owner:
 - a city of the owner's team that is not in occupation (`occupation_timer == 0`);
 - a ship of the owner with room for land units (`cargo_space > 0`, `domain_cargo` land) that
-  stands in a water area on which the owner's team has a coastal city: the line ends on a land
-  plot next to the ship's plot.
+  stands in a sea not closed to the owner's team and has an open lane to a port of the team
+  (docs/NAVAL.md, 4.6 and section 5: a path over water in the team's range, crossing no sea closed
+  to it; `Game::supply_ship_refused` says why one is not): the line ends on a land plot next to the
+  ship's plot. (Before docs/NAVAL.md, phase 2: a ship in a water area on which the owner's team had
+  a coastal city.)
 
 An army standing in a city of its owner's team is supplied, whatever the city's state.
 
@@ -311,8 +314,8 @@ disbanded at turn 169.
   raiders their target; the raiding rules are their own design.
 - **An army size cap and one army a plot** (the answer to the stack of doom): its own design.
 - **Starving a besieged garrison.** A city supplies whoever stands in it.
-- **Sea lanes.** A ship is a source while its water area touches a home port; the sea route
-  itself is not traced or cut.
+- **Sea lanes.** Built with docs/NAVAL.md, phase 2: a ship is a source only with an open lane
+  (above).
 
 ## Second pass (design, 2026-11-10; B built; C built, measured and not kept)
 

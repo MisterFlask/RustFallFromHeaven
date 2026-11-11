@@ -997,6 +997,17 @@ plot falls or the odds turn bad, and moves in.
 
 ## Naval (`naval.rs`)
 
+- **Seas and Patrol** (docs/NAVAL.md, phase 2, 4.8): a warship with no cargo and nothing else to do
+  (a `Naval` ship, a sea explorer done exploring, an idle transport that can fight) takes the
+  Patrol order: in the sea of an enemy port our army besieges where it would hold it, else a sea of
+  our ports where an enemy patrols or a warship of an enemy is seen, else the sea of our most
+  populous port (`naval::patrol`); it is woken when worn, out of range, outmatched two to one, when
+  a transport has cargo to carry, and every 8 turns (`naval::patrol_wake`). A port builds a warship
+  while we have fewer than two per sea of ours an enemy holds or contests plus one per sea shared
+  with a known enemy port, three at most (`naval::patrol_production`). Invasions go only at a coast
+  whose lane is open (`naval::way_in_range`). Not measured beyond a first count of firings (the
+  AI builds few ships before turn 150; docs/NAVAL.md, section 12).
+
 - **Overseas sites**: when no site is left on a landmass where we have cities, `sites.rs` also
   scores the coastal plots of other landmasses within 14 plots of our coastal cities.
 - **Settling by sea**: a settler with no site it can walk to goes to the nearest coastal city

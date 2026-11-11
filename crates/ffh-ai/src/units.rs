@@ -207,7 +207,9 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
         let cut = (!g.groups[grp].mission_queue.is_empty() || g.groups[grp].activity_type != ActivityType::ACTIVITY_AWAKE)
             && crate::supply::cut(g, grp)
             && g.groups[grp].units.iter().all(|&o| !g.unit_has_moved(o));
-        if g.groups[grp].force_update || replan || sleeping_settler || cut {
+        // A ship on Patrol looks again when worn, out of range or outmatched (docs/NAVAL.md, 8).
+        let patrol = matches!(role, Role::Naval | Role::SeaExplore | Role::Transport) && crate::naval::patrol_wake(g, v, grp);
+        if g.groups[grp].force_update || replan || sleeping_settler || cut || patrol {
             // Settlers re-plan every turn (danger and sites change).
             g.groups[grp].force_update = false;
             g.group_clear_mission_queue(grp);
@@ -255,6 +257,7 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             Role::Transport if !v.barbarian => crate::naval::transport(ai, g, v, grp, head),
             Role::SeaExplore if !v.barbarian => crate::naval::sea_explore(ai, g, v, grp, head),
             Role::Transport | Role::SeaExplore => hold(g, grp),
+            Role::Naval if !v.barbarian && crate::naval::patrol(g, v, grp, head) => {}
             Role::Naval | Role::Other => hold(g, grp),
         }
         if role == Role::Army && !v.barbarian {

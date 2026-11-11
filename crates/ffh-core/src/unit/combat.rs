@@ -567,14 +567,32 @@ impl Game {
     /// `bVisible == false` path); combat timers still count down if set.
     pub fn unit_update_combat(&mut self, u: UnitId) {
         if !self.telemetry.on() {
-            return self.unit_update_combat_inner(u);
+            return self.unit_update_combat_inner(u, false);
         }
         self.tel_ctx_push("combat");
-        self.unit_update_combat_inner(u);
+        self.unit_update_combat_inner(u, false);
         self.tel_ctx_pop();
     }
 
-    fn unit_update_combat_inner(&mut self, u: UnitId) {
+    /// This game's interception (docs/NAVAL.md, 4.4 point 4): ship `u` on Patrol attacks `plot`
+    /// once, a duel by `updateCombat`'s own code, without moving: it never advances, pays no
+    /// moves, keeps its group and orders; the defender's group keeps its orders.
+    pub fn unit_intercept_attack(&mut self, u: UnitId, plot: PlotIdx) {
+        self.unit_set_attack_plot(u, Some(plot), false);
+        if self.telemetry.on() {
+            self.tel_ctx_push("combat");
+            self.unit_update_combat_inner(u, true);
+            self.tel_ctx_pop();
+        } else {
+            self.unit_update_combat_inner(u, true);
+        }
+        if self.units.contains(u) && self.unit_get_attack_plot(u).is_some() {
+            self.unit_set_attack_plot(u, None, false);
+        }
+    }
+
+    /// `updateCombat`; `intercept`: an interception (`unit_intercept_attack`).
+    fn unit_update_combat_inner(&mut self, u: UnitId, intercept: bool) {
         let d = self.d;
         let mut finish = false;
 
@@ -607,6 +625,9 @@ impl Game {
         let Some(defender) = defender else {
             self.unit_set_attack_plot(u, None, false);
             self.unit_set_combat_unit(u, None, false);
+            if intercept {
+                return;
+            }
 
             let advance_unit = if self.unit_can_advance(u, plot, 0) { Some(u) } else { None };
             let group = group_of(self, u);
@@ -667,8 +688,10 @@ impl Game {
                 self.unit_set_combat_unit(u, Some(defender), true);
                 self.unit_set_combat_unit(defender, Some(u), false);
 
-                let defender_group = group_of(self, defender);
-                self.group_clear_mission_queue(defender_group);
+                if !intercept {
+                    let defender_group = group_of(self, defender);
+                    self.group_clear_mission_queue(defender_group);
+                }
 
                 // UI: combat focus camera or "units under attack" message to the defender.
 
@@ -803,6 +826,12 @@ impl Game {
 
                 let mut advance = false;
 
+                if intercept {
+                    // An interception: the defender dies; the ship stays where it is.
+                    self.unit_kill(defender, false, None);
+                    return;
+                }
+
                 if self.unit_is_suicide(u) {
                     self.unit_kill(u, true, None);
 
@@ -866,7 +895,9 @@ impl Game {
 
                     // BUGFfH: Modified by Denev 10/14/2009 (0.41k): when the defender fled, the
                     // attacker loses moves as if it had won.
-                    if self.unit_can_advance(u, plot, 0) {
+                    if intercept {
+                        // An interception: the ship stays where it is.
+                    } else if self.unit_can_advance(u, plot, 0) {
                         let group = group_of(self, u);
                         self.group_move(group, plot, true, Some(u), false);
                     } else {
@@ -881,7 +912,10 @@ impl Game {
                         format!("{} fled from {}{}", unit_type_name(d, defender_type), unit_type_name(d, unit_type), odds_suffix(log_odds))
                     });
                 }
-                if self.units[u].flee_withdrawl {
+                if self.units[u].flee_withdrawl && intercept {
+                    // An interception: the ship stays where it is, on Patrol.
+                    self.units[u].flee_withdrawl = false;
+                } else if self.units[u].flee_withdrawl {
                     self.unit_join_group(u, None, true);
                     self.units[u].flee_withdrawl = false;
                     self.log.msg_at(turn, Some(owner), at, || {

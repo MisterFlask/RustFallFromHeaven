@@ -10119,8 +10119,8 @@ TXT_KEY_MISSION_PATROL_TO_HELP	Set your unit to patrol (repeats a goto path inde
 TXT_KEY_MISSION_PERFORM_ESPIONAGE	Perform Espionage Mission
 TXT_KEY_MISSION_PILLAGE	Pillage
 TXT_KEY_MISSION_PILLAGE_HELP	The unit destroys an improvement or route in the tile it occupies.
-TXT_KEY_MISSION_PLUNDER	Blockade
-TXT_KEY_MISSION_PLUNDER_HELP	The unit disrupts the trade route so that no intercontinental trade can pass through the blockaded tile
+TXT_KEY_MISSION_PLUNDER	Patrol
+TXT_KEY_MISSION_PLUNDER_HELP	The ship patrols its sea: its strength counts for who holds the sea, and it intercepts enemies that enter it. Ends when the ship moves.
 TXT_KEY_MISSION_RECON	Recon
 TXT_KEY_MISSION_RECON_HELP	Clears the fog of war from around the selected space for one turn.
 TXT_KEY_MISSION_ROUTE_TO	Route To

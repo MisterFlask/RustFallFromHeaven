@@ -152,12 +152,9 @@ impl Game {
                     //FfH: End Modify
                 }
 
-                if self.units[u].blockading {
-                    self.unit_set_blockading(u, false);
-                    let g = self.units[u].group.expect("CvPlot::setOwner: unit without a selection group");
-                    self.group_clear_mission_queue(g);
-                    self.group_set_activity_type(g, ActivityType::ACTIVITY_AWAKE);
-                }
+                // (C++ ended a blockade when the plot changed owner: a ship could not blockade its
+                // own team's water. This game's Patrol may stand anywhere in its sea:
+                // docs/NAVAL.md, 4.2.)
             }
 
             self.map.plots[p].owner = new_value;

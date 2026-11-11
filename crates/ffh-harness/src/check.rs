@@ -39,6 +39,11 @@ pub fn check(g: &Game) {
     if !stale.is_empty() {
         fail(format!("the cached range field at sea of teams {stale:?} is stale"));
     }
+    // The seas' stored control and blockade (docs/NAVAL.md, 4.3) equal a fresh computation.
+    let stale = g.sea_control_stale();
+    if !stale.is_empty() {
+        fail(format!("the stored control of seas {stale:?} is stale"));
+    }
 
     // Cities: owner lists, plots, population, team and area counters.
     let mut team_cities = vec![0i32; g.num_teams()];

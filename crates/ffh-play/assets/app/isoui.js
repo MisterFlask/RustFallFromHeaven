@@ -137,7 +137,7 @@ export function isoBar(frac, { w = 120, next = null, kind = "", title } = {}) {
 
 const MISSION_ICONS = {
   MISSION_SKIP: "skip", MISSION_SLEEP: "sleep", MISSION_FORTIFY: "fortify", MISSION_HEAL: "heal", MISSION_SENTRY: "sentry",
-  MISSION_PLUNDER: "plunder", MISSION_PILLAGE: "pillage", MISSION_SABOTAGE: "sabotage", MISSION_DESTROY: "destroy",
+  MISSION_PLUNDER: "seapatrol", MISSION_PILLAGE: "pillage", MISSION_SABOTAGE: "sabotage", MISSION_DESTROY: "destroy",
   MISSION_STEAL_PLANS: "steal_plans", MISSION_ESPIONAGE: "espionage", MISSION_INFILTRATE: "infiltrate", MISSION_RECON: "explore",
   MISSION_RANGE_ATTACK: "rangeattack", MISSION_BOMBARD: "bombard", MISSION_AIRBOMB: "bombard", MISSION_AIRSTRIKE: "bombard",
   MISSION_FOUND: "found", MISSION_SPREAD: "spread", MISSION_SPREAD_CORPORATION: "spread", MISSION_JOIN: "join",

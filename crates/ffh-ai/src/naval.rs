@@ -10,10 +10,18 @@
 //!
 //! A sea explorer (`UNITAI_EXPLORE_SEA`) reveals coasts while our landmass is full and nothing
 //! overseas is known yet.
+//!
+//! **Patrol** (docs/NAVAL.md, section 8; [`patrol`]): a warship of ours with no cargo and nothing
+//! else to do takes the Patrol order in a sea: the sea of an enemy coastal city our army besieges
+//! where its strength would hold the sea, else a sea one of our ports is on where an enemy patrols
+//! or has ships we see, else the sea of our most populous port; it leaves a sea where what it sees
+//! of the enemy is twice its side's strength ([`patrol_wake`]). Invasions go only at a coast whose
+//! way is in our range and not cut ([`way_in_range`]).
 
 use ffh_core::defs::*;
 use ffh_core::game::Game;
 use ffh_core::ids::*;
+use ffh_core::seas::SeaControl;
 use ffh_data::*;
 
 use crate::production::{best_unit, Choice, Role};
@@ -148,7 +156,8 @@ pub fn amphibious_city(g: &Game, p: PlayerId, other: PlayerId) -> Option<Amph> {
         }
         let (cx, cy) = (g.cities[c].x, g.cities[c].y);
         let Some((dist, staging)) = ports.iter().map(|&o| (g.plot_distance(cx, cy, g.cities[o].x, g.cities[o].y), o)).min() else { continue };
-        if dist > SEA_RANGE {
+        // The way over water must be in our range and not cut (docs/NAVAL.md, section 8).
+        if dist > SEA_RANGE || !way_in_range(g, team, cp) {
             continue;
         }
         // Our best trainable attacker must be able to beat its weakest defender.
@@ -817,6 +826,11 @@ pub fn transport(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
             }
             return;
         }
+        // Nothing to carry: a transport that can fight patrols (docs/NAVAL.md, section 8); it is
+        // woken when there is something to carry (`patrol_wake`).
+        if patrol(g, v, grp, u) {
+            return;
+        }
     }
     // Wait in port.
     port(g, p, grp, here);
@@ -945,6 +959,10 @@ pub fn sea_explore(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId)
     if is_transport_type(&g.d.units[g.units[u].unit_type]) {
         g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_SETTLER_SEA);
         transport(ai, g, v, grp, u);
+        return;
+    }
+    // Nothing left to reveal: a warship patrols (docs/NAVAL.md, section 8).
+    if patrol(g, v, grp, u) {
         return;
     }
     let here = g.unit_plot(u);
@@ -1111,4 +1129,199 @@ pub(crate) fn in_boats(g: &mut Game, v: &View, grp: GroupId, u: UnitId) -> bool 
         None => skip(g, grp),
     }
     true
+}
+
+// ----------------------------------------------------------------------------
+// Seas and Patrol (docs/NAVAL.md, sections 4 and 8)
+// ----------------------------------------------------------------------------
+
+/// Whether the way over water to the coast of the city on `cp` is in our range and not cut, as we
+/// can work it out: a water plot next to it has a lane of `team` (`Game::sea_lane_known`) that is
+/// not cut.
+pub(crate) fn way_in_range(g: &Game, team: TeamId, cp: PlotIdx) -> bool {
+    let (x, y) = g.map.xy(cp);
+    (0..DirectionType::NUM)
+        .filter_map(|i| g.plot_direction(x, y, DirectionType::from_usize(i)))
+        .filter(|&w| g.plot_is_water(w))
+        .any(|w| g.sea_lane_known(team, w, team).is_some_and(|l| !l.is_cut()))
+}
+
+/// Whether a warship's wear is above half its maximum (it makes for port, `ship_to_port`).
+fn worn(g: &Game, u: UnitId) -> bool {
+    g.unit_sea_wear_percent(u) > g.d.defines.sea_wear_max_percent / 2
+}
+
+/// Whether `team` is outmatched two to one in sea `s`, by what it sees.
+fn outmatched(g: &Game, team: TeamId, s: SeaId) -> bool {
+    let st = g.sea_state_known(s, team);
+    st.theirs > 0 && st.theirs >= 2 * st.ours.max(1) && !matches!(st.control, SeaControl::PatrolledBy(_))
+}
+
+/// The sea a warship `u` of ours should patrol (module comment), and the plot of it to go to:
+/// the nearest plot of the sea (by plot distance) outside a city that it can reach.
+fn patrol_target(g: &Game, v: &View, grp: GroupId, u: UnitId) -> Option<(SeaId, PlotIdx)> {
+    let p = v.p;
+    let team = v.team;
+    let here = g.unit_plot(u);
+    let (hx, hy) = g.map.xy(here);
+    let mut wanted: Vec<SeaId> = Vec::new();
+    // 1. An enemy coastal city one of our armies besieges, where we would hold its sea.
+    for q in g.player_ids() {
+        let qt = g.players[q].team;
+        if qt == team || !g.at_war(team, qt) {
+            continue;
+        }
+        for &c in &g.players[q].cities {
+            if !g.cities.contains(c) || !g.city_besiegers(c).iter().any(|&b| g.units[b].owner == p) {
+                continue;
+            }
+            for s in g.city_seas(c) {
+                if !wanted.contains(&s) && g.sea_state_known_if(s, qt, team, &[u]).closed() {
+                    wanted.push(s);
+                }
+            }
+        }
+    }
+    // 2. A sea one of our ports is on where an enemy patrols or has ships we see; 3. (outposts'
+    // lanes: phase 4); 4. the sea of our most populous port.
+    let mut ports: Vec<(i32, CityId)> = g.players[p].cities.iter().filter(|&&c| g.cities.contains(c)).map(|&c| (-g.cities[c].population, c)).collect();
+    ports.sort();
+    let mut threatened: Vec<SeaId> = Vec::new();
+    let mut home: Vec<SeaId> = Vec::new();
+    for &(_, c) in &ports {
+        for s in g.city_seas(c) {
+            let st = g.sea_state_known(s, team);
+            let enemy_ships = g.map.seas[s.idx()].plots.iter().any(|&w| {
+                g.plot_is_visible(w, team) && g.map.plots[w].units.iter().any(|&o| g.unit_is_warship(o) && g.unit_is_enemy(o, Some(team), Some(w)) && !g.unit_is_invisible(o, team, false))
+            });
+            if (st.theirs > 0 && !matches!(st.control, SeaControl::PatrolledBy(_))) || enemy_ships {
+                if !threatened.contains(&s) {
+                    threatened.push(s);
+                }
+            } else if home.is_empty() {
+                home.push(s);
+            }
+        }
+    }
+    wanted.extend(threatened.into_iter().filter(|&s| !outmatched(g, team, s)));
+    wanted.extend(home);
+    for s in wanted {
+        let mut plots: Vec<(i32, PlotIdx)> = g.map.seas[s.idx()]
+            .plots
+            .iter()
+            .copied()
+            .filter(|&w| g.map.plots[w].plot_city.is_none() && g.plot_in_sea_range(team, w) && !v.is_claimed(w))
+            .map(|w| {
+                let (x, y) = g.map.xy(w);
+                (g.plot_distance(hx, hy, x, y), w)
+            })
+            .collect();
+        plots.sort();
+        for &(_, w) in plots.iter().take(3) {
+            if w == here || g.group_find_path(grp, here, w, 0).is_some() {
+                return Some((s, w));
+            }
+        }
+    }
+    None
+}
+
+/// A warship of ours with nothing else to do (module comment): on Patrol in its sea, or on its
+/// way there. False if it has cargo, is not a warship, is worn, or no sea wants it.
+pub(crate) fn patrol(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
+    if !alive(g, grp) || !g.units.contains(u) || g.units[u].group != Some(grp) || g.group_get_head_unit(grp).is_none() {
+        return false;
+    }
+    if v.barbarian || !g.unit_is_warship(u) || g.groups[grp].units.iter().any(|&o| g.unit_has_cargo(o)) || worn(g, u) {
+        return false;
+    }
+    let Some((s, w)) = patrol_target(g, v, grp, u) else { return false };
+    let here = g.unit_plot(u);
+    v.claimed.push(w);
+    if g.map.plots[here].sea == Some(s) && g.map.plots[here].plot_city.is_none() && crate::units::can_start(g, grp, MissionType::MISSION_PLUNDER, -1, -1) {
+        crate::trace!(g, v.p, "ship group {:?} patrols {} at {:?}", grp, g.map.seas[s.idx()].name, g.map.xy(here));
+        g.tel_decision(v.p, "naval", "patrol", "start", 1, String::new);
+        crate::units::push(g, grp, MissionType::MISSION_PLUNDER, -1, -1, 0, false);
+        return true;
+    }
+    crate::trace!(g, v.p, "ship group {:?} sails to patrol {} at {:?}", grp, g.map.seas[s.idx()].name, g.map.xy(w));
+    move_to(g, grp, w, 0);
+    if alive(g, grp) && g.group_ready_to_move(grp, false) {
+        let there = g.groups[grp].units.first().and_then(|&o| g.unit_plot_opt(o)).and_then(|q| g.map.plots[q].sea) == Some(s);
+        if there && crate::units::can_start(g, grp, MissionType::MISSION_PLUNDER, -1, -1) {
+            g.tel_decision(v.p, "naval", "patrol", "start", 1, String::new);
+            crate::units::push(g, grp, MissionType::MISSION_PLUNDER, -1, -1, 0, false);
+        } else {
+            skip(g, grp);
+        }
+    }
+    true
+}
+
+/// Whether a group of ours on Patrol should take new orders this turn (module comment): worn,
+/// out of range, outmatched in its sea, or, every 8 turns, to look again where it is wanted.
+pub(crate) fn patrol_wake(g: &Game, v: &View, grp: GroupId) -> bool {
+    if v.barbarian || g.groups[grp].activity_type != ActivityType::ACTIVITY_PLUNDER {
+        return false;
+    }
+    let Some(head) = g.group_get_head_unit(grp) else { return false };
+    let Some(here) = g.unit_plot_opt(head) else { return false };
+    if g.groups[grp].units.iter().any(|&o| worn(g, o) || g.unit_is_out_of_sea_range(o)) {
+        return true;
+    }
+    if g.map.plots[here].sea.is_some_and(|s| outmatched(g, v.team, s)) {
+        return true;
+    }
+    // A transport on Patrol: something to carry.
+    if is_transport_type(&g.d.units[g.units[head].unit_type]) && (settler_waiting(g, v.p).is_some() || !armies_waiting(g, v.p).is_empty() || v.amphibious.is_some()) {
+        return true;
+    }
+    (g.game_turn() + grp.0 as i32) % 8 == 0
+}
+
+/// A warship for a port of ours on a sea an enemy patrols (section 8): the best warship it can
+/// train (`UNITAI_ATTACK_SEA`), while we have fewer warships (transports aside) than twice the
+/// seas of ours an enemy holds or contests by what we see.
+pub fn patrol_production(g: &Game, c: CityId) -> Option<Choice> {
+    let p = g.cities[c].owner;
+    if g.player_is_barbarian(p) || !is_coastal_city(g, c) {
+        return None;
+    }
+    let team = g.players[p].team;
+    // The seas of ours an enemy holds or contests (two warships each), and the seas we share with
+    // a port of an enemy we know of (one each, at most three in all).
+    let mut contested: Vec<SeaId> = Vec::new();
+    let mut fronts: Vec<SeaId> = Vec::new();
+    let enemy_ports: Vec<CityId> = g
+        .player_ids()
+        .filter(|&q| g.players[q].alive && !g.player_is_barbarian(q) && g.players[q].team != team && g.at_war(team, g.players[q].team))
+        .flat_map(|q| g.players[q].cities.clone())
+        .filter(|&e| g.cities.contains(e) && g.city_is_revealed(e, team, false))
+        .collect();
+    for &o in &g.players[p].cities {
+        if !g.cities.contains(o) {
+            continue;
+        }
+        for s in g.city_seas(o) {
+            let st = g.sea_state_known(s, team);
+            if matches!(st.control, SeaControl::HeldBy(_) | SeaControl::Contested(_)) && !contested.contains(&s) {
+                contested.push(s);
+            }
+            if !fronts.contains(&s) && enemy_ports.iter().any(|&e| g.city_seas(e).contains(&s)) {
+                fronts.push(s);
+            }
+        }
+    }
+    let mine = g.city_seas(c);
+    if !mine.iter().any(|s| contested.contains(s) || fronts.contains(s)) {
+        return None;
+    }
+    let warships = g.players[p].units.iter().filter(|&&u| g.unit_is_warship(u) && !is_transport_type(&g.d.units[g.units[u].unit_type])).count() as i32
+        + g.players[p].ai_num_train_ai_units[UnitAIType::UNITAI_ATTACK_SEA];
+    let want = 2 * contested.len() as i32 + (fronts.iter().filter(|s| !contested.contains(s)).count() as i32).min(3);
+    if warships >= want {
+        return None;
+    }
+    let u = best_unit(g, c, Role::SeaExplore)?;
+    Some(Choice::Train(u, UnitAIType::UNITAI_ATTACK_SEA))
 }

@@ -669,6 +669,12 @@ pub(crate) fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static s
             return Some((choice, "assault_fleet"));
         }
     }
+    // A warship for a port on a sea an enemy patrols (docs/NAVAL.md, section 8).
+    if ctx.afford {
+        if let Some(choice) = crate::naval::patrol_production(g, c) {
+            return Some((choice, "patrol_ship"));
+        }
+    }
     // A ship for a settler waiting in port; a sea explorer while our land is full and
     // nothing is known across the water.
     if safe && crate::naval::is_coastal_city(g, c) {

@@ -234,9 +234,14 @@ fn a_ship_in_a_home_water_area_is_a_source() {
     // No coastal city: a ship is no source.
     let ship = w.g.player_init_unit(p0, transport, 30, 1, None, None);
     assert_eq!(w.g.plot_supply_line(p0, w.at(30, 3)), None);
-    // With a city on the coast of that ocean: the line ends on a land plot next to the ship, the
+    // A city on that coast beyond the ship's range: no lane (docs/NAVAL.md, 4.6), no source.
+    let far = w.g.player_init_city(p0, 20, 2, true, true);
+    w.clear();
+    assert_eq!(w.g.plot_supply_line(p0, w.at(30, 3)), None, "no lane in range");
+    w.g.city_kill(far, false);
+    // With a city on the coast in range: the line ends on a land plot next to the ship, the
     // lowest plot index of the three at the same cost and length.
-    w.g.player_init_city(p0, 20, 2, true, true);
+    w.g.player_init_city(p0, 25, 2, true, true);
     w.clear();
     let line = w.g.plot_supply_line(p0, w.at(30, 3)).expect("supplied by the ship");
     assert_eq!(line.source, SupplySource::Ship(ship));

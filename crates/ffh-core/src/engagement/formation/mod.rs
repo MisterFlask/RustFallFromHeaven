@@ -969,6 +969,23 @@ pub fn missile_hit(f: &Formation, h: usize, rng: &mut impl BattleRng) -> Option<
     Some(Hit { target: t as FighterIdx, dmg, expected, r, crit: false, miss: false, killed: dmg >= s.hp[t], withdrew: false, splash: false })
 }
 
+/// A ship's shot into a battle on the coast (docs/NAVAL.md, 4.7): fighter `h` (alone on its side,
+/// off the field) hits one enemy once, as a SHOOT from outside the field: SHOOT's reach, the
+/// normal choice without nearby first, the damage of a SHOOT hit ([`Formation::expected`], the
+/// ground's rules included); no miss, no crit, no splash, no withdrawal; r drawn ("Engagement
+/// hit"). It never takes the target below 1 HP. `None` (nothing drawn): no target in reach.
+pub fn shore_shot(f: &Formation, h: usize, rng: &mut impl BattleRng) -> Option<Hit> {
+    let s = State::new(f);
+    let list = f.reach(&s, h, ActionKind::Shoot);
+    let t = f.choose_with(&s, h, ActionKind::Shoot, 1, &list, true)?;
+    let p = &f.params;
+    let expected = f.expected(h, t, ActionKind::Shoot, 1, false);
+    let r = p.rand_min + rng.rand(p.rand_max - p.rand_min + 1, "Engagement hit");
+    let raw = (expected as i64 * r as i64 / 100).clamp(1, i32::MAX as i64) as i32;
+    let dmg = raw.min((s.hp[t] - 100).max(0)).min((s.hp[t] - f.floor(h, t)).max(0));
+    Some(Hit { target: t as FighterIdx, dmg, expected, r, crit: false, miss: false, killed: false, withdrew: false, splash: false })
+}
+
 struct Run<'a> {
     f: &'a Formation,
     s: State,

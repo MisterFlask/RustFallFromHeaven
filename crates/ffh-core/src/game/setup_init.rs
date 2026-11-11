@@ -349,6 +349,9 @@ impl Game {
     /// `normalizeStartingPlots`, FfH GAMEOPTION_BARBARIAN_WORLD barbarian cities (one per alive
     /// non-barbarian player), `initFreeUnits`. (`AI_updateFoundValues` per player is AI.)
     pub fn set_initial_items(&mut self) {
+        // This game's seas (docs/NAVAL.md, 4.1): the map's water is final; before the starting
+        // plots.
+        self.map_generate_seas();
         self.init_free_state();
         self.assign_starting_plots();
         self.normalize_starting_plots();

@@ -73,6 +73,19 @@
   "SEA_WEAR_PERCENT": 5,
   // wear: the most strength wear takes, in percent
   "SEA_WEAR_MAX_PERCENT": 50,
+  // seas (docs/NAVAL.md, 4.1): a water area of fewer plots has no sea
+  "SEA_MIN_PLOTS": 6,
+  // seas: the plots a sea is cut to (an area gets plots / this seas, rounded, at least 1)
+  "SEA_TARGET_PLOTS": 40,
+  // a sea is closed to a team when an enemy's strength on Patrol there is at least this percent
+  //      of the team's (and above 0)
+  "SEA_HOLD_PERCENT": 200,
+  // a besieged city with an open harbour: percent of the city's heal and of its Sentinels' repair
+  "PORT_SIEGE_HEAL_PERCENT": 50,
+  // the most warships of a side that fire into a battle on the coast
+  "SHORE_FIRE_SHIPS": 3,
+  // the least odds (percent) a ship on Patrol needs against a plot's defender to intercept
+  "INTERCEPT_MIN_ODDS": 50,
   // ==== Governors (docs/GOVERNORS.md) ====
   // percent chance a new governor has a trait (governor_traits.jsonc, drawn uniformly)
   "GOVERNOR_TRAIT_CHANCE": 50,

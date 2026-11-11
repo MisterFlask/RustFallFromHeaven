@@ -167,6 +167,8 @@ pub struct Plot {
     /// This game's Mana Grafting card (docs/CARDS.md): the plot's mana node has been grafted,
     /// and cannot be grafted again.
     pub grafted: bool,
+    /// This game's seas (docs/NAVAL.md, 4.1): the sea the plot belongs to (water only).
+    pub sea: Option<SeaId>,
 }
 
 impl Plot {
@@ -247,6 +249,7 @@ impl Plot {
             temp_terrain_timer: 0,
             real_terrain_type: None,
             grafted: false,
+            sea: None,
         }
     }
 }

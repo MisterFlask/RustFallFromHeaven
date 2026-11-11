@@ -132,6 +132,9 @@ pub struct EngagePreview {
     /// with the percent change of the damage it deals (`STARVATION_DAMAGE_DEALT_PERCENT`); the
     /// forecast counts it.
     pub starving: Vec<(UnitId, i32)>,
+    /// The ships that fire into the battle from the coast before round 1, each side's
+    /// (docs/NAVAL.md, 4.7); the forecast counts their shots.
+    pub shore: Vec<super::shore::ShoreShip>,
 }
 
 /// What the attacker knows of the defense: the defender's candidates, the units on the plot its
@@ -284,6 +287,7 @@ impl Game {
             declare_war,
             tactics: [self.engage_pool_tactic(&plan.pool, Side::Attacker, &HitCtx::new(inp.from, inp.to)), self.engage_pool_tactic(&plan.view.candidates, Side::Defender, &HitCtx::new(inp.from, inp.to))],
             starving: g.engage_dealt_mods(s),
+            shore: s.shore.clone(),
         })
     }
 
@@ -382,6 +386,8 @@ impl Game {
         effects.extend(self.engage_opening_spells(setup, &hp));
         // Card: Thunderhead Tower (docs/CARDS.md), as the real fight.
         self.engage_arms_opening(setup, &sat, &mut hp, None);
+        // The ships on the coast (docs/NAVAL.md, 4.7), as the real fight.
+        self.engage_shore_fire(setup, &sat, &mut hp, &mut *rng, None);
         let (f, map) = if effects.is_empty() {
             setup.battle(&sat, &hp)
         } else {

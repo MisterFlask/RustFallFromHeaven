@@ -214,6 +214,7 @@ game_data! {
     building_tiers: BuildingTierType => BuildingTierInfo, building::read_building_tier;
     research_paths: ResearchPathType => ResearchPathInfo, research_path::read_research_path;
     battle_tactics: BattleTacticType => BattleTacticInfo, battle_tactic::read_battle_tactic;
+    sea_names: SeaNameType => SeaNameInfo, sea::read_sea_names;
 }
 
 /// Type lists of `global_types.jsonc` (key, registry class): types the data names that are

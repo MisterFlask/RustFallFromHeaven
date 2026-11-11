@@ -592,6 +592,11 @@ pub struct Unit {
     /// Its plot was out of its team's range at sea at the last start of its owner's turn (a sea
     /// unit or a unit in boats): the attrition message is given on the first such turn only.
     pub sea_out_of_range: bool,
+    // ---- This game's own: the sea, phase 2 (docs/NAVAL.md, section 4) ----
+    /// It intercepted this turn (4.4 point 4); cleared at its owner's turn start.
+    pub intercepted: bool,
+    /// It fired into a battle on the coast this turn (4.7); cleared at its owner's turn start.
+    pub shore_fired: bool,
 }
 
 impl Unit {
@@ -775,6 +780,8 @@ impl Unit {
             battle_summon: false,
             sea_turns: 0,
             sea_out_of_range: false,
+            intercepted: false,
+            shore_fired: false,
         }
     }
 }

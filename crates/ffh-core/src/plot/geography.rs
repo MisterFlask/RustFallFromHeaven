@@ -72,6 +72,8 @@ impl Game {
         }
 
         if was_water != self.plot_is_water(p) {
+            // This game's seas (docs/NAVAL.md, 4.1): water joins a neighbouring sea, land leaves its.
+            self.plot_update_sea_on_type_change(p);
             let (x, y) = self.map.xy(p);
 
             if recalculate {

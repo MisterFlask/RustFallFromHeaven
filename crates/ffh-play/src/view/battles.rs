@@ -563,6 +563,13 @@ fn log_events(g: &Game, log: &[LogEvent]) -> (Vec<Json>, Vec<Json>) {
             // Supply (docs/SUPPLY.md): the side's units of starving armies deal `dealt_pct` damage,
             // before the battle (round 0).
             LogEvent::Starvation { units, dealt_pct } => events.push(opening_json("Starvation").with("units", idxs(units)).with("dealt_pct", *dealt_pct)),
+            // The sea (docs/NAVAL.md, 4.7): a ship's shot from the coast before the battle, at
+            // round 0.
+            LogEvent::ShoreFire { ship, owner, side, hits } => {
+                let hits: Vec<Json> = hits.iter().map(|&(b, dmg)| crate::jobj! { "target" => b, "dmg" => dmg }).collect();
+                let side = if *side == ffh_core::engagement::Side::Attacker { "attacker" } else { "defender" };
+                events.push(opening_json("ShoreFire").with("unit_type", Json::idx(*ship)).with("owner", owner.0 as i32).with("side", side).with("hits", Json::Arr(hits)));
+            }
         }
     }
     (events, after)

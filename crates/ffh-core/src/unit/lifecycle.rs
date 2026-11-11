@@ -1302,12 +1302,19 @@ impl Game {
     /// C++ `bNotifyEntity` (damage animation) is dropped. Kills the unit (with delay) when dead.
     pub fn unit_set_damage(&mut self, u: UnitId, value: i32, player: Option<PlayerId>) {
         let max_hit_points = self.unit_max_hit_points(u);
+        let old = self.units[u].damage;
+        // This game's seas (docs/NAVAL.md, 4.3): a ship on Patrol that changes strength.
+        let patrol = if self.units[u].blockading { self.unit_plot_opt(u) } else { None };
         self.units[u].damage = range(value, 0, max_hit_points);
+        let changed = self.units[u].damage != old;
 
         // UI: `NotifyEntity(MISSION_DAMAGE)`, info bar and plot list updates when the value changed.
 
         if self.unit_is_dead(u) {
             self.unit_kill(u, true, player);
+        }
+        if let (Some(q), true) = (patrol, changed) {
+            self.plot_sea_refresh(q);
         }
     }
 

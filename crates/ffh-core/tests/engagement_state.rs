@@ -138,6 +138,7 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
         standing: 1,
         lost: Vec::new(),
         summons: 0,
+        shore: Vec::new(),
     };
     let stat = |x| Stat { base_x100: x, terms: vec![Term { src: TermSource::Fortify, pct: 25 }], total_x100: x * 125 / 100 };
     let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");

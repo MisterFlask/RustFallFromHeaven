@@ -14,7 +14,7 @@ persist_enum!(Side { 0 => Attacker, 1 => Defender });
 persist_enum!(EngageResult { 0 => Taken, 1 => Cleared, 2 => Repulsed, 3 => Held });
 
 persist_struct!(BattleReport { id, turn, plot, from, place, sides, outcome, log });
-persist_struct!(ReportSide { player, shown_player, players, slots, lanes, used, committed, sat_out, fallen, escaped, standing, lost, summons });
+persist_struct!(ReportSide { player, shown_player, players, slots, lanes, used, committed, sat_out, fallen, escaped, standing, lost, summons, shore });
 persist_struct!(PlotSnap { x, y, terrain, feature, hills, river_crossing, city });
 persist_struct!(CitySnap { id, name, owner, size, defense_pct });
 persist_struct!(Outcome { result, rounds, plot_taken, city_captured, moved_in, defenders_left, sentinels, sentinels_breached });
@@ -104,6 +104,7 @@ persist_enum!(LogEvent {
     11 => MoveIn { units, city },
     30 => BuildingStrike { building, hits },
     31 => Starvation { units, dealt_pct },
+    32 => ShoreFire { ship, owner, side, hits },
 });
 persist_struct!(Event { round, pass, actor, kind, spell, target, hits, heal, knocked, note, entered });
 persist_struct!(Entry { unit, lane, row, hp });
@@ -365,6 +366,7 @@ mod tests {
             standing: 1,
             lost: vec![(UnitType(2), 2), (UnitType(7), 1)],
             summons: 1,
+            shore: vec![(UnitType(3), 1250)],
         };
         BattleReport {
             id: 41,

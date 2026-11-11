@@ -54,7 +54,7 @@ persist_struct!(RowActions { kind, count });
 
 persist_newtype!(
     PlayerId, TeamId, UnitId, CityId, GroupId, AreaId, PlotGroupId, DealId, PlotIdx, TriggeredId, VoteId,
-    PlayerVote, ArmyId, GovernorId,
+    PlayerVote, ArmyId, GovernorId, SeaId,
 );
 
 // ---- this game's own rules (docs/CULTURE.md) ----
@@ -333,7 +333,7 @@ persist_struct!(Unit {
     extra_unit_combat_modifier, ai_birthmark, ai_type, ai_groupflag, ai_origin_x, ai_origin_y,
     ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, army, march,
     stat_flat, stat_pct, attacks_made, battle_heal_turn, xp_carry, lent, card, packed_city,
-    battle_summon, sea_turns, sea_out_of_range,
+    battle_summon, sea_turns, sea_out_of_range, intercepted, shore_fired,
 });
 
 use crate::ffh::cards::map_rules::{PackedBuilding, PackedCity};
@@ -480,7 +480,7 @@ persist_struct!(Plot {
     revealed_route_type, script_data, build_progress, culture_range_cities,
     invisible_visibility_count, units, move_disabled_ai, move_disabled_human, build_disabled,
     found_disabled, python_active, min_level, plot_counter, portal_exit_x, portal_exit_y,
-    temp_terrain_timer, real_terrain_type, grafted,
+    temp_terrain_timer, real_terrain_type, grafted, sea,
 });
 
 persist_struct!(Area {
@@ -504,5 +504,8 @@ persist_struct!(Deal { id, initial_game_turn, first_player, second_player, first
 
 persist_struct!(Map {
     grid_width, grid_height, land_plots, owned_plots, top_latitude, bottom_latitude, next_river_id,
-    wrap_x, wrap_y, num_bonus, num_bonus_on_land, plots, areas, pirate_cove_types,
+    wrap_x, wrap_y, num_bonus, num_bonus_on_land, plots, areas, pirate_cove_types, seas,
 });
+
+persist_struct!(Sea { name, plots, closed_to });
+use crate::seas::Sea;

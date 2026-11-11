@@ -107,6 +107,8 @@ pub struct Map {
     /// C++ static `CvPlot::c_aePirateCoveTypes` (a `std::set`, kept sorted here): the
     /// `PIRATE_COVE_IMPROVEMENT` upgrade chain, filled by `Game::plot_init_pirate_cove_types`.
     pub pirate_cove_types: Vec<ImprovementType>,
+    /// This game's seas (docs/NAVAL.md, 4.1), by `SeaId`.
+    pub seas: Vec<crate::seas::Sea>,
 }
 
 impl Default for Map {
@@ -128,6 +130,7 @@ impl Default for Map {
             plots: Vec::new(),
             areas: Slab::new(),
             pirate_cove_types: Vec::new(),
+            seas: Vec::new(),
         }
     }
 }
@@ -159,6 +162,7 @@ impl Map {
             plots,
             areas: Slab::new(),
             pirate_cove_types: Vec::new(),
+            seas: Vec::new(),
         }
     }
 

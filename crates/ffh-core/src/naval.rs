@@ -445,3 +445,116 @@ impl Game {
 pub(crate) fn new_cache() -> RefCell<SeaRangeCache> {
     RefCell::new(SeaRangeCache::new())
 }
+
+// -------------------------------------------------------------------------------------------
+// Lanes (docs/NAVAL.md, section 5; phase 2)
+
+/// A lane ([`Game::sea_lane`]): the path from its plot (first) to a water plot next to a home
+/// port (last), the port, and the first sea along it, counted from its plot, that is closed to
+/// the team with who holds it (the barbarian team for ships of hidden nationality a viewer cannot
+/// name). A lane with `cut_in` is cut.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SeaLane {
+    pub path: Vec<PlotIdx>,
+    pub port: CityId,
+    pub cut_in: Option<(SeaId, TeamId)>,
+}
+
+impl SeaLane {
+    /// Whether the lane is cut.
+    pub fn is_cut(&self) -> bool {
+        self.cut_in.is_some()
+    }
+}
+
+impl Game {
+    /// `team`'s lane from `from` (docs/NAVAL.md, section 5) with any port of the team as its home
+    /// port (4.6): the shortest path over passable water from `from` (a water plot, or the water
+    /// plots next to a land plot) to a water plot next to a port of the team, every plot in the
+    /// team's range: down the range field (the field is the distance from those ports). Ties:
+    /// fewer plots, then the lower plot index at the first difference. `None`: no path in range.
+    /// The truth (the stored control).
+    pub fn sea_lane(&self, team: TeamId, from: PlotIdx) -> Option<SeaLane> {
+        let (path, port) = self.sea_lane_path(team, from)?;
+        let mut cut_in = None;
+        for &q in &path {
+            if let Some(s) = self.map.plots[q].sea {
+                if self.sea_is_closed_to(s, team) {
+                    cut_in = Some((s, self.sea_closed_to(s, team).unwrap_or_else(|| self.barbarian_team())));
+                    break;
+                }
+            }
+        }
+        Some(SeaLane { path, port, cut_in })
+    }
+
+    /// [`Game::sea_lane`] as team `viewer` can work it out: the same path, cut where the control
+    /// the viewer can work out ([`Game::sea_closed_known`]: only ships it sees count) closes a sea.
+    pub fn sea_lane_known(&self, team: TeamId, from: PlotIdx, viewer: TeamId) -> Option<SeaLane> {
+        let (path, port) = self.sea_lane_path(team, from)?;
+        let mut cut_in = None;
+        let mut seen: Vec<SeaId> = Vec::new();
+        for &q in &path {
+            if let Some(s) = self.map.plots[q].sea {
+                if seen.contains(&s) {
+                    continue;
+                }
+                seen.push(s);
+                if let Some(holder) = self.sea_closed_known(s, team, viewer) {
+                    cut_in = Some((s, holder.unwrap_or_else(|| self.barbarian_team())));
+                    break;
+                }
+            }
+        }
+        Some(SeaLane { path, port, cut_in })
+    }
+
+    /// The path and port of `team`'s lane from `from` ([`Game::sea_lane`]).
+    fn sea_lane_path(&self, team: TeamId, from: PlotIdx) -> Option<(Vec<PlotIdx>, CityId)> {
+        if self.team_sea_exempt(team) {
+            return None;
+        }
+        let range = self.team_sea_range(team);
+        let starts: Vec<PlotIdx> = if self.plot_is_water(from) {
+            vec![from]
+        } else {
+            let (x, y) = self.map.xy(from);
+            let mut v: Vec<PlotIdx> = (0..DirectionType::NUM).filter_map(|i| self.plot_direction(x, y, DirectionType::from_usize(i))).filter(|&w| self.plot_is_water(w)).collect();
+            v.sort();
+            v
+        };
+        let mut best: Option<Vec<PlotIdx>> = None;
+        for s in starts {
+            let Some(d0) = self.plot_sea_range(team, s) else { continue };
+            if d0 > range {
+                continue;
+            }
+            let mut path = vec![s];
+            let (mut cur, mut d) = (s, d0);
+            while d > 1 {
+                let (x, y) = self.map.xy(cur);
+                let next = (0..DirectionType::NUM)
+                    .filter_map(|i| self.plot_direction(x, y, DirectionType::from_usize(i)))
+                    .filter(|&w| self.plot_sea_range(team, w) == Some(d - 1))
+                    .min();
+                let Some(n) = next else { break };
+                path.push(n);
+                cur = n;
+                d -= 1;
+            }
+            if d != 1 {
+                continue;
+            }
+            let better = match &best {
+                None => true,
+                Some(b) => (path.len(), &path) < (b.len(), b),
+            };
+            if better {
+                best = Some(path);
+            }
+        }
+        let path = best?;
+        let port = self.plot_sea_port(team, *path.last()?)?;
+        Some((path, port))
+    }
+}

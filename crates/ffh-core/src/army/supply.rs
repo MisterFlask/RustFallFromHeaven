@@ -2,8 +2,9 @@
 //!
 //! **The line.** Every army needs a supply line: the cheapest path over land from its plot to a
 //! source of its owner ([`Game::plot_supply_line`]): a city of its owner's team not in
-//! occupation, or a ship of its owner with room for land units in a water area on which the
-//! owner's team has a coastal city (the line then ends on a land plot next to the ship). Entering
+//! occupation, or a ship of its owner with room for land units standing in a sea not closed to
+//! its team with an open lane to a port of the team (docs/NAVAL.md, 4.6; the line then ends on a
+//! land plot next to the ship). Entering
 //! a plot costs `SUPPLY_COST_ROAD` with a route (anyone's), `SUPPLY_COST_OWN` in the owner's
 //! team's territory without one, `SUPPLY_COST_LAND` anywhere else; the line cannot enter water,
 //! impassable plots, a plot an enemy unit stands on (seen or not), an enemy city, a plot next to a
@@ -21,12 +22,13 @@
 //! `STARVATION_DAMAGE_DEALT_PERCENT` damage in battles (the engagement's pre-battle hook).
 
 use std::cmp::{Ordering, Reverse};
-use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
+use std::collections::{BTreeMap, BinaryHeap};
 
 use ffh_data::*;
 
 use crate::game::Game;
 use crate::ids::*;
+use crate::naval::SeaLane;
 
 /// Where a supply line ends.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -73,6 +75,17 @@ impl SupplyState {
             _ => None,
         }
     }
+}
+
+/// Why a supply ship is no source by the sea ([`Game::supply_ship_refused`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SupplyShipRefusal {
+    /// The sea it stands in is closed to its team: the sea and its holder.
+    SeaClosed(SeaId, TeamId),
+    /// Its lane is cut: the sea and its holder.
+    LaneCut(SeaId, TeamId),
+    /// No lane: no path over water in range to a port of its team.
+    NoLane,
 }
 
 /// What a supply-line search knows: the truth (the rules' line, [`Game::plot_supply_line`]), or
@@ -208,9 +221,11 @@ impl Game {
     }
 
     /// `p`'s ships that are supply sources, by plot: a sea unit with room for land units
-    /// (`cargo_capacity > 0`, land cargo, no special cargo) on a water plot of an area on which a
-    /// city of `p`'s team stands. The lowest unit id per plot. For a team's `view`: only ships it
-    /// sees, and coastal cities it has revealed.
+    /// (`cargo_capacity > 0`, land cargo, no special cargo) on a water plot whose sea is not
+    /// closed to `p`'s team, with an open lane to a port of the team (docs/NAVAL.md, 4.6 and
+    /// section 5: [`Game::sea_lane`]). The lowest unit id per plot. For a team's `view`: only
+    /// ships it sees, and the control it can work out ([`Game::sea_closed_known`],
+    /// [`Game::sea_lane_known`]).
     fn supply_ships(&self, p: PlayerId, view: SupplyView) -> BTreeMap<PlotIdx, UnitId> {
         let team = self.players[p].team;
         let mut ships: BTreeMap<PlotIdx, UnitId> = BTreeMap::new();
@@ -227,26 +242,12 @@ impl Game {
         if candidates.is_empty() {
             return ships;
         }
-        // The water areas the team's cities touch.
-        let mut coastal: BTreeSet<Option<AreaId>> = BTreeSet::new();
-        for q in self.player_ids().filter(|&q| self.players[q].alive && self.supply_home(team, self.players[q].team)) {
-            for &c in self.players[q].cities.iter().filter(|&&c| self.supply_knows_city(view, c)) {
-                let (x, y) = (self.cities[c].x, self.cities[c].y);
-                for dy in -1..=1 {
-                    for dx in -1..=1 {
-                        if let Some(w) = self.plot_xy(x, y, dx, dy).filter(|&w| self.plot_is_water(w)) {
-                            coastal.insert(self.map.plots[w].area);
-                        }
-                    }
-                }
-            }
-        }
         for u in candidates {
             let Some(plot) = self.unit_plot_opt(u) else { continue };
             if !self.supply_sees_unit(view, u, plot) {
                 continue;
             }
-            if self.plot_is_water(plot) && self.map.plots[plot].area.is_some() && coastal.contains(&self.map.plots[plot].area) {
+            if self.plot_is_water(plot) && self.supply_ship_open(team, plot, view) {
                 let e = ships.entry(plot).or_insert(u);
                 if u < *e {
                     *e = u;
@@ -254,6 +255,33 @@ impl Game {
             }
         }
         ships
+    }
+
+    /// Whether a supply ship of `team` on water plot `plot` is a source by the sea (docs/NAVAL.md,
+    /// 4.6): its sea not closed to the team and its lane to a port of the team open, as `view`
+    /// knows them.
+    fn supply_ship_open(&self, team: TeamId, plot: PlotIdx, view: SupplyView) -> bool {
+        match view {
+            SupplyView::Truth => !self.plot_sea_closed(plot, team) && self.sea_lane(team, plot).is_some_and(|l| !l.is_cut()),
+            SupplyView::Known(v) => {
+                self.map.plots[plot].sea.is_none_or(|s| self.sea_closed_known(s, team, v).is_none()) && self.sea_lane_known(team, plot, v).is_some_and(|l| !l.is_cut())
+            }
+        }
+    }
+
+    /// Why a supply ship of `team` on `plot` is no source by the sea, as the truth has it
+    /// (docs/NAVAL.md, 4.6; the client's "No supply line: the transport is in X, held by Y"): the
+    /// sea it stands in closed (with its holder), else its lane cut (where, by whom), else no lane
+    /// in range. `None`: it is a source by the sea.
+    pub fn supply_ship_refused(&self, team: TeamId, plot: PlotIdx) -> Option<SupplyShipRefusal> {
+        if let Some(s) = self.map.plots[plot].sea.filter(|&s| self.sea_is_closed_to(s, team)) {
+            return Some(SupplyShipRefusal::SeaClosed(s, self.sea_closed_to(s, team).unwrap_or_else(|| self.barbarian_team())));
+        }
+        match self.sea_lane(team, plot) {
+            None => Some(SupplyShipRefusal::NoLane),
+            Some(SeaLane { cut_in: Some((s, t)), .. }) => Some(SupplyShipRefusal::LaneCut(s, t)),
+            Some(_) => None,
+        }
     }
 
     /// The source a supply line of `p`'s ends at on `plot` (`team`'s, `ships` from

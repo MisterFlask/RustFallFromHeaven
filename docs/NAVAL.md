@@ -3,8 +3,10 @@
 **Status: spec (2026-11-10). Built in four phases; each phase's status is in its heading. Phase 1
 (section 3) built in the rules (`crates/ffh-core/src/naval.rs`, the boats rules in the unit code,
 supply at sea in `crates/ffh-core/src/army/supply.rs`, tests in `crates/ffh-core/tests/naval.rs`)
-with the AI minimum of section 8's first two bullets (`crates/ffh-ai/src/naval.rs`); the client
-(section 10) not yet.** This
+with the AI minimum of section 8's first two bullets (`crates/ffh-ai/src/naval.rs`); phase 2
+(sections 4 and 5) built in the rules (`crates/ffh-core/src/seas.rs`, lanes in `naval.rs`, shore
+fire in `crates/ffh-core/src/engagement/shore.rs`, tests in `crates/ffh-core/tests/seas.rs`) with
+section 8's Patrol bullet and the transports' range test; the client (section 10) not yet.** This
 game's own rules, not FFH2's (the owner's direction, 2026-11-10: the naval game inherited from
 Civ4 is irrelevant and there are no colonial adventures). This file is the spec for the
 implementation, as docs/SUPPLY.md is for supply lines. Marked **(default)**: a value or rule chosen
@@ -167,7 +169,7 @@ Choices made where this spec was silent (each open to change):
   it reaches in boats. An AI army also steps aboard a transport of ours at sea beside it (the rules
   now allow it). The war-target and settler crossings are not built.
 
-## 4. Phase 2: named seas and who holds them -- status: not built
+## 4. Phase 2: named seas and who holds them -- status: built in the rules (the client: not yet; 4.4 point 5 is phase 4's)
 
 The owner's decision (2026-11-10): named seas. They replace this spec's first draft of zones
 around each warship and of Civ4's blockade by range: the player reads one state per sea.
@@ -262,7 +264,123 @@ Each shot is one SHOOT hit by the resolver's own damage rule, the ship's attack 
 on the units' stat scale, at a target chosen as an archer's first shot is. Ships take no damage and
 are not fighters. The preview, the forecast and the battle report show the shots.
 
-## 5. Lanes
+### 4.8 As built (2026-11-11)
+
+Where the code is:
+
+- `crates/ffh-core/src/seas.rs`: `Sea` (`name`, `plots`, `closed_to`), `Map::seas`, `Plot::sea`,
+  `SeaId`; generation (`Game::map_generate_seas`, called first in `set_initial_items`, so every
+  game's map path runs it: `game_init` and `regenerate_map`) and `Game::map_cut_sea` (seas cut by
+  hand, for tests and tools); the rule for plots that change type (`plot_update_sea_on_type_change`,
+  called by `plot_set_plot_type`, the one funnel of every change: terrain spells, the Sea Recedes
+  card, lakes); strength and control (`unit_sea_strength_x100`, `sea_patrollers`, `sea_strength`,
+  `sea_state`, `sea_state_known`, `sea_state_known_if`, `sea_state_if_patrol`, `sea_closed_to`,
+  `sea_is_closed_to`, `plot_sea_closed`, `sea_closed_known`; `SeaControl`, `SeaState`); the stored
+  blockade (`sea_refresh`, `seas_refresh_all`, `plot_sea_refresh`, `sea_control_stale`, the
+  messages); harbours (`city_seas`, `city_harbour` -> `Harbour`, `city_harbour_if_held`,
+  `sea_ports_blockaded_if_held`, `sea_ports`); interception (`sea_interceptors`,
+  `sea_interceptors_for`, `sea_intercept_step`, called at the end of `group_move`); the turn start
+  (`player_update_seas`).
+- Patrol: `unit_can_plunder`, `unit_update_plunder` (now: refresh the unit's sea) in
+  `unit/actions.rs`; the refresh hooks in `unit_set_damage`, `unit_set_has_promotion`, war and peace
+  (`player_update_plunder`), hidden nationality, the crusade Host's war, and each game turn
+  (`do_turn`). The duel without moving: `Game::unit_intercept_attack` (`unit/combat.rs`, an
+  `intercept` flag of `updateCombat`).
+- Lanes: `SeaLane`, `Game::sea_lane`, `Game::sea_lane_known` in `naval.rs`.
+- A port under siege: `unit_heal_rate` (`unit/actions.rs`), `city_repair_sentinels`
+  (`engagement/siege.rs`).
+- Supply ships: `supply_ship_open`, `Game::supply_ship_refused` -> `SupplyShipRefusal`
+  (`army/supply.rs`).
+- Shore fire: `engagement/shore.rs` (`ShoreShip`, `ShoreShot`, `engage_shore_ships`,
+  `engage_shore_fire`), `formation::shore_shot` (the resolver's side, pure), `Setup::shore`,
+  `EngagePreview::shore`, `ReportSide::shore`, `LogEvent::ShoreFire`.
+- The AI (section 8): `crates/ffh-ai/src/naval.rs` (`patrol`, `patrol_target`, `patrol_wake`,
+  `patrol_production`, `way_in_range`).
+- The stress harness checks `sea_control_stale` (`ffh_harness::check`). Save format 33: `Plot::sea`,
+  `Map::seas`, `Unit::intercepted`, `Unit::shore_fired`, `ReportSide::shore`,
+  `LogEvent::ShoreFire`. Data: `sea_names.jsonc` (`SeaNameInfo`: `names`, `lake`), the defines of
+  section 11's phase 2.
+
+Choices made where this spec was silent (each open to change):
+
+- **Seas.** The seeds' distances and the plots' assignment step over every water plot of the area
+  (impassable ones too: each plot has a sea). An area "touches a map edge" on a plot in the first or
+  last column (unless the map wraps in x) or row (unless it wraps in y). A lake area takes a lake
+  name while some are left, then a sea name, then "Sea N" (N: the sea's index + 1). The seas are
+  cut after the lakes and the map script's own changes, before the starting plots; the normalizer's
+  later lakes (inland, one plot) get no sea. A map made by hand (a test world) has no sea until
+  `map_generate_seas` or `map_cut_sea` makes one.
+- **Strength** is summed in hundredths and rounded down once (a ship at half strength counts),
+  `unit_curr_combat_str` with no plot and no opponent: the duel's strength with its damage and
+  wear and no terrain. Every comparison (above 0, twice) is on the rounded numbers.
+- **Hidden nationality.** The truth names the hidden ship's team (it is part of that team's
+  strength, hostile to the teams it is not at war with only through its hidden ships). What a
+  viewer works out puts another team's hidden ships into one unknown party (`SeaParty` `None`),
+  hostile; a lane cut by it names the barbarian team (as such a ship is shown).
+- **Held by you** needs strength above 0 and at least twice each enemy's; with no enemy patrolling
+  it is held by you as soon as you patrol. *Patrolled by X* only when neither you nor an enemy
+  patrols (the strongest such team; ties: the lower).
+- **The stored blockade.** `Plot::blockaded_count` (Civ4's field) is now 0 or 1 for a team: 1 when
+  the plot's sea is closed to it. A sea's refresh (its control, its plots, the trade network once)
+  runs when a ship starts or ends Patrol (moving, a new activity and death all end it through
+  `unit_set_blockading`), when a patrolling ship's damage or promotions change, at war and peace,
+  when its nationality changes, at each player's turn start for the seas its ships patrol (wear),
+  and for every sea at each game turn (strengths that move with the game's counters). The harness
+  checks that it equals a fresh computation.
+- **Patrol** may be taken in one's own borders (Civ4 refused it there and ended a blockade when the
+  plot changed owner; both are gone). It ends when the ship moves or takes another activity (Civ4's
+  rule). Civ4's Sea Patrol order (`MISSION_SEAPATROL`, a sentry for ships) is unchanged and still
+  offered; it does nothing for control.
+- **Collected blockade gold** (Civ4's `collectBlockadeGold`: gold from the trade routes of cities
+  near a blockading ship) is gone with the range rule; the raiding gold of 4.4 point 5 is phase 4's
+  (a marked hook in `unit_collect_blockade_gold`).
+- **Messages** of a change go to the players of each team a sea closed or opened to, when the team
+  has a port on it: `Lanun holds Bay of Ostrel (31 to 0). Vallus is blockaded.` /
+  `Bay of Ostrel is no longer closed to you (7 to 0).`
+- **The harbour.** A city's seas are the seas of the water plots next to it. Port siege healing is
+  the city's own part (`CITY_HEAL_RATE` and the city's heal) at `PORT_SIEGE_HEAL_PERCENT`; the
+  unit's own extra heal and the medics count in full, as under any siege (50% of the whole would
+  make an open harbour worse than a blockade for a unit with its own heal).
+- **Interception.** Each enemy team with ships on Patrol in the sea intercepts once per step, in
+  team order, with its strongest ship (sea strength; ties: the lower unit id) that has not
+  intercepted this turn and whose odds (`get_combat_odds`, the rules' own) against the plot's best
+  defender against it are at least `INTERCEPT_MIN_ODDS`; from anywhere in the sea. "An enemy of
+  it": the ship is an enemy of the mover's team, or the mover's head unit is an enemy of the ship's
+  (a mover of hidden nationality). The duel is `updateCombat`'s without the advance, the attack's
+  moves, a change of groups or the clearing of either side's orders: the ship stays on Patrol, and
+  the mover's mission goes on if it lives. It stops once no unit of the moving group is on the
+  plot. Barbarian movers are intercepted too (every team is at war with them); barbarian ships do
+  not patrol. Every step a group completes counts, the advance after a won attack included.
+- **Supply ships.** The lane's home ports are the range field's ports (the team's, its vassals' and
+  master's, open borders'). A crusade Host with no city has no range field, so no ship of it is a
+  source (before, its lenders' coastal cities counted). An army aboard a ship that is no source is
+  still supplied at sea while in range (3.3 reads range only). The known line uses
+  `sea_closed_known` and `sea_lane_known`.
+- **Lanes** run down the range field: from each start plot the path steps to the lowest-index
+  neighbour one step nearer a port, which is the lowest path among the shortest; from land, the
+  shortest of its water plots' paths, ties by the lower path.
+- **Shore fire.** "A player of that side": a team of the side (the attacker's units' teams; the
+  defender's units' and the defended city's). A ship's A is its sea strength x100 (its strength on
+  the units' x10 stat scale, in A's hundredths); the target's Dv is its Dv against a hitter with no
+  unit terms (`engage_dv_alone`; a Sentinel's, the set-up's). The choice is SHOOT's reach and the
+  normal choice without nearby first (the ship has no lane). A shot never takes a unit below 1 HP
+  (as every other pre-battle damage), so it kills nobody. The attacker's ships fire first, then the
+  defender's, after the Thunderhead Tower's strike and before the battle; each shot draws r from the
+  battle's RNG (the game's in the fight, the forecast's in the preview). A ship that fired is marked
+  even if its shot found no target. None for a missile's strike or a battle on water.
+- **The AI** (section 8): a warship (Role `Naval`, a sea explorer with nothing left to reveal, an
+  idle transport that can fight) with no cargo and not worn patrols, by the order of need of
+  section 8 (the besieged city's sea where it would hold it, then a sea of our ports where an enemy
+  patrols or a warship of an enemy is seen, then the sea of our most populous port), going to the
+  nearest plot of the sea outside a city it reaches; a group on Patrol is woken when worn, out of
+  range, outmatched two to one by what it sees, when a transport has something to carry, and every 8
+  turns. A coastal city builds a warship (`UNITAI_ATTACK_SEA`) while we have fewer warships than two
+  per sea of ours an enemy holds or contests plus one per sea we share with a known enemy port (at
+  most three). An invasion goes only at a city with a water plot whose lane (as we see it) is not cut
+  (`way_in_range`), which fixes phase 1's targets beyond range. Not built: the war-target and
+  settler crossings in boats.
+
+## 5. Lanes -- status: built (`Game::sea_lane`; used by 4.6 with any port of the team; 9.3 is phase 4's)
 
 `Game::sea_lane(team, from: PlotIdx) -> Option<SeaLane>`: the shortest path over water (8
 directions, passable water, one water area) from `from` (a water plot, or the water plots next to

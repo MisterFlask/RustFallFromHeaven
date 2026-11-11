@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::enums::*;
 use crate::infos::building::BuildingTierType;
-use crate::infos::{BattleTacticType, CulturalActionType, GovernorNameType, CityRoleType, GovernorTraitType, ResearchPathType};
+use crate::infos::{BattleTacticType, CulturalActionType, GovernorNameType, CityRoleType, GovernorTraitType, ResearchPathType, SeaNameType};
 use crate::idx::{Idx, IdxVec};
 use crate::jsonc::Value;
 
@@ -99,6 +99,7 @@ info_ids! {
     BuildingTierType => "BuildingTierInfo",
     ResearchPathType => "ResearchPathInfo",
     BattleTacticType => "BattleTacticInfo",
+    SeaNameType => "SeaNameInfo",
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

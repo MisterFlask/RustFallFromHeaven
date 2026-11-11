@@ -91,6 +91,9 @@ pub struct ReportSide {
     /// Of the committed units, those called into the battle (summons.rs: summons, and units a kill
     /// created that entered the field): beyond its slots, not in `used`.
     pub summons: i32,
+    /// This side's ships that fired into the battle from the coast (docs/NAVAL.md, 4.7), each
+    /// with the damage its shot dealt (centi-HP), in firing order.
+    pub shore: Vec<(UnitType, i32)>,
 }
 
 /// The defended plot (DESIGN `PlotSnap`).
@@ -431,6 +434,9 @@ pub enum LogEvent {
     /// Supply (docs/SUPPLY.md): the fighters of starving armies, before the battle, and the
     /// percent change of the damage they deal (`STARVATION_DAMAGE_DEALT_PERCENT`).
     Starvation { units: Vec<FighterIdx>, dealt_pct: i32 },
+    /// A ship's shot from the coast before the battle (docs/NAVAL.md, 4.7): its type, owner and
+    /// side, and the damage each fighter took, centi-HP.
+    ShoreFire { ship: UnitType, owner: PlayerId, side: Side, hits: Vec<(FighterIdx, i32)> },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

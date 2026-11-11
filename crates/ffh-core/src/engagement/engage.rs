@@ -164,6 +164,8 @@ pub(crate) struct Setup {
     pub field: Option<SentinelSource>,
     /// Per committed unit: called into the battle (summons.rs), beyond its side's slots.
     pub called: Vec<bool>,
+    /// The ships that fire into the battle before round 1 (docs/NAVAL.md, 4.7; `shore.rs`).
+    pub shore: Vec<super::shore::ShoreShip>,
 }
 
 impl Setup {
@@ -405,6 +407,8 @@ pub(crate) struct Eng {
     /// Each committed unit's type and owner at the start.
     pub types: Vec<UnitType>,
     pub owners: Vec<PlayerId>,
+    /// The ships' shots from the coast (docs/NAVAL.md, 4.7).
+    pub shore_shots: Vec<super::shore::ShoreShot>,
 }
 
 impl Eng {
@@ -639,7 +643,15 @@ impl Game {
         // Card: familiars, the maddened's own side, damage against summons (battle_magic.rs).
         self.engage_magic_setup(&units, &sides, &mut fighters, &mut pairs, &ctx);
         let called = units.iter().map(|&u| summons.iter().any(|c| c.place.unit == u)).collect();
-        let mut setup = Setup { ctx, slots, lanes, ground, params, in_city, candidates, units, sides, places, n_att, fighters, pairs, sentinel_city, sentinels: ks, field, called };
+        // The ships that fire from the water next to a battle on land (docs/NAVAL.md, 4.7); none
+        // for a missile's strike.
+        let shore = if ctx.cover {
+            Vec::new()
+        } else {
+            let (att_teams, def_teams) = self.engage_side_teams(ctx.to, &units, n_att);
+            self.engage_shore_ships(ctx.to, &att_teams, &def_teams)
+        };
+        let mut setup = Setup { ctx, slots, lanes, ground, params, in_city, candidates, units, sides, places, n_att, fighters, pairs, sentinel_city, sentinels: ks, field, called, shore };
         // The great-person cards' battle effects (docs/CARDS.md; `arms.rs`).
         self.engage_arms_setup(&mut setup);
         Ok(setup)
@@ -802,6 +814,7 @@ impl Game {
             types: setup.units.iter().map(|&u| self.units[u].unit_type).collect(),
             owners: setup.units.iter().map(|&u| self.units[u].owner).collect(),
             setup,
+            shore_shots: Vec::new(),
         };
         // The engagement noted for tools (`Game::combat_notes`, off by default; reads only): its
         // stacks are the units committed on each side.
@@ -864,6 +877,19 @@ impl Game {
         effects.extend(self.engage_opening_spells(&e.setup, &hp));
         // Card: Thunderhead Tower (docs/CARDS.md): the defended city's pre-battle damage.
         self.engage_arms_opening(&e.setup, &e.sat_out, &mut hp, sink.as_mut());
+        // The ships on the coast fire (docs/NAVAL.md, 4.7), once a turn each.
+        let shots = {
+            let mut rng = self.soren_rand.clone();
+            let shots = self.engage_shore_fire(&e.setup, &e.sat_out, &mut hp, &mut rng, sink.as_mut());
+            self.soren_rand = rng;
+            shots
+        };
+        for ship in e.setup.shore.clone() {
+            if self.units.contains(ship.unit) {
+                self.units[ship.unit].shore_fired = true;
+            }
+        }
+        e.shore_shots = shots;
         if !effects.is_empty() {
             e.setup.apply_effects(&effects, &mut hp);
         }
@@ -974,6 +1000,7 @@ impl Game {
                 standing,
                 lost,
                 summons: e.of(s).filter(|&i| e.setup.called[i] && in_battle(i)).count() as i32,
+                shore: e.shore_shots.iter().filter(|x| x.side == s).map(|x| (x.unit_type, x.dmg)).collect(),
             }
         });
         BattleReport {

@@ -185,6 +185,25 @@ flag.
   sea. An army in boats in range is supplied from the nearest port. *Wear*: a player's warship
   outside a port city of its team for more than 10 of its owner's turn starts loses 5% strength a
   turn (at most 50%) until a turn start in port. Save format 32.
+- **The sea, phase 2: named seas, Patrol, who holds a sea** (docs/NAVAL.md, sections 4 and 5;
+  2026-11-11, the owner's direction). *Seas*: when the map is made, every water area of at least 6
+  plots is cut into named seas of about 40 plots (map RNG; names from `sea_names.jsonc`). *Patrol*
+  replaces Civ4's blockade: the plunder mission is renamed Patrol and is open to any player's warship
+  in a sea outside a city, in its own borders too (FFH2: a ship with `bPillage`, outside its team's
+  borders, not on fresh water); `SHIP_BLOCKADE_RANGE`, the blockade of the plots within 3 of the
+  ship and the trade-route gold a blockading ship took from cities near it at its turn start
+  (`collectBlockadeGold`) are gone. A team's strength in a sea is its warships' on Patrol there; a
+  sea is closed to a team when an enemy (a ship of hidden nationality: everyone's enemy) has
+  strength there and at least twice the team's. In a closed sea the team cannot work the water plots
+  and its trade does not cross them; a coastal city all of whose seas are closed is blockaded.
+  *Interception*: a group that steps onto a plot of a sea where an enemy patrols is attacked once
+  by that enemy's strongest ship on Patrol there with at least 50% odds (a duel, the ship does not
+  move; each ship once a turn). *A port under siege* with an open harbour heals its units and repairs
+  its Sentinels at half the city's rate (FFH2 and docs/SIEGES.md before: none). *Supply ships*
+  (docs/SUPPLY.md) are sources only in a sea not closed to their team and with an open lane (a path
+  over water in range) to a port of the team. *Shore fire*: before round 1 of a battle on land, up
+  to 3 warships with a bombard rate per side on the water next to it fire once each (once a turn),
+  a SHOOT hit each that never takes a unit below 1 HP. Save format 33.
 - **Engagement combat** (docs/ENGAGEMENTS.md; not an option since 2026-11-03, the owner's
   decision: `GAMEOPTION_ENGAGEMENTS` was removed, every game fights it, the AI-only ones too, with or
   without armies; older saves do not load): a land attack is a **formation battle** (revision 4,

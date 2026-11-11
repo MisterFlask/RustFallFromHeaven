@@ -11,10 +11,11 @@
 //! **Siege.** A city is besieged while a plot next to it holds a land unit at war with its owner
 //! that can fight and that its team sees ([`Game::city_is_besieged`]): a pure test of the map,
 //! nothing saved. A besieged city's Sentinels do not repair and its units get no heal from the
-//! city (`unit_heal_rate`).
+//! city (`unit_heal_rate`); a port whose harbour is open (docs/NAVAL.md, 4.5) gets
+//! `PORT_SIEGE_HEAL_PERCENT` of both.
 //!
 //! **Repair.** At the city's turn each Sentinel repairs `SENTINEL_REPAIR_PERCENT` of its max HP
-//! unless the city is besieged. Sentinels a city gains start whole, or breached if it is besieged
+//! unless the city is besieged (a port with an open harbour: that percent of it). Sentinels a city gains start whole, or breached if it is besieged
 //! then; a conquered city's are breached.
 //!
 //! **Bombard** ([`Game::city_bombard_damage`]): a bombard hits every Sentinel (its rate, less the
@@ -235,11 +236,20 @@ impl Game {
     /// The city's turn (module comment): the Sentinels repair unless it is besieged.
     pub fn city_repair_sentinels(&mut self, c: CityId) {
         self.city_sync_sentinels(c);
-        if self.cities[c].sentinel_damage.is_empty() || self.city_is_besieged(c) {
+        if self.cities[c].sentinel_damage.is_empty() {
+            return;
+        }
+        // This game's port under siege (docs/NAVAL.md, 4.5): besieged with its harbour open, it
+        // repairs at `PORT_SIEGE_HEAL_PERCENT`; besieged otherwise, not at all.
+        let besieged = self.city_is_besieged(c);
+        if besieged && self.city_harbour(c) != crate::seas::Harbour::Open {
             return;
         }
         // This game's building suitability (docs/SUITABILITY.md): a Legendary Palisade repairs faster.
-        let pct = (self.d.defines.sentinel_repair_percent + self.city_sentinel_repair_change(c)).max(0);
+        let mut pct = (self.d.defines.sentinel_repair_percent + self.city_sentinel_repair_change(c)).max(0);
+        if besieged {
+            pct = pct * self.d.defines.port_siege_heal_percent.max(0) / 100;
+        }
         for dmg in self.cities[c].sentinel_damage.iter_mut() {
             *dmg = (*dmg - pct).max(0);
         }

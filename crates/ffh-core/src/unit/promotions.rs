@@ -1897,6 +1897,11 @@ impl Game {
             // by rules code (PromotionInfo does not load them).
             self.unit_update_terraformer(u);
             // FfH: End Add
+
+            // This game's seas (docs/NAVAL.md, 4.3): a ship on Patrol changed strength.
+            if self.units.contains(u) && self.units[u].blockading {
+                self.unit_update_plunder(u, 0, true);
+            }
         }
     }
 
