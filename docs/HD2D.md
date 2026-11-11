@@ -588,7 +588,10 @@ the map (`MapHd2d.setConfig`).
 * **Tilt-shift** (as the frame goes to the canvas): sharp in a band across the view at the hovered
   plot (else the selection, else the middle; eased, so the band glides), blurring toward a half-
   and then a quarter-resolution copy above and below it — a little more at the top (far) — but
-  never past a mild softening; off at the far zooms (fully on from 90 px a plot).
+  never past a mild softening; off at the far zooms (fully on from 90 px a plot), and off when the
+  frame is drawn smaller than the canvas (render scale under 1, the quality ladder on a slow GPU):
+  that frame is stretched and sharpened instead (`UPSCALE_FS`: each pixel pushed from the mean of
+  its four neighbours, clamped to their range), not blurred further.
 
 ## 7. The lab and tools
 

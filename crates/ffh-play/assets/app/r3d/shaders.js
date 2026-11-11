@@ -2841,6 +2841,27 @@ uniform sampler2D uSrc;
 out vec4 o;
 void main() { o = texture(uSrc, vUv); }`;
 
+/** A frame drawn smaller than the canvas (render scale under 1: the quality ladder on a slow GPU),
+ *  stretched to it and sharpened: each pixel pushed away from the mean of its four neighbours one
+ *  source texel away, never past the lightest or darkest of the five, so edges steepen and nothing
+ *  rings. uTexel: one source texel (uv). */
+export const UPSCALE_FS = `
+in vec2 vUv;
+uniform sampler2D uSrc;
+uniform vec2 uTexel;
+uniform float uSharp;
+out vec4 o;
+void main() {
+  vec3 c = texture(uSrc, vUv).rgb;
+  vec3 n = texture(uSrc, vUv + vec2(0.0, uTexel.y)).rgb;
+  vec3 s = texture(uSrc, vUv - vec2(0.0, uTexel.y)).rgb;
+  vec3 e = texture(uSrc, vUv + vec2(uTexel.x, 0.0)).rgb;
+  vec3 w = texture(uSrc, vUv - vec2(uTexel.x, 0.0)).rgb;
+  vec3 lo = min(c, min(min(n, s), min(e, w)));
+  vec3 hi = max(c, max(max(n, s), max(e, w)));
+  o = vec4(clamp(c + (c - (n + s + e + w) * 0.25) * uSharp, lo, hi), 1.0);
+}`;
+
 // --------------------------------------------------------------------------------------------
 // The Sea layer in the world (sealayer.js; docs/NAVAL.md 10, docs/R3D.md §5): drawn after the
 // water, before the post passes, into the scene's lit colour (so it is graded, toned and blurred

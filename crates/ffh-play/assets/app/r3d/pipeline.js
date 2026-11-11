@@ -65,6 +65,7 @@ export function pipelinePrograms(terrainDefines = {}, { scene: sceneDefines = {}
     sea: ["sea", C + SH.SEA_VS, C + SH.SEA_FS, { ...sceneDefines }],
     seaMark: ["sea-mark", C + SH.SEA_MARK_VS, C + SH.SEA_MARK_FS, { ...sceneDefines }],
     blit: ["blit", FULLSCREEN_VS, SH.BLIT_FS],
+    upscale: ["upscale", FULLSCREEN_VS, SH.UPSCALE_FS],
     // The packed scene into the three targets, and the water's grab of it.
     ...(packed ? { unpack: ["unpack", FULLSCREEN_VS, SH.UNPACK_FS], unpackCopy: ["unpack-copy", FULLSCREEN_VS, SH.UNPACK_FS, { UNPACK_COPY: 1 }] } : {}),
   };
@@ -513,7 +514,11 @@ export class Pipeline {
     });
 
     // --- to the canvas (or a mode presents it: the HD-2D tilt-shift)
-    if (!this.ext?.present(fr, cfg, canvasW, canvasH)) {
+    if (W < canvasW || H < canvasH) {
+      // A smaller frame (render scale under 1) is stretched and sharpened; a mode's own
+      // presentation (the tilt-shift's blur) is left out: the frame is soft enough.
+      this.timed("upscale", () => this.pass(this.p.upscale, null, canvasW, canvasH, { uSrc: this.t.final, uTexel: [1 / W, 1 / H], uSharp: 2 }));
+    } else if (!this.ext?.present(fr, cfg, canvasW, canvasH)) {
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, this.f.final);
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
       gl.blitFramebuffer(0, 0, W, H, 0, 0, canvasW, canvasH, gl.COLOR_BUFFER_BIT, W === canvasW && H === canvasH ? gl.NEAREST : gl.LINEAR);
