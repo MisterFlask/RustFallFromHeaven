@@ -398,19 +398,24 @@ impl Game {
             return self.unit_max_moves(unit).max(move_denominator);
         }
 
+        // This game's (docs/NAVAL.md, 3.2): a water plot entered in boats (no ship of its team with
+        // room there) costs the unit's turn split `EMBARKED_MOVES` ways (from land or water;
+        // landing ends its moves below, as from a ship). Before the flat cost: a unit that moves
+        // at a flat cost (the Tar Demon) is in boats as slow as any, and its landing from boats
+        // ends its moves too.
+        if self.unit_needs_boats(unit, p) && !self.unit_can_load(unit, p) {
+            return self.unit_embarked_step_cost(unit);
+        }
+        if self.unit_flat_movement_cost(unit) && self.unit_in_boats_at(unit, from_plot) {
+            return self.unit_max_moves(unit);
+        }
+
         if self.unit_flat_movement_cost(unit) || self.unit_get_domain_type(unit) == DomainType::DOMAIN_AIR {
             return move_denominator;
         }
 
         if self.unit_is_human(unit) && !self.map.plots[p].revealed[self.unit_get_team(unit)] {
             return self.unit_max_moves(unit);
-        }
-
-        // This game's (docs/NAVAL.md, 3.2): a water plot entered in boats (no ship of its team with
-        // room there) costs the unit's turn split `EMBARKED_MOVES` ways (from land or water;
-        // landing ends its moves below, as from a ship).
-        if self.unit_needs_boats(unit, p) && !self.unit_can_load(unit, p) {
-            return self.unit_embarked_step_cost(unit);
         }
 
         if !self.plot_is_valid_domain_for_location(from_plot, unit) {
