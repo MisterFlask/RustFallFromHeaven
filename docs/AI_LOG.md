@@ -32,6 +32,26 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Amphibious invasion on the forecast (2026-11-11, switch `INVASION`)
+
+Kept, with its gaps (docs/AI.md, Naval and Known gaps). Variants tried on the way, each over the
+naval autopsy (16 + 16 games of 300 turns, 7 full games):
+- *The smallest force at 70%, support within 2 plots, a check at sea at the same bar*: 57 sailings
+  in the full games, 38 turned home at sea, 5 landings; the ledger 92% predicted, 10% observed. A
+  barbarian roamer or a hidden unit seen only from the coast flipped the forecast from 78% to 2%,
+  every voyage.
+- *Support counted over the whole voyage* (the enemy's moves times the turns to strike): no
+  invasion launched in 32 games of 300 turns. Too pessimistic: field units counted as standing in
+  the city.
+- *Support for one turn, none for barbarian cities, home at sea only under 35%*: 40 sailings, 26%
+  taken (16 landings, 9 captures). The fleets turned home were the misses.
+- *The same with the force 50% above the smallest* (kept): 20 sailings, 43% taken, 8 of 8
+  landings took the city.
+Bugs the traces found and fixed on the way: a fleet of a Trireme and ocean ships going to and fro
+on the coast (the group moves only where all can); the fleet sailing before the war it was prepared
+for was declared and landing at peace; a fleet switching targets at sea (now the group's
+`MISSIONAI_ASSAULT` on the city's plot); whole stacks boarding where the plan counted units.
+
 ## Supply lines (2026-11-10)
 
 ### The AI cuts an invader's line (`SUPPLY_CUT`, removed; the last commit with the code: `f5558d91`)

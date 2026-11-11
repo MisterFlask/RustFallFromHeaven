@@ -49,6 +49,7 @@ pub mod events;
 pub mod expansion;
 pub mod finance;
 pub mod forecast;
+pub mod invasion;
 pub mod magic;
 pub mod mana;
 pub mod military;

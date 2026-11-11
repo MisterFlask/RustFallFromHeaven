@@ -1052,37 +1052,114 @@ plot falls or the odds turn bad, and moves in.
   transport.
 - **Work boats** improve sea resources in our borders (one per unimproved resource, at most
   one per city at a time).
-- **Amphibious invasion** (`amphibious_target`, `UNITAI_ASSAULT_SEA`): a civ can ship an army
-  across water to take an enemy city on a landmass where it has no city (the siege campaigns
-  only target landmasses we already hold a city on). The target is the best overseas enemy (or
-  barbarian) city -- revealed, coastal, on a landmass with no city of ours, within 24 plots of
-  one of our coastal cities, whose weakest defender our best trainable attacker can beat
-  (`can_take_city`) -- by value (population, wonders) for its cost (force needed, distance);
-  deterministic ordering, recomputed each turn. *Production* (the coastal city nearest the
-  target, the staging port): a fleet of assault transports big enough to carry the whole force in
-  one wave (`ceil(need / cargo per ship)` of them -- one transport only trickles a few units per
-  trip, which rarely masses enough to take a defended city), then attackers up to what one assault
-  needs (`need` = defenders x2 + 1, capped). *Execution* reuses the overseas-settling
-  machinery: the nearest army stacks (up to `need`) walk to the staging port and board the
-  transport there (as a settler and its escort board); the transport, carrying an army rather
-  than a settler, sails to a water plot beside the target city and lands the army on a land plot
-  next to it; the landed stack then takes the city with `military::assault` (which holds rather
-  than throwing the stack away if the revealed defenders are too strong). Every trip lands on the
-  *same* plot -- the reachable land plot beside the city already holding the most of our army (then
-  the soonest-reachable, then the strongest ground) -- so a trickle of small landings piles onto
-  one plot and merges (`military::army` merges army units sharing a plot) into a stack that can
-  strike, instead of scattering across the city's approaches and never massing. One transport trip
-  still carries only the ship's cargo capacity, so with early, small transports the force builds up
-  over several trips; bigger invasions wait for better ships.
+- **Amphibious invasion** (`amphibious_target`, `UNITAI_ASSAULT_SEA`; switch `INVASION`,
+  `invasion.rs`, 2026-11-11): a civ ships an army across water to take an enemy city on a
+  landmass where it has no city (the siege campaigns only target landmasses we already hold a
+  city on). The candidates are the overseas enemy (or barbarian) cities -- revealed, coastal, on
+  a landmass with no city of ours, within 24 plots of one of our coastal cities, whose weakest
+  defender our best trainable attacker can beat (`can_take_city`) -- ranked by value (population,
+  wonders) for cost (force, distance), the city we are landing near or a fleet of ours sails for
+  first. An invasion sails only when it can take the city, lands together and takes it, or is not
+  launched:
+  - *The force* is what the rules' battle forecast says takes the city (`invasion::plan`): the
+    smallest prefix of our army in commitment order -- the units already aboard in the staging port
+    (the coastal city nearest the target), then the army on the staging landmass strongest first,
+    then units elsewhere standing in for attackers the port will train -- whose battles from the
+    landing plot on their next turn (`ForecastTurn::Next`: they land, then attack) take the city
+    with a chance of at least `BAR` (70%), against the garrison we see plus the enemy units that
+    can join it in the turn ashore (`enemy_support`: a civilization's land units within
+    `ENEMY_REACH` (6) plots and their moves times `SUPPORT_TURNS` (1); none for a barbarian city,
+    whose units roam), and half as many again (`FORCE_MARGIN_PCT` 50%, at least one more: what the
+    port cannot see, the garrison growing while the fleet sails). Before the war the battles are
+    forecast as fought once it is declared
+    (`WarTest::DeclareWar`, threaded through `Game::engage_forecast_waves_war`). Beyond the army we
+    have, the force is our candidates scaled by the defenders over the forecast's kills
+    (`EXTRAP_PCT` 125%). The garrison is read where the AI may read it (`view::sees_units`: with
+    `FOG_ATTACK`, the default, every revealed plot); unseen, there is no plan. The landing plot is
+    a land plot beside the city, free of other teams' units we see, beside water of a sea the port
+    is on that the most restricted transport in port reaches, the best ground for us.
+  - *The fleet* carries that force in one wave: the room missing in our assault transports (alive
+    and in training), in the best transport the port trains now. The invasion is affordable only
+    when the port builds them within `FLEET_TURNS` (20), their hammers stay within
+    `FLEET_SHARE_PCT` (25%) of the empire's production over those turns, and the force is at most
+    `MAX_FORCE` (16). Not affordable, it is not prepared: no transports, no attackers, no units
+    gathered, and it is no target for the war gate (`territory_check` reads `amphibious_city`).
+    A war bribe on a team we share no landmass with and cannot afford to invade is refused, and a
+    war between teams that share no landmass where neither side can afford an invasion is quiet
+    (`diplomacy::phony_overseas`; `quiet_war` ends it past 15 turns whatever was won in it).
+  - *Production* (the staging port, `assault_production`): the transports, then attackers up to the
+    force on the staging side.
+  - *Boarding* (`invasion_boards`): the plan's units wait in the staging port until the whole force
+    is there and the transports in port have room for it, then all of them (not the rest of their
+    stacks) board in one turn, the ocean-going ships first.
+  - *Sailing* (`invasion_fleet_waits`): the fleet sails when the force with its margin is aboard and
+    the forecast of the army aboard (from the plan's landing plot, against the garrison and its
+    support) reaches `BAR`, with the escorts
+    present in port and only the ships that go where the lead ship goes (a Trireme beside ocean
+    ships held a fleet on the coast, going to and fro). In a war still being prepared it waits,
+    loaded, for the declaration, and a loaded invasion is the army at the border that declares an
+    overseas war (`naval::invasion_ready`, read by `diplomacy::manage` beside `staged_army`). It
+    waits while units of the plan are still coming aboard; it unloads and stands down when a city of
+    ours on the staging landmass is in peril, when the invasion is no longer prepared, or when
+    nothing more can come: it never sails a remnant. At sea the fleet keeps its target (its group's
+    mission, `MISSIONAI_ASSAULT` on the city's plot), looks again every turn and sails home when the
+    force would take the city with less than `ABORT_BAR` (35%) or no coast beside it is in reach.
+  - *Landing and the assault*: every ship of the fleet unloads on the plan's landing plot in the same
+    turn. A stack landed next to the target decides on the city first (`naval::landed_beside`, before
+    the field targets around it in `military::army`): it assaults on the field rule's capture bar
+    (`CAPTURE_BAR` on the forecast, switch `FORECAST`); under it, it holds on the best ground beside
+    the city while a second wave is under way (an army aboard a transport, or units of a prepared
+    plan still on the staging side), else digs in (re-embarking at sea is not legal for the AI's
+    land units). After a capture the survivors are the city's garrison and the ships go back to
+    ordinary duty.
+  - *The prediction ledger*: kind `invasion` at each sailing, `CityCapturedBy` the invader within 10
+    turns, pct the forecast's chance at sailing (docs/CALIBRATION.md).
+
+  Switch off (`FFH_AI_INVASION_OFF=ALL`, the game as before, checksums equal on seeds 1-3): the force
+  is `need` = defenders x2 + 1, the staging port builds `ceil(need / cargo)` transports and the
+  attackers, the nearest stacks walk to the port and board as they come, and every trip lands on the
+  plot beside the city already holding the most of our army, so a trickle of landings piles up there
+  and strikes when the field rule allows.
+
+  *Measured* (`autopsy.py --sections naval`, 6 civs, standard map; switch off -> on; one binary):
+
+  | | 16 games, 300 turns | 16, high sea level | 7 full games (seeds 1, 3-8) |
+  |---|---|---|---|
+  | military trips by units aboard (1/2/3) | 60/3/0 -> 0/0/0 | 41/1/0 -> 0/0/0 | 254/50/20 -> 26/14/2 |
+  | military trips ended back in port | 12 -> 0 | 10 -> 0 | 50 -> 11 |
+  | military landings by units (1/2/3/4+) | 10/0/0/5 -> none | 9/4/0/1 -> none | 64/28/19/23 -> 0/3/2/3 |
+  | landings followed by an assault / a capture | 4/4 -> - | 2/2 -> - | 11/15 -> 8/8 |
+  | cities taken by units that came by sea | 3 -> 0 | 1 -> 0 | 18 -> 7 |
+  | transports built (hammers) | 104 (10,025) -> 59 (5,850) | 73 (7,050) -> 50 (5,000) | 134 (13,625) -> 68 (7,200) |
+  | transport-turns empty / in port | 81% / 54% -> 92% / 52% | 82% / 60% -> 93% / 63% | 69% / 43% -> 88% / 52% |
+  | wars between teams sharing no landmass (with a fight) | 6 (2) -> 5 (0) | 9 (2) -> 4 (0) | 24 (12) -> 17 (2) |
+
+  In the full games 20 fleets sailed (all of them with the force aboard), 9 turned home at sea
+  (the enemy gathered at the city while they sailed), 1 found no coast in reach, 8 landed (every
+  landing two units or more) and all 8 took the city. The ledger (`invasion`, 14 sailings resolved):
+  predicted 100%, observed 43% -- the misses are the fleets that turned home; the forecast at the
+  port cannot see the garrison grow and the defender gather during the voyage. A first version
+  sailed on the smallest force (no `FORCE_MARGIN_PCT`): 40 sailings, 26% taken; one that counted
+  the enemy units able to reach the city over the whole voyage (not one turn) launched no invasion
+  in 32 games of 300 turns. Forks of 7 sailings (8 rolls, 20 turns, the old rule from the same
+  position): the target taken in 14 of 56 rolls against 20 of 56 (7/8 vs 3/8 and 6/8 vs 4/8 for the
+  new rule at two of them; 0/8 vs 8/8 and 0/8 vs 5/8 at two others, where the trickle took a city
+  whose garrison then grew, or the declared war brought 30 defenders into it); the invader lost
+  fewer units in four. With one-unit ships an invasion is almost never affordable before turn 300 on
+  this map (0 sailings in 32 games): the AI now launches few invasions and those that land work.
+  Guardrail (seeds 1-16, 300 turns, against the switch off, paired by seed): turn 100 identical;
+  at 300 techs 35.3 -> 35.2, cities 6.4 -> 6.5, legacy 842 -> 843, research -6% (t -0.7), military
+  -4% (t -1.0); cities captured 315 -> 339, eliminations 23 -> 14. Cost (`ffh bench`, seeds 4 and 12,
+  300 turns): +14% a turn (31.3 -> 35.7 and 24.9 -> 28.5 ms), the plans' forecasts (Known gaps).
 - **The assault fleet** (`naval::fleet_waits`, switch `FLEET`; More Naval AI's
   `AI_assaultSeaMove`, which waits in port until the cargo reaches the invasion size and sails
   escorted): a transport with an army aboard waits in port while what the transports there carry,
   with what has already landed next to the target, falls short of the force the target needs;
   then the loaded transports in port and our idle warships there sail as one stack and land
-  together (the escorts sail with them; back in port, empty, the ships part again). Before, each
-  transport sailed as soon as one fighter was aboard -- a Trireme or a Caravel carries one -- and
-  the army landed a unit at a time next to a defended city, where the landed units assaulted it
-  piecemeal.
+  together (the escorts sail with them; back in port, empty, the ships part again). With switch
+  `INVASION` the sailing is the forecast's (above). Before, each transport sailed as soon as one
+  fighter was aboard -- a Trireme or a Caravel carries one -- and the army landed a unit at a time
+  next to a defended city, where the landed units assaulted it piecemeal.
 
 ## Diplomacy (`diplomacy.rs`)
 
@@ -3874,16 +3951,29 @@ its loan general is fighting. None of this runs in the default game, so it moves
   when `AI_vassalTrade` would now refuse it. Masters do nothing for their vassals beyond the war
   joining the rules impose (Diplomacy, "Vassal states").
 
-- Naval: amphibious invasions now ship an army across water to take an overseas enemy city
-  (see Naval), but there is no naval combat and no blockade, escorts are only the idle warships
-  that happen to be in the port (none are built for the fleet), and early transports carry one
-  unit each, so the fleet waits in port until enough of them are built and invasions are slow
-  until good transports arrive late in the tech tree. Overseas settling still sends one settler at a time.
-  The trickle no longer scatters and no longer under-ships: each trip lands on the reachable plot
-  already holding the most of our army (they pile onto one plot and strike), and the staging port
-  builds a fleet big enough to carry the force in one wave. Traced water-isolated civs that used to
-  land repeatedly without ever assaulting now take overseas cities; 4 of 5 such civs convert and
-  held overseas cities rose ~20% at a fixed turn (8-game A/B), economy flat.
+- Naval: there is no naval combat and no blockade; escorts are only the idle warships that happen
+  to be in the port (warships.rs, another agent's, presents them). Overseas settling still sends one
+  settler at a time. The amphibious invasion (switch `INVASION`, see Naval) sails only with the
+  force the forecast says takes the city, and what lands takes it; what is left:
+  - *Ships with room come late.* Early transports carry one unit (a rules and data fact): a force
+    of four is four ships, which a young port does not build in `FLEET_TURNS`, so before turn 300
+    almost no invasion is affordable (0 sailings in 32 games of 300 turns). For the owner: cargo sizes
+    and when ocean transports come decide whether overseas war exists in the first half of a game.
+  - *The forecast at the port is optimistic.* It sees the garrison and the units one turn away; the
+    defender gathers while the fleet sails (barbarian garrisons grow, a civilization at war masses
+    its army in the threatened city: 30 defenders in one fork). Half the fleets that sail turn home
+    at sea (`ABORT_BAR`), and a fleet that turns home sails again when the city looks weak from the
+    port: an invisible defender seen only from the coast sends it back every time (seed 2), with no
+    memory of it. `FORCE_MARGIN_PCT` is a named factor, not an estimate; counting the enemy's moves
+    over the whole voyage launched nothing. The next step is an estimate of the garrison on arrival
+    from what the defender can bring (`threat.rs` from the enemy's side), checked in the ledger.
+  - *The war that brings the fleet*: an overseas war is declared when the fleet is loaded
+    (`invasion_ready`); the declaration itself makes the defender mass. Sailing first and declaring
+    on arrival is not built.
+  - *Cost*: each plan plays a binary search of forecasts and is asked for by the view, production,
+    the war gate and quiet-war peace without a shared cache outside the view: +14% a turn.
+  - Wars between teams sharing no landmass still come from defensive pacts and vassalage (the
+    `WARPLAN_DOGPILE` wars of the autopsy); the gates here only stop those we choose or are paid for.
   The remaining hard case is a civ whose *main army is on a different landmass from the staging
   port* -- an isolated civ (e.g. Doviello, seed 5) whose only target sits beyond its home coast's
   sea-range, reachable only from a small forward colony that cannot build transports and holds

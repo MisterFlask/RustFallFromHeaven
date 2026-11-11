@@ -195,6 +195,11 @@ pub static HASTE_MARCH: Switch = Switch::new("HASTE_MARCH");
 /// `units::attack_adjacent`) and the strike (`campaign::strike`, the strike phase); off, on
 /// `combat_sim`'s duels as in round 7g. Barbarians always play the old way.
 pub static FORECAST: Switch = Switch::new("FORECAST");
+/// Amphibious invasions planned on the forecast (`invasion.rs`): the force that takes the city,
+/// the fleet that carries it in one wave or no invasion, the fleet sails complete, lands together
+/// and the landed stack takes the city; an overseas war needs an affordable invasion
+/// (`naval.rs`, `diplomacy.rs`). Off: the invasion of round 7 (`need` = defenders x2 + 1).
+pub static INVASION: Switch = Switch::new("INVASION");
 
 /// The names environment variable `var` lists, comma-separated: trimmed, upper-cased, `prefix`
 /// (`CIVILIZATION_`, `TRAIT_`) taken off. `None` when it is unset or lists nothing.
