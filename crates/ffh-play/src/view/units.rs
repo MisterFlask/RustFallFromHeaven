@@ -98,6 +98,11 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
         if !selection::is_player_mission(m) || m == MissionType::MISSION_ESPIONAGE {
             continue;
         }
+        // Civ4's Sea Patrol (a sentry for ships) does nothing for who holds a sea: the human is
+        // offered Patrol (`MISSION_PLUNDER`) instead (docs/NAVAL.md, 4.8; the rules keep it).
+        if m == MissionType::MISSION_SEAPATROL {
+            continue;
+        }
         let typed: Option<usize> = match m {
             MissionType::MISSION_BUILD => Some(d.builds.len()),
             MissionType::MISSION_SPREAD => Some(d.religions.len()),
@@ -139,6 +144,18 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
                         extra.set("cost", g.player_get_build_cost(v.h, plot, b));
                     }
                     push("mission", enabled, mission_cmd(units, m, k, -1), extra);
+                }
+            }
+            (MissionType::MISSION_PLUNDER, _) => {
+                // Patrol (docs/NAVAL.md, 4.2 and 10): its rule as the tooltip, and the sea's state
+                // after it.
+                if can(m, -1, -1, true) {
+                    let mut help = crate::view::seas::patrol_rule(g);
+                    for line in crate::view::seas::patrol_preview(v, units, plot) {
+                        help.push_str("[NEWLINE]");
+                        help.push_str(&line);
+                    }
+                    push("mission", can(m, -1, -1, false), mission_cmd(units, m, -1, -1), crate::jobj! { "mission" => Json::idx(m), "help" => help });
                 }
             }
             _ => {
@@ -584,11 +601,27 @@ pub fn path(v: &Viewer, finder: &mut PathFinder, units: &[UnitId], x: i32, y: i3
         steps.reverse();
     }
     // The sea (docs/NAVAL.md, section 10): where the path goes in boats or out of range.
-    let sea = crate::view::sea::path_json(v, units, &steps);
+    let mut sea = crate::view::sea::path_json(v, units, &steps);
     let war = units.iter().find_map(|&u| g.unit_get_declare_war_move(u, to));
     // Card: False Colours (docs/CARDS.md): a move onto units the group's false colours let it
     // attack is an attack (its war is declared at the battle, without a question).
     let attack = v.plot_visible(to) && (units.iter().any(|&u| g.plot_is_visible_enemy_defender(to, u)) || g.group_false_colours_team(grp, to).is_some());
+    // Named seas (docs/NAVAL.md, 10): the seas it enters where an enemy patrols, and an attack on
+    // a coastal city's harbour.
+    let mut more = crate::view::seas::interception_lines(v, g.group_get_head_unit(grp).unwrap_or(units[0]), &steps);
+    if attack {
+        if let Some(c) = g.map.plots[to].plot_city.filter(|&c| v.city_revealed(c)) {
+            more.extend(crate::view::seas::attack_harbour_lines(v, c));
+        }
+    }
+    if !more.is_empty() {
+        if sea.is_null() {
+            sea = crate::jobj! { "lines" => Json::Arr(Vec::new()) };
+        }
+        let mut lines: Vec<Json> = sea.get("lines").and_then(Json::as_arr).map(|a| a.to_vec()).unwrap_or_default();
+        lines.extend(more.into_iter().map(Json::from));
+        sea.set("lines", Json::Arr(lines));
+    }
     // Supply lines (docs/SUPPLY.md, section 5): with the units of one army of the human's
     // selected, whether the army would be supplied on the plot (a revealed one): `ok`, the line's
     // `cost` and the `budget`; null otherwise. It answers from what the human knows (the known
@@ -603,7 +636,9 @@ pub fn path(v: &Viewer, finder: &mut PathFinder, units: &[UnitId], x: i32, y: i3
                 ffh_core::army::SupplySource::Sea(c) => Some(crate::view::sea::port_name(v, c)),
                 _ => None,
             });
-            crate::jobj! { "ok" => line.is_some(), "cost" => line.as_ref().map(|l| l.cost), "budget" => g.d.defines.supply_line_budget, "sea_port" => port }
+            // No line: why a supply ship of the human's there is no source (docs/NAVAL.md, 4.6).
+            let why = if line.is_none() { crate::view::seas::transport_refusal(v, to) } else { None };
+            crate::jobj! { "ok" => line.is_some(), "cost" => line.as_ref().map(|l| l.cost), "budget" => g.d.defines.supply_line_budget, "sea_port" => port, "sea_why" => why }
         }
         _ => Json::Null,
     };

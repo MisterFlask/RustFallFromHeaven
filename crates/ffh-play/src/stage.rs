@@ -1003,10 +1003,16 @@ fn corrupt_seed(dir: &Path, seed: u32) -> Result<StagedCorrupt, String> {
 }
 
 /// A saved game at a human control point (turn 1 of a duel; the first of a few fixed seeds whose
-/// capital is on the coast) for the sea (docs/NAVAL.md, section 10), the plots within 16 of the
-/// capital revealed: a Trireme next to the capital (`near`, in range), a Trireme just out of range
-/// and worn (`far`, 14 turns at sea), a Warrior in boats near the coast (`boats`) and a Warrior on
-/// land next to the water (`walker`).
+/// capital is on the coast, with two seas near it that it does not touch) for the sea
+/// (docs/NAVAL.md, section 10), the plots within 16 of the capital revealed. Phase 1: a Trireme
+/// next to the capital (`near`, in range), a Trireme just out of range and worn (`far`, 14 turns at
+/// sea), a Warrior in boats near the coast (`boats`) and a Warrior on land next to the water
+/// (`walker`). Phase 2 (named seas), at war with the other civilization: every sea the capital
+/// touches held by its patrols (two Triremes on Patrol next to the capital in each: `held`, the
+/// capital blockaded), the nearest other sea held by a Trireme of the human's on Patrol (`yours`,
+/// `patrol`), the next contested by a Trireme of each side on Patrol side by side (`contested`,
+/// `rival`, `enemy`), and a Galleon of the human's in `yours` whose lane to the capital is cut in
+/// a held sea (`transport`).
 pub struct StagedSea {
     pub save: PathBuf,
     pub capital: ffh_core::ids::CityId,
@@ -1014,6 +1020,13 @@ pub struct StagedSea {
     pub far: UnitId,
     pub boats: UnitId,
     pub walker: UnitId,
+    pub held: Vec<ffh_core::ids::SeaId>,
+    pub yours: ffh_core::ids::SeaId,
+    pub contested: ffh_core::ids::SeaId,
+    pub patrol: UnitId,
+    pub rival: UnitId,
+    pub enemy: UnitId,
+    pub transport: UnitId,
     pub turn: i32,
 }
 
@@ -1021,7 +1034,11 @@ impl StagedSea {
     pub fn to_json(&self) -> Json {
         crate::jobj! {
             "stage" => "sea", "save" => self.save.display().to_string(), "capital" => self.capital,
-            "near" => self.near, "far" => self.far, "boats" => self.boats, "walker" => self.walker, "turn" => self.turn,
+            "near" => self.near, "far" => self.far, "boats" => self.boats, "walker" => self.walker,
+            "held" => Json::Arr(self.held.iter().map(|s| Json::from(s.0 as i64)).collect()),
+            "yours" => self.yours.0 as i64, "contested" => self.contested.0 as i64,
+            "patrol" => self.patrol, "rival" => self.rival, "enemy" => self.enemy, "transport" => self.transport,
+            "turn" => self.turn,
         }
     }
 }
@@ -1081,8 +1098,88 @@ pub fn sea(dir: &Path) -> Result<StagedSea, String> {
             return Err(format!("seed {seed}: the warrior at ({bx}, {by}) is not in boats"));
         }
         let walker = g.player_init_unit(h, warrior, wx, wy, None, None);
+        let Some(p2) = sea_phase2(g, h, capital) else { continue };
         let paths = s.save("sea").map_err(|e| format!("save: {e:?}"))?;
-        return Ok(StagedSea { save: paths.save, capital, near, far, boats, walker, turn: s.g.game_turn() });
+        let (held, yours, contested, patrol, rival, enemy, transport) = p2;
+        return Ok(StagedSea { save: paths.save, capital, near, far, boats, walker, held, yours, contested, patrol, rival, enemy, transport, turn: s.g.game_turn() });
     }
-    Err("no seed with a coastal capital and water out of range".into())
+    Err("no seed with a coastal capital, water out of range and two other seas near it".into())
+}
+
+/// The named seas of [`StagedSea`] (phase 2), or None when the map does not allow them: `(held,
+/// yours, contested, patrol, rival, enemy, transport)`.
+#[allow(clippy::type_complexity)]
+fn sea_phase2(g: &mut ffh_core::game::Game, h: PlayerId, capital: ffh_core::ids::CityId) -> Option<(Vec<ffh_core::ids::SeaId>, ffh_core::ids::SeaId, ffh_core::ids::SeaId, UnitId, UnitId, UnitId, UnitId)> {
+    use ffh_core::ids::{PlotIdx, SeaId};
+    let d = ffh_data::global();
+    let trireme = d.t::<UnitType>("UNIT_TRIREME");
+    let galleon = d.t::<UnitType>("UNIT_GALLEON");
+    let team = g.players[h].team;
+    let them = g.player_ids().find(|&p| p != h && g.players[p].alive && !g.player_is_barbarian(p))?;
+    let their_team = g.players[them].team;
+    let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
+    let held = g.city_seas(capital);
+    if held.is_empty() {
+        return None;
+    }
+    let free = |g: &ffh_core::game::Game, q: PlotIdx| g.plot_is_water(q) && g.map.plots[q].units.is_empty() && g.map.plots[q].plot_city.is_none() && !g.plot_is_impassable(q) && g.map.plots[q].revealed[team];
+    // Each sea of the capital: a free plot of it next to the capital.
+    let mut held_at = Vec::new();
+    for &s in &held {
+        let q = g.map.seas[s.idx()].plots.iter().copied().find(|&q| {
+            let (x, y) = g.map.xy(q);
+            g.plot_distance(x, y, cx, cy) == 1 && free(g, q)
+        })?;
+        held_at.push(q);
+    }
+    // The other seas, nearest first (by their nearest revealed plot), with a free plot that has a
+    // free neighbour of the same sea not next to an enemy patrol.
+    let mut others: Vec<(i32, SeaId, PlotIdx, PlotIdx)> = Vec::new();
+    for s in g.sea_ids() {
+        if held.contains(&s) {
+            continue;
+        }
+        let mut best: Option<(i32, PlotIdx, PlotIdx)> = None;
+        for &q in &g.map.seas[s.idx()].plots {
+            let (x, y) = g.map.xy(q);
+            let dist = g.plot_distance(x, y, cx, cy);
+            if dist > 12 || !free(g, q) || held_at.iter().any(|&e| { let (ex, ey) = g.map.xy(e); g.plot_distance(x, y, ex, ey) <= 2 }) {
+                continue;
+            }
+            let pair = (-1..=1).flat_map(|dy| (-1..=1).map(move |dx| (dx, dy))).filter(|&(dx, dy)| dx != 0 || dy != 0).filter_map(|(dx, dy)| g.map.plot_xy(x + dx, y + dy)).find(|&n| g.plot_sea(n) == Some(s) && free(g, n));
+            if let Some(n) = pair {
+                if best.is_none_or(|b| dist < b.0) {
+                    best = Some((dist, q, n));
+                }
+            }
+        }
+        if let Some((dist, q, n)) = best {
+            others.push((dist, s, q, n));
+        }
+    }
+    others.sort();
+    let [(_, yours, yq, ytwin), (_, contested, cq, cn), ..] = others[..] else { return None };
+    g.team_declare_war(team, their_team, false, None);
+    let place = |g: &mut ffh_core::game::Game, p: PlayerId, ty: UnitType, q: PlotIdx, patrol: bool| {
+        let (x, y) = g.map.xy(q);
+        let u = g.player_init_unit(p, ty, x, y, None, None);
+        if patrol {
+            g.unit_plunder(u);
+        }
+        u
+    };
+    for &q in &held_at {
+        place(g, them, trireme, q, true);
+        place(g, them, trireme, q, true);
+    }
+    let patrol = place(g, h, trireme, yq, true);
+    let transport = place(g, h, galleon, ytwin, false);
+    let rival = place(g, h, trireme, cq, true);
+    let enemy = place(g, them, trireme, cn, true);
+    g.seas_refresh_all();
+    // What the stage promises.
+    let ok = matches!(g.city_harbour(capital), ffh_core::seas::Harbour::Blockaded(_))
+        && g.sea_lane(team, g.unit_plot(transport)).is_some_and(|l| l.is_cut())
+        && g.sea_state_known(contested, team).control != ffh_core::seas::SeaControl::HeldByUs;
+    ok.then_some((held, yours, contested, patrol, rival, enemy, transport))
 }
