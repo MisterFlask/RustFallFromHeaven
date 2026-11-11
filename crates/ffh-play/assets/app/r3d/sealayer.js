@@ -24,7 +24,7 @@ import { S, me, isBarbarian } from "../state.js";
 import * as T from "../tiles.js";
 import { OWN_COLOR, unwrapSegment } from "../supply.js";
 import { outpostLanes, laneMark } from "../lanes.js";
-import { SEA_LOOK, seaLabelLayout, fitNameHeight, seaBuoySpot, seaBand, teamColorOf, seaNameAlpha, seaFogRamp, laneCurve, laneParts, LANE_STYLE, BAND } from "../sea.js";
+import { SEA_LOOK, seaLabelLayout, fitNameHeight, placeNames, seaBuoySpot, seaBand, teamColorOf, seaNameAlpha, seaFogRamp, laneCurve, laneParts, LANE_STYLE, BAND } from "../sea.js";
 
 /** The marks' vertex: position, colour + alpha, (u, v, kind, w) (shaders.js SEA_MARK_VS). */
 const MARK_LAYOUT = { aPos: 3, aExtra: 4, aFlow: 4 };
@@ -35,7 +35,7 @@ const NAME_PX = 72;
 const NAME_SPACING = 0.2;
 const ATLAS_W = 2048;
 /** A lane's ribbon: half its width (plots), the height over the water or the ground. */
-const LANE_HALF = 0.05;
+const LANE_HALF = 0.065;
 const LANE_LIFT = 0.025;
 /** The name's height over the water (plots): over the surface's small waves. */
 const NAME_LIFT = 0.008;
@@ -218,10 +218,20 @@ export class SeaLayer {
     if (this.namesTex) gl.deleteTexture(this.namesTex);
     this.namesTex = texture(gl, ATLAS_W, H, { data: px, mips: true });
     const verts = [];
-    for (const L of laid) {
+    // The letters' height in plots (sized to the sea, fitted to its length), then moved or made
+    // smaller where two names would cover each other.
+    const sizes = laid.map((L) => fitNameHeight(L.lay, L.textW / NAME_PX));
+    const spots = placeNames(laid.map((L, i) => ({ lay: L.lay, w: (L.textW * sizes[i]) / NAME_PX, h: sizes[i] })));
+    laid.forEach((L, i) => {
+      const at = spots[i];
+      const lay = L.lay;
+      L.lay = { ...lay, x: at.x, y: at.y };
+      sizes[i] = at.h;
+    });
+    laid.forEach((L, i) => {
       const { lay, sea } = L;
-      // The letters' height in plots; the quad's from the atlas row's.
-      const hN = fitNameHeight(lay, L.textW / NAME_PX);
+      const hN = sizes[i];
+      // The quad's height from the atlas row's.
       const k = hN / NAME_PX;
       const W = L.boxW * k, Hq = rowH * k;
       const ux = Math.cos(lay.angle), uy = Math.sin(lay.angle);
@@ -241,7 +251,7 @@ export class SeaLayer {
         const spot = seaBuoySpot(map, sea, { ...lay, h: hN }, tw);
         this.banners.push({ id: sea.id, x: spot.x, y: spot.y, a: band.a, b: band.code === BAND.CONTESTED ? band.b : null });
       }
-    }
+    });
     this.names = new Mesh(gl, new Float32Array(verts), MARK_LAYOUT);
   }
 
@@ -311,7 +321,7 @@ export class SeaLayer {
     // Your supply ships' lanes: from the ship to the port (the dashes flow toward its last point).
     for (const lane of view?.sea_lanes ?? []) {
       const path = lane.path ?? [];
-      if (path.length < 2) continue;
+      if (!path.length) continue;
       const parts = laneParts(lane);
       const un = unwrapSegment(path, path[0][0], map);
       const k = parts.open.length;
@@ -333,8 +343,8 @@ export class SeaLayer {
     return f.layer || (!!this.names && seaNameAlpha(f.ts, false) > 0);
   }
 
-  /** The lit pass (Pipeline.render, after the water): the fog bank, the names and the lanes. `pl`
-   *  the pipeline, `U` the frame's uniforms, `fr` its state. */
+  /** The lit pass (Pipeline.render, after the water): the fog bank and the names. `pl` the
+   *  pipeline, `U` the frame's uniforms, `fr` its state. */
   draw(pl, U, fr) {
     const gl = this.gl;
     const f = this.frame;
@@ -369,13 +379,12 @@ export class SeaLayer {
       this.plane.draw();
     }
     const nameAlpha = this.names ? seaNameAlpha(f.ts, f.layer) : 0;
-    if (nameAlpha > 0 || (f.layer && this.lanes)) {
+    if (nameAlpha > 0) {
       const q = pl.p.seaMark;
-      q.use().set(MU).set({ uNames: this.namesTex, uNameAlpha: nameAlpha, uNameCol: rgbOf(SEA_LOOK.name.color), uLaneMotion: 0.5 });
+      q.use().set(MU).set({ uDisplay: 0, uNames: this.namesTex, uNameAlpha: nameAlpha, uNameCol: rgbOf(SEA_LOOK.name.color) });
       for (const copy of scene.copies ?? [0]) {
         q.set({ uCopyX: copy });
-        if (nameAlpha > 0) this.names.draw();
-        if (f.layer) this.lanes?.draw();
+        this.names.draw();
       }
     }
     gl.disable(gl.POLYGON_OFFSET_FILL);
@@ -392,7 +401,7 @@ export class SeaLayer {
 
   /** The surface (Pipeline.render's overlay stage, after the post passes, its state set: depth
    *  tested, offset toward the eye, blending): the holders' bands, the dotted lines between seas,
-   *  the outlined sea. */
+   *  the outlined sea; the lanes. */
   drawOverlay(pl, U, fr) {
     const gl = this.gl;
     const f = this.frame;
@@ -414,6 +423,14 @@ export class SeaLayer {
       uOutline: rgbOf(SEA_LOOK.outline),
     });
     this.plane.draw();
+    if (f.layer && this.lanes) {
+      const q = pl.p.seaMark;
+      q.use().set({ ...U, ...scene.mapUniforms(), uExposure: fr.exposure }).set({ uDisplay: 1, uNames: this.namesTex, uLaneMotion: 0.5 });
+      for (const copy of scene.copies ?? [0]) {
+        q.set({ uCopyX: copy });
+        this.lanes.draw();
+      }
+    }
     gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   }
 

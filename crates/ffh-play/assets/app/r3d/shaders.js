@@ -2865,6 +2865,11 @@ vec3 seaLit(vec3 display, float vis) {
 vec3 seaShown(vec3 display, float vis) {
   return pow(fogOfWar(srgb(display), vis), vec3(1.0 / 2.2));
 }
+// Either, by the stage drawing (uDisplay 1: the overlay stage).
+uniform float uDisplay;
+vec3 seaTone(vec3 display, float vis) {
+  return uDisplay > 0.5 ? seaShown(display, vis) : seaLit(display, vis);
+}
 // Premultiplied "over".
 void over(inout vec4 acc, vec3 c, float a) {
   a = clamp(a, 0.0, 1.0);
@@ -3005,9 +3010,9 @@ void main() {
   o = acc;
 }`;
 
-/** The marks laid on the water: the seas' names (quads lettered from an atlas), the lanes (ribbons:
- *  dashes flowing toward the home port; the part beyond a cut dotted and faint) and a cut lane's
- *  ring-and-cross. aExtra: colour and alpha; aFlow: (u, v, kind, w) -- kind 0 a name (uv in the
+/** The marks laid on the water: the seas' names (quads lettered from an atlas; in the scene's light),
+ *  the lanes (ribbons: dashes flowing toward the home port; the part beyond a cut dotted and faint)
+ *  and a cut lane's ring-and-cross (in the overlay stage, uDisplay 1, as the bands). aExtra: colour and alpha; aFlow: (u, v, kind, w) -- kind 0 a name (uv in the
  *  atlas), 1 a lane (u along it in plots, v across -1..1, w the flow's direction), 2 a cut part
  *  (w its half width), 3 a cut's mark (uv -1..1). */
 export const SEA_MARK_VS = `
@@ -3054,14 +3059,14 @@ void main() {
     float t = abs(vFlow.y);
     float core = (1.0 - smoothstep(0.42, 0.58, t)) * dash;
     float casing = 1.0 - smoothstep(0.78, 1.0, t);
-    over(acc, seaLit(vec3(0.05, 0.045, 0.04), 1.0), casing * 0.5 * vCol.a);
-    over(acc, seaLit(vCol.rgb, 1.0), core * vCol.a);
+    over(acc, seaTone(vec3(0.05, 0.045, 0.04), 1.0), casing * 0.5 * vCol.a);
+    over(acc, seaTone(vCol.rgb, 1.0), core * vCol.a);
   } else if (kind < 2.5) {
     // The part of a cut lane beyond the cut: faint dots.
     float ph = fract(vFlow.x / 0.26) - 0.5;
     float r = length(vec2(ph * 0.26 / vFlow.w, vFlow.y));
     float d = 1.0 - smoothstep(0.55, 0.9, r);
-    over(acc, seaLit(vCol.rgb, 1.0), d * 0.6 * vCol.a);
+    over(acc, seaTone(vCol.rgb, 1.0), d * 0.6 * vCol.a);
   } else {
     // Where a lane is cut: a dark disc ringed in the cut's colour, a cross in it.
     vec2 uv = vFlow.xy;
@@ -3070,8 +3075,8 @@ void main() {
     float ring = smoothstep(0.64, 0.72, r) * disc;
     float cr = min(abs(uv.x - uv.y), abs(uv.x + uv.y)) * 0.7071;
     float crs = (1.0 - smoothstep(0.08, 0.14, cr)) * (1.0 - smoothstep(0.42, 0.5, r));
-    over(acc, seaLit(vec3(0.06, 0.1, 0.18), 1.0), disc * 0.92);
-    over(acc, seaLit(vCol.rgb, 1.0), max(ring, crs));
+    over(acc, seaTone(vec3(0.06, 0.1, 0.18), 1.0), disc * 0.92);
+    over(acc, seaTone(vCol.rgb, 1.0), max(ring, crs));
   }
   if (acc.a < 0.003) discard;
   o = acc;

@@ -624,7 +624,65 @@ export function seaLabelLayout(map, sea, { maxTilt = Math.PI / 4, minH = 0.3, ma
     b1 = Math.max(b1, b);
   }
   const h = Math.max(minH, Math.min(maxH, 0.11 * Math.sqrt(n)));
-  return { x: ox, y: oy, angle, len: a1 - a0 + 1, across: b1 - b0 + 1, n, depth: best.d, h, plot: [best.x, best.y] };
+  // Other centres, should the name collide with another sea's there: the plots at least a step
+  // from the edge (or any, in a sea without one), deepest first, then nearest the centroid.
+  const alts = pts
+    .map(([x, y]) => ({ x, y, d: depth.get(key(x, y)) }))
+    .filter((p) => (p.d >= 1 || maxD === 0) && (p.x !== best.x || p.y !== best.y))
+    .sort((p, q) => q.d - p.d || (p.x + 0.5 - cx) ** 2 + (p.y + 0.5 - cy) ** 2 - ((q.x + 0.5 - cx) ** 2 + (q.y + 0.5 - cy) ** 2))
+    .slice(0, 16)
+    .map((p) => [p.x + 0.5, p.y + 0.5]);
+  return { x: ox, y: oy, angle, len: a1 - a0 + 1, across: b1 - b0 + 1, n, depth: best.d, h, plot: [best.x, best.y], alts };
+}
+
+/** An oriented rectangle `{x, y, angle, hw, hh}` (centre, direction, half width along it and half
+ *  height across): its four corners. */
+export function rectCorners(r) {
+  const ux = Math.cos(r.angle), uy = Math.sin(r.angle);
+  return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => [r.x + ux * a * r.hw - uy * b * r.hh, r.y + uy * a * r.hw + ux * b * r.hh]);
+}
+
+/** Whether two oriented rectangles (rectCorners) overlap (separating axes). */
+export function rectsOverlap(a, b) {
+  const ca = rectCorners(a), cb = rectCorners(b);
+  for (const r of [a, b]) {
+    for (const [ax, ay] of [[Math.cos(r.angle), Math.sin(r.angle)], [-Math.sin(r.angle), Math.cos(r.angle)]]) {
+      const pa = ca.map(([x, y]) => x * ax + y * ay), pb = cb.map(([x, y]) => x * ax + y * ay);
+      if (Math.max(...pa) <= Math.min(...pb) || Math.max(...pb) <= Math.min(...pa)) return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * The names placed so that none covers another: `names` `[{lay, w, h}]` (seaLabelLayout, the
+ * lettering's width and height in plots), the largest seas first, each at its centre or, where
+ * that collides with a name already placed, at the first of its other centres (`lay.alts`) that
+ * does not; one that fits nowhere keeps its centre at the smallest size. Returns, in the order
+ * given, `{x, y, h}` (centre, letters' height). A gap of `gap` plots is kept round each.
+ */
+export function placeNames(names, gap = 0.12, minH = 0.3) {
+  const order = names.map((_, i) => i).sort((i, j) => names[j].lay.n - names[i].lay.n || i - j);
+  const placed = [];
+  const out = new Array(names.length);
+  const rect = (L, x, y, h) => ({ x, y, angle: L.lay.angle, hw: (L.w * h) / L.h / 2 + gap, hh: h / 2 + gap });
+  for (const i of order) {
+    const L = names[i];
+    const tries = [[L.lay.x, L.lay.y, L.h], ...(L.lay.alts ?? []).map(([x, y]) => [x, y, L.h])];
+    if (L.h > minH) tries.push([L.lay.x, L.lay.y, minH], ...(L.lay.alts ?? []).map(([x, y]) => [x, y, minH]));
+    let pick = null;
+    for (const [x, y, h] of tries) {
+      const r = rect(L, x, y, h);
+      if (!placed.some((q) => rectsOverlap(q, r))) {
+        pick = { x, y, h, r };
+        break;
+      }
+    }
+    if (!pick) pick = { x: L.lay.x, y: L.lay.y, h: Math.min(L.h, minH), r: rect(L, L.lay.x, L.lay.y, Math.min(L.h, minH)) };
+    placed.push(pick.r);
+    out[i] = { x: pick.x, y: pick.y, h: pick.h };
+  }
+  return out;
 }
 
 /** The letters' height (plots) of a name whose lettering is `aspect` times as wide as tall, laid

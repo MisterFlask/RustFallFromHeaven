@@ -250,7 +250,7 @@ export function dressSeaBuoys(buoys, atlas) {
   const out = [];
   for (const b of buoys ?? []) {
     const key = seaBuoyKey(atlas, b.a, b.b);
-    const r = card(key, atlas.info(key), PX.banner, b.x, SEA - 0.035, -b.y, { anchor: 0.5, banner: true, team: hexRgb(cssHex(b.a)), bias: BIAS.unit, id: idOf(`sea${b.id}`), phase: hashf(b.id, 11) });
+    const r = card(key, atlas.info(key), PX.banner * 1.25, b.x, SEA - 0.04, -b.y, { anchor: 0.5, banner: true, team: hexRgb(cssHex(b.a)), bias: BIAS.unit, id: idOf(`sea${b.id}`), phase: hashf(b.id, 11) });
     r.uid = `sea:${b.id}`;
     r.ground = false;
     out.push(r);

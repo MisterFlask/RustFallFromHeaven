@@ -460,7 +460,7 @@ function seaHitBoxes(r3d, cam) {
   for (const b of sl.banners) {
     const x = r3d.nearX(b.x);
     const foot = r3d.project(cam, [x, 0, -b.y]);
-    const top = r3d.project(cam, [x, 0.62, -b.y]);
+    const top = r3d.project(cam, [x, 0.76, -b.y]);
     if (!foot || !top) continue;
     const hw = Math.max(8, (foot.y - top.y) * 0.3);
     box(b.id, [{ x: foot.x - hw, y: top.y }, { x: foot.x + hw, y: foot.y + 4 }]);

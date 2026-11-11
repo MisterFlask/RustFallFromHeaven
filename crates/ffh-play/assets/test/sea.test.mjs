@@ -217,6 +217,33 @@ test("a name's layout on a wrapping map takes the copy of each plot nearest the 
   assert.ok(Sea.inSea(m, 3, lay.x, lay.y));
 });
 
+test("names do not cover each other: the second moves, or shrinks", () => {
+  const a = { x: 0, y: 0, angle: 0, hw: 2, hh: 0.3 };
+  assert.ok(Sea.rectsOverlap(a, { x: 3, y: 0, angle: 0, hw: 1.5, hh: 0.3 }));
+  assert.ok(!Sea.rectsOverlap(a, { x: 4, y: 0, angle: 0, hw: 1.5, hh: 0.3 }));
+  assert.ok(!Sea.rectsOverlap(a, { x: 0, y: 1, angle: 0, hw: 2, hh: 0.3 }));
+  assert.ok(Sea.rectsOverlap(a, { x: 0, y: 0.5, angle: Math.PI / 4, hw: 2, hh: 0.3 }), "a tilted one across it");
+  // Two names at the same centre: the larger sea keeps it, the other takes its next centre.
+  const big = { lay: { x: 5, y: 5, angle: 0, n: 40, alts: [] }, w: 4, h: 0.6 };
+  const small = { lay: { x: 5.5, y: 5, angle: 0, n: 10, alts: [[5, 7], [5, 9]] }, w: 3, h: 0.5 };
+  const [p, q] = Sea.placeNames([small, big]);
+  assert.deepEqual(q, { x: 5, y: 5, h: 0.6 });
+  assert.deepEqual(p, { x: 5, y: 7, h: 0.5 });
+  // Nowhere to go: kept at its centre, at the smallest size.
+  const [, r] = Sea.placeNames([big, { ...small, lay: { ...small.lay, alts: [] } }]);
+  assert.deepEqual(r, { x: 5.5, y: 5, h: 0.3 });
+  // The layout offers other centres inside the sea.
+  const m = seaMap([
+    [-1, -1, -1, -1, -1, -1],
+    [-1, 2, 2, 2, 2, -1],
+    [-1, 2, 2, 2, 2, -1],
+    [-1, 2, 2, 2, 2, -1],
+    [-1, -1, -1, -1, -1, -1],
+  ]);
+  const lay = Sea.seaLabelLayout(m, { id: 2, x: 2, y: 2 });
+  assert.ok(lay.alts.length > 0 && lay.alts.every(([x, y]) => Sea.inSea(m, 2, x, y)));
+});
+
 test("the buoy stands on the sea's water, beside its name", () => {
   const m = seaMap([
     [-1, -1, -1, -1, -1, -1, -1, -1],
