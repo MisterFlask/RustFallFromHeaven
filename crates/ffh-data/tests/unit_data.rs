@@ -60,7 +60,8 @@ fn table_sizes() {
     // (Less Mother Lode, River of Blood, Wild Hunt, Gifts of Nantosuelta and Arcane Lacuna, and
     // this game's Steer the Storm, The Delve, Enter the Delve, Name the Tithe, The Cull and
     // Wellspring: docs/PORTING.md, "Changes from FFH2".)
-    assert_eq!(own(d.spells.len(), "spells"), 317);
+    // (Stasis became Frozen Passage, and SPELL_ICEBREAK is this game's.)
+    assert_eq!(own(d.spells.len(), "spells"), 318);
     // 35 and the Lanun's BUILD_PIRATE_COVE (docs/WORKS.md).
     assert_eq!(own(d.builds.len(), "builds"), 36);
     assert_eq!(d.special_units.len(), 3);

@@ -145,7 +145,7 @@ function chunksAround(map, x, y, out) {
 }
 
 /** The map arrays of a `map` reply (design §4.4), in the server's order. */
-export const MAP_LAYERS = ["vis", "plot_type", "terrain", "feature", "bonus", "improvement", "route", "owner", "river", "city", "yield", "sea", "sea_id"];
+export const MAP_LAYERS = ["vis", "plot_type", "terrain", "feature", "bonus", "improvement", "route", "owner", "river", "city", "yield", "sea", "sea_id", "sea_ice"];
 
 /** The map arrays the terrain cache draws from (every layer but `sea`, which the Sea layer draws
  *  over the cached terrain each frame: sea.js; the yield layer draws `yield`). */
@@ -158,7 +158,7 @@ export function dirtyChunks(prev, next) {
   const out = new Set();
   const n = next.w * next.h;
   for (let i = 0; i < n; i++) {
-    if (STATIC_LAYERS.some((k) => prev[k][i] !== next[k][i])) {
+    if (STATIC_LAYERS.some((k) => prev[k]?.[i] !== next[k]?.[i])) {
       const { x, y } = plotXY(next, i);
       chunksAround(next, x, y, out);
     }
@@ -235,6 +235,9 @@ export const TERRAIN_COLORS = {
   // The Sky Falls' Crater (docs/CARDS.md): scorched rock.
   TERRAIN_CRATER: "#5c5650",
 };
+
+/** Sea Ice (the Illians' Frozen Passage; the map's `sea_ice` layer): the flat renderers' tint. */
+export const SEA_ICE_COLOR = "#c4dceb";
 
 export function terrainColor(type) {
   return TERRAIN_COLORS[type] ?? hashColor(type ?? "?", 30, 40);

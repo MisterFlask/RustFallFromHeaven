@@ -666,6 +666,11 @@ impl Game {
             return false;
         }
 
+        // This game's: no city on Sea Ice.
+        if self.map.plots[plot].sea_ice {
+            return false;
+        }
+
         if let Some(feature) = self.map.plots[plot].feature_type {
             if d.features[feature].no_city {
                 return false;

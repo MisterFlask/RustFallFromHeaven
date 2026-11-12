@@ -860,10 +860,12 @@ export class IsoMap {
     const terrain = tname("TerrainType", map.terrain[c.k]);
     const x0 = c.sx - f.TW / 2;
     const y0 = c.sy - f.TH / 2 + c.drop;
-    const key = this.tileKey(terrain, c.k);
+    // Sea Ice (the Illians' Frozen Passage): a plain pale tint, not the snow tile.
+    const ice = map.sea_ice?.[c.k] === 1;
+    const key = ice ? null : this.tileKey(terrain, c.k);
     if (!key || !this.blit(g, f, key, x0, y0, 0, 0, { fog: c.fog, solid: true })) {
       this.diamond(g, c.sx, c.sy + c.drop, f.TW);
-      g.fillStyle = T.terrainColor(terrain);
+      g.fillStyle = ice ? T.SEA_ICE_COLOR : T.terrainColor(terrain);
       g.fill();
       if (c.fog) {
         g.fillStyle = "rgba(10,16,32,0.4)";

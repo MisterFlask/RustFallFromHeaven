@@ -8,6 +8,7 @@ use crate::game::Game;
 use crate::ids::*;
 use ffh_data::*;
 
+pub mod illians;
 pub mod lanun_khazad;
 pub mod small;
 
@@ -28,6 +29,7 @@ pub struct Hooks {
 
 /// Every module's hooks, in order.
 const MODULES: &[Hooks] = &[
+    Hooks { spell: illians::find_spell, req: illians::find_req, targets: illians::find_targets, label: illians::find_target_label, cannot_create: |_, _, _, _| false, project_built: |_, _, _| {}, check: |_, _| {} },
     Hooks { spell: lanun_khazad::find_spell, req: lanun_khazad::find_req, targets: lanun_khazad::find_targets, label: lanun_khazad::find_target_label, cannot_create: |_, _, _, _| false, project_built: |_, _, _| {}, check: |_, _| {} },
     small::HOOKS,
 ];

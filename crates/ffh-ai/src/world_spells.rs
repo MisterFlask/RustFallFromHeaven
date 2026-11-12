@@ -27,13 +27,12 @@ enum World {
     ReligiousFervor,
     Revelry,
     Sanctuary,
-    Stasis,
     VeilOfNight,
     Warcry,
     Worldbreak,
 }
 
-const NAMES: [(&str, World); 15] = [
+const NAMES: [(&str, World); 14] = [
     ("SPELL_ARDOR", World::Ardor),
     ("SPELL_DIVINE_RETRIBUTION", World::DivineRetribution),
     ("SPELL_FOR_THE_HORDE", World::ForTheHorde),
@@ -45,7 +44,6 @@ const NAMES: [(&str, World); 15] = [
     ("SPELL_RELIGIOUS_FERVOR", World::ReligiousFervor),
     ("SPELL_REVELRY", World::Revelry),
     ("SPELL_SANCTUARY", World::Sanctuary),
-    ("SPELL_STASIS", World::Stasis),
     ("SPELL_VEIL_OF_NIGHT", World::VeilOfNight),
     ("SPELL_WARCRY", World::Warcry),
     ("SPELL_WORLDBREAK", World::Worldbreak),
@@ -63,7 +61,6 @@ fn table(d: &GameData) -> &'static [Option<World>] {
 /// rules check the rest (`unit_can_cast`).
 pub fn ready(g: &Game, p: PlayerId, spell: SpellType) -> bool {
     let Some(w) = table(g.d)[spell.idx()] else { return true };
-    let d = g.d;
     let pl = &g.players[p];
     let wars = || g.team_get_at_war_count(pl.team, true);
     if let Some(ready) = expert_moment(g, p, w) {
@@ -73,7 +70,7 @@ pub fn ready(g: &Game, p: PlayerId, spell: SpellType) -> bool {
         World::Ardor => pl.great_people_created >= 5,
         World::DivineRetribution | World::MarchOfTheTrees | World::Sanctuary => wars() >= 2,
         World::ForTheHorde => g.players[g.barbarian_player()].num_units() >= 60,
-        World::Legends | World::Rally | World::Stasis => pl.num_cities() >= 5,
+        World::Legends | World::Rally => pl.num_cities() >= 5,
         World::IntoTheMist => pl.num_units() >= 40,
         World::ReligiousFervor => g.player_get_state_religion(p).is_some_and(|r| pl.cities.iter().filter(|&&c| g.cities[c].has_religion[r]).count() >= 5),
         // (Decided by `expert_moment`: the reworked spell has no FfH condition.)

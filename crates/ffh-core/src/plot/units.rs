@@ -357,6 +357,12 @@ impl Game {
             return true;
         }
 
+        // This game's: a ship the water froze under stays on the Sea Ice (it does not enter it:
+        // `unit_can_move_into`), and leaves it to the water next to it.
+        if self.map.plots[p].sea_ice && self.unit_get_domain_type(unit) == DomainType::DOMAIN_SEA {
+            return true;
+        }
+
         self.plot_is_city(p, true, Some(self.unit_get_team(unit)))
     }
 
@@ -423,6 +429,11 @@ impl Game {
         }
 
         if !self.plot_is_valid_domain_for_action(p, unit) {
+            return move_denominator;
+        }
+
+        // This game's: land units cross Sea Ice at a cost of 1.
+        if self.map.plots[p].sea_ice {
             return move_denominator;
         }
 

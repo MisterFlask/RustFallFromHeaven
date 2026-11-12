@@ -1408,14 +1408,23 @@ FFH2 rule they were written for.
 
 **AI: Directed.** Cast by the end-of-turn choice at its weight of 300 once FfH's condition holds: at war with two civilization teams (`world_spells::ready`), cast in 27 of 64 games around turn 420. Both a hold for an invasion (`civs/elohim.rs`) and a moment of its own (a city in peril in a civilization war) were tried, and the measured effect was within noise (docs/AI_LOG.md). The condition does not look at whether anyone is actually invading.
 
-### Stasis (`SPELL_STASIS`)
-*World spell, Illians · once a game · any Illian unit · AI weight 50*
+### Frozen Passage (`SPELL_FROZEN_PASSAGE`)
+*World spell, Illians · a charge of its ritual (Ritual: Frozen Passage, 150, doubling) · any Illian unit · target: a plot*
 
-**What it does.** Every player of another team, barbarians included, is frozen for 20 turns at normal speed (14 quick, 30 epic, 60 marathon). Their production is disabled, so their cities count as in disorder, and their research is disabled, so the player's commerce rates read 0.
+**What it does.** Cast at a water plot the Illians have seen, within 5 plots of their borders or of Sea Ice. Every water plot within 2 plots of it becomes Sea Ice, permanently: flat land of snow, without its feature, improvement or route (its resource stays, unused). Sea Ice yields nothing and takes no city, improvement or route. Land units cross it at a move cost of 1; ships cannot enter it. A ship the water froze under stays and may leave to the water next to it; its cargo may unload. It replaces FFH2's Stasis (docs/PORTING.md, "Changes from FFH2").
 
-**Playing it well.** The strongest world spell in the game, and strongest early. Twenty turns of every rival's production and research are worth most when the rivals are growing fastest. An Illian player who casts it in the opening takes the rivals' whole start, so the earlier the better. Later it still buys a war: no rival can build defenders while you attack.
+**Playing it well.** A bridge for an army: freeze a strait to walk onto another landmass, or a bay to land beside an enemy city its navy guarded. Ice cast from ice reaches farther, so two charges cross a wider sea. It also shuts harbours: a coastal city whose water freezes loses its sea. Any ship can break it again (Icebreak), so freeze where the enemy has no ships near, and cross before they come.
 
-**AI: Directed.** Its weight is only 50, but no other term applies, and any Illian unit with nothing better casts it at the end of the turn once FfH's condition holds: 5 cities (`world_spells::ready`), around turn 205. Holding it for a war or a crisis lost (docs/AI_LOG.md). Casting it on turn 1-2 won big on fresh seeds (4.7% -> 23.4%, 13 / 1), but it is held for a balance decision, since it cripples every rival's opening, a human's included (docs/AI.md, "World spells: AI timing"). No civilization override (`civs/illians.rs` builds rituals).
+**AI: Directed.** Cast the turn a charge is held (`civs/illians.rs`): at the valid target closest to the nearest city of another civilization on another landmass than the Illian capital's, else at the one nearest the capital.
+
+### Icebreak (`SPELL_ICEBREAK`)
+*Spell · any ship of any civilization · target: a plot · 2 turns*
+
+**What it does.** Cast at an adjacent Sea Ice plot with no unit on it (a ship standing on Sea Ice alone may cast it at its own plot). The ship cannot move for 2 turns; then, if no unit other than the ship stands on the plot, it becomes water again: Coast if a plot next to it is land that is not Sea Ice, else Ocean.
+
+**Playing it well.** Cut an ice bridge behind an army that crossed, or reopen a harbour. A unit stepping onto the plot before the 2 turns end keeps it frozen.
+
+**AI: Directed.** A ship that ends its turn idle next to (or on) Sea Ice within 4 plots of one of its own cities breaks it (`ffh-ai/src/sea_ice.rs`).
 
 ### Veil of Night (`SPELL_VEIL_OF_NIGHT`)
 *World spell, Svartalfar · once a game · any Svartalfar unit · AI weight 300*

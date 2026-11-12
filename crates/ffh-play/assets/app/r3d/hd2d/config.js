@@ -134,7 +134,8 @@ export const TERRAIN_LEAN = {
  *  1.9 s, estimated). Each:
  *  STANDIN_FLAT   every value noise of the ground's painting at its mean (the masses, the meadow's
  *                 golden patches, the pools, the warp of the plots' blend, the road edge's wobble,
- *                 the pigment's drift), no hell marks, dunes, plates or ice cracks;
+ *                 the pigment's drift), no hell marks, dunes or plates (ice cracks from a cheap
+ *                 pattern of lines);
  *  STANDIN_RELIEF no relief bump from the materials' heights;
  *  STANDIN_TAP1   each material at one scale (matPair's one tap, not two). */
 export const TERRAIN_STANDIN = {

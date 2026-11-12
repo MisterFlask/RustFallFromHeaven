@@ -1,5 +1,5 @@
 //! Staged situations for testing the clients (`ffh-play stage
-//! capture|attack|automoves|load|trade|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards|sea|outpost|rituals|rituals-charged DIR`,
+//! capture|attack|automoves|load|trade|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards|sea|outpost|rituals|rituals-charged|ice DIR`,
 //! and the transports' tests): a saved game at a human control point arranged with rules calls,
 //! so that a client can be tried on a situation a fresh game reaches only by chance (a captured
 //! city's keep/raze decision, an attack, the AutoMoves rule between commands, the transport
@@ -1270,4 +1270,101 @@ pub fn outpost(dir: &Path) -> Result<StagedOutpost, String> {
         return Ok(StagedOutpost { save: paths.save, save_cut: cut.save, outpost: c, turn: s.g.game_turn() });
     }
     Err("no seed with an outpost site in reach of a coastal capital".into())
+}
+
+/// A saved game (a duel, the human the Illians) at a human control point with Sea Ice (the
+/// Illians' Frozen Passage, `ffh_core::ffh::world_ritual_spells::illians`): a patch cast near the
+/// coastal capital where it touches the land on two sides, a warrior of the human standing on it
+/// (`walker`), a trireme of the human on the water next to it (`ship`, Icebreak offered), and a
+/// charge of Frozen Passage held (the top bar's world action).
+pub struct StagedIce {
+    pub save: PathBuf,
+    pub capital: ffh_core::ids::CityId,
+    /// The plot the patch was cast at.
+    pub target: (i32, i32),
+    pub walker: UnitId,
+    pub ship: UnitId,
+    pub turn: i32,
+}
+
+impl StagedIce {
+    pub fn to_json(&self) -> Json {
+        crate::jobj! {
+            "stage" => "ice", "save" => self.save.display().to_string(), "capital" => self.capital,
+            "target" => crate::jarr![self.target.0, self.target.1], "walker" => self.walker, "ship" => self.ship, "turn" => self.turn,
+        }
+    }
+}
+
+/// Writes a [`StagedIce`] into `dir` (a game directory).
+pub fn ice(dir: &Path) -> Result<StagedIce, String> {
+    use ffh_core::ffh::world_ritual_spells::illians as fp;
+    use ffh_core::ids::PlotIdx;
+    use ffh_core::structs::SpellTarget;
+    let d = ffh_data::global();
+    let trireme = d.t::<UnitType>("UNIT_TRIREME");
+    let warrior = d.t::<UnitType>("UNIT_WARRIOR");
+    let spell = d.t::<SpellType>("SPELL_FROZEN_PASSAGE");
+    for seed in [4, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] {
+        let mut s = duel_as(dir, seed, 1, Some("CIVILIZATION_ILLIANS"))?;
+        let h = s.human;
+        let g = &mut s.g;
+        let capital = *g.players[h].cities.first().ok_or("no city")?;
+        if !g.city_is_coastal(capital, d.defines.min_water_size_for_ocean) {
+            continue;
+        }
+        let team = g.players[h].team;
+        let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
+        for q in g.map.plot_ids() {
+            let (x, y) = g.map.xy(q);
+            if g.plot_distance(x, y, cx, cy) <= 12 {
+                g.plot_set_revealed(q, team, true, false, None, false);
+            }
+        }
+        if g.player_grant_world_ritual_charge(h).is_none() {
+            return Err("the Illians have no world ritual".into());
+        }
+        let caster = g.player_init_unit(h, warrior, cx, cy, None, None);
+        // The target: a patch that touches land on two sides (its shore plots at least 4 apart),
+        // with open water next to it for the ship; the nearest to the capital (by plot distance,
+        // then plot), 3 plots away or more.
+        let mut best: Option<(i32, PlotIdx)> = None;
+        for t in g.unit_spell_targets(caster, spell) {
+            let SpellTarget::Plot(t) = t else { continue };
+            let (tx, ty) = g.map.xy(t);
+            let dist = g.plot_distance(tx, ty, cx, cy);
+            // Away from a map edge that does not wrap (the camera stops there).
+            let edge = |v: i32, n: i32, wraps: bool| wraps || (v >= 7 && v < n - 7);
+            if dist < 3 || !edge(tx, g.map.grid_width, g.map.wrap_x) || !edge(ty, g.map.grid_height, g.map.wrap_y) {
+                continue;
+            }
+            let patch = fp::frozen_passage_plots(g, t);
+            let shore: Vec<(i32, i32)> =
+                patch.iter().flat_map(|&q| fp::plots_within(g, q, 1)).filter(|&q| !g.plot_is_water(q) && !patch.contains(&q)).map(|q| g.map.xy(q)).collect();
+            let spread = shore.iter().flat_map(|&(ax, ay)| shore.iter().map(move |&(bx, by)| (ax, ay, bx, by))).map(|(ax, ay, bx, by)| g.plot_distance(ax, ay, bx, by)).max().unwrap_or(0);
+            let open = patch.iter().flat_map(|&q| fp::plots_within(g, q, 1)).any(|q| g.plot_is_water(q) && !patch.contains(&q));
+            if spread >= 4 && open && best.is_none_or(|b| (dist, t) < b) {
+                best = Some((dist, t));
+            }
+        }
+        let Some((_, target)) = best else { continue };
+        g.unit_cast_at(caster, spell, SpellTarget::Plot(target));
+        if !g.map.plots[target].sea_ice {
+            return Err(format!("seed {seed}: Frozen Passage did not freeze its target"));
+        }
+        g.unit_kill(caster, false, None);
+        g.player_grant_world_ritual_charge(h);
+        // The walker on the target; the ship on the water next to the patch, by a free ice plot.
+        let (tx, ty) = g.map.xy(target);
+        let walker = g.player_init_unit(h, warrior, tx, ty, None, None);
+        let ship_at = g.map.plot_ids().filter(|&q| g.plot_is_water(q) && g.map.plots[q].units.is_empty() && g.map.plots[q].revealed[team]).find(|&q| {
+            fp::plots_within(g, q, 1).into_iter().any(|i| g.map.plots[i].sea_ice && g.map.plots[i].units.is_empty()) && fp::plots_within(g, q, 3).contains(&target)
+        });
+        let Some(ship_at) = ship_at else { continue };
+        let (sx, sy) = g.map.xy(ship_at);
+        let ship = g.player_init_unit(h, trireme, sx, sy, None, None);
+        let paths = s.save("ice").map_err(|e| format!("save: {e:?}"))?;
+        return Ok(StagedIce { save: paths.save, capital, target: (tx, ty), walker, ship, turn: s.g.game_turn() });
+    }
+    Err("no seed with a coastal capital and a strait or bay to freeze".into())
 }

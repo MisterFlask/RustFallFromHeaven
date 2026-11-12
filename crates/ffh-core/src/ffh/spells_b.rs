@@ -68,7 +68,6 @@ pub fn find_spell(name: &str) -> Option<SpellFn> {
         "spellSnowfall" => spell_snowfall,
         "spellSnowfallGreator" => spell_snowfall_greator,
         "spellSpring" => spell_spring,
-        "spellStasis" => spell_stasis,
         "spellSteal" => spell_steal,
         "spellTakeEquipmentBuilding" => spell_take_equipment_building,
         "spellTakeEquipmentPromotion" => spell_take_equipment_promotion,
@@ -114,7 +113,6 @@ pub fn find_req(name: &str) -> Option<ReqFn> {
         "reqSpreadTheCouncilOfEsus" => req_spread_the_council_of_esus,
         "reqSpring" => req_spring,
         "reqSprint" => req_sprint,
-        "reqStasis" => req_stasis,
         "reqSteal" => req_steal,
         "reqTakeEquipmentBuilding" => req_take_equipment_building,
         "reqTakeEquipmentPromotion" => req_take_equipment_promotion,
@@ -1370,35 +1368,6 @@ fn req_sprint(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
     true
 }
 
-/// `reqStasis(caster)`. Change from FFH2: its only condition was AI-only (5 cities); it is AI
-/// timing, in ffh-ai `world_spells` (docs/PORTING.md).
-fn req_stasis(_g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
-    true
-}
-
-/// `spellStasis(caster)`.
-fn spell_stasis(g: &mut Game, caster: UnitId, _call: &PyCall) {
-    let d = g.d;
-    let p = g.units[caster].owner;
-    let mut delay = 20;
-    let team = g.players[p].team;
-    if g.game_speed_type() == d.t::<GameSpeedType>("GAMESPEED_QUICK") {
-        delay = 14;
-    }
-    if g.game_speed_type() == d.t::<GameSpeedType>("GAMESPEED_EPIC") {
-        delay = 30;
-    }
-    if g.game_speed_type() == d.t::<GameSpeedType>("GAMESPEED_MARATHON") {
-        delay = 60;
-    }
-    for p2 in g.player_ids() {
-        if g.players[p2].alive && g.players[p2].team != team {
-            g.players[p2].disable_production += delay;
-            g.players[p2].disable_research += delay;
-        }
-    }
-}
-
 /// `reqSteal(caster)`.
 fn req_steal(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
     let d = g.d;
@@ -2428,7 +2397,7 @@ mod tests {
             "reqRally", "reqRebuildBarnaxus", "reqRecruitMercenary", "reqReligiousFervor", "reqRepair",
             "reqRessurection", "reqReveal", "reqRevelry", "reqRevelation", "reqRoar",
             "reqRobGrave", "reqSanctify", "reqSanctuary", "reqSandLion", "reqScorch", "reqSironasTouch",
-            "reqSpreadTheCouncilOfEsus", "reqSpring", "reqSprint", "reqStasis", "reqSteal",
+            "reqSpreadTheCouncilOfEsus", "reqSpring", "reqSprint", "reqSteal",
             "reqTakeEquipmentBuilding", "reqTakeEquipmentPromotion", "reqTakeEquipmentUnit", "reqTaunt",
             "reqTeachSpellcasting", "reqTrust", "reqUpgradeDovielloWarrior", "reqVeilOfNight", "reqVitalize",
             "reqWane", "reqWarcry", "reqWhiteout", "reqWorldbreak",
@@ -2444,7 +2413,7 @@ mod tests {
             "spellRingofFlames", "spellRoar", "spellRobGrave", "spellSacrificeAltar",
             "spellSacrificePyre", "spellSanctify", "spellSanctuary", "spellScorch", "spellSing",
             "spellSironasTouch", "spellSlaveTradeBuy", "spellSnowfall", "spellSnowfallGreator", "spellSpring",
-            "spellStasis", "spellSteal", "spellTakeEquipmentBuilding", "spellTakeEquipmentPromotion",
+            "spellSteal", "spellTakeEquipmentBuilding", "spellTakeEquipmentPromotion",
             "spellTakeEquipmentUnit", "spellTaunt", "spellTeleport", "spellTeachSpellcasting",
             "spellTreetopDefence", "spellTrust", "spellTsunami", "spellUnyieldingOrder", "spellVeilOfNight",
             "spellVitalize", "spellWarcry", "spellWonder", "spellWorldbreak",
@@ -2461,6 +2430,6 @@ mod tests {
             assert!(find_plot_fn(name).is_some(), "{name}");
         }
         assert!(find_vote_fn("voteFundDissidents").is_some());
-        assert_eq!(req.len() + spell.len() + plot.len() + 1, 97);
+        assert_eq!(req.len() + spell.len() + plot.len() + 1, 95);
     }
 }

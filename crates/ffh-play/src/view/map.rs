@@ -56,8 +56,8 @@ fn opt<I: Idx>(v: Option<I>) -> i32 {
 /// section 10: the Sea layer) is [`crate::view::sea::SeaCtx::value`]: -1 on land or without a
 /// range rule, 0 on water out of the human team's range, else the steps from its nearest port.
 /// `sea_id` (phase 2): the plot's named sea on revealed water (its index in the view's `seas`
-/// ids), else -1.
-pub const LAYERS: [&str; 13] = ["vis", "plot_type", "terrain", "feature", "bonus", "improvement", "route", "owner", "river", "city", "yield", "sea", "sea_id"];
+/// ids), else -1. `sea_ice`: 1 on Sea Ice (the Illians' Frozen Passage), else 0.
+pub const LAYERS: [&str; 14] = ["vis", "plot_type", "terrain", "feature", "bonus", "improvement", "route", "owner", "river", "city", "yield", "sea", "sea_id", "sea_ice"];
 
 /// The number of [`LAYERS`].
 pub const NUM_LAYERS: usize = LAYERS.len();
@@ -138,6 +138,7 @@ pub fn rows(v: &Viewer) -> MapRows {
                 packed_yield(v, p),
                 sea.value(v, p),
                 crate::view::seas::sea_id_value(g, p),
+                pl.sea_ice as i32,
             ]
         });
     }
@@ -272,6 +273,10 @@ fn base_move_cost(v: &Viewer, p: PlotIdx) -> i32 {
     let g = v.g;
     let d = g.d;
     let pl = &g.map.plots[p];
+    // Sea Ice: land units cross it at 1.
+    if pl.sea_ice {
+        return 1;
+    }
     let mut cost = match (pl.feature_type, pl.terrain_type) {
         (Some(f), _) => d.features[f].movement_cost,
         (None, Some(t)) => d.terrains[t].movement_cost,
@@ -310,6 +315,10 @@ pub fn plot(v: &Viewer, x: i32, y: i32, units: &[UnitId]) -> Result<Json, QueryE
         "city" => pl.plot_city.filter(|&c| v.city_revealed(c)).map(|c| crate::jobj! { "id" => c, "name" => city_name(g, c), "owner" => g.cities[c].owner }),
         "move_cost" => base_move_cost(v, p),
     };
+    // Sea Ice (the Illians' Frozen Passage): its name and its rule.
+    if pl.sea_ice {
+        j.set("sea_ice", crate::jobj! { "name" => d.text.name("TXT_KEY_SEA_ICE").to_string(), "help" => d.text.name("TXT_KEY_SEA_ICE_HELP").to_string() });
+    }
     // This game's far shores (docs/NAVAL.md, 10): a resource none of the human's landmasses holds.
     if let Some(note) = v.plot_bonus(p).and_then(|b| crate::view::outposts::bonus_line(v, b)) {
         j.set("bonus_note", note);

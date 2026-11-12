@@ -771,10 +771,10 @@ impl Game {
         self.cities[c].power_count > 0 || self.city_is_area_clean_power(c)
     }
 
-    /// C++ `CvCity::isAreaCleanPower` (CvCity.cpp:7336-7344). (C++ returns false when
-    /// `area()` is NULL, which cannot happen for a city's plot.)
+    /// C++ `CvCity::isAreaCleanPower` (CvCity.cpp:7336-7344): false when `area()` is NULL (a
+    /// city's plot has none only while the areas are recalculated: Sea Ice).
     pub fn city_is_area_clean_power(&self, c: CityId) -> bool {
-        self.area_is_clean_power(self.city_area(c), self.city_team(c))
+        self.plot_area(self.city_plot(c)).is_some_and(|a| self.area_is_clean_power(a, self.city_team(c)))
     }
 
     /// C++ `CvCity::isDirtyPower` (CvCity.cpp:7353-7356).

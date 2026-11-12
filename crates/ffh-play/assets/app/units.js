@@ -830,7 +830,10 @@ function showTip() {
     lines.push(h("div.tip-title", `(${x}, ${y}) unexplored`));
     return mapView.showTip(lines);
   }
-  const terrain = dname("TerrainType", m.terrain[i]);
+  // Sea Ice (the Illians' Frozen Passage): named for itself, its rule from the plot query.
+  const pq0 = preview.plot?.x === x && preview.plot?.y === y ? preview.plot : null;
+  const iced = m.sea_ice?.[i] === 1;
+  const terrain = iced ? (pq0?.sea_ice?.name ?? "Sea Ice") : dname("TerrainType", m.terrain[i]);
   const pt = tname("PlotType", m.plot_type[i]);
   const parts = [pt === "PLOT_PEAK" ? "Peak" : terrain];
   if (pt === "PLOT_HILLS") parts.push("Hills");
@@ -848,6 +851,7 @@ function showTip() {
   if (m.river[i] > 0 && (m.river[i] & 3)) extra.push("River");
   if (extra.length) lines.push(h("div", extra.join(" · ")));
   if (bonusHelp) lines.push(h("div.tip-effects.tip-bonus", markup(bonusHelp)));
+  if (iced && pq0?.sea_ice?.help) lines.push(h("div.tip-effects.tip-sea-ice", pq0.sea_ice.help));
   // A resource none of your landmasses holds (docs/NAVAL.md, 10; the plot query's `bonus_note`).
   const pq = preview.plot;
   if (pq && pq.x === x && pq.y === y && pq.bonus_note) lines.push(h("div.dim", pq.bonus_note));
@@ -1868,7 +1872,8 @@ async function renderPlotInfo(x, y, selUnits = S.sel?.units ?? null) {
   if (panel.dataset.plot !== `${x},${y}`) return;
   if (p.vis === 0) return fill(panel, h("div.panel-head", h("h3", `Plot (${x}, ${y})`)), h("p.dim", "Unexplored."));
   const rows = [
-    ["Terrain", [dname("TerrainType", p.terrain), p.hills ? "Hills" : null, p.feature !== null ? dname("FeatureType", p.feature) : null].filter(Boolean).join(", ")],
+    ["Terrain", [p.sea_ice ? p.sea_ice.name : dname("TerrainType", p.terrain), p.hills ? "Hills" : null, p.feature !== null ? dname("FeatureType", p.feature) : null].filter(Boolean).join(", ")],
+    ["Rule", p.sea_ice ? p.sea_ice.help : null],
     ["Bonus", p.bonus !== null ? `${dname("BonusType", p.bonus)}${p.bonus_note ? ` (${p.bonus_note})` : ""}` : null],
     ["Improvement", p.improvement !== null ? dname("ImprovementType", p.improvement) : null],
     ["Route", p.route !== null ? dname("RouteType", p.route) : null],
