@@ -614,6 +614,8 @@ async function shotsWellspring3d(bin, saves, pw) {
         await page.evaluate((s) => document.querySelector(s).click(), chip);
         await until(() => page.evaluate(() => !!document.querySelector(".tooltip.richtip:not([hidden])")), "the promotion's tooltip", 10000);
         await sleep(20000);
+        await dropToasts(page);
+        await sleep(1500);
         await crop(page, [fire, ".tooltip.richtip:not([hidden])"], "wellspring-mana-tooltip.png", { pad: 4, maxW: 420, timeout: 300000 });
         // Postponed: Escape closes the menu, the charge stays held; the button and its tooltip.
         await page.keyboard.press("Escape");
