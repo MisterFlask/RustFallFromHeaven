@@ -19,9 +19,15 @@ use crate::view::View;
 pub const MAX_TURNS: i32 = 20;
 
 /// Is city `c` building a ritual (any project) with production in it (the AI puts nothing in
-/// front of it: that would lose its production)?
+/// front of it: that would lose its production)? Not while enemy units stand within 2 plots of
+/// the city: a defender is worth more than the ritual's progress.
 pub fn locked(g: &Game, c: CityId) -> bool {
-    g.city_ritual_in_progress(c).is_some()
+    if g.city_ritual_in_progress(c).is_none() {
+        return false;
+    }
+    let city = &g.cities[c];
+    let Some(plot) = g.map.plot_xy(city.x, city.y) else { return true };
+    crate::production::local_threat(g, city.owner, plot, 2) == 0
 }
 
 /// Once a turn: start the world ritual where and when it is worth it (module doc).
