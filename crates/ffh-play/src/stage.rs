@@ -1,5 +1,5 @@
 //! Staged situations for testing the clients (`ffh-play stage
-//! capture|attack|automoves|load|trade|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards|sea|outpost|rituals|rituals-charged|tithe|ritual-civ:CIVILIZATION_X|ice DIR`,
+//! capture|attack|automoves|load|trade|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards|sea|outpost|rituals|rituals-charged|tithe|ritual-civ:CIVILIZATION_X|ritual-due:CIVILIZATION_X|ice DIR`,
 //! and the transports' tests): a saved game at a human control point arranged with rules calls,
 //! so that a client can be tried on a situation a fresh game reaches only by chance (a captured
 //! city's keep/raze decision, an attack, the AutoMoves rule between commands, the transport
@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 mod rituals;
-pub use rituals::{ritual_civ, rituals, rituals_charged, tithe, StagedRitualCiv, StagedRituals, StagedTithe};
+pub use rituals::{ritual_civ, ritual_due, rituals, rituals_charged, tithe, StagedRitualCiv, StagedRituals, StagedTithe};
 
 use ffh_core::ids::{PlayerId, UnitId, VoteId};
 use ffh_core::path::{FinderKind, PathFinder};

@@ -336,7 +336,14 @@ ritual as `ritual_charge`, a project with `world_ritual` (`PROJECT_RITUAL_<NAME>
   Calabim's The Tithe (needs a rival named by Name the Tithe, a `world_action`; acts at completion;
   cancelled by peace or the rival's death), the Doviello's The Cull (a plot), the Luchuirp's
   Upgrade (acts at completion: `Unit::reinforced`), the Amurites' Wellspring (a choice: plot and
-  mana).
+  mana type; placed by the player, no unit casting it: below).
+- **Placed world spells** (`place_on_charge` in spells.jsonc, only Wellspring): the player places
+  the spell with its ritual's charge, no unit casting it (`Game::player_can_place`,
+  `player_place_targets`, `player_place`: the charge spent from the first city holding one, the
+  cast counted in `Player::world_spell_casts` and announced, then the effect). `unit_can_cast`
+  refuses such a spell to every unit. The spell's `py_targets` names its placement
+  (`world_rituals.rs` `place_hooks`: Wellspring's `wellspring_targets` and `wellspring_place`). The
+  page opens the placement on the turn the ritual completes (docs/HUMAN.md).
 - Queries: `Game::world_rituals() -> Vec<WorldRitual>` (each living player's: `project`, `spell`,
   `city`, `progress`, `cost`, `turns_left`, `charged`, `completed`, `next_cost`),
   `player_world_ritual(p)`, `project_is_world_ritual(project)`, `city_world_ritual_in_progress(c)`.

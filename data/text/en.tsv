@@ -11552,7 +11552,7 @@ TXT_KEY_SPELL_ADD_TO_WOLF_PACK	Add to Wolf Pack
 TXT_KEY_SPELL_ADD_TO_WOLF_PACK_HELP	[ICON_BULLET]Sacrifice a wolf to add an empower promotion to a wolf pack
 TXT_KEY_SPELL_ADJACENT_TO_WATER_ONLY	[ICON_BULLET]Can only be cast next to water tiles
 TXT_KEY_SPELL_WELLSPRING	Wellspring
-TXT_KEY_SPELL_WELLSPRING_HELP	Target: a land plot in your borders with no resource, city or improvement, and a mana type. The plot gains that mana and its node, permanently.
+TXT_KEY_SPELL_WELLSPRING_HELP	The charge is held until the node is placed. Place on a land plot in your borders, not a peak, with no resource, city or improvement. Choose a mana type. The plot gains that mana and its node, permanently.
 TXT_KEY_SPELL_ARDOR	Ardor
 TXT_KEY_SPELL_ARDOR_HELP	[ICON_BULLET]Resets the player's Great Person count
 TXT_KEY_SPELL_ARENA_BATTLE	Arena Battle

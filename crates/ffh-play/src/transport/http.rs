@@ -110,6 +110,7 @@ pub const ASSETS: &[(&str, &str, &str)] = &[
     ("app/seas.js", JS, include_str!("../../assets/app/seas.js")),
     ("app/rituals.js", JS, include_str!("../../assets/app/rituals.js")),
     ("app/ritual_rows.js", JS, include_str!("../../assets/app/ritual_rows.js")),
+    ("app/place.js", JS, include_str!("../../assets/app/place.js")),
     // The 3D renderer (docs/R3D.md, docs/HD2D.md): the default map.
     ("app/r3d/config.js", JS, include_str!("../../assets/app/r3d/config.js")),
     ("app/r3d/decals.js", JS, include_str!("../../assets/app/r3d/decals.js")),

@@ -60,6 +60,11 @@ function show(el, x, y) {
   } else placeAt(x, y);
 }
 
+/** Shows `el`'s tip under it (a tap on a touch screen, where no pointer hovers). */
+export function showTip(el) {
+  show(el);
+}
+
 /** Hides the tip (of `el` only, when given). */
 export function hide(el) {
   if (el && el !== owner) return;

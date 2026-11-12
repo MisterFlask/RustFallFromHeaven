@@ -308,15 +308,28 @@ fn reinforced_stays_only_on_a_golem_through_a_conversion() {
 // ---------------------------------------------------------------------------------------------
 // Wellspring
 
-#[test]
-fn wellspring_raises_a_mana_node_on_a_bare_plot_of_ours() {
+/// The Amurites (a city at (6, 5), a charge of their ritual) and the Bannor (a city at (14, 5));
+/// no unit of either.
+fn wellspring_game() -> Game {
     let mut g = game_of(&["CIVILIZATION_AMURITES", "CIVILIZATION_BANNOR"]);
     g.player_init_city(US, 6, 5, true, true);
     g.player_init_city(THEM, 14, 5, true, true);
+    for u in g.players.iter().flat_map(|pl| pl.units.clone()).collect::<Vec<_>>() {
+        if g.units.contains(u) {
+            g.unit_kill(u, false, None);
+        }
+    }
     g.player_grant_world_ritual_charge(US).expect("a charge");
-    let adept = unit(&mut g, US, "UNIT_ADEPT", 6, 5);
+    g
+}
+
+#[test]
+fn wellspring_raises_a_mana_node_on_a_bare_plot_of_ours() {
+    let mut g = wellspring_game();
+    assert!(g.players[US].units.is_empty(), "no unit at all: the player places it");
     let s = spell(&g, "SPELL_WELLSPRING");
     let d = g.d;
+    assert!(d.spells[s].place_on_charge);
     let manas = wellspring_manas(d);
     assert_eq!(manas.len(), 17, "the typed mana with a node");
     let fire = d.t::<BonusType>("BONUS_MANA_FIRE");
@@ -339,16 +352,48 @@ fn wellspring_raises_a_mana_node_on_a_bare_plot_of_ours() {
     for q in [at(&g, 6, 5), with_bonus, improved, peak, water, foreign] {
         assert!(!ok(&g, q), "{:?}", g.map.xy(q));
     }
+    assert!(g.player_can_place(US, s));
+    assert!(!g.player_can_place(THEM, s), "not the Bannor's");
     let target = SpellTarget::Choice(wellspring_choice(d, bare, fire));
-    let targets = g.unit_spell_targets(adept, s);
+    let targets = g.player_place_targets(US, s);
     assert!(targets.contains(&target));
     assert!(!targets.contains(&SpellTarget::Choice(wellspring_choice(d, peak, fire))));
-    let label = g.spell_target_label(adept, s, target);
-    assert_eq!(label, d.text.name(&d.bonuses[fire].base.description), "the mana alone: the plot is picked on the map");
+    assert!(!targets.contains(&SpellTarget::Choice(wellspring_choice(d, foreign, fire))));
+    assert_eq!(wellspring_label(&g, wellspring_choice(d, bare, fire)), d.text.name(&d.bonuses[fire].base.description), "the mana alone: the plot is picked on the map");
     assert_eq!(g.spell_choice_plot(s, wellspring_choice(d, bare, fire)), Some(bare));
-    g.unit_cast_at(adept, s, target);
+    // An invalid target places nothing and keeps the charge.
+    assert!(!g.player_place(US, s, SpellTarget::Choice(wellspring_choice(d, peak, fire))));
+    assert!(g.player_world_ritual_charge_city(US, g.player_world_ritual(US).unwrap()).is_some());
+    assert!(g.player_place(US, s, target));
     assert_eq!(g.map.plots[bare].bonus_type, Some(fire));
     assert_eq!(g.map.plots[bare].improvement_type, Some(node));
     assert_eq!(g.player_world_ritual_charge_city(US, g.player_world_ritual(US).unwrap()), None, "the charge is spent");
-    assert!(!g.unit_can_cast_untargeted(adept, s, false));
+    assert_eq!(g.players[US].world_spell_casts, 1);
+    assert!(!told(&g, "Wellspring: ").is_empty());
+    assert!(!g.player_can_place(US, s));
+    assert!(g.player_place_targets(US, s).is_empty(), "no charge, no placement");
+    assert!(!g.player_place(US, s, SpellTarget::Choice(wellspring_choice(d, at(&g, 8, 5), fire))));
+}
+
+/// No unit casts Wellspring, an arcane one included: the player places it, whatever units it has.
+#[test]
+fn wellspring_is_placed_by_the_player_not_cast_by_a_unit() {
+    let mut g = wellspring_game();
+    let s = spell(&g, "SPELL_WELLSPRING");
+    let d = g.d;
+    let adept = unit(&mut g, US, "UNIT_ADEPT", 6, 5);
+    let warrior = unit(&mut g, US, "UNIT_WARRIOR", 6, 5);
+    for u in [adept, warrior] {
+        assert!(!g.unit_can_cast_untargeted(u, s, true), "{:?}", g.units[u].unit_type);
+    }
+    let fire = d.t::<BonusType>("BONUS_MANA_FIRE");
+    let bare = g.map.plot_xy(7, 5).unwrap();
+    let target = SpellTarget::Choice(wellspring_choice(d, bare, fire));
+    assert!(g.player_place_targets(US, s).contains(&target));
+    assert!(g.player_place(US, s, target), "with an arcane unit");
+    assert_eq!(g.map.plots[bare].bonus_type, Some(fire));
+    // Under No World Spells nothing is placed.
+    g.player_grant_world_ritual_charge(US);
+    g.setup.options[GameOptionType::GAMEOPTION_NO_WORLD_SPELLS] = true;
+    assert!(!g.player_can_place(US, s));
 }

@@ -306,6 +306,11 @@ impl Game {
         }
         // This game's (docs/CARDS.md, `ritual_charge`): a ritual's spell is cast from a city of its
         // owner holding a charge of the ritual; a world spell by any unit of an owner holding one.
+        // A world spell the player places (`place_on_charge`: Wellspring) is never a unit's
+        // cast: `Game::player_place`.
+        if info.place_on_charge {
+            return false;
+        }
         if let Some(ritual) = info.ritual_charge {
             if !self.unit_has_ritual_charge(u, ritual) {
                 return false;
@@ -824,7 +829,7 @@ impl Game {
     }
 
     /// The plot a choice target `choice` of `spell` is on, for a choice spell whose choices are
-    /// plots with an option each (Wellspring: a plot and a mana); `None` for the others. The
+    /// plots with an option each (Wellspring: a plot and a mana type); `None` for the others. The
     /// client picks the plot on the map, then the option.
     pub fn spell_choice_plot(&self, spell: SpellType, choice: i32) -> Option<PlotIdx> {
         let call = crate::ffh::pycall::PyCall::parse(&self.d.spells[spell].py_targets)?;

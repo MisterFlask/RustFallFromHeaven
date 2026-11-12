@@ -513,6 +513,8 @@ function onKey(ev) {
     }
     if (document.body.classList.contains("menu-open")) setMenu(false);
     else if (tools.cancelFlagPick()) toast("No flag.");
+    // A dialog over a plot pick (the city screen over Wellspring's placement) takes it first.
+    else if (modalOpen()) onEscape();
     else if (units.currentMode()) units.setMode(null);
     else if (units.clearWaypoints()) return;
     else if (!onEscape() && !modalOpen()) units.clearSelection();

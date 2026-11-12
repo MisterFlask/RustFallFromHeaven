@@ -114,6 +114,64 @@ pub fn project_built(g: &mut Game, c: CityId, project: ProjectType) {
     g.world_ritual_news(c, project, "completed");
 }
 
+/// The valid targets of a placed world spell for a player, and its effect at one of them
+/// (returns whether it took effect).
+type PlaceHooks = (fn(&Game, PlayerId) -> Vec<crate::structs::SpellTarget>, fn(&mut Game, PlayerId, crate::structs::SpellTarget) -> bool);
+
+/// The hooks of a placed world spell (`place_on_charge`), by its `py_targets` callback.
+fn place_hooks(d: &GameData, spell: SpellType) -> Option<PlaceHooks> {
+    use crate::ffh::world_ritual_spells::small;
+    use crate::structs::SpellTarget;
+    let call = crate::ffh::pycall::PyCall::parse(&d.spells[spell].py_targets)?;
+    match call.name.as_str() {
+        "targetsWellspring" => Some((small::wellspring_targets, |g, p, t| matches!(t, SpellTarget::Choice(c) if small::wellspring_place(g, p, c)))),
+        _ => None,
+    }
+}
+
+impl Game {
+    /// May player `p` place world spell `spell` now (`place_on_charge`, docs/CARDS.md "World
+    /// rituals": placed by the player, no unit casting it): its civilization's, and a city of `p`
+    /// holds a charge of its ritual. Its targets aside.
+    pub fn player_can_place(&self, p: PlayerId, spell: SpellType) -> bool {
+        let info = &self.d.spells[spell];
+        info.place_on_charge
+            && self.players[p].alive
+            && !self.is_option(GameOptionType::GAMEOPTION_NO_WORLD_SPELLS)
+            && info.ritual_charge.is_some_and(|r| self.player_world_ritual(p) == Some(r) && self.player_world_ritual_charge_city(p, r).is_some())
+            && place_hooks(self.d, spell).is_some()
+    }
+
+    /// Where player `p` may place world spell `spell` now (empty when it may not:
+    /// [`Game::player_can_place`]).
+    pub fn player_place_targets(&self, p: PlayerId, spell: SpellType) -> Vec<crate::structs::SpellTarget> {
+        match place_hooks(self.d, spell) {
+            Some((targets, _)) if self.player_can_place(p, spell) => targets(self, p),
+            _ => Vec::new(),
+        }
+    }
+
+    /// Player `p` places world spell `spell` at `target`, one of [`Game::player_place_targets`]:
+    /// the charge of its ritual is spent (from the first city holding one), the cast is counted
+    /// and announced, and the spell takes effect. Returns whether it was placed.
+    pub fn player_place(&mut self, p: PlayerId, spell: SpellType, target: crate::structs::SpellTarget) -> bool {
+        let d = self.d;
+        let Some((_, place)) = place_hooks(d, spell) else { return false };
+        if !self.player_place_targets(p, spell).contains(&target) {
+            return false;
+        }
+        let Some(ritual) = d.spells[spell].ritual_charge else { return false };
+        let Some(c) = self.player_world_ritual_charge_city(p, ritual) else { return false };
+        if let Some(i) = self.cities[c].ritual_charges.iter().position(|&r| r == ritual) {
+            self.cities[c].ritual_charges.remove(i);
+        }
+        self.players[p].world_spell_casts += 1;
+        let turn = self.game_turn();
+        self.log.msg(turn, Some(p), || format!("World spell: {}", d.text.name(&d.spells[spell].base.description)));
+        place(self, p, target)
+    }
+}
+
 impl Game {
     /// Is `project` a world ritual (`world_ritual` in its data)?
     pub fn project_is_world_ritual(&self, project: ProjectType) -> bool {

@@ -121,6 +121,7 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         py_targets: _,
         py_target_label: _,
         ritual_charge,
+        place_on_charge,
     } = &d.spells[s];
     let b = &mut String::new();
 
@@ -150,7 +151,8 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         b.push_str(NEWLINE);
         b.push_str("[ICON_BULLET]Cast once a game, by any of your units");
     }
-    if let Some(kind) = target {
+    // A world spell the player places (docs/CARDS.md, "World rituals"): its own help says where.
+    if let Some(kind) = target.filter(|_| !*place_on_charge) {
         let what = match kind {
             SpellTargetKind::Plot => "a plot",
             SpellTargetKind::City => "a city",
@@ -162,7 +164,10 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         b.push_str(&format!("[ICON_BULLET]Cast at {what} you choose"));
     }
     // This game's (docs/CARDS.md): a spell that spends a ritual's completion.
-    if let Some(ritual) = ritual_charge.filter(|&r| d.projects[r].world_ritual) {
+    if let Some(ritual) = ritual_charge.filter(|&r| *place_on_charge && d.projects[r].world_ritual) {
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]Placed when {} completes.", display(d, ritual)));
+    } else if let Some(ritual) = ritual_charge.filter(|&r| d.projects[r].world_ritual) {
         b.push_str(NEWLINE);
         b.push_str(&format!("[ICON_BULLET]Cast by any of your units while a city of yours holds a charge of {}; it spends that charge", display(d, ritual)));
     } else if let Some(ritual) = ritual_charge {
@@ -181,7 +186,11 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
     if let Some(x) = building_class_owned_prereq {
         line(b, d, "TXT_KEY_SPELL_BUILDINGCLASS_OWNED_PREREQ", &[Arg::S(&display(d, *x))]);
     }
-    if let Some(x) = civilization_prereq {
+    if let Some(x) = civilization_prereq.filter(|_| *place_on_charge) {
+        // Placed by the player: no unit "uses" it.
+        b.push_str(NEWLINE);
+        b.push_str(&format!("[ICON_BULLET]World spell of the {}.", display(d, x)));
+    } else if let Some(x) = civilization_prereq {
         line(b, d, "TXT_KEY_SPELL_CIVILIZATION_PREREQ", &[Arg::S(&display(d, *x))]);
     }
     if let Some(x) = corporation_prereq {

@@ -12,8 +12,9 @@ import { renderSpectatorBar, renderAutoplayBar, flagsView } from "./tools.js";
 import { isoSkin, isoIcon } from "./isoui.js";
 import { effectsOf, partsList } from "./infotips.js";
 import { battleLine, battleLinks } from "./engagements.js";
-import { castTargeted } from "./units.js";
-import { casterLine } from "./ritual_rows.js";
+import { castTargeted, openPlacement, currentMode } from "./units.js";
+import { casterLine, placementDue } from "./ritual_rows.js";
+import { modalOpen } from "./modals.js";
 import * as api from "./api.js";
 import { openResearchPaths } from "./empire.js";
 import { renderRituals } from "./rituals.js";
@@ -386,10 +387,14 @@ function renderWorldActions(m, st) {
   if (!box) return;
   const list = m && !observing(st) ? (m.world_actions ?? []) : [];
   const yours = st.phase === "human";
+  for (const s of placementDue(placeSeen, list)) placePending.add(s);
+  // (After a moment: the turn's own dialogs, a city's production, open first.)
+  if (placePending.size) setTimeout(openDuePlacement, 1500);
   fill(
     box,
     list.map((a) => {
       const name = dname("SpellType", a.spell);
+      if (a.place_on_charge) return placeButton(a, name, yours);
       const caster = a.caster !== null && a.caster !== undefined ? S.units?.get?.(a.caster) : null;
       const help = effectsOf("SpellType", a.spell) || a.help || "";
       const what = a.once ? "Card spell" : "World spell";
@@ -413,6 +418,51 @@ function renderWorldActions(m, st) {
         small(name, ".label"),
       );
     }),
+  );
+}
+
+/** The placed world spells (`place_on_charge`) seen with and without their charge, and those whose
+ *  placement waits to open by itself (`placementDue`: the turn the ritual completed). */
+const placeSeen = new Map();
+const placePending = new Set();
+
+/** Opens a placement due, on the player's turn, once no dialog or pick is up (else later). */
+function openDuePlacement() {
+  if (!placePending.size) return;
+  if (S.status?.phase !== "human" || modalOpen() || currentMode()) {
+    setTimeout(openDuePlacement, 1000);
+    return;
+  }
+  const spell = [...placePending][0];
+  placePending.delete(spell);
+  const a = (S.view?.me?.world_actions ?? []).find((x) => x.spell === spell);
+  if (a?.place && a.enabled) openPlacement(a, { completed: true });
+}
+
+/** The button of a world spell the player places (`place_on_charge`: Wellspring): `Place
+ *  Wellspring` while its charge is held (it opens the placement), else the world spell's button
+ *  with why it is not now. */
+function placeButton(a, name, yours) {
+  const help = effectsOf("SpellType", a.spell) || a.help || "";
+  const p = a.place;
+  const tip = [
+    h("div.tip-title", `World spell: ${name}`),
+    help ? h("div.tip-effects", markup(help)) : null,
+    a.enabled && a.charge ? h("div.tip-hint.ritual-charge-line", a.charge) : null,
+    a.enabled && p ? h("div.tip-hint", p.hint) : h("div.tip-hint.world-action-why", a.why ?? ""),
+  ];
+  const label = p?.label ?? name;
+  return h(
+    `button.world-action${p ? ".place" : ""}`,
+    {
+      disabled: !a.enabled || !yours,
+      "data-spell": a.spell,
+      "aria-label": p ? `${label}: world spell` : `World spell ${name}`,
+      tip,
+      onclick: () => openPlacement(a),
+    },
+    isoSkin() ? isoIcon("spell", { px: 32 }) : h("span.icon", "✶"),
+    small(label, ".label"),
   );
 }
 

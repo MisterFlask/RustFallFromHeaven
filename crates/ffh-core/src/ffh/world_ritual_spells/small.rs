@@ -6,7 +6,7 @@
 //! | Calabim | The Tithe | Name the Tithe (`world_action`, a player) | at completion: the named rival's cities above 2 lose 2 population; our vampires gain experience |
 //! | Doviello | The Cull | The Cull (a plot) | the weaker half of our units there die; the survivors share their experience |
 //! | Luchuirp | Upgrade | (none) | at completion: each of our golems gains a stack of Reinforced (+10% HP in battle) |
-//! | Amurites | Wellspring | Wellspring (a choice: plot and mana) | a bare plot of ours gains a mana resource and its node |
+//! | Amurites | Wellspring | Wellspring (placed by the player: a plot and a mana) | a bare plot of ours gains a mana resource and its node |
 
 use super::Hooks;
 use crate::ffh::dispatch::*;
@@ -24,7 +24,6 @@ pub fn find_spell(name: &str) -> Option<SpellFn> {
     let f: SpellFn = match name {
         "spellNameTheTithe" => spell_name_the_tithe,
         "spellTheCull" => spell_the_cull,
-        "spellWellspring" => spell_wellspring,
         _ => return None,
     };
     Some(f)
@@ -316,10 +315,11 @@ pub fn convert_reinforced(g: &mut Game, u: UnitId, from: UnitId) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Amurites: Wellspring. A land plot of the caster's owner with no resource, city or improvement,
-// not a peak, gains a typed mana resource and that mana's node (the improvement whose
-// `bonus_convert` is the resource: `cards::economy::mana_nodes`). The target is a choice: the
-// plot and the mana, `wellspring_choice`.
+// Amurites: Wellspring. Placed by the player, no unit casting it (`place_on_charge`,
+// [`Game::player_place`]): a land plot of the player with no resource, city or improvement, not a
+// peak, gains a typed mana resource and that mana's node (the improvement whose `bonus_convert`
+// is the resource: `cards::economy::mana_nodes`). The target is a choice: the plot and the mana,
+// `wellspring_choice`.
 
 /// The typed mana resources and their nodes, in the data's build order.
 pub fn wellspring_manas(d: &GameData) -> Vec<(BonusType, ImprovementType)> {
@@ -346,10 +346,9 @@ pub fn wellspring_decode(g: &Game, choice: i32) -> Option<(PlotIdx, BonusType)> 
     Some((PlotIdx::from_usize((choice / n) as usize), BonusType::from_usize((choice % n) as usize)))
 }
 
-/// `targetsWellspring(caster)`: by plot, then by mana.
-fn targets_wellspring(g: &Game, caster: UnitId, _call: &PyCall) -> Vec<SpellTarget> {
+/// The Wellspring choices of player `p`: by plot, then by mana (its charge aside).
+pub fn wellspring_targets(g: &Game, p: PlayerId) -> Vec<SpellTarget> {
     let d = g.d;
-    let p = g.units[caster].owner;
     let manas = wellspring_manas(d);
     let mut out = Vec::new();
     for q in g.map.plot_ids() {
@@ -358,6 +357,11 @@ fn targets_wellspring(g: &Game, caster: UnitId, _call: &PyCall) -> Vec<SpellTarg
         }
     }
     out
+}
+
+/// `targetsWellspring(caster)`: [`wellspring_targets`] of the caster's owner.
+fn targets_wellspring(g: &Game, caster: UnitId, _call: &PyCall) -> Vec<SpellTarget> {
+    wellspring_targets(g, g.units[caster].owner)
 }
 
 /// A Wellspring choice for people: its mana, `Fire Mana` (the plot is picked on the map first:
@@ -375,14 +379,14 @@ fn label_wellspring(g: &Game, _caster: UnitId, target: SpellTarget, _: &PyCall) 
     }
 }
 
-/// `spellWellspring(caster)`: the plot gains the mana and its node.
-fn spell_wellspring(g: &mut Game, caster: UnitId, _call: &PyCall) {
-    let Some(SpellTarget::Choice(choice)) = g.spell_target else { return };
-    let Some((plot, bonus)) = wellspring_decode(g, choice) else { return };
-    let p = g.units[caster].owner;
-    let Some(&(_, node)) = wellspring_manas(g.d).iter().find(|&&(b, _)| b == bonus) else { return };
+/// Player `p` places a Wellspring (`choice`): the plot gains the mana and its node. Returns
+/// whether it did (a valid plot of `p` and a typed mana); the charge is the caller's
+/// ([`Game::player_place`]).
+pub fn wellspring_place(g: &mut Game, p: PlayerId, choice: i32) -> bool {
+    let Some((plot, bonus)) = wellspring_decode(g, choice) else { return false };
+    let Some(&(_, node)) = wellspring_manas(g.d).iter().find(|&&(b, _)| b == bonus) else { return false };
     if !wellspring_plot_ok(g, p, plot) {
-        return;
+        return false;
     }
     let (x, y) = g.map.xy(plot);
     let label = format!("{} ({x}, {y})", wellspring_label(g, choice));
@@ -390,6 +394,7 @@ fn spell_wellspring(g: &mut Game, caster: UnitId, _call: &PyCall) {
     g.plot_set_improvement_type(plot, Some(node));
     let turn = g.game_turn();
     g.log.msg_at(turn, Some(p), (x, y), || format!("Wellspring: {label}."));
+    true
 }
 
 #[cfg(test)]

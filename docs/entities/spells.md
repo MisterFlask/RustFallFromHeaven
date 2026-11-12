@@ -1247,9 +1247,9 @@ casts it while a city of the owner holds a charge. The "once a game" in the entr
 FFH2 rule they were written for.
 
 ### Wellspring (`SPELL_WELLSPRING`)
-*World spell, Amurites · a charge of Ritual: Wellspring (cost 100) · cast by an arcane unit (Adept line) · target: a plot and a mana type*
+*World spell, Amurites · a charge of Ritual: Wellspring (cost 100) · placed by the player, no unit casting it · target: a plot and a mana type*
 
-**What it does.** It replaced FFH2's Arcane Lacuna (2026-11-11, the owner's design; docs/PORTING.md, "Changes from FFH2"). The target is a choice of a land plot in the Amurites' borders with no resource, city or improvement and not a peak, and a typed mana (one of the 17 with a node: Air, Body, Chaos, Death, Earth, Enchantment, Entropy, Fire, Law, Life, Metamagic, Mind, Nature, Shadow, Spirit, Sun, Water). The plot gains that mana resource and its node, permanently (`world_ritual_spells/small.rs`).
+**What it does.** It replaced FFH2's Arcane Lacuna (2026-11-11, the owner's design; docs/PORTING.md, "Changes from FFH2"). The target is a choice of a land plot in the Amurites' borders with no resource, city or improvement and not a peak, and a typed mana (one of the 17 with a node: Air, Body, Chaos, Death, Earth, Enchantment, Entropy, Fire, Law, Life, Metamagic, Mind, Nature, Shadow, Spirit, Sun, Water). The plot gains that mana resource and its node, permanently (`world_ritual_spells/small.rs`). Since 2026-11-12 (the owner's decision) no unit casts it: the player places it with the charge (`place_on_charge`, `Game::player_place`), and the human's placement opens by itself when the ritual completes, with a menu of the mana types showing what each gives and the sphere promotions it opens (docs/HUMAN.md).
 
 **Playing it well.** A new mana source of the sphere you lack, close to home: a sphere opens a line of spells for every adept, and a second source of one strengthens its spells and buildings. Put it in the heart of the empire, where no raider pillages it.
 

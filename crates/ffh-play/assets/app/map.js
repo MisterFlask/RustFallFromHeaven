@@ -1522,7 +1522,16 @@ export class MapView {
         g.setLineDash([]);
       });
     };
-    if (Array.isArray(o.targets)) for (const [x, y] of o.targets) outline(x, y, "#4fe3ff", 2, [4, 3]);
+    // The targets of an interface mode, each plot marked: a translucent fill and a solid frame.
+    if (Array.isArray(o.targets)) {
+      for (const [x, y] of o.targets) {
+        this.eachCopy(x, y, (sx, sy) => {
+          g.fillStyle = "rgba(79,227,255,0.28)";
+          g.fillRect(sx + 2, sy + 2, ts - 4, ts - 4);
+        });
+        outline(x, y, "#9ff0ff", 2.5);
+      }
+    }
     if (o.sel) outline(o.sel.x, o.sel.y, "#ffe14d", 2.5);
     if (o.hover) outline(o.hover.x, o.hover.y, o.targets ? "#4fe3ff" : "rgba(255,255,255,0.7)", 1.5);
     // Waypoints not sent yet: numbered, in order.

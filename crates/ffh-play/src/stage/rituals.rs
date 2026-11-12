@@ -256,9 +256,12 @@ pub fn tithe(dir: &Path) -> Result<StagedTithe, String> {
 /// and a charge of its world ritual held (when the ritual leaves one), arranged so that its world rituals' actions are
 /// offered: the Lanun's storm raised (Steer the Storm) and a second charge held; a Khazad tunnel
 /// between two plots next to the capital (`unit`, a warrior, stands on its end: Enter the Delve); two Doviello
-/// warriors in the capital (The Cull); an Amurite Adept in the capital (Wellspring).
+/// warriors in the capital (The Cull); nothing more for the Amurites (Wellspring is placed by the
+/// player). With `due` (`ritual-due:<civ>`), no charge: the ritual instead stands at the head of
+/// the capital's queue with all its production but 1, so that it completes at the end of the turn.
 pub struct StagedRitualCiv {
     pub save: PathBuf,
+    pub due: bool,
     pub civ: String,
     pub capital: CityId,
     pub unit: Option<ffh_core::ids::UnitId>,
@@ -268,7 +271,7 @@ pub struct StagedRitualCiv {
 impl StagedRitualCiv {
     pub fn to_json(&self) -> Json {
         crate::jobj! {
-            "stage" => format!("ritual-civ:{}", self.civ),
+            "stage" => format!("{}:{}", if self.due { "ritual-due" } else { "ritual-civ" }, self.civ),
             "save" => self.save.display().to_string(),
             "capital" => self.capital, "unit" => self.unit, "turn" => self.turn,
         }
@@ -277,6 +280,16 @@ impl StagedRitualCiv {
 
 /// Writes the `ritual-civ:<civ>` staged game into `dir` (a game directory).
 pub fn ritual_civ(dir: &Path, civ: &str) -> Result<StagedRitualCiv, String> {
+    ritual_civ_staged(dir, civ, false)
+}
+
+/// Writes the `ritual-due:<civ>` staged game into `dir`: as [`ritual_civ`], the ritual completing
+/// at the end of the turn instead of a charge held.
+pub fn ritual_due(dir: &Path, civ: &str) -> Result<StagedRitualCiv, String> {
+    ritual_civ_staged(dir, civ, true)
+}
+
+fn ritual_civ_staged(dir: &Path, civ: &str, due: bool) -> Result<StagedRitualCiv, String> {
     use ffh_core::structs::SpellTarget;
     let d = ffh_data::global();
     if d.ty::<CivilizationType>(civ).is_none() {
@@ -299,8 +312,18 @@ pub fn ritual_civ(dir: &Path, civ: &str) -> Result<StagedRitualCiv, String> {
         g.team_set_has_tech(team, tech, true, Some(h), false, false);
     }
     choose_research(g, h);
-    // A charge, for a ritual whose spell spends one (Upgrade acts at its completion).
-    if g.player_world_ritual(h).is_some_and(|r| g.world_ritual_spell(r).is_some()) {
+    // A charge, for a ritual whose spell spends one (Upgrade acts at its completion); with `due`,
+    // the ritual 1 production short of completing instead.
+    if due {
+        let project = g.player_world_ritual(h).ok_or("no world ritual")?;
+        g.city_clear_order_queue(capital);
+        g.city_push_order(capital, OrderType::ORDER_CREATE, project.i(), -1, false, false, false, true);
+        if g.city_head_world_ritual(capital) != Some(project) {
+            return Err(format!("{} is not at the head of the queue", d.projects[project].base.type_));
+        }
+        let cost = g.city_production_needed_project(capital, project);
+        g.city_add_turn_production(capital, cost - 1);
+    } else if g.player_world_ritual(h).is_some_and(|r| g.world_ritual_spell(r).is_some()) {
         g.player_grant_world_ritual_charge(h);
     }
     let warrior = d.t::<UnitType>("UNIT_WARRIOR");
@@ -342,13 +365,10 @@ pub fn ritual_civ(dir: &Path, civ: &str) -> Result<StagedRitualCiv, String> {
                 g.player_init_unit(h, warrior, cx, cy, None, None);
             }
         }
-        "CIVILIZATION_AMURITES" => {
-            unit = Some(g.player_init_unit(h, d.t::<UnitType>("UNIT_ADEPT"), cx, cy, None, None));
-        }
         _ => {}
     }
     s.drain_log();
-    let name = format!("ritual-civ-{}", civ.trim_start_matches("CIVILIZATION_").to_lowercase());
+    let name = format!("{}-{}", if due { "ritual-due" } else { "ritual-civ" }, civ.trim_start_matches("CIVILIZATION_").to_lowercase());
     let paths = s.save(&name).map_err(|e| format!("save: {e:?}"))?;
-    Ok(StagedRitualCiv { save: paths.save, civ: civ.to_string(), capital, unit, turn: s.g.game_turn() })
+    Ok(StagedRitualCiv { save: paths.save, due, civ: civ.to_string(), capital, unit, turn: s.g.game_turn() })
 }

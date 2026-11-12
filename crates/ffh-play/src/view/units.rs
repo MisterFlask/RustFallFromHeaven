@@ -425,6 +425,8 @@ pub fn world_actions(v: &Viewer) -> Json {
             "once" => info.once,
             "causes_war" => info.causes_war,
             "help" => if help == info.base.help { "" } else { help },
+            // Placed by the player, no unit casting it (`place`: while its charge is held).
+            "place_on_charge" => info.place_on_charge,
         };
         // A card's world spell cast already: still the empire's, spent.
         if info.once && g.player_cast_once(v.h, s) {
@@ -454,6 +456,12 @@ pub fn world_actions(v: &Viewer) -> Json {
             j.set("why", crate::view::rituals::no_charge_why(v, r));
             j.set("caster", Json::Null);
             j.set("cmd", Json::Null);
+            out.push(j);
+            continue;
+        }
+        // A world spell the player places (`place_on_charge`: Wellspring), no unit casting it.
+        if let Some(r) = ritual.filter(|_| info.place_on_charge) {
+            crate::view::place::world_action(v, s, r, &mut j);
             out.push(j);
             continue;
         }

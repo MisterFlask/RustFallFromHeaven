@@ -144,10 +144,15 @@ pub fn no_charge_why(v: &Viewer, project: ProjectType) -> String {
 /// `Charge held in <city>. Casting spends it. Next ritual cost: <cost>.` (the cost the ritual has
 /// now: the completion that left the charge doubled it already).
 pub fn charge_line(v: &Viewer, project: ProjectType) -> Option<String> {
+    charge_line_verb(v, project, "Casting")
+}
+
+/// [`charge_line`] with what spends the charge (`Casting`, `Placing`).
+pub fn charge_line_verb(v: &Viewer, project: ProjectType, verb: &str) -> Option<String> {
     let g = v.g;
     let c = g.player_world_ritual_charge_city(v.h, project)?;
     let cost = g.player_get_production_needed_project(v.h, project);
-    Some(format!("Charge held in {}. Casting spends it. Next ritual cost: {cost}.", city_name(g, c)))
+    Some(format!("Charge held in {}. {verb} spends it. Next ritual cost: {cost}.", city_name(g, c)))
 }
 
 /// The production dialog's line for world ritual `project` in city `c`: `World ritual. One in

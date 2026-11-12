@@ -2651,6 +2651,13 @@ vec4 marksAt(vec2 cell) {
   return texelFetch(uMarks, c, 0);
 }
 
+// Colour c with alpha a laid over dst, both straight alpha.
+vec4 overA(vec4 dst, vec3 c, float a) {
+  float oa = a + dst.a * (1.0 - a);
+  if (oa <= 0.0) return dst;
+  return vec4((c * a + dst.rgb * dst.a * (1.0 - a)) / oa, oa);
+}
+
 // Distance from point f (in the cell, 0..1) to the cell's edge toward neighbour (dx, dy).
 float edgeDist(vec2 f, int dx, int dy) {
   if (dx == 1) return 1.0 - f.x;
@@ -2724,11 +2731,18 @@ void main() {
   vec4 mk = marksAt(cell);
   vec2 dd = min(f, 1.0 - f);
   float edge = min(dd.x, dd.y);
+  float markW = 0.0;
   if (mk.r > 0.0) {
-    float dash = step(0.5, fract((f.x + f.y) * 6.0));
-    float t = 1.0 - smoothstep(0.03, 0.07, edge);
-    acc = mix(acc, vec4(0.31, 0.89, 1.0, 1.0), t * (0.55 + 0.45 * dash));
-    acc = mix(acc, vec4(0.31, 0.89, 1.0, 1.0), 0.12);
+    // A valid target, each plot on its own: a translucent cyan fill and a bright frame inside the
+    // plot's edge with a dark rim inside it, so that it reads over forests, hills and units (and
+    // through what stands in front at most of its strength, below). Composited "over" in straight
+    // alpha (a mix from the empty overlay would darken the ground instead).
+    float band = 1.0 - smoothstep(0.045, 0.07, edge);
+    float rim = (1.0 - smoothstep(0.07, 0.1, edge)) * (1.0 - band);
+    acc = overA(acc, vec3(0.31, 0.89, 1.0), 0.3);
+    acc = overA(acc, vec3(0.02, 0.1, 0.16), rim * 0.55);
+    acc = overA(acc, vec3(0.72, 0.97, 1.0), band * 0.95);
+    markW = 1.0;
   }
   if (mk.g > 0.0) acc = mix(acc, vec4(1.0, 0.92, 0.55, 1.0), 0.22 * mk.g);
   // Hovered and selected plots: a rounded square frame.
@@ -2744,7 +2758,7 @@ void main() {
     vec3 c = k == 0 ? vec3(1.0, 1.0, 0.95) : vec3(1.0, 0.86, 0.3);
     acc = mix(acc, vec4(c, 1.0), ring * (k == 0 ? 0.7 : 1.0));
   }
-  acc.a *= mix(1.0, 0.35, uGhost) * smoothstep(0.2, 0.5, v);
+  acc.a *= mix(1.0, mix(0.35, 0.8, markW), uGhost) * smoothstep(0.2, 0.5, v);
   if (acc.a < 0.003) discard;
   o = vec4(acc.rgb, acc.a);
 }`;

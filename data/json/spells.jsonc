@@ -170,16 +170,15 @@
     "description": "TXT_KEY_SPELL_WELLSPRING",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
     "help": "TXT_KEY_SPELL_WELLSPRING_HELP",
-    "unit_combat_prereq": "UNITCOMBAT_ADEPT",
     "civilization_prereq": "CIVILIZATION_AMURITES",
     "global": true,
     "ritual_charge": "PROJECT_RITUAL_WELLSPRING",
-    // This game's (docs/CARDS.md, "World rituals"): a plot and a mana type. Rules:
-    // crates/ffh-core/src/ffh/world_ritual_spells/small.rs.
+    // This game's (docs/CARDS.md, "World rituals"): a plot and a mana type, placed by the player
+    // when the ritual completes, no unit casting it. Rules:
+    // crates/ffh-core/src/ffh/world_ritual_spells/small.rs (`Game::player_place`).
+    "place_on_charge": true,
     "target": "choice",
     "display_when_disabled": true,
-    "has_casted": true,
-    "py_result": "spellWellspring(pCaster)",
     "py_targets": "targetsWellspring(pCaster)",
     "py_target_label": "labelWellspring(pCaster, iChoice)",
     "button": "Art/Interface/Buttons/Spells/Arcane Lacuna.dds"

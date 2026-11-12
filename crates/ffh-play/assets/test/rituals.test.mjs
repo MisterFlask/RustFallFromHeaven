@@ -57,11 +57,51 @@ test("world actions: the caster is placed by a city, and options on plots are pi
   assert.equal(R.casterLine({ ...player, caster_where: "in Prespur" }, "Scout"), "Cast by your Scout in Prespur; then pick its target (a player).");
   assert.equal(R.casterLine({ ...player, caster_where: null }, "Scout"), "Cast by your Scout; then pick its target (a player).");
   assert.equal(R.casterLine({ caster_where: "in Lycus" }, "Warrior"), "Cast by your Warrior in Lycus.");
-  const wellspring = { target_kind: "choice", caster_where: "in Cyrus", targets: [{ at: [3, 4], label: "Air Mana" }, { at: [3, 4], label: "Fire Mana" }] };
-  assert.equal(R.choicesOnPlots(wellspring), true);
-  assert.equal(R.casterLine(wellspring, "Adept"), "Cast by your Adept in Cyrus; then pick its target (a plot on the map, then one of its options).");
+  const onPlots = { target_kind: "choice", caster_where: "in Cyrus", targets: [{ at: [3, 4], label: "Air Mana" }, { at: [3, 4], label: "Fire Mana" }] };
+  assert.equal(R.choicesOnPlots(onPlots), true);
   const traits = { target_kind: "choice", targets: [{ at: null, label: "Aggressive" }] };
   assert.equal(R.choicesOnPlots(traits), false);
   assert.equal(R.casterLine(traits, "Adept"), "Cast by your Adept; then pick its target (one of its options).");
   assert.equal(R.choicesOnPlots({ target_kind: "plot", targets: [{ at: [1, 1] }] }), false);
+});
+
+// A world spell the player places (Wellspring): the world action as the server sends it.
+const place = (held) => ({
+  spell: 7,
+  place_on_charge: true,
+  enabled: held,
+  ...(held ? { place: { completed: "Ritual: Wellspring completed. Place the mana node: click a marked plot.", pick: "Place the mana node of Wellspring: click a marked plot.", later: "Esc: later." } } : {}),
+});
+
+test("a placement opens by itself only when its charge appears, not on a loaded game", () => {
+  const seen = new Map();
+  // First view (a loaded game, a reload) with the charge held: nothing opens.
+  assert.deepEqual(R.placementDue(seen, [place(true)]), []);
+  assert.deepEqual(R.placementDue(seen, [place(true)]), [], "held still: postponed, not reopened");
+  assert.deepEqual(R.placementDue(seen, [place(false)]), [], "placed: the charge is gone");
+  assert.deepEqual(R.placementDue(seen, [place(true)]), [7], "the ritual completed again");
+  assert.deepEqual(R.placementDue(seen, [place(true)]), []);
+  // Other world actions are not placements.
+  assert.deepEqual(R.placementDue(new Map([[3, false]]), [{ spell: 3, enabled: true, place: {} }]), []);
+  assert.deepEqual(R.placementDue(seen, undefined), []);
+});
+
+test("the placement's prompt", () => {
+  assert.equal(R.placePrompt(place(true), { completed: true }), "Ritual: Wellspring completed. Place the mana node: click a marked plot.");
+  assert.equal(R.placePrompt(place(true)), "Place the mana node of Wellspring: click a marked plot.");
+  assert.equal(R.placePrompt(place(true), { touch: true }), "Place the mana node of Wellspring: tap a marked plot.");
+  assert.equal(R.placePrompt(place(false)), "");
+});
+
+test("the mana menu's rows: passive lines and the sphere promotions' tooltips", () => {
+  assert.deepEqual(R.passiveText({ passive: ["+1 health in each of your cities that has it."] }), ["+1 health in each of your cities that has it."]);
+  assert.deepEqual(R.passiveText({ passive: [] }), ["none."]);
+  const fire1 = { name: "Fire I", needs: "Needs Channeling I and Fire Mana.", free: "Free to new Arcane Units with 2 or more Fire Mana.", spells: [{ name: "Blaze", help: "[ICON_BULLET]Creates Smoke" }] };
+  assert.deepEqual(R.promoTipParts(fire1), {
+    title: "Fire I",
+    lines: ["Needs Channeling I and Fire Mana.", "Free to new Arcane Units with 2 or more Fire Mana."],
+    spells: [{ name: "Blaze", help: "[ICON_BULLET]Creates Smoke" }],
+    none: null,
+  });
+  assert.equal(R.promoTipParts({ name: "Ice III", needs: "", spells: [] }).none, "Opens no spell.");
 });

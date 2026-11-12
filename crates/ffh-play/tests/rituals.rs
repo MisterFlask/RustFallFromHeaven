@@ -287,12 +287,11 @@ fn the_tithe_says_who_is_named_and_asks_before_the_war() {
     assert_eq!(s_of(&row(&view, h), "note"), Some(format!("Named rival: {name}.").as_str()));
 }
 
-/// `ffh-play stage ritual-civ:CIVILIZATION_AMURITES`: Wellspring's choices are each a plot's mana,
-/// picked on the map then from a list: every target carries its plot (`at`) and is labelled by its
-/// mana alone, every valid plot offers every mana; the tooltip's caster is placed by the human's
-/// nearest city, not by coordinates.
+/// `ffh-play stage ritual-civ:CIVILIZATION_AMURITES`: Wellspring is placed by the player, no unit
+/// casting it: the world action carries the placement (its prompts, every valid plot with every
+/// mana type, labelled by the mana alone) and a `place` command; no caster.
 #[test]
-fn wellspring_is_picked_by_plot_then_mana() {
+fn wellspring_is_placed_by_plot_then_mana_type() {
     let dir = common::TempDir::new("stage-ritual-civ-amurites");
     let st = ffh_play::stage::ritual_civ(&dir.0, "CIVILIZATION_AMURITES").expect("staged");
     let s = load(&st.save);
@@ -300,8 +299,17 @@ fn wellspring_is_picked_by_plot_then_mana() {
     let spell = d.t::<SpellType>("SPELL_WELLSPRING");
     let a = world_action(&s, spell).expect("Wellspring is listed");
     assert_eq!(a.get("enabled").and_then(Json::as_bool), Some(true), "{a:?}");
+    assert_eq!(a.get("place_on_charge").and_then(Json::as_bool), Some(true));
+    assert!(a.get("caster").is_some_and(Json::is_null), "no caster");
     assert_eq!(s_of(&a, "target_kind"), Some("choice"));
-    assert_eq!(s_of(&a, "caster_where"), Some(format!("in {}", city_name(&s, st.capital)).as_str()));
+    let place = a.get("place").expect("the placement");
+    assert_eq!(s_of(place, "label"), Some("Place Wellspring"));
+    assert_eq!(s_of(place, "completed"), Some("Ritual: Wellspring completed. Place the mana node: click a marked plot."));
+    assert_eq!(s_of(place, "pick"), Some("Place the mana node of Wellspring: click a marked plot."));
+    assert_eq!(s_of(place, "later"), Some("Esc: later."));
+    assert_eq!(a.get("cmd").and_then(|c| s_of(c, "c")), Some("place"));
+    let charge = s_of(&a, "charge").unwrap();
+    assert!(charge.contains("Placing spends it."), "{charge}");
     let manas: Vec<String> = ffh_core::ffh::world_ritual_spells::small::wellspring_manas(d).iter().map(|&(b, _)| d.text.name(&d.bonuses[b].base.description).to_string()).collect();
     let targets = arr(&a, "targets");
     assert!(!targets.is_empty());
@@ -318,6 +326,133 @@ fn wellspring_is_picked_by_plot_then_mana() {
         assert!(ffh_core::ffh::world_ritual_spells::small::wellspring_plot_ok(&s.g, s.human, q), "({x}, {y})");
         assert_eq!(labels, &manas, "every mana at ({x}, {y}), in the data's order");
     }
+    // The tooltip's rules: placed, no caster, a mana type.
+    let help = ffh_play::view::help::spell::effects(d, spell);
+    assert!(help.contains("Placed when Ritual: Wellspring completes."), "{help}");
+    assert!(help.contains("The charge is held until the node is placed."), "{help}");
+    assert!(help.contains("Choose a mana type."), "{help}");
+    for no in ["Cast by", "caster", "Can only be used by", "option"] {
+        assert!(!help.contains(no), "{no:?} in {help}");
+    }
+}
+
+/// A row of the `place_menu` reply for mana `name` (its `name`).
+fn menu_row<'a>(menu: &'a Json, name: &str) -> &'a Json {
+    arr(menu, "rows").iter().find(|r| s_of(r, "name") == Some(name)).unwrap_or_else(|| panic!("no row {name}"))
+}
+
+/// Wellspring's menu on a plot (`place_menu`): a row per mana type with what owning it gives, from
+/// the data and the rules (a resource's health and happiness, the free sphere promotions of new
+/// arcane units, affinity, what it allows), how many the human owns, and its sphere promotions in
+/// tier order, each with the spells it opens and their help. Then a row placed with no unit at all.
+#[test]
+fn wellspring_menu_lists_each_mana_type_with_its_passive_and_its_promotions() {
+    let dir = common::TempDir::new("stage-ritual-civ-amurites-menu");
+    let st = ffh_play::stage::ritual_civ(&dir.0, "CIVILIZATION_AMURITES").expect("staged");
+    let mut s = load(&st.save);
+    let d = s.g.d;
+    let h = s.human;
+    let spell = d.t::<SpellType>("SPELL_WELLSPRING");
+    let a = world_action(&s, spell).unwrap();
+    let at = arr(&arr(&a, "targets")[0], "at").to_vec();
+    let (x, y) = (at[0].as_i64().unwrap() as i32, at[1].as_i64().unwrap() as i32);
+    let menu = s.query(&Query::PlaceMenu { spell, x, y }).unwrap();
+    assert_eq!(s_of(&menu, "title"), Some("Wellspring"));
+    let manas = ffh_core::ffh::world_ritual_spells::small::wellspring_manas(d);
+    assert_eq!(arr(&menu, "rows").len(), manas.len(), "every mana type");
+    let v = ffh_play::view::Viewer::new(&s.g, h, false);
+    for &(b, _) in &manas {
+        let name = d.text.name(&d.bonuses[b].base.description).to_string();
+        let row = menu_row(&menu, &name);
+        assert_eq!(i_of(row, "bonus"), Some(b.idx() as i64));
+        assert_eq!(s_of(row, "owned"), Some(format!("You own: {}.", s.g.player_get_num_available_bonuses(h, b)).as_str()));
+        let passive: Vec<&str> = arr(row, "passive").iter().filter_map(Json::as_str).collect();
+        assert_eq!(passive, ffh_play::view::place::passive_lines(&v, b), "{name}");
+        let info = &d.bonuses[b];
+        if info.health != 0 {
+            assert!(passive.contains(&format!("{:+} health in each of your cities that has it.", info.health).as_str()), "{name}: {passive:?}");
+        }
+        if info.happiness != 0 {
+            assert!(passive.contains(&format!("{:+} happiness in each of your cities that has it.", info.happiness).as_str()), "{name}: {passive:?}");
+        }
+        // The free promotions rule, and the sphere promotions in tier order.
+        let tiers = ffh_core::ffh::events::adept_mana_promotions(d, b).expect("a sphere");
+        assert!(passive.contains(&ffh_play::view::place::free_promotions_line(d, b).unwrap().as_str()), "{name}");
+        let promos = arr(row, "promotions");
+        let got: Vec<i64> = promos.iter().filter_map(|p| i_of(p, "promotion")).collect();
+        assert_eq!(got, tiers.iter().map(|p| p.idx() as i64).collect::<Vec<_>>(), "{name}");
+        assert_eq!(promos.iter().filter_map(|p| s_of(p, "tier")).collect::<Vec<_>>(), ["I", "II", "III"]);
+        assert_eq!(d.promotions[tiers[0]].bonus_prereq, Some(b), "tier I needs the mana");
+        for (p, &t) in promos.iter().zip(&tiers) {
+            let want: Vec<SpellType> = d.spells.keys().filter(|&sp| d.spells[sp].promotion_prereq1 == Some(t) || d.spells[sp].promotion_prereq2 == Some(t)).collect();
+            let spells = arr(p, "spells");
+            assert_eq!(spells.iter().filter_map(|x| i_of(x, "spell")).collect::<Vec<_>>(), want.iter().map(|x| x.idx() as i64).collect::<Vec<_>>(), "{name}");
+            for (j, &sp) in spells.iter().zip(&want) {
+                assert_eq!(s_of(j, "help"), Some(ffh_play::view::help::spell::effects(d, sp).as_str()));
+            }
+            assert!(s_of(p, "needs").is_some_and(|n| n.starts_with("Needs ")), "{p:?}");
+        }
+        // Affinity: every unit type with one for this mana is named.
+        for u in d.units.keys().filter(|&u| d.units[u].bonus_affinity[b] != 0) {
+            let unit = d.text.name(&d.units[u].base.description).to_string();
+            assert!(passive.iter().any(|l| l.starts_with("Affinity: ") && l.contains(&unit)), "{name}: {unit} in {passive:?}");
+        }
+    }
+    // A sample read from the data: Life Mana's health, Enchantment Mana's happiness, Fire Mana's
+    // free Fire I with 2 or more, and the Fire Elemental's affinity for it.
+    let life = arr(menu_row(&menu, "Life Mana"), "passive").iter().filter_map(Json::as_str).map(str::to_string).collect::<Vec<_>>();
+    assert!(life.contains(&"+1 health in each of your cities that has it.".to_string()), "{life:?}");
+    let ench = arr(menu_row(&menu, "Enchantment Mana"), "passive").iter().filter_map(Json::as_str).map(str::to_string).collect::<Vec<_>>();
+    assert!(ench.contains(&"+1 happiness in each of your cities that has it.".to_string()), "{ench:?}");
+    let fire = menu_row(&menu, "Fire Mana");
+    let fire_passive = arr(fire, "passive").iter().filter_map(Json::as_str).collect::<Vec<_>>().join(" ");
+    assert!(fire_passive.contains("Fire I with 2 or more Fire Mana"), "{fire_passive}");
+    assert!(fire_passive.contains("Fire Elemental"), "{fire_passive}");
+    let fire1 = &arr(fire, "promotions")[0];
+    assert_eq!(s_of(fire1, "name"), Some("Fire I"));
+    assert!(arr(fire1, "spells").iter().any(|x| s_of(x, "name") == Some("Blaze")), "{fire1:?}");
+    // Not a valid plot: refused.
+    assert!(s.query(&Query::PlaceMenu { spell, x: st_capital_x(&s, st.capital), y: s.g.cities[st.capital].y }).is_err(), "the capital's plot");
+
+    // Placed with no unit at all.
+    for u in s.g.players[h].units.clone() {
+        if s.g.units.contains(u) {
+            s.g.unit_kill(u, false, None);
+        }
+    }
+    let target = fire.get("target").unwrap().clone();
+    let cmd = Command::from_json(d, &Json::parse(&format!(r#"{{"c":"place","spell":"SPELL_WELLSPRING","target":{target}}}"#)).unwrap()).unwrap();
+    let r = s.execute(&cmd);
+    assert!(matches!(r, Ok(CmdOk::Applied { .. })), "{r:?}");
+    let q = s.g.map.plot_idx(x, y).unwrap();
+    assert_eq!(s.g.map.plots[q].bonus_type, Some(d.t::<BonusType>("BONUS_MANA_FIRE")));
+    let a = world_action(&s, spell).unwrap();
+    assert!(a.get("place").is_none(), "the charge is spent: {a:?}");
+    assert_eq!(a.get("enabled").and_then(Json::as_bool), Some(false));
+    // No charge: a second placement is refused.
+    assert!(s.execute(&cmd).is_err());
+}
+
+fn st_capital_x(s: &Session, c: CityId) -> i32 {
+    s.g.cities[c].x
+}
+
+/// `ffh-play stage ritual-due:CIVILIZATION_AMURITES`: Ritual: Wellspring completes at the end of the
+/// turn; the next turn's world action holds the placement (the page opens it then).
+#[test]
+fn wellspring_placement_comes_with_the_completed_ritual() {
+    let dir = common::TempDir::new("stage-ritual-due-amurites");
+    let st = ffh_play::stage::ritual_due(&dir.0, "CIVILIZATION_AMURITES").expect("staged");
+    let mut s = load(&st.save);
+    let spell = s.g.d.t::<SpellType>("SPELL_WELLSPRING");
+    let a = world_action(&s, spell).unwrap();
+    assert!(a.get("place").is_none() && a.get("place_on_charge").and_then(Json::as_bool) == Some(true), "{a:?}");
+    let r = s.execute(&Command::EndTurn { force: true });
+    assert!(r.is_ok(), "{r:?}");
+    assert_eq!(s.advance(&mut |_| {}), Stop::Human);
+    let a = world_action(&s, spell).unwrap();
+    assert!(a.get("place").is_some(), "{a:?}");
+    assert_eq!(a.get("enabled").and_then(Json::as_bool), Some(true));
 }
 
 /// The caster line names no place when the human has no city, and a Delve's other end is named

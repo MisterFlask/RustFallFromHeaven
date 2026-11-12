@@ -166,10 +166,15 @@ flag.
   unreachable: no rule makes a Golden Hammer now.
 - **Amurites: Wellspring replaces Arcane Lacuna** (the owner's design, 2026-11-11). Arcane Lacuna
   denied every other player its spells for 20 turns and gave the Amurites' adepts experience.
-  Wellspring (Ritual: Wellspring, cost 100; cast by an Adept-line unit) targets a land plot in
-  the Amurites' borders with no resource, city or improvement, not a peak, and a typed mana (one of
-  the 17 with a node): the plot gains that mana resource and its node, permanently.
-  `Player::disable_spellcasting` stays in the engine, unused by the data.
+  Wellspring (Ritual: Wellspring, cost 100) targets a land plot in the Amurites' borders with no
+  resource, city or improvement, not a peak, and a typed mana (one of the 17 with a node): the plot
+  gains that mana resource and its node, permanently. `Player::disable_spellcasting` stays in the
+  engine, unused by the data.
+  **Placed by the player, not cast by a unit** (the owner's decision, 2026-11-12): Wellspring no
+  longer needs an arcane (Adept-line) unit, nor any unit: the player places it with the charge
+  (`SpellInfo::place_on_charge`, `Game::player_place`: the charge spent, the cast counted and
+  announced, the node placed; no unit loses its action, no miscast). No unit can cast it. The
+  human's placement opens by itself when the ritual completes (docs/HUMAN.md, "World rituals").
 
 - **Raging Seas is a storm the Lanun steer; Mother Lode is replaced by The Delve** (the owner's
   decision, 2026-11-11; save format 38). Raging Seas (FFH2: 75 cold damage, two draws, to every

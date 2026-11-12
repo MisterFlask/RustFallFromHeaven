@@ -47,7 +47,8 @@ use ffh_data::*;
 /// `CyUnit::startConquestMode` (`AI_setGroupflag(GROUPFLAG_CONQUEST)`).
 const GROUPFLAG_CONQUEST: i32 = 10;
 
-/// onUnitCreated: mana bonus -> (tier 1, tier 2, tier 3) promotions for new adepts.
+/// onUnitCreated: mana bonus -> (tier 1, tier 2, tier 3) promotions for new adepts
+/// ([`adept_mana_promotions`]).
 const ADEPT_MANA_PROMOTIONS: [(&str, &str, &str, &str); 18] = [
     ("BONUS_MANA_AIR", "PROMOTION_AIR1", "PROMOTION_AIR2", "PROMOTION_AIR3"),
     ("BONUS_MANA_BODY", "PROMOTION_BODY1", "PROMOTION_BODY2", "PROMOTION_BODY3"),
@@ -68,6 +69,23 @@ const ADEPT_MANA_PROMOTIONS: [(&str, &str, &str, &str); 18] = [
     ("BONUS_MANA_SUN", "PROMOTION_SUN1", "PROMOTION_SUN2", "PROMOTION_SUN3"),
     ("BONUS_MANA_WATER", "PROMOTION_WATER1", "PROMOTION_WATER2", "PROMOTION_WATER3"),
 ];
+
+/// onUnitCreated: a new unit of the Adept unit combat gets tier `i` (0-based) of a mana's sphere
+/// promotions free when its owner has at least `ADEPT_MANA_FREE[i].0` of that mana (available,
+/// `player_get_num_available_bonuses`) and, from tier 2, the Channeling promotion
+/// `ADEPT_MANA_FREE[i].1` (FfH `onUnitCreated`: `iNum > 1`, `> 2`, `> 3`).
+pub const ADEPT_MANA_FREE: [(i32, Option<&str>); 3] = [(2, None), (3, Some("PROMOTION_CHANNELING2")), (4, Some("PROMOTION_CHANNELING3"))];
+
+/// The unit combat whose new units get [`ADEPT_MANA_FREE`].
+pub const ADEPT_MANA_UNIT_COMBAT: &str = "UNITCOMBAT_ADEPT";
+
+/// The sphere promotions of mana `bonus`, tier 1 to 3, that new Adept units get free with enough
+/// of it ([`ADEPT_MANA_FREE`]); `None` for a resource without a sphere.
+pub fn adept_mana_promotions(d: &GameData, bonus: BonusType) -> Option<[PromotionType; 3]> {
+    let name = &d.bonuses[bonus].base.type_;
+    let &(_, a, b, c) = ADEPT_MANA_PROMOTIONS.iter().find(|e| e.0 == name)?;
+    Some([d.ty::<PromotionType>(a)?, d.ty::<PromotionType>(b)?, d.ty::<PromotionType>(c)?])
+}
 
 /// onCityDoTurn, Planar Gate: the creature a Planar Gate city can summon for each building it
 /// has (building, the creature's class, the creature).
@@ -602,8 +620,8 @@ impl Game {
     pub fn ev_unit_created(&mut self, u: UnitId) {
         let d = self.d;
         let p = self.units[u].owner;
-        let channeling2 = d.t::<PromotionType>("PROMOTION_CHANNELING2");
-        let channeling3 = d.t::<PromotionType>("PROMOTION_CHANNELING3");
+        let channeling2 = d.t::<PromotionType>(ADEPT_MANA_FREE[1].1.unwrap_or("PROMOTION_CHANNELING2"));
+        let channeling3 = d.t::<PromotionType>(ADEPT_MANA_FREE[2].1.unwrap_or("PROMOTION_CHANNELING3"));
 
         // Conquest mode for heroes (`unit.startConquestMode()`).
         let unit_class = self.unit_get_unit_class_type(u);
@@ -632,14 +650,15 @@ impl Game {
             }
         }
 
-        if self.unit_get_unit_combat_type(u) == Some(d.t::<UnitCombatType>("UNITCOMBAT_ADEPT")) {
+        if self.unit_get_unit_combat_type(u) == Some(d.t::<UnitCombatType>(ADEPT_MANA_UNIT_COMBAT)) {
+            let [(n1, _), (n2, _), (n3, _)] = ADEPT_MANA_FREE;
             for (bonus, tier1, tier2, tier3) in ADEPT_MANA_PROMOTIONS {
                 let num = self.player_get_num_available_bonuses(p, d.t::<BonusType>(bonus));
-                if num > 1 {
+                if num >= n1 {
                     self.unit_set_has_promotion(u, d.t::<PromotionType>(tier1), true);
-                    if num > 2 && self.units[u].has_promotion[channeling2] {
+                    if num >= n2 && self.units[u].has_promotion[channeling2] {
                         self.unit_set_has_promotion(u, d.t::<PromotionType>(tier2), true);
-                        if num > 3 && self.units[u].has_promotion[channeling3] {
+                        if num >= n3 && self.units[u].has_promotion[channeling3] {
                             self.unit_set_has_promotion(u, d.t::<PromotionType>(tier3), true);
                         }
                     }

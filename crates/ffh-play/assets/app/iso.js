@@ -1329,7 +1329,18 @@ export class IsoMap {
       g.stroke();
       g.setLineDash([]);
     };
-    if (Array.isArray(o.targets)) for (const [x, y] of o.targets) ring(x, y, "#4fe3ff", 2, [4, 3]);
+    // The targets of an interface mode, each plot marked: a translucent fill and a solid frame.
+    if (Array.isArray(o.targets)) {
+      for (const [x, y] of o.targets) {
+        const c = at(x, y);
+        this.diamond(g, c.sx, c.sy, f.TW, 3 * f.s);
+        g.fillStyle = "rgba(79,227,255,0.28)";
+        g.fill();
+        g.strokeStyle = "#9ff0ff";
+        g.lineWidth = Math.max(1.5, 2.5 * f.s);
+        g.stroke();
+      }
+    }
     if (o.sel) {
       const c = at(o.sel.x, o.sel.y);
       this.diamond(g, c.sx, c.sy, f.TW, 8 * f.s);

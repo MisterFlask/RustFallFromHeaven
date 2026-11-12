@@ -34,6 +34,7 @@ pub mod map;
 pub mod marks;
 pub mod player;
 pub mod outposts;
+pub mod place;
 pub mod rituals;
 pub mod sea;
 pub mod seas;

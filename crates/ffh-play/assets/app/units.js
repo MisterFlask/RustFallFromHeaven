@@ -5,7 +5,7 @@
 import * as api from "./api.js";
 import { S, emit, on, dname, tname, tidx, me, unitsAt, ownUnitsAt, cityAt, playerName, readyGroups, selectableGroups, nextSelectableGroup, cycleGroups, selectableGroupsOnPlot, option, moves, turns, info, observing, eventKind } from "./state.js";
 import * as K from "./hotkeys.js";
-import { h, fill, toast, coarse, errorText } from "./dom.js";
+import { h, fill, toast, toastNode, coarse, errorText } from "./dom.js";
 import { ask, openModal } from "./modals.js";
 import { run, actionCommand, sending } from "./commands.js";
 import { plotDistance, plotIndex, humanize } from "./tiles.js";
@@ -19,7 +19,8 @@ import { battleTerrain, openPlan, preferredRow, flashBattle, engageNumbers, enga
 import { portLine, seaLineWarns } from "./sea.js";
 import { addHelp } from "./help.js";
 import { plotNotes } from "./marks.js";
-import { choicesOnPlots } from "./ritual_rows.js";
+import { choicesOnPlots, placePrompt } from "./ritual_rows.js";
+import { choosePlacement } from "./place.js";
 
 // ---- The sea's rules, in the help display (docs/NAVAL.md, sections 3 and 10) ------------------
 
@@ -567,6 +568,9 @@ export function currentActions() {
  *  leaves it. */
 export function setMode(m) {
   mode = m;
+  // A placement's prompt stays up while its plot pick lasts.
+  placeToast?.remove();
+  placeToast = m?.place ? showPlacePrompt(m) : null;
   // A spell cast at a distance outlines the plots of its targets (`plots`).
   const targets = m?.kind === "target" ? (m.plots ?? (m.action.any ? null : m.action.targets)) : null;
   // The route-to mode's path preview is drawn in ochre (docs/ART.md 11.7).
@@ -596,6 +600,7 @@ async function pickPlot(x, y, ev) {
     setMode(null);
     return m.pick(x, y);
   }
+  if (m.place) return pickPlace(m, x, y);
   if (m.cast) return pickCast(m, x, y);
   if (!S.sel) {
     setMode(null);
@@ -714,6 +719,59 @@ async function pickCast(m, x, y) {
   const options = m.action.target_kind === "choice";
   const t = here.length === 1 && !options ? here[0] : await chooseTarget(m.action, here, options ? actionLabel(m.action) : `${actionLabel(m.action)}: which one?`);
   if (t) await castAt(m.action, t);
+}
+
+// ---------------------------------------------------------------------------------------------
+// World spells the player places (`place_on_charge`: Wellspring; docs/HUMAN.md)
+
+/** The prompt of the placement under way (a toast), or null. */
+let placeToast = null;
+
+/** The prompt of placement mode `m`, kept up until the pick ends: the sentence and `Esc: later.`,
+ *  with a Later button. */
+function showPlacePrompt(m) {
+  const a = m.action;
+  const text = placePrompt(a, { completed: m.completed, touch: touchy() });
+  const later = touchy() ? null : a.place?.later;
+  return toastNode(
+    h("div.toast.info.place-prompt", { role: "status" }, h("span", text), later ? h("span.dim", ` ${later}`) : null, " ", h("button.small", { onclick: () => setMode(null), title: "Place it later [Esc]: the charge stays held" }, "Later")),
+    24 * 3600 * 1000,
+  );
+}
+
+/** Opens the placement of world action `a` (`a.place`: its charge held): the map in plot pick, its
+ *  valid plots marked, and the prompt (`completed`: the turn its ritual completed). Escape or Later
+ *  postpones: the charge stays held and the top bar's button opens it again. */
+export function openPlacement(a, { completed = false } = {}) {
+  if (!a?.place) return;
+  if (!a.enabled || !(a.targets ?? []).length) {
+    toast(a.why ?? "No valid plot now.", "error");
+    return;
+  }
+  // An empire's action, not a unit's: the selection is let go (the panel shows the prompt).
+  if (S.sel) select([]);
+  setMode({ kind: "target", action: a, cast: true, world: true, place: true, completed, plots: targetPlots(a.targets) });
+}
+
+/** A plot picked for a placement: its menu (`place_menu`), then the node placed (`place`). A plot
+ *  that is not marked keeps the pick; the menu's Cancel goes back to it. */
+async function pickPlace(m, x, y) {
+  const a = m.action;
+  if (!(a.targets ?? []).some((t) => Array.isArray(t.at) && t.at[0] === x && t.at[1] === y)) {
+    toast("Not a marked plot.", "error");
+    return;
+  }
+  setMode(null);
+  let menu;
+  try {
+    menu = await api.query("place_menu", { spell: a.spell, x, y });
+  } catch (e) {
+    toast(errorText(e), "error");
+    return;
+  }
+  const r = await choosePlacement(menu);
+  if (r === "back") return openPlacement(a, { completed: m.completed });
+  if (r) await run({ c: "place", spell: a.spell, target: r.target });
 }
 
 /** Shift was released (or the window lost the focus): the held waypoints are sent, and a go-to
@@ -1623,7 +1681,8 @@ export function renderPanel() {
   // A world spell's target picked on the map, with no selection: the pick's hint.
   if (!S.sel && mode?.world) {
     delete panel.dataset.plot;
-    fill(panel, h("div.mode-hint", h("span", `Pick a target: ${actionLabel(mode.action)} (Esc cancels).`), h("button.small", { onclick: () => setMode(null), title: "Leave the pick [Esc]" }, "Cancel")));
+    const say = mode.place ? placePrompt(mode.action, { completed: mode.completed, touch: touchy() }) : `Pick a target: ${actionLabel(mode.action)} (Esc cancels).`;
+    fill(panel, h("div.mode-hint", h("span", say), h("button.small", { onclick: () => setMode(null), title: "Leave the pick [Esc]" }, mode.place ? "Later" : "Cancel")));
     return;
   }
   if (!S.sel) {
@@ -1719,7 +1778,7 @@ export function renderPanel() {
   }
   const others = foreign.length ? h("div.section", h("h4", "Others here"), foreign.map((u) => h("div.dim", `${dname("UnitType", u.type)} (${ownerText(u)})`))) : null;
   const what = mode?.cast ? "a target" : "a plot";
-  const pick = mapView?.pad ? (isGoTo(mode?.action) ? "Move the cursor to the destination and press A (B cancels)." : `Move the cursor to ${what} and press A: ${mode && actionLabel(mode.action)} (B cancels).`) : touchy() ? (isGoTo(mode?.action) ? "Tap a plot to go there." : `Tap ${what}: ${mode && actionLabel(mode.action)}.`) : isGoTo(mode?.action) ? "Click a plot to go there (Shift: add waypoints; Esc cancels)." : `Pick ${what}: ${mode && actionLabel(mode.action)} (Esc cancels).`;
+  const pick = mode?.place ? placePrompt(mode.action, { completed: mode.completed, touch: touchy() }) : mapView?.pad ? (isGoTo(mode?.action) ? "Move the cursor to the destination and press A (B cancels)." : `Move the cursor to ${what} and press A: ${mode && actionLabel(mode.action)} (B cancels).`) : touchy() ? (isGoTo(mode?.action) ? "Tap a plot to go there." : `Tap ${what}: ${mode && actionLabel(mode.action)}.`) : isGoTo(mode?.action) ? "Click a plot to go there (Shift: add waypoints; Esc cancels)." : `Pick ${what}: ${mode && actionLabel(mode.action)} (Esc cancels).`;
   // One hint at a time: waypoints being laid say more than the go-to mode they are laid in.
   const way = waypoints && unitsKey(waypoints.units) === unitsKey(S.sel.units)
     ? h("p.mode-hint", `${waypoints.points.length === 1 ? "1 waypoint" : `${waypoints.points.length} waypoints`}: release Shift to send (Esc drops them).`)

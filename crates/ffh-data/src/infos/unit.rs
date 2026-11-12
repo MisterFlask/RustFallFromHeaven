@@ -1290,6 +1290,10 @@ pub struct SpellInfo {
     /// city of its owner that holds one, and the cast spends it (the Weather Engine, the Tidecall
     /// of Danalin).
     pub ritual_charge: Option<ProjectType>,
+    /// This game's (docs/CARDS.md, "World rituals"): a world spell the player places with its
+    /// ritual's charge, no unit casting it (`Game::player_place`): the client opens the placement
+    /// when the ritual completes. Wellspring.
+    pub place_on_charge: bool,
 }
 
 /// What a remotely targeted spell is cast at (`SpellInfo::target`).
@@ -1424,6 +1428,7 @@ pub fn read_spell(rd: &Rd) -> SpellInfo {
         py_targets: rd.string("py_targets"),
         py_target_label: rd.string("py_target_label"),
         ritual_charge: rd.rf::<ProjectType>("ritual_charge"),
+        place_on_charge: rd.bool("place_on_charge"),
     }
 }
 

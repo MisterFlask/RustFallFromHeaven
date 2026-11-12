@@ -109,6 +109,9 @@ pub enum Query {
     Sea { id: SeaId, units: Vec<UnitId> },
     /// The Seas screen (docs/NAVAL.md, 10): one row per sea the human has revealed a plot of.
     Seas,
+    /// A world spell the player places (docs/CARDS.md, "World rituals": Wellspring): its menu on
+    /// plot `(x, y)` (`view::place::menu`).
+    PlaceMenu { spell: ffh_data::SpellType, x: i32, y: i32 },
 }
 
 /// The layers of the ASCII map.
@@ -142,7 +145,7 @@ pub const QUERY_NAMES: &[&str] = &[
     "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "culture", "armies", "governors", "empire_items", "empire_cities", "engage_preview",
     "battle_log", "battle_reports", "trade", "trade_answer", "log",
     "speech", "moments", "report", "inspect", "text", "ascii", "data", "setup", "saves", "crusades",
-    "sea", "seas",
+    "sea", "seas", "place_menu",
 ];
 
 /// Why a query was refused.
@@ -235,6 +238,7 @@ impl Query {
             Query::Crusades => "crusades",
             Query::Sea { .. } => "sea",
             Query::Seas => "seas",
+            Query::PlaceMenu { .. } => "place_menu",
         }
     }
 
@@ -303,6 +307,7 @@ impl Query {
             "crusades" => Query::Crusades,
             "sea" => Query::Sea { id: SeaId(j.req::<u32>("id")?), units: j.get_or("units", Vec::new())? },
             "seas" => Query::Seas,
+            "place_menu" => Query::PlaceMenu { spell: crate::names::field(ffh_data::global(), j, "spell")?, x: j.req("x")?, y: j.req("y")? },
             other => return Err(invalid(format!("unknown query {other:?}"))),
         })
     }
@@ -334,6 +339,7 @@ impl Query {
             Query::Moments { since } => j.with("since", *since),
             Query::Inspect { kind, oid } => j.with("kind", kind.as_str()).with("oid", *oid),
             Query::Sea { id, units } => j.with("id", id.0 as i64).with("units", ids(units)),
+            Query::PlaceMenu { spell, x, y } => j.with("spell", Json::idx(*spell)).with("x", *x).with("y", *y),
             Query::Ascii { x, y, w, h, layer } => j.with("x", *x).with("y", *y).with("w", *w).with("h", *h).with("layer", layer.name()),
             _ => j,
         }
@@ -470,6 +476,7 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
             r?
         }
         Query::Seas => view::seas::seas_screen(&v),
+        Query::PlaceMenu { spell, x, y } => view::place::menu(&v, *spell, *x, *y)?,
     };
     Ok(out)
 }
@@ -535,6 +542,7 @@ mod tests {
             Query::Crusades,
             Query::Sea { id: SeaId(2), units: vec![UnitId(1)] },
             Query::Seas,
+            Query::PlaceMenu { spell: ffh_data::SpellType::from_usize(4), x: 3, y: 2 },
         ];
         let mut seen: Vec<&str> = Vec::new();
         for q in &qs {

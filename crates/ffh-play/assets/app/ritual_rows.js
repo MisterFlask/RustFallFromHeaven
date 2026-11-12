@@ -73,3 +73,46 @@ export function casterLine(a, unitName) {
   const pick = a.target_kind ? `; then pick its target (${words})` : "";
   return `Cast by your ${unitName}${a.caster_where ? ` ${a.caster_where}` : ""}${pick}.`;
 }
+
+// ---------------------------------------------------------------------------------------------
+// World spells the player places (`place_on_charge`: Wellspring; the world action's `place`).
+
+/** The placed spells whose placement opens by itself now: those whose charge appeared since the
+ *  last view seen (`seen`: a Map of spell -> whether its charge was held, updated here). A spell
+ *  seen for the first time (a loaded game, a reload) opens nothing: only the turn its ritual
+ *  completed does. */
+export function placementDue(seen, actions) {
+  const due = [];
+  for (const a of actions ?? []) {
+    if (!a?.place_on_charge) continue;
+    const held = !!a.place;
+    if (seen.get(a.spell) === false && held) due.push(a.spell);
+    seen.set(a.spell, held);
+  }
+  return due;
+}
+
+/** The placement's prompt: the server's `completed` (the turn the ritual completed) or `pick`
+ *  sentence, "click" said "tap" on a touch screen. */
+export function placePrompt(a, { completed = false, touch = false } = {}) {
+  const p = a?.place ?? {};
+  const s = (completed ? p.completed : p.pick) ?? "";
+  return touch ? s.replace(/\bclick\b/g, "tap") : s;
+}
+
+/** A sphere promotion's tooltip in the placement's menu (`promotions` of a `place_menu` row): its
+ *  title, its lines (requirement, free rule) and its spells, each `{name, help}`. */
+export function promoTipParts(p) {
+  return {
+    title: `${p.name}`,
+    lines: [p.needs, p.free].filter(Boolean),
+    spells: (p.spells ?? []).map((s) => ({ name: s.name, help: s.help ?? "" })),
+    none: (p.spells ?? []).length ? null : "Opens no spell.",
+  };
+}
+
+/** A row's passive lines as shown: `Passive:` and the server's lines, or `Passive: none.` */
+export function passiveText(row) {
+  const l = row?.passive ?? [];
+  return l.length ? l : ["none."];
+}

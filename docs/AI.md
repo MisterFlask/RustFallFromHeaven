@@ -2698,7 +2698,8 @@ Lacuna are history. Their AI now:
   leaving 2 or more in a city; otherwise it waits.
 - **Upgrade** (Luchuirp, no spell): `world_rituals.rs` starts it only with 4 or more golems
   (`world_rituals::civ_gate`).
-- **Wellspring** (Amurites, `civs/amurites.rs::wellspring`): with a charge, the valid plot nearest
+- **Wellspring** (Amurites, `civs/amurites.rs::wellspring`; placed by the player with
+  `Game::player_place`, no unit needed): with a charge, the valid plot nearest
   the capital, the mana type they own the fewest of.
 
 FfH 0.41 timed the AI's world spells in the rules, as AI-only branches of the spells' Python

@@ -136,6 +136,10 @@ pub enum Command {
     /// `spell` (one with a `target`) at `target`, one of the spell's valid targets for it
     /// (`unit_spell_targets`). A world or card spell asks first (`confirmed`).
     CastAt { unit: UnitId, spell: SpellType, target: TargetRef, confirmed: bool },
+    /// This game's (docs/CARDS.md, "World rituals"): place world spell `spell` (one the player
+    /// places with its ritual's charge, `place_on_charge`: Wellspring) at `target`, one of its
+    /// valid targets (`Game::player_place_targets`). No unit casts it.
+    Place { spell: SpellType, target: TargetRef },
 }
 
 /// What a spell is cast at, as the protocol names it (`cast_at`'s `target`): `{"plot": {"x": x,
@@ -473,6 +477,7 @@ pub const COMMAND_NAMES: &[&str] = &[
     "crusade_lend",
     "propose_loan",
     "cast_at",
+    "place",
 ];
 
 /// The members of each command besides `c` (in the order of [`COMMAND_NAMES`]). A request
@@ -527,6 +532,7 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("crusade_lend", &["crusade", "units", "declare_war"]),
     ("propose_loan", &["to", "lend", "target", "mission", "strength", "duration", "give", "get", "units"]),
     ("cast_at", &["unit", "spell", "target", "confirmed"]),
+    ("place", &["spell", "target"]),
 ];
 
 /// The envelope's members a command or query object may carry (`transport::Request`).
@@ -709,6 +715,7 @@ impl Command {
             Command::CrusadeLend { .. } => "crusade_lend",
             Command::ProposeLoan { .. } => "propose_loan",
             Command::CastAt { .. } => "cast_at",
+            Command::Place { .. } => "place",
         }
     }
 
@@ -853,6 +860,7 @@ impl Command {
                 target: TargetRef::from_json(j, "target")?,
                 confirmed: flag("confirmed")?,
             },
+            "place" => Command::Place { spell: names::field(d, j, "spell")?, target: TargetRef::from_json(j, "target")? },
             other => return Err(invalid(format!("unknown command {other:?}"))),
         })
     }
@@ -956,6 +964,7 @@ impl Command {
             Command::CastAt { unit, spell, target, confirmed } => {
                 j.with("unit", *unit).with("spell", Json::idx(*spell)).with("target", target.to_json()).with("confirmed", *confirmed)
             }
+            Command::Place { spell, target } => j.with("spell", Json::idx(*spell)).with("target", target.to_json()),
         }
     }
 
@@ -1023,6 +1032,7 @@ impl Command {
                 )
             }
             Command::CastAt { unit, spell, target, .. } => format!("cast {} by unit {} at {}", names::name(d, *spell), unit.0, target.describe()),
+            Command::Place { spell, target } => format!("place {} at {}", names::name(d, *spell), target.describe()),
             Command::GovernRole { city, role } => format!("city {} role {}", city.0, names::name(d, *role)),
             Command::GovernPriorities { roles } => format!("priorities {}", roles.iter().map(|&r| names::name(d, r)).collect::<Vec<_>>().join(", ")),
             Command::EmpireOrder { city, order, data, dest } => {
@@ -1121,6 +1131,8 @@ pub enum Action {
     AgreeLoan { proposal: LoanProposal, units: Vec<UnitId> },
     /// `Game::unit_cast_at` (docs/CARDS.md, section 3).
     CastAt { unit: UnitId, spell: SpellType, target: SpellTarget },
+    /// `Game::player_place` (docs/CARDS.md, "World rituals").
+    Place { spell: SpellType, target: SpellTarget },
 }
 
 /// What validation needs from the session.
@@ -2049,6 +2061,20 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::CastAt { unit: *unit, spell: *spell, target: t })
         }
 
+        Command::Place { spell, target } => {
+            if !d.spells[*spell].place_on_charge {
+                return Err(invalid(format!("{} is not placed: it is cast by a unit", names::name(d, *spell))));
+            }
+            let t = target.resolve(g)?;
+            if !g.player_can_place(h, *spell) {
+                return Err(cannot(format!("{} cannot be placed now: no charge is held", names::display(d, *spell))));
+            }
+            if !g.player_place_targets(h, *spell).contains(&t) {
+                return Err(cannot(format!("that is not a valid target of {}", names::display(d, *spell))));
+            }
+            Plan::Apply(Action::Place { spell: *spell, target: t })
+        }
+
         Command::ProposeLoan { to, lend, target, defend, strength, duration, give, get, units } => {
             in_range("player", to.0 as i32, g.num_players())?;
             if !g.is_civ_player_slot(*to) {
@@ -2408,6 +2434,10 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
                 g.unit_cast_at(*unit, *spell, *target);
             }
         }
+        Action::Place { spell, target } => {
+            // (validated just before)
+            g.player_place(h, *spell, *target);
+        }
     }
     // This game's armies follow the groups the command changed (docs/ARMIES.md).
     g.player_army_sync(h);
@@ -2517,6 +2547,7 @@ mod tests {
                 Command::CastAt { unit: UnitId(4), spell: SpellType(3), target: TargetRef::Unit(UnitId(9)), confirmed: false },
                 Command::CastAt { unit: UnitId(4), spell: SpellType(3), target: TargetRef::Player(PlayerId(1)), confirmed: false },
                 Command::CastAt { unit: UnitId(4), spell: SpellType(3), target: TargetRef::Choice(7), confirmed: false },
+                Command::Place { spell: SpellType(3), target: TargetRef::Choice(7) },
             ])
             .collect();
         let mut seen: Vec<&str> = Vec::new();
