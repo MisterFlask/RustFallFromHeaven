@@ -57,7 +57,8 @@ fn table_sizes() {
     // 267 and this game's SPELL_FIREBALL_BARGE, 40 sphere spells in battle and Wonder's 10
     // outcomes (docs/ENGAGEMENTS.md, "Battle spells").
     // (Less the Work Boat's Pirate Cove and the Doviello Worker's upgrade, docs/WORKS.md.)
-    assert_eq!(own(d.spells.len(), "spells"), 316);
+    // Stasis became Frozen Passage, and SPELL_ICEBREAK is this game's (docs/PORTING.md).
+    assert_eq!(own(d.spells.len(), "spells"), 317);
     // 35 and the Lanun's BUILD_PIRATE_COVE (docs/WORKS.md).
     assert_eq!(own(d.builds.len(), "builds"), 36);
     assert_eq!(d.special_units.len(), 3);

@@ -124,13 +124,15 @@ impl Game {
     /// Card: The Sky Falls (docs/CARDS.md): no improvement can be built on `p`, Crater (a terrain
     /// with `no_improvement`, under a temporary terrain too).
     pub fn plot_is_unimprovable(&self, p: PlotIdx) -> bool {
-        self.plot_terrain_flag(p, |t| t.no_improvement)
+        // This game's: nothing is built on Sea Ice either.
+        self.map.plots[p].sea_ice || self.plot_terrain_flag(p, |t| t.no_improvement)
     }
 
     /// Card: The Sky Falls (docs/CARDS.md): no city works `p`, Crater (a terrain with
     /// `unworkable`, under a temporary terrain too).
     pub fn plot_is_unworkable(&self, p: PlotIdx) -> bool {
-        self.plot_terrain_flag(p, |t| t.unworkable)
+        // This game's: Sea Ice yields nothing, and no city works it.
+        self.map.plots[p].sea_ice || self.plot_terrain_flag(p, |t| t.unworkable)
     }
 
     /// What the lair on `p` spawns (`None`: no lair): its improvement's `spawn_unit_type`.
@@ -459,6 +461,11 @@ impl Game {
         if old_terrain == Some(terrain) {
             return;
         }
+        // This game's: Sea Ice stays snow (spells and terrain changes leave it alone; its thaw
+        // clears the flag first).
+        if self.map.plots[p].sea_ice && Some(terrain) != d.ty::<TerrainType>("TERRAIN_SNOW") {
+            return;
+        }
         // Passability changes the range fields at sea (docs/NAVAL.md).
         self.sea_range_invalidate();
 
@@ -572,6 +579,11 @@ impl Game {
             return false;
         }
 
+        // This game's: Sea Ice takes no feature.
+        if plot.sea_ice {
+            return false;
+        }
+
         if self.plot_is_peak(p) {
             return false;
         }
@@ -627,6 +639,10 @@ impl Game {
         let old_feature = self.map.plots[p].feature_type;
 
         if old_feature == feature {
+            return;
+        }
+        // This game's: Sea Ice takes no feature.
+        if feature.is_some() && self.map.plots[p].sea_ice {
             return;
         }
         // Passability changes the range fields at sea (docs/NAVAL.md).
@@ -955,6 +971,10 @@ impl Game {
         if old_improvement == improvement {
             return;
         }
+        // This game's: nothing is built on Sea Ice.
+        if improvement.is_some() && self.map.plots[p].sea_ice {
+            return;
+        }
 
         if self.telemetry.on() && old_improvement.is_some() && improvement.is_none() && self.plot_is_water(p) {
             if let Some(owner) = self.map.plots[p].owner {
@@ -1241,6 +1261,10 @@ impl Game {
         if self.map.plots[p].route_type == route {
             return;
         }
+        // This game's: no route is built on Sea Ice.
+        if route.is_some() && self.map.plots[p].sea_ice {
+            return;
+        }
 
         let old_route = self.plot_is_route(p); // XXX is this right??? (C++)
 
@@ -1305,6 +1329,10 @@ impl Game {
             return false;
         }
         //FfH: End Add
+        // This game's: nothing is built on Sea Ice (no improvement, no route).
+        if plot.sea_ice {
+            return false;
+        }
 
         if d.defines.use_can_build_callback != 0 {
             // Python canBuild(iX, iY, iBuild, iPlayer): -1 = use default, 0 = cannot, >= 1 = can.

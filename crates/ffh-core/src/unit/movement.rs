@@ -1351,7 +1351,15 @@ impl Game {
             if self.unit_get_immobile_timer(u) == 0 {
                 if let Some(spell) = self.units[u].delayed_spell {
                     self.tel_cast_reason(u, "delayed", 0);
-                    self.unit_cast(u, spell);
+                    // A targeted delayed spell (Icebreak) is cast at the target it was cast at.
+                    match self.units[u].delayed_spell_target {
+                        Some(target) => {
+                            let outer = self.spell_target.replace(target);
+                            self.unit_cast(u, spell);
+                            self.spell_target = outer;
+                        }
+                        None => self.unit_cast(u, spell),
+                    }
                 }
             }
         }

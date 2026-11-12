@@ -62,6 +62,7 @@ pub mod production;
 pub mod reach;
 pub mod research;
 pub mod research_path;
+pub mod sea_ice;
 pub mod sites;
 pub mod supply;
 pub mod switches;
@@ -229,6 +230,7 @@ impl Controller for Ai {
             tactics::turn(g, p); // battle tactics, once the stacks of the turn are made (docs/TACTICS.md)
             cards::end_turn(g, p); // the cards' content that acts once the units have moved
         }
+        sea_ice::end_turn(g, p); // Icebreak near our cities (ffh_core world_ritual_spells::illians)
         casting::end_turn(g, &v);
         // Spells may have summoned units or used moves: make sure nothing is left ready.
         units::finalize(g, p);

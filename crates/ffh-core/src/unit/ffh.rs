@@ -794,7 +794,8 @@ impl Game {
             SpellTarget::Plot(p) => {
                 let plot = &self.map.plots[p];
                 let (x, y) = self.map.xy(p);
-                let mut s = plot.terrain_type.map_or_else(String::new, |t| text(&d.terrains[t].base.description));
+                // This game's Sea Ice is named for itself, not for its snow.
+                let mut s = if plot.sea_ice { text("TXT_KEY_SEA_ICE") } else { plot.terrain_type.map_or_else(String::new, |t| text(&d.terrains[t].base.description)) };
                 if let Some(f) = plot.feature_type {
                     s.push_str(", ");
                     s.push_str(&text(&d.features[f].base.description));
@@ -883,12 +884,15 @@ impl Game {
         // repeats everything above (removed-by-casting promotions, a new "Miscast" roll).
         if info.delay > 0 {
             if self.units[u].delayed_spell.is_none() {
+                // A targeted spell keeps its target for the cast at the end of the delay.
+                self.units[u].delayed_spell_target = self.spell_target;
                 self.unit_change_immobile_timer(u, info.delay);
                 self.units[u].delayed_spell = Some(spell);
                 // UI: selection buttons, cycle selection counter.
                 return;
             }
             self.units[u].delayed_spell = None;
+            self.units[u].delayed_spell_target = None;
         }
         if info.create_unit_type.is_some() {
             let mut unit_num = info.create_unit_num;

@@ -136,7 +136,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 36: the sea, phase 4 (docs/NAVAL.md, section 9): `City::outpost`, `lane_cut_turns`, `lane`.
 /// - 37: world rituals (docs/CARDS.md): `Player::world_ritual_completions`,
 ///   `world_ritual_refunds`, `world_spell_casts`.
-pub const FORMAT_VERSION: u32 = 37;
+/// - 38: Sea Ice (the Illians' Frozen Passage): `Plot::sea_ice`, `Unit::delayed_spell_target`.
+pub const FORMAT_VERSION: u32 = 38;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

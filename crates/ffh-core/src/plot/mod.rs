@@ -169,6 +169,10 @@ pub struct Plot {
     pub grafted: bool,
     /// This game's seas (docs/NAVAL.md, 4.1): the sea the plot belongs to (water only).
     pub sea: Option<SeaId>,
+    /// This game's Sea Ice (the Illians' Frozen Passage, docs/PORTING.md "Changes from FFH2"):
+    /// frozen water, a flat land plot of snow that yields nothing, takes no city, improvement,
+    /// route or feature, and ships do not enter (`ffh::world_ritual_spells::illians`).
+    pub sea_ice: bool,
 }
 
 impl Plot {
@@ -250,6 +254,7 @@ impl Plot {
             real_terrain_type: None,
             grafted: false,
             sea: None,
+            sea_ice: false,
         }
     }
 }

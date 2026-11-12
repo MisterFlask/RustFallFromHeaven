@@ -30,13 +30,23 @@ impl Game {
     /// `bRecalculate = true`). Water <-> land changes re-terrain the neighbours and either
     /// recalculate all areas or move this plot to a new/adjacent area.
     pub fn plot_set_plot_type(&mut self, p: PlotIdx, plot_type: PlotType, recalculate: bool) {
+        self.plot_set_plot_type_with(p, plot_type, recalculate, true);
+    }
+
+    /// [`Game::plot_set_plot_type`]; `erase` false keeps what a change between water and land
+    /// erases (`plot_erase`: its units, city, resource, improvement, route, feature and rivers):
+    /// Sea Ice (the Illians' Frozen Passage) keeps its units and its resource, and clears the rest
+    /// itself.
+    pub fn plot_set_plot_type_with(&mut self, p: PlotIdx, plot_type: PlotType, recalculate: bool, erase: bool) {
         if self.map.plots[p].plot_type == plot_type {
             return;
         }
         // Water changes the range fields at sea (docs/NAVAL.md).
         self.sea_range_invalidate();
+        // This game's: a plot reshaped is no longer Sea Ice (its freezing sets the flag after).
+        self.map.plots[p].sea_ice = false;
 
-        if self.map.plots[p].plot_type == PlotType::PLOT_OCEAN || plot_type == PlotType::PLOT_OCEAN {
+        if erase && (self.map.plots[p].plot_type == PlotType::PLOT_OCEAN || plot_type == PlotType::PLOT_OCEAN) {
             self.plot_erase(p);
         }
 
@@ -1200,6 +1210,11 @@ impl Game {
     pub fn plot_calculate_yield(&self, p: PlotIdx, yield_type: YieldType) -> i32 {
         let pl = &self.map.plots[p];
         let y = yield_type.idx();
+
+        // This game's: Sea Ice yields nothing (its resource included).
+        if pl.sea_ice {
+            return 0;
+        }
 
         // FfH: Added by Kael 10/04/2008
         if let Some(owner) = pl.owner {

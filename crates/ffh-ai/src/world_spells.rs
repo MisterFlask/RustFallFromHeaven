@@ -31,14 +31,13 @@ enum World {
     Revelry,
     RiverOfBlood,
     Sanctuary,
-    Stasis,
     VeilOfNight,
     Warcry,
     WildHunt,
     Worldbreak,
 }
 
-const NAMES: [(&str, World); 20] = [
+const NAMES: [(&str, World); 19] = [
     ("SPELL_ARCANE_LACUNA", World::ArcaneLacuna),
     ("SPELL_ARDOR", World::Ardor),
     ("SPELL_DIVINE_RETRIBUTION", World::DivineRetribution),
@@ -54,7 +53,6 @@ const NAMES: [(&str, World); 20] = [
     ("SPELL_REVELRY", World::Revelry),
     ("SPELL_RIVER_OF_BLOOD", World::RiverOfBlood),
     ("SPELL_SANCTUARY", World::Sanctuary),
-    ("SPELL_STASIS", World::Stasis),
     ("SPELL_VEIL_OF_NIGHT", World::VeilOfNight),
     ("SPELL_WARCRY", World::Warcry),
     ("SPELL_WILD_HUNT", World::WildHunt),
@@ -105,7 +103,7 @@ pub fn ready(g: &Game, p: PlayerId, spell: SpellType) -> bool {
         World::Ardor => pl.great_people_created >= 5,
         World::DivineRetribution | World::MarchOfTheTrees | World::Sanctuary => wars() >= 2,
         World::ForTheHorde => g.players[g.barbarian_player()].num_units() >= 60,
-        World::GiftsOfNantosuelta | World::Legends | World::Rally | World::RiverOfBlood | World::Stasis => pl.num_cities() >= 5,
+        World::GiftsOfNantosuelta | World::Legends | World::Rally | World::RiverOfBlood => pl.num_cities() >= 5,
         World::IntoTheMist => pl.num_units() >= 40,
         World::MotherLode => pl.improvement_count[d.t::<ImprovementType>("IMPROVEMENT_MINE")] >= 10,
         World::RagingSeas => enemy_fleet(g, p),

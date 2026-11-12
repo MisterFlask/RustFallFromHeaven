@@ -427,9 +427,9 @@
     "world_ritual": true
   },
   {
-    "type": "PROJECT_RITUAL_STASIS",
-    "description": "TXT_KEY_PROJECT_RITUAL_STASIS",
-    "help": "TXT_KEY_PROJECT_RITUAL_STASIS_HELP",
+    "type": "PROJECT_RITUAL_FROZEN_PASSAGE",
+    "description": "TXT_KEY_PROJECT_RITUAL_FROZEN_PASSAGE",
+    "help": "TXT_KEY_PROJECT_RITUAL_FROZEN_PASSAGE_HELP",
     "max_global_instances": -1,
     "max_team_instances": -1,
     "cost": 150,

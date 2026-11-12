@@ -365,7 +365,7 @@ persist_struct!(Unit {
     immune_to_defensive_strike, immune_to_fear, immune_to_magic, invisible, only_defensive,
     see_invisible, summoner, target_weakest_unit, target_weakest_unit_counter, twincast,
     water_walking, base_combat_defense, better_defender_than_percent, combat_heal_percent,
-    combat_limit, combat_percent_in_borders, combat_percent_global_counter, delayed_spell, duration,
+    combat_limit, combat_percent_in_borders, combat_percent_global_counter, delayed_spell, delayed_spell_target, duration,
     free_promotion_pick, gold_from_combat, invisible_type, race, religion, resist, resist_modify,
     scenario_counter, spell_caster_xp, spell_damage_modify, total_damage_type_combat,
     work_rate_modify, bonus_affinity, bonus_affinity_amount, damage_type_combat, damage_type_resist,
@@ -386,6 +386,7 @@ persist_struct!(PackedCity { name, origin, population, buildings, tiers });
 persist_struct!(Doom { dealt, slots });
 persist_enum!(AreaEffectKind { 0 => Blizzard, 1 => Storm, 2 => Fog, 3 => PillarOfDawn });
 persist_struct!(AreaEffect { kind, owner, plot, radius, until });
+persist_enum!(SpellTarget { 0 => Plot(t), 1 => City(c), 2 => Unit(u), 3 => Player(p), 4 => Choice(i) });
 persist_struct!(DoomSlot { threshold, card, revealed, fired, targets });
 
 persist_struct!(City {
@@ -523,7 +524,7 @@ persist_struct!(Plot {
     revealed_route_type, script_data, build_progress, culture_range_cities,
     invisible_visibility_count, units, move_disabled_ai, move_disabled_human, build_disabled,
     found_disabled, python_active, min_level, plot_counter, portal_exit_x, portal_exit_y,
-    temp_terrain_timer, real_terrain_type, grafted, sea,
+    temp_terrain_timer, real_terrain_type, grafted, sea, sea_ice,
 });
 
 persist_struct!(Area {

@@ -455,6 +455,9 @@ pub struct Unit {
     pub combat_percent_global_counter: i32,
     /// C++ `m_iDelayedSpell` (`getDelayedSpell`, `setDelayedSpell`).
     pub delayed_spell: Option<SpellType>,
+    /// This game's: the target of a targeted delayed spell (Icebreak), cast at it when the
+    /// immobile timer runs out (`unit_set_immobile_timer`).
+    pub delayed_spell_target: Option<crate::structs::SpellTarget>,
     /// C++ `m_iDuration` (`getDuration`, `setDuration`): turns left for summons (0 = permanent).
     pub duration: i32,
     /// C++ `m_iFreePromotionPick` (`getFreePromotionPick`).
@@ -723,6 +726,7 @@ impl Unit {
             combat_percent_in_borders: 0,
             combat_percent_global_counter: 0,
             delayed_spell: None,
+            delayed_spell_target: None,
             duration: 0,
             free_promotion_pick: 0,
             gold_from_combat: info.gold_from_combat,
