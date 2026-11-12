@@ -69,18 +69,17 @@ fn begin(g: &mut ffh_core::game::Game, c: CityId, project: ProjectType, percent:
     Ok(())
 }
 
-fn staged(dir: &Path, charged_variant: bool) -> Result<StagedRituals, String> {
+/// A new game (seed 21, a small map, five civilizations, no barbarians) as `civ`, at the human's
+/// control point once every AI has founded its capital (turn 8 at most), the human's capital
+/// founded.
+fn new_game_as(dir: &Path, civ: &str) -> Result<Session, String> {
     let d = ffh_data::global();
     let mut ng = NewGame::new(d, 21);
     ng.opponents = 4;
-    ng.civ = Some(d.t::<CivilizationType>("CIVILIZATION_HIPPUS"));
+    ng.civ = Some(d.t::<CivilizationType>(civ));
     ng.options.push(GameOptionType::GAMEOPTION_NO_BARBARIANS);
     let opts = SessionOptions { saves_dir: Some(dir.to_path_buf()), autosave_keep: 0, journal: false, ..Default::default() };
     let mut s = Session::new_game(&ng, Arc::new(AdvisorAnswerer), opts).map_err(|e| format!("new game: {e:?}"))?;
-    let advance = |s: &mut Session| match s.advance(&mut |_| {}) {
-        Stop::Human => Ok(()),
-        other => Err(format!("the game stopped: {other:?}")),
-    };
     advance(&mut s)?;
     let h = s.human;
     let settler = s.g.players[h].units.iter().copied().find(|&u| d.units[s.g.units[u].unit_type].found).ok_or("no settler")?;
@@ -89,28 +88,31 @@ fn staged(dir: &Path, charged_variant: bool) -> Result<StagedRituals, String> {
         other => return Err(format!("found -> {other:?}")),
     }
     // A few turns: every AI founds its capital.
-    let others = |g: &ffh_core::game::Game| -> Vec<PlayerId> { g.player_ids().filter(|&p| p != h && g.players[p].alive && !g.player_is_barbarian(p)).collect() };
-    while others(&s.g).iter().any(|&p| s.g.player_get_capital_city(p).is_none()) && s.g.game_turn() < 8 {
+    while others(&s.g, h).iter().any(|&p| s.g.player_get_capital_city(p).is_none()) && s.g.game_turn() < 8 {
         match s.execute(&Command::EndTurn { force: true }) {
             Ok(CmdOk::Applied { .. }) => advance(&mut s)?,
             other => return Err(format!("end turn -> {other:?}")),
         }
     }
-    let g = &mut s.g;
-    let team = g.players[h].team;
-    // The AIs with a capital and a world ritual, those the human has not met first last.
-    let mut ais: Vec<PlayerId> = others(g).into_iter().filter(|&p| g.player_get_capital_city(p).is_some() && g.player_world_ritual(p).is_some()).collect();
-    ais.sort_by_key(|&p| (!g.teams[team].has_met[g.players[p].team], p.0));
-    let [in_progress, charged, idle, unmet]: [PlayerId; 4] = ais.get(..4).ok_or("fewer than four AIs with a capital and a world ritual")?.try_into().map_err(|_| "four AIs")?;
-    if g.teams[team].has_met[g.players[unmet].team] {
-        return Err("every AI met already".into());
+    Ok(s)
+}
+
+/// Plays on to the human's next control point.
+fn advance(s: &mut Session) -> Result<(), String> {
+    match s.advance(&mut |_| {}) {
+        Stop::Human => Ok(()),
+        other => Err(format!("the game stopped: {other:?}")),
     }
-    for p in [in_progress, charged, idle] {
-        let t = g.players[p].team;
-        g.team_meet(team, t, false);
-    }
-    // The human's second city, 4 to 6 plots from the capital on its land.
-    let capital = g.player_get_capital_city(h).ok_or("no capital")?;
+}
+
+/// The living civilizations other than `h`.
+fn others(g: &ffh_core::game::Game, h: PlayerId) -> Vec<PlayerId> {
+    g.player_ids().filter(|&p| p != h && g.players[p].alive && !g.player_is_barbarian(p)).collect()
+}
+
+/// Founds the human's second city 4 to 6 plots from `capital` on its land, building a warrior.
+fn second_city(g: &mut ffh_core::game::Game, h: PlayerId, capital: CityId) -> Result<CityId, String> {
+    let d = g.d;
     let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
     let area = g.map.plots[g.city_plot(capital)].area;
     let mut site = None;
@@ -127,10 +129,36 @@ fn staged(dir: &Path, charged_variant: bool) -> Result<StagedRituals, String> {
     if g.cities[second].order_queue.is_empty() {
         g.city_push_order(second, OrderType::ORDER_TRAIN, warrior.idx() as i32, -1, false, false, true, true);
     }
-    // Research chosen: no popup asks for it on load.
-    if let Some(t) = d.techs.keys().find(|&t| g.player_can_research(h, t, false)) {
+    Ok(second)
+}
+
+/// Research chosen: no popup asks for it on load.
+fn choose_research(g: &mut ffh_core::game::Game, h: PlayerId) {
+    if let Some(t) = g.d.techs.keys().find(|&t| g.player_can_research(h, t, false)) {
         g.player_push_research(h, t, true);
     }
+}
+
+fn staged(dir: &Path, charged_variant: bool) -> Result<StagedRituals, String> {
+    let mut s = new_game_as(dir, "CIVILIZATION_HIPPUS")?;
+    let h = s.human;
+    let others = |g: &ffh_core::game::Game| others(g, h);
+    let g = &mut s.g;
+    let team = g.players[h].team;
+    // The AIs with a capital and a world ritual, those the human has not met first last.
+    let mut ais: Vec<PlayerId> = others(g).into_iter().filter(|&p| g.player_get_capital_city(p).is_some() && g.player_world_ritual(p).is_some()).collect();
+    ais.sort_by_key(|&p| (!g.teams[team].has_met[g.players[p].team], p.0));
+    let [in_progress, charged, idle, unmet]: [PlayerId; 4] = ais.get(..4).ok_or("fewer than four AIs with a capital and a world ritual")?.try_into().map_err(|_| "four AIs")?;
+    if g.teams[team].has_met[g.players[unmet].team] {
+        return Err("every AI met already".into());
+    }
+    for p in [in_progress, charged, idle] {
+        let t = g.players[p].team;
+        g.team_meet(team, t, false);
+    }
+    let capital = g.player_get_capital_city(h).ok_or("no capital")?;
+    let second = second_city(g, h, capital)?;
+    choose_research(g, h);
     let own = g.player_world_ritual(h).ok_or("the Hippus have no world ritual")?;
     if charged_variant {
         g.player_grant_world_ritual_charge(h).ok_or("no charge granted")?;
@@ -150,4 +178,177 @@ fn staged(dir: &Path, charged_variant: bool) -> Result<StagedRituals, String> {
     let name = if charged_variant { "rituals-charged" } else { "rituals" };
     let paths = s.save(name).map_err(|e| format!("save: {e:?}"))?;
     Ok(StagedRituals { save: paths.save, charged_variant, capital, second, in_progress, charged, idle, unmet, turn: s.g.game_turn() })
+}
+
+/// A saved game at a human control point (as [`rituals`]: seed 21, five civilizations, no
+/// barbarians) where the human plays the Calabim (Name the Tithe, Ritual: The Tithe) with two
+/// cities, `capital` and `second`, and two Vampires (`vampires`), and has named no rival. It has
+/// met three of the four AIs: `peace` (two, at peace) and `war` (at war); `unmet` is not met.
+pub struct StagedTithe {
+    pub save: PathBuf,
+    pub capital: CityId,
+    pub second: CityId,
+    pub vampires: Vec<ffh_core::ids::UnitId>,
+    pub peace: Vec<PlayerId>,
+    pub war: PlayerId,
+    pub unmet: PlayerId,
+    pub turn: i32,
+}
+
+impl StagedTithe {
+    pub fn to_json(&self) -> Json {
+        crate::jobj! {
+            "stage" => "tithe",
+            "save" => self.save.display().to_string(),
+            "capital" => self.capital, "second" => self.second,
+            "vampires" => self.vampires.clone(), "peace" => self.peace.clone(), "war" => self.war, "unmet" => self.unmet,
+            "turn" => self.turn,
+        }
+    }
+}
+
+/// Writes the `tithe` staged game into `dir` (a game directory).
+pub fn tithe(dir: &Path) -> Result<StagedTithe, String> {
+    let d = ffh_data::global();
+    let mut s = new_game_as(dir, "CIVILIZATION_CALABIM")?;
+    let h = s.human;
+    let g = &mut s.g;
+    let team = g.players[h].team;
+    let mut ais: Vec<PlayerId> = others(g, h).into_iter().filter(|&p| g.player_get_capital_city(p).is_some()).collect();
+    ais.sort_by_key(|&p| (!g.teams[team].has_met[g.players[p].team], p.0));
+    let [a, b, war, unmet]: [PlayerId; 4] = ais.get(..4).ok_or("fewer than four AIs with a capital")?.try_into().map_err(|_| "four AIs")?;
+    if g.teams[team].has_met[g.players[unmet].team] {
+        return Err("every AI met already".into());
+    }
+    for p in [a, b, war] {
+        let t = g.players[p].team;
+        g.team_meet(team, t, false);
+    }
+    let wt = g.players[war].team;
+    g.team_declare_war(team, wt, false, None);
+    if !g.teams[team].at_war[wt] {
+        return Err("no war declared".into());
+    }
+    let capital = g.player_get_capital_city(h).ok_or("no capital")?;
+    let second = second_city(g, h, capital)?;
+    choose_research(g, h);
+    let vampire = d.t::<UnitType>("UNIT_VAMPIRE");
+    let promotion = d.t::<PromotionType>("PROMOTION_VAMPIRE");
+    let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
+    let mut vampires = Vec::new();
+    for _ in 0..2 {
+        let u = g.player_init_unit(h, vampire, cx, cy, None, None);
+        if !g.units[u].has_promotion[promotion] {
+            g.unit_set_has_promotion(u, promotion, true);
+        }
+        vampires.push(u);
+    }
+    if g.players[h].tithe_target.is_some() {
+        return Err("a rival is named already".into());
+    }
+    s.drain_log();
+    let paths = s.save("tithe").map_err(|e| format!("save: {e:?}"))?;
+    Ok(StagedTithe { save: paths.save, capital, second, vampires, peace: vec![a, b], war, unmet, turn: s.g.game_turn() })
+}
+
+/// A saved game (a duel, seed 4) at a human control point where the human plays `civ` (a
+/// `CIVILIZATION_*` type) with the land around its capital revealed, its world ritual's tech known
+/// and a charge of its world ritual held (when the ritual leaves one), arranged so that its world rituals' actions are
+/// offered: the Lanun's storm raised (Steer the Storm) and a second charge held; a Khazad tunnel
+/// between two plots next to the capital (`unit`, a warrior, stands on its end: Enter the Delve); two Doviello
+/// warriors in the capital (The Cull); an Amurite Adept in the capital (Wellspring).
+pub struct StagedRitualCiv {
+    pub save: PathBuf,
+    pub civ: String,
+    pub capital: CityId,
+    pub unit: Option<ffh_core::ids::UnitId>,
+    pub turn: i32,
+}
+
+impl StagedRitualCiv {
+    pub fn to_json(&self) -> Json {
+        crate::jobj! {
+            "stage" => format!("ritual-civ:{}", self.civ),
+            "save" => self.save.display().to_string(),
+            "capital" => self.capital, "unit" => self.unit, "turn" => self.turn,
+        }
+    }
+}
+
+/// Writes the `ritual-civ:<civ>` staged game into `dir` (a game directory).
+pub fn ritual_civ(dir: &Path, civ: &str) -> Result<StagedRitualCiv, String> {
+    use ffh_core::structs::SpellTarget;
+    let d = ffh_data::global();
+    if d.ty::<CivilizationType>(civ).is_none() {
+        return Err(format!("no civilization {civ}"));
+    }
+    let mut s = super::duel_as(dir, 4, 1, Some(civ))?;
+    let h = s.human;
+    let g = &mut s.g;
+    let team = g.players[h].team;
+    let capital = g.player_get_capital_city(h).ok_or("no capital")?;
+    let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
+    for q in g.map.plot_ids() {
+        let (x, y) = g.map.xy(q);
+        if g.plot_distance(x, y, cx, cy) <= 8 {
+            g.plot_set_revealed(q, team, true, false, None, false);
+        }
+    }
+    // The ritual's tech known (Ritual: Upgrade needs Masonry): the production list offers it.
+    if let Some(tech) = g.player_world_ritual(h).and_then(|r| d.projects[r].tech_prereq) {
+        g.team_set_has_tech(team, tech, true, Some(h), false, false);
+    }
+    choose_research(g, h);
+    // A charge, for a ritual whose spell spends one (Upgrade acts at its completion).
+    if g.player_world_ritual(h).is_some_and(|r| g.world_ritual_spell(r).is_some()) {
+        g.player_grant_world_ritual_charge(h);
+    }
+    let warrior = d.t::<UnitType>("UNIT_WARRIOR");
+    let mut unit = None;
+    match civ {
+        "CIVILIZATION_LANUN" => {
+            // The storm over the nearest water, then a charge again.
+            let caster = g.player_init_unit(h, warrior, cx, cy, None, None);
+            let spell = d.t::<SpellType>("SPELL_RAGING_SEAS");
+            let near = |g: &ffh_core::game::Game, t: &SpellTarget| match *t {
+                SpellTarget::Plot(q) => {
+                    let (x, y) = g.map.xy(q);
+                    (g.plot_distance(x, y, cx, cy), q)
+                }
+                _ => (i32::MAX, ffh_core::ids::PlotIdx(0)),
+            };
+            let target = g.unit_spell_targets(caster, spell).into_iter().min_by_key(|t| near(g, t)).ok_or("no water to raise a storm over")?;
+            g.unit_cast_at(caster, spell, target);
+            if g.player_storm(h).is_none() {
+                return Err("Raging Seas raised no storm".into());
+            }
+            g.unit_kill(caster, false, None);
+            g.player_grant_world_ritual_charge(h);
+        }
+        "CIVILIZATION_KHAZAD" => {
+            // A tunnel between two of the human's land plots next to the capital, the farthest
+            // apart; a warrior on its first end.
+            let owned = |g: &ffh_core::game::Game, q: ffh_core::ids::PlotIdx| g.map.plots[q].owner == Some(h) && !g.plot_is_water(q) && g.map.plots[q].plot_city.is_none() && g.map.plots[q].units.is_empty();
+            let near: Vec<_> = g.map.plot_ids().filter(|&q| owned(g, q) && { let (x, y) = g.map.xy(q); g.plot_distance(x, y, cx, cy) == 1 }).collect();
+            let from = *near.first().ok_or("no plots of the Khazad for a tunnel")?;
+            let (fx, fy) = g.map.xy(from);
+            let to = near.iter().copied().max_by_key(|&q| { let (x, y) = g.map.xy(q); (g.plot_distance(x, y, fx, fy), std::cmp::Reverse(q)) }).filter(|&q| q != from).ok_or("one plot of the Khazad for a tunnel")?;
+            g.delves.push((from, to));
+            let (x, y) = g.map.xy(from);
+            unit = Some(g.player_init_unit(h, warrior, x, y, None, None));
+        }
+        "CIVILIZATION_DOVIELLO" => {
+            for _ in 0..2 {
+                g.player_init_unit(h, warrior, cx, cy, None, None);
+            }
+        }
+        "CIVILIZATION_AMURITES" => {
+            unit = Some(g.player_init_unit(h, d.t::<UnitType>("UNIT_ADEPT"), cx, cy, None, None));
+        }
+        _ => {}
+    }
+    s.drain_log();
+    let name = format!("ritual-civ-{}", civ.trim_start_matches("CIVILIZATION_").to_lowercase());
+    let paths = s.save(&name).map_err(|e| format!("save: {e:?}"))?;
+    Ok(StagedRitualCiv { save: paths.save, civ: civ.to_string(), capital, unit, turn: s.g.game_turn() })
 }

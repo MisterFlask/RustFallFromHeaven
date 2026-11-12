@@ -71,11 +71,18 @@ pub fn percent(progress: i32, cost: i32) -> i32 {
     ((progress as i64 * 100 / cost as i64) as i32).clamp(0, 100)
 }
 
+/// Ritual: The Tithe's `Named rival: <Civ>.` for player `p` (none for another ritual or with no
+/// living rival named).
+fn tithe_note(g: &Game, p: PlayerId, project: ProjectType) -> Option<String> {
+    is_tithe(g, project).then(|| tithe_named(g, p)).flatten().map(|r| format!("Named rival: {}.", civ_name(g, r)))
+}
+
 /// The view's `rituals`: one row per living civilization with a world ritual (player order), as
 /// the human may know it. A civilization the human's team has not met is `Unknown civilization`
 /// (no `civ`); the city and its plot are shown for every row, met or not: the start and the
 /// completion are announced to everyone. Another player's ritual queued with no production yet is
-/// idle (not announced).
+/// idle (not announced). The human's own row adds its ritual's state (`note`: The Tithe's named
+/// rival), else null.
 pub fn rituals(v: &Viewer) -> Json {
     let g = v.g;
     let d = g.d;
@@ -106,6 +113,7 @@ pub fn rituals(v: &Viewer) -> Json {
             "charged" => r.charged,
             "completed" => r.completed,
             "next_cost" => r.next_cost,
+            "note" => if r.player == v.h { tithe_note(g, r.player, r.project) } else { None },
         });
     }
     Json::Arr(out)
@@ -157,9 +165,20 @@ pub fn rules_line(g: &Game, c: CityId, project: ProjectType) -> String {
     s
 }
 
+/// The Calabim's ritual (Ritual: The Tithe) and the living rival player `p` has named for it.
+fn tithe_named(g: &Game, p: PlayerId) -> Option<PlayerId> {
+    g.players[p].tithe_target.filter(|&r| g.players[r].alive)
+}
+
+/// Is `project` Ritual: The Tithe?
+fn is_tithe(g: &Game, project: ProjectType) -> bool {
+    ffh_core::ffh::world_ritual_spells::small::tithe_project(g.d) == Some(project)
+}
+
 /// Why city `c` cannot start world ritual `project` now (the production list shows it disabled
 /// with this): `Charge held: cast <spell> first.`, `In progress in <city>.`, `Sanctuary holds: <N>
-/// turns.`, else `Not available now.` (a reason of the rules this list does not know).
+/// turns.`, `No rival named: use Name the Tithe.` (Ritual: The Tithe), else `Not available now.`
+/// (a reason of the rules this list does not know).
 pub fn cannot_reason(g: &Game, c: CityId, project: ProjectType) -> String {
     let d = g.d;
     let p = g.cities[c].owner;
@@ -174,22 +193,45 @@ pub fn cannot_reason(g: &Game, c: CityId, project: ProjectType) -> String {
     if g.player_world_ritual_paused(p, project) {
         return format!("Sanctuary holds: {}.", turns_text(g.players[p].sanctuary_timer));
     }
+    if is_tithe(g, project) && tithe_named(g, p).is_none() {
+        if let Some(s) = d.ty::<SpellType>("SPELL_NAME_THE_TITHE") {
+            return format!("No rival named: use {}.", crate::names::display(d, s));
+        }
+    }
     "Not available now.".to_string()
 }
 
-/// A world ritual's entry of the production list (`buildable`): `ritual: {rules, why}` (`why`
-/// null while it can be chosen).
+/// A world ritual's entry of the production list (`buildable`): `ritual: {rules, why, note}`
+/// (`why` null while it can be chosen; `note` the ritual's own state, else null: Ritual: The
+/// Tithe's `Named rival: <Civ>.`).
 pub fn buildable_fields(g: &Game, c: CityId, project: ProjectType, enabled: bool, j: &mut Json) {
     if !g.project_is_world_ritual(project) {
         return;
     }
+    let note = tithe_note(g, g.cities[c].owner, project);
     j.set(
         "ritual",
         crate::jobj! {
             "rules" => rules_line(g, c, project),
             "why" => if enabled { Json::Null } else { Json::from(cannot_reason(g, c, project)) },
+            "note" => note,
         },
     );
+}
+
+/// The question asked before player `h` casts `spell` at `target`, when the cast has one: Name the
+/// Tithe's `{title: "Name the Tithe", text: "Name <Civ>? This declares war on <Civ>.", ok: "Name"}`
+/// (`Name <Civ>?` when at war with it already).
+pub fn target_confirm(g: &Game, h: PlayerId, spell: SpellType, target: ffh_core::structs::SpellTarget) -> Option<Json> {
+    let d = g.d;
+    let ffh_core::structs::SpellTarget::Player(rival) = target else { return None };
+    if d.ty::<SpellType>("SPELL_NAME_THE_TITHE") != Some(spell) {
+        return None;
+    }
+    let civ = civ_name(g, rival);
+    let (t, o) = (g.players[h].team, g.players[rival].team);
+    let text = if g.teams[t].at_war[o] { format!("Name {civ}?") } else { format!("Name {civ}? This declares war on {civ}.") };
+    Some(crate::jobj! { "title" => crate::names::display(d, spell).into_owned(), "text" => text, "ok" => "Name" })
 }
 
 /// The city screen's ritual fields: `ritual_head` (the world ritual in progress at the head of the

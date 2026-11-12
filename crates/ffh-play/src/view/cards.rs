@@ -56,7 +56,8 @@ pub fn choice_kind(d: &GameData, spell: SpellType) -> Option<String> {
 /// The targets of `spell` for `caster`, as an action carries them: each `{target, at, label}`,
 /// `target` the `cast_at` command's form, `at` the plot `[x, y]` it is picked on (null for a
 /// player or a choice), `label` its name; a choice that is an info table's entry adds `info`:
-/// `[kind, index]`, whose help the client shows.
+/// `[kind, index]`, whose help the client shows; a target the client asks about before the cast
+/// adds `confirm: {title, text, ok}` ([`crate::view::rituals::target_confirm`]).
 pub fn targets_json(v: &Viewer, caster: UnitId, spell: SpellType, targets: &[SpellTarget]) -> Json {
     let g = v.g;
     let kind = choice_kind(g.d, spell);
@@ -71,6 +72,10 @@ pub fn targets_json(v: &Viewer, caster: UnitId, spell: SpellType, targets: &[Spe
                 };
                 if let (SpellTarget::Choice(i), Some(k)) = (t, kind.as_deref()) {
                     j.set("info", crate::jarr![k, i]);
+                }
+                // The question asked before the cast (Name the Tithe: the war it declares).
+                if let Some(c) = crate::view::rituals::target_confirm(g, v.h, spell, t) {
+                    j.set("confirm", c);
                 }
                 j
             })

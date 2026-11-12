@@ -2488,6 +2488,7 @@
     "py_result": "spellNameTheTithe(pCaster)",
     "py_requirement": "reqNameTheTithe(pCaster)",
     "py_targets": "targetsNameTheTithe(pCaster)",
+    "py_target_label": "labelNameTheTithe(pCaster, pTarget)",
     "button": "Art/Interface/Buttons/Spells/River of Blood.dds"
   },
   {

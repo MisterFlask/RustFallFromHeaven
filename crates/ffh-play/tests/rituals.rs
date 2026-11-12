@@ -237,3 +237,52 @@ fn the_production_list_says_why_a_ritual_cannot_start() {
     assert_eq!(entry.get("enabled").and_then(Json::as_bool), Some(false));
     assert_eq!(entry.get("ritual").and_then(|r| s_of(r, "why")), Some("Sanctuary holds: 3 turns."));
 }
+
+/// `ffh-play stage tithe`: Ritual: The Tithe is listed, disabled, until a rival is named; Name the
+/// Tithe's targets say each rival's civilization and war state and carry the question asked
+/// before the cast; once named, the entry and the human's ritual row say who.
+#[test]
+fn the_tithe_says_who_is_named_and_asks_before_the_war() {
+    let dir = common::TempDir::new("stage-tithe");
+    let st = ffh_play::stage::tithe(&dir.0).expect("staged");
+    assert_eq!(s_of(&st.to_json(), "stage"), Some("tithe"));
+    let mut s = load(&st.save);
+    let d = s.g.d;
+    let h = s.human;
+    let project = d.t::<ProjectType>("PROJECT_RITUAL_THE_TITHE");
+    let spell = d.t::<SpellType>("SPELL_NAME_THE_TITHE");
+    let civ = |s: &Session, p: PlayerId| ffh_play::names::resolve_keys(d, &s.g.player_get_civilization_short_description(p)).into_owned();
+
+    // Not named: listed, disabled, the reason.
+    let entry = ritual_entry(&s, st.capital, project);
+    assert_eq!(entry.get("enabled").and_then(Json::as_bool), Some(false));
+    let ritual = entry.get("ritual").unwrap();
+    assert_eq!(s_of(ritual, "why"), Some("No rival named: use Name the Tithe."));
+    assert!(ritual.get("note").is_some_and(Json::is_null), "{ritual:?}");
+
+    // The targets: one per rival met, with its war state and the question.
+    let action = world_action(&s, spell).expect("Name the Tithe is a world action");
+    let targets = arr(&action, "targets");
+    assert_eq!(targets.len(), 3, "{targets:?}");
+    let target = |p: PlayerId| targets.iter().find(|t| s_of(t, "label").is_some_and(|l| l.contains(&civ(&s, p)))).cloned().unwrap_or_else(|| panic!("no target for {}", p.0));
+    let war = target(st.war);
+    assert!(s_of(&war, "label").unwrap().ends_with(&format!(": {}, at war", civ(&s, st.war))), "{war:?}");
+    assert_eq!(s_of(war.get("confirm").unwrap(), "text"), Some(format!("Name {}?", civ(&s, st.war)).as_str()));
+    let peace = target(st.peace[0]);
+    let name = civ(&s, st.peace[0]);
+    assert!(s_of(&peace, "label").unwrap().ends_with(&format!(": {name}, at peace")), "{peace:?}");
+    let confirm = peace.get("confirm").unwrap();
+    assert_eq!(s_of(confirm, "title"), Some("Name the Tithe"));
+    assert_eq!(s_of(confirm, "text"), Some(format!("Name {name}? This declares war on {name}.").as_str()));
+    assert_eq!(s_of(confirm, "ok"), Some("Name"));
+
+    // Named: the entry is enabled and says who; so does the human's row.
+    s.g.players[h].tithe_target = Some(st.peace[0]);
+    let entry = ritual_entry(&s, st.capital, project);
+    assert_eq!(entry.get("enabled").and_then(Json::as_bool), Some(true));
+    let ritual = entry.get("ritual").unwrap();
+    assert_eq!(s_of(ritual, "note"), Some(format!("Named rival: {name}.").as_str()));
+    assert!(ritual.get("why").is_some_and(Json::is_null));
+    let view = s.query(&Query::View).unwrap();
+    assert_eq!(s_of(&row(&view, h), "note"), Some(format!("Named rival: {name}.").as_str()));
+}

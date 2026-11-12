@@ -7,7 +7,8 @@
 //   the city; "All" opens the full list. With nothing in progress and no charge held it shows
 //   one muted line, `No rituals in progress`.
 // - The full list (`openRitualsPanel`): every civilization, idle ones too, with the times
-//   completed, the cost now and the next cost.
+//   completed, the cost now and the next cost (and your ritual's own state: The Tithe's named
+//   rival).
 // - The alerts (`ritualAlerts`): each ritual's news (`<Civ> began|abandoned|completed <ritual> in
 //   <city>.`, the log's `kind: "ritual"`) as a toast; a click centres the map on the city.
 //
@@ -124,6 +125,7 @@ export function openRitualsPanel() {
                 where,
                 r.x !== null && r.x !== undefined ? [" ", h("button.link.small", { title: `Show ${r.city_name} on the map`, "aria-label": `Show ${r.city_name} on the map`, onclick: () => (m.close(null), centre(r)) }, "⌖")] : null,
               ),
+              r.note ? h("div.ritual-entry-note", r.note) : null,
               h("div.ritual-entry-counts.dim", counts),
             );
           }),

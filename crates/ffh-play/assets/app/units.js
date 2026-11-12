@@ -6,7 +6,7 @@ import * as api from "./api.js";
 import { S, emit, on, dname, tname, tidx, me, unitsAt, ownUnitsAt, cityAt, playerName, readyGroups, selectableGroups, nextSelectableGroup, cycleGroups, selectableGroupsOnPlot, option, moves, turns, info, observing, eventKind } from "./state.js";
 import * as K from "./hotkeys.js";
 import { h, fill, toast, coarse, errorText } from "./dom.js";
-import { openModal } from "./modals.js";
+import { ask, openModal } from "./modals.js";
 import { run, actionCommand, sending } from "./commands.js";
 import { plotDistance, plotIndex, humanize } from "./tiles.js";
 import { render as markup } from "./markup.js";
@@ -679,11 +679,22 @@ export async function castTargeted(a, { world = false } = {}) {
   }
   if (a.target_kind === "player" || a.target_kind === "choice") {
     const t = await chooseTarget(a, targets);
-    if (t) await run(castCommand(a, t));
+    if (t) await castAt(a, t);
     return;
   }
   setMode({ kind: "target", action: a, cast: true, world, plots: targetPlots(targets) });
   if (world || !S.sel) toast(`${actionLabel(a)}: pick its target on the map (the outlined plots). Esc cancels.`, "info", 6000);
+}
+
+/** Casts action `a` at target `t`; a target with a question (`confirm`: Name the Tithe's war) is
+ *  asked about first, Cancel focused, and the cast then needs no other confirmation. */
+async function castAt(a, t) {
+  if (!t.confirm) return run(castCommand(a, t));
+  const ok = await ask(t.confirm.title, t.confirm.text, [
+    { label: t.confirm.ok, value: true, primary: true, danger: true },
+    { label: "Cancel", value: null },
+  ], { tag: "cast-confirm" });
+  if (ok) await run({ ...castCommand(a, t), confirmed: true });
 }
 
 /** A plot picked for a spell cast at a distance: its target there (several there: which one). */
@@ -695,7 +706,7 @@ async function pickCast(m, x, y) {
     return;
   }
   const t = here.length === 1 ? here[0] : await chooseTarget(m.action, here, `${actionLabel(m.action)}: which one?`);
-  if (t) await run(castCommand(m.action, t));
+  if (t) await castAt(m.action, t);
 }
 
 /** Shift was released (or the window lost the focus): the held waypoints are sent, and a go-to

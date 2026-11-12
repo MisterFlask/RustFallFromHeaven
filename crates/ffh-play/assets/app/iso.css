@@ -218,7 +218,7 @@ html.iso #rituals .ritual-row.mine .ritual-name { color: var(--iso-gold); }
 html.iso .ritual-entry { border-left-color: #3a4a74; }
 html.iso .ritual-entry.mine { border-left-color: var(--iso-gold); }
 html.iso .ritual-entry.in_progress .ritual-entry-where, html.iso .ritual-entry.queued .ritual-entry-where { color: #fff8e4; }
-html.iso .build .ritual-rules, html.iso .build .ritual-why { font: 400 20px/22px var(--iso-font); }
+html.iso .build .ritual-rules, html.iso .build .ritual-note, html.iso .build .ritual-why { font: 400 20px/22px var(--iso-font); }
 html.iso .toast.ritual-alert { box-shadow: inset 4px 0 0 #70e0b1; }
 html.iso #menu { flex: none; display: flex; gap: 4px; margin-left: auto; padding-left: 4px; flex-wrap: nowrap; }
 

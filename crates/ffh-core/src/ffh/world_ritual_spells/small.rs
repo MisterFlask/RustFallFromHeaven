@@ -54,6 +54,7 @@ pub fn find_targets(name: &str) -> Option<TargetsFn> {
 pub fn find_target_label(name: &str) -> Option<TargetLabelFn> {
     let f: TargetLabelFn = match name {
         "labelWellspring" => label_wellspring,
+        "labelNameTheTithe" => label_name_the_tithe,
         _ => return None,
     };
     Some(f)
@@ -130,6 +131,15 @@ fn req_name_the_tithe(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
 fn targets_name_the_tithe(g: &Game, caster: UnitId, _call: &PyCall) -> Vec<SpellTarget> {
     let p = g.units[caster].owner;
     g.player_ids().filter(|&r| tithe_target_ok(g, p, r)).map(SpellTarget::Player).collect()
+}
+
+/// `labelNameTheTithe(caster, target)`: the rival's civilization and whether the caster's team is
+/// at war with it (`Sheaim, at war`, `Sheaim, at peace`), after its leader's name.
+fn label_name_the_tithe(g: &Game, caster: UnitId, target: SpellTarget, _: &PyCall) -> String {
+    let SpellTarget::Player(rival) = target else { return String::new() };
+    let (t, o) = (g.unit_get_team(caster), g.players[rival].team);
+    let state = if g.teams[t].at_war[o] { "at war" } else { "at peace" };
+    format!("{}, {state}", g.player_get_civilization_short_description(rival))
 }
 
 /// `spellNameTheTithe(caster)`: declares war on the rival if not at war, and names it.

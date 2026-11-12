@@ -822,7 +822,8 @@ function buildLists(c, choose) {
         "div.build-grid",
         items.map((b) => {
           const kind = ORDER_KINDS[order];
-          // A world ritual (docs/CARDS.md): its rules line, and why it cannot be chosen now.
+          // A world ritual (docs/CARDS.md): its rules line, its own state (The Tithe's named
+          // rival), and why it cannot be chosen now.
           const ritual = b.ritual ?? null;
           const why = !b.enabled ? (ritual?.why ?? "Not possible now.") : null;
           return h(
@@ -838,6 +839,7 @@ function buildLists(c, choose) {
             h(`span${tierSel(b.tier)}`, dname(kind, b.type)),
             h("span.dim", b.turns !== null ? [`${turns(b.turns)} · `, h("span.cost", { tip: "Production cost" }, ic("production"), String(b.cost))] : ""),
             ritual ? h("span.ritual-rules", ritual.rules) : null,
+            ritual?.note ? h("span.ritual-note", ritual.note) : null,
             ritual && why ? h("span.ritual-why.warn", why) : null,
           );
         }),

@@ -205,6 +205,7 @@ body[data-phase="running"] #phase { animation: breathe 2.8s ease-in-out infinite
 button.build.ritual-build { grid-column: 1 / -1; flex-wrap: wrap; row-gap: 2px; }
 .build .ritual-rules { display: block; flex: 1 1 100%; font-size: 12px; color: var(--dim); white-space: normal; text-align: left; }
 .build .ritual-why { display: block; flex: 1 1 100%; font-size: 12px; white-space: normal; text-align: left; }
+.build .ritual-note { display: block; flex: 1 1 100%; font-size: 12px; white-space: normal; text-align: left; }
 .hurry-note { align-self: center; }
 /* A ritual's news (rituals.js ritualAlerts): a toast with the ritual mark; a click shows the city. */
 .toast.ritual-alert { border-left: 3px solid var(--c-ritual); }
