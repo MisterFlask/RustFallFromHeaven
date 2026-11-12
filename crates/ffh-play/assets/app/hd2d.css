@@ -293,6 +293,9 @@ html.iso.hd2d button.tech .tech-sub, html.iso.hd2d button.tech .tech-pct { font-
 html.iso.hd2d button.tech.has { background: rgba(38, 52, 32, 0.95); border-color: #8fbf78; }
 html.iso.hd2d button.tech.researching { background: rgba(78, 70, 50, 0.95); border-color: var(--iso-gold-lt); }
 html.iso.hd2d button.tech.can { border-color: var(--iso-gold); }
+html.iso.hd2d button.tech.can-now:not(.researching) { background: rgba(92, 72, 24, 0.95); border: 2px solid var(--iso-gold-lt); }
+html.iso.hd2d button.tech.can-now.queued { border-style: dashed; }
+html.iso.hd2d button.tech.can-now:not(.researching) .tech-name { color: var(--iso-gold-lt); }
 html.iso.hd2d button.tech.queued { border: 1px dashed var(--iso-gold-lt); }
 html.iso.hd2d .tap-mode.tree-modes button.on { background: var(--hd-band), var(--hd-fill); box-shadow: inset 2px 0 0 var(--hd-ink); color: #fff; }
 html.iso.hd2d button.tech.later { background: rgba(18, 17, 20, 0.95); }

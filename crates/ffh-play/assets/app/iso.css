@@ -521,6 +521,8 @@ html.iso button.tech .tech-sub { font-size: 10px; }
 html.iso button.tech.has { background: #24461c; border-color: var(--iso-good); }
 html.iso button.tech.researching { background: #1f4ea6; border-color: var(--iso-gold-lt); }
 html.iso button.tech.can { border-color: var(--iso-gold); }
+html.iso button.tech.can-now:not(.researching) { background: #5a4410; border-color: var(--iso-gold-lt); }
+html.iso button.tech.can-now:not(.researching) .tech-name { color: var(--iso-gold-lt); }
 /* What a tech unlocks, in its box: the chooser's icons at 3/4 (24 px). */
 html.iso button.tech > .unlocks .unlock { width: 24px; height: 24px; }
 html.iso button.tech > .unlocks .unlock > * { zoom: 0.75; }
