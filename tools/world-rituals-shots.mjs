@@ -207,7 +207,7 @@ async function main() {
     page = await open(browser, server.url);
     await dropToasts(page);
     await buttonShot(page, "worldspell-button-charged.png");
-    await openCity(page, ch.second);
+    await openCity(page, ch.capital);
     await ritualEntry(page);
     await crop(page, [".modal.city-screen button.build.ritual-build"], "production-ritual-disabled.png", { pad: 10 });
     await page.close();

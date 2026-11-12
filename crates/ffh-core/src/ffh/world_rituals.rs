@@ -204,7 +204,10 @@ impl Game {
         let turn = self.game_turn();
         for o in self.player_ids().collect::<Vec<_>>() {
             if self.players[o].alive && !self.player_is_barbarian(o) {
-                self.log.msg_at(turn, Some(o), at, || format!("{civ} {verb} {ritual} in {city}."));
+                // A player who has not met the ritual's owner is not told who it is.
+                let met = self.teams[self.players[o].team].has_met[self.players[p].team];
+                let who = if met { civ.as_str() } else { "Unknown civilization" };
+                self.log.msg_at(turn, Some(o), at, || format!("{who} {verb} {ritual} in {city}."));
             }
         }
     }

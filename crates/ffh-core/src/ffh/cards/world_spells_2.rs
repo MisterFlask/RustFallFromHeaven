@@ -498,7 +498,9 @@ fn tidecall_project(d: &GameData) -> Option<ProjectType> {
 /// Card rituals that city `c` cannot build (`cannotCreate`): one whose charge it holds; the
 /// Tidecall of Danalin away from the ocean.
 pub fn cannot_create(g: &Game, c: CityId, project: ProjectType) -> bool {
-    if g.cities[c].ritual_charges.contains(&project) {
+    // (A world ritual's held charge is `world_rituals::cannot_create`'s: the ritual stays listed,
+    // refused, in every city of its owner.)
+    if !g.d.projects[project].world_ritual && g.cities[c].ritual_charges.contains(&project) {
         return true;
     }
     tidecall_project(g.d) == Some(project) && !g.city_is_coastal(c, g.d.defines.min_water_size_for_ocean)

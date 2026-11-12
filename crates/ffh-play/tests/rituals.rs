@@ -161,11 +161,12 @@ fn the_staged_charged_game_holds_a_charge() {
     assert_eq!(s_of(&mine, "state"), Some("charged"));
     assert_eq!(i_of(&mine, "city"), Some(st.capital.0 as i64));
     let project = project_of(&s, h);
-    // The other city: the one holding the charge does not list the ritual at all (ffh-core's
-    // card rituals' `cannot_create`, also in the visibility test).
-    let entry = ritual_entry(&s, st.second, project);
-    assert_eq!(entry.get("enabled").and_then(Json::as_bool), Some(false));
-    assert_eq!(entry.get("ritual").and_then(|r| s_of(r, "why")), Some("Charge held: cast Warcry first."));
+    // Every city of the owner lists it, refused: the one holding the charge too.
+    for c in [st.second, st.capital] {
+        let entry = ritual_entry(&s, c, project);
+        assert_eq!(entry.get("enabled").and_then(Json::as_bool), Some(false));
+        assert_eq!(entry.get("ritual").and_then(|r| s_of(r, "why")), Some("Charge held: cast Warcry first."));
+    }
     let city = s.query(&Query::City { city: st.capital }).unwrap();
     assert_eq!(city.get("ritual_head"), Some(&Json::Null));
 }
