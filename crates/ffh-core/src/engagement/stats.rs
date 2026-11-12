@@ -133,9 +133,15 @@ impl Game {
         }
     }
 
-    /// The unit's maximum HP in an engagement (plan 4.1): its HP stat.
+    /// The unit's maximum HP in an engagement (plan 4.1): its HP stat, +10% for each stack of
+    /// Reinforced (Ritual: Upgrade). Its damage (a percentage) carries over proportionally.
     pub fn unit_engage_max_hp(&self, u: UnitId) -> i32 {
-        self.unit_stat(u, StatType::Hp)
+        let hp = self.unit_stat(u, StatType::Hp);
+        let stacks = self.units[u].reinforced.max(0);
+        if stacks == 0 {
+            return hp;
+        }
+        (hp as i64 * (100 + 10 * stacks as i64) / 100).min(i32::MAX as i64 / 200) as i32
     }
 
     // A unit's values in a formation battle (docs/ENGAGEMENTS.md, "Per-unit values"): its stats,

@@ -14,9 +14,13 @@
 //! - **Gift Vampirism** (Vampires): the Vampire promotion (+10% strength, +5% healing, Feast) for
 //!   every level 6+ unit (level 4+ Moroi) on the plot; its effect is Python only (value 0), so it
 //!   was never cast. Valued as a promotion for each such unit.
+//! - **The Tithe** (their world ritual, docs/CARDS.md): at war with a civilization and no rival
+//!   named, they name the enemy whose cities hold the most population above 2 ([`tithe`]); the
+//!   generic ritual building (`world_rituals.rs`) then builds it. They never name a rival they are
+//!   not already at war with.
 //!
-//! First tried in round 5 (commit efb8d23, with River of Blood held for a war, which is not
-//! back): development seeds 1-40 win 7.7% -> 7.7%, share at the end +109 (t 0.59); fresh seeds
+//! First tried in round 5 (commit efb8d23, with River of Blood, FFH2's world spell now replaced
+//! by The Tithe, held for a war): development seeds 1-40 win 7.7% -> 7.7%, share at the end +109 (t 0.59); fresh seeds
 //! 5001-5064 win 10.9% -> 4.7% (2/6 seeds won by one side only), share at the end -77 (t -0.61);
 //! vampires were rare (0.1 a game; docs/AI_LOG.md). Back since 2026-10-20 under the owner's rule.
 
@@ -43,6 +47,7 @@ impl CivPlay for Calabim {
                 g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_ATTACK);
             }
         }
+        tithe(g, v.p);
     }
 
     fn spell_value(&self, g: &Game, u: UnitId, spell: SpellType, value: i32) -> i32 {
@@ -80,4 +85,22 @@ fn gift_value(g: &Game, u: UnitId) -> i32 {
         })
         .count() as i32;
     n * crate::units::promotion_value(g, u, vampire).max(50)
+}
+
+/// Name the Tithe: with no rival named, the civilization we are at war with whose cities hold the
+/// most population above 2 (ties: the lower player id).
+fn tithe(g: &mut Game, p: PlayerId) {
+    if g.players[p].tithe_target.is_some() {
+        return;
+    }
+    let team = g.players[p].team;
+    let best = g
+        .player_ids()
+        .filter(|&o| g.teams[team].at_war[g.players[o].team] && ffh_core::ffh::world_ritual_spells::small::tithe_target_ok(g, p, o))
+        .map(|o| (g.players[o].cities.iter().map(|&c| (g.cities[c].population - 2).max(0)).sum::<i32>(), o))
+        .filter(|&(v, _)| v > 0)
+        .max_by_key(|&(v, o)| (v, std::cmp::Reverse(o)));
+    if let Some((_, o)) = best {
+        super::world_spell::cast_at(g, p, "SPELL_NAME_THE_TITHE", ffh_core::structs::SpellTarget::Player(o));
+    }
 }

@@ -597,6 +597,9 @@ pub struct Unit {
     pub intercepted: bool,
     /// It fired into a battle on the coast this turn (4.7); cleared at its owner's turn start.
     pub shore_fired: bool,
+    /// Not in C++: stacks of Reinforced (Ritual: Upgrade, the Luchuirp's): +10% maximum HP each
+    /// in a battle (`unit_engage_max_hp`). Kept by a conversion only to another golem.
+    pub reinforced: i32,
 }
 
 impl Unit {
@@ -782,6 +785,7 @@ impl Unit {
             sea_out_of_range: false,
             intercepted: false,
             shore_fired: false,
+            reinforced: 0,
         }
     }
 }

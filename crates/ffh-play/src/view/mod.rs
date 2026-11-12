@@ -408,12 +408,21 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
     }
     // Engagement combat: its role, A, Dv and max HP (`hp` / `max_hp` stay the duel's percent).
     battles::unit_fields(g, u, &mut j);
+    // Reinforced (Ritual: Upgrade, the Luchuirp's golems): its line, when it has stacks.
+    if unit.reinforced > 0 {
+        j.set("reinforced", reinforced_line(unit.reinforced));
+    }
     // A crusade Host's unit (docs/CRUSADE.md): who lent it (the lender's banner is public, as the
     // Host's own owner is).
     if let Some(rec) = unit.lent.as_ref().filter(|_| v.unit_owner(u) == unit.owner) {
         j.set("lent_by", rec.lender);
     }
     j
+}
+
+/// A unit's stacks of Reinforced, for people: `Reinforced x2: +20% hit points.`
+pub fn reinforced_line(n: i32) -> String {
+    format!("Reinforced x{n}: +{}% hit points.", 10 * n)
 }
 
 /// The units the human sees: its own (creation order), then visible foreign ones (id order).

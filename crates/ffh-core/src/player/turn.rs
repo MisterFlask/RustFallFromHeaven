@@ -167,6 +167,8 @@ impl Game {
 
         // Battle tactics changed since the last turn take effect (docs/TACTICS.md).
         self.player_apply_tactics(p);
+        // World rituals aimed at a rival (The Tithe): cancelled once the rival is dead or at peace.
+        crate::ffh::world_ritual_spells::check(self, Some(p));
 
         let turn = self.game_turn();
         self.ev_begin_player_turn(turn, p);

@@ -350,6 +350,8 @@ impl Game {
         if self.units[from].lent.is_some() {
             self.crusade_on_convert(u, from);
         }
+        // Not in C++: Reinforced (Ritual: Upgrade) stays only on a golem.
+        crate::ffh::world_ritual_spells::small::convert_reinforced(self, u, from);
 
         self.unit_kill(from, true, None);
     }

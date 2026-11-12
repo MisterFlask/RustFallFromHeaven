@@ -1,6 +1,10 @@
-//! Luchuirp: Gifts of Nantosuelta leaves a Golden Hammer in each city, which can become a free
-//! Engineer there (`SPELL_GIVE_HAMMER_TO_CRAFTSMAN`) or +1 strength on a unit that takes it
-//! (`SPELL_TAKE_GOLDEN_HAMMER_UNIT`). FfH's end-of-turn spell choice valued the take higher, so
+//! Luchuirp. Their world ritual, Upgrade (a stack of Reinforced on each golem, docs/CARDS.md), is
+//! started only with 4 or more golems (`world_rituals::civ_gate`).
+//!
+//! FFH2's Gifts of Nantosuelta (replaced by Upgrade) left a Golden Hammer in each city, which can
+//! become a free Engineer there (`SPELL_GIVE_HAMMER_TO_CRAFTSMAN`) or +1 strength on a unit that
+//! takes it (`SPELL_TAKE_GOLDEN_HAMMER_UNIT`). No rule makes a Golden Hammer now; the valuation
+//! below stays for one that exists: FfH's end-of-turn spell choice valued the take higher, so
 //! the garrison warriors took nearly every hammer; units in our own cities now leave it, and the
 //! hammer gives itself.
 //!

@@ -166,20 +166,22 @@
     "button": "Art/Interface/Buttons/Promotions/Valor.dds"
   },
   {
-    "type": "SPELL_ARCANE_LACUNA",
-    "description": "TXT_KEY_SPELL_ARCANE_LACUNA",
+    "type": "SPELL_WELLSPRING",
+    "description": "TXT_KEY_SPELL_WELLSPRING",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
-    "help": "TXT_KEY_SPELL_ARCANE_LACUNA_HELP",
+    "help": "TXT_KEY_SPELL_WELLSPRING_HELP",
     "unit_combat_prereq": "UNITCOMBAT_ADEPT",
     "civilization_prereq": "CIVILIZATION_AMURITES",
-    "allow_ai": true,
     "global": true,
-    "ritual_charge": "PROJECT_RITUAL_ARCANE_LACUNA",
-    "ai_weight": 300,
+    "ritual_charge": "PROJECT_RITUAL_WELLSPRING",
+    // This game's (docs/CARDS.md, "World rituals"): a plot and a mana type. Rules:
+    // crates/ffh-core/src/ffh/world_ritual_spells/small.rs.
+    "target": "choice",
     "display_when_disabled": true,
     "has_casted": true,
-    "py_result": "spellArcaneLacuna(pCaster)",
-    "py_requirement": "reqArcaneLacuna(pCaster)",
+    "py_result": "spellWellspring(pCaster)",
+    "py_targets": "targetsWellspring(pCaster)",
+    "py_target_label": "labelWellspring(pCaster, iChoice)",
     "button": "Art/Interface/Buttons/Spells/Arcane Lacuna.dds"
   },
   {
@@ -1510,23 +1512,6 @@
     "button": "Art/Interface/Buttons/Spells/Giftvampirism.dds"
   },
   {
-    "type": "SPELL_GIFTS_OF_NANTOSUELTA",
-    "description": "TXT_KEY_SPELL_GIFTS_OF_NANTOSUELTA",
-    "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
-    "help": "TXT_KEY_SPELL_GIFTS_OF_NANTOSUELTA_HELP",
-    "civilization_prereq": "CIVILIZATION_LUCHUIRP",
-    "tech_prereq": "TECH_MASONRY",
-    "allow_ai": true,
-    "global": true,
-    "ritual_charge": "PROJECT_RITUAL_GIFTS_OF_NANTOSUELTA",
-    "ai_weight": 300,
-    "display_when_disabled": true,
-    "has_casted": true,
-    "py_result": "spellGiftsOfNantosuelta(pCaster)",
-    "py_requirement": "reqGiftsOfNantosuelta(pCaster)",
-    "button": "Art/Interface/Buttons/Spells/Gifts of Nantosuelta.dds"
-  },
-  {
     "type": "SPELL_GIVE_HAMMER_TO_CRAFTSMAN",
     "description": "TXT_KEY_SPELL_GIVE_HAMMER_TO_CRAFTSMAN",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
@@ -2494,19 +2479,20 @@
     "button": "Art/Interface/Buttons/Spells/Ringofflames.dds"
   },
   {
-    "type": "SPELL_RIVER_OF_BLOOD",
-    "description": "TXT_KEY_SPELL_RIVER_OF_BLOOD",
+    "type": "SPELL_NAME_THE_TITHE",
+    "description": "TXT_KEY_SPELL_NAME_THE_TITHE",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
-    "help": "TXT_KEY_SPELL_RIVER_OF_BLOOD_HELP",
+    "help": "TXT_KEY_SPELL_NAME_THE_TITHE_HELP",
     "civilization_prereq": "CIVILIZATION_CALABIM",
-    "allow_ai": true,
-    "global": true,
-    "ritual_charge": "PROJECT_RITUAL_RIVER_OF_BLOOD",
-    "ai_weight": 300,
+    // This game's (docs/CARDS.md, "World rituals"): names the rival of Ritual: The Tithe, an action
+    // of the empire. Rules: crates/ffh-core/src/ffh/world_ritual_spells/small.rs.
+    "world_action": true,
+    "causes_war": true,
+    "target": "player",
     "display_when_disabled": true,
-    "has_casted": true,
-    "py_result": "spellRiverOfBlood(pCaster)",
-    "py_requirement": "reqRiverOfBlood(pCaster)",
+    "py_result": "spellNameTheTithe(pCaster)",
+    "py_requirement": "reqNameTheTithe(pCaster)",
+    "py_targets": "targetsNameTheTithe(pCaster)",
     "button": "Art/Interface/Buttons/Spells/River of Blood.dds"
   },
   {
@@ -4404,19 +4390,20 @@
     "button": "Art/Interface/Buttons/Promotions/Danceofblades.dds"
   },
   {
-    "type": "SPELL_WILD_HUNT",
-    "description": "TXT_KEY_SPELL_WILD_HUNT",
+    "type": "SPELL_THE_CULL",
+    "description": "TXT_KEY_SPELL_THE_CULL",
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
-    "help": "TXT_KEY_SPELL_WILD_HUNT_HELP",
+    "help": "TXT_KEY_SPELL_THE_CULL_HELP",
     "civilization_prereq": "CIVILIZATION_DOVIELLO",
-    "allow_ai": true,
     "global": true,
-    "ritual_charge": "PROJECT_RITUAL_WILD_HUNT",
-    "ai_weight": 300,
+    "ritual_charge": "PROJECT_RITUAL_THE_CULL",
+    // This game's (docs/CARDS.md, "World rituals"): a plot with 2 or more of the caster's owner's
+    // land combat units. Rules: crates/ffh-core/src/ffh/world_ritual_spells/small.rs.
+    "target": "plot",
     "display_when_disabled": true,
     "has_casted": true,
-    "py_result": "spellWildHunt(pCaster)",
-    "py_requirement": "reqWildHunt(pCaster)",
+    "py_result": "spellTheCull(pCaster)",
+    "py_targets": "targetsTheCull(pCaster)",
     "button": "Art/Interface/Buttons/Spells/Wild Hunt.dds"
   },
   {

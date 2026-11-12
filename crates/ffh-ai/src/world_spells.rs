@@ -4,7 +4,7 @@
 //! requirements (`if pPlayer.isHuman() == False:` in `CvSpellInterface.py` `req*`); the port
 //! dropped them from the rules (docs/PORTING.md, "Changes from FFH2"), so a world spell has the
 //! same requirements for every player and the AI decides when. [`ready`] is FfH's condition, the
-//! AI's default timing, except for three spells that condition almost never let the AI cast
+//! AI's default timing, except for two spells that condition almost never let the AI cast
 //! ([`expert_moment`]): `casting::choose_spell` (the
 //! end-of-turn spell choice) and the civilizations' held casts (`civs/world_spell.rs`) cast a
 //! world spell only once it holds. A civilization can wait longer through its `spell_value`
@@ -16,11 +16,9 @@ use ffh_data::*;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 enum World {
-    ArcaneLacuna,
     Ardor,
     DivineRetribution,
     ForTheHorde,
-    GiftsOfNantosuelta,
     IntoTheMist,
     Legends,
     MarchOfTheTrees,
@@ -29,21 +27,17 @@ enum World {
     Rally,
     ReligiousFervor,
     Revelry,
-    RiverOfBlood,
     Sanctuary,
     Stasis,
     VeilOfNight,
     Warcry,
-    WildHunt,
     Worldbreak,
 }
 
-const NAMES: [(&str, World); 20] = [
-    ("SPELL_ARCANE_LACUNA", World::ArcaneLacuna),
+const NAMES: [(&str, World); 16] = [
     ("SPELL_ARDOR", World::Ardor),
     ("SPELL_DIVINE_RETRIBUTION", World::DivineRetribution),
     ("SPELL_FOR_THE_HORDE", World::ForTheHorde),
-    ("SPELL_GIFTS_OF_NANTOSUELTA", World::GiftsOfNantosuelta),
     ("SPELL_INTO_THE_MIST", World::IntoTheMist),
     ("SPELL_LEGENDS", World::Legends),
     ("SPELL_MARCH_OF_THE_TREES", World::MarchOfTheTrees),
@@ -52,34 +46,11 @@ const NAMES: [(&str, World); 20] = [
     ("SPELL_RALLY", World::Rally),
     ("SPELL_RELIGIOUS_FERVOR", World::ReligiousFervor),
     ("SPELL_REVELRY", World::Revelry),
-    ("SPELL_RIVER_OF_BLOOD", World::RiverOfBlood),
     ("SPELL_SANCTUARY", World::Sanctuary),
     ("SPELL_STASIS", World::Stasis),
     ("SPELL_VEIL_OF_NIGHT", World::VeilOfNight),
     ("SPELL_WARCRY", World::Warcry),
-    ("SPELL_WILD_HUNT", World::WildHunt),
     ("SPELL_WORLDBREAK", World::Worldbreak),
-];
-
-/// The typed mana bonuses `reqArcaneLacuna` counts on the map (raw mana excluded).
-const MANA_TYPES: [&str; 17] = [
-    "BONUS_MANA_AIR",
-    "BONUS_MANA_BODY",
-    "BONUS_MANA_CHAOS",
-    "BONUS_MANA_DEATH",
-    "BONUS_MANA_EARTH",
-    "BONUS_MANA_ENCHANTMENT",
-    "BONUS_MANA_ENTROPY",
-    "BONUS_MANA_FIRE",
-    "BONUS_MANA_LAW",
-    "BONUS_MANA_LIFE",
-    "BONUS_MANA_METAMAGIC",
-    "BONUS_MANA_MIND",
-    "BONUS_MANA_NATURE",
-    "BONUS_MANA_SHADOW",
-    "BONUS_MANA_SPIRIT",
-    "BONUS_MANA_SUN",
-    "BONUS_MANA_WATER",
 ];
 
 /// Per spell type: the world spell whose timing it has (`None` for the other spells, and for
@@ -101,11 +72,10 @@ pub fn ready(g: &Game, p: PlayerId, spell: SpellType) -> bool {
         return ready;
     }
     match w {
-        World::ArcaneLacuna => MANA_TYPES.iter().map(|name| g.map.num_bonus[d.t::<BonusType>(name)]).sum::<i32>() >= 7,
         World::Ardor => pl.great_people_created >= 5,
         World::DivineRetribution | World::MarchOfTheTrees | World::Sanctuary => wars() >= 2,
         World::ForTheHorde => g.players[g.barbarian_player()].num_units() >= 60,
-        World::GiftsOfNantosuelta | World::Legends | World::Rally | World::RiverOfBlood | World::Stasis => pl.num_cities() >= 5,
+        World::Legends | World::Rally | World::Stasis => pl.num_cities() >= 5,
         World::IntoTheMist => pl.num_units() >= 40,
         World::MotherLode => pl.improvement_count[d.t::<ImprovementType>("IMPROVEMENT_MINE")] >= 10,
         World::RagingSeas => enemy_fleet(g, p),
@@ -113,7 +83,6 @@ pub fn ready(g: &Game, p: PlayerId, spell: SpellType) -> bool {
         World::Revelry => pl.total_population >= 25,
         World::VeilOfNight => pl.num_units() >= 25 && wars() == 0,
         World::Warcry => pl.num_units() >= 25 && wars() > 0,
-        World::WildHunt => wars() > 0 && pl.num_units() >= 20,
         World::Worldbreak => g.get_global_counter() >= 50,
     }
 }
@@ -121,9 +90,6 @@ pub fn ready(g: &Game, p: PlayerId, spell: SpellType) -> bool {
 /// The moments an expert would pick for the world spells FfH's conditions almost never allowed
 /// (the owner's rule that civilizations use their own mechanics; docs/AI.md, "World spells"):
 /// `None` keeps FfH's condition.
-/// - Arcane Lacuna (no other player can cast for 20 turns, our adepts gain as much experience as
-///   the map has typed mana): at war with a civilization. FfH waited for 7 typed mana nodes on
-///   the map, which no measured game reached.
 /// - Worldbreak (every unit in a foreign city takes the Armageddon counter as damage, and cities
 ///   burn): at war with a civilization once the counter is 20. FfH waited for 50, never reached.
 /// - Religious Fervor (a priest in every city of our state religion, with experience by their
@@ -135,7 +101,6 @@ fn expert_moment(g: &Game, p: PlayerId, w: World) -> Option<bool> {
     let barb = g.barbarian_team();
     let civ_war = || g.teams.keys().any(|t| t != team && t != barb && g.teams[t].alive_count > 0 && g.at_war(team, t));
     Some(match w {
-        World::ArcaneLacuna => civ_war(),
         World::Worldbreak => g.get_global_counter() >= 20 && civ_war(),
         World::ReligiousFervor => g.player_get_state_religion(p).is_some_and(|r| {
             let with = pl.cities.iter().filter(|&&c| g.cities[c].has_religion[r]).count();

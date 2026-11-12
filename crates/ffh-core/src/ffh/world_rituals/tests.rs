@@ -86,7 +86,7 @@ fn every_world_spell_has_a_world_ritual_of_its_civilization() {
         assert_eq!(d.projects[pr].repeat_cost_percent, 200);
         n += 1;
     }
-    assert_eq!(n, 21);
+    assert_eq!(n, 19);
 }
 
 #[test]
