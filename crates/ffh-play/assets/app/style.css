@@ -1248,18 +1248,24 @@ table.scores.seas td.num { text-align: right; }
 .place-head { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--em); }
 .place-icon { display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center; flex: none; }
 .place-mana-dot { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; align-items: center; justify-content: center; background: var(--c-dusk); color: var(--c-vellum); font-size: 12px; }
-.place-owned { margin-left: auto; font-weight: normal; font-size: 0.85em; white-space: nowrap; }
-.place-passive { font-size: 0.85em; line-height: 1.3; margin-top: 2px; }
-.place-label { color: var(--dim); }
-.place-lines { margin: 1px 0 0; padding-left: 16px; }
-.place-lines li { margin: 0; }
-.place-promos { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 3px; font-size: 0.85em; }
-button.place-promo { padding: 0; min-width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
-.place-tier { font-weight: 700; font-size: 12px; }
-.place-tip-spell { margin-top: 5px; }
+.place-intro { font-size: 0.85em; margin: 0 0 4px; }
+.place-count { font-weight: normal; font-size: 0.9em; white-space: nowrap; color: var(--fg); }
+.place-chips { margin-left: auto; display: inline-flex; gap: 3px; flex: none; }
+.place-name { min-width: 0; }
+button.place-chip { position: relative; display: inline-flex; align-items: center; gap: 2px; padding: 0 5px; min-width: 24px; height: 22px; font-size: 12px; font-weight: normal; border-radius: 11px; }
+.place-chip-n { line-height: 1; }
+.place-glyph { font-size: 12px; line-height: 1; }
+.place-chip-info .place-glyph { font-style: italic; font-weight: 700; font-family: serif; }
+.place-new { position: absolute; top: -2px; right: -2px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.place-tiers { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 8px; margin: 3px 0 0 38px; font-size: 12px; }
+.place-tier-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+button.place-tier { padding: 0 3px; min-width: 0; height: 20px; border: none; background: none; color: var(--dim); font-weight: 700; font-size: 11px; }
+button.place-spell { padding: 0 6px; height: 20px; font-size: 12px; border-radius: 4px; white-space: nowrap; }
+.place-now { margin: 3px 0 0 38px; font-size: 12px; line-height: 1.3; color: var(--em); }
+.place-now.warn { color: var(--warn); }
 .toast.place-prompt button { margin-left: 6px; }
 .modal.wide.place-menu { width: min(620px, 100%); }
 @media (max-width: 480px) {
   .place-row { padding: 4px 6px; }
-  .place-passive, .place-promos { font-size: 0.8em; }
+  .place-tiers, .place-now { margin-left: 0; }
 }

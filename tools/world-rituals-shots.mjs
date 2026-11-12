@@ -13,12 +13,13 @@
 //                                      [--only rituals,charged,tithe,ice,ice3d,civs,wellspring3d]
 //
 // It stages `ffh-play stage rituals`, `rituals-charged`, `tithe`, `ice`,
-// `ritual-civ:CIVILIZATION_X` and `ritual-due:CIVILIZATION_AMURITES`, serves each with `ffh-play serve --load`, and drives the page with
+// `ritual-civ:CIVILIZATION_X`, `ritual-due:CIVILIZATION_AMURITES` and `ritual-notech:CIVILIZATION_AMURITES`, serves each with `ffh-play serve --load`, and drives the page with
 // Playwright's Chromium (as tools/web-smoke.mjs). The map is the isometric one (headless Chromium
 // without WebGL in software falls back to it), the look a player gets without a GPU fast enough for
 // the HD-2D map; the interface is the same. `ice3d` and `wellspring3d` (Wellspring's placement on
-// the turn its ritual completes: the prompt and the marked plots, the menu of mana types, a sphere
-// promotion's tooltip, the button once postponed, then a placement clicked through; and the valid
+// the turn its ritual completes: the prompt and the marked plots, the menu of mana types, a spell's,
+// an effect chip's and the info chip's tooltips, the button once postponed, then a placement clicked
+// through; the production entry of the ritual without its tech; and the valid
 // plots marked for Frozen Passage) draw the HD-2D map in software (SwiftShader,
 // `?renderer=hd2d&force3d=1`): minutes, not seconds.
 
@@ -592,31 +593,42 @@ async function shotsWellspring3d(bin, saves, pw) {
         console.log(`wellspring-completed-prompt.png: ${clip.width} x ${clip.height} CSS px`);
         // The menu of the plot nearest the capital, at a phone's width.
         const plot = plots.slice().sort((p, q) => Math.max(Math.abs(p[0] - cap[0]), Math.abs(p[1] - cap[1])) - Math.max(Math.abs(q[0] - cap[0]), Math.abs(q[1] - cap[1])))[0];
-        await page.setViewportSize({ width: 420, height: 1900 });
+        await page.setViewportSize({ width: 420, height: 2200 });
         await page.evaluate(([x, y]) => window.ffh.units.click(x, y, {}), plot);
         await until(() => page.evaluate(() => !!document.querySelector('.modal[data-tag="place-menu"] .place-row')), "the Wellspring menu", 20000);
         await dropToasts(page);
         await page.mouse.move(415, 5);
         await page.evaluate(() => { for (const t of document.querySelectorAll(".tooltip")) t.hidden = true; });
         await sleep(30000);
+        await dropToasts(page);
         await crop(page, ['.modal[data-tag="place-menu"]'], "wellspring-mana-menu.png", { pad: 4, maxW: 420, timeout: 300000 });
-        // A sphere promotion's tooltip: Fire I, in Fire Mana's row.
-        const fire = await page.evaluate(() => {
-          const i = window.ffh.S.data.tables.BonusType.findIndex((e) => e.type === "BONUS_MANA_FIRE");
-          return `.modal[data-tag="place-menu"] .place-row[data-bonus="${i}"]`;
-        });
-        await page.evaluate((s) => document.querySelector(s).scrollIntoView({ block: "start" }), fire);
+        // Tooltips at a phone's width: a spell chip's (Blaze, in Fire Mana's row), an effect chip's
+        // (Earth Mana's affinity: the staged Earth Elemental) and the info chip's (Earth Mana).
+        const rowOf = (type) =>
+          page.evaluate((t) => {
+            const i = window.ffh.S.data.tables.BonusType.findIndex((e) => e.type === t);
+            return `.modal[data-tag="place-menu"] .place-row[data-bonus="${i}"]`;
+          }, type);
+        const fire = await rowOf("BONUS_MANA_FIRE");
+        const earth = await rowOf("BONUS_MANA_EARTH");
         await page.setViewportSize({ width: 420, height: 900 });
         await sleep(2000);
-        await page.evaluate((s) => document.querySelector(s).scrollIntoView({ block: "start" }), fire);
-        await sleep(1000);
-        const chip = `${fire} button.place-promo`;
-        await page.evaluate((s) => document.querySelector(s).click(), chip);
-        await until(() => page.evaluate(() => !!document.querySelector(".tooltip.richtip:not([hidden])")), "the promotion's tooltip", 10000);
-        await sleep(20000);
-        await dropToasts(page);
-        await sleep(1500);
-        await crop(page, [fire, ".tooltip.richtip:not([hidden])"], "wellspring-mana-tooltip.png", { pad: 4, maxW: 420, timeout: 300000 });
+        const chipTip = async (row, chip, name) => {
+          await page.evaluate(() => { for (const t of document.querySelectorAll(".tooltip")) t.hidden = true; });
+          await page.evaluate((s) => document.querySelector(s).scrollIntoView({ block: "start" }), row);
+          await sleep(1000);
+          await page.evaluate((s) => document.querySelector(s).click(), `${row} ${chip}`);
+          await until(() => page.evaluate(() => !!document.querySelector(".tooltip.richtip:not([hidden])")), `the tooltip of ${chip}`, 10000);
+          await dropToasts(page);
+          await sleep(15000);
+          await dropToasts(page);
+          await sleep(1000);
+          await crop(page, [row, ".tooltip.richtip:not([hidden])"], name, { pad: 4, maxW: 420, timeout: 300000 });
+        };
+        await chipTip(fire, "button.place-spell", "wellspring-mana-tooltip.png");
+        await chipTip(earth, "button.place-chip-affinity", "wellspring-mana-chip-tooltip.png");
+        await chipTip(earth, "button.place-chip-info", "wellspring-mana-info-tooltip.png");
+        await page.evaluate(() => { for (const t of document.querySelectorAll(".tooltip")) t.hidden = true; });
         // Postponed: Escape closes the menu, the charge stays held; the button and its tooltip.
         await page.keyboard.press("Escape");
         await sleep(500);
@@ -624,9 +636,11 @@ async function shotsWellspring3d(bin, saves, pw) {
         await page.setViewportSize({ width: 1000, height: 720 });
         await sleep(3000);
         const btn = await worldActionSel(page, "SPELL_WELLSPRING");
+        await dropToasts(page);
         await hover(page, btn);
         await sleep(20000);
-        await crop(page, [btn, ".tooltip.richtip:not([hidden])"], "wellspring-button.png", { maxW: 520, pad: 6, timeout: 300000 });
+        await dropToasts(page);
+        await crop(page, [btn, ".tooltip.richtip:not([hidden])"], "wellspring-button.png", { maxW: 1000, pad: 6, timeout: 300000 });
         await crop(page, [".tooltip.richtip:not([hidden])"], "text-wellspring.png", { maxW: 560, pad: 2, timeout: 300000 });
         await unhover(page, btn);
         // Clicked through: the button, the plot, Fire Mana: the node is placed.
@@ -646,6 +660,25 @@ async function shotsWellspring3d(bin, saves, pw) {
         );
         const bonus = await page.evaluate(([x, y]) => window.ffh.api.query("plot", { x, y }).then((r) => r.bonus), plot);
         console.log(`wellspring: placed at ${plot.join(",")}: charge spent ${placed}, plot bonus ${bonus}`);
+      },
+      { query: "?renderer=hd2d&force3d=1", ready: open3d },
+    );
+    // Without Knowledge of the Ether: the production list's Ritual: Wellspring, disabled, the
+    // requirement told.
+    await onStage(
+      browser,
+      bin,
+      saves,
+      "ritual-notech:CIVILIZATION_AMURITES",
+      async (page, st) => {
+        await dropToasts(page);
+        await openCity(page, st.capital);
+        const entry = await projectEntrySel(page, "PROJECT_RITUAL_WELLSPRING");
+        await dropToasts(page);
+        await sleep(20000);
+        await dropToasts(page);
+        await crop(page, [entry], "wellspring-ritual-needs-tech.png", { pad: 10, timeout: 300000 });
+        await closeCity(page);
       },
       { query: "?renderer=hd2d&force3d=1", ready: open3d },
     );

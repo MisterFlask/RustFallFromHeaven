@@ -231,6 +231,7 @@
     "type": "PROJECT_RITUAL_WELLSPRING",
     "description": "TXT_KEY_PROJECT_RITUAL_WELLSPRING",
     "help": "TXT_KEY_PROJECT_RITUAL_WELLSPRING_HELP",
+    "tech_prereq": "TECH_KNOWLEDGE_OF_THE_ETHER",
     "max_global_instances": -1,
     "max_team_instances": -1,
     "cost": 100,

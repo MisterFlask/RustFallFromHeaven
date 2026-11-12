@@ -49,7 +49,7 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
         }
     }
     for p in d.projects.keys() {
-        if g.city_can_create(c, p, false, true) {
+        if g.city_can_create(c, p, false, true) || crate::view::rituals::ritual_needs_tech(g, c, p).is_some() {
             let enabled = g.city_can_create(c, p, false, false);
             let mut j = crate::jobj! {
                 "order" => Json::idx(OrderType::ORDER_CREATE), "type" => Json::idx(p),

@@ -936,3 +936,14 @@ body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * 
   /* A radius-3 city's 7x7 plots across a phone: the lettering at 1x (the grid's smallest size). */
   html.iso .cplot { font: 400 10px/12px var(--iso-font); }
 }
+
+/* Wellspring's menu (place.js): small chips, not the skin's tiles. */
+html.iso button:is(.place-spell, .place-chip, .place-tier) { border: 1px solid rgba(236, 230, 214, 0.22); border-image: none; font: 400 13px/15px var(--iso-font); padding: 1px 5px; gap: 2px; min-height: 0; height: auto; }
+html.iso .place-head .place-name { font-size: 18px; line-height: 22px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+html.iso .place-head { gap: 5px; }
+html.iso button.place-tier { border-color: transparent; background: none; color: var(--iso-gold); padding: 1px 2px; }
+html.iso button.place-chip { border-radius: 10px; }
+html.iso .place-tiers { gap: 3px 10px; }
+html.iso .place-now { font: 400 13px/15px var(--iso-font); }
+html.iso .place-intro { font: 400 16px/20px var(--iso-font); }
+html.iso .place-count { font: 400 16px/20px var(--iso-font); flex: none; }

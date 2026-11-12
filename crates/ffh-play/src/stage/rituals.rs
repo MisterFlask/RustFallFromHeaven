@@ -256,8 +256,9 @@ pub fn tithe(dir: &Path) -> Result<StagedTithe, String> {
 /// and a charge of its world ritual held (when the ritual leaves one), arranged so that its world rituals' actions are
 /// offered: the Lanun's storm raised (Steer the Storm) and a second charge held; a Khazad tunnel
 /// between two plots next to the capital (`unit`, a warrior, stands on its end: Enter the Delve); two Doviello
-/// warriors in the capital (The Cull); nothing more for the Amurites (Wellspring is placed by the
-/// player). With `due` (`ritual-due:<civ>`), no charge: the ritual instead stands at the head of
+/// warriors in the capital (The Cull); for the Amurites (Wellspring is placed by the player, its
+/// menu shown in its variants) culture for a second ring of borders, roads on every land plot of theirs, Body, Chaos and Earth nodes
+/// (1, 2 and 3) far from the capital and an Earth Elemental in it (`unit`). With `due` (`ritual-due:<civ>`), no charge: the ritual instead stands at the head of
 /// the capital's queue with all its production but 1, so that it completes at the end of the turn.
 pub struct StagedRitualCiv {
     pub save: PathBuf,
@@ -280,16 +281,23 @@ impl StagedRitualCiv {
 
 /// Writes the `ritual-civ:<civ>` staged game into `dir` (a game directory).
 pub fn ritual_civ(dir: &Path, civ: &str) -> Result<StagedRitualCiv, String> {
-    ritual_civ_staged(dir, civ, false)
+    ritual_civ_staged(dir, civ, false, true)
+}
+
+/// Writes the `ritual-notech:<civ>` staged game into `dir`: the human plays `civ` with the land
+/// around its capital revealed, without its world ritual's tech and no charge (the production
+/// list shows the ritual disabled: `Requires <tech>.`).
+pub fn ritual_notech(dir: &Path, civ: &str) -> Result<StagedRitualCiv, String> {
+    ritual_civ_staged(dir, civ, false, false)
 }
 
 /// Writes the `ritual-due:<civ>` staged game into `dir`: as [`ritual_civ`], the ritual completing
 /// at the end of the turn instead of a charge held.
 pub fn ritual_due(dir: &Path, civ: &str) -> Result<StagedRitualCiv, String> {
-    ritual_civ_staged(dir, civ, true)
+    ritual_civ_staged(dir, civ, true, true)
 }
 
-fn ritual_civ_staged(dir: &Path, civ: &str, due: bool) -> Result<StagedRitualCiv, String> {
+fn ritual_civ_staged(dir: &Path, civ: &str, due: bool, tech: bool) -> Result<StagedRitualCiv, String> {
     use ffh_core::structs::SpellTarget;
     let d = ffh_data::global();
     if d.ty::<CivilizationType>(civ).is_none() {
@@ -308,7 +316,18 @@ fn ritual_civ_staged(dir: &Path, civ: &str, due: bool) -> Result<StagedRitualCiv
         }
     }
     // The ritual's tech known (Ritual: Upgrade needs Masonry): the production list offers it.
-    if let Some(tech) = g.player_world_ritual(h).and_then(|r| d.projects[r].tech_prereq) {
+    // Without `tech` (`ritual-notech`): not known, no charge, nothing more.
+    let ritual_tech = g.player_world_ritual(h).and_then(|r| d.projects[r].tech_prereq);
+    if !tech {
+        let tech = ritual_tech.ok_or_else(|| format!("{civ}: its ritual needs no tech"))?;
+        g.team_set_has_tech(team, tech, false, Some(h), false, false);
+        choose_research(g, h);
+        s.drain_log();
+        let name = format!("ritual-notech-{}", civ.trim_start_matches("CIVILIZATION_").to_lowercase());
+        let paths = s.save(&name).map_err(|e| format!("save: {e:?}"))?;
+        return Ok(StagedRitualCiv { save: paths.save, due, civ: civ.to_string(), capital, unit: None, turn: s.g.game_turn() });
+    }
+    if let Some(tech) = ritual_tech {
         g.team_set_has_tech(team, tech, true, Some(h), false, false);
     }
     choose_research(g, h);
@@ -359,6 +378,40 @@ fn ritual_civ_staged(dir: &Path, civ: &str, due: bool) -> Result<StagedRitualCiv
             g.delves.push((from, to));
             let (x, y) = g.map.xy(from);
             unit = Some(g.player_init_unit(h, warrior, x, y, None, None));
+        }
+        "CIVILIZATION_AMURITES" => {
+            // Wellspring's menu in its variants: roads on every land plot of the Amurites (a node
+            // there counts), nodes owned of Body (1), Chaos (2) and Earth (3), on the plots
+            // farthest from the capital (the nearest stay bare for the placement), and an Earth
+            // Elemental (an affinity for Earth Mana).
+            // Culture for the borders' second ring: plots for the nodes and for the placement.
+            g.city_change_culture(capital, h, 100, true, true);
+            let road = d.t::<RouteType>("ROUTE_ROAD");
+            let land: Vec<_> = g.map.plot_ids().filter(|&q| g.map.plots[q].owner == Some(h) && !g.plot_is_water(q) && !g.plot_is_peak(q)).collect();
+            for &q in &land {
+                g.plot_set_route_type(q, Some(road), true);
+            }
+            let manas = ffh_core::ffh::world_ritual_spells::small::wellspring_manas(d);
+            let mut bare: Vec<_> = land.iter().copied().filter(|&q| ffh_core::ffh::world_ritual_spells::small::wellspring_plot_ok(g, h, q)).collect();
+            bare.sort_by_key(|&q| {
+                let (x, y) = g.map.xy(q);
+                (std::cmp::Reverse(g.plot_distance(x, y, cx, cy)), q)
+            });
+            let mut plots = bare.into_iter();
+            for (name, n) in [("BONUS_MANA_BODY", 1), ("BONUS_MANA_CHAOS", 2), ("BONUS_MANA_EARTH", 3)] {
+                let b = d.t::<BonusType>(name);
+                let &(_, node) = manas.iter().find(|&&(m, _)| m == b).ok_or("no node for a mana")?;
+                // Up to `n` (the map may have given them one already).
+                while g.player_get_num_available_bonuses(h, b) < n {
+                    let q = plots.next().ok_or("too few bare plots of the Amurites for the nodes")?;
+                    g.plot_set_bonus_type(q, Some(b));
+                    g.plot_set_improvement_type(q, Some(node));
+                }
+                if g.player_get_num_available_bonuses(h, b) != n {
+                    return Err(format!("{name}: {} owned, not {n}", g.player_get_num_available_bonuses(h, b)));
+                }
+            }
+            unit = Some(g.player_init_unit(h, d.t::<UnitType>("UNIT_EARTH_ELEMENTAL"), cx, cy, None, None));
         }
         "CIVILIZATION_DOVIELLO" => {
             for _ in 0..2 {

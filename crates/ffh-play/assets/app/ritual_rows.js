@@ -100,19 +100,31 @@ export function placePrompt(a, { completed = false, touch = false } = {}) {
   return touch ? s.replace(/\bclick\b/g, "tap") : s;
 }
 
-/** A sphere promotion's tooltip in the placement's menu (`promotions` of a `place_menu` row): its
- *  title, its lines (requirement, free rule) and its spells, each `{name, help}`. */
-export function promoTipParts(p) {
-  return {
-    title: `${p.name}`,
-    lines: [p.needs, p.free].filter(Boolean),
-    spells: (p.spells ?? []).map((s) => ({ name: s.name, help: s.help ?? "" })),
-    none: (p.spells ?? []).length ? null : "Opens no spell.",
-  };
+/** A tier mark's tooltip in the placement's menu (`promotions` of a `place_menu` row): the
+ *  promotion's name, then its requirement and its free rule. */
+export function tierTipParts(p) {
+  return { title: `${p.name}`, lines: [p.needs, p.free].filter(Boolean) };
 }
 
-/** A row's passive lines as shown: `Passive:` and the server's lines, or `Passive: none.` */
-export function passiveText(row) {
-  const l = row?.passive ?? [];
-  return l.length ? l : ["none."];
+/** A spell chip's tooltip: its name, `Needs Fire I.`, then its help (markup). */
+export function spellTipParts(s) {
+  return { title: `${s.name}`, lines: [s.needs].filter(Boolean), help: s.help ?? "" };
+}
+
+/** A spell chip's accessible name: `Blaze. Needs Fire I.` */
+export function spellLabel(s) {
+  return [`${s.name}.`, s.needs].filter(Boolean).join(" ");
+}
+
+/** The text drawn in place of an effect chip's icon before the art loaded (or without one). */
+const CHIP_GLYPHS = { health: "♥", happiness: "☺", affinity: "⚔", buildings: "⌂", info: "i" };
+export function chipGlyph(kind) {
+  return CHIP_GLYPHS[kind] ?? "?";
+}
+
+/** The `icon8/<x>` art name of an effect chip's icon (null: the building's own icon, or the
+ *  glyph). */
+const CHIP_ART = { health: "healthy", happiness: "happy", affinity: "strength" };
+export function chipArt(kind) {
+  return CHIP_ART[kind] ?? null;
 }

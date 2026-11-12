@@ -125,11 +125,15 @@ fn own(v: &Viewer) -> Option<WorldRitual> {
 }
 
 /// The world-spell button's `why` while the human holds no charge of its ritual `project`:
-/// `No charge. Build <ritual> in a city (cost <cost>).`, or with the ritual queued
+/// `No charge. <ritual> requires <tech>.` while the team lacks the ritual's tech, `No charge.
+/// Build <ritual> in a city (cost <cost>).`, or with the ritual queued
 /// `No charge. <ritual>: <progress>/<cost> in <city>, <N> turns.`
 pub fn no_charge_why(v: &Viewer, project: ProjectType) -> String {
     let g = v.g;
     let name = ritual_name(g.d, project);
+    if let Some(t) = g.d.projects[project].tech_prereq.filter(|&t| !g.team_is_has_tech(v.team, Some(t))) {
+        return format!("No charge. {name} requires {}.", crate::names::display(g.d, t));
+    }
     match own(v).filter(|r| r.project == project) {
         Some(WorldRitual { city: Some(c), progress, cost, turns_left, .. }) => {
             let turns = turns_left.map_or(String::new(), |n| format!(", {}", turns_text(n)));
@@ -180,13 +184,29 @@ fn is_tithe(g: &Game, project: ProjectType) -> bool {
     ffh_core::ffh::world_ritual_spells::small::tithe_project(g.d) == Some(project)
 }
 
+/// The tech city `c`'s civilization lacks for its world ritual `project` (`tech_prereq`, e.g.
+/// Ritual: Wellspring's Knowledge of the Ether): the production list shows the ritual, disabled,
+/// instead of hiding it as the rules' visibility test does. `None`: not a world ritual of the
+/// city's civilization, or the tech is known.
+pub fn ritual_needs_tech(g: &Game, c: CityId, project: ProjectType) -> Option<TechType> {
+    let info = &g.d.projects[project];
+    let city = &g.cities[c];
+    if !info.world_ritual || g.is_option(GameOptionType::GAMEOPTION_NO_WORLD_SPELLS) || city.settlement || city.outpost || info.prereq_civilization.is_some_and(|civ| civ != g.city_civilization_type(c)) {
+        return None;
+    }
+    info.tech_prereq.filter(|&t| !g.team_is_has_tech(g.players[city.owner].team, Some(t)))
+}
+
 /// Why city `c` cannot start world ritual `project` now (the production list shows it disabled
-/// with this): `Charge held: cast <spell> first.`, `In progress in <city>.`, `Sanctuary holds: <N>
+/// with this): `Requires <tech>.`, `Charge held: cast <spell> first.`, `In progress in <city>.`, `Sanctuary holds: <N>
 /// turns.`, `No rival named: use Name the Tithe.` (Ritual: The Tithe), else `Not available now.`
 /// (a reason of the rules this list does not know).
 pub fn cannot_reason(g: &Game, c: CityId, project: ProjectType) -> String {
     let d = g.d;
     let p = g.cities[c].owner;
+    if let Some(t) = ritual_needs_tech(g, c, project) {
+        return format!("Requires {}.", crate::names::display(d, t));
+    }
     if g.player_world_ritual_charge_city(p, project).is_some() {
         if let Some(s) = g.world_ritual_spell(project) {
             return format!("Charge held: cast {} first.", crate::names::display(d, s));

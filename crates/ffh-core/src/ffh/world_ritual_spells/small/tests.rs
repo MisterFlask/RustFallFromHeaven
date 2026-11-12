@@ -375,6 +375,29 @@ fn wellspring_raises_a_mana_node_on_a_bare_plot_of_ours() {
     assert!(!g.player_place(US, s, SpellTarget::Choice(wellspring_choice(d, at(&g, 8, 5), fire))));
 }
 
+/// Ritual: Wellspring needs Knowledge of the Ether (the tech that makes Fire and Death nodes
+/// count): no city starts it without; with it, the capital can.
+#[test]
+fn wellspring_ritual_needs_knowledge_of_the_ether() {
+    let mut g = wellspring_game();
+    let d = g.d;
+    let pr = d.t::<ProjectType>("PROJECT_RITUAL_WELLSPRING");
+    let tech = d.t::<TechType>("TECH_KNOWLEDGE_OF_THE_ETHER");
+    assert_eq!(d.projects[pr].tech_prereq, Some(tech));
+    // The charge held from the fixture would forbid a start: spend it first.
+    let fire = d.t::<BonusType>("BONUS_MANA_FIRE");
+    let s = spell(&g, "SPELL_WELLSPRING");
+    let bare = g.map.plot_xy(7, 5).unwrap();
+    assert!(g.player_place(US, s, SpellTarget::Choice(wellspring_choice(d, bare, fire))), "a charge held is placed without the tech");
+    let capital = g.player_get_capital_city(US).unwrap();
+    let team = g.players[US].team;
+    assert!(!g.team_is_has_tech(team, Some(tech)));
+    assert!(!g.city_can_create(capital, pr, false, false));
+    assert!(!g.city_can_create(capital, pr, false, true), "hidden by the rules' visibility test");
+    g.team_set_has_tech(team, tech, true, Some(US), false, false);
+    assert!(g.city_can_create(capital, pr, false, false));
+}
+
 /// No unit casts Wellspring, an arcane one included: the player places it, whatever units it has.
 #[test]
 fn wellspring_is_placed_by_the_player_not_cast_by_a_unit() {

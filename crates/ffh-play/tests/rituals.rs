@@ -341,12 +341,13 @@ fn menu_row<'a>(menu: &'a Json, name: &str) -> &'a Json {
     arr(menu, "rows").iter().find(|r| s_of(r, "name") == Some(name)).unwrap_or_else(|| panic!("no row {name}"))
 }
 
-/// Wellspring's menu on a plot (`place_menu`): a row per mana type with what owning it gives, from
-/// the data and the rules (a resource's health and happiness, the free sphere promotions of new
-/// arcane units, affinity, what it allows), how many the human owns, and its sphere promotions in
-/// tier order, each with the spells it opens and their help. Then a row placed with no unit at all.
+/// Wellspring's menu on a plot (`place_menu`) in the staged game (Body 1, Chaos 2, Earth 3 owned,
+/// roads everywhere, an Earth Elemental): a compact row per mana type: the count before and after,
+/// the sphere's promotions in tier order with their spells from the data, one "now" line by
+/// priority, the effect chips where they apply; every passive sentence in the info chip. Then a
+/// row placed with no unit at all.
 #[test]
-fn wellspring_menu_lists_each_mana_type_with_its_passive_and_its_promotions() {
+fn wellspring_menu_lists_each_mana_type_compactly() {
     let dir = common::TempDir::new("stage-ritual-civ-amurites-menu");
     let st = ffh_play::stage::ritual_civ(&dir.0, "CIVILIZATION_AMURITES").expect("staged");
     let mut s = load(&st.save);
@@ -354,65 +355,129 @@ fn wellspring_menu_lists_each_mana_type_with_its_passive_and_its_promotions() {
     let h = s.human;
     let spell = d.t::<SpellType>("SPELL_WELLSPRING");
     let a = world_action(&s, spell).unwrap();
-    let at = arr(&arr(&a, "targets")[0], "at").to_vec();
-    let (x, y) = (at[0].as_i64().unwrap() as i32, at[1].as_i64().unwrap() as i32);
+    let cap = (s.g.cities[st.capital].x, s.g.cities[st.capital].y);
+    // The plot nearest the capital (connected by the stage's roads).
+    let (x, y) = arr(&a, "targets")
+        .iter()
+        .map(|t| { let at = arr(t, "at"); (at[0].as_i64().unwrap() as i32, at[1].as_i64().unwrap() as i32) })
+        .min_by_key(|&(x, y)| (s.g.plot_distance(x, y, cap.0, cap.1), x, y))
+        .unwrap();
     let menu = s.query(&Query::PlaceMenu { spell, x, y }).unwrap();
     assert_eq!(s_of(&menu, "title"), Some("Wellspring"));
+    assert_eq!(s_of(&menu, "intro"), Some("Choose a mana type for the marked plot. I, II, III: the spells of each tier for Arcane Units."));
     let manas = ffh_core::ffh::world_ritual_spells::small::wellspring_manas(d);
     assert_eq!(arr(&menu, "rows").len(), manas.len(), "every mana type");
+    let names: Vec<&str> = arr(&menu, "rows").iter().filter_map(|r| s_of(r, "name")).collect();
+    let mut sorted = names.clone();
+    sorted.sort();
+    assert_eq!(names, sorted, "by name");
     let v = ffh_play::view::Viewer::new(&s.g, h, false);
+    let owned_of = |name: &str| s.g.player_get_num_available_bonuses(h, d.t::<BonusType>(name));
+    assert_eq!((owned_of("BONUS_MANA_BODY"), owned_of("BONUS_MANA_CHAOS"), owned_of("BONUS_MANA_EARTH")), (1, 2, 3), "the stage's nodes");
     for &(b, _) in &manas {
         let name = d.text.name(&d.bonuses[b].base.description).to_string();
         let row = menu_row(&menu, &name);
         assert_eq!(i_of(row, "bonus"), Some(b.idx() as i64));
-        assert_eq!(s_of(row, "owned"), Some(format!("You own: {}.", s.g.player_get_num_available_bonuses(h, b)).as_str()));
+        let owned = s.g.player_get_num_available_bonuses(h, b) as i64;
+        assert_eq!(i_of(row, "owned"), Some(owned));
+        assert_eq!(i_of(row, "after"), Some(owned + 1), "{name}: a node next to the capital counts");
+        assert_eq!(s_of(row, "count"), Some(format!("{owned} → {}", owned + 1).as_str()));
+        assert_eq!(s_of(row, "count_tip"), Some(format!("You own {owned} {name}. After placing: {}.", owned + 1).as_str()));
         let passive: Vec<&str> = arr(row, "passive").iter().filter_map(Json::as_str).collect();
         assert_eq!(passive, ffh_play::view::place::passive_lines(&v, b), "{name}");
-        let info = &d.bonuses[b];
-        if info.health != 0 {
-            assert!(passive.contains(&format!("{:+} health in each of your cities that has it.", info.health).as_str()), "{name}: {passive:?}");
-        }
-        if info.happiness != 0 {
-            assert!(passive.contains(&format!("{:+} happiness in each of your cities that has it.", info.happiness).as_str()), "{name}: {passive:?}");
-        }
-        // The free promotions rule, and the sphere promotions in tier order.
-        let tiers = ffh_core::ffh::events::adept_mana_promotions(d, b).expect("a sphere");
+        assert!(!passive.iter().any(|l| l.contains("Knowledge of the Ether")), "no tech line: the ritual needs the tech: {passive:?}");
         assert!(passive.contains(&ffh_play::view::place::free_promotions_line(d, b).unwrap().as_str()), "{name}");
+        // The sphere promotions in tier order, each with its spells from the data.
+        let tiers = ffh_core::ffh::events::adept_mana_promotions(d, b).expect("a sphere");
         let promos = arr(row, "promotions");
-        let got: Vec<i64> = promos.iter().filter_map(|p| i_of(p, "promotion")).collect();
-        assert_eq!(got, tiers.iter().map(|p| p.idx() as i64).collect::<Vec<_>>(), "{name}");
+        assert_eq!(promos.iter().filter_map(|p| i_of(p, "promotion")).collect::<Vec<_>>(), tiers.iter().map(|p| p.idx() as i64).collect::<Vec<_>>(), "{name}");
         assert_eq!(promos.iter().filter_map(|p| s_of(p, "tier")).collect::<Vec<_>>(), ["I", "II", "III"]);
         assert_eq!(d.promotions[tiers[0]].bonus_prereq, Some(b), "tier I needs the mana");
         for (p, &t) in promos.iter().zip(&tiers) {
             let want: Vec<SpellType> = d.spells.keys().filter(|&sp| d.spells[sp].promotion_prereq1 == Some(t) || d.spells[sp].promotion_prereq2 == Some(t)).collect();
+            assert!(!want.is_empty(), "{name}: every tier opens a spell");
+            // One entry per spell name (Life III's two Resurrections are one).
+            let mut want_named: Vec<SpellType> = Vec::new();
+            for &sp in &want {
+                if !want_named.iter().any(|&o| d.text.name(&d.spells[o].base.description) == d.text.name(&d.spells[sp].base.description)) {
+                    want_named.push(sp);
+                }
+            }
+            let want = want_named;
             let spells = arr(p, "spells");
             assert_eq!(spells.iter().filter_map(|x| i_of(x, "spell")).collect::<Vec<_>>(), want.iter().map(|x| x.idx() as i64).collect::<Vec<_>>(), "{name}");
             for (j, &sp) in spells.iter().zip(&want) {
-                assert_eq!(s_of(j, "help"), Some(ffh_play::view::help::spell::effects(d, sp).as_str()));
+                let req: Vec<String> = [d.spells[sp].promotion_prereq1, d.spells[sp].promotion_prereq2].into_iter().flatten().map(|q| d.text.name(&d.promotions[q].base.description).to_string()).collect();
+                assert_eq!(s_of(j, "needs"), Some(format!("Needs {}.", req.join(" and ")).as_str()), "{j:?}");
+                assert!(!s_of(j, "help").unwrap().contains("Requires the "), "the requirement is in `needs`: {j:?}");
             }
             assert!(s_of(p, "needs").is_some_and(|n| n.starts_with("Needs ")), "{p:?}");
+            assert!(s_of(p, "free").is_some_and(|n| n.starts_with("Free to new Arcane Units with ")), "{p:?}");
         }
-        // Affinity: every unit type with one for this mana is named.
-        for u in d.units.keys().filter(|&u| d.units[u].bonus_affinity[b] != 0) {
-            let unit = d.text.name(&d.units[u].base.description).to_string();
-            assert!(passive.iter().any(|l| l.starts_with("Affinity: ") && l.contains(&unit)), "{name}: {unit} in {passive:?}");
+        // Effect chips: health and happiness from the data, the info chip always, last.
+        let chips = arr(row, "chips");
+        let kinds: Vec<&str> = chips.iter().filter_map(|c| s_of(c, "kind")).collect();
+        assert_eq!(kinds.contains(&"health"), d.bonuses[b].health != 0, "{name}: {kinds:?}");
+        assert_eq!(kinds.contains(&"happiness"), d.bonuses[b].happiness != 0, "{name}: {kinds:?}");
+        assert_eq!(kinds.last(), Some(&"info"));
+        let info = chips.last().unwrap();
+        assert_eq!(arr(info, "tip").iter().filter_map(Json::as_str).collect::<Vec<_>>(), passive, "{name}: every passive line in the info chip");
+        // Affinity: only for a mana a unit of the human's has one for, or one it can build.
+        let ours = s.g.players[h].units.iter().any(|&u| s.g.units[u].bonus_affinity[b] != 0);
+        let can = d.units.keys().any(|u| d.units[u].bonus_affinity[b] != 0 && s.g.player_can_train(h, u, false, false, false));
+        assert_eq!(kinds.contains(&"affinity"), ours || can, "{name}: {kinds:?}");
+        for c in chips {
+            assert!(s_of(c, "aria").is_some_and(|a| !a.is_empty()), "{c:?}");
         }
     }
-    // A sample read from the data: Life Mana's health, Enchantment Mana's happiness, Fire Mana's
-    // free Fire I with 2 or more, and the Fire Elemental's affinity for it.
-    let life = arr(menu_row(&menu, "Life Mana"), "passive").iter().filter_map(Json::as_str).map(str::to_string).collect::<Vec<_>>();
-    assert!(life.contains(&"+1 health in each of your cities that has it.".to_string()), "{life:?}");
-    let ench = arr(menu_row(&menu, "Enchantment Mana"), "passive").iter().filter_map(Json::as_str).map(str::to_string).collect::<Vec<_>>();
-    assert!(ench.contains(&"+1 happiness in each of your cities that has it.".to_string()), "{ench:?}");
+    // Life's health and Enchantment's happiness chips, from the data.
+    let chip = |row: &Json, kind: &str| arr(row, "chips").iter().find(|c| s_of(c, "kind") == Some(kind)).cloned();
+    let life = chip(menu_row(&menu, "Life Mana"), "health").expect("Life's health chip");
+    assert_eq!(s_of(&life, "label"), Some("+1"));
+    assert_eq!(arr(&life, "tip")[0].as_str(), Some("+1 health in each of your cities that has it."));
+    assert_eq!(chip(menu_row(&menu, "Enchantment Mana"), "happiness").and_then(|c| s_of(&c, "label").map(str::to_string)).as_deref(), Some("+1"));
+    // Earth: the staged Earth Elemental's affinity; Fire: no unit of the human's has one.
+    let earth = chip(menu_row(&menu, "Earth Mana"), "affinity").expect("the Earth Elemental's affinity");
+    let tip: Vec<&str> = arr(&earth, "tip").iter().filter_map(Json::as_str).collect();
+    assert_eq!(tip[0], "Affinity: +1 strength per Earth Mana you own, for Djinn, Dwarven Druid and Earth Elemental.");
+    assert!(tip.contains(&"Yours: Earth Elemental."), "{tip:?}");
+    assert!(chip(menu_row(&menu, "Fire Mana"), "affinity").is_none(), "no Fire Elemental");
+    // The now lines: the first node, and each free-promotion threshold crossed.
+    let now = |name: &str| menu_row(&menu, name).get("now").map(|n| (s_of(n, "text").unwrap().to_string(), n.get("warn").and_then(Json::as_bool).unwrap()));
+    let zero = arr(&menu, "rows").iter().find(|r| i_of(r, "owned") == Some(0)).expect("a mana not owned");
+    let tier1 = s_of(&arr(zero, "promotions")[0], "name").unwrap();
+    assert_eq!(zero.get("now").and_then(|n| s_of(n, "text")), Some(format!("First node: Arcane Units with Channeling I can learn {tier1}.").as_str()));
+    assert_eq!(now("Body Mana"), Some(("New Arcane Units start with Body I.".to_string(), false)));
+    assert_eq!(now("Chaos Mana"), Some(("New Arcane Units with Channeling II start with Chaos II.".to_string(), false)));
+    assert_eq!(now("Earth Mana"), Some(("New Arcane Units with Channeling III start with Earth III.".to_string(), false)));
+    // The buildings chip: Air's first node meets Storm Forge's requirement, not Tower of the
+    // Elements' (Earth owned meets it already); Fire I's spells.
+    let air = chip(menu_row(&menu, "Air Mana"), "buildings").expect("Air allows Tower of the Elements");
+    assert_eq!(arr(&air, "tip")[0].as_str(), Some("This node meets the mana requirement of Storm Forge."), "not Tower of the Elements: Earth Mana meets it already: {air:?}");
+    for r in arr(&menu, "rows") {
+        if let Some(b) = chip(r, "buildings").filter(|b| b.get("new").and_then(Json::as_bool) == Some(true)) {
+            assert_eq!(i_of(r, "owned"), Some(0), "{r:?}");
+            assert!(arr(&b, "tip")[0].as_str().unwrap().starts_with("This node meets the mana requirement of "), "{b:?}");
+        }
+    }
     let fire = menu_row(&menu, "Fire Mana");
-    let fire_passive = arr(fire, "passive").iter().filter_map(Json::as_str).collect::<Vec<_>>().join(" ");
-    assert!(fire_passive.contains("Fire I with 2 or more Fire Mana"), "{fire_passive}");
-    assert!(fire_passive.contains("Fire Elemental"), "{fire_passive}");
     let fire1 = &arr(fire, "promotions")[0];
     assert_eq!(s_of(fire1, "name"), Some("Fire I"));
-    assert!(arr(fire1, "spells").iter().any(|x| s_of(x, "name") == Some("Blaze")), "{fire1:?}");
+    assert_eq!(arr(fire1, "spells").iter().filter_map(|x| s_of(x, "name")).collect::<Vec<_>>(), ["Blaze", "Firebolt"]);
     // Not a valid plot: refused.
     assert!(s.query(&Query::PlaceMenu { spell, x: st_capital_x(&s, st.capital), y: s.g.cities[st.capital].y }).is_err(), "the capital's plot");
+
+    // A plot off the trade network (no road, no river): the node would not count.
+    let q = s.g.map.plot_idx(x, y).unwrap();
+    if !s.g.plot_is_river(q) {
+        s.g.plot_set_route_type(q, None, true);
+        let off = s.query(&Query::PlaceMenu { spell, x, y }).unwrap();
+        let fire = menu_row(&off, "Fire Mana");
+        assert_eq!(i_of(fire, "after"), i_of(fire, "owned"));
+        assert_eq!(fire.get("now").and_then(|n| s_of(n, "text")), Some("No effect: the plot is not connected to your capital."));
+        assert_eq!(fire.get("now").and_then(|n| n.get("warn")).and_then(Json::as_bool), Some(true));
+        s.g.plot_set_route_type(q, Some(d.t::<RouteType>("ROUTE_ROAD")), true);
+    }
 
     // Placed with no unit at all.
     for u in s.g.players[h].units.clone() {
@@ -424,13 +489,36 @@ fn wellspring_menu_lists_each_mana_type_with_its_passive_and_its_promotions() {
     let cmd = Command::from_json(d, &Json::parse(&format!(r#"{{"c":"place","spell":"SPELL_WELLSPRING","target":{target}}}"#)).unwrap()).unwrap();
     let r = s.execute(&cmd);
     assert!(matches!(r, Ok(CmdOk::Applied { .. })), "{r:?}");
-    let q = s.g.map.plot_idx(x, y).unwrap();
     assert_eq!(s.g.map.plots[q].bonus_type, Some(d.t::<BonusType>("BONUS_MANA_FIRE")));
+    assert_eq!(s.g.player_get_num_available_bonuses(h, d.t::<BonusType>("BONUS_MANA_FIRE")) as i64, i_of(fire, "after").unwrap(), "the node counts, as the menu said");
     let a = world_action(&s, spell).unwrap();
     assert!(a.get("place").is_none(), "the charge is spent: {a:?}");
     assert_eq!(a.get("enabled").and_then(Json::as_bool), Some(false));
     // No charge: a second placement is refused.
     assert!(s.execute(&cmd).is_err());
+}
+
+/// `ffh-play stage ritual-notech:CIVILIZATION_AMURITES`: Ritual: Wellspring needs Knowledge of the
+/// Ether: the production list shows it disabled with the requirement, and the world-spell button
+/// says so.
+#[test]
+fn wellspring_ritual_is_listed_with_its_tech_requirement() {
+    let dir = common::TempDir::new("stage-ritual-notech-amurites");
+    let st = ffh_play::stage::ritual_notech(&dir.0, "CIVILIZATION_AMURITES").expect("staged");
+    let mut s = load(&st.save);
+    let d = s.g.d;
+    let h = s.human;
+    let project = project_of(&s, h);
+    let entry = ritual_entry(&s, st.capital, project);
+    assert_eq!(entry.get("enabled").and_then(Json::as_bool), Some(false));
+    assert_eq!(entry.get("ritual").and_then(|r| s_of(r, "why")), Some("Requires Knowledge of the Ether."));
+    let a = world_action(&s, d.t::<SpellType>("SPELL_WELLSPRING")).unwrap();
+    assert_eq!(s_of(&a, "why"), Some("No charge. Ritual: Wellspring requires Knowledge of the Ether."), "{a:?}");
+    // With the tech: listed and enabled.
+    let team = s.g.players[h].team;
+    s.g.team_set_has_tech(team, d.t::<TechType>("TECH_KNOWLEDGE_OF_THE_ETHER"), true, Some(h), false, false);
+    let entry = ritual_entry(&s, st.capital, project);
+    assert_eq!(entry.get("enabled").and_then(Json::as_bool), Some(true));
 }
 
 fn st_capital_x(s: &Session, c: CityId) -> i32 {

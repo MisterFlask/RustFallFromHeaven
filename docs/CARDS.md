@@ -336,7 +336,8 @@ ritual as `ritual_charge`, a project with `world_ritual` (`PROJECT_RITUAL_<NAME>
   Calabim's The Tithe (needs a rival named by Name the Tithe, a `world_action`; acts at completion;
   cancelled by peace or the rival's death), the Doviello's The Cull (a plot), the Luchuirp's
   Upgrade (acts at completion: `Unit::reinforced`), the Amurites' Wellspring (a choice: plot and
-  mana type; placed by the player, no unit casting it: below).
+  mana type; placed by the player, no unit casting it: below; its ritual needs Knowledge of the
+  Ether, the tech Fire and Death nodes need to count).
 - **Placed world spells** (`place_on_charge` in spells.jsonc, only Wellspring): the player places
   the spell with its ritual's charge, no unit casting it (`Game::player_can_place`,
   `player_place_targets`, `player_place`: the charge spent from the first city holding one, the

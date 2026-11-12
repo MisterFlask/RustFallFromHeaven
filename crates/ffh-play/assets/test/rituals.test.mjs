@@ -93,15 +93,16 @@ test("the placement's prompt", () => {
   assert.equal(R.placePrompt(place(false)), "");
 });
 
-test("the mana menu's rows: passive lines and the sphere promotions' tooltips", () => {
-  assert.deepEqual(R.passiveText({ passive: ["+1 health in each of your cities that has it."] }), ["+1 health in each of your cities that has it."]);
-  assert.deepEqual(R.passiveText({ passive: [] }), ["none."]);
-  const fire1 = { name: "Fire I", needs: "Needs Channeling I and Fire Mana.", free: "Free to new Arcane Units with 2 or more Fire Mana.", spells: [{ name: "Blaze", help: "[ICON_BULLET]Creates Smoke" }] };
-  assert.deepEqual(R.promoTipParts(fire1), {
-    title: "Fire I",
-    lines: ["Needs Channeling I and Fire Mana.", "Free to new Arcane Units with 2 or more Fire Mana."],
-    spells: [{ name: "Blaze", help: "[ICON_BULLET]Creates Smoke" }],
-    none: null,
-  });
-  assert.equal(R.promoTipParts({ name: "Ice III", needs: "", spells: [] }).none, "Opens no spell.");
+test("the mana menu's rows: the tier marks', spell chips' and effect chips' tooltips", () => {
+  const fire1 = { name: "Fire I", needs: "Needs Channeling I and Fire Mana.", free: "Free to new Arcane Units with 2 or more Fire Mana.", spells: [] };
+  assert.deepEqual(R.tierTipParts(fire1), { title: "Fire I", lines: ["Needs Channeling I and Fire Mana.", "Free to new Arcane Units with 2 or more Fire Mana."] });
+  assert.deepEqual(R.tierTipParts({ name: "Ice III", needs: "" }).lines, []);
+  const blaze = { name: "Blaze", needs: "Needs Fire I.", help: "[ICON_BULLET]Creates Smoke" };
+  assert.deepEqual(R.spellTipParts(blaze), { title: "Blaze", lines: ["Needs Fire I."], help: "[ICON_BULLET]Creates Smoke" });
+  assert.equal(R.spellLabel(blaze), "Blaze. Needs Fire I.");
+  assert.equal(R.spellTipParts({ name: "Wave" }).help, "");
+  assert.equal(R.chipGlyph("health"), "♥");
+  assert.equal(R.chipGlyph("info"), "i");
+  assert.equal(R.chipArt("happiness"), "happy");
+  assert.equal(R.chipArt("buildings"), null);
 });

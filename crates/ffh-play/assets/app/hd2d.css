@@ -341,3 +341,6 @@ html.iso.hd2d .unlock { background: rgba(0, 0, 0, 0.36); }
   html.iso.hd2d .cplot { font: 400 12px/13px var(--iso-font); }
   html.iso.hd2d #empire::after { background: linear-gradient(90deg, rgba(9, 9, 11, 0), var(--iso-navy-bot) 85%); }
 }
+/* Wellspring's menu (place.js): flat chips. */
+html.iso.hd2d button:is(.place-spell, .place-chip) { background: rgba(24, 23, 27, 0.95); border: 1px solid var(--hd-faint); text-shadow: none; }
+html.iso.hd2d button.place-tier { background: none; color: var(--hd-dim); }

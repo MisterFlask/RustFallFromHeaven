@@ -175,6 +175,11 @@ flag.
   (`SpellInfo::place_on_charge`, `Game::player_place`: the charge spent, the cast counted and
   announced, the node placed; no unit loses its action, no miscast). No unit can cast it. The
   human's placement opens by itself when the ritual completes (docs/HUMAN.md, "World rituals").
+  **Ritual: Wellspring needs Knowledge of the Ether** (the owner's decision, 2026-11-12;
+  `tech_prereq` in projects.jsonc). Fire and Death nodes count only once the team knows it
+  (`tech_city_trade`; the other 15 typed manas need no tech), so a Wellspring before it could
+  place a node that gave nothing. A charge held from before (an old save) is still placed, the tech
+  or not. The production list shows the ritual disabled, `Requires Knowledge of the Ether.`
 
 - **Raging Seas is a storm the Lanun steer; Mother Lode is replaced by The Delve** (the owner's
   decision, 2026-11-11; save format 38). Raging Seas (FFH2: 75 cold damage, two draws, to every
