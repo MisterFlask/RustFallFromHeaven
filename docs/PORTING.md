@@ -105,6 +105,20 @@ Army Combat", 2026-10-29). They were game options until 2026-11-05 (engagement c
 no longer playable side by side. Save format 16 removed the last three options and the crusade
 flag.
 
+- **Every project is a Ritual** (the owner's decision, 2026-11-12: "Rituals ... cannot be
+  delayed-without-loss-of-production or hurried with money (slaves is fine)";
+  `ffh-core/src/ffh/rituals.rs`, docs/CARDS.md "World rituals"). Every project (FFH2's 17, such
+  as Rites of Oghma, Genesis and Bane Divine, and the 21 world rituals) is a ritual, under two
+  rules that were the world rituals' alone the day before: a ritual with production that is not
+  its city's first build (taken off the queue, or put behind another order) loses all its
+  production in that city (in FFH2 a project's production waited in the city); and a gold hurry is
+  refused while the city's first build is a ritual. In turn every ritual can be hurried with
+  population (Slavery), and a great person's hurry (a Great Engineer) adds its production to one;
+  in FFH2 neither hurried a project, and the world rituals of 2026-11-11 refused every hurry and
+  every one-step addition of production (now a Soul Forge's or a Great Engineer's production goes
+  into a world ritual as into any build). An army's requisition or an empire order does not go in
+  front of any ritual in progress. Why: a ritual is a commitment of the city that builds it, which
+  money cannot shortcut; its rules are told once, as the keyword `Ritual`'s reminder text.
 - **Frozen Passage replaces Stasis** (the Illians' world spell; the owner's decision, 2026-11-11;
   save format 38; `ffh-core/src/ffh/world_ritual_spells/illians.rs`). Stasis (`SPELL_STASIS`,
   `spellStasis`) is removed: it took 20 turns of production and research from every other player,
@@ -130,11 +144,9 @@ flag.
   (no cap on the count). A completion leaves a charge in its city; the charge is the empire's: any
   unit meeting the spell's other requirements casts the spell while a city of the owner holds a
   charge, and the cast spends it. A captured or destroyed city loses its charges. A player holds at
-  most one charge and builds the ritual in one city at a time. Once a city has put production into
-  it, it stays that city's current production: taken off the queue or put behind another order, its
-  production is lost (an army's requisition and an empire order do not go in front of it). It
-  cannot be hurried (gold, population) or given production in one step (a Great Engineer, the Soul
-  Forge): only the turn's production and its overflow. Every player is told when one begins, is
+  most one charge and builds the ritual in one city at a time. As every ritual since 2026-11-12
+  (below, "Every project is a Ritual"), its production is lost when it is taken off the head of
+  its city's queue, and it is not hurried with gold. Every player is told when one begins, is
   abandoned or completes. The Sanctuary's is not built while the Elohim's Sanctuary holds.
   `GAMEOPTION_NO_WORLD_SPELLS` forbids the rituals too. Birthright Regained, which in FFH2 let the
   world spell be cast again, undoes one doubling of the ritual's cost and needs a completion

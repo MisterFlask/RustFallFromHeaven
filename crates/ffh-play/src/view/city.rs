@@ -476,6 +476,8 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         .map(|hu| crate::jobj! {
             "hurry" => Json::idx(hu), "enabled" => g.city_can_hurry(c, hu, false),
             "gold" => g.city_hurry_gold(c, hu), "population" => g.city_hurry_population(c, hu),
+            // A ritual at the head (ffh-core's `ffh::rituals`): why its gold hurry is disabled.
+            "reason" => crate::view::rituals::hurry_reason(g, c, hu),
         })
         .collect();
     let mut out = crate::jobj! {
@@ -552,8 +554,8 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         // This game's outposts (docs/NAVAL.md, 9 and 10): the lane, starving, raising; null for a city.
         "outpost" => crate::view::outposts::city(v, c),
     };
-    // World rituals (docs/CARDS.md): the ritual in progress at the head of the queue (asked before
-    // it is taken off) and the hurry buttons' note.
+    // Rituals (docs/CARDS.md): the ritual in progress at the head of the queue (asked before it is
+    // taken off).
     crate::view::rituals::city_fields(g, c, &mut out);
     Ok(out)
 }

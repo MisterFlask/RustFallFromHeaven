@@ -659,9 +659,9 @@ impl Game {
             self.city_pop_order(c, lead as i32, false, false);
         }
 
-        // This game's world rituals (docs/CARDS.md): an army's requisition or an empire order
-        // does not go in front of a world ritual in progress (it would be abandoned).
-        if kind != OrderKind::Own && self.city_world_ritual_in_progress(c).is_some() {
+        // This game's rituals (`ffh::rituals`): an army's requisition or an empire order does not
+        // go in front of a ritual in progress (its production would be lost).
+        if kind != OrderKind::Own && self.city_ritual_in_progress(c).is_some() {
             let q = &self.cities[c].order_queue;
             let index = if kind == OrderKind::Requisition { q.iter().take_while(|o| o.requisition).count() } else { self.city_lead_orders(c) };
             if index == 0 {
@@ -744,9 +744,9 @@ impl Game {
             self.city_start_head_order(c);
         }
 
-        // This game's world rituals (docs/CARDS.md): one put behind the new order is abandoned.
+        // This game's rituals (`ffh::rituals`): one put behind the new order loses its production.
         if front {
-            self.city_check_world_rituals(c);
+            self.city_check_rituals(c);
         }
 
         // Interface dirty bits.
@@ -975,9 +975,9 @@ impl Game {
             self.city_start_head_order(c);
         }
 
-        // This game's world rituals (docs/CARDS.md): one taken off the queue with production put
-        // into it is abandoned.
-        self.city_check_world_rituals(c);
+        // This game's rituals (`ffh::rituals`): one taken off the queue with production put into
+        // it loses that production.
+        self.city_check_rituals(c);
 
         // Interface dirty bits.
 

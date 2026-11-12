@@ -3,8 +3,10 @@
 //! after the empire decisions, a player with no charge and no ritual under way starts it in its
 //! city with the most production, when it has at least two cities (one if it may hold no more),
 //! no city in peril, and that city completes it within [`MAX_TURNS`] turns. The AI never sets a
-//! ritual under way aside: nothing it queues goes in front of one ([`locked`]), so only losing the
-//! city ends it. A civilization's own condition ([`civ_gate`]) can hold a ritual back.
+//! ritual under way aside (any project: every project is a ritual, ffh-core's `ffh::rituals`):
+//! nothing it queues goes in front of one ([`locked`]), so only losing the city ends it. It never
+//! tries a gold hurry on one (the rules refuse it); its population hurries are for urgent units
+//! only (`empire::hurry`), as for any other build. A civilization's own condition ([`civ_gate`]) can hold a ritual back.
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -15,10 +17,10 @@ use crate::view::View;
 /// The most turns of its best city's production a world ritual may take for the AI to start it.
 pub const MAX_TURNS: i32 = 20;
 
-/// Is city `c` building a world ritual with production in it (the AI puts nothing in front of
-/// it: that would abandon it)?
+/// Is city `c` building a ritual (any project) with production in it (the AI puts nothing in
+/// front of it: that would lose its production)?
 pub fn locked(g: &Game, c: CityId) -> bool {
-    g.city_world_ritual_in_progress(c).is_some()
+    g.city_ritual_in_progress(c).is_some()
 }
 
 /// Once a turn: start the world ritual where and when it is worth it (module doc).

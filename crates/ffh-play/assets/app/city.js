@@ -54,7 +54,7 @@ addHelp({
 const GROUPS = [
   [0, "Units"],
   [1, "Buildings"],
-  [2, "Projects and rituals"],
+  [2, "Rituals"],
   [3, "Processes"],
 ];
 
@@ -119,12 +119,12 @@ export async function openCity(id, { popup = false } = {}) {
   };
   /** The city as last read (its `ritual_head`: a world ritual in progress at the head). */
   let current = null;
-  /** A world ritual in progress at the head of the queue (docs/CARDS.md) loses its production
-   *  when an action takes it off the head: asked first, Cancel focused. */
+  /** A ritual (any project) in progress at the head of the queue (docs/CARDS.md) loses its
+   *  production when an action takes it off the head: asked first, Cancel focused. */
   const abandonOk = async () => {
     const head = current?.id === cityId ? current.ritual_head : null;
     if (!head) return true;
-    return !!(await ask("World ritual", head.confirm, [
+    return !!(await ask("Ritual", head.confirm, [
       { label: "Abandon", value: true, danger: true },
       { label: "Cancel", value: null },
     ], { tag: "abandon-ritual" }));
@@ -707,18 +707,17 @@ function buildingsView(c, reload) {
 }
 
 function manageView(c, task) {
-  const hurries = c.hurries.map((x) =>
-    h(
-      "button.small",
-      { disabled: !x.enabled, "data-hurry": x.hurry, title: dname("HurryType", x.hurry), onclick: () => task("TASK_HURRY", x.hurry) },
-      `${dname("HurryType", x.hurry)}${x.gold ? ` (${x.gold} gold)` : ""}${x.population ? ` (${x.population} pop.)` : ""}`,
-    ),
-  );
-  // A world ritual at the head of the queue (docs/CARDS.md): the hurry button stays, disabled,
-  // with the rule.
-  if (c.hurry_note && !hurries.length) {
-    hurries.push(h("button.small.hurry-ritual", { disabled: true, title: c.hurry_note, "aria-label": `Hurry: ${c.hurry_note}` }, "Hurry"), h("span.dim.small.hurry-note", c.hurry_note));
-  }
+  // A ritual at the head of the queue (docs/CARDS.md): its gold hurry stays, disabled, with the
+  // server's reason (`Cannot be hurried with gold (Ritual).`).
+  const hurries = c.hurries.map((x) => {
+    const label = `${dname("HurryType", x.hurry)}${x.gold ? ` (${x.gold} gold)` : ""}${x.population ? ` (${x.population} pop.)` : ""}`;
+    const button = h(
+      `button.small${x.reason ? ".hurry-ritual" : ""}`,
+      { disabled: !x.enabled, "data-hurry": x.hurry, title: x.reason ?? dname("HurryType", x.hurry), "aria-label": x.reason ? `${label}: ${x.reason}` : null, onclick: () => task("TASK_HURRY", x.hurry) },
+      label,
+    );
+    return x.reason && !x.enabled ? [button, h("span.dim.small.hurry-note", x.reason)] : button;
+  });
   // A governed city's emphasis is its role's (shown, not chosen).
   const governed = !!c.governance?.governed;
   const emphasize = c.emphasize.map((on, e) =>

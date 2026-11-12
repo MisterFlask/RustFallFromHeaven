@@ -314,13 +314,19 @@ ritual as `ritual_charge`, a project with `world_ritual` (`PROJECT_RITUAL_<NAME>
   that city's (`ritual_charge_city`, `unit_has_ritual_charge`). A captured city loses its charges.
 - One charge at most per player, one city building it at a time (`world_rituals::cannot_create`,
   player-wide, outside a visibility test).
-- Not parked: with production in it, it stays the head of its city's queue; taken off or put behind
-  another order, its production is lost (`city_check_world_rituals`, after every insertion and
-  removal in `city_push_order_kind` / `city_pop_order`). Requisitions and empire orders are refused
-  in front of it (`city_push_order_kind` returns `None`).
-- Not hurried: `city_can_hurry`, `unit_can_hurry` refuse it, and `city_change_production` (every
-  one-step addition) adds nothing to it; the turn's production goes through
-  `city_add_turn_production`.
+- Two limits are no longer the world rituals' own: since the owner's decision of 2026-11-12
+  **every project is a Ritual** (`crates/ffh-core/src/ffh/rituals.rs`; the keyword `Ritual`,
+  docs/PLAY_DESIGN.md "Keywords and reminder text"), and for every ritual:
+  - Not parked: with production in it, it stays the head of its city's queue; taken off or put
+    behind another order, its production is lost (`city_check_rituals`, after every insertion and
+    removal in `city_push_order_kind` / `city_pop_order`; the "abandoned" news only for a world
+    ritual). Requisitions and empire orders are refused in front of one in progress
+    (`city_push_order_kind` returns `None`).
+  - Not hurried with gold: a hurry with a gold cost (`gold_per_production > 0`) is refused while
+    the city's first build is a ritual (`city_can_hurry`: shown, disabled). Hurrying with
+    population is allowed, and so is a great person's hurry (`unit_can_hurry`: production, not
+    gold); in FFH2 neither hurried a project. One-step production (`city_change_production`: the
+    Soul Forge, a Great Engineer) goes into a ritual as into any build.
 - The cost doubles per completion by the player, `max(0, world_ritual_completions -
   world_ritual_refunds)` times, with no cap on the count (`grow_cost`, at most
   `WORLD_RITUAL_MAX_COST`); `player_project_production_needed_at(p, project, extra)` gives the

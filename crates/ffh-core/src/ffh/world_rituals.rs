@@ -7,15 +7,13 @@
 //!   captured or destroyed city loses its charges. A player holds at most one charge and does not
 //!   start the ritual again while it holds one;
 //! - the ritual is built in one city of a player at a time;
-//! - once a city has put production into it, it stays that city's current production until it
-//!   completes: removed from the queue or no longer first in it, its production is lost
-//!   ([`Game::city_check_world_rituals`]); the armies' requisitions and the empire orders do not go
-//!   in front of it;
-//! - it cannot be hurried, nor take production in one step (gold, population, a Great Engineer,
-//!   the Soul Forge): only the city's production of the turn and its overflow;
+//! - as every ritual (`rituals.rs`; the owner's decision, 2026-11-12): taken off the head of its
+//!   city's queue it loses its production, and it is not hurried with gold (population and a great
+//!   person's hurry are allowed);
 //! - each completion doubles the next cost (`repeat_cost_percent`), with no cap on the number of
 //!   doublings; Birthright Regained undoes one (`Player::world_ritual_refunds`);
-//! - every player is told when one starts, is abandoned or completes;
+//! - every player is told when one starts, is abandoned (its production lost:
+//!   [`Game::city_check_rituals`]) or completes;
 //! - the Elohim's Sanctuary ritual is not built while their Sanctuary holds
 //!   (`Player::sanctuary_timer`); `GAMEOPTION_NO_WORLD_SPELLS` forbids every world ritual.
 //!
@@ -230,17 +228,9 @@ impl Game {
         self.city_head_world_ritual(c).filter(|&pr| self.cities[c].project_production[pr] > 0)
     }
 
-    /// After a change to city `c`'s queue: a world ritual with production that is no longer
-    /// first in it (taken off, or put behind another order) is abandoned, its production lost.
-    pub fn city_check_world_rituals(&mut self, c: CityId) {
-        let d = self.d;
-        let head = self.city_head_world_ritual(c);
-        for project in d.projects.keys() {
-            if d.projects[project].world_ritual && self.cities[c].project_production[project] > 0 && head != Some(project) {
-                self.cities[c].project_production[project] = 0;
-                self.world_ritual_news(c, project, "abandoned");
-            }
-        }
+    /// City `c` has lost the production of world ritual `project` ([`Game::city_check_rituals`]).
+    pub(crate) fn world_ritual_abandoned(&mut self, c: CityId, project: ProjectType) {
+        self.world_ritual_news(c, project, "abandoned");
     }
 
     /// City `c` has put its first production into world ritual `project`.

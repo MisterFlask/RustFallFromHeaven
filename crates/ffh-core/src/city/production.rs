@@ -857,12 +857,9 @@ impl Game {
     }
 
     /// C++ `CvCity::changeProduction` (CvCity.cpp:3253-3267): production added in one step (a
-    /// hurry, a Great Engineer, the Soul Forge, ...). This game's world rituals (docs/CARDS.md)
-    /// take none: only the turn's production ([`Game::city_add_turn_production`]).
+    /// hurry, a Great Engineer, the Soul Forge, ...). A ritual takes it as any build does; what it
+    /// refuses is a gold hurry ([`Game::city_can_hurry`]).
     pub fn city_change_production(&mut self, c: CityId, change: i32) {
-        if change > 0 && self.city_head_world_ritual(c).is_some() {
-            return;
-        }
         self.city_add_turn_production(c, change);
     }
 
@@ -1042,13 +1039,14 @@ impl Game {
             return false;
         }
 
-        // This game's world rituals (docs/CARDS.md): never hurried.
-        if self.city_head_world_ritual(c).is_some() {
-            return false;
-        }
-
         if !test_visible {
-            if !self.city_is_production_unit(c) && !self.city_is_production_building(c) {
+            // This game's rituals (`ffh::rituals`): every project is one, hurried with population
+            // (FFH2 hurried no project), never with gold (shown, refused).
+            if !self.city_is_production_unit(c) && !self.city_is_production_building(c) && !self.city_is_production_project(c) {
+                return false;
+            }
+
+            if self.city_head_ritual(c).is_some() && self.hurry_is_gold(hurry) {
                 return false;
             }
 

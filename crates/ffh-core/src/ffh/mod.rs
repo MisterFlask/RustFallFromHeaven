@@ -19,4 +19,5 @@ pub mod spells;
 pub mod spells_a;
 pub mod spells_b;
 pub mod world_ritual_spells;
+pub mod rituals;
 pub mod world_rituals;

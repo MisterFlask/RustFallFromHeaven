@@ -168,7 +168,7 @@ pub fn world_ritual_rules(charges: bool, repeat: i32) -> Vec<String> {
     let mut out = vec![
         "World ritual: one in progress per player, in one city".to_string(),
         "Taken off the head of the queue, its production is lost".to_string(),
-        "Cannot be hurried".to_string(),
+        "Cannot be hurried with gold".to_string(),
     ];
     match repeat {
         200 => out.push("Each completion doubles the next cost".to_string()),
@@ -197,7 +197,7 @@ mod tests {
             "[ICON_BULLET]Each completion: one cast of Warcry by any unit of yours",
             "[ICON_BULLET]World ritual: one in progress per player, in one city",
             "[ICON_BULLET]Taken off the head of the queue, its production is lost",
-            "[ICON_BULLET]Cannot be hurried",
+            "[ICON_BULLET]Cannot be hurried with gold",
             "[ICON_BULLET]Each completion doubles the next cost",
             "[ICON_BULLET]At most one charge held; not started again while one is held",
             "[ICON_BULLET]A captured city loses its ritual progress and its charge",

@@ -993,12 +993,9 @@ impl Game {
             return false;
         }
 
-        // This game's world rituals (docs/CARDS.md): no Great Engineer finishes one.
-        if self.city_head_world_ritual(city).is_some() {
-            return false;
-        }
-
-        if !test_visible && !self.city_is_production_building(city) {
+        // This game's rituals (`ffh::rituals`): every project is one, and a great person's hurry
+        // is production, not gold: it hurries a ritual (FFH2's hurried buildings only).
+        if !test_visible && !self.city_is_production_building(city) && !self.city_is_production_project(city) {
             return false;
         }
 

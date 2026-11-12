@@ -35,7 +35,7 @@ addHelp({
       h("li", "A civilization's world spell spends a charge. A charge is made by building the civilization's ritual (a project) in a city."),
       h("li", "One ritual in progress per player, in one city."),
       h("li", "Taken off the head of the queue, a ritual's production is lost."),
-      h("li", "A ritual cannot be hurried."),
+      h("li", "A ritual cannot be hurried with gold. Hurrying with population is allowed."),
       h("li", "Each completion doubles the next cost."),
       h("li", "A player holds at most one charge and cannot start the ritual again while holding it."),
       h("li", "A captured city loses its ritual progress and its charge."),

@@ -161,11 +161,11 @@ pub fn charge_line_verb(v: &Viewer, project: ProjectType, verb: &str) -> Option<
 
 /// The production dialog's line for world ritual `project` in city `c`: `World ritual. One in
 /// progress per player. Taken off the head of the queue, its production is lost. Cannot be
-/// hurried. Each completion doubles the next cost (next: <next_cost>).`
+/// hurried with gold. Each completion doubles the next cost (next: <next_cost>).`
 pub fn rules_line(g: &Game, c: CityId, project: ProjectType) -> String {
     let p = g.cities[c].owner;
     let next = g.player_project_production_needed_at(p, project, 1);
-    let mut s = String::from("World ritual. One in progress per player. Taken off the head of the queue, its production is lost. Cannot be hurried.");
+    let mut s = String::from("World ritual. One in progress per player. Taken off the head of the queue, its production is lost. Cannot be hurried with gold.");
     match g.d.projects[project].repeat_cost_percent {
         200 => s.push_str(&format!(" Each completion doubles the next cost (next: {next}).")),
         n if n > 0 => s.push_str(&format!(" Each completion sets the next cost to {n}% of the last (next: {next}).")),
@@ -259,13 +259,12 @@ pub fn target_confirm(g: &Game, h: PlayerId, spell: SpellType, target: ffh_core:
     Some(crate::jobj! { "title" => crate::names::display(d, spell).into_owned(), "text" => text, "ok" => "Name" })
 }
 
-/// The city screen's ritual fields: `ritual_head` (the world ritual in progress at the head of the
-/// queue, with the question asked before an action takes it off: `Abandon <ritual>? Its <N>
-/// production is lost.`) and `hurry_note` (a world ritual at the head: `A world ritual cannot be
-/// hurried.`).
+/// The city screen's ritual field `ritual_head`: the ritual (any project, ffh-core's
+/// `ffh::rituals`) in progress at the head of the queue, with the question asked before an action
+/// takes it off: `Abandon <ritual>? Its <N> production is lost.`
 pub fn city_fields(g: &Game, c: CityId, j: &mut Json) {
     let d = g.d;
-    let head = g.city_world_ritual_in_progress(c).map(|project| {
+    let head = g.city_ritual_in_progress(c).map(|project| {
         let name = ritual_name(d, project);
         let progress = g.cities[c].project_production[project];
         crate::jobj! {
@@ -276,7 +275,13 @@ pub fn city_fields(g: &Game, c: CityId, j: &mut Json) {
         }
     });
     j.set("ritual_head", head);
-    j.set("hurry_note", g.city_head_world_ritual(c).map(|_| "A world ritual cannot be hurried."));
+}
+
+/// Why city `c` cannot use hurry `hurry` although it is shown, when the reason is a ritual's:
+/// `Cannot be hurried with gold (Ritual).` (a gold hurry while the city's first build is a
+/// ritual, ffh-core's `ffh::rituals`).
+pub fn hurry_reason(g: &Game, c: CityId, hurry: HurryType) -> Option<&'static str> {
+    (g.city_head_ritual(c).is_some() && g.hurry_is_gold(hurry)).then_some("Cannot be hurried with gold (Ritual).")
 }
 
 /// The world rituals' names, for [`tag_news`].

@@ -95,7 +95,7 @@ fn check(g: &mut Game, p: Option<PlayerId>) {
 // Calabim: The Tithe. Name the Tithe (an action of the empire, any unit) names a rival the
 // caster's team has met and is at war with or may declare war on, declaring the war; the ritual
 // is built only while a living rival is named. Peace with the rival or its death cancel the
-// ritual (its order leaves the queue, its production is lost: `city_check_world_rituals`) and
+// ritual (its order leaves the queue, its production is lost: `city_check_rituals`) and
 // the name. At completion each city of the rival above 2 population loses 2, and each of the
 // owner's units with the Vampire promotion gains max(1, D / 2) experience (D the population
 // lost).

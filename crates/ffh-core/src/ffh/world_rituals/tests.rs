@@ -166,7 +166,7 @@ fn putting_it_behind_or_taking_it_off_loses_its_production() {
 }
 
 #[test]
-fn it_cannot_be_hurried_or_given_production_at_once() {
+fn it_is_not_hurried_with_gold() {
     let (mut g, [a, _], _) = game();
     let (pr, _) = warcry(&g);
     let gold = g.d.t::<HurryType>("HURRY_GOLD");
@@ -177,13 +177,14 @@ fn it_cannot_be_hurried_or_given_production_at_once() {
     assert!(g.city_can_hurry(a, gold, false), "a building is hurried");
     g.city_clear_order_queue(a);
     queue(&mut g, a, pr);
-    assert!(!g.city_can_hurry(a, gold, false) && !g.city_can_hurry(a, gold, true));
+    assert!(!g.city_can_hurry(a, gold, false) && g.city_can_hurry(a, gold, true), "shown, refused");
     g.city_hurry(a, gold);
     assert_eq!(g.cities[a].project_production[pr], 0);
-    g.city_change_production(a, 50);
-    assert_eq!(g.cities[a].project_production[pr], 0, "no production in one step");
+    // Production in one step (a Soul Forge, a Great Engineer) goes in as into any build.
+    g.city_change_production(a, 5);
+    assert_eq!(g.cities[a].project_production[pr], 5);
     g.city_add_turn_production(a, 3);
-    assert_eq!(g.cities[a].project_production[pr], 3, "the turn's production");
+    assert_eq!(g.cities[a].project_production[pr], 8, "the turn's production");
 }
 
 #[test]

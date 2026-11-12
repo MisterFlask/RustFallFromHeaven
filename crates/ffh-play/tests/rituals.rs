@@ -129,14 +129,12 @@ fn the_staged_rituals_game_shows_every_civilizations_ritual() {
     let capital = city_name(&s, st.capital);
     assert!(began.iter().any(|e| s_of(e, "text") == Some(format!("Hippus began Ritual: Warcry in {capital}.").as_str())), "{began:?}");
 
-    // The capital's ritual in progress: the abandon question, no hurrying.
+    // The capital's ritual in progress: the abandon question.
     let city = s.query(&Query::City { city: st.capital }).unwrap();
     let head = city.get("ritual_head").unwrap();
     assert_eq!(s_of(head, "confirm"), Some(format!("Abandon Ritual: Warcry? Its {progress} production is lost.").as_str()));
-    assert_eq!(s_of(&city, "hurry_note"), Some("A world ritual cannot be hurried."));
     let second = s.query(&Query::City { city: st.second }).unwrap();
     assert_eq!(second.get("ritual_head"), Some(&Json::Null));
-    assert_eq!(second.get("hurry_note"), Some(&Json::Null));
 
     // The second city cannot start it: in progress in the capital.
     let entry = ritual_entry(&s, st.second, project_of(&s, h));
@@ -191,7 +189,7 @@ fn the_world_spell_button_says_where_the_ritual_stands() {
     let entry = ritual_entry(&s, capital, project);
     assert_eq!(entry.get("enabled").and_then(Json::as_bool), Some(true));
     let next = s.g.player_project_production_needed_at(h, project, 1);
-    let rules = format!("World ritual. One in progress per player. Taken off the head of the queue, its production is lost. Cannot be hurried. Each completion doubles the next cost (next: {next}).");
+    let rules = format!("World ritual. One in progress per player. Taken off the head of the queue, its production is lost. Cannot be hurried with gold. Each completion doubles the next cost (next: {next}).");
     assert_eq!(entry.get("ritual").and_then(|r| s_of(r, "rules")), Some(rules.as_str()));
     assert_eq!(entry.get("ritual").and_then(|r| r.get("why")), Some(&Json::Null));
     let r = s.execute(&Command::PushOrder { city: capital, order: OrderType::ORDER_CREATE, data: project.idx() as i32, alt: false, shift: false, ctrl: false });
