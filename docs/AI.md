@@ -2685,6 +2685,21 @@ city completes it within 20 turns. Nothing the AI queues goes in front of a ritu
 (`world_rituals::locked`), so only losing the city ends one. The timing below decides when the
 charge is spent.
 
+Four world spells were replaced on 2026-11-11 (the owner's design; docs/PORTING.md, "Changes from
+FFH2"), and the FfH timings below for River of Blood, Wild Hunt, Gifts of Nantosuelta and Arcane
+Lacuna are history. Their AI now:
+- **The Tithe** (Calabim, `civs/calabim.rs::tithe`): at war with a civilization and no rival
+  named, Name the Tithe names the enemy whose cities hold the most population above 2; the ritual,
+  which needs a named rival, is then built by `world_rituals.rs`. It never names a rival it is not
+  already at war with.
+- **The Cull** (Doviello, `civs/doviello.rs::cull`): with a charge, the plot with the most units
+  (4 or more) whose weaker half are all units of the lowest tier the Doviello can build or older,
+  leaving 2 or more in a city; otherwise it waits.
+- **Upgrade** (Luchuirp, no spell): `world_rituals.rs` starts it only with 4 or more golems
+  (`world_rituals::civ_gate`).
+- **Wellspring** (Amurites, `civs/amurites.rs::wellspring`): with a charge, the valid plot nearest
+  the capital, the mana type they own the fewest of.
+
 FfH 0.41 timed the AI's world spells in the rules, as AI-only branches of the spells' Python
 requirements (`if pPlayer.isHuman() == False:` in `CvSpellInterface.py` `req*`). Those are AI
 policy, so the port took them out of the rules (docs/PORTING.md, "Changes from FFH2"; a human's
