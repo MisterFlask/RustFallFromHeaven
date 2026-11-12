@@ -105,12 +105,28 @@ Army Combat", 2026-10-29). They were game options until 2026-11-05 (engagement c
 no longer playable side by side. Save format 16 removed the last three options and the crusade
 flag.
 
+- **Frozen Passage replaces Stasis** (the Illians' world spell; the owner's decision, 2026-11-11;
+  save format 38; `ffh-core/src/ffh/world_ritual_spells/illians.rs`). Stasis (`SPELL_STASIS`,
+  `spellStasis`) is removed: it took 20 turns of production and research from every other player,
+  barbarians included, which removed all play from every rival, a human's included. Frozen Passage
+  (`SPELL_FROZEN_PASSAGE`, ritual `PROJECT_RITUAL_FROZEN_PASSAGE`, cost 150) reshapes the map
+  instead: cast at a water plot the caster's team has seen within 5 plots of its owner's borders
+  or of Sea Ice, it turns every water plot within 2 plots of it into **Sea Ice**
+  (`Plot::sea_ice`), for good: a flat land plot of snow that loses its feature, improvement and
+  route and keeps its resource, yields nothing (no city works it), takes no city, improvement,
+  route or feature, and whose terrain does not change; land units cross it at a cost of 1; ships
+  do not enter it, but a ship the water froze under stays and leaves to the water next to it, and
+  its cargo may unload. **Icebreak** (`SPELL_ICEBREAK`), new: any ship, at an adjacent Sea Ice
+  plot with no unit on it (or the Sea Ice it stands on, alone), held 2 turns (the spell's delay;
+  `Unit::delayed_spell_target` keeps a delayed spell's target); then, if no other unit stands
+  there, the plot is water again (Coast next to land that is not Sea Ice, else Ocean). The
+  engine's `disable_production` / `disable_research` timers stay (nothing sets them now).
 - **World rituals** (docs/CARDS.md, "World rituals"; the owner's decision, 2026-11-11; save format
   37): a civilization's world spell is no longer cast once a game, free. Each of the 21 has a
   ritual, a repeatable project of the spell's civilization (`PROJECT_RITUAL_<NAME>`, `world_ritual`;
   Divine Retribution the Mercurians', Hyborem's Whisper the Infernal's) needing the spell's tech;
   cost 100, or 150 for Sanctuary, Revelry, Hyborem's Whisper, Worldbreak, Divine Retribution,
-  Stasis, Raging Seas and River of Blood; each completion by the player doubles the next cost
+  Frozen Passage, Raging Seas and River of Blood; each completion by the player doubles the next cost
   (no cap on the count). A completion leaves a charge in its city; the charge is the empire's: any
   unit meeting the spell's other requirements casts the spell while a city of the owner holds a
   charge, and the cast spends it. A captured or destroyed city loses its charges. A player holds at

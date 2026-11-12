@@ -2693,8 +2693,10 @@ FfH's condition per spell, and `casting::choose_spell` and the held casts (`civs
 cast a world spell only once it holds. The move alone changes no AI game (every playable
 civilization forced, two fresh seeds each, full games: the same checksums before and after).
 
-FfH's conditions, the AI's default timing: Stasis, Legends, Rally, River of Blood and Gifts of
-Nantosuelta at 5 cities; Warcry at war with 25 units; Veil of Night at peace with 25 units; Wild
+FfH's conditions, the AI's default timing: Legends, Rally, River of Blood and Gifts of
+Nantosuelta at 5 cities (Stasis, at 5 cities too, was replaced on 2026-11-11 by Frozen Passage, a
+targeted spell the Illians cast the turn they hold a charge, `civs/illians.rs`, and ships break Sea
+Ice near their cities, `sea_ice.rs`); Warcry at war with 25 units; Veil of Night at peace with 25 units; Wild
 Hunt at war with 20 units; Into the Mist at 40 units; Sanctuary, March of the Trees and Divine
 Retribution at war with two teams; Raging Seas at war with a player whose fleet is worth more than
 10; Ardor at 5 great people; Revelry at 25 population; Religious Fervor with 5 cities of the state
@@ -2742,7 +2744,8 @@ development seeds 1-40 then fresh seeds 6001-6064):
 | March of the Trees (Ljosalfar) | a city in peril with 6+ of our forests near | 32.5% -> 30.0%, share@end -158 | 37.5% -> 28.1% (2 / 8), share@end -60 | not kept |
 | Worldbreak (Sheaim) | a strike, counter 20+ | 5.0% -> 5.0% | 3.1% -> 1.6% (0 / 1), share@end -58 | not kept |
 
-Stasis freezes every other player's production and research for 20 turns; FfH's condition (5
+(Stasis is gone since 2026-11-11, replaced by Frozen Passage: docs/PORTING.md, "Changes from
+FFH2". The measurement is kept for the record.) Stasis froze every other player's production and research for 20 turns; FfH's condition (5
 cities) cast it around turn 205, the new moment on turn 1-2, when the rivals' whole opening is at
 stake. It is the largest single win-rate lever measured so far, and a balance question rather than an
 AI one: an Illian player who casts it at once takes the first 20 turns of production and research
