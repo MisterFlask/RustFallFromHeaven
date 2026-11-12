@@ -329,6 +329,14 @@ ritual as `ritual_charge`, a project with `world_ritual` (`PROJECT_RITUAL_<NAME>
   <ritual> in <city>.` when production first goes into it, `abandoned` and `completed` likewise.
 - The Sanctuary's waits while `sanctuary_timer` is above 0; `GAMEOPTION_NO_WORLD_SPELLS` forbids
   every world ritual. A `world_ritual` project no spell names simply completes and counts.
+- The rituals and spells that replaced FFH2's world spells have their rules in
+  `crates/ffh-core/src/ffh/world_ritual_spells/` (one module per batch; `mod.rs` lists each
+  module's `Hooks`: its callbacks, a `cannot_create`, a `project_built` at completion, and a
+  `check` at the start of each player's turn and after a war, a peace or a death). `small.rs`: the
+  Calabim's The Tithe (needs a rival named by Name the Tithe, a `world_action`; acts at completion;
+  cancelled by peace or the rival's death), the Doviello's The Cull (a plot), the Luchuirp's
+  Upgrade (acts at completion: `Unit::reinforced`), the Amurites' Wellspring (a choice: plot and
+  mana).
 - Queries: `Game::world_rituals() -> Vec<WorldRitual>` (each living player's: `project`, `spell`,
   `city`, `progress`, `cost`, `turns_left`, `charged`, `completed`, `next_cost`),
   `player_world_ritual(p)`, `project_is_world_ritual(project)`, `city_world_ritual_in_progress(c)`.

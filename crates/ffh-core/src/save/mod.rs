@@ -137,7 +137,7 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 37: world rituals (docs/CARDS.md): `Player::world_ritual_completions`,
 ///   `world_ritual_refunds`, `world_spell_casts`.
 /// - 38: the world rituals' spells: `AreaEffect::moved`, `AreaEffectKind::RagingSeas`,
-///   `Game::delves` (and the other civilizations' world spells of that round).
+///   `Game::delves`, `Player::tithe_target`, `Unit::reinforced`.
 pub const FORMAT_VERSION: u32 = 38;
 
 /// Why [`Game::load`] rejected a save.

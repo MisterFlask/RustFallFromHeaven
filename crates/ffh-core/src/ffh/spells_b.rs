@@ -55,7 +55,6 @@ pub fn find_spell(name: &str) -> Option<SpellFn> {
         "spellRevelry" => spell_revelry,
         "spellRevelation" => spell_revelation,
         "spellRingofFlames" => spell_ring_of_flames,
-        "spellRiverOfBlood" => spell_river_of_blood,
         "spellRoar" => spell_roar,
         "spellRobGrave" => spell_rob_grave,
         "spellSacrificeAltar" => spell_sacrifice_altar,
@@ -84,7 +83,6 @@ pub fn find_spell(name: &str) -> Option<SpellFn> {
         "spellVeilOfNight" => spell_veil_of_night,
         "spellVitalize" => spell_vitalize,
         "spellWarcry" => spell_warcry,
-        "spellWildHunt" => spell_wild_hunt,
         "spellWonder" => spell_wonder,
         "spellWorldbreak" => spell_worldbreak,
         _ => return None,
@@ -106,7 +104,6 @@ pub fn find_req(name: &str) -> Option<ReqFn> {
         "reqReveal" => req_reveal,
         "reqRevelry" => req_revelry,
         "reqRevelation" => req_revelation,
-        "reqRiverOfBlood" => req_river_of_blood,
         "reqRoar" => req_roar,
         "reqRobGrave" => req_rob_grave,
         "reqSanctify" => req_sanctify,
@@ -131,7 +128,6 @@ pub fn find_req(name: &str) -> Option<ReqFn> {
         "reqWane" => req_wane,
         "reqWarcry" => req_warcry,
         "reqWhiteout" => req_whiteout,
-        "reqWildHunt" => req_wild_hunt,
         "reqWorldbreak" => req_worldbreak,
         _ => return None,
     };
@@ -878,37 +874,6 @@ fn spell_ring_of_flames(g: &mut Game, caster: UnitId, _call: &PyCall) {
                     {
                         g.plot_set_improvement_type(plot, Some(smoke));
                     }
-                }
-            }
-        }
-    }
-}
-
-/// `reqRiverOfBlood(caster)`. Change from FFH2: its AI-only branch (5 cities) is AI timing, in
-/// ffh-ai `world_spells` (docs/PORTING.md).
-fn req_river_of_blood(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    let p = g.units[caster].owner;
-    if g.players[p].num_cities() == 0 {
-        return false;
-    }
-    true
-}
-
-/// `spellRiverOfBlood(caster)`.
-fn spell_river_of_blood(g: &mut Game, caster: UnitId, _call: &PyCall) {
-    let owner = g.units[caster].owner;
-    for p in g.player_ids() {
-        if g.players[p].alive {
-            if p != owner {
-                for city in py_city_list(g, p) {
-                    if g.cities[city].population > 2 {
-                        g.city_change_population(city, -2);
-                    }
-                }
-            }
-            if p == owner {
-                for city in py_city_list(g, p) {
-                    g.city_change_population(city, 2);
                 }
             }
         }
@@ -1988,29 +1953,6 @@ fn req_whiteout(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
     true
 }
 
-/// `reqWildHunt(caster)`. Change from FFH2: its only condition was AI-only (at war and 20 units);
-/// it is AI timing, in ffh-ai `world_spells` (docs/PORTING.md).
-fn req_wild_hunt(_g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
-    true
-}
-
-/// `spellWildHunt(caster)`.
-fn spell_wild_hunt(g: &mut Game, caster: UnitId, _call: &PyCall) {
-    let wolf = g.d.t::<UnitType>("UNIT_WOLF");
-    let p = g.units[caster].owner;
-    for u in py_unit_list(g, p) {
-        if g.unit_base_combat_str(u) > 0 {
-            let (x, y) = (g.units[u].x, g.units[u].y);
-            let new_unit = g.player_init_unit(p, wolf, x, y, None, SOUTH);
-            if g.unit_base_combat_str(u) > 3 {
-                let i = py_div(g.unit_base_combat_str(u) - 2, 2);
-                // `newUnit.setBaseCombatStr(2 + i)`
-                g.unit_set_base_combat_str(new_unit, 2 + i);
-            }
-        }
-    }
-}
-
 /// `spellWonder(caster)`: 3-5 random effects.
 fn spell_wonder(g: &mut Game, caster: UnitId, _call: &PyCall) {
     let d = g.d;
@@ -2484,12 +2426,12 @@ mod tests {
         let req = [
             "reqMarchOfTheTrees", "reqPromoteSettlement",
             "reqRally", "reqRebuildBarnaxus", "reqRecruitMercenary", "reqReligiousFervor", "reqRepair",
-            "reqRessurection", "reqReveal", "reqRevelry", "reqRevelation", "reqRiverOfBlood", "reqRoar",
+            "reqRessurection", "reqReveal", "reqRevelry", "reqRevelation", "reqRoar",
             "reqRobGrave", "reqSanctify", "reqSanctuary", "reqSandLion", "reqScorch", "reqSironasTouch",
             "reqSpreadTheCouncilOfEsus", "reqSpring", "reqSprint", "reqStasis", "reqSteal",
             "reqTakeEquipmentBuilding", "reqTakeEquipmentPromotion", "reqTakeEquipmentUnit", "reqTaunt",
             "reqTeachSpellcasting", "reqTrust", "reqUpgradeDovielloWarrior", "reqVeilOfNight", "reqVitalize",
-            "reqWane", "reqWarcry", "reqWhiteout", "reqWildHunt", "reqWorldbreak",
+            "reqWane", "reqWarcry", "reqWhiteout", "reqWorldbreak",
         ];
         for name in req {
             assert!(find_req(name).is_some(), "{name}");
@@ -2499,13 +2441,13 @@ mod tests {
             "spellRaiseSkeleton", "spellRally", "spellReadTheGrimoire", "spellRebuildBarnaxus",
             "spellRecruit", "spellRecruitMercenary", "spellReleaseFromCage", "spellReligiousFervor", "spellRepair",
             "spellRessurection", "spellRessurectionGraveyard", "spellReveal", "spellRevelry", "spellRevelation",
-            "spellRingofFlames", "spellRiverOfBlood", "spellRoar", "spellRobGrave", "spellSacrificeAltar",
+            "spellRingofFlames", "spellRoar", "spellRobGrave", "spellSacrificeAltar",
             "spellSacrificePyre", "spellSanctify", "spellSanctuary", "spellScorch", "spellSing",
             "spellSironasTouch", "spellSlaveTradeBuy", "spellSnowfall", "spellSnowfallGreator", "spellSpring",
             "spellStasis", "spellSteal", "spellTakeEquipmentBuilding", "spellTakeEquipmentPromotion",
             "spellTakeEquipmentUnit", "spellTaunt", "spellTeleport", "spellTeachSpellcasting",
             "spellTreetopDefence", "spellTrust", "spellTsunami", "spellUnyieldingOrder", "spellVeilOfNight",
-            "spellVitalize", "spellWarcry", "spellWildHunt", "spellWonder", "spellWorldbreak",
+            "spellVitalize", "spellWarcry", "spellWonder", "spellWorldbreak",
         ];
         for name in spell {
             assert!(find_spell(name).is_some(), "{name}");
@@ -2519,6 +2461,6 @@ mod tests {
             assert!(find_plot_fn(name).is_some(), "{name}");
         }
         assert!(find_vote_fn("voteFundDissidents").is_some());
-        assert_eq!(req.len() + spell.len() + plot.len() + 1, 101);
+        assert_eq!(req.len() + spell.len() + plot.len() + 1, 97);
     }
 }

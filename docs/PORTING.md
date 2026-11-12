@@ -124,6 +124,36 @@ flag.
   world spell be cast again, undoes one doubling of the ritual's cost and needs a completion
   (`Player::world_ritual_refunds`); `FEAT_GLOBAL_SPELL` is no longer read or written. Why: a world
   spell becomes a recurring decision with a price, which every player sees coming.
+- **Calabim: The Tithe replaces River of Blood** (the owner's design, 2026-11-11; save format 38;
+  `ffh/world_ritual_spells/small.rs`). River of Blood took 2 population from every city above 2 of
+  every other civilization and gave 2 to each Calabim city, a blow with no target and no answer.
+  Now Name the Tithe (an action of the empire, `world_action`) names one rival the Calabim have met
+  and are at war with or may declare war on, and declares the war; Ritual: The Tithe (cost 150)
+  is built only while a living rival is named, and every player sees it begin. At completion each
+  city of that rival larger than 2 loses 2 population, and each Calabim unit with the Vampire
+  promotion gains max(1, D / 2) experience (D the population lost); the name is spent. Peace with
+  the rival or its death cancels the ritual: its order leaves the queue, its production is lost,
+  and nothing doubles. Why: one named victim, at war, announced by its ritual, so it can be
+  answered.
+- **Doviello: The Cull replaces Wild Hunt** (the owner's design, 2026-11-11). Wild Hunt made a
+  wolf for every combat unit. The Cull (Ritual: The Cull, cost 60; the charge spent by any unit)
+  targets a plot with 2 or more of the caster's owner's land units with strength: the weaker half
+  (by base strength, then experience, then unit id; rounded down) is killed, and the survivors
+  share the killed units' experience plus 5 for each, the remainder one each to the strongest.
+- **Luchuirp: Upgrade replaces Gifts of Nantosuelta** (the owner's design, 2026-11-11; save format
+  38). Gifts left a Golden Hammer in each city. Ritual: Upgrade (cost 100, Masonry) has no spell:
+  at completion each golem the Luchuirp own (the Golem promotion) gains a stack of Reinforced
+  (`Unit::reinforced`), +10% maximum HP each in a battle (`unit_engage_max_hp`; the damage, a
+  percentage, carries over). Golems built later do not have it; a conversion keeps it only into
+  another golem. The duel combat outside battles (ships, air) still counts 100 HP: golems do not
+  fight there. The Golden Hammer (`EQUIPMENT_GOLDEN_HAMMER`) and its two spells stay in the data,
+  unreachable: no rule makes a Golden Hammer now.
+- **Amurites: Wellspring replaces Arcane Lacuna** (the owner's design, 2026-11-11). Arcane Lacuna
+  denied every other player its spells for 20 turns and gave the Amurites' adepts experience.
+  Wellspring (Ritual: Wellspring, cost 100; cast by an Adept-line unit) targets a land plot in
+  the Amurites' borders with no resource, city or improvement, not a peak, and a typed mana (one of
+  the 17 with a node): the plot gains that mana resource and its node, permanently.
+  `Player::disable_spellcasting` stays in the engine, unused by the data.
 
 - **Raging Seas is a storm the Lanun steer; Mother Lode is replaced by The Delve** (the owner's
   decision, 2026-11-11; save format 38). Raging Seas (FFH2: 75 cold damage, two draws, to every

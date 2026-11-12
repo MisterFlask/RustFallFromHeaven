@@ -909,6 +909,8 @@ function showTip() {
         u.strength !== undefined ? ` ${u.strength}${u.defense_strength !== undefined && u.defense_strength !== u.strength ? `/${u.defense_strength}` : ""}⚔` : "",
         h("span.dim", ` ${playerName(u.owner)}${u.level > 1 ? `, level ${u.level}` : ""}${u.hp < u.max_hp ? `, ${Math.round((100 * u.hp) / u.max_hp)}% health` : ""}`),
         promos.length ? h("div.dim.tip-promos", promos.join(", ")) : null,
+        // Ritual: Upgrade's stacks on a golem (the view's line).
+        u.reinforced ? h("div.dim", u.reinforced) : null,
         // A great person of ours holding a card (docs/CARDS.md).
         u.card !== null && u.card !== undefined ? h("div.tip-card", `Card: ${dname("TechType", u.card)}`) : null,
         // This game's armies: a recruit of ours marching to its destination.

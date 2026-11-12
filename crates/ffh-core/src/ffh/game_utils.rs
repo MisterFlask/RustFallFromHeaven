@@ -269,6 +269,10 @@ impl Game {
         if crate::ffh::world_rituals::cannot_create(self, c, project, test_visible) {
             return true;
         }
+        // The world rituals' own conditions (The Tithe needs a named rival).
+        if crate::ffh::world_ritual_spells::cannot_create(self, c, project, test_visible) {
+            return true;
+        }
         false
     }
 

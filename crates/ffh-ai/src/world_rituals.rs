@@ -4,7 +4,7 @@
 //! city with the most production, when it has at least two cities (one if it may hold no more),
 //! no city in peril, and that city completes it within [`MAX_TURNS`] turns. The AI never sets a
 //! ritual under way aside: nothing it queues goes in front of one ([`locked`]), so only losing the
-//! city ends it.
+//! city ends it. A civilization's own condition ([`civ_gate`]) can hold a ritual back.
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -28,6 +28,9 @@ pub fn turn(g: &mut Game, v: &View) {
     if g.player_world_ritual_charge_city(p, pr).is_some() || g.player_world_ritual_city(p, pr).is_some() {
         return;
     }
+    if !civ_gate(g, p, pr) {
+        return;
+    }
     let n = g.players[p].num_cities();
     let needed = if g.players[p].max_cities == 1 { 1 } else { 2 };
     if n < needed || !v.peril.is_empty() {
@@ -45,4 +48,17 @@ pub fn turn(g: &mut Game, v: &View) {
     crate::trace!(g, p, "world ritual {} in {}", d.projects[pr].base.type_, g.cities[c].name);
     g.tel_decision(p, "production", &d.projects[pr].base.type_, "world_ritual", 0, String::new);
     g.city_push_order(c, OrderType::ORDER_CREATE, pr.i(), -1, false, false, false, false);
+}
+
+/// A civilization's own condition to start its ritual `pr`: Upgrade (the Luchuirp's: a stack of
+/// Reinforced on each golem) only with 4 or more golems.
+fn civ_gate(g: &Game, p: PlayerId, pr: ProjectType) -> bool {
+    let d = g.d;
+    match d.projects[pr].base.type_.as_str() {
+        "PROJECT_RITUAL_UPGRADE" => {
+            let golem = d.t::<PromotionType>("PROMOTION_GOLEM");
+            g.players[p].units.iter().filter(|&&u| g.units.contains(u) && g.units[u].has_promotion[golem]).count() >= 4
+        }
+        _ => true,
+    }
 }

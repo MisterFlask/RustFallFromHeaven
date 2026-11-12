@@ -788,15 +788,16 @@ def building_facts(b):
 # ---------------------------------------------------------------------------------------------
 PY_VALUED = {"SPELL_CRUSH", "SPELL_PILLAR_OF_FIRE", "SPELL_DESTROY_UNDEAD", "SPELL_DOMINATION", "SPELL_HEAL", "SPELL_EARTHQUAKE", "SPELL_SPRING", "SPELL_SCORCH", "SPELL_VITALIZE", "SPELL_RECRUIT"}
 WORLD_TIMING = {
-    "SPELL_ARCANE_LACUNA": "at war with a civilization (expert moment; FfH: 7 typed mana nodes on the map)",
+    "SPELL_WELLSPRING": "with a charge: the free plot nearest the capital, the mana type owned least",
     "SPELL_ARDOR": "5+ great people born", "SPELL_DIVINE_RETRIBUTION": "at war with 2+ teams",
     "SPELL_MARCH_OF_THE_TREES": "at war with 2+ teams", "SPELL_SANCTUARY": "at war with 2+ teams",
-    "SPELL_FOR_THE_HORDE": "barbarians have 60+ units", "SPELL_GIFTS_OF_NANTOSUELTA": "5+ cities", "SPELL_LEGENDS": "5+ cities",
-    "SPELL_RALLY": "5+ cities", "SPELL_RIVER_OF_BLOOD": "5+ cities", "SPELL_STASIS": "5+ cities", "SPELL_INTO_THE_MIST": "40+ units",
+    "SPELL_FOR_THE_HORDE": "barbarians have 60+ units", "SPELL_LEGENDS": "5+ cities",
+    "SPELL_RALLY": "5+ cities", "SPELL_STASIS": "5+ cities", "SPELL_INTO_THE_MIST": "40+ units",
     "SPELL_RAGING_SEAS": "at war with a civilization (expert moment)",
     "SPELL_RELIGIOUS_FERVOR": "5 cities of the state religion, or 3 that are two thirds of ours (expert moment)",
     "SPELL_REVELRY": "total population 25+", "SPELL_VEIL_OF_NIGHT": "25+ units and at peace",
-    "SPELL_WARCRY": "25+ units and at war", "SPELL_WILD_HUNT": "at war and 20+ units",
+    "SPELL_WARCRY": "25+ units and at war", "SPELL_THE_CULL": "a plot of 4+ units whose weaker half are of the lowest tier buildable or older",
+    "SPELL_NAME_THE_TITHE": "at war with a civilization and no rival named: the enemy with the most city population above 2",
     "SPELL_WORLDBREAK": "Armageddon counter 20+ and at war with a civilization (expert moment; FfH: 50)",
 }
 

@@ -1118,6 +1118,8 @@ impl Game {
         crate::ffh::cards::world_spells_2::project_built(self, c, project);
         // World rituals (docs/CARDS.md): the count, the charge, the news.
         crate::ffh::world_rituals::project_built(self, c, project);
+        // The world rituals that act at completion (The Tithe, Upgrade).
+        crate::ffh::world_ritual_spells::project_built(self, c, project);
 
         if is("PROJECT_BANE_DIVINE") {
             let disciple = d.t::<UnitCombatType>("UNITCOMBAT_DISCIPLE");
@@ -1354,12 +1356,19 @@ impl Game {
     pub fn ev_end_golden_age(&mut self, _p: PlayerId) {}
 
     /// `changeWar` -> `onChangeWar`: logging only.
-    pub fn ev_change_war(&mut self, _war: bool, _team: TeamId, _other: TeamId) {}
+    pub fn ev_change_war(&mut self, _war: bool, _team: TeamId, _other: TeamId) {
+        // Not in Python: a world ritual aimed at a rival ends with the war (The Tithe).
+        crate::ffh::world_ritual_spells::check(self, None);
+    }
 
     /// `setPlayerAlive` -> `onSetPlayerAlive`: a dying good player raises the Armageddon counter
     /// by 5, a dying evil player lowers it by 5 (from game year 5 on).
     pub fn ev_set_player_alive(&mut self, p: PlayerId, alive: bool) {
         let d = self.d;
+        // Not in Python: a world ritual aimed at a dead rival ends (The Tithe).
+        if !alive {
+            crate::ffh::world_ritual_spells::check(self, None);
+        }
         // `CvUtil.pyPrint` of the new alive status (logging).
         if !alive && self.game_turn_year() >= 5 {
             if self.players[p].alignment == Some(d.t::<AlignmentType>("ALIGNMENT_GOOD")) {

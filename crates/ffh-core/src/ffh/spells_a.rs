@@ -42,7 +42,6 @@ pub fn find_spell(name: &str) -> Option<SpellFn> {
     let f: SpellFn = match name {
         "spellAddToFleshGolem" => spell_add_to_flesh_golem,
         "spellAddToWolfPack" => spell_add_to_wolf_pack,
-        "spellArcaneLacuna" => spell_arcane_lacuna,
         "spellArdor" => spell_ardor,
         "spellArenaBattle" => spell_arena_battle,
         "spellCallBlizzard" => spell_call_blizzard,
@@ -71,7 +70,6 @@ pub fn find_spell(name: &str) -> Option<SpellFn> {
         "spellFeed" => spell_feed,
         "spellForTheHorde" => spell_for_the_horde,
         "spellFormWolfPack" => spell_form_wolf_pack,
-        "spellGiftsOfNantosuelta" => spell_gifts_of_nantosuelta,
         "spellGiftVampirism" => spell_gift_vampirism,
         "spellGiveHammerToCraftsman" => spell_give_hammer_to_craftsman,
         "spellHastursRazor" => spell_hasturs_razor,
@@ -106,7 +104,6 @@ pub fn find_req(name: &str) -> Option<ReqFn> {
         "reqAddToFleshGolem" => req_add_to_flesh_golem,
         "reqAddToFreakShowHuman" => req_add_to_freak_show_human,
         "reqAddToWolfPack" => req_add_to_wolf_pack,
-        "reqArcaneLacuna" => req_arcane_lacuna,
         "reqArdor" => req_ardor,
         "reqArenaBattle" => req_arena_battle,
         "reqCallBlizzard" => req_call_blizzard,
@@ -136,7 +133,6 @@ pub fn find_req(name: &str) -> Option<ReqFn> {
         "reqFeed" => req_feed,
         "reqForTheHorde" => req_for_the_horde,
         "reqFormWolfPack" => req_form_wolf_pack,
-        "reqGiftsOfNantosuelta" => req_gifts_of_nantosuelta,
         "reqGiftVampirism" => req_gift_vampirism,
         "reqHastursRazor" => req_hasturs_razor,
         "reqHeal" => req_heal,
@@ -785,73 +781,6 @@ fn spell_add_to_wolf_pack(g: &mut Game, caster: UnitId, _call: &PyCall) {
                 g.unit_set_has_promotion(u, prom, true);
                 valid = false;
             }
-        }
-    }
-}
-
-/// `manaTypes` of `reqArcaneLacuna` / `spellArcaneLacuna`.
-const MANA_TYPES: [&str; 17] = [
-    "BONUS_MANA_AIR",
-    "BONUS_MANA_BODY",
-    "BONUS_MANA_CHAOS",
-    "BONUS_MANA_DEATH",
-    "BONUS_MANA_EARTH",
-    "BONUS_MANA_ENCHANTMENT",
-    "BONUS_MANA_ENTROPY",
-    "BONUS_MANA_FIRE",
-    "BONUS_MANA_LAW",
-    "BONUS_MANA_LIFE",
-    "BONUS_MANA_METAMAGIC",
-    "BONUS_MANA_MIND",
-    "BONUS_MANA_NATURE",
-    "BONUS_MANA_SHADOW",
-    "BONUS_MANA_SPIRIT",
-    "BONUS_MANA_SUN",
-    "BONUS_MANA_WATER",
-];
-
-/// `for szBonus in manaTypes: iCount += CyMap().getNumBonuses(gc.getInfoTypeForString(szBonus))`.
-fn count_mana_bonuses(g: &Game) -> i32 {
-    MANA_TYPES.iter().map(|name| g.map.num_bonus[g.d.t::<BonusType>(name)]).sum()
-}
-
-/// `reqArcaneLacuna(caster)`. Change from FFH2: its AI-only branch (7 typed mana bonuses on the
-/// map) is AI timing, in ffh-ai `world_spells` (docs/PORTING.md).
-fn req_arcane_lacuna(g: &Game, _caster: UnitId, _call: &PyCall) -> bool {
-    let count = count_mana_bonuses(g);
-    if count == 0 {
-        return false;
-    }
-    true
-}
-
-/// `spellArcaneLacuna(caster)`.
-fn spell_arcane_lacuna(g: &mut Game, caster: UnitId, _call: &PyCall) {
-    let d = g.d;
-    let adept = d.t::<UnitCombatType>("UNITCOMBAT_ADEPT");
-    let p = g.units[caster].owner;
-    let count = count_mana_bonuses(g);
-    for u in py_unit_list(g, p) {
-        if g.units.contains(u) && g.unit_get_unit_combat_type(u) == Some(adept) {
-            g.unit_change_experience(u, count, -1, false, false, false);
-        }
-    }
-    let speed = g.game_speed_type();
-    let mut delay = 20;
-    if speed == d.t::<GameSpeedType>("GAMESPEED_QUICK") {
-        delay = 14;
-    }
-    if speed == d.t::<GameSpeedType>("GAMESPEED_EPIC") {
-        delay = 30;
-    }
-    if speed == d.t::<GameSpeedType>("GAMESPEED_MARATHON") {
-        delay = 60;
-    }
-    let team = g.players[p].team;
-    for p2 in g.player_ids() {
-        if g.players[p2].alive && g.players[p2].team != team {
-            // CvPlayer::changeDisableSpellcasting (plain member update).
-            g.players[p2].disable_spellcasting += delay;
         }
     }
 }
@@ -1864,26 +1793,6 @@ fn spell_form_wolf_pack(g: &mut Game, caster: UnitId, _call: &PyCall) {
         // Python passes player 0 as the killer.
         g.unit_kill(caster, true, Some(PlayerId(0)));
         g.unit_kill(wolf2, true, Some(PlayerId(0)));
-    }
-}
-
-/// `reqGiftsOfNantosuelta(caster)`. Change from FFH2: its AI-only branch (5 cities) is AI timing,
-/// in ffh-ai `world_spells` (docs/PORTING.md).
-fn req_gifts_of_nantosuelta(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    let player = &g.players[g.units[caster].owner];
-    if player.num_cities() == 0 {
-        return false;
-    }
-    true
-}
-
-/// `spellGiftsOfNantosuelta(caster)`.
-fn spell_gifts_of_nantosuelta(g: &mut Game, caster: UnitId, _call: &PyCall) {
-    let p = g.units[caster].owner;
-    let golden_hammer = g.d.t::<UnitType>("EQUIPMENT_GOLDEN_HAMMER");
-    for c in py_city_list(g, p) {
-        let (x, y) = (g.cities[c].x, g.cities[c].y);
-        init_unit(g, p, golden_hammer, x, y);
     }
 }
 

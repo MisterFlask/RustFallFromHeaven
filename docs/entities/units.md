@@ -2246,9 +2246,9 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 **AI: Not an AI choice.** In an AI's capital the first garrison unit to cast takes it at the end of the turn (`casting::ffh_value`: weight 50 + the promotion's weight 100 + 3 strength x 40 + 3 defense at 40 for a garrison unit), a stronger unit in the city takes it over (Take (promotion), weight 50, AI gate). Nothing then sends that unit after Auric Ascended: the +1000% against the Avatar and the resistances are not valued (`units::promotion_value`), and the bearer stays a garrison unit.
 
 ### Golden Hammer (`EQUIPMENT_GOLDEN_HAMMER`)
-*Item · not trainable · carried as the Golden Hammer promotion: +1 strength; or given to the city as a free Engineer specialist · one in every Luchuirp city after Gifts of Nantosuelta*
+*Item · not trainable · carried as the Golden Hammer promotion: +1 strength; or given to the city as a free Engineer specialist · unreachable since 2026-11-11: nothing makes one*
 
-**What it does.** Gifts of Nantosuelta, the Luchuirp world spell, puts a Golden Hammer in each of the caster's cities (`spells_a.rs::spell_gifts_of_nantosuelta`). Each can either be picked up as an item (see Athame) giving +1 strength, or used in its city with Give Hammer to Craftsman (`SPELL_GIVE_HAMMER_TO_CRAFTSMAN`: the hammer is consumed and the city gets a permanent free Engineer specialist, `spells_a.rs::spell_give_hammer_to_craftsman`).
+**What it does.** FFH2's Gifts of Nantosuelta, the Luchuirp world spell, put a Golden Hammer in each of the caster's cities; Ritual: Upgrade replaced it (2026-11-11, docs/PORTING.md), so no rule makes a Golden Hammer now, and the unit and its two spells stay in the data, unreachable. Each can either be picked up as an item (see Athame) giving +1 strength, or used in its city with Give Hammer to Craftsman (`SPELL_GIVE_HAMMER_TO_CRAFTSMAN`: the hammer is consumed and the city gets a permanent free Engineer specialist, `spells_a.rs::spell_give_hammer_to_craftsman`).
 
 **Playing it well.** Almost always give it: a free Engineer in every city (+2 production and 3 Great Engineer points a turn each, for the rest of the game) is worth far more than +1 strength on one unit. Cast Gifts once you have most of your cities, and give the hammers in production cities first if any must wait.
 

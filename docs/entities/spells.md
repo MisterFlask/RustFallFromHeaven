@@ -1246,14 +1246,14 @@ eight strongest) doubles with each completion. Any unit meeting the spell's othe
 casts it while a city of the owner holds a charge. The "once a game" in the entries below is the
 FFH2 rule they were written for.
 
-### Arcane Lacuna (`SPELL_ARCANE_LACUNA`)
-*World spell, Amurites · once a game · cast by an arcane unit (Adept line) · needs one typed mana node on the map · AI weight 300*
+### Wellspring (`SPELL_WELLSPRING`)
+*World spell, Amurites · a charge of Ritual: Wellspring (cost 100) · cast by an arcane unit (Adept line) · target: a plot and a mana type*
 
-**What it does.** Two effects. Every arcane unit of the Amurites gains as much experience as there are typed mana resources (mana nodes that have been given a sphere) on the whole map, anyone's. And every player of another team loses spellcasting for 20 turns at normal speed (14 quick, 30 epic, 60 marathon): their units can use abilities, but they cannot cast spells, and world spells are spells too. The rules require at least one typed mana node somewhere on the map.
+**What it does.** It replaced FFH2's Arcane Lacuna (2026-11-11, the owner's design; docs/PORTING.md, "Changes from FFH2"). The target is a choice of a land plot in the Amurites' borders with no resource, city or improvement and not a peak, and a typed mana (one of the 17 with a node: Air, Body, Chaos, Death, Earth, Enchantment, Entropy, Fire, Law, Life, Metamagic, Mind, Nature, Shadow, Spirit, Sun, Water). The plot gains that mana resource and its node, permanently (`world_ritual_spells/small.rs`).
 
-**Playing it well.** Cast it at the start of a war with a civilization that relies on magic: a Sheaim or Calabim army of summons and skeletons, or a rival's stack of Fireball mages. For twenty turns their summons, damage spells, Haste and healing are gone, while your mages keep casting. The experience grows with the number of typed nodes in the world, so a later cast promotes every adept further. Against a rival with no casters, or at peace, the lockout is wasted.
+**Playing it well.** A new mana source of the sphere you lack, close to home: a sphere opens a line of spells for every adept, and a second source of one strengthens its spells and buildings. Put it in the heart of the empire, where no raider pillages it.
 
-**AI: Directed.** The end-of-turn choice (`casting::end_turn`) values world spells by FfH's terms (`casting::ffh_value`), where this one is worth just its `iAIWeight` of 300, and casts it once `world_spells::ready` allows. The condition is an expert moment (`world_spells::expert_moment`): at war with a civilization. FfH's condition was 7 typed mana nodes on the map, which no measured game reached; with the expert moment the spell was cast in 13 of 24 fresh games instead of 0 (docs/AI.md, "World spells: AI timing"). No civilization overrides it. `civs/amurites.rs` only keeps casters (`civs::unique_casters`), and its comment that Arcane Lacuna is never cast is from before the expert moment. Any civilization war opens the gate: the AI does not check whether the enemy has casters, or how many typed nodes there are.
+**AI: Directed.** `civs/amurites.rs::wellspring`: with a charge, the valid plot nearest the capital, the mana type the Amurites own the fewest of (`player_get_num_available_bonuses`, ties in data order). The ritual itself is built by the generic `world_rituals.rs`.
 
 ### Ardor (`SPELL_ARDOR`)
 *World spell, Grigori · once a game · any Grigori unit · needs one great person born · AI weight 300*
@@ -1282,14 +1282,14 @@ FFH2 rule they were written for.
 
 **AI: Directed.** FfH's condition is that the barbarian player has 60 units of any kind (`world_spells::ready`). On top of it, `civs/clan_of_embers.rs::spell_value` gives the spell 0 unless the Clan is at war with a civilization or preparing one, so the end-of-turn choice casts it at 300 only then. This moved the cast from about turn 218 to about turn 320; in the development leave-one-out it was worth +141 share at turn 300 (t 2.4) (docs/AI.md, "Kept"). An earlier gate, a dozen barbarian orcs, cost wins and was dropped (docs/AI_LOG.md). Where the orcs stand is not looked at.
 
-### Gifts of Nantosuelta (`SPELL_GIFTS_OF_NANTOSUELTA`)
-*World spell, Luchuirp · once a game · Masonry · any Luchuirp unit · AI weight 300*
+### Upgrade (`PROJECT_RITUAL_UPGRADE`, no spell)
+*World ritual, Luchuirp · cost 100 · Masonry · acts at completion*
 
-**What it does.** A Golden Hammer (an equipment unit) appears in each Luchuirp city. A hammer can be given to its city as a permanent free Engineer specialist (`SPELL_GIVE_HAMMER_TO_CRAFTSMAN`), or picked up by a unit for +1 strength (`SPELL_TAKE_GOLDEN_HAMMER_UNIT`). Cities founded later get nothing.
+**What it does.** It replaced FFH2's Gifts of Nantosuelta (2026-11-11, the owner's design). At completion each golem the Luchuirp own (the Golem promotion) gains a stack of Reinforced: +10% maximum HP each in a battle (`Unit::reinforced`, `unit_engage_max_hp`). Stacks add up with each completion; golems built later do not have them; a conversion keeps them only into another golem. The Golden Hammer and its two spells stay in the data, unreachable.
 
-**Playing it well.** One free Engineer in every city for good: production and great-engineer points for golem-building dwarves. The value is the number of cities at the cast, so cast it once your last planned city is founded, not the turn Masonry comes in. Give the hammers to the cities rather than to warriors: +1 strength on one unit is worth far less than a specialist forever.
+**Playing it well.** Build the golems first: the ritual is worth the number of golems you own at its completion, and it doubles in cost each time.
 
-**AI: Directed.** Cast by the end-of-turn choice at its weight of 300 once FfH's condition holds: 5 cities (`world_spells::ready`). It is not timed to the last planned city, which docs/AI.md's group-C diagnosis names as the right moment. The Luchuirp override is for the hammers, not the cast: `civs/luchuirp.rs::spell_value` gives Take Golden Hammer 0 for a unit in our own city, so the hammer gives itself as an Engineer. In round 4, in the games where Gifts was cast, production at turn 300 was +11.8% (t 2.5) and great people +47% (docs/AI.md, "Kept").
+**AI: Directed.** The generic ritual building (`world_rituals.rs`) builds it, only while the Luchuirp own 4 or more golems (`world_rituals::civ_gate`).
 
 ### Hyborem's Whisper (`SPELL_HYBOREMS_WHISPER`)
 *World spell, Infernals · once a game · only Hyborem · Malevolent Designs · needs three non-capital Ashen Veil cities owned by others · AI weight 300*
@@ -1390,14 +1390,14 @@ FFH2 rule they were written for.
 
 **AI: Directed.** Cast by the end-of-turn choice at its weight of 300 once FfH's condition holds: a total population of 25 (`world_spells::ready`). docs/AI.md ("Kept", Balseraphs) records that Revelry keeps the default timing. No civilization override (`civs/balseraphs.rs` is Loki's).
 
-### River of Blood (`SPELL_RIVER_OF_BLOOD`)
-*World spell, Calabim · once a game · any Calabim unit · AI weight 300*
+### Name the Tithe (`SPELL_NAME_THE_TITHE`)
+*Action of the empire (`world_action`), Calabim · any Calabim unit · target: a player · declares war*
 
-**What it does.** Every city of every other player that is larger than 2 loses 2 population, and every Calabim city gains 2.
+**What it does.** It replaced FFH2's River of Blood (2026-11-11, the owner's design). It names a rival the Calabim have met and are at war with or may declare war on (`Player::tithe_target`), declaring the war if there is none; naming again replaces the rival. It cannot be cast while Ritual: The Tithe has production in a city. Ritual: The Tithe (cost 150) is built only while a living rival is named. At completion each city of the rival larger than 2 loses 2 population, and each Calabim unit with the Vampire promotion gains max(1, D / 2) experience (D the population lost); the name is spent. Peace with the rival or its death cancels the ritual with its progress, and nothing doubles (`world_ritual_spells/small.rs`).
 
-**Playing it well.** A huge swing in a large world, best when the rivals' cities are big and yours have the food, health and happiness to hold two more citizens. The Calabim can also turn surplus citizens into vampire experience with Feast. It hurts allies and vassals as much as enemies, and new citizens above your happiness cap only riot.
+**Playing it well.** Name the rival whose large cities feed the war against you, then build the ritual where it completes fastest: every player sees it begin, and a peace bought before it completes cancels it.
 
-**AI: Directed.** Cast by the end-of-turn choice at its weight of 300 once FfH's condition holds: 5 cities (`world_spells::ready`). There is no civilization override. The round-5 hold, a civilization war or room in our cities for two citizens each, came back with the other Calabim rules but this part did not (`civs/calabim.rs`, docs/AI_LOG.md). Neither our cities' room nor the rivals' sizes is weighed.
+**AI: Directed.** `civs/calabim.rs::tithe`: at war with a civilization and no rival named, the enemy whose cities hold the most population above 2. It never names a rival it is not already at war with. The generic ritual building builds the ritual once a rival is named.
 
 ### Sanctuary (`SPELL_SANCTUARY`)
 *World spell, Elohim · once a game · any Elohim unit · needs a city · AI weight 300*
@@ -1435,14 +1435,14 @@ FFH2 rule they were written for.
 
 **AI: Directed.** Cast by the end-of-turn choice at its weight of 300 once FfH's condition holds: 25 units and at war with a civilization (`world_spells::ready`). That is usually the declaration turn, and this AI strikes within about 3 turns of declaring. Holding it for the strike did not help on fresh seeds (`civs/hippus.rs`, docs/AI_LOG.md, "Warcry held for the strike"). Blitz is not used: `campaign::strike` drops a unit once it has attacked, and letting Blitz units attack again was flat.
 
-### Wild Hunt (`SPELL_WILD_HUNT`)
-*World spell, Doviello · once a game · any Doviello unit · AI weight 300*
+### The Cull (`SPELL_THE_CULL`)
+*World spell, Doviello · a charge of Ritual: The Cull (cost 60) · any Doviello unit · target: a plot*
 
-**What it does.** For every Doviello unit with strength, a Wolf appears on its plot for good. A wolf has 2 strength, and for a unit stronger than 3 it has 2 + (strength - 2) / 2: a 6-strength unit gives a 4-strength wolf, a 10-strength one a 6. The Doviello can then merge wolves into Wolf Packs (Form Wolf Pack).
+**What it does.** It replaced FFH2's Wild Hunt (2026-11-11, the owner's design). The target is a plot with 2 or more of the Doviello's land units with strength (heroes count, carried units do not). Ordered by base strength, then experience, then unit id, the weaker half (rounded down) is killed; the survivors divide the killed units' experience plus 5 for each unit killed, the remainder one each to the strongest (`world_ritual_spells/small.rs`).
 
-**Playing it well.** It doubles the unit count of a big army, so cast it once the army is large and a war is on, and fold the wolves into packs. Wolves are fodder: they soak up defenders' first strikes, pillage, and guard flanks. The wolves need support too, so cast at peace with a small army and they are a cost.
+**Playing it well.** Gather the obsolete warriors that cost upkeep and will never win a fight with the units that are to lead the next war: the old units' experience, and more, goes into the veterans.
 
-**AI: Directed.** Cast by the end-of-turn choice at its weight of 300 once FfH's condition holds: at war with a civilization and 20 units (`world_spells::ready`). The wolves keep their default AI `UNITAI_ANIMAL`, so they play as animals (`units::barbarian`): they attack what they beat at 50% or better, hunt within four turns, or wander. They do not join the army. Holding the spell for the strike, with the wolves made army units, lost (`civs/doviello.rs`, docs/AI_LOG.md). Two wolves that end a turn on the same plot are merged by Form Wolf Pack, an ability worth its weight of 100 at the end of the turn, but nothing brings them together.
+**AI: Directed.** `civs/doviello.rs::cull`: with a charge, the plot with the most units (4 or more) where the half that dies are all units of the lowest tier the Doviello can build or older, never leaving fewer than 2 units in a city; otherwise it waits.
 
 ### Worldbreak (`SPELL_WORLDBREAK`)
 *World spell, Sheaim · once a game · any Sheaim unit · needs an Armageddon counter above 0 · AI weight 300*

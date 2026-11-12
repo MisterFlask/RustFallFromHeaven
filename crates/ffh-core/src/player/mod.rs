@@ -395,6 +395,9 @@ pub struct Player {
     pub world_ritual_refunds: i32,
     /// Not in C++: the times this player cast its world spell (a `global` spell).
     pub world_spell_casts: i32,
+    /// Not in C++: the rival named by Name the Tithe, whom Ritual: The Tithe strikes (the
+    /// Calabim's; `ffh/world_ritual_spells/small.rs`).
+    pub tithe_target: Option<PlayerId>,
 }
 
 impl Player {
@@ -655,6 +658,7 @@ impl Player {
             world_ritual_completions: 0,
             world_ritual_refunds: 0,
             world_spell_casts: 0,
+            tithe_target: None,
         }
     }
 
