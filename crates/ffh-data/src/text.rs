@@ -78,6 +78,11 @@ impl Text {
         self.form(key, 0).unwrap_or_else(|| self.get(key))
     }
 
+    /// Every entry: its key and its text (in no particular order).
+    pub fn entries(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.map.iter().map(|(k, e)| (k.as_str(), e.text.as_str()))
+    }
+
     pub fn len(&self) -> usize {
         self.map.len()
     }

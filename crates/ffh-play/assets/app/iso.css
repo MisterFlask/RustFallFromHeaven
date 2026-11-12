@@ -947,3 +947,9 @@ html.iso .place-tiers { gap: 3px 10px; }
 html.iso .place-now { font: 400 13px/15px var(--iso-font); }
 html.iso .place-intro { font: 400 16px/20px var(--iso-font); }
 html.iso .place-count { font: 400 16px/20px var(--iso-font); flex: none; }
+
+/* Keywords and reminder text (style.css): the same amber keyword, boxes in the skin's lettering. */
+html.iso .tip-side { width: 300px; }
+html.iso .reminder { font: 400 16px/20px var(--iso-font); padding: 4px 10px 6px; }
+html.iso .reminder-name { font: 700 16px/20px var(--iso-font); letter-spacing: 0.04em; }
+html.iso .kw-chip { font: 700 16px/20px var(--iso-font); padding: 0 8px; }

@@ -114,6 +114,8 @@ pub fn rituals(v: &Viewer) -> Json {
             "completed" => r.completed,
             "next_cost" => r.next_cost,
             "note" => if r.player == v.h { tithe_note(g, r.player, r.project) } else { None },
+            // Its keywords' reminder texts (World Ritual, Ritual), shown as chips.
+            "reminders" => crate::view::keywords::reminders(d, crate::view::keywords::of_project(d, r.project)),
         });
     }
     Json::Arr(out)
@@ -159,19 +161,22 @@ pub fn charge_line_verb(v: &Viewer, project: ProjectType, verb: &str) -> Option<
     Some(format!("Charge held in {}. {verb} spends it. Next ritual cost: {cost}.", city_name(g, c)))
 }
 
-/// The production dialog's line for world ritual `project` in city `c`: `World ritual. One in
-/// progress per player. Taken off the head of the queue, its production is lost. Cannot be
-/// hurried with gold. Each completion doubles the next cost (next: <next_cost>).`
+/// The production dialog's rules line of world ritual `project` in city `c`: what it leaves or
+/// does and its next cost, the entity's own facts only (its keywords' rules are its reminders,
+/// [`crate::view::keywords`]): `Leaves a charge of Warcry. Next cost: 400.`, `Acts at completion.
+/// Next cost: 400.` for a ritual no spell spends.
 pub fn rules_line(g: &Game, c: CityId, project: ProjectType) -> String {
     let p = g.cities[c].owner;
     let next = g.player_project_production_needed_at(p, project, 1);
-    let mut s = String::from("World ritual. One in progress per player. Taken off the head of the queue, its production is lost. Cannot be hurried with gold.");
-    match g.d.projects[project].repeat_cost_percent {
-        200 => s.push_str(&format!(" Each completion doubles the next cost (next: {next}).")),
-        n if n > 0 => s.push_str(&format!(" Each completion sets the next cost to {n}% of the last (next: {next}).")),
-        _ => {}
+    let does = match g.world_ritual_spell(project) {
+        Some(s) => format!("Leaves a charge of {}.", crate::names::display(g.d, s)),
+        None => "Acts at completion.".to_string(),
+    };
+    if g.d.projects[project].repeat_cost_percent > 0 {
+        format!("{does} Next cost: {next}.")
+    } else {
+        does
     }
-    s
 }
 
 /// The Calabim's ritual (Ritual: The Tithe) and the living rival player `p` has named for it.
@@ -226,11 +231,19 @@ pub fn cannot_reason(g: &Game, c: CityId, project: ProjectType) -> String {
     "Not available now.".to_string()
 }
 
-/// A world ritual's entry of the production list (`buildable`): `ritual: {rules, why, note}`
-/// (`why` null while it can be chosen; `note` the ritual's own state, else null: Ritual: The
-/// Tithe's `Named rival: <Civ>.`).
+/// A ritual's entry of the production list (`buildable`; every project is a ritual, ffh-core's
+/// `ffh::rituals`): `ritual: {rules, why, note, reminders}`. A world ritual's `rules` is its
+/// [`rules_line`] (markup), `why` why it cannot be chosen (null while it can), `note` its own
+/// state (Ritual: The Tithe's `Named rival: <Civ>.`); another ritual has them null. `reminders`:
+/// its keywords' reminder texts ([`crate::view::keywords`]), shown as chips.
 pub fn buildable_fields(g: &Game, c: CityId, project: ProjectType, enabled: bool, j: &mut Json) {
+    let d = g.d;
+    if !g.project_is_ritual(project) {
+        return;
+    }
+    let reminders = crate::view::keywords::reminders(d, crate::view::keywords::of_project(d, project));
     if !g.project_is_world_ritual(project) {
+        j.set("ritual", crate::jobj! { "rules" => Json::Null, "why" => Json::Null, "note" => Json::Null, "reminders" => reminders });
         return;
     }
     let note = tithe_note(g, g.cities[c].owner, project);
@@ -240,6 +253,7 @@ pub fn buildable_fields(g: &Game, c: CityId, project: ProjectType, enabled: bool
             "rules" => rules_line(g, c, project),
             "why" => if enabled { Json::Null } else { Json::from(cannot_reason(g, c, project)) },
             "note" => note,
+            "reminders" => reminders,
         },
     );
 }

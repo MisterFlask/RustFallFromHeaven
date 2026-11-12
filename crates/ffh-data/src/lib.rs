@@ -215,6 +215,8 @@ game_data! {
     research_paths: ResearchPathType => ResearchPathInfo, research_path::read_research_path;
     battle_tactics: BattleTacticType => BattleTacticInfo, battle_tactic::read_battle_tactic;
     sea_names: SeaNameType => SeaNameInfo, sea::read_sea_names;
+    // Presentation: the keywords and their reminder texts (docs/PLAY_DESIGN.md).
+    keywords: KeywordType => KeywordInfo, keyword::read_keyword;
 }
 
 /// Type lists of `global_types.jsonc` (key, registry class): types the data names that are
@@ -451,6 +453,21 @@ impl GameData {
             }
         }
         self.derive_building_tiers();
+        self.check_keyword_marks();
+    }
+
+    /// Warns about a `[KW=X]` mark in the text that names no keyword (docs/DATA.md, "Keywords").
+    fn check_keyword_marks(&mut self) {
+        let mut bad: Vec<String> = Vec::new();
+        for (key, text) in self.text.entries() {
+            for name in keyword_marks(text) {
+                if self.reg.lookup::<KeywordType>(name).is_none() {
+                    bad.push(format!("text {key}: [KW={name}] names no keyword"));
+                }
+            }
+        }
+        bad.sort();
+        self.warnings.extend(bad);
     }
 
     /// The building tiers' derived fields (docs/SUITABILITY.md): each family's buildings by tier,

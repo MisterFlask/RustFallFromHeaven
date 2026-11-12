@@ -7,6 +7,7 @@
 import { h } from "./dom.js";
 import { render as markup } from "./markup.js";
 import { S, info, dname } from "./state.js";
+import { remindersNode } from "./keywords.js";
 
 /** A unit type's numbers as markup: strength (and defence when it differs), moves, its class of
  *  combat (`UnitType` entry `e` of the data). */
@@ -46,6 +47,8 @@ export function infoTip(kind, i, { hint = null, extra = null, title = null } = {
       extra,
       e.strategy ? h("div.tip-strategy", markup(e.strategy)) : null,
       hint ? h("div.tip-hint", hint) : null,
+      // Its keywords' reminder text: boxes beside the tooltip (tips.js), not in it.
+      remindersNode(e.reminders),
     ];
   };
 }

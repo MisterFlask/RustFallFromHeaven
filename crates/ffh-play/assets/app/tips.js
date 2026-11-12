@@ -3,10 +3,17 @@
 // browser's plain `title` tooltip, so that the help keeps its icons, colours and line breaks. One
 // box serves the page; it follows the pointer and stays inside the window. `h(tag, {tip}, ..)`
 // (dom.js) attaches one.
+//
+// A tip's reminder text (keywords.js `remindersNode`: its keywords' rules, docs/PLAY_DESIGN.md
+// "Keywords and reminder text") is never drawn in the box: it goes to a second box of its own
+// (`.tip-side`), beside the tooltip on a wide window and below it on a narrow one
+// (keyword_view.js `tipLayout`).
 
 import { render as markup, plain } from "./markup.js";
+import { tipLayout, stackedLayout } from "./keyword_view.js";
 
 let box = null;
+let side = null;
 /** The element whose tip is shown, and the content maker of each element with a tip. */
 let owner = null;
 const tips = new WeakMap();
@@ -21,6 +28,15 @@ function ensureBox() {
   return box;
 }
 
+function ensureSide() {
+  if (side?.isConnected) return side;
+  side = document.createElement("div");
+  side.className = "tip-side";
+  side.hidden = true;
+  document.body.appendChild(side);
+  return side;
+}
+
 /** The content of a tip: a markup string, a Node, or an array of them (null entries skipped). */
 function content(c) {
   const v = typeof c === "function" ? c() : c;
@@ -32,18 +48,24 @@ function content(c) {
   return frag;
 }
 
-/** Places the box near (x, y) (a pointer position), inside the window. */
+/** Places the box (and its reminder boxes) near (x, y) (a pointer position), inside the window. */
 function placeAt(x, y) {
   const b = ensureBox();
-  const pad = 14;
-  const w = b.offsetWidth;
-  const hgt = b.offsetHeight;
-  let left = x + pad;
-  let top = y + pad;
-  if (left + w > window.innerWidth - 4) left = Math.max(4, x - pad - w);
-  if (top + hgt > window.innerHeight - 4) top = Math.max(4, y - pad - hgt);
-  b.style.left = `${left}px`;
-  b.style.top = `${top}px`;
+  const s = side && !side.hidden ? side : null;
+  const vw = window.innerWidth;
+  if (s) {
+    s.classList.toggle("stacked", stackedLayout(vw));
+    // Below the tooltip, the boxes take its width.
+    s.style.width = stackedLayout(vw) && !b.hidden ? `${b.offsetWidth}px` : "";
+  }
+  const main = b.hidden ? { w: 0, h: 0 } : { w: b.offsetWidth, h: b.offsetHeight };
+  const at = tipLayout({ x, y, vw, vh: window.innerHeight, main, side: s ? { w: s.offsetWidth, h: s.offsetHeight } : null });
+  b.style.left = `${at.main.left}px`;
+  b.style.top = `${at.main.top}px`;
+  if (s && at.side) {
+    s.style.left = `${at.side.left}px`;
+    s.style.top = `${at.side.top}px`;
+  }
 }
 
 function show(el, x, y) {
@@ -51,9 +73,16 @@ function show(el, x, y) {
   if (!make) return;
   const b = ensureBox();
   owner = el;
-  b.replaceChildren(content(make));
-  if (!b.firstChild) return hide();
-  b.hidden = false;
+  const frag = content(make);
+  // The reminder text leaves the box for the side boxes.
+  const reminders = [...frag.querySelectorAll(".tip-reminders")];
+  for (const r of reminders) r.remove();
+  b.replaceChildren(frag);
+  const s = ensureSide();
+  s.replaceChildren(...reminders);
+  s.hidden = !reminders.length;
+  b.hidden = !b.firstChild;
+  if (b.hidden && s.hidden) return hide();
   if (x === undefined) {
     const r = el.getBoundingClientRect();
     placeAt(r.left, r.bottom);
@@ -70,6 +99,7 @@ export function hide(el) {
   if (el && el !== owner) return;
   owner = null;
   if (box) box.hidden = true;
+  if (side) side.hidden = true;
 }
 
 /** Attaches tip `c` (a markup string, a Node, an array of them, or a function making one when the
@@ -83,7 +113,16 @@ export function tip(el, c) {
   if (!first) return el;
   el.addEventListener("mouseenter", (ev) => show(el, ev.clientX, ev.clientY));
   el.addEventListener("mousemove", (ev) => owner === el && placeAt(ev.clientX, ev.clientY));
-  el.addEventListener("mouseleave", () => hide(el));
+  el.addEventListener("mouseleave", (ev) => {
+    hide(el);
+    // Back over an element whose tip holds this one (a keyword chip in a build's button): its tip.
+    for (let up = el.parentElement; up; up = up.parentElement) {
+      if (tips.has(up)) {
+        if (up.contains(ev.relatedTarget)) show(up, ev.clientX, ev.clientY);
+        break;
+      }
+    }
+  });
   el.addEventListener("focus", () => show(el));
   el.addEventListener("blur", () => hide(el));
   el.addEventListener("mousedown", () => hide(el));

@@ -189,8 +189,11 @@ fn the_world_spell_button_says_where_the_ritual_stands() {
     let entry = ritual_entry(&s, capital, project);
     assert_eq!(entry.get("enabled").and_then(Json::as_bool), Some(true));
     let next = s.g.player_project_production_needed_at(h, project, 1);
-    let rules = format!("World ritual. One in progress per player. Taken off the head of the queue, its production is lost. Cannot be hurried with gold. Each completion doubles the next cost (next: {next}).");
+    let rules = format!("Leaves a charge of Warcry. Next cost: {next}.");
     assert_eq!(entry.get("ritual").and_then(|r| s_of(r, "rules")), Some(rules.as_str()));
+    // The keywords' rules are its reminders (chips), not its rules line.
+    let keys: Vec<&str> = entry.get("ritual").map(|r| arr(r, "reminders")).unwrap_or(&[]).iter().filter_map(|k| s_of(k, "key")).collect();
+    assert_eq!(keys, ["KEYWORD_WORLD_RITUAL", "KEYWORD_RITUAL"]);
     assert_eq!(entry.get("ritual").and_then(|r| r.get("why")), Some(&Json::Null));
     let r = s.execute(&Command::PushOrder { city: capital, order: OrderType::ORDER_CREATE, data: project.idx() as i32, alt: false, shift: false, ctrl: false });
     assert!(matches!(r, Ok(CmdOk::Applied { .. })), "{r:?}");
@@ -326,7 +329,7 @@ fn wellspring_is_placed_by_plot_then_mana_type() {
     }
     // The tooltip's rules: placed, no caster, a mana type.
     let help = ffh_play::view::help::spell::effects(d, spell);
-    assert!(help.contains("Placed when Ritual: Wellspring completes."), "{help}");
+    assert!(help.contains("Spends a charge of its [KW=KEYWORD_WORLD_RITUAL]world ritual[\\KW], Ritual: Wellspring; placed when it completes."), "{help}");
     assert!(help.contains("The charge is held until the node is placed."), "{help}");
     assert!(help.contains("Choose a mana type."), "{help}");
     for no in ["Cast by", "caster", "Can only be used by", "option"] {

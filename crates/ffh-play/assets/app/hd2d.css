@@ -344,3 +344,11 @@ html.iso.hd2d .unlock { background: rgba(0, 0, 0, 0.36); }
 /* Wellspring's menu (place.js): flat chips. */
 html.iso.hd2d button:is(.place-spell, .place-chip) { background: rgba(24, 23, 27, 0.95); border: 1px solid var(--hd-faint); text-shadow: none; }
 html.iso.hd2d button.place-tier { background: none; color: var(--hd-dim); }
+
+/* Keywords and reminder text (style.css): the boxes as small dark-glass cards with the amber edge. */
+html.iso.hd2d .tip-side { width: 290px; }
+html.iso.hd2d .reminder {
+  font: 400 15px/19px var(--iso-font); background: rgba(24, 30, 38, 0.96); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
+html.iso.hd2d .reminder-name { font: 700 12px/16px var(--iso-font); letter-spacing: 0.1em; }
+html.iso.hd2d .kw-chip { font: 700 14px/18px var(--iso-font); background: rgba(24, 30, 38, 0.9); }

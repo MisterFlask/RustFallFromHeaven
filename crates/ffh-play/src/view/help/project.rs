@@ -94,20 +94,17 @@ pub fn effects(d: &GameData, p: ProjectType) -> String {
         first = false;
     }
     // This game's (docs/CARDS.md): a ritual whose completions charge spells, a ritual whose cost
-    // grows with each completion.
+    // grows with each completion. Every project is a Ritual, a world ritual a World Ritual: those
+    // rules are the keywords' reminder texts (`view::keywords`),
+    // shown beside this text, not in it; a world ritual's help says what it leaves or does.
     let charged: Vec<String> = d.spells.keys().filter(|&s| d.spells[s].ritual_charge == Some(p)).map(|s| display(d, s).into_owned()).collect();
-    if !charged.is_empty() && *world_ritual {
-        line(&mut b, format!("[ICON_BULLET]Each completion: one cast of {} by any unit of yours", charged.join(" or ")));
-    } else if !charged.is_empty() {
-        line(&mut b, format!("[ICON_BULLET]Each completion: one cast of {} by a unit in its city", charged.join(" or ")));
-    }
-    // The world rituals' limits (docs/CARDS.md, "World rituals"), one rule a line.
-    if *world_ritual {
-        for rule in world_ritual_rules(!charged.is_empty(), *repeat_cost_percent) {
-            line(&mut b, format!("[ICON_BULLET]{rule}"));
+    if !*world_ritual {
+        if !charged.is_empty() {
+            line(&mut b, format!("[ICON_BULLET]Each completion: one cast of {} by a unit in its city", charged.join(" or ")));
         }
-    } else if *repeat_cost_percent > 0 {
-        line(&mut b, format!("[ICON_BULLET]Each completion: the next costs {repeat_cost_percent}% of the last"));
+        if *repeat_cost_percent > 0 {
+            line(&mut b, format!("[ICON_BULLET]Each completion: the next costs {repeat_cost_percent}% of the last"));
+        }
     }
     // FfH.
     if *modify_global_counter != 0 {
@@ -162,51 +159,19 @@ pub fn effects(d: &GameData, p: ProjectType) -> String {
     finish(b)
 }
 
-/// The rules of a world ritual as short lines (the help of each ritual): `charges` when a world
-/// spell spends its completions, `repeat` its `repeat_cost_percent`.
-pub fn world_ritual_rules(charges: bool, repeat: i32) -> Vec<String> {
-    let mut out = vec![
-        "World ritual: one in progress per player, in one city".to_string(),
-        "Taken off the head of the queue, its production is lost".to_string(),
-        "Cannot be hurried with gold".to_string(),
-    ];
-    match repeat {
-        200 => out.push("Each completion doubles the next cost".to_string()),
-        n if n > 0 => out.push(format!("Each completion: the next costs {n}% of the last")),
-        _ => {}
-    }
-    if charges {
-        out.push("At most one charge held; not started again while one is held".to_string());
-        out.push("A captured city loses its ritual progress and its charge".to_string());
-    } else {
-        out.push("Acts at its completion; leaves no charge".to_string());
-        out.push("A captured city loses its ritual progress".to_string());
-    }
-    out.push("Every player is told when it begins, is abandoned or completes".to_string());
-    out
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn a_world_ritual_lists_its_rules() {
+    fn a_world_ritual_leaves_its_rules_to_its_keywords() {
         let warcry = project("PROJECT_RITUAL_WARCRY");
-        for part in [
-            "[ICON_BULLET]Each completion: one cast of Warcry by any unit of yours",
-            "[ICON_BULLET]World ritual: one in progress per player, in one city",
-            "[ICON_BULLET]Taken off the head of the queue, its production is lost",
-            "[ICON_BULLET]Cannot be hurried with gold",
-            "[ICON_BULLET]Each completion doubles the next cost",
-            "[ICON_BULLET]At most one charge held; not started again while one is held",
-            "[ICON_BULLET]A captured city loses its ritual progress and its charge",
-            "[ICON_BULLET]Every player is told when it begins, is abandoned or completes",
-        ] {
-            assert!(warcry.contains(part), "{part}: {warcry}");
+        assert!(warcry.ends_with("Leaves a charge of Warcry."), "{warcry}");
+        for gone in ["Each completion", "hurried", "production is lost", "one in progress", "charge held", "told"] {
+            assert!(!warcry.contains(gone), "{gone}: {warcry}");
         }
-        assert!(!warcry.contains("% of the last"), "{warcry}");
-        assert!(world_ritual_rules(false, 200).iter().any(|l| l == "Acts at its completion; leaves no charge"));
+        let upgrade = project("PROJECT_RITUAL_UPGRADE");
+        assert!(upgrade.contains("At completion: each golem you own gains Reinforced"), "{upgrade}");
     }
 
     /// Whether a value's `Debug` text sets anything: a number other than 0, `true` or `Some`

@@ -24,6 +24,8 @@ use crate::setup::NewGame;
 /// human's log holds the `began` messages.
 pub struct StagedRituals {
     pub save: PathBuf,
+    /// The stage's name (`rituals`, `rituals-charged`, `rituals-hurry`).
+    pub stage: &'static str,
     pub charged_variant: bool,
     pub capital: CityId,
     pub second: CityId,
@@ -37,7 +39,7 @@ pub struct StagedRituals {
 impl StagedRituals {
     pub fn to_json(&self) -> Json {
         crate::jobj! {
-            "stage" => if self.charged_variant { "rituals-charged" } else { "rituals" },
+            "stage" => self.stage,
             "save" => self.save.display().to_string(),
             "capital" => self.capital, "second" => self.second,
             "in_progress" => self.in_progress, "charged" => self.charged, "idle" => self.idle, "unmet" => self.unmet,
@@ -48,13 +50,22 @@ impl StagedRituals {
 
 /// Writes the `rituals` staged game into `dir` (a game directory).
 pub fn rituals(dir: &Path) -> Result<StagedRituals, String> {
-    staged(dir, false)
+    staged(dir, false, false)
+}
+
+/// Writes the `rituals-hurry` staged game into `dir` (docs/HUMAN.md, "Keywords and reminder
+/// text"): as [`rituals`], and the human may hurry with gold and with population (the hurry
+/// counts set, 1000 gold), its capital has 8 citizens, content, with a citizen's worth of
+/// production left on Ritual: Warcry, and its team knows Strength of Will (Rites of Oghma, an
+/// ordinary ritual, in the production list).
+pub fn rituals_hurry(dir: &Path) -> Result<StagedRituals, String> {
+    staged(dir, false, true)
 }
 
 /// Writes the `rituals-charged` staged game into `dir`: as [`rituals`], with the human holding its
 /// charge and no ritual queued.
 pub fn rituals_charged(dir: &Path) -> Result<StagedRituals, String> {
-    staged(dir, true)
+    staged(dir, true, false)
 }
 
 /// Puts world ritual `project` at the head of city `c`'s queue with `percent` of its cost in it
@@ -139,7 +150,7 @@ fn choose_research(g: &mut ffh_core::game::Game, h: PlayerId) {
     }
 }
 
-fn staged(dir: &Path, charged_variant: bool) -> Result<StagedRituals, String> {
+fn staged(dir: &Path, charged_variant: bool, hurry: bool) -> Result<StagedRituals, String> {
     let mut s = new_game_as(dir, "CIVILIZATION_HIPPUS")?;
     let h = s.human;
     let others = |g: &ffh_core::game::Game| others(g, h);
@@ -165,6 +176,18 @@ fn staged(dir: &Path, charged_variant: bool) -> Result<StagedRituals, String> {
     } else {
         begin(g, capital, own, 37)?;
     }
+    if hurry {
+        let d = g.d;
+        for name in ["HURRY_GOLD", "HURRY_POPULATION"] {
+            g.players[h].hurry_count[d.t::<HurryType>(name)] += 1;
+        }
+        g.players[h].gold = 1000;
+        g.city_set_population(capital, 8);
+        g.city_change_extra_happiness(capital, 10);
+        let left = g.city_production_left(capital);
+        g.city_add_turn_production(capital, left - 20);
+        g.team_set_has_tech(team, d.t::<TechType>("TECH_STRENGTH_OF_WILL"), true, Some(h), false, false);
+    }
     let ritual = |g: &ffh_core::game::Game, p: PlayerId| g.player_world_ritual(p).ok_or("no world ritual");
     let cap = |g: &ffh_core::game::Game, p: PlayerId| g.player_get_capital_city(p).ok_or("no capital");
     let (r, c) = (ritual(g, in_progress)?, cap(g, in_progress)?);
@@ -175,9 +198,9 @@ fn staged(dir: &Path, charged_variant: bool) -> Result<StagedRituals, String> {
     begin(g, c, r, 18)?;
     // The news goes to the human's message log as at a turn's end.
     s.drain_log();
-    let name = if charged_variant { "rituals-charged" } else { "rituals" };
+    let name = if charged_variant { "rituals-charged" } else if hurry { "rituals-hurry" } else { "rituals" };
     let paths = s.save(name).map_err(|e| format!("save: {e:?}"))?;
-    Ok(StagedRituals { save: paths.save, charged_variant, capital, second, in_progress, charged, idle, unmet, turn: s.g.game_turn() })
+    Ok(StagedRituals { save: paths.save, stage: name, charged_variant, capital, second, in_progress, charged, idle, unmet, turn: s.g.game_turn() })
 }
 
 /// A saved game at a human control point (as [`rituals`]: seed 21, five civilizations, no

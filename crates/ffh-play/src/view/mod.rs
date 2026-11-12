@@ -30,6 +30,7 @@ pub mod fog;
 pub mod help;
 pub mod hotkeys;
 pub mod improvement_help;
+pub mod keywords;
 pub mod map;
 pub mod marks;
 pub mod player;

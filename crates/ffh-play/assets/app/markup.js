@@ -3,7 +3,8 @@
 // text becomes HTML: only the tags below are recognized, everything else stays literal text.
 //
 // Tags: [NEWLINE], [PARAGRAPH:n], [TAB], [SPACE], [ICON_X], [LINK=target]..[\LINK], [COLOR_X]..
-// [COLOR_REVERT] (also [\COLOR]), [BOLD]..[\BOLD], [H1]..[\H1].
+// [COLOR_REVERT] (also [\COLOR]), [BOLD]..[\BOLD], [H1]..[\H1], and this game's keyword mark
+// [KW=KEYWORD_X]..[\KW] (docs/PLAY_DESIGN.md, "Keywords and reminder text": drawn as `.kw`).
 
 /** Icon glyphs; an unknown icon shows its humanized name in brackets. */
 export const ICONS = {
@@ -42,7 +43,7 @@ const TAG = /\[([\\/]?[A-Z][A-Z0-9_]*)(?:[=:]([^\]]*))?\]/g;
 
 /** The tokens of a text: `{t: "text", s}`, `br`, `para`, `tab`, `{t: "icon", name}`,
  *  `{t: "link", target}`, `/link`, `{t: "color", name}`, `/color`, `bold`, `/bold`, `h1`,
- *  `/h1`. Unknown bracketed words stay text. */
+ *  `/h1`, `{t: "kw", key}`, `/kw`. Unknown bracketed words stay text. */
 export function tokenize(text) {
   const out = [];
   const s = String(text ?? "");
@@ -85,6 +86,10 @@ function tagToken(name, arg) {
       return arg !== undefined ? { t: "link", target: arg } : null;
     case "\\LINK":
       return { t: "/link" };
+    case "KW":
+      return arg !== undefined ? { t: "kw", key: arg } : null;
+    case "\\KW":
+      return { t: "/kw" };
     case "COLOR_REVERT":
     case "\\COLOR":
       return { t: "/color" };
@@ -199,6 +204,14 @@ export function render(text, doc = globalThis.document) {
         open(el);
         break;
       }
+      case "kw": {
+        const el = doc.createElement("span");
+        el.className = "kw";
+        el.dataset.tag = "kw";
+        el.dataset.keyword = t.key;
+        open(el);
+        break;
+      }
       case "color": {
         const el = doc.createElement("span");
         el.dataset.tag = "color";
@@ -215,6 +228,7 @@ export function render(text, doc = globalThis.document) {
         break;
       }
       case "/link":
+      case "/kw":
       case "/color":
       case "/bold":
       case "/h1":

@@ -327,6 +327,7 @@ kinds! {
         ResearchPathType => research_paths,
         BattleTacticType => battle_tactics,
         SeaNameType => sea_names,
+        KeywordType => keywords,
     }
     globals {
         FlavorType,

@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 mod rituals;
-pub use rituals::{ritual_civ, ritual_due, ritual_notech, rituals, rituals_charged, tithe, StagedRitualCiv, StagedRituals, StagedTithe};
+pub use rituals::{ritual_civ, ritual_due, ritual_notech, rituals, rituals_charged, rituals_hurry, tithe, StagedRitualCiv, StagedRituals, StagedTithe};
 
 use ffh_core::ids::{PlayerId, UnitId, VoteId};
 use ffh_core::path::{FinderKind, PathFinder};

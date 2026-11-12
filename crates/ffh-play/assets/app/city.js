@@ -25,6 +25,8 @@ import { cultureView } from "./culture.js";
 import { recruitControls, recruitView, requisitionNote, requisitionTag } from "./armies.js";
 import { governanceView } from "./governors.js";
 import { addHelp } from "./help.js";
+import { keywordChips } from "./keywords.js";
+import { render as markup } from "./markup.js";
 
 // ---- Outposts in the help display (docs/NAVAL.md, section 9) -----------------------------------
 
@@ -821,8 +823,9 @@ function buildLists(c, choose) {
         "div.build-grid",
         items.map((b) => {
           const kind = ORDER_KINDS[order];
-          // A world ritual (docs/CARDS.md): its rules line, its own state (The Tithe's named
-          // rival), and why it cannot be chosen now.
+          // A ritual (every project, docs/CARDS.md): its keywords as chips (their rules on a
+          // chip's hover or tap); a world ritual's rules line (its own facts: what it leaves, the
+          // next cost), its own state (The Tithe's named rival), and why it cannot be chosen now.
           const ritual = b.ritual ?? null;
           const why = !b.enabled ? (ritual?.why ?? "Not possible now.") : null;
           return h(
@@ -837,7 +840,8 @@ function buildLists(c, choose) {
             isoSkin() ? buildIcon(order, b.type) : null,
             h(`span${tierSel(b.tier)}`, dname(kind, b.type)),
             h("span.dim", b.turns !== null ? [`${turns(b.turns)} · `, h("span.cost", { tip: "Production cost" }, ic("production"), String(b.cost))] : ""),
-            ritual ? h("span.ritual-rules", ritual.rules) : null,
+            ritual?.rules ? h("span.ritual-rules", markup(ritual.rules)) : null,
+            ritual ? keywordChips(ritual.reminders) : null,
             ritual?.note ? h("span.ritual-note", ritual.note) : null,
             ritual && why ? h("span.ritual-why.warn", why) : null,
           );

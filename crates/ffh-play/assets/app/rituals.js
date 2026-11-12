@@ -22,6 +22,7 @@ import { playerColor } from "./tiles.js";
 import { barEl } from "./look.js";
 import { render as markup } from "./markup.js";
 import { addHelp } from "./help.js";
+import { keywordChips } from "./keywords.js";
 import { activeRows, chipName, rowStatus, rowLabel, listLines, ritualAlerts as alertsOf } from "./ritual_rows.js";
 
 addHelp({
@@ -29,19 +30,23 @@ addHelp({
   group: "Playing",
   order: 7,
   title: "World rituals",
+  // The reference page of the rituals' rules: full prose, the keywords marked (their reminder
+  // texts are the same rules, said once).
   body: () => [
     h(
       "ul",
-      h("li", "A civilization's world spell spends a charge. A charge is made by building the civilization's ritual (a project) in a city."),
-      h("li", "One ritual in progress per player, in one city."),
-      h("li", "Taken off the head of the queue, a ritual's production is lost."),
-      h("li", "A ritual cannot be hurried with gold. Hurrying with population is allowed."),
-      h("li", "Each completion doubles the next cost."),
-      h("li", "A player holds at most one charge and cannot start the ritual again while holding it."),
-      h("li", "A captured city loses its ritual progress and its charge."),
-      h("li", "Every player is told when any ritual begins, is abandoned or completes."),
-      h("li", "Some rituals leave no charge: they act at their completion."),
-      h("li", "The rituals element (under the top bar) lists the rituals in progress and the charges held; All lists every civilization's."),
+      [
+        "A civilization's world spell spends a charge. A charge is made by building the civilization's [KW=KEYWORD_WORLD_RITUAL]world ritual[\\KW] (a project) in a city.",
+        "Every project is a [KW=KEYWORD_RITUAL]ritual[\\KW]. A ritual's progress is lost if its city switches to building something else.",
+        "A ritual cannot be hurried with gold. Hurrying with population is allowed.",
+        "One world ritual in progress per player, in one city.",
+        "Each completion doubles a world ritual's next cost.",
+        "A player holds at most one charge and cannot start the ritual again while holding it.",
+        "A captured city loses its ritual progress and its charge.",
+        "Every player is told when any world ritual begins, is abandoned or completes.",
+        "Some world rituals leave no charge: they act at their completion.",
+        "The rituals element (under the top bar) lists the world rituals in progress and the charges held; All lists every civilization's.",
+      ].map((t) => h("li", markup(t))),
     ),
   ],
 });
@@ -126,6 +131,7 @@ export function openRitualsPanel() {
                 r.x !== null && r.x !== undefined ? [" ", h("button.link.small", { title: `Show ${r.city_name} on the map`, "aria-label": `Show ${r.city_name} on the map`, onclick: () => (m.close(null), centre(r)) }, "⌖")] : null,
               ),
               r.note ? h("div.ritual-entry-note", r.note) : null,
+              keywordChips(r.reminders),
               h("div.ritual-entry-counts.dim", counts),
             );
           }),

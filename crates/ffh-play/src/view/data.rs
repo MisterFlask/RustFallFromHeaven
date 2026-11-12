@@ -4,7 +4,8 @@
 //! strategy and pedia texts (Civ4 markup kept, `null` when the text is missing) and the
 //! gameplay fields the renderer and the screens need for the main tables, and `effects`: what an
 //! entry does, as Civ4 markup ([`crate::view::help::effects_of`]; unique improvements:
-//! [`crate::view::improvement_help`]). Built once.
+//! [`crate::view::improvement_help`]), and `reminders`: its keywords' reminder texts
+//! ([`crate::view::keywords`]), shown beside its rules text. Built once.
 
 use std::sync::OnceLock;
 
@@ -224,6 +225,13 @@ fn build(d: &GameData) -> Json {
             // What it does (the help texts, `view::help`); the unique improvements set theirs above.
             if let Some(e) = crate::view::help::effects_of(d, k.kind, i) {
                 j.set("effects", e);
+            }
+            // Its keywords' reminder texts (docs/PLAY_DESIGN.md, "Keywords and reminder text"): by
+            // its properties and the marks of its rules text; shown beside that text.
+            let texts: Vec<&str> = ["effects", "help", "strategy"].iter().filter_map(|f| j.get(f).and_then(Json::as_str)).collect();
+            let kws = crate::view::keywords::of_entry(d, k.kind, i, &texts);
+            if !kws.is_empty() {
+                j.set("reminders", crate::view::keywords::reminders(d, kws));
             }
             // Under engagement combat: what its combat abilities mean in a battle (the page
             // appends it to `effects` when the game's engagements are on).

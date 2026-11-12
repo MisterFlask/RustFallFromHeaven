@@ -2,7 +2,7 @@
 // counter, mana, anarchy, golden age, Stasis) with the phase and the progress line during the
 // AI turns, and the bottom panel: the turn report, the messages by turn, the game's files.
 
-import { S, dname, tname, turns, playerName, me, emit, endTurnMessage, scoreText, fairShareText, goldBreakdown, observing, isBarbarian } from "./state.js";
+import { S, info, dname, tname, turns, playerName, me, emit, endTurnMessage, scoreText, fairShareText, goldBreakdown, observing, isBarbarian } from "./state.js";
 import { playerColor } from "./tiles.js";
 import { h, fill } from "./dom.js";
 import { render as markup } from "./markup.js";
@@ -11,6 +11,7 @@ import { openCount, run } from "./commands.js";
 import { renderSpectatorBar, renderAutoplayBar, flagsView } from "./tools.js";
 import { isoSkin, isoIcon } from "./isoui.js";
 import { effectsOf, partsList } from "./infotips.js";
+import { remindersNode } from "./keywords.js";
 import { battleLine, battleLinks } from "./engagements.js";
 import { castTargeted, openPlacement, currentMode } from "./units.js";
 import { casterLine, placementDue } from "./ritual_rows.js";
@@ -404,6 +405,8 @@ function renderWorldActions(m, st) {
         help ? h("div.tip-effects", markup(help)) : null,
         a.enabled && a.charge ? h("div.tip-hint.ritual-charge-line", a.charge) : null,
         a.enabled ? (caster ? h("div.tip-hint", casterLine(a, dname("UnitType", caster.type))) : null) : h("div.tip-hint.world-action-why", a.why ?? "No unit of yours can cast it now."),
+        // Its keywords' reminder text (Charge), beside the tooltip.
+        remindersNode(info("SpellType", a.spell)?.reminders),
       ];
       return h(
         `button.world-action${a.cast ? ".spent" : ""}`,
@@ -450,6 +453,7 @@ function placeButton(a, name, yours) {
     help ? h("div.tip-effects", markup(help)) : null,
     a.enabled && a.charge ? h("div.tip-hint.ritual-charge-line", a.charge) : null,
     a.enabled && p ? h("div.tip-hint", p.hint) : h("div.tip-hint.world-action-why", a.why ?? ""),
+    remindersNode(info("SpellType", a.spell)?.reminders),
   ];
   const label = p?.label ?? name;
   return h(

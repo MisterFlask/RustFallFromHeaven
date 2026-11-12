@@ -17,6 +17,7 @@ pub mod battle_magic;
 pub mod battle_kit;
 pub mod battle_tactic;
 pub mod sea;
+pub mod keyword;
 
 pub use basic::*;
 pub use terrain::*;
@@ -35,6 +36,7 @@ pub use battle_magic::*;
 pub use battle_kit::*;
 pub use battle_tactic::*;
 pub use sea::*;
+pub use keyword::*;
 
 use crate::registry::Rd;
 

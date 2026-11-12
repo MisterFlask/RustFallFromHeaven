@@ -611,6 +611,44 @@ Arrays per info table. Each entry is `{type, name, help?, strategy?, pedia?, ...
 
 Size is about 1–1.5 MB, cached by ETag.
 
+### 4.8 Keywords and reminder text
+
+A keyword (Slay the Spire's "magic words"; the owner's request, 2026-11-12) names a rule that holds
+for every entity it applies to: every project is a **Ritual**, a world ritual a **World Ritual**
+(which implies Ritual). The page keeps two kinds of
+text apart, and it shows at a glance which is which:
+* **Rules text** is what is unique to the entity: the body of its tooltip or entry (`effects`, a
+  production entry's `rules`, a state's reason such as `In progress in Lycus.`). A
+  keyword's word in it is marked `[KW=KEYWORD_X]word[\KW]` and drawn in the keyword style (`.kw`:
+  amber, bold, not underlined; the same in the three skins).
+* **Reminder text** is the keyword's rule, said once in `keywords.jsonc` (docs/DATA.md,
+  "Keywords"). It is never inside the body: each reminder is a box of its own (`.reminder`: the
+  keyword's name as its title, the rule below, smaller, on a cooler ground with an amber edge),
+  beside the tooltip on a wide window, stacked below it on a narrow one (under 600 px). A list
+  entry without a tooltip of its own (a ritual in the production list, a row of the rituals list)
+  shows its keywords as chips; a chip's hover, focus or tap shows its boxes, and a tap on a chip
+  does not do the entry's action.
+
+The server decides the reminders: every payload that carries an entity's rules text carries
+`reminders: [{key, name, text, with}]` beside it (`with`: the keywords a chip of this one shows,
+itself and those it `implies`), each keyword once, in the order of first mention (the entity's
+properties first, then the marks of its texts), the implied ones after the keyword that implies
+them (`src/view/keywords.rs`). The client never works out which apply (`app/keywords.js`
+`remindersNode`, `keywordChips`; tips.js lays out the boxes; pure helpers in `app/keyword_view.js`).
+
+A text that restates a reminder is a bug: `crates/ffh-play/tests/keywords.rs` fails when a
+project's or spell's rules text holds a reminder sentence or a fragment listed for its keyword.
+Reference pages (the World Spells concept, the help display's "World rituals" topic) keep full
+prose, with the keywords marked.
+
+**Adding a keyword.** (1) An entry in `data/json/keywords.jsonc` (`type`, `description`,
+`reminder`, `implies`) and its two texts in `data/text/en.tsv`, the reminder bare (CLAUDE.md,
+"Rules text and tooltips"); (2) attach it: by properties in `src/view/keywords.rs` (`of_project`,
+`of_entry`), or by marking its word in the texts that use it; (3) take the rule out of
+every entity's rules text, and list its distinctive fragments in `tests/keywords.rs` `FRAGMENTS`
+(the test fails until you do). A keyword is worth adding only for a rule that many entities share
+word for word and that fits in a short reminder.
+
 ---
 
 ## 5. Front-end features

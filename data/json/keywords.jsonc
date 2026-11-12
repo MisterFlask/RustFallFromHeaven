@@ -1,0 +1,21 @@
+// Keywords (this game's own, not FFH2's; docs/PLAY_DESIGN.md, "Keywords and reminder text";
+//     docs/DATA.md, "Keywords"): a keyword names a rule that holds for every entity it applies to.
+//     Its reminder text says that rule once; the page shows it in a box of its own beside an
+//     entity's rules text (what is unique to the entity), never inside it. A text marks a keyword
+//     with [KW=KEYWORD_X]word[\KW]; the view also attaches keywords by an entity's properties
+//     (crates/ffh-play/src/view/keywords.rs: every project is a Ritual, a world ritual a World Ritual).
+//   description: the keyword's name; reminder: its reminder text (bare: the rule, no flavor);
+//   implies: keywords whose reminders are shown with it.
+[
+  {
+    "type": "KEYWORD_RITUAL",
+    "description": "TXT_KEY_KEYWORD_RITUAL",
+    "reminder": "TXT_KEY_KEYWORD_RITUAL_REMINDER"
+  },
+  {
+    "type": "KEYWORD_WORLD_RITUAL",
+    "description": "TXT_KEY_KEYWORD_WORLD_RITUAL",
+    "reminder": "TXT_KEY_KEYWORD_WORLD_RITUAL_REMINDER",
+    "implies": ["KEYWORD_RITUAL"]
+  }
+]

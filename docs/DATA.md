@@ -42,6 +42,12 @@ reader looks up (a misspelt or obsolete key: `unknown key "combt": nothing reads
 appears twice in one object fails the load, with its line and column. `ffh data` must report
 0 warnings.
 
+**Keywords.** `keywords.jsonc` (`KeywordInfo`, this game's own; docs/PLAY_DESIGN.md 4.8): each
+entry a keyword with its name (`description`), its reminder text (`reminder`, a text key) and
+`implies` (keywords whose reminders show with it: World Ritual implies Ritual). A text marks a
+keyword with `[KW=KEYWORD_X]word[\KW]` (the word is drawn in the keyword style; the entity gets
+the keyword's reminder). Loading warns about a mark that names no keyword.
+
 **Battle stats.** A land unit's `stats` sheet and a promotion's `stat_changes` are this game's own
 (docs/UNIT_STATS.md).
 
