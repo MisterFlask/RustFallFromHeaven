@@ -92,6 +92,7 @@ assets/app/
     shaders.js    all GLSL
     dress.js      what stands where: trees, rocks, structures, settlements, unit figures
     hud.js        city plates, stack badges, far-zoom counters, yields, flashes (2D canvas)
+    sealayer.js   the Sea layer in the world: names on the water, fog bank, bands, lanes (§5.3)
     config.js     tunables, presets, lighting
     gl.js math.js noise.js mesh.js   WebGL2 plumbing, matrices, deterministic noise, mesh builder
     assets/       registry.js catalog.js palette.js basic.js fallbacks.js index.js
@@ -233,12 +234,13 @@ props. The channels: r roads, g crops, b wet banks, a settlement ground and farm
 | shadow | sun depth maps over the ground in view, texel-snapped (no shimmer when panning): the props in a 2048² map (crisp, 12-tap rotated Poisson PCF), the terrain in a 1024² one (6 wide taps, soft) applied at part strength, so a hill's cast shadow darkens the plain behind it a little instead of punching a hole in it | `shadows`, `terrainShadow` |
 | scene | depth pre-pass of terrain and props (each pixel shaded once), then the terrain (the sea floor and river beds too; the deep floor, which no one can see through the water, cheaply) and the props, with their brushwork (§5.1), into three targets: lit colour (linear HDR; alpha = keep sharp), view normal + linear depth, emission + object id (negated on a prop's crown) | `brush` |
 | water | the scene's colour and normal/depth grabbed (blit), then the sea and rivers drawn over them, writing depth (the overlays sit on the surface): seen through to the floor, mirroring what stands round them or a painted sky with drifting clouds, waves, glitter and surf (§5.2) | `refraction`, `reflections`, `caustics` |
+| sea | the Sea layer's names lettered on the water and its fog bank over water out of range, into the lit colour (§5.3); only while the layer is on (the names, faintly, at the two farthest zooms without it) | the map layer |
 | ssao | half-resolution scalable ambient obscurance, depth-aware blur | `ssao` |
 | glow | emission blurred at half resolution | `glow` |
 | compose | occlusion, glow, exposure, ACES-fitted filmic curve → display colour | — |
 | finish | split-tone grade, saturation/contrast, paper grain anchored to the world (reconstructed from depth), vignette. (The Kuwahara paint filter and the ink outlines that were here, off in every preset since §16, were removed with their switches 2026-11-10.) | `grade`, `grain`, `vignette` |
 | aa | FXAA (Timothy Lottes' console variant) on the finished colour before the overlays: takes the stair-step off silhouettes and stops them crawling when panning (the HUD is a separate 2D canvas, so it stays crisp) | `fxaa` |
-| overlay | borders (crisp ink line + soft owner band), political wash, grid, target/path/hover/selection frames on the ground mesh (depth-equal), team rings and the path ribbon draped on the ground; each also drawn ghosted where something stands in front; units hidden behind scenery as hatched team-coloured x-ray silhouettes (depth test GREATER); particles (additive) | `borders`, `grid`, `particles` |
+| overlay | borders (crisp ink line + soft owner band), political wash, grid, target/path/hover/selection frames on the ground mesh (depth-equal), the Sea layer's bands, lines between seas, outlined sea and lanes on the water (§5.3), team rings and the path ribbon draped on the ground; each also drawn ghosted where something stands in front; units hidden behind scenery as hatched team-coloured x-ray silhouettes (depth test GREATER); particles (additive) | `borders`, `grid`, `particles` |
 
 The light model (scene pass): a wrapped sun term (broad light masses; the stepped light bands, off
 since §16, were removed 2026-11-10) whose boundary the brush marks break (§5.1), coloured
@@ -380,6 +382,34 @@ under and around it:
   A shader cannot test for NaN with `isnan`/`isinf` on Direct3D 11 (FXC folds them to false, and
   its `min`/`max` return the other operand for a NaN): test the bits (`floatBitsToUint`, the
   exponent's all set), as the HD-2D guards do.
+
+### 5.3 The Sea layer (`sealayer.js`)
+
+The Sea layer (docs/NAVAL.md 10) is part of the world on this renderer and so on the HD-2D map,
+not a drawing on the interface canvas over the frame (until 2026-11-11 it was: hatched darkening,
+striped tints and pill badges lay over ships, coasts and the light like a sticker; the flat and
+isometric maps keep that drawing). It reads only the map's revealed plots (`sea`, `sea_id`) and the
+view's `seas`, `outpost_lanes` and `sea_lanes`, as the other renderers do; no field was added.
+
+| part | where | how |
+|---|---|---|
+| names | the `sea` pass: after the water (and the packed scene's unpack), before the post passes, into the lit colour (alpha untouched), depth-tested against the scene, writing no depth | each name lettered once into an atlas (2048 wide, shelf-packed: the glyphs in alpha, a blurred halo in red, mipmapped) and laid as a quad on the water (y 0.008) along its sea's axis; its colour through the compose curve inverted (as the HD-2D cards'), so the grade, the moods and the tilt-shift take it as they take the water |
+| fog bank | the `sea` pass | quads over the plots under or next to the bank at y 0.13: the per-plot density (`sea.js` `seaFogRamp`: half at the first step past the range, full from the second; held up over the land by its neighbours') filtered between plot centres, broken by a drifting value noise (`uTime`: still when the map does not animate), kept off the land by a filtered water mask, and as thick as the scene's depth behind it is beyond the plane (the scene's linear depth): full over open water, thin over a beach, a ship's hull softened, its sails clear |
+| bands, lines between seas, outline | the overlay stage (with the borders, after FXAA, before the HD-2D tilt-shift), on quads over the plots on a sea's edge at the water's surface | per plot its sea's id (an RGBA8 texture, NEAREST), per sea its band's code, colours and strength (an n x 2 texture); the fragment finds the nearest edge of its sea among its eight neighbours (as the borders do) and the coordinate along it. In display colour: graded into the water in the lit pass, a holder's colour washed out to a pale line |
+| lanes, cut marks | the overlay stage | ribbons on the water (`sea.js` `laneCurve`: through the plots' centres, corners rounded; subdivided to follow the ground where they come ashore at a port), dashes flowing toward the home port with `uTime`; the part past a cut dotted; the cut a ring-and-cross quad |
+| buoys | the HD-2D cards (units' instance set, while the layer is on) | `hd2d/dress.js` `seaBuoyKey`: a tarred float, a pole and the holder's banner drawn by code (crossed banners when contested), at the spot `sea.js` `seaBuoySpot` picks beside the name, on the sea's water |
+| hover and click | the HUD (`hud.js` `seaHitBoxes`) | each name's letters and each buoy projected to a screen box, for `MapView.seaAt` |
+
+The layout is pure and tested (`sea.js`, `test/sea.test.mjs`): `seaLabelLayout` (the principal
+axis of a sea's revealed plots, level when it is about as wide as long, at most 45 degrees, never
+upside down; the centre the plot nearest the centroid among the deepest; the letters' height
+0.11 x the square root of its plots, 0.3 to 0.8 plot, fitted to 90% of its length), `placeNames`
+(the largest seas first; a name that would cover another moves to the next deep plot of its sea,
+or shrinks), `seaBand`, `seaFogRamp`, `seaNameAlpha`. The strengths are in one place,
+`sea.js` `SEA_LOOK`: the names' alpha by zoom with the layer on (0.5 at 40 px a plot and below to
+0.16 at 168) and off (0.26 at 28 px, none from 50), the band's width (0.5 plot) and alpha, the
+fog's colour, alpha and height. A sea's band is full for the first 6% of its width and fades over
+the rest; it is a little lighter than the holder's colour, so a blue holder reads on blue water.
 
 ## 6. Asset recipes
 
@@ -675,6 +705,29 @@ shadow 150 -> 307 ms (the leaf cut in the shadow map); water 544 -> 516 ms. Star
 ts 96, `{"animate":false}`): mean |diff| 3.90 -> 4.47, pixels off by > 24: 5.19% -> 5.03% (the
 share that moves is unchanged; the mean rises with crisper, higher-contrast detail). The paragraph
 above predates the paint filter going off and the materials; its 1.6 / 1.1% figures are older still.
+
+Milestone A/B, the Sea layer in the world (§5.3; 2026-11-11): `r3d-perf --layer sea|terrain` on
+the `stage sea` save at (7, 17), 1280 x 800, the HD-2D preset, the same binary with d435be46's
+assets (`git archive`) against the new ones, two interleaved rounds each (SwiftShader; GPU times
+of the passes by wall clock, median frame of 3):
+
+| | ts 40, base | ts 40, new | ts 96, base | ts 96, new |
+|---|---|---|---|---|
+| Sea layer on: frame | 2013, 2034 ms | 2249, 2076 ms | 2841, 2508 ms | 2849, 2567 ms |
+| on: `sea` pass (fog bank, names) | -- | 74, 72 ms | -- | 48, 42 ms |
+| on: `overlay` (+ bands, lanes) | 209, 206 ms | 283, 272 ms | 329, 274 ms | 344, 322 ms |
+| Sea layer off: frame | 2323, 1958 ms | 2296, 2072 ms | 2638, 2501 ms | 2600, 2462 ms |
+| off: `sea` pass (the names, faint) | -- | 11.5, 10.9 ms | -- | not drawn |
+
+With the layer on, the two passes add about 140 ms at the far zoom (about 7% of a frame; the fog
+bank, over half the screen there, about half of it) and about 70 ms at the gameplay zoom (about
+3%); the old drawing's cost was on the CPU (the interface canvas), outside these GPU figures. Off,
+the faint names cost 0.5% at the farthest zooms and nothing from 56 px a plot. The first version
+drew both planes as a quad over the whole view (+330 ms, about 13%); they now cover only the plots
+that draw (a sea's edge plots; those under the fog bank), and the bank takes one noise, not two.
+Reading the scene's noise from the hash texture (NOISE_TEX) changed nothing measurable: under
+SwiftShader the cost is the covered pixels, not the shading. Frame times drift by 10-15% run to
+run here; the pass times are the steadier measure.
 
 GPU numbers: from the GPU bench (§10), whose runs on real cards land in its artifact's database;
 `r3d-perf --gpu` measures the same on a machine with a GPU.

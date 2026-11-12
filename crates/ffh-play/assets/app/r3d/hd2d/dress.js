@@ -166,6 +166,98 @@ export function bannerKey(atlas, css) {
   return key;
 }
 
+/** A sea's buoy as a sprite (the Sea layer, docs/NAVAL.md 10): a tarred float with a gold band, a
+ *  pole and the holder's banner -- as the owner's banner, smaller -- or, for a contested sea, two
+ *  poles crossed over the float, yours on the left and the other party's on the right. 56 x 120
+ *  art px (72 wide crossed), the float's middle the card's base; its foot is under the water. */
+export function seaBuoyKey(atlas, cssA, cssB = null) {
+  const key = `seabuoy:${cssA}:${cssB ?? ""}`;
+  if (atlas.has(key)) return key;
+  const W = cssB ? 72 : 56, H = 120;
+  const c = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(W, H) : Object.assign(document.createElement("canvas"), { width: W, height: H });
+  const g = c.getContext("2d", { willReadFrequently: true });
+  const px = (x, y, w, h, col) => {
+    g.fillStyle = col;
+    g.fillRect(Math.round(x), Math.round(y), w, h);
+  };
+  const cx = W / 2;
+  // A pole from its foot (x0, 104) to its top (x1, 12), a pixel column a row.
+  const pole = (x0, x1) => {
+    for (let y = 12; y <= 104; y++) {
+      const x = x0 + ((x1 - x0) * (104 - y)) / 92;
+      px(x - 1, y, 3, 1, "#4a2c14");
+      px(x - 1, y, 1, 1, "#8a5a2c");
+    }
+    px(x1 - 2, 6, 5, 6, "#f0c040");
+    px(x1 - 1, 5, 3, 1, "#fff0a0");
+  };
+  // A cloth hanging from the top of a pole at x, to the right (dir 1) or the left (-1).
+  const cloth = (x, dir, css) => {
+    const [r, gg, b] = hexRgb(cssHex(css)).map((v) => v * 255);
+    const shade = (k) => `rgb(${Math.round(r * k)},${Math.round(gg * k)},${Math.round(b * k)})`;
+    const L = dir > 0 ? x + 1 : x - 21, R = L + 20;
+    px(Math.min(x, L), 14, 22, 2, "#6a4018");
+    const top = 16, bottom = 58;
+    for (let y = top; y < bottom; y++) {
+      const notch = y > bottom - 10 ? Math.round(((y - (bottom - 10)) / 10) * 5) : 0;
+      for (let xx = L; xx < R; xx++) {
+        const mid = (L + R) / 2;
+        if (notch && Math.abs(xx + 0.5 - mid) < notch) continue;
+        const edge = xx === L || xx === R - 1 || y === top;
+        const fold = (xx - L) % 7 < 2 ? 0.86 : 1;
+        px(xx, y, 1, 1, edge ? "#e8b838" : shade(fold * (y < top + 3 ? 1.12 : 1)));
+      }
+    }
+    // The charge: a small pale star.
+    const sx = (L + R) / 2 - 0.5, sy = 32;
+    for (let k = -5; k <= 5; k++) {
+      const t = 5 - Math.abs(k);
+      px(sx + k, sy - Math.floor(t / 3), 1, Math.floor(t / 1.5) + 1, "#f4eedc");
+      px(sx - Math.floor(t / 3), sy + k, Math.floor(t / 1.5) + 1, 1, "#f4eedc");
+    }
+    px(L, 48, R - L, 2, "#e8b838");
+  };
+  if (cssB) {
+    pole(cx + 5, cx - 16);
+    pole(cx - 5, cx + 16);
+    cloth(cx - 16, -1, cssA);
+    cloth(cx + 16, 1, cssB);
+  } else {
+    pole(cx - 1, cx - 1);
+    cloth(cx - 1, 1, cssA);
+  }
+  // The float: a squat tarred cask, planked, a gold band round it, its foot in the water.
+  for (let y = 98; y < 120; y++) {
+    const t = (y - 108.5) / 11;
+    const half = Math.round(13 * Math.sqrt(Math.max(0, 1 - t * t * 0.55)));
+    for (let x = -half; x < half; x++) {
+      const plank = ((x + 40) % 5 === 0) ? 0.75 : 1;
+      const lit = x < -half / 3 ? 1.25 : x > half / 2 ? 0.75 : 1;
+      const v = Math.round(58 * plank * lit);
+      px(cx + x, y, 1, 1, `rgb(${v},${Math.round(v * 0.8)},${Math.round(v * 0.62)})`);
+    }
+  }
+  px(cx - 12, 105, 24, 2, "#d8a838");
+  px(cx - 12, 105, 6, 1, "#fff0a0");
+  px(cx - 9, 98, 18, 1, "#2a1e14");
+  atlas.put(key, c);
+  return key;
+}
+
+/** The buoys of the seas held, contested or patrolled (r3d/sealayer.js `banners`), as cards: each
+ *  stands in the water at its spot, its banner rippling. */
+export function dressSeaBuoys(buoys, atlas) {
+  const out = [];
+  for (const b of buoys ?? []) {
+    const key = seaBuoyKey(atlas, b.a, b.b);
+    const r = card(key, atlas.info(key), PX.banner * 1.25, b.x, SEA - 0.04, -b.y, { anchor: 0.5, banner: true, team: hexRgb(cssHex(b.a)), bias: BIAS.unit, id: idOf(`sea${b.id}`), phase: hashf(b.id, 11) });
+    r.uid = `sea:${b.id}`;
+    r.ground = false;
+    out.push(r);
+  }
+  return out;
+}
+
 /** "#rrggbb" for any CSS colour tiles.js gives (#rgb, #rrggbb, hsl()). */
 function cssHex(css) {
   if (/^#[0-9a-f]{6}$/i.test(css)) return css;
@@ -770,9 +862,10 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
   return { list, beams, claims };
 }
 
-/** The unit stacks in sight as groups of figures under their banners. Returns `{list, stacks}` in the
- *  shape of ../dress.js dressUnits (stacks: for the HUD's badges and the team rings). */
-export function dressSpriteUnits(world, map, atlas) {
+/** The unit stacks in sight as groups of figures under their banners, and the seas' buoys `buoys`
+ *  (on the Sea layer: dressSeaBuoys; null without). Returns `{list, stacks}` in the shape of
+ *  ../dress.js dressUnits (stacks: for the HUD's badges and the team rings). */
+export function dressSpriteUnits(world, map, atlas, buoys = null) {
   const list = [];
   const stacks = [];
   const w = world.w;
@@ -841,5 +934,6 @@ export function dressSpriteUnits(world, map, atlas) {
     list.push(b);
     stacks.push({ units, top, x: u0.x, y: u0.y, k: i, anchor, picked: sel.includes(top.id), team: css, spot, mark: st?.state?.mark ?? null, hero: st?.state?.hero ?? false });
   }
+  if (buoys) list.push(...dressSeaBuoys(buoys, atlas));
   return { list, stacks };
 }

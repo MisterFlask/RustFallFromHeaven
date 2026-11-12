@@ -79,10 +79,8 @@ cannot load.
 
 **The screen.** The top bar: the turn crescent (amber on your turn), turn and year, what is
 happening (your turn; "Moving: …" with the players and the seconds while the AIs play); gold and
-rate, research (click it to choose: the chooser gives each tech its turns and its research cost
-behind the flask icon, and its research multipliers as chips, "prereqs +20%", "others +5%",
-"= x1.2", each with its rule as tooltip; the total multiplies the research put into the tech each
-turn, not its cost) with its progress bar and turns ("11 turns"), the doctrine
+rate, research (click it for the tech tree, where research is chosen; the "Choose research" popup is
+the same tree, with "Later", and closes on a pick) with its progress bar and turns ("11 turns"), the doctrine
 (the adopted one, or "no doctrine", in the warning colour while one can be adopted; its tooltip
 says what a doctrine does, a click opens the doctrine chooser), the commerce split by its
 icons (click it for the sliders), the Armageddon eclipse (its corona reddens at 50, 75 and 100)
@@ -136,19 +134,22 @@ under reduced motion); the isometric and flat maps draw them still (those maps r
 change). Not on the city screen. The layers
 (buttons bottom left, `Ctrl+1/2/3/4`): **Terrain**; **Political** (each owner's land washed with
 its colour); **Yields** (the ground dimmed, and the food, production and commerce of the plots in
-sight with their icons; fogged plots show none); **Sea** (docs/NAVAL.md section 10, `app/sea.js`:
-the terrain with the water out of your range darkened and hatched, and the range's edge drawn as
-a light line over a dark casing, over the plots you have revealed; a worn warship of yours carries
-a wear pip, amber, red from half the maximum, a notch for the share worn). The Sea layer turns on
-by itself while a ship or a unit in boats is selected and goes back to the layer before when the
-selection ends (a layer you pick meanwhile stays). On the flat and isometric maps it is drawn
-under the cities and units; on the HD-2D map on the interface layer over the WebGL frame (so it
-also dims a figure standing on that water). On the Sea layer a port of yours says in its tooltip
+sight with their icons; fogged plots show none); **Sea** (docs/NAVAL.md section 10, `app/sea.js`;
+on the HD-2D map `app/r3d/sealayer.js`: the water out of your range under a fog bank, thinning
+over about a plot at the range's edge, drifting while the map animates; on the flat and isometric
+maps darkened and hatched, the range's edge drawn as a light line over a dark casing; over the
+plots you have revealed; a worn warship of yours carries a wear pip, amber, red from half the
+maximum, a notch for the share worn). The Sea layer turns on by itself while a ship or a unit in
+boats is selected and goes back to the layer before when the selection ends (a layer you pick
+meanwhile stays). On the HD-2D map it is part of the world: on the water, lit, under the ships and
+what stands in front of it; on the flat and isometric maps it is drawn under the cities and units.
+On the Sea layer a port of yours says in its tooltip
 the range it gives (`Range: 12 plots.`). **Outposts** (docs/NAVAL.md, phase 4; `app/lanes.js`,
-`view/outposts.rs`): the Sea layer draws each outpost's lane as supply lines are drawn, in its
-owner's colour (yours in vellum), the dashes flowing to the home port; a cut lane breaks where it
-enters the sea that cuts it, the rest of it to the port dotted (as a supply ship's cut lane), with
-the break's mark and `Cut: 3` (the turns before your outpost starves); others' lanes over the plots you have revealed. The Colonist's action (and the
+`view/outposts.rs`): the Sea layer draws each outpost's lane in its owner's colour (yours in vellum),
+the dashes flowing to the home port (on the HD-2D map a ribbon on the water; on the others as
+supply lines are drawn); a cut lane breaks where it enters the sea that cuts it, the rest of it to
+the port dotted (as a supply ship's cut lane), with the break's mark (a ring and a cross) and
+`Cut: 3` (the turns before your outpost starves); others' lanes over the plots you have revealed. The Colonist's action (and the
 Settler's second) is **Found outpost**, its tooltip the site rule and, when it cannot, the reason
 (`An outpost must be on another landmass than your capital's.`). An outpost's city screen has no
 production: `Lane: open, to Ithralia (14 plots).` / `Lane: cut in Sirens' Water, turn 2 of 5.` /
@@ -166,8 +167,17 @@ unit panel of a ship says `Range: in range (5 of 12).` or `Out of range: -15% HP
 `In boats: strength 1, cannot attack, does not heal.`; a unit in boats is offered only moving,
 waiting (skip, sleep, sentry) and deleting; the attack preview lists a warship's wear among the
 modifiers ("wear at sea") and says `Defender in boats: strength 1, no modifiers.`. **Named seas**
-(docs/NAVAL.md 4 and 10, phase 2; `app/sea.js`, `app/seas.js`, `view/seas.rs`): on the Sea layer
-each sea you have revealed a plot of has its border dotted (dark dots with a light core), its water
+(docs/NAVAL.md 4 and 10, phase 2; `app/sea.js`, `app/seas.js`, `view/seas.rs`). On the HD-2D map
+(`app/r3d/sealayer.js`; docs/NAVAL.md 10 has the look) each sea you have revealed a plot of has its
+name lettered on the water (pale, spaced italic serif along its long axis, sized to it; faint
+close in, and with another layer shown faintly at the two farthest zooms), a soft band of its
+holder's colour along the inside of its boundary (yours your colour, an enemy's its own, an
+unknown holder grey; contested both in long dashes; patrolled by a team at peace with you fainter;
+open none), a faint dotted line between seas, and, held, contested or patrolled, a buoy with the
+holder's banner (crossed banners when contested) by its name; hovering the name or the buoy
+outlines the sea and shows the badge's text and the rules in the tooltip, and a click opens the
+panel; a tap does too, and the controller's cursor on the buoy's plot (A, with nothing
+selected). On the flat and isometric maps each sea has its border dotted (dark dots with a light core), its water
 tinted by its state as you can work it out (only ships you see count) -- held by you lightest and
 plain, held by an enemy darker with wide amber stripes, contested with alternating light and amber
 stripes, patrolled by a team at peace with you with sparse dots, open and out of range plain --
@@ -175,9 +185,9 @@ and, at its deepest revealed plot, its name in italic serif over a badge: `HELD:
 `CONTESTED 14 to 17`, `HELD: LANUN 0 to 31`, `OPEN`, `PATROLLED: LANUN`, `OUT OF RANGE` (yours
 first); a sea closed to you that is cutting a lane or blockading a port of yours shows held even
 with no ship in sight (`HELD: LANUN 4 to ?`, the seen part `7+`; `seas_felt_by`). Your supply ships' lanes are drawn as supply lines are, from the ship to the port; a cut
-lane breaks with a ringed cross where it enters the closed sea and runs on dotted. All of this on
-the flat, isometric and 3D/HD-2D maps (on the 3D map on the interface canvas over the frame).
-Clicking a name or badge opens **the sea's panel**: plots, control and what holding takes (`Held
+lane breaks with a ringed cross where it enters the closed sea and runs on dotted (on the HD-2D
+map ribbons on the water). Clicking a name, buoy or badge opens **the sea's panel** (on the HD-2D
+map the sea is outlined while it is open): plots, control and what holding takes (`Held
 at twice the enemy's strength on patrol. You need 34.`), each side's strength bar with its ships
 on Patrol (`Ships you do not see are not counted.`), `Effect now` (lanes, your ports, interception,
 supply ships), `If Lanun holds it` (each lane that would be cut, each port blockaded, supply
@@ -294,7 +304,7 @@ replaces the mouse:
 | tap a plot, tap it again | with units selected, on a plot without units of yours: the first tap shows the way there (the path, its turns, the attack odds: the right click's preview, which a finger cannot hover), a second tap on the same plot moves or attacks. Panning, or a tap anywhere else, drops the preview and the move it offered. To move onto your own units (a stack, a garrisoned city), use Go to |
 | drag, pinch | pan; zoom through the renderer's steps about the fingers (two fingers also pan) |
 | ×, Cancel | deselect (the panel's head); leave a plot pick (its hint) |
-| "A tap:" | in the build prompt, the city screen, the research chooser and the tech tree: what a tap on a build or a tech does (build now, add to the queue, put first; research now, add to the queue): Shift- and Ctrl-click with a mouse (the tech tree, the build prompt and the city screen offer it to a mouse too, as "A click:") |
+| "A tap:" | in the build prompt, the city screen and the tech tree: what a tap on a build or a tech does (build now, add to the queue, put first; research now, add to the queue): Shift- and Ctrl-click with a mouse (the tech tree, the build prompt and the city screen offer it to a mouse too, as "A click:") |
 | tap a tech, tap it again | in the tech tree: the first tap lights the tech's path and the techs it leads to, a second tap on it researches it (or queues it, by the "A tap:" row) |
 
 A long press and a double tap do nothing on the map. What touch does not have: Shift waypoints
@@ -538,7 +548,7 @@ back when the screen closes (docs/ISO.md, "The city screen").
 
 **Empire.** **Techs** (`F6`): the tech tree, columns by prerequisite depth and rows in a band
 per research path (doctrine), each tech a box with its name,
-what it unlocks (the research chooser's icons, at most five with "+n"), and its turns and cost for
+what it unlocks (icons, at most five with "+n"), and its turns and cost for
 one you can research now, its cost otherwise, "known" for one you have; the states read without
 colour too: known (a check mark, muted), researching (a progress bar with its percentage), queued
 (its place in the queue in a corner), can research now (full contrast, gold border), not yet

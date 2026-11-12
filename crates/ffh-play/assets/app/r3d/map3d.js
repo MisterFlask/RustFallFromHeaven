@@ -19,6 +19,7 @@ import { Scene, bucketOf } from "./scene.js";
 import { dressStatic, dressUnits, staticEnv, teamColour, standHeight } from "./dress.js";
 import { loadConfig, saveConfig, withPreset, LIGHTING, PANEL } from "./config.js";
 import { drawHud } from "./hud.js";
+import { SeaLayer } from "./sealayer.js";
 import "./assets/index.js";
 
 const ZOOMS = [28, 40, 56, 72, 96, 128, 168, 220];
@@ -122,6 +123,10 @@ export class Map3D {
       noiseTex: !!this.sceneDefines().NOISE_TEX,
     });
     performance.mark("r3d:scene");
+    // The Sea layer in the world (sealayer.js), drawn by the pipeline after the water.
+    this.sea = new SeaLayer(gl);
+    this.sea.scene = this.scene;
+    this.scene.sea = this.sea;
     this.world = null;
     this.mapSeen = null;
     this.viewSeen = null;
@@ -260,6 +265,7 @@ export class Map3D {
     // programs that are done -- goes now.
     const pending = this.lost ? [] : this.programs().filter((p) => !p.done);
     try {
+      this.sea.dispose();
       this.scene.dispose();
       this.pipeline.dispose(pending);
     } catch {
@@ -628,10 +634,12 @@ export class Map3D {
       this.syncMeasure("paint", T4);
       this.syncMs.redressed = plots ? plots.length : n;
       this.staticCount = count;
+      this.sea.sync(map, S.view, this.world);
       this.viewSeen = S.view;
       this.selSeen = null;
     }
-    const selKey = JSON.stringify(S.sel?.units ?? []) + JSON.stringify(this.view.overlay.units ?? []);
+    // (The Sea layer's buoys stand with the figures, hd2d/dress.js: redressed when it turns on or off.)
+    const selKey = JSON.stringify(S.sel?.units ?? []) + JSON.stringify(this.view.overlay.units ?? []) + (this.view.layer === "sea" ? "|sea" : "");
     if (selKey !== this.selSeen || viewChanged || mapChanged) {
       const T5 = performance.now();
       const u = this.dressUnitsOf(this.world, map);
@@ -921,6 +929,8 @@ export class Map3D {
       for (let k = Math.floor((rect.x0 - 2) / map.w); k <= Math.floor((rect.x1 + 2) / map.w); k++) copies.push(k * map.w);
     } else copies.push(0);
     this.scene.setView(rect, copies, this.ts < 48, this.ts, cam.viewProj);
+    // The Sea layer's frame: on or off, the zoom, the sea outlined (hovered, or its panel open).
+    this.sea.frame = { layer: v.layer === "sea" && !v.overlay.city, ts: this.ts, focus: v.seaHover ?? v.seaPanel ?? null, pitch: cam.pitch, rect };
     this.beforeFrame(cam, fr);
     this.pipeline.measure = !!this.measuring;
     this.pipeline.render(fr, this.scene, qc, cw, ch);

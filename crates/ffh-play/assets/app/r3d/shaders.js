@@ -2848,6 +2848,276 @@ uniform sampler2D uSrc;
 out vec4 o;
 void main() { o = texture(uSrc, vUv); }`;
 
+/** A frame drawn smaller than the canvas (render scale under 1: the quality ladder on a slow GPU),
+ *  stretched to it and sharpened: each pixel pushed away from the mean of its four neighbours one
+ *  source texel away, never past the lightest or darkest of the five, so edges steepen and nothing
+ *  rings. uTexel: one source texel (uv). */
+export const UPSCALE_FS = `
+in vec2 vUv;
+uniform sampler2D uSrc;
+uniform vec2 uTexel;
+uniform float uSharp;
+out vec4 o;
+void main() {
+  vec3 c = texture(uSrc, vUv).rgb;
+  vec3 n = texture(uSrc, vUv + vec2(0.0, uTexel.y)).rgb;
+  vec3 s = texture(uSrc, vUv - vec2(0.0, uTexel.y)).rgb;
+  vec3 e = texture(uSrc, vUv + vec2(uTexel.x, 0.0)).rgb;
+  vec3 w = texture(uSrc, vUv - vec2(uTexel.x, 0.0)).rgb;
+  vec3 lo = min(c, min(min(n, s), min(e, w)));
+  vec3 hi = max(c, max(max(n, s), max(e, w)));
+  o = vec4(clamp(c + (c - (n + s + e + w) * 0.25) * uSharp, lo, hi), 1.0);
+}`;
+
+// --------------------------------------------------------------------------------------------
+// The Sea layer in the world (sealayer.js; docs/NAVAL.md 10, docs/R3D.md §5): drawn after the
+// water, before the post passes, into the scene's lit colour (so it is graded, toned and blurred
+// as the world is), depth-tested against the scene (ships, land and what stands on the water hide
+// it), never writing depth. Each layer's display colour goes through the compose pass's filmic
+// curve inverted, as the HD-2D cards' do, so a band in the open comes out as the colour chosen.
+
+const SEA_COMMON = `
+uniform float uExposure;
+vec3 invFilmic(vec3 y) {
+  y = clamp(y, 0.0, 0.96);
+  vec3 a = 2.43 * y - 2.51;
+  vec3 b = 0.59 * y - 0.03;
+  vec3 c = 0.14 * y;
+  return (-b - sqrt(max(b * b - 4.0 * a * c, 0.0))) / (2.0 * a);
+}
+// A display colour as the scene's light (linear HDR), dimmed and cooled where only remembered.
+vec3 seaLit(vec3 display, float vis) {
+  return invFilmic(fogOfWar(srgb(display), vis)) / uExposure;
+}
+// The same colour for the overlay stage (after the post passes: display colour), likewise dimmed.
+vec3 seaShown(vec3 display, float vis) {
+  return pow(fogOfWar(srgb(display), vis), vec3(1.0 / 2.2));
+}
+// Either, by the stage drawing (uDisplay 1: the overlay stage).
+uniform float uDisplay;
+vec3 seaTone(vec3 display, float vis) {
+  return uDisplay > 0.5 ? seaShown(display, vis) : seaLit(display, vis);
+}
+// Premultiplied "over".
+void over(inout vec4 acc, vec3 c, float a) {
+  a = clamp(a, 0.0, 1.0);
+  acc = vec4(c * a, a) + acc * (1.0 - a);
+}
+`;
+
+/** The sea's planes: a quad over each plot that may draw (sealayer.js: the plots on a sea's edge for
+ *  the surface, those under the fog bank for it) at height uLift (the water's surface, or the fog
+ *  bank's top) -- not the whole view, so the rest of the screen costs nothing. */
+export const SEA_VS = `
+in vec3 aPos;
+uniform float uLift;
+out vec3 vWorld;
+void main() {
+  vec3 w = aPos + vec3(uCopyX, uLift, 0.0);
+  vWorld = w;
+  gl_Position = uViewProj * vec4(w, 1.0);
+}`;
+
+/** The plane's two uses (uMode): 0 the surface, drawn in the overlay stage (after the post passes,
+ *  as the borders are: the holders' colours exact, not graded into the water) -- the bands of the
+ *  seas' holders along the inside of each sea's boundary, the faint dotted line between seas, the
+ *  outline of the sea hovered or whose panel is open; 1 the fog bank over water out of range, in
+ *  the scene's light, as thick as the water under the bank is deep (a ship standing in it is
+ *  softened, the land above it is not). */
+export const SEA_FS = `
+in vec3 vWorld;
+uniform highp sampler2D uSeaPlots; // per plot: r + 256 g = its sea's id + 1 (0 none); b on its edge
+uniform sampler2D uSeaInfo;         // per sea (x = id): row 0 colour a + band code, row 1 colour b + strength
+uniform sampler2D uSeaFog;          // per plot, filtered: r the bank's density, g water
+uniform sampler2D uSceneND;         // the scene's view normal + linear depth
+uniform float uMode;
+uniform float uBands;               // 1: the bands and the dotted lines (the Sea layer on)
+uniform float uFocus;               // the outlined sea's id + 1, 0 none
+uniform vec2 uBandLook;             // width (plots), alpha
+uniform vec3 uOutline;
+uniform vec3 uFogCol;
+uniform vec3 uFogLook;              // alpha, the expected depth of the bank over open water, drift speed
+out vec4 o;
+${SEA_COMMON}
+int seaAt(vec2 cell) {
+  int w = int(uMapSize.x);
+  int h = int(uMapSize.y);
+  ivec2 c = ivec2(floor(cell));
+  if (uWrapX > 0.5) c.x = ((c.x % w) + w) % w;
+  if (c.x < 0 || c.x >= w || c.y < 0 || c.y >= h) return 0;
+  vec4 t = texelFetch(uSeaPlots, c, 0);
+  return int(t.r * 255.0 + 0.5) + 256 * int(t.g * 255.0 + 0.5);
+}
+float edgeDist(vec2 f, int dx, int dy) {
+  if (dx == 1) return 1.0 - f.x;
+  if (dx == -1) return f.x;
+  if (dy == 1) return 1.0 - f.y;
+  return f.y;
+}
+void main() {
+  vec2 m = mapOf(vWorld);
+  float v = visAt(vWorld);
+  if (v < 0.2) discard;
+  vec4 acc = vec4(0.0);
+  if (uMode > 0.5) {
+    // The fog bank: the density over the plots (filtered: it thins over about a plot at the range's
+    // edge), broken by a drifting noise, kept off the land, and as thick as the water under it.
+    vec2 uv = m / uMapSize;
+    vec2 rg = texture(uSeaFog, uv).rg;
+    if (rg.r < 0.01) discard;
+    float t = uTime * uFogLook.z;
+    // (One noise: the bank is the Sea layer's dearest part, docs/R3D.md §11.)
+    float n1 = mnoise(m + vec2(t * 0.09, t * 0.035), 0.7);
+    float dens = smoothstep(0.2, 0.75, rg.r + (n1 - 0.5) * 0.5);
+    dens *= 0.6 + 0.4 * smoothstep(0.3, 0.7, n1);
+    dens *= smoothstep(0.45, 0.9, rg.g);
+    float sceneD = texelFetch(uSceneND, ivec2(gl_FragCoord.xy), 0).w;
+    float myD = -(uView * vec4(vWorld, 1.0)).z;
+    float thick = clamp((sceneD - myD) / uFogLook.y, 0.0, 1.0);
+    vec3 col = uFogCol * mix(0.9, 1.04, n1);
+    over(acc, seaLit(col, 1.0), dens * thick * uFogLook.x * smoothstep(0.2, 0.5, v));
+    if (acc.a < 0.003) discard;
+    o = acc;
+    return;
+  }
+  vec2 cell = floor(m);
+  vec2 f = m - cell;
+  int me = seaAt(cell);
+  if (me == 0) discard;
+  // Only a plot on its sea's edge (sealayer.js marks them: b) draws anything here; the rest of the
+  // water leaves at once, before the neighbours are read.
+  {
+    int w = int(uMapSize.x);
+    ivec2 c = ivec2(cell);
+    if (uWrapX > 0.5) c.x = ((c.x % w) + w) % w;
+    if (texelFetch(uSeaPlots, c, 0).b < 0.5) discard;
+  }
+  // The nearest edge of the sea (toward any plot not of it: land, another sea, the unknown), with
+  // the coordinate along that edge, and the nearest edge toward another sea.
+  float dmin = 1.0, dsea = 1.0, along = 0.0, alongSea = 0.0;
+  ivec2 dirs[4] = ivec2[](ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1));
+  for (int i = 0; i < 4; i++) {
+    int n = seaAt(cell + vec2(dirs[i]));
+    if (n == me) continue;
+    float e = edgeDist(f, dirs[i].x, dirs[i].y);
+    float a = dirs[i].x != 0 ? m.y : m.x;
+    if (e < dmin) { dmin = e; along = a; }
+    if (n != 0 && e < dsea) { dsea = e; alongSea = a; }
+  }
+  ivec2 diag[4] = ivec2[](ivec2(1, 1), ivec2(-1, 1), ivec2(1, -1), ivec2(-1, -1));
+  for (int i = 0; i < 4; i++) {
+    int n = seaAt(cell + vec2(diag[i]));
+    if (n == me) continue;
+    float e = max(edgeDist(f, diag[i].x, 0), edgeDist(f, 0, diag[i].y));
+    dmin = min(dmin, e);
+    if (n != 0) dsea = min(dsea, e);
+  }
+  vec4 i0 = texelFetch(uSeaInfo, ivec2(me - 1, 0), 0);
+  vec4 i1 = texelFetch(uSeaInfo, ivec2(me - 1, 1), 0);
+  int code = int(i0.a * 255.0 + 0.5);
+  if (uBands > 0.5 && code > 0) {
+    // A soft band of the holder's colour hugging the inside of the boundary: strongest at the
+    // boundary, nothing half a plot in; a thin seam where it meets another sea, so two held seas
+    // side by side read as two. Contested: the two colours in long dashes along the edge.
+    float wob = (mnoise(m, 1.7) - 0.5) * 0.08;
+    float k = clamp((dmin + wob) / uBandLook.x, 0.0, 1.0);
+    // (Full near the boundary, fading over the rest of the width; a little lighter than the colour
+    // itself, so it reads on water of the same hue.)
+    float band = (1.0 - smoothstep(0.12, 1.0, k)) * smoothstep(0.0, 0.035, dsea);
+    vec3 c = i0.rgb;
+    if (code == 3) c = mix(i0.rgb, i1.rgb, smoothstep(0.46, 0.54, abs(fract(along / 1.6) - 0.5) * 2.0));
+    c = mix(c, vec3(1.0), 0.2);
+    over(acc, seaShown(c, v), band * uBandLook.y * i1.a);
+  }
+  if (uBands > 0.5 && dsea < 0.06) {
+    // The faint dotted line between two seas (three dots a plot).
+    float ph = fract(alongSea * 3.0) - 0.5;
+    float r = length(vec2(ph / 3.0, dsea));
+    float dt = 1.0 - smoothstep(0.016, 0.028, r);
+    over(acc, seaShown(vec3(0.9, 0.93, 0.95), v), dt * 0.4);
+  }
+  if (me == int(uFocus + 0.5)) {
+    // The sea hovered (or its panel open): its whole boundary as a thin bright line.
+    float line = 1.0 - smoothstep(0.014, 0.034, dmin);
+    over(acc, seaShown(uOutline, max(v, 0.9)), line * 0.95);
+  }
+  acc *= smoothstep(0.2, 0.5, v);
+  if (acc.a < 0.003) discard;
+  o = acc;
+}`;
+
+/** The marks laid on the water: the seas' names (quads lettered from an atlas; in the scene's light),
+ *  the lanes (ribbons: dashes flowing toward the home port; the part beyond a cut dotted and faint)
+ *  and a cut lane's ring-and-cross (in the overlay stage, uDisplay 1, as the bands). aExtra: colour and alpha; aFlow: (u, v, kind, w) -- kind 0 a name (uv in the
+ *  atlas), 1 a lane (u along it in plots, v across -1..1, w the flow's direction), 2 a cut part
+ *  (w its half width), 3 a cut's mark (uv -1..1). */
+export const SEA_MARK_VS = `
+in vec3 aPos;
+in vec4 aExtra;
+in vec4 aFlow;
+out vec3 vWorld;
+out vec4 vCol;
+out vec4 vFlow;
+void main() {
+  vec3 w = aPos + vec3(uCopyX, 0.0, 0.0);
+  vWorld = w;
+  vCol = aExtra;
+  vFlow = aFlow;
+  gl_Position = uViewProj * vec4(w, 1.0);
+}`;
+
+export const SEA_MARK_FS = `
+in vec3 vWorld;
+in vec4 vCol;
+in vec4 vFlow;
+uniform sampler2D uNames;
+uniform float uNameAlpha;
+uniform vec3 uNameCol;
+uniform float uLaneMotion;
+out vec4 o;
+${SEA_COMMON}
+void main() {
+  float v = visAt(vWorld);
+  vec4 acc = vec4(0.0);
+  float kind = vFlow.z;
+  if (kind < 0.5) {
+    // A name, lettered on the water: pale and quiet, on a faint dark halo (the atlas's red) so it
+    // reads on bright water; dimmed where only remembered.
+    if (v < 0.2) discard;
+    vec4 t = texture(uNames, vFlow.xy);
+    float k = uNameAlpha * vCol.a * smoothstep(0.2, 0.5, v);
+    over(acc, seaLit(vec3(0.03, 0.05, 0.08), v), t.r * 0.32 * k);
+    over(acc, seaLit(uNameCol, v), t.a * k);
+  } else if (kind < 1.5) {
+    // A lane: a dark casing under dashes of the owner's colour, flowing toward the home port.
+    float ph = fract((vFlow.x * vFlow.w + uTime * uLaneMotion) / 0.46);
+    float dash = smoothstep(0.0, 0.05, ph) * (1.0 - smoothstep(0.52, 0.57, ph));
+    float t = abs(vFlow.y);
+    float core = (1.0 - smoothstep(0.42, 0.58, t)) * dash;
+    float casing = 1.0 - smoothstep(0.78, 1.0, t);
+    over(acc, seaTone(vec3(0.05, 0.045, 0.04), 1.0), casing * 0.5 * vCol.a);
+    over(acc, seaTone(vCol.rgb, 1.0), core * vCol.a);
+  } else if (kind < 2.5) {
+    // The part of a cut lane beyond the cut: faint dots.
+    float ph = fract(vFlow.x / 0.26) - 0.5;
+    float r = length(vec2(ph * 0.26 / vFlow.w, vFlow.y));
+    float d = 1.0 - smoothstep(0.55, 0.9, r);
+    over(acc, seaTone(vCol.rgb, 1.0), d * 0.6 * vCol.a);
+  } else {
+    // Where a lane is cut: a dark disc ringed in the cut's colour, a cross in it.
+    vec2 uv = vFlow.xy;
+    float r = length(uv);
+    float disc = 1.0 - smoothstep(0.9, 1.0, r);
+    float ring = smoothstep(0.64, 0.72, r) * disc;
+    float cr = min(abs(uv.x - uv.y), abs(uv.x + uv.y)) * 0.7071;
+    float crs = (1.0 - smoothstep(0.08, 0.14, cr)) * (1.0 - smoothstep(0.42, 0.5, r));
+    over(acc, seaTone(vec3(0.06, 0.1, 0.18), 1.0), disc * 0.92);
+    over(acc, seaTone(vCol.rgb, 1.0), max(ring, crs));
+  }
+  if (acc.a < 0.003) discard;
+  o = acc;
+}`;
+
 // FXAA (Timothy Lottes' console-quality variant): cheap edge anti-aliasing on the finished colour,
 // to take the stair-step off silhouettes and stop them crawling when panning
 // (F17). Run after the finish pass, before the overlays; the HUD is a separate 2D canvas.

@@ -348,7 +348,7 @@ async function answerPopups(log = true) {
     calm = 0;
     const has = (sel) => b.eval(`!!document.querySelector(${JSON.stringify(`#modals .backdrop:not(.under) ${sel}`)})`);
     if (await has(".modal.decision")) await click("#modals .modal.decision button.option:not([disabled])");
-    else if (await has("button.build[data-tech]")) await click("#modals .backdrop:not(.under) button.build[data-tech]");
+    else if (await has("button.tech.can-now[data-tech]")) await click("#modals .backdrop:not(.under) button.tech.can-now[data-tech]");
     else if (await has("button.build[data-order]:not([disabled])")) await click("#modals .backdrop:not(.under) button.build[data-order]:not([disabled])");
     else if (await has("button.option:not([disabled])")) await click("#modals .backdrop:not(.under) button.option:not([disabled])");
     else await b.key("Escape");
@@ -1091,9 +1091,9 @@ async function empireScreens() {
     steps.push(`tech tree (F6): researching ${tech}`);
   }
   await closeDialog("Technology");
-  // The research chooser (the top bar's research button): the doctrine chooser (research paths), an adoption.
+  // The top bar's research button opens the tree too: the doctrine chooser (research paths), an adoption.
   await click("#research-button");
-  await dialog("Research");
+  await dialog("Technology");
   await until2(`!!document.querySelector(${q(`${TOP} button[data-paths]`)})`, "the research path line");
   await click(`${TOP} button[data-paths]`);
   await dialog("Doctrines");
@@ -1120,7 +1120,7 @@ async function empireScreens() {
     await closeDialog("Doctrines");
     steps.push(`doctrine: adopted ${path} after the confirmation; the top bar names it; the chooser offers no other`);
   }
-  await closeDialog("Research");
+  await closeDialog("Technology");
   // F3: civics: a pick shows the change, the revolution when it is possible.
   await b.key("F3");
   await dialog("Civics");

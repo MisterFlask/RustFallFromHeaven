@@ -5,13 +5,14 @@
 // mark where it enters that sea (yours: the turns left before the outpost starves).
 // Others' lanes come over the plots you have revealed only. Also the banner's tag of an outpost.
 //
-// Each renderer calls its one function from its Sea layer (`drawSea`): the projection is its own
-// (map.js: the flat camera; iso.js: the diamond grid; r3d/hud.js: the 3D camera). Pure apart from
-// the drawing: no DOM, no state of its own.
+// The flat and isometric maps call their function from their Sea layer (`drawSea`): the projection
+// is their own (map.js: the flat camera; iso.js: the diamond grid). The 3D and HD-2D maps lay the
+// lanes on the water in the world (r3d/sealayer.js, from `outpostLanes` and `laneMark`). Pure apart
+// from the drawing: no DOM, no state of its own.
 
 import { S, me, isBarbarian } from "./state.js";
 import * as T from "./tiles.js";
-import { OWN_COLOR, unwrapSegment, flowOffset, drawLine, drawMark } from "./supply.js";
+import { OWN_COLOR, unwrapSegment, drawLine, drawMark } from "./supply.js";
 import { drawLaneCut } from "./sea.js";
 
 /** The lanes to draw: `[{owner, mine, color, segments: [[[x, y], ...]], cut: {x, y, sea, turns} | null}]`
@@ -89,48 +90,6 @@ export function drawLanesIso(iso, g, f, font = "sans-serif") {
       const c = iso.center(L.cut.x, L.cut.y);
       drawMark(g, laneMark(L.cut), c.sx, c.sy + iso.dropAt(L.cut.x, L.cut.y) + 24 * f.s, Math.max(9, 12 * f.s), font);
       drawn.marks++;
-    }
-  }
-}
-
-/** r3d/hud.js (the 3D map: the dashes flow while the frame animates). `r3d` the renderer. */
-export function drawLanesR3d(r3d, cam, g, inView, font = "sans-serif") {
-  const v = r3d.view;
-  const world = r3d.world;
-  const ts = r3d.ts;
-  const drawn = { lines: 0, marks: 0 };
-  r3d.lanesDrawn = drawn;
-  const lanes = outpostLanes();
-  if (!lanes.length) return;
-  const still = v.reduceMotion?.() ?? false;
-  const offset = flowOffset(performance.now(), Math.max(6, ts * 0.12), still);
-  const width = Math.max(2, Math.min(4, ts * 0.035));
-  const on3d = (seg) => {
-    const pts = [];
-    for (const [ux, y] of unwrapSegment(seg, r3d.nearX(seg[0][0]), v.map)) {
-      const x = T.wrapCoord(ux, v.map.w, v.map.wrap_x) ?? ux;
-      const p = r3d.project(cam, [ux + 0.5, world.plotHeight(x, y) + 0.03, -(y + 0.5)]);
-      if (p) pts.push(p);
-    }
-    return pts;
-  };
-  for (const L of lanes) {
-    for (const seg of L.segments) {
-      const pts = on3d(seg);
-      if (pts.length < 2 || !pts.some((p) => inView(p))) continue;
-      drawLine(g, pts, L.color, width, offset);
-      drawn.lines++;
-    }
-    for (const seg of L.cutSegments) {
-      const pts = on3d(seg);
-      if (pts.length >= 2 && pts.some((p) => inView(p))) drawLaneCut(g, pts, Math.max(6, Math.min(11, ts * 0.09)));
-    }
-    if (L.cut) {
-      const p = r3d.project(cam, [r3d.nearX(L.cut.x) + 0.5, world.plotHeight(L.cut.x, L.cut.y) + 0.03, -(L.cut.y + 0.5)]);
-      if (p && inView(p)) {
-        drawMark(g, laneMark(L.cut), p.x, p.y + Math.max(14, ts * 0.2), Math.max(9, Math.min(13, ts * 0.12)), font);
-        drawn.marks++;
-      }
     }
   }
 }

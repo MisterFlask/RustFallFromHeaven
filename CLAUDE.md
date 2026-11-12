@@ -415,6 +415,10 @@ Tiers (pick by the change):
   parallel; a refute pass only for high-severity findings that would change direction. At most one
   round per batch.
 
+Screenshots for the owner are taken on the HD-2D map (the owner's rule, 2026-11-11: `?force3d=1`
+where this machine falls back without a GPU). The flat and isometric maps are for debugging and as a
+backup for older PCs: judge and show a look on HD-2D, and design for it first.
+
 Rendering (SwiftShader here: 10-30 s a frame on 4 shared cores; workflows run 2 agents at a time):
 - Iterate on small renders (`--w 512 --h 320`) or crops of the changed region. Full 1024x640 sets
   and a real-game capture (`tools/r3d-compare.mjs`) only for a batch's final check.
@@ -427,6 +431,17 @@ Batching:
 - `tools/r3d-perf.mjs` and `tools/r3d-lab.mjs --stability` only at milestones (a batch that changes
   shader cost or anything world-anchored), as one A/B against the previous milestone: same save,
   same binary, the old tree via `git archive`. Update docs/R3D.md section 11 then.
+
+**Shader changes draw a Huge map fully revealed before they are done** (the owner's rule,
+2026-11-11; this holds at every tier). A change to a shader, or to what the renderer builds for
+the map each sync (meshes, textures, atlases, instance buffers), is tested end to end on the
+largest case with `node tools/r3d-huge.mjs --bin <built>/ffh-play` (add `--layer sea` when the
+change touches a map layer): a new Huge game, the HD-2D map zoomed out, debug reveal switched on.
+The revealed map must arrive and one complete frame of it be drawn within 30 s under SwiftShader
+(10 s with `--gpu`), with no console error and no crashed tab. A change that fails this is not
+finished: say so, don't merge it. (Why: the sea names' halo was blurred
+once per letter, unnoticed with five seas known and a frozen tab with the 200 of a Huge map
+revealed.)
 
 Every commit still needs the hard-rule gate (`tools/agents/build-tree.sh --test`, `ffh data` with 0
 warnings) plus `bash tools/web-check.sh`. Run `node tools/web-smoke.mjs --bin <built>/ffh-play`

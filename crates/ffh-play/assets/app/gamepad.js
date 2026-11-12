@@ -272,6 +272,9 @@ function act(x, y) {
   const h = P.view.h;
   const ev = { pointerType: "pad" };
   if (units.currentMode()) return h.click?.(x, y, ev);
+  // A sea's buoy on the HD-2D map's Sea layer, with nothing selected: the sea's panel.
+  const sea = S.sel ? null : P.view.seaAtPlot?.(x, y);
+  if (sea !== null && sea !== undefined && h.seaClick) return h.seaClick(sea);
   if (S.sel && S.status?.phase === "human" && !ownUnitsAt(x, y).length) return h.rightClick?.(x, y, ev);
   h.click?.(x, y, ev);
 }

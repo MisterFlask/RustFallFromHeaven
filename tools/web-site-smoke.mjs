@@ -285,7 +285,7 @@ async function answerPopups() {
     const top = "#modals .backdrop:not(.under)";
     const has = (sel) => ev(`!!document.querySelector(${JSON.stringify(`${top} ${sel}`)})`);
     if (await has(".modal.decision")) await click(`${top} .modal.decision button.option:not([disabled])`);
-    else if (await has("button.build[data-tech]")) await click(`${top} button.build[data-tech]`);
+    else if (await has("button.tech.can-now[data-tech]")) await click(`${top} button.tech.can-now[data-tech]`);
     else if (await has("button.build[data-order]:not([disabled])")) await click(`${top} button.build[data-order]:not([disabled])`);
     else if (await has("button.option:not([disabled])")) await click(`${top} button.option:not([disabled])`);
     else await page.keyboard.press("Escape");

@@ -312,7 +312,9 @@ export class MapHd2d extends Map3D {
   }
 
   dressUnitsOf(world, map) {
-    return dressSpriteUnits(world, map, this.sprites.atlas);
+    // The seas' buoys stand with the figures while the Sea layer is on (sealayer.js `banners`).
+    const sea = this.view.layer === "sea" && !this.view.overlay.city;
+    return dressSpriteUnits(world, map, this.sprites.atlas, sea ? this.sea.banners : null);
   }
 
   /** The figures as they stand now: a walking one partway, and facing the way it last walked (the
