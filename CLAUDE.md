@@ -389,6 +389,13 @@ narration or mood. Write `Total offered: 240`, `This proposal will be refused.`,
 "they would welcome it" or "the forest thanks you". Flavor belongs to what characters say (the
 leaders' speech) and to the names and descriptions of the game's data.
 
+Rules text and reminder text are kept apart (the owner's rule, 2026-11-12; docs/PLAY_DESIGN.md
+4.8). Rules text is what is unique to the entity shown. A concept that applies to many entities
+(what a Ritual is) is a keyword (`data/json/keywords.jsonc`): the entity's text names it, and its
+reminder is drawn in its own box beside or below the tooltip, never inside the rules text. Do not
+restate a keyword's rule in an entity's text (`crates/ffh-play/tests/keywords.rs` fails on it);
+when the same sentence appears on many entities, make it a keyword.
+
 ## Show UI changes in a screenshot
 
 Whenever a change adds to or alters what the player sees in support of a feature (a panel, a
