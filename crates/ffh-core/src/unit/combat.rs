@@ -877,9 +877,18 @@ impl Game {
                     }
                 }
 
+                // The attacker can be gone by now (killed by what the combat's result or the
+                // defender's death set off): nothing is left to move.
+                if !self.units.contains(u) {
+                    return;
+                }
                 if self.plot_get_num_visible_enemy_defenders(plot, u) == 0 {
                     let group = group_of(self, u);
                     self.group_move(group, plot, true, if advance { Some(u) } else { None }, false);
+                    // Entering the plot can kill it too.
+                    if !self.units.contains(u) {
+                        return;
+                    }
                 }
 
                 // This is is put before the plot advancement, the unit will always try to walk back
