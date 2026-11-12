@@ -551,8 +551,9 @@ per research path (doctrine), each tech a box with its name,
 what it unlocks (icons, at most five with "+n"), and its turns and cost for
 one you can research now, its cost otherwise, "known" for one you have; the states read without
 colour too: known (a check mark, muted), researching (a progress bar with its percentage), queued
-(its place in the queue in a corner), can research now (full contrast, gold border), not yet
-(dimmed). The bands (`treeLayout` in empire.js) are
+(its place in the queue in a corner), can research now (every prerequisite known: a gold ground, name and border), not yet
+(dimmed). Zoom: the − and + buttons above the tree or Ctrl+wheel over it (40% to 100%, 80% at
+first; the level is remembered). The bands (`treeLayout` in empire.js) are
 the seven doctrines' lines of development: a tech of one doctrine is in its band (of several, the
 one it is a capstone of), a tech of none in the band of most of its neighbours ("General" for one
 with none), the bands ordered to keep the lines between them short; in a band each column's techs

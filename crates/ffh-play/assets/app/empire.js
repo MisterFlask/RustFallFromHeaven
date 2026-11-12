@@ -299,6 +299,18 @@ export function treeRelated(byId, id) {
   return { path, next };
 }
 
+/** The tech tree's zoom steps and the one in use, kept between games (localStorage). */
+const TREE_ZOOMS = [0.4, 0.5, 0.65, 0.8, 1];
+const TREE_ZOOM_KEY = "ffh.techtree.zoom";
+function treeZoomSaved() {
+  try {
+    const v = Number(globalThis.localStorage?.getItem(TREE_ZOOM_KEY));
+    if (TREE_ZOOMS.includes(v)) return v;
+  } catch {}
+  return 0.8;
+}
+let treeZoom = treeZoomSaved();
+
 /** A tech's research cost for its box: the research icon and the number (the word in the flat look). */
 function costLabel(cost) {
   const icon = isoSkin() ? isoIcon("research", { px: 16, cls: "tech-cost-icon" }) : null;
@@ -473,7 +485,7 @@ export async function openTechTree({ popup = false } = {}) {
         h("span.tree-lane-name", { title: doctrine ? `${name}: your doctrine` : name }, h("span.tree-lane-text", name), doctrine ? h("span.tree-lane-doctrine", "Doctrine") : null),
       );
     });
-    const tree = h("div.tree", { style: { width: `${width}px`, height: `${height}px` } }, bands, svg, boxes);
+    const tree = h("div.tree", { style: { width: `${width}px`, height: `${height}px`, zoom: String(treeZoom) } }, bands, svg, boxes);
     function focus(id) {
       if (id === null && armed !== null) id = armed;
       tree.classList.toggle("focus", id !== null);
@@ -510,6 +522,41 @@ export async function openTechTree({ popup = false } = {}) {
       wrap.classList.toggle("more-right", scroll.scrollLeft + scroll.clientWidth < scroll.scrollWidth - 2);
       wrap.classList.toggle("more-down", scroll.scrollTop + scroll.clientHeight < scroll.scrollHeight - 2);    };
     scroll.addEventListener("scroll", edges, { passive: true });
+    // Zoom: the buttons, or Ctrl+wheel over the tree; the point at the view's centre stays there.
+    const zoomText = h("span.tree-zoom-now", `${Math.round(treeZoom * 100)}%`);
+    const zoomOut = h("button", { "data-zoom": "out", title: "Zoom out (Ctrl+wheel)", "aria-label": "Zoom out", onclick: () => zoomBy(-1) }, "−");
+    const zoomIn = h("button", { "data-zoom": "in", title: "Zoom in (Ctrl+wheel)", "aria-label": "Zoom in", onclick: () => zoomBy(1) }, "+");
+    const zoomEnds = () => {
+      zoomOut.disabled = treeZoom <= TREE_ZOOMS[0];
+      zoomIn.disabled = treeZoom >= TREE_ZOOMS[TREE_ZOOMS.length - 1];
+    };
+    function zoomBy(step) {
+      const z = TREE_ZOOMS[Math.max(0, Math.min(TREE_ZOOMS.length - 1, TREE_ZOOMS.indexOf(treeZoom) + step))];
+      if (z === treeZoom) return;
+      const cx = (scroll.scrollLeft + scroll.clientWidth / 2) / treeZoom;
+      const cy = (scroll.scrollTop + scroll.clientHeight / 2) / treeZoom;
+      treeZoom = z;
+      try {
+        globalThis.localStorage?.setItem(TREE_ZOOM_KEY, String(z));
+      } catch {}
+      tree.style.zoom = String(z);
+      scroll.scrollLeft = Math.max(0, cx * z - scroll.clientWidth / 2);
+      scroll.scrollTop = Math.max(0, cy * z - scroll.clientHeight / 2);
+      zoomText.textContent = `${Math.round(z * 100)}%`;
+      zoomEnds();
+      edges();
+    }
+    zoomEnds();
+    scroll.addEventListener(
+      "wheel",
+      (ev) => {
+        if (!ev.ctrlKey) return;
+        ev.preventDefault();
+        zoomBy(ev.deltaY > 0 ? -1 : 1);
+      },
+      { passive: false },
+    );
+    const zoomRow = h("div.tree-zoom", h("span.dim", "Zoom:"), zoomOut, zoomText, zoomIn);
     m.setBody(
       h(
         "div.research-head",
@@ -522,7 +569,7 @@ export async function openTechTree({ popup = false } = {}) {
         cardsLine(t),
         t.queue.length > 1 ? h("div.dim", `Queue: ${t.queue.map((q) => dname("TechType", q)).join(" → ")}`) : null,
         h("div.dim", coarse() ? "Tap: show its path. Tap again: research (with what it needs)." : "Click: research (with what it needs). Shift-click: queue."),
-        modes,
+        h("div.tree-controls", modes, zoomRow),
       ),
       wrap,
     );
@@ -535,8 +582,8 @@ export async function openTechTree({ popup = false } = {}) {
       const goal = cur && byId.has(t.current) ? byId.get(t.current) : can[0];
       if (goal) {
         const p = pos(goal);
-        scroll.scrollLeft = Math.max(0, p.x + W / 2 - scroll.clientWidth / 2);
-        scroll.scrollTop = Math.max(0, p.y + H / 2 - scroll.clientHeight / 2);
+        scroll.scrollLeft = Math.max(0, (p.x + W / 2) * treeZoom - scroll.clientWidth / 2);
+        scroll.scrollTop = Math.max(0, (p.y + H / 2) * treeZoom - scroll.clientHeight / 2);
       }
     }
     edges();

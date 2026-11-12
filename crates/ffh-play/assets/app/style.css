@@ -731,6 +731,10 @@ h4.sub { margin: 8px 0 2px; font-size: 0.9em; }
 .tree.focus .tree-lines path.lit { opacity: 1; stroke: var(--c-gold); stroke-width: 3; }
 .tree.focus .tree-lines path.lit.next { stroke: var(--c-frost); }
 .tap-mode.tree-modes { display: flex; }
+.tree-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; }
+.tree-zoom { display: flex; align-items: center; gap: 4px; margin: 4px 0 6px; }
+.tree-zoom button { min-width: 28px; }
+.tree-zoom-now { min-width: 40px; text-align: center; }
 /* A tech: opaque (the lines pass behind it); name, what it unlocks, then turns and cost. */
 button.tech { position: absolute; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 2px; padding: 3px 6px 5px 6px; text-align: left; font-size: 12px; line-height: 1.15; overflow: hidden; background: #1c2944; border-color: #3a4560; transition: opacity 120ms ease, box-shadow 120ms ease; }
 /* (Over the looks' general button padding and gap.) */
@@ -753,6 +757,9 @@ button.tech.has .tech-name { color: var(--c-lichen); }
 button.tech.researching { border-color: var(--c-frost); background: var(--c-navy); box-shadow: 0 0 0 1px var(--c-void), 0 0 10px rgba(128, 183, 227, 0.45); }
 button.tech.queued { border-color: var(--c-frost); border-style: dashed; background: #1d3050; }
 button.tech.can { border-color: var(--c-gold); background: var(--c-coal); }
+/* Researchable now (every prerequisite known): a gold ground and name. */
+button.tech.can-now:not(.researching) { background: #4a3a14; border-color: var(--c-gold); border-width: 2px; }
+button.tech.can-now:not(.researching) .tech-name { color: var(--c-gold); font-weight: 700; }
 button.tech.later { background: #18223a; opacity: 0.62; }
 button.tech.later .tech-name { color: var(--c-stone); }
 .tree.focus button.tech { opacity: 0.3; }
