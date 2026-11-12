@@ -164,6 +164,13 @@ export class World {
       else if (pt === "PLOT_HILLS") k = KIND.HILLS;
       else if (pt === "PLOT_PEAK") k = KIND.PEAK;
       if (this.feat[i] === FEAT.ICE && (k === KIND.OCEAN || k === KIND.COAST)) k = KIND.ICE;
+      // Sea Ice (the Illians' Frozen Passage, the map's `sea_ice` layer): frozen sea, drawn as the
+      // polar ice sheet (a blue-white floor with cracks at the water's level), not as snow land.
+      if (m.sea_ice?.[i] === 1) {
+        k = KIND.ICE;
+        this.feat[i] = FEAT.ICE;
+        this.ground[i] = GROUND.SNOW;
+      }
       this.kind[i] = k;
     }
   }

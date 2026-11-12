@@ -1157,7 +1157,8 @@ export class MapView {
     const P = plotTypes();
     const pt = m.plot_type[k];
     const terrain = tname("TerrainType", m.terrain[k]);
-    g.fillStyle = pt === P.peak ? "#5d5955" : T.terrainColor(terrain);
+    const ice = m.sea_ice?.[k] === 1;
+    g.fillStyle = pt === P.peak ? "#5d5955" : ice ? T.SEA_ICE_COLOR : T.terrainColor(terrain);
     g.fillRect(px, py, ts, ts);
     if (ts >= 24) {
       g.strokeStyle = "rgba(0,0,0,0.13)";
@@ -1714,7 +1715,7 @@ export class MapView {
           const o = ((map.h - 1 - y) * map.w + x) * 4;
           let col = null;
           if (map.vis[k] > 0) {
-            col = rgb(T.terrainColor(tname("TerrainType", map.terrain[k])));
+            col = rgb(map.sea_ice?.[k] === 1 ? T.SEA_ICE_COLOR : T.terrainColor(tname("TerrainType", map.terrain[k])));
             if (map.owner[k] >= 0) {
               const pc = rgb(ownerColor(map.owner[k]));
               col = col.map((v, i) => Math.round(v * 0.4 + pc[i] * 0.6));

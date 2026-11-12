@@ -1109,12 +1109,19 @@ vec3 featureFloor(int f, vec3 c, vec2 m, inout vec3 emit) {
   if (f == F_SCRUB) return mix(c, srgb(vec3(0.55, 0.48, 0.30)), smoothstep(0.6, 0.8, gN9) * 0.5);
   if (f == F_ICE) {
 #ifdef STANDIN_FLAT
-    vec2 cl = vec2(0.0, 1.0);
+    // The stand-in ground has no cell noise: cracks from two wavering families of lines (a few
+    // instructions), so the floes still read.
+    vec2 q = m * 1.7;
+    float ca = abs(fract(q.x + 0.3 * sin(q.y * 1.9)) - 0.5);
+    float cb = abs(fract(q.y + 0.3 * sin(q.x * 1.4 + 1.3)) - 0.5);
+    vec2 cl = vec2(0.0, 0.5 - max(ca, cb));
 #else
     vec2 cl = mcells(m, 1.8);
 #endif
-    float crack = 1.0 - smoothstep(0.01, 0.05, cl.y - cl.x);
-    return srgb(mix(mix(vec3(0.78, 0.86, 0.92), vec3(0.92, 0.95, 0.97), gN2), vec3(0.55, 0.68, 0.78), crack * 0.7));
+    // Frozen sea (polar ice, and Sea Ice: the Illians' Frozen Passage): a pale blue sheet, bluer
+    // than snow land, cut into floes by darker blue cracks.
+    float crack = 1.0 - smoothstep(0.012, 0.06, cl.y - cl.x);
+    return srgb(mix(mix(vec3(0.58, 0.74, 0.87), vec3(0.78, 0.87, 0.95), gN2), vec3(0.20, 0.34, 0.50), crack * 0.85));
   }
   if (f == F_FLAMES) {
     // Burning land: charred ground with embers glowing in it (the flames themselves are props),
