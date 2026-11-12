@@ -286,3 +286,63 @@ fn the_tithe_says_who_is_named_and_asks_before_the_war() {
     let view = s.query(&Query::View).unwrap();
     assert_eq!(s_of(&row(&view, h), "note"), Some(format!("Named rival: {name}.").as_str()));
 }
+
+/// `ffh-play stage ritual-civ:CIVILIZATION_AMURITES`: Wellspring's choices are each a plot's mana,
+/// picked on the map then from a list: every target carries its plot (`at`) and is labelled by its
+/// mana alone, every valid plot offers every mana; the tooltip's caster is placed by the human's
+/// nearest city, not by coordinates.
+#[test]
+fn wellspring_is_picked_by_plot_then_mana() {
+    let dir = common::TempDir::new("stage-ritual-civ-amurites");
+    let st = ffh_play::stage::ritual_civ(&dir.0, "CIVILIZATION_AMURITES").expect("staged");
+    let s = load(&st.save);
+    let d = s.g.d;
+    let spell = d.t::<SpellType>("SPELL_WELLSPRING");
+    let a = world_action(&s, spell).expect("Wellspring is listed");
+    assert_eq!(a.get("enabled").and_then(Json::as_bool), Some(true), "{a:?}");
+    assert_eq!(s_of(&a, "target_kind"), Some("choice"));
+    assert_eq!(s_of(&a, "caster_where"), Some(format!("in {}", city_name(&s, st.capital)).as_str()));
+    let manas: Vec<String> = ffh_core::ffh::world_ritual_spells::small::wellspring_manas(d).iter().map(|&(b, _)| d.text.name(&d.bonuses[b].base.description).to_string()).collect();
+    let targets = arr(&a, "targets");
+    assert!(!targets.is_empty());
+    let mut plots = std::collections::BTreeMap::<(i64, i64), Vec<String>>::new();
+    for t in targets {
+        let at = arr(t, "at");
+        assert_eq!(at.len(), 2, "{t:?}");
+        let label = s_of(t, "label").unwrap().to_string();
+        assert!(manas.contains(&label), "a mana name alone: {label}");
+        plots.entry((at[0].as_i64().unwrap(), at[1].as_i64().unwrap())).or_default().push(label);
+    }
+    for ((x, y), labels) in &plots {
+        let q = s.g.map.plot_idx(*x as i32, *y as i32).unwrap();
+        assert!(ffh_core::ffh::world_ritual_spells::small::wellspring_plot_ok(&s.g, s.human, q), "({x}, {y})");
+        assert_eq!(labels, &manas, "every mana at ({x}, {y}), in the data's order");
+    }
+}
+
+/// The caster line names no place when the human has no city, and a Delve's other end is named
+/// by the nearest city the human knows (`ffh-play stage ritual-civ:CIVILIZATION_KHAZAD`: a tunnel
+/// next to the capital).
+#[test]
+fn places_are_named_by_cities_not_coordinates() {
+    let dir = common::TempDir::new("stage-ritual-civ-khazad");
+    let st = ffh_play::stage::ritual_civ(&dir.0, "CIVILIZATION_KHAZAD").expect("staged");
+    let mut s = load(&st.save);
+    let name = city_name(&s, st.capital);
+    let view = s.query(&Query::View).unwrap();
+    let delves = arr(&view, "delves");
+    assert!(!delves.is_empty());
+    for e in delves {
+        let place = s_of(e, "to_place").unwrap();
+        assert!(place == name || place == format!("a plot near {name}"), "{place}");
+    }
+    let near = |s: &Session, x: i32, y: i32| ffh_play::view::near_own_city(&ffh_play::view::Viewer::new(&s.g, s.human, false), x, y);
+    let (cx, cy) = (s.g.cities[st.capital].x, s.g.cities[st.capital].y);
+    assert_eq!(near(&s, cx, cy), Some(format!("in {name}")));
+    assert_eq!(near(&s, cx + 2, cy), Some(format!("near {name}")));
+    let h = s.human;
+    for c in s.g.players[h].cities.clone() {
+        s.g.players[h].cities.retain(|&x| x != c);
+    }
+    assert_eq!(near(&s, cx, cy), None, "no city: no place");
+}

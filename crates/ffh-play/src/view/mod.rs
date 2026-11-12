@@ -75,6 +75,21 @@ pub fn city_name(g: &Game, c: CityId) -> String {
     crate::names::text(g.d, &g.cities[c].name).to_string()
 }
 
+/// The city nearest plot (x, y) among `cities` (by plot distance; ties: the first listed) and
+/// whether (x, y) is that city's own plot: how a place is named for people, instead of its
+/// coordinates ("in Prespur", "near Prespur").
+pub fn nearest_city(g: &Game, cities: impl IntoIterator<Item = CityId>, x: i32, y: i32) -> Option<(CityId, bool)> {
+    let c = cities.into_iter().filter(|&c| g.cities.contains(c)).min_by_key(|&c| g.plot_distance(x, y, g.cities[c].x, g.cities[c].y))?;
+    Some((c, g.cities[c].x == x && g.cities[c].y == y))
+}
+
+/// Where (x, y) is, by the human's nearest city: `in Prespur` (its plot), `near Prespur`;
+/// `None` when the human has no city.
+pub fn near_own_city(v: &Viewer, x: i32, y: i32) -> Option<String> {
+    let (c, here) = nearest_city(v.g, v.g.players[v.h].cities.iter().copied(), x, y)?;
+    Some(format!("{} {}", if here { "in" } else { "near" }, city_name(v.g, c)))
+}
+
 /// A player's name as text (some leader names are text keys: `TXT_KEY_LEADER_BARBARIAN`).
 pub fn player_name(g: &Game, p: PlayerId) -> String {
     crate::names::resolve_keys(g.d, &g.player_get_name(p)).into_owned()

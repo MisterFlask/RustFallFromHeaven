@@ -13,6 +13,7 @@ import { isoSkin, isoIcon } from "./isoui.js";
 import { effectsOf, partsList } from "./infotips.js";
 import { battleLine, battleLinks } from "./engagements.js";
 import { castTargeted } from "./units.js";
+import { casterLine } from "./ritual_rows.js";
 import * as api from "./api.js";
 import { openResearchPaths } from "./empire.js";
 import { renderRituals } from "./rituals.js";
@@ -374,9 +375,6 @@ function doctrineButton(m, adopted) {
   );
 }
 
-/** What a spell's target is, in words (`target_kind`). */
-const TARGET_WORDS = { plot: "a plot", city: "a city", unit: "a unit", player: "a player", choice: "one of its options" };
-
 /** The empire's own actions, a row of buttons beside its numbers (`me.world_actions`): its world
  *  spell, cast with a charge of its ritual (the tooltip says where the ritual stands: `why` while
  *  no charge is held or no unit can cast it, `charge` while it can be cast), and its cards' world spells (docs/CARDS.md: once a game each, still
@@ -395,13 +393,12 @@ function renderWorldActions(m, st) {
       const caster = a.caster !== null && a.caster !== undefined ? S.units?.get?.(a.caster) : null;
       const help = effectsOf("SpellType", a.spell) || a.help || "";
       const what = a.once ? "Card spell" : "World spell";
-      const pick = a.target_kind ? `; then pick its target (${TARGET_WORDS[a.target_kind] ?? a.target_kind})` : "";
       const tip = [
         h("div.tip-title", `${what}: ${name}`),
         a.once ? h("div", "Card spell: cast once a game.") : null,
         help ? h("div.tip-effects", markup(help)) : null,
         a.enabled && a.charge ? h("div.tip-hint.ritual-charge-line", a.charge) : null,
-        a.enabled ? (caster ? h("div.tip-hint", `Cast by your ${dname("UnitType", caster.type)} at (${caster.x}, ${caster.y})${pick}.`) : null) : h("div.tip-hint.world-action-why", a.why ?? "No unit of yours can cast it now."),
+        a.enabled ? (caster ? h("div.tip-hint", casterLine(a, dname("UnitType", caster.type))) : null) : h("div.tip-hint.world-action-why", a.why ?? "No unit of yours can cast it now."),
       ];
       return h(
         `button.world-action${a.cast ? ".spent" : ""}`,

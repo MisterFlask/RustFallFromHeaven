@@ -823,6 +823,17 @@ impl Game {
         }
     }
 
+    /// The plot a choice target `choice` of `spell` is on, for a choice spell whose choices are
+    /// plots with an option each (Wellspring: a plot and a mana); `None` for the others. The
+    /// client picks the plot on the map, then the option.
+    pub fn spell_choice_plot(&self, spell: SpellType, choice: i32) -> Option<PlotIdx> {
+        let call = crate::ffh::pycall::PyCall::parse(&self.d.spells[spell].py_targets)?;
+        match call.name.as_str() {
+            "targetsWellspring" => crate::ffh::world_ritual_spells::small::wellspring_decode(self, choice).map(|(q, _)| q),
+            _ => None,
+        }
+    }
+
     /// Whether `p`'s team has cast the card world spell `spell` (`SpellInfo::once`): a card is its
     /// team's (`team_set_has_tech`), so its world spell is cast once a game by the team, whichever
     /// member casts it (each caster's own record is `Player::once_spells`).

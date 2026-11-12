@@ -474,6 +474,9 @@ pub fn world_actions(v: &Viewer) -> Json {
         let caster = visible.iter().copied().filter(|&u| g.unit_march_refusal(u).is_none() && can(u, false)).min_by_key(|&u| (loses(u), u.0));
         j.set("cast", false);
         j.set("caster", caster);
+        // Where the caster stands, by the human's nearest city (`in Prespur`, `near Prespur`;
+        // null without a city): the tooltip's "Cast by your Adept near Prespur".
+        j.set("caster_where", caster.and_then(|u| crate::view::near_own_city(v, g.units[u].x, g.units[u].y)));
         if info.target.is_some() {
             let targets = caster.map(|u| g.unit_spell_targets(u, s)).unwrap_or_default();
             let (enabled, cmd) = targeted_action(v, caster.unwrap_or(visible[0]), s, caster.is_some(), &targets, &mut j);

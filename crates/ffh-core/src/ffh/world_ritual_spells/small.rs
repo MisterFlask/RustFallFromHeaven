@@ -360,12 +360,12 @@ fn targets_wellspring(g: &Game, caster: UnitId, _call: &PyCall) -> Vec<SpellTarg
     out
 }
 
-/// A Wellspring choice for people: `Fire Mana (4, 5)`.
+/// A Wellspring choice for people: its mana, `Fire Mana` (the plot is picked on the map first:
+/// [`Game::spell_choice_plot`]).
 pub fn wellspring_label(g: &Game, choice: i32) -> String {
     let d = g.d;
-    let Some((plot, bonus)) = wellspring_decode(g, choice) else { return String::new() };
-    let (x, y) = g.map.xy(plot);
-    format!("{} ({x}, {y})", d.text.name(&d.bonuses[bonus].base.description))
+    let Some((_, bonus)) = wellspring_decode(g, choice) else { return String::new() };
+    d.text.name(&d.bonuses[bonus].base.description).to_string()
 }
 
 fn label_wellspring(g: &Game, _caster: UnitId, target: SpellTarget, _: &PyCall) -> String {
@@ -384,11 +384,12 @@ fn spell_wellspring(g: &mut Game, caster: UnitId, _call: &PyCall) {
     if !wellspring_plot_ok(g, p, plot) {
         return;
     }
-    let label = wellspring_label(g, choice);
+    let (x, y) = g.map.xy(plot);
+    let label = format!("{} ({x}, {y})", wellspring_label(g, choice));
     g.plot_set_bonus_type(plot, Some(bonus));
     g.plot_set_improvement_type(plot, Some(node));
     let turn = g.game_turn();
-    g.log.msg(turn, Some(p), || format!("Wellspring: {label}."));
+    g.log.msg_at(turn, Some(p), (x, y), || format!("Wellspring: {label}."));
 }
 
 #[cfg(test)]

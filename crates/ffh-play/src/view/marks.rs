@@ -80,7 +80,14 @@ pub fn delves(v: &Viewer) -> Json {
             if v.plot_revealed(here) {
                 let (x, y) = g.map.xy(here);
                 let (tx, ty) = g.map.xy(there);
-                out.push(crate::jobj! { "x" => x, "y" => y, "to" => Json::Arr(vec![Json::from(tx), Json::from(ty)]) });
+                // The other end for people, by the nearest city the human knows of (`to_place`:
+                // `Prespur` on its plot, `a plot near Prespur`; null when none is known).
+                let known = g.cities.ids().into_iter().filter(|&c| g.map.plot_idx(g.cities[c].x, g.cities[c].y).is_some_and(|q| v.plot_revealed(q)));
+                let place = crate::view::nearest_city(g, known, tx, ty).map(|(c, here)| {
+                    let name = crate::view::city_name(g, c);
+                    if here { name } else { format!("a plot near {name}") }
+                });
+                out.push(crate::jobj! { "x" => x, "y" => y, "to" => Json::Arr(vec![Json::from(tx), Json::from(ty)]), "to_place" => place });
             }
         }
     }

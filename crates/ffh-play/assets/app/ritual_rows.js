@@ -54,3 +54,22 @@ export function listLines(r) {
 export function ritualAlerts(entries, { fresh, turn }) {
   return (entries ?? []).filter((e) => e.kind === "ritual" && (!fresh || e.t === turn));
 }
+
+/** Whether a choice spell's options are each on a plot (`at`: Wellspring's plot and mana): the
+ *  plot is picked on the map first, then the option there from a list. */
+export function choicesOnPlots(a) {
+  const t = a?.targets ?? [];
+  return a?.target_kind === "choice" && t.length > 0 && t.every((x) => Array.isArray(x.at));
+}
+
+/** What a spell's target is, in words (`target_kind`). */
+const TARGET_WORDS = { plot: "a plot", city: "a city", unit: "a unit", player: "a player", choice: "one of its options" };
+
+/** A world action's caster line: `Cast by your Adept near Prespur; then pick its target (a
+ *  player).` (`unitName`: the caster's unit type; `caster_where`: the server's `in`/`near` the
+ *  human's nearest city, none without a city). */
+export function casterLine(a, unitName) {
+  const words = choicesOnPlots(a) ? "a plot on the map, then one of its options" : (TARGET_WORDS[a.target_kind] ?? a.target_kind);
+  const pick = a.target_kind ? `; then pick its target (${words})` : "";
+  return `Cast by your ${unitName}${a.caster_where ? ` ${a.caster_where}` : ""}${pick}.`;
+}

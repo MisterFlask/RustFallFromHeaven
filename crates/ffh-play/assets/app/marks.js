@@ -25,7 +25,8 @@ export function areaEffects(view = S.view) {
   return (view?.area_effects ?? []).map((e) => ({ ...e, color: KIND_COLOR[e.kind] ?? "#9a9a9a" }));
 }
 
-/** The tunnel ends to draw: `[{x, y, to: [x, y]}]`. */
+/** The tunnel ends to draw: `[{x, y, to: [x, y], to_place}]` (`to_place`: the other end, named by
+ *  the nearest known city). */
 export function delveEnds(view = S.view) {
   return view?.delves ?? [];
 }
@@ -37,7 +38,7 @@ export function plotNotes(x, y, view = S.view) {
     if (e.plots.some(([px, py]) => px === x && py === y)) out.push(`${e.label} (${ownerName(e.owner)}): ${e.turns_left} ${e.turns_left === 1 ? "turn" : "turns"} left.`);
   }
   for (const d of delveEnds(view)) {
-    if (d.x === x && d.y === y) out.push(`Delve: tunnel to (${d.to[0]}, ${d.to[1]}).`);
+    if (d.x === x && d.y === y) out.push(`Delve: tunnel to ${d.to_place ?? "another plot"}.`);
   }
   return out;
 }

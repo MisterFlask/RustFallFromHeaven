@@ -46,6 +46,15 @@ pub fn target_plot(g: &Game, t: SpellTarget) -> Option<(i32, i32)> {
     }
 }
 
+/// The plot a target of `spell` is picked on: [`target_plot`], or for a choice that is an option
+/// on a plot (Wellspring's mana) that plot (`Game::spell_choice_plot`).
+fn choice_or_target_plot(g: &Game, spell: SpellType, t: SpellTarget) -> Option<(i32, i32)> {
+    match t {
+        SpellTarget::Choice(i) => g.spell_choice_plot(spell, i).map(|q| g.map.xy(q)),
+        _ => target_plot(g, t),
+    }
+}
+
 /// The info table a choice spell's options are entries of: the kind its `py_target_label` names
 /// with `labelInfo(pCaster, iChoice, 'TraitType')` (docs/CARDS.md, section 3).
 pub fn choice_kind(d: &GameData, spell: SpellType) -> Option<String> {
@@ -55,7 +64,8 @@ pub fn choice_kind(d: &GameData, spell: SpellType) -> Option<String> {
 
 /// The targets of `spell` for `caster`, as an action carries them: each `{target, at, label}`,
 /// `target` the `cast_at` command's form, `at` the plot `[x, y]` it is picked on (null for a
-/// player or a choice), `label` its name; a choice that is an info table's entry adds `info`:
+/// player or a choice not on a plot; Wellspring's choices are each a plot's option, picked on the
+/// map then from a list), `label` its name; a choice that is an info table's entry adds `info`:
 /// `[kind, index]`, whose help the client shows; a target the client asks about before the cast
 /// adds `confirm: {title, text, ok}` ([`crate::view::rituals::target_confirm`]).
 pub fn targets_json(v: &Viewer, caster: UnitId, spell: SpellType, targets: &[SpellTarget]) -> Json {
@@ -67,7 +77,7 @@ pub fn targets_json(v: &Viewer, caster: UnitId, spell: SpellType, targets: &[Spe
             .map(|&t| {
                 let mut j = crate::jobj! {
                     "target" => TargetRef::of(g, t).to_json(),
-                    "at" => target_plot(g, t).map(|(x, y)| crate::jarr![x, y]),
+                    "at" => choice_or_target_plot(g, spell, t).map(|(x, y)| crate::jarr![x, y]),
                     "label" => names::resolve_keys(g.d, &g.spell_target_label(caster, spell, t)).into_owned(),
                 };
                 if let (SpellTarget::Choice(i), Some(k)) = (t, kind.as_deref()) {

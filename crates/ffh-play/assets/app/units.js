@@ -19,6 +19,7 @@ import { battleTerrain, openPlan, preferredRow, flashBattle, engageNumbers, enga
 import { portLine, seaLineWarns } from "./sea.js";
 import { addHelp } from "./help.js";
 import { plotNotes } from "./marks.js";
+import { choicesOnPlots } from "./ritual_rows.js";
 
 // ---- The sea's rules, in the help display (docs/NAVAL.md, sections 3 and 10) ------------------
 
@@ -669,7 +670,9 @@ export function chooseTarget(a, targets, title = null) {
 /** Casts spell action `a`, one cast at a distance (`target_kind`, `targets`: the action carries
  *  its valid targets): a plot, city or unit is picked on the map, its plots outlined (`world`: a
  *  world action, picked without a selection); a player or one of the spell's options from a list.
- *  The cast is `cast_at` at the pick (a card spell then asks to confirm). */
+ *  Options on plots (each carries `at`: Wellspring's plot and mana) are picked in two steps: the
+ *  plot on the map, then the option there from a list. The cast is `cast_at` at the pick (a card
+ *  spell then asks to confirm). */
 export async function castTargeted(a, { world = false } = {}) {
   if (!a.enabled) return;
   const targets = a.targets ?? [];
@@ -677,13 +680,15 @@ export async function castTargeted(a, { world = false } = {}) {
     toast(a.why ?? "No valid target now.", "error");
     return;
   }
-  if (a.target_kind === "player" || a.target_kind === "choice") {
+  const onPlots = choicesOnPlots(a);
+  if (a.target_kind === "player" || (a.target_kind === "choice" && !onPlots)) {
     const t = await chooseTarget(a, targets);
     if (t) await castAt(a, t);
     return;
   }
   setMode({ kind: "target", action: a, cast: true, world, plots: targetPlots(targets) });
-  if (world || !S.sel) toast(`${actionLabel(a)}: pick its target on the map (the outlined plots). Esc cancels.`, "info", 6000);
+  if (onPlots) toast(`${actionLabel(a)}: pick a plot on the map (the outlined plots), then its option. Esc cancels.`, "info", 6000);
+  else if (world || !S.sel) toast(`${actionLabel(a)}: pick its target on the map (the outlined plots). Esc cancels.`, "info", 6000);
 }
 
 /** Casts action `a` at target `t`; a target with a question (`confirm`: Name the Tithe's war) is
@@ -705,7 +710,9 @@ async function pickCast(m, x, y) {
     toast("Not a valid target.", "error");
     return;
   }
-  const t = here.length === 1 ? here[0] : await chooseTarget(m.action, here, `${actionLabel(m.action)}: which one?`);
+  // An option on a plot (Wellspring's mana) is always chosen from the list, under the spell's name.
+  const options = m.action.target_kind === "choice";
+  const t = here.length === 1 && !options ? here[0] : await chooseTarget(m.action, here, options ? actionLabel(m.action) : `${actionLabel(m.action)}: which one?`);
   if (t) await castAt(m.action, t);
 }
 

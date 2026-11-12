@@ -10,13 +10,14 @@
 //
 //   node tools/world-rituals-shots.mjs --bin <built>/ffh-play [--out docs/shots/world-rituals]
 //                                      [--assets crates/ffh-play/assets]
-//                                      [--only rituals,charged,tithe,ice,ice3d,civs]
+//                                      [--only rituals,charged,tithe,ice,ice3d,civs,wellspring3d]
 //
 // It stages `ffh-play stage rituals`, `rituals-charged`, `tithe`, `ice` and
 // `ritual-civ:CIVILIZATION_X`, serves each with `ffh-play serve --load`, and drives the page with
 // Playwright's Chromium (as tools/web-smoke.mjs). The map is the isometric one (headless Chromium
 // without WebGL in software falls back to it), the look a player gets without a GPU fast enough for
-// the HD-2D map; the interface is the same. `ice3d` draws the HD-2D map in software (SwiftShader,
+// the HD-2D map; the interface is the same. `ice3d` and `wellspring3d` (Wellspring's plot pick
+// and mana list, the world spell's caster line) draw the HD-2D map in software (SwiftShader,
 // `?renderer=hd2d&force3d=1`): minutes, not seconds.
 
 import fs from "node:fs";
@@ -74,7 +75,7 @@ function dropToasts(page, keepRituals = false) {
 
 /** A crop around the union of the elements `sels` match (with `pad` CSS px), at most `maxW` CSS px
  *  wide, saved as `name`. */
-async function crop(page, sels, name, { pad = 8, maxW = 1000 } = {}) {
+async function crop(page, sels, name, { pad = 8, maxW = 1000, timeout = 30000 } = {}) {
   const r = await page.evaluate((sels) => {
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const s of sels) {
@@ -95,7 +96,7 @@ async function crop(page, sels, name, { pad = 8, maxW = 1000 } = {}) {
   const w = Math.min(maxW, Math.ceil(r.x1 + pad) - x, r.w - x);
   const h = Math.min(Math.ceil(r.y1 + pad) - y, r.h - y);
   const file = path.join(OUT, name);
-  await page.screenshot({ path: file, clip: { x, y, width: w, height: h } });
+  await page.screenshot({ path: file, clip: { x, y, width: w, height: h }, timeout });
   console.log(`${name}: ${w} x ${h} CSS px`);
 }
 
@@ -509,6 +510,90 @@ async function shotsIce3d(bin, saves, pw) {
   }
 }
 
+// ---- `stage ritual-civ:CIVILIZATION_AMURITES` on the HD-2D map: Wellspring picked by plot, then
+// by mana; the world spell's caster line (SwiftShader: 10-30 s a frame) ----
+async function shotsWellspring3d(bin, saves, pw) {
+  const browser = await pw.chromium.launch(chromiumLaunch(false));
+  try {
+    await onStage(
+      browser,
+      bin,
+      saves,
+      "ritual-civ:CIVILIZATION_AMURITES",
+      async (page, st) => {
+        const cap = await page.evaluate((id) => {
+          const c = (window.ffh.S.view.cities ?? []).find((c) => c.id === id);
+          return c ? [c.x, c.y] : null;
+        }, st.capital);
+        const btn = await worldActionSel(page, "SPELL_WELLSPRING");
+        for (let i = 0; i < 2; i++) {
+          await page.evaluate(([x, y]) => window.ffh.mapView.centerOn(x, y, { animate: false }), cap);
+          await sleep(30000);
+        }
+        // The tooltip: "Cast by your Adept in <capital>; then pick its target (...)".
+        await hover(page, btn);
+        await sleep(15000);
+        await crop(page, [btn, ".tooltip.richtip:not([hidden])"], "worldspell-caster-line.png", { maxW: 520, pad: 6, timeout: 300000 });
+        await unhover(page, btn);
+        // Step a: the valid plots outlined on the map, the prompt in its toast (kept on the page
+        // past its 6 s: a frame takes longer than that here).
+        await page.evaluate(() => {
+          const box = document.getElementById("toasts");
+          window.__keepPrompt = new MutationObserver((ms) => {
+            for (const m of ms) for (const n of m.removedNodes) if (/pick a plot/.test(n.textContent ?? "") && !n.isConnected) n.classList.remove("leaving"), box.appendChild(n);
+          });
+          window.__keepPrompt.observe(box, { childList: true });
+        });
+        await page.evaluate((s) => document.querySelector(s).click(), btn);
+        await until(() => page.evaluate(() => window.ffh.units.currentMode?.()?.cast === true), "the plot pick", 20000);
+        await sleep(40000);
+        const box = await page.evaluate(() => {
+          const a = window.ffh.units.currentMode().action;
+          const seen = new Set();
+          let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+          for (const t of a.targets) {
+            const k = t.at.join(",");
+            if (seen.has(k)) continue;
+            seen.add(k);
+            const p = window.ffh.mapView.screenOf(t.at[0], t.at[1]);
+            if (!p || p.x < 0 || p.y < 0 || p.x > innerWidth || p.y > innerHeight) continue;
+            x0 = Math.min(x0, p.x), y0 = Math.min(y0, p.y), x1 = Math.max(x1, p.x), y1 = Math.max(y1, p.y);
+          }
+          const toast = [...document.querySelectorAll("#toasts .toast")].find((e) => /pick a plot/.test(e.textContent))?.getBoundingClientRect().toJSON() ?? null;
+          return { x0, y0, x1, y1, toast, plots: seen.size };
+        });
+        console.log(`wellspring: ${box.plots} plots; on screen ${JSON.stringify(box)}`);
+        // The plots and the prompt's toast above them (at the top of the map, where it shows).
+        const t = box.toast ?? { left: box.x0, right: box.x1, top: box.y0 - 60 };
+        const mx = (Math.min(t.left, box.x0) + Math.max(t.right, box.x1)) / 2;
+        const clip = { x: Math.max(0, Math.round(mx - 250)), y: Math.max(0, Math.round(Math.min(t.top, box.y0 - 60) - 10)), width: 500, height: 430 };
+        await page.mouse.move(5, 715);
+        await sleep(20000);
+        await page.screenshot({ path: path.join(OUT, "wellspring-pick-plot.png"), clip, timeout: 300000 });
+        await page.evaluate(() => window.__keepPrompt.disconnect());
+        console.log(`wellspring-pick-plot.png: 500 x 430 CSS px (prompt ${box.toast ? "shown" : "MISSING"})`);
+        // Step b: a plot picked (the one nearest the capital), its manas listed.
+        const plot = await page.evaluate(([cx, cy]) => {
+          const a = window.ffh.units.currentMode().action;
+          return a.targets.map((t) => t.at).sort((p, q) => Math.max(Math.abs(p[0] - cx), Math.abs(p[1] - cy)) - Math.max(Math.abs(q[0] - cx), Math.abs(q[1] - cy)))[0];
+        }, cap);
+        await page.setViewportSize({ width: 500, height: 900 });
+        await page.evaluate(([x, y]) => window.ffh.units.click(x, y, {}), plot);
+        await until(() => page.evaluate(() => !!document.querySelector('.modal[data-tag="cast-target"]')), "the Wellspring manas", 20000);
+        await sleep(15000);
+        // The resize's notice (the HD-2D map drawn at half resolution here) is not this dialog's.
+        await dropToasts(page);
+        await sleep(15000);
+        await crop(page, ['.modal[data-tag="cast-target"]'], "wellspring-pick-mana.png", { pad: 4, maxW: 500, timeout: 300000 });
+        await page.keyboard.press("Escape");
+      },
+      { query: "?renderer=hd2d&force3d=1", ready: open3d },
+    );
+  } finally {
+    await browser.close();
+  }
+}
+
 // ---- `stage ritual-civ:CIVILIZATION_X`: each new effect's text as the game shows it ----
 async function shotsCivs(browser, bin, saves) {
   const civ = (name, f) => onStage(browser, bin, saves, `ritual-civ:CIVILIZATION_${name}`, async (page, st) => (await dropToasts(page), f(page, st)));
@@ -526,14 +611,7 @@ async function shotsCivs(browser, bin, saves) {
   await civ("AMURITES", async (page) => {
     const btn = await worldActionSel(page, "SPELL_WELLSPRING");
     await textShot(page, btn, "text-wellspring.png");
-    // The choice list: plots and mana types (at a phone's width).
-    await narrow(page, async () => {
-      await page.evaluate((s) => document.querySelector(s).click(), btn);
-      await until(() => page.evaluate(() => !!document.querySelector('.modal[data-tag="cast-target"]')), "the Wellspring choices", 10000);
-      await sleep(300);
-      await crop(page, ['.modal[data-tag="cast-target"]'], "text-wellspring-choices.png", { pad: 4 });
-      await page.keyboard.press("Escape");
-    });
+    // The plot pick, then the manas: on the HD-2D map (`wellspring3d`).
   });
   await civ("LUCHUIRP", async (page, st) => {
     await openCity(page, st.capital);
@@ -555,6 +633,7 @@ async function main() {
     if (want("ice")) await shotsIce(browser, bin, saves);
     if (want("civs")) await shotsCivs(browser, bin, saves);
     if (want("ice3d")) await shotsIce3d(bin, saves, pw);
+    if (want("wellspring3d")) await shotsWellspring3d(bin, saves, pw);
   } finally {
     await browser.close();
     fs.rmSync(saves, { recursive: true, force: true });

@@ -344,7 +344,8 @@ fn wellspring_raises_a_mana_node_on_a_bare_plot_of_ours() {
     assert!(targets.contains(&target));
     assert!(!targets.contains(&SpellTarget::Choice(wellspring_choice(d, peak, fire))));
     let label = g.spell_target_label(adept, s, target);
-    assert!(label.contains("(7, 5)") && label.len() > "(7, 5)".len(), "{label}");
+    assert_eq!(label, d.text.name(&d.bonuses[fire].base.description), "the mana alone: the plot is picked on the map");
+    assert_eq!(g.spell_choice_plot(s, wellspring_choice(d, bare, fire)), Some(bare));
     g.unit_cast_at(adept, s, target);
     assert_eq!(g.map.plots[bare].bonus_type, Some(fire));
     assert_eq!(g.map.plots[bare].improvement_type, Some(node));

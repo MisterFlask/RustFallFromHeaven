@@ -50,3 +50,18 @@ test("ritual news alerts: new entries, or the current turn's on a first read", (
     [2],
   );
 });
+
+test("world actions: the caster is placed by a city, and options on plots are picked on the map", () => {
+  const player = { target_kind: "player", caster_where: "near Prespur", targets: [{ at: null }] };
+  assert.equal(R.casterLine(player, "Scout"), "Cast by your Scout near Prespur; then pick its target (a player).");
+  assert.equal(R.casterLine({ ...player, caster_where: "in Prespur" }, "Scout"), "Cast by your Scout in Prespur; then pick its target (a player).");
+  assert.equal(R.casterLine({ ...player, caster_where: null }, "Scout"), "Cast by your Scout; then pick its target (a player).");
+  assert.equal(R.casterLine({ caster_where: "in Lycus" }, "Warrior"), "Cast by your Warrior in Lycus.");
+  const wellspring = { target_kind: "choice", caster_where: "in Cyrus", targets: [{ at: [3, 4], label: "Air Mana" }, { at: [3, 4], label: "Fire Mana" }] };
+  assert.equal(R.choicesOnPlots(wellspring), true);
+  assert.equal(R.casterLine(wellspring, "Adept"), "Cast by your Adept in Cyrus; then pick its target (a plot on the map, then one of its options).");
+  const traits = { target_kind: "choice", targets: [{ at: null, label: "Aggressive" }] };
+  assert.equal(R.choicesOnPlots(traits), false);
+  assert.equal(R.casterLine(traits, "Adept"), "Cast by your Adept; then pick its target (one of its options).");
+  assert.equal(R.choicesOnPlots({ target_kind: "plot", targets: [{ at: [1, 1] }] }), false);
+});
