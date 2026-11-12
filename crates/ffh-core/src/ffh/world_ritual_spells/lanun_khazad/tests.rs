@@ -101,7 +101,7 @@ fn seas_world() -> (Game, UnitId) {
     let mut g = game_of(&["CIVILIZATION_LANUN", "CIVILIZATION_BANNOR"]);
     learn(&mut g, US, "TECH_OPTICS");
     g.player_init_city(US, 4, 4, true, true);
-    assert!(g.player_grant_world_ritual_charge(US).is_some());
+    assert!(g.player_grant_world_ritual_pending(US).is_some());
     let caster = unit(&mut g, US, "UNIT_WARRIOR", 4, 4);
     (g, caster)
 }
@@ -130,13 +130,13 @@ fn raging_seas_raises_a_storm_over_water_and_spends_the_charge() {
 
     let turn = g.game_turn();
     raise_storm(&mut g, caster, 10, 2);
-    assert!(g.player_world_ritual_charge_city(US, project).is_none(), "the charge is spent");
+    assert!(!g.player_world_ritual_pending(US, project), "the charge is spent");
     let i = g.player_storm(US).expect("a storm");
     let storm = g.area_effects[i];
     assert_eq!((storm.kind, storm.owner, storm.plot, storm.radius, storm.until, storm.moved), (AreaEffectKind::RagingSeas, US, plot(&g, 10, 2), STORM_RADIUS, turn + STORM_TURNS, -1));
 
     // No second storm while one holds, even with a new charge.
-    g.player_grant_world_ritual_charge(US);
+    g.player_grant_world_ritual_pending(US);
     assert!(!g.unit_can_cast_untargeted(caster, seas, false));
     assert!(g.unit_spell_targets(caster, seas).is_empty());
 }
@@ -236,7 +236,7 @@ fn delve_world() -> (Game, UnitId) {
     let mut g = game_of(&["CIVILIZATION_KHAZAD", "CIVILIZATION_BANNOR"]);
     learn(&mut g, US, "TECH_MINING");
     g.player_init_city(US, 3, 4, true, true);
-    assert!(g.player_grant_world_ritual_charge(US).is_some());
+    assert!(g.player_grant_world_ritual_pending(US).is_some());
     for (x, y, owner, hill) in [(5, 5, US, true), (12, 5, US, true), (14, 5, US, true), (16, 5, US, true), (7, 5, THEM, true), (8, 5, US, false)] {
         let t = plot(&g, x, y);
         if hill {
@@ -275,11 +275,11 @@ fn the_delve_joins_two_hills_of_the_caster_within_ten_plots() {
 
     delve(&mut g, caster, 14, 5);
     assert_eq!(g.delves, vec![(plot(&g, 5, 5), plot(&g, 14, 5))]);
-    assert!(g.player_world_ritual_charge_city(US, project).is_none(), "the charge is spent");
+    assert!(!g.player_world_ritual_pending(US, project), "the charge is spent");
     assert_eq!(g.plot_delve_end(plot(&g, 14, 5)), Some(plot(&g, 5, 5)));
 
     // Neither end is the end of another tunnel.
-    g.player_grant_world_ritual_charge(US);
+    g.player_grant_world_ritual_pending(US);
     assert!(!g.unit_can_cast_untargeted(caster, s, false), "from an end");
     let other = unit(&mut g, US, "UNIT_WARRIOR", 12, 5);
     assert!(g.unit_can_cast_untargeted(other, s, false));

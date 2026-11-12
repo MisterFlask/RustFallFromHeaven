@@ -352,3 +352,4 @@ html.iso.hd2d .reminder {
 }
 html.iso.hd2d .reminder-name { font: 700 12px/16px var(--iso-font); letter-spacing: 0.1em; }
 html.iso.hd2d .kw-chip { font: 700 14px/18px var(--iso-font); background: rgba(24, 30, 38, 0.9); }
+html.iso.hd2d #end-turn .end-turn-why { font: 400 15px/17px var(--iso-font); color: #f0a08a; letter-spacing: 0; }

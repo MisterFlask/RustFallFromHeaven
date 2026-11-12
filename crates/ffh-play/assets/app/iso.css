@@ -193,7 +193,7 @@ html.iso #empire .slider-item { gap: 4px; }
 html.iso #world-actions { flex: none; gap: 6px; padding: 0 8px; }
 html.iso #world-actions .world-action { padding: 2px 10px 2px 4px; gap: 6px; }
 /* World rituals (rituals.js): a group of the bar. With nothing in progress, one muted line beside
-   the world spell; with rituals in progress or charges held, a row of its own under the bar, its
+   the world spell; with rituals in progress or casts pending, a row of its own under the bar, its
    two-line chips side by side (scrolling sideways when they do not fit). */
 html.iso #top > #rituals { flex: none; gap: 12px; padding: 0 10px; }
 html.iso #top > #rituals.has-rows { order: 10; flex: 1 1 100%; min-width: 0; height: auto; min-height: var(--iso-top-h); overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
@@ -212,7 +212,7 @@ html.iso .ritual-row .ritual-l1, html.iso .ritual-row .ritual-l2 { gap: 8px; }
 html.iso .ritual-row .ritual-name { color: #fff8e4; }
 html.iso .ritual-row .ritual-city, html.iso .ritual-row .ritual-turns { color: var(--iso-dim); }
 html.iso .ritual-row .ritual-city { max-width: 6em; }
-html.iso .ritual-row .ritual-charge, html.iso .ritual-entry.charged .ritual-entry-where { color: #70e0b1; }
+html.iso .ritual-row .ritual-charge, html.iso .ritual-entry.pending .ritual-entry-where { color: #70e0b1; }
 html.iso #rituals .ritual-row.mine { box-shadow: none; }
 html.iso #rituals .ritual-row.mine .ritual-name { color: var(--iso-gold); }
 html.iso .ritual-entry { border-left-color: #3a4a74; }
@@ -953,3 +953,5 @@ html.iso .tip-side { width: 300px; }
 html.iso .reminder { font: 400 16px/20px var(--iso-font); padding: 4px 10px 6px; }
 html.iso .reminder-name { font: 700 16px/20px var(--iso-font); letter-spacing: 0.04em; }
 html.iso .kw-chip { font: 700 16px/20px var(--iso-font); padding: 0 8px; }
+html.iso #end-turn .end-turn-why { font: 400 16px/18px var(--iso-font); color: #ff8a70; }
+html.iso #iso-corner #end-turn.blocked { row-gap: 0; align-content: center; line-height: 26px; }

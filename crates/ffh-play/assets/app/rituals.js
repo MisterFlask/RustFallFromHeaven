@@ -2,9 +2,9 @@
 // player sees of every civilization's ritual.
 //
 // - The rituals element (`#rituals`, `renderRituals`): one row per ritual in progress (or queued by
-//   you) and per charge held, anywhere: the civilization's colour, the ritual, the city, a
-//   progress bar with `37%` and `6 turns`, or `Charge held`. A click on a row centres the map on
-//   the city; "All" opens the full list. With nothing in progress and no charge held it shows
+//   you) and per cast pending, anywhere: the civilization's colour, the ritual, the city, a
+//   progress bar with `37%` and `6 turns`, or `Cast pending`. A click on a row centres the map on
+//   the city; "All" opens the full list. With nothing in progress and no cast pending it shows
 //   one muted line, `No rituals in progress`.
 // - The full list (`openRitualsPanel`): every civilization, idle ones too, with the times
 //   completed, the cost now and the next cost (and your ritual's own state: The Tithe's named
@@ -36,16 +36,15 @@ addHelp({
     h(
       "ul",
       [
-        "A civilization's world spell spends a charge. A charge is made by building the civilization's [KW=KEYWORD_WORLD_RITUAL]world ritual[\\KW] (a project) in a city.",
+        "A civilization's world spell comes with each completion of its [KW=KEYWORD_WORLD_RITUAL]world ritual[\\KW] (a project) in a city.",
+        "A world spell with no target takes effect at the completion. One with a target must be cast before the turn ends; while it has no valid target, the turn may end and the cast stays pending.",
         "Every project is a [KW=KEYWORD_RITUAL]ritual[\\KW]. A ritual's progress is lost if its city switches to building something else.",
         "A ritual cannot be hurried with gold. Hurrying with population is allowed.",
-        "One world ritual in progress per player, in one city.",
+        "One world ritual in progress per player, in one city; not started again while its cast is pending.",
         "Each completion doubles a world ritual's next cost.",
-        "A player holds at most one charge and cannot start the ritual again while holding it.",
-        "A captured city loses its ritual progress and its charge.",
         "Every player is told when any world ritual begins, is abandoned or completes.",
-        "Some world rituals leave no charge: they act at their completion.",
-        "The rituals element (under the top bar) lists the world rituals in progress and the charges held; All lists every civilization's.",
+        "Some world rituals bring no spell: they act at their completion.",
+        "The rituals element (under the top bar) lists the world rituals in progress and the casts pending; All lists every civilization's.",
       ].map((t) => h("li", markup(t))),
     ),
   ],
@@ -67,7 +66,7 @@ function centre(r) {
 function rowEl(r) {
   const st = rowStatus(r);
   return h(
-    `button.ritual-row${r.mine ? ".mine" : ""}${st.charged ? ".charged" : ""}`,
+    `button.ritual-row${r.mine ? ".mine" : ""}${st.pending ? ".pending" : ""}`,
     {
       "data-player": r.player,
       "aria-label": rowLabel(r),
@@ -78,8 +77,8 @@ function rowEl(r) {
     h(
       "span.ritual-l2",
       r.city_name ? h("span.ritual-city", r.city_name) : null,
-      st.charged
-        ? h("span.ritual-charge", "Charge held")
+      st.pending
+        ? h("span.ritual-charge", "Cast pending")
         : h(
             "span.ritual-progress",
             barEl((r.percent ?? 0) / 100, "production", { w: 16, title: `${r.progress}/${r.cost}` }),
@@ -102,7 +101,7 @@ export function renderRituals() {
   const rows = activeRows(v.rituals);
   box.hidden = !(v.rituals ?? []).length;
   box.classList.toggle("has-rows", rows.length > 0);
-  const all = h("button.link.small.ritual-all", { title: "Every civilization's ritual: in progress, charges, times completed, costs", "aria-label": "All rituals", onclick: () => openRitualsPanel() }, "All");
+  const all = h("button.link.small.ritual-all", { title: "Every civilization's ritual: in progress, casts pending, times completed, costs", "aria-label": "All rituals", onclick: () => openRitualsPanel() }, "All");
   fill(
     box,
     rows.length

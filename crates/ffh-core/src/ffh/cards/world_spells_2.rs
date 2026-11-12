@@ -453,13 +453,9 @@ fn spell_plagiarists_lens(g: &mut Game, caster: UnitId, _call: &PyCall) {
 // spell names leaves its city a charge; a unit in the city casts the spell, which spends it. A city
 // holding a ritual's charge does not build it again.
 
-/// The city of its owner unit `u` stands in, if it holds a charge of `ritual`. A world ritual's
-/// charge is the empire's (docs/CARDS.md, "World rituals"): the owner's first city holding one,
-/// wherever `u` stands.
+/// The city of its owner unit `u` stands in, if it holds a charge of card ritual `ritual`. (A
+/// world ritual leaves no charge: its cast is its owner's, pending: `Player::world_ritual_pending`.)
 pub fn ritual_charge_city(g: &Game, u: UnitId, ritual: ProjectType) -> Option<CityId> {
-    if g.d.projects[ritual].world_ritual {
-        return g.player_world_ritual_charge_city(g.units[u].owner, ritual);
-    }
     own_city_at(g, u).filter(|&c| g.cities[c].ritual_charges.contains(&ritual))
 }
 
@@ -507,15 +503,25 @@ pub fn cannot_create(g: &Game, c: CityId, project: ProjectType) -> bool {
 }
 
 impl Game {
-    /// Card rituals (`ritual_charge`): may unit `u` spend a charge of `ritual` (it stands in a
-    /// city of its owner that holds one)?
+    /// `ritual_charge`: may unit `u` cast a spell of `ritual`: a card ritual's, it stands in a city
+    /// of its owner holding a charge; a world ritual's, its owner's cast is pending.
     pub fn unit_has_ritual_charge(&self, u: UnitId, ritual: ProjectType) -> bool {
+        if self.d.projects[ritual].world_ritual {
+            return self.player_world_ritual_pending(self.units[u].owner, ritual);
+        }
         ritual_charge_city(self, u, ritual).is_some()
     }
 
-    /// Card rituals (`ritual_charge`): unit `u` casts a spell that spends a charge of `ritual`; its
-    /// city loses one.
+    /// `ritual_charge`: unit `u` casts a spell of `ritual`: a card ritual's city loses a charge; a
+    /// world ritual's pending cast is spent.
     pub fn unit_spend_ritual_charge(&mut self, u: UnitId, ritual: ProjectType) {
+        if self.d.projects[ritual].world_ritual {
+            let p = self.units[u].owner;
+            if self.players[p].world_ritual_pending == Some(ritual) {
+                self.players[p].world_ritual_pending = None;
+            }
+            return;
+        }
         if let Some(c) = ritual_charge_city(self, u, ritual) {
             if let Some(i) = self.cities[c].ritual_charges.iter().position(|&r| r == ritual) {
                 self.cities[c].ritual_charges.remove(i);

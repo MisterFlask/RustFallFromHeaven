@@ -9,7 +9,7 @@
 //! 5001-5064 win 4.7% -> 1.6% (0/2), share at the end -25 (t -0.31). Back since 2026-10-20 under
 //! the owner's rule.
 //!
-//! Wellspring (their world spell, docs/CARDS.md): with a charge, placed on the valid plot nearest
+//! Wellspring (their world spell, docs/CARDS.md): with its cast pending, placed on the valid plot nearest
 //! the capital, for the mana type they own the fewest of ([`wellspring`]).
 
 use ffh_core::game::Game;
@@ -41,7 +41,7 @@ impl CivPlay for Amurites {
     }
 }
 
-/// Wellspring, with a charge: the valid plot nearest the capital (ties: the lower plot), with
+/// Wellspring, with its cast pending: the valid plot nearest the capital (ties: the lower plot), with
 /// the mana type we own the fewest of (`player_get_num_available_bonuses`; ties in data order).
 /// Placed by the player (`Game::player_place`): no unit casts it.
 fn wellspring(g: &mut Game, p: PlayerId) {

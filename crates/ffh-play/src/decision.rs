@@ -649,6 +649,28 @@ pub struct Pending {
     /// Not in C++ (docs/CRUSADE.md): crusade calls waiting for the human's answer
     /// (`crusade_answer`; unanswered at the deadline, a call counts as refused).
     pub crusade_calls: Vec<PendingCall>,
+    /// Not in C++ (docs/CARDS.md, "World rituals"): the world spell whose cast is due before the
+    /// turn may end, with the reason the end of the turn is refused ([`cast_due`]).
+    pub cast_due: Option<CastDue>,
+}
+
+/// A pending world spell with a valid target: the turn does not end before it is cast.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CastDue {
+    pub spell: SpellType,
+    /// `Before ending the turn: cast The Cull.` (`place Wellspring.` for a placed spell).
+    pub reason: String,
+    /// The end-turn button's line: `Cast The Cull first.` (`Place Wellspring first.`).
+    pub label: String,
+}
+
+/// The world spell player `p` must cast (or place) before its turn ends (`Game::player_world_cast_due`).
+pub fn cast_due(g: &Game, p: PlayerId) -> Option<CastDue> {
+    let spell = g.player_world_cast_due(p)?;
+    let name = crate::names::display(g.d, spell);
+    let verb = if g.d.spells[spell].place_on_charge { "place" } else { "cast" };
+    let verb_cap = if g.d.spells[spell].place_on_charge { "Place" } else { "Cast" };
+    Some(CastDue { spell, reason: format!("Before ending the turn: {verb} {name}."), label: format!("{verb_cap} {name} first.") })
 }
 
 /// A crusade call waiting for the human's answer.
@@ -743,6 +765,7 @@ impl Pending {
                 "deadline" => c.deadline,
                 "end" => c.end,
             }).collect()),
+            "cast_due" => self.cast_due.as_ref().map(|c| crate::jobj! { "spell" => Json::idx(c.spell), "reason" => c.reason.as_str(), "label" => c.label.as_str() }),
         }
     }
 }
@@ -931,5 +954,6 @@ pub fn pending(g: &Game, p: PlayerId, events: &[TriggeredId]) -> Pending {
         ready_groups: ready_groups(g, p),
         ai_groups_idle: ai_groups_waiting(g, p),
         crusade_calls: pending_crusade_calls(g, p),
+        cast_due: cast_due(g, p),
     }
 }

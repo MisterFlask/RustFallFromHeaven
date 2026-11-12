@@ -1,11 +1,17 @@
-//! World rituals (docs/CARDS.md, "World rituals"; the owner's decision, 2026-11-11): each
-//! civilization's world spell (`SpellInfo::global`) spends a charge of its ritual, a project with
-//! `world_ritual` (`PROJECT_RITUAL_<NAME>`, repeatable). FFH2 let a civilization cast its world
-//! spell once a game, free; here it is cast once per completion of the ritual:
-//! - a completion leaves a charge in the city that built it; the charge is the empire's: any unit
-//!   of the owner that meets the spell's other requirements casts the spell, which spends it. A
-//!   captured or destroyed city loses its charges. A player holds at most one charge and does not
-//!   start the ritual again while it holds one;
+//! World rituals (docs/CARDS.md, "World rituals"; the owner's decisions, 2026-11-11 and
+//! 2026-11-12): each civilization's world spell (`SpellInfo::global`) comes with a completion of
+//! its ritual, a project with `world_ritual` (`PROJECT_RITUAL_<NAME>`, repeatable), naming it as
+//! `ritual_charge`. FFH2 let a civilization cast its world spell once a game, free; here it is cast
+//! once per completion of the ritual:
+//! - at completion the spell becomes the owner's pending cast (`Player::world_ritual_pending`).
+//!   A spell with no target takes effect at once ([`Game::player_fire_world_spell`]), through any
+//!   unit of the owner as its nominal caster (one in or nearest the completing city); with no unit,
+//!   or its requirement unmet, it stays pending and takes effect at the end of the first turn it
+//!   can. A spell with a target (`target`, or placed by the player: `place_on_charge`) waits for
+//!   the owner to cast it: a human cannot end a turn while it has a valid target
+//!   ([`Game::player_world_cast_due`], checked by ffh-play's end turn); with none, the turn ends and
+//!   the cast stays pending. The pending cast is the player's: losing a city changes nothing. The
+//!   ritual is not started again while its cast is pending;
 //! - the ritual is built in one city of a player at a time;
 //! - as every ritual (`rituals.rs`; the owner's decision, 2026-11-12): taken off the head of its
 //!   city's queue it loses its production, and it is not hurried with gold (population and a great
@@ -32,10 +38,9 @@ pub const WORLD_RITUAL_MAX_COST: i32 = 1_000_000;
 pub struct WorldRitual {
     pub player: PlayerId,
     pub project: ProjectType,
-    /// The world spell its charge is for (`None`: a ritual that acts at completion).
+    /// The world spell its completion brings (`None`: a ritual that acts at completion).
     pub spell: Option<SpellType>,
-    /// The city whose queue holds it (in progress, or queued with no production yet), else the
-    /// city holding its charge.
+    /// The city whose queue holds it (in progress, or queued with no production yet).
     pub city: Option<CityId>,
     /// The production put into it in that city.
     pub progress: i32,
@@ -43,8 +48,8 @@ pub struct WorldRitual {
     pub cost: i32,
     /// The turns left to complete it, while a city has it queued.
     pub turns_left: Option<i32>,
-    /// Does a city of the player hold its charge?
-    pub charged: bool,
+    /// Is its world spell's cast pending (completed, not yet cast)?
+    pub pending: bool,
     /// The times the player completed it, net of the doublings undone (Birthright Regained).
     pub completed: i32,
     /// Its cost after one more completion.
@@ -91,14 +96,15 @@ pub fn cannot_create(g: &Game, c: CityId, project: ProjectType, test_visible: bo
     if test_visible {
         return false;
     }
-    if g.player_world_ritual_charge_city(p, project).is_some() || g.player_world_ritual_paused(p, project) {
+    if g.players[p].world_ritual_pending == Some(project) || g.player_world_ritual_paused(p, project) {
         return true;
     }
     g.players[p].cities.iter().any(|&o| o != c && g.cities.contains(o) && g.cities[o].order_queue.iter().any(|q| creates(q, project)))
 }
 
 /// At the completion of a world ritual in city `c` (`ev_project_built`): the owner's count, the
-/// charge of its spell (if one spends it), and the news to every player.
+/// news to every player, and its spell (if one names it) pending: an untargeted one takes effect
+/// at once when it can.
 pub fn project_built(g: &mut Game, c: CityId, project: ProjectType) {
     let d = g.d;
     if !d.projects[project].world_ritual {
@@ -106,10 +112,22 @@ pub fn project_built(g: &mut Game, c: CityId, project: ProjectType) {
     }
     let p = g.cities[c].owner;
     g.players[p].world_ritual_completions += 1;
-    if g.world_ritual_spell(project).is_some() {
-        g.cities[c].ritual_charges.push(project);
-    }
     g.world_ritual_news(c, project, "completed");
+    if let Some(spell) = g.world_ritual_spell(project) {
+        g.players[p].world_ritual_pending = Some(project);
+        if !g.world_spell_targeted(spell) {
+            g.player_fire_world_spell(p, Some(c));
+        }
+    }
+}
+
+/// At the end of player `p`'s turn (`player_do_turn`): an untargeted world spell still pending
+/// takes effect if it now can.
+pub fn check_pending(g: &mut Game, p: PlayerId) {
+    let Some(project) = g.players[p].world_ritual_pending else { return };
+    if g.world_ritual_spell(project).is_some_and(|s| !g.world_spell_targeted(s)) {
+        g.player_fire_world_spell(p, None);
+    }
 }
 
 /// The valid targets of a placed world spell for a player, and its effect at one of them
@@ -129,14 +147,14 @@ fn place_hooks(d: &GameData, spell: SpellType) -> Option<PlaceHooks> {
 
 impl Game {
     /// May player `p` place world spell `spell` now (`place_on_charge`, docs/CARDS.md "World
-    /// rituals": placed by the player, no unit casting it): its civilization's, and a city of `p`
-    /// holds a charge of its ritual. Its targets aside.
+    /// rituals": placed by the player, no unit casting it): its civilization's, and its cast is
+    /// pending. Its targets aside.
     pub fn player_can_place(&self, p: PlayerId, spell: SpellType) -> bool {
         let info = &self.d.spells[spell];
         info.place_on_charge
             && self.players[p].alive
             && !self.is_option(GameOptionType::GAMEOPTION_NO_WORLD_SPELLS)
-            && info.ritual_charge.is_some_and(|r| self.player_world_ritual(p) == Some(r) && self.player_world_ritual_charge_city(p, r).is_some())
+            && info.ritual_charge.is_some_and(|r| self.player_world_ritual(p) == Some(r) && self.players[p].world_ritual_pending == Some(r))
             && place_hooks(self.d, spell).is_some()
     }
 
@@ -150,8 +168,8 @@ impl Game {
     }
 
     /// Player `p` places world spell `spell` at `target`, one of [`Game::player_place_targets`]:
-    /// the charge of its ritual is spent (from the first city holding one), the cast is counted
-    /// and announced, and the spell takes effect. Returns whether it was placed.
+    /// the pending cast is spent, counted and announced, and the spell takes effect. Returns
+    /// whether it was placed.
     pub fn player_place(&mut self, p: PlayerId, spell: SpellType, target: crate::structs::SpellTarget) -> bool {
         let d = self.d;
         let Some((_, place)) = place_hooks(d, spell) else { return false };
@@ -159,10 +177,10 @@ impl Game {
             return false;
         }
         let Some(ritual) = d.spells[spell].ritual_charge else { return false };
-        let Some(c) = self.player_world_ritual_charge_city(p, ritual) else { return false };
-        if let Some(i) = self.cities[c].ritual_charges.iter().position(|&r| r == ritual) {
-            self.cities[c].ritual_charges.remove(i);
+        if self.players[p].world_ritual_pending != Some(ritual) {
+            return false;
         }
+        self.players[p].world_ritual_pending = None;
         self.players[p].world_spell_casts += 1;
         let turn = self.game_turn();
         self.log.msg(turn, Some(p), || format!("World spell: {}", d.text.name(&d.spells[spell].base.description)));
@@ -196,9 +214,60 @@ impl Game {
         (pl.world_ritual_completions - pl.world_ritual_refunds).max(0)
     }
 
-    /// The first city of player `p` (in its city order) holding a charge of `project`.
-    pub fn player_world_ritual_charge_city(&self, p: PlayerId, project: ProjectType) -> Option<CityId> {
-        self.players[p].cities.iter().copied().find(|&c| self.cities.contains(c) && self.cities[c].ritual_charges.contains(&project))
+    /// Is the world spell of `project` pending for player `p` (completed, not yet cast)?
+    pub fn player_world_ritual_pending(&self, p: PlayerId, project: ProjectType) -> bool {
+        self.players[p].world_ritual_pending == Some(project)
+    }
+
+    /// Is world spell `spell` cast at a target the player picks (`target`, or placed:
+    /// `place_on_charge`)? An untargeted one takes effect at its ritual's completion.
+    pub fn world_spell_targeted(&self, spell: SpellType) -> bool {
+        let info = &self.d.spells[spell];
+        info.target.is_some() || info.place_on_charge
+    }
+
+    /// The pending targeted world spell player `p` must cast before its turn ends: one with at
+    /// least one valid target now (a place of a placed spell, or a target of a unit that can cast
+    /// it). `None`: nothing pending, an untargeted spell, or no valid target now.
+    pub fn player_world_cast_due(&self, p: PlayerId) -> Option<SpellType> {
+        let project = self.players[p].world_ritual_pending?;
+        let spell = self.world_ritual_spell(project)?;
+        if !self.world_spell_targeted(spell) || self.is_option(GameOptionType::GAMEOPTION_NO_WORLD_SPELLS) {
+            return None;
+        }
+        if self.d.spells[spell].place_on_charge {
+            return (!self.player_place_targets(p, spell).is_empty()).then_some(spell);
+        }
+        let can = |u: UnitId| self.units.contains(u) && self.unit_plot_opt(u).is_some() && self.unit_can_cast_untargeted(u, spell, false) && !self.unit_spell_targets(u, spell).is_empty();
+        self.players[p].units.iter().copied().any(can).then_some(spell)
+    }
+
+    /// Player `p`'s pending untargeted world spell takes effect now, through a nominal caster: a
+    /// unit of `p` on the map, in `near` (the completing city) first, then the nearest to it (to
+    /// the capital without one), one that loses no promotion by casting first. It stays pending
+    /// while `p` has no unit or the spell's requirement is unmet. Returns whether it took effect.
+    pub fn player_fire_world_spell(&mut self, p: PlayerId, near: Option<CityId>) -> bool {
+        let d = self.d;
+        let Some(project) = self.players[p].world_ritual_pending else { return false };
+        let Some(spell) = self.world_ritual_spell(project) else { return false };
+        if self.world_spell_targeted(spell) || self.is_option(GameOptionType::GAMEOPTION_NO_WORLD_SPELLS) {
+            return false;
+        }
+        let at = near.or(self.players[p].capital_city).filter(|&c| self.cities.contains(c)).map(|c| (self.cities[c].x, self.cities[c].y));
+        let loses = |u: UnitId| d.promotions.keys().filter(|&pr| self.units[u].has_promotion[pr] && d.promotions[pr].removed_by_casting).count();
+        let caster = self.players[p]
+            .units
+            .iter()
+            .copied()
+            .filter(|&u| self.units.contains(u) && self.unit_plot_opt(u).is_some() && !self.units[u].death_delay)
+            .min_by_key(|&u| (at.map_or(0, |(x, y)| self.plot_distance(x, y, self.units[u].x, self.units[u].y)), loses(u), u.0));
+        let Some(u) = caster else { return false };
+        if !d.spells[spell].py_requirement.is_empty() && !self.py_can_cast(u, spell) {
+            return false;
+        }
+        // (The cast spends the pending cast: `unit_spend_ritual_charge`.)
+        self.unit_cast(u, spell);
+        true
     }
 
     /// The first city of player `p` (in its city order) whose queue holds `project`.
@@ -260,14 +329,13 @@ impl Game {
         }
     }
 
-    /// For tests and set-ups: gives player `p` a charge of its world ritual, in its capital (else
-    /// its first city), without a completion. Returns the city, `None` when the player has no
-    /// world ritual or no city.
-    pub fn player_grant_world_ritual_charge(&mut self, p: PlayerId) -> Option<CityId> {
+    /// For tests and set-ups: makes player `p`'s world spell pending, without a completion (an
+    /// untargeted one takes effect at the end of its turn). Returns the ritual, `None` when the
+    /// player has none.
+    pub fn player_grant_world_ritual_pending(&mut self, p: PlayerId) -> Option<ProjectType> {
         let project = self.player_world_ritual(p)?;
-        let c = self.players[p].capital_city.filter(|&c| self.cities.contains(c)).or_else(|| self.players[p].cities.first().copied())?;
-        self.cities[c].ritual_charges.push(project);
-        Some(c)
+        self.players[p].world_ritual_pending = Some(project);
+        Some(project)
     }
 
     /// Every living player's world ritual (docs/CARDS.md, "World rituals"), in player order.
@@ -279,7 +347,6 @@ impl Game {
             }
             let Some(project) = self.player_world_ritual(p) else { continue };
             let queued = self.player_world_ritual_city(p, project);
-            let charge = self.player_world_ritual_charge_city(p, project);
             let progress = queued.map_or(0, |c| self.cities[c].project_production[project]);
             let turns_left = queued.and_then(|c| {
                 let i = self.cities[c].order_queue.iter().position(|o| creates(o, project))?;
@@ -289,11 +356,11 @@ impl Game {
                 player: p,
                 project,
                 spell: self.world_ritual_spell(project),
-                city: queued.or(charge),
+                city: queued,
                 progress,
                 cost: self.player_get_production_needed_project(p, project),
                 turns_left,
-                charged: charge.is_some(),
+                pending: self.player_world_ritual_pending(p, project),
                 completed: self.player_world_ritual_net_completions(p),
                 next_cost: self.player_project_production_needed_at(p, project, 1),
             });

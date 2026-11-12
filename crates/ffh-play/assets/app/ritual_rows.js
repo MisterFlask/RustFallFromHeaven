@@ -7,10 +7,10 @@ export function turnsText(n) {
   return n === 1 ? "1 turn" : `${n} turns`;
 }
 
-/** The rows the HUD element shows: rituals in progress (or queued by you) and charges held, in
+/** The rows the HUD element shows: rituals in progress (or queued by you) and casts pending, in
  *  the server's order (player order). */
 export function activeRows(rows) {
-  return (rows ?? []).filter((r) => r.state === "in_progress" || r.state === "queued" || r.state === "charged");
+  return (rows ?? []).filter((r) => r.state === "in_progress" || r.state === "queued" || r.state === "pending");
 }
 
 /** A row's ritual in the HUD element, which is titled "Rituals": its name without the "Ritual: "
@@ -20,30 +20,31 @@ export function chipName(r) {
 }
 
 /** What a row's status says: `37%` and `6 turns` (no turns while the city makes no production), or
- *  `Charge held`. */
+ *  `Cast pending` (the ritual completed, its world spell not yet cast). */
 export function rowStatus(r) {
-  if (r.state === "charged") return { charged: true, text: "Charge held" };
+  if (r.state === "pending") return { pending: true, text: "Cast pending" };
   const pct = `${r.percent ?? 0}%`;
   const turns = r.turns_left === null || r.turns_left === undefined ? null : turnsText(r.turns_left);
-  return { charged: false, pct, turns, text: turns ? `${pct}, ${turns}` : pct };
+  return { pending: false, pct, turns, text: turns ? `${pct}, ${turns}` : pct };
 }
 
-/** A row's accessible name: `Hippus: Ritual: Warcry in Lycus, 37%, 6 turns` or `..., charge held`. */
+/** A row's accessible name: `Hippus: Ritual: Warcry in Lycus, 37%, 6 turns` or `Hippus: Ritual:
+ *  The Cull, cast pending`. */
 export function rowLabel(r) {
   const where = r.city_name ? ` in ${r.city_name}` : "";
   const st = rowStatus(r);
-  return `${r.name}: ${r.ritual_name}${where}, ${st.charged ? "charge held" : st.text}`;
+  return `${r.name}: ${r.ritual_name}${where}, ${st.pending ? "cast pending" : st.text}`;
 }
 
 /** The full list's lines of a row: where it stands (`In progress in Lycus: 37/100 (37%, 6 turns).`,
- *  `Queued in Lycus: 0/100.`, `Charge held in Lycus.`, `Idle.`) and its counts (`Completed: 1.
+ *  `Queued in Lycus: 0/100.`, `Cast pending.`, `Idle.`) and its counts (`Completed: 1.
  *  Cost: 200. Next cost: 400.`). */
 export function listLines(r) {
   const st = rowStatus(r);
   const where = {
     in_progress: `In progress in ${r.city_name}: ${r.progress}/${r.cost} (${st.text}).`,
     queued: `Queued in ${r.city_name}: ${r.progress}/${r.cost}.`,
-    charged: `Charge held in ${r.city_name}.`,
+    pending: "Cast pending.",
   }[r.state] ?? "Idle.";
   return [where, `Completed: ${r.completed}. Cost: ${r.cost}. Next cost: ${r.next_cost}.`];
 }
@@ -75,19 +76,21 @@ export function casterLine(a, unitName) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// World spells the player places (`place_on_charge`: Wellspring; the world action's `place`).
+// Pending world spells (docs/CARDS.md, "World rituals"): a targeted one's pick (a placed one's:
+// Wellspring) opens by itself, and the turn does not end before it is cast.
 
-/** The placed spells whose placement opens by itself now: those whose charge appeared since the
- *  last view seen (`seen`: a Map of spell -> whether its charge was held, updated here). A spell
- *  seen for the first time (a loaded game, a reload) opens nothing: only the turn its ritual
- *  completed does. */
-export function placementDue(seen, actions) {
+/** The pending world casts whose pick opens by itself now: each pending world action with a valid
+ *  target (`pending`, `enabled`; a placement or a cast at a target), once a turn (`opened`: a Set
+ *  of `spell@turn`, updated here). Escape closes the pick; the top bar's button and End turn open
+ *  it again. */
+export function castsDue(opened, actions, turn) {
   const due = [];
   for (const a of actions ?? []) {
-    if (!a?.place_on_charge) continue;
-    const held = !!a.place;
-    if (seen.get(a.spell) === false && held) due.push(a.spell);
-    seen.set(a.spell, held);
+    if (!a?.pending || !a.enabled || !(a.place || a.target_kind)) continue;
+    const key = `${a.spell}@${turn}`;
+    if (opened.has(key)) continue;
+    opened.add(key);
+    due.push(a.spell);
   }
   return due;
 }

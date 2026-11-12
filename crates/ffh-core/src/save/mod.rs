@@ -139,7 +139,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 38: the world rituals' spells: `AreaEffect::moved`, `AreaEffectKind::RagingSeas`,
 ///   `Game::delves`, `Player::tithe_target`, `Unit::reinforced`, `Plot::sea_ice`,
 ///   `Unit::delayed_spell_target`.
-pub const FORMAT_VERSION: u32 = 38;
+/// - 39: a world ritual's pending cast (`Player::world_ritual_pending`) replaces its charge held in
+///   a city (`City::ritual_charges` keeps the card rituals' charges). Older saves are not converted.
+pub const FORMAT_VERSION: u32 = 39;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -1,5 +1,5 @@
 //! Staged situations for testing the clients (`ffh-play stage
-//! capture|attack|automoves|load|trade|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards|sea|outpost|rituals|rituals-charged|tithe|ritual-civ:CIVILIZATION_X|ritual-due:CIVILIZATION_X|ritual-notech:CIVILIZATION_X|ice DIR`,
+//! capture|attack|automoves|load|trade|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards|sea|outpost|rituals|rituals-pending|tithe|ritual-civ:CIVILIZATION_X|ritual-due:CIVILIZATION_X|ritual-notech:CIVILIZATION_X|ice DIR`,
 //! and the transports' tests): a saved game at a human control point arranged with rules calls,
 //! so that a client can be tried on a situation a fresh game reaches only by chance (a captured
 //! city's keep/raze decision, an attack, the AutoMoves rule between commands, the transport
@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 mod rituals;
-pub use rituals::{ritual_civ, ritual_due, ritual_notech, rituals, rituals_charged, rituals_hurry, tithe, StagedRitualCiv, StagedRituals, StagedTithe};
+pub use rituals::{ritual_civ, ritual_due, ritual_notarget, ritual_notech, rituals, rituals_pending, rituals_hurry, tithe, StagedRitualCiv, StagedRituals, StagedTithe};
 
 use ffh_core::ids::{PlayerId, UnitId, VoteId};
 use ffh_core::path::{FinderKind, PathFinder};
@@ -1321,7 +1321,7 @@ pub fn ice(dir: &Path) -> Result<StagedIce, String> {
                 g.plot_set_revealed(q, team, true, false, None, false);
             }
         }
-        if g.player_grant_world_ritual_charge(h).is_none() {
+        if g.player_grant_world_ritual_pending(h).is_none() {
             return Err("the Illians have no world ritual".into());
         }
         let caster = g.player_init_unit(h, warrior, cx, cy, None, None);
@@ -1353,7 +1353,7 @@ pub fn ice(dir: &Path) -> Result<StagedIce, String> {
             return Err(format!("seed {seed}: Frozen Passage did not freeze its target"));
         }
         g.unit_kill(caster, false, None);
-        g.player_grant_world_ritual_charge(h);
+        g.player_grant_world_ritual_pending(h);
         // The walker on the target; the ship on the water next to the patch, by a free ice plot.
         let (tx, ty) = g.map.xy(target);
         let walker = g.player_init_unit(h, warrior, tx, ty, None, None);

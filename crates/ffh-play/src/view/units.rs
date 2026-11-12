@@ -395,9 +395,12 @@ fn targeted_action(v: &Viewer, caster: UnitId, s: SpellType, can: bool, targets:
     (enabled, Command::CastAt { unit: caster, spell: s, target, confirmed: false }.to_json())
 }
 
+/// The reason a pending world spell cannot be cast now (docs/CARDS.md, "World rituals").
+pub const NO_TARGET_PENDING: &str = "No valid target now. It stays pending.";
+
 /// The actions of the whole empire, offered in the top bar rather than on a selection: its world
-/// spell (once per charge of its world ritual: listed while the civilization has one, disabled
-/// with no charge) and its cards' world spells (`once`, docs/CARDS.md). The rules cast a
+/// spell while its cast is pending (docs/CARDS.md, "World rituals": `pending`, `label` `Cast
+/// <spell>` or `Place <spell>`; nothing otherwise) and its cards' world spells (`once`, docs/CARDS.md). The rules cast a
 /// spell through a unit, so each action names the unit it is cast through (`caster`): one that can
 /// cast it now, preferring one that loses no promotion by casting (Hidden, Invisible), then the
 /// oldest. The world spells' effects reach the whole empire, whoever casts them (the Basium's and
@@ -425,7 +428,7 @@ pub fn world_actions(v: &Viewer) -> Json {
             "once" => info.once,
             "causes_war" => info.causes_war,
             "help" => if help == info.base.help { "" } else { help },
-            // Placed by the player, no unit casting it (`place`: while its charge is held).
+            // Placed by the player, no unit casting it (`place`: while its cast is pending).
             "place_on_charge" => info.place_on_charge,
         };
         // A card's world spell cast already: still the empire's, spent.
@@ -445,32 +448,42 @@ pub fn world_actions(v: &Viewer) -> Json {
         // The targets are listed once, for the caster: not for every unit tried.
         let can = |u: UnitId, visible: bool| if info.target.is_some() { !busy(u) && g.unit_can_cast_untargeted(u, s, visible) } else { selection::can_do_command(g, &[u], cast, k, -1, visible) };
         let visible: Vec<UnitId> = g.players[v.h].units.iter().copied().filter(|&u| can(u, true)).collect();
-        // The civilization's world spell (docs/CARDS.md, "World rituals"): listed while it has
-        // one, disabled while no city holds a charge of its ritual.
+        // The civilization's world spell (docs/CARDS.md, "World rituals"): listed only while its
+        // cast is pending (its ritual completed, the spell not yet cast).
         let ritual = info.ritual_charge.filter(|&r| info.global && g.player_world_ritual(v.h) == Some(r) && !g.is_option(GameOptionType::GAMEOPTION_NO_WORLD_SPELLS));
-        // Its ritual (the page writes no "once a game" line for it).
-        j.set("ritual", Json::opt_idx(ritual));
-        if let Some(r) = ritual.filter(|&r| g.player_world_ritual_charge_city(v.h, r).is_none()) {
-            j.set("enabled", false);
-            j.set("cast", false);
-            j.set("why", crate::view::rituals::no_charge_why(v, r));
-            j.set("caster", Json::Null);
-            j.set("cmd", Json::Null);
-            out.push(j);
+        if ritual.is_some_and(|r| !g.player_world_ritual_pending(v.h, r)) {
             continue;
         }
+        // Its ritual (the page writes no "once a game" line for it).
+        j.set("ritual", Json::opt_idx(ritual));
+        j.set("pending", ritual.is_some());
+        let name = crate::names::display(d, s).into_owned();
         // A world spell the player places (`place_on_charge`: Wellspring), no unit casting it.
         if let Some(r) = ritual.filter(|_| info.place_on_charge) {
             crate::view::place::world_action(v, s, r, &mut j);
             out.push(j);
             continue;
         }
+        if ritual.is_some() {
+            j.set("label", format!("Cast {name}"));
+        }
+        // An untargeted world spell pending: it takes effect by itself (no unit yet, or its
+        // requirement unmet).
+        if ritual.is_some() && info.target.is_none() {
+            j.set("enabled", false);
+            j.set("cast", false);
+            j.set("why", "Pending. Takes effect at the end of a turn when it can.");
+            j.set("caster", Json::Null);
+            j.set("cmd", Json::Null);
+            out.push(j);
+            continue;
+        }
         if visible.is_empty() {
-            // A charge held that no unit of the human can spend: the button stays, disabled.
+            // A pending cast that no unit of the human can make now: the button stays, disabled.
             if ritual.is_some() {
                 j.set("enabled", false);
                 j.set("cast", false);
-                j.set("why", "No unit of yours can cast it now.");
+                j.set("why", NO_TARGET_PENDING);
                 j.set("caster", Json::Null);
                 j.set("cmd", Json::Null);
                 out.push(j);
@@ -497,9 +510,9 @@ pub fn world_actions(v: &Viewer) -> Json {
             }
             j.set("cmd", command_cmd(&[caster.unwrap_or(visible[0])], cast, k, -1));
         }
-        // A charge held and castable: where it is, and the ritual's cost after it is spent.
-        if let Some(line) = ritual.filter(|_| j.get("enabled").and_then(Json::as_bool) == Some(true)).and_then(|r| crate::view::rituals::charge_line(v, r)) {
-            j.set("charge", line);
+        // A pending cast with no valid target now: the turn may end; it stays pending.
+        if ritual.is_some() && j.get("enabled").and_then(Json::as_bool) != Some(true) {
+            j.set("why", NO_TARGET_PENDING);
         }
         out.push(j);
     }

@@ -1,4 +1,4 @@
-//! `ffh-play stage rituals|rituals-charged DIR`: the world rituals (docs/CARDS.md, "World
+//! `ffh-play stage rituals|rituals-pending|rituals-hurry DIR`: the world rituals (docs/CARDS.md, "World
 //! rituals") as the human sees them (docs/HUMAN.md: the rituals element, the alerts, the world
 //! spell's button, the production dialog's ritual line).
 
@@ -16,21 +16,21 @@ use crate::setup::NewGame;
 
 /// A saved game at a human control point (seed 21, a small map, five civilizations, no
 /// barbarians) where the human plays the Hippus (world spell Warcry) with two cities, `capital`
-/// and `second`. Without `charged`, the capital builds Ritual: Warcry at the head of its queue
-/// with production in it; with `charged` (`rituals-charged`), the human holds a charge of it (in
+/// and `second`. Without `pending_variant`, the capital builds Ritual: Warcry at the head of its queue
+/// with production in it; with it (`rituals-pending`), the human's Warcry is pending (it takes effect at the end of the turn; in
 /// its capital) and has no ritual queued. Of the four other civilizations, three are met:
-/// `in_progress` builds its ritual in its capital, `charged` holds a charge, `idle` has completed
+/// `in_progress` builds its ritual in its capital, `pending` has its cast pending, `idle` has completed
 /// its ritual once (its cost doubled) and builds nothing; `unmet` (not met) builds its ritual. The
 /// human's log holds the `began` messages.
 pub struct StagedRituals {
     pub save: PathBuf,
-    /// The stage's name (`rituals`, `rituals-charged`, `rituals-hurry`).
+    /// The stage's name (`rituals`, `rituals-pending`, `rituals-hurry`).
     pub stage: &'static str,
-    pub charged_variant: bool,
+    pub pending_variant: bool,
     pub capital: CityId,
     pub second: CityId,
     pub in_progress: PlayerId,
-    pub charged: PlayerId,
+    pub pending: PlayerId,
     pub idle: PlayerId,
     pub unmet: PlayerId,
     pub turn: i32,
@@ -42,7 +42,7 @@ impl StagedRituals {
             "stage" => self.stage,
             "save" => self.save.display().to_string(),
             "capital" => self.capital, "second" => self.second,
-            "in_progress" => self.in_progress, "charged" => self.charged, "idle" => self.idle, "unmet" => self.unmet,
+            "in_progress" => self.in_progress, "pending" => self.pending, "idle" => self.idle, "unmet" => self.unmet,
             "turn" => self.turn,
         }
     }
@@ -62,9 +62,9 @@ pub fn rituals_hurry(dir: &Path) -> Result<StagedRituals, String> {
     staged(dir, false, true)
 }
 
-/// Writes the `rituals-charged` staged game into `dir`: as [`rituals`], with the human holding its
-/// charge and no ritual queued.
-pub fn rituals_charged(dir: &Path) -> Result<StagedRituals, String> {
+/// Writes the `rituals-pending` staged game into `dir`: as [`rituals`], with the human's world
+/// spell pending (Warcry: it takes effect at the end of the turn) and no ritual queued.
+pub fn rituals_pending(dir: &Path) -> Result<StagedRituals, String> {
     staged(dir, true, false)
 }
 
@@ -150,7 +150,7 @@ fn choose_research(g: &mut ffh_core::game::Game, h: PlayerId) {
     }
 }
 
-fn staged(dir: &Path, charged_variant: bool, hurry: bool) -> Result<StagedRituals, String> {
+fn staged(dir: &Path, pending_variant: bool, hurry: bool) -> Result<StagedRituals, String> {
     let mut s = new_game_as(dir, "CIVILIZATION_HIPPUS")?;
     let h = s.human;
     let others = |g: &ffh_core::game::Game| others(g, h);
@@ -159,11 +159,11 @@ fn staged(dir: &Path, charged_variant: bool, hurry: bool) -> Result<StagedRitual
     // The AIs with a capital and a world ritual, those the human has not met first last.
     let mut ais: Vec<PlayerId> = others(g).into_iter().filter(|&p| g.player_get_capital_city(p).is_some() && g.player_world_ritual(p).is_some()).collect();
     ais.sort_by_key(|&p| (!g.teams[team].has_met[g.players[p].team], p.0));
-    let [in_progress, charged, idle, unmet]: [PlayerId; 4] = ais.get(..4).ok_or("fewer than four AIs with a capital and a world ritual")?.try_into().map_err(|_| "four AIs")?;
+    let [in_progress, pending, idle, unmet]: [PlayerId; 4] = ais.get(..4).ok_or("fewer than four AIs with a capital and a world ritual")?.try_into().map_err(|_| "four AIs")?;
     if g.teams[team].has_met[g.players[unmet].team] {
         return Err("every AI met already".into());
     }
-    for p in [in_progress, charged, idle] {
+    for p in [in_progress, pending, idle] {
         let t = g.players[p].team;
         g.team_meet(team, t, false);
     }
@@ -171,8 +171,8 @@ fn staged(dir: &Path, charged_variant: bool, hurry: bool) -> Result<StagedRitual
     let second = second_city(g, h, capital)?;
     choose_research(g, h);
     let own = g.player_world_ritual(h).ok_or("the Hippus have no world ritual")?;
-    if charged_variant {
-        g.player_grant_world_ritual_charge(h).ok_or("no charge granted")?;
+    if pending_variant {
+        g.player_grant_world_ritual_pending(h).ok_or("no cast made pending")?;
     } else {
         begin(g, capital, own, 37)?;
     }
@@ -192,15 +192,15 @@ fn staged(dir: &Path, charged_variant: bool, hurry: bool) -> Result<StagedRitual
     let cap = |g: &ffh_core::game::Game, p: PlayerId| g.player_get_capital_city(p).ok_or("no capital");
     let (r, c) = (ritual(g, in_progress)?, cap(g, in_progress)?);
     begin(g, c, r, 52)?;
-    g.player_grant_world_ritual_charge(charged).ok_or("no charge granted")?;
+    g.player_grant_world_ritual_pending(pending).ok_or("no cast made pending")?;
     g.players[idle].world_ritual_completions = 1;
     let (r, c) = (ritual(g, unmet)?, cap(g, unmet)?);
     begin(g, c, r, 18)?;
     // The news goes to the human's message log as at a turn's end.
     s.drain_log();
-    let name = if charged_variant { "rituals-charged" } else if hurry { "rituals-hurry" } else { "rituals" };
+    let name = if pending_variant { "rituals-pending" } else if hurry { "rituals-hurry" } else { "rituals" };
     let paths = s.save(name).map_err(|e| format!("save: {e:?}"))?;
-    Ok(StagedRituals { save: paths.save, stage: name, charged_variant, capital, second, in_progress, charged, idle, unmet, turn: s.g.game_turn() })
+    Ok(StagedRituals { save: paths.save, stage: name, pending_variant, capital, second, in_progress, pending, idle, unmet, turn: s.g.game_turn() })
 }
 
 /// A saved game at a human control point (as [`rituals`]: seed 21, five civilizations, no
@@ -315,12 +315,24 @@ pub fn ritual_notech(dir: &Path, civ: &str) -> Result<StagedRitualCiv, String> {
 }
 
 /// Writes the `ritual-due:<civ>` staged game into `dir`: as [`ritual_civ`], the ritual completing
-/// at the end of the turn instead of a charge held.
+/// at the end of the turn instead of its cast pending.
 pub fn ritual_due(dir: &Path, civ: &str) -> Result<StagedRitualCiv, String> {
     ritual_civ_staged(dir, civ, true, true)
 }
 
+/// Writes the `ritual-notarget:<civ>` staged game into `dir`: as [`ritual_civ`] with the cast
+/// pending, but the human keeps only one unit (of the most strength) and nothing of the civilization's own
+/// arrangement: for The Cull (two units on one plot) no valid target, so the turn may end.
+pub fn ritual_notarget(dir: &Path, civ: &str) -> Result<StagedRitualCiv, String> {
+    let st = ritual_civ_staged_with(dir, civ, false, true, true)?;
+    Ok(st)
+}
+
 fn ritual_civ_staged(dir: &Path, civ: &str, due: bool, tech: bool) -> Result<StagedRitualCiv, String> {
+    ritual_civ_staged_with(dir, civ, due, tech, false)
+}
+
+fn ritual_civ_staged_with(dir: &Path, civ: &str, due: bool, tech: bool, no_target: bool) -> Result<StagedRitualCiv, String> {
     use ffh_core::structs::SpellTarget;
     let d = ffh_data::global();
     if d.ty::<CivilizationType>(civ).is_none() {
@@ -366,10 +378,26 @@ fn ritual_civ_staged(dir: &Path, civ: &str, due: bool, tech: bool) -> Result<Sta
         let cost = g.city_production_needed_project(capital, project);
         g.city_add_turn_production(capital, cost - 1);
     } else if g.player_world_ritual(h).is_some_and(|r| g.world_ritual_spell(r).is_some()) {
-        g.player_grant_world_ritual_charge(h);
+        g.player_grant_world_ritual_pending(h);
     }
     let warrior = d.t::<UnitType>("UNIT_WARRIOR");
     let mut unit = None;
+    if no_target {
+        // One unit left: the strongest (no plot holds two).
+        let keep = g.players[h].units.iter().copied().max_by_key(|&u| (d.units[g.units[u].unit_type].combat, std::cmp::Reverse(u)));
+        for u in g.players[h].units.clone() {
+            if Some(u) != keep && g.units.contains(u) {
+                g.unit_kill(u, false, None);
+            }
+        }
+        if keep.is_none() {
+            g.player_init_unit(h, warrior, cx, cy, None, None);
+        }
+        s.drain_log();
+        let name = format!("ritual-notarget-{}", civ.trim_start_matches("CIVILIZATION_").to_lowercase());
+        let paths = s.save(&name).map_err(|e| format!("save: {e:?}"))?;
+        return Ok(StagedRitualCiv { save: paths.save, due, civ: civ.to_string(), capital, unit: None, turn: s.g.game_turn() });
+    }
     match civ {
         "CIVILIZATION_LANUN" => {
             // The storm over the nearest water, then a charge again.
@@ -388,7 +416,7 @@ fn ritual_civ_staged(dir: &Path, civ: &str, due: bool, tech: bool) -> Result<Sta
                 return Err("Raging Seas raised no storm".into());
             }
             g.unit_kill(caster, false, None);
-            g.player_grant_world_ritual_charge(h);
+            g.player_grant_world_ritual_pending(h);
         }
         "CIVILIZATION_KHAZAD" => {
             // A tunnel between two of the human's land plots next to the capital, the farthest

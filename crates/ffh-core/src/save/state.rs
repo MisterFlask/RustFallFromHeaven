@@ -492,6 +492,7 @@ persist_struct!(Player {
     ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, tributes, armies, army_count,
     governors, governor_count, governor_priorities, once_spells, card_traits, alignment_attitude, research_path,
     world_ritual_completions, world_ritual_refunds, world_spell_casts, tithe_target,
+    world_ritual_pending,
 });
 
 persist_struct!(Team {

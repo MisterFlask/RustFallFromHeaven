@@ -166,7 +166,7 @@ mod tests {
     #[test]
     fn a_world_ritual_leaves_its_rules_to_its_keywords() {
         let warcry = project("PROJECT_RITUAL_WARCRY");
-        assert!(warcry.ends_with("Leaves a charge of Warcry."), "{warcry}");
+        assert!(warcry.ends_with("At completion: Warcry takes effect."), "{warcry}");
         for gone in ["Each completion", "hurried", "production is lost", "one in progress", "charge held", "told"] {
             assert!(!warcry.contains(gone), "{gone}: {warcry}");
         }

@@ -1,7 +1,8 @@
-//! The AI's world ritual (docs/CARDS.md, "World rituals"): the project whose completion leaves a
-//! charge of the civilization's world spell (when to cast it: `world_spells.rs`). Once a turn,
-//! after the empire decisions, a player with no charge and no ritual under way starts it in its
-//! city with the most production, when it has at least two cities (one if it may hold no more),
+//! The AI's world ritual (docs/CARDS.md, "World rituals"): the project whose completion brings the
+//! civilization's world spell (an untargeted one takes effect at completion, so the ritual is
+//! started when its moment holds: `world_spells::ready_for_ritual`; a targeted one is cast as soon
+//! as it has a target). Once a turn, after the empire decisions, a player with no cast pending and
+//! no ritual under way starts it in its city with the most production, when it has at least two cities (one if it may hold no more),
 //! no city in peril, and that city completes it within [`MAX_TURNS`] turns. The AI never sets a
 //! ritual under way aside (any project: every project is a ritual, ffh-core's `ffh::rituals`):
 //! nothing it queues goes in front of one ([`locked`]), so only losing the city ends it. It never
@@ -27,10 +28,15 @@ pub fn locked(g: &Game, c: CityId) -> bool {
 pub fn turn(g: &mut Game, v: &View) {
     let p = v.p;
     let Some(pr) = g.player_world_ritual(p) else { return };
-    if g.player_world_ritual_charge_city(p, pr).is_some() || g.player_world_ritual_city(p, pr).is_some() {
+    if g.player_world_ritual_pending(p, pr) || g.player_world_ritual_city(p, pr).is_some() {
         return;
     }
     if !civ_gate(g, p, pr) {
+        return;
+    }
+    // An untargeted world spell takes effect at the ritual's completion (docs/CARDS.md): the
+    // ritual starts when the spell's moment holds (`world_spells::ready`), not the cast.
+    if g.world_ritual_spell(pr).is_some_and(|s| !g.world_spell_targeted(s) && !crate::world_spells::ready_for_ritual(g, p, s)) {
         return;
     }
     let n = g.players[p].num_cities();

@@ -422,12 +422,40 @@ impl Bot {
                 }
             }
         }
+        // A pending world spell with a target is cast before the turn ends (docs/CARDS.md).
+        self.cast_due(s);
         // End the turn.
         let force = self.rand(5) == 0;
         if self.ok(s, Command::EndTurn { force }) {
             self.stats.end_turns += 1;
             if force {
                 self.stats.forced_end_turns += 1;
+            }
+        }
+    }
+
+    /// The world spell due before the turn ends (`pending.cast_due`): placed, or cast by the first
+    /// unit that can, at its first target.
+    fn cast_due(&mut self, s: &mut Session) {
+        let Some(spell) = s.g.player_world_cast_due(s.human) else { return };
+        let g = &s.g;
+        let mut cmds = Vec::new();
+        if g.d.spells[spell].place_on_charge {
+            if let Some(&t) = g.player_place_targets(s.human, spell).first() {
+                cmds.push(Command::Place { spell, target: crate::command::TargetRef::of(g, t) });
+            }
+        } else {
+            for &u in &g.players[s.human].units {
+                if g.units.contains(u) && g.unit_plot_opt(u).is_some() && g.unit_can_cast_untargeted(u, spell, false) {
+                    if let Some(&t) = g.unit_spell_targets(u, spell).first() {
+                        cmds.push(Command::CastAt { unit: u, spell, target: crate::command::TargetRef::of(g, t), confirmed: true });
+                    }
+                }
+            }
+        }
+        for cmd in cmds {
+            if self.ok(s, cmd) {
+                return;
             }
         }
     }

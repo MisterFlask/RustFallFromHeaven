@@ -2,7 +2,7 @@
 // counter, mana, anarchy, golden age, Stasis) with the phase and the progress line during the
 // AI turns, and the bottom panel: the turn report, the messages by turn, the game's files.
 
-import { S, info, dname, tname, turns, playerName, me, emit, endTurnMessage, scoreText, fairShareText, goldBreakdown, observing, isBarbarian } from "./state.js";
+import { S, on, info, dname, tname, turns, playerName, me, emit, endTurnMessage, scoreText, fairShareText, goldBreakdown, observing, isBarbarian } from "./state.js";
 import { playerColor } from "./tiles.js";
 import { h, fill } from "./dom.js";
 import { render as markup } from "./markup.js";
@@ -14,7 +14,7 @@ import { effectsOf, partsList } from "./infotips.js";
 import { remindersNode } from "./keywords.js";
 import { battleLine, battleLinks } from "./engagements.js";
 import { castTargeted, openPlacement, currentMode } from "./units.js";
-import { casterLine, placementDue } from "./ritual_rows.js";
+import { casterLine, castsDue } from "./ritual_rows.js";
 import { modalOpen } from "./modals.js";
 import * as api from "./api.js";
 import { openResearchPaths } from "./empire.js";
@@ -230,16 +230,21 @@ export function renderTop() {
     const n = observing() ? 0 : openCount();
     // "(1 open)" keeps together where the label wraps (a phone's bottom bar).
     const label = observing() ? "Next turn" : n ? `End turn (${n}\u00a0open)` : "End turn";
-    const skinKey = `${label}|${!!look.art}|${isoSkin()}`;
+    // A pending world spell with a valid target (docs/CARDS.md, "World rituals"): the turn does
+    // not end before it is cast; the button says why under its label, and its click opens the cast.
+    const due = !observing() && st.phase === "human" ? v?.pending?.cast_due : null;
+    const skinKey = `${label}|${!!look.art}|${isoSkin()}|${due?.label ?? ""}`;
     if (end.dataset.label !== skinKey) {
       end.dataset.label = skinKey;
-      fill(end, look.art || isoSkin() ? iconEl("icon16/turn") : null, look.art ? pix(label, { font: "vigil", smallCaps: true }) : label);
+      fill(end, look.art || isoSkin() ? iconEl("icon16/turn") : null, look.art ? pix(label, { font: "vigil", smallCaps: true }) : label, due ? h("span.end-turn-why", due.label) : null);
     }
     // Civ4's end-turn message: no group waits, so Enter (or Space) ends the turn; else Enter
     // selects the next group.
     const msg = endTurnMessage();
     end.classList.toggle("end-turn-message", msg);
     end.title = msg ? "End the turn [Enter, Space]; Shift: without the checks" : "End the turn [Shift+Enter: without the checks]; Enter selects the next unit waiting";
+    end.classList.toggle("blocked", !!due);
+    if (due) end.title = due.reason;
   }
   // Crusades (docs/CRUSADE.md): the advisor, marked while a call to arms waits.
   const crusades = document.getElementById("btn-crusades");
@@ -388,7 +393,7 @@ function renderWorldActions(m, st) {
   if (!box) return;
   const list = m && !observing(st) ? (m.world_actions ?? []) : [];
   const yours = st.phase === "human";
-  for (const s of placementDue(placeSeen, list)) placePending.add(s);
+  if (yours) for (const s of castsDue(castOpened, list, st.turn ?? S.view?.turn)) placePending.add(s);
   // (After a moment: the turn's own dialogs, a city's production, open first.)
   if (placePending.size) setTimeout(openDuePlacement, 1500);
   fill(
@@ -398,7 +403,7 @@ function renderWorldActions(m, st) {
       if (a.place_on_charge) return placeButton(a, name, yours);
       const caster = a.caster !== null && a.caster !== undefined ? S.units?.get?.(a.caster) : null;
       const help = effectsOf("SpellType", a.spell) || a.help || "";
-      const what = a.once ? "Card spell" : "World spell";
+      const what = a.once ? "Card spell" : a.pending ? "World spell, pending" : "World spell";
       const tip = [
         h("div.tip-title", `${what}: ${name}`),
         a.once ? h("div", "Card spell: cast once a game.") : null,
@@ -418,18 +423,28 @@ function renderWorldActions(m, st) {
           onclick: () => (a.target_kind ? castTargeted(a, { world: true }) : run(a.cmd)),
         },
         isoSkin() ? isoIcon("spell", { px: 32 }) : h("span.icon", a.once ? "✦" : "✶"),
-        small(name, ".label"),
+        small(a.label ?? name, ".label"),
       );
     }),
   );
 }
 
-/** The placed world spells (`place_on_charge`) seen with and without their charge, and those whose
- *  placement waits to open by itself (`placementDue`: the turn the ritual completed). */
-const placeSeen = new Map();
+/** The pending world casts whose pick opened by itself (`castsDue`: once a turn), and those whose
+ *  pick waits to open (docs/CARDS.md, "World rituals": the turn does not end before the cast). */
+const castOpened = new Set();
 const placePending = new Set();
 
-/** Opens a placement due, on the player's turn, once no dialog or pick is up (else later). */
+/** Opens the pick of pending world action `a` (a placement, or a cast at a target). */
+export function openPendingCast(a) {
+  if (!a) return;
+  if (a.place) openPlacement(a, { completed: true });
+  else castTargeted(a, { world: true });
+}
+
+// End turn refused for a pending cast (commands.js `endTurn`): its pick opens.
+on("open-pending-cast", (spell) => openPendingCast((S.view?.me?.world_actions ?? []).find((x) => x.spell === spell && x.pending && x.enabled)));
+
+/** Opens a pending cast's pick, on the player's turn, once no dialog or pick is up (else later). */
 function openDuePlacement() {
   if (!placePending.size) return;
   if (S.status?.phase !== "human" || modalOpen() || currentMode()) {
@@ -439,7 +454,7 @@ function openDuePlacement() {
   const spell = [...placePending][0];
   placePending.delete(spell);
   const a = (S.view?.me?.world_actions ?? []).find((x) => x.spell === spell);
-  if (a?.place && a.enabled) openPlacement(a, { completed: true });
+  if (a?.pending && a.enabled) openPendingCast(a);
 }
 
 /** The button of a world spell the player places (`place_on_charge`: Wellspring): `Place

@@ -119,7 +119,8 @@ fn frozen_passage_freezes_the_water_within_two_and_spends_the_charge() {
     let city = g.player_init_city(US, 7, 5, true, true);
     let caster = unit(&mut g, US, "UNIT_WARRIOR", 7, 5);
     assert!(!g.unit_can_cast(caster, fp, false), "no charge");
-    assert_eq!(g.player_grant_world_ritual_charge(US), Some(city));
+    assert!(g.player_grant_world_ritual_pending(US).is_some());
+    let _ = city;
     assert!(g.unit_can_cast(caster, fp, false));
     let target = plot(&g, 11, 5);
     let before: Vec<bool> = g.map.plot_ids().map(|p| g.plot_is_water(p)).collect();
@@ -144,7 +145,7 @@ fn frozen_passage_freezes_the_water_within_two_and_spends_the_charge() {
             assert_eq!(g.plot_is_water(p), before[p.idx()], "{:?}: nothing else changed", g.map.xy(p));
         }
     }
-    assert!(g.player_world_ritual_charge_city(US, g.player_world_ritual(US).unwrap()).is_none(), "the charge is spent");
+    assert!(!g.player_world_ritual_pending(US, g.player_world_ritual(US).unwrap()), "the charge is spent");
     assert!(!g.unit_can_cast(caster, fp, false));
     assert_areas_consistent(&g);
 }
@@ -155,7 +156,7 @@ fn frozen_passage_targets_seen_water_near_the_borders_or_the_ice() {
     let fp = spell(&g, "SPELL_FROZEN_PASSAGE");
     g.player_init_city(US, 7, 5, true, true);
     let caster = unit(&mut g, US, "UNIT_WARRIOR", 7, 5);
-    g.player_grant_world_ritual_charge(US);
+    g.player_grant_world_ritual_pending(US);
     let targets = |g: &Game| g.unit_spell_targets(caster, fp);
     // The borders at founding: x 6..=8, y 4..=6.
     assert!(targets(&g).contains(&SpellTarget::Plot(plot(&g, 13, 5))), "5 plots from the borders");

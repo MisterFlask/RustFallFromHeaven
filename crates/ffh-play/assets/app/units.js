@@ -727,21 +727,17 @@ async function pickCast(m, x, y) {
 /** The prompt of the placement under way (a toast), or null. */
 let placeToast = null;
 
-/** The prompt of placement mode `m`, kept up until the pick ends: the sentence and `Esc: later.`,
- *  with a Later button. */
+/** The prompt of placement mode `m`, kept up until the pick ends. (Escape closes the pick; the
+ *  turn does not end before the placement, docs/CARDS.md "World rituals".) */
 function showPlacePrompt(m) {
   const a = m.action;
   const text = placePrompt(a, { completed: m.completed, touch: touchy() });
-  const later = touchy() ? null : a.place?.later;
-  return toastNode(
-    h("div.toast.info.place-prompt", { role: "status" }, h("span", text), later ? h("span.dim", ` ${later}`) : null, " ", h("button.small", { onclick: () => setMode(null), title: "Place it later [Esc]: the charge stays held" }, "Later")),
-    24 * 3600 * 1000,
-  );
+  return toastNode(h("div.toast.info.place-prompt", { role: "status" }, h("span", text)), 24 * 3600 * 1000);
 }
 
-/** Opens the placement of world action `a` (`a.place`: its charge held): the map in plot pick, its
- *  valid plots marked, and the prompt (`completed`: the turn its ritual completed). Escape or Later
- *  postpones: the charge stays held and the top bar's button opens it again. */
+/** Opens the placement of world action `a` (`a.place`: its cast pending): the map in plot pick,
+ *  its valid plots marked, and the prompt (`completed`: its ritual completed). Escape closes it;
+ *  the top bar's button and End turn open it again. */
 export function openPlacement(a, { completed = false } = {}) {
   if (!a?.place) return;
   if (!a.enabled || !(a.targets ?? []).length) {
@@ -1682,7 +1678,7 @@ export function renderPanel() {
   if (!S.sel && mode?.world) {
     delete panel.dataset.plot;
     const say = mode.place ? placePrompt(mode.action, { completed: mode.completed, touch: touchy() }) : `Pick a target: ${actionLabel(mode.action)} (Esc cancels).`;
-    fill(panel, h("div.mode-hint", h("span", say), h("button.small", { onclick: () => setMode(null), title: "Leave the pick [Esc]" }, mode.place ? "Later" : "Cancel")));
+    fill(panel, h("div.mode-hint", h("span", say), mode.place ? null : h("button.small", { onclick: () => setMode(null), title: "Leave the pick [Esc]" }, "Cancel")));
     return;
   }
   if (!S.sel) {

@@ -1984,6 +1984,11 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
 
         Command::EndTurn { force } => {
             let p = decision::pending(g, h, ctx.events);
+            // A pending world spell with a valid target is cast before the turn ends (docs/CARDS.md,
+            // "World rituals"): refused even when forced.
+            if let Some(due) = &p.cast_due {
+                return Err(cannot(due.reason.clone()));
+            }
             let ready = p.ready_groups.len();
             if !force && (p.popups() > 0 || ready > 0) {
                 return Ok(Plan::Confirm(Confirm::EndTurn {
@@ -2048,8 +2053,11 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             if !g.unit_spell_targets(*unit, *spell).contains(&t) {
                 return Err(cannot(format!("that is not a valid target of {}", names::display(d, *spell))));
             }
+            // A pending world spell (docs/CARDS.md, "World rituals") is due before the turn ends:
+            // its cast needs no confirmation.
+            let pending = info.ritual_charge.is_some_and(|r| g.player_world_ritual_pending(h, r));
             if !confirmed {
-                if info.global || info.once {
+                if (info.global || info.once) && !pending {
                     return Ok(Plan::Confirm(Confirm::CastGlobal { spell: *spell }));
                 }
                 if info.causes_war {
@@ -2067,7 +2075,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             }
             let t = target.resolve(g)?;
             if !g.player_can_place(h, *spell) {
-                return Err(cannot(format!("{} cannot be placed now: no charge is held", names::display(d, *spell))));
+                return Err(cannot(format!("{} cannot be placed now: no cast is pending", names::display(d, *spell))));
             }
             if !g.player_place_targets(h, *spell).contains(&t) {
                 return Err(cannot(format!("that is not a valid target of {}", names::display(d, *spell))));

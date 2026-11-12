@@ -105,6 +105,19 @@ Army Combat", 2026-10-29). They were game options until 2026-11-05 (engagement c
 no longer playable side by side. Save format 16 removed the last three options and the crusade
 flag.
 
+- **World spells: no held charge; cast at completion** (the owner's decision, 2026-11-12: "Instead
+  of letting it be held, we simply do not allow the next turn until the player spends the ritual
+  (if it's targeted); if it's not targeted, the world spell activates immediately"; save format 39;
+  docs/CARDS.md "World rituals"). A completed world ritual no longer leaves a charge in its city.
+  A world spell with no target (Warcry, Rally, Worldbreak and eleven more) takes effect at the
+  completion, for every player, through a unit of the owner as its nominal caster (pending until
+  the owner has a unit and the spell's requirement holds; the caster's unit class is not
+  required: Divine Retribution and Hyborem's Whisper no longer need Basium or Hyborem). A world
+  spell with a target (Wellspring, The Delve, Raging Seas, Frozen Passage, The Cull) becomes the
+  owner's pending cast, kept by the player (a captured city no longer takes it): a human cannot end
+  the turn while it has a valid target; with none, the turn ends and the cast stays pending. The
+  ritual is not started again while its cast is pending. Why: a charge held for later was a
+  stockpile of a spell; now the ritual is the decision, and its spell is spent when it completes.
 - **Every project is a Ritual** (the owner's decision, 2026-11-12: "Rituals ... cannot be
   delayed-without-loss-of-production or hurried with money (slaves is fine)";
   `ffh-core/src/ffh/rituals.rs`, docs/CARDS.md "World rituals"). Every project (FFH2's 17, such

@@ -129,10 +129,7 @@ async function answerConfirm(c, confirm) {
       const name = dname("SpellType", confirm.spell);
       // A card's world spell (docs/CARDS.md) has its own once-a-game flag.
       const once = info("SpellType", confirm.spell)?.once;
-      // A civilization's world spell spends a charge of its ritual (docs/CARDS.md, "World rituals"):
-      // the top bar's line for it says where the charge is and the ritual's cost after.
-      const charge = S.view?.me?.world_actions?.find((a) => a.spell === confirm.spell)?.charge;
-      const v = await ask(`Cast ${name}?`, once ? "This is a card spell: it can be cast once a game." : (charge ?? "This is a world spell."), [
+      const v = await ask(`Cast ${name}?`, once ? "This is a card spell: it can be cast once a game." : "This is a world spell.", [
         { label: `Cast ${name}`, value: true, primary: true, danger: true },
         { label: "Cancel", value: null },
       ]);
@@ -226,6 +223,14 @@ async function askGate(confirm) {
  *  whole gate itself, from the view's pending lists (the same ones the server counts), and
  *  "End turn anyway" sends the forced end. */
 export async function endTurn(force = false) {
+  // A pending world spell with a valid target is cast first (docs/CARDS.md, "World rituals"; the
+  // server refuses the end of the turn, forced or not): its reason, and its pick opened.
+  const due = observing() ? null : S.view?.pending?.cast_due;
+  if (due) {
+    toast(due.reason, "error", 6000);
+    emit("open-pending-cast", due.spell);
+    return null;
+  }
   if (force) return run({ c: "end_turn", force: true });
   const idle = idleCities();
   const p = S.view?.pending;

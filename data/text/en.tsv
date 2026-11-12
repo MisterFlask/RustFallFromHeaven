@@ -5685,7 +5685,7 @@ TXT_KEY_CONCEPT_WHAT_IS_FALL_FROM_HEAVEN	What is Fall from Heaven?
 TXT_KEY_CONCEPT_WHAT_IS_FALL_FROM_HEAVEN_PEDIA	[H1]What is Fall from Heaven?[\H1][PARAGRAPH:2]Based on a long running Dungeons and Dragons campaign Fall from Heaven is set in the dark fantasy world of Erebus. This is a world where the themes of corruption and redemption are repeated and all the characters, including the gods themselves, are imperfect.[PARAGRAPH:2]Although the mod isn't a direct translation of any of the following inspiration comes from Celtic and Norse mythology, Judeo-Christian mysticism and the works of Edgar Allen Poe and H.P. Lovecraft.[PARAGRAPH:2]Kael's Notes: The goal of this mod is to provide a turn based strategy game with a focus on replayability. I am a huge fan of the Civilization series but after playing a dozen or so games they began to feel the same. That's actually a pretty amazing feat, what other game can you beat a dozen times before it starts to feel the same?[PARAGRAPH:2]We pursued our replayability goal by making a few key decisions:[NEWLINE][NEWLINE]1.[TAB]Each civilization should be fundamentally different than any other. Much more than just a different Unique Unit and Unique Building we want the player to have to adapt to different strategies and play styles to play each civ. We understood that not all players would like all civs, but each would find some that appealed to their play style and players in for a new experience could try something that played differently than they were used to.[NEWLINE]2.[TAB]A players state religion should have a dramatic effect on his civilization. As such there are really 7 versions of each civilization, that civilization with each religion.[NEWLINE]3.[TAB]A general dislike for patterns. Although easy to design and balance patterns are generally uncreative. Instead we craft each option individually and try to balance overall rather than on the specific option being created.[PARAGRAPH:2]Overall this means that FfH has a higher learning curve than most games, all of these options come at a cost. But once learned our hope is that there is game deep enough for players to enjoy for months or years.
 TXT_KEY_CONCEPT_WONDERS	Wonders
 TXT_KEY_CONCEPT_WORLD_SPELLS	World Spells
-TXT_KEY_CONCEPT_WORLD_SPELLS_PEDIA	[H1]World Spells[\H1][PARAGRAPH:2]Each civilization has one world spell. It is prepared by the civilization's [KW=KEYWORD_WORLD_RITUAL]world ritual[\KW], a project built in one city. Most rituals leave a charge, spent by casting the spell; some act at completion. A player has one world ritual in progress at most and holds one charge at most. Every project is a [KW=KEYWORD_RITUAL]ritual[\KW]: its progress is lost if the city switches to building something else, and it cannot be hurried with gold. Each completion doubles a world ritual's next cost. Every player is told when a world ritual begins, is abandoned or completes.[NEWLINE][NEWLINE]Amurites- [LINK=SPELL_WELLSPRING]Wellspring[\LINK][NEWLINE]Balseraphs- [LINK=SPELL_REVELRY]Revelry[\LINK][NEWLINE]Bannor- [LINK=SPELL_RALLY]Rally[\LINK][NEWLINE]Calabim- [LINK=PROJECT_RITUAL_THE_TITHE]The Tithe[\LINK][NEWLINE]Clan of Embers- [LINK=SPELL_FOR_THE_HORDE]For the Horde[\LINK][NEWLINE]Doviello- [LINK=SPELL_THE_CULL]The Cull[\LINK][NEWLINE]Elohim- [LINK=SPELL_SANCTUARY]Sanctuary[\LINK][NEWLINE]Grigori- [LINK=SPELL_ARDOR]Ardor[\LINK][NEWLINE]Hippus- [LINK=SPELL_WARCRY]Warcry[\LINK][NEWLINE]Illians- [LINK=SPELL_FROZEN_PASSAGE]Frozen Passage[\LINK][NEWLINE]Infernal- [LINK=SPELL_HYBOREMS_WHISPER]Hyborem's Whisper[\LINK][NEWLINE]Khazad- [LINK=SPELL_THE_DELVE]The Delve[\LINK][NEWLINE]Kuriotates- [LINK=SPELL_LEGENDS]Legends[\LINK][NEWLINE]Lanun- [LINK=SPELL_RAGING_SEAS]Raging Seas[\LINK][NEWLINE]Ljosalfar- [LINK=SPELL_MARCH_OF_THE_TREES]March of the Trees[\LINK][NEWLINE]Luchuirp- [LINK=PROJECT_RITUAL_UPGRADE]Upgrade[\LINK][NEWLINE]Malakim- [LINK=SPELL_RELIGIOUS_FERVOR]Religious Fervor[\LINK][NEWLINE]Mercurians- [LINK=SPELL_DIVINE_RETRIBUTION]Divine Retribution[\LINK][NEWLINE]Sheaim- [LINK=SPELL_WORLDBREAK]Worldbreak[\LINK][NEWLINE]Sidar- [LINK=SPELL_INTO_THE_MIST]Into the Mist[\LINK][NEWLINE]Svartalfar- [LINK=SPELL_VEIL_OF_NIGHT]Veil of Night[\LINK]
+TXT_KEY_CONCEPT_WORLD_SPELLS_PEDIA	[H1]World Spells[\H1][PARAGRAPH:2]Each civilization has one world spell. It comes with each completion of the civilization's [KW=KEYWORD_WORLD_RITUAL]world ritual[\KW], a project built in one city. A world spell with no target takes effect at the completion; one with a target is cast by its owner before the turn ends (while it has no valid target, the turn may end and the cast stays pending). Some rituals act at their completion and bring no spell. A player has one world ritual in progress at most and does not start it again while its cast is pending. Every project is a [KW=KEYWORD_RITUAL]ritual[\KW]: its progress is lost if the city switches to building something else, and it cannot be hurried with gold. Each completion doubles a world ritual's next cost. Every player is told when a world ritual begins, is abandoned or completes.[NEWLINE][NEWLINE]Amurites- [LINK=SPELL_WELLSPRING]Wellspring[\LINK][NEWLINE]Balseraphs- [LINK=SPELL_REVELRY]Revelry[\LINK][NEWLINE]Bannor- [LINK=SPELL_RALLY]Rally[\LINK][NEWLINE]Calabim- [LINK=PROJECT_RITUAL_THE_TITHE]The Tithe[\LINK][NEWLINE]Clan of Embers- [LINK=SPELL_FOR_THE_HORDE]For the Horde[\LINK][NEWLINE]Doviello- [LINK=SPELL_THE_CULL]The Cull[\LINK][NEWLINE]Elohim- [LINK=SPELL_SANCTUARY]Sanctuary[\LINK][NEWLINE]Grigori- [LINK=SPELL_ARDOR]Ardor[\LINK][NEWLINE]Hippus- [LINK=SPELL_WARCRY]Warcry[\LINK][NEWLINE]Illians- [LINK=SPELL_FROZEN_PASSAGE]Frozen Passage[\LINK][NEWLINE]Infernal- [LINK=SPELL_HYBOREMS_WHISPER]Hyborem's Whisper[\LINK][NEWLINE]Khazad- [LINK=SPELL_THE_DELVE]The Delve[\LINK][NEWLINE]Kuriotates- [LINK=SPELL_LEGENDS]Legends[\LINK][NEWLINE]Lanun- [LINK=SPELL_RAGING_SEAS]Raging Seas[\LINK][NEWLINE]Ljosalfar- [LINK=SPELL_MARCH_OF_THE_TREES]March of the Trees[\LINK][NEWLINE]Luchuirp- [LINK=PROJECT_RITUAL_UPGRADE]Upgrade[\LINK][NEWLINE]Malakim- [LINK=SPELL_RELIGIOUS_FERVOR]Religious Fervor[\LINK][NEWLINE]Mercurians- [LINK=SPELL_DIVINE_RETRIBUTION]Divine Retribution[\LINK][NEWLINE]Sheaim- [LINK=SPELL_WORLDBREAK]Worldbreak[\LINK][NEWLINE]Sidar- [LINK=SPELL_INTO_THE_MIST]Into the Mist[\LINK][NEWLINE]Svartalfar- [LINK=SPELL_VEIL_OF_NIGHT]Veil of Night[\LINK]
 TXT_KEY_CONNECT_ALREADY_CONNECTED_DESC	We are already connected to this host.
 TXT_KEY_CONNECT_ALREADY_CONNECTED_TITLE	Already connected
 TXT_KEY_CONNECT_INVALID_ADDRESS_DESC	The address attempted was invalid.
@@ -11552,7 +11552,7 @@ TXT_KEY_SPELL_ADD_TO_WOLF_PACK	Add to Wolf Pack
 TXT_KEY_SPELL_ADD_TO_WOLF_PACK_HELP	[ICON_BULLET]Sacrifice a wolf to add an empower promotion to a wolf pack
 TXT_KEY_SPELL_ADJACENT_TO_WATER_ONLY	[ICON_BULLET]Can only be cast next to water tiles
 TXT_KEY_SPELL_WELLSPRING	Wellspring
-TXT_KEY_SPELL_WELLSPRING_HELP	The charge is held until the node is placed. Place on a land plot in your borders, not a peak, with no resource, city or improvement. Choose a mana type. The plot gains that mana and its node, permanently.
+TXT_KEY_SPELL_WELLSPRING_HELP	Place on a land plot in your borders, not a peak, with no resource, city or improvement. Choose a mana type. The plot gains that mana and its node, permanently.
 TXT_KEY_SPELL_ARDOR	Ardor
 TXT_KEY_SPELL_ARDOR_HELP	[ICON_BULLET]Resets the player's Great Person count
 TXT_KEY_SPELL_ARENA_BATTLE	Arena Battle
@@ -14923,48 +14923,48 @@ TXT_KEY_SPELL_WONDER_TIME_WARP	Wonder: Time Warp
 TXT_KEY_SPELL_WONDER_BACKFIRE	Wonder: Backfire
 TXT_KEY_SPELL_WONDER_BUTTERFLIES	Wonder: Butterflies
 TXT_KEY_PROJECT_RITUAL_WELLSPRING	Ritual: Wellspring
-TXT_KEY_PROJECT_RITUAL_WELLSPRING_HELP	Leaves a charge of Wellspring.
+TXT_KEY_PROJECT_RITUAL_WELLSPRING_HELP	At completion: place Wellspring.
 TXT_KEY_PROJECT_RITUAL_ARDOR	Ritual: Ardor
-TXT_KEY_PROJECT_RITUAL_ARDOR_HELP	Leaves a charge of Ardor.
+TXT_KEY_PROJECT_RITUAL_ARDOR_HELP	At completion: Ardor takes effect.
 TXT_KEY_PROJECT_RITUAL_DIVINE_RETRIBUTION	Ritual: Divine Retribution
-TXT_KEY_PROJECT_RITUAL_DIVINE_RETRIBUTION_HELP	Leaves a charge of Divine Retribution.
+TXT_KEY_PROJECT_RITUAL_DIVINE_RETRIBUTION_HELP	At completion: Divine Retribution takes effect.
 TXT_KEY_PROJECT_RITUAL_FOR_THE_HORDE	Ritual: For the Horde
-TXT_KEY_PROJECT_RITUAL_FOR_THE_HORDE_HELP	Leaves a charge of For the Horde.
+TXT_KEY_PROJECT_RITUAL_FOR_THE_HORDE_HELP	At completion: For the Horde takes effect.
 TXT_KEY_PROJECT_RITUAL_UPGRADE	Ritual: Upgrade
 TXT_KEY_PROJECT_RITUAL_UPGRADE_HELP	At completion: each golem you own gains Reinforced (+10% hit points). Stacks. Golems built later do not have it.
 TXT_KEY_PROJECT_RITUAL_HYBOREMS_WHISPER	Ritual: Hyborem's Whisper
-TXT_KEY_PROJECT_RITUAL_HYBOREMS_WHISPER_HELP	Leaves a charge of Hyborem's Whisper.
+TXT_KEY_PROJECT_RITUAL_HYBOREMS_WHISPER_HELP	At completion: Hyborem's Whisper takes effect.
 TXT_KEY_PROJECT_RITUAL_INTO_THE_MIST	Ritual: Into the Mist
-TXT_KEY_PROJECT_RITUAL_INTO_THE_MIST_HELP	Leaves a charge of Into the Mist.
+TXT_KEY_PROJECT_RITUAL_INTO_THE_MIST_HELP	At completion: Into the Mist takes effect.
 TXT_KEY_PROJECT_RITUAL_LEGENDS	Ritual: Legends
-TXT_KEY_PROJECT_RITUAL_LEGENDS_HELP	Leaves a charge of Legends.
+TXT_KEY_PROJECT_RITUAL_LEGENDS_HELP	At completion: Legends takes effect.
 TXT_KEY_PROJECT_RITUAL_MARCH_OF_THE_TREES	Ritual: March of the Trees
-TXT_KEY_PROJECT_RITUAL_MARCH_OF_THE_TREES_HELP	Leaves a charge of March of the Trees.
+TXT_KEY_PROJECT_RITUAL_MARCH_OF_THE_TREES_HELP	At completion: March of the Trees takes effect.
 TXT_KEY_PROJECT_RITUAL_THE_DELVE	Ritual: The Delve
-TXT_KEY_PROJECT_RITUAL_THE_DELVE_HELP	Leaves a charge of The Delve.
+TXT_KEY_PROJECT_RITUAL_THE_DELVE_HELP	At completion: cast The Delve.
 TXT_KEY_PROJECT_RITUAL_RAGING_SEAS	Ritual: Raging Seas
-TXT_KEY_PROJECT_RITUAL_RAGING_SEAS_HELP	Leaves a charge of Raging Seas.
+TXT_KEY_PROJECT_RITUAL_RAGING_SEAS_HELP	At completion: cast Raging Seas.
 TXT_KEY_PROJECT_RITUAL_RALLY	Ritual: Rally
-TXT_KEY_PROJECT_RITUAL_RALLY_HELP	Leaves a charge of Rally.
+TXT_KEY_PROJECT_RITUAL_RALLY_HELP	At completion: Rally takes effect.
 TXT_KEY_PROJECT_RITUAL_RELIGIOUS_FERVOR	Ritual: Religious Fervor
-TXT_KEY_PROJECT_RITUAL_RELIGIOUS_FERVOR_HELP	Leaves a charge of Religious Fervor.
+TXT_KEY_PROJECT_RITUAL_RELIGIOUS_FERVOR_HELP	At completion: Religious Fervor takes effect.
 TXT_KEY_PROJECT_RITUAL_REVELRY	Ritual: Revelry
-TXT_KEY_PROJECT_RITUAL_REVELRY_HELP	Leaves a charge of Revelry.
+TXT_KEY_PROJECT_RITUAL_REVELRY_HELP	At completion: Revelry takes effect.
 TXT_KEY_PROJECT_RITUAL_THE_TITHE	Ritual: The Tithe
 TXT_KEY_PROJECT_RITUAL_THE_TITHE_HELP	At completion: each city of the named rival larger than 2 loses 2 population. Each of your Vampire units gains 1 experience per 2 population lost. Cancelled, with its progress, if the rival is destroyed or the war ends.
 TXT_KEY_PROJECT_RITUAL_SANCTUARY	Ritual: Sanctuary
-TXT_KEY_PROJECT_RITUAL_SANCTUARY_HELP	Leaves a charge of Sanctuary.
+TXT_KEY_PROJECT_RITUAL_SANCTUARY_HELP	At completion: Sanctuary takes effect.
 TXT_KEY_PROJECT_RITUAL_FROZEN_PASSAGE	Ritual: Frozen Passage
-TXT_KEY_PROJECT_RITUAL_FROZEN_PASSAGE_HELP	Leaves a charge of Frozen Passage.
+TXT_KEY_PROJECT_RITUAL_FROZEN_PASSAGE_HELP	At completion: cast Frozen Passage.
 TXT_KEY_PROJECT_RITUAL_VEIL_OF_NIGHT	Ritual: Veil of Night
-TXT_KEY_PROJECT_RITUAL_VEIL_OF_NIGHT_HELP	Leaves a charge of Veil of Night.
+TXT_KEY_PROJECT_RITUAL_VEIL_OF_NIGHT_HELP	At completion: Veil of Night takes effect.
 TXT_KEY_PROJECT_RITUAL_WARCRY	Ritual: Warcry
-TXT_KEY_PROJECT_RITUAL_WARCRY_HELP	Leaves a charge of Warcry.
+TXT_KEY_PROJECT_RITUAL_WARCRY_HELP	At completion: Warcry takes effect.
 TXT_KEY_PROJECT_RITUAL_THE_CULL	Ritual: The Cull
-TXT_KEY_PROJECT_RITUAL_THE_CULL_HELP	Leaves a charge of The Cull.
+TXT_KEY_PROJECT_RITUAL_THE_CULL_HELP	At completion: cast The Cull.
 TXT_KEY_PROJECT_RITUAL_WORLDBREAK	Ritual: Worldbreak
-TXT_KEY_PROJECT_RITUAL_WORLDBREAK_HELP	Leaves a charge of Worldbreak.
+TXT_KEY_PROJECT_RITUAL_WORLDBREAK_HELP	At completion: Worldbreak takes effect.
 TXT_KEY_KEYWORD_RITUAL	Ritual
 TXT_KEY_KEYWORD_RITUAL_REMINDER	Progress is lost if the city switches to building something else. Cannot be hurried with gold.
 TXT_KEY_KEYWORD_WORLD_RITUAL	World Ritual
-TXT_KEY_KEYWORD_WORLD_RITUAL_REMINDER	One in progress per player. Each completion doubles its next cost. Every player is told when it begins, is abandoned or completes.
+TXT_KEY_KEYWORD_WORLD_RITUAL_REMINDER	One in progress per player. Each completion doubles its next cost. Every player is told when it begins, is abandoned or completes. At completion its world spell takes effect; a spell with a target must be cast before the turn ends.

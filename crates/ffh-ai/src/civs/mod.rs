@@ -54,7 +54,7 @@ mod mercurians;
 mod sheaim;
 mod sidar;
 mod svartalfar;
-mod world_spell;
+pub(crate) mod world_spell;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Civ {

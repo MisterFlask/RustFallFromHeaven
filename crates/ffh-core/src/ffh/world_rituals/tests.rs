@@ -213,33 +213,81 @@ fn the_start_is_told_to_every_player_once() {
 }
 
 #[test]
-fn the_world_spell_spends_a_charge_held_anywhere() {
+fn an_untargeted_world_spell_takes_effect_at_completion() {
     let (mut g, [a, b], _) = game();
     let (pr, spell) = warcry(&g);
+    let warcry_promo = g.d.t::<PromotionType>("PROMOTION_WARCRY");
     let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
-    let caster = g.player_init_unit(US, warrior, 6, 6, None, None);
-    assert!(!g.unit_can_cast(caster, spell, false) && !g.unit_can_cast(caster, spell, true), "no charge");
+    let far = g.player_init_unit(US, warrior, 16, 4, None, None);
+    let near = g.player_init_unit(US, warrior, 8, 6, None, None);
+    assert!(!g.unit_can_cast(near, spell, false), "nothing pending");
     queue(&mut g, b, pr);
     complete(&mut g, b);
-    assert_eq!(g.cities[b].ritual_charges, vec![pr]);
     assert_eq!(g.players[US].world_ritual_completions, 1);
-    // One charge at most: not again while held, in any city.
-    assert!(!g.city_can_create(a, pr, false, false) && !g.city_can_create(b, pr, false, false));
-    // Cast from outside any city.
-    assert!(g.unit_can_cast(caster, spell, false));
-    g.unit_cast(caster, spell);
-    assert!(g.cities[b].ritual_charges.is_empty(), "spent");
+    assert!(g.units[far].has_promotion[warcry_promo] && g.units[near].has_promotion[warcry_promo], "every combat unit");
+    assert_eq!(g.players[US].world_ritual_pending, None, "spent at once");
     assert_eq!(g.players[US].world_spell_casts, 1);
     assert!(g.city_can_create(a, pr, false, false), "built again");
     // The next one costs twice as much.
     let r = g.world_rituals().into_iter().find(|r| r.player == US).expect("ours");
-    assert_eq!((r.project, r.spell, r.charged, r.completed, r.city), (pr, Some(spell), false, 1, None));
+    assert_eq!((r.project, r.spell, r.pending, r.completed, r.city), (pr, Some(spell), false, 1, None));
     assert_eq!(r.cost, g.player_project_production_needed_at(US, pr, 0));
     assert_eq!(r.next_cost, g.player_project_production_needed_at(US, pr, 1));
-    // A charge granted for a test.
-    assert_eq!(g.player_grant_world_ritual_charge(US), Some(a));
+}
+
+#[test]
+fn without_a_unit_it_stays_pending_until_one_exists() {
+    let (mut g, [a, b], _) = game();
+    let (pr, _) = warcry(&g);
+    assert!(g.players[US].units.is_empty());
+    queue(&mut g, b, pr);
+    complete(&mut g, b);
+    assert_eq!(g.players[US].world_ritual_pending, Some(pr), "no caster");
+    assert!(!g.city_can_create(a, pr, false, false), "not started again while pending");
     let r = g.world_rituals().into_iter().find(|r| r.player == US).expect("ours");
-    assert!(r.charged && r.city == Some(a));
+    assert!(r.pending);
+    crate::ffh::world_rituals::check_pending(&mut g, US);
+    assert_eq!(g.players[US].world_ritual_pending, Some(pr), "still no caster");
+    let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
+    let u = g.player_init_unit(US, warrior, 6, 6, None, None);
+    crate::ffh::world_rituals::check_pending(&mut g, US);
+    assert_eq!(g.players[US].world_ritual_pending, None, "fired");
+    assert!(g.units[u].has_promotion[g.d.t::<PromotionType>("PROMOTION_WARCRY")]);
+}
+
+#[test]
+fn a_targeted_world_spell_is_pending_and_due_while_it_has_a_target() {
+    let mut g = game_of(&["CIVILIZATION_DOVIELLO", "CIVILIZATION_BANNOR"]);
+    let c = g.player_init_city(US, 4, 5, true, true);
+    let other = g.player_init_city(US, 9, 5, true, true);
+    g.city_clear_order_queue(c);
+    let pr = g.d.t::<ProjectType>("PROJECT_RITUAL_THE_CULL");
+    let cull = g.d.t::<SpellType>("SPELL_THE_CULL");
+    assert!(g.world_spell_targeted(cull));
+    let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
+    g.player_init_unit(US, warrior, 6, 6, None, None);
+    g.city_push_order(c, OrderType::ORDER_CREATE, pr.i(), -1, false, false, false, true);
+    complete(&mut g, c);
+    assert_eq!(g.players[US].world_ritual_pending, Some(pr), "waits for its cast");
+    // One unit: no plot with two of them, no valid target: the turn may end.
+    assert_eq!(g.player_world_cast_due(US), None);
+    // Two on one plot: a valid target, due.
+    g.player_init_unit(US, warrior, 6, 6, None, None);
+    assert_eq!(g.player_world_cast_due(US), Some(cull));
+    // Losing the city that completed it changes nothing: the cast is the player's.
+    g.city_kill(c, true);
+    assert!(g.cities.contains(other));
+    assert_eq!(g.player_world_cast_due(US), Some(cull));
+    assert!(!g.city_can_create(other, pr, false, false), "not started again while pending");
+    // A save keeps it.
+    let back = Game::load(g.d, &g.save()).expect("loads");
+    assert_eq!(back.players[US].world_ritual_pending, Some(pr));
+    // Cast: no longer pending.
+    let caster = g.players[US].units[0];
+    let target = g.unit_spell_targets(caster, cull)[0];
+    g.unit_cast_at(caster, cull, target);
+    assert_eq!(g.players[US].world_ritual_pending, None);
+    assert_eq!(g.player_world_cast_due(US), None);
 }
 
 #[test]
@@ -251,7 +299,7 @@ fn the_query_shows_a_ritual_in_progress() {
     let all = g.world_rituals();
     assert_eq!(all.len(), 3, "each living civilization's");
     let r = all.iter().find(|r| r.player == US).expect("ours");
-    assert_eq!((r.city, r.progress, r.charged, r.completed), (Some(a), 5, false, 0));
+    assert_eq!((r.city, r.progress, r.pending, r.completed), (Some(a), 5, false, 0));
     assert!(r.turns_left.is_some_and(|t| t >= 1));
     assert_eq!(all.iter().find(|r| r.player == THEM).map(|r| r.project), g.d.ty::<ProjectType>("PROJECT_RITUAL_RALLY"));
 }
@@ -279,7 +327,7 @@ fn the_option_without_world_spells_forbids_the_rituals() {
     let (pr, spell) = warcry(&g);
     g.setup.options[GameOptionType::GAMEOPTION_NO_WORLD_SPELLS] = true;
     assert!(!g.city_can_create(a, pr, false, false) && !g.city_can_create(a, pr, false, true));
-    g.player_grant_world_ritual_charge(US);
+    g.player_grant_world_ritual_pending(US);
     let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
     let caster = g.player_init_unit(US, warrior, 6, 6, None, None);
     assert!(!g.unit_can_cast(caster, spell, false));

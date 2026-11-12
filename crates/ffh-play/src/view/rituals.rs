@@ -33,11 +33,12 @@ fn civ_name(g: &Game, p: PlayerId) -> String {
 }
 
 /// What a row of the rituals list shows: `in_progress` (production put into it; for the human
-/// also queued with none yet: `queued`), `charged` (a city holds its charge) or `idle`.
+/// also queued with none yet: `queued`), `pending` (completed, its world spell's cast pending) or
+/// `idle`.
 pub fn row_state(v: &Viewer, r: &WorldRitual) -> &'static str {
     let g = v.g;
-    if r.charged {
-        return "charged";
+    if r.pending {
+        return "pending";
     }
     let Some(c) = r.city else { return "idle" };
     if r.progress > 0 {
@@ -54,10 +55,9 @@ pub fn row_state(v: &Viewer, r: &WorldRitual) -> &'static str {
     }
 }
 
-/// The city a row names: the one holding the charge, else the one building it (none while idle).
-fn row_city(g: &Game, r: &WorldRitual, state: &str) -> Option<CityId> {
+/// The city a row names: the one building it (none while idle or pending).
+fn row_city(r: &WorldRitual, state: &str) -> Option<CityId> {
     match state {
-        "charged" => g.player_world_ritual_charge_city(r.player, r.project),
         "in_progress" | "queued" => r.city,
         _ => None,
     }
@@ -90,7 +90,7 @@ pub fn rituals(v: &Viewer) -> Json {
     for r in g.world_rituals() {
         let met = v.player_met(r.player);
         let state = row_state(v, &r);
-        let city = row_city(g, &r, state);
+        let city = row_city(&r, state);
         let (progress, turns) = if matches!(state, "in_progress" | "queued") { (r.progress, r.turns_left) } else { (0, None) };
         out.push(crate::jobj! {
             "player" => r.player,
@@ -110,7 +110,7 @@ pub fn rituals(v: &Viewer) -> Json {
             "cost" => r.cost,
             "percent" => percent(progress, r.cost),
             "turns_left" => turns,
-            "charged" => r.charged,
+            "pending" => r.pending,
             "completed" => r.completed,
             "next_cost" => r.next_cost,
             "note" => if r.player == v.h { tithe_note(g, r.player, r.project) } else { None },
@@ -121,55 +121,18 @@ pub fn rituals(v: &Viewer) -> Json {
     Json::Arr(out)
 }
 
-/// The human's own row of [`Game::world_rituals`], if its civilization has a world ritual.
-fn own(v: &Viewer) -> Option<WorldRitual> {
-    v.g.world_rituals().into_iter().find(|r| r.player == v.h)
-}
-
-/// The world-spell button's `why` while the human holds no charge of its ritual `project`:
-/// `No charge. <ritual> requires <tech>.` while the team lacks the ritual's tech, `No charge.
-/// Build <ritual> in a city (cost <cost>).`, or with the ritual queued
-/// `No charge. <ritual>: <progress>/<cost> in <city>, <N> turns.`
-pub fn no_charge_why(v: &Viewer, project: ProjectType) -> String {
-    let g = v.g;
-    let name = ritual_name(g.d, project);
-    if let Some(t) = g.d.projects[project].tech_prereq.filter(|&t| !g.team_is_has_tech(v.team, Some(t))) {
-        return format!("No charge. {name} requires {}.", crate::names::display(g.d, t));
-    }
-    match own(v).filter(|r| r.project == project) {
-        Some(WorldRitual { city: Some(c), progress, cost, turns_left, .. }) => {
-            let turns = turns_left.map_or(String::new(), |n| format!(", {}", turns_text(n)));
-            format!("No charge. {name}: {progress}/{cost} in {}{turns}.", city_name(g, c))
-        }
-        Some(r) => format!("No charge. Build {name} in a city (cost {}).", r.cost),
-        None => format!("No charge. Build {name} in a city (cost {}).", g.player_get_production_needed_project(v.h, project)),
-    }
-}
-
-/// The world-spell button's line while the human holds a charge of `project` and can cast it:
-/// `Charge held in <city>. Casting spends it. Next ritual cost: <cost>.` (the cost the ritual has
-/// now: the completion that left the charge doubled it already).
-pub fn charge_line(v: &Viewer, project: ProjectType) -> Option<String> {
-    charge_line_verb(v, project, "Casting")
-}
-
-/// [`charge_line`] with what spends the charge (`Casting`, `Placing`).
-pub fn charge_line_verb(v: &Viewer, project: ProjectType, verb: &str) -> Option<String> {
-    let g = v.g;
-    let c = g.player_world_ritual_charge_city(v.h, project)?;
-    let cost = g.player_get_production_needed_project(v.h, project);
-    Some(format!("Charge held in {}. {verb} spends it. Next ritual cost: {cost}.", city_name(g, c)))
-}
-
 /// The production dialog's rules line of world ritual `project` in city `c`: what it leaves or
 /// does and its next cost, the entity's own facts only (its keywords' rules are its reminders,
-/// [`crate::view::keywords`]): `Leaves a charge of Warcry. Next cost: 400.`, `Acts at completion.
-/// Next cost: 400.` for a ritual no spell spends.
+/// [`crate::view::keywords`]): `At completion: Warcry takes effect. Next cost: 400.`, `At
+/// completion: cast The Cull. Next cost: 400.` for a targeted spell (`place Wellspring`), `Acts at
+/// completion. Next cost: 400.` for a ritual no spell names.
 pub fn rules_line(g: &Game, c: CityId, project: ProjectType) -> String {
     let p = g.cities[c].owner;
     let next = g.player_project_production_needed_at(p, project, 1);
     let does = match g.world_ritual_spell(project) {
-        Some(s) => format!("Leaves a charge of {}.", crate::names::display(g.d, s)),
+        Some(s) if g.d.spells[s].place_on_charge => format!("At completion: place {}.", crate::names::display(g.d, s)),
+        Some(s) if g.world_spell_targeted(s) => format!("At completion: cast {}.", crate::names::display(g.d, s)),
+        Some(s) => format!("At completion: {} takes effect.", crate::names::display(g.d, s)),
         None => "Acts at completion.".to_string(),
     };
     if g.d.projects[project].repeat_cost_percent > 0 {
@@ -203,7 +166,7 @@ pub fn ritual_needs_tech(g: &Game, c: CityId, project: ProjectType) -> Option<Te
 }
 
 /// Why city `c` cannot start world ritual `project` now (the production list shows it disabled
-/// with this): `Requires <tech>.`, `Charge held: cast <spell> first.`, `In progress in <city>.`, `Sanctuary holds: <N>
+/// with this): `Requires <tech>.`, `Cast pending: cast <spell> first.`, `In progress in <city>.`, `Sanctuary holds: <N>
 /// turns.`, `No rival named: use Name the Tithe.` (Ritual: The Tithe), else `Not available now.`
 /// (a reason of the rules this list does not know).
 pub fn cannot_reason(g: &Game, c: CityId, project: ProjectType) -> String {
@@ -212,9 +175,9 @@ pub fn cannot_reason(g: &Game, c: CityId, project: ProjectType) -> String {
     if let Some(t) = ritual_needs_tech(g, c, project) {
         return format!("Requires {}.", crate::names::display(d, t));
     }
-    if g.player_world_ritual_charge_city(p, project).is_some() {
+    if g.player_world_ritual_pending(p, project) {
         if let Some(s) = g.world_ritual_spell(project) {
-            return format!("Charge held: cast {} first.", crate::names::display(d, s));
+            return format!("Cast pending: cast {} first.", crate::names::display(d, s));
         }
     }
     if let Some(o) = g.player_world_ritual_city(p, project).filter(|&o| o != c) {

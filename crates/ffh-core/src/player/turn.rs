@@ -169,6 +169,9 @@ impl Game {
         self.player_apply_tactics(p);
         // World rituals aimed at a rival (The Tithe): cancelled once the rival is dead or at peace.
         crate::ffh::world_ritual_spells::check(self, Some(p));
+        // A world spell left pending at its completion (no unit, its requirement unmet) takes
+        // effect once it can (docs/CARDS.md, "World rituals").
+        crate::ffh::world_rituals::check_pending(self, p);
 
         let turn = self.game_turn();
         self.ev_begin_player_turn(turn, p);

@@ -11,7 +11,7 @@
 //!   threatened or broke).
 //! - **Frozen Passage** (world spell, replacing FFH2's Stasis: the water within 2 plots of a
 //!   target becomes Sea Ice, `ffh_core::ffh::world_ritual_spells::illians`) is cast the turn a
-//!   charge is held ([`frozen_passage`]): toward the nearest city of another civilization on
+//!   cast is pending ([`frozen_passage`]): toward the nearest city of another civilization on
 //!   another landmass than our capital's (a passage for our armies), else by the capital. Ad hoc
 //!   (a rules change, CLAUDE.md "AI changes").
 //!
@@ -77,7 +77,7 @@ pub fn frozen_passage_target(g: &Game, p: PlayerId, targets: &[PlotIdx]) -> Opti
     })
 }
 
-/// Casts Frozen Passage when `p` holds a charge (module doc).
+/// Casts Frozen Passage when `p`'s cast is pending (module doc).
 fn frozen_passage(g: &mut Game, p: PlayerId) {
     let Some(spell) = g.d.ty::<SpellType>("SPELL_FROZEN_PASSAGE") else { return };
     let Some(u) = g.players[p].units.iter().copied().find(|&u| g.units.contains(u) && g.unit_march(u).is_none() && g.unit_can_cast_untargeted(u, spell, false)) else {

@@ -1,7 +1,7 @@
 //! World rituals in the views (docs/CARDS.md, "World rituals"; docs/HUMAN.md): the view's
 //! `rituals` rows, the world-spell button's words in each state, the production list's ritual line
 //! and its reasons, the city's abandon question, and the ritual news marked in the log. The staged
-//! games (`ffh-play stage rituals|rituals-charged`) and hand-built situations in games that cannot
+//! games (`ffh-play stage rituals|rituals-pending`) and hand-built situations in games that cannot
 //! end (`common::STEADY`); nothing here depends on how a seed's game goes.
 
 mod common;
@@ -66,7 +66,7 @@ fn duel_as(seed: u32, civ: &str) -> Session {
 }
 
 /// `ffh-play stage rituals`: the rows as the human may know them (met and unmet, in progress,
-/// charged, idle with its cost doubled), the news in the log, the capital's abandon question.
+/// pending, idle with its cost doubled), the news in the log, the capital's abandon question.
 #[test]
 fn the_staged_rituals_game_shows_every_civilizations_ritual() {
     let dir = common::TempDir::new("stage-rituals");
@@ -97,10 +97,10 @@ fn the_staged_rituals_game_shows_every_civilizations_ritual() {
     assert_eq!(s_of(&going, "state"), Some("in_progress"));
     assert!(i_of(&going, "progress").unwrap() > 0 && i_of(&going, "turns_left").is_some(), "{going:?}");
 
-    let held = row(&view, st.charged);
-    assert_eq!(s_of(&held, "state"), Some("charged"));
-    assert_eq!(held.get("charged").and_then(Json::as_bool), Some(true));
-    assert!(s_of(&held, "city_name").is_some() && i_of(&held, "x").is_some(), "{held:?}");
+    let held = row(&view, st.pending);
+    assert_eq!(s_of(&held, "state"), Some("pending"));
+    assert_eq!(held.get("pending").and_then(Json::as_bool), Some(true));
+    assert_eq!(held.get("city"), Some(&Json::Null), "{held:?}");
 
     let idle = row(&view, st.idle);
     assert_eq!(s_of(&idle, "state"), Some("idle"));
@@ -146,83 +146,101 @@ fn project_of(s: &Session, p: PlayerId) -> ProjectType {
     s.g.player_world_ritual(p).unwrap()
 }
 
-/// `ffh-play stage rituals-charged`: the human holds its charge; the ritual cannot be started.
+/// `ffh-play stage rituals-pending`: the human's world spell is pending; the ritual cannot be
+/// started meanwhile.
 #[test]
-fn the_staged_charged_game_holds_a_charge() {
-    let dir = common::TempDir::new("stage-rituals-charged");
-    let st = ffh_play::stage::rituals_charged(&dir.0).expect("staged");
-    assert_eq!(s_of(&st.to_json(), "stage"), Some("rituals-charged"));
+fn the_staged_pending_game_has_a_cast_pending() {
+    let dir = common::TempDir::new("stage-rituals-pending");
+    let st = ffh_play::stage::rituals_pending(&dir.0).expect("staged");
+    assert_eq!(s_of(&st.to_json(), "stage"), Some("rituals-pending"));
     let s = load(&st.save);
     let h = s.human;
     let view = s.query(&Query::View).unwrap();
     let mine = row(&view, h);
-    assert_eq!(s_of(&mine, "state"), Some("charged"));
-    assert_eq!(i_of(&mine, "city"), Some(st.capital.0 as i64));
+    assert_eq!(s_of(&mine, "state"), Some("pending"));
     let project = project_of(&s, h);
-    // Every city of the owner lists it, refused: the one holding the charge too.
     for c in [st.second, st.capital] {
         let entry = ritual_entry(&s, c, project);
         assert_eq!(entry.get("enabled").and_then(Json::as_bool), Some(false));
-        assert_eq!(entry.get("ritual").and_then(|r| s_of(r, "why")), Some("Charge held: cast Warcry first."));
+        assert_eq!(entry.get("ritual").and_then(|r| s_of(r, "why")), Some("Cast pending: cast Warcry first."));
     }
-    let city = s.query(&Query::City { city: st.capital }).unwrap();
-    assert_eq!(city.get("ritual_head"), Some(&Json::Null));
+    // Warcry (no target) does not block the turn; its button says it takes effect by itself.
+    let p = s.query(&Query::Pending).unwrap();
+    assert_eq!(p.get("cast_due"), Some(&Json::Null));
+    let a = world_action(&s, s.g.d.t::<SpellType>("SPELL_WARCRY")).expect("listed while pending");
+    assert_eq!(a.get("enabled").and_then(Json::as_bool), Some(false));
+    assert_eq!(s_of(&a, "why"), Some("Pending. Takes effect at the end of a turn when it can."));
 }
 
-/// The top bar's world spell in each state: no charge and nothing queued, the ritual in progress,
-/// a charge held and castable, a charge held with no unit to cast it.
+/// The top bar's world spell: no button until the cast is pending; the production list's line.
 #[test]
-fn the_world_spell_button_says_where_the_ritual_stands() {
+fn the_world_spell_button_exists_only_while_pending() {
     let mut s = duel_as(33, "CIVILIZATION_HIPPUS");
     let d = s.g.d;
     let h = s.human;
     let spell = d.t::<SpellType>("SPELL_WARCRY");
     let project = d.t::<ProjectType>("PROJECT_RITUAL_WARCRY");
     let capital = s.g.player_get_capital_city(h).unwrap();
-    let name = city_name(&s, capital);
-    let cost = s.g.player_get_production_needed_project(h, project);
-    let why = |s: &Session| world_action(s, spell).and_then(|a| s_of(&a, "why").map(str::to_string));
-
-    assert_eq!(why(&s).as_deref(), Some(format!("No charge. Build Ritual: Warcry in a city (cost {cost}).").as_str()));
-
-    // In progress: the production list's entry first, with its rules line.
+    assert!(world_action(&s, spell).is_none(), "nothing pending: no button");
     let entry = ritual_entry(&s, capital, project);
     assert_eq!(entry.get("enabled").and_then(Json::as_bool), Some(true));
     let next = s.g.player_project_production_needed_at(h, project, 1);
-    let rules = format!("Leaves a charge of Warcry. Next cost: {next}.");
+    let rules = format!("At completion: Warcry takes effect. Next cost: {next}.");
     assert_eq!(entry.get("ritual").and_then(|r| s_of(r, "rules")), Some(rules.as_str()));
-    // The keywords' rules are its reminders (chips), not its rules line.
     let keys: Vec<&str> = entry.get("ritual").map(|r| arr(r, "reminders")).unwrap_or(&[]).iter().filter_map(|k| s_of(k, "key")).collect();
     assert_eq!(keys, ["KEYWORD_WORLD_RITUAL", "KEYWORD_RITUAL"]);
-    assert_eq!(entry.get("ritual").and_then(|r| r.get("why")), Some(&Json::Null));
     let r = s.execute(&Command::PushOrder { city: capital, order: OrderType::ORDER_CREATE, data: project.idx() as i32, alt: false, shift: false, ctrl: false });
     assert!(matches!(r, Ok(CmdOk::Applied { .. })), "{r:?}");
     s.g.city_add_turn_production(capital, 7);
-    let turns = s.g.city_production_turns_left_project(capital, project, 0);
-    let turns = if turns == 1 { "1 turn".to_string() } else { format!("{turns} turns") };
-    assert_eq!(why(&s).as_deref(), Some(format!("No charge. Ritual: Warcry: 7/{cost} in {name}, {turns}.").as_str()));
     let city = s.query(&Query::City { city: capital }).unwrap();
     assert_eq!(city.get("ritual_head").and_then(|r| s_of(r, "confirm")), Some("Abandon Ritual: Warcry? Its 7 production is lost."));
-    assert!(arr(&city, "hurries").is_empty());
+    assert!(world_action(&s, spell).is_none(), "in progress: no button");
+}
 
-    // Taken off the queue (the city builds a warrior instead), then a charge held: castable.
-    let warrior = d.t::<UnitType>("UNIT_WARRIOR");
-    let r = s.execute(&Command::PushOrder { city: capital, order: OrderType::ORDER_TRAIN, data: warrior.idx() as i32, alt: false, shift: false, ctrl: false });
-    assert!(matches!(r, Ok(CmdOk::Applied { .. })), "{r:?}");
-    assert_eq!(s.g.cities[capital].project_production[project], 0, "abandoned");
-    assert_eq!(s.g.player_grant_world_ritual_charge(h), Some(capital));
-    let a = world_action(&s, spell).unwrap();
-    assert_eq!(a.get("enabled").and_then(Json::as_bool), Some(true), "{a:?}");
-    assert_eq!(s_of(&a, "charge"), Some(format!("Charge held in {name}. Casting spends it. Next ritual cost: {cost}.").as_str()));
-
-    // No unit left to cast it: still shown, disabled, with the reason.
-    for u in s.g.players[h].units.clone() {
-        s.g.unit_kill(u, false, None);
+/// `ffh-play stage ritual-civ:CIVILIZATION_DOVIELLO`: The Cull pending with a valid target (two
+/// warriors in the capital): the turn does not end, forced or not, with the reason; cast, it ends.
+/// `ritual-notarget:CIVILIZATION_DOVIELLO`: no valid target: the turn ends, the cast stays pending.
+#[test]
+fn a_pending_targeted_spell_blocks_the_end_of_the_turn() {
+    let dir = common::TempDir::new("stage-ritual-civ-doviello");
+    let st = ffh_play::stage::ritual_civ(&dir.0, "CIVILIZATION_DOVIELLO").expect("staged");
+    let mut s = load(&st.save);
+    let d = s.g.d;
+    let spell = d.t::<SpellType>("SPELL_THE_CULL");
+    let p = s.query(&Query::Pending).unwrap();
+    let due = p.get("cast_due").expect("cast_due");
+    assert_eq!(s_of(due, "reason"), Some("Before ending the turn: cast The Cull."));
+    assert_eq!(s_of(due, "label"), Some("Cast The Cull first."));
+    for force in [false, true] {
+        let r = s.execute(&Command::EndTurn { force });
+        assert!(matches!(&r, Err(e) if e.to_string().contains("Before ending the turn: cast The Cull.")), "{r:?}");
     }
-    let a = world_action(&s, spell).expect("still listed");
+    let a = world_action(&s, spell).expect("the button while pending");
+    assert_eq!(s_of(&a, "label"), Some("Cast The Cull"));
+    assert_eq!(a.get("pending").and_then(Json::as_bool), Some(true));
+    assert_eq!(a.get("enabled").and_then(Json::as_bool), Some(true), "{a:?}");
+    let cmd = match Command::from_json(d, a.get("cmd").unwrap()).unwrap() {
+        Command::CastAt { unit, spell, target, .. } => Command::CastAt { unit, spell, target, confirmed: true },
+        other => panic!("{other:?}"),
+    };
+    let r = s.execute(&cmd);
+    assert!(matches!(r, Ok(CmdOk::Applied { .. })), "{r:?}");
+    assert!(world_action(&s, spell).is_none(), "cast: no button");
+    assert_eq!(s.query(&Query::Pending).unwrap().get("cast_due"), Some(&Json::Null));
+    let r = s.execute(&Command::EndTurn { force: true });
+    assert!(matches!(r, Ok(CmdOk::Applied { .. })), "{r:?}");
+
+    let dir = common::TempDir::new("stage-ritual-notarget-doviello");
+    let st = ffh_play::stage::ritual_notarget(&dir.0, "CIVILIZATION_DOVIELLO").expect("staged");
+    let mut s = load(&st.save);
+    assert_eq!(s.query(&Query::Pending).unwrap().get("cast_due"), Some(&Json::Null));
+    let a = world_action(&s, spell).expect("the button while pending");
     assert_eq!(a.get("enabled").and_then(Json::as_bool), Some(false));
-    assert_eq!(s_of(&a, "why"), Some("No unit of yours can cast it now."));
-    assert!(a.get("charge").is_none(), "{a:?}");
+    assert_eq!(s_of(&a, "why"), Some("No valid target now. It stays pending."));
+    let h = s.human;
+    let r = s.execute(&Command::EndTurn { force: true });
+    assert!(matches!(r, Ok(CmdOk::Applied { .. })), "{r:?}");
+    assert!(s.g.player_world_ritual_pending(h, d.t::<ProjectType>("PROJECT_RITUAL_THE_CULL")), "still pending");
 }
 
 /// The Sanctuary's ritual while the Sanctuary holds, and the reason the list does not know.
@@ -307,10 +325,12 @@ fn wellspring_is_placed_by_plot_then_mana_type() {
     assert_eq!(s_of(place, "label"), Some("Place Wellspring"));
     assert_eq!(s_of(place, "completed"), Some("Ritual: Wellspring completed. Place the mana node: click a marked plot."));
     assert_eq!(s_of(place, "pick"), Some("Place the mana node of Wellspring: click a marked plot."));
-    assert_eq!(s_of(place, "later"), Some("Esc: later."));
+    assert!(place.get("later").is_none(), "{place:?}");
     assert_eq!(a.get("cmd").and_then(|c| s_of(c, "c")), Some("place"));
-    let charge = s_of(&a, "charge").unwrap();
-    assert!(charge.contains("Placing spends it."), "{charge}");
+    assert_eq!(a.get("pending").and_then(Json::as_bool), Some(true));
+    // Due before the turn ends.
+    let p = s.query(&Query::Pending).unwrap();
+    assert_eq!(p.get("cast_due").and_then(|c| s_of(c, "reason")), Some("Before ending the turn: place Wellspring."));
     let manas: Vec<String> = ffh_core::ffh::world_ritual_spells::small::wellspring_manas(d).iter().map(|&(b, _)| d.text.name(&d.bonuses[b].base.description).to_string()).collect();
     let targets = arr(&a, "targets");
     assert!(!targets.is_empty());
@@ -329,8 +349,8 @@ fn wellspring_is_placed_by_plot_then_mana_type() {
     }
     // The tooltip's rules: placed, no caster, a mana type.
     let help = ffh_play::view::help::spell::effects(d, spell);
-    assert!(help.contains("Spends a charge of its [KW=KEYWORD_WORLD_RITUAL]world ritual[\\KW], Ritual: Wellspring; placed when it completes."), "{help}");
-    assert!(help.contains("The charge is held until the node is placed."), "{help}");
+    assert!(help.contains("Placed when its [KW=KEYWORD_WORLD_RITUAL]world ritual[\\KW], Ritual: Wellspring, completes"), "{help}");
+    assert!(!help.contains("charge"), "{help}");
     assert!(help.contains("Choose a mana type."), "{help}");
     for no in ["Cast by", "caster", "Can only be used by", "option"] {
         assert!(!help.contains(no), "{no:?} in {help}");
@@ -492,16 +512,13 @@ fn wellspring_menu_lists_each_mana_type_compactly() {
     assert!(matches!(r, Ok(CmdOk::Applied { .. })), "{r:?}");
     assert_eq!(s.g.map.plots[q].bonus_type, Some(d.t::<BonusType>("BONUS_MANA_FIRE")));
     assert_eq!(s.g.player_get_num_available_bonuses(h, d.t::<BonusType>("BONUS_MANA_FIRE")) as i64, i_of(fire, "after").unwrap(), "the node counts, as the menu said");
-    let a = world_action(&s, spell).unwrap();
-    assert!(a.get("place").is_none(), "the charge is spent: {a:?}");
-    assert_eq!(a.get("enabled").and_then(Json::as_bool), Some(false));
-    // No charge: a second placement is refused.
+    assert!(world_action(&s, spell).is_none(), "placed: no button");
+    // Nothing pending: a second placement is refused.
     assert!(s.execute(&cmd).is_err());
 }
 
 /// `ffh-play stage ritual-notech:CIVILIZATION_AMURITES`: Ritual: Wellspring needs Knowledge of the
-/// Ether: the production list shows it disabled with the requirement, and the world-spell button
-/// says so.
+/// Ether: the production list shows it disabled with the requirement.
 #[test]
 fn wellspring_ritual_is_listed_with_its_tech_requirement() {
     let dir = common::TempDir::new("stage-ritual-notech-amurites");
@@ -513,8 +530,7 @@ fn wellspring_ritual_is_listed_with_its_tech_requirement() {
     let entry = ritual_entry(&s, st.capital, project);
     assert_eq!(entry.get("enabled").and_then(Json::as_bool), Some(false));
     assert_eq!(entry.get("ritual").and_then(|r| s_of(r, "why")), Some("Requires Knowledge of the Ether."));
-    let a = world_action(&s, d.t::<SpellType>("SPELL_WELLSPRING")).unwrap();
-    assert_eq!(s_of(&a, "why"), Some("No charge. Ritual: Wellspring requires Knowledge of the Ether."), "{a:?}");
+    assert!(world_action(&s, d.t::<SpellType>("SPELL_WELLSPRING")).is_none(), "nothing pending: no button");
     // With the tech: listed and enabled.
     let team = s.g.players[h].team;
     s.g.team_set_has_tech(team, d.t::<TechType>("TECH_KNOWLEDGE_OF_THE_ETHER"), true, Some(h), false, false);
@@ -534,8 +550,7 @@ fn wellspring_placement_comes_with_the_completed_ritual() {
     let st = ffh_play::stage::ritual_due(&dir.0, "CIVILIZATION_AMURITES").expect("staged");
     let mut s = load(&st.save);
     let spell = s.g.d.t::<SpellType>("SPELL_WELLSPRING");
-    let a = world_action(&s, spell).unwrap();
-    assert!(a.get("place").is_none() && a.get("place_on_charge").and_then(Json::as_bool) == Some(true), "{a:?}");
+    assert!(world_action(&s, spell).is_none(), "nothing pending yet");
     let r = s.execute(&Command::EndTurn { force: true });
     assert!(r.is_ok(), "{r:?}");
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);

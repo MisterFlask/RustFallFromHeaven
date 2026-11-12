@@ -2,13 +2,13 @@
 //! `ffh_core::ffh::world_ritual_spells::lanun_khazad`). A rules change, so the choices are ad hoc
 //! (CLAUDE.md, "AI changes"):
 //!
-//! - **Raging Seas:** with a charge and at war with a civilization (`world_spells::ready`), at the
+//! - **Raging Seas:** with its cast pending and at war with a civilization (`world_spells::ready`), at the
 //!   water plot whose storm would cover the most enemy strength (units of teams at war with us on
 //!   plots we see that the storm strikes; ties: nearest an enemy coastal city); with no enemy unit
 //!   in reach, next to the enemy coastal city nearest a city of ours.
 //! - **Steer the Storm:** each turn, to the reachable centre covering the most enemy strength, when
 //!   it covers more than where the storm stands.
-//! - **The Delve:** with a charge, by a unit of ours already on a valid hill (a hill city's
+//! - **The Delve:** with its cast pending, by a unit of ours already on a valid hill (a hill city's
 //!   garrison), to the valid hill nearest our city farthest from that unit; of the units that can,
 //!   the one whose tunnel is longest.
 //! - **Enter the Delve** (every AI, the barbarians included): a land unit on a tunnel's end at the
@@ -238,7 +238,7 @@ mod tests {
         g.player_found(US, 4, 4);
         unit(&mut g, US, "UNIT_WARRIOR", 4, 4);
         g.player_found(THEM, 15, 3);
-        g.player_grant_world_ritual_charge(US);
+        g.player_grant_world_ritual_pending(US);
         // At peace: no storm.
         play(&mut g);
         assert!(g.player_storm(US).is_none());
@@ -284,7 +284,7 @@ mod tests {
             g.plot_set_owner(t, Some(US), false, false);
         }
         let guard = unit(&mut g, US, "UNIT_WARRIOR", 4, 5);
-        g.player_grant_world_ritual_charge(US);
+        g.player_grant_world_ritual_pending(US);
         play(&mut g);
         assert_eq!(g.delves.len(), 1, "a tunnel");
         let (a, b) = g.delves[0];

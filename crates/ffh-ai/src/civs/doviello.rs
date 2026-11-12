@@ -7,7 +7,7 @@
 //! by the generic casting, and the Beastmen fight (`units::fighters_off_worker_ai`: the cast keeps
 //! the slave's AI type). (The Worker's cast went with the workers, docs/WORKS.md.)
 //!
-//! The Cull (their world spell, docs/CARDS.md): with a charge, cast on the plot with the most of
+//! The Cull (their world spell, docs/CARDS.md): with its cast pending, cast on the plot with the most of
 //! our units where the weaker half that dies are all of the lowest tier we can build or older,
 //! leaving 2 or more units in a city; it waits for such a plot of 4 or more units ([`cull`]).
 //!
@@ -63,7 +63,7 @@ fn lowest_buildable_tier(g: &Game, p: PlayerId) -> Option<i32> {
         .min()
 }
 
-/// The Cull, with a charge: the plot with the most of our units (ties: the lower plot) where the
+/// The Cull, with its cast pending: the plot with the most of our units (ties: the lower plot) where the
 /// weaker half are all of the lowest tier we can build or older, 4 or more units, and 2 or more
 /// left in a city.
 fn cull(g: &mut Game, p: PlayerId) {

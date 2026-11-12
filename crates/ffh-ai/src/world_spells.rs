@@ -1,5 +1,8 @@
-//! When the AI casts a world spell (`bGlobal`: by any unit of the civilization, once per charge of
-//! its world ritual, docs/CARDS.md; when it builds the ritual: `world_rituals.rs`).
+//! When the AI casts a world spell (`bGlobal`, once per completion of its world ritual,
+//! docs/CARDS.md; when it builds the ritual: `world_rituals.rs`). Since 2026-11-12 an untargeted
+//! world spell takes effect at its ritual's completion and a targeted one is cast as soon as it
+//! has a target: the timing below decides when the ritual starts ([`ready_for_ritual`]), and a
+//! pending cast is always [`ready`].
 //! FfH 0.41 wrote this timing into the rules, as AI-only branches of the spells' Python
 //! requirements (`if pPlayer.isHuman() == False:` in `CvSpellInterface.py` `req*`); the port
 //! dropped them from the rules (docs/PORTING.md, "Changes from FFH2"), so a world spell has the
@@ -60,6 +63,16 @@ fn table(d: &GameData) -> &'static [Option<World>] {
 /// timed world spell). These are FfH 0.41's AI-only requirements, condition for condition; the
 /// rules check the rest (`unit_can_cast`).
 pub fn ready(g: &Game, p: PlayerId, spell: SpellType) -> bool {
+    // A world spell whose cast is pending is cast at once (nothing is held for a moment).
+    if g.d.spells[spell].ritual_charge.is_some_and(|r| g.player_world_ritual_pending(p, r)) {
+        return true;
+    }
+    ready_for_ritual(g, p, spell)
+}
+
+/// True once player `p`'s world spell `spell` has its moment by the AI's timing: when the AI
+/// starts the world ritual that brings it.
+pub fn ready_for_ritual(g: &Game, p: PlayerId, spell: SpellType) -> bool {
     let Some(w) = table(g.d)[spell.idx()] else { return true };
     let pl = &g.players[p];
     let wars = || g.team_get_at_war_count(pl.team, true);
@@ -99,6 +112,8 @@ fn expert_moment(g: &Game, p: PlayerId, w: World) -> Option<bool> {
     let civ_war = || g.teams.keys().any(|t| t != team && t != barb && g.teams[t].alive_count > 0 && g.at_war(team, t));
     Some(match w {
         World::RagingSeas => civ_war(),
+        // Into the Mist (the Sidar's; `civs/sidar.rs`): for a war, or with 60 units.
+        World::IntoTheMist => crate::civs::world_spell::war_or_preparing(g, p) || pl.num_units() >= 60,
         World::Worldbreak => g.get_global_counter() >= 20 && civ_war(),
         World::ReligiousFervor => g.player_get_state_religion(p).is_some_and(|r| {
             let with = pl.cities.iter().filter(|&&c| g.cities[c].has_religion[r]).count();

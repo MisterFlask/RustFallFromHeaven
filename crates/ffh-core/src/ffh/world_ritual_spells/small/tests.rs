@@ -173,7 +173,7 @@ fn peace_or_the_rivals_death_cancels_the_tithe_without_a_doubling() {
 fn cull_game() -> (Game, UnitId) {
     let mut g = game_of(&["CIVILIZATION_DOVIELLO", "CIVILIZATION_BANNOR"]);
     g.player_init_city(US, 4, 5, true, true);
-    g.player_grant_world_ritual_charge(US).expect("a charge");
+    g.player_grant_world_ritual_pending(US).expect("a charge");
     let caster = unit(&mut g, US, "UNIT_WARRIOR", 4, 5);
     (g, caster)
 }
@@ -202,7 +202,7 @@ fn the_cull_kills_the_weaker_half_and_shares_their_experience() {
     assert!(g.units[units[1]].death_delay && g.units[units[2]].death_delay);
     assert!(!g.units[settler].death_delay, "a unit without strength is not counted");
     assert_eq!([0, 4, 3].map(|i| g.units[units[i]].experience), [4 + 7, 7 + 7, 7]);
-    assert_eq!(g.player_world_ritual_charge_city(US, g.player_world_ritual(US).unwrap()), None, "the charge is spent");
+    assert!(!g.player_world_ritual_pending(US, g.player_world_ritual(US).unwrap()), "the charge is spent");
 }
 
 #[test]
@@ -238,11 +238,10 @@ fn the_cull_refuses_a_plot_without_two_units() {
     let mixed = g.map.plot_xy(12, 5).unwrap();
     assert!(!g.unit_can_cast_at(caster, s, SpellTarget::Plot(lone)));
     assert!(!g.unit_can_cast_at(caster, s, SpellTarget::Plot(mixed)), "another player's units do not count");
-    // Without a charge, not at all.
+    // Without its cast pending, not at all.
     unit(&mut g, US, "UNIT_WARRIOR", 10, 5);
     assert!(g.unit_can_cast_at(caster, s, SpellTarget::Plot(lone)));
-    let c = g.players[US].cities[0];
-    g.cities[c].ritual_charges.clear();
+    g.players[US].world_ritual_pending = None;
     assert!(!g.unit_can_cast_at(caster, s, SpellTarget::Plot(lone)));
 }
 
@@ -319,7 +318,7 @@ fn wellspring_game() -> Game {
             g.unit_kill(u, false, None);
         }
     }
-    g.player_grant_world_ritual_charge(US).expect("a charge");
+    g.player_grant_world_ritual_pending(US).expect("a charge");
     g
 }
 
@@ -363,11 +362,11 @@ fn wellspring_raises_a_mana_node_on_a_bare_plot_of_ours() {
     assert_eq!(g.spell_choice_plot(s, wellspring_choice(d, bare, fire)), Some(bare));
     // An invalid target places nothing and keeps the charge.
     assert!(!g.player_place(US, s, SpellTarget::Choice(wellspring_choice(d, peak, fire))));
-    assert!(g.player_world_ritual_charge_city(US, g.player_world_ritual(US).unwrap()).is_some());
+    assert!(g.player_world_ritual_pending(US, g.player_world_ritual(US).unwrap()));
     assert!(g.player_place(US, s, target));
     assert_eq!(g.map.plots[bare].bonus_type, Some(fire));
     assert_eq!(g.map.plots[bare].improvement_type, Some(node));
-    assert_eq!(g.player_world_ritual_charge_city(US, g.player_world_ritual(US).unwrap()), None, "the charge is spent");
+    assert!(!g.player_world_ritual_pending(US, g.player_world_ritual(US).unwrap()), "the charge is spent");
     assert_eq!(g.players[US].world_spell_casts, 1);
     assert!(!told(&g, "Wellspring: ").is_empty());
     assert!(!g.player_can_place(US, s));
@@ -416,7 +415,7 @@ fn wellspring_is_placed_by_the_player_not_cast_by_a_unit() {
     assert!(g.player_place(US, s, target), "with an arcane unit");
     assert_eq!(g.map.plots[bare].bonus_type, Some(fire));
     // Under No World Spells nothing is placed.
-    g.player_grant_world_ritual_charge(US);
+    g.player_grant_world_ritual_pending(US);
     g.setup.options[GameOptionType::GAMEOPTION_NO_WORLD_SPELLS] = true;
     assert!(!g.player_can_place(US, s));
 }

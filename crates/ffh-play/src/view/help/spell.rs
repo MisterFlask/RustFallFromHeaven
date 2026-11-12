@@ -166,10 +166,14 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
     // This game's (docs/CARDS.md): a spell that spends a ritual's completion.
     if let Some(ritual) = ritual_charge.filter(|&r| *place_on_charge && d.projects[r].world_ritual) {
         b.push_str(NEWLINE);
-        b.push_str(&format!("[ICON_BULLET]Spends a charge of its [KW=KEYWORD_WORLD_RITUAL]world ritual[\\KW], {}; placed when it completes.", display(d, ritual)));
+        b.push_str(&format!("[ICON_BULLET]Placed when its [KW=KEYWORD_WORLD_RITUAL]world ritual[\\KW], {}, completes", display(d, ritual)));
     } else if let Some(ritual) = ritual_charge.filter(|&r| d.projects[r].world_ritual) {
         b.push_str(NEWLINE);
-        b.push_str(&format!("[ICON_BULLET]Spends a charge of its [KW=KEYWORD_WORLD_RITUAL]world ritual[\\KW], {}; cast by any unit of yours", display(d, ritual)));
+        if target.is_some() {
+            b.push_str(&format!("[ICON_BULLET]Cast when its [KW=KEYWORD_WORLD_RITUAL]world ritual[\\KW], {}, completes, by any unit of yours", display(d, ritual)));
+        } else {
+            b.push_str(&format!("[ICON_BULLET]Takes effect when its [KW=KEYWORD_WORLD_RITUAL]world ritual[\\KW], {}, completes", display(d, ritual)));
+        }
     } else if let Some(ritual) = ritual_charge {
         b.push_str(NEWLINE);
         b.push_str(&format!("[ICON_BULLET]Cast by a unit in a city of yours that has completed the {} ritual; it spends that completion", display(d, *ritual)));
@@ -476,7 +480,7 @@ mod tests {
         let seas = of("SPELL_RAGING_SEAS");
         assert!(!seas.contains("once per game"), "{seas}");
         for part in [
-            "[ICON_BULLET]Spends a charge of its [KW=KEYWORD_WORLD_RITUAL]world ritual[\\KW], Ritual: Raging Seas; cast by any unit of yours",
+            "[ICON_BULLET]Cast when its [KW=KEYWORD_WORLD_RITUAL]world ritual[\\KW], Ritual: Raging Seas, completes, by any unit of yours",
             "[ICON_BULLET]Can only be used by the [LINK=literal]Lanun[\\LINK] civilization",
             "[ICON_BULLET]Requires the [LINK=literal]Optics[\\LINK] technology",
         ] {

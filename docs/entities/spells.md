@@ -1240,20 +1240,25 @@ stands, near our own units or a neutral border alike. That 300 is also its end-o
 ## World spells
 
 Since 2026-11-11 (the owner's decision; docs/CARDS.md, "World rituals"), a world spell is not
-cast once a game: each spends a charge of its civilization's ritual (`PROJECT_RITUAL_<NAME>`), a
-repeatable project built in one city at a time, never hurried, whose cost (100, or 150 for the
-eight strongest) doubles with each completion. Any unit meeting the spell's other requirements
-casts it while a city of the owner holds a charge. The "once a game" in the entries below is the
-FFH2 rule they were written for.
+cast once a game: it comes with each completion of its civilization's ritual
+(`PROJECT_RITUAL_<NAME>`), a repeatable project built in one city at a time, never hurried with
+gold, whose cost (100, or 150 for the eight strongest) doubles with each completion. Since
+2026-11-12 (the owner's decision) no charge is held: at the completion a world spell with no
+target takes effect at once (through any unit of the owner, nearest the city; pending until the
+owner has a unit and the spell's requirement holds), and one with a target (Wellspring, The
+Delve, Raging Seas, Frozen Passage, The Cull) is the owner's pending cast: a human cannot end the
+turn while it has a valid target, and the ritual is not started again while it is pending. The
+"once a game" in the entries below is the FFH2 rule they were written for; the AI's timing of an
+untargeted one (`world_spells::ready_for_ritual`) now decides when it starts the ritual.
 
 ### Wellspring (`SPELL_WELLSPRING`)
-*World spell, Amurites · a charge of Ritual: Wellspring (cost 100, Knowledge of the Ether) · placed by the player, no unit casting it · target: a plot and a mana type*
+*World spell, Amurites · with each completion of Ritual: Wellspring (cost 100, Knowledge of the Ether) · placed by the player, no unit casting it · target: a plot and a mana type*
 
-**What it does.** It replaced FFH2's Arcane Lacuna (2026-11-11, the owner's design; docs/PORTING.md, "Changes from FFH2"). The target is a choice of a land plot in the Amurites' borders with no resource, city or improvement and not a peak, and a typed mana (one of the 17 with a node: Air, Body, Chaos, Death, Earth, Enchantment, Entropy, Fire, Law, Life, Metamagic, Mind, Nature, Shadow, Spirit, Sun, Water). The plot gains that mana resource and its node, permanently (`world_ritual_spells/small.rs`). Since 2026-11-12 (the owner's decision) no unit casts it: the player places it with the charge (`place_on_charge`, `Game::player_place`), and the human's placement opens by itself when the ritual completes, with a menu of the mana types: for each, the count before and after, the sphere's spells by tier, what this node changes and what owning it gives (docs/HUMAN.md). Since 2026-11-12 the ritual needs Knowledge of the Ether: before it, Fire and Death nodes would not count.
+**What it does.** It replaced FFH2's Arcane Lacuna (2026-11-11, the owner's design; docs/PORTING.md, "Changes from FFH2"). The target is a choice of a land plot in the Amurites' borders with no resource, city or improvement and not a peak, and a typed mana (one of the 17 with a node: Air, Body, Chaos, Death, Earth, Enchantment, Entropy, Fire, Law, Life, Metamagic, Mind, Nature, Shadow, Spirit, Sun, Water). The plot gains that mana resource and its node, permanently (`world_ritual_spells/small.rs`). Since 2026-11-12 (the owner's decision) no unit casts it: the player places it once the ritual completes (`place_on_charge`, `Game::player_place`), and the human's placement opens by itself then (the turn does not end before it is placed while a plot is valid), with a menu of the mana types: for each, the count before and after, the sphere's spells by tier, what this node changes and what owning it gives (docs/HUMAN.md). Since 2026-11-12 the ritual needs Knowledge of the Ether: before it, Fire and Death nodes would not count.
 
 **Playing it well.** A new mana source of the sphere you lack, close to home: a sphere opens a line of spells for every adept, and a second source of one strengthens its spells and buildings. Put it in the heart of the empire, where no raider pillages it.
 
-**AI: Directed.** `civs/amurites.rs::wellspring`: with a charge, the valid plot nearest the capital, the mana type the Amurites own the fewest of (`player_get_num_available_bonuses`, ties in data order). The ritual itself is built by the generic `world_rituals.rs`.
+**AI: Directed.** `civs/amurites.rs::wellspring`: with its cast pending, the valid plot nearest the capital, the mana type the Amurites own the fewest of (`player_get_num_available_bonuses`, ties in data order). The ritual itself is built by the generic `world_rituals.rs`.
 
 ### Ardor (`SPELL_ARDOR`)
 *World spell, Grigori · once a game · any Grigori unit · needs one great person born · AI weight 300*
@@ -1328,13 +1333,13 @@ FFH2 rule they were written for.
 **AI: Directed.** Cast by the end-of-turn choice at its weight of 300 once FfH's condition holds: at war with two civilization teams (`world_spells::ready`). That came late, around turn 420, and in 19 of 64 games. A moment of its own (a city in peril with 6 or more of our forests near) fired during the elves' own offensives and lost: wins 37.5% -> 28.1% fresh (docs/AI_LOG.md, "World spells at moments of their own"). The Treants are army units (default AI `UNITAI_ATTACK`, `military::army`). Research does not value Way of the Forests for the spell.
 
 ### The Delve (`SPELL_THE_DELVE`)
-*World spell, Khazad · a charge of Ritual: The Delve · Mining · cast by a selected Khazad land unit on a hill in Khazad borders · AI weight 300*
+*World spell, Khazad · with each completion of Ritual: The Delve · Mining · cast by a selected Khazad land unit on a hill in Khazad borders · AI weight 300*
 
 **What it does.** Target: another hill in the Khazad's borders within 10 plots, neither plot already the end of a tunnel. A tunnel joins the two hills for good (`Game::delves`); it stays when either plot changes owner. Units travel it with Enter the Delve. Replaces Mother Lode (25 gold a mine, 10% of flat plots raised to hills) since 2026-11-11.
 
 **Playing it well.** Join a hill city on the frontier to one in the heartland: a garrison moves across the empire in one turn. A tunnel is open to anyone who may stand on its far end, enemies included once they hold the near end, so dig away from an exposed border or keep the ends garrisoned.
 
-**AI: Directed.** With a charge, cast by a unit of ours already standing on a valid hill (a hill city's garrison), to the valid hill nearest our city farthest from that unit; of the units that can, the one with the longest tunnel (`lanun_khazad::the_delve`).
+**AI: Directed.** With its cast pending, cast by a unit of ours already standing on a valid hill (a hill city's garrison), to the valid hill nearest our city farthest from that unit; of the units that can, the one with the longest tunnel (`lanun_khazad::the_delve`).
 
 ### Enter the Delve (`SPELL_ENTER_THE_DELVE`)
 *Any player's land unit on a tunnel end · not an AI weight*
@@ -1346,13 +1351,13 @@ FFH2 rule they were written for.
 **AI: Directed.** At the start of a player's turn, a land unit on a tunnel end whose group's move order ends at least 4 plots closer from the other end takes it (`lanun_khazad::delve_travel`, every AI player, the barbarians included).
 
 ### Raging Seas (`SPELL_RAGING_SEAS`)
-*World spell, Lanun · a charge of Ritual: Raging Seas · Optics · any Lanun unit · AI weight 300*
+*World spell, Lanun · with each completion of Ritual: Raging Seas · Optics · any Lanun unit · AI weight 300*
 
 **What it does.** Target: a water plot the Lanun have seen. A storm covers the plots within 2 plots of it for 15 turns (the turn of the cast and the next 14; `AreaEffectKind::RagingSeas`). At the start of each Lanun turn, each unit of another team in the storm, on water or on land next to water, takes 20 cold damage: two draws of up to 20, less its resistance (twice its defense and level, a quarter of its city's defense, its cold resistance). A ship can sink; another unit is not taken beyond 75% damage. One storm per player at a time; Steer the Storm moves it. Every player who sees a plot of it sees it on the map. Replaces FFH2's whole-world strike (75 damage to every non-Lanun unit next to water, improvements wrecked) since 2026-11-11.
 
 **Playing it well.** Park it over an enemy fleet or the sea lanes into an enemy port, then steer it after the ships: each turn under it costs them health. On a coastal city it wears down the defenders before a landing.
 
-**AI: Directed.** With a charge and at war with a civilization (`world_spells::ready`), at the water plot whose storm covers the most enemy strength the Lanun see (ties: nearest an enemy coastal city); with no enemy in reach, next to the enemy coastal city nearest a Lanun city (`lanun_khazad::raging_seas`).
+**AI: Directed.** The ritual is started at war with a civilization (`world_spells::ready_for_ritual`); with its cast pending, at the water plot whose storm covers the most enemy strength the Lanun see (ties: nearest an enemy coastal city); with no enemy in reach, next to the enemy coastal city nearest a Lanun city (`lanun_khazad::raging_seas`).
 
 ### Steer the Storm (`SPELL_STEER_THE_STORM`)
 *Lanun · world action (top bar) · while the Lanun's storm holds · not an AI weight*
@@ -1409,13 +1414,13 @@ FFH2 rule they were written for.
 **AI: Directed.** Cast by the end-of-turn choice at its weight of 300 once FfH's condition holds: at war with two civilization teams (`world_spells::ready`), cast in 27 of 64 games around turn 420. Both a hold for an invasion (`civs/elohim.rs`) and a moment of its own (a city in peril in a civilization war) were tried, and the measured effect was within noise (docs/AI_LOG.md). The condition does not look at whether anyone is actually invading.
 
 ### Frozen Passage (`SPELL_FROZEN_PASSAGE`)
-*World spell, Illians · a charge of its ritual (Ritual: Frozen Passage, 150, doubling) · any Illian unit · target: a plot*
+*World spell, Illians · with each completion of its ritual (Ritual: Frozen Passage, 150, doubling) · any Illian unit · target: a plot*
 
 **What it does.** Cast at a water plot the Illians have seen, within 5 plots of their borders or of Sea Ice. Every water plot within 2 plots of it becomes Sea Ice, permanently: flat land of snow, without its feature, improvement or route (its resource stays, unused). Sea Ice yields nothing and takes no city, improvement or route. Land units cross it at a move cost of 1; ships cannot enter it. A ship the water froze under stays and may leave to the water next to it; its cargo may unload. It replaces FFH2's Stasis (docs/PORTING.md, "Changes from FFH2").
 
-**Playing it well.** A bridge for an army: freeze a strait to walk onto another landmass, or a bay to land beside an enemy city its navy guarded. Ice cast from ice reaches farther, so two charges cross a wider sea. It also shuts harbours: a coastal city whose water freezes loses its sea. Any ship can break it again (Icebreak), so freeze where the enemy has no ships near, and cross before they come.
+**Playing it well.** A bridge for an army: freeze a strait to walk onto another landmass, or a bay to land beside an enemy city its navy guarded. Ice cast from ice reaches farther, so two casts cross a wider sea. It also shuts harbours: a coastal city whose water freezes loses its sea. Any ship can break it again (Icebreak), so freeze where the enemy has no ships near, and cross before they come.
 
-**AI: Directed.** Cast the turn a charge is held (`civs/illians.rs`): at the valid target closest to the nearest city of another civilization on another landmass than the Illian capital's, else at the one nearest the capital.
+**AI: Directed.** Cast the turn its cast is pending (`civs/illians.rs`): at the valid target closest to the nearest city of another civilization on another landmass than the Illian capital's, else at the one nearest the capital.
 
 ### Icebreak (`SPELL_ICEBREAK`)
 *Spell · any ship of any civilization · target: a plot · 2 turns*
@@ -1445,13 +1450,13 @@ FFH2 rule they were written for.
 **AI: Directed.** Cast by the end-of-turn choice at its weight of 300 once FfH's condition holds: 25 units and at war with a civilization (`world_spells::ready`). That is usually the declaration turn, and this AI strikes within about 3 turns of declaring. Holding it for the strike did not help on fresh seeds (`civs/hippus.rs`, docs/AI_LOG.md, "Warcry held for the strike"). Blitz is not used: `campaign::strike` drops a unit once it has attacked, and letting Blitz units attack again was flat.
 
 ### The Cull (`SPELL_THE_CULL`)
-*World spell, Doviello · a charge of Ritual: The Cull (cost 60) · any Doviello unit · target: a plot*
+*World spell, Doviello · with each completion of Ritual: The Cull (cost 60) · any Doviello unit · target: a plot*
 
 **What it does.** It replaced FFH2's Wild Hunt (2026-11-11, the owner's design). The target is a plot with 2 or more of the Doviello's land units with strength (heroes count, carried units do not). Ordered by base strength, then experience, then unit id, the weaker half (rounded down) is killed; the survivors divide the killed units' experience plus 5 for each unit killed, the remainder one each to the strongest (`world_ritual_spells/small.rs`).
 
 **Playing it well.** Gather the obsolete warriors that cost upkeep and will never win a fight with the units that are to lead the next war: the old units' experience, and more, goes into the veterans.
 
-**AI: Directed.** `civs/doviello.rs::cull`: with a charge, the plot with the most units (4 or more) where the half that dies are all units of the lowest tier the Doviello can build or older, never leaving fewer than 2 units in a city; otherwise it waits.
+**AI: Directed.** `civs/doviello.rs::cull`: with its cast pending, the plot with the most units (4 or more) where the half that dies are all units of the lowest tier the Doviello can build or older, never leaving fewer than 2 units in a city; otherwise it waits.
 
 ### Worldbreak (`SPELL_WORLDBREAK`)
 *World spell, Sheaim · once a game · any Sheaim unit · needs an Armageddon counter above 0 · AI weight 300*

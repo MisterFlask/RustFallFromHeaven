@@ -308,12 +308,28 @@ attacks.
 **World rituals** (the civilizations' world spells; `crates/ffh-core/src/ffh/world_rituals.rs`,
 the owner's decision of 2026-11-11): the world spell of each civilization (`global`) names its
 ritual as `ritual_charge`, a project with `world_ritual` (`PROJECT_RITUAL_<NAME>`, repeatable,
-`prereq_civilization` the spell's, `repeat_cost_percent` 200). The variant of the charge:
-- The charge is the empire's, held in the city that built it: any unit of the owner that meets the
-  spell's other requirements casts it while any of the owner's cities holds one, and the cast spends
-  that city's (`ritual_charge_city`, `unit_has_ritual_charge`). A captured city loses its charges.
-- One charge at most per player, one city building it at a time (`world_rituals::cannot_create`,
-  player-wide, outside a visibility test).
+`prereq_civilization` the spell's, `repeat_cost_percent` 200). No charge is held (the owner's
+decision of 2026-11-12: "Instead of letting it be held, we simply do not allow the next turn until
+the player spends the ritual (if it's targeted); if it's not targeted, the world spell activates
+immediately"); at a completion the spell becomes the owner's pending cast
+(`Player::world_ritual_pending`, saved; the card rituals keep their charges in
+`City::ritual_charges`):
+- A spell with no target takes effect at once (`Game::player_fire_world_spell`), for humans and
+  AIs alike, through a nominal caster: a unit of the owner on the map, in or nearest the
+  completing city (one that loses no promotion by casting first); its requirement
+  (`py_requirement`) is checked, its caster's class (`unit_class_prereq`: Basium, Hyborem) is not.
+  With no unit, or its requirement unmet, it stays pending and takes effect at the end of the first
+  turn it can (`world_rituals::check_pending`, from `player_do_turn`).
+- A spell with a target (`target`, or `place_on_charge`: Wellspring, The Delve, Raging Seas, Frozen
+  Passage, The Cull) waits for its owner: any unit of the owner that meets the spell's other
+  requirements casts it (`unit_has_ritual_charge` reads the pending cast; the cast clears it). A
+  human cannot end the turn while it has a valid target (`Game::player_world_cast_due`; ffh-play
+  refuses `end_turn`, forced or not, with `Before ending the turn: cast The Cull.`); with no valid
+  target the turn ends and it stays pending. The AI casts it when its own targeting finds a target.
+- The pending cast is the player's: losing the city that completed it changes nothing.
+- One cast pending at most per player (the ritual is not started again while it is pending), one
+  city building it at a time (`world_rituals::cannot_create`, player-wide, outside a visibility
+  test).
 - Two limits are no longer the world rituals' own: since the owner's decision of 2026-11-12
   **every project is a Ritual** (`crates/ffh-core/src/ffh/rituals.rs`; the keyword `Ritual`,
   docs/PLAY_DESIGN.md "Keywords and reminder text"), and for every ritual:

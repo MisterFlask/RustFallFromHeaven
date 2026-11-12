@@ -271,10 +271,10 @@ fn the_staged_cards_save_has_card_spells_a_held_card_and_a_revealed_slot() {
     assert!(s.g.doom.slots.iter().any(|x| x.threshold == 30 && x.revealed));
 }
 
-/// The civilization's world spell (docs/CARDS.md, "World rituals"): listed while the civilization
-/// has one, disabled with the reason while no city holds a charge of its ritual, enabled with one.
+/// The civilization's world spell (docs/CARDS.md, "World rituals"): listed only while its cast is
+/// pending.
 #[test]
-fn the_world_spell_waits_for_a_charge_of_its_ritual() {
+fn the_world_spell_is_listed_while_its_cast_is_pending() {
     let d = ffh_data::global();
     let mut ng = common::steady_duel(33);
     ng.civ = Some(d.t::<CivilizationType>("CIVILIZATION_HIPPUS"));
@@ -285,13 +285,10 @@ fn the_world_spell_waits_for_a_charge_of_its_ritual() {
     let r = s.execute(&Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false });
     assert!(matches!(r, Ok(CmdOk::Applied { .. })), "{r:?}");
     let spell = d.t::<SpellType>("SPELL_WARCRY");
-    let a = world_action(&s, spell).expect("the civilization's world spell is listed");
-    assert!(!flag(&a, "enabled"));
-    let cost = s.g.player_get_production_needed_project(h, d.t::<ProjectType>("PROJECT_RITUAL_WARCRY"));
-    assert_eq!(a.get("why").and_then(Json::as_str), Some(format!("No charge. Build Ritual: Warcry in a city (cost {cost}).").as_str()));
-    assert_eq!(s.g.player_grant_world_ritual_charge(h).map(|c| s.g.cities[c].owner), Some(h));
-    let a = world_action(&s, spell).expect("listed");
-    assert!(flag(&a, "enabled"), "{a:?}");
+    assert!(world_action(&s, spell).is_none(), "nothing pending: the civilization's world spell is not listed");
+    assert!(s.g.player_grant_world_ritual_pending(h).is_some());
+    let a = world_action(&s, spell).expect("listed while pending");
+    assert!(flag(&a, "pending") && !flag(&a, "enabled"), "untargeted: it takes effect by itself: {a:?}");
     let other = d.t::<SpellType>("SPELL_RALLY");
     assert!(world_action(&s, other).is_none(), "another civilization's is not listed");
 }

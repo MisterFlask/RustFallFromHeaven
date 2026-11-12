@@ -7,7 +7,7 @@ import * as R from "../app/ritual_rows.js";
 const row = (o) => ({ player: 0, name: "Hippus", ritual_name: "Ritual: Warcry", city_name: "Lycus", percent: 0, turns_left: null, ...o });
 
 test("the HUD shows rituals in progress, queued by you, and charges held", () => {
-  const rows = [row({ player: 0, state: "in_progress" }), row({ player: 1, state: "idle" }), row({ player: 2, state: "charged" }), row({ player: 3, state: "queued" })];
+  const rows = [row({ player: 0, state: "in_progress" }), row({ player: 1, state: "idle" }), row({ player: 2, state: "pending" }), row({ player: 3, state: "queued" })];
   assert.deepEqual(
     R.activeRows(rows).map((r) => r.player),
     [0, 2, 3],
@@ -19,15 +19,15 @@ test("status words and accessible names", () => {
   assert.equal(R.turnsText(1), "1 turn");
   assert.equal(R.turnsText(6), "6 turns");
   const going = row({ state: "in_progress", percent: 37, turns_left: 6 });
-  assert.deepEqual(R.rowStatus(going), { charged: false, pct: "37%", turns: "6 turns", text: "37%, 6 turns" });
+  assert.deepEqual(R.rowStatus(going), { pending: false, pct: "37%", turns: "6 turns", text: "37%, 6 turns" });
   assert.equal(R.rowLabel(going), "Hippus: Ritual: Warcry in Lycus, 37%, 6 turns");
   const stalled = row({ state: "in_progress", percent: 5, turns_left: null });
   assert.equal(R.rowStatus(stalled).text, "5%");
-  const held = row({ state: "charged", name: "Unknown civilization" });
-  assert.equal(R.rowStatus(held).text, "Charge held");
-  assert.equal(R.rowLabel(held), "Unknown civilization: Ritual: Warcry in Lycus, charge held");
+  const held = row({ state: "pending", name: "Unknown civilization", city_name: null });
+  assert.equal(R.rowStatus(held).text, "Cast pending");
+  assert.equal(R.rowLabel(held), "Unknown civilization: Ritual: Warcry, cast pending");
   assert.deepEqual(R.listLines({ ...going, progress: 37, cost: 100, completed: 0, next_cost: 200 }), ["In progress in Lycus: 37/100 (37%, 6 turns).", "Completed: 0. Cost: 100. Next cost: 200."]);
-  assert.equal(R.listLines(row({ state: "charged" }))[0], "Charge held in Lycus.");
+  assert.equal(R.listLines(row({ state: "pending" }))[0], "Cast pending.");
   assert.equal(R.listLines(row({ state: "idle", city_name: null, completed: 1, cost: 200, next_cost: 400 }))[1], "Completed: 1. Cost: 200. Next cost: 400.");
   assert.equal(R.listLines(row({ state: "idle" }))[0], "Idle.");
   assert.equal(R.chipName(going), "Warcry");
@@ -69,21 +69,22 @@ test("world actions: the caster is placed by a city, and options on plots are pi
 const place = (held) => ({
   spell: 7,
   place_on_charge: true,
+  pending: held,
   enabled: held,
-  ...(held ? { place: { completed: "Ritual: Wellspring completed. Place the mana node: click a marked plot.", pick: "Place the mana node of Wellspring: click a marked plot.", later: "Esc: later." } } : {}),
+  ...(held ? { place: { completed: "Ritual: Wellspring completed. Place the mana node: click a marked plot.", pick: "Place the mana node of Wellspring: click a marked plot." } } : {}),
 });
 
-test("a placement opens by itself only when its charge appears, not on a loaded game", () => {
-  const seen = new Map();
-  // First view (a loaded game, a reload) with the charge held: nothing opens.
-  assert.deepEqual(R.placementDue(seen, [place(true)]), []);
-  assert.deepEqual(R.placementDue(seen, [place(true)]), [], "held still: postponed, not reopened");
-  assert.deepEqual(R.placementDue(seen, [place(false)]), [], "placed: the charge is gone");
-  assert.deepEqual(R.placementDue(seen, [place(true)]), [7], "the ritual completed again");
-  assert.deepEqual(R.placementDue(seen, [place(true)]), []);
-  // Other world actions are not placements.
-  assert.deepEqual(R.placementDue(new Map([[3, false]]), [{ spell: 3, enabled: true, place: {} }]), []);
-  assert.deepEqual(R.placementDue(seen, undefined), []);
+test("a pending cast's pick opens by itself once a turn", () => {
+  const opened = new Set();
+  assert.deepEqual(R.castsDue(opened, [place(true)], 5), [7]);
+  assert.deepEqual(R.castsDue(opened, [place(true)], 5), [], "closed with Escape: not reopened this turn");
+  assert.deepEqual(R.castsDue(opened, [place(true)], 6), [7], "the next turn");
+  assert.deepEqual(R.castsDue(opened, [place(false)], 7), [], "nothing pending");
+  // A targeted cast opens too; one with no valid target (disabled) or with no target does not.
+  assert.deepEqual(R.castsDue(new Set(), [{ spell: 3, pending: true, enabled: true, target_kind: "plot" }], 1), [3]);
+  assert.deepEqual(R.castsDue(new Set(), [{ spell: 3, pending: true, enabled: false, target_kind: "plot" }], 1), []);
+  assert.deepEqual(R.castsDue(new Set(), [{ spell: 3, pending: false, enabled: true, target_kind: "plot" }], 1), []);
+  assert.deepEqual(R.castsDue(opened, undefined, 1), []);
 });
 
 test("the placement's prompt", () => {

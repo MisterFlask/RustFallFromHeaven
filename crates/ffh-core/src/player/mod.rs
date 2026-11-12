@@ -398,6 +398,11 @@ pub struct Player {
     /// Not in C++: the rival named by Name the Tithe, whom Ritual: The Tithe strikes (the
     /// Calabim's; `ffh/world_ritual_spells/small.rs`).
     pub tithe_target: Option<PlayerId>,
+    /// Not in C++: the world ritual this player completed whose world spell awaits its cast
+    /// (docs/CARDS.md, "World rituals"; the owner's decision, 2026-11-12): a targeted spell until
+    /// the player casts it, an untargeted one until it can take effect (no unit of the player, or
+    /// its requirement unmet). The ritual is not built again meanwhile.
+    pub world_ritual_pending: Option<ProjectType>,
 }
 
 impl Player {
@@ -659,6 +664,7 @@ impl Player {
             world_ritual_refunds: 0,
             world_spell_casts: 0,
             tithe_target: None,
+            world_ritual_pending: None,
         }
     }
 

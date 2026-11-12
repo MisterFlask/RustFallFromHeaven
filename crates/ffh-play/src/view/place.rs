@@ -1,7 +1,8 @@
-//! World spells the player places with its ritual's charge, no unit casting them
+//! World spells the player places when their ritual completes, no unit casting them
 //! (`place_on_charge`, docs/CARDS.md "World rituals"; docs/HUMAN.md): Wellspring. The top bar's
 //! world action carries the placement ([`world_action`]): the valid plots and the prompts; the
-//! client opens it by itself on the turn the ritual completes. The menu of a plot
+//! client opens it by itself while the cast is pending (the turn cannot end before it is placed
+//! while a plot is valid). The menu of a plot
 //! ([`menu`], the `place_menu` query) lists its mana types, each a compact row: the count before
 //! and after placing it, the sphere's spells by tier, one line on what this placement changes and
 //! effect chips; every sentence of what owning it gives ([`passive_lines`]) is in a tooltip.
@@ -39,10 +40,10 @@ fn target_parts(g: &Game, spell: SpellType, t: SpellTarget) -> Option<(PlotIdx, 
     }
 }
 
-/// The world action of placed spell `spell` while the human holds its charge: `place` (its
-/// prompts and its button's words), `target_kind`, `targets` (each `{target, at, label}`: its plot
-/// and its mana type's name), `enabled` (`why` when no plot is valid), a `place` command at the
-/// first target (the client puts the picked one in) and `charge`.
+/// The world action of placed spell `spell` while its cast is pending: `place` (its prompts and its
+/// button's words), `target_kind`, `targets` (each `{target, at, label}`: its plot and its mana
+/// type's name), `enabled` (`why` when no plot is valid), a `place` command at the first target
+/// (the client puts the picked one in).
 pub fn world_action(v: &Viewer, spell: SpellType, ritual: ProjectType, j: &mut Json) {
     let g = v.g;
     let d = g.d;
@@ -68,7 +69,7 @@ pub fn world_action(v: &Viewer, spell: SpellType, ritual: ProjectType, j: &mut J
     j.set("targets", Json::Arr(list));
     j.set("enabled", enabled);
     if !enabled {
-        j.set("why", "Charge held. No valid plot now.");
+        j.set("why", crate::view::units::NO_TARGET_PENDING);
     }
     j.set(
         "place",
@@ -76,18 +77,12 @@ pub fn world_action(v: &Viewer, spell: SpellType, ritual: ProjectType, j: &mut J
             "label" => format!("Place {name}"),
             "completed" => format!("{} completed. Place {what}: click a marked plot.", display(d, ritual)),
             "pick" => format!("Place {what} of {name}: click a marked plot."),
-            "later" => "Esc: later.",
             "hint" => "Opens the placement: a marked plot on the map, then a mana type.",
             "title" => name.clone(),
         },
     );
     let first = targets.first().map(|&t| TargetRef::of(g, t)).unwrap_or(TargetRef::Choice(0));
     j.set("cmd", Command::Place { spell, target: first }.to_json());
-    if enabled {
-        if let Some(line) = crate::view::rituals::charge_line_verb(v, ritual, "Placing") {
-            j.set("charge", line);
-        }
-    }
 }
 
 /// `place_menu`: the mana types human may place with `spell` on plot `(x, y)`, each a compact row

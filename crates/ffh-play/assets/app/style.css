@@ -100,6 +100,10 @@ button[disabled] { background: var(--c-soot); border-color: var(--c-iron); color
 button.primary { color: var(--c-vellum); border-color: var(--c-bone); }
 button.danger, button.small.danger { border-color: var(--c-crimson); color: var(--c-bone); }
 #end-turn.end-turn-message:not(:disabled) { color: var(--c-glow); }
+/* A pending world spell must be cast before the turn ends (hud.js): the button is greyed and its
+   click says why and opens the cast. */
+#end-turn.blocked:not(:disabled) { flex-wrap: wrap; justify-content: center; color: var(--c-ash); }
+#end-turn .end-turn-why { flex: 1 1 100%; display: block; font-size: 11px; line-height: 13px; color: var(--c-scarlet); white-space: normal; text-transform: none; letter-spacing: 0; font-weight: 400; }
 button.small { padding: 0 6px; font-size: 13px; }
 button.link { background: none; border: none; color: var(--link); padding: 0; text-decoration: underline; box-shadow: none; }
 input, select, textarea { background: var(--c-void); border-color: var(--c-iron); color: var(--c-bone); }
@@ -174,7 +178,7 @@ body[data-phase="running"] #phase { animation: breathe 2.8s ease-in-out infinite
 #world-actions { display: flex; gap: calc(var(--u) * 2); align-items: center; flex: none; }
 .world-action { display: inline-flex; align-items: center; gap: calc(var(--u) * 2); white-space: nowrap; }
 .world-action:not(:disabled) .icon { color: var(--c-ochre); }
-/* World rituals (rituals.js): the rituals in progress and the charges held, anywhere; a row of
+/* World rituals (rituals.js): the rituals in progress and the casts pending, anywhere; a row of
    two-line chips (the ritual; its city and progress), "All" for the full list. */
 #rituals { display: flex; align-items: center; gap: calc(var(--u) * 3); flex: none; min-width: 0; }
 #rituals.has-rows { order: 10; flex: 1 1 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
@@ -199,7 +203,7 @@ body[data-phase="running"] #phase { animation: breathe 2.8s ease-in-out infinite
 .ritual-entry { padding: 4px 8px; border-left: 3px solid var(--line); }
 .ritual-entry.mine { border-left-color: var(--accent); }
 .ritual-entry.in_progress .ritual-entry-where, .ritual-entry.queued .ritual-entry-where { color: var(--em); }
-.ritual-entry.charged .ritual-entry-where { color: var(--c-ritual); }
+.ritual-entry.pending .ritual-entry-where { color: var(--c-ritual); }
 .ritual-entry .swatch { margin-right: 6px; }
 /* The production list's world ritual: a whole row, with its rules line and why it cannot start. */
 button.build.ritual-build { grid-column: 1 / -1; flex-wrap: wrap; row-gap: 2px; }

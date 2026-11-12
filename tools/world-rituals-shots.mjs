@@ -12,7 +12,7 @@
 //                                      [--assets crates/ffh-play/assets]
 //                                      [--only rituals,charged,tithe,ice,ice3d,civs,wellspring3d]
 //
-// It stages `ffh-play stage rituals`, `rituals-charged`, `tithe`, `ice`,
+// It stages `ffh-play stage rituals`, `rituals-pending`, `tithe`, `ice`,
 // `ritual-civ:CIVILIZATION_X`, `ritual-due:CIVILIZATION_AMURITES` and `ritual-notech:CIVILIZATION_AMURITES`, serves each with `ffh-play serve --load`, and drives the page with
 // Playwright's Chromium (as tools/web-smoke.mjs). The map is the isometric one (headless Chromium
 // without WebGL in software falls back to it), the look a player gets without a GPU fast enough for
@@ -308,9 +308,9 @@ async function shotsRituals(browser, bin, saves) {
   }
 }
 
-// ---- `stage rituals-charged`: the human holds its charge (in its capital) ----
+// ---- `stage rituals-pending`: the human's world spell pending ----
 async function shotsCharged(browser, bin, saves) {
-  await onStage(browser, bin, saves, "rituals-charged", async (page, ch) => {
+  await onStage(browser, bin, saves, "rituals-pending", async (page, ch) => {
     await dropToasts(page);
     await buttonShot(page, "worldspell-button-charged.png");
     await openCity(page, ch.capital);

@@ -2679,15 +2679,19 @@ them).
 
 ### World spells: AI timing (`world_spells.rs`)
 
-Since the world rituals (2026-11-11, docs/CARDS.md), a cast spends a charge, and `world_rituals.rs`
-builds the charge: with no charge and no ritual under way, at least two cities (one if it may hold
+Since the world rituals (2026-11-11, docs/CARDS.md) a world spell comes with a completion of its
+ritual, and since 2026-11-12 no charge is held: an untargeted spell takes effect at the completion
+(so `world_rituals.rs` starts the ritual only when the spell's moment holds,
+`world_spells::ready_for_ritual`: the timing below), and a targeted one is cast as soon as the
+AI's targeting finds a target (`ready` is true while a cast is pending). `world_rituals.rs`
+builds the ritual: with no cast pending and no ritual under way, at least two cities (one if it may hold
 no more), no city in peril, it starts the ritual in its city with the most production when that
 city completes it within 20 turns. Nothing the AI queues goes in front of a ritual under way
 (`world_rituals::locked`; since 2026-11-12 any project with production at the head of its queue:
 every project is a ritual and loses its production off the head, docs/CARDS.md), so only losing
 the city ends one. It never tries a gold hurry on a ritual (the rules refuse it); its population
 hurries are for urgent units only (`empire::hurry`), as for any other build. The timing below
-decides when the charge is spent.
+decides when an untargeted spell's ritual starts. (The held casts of `civs/world_spell.rs` are gone: the Sidar's Into the Mist moment, a war or 60 units, is `expert_moment`'s.)
 
 Four world spells were replaced on 2026-11-11 (the owner's design; docs/PORTING.md, "Changes from
 FFH2"), and the FfH timings below for River of Blood, Wild Hunt, Gifts of Nantosuelta and Arcane

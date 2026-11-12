@@ -2,10 +2,11 @@
 //! every unit `PROMOTION_HIDDEN`: invisible to other teams (except in our own cities) and +1 first
 //! strike, until the unit fights or casts. Units trained later do not get it. The end-of-turn
 //! spell choice cast it the first turn the gate opened, usually at peace, and the army lost it
-//! against barbarians before any war. The AI holds it for a war: it casts it when it is at war
-//! with a civilization or preparing one, so the army marches unseen (the enemy cannot attack or
-//! count it) and opens with an extra first strike; with no war by then it casts it once it has
-//! half again the gate's 40 units, for the protection of workers and settlers.
+//! against barbarians before any war. The AI holds it for a war: since the world spell takes
+//! effect at its ritual's completion (2026-11-12), it starts the ritual when it is at war with a
+//! civilization or preparing one (`world_spells::expert_moment`), so the army marches unseen (the
+//! enemy cannot attack or count it) and opens with an extra first strike; with no war by then,
+//! once it has half again the gate's 40 units, for the protection of workers and settlers.
 //!
 //! **Wane** (FfH kept it from its AI, `bAllowAI` 0, `unflagged.rs`): a living unit of level 6 or
 //! more becomes a Shade (at most 4), a great person (artist, engineer, merchant, scientist) that
@@ -29,28 +30,14 @@ use crate::Ai;
 
 pub struct Sidar;
 
-const SPELL: &str = "SPELL_INTO_THE_MIST";
-
 impl CivPlay for Sidar {
     /// FfH's `AI_chooseTech` research plan (`tech_plan::goals`).
     fn tech_goals(&self, _g: &Game, _p: PlayerId) -> super::TechGoals {
         super::TechGoals { beelines: vec!["TECH_POISONS", "TECH_ANIMAL_HANDLING"], ..Default::default() }
     }
 
-    fn spell_value(&self, g: &Game, _u: UnitId, spell: SpellType, value: i32) -> i32 {
-        if world_spell::is(g, spell, SPELL) {
-            return 0;
-        }
-        value
-    }
-
     fn turn(&self, _ai: &Ai, g: &mut Game, v: &mut View) {
         wane(g, v);
-        let p = v.p;
-        // (No charge of its ritual: no unit can cast it, `world_spell::cast` finds no caster.)
-        if world_spell::war_or_preparing(g, p) || g.players[p].num_units() >= 60 {
-            world_spell::cast(g, p, SPELL);
-        }
     }
 }
 
