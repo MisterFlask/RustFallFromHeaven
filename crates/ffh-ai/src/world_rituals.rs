@@ -18,16 +18,30 @@ use crate::view::View;
 /// The most turns of its best city's production a world ritual may take for the AI to start it.
 pub const MAX_TURNS: i32 = 20;
 
+/// The chance (per mille) that city `c` falls, with the reinforcements that can arrive in time,
+/// at which the AI gives up a ritual's progress for a defender. `forecast::holds` plays the
+/// rules' battles of the enemy stacks in reach against the garrison; as the ledger's
+/// `holds2_reinforced` (docs/CALIBRATION.md) its answers are ordered: under 10% predicted, 5% of
+/// the cities fell; from 20% on, 12-18% and more. A lost city costs far more than a ritual's
+/// progress, so the bar is well under an even chance.
+pub const GIVE_UP_PERMILLE: i32 = 250;
+
 /// Is city `c` building a ritual (any project) with production in it (the AI puts nothing in
-/// front of it: that would lose its production)? Not while enemy units stand within 2 plots of
-/// the city: a defender is worth more than the ritual's progress.
+/// front of it: that would lose its production)? Not while an enemy force in reach is a credible
+/// threat to take the city ([`GIVE_UP_PERMILLE`]): a unit in sight that the garrison holds does
+/// not interrupt the ritual.
 pub fn locked(g: &Game, c: CityId) -> bool {
     if g.city_ritual_in_progress(c).is_none() {
         return false;
     }
     let city = &g.cities[c];
     let Some(plot) = g.map.plot_xy(city.x, city.y) else { return true };
-    crate::production::local_threat(g, city.owner, plot, 2) == 0
+    // (The forecast only where a threat is in sight: it floods the enemy stacks' paths.)
+    if crate::production::local_threat(g, city.owner, plot, 3) == 0 {
+        return true;
+    }
+    let hold = crate::forecast::holds(g, None, &mut crate::reach::Flood::default(), c);
+    !(hold.threat && hold.p_fall_reinforced >= GIVE_UP_PERMILLE)
 }
 
 /// Once a turn: start the world ritual where and when it is worth it (module doc).
