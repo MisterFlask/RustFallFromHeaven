@@ -278,9 +278,12 @@ const phase = () => S("S && S.status && S.status.phase");
 const modalTitles = () => b.eval(`[...document.querySelectorAll("#modals .backdrop:not(.under) .modal h2")].map((e) => e.textContent)`);
 const until2 = (expr, what, ms = 30000) => until(() => b.eval(expr), what, ms);
 
-/** Clicks the element `sel` (its centre) with the mouse. */
+/** Clicks the element `sel` (its centre) with the mouse. A toast over that point would take the
+ *  click (it dismisses the toast and nothing else: the HD-2D map's slow-GPU note comes up over
+ *  the middle of the page whenever the frame timing says so, see `hoverUntil`), so the toasts
+ *  covering it are removed first. */
 async function click(sel, button = "left") {
-  const r = await b.eval(`(() => { const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return null; e.scrollIntoView({block: "nearest"}); const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, disabled: !!e.disabled }; })()`);
+  const r = await b.eval(`(() => { const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return null; e.scrollIntoView({block: "nearest"}); const r = e.getBoundingClientRect(); const x = r.left + r.width / 2, y = r.top + r.height / 2; if (document.elementFromPoint(x, y)?.closest("#toasts")) for (const t of document.querySelectorAll("#toasts .toast")) t.remove(); return { x, y, disabled: !!e.disabled }; })()`);
   if (!r) throw new Error(`no element ${sel}`);
   if (r.disabled) throw new Error(`${sel} is disabled`);
   await b.mouse(r.x, r.y, button);
