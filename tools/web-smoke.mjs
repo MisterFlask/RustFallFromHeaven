@@ -1789,7 +1789,7 @@ async function stagedEngagement(bin, saves) {
 async function stagedElection(bin, saves) {
   const st = await loadStaged(bin, saves, "election", { answer: false });
   const opt = `${TOP} .modal button.option[data-option="0"]`;
-  const shown = `!!document.querySelector(${q(opt)}) && /secretary general/.test(document.querySelector(${q(`${TOP} .modal`)}).textContent)`;
+  const shown = `!!document.querySelector(${q(opt)}) && /Head Councilor/.test(document.querySelector(${q(`${TOP} .modal`)}).textContent)`;
   // The popups before it in C++ order (events, votes) are answered first.
   for (let k = 0; k < 20 && !(await b.eval(shown)); k++) {
     const other = `${TOP} .modal button.option:not([disabled])`;

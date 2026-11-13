@@ -25,9 +25,8 @@ pub fn text(v: &Viewer, ctx: &Ctx) -> Json {
     let mut s = String::new();
     let _ = writeln!(
         s,
-        "Turn {} (year {}), player {} {} ({}), phase {}{}",
+        "Turn {}, player {} {} ({}), phase {}{}",
         g.game_turn(),
-        g.game_turn_year(),
         h.0,
         crate::view::player_name(g, h),
         g.player_get_civilization_type(h).map_or("-".to_string(), |c| name(d, c)),
@@ -39,13 +38,12 @@ pub fn text(v: &Viewer, ctx: &Ctx) -> Json {
     });
     let _ = writeln!(
         s,
-        "Gold {} ({:+}/turn), research {research}, sliders gold {}% research {}% culture {}% espionage {}%, Armageddon {}",
+        "Gold {} ({:+}/turn), research {research}, sliders gold {}% research {}% culture {}%, Armageddon {}",
         pl.gold,
         g.player_calculate_gold_rate(h),
         pl.commerce_percent[0],
         pl.commerce_percent[1],
         pl.commerce_percent[2],
-        pl.commerce_percent[3],
         g.get_global_counter()
     );
     if let Some(dec) = ctx.decision {

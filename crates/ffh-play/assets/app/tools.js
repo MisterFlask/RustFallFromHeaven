@@ -469,7 +469,6 @@ export async function openTakeOver() {
 export const OPTIONS = [
   ["PLAYEROPTION_QUICK_MOVES", "Quick moves (units jump to their destination)"],
   ["PLAYEROPTION_NO_UNIT_CYCLING", "No unit cycling (no automatic selection of the next unit)"],
-  ["PLAYEROPTION_SAFE_AUTOMATION", "Safe automation (automated workers keep improvements)"],
   ["PLAYEROPTION_WAIT_END_TURN", "Wait at the end of the turn"],
 ];
 
@@ -520,7 +519,7 @@ export function openOptions() {
     );
   });
   // Without a game (the title screen) there is no player to set them on.
-  const game = section("Game", my ? h("div.checks.single", rows) : h("p.dim", "The player options (quick moves, unit cycling, safe automation, waiting at the end of the turn) are set during a game."));
+  const game = section("Game", my ? h("div.checks.single", rows) : h("p.dim", "The player options (quick moves, unit cycling, waiting at the end of the turn) are set during a game."));
   // Battles (remembered by this browser, engagements.js `prefs`): how the battles fought against
   // the player during the other players' turns open, and the plan's Watch / Report switch.
   const battles = section(

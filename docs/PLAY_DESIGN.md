@@ -574,7 +574,7 @@ Every command is validated before any rules call (§2.8).
 | `cancel_deal {deal}` | diplomacy screen's cancel → `CvDeal::kill` | A deal of the human's that `deal_is_cancelable` (after `PEACE_TREATY_LENGTH` turns); then `deal_kill(deal, true)`. |
 | `event {triggered,event}` | `CvNetEventTriggered` | Must be in the pending list and `player_can_do_event`; then `player_apply_event(h, e, id, true)`; remove it from the pending list. |
 | `vote {vote,choice}` | DIPLOVOTE popup (`CvDLLButtonPopup::launchDiploVotePopup`) → `CvNetDiploVote` | `choice` is decoded by `names::decode_player_vote`: YES, NO, NEVER, ABSTAIN or a team id; the internal `NO_PLAYER_VOTE` (-1) and `NO_PLAYER_VOTE_CHECKED` (-6) are refused. The vote must be pending for h. Then the choice must be a button the popup offers. **Team vote** (`is_team_vote`): a team id that is alive and `is_team_vote_eligible(t, src)`; if h's team is the vassal of an eligible team V (the first in team order), only V or h's own team; ABSTAIN only when h is not such a vassal; YES/NO/NEVER refused. **Other votes:** YES, NO, NEVER only if `player_can_defy_resolution(h, src, &option)`, ABSTAIN; team ids refused. Then `cast_vote(h, id, choice)`. (A non-negative `PlayerVoteTypes` is a team id: ffh-core's `PlayerVote::for_team` / `PlayerVote::team()`.) |
-| `set_option {option,value}` | `sendPlayerOption` | Allow-list: STACK_ATTACK, QUICK_MOVES, SAFE_AUTOMATION, NO_UNIT_CYCLING, WAIT_END_TURN. SHOW_* is refused (F3). |
+| `set_option {option,value}` | `sendPlayerOption` | Allow-list: STACK_ATTACK, QUICK_MOVES, NO_UNIT_CYCLING, WAIT_END_TURN. SHOW_* is refused (F3). |
 | `auto_moves` | `CvNetAutoMoves` | `player_set_auto_moves(h, true)` |
 | `end_turn {force}` | `CvNetTurnComplete` | The gate in §2.3, then `player_set_end_turn(h, true)` |
 | `autoplay {turns}` | `setAIAutoPlay` (FfH `setDisableHuman`) | `set_ai_auto_play(n)`. Testing aid, journaled. (P6 review) While an autoplay runs, `turns: 0` over HTTP stops it before the next turn slice (`setAIAutoPlay(0)`, journaled at that slice and replayed there). |
@@ -704,7 +704,7 @@ word for word and that fits in a short reminder.
 * A city list overview.
 
 **Empire**
-* **Top bar:** gold and rate, research and turns, sliders, turn and year, **Armageddon counter**, **mana counts**, anarchy and golden age, Stasis flags.
+* **Top bar:** gold and rate, research and turns, sliders, turn, **Armageddon counter**, **mana counts**, anarchy and golden age, Stasis flags.
 * Research chooser, queue and tech tree.
 * Civics (current choice, availability, upkeep, anarchy, revolution).
 * Religion (state religion, convert, holy cities).

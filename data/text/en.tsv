@@ -1941,7 +1941,7 @@ TXT_KEY_BUILDING_ADJUST_COMM_RATE	[ICON_BULLET]Can Adjust %F1_CmrcIcon Rate
 TXT_KEY_BUILDING_ADULARIA_CHAMBER	Adularia Chamber
 TXT_KEY_BUILDING_ADULARIA_CHAMBER_HELP	[ICON_BULLET]Grants every golem built in the city the [LINK=PROMOTION_HIDDEN]Hidden[\LINK] promotion, which makes them invisible until they attack or cast a spell.
 TXT_KEY_BUILDING_ADVENTURERS_GUILD	Adventurers' Guild
-TXT_KEY_BUILDING_AIRLIFT	[ICON_BULLET]Can Airlift %d1_Num Land [NUM1:Unit:Units] per Turn
+TXT_KEY_BUILDING_AIRLIFT	[ICON_BULLET]Gate Travel: %d1_Num Land [NUM1:Unit:Units] per Turn
 TXT_KEY_BUILDING_AIRPORT	Airport
 TXT_KEY_BUILDING_AIRPORT_STRATEGY	[COLOR_BUILDING_TEXT]Airports[COLOR_REVERT] add an additional trade route, provide an experience bonus to all Air Units and increase the number of Air Units you may house in a city. A city with an [COLOR_BUILDING_TEXT]Airport[COLOR_REVERT] can also airlift one unit per turn to any of your other cities and house four extra Air Units for a total of eight. [COLOR_BUILDING_TEXT]Airports[COLOR_REVERT] also add unhealthiness in cities.
 TXT_KEY_BUILDING_AIR_DAMAGE_MOD	[ICON_BULLET]%D1_Mod%% Damage from [LINK=CONCEPT_AIR_UNITS]Air Units[\LINK]
@@ -8710,7 +8710,7 @@ TXT_KEY_INIT_SETUP_PLAYERS	Setup Players
 TXT_KEY_INTERFACEMODE_AIRBOMB	Air Bomb Mode
 TXT_KEY_INTERFACEMODE_AIRBOMB_HELP	Order the air unit to bomb the city or improvement in the selected tile
 TXT_KEY_INTERFACEMODE_AIRLIFT	Gate Mode
-TXT_KEY_INTERFACEMODE_AIRLIFT_HELP	Order the unit airlifted to the selected tile
+TXT_KEY_INTERFACEMODE_AIRLIFT_HELP	Order the unit through the gate to the selected city
 TXT_KEY_INTERFACEMODE_AIRSTRIKE	Air Strike Mode
 TXT_KEY_INTERFACEMODE_AIRSTRIKE_HELP	Order the air unit to attack enemy units in the selected tile
 TXT_KEY_INTERFACEMODE_DRAG	Drag Mode
@@ -10047,8 +10047,8 @@ TXT_KEY_MISC_YOU_UNIT_WAS_DESTROYED_UNKNOWN	While defending, your %s1_UnitName w
 TXT_KEY_MISC_YOU_UNIT_WITHDRAW	Your %s1_UnitName has withdrawn from combat with a %s2_EnUName!
 TXT_KEY_MISSION_AIRBOMB	Air Bomb
 TXT_KEY_MISSION_AIRBOMB_HELP	Destroys city fortifications and tile improvements.
-TXT_KEY_MISSION_AIRLIFT	Airlift
-TXT_KEY_MISSION_AIRLIFT_HELP	Airlifts the unit to another city.
+TXT_KEY_MISSION_AIRLIFT	Gate Travel
+TXT_KEY_MISSION_AIRLIFT_HELP	Moves the unit through the gate to another city.
 TXT_KEY_MISSION_BOMBARD	Bombard
 TXT_KEY_MISSION_BOMBARD_HELP	Destroys fortifications and reduces the cities defensive bonus.
 TXT_KEY_MISSION_BUILD_CITY	Build City
@@ -10660,7 +10660,7 @@ TXT_KEY_POPUP_CANNOT_CREATE_WORK_NEXT	You cannot continue creating a [COLOR_BUIL
 TXT_KEY_POPUP_CANNOT_CREATE_WORK_NEXT_LIMITED	You cannot continue creating [COLOR_BUILDING_TEXT]%s1_PrjtName[COLOR_REVERT] in %s2_CityName. What would you like to work on instead?
 TXT_KEY_POPUP_CANNOT_TRAIN_WORK_NEXT	You cannot continue training a [COLOR_UNIT_TEXT]%s1_UnitName[COLOR_REVERT] in %s2_CityName. What would you like to work on instead?
 TXT_KEY_POPUP_CANNOT_TRAIN_WORK_NEXT_LIMITED	You cannot continue training [COLOR_UNIT_TEXT]%s1_UnitName[COLOR_REVERT] in %s2_CityName. What would you like to work on instead?
-TXT_KEY_POPUP_CHOOSE_ELECTION	As Secretary-General, you can choose a U.N. Resolution to put forward for a global vote.
+TXT_KEY_POPUP_CHOOSE_ELECTION	As Head Councilor, you can choose a resolution to put forward for a council vote.
 TXT_KEY_POPUP_CHOOSE_TECH	Choose a technology...
 TXT_KEY_POPUP_CITY	City
 TXT_KEY_POPUP_CITY_CAPTURE_KEEP	You have captured %s1_CityName!!! Would you like to keep it?
@@ -11408,7 +11408,7 @@ TXT_KEY_SEASON_FALL	Fall
 TXT_KEY_SEASON_SPRING	Spring
 TXT_KEY_SEASON_SUMMER	Summer
 TXT_KEY_SEASON_WINTER	Winter
-TXT_KEY_SECRETARY_GENERAL	U.N. Secretary General
+TXT_KEY_SECRETARY_GENERAL	Head Councilor
 TXT_KEY_SEND_MAP_WAIT	Sending map to clients.  Please wait...
 TXT_KEY_SENT_BUDDY_REQUEST_DESC	The buddy request has been sent.
 TXT_KEY_SENT_BUDDY_REQUEST_TITLE	Buddy request sent
@@ -14003,8 +14003,8 @@ TXT_KEY_UNIT_YVAIN_STRATEGY	Yvain can move in mountains, summon treants, and is 
 TXT_KEY_UNIT_ZULU_IMPI	Impi
 TXT_KEY_UNIT_ZULU_IMPI_STRATEGY	This powerful melee combat unit (the Zulu replacement for the [COLOR_UNIT_TEXT]Spearman[COLOR_REVERT]) is special because in addition to its strength against mounted units it starts with the [COLOR_HIGHLIGHT_TEXT]Mobility[COLOR_REVERT] promotion.
 TXT_KEY_UNKNOWN	Unknown
-TXT_KEY_UN_VOTE_FORCE_NO_TRADE	U.N. Trade Embargo
-TXT_KEY_UN_VOTE_FORCE_WAR	U.N. War Resolution
+TXT_KEY_UN_VOTE_FORCE_NO_TRADE	Council Trade Embargo
+TXT_KEY_UN_VOTE_FORCE_WAR	Council War Resolution
 TXT_KEY_UPKEEP_HIGH	High Upkeep
 TXT_KEY_UPKEEP_LOW	Low Upkeep
 TXT_KEY_UPKEEP_MEDIUM	Medium Upkeep
@@ -14119,8 +14119,8 @@ TXT_KEY_VOTE_SLAVE_TRADE	Setup Slave Trade: Members can buy and sell slaves
 TXT_KEY_VOTE_SMUGGLING_RING	Setup Smuggling Ring: +1 Trade Route ([ICON_TRADE]) in all cities, enables the Smugglers' Port building
 TXT_KEY_VOTE_SOURCE_RELIGION	Leaders of %s1_religion have a vision of uniting all %s2_religion_adjective faithful under the %s3_building.
 TXT_KEY_VOTE_UNIVERSAL_SUFFRAGE	U.N. Resolution #3312 (Global Civic - Universal Suffrage)
-TXT_KEY_VOTE_UN_ASSIGN_CITY	U.N. Mandate for City Ownership
-TXT_KEY_VOTE_UN_FORCE_PEACE	U.N. Peacekeeping
+TXT_KEY_VOTE_UN_ASSIGN_CITY	Council Mandate for City Ownership
+TXT_KEY_VOTE_UN_FORCE_PEACE	Council Peacekeeping
 TXT_KEY_VOTE_VICTORY	U.N. Election (Diplomatic Victory)
 TXT_KEY_VOTING_TITLE	Resolutions
 TXT_KEY_WAIT_PLAYERSTATE_AUTH	Waiting for Player Authentication

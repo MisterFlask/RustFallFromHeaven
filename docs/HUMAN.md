@@ -77,7 +77,7 @@ religions and civic categories), and an illuminated initial on events, votes and
 loaded (a moment after the page) the page shows the plain look of P5, and keeps it if the art
 cannot load.
 
-**The screen.** The top bar: the turn crescent (amber on your turn), turn and year, what is
+**The screen.** The top bar: the turn crescent (amber on your turn), the turn (the year is in the protocol only), what is
 happening (your turn; "Moving: …" with the players and the seconds while the AIs play); gold and
 rate, research (click it for the tech tree, where research is chosen; the "Choose research" popup is
 the same tree, with "Later", and closes on a pick) with its progress bar and turns ("11 turns"), the doctrine
@@ -731,7 +731,7 @@ at the start of your turn when they happened in the AI turns; loading a game sho
 of its turn and the one before again.
 
 **Options** (the gear; the title screen's Options too), in sections: **Game** (the player options
-`set_option` changes: quick moves, no unit cycling, safe automation, wait at the end of the turn;
+`set_option` changes: quick moves, no unit cycling, wait at the end of the turn;
 a refused change puts the box back and says why; without a game, a note), **Battles** (remembered
 by this browser: "Battles fought against you": Watch, the default, Report, or Turn report only, see
 "Engagement combat"; "Your attacks": Watch or Report, the battle plan's switch), **Map** (the

@@ -177,7 +177,8 @@ fn game_options() {
     // "Changes from FFH2").
     assert_eq!(d.game_options.len(), GameOptionType::GAMEOPTION_NO_ORTHUS.idx() + 1);
     assert_eq!(d.game_options.iter().filter(|o| o.default).count(), 0);
-    assert_eq!(d.game_options.iter().filter(|o| o.visible).count(), 45);
+    // (GAMEOPTION_NO_EVENTS is a hidden switch for tests: it disables the trigger rules code fires.)
+    assert_eq!(d.game_options.iter().filter(|o| o.visible).count(), 44);
 }
 
 #[test]

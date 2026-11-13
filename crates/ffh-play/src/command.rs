@@ -1967,10 +1967,9 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         }
 
         Command::SetOption { option, value } => {
-            const ALLOWED: [PlayerOptionType; 5] = [
+            const ALLOWED: [PlayerOptionType; 4] = [
                 PlayerOptionType::PLAYEROPTION_STACK_ATTACK,
                 PlayerOptionType::PLAYEROPTION_QUICK_MOVES,
-                PlayerOptionType::PLAYEROPTION_SAFE_AUTOMATION,
                 PlayerOptionType::PLAYEROPTION_NO_UNIT_CYCLING,
                 PlayerOptionType::PLAYEROPTION_WAIT_END_TURN,
             ];

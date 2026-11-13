@@ -146,7 +146,7 @@
     "type": "GAMEOPTION_NO_EVENTS",
     "description": "TXT_KEY_GAME_OPTION_NO_EVENTS",
     "help": "TXT_KEY_GAME_OPTION_NO_EVENTS_HELP",
-    "visible": true
+    "visible": false
   },
   {
     "type": "GAMEOPTION_DOUBLE_ANIMALS",

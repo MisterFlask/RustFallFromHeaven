@@ -177,7 +177,6 @@ html.iso #top > .group { height: var(--iso-top-h); display: flex; align-items: c
 html.iso #top > .group:empty { display: none; }
 html.iso #phase { flex: none; max-width: 100%; margin-right: -4px; padding: 0 12px; }
 html.iso #phase .phase-dot, html.iso #phase .turn-crescent { display: none; }
-html.iso #phase .year { order: -1; color: #fff8e4; }
 html.iso #phase .turn { color: #fff8e4; font-weight: 400; gap: 8px; }
 html.iso #phase .turn .dim { color: #fff8e4; }
 html.iso #phase-text { color: var(--iso-dim); overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 360px; }
@@ -804,7 +803,6 @@ body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * 
   html.iso #top { top: 4px; left: 4px; right: 4px; flex-wrap: nowrap; gap: 4px; }
   html.iso #btn-menu { display: inline-flex; flex: none; width: 48px; height: var(--iso-top-h); padding: 0; font: 400 24px/24px var(--iso-font); justify-content: center; }
   html.iso #phase { flex: none; padding: 0 8px; margin-right: 0; }
-  html.iso #phase .year { display: none; }
   html.iso #phase-text { max-width: 30vw; }
   html.iso #empire { flex: 1 1 auto; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; gap: 12px; padding: 0 8px; }
   html.iso #empire::-webkit-scrollbar { display: none; }

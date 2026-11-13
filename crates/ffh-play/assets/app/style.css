@@ -216,7 +216,6 @@ button.build.ritual-build { grid-column: 1 / -1; flex-wrap: wrap; row-gap: 2px; 
 .toast.ritual-alert { border-left: 3px solid var(--c-ritual); }
 .toast.ritual-alert .ritual-alert-mark { color: var(--c-ritual); }
 #phase .turn { font-weight: normal; display: inline-flex; align-items: center; gap: 7px; color: var(--c-vellum); }
-#phase .year { display: inline-flex; align-items: center; }
 .num { color: var(--c-vellum); display: inline-flex; align-items: center; }
 .stat .warn, .stat.warn { color: var(--warn); }
 .slider-item, .sphere, .stat-n, .growth, .prod-line { display: inline-flex; align-items: center; gap: calc(var(--u) * 1); }
@@ -980,7 +979,7 @@ html.art .tap-mode button.on:not(.link):not(.close):not(.cplot):not(.tech):not(.
   #phase { flex: none; max-width: 50vw; overflow: hidden; }
   #phase > * { flex: none; }
   #phase > #phase-text { flex: 0 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; }
-  #phase .year, body[data-phase="human"] #phase-text { display: none; }
+  body[data-phase="human"] #phase-text { display: none; }
   #empire { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
   #empire::-webkit-scrollbar { display: none; }
   /* World rituals: a row of their own, the chips scrolling sideways. */

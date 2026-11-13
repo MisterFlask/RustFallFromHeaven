@@ -106,7 +106,7 @@ export async function openElection(e) {
   );
   const m = openModal({
     title: dname("VoteSourceType", e.source),
-    body: [h("p", "As secretary general, choose the resolution to put to the vote."), options, err],
+    body: [h("p", "As Head Councilor, choose the resolution to put to the vote."), options, err],
     buttons: [{ label: "Later", value: "later", title: "Answer later (ending the turn without an answer puts no resolution to the vote)" }],
     tag: "election",
   });
@@ -686,7 +686,7 @@ function howToPlay() {
     "Choose what each city builds when asked; click a city to open its screen.",
     touch ? "End turn ends the turn. A unit waiting for orders is selected first." : "End turn (Enter) ends the turn. While a unit waits for orders, Enter selects it instead.",
     "The advisors are on the rail at the left of the map (on a phone: in the ☰ menu): research, techs, cities, civics, religion, culture, armies, governors, diplomacy.",
-    "The top bar: the turn and the year; gold and its change a turn; research, its progress and the turns left; the doctrine; the commerce rates; the Armageddon counter; mana; the score, your share of the world.",
+    "The top bar: the turn; gold and its change a turn; research, its progress and the turns left; the doctrine; the commerce rates; the Armageddon counter; mana; the score, your share of the world.",
     touch ? "Every number and button has a tooltip." : "Point at a number, a button or a plot for its tooltip.",
     "A dialog's (i) button opens the help at its topic.",
     touch ? "Controls lists every gesture and button." : "Keys lists every key.",

@@ -1,4 +1,4 @@
-// The top bar (design §5.1 "Empire": gold, research, sliders, turn and year, the Armageddon
+// The top bar (design §5.1 "Empire": gold, research, sliders, turn, the Armageddon
 // counter, mana, anarchy, golden age, Stasis) with the phase and the progress line during the
 // AI turns, and the bottom panel: the turn report, the messages by turn, the game's files.
 
@@ -32,12 +32,6 @@ function phaseSlots(phase) {
     phase.replaceChildren(slot("autoplay-slot"), main, slot("spectate-slot"));
   }
   return { main, spectate: phase.querySelector(":scope > #spectate-slot"), autoplay: phase.querySelector(":scope > #autoplay-slot") };
-}
-
-/** Year for people: -4000 -> "4000 BC". */
-export function yearText(y) {
-  if (y === null || y === undefined) return "";
-  return y < 0 ? `${-y} BC` : `${y} AD`;
 }
 
 const PHASES = {
@@ -203,7 +197,6 @@ export function renderTop() {
       h("span.phase-dot", { "data-phase": st.phase ?? "" }),
       look.art && !isoSkin() ? h("span.turn-crescent", ic(yours ? "icon16/turn" : "icon16/turn_wait", "", yours && !observing(st) ? "Your turn" : line)) : null,
       st.turn !== undefined ? h("b.turn", small("Turn", ".dim"), " ", big(st.turn)) : null,
-      st.year !== undefined ? h("span.dim.year", " ", small(yearText(st.year)), " ") : null,
       h("span#phase-text", pixable(line) ? pix(line) : line),
       st.reveal && !observing(st) ? h("span.badge.reveal", "DEBUG REVEAL") : null,
     );
