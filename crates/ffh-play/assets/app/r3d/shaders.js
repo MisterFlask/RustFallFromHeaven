@@ -2572,6 +2572,7 @@ uniform sampler2D uND;
 uniform float uGrade;
 uniform float uSaturation;
 uniform float uContrast;
+uniform float uBrightness;
 uniform vec3 uShadowGrade;
 uniform vec3 uLightGrade;
 uniform float uGrain;
@@ -2592,6 +2593,9 @@ void main() {
     g = mix(g, g * uLightGrade, smoothstep(0.45, 1.0, L) * 0.4);
     float L2 = dot(g, vec3(0.299, 0.587, 0.114));
     g = mix(vec3(L2), g, uSaturation);
+    // Brightness: a gamma over the whole picture (1 leaves it), so the darks and the middle values
+    // rise together and the lights do not clip.
+    g = pow(max(g, vec3(0.0)), vec3(1.0 / uBrightness));
     g = (g - 0.5) * uContrast + 0.5;
     // Paper grain fixed to the world: from the depth, the point on the ground under the pixel.
     if (nd.w > 0.0) {

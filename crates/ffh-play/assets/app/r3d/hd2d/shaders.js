@@ -549,9 +549,10 @@ void main() {
   float wsum = corrupt + hell + gloom + 1e-4;
   air += vec3(0.3, 0.16, 0.42) * corrupt + vec3(0.36, 0.16, 0.1) * hell + vec3(0.26, 0.3, 0.4) * gloom;
   col = mix(col, air / wsum, clamp(far * (corrupt + hell + gloom), 0.0, 1.0) * 0.1);
-  // The land's palette (the look target's, measured: docs/HD2D.md §6): earthy and muted -- foliage
-  // a half-saturated olive, water a slate teal, the shade a dark olive rather than black -- so that
-  // saturation is left to the accents: what glows (mana, crystals, lava, fire), gold, banners.
+  // The land's palette (docs/HD2D.md §6): a little chroma taken from the land and the water, foliage
+  // nudged toward olive, the shade a dark olive rather than black; the accents (what glows, gold,
+  // banners) keep theirs. (Until 2026-11-14 it took a third of the land's chroma, after the look
+  // target's muted palette: the owner asked for a brighter, more colourful map.)
   if (!figure && uLand > 0.0) {
     float mx = max(col.r, max(col.g, col.b)), mn = min(col.r, min(col.g, col.b));
     float ch = mx - mn;
@@ -565,12 +566,12 @@ void main() {
     // Accents keep their colour: the emission, and gold (bright, saturated yellow-orange).
     float gold = smoothstep(0.62, 0.82, s) * smoothstep(0.55, 0.8, mx) * (1.0 - smoothstep(52.0, 64.0, hue)) * smoothstep(25.0, 35.0, hue);
     float keepC = max(hot, gold);
-    float drop = (earth * 0.32 + water * 0.38 + (1.0 - max(earth, water)) * 0.1) * (1.0 - keepC) * uLand;
+    float drop = (earth * 0.1 + water * 0.1 + (1.0 - max(earth, water)) * 0.04) * (1.0 - keepC) * uLand;
     float Lc = lum(col);
     col = mix(vec3(Lc), col, 1.0 - drop);
     // Greens toward olive (a little red), water toward teal (a little green, less blue).
-    col.r += (col.g - col.r) * 0.14 * green * (1.0 - keepC) * uLand;
-    col += vec3(0.0, 0.02, -0.03) * water * uLand;
+    col.r += (col.g - col.r) * 0.06 * green * (1.0 - keepC) * uLand;
+    col += vec3(0.0, 0.01, -0.01) * water * uLand;
     // The land a little lighter in its middle values, and the shade lifted toward a dark olive
     // floor (the target's darkest woods are a deep olive, not black).
     col = mix(col, pow(max(col, vec3(0.0)), vec3(0.84)), uLand);

@@ -555,6 +555,8 @@ the map (`MapHd2d.setConfig`).
   | turn-200 game at 96 px, batch 2 (GPU) | 0.32 | 0.64 | 55% | 0.91 / 0.21 | 20% |
     | the same, batch 3 (software) | 0.35 | 0.36 | 11% | 0.43 / 0.32 | 5% |
   | lab, batch 4 (towns half graded, the shade pulled back) | 0.30 | 0.39 | 15% | 0.47 / 0.33 | 8% |
+  | lab, just before the brighter map (2026-11-14, GPU) | 0.38 | 0.41 | 18% | 0.46 / 0.34 | 2% |
+  | lab, the brighter map | 0.50 | 0.54 | 41% | 0.61 / 0.46 | 0% |
 
   The target is earthy and muted: its saturation is in the accents (the gold town, the Sheaim's
   violet, lava, the banners) and its shade is a dark olive, not black. The second batch read it as
@@ -566,6 +568,19 @@ the map (`MapHd2d.setConfig`).
   toward a dark olive floor. The finish pass's saturation is 1.0 and its contrast 1.12 (1.16 and
   1.22 before); the lush mood deepens the greens in value only (its saturation boost, 1.28, went).
   Re-measure with the table's columns after a change to the grade or the art.
+
+  **Brighter than the target** (the owner's request, 2026-11-14: the map read dark and
+  desaturated; `docs/hd2d/brighter-before-after.jpg`). The land grade now takes a tenth of the
+  chroma of earth, foliage and water (a third and two fifths before) and a twenty-fifth of the
+  rest, and its olive and teal pushes are under half as strong. The finish pass has a
+  **brightness** (a gamma over the whole picture, figures included: 1.3 here, 1 in the other
+  looks; a row in the panel), saturation 1.3 (the gamma washes colour out; this gives it back),
+  contrast 1.1 and a vignette of 0.18 (0.42 before, which dimmed the corners by two fifths).
+  Exposure and the sky's fill were not the lever: the cards cancel the exposure and the filmic
+  curve (`invFilmic(lin) / uExposure`), so raising them lifts the ground only. The light shafts
+  went from 0.6 to 0.45 (the gamma lifts their haze too). The gamma also lightens the unknown's
+  cover and fogged land: not retuned here. The saved panel settings' key went to
+  `ffh.hd2d.config.4`.
 * **Light shafts** (half resolution): the sunlit haze — the sun's light scattered along each view
   ray near the ground, through the gaps of a high drifting cloud layer and past the props' shadow
   map (anchored to the world) — and painted **beams**: broad soft beams fanning from the sun beyond
@@ -867,10 +882,10 @@ distance each closes:
 
 `r3d/hd2d/config.js`: the `hd2d` preset (the 3D renderer's painterly switches with: a lower camera,
 `pitch` 32 and `fov` 30; `grid` 0; the towns' switches, §5d: `townScale` 1.25, `townLight` 0.5,
-`townClearing` 0.5, `townBanners` 0.6; deeper shade, `stylize` 0.7, `ssao` 0.85; `saturation` 1.0 and
-`contrast` 1.12 (batch 3: the land's palette is graded in the mood pass), `vignette` 0.42, `haze`
+`townClearing` 0.5, `townBanners` 0.6; deeper shade, `stylize` 0.7, `ssao` 0.85; `brightness` 1.3,
+`saturation` 1.3 and `contrast` 1.1 (the brighter map, §6), `vignette` 0.18, `haze`
 0.1, `mist` 0.08, `clouds` 0.3, `glow` 1.0) and the mode's own switches: `tiltShift` (0.6), `rays`
-(0.6), `mood` (1), `landGrade` (1, the land's palette, §6), `bloom` (0.8, from a lower threshold),
+(0.45), `mood` (1), `landGrade` (1, the land's palette, §6), `bloom` (0.8, from a lower threshold),
 `beams` (1), `borderGlow` (1), `contact` (1), `lean` (1). `LIGHT` gives little sky and ground fill
 (0.5 and 0.15). The `plain` preset turns the stylisation and the mode's passes off (the cards stay).
 Its `LIGHT` is the one light. Stored apart from the 3D renderer's look (`ffh.hd2d.config.3`, renamed
