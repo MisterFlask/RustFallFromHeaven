@@ -27,9 +27,9 @@ What follows from that:
 ## The system
 
 - **Schedule.** On each of turns 100, 200 and 300 every player is offered three bundles and
-  picks one. The three tiers rise in power. (Turns scale with game speed. Whether turn 300 comes
-  before most games are decided is to be checked against played games before the schedule is
-  fixed: see Open questions.)
+  picks one. The three tiers rise in power. Turns scale with game speed. The schedule is fixed
+  turns (the owner's decision, 2026-11-14): it is not keyed to the Armageddon counter, though
+  a game whose counter reaches 100 early may end before the third offer.
 - **A bundle is a perk plus a hidden adjustment.** The player is shown three finished bundles
   ("this set of bonuses, or this set, or this set"). How each was put together is never shown
   or explained.
@@ -140,9 +140,7 @@ Design notes on perks:
 
 ## Open questions
 
-1. **The schedule against game length.** Count, from played games, the turn by which games are
-   decided. If turn 300 is usually too late for the strongest tier to change anything, move the
-   schedule earlier.
+1. (Settled: the schedule stays at turns 100, 200 and 300.)
 2. **The worth estimator.** How crude it can be and still make pivot offers competitive. It is
    the piece both the bundles and the AI's choice rest on.
 3. **Pool size and tiers.** How many perks per tier, and whether the tiers are separate pools
