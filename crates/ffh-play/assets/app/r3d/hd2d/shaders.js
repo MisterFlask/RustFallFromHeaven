@@ -572,11 +572,14 @@ void main() {
     // Greens toward olive (a little red), water toward teal (a little green, less blue).
     col.r += (col.g - col.r) * 0.06 * green * (1.0 - keepC) * uLand;
     col += vec3(0.0, 0.01, -0.01) * water * uLand;
-    // The land a little lighter in its middle values, and the shade lifted toward a dark olive
-    // floor (the target's darkest woods are a deep olive, not black).
-    col = mix(col, pow(max(col, vec3(0.0)), vec3(0.84)), uLand);
+    // The ground a little lighter in its middle values, and its shade lifted toward a dark olive
+    // floor. Not the cards (trees, rocks, huts: the keep mask 0.9): their darks are painted -- a
+    // crown's underside, the crease between its lumps, the outline -- and lifted, a wood read flat
+    // and pale.
+    float ground = src.a < 0.85 ? 1.0 : 0.0;
+    col = mix(col, pow(max(col, vec3(0.0)), vec3(0.84)), uLand * ground);
     float dark = 1.0 - smoothstep(0.02, 0.3, lum(col));
-    col = mix(col, max(col, vec3(0.0)) * 0.85 + vec3(0.075, 0.08, 0.05), dark * 0.4 * uLand);
+    col = mix(col, max(col, vec3(0.0)) * 0.85 + vec3(0.075, 0.08, 0.05), dark * 0.4 * uLand * ground);
   }
   // A town takes about half the grade: it keeps its colours, its fires their heat.
   if (!figure && src.a > 0.93) col = mix(src.rgb, col, 0.45);

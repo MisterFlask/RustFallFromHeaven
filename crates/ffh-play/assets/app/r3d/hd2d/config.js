@@ -54,7 +54,7 @@ export const HD2D = {
   borderGlow: 1,
   pitch: 32,
   fov: 30,
-  tiltShift: 0.6,
+  tiltShift: 0.3,
   // (0.6 before the brighter finish: its gamma lifts the shafts' haze too.)
   rays: 0.45,
   mood: 1,
