@@ -480,7 +480,24 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   the cards), it is nobody's vassal and at peace with every civilization (a leader with the
   Barbarian trait, `barbarian_ally`, is at peace with the barbarians as at a game's start), it
   has met every civilization its parent has met, and `ai_attitude_extra` is -4 between it and
-  its parent both ways. **Its leader** (`faction_leader`): the first by id of its civilization's
+  its parent both ways. **Its new units** (`grant_faction_units`; the owner's request, 2026-11-14),
+  after the birth, no gold: 2 defenders per faction city round-robin (one in each city, its
+  capital first, then the rest in `cities` order; then a second round), then 2 attackers in its
+  capital (`DEFENDERS_PER_CITY`, `CAPITAL_ATTACKERS`). Each is re-picked before it is made
+  (`faction_unit`), from its civilization's units (not a world unit's class) that the faction
+  can train (`player_can_train`, team and player limits counted with units being built) and whose
+  class is under its national limit (`max_player_instances`, units being built counted: a class's
+  soft limit is a price, and a free unit does not pay it, so the grant stops at the limit and
+  falls through to the next best). A defender: the best `UNITCOMBAT_ARCHER` unit (highest tier,
+  then defense strength, then strength; ties: the lower id), else the best `UNITCOMBAT_MELEE`
+  unit; an attacker: the best melee unit (highest tier, then strength; ties: the lower id). No
+  unit qualifies: that grant is skipped. **The cap:** a unit is made only while the faction's
+  `crusade_military_strength` with it stays at most its parent's (both measured after the birth).
+  A unit's strength is known before it is made: a type already made this firing counts what its
+  first unit measured (`crusade_unit_strength`), another the bound `unmeasured_strength`, 2 x the
+  better of its strength and defense x 100 (a new unit measures that better strength x (100 + its
+  combat bonus %)). The granting stops at the first grant that does not fit (no unit is made and
+  then removed). The log line gives the count granted. **Its leader** (`faction_leader`): the first by id of its civilization's
   `leaders` not in play this game (the leader of a player ever alive) nor given to a faction of
   the same firing, else the first such of its minor leaders (`leader_heads` `minor_leader_of`,
   which no civilization lists, so no game starts with one): FFH2's scenario leaders, each by the
@@ -495,7 +512,7 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   Expansive, Raiders), Raziel (Mercurians: Defender, Spiritual). A civilization with no free leader
   does not split: the civilizations born of cards have one leader each, in play. The card is
   played only when some civilization splits (`valid_sundering`). The minor leaders show the
-  random portrait (`PORTRAIT_ALIASES`). **Under the AI** (the card fired by hand at turn 150 of
+  random portrait (`PORTRAIT_ALIASES`). **Under the AI** (measured before the faction's new units, 2026-11-14; the card fired by hand at turn 150 of
   four 6-civilization standard games, seeds 1-4, then 40 turns played; 16 factions): the
   factions keep their garrisons (none shrank: with one or two cities they are fully funded at 0
   gold) and build more (1-4 land units at the split, 3-7 forty turns later). They are weak (most
