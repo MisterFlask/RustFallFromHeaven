@@ -306,13 +306,6 @@ const FINE = 2.6;
 /** Open ground's grass tufts, smaller than the other small props: they say what the ground is
  *  without standing out of it (at FINE they read as dark stumps under the grade). */
 const TUFT = FINE * 0.7;
-/** A mountain card (tools/hd2d/mountains.py, about 145 art pixels wide) against PX.prop: a little
- *  wider than its plot, so the mountains of a range stand into each other. */
-const MOUNTAIN = 2.9;
-/** The mountain of a peak plot, by its ground. */
-function mountainOf(ground) {
-  return HELLISH.has(ground) ? "mountain_ash" : ground === GROUND.DESERT ? "mountain_dry" : "mountain";
-}
 const HELLISH = new Set([GROUND.BURNING_SANDS, GROUND.BROKEN_LANDS, GROUND.PERDITION]);
 
 /** The trees of a wooded plot, by its feature and ground: [kind, weight, scale]. */
@@ -689,17 +682,6 @@ function dressProps(world, map, atlas, env, moods, list) {
       for (let k = 0; k < 2; k++) put("grass", r.range(-0.46, 0.46), r.range(0.3, 0.48), FINE * r.range(0.85, 1.1));
       if (clearing > 0) fields(put, r, townRing(map, world, x, y)[0], clearing);
     } else if (kind === KIND.LAND || kind === KIND.HILLS || kind === KIND.PEAK) {
-      // A peak's mountain: one card, its foot at the front of the low mound the relief raises (the
-      // plot's southern third), so what lies behind it on the plot is hidden by it. A volcano
-      // is its own model.
-      if (kind === KIND.PEAK && feat !== FEAT.VOLCANO) {
-        const vs = variants(mountainOf(world.ground[i]));
-        if (vs.length) {
-          const key = vs[r.int(0, vs.length - 1)];
-          const mx = x + 0.5 + world.peakJitter[i * 2] * 0.6, my = y + 0.5 - 0.46;
-          list.push(card(key, atlas.info(key), PX.prop * MOUNTAIN * r.range(0.92, 1.08), mx, H(mx, my) - 0.02, -my, { shadow: true, flip: r() < 0.5, glow: HELLISH.has(world.ground[i]) ? 1.2 : 0, id: 0.0002, vis: [x + 0.5, y + 0.5] }));
-        }
-      }
       // Clumps: most things gather round one or two spots of the plot, the rest lie anywhere.
       const clumps = [[r.range(-0.3, 0.3), r.range(-0.3, 0.3)], [r.range(-0.3, 0.3), r.range(-0.3, 0.3)]];
       const at = () => {

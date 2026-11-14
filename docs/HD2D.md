@@ -339,22 +339,6 @@ does for the isometric sprites. No unit art changed.
   mossy), six shore cards (`shore_*`: two to four wet stones in a loose row under caps of moss)
   and three of pebbles; three haystacks (`hay_*`: the trees' lumps in straw, a point over a broad
   skirt, the straw as short strokes down the stack). All stand at the small props' scale (`FINE`).
-* **Mountains drawn by code** (`tools/hd2d/mountains.py`, 2026-11-14; the owner: the peaks looked
-  flat). A peak was the 3D renderer's relief: a smooth cone of the terrain mesh under a cobbled
-  rock texture and blurred snow, boulder cards afloat on its slopes. It is a card now, about 145
-  art pixels wide and a little wider than its plot (`MOUNTAIN` in `dress.js`), so a range's
-  mountains stand into each other; the relief under it is a low mound (`PEAKS` in `index.js`,
-  world.js `peaks`: a tenth of the 3D renderer's height, and the hill country under a peak
-  lowered with it). The card's foot stands at the plot's southern edge, so the mountain covers
-  its plot and hides what lies behind it there, and it casts its outline into the shadow map.
-  The recipe is the trees' at a mountain's size, but modelled rather than painted: a few horns,
-  each a summit with spokes running down, alternately ridges (major ones with a shoulder) and
-  gullies, the vertices jittered so ridges zigzag; the triangles are flat facets, drawn as the
-  camera sees them (32 degrees over the horizon), one hard tone a facet by the way it faces the
-  sun: lit western faces, shaded eastern ones. Above a ragged snowline the facets take the snow's
-  ramp. Five snowy mountains (`mountain_*`), three bare sandstone ones on desert
-  (`mountain_dry_*`), three of dark rock with glowing cracks on hell's grounds
-  (`mountain_ash_*`). A volcano keeps its model.
   The mood pass's land palette (`MOOD_FS`) no longer lifts the cards' middle and dark values (the
   ground's only): their darks are painted, and lifted, a wood read flat and pale.
 * **Open ground says what it is** (the owner's call, 2026-11-01: unimproved grassland and plains
@@ -680,7 +664,7 @@ the map (`MapHd2d.setConfig`).
   as cards, a city a town of the kit's cards at the props' density in its owner's colour; towns
   grow with their size, walled ones have walls, a gate and towers, deterministic; the houses round
   a town are its own; nothing stands on, and no mood comes from, an unrevealed plot).
-* **Art**: `tools/hd2d/draw.py` (the props drawn by code), `tools/hd2d/trees.py` (the woods' trees), `tools/hd2d/rocks.py` (stones and haystacks), `tools/hd2d/mountains.py` (the peaks' mountains), `tools/hd2d/local_props.py` (the image
+* **Art**: `tools/hd2d/draw.py` (the props drawn by code), `tools/hd2d/trees.py` (the woods' trees), `tools/hd2d/rocks.py` (stones and haystacks), `tools/hd2d/local_props.py` (the image
   model's, through a local ComfyUI, §5b), `tools/hd2d/gen.py` (sheets from OpenAI's
   `gpt-image-2.5-sunburst`, pinned to its 2026-09-08 snapshot -- gpt-image-1 was shut down on
   2026-10-23 -- the prop sheets of nine and the town kit's sheets of `tools/hd2d/towns.json`, with
