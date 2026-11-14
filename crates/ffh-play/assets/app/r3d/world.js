@@ -123,6 +123,9 @@ export class World {
    *  its look target's land stands over its water). */
   constructor(map, opts = {}) {
     this.bank = opts.bank ?? 0;
+    // How tall the peaks' relief stands (1, the 3D renderer; the HD-2D map lowers it to a mound
+    // under its mountain cards).
+    this.peaks = opts.peaks ?? 1;
     this.w = map.w;
     this.h = map.h;
     this.wrapX = !!map.wrap_x;
@@ -271,7 +274,8 @@ export class World {
         if (k === KIND.HILLS) hill += wgt;
         else if (k === KIND.PEAK) {
           peak += wgt;
-          hill += wgt * 0.6;
+          // The hill country under a peak, lower with the peak itself (`peaks`).
+          hill += wgt * 0.6 * Math.min(1, this.peaks * 4);
         } else if (k === KIND.OCEAN || k === KIND.COAST) water += wgt;
         else if (k === KIND.ICE) ice += wgt;
         else if (k === KIND.VOID) voidW += wgt;
@@ -307,8 +311,8 @@ export class World {
       const r = this.ridged(mx, my, 1.1, -2.7, 8.1, 4);
       const r2 = this.ridged(mx, my, 2.6, 5.3, -1.9, 3);
       const pw = Math.pow(peak, 1.4);
-      h += dry * pw * (0.18 + 0.62 * Math.pow(r, 1.7) + 0.16 * r2 * r);
-      h += dry * this.summits(mx, my) * (0.75 + 0.35 * r2);
+      h += this.peaks * dry * pw * (0.18 + 0.62 * Math.pow(r, 1.7) + 0.16 * r2 * r);
+      h += this.peaks * dry * this.summits(mx, my) * (0.75 + 0.35 * r2);
     }
     if (voidW > 0) h = h * (1 - voidW) + BASE[KIND.VOID] * voidW;
     // A raised bank: the dry land lifted, all but a narrow strip just over the waterline, so the

@@ -44,6 +44,8 @@ const SPRITE_WAIT_MS = 3000;
 
 /** How far the land stands over its water (plots; dry land's base is 0.1 over the sea). */
 export const BANK = 0.04;
+/** The peaks' relief against the 3D renderer's: the mound under a mountain card. */
+export const PEAKS = 0.1;
 
 /** The pixel-art ground layers (hd2d/art, tools/hd2d/art.py) and the material layer each replaces
  *  in the 3D renderer's ground (materials.js): the terrain shader tints a layer by its mean colour,
@@ -170,9 +172,10 @@ export class MapHd2d extends Map3D {
   }
 
   /** A low bank where the land meets its water (world.js `bank`): the look target's land stands
-   *  over its water. */
+   *  over its water. The peaks' relief is a low rocky mound (world.js `peaks`): the mountain is a
+   *  card standing on it (dress.js). */
   worldOpts() {
-    return { bank: BANK };
+    return { bank: BANK, peaks: PEAKS };
   }
 
   /** The ground's brush dabs compiled out (shaders.js NO_DABS): the pixel-art ground carries its
