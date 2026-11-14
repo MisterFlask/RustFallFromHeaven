@@ -845,7 +845,10 @@ flag.
       leader does not split (so the card-born civilizations never do). The faction knows its
       parent's techs (not its cards), has met who its parent has met, is nobody's vassal and at
       peace (a Barbarian-trait leader's at peace with the barbarians too), with -4 attitude
-      between it and its parent both ways. The AI plays it. Played only when a civilization splits.
+      between it and its parent both ways. The AI plays it. It gains units of its tech level
+      (2026-11-14, the owner's request): 2 of its best archery unit (else melee) per city and 2 of
+      its best melee unit in its capital, under national limits, while its military strength stays
+      at most its parent's. Played only when a civilization splits.
     - **The Infernal Pact is FFH2's again** (2026-11-08): the first team to learn it brings the
       Infernals whatever the Armageddon deck did (batch B8 had made them come once a game, by the
       Pact or the card). Whoever brings them, they do not learn their patron's cards.
