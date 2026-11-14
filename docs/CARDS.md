@@ -501,7 +501,7 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   gold) and build more (1-4 land units at the split, 3-7 forty turns later). They are weak (most
   have one city), and in 4 of 16 the parent, or once a neighbour, declared war and took the
   faction's city within 20-35 turns; the others lived on at peace.
-- **No card alters a victory condition** (the owner's rule, 2026-11-08): what a card produces
+- **No card alters a victory condition** [R-CARDS-NO-VICTORY] (the owner's rule, 2026-11-08): what a card produces
   counts normally toward every victory.
 - **The human's view:** `me.doom` (`view/cards.rs`) lists the slots with what the human knows:
   a revealed or fired card, or one it sees ahead, by key, name and effect; hidden slots say

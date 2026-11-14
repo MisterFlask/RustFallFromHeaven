@@ -116,7 +116,7 @@ cities that can train it with what each would delay, pick one (the client pre-se
 capable city). The standing requisition (an army's target size and the cities it draws on) is
 unchanged and fills by its role mix.
 
-**Cultural channels are the player's** (the owner's decision, 2026-10-30): a governor never sets,
+**Cultural channels are the player's** [R-GOVERNORS-NO-CHANNEL] (the owner's decision, 2026-10-30): a governor never sets,
 changes or ends a city's channel (docs/CULTURE.md).
 
 ## Decided beyond the design's text

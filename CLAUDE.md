@@ -3,10 +3,11 @@
 **New session?** Read this file, `README.md` and the doc for the area you touch (`docs/PORTING.md`,
 `docs/AI.md` + `docs/AI_LOG.md` + `docs/TELEMETRY.md`, `docs/PLAY_DESIGN.md` + `docs/HUMAN.md`, `docs/ART.md`,
 `docs/R3D.md`, `docs/HD2D.md`, `docs/SCORE.md`, `docs/PERF.md`, `docs/CRUSADE.md`, `docs/CARDS.md`,
-`docs/WORKS.md`, `docs/TACTICS.md`, `docs/SUPPLY.md`, `docs/NAVAL.md`). What is merged is what git says (`git log origin/master`);
+`docs/WORKS.md`, `docs/TACTICS.md`, `docs/SUPPLY.md`, `docs/NAVAL.md`). The owner's standing rules are
+named in `docs/RULES.md` (the `[R-...]` tags below; "Standing rules"). What is merged is what git says (`git log origin/master`);
 open work and known gaps live in the area docs, not in a session log. Out of scope for now (the owner's
-call): scenarios. The C++ AI is ported only as a benchmark to measure ffh-ai against (`crates/ffh-cppai`,
-docs/CPPAI.md; kept on master by the owner's request, 2026-10-21), not as the game's AI.
+call): scenarios [R-NO-SCENARIOS]. The C++ AI is ported only as a benchmark to measure ffh-ai against (`crates/ffh-cppai`,
+docs/CPPAI.md; kept on master by the owner's request, 2026-10-21), not as the game's AI [R-CPPAI-BENCH].
 Performance and AI-improvement work ignores it (the owner's call, 2026-10-21: no mileage in it):
 don't optimize, tune or extend it, and leave it out of sprint measurements unless the owner asks
 for a comparison; when an ffh-core change breaks its build, make the minimal mechanical fix.
@@ -33,11 +34,20 @@ crates/ffh-play  `ffh-play`: human play (docs/PLAY_DESIGN.md, docs/HUMAN.md)
 crates/ffh-web   the engine as WebAssembly and the page side of the static site (docs/WEB.md)
 tools/           fetch-reference.sh, gen_enums.py, gen_defines.py, jsonc.py (the data for Python),
                  agents/ (shared builds, run cache, CPU slots: docs/AGENTS.md)
-docs/            ARCHITECTURE.md, DATA.md, PORTING.md (status), AGENTS.md (parallel agents)
+docs/            ARCHITECTURE.md, DATA.md, PORTING.md (status), AGENTS.md (parallel agents),
+                 RULES.md (the owner's standing rules, by name)
 anim-sprint/     animations for M7 unit sprites (its own project; anim-sprint/ANIMATING_UNITS.md)
 ```
 
-## Unit animations
+## Standing rules
+
+Every standing rule of the owner's has a name and an entry in `docs/RULES.md`: `[R-NAME]` after a
+rule's lead in this file or an area doc is that name. Cite a rule by it. When the owner states a
+new standing rule, add its entry and tag its text in the same commit; when the owner ends one,
+move its entry to "Deprecated" there (never delete it), remove its text here, and revisit what
+cites it (`grep -rn 'R-NAME' .`). Only the owner makes, changes or ends a rule.
+
+## Unit animations [R-ANIM-RECIPE]
 
 To make idle, strike, flinch or death animations for an M7 unit sprite, follow
 `anim-sprint/ANIMATING_UNITS.md`. It describes the method that won the October 2026 animation
@@ -47,7 +57,7 @@ poses and impact cards (one hit frame and one still image of the blow, held: the
 rubble), follow its section "Impact cards and key poses". Agent build worktrees are sparse
 and leave that folder out; run `git sparse-checkout add anim-sprint` first.
 
-## Parallel agents
+## Parallel agents [R-AGENT-BUILDS]
 
 Other agents share this machine (4 cores) and repository. Follow docs/AGENTS.md:
 - Build with `B=$(tools/agents/build-rev.sh <rev>)` / `W=$(tools/agents/build-tree.sh)` (your
@@ -59,7 +69,7 @@ Other agents share this machine (4 cores) and repository. Follow docs/AGENTS.md:
   game runs in `tools/agents/slot.sh` (`--exclusive` for `ffh bench`).
 - If you did build in your worktree, `rm -rf target` before finishing.
 
-## Fable designs, Opus implements
+## Fable designs, Opus implements [R-FABLE-OPUS]
 
 If you are a Fable model (the owner's rule, 2026-11-09), dispatch implementation to Opus
 aggressively: start subagents with the Agent tool's `model: "opus"` and hand them the writing.
@@ -85,40 +95,40 @@ A model other than Fable ignores this section.
 - `/home/user/ref/ffh2/Assets/python/**` -- FFH2 rules Python (spells, events, ...)
 - `/home/user/ref/ffh2/Assets/XML/**` -- original XML (schemas: `*Schema.xml`)
 
-When porting, read the C++/Python being ported -- never port from memory.
+When porting, read the C++/Python being ported -- never port from memory [R-PORT-FROM-SOURCE].
 
 ## Hard rules
 
-- **No external crates.** crates.io is unreachable from this environment; std only.
-- **Determinism.** Simulation state changes only through the game RNG
+- **No external crates.** [R-NO-CRATES] crates.io is unreachable from this environment; std only.
+- **Determinism.** [R-DETERMINISM] Simulation state changes only through the game RNG
   (port of `CvRandom`). No `HashMap` iteration in simulation code (use `Vec`/
   `BTreeMap` or sort first). No wall-clock, no thread-dependent ordering.
-- **Integer math in rules,** as in the C++ (it uses `int` with percentages).
+- **Integer math in rules** [R-INTEGER-MATH], as in the C++ (it uses `int` with percentages).
   Port floating-point only where the C++ itself uses float, with the same ops.
-- **FFH2 is the starting point, not an invariant.** The port reproduces FFH2 0.41 so the game
+- **FFH2 is the starting point, not an invariant.** [R-FFH2-START] The port reproduces FFH2 0.41 so the game
   starts from a known, working base; once that base is stable and attractive, the rules will
   change sweepingly. Equivalence to FFH2 is temporary: don't add tests, tools or machinery whose
   only purpose is keeping the port identical (or bit-exact) to FFH2, and a change is not wrong
   because it departs from FFH2.
-- **Rules changes are deliberate and recorded.** Change rules on purpose, not as a side effect
+- **Rules changes are deliberate and recorded.** [R-RULES-RECORDED] Change rules on purpose, not as a side effect
   of other work: say what changed and why in the commit, and list gameplay changes from FFH2 0.41
   in docs/PORTING.md ("Changes from FFH2").
-- **New game features are not behind game options** (the owner's decision, 2026-11-05): a new
+- **New game features are not behind game options** [R-NO-FEATURE-FLAGS] (the owner's decision, 2026-11-05): a new
   system is part of the rules in every game, not a feature flag. Governors, armies, cultural
   actions, engagement combat and crusades were options once; they are in every game now.
-- **No switch without a reason to exist** (the owner's decision, 2026-11-10). A game option stays
+- **No switch without a reason to exist** [R-NO-IDLE-SWITCH] (the owner's decision, 2026-11-10). A game option stays
   only if a player can choose it on the new-game screen and it works; an AI switch
   (`crates/ffh-ai/src/switches.rs`) only while its behaviour is being measured, and it is removed
   when the behaviour is kept or dropped (the module comparators `MAGIC`, `CIV` and the trait
   switches, and the probes, are instruments and stay).
-- **Mirroring the C++ is no longer a goal** (the owner's decision, 2026-10-28). Echoing the C++
+- **Mirroring the C++ is no longer a goal** [R-NO-MIRROR] (the owner's decision, 2026-10-28). Echoing the C++
   closely was the method for the initial port, which is complete; it has no value in itself now.
   Restructure ported code, its C++-shaped APIs and its quirks whenever that makes present code or
   future changes more correct or clearer (the `// C++ quirk:` notes and the C++ names in doc
   comments are a map of where the code came from, not a constraint). A change that plays
   differently is still a rules change: deliberate and recorded (above). The rest of this file's
   C++ -> Rust conventions describe how the existing code is laid out.
-- `cargo build --release && cargo test --release` must pass before committing.
+- [R-GATE] `cargo build --release && cargo test --release` must pass before committing.
   `cargo run --release -p ffh-cli` must report `0 warnings` for data loading.
 
 ## Naming conventions (C++ -> Rust)
@@ -245,20 +255,20 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
 - Work in small, compiling steps; commit with clear messages.
 - Update docs/PORTING.md when a C++/Python unit is ported (file, functions, status).
 - Tests: unit tests next to code; data spot-checks in `crates/ffh-data/tests/`.
-- No test relies on a seed's story (the owner's decision, 2026-11-05): how an AI game goes (a
+- No test relies on a seed's story [R-NO-SEED-STORY] (the owner's decision, 2026-11-05): how an AI game goes (a
   bot survives, a city is captured, a battle comes, a game ends in a victory) changes with every
   AI or rules change, so no test asserts it or needs it. A test that plays turns uses a game that
   cannot end (`common::STEADY` in `crates/ffh-play/tests`: always peace, no barbarians, lairs or
   goody huts) and asserts only what holds for any seed; a test that needs a situation (cities,
   a war, a battle) builds it by hand. Measure how games go with the tools (docs/AI.md, "Tools").
-- **Merging to master** (the owner's standing permission, 2026-10-21): once a change passes the
+- **Merging to master** [R-MERGE-MASTER] (the owner's standing permission, 2026-10-21): once a change passes the
   gate (`tools/agents/build-tree.sh --test`, `ffh data` with 0 warnings, `bash tools/web-check.sh`)
   and the end-to-end tests (`node tools/web-smoke.mjs --bin <built>/ffh-play`; the static site's
   smoke as well when the change reaches the site, below) all pass, merge it into master
   (fast-forward when possible) and push, without asking. This holds even when the session was
   told to develop on another branch: push that branch too. Master is deployed to the public site
   by CI, so never push it with a failing or skipped check; say what failed instead.
-- **End the turn that pushes master** with the line `WORK ITEMS HAVE BEEN PUSHED TO MASTER`,
+- **End the turn that pushes master** [R-PUSHED-LINE] with the line `WORK ITEMS HAVE BEEN PUSHED TO MASTER`,
   followed by a clickable link to the game in the browser (the owner's request, 2026-10-21):
   `[Play in the browser](https://misterflask.github.io/RustFallFromHeaven/)` (CI deploys master
   there a few minutes after the push).
@@ -272,45 +282,45 @@ and the AI was only ever measured against itself.
 
 ### What the AI is
 
-- **The AI plays the way an expert human would** (the owner's decision, 2026-10-21). In broad
+- **The AI plays the way an expert human would** [R-AI-EXPERT] (the owner's decision, 2026-10-21). In broad
   strokes its strategy and tactics are the ones a strong player would conceptualize and could
   explain: settle good land while it is free, defend what it holds, fight when it has the edge and
   make peace when it does not, use every tool its civilization has, give up independence when
   hopelessly behind. Flavor and fun override this where a rule below says so.
-- **It is an opponent for a human.** What matters is how it stands against a player who does
+- **It is an opponent for a human.** [R-AI-OPPONENT] What matters is how it stands against a player who does
   what it does not: masses an army, rushes, turtles. A result that holds only among copies of
   itself (a defender is cheaper to rebuild than to keep, when no neighbour has an army) is a fact
   about those opponents, not about the game.
-- **Civilizations use their unique mechanics** (the owner's decision, 2026-10-20): a
+- **Civilizations use their unique mechanics** [R-AI-UNIQUE] (the owner's decision, 2026-10-20): a
   civilization's own units, spells and abilities are part of how it plays, so its AI uses them
   whether or not they directly benefit it.
-- **Conquest and domination are a flavor drive** (the owner's decision, 2026-10-21): the Clan of
+- **Conquest and domination are a flavor drive** [R-AI-CONQUEST] (the owner's decision, 2026-10-21): the Clan of
   Embers, the Doviello, the Bannor, any other canonically warlike civilization, and every leader
   with `TRAIT_AGGRESSIVE` play with an expansion drive, not a victory goal pursued once in reach:
   they keep looking for the easiest way to grow -- a settler site or a weaker nearby civ's
   cities -- and take it, again and again, whether or not it raises their win rate (docs/AI.md,
   "Victory pursuit").
-- **Hopeless civilizations become vassals** (the owner's decision, 2026-10-21). A civilization
+- **Hopeless civilizations become vassals** [R-AI-VASSALS] (the owner's decision, 2026-10-21). A civilization
   that has fallen hopelessly behind (in technology, power and its share of the world) offers to
   become the vassal of a much stronger neighbour it is at least decently aligned with (no
   good/evil opposition, an attitude its leader's pride accepts), and agrees when asked. One being
   crushed in a war capitulates to the conqueror, whatever it thinks of it (docs/AI.md, "Vassal
   states").
-- **The AI does not pursue the Tower of Mastery or the Altar of the Luonnotar** (the owner's
+- **The AI does not pursue the Tower of Mastery or the Altar of the Luonnotar** [R-AI-NO-SOLITAIRE] (the owner's
   decision, 2026-10-21: boring solitaire victories). It still stops a rival about to win one.
-- AI timing and AI-only restrictions belong in `ffh-ai`, not in the rules (docs/AI_ONLY_RULES.md
+- [R-AI-IN-AI] AI timing and AI-only restrictions belong in `ffh-ai`, not in the rules (docs/AI_ONLY_RULES.md
   lists the rules' remaining AI-only branches, each group moved by its own decision).
 
 ### How AI changes are checked
 
-- **A rules change** (a new system, a changed rule) is not gated on the AI at all: make the AI do
+- **A rules change** [R-AI-RULES-UNGATED] (a new system, a changed rule) is not gated on the AI at all: make the AI do
   something with it that seems reasonably likely to be effective, ad hoc and unprincipled if need
   be, and move on.
 - **An AI change is never kept or dropped on the standard AI's win rate or share against copies
-  of itself.** That number is zero-sum, noisy at any affordable sample, and falls when every
+  of itself.** [R-AI-NO-SELF-WINRATE] That number is zero-sum, noisy at any affordable sample, and falls when every
   civilization conquers better. Do not measure it to decide.
 
-An AI-specific change goes through this loop, in this order; stop at the first step that fails.
+An AI-specific change goes through this loop [R-AI-LOOP], in this order; stop at the first step that fails.
 
 1. **Start from games, not from an idea.** The work list is what goes wrong in played games,
    counted: every city lost, civilization eliminated, army that stood idle, caster that never
@@ -352,7 +362,7 @@ probes (step 7, docs/PROBES.md).
 `docs/AI_LOG.md` records attempts worth remembering and what their games showed: read the entries
 for an area before working in it.
 
-### Probes: AIs that go all in on one strategy
+### Probes: AIs that go all in on one strategy [R-AI-PROBES]
 
 A probe is a variant of the AI that pushes one strategic direction as hard as it can and neglects
 the rest (the owner's decision, 2026-11-10): an early rush, one unit line massed, settling without
@@ -383,20 +393,20 @@ build another when a question needs it.
 ## Rules text and tooltips
 
 Mechanical text -- rules, tooltips, previews, results, reasons, effects -- is bare and without
-flavor (the owner's rule, 2026-11-02): labels, numbers and the rule itself, no adjectives,
+flavor [R-BARE-TEXT] (the owner's rule, 2026-11-02): labels, numbers and the rule itself, no adjectives,
 narration or mood. Write `Total offered: 240`, `This proposal will be refused.`,
 `Reason: open borders requires attitude Pleased.`, `Effect: -1 relations for 30 turns.`; not
 "they would welcome it" or "the forest thanks you". Flavor belongs to what characters say (the
 leaders' speech) and to the names and descriptions of the game's data.
 
-Rules text and reminder text are kept apart (the owner's rule, 2026-11-12; docs/PLAY_DESIGN.md
+Rules text and reminder text are kept apart [R-KEYWORDS] (the owner's rule, 2026-11-12; docs/PLAY_DESIGN.md
 4.8). Rules text is what is unique to the entity shown. A concept that applies to many entities
 (what a Ritual is) is a keyword (`data/json/keywords.jsonc`): the entity's text names it, and its
 reminder is drawn in its own box beside or below the tooltip, never inside the rules text. Do not
 restate a keyword's rule in an entity's text (`crates/ffh-play/tests/keywords.rs` fails on it);
 when the same sentence appears on many entities, make it a keyword.
 
-## Show UI changes in a screenshot
+## Show UI changes in a screenshot [R-UI-SCREENSHOT]
 
 Whenever a change adds to or alters what the player sees in support of a feature (a panel, a
 button's states, a dialog, an alert, a tooltip's text), show the owner the result in a screenshot
@@ -408,7 +418,7 @@ at a glance, and the exact text of each new effect.
 ## Verifying renderer and visual work (r3d, lab, client look)
 
 This is a game. The owner looks at the result and reports regressions, and a regression costs a
-follow-up fix, not harm. Verify in proportion: fast iteration beats exhaustive pre-checking. These
+follow-up fix, not harm. Verify in proportion [R-VERIFY-TIERS]: fast iteration beats exhaustive pre-checking. These
 rules hold even when ultracode is on: use workflows to fan out *work* (independent areas, design
 alternatives, research), not to multiply verification. Rules-engine work keeps the hard rules above.
 
@@ -422,7 +432,7 @@ Tiers (pick by the change):
   parallel; a refute pass only for high-severity findings that would change direction. At most one
   round per batch.
 
-Screenshots for the owner are taken on the HD-2D map (the owner's rule, 2026-11-11: `?force3d=1`
+Screenshots for the owner are taken on the HD-2D map [R-SHOTS-HD2D] (the owner's rule, 2026-11-11: `?force3d=1`
 where this machine falls back without a GPU). The flat and isometric maps are for debugging and as a
 backup for older PCs: judge and show a look on HD-2D, and design for it first.
 
@@ -439,7 +449,7 @@ Batching:
   shader cost or anything world-anchored), as one A/B against the previous milestone: same save,
   same binary, the old tree via `git archive`. Update docs/R3D.md section 11 then.
 
-**Shader changes draw a Huge map fully revealed before they are done** (the owner's rule,
+**Shader changes draw a Huge map fully revealed before they are done** [R-HUGE-MAP] (the owner's rule,
 2026-11-11; this holds at every tier). A change to a shader, or to what the renderer builds for
 the map each sync (meshes, textures, atlases, instance buffers), is tested end to end on the
 largest case with `node tools/r3d-huge.mjs --bin <built>/ffh-play` (add `--layer sea` when the
@@ -455,7 +465,7 @@ warnings) plus `bash tools/web-check.sh`. Run `node tools/web-smoke.mjs --bin <b
 before pushing to master. Regressions the owner reports get fixed in the next batch; don't try to
 pre-empt every conceivable one.
 
-A change to the transport, the web host or `crates/ffh-web` also runs the static site's smoke test
+[R-SITE-SMOKE] A change to the transport, the web host or `crates/ffh-web` also runs the static site's smoke test
 before it goes to master (`tools/web-site.sh OUT`, then `node tools/web-site-smoke.mjs --site OUT`;
 docs/WEB.md): master is deployed to the public site by CI.
 

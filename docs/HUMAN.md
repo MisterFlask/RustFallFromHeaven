@@ -766,7 +766,7 @@ from the data, they follow the rules as they change. Each appears wherever its t
 build list and the buildings of a city, the unit panel's actions, the promotions and spells
 dialogs, the civics and religion screens, the trade table, the map's resources.
 
-**Rules stay out of the screens** (the owner's call, 2026-11-03). A screen holds the state and the
+**Rules stay out of the screens** [R-RULES-OFF-SCREENS] (the owner's call, 2026-11-03). A screen holds the state and the
 decision at hand; a rule (how something works, true in any game) is a tooltip on what it explains,
 or, for a screen's whole system, an article of the help display behind the dialog's (i): the
 crusade dialogs, the Armies, Governors and Cultural pressure screens. A decision's option shows

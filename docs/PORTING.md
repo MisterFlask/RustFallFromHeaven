@@ -997,7 +997,7 @@ flag.
   Mastery; Remnants of Patria: Taxation; Pool of Tears: Medicine. The AI compares techs by research
   left at the rate it gets (`tech_plan::effective_left`) and values city sites with an unclaimed
   feature in reach a quarter higher per feature (`sites::research_feature_bonus`).
-- **No eras** (the owner's decision, 2026-11-10: "era" is purged from the game, and later-era
+- **No eras** [R-NO-ERAS] (the owner's decision, 2026-11-10: "era" is purged from the game, and later-era
   starts with it; save format 31). FFH2 had three progress eras (Ancient, Classical, Medieval)
   whose growth, train, construct, create, research, build, improvement and great-people
   percents were all 100 and whose barbarian, animal and goody gates were never set, plus seven
@@ -1119,7 +1119,7 @@ flag.
   barbarian, and the barbarian, pushed off, took the half-built city (a crash: seed 16, 5 civs,
   small map, with research paths off). The unit now withdraws elsewhere, or dies when it has
   nowhere else to go.
-- **The Skirmisher, an early national unit** (2026-11-06, the owner's decision: national units
+- **The Skirmisher, an early national unit** (2026-11-06, the owner's decision [R-NATIONAL-UNITS]: national units
   are above their era's curve, with no upgrade). New `UNITCLASS_SKIRMISHER` (national: 2 per
   player at the normal cost, then 500% each, 250 hammers, as for every national class above) and
   `UNIT_SKIRMISHER`: an archer (Archer role, middle and rear rows) at Exploration, with no

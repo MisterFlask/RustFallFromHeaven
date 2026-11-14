@@ -37,7 +37,7 @@ side's ordinary and river slots together; the sides' lane counts may differ). A 
 below) fills two cells side by side in one row and counts 2 slots, and is the front or back unit
 of both its lanes.
 
-**Each unit's own rows** (the owner's decision, 2026-11-06: there are no roles). Every land unit
+**Each unit's own rows** (the owner's decision, 2026-11-06: there are no roles [R-NO-ROLES]). Every land unit
 type has, in `units.jsonc`:
 
 | Key | What | Absent |

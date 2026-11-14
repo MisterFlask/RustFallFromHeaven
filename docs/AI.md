@@ -46,7 +46,7 @@ and determinism -- and a standing cost preference:
 ## Fog of war
 
 The owner's decisions (2026-10-24): the AI **sees units through fog of war, for its defense and
-for its attacks, never through stealth** (attacks too: conflict is much of what makes the game
+for its attacks, never through stealth** [R-AI-FOG] (attacks too: conflict is much of what makes the game
 fun). Unrevealed land stays unknown. Honest inference about unseen
 units would need a memory of what was last seen (saved per-team state, decay, scouting to
 refresh it); the C++ AI never had one either -- `CvPlayerAI::AI_getPlotDanger`,
@@ -2883,7 +2883,7 @@ The rules apply every trait's effect by themselves (free promotions, cheaper civ
 ...), and the generic AI already profits where it reads numbers a trait changes: wonder turns
 (Industrious), civic upkeep (Organized), upgrade prices (Ingenuity), combat odds (the free
 promotions). What it did not do was play to them. `traits.rs` adds the decisions a trait calls for
-(the owner's decision, 2026-10-26: this is flavour as much as strength, so a trait's play is kept
+(the owner's decision, 2026-10-26 [R-AI-TRAIT-PLAY]: this is flavour as much as strength, so a trait's play is kept
 whatever the win rate does, and a drop is investigated as a flaw to fix). The hooks are marked
 `// trait-play`:
 

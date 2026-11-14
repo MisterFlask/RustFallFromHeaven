@@ -1,6 +1,6 @@
 # HD2D: pixel-art sprites in the 3D renderer's lit world
 
-**Status: the default map renderer** (the owner's decision, 2026-10-31), with the isometric 2.5D map
+**Status: the default map renderer** [R-HD2D-DEFAULT] (the owner's decision, 2026-10-31), with the isometric 2.5D map
 (docs/ISO.md) as its fallback where it cannot run, beside the flat, sprite-less debug renderer (the
 2D pixel-art map is retired too). It is built on the 3D renderer (docs/R3D.md), whose own mode,
 everything modelled, is retired: no longer offered to players, kept in the r3d lab for the layers
