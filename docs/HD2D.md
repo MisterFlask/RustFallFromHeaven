@@ -254,7 +254,8 @@ lab and tools. The camera is the 3D one with the HD-2D preset's pitch and lens (
   settlement 1.7 plots (as the reference's towns, which span about two tiles; the prop cards keep
   clear of its footprint; the kit's towns, §5c, stand at the props' scale instead), other buildings 0.73, resources' canvases 0.65 (their props about 0.25),
   banners 0.8 tall, a lone prop 0.0031 a plot an art pixel (a 150 px oak about 0.47 of a plot; in
-  a wood 0.58 of that, about 0.27: the target's trees are about half a figure's height), the props
+  a wood 0.58 of that, about 0.27; the woods' oaks and pines drawn by code, §5b, 45 px cards
+  about a third of a plot tall), the props
   drawn by code 2.6 times that (`FINE`: about one art pixel a screen pixel at 96 px a plot).
 
 ## 5b. The mode's own art: pixel ground and prop cards
@@ -291,14 +292,14 @@ does for the isometric sprites. No unit art changed.
   (SwiftShader, the lab's `scene=hd2d`, one run: 2856 to 2432 ms; an integrated GPU's gain is
   still to measure). (The switch back to the full painting with the two stages, `terrainStandin`,
   was removed 2026-11-10.)
-* **Prop cards** (`hd2d/art/*.png`, indexed by `hd2d/art/index.js`): single trees (broadleaf,
-  pine, snowy pine, jungle, ancient elven giants, dead), bushes, wildflowers, boulders, violet
+* **Prop cards** (`hd2d/art/*.png`, indexed by `hd2d/art/index.js`): single trees (jungle,
+  ancient elven giants, dead; the broadleaf trees, pines and snowy pines were the image model's
+  too until 2026-11-14 and are drawn by code now, below), bushes, wildflowers, boulders, violet
   crystals and lava rocks, drawn as single objects on white, cut out, scaled to a card a set
   number of art pixels tall, their palette cut and a dark outline added; the trees and bushes with
   their middle values deepened (a gamma of 1.25-1.35: the model paints foliage a bright lime, the
   look target's woods are deep greens under bright tips). **Woods** stand as a crowd of small
-  trees, a jittered four-by-four a plot at three quarters of a lone prop's scale (an oak about 0.35
-  of a plot tall), the back row left out and the middle kept low where something stands on the plot
+  trees (their number and size: "The woods' trees drawn by code", below), the back row left out and the middle kept low where something stands on the plot
   behind (species by feature and ground: oaks and pines,
   pines and snowy pines in the cold, jungle trees, an ancient wood's one or two giants among oaks,
   dead trees in burnt woods and hell), thinned where a stack or an improvement holds the plot; **open
