@@ -294,7 +294,7 @@ does for the isometric sprites. No unit art changed.
   was removed 2026-11-10.)
 * **Prop cards** (`hd2d/art/*.png`, indexed by `hd2d/art/index.js`): single trees (jungle,
   ancient elven giants, dead; the broadleaf trees, pines and snowy pines were the image model's
-  too until 2026-11-14 and are drawn by code now, below), bushes, wildflowers, boulders, violet
+  too until 2026-11-14 and are drawn by code now, below), bushes, wildflowers, violet
   crystals and lava rocks, drawn as single objects on white, cut out, scaled to a card a set
   number of art pixels tall, their palette cut and a dark outline added; the trees and bushes with
   their middle values deepened (a gamma of 1.25-1.35: the model paints foliage a bright lime, the
@@ -310,8 +310,7 @@ does for the isometric sprites. No unit art changed.
   shadow, so a wood is dark beneath. What they replace is **claimed** from the 3D dressing
   (`claims.trees`, `.flora`, `.rocks`): no modelled tree, plant or rock stands in the mode.
 * **Small props drawn by code** (`tools/hd2d/draw.py`, batch 3): grass tufts (green and dry),
-  reeds, pebbles, shore stones (rows of wet, mossy stones, a band much wider than tall), standing
-  stones, fences and haystacks -- each a few muted tones a material shaded from the upper left, with
+  reeds, standing stones and fences -- each a few muted tones a material shaded from the upper left, with
   the cards' dark outline, written as art cards (`art.py index` lists them). Small enough that code
   draws them well; anything with a design (a hut, a ruin) is left to the image model.
 * **Density** (batch 3): woods were five by five trees a plot (four by four before) at 0.58 of a
@@ -329,6 +328,17 @@ does for the isometric sprites. No unit art changed.
   plot's edge, thinned by a noise field of the map (not of the plot) into clumps and glades that
   run across plots: about twelve trees a plot. Flat woods are three broadleaf to one conifer,
   hill woods one to one. Jungle, ancient and dead trees are still the image model's cards.
+* **Stones and haystacks drawn by code** (`tools/hd2d/rocks.py`, 2026-11-14, the trees' recipe cut
+  for stone; they replace the image model's two boulders, 48-pixel paintings shown at a third of
+  their size, and draw.py's shore stones, pebbles and haystacks, noisy lumps the owner reported:
+  the shore stones ran together into a grey smear along every coast). A card is a few separate
+  stones, each an angular silhouette flat at its foot and broken into planar facets, a facet one
+  of five hard tones by the way it faces the light (a lit top, a middle face, a shaded side), a
+  highlight on a lit facet's edge, a crease where a nearer stone overlaps, a few cracks, the
+  outline inside the silhouette. Four boulders (`rock_*`, about 20 art pixels tall, one warm, one
+  mossy), six shore cards (`shore_*`: two to four wet stones in a loose row under caps of moss)
+  and three of pebbles; three haystacks (`hay_*`: the trees' lumps in straw, a point over a broad
+  skirt, the straw as short strokes down the stack). All stand at the small props' scale (`FINE`).
   The mood pass's land palette (`MOOD_FS`) no longer lifts the cards' middle and dark values (the
   ground's only): their darks are painted, and lifted, a wood read flat and pale.
 * **Open ground says what it is** (the owner's call, 2026-11-01: unimproved grassland and plains
@@ -654,7 +664,7 @@ the map (`MapHd2d.setConfig`).
   as cards, a city a town of the kit's cards at the props' density in its owner's colour; towns
   grow with their size, walled ones have walls, a gate and towers, deterministic; the houses round
   a town are its own; nothing stands on, and no mood comes from, an unrevealed plot).
-* **Art**: `tools/hd2d/draw.py` (the props drawn by code), `tools/hd2d/trees.py` (the woods' trees), `tools/hd2d/local_props.py` (the image
+* **Art**: `tools/hd2d/draw.py` (the props drawn by code), `tools/hd2d/trees.py` (the woods' trees), `tools/hd2d/rocks.py` (stones and haystacks), `tools/hd2d/local_props.py` (the image
   model's, through a local ComfyUI, §5b), `tools/hd2d/gen.py` (sheets from OpenAI's
   `gpt-image-2.5-sunburst`, pinned to its 2026-09-08 snapshot -- gpt-image-1 was shut down on
   2026-10-23 -- the prop sheets of nine and the town kit's sheets of `tools/hd2d/towns.json`, with
@@ -972,9 +982,10 @@ image model and brought to one contract by code in `tools/m7/`), as are the citi
 without the town kit. The ground layers and prop
 cards in `assets/app/r3d/hd2d/art/` were drawn by FLUX 3 Image Klein (Black Forest Labs) running
 locally in ComfyUI, and post-processed by `tools/hd2d/art.py` (prompts in §5b's spirit: 16-bit
-pixel art, top-down for ground, a single object lit from the upper left on white for props). The grass, reeds, pebbles, shore and
-standing stones, fences and haystacks are drawn by code (`tools/hd2d/draw.py`), as are the woods'
-oaks, pines and snowy pines (`tools/hd2d/trees.py`, after the owner's tile sketch). `tools/hd2d/gen.py`
+pixel art, top-down for ground, a single object lit from the upper left on white for props). The grass, reeds, standing stones and
+fences are drawn by code (`tools/hd2d/draw.py`), as are the woods' oaks, pines and snowy pines
+(`tools/hd2d/trees.py`, after the owner's tile sketch) and the boulders, shore stones, pebbles and
+haystacks (`tools/hd2d/rocks.py`, the same recipe). `tools/hd2d/gen.py`
 asks OpenAI's `gpt-image-2.5-sunburst` (snapshot 2026-09-08) for sheets of props on a transparent
 background (cut apart by `art.py split`, then carded by `prop`). **The town kit**
 (`art/town_*.png`, §5c) was drawn by `gpt-image-2.5-sunburst-2026-09-08` through `gen.py` (prompts

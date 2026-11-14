@@ -1,6 +1,6 @@
 """Small prop cards of the HD-2D mode drawn by code (docs/HD2D.md §5b): the clutter that fills the
-look target's tiles between the image model's trees and rocks -- grass tufts, reeds, pebbles, the
-stones that rim its shores and river banks, standing stones, fences, haystacks -- and, until the
+look target's tiles between the image model's trees and rocks -- grass tufts, reeds,
+standing stones, fences -- and, until the
 image model draws better ones (tools/hd2d/gen.py), its small designed things: huts, a well, ruins,
 gardens, and each region's own (corrupted obelisks and altars, hell's bones and vents, elven
 lanterns). Each is shaded as
@@ -22,7 +22,6 @@ ART = ROOT / "crates" / "ffh-play" / "assets" / "app" / "r3d" / "hd2d" / "art"
 
 # Tone ramps, dark to light (muted, as the look target's land: docs/HD2D.md §6).
 STONE = ["#2b2c2e", "#3f4043", "#56575a", "#6f6f70", "#8a8986", "#a8a59e"]
-WET = ["#1e2224", "#2c3234", "#3b4244", "#4e5656", "#646c6a", "#7f8682"]
 MOSS = ["#2a3318", "#3a4620", "#4d5a2a", "#626e36", "#7a8444"]
 GRASS = ["#26301a", "#36431f", "#4a5828", "#5f6c31", "#78843d", "#97a050"]
 DRY = ["#4a3c22", "#66532c", "#806a36", "#9c8444", "#b89e58"]
@@ -156,32 +155,6 @@ def reeds(name, seed):
     cv.save(name)
 
 
-def pebbles(name, seed, n=5, ramp=STONE):
-    rnd = np.random.default_rng(seed)
-    cv = Canvas(40, 20)
-    for k in range(n):
-        r = rnd.uniform(1.6, 3.4)
-        cv.blob(20 + rnd.normal(0, 6), 14 + rnd.normal(0, 1.6), r * 1.3, r, ramp, rnd, z=rnd.random() * 0.1)
-    cv.save(name)
-
-
-def shore(name, seed, n=6, w=44):
-    """A row of wet, mossy stones along a waterline: a band much wider than tall."""
-    rnd = np.random.default_rng(seed)
-    cv = Canvas(w + 12, 22)
-    x = 6.0
-    while x < w + 4:
-        r = rnd.uniform(2.6, 5.0)
-        cv.blob(x + r, 15 + rnd.normal(0, 1.0), r * rnd.uniform(1.1, 1.5), r * rnd.uniform(0.7, 0.95), WET, rnd, z=rnd.random() * 0.1, moss=MOSS, moss_amt=0.9)
-        x += r * rnd.uniform(1.3, 1.9)
-    # A few tufts of grass between the stones' tops.
-    for k in range(int(rnd.integers(1, 4))):
-        bx = rnd.uniform(8, w)
-        for j in range(4):
-            cv.blade(bx + j - 1.5, 13, rnd.normal(0, 1.5), int(rnd.integers(4, 8)), GRASS, z=0.5)
-    cv.save(name)
-
-
 def standing(name, seed, n=3):
     rnd = np.random.default_rng(seed)
     cv = Canvas(48, 44)
@@ -221,23 +194,6 @@ def fence(name, seed, posts=4):
             x0 = 4 + k * gap
             sag = int(rnd.integers(0, 2))
             cv.rect(x0 + 1, ry + sag, x0 + gap + 2, ry + sag + 2, WOOD, light_left=False, z=0.5)
-    cv.save(name)
-
-
-def hay(name, seed):
-    rnd = np.random.default_rng(seed)
-    cv = Canvas(34, 34)
-    # A stack, not a loaf: a tall dome over a wider, darker skirt.
-    cv.blob(17, 24, 12, 7, STRAW[:4], rnd, bumps=0.3)
-    cv.blob(17, 15, 9, 12, STRAW, rnd, z=1.0, bumps=0.25)
-    # Straw stripes and a few loose wisps.
-    for k in range(40):
-        x, y = rnd.uniform(7, 27), rnd.uniform(8, 27)
-        if cv.a[int(y), int(x)]:
-            cv.px(x, y, STRAW[int(rnd.integers(0, 2))], 9)
-            cv.px(x + 1, y, STRAW[int(rnd.integers(0, 2))], 9)
-    for k in range(6):
-        cv.blade(rnd.uniform(8, 26), 31, rnd.normal(0, 2), int(rnd.integers(2, 5)), DRY, z=10)
     cv.save(name)
 
 
@@ -443,16 +399,10 @@ def main():
     grass("grass_3", 3, ramp=DRY, n=10)
     reeds("reeds_1", 4)
     reeds("reeds_2", 5)
-    pebbles("pebbles_1", 6)
-    pebbles("pebbles_2", 7, n=7)
-    for k in range(4):
-        shore(f"shore_{k + 1}", 20 + k, w=38 + 6 * k)
     standing("stones_1", 30)
     standing("stones_2", 31, n=4)
     fence("fence_1", 40)
     fence("fence_2", 41, posts=3)
-    hay("hay_1", 50)
-    hay("hay_2", 51)
     hut("hut_1", 60)
     hut("hut_2", 61)
     hut("hut_stone_1", 62, stone=True)

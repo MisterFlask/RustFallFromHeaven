@@ -299,8 +299,8 @@ const TREE = 0.58;
  *  pixels tall against the image model's 150: their scale against the other trees', for an oak
  *  about a third of a plot tall (near one art pixel a screen pixel at the gameplay zoom). */
 const DRAWN = { tree_oak: 4.6, tree_pine: 4.4, tree_pine_snow: 4.4 };
-/** The props drawn by code (tools/hd2d/draw.py: grass, reeds, pebbles, shore stones, standing
- *  stones, fences, haystacks) are small art drawn for about one art pixel a screen pixel at the
+/** The props drawn by code (tools/hd2d/draw.py: grass, reeds, standing stones, fences;
+ *  tools/hd2d/rocks.py: boulders, shore stones, pebbles, haystacks) are small art drawn for about one art pixel a screen pixel at the
  *  gameplay zoom (96 px a plot): their scale against PX.prop. */
 const FINE = 2.6;
 /** Open ground's grass tufts, smaller than the other small props: they say what the ground is
@@ -334,8 +334,8 @@ function clutterOf(kind, ground, mood) {
   else if (ground === GROUND.MARSH) out.push(["reeds", 3.5, FINE], ["grass", 1.0, TUFT]);
   else if (ground === GROUND.GRASS) out.push(["grass", 3.0, TUFT], ["flowers", 1.2, 0.9]);
   else out.push(["grass_3", 3.5, TUFT]);
-  if (kind === KIND.HILLS) out.push(["rock", 1.2, 1.0], ["pebbles", 1.5, FINE]);
-  if (kind === KIND.PEAK) out.push(["rock", 2.2, 1.2], ["pebbles", 2.0, FINE]);
+  if (kind === KIND.HILLS) out.push(["rock", 1.2, FINE * 0.9], ["pebbles", 1.5, FINE]);
+  if (kind === KIND.PEAK) out.push(["rock", 2.2, FINE * 1.1], ["pebbles", 2.0, FINE]);
   // Each region's own things (the moods, hd2d/mood.js: [hell, corruption, lush, gloom]).
   if (HELLISH.has(ground)) out.push(["bones", 0.4, FINE], ["vent", 0.35, FINE]);
   if (mood && mood[1] >= 0.5 && !HELLISH.has(ground)) out.push(["crystal", 1.0, 0.9], ["obelisk", 0.14, FINE], ["altar", 0.06, FINE]);
@@ -771,7 +771,7 @@ function dressShores(world, map, atlas, list) {
           if (h > -0.004 && h < 0.02 && r() < 0.8) {
             // Mostly rows of shore stones; now and then a boulder of the bank, its rocky edge.
             const k = r();
-            if (k < 0.12) place("rock", mx, my, Math.max(SEA, h) - 0.006, r.range(0.38, 0.5), r);
+            if (k < 0.12) place("rock", mx, my, Math.max(SEA, h) - 0.006, FINE * r.range(0.6, 0.8), r);
             else place(k < 0.85 ? "shore" : "pebbles", mx, my, Math.max(SEA, h) - 0.004, FINE * r.range(0.8, 1.05), r);
             continue;
           }
