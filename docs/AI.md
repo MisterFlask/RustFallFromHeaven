@@ -2146,8 +2146,8 @@ turn, to move casters and to promote them:
   10, on our land, no enemy in sight there). FfH's own value for the spell is 0 (its effect is all
   Python), and no AI ever cast it.
 - **Mana nodes** (`mana.rs`, `MANA_NODES`; More Naval AI's `AI_upgrademanaMove` and its mana
-  valuation): raw mana in our cities' radius is worth nothing until a caster builds a node on it,
-  and a node is for good (it cannot become another type). A node type is worth, on
+  valuation): mana resources have fixed, randomly generated spheres. A caster connects the
+  matching node in our cities' radius, or rebuilds it after pillaging. A node type is worth, on
   `building_value`'s scale for the whole empire, the bonus's own effects in every city, read from
   the bonus data (Mind +3% research, Law -5% maintenance, Spirit +5% great people, Enchantment +1
   happiness and Life +1 health -- again for every node, `bModifierPerBonus` --, Body healing, Earth
@@ -2158,10 +2158,8 @@ turn, to move casters and to promote them:
   plot no enemy can reach next turn); production trains one caster for nodes when none of ours can
   build them and the jobs are worth 300 (the Mage Guild first, in a city with half our best city's
   production or more, when no city of ours can train an adept); research values the techs that
-  open node types by the gain over the types we can already build, for each raw node of ours
-  (`research::builds_value`). Before, only the Tower of Mastery goal built nodes, and it is never
-  ours: no civilization converted its raw mana. In 24 full games the nodes built were two thirds
-  Enchantment (a happy face in every city per node), then Entropy and Mind (round 7a).
+  connect node types by the resources of those types we own (`research::builds_value`). The
+  older round 7a measurements used player-chosen spheres and no longer describe generation.
 - **The caster corps** (`casters.rs`, round 7a; More Naval AI's adept roles): each caster
   (an adept or better, not a hero) has a role kept in its unit AI type, so it is saved with the
   unit: the node builder (`UNITAI_MANA_UPGRADE`, one while there are node jobs), the terraformer

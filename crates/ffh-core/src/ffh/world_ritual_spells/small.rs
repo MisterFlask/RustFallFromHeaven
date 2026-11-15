@@ -317,13 +317,13 @@ pub fn convert_reinforced(g: &mut Game, u: UnitId, from: UnitId) {
 // ---------------------------------------------------------------------------------------------
 // Amurites: Wellspring. Placed by the player, no unit casting it (`place_on_charge`,
 // [`Game::player_place`]): a land plot of the player with no resource, city or improvement, not a
-// peak, gains a typed mana resource and that mana's node (the improvement whose `bonus_convert`
-// is the resource: `cards::economy::mana_nodes`). The target is a choice: the plot and the mana,
+// peak, gains a typed mana resource and its matching node (`mana::mana_nodes`).
+// The target is a choice: the plot and the mana,
 // `wellspring_choice`.
 
 /// The typed mana resources and their nodes, in the data's build order.
 pub fn wellspring_manas(d: &GameData) -> Vec<(BonusType, ImprovementType)> {
-    crate::ffh::cards::economy::mana_nodes(d)
+    crate::mana::mana_nodes(d)
 }
 
 /// May player `p` raise a Wellspring on `plot`?

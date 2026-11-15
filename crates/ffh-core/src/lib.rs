@@ -22,6 +22,7 @@ pub mod governor;
 pub mod group;
 pub mod ids;
 pub mod log;
+pub mod mana;
 pub mod map;
 pub mod mapgen;
 pub mod mapscript;

@@ -17,8 +17,6 @@
 //!   `empire::hurry` keeps). The Court of Mammon's land units (the Infernal Gate's civilization,
 //!   `SPELL_COURT_BUY_OUT`) buy the same way, at the start of the turn and once they have moved
 //!   ([`end_turn`]).
-//! - Mana Grafting ([`unit`]): a caster on a node of a type the empire has several of grafts it
-//!   into the type worth most.
 //! - Trading Posts ([`turn`]): a spare soldier of a garrison claims the best free site near our
 //!   cities (a resource we lack, a unique feature, mana) and builds the road home (army units
 //!   build the field works, docs/WORKS.md); the nearest city's crews improve the resource.
@@ -40,8 +38,6 @@ struct Names {
     buy_out: Option<SpellType>,
     court: Option<CivilizationType>,
     court_buy_out: Option<SpellType>,
-    graft: Option<SpellType>,
-    graft_card: Option<TechType>,
     trading_post_build: Option<BuildType>,
     trading_post: Option<ImprovementType>,
     adept: Option<UnitCombatType>,
@@ -54,8 +50,6 @@ fn names(d: &GameData) -> &'static Names {
         buy_out: d.ty::<SpellType>("SPELL_BUY_OUT"),
         court: d.ty::<CivilizationType>("CIVILIZATION_COURT_OF_MAMMON"),
         court_buy_out: d.ty::<SpellType>("SPELL_COURT_BUY_OUT"),
-        graft: d.ty::<SpellType>("SPELL_MANA_GRAFT"),
-        graft_card: d.ty::<TechType>("TECH_CARD_MANA_GRAFTING"),
         trading_post_build: d.ty::<BuildType>("BUILD_TRADING_POST"),
         trading_post: d.ty::<ImprovementType>("IMPROVEMENT_TRADING_POST"),
         adept: d.ty::<UnitCombatType>("UNITCOMBAT_ADEPT"),
@@ -262,7 +256,7 @@ fn trading_posts(g: &mut Game, v: &View) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Units: the Paymaster, grafting casters.
+// Units: the Paymaster.
 
 /// A group this module moves itself (before the role's code): true when handled.
 pub fn unit(g: &mut Game, v: &mut View, grp: GroupId, head: UnitId) -> bool {
@@ -271,12 +265,6 @@ pub fn unit(g: &mut Game, v: &mut View, grp: GroupId, head: UnitId) -> bool {
     let info = &d.units[g.units[head].unit_type];
     if n.paymaster.is_some() && info.unit_class_type == n.paymaster {
         paymaster(g, v, grp, head);
-        return true;
-    }
-    if n.adept.is_some() && info.unit_combat_type == n.adept && graft(g, head) {
-        if alive(g, grp) && g.group_ready_to_move(grp, true) {
-            skip(g, grp);
-        }
         return true;
     }
     false
@@ -316,38 +304,6 @@ fn paymaster(g: &mut Game, v: &View, grp: GroupId, u: UnitId) {
     if alive(g, grp) && g.group_ready_to_move(grp, true) {
         skip(g, grp);
     }
-}
-
-/// A caster on a node of ours grafts it when it holds several nodes of its type and another type
-/// is worth clearly more (`mana::node_value`). True when it cast.
-fn graft(g: &mut Game, u: UnitId) -> bool {
-    let d = g.d;
-    let n = names(d);
-    let (Some(spell), Some(card)) = (n.graft, n.graft_card) else { return false };
-    let p = g.units[u].owner;
-    if !g.team_is_has_tech(g.players[p].team, Some(card)) {
-        return false;
-    }
-    let plot = g.unit_plot(u);
-    let targets = g.plot_graft_targets(plot, p);
-    if targets.is_empty() {
-        return false;
-    }
-    let Some(current) = g.map.plots[plot].bonus_type else { return false };
-    // Keep the sphere: only a type we hold more than one node of.
-    let nodes_of = |b: BonusType| d.improvements.keys().filter(|&i| d.improvements[i].bonus_convert == Some(b)).map(|i| g.players[p].improvement_count[i]).sum::<i32>();
-    if nodes_of(current) < 2 {
-        return false;
-    }
-    let keep = crate::mana::node_value(g, p, current);
-    let Some((best, value)) = targets.iter().map(|&b| (b, crate::mana::node_value(g, p, b))).max_by_key(|&(b, v)| (v, std::cmp::Reverse(b))) else { return false };
-    if value <= keep + 100 || !g.unit_can_cast_at(u, spell, SpellTarget::Choice(best.i())) {
-        return false;
-    }
-    crate::trace!(g, p, "grafts the {} node at {:?} into {}", d.bonuses[current].base.type_, g.map.xy(plot), d.bonuses[best].base.type_);
-    g.tel_cast_reason(u, "graft", (value - keep) as i64);
-    g.unit_cast_at(u, spell, SpellTarget::Choice(best.i()));
-    true
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -14,6 +14,7 @@ const { buildMap, buildView, hd2d, settlements, riverBits } = await import("../.
 const { World, KIND } = await import("../app/r3d/world.js");
 await import("../app/r3d/assets/index.js");
 const { SPRITES } = await import("../app/iso/sprites.js");
+const { MANA_SPRITES } = await import("../app/mana-art.js");
 const { CARDS, GROUNDS, IMPROVEMENTS, RESOURCES } = await import("../app/r3d/hd2d/art/index.js");
 const { unitSpriteKeys } = await import("../app/iso.js");
 const { dressSpriteStatic, dressSpriteUnits, PX } = await import("../app/r3d/hd2d/dress.js");
@@ -26,8 +27,8 @@ const { riverPoints, riverLevel, riverFall } = await import("../app/r3d/scene.js
  *  browser. */
 const plain = (k) => k.split("@")[0];
 const atlas = {
-  has: (k) => Object.hasOwn(SPRITES, plain(k)) || Object.hasOwn(CARDS, plain(k)) || k.startsWith("banner:"),
-  info: (k) => SPRITES[plain(k)] ?? CARDS[plain(k)] ?? { w: 40, h: 150, box: [0, 0, 40, 150] },
+  has: (k) => Object.hasOwn(SPRITES, plain(k)) || Object.hasOwn(CARDS, plain(k)) || Object.hasOwn(MANA_SPRITES, plain(k)) || k.startsWith("banner:"),
+  info: (k) => SPRITES[plain(k)] ?? CARDS[plain(k)] ?? MANA_SPRITES[plain(k)] ?? { w: 40, h: 150, box: [0, 0, 40, 150] },
   owned: (k, css) => `${k}@${css}`,
   put() {},
 };
@@ -37,6 +38,19 @@ function scene(s) {
   St.setMap(s.map);
   return new World(s.map);
 }
+
+test("mana deposits and connected nodes retain distinct sphere cards", async () => {
+  const { mana } = await import("../../r3d-lab/scenes.js");
+  const s = mana(data);
+  const world = scene(s);
+  const dressed = dressSpriteStatic(world, s.map, atlas);
+  const deposits = dressed.list.filter((c) => c.key.startsWith("res_mana_") || c.key === "res_site_mana_ice");
+  assert.equal(deposits.length, 19, "a connected node replaces its deposit glyph; Ice keeps its unique site");
+  assert.equal(new Set(deposits.map((c) => c.key)).size, 18);
+  const nodes = dressed.list.filter((c) => c.key.startsWith("feat_mana_"));
+  assert.equal(new Set(nodes.map((c) => c.key)).size, 17, "every ordinary connected node has its own art");
+  assert.equal(dressed.claims.bonus.size, 36, "the renderer replaces every generic marker");
+});
 
 /** The pixels of an 8-bit RGBA, non-interlaced PNG (the app's sprites and strips all are):
  *  `{ w, h, px }`, `px` row-major RGBA. */

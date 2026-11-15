@@ -72,8 +72,7 @@ pub struct Statics {
     pub altar_stages: Vec<BuildingClassType>,
     pub legendary: Option<CultureLevelType>,
     pub culture_process: Option<ProcessType>,
-    /// Raw mana (`BONUS_MANA`), and the builds that turn it into a mana type (casters build
-    /// these nodes: `BUILD_MANA_FIRE` -> `BONUS_MANA_FIRE`, ...).
+    /// The legacy placement template, and builds connecting each fixed mana resource.
     pub raw_mana: Option<BonusType>,
     pub mana_builds: Vec<(BuildType, BonusType)>,
 }
@@ -96,6 +95,7 @@ fn build_statics(d: &GameData) -> Statics {
     .iter()
     .filter_map(|n| d.ty::<BuildingClassType>(n))
     .collect();
+    let nodes = ffh_core::mana::mana_nodes(d);
     Statics {
         tower,
         culture: d.ty::<VictoryType>("VICTORY_CULTURAL"),
@@ -111,7 +111,7 @@ fn build_statics(d: &GameData) -> Statics {
         mana_builds: d
             .builds
             .iter_enumerated()
-            .filter_map(|(b, info)| info.improvement.and_then(|i| d.improvements[i].bonus_convert).map(|bonus| (b, bonus)))
+            .filter_map(|(b, info)| info.improvement.and_then(|i| nodes.iter().find(|&&(_, imp)| imp == i).map(|&(bonus, _)| (b, bonus))))
             .collect(),
     }
 }
@@ -206,8 +206,8 @@ pub struct TowerState {
     /// `PrereqBonuses` AND requirements (`CvCity::canConstruct`): the Tower of the Elements
     /// needs Air, Earth, Fire and Water mana, and so on, 16 manas for the four towers.
     pub mana: Vec<BonusType>,
-    /// Raw mana nodes in our cities' radius, to build those manas on.
-    pub raw_nodes: Vec<PlotIdx>,
+    /// Fixed mana resources in our cities' radius whose nodes are not connected.
+    pub unconnected_nodes: Vec<PlotIdx>,
 }
 
 /// Raw mana nodes (`BONUS_MANA`) on our plots in our cities' radius, in plot order.
@@ -271,7 +271,7 @@ pub fn tower_state(g: &Game, p: PlayerId) -> Option<TowerState> {
     st.techs = tech_path(g, team, &needed);
     st.beakers = beakers(g, team, &st.techs);
     if !st.mana.is_empty() {
-        st.raw_nodes = raw_mana_plots(g, p);
+        st.unconnected_nodes = crate::mana::node_plots(g, p);
     }
     Some(st)
 }
@@ -286,9 +286,8 @@ pub fn tower_eta(g: &Game, p: PlayerId) -> Option<i32> {
     if st.missing.is_empty() {
         return Some(0);
     }
-    // A tower without its manas cannot be built: each mana we lack needs a raw node of ours to
-    // convert (the AI does not trade for mana).
-    if g.players[p].cities.is_empty() || st.mana.len() > st.raw_nodes.len() {
+    // Every missing sphere needs an actual resource of that type (the AI does not trade for mana).
+    if g.players[p].cities.is_empty() || st.mana.iter().any(|&b| !st.unconnected_nodes.iter().any(|&q| g.map.plots[q].bonus_type == Some(b))) {
         return None;
     }
     let (best, top4) = hammers_per_turn(g, p, 4);
@@ -601,14 +600,14 @@ pub fn describe(g: &Game, p: PlayerId, plan: &Plan) -> String {
     let rival = plan.rival.map_or(String::new(), |(q, r)| format!(", rival p{} {:?} in {}", q.0, r.goal, r.eta));
     let detail = match (plan.goal(), tower_state(g, p)) {
         (Some(Goal::Tower), Some(st)) => format!(
-            "; towers missing {}, techs {:?}, {} beakers, hammers {}+{}, without mana {}, raw nodes {}, mana jobs {}",
+            "; towers missing {}, techs {:?}, {} beakers, hammers {}+{}, without mana {}, unconnected nodes {}, mana jobs {}",
             st.missing.len(),
             st.techs.iter().map(|&t| g.d.techs[t].base.type_.as_str()).collect::<Vec<_>>(),
             st.beakers,
             st.lesser_hammers,
             st.mastery_hammers,
             st.mana.len(),
-            st.raw_nodes.len(),
+            st.unconnected_nodes.len(),
             mana_jobs(g, p).len()
         ),
         _ => String::new(),
@@ -874,25 +873,25 @@ pub fn rival_city_bonus(g: &Game, plan: &Plan, c: CityId) -> i32 {
 // Mana nodes for the towers
 // ----------------------------------------------------------------------------
 
-/// The mana nodes the Tower of Mastery still needs: per mana the towers lack, a raw node of
-/// ours and the build (whose tech we have) that turns it into that mana. Only while the raw
-/// nodes cover every mana we lack (a partial set builds no tower).
+/// Connect the fixed resource of each sphere the towers lack. A partial set cannot finish
+/// the towers, so no jobs are offered unless all missing spheres are present.
 pub fn mana_jobs(g: &Game, p: PlayerId) -> Vec<(PlotIdx, BuildType)> {
     let d = g.d;
     let Some(st) = tower_state(g, p) else { return Vec::new() };
-    if st.mana.len() > st.raw_nodes.len() {
+    if st.mana.iter().any(|&b| !st.unconnected_nodes.iter().any(|&q| g.map.plots[q].bonus_type == Some(b))) {
         return Vec::new();
     }
-    let team = g.players[p].team;
-    let mut out: Vec<(PlotIdx, BuildType)> = Vec::new();
-    let mut nodes = st.raw_nodes.clone();
+    let mut out = Vec::new();
     for &mana in &st.mana {
-        let build = statics(d).mana_builds.iter().find(|&&(b, bonus)| bonus == mana && d.builds[b].tech_prereq.map_or(true, |t| g.team_is_has_tech(team, Some(t))));
-        let Some(&(b, _)) = build else { continue };
-        if nodes.is_empty() {
-            break;
+        for &q in &st.unconnected_nodes {
+            if g.map.plots[q].bonus_type != Some(mana) {
+                continue;
+            }
+            if let Some(&(build, _)) = statics(d).mana_builds.iter().find(|&&(b, bonus)| bonus == mana && g.player_can_build(p, q, b, false)) {
+                out.push((q, build));
+                break;
+            }
         }
-        out.push((nodes.remove(0), b));
     }
     out
 }

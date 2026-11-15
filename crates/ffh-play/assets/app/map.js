@@ -13,6 +13,7 @@
 
 import { S, tname, dname, info, me, isBarbarian, ORDER_KINDS, observing } from "./state.js";
 import * as T from "./tiles.js";
+import { manaSchool, manaColour, manaInk, MANA_SPHERES } from "./mana-art.js";
 import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark, drawMarchMark, marchMark } from "./iso.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
 import { seaPlot, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, seaHitAt, laneParts, drawLaneCut, drawHarbourMark, seaTipLines } from "./sea.js";
@@ -1294,12 +1295,12 @@ export class MapView {
       const lair = T.isLair(type, info("ImprovementType", imp));
       const goody = type === "IMPROVEMENT_GOODY_HUT";
       const mana = type.startsWith("IMPROVEMENT_MANA_");
-      const label = goody ? "?" : lair ? "☠" : mana ? "✦" : T.abbrev(dname("ImprovementType", imp));
+      const label = goody ? "?" : lair ? "☠" : mana ? MANA_SPHERES[manaSchool(type)] ?? "✦" : T.abbrev(dname("ImprovementType", imp));
       const s = Math.max(8, ts * 0.38);
-      g.fillStyle = goody ? "#e8c547" : lair ? "#5a1414" : mana ? "#6b3fa0" : "rgba(30,25,15,0.78)";
+      g.fillStyle = goody ? "#e8c547" : lair ? "#5a1414" : mana ? manaColour(type) : "rgba(30,25,15,0.78)";
       g.fillRect(px + 2, py + ts - s - 2, s * (label.length > 1 ? 1.35 : 1), s);
       if (ts >= 20) {
-        g.fillStyle = goody ? "#2a2000" : "#f2ead8";
+        g.fillStyle = goody ? "#2a2000" : mana ? manaInk(type) : "#f2ead8";
         g.font = `${Math.round(s * 0.72)}px ${FONT}`;
         g.textAlign = "center";
         g.textBaseline = "middle";
@@ -1313,7 +1314,7 @@ export class MapView {
       const rad = Math.max(3.5, ts * 0.17);
       const bx = px + ts - rad - 2;
       const by = py + rad + 2;
-      g.fillStyle = mana ? "#8e5cd6" : "#f0e2b6";
+      g.fillStyle = mana ? manaColour(type) : "#f0e2b6";
       g.strokeStyle = "rgba(0,0,0,0.6)";
       g.lineWidth = 1;
       g.beginPath();
@@ -1321,11 +1322,11 @@ export class MapView {
       g.fill();
       g.stroke();
       if (ts >= 32) {
-        g.fillStyle = mana ? "#fff" : "#3a2a10";
+        g.fillStyle = mana ? manaInk(type) : "#3a2a10";
         g.font = `bold ${Math.round(rad * 1.05)}px ${FONT}`;
         g.textAlign = "center";
         g.textBaseline = "middle";
-        g.fillText(T.abbrev(dname("BonusType", bonus)), bx, by + 0.5);
+        g.fillText(mana ? MANA_SPHERES[manaSchool(type)] ?? "Ma" : T.abbrev(dname("BonusType", bonus)), bx, by + 0.5);
       }
     }
     // Borders: a tint, and lines on the edges toward another owner.

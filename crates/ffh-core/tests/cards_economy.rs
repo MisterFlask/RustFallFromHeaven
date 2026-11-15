@@ -374,36 +374,6 @@ fn the_font_of_rebirth_finds_the_nearest_font_once() {
 }
 
 #[test]
-fn mana_grafting_turns_a_node_into_another_type_once() {
-    let (mut g, p, c) = game();
-    let d = g.d;
-    card(&mut g, p, "TECH_CARD_MANA_GRAFTING");
-    let (cx, cy) = (g.cities[c].x, g.cities[c].y);
-    let a = g.map.plot_xy(cx + 1, cy).unwrap();
-    let b = g.map.plot_xy(cx - 1, cy).unwrap();
-    let (fire, water) = (d.t::<BonusType>("BONUS_MANA_FIRE"), d.t::<BonusType>("BONUS_MANA_WATER"));
-    g.plot_set_bonus_type(a, Some(d.t::<BonusType>("BONUS_MANA")));
-    g.plot_set_bonus_type(b, Some(d.t::<BonusType>("BONUS_MANA")));
-    g.plot_set_improvement_type(a, Some(d.t::<ImprovementType>("IMPROVEMENT_MANA_FIRE")));
-    g.plot_set_improvement_type(b, Some(d.t::<ImprovementType>("IMPROVEMENT_MANA_WATER")));
-    assert_eq!((g.map.plots[a].bonus_type, g.map.plots[b].bonus_type), (Some(fire), Some(water)));
-    assert_eq!(g.plot_graft_targets(a, p), vec![water]);
-    let (ax, ay) = g.map.xy(a);
-    let adept = unit(&mut g, p, "UNIT_ADEPT", ax, ay);
-    let spell = d.t::<SpellType>("SPELL_MANA_GRAFT");
-    let target = SpellTarget::Choice(water.i());
-    assert!(g.unit_can_cast_at(adept, spell, target));
-    g.unit_cast_at(adept, spell, target);
-    assert_eq!(g.map.plots[a].bonus_type, Some(water));
-    assert_eq!(g.map.plots[a].improvement_type, Some(d.t::<ImprovementType>("IMPROVEMENT_MANA_WATER")));
-    assert!(g.map.plots[a].grafted);
-    assert!(g.plot_graft_targets(a, p).is_empty(), "grafted once, for good");
-    // A warrior is no caster.
-    let warrior = unit(&mut g, p, "UNIT_WARRIOR", ax, ay);
-    assert!(!g.unit_can_cast(warrior, spell, false));
-}
-
-#[test]
 fn the_paymaster_buys_an_adjacent_enemy_unit() {
     let (mut g, p, c) = game();
     let d = g.d;

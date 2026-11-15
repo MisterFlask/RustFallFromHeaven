@@ -47,6 +47,19 @@ const LEGEND = {
   J: ["TERRAIN_GRASS", "PLOT_HILLS", "FEATURE_JUNGLE"],
 };
 
+/** Each sphere before and after connection, on open ground for comparing its silhouette. */
+export function mana(data) {
+  const spheres = ["AIR", "BODY", "CHAOS", "DEATH", "EARTH", "ENCHANTMENT", "ENTROPY", "FIRE", "ICE", "LAW", "LIFE", "METAMAGIC", "MIND", "NATURE", "SHADOW", "SPIRIT", "SUN", "WATER"];
+  const bonuses = [], improvements = [];
+  spheres.forEach((s, i) => {
+    const x = 2 + (i % 6) * 3, y = 2 + Math.floor(i / 6) * 4;
+    bonuses.push([x, y, `BONUS_MANA_${s}`], [x + 1, y, `BONUS_MANA_${s}`]);
+    if (s !== "ICE") improvements.push([x + 1, y, `IMPROVEMENT_MANA_${s}`]);
+    else improvements.push([x + 1, y, "IMPROVEMENT_LETUM_FRIGUS"]);
+  });
+  return { map: buildMap(data, Array(14).fill(".".repeat(22)), { bonuses, improvements }), view: buildView(data, {}), focus: [11, 6] };
+}
+
 /** A `map` reply from rows of legend chars (north first) and overlays:
  *  rivers [[x, y, bits]], routes [[x, y]], improvements [[x, y, "IMPROVEMENT_X"]], bonuses
  *  [[x, y, "BONUS_X"]], owners [[x0, y0, x1, y1, player]], fog [[x, y]] (fogged), hidden

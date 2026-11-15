@@ -1243,7 +1243,7 @@ impl Game {
                 valid = false;
             } else if self.map.plots[p].found_disabled {
                 valid = false;
-            } else if bonus_mana != -1 && opt_to_i32(self.plot_get_bonus_type(p, None)) == bonus_mana {
+            } else if self.plot_get_bonus_type(p, None).is_some_and(|b| b.i() == bonus_mana || crate::mana::is_mana(d, b)) {
                 valid = false;
             }
 

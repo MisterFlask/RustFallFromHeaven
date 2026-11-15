@@ -14,8 +14,7 @@
 //! - The Trading Post (`ImprovementInfo::claim_range`): [`Game::plot_claim_owner`],
 //!   [`Game::plot_claim`].
 //! - The Font of Rebirth (`rebirth_range`): [`Game::unit_rebirth_font`].
-//! - Mana Grafting (`SPELL_MANA_GRAFT`) and the Paymaster's Buy Out (`SPELL_BUY_OUT`): the
-//!   callbacks below.
+//! - The Paymaster's Buy Out (`SPELL_BUY_OUT`): the callbacks below.
 
 use crate::ffh::dispatch::*;
 use crate::ffh::pycall::PyCall;
@@ -38,7 +37,6 @@ pub const BUY_OUT_COST_TIMES: i32 = 3;
 /// `PyResult` functions.
 pub fn find_spell(name: &str) -> Option<SpellFn> {
     let f: SpellFn = match name {
-        "spellManaGraft" => spell_mana_graft,
         "spellBuyOut" => spell_buy_out,
         _ => return None,
     };
@@ -48,7 +46,6 @@ pub fn find_spell(name: &str) -> Option<SpellFn> {
 /// `PyRequirement` functions.
 pub fn find_req(name: &str) -> Option<ReqFn> {
     let f: ReqFn = match name {
-        "reqManaGraft" => req_mana_graft,
         "reqBuyOut" => req_buy_out,
         _ => return None,
     };
@@ -58,7 +55,6 @@ pub fn find_req(name: &str) -> Option<ReqFn> {
 /// `py_targets` functions.
 pub fn find_targets(name: &str) -> Option<TargetsFn> {
     let f: TargetsFn = match name {
-        "targetsManaGraft" => targets_mana_graft,
         "targetsBuyOut" => targets_buy_out,
         _ => return None,
     };
@@ -79,89 +75,6 @@ fn label_buy_out(g: &Game, _caster: UnitId, target: SpellTarget, _: &PyCall) -> 
         SpellTarget::Unit(t) if g.units.contains(t) => g.unit_buy_out_price(t).map_or_else(String::new, |price| format!("Price: {price} gold")),
         _ => String::new(),
     }
-}
-
-// ---------------------------------------------------------------------------------------------
-// Mana Grafting.
-
-/// The mana node a build makes for each typed mana resource: an improvement some build makes whose
-/// `bonus_convert` is that resource (`BUILD_MANA_FIRE` makes `IMPROVEMENT_MANA_FIRE`, which makes
-/// its raw mana `BONUS_MANA_FIRE`). In build order.
-pub fn mana_nodes(d: &GameData) -> Vec<(BonusType, ImprovementType)> {
-    let mut out: Vec<(BonusType, ImprovementType)> = Vec::new();
-    for b in d.builds.iter() {
-        let Some(imp) = b.improvement else { continue };
-        let Some(bonus) = d.improvements[imp].bonus_convert else { continue };
-        let mana = d.bonuses[bonus].bonus_class_type.map_or(-1, |k| k.i()) == d.defines.bonusclass_mana;
-        if mana && !out.iter().any(|&(x, _)| x == bonus) {
-            out.push((bonus, imp));
-        }
-    }
-    out
-}
-
-impl Game {
-    /// Mana Grafting: the mana types of the nodes `p` has in its territory (any improvement that
-    /// makes a typed mana resource of the nodes: built nodes and the unique features'), in the
-    /// order of [`mana_nodes`].
-    pub fn player_node_types(&self, p: PlayerId) -> Vec<BonusType> {
-        let d = self.d;
-        let nodes = mana_nodes(d);
-        let counts = &self.players[p].improvement_count;
-        let mut out: Vec<BonusType> = Vec::new();
-        for imp in d.improvements.keys() {
-            let Some(bonus) = d.improvements[imp].bonus_convert else { continue };
-            if counts[imp] > 0 && nodes.iter().any(|&(b, _)| b == bonus) && !out.contains(&bonus) {
-                out.push(bonus);
-            }
-        }
-        out.sort_by_key(|&b| nodes.iter().position(|&(x, _)| x == b));
-        out
-    }
-
-    /// Mana Grafting: the types plot `plot`'s node can be grafted into for player `p`: none unless
-    /// it holds a built node of `p`'s that was never grafted; then every other type of `p`'s nodes.
-    pub fn plot_graft_targets(&self, plot: PlotIdx, p: PlayerId) -> Vec<BonusType> {
-        let d = self.d;
-        let pl = &self.map.plots[plot];
-        if pl.grafted || pl.owner != Some(p) {
-            return Vec::new();
-        }
-        let Some(imp) = pl.improvement_type else { return Vec::new() };
-        let nodes = mana_nodes(d);
-        let Some(&(current, _)) = nodes.iter().find(|&&(_, i)| i == imp) else { return Vec::new() };
-        if pl.bonus_type != Some(current) {
-            return Vec::new();
-        }
-        self.player_node_types(p).into_iter().filter(|&b| b != current).collect()
-    }
-
-    /// Mana Grafting: plot `plot`'s node becomes a node of `bonus` (its improvement and resource),
-    /// for good.
-    pub fn plot_graft(&mut self, plot: PlotIdx, bonus: BonusType) {
-        let Some(&(_, imp)) = mana_nodes(self.d).iter().find(|&&(b, _)| b == bonus) else { return };
-        self.plot_set_improvement_type(plot, Some(imp));
-        // (The node's `bonus_convert` made the resource `bonus`.)
-        self.map.plots[plot].grafted = true;
-    }
-}
-
-/// `reqManaGraft(caster)`: the caster stands on a node of its owner's that can be grafted.
-fn req_mana_graft(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    !g.plot_graft_targets(g.unit_plot(caster), g.units[caster].owner).is_empty()
-}
-
-/// `targetsManaGraft(caster)`: one choice per mana type the node can become (the resource's id).
-fn targets_mana_graft(g: &Game, caster: UnitId, _call: &PyCall) -> Vec<SpellTarget> {
-    g.plot_graft_targets(g.unit_plot(caster), g.units[caster].owner).into_iter().map(|b| SpellTarget::Choice(b.i())).collect()
-}
-
-/// `spellManaGraft(caster)`: the node becomes the chosen type.
-fn spell_mana_graft(g: &mut Game, caster: UnitId, _call: &PyCall) {
-    let Some(SpellTarget::Choice(i)) = g.spell_target else { return };
-    let plot = g.unit_plot(caster);
-    let Some(&bonus) = g.plot_graft_targets(plot, g.units[caster].owner).iter().find(|b| b.i() == i) else { return };
-    g.plot_graft(plot, bonus);
 }
 
 // ---------------------------------------------------------------------------------------------

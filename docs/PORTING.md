@@ -91,6 +91,18 @@ went wrong", below.)
 
 ## Changes from FFH2
 
+- **Fixed mana resources.** Map generation assigns every ordinary mana deposit a uniformly
+  random sphere from the 17 standard node types, using the map RNG after start normalization
+  and far-shore placement. Same seed, same resources. Ice remains special to Letum Frigus.
+  Earth Mana, Fire Mana, and the other spheres are resources before any improvement is built;
+  a caster builds only the matching node to connect them, with the existing technology and
+  trade requirements. Pillaging and rebuilding never change the resource. Dispel Magic only
+  removes unit promotions; the Mana Grafting card and spell are removed. Nodes discovered
+  during play (lairs, Rites of Oghma) also get random, fixed spheres. Unique mana features and
+  Wellspring keep their existing sphere or creation choice. The AI connects the resources it
+  owns and values their technology, rather than choosing a sphere to turn raw mana into.
+  Saves using the removed card's data tables are rejected by the existing data fingerprint.
+
 Every way the port's rules differ from FFH2 0.41, so the starting point can be reconstructed.
 Matching FFH2 is not a requirement (CLAUDE.md, "FFH2 is the starting point"): this list records
 the differences; it does not ask for them to be undone.
@@ -704,8 +716,7 @@ flag.
       at 10% HP instead; a second death is final.
     - *Spire of the Archmagi* (Sage, II, Sorcery; national building): each unit trained there takes
       one sphere I promotion it can acquire, its owner's choice.
-    - *Mana Grafting* (Sage, II, Elementalism; spell for adept units on a mana node in their borders):
-      the node becomes the type of another node its owner has; once a node, for good.
+    - *Mana Grafting* was removed when mana resources became fixed (see above).
     - *Stoicism* (Sage, II, Philosophy; Cultural Values civic): war weariness causes no unhappiness;
       -15% culture.
     - *Maponos's Cradle* (Prophet, I, Agriculture; national building): +2 food, and every 20 turns a

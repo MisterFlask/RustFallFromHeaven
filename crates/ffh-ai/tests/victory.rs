@@ -165,7 +165,7 @@ fn usable(g: &Game, p: PlayerId, q: PlotIdx) -> bool {
 #[test]
 fn mana_nodes_are_planned_for_towers_without_mana() {
     let mut g = founded(11, 80);
-    // The civ with the most land plots of its own to put raw mana on. A plot's forest or jungle is
+    // The civ with the most land plots of its own to put typed mana on. A plot's forest or jungle is
     // cleared for the node, as a worker would.
     let free = |g: &Game, p: PlayerId| {
         let mut n = 0;
@@ -189,12 +189,11 @@ fn mana_nodes_are_planned_for_towers_without_mana() {
     let st = victory::tower_state(&g, p).unwrap();
     let lacking = st.mana.len();
     assert!(lacking > 0, "a tower lacks its mana");
-    assert!(victory::tower_eta(&g, p).is_none(), "not enough raw nodes: the towers are out of reach");
+    assert!(victory::tower_eta(&g, p).is_none(), "missing mana spheres: the towers are out of reach");
     assert!(victory::mana_jobs(&g, p).is_empty());
-    // Raw mana on free plots of our cities' radius until there is a node per mana the towers
-    // lack.
-    let raw = d.t::<BonusType>("BONUS_MANA");
-    let mut placed = st.raw_nodes.len();
+    // Give it one actual resource of each missing sphere. Extra copies of one sphere do
+    // not stand in for another: there is no conversion.
+    let mut placed = 0;
     for c in g.players[p].cities.clone() {
         for i in 1..ffh_core::defs::NUM_CITY_PLOTS {
             if placed >= lacking {
@@ -205,23 +204,27 @@ fn mana_nodes_are_planned_for_towers_without_mana() {
                 continue;
             }
             g.plot_set_feature_type(q, None);
-            g.plot_set_bonus_type(q, Some(raw));
+            g.plot_set_bonus_type(q, Some(st.mana[placed]));
             placed += 1;
         }
     }
     assert!(placed >= lacking, "{placed} free plots for {lacking} manas");
     let st = victory::tower_state(&g, p).unwrap();
-    assert!(st.raw_nodes.len() >= lacking);
-    assert!(victory::tower_eta(&g, p).is_some(), "enough raw nodes: the towers are reachable");
+    assert!(st.unconnected_nodes.len() >= lacking);
+    assert!(victory::tower_eta(&g, p).is_some(), "all required resources are present");
     let jobs = victory::mana_jobs(&g, p);
     assert_eq!(jobs.len(), lacking);
-    // Each job turns a raw node into a mana a tower needs.
     for (mana, (q, b)) in st.mana.iter().zip(&jobs) {
         let improvement = d.builds[*b].improvement.unwrap();
-        assert_eq!(d.improvements[improvement].bonus_convert, Some(*mana));
-        assert_eq!(g.map.plots[*q].bonus_type, Some(raw));
+        assert!(d.improvements[improvement].improvement_bonus[*mana].bonus_trade);
+        assert_eq!(d.improvements[improvement].bonus_convert, None);
+        assert_eq!(g.map.plots[*q].bonus_type, Some(*mana));
         assert!(g.player_can_build(p, *q, *b, false));
     }
+    let (q, _) = jobs[0];
+    g.plot_set_bonus_type(q, Some(st.mana[1]));
+    assert!(victory::tower_eta(&g, p).is_none(), "a duplicate sphere cannot replace the missing one");
+    assert!(victory::mana_jobs(&g, p).is_empty());
 }
 
 #[test]
