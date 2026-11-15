@@ -2843,6 +2843,9 @@
    "ref/crop_mountains.png"
   ],
   "prompt": "prompts/assets/res_iron.txt",
+  "edit_prompt": "prompts/assets/res_iron_remove_pickaxe.txt",
+  "edit_tool": "image_gen",
+  "edited": "2026-11-14",
   "accepted": "2026-10-20 00:41",
   "width": 64,
   "pixel": 2,
