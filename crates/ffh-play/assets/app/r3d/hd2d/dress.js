@@ -19,7 +19,7 @@ import { isBarbarian } from "../../state.js";
 import { unitSpriteKeys, civShortName, ISO_TABLES } from "../../iso.js";
 import { hashf, hash32, rng, noise2 } from "../noise.js";
 import { SEA, DRAFT, FEAT, KIND, GROUND, RIVER_BANK, RIVER_HALF } from "../world.js";
-import { CARDS } from "./art/index.js";
+import { CARDS, IMPROVEMENTS, RESOURCES } from "./art/index.js";
 import { standHeight, hexRgb } from "../dress.js";
 import { MANA } from "../assets/palette.js";
 import { CATALOG } from "../assets/catalog.js";
@@ -29,6 +29,14 @@ import { clamp } from "../math.js";
  *  192-wide settlement 1.15 plots: its painted ground spans the plot), the other buildings, the
  *  resources' props, the banners. */
 export const PX = { unit: 0.0048, city: 0.0088, building: 0.0038, resource: 0.0042, banner: 0.0053, prop: 0.0031 };
+
+/** Bespoke HD-2D sites first; established works and mana nodes keep their art.
+ *  Static dressing and unit clearance must use the same standing footprint. */
+export function improvementSpriteKeys(type) {
+  const key = IMPROVEMENTS[type];
+  const fallback = ISO_TABLES.improvementSprites(type);
+  return key ? [key, ...fallback] : fallback;
+}
 /** Depth toward the eye (world units): a figure before the card of the building it stands at, a
  *  resource on a standing improvement's plot (its ore before the mine) before that card. */
 const BIAS = { unit: 0.26, garrison: 0.4, building: 0, resource: 0.08, builtResource: 0.18 };
@@ -881,7 +889,7 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
     // The plot-local z of a standing improvement card's foot, when one stands here.
     let footZ = null;
     if (imp && !city) {
-      const key = first(atlas, ISO_TABLES.improvementSprites(imp).filter((k) => k.startsWith("bld_") || k.startsWith("feat_")));
+      const key = first(atlas, improvementSpriteKeys(imp).filter((k) => k.startsWith("bld_") || k.startsWith("feat_")));
       if (key) {
         const art = atlas.info(key);
         const water = world.isWater(i);
@@ -889,7 +897,9 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
         footZ = lz;
         const [mx, my] = at(0, lz);
         const mana = manaColour(imp);
-        list.push(card(key, art, PX.building, mx, base, -my, { id: idOf(`i${i}`), glow: mana ? 1.4 : 0, fade: !water, vis: [x + 0.5, y + 0.5] }));
+        // Coarser authored pixels keep a small burial mound's doorway legible at
+        // play zoom, while its world footprint stays the same as the full card.
+        list.push(card(key, art, PX.building * (art.pixelScale ?? 1), mx, base, -my, { id: idOf(`i${i}`), glow: mana ? 1.4 : 0, fade: !water, vis: [x + 0.5, y + 0.5] }));
         claims.improvement.add(i);
         const tower = /TOWER/.test(imp) && !/WATCH|WARNING/.test(imp);
         if (mana || tower) {
@@ -901,7 +911,7 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
     }
     const bonus = map.bonus[i] >= 0 ? tname("BonusType", map.bonus[i]) : null;
     if (bonus && !city) {
-      const key = first(atlas, [ISO_TABLES.resourceSprite(bonus)]);
+      const key = first(atlas, [RESOURCES[bonus], ISO_TABLES.resourceSprite(bonus)]);
       if (key) {
         const art = atlas.info(key);
         const water = world.isWater(i);
@@ -949,7 +959,7 @@ export function dressSpriteUnits(world, map, atlas, buoys = null) {
   for (let i = 0; i < map.improvement.length; i++) {
     if (map.improvement[i] < 0) continue;
     const imp = tname("ImprovementType", map.improvement[i]);
-    if (ISO_TABLES.improvementSprites(imp).some((k) => (k.startsWith("bld_") || k.startsWith("feat_")) && atlas.has(k))) standing.add(i);
+    if (improvementSpriteKeys(imp).some((k) => (k.startsWith("bld_") || k.startsWith("feat_")) && atlas.has(k))) standing.add(i);
   }
   for (const units of S.unitsAt.values()) {
     const u0 = units[0];

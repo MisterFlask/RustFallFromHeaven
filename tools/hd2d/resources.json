@@ -1,0 +1,158 @@
+{
+  "about": "Bespoke HD-2D resource cards replacing shared catch-all icons; generated with image_gen, 2026-11-14.",
+  "sheets": [
+    {
+      "name": "resources_farm",
+      "prompt": "Create a production sprite sheet for Fall from Heaven HD-2D fantasy strategy game. EXACTLY NINE different isolated map-object sprites on a regular 3 by 3 grid, in reading order, one object per equal square cell with generous transparent gutters. Transparent background. Full object in each cell, no clipping, no text, no captions, no grid lines. Chunky crisp 16-bit PIXEL ART with visibly deliberate pixel clusters, limited muted earthy olive/brown/slate palette, dark one-pixel outlines, strong upper-left highlights and shadow on lower-right. Three-quarter view looking down about 35 degrees at the front of the objects, consistent scale and lighting. Small-map readability, bold distinctive silhouettes, sculpted details, no photographic texture, no anti-aliased painterly blur, no mist or bloom. Objects stand independently with no terrain tile or cast shadow. Draw exactly these nine objects, left to right across rows: a small pile of charcoal-black gunpowder beside a wooden powder keg; a cluster of reddish copper ore with green patina in grey stone; a small black demonic horse with fiery orange mane and hooves; a bunch of ripe golden bananas with a green banana leaf; two open clam shells with pale cream interiors; three golden ears of maize with folded green husks; a red-brown crab with two large claws; a small pink-brown farm pig with floppy ears; a small sheaf of golden rice stems beside a shallow bowl of white rice",
+      "pieces": [
+        {
+          "type": "BONUS_GUNPOWDER",
+          "key": "res_site_gunpowder",
+          "height": 48
+        },
+        {
+          "type": "BONUS_COPPER",
+          "key": "res_site_copper",
+          "height": 48
+        },
+        {
+          "type": "BONUS_NIGHTMARE",
+          "key": "res_site_nightmare",
+          "height": 48
+        },
+        {
+          "type": "BONUS_BANANA",
+          "key": "res_site_banana",
+          "height": 48
+        },
+        {
+          "type": "BONUS_CLAM",
+          "key": "res_site_clam",
+          "height": 48
+        },
+        {
+          "type": "BONUS_CORN",
+          "key": "res_site_corn",
+          "height": 48
+        },
+        {
+          "type": "BONUS_CRAB",
+          "key": "res_site_crab",
+          "height": 48
+        },
+        {
+          "type": "BONUS_PIG",
+          "key": "res_site_pig",
+          "height": 48
+        },
+        {
+          "type": "BONUS_RICE",
+          "key": "res_site_rice",
+          "height": 48
+        }
+      ]
+    },
+    {
+      "name": "resources_trade",
+      "prompt": "Create a production sprite sheet for Fall from Heaven HD-2D fantasy strategy game. EXACTLY NINE different isolated map-object sprites on a regular 3 by 3 grid, in reading order, one object per equal square cell with generous transparent gutters. Transparent background. Full object in each cell, no clipping, no text, no captions, no grid lines. Chunky crisp 16-bit PIXEL ART with visibly deliberate pixel clusters, limited muted earthy olive/brown/slate palette, dark one-pixel outlines, strong upper-left highlights and shadow on lower-right. Three-quarter view looking down about 35 degrees at the front of the objects, consistent scale and lighting. Small-map readability, bold distinctive silhouettes, sculpted details, no photographic texture, no anti-aliased painterly blur, no mist or bloom. Objects stand independently with no terrain tile or cast shadow. Draw exactly these nine objects, left to right across rows: three small terracotta jars of blue, red and ochre pigment; two rolled brown animal pelts with pale fur edges; a bronze incense burner with fragrant resin chunks, no smoke; two curved pale elephant tusks with dark tips; a folded roll of lustrous plum silk beside silkworm cocoons; a leather alchemist pouch with mushrooms, a tiny vial and medicinal herb sprigs; two short cut sugar canes beside a cone of pale raw sugar; three luminous golden apples on a gnarled leafy twig; a cluster of blood-red and black jagged magical stones",
+      "pieces": [
+        {
+          "type": "BONUS_DYE",
+          "key": "res_site_dye",
+          "height": 48
+        },
+        {
+          "type": "BONUS_FUR",
+          "key": "res_site_fur",
+          "height": 48
+        },
+        {
+          "type": "BONUS_INCENSE",
+          "key": "res_site_incense",
+          "height": 48
+        },
+        {
+          "type": "BONUS_IVORY",
+          "key": "res_site_ivory",
+          "height": 48
+        },
+        {
+          "type": "BONUS_SILK",
+          "key": "res_site_silk",
+          "height": 48
+        },
+        {
+          "type": "BONUS_REAGENTS",
+          "key": "res_site_reagents",
+          "height": 48
+        },
+        {
+          "type": "BONUS_SUGAR",
+          "key": "res_site_sugar",
+          "height": 48
+        },
+        {
+          "type": "BONUS_FRUIT_OF_YGGDRASIL",
+          "key": "res_site_fruit_of_yggdrasil",
+          "height": 48
+        },
+        {
+          "type": "BONUS_SHEUT_STONE",
+          "key": "res_site_sheut_stone",
+          "height": 48
+        }
+      ]
+    },
+    {
+      "name": "resources_rare",
+      "prompt": "Create a production sprite sheet for Fall from Heaven HD-2D fantasy strategy game. EXACTLY NINE different isolated map-object sprites on a regular 3 by 3 grid, in reading order, one object per equal square cell with generous transparent gutters. Transparent background. Full object in each cell, no clipping, no text, no captions, no grid lines. Chunky crisp 16-bit PIXEL ART with visibly deliberate pixel clusters, limited muted earthy olive/brown/slate palette, dark one-pixel outlines, strong upper-left highlights and shadow on lower-right. Three-quarter view looking down about 35 degrees at the front of the objects, consistent scale and lighting. Small-map readability, bold distinctive silhouettes, sculpted details, no photographic texture, no anti-aliased painterly blur, no mist or bloom. Objects stand independently with no terrain tile or cast shadow. Draw exactly these nine objects, left to right across rows: a squat moss-green warty toad with golden eyes; three luminous ivory pearls in an open oyster shell; three fluffy white cotton bolls on a brown stem; a small shaggy dark purple fantastical tusked beast with a hunched back; a wooden barrel beside a frothy pewter ale tankard; folded richly embroidered burgundy and cream garments with a golden clasp; a small golden necklace and ring with colorful cut gemstones; a low clump of serrated steel-green thorny razor-edged leaves; a cluster of pale icy blue magical crystals with a carved snowflake rune",
+      "pieces": [
+        {
+          "type": "BONUS_TOAD",
+          "key": "res_site_toad",
+          "height": 48
+        },
+        {
+          "type": "BONUS_PEARL",
+          "key": "res_site_pearl",
+          "height": 48
+        },
+        {
+          "type": "BONUS_COTTON",
+          "key": "res_site_cotton",
+          "height": 48
+        },
+        {
+          "type": "BONUS_GULAGARM",
+          "key": "res_site_gulagarm",
+          "height": 48
+        },
+        {
+          "type": "BONUS_ALE",
+          "key": "res_site_ale",
+          "height": 48
+        },
+        {
+          "type": "BONUS_FINE_CLOTHES",
+          "key": "res_site_fine_clothes",
+          "height": 48
+        },
+        {
+          "type": "BONUS_JEWELS",
+          "key": "res_site_jewels",
+          "height": 48
+        },
+        {
+          "type": "BONUS_RAZORWEED",
+          "key": "res_site_razorweed",
+          "height": 48
+        },
+        {
+          "type": "BONUS_MANA_ICE",
+          "key": "res_site_mana_ice",
+          "height": 48
+        }
+      ]
+    }
+  ]
+}

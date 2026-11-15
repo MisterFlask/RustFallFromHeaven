@@ -554,6 +554,34 @@ isometric cards. Four ways to make them stand out were tried, each a switch in t
 turns all four off; any of them can be turned off in the panel. A change to any of them redresses
 the map (`MapHd2d.setConfig`).
 
+## 5e. Bespoke map sites and resources
+
+The HD-2D map has dedicated art for all 17 unique landmarks and for the lairs,
+ruins, special sites and settlement stages that previously shared generic forts,
+caves, ruins or mana-node sprites: 45 improvements in total. The Guardian of
+Pristin Pass is a stone giant with gargoyles in its shoulder alcoves; Barrows are
+grass-covered burial mounds with a clear stone trilithon entrance, separate from
+bear dens, lion dens and dungeons. Another 27 resource cards distinguish the
+previously shared crops, animals, trade goods and rare resources. Established
+works retain their existing artwork; mana schools retain their shared node family
+and school-coloured light.
+
+`tools/hd2d/landmarks.json` and `resources.json` retain each sheet's exact image
+generation prompt, reading order, type mapping and art-pixel height. These sheets
+were generated with the image_gen tool on 2026-11-14. Import a sheet with
+`python tools/hd2d/landmarks.py SHEET.png NAME`, then run `art.py index`. The importer
+cuts nine grid cells (keeping disconnected parts such as the Seven Pines together),
+removes detached specks, and uses the existing prop pipeline's limited palette,
+hard alpha and one-pixel rim. Every card fits the 256-pixel atlas layer directly;
+Barrows uses a 59 x 40 card at twice the pixel scale, preserving its world
+footprint while keeping the doorway readable at play zoom; it has no baked blur.
+
+The generated art index exports `IMPROVEMENTS` and `RESOURCES`. Static dressing
+prefers these exact type mappings, and unit placement uses the same standing-site
+lookup. Worker build buttons use the matching art while the HD-2D map is active.
+The coverage test checks all unique landmarks, each new type's actual drawn card,
+PNG dimensions and atlas fit, alongside the existing visibility checks.
+
 ## 6. Light, moods and the post passes
 
 * **The sun** stands at the upper left of the view (west and a little north, about 45° up), where

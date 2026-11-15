@@ -20,6 +20,7 @@ import * as T from "./tiles.js";
 import { h, fill, COMPACT, compactScreen, typeIconOf } from "./dom.js";
 import { installIsoFont } from "./isofont.js";
 import { SPRITES } from "./iso/sprites.js";
+import { CARDS, IMPROVEMENTS } from "./r3d/hd2d/art/index.js";
 import { ISO_TABLES, unitSpriteKeys, civShortName } from "./iso.js";
 import * as api from "./api.js";
 import { infoTip, moodTip } from "./infotips.js";
@@ -41,7 +42,7 @@ export function isoSkin() {
   return skin.on;
 }
 
-const spriteUrl = (key) => new URL(`./iso/${key}.png`, import.meta.url).href;
+const spriteUrl = (key) => new URL(Object.hasOwn(CARDS, key) ? `./r3d/hd2d/art/${key}.png` : `./iso/${key}.png`, import.meta.url).href;
 
 // ---------------------------------------------------------------------------------------------
 // Icons
@@ -66,7 +67,7 @@ export function isoIcon(name, { px = 32, title, cls } = {}) {
 /** A map sprite (a building, an overlay, a unit) fitted by its opaque box into `px` CSS px, as a
  *  span with the sprite as its background; null when there is no such sprite. */
 export function spriteIcon(key, px, { title, cls, flip = false } = {}) {
-  const s = SPRITES[key];
+  const s = SPRITES[key] ?? CARDS[key];
   if (!s) return null;
   const [x0, y0, x1, y1] = s.box;
   const k = px / Math.max(x1 - x0, y1 - y0);
@@ -164,6 +165,7 @@ function buildSprite(b) {
   if (b?.route !== null && b?.route !== undefined) return { icon: "road" };
   const imp = b?.improvement !== null && b?.improvement !== undefined ? tname("ImprovementType", b.improvement) : null;
   if (imp) {
+    if (skin.view?.renderer?.() === "hd2d" && IMPROVEMENTS[imp]) return { sprite: IMPROVEMENTS[imp] };
     const key = ISO_TABLES.improvementSprites(imp).find((k) => Object.hasOwn(SPRITES, k));
     if (key) return { sprite: key };
   }
