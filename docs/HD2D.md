@@ -339,6 +339,10 @@ does for the isometric sprites. No unit art changed.
   mossy), six shore cards (`shore_*`: two to four wet stones in a loose row under caps of moss)
   and three of pebbles; three haystacks (`hay_*`: the trees' lumps in straw, a point over a broad
   skirt, the straw as short strokes down the stack). All stand at the small props' scale (`FINE`).
+* **Mountains are models** (2026-11-15): a peak is the 3D renderer's `feat.mountain` (docs/R3D.md
+  "Asset recipes"), a faceted massif of ridges and gullies under snow, lit and shadowed by the sun
+  like any model; the peaks' boulder and pebble cards are gone. (A card drawn by code as the trees
+  are was tried first and dropped the same day: the owner preferred a more detailed model.)
   The mood pass's land palette (`MOOD_FS`) no longer lifts the cards' middle and dark values (the
   ground's only): their darks are painted, and lifted, a wood read flat and pale.
 * **Open ground says what it is** (the owner's call, 2026-11-01: unimproved grassland and plains

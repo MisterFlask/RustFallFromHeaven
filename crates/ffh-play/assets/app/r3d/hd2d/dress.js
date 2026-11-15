@@ -335,7 +335,7 @@ function clutterOf(kind, ground, mood) {
   else if (ground === GROUND.GRASS) out.push(["grass", 3.0, TUFT], ["flowers", 1.2, 0.9]);
   else out.push(["grass_3", 3.5, TUFT]);
   if (kind === KIND.HILLS) out.push(["rock", 1.2, FINE * 0.9], ["pebbles", 1.5, FINE]);
-  if (kind === KIND.PEAK) out.push(["rock", 2.2, FINE * 1.1], ["pebbles", 2.0, FINE]);
+  // (A peak carries no cards: its mountain is a model, assets/props.js feat.mountain.)
   // Each region's own things (the moods, hd2d/mood.js: [hell, corruption, lush, gloom]).
   if (HELLISH.has(ground)) out.push(["bones", 0.4, FINE], ["vent", 0.35, FINE]);
   if (mood && mood[1] >= 0.5 && !HELLISH.has(ground)) out.push(["crystal", 1.0, 0.9], ["obelisk", 0.14, FINE], ["altar", 0.06, FINE]);

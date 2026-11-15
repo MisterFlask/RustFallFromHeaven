@@ -90,6 +90,8 @@ const FEAT_OF = {
 };
 
 /** Base height of each kind at its plot centre. */
+/** The peaks' relief against a mountain's full height: the mound a mountain model stands on. */
+const PEAK_BODY = 0.16;
 const BASE = [0.035, -0.42, -0.12, 0.1, 0.1, 0.1, 0.025];
 
 export const SEA = 0;
@@ -271,7 +273,7 @@ export class World {
         if (k === KIND.HILLS) hill += wgt;
         else if (k === KIND.PEAK) {
           peak += wgt;
-          hill += wgt * 0.6;
+          hill += wgt * 0.25;
         } else if (k === KIND.OCEAN || k === KIND.COAST) water += wgt;
         else if (k === KIND.ICE) ice += wgt;
         else if (k === KIND.VOID) voidW += wgt;
@@ -307,7 +309,9 @@ export class World {
       const r = this.ridged(mx, my, 1.1, -2.7, 8.1, 4);
       const r2 = this.ridged(mx, my, 2.6, 5.3, -1.9, 3);
       const pw = Math.pow(peak, 1.4);
-      h += dry * pw * (0.18 + 0.62 * Math.pow(r, 1.7) + 0.16 * r2 * r);
+      // (The massif is low: a peak's mountain is a model standing on it, assets/props.js
+      // feat.mountain; the relief is the rocky ground round its foot.)
+      h += PEAK_BODY * dry * pw * (0.18 + 0.62 * Math.pow(r, 1.7) + 0.16 * r2 * r);
       h += dry * this.summits(mx, my) * (0.75 + 0.35 * r2);
     }
     if (voidW > 0) h = h * (1 - voidW) + BASE[KIND.VOID] * voidW;
@@ -381,6 +385,8 @@ export class World {
       for (let dx = -1; dx <= 1; dx++) {
         const i = this.index(cx + dx, cy + dy);
         if (i < 0 || this.kind[i] !== KIND.PEAK) continue;
+        // A volcano's cone is the relief itself; any other peak's is a mound under its model.
+        const body = this.feat[i] === FEAT.VOLCANO ? 1 : PEAK_BODY;
         const px = cx + dx + 0.5 + this.peakJitter[i * 2];
         const py = cy + dy + 0.5 + this.peakJitter[i * 2 + 1];
         const d = Math.hypot(mx - px, my - py);
@@ -391,12 +397,12 @@ export class World {
         const p1 = hashf(i, 71) * 6.2832, p2 = hashf(i, 72) * 6.2832;
         const reach = 0.62 * (1 + 0.3 * Math.sin(3 * a + p1) + 0.14 * Math.sin(5 * a + p2));
         const t = clamp(1 - d / reach, 0, 1);
-        s = Math.max(s, 0.55 * Math.pow(t, 1.25));
+        s = Math.max(s, body * 0.55 * Math.pow(t, 1.25));
         // A lower second summit on one shoulder: a lone mountain is a lopsided massif.
         const b = hashf(i, 73) * 6.2832;
         const d2 = Math.hypot(mx - (px + Math.cos(b) * 0.3), my - (py + Math.sin(b) * 0.3));
         const t2 = clamp(1 - d2 / 0.36, 0, 1);
-        s = Math.max(s, 0.36 * Math.pow(t2, 1.1));
+        s = Math.max(s, body * 0.36 * Math.pow(t2, 1.1));
       }
     }
     return s;
