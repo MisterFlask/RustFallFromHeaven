@@ -4,7 +4,8 @@
 `docs/AI.md` + `docs/AI_LOG.md` + `docs/TELEMETRY.md`, `docs/PLAY_DESIGN.md` + `docs/HUMAN.md`, `docs/ART.md`,
 `docs/R3D.md`, `docs/HD2D.md`, `docs/SCORE.md`, `docs/PERF.md`, `docs/CRUSADE.md`, `docs/CARDS.md`,
 `docs/WORKS.md`, `docs/TACTICS.md`, `docs/SUPPLY.md`, `docs/NAVAL.md`, `docs/SPECIALTIES.md`). What is merged is what git says (`git log origin/master`);
-open work and known gaps live in the area docs, not in a session log. Out of scope for now (the owner's
+open work and known gaps live in the area docs, not in a session log; the owner's queue of planned
+work is `TODO.md`. Out of scope for now (the owner's
 call): scenarios. The C++ AI is ported only as a benchmark to measure ffh-ai against (`crates/ffh-cppai`,
 docs/CPPAI.md; kept on master by the owner's request, 2026-10-21), not as the game's AI.
 Performance and AI-improvement work ignores it (the owner's call, 2026-10-21: no mileage in it):
