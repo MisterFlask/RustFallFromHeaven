@@ -31,9 +31,16 @@ against them before it is added.
    with its numbers in it. It is not a tier, a rarity, a category bonus or a choice among
    charters. The owner's examples set the register (section 3).
 3. **One per city.** A city's identity is one line a player can remember: "the wonder city",
-   "where the archers come from". Building tiers gave each city about 45 rolls, which is a hand
-   to optimise and not an identity. (This contrast is the design's reading of why tiers were the
-   wrong direction; the owner's decision did not give reasons.)
+   "where the archers come from". This is why building tiers were the wrong direction (the
+   owner's reasons, 2026-11-15):
+   - Tiers gave each city about 45 independent rolls. They average out, so every city ends up
+     with much the same mix and none has a character.
+   - The decision they create is sorting a table (build the good tiers first, skip the bad
+     ones), the same exercise in every city.
+   - Nobody remembers 45 tiers per city, so the city screen has to be reopened to know what a
+     city is good at.
+   - Tiers work strangely with city automation: a city that chooses its own builds has a
+     different table to sort in every city.
 4. **Only buffs.** No specialty has a price, and none makes the city worse at anything. A random
    penalty reads as punishment, which is what Lesser buildings did.
 5. **Different cities, different specialties.** Draws are without replacement within an empire.
