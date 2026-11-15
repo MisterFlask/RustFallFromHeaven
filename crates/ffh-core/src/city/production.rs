@@ -3,6 +3,8 @@
 //!
 //! The build queue itself (`pushOrder`/`popOrder`, `doProduction`, ...) is in `turn.rs`.
 
+use crate::city::specialties::*;
+
 use super::{ai_choose_production, building_class_of, order_type_data, unit_class_of, unit_domain_of};
 use crate::defs::MAX_INT;
 use crate::game::Game;
@@ -571,6 +573,7 @@ impl Game {
         if let Some(unit) = unit {
             if let Some(unit_combat) = d.units[unit].unit_combat_type {
                 experience += city.unit_combat_free_experience[unit_combat];
+                if city.specialty == Some(CLASS_XP) && city.specialty_class == Some(unit_combat) { experience += 3; }
             }
             experience += city.domain_free_experience[unit_domain_of(d, unit).idx()];
 
@@ -615,6 +618,8 @@ impl Game {
                 }
             }
         }
+        self.units[unit].trained_specialty = self.cities[c].specialty;
+        if self.city_has_specialty(c, NAVAL) && self.unit_get_domain_type(unit) == DomainType::DOMAIN_SEA { self.units[unit].extra_moves += 1; }
         // Card: the Spire of the Archmagi (docs/CARDS.md): a free promotion of the owner's choice.
         self.city_free_promotion_choice(c, unit);
         if !self.units.contains(unit) {
@@ -679,6 +684,7 @@ impl Game {
     /// C++ `CvCity::isFoodProduction(UnitTypes)` (CvCity.cpp:2892-2908).
     pub fn city_is_food_production_unit(&self, c: CityId, unit: UnitType) -> bool {
         let info = &self.d.units[unit];
+        if info.found && self.city_has_specialty(c, SETTLERS) { return false; }
         if info.food_production {
             return true;
         }
@@ -957,6 +963,10 @@ impl Game {
             }
         }
 
+        if self.city_has_specialty(c, WONDERS) && d.buildings[building].building_class_type.is_some_and(|k| d.building_classes[k].max_global_instances != -1 || d.building_classes[k].max_team_instances != -1 || d.building_classes[k].max_player_instances != -1) {
+            let base = self.city_base_yield_rate_modifier(c, YieldType::YIELD_PRODUCTION, 0);
+            multiplier = (base + multiplier) * 3 / 2 - base;
+        }
         multiplier.max(0)
     }
 
@@ -1027,7 +1037,7 @@ impl Game {
     pub fn city_can_hurry(&self, c: CityId, hurry: HurryType, test_visible: bool) -> bool {
         let owner = self.cities[c].owner;
 
-        if !self.player_can_hurry(owner, hurry) && self.city_unit_rush_gold(c, hurry).is_none() {
+        if !self.city_specialty_can_hurry(c, hurry) && !self.player_can_hurry(owner, hurry) && self.city_unit_rush_gold(c, hurry).is_none() {
             return false;
         }
 
@@ -1075,7 +1085,7 @@ impl Game {
         let rush = self.player_unit_rush_gold(owner);
         let rush = (rush > 0 && self.d.hurries[hurry].gold_per_production > 0).then_some(rush);
 
-        if !self.player_can_hurry(owner, hurry) && rush.is_none() {
+        if !self.city_specialty_can_hurry(c, hurry) && !self.player_can_hurry(owner, hurry) && rush.is_none() {
             return false;
         }
 
@@ -1088,7 +1098,7 @@ impl Game {
         }
 
         let gold = match rush {
-            Some(rate) => (rate * (self.city_production_needed_unit(c, unit) - self.cities[c].unit_production[unit])).max(1),
+            Some(rate) => (rate * (self.city_production_needed_unit(c, unit) - self.cities[c].unit_production[unit]) / if self.city_has_specialty(c, GOLD_RUSH) { 2 } else { 1 }).max(1),
             None => self.city_hurry_gold_for_cost(c, hurry, self.city_hurry_cost_unit(c, false, unit, ignore_new)),
         };
         if self.players[owner].gold < gold {
@@ -1106,7 +1116,7 @@ impl Game {
     pub fn city_can_hurry_building(&self, c: CityId, hurry: HurryType, building: BuildingType, ignore_new: bool) -> bool {
         let owner = self.cities[c].owner;
 
-        if !self.player_can_hurry(owner, hurry) {
+        if !self.city_specialty_can_hurry(c, hurry) && !self.player_can_hurry(owner, hurry) {
             return false;
         }
 
@@ -1229,7 +1239,7 @@ impl Game {
         }
 
         let owner = self.cities[c].owner;
-        if self.players[owner].conscript_count >= self.players[owner].max_conscript {
+        if !self.city_specialty_draft_ready(c) && self.players[owner].conscript_count >= self.players[owner].max_conscript {
             return false;
         }
 
@@ -1287,15 +1297,16 @@ impl Game {
             return;
         }
 
+        let specialty_draft = self.city_specialty_draft_ready(c);
         let conscript_population = self.city_conscript_population(c);
         self.city_change_population(c, -conscript_population);
-        let anger_length = self.city_flat_conscript_anger_length(c);
+        let anger_length = if specialty_draft { 0 } else { self.city_flat_conscript_anger_length(c) };
         self.city_change_conscript_anger_timer(c, anger_length);
 
         self.cities[c].drafted = true;
 
         let owner = self.cities[c].owner;
-        self.players[owner].conscript_count += 1;
+        if specialty_draft { self.cities[c].specialty_draft_turn = self.game_turn(); } else { self.players[owner].conscript_count += 1; }
 
         // UI: the active player selects the new unit.
         let _unit = self.city_init_conscripted_unit(c);
@@ -1386,7 +1397,7 @@ impl Game {
     /// C++ `CvCity::hurryGold` (CvCity.cpp:5073-5076).
     pub fn city_hurry_gold(&self, c: CityId, hurry: HurryType) -> i32 {
         if let Some(rate) = self.city_unit_rush_gold(c, hurry) {
-            return (rate * self.city_production_left(c)).max(1);
+            return (rate * self.city_production_left(c) / if self.city_has_specialty(c, GOLD_RUSH) { 2 } else { 1 }).max(1);
         }
         self.city_hurry_cost_gold(c, hurry)
     }
@@ -1420,13 +1431,13 @@ impl Game {
     }
 
     /// C++ `CvCity::getHurryGold(HurryTypes, int iHurryCost)` (CvCity.cpp:5078-5090).
-    pub fn city_hurry_gold_for_cost(&self, _c: CityId, hurry: HurryType, hurry_cost: i32) -> i32 {
+    pub fn city_hurry_gold_for_cost(&self, c: CityId, hurry: HurryType, hurry_cost: i32) -> i32 {
         let gold_per_production = self.d.hurries[hurry].gold_per_production;
         if gold_per_production == 0 {
             return 0;
         }
 
-        let gold = hurry_cost * gold_per_production;
+        let gold = hurry_cost * gold_per_production / if self.city_has_specialty(c, GOLD_RUSH) { 2 } else { 1 };
 
         gold.max(1)
     }
@@ -1470,6 +1481,7 @@ impl Game {
 
     /// C++ `CvCity::hurryAngerLength` (CvCity.cpp:5142-5152).
     pub fn city_hurry_anger_length(&self, c: CityId, hurry: HurryType) -> i32 {
+        if self.city_has_specialty(c, POP_RUSH) { return 0; }
         if self.d.hurries[hurry].anger {
             self.city_flat_hurry_anger_length(c)
         } else {

@@ -631,9 +631,22 @@ pub struct PendingVote {
     pub last_turn: bool,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PendingSpecialty { pub city: CityId, pub name: String, pub options: Vec<crate::view::perks::Perk> }
+impl PendingSpecialty {
+    fn to_json(&self) -> Json { crate::jobj! {
+        "city" => self.city, "name" => self.name.as_str(),
+        "options" => Json::Arr(self.options.iter().enumerate().map(|(i, perk)| {
+            let mut j = perk.to_json();
+            j.set("option", i);
+            j
+        }).collect()),
+    } }
+}
 /// Everything the human answers or acts on at a control point (design §3).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Pending {
+    pub specialties: Vec<PendingSpecialty>,
     pub events: Vec<PendingEvent>,
     pub votes: Vec<PendingVote>,
     /// The secretary general's elections waiting for the human (BUTTONPOPUP_CHOOSEELECTION).
@@ -718,11 +731,12 @@ pub fn pending_crusade_calls(g: &Game, p: PlayerId) -> Vec<PendingCall> {
 impl Pending {
     /// Deferred popups still open (the end-turn gate's events, votes, elections and research).
     pub fn popups(&self) -> usize {
-        self.events.len() + self.votes.len() + self.elections.len() + self.research_needed as usize + self.crusade_calls.len()
+        self.specialties.len() + self.events.len() + self.votes.len() + self.elections.len() + self.research_needed as usize + self.crusade_calls.len()
     }
 
     pub fn to_json(&self) -> Json {
         crate::jobj! {
+            "specialties" => Json::Arr(self.specialties.iter().map(PendingSpecialty::to_json).collect()),
             "events" => Json::Arr(self.events.iter().map(|e| crate::jobj! {
                 "triggered" => e.triggered,
                 "trigger" => Json::idx(e.trigger),
@@ -944,6 +958,10 @@ pub fn is_selectable_group(g: &Game, grp: GroupId) -> bool {
 pub fn pending(g: &Game, p: PlayerId, events: &[TriggeredId]) -> Pending {
     let pl = &g.players[p];
     Pending {
+        specialties: pl.cities.iter().filter(|&&c| !g.cities[c].specialty_options.is_empty()).map(|&c| PendingSpecialty {
+            city: c, name: crate::view::city_name(g, c),
+            options: g.cities[c].specialty_options.iter().map(|&(s, class, mana)| crate::view::perks::describe(g, s, class, mana)).collect(),
+        }).collect(),
         events: events.iter().filter_map(|&id| pending_event(g, p, id)).collect(),
         votes: pending_votes(g, p),
         elections: pending_elections(g, p),

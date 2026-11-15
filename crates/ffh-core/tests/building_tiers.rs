@@ -50,33 +50,9 @@ fn class(d: &GameData, b: BuildingType) -> BuildingClassType {
 }
 
 #[test]
-fn every_city_rolls_a_tier_for_each_class_that_rolls_one() {
+fn new_cities_use_standard_buildings_without_random_tiers() {
     let (g, cities) = game(12);
-    let d = g.d;
-    let mut seen = vec![0; BuildingTierType::NUM];
-    for &c in &cities {
-        for k in d.building_classes.keys() {
-            let tier = g.cities[c].building_tiers[k];
-            if d.building_classes[k].rolls_tier {
-                seen[tier.idx()] += 1;
-            } else {
-                assert_eq!(tier, BuildingTierType::STANDARD, "{} rolls no tier", d.building_classes[k].base.type_);
-            }
-        }
-    }
-    // About 100 classes x 12 cities: every tier comes up, roughly by its weight.
-    let total: usize = seen.iter().sum();
-    for t in d.building_tiers.keys() {
-        let share = seen[t.idx()] * 100 / total;
-        let weight = d.building_tiers[t].weight as usize;
-        assert!(share + 5 >= weight && share <= weight + 5, "{}: {share}% for weight {weight}", d.building_tiers[t].base.type_);
-    }
-    let library = b(d, "BUILDING_LIBRARY");
-    assert!(d.building_classes[class(d, library)].rolls_tier, "a class with variants rolls");
-    let great_library = b(d, "BUILDING_GREAT_LIBRARY");
-    assert!(d.building_classes[class(d, great_library)].rolls_tier, "a world wonder rolls (its cost)");
-    let mastery = b(d, "BUILDING_TOWER_OF_MASTERY");
-    assert!(!d.building_classes[class(d, mastery)].rolls_tier, "a victory building does not");
+    for c in cities { assert!(g.cities[c].building_tiers.iter().all(|&t| t == BuildingTierType::STANDARD)); }
 }
 
 #[test]

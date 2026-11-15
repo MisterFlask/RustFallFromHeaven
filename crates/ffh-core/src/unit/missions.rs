@@ -10,6 +10,8 @@
 //! game log.
 
 
+use crate::city::specialties::*;
+
 use crate::game::Game;
 use crate::ids::*;
 use crate::utils::{is_limited_project, is_limited_unit_class, is_limited_wonder_class};
@@ -454,7 +456,9 @@ impl Game {
 
         let owner = self.units[u].owner;
         let (x, y) = (self.units[u].x, self.units[u].y);
+        let large = self.units[u].trained_specialty == Some(SETTLERS);
         self.player_found(owner, x, y);
+        if large { if let Some(c) = self.map.plots[plot].plot_city { if self.cities[c].population < 2 { self.city_set_population(c, 2); } } }
 
         // Graphics: NotifyEntity(MISSION_FOUND).
 

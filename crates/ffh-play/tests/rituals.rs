@@ -551,6 +551,10 @@ fn wellspring_placement_comes_with_the_completed_ritual() {
     let mut s = load(&st.save);
     let spell = s.g.d.t::<SpellType>("SPELL_WELLSPRING");
     assert!(world_action(&s, spell).is_none(), "nothing pending yet");
+    // This staged city has reached Developing: answer its independent specialty choice first.
+    while let Some(city) = s.pending().specialties.first().map(|p| p.city) {
+        assert!(s.execute(&Command::ChooseSpecialty { city, option: 0 }).is_ok());
+    }
     let r = s.execute(&Command::EndTurn { force: true });
     assert!(r.is_ok(), "{r:?}");
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);

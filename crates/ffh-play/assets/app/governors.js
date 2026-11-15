@@ -34,7 +34,7 @@ addHelp({
     h(
       "ul",
       h("li", "A governor chooses what the city builds and which yields its citizens favour, by the city's role: Growth, Research, Commerce, Culture, Garrison or Production."),
-      h("li", "The proposed role is the one the city's building tiers suit best: a role's suitability is the mean effect of the city's tiers for its four key buildings."),
+      h("li", "Standard buildings give every role 100% suitability. The proposed role follows your empire priorities."),
       h("li", `You may choose another role for a city if its suitability is ${rules ? `${rules.min}%` : "high enough"} or more. Choosing the proposed role again lets the role follow the proposal.`),
       h("li", `Priorities: up to ${rules ? rules.max : 2} roles weigh ${rules ? `+${rules.weight}%` : "more"} in every city's proposal.`),
       h("li", "A governor has a name and at most one trait: Cautious (one more defender) or Ambitious (the costliest building first)."),
@@ -123,7 +123,7 @@ function roleCard(c, r, act, go) {
       "li",
       { title: b.none ? "Your civilization cannot build it." : `Core effect: ${b.effect}%` },
       h("span", `${dname("BuildingClassType", b.class)}: `),
-      b.none ? h("span.dim", "cannot build") : h(`span${tierSel(b.tier)}`, dname("BuildingTierType", b.tier)),
+      b.none ? h("span.dim", "cannot build") : h("span", "available"),
     ),
   );
   const current = k.roles.find((x) => x.role === c.role);

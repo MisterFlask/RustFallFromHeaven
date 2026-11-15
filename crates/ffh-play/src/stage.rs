@@ -1368,3 +1368,26 @@ pub fn ice(dir: &Path) -> Result<StagedIce, String> {
     }
     Err("no seed with a coastal capital and a strait or bay to freeze".into())
 }
+
+/// A real random specialty offer at the capital's Developing culture threshold.
+pub fn specialties(dir: &Path) -> Result<Json, String> {
+    let mut s = duel_with(dir, 11, 4, None, &[])?;
+    let c = *s.g.players[s.human].cities.first().ok_or("no capital")?;
+    s.g.city_set_culture(c, s.human, 100, true, true);
+    s.g.city_offer_specialty(c);
+    let paths = s.save("specialties").map_err(|e| format!("save: {e:?}"))?;
+    Ok(crate::jobj! { "stage" => "specialties", "save" => paths.save.display().to_string(), "city" => c })
+}
+
+/// The city-perk review fixture: typed mana, double growth and wonders, all legal offers.
+pub fn specialties_details(dir: &Path) -> Result<Json, String> {
+    use ffh_core::city::specialties::{MANA, DOUBLE_GROWTH, WONDERS};
+    let mut s = duel_with(dir, 11, 4, None, &[])?;
+    let c = *s.g.players[s.human].cities.first().ok_or("no capital")?;
+    s.g.city_set_culture(c, s.human, 100, true, true);
+    let manas = s.g.city_specialty_manas();
+    let mana = manas[s.g.soren_rand_num(manas.len() as i32, "City perk review mana") as usize];
+    s.g.cities[c].specialty_options = vec![(MANA, None, Some(mana)), (DOUBLE_GROWTH, None, None), (WONDERS, None, None)];
+    let paths = s.save("specialties-details").map_err(|e| format!("save: {e:?}"))?;
+    Ok(crate::jobj! { "stage" => "specialties-details", "save" => paths.save.display().to_string(), "city" => c })
+}

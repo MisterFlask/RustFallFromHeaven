@@ -397,6 +397,7 @@ impl Game {
     pub fn plot_movement_cost(&self, p: PlotIdx, unit: UnitId, from_plot: PlotIdx) -> i32 {
         let d = self.d;
         let move_denominator = d.defines.move_denominator;
+        let specialty_speed = if self.specialty_fast_plot(p, self.unit_get_team(unit)) { 2 } else { 1 };
 
         // Card: Wall of the Kings (docs/CARDS.md): an enemy land unit entering the holder's
         // borders ends its move there.
@@ -417,7 +418,7 @@ impl Game {
         }
 
         if self.unit_flat_movement_cost(unit) || self.unit_get_domain_type(unit) == DomainType::DOMAIN_AIR {
-            return move_denominator;
+            return (move_denominator / specialty_speed).max(1);
         }
 
         if self.unit_is_human(unit) && !self.map.plots[p].revealed[self.unit_get_team(unit)] {
@@ -429,12 +430,12 @@ impl Game {
         }
 
         if !self.plot_is_valid_domain_for_action(p, unit) {
-            return move_denominator;
+            return (move_denominator / specialty_speed).max(1);
         }
 
         // This game's: land units cross Sea Ice at a cost of 1.
         if self.map.plots[p].sea_ice {
-            return move_denominator;
+            return (move_denominator / specialty_speed).max(1);
         }
 
         // (C++ FAssert: the unit is not DOMAIN_IMMOBILE.)
@@ -512,7 +513,8 @@ impl Game {
             }
         }
 
-        regular_cost.min(route_cost.min(route_flat_cost)).max(1)
+        let cost = regular_cost.min(route_cost.min(route_flat_cost));
+        (cost / specialty_speed).max(1)
     }
 
     /// C++ `CvPlot::getExtraMovePathCost` (`CvGame::getPlotExtraCost` at this plot).

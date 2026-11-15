@@ -231,6 +231,12 @@ export async function endTurn(force = false) {
     emit("open-pending-cast", due.spell);
     return null;
   }
+  if (!observing() && S.view?.pending?.specialties?.length) {
+    S.dismissed.clear();
+    emit("reopen-popups");
+    toast("Choose a city perk before ending the turn.", "error", 6000);
+    return null;
+  }
   if (force) return run({ c: "end_turn", force: true });
   const idle = idleCities();
   const p = S.view?.pending;
@@ -253,5 +259,5 @@ export async function endTurn(force = false) {
 export function openCount() {
   const p = S.view?.pending;
   if (!p) return 0;
-  return (p.events?.length ?? 0) + (p.votes?.length ?? 0) + (p.crusade_calls?.length ?? 0) + (p.research_needed ? 1 : 0) + idleCities().length;
+  return (p.specialties?.length ?? 0) + (p.events?.length ?? 0) + (p.votes?.length ?? 0) + (p.crusade_calls?.length ?? 0) + (p.research_needed ? 1 : 0) + idleCities().length;
 }

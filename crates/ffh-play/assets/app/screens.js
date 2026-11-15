@@ -11,6 +11,7 @@ import { addHelp, openHelp } from "./help.js";
 import { run } from "./commands.js";
 import { render as markup, plain } from "./markup.js";
 import { illuminate, bannerEl } from "./look.js";
+import { perkView } from "./perks.js";
 import { leaderPortrait, teamPortrait, PORTRAIT } from "./portraits.js";
 
 // ---------------------------------------------------------------------------------------------
@@ -717,3 +718,43 @@ export function rawRequest() {
   return openModal({ title: "Raw request", tag: "raw", wide: true, body: [box, out], buttons: [{ label: "Send", primary: true, onClick: send }, { label: "Close", value: null }] });
 }
 
+
+/** Permanent specialty: the offer is saved by the engine, including when set aside. */
+export async function openSpecialty(city) {
+  let selected = null;
+  const buttons = [];
+  const updateActions = () => m.setButtons([
+    { label: "Confirm perk", primary: true, danger: true, disabled: selected === null,
+      onClick: async () => {
+        if (selected === null) return;
+        const reply = await run({ c: "choose_specialty", city: city.city, option: selected });
+        if (reply) m.close("chosen");
+      },
+    },
+    { label: "Later this turn", value: "later", title: "The turn cannot end until this choice is made." },
+  ]);
+  for (const o of city.options) {
+    const button = h("button.option", {
+      "data-specialty": o.option, "aria-pressed": "false",
+      onclick: () => {
+        if (m.busy) return;
+        selected = o.option;
+        for (const b of buttons) {
+          const chosen = b === button;
+          b.classList.toggle("chosen", chosen);
+          b.setAttribute("aria-pressed", String(chosen));
+        }
+        updateActions();
+      },
+    }, perkView(o));
+    buttons.push(button);
+  }
+  const m = openModal({ title: `${city.name}: choose a city perk`,
+    body: [h("p", "Select one permanent effect, then confirm. The city keeps its perk when captured. Choose before ending this turn."), h("div.options", buttons)],
+    // Initial focus stays on the dialog: Enter cannot accidentally commit a permanent choice.
+    buttons: [{ label: "Confirm perk", danger: true, disabled: true }, { label: "Later this turn", value: "later" }],
+    tag: "specialty",
+  });
+  updateActions();
+  return m.done;
+}

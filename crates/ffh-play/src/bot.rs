@@ -424,6 +424,10 @@ impl Bot {
         }
         // A pending world spell with a target is cast before the turn ends (docs/CARDS.md).
         self.cast_due(s);
+        // Events, unit actions or a world spell can unlock a specialty after the first popup pass.
+        while let Some(city) = s.pending().specialties.first().map(|p| p.city) {
+            if !self.ok(s, Command::ChooseSpecialty { city, option: 0 }) { break; }
+        }
         // End the turn.
         let force = self.rand(5) == 0;
         if self.ok(s, Command::EndTurn { force }) {
@@ -462,6 +466,9 @@ impl Bot {
 
     /// Events, votes, elections, research.
     fn popups(&mut self, s: &mut Session, p: &Json) {
+        for c in arr(p, "specialties") {
+            self.ok(s, Command::ChooseSpecialty { city: CityId(int(c, "city") as u32), option: 0 });
+        }
         for e in arr(p, "events") {
             let options: Vec<i64> = arr(e, "options").iter().filter(|o| flag(o, "enabled")).map(|o| int(o, "event")).collect();
             if options.is_empty() {

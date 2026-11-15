@@ -33,6 +33,7 @@ pub mod buildings;
 pub mod citizens;
 pub mod production;
 pub mod tiers;
+pub mod specialties;
 pub mod turn;
 pub mod yields_culture;
 
@@ -291,9 +292,14 @@ pub struct City {
     pub role: Option<CityRoleType>,
     /// The player chose its role (else it follows the proposal).
     pub role_overridden: bool,
-    /// This game's building suitability (docs/SUITABILITY.md): the city's tier for each building
-    /// class, rolled at founding (`Game::city_roll_building_tiers`) and kept for the city's life
-    /// (a city changing hands keeps it). Standard for a class no city rolls.
+    /// Permanent specialty and the class rolled for its XP entry (docs/SPECIALTIES.md).
+    pub specialty: Option<u8>,
+    pub specialty_class: Option<UnitCombatType>,
+    pub specialty_mana: Option<BonusType>,
+    /// Saved random offer: queries and loads never roll it again.
+    pub specialty_options: Vec<(u8, Option<UnitCombatType>, Option<BonusType>)>,
+    pub specialty_draft_turn: i32,
+    /// Retired tier scaffolding; all new cities use Standard buildings.
     pub building_tiers: IdxVec<BuildingClassType, BuildingTierType>,
     /// This game's cards (docs/CARDS.md): the resource its owner chose for each building of the
     /// city with `free_bonus_choices` (Agares's Well), in the order they were built.
@@ -534,6 +540,11 @@ impl City {
             governor: None,
             role: None,
             role_overridden: false,
+            specialty: None,
+            specialty_class: None,
+            specialty_mana: None,
+            specialty_options: Vec::new(),
+            specialty_draft_turn: -10,
             building_tiers: IdxVec::from_elem(BuildingTierType::STANDARD, d.building_classes.len()),
             free_bonus_choices: Vec::new(),
             muster_production: 0,

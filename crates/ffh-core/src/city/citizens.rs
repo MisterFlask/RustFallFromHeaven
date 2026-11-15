@@ -8,6 +8,8 @@
 //! (`city_ai_add_best_citizen`, `city_ai_remove_worst_citizen`) live in `governor.rs`, keep
 //! the C++ structure of those two functions and value the candidates the way the governor does.
 
+use crate::city::specialties::*;
+
 use super::range;
 use crate::defs::*;
 use crate::game::Game;
@@ -826,7 +828,7 @@ impl Game {
             modifier += self.d.defines.golden_age_great_people_modifier;
         }
 
-        (modifier + 100).max(0)
+        (modifier + 100).max(0) * if self.city_has_specialty(c, GREAT_PEOPLE) { 2 } else { 1 }
     }
 
     /// C++ `CvCity::changeWarWearinessModifier` (CvCity.cpp:6059-6067).
@@ -1729,13 +1731,14 @@ impl Game {
             // GrowthControl (Jean Elcard, merged by Sephi): AI_stopGrowth() replaces
             // AI_isEmphasizeAvoidGrowth(). This game's outposts (docs/NAVAL.md, 9.2) stop at
             // `OUTPOST_MAX_POP`.
-            if self.city_ai_stop_growth(c) || self.city_outpost_full(c) {
+            let growth = self.city_population_growth(c);
+            if self.city_ai_stop_growth(c) || self.city_outpost_full(c) || growth == 0 {
                 let threshold = self.city_growth_threshold(c);
                 self.cities[c].food = threshold;
             } else {
                 let food_used = (self.city_growth_threshold(c) - self.cities[c].food_kept).max(0);
                 self.cities[c].food -= food_used;
-                self.city_change_population(c, 1);
+                self.city_change_population(c, growth);
 
                 // ONEVENT - City growth
                 let owner = self.cities[c].owner;

@@ -538,6 +538,7 @@ impl Driver {
         // turns `QUIET_TURN` mod `QUIET_EVERY` left open, so the end-turn gate is forced with
         // what C++ does to unanswered popups (events closed, a vote's extra turn then abstain,
         // the AI's research pick after turn 4).
+        self.answer_specialties(s)?;
         let p = s.pending();
         let quiet = s.g.game_turn() % QUIET_EVERY == QUIET_TURN;
         if quiet {
@@ -580,6 +581,9 @@ impl Driver {
             }
             self.stats.research_left_open += 1;
         }
+        // Unit actions may have raised a city's culture during this turn. Specialties are
+        // mandatory even on quiet turns, unlike the older deferred popups being tested.
+        self.answer_specialties(s)?;
         // End the turn; the gate's confirmation (popups left open, ready units) is forced.
         if let CmdOk::NeedsConfirm(c) = self.exec(s, Command::EndTurn { force: false })? {
             if !matches!(c, Confirm::EndTurn { .. }) {
@@ -589,6 +593,13 @@ impl Driver {
             self.applied(s, Command::EndTurn { force: true })?;
         }
         self.stats.turns_played += 1;
+        Ok(())
+    }
+
+    fn answer_specialties(&mut self, s: &mut Session) -> Result<(), String> {
+        while let Some(city) = s.pending().specialties.first().map(|p| p.city) {
+            self.applied(s, Command::ChooseSpecialty { city, option: 0 })?;
+        }
         Ok(())
     }
 
