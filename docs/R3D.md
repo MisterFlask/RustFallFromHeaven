@@ -477,8 +477,23 @@ recipe("tree.oak", { variants: 8, build(mb, r, { variant, param }) { /* model wi
 | `vegetation.js` | oak, birch, pine (and snowy), jungle, palm, ancient (mallorn-like giants with lantern fruit), willow, dead and blighted trees, saplings, bushes, reeds, dry shrubs and cacti, ferns, mushrooms (and glowing), grass tufts | `forest` (a wooded plot's species mix by feature, ground and relief, with undergrowth), `flora` |
 | `units.js` | humanoid figures assembled from a race table (human, elf, dwarf, orc, goblin, lizard, undead, demon; `-dark` garb) with body types, headgear, hair, capes, wings, 18 weapons and shields, posed by archetype (warrior, soldier, spearman, archer, mage, priest, worker, hero, scout, settler, cavalry on horse, wolf, boar or nightmare); creatures (wolf, bear, spider, dragon, demon, golem, elemental, skeleton, serpent, angel, bird and fifteen beasts); galleys, ships, catapults | `unit` (every unit type of the game: ~110 name rules, then race by name or civilization, then a fallback by combat class, domain and tier) |
 | `architecture.js` | seven architectural families mapped from the civilizations (human, elven, dwarven, infernal, tribal, desert, coastal, with arcane, dark, gothic and northern variants): houses, halls, towers, keeps, walls, gates, wall towers, wells, stalls, banners | `family`, `city` (a layout from size, capital, walls and family: a ring street, a square before the landmark, walls), `settlement` (cottage to town, forts, castles, citadels, towers, pirate ports, goblin forts) |
-| `props.js` | rocks by ground (boulders, strata outcrops, crags, obsidian, sandstone), terrain features (oasis, volcano, flames, ice floes, flood silt, scrub, souls, fallout), every improvement (farms, pastures with livestock, camps, mines, quarries, mills, vineyards, boats, lairs and ruins, mana nodes per school), distinct landmarks (Yggdrasil, the Maelstrom, the Dragon Bones, the Pool of Tears, standing stones, ...) and a marker for every resource | `rocks`, `feature`, `improvement`, `bonus` |
+| `props.js` | rocks by ground (boulders, strata outcrops, crags, obsidian, sandstone), mountains (`feat.mountain`, below), terrain features (oasis, volcano, flames, ice floes, flood silt, scrub, souls, fallout), every improvement (farms, pastures with livestock, camps, mines, quarries, mills, vineyards, boats, lairs and ruins, mana nodes per school), distinct landmarks (Yggdrasil, the Maelstrom, the Dragon Bones, the Pool of Tears, standing stones, ...) and a marker for every resource | `rocks`, `feature`, `improvement`, `bonus` |
 | `fx.js` | particle emitters: hell embers, fire and volcano sparks and ash, soul wisps, ancient-forest motes, city sparks by family | `emitters` |
+
+**Mountains** (`feat.mountain`, 2026-11-15; the owner: the peaks looked flat). The terrain mesh has
+six vertices a plot, so a peak drawn by the relief alone was a smooth cone under a rock texture. A
+peak is a model now: a height field of a few horns, each a summit whose flanks reach further along
+its ridges (a few major crests and finer spurs, wandering as they run down) than in the gullies
+between, meshed on a 44 by 44 grid (about 2,000 facets) and painted as the rocks are: flanks darker
+as they steepen, gullies darker than crests, strata, a ragged coat of snow where the slope holds
+it, grass on the gentle ground of the foot; crag teeth on the upper ridges, boulders at the foot.
+Six variants; grey rock under snow, more snow on tundra and snow ground, bare sandstone on desert,
+basalt on hell's grounds. `mountainOf` (the catalog's `feature` entry) stands one on every peak
+plot but a volcano's, at the summit the relief raises, a little wider than the plot so a range's
+mountains stand into each other; smaller and set back where a unit or an improvement holds the
+plot. The relief under it is a low mound (world.js `PEAK_BODY`; a volcano's cone is still the
+relief). Peaks have no crags or boulders of the `rocks` entry any more, and no prop cards in the
+HD-2D mode. Picking still reads the relief, not the model.
 
 Budgets (triangles, full detail): trees ≤ ~700 (great trees ~2100), units ≤ ~2000, houses ≤ ~250,
 keeps ≤ ~1800, a walled size-12 capital ~3–15k (simplified ~6k), ground clutter (tufts, flowers) ≤ 40

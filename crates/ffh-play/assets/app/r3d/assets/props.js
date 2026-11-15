@@ -823,6 +823,163 @@ function buildVolcano(mb, r, variant) {
 
 recipe("feat.volcano", { variants: 2, build: (mb, r, { variant }) => buildVolcano(mb, r, variant) });
 
+// --- mountains --------------------------------------------------------------------------------------
+
+/** The horns of a mountain by variant: [x, z, height, radius] in plot units (z toward the camera). */
+const MOUNTAINS = [
+  [[0, 0, 0.77, 0.62], [0.3, 0.14, 0.39, 0.36]],
+  [[-0.17, 0, 0.72, 0.52], [0.22, 0.05, 0.57, 0.46], [0, 0.2, 0.29, 0.32]],
+  [[-0.27, 0.02, 0.5, 0.42], [0.02, -0.03, 0.76, 0.56], [0.3, 0.07, 0.45, 0.38], [-0.06, 0.22, 0.27, 0.3]],
+  [[0.02, 0, 0.84, 0.56], [-0.27, 0.1, 0.37, 0.34], [0.28, 0.14, 0.34, 0.32]],
+  [[-0.33, 0, 0.49, 0.38], [-0.07, 0.03, 0.67, 0.48], [0.24, -0.02, 0.59, 0.44], [0.42, 0.1, 0.3, 0.28]],
+  [[0.05, -0.02, 0.71, 0.6], [-0.3, 0.08, 0.42, 0.36], [0.16, 0.24, 0.25, 0.28]],
+];
+
+/** A mountain's height field `(x, z) -> {h, crest}`: each horn is a summit whose flanks reach
+ *  further along its ridges (sharp crests: a few major ones and finer spurs, wandering as they run
+ *  down) than in the gullies between them, steep at the top and easing toward the foot; crags of
+ *  ridged noise roughen the middle slopes. `crest` is 1 on a ridge line, 0 in a gully's bed. */
+function mountainField(r, horns) {
+  const seed = r.range(0, 50);
+  const hs = horns.map(([x, z, h, rad]) => ({ x, z, h: h * r.range(0.94, 1.06), rad, maj: r() < 0.5 ? 4 : 5, min: [9, 11, 13][r.int(0, 2)], p1: r.range(0, TAU), p2: r.range(0, TAU), wk: r.range(4, 7), wp: r.range(0, TAU) }));
+  const top = Math.max(...hs.map((o) => o.h));
+  const f = (x, z) => {
+    let h = 0, crest = 0;
+    const bend = 0.5 * noise3(x * 2.2 + seed, 0.5, z * 2.2);
+    for (const o of hs) {
+      const dx = x - o.x, dz = z - o.z;
+      const d = Math.hypot(dx, dz);
+      if (d > o.rad * 1.2) continue;
+      const a = Math.atan2(dz, dx) + bend + 0.3 * Math.sin(d * o.wk + o.wp);
+      const cr = 1 - Math.pow(Math.abs(Math.sin((o.maj * a) / 2 + o.p1)), 0.75);
+      const sp = 1 - Math.pow(Math.abs(Math.sin((o.min * a) / 2 + o.p2)), 0.8);
+      const reach = o.rad * (0.56 + 0.44 * cr + 0.14 * sp * (0.35 + 0.65 * clamp(d / o.rad, 0, 1)));
+      const v = o.h * Math.pow(clamp(1 - d / reach, 0, 1), 1.18);
+      if (v > h) {
+        h = v;
+        crest = Math.max(cr, sp * 0.7);
+      }
+    }
+    if (h > 0) h = Math.max(0.001, h - 0.028 * Math.abs(noise3(x * 11 + seed, 1.5, z * 11)) * clamp((h / top) * 3, 0, 1) * clamp(1.15 - h / top, 0, 1));
+    return { h, crest };
+  };
+  return { f, top, hs };
+}
+
+/** The paint of a mountain by its ground: the rock, its lit tops, its strata, where its snow
+ *  begins (a share of its height; null: none) and the colour of the gentle ground at its foot. */
+function mountainPaint(kind, r) {
+  switch (kind) {
+    case "sand":
+      return { base: mulc(J(T.sandBand, r, 0.04), 0.9), top: mulc(J(T.sandLight, r), 0.95), band: "#8a5c36", snow: null, foot: null };
+    case "basalt":
+      return { base: J("#3a343a", r, 0.04), top: J("#5a5258", r), band: "#54302a", snow: null, foot: null };
+    case "cold":
+      return { base: J("#524e58", r, 0.04), top: J("#7e787c", r, 0.04), band: "#68626c", snow: 0.32, foot: null };
+    default:
+      return { base: J("#554c54", r, 0.04), top: J("#857a76", r, 0.04), band: "#6c6062", snow: 0.56, foot: "#586a2c" };
+  }
+}
+
+/** A mountain: a massif of ridges and gullies modelled as a dense faceted surface (the terrain's
+ *  mesh, six vertices a plot, can only draw a smooth cone), its facets painted as the rocks are --
+ *  lit tops, flanks darker as they steepen, gullies darker than crests, strata banding the rock --
+ *  under a ragged coat of snow where the slope holds it; crag teeth on its upper ridges and
+ *  boulders at its foot. It stands on the low mound the relief raises for a peak (world.js). */
+function buildMountain(mb, r, variant, param) {
+  const { f, top, hs } = mountainField(r, MOUNTAINS[variant % MOUNTAINS.length]);
+  const p = mountainPaint(param, r);
+  const seed = r.range(0, 9);
+  const rockAt = (n, y, cx, cz) => {
+    const k = noise3(cx * 7 + seed, y * 7, cz * 7);
+    let base = p.base;
+    if (Math.sin(y * 46 + k * 2.4 + seed) > 0.3) base = mixl(base, p.band, 0.4);
+    // Flanks darken as they steepen; a gully's bed is darker than the crest beside it.
+    base = mulc(base, 0.74 + 0.26 * clamp(n[1] / 0.7, 0, 1));
+    return [base, k];
+  };
+  const shade = (n, y, a, b, c) => {
+    const cx = (a[0] + b[0] + c[0]) / 3, cz = (a[2] + b[2] + c[2]) / 3;
+    let [base, k] = rockAt(n, y, cx, cz);
+    base = mulc(base, 0.8 + 0.2 * f(cx, cz).crest);
+    let col = faceShade(base, n, { top: p.top, lit: 0.3 });
+    const sun = n[0] * -0.78 + n[1] * 0.46 + n[2] * 0.42;
+    if (p.snow !== null && n[1] > 0.2 && y > top * (p.snow + 0.1 * k) - (n[1] - 0.45) * 0.1) {
+      // Snow where the slope holds it: white toward the sun, blue away from it.
+      col = mulc(faceShade(mixl(T.snowShade, T.snow, clamp(0.5 + sun * 0.9, 0, 1)), n, { lit: 0.1 }), 0.86);
+    } else if (p.foot && n[1] > 0.62 && y < 0.07 + 0.05 * k) {
+      col = mixl(col, faceShade(p.foot, n, { lit: 0.1 }), 0.75);
+    }
+    const v = 0.95 + 0.1 * hashf(Math.round(a[0] * 1e4), Math.round(b[1] * 1e4), Math.round(c[2] * 1e4));
+    return [col[0] * v, col[1] * v, col[2] * v];
+  };
+  // The surface: a grid over the massif, its vertices pushed off the grid's lines (no rows of
+  // facets show), sunk under the ground where the mountain ends.
+  const N = 44, E = 0.82, step = (2 * E) / N;
+  const P = [];
+  for (let j = 0; j <= N; j++) {
+    for (let i = 0; i <= N; i++) {
+      const x = -E + (i + r.range(-0.18, 0.18)) * step, z = -E + (j + r.range(-0.18, 0.18)) * step;
+      const h = f(x, z).h;
+      P.push([x, h > 0 ? h : -0.06, z, h > 0]);
+    }
+  }
+  const m0 = mb.mark();
+  const inside = [0, -0.3, 0];
+  for (let j = 0; j < N; j++) {
+    for (let i = 0; i < N; i++) {
+      const a = P[j * (N + 1) + i], b = P[j * (N + 1) + i + 1], c = P[(j + 1) * (N + 1) + i], d = P[(j + 1) * (N + 1) + i + 1];
+      if (!a[3] && !b[3] && !c[3] && !d[3]) continue;
+      // Split each quad along the diagonal that follows the fold (a ridge stays an edge).
+      if (Math.abs(a[1] - d[1]) < Math.abs(b[1] - c[1])) {
+        ftri(mb, a, d, b, inside, shade);
+        ftri(mb, a, c, d, inside, shade);
+      } else {
+        ftri(mb, a, c, b, inside, shade);
+        ftri(mb, b, c, d, inside, shade);
+      }
+    }
+  }
+  groundAO(mb, m0, -0.02, 0.12, 0.62);
+  // Crag teeth on the upper ridges: they break the silhouette.
+  const tooth = (n, y, a, b, c) => {
+    const [base] = rockAt(n, y, a[0], a[2]);
+    return faceShade(base, n, { top: p.top, lit: 0.3 });
+  };
+  for (const o of hs) {
+    const n = o.h > 0.6 ? 3 : 1;
+    for (let k = 0; k < n; k++) {
+      const a = r.range(0, TAU), d = o.rad * r.range(0.16, 0.42);
+      const x = o.x + Math.cos(a) * d, z = o.z + Math.sin(a) * d;
+      const g = f(x, z);
+      if (g.crest < 0.45 || g.h < 0.15) continue;
+      spire(mb, r, { x, z, h: g.h + r.range(0.05, 0.1), rad: r.range(0.03, 0.045), sides: 5, rings: 2, base: g.h - 0.06, taper: 0.8, lean: [r.range(-0.02, 0.02), r.range(-0.02, 0.02)], shade: tooth });
+    }
+  }
+  // Boulders where the flanks meet the ground.
+  const sh = rockShader(rockPaint(param === "sand" ? "sand" : param === "basalt" ? "basalt" : "", r), seed);
+  for (let k = 0; k < 6; k++) {
+    const a = r.range(0, TAU), d = r.range(0.45, 0.7);
+    const x = Math.cos(a) * d, z = Math.sin(a) * d;
+    const g = f(x, z);
+    if (g.h > 0.12) continue;
+    rockMass(mb, r, { rad: r.range(0.035, 0.06), detail: 0, sy: 0.7, cuts: 3, cut: 0.55, c: [x, Math.max(0, g.h) + 0.01, z], floor: -0.05, shade: sh });
+  }
+}
+
+recipe("feat.mountain", { variants: MOUNTAINS.length, build: (mb, r, { variant, param }) => buildMountain(mb, r, variant, param) });
+
+/** The mountain of a peak plot (a volcano is its own model), at the summit the relief raises. */
+function mountainOf(ctx) {
+  if (ctx.kind !== KIND.PEAK || ctx.feat === FEAT.VOLCANO) return [];
+  const { r, world, i, ground } = ctx;
+  const cold = ground === GROUND.TUNDRA || ground === GROUND.SNOW;
+  const param = isHell(ground) ? "basalt" : ground === GROUND.DESERT ? "sand" : cold ? "cold" : "";
+  // Something stands at the plot's centre: a smaller mountain behind it.
+  const held = ctx.held;
+  return [{ asset: "feat.mountain", param, variant: r.int(0, MOUNTAINS.length - 1), dx: world.peakJitter[i * 2], dz: -world.peakJitter[i * 2 + 1] - (held ? 0.2 : 0), scale: (held ? 0.62 : 1.12) * r.range(0.94, 1.08), yaw: r.range(-0.5, 0.5) + (r() < 0.5 ? Math.PI : 0), always: true }];
+}
+
 const FIRE = [T.flameCore, T.flameMid, T.flameTip];
 const WITCHFIRE = ["#c8ffb0", "#5ad860", "#1a5a3a"];
 const HOLYFIRE = ["#fff4d0", "#ffd878", "#e09a40"];
@@ -4764,11 +4921,8 @@ function rocksOf(ctx) {
   if (kind === KIND.PEAK) {
     // Crags break the mountain's silhouette; scree and boulders on the flanks.
     if (feat === FEAT.VOLCANO) return [{ asset: "rock.basalt", scale: 1.2, count: 3 }, { asset: "rock.shard", scale: 1.1, count: 1 }];
-    if (hell) return [{ asset: "rock.crag", scale: 1.0, count: 2, tint: [0.62, 0.55, 0.58], prefer: "ridge" }, { asset: "rock.thorn", scale: 1.3, count: 1 }, { asset: "rock.shard", scale: 1.2, count: 1 }];
-    return [
-      { asset: cold ? "rock.crag.snow" : "rock.crag", scale: 1.0, count: 2 + (r() < 0.4 ? 1 : 0), prefer: "ridge" },
-      { asset: cold ? "rock.boulder.snow" : "rock.boulder", scale: 0.9, count: r() < 0.6 ? 1 : 0 },
-    ];
+    // The mountain is a model of its own (feat.mountain: its crags and the boulders at its foot).
+    return [];
   }
   if (kind === KIND.HILLS) {
     if (hell) return [{ asset: "rock.thorn", scale: 1.25, count: 1 }, { asset: "rock.shard", scale: 1.1, count: r() < 0.5 ? 1 : 0 }, { asset: "rock.basalt", scale: 1.1, count: 1 }];
@@ -5132,7 +5286,7 @@ function bonusOf(type, ctx) {
 
 extendCatalog({
   rocks: (ctx) => rocksOf(ctx),
-  feature: (feat, ctx) => featureOf(feat, ctx),
+  feature: (feat, ctx) => [...mountainOf(ctx), ...(featureOf(feat, ctx) ?? [])],
   improvement: (type, ctx) => improvementOf(type, ctx),
   bonus: (type, ctx) => bonusOf(type, ctx),
   // A stone bridge where a road crosses a river, by the crossing: an arch reads only from the side,
