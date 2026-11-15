@@ -130,8 +130,14 @@ bits, chained through shared corners, smoothed with Chaikin and given a slight m
 channel with sloping banks. Everything is a pure function of the map and the plot index.
 
 Height noise is periodic over the map's width when the map wraps (the ground meets itself at the
-seam; every copy of the map is the same ground). Hills are rounded domes on each hill plot over a
-low shoulder (overlapping into ridges where hills neighbour); desert lowlands get wind-combed dunes.
+seam; every copy of the map is the same ground). Hills are turf-capped scarps: broad, gently rounded
+crowns over short, broken exposures, broad grassy shoulders and a gentle back slope. Their irregular rims
+and facing vary deterministically by plot, and neighbouring shoulders merge. This is the shared
+heightfield, so roads, rivers, picking, units and trees follow the same surface. The hill's actual
+mesh slope and a texture mask blend its exposed soil and small stone faces into the surrounding
+turf; altitude alone never removes its turf. Hill stone uses the biome's soil colour and a face
+projection for its texture, avoiding gray rock walls with stretched vertical cracks. Desert lowlands
+get wind-combed dunes.
 
 **Ground painting** (terrain shader). Each fragment blends the materials of the four plots around it
 with weights sharpened by brush-dab noise, so borders between terrains are bands of interleaved

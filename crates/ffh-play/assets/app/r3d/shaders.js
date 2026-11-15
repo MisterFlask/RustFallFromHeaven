@@ -1348,11 +1348,17 @@ void main() {
   // Rock on steep ground (painted below). Its crags: creases of ridged noise across the rock faces
   // catch the light (a bump on the shading normal, world-anchored, close up mostly), finer than the
   // terrain mesh can carry -- their height here, its derivatives outside the branches.
+  // Follow the blended hill region across plot boundaries, including its lower shoulder.
+  float hillRock = smoothstep(0.05, 0.7, kindW(4, ivec4(p00.z, p10.z, p01.z, p11.z), w));
   float rockMask = 0.0, crag = 0.0;
   if (known) {
-    float slope = 1.0 - n.y;
-    rockMask = smoothstep(0.24, 0.4, slope + (gN4 - 0.5) * 0.14);
-    rockMask = max(rockMask, smoothstep(0.42, 0.62, h) * 0.85);
+    // Mostly smooth normals: a hard per-triangle mask made a continuous angular stone collar.
+    // The utility texture stays live on HD-2D's stand-in terrain, where mnoise is a constant.
+    vec3 faceN = normalize(cross(pDx, pDy));
+    float slope = 1.0 - mix(n.y, abs(faceN.y), hillRock * 0.45);
+    float broken = hillRock > 0.0 ? matAt(m, M_NOISE, 2.8, vec2(0.23, 0.61), 1.0).r : gN4;
+    rockMask = smoothstep(mix(0.24, 0.10, hillRock), mix(0.4, 0.24, hillRock), slope + (broken - 0.5) * 0.18);
+    if (here == 5) rockMask = max(rockMask, smoothstep(0.42, 0.62, h) * 0.85);
 #ifndef LEAN_CRAG
     if (rockMask > 0.0) {
       float crease = 1.0 - abs(mnoise(m + 1.7, 2.2) * 2.0 - 1.0);
@@ -1403,8 +1409,28 @@ void main() {
       // Lit faces of the rock read warm, the shaded ones cool (painted massing of a mountain).
       rock = mix(rock, rock * vec3(1.12, 1.02, 0.9), clamp(dot(n, uSunDir), 0.0, 1.0) * 0.5);
       // The stone's facets, cracks and lichen (the material; the hell's basalt takes only its value).
-      vec4 tk = matPair(m, M_ROCK, 1.2);
+      vec4 tk;
+      if (hillRock > 0.0) {
+        // Project onto the exposed face, not down from above: top-down rock stretched into
+        // enormous vertical cracks on the scarp. Explicit gradients keep its pixel scale stable.
+        bool side = abs(n.x) > abs(n.z);
+        vec2 uv = vec2(side ? vWorld.z : vWorld.x, vWorld.y * 2.0) * 2.4;
+        vec2 dx = vec2(side ? pDx.z : pDx.x, pDx.y * 2.0) * 2.4;
+        vec2 dy = vec2(side ? pDy.z : pDy.x, pDy.y * 2.0) * 2.4;
+        tk = textureGrad(uMat, vec3(uv, float(M_ROCK)), dx, dy);
+      } else tk = matPair(m, M_ROCK, 1.2);
       rock = mix(matTint(tk, M_ROCK, rock), matShade(tk, M_ROCK, rock, 1.0), hellW);
+      if (hillRock > 0.0) {
+        // Soil, small mineral exposures and the original turf meet gradually. Use the biome's
+        // soil colour and retain some ground colour, so desert is sandy and meadow is mossy.
+        vec4 soil = matAt(m, M_DIRT, 2.4, vec2(0.7, 0.3), 1.0);
+        vec3 earth = mix(vec3(0.38, 0.33, 0.23), vec3(0.62, 0.49, 0.33), wDesert);
+        earth = mix(earth, vec3(0.40, 0.41, 0.36), min(1.0, wTundra + wSnow));
+        earth = mix(earth, vec3(0.21, 0.16, 0.14), hellW);
+        vec3 bed = mix(matTint(soil, M_DIRT, earth), matShade(tk, M_ROCK, earth * 1.12, 0.55), 0.4);
+        rock = mix(rock, mix(bed, pow(max(alb, vec3(0.0)), vec3(1.0 / 2.2)), 0.22), hillRock);
+        rockMask *= 1.0 - 0.28 * hillRock;
+      }
       alb = mix(alb, srgb(rock), rockMask);
       hG = mix(hG, tk.a, rockMask);
     }

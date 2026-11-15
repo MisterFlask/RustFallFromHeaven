@@ -317,7 +317,7 @@ does for the isometric sprites. No unit art changed.
   pines and snowy pines in the cold, jungle trees, an ancient wood's one or two giants among oaks,
   dead trees in burnt woods and hell), thinned where a stack or an improvement holds the plot; **open
   ground** carries only what says what it is (since 2026-11-01, below): grass tufts, flowers,
-  reeds, pebbles, rocks on hills and peaks, crystals on corrupted land and lava rocks on hell
+  reeds, pebbles, crystals on corrupted land and lava rocks on hell
   ground. They keep off rivers, roads, a town's footprint and
   the spot a stack stands on; they cast their outline into the sun's shadow map and a contact
   shadow, so a wood is dark beneath. What they replace is **claimed** from the 3D dressing
@@ -362,11 +362,17 @@ does for the isometric sprites. No unit art changed.
   were hard to tell from woods, hills and each other). `clutterOf` keeps only the props that name
   the ground: small green tufts and flowers on grassland, small dry tufts on plains (`TUFT`, 0.7 of
   the other small props' scale: at full size they read as dark stumps), reeds on marsh, moss tufts
-  and pebbles on tundra, pebbles on desert and snow, rocks on hills and peaks, and the regions' own
+  and pebbles on tundra, pebbles on desert and snow, and the regions' own
   things (lava rocks, bones and vents in hell, crystals, obelisks and altars on corrupted land,
   lanterns in the elven lands). The lone trees, bushes, boulders, ruins, shrines and standing
   stones that had stood on every open plot are gone: they made open land read as a thin wood. The
-  meadow's ground (shaders.js `G_GRASS`) no longer mixes the two either: a grassland stays green
+  Hills now read through the terrain's turf-capped scarps (docs/R3D.md §4), with a grassy crown,
+  short soil-and-stone exposures and broad grassy shoulders; `clutterOf` adds no extra rock or
+  pebble cards for hills. Hill mines are 0.82 of the usual improvement-card scale and choose a
+  supported patch across the shoulder, keeping their apron off the river banks. Their base follows
+  the turf under the apron instead of the highest point behind it, so the painted rock mound
+  does not hang across a scarp or float above its foot.
+  The meadow's ground (shaders.js `G_GRASS`) no longer mixes the two either: a grassland stays green
   and a plains golden, their patches interleaving only where they meet (they had been a tenth
   and three quarters golden).
 * **Designed props drawn by code** (batch 4, until the image model draws better ones): thatched and
