@@ -322,6 +322,29 @@ impl Controller for Ai {
         crusade::pick_units(g, p, terms.strength as i64)
     }
 
+    fn choose_lair_outcome(&self, g: &Game, _p: PlayerId, u: UnitId, _tier: ffh_core::ffh::lairs::LairTier, options: &[ffh_core::ffh::lairs::LairOutcome]) -> usize {
+        use ffh_core::ffh::lairs::LairOutcome;
+        // A simple preference for smaller threats and lasting rewards; the two offers are
+        // already rolled, so choosing consumes no randomness and cannot redraw the category.
+        let value = |outcome: &LairOutcome| match *outcome {
+            LairOutcome::Monster { monster, henchman, count, .. } => -(g.d.units[monster].combat * 100 + g.d.units[henchman].combat * count * 30),
+            LairOutcome::Result(key) => match key {
+                "DEATH" => -10_000,
+                "DEMONIC_POSSESSION" | "CRAZED" | "CAGE" => -900,
+                "PLAGUED" | "WITHERED" | "DISEASED" => -600,
+                "COLLAPSE" => -100 - g.units[u].damage,
+                "POISONED" | "RUSTED" | "ENRAGED" => -200,
+                k if k.starts_with("SPAWN_") => -300,
+                "NOTHING" => 0,
+                "TECH" | "GOLDEN_AGE" => 500,
+                k if k.starts_with("PRISONER_") || k.starts_with("BONUS_") => 400,
+                "HIGH_GOLD" | "TREASURE_VAULT" => 300,
+                _ => 100,
+            },
+        };
+        options.iter().enumerate().max_by_key(|(i, o)| (value(o), std::cmp::Reverse(*i))).map_or(0, |(i, _)| i)
+    }
+
     fn choose_free_promotion(&self, g: &Game, p: PlayerId, _u: UnitId, options: &[PromotionType]) -> Option<PromotionType> {
         cards_economy::choose_free_promotion(g, p, options)
     }

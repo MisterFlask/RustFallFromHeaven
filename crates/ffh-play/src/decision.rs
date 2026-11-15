@@ -48,6 +48,8 @@ pub enum DecisionKind {
     /// Not in C++ (the cards): the resource a just-built Agares's Well gives its city; the options
     /// are resources.
     FreeBonus { city: CityId },
+    /// Two random results from the exploration's rolled tier.
+    LairOutcome { unit: UnitId },
 }
 
 impl DecisionKind {
@@ -64,6 +66,7 @@ impl DecisionKind {
             DecisionKind::Loan { .. } => "loan",
             DecisionKind::FreePromotion { .. } => "free_promotion",
             DecisionKind::FreeBonus { .. } => "free_bonus",
+            DecisionKind::LairOutcome { .. } => "lair_outcome",
         }
     }
 }
@@ -458,6 +461,49 @@ pub fn free_bonus(g: &Game, p: PlayerId, c: CityId, b: BuildingType, options: &[
             .collect(),
         advisor: advisor.and_then(|a| options.iter().position(|&x| x == a)),
         context: city_context(g, c, None),
+    }
+}
+
+/// A blocking choice shared by ordinary, epic and event-triggered lair explorations.
+pub fn lair_outcome(g: &Game, p: PlayerId, u: UnitId, tier: ffh_core::ffh::lairs::LairTier, options: &[ffh_core::ffh::lairs::LairOutcome], advisor: usize) -> Decision {
+    use ffh_core::ffh::lairs::{lair_destroy_chance, lair_outcome_replaces_lair, LairOutcome, LairTier};
+    let category = match tier {
+        LairTier::BigBad => "Big bad",
+        LairTier::Bad => "Bad",
+        LairTier::Neutral => "Neutral",
+        LairTier::Good => "Good",
+        LairTier::BigGood => "Big good",
+    };
+    let unit = &g.units[u];
+    Decision {
+        id: 0,
+        player: p,
+        kind: DecisionKind::LairOutcome { unit: u },
+        title: format!("Explore Lair: {category}"),
+        text: "Choose one of two random results. Only the chosen result takes effect.".into(),
+        options: options.iter().enumerate().map(|(i, outcome)| {
+            let label = match *outcome {
+                LairOutcome::Result(key) => crate::view::explore::lair_label(g, p, tier, key),
+                LairOutcome::Monster { monster, henchman, promotion, count } => format!(
+                    "Barbarian: {}; promotion: {}; henchmen: {} {}",
+                    names::display(g.d, monster), names::display(g.d, promotion), count, names::display(g.d, henchman),
+                ),
+            };
+            let mut o = DecisionOption::new(format!("result_{i}"), label);
+            let chance = lair_destroy_chance(tier, outcome.key());
+            o.help = if lair_outcome_replaces_lair(tier, outcome.key()) {
+                "Lair replaced by a cage.".into()
+            } else {
+                match chance {
+                    0 => "Lair remains.".into(),
+                    100 => "Lair destroyed.".into(),
+                    _ => format!("Lair destroyed: {chance}% chance."),
+                }
+            };
+            o
+        }).collect(),
+        advisor: Some(advisor).filter(|&i| i < options.len()),
+        context: DecisionContext { plot: Some((unit.x, unit.y)), city: None, unit: Some(u), other_player: None },
     }
 }
 

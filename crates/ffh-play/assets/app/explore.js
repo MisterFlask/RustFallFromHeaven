@@ -38,8 +38,7 @@ export function exploreShort(e, dname) {
     return [head, ...rows].join("[NEWLINE]");
   }
   const head = `[BOLD]Explore Lair${e.epic ? " (epic)" : ""}[\\BOLD]${who ? ` (${who})` : " (level 1; select a unit)"}`;
-  const lines = [head, tierLine(e.tiers)];
-  if (e.lair_survives_ppm !== undefined) lines.push(`Lair remains: ${pct(e.lair_survives_ppm)}`);
+  const lines = [head, tierLine(e.tiers), "Choose one of two random results from the rolled category."];
   for (const o of e.others ?? []) lines.push(`[ICON_BULLET]then ${dname("UnitType", o.unit_type)}, level ${o.level}: ${tierLine(o.tiers)}`);
   return lines.join("[NEWLINE]");
 }
@@ -65,6 +64,7 @@ export function exploreFull(e, dname) {
     return lines.join("[NEWLINE]");
   }
   lines.push(e.epic ? "Roll: 0-99 + unit level; big bad below 54, big good from 54." : "Roll: 0-99 + unit level; big bad below 14, bad below 44, neutral below 74, good below 94, big good from 94.");
+  lines.push("Outcome chances are for the first offer. The second is a different result from the same category. The chosen result determines what happens to the lair.");
   for (const t of e.tiers) {
     lines.push(`[${TIER_COLORS[t.tier]}][BOLD]${TIER_NAMES[t.tier]} ${pct(t.ppm)}[\\BOLD][COLOR_REVERT]`);
     for (const o of e.outcomes.filter((x) => x.tier === t.tier)) {

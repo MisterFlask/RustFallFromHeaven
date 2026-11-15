@@ -105,6 +105,16 @@ Army Combat", 2026-10-29). They were game options until 2026-11-05 (engagement c
 no longer playable side by side. Save format 16 removed the last three options and the crusade
 flag.
 
+- **Lair exploration: choose between two results** (the owner's decision, 2026-11-14).
+  Ordinary, epic and event-triggered explorations keep their category roll, then offer two
+  distinct random results from that category. The second draw excludes every copy of the
+  first result; the other list weights and grace restrictions stay the same. Big bad offers
+  have different monsters and show their rolled promotion and number/type of henchmen.
+  The human chooses in a blocking, journaled decision; the AI prefers smaller threats or
+  lasting rewards. Only the selected result is applied, including its lair-destruction
+  chance. Movement and experience still finish once per exploration. Preview probabilities
+  describe the first offer; the final result and lair survival depend on the player's choice.
+
 - **World spells: no held charge; cast at completion** (the owner's decision, 2026-11-12: "Instead
   of letting it be held, we simply do not allow the next turn until the player spends the ritual
   (if it's targeted); if it's not targeted, the world spell activates immediately"; save format 39;

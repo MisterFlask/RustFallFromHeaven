@@ -18,7 +18,7 @@ test("chances in parts per million", () => {
 const lair = {
   kind: "lair", epic: false, in_view: true, unit: 7, unit_type: 3, level: 2,
   tiers: [{ tier: "big_bad", ppm: 120000 }, { tier: "bad", ppm: 300000 }, { tier: "neutral", ppm: 300000 }, { tier: "good", ppm: 200000 }, { tier: "big_good", ppm: 80000 }],
-  lair_survives_ppm: 400000, grace_ppm: 1000000,
+  choices: 2, first_offer_lair_survives_ppm: 400000, grace_ppm: 1000000,
   outcomes: [
     { tier: "big_bad", key: "MONSTER", label: "Barbarian monster", ppm: 120000, destroy_pct: 0, replaces_lair: false },
     { tier: "bad", key: "COLLAPSE", label: "Collapse: 50% damage", ppm: 30000, destroy_pct: 100, replaces_lair: false },
@@ -33,7 +33,8 @@ test("the lair tooltip names the unit, the tiers and the lair's fate", () => {
   const t = plain(exploreShort(lair, dname));
   assert.match(t, /Explore Lair \(UnitType#3, level 2\)/);
   assert.match(t, /Big bad 12% · Bad 30% · Neutral 30% · Good 20% · Big good 8.0%/);
-  assert.match(t, /Lair remains: 40%/);
+  assert.match(t, /Choose one of two random results from the rolled category/);
+  assert.doesNotMatch(t, /Lair remains: 40%/);
   assert.match(t, /then UnitType#4, level 5: Big bad 9.0%/);
   assert.equal(tierLine([{ tier: "bad", ppm: 500000 }]), "[COLOR_NEGATIVE_TEXT]Bad 50%[COLOR_REVERT]");
 });
@@ -45,6 +46,8 @@ test("the lair table lists each outcome with what becomes of the lair", () => {
   assert.match(t, /2.0% Gold: 20-120 \(lair destroyed 90%\)/);
   assert.match(t, /Monster: one of Azer, Ogre\./);
   assert.match(t, /Grace period: 100%/);
+  assert.match(t, /Outcome chances are for the first offer/);
+  assert.match(t, /second is a different result from the same category/);
 });
 
 test("a fogged lair or no unit: the tiers alone", () => {

@@ -1458,6 +1458,25 @@ async function stagedCapture(bin, saves) {
   await answerPopups();
 }
 
+/** Ordinary and epic lairs both block on two results in the rolled category; the second
+ *  button resolves the exploration. Earlier popups can consume RNG after loading the fixture. */
+async function stagedLairs(bin, saves) {
+  for (const kind of ["lair", "lair-epic"]) {
+    const st = await loadStaged(bin, saves, kind);
+    await b.eval(`window.ffh.units.select([${st.unit}])`);
+    await until2(`window.ffh.units.currentActions().some(a => a.enabled && a.cmd?.data1 === ${st.spell})`, "Explore Lair action");
+    // Start the real action without awaiting it: its request waits for the blocking answer.
+    await b.eval(`void window.ffh.api.send({ k: "cmd", c: "do_command", units: [${st.unit}], command: "COMMAND_CAST", data1: ${st.spell}, data2: -1, confirmed: true })`);
+    await until2(`window.ffh.S.status?.decision?.kind === "lair_outcome"`, "the lair choice");
+    const decision = await S("S.status.decision");
+    if (decision.options.length !== 2 || decision.options[0].label === decision.options[1].label || !decision.title.startsWith("Explore Lair: ")) throw new Error(`invalid lair offers: ${JSON.stringify(decision)}`);
+    await shot(kind);
+    await click('#modals .modal.decision button.option[data-option="1"]');
+    await until2(`window.ffh.S.status?.phase === "human" && !document.querySelector("#modals .modal.decision")`, "the chosen result applied");
+    steps.push(`${kind}: two results offered (${decision.title}); second chosen`);
+  }
+}
+
 /** The trade screen (P6, `stage trade`: a civilization met at peace, gold trading): F4, Trade…,
  *  the leader's greeting, the tables, 7 gold put into the deal (its value, the totals and the
  *  answer shown before proposing), Propose: accepted with the leader's thanks, the gold gone. */
@@ -2261,6 +2280,7 @@ async function main() {
     await flatRenderer(server.url);
     await rendererIso(server.url);
     await rendererHd2d(server.url);
+    await stagedLairs(bin, saves);
     await crusadeHd2d(server.url, bin, saves);
     await supplyHd2d(server.url, bin, saves);
     await warStart(bin);

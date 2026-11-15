@@ -79,6 +79,7 @@ pub const POLICIES: &[(&str, Policy)] = &[
     // (the cards, docs/CARDS.md: the Spire of the Archmagi's sphere, Agares's Well's mana)
     ("choose_free_promotion", Policy::Blocking),
     ("choose_free_bonus", Policy::Blocking),
+    ("choose_lair_outcome", Policy::Blocking),
     ("hook", Policy::Advisor),
     ("assign_working_plots", Policy::Advisor),
 ];
@@ -498,6 +499,14 @@ impl Controller for HumanController {
             return self.advisor.trade_value(g, p, other, item, p_gets);
         }
         None
+    }
+
+    fn choose_lair_outcome(&self, g: &Game, p: PlayerId, u: UnitId, tier: ffh_core::ffh::lairs::LairTier, options: &[ffh_core::ffh::lairs::LairOutcome]) -> usize {
+        let advice = self.suggest(g, |g| self.advisor.choose_lair_outcome(g, p, u, tier, options));
+        if !g.players[p].human {
+            return advice;
+        }
+        self.block(g, decision::lair_outcome(g, p, u, tier, options, advice))
     }
 
     /// The cards (docs/CARDS.md): the Spire of the Archmagi's free promotion, blocking.

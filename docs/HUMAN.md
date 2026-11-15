@@ -1355,12 +1355,17 @@ entering a goody hut or exploring a lair can bring, with each chance for the uni
 million. The map tooltip shows the short form, and the plot panel and the Explore Lair action
 show the full table (`assets/app/explore.js`). The lists are the ones the rules draw from
 (`ffh_core::ffh::lairs`: each tier's outcome list is built by one read-only function that the
-roll and the odds share). The odds treat the RNG as uniform.
+roll and the odds share). Exploration keeps the category roll, then offers two distinct random
+results from that category in a blocking `lair_outcome` decision. Only the chosen result takes
+effect. Big bad offers show two different monsters, each with its fixed promotion and henchmen.
+Outcome probabilities describe the **first offer**, not the player's eventual choice; the
+second draw excludes all copies of the first result. The odds treat the RNG as uniform.
 
 - **Lair** (`kind: "lair"`): `epic` (Explore Lair on an epic site: two tiers), `unit`,
   `unit_type`, `level` (the roll is `rand(100) + level`), `tiers` (`[{tier, ppm}]`, tiers
   `big_bad`, `bad`, `neutral`, `good`, `big_good`), and, while the plot is in view (`in_view`),
-  `outcomes` (`[{tier, key, label, ppm, destroy_pct, replaces_lair}]`), `lair_survives_ppm`,
+  `choices: 2`, `outcomes` (`[{tier, key, label, ppm, destroy_pct, replaces_lair}]`),
+  `first_offer_lair_survives_ppm` (survival if the first offer were chosen),
   `grace_ppm` (the chance that a grace check passes: early on, the big tiers leave out their
   strongest entries), `big_bad` (the monsters, henchmen and promotions the big bad result picks
   from, by name) and `others` (the other selected units' tiers: every selected unit explores in

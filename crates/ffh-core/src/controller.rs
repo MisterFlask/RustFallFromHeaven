@@ -212,6 +212,12 @@ pub trait Controller: Send + Sync {
         g.loan_default_units(p, terms.strength)
     }
 
+    /// Choose one of two rolled results in the exploration's tier. Only the chosen result
+    /// takes effect. An invalid index falls back to the first offer.
+    fn choose_lair_outcome(&self, _g: &Game, _p: PlayerId, _u: UnitId, _tier: crate::ffh::lairs::LairTier, _options: &[crate::ffh::lairs::LairOutcome]) -> usize {
+        0
+    }
+
     /// Not in C++ (the cards, docs/CARDS.md): the free promotion unit `u`, just trained in a
     /// city with `free_promotion_choices` (the Spire of the Archmagi), takes: one of `options`
     /// (never empty). Default: `None`, the first.
