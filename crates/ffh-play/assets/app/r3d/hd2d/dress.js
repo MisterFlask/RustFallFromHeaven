@@ -28,7 +28,7 @@ import { clamp } from "../math.js";
 /** World units per art pixel: figures (a 96 x 120 unit canvas is 0.46 x 0.58 of a plot), cities (a
  *  192-wide settlement 1.15 plots: its painted ground spans the plot), the other buildings, the
  *  resources' props, the banners. */
-export const PX = { unit: 0.0048, city: 0.0088, building: 0.0038, resource: 0.0034, banner: 0.0053, prop: 0.0031 };
+export const PX = { unit: 0.0048, city: 0.0088, building: 0.0038, resource: 0.0042, banner: 0.0053, prop: 0.0031 };
 /** Depth toward the eye (world units): a figure before the card of the building it stands at, a
  *  resource on a standing improvement's plot (its ore before the mine) before that card. */
 const BIAS = { unit: 0.26, garrison: 0.4, building: 0, resource: 0.08, builtResource: 0.18 };
@@ -788,6 +788,52 @@ function dressShores(world, map, atlas, list) {
   }
 }
 
+/** Keep a little sky/ground around a resource's silhouette. A tree's crown can hide a resource
+ *  on the next plot, so test the cards' opaque bounds across plots, at the gameplay camera's
+ *  full 30–42 degree range. Removing props after dressing keeps every other prop's RNG unchanged.
+ *  Buckets make this local work even on a fully revealed Huge map. */
+function resourceClearings(world, atlas, props, resources) {
+  if (!resources.size) return props;
+  const bounds = (it) => {
+    const art = atlas.info(it.key);
+    const [x0, y0, x1, y1] = art.box ?? [0, 0, art.w, art.h];
+    const left = (x0 / art.w - it.anchor) * it.w;
+    const right = (x1 / art.w - it.anchor) * it.w;
+    return { left: it.flip ? -right : left, right: it.flip ? -left : right,
+      bottom: (1 - y1 / art.h) * it.h, top: (1 - y0 / art.h) * it.h };
+  };
+  const nearby = new Map();
+  const targets = new Map([...resources].map(([i, it]) => [i, { ...it, ...bounds(it) }]));
+  return props.filter((it) => {
+    const x = Math.floor(it.x), y = Math.floor(-it.z), index = world.index(x, y);
+    const cell = index < 0 ? `${x},${y}` : index;
+    let around = nearby.get(cell);
+    if (!around) {
+      around = [];
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+        const target = targets.get(world.index(x + dx, y + dy));
+        if (target) around.push(target);
+      }
+      nearby.set(cell, around);
+    }
+    if (!around.length) return true;
+    const b = bounds(it), pad = 0.08;
+    return !around.some((r) => {
+      let dx = it.x - r.x;
+      if (world.wrapX) dx -= Math.round(dx / world.w) * world.w;
+      if (dx + b.right < r.left - pad || dx + b.left > r.right + pad) return false;
+      let dy = r.z - it.z;
+      if (world.wrapY) dy -= Math.round(dy / world.h) * world.h;
+      const dh = it.y - r.y;
+      // Conservative bounds over the camera's pitch, including intermediate angles. The cards
+      // face the camera; only their bases move in screen height as the pitch changes.
+      const lo = Math.min(dy * 0.5, dy * 0.7071) + Math.min(dh * 0.7071, dh * 0.8661);
+      const hi = Math.max(dy * 0.5, dy * 0.7071) + Math.max(dh * 0.7071, dh * 0.8661);
+      return hi + b.top > r.bottom - pad && lo + b.bottom < r.top + pad;
+    });
+  });
+}
+
 /** The static cards (cities, standing improvements, resources and their banners, the land's prop
  *  cards) and the light beams over mana nodes and towers; `claims` names what the 3D dressing no
  *  longer models (with prop cards: its trees, plants and rocks). */
@@ -800,6 +846,8 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
     dressShores(world, map, atlas, list);
     claims.trees = claims.flora = claims.rocks = true;
   }
+  const propCount = list.length;
+  const resources = new Map();
   const w = world.w;
   const H = (mx, my) => world.heightAt(mx, my);
   const cityAt = new Map();
@@ -862,13 +910,16 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
         const [mx, my] = built ? at(BUILT_BONUS_SPOT[0], footZ - BUILT_BONUS_SPOT[1]) : at(...BONUS_SPOT);
         const base = water ? SEA : H(mx, my);
         const glow = /MANA|GEMS|JEWELS|MITHRIL/.test(bonus) ? 1.2 : 0;
-        list.push(card(key, art, PX.resource, mx, base, -my, { id: idOf(`b${i}`), glow, bias: built ? BIAS.builtResource : BIAS.resource }));
+        const resource = card(key, art, PX.resource, mx, base, -my, { id: idOf(`b${i}`), glow, bias: built ? BIAS.builtResource : BIAS.resource, vis: [x + 0.5, y + 0.5] });
+        list.push(resource);
+        resources.set(i, resource);
         claims.bonus.add(i);
         if (/MANA/.test(bonus)) beams.push({ key: null, x: mx, y: base, z: -my, w: 0.26, h: 0.9, anchor: 0.5, team: hexRgb(manaColour(bonus) ?? "#b48aff"), glow: 0.3, id: 0, phase: hashf(i, 11) });
       }
     }
   }
-  return { list, beams, claims };
+  const props = resourceClearings(world, atlas, list.slice(0, propCount), resources);
+  return { list: props.concat(list.slice(propCount)), beams, claims };
 }
 
 /** The unit stacks in sight as groups of figures under their banners, and the seas' buoys `buoys`
