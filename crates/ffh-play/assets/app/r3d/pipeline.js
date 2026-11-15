@@ -460,6 +460,7 @@ export class Pipeline {
         uGrade: cfg.grade,
         uSaturation: cfg.saturation,
         uContrast: cfg.contrast,
+        uBrightness: cfg.brightness ?? 1,
         uShadowGrade: [0.82, 0.84, 1.08],
         uLightGrade: [1.06, 1.0, 0.9],
         uGrain: cfg.grain,

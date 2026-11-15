@@ -17,7 +17,7 @@ import * as T from "../../tiles.js";
 import { stackState } from "../../stacks.js";
 import { isBarbarian } from "../../state.js";
 import { unitSpriteKeys, civShortName, ISO_TABLES } from "../../iso.js";
-import { hashf, hash32, rng } from "../noise.js";
+import { hashf, hash32, rng, noise2 } from "../noise.js";
 import { SEA, DRAFT, FEAT, KIND, GROUND, RIVER_BANK, RIVER_HALF } from "../world.js";
 import { CARDS } from "./art/index.js";
 import { standHeight, hexRgb } from "../dress.js";
@@ -295,8 +295,12 @@ const WOODED = new Set([FEAT.FOREST, FEAT.JUNGLE, FEAT.ANCIENT, FEAT.BURNT, FEAT
 /** A wood's trees against a lone prop's scale (PX.prop): smaller, many to a plot -- the look
  *  target's woods are crowds of trees about half a figure's height. */
 const TREE = 0.58;
-/** The props drawn by code (tools/hd2d/draw.py: grass, reeds, pebbles, shore stones, standing
- *  stones, fences, haystacks) are small art drawn for about one art pixel a screen pixel at the
+/** The trees drawn by code (tools/hd2d/trees.py: oaks, pines, snowy pines) are about 45 art
+ *  pixels tall against the image model's 150: their scale against the other trees', for an oak
+ *  about a third of a plot tall (near one art pixel a screen pixel at the gameplay zoom). */
+const DRAWN = { tree_oak: 4.6, tree_pine: 4.4, tree_pine_snow: 4.4 };
+/** The props drawn by code (tools/hd2d/draw.py: grass, reeds, standing stones, fences;
+ *  tools/hd2d/rocks.py: boulders, shore stones, pebbles, haystacks) are small art drawn for about one art pixel a screen pixel at the
  *  gameplay zoom (96 px a plot): their scale against PX.prop. */
 const FINE = 2.6;
 /** Open ground's grass tufts, smaller than the other small props: they say what the ground is
@@ -312,7 +316,7 @@ function woodOf(feat, ground, hills) {
   if (feat === FEAT.BURNT || HELLISH.has(ground)) return [["tree_dead", 1, 0.9]];
   if (feat === FEAT.YOUNG) return [["tree_oak", 2, 0.62], ["bush", 1, 1.2]];
   if (cold) return [[ground === GROUND.SNOW ? "tree_pine_snow" : "tree_pine", 3, 1], ["tree_pine_snow", 1, 0.95]];
-  return hills ? [["tree_pine", 2, 1], ["tree_oak", 1, 1]] : [["tree_oak", 3, 1], ["tree_pine", 1, 1]];
+  return hills ? [["tree_pine", 1, 1], ["tree_oak", 1, 1]] : [["tree_oak", 3, 1], ["tree_pine", 1, 1]];
 }
 
 /** What scatters over open ground, by its ground and mood: [kind, how many (expected), scale].
@@ -330,8 +334,8 @@ function clutterOf(kind, ground, mood) {
   else if (ground === GROUND.MARSH) out.push(["reeds", 3.5, FINE], ["grass", 1.0, TUFT]);
   else if (ground === GROUND.GRASS) out.push(["grass", 3.0, TUFT], ["flowers", 1.2, 0.9]);
   else out.push(["grass_3", 3.5, TUFT]);
-  if (kind === KIND.HILLS) out.push(["rock", 1.2, 1.0], ["pebbles", 1.5, FINE]);
-  if (kind === KIND.PEAK) out.push(["rock", 2.2, 1.2], ["pebbles", 2.0, FINE]);
+  if (kind === KIND.HILLS) out.push(["rock", 1.2, FINE * 0.9], ["pebbles", 1.5, FINE]);
+  // (A peak carries no cards: its mountain is a model, assets/props.js feat.mountain.)
   // Each region's own things (the moods, hd2d/mood.js: [hell, corruption, lush, gloom]).
   if (HELLISH.has(ground)) out.push(["bones", 0.4, FINE], ["vent", 0.35, FINE]);
   if (mood && mood[1] >= 0.5 && !HELLISH.has(ground)) out.push(["crystal", 1.0, 0.9], ["obelisk", 0.14, FINE], ["altar", 0.06, FINE]);
@@ -656,15 +660,20 @@ function dressProps(world, map, atlas, env, moods, list) {
       if (feat === FEAT.ANCIENT && variants("tree_ancient").length) {
         put("tree_ancient", r.range(-0.12, 0.12), r.range(-0.18, 0.0), r.range(0.95, 1.15));
       }
-      // A crowd of small trees, as the look target's woods: five by five, jittered.
-      for (let gy = 0; gy < 5; gy++) {
-        for (let gx = 0; gx < 5; gx++) {
+      // A crowd of trees: four rows of four, every other row shifted half a step (no columns of
+      // trees show), jittered, reaching a little over the plot's edge. A field of the map (not of
+      // the plot) thins them into clumps and glades that run across plots, so a wood is not a
+      // filled square.
+      for (let gy = 0; gy < 4; gy++) {
+        for (let gx = 0; gx < 4; gx++) {
           let pick = r() * total, k = wood[0];
           for (const it of wood) if ((pick -= it[1]) <= 0) { k = it; break; }
           if (k[0] === "tree_ancient") k = ["tree_oak", 1, 1];
-          const s = TREE * k[2] * r.range(0.8, 1.18);
-          const lx = (gx - 2) * 0.19 + r.range(-0.055, 0.055), lz = (gy - 2) * 0.19 + r.range(-0.055, 0.055);
+          const s = TREE * (DRAWN[k[0]] ?? 1) * k[2] * r.range(0.78, 1.2);
+          const lx = (gx - 1.5 + (gy % 2 ? 0.25 : -0.25)) * 0.27 + r.range(-0.07, 0.07), lz = (gy - 1.5) * 0.26 + r.range(-0.07, 0.07);
           if (northHeld && gy === 0) continue;
+          const grove = noise2((x + 0.5 + lx) * 2.3 + 17.0, (y + 0.5 - lz) * 2.3 + 5.0);
+          if (grove < -0.18) continue;
           put(k[0], lx, lz, northHeld && gy === 1 ? s * 0.7 : s);
         }
       }
@@ -762,7 +771,7 @@ function dressShores(world, map, atlas, list) {
           if (h > -0.004 && h < 0.02 && r() < 0.8) {
             // Mostly rows of shore stones; now and then a boulder of the bank, its rocky edge.
             const k = r();
-            if (k < 0.12) place("rock", mx, my, Math.max(SEA, h) - 0.006, r.range(0.38, 0.5), r);
+            if (k < 0.12) place("rock", mx, my, Math.max(SEA, h) - 0.006, FINE * r.range(0.6, 0.8), r);
             else place(k < 0.85 ? "shore" : "pebbles", mx, my, Math.max(SEA, h) - 0.004, FINE * r.range(0.8, 1.05), r);
             continue;
           }

@@ -6,8 +6,8 @@ import { hexLinear } from "../math.js";
 import { DEFAULTS, PRESETS } from "../config.js";
 
 // Renamed when the look changes enough that a panel tuning saved for the old one would mislead
-// (batch 3: the muted land palette, the wider default view).
-export const STORE = "ffh.hd2d.config.3";
+// (batch 3: the muted land palette, the wider default view; 4: the brighter map).
+export const STORE = "ffh.hd2d.config.4";
 
 /** The light: the sprites are painted lit from the upper left, so the sun stands there -- to the
  *  west and a little north of the view (the camera looks north and never turns), about 45 degrees
@@ -35,11 +35,14 @@ export const HD2D = {
   lighting: "hd2d",
   ssao: 0.85,
   glow: 1.0,
-  // The land's own palette is graded in the mood pass (landGrade): the finish keeps the colours.
-  saturation: 1.0,
-  contrast: 1.12,
+  // A bright map (the owner's request, 2026-11-14): the finish lifts the whole picture by a gamma
+  // (brightness) and gives back the colour that lift washes out (saturation); the mood pass's
+  // land palette (landGrade) now takes little chroma, and the vignette is light.
+  brightness: 1.3,
+  saturation: 1.3,
+  contrast: 1.1,
   grain: 0,
-  vignette: 0.42,
+  vignette: 0.18,
   rim: 0.4,
   clouds: 0.3,
   haze: 0.1,
@@ -51,8 +54,9 @@ export const HD2D = {
   borderGlow: 1,
   pitch: 32,
   fov: 30,
-  tiltShift: 0.6,
-  rays: 0.6,
+  tiltShift: 0.3,
+  // (0.6 before the brighter finish: its gamma lifts the shafts' haze too.)
+  rays: 0.45,
   mood: 1,
   landGrade: 1,
   bloom: 0.8,
