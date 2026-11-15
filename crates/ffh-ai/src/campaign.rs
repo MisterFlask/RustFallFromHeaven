@@ -830,6 +830,14 @@ fn finish(g: &mut Game, grp: GroupId) {
 /// `AI_setMissionAI(MISSIONAI_ASSAULT, pTargetPlot)`), saved with the game: the next turn's plan
 /// knows which stacks are already committed to which city, so the target stays put.
 fn order(g: &mut Game, grp: GroupId, mission: MissionType, x: i32, y: i32, flags: i32, tp: PlotIdx) {
+    if mission == MissionType::MISSION_MOVE_TO {
+        if let Some(to) = g.map.plot_xy(x, y) {
+            if !crate::supply::may_leave_investment(g, grp, to) {
+                hold_for(g, grp, tp);
+                return;
+            }
+        }
+    }
     g.group_push_mission(grp, mission, x, y, flags, false, false, Some(MissionAIType::MISSIONAI_ASSAULT), Some(tp), None);
 }
 
@@ -1613,6 +1621,29 @@ fn siege_building(g: &Game, c: CityId) -> Option<BuildingType> {
 mod tests {
     use super::*;
     use crate::testkit::one_landmass_game;
+
+    #[test]
+    fn a_campaign_order_keeps_enough_troops_invested() {
+        let mut g = one_landmass_game(21);
+        let (us, them) = (PlayerId(0), PlayerId(1));
+        g.player_init_city(us, 4, 5, true, true);
+        let city = g.player_init_city(them, 12, 5, true, true);
+        let (ut, tt) = (g.players[us].team, g.players[them].team);
+        g.team_declare_war(ut, tt, false, None);
+        g.players[us].turn_active = true;
+        let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
+        let units: Vec<_> = (0..3).map(|_| g.player_init_unit(us, warrior, 11, 5, None, None)).collect();
+        let army = g.army_form(us, &units).unwrap();
+        let grp = g.armies[army].group.unwrap();
+        let from = g.map.plot_xy(11, 5).unwrap();
+        let tp = g.city_plot(city);
+        g.cities[city].siege_turns = 3;
+        assert!(g.city_supply_cut_by_siege(city));
+        order(&mut g, grp, MissionType::MISSION_MOVE_TO, 10, 5, 0, tp);
+        assert_eq!(g.group_plot(grp), Some(from), "the campaign's direct mission path must not bypass investment");
+        assert!(g.city_is_invested(city));
+        assert_eq!(tagged(&g, grp), Some(tp), "holding keeps the operation's target");
+    }
 
     /// A skeleton in a strike attacks before the Champions, though they would take the city on
     /// their own: units summoned for good soften the defenders (the old order sent the best odds

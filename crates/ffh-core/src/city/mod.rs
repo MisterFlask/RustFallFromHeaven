@@ -34,6 +34,7 @@ pub mod citizens;
 pub mod production;
 pub mod tiers;
 pub mod specialties;
+pub mod siege;
 pub mod turn;
 pub mod yields_culture;
 
@@ -143,6 +144,9 @@ pub struct City {
     /// bombard (`bombard_besieges`) bombarded the city since its last turn, so it counts as
     /// besieged until then.
     pub besieged_by_bombard: bool,
+    /// Investment's Hunger/Starvation counter, and consecutive relieved turns (docs/SIEGES.md).
+    pub siege_turns: i32,
+    pub siege_relief_turns: i32,
     pub drafted: bool,
     pub airlift_targeted: bool,
     pub we_love_the_king_day: bool,
@@ -435,6 +439,8 @@ impl City {
             never_lost: true,
             bombarded: false,
             besieged_by_bombard: false,
+            siege_turns: 0,
+            siege_relief_turns: 0,
             drafted: false,
             airlift_targeted: false,
             we_love_the_king_day: false,

@@ -194,8 +194,8 @@ fn a_marching_recruit_shows_its_march_and_refuses_every_order() {
     // automation, the army commands.
     let (x, y) = (g.units[u].x, g.units[u].y);
     let cmds = [
-        Command::Move { units: vec![u], x: x + 1, y, append: false, declare_war: None },
-        Command::Mission { units: vec![u], mission: MissionType::MISSION_SKIP, data1: -1, data2: -1, flags: 0, append: false },
+        Command::Move { units: vec![u], x: x + 1, y, append: false, declare_war: None, confirm_end_siege: false },
+        Command::Mission { units: vec![u], mission: MissionType::MISSION_SKIP, data1: -1, data2: -1, flags: 0, append: false, confirm_end_siege: false },
         Command::DoCommand { units: vec![u], command: CommandType::COMMAND_WAKE, data1: -1, data2: -1, alt: false, confirmed: false },
         Command::JoinGroup { unit: u, head: None },
         Command::AutoMission { unit: u },
@@ -215,7 +215,7 @@ fn a_marching_recruit_shows_its_march_and_refuses_every_order() {
     assert!(!ffh_play::decision::is_selectable_group(&g, grp));
     // Arrived (its march over), it takes orders again and its view has no march.
     g.units[u].march = None;
-    assert!(run(&mut g, &Command::Mission { units: vec![u], mission: MissionType::MISSION_SKIP, data1: -1, data2: -1, flags: 0, append: false }).is_ok());
+    assert!(run(&mut g, &Command::Mission { units: vec![u], mission: MissionType::MISSION_SKIP, data1: -1, data2: -1, flags: 0, append: false, confirm_end_siege: false }).is_ok());
     assert_eq!(view::unit_json(&Viewer::new(&g, H, false), u).get("march"), Some(&Json::Null));
 }
 

@@ -38,6 +38,23 @@ use ffh_core::ids::*;
 use ffh_data::*;
 
 use crate::units::{alive, move_to, skip};
+
+/// Keep an investing force in place while it can feed itself. Capturing the target city,
+/// retreating from a cut supply line, and relieving an invested home city take priority.
+pub fn may_leave_investment(g: &Game, grp: GroupId, to: PlotIdx) -> bool {
+    let Some(head) = g.group_get_head_unit(grp) else { return true; };
+    if g.unit_is_unsupplied(head) { return true; }
+    let p = g.units[head].owner;
+    if g.map.plots[to].plot_city.is_some_and(|c| g.cities[c].owner == p && g.city_supply_cut_by_siege(c)) { return true; }
+    let units = &g.groups[grp].units;
+    let here = g.unit_plot(head);
+    let (x, y) = g.map.xy(here);
+    for (c, _) in g.cities.iter() {
+        if g.city_plot(c) == to || g.plot_distance(x, y, g.cities[c].x, g.cities[c].y) != 1 { continue; }
+        if g.city_supply_cut_by_siege(c) && !g.city_invested_after_move(c, units, to) { return false; }
+    }
+    true
+}
 use crate::view::View;
 
 /// Turns of Starvation in a row after which an army that cannot get home is disbanded (the last
@@ -394,6 +411,37 @@ pub fn turn(g: &Game, p: PlayerId) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_investing_force_holds_until_relieved_or_its_own_supply_fails() {
+        let (mut g, _, theirs) = war_game();
+        let (a, grp) = army(&mut g, 15, 5, 3);
+        g.cities[theirs].siege_turns = 3;
+        assert!(g.city_supply_cut_by_siege(theirs));
+        let away = g.map.plot_xy(13, 5).unwrap();
+        assert!(!may_leave_investment(&g, grp, away));
+        assert!(may_leave_investment(&g, grp, g.city_plot(theirs)), "an assault remains possible");
+        assert!(may_leave_investment(&g, grp, g.map.plot_xy(15, 6).unwrap()), "moves along the investing ring are allowed");
+        g.armies[a].unsupplied_turns = 1;
+        assert!(may_leave_investment(&g, grp, away), "our own hungry force can retreat");
+        g.armies[a].unsupplied_turns = 0;
+        let warrior = g.d.t("UNIT_WARRIOR");
+        for _ in 0..3 { g.player_init_unit(PlayerId(0), warrior, 17, 5, None, None); }
+        assert!(may_leave_investment(&g, grp, away), "enough other units keep the investment");
+    }
+
+    #[test]
+    fn investment_requests_relief_and_allows_a_garrison_to_try_a_sortie() {
+        let (mut g, ours, _) = war_game();
+        let warrior = g.d.t("UNIT_WARRIOR");
+        let defender = g.player_init_unit(PlayerId(0), warrior, 3, 5, None, None);
+        for _ in 0..3 { g.player_init_unit(PlayerId(1), warrior, 4, 5, None, None); }
+        let v = analyzed(&g);
+        assert!(g.city_supply_cut_by_siege(ours));
+        assert!(v.peril.iter().any(|&(q, _)| q == g.city_plot(ours)));
+        assert!(crate::defense::sortie_ok(&g, PlayerId(0), g.city_plot(ours), defender));
+        // The normal attack-odds test still decides whether the sortie is taken.
+    }
 
     /// Player 0's city on (3, 5) and player 1's on (16, 5) of the testkit's landmass (x 2..=17),
     /// at war; nothing owns the plots between them and there is no road.

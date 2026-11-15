@@ -130,7 +130,7 @@ function drawHudParts(r3d, cam) {
     const seen = city.visible !== false;
     const fs = Math.max(10, Math.min(15, Math.round(ts * 0.15)));
     g.font = `600 ${fs}px ${FONT}`;
-    const name = ts >= 40 ? (city.name ?? "") + outpostTag(city) : "";
+    const name = ts >= 40 ? (city.name ?? "") + outpostTag(city) + (city.siege ? ` · ${city.siege.label}` : "") : "";
     const tw = g.measureText(name).width;
     const sizeR = fs * 0.78;
     const pad = fs * 0.45;

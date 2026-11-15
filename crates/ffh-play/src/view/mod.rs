@@ -35,6 +35,7 @@ pub mod map;
 pub mod marks;
 pub mod player;
 pub mod perks;
+pub mod sieges;
 pub mod outposts;
 pub mod place;
 pub mod rituals;
@@ -353,6 +354,7 @@ pub fn cities(v: &Viewer) -> Json {
             "walls" => visible.then(|| walls.iter().any(|&b| g.city_num_building(c, b) > 0)),
             // Sieges (docs/SIEGES.md): besieged, and each Sentinel's HP left in percent.
             "besieged" => visible.then(|| g.city_is_besieged(c)),
+            "siege" => sieges::city(v, c),
             "sentinels" => visible.then(|| crate::view::city::sentinels_json(g, c)),
             // The sea (docs/NAVAL.md, section 10): a port of the human's team (its tooltip on
             // the Sea layer names the range it gives).
@@ -406,6 +408,7 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
         "max_hp" => g.unit_max_hit_points(u),
         // In a besieged city of its own: no heal from the city (docs/SIEGES.md).
         "besieged" => g.unit_plot_opt(u).and_then(|p| g.map.plots[p].plot_city).is_some_and(|c| g.cities.contains(c) && g.city_team(c) == g.unit_get_team(u) && g.city_is_besieged(c)),
+        "siege" => g.unit_plot_opt(u).and_then(|p| g.map.plots[p].plot_city).map(|c| sieges::city(v, c)).unwrap_or(Json::Null),
         "level" => unit.level,
     };
     if unit.owner == v.h || v.reveal {

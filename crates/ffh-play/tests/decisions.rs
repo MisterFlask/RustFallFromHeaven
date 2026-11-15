@@ -49,7 +49,7 @@ fn ok(s: &mut Session, c: Command) {
 fn found_capital(s: &mut Session) {
     let h = s.human;
     let settler = s.g.players[h].units.iter().copied().find(|&u| s.g.d.units[s.g.units[u].unit_type].found).expect("a settler");
-    ok(s, Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false });
+    ok(s, Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false, confirm_end_siege: false });
     assert_eq!(s.g.players[h].cities.len(), 1);
 }
 
@@ -110,7 +110,7 @@ fn capture_asks_keep_or_raze_inside_the_command() {
     let u = attacker.expect("a plot to attack from");
     assert!(asked.lock().unwrap().is_empty());
     assert_eq!(s.phase(), Phase::Human(h));
-    let log = match s.execute(&Command::Move { units: vec![u], x: cx, y: cy, append: false, declare_war: None }) {
+    let log = match s.execute(&Command::Move { units: vec![u], x: cx, y: cy, append: false, declare_war: None, confirm_end_siege: false }) {
         Ok(CmdOk::Applied { log, .. }) => log,
         other => panic!("{other:?}"),
     };
@@ -570,17 +570,17 @@ fn commands_are_checked_like_the_exe() {
     let foreign_unit = s.g.players[other].units[0];
     let my_unit = s.g.players[h].units[0];
     let my_city = s.g.players[h].cities[0];
-    let mission = |units: Vec<UnitId>, m: MissionType| Command::Mission { units, mission: m, data1: -1, data2: -1, flags: 0, append: false };
+    let mission = |units: Vec<UnitId>, m: MissionType| Command::Mission { units, mission: m, data1: -1, data2: -1, flags: 0, append: false, confirm_end_siege: false };
     assert_eq!(s.execute(&mission(vec![foreign_unit], MissionType::MISSION_SKIP)), Err(CmdErr::NotOwner));
     assert_eq!(s.execute(&mission(vec![UnitId(999_999)], MissionType::MISSION_SKIP)), Err(CmdErr::Gone));
     assert!(matches!(s.execute(&mission(vec![], MissionType::MISSION_SKIP)), Err(CmdErr::Invalid(_))));
     assert!(matches!(s.execute(&mission(vec![my_unit, my_unit], MissionType::MISSION_SKIP)), Err(CmdErr::Invalid(_))));
     assert!(matches!(s.execute(&mission(vec![my_unit], MissionType::MISSION_DIE)), Err(CmdErr::Invalid(_))));
     assert!(matches!(s.execute(&mission(vec![my_unit], MissionType::MISSION_FOUND)), Err(CmdErr::Cannot(_))), "no settler");
-    let off_map = Command::Move { units: vec![my_unit], x: -1, y: 0, append: false, declare_war: None };
+    let off_map = Command::Move { units: vec![my_unit], x: -1, y: 0, append: false, declare_war: None, confirm_end_siege: false };
     assert!(matches!(s.execute(&off_map), Err(CmdErr::Invalid(_))));
     let (ux, uy) = (s.g.units[my_unit].x, s.g.units[my_unit].y);
-    assert!(matches!(s.execute(&Command::Move { units: vec![my_unit], x: ux, y: uy, append: false, declare_war: None }), Err(CmdErr::Cannot(_))));
+    assert!(matches!(s.execute(&Command::Move { units: vec![my_unit], x: ux, y: uy, append: false, declare_war: None, confirm_end_siege: false }), Err(CmdErr::Cannot(_))));
     let raze = Command::DoTask { city: my_city, task: TaskType::TASK_RAZE, data1: -1, data2: -1, option: false, alt: false, shift: false, ctrl: false };
     assert!(matches!(s.execute(&raze), Err(CmdErr::Invalid(_))));
     let show = Command::SetOption { option: PlayerOptionType::PLAYEROPTION_SHOW_ENEMY_MOVES, value: true };
@@ -704,7 +704,7 @@ fn parameters_the_exe_never_sends_are_refused() {
         ctrl: false,
     };
     let percent = |change: i32| Command::PercentChange { commerce: CommerceType::COMMERCE_RESEARCH, change };
-    let mission = |m: MissionType, data1: i32, data2: i32, flags: i32| Command::Mission { units: vec![my_unit], mission: m, data1, data2, flags, append: false };
+    let mission = |m: MissionType, data1: i32, data2: i32, flags: i32| Command::Mission { units: vec![my_unit], mission: m, data1, data2, flags, append: false, confirm_end_siege: false };
     let (ux, uy) = (s.g.units[my_unit].x, s.g.units[my_unit].y);
     let (tx, ty) = if ux > 0 { (ux - 1, uy) } else { (ux + 1, uy) };
     let liberate = Command::DoTask { city: my_city, task: TaskType::TASK_LIBERATE, data1: 1, data2: -1, option: false, alt: false, shift: false, ctrl: false };

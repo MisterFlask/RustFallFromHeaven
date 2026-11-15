@@ -302,6 +302,16 @@ flag.
   heal, its recruits wait), then starving (each unit loses 10% of its full HP a turn, down to 25%,
   never killed; it deals 25% less damage in battles). It replaces the old supply rule (within
   `ARMY_SUPPLY_RANGE` of the trade network, which only paused recruits). Save format 29.
+- **Starving invested garrisons** (docs/SUPPLY.md 3.1, docs/SIEGES.md): a saved city counter
+  advances under at least 3 visible non-animal adjacent enemy land soldiers and half its
+  physical defending force, rounded up. An open harbour prevents it. Two turns of Hunger block
+  all healing; later turns take 10% HP down to 25% and reduce battle damage by 25%. Applies to
+  every physical unit in the city, with no stacking of army and city starvation; Sentinels are
+  exempt. One relieved turn pauses the counter; two consecutive ones reset it. Invested cities
+  supply no army unless their harbour is open. Counter and relief progress survive capture.
+  Previews name a withdrawal's effect; commands ask before ending an investment past Hunger.
+  AI investing forces hold, garrisons can sortie, and local armies respond to invested cities.
+  Save format 42; older saves are not converted.
 - **A bump keeps a land unit connected to home** (docs/SUPPLY.md, "Second pass" B; 2026-11-10):
   `jumpToNearestValidPlot` (the bump of a unit standing where it may no longer be: a peace, a
   border change, a stack it may not share) moves a land unit whose owner has a city on its

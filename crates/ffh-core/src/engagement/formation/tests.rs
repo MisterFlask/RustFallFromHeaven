@@ -1637,3 +1637,21 @@ fn no_charm_in_the_last_round() {
     let casts: Vec<Option<u32>> = out.events.iter().filter(|e| e.actor == 0).map(|e| e.spell).collect();
     assert_eq!(casts, [Some(3), Some(3)]);
 }
+
+
+#[test]
+fn siege_hunger_blocks_direct_and_sweeping_battle_healing() {
+    use Side::*;
+    let mut priest = healer(Attacker, 0, 1);
+    priest.speed = 9;
+    priest.patterns = [AttackPattern::Sweep; ROWS];
+    let mut hungry = hurt(frontline(Attacker, 1, 0), 6000);
+    hungry.healing_blocked = true;
+    let b = one_round(battle(OPEN, vec![priest, hungry,
+        hurt(frontline(Attacker, 2, 0), 10000), Fighter::new(Defender, 120)]));
+    let s = State::new(&b);
+    assert_eq!(b.heal_target(&s, 0), Some(2), "the more hurt but hungry fighter cannot receive a heal");
+    let out = play(&b, &mut rigged(sure));
+    assert_eq!(out.fighters[1].was_healed, 0, "a sweeping heal cannot bypass Hunger");
+    assert!(out.fighters[2].was_healed > 0);
+}

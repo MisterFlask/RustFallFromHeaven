@@ -361,6 +361,7 @@ impl Game {
         let specialty = (self.cities[old_city].specialty, self.cities[old_city].specialty_class, self.cities[old_city].specialty_options.clone(), self.cities[old_city].specialty_draft_turn, self.cities[old_city].specialty_mana);
         // This game's outposts (docs/NAVAL.md, 9.2): a taken outpost stays an outpost.
         let was_outpost = self.cities[old_city].outpost;
+        let siege = (self.cities[old_city].siege_turns, self.cities[old_city].siege_relief_turns);
         let building_original_owner = self.cities[old_city].building_original_owner.clone();
         let building_original_time = self.cities[old_city].building_original_time.clone();
 
@@ -422,6 +423,8 @@ impl Game {
 
         let new_city = self.player_init_city_as(p, city_x, city_y, !conquest, false, Some(building_tiers), was_outpost);
         self.cities[new_city].specialty = specialty.0;
+        self.cities[new_city].siege_turns = siege.0;
+        self.cities[new_city].siege_relief_turns = siege.1;
         self.cities[new_city].specialty_class = specialty.1;
         self.cities[new_city].specialty_mana = specialty.4;
         if specialty.0 == Some(crate::city::specialties::MANA) {

@@ -79,7 +79,7 @@ fn run(seed: u32, end: i32, swap: Option<&TempDir>) -> (Vec<(i32, i32)>, Vec<u8>
             let h = s.human;
             let (warrior, cx, cy) = construct_capture(&mut s);
             let before = s.stats().decisions_total();
-            match s.execute(&Command::Move { units: vec![warrior], x: cx, y: cy, append: false, declare_war: None }) {
+            match s.execute(&Command::Move { units: vec![warrior], x: cx, y: cy, append: false, declare_war: None, confirm_end_siege: false }) {
                 Ok(CmdOk::Applied { .. }) => {}
                 other => panic!("capture move: {other:?}"),
             }

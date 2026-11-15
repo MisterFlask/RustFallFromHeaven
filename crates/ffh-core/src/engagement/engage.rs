@@ -507,6 +507,7 @@ impl Game {
         f.pierce = self.unit_engage_piercing(u);
         f.pursuit = self.unit_engage_pursuit(u);
         f.heal_pct = ty.heal_percent;
+        f.healing_blocked = self.unit_plot_opt(u).is_some_and(|p| self.plot_siege_turns(p) > 0);
         f.round_pct = ty.round_percent;
         f.class_bit = self.unit_get_unit_combat_type(u).map_or(0, |c| 1u64 << (c.idx() % 64));
         f.prefer = ty.target_preference.iter().fold(0u64, |m, c| m | 1u64 << (c.idx() % 64));
@@ -682,7 +683,7 @@ impl Game {
 
     /// Phase 7 hook (plan 6.2, 14): the effects on the battle of `setup` before it (its units
     /// committed, before the morale check and the opening). Supply (docs/SUPPLY.md): each
-    /// committed unit of a starving army deals `STARVATION_DAMAGE_DEALT_PERCENT` damage. No
+    /// committed unit starving in its army or city deals `STARVATION_DAMAGE_DEALT_PERCENT` damage. No
     /// pre-battle spells yet.
     pub(crate) fn engage_pre_battle(&self, setup: &Setup) -> Vec<BattleEffect> {
         let pct = self.d.defines.starvation_damage_dealt_percent;

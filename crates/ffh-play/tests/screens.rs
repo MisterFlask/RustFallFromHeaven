@@ -81,7 +81,7 @@ fn duel(seed: u32) -> (Session, CityId) {
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
     let h = s.human;
     let settler = s.g.players[h].units.iter().copied().find(|&u| s.g.d.units[s.g.units[u].unit_type].found).unwrap();
-    applied(&mut s, Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false });
+    applied(&mut s, Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false, confirm_end_siege: false });
     let c = s.g.players[h].cities[0];
     (s, c)
 }

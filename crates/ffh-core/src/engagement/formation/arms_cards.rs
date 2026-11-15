@@ -100,7 +100,7 @@ impl Formation {
     pub fn arms_behind(&self, s: &State, h: usize) -> Option<usize> {
         let fh = &self.fighters[h];
         (0..self.len())
-            .filter(|&t| t != h && s.on_field(t) && self.fighters[t].side == fh.side && !self.fighters[t].fixed && s.row[t] > s.row[h])
+            .filter(|&t| t != h && s.on_field(t) && self.fighters[t].side == fh.side && !self.fighters[t].fixed && !self.fighters[t].healing_blocked && s.row[t] > s.row[h])
             .filter(|&t| self.fighters[t].lanes().any(|l| fh.lanes().contains(&l)))
             .min_by_key(|&t| (s.row[t], t))
     }

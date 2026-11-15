@@ -746,6 +746,7 @@ fn cmd_stage(args: &[String]) {
         "engagement" => ffh_play::stage::engagement(dir).map(|s| s.to_json()),
         "specialties" => ffh_play::stage::specialties(dir),
         "specialties-details" => ffh_play::stage::specialties_details(dir),
+        kind @ ("siege-hunger" | "siege-starvation" | "siege-relief" | "siege-attacker") => ffh_play::stage::siege(dir, kind),
         "supply" => ffh_play::stage::supply(dir).map(|s| s.to_json()),
         "election" => ffh_play::stage::election(dir).map(|s| s.to_json()),
         "settlement" => ffh_play::stage::settlement(dir).map(|s| s.to_json()),

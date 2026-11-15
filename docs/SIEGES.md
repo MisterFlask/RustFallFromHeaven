@@ -102,6 +102,35 @@ SHOOT (`sentinel_ranged_resist`).
 - **It shows** (the owner's request): the city's banner and the city screen say it is besieged and
   show its Sentinels; a unit in a besieged city says it does not heal from the city.
 
+## Investment and garrison starvation
+
+**Built** (owner's design from TODO.md). The original one-adjacent-enemy test above still controls
+city healing and Sentinel repair. Hunger requires investment: at least 3 visible non-animal
+land combat units at war on adjacent land plots, and at least half the city's defending land
+combat units, rounded up. The defenders include its team's armies, heroes and casters physically
+in the city. Cargo, dead units, civilians and animals do not increase the force threshold.
+
+An open harbour prevents investment turns and keeps the city an army supply source. Otherwise,
+investment cuts that source immediately and increments a saved city counter at its owner's turn
+start. Turns 1–2 give Hunger (no healing of any kind); later turns give Starvation (-10% full HP
+per unit-owner turn down to 25%, -25% battle damage). Every physical unit in the city is affected;
+Sentinels are exempt. Army and city starvation do not stack. A unit attacking out of the city
+carries the normal Starvation penalty; bombard's 50% floor and starvation's 25% floor coexist.
+
+One relieved city-owner turn pauses the counter; two consecutive relieved turns clear it.
+Renewed investment cancels that streak. Capture keeps the counters. A moved unit retains its HP
+loss; its city-based effect applies while it stands there. Details: docs/SUPPLY.md 3.1.
+
+The city banner, city screen, compact city panel and unit details show the turn and effect.
+Movement previews name an investment that the move ends; past Hunger the command asks before
+moving, with Cancel leaving the game untouched. Both sides see a visible city's state.
+
+AI: a supplied investing force holds enough soldiers in place, but may assault, retreat when
+its own supply fails, or relieve an invested home city. Invested home cities request nearby
+relief even during a campaign. Garrisons may attempt locally winning sorties at their normal
+attack-odds threshold even while below their ordinary quota. Staged tests cover these choices;
+this rules change has no AI win-rate gate (CLAUDE.md).
+
 ## Bombarding
 
 **A bombard hits every Sentinel and every soldier** (the owner's rule). The unit types with a

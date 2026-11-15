@@ -328,7 +328,14 @@ impl Bot {
             Ok(CmdOk::NeedsConfirm(c)) => {
                 self.stats.confirms += 1;
                 let again = match (c, cmd) {
-                    (Confirm::DeclareWar { .. }, Command::Move { units, x, y, append, .. }) => Some(Command::Move { units, x, y, append, declare_war: Some(false) }),
+                    (Confirm::EndSiege { .. }, mut cmd) => {
+                        match &mut cmd {
+                            Command::Move { confirm_end_siege, .. } | Command::Mission { confirm_end_siege, .. } => *confirm_end_siege = true,
+                            _ => {},
+                        }
+                        Some(cmd)
+                    },
+                    (Confirm::DeclareWar { .. }, Command::Move { units, x, y, append, .. }) => Some(Command::Move { units, x, y, append, declare_war: Some(false), confirm_end_siege: false }),
                     (Confirm::LoadUnit { .. }, _) => None,
                     (Confirm::EndTurn { .. }, _) => Some(Command::EndTurn { force: true }),
                     (_, Command::DoCommand { units, command, data1, data2, alt, .. }) => Some(Command::DoCommand { units, command, data1, data2, alt, confirmed: true }),
@@ -406,7 +413,7 @@ impl Bot {
                     handled.extend(stack.iter().copied());
                 }
                 if !self.ok(s, order) {
-                    self.ok(s, Command::Mission { units: units.clone(), mission: MissionType::MISSION_SKIP, data1: -1, data2: -1, flags: 0, append: false });
+                    self.ok(s, Command::Mission { units: units.clone(), mission: MissionType::MISSION_SKIP, data1: -1, data2: -1, flags: 0, append: false, confirm_end_siege: false });
                 }
             }
         }
@@ -639,7 +646,7 @@ impl Bot {
         let (x, y) = (int(head, "x") as i32, int(head, "y") as i32);
         let move_to = |i: usize, declare_war: Option<bool>| {
             let (px, py) = seen.xy(i);
-            Command::Move { units: units.to_vec(), x: px, y: py, append: false, declare_war }
+            Command::Move { units: units.to_vec(), x: px, y: py, append: false, declare_war, confirm_end_siege: false }
         };
         let decided = (|| -> Option<Command> {
             // Settlers.
@@ -691,7 +698,7 @@ impl Bot {
             }
             let weak = seen.cities.iter().filter(|&&(_, cx, cy)| (cx, cy) != (x, y) && seen.guards(d, cx, cy, grp) < 2).min_by_key(|&&(c, cx, cy)| (seen.distance(x, y, cx, cy), c));
             if let Some(&(_, cx, cy)) = weak {
-                return Some(Command::Move { units: units.to_vec(), x: cx, y: cy, append: false, declare_war: None });
+                return Some(Command::Move { units: units.to_vec(), x: cx, y: cy, append: false, declare_war: None, confirm_end_siege: false });
             }
             // Spare units rally in the capital; three or more ready there march together on the
             // nearest known enemy city (the selection becomes one group: `move` joins it).
@@ -713,16 +720,16 @@ impl Bot {
                         .map(|u| u.id)
                         .collect();
                     if let (true, Some((_, tx, ty))) = (stack.len() >= 3 && stack.iter().any(|u| units.contains(u)), target) {
-                        return Some(Command::Move { units: stack, x: tx, y: ty, append: false, declare_war: Some(false) });
+                        return Some(Command::Move { units: stack, x: tx, y: ty, append: false, declare_war: Some(false), confirm_end_siege: false });
                     }
                 } else if roll < 40 && target.is_none_or(|(dist, _, _)| dist > 4) {
-                    return Some(Command::Move { units: units.to_vec(), x: cx, y: cy, append: false, declare_war: None });
+                    return Some(Command::Move { units: units.to_vec(), x: cx, y: cy, append: false, declare_war: None, confirm_end_siege: false });
                 }
             }
             // Spare units go for the nearest known enemy city (barbarian cities included).
             let target = seen.enemy_cities.iter().map(|&(cx, cy)| (seen.distance(x, y, cx, cy), cx, cy)).filter(|&(dist, _, _)| dist <= 12).min();
             if let (Some((_, cx, cy)), true) = (target, roll < 60) {
-                return Some(Command::Move { units: units.to_vec(), x: cx, y: cy, append: false, declare_war: Some(false) });
+                return Some(Command::Move { units: units.to_vec(), x: cx, y: cy, append: false, declare_war: Some(false), confirm_end_siege: false });
             }
             if roll < 70 {
                 let around: Vec<usize> = seen.near(x, y, 2).into_iter().filter(|&i| seen.land(i)).collect();
@@ -743,7 +750,7 @@ impl Bot {
                 }
                 c
             }
-            None => Command::Mission { units: units.to_vec(), mission: MissionType::MISSION_SKIP, data1: -1, data2: -1, flags: 0, append: false },
+            None => Command::Mission { units: units.to_vec(), mission: MissionType::MISSION_SKIP, data1: -1, data2: -1, flags: 0, append: false, confirm_end_siege: false },
         }
     }
 }

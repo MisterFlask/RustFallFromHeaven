@@ -252,6 +252,15 @@ A besieged city (docs/SIEGES.md) whose harbour is open is relieved by sea: its u
 percent of their repair **(default)**. Besieged and blockaded, or on no sea: as docs/SIEGES.md
 (no healing from the city, no repair).
 
+Investment and garrison starvation (built): an open harbour also prevents siege turns from
+accumulating and keeps the city an army supply source. A blockaded invested city uses the normal
+Hunger/Starvation counter. Opening the harbour pauses that counter; two consecutive relieved
+city-owner turns clear it (docs/SUPPLY.md 3.1, docs/SIEGES.md). The older half-rate city heal and
+Sentinel repair rules still use the one-enemy siege test; Hunger blocks unit healing entirely
+until the counter clears. Armies in boats cannot use an invested, blockaded port as their
+automatic supply source; another eligible port within range can supply them. This does not
+change ships' operating range.
+
 ### 4.6 Supply ships need open water
 
 A ship is a supply source (docs/SUPPLY.md, section 2) only while the sea it stands in is not

@@ -169,8 +169,8 @@ impl View {
                 let cp = g.city_plot(c);
                 let threat = crate::production::local_threat(g, p, cp, 3);
                 let defense = crate::production::garrison(g, p, cp).1 * 3 / 2;
-                if threat > defense {
-                    v.peril.push((cp, threat - defense));
+                if threat > defense || g.city_supply_cut_by_siege(c) {
+                    v.peril.push((cp, (threat - defense).max(1)));
                 }
                 // Prediction ledger (docs/CALIBRATION.md): with a threat in sight, "in peril" says
                 // the city is lost.

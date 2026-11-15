@@ -126,7 +126,7 @@ fn the_fleets_section_and_the_standing_order() {
     let e = arr(&s, "fleets")[0].clone();
     assert_eq!(text(e.get("station").unwrap(), "text"), "Standing order: Patrol of West.");
     // A move order ends it.
-    run(&mut g, &Command::Move { units: vec![ship], x: 8, y: 0, append: false, declare_war: None }).unwrap();
+    run(&mut g, &Command::Move { units: vec![ship], x: 8, y: 0, append: false, declare_war: None, confirm_end_siege: false }).unwrap();
     assert_eq!(g.armies[f].station, Station::None);
     // Refusals: an army takes no standing order, a fleet no tactic.
     assert!(refused(run(&mut g, &Command::ArmyStation { army, station: Station::Patrol(west) })).contains("only a fleet"));

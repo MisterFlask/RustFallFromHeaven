@@ -512,6 +512,18 @@ function specialtyView(c, reload) {
   );
 }
 
+function siegeView(c) {
+  const s = c.siege;
+  if (!s) return null;
+  const color = s.state === "starvation" ? ".bad" : s.state === "hunger" ? ".warn" : "";
+  return h("section.section.siege-status", { "aria-label": "Siege" },
+    h("h4", "Siege"),
+    h(`p${color}`, `Siege turn ${s.turn}`),
+    h("p", s.text),
+    s.required !== null ? h("p.small.dim", `${s.besiegers} investing soldiers; ${s.required} required against ${s.garrison} defenders. Requires at least 3 and half the land combat units in the city, rounded up. Animals do not count. An open harbour prevents siege turns.`) : null,
+  );
+}
+
 function growthView(c) {
   const ct = c.culture_threshold;
   return h(
@@ -540,7 +552,7 @@ function growthView(c) {
             `Sentinels ${c.sentinels.map((p) => (p > 0 ? `${p}%` : "breached")).join(" · ")}`,
           )
         : null,
-      c.besieged ? h("span.chip.bad", { tip: `Besieged by ${c.besiegers} enemy unit${c.besiegers === 1 ? "" : "s"} next to the city: its units get no heal from the city and its Sentinels do not repair` }, "Besieged") : null,
+      c.besieged ? h("span.chip.bad", { tip: `Besieged by ${c.besiegers} enemy unit${c.besiegers === 1 ? "" : "s"} next to the city. ${c.harbour?.state === "open" ? "City healing and Sentinel repair run at half rate while the harbour stays open." : "No healing from the city; no Sentinel repair."}` }, "Besieged") : null,
       // Named seas (docs/NAVAL.md 10): the harbour, open or blockaded.
       c.harbour ? h(`span.chip${c.harbour.state === "blockaded" ? ".bad" : ""}.harbour`, { tip: c.harbour.text }, c.harbour.text) : null,
       h("span.chip", { tip: "Upkeep: gold a turn" }, ic("gold"), c.maintenance ? `−${c.maintenance}` : "0"),
@@ -922,7 +934,7 @@ function screen(c, { task, choose, remove, overlay, tap, reload }) {
   const plots = overlay ? null : plotGrid(c, task);
   // This game's cultural channel after the city's numbers (its culture among them), above the
   // buildings.
-  const left = h("div.city-col", overlay ? specialtyView(c, reload) : null, plots, citizensView(c, task), moodView(c), growthView(c), cultureView(c, reload), buildingsView(c, reload));
+  const left = h("div.city-col", siegeView(c), overlay ? specialtyView(c, reload) : null, plots, citizensView(c, task), moodView(c), growthView(c), cultureView(c, reload), buildingsView(c, reload));
   // What to build first; then the orders, where trained units go (armies.js) and the governance.
   // An outpost builds nothing and has no governor: its lane and Raise to city instead.
   if (c.outpost) return [summaryView(c, reload, overlay), h("div.city-cols", left, h("div.city-col", outpostView(c, reload)))];

@@ -689,7 +689,7 @@ export async function renderCityPanel() {
     return;
   }
   // Not every command's view (the server counts each): the turn and what the view says of the city.
-  const key = `${city.id}|${S.view.turn}|${city.size}|${city.production?.order}|${city.production?.type}|${city.production?.turns}|${city.food_turns}|${city.disorder}`;
+  const key = `${city.id}|${S.view.turn}|${city.size}|${city.production?.order}|${city.production?.type}|${city.production?.turns}|${city.food_turns}|${city.disorder}|${city.siege?.turn}|${city.siege?.counting}|${city.siege?.relief_turns}`;
   if (key === cityKey && el.childElementCount) return;
   cityKey = key;
   const n = ++cityToken;
@@ -713,6 +713,7 @@ export async function renderCityPanel() {
   fill(
     el,
     h("h3.iso-title", { title: city.capital ? "Your capital" : null }, city.capital ? isoIcon("capital", { px: 16, cls: "capital" }) ?? isoIcon("civics", { px: 16, cls: "capital" }) : null, city.name ?? ""),
+    city.siege ? h(`p.siege-status${city.siege.state === "starvation" ? ".bad" : ".warn"}`, { tip: city.siege.text }, city.siege.label) : null,
     cityPicture(city),
     h(
       "div.iso-stat",

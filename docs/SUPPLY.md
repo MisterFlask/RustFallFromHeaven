@@ -21,10 +21,13 @@ to come and fight.
 ## 2. The line
 
 Every army (docs/ARMIES.md: a named body of land army units) needs a supply line. Garrisons,
-units in no army (heroes, mages, recon units, settlers, summons) and the barbarians need none.
+units in no army (heroes, mages, recon units, settlers, summons) and the barbarians need no
+individual line. Every unit in an invested city is subject to the city counter below, including
+units outside armies and barbarians.
 
 **Sources.** A line ends at a source of the army's owner:
-- a city of the owner's team that is not in occupation (`occupation_timer == 0`);
+- a city of the owner's team that is not in occupation (`occupation_timer == 0`) and is not
+  invested, unless its harbour is open (section 3.1);
 - a ship of the owner with room for land units (`cargo_space > 0`, `domain_cargo` land) that
   stands in a sea not closed to the owner's team and has an open lane to a port of the team
   (docs/NAVAL.md, 4.6 and section 5: a path over water in the team's range, crossing no sea closed
@@ -32,7 +35,10 @@ units in no army (heroes, mages, recon units, settlers, summons) and the barbari
   ship's plot. (Before docs/NAVAL.md, phase 2: a ship in a water area on which the owner's team had
   a coastal city.)
 
-An army standing in a city of its owner's team is supplied, whatever the city's state.
+An army standing in a city of its owner's team is supplied unless investment cuts that city's
+supply. An invested city with no open harbour is no source, including for an army standing in
+it. Another eligible city or ship can still supply that army through a valid line; the city's
+own Hunger and Starvation counter still applies to units standing there.
 
 **Tracing.** The line is the cheapest path over land from the army's plot to a source, by plot
 entered:
@@ -88,6 +94,48 @@ line.
 The old rule goes: `ARMY_SUPPLY_RANGE`, `Game::plot_in_supply` and `army_in_supply`'s network
 test. "In supply" for marching recruits (docs/ARMIES.md, "Supply gates progress") means the
 army's counter is 0.
+
+### 3.1 Starving an invested garrison (built)
+
+The city saves `siege_turns` and `siege_relief_turns` (save format 42). At the start of its owner's
+turn, before army supply is traced and units heal, it counts one turn when:
+
+- adjacent land plots hold visible, non-animal land combat units at war with the city's team;
+- their number is at least 3 and at least half the city's defending land combat units, rounded up;
+- the harbour is not open.
+
+Defenders are the city's team's land combat units physically on its plot, including armies,
+heroes and casters. Assignment to an army or garrison changes neither count. Dead units, cargo,
+noncombatants and animals do not add to either force. Bombard-only siege does not invest a city.
+
+Counter 1–2 is Hunger; above 2 is Starvation, using the existing supply defines. Every physical
+unit standing in the city is affected, including civilians, heroes, casters and ships. Hunger
+blocks all healing there, including spells, promotion healing and battle healing. Starvation
+loses 10% of full HP per unit owner's turn, down to 25%, and gives the existing -25% battle damage
+modifier. Army and city starvation use the worse counter and cause HP loss only once per unit's
+turn. Sentinels are exempt; their repair still uses the original one-enemy siege test.
+
+A turn without investment, or with an open harbour, pauses the counter. The second consecutive
+such city-owner turn resets it. Renewed investment increments the paused counter and clears the
+relief streak. Healing and the battle modifier persist through the first relieved turn. Army
+source eligibility follows the current investment immediately, independently of the saved
+counter's recovery. Armies in boats also exclude invested, blockaded ports from automatic sea
+supply, falling back to the nearest eligible port within operating range; ships' operating
+range remains unchanged. Capture transfers both counters with the city.
+
+A unit leaving the city loses its city-based modifier, retaining its lost HP and any army-based
+supply state. An attack launched from the city carries its Starvation penalty into that battle;
+there is no separate sally rule. Bombarding stops at its 50% HP floor; starvation can continue to
+25%, and neither effect heals a unit already below its floor.
+
+The city banner, city panel, unit panel and hover show the counter and state for both sides while
+the city is visible. A movement preview states `Ends the siege of Vallus (turn 7, Starvation).`
+Moving or routing away asks for confirmation only past Hunger; cancelling changes nothing.
+The counter still needs two relieved turns to clear after an approved withdrawal.
+
+Implementation: `city/siege.rs`, `army/supply.rs`, unit healing and the existing battle supply
+hook. Tests: the supply and siege suites in core and play. Stages: `siege-hunger`,
+`siege-starvation`, `siege-relief` and `siege-attacker`.
 
 ## 4. Defines (`rules_defines.jsonc`)
 
@@ -313,7 +361,7 @@ disbanded at turn 169.
   battle, live off plunder, and a standing raid order; pillage that disables). Supply lines give
   raiders their target; the raiding rules are their own design.
 - **An army size cap and one army a plot** (the answer to the stack of doom): its own design.
-- **Starving a besieged garrison.** A city supplies whoever stands in it.
+- **Starving a besieged garrison.** Built; section 3.1.
 - **Sea lanes.** Built with docs/NAVAL.md, phase 2: a ship is a source only with an open lane
   (above).
 

@@ -549,3 +549,195 @@ fn an_unrevealed_city_is_no_source_and_the_own_team_knows_the_truth() {
     assert_eq!(w.g.plot_supply_line_known(p0, w.at(5, 5), t1), None, "not even standing in it");
     assert_eq!(w.g.plot_supply_line(p0, from), Some(truth));
 }
+
+#[test]
+fn investment_requires_three_and_half_the_physical_garrison_without_animals() {
+    let mut w = world();
+    w.war();
+    let a = w.army(w.p0, 5, 5, 7);
+    assert_eq!(w.g.city_investment_garrison(w.city).len(), 7, "stationed armies count as defenders");
+    let enemies: Vec<_> = (0..3).map(|_| w.unit(w.p1, "UNIT_WARRIOR", 6, 5)).collect();
+    for _ in 0..3 { w.unit(w.p1, "UNIT_WOLF", 5, 4); }
+    assert!(w.g.city_is_besieged(w.city), "the original one-enemy repair/healing test remains");
+    assert_eq!(w.g.city_investment_besiegers(w.city).len(), 3);
+    assert_eq!(w.g.city_investment_required(w.city), 4, "half of seven rounds up");
+    assert!(!w.g.city_is_invested(w.city));
+    let fourth = w.unit(w.p1, "UNIT_WARRIOR", 6, 5);
+    assert!(w.g.city_is_invested(w.city));
+    assert!(!w.g.city_invested_after_move(w.city, &[fourth], w.at(8, 5)));
+    assert!(w.g.city_invested_after_move(w.city, &[enemies[0]], w.at(6, 6)));
+    assert_eq!(w.g.army_units(a).len(), 7);
+}
+
+#[test]
+fn siege_hunger_blocks_every_heal_then_starves_once_with_army_hunger_and_never_kills() {
+    let mut w = world();
+    w.war();
+    let a = w.army(w.p0, 5, 5, 2);
+    let warrior = w.g.army_units(a)[0];
+    let worker = w.unit(w.p0, "UNIT_SETTLER", 5, 5);
+    let hero = w.unit(w.p0, "UNIT_ADEPT", 5, 5);
+    for _ in 0..3 { w.unit(w.p1, "UNIT_WARRIOR", 6, 5); }
+    w.g.unit_set_damage(warrior, 20, None);
+    for turn in 1..=2 {
+        w.g.player_update_supply(w.p0);
+        assert_eq!(w.g.cities[w.city].siege_turns, turn);
+        assert!(w.g.unit_is_unsupplied(worker), "civilian units are hungry too");
+        assert_eq!(w.g.unit_heal_rate(warrior, w.at(5, 5)), 0);
+        w.g.unit_set_damage(warrior, 0, None);
+        w.g.unit_change_damage(warrior, -10, None);
+        assert_eq!(w.g.units[warrior].damage, 20, "spells and other direct heals cannot bypass Hunger");
+        assert_eq!(w.g.units[worker].damage, 0, "Hunger itself does no damage");
+    }
+    w.g.player_update_supply(w.p0);
+    assert_eq!(w.g.city_siege_state(w.city), SupplyState::Starvation);
+    assert!(w.g.armies[a].unsupplied_turns > w.g.d.defines.supply_hunger_turns);
+    assert_eq!(w.g.units[warrior].damage, 30, "army and city starvation cause only one HP loss");
+    for u in [worker, hero] {
+        assert!(w.g.unit_is_starving(u));
+        assert_eq!(w.g.units[u].damage, w.g.unit_max_hit_points(u) / 10);
+    }
+    for _ in 0..20 { w.g.player_update_supply(w.p0); }
+    let max = w.g.unit_max_hit_points(warrior);
+    assert_eq!(w.g.units[warrior].damage, max - (max * 25 + 99) / 100);
+    w.g.unit_set_damage(warrior, max - 1, None);
+    w.g.player_update_supply(w.p0);
+    assert_eq!(w.g.units[warrior].damage, max - 1, "a unit already below the floor stays there");
+}
+
+#[test]
+fn siege_counter_pauses_then_resets_after_two_consecutive_relieved_turns_and_is_saved() {
+    let mut w = world();
+    w.war();
+    w.unit(w.p0, "UNIT_WARRIOR", 5, 5);
+    let enemies: Vec<_> = (0..3).map(|_| w.unit(w.p1, "UNIT_WARRIOR", 6, 5)).collect();
+    for _ in 0..3 { w.g.player_update_supply(w.p0); }
+    w.g.unit_kill(enemies[0], false, None);
+    w.g.player_update_supply(w.p0);
+    assert_eq!((w.g.cities[w.city].siege_turns, w.g.cities[w.city].siege_relief_turns), (3, 1));
+    let saved = w.g.save();
+    w.g = Game::load(w.g.d, &saved).unwrap();
+    assert_eq!(w.g.save(), saved);
+    w.unit(w.p1, "UNIT_WARRIOR", 6, 5);
+    w.g.player_update_supply(w.p0);
+    assert_eq!((w.g.cities[w.city].siege_turns, w.g.cities[w.city].siege_relief_turns), (4, 0), "renewed investment cancels the relief streak");
+    w.g.unit_kill(enemies[1], false, None);
+    w.g.player_update_supply(w.p0);
+    w.g.player_update_supply(w.p0);
+    assert_eq!((w.g.cities[w.city].siege_turns, w.g.cities[w.city].siege_relief_turns), (0, 0));
+}
+
+#[test]
+fn invested_cities_are_no_supply_source_but_another_city_can_still_supply_the_army() {
+    let mut w = world();
+    w.war();
+    w.unit(w.p1, "UNIT_WARRIOR", 6, 5);
+    let at = w.at(5, 5);
+    assert_eq!(w.g.plot_supply_line(w.p0, at).unwrap().source, SupplySource::City(w.city));
+    for _ in 0..2 { w.unit(w.p1, "UNIT_WARRIOR", 6, 5); }
+    assert_eq!(w.g.plot_supply_line(w.p0, at), None, "an army standing in the invested city has no exemption");
+    let relief = w.g.player_init_city(w.p0, 10, 5, true, true);
+    assert_eq!(w.g.plot_supply_line(w.p0, at).unwrap().source, SupplySource::City(relief));
+}
+
+#[test]
+fn an_open_harbour_prevents_siege_hunger_and_keeps_the_city_a_supply_source() {
+    let mut w = world();
+    let coast = w.g.d.t("TERRAIN_COAST");
+    for y in 2..=4 {
+        let water = w.at(5, y);
+        w.g.plot_set_plot_type(water, PlotType::PLOT_OCEAN, false);
+        w.g.plot_set_terrain_type(water, coast, false);
+    }
+    w.g.map_recalculate_areas();
+    w.g.map_generate_seas();
+    w.war();
+    for _ in 0..3 { w.unit(w.p1, "UNIT_WARRIOR", 6, 5); }
+    assert!(w.g.city_is_invested(w.city));
+    assert_eq!(w.g.city_harbour(w.city), ffh_core::seas::Harbour::Open);
+    for _ in 0..4 { w.g.player_update_supply(w.p0); }
+    assert_eq!(w.g.cities[w.city].siege_turns, 0);
+    assert_eq!(w.g.plot_supply_line(w.p0, w.at(5, 5)).unwrap().source, SupplySource::City(w.city));
+    let boats = w.at(5, 2);
+    assert_eq!(w.g.plot_supply_line(w.p0, boats).unwrap().source, SupplySource::Sea(w.city));
+    let ship = w.unit(w.p1, "UNIT_FRIGATE", 5, 4);
+    assert!(w.g.unit_plunder(ship));
+    assert!(matches!(w.g.city_harbour(w.city), ffh_core::seas::Harbour::Blockaded(_)));
+    w.g.player_update_supply(w.p0);
+    assert_eq!(w.g.cities[w.city].siege_turns, 1, "blockade removes the harbour's relief");
+    assert_eq!(w.g.plot_supply_line(w.p0, w.at(5, 5)), None);
+    assert_eq!(w.g.plot_supply_line(w.p0, boats), None, "boats cannot use the invested port's automatic supply");
+    let other = w.g.player_init_city(w.p0, 9, 2, true, true);
+    let team = w.g.players[w.p0].team;
+    assert_eq!(w.g.plot_sea_port(team, boats), Some(w.city), "the operating-range field is unchanged");
+    assert_eq!(w.g.plot_supply_line(w.p0, boats).unwrap().source, SupplySource::Sea(other), "another eligible port within range can feed the army");
+}
+
+#[test]
+fn a_starving_garrison_carries_its_battle_penalty_in_a_sally_and_sentinels_are_exempt() {
+    let mut w = world();
+    let wall = w.g.d.t("BUILDING_PALISADE");
+    w.g.city_set_num_real_building(w.city, wall, 1);
+    w.g.city_sync_sentinels(w.city);
+    let sentinels = w.g.cities[w.city].sentinel_damage.clone();
+    assert!(!sentinels.is_empty());
+    let defenders: Vec<_> = (0..2).map(|_| w.unit(w.p0, "UNIT_WARRIOR", 5, 5)).collect();
+    w.war();
+    for _ in 0..3 { w.unit(w.p1, "UNIT_WARRIOR", 6, 5); }
+    for _ in 0..3 { w.g.player_update_supply(w.p0); }
+    assert_eq!(w.g.cities[w.city].sentinel_damage, sentinels, "Starvation does not damage Sentinels");
+    let inp = PreviewInput { player: w.p0, from: w.at(5, 5), to: w.at(6, 5), formation: None, war: WarTest::AtWar };
+    let preview = w.g.engage_preview(&inp).expect("sally forecast");
+    assert!(!preview.starving.is_empty());
+    assert!(preview.starving.iter().all(|&(u, pct)| defenders.contains(&u) && pct == -25));
+    let inp = PreviewInput { player: w.p1, from: w.at(6, 5), to: w.at(5, 5), formation: None, war: WarTest::AtWar };
+    let preview = w.g.engage_preview(&inp).expect("assault forecast");
+    assert!(preview.starving.iter().all(|&(u, pct)| defenders.contains(&u) && pct == -25), "only physical garrison units receive the penalty");
+}
+
+#[test]
+fn concealed_soldiers_do_not_invest_and_an_open_harbour_relief_still_takes_two_turns() {
+    let mut w = world();
+    w.war();
+    let enemies: Vec<_> = (0..3).map(|_| w.unit(w.p1, "UNIT_WARRIOR", 6, 5)).collect();
+    let team = w.g.players[w.p0].team;
+    w.g.units[enemies[2]].invisible_type = Some(w.g.d.t("INVISIBLE_LAND"));
+    assert!(w.g.unit_is_invisible(enemies[2], team, false));
+    assert!(!w.g.city_is_invested(w.city));
+    w.g.player_update_supply(w.p0);
+    assert_eq!(w.g.cities[w.city].siege_turns, 0);
+    w.g.units[enemies[2]].invisible_type = None;
+    for _ in 0..3 { w.g.player_update_supply(w.p0); }
+    assert_eq!(w.g.cities[w.city].siege_turns, 3);
+    let coast = w.g.d.t("TERRAIN_COAST");
+    for y in 2..=4 {
+        let q = w.at(5, y);
+        w.g.plot_set_plot_type(q, PlotType::PLOT_OCEAN, false);
+        w.g.plot_set_terrain_type(q, coast, false);
+    }
+    w.g.map_recalculate_areas();
+    w.g.map_generate_seas();
+    assert_eq!(w.g.city_harbour(w.city), ffh_core::seas::Harbour::Open);
+    assert!(w.g.city_is_invested(w.city));
+    w.g.player_update_supply(w.p0);
+    assert_eq!((w.g.cities[w.city].siege_turns, w.g.cities[w.city].siege_relief_turns), (3, 1));
+    w.g.player_update_supply(w.p0);
+    assert_eq!(w.g.cities[w.city].siege_turns, 0);
+}
+
+#[test]
+fn bombard_and_starvation_floors_stack_without_healing_the_garrison() {
+    let mut w = world();
+    w.war();
+    let defender = w.unit(w.p0, "UNIT_WARRIOR", 5, 5);
+    let bomber = w.unit(w.p1, "UNIT_CATAPULT", 6, 5);
+    for _ in 0..2 { w.unit(w.p1, "UNIT_WARRIOR", 6, 5); }
+    w.g.city_bombard_damage(w.city, bomber, 100);
+    assert_eq!(w.g.units[defender].damage, 50);
+    for _ in 0..3 { w.g.player_update_supply(w.p0); }
+    assert_eq!(w.g.units[defender].damage, 60);
+    w.g.city_bombard_damage(w.city, bomber, 100);
+    assert_eq!(w.g.units[defender].damage, 60);
+    for _ in 0..3 { w.g.player_update_supply(w.p0); }
+    assert_eq!(w.g.units[defender].damage, 75);
+}

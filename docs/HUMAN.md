@@ -970,6 +970,18 @@ cells, the log folded into states and lines, the words of the rules by their cod
 from the owner's prototype (`assets/test/fixtures/proto/`: its engine and sample armies, not the
 engine's numbers).
 
+Invested cities (docs/SIEGES.md, docs/SUPPLY.md 3.1): the banner and city panel show the siege
+turn, Hunger or Starvation, and relief progress. Investment needs 3 adjacent visible enemy land
+soldiers and at least half the defending land combat units, rounded up; animals do not count.
+An open harbour prevents siege turns. Hunger stops every kind of healing; after two turns,
+Starvation takes 10% HP per turn down to 25% and reduces battle damage by 25%. Sentinels are
+exempt. Two consecutive city-owner turns without investment clear the counter; the first only
+pauses it. Army and city starvation do not stack. Movement previews name any investment the
+move ends. Past Hunger, **End the siege?** asks before moving; Cancel preserves the force's
+position. The `move` and `mission` commands resend with `confirm_end_siege: true` to accept the
+`end_siege` confirmation. Staged saves: `siege-hunger`, `siege-starvation`, `siege-relief`,
+`siege-attacker`.
+
 ## Commands
 
 ```

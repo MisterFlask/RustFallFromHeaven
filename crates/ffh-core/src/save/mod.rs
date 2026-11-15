@@ -143,7 +143,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   a city (`City::ritual_charges` keeps the card rituals' charges). Older saves are not converted.
 /// - 40: permanent city specialties, saved offers and training provenance.
 /// - 41: typed mana specialties and the revised specialty pool.
-pub const FORMAT_VERSION: u32 = 41;
+/// - 42: city investment and relief counters for besieged garrisons.
+pub const FORMAT_VERSION: u32 = 42;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

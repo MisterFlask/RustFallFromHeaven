@@ -56,7 +56,7 @@ pub const TARGET_MISSIONS: [MissionType; 8] = [
 ];
 
 fn mission_cmd(units: &[UnitId], m: MissionType, data1: i32, data2: i32) -> Json {
-    Command::Mission { units: units.to_vec(), mission: m, data1, data2, flags: 0, append: false }.to_json()
+    Command::Mission { units: units.to_vec(), mission: m, data1, data2, flags: 0, append: false, confirm_end_siege: false }.to_json()
 }
 
 fn command_cmd(units: &[UnitId], c: CommandType, data1: i32, data2: i32) -> Json {
@@ -212,7 +212,7 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
         };
         let (tx, ty) = targets.as_ref().and_then(|t| t.first().copied()).unwrap_or((px, py));
         let cmd = if mode == InterfaceMode::GoTo {
-            Command::Move { units: units.to_vec(), x: tx, y: ty, append: false, declare_war: None }.to_json()
+            Command::Move { units: units.to_vec(), x: tx, y: ty, append: false, declare_war: None, confirm_end_siege: false }.to_json()
         } else {
             mission_cmd(units, m, tx, ty)
         };
@@ -747,6 +747,7 @@ pub fn path(v: &Viewer, finder: &mut PathFinder, units: &[UnitId], x: i32, y: i3
         "attack" => attack,
         "approximate" => mirrored.is_none(),
         "supply" => supply,
+        "ends_sieges" => Json::Arr(if ok { crate::view::sieges::ended_by_move(g, v.h, units, to).iter().map(|s| s.to_json()).collect() } else { Vec::new() }),
         "sea" => sea,
     })
 }

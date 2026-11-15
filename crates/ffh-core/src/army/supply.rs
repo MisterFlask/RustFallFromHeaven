@@ -10,7 +10,7 @@
 //! impassable plots, a plot an enemy unit stands on (seen or not), an enemy city, a plot next to a
 //! fort an enemy unit holds, or territory its owner's borders bar. The army is supplied when the
 //! cheapest path costs at most `SUPPLY_LINE_BUDGET`; an army in a city of its owner's team is
-//! supplied whatever the city's state. Ties: the lower cost, the fewer plots, then the lower plot
+//! supplied unless investment cuts that source (an open harbour prevents the cut). Ties: the lower cost, the fewer plots, then the lower plot
 //! index at the first difference. A crusade Host (docs/CRUSADE.md), which has no cities of its
 //! own at first, counts its lenders' and the victim's cities and land as its own team's.
 //!
@@ -289,7 +289,7 @@ impl Game {
     /// ship (the lowest unit id). For a team's `view`: only a city it has revealed.
     fn supply_source_at(&self, team: TeamId, plot: PlotIdx, ships: &BTreeMap<PlotIdx, UnitId>, view: SupplyView) -> Option<SupplySource> {
         if let Some(c) = self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c) && self.supply_knows_city(view, c)) {
-            if self.supply_home(team, self.players[self.cities[c].owner].team) && self.cities[c].occupation_timer == 0 {
+            if self.supply_home(team, self.players[self.cities[c].owner].team) && self.cities[c].occupation_timer == 0 && !self.city_supply_cut_by_siege(c) {
                 return Some(SupplySource::City(c));
             }
         }
@@ -336,9 +336,9 @@ impl Game {
     /// The search of [`Game::plot_supply_line`] and [`Game::plot_supply_line_known`].
     fn supply_line_search(&self, p: PlayerId, start: PlotIdx, view: SupplyView) -> Option<SupplyLine> {
         let team = self.players[p].team;
-        // In a city of its owner's team, whatever its state.
+        // A city of its team is an immediate source unless investment cuts it.
         if let Some(c) = self.map.plots[start].plot_city.filter(|&c| self.cities.contains(c) && self.supply_knows_city(view, c)) {
-            if self.supply_home(team, self.players[self.cities[c].owner].team) {
+            if self.supply_home(team, self.players[self.cities[c].owner].team) && !self.city_supply_cut_by_siege(c) {
                 return Some(SupplyLine { path: vec![start], cost: 0, source: SupplySource::City(c) });
             }
         }
@@ -354,11 +354,7 @@ impl Game {
             if self.team_sea_exempt(team) {
                 return None;
             }
-            let in_range = self.plot_sea_range(team, start).is_some_and(|d| d <= self.team_sea_range(team));
-            return match self.plot_sea_port(team, start) {
-                Some(c) if in_range => Some(SupplyLine { path: vec![start], cost: 0, source: SupplySource::Sea(c) }),
-                _ => None,
-            };
+            return self.plot_sea_supply_port(team, start).map(|c| SupplyLine { path: vec![start], cost: 0, source: SupplySource::Sea(c) });
         }
         if let Some(source) = self.supply_source_at(team, start, &ships, view) {
             return Some(SupplyLine { path: vec![start], cost: 0, source });
@@ -460,7 +456,11 @@ impl Game {
 
     /// Army `a`'s supply state, from its counter (`Army::unsupplied_turns`).
     pub fn army_supply_state(&self, a: ArmyId) -> SupplyState {
-        let n = self.armies[a].unsupplied_turns;
+        self.supply_state(self.armies[a].unsupplied_turns)
+    }
+
+    /// The shared Hunger/Starvation thresholds for armies and city investment.
+    pub fn supply_state(&self, n: i32) -> SupplyState {
         let of = self.d.defines.supply_hunger_turns;
         if n <= 0 {
             SupplyState::Supplied
@@ -476,15 +476,22 @@ impl Game {
         self.armies[a].unsupplied_turns == 0
     }
 
-    /// Whether unit `u` is in an army whose line is cut (hungry or starving): it does not heal.
+    /// Whether unit `u` is hungry or starving from its army or the city it stands in.
     pub fn unit_is_unsupplied(&self, u: UnitId) -> bool {
-        self.units[u].army.is_some_and(|a| self.armies.contains(a) && self.armies[a].unsupplied_turns > 0)
+        self.unit_supply_turns(u) > 0
     }
 
-    /// Whether unit `u` is in a starving army: it deals `STARVATION_DAMAGE_DEALT_PERCENT` damage
+    /// The worse of the unit's army and the city it stands in; the effects never stack.
+    pub fn unit_supply_turns(&self, u: UnitId) -> i32 {
+        if !self.units.contains(u) { return 0; }
+        let army = self.units[u].army.filter(|&a| self.armies.contains(a)).map_or(0, |a| self.armies[a].unsupplied_turns);
+        army.max(self.unit_plot_opt(u).map_or(0, |p| self.plot_siege_turns(p)))
+    }
+
+    /// Whether unit `u` is starving from its army or city: it deals `STARVATION_DAMAGE_DEALT_PERCENT` damage
     /// in battles.
     pub fn unit_is_starving(&self, u: UnitId) -> bool {
-        self.units.contains(u) && self.units[u].army.is_some_and(|a| self.armies.contains(a) && self.army_supply_state(a) == SupplyState::Starvation)
+        self.supply_state(self.unit_supply_turns(u)) == SupplyState::Starvation
     }
 
     /// The start of `p`'s turn, before its units heal (docs/SUPPLY.md, section 3): each army's
@@ -492,7 +499,9 @@ impl Game {
     /// hungry, starts starving or is supplied again; a starving army's units lose
     /// `STARVATION_DAMAGE_PERCENT` of their full HP, never below `STARVATION_FLOOR_PERCENT`.
     pub fn player_update_supply(&mut self, p: PlayerId) {
+        self.player_update_city_sieges(p);
         if self.player_is_barbarian(p) {
+            self.player_starve_units(p);
             return;
         }
         // A player with no city (the starting units before the capital, a crusade Host without
@@ -505,6 +514,7 @@ impl Game {
                     self.armies[a].unsupplied_turns = 0;
                 }
             }
+            self.player_starve_units(p);
             return;
         }
         let hunger = self.d.defines.supply_hunger_turns;
@@ -531,18 +541,18 @@ impl Game {
             } else if after == hunger + 1 {
                 self.log.msg_at(turn, Some(p), at, || format!("The {name} is starving: units lose HP each turn, deal less damage."));
             }
-            if after > hunger {
-                self.army_starve(a);
-            }
         }
+        self.player_starve_units(p);
     }
 
-    /// Starvation's HP loss on army `a`'s units: `STARVATION_DAMAGE_PERCENT` of their full HP,
+    /// Starvation's HP loss once per unit, from its army or besieged city:
+    /// `STARVATION_DAMAGE_PERCENT` of its full HP,
     /// never below `STARVATION_FLOOR_PERCENT` of it (a unit below it loses nothing). Never kills.
-    fn army_starve(&mut self, a: ArmyId) {
+    fn player_starve_units(&mut self, p: PlayerId) {
         let d = &self.d.defines;
         let (loss_pct, floor_pct) = (d.starvation_damage_percent.max(0), d.starvation_floor_percent.clamp(1, 100));
-        for u in self.army_units(a) {
+        for u in self.players[p].units.clone() {
+            if !self.unit_is_starving(u) { continue; }
             let max = self.unit_max_hit_points(u);
             let limit = max - (max * floor_pct + 99) / 100;
             let damage = self.units[u].damage;

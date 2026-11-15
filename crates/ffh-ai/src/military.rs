@@ -766,9 +766,10 @@ pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
 
     // A city of ours in peril within a few turns: defend it (unless the stack is on its way to
     // a siege: campaign.rs).
-    if !v.peril.is_empty() && !crate::campaign::on_the_move(v, grp) {
+    let urgent_siege = v.peril.iter().any(|&(q, _)| g.map.plots[q].plot_city.is_some_and(|c| g.city_supply_cut_by_siege(c)));
+    if !v.peril.is_empty() && (!crate::campaign::on_the_move(v, grp) || urgent_siege) {
         let reach = v.flood.run(g, u, 5, false);
-        if let Some(r) = v.peril.iter().filter_map(|&(q, _)| reach.iter().find(|r| r.plot == q).copied()).min_by_key(|r| (r.turns, r.plot)) {
+        if let Some(r) = v.peril.iter().filter(|&&(q, _)| !urgent_siege || g.map.plots[q].plot_city.is_some_and(|c| g.city_supply_cut_by_siege(c))).filter_map(|&(q, _)| reach.iter().find(|r| r.plot == q).copied()).min_by_key(|r| (r.turns, r.plot)) {
             crate::trace!(g, p, "stack {:?} defends city at {:?}", grp, g.map.xy(r.plot));
             if r.plot == here {
                 hold(g, grp);
@@ -895,6 +896,9 @@ fn heal(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> Healed {
     }
     let here = g.unit_plot(u);
     let max_hp = g.d.defines.max_hit_points.max(1);
+    // Neither army nor city Hunger permits healing. Do not split wounded troops off to wait
+    // for a heal that cannot happen; keep them available for a sortie or relief operation.
+    if g.unit_is_unsupplied(u) { return Healed::Continue(grp, u); }
     let pct = |g: &Game, o: UnitId| g.units[o].damage * 100 / max_hp;
     let units = g.groups[grp].units.clone();
     let safe = |g: &Game, v: &View| v.danger_at(here) * 2 < g.groups[grp].units.iter().map(|&o| defense_power(g, o)).sum::<i32>().max(1) * 3;
@@ -1358,6 +1362,24 @@ pub fn find_targets(g: &Game, v: &View) -> Vec<Target> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_hungry_city_does_not_split_wounded_troops_off_to_heal() {
+        let mut g = crate::testkit::one_landmass_game(21);
+        let p = PlayerId(0);
+        let city = g.player_init_city(p, 4, 5, true, true);
+        let warrior = g.d.t("UNIT_WARRIOR");
+        let units: Vec<_> = (0..2).map(|_| g.player_init_unit(p, warrior, 4, 5, None, None)).collect();
+        let a = g.army_form(p, &units).unwrap();
+        let grp = g.armies[a].group.unwrap();
+        g.units[units[0]].damage = 50;
+        g.cities[city].siege_turns = 1;
+        let groups = g.groups.len();
+        let mut v = View::new(&g, p);
+        assert!(matches!(heal(&mut g, &mut v, grp, units[0]), Healed::Continue(group, head) if group == grp && head == units[0]));
+        assert_eq!(g.groups.len(), groups);
+        assert!(units.iter().all(|&u| g.units[u].group == Some(grp)));
+    }
     use crate::forecast::Est;
 
     fn est(p_take: i32, own: i32, enemy: i32) -> Est {

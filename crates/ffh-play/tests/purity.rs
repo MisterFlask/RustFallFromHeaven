@@ -56,7 +56,7 @@ fn play(seed: u32, warmup: i32, noisy: bool) -> Run {
     // on the seed, the AI or the content; the seed only shaped the warm-up board.
     let (warrior, cx, cy) = common::construct_capture(&mut s);
     let before = s.stats().decisions_of("keep_city");
-    match s.execute(&Command::Move { units: vec![warrior], x: cx, y: cy, append: false, declare_war: None }) {
+    match s.execute(&Command::Move { units: vec![warrior], x: cx, y: cy, append: false, declare_war: None, confirm_end_siege: false }) {
         Ok(CmdOk::Applied { .. }) => {}
         other => panic!("the capture move was not applied: {other:?}"),
     }
