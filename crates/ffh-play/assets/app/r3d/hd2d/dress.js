@@ -900,18 +900,18 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
         const mana = manaColour(imp);
         // Coarser authored pixels keep a small burial mound's doorway legible at
         // play zoom, while its world footprint stays the same as the full card.
-        list.push(card(key, art, PX.building * (art.pixelScale ?? 1), mx, base, -my, { id: idOf(`i${i}`), glow: mana ? 1.4 : 0, fade: !water, vis: [x + 0.5, y + 0.5] }));
+        list.push(card(key, art, PX.building * (art.pixelScale ?? 1), mx, base, -my, { id: idOf(`i${i}`), glow: mana ? 0.4 : 0, fade: !water, vis: [x + 0.5, y + 0.5] }));
         claims.improvement.add(i);
         const tower = /TOWER/.test(imp) && !/WATCH|WARNING/.test(imp);
         if (mana || tower) {
           const col = hexRgb(mana ?? "#ffe6a8");
           const [cx, cy] = at(0, 0.02);
-          beams.push({ key: null, x: cx, y: H(cx, cy), z: -cy, w: 0.4, h: 1.5, anchor: 0.5, team: col, glow: mana ? 0.45 : 0.3, id: 0, phase: hashf(i, 9) });
+          beams.push({ key: null, x: cx, y: H(cx, cy), z: -cy, w: mana ? 0.22 : 0.4, h: mana ? 0.6 : 1.5, anchor: 0.5, team: col, glow: mana ? 0.12 : 0.3, id: 0, phase: hashf(i, 9) });
         }
       }
     }
     const bonus = map.bonus[i] >= 0 ? tname("BonusType", map.bonus[i]) : null;
-    // The connected node already displays its resource's sphere. Avoid drawing its glyph twice.
+    // The connected shrine already contains its resource's mineral formation.
     const connectedMana = manaSchool(bonus) && manaSchool(bonus) === manaSchool(imp);
     if (connectedMana) claims.bonus.add(i);
     if (bonus && !city && !connectedMana) {
@@ -923,12 +923,12 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
         const built = footZ !== null;
         const [mx, my] = built ? at(BUILT_BONUS_SPOT[0], footZ - BUILT_BONUS_SPOT[1]) : at(...BONUS_SPOT);
         const base = water ? SEA : H(mx, my);
-        const glow = /MANA|GEMS|JEWELS|MITHRIL/.test(bonus) ? 1.2 : 0;
+        const glow = /MANA/.test(bonus) ? 0.3 : /GEMS|JEWELS|MITHRIL/.test(bonus) ? 1.2 : 0;
         const resource = card(key, art, PX.resource, mx, base, -my, { id: idOf(`b${i}`), glow, bias: built ? BIAS.builtResource : BIAS.resource, vis: [x + 0.5, y + 0.5] });
         list.push(resource);
         resources.set(i, resource);
         claims.bonus.add(i);
-        if (/MANA/.test(bonus)) beams.push({ key: null, x: mx, y: base, z: -my, w: 0.26, h: 0.9, anchor: 0.5, team: hexRgb(manaColour(bonus) ?? "#b48aff"), glow: 0.3, id: 0, phase: hashf(i, 11) });
+        if (/MANA/.test(bonus)) beams.push({ key: null, x: mx, y: base, z: -my, w: 0.16, h: 0.3, anchor: 0.5, team: hexRgb(manaColour(bonus) ?? "#b48aff"), glow: 0.08, id: 0, phase: hashf(i, 11) });
       }
     }
   }

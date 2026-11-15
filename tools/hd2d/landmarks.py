@@ -50,12 +50,15 @@ def remove_specks(im):
 
 def main():
     src, name = sys.argv[1:]
-    manifest_path = Path(__file__).with_name('resources.json') if name.startswith('resources_') else Path(__file__).with_suffix('.json')
+    manifest_name = 'mana.json' if name.startswith('mana_') else 'resources.json' if name.startswith('resources_') else 'landmarks.json'
+    manifest_path = Path(__file__).with_name(manifest_name)
     manifest = json.loads(manifest_path.read_text())
     sheet = next(s for s in manifest['sheets'] if s['name'] == name)
     im = Image.open(src).convert('RGBA')
     with tempfile.TemporaryDirectory() as tmp:
         for i, piece in enumerate(sheet['pieces']):
+            if piece.get('skip'):
+                continue
             col, row = i % 3, i // 3
             box = (round(col * im.width / 3), round(row * im.height / 3),
                    round((col + 1) * im.width / 3), round((row + 1) * im.height / 3))

@@ -1,0 +1,209 @@
+{
+  "about": "Physical mana deposits and matching connected shrines for HD-2D and isometric maps; image_gen, 2026-11-15. Imported with landmarks.py and art.py index.",
+  "sheets": [
+    {
+      "name": "mana_deposits_a",
+      "prompt": "Production sprite sheet for the existing Fall from Heaven HD-2D fantasy strategy map. EXACTLY NINE separate map objects in a regular 3 by 3 grid, reading order, centered in equal cells, generous transparent gutters. Transparent background, no labels, no frame, no floor tile, no ground plane, no cast shadow. Full silhouettes with no clipping. Tangible, sculpted, weathered stone and faceted mineral objects, viewed from 35 degrees above from the front. Crisp 16-bit pixel art: visible deliberate pixel clusters, restrained detail, dark one-pixel contour, limited muted earthy palette, warm cream upper-left highlights and cool slate lower-right shadows. Match classic high-quality pixel-art trees, ruined shrines, stone circles, and crystal resource deposits. Rich material shading and physical volume. Magical colors only in mineral facets and small crevices; no neon, bloom, haze, floating symbols, pictograms, emoji, UI icons, smooth vector shapes, text, giant flames or particle clouds. One coherent scale and light direction. Each object occupies roughly the middle two-thirds of its cell. These are SMALL WILD NATURAL MANA DEPOSITS, with no constructed platforms, columns or masonry. Draw exactly these nine objects left to right across rows: 1 AIR: three slender windswept forked pearl-white quartz blades curving right, rooted in a small slate outcrop; 2 BODY: a squat rugged cream limestone boulder split by thick branching dark-red jasper veins and rounded red nodules; 3 CHAOS: an asymmetric eruption of jagged dark plum and burnt-orange crystal shards jutting in discordant directions from black rock; 4 DEATH: a charcoal limestone outcrop with a broken narrow upright black slab, embedded bone-white fossils and two tiny cold teal fissures, somber rather than cartoon skull; 5 EARTH: a broad low cluster of chunky ochre cubic mineral blocks, olive-green geode faces and brown rock; 6 ENCHANTMENT: a rounded dusty-rose quartz geode split open, showing concentric pink mineral layers and a small faceted ruby heart inside (an actual crystal, never a heart symbol); 7 ENTROPY: an eroded crooked olive-grey stone spire, pitted cavities, ochre crumbling flakes fallen at its base, a very small dull yellow-green inner crack; 8 FIRE: two black basalt chimneys split by ember-orange lava seams with a small actual amber flame nestled between them; 9 ICE: a compact jagged frost-blue crystal cluster, frosted pale tips and short snow-covered stones.",
+      "pieces": [
+        {
+          "type": "BONUS_MANA_AIR",
+          "key": "res_mana_air",
+          "height": 64
+        },
+        {
+          "type": "BONUS_MANA_BODY",
+          "key": "res_mana_body",
+          "height": 64
+        },
+        {
+          "type": "BONUS_MANA_CHAOS",
+          "key": "res_mana_chaos",
+          "height": 64
+        },
+        {
+          "type": "BONUS_MANA_DEATH",
+          "key": "res_mana_death",
+          "height": 64
+        },
+        {
+          "type": "BONUS_MANA_EARTH",
+          "key": "res_mana_earth",
+          "height": 64
+        },
+        {
+          "type": "BONUS_MANA_ENCHANTMENT",
+          "key": "res_mana_enchantment",
+          "height": 64
+        },
+        {
+          "type": "BONUS_MANA_ENTROPY",
+          "key": "res_mana_entropy",
+          "height": 64
+        },
+        {
+          "type": "BONUS_MANA_FIRE",
+          "key": "res_mana_fire",
+          "height": 64
+        },
+        {
+          "type": "BONUS_MANA_ICE",
+          "key": "res_mana_ice",
+          "height": 64
+        }
+      ]
+    },
+    {
+      "name": "mana_deposits_b",
+      "prompt": "Production sprite sheet for the existing Fall from Heaven HD-2D fantasy strategy map. EXACTLY NINE separate map objects in a regular 3 by 3 grid, reading order, centered in equal cells, generous transparent gutters. Transparent background, no labels, no frame, no floor tile, no ground plane, no cast shadow. Full silhouettes with no clipping. Tangible, sculpted, weathered stone and faceted mineral objects, viewed from 35 degrees above from the front. Crisp 16-bit pixel art: visible deliberate pixel clusters, restrained detail, dark one-pixel contour, limited muted earthy palette, warm cream upper-left highlights and cool slate lower-right shadows. Match classic high-quality pixel-art trees, ruined shrines, stone circles, and crystal resource deposits. Rich material shading and physical volume. Magical colors only in mineral facets and small crevices; no neon, bloom, haze, floating symbols, pictograms, emoji, UI icons, smooth vector shapes, text, giant flames or particle clouds. One coherent scale and light direction. Each object occupies roughly the middle two-thirds of its cell. These are SMALL WILD NATURAL MANA DEPOSITS, with no constructed platforms, columns or masonry. Draw exactly these nine objects left to right across rows: 1 LAW: a neat pair of straight ivory hexagonal mineral columns of unequal heights rooted in grey stone, precisely ordered facets and faint warm gold seams; 2 LIFE: a creamy white rounded crystal emerging from pale mossy stones, fresh small white flowers and a few young leaves around its base; 3 METAMAGIC: a tall sharp violet quartz prism surrounded by three short angular dark-purple satellite shards, tiny pale-lilac internal inclusions; 4 MIND: a wide low honey-amber geode, oval translucent faceted orange stone on slate, a small spiral mineral inclusion carved naturally inside, no eye symbol; 5 NATURE: a low emerald crystal outcrop enclosed by gnarled brown roots, olive-green leaves and a fern, asymmetric living mass; 6 SHADOW: two tall thin smoky obsidian blades leaning inward over a dark hollow, blue-grey edge reflections and a tiny muted lavender crack; 7 SPIRIT: pale turquoise opal nodules nestled in old grey stones, one upward curling pale crystalline spire with a milky rounded tip, no ghost face; 8 SUN: a squat radiant honey-gold citrine cluster with a broad sunburst-like arrangement of real short crystal facets, warm cream tips and reddish rock, no drawn sun icon; 9 WATER: a low dark slate basin formed by natural split rock with a small bright turquoise spring and two pale blue crystal fins growing beside the water.",
+      "pieces": [
+        {
+          "type": "BONUS_MANA_LAW",
+          "key": "res_mana_law",
+          "height": 64
+        },
+        {
+          "type": "BONUS_MANA_LIFE",
+          "key": "res_mana_life",
+          "height": 64
+        },
+        {
+          "type": "BONUS_MANA_METAMAGIC",
+          "key": "res_mana_metamagic",
+          "height": 64
+        },
+        {
+          "type": "BONUS_MANA_MIND",
+          "key": "res_mana_mind",
+          "height": 64
+        },
+        {
+          "type": "BONUS_MANA_NATURE",
+          "key": "res_mana_nature",
+          "height": 64
+        },
+        {
+          "type": "BONUS_MANA_SHADOW",
+          "key": "res_mana_shadow",
+          "height": 64
+        },
+        {
+          "type": "BONUS_MANA_SPIRIT",
+          "key": "res_mana_spirit",
+          "height": 64
+        },
+        {
+          "type": "BONUS_MANA_SUN",
+          "key": "res_mana_sun",
+          "height": 64
+        },
+        {
+          "type": "BONUS_MANA_WATER",
+          "key": "res_mana_water",
+          "height": 64
+        }
+      ]
+    },
+    {
+      "name": "mana_nodes_a",
+      "prompt": "Edit this nine-object sheet into the corresponding nine CONNECTED MANA SHRINES, keeping exactly the same 3 by 3 grid order, transparent background, individual objects isolated by generous gutters, art style, warm upper-left light, mineral colors, and all nine distinctive physical mineral shapes. Around EACH existing deposit add a small constructed circular dais made of chunky weathered slate-grey dressed stones, two visible shallow front steps, and THREE short thick rune-carved standing stones spaced around the outside. Small carved runes should be subtle and indistinct at this scale, no readable text, no floating pictograms or symbols. The central mineral outcrop remains the unmistakable focal point rising above the stone ring; keep its main silhouette and material. No roofs, tall buildings, walls obscuring the deposit, terrain tiles, cast shadows, bloom or particle clouds. The lower front of each ring is an open low rim so the mineral can be seen clearly. Crisp chunky 16-bit pixel art, cohesive muted earthy palette, dark one-pixel outlines. All nine shrines at consistent scale and perspective, matching a strategy game's detailed pixel-art stone circles.",
+      "reference": "mana_deposits_a",
+      "pieces": [
+        {
+          "type": "IMPROVEMENT_MANA_AIR",
+          "key": "feat_mana_air",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MANA_BODY",
+          "key": "feat_mana_body",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MANA_CHAOS",
+          "key": "feat_mana_chaos",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MANA_DEATH",
+          "key": "feat_mana_death",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MANA_EARTH",
+          "key": "feat_mana_earth",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MANA_ENCHANTMENT",
+          "key": "feat_mana_enchantment",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MANA_ENTROPY",
+          "key": "feat_mana_entropy",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MANA_FIRE",
+          "key": "feat_mana_fire",
+          "height": 112
+        },
+        {
+          "skip": true
+        }
+      ]
+    },
+    {
+      "name": "mana_nodes_b",
+      "prompt": "Edit this nine-object sheet into the corresponding nine CONNECTED MANA SHRINES, keeping exactly the same 3 by 3 grid order, transparent background, individual objects isolated by generous gutters, art style, warm upper-left light, mineral colors, and all nine distinctive physical mineral shapes. Around EACH existing deposit add a small constructed circular dais made of chunky weathered slate-grey dressed stones, two visible shallow front steps, and THREE short thick rune-carved standing stones spaced around the outside. Small carved runes should be subtle and indistinct at this scale, no readable text, no floating pictograms or symbols. The central mineral outcrop remains the unmistakable focal point rising above the stone ring; keep its main silhouette and material. No roofs, tall buildings, walls obscuring the deposit, terrain tiles, cast shadows, bloom or particle clouds. The lower front of each ring is an open low rim so the mineral can be seen clearly. Crisp chunky 16-bit pixel art, cohesive muted earthy palette, dark one-pixel outlines. All nine shrines at consistent scale and perspective, matching a strategy game's detailed pixel-art stone circles.",
+      "reference": "mana_deposits_b",
+      "pieces": [
+        {
+          "type": "IMPROVEMENT_MANA_LAW",
+          "key": "feat_mana_law",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MANA_LIFE",
+          "key": "feat_mana_life",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MANA_METAMAGIC",
+          "key": "feat_mana_metamagic",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MANA_MIND",
+          "key": "feat_mana_mind",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MANA_NATURE",
+          "key": "feat_mana_nature",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MANA_SHADOW",
+          "key": "feat_mana_shadow",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MANA_SPIRIT",
+          "key": "feat_mana_spirit",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MANA_SUN",
+          "key": "feat_mana_sun",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MANA_WATER",
+          "key": "feat_mana_water",
+          "height": 112
+        }
+      ]
+    }
+  ]
+}

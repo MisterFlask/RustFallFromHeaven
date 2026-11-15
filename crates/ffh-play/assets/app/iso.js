@@ -24,7 +24,7 @@ import { S, me, tname, isBarbarian } from "./state.js";
 import * as T from "./tiles.js";
 import { unitMoves } from "./stacks.js";
 import { SPRITES } from "./iso/sprites.js";
-import { MANA_SPRITES, manaSchool, manaSpriteKey, drawManaSprite } from "./mana-art.js";
+import { MANA_SPRITES, manaSchool, manaSpriteKey } from "./mana-art.js";
 import { drawCityWork } from "./citywork.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
 import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, laneParts, drawLaneCut, drawHarbourMark } from "./sea.js";
@@ -452,12 +452,8 @@ class SpriteStore {
   source(key) {
     const d = this.drawn.get(key);
     if (d) return d;
-    if (Object.hasOwn(MANA_SPRITES, key)) {
-      const c = drawManaSprite(key);
-      this.drawn.set(key, c);
-      return c;
-    }
-    if (!Object.hasOwn(SPRITES, key)) return null;
+    const mana = Object.hasOwn(MANA_SPRITES, key);
+    if (!mana && !Object.hasOwn(SPRITES, key)) return null;
     const e = this.images.get(key);
     if (e) return e.ok ? e.im : null;
     const im = new Image();
@@ -466,7 +462,7 @@ class SpriteStore {
       entry.ok = true;
       this.onload();
     };
-    im.src = new URL(`./iso/${key}.png`, import.meta.url).href;
+    im.src = new URL(mana ? `./r3d/hd2d/art/${key}.png` : `./iso/${key}.png`, import.meta.url).href;
     this.images.set(key, entry);
     return null;
   }

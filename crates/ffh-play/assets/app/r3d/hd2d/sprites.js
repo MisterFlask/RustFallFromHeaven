@@ -8,7 +8,6 @@
 // frames, two to a layer, and its card plays them (the cards' vertex shader picks the frame).
 
 import { SPRITES } from "../../iso/sprites.js";
-import { MANA_SPRITES, drawManaSprite } from "../../mana-art.js";
 import { ownerBand } from "../../iso.js";
 import { CARDS } from "./art/index.js";
 import { ATTR } from "../gl.js";
@@ -239,7 +238,7 @@ export class SpriteAtlas {
   }
 
   has(key) {
-    return Object.hasOwn(SPRITES, key) || Object.hasOwn(CARDS, key) || Object.hasOwn(MANA_SPRITES, key) || this.drawn.has(key) || this.base.has(key);
+    return Object.hasOwn(SPRITES, key) || Object.hasOwn(CARDS, key) || this.drawn.has(key) || this.base.has(key);
   }
 
   /** Sprite `key` in its owner's colour `css`: the art's owner-colour band (iso.js ownerBand, its
@@ -254,7 +253,7 @@ export class SpriteAtlas {
   info(key) {
     const b = this.base.get(key);
     if (b) return this.info(b.key);
-    const s = SPRITES[key] ?? CARDS[key] ?? MANA_SPRITES[key];
+    const s = SPRITES[key] ?? CARDS[key];
     if (s) return s;
     const c = this.drawn.get(key);
     return c ? { w: c.width, h: c.height, box: [0, 0, c.width, c.height] } : null;
@@ -310,7 +309,6 @@ export class SpriteAtlas {
       this.next += layers;
       e = { layer, layers, ready: false, failed: false, idle: false };
       this.entries.set(key, e);
-      if (Object.hasOwn(MANA_SPRITES, key) && !this.drawn.has(key)) this.drawn.set(key, drawManaSprite(key));
       const drawn = this.drawn.get(key);
       if (drawn) this.store(e, drawn);
       else if (layers > 1) this.loadIdle(key, e);

@@ -177,14 +177,15 @@ lab and tools. The camera is the 3D one with the HD-2D preset's pitch and lens (
 
 ## 5. The sprites
 
-Mana resources and connected nodes have sphere-specific cards (`app/mana-art.js`), shared with
-the isometric fallback: 18 colours and distinct silhouettes, including Ice's special resource.
-Fire is a flame, Earth a mountain, Water a droplet, Nature a branching plant, Law scales, Mind an
-eye, Death a skull; the other spheres have their own symbols too. A wild deposit rests on rough
-shards; its matching built node adds a carved dais and standing stones. The atlas draws and caches
-each card on first use; no work is added per plot per frame. The flat renderer uses the same
-colours and distinct two-letter labels. `scene=mana&renderer=hd2d` in the lab compares deposits
-beside connected nodes.
+Mana has 18 physical mineral-deposit PNGs and 17 matching connected-shrine PNGs, shared with
+the isometric fallback (`app/mana-art.js` selects their indexed art). Each sphere has a distinct
+material and silhouette: Air's windswept white quartz, Earth's cubic ochre geodes, Fire's split
+basalt, Nature's root-bound emerald, Mind's amber spiral and Water's slate spring, for example.
+Connected shrines retain the mineral formation inside a carved stone ring with steps and short
+standing stones. The cards use the existing art pipeline's palette, hard alpha, upper-left light
+and shaded rim; there are no floating pictograms. School-coloured light stays close to the object
+with restrained bloom. The flat renderer keeps the sphere colours and two-letter labels.
+`scene=mana&renderer=hd2d` in the lab compares deposits beside connected nodes.
 
 * **Atlas** (`sprites.js`): the isometric renderer's PNGs (`assets/app/iso/*.png`, indexed by
   `iso/sprites.js`) loaded on first use into a `TEXTURE_2D_ARRAY` of 256 × 256 layers, one sprite a
@@ -572,10 +573,10 @@ Pristin Pass is a stone giant with gargoyles in its shoulder alcoves; Barrows ar
 grass-covered burial mounds with a clear stone trilithon entrance, separate from
 bear dens, lion dens and dungeons. Another 27 resource cards distinguish the
 previously shared crops, animals, trade goods and rare resources. Established
-works retain their existing artwork; mana schools retain their shared node family
-and school-coloured light.
+works retain their existing artwork. Mana has another 35 sphere-specific cards (§5),
+generated on 2026-11-15; Ice remains a resource of Letum Frigus rather than a buildable shrine.
 
-`tools/hd2d/landmarks.json` and `resources.json` retain each sheet's exact image
+`tools/hd2d/landmarks.json`, `resources.json` and `mana.json` retain each sheet's exact image
 generation prompt, reading order, type mapping and art-pixel height. These sheets
 were generated with the image_gen tool on 2026-11-14. Import a sheet with
 `python tools/hd2d/landmarks.py SHEET.png NAME`, then run `art.py index`. The importer
@@ -662,8 +663,8 @@ PNG dimensions and atlas fit, alongside the existing visibility checks.
   filmic curve; non-finite pixels give no light (a lone NaN would otherwise spread into a block).
   Both guards test the bits, not `isnan`/`isinf`, which Direct3D 11's compiler folds to false (there
   a NaN then went through `min(c, 32)` as 32: a purple blaze over the Sheaim lake in the lab).
-* **Light beams** over mana nodes (1.5 plots tall), mana resources and mages' towers: soft additive
-  columns in the node's school colour (`palette.js` MANA), shimmering.
+* **Light beams**: restrained school-coloured wisps over mana nodes (0.6 plots tall) and
+  resources (0.3); mages' towers retain 1.5-plot columns. Soft additive light, shimmering.
 * **Glowing borders**: the overlay's border becomes a hot core in the owner's colour, meandering a
   little inside the owner's side (so the plot grid does not show in it; where two realms meet each
   draws its own colour), its light spilling softly over that side; **no grid**.
