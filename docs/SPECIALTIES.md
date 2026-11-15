@@ -47,8 +47,8 @@ against them before it is added.
    A second city with the same specialty adds much less than the first, and distinct cities are
    the point.
 6. **A specialty is never blank.** Three ways an entry can be blank, and the rule for each:
-   - *The site lacks what it acts on.* An entry that needs a coast, mines, farms or rivers is
-     drawn only by a city that has them.
+   - *The site lacks what it acts on.* An entry that needs a coast is drawn only by a coastal
+     city.
    - *A civic grants the same thing.* An entry that grants access to an action a civic also
      grants adds something on top, so it still matters once the civic is adopted.
    - *The city cannot train the unit class.* The class is rolled from what the city can train
@@ -56,9 +56,13 @@ against them before it is added.
 7. **Passive value is not a specialty.** A buff whose value comes from where the city sits
    (defense on a border city, maintenance on a distant one), or that is shared by the whole
    empire (mana), does not shape the city. It is cut however good it is.
-8. **Culture is the gate, on purpose.** The draw comes at a culture level, so it comes after the
+8. **No bonuses on the city's tiles** (the owner's decision, 2026-11-15). The tiles a city has
+   are what they are, so "+1 food on farms" is a flat food bonus with noise on top: its size
+   varies with the site and the owner does nothing differently. The same holds for any yield
+   added to plots of a kind.
+9. **Culture is the gate, on purpose.** The draw comes at a culture level, so it comes after the
    city has a few buildings and borders, and a city that invests in culture specialises sooner.
-9. **Text is bare** (CLAUDE.md, "Rules text and tooltips"): the rule and its numbers, no flavor.
+10. **Text is bare** (CLAUDE.md, "Rules text and tooltips"): the rule and its numbers, no flavor.
 
 ## 2. Rules
 
@@ -86,25 +90,22 @@ Numbers are first guesses. Entries marked *owner* are the owner's own examples.
 | 2 | Units trained here start with Mobility I. | |
 | 3 | Units trained here cost no upkeep. | |
 | 4 | Wonders are built here at 1.5x speed. *(owner)* | |
-| 5 | Mines and quarries worked by this city give +1 production. | hills or stone |
-| 6 | Farms worked by this city give +1 food. | farmable land |
-| 7 | Settlers trained here do not stop growth, and the cities they found start at size 2. | |
-| 8 | Great Person points are doubled here. | |
-| 9 | Each specialist in this city gives +1 research. | |
-| 10 | 1.5x culture in this city. *(owner)* | |
-| 11 | Missionaries trained here never fail to spread their religion. | |
-| 12 | Each religion in this city gives +2 culture and +1 gold. | |
-| 13 | Water plots worked by this city give +1 food. | coast |
-| 14 | Naval units trained here get +1 movement. | coast |
-| 15 | Trade routes with other coastal cities yield double here. | coast |
+| 5 | Settlers trained here do not stop growth, and the cities they found start at size 2. | |
+| 6 | Great Person points are doubled here. | |
+| 7 | Each specialist in this city gives +1 research. | |
+| 8 | 1.5x culture in this city. *(owner)* | |
+| 9 | Missionaries trained here never fail to spread their religion. | |
+| 10 | Each religion in this city gives +2 culture and +1 gold. | |
+| 11 | Naval units trained here get +1 movement. | coast |
+| 12 | Trade routes with other coastal cities yield double here. | coast |
 
 ### 3.2 Changes how the city is used
 
 | # | Specialty | Needs |
 |---|---|---|
-| 16 | Units in this city heal fully each turn. | |
-| 17 | Friendly units move at double speed in this city's cultural radius. *(owner)* | |
-| 18 | This city gains +5 food each turn. *(owner)* | |
+| 13 | Units in this city heal fully each turn. | |
+| 14 | Friendly units move at double speed in this city's cultural radius. *(owner)* | |
+| 15 | This city gains +5 food each turn. *(owner)* | |
 
 Food is the one flat yield in the pool: it changes how a city is run (specialists, population
 rushing), where health, happiness and the other flat yields do not.
@@ -115,9 +116,9 @@ Each has its access and an extra on top (principle 6).
 
 | # | Specialty | Still to settle |
 |---|---|---|
-| 19 | This city can always rush production with population, and rushing here causes no unhappiness. *(owner, the access)* | |
-| 20 | This city can draft one unit every 10 turns with no unhappiness. | the extra once a civic allows drafting |
-| 21 | Rushing production with gold costs half here. | whether a civic gates gold rushing |
+| 16 | This city can always rush production with population, and rushing here causes no unhappiness. *(owner, the access)* | |
+| 17 | This city can draft one unit every 10 turns with no unhappiness. | the extra once a civic allows drafting |
+| 18 | Rushing production with gold costs half here. | whether a civic gates gold rushing |
 
 ### 3.4 Not yet placed
 
@@ -137,6 +138,7 @@ Each has its access and an extra on top (principle 6).
 | This city's cultural radius is one ring larger. | A one-time head start on land the city would get anyway. |
 | +3 health in this city. +3 happiness in this city. | They raise a cap every city wants equally. |
 | Buildings are built here at 1.25x speed. | Everything is a building: it points nowhere. |
+| Mines and quarries worked by this city give +1 production. Farms worked by this city give +1 food. Water plots worked by this city give +1 food. | A flat yield with noise (principle 8). |
 | This city keeps 50% of its food when it grows. | Overlaps the Granary and Smokehouse and the 60% cap on food kept. |
 
 Also rejected, as whole designs (2026-11-14): one built building becoming its Legendary version;
@@ -155,7 +157,7 @@ system; a choice among named charters.
   docs/SUITABILITY.md).
 - **A captured city.** Whether it keeps its specialty, and whether the specialty then counts
   against its new owner's draws.
-- **Pool size.** With about 21 entries and draws without replacement, an empire larger than its
+- **Pool size.** With about 18 entries and draws without replacement, an empire larger than its
   eligible pool has cities with nothing to draw. The pool needs more entries, above all for trade
   and for defense, which lost nearly everything in the cut. A defense entry must pass principle 1:
   it has to change what the owner does in the city, not only how well the city holds.
