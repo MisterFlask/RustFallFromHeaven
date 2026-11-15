@@ -245,14 +245,18 @@ lab and tools. The camera is the 3D one with the HD-2D preset's pitch and lens (
   slope in front); flat ones (farms, pastures, plantations, wineries, quarries) stay the 3D
   renderer's fields. A resource is its family's prop at the plot's front-left; under a standing
   improvement it lies at the card's front-left and is drawn before it (a mine's ore shows, and a
-  mana node's or fishing boats' resource). A town's card (batch 4: keep mask 0.95)
+  mana node's or fishing boats' resource). Resources reserve a small clearing around their opaque
+  sprite bounds, across neighbouring plots too: trees' crowns, bushes, rocks and shore props keep
+  off their silhouettes over the camera's 30–42° pitch range. The check uses the resource's actual
+  position beside an improvement, accounts for hills and map wrapping, and leaves the rest of the
+  dressing unchanged. Resource sprites take their own plot's fog visibility. A town's card (batch 4: keep mask 0.95)
   takes about half the moods' and the land palette's grade, so it keeps its own colours, and its
   warm lights (windows, fires, braziers: orange to yellow, not its red roofs or blue domes) glow. Mana and gems glow (their bright, saturated pixels
   feed the bloom). What a card stands for is **claimed** from the 3D dressing (no house, wall,
   structure or marker is modelled under it); trees keep out of a town's reach as before.
 * Scale (`dress.js` `PX`): a unit's 96 × 120 canvas is 0.46 × 0.58 of a plot, a 192-wide
   settlement 1.7 plots (as the reference's towns, which span about two tiles; the prop cards keep
-  clear of its footprint; the kit's towns, §5c, stand at the props' scale instead), other buildings 0.73, resources' canvases 0.65 (their props about 0.25),
+  clear of its footprint; the kit's towns, §5c, stand at the props' scale instead), other buildings 0.73, resources' canvases 0.81 (their props about 0.3),
   banners 0.8 tall, a lone prop 0.0031 a plot an art pixel (a 150 px oak about 0.47 of a plot; in
   a wood 0.58 of that, about 0.27; the woods' oaks and pines drawn by code, §5b, 45 px cards
   about a third of a plot tall), the props
@@ -549,6 +553,34 @@ isometric cards. Four ways to make them stand out were tried, each a switch in t
 **The default** combines them: size 1.25, lit 0.5, clearing 0.5, banners 0.6. The `plain` preset
 turns all four off; any of them can be turned off in the panel. A change to any of them redresses
 the map (`MapHd2d.setConfig`).
+
+## 5e. Bespoke map sites and resources
+
+The HD-2D map has dedicated art for all 17 unique landmarks and for the lairs,
+ruins, special sites and settlement stages that previously shared generic forts,
+caves, ruins or mana-node sprites: 45 improvements in total. The Guardian of
+Pristin Pass is a stone giant with gargoyles in its shoulder alcoves; Barrows are
+grass-covered burial mounds with a clear stone trilithon entrance, separate from
+bear dens, lion dens and dungeons. Another 27 resource cards distinguish the
+previously shared crops, animals, trade goods and rare resources. Established
+works retain their existing artwork; mana schools retain their shared node family
+and school-coloured light.
+
+`tools/hd2d/landmarks.json` and `resources.json` retain each sheet's exact image
+generation prompt, reading order, type mapping and art-pixel height. These sheets
+were generated with the image_gen tool on 2026-11-14. Import a sheet with
+`python tools/hd2d/landmarks.py SHEET.png NAME`, then run `art.py index`. The importer
+cuts nine grid cells (keeping disconnected parts such as the Seven Pines together),
+removes detached specks, and uses the existing prop pipeline's limited palette,
+hard alpha and one-pixel rim. Every card fits the 256-pixel atlas layer directly;
+Barrows uses a 59 x 40 card at twice the pixel scale, preserving its world
+footprint while keeping the doorway readable at play zoom; it has no baked blur.
+
+The generated art index exports `IMPROVEMENTS` and `RESOURCES`. Static dressing
+prefers these exact type mappings, and unit placement uses the same standing-site
+lookup. Worker build buttons use the matching art while the HD-2D map is active.
+The coverage test checks all unique landmarks, each new type's actual drawn card,
+PNG dimensions and atlas fit, alongside the existing visibility checks.
 
 ## 6. Light, moods and the post passes
 

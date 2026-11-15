@@ -45,8 +45,8 @@ against them before it is added.
    A second city with the same perk adds much less than the first, and distinct cities are
    the point.
 6. **A perk is never blank.** Three ways an entry can be blank, and the rule for each:
-   - *The site lacks what it acts on.* An entry that needs a coast is
-     drawn only by a city that has one.
+   - *The site lacks what it acts on.* An entry that needs a coast is drawn only by a coastal
+     city.
    - *A civic grants the same thing.* An entry that grants access to an action a civic also
      grants adds something on top, so it still matters once the civic is adopted.
    - *The city cannot train the unit class.* The class is rolled from what the city can train
@@ -54,9 +54,13 @@ against them before it is added.
 7. **Passive value is not a perk.** A buff whose value comes from where the city sits
    (defense on a border city, maintenance on a distant one), or that is shared by the whole
    empire does not shape the city. Typed mana is an explicit owner-requested exception.
-8. **Culture is the gate, on purpose.** The draw comes at a culture level, so it comes after the
+8. **No bonuses on the city's tiles** (the owner's decision, 2026-11-15). The tiles a city has
+   are what they are, so "+1 food on farms" is a flat food bonus with noise on top: its size
+   varies with the site and the owner does nothing differently. The same holds for any yield
+   added to plots of a kind.
+9. **Culture is the gate, on purpose.** The draw comes at a culture level, so it comes after the
    city has a few buildings and borders, and a city that invests in culture specialises sooner.
-9. **Text is bare** (CLAUDE.md, "Rules text and tooltips"): the rule and its numbers, no flavor.
+10. **Text is bare** (CLAUDE.md, "Rules text and tooltips"): the rule and its numbers, no flavor.
 
 ## 2. Rules
 

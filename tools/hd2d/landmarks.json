@@ -1,0 +1,261 @@
+{
+  "about": "Bespoke HD-2D map improvements. Each sheet's sprites are in reading order; imported by landmarks.py. Generated with image_gen, 2026-11-14. Existing named works keep their M7 artwork. Mana nodes share an intentional family with school-coloured runtime light.",
+  "sheets": [
+    {
+      "name": "monuments",
+      "prompt": "Create a production sprite sheet for Fall from Heaven HD-2D fantasy strategy game. EXACTLY NINE different isolated map-object sprites on a regular 3 by 3 grid, in reading order, one object per equal square cell with generous transparent gutters. Transparent background. Full object in each cell, no clipping, no text, no captions, no grid lines. Chunky crisp 16-bit PIXEL ART with visibly deliberate pixel clusters, limited muted earthy olive/brown/slate palette, dark one-pixel outlines, strong upper-left highlights and shadow on lower-right. Three-quarter view looking down about 35 degrees at the front of the objects, consistent scale and lighting. Small-map readability, bold distinctive silhouettes, sculpted details, no photographic texture, no anti-aliased painterly blur, no mist or bloom. Objects stand independently with no terrain tile or cast shadow. Draw exactly these nine objects, left to right across rows: a colossal weathered stone giant standing guard with small gargoyles nesting in carved shoulder alcoves (Guardian of Pristin Pass); a half-buried petrified winged warrior archangel trapped in jagged rock (Odio's Prison); an enormous bleached dragon skull with a curved ribcage and spine; a cluster of ancient jade-green imperial statues on broken plinths (Remnants of Patria); a cracked open gothic sepulcher with its shattered sealing stone and exposed dark stairway; an open white-stone sarcophagus shrine entwined in fresh green vines (Tomb of Sucellus); a shattered frozen throne and sword embedded in blue-white ice (Letum Frigus); a ring of pale starlight standing stones imprisoning a tiny fiery winged angel (Ring of Carcer); a white stone stepped pyre with golden angel wings and holy fire (Pyre of the Seraphic)",
+      "pieces": [
+        {
+          "type": "IMPROVEMENT_GUARDIAN",
+          "key": "bld_site_guardian",
+          "height": 164
+        },
+        {
+          "type": "IMPROVEMENT_ODIOS_PRISON",
+          "key": "bld_site_odios_prison",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_DRAGON_BONES",
+          "key": "bld_site_dragon_bones",
+          "height": 100
+        },
+        {
+          "type": "IMPROVEMENT_REMNANTS_OF_PATRIA",
+          "key": "bld_site_remnants_of_patria",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_BROKEN_SEPULCHER",
+          "key": "bld_site_broken_sepulcher",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_TOMB_OF_SUCELLUS",
+          "key": "bld_site_tomb_of_sucellus",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_LETUM_FRIGUS",
+          "key": "bld_site_letum_frigus",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_RING_OF_CARCER",
+          "key": "bld_site_ring_of_carcer",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_PYRE_OF_THE_SERAPHIC",
+          "key": "bld_site_pyre_of_the_seraphic",
+          "height": 112
+        }
+      ]
+    },
+    {
+      "name": "wonders",
+      "prompt": "Create a production sprite sheet for Fall from Heaven HD-2D fantasy strategy game. EXACTLY NINE different isolated map-object sprites on a regular 3 by 3 grid, in reading order, one object per equal square cell with generous transparent gutters. Transparent background. Full object in each cell, no clipping, no text, no captions, no grid lines. Chunky crisp 16-bit PIXEL ART with visibly deliberate pixel clusters, limited muted earthy olive/brown/slate palette, dark one-pixel outlines, strong upper-left highlights and shadow on lower-right. Three-quarter view looking down about 35 degrees at the front of the objects, consistent scale and lighting. Small-map readability, bold distinctive silhouettes, sculpted details, no photographic texture, no anti-aliased painterly blur, no mist or bloom. Objects stand independently with no terrain tile or cast shadow. Draw exactly these nine objects, left to right across rows: a small rocky barren island with ruined sea-temple pillars and a broken shell arch (Maenalus); a sinister ancient stone well with a deep violet interior and twisted roots (Bradeline's Well); a mossy stepped jungle altar with a blood-red ceremonial stone; a dark teal spiral whirlpool of concentric pixel water crests (Maelstrom), no island; a tilted circular golden mirror held in an ornate pale stone sun shrine (Mirror of Heaven); a tiny luminous turquoise pool surrounded by weeping pale statues (Pool of Tears); seven tall distinct dark pine trees arranged in a sacred crescent; a druidic ring of weathered grey menhirs with carved spiral markings (Standing Stones); a vast ancient golden-fruited world tree with gnarled trunk and deep olive crown (Yggdrasil)",
+      "pieces": [
+        {
+          "type": "IMPROVEMENT_AIFON_ISLE",
+          "key": "bld_site_aifon_isle",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_BRADELINES_WELL",
+          "key": "bld_site_bradelines_well",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_JUNGLE_ALTAR",
+          "key": "bld_site_jungle_altar",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MAELSTROM",
+          "key": "bld_site_maelstrom",
+          "height": 100
+        },
+        {
+          "type": "IMPROVEMENT_MIRROR_OF_HEAVEN",
+          "key": "bld_site_mirror_of_heaven",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_POOL_OF_TEARS",
+          "key": "bld_site_pool_of_tears",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_SEVEN_PINES",
+          "key": "bld_site_seven_pines",
+          "height": 126
+        },
+        {
+          "type": "IMPROVEMENT_STANDING_STONES",
+          "key": "bld_site_standing_stones",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_YGGDRASIL",
+          "key": "bld_site_yggdrasil",
+          "height": 160
+        }
+      ]
+    },
+    {
+      "name": "lairs",
+      "prompt": "Create a production sprite sheet for Fall from Heaven HD-2D fantasy strategy game. EXACTLY NINE different isolated map-object sprites on a regular 3 by 3 grid, in reading order, one object per equal square cell with generous transparent gutters. Transparent background. Full object in each cell, no clipping, no text, no captions, no grid lines. Chunky crisp 16-bit PIXEL ART with visibly deliberate pixel clusters, limited muted earthy olive/brown/slate palette, dark one-pixel outlines, strong upper-left highlights and shadow on lower-right. Three-quarter view looking down about 35 degrees at the front of the objects, consistent scale and lighting. Small-map readability, bold distinctive silhouettes, sculpted details, no photographic texture, no anti-aliased painterly blur, no mist or bloom. Objects stand independently with no terrain tile or cast shadow. Draw exactly these nine objects, left to right across rows: a low GRASS-COVERED BURIAL MOUND with a very clear grey stone trilithon doorway, black rectangular entrance, stone lintel, two upright slabs, short burial markers, no monster teeth, no fog (Barrow); a bear's den under a brown rocky overhang with claw scratches and a small hibernating brown bear; a sunlit sandstone lion den with a tawny lion resting beside its entrance; a ruined dungeon stair descending into a square stone cellar with an iron barred arch; a large empty iron cage hanging from a wooden gallows; a jagged obsidian hellfire vent with vivid orange flames and red cracks; a huge ancient monster skeleton with skull and arched ribs, distinct from a dragon; a sinister tall necromantic skull totem with bone charms and violet runes; an ancient stone pillar carved as a coiled serpent with a cobra head",
+      "pieces": [
+        {
+          "type": "IMPROVEMENT_BARROW",
+          "key": "bld_site_barrow",
+          "height": 38,
+          "pixelScale": 2
+        },
+        {
+          "type": "IMPROVEMENT_BEAR_DEN",
+          "key": "bld_site_bear_den",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_LION_DEN",
+          "key": "bld_site_lion_den",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_DUNGEON",
+          "key": "bld_site_dungeon",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_CAGE",
+          "key": "bld_site_cage",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_HELLFIRE",
+          "key": "bld_site_hellfire",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_MONSTER_SKELETON",
+          "key": "bld_site_monster_skeleton",
+          "height": 86
+        },
+        {
+          "type": "IMPROVEMENT_NECROTOTEM",
+          "key": "bld_site_necrototem",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_SNAKE_PILLAR",
+          "key": "bld_site_snake_pillar",
+          "height": 112
+        }
+      ]
+    },
+    {
+      "name": "sites",
+      "prompt": "Create a production sprite sheet for Fall from Heaven HD-2D fantasy strategy game. EXACTLY NINE different isolated map-object sprites on a regular 3 by 3 grid, in reading order, one object per equal square cell with generous transparent gutters. Transparent background. Full object in each cell, no clipping, no text, no captions, no grid lines. Chunky crisp 16-bit PIXEL ART with visibly deliberate pixel clusters, limited muted earthy olive/brown/slate palette, dark one-pixel outlines, strong upper-left highlights and shadow on lower-right. Three-quarter view looking down about 35 degrees at the front of the objects, consistent scale and lighting. Small-map readability, bold distinctive silhouettes, sculpted details, no photographic texture, no anti-aliased painterly blur, no mist or bloom. Objects stand independently with no terrain tile or cast shadow. Draw exactly these nine objects, left to right across rows: the rubble of a destroyed medieval town with half-timbered walls and toppled chimney (City Ruins); a crumbling ancient stone ruin with two broken columns and a cracked arch; a wrecked wooden sailing ship with snapped mast and torn pale sail on broken hull, no water patch; a free-standing circular carved stone portal with a dark violet magical interior; a small colony of five black and white penguins huddled on a little rock; a cultivated cluster of large ochre and brown mushrooms on dark logs; a medieval grey stone castle with four turrets and red-brown roofs; a formidable dark stone citadel with a tall square keep and fortified gate; a prosperous enclosed stone merchant enclave with golden roofs and courtyard",
+      "pieces": [
+        {
+          "type": "IMPROVEMENT_CITY_RUINS",
+          "key": "bld_site_city_ruins",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_RUINS",
+          "key": "bld_site_ruins",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_SHIP_WRECK",
+          "key": "bld_site_ship_wreck",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_PORTAL",
+          "key": "bld_site_portal",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_PENGUINS",
+          "key": "bld_site_penguins",
+          "height": 68
+        },
+        {
+          "type": "IMPROVEMENT_MUSHROOMS",
+          "key": "bld_site_mushrooms",
+          "height": 68
+        },
+        {
+          "type": "IMPROVEMENT_CASTLE",
+          "key": "bld_site_castle",
+          "height": 130
+        },
+        {
+          "type": "IMPROVEMENT_CITADEL",
+          "key": "bld_site_citadel",
+          "height": 146
+        },
+        {
+          "type": "IMPROVEMENT_ENCLAVE",
+          "key": "bld_site_enclave",
+          "height": 130
+        }
+      ]
+    },
+    {
+      "name": "settlements",
+      "prompt": "Create a production sprite sheet for Fall from Heaven HD-2D fantasy strategy game. EXACTLY NINE different isolated map-object sprites on a regular 3 by 3 grid, in reading order, one object per equal square cell with generous transparent gutters. Transparent background. Full object in each cell, no clipping, no text, no captions, no grid lines. Chunky crisp 16-bit PIXEL ART with visibly deliberate pixel clusters, limited muted earthy olive/brown/slate palette, dark one-pixel outlines, strong upper-left highlights and shadow on lower-right. Three-quarter view looking down about 35 degrees at the front of the objects, consistent scale and lighting. Small-map readability, bold distinctive silhouettes, sculpted details, no photographic texture, no anti-aliased painterly blur, no mist or bloom. Objects stand independently with no terrain tile or cast shadow. Draw exactly these nine objects, left to right across rows: a solitary ruined wizard watchtower with a pointed blue-slate roof and narrow golden window; a rough timber warning post with a hanging bronze alarm bell and ragged pennant; a tiny pirate cove of a weathered hut, smuggler crates and short wooden jetty; a pirate harbor with a timber lookout, warehouse and moored small longboat, no water base; a fortified pirate port with a tall crooked lighthouse, palisade and dock; an ancient tribal goody hut with thatched conical roof, clay pots and carved wooden post; a small medieval hamlet of two thatched cottages with vegetable basket; a rustic village of three brown-roofed cottages around a stone well; a prosperous medieval town of three tall stone and timber houses with slate roofs",
+      "pieces": [
+        {
+          "type": "IMPROVEMENT_TOWER",
+          "key": "bld_site_tower",
+          "height": 136
+        },
+        {
+          "type": "IMPROVEMENT_WARNING_POST",
+          "key": "bld_site_warning_post",
+          "height": 108
+        },
+        {
+          "type": "IMPROVEMENT_PIRATE_COVE",
+          "key": "bld_site_pirate_cove",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_PIRATE_HARBOR",
+          "key": "bld_site_pirate_harbor",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_PIRATE_PORT",
+          "key": "bld_site_pirate_port",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_GOODY_HUT",
+          "key": "bld_site_goody_hut",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_HAMLET",
+          "key": "bld_site_hamlet",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_VILLAGE",
+          "key": "bld_site_village",
+          "height": 112
+        },
+        {
+          "type": "IMPROVEMENT_TOWN",
+          "key": "bld_site_town",
+          "height": 112
+        }
+      ]
+    }
+  ]
+}

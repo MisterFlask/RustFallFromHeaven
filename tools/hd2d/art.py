@@ -317,6 +317,9 @@ def owner_band(rgba):
 
 def index():
     cards, grounds = {}, []
+    pieces = {p["key"]: p for filename in ("landmarks.json", "resources.json")
+              for sheet in json.loads(Path(__file__).with_name(filename).read_text())["sheets"]
+              for p in sheet["pieces"]}
     for p in sorted(ART.glob("*.png")):
         im = Image.open(p)
         if p.stem.startswith("gnd_"):
@@ -338,8 +341,20 @@ def index():
     ]
     for k, v in cards.items():
         band = ", band: true" if v.get("band") else ""
-        lines.append(f"  {k}: {{ w: {v['w']}, h: {v['h']}, box: {json.dumps(v['box']).replace(',', ', ')}{band} }},")
+        scale = f", pixelScale: {pieces[k]['pixelScale']}" if pieces.get(k, {}).get("pixelScale") else ""
+        lines.append(f"  {k}: {{ w: {v['w']}, h: {v['h']}, box: {json.dumps(v['box']).replace(',', ', ')}{band}{scale} }},")
     lines.append("};")
+    # The mode's bespoke landmarks/lairs take precedence over the isometric
+    # renderer's by-kind stand-ins. Keep the mapping beside its generated art.
+    for filename, export in (("landmarks.json", "IMPROVEMENTS"), ("resources.json", "RESOURCES")):
+        manifest = json.loads(Path(__file__).with_name(filename).read_text(encoding="utf-8"))
+        lines.append(f"export const {export} = {{")
+        for sheet in manifest["sheets"]:
+            for piece in sheet["pieces"]:
+                if piece["key"] not in cards:
+                    sys.exit(f"missing map card: {piece['key']}")
+                lines.append(f'  {piece["type"]}: "{piece["key"]}",')
+        lines.append("};")
     (ART / "index.js").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
     print(f"index: {len(grounds)} ground layers, {len(cards)} cards")
 

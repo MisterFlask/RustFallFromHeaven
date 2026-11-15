@@ -14,7 +14,7 @@ const { buildMap, buildView, hd2d, settlements, riverBits } = await import("../.
 const { World, KIND } = await import("../app/r3d/world.js");
 await import("../app/r3d/assets/index.js");
 const { SPRITES } = await import("../app/iso/sprites.js");
-const { CARDS, GROUNDS } = await import("../app/r3d/hd2d/art/index.js");
+const { CARDS, GROUNDS, IMPROVEMENTS, RESOURCES } = await import("../app/r3d/hd2d/art/index.js");
 const { unitSpriteKeys } = await import("../app/iso.js");
 const { dressSpriteStatic, dressSpriteUnits, PX } = await import("../app/r3d/hd2d/dress.js");
 const { IDLE, IDLE_FRAME, idleCard } = await import("../app/r3d/hd2d/sprites.js");
@@ -149,6 +149,39 @@ test("cities, standing improvements and resources stand as cards, and the 3D dre
     assert.equal(r.key.includes("@"), !!CARDS[plain(r.key)].band, "a town's pieces with the owner-colour band take their owner's colour");
     assert.ok(r.town && r.shadow, "a town's pieces are lit as towns and cast shadows");
   }
+});
+
+test("landmarks, lairs and formerly shared resource markers use their own HD-2D art", () => {
+  const items = [...Object.entries(IMPROVEMENTS), ...Object.entries(RESOURCES)];
+  assert.equal(new Set(items.map(([, key]) => key)).size, items.length, "each site has distinct artwork");
+  const n = Math.ceil(items.length / 6) * 2 + 2;
+  const improvements = [], bonuses = [];
+  items.forEach(([type], i) => {
+    const spot = [1 + (i % 6) * 2, 1 + Math.floor(i / 6) * 2, type];
+    (type.startsWith("BONUS_") ? bonuses : improvements).push(spot);
+  });
+  const map = buildMap(data, Array.from({ length: n }, () => ".".repeat(14)), { improvements, bonuses });
+  const view = buildView(data, { players: [{ civ: "CIVILIZATION_BANNOR" }] });
+  const { list, claims } = dressSpriteStatic(scene({ map, view }), map, atlas);
+  assert.equal(claims.improvement.size, improvements.length);
+  assert.equal(claims.bonus.size, bonuses.length);
+  for (const [type, key] of items) {
+    assert.equal(list.filter((r) => r.key === key).length, 1, `${type} draws its own art once`);
+    const info = CARDS[key];
+    assert.ok(info && info.w <= 256 && info.h <= 256, `${key} fits the atlas without resampling`);
+    const png = fs.readFileSync(fileURLToPath(new URL(`../app/r3d/hd2d/art/${key}.png`, import.meta.url)));
+    assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [info.w, info.h], `${key} metadata matches its PNG`);
+  }
+  const types = JSON.parse(fs.readFileSync(new URL("../../../../data/json/improvements.jsonc", import.meta.url), "utf8").replace(/^\s*\/\/.*$/gm, ""));
+  const unique = types.filter((t) => t.unique);
+  assert.ok(unique.length > 0, "read unique landmarks from the rules data, not the lab's name-only table");
+  for (const type of unique) {
+    assert.ok(IMPROVEMENTS[type.type], `${type.type} has bespoke landmark art`);
+  }
+  assert.notEqual(IMPROVEMENTS.IMPROVEMENT_BARROW, IMPROVEMENTS.IMPROVEMENT_DUNGEON);
+  const barrow = list.find((r) => r.key === IMPROVEMENTS.IMPROVEMENT_BARROW);
+  assert.ok(Math.abs(barrow.w - 120 * PX.building) <= 2 * PX.building + 1e-9, "Barrows keeps its footprint within one coarse pixel");
+  assert.equal(barrow.h, 80 * PX.building);
 });
 
 test("towns grow with their size, walled cities have walls, a gate and towers, deterministic", () => {
@@ -314,7 +347,7 @@ test("nothing stands on, and no mood comes from, what the player has not seen", 
     const i = Math.floor(-r.z - 0.01 + 0.5) * map.w + Math.floor(r.x);
     assert.notEqual(w.kind[Math.max(0, i)], KIND.VOID, `${r.key} on an unrevealed plot`);
   }
-  assert.equal(list.filter((r) => r.key === "bld_watchtower").length, 1, "only the seen tower");
+  assert.equal(list.filter((r) => r.key === IMPROVEMENTS.IMPROVEMENT_TOWER).length, 1, "only the seen tower");
   const { data: mood } = plotMoods(w, map);
   for (const [x, y] of hidden) assert.deepEqual([...mood.slice((y * map.w + x) * 4, (y * map.w + x) * 4 + 4)], [0, 0, 0, 0]);
   // The Sheaim's land is corrupted, hell terrain is hell.
