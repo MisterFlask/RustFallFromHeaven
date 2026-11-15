@@ -330,7 +330,7 @@ function woodOf(feat, ground, hills) {
 
 /** What scatters over open ground, by its ground and mood: [kind, how many (expected), scale].
  *  Only what says what the ground is: green tufts and flowers on grassland, dry tufts on plains,
- *  reeds on marsh, moss on tundra, pebbles on the barren grounds, rocks on hills and peaks, the
+ *  reeds on marsh, moss on tundra, stones on improved plots, the
  *  regions' own things (lava rocks, crystals, ...). No lone trees, bushes, boulders, ruins or
  *  standing stones on open ground: they made grassland and plains read as woods, hills or a site
  *  (the owner's call, 2026-11-01). */
@@ -355,22 +355,6 @@ function clutterOf(kind, ground, mood) {
 /** Props that carry a light of their own (hut windows, runes, lamps, embers): their bright,
  *  saturated pixels feed the bloom. */
 const GLOWS = { crystal: 1.3, lava_rock: 1.3, obelisk: 1.4, altar: 1.2, vent: 1.4, lantern: 1.4, hut: 0.6 };
-
-/** A town spills over its walls, as the look target's do: on the open plots round it, houses,
- *  gardens, a well, fences and haystacks -- more on the ring next to it than on the one beyond.
- *  Returns how far the nearest city is (1 or 2 plots, 0 for none) and its plot index. */
-function townRing(map, world, x, y) {
-  let best = 0, at = -1;
-  for (let dy = -2; dy <= 2; dy++) {
-    for (let dx = -2; dx <= 2; dx++) {
-      const j = world.index(x + dx, y + dy);
-      if (j < 0 || map.city[j] < 0) continue;
-      const d = Math.max(Math.abs(dx), Math.abs(dy));
-      if (d > 0 && (!best || d < best)) [best, at] = [d, j];
-    }
-  }
-  return [best, at];
-}
 
 /** The town kit's architecture families (tools/hd2d/towns.json, docs/HD2D.md §5c), by the short
  *  name of a civilization (iso.js civShortName): the 3D renderer's families (architecture.js
@@ -578,21 +562,10 @@ function dressTown(world, map, atlas, env, city, kit, list) {
 /** What may stand on a town's clearing (config.js townClearing): low things and the fields. */
 const LOW = new Set(["flowers", "grass", "grass_3", "pebbles", "garden", "fence", "hay", "well", "cart"]);
 
-/** A town's fields round its clearing (config.js townClearing): garden plots, haystacks and fences
- *  on the plots next to it, fewer one further out. */
-function fields(put, r, ring, clearing) {
-  if (!ring) return;
-  const n = Math.round((ring === 1 ? 3 : 1.5) * clearing * r.range(0.7, 1.3));
-  for (let k = 0; k < n; k++) {
-    const p = r();
-    put(p < 0.6 ? "garden" : p < 0.82 ? "hay" : "fence", r.range(-0.4, 0.4), r.range(-0.4, 0.42), FINE * r.range(0.95, 1.15));
-  }
-}
-
 /** Props too low to cast a shadow worth the shadow map's while. */
 const FLAT = new Set(["flowers", "grass", "grass_3", "pebbles", "garden", "bones"]);
 
-/** Farmland's own clutter, near a town or on a farm, pasture or cottage plot: fences and haystacks. */
+/** Agricultural improvements carry fences and haystacks. */
 const FARMED = /FARM|PASTURE|COTTAGE|HAMLET|VILLAGE|PLANTATION|WINERY/;
 
 /** The prop cards of the land: stands of single trees on wooded plots (a jittered three by three,
@@ -602,16 +575,13 @@ const FARMED = /FARM|PASTURE|COTTAGE|HAMLET|VILLAGE|PLANTATION|WINERY/;
 function dressProps(world, map, atlas, env, moods, list) {
   const w = world.w;
   const H = (mx, my) => world.heightAt(mx, my);
-  const cityAt = new Map();
   /** A town of the kit's shape (townShape), by its plot: worked out once a dressing. */
   const shapeAt = new Map();
   const townScale = env.town?.scale ?? 1;
   for (const c of S.cities.values()) {
-    cityAt.set(c.y * w + c.x, c);
     if (townKit(c)) shapeAt.set(c.y * w + c.x, townShape(c, townScale));
   }
-  // A town on a clearing (config.js townClearing): what stands tall (trees, bushes, rocks) keeps
-  // this much further out; grass, flowers and fields do not.
+  // A town on a clearing keeps tall vegetation farther from its buildings.
   const clearing = env.town?.clearing ?? 0;
   const margin = (kindKey) => (clearing > 0 && !LOW.has(kindKey) ? 0.6 * clearing : 0);
   const cityNear = (x, y, lx, lz, m = 0) => {
@@ -654,6 +624,7 @@ function dressProps(world, map, atlas, env, moods, list) {
       return !cityNear(x, y, lx, lz, m);
     };
     const put = (kindKey, lx, lz, scale) => {
+      if (map.improvement[i] < 0 && ["rock", "pebbles", "lava_rock"].includes(kindKey)) return;
       const vs = variants(kindKey);
       if (!vs.length || !ok(lx, lz, margin(kindKey))) return;
       const key = vs[r.int(0, vs.length - 1)];
@@ -689,7 +660,6 @@ function dressProps(world, map, atlas, env, moods, list) {
       if (r() < 0.7) put("bush", r.range(-0.42, 0.42), r.range(-0.42, 0.42), r.range(0.7, 1.0));
       // The wood's floor at its edge: grass and a fern-like bush where light reaches.
       for (let k = 0; k < 2; k++) put("grass", r.range(-0.46, 0.46), r.range(0.3, 0.48), FINE * r.range(0.85, 1.1));
-      if (clearing > 0) fields(put, r, townRing(map, world, x, y)[0], clearing);
     } else if (kind === KIND.LAND || kind === KIND.HILLS || kind === KIND.PEAK) {
       // Clumps: most things gather round one or two spots of the plot, the rest lie anywhere.
       const clumps = [[r.range(-0.3, 0.3), r.range(-0.3, 0.3)], [r.range(-0.3, 0.3), r.range(-0.3, 0.3)]];
@@ -702,37 +672,11 @@ function dressProps(world, map, atlas, env, moods, list) {
         let count = Math.floor(n) + (r() < n - Math.floor(n) ? 1 : 0);
         while (count-- > 0) put(k, ...at(), s * r.range(0.8, 1.15));
       }
-      // Farmland and a town's outskirts: fences along a side of the plot, a haystack or two,
-      // and next to the town its houses and gardens.
+      // Only worked land carries agricultural props; nearby bare terrain stays open.
       const imp = map.improvement[i] >= 0 ? tname("ImprovementType", map.improvement[i]) : "";
-      const [ring, ringAt] = HELLISH.has(world.ground[i]) ? [0, -1] : townRing(map, world, x, y);
-      if (FARMED.test(imp) || (ring && r() < 0.6)) {
+      if (FARMED.test(imp)) {
         if (r() < 0.75) put("fence", r.range(-0.2, 0.2), r() < 0.5 ? 0.42 : -0.4, FINE);
         if (r() < 0.55) put("hay", r.range(-0.35, 0.35), r.range(-0.1, 0.38), FINE * r.range(0.85, 1.05));
-      }
-      if (ring && !imp) {
-        const huts = ring === 1 ? (r() < 0.75 ? 2 : 1) : r() < 0.45 ? 1 : 0;
-        // The town's own houses (in its owner's colour), else huts. Two keep
-        // to either half of the plot, so they never stand in each other.
-        const town = cityAt.get(ringAt);
-        const kit = town ? townKit(town) : null;
-        // All four (the low ones twice as often), so the owner's colour spills out too.
-        const low = kit ? (([a, b, c, d]) => [a, a, b, b, c, d].filter(Boolean))([...kit.house].sort((a, b) => atlas.info(a).h - atlas.info(b).h)) : null;
-        for (let k = 0; k < huts; k++) {
-          const lx = huts === 1 ? r.range(-0.3, 0.3) : k ? r.range(0.08, 0.32) : r.range(-0.32, -0.08), lz = r.range(-0.3, 0.3);
-          if (!low) put(r() < 0.25 ? "hut_stone" : "hut", lx, lz, FINE * r.range(0.9, 1.05));
-          else if (ok(lx, lz)) {
-            const key = r.pick(low);
-            const mx = x + 0.5 + lx, my = y + 0.5 - lz;
-            const owned = atlas.owned && CARDS[key]?.band ? atlas.owned(key, teamCss(town.owner)) : key;
-            list.push(card(owned, atlas.info(key), PX.prop * r.range(0.9, 1.04), mx, H(mx, my) - 0.006, -my, { shadow: true, town: true, glow: 1.1, flip: r() < 0.5, id: 0.0002, vis: [x + 0.5, y + 0.5] }));
-          }
-        }
-        if (r() < (ring === 1 ? 0.5 : 0.25)) put("garden", r.range(-0.25, 0.25), r.range(-0.3, 0.35), FINE);
-        if (clearing > 0) fields(put, r, ring, clearing);
-        if (ring === 1 && r() < 0.12) put("well", r.range(-0.3, 0.3), r.range(-0.2, 0.3), FINE);
-        // (Kinds the image model may add, tools/hd2d/props.json: none stand until their cards exist.)
-        if (r() < 0.12) put("cart", r.range(-0.3, 0.3), r.range(-0.2, 0.35), FINE);
       }
     }
   }

@@ -240,7 +240,7 @@ test("towns stand out: larger, on a clearing, under their owner's banners, as th
   const near = (r) => Math.hypot(r.x - c.x - 0.5, -r.z - c.y - 0.5) < 1.3;
   const tall = (l) => l.filter((r) => near(r) && /^(tree|bush|rock)_/.test(r.key)).length;
   assert.ok(tall(list) < tall(plainList) || tall(plainList) === 0, `tall props near the town: ${tall(list)} against ${tall(plainList)}`);
-  assert.ok(list.filter((r) => /^(garden|hay)_/.test(r.key)).length > plainList.filter((r) => /^(garden|hay)_/.test(r.key)).length, "fields round a town on a clearing");
+  assert.equal(list.filter((r) => /^(garden|hay|fence)_/.test(r.key)).length, plainList.filter((r) => /^(garden|hay|fence)_/.test(r.key)).length, "a clearing does not add farmland to bare plots");
   assert.deepEqual(dressSpriteStatic(w, s.map, atlas, env, null).list, list, "the same state, the same town");
 });
 
@@ -262,6 +262,7 @@ test("woods stand as single tree cards and open ground as scattered props, claim
     }
   }
   assert.ok(list.some((r) => r.key.startsWith("tree_ancient_")), "an ancient wood has its giants");
+  assert.ok(!list.some((r) => /^(rock|pebbles|lava_rock|hut|hay|fence)_/.test(r.key)), "bare inland terrain has no scattered buildings, farm props or rocks");
   for (const r of list) assert.ok(atlas.has(r.key), r.key);
   // The hidden plot (5, 0) holds nothing.
   assert.ok(!list.some((r) => at(r)[0] === 5 && at(r)[1] === 0), "a card on an unrevealed plot");
@@ -289,7 +290,7 @@ test("shores are rimmed with stones and open ground is filled with small props i
   assert.deepEqual(dressSpriteStatic(w, map, atlas, env, null).list, list, "the same state, the same cards");
 });
 
-test("towns spill into houses round them, regions carry their own things", () => {
+test("bare terrain stays free of houses and agricultural clutter, regions keep their own features", () => {
   const s = hd2d(data);
   St.setView(s.view);
   St.setMap(s.map);
@@ -297,9 +298,13 @@ test("towns spill into houses round them, regions carry their own things", () =>
   const { moods } = plotMoods(w, s.map);
   const { list } = dressSpriteStatic(w, s.map, atlas, { unitAt: new Set(), cityAt: new Map() }, moods);
   const n = (kind) => list.filter((r) => r.key.startsWith(`${kind}_`)).length;
-  // The houses round a town are its own family's (the lab's towns' families all have the kit).
+  // City buildings stay in cities; bare neighbouring plots receive no houses.
   const ring = list.filter((r) => r.id === 0.0002 && /^town_\w+_house_/.test(plain(r.key)));
-  assert.ok(ring.length >= 6, `houses round the towns: ${ring.length}`);
+  assert.equal(ring.length, 0, "no decorative houses outside city plots");
+  for (const r of list.filter((r) => r.id === 0.0002 && /^(hut|hay|fence)_/.test(plain(r.key)))) {
+    const i = Math.floor(-r.z) * w.w + Math.floor(r.x);
+    assert.ok(s.map.improvement[i] >= 0, `clutter on bare plot: ${r.key} at ${i}`);
+  }
   assert.ok(n("obelisk") + n("altar") >= 1, "the Sheaim's corrupted land has its obelisks and altars");
   assert.ok(n("lantern") >= 1, "the Ljosalfar's lush land has its lanterns");
   assert.ok(n("bones") + n("vent") >= 4, "hell has its bones and vents");
