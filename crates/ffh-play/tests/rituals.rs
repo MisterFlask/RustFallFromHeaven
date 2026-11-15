@@ -60,7 +60,7 @@ fn duel_as(seed: u32, civ: &str) -> Session {
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
     let h = s.human;
     let settler = s.g.players[h].units.iter().copied().find(|&u| s.g.d.units[s.g.units[u].unit_type].found).unwrap();
-    let r = s.execute(&Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false });
+    let r = s.execute(&Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false, confirm_end_siege: false });
     assert!(matches!(r, Ok(CmdOk::Applied { .. })), "{r:?}");
     s
 }

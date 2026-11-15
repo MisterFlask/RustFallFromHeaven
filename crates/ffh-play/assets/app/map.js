@@ -1415,7 +1415,7 @@ export class MapView {
         // Zoomed out (no label): the harbour mark at the banner's left.
         if (ts < 16) drawHarbourMark(g, c, bx, by + hh / 2, 5, 1);
         if (ts >= 16) {
-          const label = `${c.capital ? "★ " : ""}${c.name}${outpostTag(c)}`;
+          const label = `${c.capital ? "★ " : ""}${c.name}${outpostTag(c)}${c.siege ? ` · ${c.siege.label}` : ""}`;
           g.font = `${ts >= 32 ? 12 : 10}px ${FONT}`;
           const tw = g.measureText(label).width + 8;
           g.fillStyle = "rgba(10,10,12,0.78)";

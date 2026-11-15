@@ -431,7 +431,7 @@ fn command_latency(s: &mut Session, max: usize) -> (Vec<f64>, String) {
                     .map(|p| g.map.xy(p))
             });
             if let (Some((x, y)), true) = (target, s.read(|g| g.unit_moves_left(units[0]) > 0)) {
-                run(s, Command::Move { units: units.clone(), x, y, append: false, declare_war: Some(false) }, &mut times);
+                run(s, Command::Move { units: units.clone(), x, y, append: false, declare_war: Some(false), confirm_end_siege: false }, &mut times);
                 continue;
             }
         }

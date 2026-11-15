@@ -74,7 +74,7 @@ fn ok(s: &mut Session, c: Command) {
 fn found_capital(s: &mut Session) {
     let h = s.human;
     let settler = s.g.players[h].units.iter().copied().find(|&u| s.g.d.units[s.g.units[u].unit_type].found).expect("a settler");
-    ok(s, Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false });
+    ok(s, Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false, confirm_end_siege: false });
     assert_eq!(s.g.players[h].cities.len(), 1);
 }
 
@@ -185,7 +185,7 @@ fn conquest_offers_the_gift_to_a_friendly_liberation_player() {
     let u = attacker_next_to(&mut s.g, h, plot);
     answer(&script, "keep_city", "gift");
     let (x, y) = s.g.map.xy(plot);
-    ok(&mut s, Command::Move { units: vec![u], x, y, append: false, declare_war: None });
+    ok(&mut s, Command::Move { units: vec![u], x, y, append: false, declare_war: None, confirm_end_siege: false });
     let asked = asked(&script);
     assert_eq!(asked.len(), 1, "{asked:?}");
     let d = &asked[0];
@@ -210,7 +210,7 @@ fn conquest_without_a_friend_offers_keep_or_raze() {
     let u = attacker_next_to(&mut s.g, h, plot);
     answer(&script, "keep_city", "raze");
     let (x, y) = s.g.map.xy(plot);
-    ok(&mut s, Command::Move { units: vec![u], x, y, append: false, declare_war: None });
+    ok(&mut s, Command::Move { units: vec![u], x, y, append: false, declare_war: None, confirm_end_siege: false });
     let asked = asked(&script);
     assert_eq!(asked.len(), 1);
     assert!(matches!(asked[0].kind, DecisionKind::KeepCity { gift_to: None, .. }));

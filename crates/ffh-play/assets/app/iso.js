@@ -1554,7 +1554,7 @@ export class IsoMap {
       const col = ownerColor(city.owner);
       const size = city.size === null || city.size === undefined ? "?" : String(city.size);
       const turns = city.owner === mine ? city.production?.turns : null;
-      const label = f.TW >= 64 ? `${city.name ?? ""}${outpostTag(city)}${turns !== null && turns !== undefined ? `  ${turns}` : ""}` : "";
+      const label = f.TW >= 64 ? `${city.name ?? ""}${outpostTag(city)}${city.siege ? ` · ${city.siege.label}` : ""}${turns !== null && turns !== undefined ? `  ${turns}` : ""}` : "";
       const tw = label ? Math.ceil(g.measureText(label).width) : 0;
       const sw = Math.ceil(g.measureText(size).width);
       const h = 15 * u;

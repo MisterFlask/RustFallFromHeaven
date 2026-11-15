@@ -138,6 +138,12 @@ impl Game {
     /// from the water plots next to its ports, layer by layer, each plot keeping the lowest city
     /// id among the nearest ports.
     fn sea_field_compute(&self, team: TeamId) -> SeaField {
+        self.sea_field_compute_for_supply(team, false)
+    }
+
+    /// The same range graph for army supply, optionally excluding invested ports. This field
+    /// is computed fresh when needed: troop movements can change investment within a turn.
+    fn sea_field_compute_for_supply(&self, team: TeamId, supply_only: bool) -> SeaField {
         let n = self.map.num_plots();
         let port_teams: Vec<bool> = self.team_ids().map(|t| self.team_is_port_team(team, t)).collect();
         let player_teams: Vec<TeamId> = self.player_ids().map(|q| self.players[q].team).collect();
@@ -150,7 +156,7 @@ impl Game {
             }
             for &c in &self.players[q].cities {
                 // A starved outpost is no port (docs/NAVAL.md, 9.3).
-                if !self.cities.contains(c) || self.city_outpost_starved(c) {
+                if !self.cities.contains(c) || self.city_outpost_starved(c) || (supply_only && self.city_supply_cut_by_siege(c)) {
                     continue;
                 }
                 let (x, y) = (self.cities[c].x, self.cities[c].y);
@@ -264,6 +270,19 @@ impl Game {
             let c = f.port[plot.idx()];
             (c != NONE32).then_some(CityId(c))
         })
+    }
+
+    /// Army supply uses the nearest eligible port within operating range. Investment changes
+    /// food sources, without changing ships' operating range or its cached field.
+    pub(crate) fn plot_sea_supply_port(&self, team: TeamId, plot: PlotIdx) -> Option<CityId> {
+        let nearest = self.plot_sea_port(team, plot)?;
+        let range = self.team_sea_range(team);
+        if !self.city_supply_cut_by_siege(nearest) {
+            return self.plot_sea_range(team, plot).filter(|&d| d <= range).map(|_| nearest);
+        }
+        let f = self.sea_field_compute_for_supply(team, true);
+        let (d, c) = (f.dist[plot.idx()], f.port[plot.idx()]);
+        (d != NONE16 && c != NONE32 && i32::from(d) <= range).then_some(CityId(c))
     }
 
     /// Whether `plot` is in `team`'s range: always on land and for an exempt team

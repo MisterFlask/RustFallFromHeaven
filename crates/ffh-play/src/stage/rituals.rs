@@ -94,7 +94,7 @@ fn new_game_as(dir: &Path, civ: &str) -> Result<Session, String> {
     advance(&mut s)?;
     let h = s.human;
     let settler = s.g.players[h].units.iter().copied().find(|&u| d.units[s.g.units[u].unit_type].found).ok_or("no settler")?;
-    match s.execute(&Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false }) {
+    match s.execute(&Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false, confirm_end_siege: false }) {
         Ok(CmdOk::Applied { .. }) => {}
         other => return Err(format!("found -> {other:?}")),
     }

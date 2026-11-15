@@ -573,7 +573,7 @@ impl Game {
         let unit_type = self.units[u].unit_type;
         let info = &d.units[unit_type];
 
-        // Supply (docs/SUPPLY.md): a unit of a hungry or starving army does not heal; nor does a
+        // Supply (docs/SUPPLY.md): a hungry or starving army or city prevents healing; nor does a
         // unit in boats or at sea out of range (docs/NAVAL.md, 3.1 and 3.2).
         let unsupplied = self.unit_is_unsupplied(u) || self.unit_plot_opt(u).is_some_and(|p| self.unit_sea_no_heal_at(u, p));
 
@@ -1316,6 +1316,8 @@ impl Game {
     pub fn unit_set_damage(&mut self, u: UnitId, value: i32, player: Option<PlayerId>) {
         let max_hit_points = self.unit_max_hit_points(u);
         let old = self.units[u].damage;
+        // Investment prevents every form of healing, including spells and promotion heals.
+        if value < old && self.unit_plot_opt(u).is_some_and(|p| self.plot_siege_turns(p) > 0) { return; }
         // This game's seas (docs/NAVAL.md, 4.3): a ship on Patrol that changes strength.
         let patrol = if self.units[u].blockading { self.unit_plot_opt(u) } else { None };
         self.units[u].damage = range(value, 0, max_hit_points);

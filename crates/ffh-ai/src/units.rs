@@ -21,6 +21,13 @@ pub fn push(g: &mut Game, grp: GroupId, mission: MissionType, d1: i32, d2: i32, 
 }
 
 pub fn move_to(g: &mut Game, grp: GroupId, plot: PlotIdx, flags: i32) {
+    if !crate::supply::may_leave_investment(g, grp, plot) {
+        if let Some(u) = g.group_get_head_unit(grp) {
+            g.tel_decision(g.units[u].owner, "siege", "hold_investment", "hold", 1, String::new);
+        }
+        hold(g, grp);
+        return;
+    }
     let (x, y) = g.map.xy(plot);
     push(g, grp, MissionType::MISSION_MOVE_TO, x, y, flags, false);
 }
@@ -494,7 +501,9 @@ fn garrison_unit(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let here = g.unit_plot(u);
     if let Some(c) = g.map.plots[here].plot_city.filter(|&c| g.cities[c].owner == p) {
         let have = v.garrison.get(&c).copied().unwrap_or(0);
-        if have < garrison_quota(g, v, c) || crate::defense::sortie_ok(g, p, here, u) && attack_adjacent(g, v, grp, u, 800, "sortie") {
+        let invested = g.city_supply_cut_by_siege(c);
+        let quota = garrison_quota(g, v, c);
+        if ((have >= quota || invested) && crate::defense::sortie_ok(g, p, here, u) && attack_adjacent(g, v, grp, u, 800, "sortie")) || have < quota || invested {
             *v.garrison.entry(c).or_insert(0) += 1;
             if alive(g, grp) && g.group_ready_to_move(grp, false) {
                 hold(g, grp);

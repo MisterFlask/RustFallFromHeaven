@@ -966,6 +966,7 @@ function showTip() {
   if (city) {
     const walls = city.sentinels?.length ? `, Sentinels ${city.sentinels.map((p) => (p > 0 ? `${p}%` : "breached")).join("/")}` : "";
     lines.push(h("div.tip-city", `${city.capital ? "★ " : ""}${city.name}`, h("span.dim", ` (${playerName(city.owner)}${city.size !== null && city.size !== undefined ? `, size ${city.size}` : ""}${walls})`), city.besieged ? h("span.bad", " besieged") : null));
+    if (city.siege) lines.push(h(`div.tip-siege${city.siege.state === "starvation" ? ".bad" : ".warn"}`, `Siege turn ${city.siege.turn}. ${city.siege.text}`));
     // The Sea layer (docs/NAVAL.md section 10): a port of yours names the range it gives.
     const port = mapView?.layer === "sea" ? portLine(city, me()?.sea_range) : null;
     if (port) lines.push(h("div.tip-sea", port));
@@ -1013,6 +1014,7 @@ function showTip() {
       lines.push(h("div.tip-path", `Move: ${bits.join(", ")} · ${mapView.pad ? "A" : mapView.touch ? "tap again" : "right-click"} to go`));
     }
     // Supply lines (docs/SUPPLY.md): an army selected, whether it would be supplied there.
+    for (const siege of path.ends_sieges ?? []) lines.push(h(`div.tip-siege${siege.starving ? ".bad" : ".warn"}`, siege.text));
     if (path.supply) {
       const s = path.supply;
       // At sea (docs/NAVAL.md 3.3): in range of a port.
@@ -1598,7 +1600,7 @@ function chipTip(u) {
   const act = activityOf(u);
   const numbers = [
     u.strength !== undefined ? `${u.strength} strength` : null,
-    `${Math.round((100 * u.hp) / Math.max(1, u.max_hp))}% health${u.besieged ? " (besieged: no heal from the city)" : ""}`,
+    `${Math.round((100 * u.hp) / Math.max(1, u.max_hp))}% health${u.siege?.turn > 0 ? ` (${u.siege.label}: no healing)` : u.besieged ? " (besieged: city healing suppressed)" : ""}`,
     u.moves !== undefined ? `${moves(u.moves)}/${moves(u.max_moves)} moves` : null,
     u.level !== undefined ? `level ${u.level}${u.xp !== undefined && u.xp_needed ? ` (${u.xp}/${u.xp_needed} xp)` : ""}` : null,
   ].filter(Boolean);
@@ -1815,6 +1817,7 @@ function renderCard({ own, ordered, r, details, lead, promotions, tools, status,
         preferredRow(d)
           ? stat("strength", "Battle", h("span.value.engage", `${preferredRow(d)} · ${engageBrief(d)}`), `${engageText(d)}\n\n${ENGAGE_TITLE}`, ".engage-stat")
           : null,
+        d.siege?.turn > 0 ? h(`div.siege-status${d.siege.state === "starvation" ? ".bad" : ".warn"}`, { tip: d.siege.text }, `${d.siege.label} · no healing`) : null,
       )
     : null;
   // The lead unit's promotions as their seals (docs/ART.md 11.5).

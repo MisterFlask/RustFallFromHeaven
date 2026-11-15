@@ -32,8 +32,8 @@ use crate::selection;
 pub enum Command {
     /// Right-click move (`selectionListMove`). `declare_war`: `None` asks (DECLAREWARMOVE),
     /// `Some(true)` declares and moves, `Some(false)` is the popup's "no".
-    Move { units: Vec<UnitId>, x: i32, y: i32, append: bool, declare_war: Option<bool> },
-    Mission { units: Vec<UnitId>, mission: MissionType, data1: i32, data2: i32, flags: i32, append: bool },
+    Move { units: Vec<UnitId>, x: i32, y: i32, append: bool, declare_war: Option<bool>, confirm_end_siege: bool },
+    Mission { units: Vec<UnitId>, mission: MissionType, data1: i32, data2: i32, flags: i32, append: bool, confirm_end_siege: bool },
     DoCommand { units: Vec<UnitId>, command: CommandType, data1: i32, data2: i32, alt: bool, confirmed: bool },
     JoinGroup { unit: UnitId, head: Option<UnitId> },
     AutoMission { unit: UnitId },
@@ -304,6 +304,8 @@ pub fn plot_json(x: i32, y: i32) -> Json {
 /// A confirmation the C++ asks before acting (a popup); the command is resent with its flag.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Confirm {
+    /// Moving these soldiers ends investment of a starving city. Resend with `confirm_end_siege`.
+    EndSiege { cities: Vec<crate::view::sieges::EndSiege> },
     /// DECLAREWARMOVE: resend `move` with `declare_war: true` (or `false`; then the units still
     /// move when `move_anyway`, the popup's `getOption2`: the target plot is not that team's).
     DeclareWar { team: TeamId, move_anyway: bool },
@@ -329,6 +331,7 @@ pub enum Confirm {
 impl Confirm {
     pub fn to_json(&self) -> Json {
         match self {
+            Confirm::EndSiege { cities } => crate::jobj! { "kind" => "end_siege", "cities" => Json::Arr(cities.iter().map(|c| c.to_json()).collect()) },
             Confirm::DeclareWar { team, move_anyway } => crate::jobj! { "kind" => "declare_war", "team" => *team, "move_anyway" => *move_anyway },
             Confirm::Command { command } => crate::jobj! { "kind" => "command", "command" => Json::idx(*command) },
             Confirm::CastGlobal { spell } => crate::jobj! { "kind" => "cast_global", "spell" => Json::idx(*spell) },
@@ -486,8 +489,8 @@ pub const COMMAND_NAMES: &[&str] = &[
 /// object may also carry the envelope's `id` and `k`; any other member is refused, so that a
 /// misspelt flag is an error instead of its default.
 pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
-    ("move", &["units", "x", "y", "append", "declare_war"]),
-    ("mission", &["units", "mission", "data1", "data2", "flags", "append"]),
+    ("move", &["units", "x", "y", "append", "declare_war", "confirm_end_siege"]),
+    ("mission", &["units", "mission", "data1", "data2", "flags", "append", "confirm_end_siege"]),
     ("do_command", &["units", "command", "data1", "data2", "alt", "confirmed"]),
     ("join_group", &["unit", "head"]),
     ("auto_mission", &["unit"]),
@@ -738,6 +741,7 @@ impl Command {
                 y: j.req("y")?,
                 append: flag("append")?,
                 declare_war: j.opt("declare_war")?,
+                confirm_end_siege: flag("confirm_end_siege")?,
             },
             "mission" => {
                 let mission = names::field::<MissionType>(d, j, "mission")?;
@@ -748,6 +752,7 @@ impl Command {
                     data2: j.get_or("data2", -1)?,
                     flags: j.get_or("flags", 0)?,
                     append: flag("append")?,
+                    confirm_end_siege: flag("confirm_end_siege")?,
                 }
             }
             "do_command" => {
@@ -875,15 +880,16 @@ impl Command {
         let ids = |v: &[UnitId]| Json::Arr(v.iter().map(|&u| Json::from(u)).collect());
         let j = crate::jobj! { "c" => self.name() };
         match self {
-            Command::Move { units, x, y, append, declare_war } => {
-                j.with("units", ids(units)).with("x", *x).with("y", *y).with("append", *append).with("declare_war", *declare_war)
+            Command::Move { units, x, y, append, declare_war, confirm_end_siege } => {
+                j.with("units", ids(units)).with("x", *x).with("y", *y).with("append", *append).with("declare_war", *declare_war).with("confirm_end_siege", *confirm_end_siege)
             }
-            Command::Mission { units, mission, data1, data2, flags, append } => j
+            Command::Mission { units, mission, data1, data2, flags, append, confirm_end_siege } => j
                 .with("units", ids(units))
                 .with("mission", Json::idx(*mission))
                 .with("data1", *data1)
                 .with("data2", *data2)
                 .with("flags", *flags)
+                .with("confirm_end_siege", *confirm_end_siege)
                 .with("append", *append),
             Command::DoCommand { units, command, data1, data2, alt, confirmed } => j
                 .with("units", ids(units))
@@ -976,7 +982,7 @@ impl Command {
     /// One line for people, with type names (`journal print`).
     pub fn describe(&self, d: &GameData) -> String {
         match self {
-            Command::Move { units, x, y, append, declare_war } => {
+            Command::Move { units, x, y, append, declare_war, .. } => {
                 format!("move {units:?} to ({x}, {y}){}{}", if *append { " (append)" } else { "" }, match declare_war {
                     Some(true) => " declaring war",
                     Some(false) => " without war",
@@ -1305,7 +1311,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
     let d = g.d;
     let team = g.players[h].team;
     Ok(match cmd {
-        Command::Move { units, x, y, append, declare_war } => {
+        Command::Move { units, x, y, append, declare_war, confirm_end_siege } => {
             selection_of(g, h, units)?;
             let plot = on_map(g, *x, *y)?;
             // selectionListMove: the first selected unit whose move needs a war asks (not a move
@@ -1325,10 +1331,14 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             if !selection::can_start_mission(g, units, MissionType::MISSION_MOVE_TO, *x, *y, selection::plot(g, units), false) {
                 return Err(cannot("the units are already there"));
             }
+            if !confirm_end_siege {
+                let cities: Vec<_> = crate::view::sieges::ended_by_move(g, h, units, plot).into_iter().filter(|c| c.starving).collect();
+                if !cities.is_empty() { return Ok(Plan::Confirm(Confirm::EndSiege { cities })); }
+            }
             Plan::Apply(Action::Move { units: units.clone(), x: *x, y: *y, append: *append, war })
         }
 
-        Command::Mission { units, mission, data1, data2, flags, append } => {
+        Command::Mission { units, mission, data1, data2, flags, append, confirm_end_siege } => {
             selection_of(g, h, units)?;
             if !selection::is_player_mission(*mission) {
                 return Err(invalid(format!("{} is not a mission a player gives", names::name(d, *mission))));
@@ -1362,6 +1372,11 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             }
             if !selection::can_start_mission(g, units, *mission, *data1, *data2, plot, false) {
                 return Err(cannot(format!("{} is not possible", names::display(d, *mission))));
+            }
+            if !confirm_end_siege && matches!(*mission, MissionType::MISSION_MOVE_TO | MissionType::MISSION_ROUTE_TO) {
+                let to = on_map(g, *data1, *data2)?;
+                let cities: Vec<_> = crate::view::sieges::ended_by_move(g, h, units, to).into_iter().filter(|c| c.starving).collect();
+                if !cities.is_empty() { return Ok(Plan::Confirm(Confirm::EndSiege { cities })); }
             }
             Plan::Apply(Action::Mission { units: units.clone(), mission: *mission, data1: *data1, data2: *data2, flags: *flags, append: *append })
         }
@@ -2473,9 +2488,9 @@ mod tests {
     fn json_round_trip() {
         let d = ffh_data::global();
         let cmds = vec![
-            Command::Move { units: vec![UnitId(3), UnitId(9)], x: 4, y: 5, append: true, declare_war: Some(false) },
-            Command::Move { units: vec![UnitId(3)], x: 4, y: 5, append: false, declare_war: None },
-            Command::Mission { units: vec![UnitId(1)], mission: MissionType::MISSION_BUILD, data1: 2, data2: -1, flags: 0, append: false },
+            Command::Move { units: vec![UnitId(3), UnitId(9)], x: 4, y: 5, append: true, declare_war: Some(false), confirm_end_siege: false },
+            Command::Move { units: vec![UnitId(3)], x: 4, y: 5, append: false, declare_war: None, confirm_end_siege: false },
+            Command::Mission { units: vec![UnitId(1)], mission: MissionType::MISSION_BUILD, data1: 2, data2: -1, flags: 0, append: false, confirm_end_siege: false },
             Command::DoCommand { units: vec![UnitId(1)], command: CommandType::COMMAND_CAST, data1: 7, data2: -1, alt: true, confirmed: false },
             Command::JoinGroup { unit: UnitId(1), head: None },
             Command::AutoMission { unit: UnitId(2) },

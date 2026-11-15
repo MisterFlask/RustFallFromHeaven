@@ -100,7 +100,7 @@ fn duel_with(dir: &Path, seed: u32, turn: i32, civ: Option<&str>, options: &[Gam
         other => Err(format!("{c:?} -> {other:?}")),
     };
     let settler = s.g.players[h].units.iter().copied().find(|&u| d.units[s.g.units[u].unit_type].found).ok_or("no settler")?;
-    ok(&mut s, Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false })?;
+    ok(&mut s, Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false, confirm_end_siege: false })?;
     while s.g.game_turn() < turn {
         ok(&mut s, Command::EndTurn { force: true })?;
         advance(&mut s)?;
@@ -418,7 +418,7 @@ pub fn crusade(dir: &Path) -> Result<StagedCrusade, String> {
     advance(&mut s)?;
     let h = s.human;
     let settler = s.g.players[h].units.iter().copied().find(|&u| d.units[s.g.units[u].unit_type].found).ok_or("no settler")?;
-    match s.execute(&Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false }) {
+    match s.execute(&Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false, confirm_end_siege: false }) {
         Ok(CmdOk::Applied { .. }) => {}
         other => return Err(format!("found -> {other:?}")),
     }
@@ -1414,4 +1414,59 @@ pub fn specialties_details(dir: &Path) -> Result<Json, String> {
     s.g.cities[c].specialty_options = vec![(MANA, None, Some(mana)), (DOUBLE_GROWTH, None, None), (WONDERS, None, None)];
     let paths = s.save("specialties-details").map_err(|e| format!("save: {e:?}"))?;
     Ok(crate::jobj! { "stage" => "specialties-details", "save" => paths.save.display().to_string(), "city" => c })
+}
+
+/// A constructed investment at a human control point. Its counter is advanced by the real rules.
+pub fn siege(dir: &Path, kind: &str) -> Result<Json, String> {
+    let mut s = duel_with(dir, 11, 4, None, &[])?;
+    let h = s.human;
+    let rival = s.g.player_ids().find(|&p| p != h && !s.g.player_is_barbarian(p) && s.g.players[p].alive).ok_or("no rival")?;
+    let attacker = kind == "siege-attacker";
+    let (owner, enemy) = if attacker { (rival, h) } else { (h, rival) };
+    let c = *s.g.players[owner].cities.first().ok_or("no city")?;
+    let (cx, cy) = (s.g.cities[c].x, s.g.cities[c].y);
+    let plots: Vec<_> = (-2..=2).flat_map(|dy| (-2..=2).map(move |dx| (dx, dy))).filter_map(|(dx, dy)| s.g.plot_xy(cx, cy, dx, dy)).collect();
+    let remove: Vec<_> = plots.iter().flat_map(|&q| s.g.map.plots[q].units.clone()).collect();
+    for u in remove { if s.g.units.contains(u) { s.g.unit_kill(u, false, None); } }
+    let grass = s.g.d.t("TERRAIN_GRASS");
+    for q in plots {
+        s.g.plot_set_plot_type(q, PlotType::PLOT_LAND, false);
+        s.g.plot_set_terrain_type(q, grass, false);
+        s.g.plot_set_feature_type(q, None);
+    }
+    s.g.map_recalculate_areas();
+    s.g.update_plot_groups();
+    let (ot, et) = (s.g.players[owner].team, s.g.players[enemy].team);
+    s.g.team_meet(ot, et, false);
+    s.g.team_declare_war(ot, et, false, None);
+    if let Some(wall) = s.g.d.ty("BUILDING_PALISADE") { s.g.city_set_num_real_building(c, wall, 1); }
+    let warrior = s.g.d.t("UNIT_WARRIOR");
+    let mut defenders = Vec::new();
+    for _ in 0..2 { defenders.push(s.g.player_init_unit(owner, warrior, cx, cy, None, None)); }
+    let at = (0..DirectionType::NUM).filter_map(|i| s.g.plot_direction(cx, cy, DirectionType::from_usize(i))).find(|&q| !s.g.plot_is_water(q) && s.g.map.plots[q].plot_city.is_none()).ok_or("no investing plot")?;
+    let (x, y) = s.g.map.xy(at);
+    let besiegers: Vec<_> = (0..3).map(|_| s.g.player_init_unit(enemy, warrior, x, y, None, None)).collect();
+    let n = if kind == "siege-hunger" { 1 } else { 3 };
+    for _ in 0..n { s.g.player_update_supply(owner); }
+    if kind == "siege-relief" {
+        s.g.unit_kill(besiegers[0], false, None);
+        s.g.player_update_supply(owner);
+    }
+    let away = (0..DirectionType::NUM).filter_map(|i| s.g.plot_direction(x, y, DirectionType::from_usize(i))).find(|&q| !s.g.plot_is_water(q) && s.g.map.plots[q].units.is_empty() && s.g.plot_distance(cx, cy, s.g.map.xy(q).0, s.g.map.xy(q).1) > 1).ok_or("no withdrawal plot")?;
+    let (ax, ay) = s.g.map.xy(away);
+    // Keep unrelated research/build prompts out of the siege walkthrough.
+    if let Some(t) = s.g.d.techs.keys().find(|&t| s.g.player_can_research(h, t, false)) {
+        s.g.player_push_research(h, t, true);
+    }
+    for city in s.g.players[h].cities.clone() {
+        if !s.g.city_is_production(city) {
+            if let Some(u) = s.g.d.units.keys().find(|&u| s.g.city_can_train(city, u, false, false, false, false)) {
+                s.g.city_push_order(city, OrderType::ORDER_TRAIN, u.idx() as i32, -1, false, false, false, false);
+            }
+        }
+    }
+    let paths = s.save(kind).map_err(|e| format!("save: {e:?}"))?;
+    Ok(crate::jobj! { "stage" => kind, "save" => paths.save.display().to_string(), "city" => c,
+        "unit" => if attacker { besiegers[0] } else { defenders[0] },
+        "withdraw" => crate::jarr![ax, ay], "defenders" => defenders, "besiegers" => besiegers })
 }

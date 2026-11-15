@@ -6,7 +6,7 @@
 import * as api from "./api.js";
 import { S, emit, on, dname, info, teamName, gateLines, loadUnitCommand, tradeItemLabel, observing, OBSERVER_COMMANDS } from "./state.js";
 import { ask } from "./modals.js";
-import { toast, busy, errorText } from "./dom.js";
+import { h, toast, busy, errorText } from "./dom.js";
 import { showBattles, battleShown, battlesMuted, battlesPending } from "./engagements.js";
 
 /** The messages of a command that fought a battle (the plan's attack, or a move that attacked:
@@ -104,6 +104,15 @@ export function refusal(e) {
 /** The command to send after the player answered `confirm` (null: cancelled). */
 async function answerConfirm(c, confirm) {
   switch (confirm.kind) {
+    case "end_siege": {
+      const body = h("div", confirm.cities.map(city => h("p", city.text)),
+        h("p", "Two consecutive relieved turns clear the city's Hunger and Starvation counter."));
+      const yes = await ask("End the siege?", body, [
+        { label: "Move and end siege", value: true, primary: true, danger: true },
+        { label: "Cancel", value: false },
+      ]);
+      return yes ? { ...c, confirm_end_siege: true } : null;
+    }
     case "declare_war": {
       // Irreversible: Cancel has the focus (Enter, also the unit-cycle key, does not declare).
       const choices = [{ label: "Declare war", value: "war", primary: true, danger: true }];

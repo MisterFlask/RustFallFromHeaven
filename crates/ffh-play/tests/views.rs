@@ -102,7 +102,7 @@ fn duel(seed: u32) -> Session {
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
     let h = s.human;
     let settler = s.g.players[h].units.iter().copied().find(|&u| s.g.d.units[s.g.units[u].unit_type].found).unwrap();
-    applied(&mut s, Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false });
+    applied(&mut s, Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false, confirm_end_siege: false });
     s
 }
 
@@ -243,7 +243,7 @@ fn lazy_turn(s: &mut Session) {
         let units = s.g.groups[grp].units.clone();
         let found = s.read(|g| g.unit_can_found(units[0], g.unit_plot(units[0]), false));
         let mission = if found { MissionType::MISSION_FOUND } else { MissionType::MISSION_SKIP };
-        let _ = s.execute(&Command::Mission { units, mission, data1: -1, data2: -1, flags: 0, append: false });
+        let _ = s.execute(&Command::Mission { units, mission, data1: -1, data2: -1, flags: 0, append: false, confirm_end_siege: false });
     }
 }
 
@@ -515,8 +515,8 @@ fn target_actions_follow_the_interface_modes() {
     // A move that needs a war: `move` asks, and so does the mission and the GO_TO action.
     let before = s.g.save();
     let asks = |r: Result<CmdOk, CmdErr>| matches!(r, Ok(CmdOk::NeedsConfirm(Confirm::DeclareWar { .. })));
-    assert!(asks(s.execute(&Command::Move { units: vec![u], x: tx, y: ty, append: false, declare_war: None })));
-    let mission = Command::Mission { units: vec![u], mission: MissionType::MISSION_MOVE_TO, data1: tx, data2: ty, flags: 0, append: false };
+    assert!(asks(s.execute(&Command::Move { units: vec![u], x: tx, y: ty, append: false, declare_war: None, confirm_end_siege: false })));
+    let mission = Command::Mission { units: vec![u], mission: MissionType::MISSION_MOVE_TO, data1: tx, data2: ty, flags: 0, append: false, confirm_end_siege: false };
     assert!(asks(s.execute(&mission)), "the mission must ask like move");
     let go_to = target_actions(&s, &[u]).into_iter().find(|a| mode(a) == "INTERFACEMODE_GO_TO").expect("GO_TO");
     assert_eq!(go_to.get("any"), Some(&Json::Bool(true)));

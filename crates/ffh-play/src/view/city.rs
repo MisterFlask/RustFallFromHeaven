@@ -501,6 +501,7 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         // percent with its max HP in a battle.
         "besieged" => g.city_is_besieged(c),
         "besiegers" => g.city_besiegers(c).len(),
+        "siege" => crate::view::sieges::city(v, c),
         // Named seas (docs/NAVAL.md, 4.4 and 10): the harbour, open or blockaded (null on no sea).
         "harbour" => crate::view::seas::harbour_json(v, c),
         "sentinels" => sentinels_json(g, c),

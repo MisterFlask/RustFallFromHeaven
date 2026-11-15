@@ -279,6 +279,8 @@ pub fn all_rival_defenders(g: &Game, p: PlayerId) -> BTreeMap<CityId, i32> {
 /// be at least [`SORTIE_EDGE`] percent of the attack power of the enemy units within two plots,
 /// fog included ([`crate::view::known_threat`]).
 pub fn sortie_ok(g: &Game, p: PlayerId, plot: PlotIdx, u: UnitId) -> bool {
+    // Under investment the caller may take a locally winning attack even at the garrison quota.
+    if g.map.plots[plot].plot_city.is_some_and(|c| g.cities[c].owner == p && g.city_supply_cut_by_siege(c)) { return true; }
     let team = g.players[p].team;
     let (x, y) = g.map.xy(plot);
     // Nothing next to the city to attack: nothing to hold back.

@@ -417,7 +417,7 @@ impl<'a> Run<'a> {
         let side = f.fighters[h].side;
         let Some(k) = self.kills.iter().position(|k| {
             let v = k.victim as usize;
-            f.fighters[v].side == side && !f.fighters[v].fixed && !f.fighters[v].magic.illusion && !self.s.alive[v]
+            f.fighters[v].side == side && !f.fighters[v].fixed && !f.fighters[v].healing_blocked && !f.fighters[v].magic.illusion && !self.s.alive[v]
         }) else {
             return false;
         };

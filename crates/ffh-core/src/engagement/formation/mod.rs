@@ -430,6 +430,8 @@ pub struct Fighter {
     pub pursuit: bool,
     /// Its heal, in percent of a hit (`None`: the params').
     pub heal_pct: Option<i32>,
+    /// Siege Hunger: this fighter cannot receive healing of any kind.
+    pub healing_blocked: bool,
     /// Its hits' damage in rounds 1, 2 and 3 and later, in percent.
     pub round_pct: [i32; ROWS],
     /// Its unit combat as a bit (0: none), and the unit combats it goes for first (a mask).
@@ -488,6 +490,7 @@ impl Fighter {
             pierce: false,
             pursuit: false,
             heal_pct: None,
+            healing_blocked: false,
             round_pct: [100; ROWS],
             class_bit: 0,
             prefer: 0,
@@ -1216,7 +1219,7 @@ impl Formation {
         let side = self.fighters[h].side;
         let missing = |t: usize| self.fighters[t].max_hp * 100 - s.hp[t];
         (0..self.len())
-            .filter(|&t| s.on_field(t) && self.fighters[t].side == side && !self.fighters[t].fixed && missing(t) > 0)
+            .filter(|&t| s.on_field(t) && self.fighters[t].side == side && !self.fighters[t].fixed && !self.fighters[t].healing_blocked && missing(t) > 0)
             .min_by(|&x, &y| missing(y).cmp(&missing(x)).then_with(|| self.place(s, x, y)))
     }
 
@@ -1550,6 +1553,7 @@ impl<'a> Run<'a> {
             Vec::new()
         };
         for (k, u) in std::iter::once(t).chain(others).enumerate() {
+            if f.fighters[u].healing_blocked { continue; }
             let amt = if k == 0 { amount } else { (amount as i64 * p.sweep_pct.max(0) as i64 / 100) as i32 };
             let got = amt.min(f.fighters[u].max_hp * 100 - self.s.hp[u]).max(0);
             self.s.hp[u] += got;

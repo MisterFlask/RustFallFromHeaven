@@ -92,7 +92,7 @@ pub fn bot_session(ng: &NewGame, saves: Option<PathBuf>) -> (Session, Bot) {
 /// construction primitive for the decision tests): finds an AI city, makes it an undefended
 /// size-3 city, puts the human's team at war with its owner, and places a human `UNIT_WARRIOR` on
 /// a free land plot adjacent to it. Returns `(warrior, city_x, city_y)`; the caller then runs
-/// `Command::Move { units: vec![warrior], x: city_x, y: city_y, append: false, declare_war: None }`
+/// `Command::Move { units: vec![warrior], x: city_x, y: city_y, append: false, declare_war: None, confirm_end_siege: false }`
 /// to capture the city and raise the `keep_city` decision inside the command -- a deterministic
 /// capture with no combat RNG (the seed only shaped a believable board). Panics with a clear
 /// message if the map has no AI city or no free adjacent plot to attack from.

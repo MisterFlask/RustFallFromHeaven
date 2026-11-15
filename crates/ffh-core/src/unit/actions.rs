@@ -590,6 +590,8 @@ impl Game {
     /// C++ `CvUnit::healRate` (CvUnit.cpp:4538-4673).
     pub fn unit_heal_rate(&self, u: UnitId, plot: PlotIdx) -> i32 {
         let d = self.d;
+        let hungry_army = self.units[u].army.is_some_and(|a| self.armies.contains(a) && self.armies[a].unsupplied_turns > 0);
+        if hungry_army || self.plot_siege_turns(plot) > 0 { return 0; }
 
         // This game's (docs/NAVAL.md, 3.1 and 3.2): no healing in boats, nor at sea out of range.
         if self.unit_sea_no_heal_at(u, plot) {

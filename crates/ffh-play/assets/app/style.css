@@ -602,6 +602,10 @@ td.num { text-align: right; font-variant-numeric: lining-nums tabular-nums; }
 .modal.city-screen { width: min(1120px, 100%); }
 .city-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
 .city-col { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.city-screen section.siege-status { padding-inline: 4px; }
+.siege-status { min-width: 0; white-space: normal; }
+.siege-status p { margin: 6px 0; }
+.iso-plate .siege-status { grid-column: 1 / -1; flex-basis: 100%; }
 .cgrid { display: grid; gap: 2px; max-width: 360px; }
 .cplot { aspect-ratio: 1; padding: 0; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; line-height: 1.1; background: var(--c-coal); border: 1px solid var(--c-iron); }
 .cplot.none { visibility: hidden; }
