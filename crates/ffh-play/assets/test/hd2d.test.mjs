@@ -11,7 +11,7 @@ import * as St from "../app/state.js";
 const data = JSON.parse(fs.readFileSync(fileURLToPath(new URL("../../r3d-lab/data.json", import.meta.url)), "utf8"));
 St.setData(data);
 const { buildMap, buildView, hd2d, settlements, riverBits } = await import("../../r3d-lab/scenes.js");
-const { World, KIND } = await import("../app/r3d/world.js");
+const { World, KIND, RIVER_BANK } = await import("../app/r3d/world.js");
 await import("../app/r3d/assets/index.js");
 const { SPRITES } = await import("../app/iso/sprites.js");
 const { CARDS, GROUNDS, IMPROVEMENTS, RESOURCES } = await import("../app/r3d/hd2d/art/index.js");
@@ -37,6 +37,29 @@ function scene(s) {
   St.setMap(s.map);
   return new World(s.map);
 }
+
+test("hill mine aprons sit on supported ground and stay clear of river banks", () => {
+  const mines = Array.from({ length: 20 }, (_, n) => [n * 3 + 1, 4, "IMPROVEMENT_MINE"]);
+  const map = buildMap(data, Array(9).fill("h".repeat(62)), {
+    improvements: mines,
+    rivers: mines.filter((_, n) => n % 3 === 0).map(([x, y]) => [x, y, 1]),
+  });
+  const world = scene({ map, view: buildView(data, {}) });
+  const cards = dressSpriteStatic(world, map, atlas).list.filter((c) => c.key === "bld_mine");
+  assert.equal(cards.length, mines.length);
+  let supported = 0, frontEdge = 0;
+  for (const c of cards) {
+    // The lower rock mound and apron need a span of ground beneath them, not just one point.
+    const span = (my, radius) => [-1, 0, 1].map((side) => world.heightAt(c.x + side * radius, my));
+    const foot = span(-c.z, c.w * 0.3);
+    supported += Math.max(...foot) - Math.min(...foot);
+    assert.ok(c.y >= Math.min(...foot) - 0.015 && c.y <= Math.max(...foot) + 0.015, "the apron sits in its supporting turf");
+    for (const side of [-1, 0, 1]) assert.ok(world.riverDist(c.x + side * c.w * 0.3, -c.z) >= RIVER_BANK, "the apron is outside the river bank");
+    const before = span(Math.floor(-c.z), SPRITES.bld_mine.w * PX.building * 0.3);
+    frontEdge += Math.max(...before) - Math.min(...before);
+  }
+  assert.ok(supported < frontEdge * 0.6, "mine footprints cross substantially less uneven ground than fixed plot-front placement");
+});
 
 test("mana deposits and connected nodes retain distinct sphere cards", async () => {
   const { mana } = await import("../../r3d-lab/scenes.js");

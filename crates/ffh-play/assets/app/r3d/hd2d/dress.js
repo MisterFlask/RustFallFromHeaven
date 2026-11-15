@@ -70,7 +70,25 @@ function garrisonSpot(world, x, y) {
  *  plot's front edge, at the ground there -- not the plot's middle, which on a hill is its crest and
  *  left the card floating over the slope in front -- as the ground lies before a river cuts it, and
  *  stepped back (by up to 0.3) off a river that runs along that edge, rather than overhanging it. */
-function builtFoot(world, x, y) {
+function builtFoot(world, x, y, halfWidth = 0) {
+  if (halfWidth > 0) {
+    // The mine painting contains its own rock mound and apron. Seat the whole foot on the
+    // shoulder with the least height difference, rather than pushing it through a scarp at the
+    // plot's fixed front edge. Check both sides and the ground behind its apron.
+    let best = null, bestScore = Infinity;
+    for (const z of [0.24, 0.18, 0.30, 0.12, 0.06, 0, 0.36, 0.42, 0.48]) {
+      const mx = x + 0.5, my = y + 0.5 - z;
+      const samples = [[mx, my], [mx - halfWidth, my], [mx + halfWidth, my], [mx, my + 0.12]];
+      if (world.riverCells.size && samples.some(([sx, sy]) => world.riverDist(sx, sy) < RIVER_BANK + 0.02)) continue;
+      const heights = samples.map(([sx, sy]) => world.heightAt(sx, sy));
+      const hi = Math.max(...heights), lo = Math.min(...heights);
+      const score = hi - lo + Math.abs(z - 0.24) * 0.035;
+      // Seat the apron in the turf, rather than lifting every foot to the highest back corner.
+      const base = (heights[0] + heights[1] + heights[2]) / 3;
+      if (score < bestScore) { best = [z, base]; bestScore = score; }
+    }
+    if (best) return best;
+  }
   let lz = 0.5;
   for (let k = 0; k < 6 && world.riverCells.size && world.riverDist(x + 0.5, y + 0.5 - lz) < RIVER_BANK; k++) lz -= 0.05;
   return [lz, world.heightAt(x + 0.5, y + 0.5 - lz, false)];
@@ -343,7 +361,7 @@ function clutterOf(kind, ground, mood) {
   else if (ground === GROUND.MARSH) out.push(["reeds", 3.5, FINE], ["grass", 1.0, TUFT]);
   else if (ground === GROUND.GRASS) out.push(["grass", 3.0, TUFT], ["flowers", 1.2, 0.9]);
   else out.push(["grass_3", 3.5, TUFT]);
-  if (kind === KIND.HILLS) out.push(["rock", 1.2, FINE * 0.9], ["pebbles", 1.5, FINE]);
+  // Hills are turf-capped scarps in the terrain itself; their silhouette carries the elevation.
   // (A peak carries no cards: its mountain is a model, assets/props.js feat.mountain.)
   // Each region's own things (the moods, hd2d/mood.js: [hell, corruption, lush, gloom]).
   if (HELLISH.has(ground)) out.push(["bones", 0.4, FINE], ["vent", 0.35, FINE]);
@@ -838,13 +856,15 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
       if (key) {
         const art = atlas.info(key);
         const water = world.isWater(i);
-        const [lz, base] = water ? [0.5, SEA - DRAFT] : builtFoot(world, x, y);
+        const mine = imp === "IMPROVEMENT_MINE" && world.kind[i] === KIND.HILLS;
+        const px = PX.building * (art.pixelScale ?? 1) * (mine ? 0.82 : 1);
+        const [lz, base] = water ? [0.5, SEA - DRAFT] : builtFoot(world, x, y, mine ? art.w * px * 0.32 : 0);
         footZ = lz;
         const [mx, my] = at(0, lz);
         const mana = manaColour(imp);
         // Coarser authored pixels keep a small burial mound's doorway legible at
         // play zoom, while its world footprint stays the same as the full card.
-        list.push(card(key, art, PX.building * (art.pixelScale ?? 1), mx, base, -my, { id: idOf(`i${i}`), glow: mana ? 0.4 : 0, fade: !water, vis: [x + 0.5, y + 0.5] }));
+        list.push(card(key, art, px, mx, base, -my, { id: idOf(`i${i}`), glow: mana ? 0.4 : 0, fade: !water, vis: [x + 0.5, y + 0.5] }));
         claims.improvement.add(i);
         const tower = /TOWER/.test(imp) && !/WATCH|WARNING/.test(imp);
         if (mana || tower) {

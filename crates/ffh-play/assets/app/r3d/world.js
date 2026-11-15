@@ -136,6 +136,9 @@ export class World {
     this.feat = new Uint8Array(n);
     this.vis = new Uint8Array(n);
     this.peakJitter = new Float32Array(n * 2);
+    // A hill's scarp faces roughly south, with regional variations: cache the shape so sampling
+    // the shared ground for meshes, roads, water and picking does not reroll its geology.
+    this.hillShape = new Float32Array(n * 4);
     this.classify();
     this.findLakes();
     this.buildRivers();
@@ -150,6 +153,8 @@ export class World {
       this.vis[i] = m.vis[i];
       this.peakJitter[i * 2] = (hashf(i, 7) - 0.5) * 0.18;
       this.peakJitter[i * 2 + 1] = (hashf(i, 8) - 0.5) * 0.18;
+      const facing = (hashf(i, 81) - 0.5) * 1.8;
+      this.hillShape.set([Math.sin(facing), -Math.cos(facing), 0.58 + hashf(i, 82) * 0.12, hashf(i, 83) * 6.2832], i * 4);
       if (m.vis[i] === 0) {
         this.kind[i] = KIND.VOID;
         this.ground[i] = GROUND.VOID;
@@ -296,11 +301,11 @@ export class World {
     // Hills and mountains do not spill into a lake (their domes reach over the plot's edge).
     const dry = lakeW > 0.3 ? 1 - smoothstep(0.3, 0.6, lakeW) : 1;
     if (hill > 0 && dry > 0) {
-      // Rolling hills: a low shoulder under the hill country, the rounded domes of the hill plots
-      // (they overlap into ridges where hills neighbour), crests of ridged noise on top.
+      // Turf-capped scarps: broad crowns above a short exposed face and a lower grassy shelf.
+      // This is the ground itself, shared by everything that stands on or follows the hill.
       const r = this.ridged(mx, my, 1.6, 5.2, -3.4, 3);
-      h += dry * smoothstep(0, 1, hill) * (0.06 + 0.07 * r);
-      h += dry * this.domes(mx, my) * (0.8 + 0.35 * r);
+      h += dry * smoothstep(0, 1, hill) * (0.04 + 0.025 * r);
+      h += dry * this.domes(mx, my);
     }
     if (peak > 0 && dry > 0) {
       // Mountains: ridged massif, plus a summit near each peak plot's centre.
@@ -358,7 +363,8 @@ export class World {
     return ridged2p(mx * this.freq(f) + ox, my * f + oy, this.period(f), oct);
   }
 
-  /** The rounded domes of the hill plots near (mx, my) (soft sum: overlapping domes merge). */
+  /** Hills merge at their feet into a continuous surface. Rounded crowns have an irregular
+   *  scarp on one flank, a lower shelf, and a gentle back slope; peaks keep their low mound. */
   domes(mx, my) {
     let s = 0;
     const cx = Math.floor(mx);
@@ -369,11 +375,29 @@ export class World {
         if (i < 0 || (this.kind[i] !== KIND.HILLS && this.kind[i] !== KIND.PEAK)) continue;
         const px = cx + dx + 0.5 + this.peakJitter[i * 2] * 1.6;
         const py = cy + dy + 0.5 + this.peakJitter[i * 2 + 1] * 1.6;
-        const t = clamp(1 - Math.hypot(mx - px, my - py) / 0.78, 0, 1);
-        s += 0.34 * t * t * (3 - 2 * t);
+        if (this.kind[i] === KIND.PEAK) {
+          const t = clamp(1 - Math.hypot(mx - px, my - py) / 0.78, 0, 1);
+          s = Math.max(s, 0.25 * t * t * (3 - 2 * t));
+          continue;
+        }
+        const k = i * 4, radius = this.hillShape[k + 2], phase = this.hillShape[k + 3];
+        const u = (mx - px) / radius, v = (my - py) / (radius * 0.86);
+        const d0 = Math.hypot(u, v);
+        if (d0 > 1.35) continue;
+        // Broad lobes break the rim without turning the crown into noisy rubble.
+        const d = d0 + 0.055 * Math.sin(u * 8 + phase) * Math.sin(v * 7 - phase);
+        const front = smoothstep(-0.35, 0.65, (u * this.hillShape[k] + v * this.hillShape[k + 1]) / Math.max(0.01, d0));
+        // A short exposure within a broad turf slope, rather than a sheer ring holding up a
+        // flat pedestal. The outer shoulder carries the grass continuously down to the plain.
+        const width = 0.62 - 0.42 * front;
+        const crown = 0.16 * (1 - smoothstep(0.72 - width * 0.5, 0.72 + width * 0.5, d));
+        const shelf = 0.035 * (1 - smoothstep(0.96, 1.24, d));
+        const shoulder = 0.10 * (1 - smoothstep(0.18, 1.34, d));
+        const turf = 0.045 * Math.max(0, 1 - d * d);
+        s = Math.max(s, crown + shelf + shoulder + turf);
       }
     }
-    return s / (1 + s * 1.1);
+    return s;
   }
 
   /** The summit cones of the peak plots near (mx, my). */
