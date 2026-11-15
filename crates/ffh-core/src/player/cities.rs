@@ -358,7 +358,7 @@ impl Game {
         let num_real_building = self.cities[old_city].num_real_building.clone();
         // This game's building suitability (docs/SUITABILITY.md): the city keeps its tiers.
         let building_tiers = self.cities[old_city].building_tiers.clone();
-        let specialty = (self.cities[old_city].specialty, self.cities[old_city].specialty_class, self.cities[old_city].specialty_options.clone(), self.cities[old_city].specialty_draft_turn);
+        let specialty = (self.cities[old_city].specialty, self.cities[old_city].specialty_class, self.cities[old_city].specialty_options.clone(), self.cities[old_city].specialty_draft_turn, self.cities[old_city].specialty_mana);
         // This game's outposts (docs/NAVAL.md, 9.2): a taken outpost stays an outpost.
         let was_outpost = self.cities[old_city].outpost;
         let building_original_owner = self.cities[old_city].building_original_owner.clone();
@@ -423,6 +423,10 @@ impl Game {
         let new_city = self.player_init_city_as(p, city_x, city_y, !conquest, false, Some(building_tiers), was_outpost);
         self.cities[new_city].specialty = specialty.0;
         self.cities[new_city].specialty_class = specialty.1;
+        self.cities[new_city].specialty_mana = specialty.4;
+        if specialty.0 == Some(crate::city::specialties::MANA) {
+            if let Some(mana) = specialty.4 { self.city_change_free_bonus(new_city, mana, 1); }
+        }
         self.cities[new_city].specialty_options = specialty.2;
         self.cities[new_city].specialty_draft_turn = specialty.3;
 

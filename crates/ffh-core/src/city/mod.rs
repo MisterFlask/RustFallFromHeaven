@@ -295,8 +295,9 @@ pub struct City {
     /// Permanent specialty and the class rolled for its XP entry (docs/SPECIALTIES.md).
     pub specialty: Option<u8>,
     pub specialty_class: Option<UnitCombatType>,
+    pub specialty_mana: Option<BonusType>,
     /// Saved random offer: queries and loads never roll it again.
-    pub specialty_options: Vec<(u8, Option<UnitCombatType>)>,
+    pub specialty_options: Vec<(u8, Option<UnitCombatType>, Option<BonusType>)>,
     pub specialty_draft_turn: i32,
     /// Retired tier scaffolding; all new cities use Standard buildings.
     pub building_tiers: IdxVec<BuildingClassType, BuildingTierType>,
@@ -541,6 +542,7 @@ impl City {
             role_overridden: false,
             specialty: None,
             specialty_class: None,
+            specialty_mana: None,
             specialty_options: Vec::new(),
             specialty_draft_turn: -10,
             building_tiers: IdxVec::from_elem(BuildingTierType::STANDARD, d.building_classes.len()),

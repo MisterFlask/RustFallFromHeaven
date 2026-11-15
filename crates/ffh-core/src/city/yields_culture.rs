@@ -660,7 +660,6 @@ impl Game {
     pub fn city_calculate_trade_profit(&self, c: CityId, other: CityId) -> i32 {
         let mut profit = self.city_base_trade_profit(c, other);
         profit *= self.city_total_trade_modifier(c, Some(other));
-        if self.city_has_specialty(c, SEA_TRADE) && self.city_is_coastal(other, 0) { profit *= 2; }
         profit /= 10000;
         profit
     }

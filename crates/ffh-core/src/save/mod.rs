@@ -142,7 +142,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 39: a world ritual's pending cast (`Player::world_ritual_pending`) replaces its charge held in
 ///   a city (`City::ritual_charges` keeps the card rituals' charges). Older saves are not converted.
 /// - 40: permanent city specialties, saved offers and training provenance.
-pub const FORMAT_VERSION: u32 = 40;
+/// - 41: typed mana specialties and the revised specialty pool.
+pub const FORMAT_VERSION: u32 = 41;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

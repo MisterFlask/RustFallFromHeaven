@@ -483,7 +483,7 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
     let mut out = crate::jobj! {
         "id" => c,
         "name" => city_name(g, c),
-        "specialty" => city.specialty.map(|s| g.specialty_text(s, city.specialty_class)),
+        "specialty" => city.specialty.map(|s| g.specialty_text(s, city.specialty_class, city.specialty_mana)),
         "specialty_pending" => !city.specialty_options.is_empty(),
         "owner" => city.owner,
         "x" => city.x,

@@ -13,7 +13,7 @@
 
 import * as api from "./api.js";
 import { S, dname, orderName, info, turns, me, emit, tidx, ORDER_KINDS } from "./state.js";
-import { h, signed, setText, tapModes, compactScreen, errorText } from "./dom.js";
+import { h, signed, setText, tapModes, compactScreen, errorText, toast } from "./dom.js";
 import { openModal, ask } from "./modals.js";
 import { run } from "./commands.js";
 import { YIELD_COLORS } from "./tiles.js";
@@ -170,7 +170,7 @@ export async function openCity(id, { popup = false } = {}) {
     if (m.closed || n !== loading) return;
     current = c;
     m.el.dataset.city = String(cityId);
-    m.setBody(popup ? promptView(c, { choose, remove, tap: [tapMode, setTapMode] }) : screen(c, { task, choose, remove, go, overlay, tap: [tapMode, setTapMode], reload: load }));
+    m.setBody(popup ? promptView(c, { choose, remove, tap: [tapMode, setTapMode], reload: load }) : screen(c, { task, choose, remove, go, overlay, tap: [tapMode, setTapMode], reload: load }));
     if (overlay) {
       const mine = me()?.player;
       // A click works the plot of the city these plots are of (Previous / Next may have moved on).
@@ -484,8 +484,31 @@ function moodView(c) {
   );
 }
 
-function specialtyView(c) {
-  return c.outpost ? null : h("p.specialty", c.specialty ?? (c.specialty_pending ? "Choose a specialty before ending the turn." : "At culture level 3 (Developing): choose one of three random permanent specialties."));
+function specialtyView(c, reload) {
+  if (c.outpost) return null;
+  const pending = c.specialty_pending && c.owner === me()?.player;
+  const choose = pending ? h("button.choose-specialty", {
+    "data-choose-specialty": c.id,
+    onclick: async (ev) => {
+      const button = ev.currentTarget;
+      button.disabled = true;
+      try {
+        const p = await api.query("pending");
+        const offer = p.specialties?.find(o => o.city === c.id);
+        if (offer) {
+          const { openSpecialty } = await import("./screens.js");
+          await openSpecialty(offer);
+        }
+        await reload?.();
+      } catch (e) { toast(errorText(e), "error"); }
+      finally { button.disabled = false; }
+    },
+  }, "Choose perk") : null;
+  return h("section.section.specialty", { "aria-label": "City perk" },
+    h("h4", "City perk"),
+    h("p", c.specialty ?? (pending ? "Choose one of three permanent effects before ending this turn." : "At Developing culture (level 3), choose one of three permanent city perks.")),
+    choose,
+  );
 }
 
 function growthView(c) {
@@ -530,8 +553,8 @@ function growthView(c) {
 
 /** The city's yields at a glance: size, food (grown less eaten, the growth bar, when it grows),
  *  production (the current build's bar and turns), then where the commerce goes. */
-function summaryView(c) {
-  return h("div.city-summary", summaryRow(c), specialtyView(c), commerceView(c));
+function summaryView(c, reload, overlay = false) {
+  return h("div.city-summary", summaryRow(c), overlay ? null : specialtyView(c, reload), commerceView(c));
 }
 
 /** The summary's first row: the size, food (surplus, growth) and production. With `prompt` (the
@@ -882,10 +905,10 @@ function productionView(c, choose, remove, tap, reload) {
 
 /** The build prompt (`openCity` with `popup`): the city's size, food and production in one row,
  *  the queue, what a click does, and the build lists. */
-function promptView(c, { choose, remove, tap }) {
+function promptView(c, { choose, remove, tap, reload }) {
   const locked = !!c.governance?.governed;
   return [
-    h("div.city-summary.prompt-summary", summaryRow(c, { prompt: true }), specialtyView(c)),
+    h("div.city-summary.prompt-summary", summaryRow(c, { prompt: true }), specialtyView(c, reload)),
     queueView(c, remove, null, { compact: true }),
     locked ? h("p.dim.governed-note", "Empire orders: units, wonders, palaces and rituals. The governor builds the rest.") : chooseModes(tap, true),
     h("div.prompt-builds", buildLists(c, choose)),
@@ -898,13 +921,13 @@ function screen(c, { task, choose, remove, overlay, tap, reload }) {
   const plots = overlay ? null : plotGrid(c, task);
   // This game's cultural channel after the city's numbers (its culture among them), above the
   // buildings.
-  const left = h("div.city-col", plots, citizensView(c, task), moodView(c), growthView(c), cultureView(c, reload), buildingsView(c, reload));
+  const left = h("div.city-col", overlay ? specialtyView(c, reload) : null, plots, citizensView(c, task), moodView(c), growthView(c), cultureView(c, reload), buildingsView(c, reload));
   // What to build first; then the orders, where trained units go (armies.js) and the governance.
   // An outpost builds nothing and has no governor: its lane and Raise to city instead.
-  if (c.outpost) return [summaryView(c), h("div.city-cols", left, h("div.city-col", outpostView(c, reload)))];
+  if (c.outpost) return [summaryView(c, reload, overlay), h("div.city-cols", left, h("div.city-col", outpostView(c, reload)))];
   const garrison = c.governance?.governed ? null : recruitView(c, reload);
   const right = h("div.city-col", productionView(c, choose, remove, tap, reload), manageView(c, task), garrison ? h("div.section.recruit", garrison) : null, governanceView(c, reload));
-  return [summaryView(c), h("div.city-cols", left, right)];
+  return [summaryView(c, reload, overlay), h("div.city-cols", left, right)];
 }
 
 /** An outpost's part of the city screen (docs/NAVAL.md, 9 and 10; the city query's `outpost`): what

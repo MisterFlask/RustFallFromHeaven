@@ -720,15 +720,40 @@ export function rawRequest() {
 
 /** Permanent specialty: the offer is saved by the engine, including when set aside. */
 export async function openSpecialty(city) {
-  const options = h("div.options", city.options.map(o => h("button.option", {
-    "data-specialty": o.option,
-    onclick: async () => {
-      const reply = await run({ c: "choose_specialty", city: city.city, option: o.option });
-      if (reply) m.close("chosen");
+  let selected = null;
+  const buttons = [];
+  const updateActions = () => m.setButtons([
+    { label: "Confirm perk", primary: true, danger: true, disabled: selected === null,
+      onClick: async () => {
+        if (selected === null) return;
+        const reply = await run({ c: "choose_specialty", city: city.city, option: selected });
+        if (reply) m.close("chosen");
+      },
     },
-  }, o.text)));
-  const m = openModal({ title: `${city.name}: choose a specialty`,
-    body: [h("p", "Choose one of three random permanent effects. The city keeps its specialty when captured."), options],
-    buttons: [{ label: "Later", value: "later" }], tag: "specialty" });
+    { label: "Later this turn", value: "later", title: "The turn cannot end until this choice is made." },
+  ]);
+  for (const o of city.options) {
+    const button = h("button.option", {
+      "data-specialty": o.option, "aria-pressed": "false",
+      onclick: () => {
+        if (m.busy) return;
+        selected = o.option;
+        for (const b of buttons) {
+          const chosen = b === button;
+          b.classList.toggle("chosen", chosen);
+          b.setAttribute("aria-pressed", String(chosen));
+        }
+        updateActions();
+      },
+    }, o.text);
+    buttons.push(button);
+  }
+  const m = openModal({ title: `${city.name}: choose a city perk`,
+    body: [h("p", "Select one permanent effect, then confirm. The city keeps its perk when captured. Choose before ending this turn."), h("div.options", buttons)],
+    // Initial focus stays on the dialog: Enter cannot accidentally commit a permanent choice.
+    buttons: [{ label: "Confirm perk", danger: true, disabled: true }, { label: "Later this turn", value: "later" }],
+    tag: "specialty",
+  });
+  updateActions();
   return m.done;
 }

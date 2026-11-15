@@ -619,9 +619,6 @@ impl Game {
             }
         }
         self.units[unit].trained_specialty = self.cities[c].specialty;
-        if self.city_has_specialty(c, MOBILITY) {
-            if let Some(p) = self.d.ty::<PromotionType>("PROMOTION_MOBILITY1") { self.unit_set_has_promotion(unit, p, true); }
-        }
         if self.city_has_specialty(c, NAVAL) && self.unit_get_domain_type(unit) == DomainType::DOMAIN_SEA { self.units[unit].extra_moves += 1; }
         // Card: the Spire of the Archmagi (docs/CARDS.md): a free promotion of the owner's choice.
         self.city_free_promotion_choice(c, unit);

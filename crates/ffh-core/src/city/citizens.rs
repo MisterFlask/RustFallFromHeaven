@@ -1731,13 +1731,14 @@ impl Game {
             // GrowthControl (Jean Elcard, merged by Sephi): AI_stopGrowth() replaces
             // AI_isEmphasizeAvoidGrowth(). This game's outposts (docs/NAVAL.md, 9.2) stop at
             // `OUTPOST_MAX_POP`.
-            if self.city_ai_stop_growth(c) || self.city_outpost_full(c) {
+            let growth = self.city_population_growth(c);
+            if self.city_ai_stop_growth(c) || self.city_outpost_full(c) || growth == 0 {
                 let threshold = self.city_growth_threshold(c);
                 self.cities[c].food = threshold;
             } else {
                 let food_used = (self.city_growth_threshold(c) - self.cities[c].food_kept).max(0);
                 self.cities[c].food -= food_used;
-                self.city_change_population(c, 1);
+                self.city_change_population(c, growth);
 
                 // ONEVENT - City growth
                 let owner = self.cities[c].owner;

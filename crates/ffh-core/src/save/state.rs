@@ -433,7 +433,7 @@ persist_struct!(City {
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
     ai_emphasize_avoid_unhealthy_citizens_count, culture_channel, culture_diverted, culture_pressure,
     culture_revolt_level, recruit_default, direct_rule, governor, role, role_overridden,
-    specialty, specialty_class, specialty_options, specialty_draft_turn,
+    specialty, specialty_class, specialty_mana, specialty_options, specialty_draft_turn,
     building_tiers, free_bonus_choices, muster_production, ritual_charges, crew_build,
     garrison_tactic, garrison_tactic_next, outpost, lane_cut_turns, lane,
 });

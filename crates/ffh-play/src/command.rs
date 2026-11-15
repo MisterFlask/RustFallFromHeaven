@@ -1016,7 +1016,7 @@ impl Command {
                 let items = |v: &[TradeData]| v.iter().map(|t| format!("{} {}", names::name(d, t.item_type), t.data)).collect::<Vec<_>>().join(", ");
                 format!("offer player {}: give [{}] for [{}]", to.0, items(give), items(get))
             }
-            Command::ChooseSpecialty { city, option } => format!("City {}: choose specialty {}", city.0, option),
+            Command::ChooseSpecialty { city, option } => format!("City {}: choose perk {}", city.0, option),
             Command::CrusadeAnswer { crusade, strength } => match strength {
                 Some(s) => format!("crusade {crusade}: pledge strength {s}"),
                 None => format!("crusade {crusade}: refuse the call"),
@@ -1995,7 +1995,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             if let Some(due) = &p.cast_due {
                 return Err(cannot(due.reason.clone()));
             }
-            if !p.specialties.is_empty() { return Err(cannot("Choose a city specialty before ending the turn.")); }
+            if !p.specialties.is_empty() { return Err(cannot("Choose a city perk before ending the turn.")); }
             let ready = p.ready_groups.len();
             if !force && (p.popups() > 0 || ready > 0) {
                 return Ok(Plan::Confirm(Confirm::EndTurn {
@@ -2021,7 +2021,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         Command::ChooseSpecialty { city, option } => {
             if !g.cities.contains(*city) { return Err(CmdErr::Gone); }
             if g.cities[*city].owner != h { return Err(cannot("this city is not yours")); }
-            if g.cities[*city].specialty.is_some() || *option >= g.cities[*city].specialty_options.len() { return Err(cannot("choose one of the offered specialties")); }
+            if g.cities[*city].specialty.is_some() || *option >= g.cities[*city].specialty_options.len() { return Err(cannot("choose one of the offered perks")); }
             Plan::Apply(Action::ChooseSpecialty { city: *city, option: *option })
         }
         Command::CrusadeAnswer { crusade, strength } => {

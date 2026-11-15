@@ -542,7 +542,7 @@ impl Game {
             let num_religions = d.religions.len() as i32;
             spread_prob += ((num_religions - self.city_religion_count(city)) * (100 - spread_prob)) / num_religions;
 
-            if self.units[u].trained_specialty == Some(MISSIONARIES) || self.soren_rand_num(100, "Unit Spread Religion") < spread_prob {
+            if self.soren_rand_num(100, "Unit Spread Religion") < spread_prob {
                 // FfH: Modified by Kael 10/04/2008 (spreading an unfounded religion founds it here)
                 if self.is_religion_founded(religion) {
                     self.city_set_has_religion(city, religion, true, true, false);

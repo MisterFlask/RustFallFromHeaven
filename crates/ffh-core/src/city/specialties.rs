@@ -3,32 +3,30 @@ use crate::{game::Game, ids::*};
 use ffh_data::*;
 
 pub const CLASS_XP: u8 = 0;
-pub const MOBILITY: u8 = 1;
-pub const NO_UPKEEP: u8 = 2;
 pub const WONDERS: u8 = 3;
-pub const MINES: u8 = 4;
-pub const FARMS: u8 = 5;
 pub const SETTLERS: u8 = 6;
 pub const GREAT_PEOPLE: u8 = 7;
 pub const SAGES: u8 = 8;
 pub const CULTURE: u8 = 9;
-pub const MISSIONARIES: u8 = 10;
 pub const RELIGIONS: u8 = 11;
-pub const WATER: u8 = 12;
 pub const NAVAL: u8 = 13;
-pub const SEA_TRADE: u8 = 14;
 pub const HEALING: u8 = 15;
 pub const MOVEMENT: u8 = 16;
 pub const FOOD: u8 = 17;
 pub const POP_RUSH: u8 = 18;
 pub const DRAFT: u8 = 19;
 pub const GOLD_RUSH: u8 = 20;
-pub const COUNT: u8 = 21;
+// Retired ids are not reused: 1, 2, 4, 5, 10, 12 and 14.
+pub const MANA: u8 = 21;
+pub const DOUBLE_GROWTH: u8 = 22;
+pub const SPECIALTIES: [u8; 16] = [CLASS_XP, WONDERS, SETTLERS, GREAT_PEOPLE, SAGES,
+    CULTURE, RELIGIONS, NAVAL, HEALING, MOVEMENT, FOOD, POP_RUSH, DRAFT, GOLD_RUSH,
+    MANA, DOUBLE_GROWTH];
 
 impl Game {
     pub fn city_has_specialty(&self, c: CityId, s: u8) -> bool { self.cities[c].specialty == Some(s) }
 
-    pub fn specialty_text(&self, s: u8, class: Option<UnitCombatType>) -> String {
+    pub fn specialty_text(&self, s: u8, class: Option<UnitCombatType>, mana: Option<BonusType>) -> String {
         if s == CLASS_XP {
             let name = class.map(|k| {
                 let key = &self.d.unit_combats[k].base.description;
@@ -37,21 +35,19 @@ impl Game {
             }).unwrap_or("Class");
             return format!("{name} units trained here get +3 XP.");
         }
+        if s == MANA {
+            let name = mana.map(|b| self.d.text.name(&self.d.bonuses[b].base.description)).unwrap_or("mana");
+            return format!("This city provides 1 {name}.");
+        }
         match s {
-            MOBILITY => "Units trained here start with Mobility I.",
-            NO_UPKEEP => "Units trained here cost no upkeep.",
+            DOUBLE_GROWTH => "When this city grows, it gains 2 population, up to its happiness limit.",
             WONDERS => "Wonders are built here at 1.5x speed.",
-            MINES => "Mines and quarries worked by this city give +1 production.",
-            FARMS => "Farms worked by this city give +1 food.",
             SETTLERS => "Settlers trained here do not stop growth, and the cities they found start at size 2.",
             GREAT_PEOPLE => "Great Person points are doubled here.",
             SAGES => "Each specialist in this city gives +1 research.",
             CULTURE => "1.5x culture in this city.",
-            MISSIONARIES => "Missionaries trained here never fail to spread their religion.",
             RELIGIONS => "Each religion in this city gives +2 culture and +1 gold.",
-            WATER => "Water plots worked by this city give +1 food.",
             NAVAL => "Naval units trained here get +1 movement.",
-            SEA_TRADE => "Trade routes with other coastal cities yield double here.",
             HEALING => "Friendly units in this city heal fully each turn while supplied.",
             MOVEMENT => "Friendly units move at double speed in this city's cultural radius.",
             FOOD => "This city gains +5 food each turn.",
@@ -76,12 +72,9 @@ impl Game {
     pub fn city_specialty_eligible(&self, c: CityId, s: u8) -> bool {
         match s {
             CLASS_XP => !self.city_specialty_classes(c).is_empty(),
-            WATER | NAVAL | SEA_TRADE => self.city_is_coastal(c, 0),
-            MINES | FARMS => (0..crate::defs::NUM_CITY_PLOTS).filter_map(|i| self.plot_city(self.cities[c].x, self.cities[c].y, i)).any(|p| {
-                if s == MINES { ["IMPROVEMENT_MINE", "IMPROVEMENT_QUARRY"].iter().any(|name| self.d.ty::<ImprovementType>(name).is_some_and(|i| self.map.plots[p].improvement_type == Some(i) || self.plot_can_have_improvement(p, i, Some(self.city_team(c)), true))) }
-                else { self.d.ty::<ImprovementType>("IMPROVEMENT_FARM").is_some_and(|farm| self.map.plots[p].improvement_type == Some(farm) || self.plot_can_have_improvement(p, farm, Some(self.city_team(c)), true)) }
-            }),
-            _ => s < COUNT,
+            NAVAL => self.city_is_coastal(c, 0),
+            MANA => !self.city_specialty_manas().is_empty(),
+            _ => SPECIALTIES.contains(&s),
         }
     }
 
@@ -92,13 +85,13 @@ impl Game {
         if self.cities[c].culture_level.is_none_or(|l| l.idx() < 3) { return; }
         let owner = self.cities[c].owner;
         let used: Vec<u8> = self.players[owner].cities.iter().filter(|&&o| o != c).filter_map(|&o| self.cities[o].specialty).collect();
-        let eligible: Vec<u8> = (0..COUNT).filter(|&s| self.city_specialty_eligible(c, s)).collect();
+        let eligible: Vec<u8> = SPECIALTIES.into_iter().filter(|&s| self.city_specialty_eligible(c, s)).collect();
         let mut pool: Vec<u8> = eligible.iter().copied().filter(|s| !used.contains(s)).collect();
         let unused = pool.len();
         let mut repeats: Vec<_> = eligible.into_iter().filter(|s| used.contains(s)).collect();
         // A previously offered option may have been chosen in another city. Keep all three
         // offers stable until that happens, including across saves and repeated queries.
-        if self.cities[c].specialty_options.len() == 3 && self.cities[c].specialty_options.iter().all(|(s, _)| !used.contains(s) || unused < 3) {
+        if self.cities[c].specialty_options.len() == 3 && self.cities[c].specialty_options.iter().all(|(s, _, _)| SPECIALTIES.contains(s) && (!used.contains(s) || unused < 3)) {
             if !self.players[owner].human { self.city_choose_specialty(c, 0); }
             return;
         }
@@ -111,21 +104,28 @@ impl Game {
                 let classes = self.city_specialty_classes(c);
                 Some(classes[self.soren_rand_num(classes.len() as i32, "Specialty class") as usize])
             } else { None };
-            options.push((s, class));
+            let mana = if s == MANA {
+                let manas = self.city_specialty_manas();
+                Some(manas[self.soren_rand_num(manas.len() as i32, "Specialty mana") as usize])
+            } else { None };
+            options.push((s, class, mana));
         }
         self.cities[c].specialty_options = options;
         if !self.players[owner].human {
             // A modest local choice: favor food, specialists and existing military production.
-            let pick = self.cities[c].specialty_options.iter().enumerate().max_by_key(|(_, (s, _))| match *s { FOOD => 100, GREAT_PEOPLE => 70 + self.cities[c].population, CLASS_XP | MOBILITY | NO_UPKEEP => 60, _ => 40 }).map(|(i, _)| i).unwrap_or(0);
+            let pick = self.cities[c].specialty_options.iter().enumerate().max_by_key(|(_, (s, _, _))| match *s { FOOD => 100, GREAT_PEOPLE => 70 + self.cities[c].population, CLASS_XP => 60, _ => 40 }).map(|(i, _)| i).unwrap_or(0);
             self.city_choose_specialty(c, pick);
         }
     }
 
     pub fn city_choose_specialty(&mut self, c: CityId, option: usize) -> bool {
         if self.cities[c].specialty.is_some() { return false; }
-        let Some(&(s, class)) = self.cities[c].specialty_options.get(option) else { return false; };
+        let Some(&(s, class, mana)) = self.cities[c].specialty_options.get(option) else { return false; };
+        if !SPECIALTIES.contains(&s) || (s == MANA && !mana.is_some_and(|b| self.city_specialty_manas().contains(&b))) { return false; }
         self.cities[c].specialty = Some(s);
         self.cities[c].specialty_class = class;
+        self.cities[c].specialty_mana = mana;
+        if s == MANA { self.city_change_free_bonus(c, mana.unwrap(), 1); }
         self.cities[c].specialty_options.clear();
         self.city_update_yield(c);
         self.city_update_commerces(c);
@@ -137,12 +137,23 @@ impl Game {
         true
     }
 
-    pub fn city_specialty_plot_yield(&self, c: CityId, p: PlotIdx, y: YieldType) -> i32 {
-        let s = self.cities[c].specialty;
-        let imp = self.map.plots[p].improvement_type.map(|i| self.d.improvements[i].base.type_.as_str()).unwrap_or("");
-        i32::from((s == Some(WATER) && y == YieldType::YIELD_FOOD && self.plot_is_water(p))
-            || (s == Some(FARMS) && y == YieldType::YIELD_FOOD && imp == "IMPROVEMENT_FARM")
-            || (s == Some(MINES) && y == YieldType::YIELD_PRODUCTION && matches!(imp, "IMPROVEMENT_MINE" | "IMPROVEMENT_QUARRY")))
+    /// Typed mana resources, excluding raw mana, in deterministic data order.
+    pub fn city_specialty_manas(&self) -> Vec<BonusType> {
+        self.d.bonuses.keys().filter(|&b| self.d.bonuses[b].bonus_class_type
+            .is_some_and(|k| k.i() == self.d.defines.bonusclass_mana)).collect()
+    }
+
+    /// One food threshold buys one growth event; the specialty adds at most two citizens.
+    pub fn city_population_growth(&self, c: CityId) -> i32 {
+        if !self.city_has_specialty(c, DOUBLE_GROWTH) { return 1; }
+        let happy = self.city_happy_level(c);
+        let healthy = self.city_good_health(c);
+        (1..=2).take_while(|&extra| {
+            self.city_unhappy_level(c, extra) <= happy
+                && (!self.city_ai_is_emphasize_avoid_unhealthy_citizens(c)
+                    || self.city_bad_health(c, false, extra) <= healthy)
+                && (!self.cities[c].outpost || self.cities[c].population + extra <= self.d.defines.outpost_max_pop)
+        }).count() as i32
     }
 
     pub fn specialty_fast_plot(&self, p: PlotIdx, team: TeamId) -> bool {

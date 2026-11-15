@@ -388,7 +388,7 @@ function citiesList() {
       mine.length
         ? h(
             "table.scores",
-            h("tr", h("th", "City"), h("th", "Specialty"), h("th", "Size"), h("th", "Producing"), h("th", "Growth")),
+            h("tr", h("th", "City"), h("th", "City perk"), h("th", "Size"), h("th", "Producing"), h("th", "Growth")),
             mine.map((c) =>
               h(
                 "tr.clickable",

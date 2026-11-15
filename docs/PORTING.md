@@ -446,15 +446,17 @@ flag.
   rules denials make rare). Before, nothing could cancel a deal in the port: the human had no way
   to, and ffh-ai never did. A loan's payment runs with its loan.
 
-- **City specialties** (docs/SPECIALTIES.md; 2026-11-15): replaces the building-tier rolls.
+- **City perks** (docs/SPECIALTIES.md; 2026-11-15): replaces the building-tier rolls.
   Buildings use their Standard versions. At Developing culture (index 3, 100 at Normal speed),
-  every city, including the capital, offers three random eligible specialties; the owner picks
+  every city, including the capital, offers three random eligible perks; the owner picks
   one permanent effect. Chosen entries are excluded from later offers while enough unused
   entries remain. If the eligible pool is exhausted, unused entries are offered first, with
-  repeats filling the three choices. Captured cities keep their specialty, which counts against
-  their new owner's draws. All 21 settled entries in the design are implemented. Drafting grants
+  repeats filling the three choices. Captured cities keep their perk, which counts against
+  their new owner's draws. The revised pool has 16 entries. The owner removed the seven plot-yield,
+  Mobility I, free-upkeep, reliable missionary and coastal trade entries, and added typed mana
+  (type rolled and disclosed with the offer) and double growth capped by happiness. Drafting grants
   one extra draft every 10 turns without unhappiness; gold rushing needs no civic. Full healing
-  still requires supply. Offers and trained-unit provenance are saved (format 40); older saves
+  still requires supply. Offers and trained-unit provenance are saved (format 41); older saves
   are not converted. Tier data and family APIs remain as dormant implementation scaffolding;
   new cities roll no tiers and receive none of the Grand or Legendary bonuses.
 

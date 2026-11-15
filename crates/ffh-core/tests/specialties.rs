@@ -44,7 +44,7 @@ fn game(n: usize) -> (Game, Vec<CityId>) {
 
 fn offer(g: &mut Game, c: CityId, specialty: u8) {
     g.cities[c].specialty = None;
-    g.cities[c].specialty_options = vec![(specialty, None)];
+    g.cities[c].specialty_options = vec![(specialty, None, None)];
     assert!(g.city_choose_specialty(c, 0));
 }
 
@@ -58,10 +58,11 @@ fn three_choices_at_developing_are_saved_and_chosen_only_once() {
     g.city_set_culture_level(a, Some(developing), true);
     let options = g.cities[a].specialty_options.clone();
     assert_eq!(options.len(), 3);
-    for (i, &(s, k)) in options.iter().enumerate() {
+    for (i, &(s, k, mana)) in options.iter().enumerate() {
         assert!(g.city_specialty_eligible(a, s));
         assert!(options[..i].iter().all(|o| o.0 != s));
         if s == CLASS_XP { assert!(k.is_some()); }
+        if s == MANA { assert!(mana.is_some()); }
     }
     let bytes = g.save();
     let mut loaded = Game::load(g.d, &bytes).unwrap();
@@ -84,7 +85,7 @@ fn choosing_refreshes_a_conflicting_offer_and_capture_keeps_the_effect() {
     let (a, b) = (cs[0], cs[1]);
     for c in [a, b] {
         g.city_set_culture_level(c, Some(CultureLevelType::from_usize(3)), true);
-        g.cities[c].specialty_options = vec![(FOOD, None), (CULTURE, None), (WONDERS, None)];
+        g.cities[c].specialty_options = vec![(FOOD, None, None), (CULTURE, None, None), (WONDERS, None, None)];
     }
     g.city_choose_specialty(a, 0);
     assert!(g.cities[b].specialty_options.iter().all(|o| o.0 != FOOD));
@@ -111,16 +112,6 @@ fn economic_and_training_effects_apply_at_their_sources() {
     let settler = d.t::<UnitType>("UNIT_SETTLER");
     offer(&mut g, c, SETTLERS);
     assert!(!g.city_is_food_production_unit(c, settler));
-    let warrior = d.t::<UnitType>("UNIT_WARRIOR");
-    let unit = g.player_init_unit(PlayerId(0), warrior, g.cities[c].x, g.cities[c].y, None, None);
-    offer(&mut g, c, MOBILITY);
-    g.city_add_production_experience(c, unit, false);
-    assert!(g.units[unit].has_promotion[d.t::<PromotionType>("PROMOTION_MOBILITY1")]);
-    offer(&mut g, c, NO_UPKEEP);
-    g.city_add_production_experience(c, unit, false);
-    assert_eq!(g.units[unit].trained_specialty, Some(NO_UPKEEP));
-    let cost = g.player_calculate_unit_cost_breakdown(PlayerId(0));
-    assert!(cost.free_units > 0);
     offer(&mut g, c, POP_RUSH);
     let pop = d.hurries.keys().find(|&h| d.hurries[h].production_per_population > 0).unwrap();
     assert!(g.city_specialty_can_hurry(c, pop));
@@ -132,22 +123,11 @@ fn economic_and_training_effects_apply_at_their_sources() {
 }
 
 #[test]
-fn plot_specialist_religion_wonder_and_class_bonuses_have_the_documented_amounts() {
+fn specialist_religion_wonder_and_class_bonuses_have_the_documented_amounts() {
     let (mut g, cs) = game(1);
     let c = cs[0];
     let d = g.d;
-    let plot = g.city_plot(c);
-    let food = YieldType::YIELD_FOOD;
-    let prod = YieldType::YIELD_PRODUCTION;
     let research = CommerceType::COMMERCE_RESEARCH;
-    g.map.plots[plot].improvement_type = Some(d.t("IMPROVEMENT_FARM"));
-    offer(&mut g, c, FARMS);
-    assert_eq!(g.city_specialty_plot_yield(c, plot, food), 1);
-    assert_eq!(g.city_specialty_plot_yield(c, plot, prod), 0);
-    offer(&mut g, c, MINES);
-    assert_eq!(g.city_specialty_plot_yield(c, plot, prod), 0);
-    g.map.plots[plot].improvement_type = Some(d.t("IMPROVEMENT_QUARRY"));
-    assert_eq!(g.city_specialty_plot_yield(c, plot, prod), 1);
     g.cities[c].specialty = None;
     let base = g.city_base_commerce_rate_times100(c, research);
     let sage = d.specialists.keys().next().unwrap();
@@ -177,7 +157,69 @@ fn plot_specialist_religion_wonder_and_class_bonuses_have_the_documented_amounts
     let warrior = d.t::<UnitType>("UNIT_WARRIOR");
     g.cities[c].specialty = None;
     let xp = g.city_production_experience(c, Some(warrior));
-    g.cities[c].specialty_options = vec![(CLASS_XP, d.units[warrior].unit_combat_type)];
+    g.cities[c].specialty_options = vec![(CLASS_XP, d.units[warrior].unit_combat_type, None)];
     assert!(g.city_choose_specialty(c, 0));
     assert_eq!(g.city_production_experience(c, Some(warrior)), xp + 3);
+}
+
+#[test]
+fn revised_pool_rejects_all_seven_removed_specialties() {
+    let (mut g, cs) = game(1);
+    let c = cs[0];
+    assert_eq!(SPECIALTIES.len(), 16);
+    for retired in [1, 2, 4, 5, 10, 12, 14] {
+        assert!(!g.city_specialty_eligible(c, retired));
+        g.cities[c].specialty_options = vec![(retired, None, None)];
+        assert!(!g.city_choose_specialty(c, 0));
+    }
+}
+
+#[test]
+fn typed_mana_is_disclosed_saved_and_transferred_with_the_city() {
+    let (mut g, cs) = game(2);
+    let c = cs[0];
+    let mana = g.d.t::<BonusType>("BONUS_MANA_FIRE");
+    assert!(g.city_specialty_manas().contains(&mana));
+    assert!(!g.city_specialty_manas().contains(&g.d.t("BONUS_MANA")));
+    g.cities[c].specialty_options = vec![(MANA, None, Some(mana)), (FOOD, None, None), (WONDERS, None, None)];
+    assert_eq!(g.specialty_text(MANA, None, Some(mana)), "This city provides 1 Fire Mana.");
+    let saved = g.save();
+    let mut restored = Game::load(g.d, &saved).unwrap();
+    assert_eq!(restored.cities[c].specialty_options[0].2, Some(mana));
+    let before = restored.city_num_bonuses(c, mana);
+    assert!(restored.city_choose_specialty(c, 0));
+    assert_eq!(restored.cities[c].specialty_mana, Some(mana));
+    assert_eq!(restored.city_num_bonuses(c, mana), before + 1);
+    assert!(!restored.city_choose_specialty(c, 0));
+    let saved = restored.save();
+    let mut restored = Game::load(g.d, &saved).unwrap();
+    assert_eq!(restored.save(), saved);
+    assert_eq!(restored.city_num_bonuses(c, mana), before + 1);
+    let plot = restored.city_plot(c);
+    restored.player_acquire_city(PlayerId(1), c, false, true, true);
+    let captured = restored.map.plots[plot].plot_city.unwrap();
+    assert_eq!(restored.cities[captured].specialty_mana, Some(mana));
+    assert!(restored.city_has_bonus(captured, mana));
+}
+
+#[test]
+fn double_growth_adds_two_one_or_zero_without_crossing_the_happiness_cap() {
+    for room in [2, 1, 0] {
+        let (mut g, cs) = game(1);
+        let c = cs[0];
+        g.city_set_population(c, 5);
+        g.cities[c].military_happiness_units = 1;
+        g.cities[c].ai_emphasize_avoid_angry_citizens_count = 0;
+        g.cities[c].ai_emphasize_avoid_unhealthy_citizens_count = 0;
+        g.cities[c].ai_emphasize_avoid_growth_count = 0;
+        let change = g.city_unhappy_level(c, 0) - g.city_happy_level(c) + room;
+        g.city_change_extra_happiness(c, change);
+        assert_eq!(g.city_happy_level(c) - g.city_unhappy_level(c, 0), room);
+        offer(&mut g, c, DOUBLE_GROWTH);
+        assert_eq!(g.city_population_growth(c), room);
+        g.cities[c].food = g.city_growth_threshold(c) + 100;
+        g.city_do_growth(c);
+        assert_eq!(g.cities[c].population, 5 + room);
+        assert!(g.city_happy_level(c) >= g.city_unhappy_level(c, 0));
+    }
 }

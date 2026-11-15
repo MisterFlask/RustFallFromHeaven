@@ -1,6 +1,6 @@
 # Building suitability: building tiers
 
-**Status: replaced by city specialties** (2026-11-15, docs/SPECIALTIES.md).
+**Status: replaced by city perks** (2026-11-15, docs/SPECIALTIES.md).
 New cities use Standard buildings; no building tiers are rolled. The old type tables and family
 lookup APIs remain for now, but the non-Standard variants are not offered in play. The remainder
 of this file records the retired design.

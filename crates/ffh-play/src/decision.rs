@@ -956,7 +956,7 @@ pub fn pending(g: &Game, p: PlayerId, events: &[TriggeredId]) -> Pending {
     Pending {
         specialties: pl.cities.iter().filter(|&&c| !g.cities[c].specialty_options.is_empty()).map(|&c| PendingSpecialty {
             city: c, name: crate::view::city_name(g, c),
-            options: g.cities[c].specialty_options.iter().map(|&(s, class)| g.specialty_text(s, class)).collect(),
+            options: g.cities[c].specialty_options.iter().map(|&(s, class, mana)| g.specialty_text(s, class, mana)).collect(),
         }).collect(),
         events: events.iter().filter_map(|&id| pending_event(g, p, id)).collect(),
         votes: pending_votes(g, p),

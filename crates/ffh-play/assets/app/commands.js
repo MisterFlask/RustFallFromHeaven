@@ -234,7 +234,7 @@ export async function endTurn(force = false) {
   if (!observing() && S.view?.pending?.specialties?.length) {
     S.dismissed.clear();
     emit("reopen-popups");
-    toast("Choose a city specialty before ending the turn.", "error", 6000);
+    toast("Choose a city perk before ending the turn.", "error", 6000);
     return null;
   }
   if (force) return run({ c: "end_turn", force: true });

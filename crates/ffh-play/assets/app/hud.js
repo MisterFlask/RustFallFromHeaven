@@ -227,7 +227,7 @@ export function renderTop() {
     // not end before it is cast; the button says why under its label, and its click opens the cast.
     const due = !observing() && st.phase === "human" ? v?.pending?.cast_due : null;
     const specialty = !observing() && st.phase === "human" && v?.pending?.specialties?.length;
-    const why = specialty ? "Choose a city specialty first." : due?.label;
+    const why = specialty ? "Choose a city perk first." : due?.label;
     const skinKey = `${label}|${!!look.art}|${isoSkin()}|${why ?? ""}`;
     if (end.dataset.label !== skinKey) {
       end.dataset.label = skinKey;
