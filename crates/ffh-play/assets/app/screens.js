@@ -11,6 +11,7 @@ import { addHelp, openHelp } from "./help.js";
 import { run } from "./commands.js";
 import { render as markup, plain } from "./markup.js";
 import { illuminate, bannerEl } from "./look.js";
+import { perkView } from "./perks.js";
 import { leaderPortrait, teamPortrait, PORTRAIT } from "./portraits.js";
 
 // ---------------------------------------------------------------------------------------------
@@ -745,7 +746,7 @@ export async function openSpecialty(city) {
         }
         updateActions();
       },
-    }, o.text);
+    }, perkView(o));
     buttons.push(button);
   }
   const m = openModal({ title: `${city.name}: choose a city perk`,

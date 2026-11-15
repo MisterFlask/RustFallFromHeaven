@@ -95,7 +95,11 @@ against them before it is added.
   No scrolling through buildings is needed.
 - Before unlocking, it states the Developing (level 3) trigger. Once unlocked, **Choose perk**
   opens this city's saved offer directly. After selection, it shows the exact rule and numbers.
-- The chooser previews three full rules. Selecting highlights one; **Confirm perk** commits
+- Each perk has a short title and an existing interface icon above its full rule. The chooser,
+  city screen and cities list use the same title, icon and rule. The mana icon and title show
+  the rolled sphere; the training title shows its rolled unit class. These are presentation
+  fields derived from the saved perk; no save-format or gameplay change is needed.
+- The chooser previews three titled, illustrated rules. Selecting highlights one; **Confirm perk** commits
   it. Initial keyboard focus cannot commit a choice, and double clicks cannot send it twice.
 - **Later this turn** keeps the offer; its text explicitly says the turn cannot end without a
   choice. The end-turn button also explains the block. The cities list shows each selected rule.
@@ -111,6 +115,27 @@ trade-route city perks. Their effects are no longer applied. The typed mana and 
 entries below were added at the owner's request.
 
 Numbers are first guesses. Entries marked *owner* are the owner's own examples.
+
+### Titles and icons
+
+| Title | Icon | Effect |
+|---|---|---|
+| [Class] Academy | XP star | +3 training XP for the rolled class |
+| Master Builders | Construction | Faster wonders |
+| Pioneers | Found city | Settler training and size-2 new cities |
+| Great Minds | Great person | Double Great Person points |
+| Scholars' Guild | Research flask | Research from specialists |
+| City of Arts | Culture notes | More culture |
+| Sacred Crossroads | Religion | Culture and gold from religions |
+| Fleet Academy | Sea patrol | Faster naval units |
+| Sanctuary | Healing | Full healing while supplied |
+| Swift Roads | Road | Double local movement |
+| Abundance | Food sheaf | +5 food |
+| Willing Hands | Hurry | Population rushing without unhappiness |
+| Citizen Militia | Strength | Additional drafts |
+| Shrewd Buyers | Gold | Half-price gold rushing |
+| [Typed Mana] Source | Rolled mana sphere | One typed mana source |
+| Growing Together | Population | Double growth up to happiness limit |
 
 ### 3.1 Changes what the city builds
 

@@ -34,6 +34,7 @@ pub mod keywords;
 pub mod map;
 pub mod marks;
 pub mod player;
+pub mod perks;
 pub mod outposts;
 pub mod place;
 pub mod rituals;
@@ -346,6 +347,7 @@ pub fn cities(v: &Viewer) -> Json {
             "visible" => visible,
             "size" => visible.then_some(city.population),
             "specialty" => visible.then(|| city.specialty.map(|s| g.specialty_text(s, city.specialty_class, city.specialty_mana))).flatten(),
+            "perk" => if visible { perks::city(g, c).map(|p| p.to_json()).unwrap_or(Json::Null) } else { Json::Null },
             "defense" => visible.then(|| g.city_defense_modifier(c, false)),
             // The city art's curtain wall (docs/ART.md 9.3), seen like its size.
             "walls" => visible.then(|| walls.iter().any(|&b| g.city_num_building(c, b) > 0)),

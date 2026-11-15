@@ -26,6 +26,7 @@ import { recruitControls, recruitView, requisitionNote, requisitionTag } from ".
 import { governanceView } from "./governors.js";
 import { addHelp } from "./help.js";
 import { keywordChips } from "./keywords.js";
+import { perkView } from "./perks.js";
 import { render as markup } from "./markup.js";
 
 // ---- Outposts in the help display (docs/NAVAL.md, section 9) -----------------------------------
@@ -506,7 +507,7 @@ function specialtyView(c, reload) {
   }, "Choose perk") : null;
   return h("section.section.specialty", { "aria-label": "City perk" },
     h("h4", "City perk"),
-    h("p", c.specialty ?? (pending ? "Choose one of three permanent effects before ending this turn." : "At Developing culture (level 3), choose one of three permanent city perks.")),
+    c.perk ? perkView(c.perk) : h("p", c.specialty ?? (pending ? "Choose one of three permanent effects before ending this turn." : "At Developing culture (level 3), choose one of three permanent city perks.")),
     choose,
   );
 }

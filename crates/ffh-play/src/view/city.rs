@@ -484,6 +484,7 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "id" => c,
         "name" => city_name(g, c),
         "specialty" => city.specialty.map(|s| g.specialty_text(s, city.specialty_class, city.specialty_mana)),
+        "perk" => crate::view::perks::city(g, c).map(|p| p.to_json()).unwrap_or(Json::Null),
         "specialty_pending" => !city.specialty_options.is_empty(),
         "owner" => city.owner,
         "x" => city.x,

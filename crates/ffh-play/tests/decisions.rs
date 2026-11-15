@@ -808,6 +808,7 @@ fn specialty_choices_are_pending_validated_and_block_even_forced_end_turn() {
     let pending = s.pending();
     assert_eq!(pending.specialties.len(), 1);
     assert_eq!(pending.specialties[0].options.len(), 3);
+    let expected = pending.specialties[0].options[1].to_json();
     let before = s.g.save();
     assert!(s.execute(&Command::EndTurn { force: true }).is_err());
     assert!(s.execute(&Command::ChooseSpecialty { city: c, option: 3 }).is_err());
@@ -815,6 +816,12 @@ fn specialty_choices_are_pending_validated_and_block_even_forced_end_turn() {
     let chosen = s.g.cities[c].specialty_options[1].0;
     ok(&mut s, Command::ChooseSpecialty { city: c, option: 1 });
     assert_eq!(s.g.cities[c].specialty, Some(chosen));
+    let v = ffh_play::view::Viewer::new(&s.g, s.human, false);
+    let screen = ffh_play::view::city::city(&v, c).unwrap();
+    assert_eq!(screen.get("perk"), Some(&expected), "the selected perk keeps the offer's title, icon and full rule");
+    let cities = ffh_play::view::cities(&v);
+    let listed = cities.as_arr().unwrap().iter().find(|city| city.get("id") == Some(&ffh_play::json::Json::from(c))).unwrap();
+    assert_eq!(listed.get("perk"), Some(&expected), "the cities list uses the same perk presentation");
     assert!(s.pending().specialties.is_empty());
     assert!(s.execute(&Command::ChooseSpecialty { city: c, option: 0 }).is_err());
 }

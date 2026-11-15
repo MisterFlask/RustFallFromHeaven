@@ -632,11 +632,15 @@ pub struct PendingVote {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct PendingSpecialty { pub city: CityId, pub name: String, pub options: Vec<String> }
+pub struct PendingSpecialty { pub city: CityId, pub name: String, pub options: Vec<crate::view::perks::Perk> }
 impl PendingSpecialty {
     fn to_json(&self) -> Json { crate::jobj! {
         "city" => self.city, "name" => self.name.as_str(),
-        "options" => Json::Arr(self.options.iter().enumerate().map(|(i, text)| crate::jobj! { "option" => i, "text" => text.as_str() }).collect()),
+        "options" => Json::Arr(self.options.iter().enumerate().map(|(i, perk)| {
+            let mut j = perk.to_json();
+            j.set("option", i);
+            j
+        }).collect()),
     } }
 }
 /// Everything the human answers or acts on at a control point (design §3).
@@ -956,7 +960,7 @@ pub fn pending(g: &Game, p: PlayerId, events: &[TriggeredId]) -> Pending {
     Pending {
         specialties: pl.cities.iter().filter(|&&c| !g.cities[c].specialty_options.is_empty()).map(|&c| PendingSpecialty {
             city: c, name: crate::view::city_name(g, c),
-            options: g.cities[c].specialty_options.iter().map(|&(s, class, mana)| g.specialty_text(s, class, mana)).collect(),
+            options: g.cities[c].specialty_options.iter().map(|&(s, class, mana)| crate::view::perks::describe(g, s, class, mana)).collect(),
         }).collect(),
         events: events.iter().filter_map(|&id| pending_event(g, p, id)).collect(),
         votes: pending_votes(g, p),

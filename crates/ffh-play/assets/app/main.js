@@ -16,6 +16,7 @@ import { S, setData, setView, setMap, on, emit, resetDismissed, clearDismissed, 
 import { MapView } from "./map.js";
 import * as units from "./units.js";
 import { openCity, ownCities, stepCityScreen } from "./city.js";
+import { perkView } from "./perks.js";
 import * as empire from "./empire.js";
 import { openCulture } from "./culture.js";
 import { openArmies } from "./armies.js";
@@ -394,7 +395,7 @@ function citiesList() {
                 "tr.clickable",
                 { onclick: () => (closeTag("cities"), mapView.centerOn(c.x, c.y), openCity(c.id)) },
                 h("td", `${c.capital ? "★ " : ""}${c.name}`, c.outpost ? h("span.dim", " outpost") : null),
-                h("td", c.specialty ?? "—"),
+                h("td", c.perk ? perkView(c.perk) : (c.specialty ?? "—")),
                 h("td", String(c.size)),
                 h("td", c.production ? `${dname(["UnitType", "BuildingType", "ProjectType", "ProcessType"][c.production.order], c.production.type)} (${turns(c.production.turns)})` : c.outpost ? h("span", { class: c.outpost.lane === "open" ? "" : "warn" }, c.outpost.text ?? "") : h("span.warn", "nothing")),
                 h("td", c.food_turns > 0 ? turns(c.food_turns) : "-"),
