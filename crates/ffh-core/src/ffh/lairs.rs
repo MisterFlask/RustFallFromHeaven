@@ -1,8 +1,9 @@
 //! Lair exploration (`spellExploreLair`, `spellExploreLairEpic` and the `exploreLair*` functions
 //! of CustomFunctions.py) and the odds of lairs and goody huts as the interface shows them.
 //!
-//! An exploration rolls a tier (`rand(100) + the unit's level`), then picks one outcome from the
-//! tier's list. Each tier's list is built by a read-only function (`lair_*_outcomes`,
+//! An exploration rolls a tier (`rand(100) + the unit's level`), then offers two distinct
+//! random outcomes from that tier. Only the controller's choice is applied. Each tier's list
+//! is built by a read-only function (`lair_*_outcomes`,
 //! `lair_big_bad_lists`) that the roll and [`Game::lair_explore_odds`] share, so the odds shown
 //! are the lists the roll draws from. The lists of the two "big" tiers depend on the grace
 //! period (`cf_grace`, a random draw per check, FFH2's order kept): their builders take the
@@ -81,6 +82,23 @@ pub struct LairBigBadLists {
 /// The key of the big bad tier's single outcome (a named monster and its henchmen).
 pub const BIG_BAD_MONSTER: &str = "MONSTER";
 
+/// An offered result. Monster encounters are rolled before the choice, so the displayed
+/// monster, promotion and henchmen are exactly what choosing that option produces.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum LairOutcome {
+    Result(&'static str),
+    Monster { monster: UnitType, henchman: UnitType, promotion: PromotionType, count: i32 },
+}
+
+impl LairOutcome {
+    pub fn key(&self) -> &'static str {
+        match self {
+            Self::Result(key) => key,
+            Self::Monster { .. } => BIG_BAD_MONSTER,
+        }
+    }
+}
+
 /// In % the chance that the lair is destroyed after outcome `key` of `tier` (what the Python
 /// `exploreLair*` functions return; `spellExploreLair` removes the lair when it beats
 /// `rand(100)`).
@@ -114,7 +132,7 @@ pub fn lair_outcome_replaces_lair(tier: LairTier, key: &str) -> bool {
     tier == LairTier::Neutral && key == "CAGE"
 }
 
-/// One outcome of an exploration and its chance (parts per million of the whole exploration).
+/// One outcome's chance in the first offer (parts per million of the whole exploration).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LairOutcomeOdds {
     pub tier: LairTier,
@@ -135,7 +153,7 @@ pub struct LairOdds {
     pub tiers: Vec<(LairTier, i64)>,
     /// Every outcome with a chance, by tier, in the order of the tier's list.
     pub outcomes: Vec<LairOutcomeOdds>,
-    /// The chance (ppm) that the lair is still there after the exploration.
+    /// The chance (ppm) that the lair would remain if the first offer were chosen.
     pub lair_survives_ppm: i64,
     /// The chance (ppm) that a grace check passes now (`cf_grace`: early in the game the big
     /// results leave out their strongest entries).
@@ -491,8 +509,8 @@ impl Game {
 
     // ------------------------------------------------------------------ the roll
 
-    /// `spellExploreLair` / `spellExploreLairEpic` up to the tier's result: rolls the tier and
-    /// applies one of its outcomes. Returns the chance in % that the lair is destroyed.
+    /// Rolls the tier, offers two results and applies the chosen one.
+    /// Returns the chance in % that the lair is destroyed.
     pub fn lair_explore(&mut self, caster: UnitId, epic: bool) -> i32 {
         let rnd = self.soren_rand_num(100, "Explore Lair") + self.units[caster].level;
         self.lair_explore_tier(caster, LairTier::of_roll(rnd, epic))
@@ -502,35 +520,57 @@ impl Game {
     /// Returns the chance in % that the lair is destroyed.
     pub fn lair_explore_tier(&mut self, caster: UnitId, tier: LairTier) -> i32 {
         let plot = self.unit_plot(caster);
-        if tier == LairTier::BigBad {
-            let lists = self.with_grace_rng(|g, grace| g.lair_big_bad_lists(plot, grace));
-            self.lair_apply_big_bad(caster, plot, &lists);
-            return lair_destroy_chance(tier, BIG_BAD_MONSTER);
+        let options = self.lair_roll_options(caster, plot, tier);
+        let owner = self.units[caster].owner;
+        let choice = self.controller(owner).choose_lair_outcome(self, owner, caster, tier, &options);
+        let outcome = options.get(choice).unwrap_or(&options[0]);
+        match *outcome {
+            LairOutcome::Result(key) => self.lair_apply(tier, caster, plot, key),
+            LairOutcome::Monster { monster, henchman, promotion, count } => self.lair_apply_big_bad(caster, monster, henchman, promotion, count),
         }
-        let list = self.with_grace_rng(|g, grace| g.lair_tier_outcomes(tier, caster, plot, grace));
-        let key = self.cf_pick(&list, "Pick Goody");
-        self.lair_apply(tier, caster, plot, key);
-        lair_destroy_chance(tier, key)
+        lair_destroy_chance(tier, outcome.key())
+    }
+
+    /// Weighted first draw, then a second draw excluding every copy of the first key.
+    /// Big bad offers have different monsters; their other encounter details are also fixed.
+    fn lair_roll_options(&mut self, caster: UnitId, plot: PlotIdx, tier: LairTier) -> Vec<LairOutcome> {
+        if tier == LairTier::BigBad {
+            let mut lists = self.with_grace_rng(|g, grace| g.lair_big_bad_lists(plot, grace));
+            let mut options = Vec::new();
+            for _ in 0..2 {
+                let monster = self.cf_pick(&lists.monsters, "Pick Monster");
+                let henchman = self.cf_pick(&lists.henchmen, "Pick Henchman");
+                let promotion = self.cf_pick(&lists.promotions, "Pick Promotion");
+                let count = self.soren_rand_num(5, "Pick Henchmen");
+                options.push(LairOutcome::Monster {
+                    monster: self.d.t::<UnitType>(monster),
+                    henchman: self.d.t::<UnitType>(henchman),
+                    promotion: self.d.t::<PromotionType>(promotion),
+                    count,
+                });
+                lists.monsters.retain(|&m| m != monster);
+            }
+            return options;
+        }
+        let mut list = self.with_grace_rng(|g, grace| g.lair_tier_outcomes(tier, caster, plot, grace));
+        let first = self.cf_pick(&list, "Pick Goody");
+        list.retain(|&key| key != first);
+        let second = self.cf_pick(&list, "Pick Goody");
+        vec![LairOutcome::Result(first), LairOutcome::Result(second)]
     }
 
     /// The big bad result: a named barbarian monster with a promotion appears next to the
     /// caster, with 0-4 henchmen.
-    fn lair_apply_big_bad(&mut self, caster: UnitId, _plot: PlotIdx, lists: &LairBigBadLists) {
-        let d = self.d;
+    fn lair_apply_big_bad(&mut self, caster: UnitId, monster: UnitType, henchman: UnitType, promotion: PromotionType, count: i32) {
         let p = self.units[caster].owner;
-        let monster = self.cf_pick(&lists.monsters, "Pick Monster");
-        let henchman = self.cf_pick(&lists.henchmen, "Pick Henchman");
-        let promo = self.cf_pick(&lists.promotions, "Pick Promotion");
-        let unit = d.t::<UnitType>(monster);
-        let henchman = d.t::<UnitType>(henchman);
-        if let Some(new_unit) = self.cf_add_unit_fixed(caster, unit) {
-            self.unit_set_has_promotion(new_unit, d.t::<PromotionType>(promo), true);
+        if let Some(new_unit) = self.cf_add_unit_fixed(caster, monster) {
+            self.unit_set_has_promotion(new_unit, promotion, true);
             let name = self.cf_marnok_name_generator(new_unit);
             self.unit_set_name(new_unit, name);
             self.cf_msg(p, "TXT_KEY_MESSAGE_EXPLORE_LAIR_BIGBAD");
             let barbarian = self.barbarian_player();
             let (x, y) = (self.units[new_unit].x, self.units[new_unit].y);
-            for _ in 0..self.soren_rand_num(5, "Pick Henchmen") {
+            for _ in 0..count {
                 self.player_init_unit(barbarian, henchman, x, y, None, Some(DirectionType::DIRECTION_SOUTH));
             }
         }
@@ -846,6 +886,82 @@ mod tests {
         let u = g.player_init_unit(p, d.t::<UnitType>(unit), x, y, None, None);
         g.plot_set_improvement_type(plot, Some(d.t::<ImprovementType>(improvement)));
         (u, plot)
+    }
+
+    #[test]
+    fn offers_are_distinct_eligible_and_do_not_apply_effects() {
+        let mut g = game();
+        let (u, plot) = on_lair(&mut g, "IMPROVEMENT_RUINS", "UNIT_WARRIOR");
+        for water in [false, true] {
+            g.map.plots[plot].plot_type = if water { PlotType::PLOT_OCEAN } else { PlotType::PLOT_LAND };
+            for improvement in ["IMPROVEMENT_RUINS", "IMPROVEMENT_BARROW", "IMPROVEMENT_GOBLIN_FORT", "IMPROVEMENT_DUNGEON"] {
+                g.plot_set_improvement_type(plot, Some(g.d.t::<ImprovementType>(improvement)));
+                for tier in LairTier::ALL {
+                    for seed in 0..3 {
+                        g.soren_rand = Rng::new(seed * 7919 + 13);
+                        let rng = g.soren_rand.clone();
+                        let before = g.save();
+                        let options = g.lair_roll_options(u, plot, tier);
+                        assert_eq!(options.len(), 2);
+                        assert_ne!(options[0], options[1], "{improvement}, {tier:?}");
+                        if tier == LairTier::BigBad {
+                            let lists = g.lair_big_bad_lists(plot, &mut || true);
+                            for option in &options {
+                                let LairOutcome::Monster { monster, henchman, promotion, count } = *option else { panic!("monster offer") };
+                                assert!(lists.monsters.contains(&g.d.units[monster].base.type_.as_str()));
+                                assert!(lists.henchmen.contains(&g.d.units[henchman].base.type_.as_str()));
+                                assert!(lists.promotions.contains(&g.d.promotions[promotion].base.type_.as_str()));
+                                assert!((0..5).contains(&count));
+                            }
+                        } else {
+                            let list = g.lair_tier_outcomes(tier, u, plot, &mut || true);
+                            assert!(options.iter().all(|o| list.contains(&o.key())));
+                        }
+                        g.soren_rand = rng;
+                        assert_eq!(g.save(), before, "rolling offers must have no effects beyond RNG");
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn controller_choice_applies_only_that_offer_and_invalid_choice_uses_first() {
+        use crate::controller::Controller;
+        use std::sync::Arc;
+        struct Pick {
+            choice: usize,
+            options: Vec<LairOutcome>,
+            before: Vec<u8>,
+        }
+        impl Controller for Pick {
+            fn choose_lair_outcome(&self, g: &Game, _p: PlayerId, _u: UnitId, _tier: LairTier, options: &[LairOutcome]) -> usize {
+                assert_eq!(options, self.options);
+                assert_eq!(g.save(), self.before, "neither offer has taken effect when asked");
+                self.choice
+            }
+        }
+        let mut base = game();
+        let (u, plot) = on_lair(&mut base, "IMPROVEMENT_RUINS", "UNIT_WARRIOR");
+        let saved = base.save();
+        for tier in LairTier::ALL {
+            for choice in [0, 1, usize::MAX] {
+                let mut expected = Game::load(base.d, &saved).unwrap();
+                let options = expected.lair_roll_options(u, plot, tier);
+                let before = expected.save();
+                let selected = options.get(choice).unwrap_or(&options[0]);
+                match *selected {
+                    LairOutcome::Result(key) => expected.lair_apply(tier, u, plot, key),
+                    LairOutcome::Monster { monster, henchman, promotion, count } => expected.lair_apply_big_bad(u, monster, henchman, promotion, count),
+                }
+                let destroy = lair_destroy_chance(tier, selected.key());
+                let mut actual = Game::load(base.d, &saved).unwrap();
+                let owner = actual.units[u].owner;
+                actual.controllers[owner] = Arc::new(Pick { choice, options, before });
+                assert_eq!(actual.lair_explore_tier(u, tier), destroy);
+                assert_eq!(actual.save(), expected.save(), "{tier:?}, choice {choice}");
+            }
+        }
     }
 
     #[test]

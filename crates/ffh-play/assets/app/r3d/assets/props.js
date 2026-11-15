@@ -969,7 +969,7 @@ function buildMountain(mb, r, variant, param) {
 
 recipe("feat.mountain", { variants: MOUNTAINS.length, build: (mb, r, { variant, param }) => buildMountain(mb, r, variant, param) });
 
-/** The mountain of a peak plot (a volcano is its own model), at the summit the relief raises. */
+/** The mountain of a peak plot (a volcano is its own model), rooted across its whole footprint. */
 function mountainOf(ctx) {
   if (ctx.kind !== KIND.PEAK || ctx.feat === FEAT.VOLCANO) return [];
   const { r, world, i, ground } = ctx;
@@ -977,7 +977,11 @@ function mountainOf(ctx) {
   const param = isHell(ground) ? "basalt" : ground === GROUND.DESERT ? "sand" : cold ? "cold" : "";
   // Something stands at the plot's centre: a smaller mountain behind it.
   const held = ctx.held;
-  return [{ asset: "feat.mountain", param, variant: r.int(0, MOUNTAINS.length - 1), dx: world.peakJitter[i * 2], dz: -world.peakJitter[i * 2 + 1] - (held ? 0.2 : 0), scale: (held ? 0.62 : 1.12) * r.range(0.94, 1.08), yaw: r.range(-0.5, 0.5) + (r() < 0.5 ? Math.PI : 0), always: true }];
+  const variant = r.int(0, MOUNTAINS.length - 1);
+  const scale = (held ? 0.62 : 1.12) * r.range(0.94, 1.08);
+  // The model's rim is only 0.06 below its base. Placed at the mound's summit, it hung above
+  // the lower ground round it; take its foundation from the footprint (including its boulders).
+  return [{ asset: "feat.mountain", param, variant, dx: world.peakJitter[i * 2], dz: -world.peakJitter[i * 2 + 1] - (held ? 0.2 : 0), scale, foundation: 0.85 * scale, yaw: r.range(-0.5, 0.5) + (r() < 0.5 ? Math.PI : 0), always: true }];
 }
 
 const FIRE = [T.flameCore, T.flameMid, T.flameTip];

@@ -114,6 +114,20 @@ export function standHeight(world, mx, my, foot = 0) {
   return h;
 }
 
+/** The base of a broad model with a buried skirt: the lowest visible ground under its footprint,
+ *  so it grows out of a slope instead of balancing on the highest point. Water covers the skirt
+ *  at a shore, so a sea floor must not drag the whole model below the waterline. */
+function foundationHeight(world, mx, my, radius) {
+  let h = world.heightAt(mx, my);
+  for (const ring of [0.5, 1]) {
+    for (let k = 0; k < 32; k++) {
+      const a = (k / 32) * Math.PI * 2;
+      h = Math.min(h, world.heightAt(mx + Math.cos(a) * radius * ring, my + Math.sin(a) * radius * ring));
+    }
+  }
+  return Math.max(SEA, h);
+}
+
 /** What the static dressing reads from the view: the cities and where units stand (by plot). */
 export function staticEnv(world) {
   const cityAt = new Map();
@@ -205,8 +219,10 @@ export function dressStatic(world, map, plots = null, env = staticEnv(world)) {
       ctx.roadDist = (lx, lz) => roadDist(roads, lx, lz);
       const place = (asset, lx, lz, o = {}) => {
         const [mx, my] = at(lx, lz);
+        let yy = H(mx, my);
+        if (o.foundation) yy = foundationHeight(world, mx, my, o.foundation);
         // A floating thing rides at the sea's level, a hull a little under it (its draft).
-        const yy = o.float ? Math.max(SEA - (o.draft ?? 0), H(mx, my)) : H(mx, my);
+        else if (o.float) yy = Math.max(SEA - (o.draft ?? 0), yy);
         out.push(inst(asset, mx, yy + (o.lift ?? 0), -my, { plot: i, id: o.id ?? idOf(`s${i}:${out.length - base}`), ...o }));
       };
 
@@ -245,7 +261,7 @@ export function dressStatic(world, map, plots = null, env = staticEnv(world)) {
       const feats = CATALOG.feature?.(feat, ctx) ?? [];
       for (const f of feats) {
         if (city && !f.always) continue;
-        place(f.asset, f.dx ?? 0, f.dz ?? 0, { variant: f.variant ?? r.int(0, 7), param: f.param, scale: f.scale ?? 1, yaw: f.yaw ?? r.range(0, 6.28), float: f.float, draft: f.draft, tint: f.tint });
+        place(f.asset, f.dx ?? 0, f.dz ?? 0, { variant: f.variant ?? r.int(0, 7), param: f.param, scale: f.scale ?? 1, yaw: f.yaw ?? r.range(0, 6.28), float: f.float, draft: f.draft, tint: f.tint, foundation: f.foundation });
       }
       // The improvement's structure (not under a city: the settlement replaces it).
       if (imp && !city) {

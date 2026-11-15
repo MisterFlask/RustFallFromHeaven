@@ -129,6 +129,9 @@ impl Controller for Timed {
     fn choose_free_bonus(&self, g: &Game, p: PlayerId, c: CityId, b: BuildingType, options: &[BonusType]) -> Option<BonusType> {
         self.time(|| self.inner.choose_free_bonus(g, p, c, b, options))
     }
+    fn choose_lair_outcome(&self, g: &Game, p: PlayerId, u: UnitId, tier: ffh_core::ffh::lairs::LairTier, options: &[ffh_core::ffh::lairs::LairOutcome]) -> usize {
+        self.time(|| self.inner.choose_lair_outcome(g, p, u, tier, options))
+    }
     fn hook(&self, g: &mut Game, h: ffh_core::controller::AiHook) {
         self.time(|| self.inner.hook(g, h))
     }
@@ -318,6 +321,9 @@ impl Controller for CppCitizens {
     }
     fn choose_free_bonus(&self, g: &Game, p: PlayerId, c: CityId, b: BuildingType, options: &[BonusType]) -> Option<BonusType> {
         self.inner.choose_free_bonus(g, p, c, b, options)
+    }
+    fn choose_lair_outcome(&self, g: &Game, p: PlayerId, u: UnitId, tier: ffh_core::ffh::lairs::LairTier, options: &[ffh_core::ffh::lairs::LairOutcome]) -> usize {
+        self.inner.choose_lair_outcome(g, p, u, tier, options)
     }
     fn hook(&self, g: &mut Game, h: ffh_core::controller::AiHook) {
         self.inner.hook(g, h)
@@ -1162,6 +1168,9 @@ impl Controller for FreeRider {
     }
     fn choose_free_bonus(&self, g: &Game, p: PlayerId, c: CityId, b: BuildingType, options: &[BonusType]) -> Option<BonusType> {
         self.inner.choose_free_bonus(g, p, c, b, options)
+    }
+    fn choose_lair_outcome(&self, g: &Game, p: PlayerId, u: UnitId, tier: ffh_core::ffh::lairs::LairTier, options: &[ffh_core::ffh::lairs::LairOutcome]) -> usize {
+        self.inner.choose_lair_outcome(g, p, u, tier, options)
     }
 }
 

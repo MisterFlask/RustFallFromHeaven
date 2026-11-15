@@ -500,6 +500,30 @@ pub fn automate(dir: &Path) -> Result<StagedAutomate, String> {
     Ok(StagedAutomate { save: paths.save, scout, turn: s.g.game_turn() })
 }
 
+/// A ready explorer on an ordinary or epic lair, arranged to roll Big bad. The two
+/// encounters can be compared in the real blocking dialog without searching a random map.
+pub fn lair(dir: &Path, epic: bool) -> Result<Json, String> {
+    let d = ffh_data::global();
+    let mut s = duel_as(dir, 11, 1, Some("CIVILIZATION_BANNOR"))?;
+    let h = s.human;
+    let g = &mut s.g;
+    let &(x, y) = free_plots_near_capital(g, h)?.first().ok_or("no free plot")?;
+    let unit = g.player_init_unit(h, d.t::<UnitType>("UNIT_WARRIOR"), x, y, None, None);
+    let plot = g.unit_plot(unit);
+    let site = if epic { "BROKEN_SEPULCHER" } else { "RUINS" };
+    g.plot_set_improvement_type(plot, Some(d.t::<ImprovementType>(&format!("IMPROVEMENT_{site}"))));
+    let spell = d.t::<SpellType>(&format!("SPELL_EXPLORE_LAIR_{site}"));
+    let barbarian = g.players[g.barbarian_player()].team;
+    g.team_declare_war(g.players[h].team, barbarian, false, None);
+    g.soren_rand = ffh_core::rng::Rng::new(0);
+    if !g.unit_can_cast(unit, spell, false) {
+        return Err("staged explorer cannot cast Explore Lair".into());
+    }
+    let kind = if epic { "lair-epic" } else { "lair" };
+    let paths = s.save(kind).map_err(|e| format!("save: {e:?}"))?;
+    Ok(crate::jobj! { "stage" => kind, "save" => paths.save.display().to_string(), "unit" => unit, "spell" => Json::idx(spell), "x" => x, "y" => y, "turn" => s.g.game_turn() })
+}
+
 /// A saved game at a human control point (turn 4 of a duel, seed 11) with the decks in play
 /// (docs/CARDS.md): the human knows the Starmetal Meteor and Legacy of Kings cards (spells
 /// `meteor` and `legacy`, the top bar's card spells, cast at a plot and at a choice) and Mithril

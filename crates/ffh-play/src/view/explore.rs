@@ -41,7 +41,7 @@ fn tiers_json(tiers: &[(LairTier, i64)]) -> Json {
 fn lair_json(v: &Viewer, p: PlotIdx, epic: bool, units: &[UnitId], current: bool) -> Json {
     let g = v.g;
     let d = g.d;
-    let mut j = crate::jobj! { "kind" => "lair", "epic" => epic, "in_view" => current };
+    let mut j = crate::jobj! { "kind" => "lair", "epic" => epic, "in_view" => current, "choices" => 2 };
     let Some(&first) = units.first() else {
         // No unit: the tiers for a level-1 unit, without the unit's lists.
         j.set("unit", Json::Null);
@@ -61,7 +61,7 @@ fn lair_json(v: &Viewer, p: PlotIdx, epic: bool, units: &[UnitId], current: bool
     j.set("unit_type", Json::idx(g.units[first].unit_type));
     j.set("level", odds.level);
     j.set("tiers", tiers_json(&odds.tiers));
-    j.set("lair_survives_ppm", ppm_json(odds.lair_survives_ppm));
+    j.set("first_offer_lair_survives_ppm", ppm_json(odds.lair_survives_ppm));
     j.set("grace_ppm", ppm_json(odds.grace_ppm));
     let outcomes: Vec<Json> = odds
         .outcomes
@@ -184,7 +184,7 @@ pub fn goody_label(g: &Game, p: PlayerId, goody: GoodyType) -> String {
 }
 
 /// What lair result `key` of `tier` does, in a line.
-fn lair_label(g: &Game, p: PlayerId, tier: LairTier, key: &str) -> String {
+pub(crate) fn lair_label(g: &Game, p: PlayerId, tier: LairTier, key: &str) -> String {
     let d = g.d;
     if let Some(goody) = Game::lair_outcome_goody(tier, key) {
         return goody_label(g, p, d.t::<GoodyType>(goody));

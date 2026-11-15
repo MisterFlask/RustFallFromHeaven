@@ -739,6 +739,8 @@ fn cmd_stage(args: &[String]) {
         "trade" => ffh_play::stage::trade(dir).map(|s| s.to_json()),
         "diplomacy" => ffh_play::stage::diplomacy(dir).map(|s| s.to_json()),
         "automate" => ffh_play::stage::automate(dir).map(|s| s.to_json()),
+        "lair" => ffh_play::stage::lair(dir, false),
+        "lair-epic" => ffh_play::stage::lair(dir, true),
         "armies" => ffh_play::stage::armies(dir).map(|s| s.to_json()),
         "governors" => ffh_play::stage::governors(dir).map(|s| s.to_json()),
         "engagement" => ffh_play::stage::engagement(dir).map(|s| s.to_json()),

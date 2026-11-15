@@ -26,7 +26,9 @@
 //                              edge of the plot, modelled along z with its deck's ends at y = 0
 //                              (ctx: the plot ctx, crossing (the plot across), alongX (the road
 //                              runs east-west))
-//   feature(feat, ctx)     -> [{asset, param?, scale?, dx?, dz?}] one-off features (oasis, volcano)
+//   feature(feat, ctx)     -> [{asset, param?, scale?, dx?, dz?, foundation?}] one-off features
+//                              (oasis, volcano); foundation: footprint radius in world units,
+//                              a broad model's skirt buried at the lowest visible ground under it
 //   family(civType)        -> string   a civilization's architectural family
 //   city(ctx)              -> [{asset, variant?, param?, x, z, yaw, scale, lift?}] (+ optional
 //                              `.emit` array property: chimney smoke, braziers; `.reach`: how far
