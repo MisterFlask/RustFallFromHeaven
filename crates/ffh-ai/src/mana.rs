@@ -1,9 +1,5 @@
-//! Mana nodes as an economy (More Naval AI's `CvUnitAI::AI_upgrademanaMove` and
-//! its mana valuation in `CvPlayerAI::AI_bonusVal`). Raw mana (`BONUS_MANA`) in our lands is
-//! worth nothing until a caster builds a node on it (`BUILD_MANA_FIRE` ... : the improvement
-//! converts the bonus, for good: a node cannot be changed into another type). Before this, only the
-//! Tower of Mastery goal built nodes (`victory::mana_node`), and that goal is never ours, so no
-//! civilization ever converted its raw mana.
+//! Mana nodes as an economy. Map generation fixes each resource's sphere; casters connect only
+//! its matching node. Pillaging removes the improvement, leaving the resource's sphere intact.
 //!
 //! What a node of a type is worth ([`node_value`]), on `production::building_value`'s scale for
 //! the whole empire:
@@ -21,7 +17,7 @@
 //! A caster with nothing better to do (no strike to join, no city spell to keep) goes to build the
 //! node worth most for the turns it takes ([`build_node`]); production trains one caster for it
 //! when none of ours can ([`production`]), and the Mage Guild that trains it where no city can;
-//! research values the techs that open node types by the nodes our raw mana would become
+//! research values the techs that connect the typed resources we actually own
 //! ([`tech_value`], More Naval AI's `AI_techValue` mana term).
 
 use ffh_core::game::Game;
@@ -29,11 +25,6 @@ use ffh_core::ids::*;
 use ffh_data::*;
 
 use crate::units::{alive, move_to, push, skip};
-
-/// Raw mana and the node builds (`BUILD_MANA_X` -> `BONUS_MANA_X`).
-fn raw_mana(d: &GameData) -> Option<BonusType> {
-    crate::victory::statics(d).raw_mana
-}
 
 fn mana_builds(d: &GameData) -> &'static [(BuildType, BonusType)] {
     &crate::victory::statics(d).mana_builds
@@ -44,11 +35,9 @@ pub fn is_mana(d: &GameData, b: BonusType) -> bool {
     d.bonuses[b].bonus_class_type.map_or(-1, |c| c.i()) == d.defines.bonusclass_mana
 }
 
-/// The plots in our cities' radius, ours, where a node can go: raw mana, and typed mana whose node
-/// is gone (pillaged: the bonus stays, its node can be rebuilt). In plot order.
+/// Typed mana in our cities' radius whose matching node is not connected, in plot order.
 pub fn node_plots(g: &Game, p: PlayerId) -> Vec<PlotIdx> {
     let d = g.d;
-    let Some(raw) = raw_mana(d) else { return Vec::new() };
     let mut out: Vec<PlotIdx> = Vec::new();
     for &c in &g.players[p].cities {
         for i in 0..ffh_core::defs::NUM_CITY_PLOTS {
@@ -58,7 +47,7 @@ pub fn node_plots(g: &Game, p: PlayerId) -> Vec<PlotIdx> {
                 continue;
             }
             let Some(b) = plot.bonus_type else { continue };
-            let open = b == raw || is_mana(d, b) && plot.improvement_type.map_or(true, |imp| d.improvements[imp].bonus_convert.is_none());
+            let open = is_mana(d, b) && plot.improvement_type.map_or(true, |imp| !d.improvements[imp].acts_as_city && !d.improvements[imp].improvement_bonus[b].bonus_trade);
             if open {
                 out.push(q);
             }
@@ -311,39 +300,23 @@ pub fn builder_unit(g: &Game, c: CityId) -> Option<UnitType> {
     crate::production::best_unit(g, c, crate::production::Role::Mage).filter(|&u| can_build_nodes(g.d, u))
 }
 
-/// What tech `t` is worth to `p` for the node types it opens (`research::builds_value`, More
-/// Naval AI's mana term in `AI_techValue`): the best of them for each node plot of ours still
-/// open (raw mana, or a typed mana without its node) that our known techs give nothing better
-/// for, at half a node's value; a quarter of that while we could not train a caster to build
-/// them.
+/// What tech `t` is worth for connecting the mana resources we own. Learning another
+/// sphere's node build cannot change any of those resources.
 pub fn tech_value(g: &Game, p: PlayerId, t: TechType) -> i32 {
     let d = g.d;
     let team = g.players[p].team;
+    if g.team_is_has_tech(team, Some(t)) {
+        return 0;
+    }
     let opened: Vec<BonusType> = mana_builds(d).iter().filter(|&&(b, _)| d.builds[b].tech_prereq == Some(t)).map(|&(_, bonus)| bonus).collect();
     if opened.is_empty() {
         return 0;
     }
-    let raw = raw_mana(d);
-    let plots: Vec<PlotIdx> = node_plots(g, p).into_iter().filter(|&q| g.map.plots[q].bonus_type == raw).collect();
-    if plots.is_empty() {
+    let value = node_plots(g, p).into_iter().filter_map(|q| g.map.plots[q].bonus_type).filter(|b| opened.contains(b)).map(|b| node_value(g, p, b)).sum::<i32>() / 2;
+    if value == 0 {
         return 0;
     }
-    // What the node types we can already build are worth (the plots go to the best).
-    let known_best = mana_builds(d)
-        .iter()
-        .filter(|&&(b, _)| d.builds[b].tech_prereq.map_or(true, |k| g.team_is_has_tech(team, Some(k))))
-        .map(|&(_, bonus)| node_value(g, p, bonus))
-        .max()
-        .unwrap_or(0);
-    let mut gains: Vec<i32> = opened.iter().map(|&bonus| (node_value(g, p, bonus) - known_best).max(0)).collect();
-    gains.sort_unstable_by(|a, b| b.cmp(a));
-    let value: i32 = gains.iter().take(plots.len()).sum::<i32>() / 2;
-    let builder = builders(g, p) > 0 || can_train_builder(g, p);
-    if builder {
-        value
-    } else {
-        value / 4
-    }
+    if builders(g, p) > 0 || can_train_builder(g, p) { value } else { value / 4 }
 }
 
 #[cfg(test)]

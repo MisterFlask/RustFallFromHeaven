@@ -177,6 +177,15 @@ lab and tools. The camera is the 3D one with the HD-2D preset's pitch and lens (
 
 ## 5. The sprites
 
+Mana resources and connected nodes have sphere-specific cards (`app/mana-art.js`), shared with
+the isometric fallback: 18 colours and distinct silhouettes, including Ice's special resource.
+Fire is a flame, Earth a mountain, Water a droplet, Nature a branching plant, Law scales, Mind an
+eye, Death a skull; the other spheres have their own symbols too. A wild deposit rests on rough
+shards; its matching built node adds a carved dais and standing stones. The atlas draws and caches
+each card on first use; no work is added per plot per frame. The flat renderer uses the same
+colours and distinct two-letter labels. `scene=mana&renderer=hd2d` in the lab compares deposits
+beside connected nodes.
+
 * **Atlas** (`sprites.js`): the isometric renderer's PNGs (`assets/app/iso/*.png`, indexed by
   `iso/sprites.js`) loaded on first use into a `TEXTURE_2D_ARRAY` of 256 × 256 layers, one sprite a
   layer at its top-left (the 2x2 city, 384 wide, at two thirds), premultiplied (so the mipmaps

@@ -11621,7 +11621,7 @@ TXT_KEY_SPELL_DESTROY_UNDEAD	Destroy Undead
 TXT_KEY_SPELL_DESTROY_UNDEAD_HELP	[ICON_BULLET]Does 30% holy damage to all undead units within 1 tile
 TXT_KEY_SPELL_DISPEL	[ICON_BULLET]Removes beneficial spell effects from enemy units, and negative spell effects from allied units
 TXT_KEY_SPELL_DISPEL_MAGIC	Dispel Magic
-TXT_KEY_SPELL_DISPEL_MAGIC_HELP	[ICON_BULLET]Returns mana nodes to raw mana nodes
+TXT_KEY_SPELL_DISPEL_MAGIC_HELP	[ICON_BULLET]Removes dispellable promotions from units within 2 plots
 TXT_KEY_SPELL_DISRUPT	Disrupt
 TXT_KEY_SPELL_DISRUPT_HELP	[ICON_BULLET]Causes unhappiness and decreases the culture of the city[NEWLINE][ICON_BULLET]Can Convert cities without culture
 TXT_KEY_SPELL_DIVINE_RETRIBUTION	Divine Retribution

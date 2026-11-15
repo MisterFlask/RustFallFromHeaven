@@ -22,6 +22,7 @@ import { SEA, DRAFT, FEAT, KIND, GROUND, RIVER_BANK, RIVER_HALF } from "../world
 import { CARDS, IMPROVEMENTS, RESOURCES } from "./art/index.js";
 import { standHeight, hexRgb } from "../dress.js";
 import { MANA } from "../assets/palette.js";
+import { manaSchool } from "../../mana-art.js";
 import { CATALOG } from "../assets/catalog.js";
 import { clamp } from "../math.js";
 
@@ -910,7 +911,10 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
       }
     }
     const bonus = map.bonus[i] >= 0 ? tname("BonusType", map.bonus[i]) : null;
-    if (bonus && !city) {
+    // The connected node already displays its resource's sphere. Avoid drawing its glyph twice.
+    const connectedMana = manaSchool(bonus) && manaSchool(bonus) === manaSchool(imp);
+    if (connectedMana) claims.bonus.add(i);
+    if (bonus && !city && !connectedMana) {
       const key = first(atlas, [RESOURCES[bonus], ISO_TABLES.resourceSprite(bonus)]);
       if (key) {
         const art = atlas.info(key);

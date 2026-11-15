@@ -24,6 +24,7 @@ import { S, me, tname, isBarbarian } from "./state.js";
 import * as T from "./tiles.js";
 import { unitMoves } from "./stacks.js";
 import { SPRITES } from "./iso/sprites.js";
+import { MANA_SPRITES, manaSchool, manaSpriteKey, drawManaSprite } from "./mana-art.js";
 import { drawCityWork } from "./citywork.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
 import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, laneParts, drawLaneCut, drawHarbourMark } from "./sea.js";
@@ -102,6 +103,8 @@ const FEATURE_SPRITES = {
  *  shows on hover. Flat works (fields, pastures, quarries) are overlays inside the tile; the rest
  *  stand on it. */
 function improvementSprites(t) {
+  const mana = manaSpriteKey(t, true);
+  if (mana) return [mana, "feat_mana_node"];
   if (/MANA_|STANDING_STONES|RING_OF_CARCER|PORTAL|MIRROR_OF_HEAVEN|JUNGLE_ALTAR|PYRE_OF|POOL_OF_TEARS|BRADELINES_WELL/.test(t)) return ["feat_mana_node", "bld_ruins"];
   if (/YGGDRASIL|SEVEN_PINES/.test(t)) return ["feat_forest_ancient", "feat_forest"];
   if (/FARM|MUSHROOMS/.test(t)) return ["ovl_farm"];
@@ -130,6 +133,8 @@ function improvementSprites(t) {
 
 /** A BonusType name -> its resource prop (the specific kind shows on hover). */
 function resourceSprite(t) {
+  const mana = manaSpriteKey(t);
+  if (mana) return mana;
   if (/MANA/.test(t)) return "res_mana";
   if (/WHEAT|CORN|RICE/.test(t)) return "res_wheat";
   if (/COW|PIG/.test(t)) return "res_cow";
@@ -391,12 +396,12 @@ class SpriteStore {
   }
 
   has(key) {
-    return Object.hasOwn(SPRITES, key) || this.drawn.has(key);
+    return Object.hasOwn(SPRITES, key) || Object.hasOwn(MANA_SPRITES, key) || this.drawn.has(key);
   }
 
   /** The sprite's native width and height, and its opaque box [x0, y0, x1, y1] (art px). */
   info(key) {
-    const s = SPRITES[this.base.get(key) ?? key];
+    const s = SPRITES[this.base.get(key) ?? key] ?? MANA_SPRITES[key];
     if (s) return s;
     const c = this.drawn.get(key);
     return c ? { w: c.width, h: c.height, box: [0, 0, c.width, c.height] } : null;
@@ -447,6 +452,11 @@ class SpriteStore {
   source(key) {
     const d = this.drawn.get(key);
     if (d) return d;
+    if (Object.hasOwn(MANA_SPRITES, key)) {
+      const c = drawManaSprite(key);
+      this.drawn.set(key, c);
+      return c;
+    }
     if (!Object.hasOwn(SPRITES, key)) return null;
     const e = this.images.get(key);
     if (e) return e.ok ? e.im : null;
@@ -929,6 +939,8 @@ export class IsoMap {
       }
       const bonus = map.bonus[c.k];
       if (bonus !== null && bonus !== undefined && bonus >= 0) {
+        const sphere = manaSchool(tname("BonusType", bonus));
+        if (sphere && sphere === manaSchool(tname("ImprovementType", imp))) continue;
         // A prop on the plot's front-right quarter, in front of what stands on the plot.
         const key = this.pick([resourceSprite(tname("BonusType", bonus) ?? "")]);
         if (key) {

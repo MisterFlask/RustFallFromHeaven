@@ -3,7 +3,7 @@
 //! mage keeps its Fireball or Maelstrom, battle spells, for the battle), an adept that knows
 //! Enchanted Blade and Haste blesses its stack rather than hasting it at the end of a quiet turn,
 //! a fresh summon attacks only a fight it has a chance in unless it is about to expire and covers
-//! no one, Donal recruits once in a big city, a caster builds a mana node on our raw mana and
+//! no one, Donal recruits once in a big city, a caster connects our fixed mana resource and
 //! Govannon teaches his spheres; a Fireball missile does nothing to a Fire Elemental, and the
 //! barrage softens the stack at our gates before our units move, the force estimate counts a
 //! Mage's damage spells, and a besieged city gets its Wall of Stone.
@@ -301,10 +301,9 @@ fn a_summon_on_its_last_turn_spends_itself_unless_it_is_cover() {
     assert!(fought, "the Puppet spends itself on the Champion");
 }
 
-/// Mana nodes: raw mana in our city's radius is a job for a caster, which goes to
-/// build the node type worth most.
+/// A caster connects the fixed mana sphere in our city's radius.
 #[test]
-fn a_caster_builds_a_mana_node_on_our_raw_mana() {
+fn a_caster_builds_the_matching_node_on_typed_mana() {
     let d = ffh_data::global();
     let mut g = one_landmass_game(17);
     let us = PlayerId(0);
@@ -315,12 +314,12 @@ fn a_caster_builds_a_mana_node_on_our_raw_mana() {
         g.team_set_has_tech(team, t, true, Some(us), false, false);
     }
     let raw = g.map.plot_xy(6, 6).unwrap();
-    g.plot_set_bonus_type(raw, Some(d.t::<BonusType>("BONUS_MANA")));
+    g.plot_set_bonus_type(raw, Some(d.t::<BonusType>("BONUS_MANA_LIFE")));
     assert_eq!(g.map.plots[raw].owner, Some(us));
     let jobs = ffh_ai::mana::jobs(&g, us);
-    assert_eq!(jobs.len(), 1, "one raw node");
+    assert_eq!(jobs.len(), 1, "one typed resource");
     assert_eq!(jobs[0].0, raw);
-    assert!(d.builds[jobs[0].1].base.type_.starts_with("BUILD_MANA_"));
+    assert_eq!(jobs[0].1, d.t::<BuildType>("BUILD_MANA_LIFE"));
     assert!(jobs[0].2 > 0, "worth something");
     let adept = g.player_init_unit(us, d.t::<UnitType>("UNIT_ADEPT"), 5, 5, Some(UnitAIType::UNITAI_MANA_UPGRADE), None);
     let grp = g.units[adept].group.unwrap();
@@ -328,6 +327,23 @@ fn a_caster_builds_a_mana_node_on_our_raw_mana() {
     assert!(ffh_ai::mana::build_node(&mut g, &mut v, grp, adept), "the adept goes to build it");
     let build = g.groups[grp].mission_queue.iter().find(|m| m.mission_type == MissionType::MISSION_BUILD).map(|m| m.data1);
     assert_eq!(build, Some(jobs[0].1.i()), "the node's build is queued");
+}
+
+#[test]
+fn node_technology_is_valued_for_the_resources_we_own() {
+    let mut g = one_landmass_game(17);
+    let d = g.d;
+    let us = PlayerId(0);
+    g.player_found(us, 5, 5);
+    let q = g.map.plot_xy(6, 6).unwrap();
+    let elementalism = d.t::<TechType>("TECH_ELEMENTALISM");
+    let divination = d.t::<TechType>("TECH_DIVINATION");
+    g.plot_set_bonus_type(q, Some(d.t::<BonusType>("BONUS_MANA_EARTH")));
+    assert!(ffh_ai::mana::tech_value(&g, us, elementalism) > 0);
+    assert_eq!(ffh_ai::mana::tech_value(&g, us, divination), 0);
+    g.plot_set_bonus_type(q, Some(d.t::<BonusType>("BONUS_MANA_LIFE")));
+    assert_eq!(ffh_ai::mana::tech_value(&g, us, elementalism), 0);
+    assert!(ffh_ai::mana::tech_value(&g, us, divination) > 0);
 }
 
 /// Govannon teaches his first-level spheres to the units he stands with.

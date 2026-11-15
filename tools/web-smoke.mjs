@@ -1308,7 +1308,8 @@ async function toolsAndSpectate() {
   await until2(`window.ffh.S.status.turn >= ${turn + 2}`, "two spectated turns", 120000);
   await shot("spectating");
   if ((await modalTitles()).length) throw new Error(`dialogs while spectating: ${await modalTitles()}`);
-  await click("#spectate-pause");
+  // The phase label changes width while turns advance; wait for the bar to settle before aiming.
+  await clickSteady("#spectate-pause");
   await until2(`!!document.querySelector("#spectate-play") && !window.ffh.tools.spectatorBusy()`, "the spectator mode paused", 60000);
   await waitHuman("the paused spectator mode");
   const paused = await S("S.status.turn");

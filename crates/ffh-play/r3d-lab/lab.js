@@ -31,7 +31,7 @@
 import { S, setData, setView, setMap } from "/app/state.js";
 import { Map3D } from "/app/r3d/map3d.js";
 import { MapHd2d } from "/app/r3d/hd2d/index.js";
-import { showcase, reference, riverTown, fields, grid, settlements, fromRows, hd2d } from "./scenes.js";
+import { showcase, reference, riverTown, fields, grid, settlements, fromRows, hd2d, mana } from "./scenes.js";
 
 const q = new URLSearchParams(location.search);
 
@@ -57,6 +57,8 @@ async function main() {
     scene = fields(data);
   } else if (q.get("scene") === "hd2d") {
     scene = hd2d(data);
+  } else if (q.get("scene") === "mana") {
+    scene = mana(data);
   } else {
     scene = showcase(data);
   }

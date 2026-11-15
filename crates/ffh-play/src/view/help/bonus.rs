@@ -355,9 +355,9 @@ mod tests {
         // Marble speeds up wonders (counted) and the gargoyles (named).
         let marble = bonus("BONUS_MARBLE");
         assert!(marble.contains("[ICON_BULLET]Double Production Speed of 9 buildings, units or rituals") && marble.contains("[ICON_BULLET]+25% Production of [COLOR_UNIT_TEXT]"), "{marble}");
-        // Mana: raw mana becomes a sphere by a node; a sphere strengthens the units of its affinity.
+        // Raw mana is only the placement template; it offers no sphere conversions.
         let mana = bonus("BONUS_MANA");
-        assert!(mana.contains("[ICON_BULLET]Cannot be connected as it is") && mana.contains("[ICON_BULLET]A node built on it turns it into the node's mana"), "{mana}");
+        assert!(mana.contains("[ICON_BULLET]Cannot be connected as it is") && !mana.contains("turns it into"), "{mana}");
         let fire = bonus("BONUS_MANA_FIRE");
         for part in ["[ICON_BULLET]Units with an affinity for it: +1 Fire combat for each one you have", "[ICON_BULLET]Connected by [COLOR_HIGHLIGHT_TEXT]Fire Node[COLOR_REVERT]"] {
             assert!(fire.contains(part), "{part}: {fire}");

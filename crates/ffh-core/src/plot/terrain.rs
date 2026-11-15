@@ -800,6 +800,14 @@ impl Game {
 
     /// C++ `CvPlot::setBonusType`.
     pub fn plot_set_bonus_type(&mut self, p: PlotIdx, bonus: Option<BonusType>) {
+        // Raw mana is a map-generation template, never a resource left in a running game.
+        // Discovery events request that template too; give each new node a random sphere.
+        let bonus = if self.final_initialized && bonus.is_some_and(|b| b.i() == self.d.defines.bonus_mana) {
+            // Repeated discovery of the same plot (Rites of Oghma) keeps its sphere.
+            self.map.plots[p].bonus_type.filter(|&b| crate::mana::is_mana(self.d, b)).or_else(|| Some(self.random_mana_bonus()))
+        } else {
+            bonus
+        };
         let old_bonus = self.map.plots[p].bonus_type;
 
         if old_bonus == bonus {
@@ -1061,7 +1069,11 @@ impl Game {
         if let Some(current) = self.map.plots[p].improvement_type {
             //FfH Improvements: Added by Kael 08/07/2007
             if let Some(bonus) = d.improvements[current].bonus_convert {
-                self.plot_set_bonus_type(p, Some(bonus));
+                // A sphere is a property of the resource, even without its node. Unique
+                // features can still create mana on an empty plot during map generation.
+                if !self.map.plots[p].bonus_type.is_some_and(|b| crate::mana::is_mana(d, b)) {
+                    self.plot_set_bonus_type(p, Some(bonus));
+                }
             }
             //FfH: End Add
 

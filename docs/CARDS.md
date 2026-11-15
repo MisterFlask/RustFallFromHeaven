@@ -550,7 +550,7 @@ ids) and docs/DECKS.md (sections 3, 9.4, 10.1, 12, 13).
 | Font of Rebirth | Prophet [good or neutral] | built |
 | Spire of the Archmagi | Sage | built |
 | Academy of War | Bard | built (free picks: 5 experience, two promotions) |
-| Mana Grafting | Sage | built (once a node, for good) |
+| Mana Grafting | Sage | removed: mana resource spheres are fixed |
 | Stoicism | Sage | built |
 | Maponos's Cradle | Prophet | built |
 | Agares's Well | Prophet [evil] | built (II) |

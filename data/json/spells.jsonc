@@ -871,7 +871,6 @@
     "has_casted": true,
     "range": 2,
     "dispel": true,
-    "py_result": "spellDispelMagic(pCaster)",
     "py_requirement": "reqDispelMagic(pCaster)",
     "button": "Art/Interface/Buttons/Spells/Dispel Magic.dds"
   },

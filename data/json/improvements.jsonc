@@ -636,12 +636,6 @@
     "advanced_start_cost": -1,
     "bonus_type_structs": [
       {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
-      {
         "bonus_type": "BONUS_MANA_AIR",
         "bonus_makes_valid": true,
         "bonus_trade": true,
@@ -649,20 +643,13 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_AIR"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MANA_BODY",
     "description": "TXT_KEY_IMPROVEMENT_MANA_BODY",
     "advanced_start_cost": -1,
     "bonus_type_structs": [
-      {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
       {
         "bonus_type": "BONUS_MANA_BODY",
         "bonus_makes_valid": true,
@@ -671,20 +658,13 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_BODY"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MANA_CHAOS",
     "description": "TXT_KEY_IMPROVEMENT_MANA_CHAOS",
     "advanced_start_cost": -1,
     "bonus_type_structs": [
-      {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
       {
         "bonus_type": "BONUS_MANA_CHAOS",
         "bonus_makes_valid": true,
@@ -693,20 +673,13 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_CHAOS"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MANA_DEATH",
     "description": "TXT_KEY_IMPROVEMENT_MANA_DEATH",
     "advanced_start_cost": -1,
     "bonus_type_structs": [
-      {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
       {
         "bonus_type": "BONUS_MANA_DEATH",
         "bonus_makes_valid": true,
@@ -715,20 +688,13 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_DEATH"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MANA_EARTH",
     "description": "TXT_KEY_IMPROVEMENT_MANA_EARTH",
     "advanced_start_cost": -1,
     "bonus_type_structs": [
-      {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
       {
         "bonus_type": "BONUS_MANA_EARTH",
         "bonus_makes_valid": true,
@@ -737,20 +703,13 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_EARTH"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MANA_ENCHANTMENT",
     "description": "TXT_KEY_IMPROVEMENT_MANA_ENCHANTMENT",
     "advanced_start_cost": -1,
     "bonus_type_structs": [
-      {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
       {
         "bonus_type": "BONUS_MANA_ENCHANTMENT",
         "bonus_makes_valid": true,
@@ -759,20 +718,13 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_ENCHANTMENT"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MANA_ENTROPY",
     "description": "TXT_KEY_IMPROVEMENT_MANA_ENTROPY",
     "advanced_start_cost": -1,
     "bonus_type_structs": [
-      {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
       {
         "bonus_type": "BONUS_MANA_ENTROPY",
         "bonus_makes_valid": true,
@@ -781,20 +733,13 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_ENTROPY"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MANA_FIRE",
     "description": "TXT_KEY_IMPROVEMENT_MANA_FIRE",
     "advanced_start_cost": -1,
     "bonus_type_structs": [
-      {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
       {
         "bonus_type": "BONUS_MANA_FIRE",
         "bonus_makes_valid": true,
@@ -803,20 +748,13 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_FIRE"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MANA_LAW",
     "description": "TXT_KEY_IMPROVEMENT_MANA_LAW",
     "advanced_start_cost": -1,
     "bonus_type_structs": [
-      {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
       {
         "bonus_type": "BONUS_MANA_LAW",
         "bonus_makes_valid": true,
@@ -825,20 +763,13 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_LAW"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MANA_LIFE",
     "description": "TXT_KEY_IMPROVEMENT_MANA_LIFE",
     "advanced_start_cost": -1,
     "bonus_type_structs": [
-      {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
       {
         "bonus_type": "BONUS_MANA_LIFE",
         "bonus_makes_valid": true,
@@ -847,20 +778,13 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_LIFE"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MANA_METAMAGIC",
     "description": "TXT_KEY_IMPROVEMENT_MANA_METAMAGIC",
     "advanced_start_cost": -1,
     "bonus_type_structs": [
-      {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
       {
         "bonus_type": "BONUS_MANA_METAMAGIC",
         "bonus_makes_valid": true,
@@ -869,20 +793,13 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_METAMAGIC"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MANA_MIND",
     "description": "TXT_KEY_IMPROVEMENT_MANA_MIND",
     "advanced_start_cost": -1,
     "bonus_type_structs": [
-      {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
       {
         "bonus_type": "BONUS_MANA_MIND",
         "bonus_makes_valid": true,
@@ -891,20 +808,13 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_MIND"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MANA_NATURE",
     "description": "TXT_KEY_IMPROVEMENT_MANA_NATURE",
     "advanced_start_cost": -1,
     "bonus_type_structs": [
-      {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
       {
         "bonus_type": "BONUS_MANA_NATURE",
         "bonus_makes_valid": true,
@@ -913,20 +823,13 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_NATURE"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MANA_SHADOW",
     "description": "TXT_KEY_IMPROVEMENT_MANA_SHADOW",
     "advanced_start_cost": -1,
     "bonus_type_structs": [
-      {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
       {
         "bonus_type": "BONUS_MANA_SHADOW",
         "bonus_makes_valid": true,
@@ -935,20 +838,13 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_SHADOW"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MANA_SPIRIT",
     "description": "TXT_KEY_IMPROVEMENT_MANA_SPIRIT",
     "advanced_start_cost": -1,
     "bonus_type_structs": [
-      {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
       {
         "bonus_type": "BONUS_MANA_SPIRIT",
         "bonus_makes_valid": true,
@@ -957,20 +853,13 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_SPIRIT"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MANA_SUN",
     "description": "TXT_KEY_IMPROVEMENT_MANA_SUN",
     "advanced_start_cost": -1,
     "bonus_type_structs": [
-      {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
       {
         "bonus_type": "BONUS_MANA_SUN",
         "bonus_makes_valid": true,
@@ -979,20 +868,13 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_SUN"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MANA_WATER",
     "description": "TXT_KEY_IMPROVEMENT_MANA_WATER",
     "advanced_start_cost": -1,
     "bonus_type_structs": [
-      {
-        "bonus_type": "BONUS_MANA",
-        "bonus_makes_valid": true,
-        "bonus_trade": true,
-        "discover_rand": 0
-      },
       {
         "bonus_type": "BONUS_MANA_WATER",
         "bonus_makes_valid": true,
@@ -1001,8 +883,7 @@
       }
     ],
     "tech_yield_changes": "",
-    "route_yield_changes": "",
-    "bonus_convert": "BONUS_MANA_WATER"
+    "route_yield_changes": ""
   },
   {
     "type": "IMPROVEMENT_MINE",

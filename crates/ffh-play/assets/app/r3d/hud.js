@@ -7,6 +7,7 @@
 
 import { S, me, dname, tname } from "../state.js";
 import * as T from "../tiles.js";
+import { manaSchool, manaColour, manaInk, MANA_SPHERES } from "../mana-art.js";
 import { CATALOG } from "./assets/catalog.js";
 import { SEA } from "./world.js";
 import { drawCityWork } from "../citywork.js";
@@ -236,19 +237,20 @@ function drawHudParts(r3d, cam) {
           // At the resource prop's spot (dress.js BONUS_SPOT = [-0.26, 0.2]).
           const p = r3d.project(cam, [xx + 0.5 - 0.26, r3d.world.plotHeight(x, y) + 0.18, -(y + 0.5 - 0.2)]);
           if (!inView(p)) continue;
-          const mana = (tname("BonusType", b) ?? "").startsWith("BONUS_MANA");
+          const type = tname("BonusType", b) ?? "";
+          const mana = type.startsWith("BONUS_MANA");
           const rad = Math.max(9, ts * 0.15);
           g.globalAlpha = (fogged ? 0.55 : 1) * chipA;
           g.beginPath();
           g.arc(p.x, p.y, rad, 0, Math.PI * 2);
-          g.fillStyle = mana ? "#8e5cd6" : "#f0e2b6";
+          g.fillStyle = mana ? manaColour(type) : "#f0e2b6";
           g.fill();
           g.lineWidth = 1.5;
           g.strokeStyle = "rgba(20,14,8,0.85)";
           g.stroke();
-          g.fillStyle = mana ? "#fff" : "#3a2a10";
+          g.fillStyle = mana ? manaInk(type) : "#3a2a10";
           g.font = `700 ${Math.round(rad)}px ${FONT}`;
-          g.fillText(T.abbrev(dname("BonusType", b)), p.x, p.y + 0.5);
+          g.fillText(mana ? MANA_SPHERES[manaSchool(type)] ?? "Ma" : T.abbrev(dname("BonusType", b)), p.x, p.y + 0.5);
           g.globalAlpha = 1;
         }
       }

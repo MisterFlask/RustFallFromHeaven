@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { ISO_TABLES } from "../app/iso.js";
 import { SPRITES } from "../app/iso/sprites.js";
+import { MANA_SPRITES } from "../app/mana-art.js";
 
 const DATA = new URL("../../../../data/json/", import.meta.url);
 
@@ -16,7 +17,7 @@ function types(file) {
 }
 
 function missing(keys) {
-  return [...new Set(keys)].filter((k) => !Object.hasOwn(SPRITES, k));
+  return [...new Set(keys)].filter((k) => !Object.hasOwn(SPRITES, k) && !Object.hasOwn(MANA_SPRITES, k));
 }
 
 test("every terrain and feature sprite the renderer names exists", () => {

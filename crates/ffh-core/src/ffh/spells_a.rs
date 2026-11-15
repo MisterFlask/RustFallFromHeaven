@@ -57,7 +57,6 @@ pub fn find_spell(name: &str) -> Option<SpellFn> {
         "spellCreateDenLion" => spell_create_den_lion,
         "spellCrush" => spell_crush,
         "spellDestroyUndead" => spell_destroy_undead,
-        "spellDispelMagic" => spell_dispel_magic,
         "spellDisrupt" => spell_disrupt,
         "spellDivineRetribution" => spell_divine_retribution,
         "spellDomination" => spell_domination,
@@ -1374,41 +1373,9 @@ fn spell_destroy_undead(g: &mut Game, caster: UnitId, _call: &PyCall) {
     }
 }
 
-/// `pPlot.getBonusType(-1)` is mana and its improvement (if any) is not permanent: the plot
-/// part shared by `reqDispelMagic` / `spellDispelMagic`. `Some(has_improvement)` when it holds.
-fn dispellable_mana(g: &Game, pl: PlotIdx) -> Option<bool> {
-    let d = g.d;
-    let bonus = g.map.plots[pl].bonus_type?;
-    if d.bonuses[bonus].bonus_class_type != Some(d.t::<BonusClassType>("BONUSCLASS_MANA")) {
-        return None;
-    }
-    match g.map.plots[pl].improvement_type {
-        None => Some(false),
-        Some(imp) if !d.improvements[imp].permanent => Some(true),
-        Some(_) => None,
-    }
-}
-
-/// `reqDispelMagic(caster)`.
+/// `reqDispelMagic(caster)`: only dispellable unit promotions; mana spheres are fixed.
 fn req_dispel_magic(g: &Game, caster: UnitId, _call: &PyCall) -> bool {
-    if g.unit_can_dispel(caster, g.d.t::<SpellType>("SPELL_DISPEL_MAGIC")) {
-        return true;
-    }
-    dispellable_mana(g, g.unit_plot(caster)).is_some()
-}
-
-/// `spellDispelMagic(caster)`.
-fn spell_dispel_magic(g: &mut Game, caster: UnitId, _call: &PyCall) {
-    let pl = g.unit_plot(caster);
-    let mana = g.d.t::<BonusType>("BONUS_MANA");
-    match dispellable_mana(g, pl) {
-        Some(false) => g.plot_set_bonus_type(pl, Some(mana)),
-        Some(true) => {
-            g.plot_set_bonus_type(pl, Some(mana));
-            g.plot_set_improvement_type(pl, None);
-        }
-        None => {}
-    }
+    g.unit_can_dispel(caster, g.d.t::<SpellType>("SPELL_DISPEL_MAGIC"))
 }
 
 /// `reqDisrupt(caster)`.

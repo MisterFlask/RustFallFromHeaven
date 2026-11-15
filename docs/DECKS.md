@@ -534,11 +534,8 @@ every 5 turns per stack.
 *Expert:* two Waystones at two fronts let one army defend both. Build them where the wars will
 be, not where the cities are.
 
-**Mana Grafting** · II · needs Elementalism · spell (adept on a node in your borders) · [new]
-*Graft*: the node becomes the type of another node you own. It cannot be grafted again for 30
-turns.
-*Expert:* double the sphere your battle mages use, or make the third node of a sphere whose
-tier-III spell you want.
+**Mana Grafting** · removed. Mana resources now have fixed spheres assigned at generation;
+there is no spell to change them (docs/PORTING.md, "Fixed mana resources").
 
 **Orrery of Ceridwen** · II · needs Astronomy · world wonder · [new: bridge to the Armageddon deck]
 You see the next two Armageddon cards and their thresholds; others see one, and only when it is

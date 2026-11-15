@@ -57,10 +57,9 @@ fn check_far_shores(g: &Game) {
             assert!(report.stayed.contains(&(b, q)) || report.kept_by_start.contains(&(b, q)), "{q:?}: a flagged bonus on a starting landmass stayed for a reason");
         }
     }
-    let mana = d.t::<BonusType>("BONUS_MANA");
     assert!(report.mana_wanted >= shores.len() as i32);
     for &q in &report.mana {
-        assert_eq!(g.map.plots[q].bonus_type, Some(mana));
+        assert!(g.map.plots[q].bonus_type.is_some_and(|b| ffh_core::mana::is_mana(d, b)));
         assert!(g.map.plots[q].area.is_some_and(|a| shores.contains(&a)));
     }
 }
