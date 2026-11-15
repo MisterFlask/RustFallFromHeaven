@@ -159,7 +159,8 @@ Everything below is in `tools/m7/roster/` with its exact prompt in `tools/m7/pro
 - **Features:** forest, new forest, ancient forest, burnt forest, jungle, scrub, mountain, hell
   mountain, volcano, flames, tormented souls, mana node, fishing boats, whaling boats.
 - **Resources:** wheat, cow, sheep, horse, deer, fish, whale, iron, gold, gems, marble, mithril,
-  wine, fruit, mana, goods.
+  wine, fruit, mana, goods. The iron-family ore sprite is bare, veined boulders without a pickaxe;
+  its accepted edit prompt is `tools/m7/prompts/assets/res_iron_remove_pickaxe.txt`.
 - **Settlements and buildings:** city village, town and castle (one plot each), the 2x2 city;
   cottage, hamlet, fort, watchtower, lumbermill, windmill, workshop, mine, camp, lair, ruins,
   graveyard, goblin fort, harbor; the mage guild and temple of leaves (not on the map yet).
