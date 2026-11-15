@@ -100,3 +100,17 @@ for (const bank of [0, 0.04]) {
     assert.ok(worst <= 0.002, `${where}: open rim floats ${worst.toFixed(4)} plots above the visible surface`);
   });
 }
+
+
+test("ordinary peaks add no hill pedestal; volcanoes retain their terrain cone", () => {
+  const flat = buildMap(data, Array(7).fill("......."));
+  const peak = buildMap(data, [".......", ".......", ".......", "...^...", ".......", ".......", "......."]);
+  // Use identical ground so the comparison isolates plot elevation.
+  peak.terrain = [...flat.terrain];
+  const volcano = buildMap(data, [".......", ".......", ".......", "...v...", ".......", ".......", "......."]);
+  const a = new World(flat), b = new World(peak), v = new World(volcano);
+  for (let y = 2.5; y <= 4.5; y += 0.125) for (let x = 2.5; x <= 4.5; x += 0.125) {
+    assert.ok(Math.abs(a.heightAt(x, y) - b.heightAt(x, y)) < 1e-9, "mountain supplies all its own relief");
+  }
+  assert.ok(v.heightAt(3.5, 3.5) > a.heightAt(3.5, 3.5) + 0.3, "volcano still has its cone");
+});

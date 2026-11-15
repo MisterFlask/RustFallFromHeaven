@@ -7,7 +7,7 @@
 //
 // The height is a blend of the plot kinds around a point (ocean, coast, land, hills, peak), with
 // the blend's lookup warped by low noise so coasts and hill feet do not follow the grid; hills add
-// rolling noise, peaks a ridged mountain with its summit on the plot centre; rivers (plot edges)
+// rounded crowns; volcanoes add their cone, while ordinary peaks are models. Rivers (plot edges)
 // carve a channel. Unrevealed plots are "void": flat, unknown ground (no hidden plot shapes it).
 
 import { S, tname } from "../state.js";
@@ -90,8 +90,6 @@ const FEAT_OF = {
 };
 
 /** Base height of each kind at its plot centre. */
-/** The peaks' relief against a mountain's full height: the mound a mountain model stands on. */
-const PEAK_BODY = 0.16;
 const BASE = [0.035, -0.42, -0.12, 0.1, 0.1, 0.1, 0.025];
 
 export const SEA = 0;
@@ -277,8 +275,8 @@ export class World {
         if (gi >= 0 && this.lake[gi]) lakeW += wgt;
         if (k === KIND.HILLS) hill += wgt;
         else if (k === KIND.PEAK) {
-          peak += wgt;
-          hill += wgt * 0.25;
+          // Ordinary peaks are models, with no terrain mound to bury their flanks.
+          if (this.feat[gi] === FEAT.VOLCANO) peak += wgt;
         } else if (k === KIND.OCEAN || k === KIND.COAST) water += wgt;
         else if (k === KIND.ICE) ice += wgt;
         else if (k === KIND.VOID) voidW += wgt;
@@ -314,9 +312,8 @@ export class World {
       const r = this.ridged(mx, my, 1.1, -2.7, 8.1, 4);
       const r2 = this.ridged(mx, my, 2.6, 5.3, -1.9, 3);
       const pw = Math.pow(peak, 1.4);
-      // (The massif is low: a peak's mountain is a model standing on it, assets/props.js
-      // feat.mountain; the relief is the rocky ground round its foot.)
-      h += PEAK_BODY * dry * pw * (0.18 + 0.62 * Math.pow(r, 1.7) + 0.16 * r2 * r);
+      // Only volcanoes use terrain relief; ordinary mountains supply their own flanks.
+      h += 0.16 * dry * pw * (0.18 + 0.62 * Math.pow(r, 1.7) + 0.16 * r2 * r);
       h += dry * this.summits(mx, my) * (0.75 + 0.35 * r2);
     }
     if (voidW > 0) h = h * (1 - voidW) + BASE[KIND.VOID] * voidW;
@@ -364,7 +361,7 @@ export class World {
   }
 
   /** Hills merge at their feet into a continuous surface. Rounded crowns have an irregular
-   *  scarp on one flank, a lower shelf, and a gentle back slope; peaks keep their low mound. */
+   *  scarp on one flank, a lower shelf, and a gentle back slope. Peaks have their own models. */
   domes(mx, my) {
     let s = 0;
     const cx = Math.floor(mx);
@@ -372,14 +369,9 @@ export class World {
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
         const i = this.index(cx + dx, cy + dy);
-        if (i < 0 || (this.kind[i] !== KIND.HILLS && this.kind[i] !== KIND.PEAK)) continue;
+        if (i < 0 || this.kind[i] !== KIND.HILLS) continue;
         const px = cx + dx + 0.5 + this.peakJitter[i * 2] * 1.6;
         const py = cy + dy + 0.5 + this.peakJitter[i * 2 + 1] * 1.6;
-        if (this.kind[i] === KIND.PEAK) {
-          const t = clamp(1 - Math.hypot(mx - px, my - py) / 0.78, 0, 1);
-          s = Math.max(s, 0.25 * t * t * (3 - 2 * t));
-          continue;
-        }
         const k = i * 4, radius = this.hillShape[k + 2], phase = this.hillShape[k + 3];
         const u = (mx - px) / radius, v = (my - py) / (radius * 0.86);
         const d0 = Math.hypot(u, v);
@@ -408,9 +400,8 @@ export class World {
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
         const i = this.index(cx + dx, cy + dy);
-        if (i < 0 || this.kind[i] !== KIND.PEAK) continue;
-        // A volcano's cone is the relief itself; any other peak's is a mound under its model.
-        const body = this.feat[i] === FEAT.VOLCANO ? 1 : PEAK_BODY;
+        if (i < 0 || this.kind[i] !== KIND.PEAK || this.feat[i] !== FEAT.VOLCANO) continue;
+        // Only volcanoes use terrain relief for their body.
         const px = cx + dx + 0.5 + this.peakJitter[i * 2];
         const py = cy + dy + 0.5 + this.peakJitter[i * 2 + 1];
         const d = Math.hypot(mx - px, my - py);
@@ -421,12 +412,12 @@ export class World {
         const p1 = hashf(i, 71) * 6.2832, p2 = hashf(i, 72) * 6.2832;
         const reach = 0.62 * (1 + 0.3 * Math.sin(3 * a + p1) + 0.14 * Math.sin(5 * a + p2));
         const t = clamp(1 - d / reach, 0, 1);
-        s = Math.max(s, body * 0.55 * Math.pow(t, 1.25));
+        s = Math.max(s, 0.55 * Math.pow(t, 1.25));
         // A lower second summit on one shoulder: a lone mountain is a lopsided massif.
         const b = hashf(i, 73) * 6.2832;
         const d2 = Math.hypot(mx - (px + Math.cos(b) * 0.3), my - (py + Math.sin(b) * 0.3));
         const t2 = clamp(1 - d2 / 0.36, 0, 1);
-        s = Math.max(s, body * 0.36 * Math.pow(t2, 1.1));
+        s = Math.max(s, 0.36 * Math.pow(t2, 1.1));
       }
     }
     return s;

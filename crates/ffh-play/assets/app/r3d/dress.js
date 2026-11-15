@@ -7,6 +7,7 @@
 // what was seen there (the map reply's remembered improvements and cities), unrevealed plots show
 // nothing, and units come from the view (only those in sight).
 
+import { improvementContainsMana } from "../mana-art.js";
 import { S, tname, me, isBarbarian } from "../state.js";
 import * as T from "../tiles.js";
 import { headUnit, stackState } from "../stacks.js";
@@ -280,7 +281,7 @@ export function dressStatic(world, map, plots = null, env = staticEnv(world)) {
         }
       }
       // The resource's marker.
-      if (bonus && !claims?.bonus.has(i)) {
+      if (bonus && !claims?.bonus.has(i) && !improvementContainsMana(imp, bonus)) {
         const b = CATALOG.bonus?.(bonus, ctx) ?? null;
         if (b) {
           const water = world.isWater(i);

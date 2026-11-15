@@ -32,3 +32,19 @@ export function manaInk(type) {
   const light = (n >> 16) * .299 + ((n >> 8) & 255) * .587 + (n & 255) * .114;
   return light < 140 ? "#fff6e5" : "#201a28";
 }
+
+/** Unique sites that create their own mana deposit (improvements.jsonc bonus_convert).
+ *  Their artwork represents the source, just as a connected sphere shrine does. */
+export const SITE_MANA = {
+  IMPROVEMENT_BROKEN_SEPULCHER: "DEATH",
+  IMPROVEMENT_LETUM_FRIGUS: "ICE",
+  IMPROVEMENT_MIRROR_OF_HEAVEN: "SUN",
+  IMPROVEMENT_PYRE_OF_THE_SERAPHIC: "FIRE",
+  IMPROVEMENT_STANDING_STONES: "EARTH",
+  IMPROVEMENT_TOMB_OF_SUCELLUS: "LIFE",
+};
+
+export function improvementContainsMana(improvement, bonus) {
+  const school = manaSchool(improvement) ?? SITE_MANA[improvement];
+  return !!school && (bonus === "BONUS_MANA" || manaSchool(bonus) === school);
+}

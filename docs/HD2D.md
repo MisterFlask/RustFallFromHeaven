@@ -250,12 +250,17 @@ with restrained bloom. The flat renderer keeps the sphere colours and two-letter
   cottages, forts, towers, mines, mills, camps, lairs, ruins, mana nodes, boats) is a card likewise,
   smaller than a city, its painted ground thinned out over its foot by a dither fixed to the art's
   texels (it melts into the 3D land instead of ending in the isometric diamond's edge). Its foot
-  stands on the ground at the plot's front edge, stepped back off a river along that edge (`dress.js`
-  `builtFoot`; at the plot's middle height, a mine stood on a hill's crest and floated over the
-  slope in front); flat ones (farms, pastures, plantations, wineries, quarries) stay the 3D
-  renderer's fields. A resource is its family's prop at the plot's front-left; under a standing
-  improvement it lies at the card's front-left and is drawn before it (a mine's ore shows, and a
-  mana node's or fishing boats' resource). Resources reserve a small clearing around their opaque
+  stands on the ground at the plot's front edge on level land, stepped back off a river.
+  On hills, `hilltopFoot` searches the crown in both directions for high, supported ground clear
+  of river channels, and puts the card's foot at the actual height there. Tribal villages are
+  five separate smaller hut cards about a clearing; each hut samples its own ground contact.
+  Flat works (farms, pastures, plantations, wineries, quarries) stay the 3D renderer's fields.
+  A resource is its family's prop at the plot's front-left; under a standing improvement it lies
+  at the card's front-left and is drawn before it. Connected mana shrines and the six world sites
+  that produce mana contain their deposit visually (`mana-art.js` `improvementContainsMana`),
+  so neither a separate resource card nor its 3D model or particles is drawn beneath them.
+  `scene=sites&renderer=hd2d` compares villages on flat land and a jungle hill, hilltop works,
+  mountains and mana-producing landmarks. Resources reserve a small clearing around their opaque
   sprite bounds, across neighbouring plots too: trees' crowns, bushes, rocks and shore props keep
   off their silhouettes over the camera's 30–42° pitch range. The check uses the resource's actual
   position beside an improvement, accounts for hills and map wrapping, and leaves the rest of the
@@ -370,9 +375,8 @@ does for the isometric sprites. No unit art changed.
   Hills now read through the terrain's turf-capped scarps (docs/R3D.md §4), with a grassy crown,
   short soil-and-stone exposures and broad grassy shoulders; `clutterOf` adds no extra rock or
   pebble cards for hills. Hill mines are 0.82 of the usual improvement-card scale and choose a
-  supported patch across the shoulder, keeping their apron off the river banks. Their base follows
-  the turf under the apron instead of the highest point behind it, so the painted rock mound
-  does not hang across a scarp or float above its foot.
+  supported patch on the crown, as other standing improvements do, keeping their apron off
+  river banks. Their base follows the turf at the chosen hilltop contact.
   The meadow's ground (shaders.js `G_GRASS`) no longer mixes the two either: a grassland stays green
   and a plains golden, their patches interleaving only where they meet (they had been a tenth
   and three quarters golden).

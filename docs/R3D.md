@@ -497,11 +497,11 @@ Six variants; grey rock under snow, more snow on tundra and snow ground, bare sa
 basalt on hell's grounds. `mountainOf` (the catalog's `feature` entry) stands one on every peak
 plot but a volcano's, a little wider than the plot so a range's mountains stand into each other;
 smaller and set back where a unit or an improvement holds the
-plot. The relief under it is a low mound (world.js `PEAK_BODY`; a volcano's cone is still the
-relief). Its base is the lowest visible ground sampled across its scaled footprint (`foundation`
-in the feature entry, `dress.js`), with the model's skirt buried under it. Placing the base at the
-mound's summit left the rim floating over the lower slopes; at a shore the foundation stops at
-sea level, where water hides the skirt. Peaks have no crags or boulders of the `rocks` entry any
+plot. Ordinary peaks contribute no hill dome or terrain summit: the model supplies the whole
+mountain, so a grassy pedestal cannot swallow its lower slopes. Volcanoes keep their terrain cone.
+The base is the lowest visible ground sampled across its scaled footprint (`foundation` in the
+feature entry, `dress.js`), with the model's skirt buried under it; at a shore the foundation stops
+at sea level, where water hides the skirt. Peaks have no crags or boulders of the `rocks` entry any
 more, and no prop cards in the HD-2D mode. Picking still reads the relief, not the model.
 
 Budgets (triangles, full detail): trees ≤ ~700 (great trees ~2100), units ≤ ~2000, houses ≤ ~250,

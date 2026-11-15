@@ -885,7 +885,7 @@ function mountainPaint(kind, r) {
  *  mesh, six vertices a plot, can only draw a smooth cone), its facets painted as the rocks are --
  *  lit tops, flanks darker as they steepen, gullies darker than crests, strata banding the rock --
  *  under a ragged coat of snow where the slope holds it; crag teeth on its upper ridges and
- *  boulders at its foot. It stands on the low mound the relief raises for a peak (world.js). */
+ *  boulders at its foot. It supplies the whole peak, rooted in the underlying ground (world.js). */
 function buildMountain(mb, r, variant, param) {
   const { f, top, hs } = mountainField(r, MOUNTAINS[variant % MOUNTAINS.length]);
   const p = mountainPaint(param, r);
@@ -979,8 +979,8 @@ function mountainOf(ctx) {
   const held = ctx.held;
   const variant = r.int(0, MOUNTAINS.length - 1);
   const scale = (held ? 0.62 : 1.12) * r.range(0.94, 1.08);
-  // The model's rim is only 0.06 below its base. Placed at the mound's summit, it hung above
-  // the lower ground round it; take its foundation from the footprint (including its boulders).
+  // Root the shallow rim across the footprint (including its boulders), including at coasts
+  // and beside neighbouring hills, rather than balancing the model on a high centre point.
   return [{ asset: "feat.mountain", param, variant, dx: world.peakJitter[i * 2], dz: -world.peakJitter[i * 2 + 1] - (held ? 0.2 : 0), scale, foundation: 0.85 * scale, yaw: r.range(-0.5, 0.5) + (r() < 0.5 ? Math.PI : 0), always: true }];
 }
 

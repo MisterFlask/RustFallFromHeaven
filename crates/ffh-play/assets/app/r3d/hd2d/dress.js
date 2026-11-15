@@ -4,7 +4,7 @@
 // art (hd2d/art: prop cards, the town kit), placed on the 3D renderer's ground. A stack is a group of
 // two or three figures of its head unit under the owner's banner; a city is a town composed of the
 // kit's cards (§5c: its landmark, houses, towers and walls); a standing improvement and a resource
-// are one card each. The 3D models of what these replace are not placed (`claims`, read by
+// are cards (a tribal village is five huts). The 3D models of what these replace are not placed (`claims`, read by
 // ../dress.js); forests, rocks, fields, flat improvements and the land stay the 3D renderer's.
 //
 // Records (hd2d/sprites.js packs them): { key, x, y, z (the base point, world), w, h (the card,
@@ -22,7 +22,7 @@ import { SEA, DRAFT, FEAT, KIND, GROUND, RIVER_BANK, RIVER_HALF } from "../world
 import { CARDS, IMPROVEMENTS, RESOURCES } from "./art/index.js";
 import { standHeight, hexRgb } from "../dress.js";
 import { MANA } from "../assets/palette.js";
-import { manaSchool } from "../../mana-art.js";
+import { improvementContainsMana } from "../../mana-art.js";
 import { CATALOG } from "../assets/catalog.js";
 import { clamp } from "../math.js";
 
@@ -66,33 +66,33 @@ function garrisonSpot(world, x, y) {
   return best;
 }
 
-/** Where a standing improvement's card has its foot on a land plot: [plot-local z, height]. On the
- *  plot's front edge, at the ground there -- not the plot's middle, which on a hill is its crest and
- *  left the card floating over the slope in front -- as the ground lies before a river cuts it, and
- *  stepped back (by up to 0.3) off a river that runs along that edge, rather than overhanging it. */
-function builtFoot(world, x, y, halfWidth = 0) {
-  if (halfWidth > 0) {
-    // The mine painting contains its own rock mound and apron. Seat the whole foot on the
-    // shoulder with the least height difference, rather than pushing it through a scarp at the
-    // plot's fixed front edge. Check both sides and the ground behind its apron.
-    let best = null, bestScore = Infinity;
-    for (const z of [0.24, 0.18, 0.30, 0.12, 0.06, 0, 0.36, 0.42, 0.48]) {
-      const mx = x + 0.5, my = y + 0.5 - z;
-      const samples = [[mx, my], [mx - halfWidth, my], [mx + halfWidth, my], [mx, my + 0.12]];
-      if (world.riverCells.size && samples.some(([sx, sy]) => world.riverDist(sx, sy) < RIVER_BANK + 0.02)) continue;
-      const heights = samples.map(([sx, sy]) => world.heightAt(sx, sy));
-      const hi = Math.max(...heights), lo = Math.min(...heights);
-      const score = hi - lo + Math.abs(z - 0.24) * 0.035;
-      // Seat the apron in the turf, rather than lifting every foot to the highest back corner.
-      const base = (heights[0] + heights[1] + heights[2]) / 3;
-      if (score < bestScore) { best = [z, base]; bestScore = score; }
-    }
-    if (best) return best;
+/** The high, supported part of a hill's crown, kept out of river channels. Search in both
+ *  directions: crowns are jittered and a fixed front edge is usually at the foot of the hill. */
+function hilltopFoot(world, x, y, radius = 0.08) {
+  let best = [0, 0, world.heightAt(x + 0.5, y + 0.5)], bestScore = -Infinity;
+  for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) {
+    const lx = dx * 0.08, lz = dz * 0.08;
+    const mx = x + 0.5 + lx, my = y + 0.5 - lz;
+    const samples = [[mx, my], [mx - radius, my], [mx + radius, my], [mx, my + radius]];
+    if (world.riverCells.size && samples.some(([sx, sy]) => world.riverDist(sx, sy) < RIVER_BANK + 0.02)) continue;
+    const heights = samples.map(([sx, sy]) => world.heightAt(sx, sy));
+    const spread = Math.max(...heights) - Math.min(...heights);
+    const score = heights[0] - spread * 0.4 - Math.hypot(lx, lz) * 0.01;
+    if (score > bestScore) { best = [lx, lz, heights[0]]; bestScore = score; }
   }
+  return best;
+}
+
+/** On level land the painted ground reaches back from the front edge; retreat off a river. */
+function builtFoot(world, x, y) {
   let lz = 0.5;
   for (let k = 0; k < 6 && world.riverCells.size && world.riverDist(x + 0.5, y + 0.5 - lz) < RIVER_BANK; k++) lz -= 0.05;
-  return [lz, world.heightAt(x + 0.5, y + 0.5 - lz, false)];
+  return [0, lz, world.heightAt(x + 0.5, y + 0.5 - lz, false)];
 }
+
+/** Five separate households around a small open centre, rather than one oversized tribal hut.
+ *  Each card has its own ground contact, including on a hill's crown. */
+const TRIBAL_HUTS = [[-0.23, -0.16, 0.46], [0.03, -0.21, 0.52], [0.25, -0.10, 0.44], [-0.19, 0.17, 0.49], [0.16, 0.21, 0.47]];
 
 /** A group of figures about its spot: two in front, one behind between them, far enough apart that
  *  each reads as a figure (about 0.6 of a figure's width), not a single blot. */
@@ -629,6 +629,8 @@ function dressProps(world, map, atlas, env, moods, list) {
     const feat = world.feat[i];
     const r = rng(i * 7919 + 101);
     const held = env.unitAt.has(i) || map.improvement[i] >= 0;
+    const tribal = tname("ImprovementType", map.improvement[i]) === "IMPROVEMENT_GOODY_HUT";
+    const villageFoot = tribal && kind === KIND.HILLS ? hilltopFoot(world, x, y, 0.18) : [0, 0];
     const road = map.route[i] >= 0;
     // Something stands on the plot behind (north): this plot's trees stand between it and the
     // camera, so its back row goes and its middle row keeps low.
@@ -638,7 +640,7 @@ function dressProps(world, map, atlas, env, moods, list) {
       const mx = x + 0.5 + lx, my = y + 0.5 - lz;
       if (world.riverCells.size && world.riverDist(mx, my) < RIVER_HALF + 0.1) return false;
       if (road && (Math.abs(lx) < 0.12 || Math.abs(lz) < 0.12)) return false;
-      if (held && Math.hypot(lx, lz - 0.08) < 0.3) return false;
+      if (held && Math.hypot(lx - (tribal ? villageFoot[0] : 0), lz - (tribal ? villageFoot[1] : 0.08)) < (tribal ? 0.46 : 0.3)) return false;
       return !cityNear(x, y, lx, lz, m);
     };
     const put = (kindKey, lx, lz, scale) => {
@@ -850,7 +852,7 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
     }
     const imp = map.improvement[i] >= 0 ? tname("ImprovementType", map.improvement[i]) : null;
     // The plot-local z of a standing improvement card's foot, when one stands here.
-    let footZ = null;
+    let footZ = null, footX = 0;
     if (imp && !city) {
       const key = first(atlas, improvementSpriteKeys(imp).filter((k) => k.startsWith("bld_") || k.startsWith("feat_")));
       if (key) {
@@ -858,13 +860,22 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
         const water = world.isWater(i);
         const mine = imp === "IMPROVEMENT_MINE" && world.kind[i] === KIND.HILLS;
         const px = PX.building * (art.pixelScale ?? 1) * (mine ? 0.82 : 1);
-        const [lz, base] = water ? [0.5, SEA - DRAFT] : builtFoot(world, x, y, mine ? art.w * px * 0.32 : 0);
+        const tribal = imp === "IMPROVEMENT_GOODY_HUT";
+        const hill = world.kind[i] === KIND.HILLS;
+        const [lx, lz, base] = water ? [0, 0.5, SEA - DRAFT]
+          : hill ? hilltopFoot(world, x, y, tribal ? 0.18 : art.w * px * 0.25)
+          : tribal ? [0, 0, H(x + 0.5, y + 0.5)] : builtFoot(world, x, y);
         footZ = lz;
-        const [mx, my] = at(0, lz);
+        footX = lx;
+        const [mx, my] = at(lx, lz);
         const mana = manaColour(imp);
         // Coarser authored pixels keep a small burial mound's doorway legible at
         // play zoom, while its world footprint stays the same as the full card.
-        list.push(card(key, art, px, mx, base, -my, { id: idOf(`i${i}`), glow: mana ? 0.4 : 0, fade: !water, vis: [x + 0.5, y + 0.5] }));
+        const huts = tribal ? TRIBAL_HUTS : [[0, 0, 1]];
+        for (const [ox, oz, scale] of huts) {
+          const hx = mx + ox, hy = my - oz;
+          list.push(card(key, art, px * scale, hx, tribal ? H(hx, hy) : base, -hy, { id: idOf(`i${i}`), glow: mana ? 0.4 : 0, fade: !water, vis: [x + 0.5, y + 0.5] }));
+        }
         claims.improvement.add(i);
         const tower = /TOWER/.test(imp) && !/WATCH|WARNING/.test(imp);
         if (mana || tower) {
@@ -875,8 +886,8 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
       }
     }
     const bonus = map.bonus[i] >= 0 ? tname("BonusType", map.bonus[i]) : null;
-    // The connected shrine already contains its resource's mineral formation.
-    const connectedMana = manaSchool(bonus) && manaSchool(bonus) === manaSchool(imp);
+    // A connected shrine or mana-producing landmark represents the deposit itself.
+    const connectedMana = improvementContainsMana(imp, bonus);
     if (connectedMana) claims.bonus.add(i);
     if (bonus && !city && !connectedMana) {
       const key = first(atlas, [RESOURCES[bonus], ISO_TABLES.resourceSprite(bonus)]);
@@ -885,7 +896,7 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
         const water = world.isWater(i);
         // Before what stands on the plot (the mine's card would hide its ore), else at the front-left.
         const built = footZ !== null;
-        const [mx, my] = built ? at(BUILT_BONUS_SPOT[0], footZ - BUILT_BONUS_SPOT[1]) : at(...BONUS_SPOT);
+        const [mx, my] = built ? at(footX + BUILT_BONUS_SPOT[0], footZ - BUILT_BONUS_SPOT[1]) : at(...BONUS_SPOT);
         const base = water ? SEA : H(mx, my);
         const glow = /MANA/.test(bonus) ? 0.3 : /GEMS|JEWELS|MITHRIL/.test(bonus) ? 1.2 : 0;
         const resource = card(key, art, PX.resource, mx, base, -my, { id: idOf(`b${i}`), glow, bias: built ? BIAS.builtResource : BIAS.resource, vis: [x + 0.5, y + 0.5] });

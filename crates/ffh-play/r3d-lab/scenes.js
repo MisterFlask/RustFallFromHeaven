@@ -422,3 +422,18 @@ export function hd2d(data) {
   });
   return { map, view, focus: [9.5, 6.4] };
 }
+
+
+/** Tribal villages, hilltop sites, exposed mountain flanks and mana-producing landmarks. */
+export function sites(data) {
+  const rows = Array.from({ length: 9 }, () => Array(14).fill("."));
+  const terrain = [[3, 5, "J"], [6, 5, "h"], [9, 4, "h"], [10, 6, "^"], [12, 5, "^"]];
+  for (let x = 0; x < 14; x++) rows[0][x] = "-";
+  for (const [x, y, char] of terrain) rows[8 - y][x] = char;
+  const improvements = [[3, 5, "IMPROVEMENT_GOODY_HUT"], [3, 2, "IMPROVEMENT_GOODY_HUT"],
+    [6, 5, "IMPROVEMENT_MINE"], [9, 4, "IMPROVEMENT_TOWER"],
+    [6, 2, "IMPROVEMENT_STANDING_STONES"], [10, 1, "IMPROVEMENT_MIRROR_OF_HEAVEN"]];
+  const bonuses = [[6, 2, "BONUS_MANA_EARTH"], [10, 1, "BONUS_MANA_SUN"]];
+  return { map: buildMap(data, rows.map((r) => r.join("")), { improvements, bonuses }),
+    view: buildView(data, {}), focus: [7, 4] };
+}

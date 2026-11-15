@@ -38,27 +38,53 @@ function scene(s) {
   return new World(s.map);
 }
 
-test("hill mine aprons sit on supported ground and stay clear of river banks", () => {
-  const mines = Array.from({ length: 20 }, (_, n) => [n * 3 + 1, 4, "IMPROVEMENT_MINE"]);
-  const map = buildMap(data, Array(9).fill("h".repeat(62)), {
-    improvements: mines,
-    rivers: mines.filter((_, n) => n % 3 === 0).map(([x, y]) => [x, y, 1]),
-  });
+test("standing hill improvements occupy the crown, with five individually grounded tribal huts", () => {
+  const types = ["GOODY_HUT", "MINE", "COTTAGE", "FORT", "TOWER", "RUINS", "MANA_FIRE"];
+  const improvements = types.map((type, n) => [n * 3 + 2, 4, `IMPROVEMENT_${type}`]);
+  const map = buildMap(data, Array(9).fill("h".repeat(25)), { improvements,
+    rivers: improvements.map(([x, y]) => [x, y, 1]) });
   const world = scene({ map, view: buildView(data, {}) });
-  const cards = dressSpriteStatic(world, map, atlas).list.filter((c) => c.key === "bld_mine");
-  assert.equal(cards.length, mines.length);
-  let supported = 0, frontEdge = 0;
-  for (const c of cards) {
-    // The lower rock mound and apron need a span of ground beneath them, not just one point.
-    const span = (my, radius) => [-1, 0, 1].map((side) => world.heightAt(c.x + side * radius, my));
-    const foot = span(-c.z, c.w * 0.3);
-    supported += Math.max(...foot) - Math.min(...foot);
-    assert.ok(c.y >= Math.min(...foot) - 0.015 && c.y <= Math.max(...foot) + 0.015, "the apron sits in its supporting turf");
-    for (const side of [-1, 0, 1]) assert.ok(world.riverDist(c.x + side * c.w * 0.3, -c.z) >= RIVER_BANK, "the apron is outside the river bank");
-    const before = span(Math.floor(-c.z), SPRITES.bld_mine.w * PX.building * 0.3);
-    frontEdge += Math.max(...before) - Math.min(...before);
+  const dressed = dressSpriteStatic(world, map, atlas);
+  for (const [x, y, type] of improvements) {
+    const cards = dressed.list.filter((c) => c.vis?.[0] === x + 0.5 && c.vis?.[1] === y + 0.5);
+    assert.equal(cards.length, type === "IMPROVEMENT_GOODY_HUT" ? 5 : 1);
+    const oldBase = world.heightAt(x + 0.5, y);
+    for (const c of cards) {
+      assert.ok(c.w < 0.8, "each building fits the plot");
+      assert.ok(Math.abs(c.x - x - 0.5) < 0.5 && Math.abs(-c.z - y - 0.5) < 0.5, "inside the hill plot");
+      assert.ok(Math.abs(c.y - world.heightAt(c.x, -c.z)) < 1e-9, "each foot meets its own terrain");
+      assert.ok(c.y > oldBase + 0.04, "stands above the old front-edge hill foot");
+      assert.ok(world.riverDist(c.x, -c.z) >= RIVER_BANK, "outside the river channel");
+    }
+    if (cards.length === 5) {
+      assert.equal(new Set(cards.map((c) => `${c.x},${c.z}`)).size, 5, "five separate buildings");
+      assert.ok(cards.every((c) => c.w < 0.25), "huts are smaller than the original building");
+    }
   }
-  assert.ok(supported < frontEdge * 0.6, "mine footprints cross substantially less uneven ground than fixed plot-front placement");
+  const flat = buildMap(data, Array(5).fill("....."), { improvements: [[2, 2, "IMPROVEMENT_GOODY_HUT"]] });
+  assert.equal(dressSpriteStatic(scene({ map: flat, view: buildView(data, {}) }), flat, atlas).list.length, 5);
+});
+
+test("mana-producing landmarks replace their own deposits in sprite and model dressing", async () => {
+  const { SITE_MANA, improvementContainsMana } = await import("../app/mana-art.js");
+  const { dressStatic } = await import("../app/r3d/dress.js");
+  const rules = JSON.parse(fs.readFileSync(new URL("../../../../data/json/improvements.jsonc", import.meta.url), "utf8").replace(/^\s*\/\/.*$/gm, ""));
+  const sites = rules.filter((r) => r.bonus_convert?.startsWith("BONUS_MANA_"));
+  assert.equal(Object.keys(SITE_MANA).length, sites.length, "covers every mana-producing world improvement");
+  for (const site of sites) {
+    for (const bonus of [site.bonus_convert, "BONUS_MANA"]) {
+      assert.ok(improvementContainsMana(site.type, bonus));
+      const map = buildMap(data, Array(5).fill("....."), { improvements: [[2, 2, site.type]], bonuses: [[2, 2, bonus]] });
+      const world = scene({ map, view: buildView(data, {}) });
+      const sprites = dressSpriteStatic(world, map, atlas);
+      assert.ok(sprites.claims.bonus.has(12), "claims the hidden resource model too");
+      assert.equal(sprites.list.length, 1, "only the landmark card is drawn");
+      assert.ok(!dressStatic(world, map).list.some((r) => r.asset.startsWith("res.")), "no 3D resource underneath");
+    }
+  }
+  assert.equal(improvementContainsMana("IMPROVEMENT_MINE", "BONUS_MANA_FIRE"), false);
+  assert.equal(improvementContainsMana("IMPROVEMENT_MIRROR_OF_HEAVEN", "BONUS_GOLD"), false);
+  assert.equal(improvementContainsMana("IMPROVEMENT_MIRROR_OF_HEAVEN", "BONUS_MANA_WATER"), false);
 });
 
 test("mana deposits and connected nodes retain distinct sphere cards", async () => {
@@ -67,7 +93,7 @@ test("mana deposits and connected nodes retain distinct sphere cards", async () 
   const world = scene(s);
   const dressed = dressSpriteStatic(world, s.map, atlas);
   const deposits = dressed.list.filter((c) => c.key.startsWith("res_mana_") || c.key === "res_site_mana_ice");
-  assert.equal(deposits.length, 19, "a connected shrine contains its deposit; Ice keeps its unique site");
+  assert.equal(deposits.length, 18, "connected shrines and Letum Frigus contain their deposits");
   assert.equal(new Set(deposits.map((c) => c.key)).size, 18);
   const nodes = dressed.list.filter((c) => c.key.startsWith("feat_mana_"));
   assert.equal(new Set(nodes.map((c) => c.key)).size, 17, "every ordinary connected node has its own art");
@@ -202,7 +228,7 @@ test("landmarks, lairs and formerly shared resource markers use their own HD-2D 
   assert.equal(claims.improvement.size, improvements.length);
   assert.equal(claims.bonus.size, bonuses.length);
   for (const [type, key] of items) {
-    assert.equal(list.filter((r) => r.key === key).length, 1, `${type} draws its own art once`);
+    assert.equal(list.filter((r) => r.key === key).length, type === "IMPROVEMENT_GOODY_HUT" ? 5 : 1, `${type} draws its site artwork`);
     const info = CARDS[key];
     assert.ok(info && info.w <= 256 && info.h <= 256, `${key} fits the atlas without resampling`);
     const png = fs.readFileSync(fileURLToPath(new URL(`../app/r3d/hd2d/art/${key}.png`, import.meta.url)));

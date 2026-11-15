@@ -24,7 +24,7 @@ import { S, me, tname, isBarbarian } from "./state.js";
 import * as T from "./tiles.js";
 import { unitMoves } from "./stacks.js";
 import { SPRITES } from "./iso/sprites.js";
-import { MANA_SPRITES, manaSchool, manaSpriteKey } from "./mana-art.js";
+import { MANA_SPRITES, improvementContainsMana, manaSpriteKey } from "./mana-art.js";
 import { drawCityWork } from "./citywork.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
 import { seaPlot, sideToward, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, laneParts, drawLaneCut, drawHarbourMark } from "./sea.js";
@@ -935,8 +935,7 @@ export class IsoMap {
       }
       const bonus = map.bonus[c.k];
       if (bonus !== null && bonus !== undefined && bonus >= 0) {
-        const sphere = manaSchool(tname("BonusType", bonus));
-        if (sphere && sphere === manaSchool(tname("ImprovementType", imp))) continue;
+        if (improvementContainsMana(tname("ImprovementType", imp), tname("BonusType", bonus))) continue;
         // A prop on the plot's front-right quarter, in front of what stands on the plot.
         const key = this.pick([resourceSprite(tname("BonusType", bonus) ?? "")]);
         if (key) {
