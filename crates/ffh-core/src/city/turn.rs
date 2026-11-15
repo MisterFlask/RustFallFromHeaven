@@ -328,6 +328,7 @@ impl Game {
     /// C++ `CvCity::doTurn` (CvCity.cpp:915-1150). `AI_doTurn` is AI (omit); FFH: caster
     /// buildings, remove/free promotions on units in the city. Python event `cityDoTurn`.
     pub fn city_do_turn(&mut self, c: CityId) {
+        self.city_offer_specialty(c);
         let d = self.d;
         let defines = &d.defines;
 

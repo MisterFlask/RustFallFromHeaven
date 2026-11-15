@@ -85,9 +85,9 @@ fn set_national(g: &ffh_core::game::Game, c: CityId, u: UnitType, j: &mut Json) 
 /// Nothing for a building without a tier.
 fn set_tier(g: &ffh_core::game::Game, c: CityId, b: BuildingType, j: &mut Json) {
     let d = g.d;
-    if let Some(t) = d.buildings[b].tier {
+    if let Some(t) = d.buildings[b].tier.filter(|&t| t != BuildingTierType::STANDARD) {
         j.set("tier", Json::idx(t));
-    } else if g.city_wonder_cost_percent(c, b) != 100 || d.buildings[b].building_class_type.is_some_and(|k| d.building_classes[k].rolls_tier) {
+    } else if g.city_wonder_cost_percent(c, b) != 100 {
         let t = g.city_building_tier(c, b);
         j.set("tier", Json::idx(t));
         j.set("cost_percent", g.city_wonder_cost_percent(c, b));
@@ -483,6 +483,8 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
     let mut out = crate::jobj! {
         "id" => c,
         "name" => city_name(g, c),
+        "specialty" => city.specialty.map(|s| g.specialty_text(s, city.specialty_class)),
+        "specialty_pending" => !city.specialty_options.is_empty(),
         "owner" => city.owner,
         "x" => city.x,
         "y" => city.y,

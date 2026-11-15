@@ -484,6 +484,10 @@ function moodView(c) {
   );
 }
 
+function specialtyView(c) {
+  return c.outpost ? null : h("p.specialty", c.specialty ?? (c.specialty_pending ? "Choose a specialty before ending the turn." : "At culture level 3 (Developing): choose one of three random permanent specialties."));
+}
+
 function growthView(c) {
   const ct = c.culture_threshold;
   return h(
@@ -527,7 +531,7 @@ function growthView(c) {
 /** The city's yields at a glance: size, food (grown less eaten, the growth bar, when it grows),
  *  production (the current build's bar and turns), then where the commerce goes. */
 function summaryView(c) {
-  return h("div.city-summary", summaryRow(c), commerceView(c));
+  return h("div.city-summary", summaryRow(c), specialtyView(c), commerceView(c));
 }
 
 /** The summary's first row: the size, food (surplus, growth) and production. With `prompt` (the
@@ -881,7 +885,7 @@ function productionView(c, choose, remove, tap, reload) {
 function promptView(c, { choose, remove, tap }) {
   const locked = !!c.governance?.governed;
   return [
-    h("div.city-summary.prompt-summary", summaryRow(c, { prompt: true })),
+    h("div.city-summary.prompt-summary", summaryRow(c, { prompt: true }), specialtyView(c)),
     queueView(c, remove, null, { compact: true }),
     locked ? h("p.dim.governed-note", "Empire orders: units, wonders, palaces and rituals. The governor builds the rest.") : chooseModes(tap, true),
     h("div.prompt-builds", buildLists(c, choose)),

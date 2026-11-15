@@ -8,6 +8,8 @@
 //! (`city_ai_add_best_citizen`, `city_ai_remove_worst_citizen`) live in `governor.rs`, keep
 //! the C++ structure of those two functions and value the candidates the way the governor does.
 
+use crate::city::specialties::*;
+
 use super::range;
 use crate::defs::*;
 use crate::game::Game;
@@ -826,7 +828,7 @@ impl Game {
             modifier += self.d.defines.golden_age_great_people_modifier;
         }
 
-        (modifier + 100).max(0)
+        (modifier + 100).max(0) * if self.city_has_specialty(c, GREAT_PEOPLE) { 2 } else { 1 }
     }
 
     /// C++ `CvCity::changeWarWearinessModifier` (CvCity.cpp:6059-6067).

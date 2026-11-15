@@ -1,13 +1,12 @@
 # City specialties: a permanent buff drawn at culture level 3
 
-**Status: design, not built** (2026-11-15). Replaces building tiers (docs/SUITABILITY.md), which
-the owner judged the wrong direction (2026-11-14). This file is the design as agreed so far: the
-principles (section 1), the rules (section 2), the pool (section 3), what was cut and why
-(section 4) and what is still open (section 5).
+**Status: built** (2026-11-15). The owner chooses one of **three random options**.
+Replaces building tiers: new cities use Standard buildings. The principles and pool below
+remain the design record; the implemented rules are in section 2.
 
 ## 0. The idea
 
-When a city reaches culture level 3, it draws one permanent buff at random: its **specialty**.
+When a city reaches culture level 3, it offers three random permanent buffs. Its owner chooses one: its **specialty**.
 A specialty is one specific rule that pushes the city toward a function:
 
 - Melee units trained here get +3 XP.
@@ -62,17 +61,36 @@ against them before it is added.
 
 ## 2. Rules
 
-Agreed:
+- At Developing (culture level index 3: 100 culture at Normal speed), a city offers three
+  distinct, uniformly drawn eligible entries. The capital participates. Outposts do not.
+- The player picks one permanent effect. The turn cannot end until all specialty choices are
+  answered, even with a forced end turn. “Later” sets the dialog aside without discarding it.
+- Offers, their rolled unit classes and the selection are saved; loading or querying cannot
+  reroll them. The city screen shows the trigger before it is reached and the effect afterward;
+  the cities list also shows the chosen effect. Options are revealed at the trigger.
+- A chosen entry is excluded from that owner's other offers. If another city chooses an entry
+  already offered elsewhere, the conflicting offer is refreshed immediately. Unchosen options
+  do not reserve entries. With fewer than three unused eligible entries, all remaining unused
+  entries appear and repeats fill the offer. Each offer still has three distinct entries.
+- The unit-class XP effect is one pool entry; its class is drawn from trainable unit combats
+  when offered and saved with the offer. Coast, mines/quarries and farms have site eligibility.
+- Captured cities keep their chosen specialty; it counts against the new owner's offers.
+  Captures may create duplicates already held. Pending offers transfer and refresh as needed.
+- Units retain their training effects after leaving the city and through upgrades. Settler
+  growth, free upkeep and reliable missionary spread are tracked on the trained unit.
+- The draft specialty grants one extra draft per 10 game turns (population and normal city
+  eligibility still apply), with no unhappiness. Civic drafts remain available between these
+  extra drafts, using the civic's normal cost and unhappiness. At most one draft per city/turn.
+- Gold rushing requires no civic and costs half; ritual restrictions still apply. Population
+  rushing always has access and causes no unhappiness. Existing population limits still apply.
+- Full healing requires supply. Movement doubles valid movement inside the friendly city's
+  owned cultural radius; forced stops (such as an enemy border effect) still apply.
+- AI cities choose from the same offers, using a simple preference for food, specialists and
+  military training. Rules are not gated on AI tuning.
 
-- A city draws its specialty once, when it first reaches culture level 3.
-- The specialty is permanent.
-- The capital draws like every other city.
-- The draw is uniform over the entries the city is eligible for: those its site supports
-  (principle 6) and that no other city of its owner holds (principle 5).
-- The unit-class XP specialty is one entry. Its class is rolled when the city draws, from the
-  classes the city can train then.
-
-Not yet decided: section 5.
+Implementation: `city/specialties.rs`, the city production/yield hooks, unit provenance,
+`save` format 40, and the play client's `choose_specialty` command and pending dialog.
+Verification: `tests/specialties.rs`, the session decision test, and `ffh-play stage specialties DIR`.
 
 ## 3. The pool
 
@@ -143,21 +161,9 @@ Also rejected, as whole designs (2026-11-14): one built building becoming its Le
 a multiplier on a family of buildings; buffs with a price; free specialist slots as the whole
 system; a choice among named charters.
 
-## 5. Open points for the owner
+## 5. Remaining design work
 
-- **Which level is "3".** By index it is Developing (100 culture at Normal speed), which a city
-  reaches with a few buildings up. Refined (500) comes late enough that small cities may never
-  draw.
-- **One result, or draw three and pick one.** The owner asked for a random draw; pick-one-of-three
-  keeps the variety and removes the worst results.
-- **Building tiers.** Removed entirely, or the Legendary buildings and their names kept in some
-  form. Removing them is a rules change of its own (docs/PORTING.md, "Changes from FFH2", and
-  docs/SUITABILITY.md).
-- **A captured city.** Whether it keeps its specialty, and whether the specialty then counts
-  against its new owner's draws.
-- **Pool size.** With about 21 entries and draws without replacement, an empire larger than its
-  eligible pool has cities with nothing to draw. The pool needs more entries, above all for trade
-  and for defense, which lost nearly everything in the cut. A defense entry must pass principle 1:
-  it has to change what the owner does in the city, not only how well the city holds.
-- **Seeing it coming.** Whether the owner sees the specialty before the draw (so it can shape
-  plans), or only when it lands.
+- More pool entries, especially trade and active defense, remain possible additions.
+- The free specialist proposal in 3.4 remains unimplemented: its amount was not settled and it
+  is outside the 21 settled pool entries.
+- The initial 21 effects' numbers and the AI's preferences may need balance tuning.

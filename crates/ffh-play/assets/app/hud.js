@@ -226,17 +226,20 @@ export function renderTop() {
     // A pending world spell with a valid target (docs/CARDS.md, "World rituals"): the turn does
     // not end before it is cast; the button says why under its label, and its click opens the cast.
     const due = !observing() && st.phase === "human" ? v?.pending?.cast_due : null;
-    const skinKey = `${label}|${!!look.art}|${isoSkin()}|${due?.label ?? ""}`;
+    const specialty = !observing() && st.phase === "human" && v?.pending?.specialties?.length;
+    const why = specialty ? "Choose a city specialty first." : due?.label;
+    const skinKey = `${label}|${!!look.art}|${isoSkin()}|${why ?? ""}`;
     if (end.dataset.label !== skinKey) {
       end.dataset.label = skinKey;
-      fill(end, look.art || isoSkin() ? iconEl("icon16/turn") : null, look.art ? pix(label, { font: "vigil", smallCaps: true }) : label, due ? h("span.end-turn-why", due.label) : null);
+      fill(end, look.art || isoSkin() ? iconEl("icon16/turn") : null, look.art ? pix(label, { font: "vigil", smallCaps: true }) : label, why ? h("span.end-turn-why", why) : null);
     }
     // Civ4's end-turn message: no group waits, so Enter (or Space) ends the turn; else Enter
     // selects the next group.
     const msg = endTurnMessage();
     end.classList.toggle("end-turn-message", msg);
     end.title = msg ? "End the turn [Enter, Space]; Shift: without the checks" : "End the turn [Shift+Enter: without the checks]; Enter selects the next unit waiting";
-    end.classList.toggle("blocked", !!due);
+    end.classList.toggle("blocked", !!due || !!specialty);
+    if (specialty) end.title = why;
     if (due) end.title = due.reason;
   }
   // Crusades (docs/CRUSADE.md): the advisor, marked while a call to arms waits.

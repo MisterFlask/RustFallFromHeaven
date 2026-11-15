@@ -345,6 +345,7 @@ pub fn cities(v: &Viewer) -> Json {
             "capital" => g.city_is_capital(c),
             "visible" => visible,
             "size" => visible.then_some(city.population),
+            "specialty" => visible.then(|| city.specialty.map(|s| g.specialty_text(s, city.specialty_class))).flatten(),
             "defense" => visible.then(|| g.city_defense_modifier(c, false)),
             // The city art's curtain wall (docs/ART.md 9.3), seen like its size.
             "walls" => visible.then(|| walls.iter().any(|&b| g.city_num_building(c, b) > 0)),

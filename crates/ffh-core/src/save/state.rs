@@ -351,7 +351,7 @@ persist_struct!(Unit {
     id, group, x, y, last_move_turn, recon_x, recon_y, game_turn_created, damage, moves, experience,
     level, cargo, cargo_capacity, attack_plot_x, attack_plot_y, combat_timer, combat_first_strikes,
     fortify_turns, blitz_count, amphib_count, river_count, enemy_route_count, always_heal_count,
-    hills_double_move_count, immune_to_first_strikes_count, extra_visibility_range, extra_moves,
+    hills_double_move_count, immune_to_first_strikes_count, extra_visibility_range, trained_specialty, extra_moves,
     extra_move_discount, extra_air_range, extra_intercept, extra_evasion, extra_first_strikes,
     extra_chance_first_strikes, extra_withdrawal, extra_collateral_damage, extra_bombard_rate,
     extra_enemy_heal, extra_neutral_heal, extra_friendly_heal, same_tile_heal, adjacent_tile_heal,
@@ -433,6 +433,7 @@ persist_struct!(City {
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
     ai_emphasize_avoid_unhealthy_citizens_count, culture_channel, culture_diverted, culture_pressure,
     culture_revolt_level, recruit_default, direct_rule, governor, role, role_overridden,
+    specialty, specialty_class, specialty_options, specialty_draft_turn,
     building_tiers, free_bonus_choices, muster_production, ritual_charges, crew_build,
     garrison_tactic, garrison_tactic_next, outpost, lane_cut_turns, lane,
 });

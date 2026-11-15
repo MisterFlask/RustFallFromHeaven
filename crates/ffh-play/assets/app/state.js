@@ -355,6 +355,8 @@ export function option(name) {
 /** Keys of the deferred popups. */
 export function popupKey(p, turn) {
   switch (p.kind) {
+    case "specialty":
+      return `specialty:${p.specialty.city}:${JSON.stringify(p.specialty.options)}`;
     case "event":
       return `event:${p.event.triggered}`;
     case "vote":
@@ -375,6 +377,7 @@ export function popupKey(p, turn) {
 export function popupQueue(pending, dismissed, turn) {
   if (!pending) return [];
   const out = [];
+  for (const specialty of pending.specialties ?? []) out.push({ kind: "specialty", specialty });
   for (const e of pending.events ?? []) out.push({ kind: "event", event: e });
   for (const v of pending.votes ?? []) out.push({ kind: "vote", vote: v });
   for (const e of pending.elections ?? []) out.push({ kind: "election", election: e });

@@ -1,48 +1,14 @@
-//! Building suitability (docs/SUITABILITY.md): this game's own rule, not FFH2's.
-//!
-//! A city rolls a tier for every building class at founding (`City::building_tiers`, kept for
-//! the city's life, also when it changes hands). Each tier of a building is its own
-//! `BuildingType` (building_variants.jsonc), and a city holds only its own tier's variant:
-//!
-//! - it can build only that variant (`city_can_construct`);
-//! - a building given to it at another tier becomes its own tier's
-//!   (`city_set_num_real_building_timed`, `city_set_num_free_building`), so events, spells,
-//!   captures and free buildings need no tier of their own;
-//! - "the city has X" asks for X at any tier: [`Game::city_num_family`] and its kin. Code that
-//!   loops over every building type reads the exact counts instead.
-//!
-//! A wonder has no variants: its tier is its cost (`city_production_needed_building`).
-//! The civilization buildings whose effects are code read their tier in `ffh/events.rs`.
+//! Retired building-tier scaffolding. New cities use Standard buildings (city specialties).
+//! Family lookups remain shared by building prerequisites and code effects.
 
 use crate::game::Game;
 use crate::ids::*;
 use ffh_data::*;
 
 impl Game {
-    /// Rolls the city's tier for every class that rolls one (`BuildingClassInfo::rolls_tier`):
-    /// one draw per class, each tier weighted by its `weight`.
+    /// Initializes every class to Standard without consuming randomness.
     pub fn city_roll_building_tiers(&mut self, c: CityId) {
-        let d = self.d;
-        let total: i32 = d.building_tiers.iter().map(|t| t.weight.max(0)).sum();
-        if total <= 0 {
-            return;
-        }
-        for class in d.building_classes.keys() {
-            if !d.building_classes[class].rolls_tier {
-                continue;
-            }
-            let mut roll = self.soren_rand_num(total, "Building tier");
-            let mut tier = BuildingTierType::STANDARD;
-            for t in d.building_tiers.keys() {
-                let w = d.building_tiers[t].weight.max(0);
-                if roll < w {
-                    tier = t;
-                    break;
-                }
-                roll -= w;
-            }
-            self.cities[c].building_tiers[class] = tier;
-        }
+        self.cities[c].building_tiers = IdxVec::from_elem(BuildingTierType::STANDARD, self.d.building_classes.len());
     }
 
     /// The city's tier for `class`.

@@ -1368,3 +1368,13 @@ pub fn ice(dir: &Path) -> Result<StagedIce, String> {
     }
     Err("no seed with a coastal capital and a strait or bay to freeze".into())
 }
+
+/// A real random specialty offer at the capital's Developing culture threshold.
+pub fn specialties(dir: &Path) -> Result<Json, String> {
+    let mut s = duel_with(dir, 11, 4, None, &[])?;
+    let c = *s.g.players[s.human].cities.first().ok_or("no capital")?;
+    s.g.city_set_culture(c, s.human, 100, true, true);
+    s.g.city_offer_specialty(c);
+    let paths = s.save("specialties").map_err(|e| format!("save: {e:?}"))?;
+    Ok(crate::jobj! { "stage" => "specialties", "save" => paths.save.display().to_string(), "city" => c })
+}

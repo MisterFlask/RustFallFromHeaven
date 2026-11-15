@@ -1242,6 +1242,7 @@ impl Game {
         let route = pl.route_type;
 
         let mut yield_ = self.plot_calculate_nature_yield(p, yield_type, player.map(|pp| self.players[pp].team), false);
+        if let Some(c) = pl.working_city { yield_ += self.city_specialty_plot_yield(c, p, yield_type); }
 
         if let Some(improvement) = improvement {
             yield_ += self.plot_calculate_improvement_yield_change(p, improvement, yield_type, player, false, false);

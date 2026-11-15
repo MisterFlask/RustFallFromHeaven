@@ -58,6 +58,13 @@ fn asked(script: &Shared) -> Vec<Decision> {
 }
 
 fn ok(s: &mut Session, c: Command) {
+    // These scenarios exercise diplomacy, not specialty choices. Answer the new mandatory
+    // choice before advancing their scripted human through later culture levels.
+    if matches!(c, Command::EndTurn { .. }) {
+        while let Some(city) = s.pending().specialties.first().map(|p| p.city) {
+            assert!(matches!(s.execute(&Command::ChooseSpecialty { city, option: 0 }), Ok(CmdOk::Applied { .. })));
+        }
+    }
     match s.execute(&c) {
         Ok(CmdOk::Applied { .. }) => {}
         other => panic!("{c:?} -> {other:?}"),

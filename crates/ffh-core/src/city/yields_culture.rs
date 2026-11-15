@@ -2,6 +2,8 @@
 //! caches, and owner/location helpers (`getTeam`, `plot`, `area`,
 //! `isHuman`, `isCapital`, `isDisorder`, ...).
 
+use crate::city::specialties::*;
+
 use std::cmp::{max, min};
 
 use super::range;
@@ -367,6 +369,7 @@ impl Game {
 
         if old_value != new_value {
             self.cities[c].culture_level = new_value;
+            self.city_offer_specialty(c);
 
             // C++ compares the levels as ints (NO_CULTURELEVEL = -1). Neither the owner nor the
             // culture level can change inside the loops (`CvPlot::updateCulture` never changes a
@@ -521,7 +524,7 @@ impl Game {
 
     /// C++ `CvCity::getYieldRate` (CvCity.cpp:8094-8097).
     pub fn city_yield_rate(&self, c: CityId, yield_type: YieldType) -> i32 {
-        (self.cities[c].base_yield_rate[yield_type.idx()] * self.city_base_yield_rate_modifier(c, yield_type, 0)) / 100
+        ((self.cities[c].base_yield_rate[yield_type.idx()] + if yield_type == YieldType::YIELD_FOOD && self.city_has_specialty(c, FOOD) { 5 } else { 0 }) * self.city_base_yield_rate_modifier(c, yield_type, 0)) / 100
     }
 
     /// C++ `CvCity::setBaseYieldRate` (CvCity.cpp:8100-8126).
@@ -657,6 +660,7 @@ impl Game {
     pub fn city_calculate_trade_profit(&self, c: CityId, other: CityId) -> i32 {
         let mut profit = self.city_base_trade_profit(c, other);
         profit *= self.city_total_trade_modifier(c, Some(other));
+        if self.city_has_specialty(c, SEA_TRADE) && self.city_is_coastal(other, 0) { profit *= 2; }
         profit /= 10000;
         profit
     }
@@ -768,6 +772,12 @@ impl Game {
 
         base_commerce_rate += 100 * (city.building_commerce[i] + city.specialist_commerce[i] + city.religion_commerce[i] + city.corporation_commerce[i] + player.free_city_commerce[i]);
 
+        if self.city_has_specialty(c, SAGES) && commerce == CommerceType::COMMERCE_RESEARCH {
+            base_commerce_rate += 100 * self.d.specialists.keys().map(|s| city.specialist_count[s] + city.free_specialist_count[s]).sum::<i32>();
+        }
+        if self.city_has_specialty(c, RELIGIONS) {
+            base_commerce_rate += 100 * self.city_religion_count(c) * match commerce { CommerceType::COMMERCE_CULTURE => 2, CommerceType::COMMERCE_GOLD => 1, _ => 0 };
+        }
         base_commerce_rate
     }
 
@@ -790,6 +800,7 @@ impl Game {
         } else {
             let mut new_commerce = (self.city_base_commerce_rate_times100(c, commerce) * self.city_total_commerce_rate_modifier(c, commerce)) / 100;
             new_commerce += self.city_yield_rate(c, YieldType::YIELD_PRODUCTION) * self.cities[c].production_to_commerce_modifier[i];
+            if commerce == CommerceType::COMMERCE_CULTURE && self.city_has_specialty(c, CULTURE) { new_commerce = new_commerce * 3 / 2; }
             new_commerce
         };
 

@@ -358,6 +358,7 @@ impl Game {
         let num_real_building = self.cities[old_city].num_real_building.clone();
         // This game's building suitability (docs/SUITABILITY.md): the city keeps its tiers.
         let building_tiers = self.cities[old_city].building_tiers.clone();
+        let specialty = (self.cities[old_city].specialty, self.cities[old_city].specialty_class, self.cities[old_city].specialty_options.clone(), self.cities[old_city].specialty_draft_turn);
         // This game's outposts (docs/NAVAL.md, 9.2): a taken outpost stays an outpost.
         let was_outpost = self.cities[old_city].outpost;
         let building_original_owner = self.cities[old_city].building_original_owner.clone();
@@ -420,6 +421,10 @@ impl Game {
         }
 
         let new_city = self.player_init_city_as(p, city_x, city_y, !conquest, false, Some(building_tiers), was_outpost);
+        self.cities[new_city].specialty = specialty.0;
+        self.cities[new_city].specialty_class = specialty.1;
+        self.cities[new_city].specialty_options = specialty.2;
+        self.cities[new_city].specialty_draft_turn = specialty.3;
 
         self.cities[new_city].previous_owner = Some(old_owner);
         self.cities[new_city].original_owner = original_owner;
@@ -562,6 +567,11 @@ impl Game {
             self.update_plot_groups();
         }
 
+        // Specialty plot and trade yields must be recomputed after the new city replaces the old.
+        self.city_update_yield(new_city);
+        self.city_update_commerces(new_city);
+        self.city_update_trade_routes(new_city);
+        if !self.cities[new_city].specialty_options.is_empty() { self.city_offer_specialty(new_city); }
         self.ev_city_acquired(old_owner, p, new_city, conquest, trade);
 
         // The C++ keeps using pNewCity; nothing above destroys it, but Python handlers are not

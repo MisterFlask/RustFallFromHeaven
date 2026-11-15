@@ -717,3 +717,18 @@ export function rawRequest() {
   return openModal({ title: "Raw request", tag: "raw", wide: true, body: [box, out], buttons: [{ label: "Send", primary: true, onClick: send }, { label: "Close", value: null }] });
 }
 
+
+/** Permanent specialty: the offer is saved by the engine, including when set aside. */
+export async function openSpecialty(city) {
+  const options = h("div.options", city.options.map(o => h("button.option", {
+    "data-specialty": o.option,
+    onclick: async () => {
+      const reply = await run({ c: "choose_specialty", city: city.city, option: o.option });
+      if (reply) m.close("chosen");
+    },
+  }, o.text)));
+  const m = openModal({ title: `${city.name}: choose a specialty`,
+    body: [h("p", "Choose one of three random permanent effects. The city keeps its specialty when captured."), options],
+    buttons: [{ label: "Later", value: "later" }], tag: "specialty" });
+  return m.done;
+}

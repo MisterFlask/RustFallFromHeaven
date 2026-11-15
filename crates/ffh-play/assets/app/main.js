@@ -357,7 +357,8 @@ async function runPopups() {
       const p = q[0];
       // Asked once per turn: answered, or set aside until the end-turn gate reopens it.
       S.dismissed.add(p.key);
-      if (p.kind === "event") await screens.openEvent(p.event);
+      if (p.kind === "specialty") await screens.openSpecialty(p.specialty);
+      else if (p.kind === "event") await screens.openEvent(p.event);
       else if (p.kind === "vote") await screens.openVote(p.vote);
       else if (p.kind === "election") await screens.openElection(p.election);
       else if (p.kind === "crusade") await crusade.openCall(p.call);
@@ -387,12 +388,13 @@ function citiesList() {
       mine.length
         ? h(
             "table.scores",
-            h("tr", h("th", "City"), h("th", "Size"), h("th", "Producing"), h("th", "Growth")),
+            h("tr", h("th", "City"), h("th", "Specialty"), h("th", "Size"), h("th", "Producing"), h("th", "Growth")),
             mine.map((c) =>
               h(
                 "tr.clickable",
                 { onclick: () => (closeTag("cities"), mapView.centerOn(c.x, c.y), openCity(c.id)) },
                 h("td", `${c.capital ? "★ " : ""}${c.name}`, c.outpost ? h("span.dim", " outpost") : null),
+                h("td", c.specialty ?? "—"),
                 h("td", String(c.size)),
                 h("td", c.production ? `${dname(["UnitType", "BuildingType", "ProjectType", "ProcessType"][c.production.order], c.production.type)} (${turns(c.production.turns)})` : c.outpost ? h("span", { class: c.outpost.lane === "open" ? "" : "warn" }, c.outpost.text ?? "") : h("span.warn", "nothing")),
                 h("td", c.food_turns > 0 ? turns(c.food_turns) : "-"),

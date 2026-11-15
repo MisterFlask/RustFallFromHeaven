@@ -10,6 +10,8 @@
 //! and `skipResearchPopup` return False (= run the C++ default).
 
 
+use crate::city::specialties::*;
+
 use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
@@ -228,12 +230,15 @@ impl Game {
             free_military_units += pl.num_cities(); // XXX
         }
 
+        let exempt: Vec<_> = pl.units.iter().copied().filter(|&u| self.units[u].trained_specialty == Some(NO_UPKEEP)).collect();
+        free_units += exempt.iter().filter(|&&u| self.units[u].duration <= 0).count() as i32;
+        free_military_units += exempt.iter().filter(|&&u| d.units[self.units[u].unit_type].military_support).count() as i32;
         let paid_units = 0.max(pl.num_units() - free_units);
         let paid_military_units = 0.max(pl.num_military_units - free_military_units);
 
         let base_unit_cost = paid_units * pl.gold_per_unit;
         let military_cost = paid_military_units * pl.gold_per_military_unit;
-        let extra_cost = pl.extra_unit_cost;
+        let extra_cost = pl.extra_unit_cost - exempt.iter().map(|&u| d.units[self.units[u].unit_type].extra_cost).sum::<i32>();
 
         let mut support = military_cost + base_unit_cost + extra_cost;
 

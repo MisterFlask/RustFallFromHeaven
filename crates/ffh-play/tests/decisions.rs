@@ -798,3 +798,23 @@ fn the_session_follows_the_human_to_another_slot() {
     assert_eq!(s.stats().reassigned, 2);
     std::fs::remove_dir_all(&dir).unwrap();
 }
+
+#[test]
+fn specialty_choices_are_pending_validated_and_block_even_forced_end_turn() {
+    let (mut s, _) = duel(11, |_, _| 0);
+    found_capital(&mut s);
+    let c = s.g.players[s.human].cities[0];
+    s.g.city_set_culture(c, s.human, 100, true, true);
+    let pending = s.pending();
+    assert_eq!(pending.specialties.len(), 1);
+    assert_eq!(pending.specialties[0].options.len(), 3);
+    let before = s.g.save();
+    assert!(s.execute(&Command::EndTurn { force: true }).is_err());
+    assert!(s.execute(&Command::ChooseSpecialty { city: c, option: 3 }).is_err());
+    assert_eq!(before, s.g.save());
+    let chosen = s.g.cities[c].specialty_options[1].0;
+    ok(&mut s, Command::ChooseSpecialty { city: c, option: 1 });
+    assert_eq!(s.g.cities[c].specialty, Some(chosen));
+    assert!(s.pending().specialties.is_empty());
+    assert!(s.execute(&Command::ChooseSpecialty { city: c, option: 0 }).is_err());
+}

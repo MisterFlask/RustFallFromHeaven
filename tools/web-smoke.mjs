@@ -1098,7 +1098,7 @@ async function empireScreens() {
   await click("#research-button");
   await dialog("Technology");
   await until2(`!!document.querySelector(${q(`${TOP} button[data-paths]`)})`, "the research path line");
-  await click(`${TOP} button[data-paths]`);
+  await clickSteady(`${TOP} button[data-paths]`);
   await dialog("Doctrines");
   await until2(`!!document.querySelector(${q(`${TOP} button.option[data-path]`)})`, "the research paths");
   await shot("research-paths");
@@ -1788,11 +1788,12 @@ async function stagedEngagement(bin, saves) {
  *  and votes): a resolution put to the vote. */
 async function stagedElection(bin, saves) {
   const st = await loadStaged(bin, saves, "election", { answer: false });
-  const opt = `${TOP} .modal button.option[data-option="0"]`;
-  const shown = `!!document.querySelector(${q(opt)}) && /Head Councilor/.test(document.querySelector(${q(`${TOP} .modal`)}).textContent)`;
-  // The popups before it in C++ order (events, votes) are answered first.
+  const opt = `${TOP} .modal[data-tag="election"] button.option[data-option="0"]`;
+  const shown = `!!document.querySelector(${q(opt)})`;
+  // Target earlier popup kinds explicitly: a generic .option can become the election's
+  // first resolution between this read and click(), answering the election before we see it.
   for (let k = 0; k < 20 && !(await b.eval(shown)); k++) {
-    const other = `${TOP} .modal button.option:not([disabled])`;
+    const other = ["event", "vote", "decision"].map(tag => `${TOP} .modal[data-tag="${tag}"] button.option:not([disabled])`).join(", ");
     if (await b.eval(`!!document.querySelector(${q(other)})`)) await click(other);
     await new Promise((r) => setTimeout(r, 400));
   }

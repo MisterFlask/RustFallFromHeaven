@@ -5,17 +5,6 @@ entry per item: what it is, the decisions already made, what is still open, and 
 hold the detail. Open work on a built area lives in that area's doc (CLAUDE.md). Remove an entry
 when its work is merged (the area doc then describes it as built).
 
-## City specialties
-
-A city draws one permanent buff at random when it reaches culture level 3; replaces building
-tiers. The design, its principles, the pool and the open points are in docs/SPECIALTIES.md.
-
-Before it can be built:
-
-- The owner's decisions in docs/SPECIALTIES.md section 5 (which culture level, one result or
-  pick one of three, what happens to building tiers, captured cities).
-- More pool entries, above all for trade and defense.
-
 ## Starving a besieged garrison
 
 Decided by the owner, 2026-11-14. Fills the gap docs/SUPPLY.md section 8 lists ("Starving a

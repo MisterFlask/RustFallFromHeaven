@@ -120,6 +120,8 @@ pub enum Command {
     EndTurn { force: bool },
     /// FfH `setAIAutoPlay` (a testing aid).
     AutoPlay { turns: i32 },
+    /// Choose one of this city's saved specialty offers (zero-based option index).
+    ChooseSpecialty { city: CityId, option: usize },
     /// Not in C++ (docs/CRUSADE.md): answer crusade `crusade`'s call: pledge `strength`
     /// (combat strength x100, as the `crusades` query counts it), or refuse (`None`).
     CrusadeAnswer { crusade: u32, strength: Option<i32> },
@@ -711,6 +713,7 @@ impl Command {
             Command::AutoMoves => "auto_moves",
             Command::EndTurn { .. } => "end_turn",
             Command::AutoPlay { .. } => "autoplay",
+            Command::ChooseSpecialty { .. } => "choose_specialty",
             Command::CrusadeAnswer { .. } => "crusade_answer",
             Command::CrusadeLend { .. } => "crusade_lend",
             Command::ProposeLoan { .. } => "propose_loan",
@@ -830,6 +833,7 @@ impl Command {
             "end_turn" => Command::EndTurn { force: flag("force")? },
             "autoplay" => Command::AutoPlay { turns: j.req("turns")? },
             "propose_deal" => Command::ProposeDeal { to: j.req("to")?, give: trade_items(d, j, "give")?, get: trade_items(d, j, "get")? },
+            "choose_specialty" => Command::ChooseSpecialty { city: j.req("city")?, option: j.req("option")? },
             "crusade_answer" => Command::CrusadeAnswer {
                 crusade: j.req("crusade")?,
                 // Present: a strength, or null to refuse (a missing answer is not a refusal).
@@ -947,6 +951,7 @@ impl Command {
             Command::AutoMoves => j,
             Command::EndTurn { force } => j.with("force", *force),
             Command::AutoPlay { turns } => j.with("turns", *turns),
+            Command::ChooseSpecialty { city, option } => j.with("city", *city).with("option", *option),
             Command::CrusadeAnswer { crusade, strength } => j.with("crusade", *crusade).with("strength", *strength),
             Command::CrusadeLend { crusade, units, declare_war } => j.with("crusade", *crusade).with("units", ids(units)).with("declare_war", *declare_war),
             Command::ProposeLoan { to, lend, target, defend, strength, duration, give, get, units } => {
@@ -1011,6 +1016,7 @@ impl Command {
                 let items = |v: &[TradeData]| v.iter().map(|t| format!("{} {}", names::name(d, t.item_type), t.data)).collect::<Vec<_>>().join(", ");
                 format!("offer player {}: give [{}] for [{}]", to.0, items(give), items(get))
             }
+            Command::ChooseSpecialty { city, option } => format!("City {}: choose specialty {}", city.0, option),
             Command::CrusadeAnswer { crusade, strength } => match strength {
                 Some(s) => format!("crusade {crusade}: pledge strength {s}"),
                 None => format!("crusade {crusade}: refuse the call"),
@@ -1123,6 +1129,7 @@ pub enum Action {
     /// the open election popups (no resolution, as the popup's "none").
     EndTurn { drop_events: bool, close_elections: Vec<VoteId> },
     AutoPlay { turns: i32 },
+    ChooseSpecialty { city: CityId, option: usize },
     /// `Game::crusade_answer`.
     CrusadeAnswer { crusade: CrusadeId, pledge: Pledge },
     /// `Game::crusade_lend` (its war declaration included).
@@ -1988,6 +1995,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             if let Some(due) = &p.cast_due {
                 return Err(cannot(due.reason.clone()));
             }
+            if !p.specialties.is_empty() { return Err(cannot("Choose a city specialty before ending the turn.")); }
             let ready = p.ready_groups.len();
             if !force && (p.popups() > 0 || ready > 0) {
                 return Ok(Plan::Confirm(Confirm::EndTurn {
@@ -2010,6 +2018,12 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::AutoPlay { turns: *turns })
         }
 
+        Command::ChooseSpecialty { city, option } => {
+            if !g.cities.contains(*city) { return Err(CmdErr::Gone); }
+            if g.cities[*city].owner != h { return Err(cannot("this city is not yours")); }
+            if g.cities[*city].specialty.is_some() || *option >= g.cities[*city].specialty_options.len() { return Err(cannot("choose one of the offered specialties")); }
+            Plan::Apply(Action::ChooseSpecialty { city: *city, option: *option })
+        }
         Command::CrusadeAnswer { crusade, strength } => {
             let id = CrusadeId(*crusade);
             let Some(c) = g.crusade(id) else { return Err(CmdErr::Gone) };
@@ -2423,6 +2437,7 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
             g.player_set_end_turn(h, true)
         }
         Action::AutoPlay { turns } => g.set_ai_auto_play(*turns),
+        Action::ChooseSpecialty { city, option } => { g.city_choose_specialty(*city, *option); }
         Action::CrusadeAnswer { crusade, pledge } => {
             g.crusade_answer(*crusade, h, *pledge);
         }

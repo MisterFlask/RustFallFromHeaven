@@ -1,8 +1,9 @@
 # Building suitability: building tiers
 
-**Status: built** (2026-11-05). This file is the rules as they play (sections 0-5) and how they
-are built (section 7). Revision history: proposal revisions 1-7 (2026-11-05), then built with the
-differences noted in section 6.
+**Status: replaced by city specialties** (2026-11-15, docs/SPECIALTIES.md).
+New cities use Standard buildings; no building tiers are rolled. The old type tables and family
+lookup APIs remain for now, but the non-Standard variants are not offered in play. The remainder
+of this file records the retired design.
 
 ## 0. The idea
 

@@ -6,6 +6,8 @@
 //! ranges; all of them are ported. AI-only parts are omitted with `// AI:` notes; call sites
 //! whose callee signature does not fit the C++ are marked `// SIGNATURE:`.
 
+use crate::city::specialties::*;
+
 use crate::controller::AiHook;
 use crate::defs::*;
 use crate::game::Game;
@@ -205,6 +207,8 @@ impl Game {
         }
         // This game's sea (docs/NAVAL.md, 3.1 and 3.4): an upgrade or conversion at sea keeps the
         // ship's wear (only a port clears it) and the out-of-range state of its message.
+        self.units[u].trained_specialty = self.units[from].trained_specialty;
+        if self.units[from].trained_specialty == Some(NAVAL) && self.unit_get_domain_type(u) == DomainType::DOMAIN_SEA { self.units[u].extra_moves += 1; }
         self.units[u].sea_turns = self.units[from].sea_turns;
         self.units[u].sea_out_of_range = self.units[from].sea_out_of_range;
         let info = &d.units[self.units[u].unit_type];
@@ -574,7 +578,7 @@ impl Game {
         let unsupplied = self.unit_is_unsupplied(u) || self.unit_plot_opt(u).is_some_and(|p| self.unit_sea_no_heal_at(u, p));
 
         // Card: Pillar of Dawn (docs/CARDS.md): under its owner's Pillar a unit heals fully.
-        if !unsupplied && self.units[u].damage > 0 && self.unit_in_pillar_of_dawn(u) {
+        if !unsupplied && self.units[u].damage > 0 && (self.unit_in_pillar_of_dawn(u) || self.unit_plot_opt(u).and_then(|p| self.map.plots[p].plot_city).is_some_and(|c| self.city_team(c) == self.unit_get_team(u) && self.city_has_specialty(c, HEALING))) {
             let damage = self.units[u].damage;
             self.unit_change_damage(u, -damage, None);
         }

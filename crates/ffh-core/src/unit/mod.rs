@@ -313,6 +313,7 @@ pub struct Unit {
     /// C++ `m_iExtraVisibilityRange` (`getExtraVisibilityRange`).
     pub extra_visibility_range: i32,
     /// C++ `m_iExtraMoves` (`getExtraMoves`).
+    pub trained_specialty: Option<u8>,
     pub extra_moves: i32,
     /// C++ `m_iExtraMoveDiscount` (`getExtraMoveDiscount`).
     pub extra_move_discount: i32,
@@ -660,6 +661,7 @@ impl Unit {
             hills_double_move_count: 0,
             immune_to_first_strikes_count: 0,
             extra_visibility_range: 0,
+            trained_specialty: None,
             extra_moves: 0,
             extra_move_discount: 0,
             extra_air_range: 0,

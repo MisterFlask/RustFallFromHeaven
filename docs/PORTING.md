@@ -446,18 +446,17 @@ flag.
   rules denials make rare). Before, nothing could cancel a deal in the port: the human had no way
   to, and ffh-ai never did. A loan's payment runs with its loan.
 
-- **Building tiers** (docs/SUITABILITY.md; the owner's design of 2026-11-05; part of the rules in
-  every game, no option): a city rolls a tier for every building class at founding (Lesser 25%,
-  Standard 30%, Fine 25%, Grand 15%, Legendary 5%; `building_tiers.jsonc`) and keeps it for life,
-  also when it changes hands. Each ordinary building (the FFH2 building is its Standard tier) has
-  four more variants in `building_variants.jsonc` with weaker or stronger effects, a Legendary one
-  with a name and an ability of its own; a city builds only its own tier's, and a building given
-  to it at another tier becomes its own. Costs and unlocks are the same at every tier; the
-  buildings that unlock units give those units experience, a promotion or slower production by
-  tier. The civilization buildings whose effects are code (Warrens, Planar Gate, Citadel of Light,
-  ...) scale them by tier (`ffh/events.rs`). A wonder's tier is its cost there (125/100/85/70/50%);
-  not the Tower of Mastery or the Altar of the Luonnotar. New: `PROMOTION_SPIRIT_GUIDE2` (the
-  Legendary Reliquary's). Save format 17.
+- **City specialties** (docs/SPECIALTIES.md; 2026-11-15): replaces the building-tier rolls.
+  Buildings use their Standard versions. At Developing culture (index 3, 100 at Normal speed),
+  every city, including the capital, offers three random eligible specialties; the owner picks
+  one permanent effect. Chosen entries are excluded from later offers while enough unused
+  entries remain. If the eligible pool is exhausted, unused entries are offered first, with
+  repeats filling the three choices. Captured cities keep their specialty, which counts against
+  their new owner's draws. All 21 settled entries in the design are implemented. Drafting grants
+  one extra draft every 10 turns without unhappiness; gold rushing needs no civic. Full healing
+  still requires supply. Offers and trained-unit provenance are saved (format 40); older saves
+  are not converted. Tier data and family APIs remain as dormant implementation scaffolding;
+  new cities roll no tiers and receive none of the Grand or Legendary bonuses.
 
 - **Battle spells** (docs/ENGAGEMENTS.md, "Battle spells"; the owner's decisions, 2026-11-05).
   Fire II's Fireball and Air II's Maelstrom are cast only in formation battles, by their caster's

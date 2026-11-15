@@ -114,6 +114,9 @@ fn applied(s: &mut Session, c: Command) -> Option<bool> {
 }
 
 fn next_turn(s: &mut Session) {
+    while let Some(city) = s.pending().specialties.first().map(|p| p.city) {
+        applied(s, Command::ChooseSpecialty { city, option: 0 });
+    }
     applied(s, Command::EndTurn { force: true });
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
 }
