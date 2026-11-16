@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-4f9aeed3-fbcb-4645-91f2-422fa9c746e2.png",
+  "source_copy": "art/kuriotates.png",
+  "prompt": "art/kuriotates.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "sereia_coil_of_law",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/sereia_coil_of_law.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "torven_longstride",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/torven_longstride.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "ilyra_roof_singer",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/ilyra_roof_singer.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "avar_senn",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/avar_senn.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "meren_glasshand",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/meren_glasshand.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-fa944ae9-11aa-46bb-908b-ddc1cfb68390.png",
+  "background_edit_prompt": "art/kuriotates-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-2201f847-5322-4e5d-a720-baf53823683c.png",
+  "source_copy": "art/khazad.png",
+  "prompt": "art/khazad.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "brunna_chalkvein",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/brunna_chalkvein.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "dorrik_ledgergrave",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/dorrik_ledgergrave.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "helvi_handseer",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/helvi_handseer.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "ordan_outledge",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/ordan_outledge.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "sovna_trueweight",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/sovna_trueweight.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-672930d6-40d5-4f5d-9fce-a4d3b1e4c06c.png",
+  "background_edit_prompt": "art/khazad-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

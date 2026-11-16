@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-07759a86-5edb-4064-ad6e-993f769cc6e3.png",
+  "source_copy": "art/ljosalfar.png",
+  "prompt": "art/ljosalfar.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "saeril_reedkeeper",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/saeril_reedkeeper.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "nethra_cinderbough",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/nethra_cinderbough.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "iovain_stillroot",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/iovain_stillroot.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "aelwen_many_vows",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/aelwen_many_vows.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "namar_oathmolt",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/namar_oathmolt.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-06298643-706f-43f1-92f9-28de944d6866.png",
+  "background_edit_prompt": "art/ljosalfar-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

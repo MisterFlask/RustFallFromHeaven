@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-38824de7-aceb-489e-8073-e0edf788157f.png",
+  "source_copy": "art/hippus.png",
+  "prompt": "art/hippus.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "ulsha_marekeeper",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/ulsha_marekeeper.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "hest_varrow",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/hest_varrow.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "cevran_dustreader",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/cevran_dustreader.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "ereska_stonecorral",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/ereska_stonecorral.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "marruk_debtbrand",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/marruk_debtbrand.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-4a4d979d-4b2b-40d5-95b6-6757804b6068.png",
+  "background_edit_prompt": "art/hippus-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

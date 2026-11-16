@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-7e0ce306-0a3d-4655-a58f-67ad9fdec265.png",
+  "source_copy": "art/amurites.png",
+  "prompt": "art/amurites.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "nesra_vell",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/nesra_vell.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "othran_pell",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/othran_pell.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "maerith_voss",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/maerith_voss.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "ennar_solm",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/ennar_solm.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "ilvara_thenn",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/ilvara_thenn.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-892be532-f9fd-4e2e-845d-065c0d02a9ff.png",
+  "background_edit_prompt": "art/amurites-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

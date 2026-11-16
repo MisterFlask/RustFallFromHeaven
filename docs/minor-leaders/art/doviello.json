@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-ed4ab0f4-dc2a-4e68-b9d1-ecef82b38975.png",
+  "source_copy": "art/doviello.png",
+  "prompt": "art/doviello.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "harka_reedtooth",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/harka_reedtooth.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "vargan_split_tusk",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/vargan_split_tusk.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "edda_coalhand",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/edda_coalhand.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "torvek_antler_crown",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/torvek_antler_crown.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "nask_white_ear",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/nask_white_ear.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-a3595cf6-325c-4523-94a2-6ca5318f70ed.png",
+  "background_edit_prompt": "art/doviello-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

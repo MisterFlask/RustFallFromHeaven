@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-b80f0c87-e986-46ab-b9d0-3e5b68befc9e.png",
+  "source_copy": "art/balseraphs.png",
+  "prompt": "art/balseraphs.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "perpentach_gentle_witness",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/perpentach_gentle_witness.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "perpentach_perfect_rehearsal",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/perpentach_perfect_rehearsal.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "perpentach_empty_audience",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/perpentach_empty_audience.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "brassett_nine_fingers",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/brassett_nine_fingers.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "velisse_understudy",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/velisse_understudy.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-a129a92d-1b77-4a40-9a42-1ac1f1a337d1.png",
+  "background_edit_prompt": "art/balseraphs-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

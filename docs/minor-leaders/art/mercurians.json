@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-e4b46d0f-697d-4ae7-a14e-a9db24a9104d.png",
+  "source_copy": "art/mercurians.png",
+  "prompt": "art/mercurians.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "serediel_threshold",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/serediel_threshold.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "othra_leadwings",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/othra_leadwings.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "talvek_unforgiven",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/talvek_unforgiven.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "naeviel_lasthymn",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/naeviel_lasthymn.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "istran_borroweddawn",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/istran_borroweddawn.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-d01e9713-cd71-48f9-ab8b-038b50e79097.png",
+  "background_edit_prompt": "art/mercurians-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

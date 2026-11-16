@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-ba45bd2f-ea0a-4dc4-9bec-ca3d984f1a2a.png",
+  "source_copy": "art/illians.png",
+  "prompt": "art/illians.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "tovra_hearthmeter",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/tovra_hearthmeter.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "elken_long_silence",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/elken_long_silence.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "hroven_tithe_of_ice",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/hroven_tithe_of_ice.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "ysrel_thawless_road",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/ysrel_thawless_road.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "naevra_snow_listener",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/naevra_snow_listener.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-71f24d19-fe4f-4c09-ad49-5b5af34b3f3f.png",
+  "background_edit_prompt": "art/illians-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

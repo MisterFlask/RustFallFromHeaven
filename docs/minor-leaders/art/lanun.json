@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-249a1699-d617-4ade-8d48-eff8ca2cd8d2.png",
+  "source_copy": "art/lanun.png",
+  "prompt": "art/lanun.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "maris_tallow",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/maris_tallow.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "orrick_sounder",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/orrick_sounder.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "sella_nine_shares",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/sella_nine_shares.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "brannoc_blackwake",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/brannoc_blackwake.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "ilyra_rope_end",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/ilyra_rope_end.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-cb9c1a45-672b-4e21-840c-597a2bea1cb7.png",
+  "background_edit_prompt": "art/lanun-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

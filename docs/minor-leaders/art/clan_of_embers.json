@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-5bd14fc9-c359-49b3-91c4-038f40e5287c.png",
+  "source_copy": "art/clan_of_embers.png",
+  "prompt": "art/clan_of_embers.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "ugrava_clayhand",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/ugrava_clayhand.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "vorga_coalwidow",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/vorga_coalwidow.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "drekk_ninetokens",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/drekk_ninetokens.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "sarruk_farstep",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/sarruk_farstep.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "ishka_cindertongue",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/ishka_cindertongue.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-6b0749e9-b15f-44e2-a5b4-8890d323f3a2.png",
+  "background_edit_prompt": "art/clan_of_embers-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

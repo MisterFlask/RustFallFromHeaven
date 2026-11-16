@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-f0d23c93-fb25-424a-9819-35422d85eb16.png",
+  "source_copy": "art/svartalfar.png",
+  "prompt": "art/svartalfar.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "neryss_thornveil",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/neryss_thornveil.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "vaelith_rowanfall",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/vaelith_rowanfall.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "thariel_voss",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/thariel_voss.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "elyndra_ashglass",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/elyndra_ashglass.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "ossren_nightferry",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/ossren_nightferry.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-0deaff95-3c85-4adb-9dfe-79a2a67b5b00.png",
+  "background_edit_prompt": "art/svartalfar-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

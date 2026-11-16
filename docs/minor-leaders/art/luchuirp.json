@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-a6ef73ff-9818-47cb-9d03-d31274fc5e7c.png",
+  "source_copy": "art/luchuirp.png",
+  "prompt": "art/luchuirp.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "mavra_wickhand",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/mavra_wickhand.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "odrik_sluice",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/odrik_sluice.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "kelna_brasshear",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/kelna_brasshear.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "vorra_rentshaper",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/vorra_rentshaper.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "durn_pell",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/durn_pell.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-1cfe6b4f-d5bf-45c7-b7f9-ab857dd07f16.png",
+  "background_edit_prompt": "art/luchuirp-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

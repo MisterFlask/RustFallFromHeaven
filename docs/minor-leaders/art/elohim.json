@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-31b2348a-af52-43ee-8ac7-0873bfdae8f2.png",
+  "source_copy": "art/elohim.png",
+  "prompt": "art/elohim.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "isrene_stoneear",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/isrene_stoneear.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "damar_ninebells",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/damar_ninebells.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "velka_thornpatient",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/velka_thornpatient.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "olen_unwritten",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/olen_unwritten.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "thesra_quietgate",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/thesra_quietgate.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-69c29438-b4e5-4d43-bae7-7fc0627c335e.png",
+  "background_edit_prompt": "art/elohim-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

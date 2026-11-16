@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-4cf87dc2-f2d7-4019-83f4-0ded907096cd.png",
+  "source_copy": "art/sheaim.png",
+  "prompt": "art/sheaim.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "serev_of_the_sealed_atlas",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/serev_of_the_sealed_atlas.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "veyra_ash_witness",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/veyra_ash_witness.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "pellan_of_the_deferred_hour",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/pellan_of_the_deferred_hour.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "sethrien_unfinished_name",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/sethrien_unfinished_name.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "nesk_doorless",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/nesk_doorless.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-ae5d7097-ab61-4782-8146-b8f860d1ac0f.png",
+  "background_edit_prompt": "art/sheaim-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

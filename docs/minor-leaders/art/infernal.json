@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-896688f2-e1ea-415d-b337-8a6a4a28b21b.png",
+  "source_copy": "art/infernal.png",
+  "prompt": "art/infernal.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "rhuvek_tithekeeper",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/rhuvek_tithekeeper.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "azhrul_ashwarden",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/azhrul_ashwarden.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "ivrasha_clause_bearer",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/ivrasha_clause_bearer.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "kethril_thousand_scars",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/kethril_thousand_scars.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "omel_unspent",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/omel_unspent.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-08ad8cda-7207-44e8-98b2-5ba422c85683.png",
+  "background_edit_prompt": "art/infernal-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

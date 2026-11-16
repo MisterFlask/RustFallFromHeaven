@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-96ea7ab7-ab0d-4dc7-83c8-a8119fd67813.png",
+  "source_copy": "art/calabim.png",
+  "prompt": "art/calabim.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "nemara_vey",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/nemara_vey.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "odran_kessel",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/odran_kessel.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "valesca_dorn",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/valesca_dorn.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "istren_vale",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/istren_vale.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "raska_morcant",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/raska_morcant.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-f6cd7fb7-c57f-4ff8-ae9c-08bb75259426.png",
+  "background_edit_prompt": "art/calabim-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}

@@ -102,3 +102,7 @@ The rules port is complete (no `todo!()` left in `ffh-core`) and audited line by
 the C++/Python, and stress-tested with about 1,400 AI games over all game settings. AI-only games
 play end to end; the AI itself is the main open work (`docs/AI.md`). Details, changes from
 FFH2 and next steps: `docs/PORTING.md`.
+
+Character proposals: [105 minor leader concepts](docs/minor-leaders/README.md), five for each
+original civilization, with portraits, backstories, alignments and traits. The
+[searchable illustrated catalog](docs/minor-leaders/catalog.html) opens locally in a browser.

@@ -1,0 +1,92 @@
+{
+  "generator": "image_gen.imagegen",
+  "generated_source": "/workspace/generated_images/exec-339a6fb5-7d5b-486e-88da-767b67e42504.png",
+  "source_copy": "art/grigori.png",
+  "prompt": "art/grigori.txt",
+  "sheet_size": [
+    1536,
+    1024
+  ],
+  "layout": "3 columns x 2 rows, row-major; sixth cell unused",
+  "export": "Square cell extraction and resize only; no retouching",
+  "leaders": [
+    {
+      "leader": "hadrin_ash_baker",
+      "cell": 1,
+      "crop": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/hadrin_ash_baker.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "dessa_venn",
+      "cell": 2,
+      "crop": [
+        512,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/dessa_venn.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "ruvik_red_wager",
+      "cell": 3,
+      "crop": [
+        1024,
+        0,
+        512,
+        512
+      ],
+      "portrait": "portraits/ruvik_red_wager.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "nallia_bronzebound",
+      "cell": 4,
+      "crop": [
+        0,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/nallia_bronzebound.png",
+      "size": [
+        384,
+        384
+      ]
+    },
+    {
+      "leader": "edren_twice_buried",
+      "cell": 5,
+      "crop": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "portrait": "portraits/edren_twice_buried.png",
+      "size": [
+        384,
+        384
+      ]
+    }
+  ],
+  "initial_generated_source": "/workspace/generated_images/exec-1c838c75-1bcd-4236-b15f-ee6059f339c2.png",
+  "background_edit_prompt": "art/grigori-background.txt",
+  "style": "Pixel-art characters and props against high-definition painterly realistic backgrounds"
+}
