@@ -803,8 +803,15 @@ float gDry = 0.0;
 vec3 flowers(vec2 m, vec3 c, float amt) {
   const float f = 17.0;
   float aa = gPpx * f;
+#ifdef REFERENCE_TERRAIN
+  // Fine meadow flowers stay independent of the expensive brush-dab program. Their drift is
+  // the same sampled field as the meadow's masses, so they gather in patches across plot edges.
+  float k = amt * (1.0 - smoothstep(0.20, 0.34, aa)) * gMarkW;
+  float drift = smoothstep(0.38, 0.67, gMid);
+#else
   float k = amt * (1.0 - smoothstep(0.13, 0.24, aa)) * min(gK(), 1.0) * gMarkW;
   float drift = smoothstep(0.5, 0.78, mnoise(m + 19.0, 1.1));
+#endif
   if (k * drift <= 0.0) return c;
   vec3 l = mlattice(m, f);
   float P = CELL_P(l.z);
@@ -918,8 +925,13 @@ vec3 groundAlbedo(int g, vec2 m, float h, inout vec3 emit) {
     // its own ground, easing out to the rim, while the grid no longer shows in the grass.
     // A patch meets the green in a broad blend (about a quarter of a plot, as in the target), not a
     // cut: dry runs over a wide band of the noise and the two grasses interleave over its middle.
+#ifdef REFERENCE_TERRAIN
+    float dn = gBig * 0.6 + gMid * 0.4;
+    float t = mix(0.73, 0.20, gDry);
+#else
     float dn = mnoise(m + 61.0, 0.85) * 0.35 + mnoise(m - 27.0, 1.9) * 0.4 + mstroke(m + 13.0, 3.6, 2.5) * 0.25;
     float t = mix(0.92, 0.10, gDry);
+#endif
     dry = smoothstep(t - 0.28, t + 0.28, dn);
     dry = mix(gDry, dry, smoothstep(0.06, 0.6, length(fract(m) - 0.5)));
     big = gBig;
@@ -928,12 +940,21 @@ vec3 groundAlbedo(int g, vec2 m, float h, inout vec3 emit) {
     // half-plot blotches), drifting slowly between a yellower and a bluer green; as deep as the
     // target's (lighter read as astroturf).
     vec3 cg = mass3(vec3(0.18, 0.27, 0.17), vec3(0.27, 0.35, 0.22), vec3(0.35, 0.415, 0.24), big, mid);
+#ifdef REFERENCE_TERRAIN
+    // Olive turf with ochre shoulders: colour variation comes from the material and these broad
+    // fields, rather than raising the whole scene's saturation (which washes water and towns).
+    cg = mass3(vec3(0.22, 0.285, 0.14), vec3(0.34, 0.39, 0.19), vec3(0.43, 0.46, 0.24), big, mid);
+    mot = gMid;
+#endif
     cg = mix(cg, vec3(0.17, 0.26, 0.17), smoothstep(0.55, 0.8, mot) * 0.42);
     vec3 dr = mix(vec3(0.20, 0.31, 0.21), vec3(0.33, 0.40, 0.20), smoothstep(0.3, 0.7, mnoise(m - 23.0, 0.7)));
     cg = mix(cg, dr * lum(cg) / max(lum(dr), 1e-4), 0.22 * gK()) * 0.85;
     // Golden: straw over ochre, combed by the wind into lighter and darker streaks; its shade an
     // olive ochre (not russet: the warm sun and the grade's saturation would turn that orange).
     vec3 cd = mass3(vec3(0.37, 0.30, 0.185), vec3(0.50, 0.42, 0.265), vec3(0.62, 0.54, 0.355), big, mid);
+#ifdef REFERENCE_TERRAIN
+    cd = mass3(vec3(0.37, 0.33, 0.18), vec3(0.52, 0.46, 0.265), vec3(0.64, 0.58, 0.36), big, mid);
+#endif
 #ifndef LEAN_GOLD
     cd = mix(cd, vec3(0.38, 0.31, 0.185), smoothstep(0.55, 0.8, mstroke(m - 3.0, 5.0, 4.0)) * 0.5);
     cd = mix(cd, vec3(0.64, 0.56, 0.385), smoothstep(0.6, 0.85, mstroke(m + 9.0, 3.5, 5.0)) * 0.3);
@@ -1292,8 +1313,15 @@ void main() {
 #else
   if (wBroad >= 0.004) {
 #endif
+#ifdef REFERENCE_TERRAIN
+    // Two mipmapped utility reads bring back broad terrain variation without expanding the
+    // lean shader's procedural noise. The green channel is seamless fractal noise (materials.js).
+    gBig = clamp(0.5 + (matAt(m, M_NOISE, 0.18, vec2(0.13, 0.37), 1.0).g - 0.5) * 1.7, 0.0, 1.0);
+    gMid = clamp(0.5 + (matAt(m, M_NOISE, 0.58, vec2(0.61, 0.19), -1.0).g - 0.5) * 1.6, 0.0, 1.0);
+#else
     gBig = FBM_BROAD(m, 0.45);
     gMid = mnoise(m + 11.0, 1.6);
+#endif
   }
 #ifndef STANDIN_FLAT
   if (wDesert >= 0.004 || wBurning >= 0.004) gDune = dunePh(m);
@@ -1358,6 +1386,14 @@ void main() {
     float slope = 1.0 - mix(n.y, abs(faceN.y), hillRock * 0.45);
     float broken = hillRock > 0.0 ? matAt(m, M_NOISE, 2.8, vec2(0.23, 0.61), 1.0).r : gN4;
     rockMask = smoothstep(mix(0.24, 0.10, hillRock), mix(0.4, 0.24, hillRock), slope + (broken - 0.5) * 0.18);
+#ifdef REFERENCE_TERRAIN
+    // Turf runs over the crown and most shoulders. Exposed stone breaks through in local
+    // patches on the steep flank, rather than wrapping every hill in a continuous stone collar.
+    if (hillRock > 0.0) {
+      float exposure = matAt(m, M_NOISE, 0.62, vec2(0.47, 0.29), 1.0).r;
+      rockMask *= mix(1.0, smoothstep(0.08, 0.27, slope) * mix(0.12, 1.0, smoothstep(0.40, 0.68, exposure)), hillRock);
+    }
+#endif
     if (here == 5) rockMask = max(rockMask, smoothstep(0.42, 0.62, h) * 0.85);
 #ifndef LEAN_CRAG
     if (rockMask > 0.0) {
@@ -1417,6 +1453,12 @@ void main() {
         vec2 uv = vec2(side ? vWorld.z : vWorld.x, vWorld.y * 2.0) * 2.4;
         vec2 dx = vec2(side ? pDx.z : pDx.x, pDx.y * 2.0) * 2.4;
         vec2 dy = vec2(side ? pDy.z : pDy.x, pDy.y * 2.0) * 2.4;
+#ifdef REFERENCE_TERRAIN
+        // Larger rock planes instead of a repeated cobble fill across the whole mound.
+        uv *= 0.34;
+        dx *= 0.34;
+        dy *= 0.34;
+#endif
         tk = textureGrad(uMat, vec3(uv, float(M_ROCK)), dx, dy);
       } else tk = matPair(m, M_ROCK, 1.2);
       rock = mix(matTint(tk, M_ROCK, rock), matShade(tk, M_ROCK, rock, 1.0), hellW);
@@ -1428,8 +1470,17 @@ void main() {
         earth = mix(earth, vec3(0.40, 0.41, 0.36), min(1.0, wTundra + wSnow));
         earth = mix(earth, vec3(0.21, 0.16, 0.14), hellW);
         vec3 bed = mix(matTint(soil, M_DIRT, earth), matShade(tk, M_ROCK, earth * 1.12, 0.55), 0.4);
+#ifdef REFERENCE_TERRAIN
+        // Keep recognisable grey mineral faces in the turf. The original soil blend replaced
+        // almost all the stone; a broken mineral/earth transition reads as local outcrops.
+        float mineral = smoothstep(0.36, 0.66, tk.a);
+        vec3 outcrop = mix(bed * 0.85, rock * vec3(0.86, 0.92, 0.94), 0.50 + 0.4 * mineral);
+        rock = mix(rock, outcrop, hillRock);
+        rockMask *= 1.0 - 0.12 * hillRock;
+#else
         rock = mix(rock, mix(bed, pow(max(alb, vec3(0.0)), vec3(1.0 / 2.2)), 0.22), hillRock);
         rockMask *= 1.0 - 0.28 * hillRock;
+#endif
       }
       alb = mix(alb, srgb(rock), rockMask);
       hG = mix(hG, tk.a, rockMask);
@@ -2262,9 +2313,19 @@ void main() {
     float u4 = vExtra.x * vExtra.x;
     rd = mix(clamp(1.0 - u4 * u4 - clamp(-vExtra.x * vFlow.x * 0.25, 0.0, 0.5), 0.0, 1.0), rd, calm);
 #endif
+#ifdef REFERENCE_RIVERS
+    // Deep teal pools carry thin white rapids; broad pale-blue shallows used to flatten the
+    // whole channel under the brighter HD-2D finish.
+    vec3 rc = mix(srgb(vec3(0.16, 0.45, 0.43)), srgb(vec3(0.08, 0.31, 0.35)), smoothstep(0.1, 0.5, rd));
+    rc = mix(rc, srgb(vec3(0.045, 0.20, 0.27)), smoothstep(0.55, 0.95, rd));
+#else
     vec3 rc = mix(srgb(vec3(0.34, 0.64, 0.72)), srgb(vec3(0.2, 0.48, 0.62)), smoothstep(0.1, 0.5, rd));
     rc = mix(rc, srgb(vec3(0.11, 0.3, 0.47)), smoothstep(0.55, 0.95, rd));
+#endif
     body = rc * (lum(Lb) * 0.7 + 0.1) * bm;
+#ifdef REFERENCE_RIVERS
+    body *= 0.7;
+#endif
     T *= 0.5;
   }
 
@@ -2313,6 +2374,9 @@ void main() {
   sky *= mix(vec3(1.0), vec3(0.45, 0.7, 1.1), dk);
   float rw = clamp(mix(mix(river ? 0.08 : 0.15, 0.04, dk), 0.85, fres) * mix(0.3, 1.45, smoothstep(0.25, 0.8, brk)), 0.0, 0.85);
   rw *= mix(1.0, 0.6, dk);
+#ifdef REFERENCE_RIVERS
+  if (river) rw *= 0.45;
+#endif
 
   // --- Glitter: the ripples' small steep facets catch the sun and flash -- short bright marks
   // along the swell, twinkling; in the sun only (not in a cast or a cloud's shadow), in sight only.
@@ -2413,6 +2477,11 @@ void main() {
     float rfv[2];
     for (int k = 0; k < passes; k++) rfv[k] = riverFoam(vExtra.x, vExtra.y, vFlow.x, k == 0 ? tl : 0.0, rfa);
     float rf = band ? mix(rfv[1], rfv[0], live) : rfv[0];
+#ifdef REFERENCE_RIVERS
+    // Keep dark pools between the rapids; thin bright strokes read as moving water where a
+    // broad half-white mix looked like a smooth icy ribbon.
+    rf = smoothstep(0.12, 0.95, rf) * 0.9;
+#endif
 #ifdef CALM_FADE
     rf *= calm;
 #endif
@@ -2464,6 +2533,9 @@ void main() {
   vec3 foamCol = srgb(vec3(0.9, 0.89, 0.83)) * (Lb * 0.32 + 0.08);
   // A river's foam is a cool white, lit by the light's value (it reads against bright turquoise).
   if (river) foamCol = srgb(vec3(0.9, 0.96, 1.0)) * (lum(Lb) * 0.45 + 0.08);
+#ifdef REFERENCE_RIVERS
+  if (river) foamCol = srgb(vec3(0.91, 0.96, 0.93)) * (lum(Lb) * 0.52 + 0.09);
+#endif
 
   // --- Together. What the water adds of its own (its body, the sky, foam, glitter) takes the
   // fog of war and the haze; what is seen in it (the floor, a reflected bank) was grabbed with

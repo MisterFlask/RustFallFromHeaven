@@ -181,9 +181,10 @@ export class MapHd2d extends Map3D {
    *  (config.js TERRAIN_LEAN): the parts of the ground's painting this mode shows little of,
    *  computed more cheaply (shaders.js LEAN_*). And the ground is the stand-in's painting (config.js
    *  TERRAIN_STANDIN; docs/HD2D.md §5b): in play it reads as the full one, and it is half the
-   *  program. */
+   *  program. REFERENCE_TERRAIN restores broad olive/ochre meadow masses and fine flower
+   *  drifts from the existing utility texture, and breaks grey outcrops through the turf. */
   terrainDefines() {
-    return { NO_DABS: 1, ...TERRAIN_LEAN, ...TERRAIN_STANDIN };
+    return { NO_DABS: 1, REFERENCE_TERRAIN: 1, ...TERRAIN_LEAN, ...TERRAIN_STANDIN };
   }
 
   /** The scene packed into one target (pipeline.js `packed`): on Direct3D 11 the scene's programs
@@ -212,7 +213,8 @@ export class MapHd2d extends Map3D {
   }
 
   waterDefines() {
-    return { ...LITE_WATER };
+    // Deeper teal channels, quieter sky reflections and white rapids for the terrain preview.
+    return { ...LITE_WATER, REFERENCE_RIVERS: 1 };
   }
 
   /** The rivers a program of their own (the sea's then compiled without them). */

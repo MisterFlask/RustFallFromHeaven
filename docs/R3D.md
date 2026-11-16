@@ -672,6 +672,16 @@ Two scenes, the same renderer:
 
 ## 11. Performance
 
+The November 15, 2026 [terrain preview](HD2D-TERRAIN-PREVIEW.md) retains the lean
+HD-2D terrain shader and adds mipmapped utility reads for broad meadow variation
+and broken hill outcrops. A fixed SwiftShader pan comparison (`scene=hd2d`,
+`renderer=hd2d`, `ts=96`, 512 by 320, animation off, 4-pixel shift) measured mean
+image difference 8.43 before / 7.64 after; pixels differing by more than 24 were
+13.13% / 10.89%. Both chose shift (4, 0). This is a temporal stability comparison,
+not a GPU frame-rate measurement. The fully revealed 128 by 80 Huge-map check
+(203 seas, SwiftShader) passed: map received in 221 ms, complete frame in 11,637 ms,
+11,897 ms total against its 30,000 ms limit, without browser errors or context loss.
+
 Measured in headless Chromium with SwiftShader (a CPU rasteriser; WebGL renderer: ANGLE / Vulkan
 1.3 SwiftShader), on the real-game slice (`stage corrupt`, centred on the corrupted heartland).
 **These are a CPU rasteriser's times -- several seconds a frame -- and say nothing about a real GPU;

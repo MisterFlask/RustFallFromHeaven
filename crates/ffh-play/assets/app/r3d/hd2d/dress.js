@@ -322,28 +322,28 @@ const WOODED = new Set([FEAT.FOREST, FEAT.JUNGLE, FEAT.ANCIENT, FEAT.BURNT, FEAT
 /** A wood's trees against a lone prop's scale (PX.prop): smaller, many to a plot -- the look
  *  target's woods are crowds of trees about half a figure's height. */
 const TREE = 0.58;
-/** The trees drawn by code (tools/hd2d/trees.py: oaks, pines, snowy pines) are about 45 art
- *  pixels tall against the image model's 150: their scale against the other trees', for an oak
- *  about a third of a plot tall (near one art pixel a screen pixel at the gameplay zoom). */
-const DRAWN = { tree_oak: 4.6, tree_pine: 4.4, tree_pine_snow: 4.4 };
+/** The 144-pixel painted canopies retain the previous trees' world height. Snowy pines still
+ *  use the smaller code-drawn cards. Keep scale independent of the texture's added detail. */
+const DRAWN = { tree_broadleaf: 1.42, tree_fir: 1.5, tree_pine_snow: 4.4 };
 /** The props drawn by code (tools/hd2d/draw.py: grass, reeds, standing stones, fences;
  *  tools/hd2d/rocks.py: boulders, shore stones, pebbles, haystacks) are small art drawn for about one art pixel a screen pixel at the
  *  gameplay zoom (96 px a plot): their scale against PX.prop. */
 const FINE = 2.6;
 /** Open ground's grass tufts, smaller than the other small props: they say what the ground is
  *  without standing out of it (at FINE they read as dark stumps under the grade). */
-const TUFT = FINE * 0.7;
+const TUFT = 0.72;
+const FLOWER = 0.7;
 const HELLISH = new Set([GROUND.BURNING_SANDS, GROUND.BROKEN_LANDS, GROUND.PERDITION]);
 
 /** The trees of a wooded plot, by its feature and ground: [kind, weight, scale]. */
 function woodOf(feat, ground, hills) {
   const cold = ground === GROUND.TUNDRA || ground === GROUND.SNOW;
-  if (feat === FEAT.JUNGLE) return [["tree_jungle", 3, 1], ["tree_oak", 1, 0.9]];
-  if (feat === FEAT.ANCIENT) return [["tree_ancient", 1, 1], ["tree_oak", 2, 1]];
+  if (feat === FEAT.JUNGLE) return [["tree_jungle", 3, 1], ["tree_broadleaf", 1, 0.9]];
+  if (feat === FEAT.ANCIENT) return [["tree_ancient", 1, 1], ["tree_broadleaf", 2, 1]];
   if (feat === FEAT.BURNT || HELLISH.has(ground)) return [["tree_dead", 1, 0.9]];
-  if (feat === FEAT.YOUNG) return [["tree_oak", 2, 0.62], ["bush", 1, 1.2]];
-  if (cold) return [[ground === GROUND.SNOW ? "tree_pine_snow" : "tree_pine", 3, 1], ["tree_pine_snow", 1, 0.95]];
-  return hills ? [["tree_pine", 1, 1], ["tree_oak", 1, 1]] : [["tree_oak", 3, 1], ["tree_pine", 1, 1]];
+  if (feat === FEAT.YOUNG) return [["tree_broadleaf", 2, 0.62], ["bush", 1, 1.2]];
+  if (cold) return [[ground === GROUND.SNOW ? "tree_pine_snow" : "tree_fir", 3, 1], ["tree_pine_snow", 1, 0.95]];
+  return hills ? [["tree_fir", 1, 1], ["tree_broadleaf", 1, 1]] : [["tree_broadleaf", 3, 1], ["tree_fir", 1, 1]];
 }
 
 /** What scatters over open ground, by its ground and mood: [kind, how many (expected), scale].
@@ -356,11 +356,11 @@ function clutterOf(kind, ground, mood) {
   const out = [];
   if (HELLISH.has(ground)) out.push(["lava_rock", 1.3, 1], ["pebbles", 1.5, FINE]);
   else if (ground === GROUND.SNOW) out.push(["pebbles", 0.8, FINE]);
-  else if (ground === GROUND.TUNDRA) out.push(["grass", 1.5, TUFT], ["pebbles", 1.0, FINE]);
+  else if (ground === GROUND.TUNDRA) out.push(["grass_meadow", 1.5, TUFT], ["pebbles", 1.0, FINE]);
   else if (ground === GROUND.DESERT) out.push(["pebbles", 1.5, FINE]);
-  else if (ground === GROUND.MARSH) out.push(["reeds", 3.5, FINE], ["grass", 1.0, TUFT]);
-  else if (ground === GROUND.GRASS) out.push(["grass", 3.0, TUFT], ["flowers", 1.2, 0.9]);
-  else out.push(["grass_3", 3.5, TUFT]);
+  else if (ground === GROUND.MARSH) out.push(["reeds", 3.5, FINE], ["grass_meadow", 1.0, TUFT]);
+  else if (ground === GROUND.GRASS) out.push(["grass_meadow", 3.0, TUFT], ["flowers_meadow", 1.2, FLOWER]);
+  else out.push(["grass_meadow", 3.5, TUFT]);
   // Hills are turf-capped scarps in the terrain itself; their silhouette carries the elevation.
   // (A peak carries no cards: its mountain is a model, assets/props.js feat.mountain.)
   // Each region's own things (the moods, hd2d/mood.js: [hell, corruption, lush, gloom]).
@@ -578,10 +578,10 @@ function dressTown(world, map, atlas, env, city, kit, list) {
 }
 
 /** What may stand on a town's clearing (config.js townClearing): low things and the fields. */
-const LOW = new Set(["flowers", "grass", "grass_3", "pebbles", "garden", "fence", "hay", "well", "cart"]);
+const LOW = new Set(["flowers", "flowers_meadow", "grass", "grass_meadow", "grass_3", "pebbles", "garden", "fence", "hay", "well", "cart"]);
 
 /** Props too low to cast a shadow worth the shadow map's while. */
-const FLAT = new Set(["flowers", "grass", "grass_3", "pebbles", "garden", "bones"]);
+const FLAT = new Set(["flowers", "flowers_meadow", "grass", "grass_meadow", "grass_3", "pebbles", "garden", "bones"]);
 
 /** Agricultural improvements carry fences and haystacks. */
 const FARMED = /FARM|PASTURE|COTTAGE|HAMLET|VILLAGE|PLANTATION|WINERY/;
@@ -668,7 +668,7 @@ function dressProps(world, map, atlas, env, moods, list) {
         for (let gx = 0; gx < 4; gx++) {
           let pick = r() * total, k = wood[0];
           for (const it of wood) if ((pick -= it[1]) <= 0) { k = it; break; }
-          if (k[0] === "tree_ancient") k = ["tree_oak", 1, 1];
+          if (k[0] === "tree_ancient") k = ["tree_broadleaf", 1, 1];
           const s = TREE * (DRAWN[k[0]] ?? 1) * k[2] * r.range(0.78, 1.2);
           const lx = (gx - 1.5 + (gy % 2 ? 0.25 : -0.25)) * 0.27 + r.range(-0.07, 0.07), lz = (gy - 1.5) * 0.26 + r.range(-0.07, 0.07);
           if (northHeld && gy === 0) continue;
@@ -679,7 +679,7 @@ function dressProps(world, map, atlas, env, moods, list) {
       }
       if (r() < 0.7) put("bush", r.range(-0.42, 0.42), r.range(-0.42, 0.42), r.range(0.7, 1.0));
       // The wood's floor at its edge: grass and a fern-like bush where light reaches.
-      for (let k = 0; k < 2; k++) put("grass", r.range(-0.46, 0.46), r.range(0.3, 0.48), FINE * r.range(0.85, 1.1));
+      for (let k = 0; k < 2; k++) put("grass_meadow", r.range(-0.46, 0.46), r.range(0.3, 0.48), TUFT * r.range(0.85, 1.1));
     } else if (kind === KIND.LAND || kind === KIND.HILLS || kind === KIND.PEAK) {
       // Clumps: most things gather round one or two spots of the plot, the rest lie anywhere.
       const clumps = [[r.range(-0.3, 0.3), r.range(-0.3, 0.3)], [r.range(-0.3, 0.3), r.range(-0.3, 0.3)]];

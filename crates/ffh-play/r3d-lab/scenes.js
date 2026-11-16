@@ -437,3 +437,53 @@ export function sites(data) {
   return { map: buildMap(data, rows.map((r) => r.join("")), { improvements, bonuses }),
     view: buildView(data, {}), focus: [7, 4] };
 }
+
+/** A fixed terrain review composition after the owner's Golden Leane reference: rounded hills,
+ *  mixed woodland, a winding river and three old landmarks around a sunlit desert-family town.
+ *  This is a renderer fixture, not a saved game. Best framed at ts=128 (overview) or 168 (close).
+ *  Keep it independent of renderer changes so the same scene can be rendered on an earlier ref. */
+export function goldenStudy(data) {
+  const w = 28, h = 24;
+  const rows = Array.from({ length: h }, () => Array(w).fill("."));
+  const put = (x, y, char) => { rows[h - 1 - y][x] = char; };
+  // Broad patches and asymmetric edges avoid a catalog of one-plot examples.
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    if ((y > 15 && x < 18) || (y < 5 && x > 17) || (x < 7 && y > 6)) put(x, y, ",");
+    const west = ((x - 8.5) / 3.7) ** 2 + ((y - 9) / 5.1) ** 2 < 1;
+    const east = ((x - 21) / 4.2) ** 2 + ((y - 12) / 7.5) ** 2 < 1;
+    const south = ((x - 10) / 4.8) ** 2 + ((y - 5.5) / 2.8) ** 2 < 1;
+    if ((west || east || south) && (x * 7 + y * 11) % 13 !== 0) put(x, y, "f");
+  }
+  for (const [x, y] of [[8, 15], [18, 18], [12, 10], [18, 8], [16, 3]]) put(x, y, "h");
+  // The town, landmarks and river have clear ground under their silhouettes.
+  for (const [x, y] of [[15, 11], [14, 11], [15, 12], [16, 11], [12, 14], [11, 8], [11, 9], [17, 8], [18, 13], [16, 13]]) put(x, y, ".");
+  for (let y = 7; y <= 9; y++) for (let x = 10; x <= 12; x++) put(x, y, ".");
+  const turns = [[10, 23], [10, 20], [11, 20], [11, 18], [12, 18], [12, 16], [13, 16], [13, 14], [15, 14], [15, 13], [17, 13], [17, 10], [18, 10], [18, 9], [20, 9], [20, 7], [21, 7], [21, 4], [22, 4], [22, 0]];
+  const corners = [turns[0]];
+  for (const [tx, ty] of turns.slice(1)) {
+    let [x, y] = corners[corners.length - 1];
+    while (x !== tx || y !== ty) {
+      if (x !== tx) x += Math.sign(tx - x);
+      else y += Math.sign(ty - y);
+      corners.push([x, y]);
+    }
+  }
+  const town = { id: 1, owner: 0, x: 15, y: 11, name: "Golden Leane", capital: true, size: 3 };
+  const hidden = [];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    if (x < 3 || y > 21 || (x < 6 && y > 15)) hidden.push([x, y]);
+  }
+  const map = buildMap(data, rows.map((r) => r.join("")), {
+    rivers: riverBits(corners),
+    improvements: [[11, 8, "IMPROVEMENT_POOL_OF_TEARS"], [12, 14, "IMPROVEMENT_STANDING_STONES"], [17, 8, "IMPROVEMENT_RUINS"]],
+    owners: [[5, 4, 24, 18, 0]],
+    cities: [town],
+    hidden,
+  });
+  const view = buildView(data, {
+    players: [{ civ: "CIVILIZATION_MALAKIM" }],
+    cities: [town],
+    units: [{ owner: 0, type: "UNIT_PALADIN", x: 16, y: 13 }, { owner: 0, type: "UNIT_PALADIN", x: 18, y: 13 }],
+  });
+  return { map, view, focus: [14.4, 10.5] };
+}

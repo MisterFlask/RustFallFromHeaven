@@ -7,6 +7,7 @@
 //   lab.html?scene=rivertown&ts=150             a great town by a river among farms, a unit
 //                                               behind it, a small walled town; their garrisons
 //   lab.html?scene=sites&renderer=hd2d          villages, hilltop sites, peaks and mana landmarks
+//   lab.html?scene=golden-study&renderer=hd2d&ts=128   Golden Leane terrain review composition
 //   lab.html?scene=fields                       farms, pastures and the like along a river
 //   lab.html?grid=tree.oak,tree.pine&variants=6 recipes in rows of variants on flat grass
 //            &param=x (all rows) or &params=a,b,c (one per row; repeat a name for several params)
@@ -32,7 +33,7 @@
 import { S, setData, setView, setMap } from "/app/state.js";
 import { Map3D } from "/app/r3d/map3d.js";
 import { MapHd2d } from "/app/r3d/hd2d/index.js";
-import { showcase, reference, riverTown, fields, grid, settlements, fromRows, hd2d, mana, sites } from "./scenes.js";
+import { showcase, reference, riverTown, fields, grid, settlements, fromRows, hd2d, mana, sites, goldenStudy } from "./scenes.js";
 
 const q = new URLSearchParams(location.search);
 
@@ -60,6 +61,8 @@ async function main() {
     scene = hd2d(data);
   } else if (q.get("scene") === "sites") {
     scene = sites(data);
+  } else if (q.get("scene") === "golden-study") {
+    scene = goldenStudy(data);
   } else if (q.get("scene") === "mana") {
     scene = mana(data);
   } else {
