@@ -346,6 +346,7 @@ impl Game {
         // This game's far shores (docs/NAVAL.md, 9.1): after the starts are normalized.
         self.map_place_far_shores();
         self.mapgen_type_mana_nodes();
+        self.map_script.clone().after_starting_resources(self);
 
         // FfH: Added by Kael 09/16/2008
         if self.is_option(GameOptionType::GAMEOPTION_BARBARIAN_WORLD) {

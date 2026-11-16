@@ -84,7 +84,7 @@ impl NewGame {
         ng.opponents = j.get_or("opponents", ng.opponents)?;
         ng.map_script = j.get_or("map_script", ng.map_script)?;
         if map_script_named(&ng.map_script).is_none() {
-            return Err(FieldError::new("map_script", "expected Fractal or Erebus"));
+            return Err(FieldError::new("map_script", "expected Fractal, Erebus or ErebusTerra"));
         }
         if let Some(v) = names::opt_field(d, j, "world")? {
             ng.world = v;
@@ -187,7 +187,7 @@ impl NewGame {
     /// Checks the settings (also done by [`build_game`]).
     pub fn validate(&self, d: &GameData) -> Result<(), String> {
         if map_script_named(&self.map_script).is_none() {
-            return Err("map_script must be Fractal or Erebus".into());
+            return Err("map_script must be Fractal, Erebus or ErebusTerra".into());
         }
         if self.opponents < 1 || self.opponents >= MAX_CIV_PLAYERS {
             return Err(format!("opponents must be in 1..={}", MAX_CIV_PLAYERS - 1));
@@ -362,6 +362,7 @@ pub fn setup_lists(d: &GameData) -> Json {
         "map_scripts" => Json::Arr(vec![
             crate::jobj! { "id" => "Fractal", "type" => "Fractal", "name" => "Fractal", "help" => "Continents and islands, with latitude-based climates. Wraps east–west." },
             crate::jobj! { "id" => "Erebus", "type" => "Erebus", "name" => "Erebus", "help" => "Mountain-enclosed valleys, river passes and connected seas. Regional climates follow elevation and rainfall. The map does not wrap." },
+            crate::jobj! { "id" => "ErebusTerra", "type" => "ErebusTerra", "name" => "Erebus Terra", "help" => "Two continents of mountain-enclosed valleys, separated by deep ocean. Everyone starts on the larger continent; the unpopulated New World has about one-third as much habitable land and exclusive Gems, Silk, Incense and Mithril." },
         ]),
         "sea_levels" => list_help::<SeaLevelType>(d, |_| true, |s| xml(&d.sea_levels[s].base.help)),
         "options" => list_help::<GameOptionType>(d, |o| d.game_options[o].visible, |o| xml(&d.game_options[o].base.help)),

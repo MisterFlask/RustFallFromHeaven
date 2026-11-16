@@ -37,7 +37,7 @@ re-read against the original in the audit wave (see "Audit and stress testing" b
 | CvPlayerAI::AI_foundValue (+ bonus values) | found_value.rs | ported + audited (rules need it: start plots, barbarian cities); `AI_baseBonusVal` cached and reset as in C++ |
 | CvCityAI::AI_assignWorkingPlots | governor.rs | new code: C++ rules-visible steps kept, choice by the governor |
 | CvFractal | mapgen/fractal.rs | done (bit-exact, parity-tested) |
-| Map scripts (BTS Fractal.py, FFH2 Erebus/Creation) | mapscript.rs, mapscript/erebus.rs | Fractal plus selectable native Erebus adaptation; geography, differences and coverage in MAPGEN.md |
+| Map scripts (BTS Fractal.py, FFH2 Erebus/Creation) | mapscript.rs, mapscript/erebus.rs | Fractal, native Erebus and Erebus Terra (Old World starts, smaller resource-rich New World); geography and coverage in MAPGEN.md |
 
 ## Python (ffh-core/src/ffh)
 

@@ -438,6 +438,7 @@ pub fn map_script_named(name: &str) -> Option<crate::mapgen::MapScriptRef> {
     match name {
         "Fractal" => Some(std::sync::Arc::new(FractalMapScript::default())),
         "Erebus" => Some(std::sync::Arc::new(erebus::ErebusMapScript::default())),
+        "ErebusTerra" => Some(std::sync::Arc::new(erebus::ErebusMapScript::terra())),
         _ => None,
     }
 }

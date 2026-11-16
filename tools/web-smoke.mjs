@@ -2147,7 +2147,7 @@ async function stagedLoad(bin, saves) {
 }
 
 /** Erebus is selected through the actual new-game form; Fractal remains the default. */
-async function erebusMap(bin) {
+async function erebusMap(bin, mapType = "Erebus") {
   const saves = tempDir("smoke-erebus");
   const server = await startServer({ bin, saves, extra: ASSETS });
   try {
@@ -2157,10 +2157,10 @@ async function erebusMap(bin) {
     await click("#title-new");
     await until2('!!document.getElementById("ng-map_script")', "the map-type selector");
     const choices = await b.eval('Array.from(document.getElementById("ng-map_script").options, o => o.value)');
-    if (JSON.stringify(choices) !== JSON.stringify(["Fractal", "Erebus"])) throw new Error(`map types: ${choices}`);
+    if (JSON.stringify(choices) !== JSON.stringify(["Fractal", "Erebus", "ErebusTerra"])) throw new Error(`map types: ${choices}`);
     if (await b.eval('document.getElementById("ng-map_script").value') !== "Fractal") throw new Error("Fractal is no longer the default");
     await b.eval(`(() => {
-      for (const [id, value] of [["ng-map_script", "Erebus"], ["ng-world", "WORLDSIZE_DUEL"], ["ng-seed", "19"], ["ng-opponents", "1"]]) {
+      for (const [id, value] of [["ng-map_script", "${mapType}"], ["ng-world", "WORLDSIZE_DUEL"], ["ng-seed", "19"], ["ng-opponents", "1"]]) {
         const el = document.getElementById(id); el.value = value; el.dispatchEvent(new Event("change"));
       }
     })()`);
@@ -2168,8 +2168,9 @@ async function erebusMap(bin) {
     await click("#modals .modal-buttons button.primary");
     await waitHuman("the first Erebus turn", 120000);
     const map = await S("S.map");
-    if (map.w !== 32 || map.h !== 32 || map.wrap_x || map.wrap_y) throw new Error(`Erebus geography: ${map.w}x${map.h}, wrap ${map.wrap_x}/${map.wrap_y}`);
-    steps.push("Erebus selected in New game: a 32x32 nonwrapping world; Fractal remains the default");
+    const width = mapType === "ErebusTerra" ? 68 : 32;
+    if (map.w !== width || map.h !== 32 || map.wrap_x || map.wrap_y) throw new Error(`${mapType} geography: ${map.w}x${map.h}, wrap ${map.wrap_x}/${map.wrap_y}`);
+    steps.push(`${mapType} selected in New game: a ${width}x32 nonwrapping world; Fractal remains the default`);
   } finally {
     await b.goto("about:blank");
     await server.stop();
@@ -2316,6 +2317,7 @@ async function main() {
     await crusadeHd2d(server.url, bin, saves);
     await supplyHd2d(server.url, bin, saves);
     await erebusMap(bin);
+    await erebusMap(bin, "ErebusTerra");
     await warStart(bin);
     await newGameElsewhere(bin);
     await crashScreen(bin);

@@ -26,6 +26,8 @@ const AROUND: [(i32, i32); 8] = [
     (1, -1),
     (-1, -1),
 ];
+mod terra;
+
 const RIVER_THRESHOLD: f64 = 5.0;
 
 fn shuffle<T>(a: &mut [T], rng: &mut Rng) {
@@ -71,6 +73,7 @@ struct Layout {
     runoff: Vec<f64>,
     altitude: Vec<f64>,
     rainfall: Vec<f64>,
+    old_world: Option<Vec<bool>>,
 }
 
 impl Layout {
@@ -86,6 +89,7 @@ impl Layout {
             runoff: vec![0.0; ((w + 1) * (h + 1)) as usize],
             altitude: vec![0.0; n],
             rainfall: vec![0.0; n],
+            old_world: None,
         };
         s.grow_regions(rng);
         s.choose_seas(water_density, rng);
@@ -606,11 +610,16 @@ impl Layout {
 #[derive(Default)]
 pub struct ErebusMapScript {
     layout: Mutex<Option<Layout>>,
+    terra: bool,
+}
+
+impl ErebusMapScript {
+    pub fn terra() -> Self { Self { terra: true, ..Self::default() } }
 }
 
 impl MapScript for ErebusMapScript {
     fn name(&self) -> &str {
-        "Erebus"
+        if self.terra { "ErebusTerra" } else { "Erebus" }
     }
     fn get_wrap_x(&self, _: &Game) -> Option<bool> {
         Some(false)
@@ -634,7 +643,7 @@ impl MapScript for ErebusMapScript {
             _ => 1.0,
         };
         let side = (cells as f64 * scale) as i32;
-        Some((side, side))
+        Some(if self.terra { (side + (side * 3 + 3) / 4 + 3, side) } else { (side, side) })
     }
     fn generate_plot_types(&self, g: &mut Game) -> Option<Vec<PlotType>> {
         let density = match g.d.type_name(g.setup.sea_level) {
@@ -642,12 +651,11 @@ impl MapScript for ErebusMapScript {
             "SEALEVEL_HIGH" => 0.004,
             _ => 0.002,
         };
-        let s = Layout::generate(
-            g.map.grid_width,
-            g.map.grid_height,
-            density,
-            &mut g.map_rand,
-        );
+        let s = if self.terra {
+            Layout::generate_terra(g.map.grid_width, g.map.grid_height, &mut g.map_rand)
+        } else {
+            Layout::generate(g.map.grid_width, g.map.grid_height, density, &mut g.map_rand)
+        };
         let plots = s.plots.clone();
         *self.layout.lock().unwrap() = Some(s);
         Some(plots)
@@ -803,6 +811,15 @@ impl MapScript for ErebusMapScript {
             }
         }
         true
+    }
+    fn add_bonus_type(&self, g: &mut Game, bonus: BonusType) -> bool {
+        self.terra && terra::place_reserved_type(g, bonus)
+    }
+    fn find_starting_area(&self, g: &Game, _: crate::ids::PlayerId) -> Option<i32> {
+        if self.terra && !g.final_initialized { terra::old_world_area(g).map(|a| a.i()) } else { None }
+    }
+    fn after_starting_resources(&self, g: &mut Game) {
+        if self.terra { terra::finish_resources(g); }
     }
     fn normalize_add_river(&self, _: &mut Game) -> bool {
         true

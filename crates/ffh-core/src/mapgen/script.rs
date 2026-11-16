@@ -108,6 +108,10 @@ pub trait MapScript: Send + Sync {
     /// `afterGeneration` (no default behaviour).
     fn after_generation(&self, _g: &mut Game) {}
 
+    /// Final generation-only resource policy, after starting-plot normalization, far shores
+    /// and mana typing, before free units. Default maps preserve the standard placement.
+    fn after_starting_resources(&self, _g: &mut Game) {}
+
     /// `canPlaceBonusAt(plot)`: `None` = DLL rules.
     fn can_place_bonus_at(&self, _g: &Game, _plot: PlotIdx) -> Option<bool> {
         None

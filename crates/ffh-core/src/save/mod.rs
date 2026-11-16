@@ -756,8 +756,8 @@ fn write_game(g: &Game, w: &mut Writer) {
 /// in the order written).
 fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError> {
     let setup: crate::setup::GameSetup = Persist::read(r)?;
-    let map_script = if setup.map_script == "Erebus" {
-        crate::mapscript::map_script_named("Erebus").unwrap()
+    let map_script = if matches!(setup.map_script.as_str(), "Erebus" | "ErebusTerra") {
+        crate::mapscript::map_script_named(&setup.map_script).unwrap()
     } else { default_map_script() };
     let mut g = Game {
         d,

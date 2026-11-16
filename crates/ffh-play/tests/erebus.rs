@@ -31,7 +31,7 @@ fn generator_selection_round_trips_and_rejects_unknown_names() {
         .iter()
         .map(|j| j.req_str("type").unwrap())
         .collect();
-    assert_eq!(names, ["Fractal", "Erebus"]);
+    assert_eq!(names, ["Fractal", "Erebus", "ErebusTerra"]);
 }
 
 #[test]

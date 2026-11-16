@@ -1274,7 +1274,7 @@ All run with `cargo test --release -p ffh-play`. None needs node or the network.
     * **Resolution:** `ffh-play`, because it hosts both the browser and the agent transports.
 
 
-Map selection: the new-game World settings include **Map type: Fractal / Erebus**. Fractal stays
+Map selection: the new-game World settings include **Map type: Fractal / Erebus / Erebus Terra**. Fractal stays
 selected by default. Erebus is the original FFH2 valley-based map family, adapted natively;
 its regions, rivers, climate and differences from the Python script are documented in
 [MAPGEN.md](MAPGEN.md). The session setup member is `map_script`, recorded in the journal and save.

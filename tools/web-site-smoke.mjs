@@ -13,9 +13,9 @@
 // error; screenshots go to --out.
 //
 //   node tools/web-site-smoke.mjs --site DIR [--port N] [--base /path/] [--isolated] [--no-sw]
-//        [--turns 3] [--seed 5] [--map Fractal|Erebus] [--out DIR] [--headed]
+//        [--turns 3] [--seed 5] [--map Fractal|Erebus|ErebusTerra] [--out DIR] [--headed]
 //
-//   --map NAME    Fractal (default) or Erebus; exercises generation, turns and save/reload
+//   --map NAME    Fractal (default), Erebus or ErebusTerra; exercises generation, turns and save/reload
 //   --site DIR    the site (tools/web-site.sh DIR)
 //   --port N      the static server's port (default: a free one)
 //   --base PATH   the path the site is served below (default /RustFallFromHeaven/)
@@ -38,13 +38,13 @@ import { ROOT, parseArgs, until } from "./web-lib.mjs";
 let args;
 try {
   args = parseArgs(process.argv.slice(2), { site: "v", port: "v", base: "v", isolated: "flag", "no-sw": "flag", turns: "v", seed: "v", map: "v", out: "v", headed: "flag", serve: "flag" });
-  if (args.map && !["Fractal", "Erebus"].includes(args.map)) throw new Error("--map must be Fractal or Erebus");
+  if (args.map && !["Fractal", "Erebus", "ErebusTerra"].includes(args.map)) throw new Error("--map must be Fractal, Erebus or ErebusTerra");
   if (!args.site) throw new Error("--site DIR is required");
   for (const k of ["port", "turns", "seed"]) if (args[k] !== undefined && !/^\d+$/.test(args[k])) throw new Error(`--${k} needs a number, not ${args[k]}`);
   if (args.base !== undefined && !/^\/([^?#]*\/)?$/.test(args.base)) throw new Error(`--base needs a path that starts and ends with "/", not ${args.base}`);
 } catch (e) {
   console.error(`web-site-smoke: ${e.message}`);
-  console.error("usage: node tools/web-site-smoke.mjs --site DIR [--port N] [--base /path/] [--isolated] [--no-sw] [--turns 3] [--seed 5] [--map Fractal|Erebus] [--out DIR] [--headed] [--serve]");
+  console.error("usage: node tools/web-site-smoke.mjs --site DIR [--port N] [--base /path/] [--isolated] [--no-sw] [--turns 3] [--seed 5] [--map Fractal|Erebus|ErebusTerra] [--out DIR] [--headed] [--serve]");
   process.exit(2);
 }
 const SITE = path.resolve(args.site);
@@ -331,9 +331,10 @@ async function newGame() {
   const t0 = Date.now();
   await clickButton("Start");
   await waitHuman("the first turn", 180000);
-  if (args.map === "Erebus") {
+  if (args.map === "Erebus" || args.map === "ErebusTerra") {
     const map = await S("S.map");
-    if (map.w !== 36 || map.h !== 36 || map.wrap_x || map.wrap_y) throw new Error(`expected nonwrapping Erebus, got ${map.w}x${map.h}, wrap ${map.wrap_x}/${map.wrap_y}`);
+    const width = args.map === "ErebusTerra" ? 76 : 36;
+    if (map.w !== width || map.h !== 36 || map.wrap_x || map.wrap_y) throw new Error(`expected nonwrapping Erebus, got ${map.w}x${map.h}, wrap ${map.wrap_x}/${map.wrap_y}`);
   }
   steps.push(`new game (${args.map ?? "Fractal"}, tiny, seed ${SEED}, 2 opponents): turn ${await S("S.status.turn")} in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   await answerPopups();
