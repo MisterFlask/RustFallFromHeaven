@@ -980,8 +980,8 @@ fn do_city_feud_start3(g: &mut Game, _event: EventType, data: &EventTriggeredDat
     }
 }
 
-/// `canTriggerCitySplit(argsList)`: not the capital, not barbarian-trait and no Koun in the game
-/// (FFH2's "a free player slot" is gone: a new civilization gets a new slot).
+/// `canTriggerCitySplit(argsList)`: not the capital, not barbarian-trait, with an available
+/// breakaway leader of the parent's civilization. A new civilization gets a new player slot.
 fn can_trigger_city_split(g: &Game, _trigger: EventTriggerType, p: PlayerId, c: CityId) -> bool {
     let d = g.d;
     if g.city_is_capital(c) {
@@ -991,34 +991,32 @@ fn can_trigger_city_split(g: &Game, _trigger: EventTriggerType, p: PlayerId, c: 
     if g.players[p].traits[d.t::<TraitType>("TRAIT_BARBARIAN")] {
         return false;
     }
-    let koun = d.t::<LeaderHeadType>("LEADER_KOUN");
-    if g.player_ids().any(|lp| g.player_get_leader_type(lp) == Some(koun)) {
-        return false;
-    }
-    true
+    g.player_get_civilization_type(p).is_some_and(|civ| crate::ffh::cards::sundering::faction_leader(g, civ, &[]).is_some())
 }
 
-/// `doCitySplit1(argsList)`: the city secedes as a new Koun empire of the same civilization.
+/// `doCitySplit1(argsList)`: the city secedes under an available breakaway leader of its
+/// civilization, using that leader's alignment.
 fn do_city_split1(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
     let p = data.player;
     // NULL city: formEmpire would search around the NULL plot's (-1, -1).
     let Some(city) = data_city(g, data) else { return };
     let Some(civ) = g.player_get_civilization_type(p) else { return };
-    let koun = g.d.t::<LeaderHeadType>("LEADER_KOUN");
-    let alignment = g.players[p].alignment;
-    g.cf_form_empire(civ, koun, None, city, alignment, None);
+    let Some(leader) = crate::ffh::cards::sundering::choose_faction_leader(g, civ, &[]) else { return };
+    let alignment = g.d.leader_heads[leader].alignment.or(g.players[p].alignment);
+    g.cf_form_empire(civ, leader, None, city, alignment, None);
 }
 
-/// `doSoverignCity1(argsList)`: the city becomes a Koun empire on the player's team, with its techs.
+/// `doSoverignCity1(argsList)`: the city becomes a breakaway empire on the player's team, with
+/// its techs, under an available leader of its civilization and that leader's alignment.
 fn do_soverign_city1(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
     let p = data.player;
     // NULL city: formEmpire would search around the NULL plot's (-1, -1).
     let Some(city) = data_city(g, data) else { return };
     let Some(civ) = g.player_get_civilization_type(p) else { return };
-    let koun = g.d.t::<LeaderHeadType>("LEADER_KOUN");
+    let Some(leader) = crate::ffh::cards::sundering::choose_faction_leader(g, civ, &[]) else { return };
     let team = g.players[p].team;
-    let alignment = g.players[p].alignment;
-    g.cf_form_empire(civ, koun, Some(team), city, alignment, Some(p));
+    let alignment = g.d.leader_heads[leader].alignment.or(g.players[p].alignment);
+    g.cf_form_empire(civ, leader, Some(team), city, alignment, Some(p));
 }
 
 /// `doDissent1(argsList)`.
@@ -3043,6 +3041,106 @@ mod tests {
     }
 
     const INVALID_PLOT_COORD: i32 = crate::defs::INVALID_PLOT_COORD;
+
+    /// Two constructed Bannor cities, a Koun already alive elsewhere, and only the evil
+    /// Bannor minor free. The map supplies terrain; no emergent game outcome is assumed.
+    fn city_breakaway_fixture() -> (Game, EventTriggeredData, PlotIdx, CityId, LeaderHeadType) {
+        use crate::ffh::cards::world;
+
+        let d = ffh_data::global();
+        let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 7);
+        for (slot, civ, leader) in [(0, "CIVILIZATION_BANNOR", "LEADER_SABATHIEL"), (1, "CIVILIZATION_GRIGORI", "LEADER_KOUN")] {
+            setup.players[slot].civ = Some(d.t(civ));
+            setup.players[slot].leader = Some(d.t(leader));
+        }
+        setup.options[GameOptionType::GAMEOPTION_NO_BARBARIANS] = true;
+        let mut g = Game::new(d, setup);
+        g.game_init();
+        for unit in g.units.ids() {
+            if g.units.contains(unit) {
+                g.unit_kill(unit, false, None);
+            }
+        }
+        let land: Vec<PlotIdx> = g.map.plot_ids().filter(|&plot| !g.plot_is_water(plot) && !g.plot_is_peak(plot)).collect();
+        let mut made = Vec::new();
+        for _ in 0..2 {
+            let taken: Vec<_> = made.iter().map(|&city| g.city_plot(city)).collect();
+            let site = world::best_sites(&g, &land, 1, None, &taken)[0];
+            let (x, y) = g.map.xy(site);
+            made.push(g.player_init_city(PlayerId(0), x, y, true, true));
+        }
+        let capital = made[0];
+        let city = made[1];
+        let plot = g.city_plot(city);
+        // Guarantee that formEmpire can move the city's units to a clear adjacent land plot.
+        let (x, y) = g.map.xy(plot);
+        let clear = (-1..=1)
+            .flat_map(|dx| (-1..=1).map(move |dy| (dx, dy)))
+            .filter(|&(dx, dy)| dx != 0 || dy != 0)
+            .filter_map(|(dx, dy)| g.map.plot_xy(x + dx, y + dy))
+            .find(|&p| g.map.plots[p].plot_city.is_none())
+            .expect("a neighbouring plot outside the two cities");
+        g.map.plots[clear].plot_type = PlotType::PLOT_LAND;
+        g.map.plots[clear].terrain_type = Some(d.t("TERRAIN_GRASS"));
+        let bannor = d.t::<CivilizationType>("CIVILIZATION_BANNOR");
+        let chosen = d.t::<LeaderHeadType>("LEADER_ODRAN_IRON_MERCY");
+        let unavailable: Vec<_> = d.leader_heads.keys().filter(|&l| d.leader_heads[l].preferred_breakaway && d.leader_heads[l].minor_leader_of == Some(bannor) && l != chosen).collect();
+        for leader in unavailable {
+            let p = g.add_player(leader, bannor);
+            g.player_set_alive(p, false);
+        }
+        let mut event = data(PlayerId(0));
+        event.city = Some(city);
+        (g, event, plot, capital, chosen)
+    }
+
+    fn assert_breakaway_traits(g: &Game, p: PlayerId, leader: LeaderHeadType) {
+        let civ = g.player_get_civilization_type(p).unwrap();
+        for t in g.d.traits.keys() {
+            assert_eq!(g.players[p].traits[t], g.d.leader_heads[leader].has_trait[t] || g.d.civilizations[civ].civ_trait == Some(t), "{}", g.d.type_name(t));
+        }
+        assert_eq!(g.players[p].alignment, g.d.leader_heads[leader].alignment);
+    }
+
+    #[test]
+    fn city_split_uses_a_preferred_minor_even_when_koun_is_in_play() {
+        let (mut g, event, plot, capital, chosen) = city_breakaway_fixture();
+        let parent = event.player;
+        let trigger = g.d.t::<EventTriggerType>("EVENTTRIGGER_CITY_SPLIT");
+        let rng = g.soren_rand.clone();
+        assert!(can_trigger_city_split(&g, trigger, parent, event.city.unwrap()));
+        assert!(!can_trigger_city_split(&g, trigger, parent, capital), "the capital still cannot secede");
+        assert_eq!(g.soren_rand, rng, "trigger checks do not choose a leader");
+        let barbarian = g.d.t::<TraitType>("TRAIT_BARBARIAN");
+        g.players[parent].traits[barbarian] = true;
+        assert!(!can_trigger_city_split(&g, trigger, parent, event.city.unwrap()), "barbarian-trait civilizations remain excluded");
+        g.players[parent].traits[barbarian] = false;
+        assert_ne!(g.players[parent].alignment, g.d.leader_heads[chosen].alignment, "the fixture distinguishes the faction's alignment");
+        let np = crate::ffh::cards::world::next_player(&g);
+        do_city_split1(&mut g, EventType(0), &event);
+        assert_eq!(g.player_get_leader_type(np), Some(chosen));
+        assert_eq!(g.player_get_civilization_type(np), g.player_get_civilization_type(parent));
+        assert_ne!(g.players[np].team, g.players[parent].team);
+        assert_eq!(g.cities[g.map.plots[plot].plot_city.unwrap()].owner, np);
+        assert_eq!(g.cities[capital].owner, parent);
+        assert_breakaway_traits(&g, np, chosen);
+    }
+
+    #[test]
+    fn sovereign_city_keeps_the_team_and_techs_but_uses_its_minor_leaders_alignment() {
+        let (mut g, event, plot, _, chosen) = city_breakaway_fixture();
+        let parent = event.player;
+        let team = g.players[parent].team;
+        let tech = g.d.t::<TechType>("TECH_WRITING");
+        g.team_set_has_tech(team, tech, true, Some(parent), false, false);
+        let np = crate::ffh::cards::world::next_player(&g);
+        do_soverign_city1(&mut g, EventType(0), &event);
+        assert_eq!(g.player_get_leader_type(np), Some(chosen));
+        assert_eq!(g.players[np].team, team);
+        assert!(g.team_is_has_tech(g.players[np].team, Some(tech)));
+        assert_eq!(g.cities[g.map.plots[plot].plot_city.unwrap()].owner, np);
+        assert_breakaway_traits(&g, np, chosen);
+    }
 
     #[test]
     fn pick_alignment_sets_the_alignment() {

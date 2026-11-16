@@ -6513,11 +6513,11 @@ TXT_KEY_EVENT_CITY_FEUD_START_3_HELP	[ICON_BULLET]5 [ICON_UNHAPPY] temporarily i
 TXT_KEY_EVENT_CITY_IMPROVEMENT_DESTROYED	Your %s1_improvement has been destroyed
 TXT_KEY_EVENT_CITY_RUINS_1	Send commendations to the leaders of the exploring party.
 TXT_KEY_EVENT_CITY_RUINS_2	Fund additional exploratory efforts.
-TXT_KEY_EVENT_CITY_SPLIT	The people of %s2_city want to form their own nation under Minister Koun, a local politician. Our advisors warn that refusing their request could create bad will in the city, and allowing them to form their own nation could provide a good ally.
+TXT_KEY_EVENT_CITY_SPLIT	The people of %s2_city want to form their own nation under a local political leader. Our advisors warn that refusing their request could create bad will in the city, and allowing them to form their own nation could provide a good ally.
 TXT_KEY_EVENT_CITY_SPLIT_1	Allow the people to do as they desire.
-TXT_KEY_EVENT_CITY_SPLIT_2	Send in guards from other cities to make sure we maintain control, jail Koun for treason.
-TXT_KEY_EVENT_CITY_SPLIT_3	Contact the assassins' guild, make it look like one of Koun's rivals is responsible for his death.
-TXT_KEY_EVENT_CITY_SPLIT_4	Kill Koun, kill any populace that complains, and kill the messenger that delivered this ridiculous request.
+TXT_KEY_EVENT_CITY_SPLIT_2	Send in guards from other cities to make sure we maintain control, jail the movement's leader for treason.
+TXT_KEY_EVENT_CITY_SPLIT_3	Contact the assassins' guild, make it look like one of the movement's rivals is responsible for its leader's death.
+TXT_KEY_EVENT_CITY_SPLIT_4	Kill the movement's leader, kill any populace that complains, and kill the messenger that delivered this ridiculous request.
 TXT_KEY_EVENT_CIV_GAME_1	Send congratulations to the developers. Our people should enjoy this game.
 TXT_KEY_EVENT_CIV_GAME_2	This game seems to have great educational potential. Suggest that it be used in our educational system.
 TXT_KEY_EVENT_CIV_GAME_3	Computer games? They have no place in our society! Sell the franchise to foreign buyers!
@@ -7248,7 +7248,7 @@ TXT_KEY_EVENT_SOBS_3	Delightful, begin charging admission to the home.
 TXT_KEY_EVENT_SOLO_FLIGHT_1	This grand achievement has won admiration from people across the globe!
 TXT_KEY_EVENT_SOLO_FLIGHT_HELP_1	[ICON_BULLET]Receive [COLOR_POSITIVE_TEXT]%D1[COLOR_REVERT] attitude from all leaders
 TXT_KEY_EVENT_SOUR_CRUDE_1	Sour crude? What a mess. Less valuable per barrel, but it still burns, right? Just deal with it.
-TXT_KEY_EVENT_SOVERIGN_CITY	The people of %s2_city want to rule themselves under Minister Koun, a local politician. They would remain a part of our empire, but become sovereign in their own matters.
+TXT_KEY_EVENT_SOVERIGN_CITY	The people of %s2_city want to rule themselves under a local political leader. They would remain a part of our empire, but become sovereign in their own matters.
 TXT_KEY_EVENT_SPACE_PRODUCTION_CITY	[ICON_BULLET][ICON_BULLET]%D1_Mod%% Spaceship Production in %s2_city
 TXT_KEY_EVENT_SPICY_1	That sounds like welcome news for our economy.
 TXT_KEY_EVENT_SPICY_2	Commit our government to harvesting this new resource immediately.

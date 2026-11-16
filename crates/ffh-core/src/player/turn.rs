@@ -974,12 +974,23 @@ impl Game {
         true
     }
 
-    /// C++ `CvPlayer::getSplitEmpireLeaders(aLeaders)`: candidate (civilization, leader)
-    /// pairs for a colony; C++ returns `!aLeaders.empty()`.
+    /// Candidate (civilization, leader) pairs for a colony: free preferred minor leaders of
+    /// our civilization first, else the original `CvPlayer::getSplitEmpireLeaders` candidates.
     pub fn player_get_split_empire_leaders(&self, p: PlayerId) -> Vec<(CivilizationType, LeaderHeadType)> {
         let d = self.d;
         let mut leaders = Vec::new();
         let our_civ = self.player_get_civilization_type(p);
+
+        if let Some(civ) = our_civ.filter(|&c| civ_is_playable(self, c) && civ_is_ai_playable(self, c)) {
+            // A preferred minor leads another faction of our civilization even when a prior
+            // colony already exists. A living or former personality is reserved as well as
+            // the leader identity (the shared helper excludes leaders ever in play).
+            let taken: Vec<LeaderHeadType> = self.player_ids().filter(|&q| self.players[q].ever_alive).filter_map(|q| self.players[q].personality_type).collect();
+            let preferred = crate::ffh::cards::sundering::preferred_faction_leaders(self, civ, &taken);
+            if !preferred.is_empty() {
+                return preferred.into_iter().map(|l| (civ, l)).collect();
+            }
+        }
 
         for civ in d.civilizations.keys() {
             // FfH: Modified by Kael 01/16/2009 -- the "not our own civilization" test is
@@ -1003,6 +1014,11 @@ impl Game {
                 let civ_info = &d.civilizations[civ];
                 for leader in d.leader_heads.keys() {
                     let leader_info = &d.leader_heads[leader];
+                    // Preferred minors enter only through the own-civilization pool above.
+                    // Lead Any Civilization must not attach them to a different people.
+                    if leader_info.preferred_breakaway {
+                        continue;
+                    }
                     let mut leader_valid = true;
                     if !civ_info.leaders[leader] && !self.is_option(GameOptionType::GAMEOPTION_LEAD_ANY_CIV) {
                         leader_valid = false;
@@ -1562,13 +1578,74 @@ mod tests {
             assert_ne!(civ, ljosalfar);
             // leaders already in play are excluded
             assert!(leader != sabathiel && leader != arendel);
-            assert!(d.leader_heads[leader].favorite_wonder.is_some());
+            assert!(d.leader_heads[leader].preferred_breakaway || d.leader_heads[leader].favorite_wonder.is_some());
             assert!(d.civilizations[civ].playable && d.civilizations[civ].ai_playable);
         }
         // no colony slot without a capital
         assert!(!g.player_can_split_area(PlayerId(0), AreaId(0)));
         // no colony of ours on the area yet: one may be made there (in a new slot)
         assert!(g.player_split_empire_area_free(PlayerId(0), AreaId(0)));
+    }
+
+    #[test]
+    fn colonies_prefer_own_minors_and_reserve_former_leaders_and_personalities() {
+        let mut g = game(&[
+            ("CIVILIZATION_BANNOR", "LEADER_SABATHIEL"),
+            ("CIVILIZATION_BANNOR", "LEADER_CAPRIA"),
+            ("CIVILIZATION_BANNOR", "LEADER_MAERETH_ASHLEDGER"),
+        ]);
+        let d = g.d;
+        let bannor = d.t::<CivilizationType>("CIVILIZATION_BANNOR");
+        let former = d.t::<LeaderHeadType>("LEADER_MAERETH_ASHLEDGER");
+        let personality = d.t::<LeaderHeadType>("LEADER_ODRAN_IRON_MERCY");
+        g.players[PlayerId(2)].alive = false;
+        g.players[PlayerId(1)].personality_type = Some(personality);
+
+        let leaders = g.player_get_split_empire_leaders(PlayerId(0));
+        assert_eq!(leaders.len(), 3, "five preferred minors minus the former leader and occupied personality");
+        for (civ, leader) in leaders {
+            assert_eq!(civ, bannor, "another faction of our own civilization is allowed");
+            assert!(d.leader_heads[leader].preferred_breakaway);
+            assert_eq!(d.leader_heads[leader].minor_leader_of, Some(bannor));
+            assert!(leader != former && leader != personality);
+        }
+    }
+
+    #[test]
+    fn colonies_fall_back_after_own_preferred_minors_are_exhausted() {
+        let g = game(&[
+            ("CIVILIZATION_BANNOR", "LEADER_SABATHIEL"),
+            ("CIVILIZATION_BANNOR", "LEADER_MAERETH_ASHLEDGER"),
+            ("CIVILIZATION_BANNOR", "LEADER_ODRAN_IRON_MERCY"),
+            ("CIVILIZATION_BANNOR", "LEADER_SERA_VELL"),
+            ("CIVILIZATION_BANNOR", "LEADER_TOVIN_CINDERWRIGHT"),
+            ("CIVILIZATION_BANNOR", "LEADER_YSABET_LAST_WITNESS"),
+        ]);
+        let d = g.d;
+        let bannor = d.t::<CivilizationType>("CIVILIZATION_BANNOR");
+        let leaders = g.player_get_split_empire_leaders(PlayerId(0));
+        assert!(!leaders.is_empty(), "the original candidate builder is still available");
+        for (civ, leader) in leaders {
+            assert_ne!(civ, bannor, "the original fallback excludes a civilization held by another player");
+            assert!(!d.leader_heads[leader].preferred_breakaway);
+            assert!(d.civilizations[civ].leaders[leader] || d.leader_heads[leader].base.graphical_only);
+        }
+    }
+
+    #[test]
+    fn lead_any_civ_does_not_offer_another_civilizations_preferred_minors() {
+        let mut g = game(&[
+            ("CIVILIZATION_BANNOR", "LEADER_SABATHIEL"),
+            ("CIVILIZATION_BANNOR", "LEADER_MAERETH_ASHLEDGER"),
+            ("CIVILIZATION_BANNOR", "LEADER_ODRAN_IRON_MERCY"),
+            ("CIVILIZATION_BANNOR", "LEADER_SERA_VELL"),
+            ("CIVILIZATION_BANNOR", "LEADER_TOVIN_CINDERWRIGHT"),
+            ("CIVILIZATION_BANNOR", "LEADER_YSABET_LAST_WITNESS"),
+        ]);
+        g.setup.options[GameOptionType::GAMEOPTION_LEAD_ANY_CIV] = true;
+        let leaders = g.player_get_split_empire_leaders(PlayerId(0));
+        assert!(!leaders.is_empty());
+        assert!(leaders.iter().all(|&(_, leader)| !g.d.leader_heads[leader].preferred_breakaway));
     }
 
     #[test]

@@ -871,9 +871,18 @@ flag.
       (rounded down, at least one; ties to the lower city id). They secede as a new faction of the
       same civilization type, released as the Usurper's Crown releases (buildings, culture, land
       garrisons; heroes stay), the most populous its capital, named "<civilization> of <capital>".
-      Its leader is one of its civilization's leaders not in play, else a minor leader of it (a new
-      `leader_heads` key, `minor_leader_of`: FFH2's scenario leaders by the civilization their
-      scenarios gave them, and six invented in the card's file); a civilization with no free
+      Its leader is drawn from the available preferred minor leaders of its civilization
+      (`preferred_breakaway`, the owner's decision, 2026-11-15), before unused major or legacy
+      minor leaders. There are 105 new leaders, five for each original civilization, with their
+      own traits, alignment, backstory and portrait; none is selectable at game start.
+      Availability checks do not draw RNG, and a leader ever in play is not reused.
+      Generic city revolts, Sovereign City and colonial releases use the same preference;
+      their new faction takes its chosen leader's alignment. The Usurper's Crown keeps its
+      dedicated civilization and hero. The new definitions are appended after existing info
+      entries (`cards/zz_minor_leaders.jsonc`), preserving their numeric indices.
+      Saves from before this addition can load when their leader list is an exact prefix of
+      the current list and every other data fingerprint matches; no state-layout change.
+      A civilization with no free
       leader does not split (so the card-born civilizations never do). The faction knows its
       parent's techs (not its cards), has met who its parent has met, is nobody's vassal and at
       peace (a Barbarian-trait leader's at peace with the barbarians too), with -4 attitude

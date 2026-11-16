@@ -12,7 +12,8 @@
 //! - **Data fingerprint**: static game data (`&'static GameData`) is not saved. The save records,
 //!   for every info table, its type count and a hash of its type names (plus a hash of the
 //!   enum-sized array lengths the encoding relies on); [`Game::load`] refuses a save made with
-//!   different data ([`LoadError::DataMismatch`]).
+//!   different data ([`LoadError::DataMismatch`]), except for new leaders appended after every
+//!   saved leader. Leader references are scalar indices, with no leader-sized mutable arrays.
 //! - **Game**: every `Game` field in declaration order (`io.rs` describes the encoding), except
 //!   the non-state members:
 //!   * `d` (passed to `load`);
@@ -221,6 +222,18 @@ fn data_fingerprint(d: &GameData) -> Vec<FingerprintEntry> {
     v
 }
 
+/// Appending leaders preserves every saved leader index and requires no mutable-state resize.
+/// Every other table, the saved leader-name prefix and the fixed layout must still agree.
+fn fingerprint_entry_matches(d: &GameData, saved: &FingerprintEntry, current: &FingerprintEntry) -> bool {
+    if saved == current {
+        return true;
+    }
+    saved.0 == LeaderHeadType::CLASS
+        && current.0 == LeaderHeadType::CLASS
+        && saved.1 < current.1
+        && d.reg.names_of(LeaderHeadType::CLASS).get(..saved.1 as usize).is_some_and(|prefix| fnv1a(prefix.iter().map(|name| name.as_bytes())) == saved.2)
+}
+
 impl Game {
     /// Is this a turn boundary (no player's turn active: the next `update()` starts the next game
     /// turn)? Saves taken here resume exactly, controllers included (see the module docs).
@@ -238,7 +251,8 @@ impl Game {
         w.into_bytes()
     }
 
-    /// A game from [`Game::save`] bytes, made with the same game data `d`. Controllers are
+    /// A game from [`Game::save`] bytes, made with compatible game data `d` (the same type lists,
+    /// allowing only additional leaders after the saved leader list). Controllers are
     /// `NullController`s and the map script is the default one: attach the real controllers
     /// before continuing.
     pub fn load(d: &'static GameData, bytes: &[u8]) -> Result<Game, LoadError> {
@@ -252,8 +266,8 @@ impl Game {
         }
         let saved = Vec::<FingerprintEntry>::read(&mut r)?;
         let current = data_fingerprint(d);
-        if saved != current {
-            let msg = match saved.iter().zip(&current).find(|(a, b)| a != b) {
+        if saved.len() != current.len() || saved.iter().zip(&current).any(|(a, b)| !fingerprint_entry_matches(d, a, b)) {
+            let msg = match saved.iter().zip(&current).find(|(a, b)| !fingerprint_entry_matches(d, a, b)) {
                 Some((a, b)) => format!("{}: {} types (hash {:016x}) in the save, {} {} types (hash {:016x}) in the data", a.0, a.1, a.2, b.0, b.1, b.2),
                 None => format!("{} tables in the save, {} in the data", saved.len(), current.len()),
             };
@@ -891,7 +905,9 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ids::PlayerId;
     use crate::setup::GameSetup;
+    use std::path::{Path, PathBuf};
 
     fn small_game(seed: u32) -> Game {
         let d = ffh_data::global();
@@ -946,6 +962,122 @@ mod tests {
         match Game::load(g.d, &w.into_bytes()) {
             Err(LoadError::DataMismatch(s)) => assert!(s.contains(&fp[3].0), "{s}"),
             other => panic!("expected a data mismatch, got {:?}", other.err()),
+        }
+    }
+
+    #[test]
+    fn a_save_before_the_minor_leaders_loads_with_its_state_and_leader_indices_intact() {
+        // Load the real previous data, rather than merely forging an old header on a new game.
+        // The new card file is last, so removing it leaves every original type index unchanged.
+        struct OldDataDir(PathBuf);
+        impl Drop for OldDataDir {
+            fn drop(&mut self) {
+                let _ = std::fs::remove_dir_all(&self.0);
+            }
+        }
+        fn copy_old_data(from: &Path, to: &Path) {
+            std::fs::create_dir_all(to).expect("old-data fixture directory");
+            for entry in std::fs::read_dir(from).expect("source data") {
+                let entry = entry.expect("source data entry");
+                if entry.file_name() == "zz_minor_leaders.jsonc" {
+                    continue;
+                }
+                let dest = to.join(entry.file_name());
+                if entry.file_type().expect("data file type").is_dir() {
+                    copy_old_data(&entry.path(), &dest);
+                } else {
+                    std::fs::copy(entry.path(), dest).expect("copy old data");
+                }
+            }
+        }
+        let dir = OldDataDir(std::env::temp_dir().join(format!("ffh-save-before-minor-leaders-{}", std::process::id())));
+        copy_old_data(&ffh_data::default_data_dir(), &dir.0);
+        let old: &'static GameData = Box::leak(Box::new(GameData::load(&dir.0).expect("previous data loads")));
+        let current = ffh_data::global();
+        assert_eq!(old.leader_heads.len() + 105, current.leader_heads.len());
+        assert!(old.warnings.is_empty(), "{:?}", old.warnings);
+        for leader in old.leader_heads.keys() {
+            assert_eq!(old.type_name(leader), current.type_name(leader), "the old leader keeps its index");
+        }
+        let mut setup = GameSetup::standard(old, 2, "WORLDSIZE_DUEL", 8);
+        for (slot, civ, leader) in [(0, "CIVILIZATION_BANNOR", "LEADER_CAPRIA"), (1, "CIVILIZATION_LJOSALFAR", "LEADER_ARENDEL")] {
+            setup.players[slot].civ = Some(old.t::<CivilizationType>(civ));
+            setup.players[slot].leader = Some(old.t::<LeaderHeadType>(leader));
+        }
+        let mut g = Game::new(old, setup);
+        g.autorun = true;
+        g.game_init();
+        g.players[PlayerId(0)].gold = 137;
+        let bytes = g.save();
+        let mut h = Game::load(current, &bytes).expect("appended leader types are compatible");
+        assert_eq!(h.calculate_sync_checksum(), g.calculate_sync_checksum());
+        assert_eq!(h.players[PlayerId(0)].gold, 137);
+        assert_eq!(h.player_get_leader_type(PlayerId(0)), g.player_get_leader_type(PlayerId(0)));
+        assert_eq!(h.players[PlayerId(1)].personality_type, g.players[PlayerId(1)].personality_type);
+        assert_eq!(h.soren_rand.seed(), g.soren_rand.seed());
+        // The data fingerprint changes, but the encoded game state does not.
+        fn body(bytes: &[u8]) -> &[u8] {
+            let mut r = Reader::new(bytes);
+            r.bytes(MAGIC.len() + 4).expect("header");
+            Vec::<FingerprintEntry>::read(&mut r).expect("fingerprint");
+            &bytes[bytes.len() - r.remaining()..]
+        }
+        let upgraded = h.save();
+        assert_eq!(body(&upgraded), body(&bytes));
+        assert_eq!(Game::load(current, &upgraded).expect("current save reloads").save(), upgraded);
+
+        // A restored game can also initialize one of the newly appended breakaway leaders.
+        let minor = current.t::<LeaderHeadType>("LEADER_MAERETH_ASHLEDGER");
+        assert!(minor.idx() >= old.leader_heads.len());
+        let faction = h.add_player(minor, current.t::<CivilizationType>("CIVILIZATION_BANNOR"));
+        assert_eq!(h.player_get_leader_type(faction), Some(minor));
+        let with_faction = h.save();
+        assert_eq!(Game::load(current, &with_faction).expect("new leader reloads").save(), with_faction);
+        assert!(matches!(Game::load(old, &with_faction), Err(LoadError::DataMismatch(_))), "leader removal remains incompatible");
+    }
+
+    #[test]
+    fn leader_extension_rejects_changed_prefixes_removals_and_other_tables() {
+        let g = small_game(9);
+        let original = data_fingerprint(g.d);
+        let leader_pos = original.iter().position(|entry| entry.0 == LeaderHeadType::CLASS).expect("leader fingerprint");
+        let names = g.d.reg.names_of(LeaderHeadType::CLASS);
+        let prefix_len = names.len() - 1;
+        let prefix = &names[..prefix_len];
+        let mut changes = Vec::new();
+
+        let mut renamed = prefix.to_vec();
+        renamed[0].push_str("_RENAMED");
+        changes.push((prefix_len as u32, fnv1a(renamed.iter().map(|name| name.as_bytes()))));
+        let mut reordered = prefix.to_vec();
+        reordered.swap(0, 1);
+        changes.push((prefix_len as u32, fnv1a(reordered.iter().map(|name| name.as_bytes()))));
+        changes.push((original[leader_pos].1 + 1, original[leader_pos].2)); // removal
+        changes.push((original[leader_pos].1, original[leader_pos].2 ^ 1)); // same-size change
+
+        let bytes_with = |fp: Vec<FingerprintEntry>| {
+            let mut w = Writer::new();
+            w.bytes(MAGIC);
+            w.bytes(&FORMAT_VERSION.to_le_bytes());
+            fp.write(&mut w);
+            write_game(&g, &mut w);
+            w.into_bytes()
+        };
+        for (count, hash) in changes {
+            let mut fp = original.clone();
+            fp[leader_pos].1 = count;
+            fp[leader_pos].2 = hash;
+            assert!(matches!(Game::load(g.d, &bytes_with(fp)), Err(LoadError::DataMismatch(_))));
+        }
+        // Even with a valid shorter leader prefix, every other table and the layout are exact.
+        for other in [0, original.len() - 1] {
+            let mut fp = original.clone();
+            fp[leader_pos] = (LeaderHeadType::CLASS.to_string(), prefix_len as u32, fnv1a(prefix.iter().map(|name| name.as_bytes())));
+            fp[other].2 ^= 1;
+            match Game::load(g.d, &bytes_with(fp)) {
+                Err(LoadError::DataMismatch(message)) => assert!(message.contains(&original[other].0), "{message}"),
+                result => panic!("expected the other table's mismatch, got {:?}", result.err()),
+            }
         }
     }
 }

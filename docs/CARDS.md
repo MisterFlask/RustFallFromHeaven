@@ -200,7 +200,7 @@ help):
 | units, promotions | `battle_sentinels`, `battle_sentinel_defense` | Bastion | when its plot is attacked, its side fights with this many more Sentinels, their HP and defence grown by `battle_sentinel_defense` percent (below, "Field Sentinels") |
 | improvements | `battle_sentinels`, `engagement_defense` | Cairn Golem | in battles on its plot the defender fights with this many Sentinels (grown by `engagement_defense`), and its units have `engagement_defense` percent more Dv (not A) |
 | promotions | `naval_damage_vs` (unit classes) | Leviathan Harpoons | percent more damage its ship deals in the rounds it wins of a naval battle against units of these classes |
-| leader_heads | `minor_leader_of` (a civilization) | The Sundering | a minor leader of the civilization, which none lists: a faction the card splits from it may have it when the civilization's own leaders are in play (section 4); the leader's help names the civilization |
+| leader_heads | `minor_leader_of` (a civilization), `preferred_breakaway` (bool, default false) | Breakaway factions | a minor leader of the civilization, absent from starting leader lists; preferred leaders are chosen before major or legacy minor leaders (section 4); the leader's help names the civilization |
 | buildings | `legion_cost_percent` | The Gilded Legion | once built, the city chooses a civilization it has met (`SPELL_GILDED_LEGION`, at a player: `City::legion_civ`); it then trains that civilization's unit of each class (not world units) as that civilization's city would, at this percent of its cost (`city_legion_unit_civ`) |
 
 The battle effects are in `crates/ffh-core/src/engagement/arms.rs` (the set-up, `Game`) and
@@ -498,22 +498,23 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   experience, level and damage; the old unit is gone at once, out of its army, march and group.
   (The new unit also takes the faction's free promotions, a leader trait's among them: the
   faction may end above its parent by at most the last defector's gain.) The log line gives the
-  count defected. **Its leader** (`faction_leader`): the first by id of its civilization's
-  `leaders` not in play this game (the leader of a player ever alive) nor given to a faction of
-  the same firing, else the first such of its minor leaders (`leader_heads` `minor_leader_of`,
-  which no civilization lists, so no game starts with one): FFH2's scenario leaders, each by the
-  civilization its scenario gave it (Tethira: Bannor; Kane: Malakim; Thessalonica: Elohim;
-  Shekinah: Sidar; Koun: Grigori; Ostanes, Uldanor: Hippus; Tya Kiri: Amurites; Duin Halfmorn:
-  Doviello; Furia, Melisandre: Balseraphs; Hafgan: Clan of Embers; Rivanna, Volanna: Svartalfar;
-  Mahon: Calabim; Dumannios, Riuros, Anagantios: Illians; Weevil and Braeden, whose traits are
-  Foolish and Weak, are left out), and six invented for the civilizations FFH2 gave none, each
-  with the AI personality of a leader of its civilization: Torrin Coldforge (Luchuirp: Industrious,
-  Organized), Ysolde Lorda (Kuriotates: Expansive, Organized), Caelith Sunbough (Ljosalfar:
-  Creative, Defender), Durgrim Deepvault (Khazad: Defender, Financial), Selka Saltreach (Lanun:
-  Expansive, Raiders), Raziel (Mercurians: Defender, Spiritual). A civilization with no free leader
-  does not split: the civilizations born of cards have one leader each, in play. The card is
-  played only when some civilization splits (`valid_sundering`). The minor leaders show the
-  random portrait (`PORTRAIT_ALIASES`). **Under the AI** (measured before the faction's new units, 2026-11-14; the card fired by hand at turn 150 of
+  count defected. **Its leader** (the owner's decision, 2026-11-15): a random available
+  `preferred_breakaway` minor leader of its civilization before considering any major or legacy
+  minor leader. The 105 preferred leaders, five for each original civilization, are listed with
+  their backstories, alignments, traits and portraits in [minor-leaders/README.md](minor-leaders/README.md).
+  Their runtime definitions are appended in `cards/zz_minor_leaders.jsonc`, generated from the
+  approved concepts by `tools/sync-minor-leaders.py`. No civilization lists them as starting
+  leaders. A leader of any player ever alive, or assigned to another faction in the same firing,
+  is unavailable. Planning and validity checks consume no RNG; the draw happens only when the
+  faction forms, and a pool of one needs no draw. Once all five are unavailable, the fallback is
+  the first available major leader, then the first available legacy minor leader: FFH2's
+  scenario leaders and the six previously invented in `doom_sundering.jsonc`.
+  A civilization with no free leader does not split: the civilizations born of cards have one
+  leader each, in play. The card is played only when some civilization splits (`valid_sundering`).
+  Each new leader has a 384-pixel portrait and 160-pixel face crop; legacy minors retain their
+  random portrait alias. Generic city revolts, Sovereign City and colonial releases also prefer
+  the available new leaders of the parent's civilization. The Usurper's Crown retains its own
+  named civilization and hero. **Under the AI** (measured before the new leader roster and the faction's new units, 2026-11-14; the card fired by hand at turn 150 of
   four 6-civilization standard games, seeds 1-4, then 40 turns played; 16 factions): the
   factions keep their garrisons (none shrank: with one or two cities they are fully funded at 0
   gold) and build more (1-4 land units at the split, 3-7 forty turns later). They are weak (most

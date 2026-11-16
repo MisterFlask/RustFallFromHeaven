@@ -59,6 +59,19 @@ fn leader(g: &Game, name: &str) -> LeaderHeadType {
     g.d.t::<LeaderHeadType>(name)
 }
 
+fn preferred(g: &Game, civ: CivilizationType) -> Vec<LeaderHeadType> {
+    g.d.leader_heads.keys().filter(|&l| g.d.leader_heads[l].preferred_breakaway && g.d.leader_heads[l].minor_leader_of == Some(civ)).collect()
+}
+
+fn assert_leader_traits(g: &Game, p: PlayerId) {
+    let l = g.player_get_leader_type(p).unwrap();
+    let civ = g.player_get_civilization_type(p).unwrap();
+    for t in g.d.traits.keys() {
+        assert_eq!(g.players[p].traits[t], g.d.leader_heads[l].has_trait[t] || g.d.civilizations[civ].civ_trait == Some(t), "{}", g.d.type_name(t));
+    }
+    assert_eq!(g.players[p].alignment, g.d.leader_heads[l].alignment);
+}
+
 #[test]
 fn a_civilization_of_eight_cities_loses_its_two_farthest_to_a_faction_of_its_own() {
     let mut g = game(&[
@@ -77,8 +90,12 @@ fn a_civilization_of_eight_cities_loses_its_two_farthest_to_a_faction_of_its_own
     g.team_set_has_tech(t0, tech, true, Some(p0), false, false);
     g.team_set_has_tech(t0, card, true, Some(p0), false, false);
 
-    assert_eq!(sd::sundering_plan(&g), vec![(p0, leader(&g, "LEADER_CAPRIA"))], "the Bannor only, with a Bannor leader not in play");
+    let bannor = d.t::<CivilizationType>("CIVILIZATION_BANNOR");
+    let candidates = preferred(&g, bannor);
+    let rng = g.soren_rand.clone();
+    assert_eq!(sd::sundering_plan(&g), vec![(p0, candidates[0])], "only the Bannor, reserving an available preferred minor");
     assert!(sd::valid_sundering(&g));
+    assert_eq!(g.soren_rand, rng, "planning and card validation do not draw a leader");
     let seceding = sd::seceding_cities(&g, p0);
     assert_eq!(seceding.len(), 2, "a quarter of eight");
     let cap = g.city_plot(mine[0]);
@@ -104,8 +121,9 @@ fn a_civilization_of_eight_cities_loses_its_two_farthest_to_a_faction_of_its_own
     assert_eq!(world::next_player(&g), PlayerId(np.0 + 1), "one faction");
     assert_eq!(g.player_get_civilization_type(np), g.player_get_civilization_type(p0), "of its parent's civilization");
     let l = g.player_get_leader_type(np).unwrap();
-    assert_eq!(l, leader(&g, "LEADER_CAPRIA"));
-    assert!(l != leader(&g, "LEADER_SABATHIEL") && d.civilizations[d.t::<CivilizationType>("CIVILIZATION_BANNOR")].leaders[l]);
+    assert!(candidates.contains(&l), "the actual firing draws a preferred minor");
+    assert!(!d.civilizations[bannor].leaders[l], "the breakaway leader is not a setup leader");
+    assert_leader_traits(&g, np);
     let capital = g.player_get_capital_city(np).expect("a capital");
     let city = d.text.name(&g.cities[capital].name).to_string();
     assert!(!city.starts_with("TXT_KEY"));
@@ -151,36 +169,112 @@ fn a_civilization_of_eight_cities_loses_its_two_farthest_to_a_faction_of_its_own
 }
 
 #[test]
-fn a_civilization_whose_every_leader_is_in_play_gets_a_minor_leader() {
+fn preferred_minor_leaders_are_used_before_free_major_or_legacy_leaders() {
     let mut g = game(&[("CIVILIZATION_KURIOTATES", "LEADER_CARDITH"), ("CIVILIZATION_BANNOR", "LEADER_SABATHIEL")]);
     let d = g.d;
     let (p0, p1) = (PlayerId(0), PlayerId(1));
     cities(&mut g, p0, 4);
     cities(&mut g, p1, 2);
-    // The Kuriotates' only leader is in play: the leader invented for them.
     let kuriotates = d.t::<CivilizationType>("CIVILIZATION_KURIOTATES");
-    let ysolde = leader(&g, "LEADER_YSOLDE");
-    assert_eq!(d.leader_heads[ysolde].minor_leader_of, Some(kuriotates));
-    assert!(!d.civilizations[kuriotates].leaders[ysolde], "no civilization lists it");
-    assert_eq!(sd::sundering_plan(&g), vec![(p0, ysolde)]);
-    // The Bannor's own leaders first; with all three taken, their FFH2 minor leader.
+    let candidates = preferred(&g, kuriotates);
+    assert_eq!(candidates.len(), 5);
+    assert_eq!(sd::sundering_plan(&g), vec![(p0, candidates[0])]);
+
     let bannor = d.t::<CivilizationType>("CIVILIZATION_BANNOR");
-    assert_eq!(sd::faction_leader(&g, bannor, &[]), Some(leader(&g, "LEADER_CAPRIA")));
-    let taken = [leader(&g, "LEADER_CAPRIA"), leader(&g, "LEADER_DECIUS")];
-    assert_eq!(sd::faction_leader(&g, bannor, &taken), Some(leader(&g, "LEADER_TETHIRA")));
-    let all = [taken[0], taken[1], leader(&g, "LEADER_TETHIRA")];
-    assert_eq!(sd::faction_leader(&g, bannor, &all), None, "no leader free");
+    let minors = preferred(&g, bannor);
+    assert_eq!(minors.len(), 5);
+    assert_eq!(sd::faction_leader(&g, bannor, &[]), Some(minors[0]), "a preferred minor beats free major leaders");
+    assert_eq!(sd::faction_leader(&g, bannor, &minors[..2]), Some(minors[2]), "leaders reserved by this firing are excluded");
+    let capria = leader(&g, "LEADER_CAPRIA");
+    let decius = leader(&g, "LEADER_DECIUS");
+    let tethira = leader(&g, "LEADER_TETHIRA");
+    assert!(!d.leader_heads[capria].preferred_breakaway && !d.leader_heads[tethira].preferred_breakaway);
+    let mut taken = minors;
+    assert_eq!(sd::faction_leader(&g, bannor, &taken), Some(capria), "preferred pool exhausted: a major leader");
+    taken.push(capria);
+    assert_eq!(sd::faction_leader(&g, bannor, &taken), Some(decius));
+    taken.push(decius);
+    assert_eq!(sd::faction_leader(&g, bannor, &taken), Some(tethira), "major pool exhausted: a legacy minor");
+    taken.push(tethira);
+    assert_eq!(sd::faction_leader(&g, bannor, &taken), None, "no leader free");
 
     let np = world::next_player(&g);
     sd::fire_sundering(&mut g, 0);
     assert!(g.players[np].alive);
-    assert_eq!(g.player_get_leader_type(np), Some(ysolde));
+    let chosen = g.player_get_leader_type(np).unwrap();
+    assert!(candidates.contains(&chosen));
     assert_eq!(g.player_get_civilization_type(np), Some(kuriotates));
     assert_eq!(g.players[np].cities.len(), 1, "a quarter of four");
     assert_eq!(g.players[p0].cities.len(), 3);
     assert_eq!(g.players[p1].cities.len(), 2);
-    // Its leader is in play now: no second faction would get it.
-    assert_eq!(sd::faction_leader(&g, kuriotates, &[]), None);
+    assert_leader_traits(&g, np);
+    let next = sd::faction_leader(&g, kuriotates, &[]).expect("four preferred minors remain");
+    assert_ne!(next, chosen, "the new faction's leader cannot be reused");
+    assert!(candidates.contains(&next));
+}
+
+#[test]
+fn a_preferred_leader_who_has_ever_been_alive_is_not_reused() {
+    let mut g = game(&[("CIVILIZATION_BANNOR", "LEADER_SABATHIEL"), ("CIVILIZATION_BANNOR", "LEADER_MAERETH_ASHLEDGER")]);
+    let civ = g.d.t::<CivilizationType>("CIVILIZATION_BANNOR");
+    let maereth = leader(&g, "LEADER_MAERETH_ASHLEDGER");
+    let others: Vec<LeaderHeadType> = preferred(&g, civ).into_iter().filter(|&l| l != maereth).collect();
+    let capria = leader(&g, "LEADER_CAPRIA");
+    assert!(g.players[PlayerId(1)].ever_alive);
+    assert_eq!(sd::faction_leader(&g, civ, &others), Some(capria), "a living preferred leader is unavailable");
+    g.players[PlayerId(1)].alive = false;
+    assert_eq!(sd::faction_leader(&g, civ, &others), Some(capria), "a dead preferred leader remains unavailable");
+    assert_eq!(sd::choose_faction_leader(&mut g, civ, &others), Some(capria), "creation cannot resurrect an unavailable leader either");
+}
+
+#[test]
+fn choosing_a_faction_uses_the_game_rng_only_when_there_is_a_choice() {
+    let mut g = game(&[("CIVILIZATION_BANNOR", "LEADER_SABATHIEL"), ("CIVILIZATION_LJOSALFAR", "LEADER_ARENDEL")]);
+    let civ = g.d.t::<CivilizationType>("CIVILIZATION_BANNOR");
+    let candidates = preferred(&g, civ);
+    let mut expected_rng = g.soren_rand.clone();
+    let index = expected_rng.get_i(candidates.len() as i32, "test") as usize;
+    assert_eq!(sd::choose_faction_leader(&mut g, civ, &[]), Some(candidates[index]));
+    assert_eq!(g.soren_rand, expected_rng, "exactly one game RNG draw chooses the preferred leader");
+
+    let rng = g.soren_rand.clone();
+    assert_eq!(sd::choose_faction_leader(&mut g, civ, &candidates[..candidates.len() - 1]), candidates.last().copied());
+    assert_eq!(g.soren_rand, rng, "one preferred leader needs no draw");
+    let capria = leader(&g, "LEADER_CAPRIA");
+    assert_eq!(sd::choose_faction_leader(&mut g, civ, &candidates), Some(capria));
+    assert_eq!(g.soren_rand, rng, "the fallback order needs no draw");
+}
+
+#[test]
+fn two_factions_of_the_same_civilization_draw_different_preferred_leaders() {
+    let mut g = game(&[("CIVILIZATION_BANNOR", "LEADER_SABATHIEL"), ("CIVILIZATION_BANNOR", "LEADER_CAPRIA")]);
+    let d = g.d;
+    let civ = d.t::<CivilizationType>("CIVILIZATION_BANNOR");
+    let candidates = preferred(&g, civ);
+    cities(&mut g, PlayerId(0), 4);
+    cities(&mut g, PlayerId(1), 4);
+    let rng = g.soren_rand.clone();
+    let plan = sd::sundering_plan(&g);
+    assert_eq!(plan.len(), 2);
+    assert_ne!(plan[0].1, plan[1].1, "planning reserves different candidates");
+    assert_eq!(g.soren_rand, rng);
+
+    let bytes = g.save();
+    let np = world::next_player(&g);
+    sd::fire_sundering(&mut g, 0);
+    let nq = PlayerId(np.0 + 1);
+    let a = g.player_get_leader_type(np).unwrap();
+    let b = g.player_get_leader_type(nq).unwrap();
+    assert_ne!(a, b, "a random choice cannot steal a later faction's only candidate");
+    for (faction, parent, chosen) in [(np, PlayerId(0), a), (nq, PlayerId(1), b)] {
+        assert!(g.players[faction].alive);
+        assert_eq!(g.players[faction].parent, Some(parent));
+        assert!(candidates.contains(&chosen));
+        assert_leader_traits(&g, faction);
+    }
+    let mut same = Game::load(d, &bytes).expect("reload before the split");
+    sd::fire_sundering(&mut same, 0);
+    assert_eq!(same.save(), g.save(), "the saved game RNG reproduces the faction draws and births");
 }
 
 #[test]

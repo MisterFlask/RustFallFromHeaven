@@ -1,12 +1,12 @@
-# Minor leader concepts for review
+# Minor leaders
 
-105 proposed minor leaders for the original 21 Fall from Heaven civilizations, with five per civilization. Each has a new portrait, three or four sentences of backstory, an alignment, and traits from the current game. Three Balseraph leaders are rival facets of the same living Perpentach; another is a demon who escaped a summoned performance.
+105 minor leaders for the original 21 Fall from Heaven civilizations, with five per civilization. Each has a portrait, three or four sentences of backstory, an alignment, and traits from the game. Three Balseraph leaders are rival facets of the same living Perpentach; another is a demon who escaped a summoned performance.
 
-Review proposal. These are original character concepts, not established FFH canon. They are not registered in the playable roster or Sundering pool; master remains unchanged pending review.
+These leaders are registered for breakaway factions and take priority over existing major and legacy minor leaders while one is available. They are absent from the selectable starting leaders. The game chooses between available preferred leaders with its seeded RNG when a faction forms.
 
 [Open the searchable illustrated catalog](catalog.html).
 
-Personal traits are followed by any inherited civilization traits. Alignment describes the proposed faction's outlook; it does not remove civilization rules, races, unit restrictions, or inherited traits. Illian Agnostic and Infernal Barbarian, where listed, are personal traits matching their existing leaders. These combinations are design choices awaiting balance testing.
+Personal traits are followed by inherited civilization traits. Alignment sets the faction's starting alignment; it does not remove civilization rules, races, unit restrictions, or inherited traits. Illian Agnostic and Infernal Barbarian, where listed, are personal traits matching their existing leaders. The Sundering retains its existing eligibility rules, including its Sheaim and Infernal exemptions; other city revolts and colonial releases use the same preferred leader pool.
 
 ## Civilizations
 
@@ -706,7 +706,7 @@ Hadrin followed adventuring companies with a portable oven and learned that ever
 
 *Secular culture tests Cassiel's ideas through art, including criticism of Cassiel himself.*
 
-Sera fled a royal theater after refusing to rewrite a lost battle as a god's deliberate triumph. In the Grigori cities she found audiences willing to laugh at immortals, then alarmed her patrons by giving Cassiel the least flattering part in her next play. Actors, teachers and disputing societies have made her their speaker, and she defends their right to question even the principles that first gave them refuge.
+Dessa fled a royal theater after refusing to rewrite a lost battle as a god's deliberate triumph. In the Grigori cities she found audiences willing to laugh at immortals, then alarmed her patrons by giving Cassiel the least flattering part in her next play. Actors, teachers and disputing societies have made her their speaker, and she defends their right to question even the principles that first gave them refuge.
 
 **Portrait direction:** Incisive theatrical mischief. Palette: Royal violet and amber gold. Activity: Pulling a heavy theater curtain aside with one hand while giving a precise two-finger cue to unseen actors
 
@@ -1398,8 +1398,8 @@ Naevra was guarding a mountain shrine when an avalanche buried an invading compa
 
 ## Sources and assets
 
-Civilization identities and inherited traits: `data/json/civilizations.jsonc`. Existing leaders and personal traits: `data/json/leader_heads.jsonc` and `data/json/cards/doom_sundering.jsonc`. Trait definitions: `data/json/traits.jsonc`. Setting reference: `data/text/en.tsv`. Portrait style: `docs/ISO.md` and `tools/m7/prompts/assets/leader_*.txt`.
+Civilization identities and inherited traits: `data/json/civilizations.jsonc`. Existing leaders and personal traits: `data/json/leader_heads.jsonc` and `data/json/cards/doom_sundering.jsonc`. The new leaders' runtime definitions and stories: `data/json/cards/zz_minor_leaders.jsonc`, generated from this catalog by `tools/sync-minor-leaders.py`. Trait definitions: `data/json/traits.jsonc`. Setting reference: `data/text/en.tsv`. Portrait style: `docs/ISO.md` and `tools/m7/prompts/assets/leader_*.txt`.
 
-Concept data and exact art briefs are in [concepts.json](concepts.json). Generated source sheets, prompts, and extraction metadata are in [art](art/). Each portrait is a separate PNG in [portraits](portraits/). The original generated sheets are preserved; export only splits their square cells and resizes them to the game's 384 pixel leaderhead size.
+Concept data and exact art briefs are in [concepts.json](concepts.json). Generated source sheets, prompts, and extraction metadata are in [art](art/). Each portrait is a separate PNG in [portraits](portraits/). The original generated sheets are preserved; export only splits their square cells and resizes them to the game's 384 pixel leaderhead size. The game exports also include 160 pixel face crops for diplomacy and other small portrait slots.
 
-Rebuild and validate with `python3 docs/minor-leaders/build_catalog.py`. This proposal changes documentation and art only.
+Rebuild and validate this catalog with `python3 docs/minor-leaders/build_catalog.py`; check the runtime definitions with `python3 tools/sync-minor-leaders.py --check`.

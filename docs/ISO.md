@@ -291,6 +291,13 @@ fills the page and the interface floats over it.
   every renderer: the whole painting at 192 px at the top of the trade screen and on the new-game
   screen; the face at 80 px by each player in Diplomacy, on a deal offered to you and on the
   take-control question, at 40 px by each candidate of a vote; in this skin in the boxes' inset frame.
+  The 105 preferred breakaway leaders have individual portraits in the same slots: pixel-art
+  characters doing distinct tasks, different palettes and clothes, and smooth high-definition
+  painterly realistic backgrounds. `tools/m7/import_minor_leaders.py` imports the approved
+  [minor leader portraits](minor-leaders/README.md) into the roster and exports their full and
+  face images through the existing pipeline. They do not appear in the new-game leader choices.
+  `ffh-play stage breakaway DIR` saves an actual Sundering faction met by its human Balseraph
+  parent, ready to inspect in diplomacy (`ffh-play serve --load DIR/breakaway.ffhsave`).
 - **How it is wired**: the skin follows the renderer (`main.js` `syncSkin`, on every renderer
   change): it moves the advisor buttons to the rail and End turn, the layers, zoom and minimap
   to the bottom-right cluster, and puts them back when the renderer changes. look.js's helpers

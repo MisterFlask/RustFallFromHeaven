@@ -161,9 +161,14 @@ without changing the rules engine:
 `ffh-core/src/save/` (replaces C++ `read`/`write`): `Game::save(&self) -> Vec<u8>` and
 `Game::load(d, &bytes) -> Result<Game, LoadError>`. std-only binary format: magic `FFH2SAVE`,
 format version, a fingerprint of the static data (type count + hash of the type names of every
-info table, plus the fixed array lengths; a save made with other data is refused), then every
+info table, plus the fixed array lengths; a save made with other data is refused except for
+leaders appended after its exact original leader-name prefix), then every
 `Game` field in declaration order (varint integers, length-prefixed strings/vectors, tagged
 options; slabs keep their ids and next id). Encoding details: `save/io.rs`.
+
+Appending leader definitions needs no state migration: saved leader references are scalar
+indices, and mutable state has no arrays sized by the leader table. Loading still rejects
+removed, renamed or reordered leaders, changes to every other table, and layout mismatches.
 
 - Everything mutable is saved; there are no rules caches to recompute after loading.
 - Not saved: `d`, `controllers` (a loaded game has `NullController`s: the caller re-attaches

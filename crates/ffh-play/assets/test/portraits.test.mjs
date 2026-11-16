@@ -5,6 +5,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { portraitKey } from "../app/portraits.js";
+import { SPRITES } from "../app/iso/sprites.js";
 
 const DATA = new URL("../../../../data/json/", import.meta.url);
 
@@ -23,4 +24,25 @@ test("a leader type's portrait key", () => {
   assert.equal(portraitKey("LEADER_RANDOM_EVIL"), "leader_random");
   assert.equal(portraitKey("LEADER_NOBODY"), null);
   assert.equal(portraitKey(null), null);
+});
+
+test("every preferred breakaway leader has its own full portrait and face crop", () => {
+  const text = fs.readFileSync(new URL("cards/zz_minor_leaders.jsonc", DATA), "utf8");
+  const data = JSON.parse(text.replace(/^\s*\/\/.*$/gm, ""));
+  const leaders = data.leader_heads.filter((leader) => leader.preferred_breakaway);
+  assert.equal(leaders.length, 105);
+  const keys = new Set();
+  for (const leader of leaders) {
+    const key = `leader_${leader.type.replace(/^LEADER_/, "").toLowerCase()}`;
+    assert.equal(portraitKey(leader.type), key, `${leader.type} has its own portrait`);
+    assert.ok(!keys.has(key), `${leader.type} has a unique portrait key`);
+    keys.add(key);
+    for (const [file, size] of [[key, 384], [`${key}_face`, 160]]) {
+      assert.ok(Object.hasOwn(SPRITES, file), `${file} is registered`);
+      const png = fs.readFileSync(new URL(`../app/iso/${file}.png`, import.meta.url));
+      assert.deepEqual([...png.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+      assert.equal(png.readUInt32BE(16), size, `${file} width`);
+      assert.equal(png.readUInt32BE(20), size, `${file} height`);
+    }
+  }
 });

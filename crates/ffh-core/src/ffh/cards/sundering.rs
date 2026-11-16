@@ -2,7 +2,7 @@
 //! every large civilization loses its far cities to a new faction of its own civilization, led by
 //! another leader of that civilization. Its `valid` and `fire` functions are listed in
 //! `deck::doom_cards::CARDS`; its text and the minor leaders invented for it are in
-//! `data/json/cards/doom_sundering.jsonc`.
+//! `data/json/cards/doom_sundering.jsonc` and `data/json/cards/zz_minor_leaders.jsonc`.
 //!
 //! - **Who splits** ([`sundering_plan`]): in player id order, every living civilization (not the
 //!   barbarians, a minor civilization or a crusade Host; not the Sheaim or the Infernals) with
@@ -17,6 +17,9 @@
 //!   with the barbarians, the Barbarian trait, is at peace with them too, as at a game's start),
 //!   [`GRUDGE`] attitude between it and its parent, both ways. The AI plays it (`Birth::wild`'s
 //!   slot controller). It is named for its capital: "<civilization> of <city>".
+//! - **Its leader**: a random free preferred minor leader of its civilization, chosen only when
+//!   the card fires. If none remains, the first free major leader, then the first legacy minor
+//!   leader. A leader who has ever been in play is never reused.
 //! - **Its defecting army** ([`defect_units`]; the owner's decision, 2026-11-15, replacing the
 //!   grant of new units of 2b74c6fa: total military stays the same and the largest empires lose
 //!   part of their army): after the split, part of the parent's land army goes over to the
@@ -46,14 +49,46 @@ fn leader_in_play(g: &Game, l: LeaderHeadType) -> bool {
     g.player_ids().any(|p| g.players[p].ever_alive && g.player_get_leader_type(p) == Some(l))
 }
 
-/// The leader a new faction of civilization `civ` gets: the first (by id) of the civilization's
-/// own leaders (`leaders`) not in play this game and not in `taken`, else the first of its minor
-/// leaders (`minor_leader_of`) that is free; `None` when every one is in play.
+/// Free preferred minor leaders of `civ`, in id order. A read-only query: planning and card
+/// validation must not consume the game RNG.
+pub fn preferred_faction_leaders(g: &Game, civ: CivilizationType, taken: &[LeaderHeadType]) -> Vec<LeaderHeadType> {
+    g.d.leader_heads
+        .keys()
+        .filter(|&l| {
+            let info = &g.d.leader_heads[l];
+            info.preferred_breakaway && info.minor_leader_of == Some(civ) && !taken.contains(&l) && !leader_in_play(g, l)
+        })
+        .collect()
+}
+
+/// The first available leader for a new faction of `civ`: preferred minor, major, then legacy
+/// minor, in id order within each group. Excludes leaders ever in play and `taken` by this
+/// firing's plan. This read-only candidate proves availability; the actual firing chooses
+/// randomly among the remaining preferred minors.
 pub fn faction_leader(g: &Game, civ: CivilizationType, taken: &[LeaderHeadType]) -> Option<LeaderHeadType> {
     let d = g.d;
+    if let Some(l) = preferred_faction_leaders(g, civ, taken).first() {
+        return Some(*l);
+    }
     let free = |l: LeaderHeadType| !taken.contains(&l) && !leader_in_play(g, l);
     let own = d.leader_heads.keys().find(|&l| d.civilizations[civ].leaders[l] && free(l));
     own.or_else(|| d.leader_heads.keys().find(|&l| d.leader_heads[l].minor_leader_of == Some(civ) && free(l)))
+}
+
+/// Choose a breakaway faction's leader when it is created: uniformly among free preferred
+/// minors of `civ`, or the first available major/legacy minor if that pool is exhausted.
+/// Read-only validity checks use [`faction_leader`] instead.
+pub fn choose_faction_leader(g: &mut Game, civ: CivilizationType, taken: &[LeaderHeadType]) -> Option<LeaderHeadType> {
+    let preferred = preferred_faction_leaders(g, civ, taken);
+    draw_preferred_leader(g, &preferred).or_else(|| faction_leader(g, civ, taken))
+}
+
+fn draw_preferred_leader(g: &mut Game, preferred: &[LeaderHeadType]) -> Option<LeaderHeadType> {
+    match preferred.len() {
+        0 => None,
+        1 => Some(preferred[0]),
+        n => Some(preferred[g.soren_rand_num(n as i32, "Breakaway: preferred leader") as usize]),
+    }
 }
 
 /// May civilization `q` split (a leader aside): living, not the barbarians, a minor civilization,
@@ -67,8 +102,9 @@ fn may_split(g: &Game, q: PlayerId) -> bool {
     g.players[q].cities.len() >= MIN_CITIES && g.player_get_capital_city(q).is_some()
 }
 
-/// The civilizations that split, in player id order, each with its faction's leader (two
-/// factions of one civilization get different leaders).
+/// The civilizations that split, in player id order, each reserving a candidate leader to
+/// establish availability without RNG draws. The firing may choose another preferred minor
+/// of the same civilization; it never reuses a leader selected for an earlier faction.
 pub fn sundering_plan(g: &Game) -> Vec<(PlayerId, LeaderHeadType)> {
     let mut plan: Vec<(PlayerId, LeaderHeadType)> = Vec::new();
     for q in world::civ_players(g) {
@@ -114,10 +150,14 @@ pub fn valid_sundering(g: &Game) -> bool {
 
 /// Every civilization of [`sundering_plan`] splits, in player id order: its [`seceding_cities`]
 /// form a new faction of its civilization with its leader (the module comment). The plan is drawn
-/// before the first split, so a faction born now does not split again.
+/// before the first split, so a faction born now does not split again. Preferred minor leaders
+/// are drawn from each civilization's remaining free pool when its faction is born; planning
+/// only reserved a candidate. Their civilization-specific pools cannot displace another
+/// civilization's reserved fallback leader.
 pub fn fire_sundering(g: &mut Game, _: usize) {
     let turn = g.game_turn();
-    for (q, leader) in sundering_plan(g) {
+    let mut taken = Vec::new();
+    for (q, planned_leader) in sundering_plan(g) {
         if !g.players[q].alive {
             continue;
         }
@@ -125,6 +165,9 @@ pub fn fire_sundering(g: &mut Game, _: usize) {
         let cities_before = g.players[q].cities.len();
         let cities = seceding_cities(g, q);
         let Some(&capital) = cities.first() else { continue };
+        let preferred = preferred_faction_leaders(g, civ, &taken);
+        let leader = draw_preferred_leader(g, &preferred).unwrap_or(planned_leader);
+        taken.push(leader);
         let mut b = Birth::wild(civ, leader);
         b.parent = Some(q);
         let city = g.d.text.name(&g.cities[capital].name).to_string();

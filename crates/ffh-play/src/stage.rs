@@ -1,5 +1,5 @@
 //! Staged situations for testing the clients (`ffh-play stage
-//! capture|attack|automoves|load|trade|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards|sea|outpost|rituals|rituals-pending|tithe|ritual-civ:CIVILIZATION_X|ritual-due:CIVILIZATION_X|ritual-notech:CIVILIZATION_X|ice DIR`,
+//! capture|attack|automoves|load|trade|breakaway|diplomacy|automate|armies|governors|engagement|supply|election|settlement|corrupt|crusade|cards|sea|outpost|rituals|rituals-pending|tithe|ritual-civ:CIVILIZATION_X|ritual-due:CIVILIZATION_X|ritual-notech:CIVILIZATION_X|ice DIR`,
 //! and the transports' tests): a saved game at a human control point arranged with rules calls,
 //! so that a client can be tried on a situation a fresh game reaches only by chance (a captured
 //! city's keep/raze decision, an attack, the AutoMoves rule between commands, the transport
@@ -345,6 +345,42 @@ pub fn trade(dir: &Path) -> Result<StagedTrade, String> {
     g.players[with].gold = 100;
     let paths = s.save("trade").map_err(|e| format!("save: {e:?}"))?;
     Ok(StagedTrade { save: paths.save, with, turn: s.g.game_turn() })
+}
+
+/// A Balseraph breakaway produced by The Sundering, met by its human parent and ready for
+/// diplomacy. Exercises the actual faction birth and the new minor leader portraits.
+pub fn breakaway(dir: &Path) -> Result<Json, String> {
+    use ffh_core::ffh::cards::{sundering, world};
+
+    let mut s = duel_as(dir, 11, 4, Some("CIVILIZATION_BALSERAPHS"))?;
+    let human = s.human;
+    let g = &mut s.g;
+    while g.players[human].cities.len() < sundering::MIN_CITIES {
+        let taken: Vec<_> = g.cities.ids().into_iter().map(|c| g.city_plot(c)).collect();
+        let land: Vec<_> = g.map.plot_ids().filter(|&q| !g.plot_is_water(q) && g.map.plots[q].owner.is_none_or(|p| p == human)).collect();
+        let site = world::best_sites(g, &land, 1, None, &taken).first().copied().ok_or("no site for breakaway staging")?;
+        let (x, y) = g.map.xy(site);
+        g.player_init_city(human, x, y, true, true);
+    }
+    let with = world::next_player(g);
+    sundering::fire_sundering(g, 0);
+    if !g.players.get(with).is_some_and(|p| p.alive && p.parent == Some(human)) {
+        return Err("the staged civilization did not split".into());
+    }
+    let leader = g.player_get_leader_type(with).ok_or("no breakaway leader")?;
+    if !g.d.leader_heads[leader].preferred_breakaway {
+        return Err("the staged faction did not receive a preferred minor leader".into());
+    }
+    let (ours, theirs) = (g.players[human].team, g.players[with].team);
+    g.team_meet(ours, theirs, false);
+    let currency = g.d.t::<TechType>("TECH_CURRENCY");
+    g.team_set_has_tech(ours, currency, true, Some(human), false, false);
+    g.team_set_has_tech(theirs, currency, true, Some(with), false, false);
+    g.players[human].gold = 100;
+    g.players[with].gold = 100;
+    let leader_type = g.d.type_name(leader).to_string();
+    let paths = s.save("breakaway").map_err(|e| format!("save: {e:?}"))?;
+    Ok(crate::jobj! { "stage" => "breakaway", "save" => paths.save.display().to_string(), "with" => with, "leader" => leader_type })
 }
 
 /// A saved game at a human control point (turn 4 of a duel, seed 11) in which the AI player
