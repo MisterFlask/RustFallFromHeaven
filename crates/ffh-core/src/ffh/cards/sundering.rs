@@ -17,15 +17,13 @@
 //!   with the barbarians, the Barbarian trait, is at peace with them too, as at a game's start),
 //!   [`GRUDGE`] attitude between it and its parent, both ways. The AI plays it (`Birth::wild`'s
 //!   slot controller). It is named for its capital: "<civilization> of <city>".
-//! - **Its new units** ([`grant_faction_units`]; the owner's request, 2026-11-14): after the split
-//!   the faction gets units of its tech level, never so many that its military strength
-//!   (`crusade_military_strength`) exceeds its parent's. In order: [`DEFENDERS_PER_CITY`]
-//!   defenders per city, round-robin (one in each city, its capital first, then a second round),
-//!   then [`CAPITAL_ATTACKERS`] attackers in its capital; each re-picked ([`faction_unit`]) before
-//!   it is made, so a class at its national limit falls through to the next best. A grant is made
-//!   only while the faction's strength with it stays at most its parent's (a type not yet made is
-//!   counted at the bound [`unmeasured_strength`]); the granting stops at the first that does not
-//!   fit. No gold.
+//! - **Its defecting army** ([`defect_units`]; the owner's decision, 2026-11-15, replacing the
+//!   grant of new units of 2b74c6fa: total military stays the same and the largest empires lose
+//!   part of their army): after the split, part of the parent's land army goes over to the
+//!   faction, up to the seceded share of the parent's cities times the parent's remaining
+//!   military strength (`crusade_military_strength`), nearest the faction's capital first. Not a
+//!   hero, not the last unit in one of the parent's cities, and never so much that the faction
+//!   ends stronger than its parent. No gold, no new units.
 
 use std::cmp::Reverse;
 
@@ -40,10 +38,6 @@ pub const MIN_CITIES: usize = 4;
 pub const SECEDE_DIVISOR: usize = 4;
 /// The attitude modifier between a faction and its parent, both ways (FFH's scale, 4 a step).
 pub const GRUDGE: i32 = -4;
-/// Defenders granted per faction city ([`grant_faction_units`]).
-pub const DEFENDERS_PER_CITY: usize = 2;
-/// Attackers granted in the faction's capital ([`grant_faction_units`]).
-pub const CAPITAL_ATTACKERS: usize = 2;
 /// The civilizations that never split.
 const NEVER_SPLIT: [&str; 2] = ["CIVILIZATION_SHEAIM", "CIVILIZATION_INFERNAL"];
 
@@ -128,6 +122,7 @@ pub fn fire_sundering(g: &mut Game, _: usize) {
             continue;
         }
         let Some(civ) = g.player_get_civilization_type(q) else { continue };
+        let cities_before = g.players[q].cities.len();
         let cities = seceding_cities(g, q);
         let Some(&capital) = cities.first() else { continue };
         let mut b = Birth::wild(civ, leader);
@@ -152,89 +147,78 @@ pub fn fire_sundering(g: &mut Game, _: usize) {
             g.teams[nt].at_war[barbarians] = false;
             g.teams[barbarians].at_war[nt] = false;
         }
-        let granted = grant_faction_units(g, np, q);
-        let (name, by) = (g.player_get_civilization_description(np), g.player_get_civilization_description(q));
         let n = g.players[np].cities.len();
-        g.log.msg(turn, None, || format!("The Sundering: {n} cities of {by} secede as {name}. Units granted: {granted}."));
+        let defected = defect_units(g, np, q, cities_before, n);
+        let (name, by) = (g.player_get_civilization_description(np), g.player_get_civilization_description(q));
+        g.log.msg(turn, None, || format!("The Sundering: {n} cities of {by} secede as {name}. Units defected: {defected}."));
     }
 }
 
-/// The unit a faction `np` is granted ([`grant_faction_units`]): of its civilization's units (not
-/// a world unit's class) those it can train now (`player_can_train`, team and player limits
-/// counted with the units being built) whose class is not at its national limit
-/// (`max_player_instances`, units being built counted: the soft limit's price is not paid for a
-/// free unit). A defender (`defender`): the best archery unit (the highest tier, then defense
-/// strength, then strength; ties: the lower id), else the best melee unit. An attacker: the best
-/// melee unit (the highest tier, then strength; ties: the lower id). `None`: no such unit.
-pub fn faction_unit(g: &Game, np: PlayerId, defender: bool) -> Option<UnitType> {
-    let d = g.d;
-    let civ = g.player_get_civilization_type(np)?;
-    let candidates: Vec<UnitType> = d
-        .unit_classes
-        .keys()
-        .filter(|&class| !crate::utils::is_world_unit_class(d, class))
-        .filter(|&class| {
-            !crate::utils::is_national_unit_class(d, class)
-                || g.player_get_unit_class_count_plus_making(np, class) < d.unit_classes[class].max_player_instances
-        })
-        .filter_map(|class| d.civ_unit(civ, class))
-        .filter(|&u| g.player_can_train(np, u, false, false, false))
-        .collect();
-    let of = |combat: UnitCombatType| candidates.iter().copied().filter(move |&u| d.units[u].unit_combat_type == Some(combat));
-    let melee = d.t::<UnitCombatType>("UNITCOMBAT_MELEE");
-    let best_melee = || of(melee).max_by_key(|&u| (d.units[u].tier, d.units[u].combat, Reverse(u)));
-    if defender {
-        let archer = d.t::<UnitCombatType>("UNITCOMBAT_ARCHER");
-        of(archer).max_by_key(|&u| (d.units[u].tier, d.units[u].combat_defense, d.units[u].combat, Reverse(u))).or_else(best_melee)
-    } else {
-        best_melee()
-    }
-}
-
-/// The strength counted for a unit of type `u` not yet made ([`grant_faction_units`]): twice the
-/// better of its strength and defense strength, x 100. A new unit's `crusade_unit_strength` is
-/// that better strength x (100 + its combat bonus percent) at full health, so this holds for a
-/// combat bonus up to +100%.
-pub fn unmeasured_strength(g: &Game, u: UnitType) -> i32 {
-    let info = &g.d.units[u];
-    2 * info.combat.max(info.combat_defense) * 100
-}
-
-/// Grants faction `np`, just split from `q`, its new units (the module comment): the defenders
-/// round-robin over its cities (capital first), then the attackers in its capital, each only while
-/// `crusade_military_strength(np)` with it stays at most `crusade_military_strength(q)`. A type
-/// made once is counted at what its unit measured (`crusade_unit_strength`), another at
-/// [`unmeasured_strength`]; the granting stops at the first grant that does not fit, or when no
-/// unit qualifies for it (that grant is skipped). Returns how many units were made.
-pub fn grant_faction_units(g: &mut Game, np: PlayerId, q: PlayerId) -> usize {
+/// Part of `q`'s army defects to faction `np`, just split from it (the module comment), where
+/// `q` had `cities_before` cities before the split and `seceded` of them went to `np`:
+/// - **The share:** `budget = crusade_military_strength(q) * seceded / cities_before` (rounded
+///   down; the parent's strength measured after the split, without the garrisons that went with
+///   the cities).
+/// - **The candidates:** `q`'s units that `crusade_unit_lendable` (land combat units, not lent,
+///   temporary, aboard or carrying) and are not heroes, nearest the faction's capital first (plot
+///   distance; ties: the lower unit id).
+/// - **Each in turn defects** when its strength `s` (`crusade_unit_strength`) is above 0 and keeps
+///   the defected strength within the budget, when the faction's strength plus `s` stays at most
+///   the parent's minus `s`, and when it is not the only lendable unit of `q` in one of `q`'s
+///   cities; a candidate that fails is passed over, and the next is tried. The strengths are
+///   measured anew after each defection.
+/// - **The transfer:** it becomes `np`'s unit of the same type in the faction's capital, with its
+///   promotions, experience, level and damage (`crusade_change_owner`: the old unit is gone at
+///   once, out of its army, march and group). It also takes the faction's free promotions (a
+///   leader trait's: Aggressive's Combat I), which the checks, made before the transfer, do not
+///   see: the faction may end above its parent by the last defector's gain.
+///
+/// Returns how many units defected.
+pub fn defect_units(g: &mut Game, np: PlayerId, q: PlayerId, cities_before: usize, seceded: usize) -> usize {
     let Some(capital) = g.player_get_capital_city(np) else { return 0 };
-    let mut order: Vec<CityId> = vec![capital];
-    order.extend(g.players[np].cities.iter().copied().filter(|&c| c != capital && g.cities.contains(c)));
-    let mut plan: Vec<(CityId, bool)> = Vec::new();
-    for _ in 0..DEFENDERS_PER_CITY {
-        plan.extend(order.iter().map(|&c| (c, true)));
+    if cities_before == 0 || seceded == 0 {
+        return 0;
     }
-    plan.extend(std::iter::repeat_n((capital, false), CAPITAL_ATTACKERS));
-    let parent = g.crusade_military_strength(q);
-    let mut strength = g.crusade_military_strength(np);
-    let mut measured: Vec<(UnitType, i32)> = Vec::new();
-    let mut granted = 0;
-    for (city, defender) in plan {
-        let Some(unit) = faction_unit(g, np, defender) else { continue };
-        let cost = measured.iter().find(|&&(t, _)| t == unit).map_or_else(|| unmeasured_strength(g, unit), |&(_, s)| s);
-        if strength + cost > parent {
-            break;
+    let target = g.city_plot(capital);
+    let (cx, cy) = g.map.xy(target);
+    let budget = (g.crusade_military_strength(q) as i64 * seceded as i64 / cities_before as i64) as i32;
+    let candidate = |g: &Game, u: UnitId| g.units.contains(u) && g.units[u].owner == q && g.crusade_unit_lendable(u) && !g.unit_is_hero(u);
+    let mut order: Vec<(i32, UnitId)> = g.players[q]
+        .units
+        .iter()
+        .copied()
+        .filter(|&u| candidate(g, u))
+        .map(|u| {
+            let (x, y) = (g.units[u].x, g.units[u].y);
+            (g.plot_distance(x, y, cx, cy), u)
+        })
+        .collect();
+    order.sort();
+    let mut parent = g.crusade_military_strength(q);
+    let mut faction = g.crusade_military_strength(np);
+    let mut spent = 0;
+    let mut defected = 0;
+    for (_, u) in order {
+        if !candidate(g, u) {
+            continue;
         }
-        let (x, y) = g.map.xy(g.city_plot(city));
-        let u = g.player_init_unit(np, unit, x, y, None, None);
-        granted += 1;
-        if g.units.contains(u) {
-            let s = g.crusade_unit_strength(u);
-            if !measured.iter().any(|&(t, _)| t == unit) {
-                measured.push((unit, s));
+        let s = g.crusade_unit_strength(u);
+        if s <= 0 || spent + s > budget || faction + s > parent - s {
+            continue;
+        }
+        // The last defender of one of `q`'s cities stays.
+        let plot = g.unit_plot(u);
+        if g.map.plots[plot].plot_city.is_some_and(|c| g.cities.contains(c) && g.cities[c].owner == q) {
+            let defenders = g.map.plots[plot].units.iter().filter(|&&o| g.units.contains(o) && g.units[o].owner == q && g.crusade_unit_lendable(o)).count();
+            if defenders <= 1 {
+                continue;
             }
         }
-        strength = g.crusade_military_strength(np);
+        g.crusade_change_owner(u, np, Some((cx, cy)));
+        spent += s;
+        defected += 1;
+        parent = g.crusade_military_strength(q);
+        faction = g.crusade_military_strength(np);
     }
-    granted
+    defected
 }

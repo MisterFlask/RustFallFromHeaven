@@ -480,24 +480,25 @@ enemies of each other (`unit_is_enemy`, `unit_get_combat_owner`, `puf_is_enemy_w
   the cards), it is nobody's vassal and at peace with every civilization (a leader with the
   Barbarian trait, `barbarian_ally`, is at peace with the barbarians as at a game's start), it
   has met every civilization its parent has met, and `ai_attitude_extra` is -4 between it and
-  its parent both ways. **Its new units** (`grant_faction_units`; the owner's request, 2026-11-14),
-  after the birth, no gold: 2 defenders per faction city round-robin (one in each city, its
-  capital first, then the rest in `cities` order; then a second round), then 2 attackers in its
-  capital (`DEFENDERS_PER_CITY`, `CAPITAL_ATTACKERS`). Each is re-picked before it is made
-  (`faction_unit`), from its civilization's units (not a world unit's class) that the faction
-  can train (`player_can_train`, team and player limits counted with units being built) and whose
-  class is under its national limit (`max_player_instances`, units being built counted: a class's
-  soft limit is a price, and a free unit does not pay it, so the grant stops at the limit and
-  falls through to the next best). A defender: the best `UNITCOMBAT_ARCHER` unit (highest tier,
-  then defense strength, then strength; ties: the lower id), else the best `UNITCOMBAT_MELEE`
-  unit; an attacker: the best melee unit (highest tier, then strength; ties: the lower id). No
-  unit qualifies: that grant is skipped. **The cap:** a unit is made only while the faction's
-  `crusade_military_strength` with it stays at most its parent's (both measured after the birth).
-  A unit's strength is known before it is made: a type already made this firing counts what its
-  first unit measured (`crusade_unit_strength`), another the bound `unmeasured_strength`, 2 x the
-  better of its strength and defense x 100 (a new unit measures that better strength x (100 + its
-  combat bonus %)). The granting stops at the first grant that does not fit (no unit is made and
-  then removed). The log line gives the count granted. **Its leader** (`faction_leader`): the first by id of its civilization's
+  its parent both ways. **Its defecting army** (`defect_units`; the owner's decision, 2026-11-15, replacing
+  the grant of new units of 2b74c6fa: total military stays the same and the largest empires lose
+  part of their army), after the birth, no gold, no new units: **the share** is `budget =
+  remaining x seceded / cities_before` (integer), where `cities_before` is the parent's city count
+  before the split, `seceded` the faction's cities after it, and `remaining` the parent's
+  `crusade_military_strength` after it (without the garrisons that went with the cities).
+  **The candidates** are the parent's units that `crusade_unit_lendable` (land combat units, not
+  lent, temporary, aboard or carrying) and are not heroes, ordered by plot distance from the
+  unit to the faction's capital (ties: the lower unit id). **Each in turn** defects when all hold
+  at that moment: its strength `s` (`crusade_unit_strength`) is above 0 and the strength defected
+  so far plus `s` stays within the budget; the faction's strength plus `s` stays at most the
+  parent's minus `s` (both measured anew after each defection); and it is not the only lendable
+  unit of the parent on the plot of one of the parent's cities. A candidate that fails is passed
+  over and the next is tried. **The transfer** (`crusade_change_owner`, as a crusade loan): it
+  becomes the faction's unit of the same type in the faction's capital, with its promotions,
+  experience, level and damage; the old unit is gone at once, out of its army, march and group.
+  (The new unit also takes the faction's free promotions, a leader trait's among them: the
+  faction may end above its parent by at most the last defector's gain.) The log line gives the
+  count defected. **Its leader** (`faction_leader`): the first by id of its civilization's
   `leaders` not in play this game (the leader of a player ever alive) nor given to a faction of
   the same firing, else the first such of its minor leaders (`leader_heads` `minor_leader_of`,
   which no civilization lists, so no game starts with one): FFH2's scenario leaders, each by the

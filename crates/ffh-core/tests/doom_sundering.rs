@@ -122,11 +122,10 @@ fn a_civilization_of_eight_cities_loses_its_two_farthest_to_a_faction_of_its_own
     // (At the city's tier: a building's tier variant is the city's.)
     let class = d.buildings[elder].building_class_type;
     assert!(d.buildings.keys().any(|b| d.buildings[b].building_class_type == class && g.cities[nc].num_real_building[b] > 0), "with its buildings");
-    // Exactly its 2 warriors: the parent is left with only its hero, weaker than that garrison, so
-    // the cap on the faction's strength blocks every new unit.
+    // Exactly its 2 warriors: the parent is left with only its hero, which never defects.
     let units: Vec<UnitId> = g.map.plots[plots[1]].units.clone();
     assert_eq!(units.iter().filter(|&&u| g.units[u].owner == np && g.units[u].unit_type == warrior).count(), 2, "with its garrison");
-    assert_eq!(g.players[np].units.len(), 2, "no new unit: its garrison is stronger than the parent's army");
+    assert_eq!(g.players[np].units.len(), 2, "no unit defects: the parent has only its hero");
     assert!(g.units.contains(hero) && g.units[hero].owner == p0, "the hero stays with the parent");
 
     // Independent, at peace, -4 both ways, its parent's techs (not its cards), met who its parent met.
@@ -203,110 +202,183 @@ fn every_civilization_that_can_split_has_a_minor_leader() {
     }
 }
 
-/// A Bannor of eight cities and a second civilization; the Bannor know `techs`, and hold `army`
-/// warriors in their capital (which never secedes). Returns the Bannor's cities.
-fn bannor(army: usize, techs: &[&str]) -> (Game, Vec<CityId>) {
+
+/// A Bannor of eight cities and a second civilization of two. Returns the Bannor's cities and the
+/// plot of the faction's capital-to-be (the first of `seceding_cities`).
+fn bannor() -> (Game, Vec<CityId>, PlotIdx) {
     let mut g = game(&[("CIVILIZATION_BANNOR", "LEADER_SABATHIEL"), ("CIVILIZATION_LJOSALFAR", "LEADER_ARENDEL")]);
-    let d = g.d;
+    g.log.enabled = true;
     let p0 = PlayerId(0);
     let mine = cities(&mut g, p0, 8);
     cities(&mut g, PlayerId(1), 2);
-    let t0 = g.players[p0].team;
-    for tech in techs {
-        g.team_set_has_tech(t0, d.t::<TechType>(tech), true, Some(p0), false, false);
-    }
-    let (x, y) = g.map.xy(g.city_plot(mine[0]));
-    let warrior = d.t::<UnitType>("UNIT_WARRIOR");
-    for _ in 0..army {
-        g.player_init_unit(p0, warrior, x, y, None, None);
-    }
-    (g, mine)
+    let target = g.city_plot(sd::seceding_cities(&g, p0)[0]);
+    (g, mine, target)
 }
 
-/// The faction's units of type `name` in city `c`.
-fn count_in(g: &Game, np: PlayerId, c: CityId, name: &str) -> usize {
-    let t = g.d.t::<UnitType>(name);
-    g.map.plots[g.city_plot(c)].units.iter().filter(|&&u| g.units[u].owner == np && g.units[u].unit_type == t).count()
+/// Land plots without a city, unowned or the Bannor's, one per distance from `target` (the
+/// lowest plot index of each), nearest first, from distance `from` on.
+fn plots_by_distance(g: &Game, target: PlotIdx, from: i32) -> Vec<PlotIdx> {
+    let mut all: Vec<(i32, PlotIdx)> = g
+        .map
+        .plot_ids()
+        .filter(|&q| !g.plot_is_water(q) && !g.plot_is_impassable(q) && g.map.plots[q].plot_city.is_none())
+        .filter(|&q| g.map.plots[q].owner.is_none_or(|o| o == PlayerId(0)))
+        .map(|q| (dist(g, q, target), q))
+        .filter(|&(d, _)| d >= from)
+        .collect();
+    all.sort();
+    all.dedup_by_key(|e| e.0);
+    all.into_iter().map(|(_, q)| q).collect()
 }
 
-#[test]
-fn a_faction_gets_two_archers_per_city_and_two_axemen_in_its_capital() {
-    let (mut g, _) = bannor(30, &["TECH_ARCHERY", "TECH_BRONZE_WORKING"]);
-    let np = world::next_player(&g);
-    sd::fire_sundering(&mut g, 0);
-    let p0 = PlayerId(0);
-    let capital = g.player_get_capital_city(np).unwrap();
-    let cs = g.players[np].cities.clone();
-    assert_eq!(cs.len(), 2);
-    for &c in &cs {
-        assert_eq!(count_in(&g, np, c, "UNIT_ARCHER"), sd::DEFENDERS_PER_CITY, "two archers in each city");
-    }
-    assert_eq!(count_in(&g, np, capital, "UNIT_AXEMAN"), sd::CAPITAL_ATTACKERS, "two axemen in the capital");
-    assert_eq!(g.players[np].units.len(), 2 * sd::DEFENDERS_PER_CITY + sd::CAPITAL_ATTACKERS, "nothing else");
-    assert!(g.crusade_military_strength(np) <= g.crusade_military_strength(p0));
+/// A warrior of `p` on `plot`.
+fn warrior(g: &mut Game, p: PlayerId, plot: PlotIdx) -> UnitId {
+    let t = g.d.t::<UnitType>("UNIT_WARRIOR");
+    let (x, y) = g.map.xy(plot);
+    g.player_init_unit(p, t, x, y, None, None)
 }
 
-#[test]
-fn a_faction_gets_no_more_strength_than_its_parent_has() {
-    // Four warriors: room for a few of the six units.
-    let (mut g, _) = bannor(4, &["TECH_ARCHERY", "TECH_BRONZE_WORKING"]);
-    let np = world::next_player(&g);
-    sd::fire_sundering(&mut g, 0);
-    let p0 = PlayerId(0);
-    let plan = 2 * sd::DEFENDERS_PER_CITY + sd::CAPITAL_ATTACKERS;
-    let n = g.players[np].units.len();
-    assert!(n > 0 && n < plan, "{n} of {plan}");
-    assert!(g.crusade_military_strength(np) <= g.crusade_military_strength(p0));
+/// `n` warriors of the Bannor's, one on each of [`plots_by_distance`]'s plots from `from` on,
+/// nearest first.
+fn field_army(g: &mut Game, target: PlotIdx, from: i32, n: usize) -> Vec<UnitId> {
+    let plots = plots_by_distance(g, target, from);
+    assert!(plots.len() >= n, "room for {n} units");
+    plots[..n].iter().map(|&q| warrior(g, PlayerId(0), q)).collect()
+}
+
+fn owned_by(g: &Game, u: UnitId, p: PlayerId) -> bool {
+    g.units.contains(u) && g.units[u].owner == p
 }
 
 #[test]
-fn a_class_at_its_national_limit_falls_through_to_the_next_best() {
-    let (mut g, mine) = bannor(60, &["TECH_ARCHERY", "TECH_BRONZE_WORKING", "TECH_MACHINERY"]);
-    let d = g.d;
+fn the_nearest_units_defect_up_to_the_seceded_share_of_the_parents_strength() {
+    let (mut g, _, target) = bannor();
     let p0 = PlayerId(0);
-    // Three Crossbowmen (national limit 4) in a city that secedes: the faction may make one more.
-    let crossbow = d.t::<UnitType>("UNIT_CROSSBOWMAN");
-    let class = d.units[crossbow].unit_class_type.unwrap();
-    assert_eq!(d.unit_classes[class].max_player_instances, 4);
-    let seceding = sd::seceding_cities(&g, p0);
-    assert!(seceding.iter().all(|c| *c != mine[0]));
-    let (x, y) = g.map.xy(g.city_plot(seceding[0]));
-    for _ in 0..3 {
-        g.player_init_unit(p0, crossbow, x, y, None, None);
-    }
-    let np = world::next_player(&g);
-    sd::fire_sundering(&mut g, 0);
-    assert_eq!(g.players[np].unit_class_count[class], 4, "three seceded and one made");
-    let count = |name: &str| {
-        let t = d.t::<UnitType>(name);
-        g.players[np].units.iter().filter(|&&u| g.units[u].unit_type == t).count()
-    };
-    assert_eq!(count("UNIT_CROSSBOWMAN"), 4);
-    assert_eq!(count("UNIT_ARCHER"), 3, "the other defenders: the next best");
-    assert_eq!(count("UNIT_AXEMAN"), 2);
-    assert!(g.crusade_military_strength(np) <= g.crusade_military_strength(p0));
-}
-
-#[test]
-fn without_archery_the_defenders_are_the_best_melee_unit() {
-    let (mut g, _) = bannor(30, &["TECH_BRONZE_WORKING"]);
-    let d = g.d;
-    let p0 = PlayerId(0);
-    // No archery unit: neither the Archer nor the Skirmisher (Exploration, a Bannor starting tech).
-    let t0 = g.players[p0].team;
-    for tech in ["TECH_ARCHERY", "TECH_EXPLORATION"] {
-        g.team_set_has_tech(t0, d.t::<TechType>(tech), false, Some(p0), false, false);
-    }
-    let pick = sd::faction_unit(&g, p0, true).map(|u| d.type_name(u).to_string());
-    assert_eq!(pick.as_deref(), Some("UNIT_AXEMAN"));
+    let army = field_army(&mut g, target, 1, 12);
+    let s = g.crusade_unit_strength(army[0]);
+    assert!(s > 0 && army.iter().all(|&u| g.crusade_unit_strength(u) == s));
     let np = world::next_player(&g);
     sd::fire_sundering(&mut g, 0);
     let capital = g.player_get_capital_city(np).unwrap();
-    for c in g.players[np].cities.clone() {
-        let n = if c == capital { sd::DEFENDERS_PER_CITY + sd::CAPITAL_ATTACKERS } else { sd::DEFENDERS_PER_CITY };
-        assert_eq!(count_in(&g, np, c, "UNIT_AXEMAN"), n, "axemen defend");
+    assert_eq!(g.city_plot(capital), target);
+    // 12 warriors after the split (no garrison went), 2 of 8 cities seceded: 3 warriors' worth.
+    assert_eq!(12 * s * 2 / 8, 3 * s);
+    assert_eq!(g.players[np].units.len(), 3, "3 defect");
+    for &u in &g.players[np].units {
+        assert_eq!(g.unit_plot(u), target, "in the faction's capital");
+        assert_eq!(g.d.type_name(g.units[u].unit_type), "UNIT_WARRIOR");
     }
-    let axeman = d.t::<UnitType>("UNIT_AXEMAN");
-    assert!(g.players[np].units.iter().all(|&u| g.units[u].unit_type == axeman));
-    assert_eq!(g.players[np].units.len(), 2 * sd::DEFENDERS_PER_CITY + sd::CAPITAL_ATTACKERS);
+    assert!(army[..3].iter().all(|&u| !g.units.contains(u)), "the nearest three leave the parent");
+    assert!(army[3..].iter().all(|&u| owned_by(&g, u, p0)), "the far ones stay");
+    assert_eq!(g.players[p0].units.len(), 9);
+    assert!(g.crusade_military_strength(np) <= g.crusade_military_strength(p0));
+    assert!(g.log.entries.iter().any(|e| e.text.contains("Units defected: 3.")), "the log line counts them");
+}
+
+#[test]
+fn a_defector_keeps_its_promotions_experience_level_and_damage_and_a_hero_stays() {
+    let (mut g, _, target) = bannor();
+    let d = g.d;
+    let p0 = PlayerId(0);
+    let army = field_army(&mut g, target, 1, 12);
+    // The nearest is a hero; the second has a promotion, experience, a level and damage.
+    g.unit_set_has_promotion(army[0], d.t::<PromotionType>("PROMOTION_HERO"), true);
+    let mobility = d.t::<PromotionType>("PROMOTION_MOBILITY1");
+    let v = army[1];
+    g.unit_set_has_promotion(v, mobility, true);
+    g.unit_set_level(v, 3);
+    g.unit_set_experience(v, 17, -1);
+    g.unit_set_damage(v, 20, None);
+    let np = world::next_player(&g);
+    sd::fire_sundering(&mut g, 0);
+    assert!(owned_by(&g, army[0], p0), "the hero stays");
+    assert!(!g.units.contains(v), "the veteran defects");
+    let w: Vec<UnitId> = g.players[np].units.iter().copied().filter(|&u| g.units[u].has_promotion[mobility]).collect();
+    assert_eq!(w.len(), 1, "with its promotion");
+    let w = &g.units[w[0]];
+    assert_eq!((w.level, w.experience, w.damage), (3, 17, 20));
+    assert!(g.players[np].units.iter().all(|&u| !g.unit_is_hero(u)));
+}
+
+#[test]
+fn the_last_unit_in_a_city_of_the_parent_stays() {
+    for in_city in [1usize, 2] {
+        let (mut g, mine, target) = bannor();
+        let p0 = PlayerId(0);
+        let seceding = sd::seceding_cities(&g, p0);
+        // The parent's city nearest the faction's capital, with `in_city` warriors; 11 more
+        // warriors farther away than it.
+        let near = mine.iter().copied().filter(|c| !seceding.contains(c)).min_by_key(|&c| (dist(&g, g.city_plot(c), target), c)).unwrap();
+        let plot = g.city_plot(near);
+        let guards: Vec<UnitId> = (0..in_city).map(|_| warrior(&mut g, p0, plot)).collect();
+        let from = dist(&g, plot, target) + 1;
+        let far = field_army(&mut g, target, from, 11);
+        let np = world::next_player(&g);
+        sd::fire_sundering(&mut g, 0);
+        let stayed = guards.iter().filter(|&&u| owned_by(&g, u, p0)).count();
+        assert_eq!(stayed, 1, "{in_city} in the city: one stays");
+        // 11 + `in_city` warriors x 2/8: 3 defect, a guard first when one may go.
+        assert_eq!(g.players[np].units.len(), 3);
+        let far_gone = far.iter().filter(|&&u| !g.units.contains(u)).count();
+        assert_eq!(far_gone, 3 - (in_city - 1), "the rest from the nearest far units");
+        assert!(far[..far_gone].iter().all(|&u| !g.units.contains(u)), "nearest first");
+    }
+}
+
+#[test]
+fn a_faction_never_ends_stronger_than_its_parent() {
+    // 8 warriors in the field and 7 or 6 in the faction's capital-to-be (they go with it): 2
+    // warriors' worth of budget, but with 7 the first defector would make the faction stronger
+    // than its parent, with 6 the second.
+    for (garrison, expected) in [(7usize, 0usize), (6, 1)] {
+        let (mut g, _, target) = bannor();
+        let p0 = PlayerId(0);
+        for _ in 0..garrison {
+            warrior(&mut g, p0, target);
+        }
+        let army = field_army(&mut g, target, 1, 8);
+        let np = world::next_player(&g);
+        sd::fire_sundering(&mut g, 0);
+        assert_eq!(g.players[np].units.len(), garrison + expected, "garrison {garrison}");
+        assert_eq!(army.iter().filter(|&&u| owned_by(&g, u, p0)).count(), 8 - expected);
+        assert!(g.crusade_military_strength(np) <= g.crusade_military_strength(p0));
+    }
+}
+
+#[test]
+fn a_defector_leaves_its_army_and_the_game_saves() {
+    let (mut g, _, target) = bannor();
+    let d = g.d;
+    let p0 = PlayerId(0);
+    // An army of 4 warriors on the plot nearest the faction's capital, 8 warriors farther away.
+    let near = plots_by_distance(&g, target, 1)[0];
+    let members: Vec<UnitId> = (0..4).map(|_| warrior(&mut g, p0, near)).collect();
+    let a = g.army_form(p0, &members).expect("an army");
+    assert!(members.iter().all(|&u| g.units[u].army == Some(a)));
+    let from = dist(&g, near, target) + 1;
+    field_army(&mut g, target, from, 8);
+    let np = world::next_player(&g);
+    sd::fire_sundering(&mut g, 0);
+    // 12 warriors x 2/8: 3 defect, all from the army.
+    assert_eq!(g.players[np].units.len(), 3);
+    let left: Vec<UnitId> = members.iter().copied().filter(|&u| g.units.contains(u)).collect();
+    assert_eq!(left.len(), 1);
+    assert_eq!(g.army_units(a), left, "the army keeps the one left");
+    for p in [p0, np] {
+        for &u in &g.players[p].units {
+            assert!(g.units.contains(u));
+            if let Some(b) = g.units[u].army {
+                assert!(g.armies.contains(b) && g.armies[b].owner == p, "no dangling army");
+            }
+            let grp = g.units[u].group.expect("a group");
+            assert!(g.groups.contains(grp) && g.groups[grp].units.contains(&u), "in its group");
+        }
+        for &grp in &g.players[p].groups {
+            assert!(g.groups[grp].units.iter().all(|&u| g.units.contains(u) && g.units[u].owner == p));
+        }
+    }
+    assert!(g.players[np].units.iter().all(|&u| g.units[u].army.is_none() && g.units[u].march.is_none()));
+    let bytes = g.save();
+    let h = Game::load(d, &bytes).expect("reload");
+    assert_eq!(h.save(), bytes, "the same game");
 }
