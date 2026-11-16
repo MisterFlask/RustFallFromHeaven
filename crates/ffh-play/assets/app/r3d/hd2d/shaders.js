@@ -5,6 +5,7 @@
 // (../shaders.js, COMMON) supply the noise, light, shadow and fog helpers.
 
 import { SCENE_OUT } from "../shaders.js";
+import { CLIFF } from "./config.js";
 
 // --------------------------------------------------------------------------------------------
 // Sprite cards
@@ -367,10 +368,13 @@ void main() {
   vec3 P = (uInvView * vec4(vp, 1.0)).xyz;
   vec3 E = uEye;
   vec3 D = P - E;
-  // The slab of haze: from the ground up to 1.6 plots.
+  // The slab of haze: from the ground up to 1.6 plots over the land (which stands LAND_UP over
+  // the sea's level: config.js CLIFF -- the haze lies on the land as it did before the land was
+  // lifted, densest at its level).
+  const float LAND_UP = ${CLIFF.toFixed(3)};
   float t0 = 0.0, t1 = 1.0;
   if (abs(D.y) > 1e-4) {
-    float ta = (1.6 - E.y) / D.y, tb = (-0.1 - E.y) / D.y;
+    float ta = (1.6 + LAND_UP - E.y) / D.y, tb = (-0.1 - E.y) / D.y;
     t0 = clamp(min(ta, tb), 0.0, 1.0);
     t1 = clamp(max(ta, tb), 0.0, 1.0);
   }
@@ -383,7 +387,7 @@ void main() {
   for (int i = 0; i < N; i++) {
     float t = mix(t0, t1, (float(i) + jit) / float(N));
     vec3 q = E + D * t;
-    float dens = exp(-max(q.y, 0.0) * 1.6);
+    float dens = exp(-max(q.y - LAND_UP, 0.0) * 1.6);
     s += gap(q) * occl(q) * dens;
   }
   s /= float(N);
@@ -525,7 +529,8 @@ void main() {
   col = mix(col, hel, hell);
   // And its ground is split by glowing cracks: a world-anchored network (the edges of cells about
   // a plot across), pulsing slowly, on the ground only (a surface facing up, not a card).
-  if (hell > 0.05 && src.a < 0.85) {
+  // (The ground: the painted one's keep mask is under 0.85, the pixel-art one's 0.87; a card's 0.9.)
+  if (hell > 0.05 && src.a < 0.885) {
     vec3 wn = mat3(uInvView) * nd.xyz;
     float up = smoothstep(0.5, 0.85, wn.y);
     vec2 c = mcells(m + warp * 0.6, 0.95);

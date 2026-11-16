@@ -73,7 +73,9 @@ function hilltopFoot(world, x, y, radius = 0.08) {
   for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) {
     const lx = dx * 0.08, lz = dz * 0.08;
     const mx = x + 0.5 + lx, my = y + 0.5 - lz;
-    const samples = [[mx, my], [mx - radius, my], [mx + radius, my], [mx, my + radius]];
+    // (Its sides, its back and its front: the front a little further, where a crown ends in its
+    // scarp and a river may run under it.)
+    const samples = [[mx, my], [mx - radius, my], [mx + radius, my], [mx, my + radius], [mx, my - radius * 1.2]];
     if (world.riverCells.size && samples.some(([sx, sy]) => world.riverDist(sx, sy) < RIVER_BANK + 0.02)) continue;
     const heights = samples.map(([sx, sy]) => world.heightAt(sx, sy));
     const spread = Math.max(...heights) - Math.min(...heights);
@@ -83,10 +85,32 @@ function hilltopFoot(world, x, y, radius = 0.08) {
   return best;
 }
 
-/** On level land the painted ground reaches back from the front edge; retreat off a river. */
+/** A spot of land plot (x, y), plot-local [x east, z south], kept on the plot's own level of land
+ *  where the ground steps (world.js `cliff`): drawn toward the plot's middle until it is off the
+ *  water, back from the rim of the land's face, and off a neighbouring hill's crown. (A plot's
+ *  middle is always its own land.) */
+function onLand(world, x, y, lx, lz, reach = 0) {
+  if (!(world.cliff > 0)) return [lx, lz];
+  const crown = world.kind[world.index(x, y)] === KIND.HILLS;
+  const dry = (ax, az) => {
+    world.heightAt(x + 0.5 + ax, y + 0.5 - az, false);
+    return world.shore > 0.012 && (crown || world.scarp <= 0);
+  };
+  // (`reach`: what stands there is that wide -- a group of figures: its sides and front as well.)
+  for (let k = 0; k < 8; k++) {
+    if (dry(lx, lz) && (!reach || (dry(lx - reach, lz) && dry(lx + reach, lz) && dry(lx, lz + reach)))) break;
+    lx *= 0.8;
+    lz *= 0.8;
+  }
+  return [lx, lz];
+}
+
+/** On level land the painted ground reaches back from the front edge; retreat off a river, and off
+ *  the water and a neighbouring hill's crown where the ground steps (`onLand`). */
 function builtFoot(world, x, y) {
   let lz = 0.5;
   for (let k = 0; k < 6 && world.riverCells.size && world.riverDist(x + 0.5, y + 0.5 - lz) < RIVER_BANK; k++) lz -= 0.05;
+  lz = onLand(world, x, y, 0, lz)[1];
   return [0, lz, world.heightAt(x + 0.5, y + 0.5 - lz, false)];
 }
 
@@ -651,7 +675,11 @@ function dressProps(world, map, atlas, env, moods, list) {
       const art = atlas.info(key);
       const mx = x + 0.5 + lx, my = y + 0.5 - lz;
       const glow = GLOWS[kindKey] ?? (kindKey.startsWith("hut") ? GLOWS.hut : 0);
-      list.push(card(key, art, PX.prop * scale, mx, H(mx, my) - 0.01, -my, { shadow: !FLAT.has(kindKey), flip: r() < 0.5, glow, id: 0.0002, vis: [x + 0.5, y + 0.5] }));
+      const flip = r() < 0.5;
+      const base = H(mx, my);
+      // (Where the land is a slab nothing of a land plot stands past its rim, in the water.)
+      if (world.cliff > 0 && world.shore <= 0.004) return;
+      list.push(card(key, art, PX.prop * scale, mx, base - 0.01, -my, { shadow: !FLAT.has(kindKey), flip, glow, id: 0.0002, vis: [x + 0.5, y + 0.5] }));
     };
     if (WOODED.has(feat)) {
       const wood = woodOf(feat, world.ground[i], kind === KIND.HILLS);
@@ -702,9 +730,9 @@ function dressProps(world, map, atlas, env, moods, list) {
   }
 }
 
-/** The look target's land ends at its water in a rim of dark, wet stones: rows of them along the
- *  sea's and the lakes' shores (where the ground falls through the waterline) and along the river
- *  banks, with reeds here and there. One stone a cell of about a fifth of a plot at most (a global
+/** The look target's land ends at its water in dark, wet stones: a loose row of them in the
+ *  shallows at the foot of the land's face, along the sea's and the lakes' shores, and rows along
+ *  the river banks, with reeds here and there. One stone a cell of about a fifth of a plot at most (a global
  *  grid, so two plots never stack theirs); a pure function of the state. */
 function dressShores(world, map, atlas, list) {
   const w = world.w;
@@ -740,13 +768,21 @@ function dressShores(world, map, atlas, list) {
         if (own !== i && (own < 0 || dry(world.kind[own]))) continue;
         if (road && Math.abs(mx - x - 0.5) < 0.12) continue;
         if (coast) {
-          const h = world.heightAt(mx, my);
-          if (h > -0.004 && h < 0.02 && r() < 0.8) {
-            // Mostly rows of shore stones; now and then a boulder of the bank, its rocky edge.
-            const k = r();
-            if (k < 0.12) place("rock", mx, my, Math.max(SEA, h) - 0.006, FINE * r.range(0.6, 0.8), r);
-            else place(k < 0.85 ? "shore" : "pebbles", mx, my, Math.max(SEA, h) - 0.004, FINE * r.range(0.8, 1.05), r);
-            continue;
+          // The land ends in a face (world.js `cliff`): its fallen stones stand in the shallows at
+          // its foot, a little way out (the shore field just under the sea's level) -- a loose
+          // row, a boulder now and then, not a rim.
+          const s = world.shoreAt(mx, my);
+          if (s < 0 && s > -0.12) {
+            // (How far out: the field's value over its slope.)
+            const e = 0.03;
+            const off = -s / (Math.hypot(world.shoreAt(mx + e, my) - s, world.shoreAt(mx, my + e) - s) / e || 1);
+            if (off > 0.02 && off < 0.075 && r() < 0.17) {
+              // (Their feet just over the water's level: a card cut by the water's plane would
+              // wear its foam in a straight bar.)
+              if (r() < 0.2) place("rock", mx, my, SEA + 0.003, FINE * r.range(0.6, 0.85), r);
+              else place("shore", mx, my, SEA + 0.003, FINE * r.range(0.8, 1.05), r);
+              continue;
+            }
           }
         }
         if (river) {
@@ -845,7 +881,7 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
       if (kit || key) {
         const css = teamCss(city.owner);
         const bk = bannerKey(atlas, css);
-        const [bx, by] = at(...BANNER_SPOT);
+        const [bx, by] = at(...onLand(world, x, y, ...BANNER_SPOT));
         list.push(card(bk, atlas.info(bk), PX.banner, bx, H(bx, by), -by, { anchor: 5.5 / 40, banner: true, team: hexRgb(cssHex(css)), bias: BIAS.unit, id: idOf(`cb${city.id}`), phase: hashf(city.id, 5) }));
         claims.city.add(i);
       }
@@ -896,7 +932,7 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
         const water = world.isWater(i);
         // Before what stands on the plot (the mine's card would hide its ore), else at the front-left.
         const built = footZ !== null;
-        const [mx, my] = built ? at(footX + BUILT_BONUS_SPOT[0], footZ - BUILT_BONUS_SPOT[1]) : at(...BONUS_SPOT);
+        const [mx, my] = at(...(water ? (built ? [footX + BUILT_BONUS_SPOT[0], footZ - BUILT_BONUS_SPOT[1]] : BONUS_SPOT) : onLand(world, x, y, ...(built ? [footX + BUILT_BONUS_SPOT[0], footZ - BUILT_BONUS_SPOT[1]] : BONUS_SPOT))));
         const base = water ? SEA : H(mx, my);
         const glow = /MANA/.test(bonus) ? 0.3 : /GEMS|JEWELS|MITHRIL/.test(bonus) ? 1.2 : 0;
         const resource = card(key, art, PX.resource, mx, base, -my, { id: idOf(`b${i}`), glow, bias: built ? BIAS.builtResource : BIAS.resource, vis: [x + 0.5, y + 0.5] });
@@ -952,9 +988,11 @@ export function dressSpriteUnits(world, map, atlas, buoys = null) {
     const onCity = map.city[i] >= 0;
     // A city's garrison is one figure at its front, so it does not crowd the town's walls and gate:
     // at the front-left corner, else the front-right or the front's middle, out of a river.
-    const spot = onCity ? garrisonSpot(world, u0.x, u0.y) : world.feat[i] === FEAT.VOLCANO ? VOLCANO_SPOT : standing.has(i) ? BUILT_SPOT : SPOT;
-    const n = onCity ? 1 : groupSize(info, art);
     const dom = info ? tname("DomainType", info.domain) : null;
+    let spot = onCity ? garrisonSpot(world, u0.x, u0.y) : world.feat[i] === FEAT.VOLCANO ? VOLCANO_SPOT : standing.has(i) ? BUILT_SPOT : SPOT;
+    // (A group on a land plot stands on its land, not past the rim of the land's face.)
+    if (!world.isWater(i) && world.kind[i] !== KIND.ICE && dom !== "DOMAIN_SEA" && dom !== "DOMAIN_AIR") spot = onLand(world, u0.x, u0.y, spot[0], spot[1], 0.13);
+    const n = onCity ? 1 : groupSize(info, art);
     const css = teamCss(top.owner);
     const team = hexRgb(cssHex(css));
     const scale = onCity ? 0.8 : 1;

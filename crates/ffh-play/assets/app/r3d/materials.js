@@ -611,9 +611,10 @@ const RECIPES = [
 /** Paints every layer: {size, layers, data (RGBA8, layer after layer), mean (rgb a layer, the
  *  albedo's mean: the shader scales a material by its broad colour over this), ms, times (ms a
  *  layer)}. */
-export function bakeMaterials(size = MAT_SIZE, skip = null) {
+export function bakeMaterials(size = MAT_SIZE, skip = null, extra = 0) {
   const t0 = performance.now();
-  const layers = RECIPES.length;
+  // (`extra`: layers after the recipes', left clear for a mode's own art -- the HD-2D map's ground.)
+  const layers = RECIPES.length + extra;
   const data = new Uint8Array(size * size * 4 * layers);
   const mean = new Float32Array(layers * 3);
   const times = [];

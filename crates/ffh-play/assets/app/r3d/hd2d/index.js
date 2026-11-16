@@ -15,7 +15,7 @@
 import { Map3D } from "../map3d.js";
 import { loadConfig, saveConfig, withPreset, PANEL } from "../config.js";
 import { clamp, smoothstep } from "../math.js";
-import { STORE, LIGHT, DEFAULTS_HD2D, PRESETS_HD2D, PANEL_HD2D, TERRAIN_LEAN, TERRAIN_STANDIN } from "./config.js";
+import { STORE, LIGHT, DEFAULTS_HD2D, PRESETS_HD2D, PANEL_HD2D, TERRAIN_LEAN, TERRAIN_STANDIN, CLIFF } from "./config.js";
 import { SpriteLayer } from "./sprites.js";
 import { Hd2dPasses } from "./passes.js";
 import { dressSpriteStatic, dressSpriteUnits } from "./dress.js";
@@ -42,13 +42,26 @@ export const DEFAULT_ZOOM = 96;
 /** How long the start waits at most for the sprites its first frame asks for (ms; `modeReady`). */
 const SPRITE_WAIT_MS = 3000;
 
-/** How far the land stands over its water (plots; dry land's base is 0.1 over the sea). */
-export const BANK = 0.04;
+/** The strips of the ground's faces (art/gnd_face.png, tools/hd2d/cliffs.py): their art pixels a
+ *  plot (the small cards' density, as the ground's: PIX_TILES) and a strip's rows. */
+const CLIFF_ART = { density: 124, rows: 64 };
 
-/** The pixel-art ground layers (hd2d/art, tools/hd2d/art.py) and the material layer each replaces
- *  in the 3D renderer's ground (materials.js): the terrain shader tints a layer by its mean colour,
- *  so the land keeps its painted design and takes the pixel art's texture. */
-const GROUND_LAYER = { gnd_grass: MAT.GRASS, gnd_straw: MAT.STRAW, gnd_dirt: MAT.DIRT, gnd_sand: MAT.SAND, gnd_lichen: MAT.LICHEN, gnd_snow: MAT.SNOW, gnd_rock: MAT.ROCK };
+/** The ground's art (hd2d/art/gnd_*.png, drawn by code: tools/hd2d/ground.py; docs/HD2D.md §5g) and
+ *  the material layer each fills: those of the 3D renderer's ground it replaces (materials.js), and
+ *  after them the mode's own (`extraMaterials`; shaders.js M_PIX ...): the utility tile and the
+ *  three hell grounds. A tile is 256 art pixels a side, a texel each. */
+const MAT_OWN = Object.keys(MAT).length;
+const GROUND_LAYER = {
+  gnd_grass: MAT.GRASS, gnd_straw: MAT.STRAW, gnd_dirt: MAT.DIRT, gnd_sand: MAT.SAND, gnd_lichen: MAT.LICHEN, gnd_snow: MAT.SNOW,
+  gnd_rock: MAT.ROCK, gnd_marsh: MAT.REEDS, gnd_soil: MAT.SOIL, gnd_veg: MAT.VEG, gnd_grain: MAT.GRAIN,
+  gnd_pix: MAT_OWN, gnd_burning: MAT_OWN + 1, gnd_broken: MAT_OWN + 2, gnd_perdition: MAT_OWN + 3,
+};
+
+/** The ground's tiles a plot (shaders.js uPix): east-west an art pixel is the small cards' (dress.js
+ *  PX.prop * FINE: 124 a plot, about a screen pixel at the gameplay zoom); north-south fewer, by
+ *  about the sine of the camera's pitch -- the view foreshortens the ground, and the art's pixels
+ *  should come out square on the screen, as the cards' do. */
+const PIX_TILES = [124 / 256, (124 / 256) * 0.55];
 
 export class MapHd2d extends Map3D {
   constructor(view) {
@@ -78,6 +91,8 @@ export class MapHd2d extends Map3D {
     const T = gl.TEXTURE_2D_ARRAY;
     let n = 0;
     const done = new Set();
+    const face = this.loadCliff();
+    this.scene.pixArt = PIX_TILES;
     await Promise.all(
       GROUNDS.filter((name) => GROUND_LAYER[name] !== undefined).map(async (name) => {
         try {
@@ -100,9 +115,13 @@ export class MapHd2d extends Map3D {
           gl.bindTexture(T, mats.tex);
           // The PNG as it is: colour not premultiplied (alpha is the layer's height), no colour
           // conversion (the shader treats the layers' colours as authored).
+          // Its first row the tile's north: a tile is drawn as the screen shows it, north up, and
+          // the layers' rows run northward (materials.js).
           gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
           gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
           gl.texSubImage3D(T, 0, 0, 0, GROUND_LAYER[name], 256, 256, 1, gl.RGBA, gl.UNSIGNED_BYTE, im);
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
           gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.BROWSER_DEFAULT_WEBGL);
           mats.mean.set([r / m, gg / m, b / m], GROUND_LAYER[name] * 3);
           done.add(GROUND_LAYER[name]);
@@ -131,11 +150,55 @@ export class MapHd2d extends Map3D {
       gl.bindTexture(T, null);
       this.dirty = true;
     }
+    await face;
+  }
+
+  /** The strips of the land's face into a texture of their own (Scene.cliffArt): it tiles along
+   *  the shore, its alpha is the turf lip's shade, not coverage. */
+  async loadCliff() {
+    const gl = this.gl;
+    // Until the strips are in (or if they do not come): one texel of bare rock, so the faces'
+    // sampler is never without a texture.
+    const blank = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, blank);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([104, 101, 97, 0]));
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    this.scene.cliffArt = { tex: blank, ...CLIFF_ART };
+    try {
+      const im = new Image();
+      im.src = new URL("./art/gnd_face.png", import.meta.url).href;
+      await im.decode();
+      if (!this.running) return;
+      const t = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+      gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, im);
+      gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.BROWSER_DEFAULT_WEBGL);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+      this.scene.cliffArt = { tex: t, ...CLIFF_ART };
+      gl.deleteTexture(blank);
+      this.dirty = true;
+    } catch (e) {
+      console.warn("hd2d: the land's face did not load", e);
+    }
   }
 
   /** The pixel-art ground's layers: the scene does not paint them. */
   replacedMaterials() {
-    return new Set(Object.values(GROUND_LAYER));
+    return new Set(Object.values(GROUND_LAYER).filter((l) => l < MAT_OWN));
+  }
+
+  /** The mode's own layers after the 3D renderer's (GROUND_LAYER). */
+  extraMaterials() {
+    return Math.max(...Object.values(GROUND_LAYER)) + 1 - MAT_OWN;
   }
 
   /** Resolves once the ground's layers have loaded (left clear by the scene): the first
@@ -159,6 +222,7 @@ export class MapHd2d extends Map3D {
   dispose() {
     try {
       this.sprites?.dispose();
+      if (this.scene?.cliffArt) this.gl.deleteTexture(this.scene.cliffArt.tex);
     } catch {
       /* the context may be gone */
     }
@@ -169,10 +233,9 @@ export class MapHd2d extends Map3D {
     return loadConfig(STORE, DEFAULTS_HD2D, PRESETS_HD2D, { hd2d: LIGHT });
   }
 
-  /** A low bank where the land meets its water (world.js `bank`): the look target's land stands
-   *  over its water. */
+  /** The land a slab with a sheer face where it meets its water (world.js `cliff`). */
   worldOpts() {
-    return { bank: BANK };
+    return { cliff: CLIFF };
   }
 
   /** The ground's brush dabs compiled out (shaders.js NO_DABS): the pixel-art ground carries its
@@ -183,7 +246,7 @@ export class MapHd2d extends Map3D {
    *  TERRAIN_STANDIN; docs/HD2D.md §5b): in play it reads as the full one, and it is half the
    *  program. */
   terrainDefines() {
-    return { NO_DABS: 1, ...TERRAIN_LEAN, ...TERRAIN_STANDIN };
+    return { NO_DABS: 1, ...TERRAIN_LEAN, ...TERRAIN_STANDIN, CLIFF_FACE: 1, PIXEL_GROUND: 1 };
   }
 
   /** The scene packed into one target (pipeline.js `packed`): on Direct3D 11 the scene's programs
@@ -212,7 +275,7 @@ export class MapHd2d extends Map3D {
   }
 
   waterDefines() {
-    return { ...LITE_WATER };
+    return { ...LITE_WATER, SHORE_FIELD: 1 };
   }
 
   /** The rivers a program of their own (the sea's then compiled without them). */

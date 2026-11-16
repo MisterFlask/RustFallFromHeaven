@@ -139,6 +139,17 @@ turf; altitude alone never removes its turf. Hill stone uses the biome's soil co
 projection for its texture, avoiding gray rock walls with stretched vertical cracks. Desert lowlands
 get wind-combed dunes.
 
+**Steps** (`World`'s `cliff` option; the HD-2D map's, docs/HD2D.md §5f; without it everything
+here is as above, to the bit). The ground may step: `heightAt` then lifts dry land whole from its
+shore and stands a hill's crown sheer over its shelf on the hill's front, and leaves beside the
+height the two fields whose zeros are the steps (`shore`, `scarp`) and the height the point would
+have on each side of them (`hFloor`, `hLand`, `hCrown`). The terrain mesh cuts its faces there
+(`terrain.js` `buildCliffChunk`: each grid square a step runs through, clipped by the fields into
+each side's part with an upright quad between), and the height texture carries the shore field in
+a second channel (the water measures its depth by it: a face's height does not interpolate). The
+material array takes extra layers after its own for a mode's art (`bakeMaterials`' `extra`,
+`Map3D.extraMaterials`).
+
 **Ground painting** (terrain shader). Each fragment blends the materials of the four plots around it
 with weights sharpened by brush-dab noise, so borders between terrains are bands of interleaved
 strokes; the lookup is warped up to most of a plot between plot centres and not at all at them, so a
@@ -313,7 +324,7 @@ under and around it:
   plot along its line, carried about half a plot past the foot; on level land it stays under about
   0.2) the water turns
   white, streaked down the slope and running fast, its edge broken by a noise -- the falls off the
-  hills and over the HD-2D map's raised bank into the sea. The rings and wakes are off there (from
+  hills and over the HD-2D map's face into the sea. The rings and wakes are off there (from
   a drop of 0.15 to 0.3): their depth tests take the water for level over a bed well beneath it,
   and on a slope the terrain mesh (RES vertices a plot) comes up to the surface, so they found the
   bed all over the slope and drew their lace on it as a net of white cracks.
@@ -592,7 +603,8 @@ marks the edge of the unexplored as a coast, and remembered water calms (§5.2).
   settlements side by side (`scene=cities&civs=CIVILIZATION_BANNOR,CIVILIZATION_KHAZAD&sizes=2,6,12&imps=IMPROVEMENT_TOWN`),
   any map written as legend rows and dressed by the real placement (`rows=.www.kkk.,.zzz.qqq.`;
   `scenes.js` `LEGEND`; `&wrap=1` wraps it east-west, `&hidden=x0,y0,x1,y1` leaves a rectangle
-  unrevealed, `&river=5,8;5,7;...` runs a river along those plot corners, y from the south),
+  unrevealed, `&river=5,8;5,7;...` runs a river along those plot corners, y from the south,
+  `&routes=2,0;2,1;...` lays a road on those plots),
   overlays (`&sel=x,y&path=...`), any pipeline override (`&r3d={...}`).
   `node tools/r3d-lab.mjs --out a.png --query "scene=showcase&ts=96"`; `--shots FILE` for many;
   `--serve` to open it in a browser; `--stability` for the panning test (§11);
@@ -752,6 +764,21 @@ that draw (a sea's edge plots; those under the fog bank), and the bank takes one
 Reading the scene's noise from the hash texture (NOISE_TEX) changed nothing measurable: under
 SwiftShader the cost is the covered pixels, not the shading. Frame times drift by 10-15% run to
 run here; the pass times are the steadier measure.
+
+**The HD-2D map's ground in steps and as pixel art** (2026-11-16, docs/HD2D.md §5f, §5g; the same
+save and binary, `r3d-perf --configs hd2d`, the tree before against the tree after under
+SwiftShader at 1280 x 800): a frame 1105, 1158 and 1170 ms before, 1080 and 1116 after at 96 px a
+plot; 1007, 1014 and 1013 against 1045 and 1067 at 40. The `scene` pass 409, 409 and 395 to 386
+and 388 ms at 96 (the terrain's program lost its painted branches as the tiles came in); the
+`overlay` at 40, which draws the terrain's meshes again, 121 to 142 ms (25 to 37 thousand
+triangles there with the cuts and the faces; 166 to 200 thousand at 96). Bringing the whole
+revealed map up to date: the map's textures about 107 to 182 ms (the height texture's second
+channel), the dressing about 373 to 481 ms. Panning stability (`r3d-lab --gpu --stability`,
+`scene=hd2d&renderer=hd2d`, `{"animate":false}`, a 4 px pan; the tree before against the tree
+after): mean |diff| 7.63 -> 7.60 with 10.73% -> 10.81% of pixels off by more than 24 at 96 px a
+plot, 8.15 -> 7.99 with 13.26% -> 13.08% at 168, 3.49 -> 3.41 with 3.46% -> 3.61% at 40: the drawn
+ground crawls no more under a pan than the painted one did (its texels' edges are a screen pixel
+wide while magnified, as the cards' are).
 
 GPU numbers: from the GPU bench (§10), whose runs on real cards land in its artifact's database;
 `r3d-perf --gpu` measures the same on a machine with a GPU.

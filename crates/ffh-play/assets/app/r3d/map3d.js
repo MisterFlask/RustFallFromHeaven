@@ -120,6 +120,7 @@ export class Map3D {
     this.scene = new Scene(gl, {
       // (The material layers the mode replaces are not painted, replacedMaterials.)
       skipMaterials: this.replacedMaterials(),
+      extraMaterials: this.extraMaterials(),
       noiseTex: !!this.sceneDefines().NOISE_TEX,
     });
     performance.mark("r3d:scene");
@@ -178,6 +179,11 @@ export class Map3D {
    *  scene does not paint them; null: none. */
   replacedMaterials() {
     return null;
+  }
+
+  /** How many material layers of its own the mode keeps after the 3D renderer's (left clear for it). */
+  extraMaterials() {
+    return 0;
   }
 
   /** The programs of the pipeline and of the mode's passes. */

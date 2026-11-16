@@ -652,6 +652,45 @@ uniform sampler2D uOwner;
 // The ground's materials (materials.js): rgb albedo, a height; and each layer's mean albedo.
 uniform highp sampler2DArray uMat;
 uniform vec3 uMatMean[16];
+#ifdef CLIFF_FACE
+// The ground's faces (the HD-2D map: MapHd2d.terrainDefines; world.js cliff, terrain.js): where
+// the land meets its water, and where a hill's crown stands over its scarp, the mesh stands a sheer
+// face (its normal level, 2 + its rim's height long), drawn from strips of rock (hd2d/art/
+// gnd_face.png, tools/hd2d/cliffs.py: colour, and in alpha the turf lip that hangs over the rim,
+// as a shade of the ground's own colour) laid down from the rim. uCliff: the strips' art pixels a
+// plot (down a face, and along one that looks east or west), a strip's rows, and the art pixels a
+// plot along a face that looks south or north (a whole number of strips over a wrapping map's
+// width).
+uniform sampler2D uCliffTex;
+uniform vec3 uCliff;
+#endif
+#ifdef PIXEL_GROUND
+// The ground drawn as pixel art (the HD-2D map: MapHd2d.terrainDefines; docs/HD2D.md §5g): each
+// ground a tile of art (hd2d/art/gnd_*.png, tools/hd2d/ground.py) laid at the cards' density, an
+// art pixel a texel, its texels sharp while they are larger than a screen pixel (the cards'
+// filter), and its colours the art's own on open, level ground in full sun -- tinted by the light,
+// not lit again, as the cards are. uPix: tiles a plot, east-west and north-south (fewer north-south:
+// the view foreshortens the ground, and an art pixel should come out about square on the screen).
+uniform vec2 uPix;
+// This fragment's place in the tiles (its art pixel's centre while magnified), and what turns an
+// art colour (linear) into the albedo that shows as it there (main).
+vec2 gPixUv = vec2(0.0);
+vec3 gArtK = vec3(1.0);
+#endif
+#if defined(CLIFF_FACE) || defined(PIXEL_GROUND)
+uniform float uExposure;
+// The light of open, level ground in full sun (main: lightAt's and shadowColour's terms there):
+// art shown in it comes out of the pipeline as its own colours.
+vec3 gFlat = vec3(1.0);
+// (COMPOSITE_FS's filmic curve inverted, as the cards' shader has it.)
+vec3 invFilmic(vec3 y) {
+  y = clamp(y, 0.0, 0.96);
+  vec3 a = 2.43 * y - 2.51;
+  vec3 b = 0.59 * y - 0.03;
+  vec3 c = 0.14 * y;
+  return (-b - sqrt(max(b * b - 4.0 * a * c, 0.0))) / (2.0 * a);
+}
+#endif
 ${SCENE_OUT}
 const int M_GRASS = ${MAT.GRASS}, M_STRAW = ${MAT.STRAW}, M_DIRT = ${MAT.DIRT}, M_SOIL = ${MAT.SOIL}, M_GRAIN = ${MAT.GRAIN},
   M_VEG = ${MAT.VEG}, M_NOISE = ${MAT.NOISE}, M_SAND = ${MAT.SAND}, M_LICHEN = ${MAT.LICHEN}, M_SNOW = ${MAT.SNOW},
@@ -732,6 +771,24 @@ vec3 matTint(vec4 t, int l, vec3 broadC) { return t.rgb * broadC / max(uMatMean[
 vec3 matShade(vec4 t, int l, vec3 broadC, float k) {
   return broadC * max(0.0, 1.0 + (lum(t.rgb) / max(lum(uMatMean[l]), 0.02) - 1.0) * k);
 }
+#ifdef PIXEL_GROUND
+// The pixel-art ground's layers of its own, after the 3D renderer's (MapHd2d.extraMaterials): the
+// utility tile (r, g: lobes a few art pixels across, two sets, which break an edge into the art's
+// marks; b: a finer grain) and the three hell grounds.
+const int M_PIX = ${Object.keys(MAT).length}, M_BURNING = M_PIX + 1, M_BROKEN = M_PIX + 2, M_PERDITION = M_PIX + 3;
+// Layer 'l' at this fragment's art pixel (gPixUv: the same texel grid for every layer).
+vec4 pixTile(int l) { return textureGrad(uMat, vec3(gPixUv, float(l)), gDx * uPix, gDy * uPix); }
+// An art colour (as authored) as the albedo that shows as it on open ground in full sun.
+vec3 artAlb(vec3 c) { return invFilmic(srgb(c)) * gArtK; }
+// The value noise itself (the stand-in ground puts mnoise at its mean, above): the few broad
+// fields the pixel ground takes -- where its plots' borders wander, its patches of tone.
+float rnoise(vec2 m, float f) {
+  vec3 l = mlattice(m, f);
+  return pnoise(l.xy, vec2(l.z, 4096.0));
+}
+// Broad patches of tone over the open grounds (main): under 0.5 a step darker, over it lighter.
+float gPatch = 0.5;
+#endif
 
 // A three-tone painted mass: broad, soft shapes of base and dark, the lighter tone where the
 // broad shapes rise, then brush dabs at two sizes lightening or darkening the paint. Its only use,
@@ -891,11 +948,83 @@ void hellMarks(vec2 m) {
 #endif
 }
 
+#ifdef PIXEL_GROUND
+// The utility tile at this fragment (main).
+vec4 gPu = vec4(0.5);
+// An open ground's colour, the pixel-art ground's: its tile's art as it is (linear; main turns the
+// painted ground into an albedo), a step darker or lighter in broad patches (gPatch) whose edges the
+// tile's own height breaks into its marks. Each call passes a constant 'g' (as below).
+vec3 groundAlbedo(int g, vec2 m, float h, inout vec3 emit) {
+  gH = 0.5;
+  // (The floor under the water: the face's fallen stone, seen through the shallows.)
+  if (g == G_SHALLOWS || g == G_COAST) return vec3(0.115, 0.135, 0.14);
+  if (g == G_OCEAN) return vec3(0.05, 0.065, 0.075);
+  vec4 t;
+  // (The patches' steps: a tone of shade and a tone of light, in each ground's own cast.)
+  vec3 dk = vec3(0.84, 0.89, 0.85), lt = vec3(1.1, 1.08, 0.94);
+  if (g == G_GRASS) {
+    // The meadow: grassland and prairie, each its own tile (gDry: the prairie's share, cut hard).
+    float dry = smoothstep(0.4, 0.6, gDry);
+    t = mix(pixTile(M_GRASS), pixTile(M_STRAW), dry);
+    dk = mix(dk, vec3(0.86, 0.84, 0.78), dry);
+    lt = mix(lt, vec3(1.06, 1.05, 0.98), dry);
+  } else if (g == G_DESERT) {
+    t = pixTile(M_SAND);
+    dk = vec3(0.88, 0.85, 0.8);
+    lt = vec3(1.05, 1.04, 1.0);
+  } else if (g == G_TUNDRA) {
+    t = pixTile(M_LICHEN);
+    dk = vec3(0.84, 0.86, 0.86);
+    lt = vec3(1.08, 1.07, 1.0);
+  } else if (g == G_SNOW) {
+    t = pixTile(M_SNOW);
+    dk = vec3(0.82, 0.88, 0.98);
+    lt = vec3(1.0);
+  } else if (g == G_MARSH) {
+    t = pixTile(M_REEDS);
+    dk = vec3(0.8, 0.84, 0.86);
+  } else {
+    if (g == G_BURNING) t = pixTile(M_BURNING);
+    else if (g == G_BROKEN) t = pixTile(M_BROKEN);
+    else t = pixTile(M_PERDITION);
+    dk = vec3(0.78);
+    lt = vec3(1.14, 1.06, 1.0);
+  }
+  gH = t.a;
+  float pv = gPatch + (t.a - 0.5) * 0.3;
+  return srgb(t.rgb) * (pv < 0.37 ? dk : pv > 0.62 ? lt : vec3(1.0));
+}
+
+// The floor a feature lays over the ground, the pixel-art ground's: the ground's own drawing in
+// the feature's shade or cast (linear art colours, as groundAlbedo's).
+vec3 featureFloor(int f, vec3 c, vec2 m, inout vec3 emit) {
+  if (f == F_FOREST || f == F_YOUNG) return c * vec3(0.56, 0.68, 0.52);
+  if (f == F_JUNGLE) return c * vec3(0.4, 0.6, 0.4);
+  if (f == F_ANCIENT) return c * vec3(0.34, 0.58, 0.5);
+  if (f == F_BURNT) return mix(vec3(lum(c)) * vec3(0.3, 0.27, 0.25), c * 0.4, 0.3);
+  // Flood plains: fresh grass over the silt, in patches.
+  if (f == F_FLOOD) return gPatch + (gPu.r - 0.5) * 0.5 > 0.47 ? srgb(pixTile(M_GRASS).rgb) * vec3(0.9, 1.04, 0.8) : c * vec3(0.8, 0.78, 0.7);
+  if (f == F_SCRUB) return gPu.r > 0.62 ? c * vec3(0.68, 0.64, 0.5) : c;
+  // Frozen sea: the snow's drawing in a pale blue, cut into floes by the utility tile's cracks.
+  if (f == F_ICE) return mix(srgb(pixTile(M_SNOW).rgb) * vec3(0.88, 0.95, 1.0), vec3(0.07, 0.2, 0.38), gPu.a * 0.9);
+  if (f == F_FLAMES) return c * vec3(0.2, 0.16, 0.15);
+  if (f == F_OBSIDIAN) return vec3(0.012, 0.011, 0.018) + c * 0.05;
+  if (f == F_SOULS) return mix(c, vec3(lum(c)) * vec3(0.9, 1.0, 1.05), 0.6) * 0.8;
+  if (f == F_FALLOUT) return mix(c, vec3(lum(c)) * vec3(0.85, 1.0, 0.4), 0.5);
+  return c;
+}
+#else
 // An open ground's colour ('g' one of the open grounds, the coast or the ocean: main paints the
 // unexplored ground, and each call passes a constant 'g', so it inlines only that ground's branch).
 vec3 groundAlbedo(int g, vec2 m, float h, inout vec3 emit) {
   gH = 0.5;
+#ifdef CLIFF_FACE
+  // (Under a face the floor is the face's fallen stone, not a sandy shelf: darker and cooler, so
+  // the shallows at its foot are water over rock.)
+  if (g == G_SHALLOWS || g == G_COAST) return srgb(masses(m, vec3(0.45, 0.40, 0.30), vec3(0.62, 0.55, 0.40), vec3(0.72, 0.66, 0.50), 1.0) * vec3(0.5, 0.56, 0.64));
+#else
   if (g == G_SHALLOWS || g == G_COAST) return srgb(masses(m, vec3(0.45, 0.40, 0.30), vec3(0.62, 0.55, 0.40), vec3(0.72, 0.66, 0.50), 1.0));
+#endif
   if (g == G_OCEAN) return srgb(vec3(0.22, 0.26, 0.28));
   bool hell = g == G_BURNING || g == G_BROKEN || g == G_PERDITION;
   // Each open ground: its broad masses (c, procedural: the plot-scale design), then its material's
@@ -1139,6 +1268,7 @@ vec3 featureFloor(int f, vec3 c, vec2 m, inout vec3 emit) {
   if (f == F_FALLOUT) return mix(c, srgb(vec3(0.35, 0.40, 0.18)), 0.45);
   return c;
 }
+#endif
 
 // Bump from a height field given per pixel (derivative bump mapping, Mikkelsen 2010): the brush
 // strokes' impasto catching the light. The field is world-anchored; only its derivatives are taken
@@ -1194,6 +1324,27 @@ void main() {
   gDx = dFdx(m);
   gDy = dFdy(m);
   gPpx = length(abs(gDx) + abs(gDy));
+#if defined(CLIFF_FACE) || defined(PIXEL_GROUND)
+  {
+    float d = clamp((uSunDir.y + uWrapLight) / (1.0 + uWrapLight), 0.0, 1.0);
+    vec3 lf = uSunColor * d + uSkyColor * (1.0 + 0.24 * uStylize * normalize(vec3(-uSunDir.x, 0.4, -uSunDir.z)).y);
+    gFlat = mix(lf, lf * uShadowTint, (1.0 - d) * 0.55 * uStylize);
+  }
+#endif
+#ifdef PIXEL_GROUND
+  // This fragment's art pixel: where it lies in the tiles, held at the texel's centre while a
+  // texel is larger than a screen pixel (moving to the next over one pixel at its edge), and the
+  // map point of that -- the ground's painting below is worked out there, so its edges step with
+  // the art's pixels. And what makes an art colour an albedo (gArtK: by the light of open ground).
+  vec2 pb = m * uPix * 256.0 - 0.5;
+  vec2 pbi = floor(pb);
+  vec2 pfw = clamp((abs(gDx) + abs(gDy)) * uPix * 256.0, vec2(1e-4), vec2(1.0));
+  gPixUv = (pbi + 0.5 + clamp((pb - pbi - 0.5) / pfw + 0.5, 0.0, 1.0)) / 256.0;
+  vec2 mp = gPixUv / uPix;
+  gArtK = 1.0 / (gFlat * uExposure);
+#else
+  vec2 mp = m;
+#endif
   // The surface's too, for the bumps. A derivative is undefined in a 2x2 quad some of whose pixels
   // have left (skipped the branch, returned): on a real GPU the bumps' derivatives, taken in
   // branches, came out zero there and their normals NaN -- black dashes along the branches' edges
@@ -1201,6 +1352,16 @@ void main() {
   // runs a quad in step and never showed them. So the bumps' derivatives are all taken outside the
   // branches.
   vec3 pDx = dFdx(vWorld), pDy = dFdy(vWorld);
+#ifdef CLIFF_FACE
+  // A face's place in its strip (art pixels: along the step, and down from the rim, whose height
+  // the normal's length carries), with its derivatives, taken here with the others.
+  // (Only a face's normal is level: steep ground -- a volcano's flank -- is ground.)
+  bool face = abs(vNormal.y) < 0.01;
+  bool faceX = abs(n.x) > abs(n.z);
+  vec2 cK = vec2(faceX ? uCliff.x : uCliff.z, uCliff.x);
+  vec2 cTex = vec2(faceX ? m.y : m.x, length(vNormal) - 2.0 - h) * cK;
+  vec2 cDx = vec2(faceX ? gDx.y : gDx.x, -pDx.y) * cK, cDy = vec2(faceX ? gDy.y : gDy.x, -pDy.y) * cK;
+#endif
   // The deep sea floor is deeper than the water lets anyone see (the water, drawn over it, shows at
   // most a dark trace of it), so it is shaded cheaply -- but with its true depth, which the water
   // reads for its thickness. Not where unexplored: no water is drawn there, and the blank
@@ -1222,17 +1383,59 @@ void main() {
   // The lookup is warped most between plots and not at all at their centres, so a plot's centre
   // always shows its own ground while the borders wander well off the plot edges (organic regions
   // instead of a board of squares).
-  vec2 fc = abs(fract(m) - 0.5);
+  vec2 fc = abs(fract(mp) - 0.5);
   float freeW = smoothstep(0.1, 0.42, max(fc.x, fc.y));
+#ifdef PIXEL_GROUND
+  // The pixel-art ground: the borders wander off the grid by a broad noise, the utility tile's
+  // lobes break them into marks a few art pixels across, and the weights are cut hard below (one
+  // ground holds an art pixel). The same noise at two sizes lays the patches of tone.
+  gPu = pixTile(M_PIX);
+  vec2 wv = (vec2(rnoise(mp, 1.1), rnoise(mp + 17.3, 1.1)) - 0.5) * 2.3 + (vec2(rnoise(mp + 5.1, 2.9), rnoise(mp - 8.7, 2.9)) - 0.5) * 0.9;
+  vec2 q = mp + wv / (1.0 + abs(wv) / 0.42) * freeW + (gPu.rg - 0.5) * 0.07;
+  gPatch = rnoise(mp + 31.7, 1.3) * 0.6 + rnoise(mp - 9.1, 3.1) * 0.4;
+#else
   vec4 wn = vec4(mnoise(m, 0.45), mnoise(m + 17.3, 0.45), mnoise(m + 3.3, 1.1), mnoise(m - 4.4, 1.1));
   vec2 warp = (wn.xy - 0.5) * 1.3 + (wn.zw - 0.5) * 0.5;
   vec2 q = m + warp * freeW + (vec2(mnoise(m + 5.1, 3.2), mnoise(m - 8.7, 3.2)) - 0.5) * 0.2;
+#endif
   vec2 gq = q - 0.5;
   vec2 c0 = floor(gq);
   vec2 f = fract(gq);
   ivec4 p00 = plotAt(c0), p10 = plotAt(c0 + vec2(1, 0)), p01 = plotAt(c0 + vec2(0, 1)), p11 = plotAt(c0 + vec2(1, 1));
   vec4 w = vec4((1.0 - f.x) * (1.0 - f.y), f.x * (1.0 - f.y), (1.0 - f.x) * f.y, f.x * f.y);
   int gs[4] = int[](p00.x, p10.x, p01.x, p11.x);
+  // (How much of the point is unexplored, by the smooth weights: the pixel-art ground fades the
+  // parchment in by it. And, where the land is a slab, the smooth shares of land and of open water:
+  // a beach lies only where both are.)
+  float voidSoft = 0.0, landSoft = 1.0, wetSoft = 1.0;
+#ifdef CLIFF_FACE
+  // The land is a slab: over the water its ground is the land's own right to the rim (none of the
+  // shelf's blended in), and under it the floor is the shelf's alone. The frozen sea is a sheet at
+  // the water's level, over it and under it; the unexplored stands over it.
+  {
+    ivec4 gv0 = ivec4(gs[0], gs[1], gs[2], gs[3]);
+    vec4 isVoid = vec4(lessThan(gv0, ivec4(G_GRASS))) + vec4(greaterThan(gv0, ivec4(G_OCEAN)));
+    vec4 isIce = min(vec4(equal(ivec4(p00.y, p10.y, p01.y, p11.y), ivec4(F_ICE))) + vec4(equal(ivec4(p00.z, p10.z, p01.z, p11.z), ivec4(6))), 1.0);
+    vec4 isLand = vec4(lessThan(gv0, ivec4(G_SHALLOWS))) * (1.0 - isVoid) * (1.0 - isIce);
+    vec4 isWater = (1.0 - isLand) * (1.0 - isVoid) * (1.0 - isIce);
+    landSoft = dot(w, isLand);
+    wetSoft = dot(w, isWater);
+    vec4 own = h > 0.0 ? 1.0 - isWater : isWater + isIce;
+    float sum = dot(w, own);
+    if (sum > 0.001) w = w * own / sum;
+#ifdef PIXEL_GROUND
+    // The ground under the parchment's edge is the nearest known ground's: the cut below is among
+    // the known plots, and the parchment fades in over it.
+    voidSoft = dot(w, isVoid);
+    if (voidSoft < 0.999) w = w * (1.0 - isVoid) / (1.0 - voidSoft);
+#endif
+  }
+#endif
+#ifdef PIXEL_GROUND
+  w /= max(max(w.x, w.y), max(w.z, w.w));
+  w = pow(w, vec4(64.0));
+  w /= dot(w, vec4(1.0));
+#endif
   // Grassland and prairie are one ground, the meadow, painted once: gDry, the prairie's share of it
   // by the smooth weights (before they are sharpened), only tips the balance between its green and
   // golden grass, so the golden patches follow their own organic shapes, not the plot grid.
@@ -1246,9 +1449,11 @@ void main() {
   // Painted edges: the weights are pushed by stroke noise, so a border between two grounds is a
   // band of interleaved brush strokes rather than a gradient.
   // (The utility layer's dab tones: 4.5 dabs a plot, as the GLSL mdabs, for one tap.)
+#ifndef PIXEL_GROUND
   float brk = matAt(m, M_NOISE, 0.75, vec2(0.13, 0.29), 1.0).r;
   w = pow(w, vec4(2.2 + 4.0 * brk));
   w /= dot(w, vec4(1.0));
+#endif
   float ws[4] = float[](w.x, w.y, w.z, w.w);
   // How much of the point is hell ground (its rock is basalt and it takes no snow), and how much is
   // unexplored.
@@ -1279,7 +1484,7 @@ void main() {
   int here = plotAt(m).z;
   bool known = here != 0;
   float v = visAt(vWorld);
-  vec4 dec = texture(uDecal, mapUV(m));
+  vec4 dec = texture(uDecal, mapUV(mp));
   // The noises several branches take (gBig ...: see their declaration), each where one of them
   // will run: the conditions are those branches' own (paintGround's weight, the beach's band, ...).
 #ifdef LEAN_BROAD
@@ -1323,9 +1528,11 @@ void main() {
   paintGround(G_OCEAN, kindW(G_OCEAN, gv, w), m, h, alb, keepG, hG, emit);
   // The unexplored ground: the blank parchment, painted once for it and for the frontier (below).
   vec3 blank = vec3(0.0);
-  if (voidW >= 0.004 || v < 0.7) blank = blankAlbedo(m);
+  if (voidW >= 0.004 || voidSoft >= 0.004 || v < 0.7) blank = blankAlbedo(m);
   if (voidW >= 0.004) {
+#ifndef PIXEL_GROUND
     alb += blank * voidW;
+#endif
     hG += 0.5 * voidW;
   }
   // Features' floors, by the same weights, each kind once in the same way (the young forest's floor
@@ -1345,6 +1552,11 @@ void main() {
   paintFeature(F_SOULS, kindW(F_SOULS, fv, w), alb, m, fa, emit);
   paintFeature(F_FALLOUT, kindW(F_FALLOUT, fv, w), alb, m, fa, emit);
   alb = fa;
+#ifdef PIXEL_GROUND
+  // (The art's colours, so far: from here an albedo, as what is laid over the ground below -- and
+  // the unexplored ground's parchment, which is painted as one.)
+  alb = mix(invFilmic(alb / max(1.0 - voidW, 1e-3)) * gArtK, blank, max(voidW, smoothstep(0.3, 0.7, voidSoft)));
+#endif
   // Rock on steep ground (painted below). Its crags: creases of ridged noise across the rock faces
   // catch the light (a bump on the shading normal, world-anchored, close up mostly), finer than the
   // terrain mesh can carry -- their height here, its derivatives outside the branches.
@@ -1359,6 +1571,11 @@ void main() {
     float broken = hillRock > 0.0 ? matAt(m, M_NOISE, 2.8, vec2(0.23, 0.61), 1.0).r : gN4;
     rockMask = smoothstep(mix(0.24, 0.10, hillRock), mix(0.4, 0.24, hillRock), slope + (broken - 0.5) * 0.18);
     if (here == 5) rockMask = max(rockMask, smoothstep(0.42, 0.62, h) * 0.85);
+#ifdef CLIFF_FACE
+    // (A face is drawn from its strip, below: the ground it stands under keeps its own colour for
+    // the turf lip.)
+    if (face) rockMask = 0.0;
+#endif
 #ifndef LEAN_CRAG
     if (rockMask > 0.0) {
       float crease = 1.0 - abs(mnoise(m + 1.7, 2.2) * 2.0 - 1.0);
@@ -1379,13 +1596,29 @@ void main() {
     float beach = (1.0 - smoothstep(0.02, 0.075, h)) * smoothstep(-0.05, 0.0, h);
     beach *= 1.0 - smoothstep(0.15, 0.5, iceW);
     beach *= 1.0 - smoothstep(0.3, 0.7, dec.b); // a river's banks: wet earth
+#ifdef CLIFF_FACE
+    // (Where the land is a slab a beach lies only where its face fades out beside open water:
+    // not on the ice, the parchment or the map's edge, which stand as low.)
+    beach *= step(0.1, landSoft) * step(0.04, wetSoft);
+#endif
+#ifdef PIXEL_GROUND
+    // (The pixel-art ground: the sand's tile, cut hard. Only where the land's face fades out,
+    // toward the ice and the unknown beside the sea.)
+    if (beach + (gPu.r - 0.5) * 0.3 > 0.5) alb = artAlb(pixTile(M_SAND).rgb);
+#else
     if (beach > 0.0) {
       vec4 tb = matAt(m, M_SAND, 1.3, vec2(0.3, 0.1), 1.0);
       alb = mix(alb, srgb(matTint(tb, M_SAND, mix(vec3(0.66, 0.57, 0.40), vec3(0.78, 0.70, 0.52), gN2))), beach * 0.85);
       hG = mix(hG, tb.a, beach * 0.85);
     }
+#endif
     // Rock on steep ground: cliffs and the flanks of the mountains, with strata, its crags catching
     // the light.
+#ifdef PIXEL_GROUND
+    // (The pixel-art ground: the rock's tile on a volcano's steep flanks, its edge cut hard. A
+    // hill's rock is its scarp's face.)
+    if (here == 5 && rockMask + (gPu.g - 0.5) * 0.3 > 0.5) alb = artAlb(pixTile(M_ROCK).rgb * mix(vec3(1.0), vec3(0.45, 0.32, 0.32), hellW));
+#else
     if (rockMask > 0.0) {
 #ifndef LEAN_CRAG
       n = bumpD(n, pDx, pDy, dCrag.x, dCrag.y, 1.0);
@@ -1434,6 +1667,7 @@ void main() {
       alb = mix(alb, srgb(rock), rockMask);
       hG = mix(hG, tk.a, rockMask);
     }
+#endif
     // Snow on the high peaks (and their sunlit ledges).
     // Snow on the summits and caught on the gentler ledges below them, streaked by the wind.
     float snow = 0.0;
@@ -1448,12 +1682,26 @@ void main() {
     // Wet banks along the rivers (decals.js b: full under the water and on the cut bank, fading
     // over the bank tops): lush grass by the river, and the bank itself -- its cut face and the
     // strip at the water's edge -- dark wet earth and moss under the overhanging grass.
+#ifdef PIXEL_GROUND
+    // (The pixel-art ground: the same, in the art's steps -- the grass a tone lusher by the river,
+    // the dirt's tile, wet and dark, on the cut bank.)
+    float wet = dec.b + (gPu.r - 0.5) * 0.25;
+    if (wet > 0.3) alb *= vec3(0.88, 1.0, 0.78);
+    if (wet > 0.86) alb = artAlb(pixTile(M_DIRT).rgb * vec3(0.7, 0.72, 0.6));
+#else
     alb = mix(alb, alb * vec3(0.86, 1.0, 0.76), smoothstep(0.05, 0.6, dec.b) * 0.6);
     float mudN = gN9;
     float mud = smoothstep(0.8 + (mudN - 0.5) * 0.16, 0.95, dec.b);
     alb = mix(alb, srgb(mix(vec3(0.25, 0.2, 0.13), vec3(0.19, 0.23, 0.12), mudN)), mud * 0.9);
+#endif
     // Settlement ground, fields and roads (rasterised per plot, see decals.js).
     // Trodden ground (settlements, yards): the road's packed dirt, laid on with the decal's strength.
+#ifdef PIXEL_GROUND
+    // (The pixel-art ground: worn to the dirt's tile, bare at the yard's middle and half worn
+    // round it, each edge cut hard and ragged.)
+    float worn = dec.a * 0.9 + (gPu.g - 0.5) * 0.5;
+    if (worn > 0.42) alb = mix(alb, artAlb(pixTile(M_DIRT).rgb), worn > 0.72 ? 1.0 : 0.5);
+#else
     float earthW = dec.a * 0.8;
     if (earthW > 0.0) {
       vec4 te = matPair(m + 3.1, M_DIRT, 1.2);
@@ -1464,6 +1712,7 @@ void main() {
 #endif
       hG = mix(hG, te.a, earthW);
     }
+#endif
     // Fields (decals.js, fields.js): g holds the crop -- 0.2 a paddock's grazed turf, ~0.33 vegetable
     // beds (green rows on tilled soil, 14 a plot, running east-west), ~0.67 bare tilled soil, 1
     // golden grain (18 rows a plot, running north-south). The filtered value fades the field in; the
@@ -1473,13 +1722,23 @@ void main() {
     float fieldW = smoothstep(0.08, 0.2, dec.g);
     if (fieldW > 0.0) {
       ivec2 dsz = textureSize(uDecal, 0);
-      ivec2 t0 = ivec2(floor(mapUV(m) * vec2(dsz) - 0.5));
+      ivec2 t0 = ivec2(floor(mapUV(mp) * vec2(dsz) - 0.5));
       float gk = 0.0;
       for (int k = 0; k < 4; k++) {
         ivec2 tk = t0 + ivec2(k & 1, k >> 1);
         tk = ivec2(uWrapX > 0.5 ? (tk.x % dsz.x + dsz.x) % dsz.x : clamp(tk.x, 0, dsz.x - 1), clamp(tk.y, 0, dsz.y - 1));
         gk = max(gk, texelFetch(uDecal, tk, 0).g);
       }
+#ifdef PIXEL_GROUND
+      // (The pixel-art ground: each crop its tile, laid on the ground's own grid of art pixels --
+      // furrows, beds and rows of grain a whole number of pixels apart -- the field's edge cut hard
+      // half-way up its fade.)
+      if (dec.g + (gPu.r - 0.5) * 0.08 * gk > 0.5 * gk) {
+        vec3 crop = gk < 0.26 ? pixTile(M_GRASS).rgb * mix(vec3(1.1, 1.08, 0.9), vec3(1.2, 1.06, 0.72), gDry)
+          : gk < 0.5 ? pixTile(M_VEG).rgb : gk < 0.84 ? pixTile(M_SOIL).rgb : pixTile(M_GRAIN).rgb;
+        alb = artAlb(crop);
+      }
+#else
       float soilK = smoothstep(0.42, 0.56, gk), grainK = smoothstep(0.78, 0.9, gk), turfK = 1.0 - smoothstep(0.23, 0.29, gk);
       float wT = turfK, wG = grainK * (1.0 - wT), wS = soilK * (1.0 - grainK) * (1.0 - wT), wV = 1.0 - wT - wG - wS;
       vec4 crop = vec4(0.0);
@@ -1509,10 +1768,22 @@ void main() {
       alb = mix(alb, srgb(crop.rgb), fieldW);
       hG = mix(hG, crop.a, fieldW);
       keepG = max(keepG, fieldW * 0.45);
+#endif
     }
     // Roads: r is a ramp falling from 1 on a track's centre line to 0 at 0.3 plots (decals.js
     // ROAD_RAMP), cut here into a packed-dirt track ~0.14 plots wide: a crisp edge, a lighter crown,
     // darker margins and wheel ruts, and a verge of worn, dry grass beside it.
+#ifdef PIXEL_GROUND
+    // (The pixel-art ground's road: the dirt's tile, cut hard at its edge and a step darker along
+    // it, the grass beside it worn dry in patches.)
+    float rd = (1.0 - dec.r) * 0.3 + (gPu.r - 0.5) * 0.016;
+    if (rd < 0.1) {
+      float aa = max(gPpx * 0.75, 0.002);
+      float on = 1.0 - smoothstep(0.075 - aa, 0.075 + aa, rd);
+      if (rd > 0.075 && gPu.g > 0.45) alb *= vec3(1.1, 1.0, 0.74);
+      alb = mix(alb, artAlb(rd > 0.06 ? pixTile(M_DIRT).rgb * vec3(0.9, 0.87, 0.82) : mix(pixTile(M_DIRT).rgb, vec3(0.83, 0.74, 0.56), 0.6)), on);
+    }
+#else
     float rd = (1.0 - dec.r) * 0.3;
     if (rd < 0.15) {
 #ifdef LEAN_ROAD
@@ -1543,6 +1814,7 @@ void main() {
       hG = mix(hG, td.a, on);
       keepG = max(keepG, on * 0.6);
     }
+#endif
   }
   // The materials' relief, picked out by the light (the mipmaps flatten it with distance).
   vec2 dRel = vec2(dFdx(hG), dFdy(hG)) * 0.004;
@@ -1563,6 +1835,50 @@ void main() {
   vec3 col = alb * L;
   col = shadowColour(col, sun);
   col += emit;
+#ifdef CLIFF_FACE
+  if (face) {
+    // The strip: one for the faces that look south or north, the other for east or west. Its texels
+    // sharp while they are larger than a pixel (each a flat square, blended with its neighbour over
+    // one pixel: the cards' filter), mip-filtered when smaller.
+    vec2 sz = vec2(256.0, 2.0 * uCliff.y);
+    vec2 tx = vec2(cTex.x, (faceX ? uCliff.y : 0.0) + clamp(cTex.y, 0.5, uCliff.y - 0.5));
+    vec2 fw = max(abs(cDx) + abs(cDy), vec2(1e-4));
+    vec4 ct;
+    if (max(fw.x, fw.y) < 1.0) {
+      vec2 t = tx - 0.5;
+      vec2 ti = floor(t);
+      vec2 ts = clamp((t - ti - 0.5) / fw + 0.5, 0.0, 1.0);
+      ct = textureLod(uCliffTex, (ti + 0.5 + ts) / sz, 0.0);
+    } else ct = textureGrad(uCliffTex, tx / sz, cDx / sz, cDy / sz);
+    // The stone in its land's cast: sandstone by a desert, cold grey in the north, basalt in hell.
+    vec3 stone = ct.rgb * mix(vec3(1.0), vec3(1.12, 1.02, 0.84), wDesert);
+    stone = mix(stone, vec3(lum(stone)) * vec3(0.9, 0.95, 1.06), 0.65 * min(1.0, wSnow + wTundra));
+    stone = mix(stone, stone * vec3(0.4, 0.28, 0.28), hellW);
+    // Wet where it stands in the water, and darker under it.
+    stone *= mix(vec3(0.5, 0.58, 0.66), vec3(1.0), smoothstep(-0.005, 0.02, h));
+    // Tinted, not lit again (the strip is painted lit from the upper left, as the cards are): a
+    // face turned from the sun a step darker, one turned to it a little lighter. Written through
+    // the filmic curve's inverse, so the art's colours come out its own.
+    float turn = smoothstep(-0.55, 0.6, dot(n, uSunDir));
+    // (And in a cast shadow or a cloud's, where the sun would reach it: the light's own share of
+    // shade there, out of lightAt's sun term.)
+    float dF = clamp((dot(n, uSunDir) + uWrapLight) / (1.0 + uWrapLight), 0.0, 1.0);
+    float lit = dF > 0.05 ? clamp(sun / dF, 0.0, 1.0) : 1.0;
+    vec3 faceC = invFilmic(srgb(stone) * mix(0.82, 1.06, turn) * mix(vec3(0.66, 0.7, 0.84), vec3(1.0), lit)) / uExposure;
+    // The lip: the ground's own colour hanging over the rim, by the strip's shade.
+    vec3 lipC = alb * gFlat * mix(0.5, 1.0, ct.a) * mix(vec3(0.66, 0.7, 0.84), vec3(1.0), lit);
+    col = mix(faceC, lipC, step(0.02, ct.a) * step(0.0, h));
+    // Where a road meets the face, steps cut in it: treads of packed earth, three art pixels each,
+    // a dark riser under every one and a darker side.
+    float sd = (1.0 - dec.r) * 0.3;
+    if (sd < 0.08 && h > 0.0) {
+      float riser = step(mod(cTex.y, 3.0), 1.0);
+      vec3 tread = mix(vec3(0.694, 0.573, 0.384), vec3(0.357, 0.251, 0.149), max(riser, step(0.058, sd)));
+      col = invFilmic(srgb(tread) * mix(0.82, 1.06, turn)) / uExposure;
+    }
+    emit = vec3(0.0);
+  }
+#endif
 
   // The unexplored: the map's blank, dark parchment. The frontier is a brushy edge (the smooth
   // visibility field pushed by brush dabs), with a scorched rim like the edge of burnt paper.
@@ -1582,6 +1898,12 @@ void main() {
   col = fogOfWar(col, v);
   col = atmosphere(col, vWorld);
   // Alpha: the paint filter's keep mask -- open ground spares part of its own marks, not the blank.
+#ifdef PIXEL_GROUND
+  // (The pixel-art ground: art, as the cards are. 0.87 tells the HD-2D mood pass so -- under the
+  // props' 0.9, over the painted ground's values: its land grade leaves the art's values as
+  // authored, as it does the cards', and its hell cracks still take it for ground. MOOD_FS.)
+  keepG = 0.87;
+#endif
   oColor = vec4(col, keepG * (1.0 - blankT));
   vec3 vn = normalize((uView * vec4(n, 0.0)).xyz);
   oND = vec4(vn, -(uView * vec4(vWorld, 1.0)).z);
@@ -1913,6 +2235,14 @@ in vec3 vWorld;
 in vec4 vExtra;
 in vec2 vFlow;
 uniform sampler2D uHeight;
+// The ground's height the water measures its depth by: the height texture's r, or (SHORE_FIELD,
+// the HD-2D map: MapHd2d.waterDefines) its g, the shore field -- where the land is a slab its
+// height jumps at the shore and does not interpolate, the shore field runs on through.
+#if defined(SHORE_FIELD) && !defined(WATER_RIVER)
+#define GROUND_H(uv) texture(uHeight, uv).g
+#else
+#define GROUND_H(uv) texture(uHeight, uv).r
+#endif
 uniform sampler2D uSceneColor;
 uniform sampler2D uSceneND;
 uniform float uRiver;
@@ -2144,12 +2474,12 @@ void main() {
   // Only samples under water count: around a small lake most of the footprint is dry land, which
   // read as shallows everywhere (a pale salt pan instead of a lake).
   vec2 wq = m + (vec2(mnoise(m, 0.8), mnoise(m + 9.0, 0.8)) - 0.5) * 0.7;
-  float near = texture(uHeight, mapUV(m)).r;
+  float near = GROUND_H(mapUV(m));
   float gsum = 0.0, gw = 0.0;
   float gt[4];
   for (int k = 0; k < 4; k++) {
     vec2 o = vec2(k == 1 ? 0.35 : k == 3 ? -0.35 : 0.0, k == 0 ? 0.35 : k == 2 ? -0.35 : 0.0);
-    float g = texture(uHeight, mapUV(wq + o)).r;
+    float g = GROUND_H(mapUV(wq + o));
     gt[k] = g;
     // Fade each tap's weight continuously across the waterline (F20): the hard step() made a tap
     // snap in or out as it crossed the shore, so depth jumped into hard-edged polygonal facets in
@@ -2372,7 +2702,7 @@ void main() {
   // ... and only where the floor keeps rising toward land across the pixel's neighbourhood (a
   // bump's flank rises one way and falls the other: its contours would close into a lens).
   vec2 up = normalize(vec2(gt[1] - gt[3], gt[0] - gt[2]) + vec2(1e-6, 0.0));
-  float hA = texture(uHeight, mapUV(m + up * 0.15)).r, hB = texture(uHeight, mapUV(m - up * 0.15)).r;
+  float hA = GROUND_H(mapUV(m + up * 0.15)), hB = GROUND_H(mapUV(m - up * 0.15));
   roll *= smoothstep(0.0, 0.006, hA - near) * smoothstep(0.0, 0.006, near - hB);
   // The edge of the unexplored is no coast: the blank's floor stands above the sea (world.js BASE),
   // so the water shallows against it, but surf there would say land. The height's lookup is warped
@@ -2697,6 +3027,9 @@ float edgeDist(vec2 f, int dx, int dy) {
 }
 
 void main() {
+  // No mark on a sheer face (terrain.js: a face's normals are level): a border's line would run up
+  // it as a bar.
+  if (abs(vNormal.y) < 0.01) discard;
   vec2 m = mapOf(vWorld);
   vec2 cell = floor(m);
   vec2 f = m - cell;

@@ -1,6 +1,6 @@
 // The HD-2D mode's own art (docs/HD2D.md): ground layers and prop cards drawn by a local image
 // model and brought to one contract by tools/hd2d/art.py, which writes this index; do not edit.
-export const GROUNDS = ["gnd_dirt", "gnd_grass", "gnd_lichen", "gnd_rock", "gnd_sand", "gnd_snow", "gnd_straw"];
+export const GROUNDS = ["gnd_broken", "gnd_burning", "gnd_dirt", "gnd_face", "gnd_grain", "gnd_grass", "gnd_lichen", "gnd_marsh", "gnd_perdition", "gnd_pix", "gnd_rock", "gnd_sand", "gnd_snow", "gnd_soil", "gnd_straw", "gnd_veg"];
 export const CARDS = {
   altar_1: { w: 29, h: 20, box: [0,  0,  29,  20] },
   bld_site_aifon_isle: { w: 155, h: 114, box: [0,  0,  155,  114] },

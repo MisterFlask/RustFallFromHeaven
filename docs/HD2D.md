@@ -109,6 +109,17 @@ the old bright cards (§5d): four switches -- the towns larger, lit and outlined
 their own fields, flying their owner's banners over the roofs -- compared alone in
 [hd2d/towns-stand-out.jpg](hd2d/towns-stand-out.jpg) and on by default in a moderate mix.
 
+**The terrain pass** (2026-11-16) took up the two things the look target's land has and the
+mode's did not (the owner's direction: the land should be beautiful; no unit or resource art
+changed). **The land is a physical object** (§5f): it stands over its water as a slab with a sheer
+rock face at every shore, and the hills are crowns standing over rock scarps on the side they turn
+to the camera, neighbours joined into plateaus -- faces the terrain mesh now cuts, drawn from
+strips of pixel-art rock under a lip of overhanging turf, with steps where a road climbs one. **The ground is drawn** (§5g): each ground a
+tile of pixel art in the cards' hand, laid at the cards' density with its texels sharp and in its
+own colours, the borders between grounds cut hard and wandering off the grid, with broad patches
+a tone darker or lighter; roads, fields, worn earth and river banks in the same pixels.
+[hd2d/terrain-pass.jpg](hd2d/terrain-pass.jpg) shows it before and after (on the owner's GPU).
+
 | | |
 |---|---|
 | the look target and the lab's composition after it, side by side | [hd2d/lab-vs-reference.jpg](hd2d/lab-vs-reference.jpg) |
@@ -116,6 +127,7 @@ their own fields, flying their owner's banners over the roofs -- compared alone 
 | the town kit (batch 5): the eleven families' pieces and the 22 landmarks | [hd2d/town-kit.png](hd2d/town-kit.png) |
 | cities before and after the town kit: the lab's two views, the real game, close-ups | [hd2d/towns.jpg](hd2d/towns.jpg) |
 | the four ways of making towns stand out, each alone and the default (batch 6) | [hd2d/towns-stand-out.jpg](hd2d/towns-stand-out.jpg) |
+| the terrain pass, before and after: the land in steps, the ground as pixel art | [hd2d/terrain-pass.jpg](hd2d/terrain-pass.jpg) |
 | the Sheaim's corrupted land (lab) | [hd2d/sheaim.jpg](hd2d/sheaim.jpg) |
 | a real game (the `stage corrupt` save at (46, 27)), 96 px a plot | [hd2d/game.jpg](hd2d/game.jpg) |
 | the same, close (168) and far (40) | [hd2d/game-close.jpg](hd2d/game-close.jpg), [hd2d/game-far.jpg](hd2d/game-far.jpg) |
@@ -138,24 +150,30 @@ assets/app/
     pipeline.js  + `ext`: a mode's passes (shadow, scene, post/compose, grade, underlay, ghosts,
                    additive, present); null for the 3D renderer
     dress.js     + `env.claims`: what a mode stands as sprites is not modelled
-    terrain.js   + MapTextures.setMood: the per-plot mood channel
-    shaders.js   + OVERLAY_FS uBorderGlow (0 for the 3D renderer: its ink border is unchanged)
+    world.js     + the `cliff` option: the ground in steps (§5f)
+    terrain.js   + MapTextures.setMood: the per-plot mood channel; buildCliffChunk: the stepped
+                   ground's mesh, its faces cut (§5f); the shore field in the height texture
+    shaders.js   + OVERLAY_FS uBorderGlow (0 for the 3D renderer: its ink border is unchanged);
+                   TERRAIN_FS CLIFF_FACE (the faces, §5f) and PIXEL_GROUND (the ground as art, §5g)
+    materials.js + extra layers after its own for a mode's art
     hud.js       + the resource chips ask the map (`resourceChips`)
     config.js    loadConfig/saveConfig/withPreset take the store and presets
     hd2d/
       index.js    MapHd2d: the 3D renderer's Map3D with the hooks set (the module map.js imports)
-      config.js   the HD-2D preset, its light, its panel rows (stored apart: ffh.hd2d.config.3)
+      config.js   the HD-2D preset, its light, its panel rows (stored apart: ffh.hd2d.config.4)
       dress.js    which card stands where: unit groups and banners, cities, buildings, resources,
                   light beams, the Sea layer's buoys (docs/R3D.md §5.3); the claims
       mood.js     the per-plot mood channel and its particles
       sprites.js  the sprite atlas (a texture array) and the card instance buffers
       passes.js   the pipeline extension
       shaders.js  the cards, their shadows and ghosts, the beams, the post passes
-      art/        the mode's own art: gnd_*.png (ground layers), the prop cards, index.js
-                  (written by tools/hd2d/art.py)
+      art/        the mode's own art: gnd_*.png (the ground's tiles and the faces' strips, drawn
+                  by tools/hd2d/ground.py and cliffs.py), the prop cards, index.js (written by
+                  tools/hd2d/art.py)
 r3d-lab/          scene=hd2d, renderer=hd2d, compile.html (§7)
 tools/            r3d-lab.mjs --capture, r3d-perf.mjs, r3d-compare.mjs hd2d shots,
-                  hd2d/art.py (the art's post-processing)
+                  hd2d/art.py (the art's post-processing), hd2d/ground.py and cliffs.py (the
+                  ground drawn by code), trees.py, rocks.py, draw.py (cards drawn by code)
 ```
 
 The mode is the 3D renderer with a handful of hook methods overridden (`MapHd2d extends Map3D`)
@@ -168,8 +186,8 @@ the uniforms change.
 ## 4. What is reused
 
 Everything but the figures, the settlements, the standing improvements and the resource markers:
-the ground and its relief (`world.js`, `terrain.js`, materials), water and rivers, the 3D trees
-(forests are whole-tile clumps; there are no single trees cut for cards yet, §10), rocks, fields
+the ground and its relief (`world.js`, `terrain.js`; in steps and drawn as pixel art since
+2026-11-16, §5f, §5g), water and rivers, fields
 and flat improvements, roads and bridges, the decal and light layers, picking, the camera and its
 zoom steps, the shadow, SSAO and glow passes, the compose/finish grade, FXAA, the overlays (with a
 glowing border, §6), particles, the HUD (city plates, stack badges, far-zoom counters) and the
@@ -284,7 +302,9 @@ its two largest parts with art of the mode's own, drawn by a local image model (
 in ComfyUI on the owner's PC) and brought to one contract by `tools/hd2d/art.py`, as `tools/m7`
 does for the isometric sprites. No unit art changed.
 
-* **Pixel-art ground** (`hd2d/art/gnd_*.png`): grass, dry straw, packed dirt, sand, tundra moss
+* **Pixel-art ground**, as it was until the terrain pass of 2026-11-16 (§5g: the tiles are drawn
+  by code now, laid at the cards' density and shown in their own colours)
+  (`hd2d/art/gnd_*.png`): grass, dry straw, packed dirt, sand, tundra moss
   and lichen, snow and broken rock, drawn top-down, then pixelated to 128 art pixels a tile (two
   texels each: about the sprites' density on screen), their palettes cut to 40 colours, made
   seamless by a dithered cross-fade (each edge takes, more often the nearer it is, what lies one
@@ -310,7 +330,8 @@ does for the isometric sprites. No unit art changed.
   the start (the full terrain's compile, about 1.9 s on Direct3D, is gone), and a cheaper frame
   (SwiftShader, the lab's `scene=hd2d`, one run: 2856 to 2432 ms; an integrated GPU's gain is
   still to measure). (The switch back to the full painting with the two stages, `terrainStandin`,
-  was removed 2026-11-10.)
+  was removed 2026-11-10.) Since 2026-11-16 the grounds themselves are §5g's tiles; the stand-in's
+  defines still shape what is left of the 3D renderer's painting in the mode's program.
 * **Prop cards** (`hd2d/art/*.png`, indexed by `hd2d/art/index.js`): single trees (jungle,
   ancient elven giants, dead; the broadleaf trees, pines and snowy pines were the image model's
   too until 2026-11-14 and are drawn by code now, below), bushes, wildflowers, violet
@@ -399,7 +420,8 @@ does for the isometric sprites. No unit art changed.
 * **Towns spill over their walls** (batch 4, `townRing`): on the open plots within two of a town,
   houses (one or two a plot next to it, now and then one beyond), gardens, a well, fences and
   haystacks, as the look target's towns spread into the land round them.
-* **Raised banks and waterfalls** (batch 4): the mode's world raises dry land 0.04 over its water
+* **Raised banks and waterfalls** (batch 4; the bank gave way to the land's face on 2026-11-16,
+  §5f, the white water stays): the mode's world raised dry land 0.04 over its water
   (world.js `bank`, `MapHd2d.worldOpts`; the 3D renderer's is 0), all but a narrow strip over the
   waterline, so the shore climbs in a short steep step the terrain shader draws as rock, a boulder of
   the bank now and then among the shore stones. (The terrain mesh, six vertices a plot, cannot draw a
@@ -411,10 +433,12 @@ does for the isometric sprites. No unit art changed.
   as artifacts in the river. Behind the cards, the river's depth-found rock collars and wakes took
   the sloping bed for something in the stream and drew a net of white cracks over every drop;
   they are now off where a river runs steeply.)
-* **Shores** (batch 3, `dressShores`): the look target's land ends at its water in a rim of dark
+* **Shores** (batch 3, `dressShores`): the look target's land ends at its water in dark
   stones. Along every coast and lake shore a 14 × 14 sampling of the plot (and a quarter plot past
-  its edges, as the warped coast wanders off the grid) finds where the ground falls through the
-  waterline and stands a shore stone or pebbles there; along rivers, just outside the water's edge
+  its edges, as the warped coast wanders off the grid) finds the shallows a little way off the
+  land's face (0.02 to 0.075 of a plot out, by the shore field over its slope: §5f) and stands a
+  shore stone there, now and then a boulder, in a loose row (until 2026-11-16 a rim of stones and
+  pebbles where the ground fell through the waterline on a beach); along rivers, just outside the water's edge
   (`RIVER_HALF` + 0.01-0.055), smaller stones, pebbles and now and then reeds. One a cell of 0.17
   plot at most, on a global grid, so neighbouring plots never stack theirs.
 
@@ -602,6 +626,161 @@ lookup. Worker build buttons use the matching art while the HD-2D map is active.
 The coverage test checks all unique landmarks, each new type's actual drawn card,
 PNG dimensions and atlas fit, alongside the existing visibility checks.
 
+## 5f. The land in steps: the slab and the hills' scarps (2026-11-16)
+
+The look target's land is a thing: it stands over its water as a slab with rock at its edge, and
+its high ground is a plateau over a rock face. Until this pass the mode's land met its water in a
+bank 0.04 of a plot high, painted as rock, and its hills were smooth domes with a blurred rock
+texture on their steep side: the terrain mesh, six vertices a plot, could only ramp. Now the ground
+has steps (the owner's direction, 2026-11-16: the land should be beautiful; no unit or resource art
+changed):
+
+* **The world** (`world.js`, the mode's `cliff` option: `CLIFF` 0.18 in hd2d/config.js; the 3D
+  renderer's world, without it, is unchanged to the bit). `heightAt` keeps the *shore field* -- the
+  ground before any step, continuous, zero at the shore -- lifts all dry land by `CLIFF` and drops
+  the floor by `CLIFF_FOOT` (0.05), so at the shore the ground steps by 0.23 of a plot: about 14 px
+  of face at the gameplay zoom, 26 at 168. The hills (`domes`) have a *scarp field*, positive on
+  their crowns: on the side a hill turns to the south, toward the camera (each hill its own way, as
+  before), the crown stands sheer over its shelf, up to `SCARP` (0.2 of a plot; 0.7 to 1 of it,
+  each hill its own), tapering out over about a sixth of a plot of rim to nothing round the back,
+  where the crown rises in the broad ramp it had. Hills side by side stand on one crown, a plateau
+  under one scarp: the crowns are where the hills' pulls together (`crownPull`) pass a lone hill's
+  at its rim, and the step's height and the way it faces are the hills' own, mixed by their pulls.
+  A scarp gives way to a river (over its channel it is the old slope) and to a lake. Toward the ice
+  the shore's lift fades instead (no face): the frozen sea is a sheet at the water's level. The
+  unknown beside known water lies low, at the water's level, as before; the rest of the unknown is
+  lifted with the land (`findLowVoid`), so known land runs level to its frontier and a river there
+  does not fall.
+* **The mesh** (`terrain.js` `buildCliffChunk`). A grid square the shore or a scarp runs through is
+  cut along it: each of its two triangles is clipped by the shore field, then its land by the scarp
+  field, into each region's part (the floor, the land, a crown) at that region's height
+  (`World.hFloor`, `hLand`, `hCrown`), with an upright quad between two parts. A cut's ends are
+  found on the fields themselves (false position, a few steps; more on the far zoom's coarse grid),
+  from the same end of a grid edge in the chunks on both of its sides, so neighbouring chunks meet
+  without a crack (tested, at both levels of detail: the plan area of a chunk's ground is the
+  chunk's, and the vertices on a shared edge are the same from both sides;
+  `assets/test/r3d-steps.test.mjs`). A face's normal is level, which is how the shaders know a
+  face (steep ground, a volcano's flank, is still ground), and 2 + its rim's height long. A Huge
+  map's 56 chunks build in 0.8 s against the plain grid's 0.5. A reveal in the map's edge rows also
+  rebuilds the parchment's chunk past the edge (the unknown there turns low beside known water).
+* **The faces** (`shaders.js` `CLIFF_FACE`; `hd2d/art/gnd_face.png`, drawn by
+  `tools/hd2d/cliffs.py`). A face is drawn from a strip of pixel-art rock laid down from its rim at
+  the cards' density (124 art pixels a plot along it and down it; along a wrapping map's width a
+  whole number of strips), its texels sharp while they are larger than a pixel: living rock broken
+  into blocks of very uneven size, each standing out of the face, level with it or set back -- a
+  block that stands out a tone lighter, its upper and left edges in the light, the crevice beside it
+  dark; level blocks meet in a change of tone, none ringed in dark (a face of ringed cells read as
+  paving, a face of courses as masonry: both were tried) -- lightest under the rim and darker
+  toward the foot. The strip's alpha is the *lip*: the turf that hangs over the rim, four to seven
+  pixels deep in blades and darker downward, drawn in the ground's own colour there (a meadow's lip
+  is green, a prairie's straw, the snow's white); where a scarp tapers out, a face a few pixels
+  high is all turf. The rock takes its land's cast (sandstone by a desert, cold grey in the north,
+  basalt in hell) and is wet and dark where it stands in the water. Like a card it is tinted, not
+  lit: a face turned from the sun is a step darker.
+* **Roads climb a face in steps**: where a road's track meets one, treads of packed earth, three
+  art pixels each, are cut in the rock -- up a hill's scarp, and down the land's face where a road
+  reaches the shore.
+* **The water** measures the sea's depth, foam and shore lace by the shore field (the height
+  texture's second channel, `SHORE_FIELD`: a face's height does not interpolate; the rivers'
+  program keeps the ground itself). The floor at a face's foot is dark stone, not a sandy shelf; a
+  beach lies only where the face fades out beside open water. **Shore stones** (`dressShores`)
+  stand in the shallows a little way off the face, a loose row with a boulder now and then, their
+  feet just over the water's level, no longer a rim on a beach. Rivers still turn white where they
+  fall (§5b): off a crown's side, and over the land's face into the sea.
+* **What stands on the land** takes its height from the same `heightAt`: a figure, a mine or a
+  tree stands on a crown or at its foot, never in the face. What belongs to a land plot stands on
+  its land (`onLand`, hd2d/dress.js): a building's foot, a banner, a resource or a group of figures
+  whose spot would fall past the rim of the land's face, or on a neighbouring hill's crown, is
+  drawn back toward the plot's middle, and no tree or tuft of a land plot stands in the water. The
+  borders, the grid and the plots' marks are not drawn on a face (`OVERLAY_FS`). The light shafts'
+  haze lies on the lifted land as it lay on the land before (`RAYS_FS` `LAND_UP`).
+
+Not done: a river's mouth is a chute of white water that reads as a waterfall only where it faces
+the camera; a peak is still the 3D renderer's model (the owner's choice, §5b); a scarp stands only
+on the side a hill turns to the camera; a face takes no cast shadow; what reads the height's
+texture or drapes a patch still ramps across a step (a card's contact shadow within a fifth of a
+plot of a face, a unit's ring on the land's rim, a sea lane at a port); the far zoom's coarse grid
+places a scarp less exactly than the near one.
+
+## 5g. The ground drawn as pixel art (2026-11-16)
+
+Until this pass the ground was the 3D renderer's painting under seven image-model textures (§5b),
+laid at twice the cards' density and tinted to each ground's mean tone: at the gameplay zoom a
+soft, smooth surface under crisp cards -- two media. Now the ground is art in the cards' hand:
+
+* **The tiles** (`hd2d/art/gnd_*.png`: 256 x 256 art pixels, a texel each; drawn by
+  `tools/hd2d/ground.py`, the trees' and the stones' recipe cut for ground -- hard tones of one
+  ramp, lit from the upper left, marks a few pixels across). Grass (blades, tufts, flecks of light
+  and shade, flowers in drifts), prairie straw combed along the wind, sand under short crests,
+  packed dirt with pebbles, pale stony tundra with tufts of moss and frost, wind-carved snow, marsh
+  with pools and reeds, rock, the three hell grounds (charred sand with embers, plates of basalt
+  with burning seams, clotted red ground with dark pools) and a field's crops (tilled furrows,
+  beds, rows of ripe grain, a whole number of art pixels apart). They fill the scene's material
+  layers (`MapHd2d` `GROUND_LAYER`: those of the 3D renderer's ground they replace, and four of the
+  mode's own after its twelve, `extraMaterials`).
+* **Laid as a card is drawn** (`shaders.js` `PIXEL_GROUND`). A tile lies at the small cards'
+  density east-west (124 art pixels a plot) and at 0.55 of it north-south: the view foreshortens
+  the ground by about the sine of the camera's pitch, so an art pixel comes out square on the
+  screen and a blade drawn upright stands upright, as on a card (a tile's first row is its north).
+  Its texels are sharp while they are larger than a screen pixel (the cards' filter) and
+  mip-filtered when smaller. And the ground's whole painting is worked out at the art pixel's
+  centre while magnified, so every edge -- a border between grounds, a road's, a field's -- steps
+  with the art's pixels.
+* **In the art's own colours.** The tiles are authored in the cards' colour space and shown as the
+  cards are: on open, level ground in full sun a tile's colour comes out of the pipeline as
+  authored (the finish's brightness and saturation then lift it as they do a card's), and shade,
+  cloud, a slope turned from the sun and a town's light tint it. The mood pass's land grade no
+  longer lifts the ground's middle values (the ground's keep mask is 0.87, between the painted
+  ground's and the cards' 0.9; §6): one palette for the ground and the cards. The ramps keep the
+  map about as bright as the owner asked for on 2026-11-14 (grass is shown at about #89b050,
+  prairie at #e8c86a, sand at #f8dea8): over six views of the turn-200 game the picture's median
+  luminance is 1 to 3% under the map before (the shores' pale beaches are rock now) and its
+  saturation 2 to 6% over.
+* **Which ground lies where is cut hard**: one ground holds an art pixel. The borders between
+  plots' grounds wander off the grid by a noise of the map (up to 0.42 of a plot; a plot's centre
+  keeps its own ground) and are broken into lobes a few art pixels across (the utility tile,
+  `gnd_pix`). Grassland and prairie are two tiles, cut the same way. Over the water the ground is
+  the land's own right to its rim. The unknown's parchment fades in softly, as it did, over the
+  nearest known ground.
+* **Patches of tone.** A noise of the map at two sizes steps a pixel one tone darker or lighter, in
+  each ground's cast (the snow's shade is blue). A tile's alpha pushes that cut, so a patch on
+  grass ends in upright teeth, like blades, on straw in lying ones, on sand in an even curve. The
+  patches do not repeat with the tile and hide its repeat (2.1 by 3.8 plots).
+* **What is laid on the ground**: a wood's floor is the ground's own drawing a deep tone darker (a
+  jungle's and an ancient wood's each in their cast); flood plains are the grass's tile in patches
+  on the sand; frozen sea is the snow's tile in a pale blue, cut into floes by the utility tile's
+  cracks; a road is a light track of the dirt's tile with a darker edge, the grass beside it worn
+  dry in patches; a yard is worn to the dirt's tile in two steps; a river's banks are a tone lusher
+  and its cut bank wet earth; a field is its crop's tile.
+* **Cost.** The frame costs what it did: on the turn-200 `stage corrupt` save at 1280 x 800 under
+  SwiftShader 1105, 1158 and 1170 ms a frame before and 1080 and 1116 after at 96 px a plot (the
+  scene pass about 405 to 387 ms: the ground's painted branches left its program as the tiles
+  came in), and 1007 to 1014 against 1045 and 1067 at 40 (the overlay, which draws the terrain's
+  meshes again, 121 to 142 ms). The terrain's triangles go from 166 to 200 thousand at 96 and from
+  25 to 37 at 40 (the cuts and the faces). Its program compiles on Direct3D in about 460 ms (525
+  before; an RTX 4080 laptop, `r3d-lab/compile.html?only=terrain`). Bringing the whole revealed
+  map up to date costs more, once: the height texture with its second channel about 107 to 182
+  ms, the dressing about 373 to 481 ms (the stones' search off the faces, the spots kept on
+  land). A Huge map fully revealed draws its first frame 4.3 to 4.5 s after the reveal under
+  SwiftShader (the limit is 30) and in about a second on the GPU, the Sea layer on or off
+  (`tools/r3d-huge.mjs`). A pan is as stable as it was (`r3d-lab --stability` at 40, 96 and 168
+  px a plot: docs/R3D.md §11).
+
+Not done: the unexplored's parchment, the snow on a volcano and the sea floor are still the 3D
+renderer's painting; a tile's art is one seed's (a second tile a ground, chosen by a noise, would
+vary it further); and the water is now the largest surface not in the cards' medium (the review's
+note: texel-snapped waves and a pixel foam line at the faces would be the next step).
+
+**The review** (one round: a visual critic on the renders, a code critic on the diff) found, and
+the pass fixed before it landed: the polar ice painted as sand and a ragged map edge (the slab's
+re-weighting took the ice's ground for water and the unknown's cut ran hard); improvements,
+banners, resources and garrisons on a plot with water due south standing at the foot of the face
+(their spots lay past the rim: `onLand`); the tiles laid mirrored north-south; steep ground drawn
+as a face; the parchment's chunks past the map's edge left stale after a reveal; a hole under the
+face where a scarp met the shore; the map 5 to 10% darker (the ramps were lifted, the haze's slab
+raised with the land); roads without contrast on grass; hills as separate discs (their crowns
+join now); the faces as paving (redrawn).
+
 ## 6. Light, moods and the post passes
 
 * **The sun** stands at the upper left of the view (west and a little north, about 45° up), where
@@ -646,7 +825,9 @@ PNG dimensions and atlas fit, alongside the existing visibility checks.
   green) about a third, water about two fifths, the rest a tenth -- except what glows (the
   emission) and gold (bright, saturated yellow-orange); greens are pushed toward olive and water
   toward slate teal; the middle values are lightened a little (a gamma of 0.84) and the shade lifted
-  toward a dark olive floor. The finish pass's saturation is 1.0 and its contrast 1.12 (1.16 and
+  toward a dark olive floor (the painted ground only: the pixel-art ground of §5g is art, as the
+  cards are, its keep mask 0.87 -- over the painted ground's values, under the props' 0.9 -- and
+  its values stay as authored). The finish pass's saturation is 1.0 and its contrast 1.12 (1.16 and
   1.22 before); the lush mood deepens the greens in value only (its saturation boost, 1.28, went).
   Re-measure with the table's columns after a change to the grade or the art.
 
@@ -720,13 +901,13 @@ PNG dimensions and atlas fit, alongside the existing visibility checks.
   as cards, a city a town of the kit's cards at the props' density in its owner's colour; towns
   grow with their size, walled ones have walls, a gate and towers, deterministic; the houses round
   a town are its own; nothing stands on, and no mood comes from, an unrevealed plot).
-* **Art**: `tools/hd2d/draw.py` (the props drawn by code), `tools/hd2d/trees.py` (the woods' trees), `tools/hd2d/rocks.py` (stones and haystacks), `tools/hd2d/local_props.py` (the image
+* **Art**: `tools/hd2d/draw.py` (the props drawn by code), `tools/hd2d/trees.py` (the woods' trees), `tools/hd2d/rocks.py` (stones and haystacks), `tools/hd2d/ground.py` (the ground's tiles, §5g; `--sheet OUT.png` for a look at them) and `tools/hd2d/cliffs.py` (the faces' strips, §5f), `tools/hd2d/local_props.py` (the image
   model's, through a local ComfyUI, §5b), `tools/hd2d/gen.py` (sheets from OpenAI's
   `gpt-image-2.5-sunburst`, pinned to its 2026-09-08 snapshot -- gpt-image-1 was shut down on
   2026-10-23 -- the prop sheets of nine and the town kit's sheets of `tools/hd2d/towns.json`, with
   `--ref` images to match an accepted sheet's style; cut apart by `art.py split SHEET PREFIX`, or
-  for the town kit by `tools/hd2d/towns.py`, §5c), `tools/hd2d/art.py ground SRC NAME` (a top-down texture to a seamless ground layer),
-  `prop SRC NAME HEIGHT [DEEPEN]` (an object on white to a card), `index` (writes
+  for the town kit by `tools/hd2d/towns.py`, §5c), `tools/hd2d/art.py
+  prop SRC NAME HEIGHT [DEEPEN]` (an object on white to a card), `index` (writes
   `art/index.js`); run it with Python with Pillow and numpy (ComfyUI's bundled one has both). The
   images came from the local FLUX 3 Image Klein (the owner's `local-image-gen` skill); `build.rs`
   embeds `assets/app/r3d/hd2d/art/*.png` beside the isometric sprites, and the server's client
@@ -949,9 +1130,10 @@ distance each closes:
    layer at the props' density, about 0.8 of a plot; the reference's palace is somewhat taller
    against its figures. The parallel answer, towns as 3D geometry with pixel-art textures, would
    close the first; a larger atlas layer for a few cards would close the second.
-3. **True cliffs and wide water** (code, the terrain). The raised bank is a steep step, not a cliff
-   face: the terrain mesh (six vertices a plot) cannot draw one; the target's rivers are broader and
-   braided. A finer mesh along shores, or cliff cards along the bank, would close it.
+3. **True cliffs and wide water** (code, the terrain). The cliffs are closed by the terrain pass
+   (§5f: the mesh cuts a sheer face at the shore and at a hill's scarp). What remains: the target's
+   rivers are broader and braided, and a river's mouth over the land's face is a chute of white
+   water, a waterfall only where it faces the camera.
 4. **Darker, moodier sprite variants and figures facing left or animated** (unit art; set aside by
    the owner). The anim-sprint idles now play (§5, "Idle figures"), for the 129 sprites that have one.
 5. **The sky and the map's edge** (code): a small map's edge shows the 3D renderer's void under
@@ -969,7 +1151,7 @@ distance each closes:
 (0.45), `mood` (1), `landGrade` (1, the land's palette, §6), `bloom` (0.8, from a lower threshold),
 `beams` (1), `borderGlow` (1), `contact` (1), `lean` (1). `LIGHT` gives little sky and ground fill
 (0.5 and 0.15). The `plain` preset turns the stylisation and the mode's passes off (the cards stay).
-Its `LIGHT` is the one light. Stored apart from the 3D renderer's look (`ffh.hd2d.config.3`, renamed
+Its `LIGHT` is the one light. Stored apart from the 3D renderer's look (`ffh.hd2d.config.4`, renamed
 when the look changes enough that a saved panel tuning would mislead); the panel offers the 3D
 switches that apply (not the grid or brush dabs, which the mode's terrain is compiled without, §8)
 and the mode's rows. The mode always compiles its terrain, water and props with the value noise
@@ -987,7 +1169,8 @@ outlines and light banding (docs/R3D.md §5).
 
 ## 12. Removing it
 
-Delete `assets/app/r3d/hd2d/` (with its `art/`), `assets/test/hd2d.test.mjs`,
+Delete `assets/app/r3d/hd2d/` (with its `art/`), `assets/test/hd2d.test.mjs` and
+`r3d-steps.test.mjs` (with world.js's `cliff` and terrain.js's `buildCliffChunk`, the mode's alone),
 `r3d-lab/compile.html`, `tools/hd2d/`, this file and `docs/art/hd2d-reference.png`, and the
 `r3d/hd2d/art` folder from `build.rs`; remove the `app/r3d/hd2d/*` lines of `ASSETS` in
 `src/transport/http.rs`, `"hd2d"` and its option in `look.js`/`tools.js` (with another default
@@ -1027,7 +1210,11 @@ its defaults and do no harm.
   cards several to a layer would need an offset per card in the instance data.
 * **Cities' garrisons** show one figure (the banner's badge carries the count), as the isometric map
   hides them.
-* Next, by value: new art per §10 (ground textures first); the first frame's stall on Direct3D 11
+* **The terrain pass's loose ends** (§5f, §5g): a river's mouth over the land's face; a scarp only
+  on the side a hill turns to the camera; contact shadows, rings and sea lanes ramping across a
+  step; the parchment, a volcano's snow and the sea floor still the 3D renderer's painting; one
+  tile of art a ground; the water not yet in the cards' medium.
+* Next, by value: new art per §10; the first frame's stall on Direct3D 11
   (§8: cheaper terrain, water and prop shaders); picking by card; idle frames for the
   other riders and centaurs (above), then the other common units still standing; a sky or haze bank beyond the map's north edge.
 
@@ -1035,7 +1222,9 @@ its defaults and do no harm.
 
 The units, buildings and resources are the isometric renderer's sprites (docs/ISO.md: drawn by an
 image model and brought to one contract by code in `tools/m7/`), as are the cities of a family
-without the town kit. The ground layers and prop
+without the town kit. The ground's tiles and the faces' strips (`gnd_*.png`) are drawn by code
+(`tools/hd2d/ground.py`, `cliffs.py`; since 2026-11-16: the seven ground layers before them were
+the image model's). The prop
 cards in `assets/app/r3d/hd2d/art/` were drawn by FLUX 3 Image Klein (Black Forest Labs) running
 locally in ComfyUI, and post-processed by `tools/hd2d/art.py` (prompts in §5b's spirit: 16-bit
 pixel art, top-down for ground, a single object lit from the upper left on white for props). The grass, reeds, standing stones and

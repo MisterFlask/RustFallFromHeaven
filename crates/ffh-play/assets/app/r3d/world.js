@@ -94,6 +94,26 @@ const BASE = [0.035, -0.42, -0.12, 0.1, 0.1, 0.1, 0.025];
 
 export const SEA = 0;
 
+/** With `World.cliff`: how far under the sea the floor lies at the foot of the land's face (the
+ *  face stands in water, not on a beach). */
+export const CLIFF_FOOT = 0.05;
+/** With `World.cliff`: a lone hill's crown ends at this value of the hill's own distance (`domes`):
+ *  there its scarp stands, up to SCARP high where it faces the hill's front, nothing at its back.
+ *  CROWN_REACH: how far a hill's pull on the crowns' field reaches (hills side by side join their
+ *  crowns into one plateau: `crownPull`). */
+const CROWN_AT = 0.72;
+const CROWN_REACH = 1.6;
+export const SCARP = 0.2;
+
+/** A hill's pull on the crowns' field at distance d of its own (`domes`): 1 at its middle, falling
+ *  smoothly to nothing at CROWN_REACH. The crowns stand where the hills' pulls together pass a lone
+ *  hill's at CROWN_AT. */
+function crownPull(d) {
+  const t = 1 - (d / CROWN_REACH) * (d / CROWN_REACH);
+  return t > 0 ? t * t : 0;
+}
+const CROWN_PULL = crownPull(CROWN_AT);
+
 /** How deep a hull sits in the water: its keel is under the surface, so the water is seen over it
  *  (refracted, tinted) and laps at its waterline in a collar of foam (shaders.js WATER_FS). Only
  *  hulls (ships, boats, wrecks, swimmers) take it; what lies on the surface (a resource's ripples, a
@@ -118,11 +138,23 @@ export function isHell(g) {
 }
 
 export class World {
-  /** `map`: the `map` reply (S.map shape). `opts.bank`: how far dry land stands over its water
-   *  (0, the 3D renderer: the shore slopes gently into the sea; the HD-2D map raises a low bank, as
-   *  its look target's land stands over its water). */
+  /** `map`: the `map` reply (S.map shape). `opts.cliff`: the ground in steps (the HD-2D map;
+   *  docs/HD2D.md §5f): the land a slab over its water -- dry land lifted by this much right from
+   *  its shore, where it drops to the water in a sheer face, the floor falling away a little at the
+   *  face's foot -- and a hill's crown standing over a scarp (`domes`). 0 (the 3D renderer): the
+   *  shore slopes gently into the sea, a hill's scarp is a steep slope. */
   constructor(map, opts = {}) {
-    this.bank = opts.bank ?? 0;
+    this.cliff = opts.cliff ?? 0;
+    /** What `heightAt` last worked out beside the height (the terrain mesh reads them after each
+     *  call, terrain.js): `shore`, the shore field (see `shoreAt`), and `scarp`, the hills' (positive
+     *  on a hill's crown, 0 where its scarp stands); and the point's height were it the floor under
+     *  the water (`hFloor`), dry land below any crown (`hLand`) or on the nearest crown (`hCrown`) --
+     *  on the shore or on a scarp the ground has two of them, the face between. */
+    this.shore = 0;
+    this.scarp = -CROWN_PULL;
+    this.hFloor = 0;
+    this.hLand = 0;
+    this.hCrown = 0;
     this.w = map.w;
     this.h = map.h;
     this.wrapX = !!map.wrap_x;
@@ -138,6 +170,7 @@ export class World {
     // the shared ground for meshes, roads, water and picking does not reroll its geology.
     this.hillShape = new Float32Array(n * 4);
     this.classify();
+    if (this.cliff > 0) this.findLowVoid();
     this.findLakes();
     this.buildRivers();
     this.centerH = new Float32Array(n);
@@ -178,6 +211,36 @@ export class World {
       }
       this.kind[i] = k;
     }
+  }
+
+  /** With `cliff`: the unexplored plots that lie low, at the water's level -- those next to known
+   *  water or ice (`voidLow`). The rest of the unknown is lifted with the land (heightAt), so known
+   *  land runs level to its frontier (and a river there does not fall), while known water still
+   *  meets the unknown's parchment at its own level, without a face. */
+  findLowVoid() {
+    const n = this.w * this.h;
+    this.voidLow = new Uint8Array(n);
+    const wet = (k) => k === KIND.OCEAN || k === KIND.COAST || k === KIND.ICE;
+    for (let i = 0; i < n; i++) {
+      if (this.kind[i] !== KIND.VOID) continue;
+      const x = i % this.w, y = (i - x) / this.w;
+      for (let dy = -1; dy <= 1 && !this.voidLow[i]; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const j = this.index(x + dx, y + dy);
+          if (j >= 0 && wet(this.kind[j])) this.voidLow[i] = 1;
+        }
+      }
+    }
+  }
+
+  /** Whether the unknown at plot (x, y) lies low (`findLowVoid`); off the map, as the map's nearest
+   *  plot does or would: low beside water, ice or low unknown. */
+  lowVoid(x, y) {
+    let i = this.index(x, y);
+    if (i >= 0) return this.voidLow[i] === 1;
+    i = this.index(this.wrapX ? x : clamp(x, 0, this.w - 1), this.wrapY ? y : clamp(y, 0, this.h - 1));
+    const k = this.kind[i];
+    return k === KIND.VOID ? this.voidLow[i] === 1 : k === KIND.OCEAN || k === KIND.COAST || k === KIND.ICE;
   }
 
   /** Lakes: bodies of water of at most 12 plots (8-connected, as the game's areas) that touch no
@@ -264,7 +327,7 @@ export class World {
     const y0 = Math.floor(v);
     const fx = smoother(u - x0);
     const fy = smoother(v - y0);
-    let h = 0, hill = 0, peak = 0, water = 0, ice = 0, voidW = 0, sand = 0, lakeW = 0;
+    let h = 0, hill = 0, peak = 0, water = 0, ice = 0, voidW = 0, voidLo = 0, sand = 0, lakeW = 0;
     for (let j = 0; j < 2; j++) {
       for (let i = 0; i < 2; i++) {
         const k = this.kindAt(x0 + i, y0 + j);
@@ -279,7 +342,10 @@ export class World {
           if (this.feat[gi] === FEAT.VOLCANO) peak += wgt;
         } else if (k === KIND.OCEAN || k === KIND.COAST) water += wgt;
         else if (k === KIND.ICE) ice += wgt;
-        else if (k === KIND.VOID) voidW += wgt;
+        else if (k === KIND.VOID) {
+          voidW += wgt;
+          if (this.cliff > 0 && this.lowVoid(x0 + i, y0 + j)) voidLo += wgt;
+        }
       }
     }
     const land = 1 - water - ice - voidW;
@@ -298,12 +364,22 @@ export class World {
     }
     // Hills and mountains do not spill into a lake (their domes reach over the plot's edge).
     const dry = lakeW > 0.3 ? 1 - smoothstep(0.3, 0.6, lakeW) : 1;
+    // (The nearest river: its channel is carved below, and with `cliff` a scarp gives way to it.)
+    const rd = this.riverCells.size && (carve || this.cliff > 0) ? this.riverDist(mx, my) : Infinity;
+    // With `cliff`: the scarp field here, and how far the ground stands higher on the nearest crown
+    // and at this point (0 off the crowns) than the hills' continuous ground.
+    let scarp = -CROWN_PULL, riseIn = 0, rise = 0;
     if (hill > 0 && dry > 0) {
       // Turf-capped scarps: broad crowns above a short exposed face and a lower grassy shelf.
       // This is the ground itself, shared by everything that stands on or follows the hill.
       const r = this.ridged(mx, my, 1.6, 5.2, -3.4, 3);
       h += dry * smoothstep(0, 1, hill) * (0.04 + 0.025 * r);
-      h += dry * this.domes(mx, my);
+      h += dry * this.domes(mx, my, rd);
+      if (this.cliff > 0) {
+        scarp = this.crown;
+        riseIn = dry * this.crownIn;
+        rise = dry * this.crownAt;
+      }
     }
     if (peak > 0 && dry > 0) {
       // Mountains: ridged massif, plus a summit near each peak plot's centre.
@@ -316,25 +392,53 @@ export class World {
       h += 0.16 * dry * pw * (0.18 + 0.62 * Math.pow(r, 1.7) + 0.16 * r2 * r);
       h += dry * this.summits(mx, my) * (0.75 + 0.35 * r2);
     }
-    if (voidW > 0) h = h * (1 - voidW) + BASE[KIND.VOID] * voidW;
-    // A raised bank: the dry land lifted, all but a narrow strip just over the waterline, so the
-    // shore climbs in a short steep step (the terrain shader draws steep ground as rock).
-    if (this.bank > 0 && h > 0) h += this.bank * smoothstep(0, 0.03, h);
+    if (voidW > 0) {
+      h = h * (1 - voidW) + BASE[KIND.VOID] * voidW;
+      riseIn *= 1 - voidW;
+      rise *= 1 - voidW;
+    }
+    // The shore field: the ground before any bank or face, continuous across the shore, which is
+    // where it crosses the sea's level.
+    this.shore = h;
+    this.scarp = scarp;
+    let cut = 0, bedFloor = -Infinity;
     // Rivers carve their channel (`carve` false: the ground the river runs over, uncut).
     if (carve && this.riverCells.size) {
-      const d = this.riverDist(mx, my);
+      const d = rd;
       if (d < RIVER_BANK) {
         // A flat bed under all the water the shader may draw (its edge wanders, RIVER_WANDER), then
         // a steep cut bank up to the bank tops. The bed runs on under the water's edge: the terrain
         // mesh (RES vertices a plot) is too coarse to draw the shore, so the water shader does.
         const cv = 1 - smoothstep(RIVER_HALF + RIVER_WANDER, RIVER_BANK, d);
-        h -= 0.09 * cv * cv * (3 - 2 * cv);
+        cut = 0.09 * cv * cv * (3 - 2 * cv);
         // A river's bed never sinks deep under sea level -- on land: over the sea the floor stays
         // the sea's (raised, it would show through the clear water as a sandbar along the river).
-        if (cv > 0.5) h = Math.max(h, -0.06 - 0.5 * smoothstep(0.3, 0.7, water));
+        if (cv > 0.5) bedFloor = -0.06 - 0.5 * smoothstep(0.3, 0.7, water);
       }
     }
-    return h;
+    if (this.cliff > 0) {
+      // The land a slab: lifted whole from its shore, where it drops sheer to the floor at the
+      // face's foot. Not the ice (a sheet at the water's level) nor the unknown beside known water
+      // (`findLowVoid`): toward them the lift fades, and the land slopes down to them as it did.
+      // And a hill's crown stands over its scarp (`domes`). The ground steps at the shore and at a
+      // scarp: the terrain mesh cuts its faces there (terrain.js).
+      const f = 1 - smoothstep(0.15, 0.6, ice + voidLo);
+      const land = h + this.cliff * f - cut;
+      this.hFloor = Math.max(h - CLIFF_FOOT * f - cut, bedFloor);
+      this.hLand = Math.max(land, bedFloor);
+      this.hCrown = Math.max(land + riseIn, bedFloor);
+      if (h <= 0) return this.hFloor;
+      return scarp > 0 ? Math.max(land + rise, bedFloor) : this.hLand;
+    }
+    return Math.max(h - cut, bedFloor);
+  }
+
+  /** The shore field at (mx, my): the ground's height before any bank or face (and uncut by the
+   *  rivers), positive on dry land and negative under water, continuous across the shore. Where it
+   *  is 0 the shore runs; with `cliff` the land's face stands there. */
+  shoreAt(mx, my) {
+    this.heightAt(mx, my, false);
+    return this.shore;
   }
 
   // Noise of the height, at about f cycles a plot, periodic over the map's width when it wraps
@@ -361,9 +465,24 @@ export class World {
   }
 
   /** Hills merge at their feet into a continuous surface. Rounded crowns have an irregular
-   *  scarp on one flank, a lower shelf, and a gentle back slope. Peaks have their own models. */
-  domes(mx, my) {
+   *  scarp on one flank, a lower shelf, and a gentle back slope. Peaks have their own models.
+   *  With `cliff` the scarp is a step: the crown's front stands sheer over the shelf, up to SCARP
+   *  high at its middle (each hill its own height, 0.7 to 1 of it) and nothing at its ends and
+   *  round the back (where the crown rises in the broad ramp it has there), and gives way to a
+   *  river (`rd`: how far the nearest runs). Hills side by side stand on one crown, a plateau under
+   *  one scarp: the crowns are where the hills' pulls together (`crownPull`) pass a lone hill's at
+   *  its rim, and the step's height and the way it faces are the hills' own, mixed by their pulls.
+   *  The value is then the hills' ground without the step, and beside it: `crown`, the scarp field
+   *  (positive on a crown); `crownIn`, how far a crown would stand over that ground here;
+   *  `crownAt`, how far the ground itself does (0 off the crowns). */
+  domes(mx, my, rd = Infinity) {
     let s = 0;
+    const scarps = this.cliff > 0;
+    const fade = scarps ? smoothstep(RIVER_BANK, RIVER_BANK + 0.14, rd) : 0;
+    // (With `cliff`: each hill's ground apart from its crown's ramp, and that ramp; the pulls'
+    // sum, and the hills' sheerness and height of scarp weighed by them.)
+    let n = 0, pull = 0, sheerSum = 0, highSum = 0;
+    const rest = this.domeRest ?? (this.domeRest = new Float64Array(9)), ramp = this.domeRamp ?? (this.domeRamp = new Float64Array(9));
     const cx = Math.floor(mx);
     const cy = Math.floor(my);
     for (let dy = -1; dy <= 1; dy++) {
@@ -375,19 +494,43 @@ export class World {
         const k = i * 4, radius = this.hillShape[k + 2], phase = this.hillShape[k + 3];
         const u = (mx - px) / radius, v = (my - py) / (radius * 0.86);
         const d0 = Math.hypot(u, v);
-        if (d0 > 1.35) continue;
+        // (A hill's ground reaches 1.35; with `cliff` its pull on the crowns CROWN_REACH.)
+        if (d0 > (scarps ? CROWN_REACH + 0.05 : 1.35)) continue;
         // Broad lobes break the rim without turning the crown into noisy rubble.
-        const d = d0 + 0.055 * Math.sin(u * 8 + phase) * Math.sin(v * 7 - phase);
+        // (With `cliff` fewer and shallower: each lobe of a crown's rim is a buttress of its scarp.)
+        const d = d0 + (scarps ? 0.04 * Math.sin(u * 5 + phase) * Math.sin(v * 4.5 - phase) : 0.055 * Math.sin(u * 8 + phase) * Math.sin(v * 7 - phase));
         const front = smoothstep(-0.35, 0.65, (u * this.hillShape[k] + v * this.hillShape[k + 1]) / Math.max(0.01, d0));
         // A short exposure within a broad turf slope, rather than a sheer ring holding up a
         // flat pedestal. The outer shoulder carries the grass continuously down to the plain.
         const width = 0.62 - 0.42 * front;
-        const crown = 0.16 * (1 - smoothstep(0.72 - width * 0.5, 0.72 + width * 0.5, d));
         const shelf = 0.035 * (1 - smoothstep(0.96, 1.24, d));
         const shoulder = 0.10 * (1 - smoothstep(0.18, 1.34, d));
         const turf = 0.045 * Math.max(0, 1 - d * d);
-        s = Math.max(s, crown + shelf + shoulder + turf);
+        if (!scarps) {
+          const crown = 0.16 * (1 - smoothstep(0.72 - width * 0.5, 0.72 + width * 0.5, d));
+          s = Math.max(s, crown + shelf + shoulder + turf);
+          continue;
+        }
+        rest[n] = shelf + shoulder + turf;
+        ramp[n++] = 0.16 * (1 - smoothstep(0.41, 1.03, d));
+        const g = crownPull(d);
+        pull += g;
+        // (About the hill's middle the way a point lies from it turns fast: there the front
+        // counts half, on every side, so the crown has no crease through its middle.)
+        // The scarp tapers out over a sixth of a plot of the rim (a broad turn from front to
+        // back: on the crown, between the two, the ground ramps from the step's height to the
+        // back's slope, and a quick turn would be a crease the grid cannot draw).
+        sheerSum += g * (0.5 + (smoothstep(0.22, 0.82, front) - 0.5) * smoothstep(0.1, 0.35, d0));
+        highSum += g * (0.7 + 0.3 * Math.abs(Math.sin(phase * 3.7)));
       }
+    }
+    if (scarps) {
+      // Where the front is sheer the crown's ramp is the step instead.
+      const sheer = pull > 0 ? (sheerSum / pull) * fade : 0;
+      for (let k = 0; k < n; k++) s = Math.max(s, ramp[k] * (1 - sheer) + rest[k]);
+      this.crown = pull - CROWN_PULL;
+      this.crownIn = pull > 0 ? SCARP * sheer * (highSum / pull) : 0;
+      this.crownAt = this.crown > 0 ? this.crownIn : 0;
     }
     return s;
   }

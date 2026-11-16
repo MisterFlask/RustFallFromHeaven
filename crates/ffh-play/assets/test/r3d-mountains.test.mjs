@@ -40,30 +40,45 @@ function rim(mesh) {
   return points;
 }
 
-// Sample the triangles actually drawn, so the coarse terrain cannot hide a gap in the test.
+// Sample the triangles actually drawn, so the coarse terrain cannot hide a gap in the test: the
+// lowest of those over the point (where the ground steps, world.js `cliff`, a point on the step
+// has the upper ground's triangle and the lower's; a face, seen from above, is none).
 function terrainHeight(world, res) {
   const chunks = new Map();
   return (mx, my) => {
     mx = ((mx % world.w) + world.w) % world.w;
     const cx = Math.floor(mx / CHUNK), cy = Math.floor(my / CHUNK);
     const key = `${cx},${cy}`;
-    if (!chunks.has(key)) chunks.set(key, buildChunk(world, cx, cy, res));
-    const mesh = chunks.get(key), vw = mesh.pw * res + 1;
+    if (!chunks.has(key)) {
+      // The chunk's triangles by the grid square they lie in.
+      const mesh = buildChunk(world, cx, cy, res);
+      const cells = new Map();
+      for (let t = 0; t < mesh.idx.length; t += 3) {
+        const tri = [0, 1, 2].map((k) => mesh.data.slice(mesh.idx[t + k] * 6, mesh.idx[t + k] * 6 + 3));
+        const x = Math.floor(((tri[0][0] + tri[1][0] + tri[2][0]) / 3 - mesh.x0) * res), y = Math.floor((-(tri[0][2] + tri[1][2] + tri[2][2]) / 3 - mesh.y0) * res);
+        const k = `${x},${y}`;
+        if (!cells.has(k)) cells.set(k, []);
+        cells.get(k).push(tri);
+      }
+      chunks.set(key, { mesh, cells });
+    }
+    const { mesh, cells } = chunks.get(key);
     const x = Math.floor((mx - mesh.x0) * res), y = Math.floor((my - mesh.y0) * res);
-    const start = (y * (vw - 1) + x) * 6;
-    for (const t of [start, start + 3]) {
-      const [a, b, c] = [0, 1, 2].map((k) => mesh.data.slice(mesh.idx[t + k] * 6, mesh.idx[t + k] * 6 + 3));
+    let low = Infinity;
+    for (const [a, b, c] of cells.get(`${x},${y}`) ?? []) {
       const den = (b[2] - c[2]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[2] - c[2]);
+      if (Math.abs(den) < 1e-12) continue;
       const u = ((b[2] - c[2]) * (mx - c[0]) + (c[0] - b[0]) * (-my - c[2])) / den;
       const v = ((c[2] - a[2]) * (mx - c[0]) + (a[0] - c[0]) * (-my - c[2])) / den;
-      if (u >= -1e-6 && v >= -1e-6 && u + v <= 1 + 1e-6) return u * a[1] + v * b[1] + (1 - u - v) * c[1];
+      if (u >= -1e-6 && v >= -1e-6 && u + v <= 1 + 1e-6) low = Math.min(low, u * a[1] + v * b[1] + (1 - u - v) * c[1]);
     }
-    assert.fail(`no terrain triangle at ${mx}, ${my}`);
+    if (low === Infinity) assert.fail(`no terrain triangle at ${mx}, ${my}`);
+    return low;
   };
 }
 
-for (const bank of [0, 0.04]) {
-  test(`mountain rims meet the terrain at full and distant detail (bank ${bank})`, () => {
+for (const cliff of [0, 0.18]) {
+  test(`mountain rims meet the terrain at full and distant detail (cliff ${cliff})`, () => {
     const rows = Array.from({ length: 13 }, (_, y) => (y < 3 ? "-" : y > 8 ? "h" : ".").repeat(30));
     const map = buildMap(data, rows, { wrap: true });
     const peaks = [];
@@ -78,7 +93,7 @@ for (const bank of [0, 0.04]) {
     }
     St.setMap(map);
     St.setView(buildView(data, { players: [{ civ: "CIVILIZATION_BANNOR" }], units }));
-    const world = new World(map, { bank });
+    const world = new World(map, { cliff });
     const mountains = dressStatic(world, map, peaks).list.filter((it) => it.asset === "feat.mountain");
     assert.equal(mountains.length, peaks.length);
     assert.equal(new Set(mountains.map((it) => it.variant)).size, 6, "all six variants are covered");

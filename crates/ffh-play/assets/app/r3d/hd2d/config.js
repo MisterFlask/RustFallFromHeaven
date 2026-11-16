@@ -96,6 +96,11 @@ export const PANEL_HD2D = [
   ["fov", "Lens (field of view)", "range", 20, 36, 1],
 ];
 
+/** How high the land's face stands at its shore (plots; world.js `cliff`, MapHd2d.worldOpts): the
+ *  land is a slab over its water, as the look target's (docs/HD2D.md §5f), and its hills' crowns
+ *  stand over scarps. About 15 px of face at the gameplay zoom. */
+export const CLIFF = 0.18;
+
 /** The lean terrain's defines (shaders.js LEAN_*, compiled into the mode's terrain,
  *  MapHd2d.terrainDefines): the parts of the ground's painting the mode shows little of, computed
  *  from fewer noises -- the terrain shader's instructions 5736 to 3439, its Direct3D compile at the

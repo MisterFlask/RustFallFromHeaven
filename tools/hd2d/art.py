@@ -1,10 +1,8 @@
-"""The HD-2D mode's own art (docs/HD2D.md §10): pixel-art ground layers and prop cards drawn by a
-local image model (FLUX 3 Image Klein in ComfyUI on the owner's PC) and brought to one contract
-here, the way tools/m7 does it for the isometric sprites:
+"""The HD-2D mode's own art (docs/HD2D.md §10): prop cards drawn by a local image model (FLUX 3
+Image Klein in ComfyUI on the owner's PC) and brought to one contract here, the way tools/m7 does
+it for the isometric sprites. (The ground's tiles, art/gnd_*.png, are drawn by code: ground.py and
+cliffs.py; until 2026-11-16 a `ground` command here made them from the image model's textures.)
 
-  ground SRC NAME   a top-down texture -> a seamless 256 x 256 ground layer (128 art px a side, each
-                    two texels, its palette cut), its height (from its value) in alpha:
-                    crates/ffh-play/assets/app/r3d/hd2d/art/NAME.png
   prop SRC NAME H [DEEPEN]
                     an object on a plain white background -> a card H art px tall (cut out, palette
                     cut, a dark one-pixel outline), its foot at the bottom centre: art/NAME.png;
@@ -16,7 +14,7 @@ here, the way tools/m7 does it for the isometric sprites:
   index             art/index.js: every card's size and opaque box, every ground layer
 
 Needs Pillow and numpy (ComfyUI's bundled Python has both):
-  C:/ComfyUI/python_embeded/python.exe tools/hd2d/art.py ground gen/gnd_grass.png gnd_grass
+  C:/ComfyUI/python_embeded/python.exe tools/hd2d/art.py prop gen/hut.png hut_3 30
 """
 import json
 import sys
@@ -27,59 +25,12 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 ART = ROOT / "crates" / "ffh-play" / "assets" / "app" / "r3d" / "hd2d" / "art"
-LAYER = 256  # texels a side of a ground layer (r3d/materials.js MAT_SIZE)
-
-
-def smooth_rank(shape, sigma, seed):
-    """Smooth noise ranked to a uniform 0..1 (clustered choices, not salt and pepper)."""
-    r = np.random.default_rng(seed).random(shape)
-    # A separable box blur, a few times: close enough to a gaussian, no scipy needed.
-    k = max(1, int(sigma))
-    for _ in range(3):
-        for ax in (0, 1):
-            r = sum(np.roll(r, s, ax) for s in range(-k, k + 1)) / (2 * k + 1)
-    return (r.argsort(axis=None).argsort().reshape(shape) + 0.5) / r.size
 
 
 def quantize(rgb, colors):
     """Cut an RGB array's palette to `colors` (median cut, no dithering)."""
     im = Image.fromarray(rgb.astype(np.uint8), "RGB").quantize(colors, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
     return np.asarray(im.convert("RGB"))
-
-
-def ground(src, name, art=128, band=32, colors=40, seed=7):
-    im = Image.open(src).convert("RGB")
-    s = min(im.size)
-    im = im.crop(((im.width - s) // 2, (im.height - s) // 2, (im.width + s) // 2, (im.height + s) // 2))
-    n = art + band
-    small = np.asarray(im.resize((n, n), Image.Resampling.BOX)).astype(np.float32)
-    small = quantize(small, colors)
-    # Seamless: near the tile's west (north) edge a texel is taken, more often the nearer the edge,
-    # from one tile's width further east (south) in the source -- what lies just past the opposite
-    # edge -- so the tile's last column meets its first as the source's neighbours meet. Clustered
-    # choices (a dithered cross-fade): no ghosting, no seam.
-    ys, xs = np.mgrid[0:art, 0:art]
-    wx = np.clip(1.0 - xs / band, 0.0, 1.0)
-    wy = np.clip(1.0 - ys / band, 0.0, 1.0)
-    bx = smooth_rank((art, art), 1.5, seed) < wx
-    by = smooth_rank((art, art), 1.5, seed + 1) < wy
-    sx = xs + np.where(bx, art, 0)
-    sy = ys + np.where(by, art, 0)
-    tile = small[sy, sx]
-    # The height: the texel's value, softened a little, kept off zero (the shader reads it as relief
-    # and as which of two layers stands taller).
-    lum = tile @ np.array([0.2126, 0.7152, 0.0722])
-    soft = lum.copy()
-    for ax in (0, 1):
-        soft = (np.roll(soft, 1, ax) + soft * 2 + np.roll(soft, -1, ax)) / 4
-    h = (soft - soft.min()) / max(1e-6, soft.max() - soft.min())
-    alpha = (0.3 + 0.7 * h) * 255
-    rgba = np.dstack([tile, alpha]).astype(np.uint8)
-    k = LAYER // art
-    rgba = np.repeat(np.repeat(rgba, k, 0), k, 1)
-    ART.mkdir(parents=True, exist_ok=True)
-    Image.fromarray(rgba, "RGBA").save(ART / f"{name}.png", optimize=True)
-    print(f"{name}: ground {LAYER}x{LAYER}, {art} art px a side, {colors} colours")
 
 
 def cutout(rgb, thresh=232):
@@ -361,9 +312,7 @@ def index():
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
-    if cmd == "ground":
-        ground(sys.argv[2], sys.argv[3])
-    elif cmd == "prop":
+    if cmd == "prop":
         prop(sys.argv[2], sys.argv[3], int(sys.argv[4]), deepen=float(sys.argv[5]) if len(sys.argv) > 5 else 1.0)
     elif cmd == "split":
         split(sys.argv[2], sys.argv[3])

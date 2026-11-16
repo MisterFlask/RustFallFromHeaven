@@ -128,17 +128,18 @@ function packBuckets(list) {
 }
 
 export class Scene {
-  /** `skipMaterials`: material layers a mode fills itself (not painted here; Map3D replacedMaterials).
+  /** `skipMaterials`: material layers a mode fills itself (not painted here; Map3D replacedMaterials);
+   *  `extraMaterials`: how many more layers it has of its own, after those (Map3D extraMaterials).
    *  `noiseTex`: whether the programs are compiled with NOISE_TEX (Map3D.sceneDefines): the value
    *  noise's hash texture is then made. */
-  constructor(gl, { skipMaterials = null, noiseTex = false } = {}) {
+  constructor(gl, { skipMaterials = null, extraMaterials = 0, noiseTex = false } = {}) {
     this.gl = gl;
     this.noiseHash = noiseTex ? noiseHashTexture(gl) : null;
     this.dabHash = noiseTex ? dabHashTexture(gl) : null;
     this.terrain = new TerrainMeshes(gl);
     this.tex = new MapTextures(gl);
     // The ground's material textures (materials.js), painted once: {tex, mean, bakeMs, uploadMs, bytes}.
-    this.materials = materialTexture(gl, bakeMaterials(undefined, skipMaterials));
+    this.materials = materialTexture(gl, bakeMaterials(undefined, skipMaterials, extraMaterials));
     this.assets = new Map(); // asset key -> AssetBatch
     this.layers = { static: [], units: [] }; // [{batch, chunk: [cx, cy], top, bucket}]
     this.world = null;
@@ -528,6 +529,12 @@ export class Scene {
       uHeight: this.tex.height,
       uMat: this.materials.tex,
       uMatMean: this.materials.mean,
+      // The ground's faces (a mode's: the HD-2D map sets `cliffArt`; shaders.js CLIFF_FACE).
+      uCliffTex: this.cliffArt?.tex,
+      uCliff: [this.cliffArt?.density ?? 1, this.cliffArt?.rows ?? 1, w.wrapX && this.cliffArt ? (Math.max(1, Math.round((w.w * this.cliffArt.density) / 256)) * 256) / w.w : this.cliffArt?.density ?? 1],
+      // The pixel-art ground's tiles a plot (a mode's: the HD-2D map sets `pixArt`; shaders.js
+      // PIXEL_GROUND): a whole number of tiles over a wrapping map's width.
+      uPix: this.pixArt ? [w.wrapX ? Math.max(1, Math.round(w.w * this.pixArt[0])) / w.w : this.pixArt[0], this.pixArt[1]] : [1, 1],
     };
   }
 

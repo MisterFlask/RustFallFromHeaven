@@ -19,6 +19,7 @@ const { unitSpriteKeys } = await import("../app/iso.js");
 const { dressSpriteStatic, dressSpriteUnits, PX } = await import("../app/r3d/hd2d/dress.js");
 const { IDLE, IDLE_FRAME, idleCard } = await import("../app/r3d/hd2d/sprites.js");
 const { plotMoods } = await import("../app/r3d/hd2d/mood.js");
+const { CLIFF } = await import("../app/r3d/hd2d/config.js");
 const { riverPoints, riverLevel, riverFall } = await import("../app/r3d/scene.js");
 
 /** The atlas as the dressing sees it (hd2d/sprites.js SpriteAtlas): the PNG sprites, their owners'
@@ -35,7 +36,7 @@ const atlas = {
 function scene(s) {
   St.setView(s.view);
   St.setMap(s.map);
-  return new World(s.map);
+  return new World(s.map, { cliff: CLIFF });
 }
 
 test("standing hill improvements occupy the crown, with five individually grounded tribal huts", () => {
@@ -318,8 +319,8 @@ test("woods stand as single tree cards and open ground as scattered props, claim
   assert.deepEqual(dressSpriteStatic(w, map, atlas, env, null).list, list, "the same state, the same cards");
 });
 
-test("shores are rimmed with stones and open ground is filled with small props in clumps", () => {
-  const rows = ["~~~~~~", "~~~~~~", "......", "......", "......"];
+test("stones stand in the shallows along a shore and open ground is filled with small props in clumps", () => {
+  const rows = ["~~~~~~", "------", "......", "......", "......"];
   const map = buildMap(data, rows);
   const view = buildView(data, { players: [{ civ: "CIVILIZATION_BANNOR" }] });
   const w = scene({ map, view });
@@ -327,10 +328,13 @@ test("shores are rimmed with stones and open ground is filled with small props i
   const { list } = dressSpriteStatic(w, map, atlas, env, null);
   const shore = list.filter((r) => r.key.startsWith("shore_"));
   // Along the coast (the land's last row, y 2 -- the rows are listed north first -- and the warped
-  // waterline about it), not inland.
-  assert.ok(shore.length >= 8, `a coast six plots long has a rim of stones, not ${shore.length}`);
+  // waterline about it), not inland: in the water at the foot of the land's face, at its surface.
+  assert.ok(shore.length >= 4, `a coast six plots long has a loose row of stones, not ${shore.length}`);
   for (const r of shore) assert.ok(-r.z > 1.6 && -r.z < 3.5, `a shore stone inland at ${-r.z}`);
-  for (const r of shore) assert.ok(Math.abs(r.y - Math.max(0, w.heightAt(r.x, -r.z))) < 0.03, "a shore stone at the waterline");
+  for (const r of shore) {
+    assert.ok(w.shoreAt(r.x, -r.z) < 0, "a shore stone stands in the water");
+    assert.ok(Math.abs(r.y) < 0.03, "a shore stone at the waterline");
+  }
   // Open grassland carries grass tufts, on every inland plot.
   for (let x = 0; x < 6; x++) {
     const n = list.filter((r) => r.key.startsWith("grass_") && Math.floor(r.x) === x && Math.floor(-r.z) === 0).length;
@@ -339,11 +343,32 @@ test("shores are rimmed with stones and open ground is filled with small props i
   assert.deepEqual(dressSpriteStatic(w, map, atlas, env, null).list, list, "the same state, the same cards");
 });
 
+test("what stands on a plot above the sea stands on its land, not at the foot of the land's face", () => {
+  // Land with the coast due south of it (rows are listed north first): improvements, a resource,
+  // a city and a stack on the land's last row.
+  const rows = ["........", "........", "--------", "~~~~~~~~"];
+  const imps = ["IMPROVEMENT_COTTAGE", "IMPROVEMENT_FARM", "IMPROVEMENT_TOWER", "IMPROVEMENT_FORT", "IMPROVEMENT_WORKSHOP", "IMPROVEMENT_LUMBERMILL", "IMPROVEMENT_WINDMILL", "IMPROVEMENT_CAMP"];
+  const map = buildMap(data, rows, { improvements: imps.map((t, x) => [x, 2, t]), bonuses: [[1, 2, "BONUS_WHEAT"], [3, 3, "BONUS_COW"]] });
+  const view = buildView(data, { players: [{ civ: "CIVILIZATION_BANNOR" }], units: [{ type: "UNIT_WARRIOR", x: 2, y: 2 }, { type: "UNIT_WARRIOR", x: 5, y: 2 }] });
+  const w = scene({ map, view });
+  const env = { unitAt: new Set(), cityAt: new Map() };
+  const { list } = dressSpriteStatic(w, map, atlas, env, null);
+  const standing = list.filter((r) => !/^(shore|rock|pebbles)_/.test(plain(r.key)) && -r.z > 2 && -r.z < 4);
+  assert.ok(standing.length > 20, `cards on the land's rows: ${standing.length}`);
+  for (const r of standing) {
+    assert.ok(w.shoreAt(r.x, -r.z) > 0, `${r.key} stands past the land's rim at ${r.x.toFixed(2)}, ${(-r.z).toFixed(2)}`);
+    assert.ok(r.y > 0.1, `${r.key} stands at ${r.y.toFixed(3)}, under its land`);
+  }
+  const units = dressSpriteUnits(w, map, atlas).list;
+  assert.ok(units.length >= 2);
+  for (const r of units) assert.ok(r.y > 0.1 && w.shoreAt(r.x, -r.z) > 0, `${r.key} stands at ${r.y.toFixed(3)}`);
+});
+
 test("bare terrain stays free of houses and agricultural clutter, regions keep their own features", () => {
   const s = hd2d(data);
   St.setView(s.view);
   St.setMap(s.map);
-  const w = new World(s.map, { bank: 0.04 });
+  const w = new World(s.map, { cliff: CLIFF });
   const { moods } = plotMoods(w, s.map);
   const { list } = dressSpriteStatic(w, s.map, atlas, { unitAt: new Set(), cityAt: new Map() }, moods);
   const n = (kind) => list.filter((r) => r.key.startsWith(`${kind}_`)).length;
@@ -366,7 +391,7 @@ test("bare terrain stays free of houses and agricultural clutter, regions keep t
 
 /** How steeply each river's water runs, point by point (scene.js riverFall, the ribbon's aExtra.w). */
 function riverFalls(map) {
-  const w = new World(map, { bank: 0.04 });
+  const w = new World(map, { cliff: CLIFF });
   return w.rivers.flatMap((line) => {
     const pts = riverPoints(w, line);
     const along = [0];
