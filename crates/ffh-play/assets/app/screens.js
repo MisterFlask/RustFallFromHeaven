@@ -234,7 +234,8 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
   const handicap = select("handicap", st.handicaps, d.handicap);
   const climate = select("climate", st.climates, d.climate);
   const sea = select("sea_level", st.sea_levels, d.sea_level);
-  for (const [el, list] of [[world, st.worlds], [speed, st.speeds], [handicap, st.handicaps], [climate, st.climates], [sea, st.sea_levels]]) tip(el, helpTip(list, el));
+  const mapScript = select("map_script", st.map_scripts, d.map_script);
+  for (const [el, list] of [[mapScript, st.map_scripts], [world, st.worlds], [speed, st.speeds], [handicap, st.handicaps], [climate, st.climates], [sea, st.sea_levels]]) tip(el, helpTip(list, el));
   const name = h("input", { type: "text", id: "ng-name", placeholder: "game-<seed>", pattern: "[A-Za-z0-9_.\\-]{1,64}", title: "The game's directory under the saves directory" });
   const options = h(
     "div.checks",
@@ -256,6 +257,7 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
     h(
       "div.fields",
       field("Opponents", opponents),
+      field("Map type", mapScript),
       field("World size", world),
       field("Speed", speed),
       field("Difficulty", handicap),
@@ -307,6 +309,7 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
       handicap: handicap.value,
       climate: climate.value,
       sea_level: sea.value,
+      map_script: mapScript.value,
       options: [...options.querySelectorAll("input:checked")].map((i) => i.value),
       disabled_victories: [...victories.querySelectorAll("input:not(:checked)")].map((i) => i.value),
     };

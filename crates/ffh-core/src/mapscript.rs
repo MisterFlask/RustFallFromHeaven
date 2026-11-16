@@ -429,3 +429,15 @@ impl MapScript for FractalMapScript {
         true
     }
 }
+
+
+pub mod erebus;
+
+/// The procedural map types offered by the new-game screen. Unknown names are rejected.
+pub fn map_script_named(name: &str) -> Option<crate::mapgen::MapScriptRef> {
+    match name {
+        "Fractal" => Some(std::sync::Arc::new(FractalMapScript::default())),
+        "Erebus" => Some(std::sync::Arc::new(erebus::ErebusMapScript::default())),
+        _ => None,
+    }
+}

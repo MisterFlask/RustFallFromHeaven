@@ -6,7 +6,7 @@ use ffh_core::controller::ControllerRef;
 use ffh_core::defs::MAX_CIV_PLAYERS;
 use ffh_core::game::Game;
 use ffh_core::ids::PlayerId;
-use ffh_core::mapscript::FractalMapScript;
+use ffh_core::mapscript::map_script_named;
 use ffh_core::setup::{GameSetup, SetupOptions, SlotStatus};
 use ffh_data::*;
 
@@ -25,6 +25,8 @@ pub struct NewGame {
     pub handicap: HandicapType,
     pub climate: ClimateType,
     pub sea_level: SeaLevelType,
+    /// Procedural generator selected on the new-game screen.
+    pub map_script: String,
     pub options: Vec<GameOptionType>,
     pub disabled_victories: Vec<VictoryType>,
     /// 0 = from the game speed, as the exe does.
@@ -54,6 +56,7 @@ impl NewGame {
             handicap: o.handicap,
             climate: o.climate,
             sea_level: o.sea_level,
+            map_script: "Fractal".into(),
             options: Vec::new(),
             disabled_victories: Vec::new(),
             max_turns: 0,
@@ -66,7 +69,7 @@ impl NewGame {
 
     /// The members of a `setup` object.
     pub const FIELDS: &'static [&'static str] =
-        &["seed", "opponents", "world", "speed", "handicap", "climate", "sea_level", "options", "disabled_victories", "max_turns", "civ", "leader", "observe", "vanilla"];
+        &["seed", "opponents", "world", "speed", "handicap", "climate", "sea_level", "map_script", "options", "disabled_victories", "max_turns", "civ", "leader", "observe", "vanilla"];
 
     /// Members accepted and ignored: settings the game no longer has, which older clients and
     /// journals still send (`era`).
@@ -79,6 +82,10 @@ impl NewGame {
         j.only(&known)?;
         let mut ng = NewGame::new(d, j.get_or("seed", 1u32)?);
         ng.opponents = j.get_or("opponents", ng.opponents)?;
+        ng.map_script = j.get_or("map_script", ng.map_script)?;
+        if map_script_named(&ng.map_script).is_none() {
+            return Err(FieldError::new("map_script", "expected Fractal or Erebus"));
+        }
         if let Some(v) = names::opt_field(d, j, "world")? {
             ng.world = v;
         }
@@ -118,6 +125,7 @@ impl NewGame {
             "handicap" => Json::idx(self.handicap),
             "climate" => Json::idx(self.climate),
             "sea_level" => Json::idx(self.sea_level),
+            "map_script" => self.map_script.clone(),
             "options" => Json::Arr(self.options.iter().map(|&o| Json::idx(o)).collect()),
             "disabled_victories" => Json::Arr(self.disabled_victories.iter().map(|&v| Json::idx(v)).collect()),
             "max_turns" => self.max_turns,
@@ -139,6 +147,7 @@ impl NewGame {
             "handicap" => d.type_name(self.handicap),
             "climate" => d.type_name(self.climate),
             "sea_level" => d.type_name(self.sea_level),
+            "map_script" => self.map_script.clone(),
             "options" => Json::Arr(self.options.iter().map(|&o| Json::from(d.type_name(o))).collect()),
             "disabled_victories" => Json::Arr(self.disabled_victories.iter().map(|&v| Json::from(d.type_name(v))).collect()),
             "max_turns" => self.max_turns,
@@ -177,6 +186,9 @@ impl NewGame {
 
     /// Checks the settings (also done by [`build_game`]).
     pub fn validate(&self, d: &GameData) -> Result<(), String> {
+        if map_script_named(&self.map_script).is_none() {
+            return Err("map_script must be Fractal or Erebus".into());
+        }
         if self.opponents < 1 || self.opponents >= MAX_CIV_PLAYERS {
             return Err(format!("opponents must be in 1..={}", MAX_CIV_PLAYERS - 1));
         }
@@ -206,7 +218,8 @@ pub fn build_game(d: &'static GameData, ng: &NewGame) -> Result<Game, String> {
     let mut g = Game::new(d, setup);
     // The exe passes the first human slot's handicap to CvGame::init.
     g.handicap = Game::setup_handicap(d, &g.setup);
-    g.map_script = std::sync::Arc::new(FractalMapScript::default());
+    g.setup.map_script = ng.map_script.clone();
+    g.map_script = map_script_named(&ng.map_script).expect("validated map script");
     Ok(g)
 }
 
@@ -241,7 +254,8 @@ pub fn build_observed_game(d: &'static GameData, ng: &NewGame) -> Result<Game, S
     }
     let mut g = Game::new(d, setup);
     g.handicap = o.handicap;
-    g.map_script = std::sync::Arc::new(FractalMapScript::default());
+    g.setup.map_script = ng.map_script.clone();
+    g.map_script = map_script_named(&ng.map_script).expect("validated map script");
     Ok(g)
 }
 
@@ -345,6 +359,10 @@ pub fn setup_lists(d: &GameData) -> Json {
         "speeds" => list_help::<GameSpeedType>(d, |_| true, |s| xml(&d.game_speeds[s].base.help)),
         "handicaps" => list_help::<HandicapType>(d, |_| true, |h| xml(&d.handicaps[h].base.help)),
         "climates" => list_help::<ClimateType>(d, |_| true, |c| xml(&d.climates[c].base.help)),
+        "map_scripts" => Json::Arr(vec![
+            crate::jobj! { "id" => "Fractal", "type" => "Fractal", "name" => "Fractal", "help" => "Continents and islands, with latitude-based climates. Wraps east–west." },
+            crate::jobj! { "id" => "Erebus", "type" => "Erebus", "name" => "Erebus", "help" => "Mountain-enclosed valleys, river passes and connected seas. Regional climates follow elevation and rainfall. The map does not wrap." },
+        ]),
         "sea_levels" => list_help::<SeaLevelType>(d, |_| true, |s| xml(&d.sea_levels[s].base.help)),
         "options" => list_help::<GameOptionType>(d, |o| d.game_options[o].visible, |o| xml(&d.game_options[o].base.help)),
         "victories" => list_help::<VictoryType>(d, |_| true, |v| xml(&d.victories[v].base.help)),

@@ -2146,6 +2146,37 @@ async function stagedLoad(bin, saves) {
   steps.push(`loaded the warrior into trireme ${pick} through the transport picker`);
 }
 
+/** Erebus is selected through the actual new-game form; Fractal remains the default. */
+async function erebusMap(bin) {
+  const saves = tempDir("smoke-erebus");
+  const server = await startServer({ bin, saves, extra: ASSETS });
+  try {
+    await b.goto(`${server.url}/?renderer=flat`);
+    await until2("window.ffh && window.ffh.ready", "the Erebus client to boot");
+    await until2('!!document.getElementById("title-new") && !document.getElementById("title-screen").hidden', "the Erebus title screen");
+    await click("#title-new");
+    await until2('!!document.getElementById("ng-map_script")', "the map-type selector");
+    const choices = await b.eval('Array.from(document.getElementById("ng-map_script").options, o => o.value)');
+    if (JSON.stringify(choices) !== JSON.stringify(["Fractal", "Erebus"])) throw new Error(`map types: ${choices}`);
+    if (await b.eval('document.getElementById("ng-map_script").value') !== "Fractal") throw new Error("Fractal is no longer the default");
+    await b.eval(`(() => {
+      for (const [id, value] of [["ng-map_script", "Erebus"], ["ng-world", "WORLDSIZE_DUEL"], ["ng-seed", "19"], ["ng-opponents", "1"]]) {
+        const el = document.getElementById(id); el.value = value; el.dispatchEvent(new Event("change"));
+      }
+    })()`);
+    await shot("erebus-selection");
+    await click("#modals .modal-buttons button.primary");
+    await waitHuman("the first Erebus turn", 120000);
+    const map = await S("S.map");
+    if (map.w !== 32 || map.h !== 32 || map.wrap_x || map.wrap_y) throw new Error(`Erebus geography: ${map.w}x${map.h}, wrap ${map.wrap_x}/${map.wrap_y}`);
+    steps.push("Erebus selected in New game: a 32x32 nonwrapping world; Fractal remains the default");
+  } finally {
+    await b.goto("about:blank");
+    await server.stop();
+    fs.rmSync(saves, { recursive: true, force: true });
+  }
+}
+
 /** "Start at war (debug)" on the new-game screen: the search's progress shows, then the game
  *  opens at the attacked civilization with a message naming the attacker, and the start is saved
  *  as `war-start` in the game's directory. */
@@ -2284,6 +2315,7 @@ async function main() {
     await stagedLairs(bin, saves);
     await crusadeHd2d(server.url, bin, saves);
     await supplyHd2d(server.url, bin, saves);
+    await erebusMap(bin);
     await warStart(bin);
     await newGameElsewhere(bin);
     await crashScreen(bin);

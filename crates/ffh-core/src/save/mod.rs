@@ -19,7 +19,7 @@
 //!   * `controllers`: a loaded game has `NullController`s; the caller re-attaches its own
 //!     (`g.controllers[p] = ..`), exactly as after `Game::new`;
 //!   * `map_script`: only used while generating the map (`game_init`); a loaded game gets the
-//!     default script;
+//!     script selected by its saved setup; old/default scripts keep their default hooks;
 //!   * `dying`: empty outside `unit_kill`;
 //!   * `telemetry`: observation only; a loaded game has it off;
 //!   * `combat_notes`: a debugging record of fights, off (`None`) in a loaded game;
@@ -755,9 +755,13 @@ fn write_game(g: &Game, w: &mut Writer) {
 /// Reads the fields `write_game` wrote, in the same order (struct literal fields are evaluated
 /// in the order written).
 fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError> {
+    let setup: crate::setup::GameSetup = Persist::read(r)?;
+    let map_script = if setup.map_script == "Erebus" {
+        crate::mapscript::map_script_named("Erebus").unwrap()
+    } else { default_map_script() };
     let mut g = Game {
         d,
-        setup: Persist::read(r)?,
+        setup,
         map: Persist::read(r)?,
         players: Persist::read(r)?,
         teams: Persist::read(r)?,
@@ -867,7 +871,7 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         delves: Persist::read(r)?,
         spell_target: None,
         trophies: Persist::read(r)?,
-        map_script: default_map_script(),
+        map_script,
         dying: Vec::new(),
         escorting: false,
         telemetry: crate::telemetry::Telemetry::off(),
