@@ -51,6 +51,22 @@ TRAIT_FLAVORS = {
     "TRAIT_INGENUITY": {"FLAVOR_PRODUCTION": 15},
     "TRAIT_TOLERANT": {"FLAVOR_CULTURE": 10, "FLAVOR_GROWTH": 10},
 }
+MINOR_DIPLOMACY = {
+    "FIRST_CONTACT": "I speak for [OUR_EMPIRE]. Our decisions are our own.",
+    "GREETINGS": "What have you come to discuss, [CT_NAME]?",
+    "DECLARE_WAR": "Our dispute will now be settled by force.",
+    "REFUSE_TO_TALK": "There will be no talks between us today.",
+    "ACCEPT": "We accept these terms.",
+    "THANKS": "We acknowledge your gift. Thank you.",
+    "NO_DEAL": "Those terms do not serve our interests.",
+    "PEACE": "We accept peace. Let the fighting end.",
+    "NO_PEACE": "We are not ready to make peace.",
+    "REJECT": "We will not submit to that demand.",
+    "WORST_ENEMY": "Your dealings with our enemies concern us.",
+    "WORST_ENEMY_TRADING": "Your trade with our enemies will not go unnoticed.",
+    "NUKES": "We possess weapons you would be wise to consider.",
+    "UNIT_BRAG": "Do not underestimate the forces at our command.",
+}
 
 
 def definitions():
@@ -110,6 +126,7 @@ def definitions():
             text[key] = concept["name"]
             text[key + "_PEDIA"] = concept["epithet"] + "[NEWLINE][NEWLINE]" + concept["backstory"]
     assert len(added) == 105 and len({l["type"] for l in added}) == 105
+    text.update({"TXT_KEY_MINOR_DIPLO_" + moment: line for moment, line in MINOR_DIPLOMACY.items()})
     return {"leader_heads": added, "text": text}
 
 

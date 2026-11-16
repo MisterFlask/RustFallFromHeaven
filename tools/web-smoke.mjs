@@ -1515,6 +1515,26 @@ async function stagedTrade(bin, saves) {
   steps.push("trade screen (stage trade): the leader's greeting; 7 gold offered as a gift (value, effect, tiers, the answer shown first), accepted with thanks");
 }
 
+/** A real Sundering faction: its new minor leader's own portrait and a spoken response to
+ *  the parent of the same civilization, which has no civilization-pair bark entry. */
+async function stagedBreakaway(bin, saves) {
+  const st = await loadStaged(bin, saves, "breakaway");
+  await b.key("F4");
+  await dialog("Foreign affairs");
+  const trade = `${TOP} button[data-trade="${st.with}"]`;
+  await until2(`!!document.querySelector(${q(trade)})`, "the breakaway's Trade button");
+  await click(trade);
+  await dialog(/^Trade with/);
+  const head = `${TOP} .leader-head[data-player="${st.with}"]`;
+  const file = `leader_${st.leader.replace(/^LEADER_/, "").toLowerCase()}.png`;
+  await until2(`(() => { const i = document.querySelector(${q(`${head} img.leader-portrait`)}); return !!i && i.complete && i.naturalWidth === 384 && i.src.endsWith(${q(file)}); })()`, "the minor leader's own full portrait");
+  await until2(`(() => { const e = document.querySelector(${q(`${head} .leader-says`)}); return !!e && e.textContent.length > 3 && !/\\[|…|TXT_KEY_/.test(e.textContent); })()`, "the minor leader's response to its parent");
+  await shot("breakaway-leader");
+  await closeDialog(await b.eval(`document.querySelector(${q(`${TOP} .modal-head h2`)}).textContent`));
+  await closeDialog("Foreign affairs");
+  steps.push(`breakaway faction: ${st.leader} has its own portrait and speaks to its parent`);
+}
+
 /** The leader moments (`stage diplomacy`: an AI leader met the human, then declared war): loading
  *  the save, the leader's first contact speaks, "Farewell"; then its war declaration, "So be it";
  *  F4, Trade…: at war since this turn, the leader refuses to talk. */
@@ -2298,6 +2318,7 @@ async function main() {
     await stagedAttack(bin, saves);
     await stagedCapture(bin, saves);
     await stagedTrade(bin, saves);
+    await stagedBreakaway(bin, saves);
     await stagedDiplomacy(bin, saves);
     await stagedAutomate(bin, saves);
     await stagedArmies(bin, saves);

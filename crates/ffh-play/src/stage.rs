@@ -380,7 +380,7 @@ pub fn breakaway(dir: &Path) -> Result<Json, String> {
     g.players[with].gold = 100;
     let leader_type = g.d.type_name(leader).to_string();
     let paths = s.save("breakaway").map_err(|e| format!("save: {e:?}"))?;
-    Ok(crate::jobj! { "stage" => "breakaway", "save" => paths.save.display().to_string(), "with" => with, "leader" => leader_type })
+    Ok(crate::jobj! { "stage" => "breakaway", "save" => paths.save.display().to_string(), "with" => with, "leader" => leader_type, "turn" => s.g.game_turn() })
 }
 
 /// A saved game at a human control point (turn 4 of a duel, seed 11) in which the AI player

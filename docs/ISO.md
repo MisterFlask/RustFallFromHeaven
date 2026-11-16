@@ -296,6 +296,8 @@ fills the page and the interface floats over it.
   painterly realistic backgrounds. `tools/m7/import_minor_leaders.py` imports the approved
   [minor leader portraits](minor-leaders/README.md) into the roster and exports their full and
   face images through the existing pipeline. They do not appear in the new-game leader choices.
+  When neither stock dialogue nor civilization barks supplies a line, preferred minors use
+  default diplomatic responses, including conversations with their own parent civilization.
   `ffh-play stage breakaway DIR` saves an actual Sundering faction met by its human Balseraph
   parent, ready to inspect in diplomacy (`ffh-play serve --load DIR/breakaway.ffhsave`).
 - **How it is wired**: the skin follows the renderer (`main.js` `syncSkin`, on every renderer

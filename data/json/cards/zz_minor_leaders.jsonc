@@ -18904,6 +18904,20 @@
     "TXT_KEY_LEADER_YSREL_THAWLESS_ROAD": "Ysrel of the Thawless Road",
     "TXT_KEY_LEADER_YSREL_THAWLESS_ROAD_PEDIA": "Marshal of the Winter Caravans[NEWLINE][NEWLINE]Ysrel learned to guide caravans across frozen rivers after a southern toll lord impounded her family's wagons. Her traveling households now maintain winter routes that bypass the warm kingdoms' customs posts and unite scattered Illian enclaves. They carry medicine, stolen silver, and exiles with equal discretion, taking tolls of their own wherever a weak garrison cannot stop them. She admires Auric's ability to unite her people but has no wish to exchange every distant border for a single master at home.",
     "TXT_KEY_LEADER_NAEVRA_SNOW_LISTENER": "Naevra Snow-Listener",
-    "TXT_KEY_LEADER_NAEVRA_SNOW_LISTENER_PEDIA": "The Avalanche Warden[NEWLINE][NEWLINE]Naevra was guarding a mountain shrine when an avalanche buried an invading company and her own relief patrol beneath the same snow. She broke the shrine's ceremonial doors into stretchers and brought survivors from both sides down the mountain. The watch houses that follow her preserve Illian winter customs but keep their shelters open to anyone who surrenders a weapon at the threshold. She refuses Auric's demand to close the passes to unbelievers, arguing that knowing the cold creates a duty to those who do not."
+    "TXT_KEY_LEADER_NAEVRA_SNOW_LISTENER_PEDIA": "The Avalanche Warden[NEWLINE][NEWLINE]Naevra was guarding a mountain shrine when an avalanche buried an invading company and her own relief patrol beneath the same snow. She broke the shrine's ceremonial doors into stretchers and brought survivors from both sides down the mountain. The watch houses that follow her preserve Illian winter customs but keep their shelters open to anyone who surrenders a weapon at the threshold. She refuses Auric's demand to close the passes to unbelievers, arguing that knowing the cold creates a duty to those who do not.",
+    "TXT_KEY_MINOR_DIPLO_FIRST_CONTACT": "I speak for [OUR_EMPIRE]. Our decisions are our own.",
+    "TXT_KEY_MINOR_DIPLO_GREETINGS": "What have you come to discuss, [CT_NAME]?",
+    "TXT_KEY_MINOR_DIPLO_DECLARE_WAR": "Our dispute will now be settled by force.",
+    "TXT_KEY_MINOR_DIPLO_REFUSE_TO_TALK": "There will be no talks between us today.",
+    "TXT_KEY_MINOR_DIPLO_ACCEPT": "We accept these terms.",
+    "TXT_KEY_MINOR_DIPLO_THANKS": "We acknowledge your gift. Thank you.",
+    "TXT_KEY_MINOR_DIPLO_NO_DEAL": "Those terms do not serve our interests.",
+    "TXT_KEY_MINOR_DIPLO_PEACE": "We accept peace. Let the fighting end.",
+    "TXT_KEY_MINOR_DIPLO_NO_PEACE": "We are not ready to make peace.",
+    "TXT_KEY_MINOR_DIPLO_REJECT": "We will not submit to that demand.",
+    "TXT_KEY_MINOR_DIPLO_WORST_ENEMY": "Your dealings with our enemies concern us.",
+    "TXT_KEY_MINOR_DIPLO_WORST_ENEMY_TRADING": "Your trade with our enemies will not go unnoticed.",
+    "TXT_KEY_MINOR_DIPLO_NUKES": "We possess weapons you would be wise to consider.",
+    "TXT_KEY_MINOR_DIPLO_UNIT_BRAG": "Do not underestimate the forces at our command."
   }
 }

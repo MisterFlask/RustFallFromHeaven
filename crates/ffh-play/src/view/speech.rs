@@ -29,6 +29,8 @@
 //! lines for each other civilization at eleven moments ([`MOMENTS`]; [`Barks`]). Unless the game
 //! is set to the vanilla experience (`NewGame::vanilla`), a leader picks from those of its
 //! civilization for the human's civilization together with FfH2's own.
+//! Preferred breakaway leaders use a neutral fallback for the displayed moments only when
+//! neither source supplies a line, including contact with their own parent civilization.
 
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
@@ -174,6 +176,28 @@ pub fn barks(d: &'static GameData) -> &'static Barks {
     BARKS.get_or_init(|| Barks::parse(d, &d.barks))
 }
 
+/// A preferred minor leader's response when neither stock diplomacy nor civilization barks
+/// has one. Keys are static because the selected line borrows the static game text.
+fn minor_diplomacy_key(comment: &str) -> Option<&'static str> {
+    Some(match comment {
+        "AI_DIPLOCOMMENT_FIRST_CONTACT" => "TXT_KEY_MINOR_DIPLO_FIRST_CONTACT",
+        "AI_DIPLOCOMMENT_GREETINGS" => "TXT_KEY_MINOR_DIPLO_GREETINGS",
+        "AI_DIPLOCOMMENT_DECLARE_WAR" => "TXT_KEY_MINOR_DIPLO_DECLARE_WAR",
+        "AI_DIPLOCOMMENT_REFUSE_TO_TALK" => "TXT_KEY_MINOR_DIPLO_REFUSE_TO_TALK",
+        "AI_DIPLOCOMMENT_ACCEPT" => "TXT_KEY_MINOR_DIPLO_ACCEPT",
+        "AI_DIPLOCOMMENT_THANKS" => "TXT_KEY_MINOR_DIPLO_THANKS",
+        "AI_DIPLOCOMMENT_NO_DEAL" => "TXT_KEY_MINOR_DIPLO_NO_DEAL",
+        "AI_DIPLOCOMMENT_PEACE" => "TXT_KEY_MINOR_DIPLO_PEACE",
+        "AI_DIPLOCOMMENT_NO_PEACE" => "TXT_KEY_MINOR_DIPLO_NO_PEACE",
+        "AI_DIPLOCOMMENT_REJECT" => "TXT_KEY_MINOR_DIPLO_REJECT",
+        "AI_DIPLOCOMMENT_WORST_ENEMY" => "TXT_KEY_MINOR_DIPLO_WORST_ENEMY",
+        "AI_DIPLOCOMMENT_WORST_ENEMY_TRADING" => "TXT_KEY_MINOR_DIPLO_WORST_ENEMY_TRADING",
+        "AI_DIPLOCOMMENT_NUKES" => "TXT_KEY_MINOR_DIPLO_NUKES",
+        "AI_DIPLOCOMMENT_UNIT_BRAG" => "TXT_KEY_MINOR_DIPLO_UNIT_BRAG",
+        _ => return None,
+    })
+}
+
 /// The lines `ai` may say to `other` for `comment` (see the module docs): FfH2's, and with
 /// `own` also its civilization's own lines for `other`'s; empty when none fits.
 pub fn lines(g: &Game, ai: PlayerId, other: PlayerId, comment: DiploCommentType, own: bool) -> Vec<&'static str> {
@@ -209,6 +233,11 @@ pub fn lines(g: &Game, ai: PlayerId, other: PlayerId, comment: DiploCommentType,
     if let (true, Some(civ), Some(theirs)) = (own, civ, g.player_get_civilization_type(other)) {
         let hostile = comment == d.t::<DiploCommentType>("AI_DIPLOCOMMENT_GREETINGS") && attitude <= AttitudeType::ATTITUDE_ANNOYED;
         out.extend(barks(d).get(civ, theirs, comment, hostile).iter().map(String::as_str));
+    }
+    if out.is_empty() && leader.is_some_and(|l| d.leader_heads[l].preferred_breakaway) {
+        if let Some(key) = minor_diplomacy_key(d.type_name(comment)) {
+            out.push(d.text.get(key));
+        }
     }
     out
 }
@@ -372,5 +401,47 @@ mod tests {
         assert!(v.iter().all(|&x| x < 4));
         assert!((0..4).all(|x| v.contains(&x)));
         assert_eq!(Async::new(0).get(0), 0);
+    }
+
+    #[test]
+    fn every_preferred_minor_can_address_its_parent_in_each_displayed_moment_without_using_game_rng() {
+        let d = ffh_data::global();
+        let mut g = Game::new(d, ffh_core::setup::GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 1));
+        g.game_init();
+        let (other, ai) = (PlayerId(0), PlayerId(1));
+        g.team_meet(g.players[other].team, g.players[ai].team, false);
+        let preferred: Vec<LeaderHeadType> = d.leader_heads.keys().filter(|&l| d.leader_heads[l].preferred_breakaway).collect();
+        assert_eq!(preferred.len(), 105);
+        let moments: Vec<(&str, bool)> = MOMENTS.iter().map(|m| (m.1, m.2)).chain([
+            ("AI_DIPLOCOMMENT_WORST_ENEMY", false),
+            ("AI_DIPLOCOMMENT_WORST_ENEMY_TRADING", false),
+            ("AI_DIPLOCOMMENT_NUKES", false),
+            ("AI_DIPLOCOMMENT_UNIT_BRAG", false),
+        ]).collect();
+        for leader in preferred {
+            let info = &d.leader_heads[leader];
+            let civ = info.minor_leader_of.unwrap();
+            let parent = d.leader_heads.keys().find(|&l| d.civilizations[civ].leaders[l]).unwrap();
+            g.setup.players[ai.idx()].leader = Some(leader);
+            g.setup.players[ai.idx()].civ = Some(civ);
+            g.players[ai].personality_type = Some(leader);
+            g.players[ai].alignment = info.alignment;
+            g.setup.players[other.idx()].civ = Some(civ);
+            g.setup.players[other.idx()].leader = Some(parent);
+            g.players[other].personality_type = Some(parent);
+            g.players[other].alignment = d.leader_heads[parent].alignment;
+            let seeds = (g.soren_rand.seed(), g.map_rand.seed());
+            for &(moment, hostile) in &moments {
+                g.players[ai].ai_attitude_extra[other] = if hostile { -100 } else { 100 };
+                let comment = d.t::<DiploCommentType>(moment);
+                for own in [false, true] {
+                    let response = speech(&Viewer::new(&g, other, false), ai, Some(comment), 7, own).unwrap();
+                    let text = response.get("text").and_then(Json::as_str).unwrap_or_else(|| panic!("{}: {moment}, own={own}", d.type_name(leader)));
+                    assert!(!text.trim().is_empty() && text.trim() != "…" && text.trim() != "..." && !text.contains("TXT_KEY"), "{}: {moment}: {text}", d.type_name(leader));
+                }
+            }
+            assert_eq!((g.soren_rand.seed(), g.map_rand.seed()), seeds, "{}: presentation queries preserve game RNG", d.type_name(leader));
+        }
+        assert_eq!(minor_diplomacy_key("AI_DIPLOCOMMENT_CURRENT_DEALS"), None, "unsupported moments gain no fallback");
     }
 }
