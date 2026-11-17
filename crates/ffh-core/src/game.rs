@@ -298,7 +298,8 @@ pub struct Game {
     /// the teams whose visibility count it raised.
     pub ritual_sight: Vec<(PlotIdx, Vec<TeamId>)>,
     /// Not in C++: the target of the targeted spell being cast (`unit_cast_at`), read by its
-    /// result; `None` outside such a cast. Not saved (a cast is over within one call).
+    /// result; `None` outside such a cast. Set only through [`Game::with_spell_target`]. Not saved
+    /// (a cast is over within one call).
     pub spell_target: Option<crate::structs::SpellTarget>,
     // ---- replacements for state C++ keeps outside CvGame ----
     /// Trophies (C++ Python `CvDataStorage`, persistent across games in C++; per game here).
@@ -330,6 +331,16 @@ pub struct Game {
 }
 
 impl Game {
+    /// Runs `op` with `spell_target` set to `target`, then restores the value it had before, so
+    /// a targeted cast nested inside another (a result that casts) leaves the outer cast's target
+    /// as it found it. Every writer of `spell_target` goes through here.
+    pub fn with_spell_target<R>(&mut self, target: Option<crate::structs::SpellTarget>, op: impl FnOnce(&mut Game) -> R) -> R {
+        let outer = std::mem::replace(&mut self.spell_target, target);
+        let r = op(self);
+        self.spell_target = outer;
+        r
+    }
+
     /// Runs `op` with the scratch finder of `kind` (`Path`, `Step` or `Border`). When that finder
     /// is already in use (a read nested inside a search's callbacks) `op` gets a fresh one: a
     /// finder holds no state between searches (path.rs, "No reuse"), so the result is the same.
@@ -724,5 +735,23 @@ mod tests {
         let g = Game::new(d, setup);
         assert!(g.is_option(GameOptionType::GAMEOPTION_RAGING_BARBARIANS));
         assert!(!g.is_option(GameOptionType::GAMEOPTION_NO_BARBARIANS));
+    }
+
+    #[test]
+    fn nested_spell_target_restores_the_outer_one() {
+        use crate::structs::SpellTarget;
+        let d = ffh_data::global();
+        let mut g = Game::new(d, GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 1));
+        assert_eq!(g.spell_target, None);
+        let seen = g.with_spell_target(Some(SpellTarget::Choice(1)), |g| {
+            let inner = g.with_spell_target(Some(SpellTarget::Choice(2)), |g| g.spell_target);
+            assert_eq!(inner, Some(SpellTarget::Choice(2)));
+            // The inner cast is over: the outer cast reads its own target again.
+            let after_inner = g.spell_target;
+            g.with_spell_target(None, |g| assert_eq!(g.spell_target, None));
+            (after_inner, g.spell_target)
+        });
+        assert_eq!(seen, (Some(SpellTarget::Choice(1)), Some(SpellTarget::Choice(1))));
+        assert_eq!(g.spell_target, None);
     }
 }

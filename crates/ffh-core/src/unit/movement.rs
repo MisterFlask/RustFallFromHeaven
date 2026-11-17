@@ -1353,11 +1353,7 @@ impl Game {
                     self.tel_cast_reason(u, "delayed", 0);
                     // A targeted delayed spell (Icebreak) is cast at the target it was cast at.
                     match self.units[u].delayed_spell_target {
-                        Some(target) => {
-                            let outer = self.spell_target.replace(target);
-                            self.unit_cast(u, spell);
-                            self.spell_target = outer;
-                        }
+                        Some(target) => self.with_spell_target(Some(target), |g| g.unit_cast(u, spell)),
                         None => self.unit_cast(u, spell),
                     }
                 }

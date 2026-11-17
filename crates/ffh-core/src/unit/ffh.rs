@@ -782,9 +782,7 @@ impl Game {
     /// This game's: casts a targeted spell at `target` (its result reads `spell_target`). The
     /// caller checks `unit_can_cast_at`.
     pub fn unit_cast_at(&mut self, u: UnitId, spell: SpellType, target: crate::structs::SpellTarget) {
-        self.spell_target = Some(target);
-        self.unit_cast(u, spell);
-        self.spell_target = None;
+        self.with_spell_target(Some(target), |g| g.unit_cast(u, spell));
     }
 
     /// This game's: target `target` of spell `spell` cast by `caster`, named for people: a plot's
