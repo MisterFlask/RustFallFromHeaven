@@ -182,6 +182,9 @@ export function dressStatic(world, map, plots = null, env = staticEnv(world)) {
       const family = civ ? CATALOG.family?.(civ, null) ?? "human" : "human";
       const team = ownerId >= 0 ? hexRgb(teamColour(ownerId)) : [0.62, 0.58, 0.5];
       const ctx = { r, x, y, i, kind, feat, ground, world, hills: kind === KIND.HILLS, peak: kind === KIND.PEAK, held, city: !!city, owner: ownerId, civ, family, unit: unitAt.has(i), bonus, improvement: imp, coast: shoreOf(world, x, y), river: map.river[i] > 0 };
+      // Whether something stands on plot j (a city, a unit, an improvement): a range's ridge does
+      // not run to a peak whose mountain stands aside for it (props.js ridgesOf).
+      ctx.heldAt = (j) => j >= 0 && (cityAt.has(j) || unitAt.has(j) || map.improvement[j] >= 0);
       const at = (lx, lz) => [x + 0.5 + lx, y + 0.5 - lz]; // plot-local (x east, z south) -> map
       // Nothing grows in a river's channel.
       const nearRiver = (lx, lz) => world.riverCells.size > 0 && world.riverDist(x + 0.5 + lx, y + 0.5 - lz) < RIVER_HALF + RIVER_WANDER + 0.05;

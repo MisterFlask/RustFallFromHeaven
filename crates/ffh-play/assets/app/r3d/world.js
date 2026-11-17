@@ -113,6 +113,16 @@ function crownPull(d) {
   return t > 0 ? t * t : 0;
 }
 const CROWN_PULL = crownPull(CROWN_AT);
+/** With `World.cliff`: the bridge between two neighbouring hills pulls the crowns' field as a hill
+ *  of this radius would, along the line between their middles (`domes`). */
+const LINK_R = 0.5;
+/** With `World.cliff`: each hill's top, a swell on its crown (`domes`): TOP_LOW to TOP_HIGH of a
+ *  plot high (each hill its own), TOP_R of a plot round, easing in over TOP_IN of the crowns' field
+ *  from the crown's rim. */
+const TOP_LOW = 0.08;
+const TOP_HIGH = 0.13;
+const TOP_R = 0.55;
+const TOP_IN = 0.25;
 
 /** How deep a hull sits in the water: its keel is under the surface, so the water is seen over it
  *  (refracted, tinted) and laps at its waterline in a collar of foam (shaders.js WATER_FS). Only
@@ -169,6 +179,9 @@ export class World {
     // A hill's scarp faces roughly south, with regional variations: cache the shape so sampling
     // the shared ground for meshes, roads, water and picking does not reroll its geology.
     this.hillShape = new Float32Array(n * 4);
+    // A hill's top on its crown (with `cliff`, `domes`): where it stands off the hill's middle and
+    // how high it swells.
+    this.hillTop = new Float32Array(n * 3);
     this.classify();
     if (this.cliff > 0) this.findLowVoid();
     this.findLakes();
@@ -186,6 +199,7 @@ export class World {
       this.peakJitter[i * 2 + 1] = (hashf(i, 8) - 0.5) * 0.18;
       const facing = (hashf(i, 81) - 0.5) * 1.8;
       this.hillShape.set([Math.sin(facing), -Math.cos(facing), 0.58 + hashf(i, 82) * 0.12, hashf(i, 83) * 6.2832], i * 4);
+      this.hillTop.set([(hashf(i, 84) - 0.5) * 0.18, (hashf(i, 85) - 0.5) * 0.18, TOP_LOW + (TOP_HIGH - TOP_LOW) * hashf(i, 86)], i * 3);
       if (m.vis[i] === 0) {
         this.kind[i] = KIND.VOID;
         this.ground[i] = GROUND.VOID;
@@ -471,7 +485,9 @@ export class World {
    *  round the back (where the crown rises in the broad ramp it has there), and gives way to a
    *  river (`rd`: how far the nearest runs). Hills side by side stand on one crown, a plateau under
    *  one scarp: the crowns are where the hills' pulls together (`crownPull`) pass a lone hill's at
-   *  its rim, and the step's height and the way it faces are the hills' own, mixed by their pulls.
+   *  its rim (neighbouring hills bridged by a pull along the line between their middles), and the
+   *  step's height and the way it faces are the hills' own, mixed by their pulls; each hill's top
+   *  swells out of the crown (TOP_LOW..TOP_HIGH), so a group rolls over a top for each hill.
    *  The value is then the hills' ground without the step, and beside it: `crown`, the scarp field
    *  (positive on a crown); `crownIn`, how far a crown would stand over that ground here;
    *  `crownAt`, how far the ground itself does (0 off the crowns). */
@@ -483,6 +499,10 @@ export class World {
     // sum, and the hills' sheerness and height of scarp weighed by them.)
     let n = 0, pull = 0, sheerSum = 0, highSum = 0;
     const rest = this.domeRest ?? (this.domeRest = new Float64Array(9)), ramp = this.domeRamp ?? (this.domeRamp = new Float64Array(9));
+    // (With `cliff`, every hill of the 3 by 3 plots round the point: its window cell, its middle,
+    // how sheer it stands and how high its scarp toward the point, and its top's swell here.)
+    let m = 0, swell = 0;
+    const hc = this.domeHills ?? (this.domeHills = new Float64Array(9 * 6));
     const cx = Math.floor(mx);
     const cy = Math.floor(my);
     for (let dy = -1; dy <= 1; dy++) {
@@ -494,12 +514,31 @@ export class World {
         const k = i * 4, radius = this.hillShape[k + 2], phase = this.hillShape[k + 3];
         const u = (mx - px) / radius, v = (my - py) / (radius * 0.86);
         const d0 = Math.hypot(u, v);
+        const front = smoothstep(-0.35, 0.65, (u * this.hillShape[k] + v * this.hillShape[k + 1]) / Math.max(0.01, d0));
+        if (scarps) {
+          // (About the hill's middle the way a point lies from it turns fast: there the front
+          // counts half, on every side, so the crown has no crease through its middle.)
+          // The scarp tapers out over a sixth of a plot of the rim (a broad turn from front to
+          // back: on the crown, between the two, the ground ramps from the step's height to the
+          // back's slope, and a quick turn would be a crease the grid cannot draw).
+          const o = m * 6;
+          hc[o] = dx;
+          hc[o + 1] = dy;
+          hc[o + 2] = px;
+          hc[o + 3] = py;
+          hc[o + 4] = 0.5 + (smoothstep(0.22, 0.82, front) - 0.5) * smoothstep(0.1, 0.35, d0);
+          hc[o + 5] = 0.7 + 0.3 * Math.abs(Math.sin(phase * 3.7));
+          m++;
+          // Its top: a broad rounded swell about a point near its middle, each hill its own
+          // height and place, so a crown of many hills rolls over as many tops.
+          const sd = Math.hypot(mx - px - this.hillTop[i * 3], my - py - this.hillTop[i * 3 + 1]) / TOP_R;
+          if (sd < 1) swell += this.hillTop[i * 3 + 2] * (1 - sd * sd) * (1 - sd * sd);
+        }
         // (A hill's ground reaches 1.35; with `cliff` its pull on the crowns CROWN_REACH.)
         if (d0 > (scarps ? CROWN_REACH + 0.05 : 1.35)) continue;
         // Broad lobes break the rim without turning the crown into noisy rubble.
         // (With `cliff` fewer and shallower: each lobe of a crown's rim is a buttress of its scarp.)
         const d = d0 + (scarps ? 0.04 * Math.sin(u * 5 + phase) * Math.sin(v * 4.5 - phase) : 0.055 * Math.sin(u * 8 + phase) * Math.sin(v * 7 - phase));
-        const front = smoothstep(-0.35, 0.65, (u * this.hillShape[k] + v * this.hillShape[k + 1]) / Math.max(0.01, d0));
         // A short exposure within a broad turf slope, rather than a sheer ring holding up a
         // flat pedestal. The outer shoulder carries the grass continuously down to the plain.
         const width = 0.62 - 0.42 * front;
@@ -515,19 +554,32 @@ export class World {
         ramp[n++] = 0.16 * (1 - smoothstep(0.41, 1.03, d));
         const g = crownPull(d);
         pull += g;
-        // (About the hill's middle the way a point lies from it turns fast: there the front
-        // counts half, on every side, so the crown has no crease through its middle.)
-        // The scarp tapers out over a sixth of a plot of the rim (a broad turn from front to
-        // back: on the crown, between the two, the ground ramps from the step's height to the
-        // back's slope, and a quick turn would be a crease the grid cannot draw).
-        sheerSum += g * (0.5 + (smoothstep(0.22, 0.82, front) - 0.5) * smoothstep(0.1, 0.35, d0));
-        highSum += g * (0.7 + 0.3 * Math.abs(Math.sin(phase * 3.7)));
+        sheerSum += g * hc[(m - 1) * 6 + 4];
+        highSum += g * hc[(m - 1) * 6 + 5];
       }
     }
     if (scarps) {
+      // Neighbouring hills (diagonal ones too) are bridged: a pull along the line between their
+      // middles, nothing at its ends, so the crown never parts between two of them (their own
+      // pulls alone left a strip of the plain between two rows), its step and facing theirs.
+      for (let a = 0; a < m; a++) {
+        for (let b = a + 1; b < m; b++) {
+          const oa = a * 6, ob = b * 6;
+          if (Math.max(Math.abs(hc[oa] - hc[ob]), Math.abs(hc[oa + 1] - hc[ob + 1])) !== 1) continue;
+          const ex = hc[ob + 2] - hc[oa + 2], ey = hc[ob + 3] - hc[oa + 3];
+          const t = clamp(((mx - hc[oa + 2]) * ex + (my - hc[oa + 3]) * ey) / (ex * ex + ey * ey), 0, 1);
+          if (t <= 0 || t >= 1) continue;
+          const g = crownPull(Math.hypot(mx - hc[oa + 2] - ex * t, my - hc[oa + 3] - ey * t) / LINK_R) * Math.sin(Math.PI * t);
+          pull += g;
+          sheerSum += g * 0.5 * (hc[oa + 4] + hc[ob + 4]);
+          highSum += g * 0.5 * (hc[oa + 5] + hc[ob + 5]);
+        }
+      }
       // Where the front is sheer the crown's ramp is the step instead.
       const sheer = pull > 0 ? (sheerSum / pull) * fade : 0;
       for (let k = 0; k < n; k++) s = Math.max(s, ramp[k] * (1 - sheer) + rest[k]);
+      // The tops swell out of the crown, from nothing at its rim (no second step).
+      s += swell * smoothstep(0, TOP_IN, pull - CROWN_PULL);
       this.crown = pull - CROWN_PULL;
       this.crownIn = pull > 0 ? SCARP * sheer * (highSum / pull) : 0;
       this.crownAt = this.crown > 0 ? this.crownIn : 0;

@@ -365,6 +365,13 @@ pub fn cities(v: &Viewer) -> Json {
         };
         // This game's outposts (docs/NAVAL.md, 9.2 and 10): the banner's mark, the list's row.
         crate::view::outposts::city_fields(v, c, &mut j);
+        // A ritual under way (its first build a project): its name, the map's and the minimap's
+        // mark. Its plot is visible to every team while it lasts (ffh-core `ffh::rituals`).
+        if visible || own {
+            if let Some(project) = g.city_production_project(c) {
+                j.set("ritual", crate::view::rituals::ritual_name(g.d, project));
+            }
+        }
         if own {
             j.set("production", production(g, c));
             j.set("idle", !g.city_is_production(c) && !city.production_automated && !city.outpost);

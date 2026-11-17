@@ -20,7 +20,8 @@ use crate::setup::NewGame;
 /// with production in it; with it (`rituals-pending`), the human's Warcry is pending (it takes effect at the end of the turn; in
 /// its capital) and has no ritual queued. Of the four other civilizations, three are met:
 /// `in_progress` builds its ritual in its capital, `pending` has its cast pending, `idle` has completed
-/// its ritual once (its cost doubled) and builds nothing; `unmet` (not met) builds its ritual. The
+/// its ritual once (its cost doubled) and builds nothing; `unmet` (not met before) builds its ritual,
+/// which meets it (a ritual under way is seen by every team). The
 /// human's log holds the `began` messages.
 pub struct StagedRituals {
     pub save: PathBuf,

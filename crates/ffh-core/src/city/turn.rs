@@ -749,6 +749,8 @@ impl Game {
         if front {
             self.city_check_rituals(c);
         }
+        // A ritual first in the queue: its plot is seen by every team.
+        self.city_sync_ritual_sight(c);
 
         // Interface dirty bits.
         Some(index)
@@ -979,6 +981,8 @@ impl Game {
         // This game's rituals (`ffh::rituals`): one taken off the queue with production put into
         // it loses that production.
         self.city_check_rituals(c);
+        // A ritual no longer (or now) first in the queue: its plot's sight for every team.
+        self.city_sync_ritual_sight(c);
 
         // Interface dirty bits.
 

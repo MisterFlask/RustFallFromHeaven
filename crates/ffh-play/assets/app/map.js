@@ -14,7 +14,7 @@
 import { S, tname, dname, info, me, isBarbarian, ORDER_KINDS, observing } from "./state.js";
 import * as T from "./tiles.js";
 import { manaSchool, manaColour, manaInk, MANA_SPHERES } from "./mana-art.js";
-import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark, drawMarchMark, marchMark } from "./iso.js";
+import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark, drawMarchMark, marchMark, drawRitualMark, RITUAL_CORE, RITUAL_RING } from "./iso.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
 import { seaPlot, stackWear, drawDark, drawEdges, drawWearPip, seasById, seaPlotNamed, drawSeaTint, drawSeaBorders, seaLabelSizes, drawSeaLabel, seaHitAt, laneParts, drawLaneCut, drawHarbourMark, seaTipLines } from "./sea.js";
 import { drawLanesFlat, outpostTag } from "./lanes.js";
@@ -1397,6 +1397,8 @@ export class MapView {
     const mine = me()?.player;
     for (const c of S.cities.values()) {
       this.eachCopy(c.x, c.y, (sx, sy) => {
+        // A ritual under way: a violet ring on the plot and a beam above it, under the banner.
+        if (c.ritual) drawRitualMark(g, sx + ts / 2, sy + ts / 2, ts * 0.56, ts * 0.56, ts * 0.9);
         const col = ownerColor(c.owner);
         const w = ts * 0.84;
         const hh = Math.max(10, ts * 0.42);
@@ -1792,6 +1794,16 @@ export class MapView {
     // The viewport.
     const sx = c.width / map.w;
     const sy = c.height / map.h;
+    // A ritual under way (the view's `ritual`; its plot is visible to every player): a violet
+    // ring and diamond at least 5 CSS px in radius, whatever the map's size.
+    {
+      const r = Math.max(5 * this.dpr, 1.5 * Math.max(1, Math.min(sx, sy)));
+      for (const city of S.cities.values()) {
+        if (!city.ritual) continue;
+        const cy = (map.h - 1 - city.y + 0.5) * sy;
+        for (const off of map.wrap_x ? [-c.width, 0, c.width] : [0]) drawMiniRitual(g, (city.x + 0.5) * sx + off, cy, r, this.dpr);
+      }
+    }
     // While watching the AI, the armies: every stack of 2 or more units, a dot in its owner's
     // colour sized by the stack (2-4, 5-9, 10 or more units), the flags as white ticks.
     if (S.spectating || observing()) {
@@ -1860,6 +1872,34 @@ export class MapView {
   hideTip() {
     this.tip.hidden = true;
   }
+}
+
+/** The minimap's mark of a ritual under way at (`cx`, `cy`): a dark halo, a deep violet ring of
+ *  radius `r` and a light violet diamond inside it; `dpr` the line unit. */
+function drawMiniRitual(g, cx, cy, r, dpr) {
+  g.save();
+  g.beginPath();
+  g.arc(cx, cy, r + 1.5 * dpr, 0, Math.PI * 2);
+  g.fillStyle = "rgba(8,4,18,0.7)";
+  g.fill();
+  g.beginPath();
+  g.arc(cx, cy, r, 0, Math.PI * 2);
+  g.strokeStyle = RITUAL_RING;
+  g.lineWidth = Math.max(1.5, 2 * dpr);
+  g.stroke();
+  const d = r * 0.6;
+  g.beginPath();
+  g.moveTo(cx, cy - d);
+  g.lineTo(cx + d, cy);
+  g.lineTo(cx, cy + d);
+  g.lineTo(cx - d, cy);
+  g.closePath();
+  g.fillStyle = RITUAL_CORE;
+  g.fill();
+  g.strokeStyle = "#12061e";
+  g.lineWidth = Math.max(1, dpr);
+  g.stroke();
+  g.restore();
 }
 
 /** The minimap's background (the unrevealed world): void with a faint diagonal hatch. */

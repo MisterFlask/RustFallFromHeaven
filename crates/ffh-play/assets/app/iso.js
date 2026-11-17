@@ -1558,6 +1558,8 @@ export class IsoMap {
     g.textAlign = "left";
     g.textBaseline = "alphabetic";
     for (const { city, c } of cities) {
+      // A ritual under way: a violet ring on the plot and a beam above the city, under the plaque.
+      if (city.ritual) drawRitualMark(g, c.sx, c.sy + (c.drop ?? 0), f.TW * 0.42, f.TH * 0.42, f.TH * 1.8, u);
       const col = ownerColor(city.owner);
       const size = city.size === null || city.size === undefined ? "?" : String(city.size);
       const turns = city.owner === mine ? city.production?.turns : null;
@@ -1751,6 +1753,33 @@ export function drawRevoltMark(g, city, cx, cy, r, u, base) {
     g.fillText(mk.glyph, x, base);
     g.textAlign = align;
   }
+}
+
+/** The colours of a ritual under way (the view's cities carry `ritual`, its name, while their
+ *  first build is a ritual: the plot is visible to every player then): a light violet core, a
+ *  deep violet ring. The minimap (map.js `drawMini`), the 2D and the isometric map share them. */
+export const RITUAL_CORE = "#c9a0ff";
+export const RITUAL_RING = "#7a3cff";
+
+/** Draws the map mark of a ritual under way on a city's plot: a violet ring (radii `rx`, `ry`)
+ *  about (`cx`, `cy`) and a beam `beam` px tall rising from it; `u` the line unit. */
+export function drawRitualMark(g, cx, cy, rx, ry, beam, u = 1) {
+  g.save();
+  const lw = Math.max(2, 2 * u);
+  const bw = Math.max(2, 3 * u);
+  g.beginPath();
+  g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+  g.strokeStyle = "rgba(12,6,24,0.8)";
+  g.lineWidth = lw + 2;
+  g.stroke();
+  g.strokeStyle = RITUAL_RING;
+  g.lineWidth = lw;
+  g.stroke();
+  g.fillStyle = "rgba(12,6,24,0.8)";
+  g.fillRect(cx - bw / 2 - 1, cy - beam - 1, bw + 2, beam + 1);
+  g.fillStyle = RITUAL_CORE;
+  g.fillRect(cx - bw / 2, cy - beam, bw, beam);
+  g.restore();
 }
 
 /** The map mark of a marching recruit (this game's armies, docs/ARMIES.md; the view's own units

@@ -272,3 +272,45 @@ fn hidden_units_stay_hidden() {
     s.set_reveal(false);
     check_fog(&s, s.g.game_turn());
 }
+
+/// A ritual under way (ffh-core `ffh::rituals`): the city's plot is visible to every team, and
+/// the view's city carries `ritual`, its name; no `ritual` once the project leaves the head of the
+/// queue. Built by hand in a steady duel (no seed's story).
+#[test]
+fn a_ritual_under_way_is_seen_and_named() {
+    let ng = common::steady_duel(5);
+    let mut s = Session::new_game(&ng, std::sync::Arc::new(ffh_play::human::AdvisorAnswerer), ffh_play::SessionOptions::default()).unwrap();
+    s.advance(&mut |_| {});
+    let (h, team) = (s.human, s.g.players[s.human].team);
+    let ai = s.g.civ_player_ids().find(|&p| p != h && !s.g.players[p].units.is_empty()).expect("a rival with units");
+    let (x, y) = s.g.players[ai].units.iter().map(|&u| (s.g.units[u].x, s.g.units[u].y)).next().unwrap();
+    let c = s.g.player_init_city(ai, x, y, true, true);
+    s.g.city_clear_order_queue(c);
+    let plot = s.g.city_plot(c);
+    let ritual = |s: &Session| -> Option<Json> {
+        let view = wire(s, Query::View);
+        arr(&view, "cities").iter().find(|j| int(j, "id") == c.0 as i64).and_then(|j| j.get("ritual").cloned()).filter(|r| !r.is_null())
+    };
+    let project = s.g.d.t::<ProjectType>("PROJECT_RITES_OF_OGHMA");
+    s.g.city_push_order(c, OrderType::ORDER_CREATE, project.i(), -1, false, false, false, true);
+    assert!(s.g.plot_is_visible(plot, team), "the ritual's plot is visible to the human");
+    let name = ffh_play::view::rituals::ritual_name(s.g.d, project);
+    assert_eq!(ritual(&s).as_ref().and_then(Json::as_str), Some(name.as_str()));
+    check_fog(&s, s.g.game_turn());
+    // Taken off the queue: no ritual.
+    s.g.city_pop_order(c, 0, false, false);
+    assert!(ritual(&s).is_none());
+    // A city of ours building a ritual is named too; one building a unit is not.
+    let (x, y) = s.g.players[h].units.iter().map(|&u| (s.g.units[u].x, s.g.units[u].y)).next().unwrap();
+    let mine = s.g.player_init_city(h, x, y, true, true);
+    s.g.city_clear_order_queue(mine);
+    s.g.city_push_order(mine, OrderType::ORDER_CREATE, project.i(), -1, false, false, false, true);
+    let view = wire(&s, Query::View);
+    let j = arr(&view, "cities").iter().find(|j| int(j, "id") == mine.0 as i64).expect("our city");
+    assert_eq!(j.get("ritual").and_then(Json::as_str), Some(name.as_str()));
+    let warrior = s.g.d.t::<UnitType>("UNIT_WARRIOR");
+    s.g.city_push_order(mine, OrderType::ORDER_TRAIN, warrior.i(), -1, false, false, false, true);
+    let view = wire(&s, Query::View);
+    let j = arr(&view, "cities").iter().find(|j| int(j, "id") == mine.0 as i64).expect("our city");
+    assert!(j.get("ritual").map_or(true, Json::is_null));
+}

@@ -154,6 +154,14 @@ flag.
   into a world ritual as into any build). An army's requisition or an empire order does not go in
   front of any ritual in progress. Why: a ritual is a commitment of the city that builds it, which
   money cannot shortcut; its rules are told once, as the keyword `Ritual`'s reminder text.
+- **A ritual in production is seen by everyone** (the owner's request, 2026-11-17; save format 43;
+  `ffh-core/src/ffh/rituals.rs` `sync_ritual_sight`). While a city's first build is a ritual (any
+  project), its plot is visible to every living team: +1 to the plot's visibility count of each
+  team (no radius), so seeing it the first time reveals the plot and meets its owner, as any sight
+  does. It ends when the project leaves the head of the queue (completed, removed, put behind
+  another order) or the city is destroyed or changes hands. In FFH2 a project was seen only by
+  those who saw the city. Why: a ritual is a commitment every rival should see coming, and can
+  answer; the map, the minimap and the city's tooltip show it.
 - **Frozen Passage replaces Stasis** (the Illians' world spell; the owner's decision, 2026-11-11;
   save format 38; `ffh-core/src/ffh/world_ritual_spells/illians.rs`). Stasis (`SPELL_STASIS`,
   `spellStasis`) is removed: it took 20 turns of production and research from every other player,

@@ -17,7 +17,7 @@ use ffh_play::{Json, Session, SessionOptions};
 /// What each keyword's reminder says, as distinctive fragments a rules text must not hold
 /// (lowercase; matched without case).
 const FRAGMENTS: &[(&str, &[&str])] = &[
-    ("KEYWORD_RITUAL", &["progress is lost if the city switches", "switches to building something else", "hurried with gold", "cannot be hurried", "production is lost", "first build", "off the head of the queue"]),
+    ("KEYWORD_RITUAL", &["progress is lost if the city switches", "switches to building something else", "hurried with gold", "cannot be hurried", "production is lost", "first build", "off the head of the queue", "visible to every player"]),
     ("KEYWORD_WORLD_RITUAL", &["one in progress per player", "doubles the next cost", "doubles its next cost", "every player is told"]),
 ];
 

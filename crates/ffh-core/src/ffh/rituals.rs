@@ -1,5 +1,8 @@
 //! Rituals (the owner's decision, 2026-11-12; docs/CARDS.md, "World rituals"; docs/PORTING.md,
-//! "Changes from FFH2"): every project is a ritual, and two rules hold for every ritual:
+//! "Changes from FFH2"): every project is a ritual, and three rules hold for every ritual:
+//! - **seen by everyone** (2026-11-17): while it is its city's first build, the city's plot is
+//!   visible to every living team ([`Game::sync_ritual_sight`], after every change to the head of
+//!   a queue and once a game turn);
 //! - **not delayed without loss**: a ritual with production that is not its city's first build
 //!   (taken off the queue, or put behind another order) loses all its production in that city
 //!   ([`Game::city_check_rituals`], after every change to the head of a queue); the armies'
@@ -53,6 +56,59 @@ impl Game {
             }
         }
     }
+
+    /// After a change to city `c`'s queue head: [`Game::sync_ritual_sight`] if `c`'s plot is lit
+    /// and its head is no ritual, or the other way round. Nothing to do otherwise (the common
+    /// case: push and pop are frequent).
+    pub fn city_sync_ritual_sight(&mut self, c: CityId) {
+        let plot = self.city_plot(c);
+        let lit = self.ritual_sight.binary_search_by_key(&plot, |e| e.0).is_ok();
+        if lit != self.city_is_production_project(c) {
+            self.sync_ritual_sight();
+        }
+    }
+
+    /// The ritual's sight: the plot of every city whose first build is a ritual (a project) is
+    /// visible to every living team, through the plots' visibility counts (+1 per team while it
+    /// lasts; seeing it first reveals the plot and meets its owner, as any sight does).
+    /// `Game::ritual_sight` lists the plots lit and, for each, the teams counted, so what is
+    /// taken off always matches what was put on (teams born or dead since are put on or taken
+    /// off here).
+    pub fn sync_ritual_sight(&mut self) {
+        let mut plots: Vec<PlotIdx> = self.cities.iter().filter(|(_, city)| city.head_order().is_some_and(|o| o.order_type == OrderType::ORDER_CREATE)).map(|(c, _)| self.city_plot(c)).collect();
+        plots.sort();
+        plots.dedup();
+        let teams: Vec<TeamId> = self.team_ids().filter(|&t| self.team_is_alive(t)).collect();
+        let wanted: Vec<(PlotIdx, Vec<TeamId>)> = plots.into_iter().map(|p| (p, teams.clone())).collect();
+        if wanted == self.ritual_sight {
+            return;
+        }
+        // The new state first: a sight change below (meeting a team) never sees a stale list.
+        let old = std::mem::replace(&mut self.ritual_sight, wanted.clone());
+        let lit = |list: &[(PlotIdx, Vec<TeamId>)], p: PlotIdx| -> Vec<TeamId> { list.binary_search_by_key(&p, |e| e.0).map(|i| list[i].1.clone()).unwrap_or_default() };
+        let mut changes: Vec<(PlotIdx, TeamId, i32)> = Vec::new();
+        for (p, was) in &old {
+            let now = lit(&wanted, *p);
+            changes.extend(was.iter().filter(|t| !now.contains(t)).map(|&t| (*p, t, -1)));
+        }
+        for (p, now) in &wanted {
+            let was = lit(&old, *p);
+            changes.extend(now.iter().filter(|t| !was.contains(t)).map(|&t| (*p, t, 1)));
+        }
+        for (p, t, change) in changes {
+            self.plot_change_visibility_count(p, t, change, None, true);
+        }
+    }
+
+    /// Takes every ritual's sight off (before the teams' visibility counts are merged:
+    /// `team_add_team`); [`Game::sync_ritual_sight`] puts it back.
+    pub fn release_ritual_sight(&mut self) {
+        for (p, teams) in std::mem::take(&mut self.ritual_sight) {
+            for t in teams {
+                self.plot_change_visibility_count(p, t, -1, None, true);
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -91,6 +147,60 @@ mod tests {
     fn create(g: &mut Game, c: CityId, project: ProjectType) {
         g.city_push_order(c, OrderType::ORDER_CREATE, project.i(), -1, false, false, false, true);
         assert_eq!(g.city_head_ritual(c), Some(project));
+    }
+
+    /// A ritual first in a city's queue makes the city's plot visible to every team: on while it
+    /// is the head, off when it is popped, put behind another order or its city is destroyed;
+    /// the counts come back to what they were.
+    #[test]
+    fn a_ritual_in_production_is_seen_by_every_team() {
+        let (mut g, c) = game();
+        let d = g.d;
+        let project = d.t::<ProjectType>("PROJECT_RITES_OF_OGHMA");
+        let warrior = d.t::<UnitType>("UNIT_WARRIOR");
+        let plot = g.city_plot(c);
+        let (us, them) = (g.players[US].team, g.players[PlayerId(1)].team);
+        // Them: no sight of the city, whatever the map put near it.
+        g.map.plots[plot].visibility_count[them] = 0;
+        assert!(!g.plot_is_visible(plot, them));
+        let count = |g: &Game, t: TeamId| g.map.plots[plot].visibility_count[t];
+        let (ours, theirs) = (count(&g, us), count(&g, them));
+
+        create(&mut g, c, project);
+        assert!(g.plot_is_visible(plot, them), "seen by the other team");
+        assert!(g.map.plots[plot].revealed[them]);
+        assert_eq!((count(&g, us), count(&g, them)), (ours + 1, theirs + 1));
+        // Appended behind it: still the head, nothing changes.
+        g.city_push_order(c, OrderType::ORDER_TRAIN, warrior.i(), -1, false, false, true, false);
+        assert_eq!((count(&g, us), count(&g, them)), (ours + 1, theirs + 1));
+
+        // Popped: off again (the warrior is the head now).
+        g.city_pop_order(c, 0, false, false);
+        assert!(!g.plot_is_visible(plot, them));
+        assert!(g.plot_is_visible(plot, us));
+        assert_eq!((count(&g, us), count(&g, them)), (ours, theirs));
+        assert!(g.ritual_sight.is_empty());
+
+        // Put first again, then behind a new order: off.
+        g.city_clear_order_queue(c);
+        create(&mut g, c, project);
+        assert!(g.plot_is_visible(plot, them));
+        g.city_push_order(c, OrderType::ORDER_TRAIN, warrior.i(), -1, false, false, false, false);
+        assert_eq!((count(&g, us), count(&g, them)), (ours, theirs));
+
+        // The full sync agrees, and changes nothing more.
+        g.city_clear_order_queue(c);
+        create(&mut g, c, project);
+        g.sync_ritual_sight();
+        assert_eq!((count(&g, us), count(&g, them)), (ours + 1, theirs + 1));
+        assert_eq!(g.ritual_sight.len(), 1);
+
+        // The city destroyed during the ritual: its sight goes with it.
+        g.city_kill(c, true);
+        assert_eq!(count(&g, them), theirs);
+        assert!(g.ritual_sight.is_empty());
+        g.sync_ritual_sight();
+        assert_eq!(count(&g, them), theirs);
     }
 
     /// For an ordinary ritual (Rites of Oghma) and a world ritual (Warcry): put behind another

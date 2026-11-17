@@ -129,3 +129,55 @@ test("ordinary peaks add no hill pedestal; volcanoes retain their terrain cone",
   }
   assert.ok(v.heightAt(3.5, 3.5) > a.heightAt(3.5, 3.5) + 0.3, "volcano still has its cone");
 });
+
+test("a range's peaks are joined by ridges: each link once, none across a block, none to a volcano, a held peak or the unknown", () => {
+  // North first: a 2x2 block of peaks with a tail, a diagonal pair, a volcano beside the range, a
+  // peak a unit stands on, and a peak beside the unknown.
+  const rows = ["..........", ".^^.^v....", ".^^^......", "....^.^...", ".......^..", ".^^^......"];
+  // (A unit stands on (1, 0); (3, 0) is unknown.)
+  const hidden = [[3, 0]];
+  const map = buildMap(data, rows, { hidden });
+  St.setMap(map);
+  St.setView(buildView(data, { players: [{ civ: "CIVILIZATION_BANNOR" }], units: [{ type: "UNIT_WARRIOR", x: 1, y: 0 }] }));
+  for (const cliff of [0, 0.18]) {
+    const world = new World(map, { cliff });
+    const list = dressStatic(world, map).list;
+    const ridges = list.filter((it) => it.asset === "feat.ridge");
+    const at = (it) => [it.x, -it.z];
+    const peaks = list.filter((it) => it.asset === "feat.mountain");
+    // A ridge lies between the two mountains it joins: name each end by the mountain nearest it.
+    const links = new Set();
+    for (const it of ridges) {
+      const [x, y] = at(it), dir = [Math.cos(it.yaw), Math.sin(it.yaw)];
+      const half = (it.variant < 4 ? 0.5 : Math.SQRT1_2) * it.sx;
+      const ends = [1, -1].map((s) => {
+        const e = [x + dir[0] * half * s, y + dir[1] * half * s];
+        const m = peaks.reduce((b, p) => (Math.hypot(p.x - e[0], -p.z - e[1]) < Math.hypot(b.x - e[0], -b.z - e[1]) ? p : b));
+        assert.ok(Math.hypot(m.x - e[0], -m.z - e[1]) < 1e-6, "a ridge ends at a mountain's place");
+        return m.plot;
+      });
+      const key = ends.sort((a, b) => a - b).join("-");
+      assert.ok(!links.has(key), `the link ${key} is laid once`);
+      links.add(key);
+    }
+    const P = (x, y) => y * map.w + x;
+    const want = [
+      [P(1, 4), P(2, 4)], [P(1, 3), P(2, 3)], [P(2, 3), P(3, 3)], [P(1, 3), P(1, 4)], [P(2, 3), P(2, 4)],
+      // Diagonal neighbours with no peak between them.
+      [P(3, 3), P(4, 2)], [P(3, 3), P(4, 4)], [P(6, 2), P(7, 1)],
+    ].map((l) => l.sort((a, b) => a - b).join("-"));
+    assert.deepEqual([...links].sort(), want.sort(), "the links of the range");
+    // A ridge is rooted as a mountain is: its open rim nowhere over the ground drawn.
+    const surfaces = [terrainHeight(world, RES), terrainHeight(world, LOW_RES)];
+    for (const it of ridges) {
+      for (const mesh of [buildAsset(it.asset, it.variant, it.param), buildAssetLOD(it.asset, it.variant, it.param)].filter(Boolean)) {
+        for (const [x, y, z] of rim(mesh)) {
+          const mx = it.x + Math.cos(it.yaw) * x * it.sx + Math.sin(it.yaw) * z * it.sz;
+          const my = -it.z + Math.sin(it.yaw) * x * it.sx - Math.cos(it.yaw) * z * it.sz;
+          const ground = Math.max(0, Math.min(world.heightAt(mx, my), ...surfaces.map((h) => h(mx, my))));
+          assert.ok(it.y + y * it.sy - ground <= 0.002, `a ridge's rim floats ${(it.y + y * it.sy - ground).toFixed(4)} over the ground (plot ${it.plot}, cliff ${cliff})`);
+        }
+      }
+    }
+  }
+});

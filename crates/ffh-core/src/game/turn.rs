@@ -114,6 +114,10 @@ impl Game {
         // Weather Engine, the Pillar of Dawn) are dropped.
         self.area_effects_do_turn();
 
+        // Not in C++: a ritual's sight (`ffh::rituals`) brought up to date (teams born or dead
+        // this turn; push and pop keep it otherwise).
+        self.sync_ritual_sight();
+
         // setEndTurnMessage(false), setHasMovedUnit(false): UI.
 
         if self.ai_auto_play > 0 {

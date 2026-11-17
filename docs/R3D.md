@@ -137,7 +137,13 @@ heightfield, so roads, rivers, picking, units and trees follow the same surface.
 mesh slope and a texture mask blend its exposed soil and small stone faces into the surrounding
 turf; altitude alone never removes its turf. Hill stone uses the biome's soil colour and a face
 projection for its texture, avoiding gray rock walls with stretched vertical cracks. Desert lowlands
-get wind-combed dunes.
+get wind-combed dunes. With `cliff` (below) a group of hills is one upland with a top for each
+hill: neighbouring hills (diagonal ones too) stand on one crown, bridged by a pull along the line
+between their middles, and each hill's top swells out of it (`TOP_LOW`-`TOP_HIGH`, 0.08 to 0.13 of a
+plot, each hill its own height and a little off its middle; a broad dome `TOP_R` round), easing in
+from the crown's rim, so the group's skyline rolls over as many tops with saddles between and a lone
+hill is a dome over its scarp. The swell is part of the height (units, roads, trees and picking
+follow it) and adds no step. Without `cliff` the hills are as above.
 
 **Steps** (`World`'s `cliff` option; the HD-2D map's, docs/HD2D.md §5f; without it everything
 here is as above, to the bit). The ground may step: `heightAt` then lifts dry land whole from its
@@ -257,7 +263,7 @@ props. The channels: r roads, g crops, b wet banks, a settlement ground and farm
 | compose | occlusion, glow, exposure, ACES-fitted filmic curve → display colour | — |
 | finish | split-tone grade, saturation/contrast, paper grain anchored to the world (reconstructed from depth), vignette. (The Kuwahara paint filter and the ink outlines that were here, off in every preset since §16, were removed with their switches 2026-11-10.) | `grade`, `grain`, `vignette` |
 | aa | FXAA (Timothy Lottes' console variant) on the finished colour before the overlays: takes the stair-step off silhouettes and stops them crawling when panning (the HUD is a separate 2D canvas, so it stays crisp) | `fxaa` |
-| overlay | borders (crisp ink line + soft owner band), political wash, grid, target/path/hover/selection frames on the ground mesh (depth-equal), the Sea layer's bands, lines between seas, outlined sea and lanes on the water (§5.3), team rings and the path ribbon draped on the ground; each also drawn ghosted where something stands in front; units hidden behind scenery as hatched team-coloured x-ray silhouettes (depth test GREATER); particles (additive) | `borders`, `grid`, `particles` |
+| overlay | borders (crisp ink line + soft owner band), political wash, grid, target/path/hover/selection frames on the ground mesh (depth-equal), the Sea layer's bands, lines between seas, outlined sea and lanes on the water (§5.3), team rings and the path ribbon draped on the ground; each also drawn ghosted where something stands in front; units hidden behind scenery as hatched team-coloured x-ray silhouettes (depth test GREATER); a city's ritual: the storm's shadow on the land, the storm and the beam (`ritual.js`, docs/HD2D.md §6b; only while a city holds one); particles (additive) | `borders`, `grid`, `particles` |
 
 The light model (scene pass): a wrapped sun term (broad light masses; the stepped light bands, off
 since §16, were removed 2026-11-10) whose boundary the brush marks break (§5.1), coloured
@@ -508,7 +514,23 @@ Six variants; grey rock under snow, more snow on tundra and snow ground, bare sa
 basalt on hell's grounds. `mountainOf` (the catalog's `feature` entry) stands one on every peak
 plot but a volcano's, a little wider than the plot so a range's mountains stand into each other;
 smaller and set back where a unit or an improvement holds the
-plot. Ordinary peaks contribute no hill dome or terrain summit: the model supplies the whole
+plot. **Ranges** (2026-11-17; the owner: merge mountains that are close together): neighbouring
+peaks are joined by a ridge (`feat.ridge`, `ridgesOf`), so a range is one massif with a continuous
+ridgeline and its summits still counted one by one. A ridge is a height field meshed and painted as
+the mountain is (`meshField`, `mountainShade`: the same facets, strata and paint, its snow line
+reckoned against a mountain's height, so the snow runs on across the saddle): a sharp wandering
+crest about 0.6 of a mountain's height where it runs into the two massifs and sagging off its middle
+to a saddle at about 0.4, a knob or two along it, a few crag teeth, spurs and gullies down both
+flanks, 0.3 to 0.45 of a plot wide on each side at the foot (no ground shows between the two
+mountains), no boulders; it ends inside the massifs. Four variants a plot apart, four √2 apart. A
+peak plot lays one to its east and north neighbours, and to a diagonal one only when neither plot
+between them is a peak (no crossed diagonals in a block of four); only between ordinary peaks (no
+volcano, nothing standing on either: `heldAt` in the plot's ctx) the dressing knows (not to the
+unknown). It lies between the two mountains' actual places (plot centre + `peakJitter`), along the
+link, scaled to its length, rooted by a `foundation` as a mountain is, and draws nothing from the
+plot's rng (hashes of the plot index), so the rest of the plot's dressing is as it was. A ridge is
+about 1,300 triangles a plot apart and 1,900 diagonally (its simplified copy about 300): a range of
+n peaks in a row adds n − 1 of them to its mountains' (about 1,400 each). Ordinary peaks contribute no hill dome or terrain summit: the model supplies the whole
 mountain, so a grassy pedestal cannot swallow its lower slopes. Volcanoes keep their terrain cone.
 The base is the lowest visible ground sampled across its scaled footprint (`foundation` in the
 feature entry, `dress.js`), with the model's skirt buried under it; at a shore the foundation stops

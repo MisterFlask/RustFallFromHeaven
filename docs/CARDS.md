@@ -343,6 +343,11 @@ immediately"); at a completion the spell becomes the owner's pending cast
     population is allowed, and so is a great person's hurry (`unit_can_hurry`: production, not
     gold); in FFH2 neither hurried a project. One-step production (`city_change_production`: the
     Soul Forge, a Great Engineer) goes into a ritual as into any build.
+  - Seen by everyone: while a city's first build is a ritual, its plot is visible to every living
+    team (`sync_ritual_sight`, from `city_push_order_kind` / `city_pop_order` and each game turn;
+    `Game::ritual_sight` lists the plots lit and the teams counted; first sight meets the owner).
+    The view's city carries `ritual` (its name): a violet mark on the minimap and the 2D maps, a
+    line in the plot's tooltip.
 - The cost doubles per completion by the player, `max(0, world_ritual_completions -
   world_ritual_refunds)` times, with no cap on the count (`grow_cost`, at most
   `WORLD_RITUAL_MAX_COST`); `player_project_production_needed_at(p, project, extra)` gives the

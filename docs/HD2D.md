@@ -643,9 +643,15 @@ changed):
   their crowns: on the side a hill turns to the south, toward the camera (each hill its own way, as
   before), the crown stands sheer over its shelf, up to `SCARP` (0.2 of a plot; 0.7 to 1 of it,
   each hill its own), tapering out over about a sixth of a plot of rim to nothing round the back,
-  where the crown rises in the broad ramp it had. Hills side by side stand on one crown, a plateau
-  under one scarp: the crowns are where the hills' pulls together (`crownPull`) pass a lone hill's
-  at its rim, and the step's height and the way it faces are the hills' own, mixed by their pulls.
+  where the crown rises in the broad ramp it had. Hills side by side stand on one crown under one
+  scarp: the crowns are where the hills' pulls together (`crownPull`) pass a lone hill's at its
+  rim, with a pull along the line between two neighbouring hills' middles (diagonal ones too:
+  `LINK_R`), so a group never parts into terraces with a strip of the plain between them; the
+  step's height and the way it faces are the hills' own, mixed by their pulls. The crown is not
+  flat: each hill's top swells out of it (0.08 to 0.13 of a plot, its own height and place, from
+  nothing at the crown's rim, so no second step), so a group is one rolling upland with a top for
+  each hill and saddles between, and a lone hill a dome over its scarp (2026-11-17; the owner:
+  hills that are close together should merge and still read as hills).
   A scarp gives way to a river (over its channel it is the old slope) and to a lake. Toward the ice
   the shore's lift fades instead (no face): the frozen sea is a sheet at the water's level. The
   unknown beside known water lies low, at the water's level, as before; the rest of the unknown is
@@ -869,6 +875,38 @@ join now); the faces as paving (redrawn).
   frame is drawn smaller than the canvas (render scale under 1, the quality ladder on a slow GPU):
   that frame is stretched and sharpened instead (`UPSCALE_FS`: each pixel pushed from the mean of
   its four neighbours, clamped to their range), not blurred further.
+
+## 6b. A city's ritual
+
+A city whose production is a ritual (its view record's `ritual`, the ritual's name) is marked on
+the map by a column of light and a storm over it (`r3d/ritual.js`; the 3D renderer draws it too):
+
+* **The beam**: a camera-facing strip from the city's centre to nearly the camera's height (out of
+  the top of the view), a white core a quarter of its width and a violet halo, streaming upward and
+  pulsing slowly. 0.84 plots across with its halo; never under 14 px (the core 4 px) however far out.
+* **The storm**: horizontal discs 1.9 and 2.2 plots over the city, 2.6 plots in radius (the upper
+  a little smaller), and a funnel of half the width 0.55 plots under them: grey-violet cloud in
+  three spiral arms (value noise sheared by a logarithmic twist, the inner bands turning faster),
+  densest and darkest in a ring round an eye where the beam passes, the inner bands lit violet, the
+  billows' faces toward the sun lighter, a ragged edge, now and then a flicker of lightning in the
+  ring. From the gameplay zoom its near edge stands well over the town and its far half runs out of
+  the top of the view. (The 3D renderer's steeper camera sees it from higher: there it hangs over
+  the town rather than above it.)
+* **The storm's shadow**: the land within about 2.1 plots darkened (30-50% in the lab's shots) and
+  tinted violet, its arms turning with the clouds, and a violet pool of light at the beam's foot
+  that lights the town's cards. Each pixel's surface is found from the scene's depth, so it falls
+  on the ground, trees and buildings alike.
+* **Motes**: violet and white particles rising round the town (Map3D.sync adds the emitters).
+
+Drawn in the overlay stage, after the ground marks and the x-ray figures and before the particles:
+over the finished display colour, so the storm's darks are as chosen, not lifted by the grade. Per
+city the shadow (a quad round the city, depth test off), the storm's three layers (alpha-blended,
+depth-tested: what stands nearer the camera hides them), then the whole beam over them (depth-tested:
+the town's front hides its foot). One program (`ritual` in pipeline.js's list, linked with the
+others), a strip of 8 quads drawn five times a city; nothing drawn or bound while no city holds a
+ritual. It moves with the frame's time, and is a still frame of the same when the map does not
+animate. The lab shows it with `&ritual=1` (the city nearest the camera's point), `&ritual=all` or
+`&ritual=id:3,id:5`.
 
 ## 7. The lab and tools
 

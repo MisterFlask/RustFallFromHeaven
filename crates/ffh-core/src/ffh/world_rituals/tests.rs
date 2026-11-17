@@ -196,8 +196,9 @@ fn the_start_is_told_to_every_player_once() {
     let team = |g: &Game, i: usize| g.players[ids[i]].team;
     let (t0, t1, t2) = (team(&g, 0), team(&g, 1), team(&g, 2));
     g.teams[t1].has_met[t0] = true;
-    g.teams[t2].has_met[t0] = false;
     queue(&mut g, a, pr);
+    // (Seeing the ritual's plot meets its owner, `ffh::rituals`: unmet by hand after.)
+    g.teams[t2].has_met[t0] = false;
     assert!(told(&g, "began").is_empty(), "queued: nothing put into it yet");
     g.city_add_turn_production(a, 2);
     g.city_add_turn_production(a, 2);

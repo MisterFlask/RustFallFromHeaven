@@ -112,11 +112,11 @@ fn the_staged_rituals_game_shows_every_civilizations_ritual() {
     assert!((doubled - 2 * base).abs() <= 1, "doubled: {doubled} of {base}");
     assert_eq!(i_of(&idle, "next_cost"), Some(g.player_project_production_needed_at(st.idle, project, 1) as i64));
 
-    // Not met: named for no one, its city shown (the start is announced to everyone).
+    // Not met before its ritual began: a ritual under way is seen by every team (ffh-core
+    // `ffh::rituals`), and seeing its city met its owner.
     let unmet = row(&view, st.unmet);
-    assert_eq!(unmet.get("met").and_then(Json::as_bool), Some(false));
-    assert_eq!(s_of(&unmet, "name"), Some("Unknown civilization"));
-    assert_eq!(unmet.get("civ"), Some(&Json::Null));
+    assert_eq!(unmet.get("met").and_then(Json::as_bool), Some(true));
+    assert_eq!(s_of(&unmet, "name"), Some(civ(st.unmet).as_str()));
     assert_eq!(s_of(&unmet, "state"), Some("in_progress"));
     let c = g.player_get_capital_city(st.unmet).unwrap();
     assert_eq!(s_of(&unmet, "city_name"), Some(city_name(&s, c).as_str()));

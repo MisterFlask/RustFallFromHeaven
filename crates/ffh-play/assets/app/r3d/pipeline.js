@@ -10,7 +10,8 @@
 //   glow     emission, blurred at half resolution
 //   compose  occlusion, glow, exposure, filmic curve -> display colour
 //   finish   grade, world-anchored paper grain, vignette
-//   overlay  borders, political wash, grid, marks, rings, particles -- over the finished frame,
+//   overlay  borders, political wash, grid, marks, rings, a ritual's beam and storm (ritual.js),
+//            particles -- over the finished frame,
 //            depth-tested against the scene and ghosted through what stands in front
 //   blit     to the canvas
 //
@@ -22,6 +23,7 @@
 import { Program, texture, framebuffer, depthBuffer, depthTexture, fullscreen, gpuIdle, FULLSCREEN_VS } from "./gl.js";
 import { toHalf } from "./math.js";
 import * as SH from "./shaders.js";
+import { RITUAL_VS, RITUAL_FS } from "./ritual.js";
 
 const SHADOW_SIZE = 2048;
 // The terrain casts into a map of its own, coarser (its shadows are broad and soft) and applied at
@@ -64,6 +66,8 @@ export function pipelinePrograms(terrainDefines = {}, { scene: sceneDefines = {}
     // (With the scene's defines: its value noise from the hash texture where the mode has it.)
     sea: ["sea", C + SH.SEA_VS, C + SH.SEA_FS, { ...sceneDefines }],
     seaMark: ["sea-mark", C + SH.SEA_MARK_VS, C + SH.SEA_MARK_FS, { ...sceneDefines }],
+    // A city performing a ritual: its beam, storm and the storm's shadow (ritual.js).
+    ritual: ["ritual", C + RITUAL_VS, C + RITUAL_FS],
     blit: ["blit", FULLSCREEN_VS, SH.BLIT_FS],
     upscale: ["upscale", FULLSCREEN_VS, SH.UPSCALE_FS],
     // The packed scene into the three targets, and the water's grab of it.
@@ -504,6 +508,8 @@ export class Pipeline {
       scene.drawUnitGhosts(this.p.ghost, { ...U, uND: this.t.nd, uEmitId: this.t.emit });
       this.ext?.ghosts({ ...U, uND: this.t.nd, uEmitId: this.t.emit }, scene);
       gl.depthFunc(gl.LEQUAL);
+      // The cities performing a ritual (ritual.js): only while one does.
+      if (scene.ritual?.active()) scene.ritual.draw(this, U, fr);
       if (cfg.particles) {
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
         scene.drawParticles(this.p.particle, U);

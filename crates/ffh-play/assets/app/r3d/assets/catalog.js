@@ -55,7 +55,7 @@
 //
 // Plot ctx (forest, flora, rocks, feature, settlement, improvement, bonus, emitters "plot"): r, x,
 // y, i (plot index), kind (world.js KIND), feat (FEAT), ground (GROUND), hills, peak, held
-// (something stands at the centre), city, unit, owner (player id or -1), civ, family, bonus and
+// (something stands at the centre), heldAt(j) (the same of plot index j), city, unit, owner (player id or -1), civ, family, bonus and
 // improvement (type names or null), world, coast ([[dx, dz], ...] plot-local directions of the
 // water around the plot: a harbour faces them; empty inland), river (a river runs along the plot),
 // cityNear (a city stands on a neighbouring plot), cityBehind ({n, e, w}: a city on the plot north,

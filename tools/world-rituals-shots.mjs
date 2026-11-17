@@ -247,7 +247,7 @@ async function onStage(browser, bin, saves, kind, f, { viewport = VIEW, query = 
   }
 }
 
-// ---- `stage rituals`: rituals in progress (yours too), a charge held, one unmet ----
+// ---- `stage rituals`: rituals in progress (yours too), a charge held ----
 async function shotsRituals(browser, bin, saves) {
   const st = await stage(bin, "rituals", path.join(saves, "staged-rituals"));
   const server = await startServer({ bin, saves, extra: ["--load", st.save, "--assets", ASSETS] });

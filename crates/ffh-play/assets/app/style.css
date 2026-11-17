@@ -246,6 +246,7 @@ html.art #top .sep { display: block; }
 .tooltip[hidden] { display: none; }
 .tip-title { color: var(--c-vellum); }
 .tip-city { color: var(--c-sand); }
+.tip-ritual { color: #c9a0ff; }
 .tip-path { color: var(--c-bone); margin-top: 3px; }
 .tip-unique { margin: 4px 0; padding: 4px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .tip-unique-name { color: var(--c-sand); }

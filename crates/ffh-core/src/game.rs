@@ -293,6 +293,10 @@ pub struct Game {
     /// Not in C++: the Khazad's tunnels (The Delve), each joining two plots for good, in the order
     /// dug (`ffh::world_ritual_spells::lanun_khazad`).
     pub delves: Vec<(PlotIdx, PlotIdx)>,
+    /// Not in C++: the plots lit by a ritual's sight (`ffh::rituals`, `sync_ritual_sight`: the
+    /// plot of a city whose first build is a ritual is visible to every team), sorted, each with
+    /// the teams whose visibility count it raised.
+    pub ritual_sight: Vec<(PlotIdx, Vec<TeamId>)>,
     /// Not in C++: the target of the targeted spell being cast (`unit_cast_at`), read by its
     /// result; `None` outside such a cast. Not saved (a cast is over within one call).
     pub spell_target: Option<crate::structs::SpellTarget>,
@@ -462,6 +466,7 @@ impl Game {
             doom: Default::default(),
             area_effects: Vec::new(),
             delves: Vec::new(),
+            ritual_sight: Vec::new(),
             spell_target: None,
             trophies: BTreeMap::new(),
             map_script: default_map_script(),

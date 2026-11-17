@@ -196,6 +196,34 @@ test("hills side by side stand on one crown, under one scarp", () => {
   }
 });
 
+test("a group of hills is one crown with a top for each hill", () => {
+  // Two rows of hills, and a pair that touch only at a corner.
+  const rows = [".......", ".hhh...", ".hhh...", ".....h.", "....h..", "......."];
+  const w = new World(buildMap(data, rows), { cliff: CLIFF });
+  // (Rows are listed north first: the block's rows are y 3 and 4.) Between the rows and between the
+  // pair, all the way across, the ground is crown: no strip of the plain parts them.
+  for (let x = 1.3; x <= 3.7; x += 0.05) {
+    w.heightAt(x, 4);
+    assert.ok(w.scarp > 0, `the crown holds between the rows at ${x.toFixed(2)}`);
+  }
+  for (let t = 0.2; t <= 0.8; t += 0.05) {
+    w.heightAt(4.5 + t, 1.5 + t);
+    assert.ok(w.scarp > 0, `the crown holds between the corner pair at ${t.toFixed(2)}`);
+  }
+  // Each hill's top stands over the saddles to its neighbours.
+  const top = (x, y) => {
+    let best = -Infinity;
+    for (let dy = -0.25; dy <= 0.25; dy += 0.05) for (let dx = -0.25; dx <= 0.25; dx += 0.05) best = Math.max(best, w.heightAt(x + 0.5 + dx, y + 0.5 + dy));
+    return best;
+  };
+  for (const y of [3, 4]) {
+    for (const x of [1, 2]) {
+      const saddle = Math.min(...[-0.1, 0, 0.1].map((dy) => w.heightAt(x + 1, y + 0.5 + dy)));
+      assert.ok(Math.min(top(x, y), top(x + 1, y)) - saddle > 0.03, `a saddle between the tops of (${x}, ${y}) and (${x + 1}, ${y})`);
+    }
+  }
+});
+
 test("a plot revealed in the map's edge rows drops the parchment's chunk past the edge", () => {
   const rows = Array.from({ length: 16 }, () => "-".repeat(16));
   const w = new World(buildMap(data, rows), { cliff: CLIFF });

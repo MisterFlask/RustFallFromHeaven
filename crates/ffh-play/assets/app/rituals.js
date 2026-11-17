@@ -40,6 +40,7 @@ addHelp({
         "A world spell with no target takes effect at the completion. One with a target must be cast before the turn ends; while it has no valid target, the turn may end and the cast stays pending.",
         "Every project is a [KW=KEYWORD_RITUAL]ritual[\\KW]. A ritual's progress is lost if its city switches to building something else.",
         "A ritual cannot be hurried with gold. Hurrying with population is allowed.",
+        "While a ritual is in production, its city's plot is visible to every player (a violet mark on the minimap).",
         "One world ritual in progress per player, in one city; not started again while its cast is pending.",
         "Each completion doubles a world ritual's next cost.",
         "Every player is told when any world ritual begins, is abandoned or completes.",

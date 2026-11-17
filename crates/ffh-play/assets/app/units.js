@@ -967,6 +967,8 @@ function showTip() {
     const walls = city.sentinels?.length ? `, Sentinels ${city.sentinels.map((p) => (p > 0 ? `${p}%` : "breached")).join("/")}` : "";
     lines.push(h("div.tip-city", `${city.capital ? "★ " : ""}${city.name}`, h("span.dim", ` (${playerName(city.owner)}${city.size !== null && city.size !== undefined ? `, size ${city.size}` : ""}${walls})`), city.besieged ? h("span.bad", " besieged") : null));
     if (city.siege) lines.push(h(`div.tip-siege${city.siege.state === "starvation" ? ".bad" : ".warn"}`, `Siege turn ${city.siege.turn}. ${city.siege.text}`));
+    // A ritual under way (the view's `ritual`): its plot is seen by every player.
+    if (city.ritual) lines.push(h("div.tip-ritual", `Ritual under way: ${city.ritual}. This plot is visible to every player.`));
     // The Sea layer (docs/NAVAL.md section 10): a port of yours names the range it gives.
     const port = mapView?.layer === "sea" ? portLine(city, me()?.sea_range) : null;
     if (port) lines.push(h("div.tip-sea", port));

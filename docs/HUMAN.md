@@ -494,7 +494,8 @@ texts mark a keyword), as do a production entry's `ritual` and a row of `rituals
   list): `World Ritual`, `Ritual`; hover, focus or tap shows that keyword's boxes and its
   implied ones; the tap does not choose the entry.
 - The keywords now: Ritual (`Progress is lost if the city switches to building something else.
-  Cannot be hurried with gold.`), World Ritual (`One in progress per player. Each
+  Cannot be hurried with gold. While this is in production, the city's plot is visible to every
+  player.`), World Ritual (`One in progress per player. Each
   completion doubles its next cost. Every player is told when it begins, is abandoned or
   completes.`, implies Ritual).
 

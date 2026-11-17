@@ -145,7 +145,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 40: permanent city specialties, saved offers and training provenance.
 /// - 41: typed mana specialties and the revised specialty pool.
 /// - 42: city investment and relief counters for besieged garrisons.
-pub const FORMAT_VERSION: u32 = 42;
+/// - 43: a ritual's sight (`Game::ritual_sight`).
+pub const FORMAT_VERSION: u32 = 43;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -397,6 +398,7 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
         doom,
         area_effects,
         delves,
+        ritual_sight,
         spell_target: _,
         trophies,
         map_script: _,
@@ -517,6 +519,7 @@ pub(crate) fn grow_game(g: &mut Game, slots: Slots) {
     doom.grow(slots);
     area_effects.grow(slots);
     delves.grow(slots);
+    ritual_sight.grow(slots);
     trophies.grow(slots);
     // Ranks by position, one per slot (`update_score` fills those of the civ slots).
     rank_player.resize(slots.players, crate::ids::PlayerId(0));
@@ -642,6 +645,7 @@ fn write_game(g: &Game, w: &mut Writer) {
         doom,
         area_effects,
         delves,
+        ritual_sight,
         spell_target: _,
         trophies,
         map_script: _,
@@ -763,6 +767,7 @@ fn write_game(g: &Game, w: &mut Writer) {
     doom.write(w);
     area_effects.write(w);
     delves.write(w);
+    ritual_sight.write(w);
     trophies.write(w);
 }
 
@@ -883,6 +888,7 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         doom: Persist::read(r)?,
         area_effects: Persist::read(r)?,
         delves: Persist::read(r)?,
+        ritual_sight: Persist::read(r)?,
         spell_target: None,
         trophies: Persist::read(r)?,
         map_script,

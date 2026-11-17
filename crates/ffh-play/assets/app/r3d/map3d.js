@@ -20,6 +20,7 @@ import { dressStatic, dressUnits, staticEnv, teamColour, standHeight } from "./d
 import { loadConfig, saveConfig, withPreset, LIGHTING, PANEL } from "./config.js";
 import { drawHud } from "./hud.js";
 import { SeaLayer } from "./sealayer.js";
+import { RitualLayer, ritualCities, ritualEmitters } from "./ritual.js";
 import "./assets/index.js";
 
 const ZOOMS = [28, 40, 56, 72, 96, 128, 168, 220];
@@ -128,6 +129,10 @@ export class Map3D {
     this.sea = new SeaLayer(gl);
     this.sea.scene = this.scene;
     this.scene.sea = this.sea;
+    // A city performing a ritual (ritual.js), drawn by the pipeline with the overlays.
+    this.ritual = new RitualLayer(gl);
+    this.ritual.scene = this.scene;
+    this.scene.ritual = this.ritual;
     this.world = null;
     this.mapSeen = null;
     this.viewSeen = null;
@@ -272,6 +277,7 @@ export class Map3D {
     const pending = this.lost ? [] : this.programs().filter((p) => !p.done);
     try {
       this.sea.dispose();
+      this.ritual.dispose();
       this.scene.dispose();
       this.pipeline.dispose(pending);
     } catch {
@@ -619,6 +625,10 @@ export class Map3D {
       }
       this.cities = cities;
       this.staticExtras(map, env, emitters);
+      // The cities performing a ritual: their beam and storm, and violet motes round them.
+      const rituals = ritualCities(cities, env.cityAt, this.world.w);
+      this.ritual.set(rituals);
+      for (const e of ritualEmitters(rituals)) emitters.push(e);
       this.emitters = emitters;
       this.scene.setParticles(emitters);
       const T4 = performance.now();

@@ -29,6 +29,9 @@
 //        &routes=x,y;x,y;...                   a road on those plots (y from the south)
 //   &fogRect=x0,y0,x1,y1                      (any scene) a rectangle remembered, not in sight
 //   &sel=x,y&select=1&hover=x,y&targets=x,y;x,y&path=x,y;x,y&attack=1&layer=political  overlays
+//   &ritual=1                                  (any scene with cities) the city nearest the camera's
+//                                              point performs a ritual (its beam and storm, ritual.js);
+//                                              &ritual=all every city, &ritual=id:3,id:5 those ids
 
 import { S, setData, setView, setMap } from "/app/state.js";
 import { Map3D } from "/app/r3d/map3d.js";
@@ -70,6 +73,15 @@ async function main() {
   // &fogRect=x0,y0,x1,y1: those plots remembered rather than in sight (the fog of war's frontier).
   const fogRect = q.get("fogRect")?.split(",").map(Number);
   if (fogRect) for (let y = fogRect[1]; y <= fogRect[3]; y++) for (let x = fogRect[0]; x <= fogRect[2]; x++) if (scene.map.vis[y * scene.map.w + x] > 1) scene.map.vis[y * scene.map.w + x] = 1;
+  // &ritual=1 | all | id:N,id:M: cities performing a ritual (the view record's `ritual`).
+  const ritual = q.get("ritual");
+  if (ritual && scene.view.cities.length) {
+    const cs = scene.view.cities;
+    const [fx, fy] = [Number(q.get("cx") ?? scene.focus[0]), Number(q.get("cy") ?? scene.focus[1])];
+    const near = cs.reduce((a, c) => (Math.hypot(c.x + 0.5 - fx, c.y + 0.5 - fy) < Math.hypot(a.x + 0.5 - fx, a.y + 0.5 - fy) ? c : a));
+    const ids = ritual.split(",").filter((s) => s.startsWith("id:")).map((s) => Number(s.slice(3)));
+    for (const c of cs) if (ritual === "all" || ids.includes(c.id) || (!ids.length && c === near)) c.ritual = "Ritual";
+  }
   setView(scene.view);
   // &wrap=1 on any scene: its map wraps east-west (a game's map does, and the ground's noise is
   // laid out for the wrap, docs/R3D.md §11.1).

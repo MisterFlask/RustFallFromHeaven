@@ -31,7 +31,7 @@ import { extendCatalog } from "./catalog.js";
 import { MAT, icosphere, MeshBuilder } from "../mesh.js";
 import { pal, jitter, MANA } from "./palette.js";
 import { noise3, hashf } from "../noise.js";
-import { vnorm, vsub, vcross, vadd, vscale, clamp } from "../math.js";
+import { vnorm, vsub, vcross, vadd, vscale, clamp, smoothstep } from "../math.js";
 import { KIND, FEAT, GROUND, DRAFT, RIVER_HALF, RIVER_WANDER, isHell } from "../world.js";
 import { fieldLayout, inField, roadLinks, onRoad, ROAD_CLEAR, CROP, ROWS } from "../fields.js";
 
@@ -890,6 +890,35 @@ function buildMountain(mb, r, variant, param) {
   const { f, top, hs } = mountainField(r, MOUNTAINS[variant % MOUNTAINS.length]);
   const p = mountainPaint(param, r);
   const seed = r.range(0, 9);
+  const { shade, tooth } = mountainShade(f, top, p, seed);
+  meshField(mb, r, f, -0.82, 0.82, -0.82, 0.82, 44, 44, shade);
+  // Crag teeth on the upper ridges: they break the silhouette.
+  for (const o of hs) {
+    const n = o.h > 0.6 ? 3 : 1;
+    for (let k = 0; k < n; k++) {
+      const a = r.range(0, TAU), d = o.rad * r.range(0.16, 0.42);
+      const x = o.x + Math.cos(a) * d, z = o.z + Math.sin(a) * d;
+      const g = f(x, z);
+      if (g.crest < 0.45 || g.h < 0.15) continue;
+      spire(mb, r, { x, z, h: g.h + r.range(0.05, 0.1), rad: r.range(0.03, 0.045), sides: 5, rings: 2, base: g.h - 0.06, taper: 0.8, lean: [r.range(-0.02, 0.02), r.range(-0.02, 0.02)], shade: tooth });
+    }
+  }
+  // Boulders where the flanks meet the ground.
+  const sh = rockShader(rockPaint(param === "sand" ? "sand" : param === "basalt" ? "basalt" : "", r), seed);
+  for (let k = 0; k < 6; k++) {
+    const a = r.range(0, TAU), d = r.range(0.45, 0.7);
+    const x = Math.cos(a) * d, z = Math.sin(a) * d;
+    const g = f(x, z);
+    if (g.h > 0.12) continue;
+    rockMass(mb, r, { rad: r.range(0.035, 0.06), detail: 0, sy: 0.7, cuts: 3, cut: 0.55, c: [x, Math.max(0, g.h) + 0.01, z], floor: -0.05, shade: sh });
+  }
+}
+
+/** The facet shading of a mountain's rock (and of a ridge between two: the same paint, the same
+ *  snow line, by height against the mountain's `top`): flanks darker as they steepen, gullies
+ *  darker than crests (the field's `crest`), strata, snow where the slope holds it, grass on the
+ *  gentle ground of the foot. `tooth`: the same rock for crag teeth. */
+function mountainShade(f, top, p, seed) {
   const rockAt = (n, y, cx, cz) => {
     const k = noise3(cx * 7 + seed, y * 7, cz * 7);
     let base = p.base;
@@ -913,24 +942,33 @@ function buildMountain(mb, r, variant, param) {
     const v = 0.95 + 0.1 * hashf(Math.round(a[0] * 1e4), Math.round(b[1] * 1e4), Math.round(c[2] * 1e4));
     return [col[0] * v, col[1] * v, col[2] * v];
   };
-  // The surface: a grid over the massif, its vertices pushed off the grid's lines (no rows of
-  // facets show), sunk under the ground where the mountain ends.
-  const N = 44, E = 0.82, step = (2 * E) / N;
+  const tooth = (n, y, a, b, c) => {
+    const [base] = rockAt(n, y, a[0], a[2]);
+    return faceShade(base, n, { top: p.top, lit: 0.3 });
+  };
+  return { shade, tooth };
+}
+
+/** The faceted surface of a height field `f` (mountainField's shape) over [x0, x1] x [z0, z1]: a grid
+ *  of `nx` by `nz` squares, its vertices pushed off the grid's lines (no rows of facets show), sunk
+ *  under the ground where the field ends, each square split along the diagonal that follows the
+ *  fold (a ridge stays an edge); the foot darkened (groundAO). */
+function meshField(mb, r, f, x0, x1, z0, z1, nx, nz, shade) {
+  const sx = (x1 - x0) / nx, sz = (z1 - z0) / nz;
   const P = [];
-  for (let j = 0; j <= N; j++) {
-    for (let i = 0; i <= N; i++) {
-      const x = -E + (i + r.range(-0.18, 0.18)) * step, z = -E + (j + r.range(-0.18, 0.18)) * step;
+  for (let j = 0; j <= nz; j++) {
+    for (let i = 0; i <= nx; i++) {
+      const x = x0 + (i + r.range(-0.18, 0.18)) * sx, z = z0 + (j + r.range(-0.18, 0.18)) * sz;
       const h = f(x, z).h;
       P.push([x, h > 0 ? h : -0.06, z, h > 0]);
     }
   }
   const m0 = mb.mark();
   const inside = [0, -0.3, 0];
-  for (let j = 0; j < N; j++) {
-    for (let i = 0; i < N; i++) {
-      const a = P[j * (N + 1) + i], b = P[j * (N + 1) + i + 1], c = P[(j + 1) * (N + 1) + i], d = P[(j + 1) * (N + 1) + i + 1];
+  for (let j = 0; j < nz; j++) {
+    for (let i = 0; i < nx; i++) {
+      const a = P[j * (nx + 1) + i], b = P[j * (nx + 1) + i + 1], c = P[(j + 1) * (nx + 1) + i], d = P[(j + 1) * (nx + 1) + i + 1];
       if (!a[3] && !b[3] && !c[3] && !d[3]) continue;
-      // Split each quad along the diagonal that follows the fold (a ridge stays an edge).
       if (Math.abs(a[1] - d[1]) < Math.abs(b[1] - c[1])) {
         ftri(mb, a, d, b, inside, shade);
         ftri(mb, a, c, d, inside, shade);
@@ -941,33 +979,117 @@ function buildMountain(mb, r, variant, param) {
     }
   }
   groundAO(mb, m0, -0.02, 0.12, 0.62);
-  // Crag teeth on the upper ridges: they break the silhouette.
-  const tooth = (n, y, a, b, c) => {
-    const [base] = rockAt(n, y, a[0], a[2]);
-    return faceShade(base, n, { top: p.top, lit: 0.3 });
-  };
-  for (const o of hs) {
-    const n = o.h > 0.6 ? 3 : 1;
-    for (let k = 0; k < n; k++) {
-      const a = r.range(0, TAU), d = o.rad * r.range(0.16, 0.42);
-      const x = o.x + Math.cos(a) * d, z = o.z + Math.sin(a) * d;
-      const g = f(x, z);
-      if (g.crest < 0.45 || g.h < 0.15) continue;
-      spire(mb, r, { x, z, h: g.h + r.range(0.05, 0.1), rad: r.range(0.03, 0.045), sides: 5, rings: 2, base: g.h - 0.06, taper: 0.8, lean: [r.range(-0.02, 0.02), r.range(-0.02, 0.02)], shade: tooth });
-    }
-  }
-  // Boulders where the flanks meet the ground.
-  const sh = rockShader(rockPaint(param === "sand" ? "sand" : param === "basalt" ? "basalt" : "", r), seed);
-  for (let k = 0; k < 6; k++) {
-    const a = r.range(0, TAU), d = r.range(0.45, 0.7);
-    const x = Math.cos(a) * d, z = Math.sin(a) * d;
-    const g = f(x, z);
-    if (g.h > 0.12) continue;
-    rockMass(mb, r, { rad: r.range(0.035, 0.06), detail: 0, sy: 0.7, cuts: 3, cut: 0.55, c: [x, Math.max(0, g.h) + 0.01, z], floor: -0.05, shade: sh });
-  }
 }
 
 recipe("feat.mountain", { variants: MOUNTAINS.length, build: (mb, r, { variant, param }) => buildMountain(mb, r, variant, param) });
+
+/** A ridge's variants: RIDGE_VARIANTS between orthogonal neighbours (its peaks a plot apart), as
+ *  many again between diagonal ones (√2 apart). */
+const RIDGE_VARIANTS = 4;
+/** A mountain's height in the world (its tallest horn at the scale mountainOf gives it): the ridge's
+ *  snow line is reckoned against it, so the snow runs on from the massifs across the saddle. */
+const MOUNTAIN_TOP = 0.86;
+
+/** The height field `(x, z) -> {h, crest}` of a ridge between two peaks at x = ±len/2 (z toward the
+ *  camera, plot units): a sharp crest wandering along the axis, highest where it runs into the two
+ *  massifs (about 0.6 of a mountain's height) and sagging to a saddle off its middle (about 0.4),
+ *  with a knob or two along it; its flanks fall to both sides in spurs with gullies between them,
+ *  a third of a plot and more wide at the foot, so no ground shows between the two mountains; past
+ *  the peaks' centres it ends inside them. `crest` is 1 on the crest and the spurs, 0 in a gully. */
+function ridgeField(r, len) {
+  const seed = r.range(0, 50), half = len / 2;
+  const hEnd = r.range(0.5, 0.56), hMid = r.range(0.32, 0.38);
+  const sag = r.range(-0.25, 0.25);
+  const knobs = Array.from({ length: r.int(1, 2) }, () => ({ u: r.range(-0.55, 0.55), h: r.range(0.04, 0.07), w: r.range(0.1, 0.16) }));
+  const wa = r.range(0.03, 0.05), wk = r.range(5, 8), wp = r.range(0, TAU);
+  // Each flank its own spurs: how many to a plot and where they fall.
+  const side = [0, 1].map(() => ({ k: r.range(5.5, 8), p: r.range(0, TAU), lean: r.range(-0.6, 0.6) }));
+  const f = (x, z) => {
+    const u = x / half;
+    if (Math.abs(u) > 1.25) return { h: 0, crest: 0 };
+    // The crest line wanders; the saddle lies off the middle.
+    const zc = wa * Math.sin(u * wk + wp) * (1 - 0.6 * u * u);
+    const us = u - sag * (1 - u * u);
+    let c = hMid + (hEnd - hMid) * Math.min(1, us * us);
+    for (const kn of knobs) c += kn.h * Math.max(0, 1 - ((x - kn.u * half) / kn.w) ** 2) ** 2;
+    // It ends inside the massifs, past the peaks' centres.
+    c *= 1 - smoothstep(0.9, 1.22, Math.abs(u));
+    if (c <= 0) return { h: 0, crest: 0 };
+    const dz = z - zc, o = side[dz < 0 ? 0 : 1];
+    // Spurs reach further out than the gullies between them; they lean as they run down.
+    const sp = 1 - Math.pow(Math.abs(Math.sin(o.k * (x + o.lean * Math.abs(dz)) + o.p)), 0.75);
+    const w = (0.4 - 0.12 * Math.min(1, u * u)) * (0.72 + 0.42 * sp);
+    const d = Math.abs(dz) / w;
+    let h = c * Math.pow(clamp(1 - d, 0, 1), 1.15);
+    if (h > 0) h = Math.max(0.001, h - 0.024 * Math.abs(noise3(x * 11 + seed, 1.5, z * 11)) * clamp((h / c) * 3, 0, 1) * clamp(1.1 - h / c, 0, 1));
+    return { h, crest: Math.max(sp * 0.8, 1 - smoothstep(0, 0.25, d)) };
+  };
+  return { f, hEnd, half };
+}
+
+/** A ridge joining two neighbouring peaks of a range into one massif (mountainOf): ridgeField,
+ *  meshed and painted as the mountain is (mountainShade, its snow line reckoned against a
+ *  mountain's height), with a few crag teeth along the crest. No boulders: its foot is the
+ *  ground between two mountains. */
+function buildRidge(mb, r, variant, param) {
+  const len = variant < RIDGE_VARIANTS ? 1 : Math.SQRT2;
+  const { f, half } = ridgeField(r, len);
+  const p = mountainPaint(param, r);
+  const seed = r.range(0, 9);
+  const { shade, tooth } = mountainShade(f, MOUNTAIN_TOP, p, seed);
+  const ex = half * 1.25;
+  meshField(mb, r, f, -ex, ex, -0.5, 0.5, Math.ceil((2 * ex) / 0.036), 28, shade);
+  for (let k = 0; k < 3; k++) {
+    const x = r.range(-0.6, 0.6) * half;
+    const g = f(x, 0);
+    if (g.h < 0.2) continue;
+    spire(mb, r, { x, z: 0, h: g.h + r.range(0.04, 0.08), rad: r.range(0.028, 0.04), sides: 5, rings: 2, base: g.h - 0.07, taper: 0.8, lean: [r.range(-0.02, 0.02), r.range(-0.02, 0.02)], shade: tooth });
+  }
+}
+
+recipe("feat.ridge", { variants: 2 * RIDGE_VARIANTS, build: (mb, r, { variant, param }) => buildRidge(mb, r, variant, param) });
+
+/** The links of a range a peak plot emits (each link once): to its east and north neighbours, and
+ *  to its north-east and north-west ones when neither plot between them is a peak (no crossed
+ *  diagonals in a block of four). */
+const RIDGE_LINKS = [[1, 0], [0, 1], [1, 1], [-1, 1]];
+
+/** Whether plot j is an ordinary peak: a peak the dressing knows, not a volcano, nothing standing
+ *  on it (its mountain stands at the plot's centre, full size). */
+function ordinaryPeak(ctx, j) {
+  const { world } = ctx;
+  return j >= 0 && world.kind[j] === KIND.PEAK && world.feat[j] !== FEAT.VOLCANO && !(ctx.heldAt?.(j) ?? false);
+}
+
+/** The ridges from an ordinary peak to its ordinary neighbours (RIDGE_LINKS): each laid between the
+ *  two mountains' actual places (plot centre + peakJitter), along the link, scaled to its length,
+ *  rooted as a mountain is. Deterministic from the plot index (hashes: it draws nothing from the
+ *  plot's rng, whose other dressing stays as it was). */
+function ridgesOf(ctx, param) {
+  const { world, i, x, y } = ctx;
+  if (!ordinaryPeak(ctx, i)) return [];
+  const out = [];
+  const ax = world.peakJitter[i * 2], az = -world.peakJitter[i * 2 + 1];
+  for (const [dx, dy] of RIDGE_LINKS) {
+    const j = world.index(x + dx, y + dy);
+    if (!ordinaryPeak(ctx, j)) continue;
+    const diag = dx !== 0 && dy !== 0;
+    if (diag) {
+      const between = (bx, by) => world.kind[world.index(bx, by)] === KIND.PEAK;
+      if (between(x + dx, y) || between(x, y + dy)) continue;
+    }
+    // Plot-local, x east and z south (map y north).
+    const bx = dx + world.peakJitter[j * 2], bz = -dy - world.peakJitter[j * 2 + 1];
+    const vx = bx - ax, vz = bz - az, dist = Math.hypot(vx, vz);
+    const len = diag ? Math.SQRT2 : 1, scale = dist / len;
+    const k = RIDGE_LINKS.findIndex(([ex, ey]) => ex === dx && ey === dy);
+    const variant = (diag ? RIDGE_VARIANTS : 0) + Math.floor(hashf(i, 91 + k) * RIDGE_VARIANTS) % RIDGE_VARIANTS;
+    // Either way along the link (the model is not symmetric).
+    const yaw = Math.atan2(-vz, vx) + (hashf(i, 95 + k) < 0.5 ? Math.PI : 0);
+    out.push({ asset: "feat.ridge", param, variant, dx: (ax + bx) / 2, dz: (az + bz) / 2, scale, foundation: 0.5 * len * scale, yaw, always: true });
+  }
+  return out;
+}
 
 /** The mountain of a peak plot (a volcano is its own model), rooted across its whole footprint. */
 function mountainOf(ctx) {
@@ -981,7 +1103,7 @@ function mountainOf(ctx) {
   const scale = (held ? 0.62 : 1.12) * r.range(0.94, 1.08);
   // Root the shallow rim across the footprint (including its boulders), including at coasts
   // and beside neighbouring hills, rather than balancing the model on a high centre point.
-  return [{ asset: "feat.mountain", param, variant, dx: world.peakJitter[i * 2], dz: -world.peakJitter[i * 2 + 1] - (held ? 0.2 : 0), scale, foundation: 0.85 * scale, yaw: r.range(-0.5, 0.5) + (r() < 0.5 ? Math.PI : 0), always: true }];
+  return [{ asset: "feat.mountain", param, variant, dx: world.peakJitter[i * 2], dz: -world.peakJitter[i * 2 + 1] - (held ? 0.2 : 0), scale, foundation: 0.85 * scale, yaw: r.range(-0.5, 0.5) + (r() < 0.5 ? Math.PI : 0), always: true }, ...ridgesOf(ctx, param)];
 }
 
 const FIRE = [T.flameCore, T.flameMid, T.flameTip];

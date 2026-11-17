@@ -181,6 +181,9 @@ impl Game {
             }
         }
 
+        // This game's rituals (`ffh::rituals`): their sight is counted once per team; taken off
+        // before the counts merge, put back on after.
+        self.release_ritual_sight();
         let d = self.d;
         for p in self.map.plot_ids() {
             let visibility_count = self.map.plots[p].visibility_count[other];
@@ -196,6 +199,7 @@ impl Game {
                 self.plot_set_revealed(p, t, true, false, Some(other), false);
             }
         }
+        self.sync_ritual_sight();
 
         self.update_plot_groups();
 
