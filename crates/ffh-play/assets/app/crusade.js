@@ -62,6 +62,13 @@ function show(m, at) {
 // ---- the rules, in the help display (help.js; each dialog's (i) opens its topic) --------------
 
 const GROUP = "Crusades (a rules variant)";
+
+/** " for some 20 turns (at normal speed)": the unhappiness of defying the council, from the served
+ *  define (`defy_resolution_anger_divisor`); "" when it is not served. */
+function defyTurns() {
+  const v = S.data?.defines?.defy_resolution_anger_divisor;
+  return typeof v === "number" ? ` for some ${v} turns (at normal speed)` : "";
+}
 const li = (...parts) => h("li", ...parts);
 
 addHelp({
@@ -81,7 +88,7 @@ addHelp({
     h(
       "ul",
       li("What you lent is weighed against your obligation."),
-      li("A refusal, or nothing lent, defies the council: unhappiness in your cities for some 20 turns (at normal speed), and you lose your loyal membership until you next comply with one of its resolutions."),
+      li(`A refusal, or nothing lent, defies the council: unhappiness in your cities${defyTurns()}, and you lose your loyal membership until you next comply with one of its resolutions.`),
       li("Lending less than asked costs the shortfall's share of that unhappiness. Meeting the obligation keeps you a loyal member."),
     ),
   ],

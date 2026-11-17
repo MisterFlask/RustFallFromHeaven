@@ -77,11 +77,22 @@ fn plot_idx_json(g: &Game, p: PlotIdx) -> Json {
     plot_json(x, y)
 }
 
-/// A ground rule as the screens read it, `{kind, pct}`; `None` for one the ground's flags say
+/// A ground rule as the screens read it, `{kind, pct, side, kinds, first_round}` (its reach, the
+/// rules' `GroundRule::reach`: the side whose hits it changes, 0 or 1, null for both; the action
+/// kinds, null for all; whether only in the first round); `None` for one the ground's flags say
 /// already (no flanking: `flanking` false) or that changes nothing (a charge's first round at
 /// 100%).
 fn rule_json(r: &GroundRule) -> Option<Json> {
-    let j = |kind: &str, pct: i32| Some(crate::jobj! { "kind" => kind, "pct" => pct });
+    let reach = r.reach();
+    let j = |kind: &str, pct: i32| {
+        Some(crate::jobj! {
+            "kind" => kind,
+            "pct" => pct,
+            "side" => reach.side.map(side_ix),
+            "kinds" => reach.kinds.map(|ks| Json::Arr(ks.iter().map(|&k| Json::from(kind_name(k))).collect())),
+            "first_round" => reach.first_round,
+        })
+    };
     match *r {
         GroundRule::CityShots { pct } => j("CityShots", pct),
         GroundRule::ForestRanged { pct } => j("ForestRanged", pct),
@@ -109,6 +120,9 @@ fn params_json(d: &GameData) -> Json {
         "bolt_pct" => x.engagement_bolt_percent,
         "splash_pct" => x.engagement_splash_percent,
         "first_strike_speed" => x.engagement_first_strike_speed,
+        // A type of this tier or above, and a hero, get `extra_actions` more in its best row.
+        "extra_action_tier" => x.engagement_extra_action_tier,
+        "extra_actions" => x.engagement_extra_actions,
     }
 }
 

@@ -24,6 +24,22 @@ import { addHelp } from "./help.js";
 /** The numbers of the rules as the last `governors` query gave them (null before one). */
 let rules = null;
 
+/** The Standard tier's suitability for every role ("100%": its `core_effect_percent` in the served
+ *  data), or "full" when it is not served. */
+function standardSuitability() {
+  const t = (S.data?.tables?.BuildingTierType ?? []).find((x) => x.type === "BUILDINGTIER_STANDARD");
+  return typeof t?.core_effect_percent === "number" ? `${t.core_effect_percent}%` : "full";
+}
+
+/** What the Cautious trait adds to its city's garrison quota ("one more defender": its
+ *  `defenders` in the served data), or "more defenders" when it is not served. */
+function cautiousDefenders() {
+  const t = (S.data?.tables?.GovernorTraitType ?? []).find((x) => x.type === "GOVERNORTRAIT_CAUTIOUS");
+  const n = t?.defenders;
+  if (typeof n !== "number") return "more defenders";
+  return n === 1 ? "one more defender" : `${n} more defenders`;
+}
+
 addHelp({
   id: "governors",
   group: "Game options",
@@ -34,10 +50,10 @@ addHelp({
     h(
       "ul",
       h("li", "A governor chooses what the city builds and which yields its citizens favour, by the city's role: Growth, Research, Commerce, Culture, Garrison or Production."),
-      h("li", "Standard buildings give every role 100% suitability. The proposed role follows your empire priorities."),
+      h("li", `Standard buildings give every role ${standardSuitability()} suitability. The proposed role follows your empire priorities.`),
       h("li", `You may choose another role for a city if its suitability is ${rules ? `${rules.min}%` : "high enough"} or more. Choosing the proposed role again lets the role follow the proposal.`),
-      h("li", `Priorities: up to ${rules ? rules.max : 2} roles weigh ${rules ? `+${rules.weight}%` : "more"} in every city's proposal.`),
-      h("li", "A governor has a name and at most one trait: Cautious (one more defender) or Ambitious (the costliest building first)."),
+      h("li", `Priorities: ${rules ? `up to ${rules.max} roles` : "the roles you pick"} weigh ${rules ? `+${rules.weight}%` : "more"} in every city's proposal.`),
+      h("li", `A governor has a name and at most one trait: Cautious (${cautiousDefenders()}) or Ambitious (the costliest building first).`),
     ),
     h("h4", "Empire orders"),
     h(

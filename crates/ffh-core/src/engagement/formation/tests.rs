@@ -384,6 +384,52 @@ fn the_ground() {
     assert_eq!(b.expected(2, 6, K::Strike, 1, false), 3000);
 }
 
+/// `GroundRule::reach` (what the host serves the screens with each rule) says what the resolver
+/// applies: on every ground, for each side, action kind and round, a hit's expected damage is the
+/// even hit times the percentages of the ground's rules whose reach takes it in.
+#[test]
+fn ground_rules_reach_what_the_resolver_applies() {
+    use Side::*;
+    let mut fs = vec![frontline(Attacker, 0, 0), frontline(Defender, 0, 0)];
+    for f in &mut fs {
+        f.spell = Spell::known(7);
+    }
+    let params = Params::default();
+    let mut seen = Vec::new();
+    for bits in 0..8 {
+        let g = Ground { city: bits & 1 != 0, forest: bits & 2 != 0, hills: bits & 4 != 0 };
+        let rules = g.rules(&params);
+        let b = battle(g, fs.clone());
+        for (h, t, side) in [(0, 1, Attacker), (1, 0, Defender)] {
+            for kind in ffh_data::ActionKind::ALL {
+                for round in 1..=3 {
+                    let mut num: i64 = EVEN as i64;
+                    let mut den: i64 = 1;
+                    for r in rules.iter().filter(|r| r.reach().touches(side, kind, round)) {
+                        num *= r.pct().unwrap_or(100) as i64;
+                        den *= 100;
+                    }
+                    assert_eq!(num % den, 0, "{g:?} {side:?} {kind:?} round {round}");
+                    let want = (num / den) as i32;
+                    assert_eq!(b.expected(h, t, kind, round, false), want, "{g:?} {side:?} {kind:?} round {round}");
+                }
+            }
+        }
+        seen.extend(rules.iter().map(std::mem::discriminant));
+    }
+    // Every rule kind came up on some ground.
+    for r in [
+        GroundRule::CityShots { pct: 0 },
+        GroundRule::ForestRanged { pct: 0 },
+        GroundRule::HillsAttacker { pct: 0 },
+        GroundRule::HillsDefenderRanged { pct: 0 },
+        GroundRule::Charge { pct: 0 },
+        GroundRule::NoFlanking,
+    ] {
+        assert!(seen.contains(&std::mem::discriminant(&r)), "{r:?}");
+    }
+}
+
 /// A missile strikes from outside the field at `missile_pct` (50) of a hit whatever the ground,
 /// takes the kill its own hit offers, and looks for no nearby unit.
 #[test]

@@ -27,8 +27,9 @@ const OUT = path.join(here, "..", "app", "battle_fixture.js");
 const RUNS = 200;
 const BASE = 40;
 /** The rule values the screens word (the protocol's `params`): the prototype's (its magic bolt,
- *  its spells' splash of half a hit, its LARGE_HP, two speed a first strike). */
-const PARAMS = { bolt_pct: En.SPELLS.bolt.power, splash_pct: 50, large_hp_pct: 150, first_strike_speed: 2 };
+ *  its spells' splash of half a hit, its LARGE_HP, two speed a first strike, one more action from
+ *  tier 4: `bonus_action` below). */
+const PARAMS = { bolt_pct: En.SPELLS.bolt.power, splash_pct: 50, large_hp_pct: 150, first_strike_speed: 2, extra_action_tier: 4, extra_actions: 1 };
 
 const TYPE = {
   Champion: "UNIT_CHAMPION",
@@ -105,12 +106,15 @@ function groundOf(g, city = CITY) {
     if (side === 0 && g.city) out.push({ src: "CityDefense", pct: g.cityDef, next_at: (Math.floor(g.cityDef / 25) + 1) * 25, delta: -Math.floor(g.cityDef / 25) });
     return out;
   };
+  // Each rule with its reach as the host sends it (the rules' `GroundRule::reach`): the side
+  // (null: both), the action kinds (null: all), the first round only.
+  const rule = (kind, pct, side, kinds, first_round = false) => ({ kind, pct, side, kinds, first_round });
   const rules = [];
-  if (g.city) rules.push({ kind: "CityShots", pct: 50 });
-  if (forest) rules.push({ kind: "ForestRanged", pct: 50 });
-  if (g.hills) rules.push({ kind: "HillsAttacker", pct: 75 }, { kind: "HillsDefenderRanged", pct: 125 });
+  if (g.city) rules.push(rule("CityShots", 50, 0, ["Shoot"]));
+  if (forest) rules.push(rule("ForestRanged", 50, null, ["Shoot", "Bombard"]));
+  if (g.hills) rules.push(rule("HillsAttacker", 75, 0, null), rule("HillsDefenderRanged", 125, 1, ["Shoot", "Bombard"]));
   // The cavalry's charge in the field (the prototype's chargePct): where flanking works.
-  if (fr.ground.flanking && En.CHARGE() !== 0) rules.push({ kind: "ChargeFirstRound", pct: 100 + En.CHARGE() });
+  if (fr.ground.flanking && En.CHARGE() !== 0) rules.push(rule("ChargeFirstRound", 100 + En.CHARGE(), null, ["Charge"], true));
   const plot = { x: 31, y: 18, terrain, feature: forest ? `FEATURE_${g.feature.toUpperCase()}` : null, hills: !!g.hills, river_crossing: false, city: g.city ? city : null };
   return {
     fr,

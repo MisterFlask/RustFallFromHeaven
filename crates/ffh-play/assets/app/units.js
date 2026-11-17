@@ -30,29 +30,36 @@ addHelp({
   order: 5,
   title: "The sea",
   body: () => {
+    // The numbers are the served defines (`S.data.defines`); one not served leaves its sentence
+    // without the number.
     const d = S.data?.defines ?? {};
-    const n = (k, def) => d[k] ?? def;
+    const q = (k, text, without) => (typeof d[k] === "number" ? text(d[k]) : without);
+    const pct = (k, without) => q(k, (v) => `${v}%`, without);
     const range = me()?.sea_range;
+    // The civilizations whose units in boats move more (`embarked_moves_change`: the Lanun).
+    const civs = S.data?.tables?.CivilizationType ?? [];
+    const more = civs.map((c, i) => [i, c.embarked_moves_change]).filter(([, m]) => m);
+    const boatsMore = more.map(([i, m]) => ` (the ${dname("CivilizationType", i)}: ${m === 1 ? "one" : m} more)`).join("");
     return [
       h("h4", "Range"),
       h(
         "ul",
-        h("li", `Range: ${n("sea_range", 8)} plots of water from a port (a city next to water) of yours, of your vassals or master, or of a team with open borders with you; techs add to it.${range !== null && range !== undefined ? ` Yours: ${range}.` : ""}`),
-        h("li", `Out of range, at the start of your turn: -${n("sea_attrition_percent", 15)}% HP for a ship or a unit in boats, no healing. It can kill. Carried units take none.`),
+        h("li", `Range: ${q("sea_range", (v) => `${v} plots`, "a number of plots")} of water from a port (a city next to water) of yours, of your vassals or master, or of a team with open borders with you; techs add to it.${range !== null && range !== undefined ? ` Yours: ${range}.` : ""}`),
+        h("li", `Out of range, at the start of your turn: ${q("sea_attrition_percent", (v) => `-${v}% HP`, "lost HP")} for a ship or a unit in boats, no healing. It can kill. Carried units take none.`),
         h("li", "No range while you have no city. Barbarians and animals have none."),
         h("li", "The Sea layer (Ctrl+4) darkens the water out of your range and draws its edge; it is on while a ship or a unit in boats is selected."),
       ),
       h("h4", "Boats"),
       h(
         "ul",
-        h("li", `A land unit may step onto water where no ship of yours has room for it: it is in boats. Entering water ends its moves; ${n("embarked_moves", 1)} water plot a turn (the Lanun: one more).`),
-        h("li", `In boats: strength ${n("embarked_strength", 1)} with no modifier, cannot attack or enter a plot with an enemy, does not heal, fortify, cast, build or found. It can move, wait or be deleted.`),
+        h("li", `A land unit may step onto water where no ship of yours has room for it: it is in boats. Entering water ends its moves; ${q("embarked_moves", (v) => `${v} water plot${v === 1 ? "" : "s"} a turn`, "a limited number of water plots a turn")}${boatsMore}.`),
+        h("li", `In boats: ${q("embarked_strength", (v) => `strength ${v}`, "a fixed strength")} with no modifier, cannot attack or enter a plot with an enemy, does not heal, fortify, cast, build or found. It can move, wait or be deleted.`),
         h("li", "An army in boats is supplied while in range of a port."),
       ),
       h("h4", "Wear"),
       h(
         "ul",
-        h("li", `A warship counts its turns outside a port of yours. After ${n("sea_wear_free_turns", 10)}: -${n("sea_wear_percent", 5)}% strength a turn, at most -${n("sea_wear_max_percent", 50)}%. A turn started in a port clears it.`),
+        h("li", `A warship counts its turns outside a port of yours. After ${q("sea_wear_free_turns", (v) => String(v), "some turns")}: ${q("sea_wear_percent", (v) => `-${v}% strength`, "less strength")} a turn${q("sea_wear_max_percent", (v) => `, at most -${v}%`, "")}. A turn started in a port clears it.`),
       ),
       h("h4", "Seas"),
       h(
@@ -65,7 +72,7 @@ addHelp({
         "ul",
         h("li", "Patrol: a warship on a sea plot outside a city takes the order; it ends the ship's moves, and ends when the ship moves or takes another order. Barbarian ships do not patrol."),
         h("li", "A side's strength in a sea: the sum of its warships' strength on Patrol there (damage and wear included). Ships passing through count for nothing."),
-        h("li", `A sea is held by an enemy (closed to you) while it has strength above 0 there and at least ${n("sea_hold_percent", 200)}% of yours. You hold it at ${n("sea_hold_percent", 200)}% of every enemy's strength there, or as soon as you patrol where no enemy does. Ships of hidden nationality count as at war with everyone.`),
+        h("li", `A sea is held by an enemy (closed to you) while it has strength above 0 there and at least ${pct("sea_hold_percent", "a set multiple")} of yours. You hold it at ${pct("sea_hold_percent", "that multiple")} of every enemy's strength there, or as soon as you patrol where no enemy does. Ships of hidden nationality count as at war with everyone.`),
       ),
       h("h4", "Blockade"),
       h(
@@ -77,17 +84,17 @@ addHelp({
       h("h4", "Interception"),
       h(
         "ul",
-        h("li", `A group that enters a plot of a sea where an enemy has ships on Patrol is attacked there, once, by that enemy's strongest ship on Patrol in the sea whose odds are at least ${n("intercept_min_odds", 50)}%; then it moves on if it lives. Each ship intercepts once a turn. The path preview says where you would be intercepted.`),
+        h("li", `A group that enters a plot of a sea where an enemy has ships on Patrol is attacked there, once, by that enemy's strongest ship on Patrol in the sea whose odds are at least ${pct("intercept_min_odds", "a set minimum")}; then it moves on if it lives. Each ship intercepts once a turn. The path preview says where you would be intercepted.`),
       ),
       h("h4", "Ports under siege"),
       h(
         "ul",
-        h("li", `A besieged city whose harbour is open is relieved by sea: its units heal at ${n("port_siege_heal_percent", 50)}% of the city's part of healing, and its Sentinels repair at ${n("port_siege_heal_percent", 50)}%. Besieged and blockaded: no healing from the city, no repair.`),
+        h("li", `A besieged city whose harbour is open is relieved by sea: its units heal at ${pct("port_siege_heal_percent", "a part")} of the city's part of healing, and its Sentinels repair at ${pct("port_siege_heal_percent", "the same part")}. Besieged and blockaded: no healing from the city, no repair.`),
       ),
       h("h4", "Shore fire"),
       h(
         "ul",
-        h("li", `In a battle on a land plot, each side's warships that can bombard and stand on water next to it fire once before round 1: at most ${n("shore_fire_ships", 3)} a side, the strongest first, once a turn each. A shot never takes a unit below 1 HP. The battle preview and report list them.`),
+        h("li", `In a battle on a land plot, each side's warships that can bombard and stand on water next to it fire once before round 1: ${q("shore_fire_ships", (v) => `at most ${v} a side, `, "a limited number a side, ")}the strongest first, once a turn each. A shot never takes a unit below 1 HP. The battle preview and report list them.`),
       ),
     ];
   },

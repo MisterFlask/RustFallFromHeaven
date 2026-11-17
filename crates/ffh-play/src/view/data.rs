@@ -198,6 +198,23 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
             j.set("time", b.time);
             j.set("tech", Json::opt_idx(b.tech_prereq));
         }
+        "CivilizationType" => {
+            // The sea's help (units.js): the water plots more a turn its units in boats move.
+            let c = &d.civilizations[CivilizationType::from_usize(i)];
+            if c.embarked_moves_change != 0 {
+                j.set("embarked_moves_change", c.embarked_moves_change);
+            }
+        }
+        "GovernorTraitType" => {
+            // The governors' help: what the trait adds to its city's garrison quota.
+            let t = &d.governor_traits[GovernorTraitType::from_usize(i)];
+            j.set("defenders", t.defenders);
+        }
+        "BuildingTierType" => {
+            // The governors' help: a building's core effect at the tier, in percent of the
+            // Standard one (the city roles' suitability).
+            j.set("core_effect_percent", d.building_tiers[BuildingTierType::from_usize(i)].core_effect_percent);
+        }
         "CommandType" => {
             let c = &d.commands[CommandType::from_usize(i)];
             j.set("confirm", c.confirm_command);
@@ -274,6 +291,9 @@ fn build(d: &GameData) -> Json {
             "lane_raid_gold" => d.defines.lane_raid_gold,
             "lane_raid_gold_contested" => d.defines.lane_raid_gold_contested,
             "lane_starve_turns" => d.defines.lane_starve_turns,
+            // Crusades' help (crusade.js): the unhappiness of defying a council, in turns at
+            // normal speed.
+            "defy_resolution_anger_divisor" => d.defines.defy_resolution_anger_divisor,
         },
     }
 }

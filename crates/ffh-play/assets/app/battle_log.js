@@ -22,13 +22,14 @@
 //   plot, from: PlotSnap {x, y, terrain, feature, hills, river_crossing, city: {id, name, owner, size, defense_pct} | null}
 //     (`plot` as it was at the battle, `from` as the viewer sees it now)
 //   ground: {city, forest, hills, flanking (bool each: flanking is false in a city, a forest or a jungle),
-//     rules: [{kind, pct}]} with kind "CityShots" (the attacker's Shoot deals pct), "ForestRanged" (Shoot and
+//     rules: [{kind, pct, side, kinds, first_round}]} (each rule's reach from the engine: side 0 or 1, null both; the action kinds, null all; first round only) with kind "CityShots" (the attacker's Shoot deals pct), "ForestRanged" (Shoot and
 //     Bombard deal pct on both sides), "HillsAttacker" (every attacker hit deals pct), "HillsDefenderRanged" (the
 //     defender's Shoot and Bombard deal pct), "ChargeFirstRound" (where flanking works: a Charge in the first round
 //     deals pct on both sides, 100 + ENGAGEMENT_CHARGE_BONUS; absent when that is 100); empty: open ground, no bonus
 //   params: {bolt_pct (the magic bolt's power, ENGAGEMENT_BOLT_PERCENT), splash_pct (a splash on each neighbour, in
 //     percent of the hit on the target, ENGAGEMENT_SPLASH_PERCENT), first_strike_speed (speed a first strike adds,
-//     ENGAGEMENT_FIRST_STRIKE_SPEED)}: the rule values the screens word (absent: the words leave the numbers out)
+//     ENGAGEMENT_FIRST_STRIKE_SPEED), extra_action_tier and extra_actions (a type of that tier or above, and a hero,
+//     act extra_actions more times in its best row: ENGAGEMENT_EXTRA_ACTION_TIER, ENGAGEMENT_EXTRA_ACTIONS)}: the rule values the screens word (absent: the words leave the numbers out)
 //   slots: [SideSlots, SideSlots] (attacker, defender): {base, changes: [SlotChange], total, river_only}
 //     SlotChange {src: "Terrain" (terrain) | "Feature" (feature) | "Hills" | "River" | "Sentinels" (n: the defended
 //                 city's Sentinels, docs/SIEGES.md) | "Minimum" | "Summons" (n) | "Improvement" (improvement: the
@@ -318,31 +319,27 @@ export function specials(f, ground, params = null) {
     const fs = num("first_strike_speed");
     notes.push(`First strike${f.first_strikes > 1 ? "s" : ""}: ${fs !== null ? `+${fs * f.first_strikes} speed` : `it acts sooner (its speed counts ${f.first_strikes > 1 ? "them" : "it"})`}.`);
   }
-  if (f.bonus_action) notes.push("Tier 4 or a hero: one more action in its best row.");
+  if (f.bonus_action) {
+    const tier = num("extra_action_tier");
+    const more = num("extra_actions");
+    const extra = more === null ? "more actions" : more === 1 ? "one more action" : `${more} more actions`;
+    notes.push(`${tier !== null ? `Tier ${tier}` : "Its tier"} or a hero: ${extra} in its best row.`);
+  }
   return notes;
 }
 
 // ---------------------------------------------------------------------------------------------
 // The ground
 
-/** The kinds a ground rule touches, and on which side (null: both); `firstRound`: only in the
- *  first round. */
-const RULE_REACH = {
-  CityShots: { side: 0, kinds: ["Shoot"] },
-  ForestRanged: { side: null, kinds: ["Shoot", "Bombard"] },
-  HillsAttacker: { side: 0, kinds: null },
-  HillsDefenderRanged: { side: 1, kinds: ["Shoot", "Bombard"] },
-  ChargeFirstRound: { side: null, kinds: ["Charge"], firstRound: true },
-};
-
 /** What the ground's rules make of a hit of `kind` by side `side`, in percent (the rules' own
- *  percents multiplied); `firstRound`: a hit of the first round (the charge's rule counts). */
+ *  percents multiplied); `firstRound`: a hit of the first round (the charge's rule counts). Each
+ *  rule carries its reach from the engine: `side` (null: both), `kinds` (null: all) and
+ *  `first_round`. */
 export function groundPct(ground, side, kind, { firstRound = false } = {}) {
   let pct = 100;
   const k = kindKey(kind);
   for (const r of ground?.rules ?? []) {
-    const reach = RULE_REACH[r.kind];
-    if (!reach || (reach.firstRound && !firstRound) || (reach.side !== null && reach.side !== side) || (reach.kinds && !reach.kinds.includes(k))) continue;
+    if ((r.first_round && !firstRound) || (r.side !== null && r.side !== undefined && r.side !== side) || (Array.isArray(r.kinds) && !r.kinds.includes(k))) continue;
     pct = (pct * r.pct) / 100;
   }
   return Math.round(pct);

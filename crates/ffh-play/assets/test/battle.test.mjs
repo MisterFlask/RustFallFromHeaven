@@ -63,7 +63,7 @@ test("actions and reach in words", () => {
   assert.equal(L.actionText(champ, 1), "1 strike");
   // the charge's first-round damage is the ground's rule's, worded from its percent
   assert.match(L.reachText("Charge", field.ground), /anywhere; double damage in the first round$/);
-  assert.match(L.reachText("Charge", { flanking: true, rules: [{ kind: "ChargeFirstRound", pct: 150 }] }), /anywhere; 150% damage in the first round$/);
+  assert.match(L.reachText("Charge", { flanking: true, rules: [{ kind: "ChargeFirstRound", pct: 150, side: null, kinds: ["Charge"], first_round: true }] }), /anywhere; 150% damage in the first round$/);
   assert.match(L.reachText("Charge", { flanking: true, rules: [] }), /anywhere$/);
   assert.match(L.reachText("Charge", { flanking: false }), /no flanking here/);
   assert.match(L.reachText("Shoot"), /back unit/);
@@ -79,7 +79,7 @@ test("actions and reach in words", () => {
   assert.match(notes, /Evasion 10: physical attacks on it hit 10 points less often/);
   assert.match(notes, /Withdrawal 25%/);
   assert.match(notes, /first-round charges deal double damage/);
-  assert.match(L.specials(elephant, { flanking: true, rules: [{ kind: "ChargeFirstRound", pct: 175 }] }, {}).join(" "), /Large: fills two cells.*first-round charges deal 175% damage/);
+  assert.match(L.specials(elephant, { flanking: true, rules: [{ kind: "ChargeFirstRound", pct: 175, side: null, kinds: ["Charge"], first_round: true }] }, {}).join(" "), /Large: fills two cells.*first-round charges deal 175% damage/);
   const bare = L.specials(elephant, { flanking: true, rules: [] }).join(" ");
   assert.doesNotMatch(bare, /150%|double|first-round/, "no rule values without the params and the ground's rule");
   assert.match(bare, /Large: fills two cells/);

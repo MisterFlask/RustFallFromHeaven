@@ -196,6 +196,59 @@ pub enum GroundRule {
     NoFlanking,
 }
 
+/// Which hits a [`GroundRule`] changes ([`GroundRule::reach`]).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct RuleReach {
+    /// The side whose hits it changes; `None`: both sides'.
+    pub side: Option<Side>,
+    /// The action kinds whose hits it changes; `None`: every kind.
+    pub kinds: Option<&'static [ActionKind]>,
+    /// It changes the hits of the first round only.
+    pub first_round: bool,
+}
+
+impl RuleReach {
+    /// Whether the rule changes a hit of `kind` by side `side` in round `round` (from 1).
+    pub fn touches(&self, side: Side, kind: ActionKind, round: i32) -> bool {
+        (!self.first_round || round == 1)
+            && self.side.is_none_or(|s| s == side)
+            && self.kinds.is_none_or(|ks| ks.contains(&kind))
+    }
+}
+
+impl GroundRule {
+    /// The rule's percentage of a hit it changes (`None`: no flanking, which changes no hit's
+    /// damage).
+    pub fn pct(&self) -> Option<i32> {
+        match *self {
+            GroundRule::CityShots { pct }
+            | GroundRule::ForestRanged { pct }
+            | GroundRule::HillsAttacker { pct }
+            | GroundRule::HillsDefenderRanged { pct }
+            | GroundRule::Charge { pct } => Some(pct),
+            GroundRule::NoFlanking => None,
+        }
+    }
+
+    /// Which hits the rule changes: the side, the action kinds, the first round only. The
+    /// resolver applies the rules in `Formation::ground_pcts` and `Formation::expected_power` (a
+    /// test checks the two agree for every rule); the host serves it with each rule, so the
+    /// screens do not hold their own table.
+    pub fn reach(&self) -> RuleReach {
+        use ActionKind as K;
+        const RANGED: &[ActionKind] = &[K::Shoot, K::Bombard];
+        let (side, kinds, first_round): (Option<Side>, Option<&'static [ActionKind]>, bool) = match self {
+            GroundRule::CityShots { .. } => (Some(Side::Attacker), Some(&[K::Shoot]), false),
+            GroundRule::ForestRanged { .. } => (None, Some(RANGED), false),
+            GroundRule::HillsAttacker { .. } => (Some(Side::Attacker), None, false),
+            GroundRule::HillsDefenderRanged { .. } => (Some(Side::Defender), Some(RANGED), false),
+            GroundRule::Charge { .. } => (None, Some(&[K::Charge]), true),
+            GroundRule::NoFlanking => (None, Some(&[]), false),
+        };
+        RuleReach { side, kinds, first_round }
+    }
+}
+
 /// The rule constants a battle reads (the `ENGAGEMENT_*` defines; percentages in percent).
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Params {
