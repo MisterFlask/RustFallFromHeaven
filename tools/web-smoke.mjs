@@ -362,9 +362,9 @@ async function answerPopups(log = true) {
 async function newGame(url, saves) {
   await b.goto(url);
   await until2("window.ffh && window.ffh.ready", "the client to boot");
-  // No game: the title screen, its island drawn, its menu up (New game: the new-game screen).
+  // No game: the title screen, its HD-2D picture loaded, its menu up (New game: the new-game screen).
   await until2(`!document.getElementById("title-screen").hidden && !!document.getElementById("title-new")`, "the title screen");
-  await until2(`(() => { const c = document.querySelector("#title-screen canvas.title-backdrop"); return !!c && c.width > 1; })()`, "the title screen's island");
+  await until2(`(() => { const im = document.querySelector("#title-screen img.title-picture"); return !!im && im.complete && im.naturalWidth > 1; })()`, "the title screen's picture");
   await new Promise((r) => setTimeout(r, 400));
   await shot("title");
   steps.push("the title screen with its menu");
@@ -1248,7 +1248,7 @@ async function keysAndLayers() {
   } else steps.push("seas: none seen yet");
 }
 
-/** The tools (P6): the inspector, debug reveal, AI autoplay, the spectator mode. */
+/** The tools (P6): the inspector, debug reveal, the Armageddon counter, AI autoplay, the spectator mode. */
 async function toolsAndSpectate() {
   const tool = async (id, title) => {
     await click("#btn-tools");
@@ -1272,6 +1272,16 @@ async function toolsAndSpectate() {
   await tool("tool-reveal");
   await until2(`window.ffh.S.status.reveal === false && !document.querySelector("#phase .badge.reveal")`, "debug reveal off");
   steps.push("debug reveal on and off");
+  // The Armageddon counter set to 60, then back to where it was.
+  const doom0 = await S("S.view.me.armageddon");
+  for (const v of [60, doom0]) {
+    await tool("tool-armageddon", "Armageddon counter");
+    await b.eval(`document.getElementById("armageddon-value").value = "${v}"`);
+    if (v === 60) await shot("armageddon-dialog");
+    await click(`${TOP} .modal-buttons button.primary`);
+    await until2(`Math.abs(window.ffh.S.view.me.armageddon - ${v}) <= 1`, `the Armageddon counter at ${v}`);
+  }
+  steps.push(`Armageddon counter: set to 60 and back to ${doom0}`);
   // AI autoplay for one turn.
   let turn = await S("S.status.turn");
   await tool("tool-autoplay", "AI autoplay");

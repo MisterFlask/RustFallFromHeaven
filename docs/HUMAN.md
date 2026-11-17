@@ -22,8 +22,8 @@ cargo build --release
 ./target/release/ffh-play serve            # then open http://127.0.0.1:8642/
 ```
 
-The page opens on the title screen: a small isometric island drawn from the map's own sprites (a
-kingdom on one shore, the hells creeping in on the other) under drifting clouds, and the main menu:
+The page opens on the title screen: the HD-2D map as a picture (a scene of a played game, rendered
+by the HD-2D renderer), drifting slowly, and the main menu:
 **Continue** (the newest save or autosave, by its time), **New game**, **Load game**, **Options**
 and **How to play** (the help at its first topic). With a game running the title screen goes; the menu's Main menu button
 (the map icon) brings it back with Resume (or `Esc`). The new-game screen lists the civilizations
@@ -740,7 +740,8 @@ renderer: HD-2D, the default, isometric 2.5D or flat) and, on a phone, **Screen*
 ends with **Debug tools…**, the only way to the Tools dialog.
 
 **Tools** (Options → Debug tools…): **Debug reveal** (the whole map and every unit and city; the top
-bar says DEBUG REVEAL); the **Inspector** (the rules engine's own data of your unit, group, city,
+bar says DEBUG REVEAL); **Armageddon counter…** (sets the counter, 0 to 100, on your turn:
+`set_armageddon`; the HD-2D map's light and land follow it, docs/HD2D.md §6); the **Inspector** (the rules engine's own data of your unit, group, city,
 player or team, and of anything under debug reveal, plots too; an info entry by kind and index);
 **AI autoplay** (the AI plays your civilization for N turns, then you have control again; while
 it runs the top bar counts the turns left and "Stop" ends it: you have control at your next turn);
@@ -1640,7 +1641,7 @@ node tools/web-orient-smoke.mjs          # an emulated phone turned and locked; 
 **Manual checklist** (a human tester, `ffh-play serve` and a real browser; also try a narrow
 window, and a phone: `ffh-play serve --bind 0.0.0.0` on the same network, or the site):
 
-1. The title screen: the island draws and drifts (still under "reduce motion"); New game: change
+1. The title screen: the HD-2D picture shows and drifts (still under "reduce motion"); New game: change
    the civilization (its leaders' cards follow), world size, difficulty, a game
    option and a victory condition; start. The map centres on your units; the top bar shows the
    turn, gold and "choose research".

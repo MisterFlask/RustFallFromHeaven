@@ -39,17 +39,25 @@ fn main() {
 
     let mut rs = String::from("/// The isometric renderer's sprites (`assets/app/iso/*.png`, docs/ISO.md), the battle screens' unit\n/// animations, key poses and impact cards (`assets/app/{anim,pose,fx}/*.png`, anim-sprint) and the HD-2D mode's art (`assets/app/r3d/hd2d/art/*.png`,\n/// docs/HD2D.md): `(path, content type, bytes)`.\n");
     rs.push_str("pub const ASSET_BYTES: &[(&str, &str, &[u8])] = &[\n");
-    for sub in ["iso", "anim", "pose", "fx", "r3d/hd2d/art"] {
+    // (`title`: the title screen's backdrop, a rendered HD-2D scene, `assets/app/title/*.webp`.)
+    for sub in ["iso", "anim", "pose", "fx", "r3d/hd2d/art", "title"] {
         let dir = sub.split('/').fold(manifest.join("assets").join("app"), |d, s| d.join(s));
         println!("cargo:rerun-if-changed=assets/app/{sub}");
         let mut pngs: Vec<String> = std::fs::read_dir(&dir)
             .unwrap_or_else(|e| panic!("{}: {e}", dir.display()))
             .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
-            .filter(|n| n.ends_with(".png"))
+            .filter(|n| [".png", ".webp", ".jpg"].iter().any(|e| n.ends_with(e)))
             .collect();
         pngs.sort();
         for n in &pngs {
-            rs.push_str(&format!("    ({:?}, PNG, include_bytes!({:?})),\n", format!("app/{sub}/{n}"), dir.join(n).to_string_lossy()));
+            let ct = if n.ends_with(".webp") {
+                "\"image/webp\""
+            } else if n.ends_with(".jpg") {
+                "\"image/jpeg\""
+            } else {
+                "PNG"
+            };
+            rs.push_str(&format!("    ({:?}, {ct}, include_bytes!({:?})),\n", format!("app/{sub}/{n}"), dir.join(n).to_string_lossy()));
         }
     }
     rs.push_str("];\n");

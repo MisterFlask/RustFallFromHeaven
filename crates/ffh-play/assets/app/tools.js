@@ -1,7 +1,7 @@
 // Options (the gear: the player options `set_option` changes, how battles open, the map's renderer,
 // the phone's orientation) and, behind it, the rules-testing tools (design §5.1 "Rules-testing
-// tools", §7 P6): the raw inspector (`inspect`), debug reveal (`session debug`), AI autoplay
-// (`autoplay`), taking over a slot of an AI save (`session take_over`), the raw request box, and
+// tools", §7 P6): the raw inspector (`inspect`), debug reveal (`session debug`), the Armageddon
+// counter (`set_armageddon`), AI autoplay (`autoplay`), taking over a slot of an AI save (`session take_over`), the raw request box, and
 // the optional spectator mode: the AI plays every civilization (the human slot too, through FfH's
 // AIAutoPlay one turn at a time) with the whole map shown, paused or stepped at will.
 
@@ -30,6 +30,7 @@ export function openTools() {
         "div.tools",
         game ? item(st.reveal ? "Debug reveal: on" : "Debug reveal: off", "Show the whole map and every unit and city (marked DEBUG REVEAL)", () => setReveal(!st.reveal), { id: "tool-reveal" }) : null,
         game ? item("Inspector…", "The rules engine's own data of a unit, group, city, plot, player, team, deal or info entry", () => openInspector(), { id: "tool-inspect" }) : null,
+        game ? item(`Armageddon counter… (${me()?.armageddon ?? 0})`, "Set the Armageddon counter (0 to 100); the map's light and land follow it", () => openArmageddon(), { id: "tool-armageddon" }) : null,
         game ? item("AI autoplay…", "The AI plays your civilization for a number of turns", () => openAutoplay(), { id: "tool-autoplay" }) : null,
         game ? item(spectating() ? "Stop spectating" : "Spectate", "The AI plays every civilization, one turn at a time, with the whole map shown", () => (spectating() ? stopSpectating() : startSpectating()), { id: "tool-spectate" }) : null,
         item("Take over…", "Play another slot of an AI-only save", () => openTakeOver(), { id: "tool-takeover" }),
@@ -99,6 +100,44 @@ export function openInspector(kind = "unit", oid = null) {
   if (oid !== null) go();
   oidIn.addEventListener("keydown", (ev) => ev.key === "Enter" && go());
   return m;
+}
+
+// ---------------------------------------------------------------------------------------------
+// The Armageddon counter.
+
+/** Sets the Armageddon counter (`set_armageddon {value}`, a testing aid): a slider and a number,
+ *  0 to 100, applied on Set. */
+export function openArmageddon() {
+  const now = me()?.armageddon ?? 0;
+  const num = h("input#armageddon-value", { type: "number", min: 0, max: 100, step: 1, value: now });
+  const range = h("input#armageddon-range", { type: "range", min: 0, max: 100, step: 1, value: now, "aria-label": "Armageddon counter" });
+  range.addEventListener("input", () => (num.value = range.value));
+  num.addEventListener("input", () => (range.value = num.value));
+  const err = h("p.error");
+  return openModal({
+    title: "Armageddon counter",
+    tag: "armageddon",
+    body: [h("p", `Counter now: ${now}. Sets the counter to a value from 0 to 100.`), h("label.field", h("span", "Counter"), range, num), err],
+    buttons: [
+      {
+        label: "Set",
+        primary: true,
+        onClick: async (m) => {
+          const value = Math.round(Number(num.value));
+          if (!(value >= 0 && value <= 100)) {
+            err.textContent = "A value from 0 to 100.";
+            return;
+          }
+          const reply = await run({ c: "set_armageddon", value });
+          if (reply) {
+            toast(`Armageddon counter: ${value}.`);
+            m.close("set");
+          } else err.textContent = "Refused (on your turn only).";
+        },
+      },
+      { label: "Cancel", value: null },
+    ],
+  });
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -603,7 +642,7 @@ export function openOptions() {
   // the raw request).
   const debug = h(
     "div.options-debug",
-    h("button#options-debug", { type: "button", title: "Debug reveal, inspector, AI autoplay, spectate, take over, raw request", onclick: () => (closeTag("options"), openTools()) }, "Debug tools…"),
+    h("button#options-debug", { type: "button", title: "Debug reveal, inspector, Armageddon counter, AI autoplay, spectate, take over, raw request", onclick: () => (closeTag("options"), openTools()) }, "Debug tools…"),
   );
   return openModal({
     title: "Options",

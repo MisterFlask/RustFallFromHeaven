@@ -120,6 +120,9 @@ pub enum Command {
     EndTurn { force: bool },
     /// FfH `setAIAutoPlay` (a testing aid).
     AutoPlay { turns: i32 },
+    /// Not in C++ (a testing aid, Tools → Armageddon counter): sets the Armageddon counter to
+    /// `value` percent of its limit (0..=100, as `get_global_counter` reads it).
+    SetArmageddon { value: i32 },
     /// Choose one of this city's saved specialty offers (zero-based option index).
     ChooseSpecialty { city: CityId, option: usize },
     /// Not in C++ (docs/CRUSADE.md): answer crusade `crusade`'s call: pledge `strength`
@@ -478,6 +481,7 @@ pub const COMMAND_NAMES: &[&str] = &[
     "auto_moves",
     "end_turn",
     "autoplay",
+    "set_armageddon",
     "crusade_answer",
     "crusade_lend",
     "propose_loan",
@@ -533,6 +537,7 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("auto_moves", &[]),
     ("end_turn", &["force"]),
     ("autoplay", &["turns"]),
+    ("set_armageddon", &["value"]),
     ("crusade_answer", &["crusade", "strength"]),
     ("crusade_lend", &["crusade", "units", "declare_war"]),
     ("propose_loan", &["to", "lend", "target", "mission", "strength", "duration", "give", "get", "units"]),
@@ -716,6 +721,7 @@ impl Command {
             Command::AutoMoves => "auto_moves",
             Command::EndTurn { .. } => "end_turn",
             Command::AutoPlay { .. } => "autoplay",
+            Command::SetArmageddon { .. } => "set_armageddon",
             Command::ChooseSpecialty { .. } => "choose_specialty",
             Command::CrusadeAnswer { .. } => "crusade_answer",
             Command::CrusadeLend { .. } => "crusade_lend",
@@ -837,6 +843,7 @@ impl Command {
             "auto_moves" => Command::AutoMoves,
             "end_turn" => Command::EndTurn { force: flag("force")? },
             "autoplay" => Command::AutoPlay { turns: j.req("turns")? },
+            "set_armageddon" => Command::SetArmageddon { value: j.req("value")? },
             "propose_deal" => Command::ProposeDeal { to: j.req("to")?, give: trade_items(d, j, "give")?, get: trade_items(d, j, "get")? },
             "choose_specialty" => Command::ChooseSpecialty { city: j.req("city")?, option: j.req("option")? },
             "crusade_answer" => Command::CrusadeAnswer {
@@ -957,6 +964,7 @@ impl Command {
             Command::AutoMoves => j,
             Command::EndTurn { force } => j.with("force", *force),
             Command::AutoPlay { turns } => j.with("turns", *turns),
+            Command::SetArmageddon { value } => j.with("value", *value),
             Command::ChooseSpecialty { city, option } => j.with("city", *city).with("option", *option),
             Command::CrusadeAnswer { crusade, strength } => j.with("crusade", *crusade).with("strength", *strength),
             Command::CrusadeLend { crusade, units, declare_war } => j.with("crusade", *crusade).with("units", ids(units)).with("declare_war", *declare_war),
@@ -1135,6 +1143,7 @@ pub enum Action {
     /// the open election popups (no resolution, as the popup's "none").
     EndTurn { drop_events: bool, close_elections: Vec<VoteId> },
     AutoPlay { turns: i32 },
+    SetArmageddon { value: i32 },
     ChooseSpecialty { city: CityId, option: usize },
     /// `Game::crusade_answer`.
     CrusadeAnswer { crusade: CrusadeId, pledge: Pledge },
@@ -2033,6 +2042,13 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::AutoPlay { turns: *turns })
         }
 
+        Command::SetArmageddon { value } => {
+            if !(0..=100).contains(value) {
+                return Err(invalid("field `value`: expected 0..=100 (percent of the counter's limit)"));
+            }
+            Plan::Apply(Action::SetArmageddon { value: *value })
+        }
+
         Command::ChooseSpecialty { city, option } => {
             if !g.cities.contains(*city) { return Err(CmdErr::Gone); }
             if g.cities[*city].owner != h { return Err(cannot("this city is not yours")); }
@@ -2452,6 +2468,13 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
             g.player_set_end_turn(h, true)
         }
         Action::AutoPlay { turns } => g.set_ai_auto_play(*turns),
+        Action::SetArmageddon { value } => {
+            // Set, not changed: no game option doubles or blocks a debug value.
+            let v = value * g.global_counter_limit / 100;
+            g.global_counter = v;
+            g.max_global_counter = g.max_global_counter.max(v);
+            g.update_global_counter_commerce();
+        }
         Action::ChooseSpecialty { city, option } => { g.city_choose_specialty(*city, *option); }
         Action::CrusadeAnswer { crusade, pledge } => {
             g.crusade_answer(*crusade, h, *pledge);
@@ -2561,6 +2584,7 @@ mod tests {
             Command::AutoMoves,
             Command::EndTurn { force: true },
             Command::AutoPlay { turns: 3 },
+            Command::SetArmageddon { value: 75 },
             Command::CrusadeAnswer { crusade: 2, strength: Some(800) },
             Command::CrusadeAnswer { crusade: 2, strength: None },
             Command::CrusadeLend { crusade: 0, units: vec![UnitId(4), UnitId(7)], declare_war: true },

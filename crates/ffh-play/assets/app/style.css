@@ -1164,13 +1164,18 @@ html:not(.iso) select { appearance: none; -webkit-appearance: none; padding-righ
 html.art:not(.iso) select { border-image: var(--nine-frame-inset-nofill, var(--nine-frame-inset)); background: var(--c-soot) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 4' shape-rendering='crispEdges'%3E%3Cpath fill='%23dba63b' d='M0 0h1v1H0zM5 0h1v1H5zM0 1h2v1H0zM4 1h2v1H4zM1 2h4v1H1zM2 3h2v1H2z'/%3E%3C/svg%3E") no-repeat right 10px center / 12px 8px; }
 
 /* ------------------------------------------------------------------------------------------
-   The title screen (title.js): the island behind, a shade at the left, the logo and the main
+   The title screen (title.js): the HD-2D picture behind, a shade at the left, the logo and the main
    menu over it, the credits at the foot. Over the game's chrome, under dialogs and toasts. */
 
 #title-screen { position: fixed; inset: 0; z-index: 17; background: #0e1730; overflow: hidden; opacity: 1; transition: opacity 420ms ease; }
 #title-screen[hidden] { display: none; }
 #title-screen.leaving { opacity: 0; pointer-events: none; }
-.title-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.title-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: hidden; background: #2a4a78; }
+/* The HD-2D picture (title.js BACKDROP): covering the screen, its land kept to the right of the
+   menu; drifting slowly (a few percent larger than the screen, so the drift never shows an edge). */
+.title-picture { position: absolute; inset: -3%; width: 106%; height: 106%; object-fit: cover; object-position: 62% 50%; user-select: none; }
+.title-backdrop.drifting .title-picture { animation: title-drift 60s ease-in-out infinite alternate; }
+@keyframes title-drift { from { transform: translate(1.5%, 0.8%) scale(1); } to { transform: translate(-1.5%, -0.8%) scale(1.03); } }
 .title-shade {
   position: absolute; inset: 0; pointer-events: none;
   background:
@@ -1209,6 +1214,7 @@ body.title-up #top, body.title-up #main, body.title-up #bottom { visibility: hid
 }
 @media (prefers-reduced-motion: reduce) {
   #title-screen { transition: none; }
+  .title-backdrop.drifting .title-picture { animation: none; }
   .title-status:not(:empty)::after { animation: none; content: "…"; }
 }
 /* The isometric skin's larger lettering: the description's line (its 8-line floor). */
