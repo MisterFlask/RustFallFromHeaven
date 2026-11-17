@@ -21,10 +21,15 @@
 //!     (`g.controllers[p] = ..`), exactly as after `Game::new`;
 //!   * `map_script`: only used while generating the map (`game_init`); a loaded game gets the
 //!     script selected by its saved setup; old/default scripts keep their default hooks;
+//!   * `spell_target`: `None` outside a targeted cast (`Game::with_spell_target`), which is over
+//!     within one call;
 //!   * `dying`: empty outside `unit_kill`;
+//!   * `escorting`: false between rules calls (a fleet's move to its escort target);
 //!   * `telemetry`: observation only; a loaded game has it off;
 //!   * `combat_notes`: a debugging record of fights, off (`None`) in a loaded game;
-//!   * the path finders: scratch storage for searches, holding nothing between them.
+//!   * the path finders: scratch storage for searches, holding nothing between them;
+//!   * `sea_range`: the cached range fields at sea and outposts' network (`naval.rs`), derived
+//!     from the map and computed again when read.
 //!
 //! **Turn boundaries.** Save between two `update()` calls while no player's turn is active
 //! (`num_game_turn_active == 0`, see [`Game::at_turn_boundary`]): the next `update()` then starts
