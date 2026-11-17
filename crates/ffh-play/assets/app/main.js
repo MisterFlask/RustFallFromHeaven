@@ -774,7 +774,6 @@ function wire() {
     if (S.status?.phase === "human") runPopups();
   });
   on("open-city", (id) => openCity(id));
-  on("open-screen", (name) => openScreen(name));
   on("city-overlay", (o) => mapView.cityOverlay(o));
   on("city-hover", (p) => mapView.cityHover(p));
   on("center", (x, y) => mapView.centerOn(x, y));
