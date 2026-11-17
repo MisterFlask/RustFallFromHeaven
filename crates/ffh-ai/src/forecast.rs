@@ -121,8 +121,10 @@ fn fnv(h: &mut u64, v: i64) {
 }
 
 /// What a forecast reads that changes within a turn: every unit involved (and every unit on the
-/// target): where it is, its health, moves, attacks, experience, level, promotions and
-/// fortification; the target's owner and its city's defence damage.
+/// target): where it is, its health, moves, attacks, experience, level, which promotions it has
+/// (each promotion's id, in id order: a spell that swaps one promotion for another changes the
+/// key) and fortification; the target's owner, feature and improvement, and its city's defence
+/// damage.
 fn fingerprint(g: &Game, units: &[UnitId], target: PlotIdx) -> u64 {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
     fnv(&mut h, g.game_turn() as i64);
@@ -136,10 +138,16 @@ fn fingerprint(g: &Game, units: &[UnitId], target: PlotIdx) -> u64 {
         for v in [x.x, x.y, x.damage, x.moves, x.attacks_made, x.made_attack as i32, x.experience, x.level, x.fortify_turns, x.owner.0 as i32] {
             fnv(&mut h, v as i64);
         }
-        fnv(&mut h, g.d.promotions.keys().filter(|&p| x.has_promotion[p]).count() as i64);
+        for p in g.d.promotions.keys().filter(|&p| x.has_promotion[p]) {
+            fnv(&mut h, p.idx() as i64);
+        }
+        // The end of the unit's promotions (no promotion id is negative).
+        fnv(&mut h, -1);
     }
     let plot = &g.map.plots[target];
     fnv(&mut h, plot.owner.map_or(-1, |o| o.0 as i64));
+    fnv(&mut h, plot.feature_type.map_or(-1, |f| f.idx() as i64));
+    fnv(&mut h, plot.improvement_type.map_or(-1, |i| i.idx() as i64));
     fnv(&mut h, plot.plot_city.map_or(-1, |c| g.cities.get(c).map_or(-2, |c| c.defense_damage as i64)));
     h
 }
