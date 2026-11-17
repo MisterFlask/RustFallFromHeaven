@@ -16,6 +16,7 @@
 ffh-data   data/json -> typed info tables (GameData). No game state.
 ffh-core   Rules engine. Owns all mutable game state (Game). Deterministic.
 ffh-ai     Controllers (the new AI). Reads state, issues the same calls a human UI would.
+ffh-cppai  The FFH2 C++ AI ported as a second controller: a benchmark for ffh-ai only (docs/CPPAI.md).
 ffh-cli    `ffh` binary: autoplay, benchmarks, inspection.
 ffh-harness What the game runners share: child processes, worker pool, panic capture, invariant checks.
 ffh-stress `ffh-stress` binary: AI games over a matrix of game settings, crashes caught per game.
@@ -97,6 +98,68 @@ The C++ rules code calls `AI_*` functions synchronously. In this port:
 - the AI proper (`ffh-ai`) plays turns via `Controller::play_turn`, using only public
   rules APIs (the same moves a player could make).
 
+## Systems beyond FFH2
+
+The game's own systems are modules of `ffh-core` beside the ported classes. Each keeps its state
+in `Game` (a container of its own, or fields on `Unit`, `City`, `Player`, `Team`, all saved),
+asks its decisions through `Controller` methods, and is described in its own doc:
+
+| System | Module | State | Doc |
+|---|---|---|---|
+| Armies, requisition, march, supply, fleets | `army/` | `Game::armies`, `Unit::army`, `Unit::march` | ARMIES.md, SUPPLY.md |
+| Engagement combat (land battles) | `engagement/` | `Game::battle_reports` | ENGAGEMENTS.md, TACTICS.md, SIEGES.md |
+| Crusades and loans | `crusade/` | `Game::crusades`, `crusade_reports` | CRUSADE.md |
+| The Armageddon deck | `deck/` | `Game::doom` | DECKS.md |
+| The cards' content | `ffh/cards/`, `ffh/world_rituals*`, `ffh/world_ritual_spells/` | `Game::area_effects`, `delves`, fields on the objects | CARDS.md |
+| Governors | `governors.rs` | `Game::governors` | GOVERNORS.md |
+| Cultural actions | `culture.rs` | fields on `City`, `Player` | CULTURE.md |
+| City works | `works.rs` | fields on `City` | WORKS.md |
+| The sea: range, boats, wear, seas, lanes, outposts | `naval.rs`, `seas.rs`, `outposts.rs` | `Map::seas`, fields on `Unit`, `City` | NAVAL.md |
+| City specialties | `city/specialties.rs` | fields on `City` | SPECIALTIES.md |
+| Gifts and demands | `tribute.rs` | `Player::tributes` | HUMAN.md, "Deals" |
+
+How they attach to the ported rules:
+
+- **Turn processing calls each system by name**, one line each with its place in the order
+  explained: the game turn in `game/turn.rs` (`crusade_do_turn`, `doom_do_turn`,
+  `area_effects_do_turn`, `seas_refresh_all`), the player turn in `player/turn.rs` (march, army
+  sync, governance, requisition, supply, sea), a city's death in `city/turn.rs`.
+- **Passive effects are data.** A card that only uses existing effect keys is a data file;
+  spells and Armageddon cards are found by name through registries (`ffh/cards/mod.rs`,
+  `deck/doom_cards.rs`), like the ported Python callbacks (`ffh/dispatch.rs`).
+- **The battle resolver is pure** (`engagement/formation/` never reads `Game`): the engine
+  builds its inputs, it returns the outcome, and the engine applies it.
+- **A rule is asked in one place.** The convention for a capability a system changes (may this
+  unit enter this plot, is this attack a battle, is this city a port, do these teams have a
+  truce): one `Game` method that the ported predicate, the path finder, the AI and the views all
+  call, so a system that changes the answer changes that method. `engage_applies` is the model:
+  one predicate decides between the duel (`unit/combat.rs`: sea, air, captures) and a battle.
+  Not there yet (2026-11): the cards' terrain and movement rules are tested inline in the ported
+  functions, each site marked `// Card:` (a Causeway is asked about in some ten files), and the
+  sea's range search and `unit_can_move_into` disagree on whether ships pass a Causeway. New
+  work adds the method instead of another inline test.
+
+**No rule is computed outside `ffh-core`.** The host's views and the browser client show what
+`Game` methods answer; a number a screen needs (a threshold, the turns until an effect, what a
+click may do) is a field of a view, computed by the rules' own function. Known exceptions
+(2026-11): the revolt-pressure forecast of the cultural screens (`view/culture.rs`, `culture.js`;
+cultural actions are being redesigned), the requirement lines of the static help
+(`view/help/`, written by hand beside `city_can_construct`), and the client's help topics, whose
+prose states rules (their numbers come from the data). In `ffh-ai`, the estimate of a strike runs
+the rules' forecast (`forecast.rs`), while `combat_sim.rs` still sizes a land force with the
+duel's odds, which land combat no longer uses: an open AI item.
+
+## The game log
+
+`Game::log` (`log.rs`) holds what the players are told. An entry says who receives it and what
+it is, so that nothing reads its wording: `player` (one player), or for a message to several an
+`Audience` computed where it is logged, as C++ tests each player when it sends (those who have
+met both teams of a war, who have revealed the city, the voting members, everyone; `Tools` for
+tools and the observer only); a `LogMark` for the map marker of a located message (a city taken,
+a loss, a kill, a retreat) and a `LogTag` for what a client links (a battle's report, a ritual's
+news). `GameLog::msg` with no player is for tools only: a message for players states its
+audience (a test in ffh-core fails on a literal `None`). The log is saved with these.
+
 ## Human play (ffh-play)
 
 `crates/ffh-play` (design: `docs/PLAY_DESIGN.md`, use: `docs/HUMAN.md`) adds a human player
@@ -111,11 +174,17 @@ without changing the rules engine:
   asks an `Answerer` synchronously where no answer would lose information (free tech, keep/raze,
   election, offer, religion). AI work C++ also runs for humans goes to a private advisor `Ai`.
 - **Purity.** Reads of `&Game` never change later results or save bytes: ffh-core's `&self`
-  functions write no game state (no caches written by reads; the path finders are scratch,
-  path.rs "No reuse"). `tests/purity.rs` checks the save bytes around a noisy client and the
-  city screen.
-- **Saves.** A save is `Game::save()` bytes plus a JSON sidecar with the session state the rules
-  need and `Game` lacks (the deferred event popups). Saves taken at a human control point resume
+  functions write no game state. Two things are written by reads and neither is state: the path
+  finders are scratch (path.rs "No reuse"), and `Game::sea_range` caches the sea's range fields
+  and the outposts' network, derived from the cities and the map, cleared by the setters that
+  change them and never saved (naval.rs, "The cache"). A read from that cache must equal a fresh
+  computation: the runners' invariant checks compare the two (`sea_range_cache_stale`,
+  ffh-harness). `tests/purity.rs` checks the save bytes around a noisy client that issues every
+  query, and the city screen.
+- **Saves.** A save is `Game::save()` bytes plus a JSON sidecar with the session's own state (the
+  journal position, the latest messages, the session's automation flags). The rules' state is all
+  in `Game`, the human's queued event popups included (`Player::event_popups`), so a save loaded
+  without its sidecar plays on the same. Saves taken at a human control point resume
   exactly (the human plays slot 0, before any AI acts that turn; ffh-ai caches are per turn).
 - **Journal.** One JSON line per input (command, decision answer) stamped with `(turn, slice)`,
   plus a checksum checkpoint per turn; `ffh-play replay` re-plays it and stops at the first
@@ -130,7 +199,8 @@ without changing the rules engine:
 - **Views and queries.** Clients read the game only through protocol queries (`query.rs`,
   `view/`), answered from the human team's side: `view/fog.rs` holds the
   only visibility predicates (revealed and visible plots, invisible units, revealed cities, met
-  players). Path previews use a session-owned interface path finder, never the game's. A turn
+  players). The log's entries reach the human by their recipients ("The game log"), not by
+  their text. Path previews use a session-owned interface path finder, never the game's. A turn
   report diffs a fog-filtered snapshot taken at the end of the human's turn against its next
   control point. Queries can also be served inside a blocking decision (`Answerer::ask_with`).
 - **Transports.** One JSON envelope (`cmd`, `q`, `answer`, `session`) over three transports:
@@ -170,7 +240,8 @@ Appending leader definitions needs no state migration: saved leader references a
 indices, and mutable state has no arrays sized by the leader table. Loading still rejects
 removed, renamed or reordered leaders, changes to every other table, and layout mismatches.
 
-- Everything mutable is saved; there are no rules caches to recompute after loading.
+- Everything mutable is saved. The one derived cache, `Game::sea_range` ("Purity" above), is not:
+  a loaded game starts with it empty and fills it on demand, to the same values.
 - Not saved: `d`, `controllers` (a loaded game has `NullController`s: the caller re-attaches
   its controllers, as after `Game::new`), `map_script` (only used by `game_init`),
   `telemetry` (observation only, docs/TELEMETRY.md; off in a loaded game) and the path finders

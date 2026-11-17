@@ -1,6 +1,6 @@
 [package]
 name = "ffh-data"
-description = "FFH2 game data: XML loading into typed info tables (port of CvInfos / CvXMLLoadUtility)"
+description = "Game data: data/json loaded into typed info tables (port of CvInfos)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
