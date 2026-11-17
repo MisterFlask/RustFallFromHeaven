@@ -422,6 +422,16 @@ pub fn gold_floor(g: &Game, p: PlayerId) -> i32 {
 mod tests {
     use super::*;
 
+    /// Every civilization [`NAMES`] wires is in the data (`CIVILIZATION_<name>`): a renamed one
+    /// would fall back to `Civ::Other` without a word, and play none of its logic.
+    #[test]
+    fn every_civ_name_resolves() {
+        let d = ffh_data::global();
+        for (name, _) in NAMES {
+            assert!(d.ty::<CivilizationType>(&format!("CIVILIZATION_{name}")).is_some(), "CIVILIZATION_{name}");
+        }
+    }
+
     #[test]
     fn unique_units_are_the_civilizations_own() {
         let d = ffh_data::global();

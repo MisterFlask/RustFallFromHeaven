@@ -126,3 +126,102 @@ pub fn great_person_card(g: &mut Game, u: UnitId) -> CardPlan {
         CardPlan::Ignore
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The sources whose card content is wired by type name: the batches' tables and the inline
+    /// lookups (`d.ty`, an `Option`) that skip a missing name without a word.
+    const SOURCES: &[(&str, &str)] = &[
+        ("cards.rs", include_str!("cards.rs")),
+        ("cards_battle_arms.rs", include_str!("cards_battle_arms.rs")),
+        ("cards_battle_magic.rs", include_str!("cards_battle_magic.rs")),
+        ("cards_battle_more.rs", include_str!("cards_battle_more.rs")),
+        ("cards_deck_ui.rs", include_str!("cards_deck_ui.rs")),
+        ("cards_economy.rs", include_str!("cards_economy.rs")),
+        ("cards_map_rules.rs", include_str!("cards_map_rules.rs")),
+        ("cards_new_civs.rs", include_str!("cards_new_civs.rs")),
+        ("cards_new_civs_2.rs", include_str!("cards_new_civs_2.rs")),
+        ("cards_world_spells.rs", include_str!("cards_world_spells.rs")),
+        ("cards_world_spells_2.rs", include_str!("cards_world_spells_2.rs")),
+        ("world_spells.rs", include_str!("world_spells.rs")),
+        ("world_rituals.rs", include_str!("world_rituals.rs")),
+        ("lanun_khazad.rs", include_str!("lanun_khazad.rs")),
+        ("civs/mod.rs", include_str!("civs/mod.rs")),
+    ];
+
+    /// Prefixes of quoted capitals that are not type names: `FFH_` environment variables, and
+    /// the civilization names of `civs/mod.rs` written without `CIVILIZATION_` (checked there,
+    /// `every_civ_name_resolves`).
+    const NOT_TYPES: &[&str] = &["FFH", "CLAN", "COURT"];
+
+    /// Whether `name` resolves in the data as the kind its prefix names (`None`: a prefix this
+    /// test does not know).
+    fn resolves(d: &GameData, name: &str) -> Option<bool> {
+        let prefix = name.split('_').next().unwrap();
+        Some(match prefix {
+            "UNIT" => d.ty::<UnitType>(name).is_some(),
+            "UNITCLASS" => d.ty::<UnitClassType>(name).is_some(),
+            "UNITCOMBAT" => d.ty::<UnitCombatType>(name).is_some(),
+            "SPELL" => d.ty::<SpellType>(name).is_some(),
+            "TECH" => d.ty::<TechType>(name).is_some(),
+            "FLAVOR" => d.ty::<FlavorType>(name).is_some(),
+            "TRAIT" => d.ty::<TraitType>(name).is_some(),
+            "BUILDING" => d.ty::<BuildingType>(name).is_some(),
+            "BUILDINGCLASS" => d.ty::<BuildingClassType>(name).is_some(),
+            "BUILD" => d.ty::<BuildType>(name).is_some(),
+            "PROJECT" => d.ty::<ProjectType>(name).is_some(),
+            "CIVILIZATION" => d.ty::<CivilizationType>(name).is_some(),
+            "PROMOTION" => d.ty::<PromotionType>(name).is_some(),
+            "IMPROVEMENT" => d.ty::<ImprovementType>(name).is_some(),
+            "BONUS" => d.ty::<BonusType>(name).is_some(),
+            "ALIGNMENT" => d.ty::<AlignmentType>(name).is_some(),
+            "WORLDSIZE" => d.ty::<WorldSizeType>(name).is_some(),
+            _ => return None,
+        })
+    }
+
+    /// The quoted type-like names of `src` (`"PREFIX_REST"`, capitals, digits and underscores),
+    /// outside `//` comments.
+    fn quoted_names(src: &str) -> Vec<&str> {
+        let mut out = Vec::new();
+        for line in src.lines() {
+            let code = line.find("//").map_or(line, |i| &line[..i]);
+            let mut parts = code.split('"');
+            parts.next();
+            // Every other part is inside quotes.
+            while let Some(inside) = parts.next() {
+                // A bare prefix (`"UNIT_"`, for `trim_start_matches`) is not a name.
+                let ok = inside.contains('_') && !inside.ends_with('_') && inside.starts_with(|c: char| c.is_ascii_uppercase()) && inside.bytes().all(|b| b.is_ascii_uppercase() || b.is_ascii_digit() || b == b'_');
+                if ok {
+                    out.push(inside);
+                }
+                parts.next();
+            }
+        }
+        out
+    }
+
+    /// Every hard-coded type name in the card content's AI is in the game data: a renamed or
+    /// misspelt name would make the AI skip its card silently (the tables look names up with
+    /// `d.ty`). New kinds of names need a line in [`resolves`].
+    #[test]
+    fn every_card_type_name_resolves() {
+        let d = ffh_data::global();
+        let mut checked = 0;
+        let mut missing = Vec::new();
+        for &(file, src) in SOURCES {
+            for name in quoted_names(src) {
+                match resolves(d, name) {
+                    Some(true) => checked += 1,
+                    Some(false) => missing.push(format!("{file}: {name}")),
+                    None => assert!(NOT_TYPES.contains(&name.split('_').next().unwrap()), "{file}: {name}: a kind of name this test does not know"),
+                }
+            }
+        }
+        eprintln!("{checked} type names resolve");
+        assert!(missing.is_empty(), "names not in the data:\n{}", missing.join("\n"));
+        assert!(checked > 200, "only {checked} names found: has the way the tables are written changed?");
+    }
+}
