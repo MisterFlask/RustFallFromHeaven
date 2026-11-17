@@ -207,10 +207,10 @@ fn the_newer_queries_keep_the_fog() {
 /// reveal it is (built by hand: the war is declared directly).
 #[test]
 fn an_unmet_war_stays_out_of_the_crusades() {
+    // At the game's first control point the human has met no one (no unit has moved yet).
     let ng = peaceful_game(5);
-    let (mut s, mut b) = bot_session(&ng, None);
-    let until = s.g.game_turn() + 3;
-    assert_eq!(bot::run(&mut s, &mut b, until, |_, _| {}), Stop::Human);
+    let (mut s, _) = bot_session(&ng, None);
+    assert_eq!(s.advance(&mut |_| {}), Stop::Human);
     let h = s.human;
     let my = s.g.players[h].team;
     // Two AI teams, neither met by the human (met with each other for the declaration).
