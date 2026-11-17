@@ -67,12 +67,6 @@ fn hold_times(g: &Game) -> String {
     }
 }
 
-/// The strength holding against `x` takes: `SEA_HOLD_PERCENT` of it, rounded up, at least 1.
-fn hold_need(g: &Game, x: i32) -> i64 {
-    let hold = g.d.defines.sea_hold_percent.max(0) as i64;
-    ((x as i64 * hold + 99) / 100).max(1)
-}
-
 /// The control of a state in words: "Held by you", "Held by Lanun", "Contested", "Open",
 /// "Patrolled by Lanun".
 pub fn control_text(v: &Viewer, st: &SeaState) -> String {
@@ -308,7 +302,7 @@ pub fn attack_harbour_lines(v: &Viewer, c: CityId) -> Vec<String> {
                 if let [s] = open[..] {
                     let theirs = g.sea_state_known_if(s, team, v.team, &[]).ours;
                     let ours = g.sea_state_known(s, v.team).ours;
-                    lines.push(format!("To blockade it: hold {} ({} needed, you have {ours}).", sea_name(g, s), hold_need(g, theirs)));
+                    lines.push(format!("To blockade it: hold {} ({} needed, you have {ours}).", sea_name(g, s), g.sea_hold_need(theirs)));
                 } else if !open.is_empty() {
                     let names: Vec<String> = open.iter().map(|&s| sea_name(g, s)).collect();
                     lines.push(format!("To blockade it: hold {}.", names.join(" and ")));
@@ -588,10 +582,10 @@ pub fn sea_panel(v: &Viewer, finder: &mut PathFinder, s: SeaId, units: &[UnitId]
     match st.control {
         SeaControl::HeldByUs if st.theirs > 0 => {
             let who = strongest_enemy.map_or("An enemy".to_string(), |p| capital(&party_name(v, p)));
-            hold.push_str(&format!(" {who} needs {}.", hold_need(g, st.ours)));
+            hold.push_str(&format!(" {who} needs {}.", g.sea_hold_need(st.ours)));
         }
         SeaControl::HeldByUs => hold.push_str(" No enemy patrols it."),
-        SeaControl::HeldBy(_) | SeaControl::Contested(_) => hold.push_str(&format!(" You need {}.", hold_need(g, st.theirs))),
+        SeaControl::HeldBy(_) | SeaControl::Contested(_) => hold.push_str(&format!(" You need {}.", g.sea_hold_need(st.theirs))),
         _ => hold.push_str(" Any warship of yours on Patrol holds it while no enemy patrols."),
     }
     // Known held by its effect on the human, its ships not all in sight.

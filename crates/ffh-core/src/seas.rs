@@ -376,18 +376,26 @@ impl Game {
         self.sea_patrollers(s).into_iter().filter(|&u| self.unit_get_team(u) == team).map(|u| self.unit_sea_strength_x100(u)).sum::<i32>() / 100
     }
 
+    /// The strength that holds a sea against strength `x` (docs/NAVAL.md, 4.3):
+    /// `SEA_HOLD_PERCENT` of `x`, rounded up, at least 1. The one threshold of
+    /// [`Game::sea_state`]'s comparisons, both ways.
+    pub fn sea_hold_need(&self, x: i32) -> i64 {
+        let hold = self.d.defines.sea_hold_percent.max(0) as i64;
+        ((x as i64 * hold + 99) / 100).max(1)
+    }
+
     /// The state from parties: `ours` (the team's strength), the hostile parties' strengths
     /// against it and the others' (each rounded down, x1).
     fn sea_state_from(&self, ours: i32, hostile: &[(SeaParty, i32)], friendly: &[(SeaParty, i32)]) -> SeaState {
-        let hold = self.d.defines.sea_hold_percent.max(0) as i64;
         // The strongest first, ties to the lower team (hidden last).
         let key = |p: &SeaParty| p.map_or(u32::MAX, |t| t.0 as u32);
         let best = |v: &[(SeaParty, i32)], f: &dyn Fn(i32) -> bool| v.iter().filter(|e| e.1 > 0 && f(e.1)).min_by(|a, b| b.1.cmp(&a.1).then(key(&a.0).cmp(&key(&b.0)))).copied();
-        if let Some((p, x)) = best(hostile, &|x| x as i64 * 100 >= hold * ours as i64) {
+        let need = self.sea_hold_need(ours);
+        if let Some((p, x)) = best(hostile, &|x| x as i64 >= need) {
             return SeaState { control: SeaControl::HeldBy(p), ours, theirs: x };
         }
         if let Some((p, x)) = best(hostile, &|_| true) {
-            let we_hold = ours > 0 && hostile.iter().all(|e| ours as i64 * 100 >= hold * e.1 as i64);
+            let we_hold = hostile.iter().all(|e| ours as i64 >= self.sea_hold_need(e.1));
             let control = if we_hold { SeaControl::HeldByUs } else { SeaControl::Contested(p) };
             return SeaState { control, ours, theirs: x };
         }
