@@ -10,7 +10,7 @@
 import { improvementContainsMana } from "../mana-art.js";
 import { S, tname, me, isBarbarian } from "../state.js";
 import * as T from "../tiles.js";
-import { headUnit, stackState } from "../stacks.js";
+import { stackState, unitStrength } from "../stacks.js";
 import { rng, hash32, hashf } from "./noise.js";
 import { hexLinear, clamp, smoothstep } from "./math.js";
 import { KIND, FEAT, GROUND, SEA, DRAFT, RIVER_HALF, RIVER_WANDER, RIVER_BANK } from "./world.js";
@@ -817,9 +817,9 @@ export function dressUnits(world, map) {
   const w = world.w;
   const mine = me()?.player;
   const sel = S.sel?.units ?? [];
-  // The stack's face is its best defender, as the 2D art shows (F4): topUnit returned units[0] for
-  // a foreign stack, so a worker hid the armed unit behind it. headUnit picks the strongest.
-  const strength = (u) => S.data?.tables?.UnitType?.[u.type]?.combat ?? 0;
+  // The stack's face is its best defender, as on every map (F4): a foreign stack's units[0] could be
+  // a worker hiding the armed unit behind it. headUnit picks the strongest (stacks.js).
+  const strength = (u) => unitStrength(S.data, u);
   // The same ctx the art view builds, so stackState also gives the activity mark and hero for the
   // player's own stacks (F19). combat here is a proxy string (fights when its strength > 0); the
   // hero pip needs the art catalog and is left for later.

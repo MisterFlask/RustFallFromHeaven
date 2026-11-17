@@ -307,16 +307,6 @@ export function isLair(type, info) {
   return /LAIR|BARROW|DEN$|DUNGEON|GOBLIN_FORT|RUINS|GRAVEYARD|HELLFIRE|PIRATE|SHIP_WRECK|TOMB|SEPULCHER|CAGE/.test(type ?? "") || (info?.unique ?? false);
 }
 
-/** How a plot's top unit is chosen: the selection's first, else the viewer's own unit that is
- *  not busy, else the first listed. `units` are the view's units on one plot. */
-export function topUnit(units, me, selected = []) {
-  const sel = units.find((u) => selected.includes(u.id));
-  if (sel) return sel;
-  const own = units.filter((u) => u.owner === me);
-  if (own.length) return own.find((u) => (u.moves ?? 0) > 0) ?? own[0];
-  return units[0] ?? null;
-}
-
 /** Turn markers along a path (`path` query nodes, the first being the start): `{i, turn,
  *  last}` for each node where a turn ends (the next node is reached a turn later) and for the
  *  last node. */

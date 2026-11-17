@@ -34,6 +34,18 @@ export function headUnit(units, me, selected = [], strength = () => 0) {
   return best;
 }
 
+/** A unit's strength for choosing a stack's head (`headUnit`): its type's combat strength in the
+ *  client's data JSON (`data`: `S.data`). Every map that draws stacks rates units with it. */
+export function unitStrength(data, u) {
+  return data?.tables?.UnitType?.[u?.type]?.combat ?? 0;
+}
+
+/** The unit drawn for a stack on the maps: `headUnit` with `unitStrength`, so a foreign stack
+ *  shows its strongest unit (a worker does not hide the armed unit behind it). */
+export function stackHead(units, me, selected, data) {
+  return headUnit(units, me, selected, (u) => unitStrength(data, u));
+}
+
 /**
  * The stack on one tile as the art draws it: `{head, state}` with state `{own, moves, selected,
  * hp, mark, hero, count, facing}` (web/art/units/stack.js). `units`: the view's units on the tile;

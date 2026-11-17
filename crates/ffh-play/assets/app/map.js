@@ -13,6 +13,7 @@
 
 import { S, tname, dname, info, me, isBarbarian, ORDER_KINDS, observing } from "./state.js";
 import * as T from "./tiles.js";
+import { stackHead } from "./stacks.js";
 import { manaSchool, manaColour, manaInk, MANA_SPHERES } from "./mana-art.js";
 import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark, drawMarchMark, marchMark, drawRitualMark, RITUAL_CORE, RITUAL_RING } from "./iso.js";
 import { supplyLines, supplyMarks, unwrapSegment, drawLine, drawMark, OWN_COLOR } from "./supply.js";
@@ -1454,7 +1455,7 @@ export class MapView {
     const sel = this.overlay.units ?? [];
     for (const units of S.unitsAt.values()) {
       const u0 = units[0];
-      const top = T.topUnit(units, mine, sel);
+      const top = stackHead(units, mine, sel, S.data);
       const city = this.map.city[T.plotIndex(this.map, u0.x, u0.y)] >= 0;
       this.eachCopy(u0.x, u0.y, (sx, sy) => {
         const s = city ? ts * 0.5 : ts * 0.7;

@@ -129,15 +129,6 @@ test("labels, colours and the top unit", () => {
   assert.ok(T.isLair("IMPROVEMENT_BARROW"));
   assert.ok(T.isLair("IMPROVEMENT_X", { unique: true }));
   assert.ok(!T.isLair("IMPROVEMENT_FARM", { unique: false }));
-  const units = [
-    { id: 1, owner: 2, moves: 60 },
-    { id: 2, owner: 0, moves: 0 },
-    { id: 3, owner: 0, moves: 60 },
-  ];
-  assert.equal(T.topUnit(units, 0).id, 3);
-  assert.equal(T.topUnit(units, 0, [2]).id, 2);
-  assert.equal(T.topUnit(units, 5).id, 1);
-  assert.equal(T.topUnit([], 0), null);
 });
 
 test("turn markers along a path", () => {

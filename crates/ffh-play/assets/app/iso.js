@@ -22,7 +22,7 @@
 
 import { S, me, tname, isBarbarian } from "./state.js";
 import * as T from "./tiles.js";
-import { unitMoves } from "./stacks.js";
+import { stackHead, unitMoves } from "./stacks.js";
 import { SPRITES } from "./iso/sprites.js";
 import { MANA_SPRITES, improvementContainsMana, manaSpriteKey } from "./mana-art.js";
 import { drawCityWork } from "./citywork.js";
@@ -982,7 +982,7 @@ export class IsoMap {
     const out = [];
     for (const units of S.unitsAt.values()) {
       const u0 = units[0];
-      const top = T.topUnit(units, mine, sel);
+      const top = stackHead(units, mine, sel, S.data);
       for (const c of byPlot.get(u0.y * v.map.w + u0.x) ?? []) out.push({ units, top, c, picked: sel.includes(top.id) });
     }
     return out;

@@ -46,6 +46,25 @@ test("the head of a stack and its state", () => {
   assert.equal(St.stackState([], ctx()), null);
 });
 
+test("the unit every map draws for a stack: stackHead rates units by their type's combat", () => {
+  const data = { tables: { UnitType: [{ type: "UNIT_WORKER", combat: 0 }, { type: "UNIT_AXEMAN", combat: 5 }] } };
+  assert.equal(St.unitStrength(data, { type: 1 }), 5);
+  assert.equal(St.unitStrength(data, { type: 9 }), 0, "an unknown type");
+  assert.equal(St.unitStrength(null, { type: 1 }), 0, "no data yet");
+  const units = [
+    { id: 1, owner: 2, type: 0, moves: 60 },
+    { id: 4, owner: 2, type: 1, moves: 60 },
+    { id: 2, owner: 0, type: 0, moves: 0 },
+    { id: 3, owner: 0, type: 0, moves: 60 },
+  ];
+  // Own units: the selection's first, else the first that can move.
+  assert.equal(St.stackHead(units, 0, [], data).id, 3);
+  assert.equal(St.stackHead(units, 0, [2], data).id, 2);
+  // A foreign stack: its strongest unit, not the worker listed first.
+  assert.equal(St.stackHead(units, 5, [], data).id, 4);
+  assert.equal(St.stackHead([], 0, [], data), null);
+});
+
 test("marks from Civ4's activities", () => {
   assert.equal(St.markOf("ACTIVITY_SLEEP", { canFight: true }), "fortify");
   assert.equal(St.markOf("ACTIVITY_SLEEP"), "sleep");
