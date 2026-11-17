@@ -8,18 +8,19 @@
 // console error.
 //
 //   node tools/r3d-huge.mjs [--bin FFH_PLAY] [--limit SECONDS] [--gpu] [--w 512 --h 320]
-//        [--world WORLDSIZE_HUGE] [--opponents 8] [--seed 5] [--layer sea]
+//        [--world WORLDSIZE_HUGE] [--opponents 8] [--seed 5] [--layer sea] [--query doom=100]
 //
 // --limit: 30 by default under SwiftShader (software WebGL, headless Chromium's default here), 10
 // with --gpu (the machine's GPU; see chromiumLaunch in web-lib.mjs for FFH_CHROMIUM_CHANNEL).
-// --layer draws a map layer as well (`sea`: the Sea layer in the world).
+// --layer draws a map layer as well (`sea`: the Sea layer in the world). --query adds to the page's
+// URL (`doom=100`: the map as at Armageddon counter 100, docs/HD2D.md §6).
 
 import path from "node:path";
 import { createRequire } from "node:module";
 import { ROOT, parseArgs, findBin, tempDir, startServer, chromiumLaunch, webglRenderer, skipped } from "./web-lib.mjs";
 
 const NAME = "r3d-huge";
-const args = parseArgs(process.argv.slice(2), { gpu: "flag", bin: "v", limit: "v", w: "v", h: "v", world: "v", opponents: "v", seed: "v", layer: "v" });
+const args = parseArgs(process.argv.slice(2), { gpu: "flag", bin: "v", limit: "v", w: "v", h: "v", world: "v", opponents: "v", seed: "v", layer: "v", query: "v" });
 const limitMs = Number(args.limit ?? (args.gpu ? 10 : 30)) * 1000;
 
 const require = createRequire(import.meta.url);
@@ -67,7 +68,7 @@ page.on("crash", () => (crashed = true));
 
 try {
   // force3d=1 bypasses the GPU guard (docs/R3D.md §1): SwiftShader on purpose.
-  await page.goto(`${server.url}/?renderer=hd2d&force3d=1`);
+  await page.goto(`${server.url}/?renderer=hd2d&force3d=1${args.query ? `&${args.query}` : ""}`);
   await page.waitForFunction(() => window.ffh?.ready && window.ffh.S.map && window.ffh.mapView.r3d?.cam, null, { timeout: 300000 });
   console.log(`WebGL renderer: ${await webglRenderer(page)}`);
   const size = await page.evaluate(
