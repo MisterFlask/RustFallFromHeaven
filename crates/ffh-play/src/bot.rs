@@ -755,56 +755,129 @@ impl Bot {
     }
 }
 
-/// Every allow-listed query of the noisy client (design §8 T10), through `query`: view, map,
-/// every group's details and actions, 5 path and 5 combat previews, every city screen, techs,
-/// civics, religions, players, trade with every met civilization, inspect, text and the ASCII
-/// layers. Returns the number of queries; an error other than `busy` fails.
+/// Which errors a query of the noisy client may meet besides `busy`: none (its parameters are
+/// valid by construction), or the refusal its fallback parameters may draw where the game state
+/// has nothing valid to ask about (no battle report, no sea, a plot off the map's edge).
+#[derive(Copy, Clone)]
+enum May {
+    Answer,
+    BeInvalid,
+    BeGone,
+}
+
+/// Every allow-listed query of the noisy client (design §8 T10), through `query`: each name of
+/// [`crate::query::QUERY_NAMES`] at least once (`purity.rs` checks it), with real ids where the
+/// game has them (the human's groups, cities, armies, the met players, the seas it knows, its
+/// battle reports) and a fallback that draws a refusal where it has none. View and map, every
+/// group's details and actions, 5 plot, path, combat and engagement previews, every city
+/// screen, the empire screens, trade and speech with every met civilization, inspect, text and
+/// the ASCII layers. Returns the number of queries; an error other than `busy` or the refusal a
+/// query's fallback may draw fails.
 pub fn noise_with(mut query: impl FnMut(&Query) -> Result<Json, QueryErr>) -> usize {
+    let d = ffh_data::global();
     let mut n = 0;
-    // `edge`: a preview whose target is off the map (at an edge) is `invalid`: skipped.
-    let mut ask = |q: Query, edge: bool| -> Option<Json> {
+    let mut ask = |q: Query, may: May| -> Option<Json> {
         n += 1;
-        match query(&q) {
-            Ok(j) => Some(j),
-            Err(QueryErr::Busy(_)) => None,
-            Err(QueryErr::Invalid(_)) if edge => None,
-            Err(e) => panic!("noisy client: {q:?} refused: {e}"),
+        match (query(&q), may) {
+            (Ok(j), _) => Some(j),
+            (Err(QueryErr::Busy(_)), _) => None,
+            (Err(QueryErr::Invalid(_)), May::BeInvalid) | (Err(QueryErr::Gone), May::BeGone) => None,
+            (Err(e), _) => panic!("noisy client: {q:?} refused: {e}"),
         }
     };
-    let Some(view) = ask(Query::View, false) else { return 1 };
-    ask(Query::Map { since: None, epoch: None }, false);
+    ask(Query::Status, May::Answer);
+    ask(Query::Pending, May::Answer);
+    let Some(view) = ask(Query::View, May::Answer) else { return n };
+    ask(Query::Map { since: None, epoch: None }, May::Answer);
     let me = int(view.get("me").unwrap(), "player");
     let mut previews = 0;
+    let mut some_units: Vec<UnitId> = Vec::new();
     for grp in arr(&view, "groups") {
         let units = unit_ids(grp, "units");
         if units.is_empty() {
             continue;
         }
-        let Some(gq) = ask(Query::Group { units: units.clone() }, false) else { continue };
+        let Some(gq) = ask(Query::Group { units: units.clone() }, May::Answer) else { continue };
         if previews < 5 {
             previews += 1;
             let plot = arr(&gq, "plot");
             let (x, y) = (plot.first().and_then(Json::as_i64).unwrap_or(0) as i32, plot.get(1).and_then(Json::as_i64).unwrap_or(0) as i32);
-            ask(Query::Path { units: units.clone(), x: x + 3, y, flags: 0 }, true);
-            ask(Query::Combat { units: units.clone(), x: x + 1, y }, true);
+            ask(Query::Plot { x, y, units: units.clone() }, May::Answer);
+            // A target off the map (at an edge) is `invalid`.
+            ask(Query::Path { units: units.clone(), x: x + 3, y, flags: 0 }, May::BeInvalid);
+            ask(Query::Combat { units: units.clone(), x: x + 1, y }, May::BeInvalid);
+            ask(Query::EngagePreview { by: crate::command::EngageBy::Units(units.clone()), to: (x + 1, y), formation: None }, May::BeInvalid);
+            if some_units.is_empty() {
+                some_units = units.clone();
+            }
         }
     }
-    for c in arr(&view, "cities").iter().filter(|c| int(c, "owner") == me) {
-        ask(Query::City { city: CityId(int(c, "id") as u32) }, false);
+    let mine: Vec<&Json> = arr(&view, "cities").iter().filter(|c| int(c, "owner") == me).collect();
+    for c in &mine {
+        ask(Query::City { city: CityId(int(c, "id") as u32) }, May::Answer);
     }
-    for q in [Query::Techs, Query::Civics { with: Vec::new() }, Query::Religions, Query::Text] {
-        ask(q, false);
+    for q in [Query::Techs, Query::Civics { with: Vec::new() }, Query::Religions, Query::Text, Query::Culture, Query::Governors, Query::Crusades] {
+        ask(q, May::Answer);
     }
-    if let Some(players) = ask(Query::Players, false) {
-        for p in arr(&players, "players").iter().filter(|p| !flag(p, "barbarian") && flag(p, "alive")) {
-            ask(Query::Trade { with: PlayerId(int(p, "id") as u8) }, false);
+    // A civic tried over the current ones (the reply says whether it may be adopted).
+    ask(Query::Civics { with: vec![CivicType::from_usize(0)] }, May::Answer);
+    // The empire orders: what the governed cities may build, then the cities for one of them.
+    let items = ask(Query::EmpireItems { army: None }, May::Answer);
+    let item = items.as_ref().and_then(|j| arr(j, "items").first().cloned());
+    let (order, data) = match &item {
+        Some(i) => (i.get("order").and_then(Json::as_i64).map_or(OrderType::ORDER_TRAIN, |o| OrderType::from_usize(o as usize)), int(i, "type") as i32),
+        None => (OrderType::ORDER_TRAIN, 0),
+    };
+    ask(Query::EmpireCities { order, data, army: None }, May::BeInvalid);
+    if let Some(armies) = ask(Query::Armies, May::Answer) {
+        if let Some(a) = arr(&armies, "armies").iter().chain(arr(&armies, "fleets")).next() {
+            ask(Query::EmpireItems { army: Some(ArmyId(int(a, "id") as u32)) }, May::BeInvalid);
         }
+    }
+    if let Some(players) = ask(Query::Players, May::Answer) {
+        for p in arr(&players, "players").iter().filter(|p| !flag(p, "barbarian") && flag(p, "alive") && int(p, "id") != me) {
+            let with = PlayerId(int(p, "id") as u8);
+            ask(Query::Trade { with }, May::Answer);
+            // Whether they can be contacted is the rules' (the answer is refused when not).
+            ask(Query::TradeAnswer { with, give: Vec::new(), get: Vec::new() }, May::BeInvalid);
+            ask(Query::Speech { with, comment: None, salt: 0 }, May::BeInvalid);
+        }
+    }
+    // The battle reports and the log of the newest (a report may have lost its log: `gone`);
+    // without one, a report id that is not kept.
+    let report = ask(Query::BattleReports, May::Answer).and_then(|r| arr(&r, "reports").first().map(|r| int(r, "id")));
+    ask(Query::BattleLog { report: report.map_or(0, |r| r as u32) }, May::BeGone);
+    ask(Query::Log { since: 0 }, May::Answer);
+    ask(Query::Moments { since: 0 }, May::Answer);
+    ask(Query::Report, May::Answer);
+    // The seas the human knows, each with the first group as the ships to send (the reply says
+    // whether they can); without one, a sea id it does not know.
+    let seas: Vec<u32> = ask(Query::Seas, May::Answer).map(|s| arr(&s, "seas").iter().map(|r| int(r, "id") as u32).collect()).unwrap_or_default();
+    if seas.is_empty() {
+        ask(Query::Sea { id: SeaId(0), units: some_units.clone() }, May::BeGone);
+    }
+    for id in seas {
+        ask(Query::Sea { id: SeaId(id), units: some_units.clone() }, May::Answer);
+    }
+    // A placed world spell's menu on a city of ours (refused unless the human holds its charge
+    // and the plot is a target).
+    if let Some(spell) = d.spells.keys().find(|&s| d.spells[s].place_on_charge) {
+        let (x, y) = mine.first().map_or((0, 0), |c| (int(c, "x") as i32, int(c, "y") as i32));
+        ask(Query::PlaceMenu { spell, x, y }, May::BeInvalid);
     }
     if let Some(u) = arr(&view, "units").iter().find(|u| int(u, "owner") == me) {
-        ask(Query::Inspect { kind: "unit".into(), oid: int(u, "id") }, false);
+        ask(Query::Inspect { kind: "unit".into(), oid: int(u, "id") }, May::Answer);
     }
+    if let Some(c) = mine.first() {
+        ask(Query::Inspect { kind: "city".into(), oid: int(c, "id") }, May::Answer);
+    }
+    ask(Query::Inspect { kind: "player".into(), oid: me }, May::Answer);
+    ask(Query::Inspect { kind: "UnitType".into(), oid: 0 }, May::Answer);
     for layer in Layer::ALL {
-        ask(Query::Ascii { x: 0, y: 0, w: 0, h: 0, layer }, false);
+        ask(Query::Ascii { x: 0, y: 0, w: 0, h: 0, layer }, May::Answer);
+    }
+    for q in [Query::Data, Query::Setup, Query::Saves] {
+        ask(q, May::Answer);
     }
     n
 }

@@ -117,3 +117,32 @@ fn a_city_screen_leaves_the_save_unchanged() {
     }
     assert!(before == s.g.save(), "a city screen changed the save");
 }
+
+/// Queries the noisy client leaves out, each with the reason. Empty: a new query must be added
+/// to `bot::noise_with`, so that T10 reads through it.
+const NOT_IN_NOISE: &[&str] = &[];
+
+/// The noisy client issues every query of the protocol (but [`NOT_IN_NOISE`]), whatever the
+/// game holds (a query without valid parameters still goes out with a fallback that draws a
+/// refusal), and one round of it leaves the save bytes as they were. Pattern A: a peaceful bot
+/// game, any seed.
+#[test]
+fn the_noisy_client_issues_every_query() {
+    let ng = peaceful_game(3);
+    let mut b = Bot::new(3);
+    let mut s = Session::new_game(&ng, b.answerer(), SessionOptions { journal: false, ..Default::default() }).unwrap();
+    let until = s.g.game_turn() + 30;
+    assert_eq!(bot::run(&mut s, &mut b, until, |_, _| {}), Stop::Human);
+    let before = s.g.save();
+    let mut issued: Vec<&'static str> = Vec::new();
+    bot::noise_with(|q| {
+        issued.push(q.name());
+        s.query(q)
+    });
+    issued.sort();
+    issued.dedup();
+    let mut want: Vec<&str> = ffh_play::query::QUERY_NAMES.iter().copied().filter(|n| !NOT_IN_NOISE.contains(n)).collect();
+    want.sort();
+    assert_eq!(issued, want, "the noisy client's queries");
+    assert!(before == s.g.save(), "a query changed the save");
+}
