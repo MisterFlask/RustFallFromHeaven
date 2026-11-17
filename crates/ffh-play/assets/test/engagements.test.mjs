@@ -67,19 +67,18 @@ test("the map's markers: one per plot, the newest battle there (the view lists n
   assert.deepEqual(battleMarkers(), []);
 });
 
-test("a battle is a land attack on land (the rules' engage_applies)", () => {
+test("a battle is an attack on land by a unit the engine marks as engaging (the rules' engage_applies)", () => {
   const saved = { view: S.view, data: S.data, map: S.map, units: S.units };
   S.data = {
     tables: {
-      DomainType: [{ type: "DOMAIN_SEA" }, { type: "DOMAIN_AIR" }, { type: "DOMAIN_LAND" }],
       PlotType: [{ type: "PLOT_PEAK" }, { type: "PLOT_HILLS" }, { type: "PLOT_LAND" }, { type: "PLOT_OCEAN" }],
-      UnitType: [{ type: "UNIT_AXEMAN", domain: 2 }, { type: "UNIT_TRIREME", domain: 0 }, { type: "UNIT_GRIFFON", domain: 1 }],
     },
   };
   // A 3 x 1 map: hills, land, ocean.
   S.map = { w: 3, h: 1, wrap_x: false, wrap_y: false, plot_type: [1, 2, 3] };
+  // The engine's `engages`: a land unit (1); a ship (2) and an air unit (3) go without it.
   S.units = new Map([
-    [1, { id: 1, type: 0 }],
+    [1, { id: 1, type: 0, engages: true }],
     [2, { id: 2, type: 1 }],
     [3, { id: 3, type: 2 }],
   ]);

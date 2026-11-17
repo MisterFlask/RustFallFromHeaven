@@ -442,6 +442,10 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
     }
     // Engagement combat: its role, A, Dv and max HP (`hp` / `max_hp` stay the duel's percent).
     battles::unit_fields(g, u, &mut j);
+    // Its attack on a land plot is a battle, not the duel (the rules' `unit_attack_engages`).
+    if g.unit_attack_engages(u) {
+        j.set("engages", true);
+    }
     // Reinforced (Ritual: Upgrade, the Luchuirp's golems): its line, when it has stacks.
     if unit.reinforced > 0 {
         j.set("reinforced", reinforced_line(unit.reinforced));
