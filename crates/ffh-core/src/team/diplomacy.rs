@@ -67,6 +67,15 @@ impl Game {
     // War and peace
     // ------------------------------------------------------------------
 
+    /// Not in C++: does a truce hold between teams `t` and `other`? A truce is a span of turns
+    /// (`Team::truce_until`, kept the same on both teams) during which there is no war between
+    /// the two: neither can declare it (`team_can_declare_war`), the declarations other wars drag
+    /// in skip it, and their always-hostile units (hidden nationality) are not enemies of each
+    /// other. The Judgment of Junil card (docs/CARDS.md, "Truces") is what sets it today.
+    pub fn team_has_truce(&self, t: TeamId, other: TeamId) -> bool {
+        t != other && self.teams[t].truce_until[other] > self.game_turn()
+    }
+
     /// C++ `CvTeam::canChangeWarPeace` (default `bAllowVassal = false`).
     pub fn team_can_change_war_peace(&self, t: TeamId, other: TeamId, allow_vassal: bool) -> bool {
         if is_option(self, GameOptionType::GAMEOPTION_NO_CHANGING_WAR_PEACE) {

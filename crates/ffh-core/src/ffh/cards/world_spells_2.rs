@@ -19,10 +19,11 @@
 //! (`*_ok`): its `targets*` callback lists what passes it, and its result checks the target again.
 //!
 //! The rules that are not callbacks live here as `Game` methods and are called where the rule they
-//! change lives, with a comment naming the card: the truce (`team_has_truce`: war declarations,
-//! hidden units, False Colours), the rituals' charges (`ritual_charge`: casting, and the city's
-//! queue), the cost of a repeated ritual (`repeat_cost_percent`), the sites a building reveals
-//! (`reveals_sites`), and the area effects (`Game::area_effects`: healing, moves, battles, sight).
+//! change lives, with a comment naming the card: the truce (`Team::truce_until`, read through
+//! `team_has_truce` in `team/diplomacy.rs`: war declarations, hidden units, False Colours), the
+//! rituals' charges (`ritual_charge`: casting, and the city's queue), the cost of a repeated
+//! ritual (`repeat_cost_percent`), the sites a building reveals (`reveals_sites`), and the area
+//! effects (`Game::area_effects`: healing, moves, battles, sight).
 
 use super::world::near_borders;
 use super::world_spells::own_city_at;
@@ -269,16 +270,8 @@ fn spell_call_the_leviathan(g: &mut Game, caster: UnitId, _call: &PyCall) {
 // ---------------------------------------------------------------------------------------------
 // Judgment of Junil: a player of another team the caster's team has met (a civilization: not the
 // barbarians, a minor civilization or a crusade Host), with no truce already. A war between the
-// two teams ends at once; for 20 turns there is none (`Team::truce_until`, `team_has_truce`).
-
-impl Game {
-    /// Card: Judgment of Junil (docs/CARDS.md): does a truce hold between teams `t` and `other`?
-    /// While it does there is no war between them: neither can declare it, the declarations other
-    /// wars drag in skip it, and their always-hostile units (hidden nationality) are not enemies.
-    pub fn team_has_truce(&self, t: TeamId, other: TeamId) -> bool {
-        t != other && self.teams[t].truce_until[other] > self.game_turn()
-    }
-}
+// two teams ends at once; for 20 turns there is none (`Team::truce_until`; `team_has_truce` in
+// `team/diplomacy.rs`).
 
 /// May `caster` name player `o` with Judgment of Junil?
 pub fn junil_ok(g: &Game, caster: UnitId, o: PlayerId) -> bool {
