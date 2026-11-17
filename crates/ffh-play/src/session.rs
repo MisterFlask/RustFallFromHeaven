@@ -21,7 +21,7 @@ use ffh_data::*;
 
 use crate::command::{self, Action, CmdErr, CmdOk, Command, Plan};
 use crate::decision::{self, Pending};
-use crate::human::{Answerer, HumanController, SessionShared, Stats};
+use crate::human::{open_events_of, Answerer, HumanController, SessionShared, Stats};
 use crate::journal::{self, Cursor, Journal, JournalAnswerer, Line, Stamp};
 use crate::json::Json;
 use crate::query::{self, Query, QueryErr, UiState};
@@ -223,7 +223,7 @@ impl Session {
     }
 
     /// A saved game (a turn boundary or a human control point). The human is the sidecar's, else
-    /// the first human slot. Without a sidecar no event popup is pending.
+    /// the first human slot. The event popups are the save's (`Player::event_popups`).
     pub fn load(save: &[u8], sidecar: Option<&Sidecar>, answerer: Arc<dyn Answerer>, opts: SessionOptions) -> Result<Session, PlayError> {
         let journal = Self::make_journal(&opts)?;
         Self::load_with(save, sidecar, answerer, opts, journal)
@@ -259,7 +259,6 @@ impl Session {
             if observe {
                 s.to_play = sc.to_play.max(0);
             }
-            *s.shared.pending_events.lock().unwrap() = sc.pending_events.clone();
             // The moments are presentation only: one that does not read (another data version)
             // or names no player of this game is dropped.
             let moments = sc.moments_tail.iter().filter_map(|j| Moment::from_json(s.g.d, j).ok()).filter(|m| m.player.idx() < s.g.num_players()).collect();
@@ -515,7 +514,7 @@ impl Session {
             return Err(CmdErr::DecisionPending);
         }
         let Phase::Human(h) = self.phase() else { return Err(CmdErr::NotYourTurn) };
-        let events = self.shared.open_events_of(h);
+        let events = open_events_of(&self.g, h);
         let plan = {
             command::validate(&self.g, h, cmd, &command::Ctx { events: &events })?
         };
@@ -559,9 +558,9 @@ impl Session {
         self.drain_log();
         let mark = self.messages.total();
         match action {
-            Action::Event { triggered, .. } => self.shared.pending_events.lock().unwrap().retain(|e| (e.player, e.triggered) != (h, *triggered)),
+            Action::Event { triggered, .. } => self.g.players[h].event_popups.retain(|e| e.triggered != *triggered),
             // C++: closing an event popup without a choice does nothing; the popup is gone.
-            Action::EndTurn { drop_events: true, .. } => self.shared.pending_events.lock().unwrap().retain(|e| e.player != h),
+            Action::EndTurn { drop_events: true, .. } => self.g.players[h].event_popups.clear(),
             _ => {}
         }
         if let Action::EndTurn { .. } = action {
@@ -720,17 +719,17 @@ impl Session {
     /// enabled as `canDoEvent` says at each moment) until answered or closed by a forced end
     /// turn; it is dropped only when its data is gone (`applyEvent` would do nothing).
     fn launch_events(&mut self, h: PlayerId) {
+        let mut popups = std::mem::take(&mut self.g.players[h].event_popups);
         let g = &self.g;
-        self.shared.pending_events.lock().unwrap().retain_mut(|e| {
-            if e.player != h {
-                true
-            } else if e.launched {
+        popups.retain_mut(|e| {
+            if e.launched {
                 g.player_get_event_triggered(h, e.triggered).is_some()
             } else {
                 e.launched = decision::event_available(g, h, e.triggered);
                 e.launched
             }
         });
+        self.g.players[h].event_popups = popups;
     }
 
     // ---- reads ---------------------------------------------------------------------------------
@@ -745,7 +744,7 @@ impl Session {
         if self.observing {
             return Pending::default();
         }
-        let events = self.shared.open_events_of(self.human);
+        let events = open_events_of(&self.g, self.human);
         self.read(|g| decision::pending(g, self.human, &events))
     }
 
@@ -776,7 +775,7 @@ impl Session {
 
     /// Answers a protocol query (design §4.6) from the human's side.
     pub fn query(&self, q: &Query) -> Result<Json, QueryErr> {
-        let events = self.shared.open_events_of(self.human);
+        let events = open_events_of(&self.g, self.human);
         let decision = self.shared.open_decision.lock().unwrap().clone();
         let ctx = query::Ctx {
             h: self.human,
@@ -836,7 +835,6 @@ impl Session {
             observe: self.observing,
             to_play: self.to_play,
             setup: self.setup.as_ref().map(|ng| ng.to_json_names(self.g.d)),
-            pending_events: self.shared.pending_events.lock().unwrap().clone(),
             journal: journal.path().map(|p| p.display().to_string()),
             journal_line: journal.count(),
             messages_tail: tail,

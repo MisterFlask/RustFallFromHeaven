@@ -143,6 +143,7 @@ persist_struct!(EventTriggeredData {
     id, trigger, turn, player, city, plot_x, plot_y, unit, other_player, other_player_city, religion,
     corporation, building, text, global_text,
 });
+persist_struct!(EventPopup { triggered, launched });
 persist_struct!(VoteSelectionSubData { vote, player, city, other_player, text });
 persist_struct!(VoteSelectionData { id, vote_source, vote_options });
 persist_struct!(VoteTriggeredData { id, vote_source, vote_option });
@@ -485,7 +486,7 @@ persist_struct!(Player {
     has_religion_count, has_corporation_count, upkeep_count, specialist_valid_count,
     researching_tech, loyal_member, civics, specialist_extra_yield, improvement_yield_change,
     triggers_fired, group_cycle, research_queue, city_names, plot_groups, cities, units, groups,
-    events_triggered, next_triggered_id, events_occured, event_countdown,
+    events_triggered, next_triggered_id, event_popups, events_occured, event_countdown,
     free_unit_combat_promotions, free_unit_class_promotions, votes, unit_extra_costs,
     score_history, economy_history, industry_history, agriculture_history, power_history,
     culture_history, ai_civic_timer, ai_religion_timer, ai_num_train_ai_units,

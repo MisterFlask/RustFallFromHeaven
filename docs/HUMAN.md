@@ -1415,8 +1415,8 @@ With `SessionOptions::saves_dir = DIR`: autosaves at every turn boundary in `DIR
 last 20, `T0057.ffhsave` = the end of turn 57) and `DIR/auto/start.ffhsave` at a new game's
 first control point, the journal `DIR/journal.jsonl` (one line per command, decision answer and turn
 checkpoint), manual saves `DIR/<name>.ffhsave`. A save is two files: `.ffhsave` (the game, any
-tool loads it) and `.ffhsess` (session state: your open event popups, the journal position, the
-latest messages and the turn report).
+tool loads it, your open event popups included) and `.ffhsess` (session state: the journal
+position, the latest messages and the turn report).
 
 ## Transports: `ffh-play agent` and `ffh-play serve`
 

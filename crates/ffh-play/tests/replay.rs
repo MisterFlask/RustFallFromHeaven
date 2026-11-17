@@ -61,12 +61,10 @@ fn t4_replay_journal() {
     eprintln!("replaying from {}", autos[0].display());
     let r = replay(lines.clone(), Some(ReplayFrom { save: &save, sidecar: sidecar.as_ref() }), SessionOptions::default()).unwrap_or_else(|e| panic!("replay from a save: {e}"));
     assert!(r.g.save() == final_save, "replay from an autosave ends in a different game");
-    // Without the sidecar the checkpoint is found by turn and checksum.
-    // (Without it no event popup is pending, so this holds only when none was.)
-    if sidecar.as_ref().is_some_and(|sc| sc.pending_events.is_empty()) {
-        let r = replay(lines.clone(), Some(ReplayFrom { save: &save, sidecar: None }), SessionOptions::default()).unwrap_or_else(|e| panic!("replay without sidecar: {e}"));
-        assert!(r.g.save() == final_save, "replay from an autosave without sidecar ends in a different game");
-    }
+    // Without the sidecar the checkpoint is found by turn and checksum (the event popups are in
+    // the save).
+    let r = replay(lines.clone(), Some(ReplayFrom { save: &save, sidecar: None }), SessionOptions::default()).unwrap_or_else(|e| panic!("replay without sidecar: {e}"));
+    assert!(r.g.save() == final_save, "replay from an autosave without sidecar ends in a different game");
 
     // A changed stamp is found at its line.
     let text = std::fs::read_to_string(&path).unwrap();

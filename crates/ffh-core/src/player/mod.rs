@@ -308,6 +308,10 @@ pub struct Player {
     pub events_triggered: Vec<EventTriggeredData>,
     /// Next id handed out for `events_triggered` (replaces the C++ free-list id counter).
     pub next_triggered_id: u32,
+    /// C++ the player's popup queue, its BUTTONPOPUP_EVENT entries: a human's triggered events
+    /// awaiting an answer, in trigger order (`player_trigger_data` queues one when the human's
+    /// controller defers the choice). Always empty for an AI player.
+    pub event_popups: Vec<EventPopup>,
     /// C++ `m_mapEventsOccured` (hash_map in C++; ordered here for determinism).
     pub events_occured: BTreeMap<EventType, EventTriggeredData>,
     /// C++ `m_mapEventCountdown`.
@@ -625,6 +629,7 @@ impl Player {
             groups: Vec::new(),
             events_triggered: Vec::new(),
             next_triggered_id: 0,
+            event_popups: Vec::new(),
             events_occured: BTreeMap::new(),
             event_countdown: BTreeMap::new(),
             free_unit_combat_promotions: Vec::new(),

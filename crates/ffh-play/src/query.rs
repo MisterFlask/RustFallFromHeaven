@@ -380,7 +380,7 @@ impl UiState {
 pub struct Ctx<'a> {
     /// The human player (the view's side).
     pub h: PlayerId,
-    /// The open event popups of the human (`SessionShared::open_events_of`).
+    /// The open event popups of the human (`human::open_events_of`).
     pub events: &'a [TriggeredId],
     /// The blocking decision being asked, if any (status phase `decision`).
     pub decision: Option<&'a Decision>,

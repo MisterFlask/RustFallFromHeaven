@@ -112,7 +112,6 @@ pub trait Answerer: Send + Sync {
 /// (`busy`); a query that panics is caught (design §2.4) and answered `busy`.
 pub struct DecisionReader<'a> {
     g: &'a Game,
-    shared: &'a SessionShared,
     ui: &'a Mutex<UiState>,
     decision: &'a Decision,
 }
@@ -129,7 +128,7 @@ impl DecisionReader<'_> {
 
     /// Answers a protocol query from the deciding player's side.
     pub fn query(&self, q: &Query) -> Result<Json, QueryErr> {
-        let events = self.shared.open_events_of(self.decision.player);
+        let events = open_events_of(self.g, self.decision.player);
         let ctx = Ctx {
             h: self.decision.player,
             events: &events,
@@ -188,22 +187,19 @@ impl Stats {
     }
 }
 
-/// A deferred event popup (C++ BUTTONPOPUP_EVENT in the player's popup queue).
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct DeferredEvent {
-    pub player: PlayerId,
-    pub triggered: TriggeredId,
-    /// Shown: the popup was launched at a control point (`launchEventPopup` found a doable
-    /// event). Before that it is only queued; once launched it stays open (C++ fixes the popup
-    /// when it is shown) until answered, closed by a forced end turn, or its data is gone.
-    pub launched: bool,
+/// Deferred event popups of `p` (queued or open), in order (`Player::event_popups`).
+pub fn events_of(g: &Game, p: PlayerId) -> Vec<TriggeredId> {
+    g.players[p].event_popups.iter().map(|e| e.triggered).collect()
+}
+
+/// The event popups of `p` on screen (launched), in order: what `pending` lists and the
+/// `event` command answers.
+pub fn open_events_of(g: &Game, p: PlayerId) -> Vec<TriggeredId> {
+    g.players[p].event_popups.iter().filter(|e| e.launched).map(|e| e.triggered).collect()
 }
 
 /// Session state the controller shares with the session (design §3).
 pub struct SessionShared {
-    /// Deferred event popups in trigger order (C++ the player's popup queue; saved in the
-    /// sidecar).
-    pub pending_events: Mutex<Vec<DeferredEvent>>,
     pub next_decision: AtomicU32,
     /// The decision being asked, if any (saving is refused meanwhile).
     pub open_decision: Mutex<Option<Decision>>,
@@ -218,7 +214,6 @@ pub struct SessionShared {
 impl SessionShared {
     pub fn new(journal: Journal) -> SessionShared {
         SessionShared {
-            pending_events: Mutex::new(Vec::new()),
             next_decision: AtomicU32::new(1),
             open_decision: Mutex::new(None),
             journal: Mutex::new(journal),
@@ -231,17 +226,6 @@ impl SessionShared {
     /// while `advance` runs: `Session::advance` journals and applies it).
     pub fn request_stop_autoplay(&self) {
         self.stop_autoplay.store(true, Ordering::SeqCst);
-    }
-
-    /// Deferred events of `p` (queued or open), in order.
-    pub fn events_of(&self, p: PlayerId) -> Vec<TriggeredId> {
-        self.pending_events.lock().unwrap().iter().filter(|e| e.player == p).map(|e| e.triggered).collect()
-    }
-
-    /// The event popups of `p` on screen (launched), in order: what `pending` lists and the
-    /// `event` command answers.
-    pub fn open_events_of(&self, p: PlayerId) -> Vec<TriggeredId> {
-        self.pending_events.lock().unwrap().iter().filter(|e| e.player == p && e.launched).map(|e| e.triggered).collect()
     }
 
     pub fn decision_open(&self) -> bool {
@@ -280,7 +264,7 @@ impl HumanController {
         // the decision): the decision's view is a new one, and so is the view after it.
         UiState::lock(&self.ui).view_version += 1;
         let answer = {
-            let reader = DecisionReader { g, shared: &self.shared, ui: &self.ui, decision: &d };
+            let reader = DecisionReader { g, ui: &self.ui, decision: &d };
             self.answerer.ask_with(&reader, &d)
         };
         *self.shared.open_decision.lock().unwrap() = None;
@@ -430,15 +414,14 @@ impl Controller for HumanController {
         Some(self.block(g, decision::settlement(g, p, c, advice)) == 1)
     }
 
-    /// C++ `CvPlayer::trigger` for a human queues BUTTONPOPUP_EVENT: deferred (F7), the
-    /// triggered data stays pending until answered with `event`.
+    /// C++ `CvPlayer::trigger` for a human queues BUTTONPOPUP_EVENT: deferred (F7). The rules
+    /// queue the popup on a `None` (`Player::event_popups`); the triggered data stays pending
+    /// until answered with `event`.
     fn choose_event(&self, g: &Game, p: PlayerId, t: &EventTriggeredData, options: &[EventType]) -> Option<EventType> {
         if !g.players[p].human {
             return self.advisor.choose_event(g, p, t, options);
         }
-        let mut pending = self.shared.pending_events.lock().unwrap();
-        if !pending.iter().any(|e| (e.player, e.triggered) == (p, t.id)) {
-            pending.push(DeferredEvent { player: p, triggered: t.id, launched: false });
+        if !g.players[p].event_popups.iter().any(|e| e.triggered == t.id) {
             self.shared.stats.lock().unwrap().events_deferred += 1;
         }
         None

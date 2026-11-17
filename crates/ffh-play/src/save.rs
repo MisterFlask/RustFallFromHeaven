@@ -1,16 +1,15 @@
 //! Save bundles (design §2.6): `<name>.ffhsave` holds plain `Game::save()` bytes (loadable by any
-//! tool); `<name>.ffhsess` is a small JSON sidecar with the session state the rules need that is
-//! not in `Game`: the deferred event popups (C++ keeps them in the player's popup queue, which
-//! its saves include). Autosaves are a ring of the last N turn boundaries in `<dir>/auto/`.
+//! tool); `<name>.ffhsess` is a small JSON sidecar with the session's own state: the human, the
+//! journal, the latest messages and report, the AutoMoves rule's state. The rules' state, a
+//! human's deferred event popups included (`Player::event_popups`), is all in `Game`.
+//! Autosaves are a ring of the last N turn boundaries in `<dir>/auto/`.
 
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use ffh_core::ids::{PlayerId, TriggeredId};
+use ffh_core::ids::PlayerId;
 use ffh_core::log::LogEntry;
-
-use crate::human::DeferredEvent;
 
 use crate::json::{FieldError, Json};
 
@@ -28,9 +27,6 @@ pub struct Sidecar {
     pub to_play: i32,
     /// The game's settings (`NewGame`, type names; absent: unknown), quoted by flags.
     pub setup: Option<Json>,
-    /// Deferred event popups, in order (`[player, triggered id, launched]`; a version 1 pair
-    /// without `launched` reads as not yet launched).
-    pub pending_events: Vec<DeferredEvent>,
     /// The journal of the session that saved (for bug reports).
     pub journal: Option<String>,
     /// Lines that journal had when saving.
@@ -76,7 +72,6 @@ impl Sidecar {
             "observe" => self.observe,
             "to_play" => self.to_play,
             "setup" => self.setup.clone(),
-            "pending_events" => Json::Arr(self.pending_events.iter().map(|e| crate::jarr![e.player, e.triggered, e.launched]).collect()),
             "journal" => self.journal.as_deref(),
             "journal_line" => self.journal_line,
             "messages_tail" => Json::Arr(self.messages_tail.iter().map(log_entry_json).collect()),
@@ -93,27 +88,14 @@ impl Sidecar {
             SIDECAR_VERSION => {}
             v => return Err(format!("sidecar version {v} is not supported (expected {SIDECAR_VERSION})")),
         }
-        let mut pending_events = Vec::new();
-        for (i, pair) in j.req_arr("pending_events").map_err(e)?.iter().enumerate() {
-            let p = pair.at(0).and_then(|v| v.as_i64()).and_then(|v| u8::try_from(v).ok());
-            let id = pair.at(1).and_then(|v| v.as_i64()).and_then(|v| u32::try_from(v).ok());
-            let launched = match pair.as_arr().map(<[Json]>::len) {
-                Some(2) => Some(false),
-                Some(3) => pair.at(2).and_then(Json::as_bool),
-                _ => None,
-            };
-            match (p, id, launched) {
-                (Some(p), Some(id), Some(launched)) => pending_events.push(DeferredEvent { player: PlayerId(p), triggered: TriggeredId(id), launched }),
-                _ => return Err(format!("field `pending_events`: element {i}: expected [player, triggered id, launched]")),
-            }
-        }
+        // `pending_events` (the event popups, before they were saved in `Game`) is ignored: the
+        // save of such a sidecar has an older format, which `Game::load` refuses.
         let messages_tail = j.req_arr("messages_tail").map_err(e)?.iter().map(log_entry_from).collect::<Result<_, _>>().map_err(e)?;
         Ok(Sidecar {
             human: j.req("human").map_err(e)?,
             observe: j.get_or("observe", false).map_err(e)?,
             to_play: j.get_or("to_play", 0i32).map_err(e)?,
             setup: j.opt_value("setup").map_err(e)?.filter(|v| !v.is_null()).cloned(),
-            pending_events,
             journal: j.opt("journal").map_err(e)?,
             journal_line: j.req("journal_line").map_err(e)?,
             messages_tail,
@@ -245,7 +227,6 @@ mod tests {
             observe: false,
             to_play: 0,
             setup: None,
-            pending_events: vec![DeferredEvent { player: PlayerId(0), triggered: TriggeredId(7), launched: true }],
             journal: Some("saves/journal.jsonl".into()),
             journal_line: 12,
             messages_tail: vec![LogEntry { at: Some((4, 5)), ..LogEntry::new(3, Some(0), "hi \"there\"".into()) }],
@@ -260,7 +241,7 @@ mod tests {
         let old = Sidecar::from_json(&old).unwrap();
         assert!(!old.auto_moves_tried);
         assert!(old.report_snapshot.is_none() && old.report.is_none());
-        assert_eq!(old.pending_events, [DeferredEvent { player: PlayerId(0), triggered: TriggeredId(4), launched: false }]);
+        assert_eq!(old.journal_line, 3, "an older sidecar's `pending_events` is ignored");
 
         let dir = std::env::temp_dir().join(format!("ffh-play-save-test-{}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);

@@ -947,8 +947,17 @@ impl Game {
 
         // C++ human: BUTTONPOPUP_EVENT; AI: AI_chooseEvent(kData.getID()).
         let event = self.controller(p).choose_event(self, p, &triggered, &options);
-        if let Some(event) = event {
-            self.player_apply_event(p, event, triggered.id, true);
+        match event {
+            Some(event) => self.player_apply_event(p, event, triggered.id, true),
+            // A human's deferred choice: the popup joins the player's queue (once), and the
+            // human answers it later (`player_apply_event`).
+            None if self.players[p].human => {
+                let popups = &mut self.players[p].event_popups;
+                if !popups.iter().any(|e| e.triggered == triggered.id) {
+                    popups.push(EventPopup { triggered: triggered.id, launched: false });
+                }
+            }
+            None => {}
         }
     }
 

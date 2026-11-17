@@ -155,6 +155,19 @@ pub struct EventTriggeredData {
     pub global_text: String,
 }
 
+/// C++ BUTTONPOPUP_EVENT in a human player's popup queue (`CvPlayer::trigger`): a triggered
+/// event the human has yet to answer (`Player::event_popups`). The rules only queue it; the
+/// human's client shows it and answers it with `player_apply_event`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct EventPopup {
+    /// The triggered data (`Player::events_triggered`) the popup offers.
+    pub triggered: TriggeredId,
+    /// Shown: the popup was launched at a control point (`launchEventPopup` found a doable
+    /// event). Before that it is only queued; once launched it stays open (C++ fixes the popup
+    /// when it is shown) until answered, closed by a forced end turn, or its data is gone.
+    pub launched: bool,
+}
+
 /// C++ `VoteSelectionSubData`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VoteSelectionSubData {

@@ -14,7 +14,7 @@ use ffh_core::structs::*;
 use ffh_data::*;
 use ffh_play::command::{CmdErr, CmdOk, Command, Confirm};
 use ffh_play::decision::{Decision, DecisionKind};
-use ffh_play::human::{AdvisorAnswerer, Answer, Answerer, FnAnswerer, HumanController, SessionShared};
+use ffh_play::human::{events_of, open_events_of, AdvisorAnswerer, Answer, Answerer, FnAnswerer, HumanController, SessionShared};
 use ffh_play::journal::Journal;
 use ffh_core::log::LogEntry;
 use ffh_play::view::fog::LogFog;
@@ -186,9 +186,9 @@ fn queue_event(s: &mut Session, which: impl Fn(&GameData, EventTriggerType) -> b
     let h = s.human;
     let d = s.g.d;
     for t in d.event_triggers.keys().filter(|&t| which(d, t)) {
-        let before = s.shared.events_of(h);
+        let before = events_of(&s.g, h);
         s.g.player_init_triggered_data(h, t, true, None, INVALID_PLOT_COORD, INVALID_PLOT_COORD, None, None, None, None, None, None);
-        if let Some(&id) = s.shared.events_of(h).iter().find(|id| !before.contains(id)) {
+        if let Some(&id) = events_of(&s.g, h).iter().find(|id| !before.contains(id)) {
             return Some(id);
         }
     }
@@ -200,7 +200,7 @@ fn queue_event(s: &mut Session, which: impl Fn(&GameData, EventTriggerType) -> b
 fn fire_event(s: &mut Session) -> TriggeredId {
     let id = queue_event(s, |_, _| true).expect("no trigger fires for the human");
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
-    assert!(s.shared.open_events_of(s.human).contains(&id), "shown at the control point");
+    assert!(open_events_of(&s.g, s.human).contains(&id), "shown at the control point");
     id
 }
 
@@ -240,13 +240,13 @@ fn events_are_deferred_until_answered() {
     assert!(s.pending().events.iter().any(|e| e.triggered == id2));
     ok(&mut s, Command::EndTurn { force: true });
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
-    assert!(!s.shared.events_of(h).contains(&id2));
+    assert!(!events_of(&s.g, h).contains(&id2));
 
     // Re-filtered: a pending event whose data is gone is dropped at the next control point.
     let id3 = fire_event(&mut s);
     s.g.player_delete_event_triggered(h, id3);
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
-    assert!(!s.shared.events_of(h).contains(&id3));
+    assert!(!events_of(&s.g, h).contains(&id3));
 }
 
 /// `launchEventPopup` checks an event popup once, when it is shown: one with nothing doable then
@@ -272,16 +272,16 @@ fn event_popups_are_checked_once_when_shown() {
 
     // Nothing doable when it would be shown: dropped unshown.
     let id = queue_event(&mut s, city_trigger).expect("a city event fires");
-    assert!(!s.shared.open_events_of(h).contains(&id), "queued, not yet shown");
+    assert!(!open_events_of(&s.g, h).contains(&id), "queued, not yet shown");
     let city = set_city(&mut s, id, gone);
     assert!(city.is_some());
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
-    assert!(!s.shared.events_of(h).contains(&id), "dropped when it would be shown");
+    assert!(!events_of(&s.g, h).contains(&id), "dropped when it would be shown");
 
     // Shown, then nothing doable: still open, with every option disabled.
     let id = queue_event(&mut s, city_trigger).expect("another city event fires");
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
-    assert!(s.shared.open_events_of(h).contains(&id));
+    assert!(open_events_of(&s.g, h).contains(&id));
     let city = set_city(&mut s, id, gone);
     ok(&mut s, Command::SetOption { option: PlayerOptionType::PLAYEROPTION_QUICK_MOVES, value: true });
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
@@ -297,7 +297,47 @@ fn event_popups_are_checked_once_when_shown() {
     set_city(&mut s, id, city);
     let event = s.pending().events.into_iter().find(|e| e.triggered == id).unwrap().options.into_iter().find(|o| o.enabled).expect("an option is doable again").event;
     ok(&mut s, Command::Event { triggered: id, event });
-    assert!(!s.shared.events_of(h).contains(&id));
+    assert!(!events_of(&s.g, h).contains(&id));
+}
+
+/// The event popups are rules state in `Game` (`Player::event_popups`, C++ the player's popup
+/// queue): a bare `Game::save()` keeps a human's queued and shown popups, a save loaded without
+/// its sidecar shows them, and an AI player never queues one.
+#[test]
+fn event_popups_are_saved_in_the_game() {
+    let (mut s, _) = duel(14, |_, _| 0);
+    to_turn(&mut s, 3);
+    let h = s.human;
+    let shown = fire_event(&mut s);
+    let queued = queue_event(&mut s, |_, _| true).expect("a second trigger fires for the human");
+    let popups = s.g.players[h].event_popups.clone();
+    assert!(popups.contains(&EventPopup { triggered: shown, launched: true }));
+    assert!(popups.contains(&EventPopup { triggered: queued, launched: false }));
+
+    // A bare save round trip.
+    let g = Game::load(s.g.d, &s.g.save()).unwrap();
+    assert_eq!(g.players[h].event_popups, popups);
+
+    // A save loaded without its sidecar: the shown popup is still open.
+    let (bytes, _) = s.save_bytes().unwrap();
+    let mut r = Session::load(&bytes, None, Arc::new(AdvisorAnswerer), SessionOptions::default()).unwrap();
+    assert_eq!(r.human, h);
+    assert_eq!(r.g.players[h].event_popups, popups);
+    assert_eq!(r.advance(&mut |_| {}), Stop::Human);
+    assert!(open_events_of(&r.g, h).contains(&shown));
+    assert!(r.pending().events.iter().any(|e| e.triggered == shown));
+
+    // AI players choose at once: no popup is ever queued for them.
+    assert!(s.g.civ_player_ids().filter(|&p| p != h).all(|p| s.g.players[p].event_popups.is_empty()));
+    let ai = s.g.civ_player_ids().find(|&p| p != h && s.g.players[p].alive).unwrap();
+    let triggered = s.g.players[ai].next_triggered_id;
+    // The human's triggers (forcing every trigger with no data is not a situation the rules meet).
+    let triggers: Vec<_> = [shown, queued].iter().map(|&id| s.g.player_get_event_triggered(h, id).unwrap().trigger).collect();
+    for t in triggers {
+        s.g.player_init_triggered_data(ai, t, true, None, INVALID_PLOT_COORD, INVALID_PLOT_COORD, None, None, None, None, None, None);
+    }
+    assert!(s.g.players[ai].next_triggered_id > triggered, "some trigger fired for the AI");
+    assert!(s.g.players[ai].event_popups.is_empty());
 }
 
 /// The game log reaches the human as C++ `addMessage` would: untagged entries only under their
@@ -522,7 +562,8 @@ fn autoplay_delegates_to_the_advisor() {
     let options = [EventType(0), EventType(1)];
     assert_eq!(hc.choose_event(g, h, &data, &options), advisor.choose_event(g, h, &data, &options));
     assert!(hc.choose_event(g, h, &data, &options).is_some());
-    assert!(shared.pending_events.lock().unwrap().is_empty());
+    assert_eq!(shared.stats.lock().unwrap().events_deferred, 0);
+    assert!(g.players[h].event_popups.is_empty());
     g.player_set_disable_human(h, false);
 }
 
