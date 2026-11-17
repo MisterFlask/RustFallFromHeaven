@@ -174,12 +174,13 @@ pub fn ai_willing_to_talk(g: &Game, ai: PlayerId, other: PlayerId) -> bool {
 
 /// Why the human cannot trade with `with` (or `Ok`): a met, alive civilization it can contact
 /// and that is willing to talk ([`ai_willing_to_talk`]).
-pub fn contact(g: &Game, h: PlayerId, with: PlayerId) -> Result<(), String> {
+/// Met as `v` knows it: a command's check passes a viewer without debug reveal.
+pub fn contact(v: &Viewer, with: PlayerId) -> Result<(), String> {
+    let (g, h) = (v.g, v.h);
     if !g.is_civ_player_slot(with) || with == h || g.player_is_barbarian(with) {
         return Err(format!("player {} is not another civilization", with.0));
     }
-    let team = g.players[h].team;
-    if !g.players[with].alive || !g.teams[team].has_met[g.players[with].team] {
+    if !g.players[with].alive || !v.player_met(with) {
         return Err(format!("player {} is unknown or dead", with.0));
     }
     if !g.player_can_contact(h, with) {
@@ -201,7 +202,7 @@ pub fn trade(v: &Viewer, with: PlayerId) -> Result<Json, QueryErr> {
     if !g.is_civ_player_slot(with) || with == v.h || g.player_is_barbarian(with) || !v.player_met(with) {
         return Err(invalid(format!("field `with`: player {} is not a civilization the human knows", with.0)));
     }
-    let can = contact(g, v.h, with);
+    let can = contact(v, with);
     let (ours, theirs) = if can.is_ok() { (trade_table(g, v.h, with), trade_table(g, with, v.h)) } else { (Vec::new(), Vec::new()) };
     let troops = if can.is_ok() { troops(v, with) } else { Json::Null };
     Ok(crate::jobj! {
@@ -310,7 +311,8 @@ pub fn check_deal(g: &Game, h: PlayerId, to: PlayerId, give: &[TradeData], get: 
     if to.idx() >= g.num_players() {
         return Err(CmdErr::Invalid(format!("field `to`: player {} out of range", to.0)));
     }
-    contact(g, h, to).map_err(CmdErr::Cannot)?;
+    // A command acts on the rules' state: debug reveal does not make an unmet civilization met.
+    contact(&Viewer::new(g, h, false), to).map_err(CmdErr::Cannot)?;
     if give.is_empty() && get.is_empty() {
         return Err(CmdErr::Invalid("an empty deal".into()));
     }

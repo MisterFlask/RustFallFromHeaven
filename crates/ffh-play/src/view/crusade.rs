@@ -145,7 +145,7 @@ pub fn crusades(v: &Viewer) -> Json {
         .collect();
     // Who fights whom among the teams the human has met (as the foreign advisor shows it), for
     // the loans it may propose.
-    let met: Vec<ffh_core::ids::TeamId> = g.civ_team_ids().filter(|&t| g.team_is_alive(t) && (t == v.team || g.teams[v.team].has_met[t] || v.reveal)).collect();
+    let met: Vec<ffh_core::ids::TeamId> = g.civ_team_ids().filter(|&t| g.team_is_alive(t) && v.team_met(t)).collect();
     let mut wars = Vec::new();
     for (i, &a) in met.iter().enumerate() {
         for &b in &met[i + 1..] {
