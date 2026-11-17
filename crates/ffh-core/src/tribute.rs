@@ -37,6 +37,13 @@ impl Game {
         (value / self.gift_tier().max(1)).clamp(0, GIFT_MAX_RELATIONS)
     }
 
+    /// The steps of [`Game::gift_relations`]: `(threshold, relations)` for each relations value
+    /// above 0, in increasing order, the threshold the least total value that gives it (the
+    /// diplomacy screen reads them, so it holds no formula).
+    pub fn gift_steps(&self) -> Vec<(i32, i32)> {
+        (1..=GIFT_MAX_RELATIONS).map(|n| (n * self.gift_tier().max(1), n)).collect()
+    }
+
     /// The tributes `p` recorded about `other` that still count (the last [`TRIBUTE_TURNS`]
     /// turns): gifts received (`demand` false) or demands paid (`demand` true).
     pub fn tributes(&self, p: PlayerId, other: PlayerId, demand: bool) -> impl Iterator<Item = &Tribute> + '_ {
@@ -115,6 +122,22 @@ mod tests {
         g.teams[ta].has_met[tb] = true;
         g.teams[tb].has_met[ta] = true;
         g
+    }
+
+    /// The gift steps are where `gift_relations` steps up: each threshold gives its relations,
+    /// one point less gives the step below.
+    #[test]
+    fn gift_steps_are_gift_relations_steps() {
+        let g = two_player_game();
+        let steps = g.gift_steps();
+        assert_eq!(steps.len() as i32, GIFT_MAX_RELATIONS);
+        let mut below = 0;
+        for &(at, n) in &steps {
+            assert_eq!(g.gift_relations(at), n);
+            assert_eq!(g.gift_relations(at - 1), below);
+            below = n;
+        }
+        assert_eq!(g.gift_relations(steps.last().unwrap().0 * 10), below);
     }
 
     /// Values every item at 100 points, as a stand-in for an AI's judgement.

@@ -224,8 +224,9 @@ fn tribute_json(g: &Game, ai: PlayerId, h: PlayerId) -> Json {
         "gifts" => crate::jobj! {
             "value" => g.gifts_value(ai, h),
             "relations" => gift_relations,
-            "tier" => g.gift_tier(),
-            "max_relations" => GIFT_MAX_RELATIONS,
+            // `[threshold, relations]` per step, increasing: the relations a total value at or
+            // above the threshold gives (the rules' `gift_steps`).
+            "steps" => Json::Arr(g.gift_steps().into_iter().map(|(at, n)| Json::Arr(vec![Json::from(at), Json::from(n)])).collect()),
         },
         "demands" => crate::jobj! {
             "value" => g.demands_value(ai, h),

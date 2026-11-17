@@ -1680,6 +1680,16 @@ impl Game {
         // UI: info pane, city screen and colored plots dirty bits.
     }
 
+    /// Whether [`Game::city_alter_working_plot`] acts on plot `index` of city `c`: the centre
+    /// (automates the citizens), a plot the city can work, or a plot of the city's owner (the
+    /// working override).
+    pub fn city_can_alter_working_plot(&self, c: CityId, index: usize) -> bool {
+        if index == CITY_HOME_PLOT {
+            return true;
+        }
+        self.city_index_plot(c, index).is_some_and(|plot| self.city_can_work(c, plot) || self.map.plots[plot].owner == Some(self.cities[c].owner))
+    }
+
     /// C++ `CvCity::alterWorkingPlot` (CvCity.cpp:10375-10423): the player clicking a city
     /// plot (governor calls `AI_addBestCitizen` / `AI_removeWorstCitizen`).
     pub fn city_alter_working_plot(&mut self, c: CityId, index: usize) {

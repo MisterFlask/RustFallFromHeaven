@@ -688,7 +688,14 @@ fn gifts_and_cancelled_deals_through_the_protocol() {
     let value = a.get("margin").and_then(Json::as_i64).unwrap();
     assert_eq!(applied(&mut s, Command::ProposeDeal { to: ai, give: gift, get: vec![] }), Some(true));
     assert_eq!(gifts(&s, "value"), value, "recorded at the value the answer gave");
-    assert_eq!(gifts(&s, "relations"), (value / gifts(&s, "tier")).min(gifts(&s, "max_relations")));
+    // The relations are the highest served step at or under the value (the screen's reading).
+    let steps: Vec<(i64, i64)> = tribute(&s).get("gifts").unwrap().get("steps").and_then(Json::as_arr).unwrap().iter().map(|st| {
+        let st = st.as_arr().unwrap();
+        (st[0].as_i64().unwrap(), st[1].as_i64().unwrap())
+    }).collect();
+    assert!(!steps.is_empty());
+    let read = steps.iter().filter(|&&(at, _)| value >= at).map(|&(_, n)| n).last().unwrap_or(0);
+    assert_eq!(gifts(&s, "relations"), read);
 
     // Open borders, a standing deal: not cancelled before its first turns.
     let ob = vec![item(TradeableItem::TRADE_OPEN_BORDERS, 0)];

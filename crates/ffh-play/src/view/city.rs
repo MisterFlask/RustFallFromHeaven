@@ -350,6 +350,10 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
             // A click on it works it or stops working it (`alterWorkingPlot`); else, on our
             // plot, it takes the plot from the city working it (the working override).
             "can_work" => g.city_can_work(c, p),
+            // A click on it does something (`do_task CHANGE_WORKING_PLOT`: the rules'
+            // `city_can_alter_working_plot`: the centre automates the citizens), on a plot the
+            // viewer has seen.
+            "can_alter" => v.plot_revealed(p) && g.city_can_alter_working_plot(c, i),
             "worked_by" => pl.working_city.filter(|&w| w != c && v.city_revealed(w)),
             "override" => pl.working_city_override,
             "yields" => if v.plot_visible(p) { Json::from(pl.yields.to_vec()) } else { Json::Null },

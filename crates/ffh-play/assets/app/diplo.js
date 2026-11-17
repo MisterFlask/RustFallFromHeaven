@@ -325,12 +325,15 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
     return null;
   };
   const summary = h("div.trade-summary", { hidden: true });
-  // A gift's lines: what they recorded of your gifts, this gift, the relations after it, the tiers.
+  // A gift's lines: what they recorded of your gifts, this gift, the relations after it, the tiers
+  // (the engine's `steps`, `[threshold, relations]` increasing: the highest at or under the total
+  // gives the relations).
   const giftLines = (tr, offered) => {
     const g = tr.gifts;
-    const after = Math.min(Math.floor((g.value + offered) / g.tier), g.max_relations);
-    const tiers = [`<${g.tier}: no effect`];
-    for (let n = 1; n <= g.max_relations; n++) tiers.push(n < g.max_relations ? `${n * g.tier}-${(n + 1) * g.tier}: +${n} relations` : `${n * g.tier} or more: +${n} relations`);
+    const steps = g.steps ?? [];
+    const after = steps.reduce((rel, [at, n]) => (g.value + offered >= at ? n : rel), 0);
+    const tiers = steps.length ? [`<${steps[0][0]}: no effect`] : [];
+    steps.forEach(([at, n], i) => tiers.push(i + 1 < steps.length ? `${at}-${steps[i + 1][0]}: +${n} relations` : `${at} or more: +${n} relations`));
     return [
       h("div", `Current value of gifts: ${g.value}.`),
       h("div", `Value of this gift: ${offered}.`),

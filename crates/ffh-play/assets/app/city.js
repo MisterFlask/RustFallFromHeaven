@@ -175,7 +175,7 @@ export async function openCity(id, { popup = false } = {}) {
     if (overlay) {
       const mine = me()?.player;
       // A click works the plot of the city these plots are of (Previous / Next may have moved on).
-      emit("city-overlay", { id: c.id, x: c.x, y: c.y, owner: c.owner, plots: c.plots, onPlot: (p) => cityId === c.id && workable(p, mine) && task("TASK_CHANGE_WORKING_PLOT", p.i), tipOf: (p) => plotTipNodes(p, mine, c) });
+      emit("city-overlay", { id: c.id, x: c.x, y: c.y, owner: c.owner, plots: c.plots, onPlot: (p) => cityId === c.id && workable(p) && task("TASK_CHANGE_WORKING_PLOT", p.i), tipOf: (p) => plotTipNodes(p, mine, c) });
     }
   };
   m.setButtons(
@@ -224,10 +224,10 @@ function buildIcon(order, type) {
   return el;
 }
 
-/** Whether a click on city plot `p` does something: the centre (automates the citizens) or a
- *  revealed plot of `mine`. */
-function workable(p, mine) {
-  return (p.i === 0 || p.owner === mine) && !!p.revealed;
+/** Whether a click on city plot `p` does something (the view's `can_alter`: the centre automates
+ *  the citizens). */
+function workable(p) {
+  return !!p.can_alter;
 }
 
 /** What a click on city plot `p` does (the grid's tooltip; the map's in the overlay). */
@@ -278,7 +278,7 @@ function plotGrid(c, task) {
             class: cls,
             title: plotTip(p, mine),
             "data-i": p.i,
-            disabled: !workable(p, mine),
+            disabled: !workable(p),
             onclick: () => task("TASK_CHANGE_WORKING_PLOT", p.i),
           },
           centre ? h("span.ccity", "★") : null,
