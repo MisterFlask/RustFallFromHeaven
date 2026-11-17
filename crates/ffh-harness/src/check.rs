@@ -39,6 +39,10 @@ pub fn check(g: &Game) {
     if !stale.is_empty() {
         fail(format!("the cached range field at sea of teams {stale:?} is stale"));
     }
+    // The outposts' trade network cached with them (outposts.rs) equals a fresh build.
+    if g.outpost_net_cache_stale() {
+        fail("the cached outposts' network is stale".to_string());
+    }
     // The seas' stored control and blockade (docs/NAVAL.md, 4.3) equal a fresh computation.
     let stale = g.sea_control_stale();
     if !stale.is_empty() {

@@ -27,8 +27,11 @@
 //! `Game::sea_range` (not saved) and checked on every read against what it was computed from
 //! (which teams' cities are the team's ports, which team each player is on); the cities and the
 //! plots' water and passability clear it when they change (`Game::sea_range_invalidate`, called
-//! by the city and plot setters, and when an outpost starts or stops starving: outposts.rs). A
-//! read from the cache equals a fresh computation, so the cache cannot change a game's course.
+//! by the city and plot setters, and when an outpost starts or stops starving: outposts.rs). The
+//! outposts' trade network (outposts.rs: their open lanes and cut-off plots by team) is cached
+//! alongside, built from the cities on first read and dropped by the same invalidation. A read
+//! from the cache equals a fresh computation, so the cache cannot change a game's course; tools
+//! check both (`Game::sea_range_cache_stale`, `Game::outpost_net_cache_stale`).
 
 use std::cell::RefCell;
 

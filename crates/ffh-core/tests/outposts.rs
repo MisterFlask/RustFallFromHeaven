@@ -318,6 +318,24 @@ fn an_open_lane_carries_trade() {
 }
 
 #[test]
+fn a_stale_outpost_network_is_reported() {
+    let mut w = world();
+    let c = w.outpost();
+    assert!(!w.g.cities[c].lane.is_empty(), "an open lane");
+    let on = w.g.cities[c].lane[0];
+    // A read fills the cache.
+    assert!(w.g.plot_on_outpost_lane(on, w.t0()));
+    assert!(!w.g.outpost_net_cache_stale());
+    // The flag flipped behind the cache's back: the cached network no longer matches the cities.
+    w.g.cities[c].outpost = false;
+    assert!(w.g.outpost_net_cache_stale());
+    w.g.sea_range_invalidate();
+    assert!(!w.g.outpost_net_cache_stale());
+    assert!(!w.g.plot_on_outpost_lane(on, w.t0()));
+    assert!(!w.g.outpost_net_cache_stale());
+}
+
+#[test]
 fn a_cut_lane_pays_the_holder_and_starves_the_outpost() {
     let mut w = world();
     let c = w.outpost();

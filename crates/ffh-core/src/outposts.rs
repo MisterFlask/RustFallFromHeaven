@@ -96,7 +96,7 @@ pub struct FarShoreReport {
 
 /// The outposts' share of the trade network, by plot (outposts.rs module comment): a bit per
 /// team. Derived from the cities; cached with the sea's range fields (`SeaRangeCache`).
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct OutpostNet {
     /// Per plot: the teams with an open outpost lane over it (empty: no outpost lane at all).
     lane: Vec<u64>,
@@ -703,6 +703,14 @@ impl Game {
             cache.outpost_net = Some(net);
         }
         out
+    }
+
+    /// Whether the cached outposts' network differs from a fresh build (a check for tools, as
+    /// `sea_range_cache_stale` for the range fields: the cache must never change a game's course;
+    /// false when it holds or nothing is cached).
+    pub fn outpost_net_cache_stale(&self) -> bool {
+        let cache = self.sea_range.borrow();
+        cache.outpost_net.as_ref().is_some_and(|net| *net != self.outpost_net_build())
     }
 
     /// Builds the outposts' network from the cities (module comment).
