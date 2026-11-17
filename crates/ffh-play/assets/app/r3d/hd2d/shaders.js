@@ -481,14 +481,23 @@ uniform vec2 uTan;
 uniform mat4 uInvView;
 uniform float uMoodAmount;
 uniform float uLand;
+uniform float uDoom;
+uniform float uDusk;
 uniform float uFarDepth;
 out vec4 o;
 vec3 sat(vec3 c, float s) { float l = lum(c); return mix(vec3(l), c, s); }
+// The hue in degrees (0 red, 60 yellow, 120 green, 240 blue) and the chroma's share of the value.
+vec2 hueSat(vec3 c) {
+  float mx = max(c.r, max(c.g, c.b)), mn = min(c.r, min(c.g, c.b));
+  float ch = mx - mn;
+  float hue = ch < 1e-4 ? 0.0 : mx == c.r ? 60.0 * mod((c.g - c.b) / ch, 6.0) : mx == c.g ? 60.0 * ((c.b - c.r) / ch + 2.0) : 60.0 * ((c.r - c.g) / ch + 4.0);
+  return vec2(hue, ch / max(mx, 1e-4));
+}
 void main() {
   vec4 src = texture(uSrc, vUv);
   vec3 col = src.rgb;
   vec4 nd = texture(uND, vUv);
-  if ((uMoodAmount <= 0.0 && uLand <= 0.0) || nd.w <= 0.0) { o = src; return; }
+  if ((uMoodAmount <= 0.0 && uLand <= 0.0 && uDoom <= 0.0 && uDusk <= 0.0) || nd.w <= 0.0) { o = src; return; }
   vec3 vp = vec3((vUv * 2.0 - 1.0) * uTan * nd.w, -nd.w);
   vec3 wp = (uInvView * vec4(vp, 1.0)).xyz;
   vec2 m = vec2(wp.x, -wp.z);
@@ -530,7 +539,10 @@ void main() {
   // And its ground is split by glowing cracks: a world-anchored network (the edges of cells about
   // a plot across), pulsing slowly, on the ground only (a surface facing up, not a card).
   // (The ground: the painted one's keep mask is under 0.85, the pixel-art one's 0.87; a card's 0.9.)
-  if (hell > 0.05 && src.a < 0.885) {
+  // (Late toward the end of the world, the cracks open on every land: uDoom.)
+  // (Not on the water: its keep mask is its glints', mostly 0; the ground's is 0.87.)
+  float rift = max(hell, smoothstep(0.45, 1.0, uDoom) * 0.62 * step(0.6, src.a));
+  if (rift > 0.05 && src.a < 0.885) {
     vec3 wn = mat3(uInvView) * nd.xyz;
     float up = smoothstep(0.5, 0.85, wn.y);
     vec2 c = mcells(m + warp * 0.6, 0.95);
@@ -541,7 +553,7 @@ void main() {
     float open = smoothstep(0.42, 0.62, mnoise(m + 41.0, 1.6));
     float pulse = 0.75 + 0.25 * sin(uTime * 1.2 + c.x * 7.0 + m.x * 0.9);
     vec3 lava = vec3(1.0, 0.46, 0.12);
-    float k2 = smoothstep(0.3, 0.85, hell) * up * pulse * open;
+    float k2 = smoothstep(0.3, 0.85, rift) * up * pulse * open;
     col += lava * halo * k2 * 0.14;
     col = mix(col, mix(lava, vec3(1.0, 0.86, 0.5), crack * 0.4), crack * k2 * 0.75);
   }
@@ -585,6 +597,37 @@ void main() {
     col = mix(col, pow(max(col, vec3(0.0)), vec3(0.84)), uLand * ground);
     float dark = 1.0 - smoothstep(0.02, 0.3, lum(col));
     col = mix(col, max(col, vec3(0.0)) * 0.85 + vec3(0.075, 0.08, 0.05), dark * 0.4 * uLand * ground);
+  }
+  // The end of the world (the Armageddon counter, uDoom 0..1; docs/HD2D.md §6): the foliage
+  // withers to olive-brown, the sea turns blood-red, the land darkens under a red cast, the shade
+  // goes to maroon, the distance to an ember haze and the corners close in -- while what glows
+  // (lava, fire, mana, the towns' lights: the emission) keeps its heat and stands out the more.
+  if (uDoom > 0.0 || uDusk > 0.0) {
+    float d = uDoom;
+    vec2 hs = hueSat(col);
+    float Ld = lum(col);
+    float leaf = smoothstep(55.0, 80.0, hs.x) * (1.0 - smoothstep(150.0, 175.0, hs.x)) * smoothstep(0.05, 0.2, hs.y);
+    vec3 dead = mix(sat(col, 0.35), Ld * vec3(1.25, 0.86, 0.6), 0.6);
+    col = mix(col, dead, leaf * d * 0.72 * (1.0 - hot));
+    // The sea: by its keep mask (its glints', mostly 0: not a hue, which the light shafts' colour
+    // moves), not the unknown's light parchment (also 0). It dulls to slate first, then goes to a
+    // dark blood-red.
+    vec2 hs0 = hueSat(src.rgb);
+    float parch = smoothstep(0.45, 0.65, lum(src.rgb)) * (1.0 - smoothstep(60.0, 80.0, hs0.x)) * smoothstep(0.08, 0.2, hs0.y);
+    float sea = (1.0 - smoothstep(0.3, 0.6, src.a)) * (1.0 - parch);
+    vec3 slate = mix(vec3(Ld) * vec3(0.92, 0.95, 1.02), col, 0.35);
+    vec3 blood = Ld * 0.66 * vec3(1.18, 0.64, 0.56) + vec3(0.02, 0.0, 0.0);
+    col = mix(col, mix(slate, blood, smoothstep(0.35, 0.95, d)), sea * min(1.0, d * 2.0) * 0.92 * (1.0 - hot));
+    // The dusk's golden cast (the sun's colour does not reach the cards: they are tinted by its
+    // strength only), strongest at the counter's middle, given way to the red as the end comes.
+    float dusk = min(1.0, uDusk * 2.0) * (1.0 - d);
+    col *= mix(vec3(1.0), vec3(1.1, 0.97, 0.78), dusk * 0.8 * (1.0 - hot));
+    col *= mix(vec3(1.0), vec3(0.74, 0.58, 0.52), d * (1.0 - hot * 0.8));
+    float shade = 1.0 - smoothstep(0.04, 0.35, lum(col));
+    col = mix(col, col * vec3(1.1, 0.72, 0.72), shade * d * 0.5);
+    col = mix(col, vec3(0.26, 0.07, 0.04), far * d * 0.3);
+    vec2 vc = (vUv - 0.5) * vec2(1.25, 1.0);
+    col *= 1.0 - smoothstep(0.3, 0.85, length(vc)) * 0.42 * d;
   }
   // A town takes about half the grade: it keeps its colours, its fires their heat.
   if (!figure && src.a > 0.93) col = mix(src.rgb, col, 0.45);

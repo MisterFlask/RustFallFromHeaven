@@ -25,6 +25,57 @@ export const LIGHT = {
   exposure: 1.0,
 };
 
+/** The light as the world ends (docs/HD2D.md §6, "The Armageddon counter"): the light the map
+ *  turns to as the counter climbs -- at 50 a golden dusk (a low amber sun, a warm haze), at 100 the
+ *  end (a red sun, a blood-red fill, a dark ember haze). `doomLight` blends LIGHT through them; the
+ *  mood pass does the rest (the land's grade). (A straight blend from LIGHT's blue haze to the red
+ *  one went through mauve.) */
+export const LIGHT_DUSK = {
+  sun: [hexLinear("#ffc890"), 2.8],
+  sky: [hexLinear("#9c8a86"), 0.48],
+  ground: [hexLinear("#6a4a34"), 0.15],
+  haze: hexLinear("#c49a78"),
+  shadowTint: [0.82, 0.72, 0.92],
+  exposure: 0.98,
+};
+export const LIGHT_DOOM = {
+  sun: [hexLinear("#ff8456"), 2.4],
+  sky: [hexLinear("#8c3a30"), 0.45],
+  ground: [hexLinear("#4c2016"), 0.15],
+  haze: hexLinear("#6e2a20"),
+  shadowTint: [0.95, 0.6, 0.64],
+  exposure: 0.92,
+};
+
+/** LIGHT blended through LIGHT_DUSK (at 0.5) to LIGHT_DOOM (at 1) by `t`; LIGHT itself at 0. */
+export function doomLight(t) {
+  if (!(t > 0)) return LIGHT;
+  const x = Math.min(1, t);
+  const [A, B, k] = x <= 0.5 ? [LIGHT, LIGHT_DUSK, x * 2] : [LIGHT_DUSK, LIGHT_DOOM, x * 2 - 1];
+  const mix = (a, b) => a + (b - a) * k;
+  const mixV = (a, b) => a.map((v, i) => mix(v, b[i]));
+  const pair = (a, b) => [mixV(a[0], b[0]), mix(a[1], b[1])];
+  return {
+    sunDir: LIGHT.sunDir,
+    sun: pair(A.sun, B.sun),
+    sky: pair(A.sky, B.sky),
+    ground: pair(A.ground, B.ground),
+    haze: mixV(A.haze, B.haze),
+    shadowTint: mixV(A.shadowTint, B.shadowTint),
+    exposure: mix(A.exposure, B.exposure),
+  };
+}
+
+/** How far the world has gone toward its end, from the Armageddon counter (0..100 and over):
+ *  `light` for the sun and sky, which turn first, and `land` for the grade of the land (dying
+ *  foliage, the blood-red sea, the darkening), which comes later -- at counter 20 the map still
+ *  reads green and cheerful, at 50 the light is half turned and the land a quarter, at 100 both
+ *  whole. */
+export function doomOf(counter) {
+  const x = Math.min(1, Math.max(0, (counter ?? 0) / 100));
+  return { light: x, land: Math.pow(x, 1.6) };
+}
+
 /** The HD-2D look over the 3D renderer's painterly switches: a lower camera with a wider lens
  *  (tilted toward the horizon), no grid, the painted grade a little richer, more haze in the
  *  distance, and the mode's own passes: tilt-shift, light shafts, region moods, wide bloom, the

@@ -165,7 +165,7 @@ export class Hd2dPasses {
  *  frame (or null). */
   grade(fr, cfg) {
     const fx = this.frame;
-    if (!fx?.mood || !((cfg.mood ?? 0) > 0 || (cfg.landGrade ?? 0) > 0)) return null;
+    if (!fx?.mood || !((cfg.mood ?? 0) > 0 || (cfg.landGrade ?? 0) > 0 || (fx.dusk ?? 0) > 0)) return null;
     const pl = this.pl;
     pl.timed("mood", () => {
       pl.pass(this.p.mood, this.f.mood, pl.w, pl.h, {
@@ -177,6 +177,8 @@ export class Hd2dPasses {
         uInvView: fr.invView,
         uMoodAmount: cfg.mood ?? 0,
         uLand: cfg.landGrade ?? 0,
+        uDoom: fx.doom ?? 0,
+        uDusk: fx.dusk ?? 0,
         uTime: fr.uniforms.uTime,
         uMapSize: fx.mapSize,
         uWrapX: fx.wrapX,

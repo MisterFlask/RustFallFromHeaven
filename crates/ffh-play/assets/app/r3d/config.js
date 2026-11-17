@@ -12,7 +12,9 @@ const KEY = "ffh.r3d.config";
  * degrees up, from the south-west) so shadows stay short (about 0.9x object height, as in the
  * look target) and the shaded side keeps its colour. No dusk, night or time-of-day cycle (owner
  * decision); the old `afternoon`/`day` pair, whose low (27 degrees) sun cast the long near-black
- * shadows F1 reported, is merged into this. */
+ * shadows F1 reported, is merged into this. (The HD-2D map's light does change with the game: it
+ * turns red and dim as the Armageddon counter climbs, hd2d/config.js LIGHT_DOOM. That is the
+ * world's state, not a time of day.) */
 export const LIGHTING = {
   daylight: {
     sunDir: [-0.589, 0.743, 0.317],

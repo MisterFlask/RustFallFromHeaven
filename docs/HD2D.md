@@ -849,6 +849,25 @@ join now); the faces as paving (redrawn).
   went from 0.6 to 0.45 (the gamma lifts their haze too). The gamma also lightens the unknown's
   cover and fogged land: not retuned here. The saved panel settings' key went to
   `ffh.hd2d.config.4`.
+* **The Armageddon counter** (the owner's request, 2026-11-17, after two mock-ups: a green map at
+  the start, a dark red one at counter 100). The map's light and grade follow the counter of the
+  player the view follows (`me().armageddon`; `?doom=<counter>` previews a value for one page,
+  never saved). Two curves from the counter's share of 100, `x` (`config.js doomOf`): the **light**
+  takes `x` -- `doomLight` blends LIGHT through `LIGHT_DUSK` at 50 (a low amber sun, a golden haze)
+  to `LIGHT_DOOM` at 100 (a red sun, a blood-red fill, a dark ember haze; a straight blend from the
+  blue haze to the red one went through mauve) -- and the **land** takes `x^1.6`, so it dies later
+  than the light turns (counter 20: the land 8%, still green; 50: a third; 100: whole). In the mood
+  pass (`uDusk` = x, `uDoom` = x^1.6; after the land palette, before the towns' and figures' share
+  of the grade): a golden cast at the middle, given way to the red; the foliage withers toward
+  olive-brown; the sea (by its keep mask, mostly 0 -- not by hue, which the shafts' colour moves --
+  minus the unknown's light parchment) dulls to slate, then goes to a dark blood-red, the rivers
+  with it; the land darkens under a red cast, the shade to maroon, the distance to an ember haze,
+  the corners close in; from about 60 the hell grounds' glowing cracks open on all land (the
+  ground's keep mask only). What glows (the emission: lava, fire, mana, the towns' lights) keeps its
+  colour and stands out the more; figures take a quarter of the change in value, towns a little
+  under half, as with the region moods. At counter 0 the light is LIGHT itself and the pass adds
+  nothing. Screenshots: `docs/hd2d/armageddon-0-50-100.jpg`. Not done: the sprites themselves
+  (dead or bare trees, ash in the air) do not change.
 * **Light shafts** (half resolution): the sunlit haze — the sun's light scattered along each view
   ray near the ground, through the gaps of a high drifting cloud layer and past the props' shadow
   map (anchored to the world) — and painted **beams**: broad soft beams fanning from the sun beyond

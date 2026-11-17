@@ -15,7 +15,7 @@
 import { Map3D } from "../map3d.js";
 import { loadConfig, saveConfig, withPreset, PANEL } from "../config.js";
 import { clamp, smoothstep } from "../math.js";
-import { STORE, LIGHT, DEFAULTS_HD2D, PRESETS_HD2D, PANEL_HD2D, TERRAIN_LEAN, TERRAIN_STANDIN, CLIFF } from "./config.js";
+import { STORE, LIGHT, doomLight, doomOf, DEFAULTS_HD2D, PRESETS_HD2D, PANEL_HD2D, TERRAIN_LEAN, TERRAIN_STANDIN, CLIFF } from "./config.js";
 import { SpriteLayer } from "./sprites.js";
 import { Hd2dPasses } from "./passes.js";
 import { dressSpriteStatic, dressSpriteUnits } from "./dress.js";
@@ -23,6 +23,7 @@ import { plotMoods, moodEmitters } from "./mood.js";
 import { staticEnv } from "../dress.js";
 import { MAT, bakeLayer } from "../materials.js";
 import { GROUNDS } from "./art/index.js";
+import { me } from "../../state.js";
 
 /** The mode's compile-time savings in the props' and the water's programs (shaders.js).
  *  Props: NO_LEAVES -- no crown of leaf clusters stands in the mode (its trees, bushes and saplings
@@ -287,8 +288,24 @@ export class MapHd2d extends Map3D {
     saveConfig(cfg, STORE);
   }
 
+  /** The light of the frame: LIGHT, turned red and dim as the Armageddon counter climbs. */
   light() {
-    return LIGHT;
+    return doomLight(this.doom().light);
+  }
+
+  /** How far the world has gone toward its end (config.js doomOf): from the counter of the player
+   *  the view follows, or `?doom=<counter>` for one page (a preview: the tools' screenshots; never
+   *  saved with the panel's settings). */
+  doom() {
+    let ac = me()?.armageddon ?? 0;
+    try {
+      const q = new URLSearchParams(globalThis.location?.search ?? "").get("doom");
+      if (q !== null && q !== "" && Number.isFinite(Number(q))) ac = Number(q);
+    } catch {
+      /* no page */
+    }
+    if (this.doomAt?.ac !== ac) this.doomAt = { ac, ...doomOf(ac) };
+    return this.doomAt;
   }
 
   presetNames() {
@@ -417,6 +434,9 @@ export class MapHd2d extends Map3D {
       beamZoom: smoothstep(48, 96, this.ts),
       farDepth: cam.dist * 2.2,
       mood: this.scene.tex.mood,
+      // The land's grade toward the end of the world (the mood pass's uDoom).
+      doom: this.doom().land,
+      dusk: this.doom().light,
       mapSize: [this.world.w, this.world.h],
       wrapX: this.world.wrapX ? 1 : 0,
       // The figures breathe while the map animates (the frame's time runs: map3d.js loop).
