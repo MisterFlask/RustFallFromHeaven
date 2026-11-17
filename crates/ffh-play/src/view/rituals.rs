@@ -261,40 +261,6 @@ pub fn hurry_reason(g: &Game, c: CityId, hurry: HurryType) -> Option<&'static st
     (g.city_head_ritual(c).is_some() && g.hurry_is_gold(hurry)).then_some("Cannot be hurried with gold (Ritual).")
 }
 
-/// The world rituals' names, for [`tag_news`].
-fn ritual_names() -> &'static [String] {
-    static NAMES: std::sync::OnceLock<Vec<String>> = std::sync::OnceLock::new();
-    NAMES.get_or_init(|| {
-        let d = ffh_data::global();
-        d.projects.keys().filter(|&p| d.projects[p].world_ritual).map(|p| ritual_name(d, p)).collect()
-    })
-}
-
-/// The verb of a ritual's news (`<Civ> began|abandoned|completed <ritual> in <city>.`, ffh-core's
-/// `world_ritual_news`), if `text` is one.
-pub fn news_verb(text: &str) -> Option<&'static str> {
-    if !text.ends_with('.') {
-        return None;
-    }
-    for verb in ["began", "abandoned", "completed"] {
-        for name in ritual_names() {
-            if text.contains(&format!(" {verb} {name} in ")) {
-                return Some(verb);
-            }
-        }
-    }
-    None
-}
-
-/// A message's JSON with `kind: "ritual"` and `verb` when it is a ritual's news, so that the page
-/// shows it as an alert without reading its wording.
-pub fn tag_news(j: Json, text: &str) -> Json {
-    match news_verb(text) {
-        Some(verb) => j.with("kind", "ritual").with("verb", verb),
-        None => j,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -306,9 +272,5 @@ mod tests {
         assert_eq!(percent(34, 100), 34);
         assert_eq!(percent(150, 100), 100);
         assert_eq!(percent(5, 0), 0);
-        assert_eq!(news_verb("Hippus began Ritual: Warcry in Lycus."), Some("began"));
-        assert_eq!(news_verb("Unknown completed Ritual: Rally in X."), Some("completed"));
-        assert_eq!(news_verb("Hippus began Ritual: Warcry in Lycus"), None);
-        assert_eq!(news_verb("Your Warrior was killed."), None);
     }
 }

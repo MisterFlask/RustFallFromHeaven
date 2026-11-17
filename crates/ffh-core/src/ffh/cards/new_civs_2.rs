@@ -21,6 +21,7 @@
 //!   ([`infernal_population`]), the Manes of the evil dead shared with them ([`manes_civ`]), the
 //!   Paymaster's Buy Out for its land units, -4 attitude with the Infernals.
 
+use crate::log::{Audience};
 use std::cmp::Reverse;
 use std::sync::OnceLock;
 
@@ -622,13 +623,13 @@ pub fn fire_brood(g: &mut Game, stage: usize) {
         for q in nest_sites(g) {
             g.plot_set_improvement_type(q, Some(nest));
             let (x, y) = g.map.xy(q);
-            g.log.msg(turn, None, || format!("The Brood: a Spider Nest appears at ({x}, {y})."));
+            g.log.msg_to(turn, Audience::Everyone, || format!("The Brood: a Spider Nest appears at ({x}, {y})."));
         }
         return;
     }
     let sites = brood_sites(g);
     if sites.is_empty() {
-        g.log.msg(turn, None, || "The Brood: no nest stands.".to_string());
+        g.log.msg_to(turn, Audience::Everyone, || "The Brood: no nest stands.".to_string());
         return;
     }
     let mut b = Birth::wild(d.t("CIVILIZATION_BROOD"), d.t("LEADER_SPIDER_QUEEN"));
@@ -751,5 +752,6 @@ pub fn fire_infernal_gate(g: &mut Game, _: usize) {
     court_infernal_grudge(g, np);
     let turn = g.game_turn();
     let by = g.player_get_civilization_description(patron);
-    g.log.msg(turn, None, || format!("The Infernal Gate opens beside {by}: the Court of Mammon arrives."));
+    let to = g.audience_met(g.players[patron].team);
+    g.log.msg_to(turn, to, || format!("The Infernal Gate opens beside {by}: the Court of Mammon arrives."));
 }

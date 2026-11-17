@@ -21,6 +21,7 @@
 //! (its units and resource stay) and without the per-plot area update; the areas are recalculated
 //! once per cast ([`Game::plot_freeze_sea_ice`], [`Game::plot_thaw_sea_ice`]).
 
+use crate::log::{LogMark};
 use crate::ffh::dispatch::*;
 use crate::ffh::pycall::PyCall;
 use crate::game::Game;
@@ -128,8 +129,9 @@ fn spell_frozen_passage(g: &mut Game, caster: UnitId, _call: &PyCall) {
     let turn = g.game_turn();
     let (x, y) = g.map.xy(t);
     let n = plots.len();
-    // Every player is told (it reshapes the map).
-    g.log.msg_at(turn, None, (x, y), || format!("Frozen Passage: {n} water plots within {FROZEN_PASSAGE_RADIUS} plots of ({x}, {y}) become Sea Ice"));
+    // The players who have revealed the plot are told.
+    let to = g.audience_revealed_plot(t);
+    g.log.msg_to_at(turn, to, (x, y), LogMark::Event, || format!("Frozen Passage: {n} water plots within {FROZEN_PASSAGE_RADIUS} plots of ({x}, {y}) become Sea Ice"));
 }
 
 /// The Icebreak targets of unit `u` standing on plot `at`: the adjacent Sea Ice plots with no

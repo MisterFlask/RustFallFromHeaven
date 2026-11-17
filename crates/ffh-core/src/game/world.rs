@@ -11,6 +11,7 @@
 //! `incrementBuildingClassCreatedCount`, `incrementProjectCreatedCount(e, iExtra)`,
 //! `makeSpecialUnitValid`, `makeNukesValid`, `get/setBestLandUnit`, `getTrueGlobalCounter`, ...
 
+use crate::log::{Audience};
 use crate::defs::{RANDPLOT_ADJACENT_LAND, RANDPLOT_NOT_VISIBLE_TO_CIV, RANDPLOT_PASSIBLE};
 use crate::game::Game;
 use crate::ids::*;
@@ -525,7 +526,7 @@ impl Game {
                 // C++: TXT_KEY_SPECIAL_BUILDING_VALID message to every alive player.
                 let d = self.d;
                 let turn = self.game_turn();
-                self.log.msg(turn, None, || {
+                self.log.msg_to(turn, Audience::Everyone, || {
                     format!("{} can now be built", d.text.name(&d.special_buildings[special_building].base.description))
                 });
             }

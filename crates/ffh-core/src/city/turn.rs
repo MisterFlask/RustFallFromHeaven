@@ -1661,7 +1661,8 @@ impl Game {
         // TXT_KEY_MISC_CITY_LIBERATED to every alive player that has revealed the city, and a
         // replay message.
         let turn = self.game_turn();
-        self.log.msg(turn, None, || format!("{} liberated: player {} -> player {}", d.text.name(&self.cities[c].name), owner, player));
+        let to = self.audience_revealed_city(c);
+        self.log.msg_to(turn, to, || format!("{} liberated: player {} -> player {}", d.text.name(&self.cities[c].name), owner, player));
 
         self.player_acquire_city(player, c, false, true, true);
         // `c` dangles from here on.

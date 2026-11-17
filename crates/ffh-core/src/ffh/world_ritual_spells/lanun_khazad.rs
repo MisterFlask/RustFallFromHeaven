@@ -18,6 +18,7 @@
 //! As in the cards' batches, a spell cast at a distance has a predicate for one target (`*_ok`):
 //! its `targets*` callback lists what passes it, and its result checks the target again.
 
+use crate::log::{LogMark};
 use crate::ffh::dispatch::*;
 use crate::ffh::pycall::PyCall;
 use crate::game::Game;
@@ -183,8 +184,9 @@ fn spell_raging_seas(g: &mut Game, caster: UnitId, _call: &PyCall) {
     let turn = g.game_turn();
     g.area_effects.push(AreaEffect { kind: AreaEffectKind::RagingSeas, owner: p, plot: t, radius: STORM_RADIUS, until: turn + STORM_TURNS, moved: -1 });
     let (x, y) = g.map.xy(t);
-    // Every player is told (a world spell).
-    g.log.msg_at(turn, None, (x, y), || format!("Raging Seas: a storm within {STORM_RADIUS} plots of ({x}, {y}) for {STORM_TURNS} turns"));
+    // The players who have revealed the plot are told.
+    let to = g.audience_revealed_plot(t);
+    g.log.msg_to_at(turn, to, (x, y), LogMark::Event, || format!("Raging Seas: a storm within {STORM_RADIUS} plots of ({x}, {y}) for {STORM_TURNS} turns"));
 }
 
 /// May the owner of `caster` steer its storm to `t` (water its team has revealed, within

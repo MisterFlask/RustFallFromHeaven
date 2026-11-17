@@ -15,7 +15,7 @@
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_core::log::LogEntry;
+use ffh_core::log::{LogEntry, LogMark, LogTag, RitualNews};
 use ffh_data::*;
 
 use crate::json::{FieldError, FromJson, Json};
@@ -137,8 +137,8 @@ impl MessageStore {
     }
 
     /// The `log` query: `{from, next, entries: [{i, t, text}]}` (`from` is the index of the
-    /// first entry returned, later than `since` when older messages were dropped). An
-    /// engagement's message carries `kind: "engagement"` and its `report` ([`tag_battle`]).
+    /// first entry returned, later than `since` when older messages were dropped), with the
+    /// fields [`entry_fields`] adds.
     pub fn since_json(&self, since: usize) -> Json {
         let from = since.max(self.first()).min(self.total);
         let entries = self.since(since).iter().enumerate().map(|(k, e)| {
@@ -147,27 +147,51 @@ impl MessageStore {
                 Some((x, y)) => j.with("at", crate::jarr![x, y]),
                 None => j,
             };
-            // World rituals (docs/CARDS.md): their news is marked for the page's alerts.
-            crate::view::rituals::tag_news(tag_battle(j, &e.text), &e.text)
+            entry_fields(j, e)
         });
         crate::jobj! { "from" => from, "next" => self.total, "entries" => Json::Arr(entries.collect()) }
     }
 }
 
-/// The battle report an engagement's message names (its last words are `(report #12)`: ffh-core's
-/// `engage_messages`), if any.
-pub fn battle_report_ref(text: &str) -> Option<u32> {
-    let rest = &text[text.rfind("(report #")? + "(report #".len()..];
-    rest[..rest.find(')')?].parse().ok()
+/// A message's JSON with what ffh-core says it is, so that a client marks and links it without
+/// reading its wording: `kind: "engagement"` and its `report` (a battle's message), `kind:
+/// "ritual"` and its `verb` (a world ritual's news, docs/CARDS.md), and `mark: "city" | "loss" |
+/// "kill" | "retreat"` (a located message's map marker; absent: an event).
+pub fn entry_fields(j: Json, e: &LogEntry) -> Json {
+    let j = match e.tag {
+        LogTag::None => j,
+        LogTag::Battle(id) => j.with("kind", "engagement").with("report", id),
+        LogTag::Ritual(news) => j.with("kind", "ritual").with("verb", news.verb()),
+    };
+    match e.mark {
+        LogMark::Event => j,
+        LogMark::City => j.with("mark", "city"),
+        LogMark::Loss => j.with("mark", "loss"),
+        LogMark::Kill => j.with("mark", "kill"),
+        LogMark::Retreat => j.with("mark", "retreat"),
+    }
 }
 
-/// A message's JSON with `kind: "engagement"` and `report: id` when it names a battle report, so
-/// that a client marks and links it without reading its wording.
-pub fn tag_battle(j: Json, text: &str) -> Json {
-    match battle_report_ref(text) {
-        Some(id) => j.with("kind", "engagement").with("report", id),
-        None => j,
-    }
+/// The mark and the tag [`entry_fields`] wrote, read back (absent or unknown: the defaults).
+pub fn entry_fields_from(j: &Json, e: &mut LogEntry) {
+    let s = |k: &str| j.get(k).and_then(Json::as_str).map(str::to_owned);
+    e.mark = match s("mark").as_deref() {
+        Some("city") => LogMark::City,
+        Some("loss") => LogMark::Loss,
+        Some("kill") => LogMark::Kill,
+        Some("retreat") => LogMark::Retreat,
+        _ => LogMark::Event,
+    };
+    e.tag = match s("kind").as_deref() {
+        Some("engagement") => j.get("report").and_then(Json::as_i64).and_then(|id| u32::try_from(id).ok()).map_or(LogTag::None, LogTag::Battle),
+        Some("ritual") => match s("verb").as_deref() {
+            Some("began") => LogTag::Ritual(RitualNews::Began),
+            Some("abandoned") => LogTag::Ritual(RitualNews::Abandoned),
+            Some("completed") => LogTag::Ritual(RitualNews::Completed),
+            _ => LogTag::None,
+        },
+        _ => LogTag::None,
+    };
 }
 
 // ---------------------------------------------------------------------------------------------

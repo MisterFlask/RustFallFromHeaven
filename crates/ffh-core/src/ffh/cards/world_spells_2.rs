@@ -25,6 +25,7 @@
 //! ritual (`repeat_cost_percent`), the sites a building reveals (`reveals_sites`), and the area
 //! effects (`Game::area_effects`: healing, moves, battles, sight).
 
+use crate::log::{LogMark};
 use super::world::near_borders;
 use super::world_spells::own_city_at;
 use crate::ffh::dispatch::*;
@@ -583,8 +584,9 @@ fn spell_weather(g: &mut Game, caster: UnitId, call: &PyCall) {
         AreaEffectKind::Storm => "Storm",
         _ => "Fog",
     };
-    // Every player is told (big effects are visible to opponents).
-    g.log.msg_at(turn, None, (x, y), || format!("Weather Engine: {what} within {WEATHER_RADIUS} plots of ({x}, {y}) for {WEATHER_TURNS} turns"));
+    // The players who have revealed the plot are told.
+    let to = g.audience_revealed_plot(t);
+    g.log.msg_to_at(turn, to, (x, y), LogMark::Event, || format!("Weather Engine: {what} within {WEATHER_RADIUS} plots of ({x}, {y}) for {WEATHER_TURNS} turns"));
 }
 
 impl Game {

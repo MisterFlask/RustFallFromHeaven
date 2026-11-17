@@ -308,7 +308,7 @@ pub fn decision_event(d: &Decision) -> Json {
 
 /// A log entry of a command reply.
 fn log_json(e: &ffh_core::log::LogEntry) -> Json {
-    crate::report::tag_battle(crate::jobj! { "t" => e.turn, "text" => e.text.as_str() }, &e.text)
+    crate::report::entry_fields(crate::jobj! { "t" => e.turn, "text" => e.text.as_str() }, e)
 }
 
 // ---------------------------------------------------------------------------------------------

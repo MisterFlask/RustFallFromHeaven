@@ -50,7 +50,7 @@ pub fn log_entry_json(e: &LogEntry) -> Json {
         Some((x, y)) => j.with("at", crate::jarr![x, y]),
         None => j,
     };
-    crate::report::tag_battle(j, &e.text)
+    crate::report::entry_fields(j, e)
 }
 
 fn log_entry_from(j: &Json) -> Result<LogEntry, FieldError> {
@@ -61,7 +61,9 @@ fn log_entry_from(j: &Json) -> Result<LogEntry, FieldError> {
         },
         None => None,
     };
-    Ok(LogEntry { at, ..LogEntry::new(j.req("t")?, j.opt("player")?, j.req("text")?) })
+    let mut e = LogEntry { at, ..LogEntry::new(j.req("t")?, j.opt("player")?, j.req("text")?) };
+    crate::report::entry_fields_from(j, &mut e);
+    Ok(e)
 }
 
 impl Sidecar {
@@ -211,6 +213,7 @@ pub fn list_json(dir: Option<&Path>) -> Json {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ffh_core::log::{LogMark, LogTag, RitualNews};
 
     #[test]
     fn names_are_sanitized() {
@@ -229,7 +232,11 @@ mod tests {
             setup: None,
             journal: Some("saves/journal.jsonl".into()),
             journal_line: 12,
-            messages_tail: vec![LogEntry { at: Some((4, 5)), ..LogEntry::new(3, Some(0), "hi \"there\"".into()) }],
+            messages_tail: vec![
+                LogEntry { at: Some((4, 5)), ..LogEntry::new(3, Some(0), "hi \"there\"".into()) },
+                LogEntry { at: Some((1, 2)), mark: LogMark::Loss, tag: LogTag::Battle(9), ..LogEntry::new(3, Some(0), "lost".into()) },
+                LogEntry { tag: LogTag::Ritual(RitualNews::Abandoned), ..LogEntry::new(4, Some(0), "news".into()) },
+            ],
             moments_tail: vec![crate::jobj! { "t" => 3, "player" => 1, "comment" => 2, "text" => "Hail" }],
             auto_moves_tried: true,
             report_snapshot: Some(crate::jobj! { "turn" => 3 }),
@@ -242,6 +249,10 @@ mod tests {
         assert!(!old.auto_moves_tried);
         assert!(old.report_snapshot.is_none() && old.report.is_none());
         assert_eq!(old.journal_line, 3, "an older sidecar's `pending_events` is ignored");
+        // A message saved without a mark or tag reads as an event with none.
+        let old_msg = Json::parse(r#"{"t":2,"player":0,"text":"Axeman destroyed Warrior","at":[1,1]}"#).unwrap();
+        let old_msg = log_entry_from(&old_msg).unwrap();
+        assert_eq!((old_msg.mark, old_msg.tag), (LogMark::Event, LogTag::None));
 
         let dir = std::env::temp_dir().join(format!("ffh-play-save-test-{}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);

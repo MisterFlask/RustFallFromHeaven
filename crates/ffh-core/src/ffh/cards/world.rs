@@ -1,5 +1,6 @@
 //! The helpers the cards share (docs/CARDS.md, section 3), and their lookups.
 
+use crate::log::{Audience};
 use crate::ffh::dispatch::*;
 use crate::ffh::pycall::PyCall;
 use crate::game::Game;
@@ -577,10 +578,18 @@ pub fn birth(g: &mut Game, b: &Birth) -> PlayerId {
     let name = g.player_get_civilization_description(p);
     match b.parent.or(b.founder) {
         Some(by) => {
+            // To its founder; without one, to those who know the civilization it came from.
+            let to = match b.founder {
+                Some(_) => Audience::Players(Vec::new()),
+                None => g.audience_met(g.players[by].team),
+            };
             let by = g.player_get_civilization_description(by);
-            g.log.msg(turn, b.founder, || format!("{name} is born of {by}"));
+            match b.founder {
+                Some(f) => g.log.msg(turn, Some(f), || format!("{name} is born of {by}")),
+                None => g.log.msg_to(turn, to, || format!("{name} is born of {by}")),
+            }
         }
-        None => g.log.msg(turn, None, || format!("{name} rises")),
+        None => g.log.msg_to(turn, Audience::Everyone, || format!("{name} rises")),
     }
     p
 }

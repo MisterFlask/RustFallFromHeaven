@@ -152,7 +152,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 42: city investment and relief counters for besieged garrisons.
 /// - 43: a ritual's sight (`Game::ritual_sight`).
 /// - 44: a human's event popups (`Player::event_popups`), which were kept by ffh-play's sidecar.
-pub const FORMAT_VERSION: u32 = 44;
+/// - 45: a log entry's audience, mark and tag (`LogEntry::audience`, `mark`, `tag`).
+pub const FORMAT_VERSION: u32 = 45;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

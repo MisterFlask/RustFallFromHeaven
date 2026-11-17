@@ -206,7 +206,8 @@ impl Game {
             // player), plus a replay message; otherwise the trigger text goes to us.
             let turn = self.game_turn();
             if !data.global_text.is_empty() {
-                self.log.msg(turn, None, || data.global_text.clone());
+                let to = self.audience_event_news(p, data.other_player);
+                self.log.msg_to(turn, to, || data.global_text.clone());
             } else if !data.text.is_empty() {
                 self.log.msg(turn, Some(p), || data.text.clone());
             }
@@ -1889,7 +1890,8 @@ impl Game {
             // UI: the world news goes to every alive player who has met us (and the other
             // player), plus a replay message.
             let turn = self.game_turn();
-            self.log.msg(turn, None, || event_text(d, &k_event.world_news[chosen as usize]));
+            let to = self.audience_event_news(p, data.other_player);
+            self.log.msg_to(turn, to, || event_text(d, &k_event.world_news[chosen as usize]));
         }
 
         // UI: the event's local info text (to us) and the other player's popup.

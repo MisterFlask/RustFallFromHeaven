@@ -15,6 +15,7 @@
 //! `checkRemoveSelectionAfterAttack`, siege towers, explosion effects) is omitted; the main
 //! combat outcomes go to the game log.
 
+use crate::log::{LogMark, LogTag};
 use crate::defs::INVALID_PLOT_COORD;
 use crate::game::Game;
 use crate::ids::*;
@@ -771,7 +772,7 @@ impl Game {
                     self.teams[defender_team].ai_war_success[team] += d.defines.war_success_defending;
                 }
 
-                self.log.msg_at(turn, Some(owner), at, || {
+                self.log.msg_marked(turn, Some(owner), at, LogMark::Loss, LogTag::None, || {
                     format!("{} died attacking {}{}", unit_type_name(d, unit_type), unit_type_name(d, defender_type), odds_suffix(log_odds))
                 });
 
@@ -800,7 +801,7 @@ impl Game {
                     self.teams[team].ai_war_success[defender_team] += d.defines.war_success_attacking;
                 }
 
-                self.log.msg_at(turn, Some(owner), at, || {
+                self.log.msg_marked(turn, Some(owner), at, LogMark::Kill, LogTag::None, || {
                     format!("{} destroyed {}{}", unit_type_name(d, unit_type), unit_type_name(d, defender_type), odds_suffix(log_odds))
                 });
 
@@ -917,7 +918,7 @@ impl Game {
 
                     let group = group_of(self, u);
                     self.group_clear_mission_queue(group);
-                    self.log.msg_at(turn, Some(owner), at, || {
+                    self.log.msg_marked(turn, Some(owner), at, LogMark::Retreat, LogTag::None, || {
                         format!("{} fled from {}{}", unit_type_name(d, defender_type), unit_type_name(d, unit_type), odds_suffix(log_odds))
                     });
                 }
@@ -927,7 +928,7 @@ impl Game {
                 } else if self.units[u].flee_withdrawl {
                     self.unit_join_group(u, None, true);
                     self.units[u].flee_withdrawl = false;
-                    self.log.msg_at(turn, Some(owner), at, || {
+                    self.log.msg_marked(turn, Some(owner), at, LogMark::Retreat, LogTag::None, || {
                         format!("{} withdrew from {}{}", unit_type_name(d, unit_type), unit_type_name(d, defender_type), odds_suffix(log_odds))
                     });
                     let cost = attack_move_cost(self, u, plot);

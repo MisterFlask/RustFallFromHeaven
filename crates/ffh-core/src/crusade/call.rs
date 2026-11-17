@@ -12,6 +12,7 @@
 //! (`setDefiedResolution`: defiance anger in the cities, loyal membership lost); a shortfall
 //! gives its share of the defiance anger only.
 
+use crate::log::{Audience};
 use super::*;
 use crate::structs::VoteSelectionSubData;
 
@@ -92,7 +93,7 @@ impl Game {
             self.crusade_grant_passage(idx, vt);
         }
         let log_kind = kind;
-        self.log.msg(turn, None, || format!("Crusade {} ({:?}) called against team {}", id.0, log_kind, target));
+        self.log.msg_to(turn, Audience::Tools, || format!("Crusade {} ({:?}) called against team {}", id.0, log_kind, target));
         // Ask at once (an AI answers now; a human may answer until the deadline).
         self.crusade_ask_pledges(idx);
         Some(id)

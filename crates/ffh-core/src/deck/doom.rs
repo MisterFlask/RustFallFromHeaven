@@ -20,6 +20,7 @@
 //! - **Lasting cards:** a card whose effect lasts for the rest of the game is a rule that asks
 //!   whether its slot has fired (`Game::doom_fired`).
 
+use crate::log::{Audience};
 use crate::game::Game;
 use crate::ids::*;
 use ffh_data::*;
@@ -210,7 +211,7 @@ impl Game {
                 if let Some((c, stage)) = self.doom_slot_card(i) {
                     let turn = self.game_turn();
                     let name = self.d.text.get(&format!("TXT_KEY_{}", c.key)).to_string();
-                    self.log.msg(turn, None, || format!("Armageddon {threshold}: {name}."));
+                    self.log.msg_to(turn, Audience::Everyone, || format!("Armageddon {threshold}: {name}."));
                     (c.fire)(self, stage);
                 }
             }
@@ -243,7 +244,7 @@ impl Game {
             self.doom.slots[i].targets = c.on_reveal.map_or_else(Vec::new, |f| f(self, stage));
             let turn = self.game_turn();
             let name = self.d.text.get(&format!("TXT_KEY_{}", c.key)).to_string();
-            self.log.msg(turn, None, || format!("Armageddon card revealed at {threshold}: {name}."));
+            self.log.msg_to(turn, Audience::Everyone, || format!("Armageddon card revealed at {threshold}: {name}."));
         }
     }
 

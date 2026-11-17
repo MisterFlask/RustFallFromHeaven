@@ -144,16 +144,11 @@ export function observing(status = S.status) {
 /** The commands an observed game takes: they play turns. */
 export const OBSERVER_COMMANDS = ["autoplay", "end_turn"];
 
-/** The kind of a located log entry for its map marker: "loss" (an attacker died), "kill" (a
- *  defender died), "retreat" (fled or withdrew), "city" (a city captured or razed), else
- *  "event". */
-export function eventKind(text) {
-  const t = text ?? "";
-  if (/ was captured by | was razed by |^You have (captured|destroyed) /.test(t)) return "city";
-  if (/ died attacking /.test(t)) return "loss";
-  if (/ destroyed | killed /.test(t)) return "kill";
-  if (/ fled from | withdrew from /.test(t)) return "retreat";
-  return "event";
+/** The kind of a located log entry for its map marker, as the engine marks it (`mark`):
+ *  "loss" (a unit of the viewer's died, a battle lost), "kill" (its unit destroyed another, a
+ *  battle won), "retreat" (fled or withdrew), "city" (a city captured or razed), else "event". */
+export function eventKind(m) {
+  return m?.mark ?? "event";
 }
 
 /** The map markers of the latest located messages: one per plot (the strongest kind there),
@@ -164,7 +159,7 @@ export function eventMarkers(messages, from) {
   for (const m of messages) {
     if (!Array.isArray(m.at) || m.t < from) continue;
     const key = `${m.at[0]},${m.at[1]}`;
-    const kind = eventKind(m.text);
+    const kind = eventKind(m);
     const cur = byPlot.get(key);
     if (!cur) byPlot.set(key, { x: m.at[0], y: m.at[1], kind, texts: [m.text] });
     else {

@@ -16,6 +16,7 @@
 //! `Game::next_vote_selection_id` / `next_vote_triggered_id` (0 after `reset`) hold the array
 //! state as `m_iCurrentID - FLTA_MAX_BUCKETS + m_iLastIndex + 1`.
 
+use crate::log::{Audience};
 use crate::game::Game;
 use crate::ids::*;
 use crate::structs::*;
@@ -1018,7 +1019,8 @@ impl Game {
                 // C++: result popup to the human voting members and, when passed,
                 // TXT_KEY_VOTE_RESULTS to the humans concerned (UI). Logged once.
                 let turn = self.game_turn();
-                self.log.msg(turn, None, || {
+                let to = self.audience_voting_members(vote_source);
+                self.log.msg_to(turn, to, || {
                     format!(
                         "{}: {} {}",
                         d.text.name(&d.vote_sources[vote_source].base.description),
@@ -1124,7 +1126,7 @@ impl Game {
                 // C++: TXT_KEY_VOTE_SOURCE_RELIGION message to every alive player.
                 let d = self.d;
                 let turn = self.game_turn();
-                self.log.msg(turn, None, || {
+                self.log.msg_to(turn, Audience::Everyone, || {
                     format!(
                         "{} is now the religion of the {}",
                         d.text.name(&d.religions[r].base.description),

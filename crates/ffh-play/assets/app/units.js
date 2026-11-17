@@ -1009,7 +1009,7 @@ function showTip() {
   // The located messages of the latest turn here (combats, cities taken): what happened on
   // this plot while the AIs moved.
   const recent = (S.messages ?? []).filter((m) => Array.isArray(m.at) && m.at[0] === x && m.at[1] === y && m.t >= latestEventTurn());
-  for (const m of recent.slice(-4)) lines.push(h(`div.tip-event.ev-${eventKind(m.text)}`, `${m.player !== null && m.player !== undefined ? `${playerName(m.player)}: ` : ""}${m.text}`));
+  for (const m of recent.slice(-4)) lines.push(h(`div.tip-event.ev-${eventKind(m)}`, `${m.player !== null && m.player !== undefined ? `${playerName(m.player)}: ` : ""}${m.text}`));
   const c = preview.combat;
   if (c?.valid) lines.push(combatLines(c, { x, y }));
   const path = preview.path;
@@ -1994,7 +1994,7 @@ async function renderPlotInfo(x, y, selUnits = S.sel?.units ?? null) {
     : null;
   const recent = (S.messages ?? []).filter((m) => Array.isArray(m.at) && m.at[0] === x && m.at[1] === y && m.t >= latestEventTurn());
   const events = recent.length
-    ? h("div.section", h("h4", "This turn here"), recent.map((m) => h(`div.small.ev-${eventKind(m.text)}`, `${m.player !== null && m.player !== undefined ? `${playerName(m.player)}: ` : ""}${m.text}`)))
+    ? h("div.section", h("h4", "This turn here"), recent.map((m) => h(`div.small.ev-${eventKind(m)}`, `${m.player !== null && m.player !== undefined ? `${playerName(m.player)}: ` : ""}${m.text}`)))
     : null;
   const flag = S.spectating || observing() ? h("button#flag-plot", { onclick: () => emit("flag-plot", x, y), title: "Record this plot for a bug report: the turn, the units, the game's settings and the replay commands [F]" }, "⚑ Flag this plot…") : null;
   fill(

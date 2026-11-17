@@ -36,6 +36,7 @@
 //! Each step is a message to its owner (setting out, waiting, diverted, arrived, stopped, killed)
 //! and a telemetry count (`march`: `sent`, `arrived`, `diverted`, `stopped`, `killed`).
 
+use crate::log::{LogMark, LogTag};
 use ffh_data::*;
 
 use super::RecruitDest;
@@ -439,7 +440,7 @@ impl Game {
         self.tel_march(p, "killed", matches!(m.dest, RecruitDest::Army(_)), turn - m.left_turn);
         let at = self.unit_plot_opt(u).map(|q| self.map.xy(q));
         match at {
-            Some(at) => self.log.msg_at(turn, Some(p), at, || format!("{name} was killed on its way to {to}.")),
+            Some(at) => self.log.msg_marked(turn, Some(p), at, LogMark::Loss, LogTag::None, || format!("{name} was killed on its way to {to}.")),
             None => self.log.msg(turn, Some(p), || format!("{name} was killed on its way to {to}.")),
         }
     }

@@ -25,6 +25,7 @@
 //!
 //! A world ritual without a spell naming it (`ritual_charge`) simply completes and counts.
 
+use crate::log::{LogMark, LogTag, RitualNews};
 use crate::game::Game;
 use crate::ids::*;
 use ffh_data::*;
@@ -112,7 +113,7 @@ pub fn project_built(g: &mut Game, c: CityId, project: ProjectType) {
     }
     let p = g.cities[c].owner;
     g.players[p].world_ritual_completions += 1;
-    g.world_ritual_news(c, project, "completed");
+    g.world_ritual_news(c, project, RitualNews::Completed);
     if let Some(spell) = g.world_ritual_spell(project) {
         g.players[p].world_ritual_pending = Some(project);
         if !g.world_spell_targeted(spell) {
@@ -299,16 +300,16 @@ impl Game {
 
     /// City `c` has lost the production of world ritual `project` ([`Game::city_check_rituals`]).
     pub(crate) fn world_ritual_abandoned(&mut self, c: CityId, project: ProjectType) {
-        self.world_ritual_news(c, project, "abandoned");
+        self.world_ritual_news(c, project, RitualNews::Abandoned);
     }
 
     /// City `c` has put its first production into world ritual `project`.
     pub(crate) fn world_ritual_began(&mut self, c: CityId, project: ProjectType) {
-        self.world_ritual_news(c, project, "began");
+        self.world_ritual_news(c, project, RitualNews::Began);
     }
 
     /// `<Civilization> <verb> <ritual> in <city>.` to every living player, at the city's plot.
-    fn world_ritual_news(&mut self, c: CityId, project: ProjectType, verb: &str) {
+    fn world_ritual_news(&mut self, c: CityId, project: ProjectType, news: RitualNews) {
         if !self.log.enabled {
             return;
         }
@@ -319,12 +320,13 @@ impl Game {
         let city = d.text.name(&self.cities[c].name).to_string();
         let at = (self.cities[c].x, self.cities[c].y);
         let turn = self.game_turn();
+        let verb = news.verb();
         for o in self.player_ids().collect::<Vec<_>>() {
             if self.players[o].alive && !self.player_is_barbarian(o) {
                 // A player who has not met the ritual's owner is not told who it is.
                 let met = self.teams[self.players[o].team].has_met[self.players[p].team];
                 let who = if met { civ.as_str() } else { "Unknown civilization" };
-                self.log.msg_at(turn, Some(o), at, || format!("{who} {verb} {ritual} in {city}."));
+                self.log.msg_marked(turn, Some(o), at, LogMark::Event, LogTag::Ritual(news), || format!("{who} {verb} {ritual} in {city}."));
             }
         }
     }

@@ -51,6 +51,7 @@
 //! **The battle log** is written through an optional sink ([`super::sink`]) for a battle a human
 //! could see; it draws no random number and changes no state (test `the_sink_changes_nothing`).
 
+use crate::log::{LogMark, LogTag};
 use ffh_data::*;
 
 use super::apply::Post;
@@ -1047,7 +1048,10 @@ impl Game {
             (None, true) => "took the plot".to_string(),
             _ => "cleared it".to_string(),
         };
-        let mut msgs: Vec<(PlayerId, String)> = Vec::new();
+        // The recipient's result: its side took or cleared the plot, or held it.
+        let attacker_won = matches!(result, EngageResult::Taken | EngageResult::Cleared);
+        let mark = |won: bool| if won { LogMark::Kill } else { LogMark::Loss };
+        let mut msgs: Vec<(PlayerId, LogMark, String)> = Vec::new();
         for &p in &att.players {
             let verb = match result {
                 EngageResult::Taken => took.clone(),
@@ -1056,7 +1060,7 @@ impl Game {
                 EngageResult::Held => "could not break their line".to_string(),
             };
             let them = self.player_get_civilization_adjective(def.shown_player);
-            msgs.push((p, format!("Battle at {place}: your {} attacked {} {them} and {verb}; {} fell, {} killed{walls} (report #{id})", att.committed, def.committed, att.fallen, def.fallen)));
+            msgs.push((p, mark(attacker_won), format!("Battle at {place}: your {} attacked {} {them} and {verb}; {} fell, {} killed{walls} (report #{id})", att.committed, def.committed, att.fallen, def.fallen)));
         }
         for &p in &def.players {
             let verb = match result {
@@ -1066,10 +1070,10 @@ impl Game {
                 EngageResult::Held => "held",
             };
             let them = self.player_get_civilization_adjective(att.shown_player);
-            msgs.push((p, format!("Battle at {place}: {} {them} attacked your {}, which {verb}; {} fell, {} killed{walls} (report #{id})", att.committed, def.committed, def.fallen, att.fallen)));
+            msgs.push((p, mark(!attacker_won), format!("Battle at {place}: {} {them} attacked your {}, which {verb}; {} fell, {} killed{walls} (report #{id})", att.committed, def.committed, def.fallen, att.fallen)));
         }
-        for (p, text) in msgs {
-            self.log.msg_at(turn, Some(p), at, || text);
+        for (p, mark, text) in msgs {
+            self.log.msg_marked(turn, Some(p), at, mark, LogTag::Battle(id), || text);
         }
     }
 
@@ -1238,8 +1242,15 @@ impl Game {
                 self.unit_set_damage(tu, damage_from_hp(left, setup.fighters[t].max_hp), None);
             }
             let verb = if left <= 0 { "destroyed" } else { "struck" };
-            for owner in [p, self.units[tu].owner] {
-                self.log.msg_at(turn, Some(owner), at, || format!("{} {verb} {}", d.text.name(&d.units[mty].base.description), d.text.name(&d.units[tty].base.description)));
+            // Destroyed: a kill for the shooter's owner, a loss for the target's.
+            let target_owner = self.units[tu].owner;
+            for owner in [p, target_owner] {
+                let mark = match (left <= 0, owner == p) {
+                    (false, _) => LogMark::Event,
+                    (true, true) => LogMark::Kill,
+                    (true, false) => LogMark::Loss,
+                };
+                self.log.msg_marked(turn, Some(owner), at, mark, LogTag::None, || format!("{} {verb} {}", d.text.name(&d.units[mty].base.description), d.text.name(&d.units[tty].base.description)));
             }
         }
         self.unit_collateral_combat_ex(m, to, None, true);

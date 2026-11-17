@@ -6,6 +6,7 @@
 //! ranges; all of them are ported. Interface-only code (messages, entity missions/animations,
 //! selection cycling, hot keys) is omitted with `UI:` notes; a few messages go to the game log.
 
+use crate::log::{Audience};
 use crate::defs::*;
 use crate::game::Game;
 use crate::ids::*;
@@ -940,7 +941,7 @@ impl Game {
         if self.soren_rand_num(100, "Nuke") < best_interception {
             // UI: TXT_KEY_MISC_NUKE_INTERCEPTED to every alive player; the nuke entity mission.
             let owner = self.units[u].owner;
-            self.log.msg(turn, None, || {
+            self.log.msg_to(turn, Audience::Everyone, || {
                 format!("A nuke of player {} was intercepted by team {}", owner, best_team.map_or(-1, |t| t.i()))
             });
 
@@ -995,7 +996,7 @@ impl Game {
         // XXX some AI should declare war here...
 
         // UI: TXT_KEY_MISC_NUKE_LAUNCHED to every alive player.
-        self.log.msg(turn, None, || format!("Player {} launched a nuke at ({}, {})", owner, x, y));
+        self.log.msg_to(turn, Audience::Everyone, || format!("Player {} launched a nuke at ({}, {})", owner, x, y));
 
         if self.unit_is_suicide(u) {
             self.unit_kill(u, true, None);

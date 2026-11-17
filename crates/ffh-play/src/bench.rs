@@ -12,7 +12,7 @@
 //!   same controllers; through `Session::advance` with the journal in memory and no autosave;
 //!   and with the journal and the autosaves in a directory. All end with the same checksum.
 //!   The budget (+10%) is on the session's own work measured inside its runs
-//!   ([`AdvanceProfile`]: the phase predicate, the slot-move check, the log drain and its fog,
+//!   ([`AdvanceProfile`]: the phase predicate, the slot-move check, the log drain,
 //!   the turn-boundary checkpoint and its checksum, the per-slice callback) against the
 //!   `update()` slices of the same runs: both are read around each slice, so host load reaches
 //!   both alike (P6 review). The three ways are also timed whole, interleaved, `overhead_runs`

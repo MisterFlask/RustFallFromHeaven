@@ -18,6 +18,7 @@
 //! `ffh/cards/new_civs_2.rs`. The Sundering (90), which splits civilizations, is in
 //! `ffh/cards/sundering.rs`.
 
+use crate::log::{Audience};
 use std::cmp::Reverse;
 
 use crate::deck::doom::DoomCard;
@@ -366,7 +367,7 @@ fn erupt(g: &mut Game, p: PlotIdx) {
         }
     }
     let turn = g.game_turn();
-    g.log.msg(turn, None, || format!("Volcanic Spring: a volcano erupts at ({x}, {y})."));
+    g.log.msg_to(turn, Audience::Everyone, || format!("Volcanic Spring: a volcano erupts at ({x}, {y})."));
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -449,7 +450,7 @@ fn fire_blade_returns(g: &mut Game, _: usize) {
         g.player_init_unit(barbarian, greater, x, y, Some(UnitAIType::UNITAI_ATTACK), None);
     }
     let turn = g.game_turn();
-    g.log.msg(turn, None, || format!("The Blade Returns: the Godslayer lies at ({x}, {y})."));
+    g.log.msg_to(turn, Audience::Everyone, || format!("The Blade Returns: the Godslayer lies at ({x}, {y})."));
 }
 
 // ---------------------------------------------------------------------------------------------

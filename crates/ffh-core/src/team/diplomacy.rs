@@ -358,7 +358,8 @@ impl Game {
                     && !self.team_is_minor_civ(other)
                 {
                     let turn = self.game_turn();
-                    self.log.msg(turn, None, || format!("Team {} declared war on team {}", t, other));
+                    let to = self.audience_met_both(t, other);
+                    self.log.msg_to(turn, to, || format!("Team {} declared war on team {}", t, other));
                 }
             }
 
@@ -543,7 +544,8 @@ impl Game {
 
             // TXT_KEY_MISC_YOU_MADE_PEACE_WITH / SOMEONE_MADE_PEACE messages and the replay message.
             let turn = self.game_turn();
-            self.log.msg(turn, None, || format!("Team {} made peace with team {}", t, other));
+            let to = self.audience_met_both(t, other);
+            self.log.msg_to(turn, to, || format!("Team {} made peace with team {}", t, other));
 
             self.ev_change_war(false, t, other);
 
@@ -1126,7 +1128,8 @@ impl Game {
                     // also sent to every alive player who has met both teams.
                     let kind = if capitulated { "capitulated to" } else { "became a vassal of" };
                     let turn = self.game_turn();
-                    self.log.msg(turn, None, || format!("Team {} {} team {}", t, kind, master));
+                    let to = self.audience_met_both(t, master);
+                    self.log.msg_to(turn, to, || format!("Team {} {} team {}", t, kind, master));
                 }
             } else {
                 self.teams[t].master_power = 0;
@@ -1137,7 +1140,8 @@ impl Game {
                     // m_bCapitulated) replay message and messages.
                     let kind = if self.teams[t].capitulated { "revolted against its surrender to" } else { "revolted against its master" };
                     let turn = self.game_turn();
-                    self.log.msg(turn, None, || format!("Team {} {} team {}", t, kind, master));
+                    let to = self.audience_met_both(t, master);
+                    self.log.msg_to(turn, to, || format!("Team {} {} team {}", t, kind, master));
                 }
 
                 self.teams[t].capitulated = false;

@@ -28,7 +28,6 @@ use crate::query::{self, Query, QueryErr, UiState};
 use crate::report::{self, MessageStore, Moment, Report, Snapshot};
 use crate::save::{self, SavePaths, Sidecar};
 use crate::setup::{self, NewGame, HUMAN_SLOT};
-use crate::view::fog::LogFog;
 use crate::view::Viewer;
 
 /// Who has control.
@@ -103,7 +102,7 @@ pub const WATCHDOG_SLICES: u64 = 200_000;
 
 /// Where [`Session::advance`] spends its time while the game runs (T13, `bench.rs`): the rules'
 /// `update()` slices, and the session's own work around them in the same slices (the slot-move
-/// check, the log drain and its fog, the turn-boundary checkpoint and its checksum, the per-slice
+/// check, the log drain, the turn-boundary checkpoint and its checksum, the per-slice
 /// callback), the autosave counted apart. Both are wall time read around each part of each
 /// slice, so the two shares see the same host load: their ratio holds on a loaded host where
 /// two separate runs differ by a quarter (P6 review). Off unless `Session::profile` is set.
@@ -134,8 +133,6 @@ pub struct Session {
     pub ui: Arc<Mutex<UiState>>,
     advisor: Arc<Ai>,
     messages: MessageStore,
-    /// Which log entries the human receives (design §4.4).
-    fog: LogFog,
     /// The turn report's snapshot, taken when the human ends its turn.
     snapshot: Option<Snapshot>,
     /// The last turn report (built at the control point after the snapshot).
@@ -171,7 +168,6 @@ impl Session {
             setup::attach_controllers(&mut g, human, ffh_ai::ai_controller(), controller);
             setup::configure_human(&mut g, human);
         }
-        let fog = LogFog::new(&g, human);
         Session {
             g,
             human,
@@ -182,7 +178,6 @@ impl Session {
             ui,
             advisor,
             messages: MessageStore::default(),
-            fog,
             snapshot: None,
             report: None,
             opts,
@@ -348,7 +343,6 @@ impl Session {
             return Err(PlayError::Refused(format!("player {} is not a civilization of this game", p.0)));
         }
         self.human = p;
-        self.fog = LogFog::new(&self.g, p);
         UiState::lock(&self.ui).view_version += 1;
         Ok(())
     }
@@ -617,7 +611,7 @@ impl Session {
     /// `CvInitCore::reassignPlayerAdvanced` (the Impersonate Leader spell and the end of its
     /// timer, the "switch civilizations" event, the High to Low challenge): the slot's human flag,
     /// options, controller and the active player move (ffh-core `reassign_player_advanced`,
-    /// CvInitCore.cpp:474-482); the session moves its own `human`, fog and report snapshot.
+    /// CvInitCore.cpp:474-482); the session moves its own `human` and report snapshot.
     ///
     /// The log entries since the last drain are split at the move in C++: those before go to
     /// the old slot's player, those after to the new one, and the old slot's later messages
@@ -640,7 +634,6 @@ impl Session {
         }
         self.human = new;
         debug_assert_eq!(self.g.active_player, Some(new), "ffh-core moves the active player with the human");
-        self.fog = LogFog::new(&self.g, new);
         // The report's snapshot was of the old slot.
         self.snapshot = None;
         self.shared.stats.lock().unwrap().reassigned += 1;
@@ -674,8 +667,8 @@ impl Session {
         }
     }
 
-    /// Moves the game log into the message store: the entries C++ would send to the human
-    /// ([`LogFog`]).
+    /// Moves the game log into the message store: the entries that reach the human
+    /// (`LogEntry::reaches`: its own, and the untagged ones whose audience holds it).
     pub(crate) fn drain_log(&mut self) {
         let h = self.human;
         let d = self.g.d;
@@ -707,10 +700,9 @@ impl Session {
             }
             return;
         }
-        for e in entries.into_iter().filter_map(|e| self.fog.filter(&self.g, h, e)) {
+        for e in entries.into_iter().filter(|e| e.reaches(h)) {
             self.messages.push(resolve(e));
         }
-        self.fog.update(&self.g, h);
     }
 
     /// Shows the queued event popups of `h` at a control point: `launchEventPopup` checks once,
@@ -822,7 +814,8 @@ impl Session {
 
     fn sidecar(&self) -> Sidecar {
         let journal = self.shared.journal.lock().unwrap();
-        let tail = self.messages.tail(50);
+        // Delivered messages: who else received an untagged one is not kept.
+        let tail: Vec<LogEntry> = self.messages.tail(50).into_iter().map(|e| LogEntry { audience: Default::default(), ..e }).collect();
         // The snapshot's log mark in the loaded store's numbering (the tail is 0..len).
         let report_snapshot = self.snapshot.as_ref().map(|s| {
             let mut s = s.clone();

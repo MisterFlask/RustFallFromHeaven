@@ -240,7 +240,10 @@ impl Game {
                 // TXT_KEY_MISC_YOU_CIRC_GLOBE / SOMEONE_CIRC_GLOBE / UNKNOWN_CIRC_GLOBE messages and
                 // the replay message.
                 let turn = self.game_turn();
-                self.log.msg(turn, None, || format!("Team {} has circumnavigated the globe (+{} sea moves)", t, free_moves));
+                // The team and those who met it are told who; the others, that someone did.
+                let (to, unknown) = (self.audience_met(t), self.audience_where(|p| !self.player_knows_team(p, t)));
+                self.log.msg_to(turn, to, || format!("Team {} has circumnavigated the globe (+{} sea moves)", t, free_moves));
+                self.log.msg_to(turn, unknown, || "An unknown civilization has circumnavigated the globe!".to_string());
             }
         }
     }

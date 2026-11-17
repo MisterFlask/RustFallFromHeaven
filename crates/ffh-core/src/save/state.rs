@@ -17,7 +17,7 @@ use crate::deal::Deal;
 use crate::deck::doom::{Doom, DoomSlot};
 use crate::group::SelectionGroup;
 use crate::ids::*;
-use crate::log::{GameLog, LogEntry};
+use crate::log::{Audience, GameLog, LogEntry, LogMark, LogTag, RitualNews};
 use crate::map::Map;
 use crate::player::Player;
 use crate::plot::Plot;
@@ -320,17 +320,32 @@ persist_struct!(LenderReport { player, called, obligation, refused, delivered, c
 persist_struct!(CrusadeReport {
     id, kind, target, start_turn, end_turn, reason, pool, wealth, delivered, engaged, refusals, lenders,
 });
-// `LogEntry::at` is presentation only and not saved (the format is unchanged: it reads back as
-// `None`), so it is written by hand rather than with `persist_struct!`.
+persist_enum!(Audience { 0 => Tools, 1 => Everyone, 2 => Players(players) });
+persist_enum!(LogMark { 0 => Event, 1 => City, 2 => Loss, 3 => Kill, 4 => Retreat });
+persist_enum!(RitualNews { 0 => Began, 1 => Abandoned, 2 => Completed });
+persist_enum!(LogTag { 0 => None, 1 => Battle(report), 2 => Ritual(news) });
+// `LogEntry::at` is presentation only and not saved (it reads back as `None`), so the entry is
+// written by hand rather than with `persist_struct!`.
 impl Persist for LogEntry {
     fn write(&self, w: &mut Writer) {
-        let LogEntry { turn, player, text, at: _ } = self;
+        let LogEntry { turn, player, text, at: _, audience, mark, tag } = self;
         turn.write(w);
         player.write(w);
         text.write(w);
+        audience.write(w);
+        mark.write(w);
+        tag.write(w);
     }
     fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
-        Ok(LogEntry { turn: Persist::read(r)?, player: Persist::read(r)?, text: Persist::read(r)?, at: None })
+        Ok(LogEntry {
+            turn: Persist::read(r)?,
+            player: Persist::read(r)?,
+            text: Persist::read(r)?,
+            at: None,
+            audience: Persist::read(r)?,
+            mark: Persist::read(r)?,
+            tag: Persist::read(r)?,
+        })
     }
 }
 // `GameLog::diplo` is presentation only and not saved (as `LogEntry::at`).

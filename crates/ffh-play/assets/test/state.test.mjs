@@ -315,18 +315,16 @@ test("observed games: the status flag, and the commands they take", () => {
 });
 
 test("located messages make one map marker per plot, the strongest kind there", () => {
-  assert.equal(St.eventKind("Axeman died attacking Longbowman (12.3% to win)"), "loss");
-  assert.equal(St.eventKind("Axeman destroyed Warrior (81.0% to win)"), "kill");
-  assert.equal(St.eventKind("Horseman withdrew from Archer (40.2% to win)"), "retreat");
-  assert.equal(St.eventKind("Scout fled from Wolf"), "retreat");
-  assert.equal(St.eventKind("Bannor City (Sabathiel) was captured by the Sheaim"), "city");
-  assert.equal(St.eventKind("You have destroyed Ilythia!"), "city");
-  assert.equal(St.eventKind("The revolution has begun!"), "event");
+  // The kind is the engine's mark, never read from the wording.
+  assert.equal(St.eventKind({ text: "Axeman died attacking Longbowman", mark: "loss" }), "loss");
+  assert.equal(St.eventKind({ text: "Bannor City was captured by the Sheaim", mark: "city" }), "city");
+  assert.equal(St.eventKind({ text: "Axeman destroyed Warrior" }), "event");
+  assert.equal(St.eventKind(null), "event");
   const msgs = [
-    { t: 9, at: [1, 1], text: "Axeman destroyed Warrior" },
-    { t: 10, at: [2, 3], text: "Axeman destroyed Warrior" },
-    { t: 10, at: [2, 3], text: "Warrior died attacking Axeman" },
-    { t: 10, at: [5, 5], text: "Horseman withdrew from Archer" },
+    { t: 9, at: [1, 1], text: "Axeman destroyed Warrior", mark: "kill" },
+    { t: 10, at: [2, 3], text: "Axeman destroyed Warrior", mark: "kill" },
+    { t: 10, at: [2, 3], text: "Warrior died attacking Axeman", mark: "loss" },
+    { t: 10, at: [5, 5], text: "Horseman withdrew from Archer", mark: "retreat" },
     { t: 10, text: "no plot" },
   ];
   const m = St.eventMarkers(msgs, 10);

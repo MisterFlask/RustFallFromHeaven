@@ -166,10 +166,13 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
     let r = cmd(&mut s, &format!(r#"{{"c":"engage","army":{army},"to":{{"x":{x},"y":{y}}}}}"#)).unwrap();
     let CmdOk::Applied { battle: Some(id), log, .. } = r else { panic!("no battle: {r:?}") };
     assert_eq!(s.g.battle_reports.len(), 1);
-    assert!(log.iter().any(|e| ffh_play::report::battle_report_ref(&e.text) == Some(id)), "the battle's message names its report: {log:?}");
+    assert!(log.iter().any(|e| e.tag == ffh_core::log::LogTag::Battle(id)), "the battle's message names its report: {log:?}");
     let msgs = q(&s, r#"{"q":"log","since":0}"#);
     let tagged = arr(&msgs, "entries").into_iter().find(|e| e.get("kind").and_then(Json::as_str) == Some("engagement")).expect("a message of kind engagement");
     assert_eq!(int(&tagged, "report"), id as i64);
+    // Its mark is the attacker's result: a kill when it took or cleared the plot, else a loss.
+    let won = matches!(s.g.battle_report(id).unwrap().outcome.result, ffh_core::engagement::report::EngageResult::Taken | ffh_core::engagement::report::EngageResult::Cleared);
+    assert_eq!(tagged.get("mark").and_then(Json::as_str), Some(if won { "kill" } else { "loss" }), "{tagged:?}");
 
     // The battle lists: `battle_reports` and the view's `battles`, as summaries.
     let list = q(&s, r#"{"q":"battle_reports"}"#);

@@ -13,6 +13,7 @@
 //! USE_CAN_FOUND_CITIES_ON_WATER_CALLBACK = 0, and they return False anyway).
 
 
+use crate::log::{LogMark, LogTag};
 use crate::city::City;
 use crate::controller::ConqueredCityChoice;
 use crate::defs::NUM_CITY_PLOTS;
@@ -303,8 +304,9 @@ impl Game {
                 let old_owner_name = self.player_get_name(old_owner);
                 let civ = self.player_get_civilization_description(p);
                 let at = (self.cities[old_city].x, self.cities[old_city].y);
-                self.log.msg_at(turn, Some(p), at, || format!("You have captured {name}!"));
-                self.log.msg_at(turn, None, at, || format!("{name} ({old_owner_name}) was captured by the {civ}"));
+                self.log.msg_marked(turn, Some(p), at, LogMark::City, LogTag::None, || format!("You have captured {name}!"));
+                let to = self.audience_revealed_city(old_city);
+                self.log.msg_to_at(turn, to, at, LogMark::City, || format!("{name} ({old_owner_name}) was captured by the {civ}"));
             }
         }
 
@@ -861,8 +863,9 @@ impl Game {
             let name = city_name(self, city).to_string();
             let civ = self.player_get_civilization_description(p);
             let at = (self.cities[city].x, self.cities[city].y);
-            self.log.msg_at(turn, Some(p), at, || format!("You have destroyed {name}!"));
-            self.log.msg_at(turn, None, at, || format!("{name} was razed by the {civ}"));
+            self.log.msg_marked(turn, Some(p), at, LogMark::City, LogTag::None, || format!("You have destroyed {name}!"));
+            let to = self.audience_revealed_city(city);
+            self.log.msg_to_at(turn, to, at, LogMark::City, || format!("{name} was razed by the {civ}"));
         }
 
         //FfH Global Counter: Added by Kael 08/11/2007

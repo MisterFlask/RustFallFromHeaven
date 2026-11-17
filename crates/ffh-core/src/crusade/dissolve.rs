@@ -16,6 +16,7 @@
 //! lender whose war began with its lending makes peace with the target (a standard peace treaty);
 //! (7) the Host slot is freed. A loan general has no draft: its cities and gold go to the borrower.
 
+use crate::log::{Audience};
 use super::*;
 
 /// Largest-remainder split of `total` in proportion to `weights` (sums to `total` when any
@@ -210,7 +211,7 @@ impl Game {
         self.crusade_free_host(host);
         let idx = self.crusade_index(id).expect("dissolving crusade");
         self.crusades.remove(idx);
-        self.log.msg(turn, None, || format!("Crusade {} dissolved ({:?})", id.0, reason));
+        self.log.msg_to(turn, Audience::Tools, || format!("Crusade {} dissolved ({:?})", id.0, reason));
         self.crusade_reports.push(report);
     }
 

@@ -16,7 +16,7 @@
 //!   the advisor's) and the [`Answerer`] that answers blocking [`Decision`]s.
 //! * [`command`], [`selection`]: commands as ports of the C++ human input paths.
 //! * [`decision`]: blocking decisions and the pending items of a control point.
-//! * [`view`]: what the human may see (P1: the fog rules of the game log).
+//! * [`view`]: what the human may see (the fog rules).
 //! * [`setup`], [`save`], [`journal`], [`bot`] (a scripted human for tests).
 //! * [`soak`]: the AI plays the human slot through the session over a settings matrix
 //!   (`ffh-play soak`), with ffh-stress's invariant checks.

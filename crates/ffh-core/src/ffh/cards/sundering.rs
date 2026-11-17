@@ -193,7 +193,8 @@ pub fn fire_sundering(g: &mut Game, _: usize) {
         let n = g.players[np].cities.len();
         let defected = defect_units(g, np, q, cities_before, n);
         let (name, by) = (g.player_get_civilization_description(np), g.player_get_civilization_description(q));
-        g.log.msg(turn, None, || format!("The Sundering: {n} cities of {by} secede as {name}. Units defected: {defected}."));
+        let to = g.audience_met(g.players[q].team);
+        g.log.msg_to(turn, to, || format!("The Sundering: {n} cities of {by} secede as {name}. Units defected: {defected}."));
     }
 }
 
