@@ -1525,9 +1525,10 @@ These hold for every request and reply of the protocol (design §4.1):
   and teams are 0-255. JSON integers are 64-bit signed; a 64-bit hash is sent as a hex string.
 * **JSON** is strict: no comments or trailing commas, no duplicate keys, nesting at most 128.
   Errors name the field: ``field `units`: expected an array of (a unit id (...)), got "x"``.
-  A member that a command, a `setup`, a session operation or an answer does not have is refused
-  (``field `oponents`: unknown field (known: ...)``), so a typo cannot start a default game or drop
-  a flag; queries ignore members they do not use.
+  A member that a command, a query, a `setup`, a session operation or an answer does not have is
+  refused (``field `oponents`: unknown field (known: ...)``), so a typo cannot start a default game,
+  drop a flag or quietly read a default. The envelope's `id` and `k` are always allowed (`sea`
+  takes its sea as `id`).
 * **Display names** are the whole description text, with Civ4 markup such as `[ICON_TRADE]` kept
   (`VOTE_LIBERTY` -> "Global Civic: Liberty"). Text FfH2 inherits from BtS is not vendored, so
   those names are derived from the type name (`UNIT_WARRIOR` -> "Warrior"), as are descriptions

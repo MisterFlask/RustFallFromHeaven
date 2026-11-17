@@ -148,6 +148,50 @@ pub const QUERY_NAMES: &[&str] = &[
     "sea", "seas", "place_menu",
 ];
 
+/// The members of each query besides `q` (in the order of [`QUERY_NAMES`]). A request object may
+/// also carry the envelope's `id` and `k` ([`crate::command::ENVELOPE_FIELDS`]); any other member
+/// is refused, as a command's are, so that a misspelt member is an error instead of its default.
+/// (`sea` names its sea `id`: the envelope's member, which the client sets to the sea.)
+pub const QUERY_FIELDS: &[(&str, &[&str])] = &[
+    ("status", &[]),
+    ("pending", &[]),
+    ("view", &[]),
+    ("map", &["since", "epoch"]),
+    ("plot", &["x", "y", "units"]),
+    ("group", &["units"]),
+    ("path", &["units", "x", "y", "flags"]),
+    ("combat", &["units", "x", "y"]),
+    ("city", &["city"]),
+    ("techs", &[]),
+    ("civics", &["with"]),
+    ("religions", &[]),
+    ("players", &[]),
+    ("culture", &[]),
+    ("armies", &[]),
+    ("governors", &[]),
+    ("empire_items", &["army"]),
+    ("empire_cities", &["order", "data", "army"]),
+    ("engage_preview", &["army", "units", "from", "to", "formation"]),
+    ("battle_log", &["report"]),
+    ("battle_reports", &[]),
+    ("trade", &["with"]),
+    ("trade_answer", &["with", "give", "get"]),
+    ("log", &["since"]),
+    ("speech", &["with", "comment", "salt"]),
+    ("moments", &["since"]),
+    ("report", &[]),
+    ("inspect", &["kind", "oid"]),
+    ("text", &[]),
+    ("ascii", &["x", "y", "w", "h", "layer"]),
+    ("data", &[]),
+    ("setup", &[]),
+    ("saves", &[]),
+    ("crusades", &[]),
+    ("sea", &["units"]),
+    ("seas", &[]),
+    ("place_menu", &["spell", "x", "y"]),
+];
+
 /// Why a query was refused.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum QueryErr {
@@ -242,9 +286,14 @@ impl Query {
         }
     }
 
-    /// Decodes a request object (`{"q": "path", ...}`; other members are ignored).
+    /// Decodes a request object (`{"q": "path", ...}`). Members other than the query's own
+    /// ([`QUERY_FIELDS`]) and the envelope's are refused.
     pub fn from_json(j: &Json) -> Result<Query, QueryErr> {
         let q = j.req_str("q")?;
+        if let Some((_, fields)) = QUERY_FIELDS.iter().find(|(name, _)| *name == q) {
+            let known: Vec<&str> = ["q"].iter().chain(crate::command::ENVELOPE_FIELDS).chain(fields.iter()).copied().collect();
+            j.only(&known)?;
+        }
         Ok(match q {
             "status" => Query::Status,
             "pending" => Query::Pending,
@@ -570,5 +619,21 @@ mod tests {
         assert_eq!(Query::from_json(&j).unwrap(), Query::Inspect { kind: "unit".into(), oid: 0 });
         let e = Query::from_json(&Json::parse(r#"{"id":0,"q":"inspect","kind":"unit"}"#).unwrap()).unwrap_err();
         assert!(matches!(&e, QueryErr::Invalid(s) if s.contains("field `oid`")), "{e}");
+    }
+
+    /// A misspelt member is refused, not taken for its default, as a command's is; the envelope's
+    /// `id` and `k` are allowed.
+    #[test]
+    fn unknown_members_are_refused() {
+        let e = Query::from_json(&Json::parse(r#"{"q":"path","units":[1],"x":1,"y":1,"flag":2}"#).unwrap()).unwrap_err();
+        assert!(matches!(&e, QueryErr::Invalid(s) if s.contains("field `flag`: unknown field")), "{e}");
+        let e = Query::from_json(&Json::parse(r#"{"q":"view","since":3}"#).unwrap()).unwrap_err();
+        assert!(matches!(&e, QueryErr::Invalid(s) if s.contains("field `since`")), "{e}");
+        let j = Json::parse(r#"{"id":"x","k":"q","q":"log","since":4}"#).unwrap();
+        assert_eq!(Query::from_json(&j).unwrap(), Query::Log { since: 4 });
+        let j = Json::parse(r#"{"id":2,"k":"q","q":"sea","units":[]}"#).unwrap();
+        assert_eq!(Query::from_json(&j).unwrap(), Query::Sea { id: SeaId(2), units: vec![] });
+        let names: Vec<&str> = QUERY_FIELDS.iter().map(|(n, _)| *n).collect();
+        assert_eq!(names, QUERY_NAMES);
     }
 }
