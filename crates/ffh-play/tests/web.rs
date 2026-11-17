@@ -444,3 +444,62 @@ fn the_staged_load_asks_which_transport() {
     assert_eq!(s.g.units[st.unit].transport_unit, Some(second));
     assert_eq!(st.to_json().req_str("stage"), Ok("load"));
 }
+
+/// The protocol names the client spells out (`query("x"`, `cmd("x"`, and `c: "x"` / `q: "x"`
+/// in request objects), each with the files it appears in. Names built at run time
+/// (`api.cmd(next.c, ..)`) are not literals and are skipped, as is a literal that is not a
+/// lowercase protocol name (the renderer's `c: "#8a8378"` colours).
+fn client_protocol_names() -> (Vec<(String, String)>, Vec<(String, String)>) {
+    let app = assets_dir().join("app");
+    let (mut queries, mut commands) = (Vec::new(), Vec::new());
+    for file in files_under(&app).into_iter().filter(|f| f.ends_with(".js")) {
+        let src = std::fs::read_to_string(app.join(&file)).unwrap();
+        // (needle, is a query, the needle's start must follow one of these, or a non-word char)
+        for (needle, query, object) in [("query(\"", true, false), ("cmd(\"", false, false), ("q: \"", true, true), ("c: \"", false, true)] {
+            for (at, _) in src.match_indices(needle) {
+                let before = src[..at].chars().next_back();
+                let ok = match before {
+                    None => true,
+                    Some(ch) if object => matches!(ch, '{' | ',' | '(') || ch.is_whitespace(),
+                    Some(ch) => !(ch.is_ascii_alphanumeric() || ch == '_'),
+                };
+                if !ok {
+                    continue;
+                }
+                let rest = &src[at + needle.len()..];
+                let Some(end) = rest.find('"') else { continue };
+                let name = &rest[..end];
+                if name.is_empty() || !name.bytes().all(|b| b.is_ascii_lowercase() || b == b'_') {
+                    continue;
+                }
+                let out = if query { &mut queries } else { &mut commands };
+                out.push((name.to_string(), file.clone()));
+            }
+        }
+    }
+    (queries, commands)
+}
+
+/// Every command and query name the client sends is one the host knows (`COMMAND_NAMES`,
+/// `QUERY_NAMES`): a renamed or misspelt name fails here, not as an `invalid` in a player's
+/// browser. The extraction must find a plausible number of names, so that it cannot silently
+/// stop matching the client's call patterns.
+#[test]
+fn the_client_sends_only_names_the_host_knows() {
+    let (queries, commands) = client_protocol_names();
+    let distinct = |v: &[(String, String)]| {
+        let mut n: Vec<&str> = v.iter().map(|(n, _)| n.as_str()).collect();
+        n.sort();
+        n.dedup();
+        n.len()
+    };
+    eprintln!("client literals: {} queries ({} names), {} commands ({} names)", queries.len(), distinct(&queries), commands.len(), distinct(&commands));
+    assert!(distinct(&queries) >= 20, "only {} query names found in the client: has the call pattern changed?", distinct(&queries));
+    assert!(distinct(&commands) >= 35, "only {} command names found in the client: has the call pattern changed?", distinct(&commands));
+    for (name, file) in &queries {
+        assert!(ffh_play::query::QUERY_NAMES.contains(&name.as_str()), "app/{file} sends query {name:?}, which the host does not know");
+    }
+    for (name, file) in &commands {
+        assert!(ffh_play::command::COMMAND_NAMES.contains(&name.as_str()), "app/{file} sends command {name:?}, which the host does not know");
+    }
+}

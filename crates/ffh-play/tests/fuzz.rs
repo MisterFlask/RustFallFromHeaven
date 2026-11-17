@@ -210,6 +210,7 @@ impl Fuzz {
             "event" => &["triggered", "event"],
             "vote" => &["vote", "choice"],
             "set_option" => &["option", "value"],
+            "choose_specialty" => &["city", "option"],
             "crusade_answer" => &["crusade", "strength"],
             "crusade_lend" => &["crusade", "units", "declare_war"],
             "propose_loan" => &["to", "lend", "target", "mission", "strength", "duration", "give", "get", "units"],
