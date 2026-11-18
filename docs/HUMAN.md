@@ -869,7 +869,18 @@ ritual-civ:CIVILIZATION_X DIR`: a duel as X with its ritual's tech, a charge hel
 leaves one, and its ritual actions offered (the Lanun's storm raised, a Khazad tunnel with a warrior
 on its end, two Doviello warriors). `ffh-play stage ritual-due:CIVILIZATION_X DIR`: the same, but
 instead of the charge the ritual stands 1 production short in the capital, completing at the end
-of the turn (Wellspring's placement then opens by itself). See
+of the turn (Wellspring's placement then opens by itself). `ffh-play stage persons DIR` writes
+Persons of Note (docs/PERSONS.md, "UI", part K): you play the Bannor under Aristocracy with a
+capital and three Crown cities, one of them taken this turn by Donal Lugh's army (claimed by two
+Houses and by him); House A Devoted with three cities and a wonder demand in production in its
+seat; House B Restless after a refused demand, two cities; House C Disloyal with its countdown at
+8 turns, two cities, an army of yours standing in one; House D with an empty seat and three
+persons without a post who can succeed (heroes); a Loyal commander (Donal Lugh, a hero) and a
+Disloyal one with a countdown (a veteran); an army without a commander; a Great Merchant in the
+capital that can found a House; a neighbour met at peace with two cities, one within 12 plots of
+a House's city. It prints the ids of the Houses, persons (by role), cities and armies.
+`ffh-play stage persons-direct DIR` is the same empire with Mysticism known: the civics screen
+adopts God King in one click. See
 "Testing the browser client" below for the checklist.
 
 **Engagement combat** (docs/ENGAGEMENTS.md; always on: the game's land combat, not an option). An
@@ -1069,7 +1080,8 @@ cargo build --release
   battle plan, and the battle takes the city; `cards`: the decks in play (docs/CARDS.md), the
   Starmetal Meteor and Legacy of Kings cards known (their world spells in the top bar), a Great
   Bard holding the Anointed Champion card with its need missing, the Armageddon deck dealt with
-  its slot 30 revealed; `rituals`, `rituals-pending` and `rituals-hurry`: the world rituals, above),
+  its slot 30 revealed; `rituals`, `rituals-pending` and `rituals-hurry`: the world rituals, above;
+  `persons` and `persons-direct`: Persons of Note, every state of the system, above),
   and prints
   its path and the ids as JSON. It writes only `DIR/KIND.ffhsave` and its sidecar (the staged
   game keeps no journal and no autosaves). Nothing in play uses it.

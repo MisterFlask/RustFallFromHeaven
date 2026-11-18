@@ -1312,3 +1312,16 @@ button.place-spell { padding: 0 6px; height: 20px; font-size: 12px; border-radiu
   color: var(--kw); font-size: 11px; line-height: 16px; font-weight: 700; cursor: help; white-space: nowrap;
 }
 .kw-chip:hover, .kw-chip:focus-visible { border-color: var(--kw); outline: none; }
+
+/* Persons of Note (docs/PERSONS.md, "UI", principle 2): one mark for a loyalty state on every screen,
+   drawn by persons.js stateMark: a shape and a word in the state's colour (never colour alone), the
+   turns of a countdown after them. Screens place it; they do not restyle it. A House's shield is an
+   inline SVG in its colour (persons.js houseShield). */
+.pstate { display: inline-flex; align-items: baseline; gap: 3px; font-weight: 700; white-space: nowrap; }
+.pstate-glyph { font-family: var(--serif); font-size: 0.9em; line-height: 1; }
+.pstate-turns { font-weight: 400; margin-left: 2px; }
+.pstate.ps-devoted { color: var(--good); }
+.pstate.ps-loyal { color: var(--dim); }
+.pstate.ps-restless { color: var(--caution); }
+.pstate.ps-disloyal { color: var(--warn); }
+.house-shield { display: inline-block; vertical-align: -2px; flex: none; }
