@@ -19,20 +19,21 @@ wants done next into this file.
 - Other: "Next steps" in docs/PORTING.md, "Not in this change" in docs/SUPPLY.md, the "Not built"
   notes in docs/NAVAL.md
 
-## Persons of Note
+## Persons of Note: the stages not built
 
-A cast of authored, recurring characters (heroes, and the minor leaders entering as veterans and
-great people) who preside over the Houses that hold cities, command armies and rule vassals, make
-demands, withhold when crossed, and can take what they hold. Design: docs/PERSONS.md.
+The cast, Houses, demands, loyalty and their consequences are built (docs/PERSONS.md, stages 1
+and 2, "The first build"). Still to build, each described there:
 
-- Decided (2026-11-18): a disloyal holder takes what it holds; a master levies its vassals
-  through the armies' requisition, by a quota; a human as a vassal is out of scope. Cities are
-  held by Houses of several cities, not by per-city governors (the named governors and their
-  traits go); a want is an act the player can do on the board. A grant is for good: no city is
-  revoked and no head replaced; a House outlives its head and takes its heir from the cast. The
-  capital is the Crown's. Adopting Despotism or God King is civil war with every House. Persons
-  are the minor leaders, the same characters in every game; the cast is to be authored later.
-  A House's head brings their first leader trait the owner lacks to that House's cities.
-- Proposed, to be confirmed: docs/PERSONS.md, "Open points for the owner" (demands with a term,
-  Houses running their cities under a quota, Restless withholding, claims, leagues).
-- First step: the vassal levy (stage 0), which needs no persons.
+- The vassal levy (stage 0): an army requisitions from its owner's vassals' cities, by a quota.
+  Needs no persons.
+- Vassal rulers (stage 3): a released head stays in the cast as the vassal's ruler, with
+  loyalty and demands; a capitulated leader as a person; claims abroad.
+- Foreign persons (stage 4): seeing a rival's holders, courting them, agents abroad. Courting
+  is kept only if the AI can answer it.
+- The annals (stage 5): what each character did in the player's earlier games.
+- The cast itself: a civilization has five minor leaders, so at most five persons who are not
+  heroes. How many it needs, and which enter as soldiers and which as great people, is the
+  owner's.
+- To be judged in play (docs/PERSONS.md, "Open points for the owner"): the proposals the first
+  build made (demands with a term, the order quota, Restless withholding, claims, leagues),
+  the Crown's size, a House's say over its cities' roles, a commander's effect in battle.

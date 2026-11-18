@@ -11,15 +11,15 @@ decisions and which are proposals still to be confirmed.
 | Stage | What | Status |
 |---|---|---|
 | 0 | the vassal levy: an army requisitions from its owner's vassals' cities, by a quota | not built |
-| 1 | the cast, the Court screen, Houses and grants, the commander's post, demands and loyalty shown; no consequences. The per-city named governors and their traits go | rules, state and read API built (`crates/ffh-core/src/persons/`, tests `crates/ffh-core/tests/persons.rs`); the governors gone; the AI's minimum; the Court screen and the grant list (UI parts A, B, J) |
-| 1 | the cast, the Court screen, Houses and grants, the commander's post, demands and loyalty shown; no consequences. The per-city named governors and their traits go | rules, state and read API built (`crates/ffh-core/src/persons/`, tests `crates/ffh-core/tests/persons.rs`); the governors gone; Court screen and AI to come; UI parts C to I (the existing screens, the map's plates, the alerts, the previews) built |
-| 2 | consequences: quotas and withholding, secession, leagues, the civil war of direct rule, heirs | rules built (`persons/secession.rs`, `persons/city.rs`, hooks in the order code, the attack rule, the city's reads); release as a vassal built too |
-| 3 | vassals: a House released as a vassal, a capitulated leader as a person, claims abroad | not built |
+| 1 | the cast, Houses and grants, heirs, commanders, demands and loyalty; the Court screen and the grant list; persons in the city, Armies and unit screens, on the map's plates, in the alerts and in the previews of civics, religion, war, peace and razing. The per-city named governors and their traits are gone | built (rules `crates/ffh-core/src/persons/`, tests `crates/ffh-core/tests/persons.rs`; client `crates/ffh-play/src/view/persons.rs`, `view/house_marks.rs`, `assets/app/persons*.js`; AI `crates/ffh-ai/src/persons.rs`) |
+| 2 | consequences: the order quota and withholding, a head's trait in their House's cities, half maintenance, secession, leagues, a commander's secession, the civil war of direct rule | built (`persons/secession.rs`, `persons/city.rs`) |
+| 3 | vassals: a House released as a vassal, a ruler's loyalty and demands, a capitulated leader as a person, claims abroad | release built (the head leaves the cast); the rest not built |
 | 4 | foreign persons: seeing them, courting them, agents abroad | not built |
 | 5 | the annals: what each character did in the player's earlier games | not built |
 
-Stage 0 needs no persons and can be built first. Stage 1 alone shows whether the cast is worth
-looking at before anything can go wrong.
+"The first build" below is what is built, with each ambiguous case as it was settled; "UI" is the
+interface as built. The sections between them ("Rules") are the design the build came from and
+describe the stages not built yet.
 
 ## The first build (2026-11-18)
 
